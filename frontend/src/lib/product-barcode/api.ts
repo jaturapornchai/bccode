@@ -7,6 +7,7 @@
  * - Returns plain objects with `success` boolean.
  */
 
+import { authFetch } from "@/lib/client-auth-session";
 import type { AuthSession } from "@/lib/workspace-models";
 import type {
   NameX,
@@ -32,16 +33,13 @@ export type QuickBarcodePayload = Pick<
   | "itemunitguid"
   | "itemunitcode"
   | "itemunitnames"
-  | "dividevalue"
-  | "standvalue"
-  | "ismainbarcode"
   | "imageuri"
   | "images"
   | "videos"
   | "description"
 >;
 
-/** Keep barcode writes small: identity, unit/conversion, and barcode-owned media/description only. */
+/** Keep barcode writes small: identity, unit, and barcode-owned media/description only. */
 export function toQuickBarcodePayload(data: ProductBarcode): QuickBarcodePayload {
   const compactNames = (names: NameX[]) =>
     names
@@ -58,9 +56,6 @@ export function toQuickBarcodePayload(data: ProductBarcode): QuickBarcodePayload
     itemunitguid: data.itemunitguid.trim(),
     itemunitcode: data.itemunitcode.trim().toUpperCase(),
     itemunitnames: compactNames(data.itemunitnames),
-    dividevalue: data.dividevalue,
-    standvalue: data.standvalue,
-    ismainbarcode: data.ismainbarcode,
     imageuri: data.imageuri.trim(),
     images: data.images
       .map((image, index) => ({
@@ -96,7 +91,7 @@ async function jsonRequest<T = unknown>(
   init: RequestInit,
 ): Promise<ApiEnvelope<T>> {
   try {
-    const response = await fetch(input, init);
+    const response = await authFetch(input, init);
     const payload = (await response.json().catch(() => ({}))) as ApiEnvelope<T>;
     if (!response.ok && payload.success !== false) {
       return {
@@ -319,7 +314,7 @@ function uploadProductMedia(
 ): Promise<ApiEnvelope<{ url: string; key?: string }>> {
   const form = new FormData();
   form.append("file", file);
-  return fetch(endpoint, {
+  return authFetch(endpoint, {
     method: "POST",
     headers: {
       ...(auth

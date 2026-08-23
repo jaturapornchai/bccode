@@ -66,7 +66,7 @@ func TestParseTransactionToPayment(t *testing.T) {
 			assert.Equal(t, tc.expected.BranchCode, paymentDoc.BranchCode, "Branch code invalid")
 			assert.Equal(t, tc.expected.BranchNames, paymentDoc.BranchNames, "Branch name invalid")
 			assert.Equal(t, "en", *paymentDoc.BranchNames[0].Code, "Branch name code should be en")
-			assert.Equal(t, int8(50), paymentDoc.TransFlag, "Trans Flag should be 50")
+			assert.Equal(t, int16(50), paymentDoc.TransFlag, "Trans Flag should be 50")
 			assert.Equal(t, "c01", paymentDoc.CustCode, "Cust code should be c01")
 			assert.Equal(t, "ลูกค้าทดสอบ", *paymentDoc.CustNames[0].Name, "Cust name should be ลูกค้าทดสอบ")
 		})
@@ -91,7 +91,7 @@ func TestParseSaleInvoice(t *testing.T) {
 	assert.Equal(t, "th", *paymentDoc.BranchNames[0].Code, "Branch name code should be en")
 	assert.Equal(t, int8(1), paymentDoc.DocType, "Doc type should be 1")
 
-	assert.Equal(t, int8(44), paymentDoc.TransFlag)
+	assert.Equal(t, int16(44), paymentDoc.TransFlag)
 	assert.Equal(t, "c1", paymentDoc.CustCode)
 
 }

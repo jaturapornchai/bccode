@@ -23,6 +23,7 @@ import { backendText, useBackendLanguage, type BackendLanguageDictionary } from 
 import { formatDefaultDateTime, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
+import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 import {
   branchDisplayName,
   shopDisplayName,
@@ -450,7 +451,7 @@ async function callLineOaUserApi(
   workspace: WorkspaceSession,
   action: "link" | "profile",
 ): Promise<LineOaApiResponse> {
-  const response = await fetch("/api/line-oa/user", {
+  const response = await authFetch("/api/line-oa/user", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -483,7 +484,7 @@ function normalizeLineOaProfile(payload: LineOaApiResponse): LineOaUserProfile {
 }
 
 function readAuth(): AuthSession | null {
-  return readStorage<AuthSession>(workspaceStorageKeys.auth);
+  return getAuthSession();
 }
 
 function readWorkspace(): WorkspaceSession | null {

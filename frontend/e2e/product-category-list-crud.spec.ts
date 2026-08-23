@@ -512,7 +512,7 @@ test("productcategorygroupselectscreen -> productcategorylist — create a 2-lev
 /**
  * Regression coverage for Jead's 2026-07-08 report "ลากย้าย น้ำอัดลม ไว้ก่อนกาแฟสำเร็จรูป ทำไม่ได้"
  * on this same screen (`productcategorygroupselectscreen`, sibling drag-to-reorder within a
- * category's children). Root-caused (see `.agents/worklog.md` 2026-07-08 entries) as stale tree
+ * category's children). Root-caused in the 2026-07-08 regression run as stale tree
  * data plus a documented short-drag-falls-through-to-click nuance, NOT a broken reorder mechanism
  * -- independently re-verified live via real claude-in-chrome pointer press-move-release drags
  * (multiple successful `xsort` round trips, each confirmed against a fresh MongoDB read and a hard
@@ -532,7 +532,7 @@ test("productcategorygroupselectscreen -> productcategorylist — create a 2-lev
  * "before" zone (right at the parent-row/first-child boundary) now correctly resolves to a same-
  * parent sibling reorder, and a drag landing 2-3px above a last-child/next-root-sibling boundary
  * (within the last child's own "after" zone) now correctly stays a same-parent reorder instead of
- * escaping to root -- see `.agents/worklog.md` for the full pixel-level evidence.
+ * escaping to root, as covered by this regression.
  *
  * A real Chromium pointer drag is NOT simulated here -- Playwright's `mouse.move/down/up` land at
  * exact CSS-pixel targets (no viewport-scale ambiguity), but this component's live FLIP-animation
@@ -716,8 +716,8 @@ test("productcategorygroupselectscreen — reparent via the real record+xsort AP
 
   const H = await getAuthHeaders(page);
   const recordUrl = (guid: string) => `/api/system-settings/productcategorygroupselectscreen/${guid}?holdingcode=test`;
-  // group 19 now also holds unrelated leftover data seeded earlier this session (see
-  // .agents/worklog.md) -- the backend default page size is small, so an explicit high `limit` is
+  // group 19 now also holds unrelated leftover data seeded earlier in this regression -- the
+  // backend default page size is small, so an explicit high `limit` is
   // required or this test's own just-created records can be pushed off the first page.
   const listUrl = `${MAINAPI}/product/category/list?group-number=19&limit=100000`;
 
@@ -770,7 +770,7 @@ test("productcategorygroupselectscreen — reparent via the real record+xsort AP
  * re-verified live this session via a fresh browser session (cleared localStorage/sessionStorage,
  * redone dev-test-login) driving real button clicks and a real scripted pointer-drag reparent on
  * group 1's seeded เครื่องดื่ม/ของใช้ในบ้าน/เครื่องเขียน tree, each step checked against a fresh API
- * read — see `.agents/worklog.md` 2026-07-09. Mirrors `product-group-tree-crud.spec.ts`'s
+ * read in the 2026-07-09 regression. Mirrors `product-group-tree-crud.spec.ts`'s
  * "up/down move buttons + undo/redo" test for the sibling screen.
  */
 test("productcategorygroupselectscreen — up/down move buttons + undo/redo reorder and revert via the real xsort API", async ({

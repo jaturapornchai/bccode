@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -162,6 +163,14 @@ func ProcessDocumentStockCalculation(db *sql.DB, holdingCode string, docDetailSt
 	return ProcessDocumentStockCalculationWithOptions(db, holdingCode, docDetailStructs, stepNumber, true, true)
 }
 
+func setDocumentCompany(doc *models.DocStruct, details []models.DocDetailStruct, businessCode string) {
+	businessCode = strings.ToUpper(strings.TrimSpace(businessCode))
+	doc.BusinessCode = businessCode
+	for i := range details {
+		details[i].BusinessCode = businessCode
+	}
+}
+
 // ProcessDocumentStockCalculationWithOptions - คำนวณต้นทุนสินค้าพร้อม options
 // Parameters:
 //   - db: database connection (*sql.DB)
@@ -177,11 +186,19 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, 
 
 	// รวบรวม unique itemcodes จาก docdetails
 	itemCodeMap := make(map[string]bool)
+	businessCode := ""
 
 	for _, detail := range docDetailStructs {
-		if detail.ItemCode != "" {
-			itemCodeMap[detail.ItemCode] = true
+		detailBusinessCode := strings.ToUpper(strings.TrimSpace(detail.BusinessCode))
+		itemCode := strings.ToUpper(strings.TrimSpace(detail.ItemCode))
+		if detailBusinessCode == "" || itemCode == "" {
+			return fmt.Errorf("stock calculation requires businesscode and itemcode")
 		}
+		if businessCode != "" && detailBusinessCode != businessCode {
+			return fmt.Errorf("stock calculation cannot mix businesscodes")
+		}
+		businessCode = detailBusinessCode
+		itemCodeMap[itemCode] = true
 	}
 
 	if len(itemCodeMap) == 0 {
@@ -209,9 +226,10 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, 
 
 		if incremental {
 			// Use incremental mode with checksum checking
-			processstock.ProductCalcCostIncremental(
+			processstock.ProductCalcCostIncrementalCompany(
 				db,          // database connection
 				holdingCode, // holdingCode
+				businessCode,
 				itemCode,    // itemCodeForProcess
 				pointQty,    // pointQty (จาก global config)
 				pointAmount, // pointAmount (จาก global config)
@@ -221,9 +239,10 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, 
 			)
 		} else {
 			// Legacy mode: delete first then insert
-			processstock.ProductCalcCost(
+			processstock.ProductCalcCostCompany(
 				db,          // database connection
 				holdingCode, // holdingCode
+				businessCode,
 				itemCode,    // itemCodeForProcess
 				pointQty,    // pointQty (จาก global config)
 				pointAmount, // pointAmount (จาก global config)
@@ -249,7 +268,7 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, 
 	for code := range itemCodeMap {
 		itemCodeList = append(itemCodeList, code)
 	}
-	processstock.ProcessProductBalanceUpdateByItemsAsync(db, itemCodeList)
+	processstock.ProcessProductBalanceUpdateByItemsAsync(db, holdingCode, businessCode, itemCodeList)
 
 	return nil
 }
@@ -266,6 +285,13 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, 
 // Returns: error
 func InsertDocumentToPostgreSQL(ctx context.Context, db *sql.DB, docStruct models.DocStruct, docRefStructs []models.DocRefStruct, docPaymentStruct models.DocPaymentStruct, stepNumber int) error {
 	logger.Debug("Step %d: Inserting main document to PostgreSQL...", stepNumber)
+	if docStruct.BusinessCode == "" {
+		return fmt.Errorf("missing businesscode for document %s", docStruct.DocNo)
+	}
+	for i := range docRefStructs {
+		docRefStructs[i].BusinessCode = docStruct.BusinessCode
+	}
+	docPaymentStruct.BusinessCode = docStruct.BusinessCode
 
 	if err := mypg.InsertDocListToPostgreSql(ctx, db,
 		[]models.DocStruct{docStruct},
@@ -281,6 +307,13 @@ func InsertDocumentToPostgreSQL(ctx context.Context, db *sql.DB, docStruct model
 
 func InsertDocumentToPostgreSQLTx(ctx context.Context, tx *sql.Tx, docStruct models.DocStruct, docRefStructs []models.DocRefStruct, docPaymentStruct models.DocPaymentStruct, stepNumber int) error {
 	logger.Debug("Step %d: Inserting main document to PostgreSQL (tx)...", stepNumber)
+	if docStruct.BusinessCode == "" {
+		return fmt.Errorf("missing businesscode for document %s", docStruct.DocNo)
+	}
+	for i := range docRefStructs {
+		docRefStructs[i].BusinessCode = docStruct.BusinessCode
+	}
+	docPaymentStruct.BusinessCode = docStruct.BusinessCode
 
 	if err := mypg.InsertDocListTx(ctx, tx,
 		[]models.DocStruct{docStruct},
@@ -425,7 +458,11 @@ func DecodeKafkaMessage[T any](jsonData string, targetModel *T, messageType stri
 
 // DeleteDocumentFromDatabases ทำ soft delete เอกสารใน PostgreSQL และ ClickHouse
 // เปลี่ยนจาก hard delete เป็น UPDATE isdelete = true
-func DeleteDocumentFromDatabases(ctx context.Context, holdingCode, docNo string, transFlag int) error {
+func DeleteDocumentFromDatabases(ctx context.Context, holdingCode, businessCode, docNo string, transFlag int) error {
+	businessCode = strings.ToUpper(strings.TrimSpace(businessCode))
+	if businessCode == "" {
+		return fmt.Errorf("businesscode is required")
+	}
 	// Soft delete ใน PostgreSQL
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
@@ -433,8 +470,8 @@ func DeleteDocumentFromDatabases(ctx context.Context, holdingCode, docNo string,
 		return fmt.Errorf("failed to connect to PostgreSQL: %w", err)
 	}
 
-	softDeleteQuery := "UPDATE doc SET isdelete = true WHERE docno = $1 AND transflag = $2"
-	_, err = db.ExecContext(ctx, softDeleteQuery, docNo, transFlag)
+	softDeleteQuery := "UPDATE doc SET isdelete = true WHERE businesscode = $1 AND docno = $2 AND transflag = $3"
+	_, err = db.ExecContext(ctx, softDeleteQuery, businessCode, docNo, transFlag)
 	if err != nil {
 		logger.Error("Soft delete ใน PostgreSQL ล้มเหลว: %v", err)
 		return fmt.Errorf("failed to soft delete from PostgreSQL: %w", err)

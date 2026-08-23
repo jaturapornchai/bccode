@@ -29,7 +29,7 @@ func OnConsumeMessageRFQDelete(msg string) error {
 		return fmt.Errorf("invalid RFQ data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_RFQ)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_RFQ)
 }
 
 // ProcessRFQDocument - processes RFQ using build-doc system
@@ -64,11 +64,12 @@ func ProcessRFQDocument(msg string) error {
 	ctx := context.Background()
 
 	// Delete existing documents (upsert behavior)
-	mypg.DeleteDocPgSql(ctx, db, rfqData.DocNo, TRANS_FLAG_RFQ)
+	mypg.DeleteDocPgSql(ctx, db, rfqData.BusinessCode, rfqData.DocNo, TRANS_FLAG_RFQ)
 
 	// Convert to build-doc structs
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, rfqData.HoldingCode)
 	docDetailStructs := MapRFQToDocDetailStructs(processData, rfqData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, rfqData.BusinessCode)
 
 	// Create doc references if any
 	var docRefStructs []models.DocRefStruct
@@ -131,7 +132,6 @@ func MapRFQToDocDetailStructs(processData models.ProcessMongoTransModel, holding
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

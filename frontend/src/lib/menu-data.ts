@@ -31,9 +31,16 @@ export type MenuSection = {
 const menuKey = (id: string) => id.replace(/-/g, "_");
 const ml = (id: string, th: string, en: string): MenuLabel => ({ key: menuKey(id), th, en });
 
-const tx = (id: string, th: string, en: string, route: string, category: MenuCategory = "transaction"): MenuItem => ({
+const tx = (
+  id: string,
+  th: string,
+  en: string,
+  route: string,
+  category: MenuCategory = "transaction",
+  languageKey: string = menuKey(id),
+): MenuItem => ({
   id,
-  label: ml(id, th, en),
+  label: { key: languageKey, th, en },
   route,
   category,
 });
@@ -226,8 +233,8 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("class", "ระดับสินค้า", "Product Class", "/masterclassscreen", "master"),
           tx("design", "รูปทรงสินค้า", "Product Shape", "/masterdesignscreen", "master"),
           tx("grade", "เกรดสินค้า", "Product Grade", "/mastergradescreen", "master"),
-          tx("groupsubone", "กลุ่มย่อยระดับ 1", "Subgroup Level 1", "/mastergroupsubonescreen", "master"),
-          tx("groupsubtwo", "กลุ่มย่อยระดับ 2", "Subgroup Level 2", "/mastergroupsubtwoscreen", "master"),
+          tx("groupsubone", "กลุ่มย่อยระดับ 1", "Subgroup Level 1", "/mastergroupsubonescreen", "master", "group_sub_one"),
+          tx("groupsubtwo", "กลุ่มย่อยระดับ 2", "Subgroup Level 2", "/mastergroupsubtwoscreen", "master", "group_sub_two"),
         ],
       },
       {

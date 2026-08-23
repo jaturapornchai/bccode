@@ -1,5 +1,0 @@
-- Every note starts with a YAML front matter containing `source:` pointing at the authoritative Go file and `tags:` such as `[datamodel, mongodb]` or `[datamodel, general-type]` to distinguish root collections from shared types.
-- Root-collection notes add a `collection:` field naming the actual MongoDB collection (e.g. `attachments`, `images`, `pdfhistory`) alongside the `source:` tag.
-- Field tables follow a fixed column order `| Field | Type | bson | json | คำอธิบาย |` and list both the BSON tag and the JSON tag for every persisted field.
-- Cross-references between types use the `[[file-StructName|Alias]]` wiki link syntax rather than plain filenames, keeping display names stable across renames.
-- Each note ends with a `## ความสัมพันธ์` section listing foreign-key-like references (tenant `HoldingCode`, document `DocNo`+`GuidFixed`, etc.) instead of scattering them inline.

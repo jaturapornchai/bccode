@@ -9,7 +9,7 @@ import { test, expect, type Page } from "@playwright/test";
  * DOM `closest()`, which is contaminated by the drag's own rendered side effects -- the dragged row
  * is `pointer-events-none` while dragging, and this file's drag-only "วางเป็นลูก" chip could
  * out-compete a neighboring row's own zone -- instead of stable row geometry. A live-reproduced
- * failure on this exact file (see `.agents/worklog.md` 2026-07-08 "cont." entries) showed a small
+ * failure on this exact file (2026-07-08 regression) showed a small
  * in-place jiggle-drag on a leaf row silently reparenting a DIFFERENT, unrelated sibling row into a
  * neighboring group (worse than the category screen's own repro, which at least moved the dragged
  * node itself) -- this file's `previewSiblingReorder` optimistically FLIP-animates rows during the
@@ -510,7 +510,7 @@ test("productgroup — reparent via the real record+xsort API (moveGroupAsChild 
  * Undo/Redo stack that replays moves through the real `saveGroupRecord`/`saveXSorts` calls (not a
  * local-only revert). Independently re-verified live this session via claude-in-chrome real button
  * clicks + a real pointer drag reparent, each checked against a fresh API read -- see
- * `.agents/worklog.md` 2026-07-09. Drives the same real button elements and the real `xsort` PUT the
+ * the 2026-07-09 regression run. Drives the same real button elements and the real `xsort` PUT the
  * UI uses, asserting against fresh API reads (not the optimistic in-memory state) at every step.
  */
 test("productgroup — up/down move buttons + undo/redo reorder and revert via the real xsort API", async ({
@@ -649,8 +649,8 @@ test("productgroup — up/down move buttons + undo/redo reorder and revert via t
  * does not catch a redo tail that fails to clear after a genuinely NEW move is made post-undo (i.e.
  * a stale/leftover "future" branch of history incorrectly staying replayable after being superseded).
  * Standard undo/redo semantics require a new action taken after an undo to discard that redo tail --
- * confirmed still correct here via live claude-in-chrome testing this session (see `.agents/worklog.md`
- * 2026-07-09 cont. 3), not previously covered by an automated test. Uses 3 siblings so "move A" and
+ * confirmed still correct here via live browser testing in the 2026-07-09 regression run,
+ * not previously covered by an automated test. Uses 3 siblings so "move A" and
  * "move B" are unambiguously different operations (not just the same swap re-applied).
  */
 test("productgroup — a new move after Undo clears the Redo tail (does not replay the undone move)", async ({

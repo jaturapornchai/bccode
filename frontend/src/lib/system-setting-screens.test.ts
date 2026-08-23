@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { THAI_ADDRESS_SUBKEYS } from "@/components/system-settings/types";
 import { getSystemSettingConfig } from "./system-setting-screens";
 
 describe("system setting screen configs", () => {
@@ -19,10 +20,15 @@ describe("system setting screen configs", () => {
     expect(keys.has("language")).toBe(false);
     expect(keys.has("contact.address")).toBe(true);
     expect(keys.has("contact.countrycode")).toBe(true);
-    expect(keys.has("contact.provincecode")).toBe(true);
-    expect(keys.has("contact.districtcode")).toBe(true);
-    expect(keys.has("contact.subdistrictcode")).toBe(true);
-    expect(keys.has("contact.zipcode")).toBe(true);
+    const addressField = config?.fields.find((field) => field.key === "contact");
+    expect(addressField?.type).toBe("thai-address");
+    expect(THAI_ADDRESS_SUBKEYS).toEqual([
+      "countrycode",
+      "provincecode",
+      "districtcode",
+      "subdistrictcode",
+      "zipcode",
+    ]);
     expect(keys.has("contact.phonenumber")).toBe(true);
     expect(keys.has("yeartype")).toBe(true);
     expect(keys.has("companyregistrationno")).toBe(true);

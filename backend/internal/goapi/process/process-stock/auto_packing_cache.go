@@ -22,16 +22,31 @@ ORDER BY unitratio DESC`
 
 // BuildAutoPackingCache fetches packing info for a batch of item codes to minimize per-item queries.
 func BuildAutoPackingCache(db *sql.DB, itemCodes []string) map[string][]models.ProductBarcodePackingStruct {
+	return buildAutoPackingCache(db, "", "", itemCodes)
+}
+
+func BuildAutoPackingCacheCompany(db *sql.DB, holdingCode, businessCode string, itemCodes []string) map[string][]models.ProductBarcodePackingStruct {
+	return buildAutoPackingCache(db, strings.TrimSpace(holdingCode), strings.ToUpper(strings.TrimSpace(businessCode)), itemCodes)
+}
+
+func buildAutoPackingCache(db *sql.DB, holdingCode, businessCode string, itemCodes []string) map[string][]models.ProductBarcodePackingStruct {
 	cache := make(map[string][]models.ProductBarcodePackingStruct)
 	if len(itemCodes) == 0 {
 		return cache
 	}
 
 	placeholders := make([]string, len(itemCodes))
-	args := make([]any, len(itemCodes))
+	args := make([]any, 0, len(itemCodes)+1)
+	offset := 0
+	companyWhere := ""
+	if businessCode != "" {
+		offset = 2
+		args = append(args, holdingCode, businessCode)
+		companyWhere = "holding_code = $1 AND businesscode = $2 AND "
+	}
 	for i, code := range itemCodes {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-		args[i] = code
+		placeholders[i] = fmt.Sprintf("$%d", offset+i+1)
+		args = append(args, code)
 	}
 
 	batchQuery := `SELECT DISTINCT
@@ -41,7 +56,7 @@ func BuildAutoPackingCache(db *sql.DB, itemCodes []string) map[string][]models.P
         barcoderefunitdivide,
         barcoderefunitstand / NULLIF(barcoderefunitdivide, 1) AS unitratio
     FROM productbarcode
-    WHERE itemcode IN (` + strings.Join(placeholders, ",") + `)
+    WHERE ` + companyWhere + `itemcode IN (` + strings.Join(placeholders, ",") + `)
     AND barcoderefunitstand > 0
     AND barcoderefunitdivide > 0
     ORDER BY itemcode, unitratio DESC`

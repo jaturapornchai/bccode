@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import { BadgeCheck, Building2, GitBranch, Loader2, MapPin, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -186,7 +187,7 @@ export function BranchMultiSelectFieldEditor({
       holdingcodes = [workspace.shop.holdingcode];
     }
 
-    void fetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -209,7 +210,7 @@ export function BranchMultiSelectFieldEditor({
             offset: "0",
             holdingcode: sid,
           });
-          const response = await fetch(`/api/system-settings/branch?${params.toString()}`, {
+          const response = await authFetch(`/api/system-settings/branch?${params.toString()}`, {
             headers: requestHeaders(auth),
             cache: "no-store",
             signal: controller.signal,
@@ -660,7 +661,7 @@ export function CompanyMultiSelectFieldEditor({
     const activeHoldingCode = stringValue(workspace.shop.holdingcode);
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void fetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -785,7 +786,7 @@ export function CompanyMultiSelectReadOnlyDetail({
   useEffect(() => {
     if (!auth || selectedGuids.length === 0) return;
     const controller = new AbortController();
-    void fetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,

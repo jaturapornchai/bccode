@@ -9,17 +9,23 @@ import (
 )
 
 type BranchOrgDoc struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
-	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
-	CompanyGuid string             `json:"companyguid" bson:"companyguid"`
-	Code        string             `json:"code" bson:"code"`
-	Names       common.JSONB       `json:"names" bson:"names"`
-	LogoURI     string             `json:"logouri" bson:"logouri"`
-	// Default locale/date-time settings carried on the branch so workspace
-	// headers and date rendering have a value before the user edits the branch.
-	// These mirror BranchData fields; kept here so the minimal head-office doc
-	// created at company-create time already has sensible defaults.
+	ID            primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Version       int64              `json:"__v" bson:"__v"`
+	HoldingCode   string             `json:"holdingcode" bson:"holdingcode"`
+	HoldingUID    string             `json:"holdinguid" bson:"holdinguid"`
+	GuidFixed     string             `json:"guidfixed" bson:"guidfixed"`
+	CompanyGuid   string             `json:"companyguid" bson:"companyguid"`
+	CompanyUID    string             `json:"companyuid" bson:"companyuid"`
+	BranchUID     string             `json:"branchuid" bson:"branchuid"`
+	IsDeleted     bool               `json:"isdeleted" bson:"isdeleted"`
+	BusinessCode  string             `json:"businesscode" bson:"businesscode"`
+	Code          string             `json:"code" bson:"code"`
+	BranchCode    string             `json:"branchcode" bson:"branchcode"`
+	Names         common.JSONB       `json:"names" bson:"names"`
+	BusinessTypes []string           `json:"businesstypes" bson:"businesstypes"`
+	LogoURI       string             `json:"logouri" bson:"logouri"`
+	// Locale/date-time settings are explicit per branch. Timezone is the IANA
+	// source of truth; label and offset are display-only derived values.
 	Timezone       string `json:"timezone" bson:"timezone"`
 	TimezoneLabel  string `json:"timezonelabel" bson:"timezonelabel"`
 	TimezoneOffset string `json:"timezoneoffset" bson:"timezoneoffset"`

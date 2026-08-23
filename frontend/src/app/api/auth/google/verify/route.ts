@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { postMainApiAuth } from "@/lib/auth-bridge";
+import { setRefreshTokenCookie } from "@/lib/auth-session-server";
+import { serverMainApiBase } from "@/lib/backend-url";
 
 // Real Google Sign-In (Google Identity Services).
 // The browser obtains a Google ID token (JWT) from the "Sign in with Google" button,
 // posts it here, and this route VERIFIES it with Google before trusting any email.
-// Only after verification do we call mainapi /googlelogin (server-side, via the local
-// backend address — never the public /backend proxy, which deliberately does not expose
-// raw auth routes). This is the security boundary: mainapi /googlelogin trusts the email
-// it is given, so the email must be proven to come from a real Google sign-in here.
+// Only after verification do we call mainapi /googlelogin. Mainapi verifies the same raw
+// credential again and binds the account by issuer+subject, so neither layer trusts email
+// supplied by the browser.
 
 type VerifyBody = {
   credential?: string;
@@ -23,10 +24,6 @@ type GoogleTokenInfo = {
   picture?: string;
   sub?: string;
 };
-
-function localBackendUrl(): string {
-  return process.env.BCAI_LOCAL_BACKEND_URL ?? "http://192.168.2.202:8888";
-}
 
 function configuredClientId(): string | undefined {
   return process.env.GOOGLE_CLIENT_ID ?? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -82,7 +79,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const login = await postMainApiAuth(localBackendUrl(), "/googlelogin", {
+    const login = await postMainApiAuth(serverMainApiBase(), "/googlelogin", {
       email: info.email,
       displayname: info.name ?? "",
       pictureurl: info.picture ?? "",
@@ -92,11 +89,14 @@ export async function POST(request: Request) {
       credential,
     });
 
-    return NextResponse.json({
+    if (!login.refresh) {
+      return NextResponse.json({ success: false, status: "failed", message: "เข้าสู่ระบบไม่สำเร็จ" }, { status: 502 });
+    }
+
+    const response = NextResponse.json({
       success: true,
       status: "success",
       token: login.token,
-      refresh: login.refresh,
       user: {
         username: login.username || info.email,
         email: info.email,
@@ -104,6 +104,7 @@ export async function POST(request: Request) {
         pictureUrl: info.picture ?? "",
       },
     });
+    return setRefreshTokenCookie(response, login.refresh);
   } catch (error) {
     return NextResponse.json(
       { success: false, status: "failed", message: error instanceof Error ? error.message : "เข้าสู่ระบบไม่สำเร็จ" },

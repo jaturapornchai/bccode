@@ -31,7 +31,7 @@ func OnConsumeMessageSaleInvoiceDelete(msg string) error {
 		return fmt.Errorf("invalid sale invoice data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_SALE_INVOICE)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_SALE_INVOICE)
 }
 
 // ProcessSaleInvoiceDocument - ประมวลผลเอกสาร Sale Invoice (ใบขาย)
@@ -80,13 +80,14 @@ func ProcessSaleInvoiceDocument(msg string) error {
 
 	// Step 4: ลบเอกสารเดิม (upsert behavior)
 	logger.Debug("Step 4: Deleting existing documents...")
-	mypg.DeleteDocPgSql(ctx, db, saleInvoiceData.DocNo, TRANS_FLAG_SALE_INVOICE)
+	mypg.DeleteDocPgSql(ctx, db, saleInvoiceData.BusinessCode, saleInvoiceData.DocNo, TRANS_FLAG_SALE_INVOICE)
 	logger.Debug("Step 4 completed: Existing documents deleted")
 
 	// Step 5: แปลงเป็น build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, saleInvoiceData.HoldingCode)
 	docDetailStructs := MapSaleInvoiceToDocDetailStructs(processData, saleInvoiceData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, saleInvoiceData.BusinessCode)
 	logger.Debug("Step 5 completed: Converted to %d doc details", len(docDetailStructs))
 
 	// Step 6: สร้าง document references (ถ้ามี)
@@ -150,7 +151,6 @@ func MapSaleInvoiceToDocDetailStructs(processData models.ProcessMongoTransModel,
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

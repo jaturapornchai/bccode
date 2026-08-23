@@ -702,10 +702,16 @@ func (pst *PersisterMongo) Healthcheck(ctx context.Context) error {
 }
 
 func (pst *PersisterMongo) Transaction(ctx context.Context, queryFunc func(context.Context) error) error {
-	pst.getClient(ctx)
-	client := pst.client
+	db, err := pst.getClient(ctx)
+	if err != nil {
+		return err
+	}
+	client := db.Client()
+	if client == nil {
+		return fmt.Errorf("mongodb client is not available")
+	}
 
-	err := client.UseSession(ctx, func(sessionContext mongo.SessionContext) error {
+	err = client.UseSession(ctx, func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
 		if err != nil {
 			return err

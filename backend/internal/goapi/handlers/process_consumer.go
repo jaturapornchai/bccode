@@ -131,7 +131,6 @@ package handlers
 // 		barcodeInsertList = append(barcodeInsertList, "('"+item+"')")
 // 	}
 
-// 	queryInsertStockWaitProcess := "INSERT INTO stockwaitprocess (barcodemain) VALUES " + strings.Join(barcodeInsertList, ",") + ";"
 // 	_, err := p.db.ExecContext(context.Background(), queryInsertStockWaitProcess)
 // 	if err != nil {
 // 		logger.Error("inserting into stockwaitprocess table: %v", err)

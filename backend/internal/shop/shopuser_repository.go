@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/mail"
 	"smlcloudplatform/internal/authentication/models"
+	companymodels "smlcloudplatform/internal/organization/company/models"
 	shopmodels "smlcloudplatform/internal/shop/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/search"
@@ -24,9 +25,11 @@ type IShopUserRepository interface {
 	Create(ctx context.Context, shopUser *models.ShopUser) error
 	Update(ctx context.Context, id primitive.ObjectID, holdingCode string, username string, role models.UserRole) error
 	Save(ctx context.Context, holdingCode string, username string, role models.UserRole) error
+	SaveStable(ctx context.Context, holdingCode string, holdingUID string, userUID string, username string, role models.UserRole, createdAt time.Time) error
 	SaveFullProfile(ctx context.Context, holdingCode string, req *models.UserRoleRequest) error
-	UpdateLastAccess(ctx context.Context, holdingCode string, username string, lastAccessedAt time.Time) error
-	SaveFavorite(ctx context.Context, holdingCode string, username string, isFavorite bool) error
+	UpdateLineFields(ctx context.Context, holdingCode string, userUID string, lineUserID string, lineDisplayName string, linePictureURL string) error
+	UpdateLastAccess(ctx context.Context, holdingCode string, userUID string, lastAccessedAt time.Time) error
+	SaveFavorite(ctx context.Context, holdingCode string, userUID string, isFavorite bool) error
 	Delete(ctx context.Context, holdingCode string, username string) error
 	DeleteEmptyUsernames(ctx context.Context, holdingCode string) (int64, error)
 	FindByHoldingCodeAndUserUIDInfo(ctx context.Context, holdingCode string, userUID string) (models.ShopUserInfo, error)
@@ -46,6 +49,34 @@ type IShopUserRepository interface {
 	FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error)
 	FindUserProfileByUsernames(ctx context.Context, usernames []string) ([]models.UserProfile, error)
 	ResolveHoldingCodeByHoldingCode(ctx context.Context, holdingCode string) (string, error)
+	ResolveCompanyUID(ctx context.Context, holdingCode string, businessCode string) (string, error)
+}
+
+func (svc ShopUserRepository) SaveStable(ctx context.Context, holdingCode string, holdingUID string, userUID string, username string, role models.UserRole, createdAt time.Time) error {
+	holdingUID = strings.TrimSpace(holdingUID)
+	userUID = strings.TrimSpace(userUID)
+	if holdingUID == "" || userUID == "" {
+		return errors.New("stable membership identity is required")
+	}
+	membership := &models.ShopUser{
+		Version: 0,
+		ShopUserBase: models.ShopUserBase{
+			MembershipUID: utils.NewGUID(),
+			HoldingUID:    holdingUID,
+			HoldingCode:   holdingCode,
+			UserUID:       userUID,
+			Username:      strings.TrimSpace(username),
+			Role:          role,
+		},
+		PermissionVersion: 0,
+		IsDeleted:         false,
+		CreatedAt:         createdAt.UTC(),
+		CreatedBy:         userUID,
+		IsAccessDisabled:  false,
+		AccessScopes:      []models.AccessScope{},
+	}
+	_, err := svc.pst.Create(ctx, &models.ShopUser{}, membership)
+	return err
 }
 
 type ShopUserRepository struct {
@@ -158,83 +189,58 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 	return svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": updateData}, optUpdate)
 }
 
+func (svc ShopUserRepository) UpdateLineFields(ctx context.Context, holdingCode string, userUID string, lineUserID string, lineDisplayName string, linePictureURL string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	userUID = strings.TrimSpace(userUID)
+	if holdingCode == "" || userUID == "" {
+		return errors.New("membership identity is required")
+	}
+
+	return svc.pst.Update(ctx, &models.ShopUser{}, bson.M{
+		"holdingcode": holdingCode,
+		"useruid":     userUID,
+		"isdeleted":   bson.M{"$ne": true},
+	}, bson.M{"$set": bson.M{
+		"lineuserid":      lineUserID,
+		"linedisplayname": lineDisplayName,
+		"linepictureurl":  linePictureURL,
+	}})
+}
+
 func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *models.UserRoleRequest) error {
 	username := strings.TrimSpace(req.Username)
 	if username == "" {
-		return nil
+		return errors.New("user identity is required")
 	}
 	lookupUsername := username
 	if editUsername := strings.TrimSpace(req.EditUsername); editUsername != "" {
 		lookupUsername = editUsername
+	}
+	if !strings.EqualFold(lookupUsername, username) {
+		return errors.New("global usercode cannot be changed by holding administration")
 	}
 
 	existing := &models.UserDoc{}
 	if err := svc.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"username": lookupUsername}, existing); err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
-
-	updateData := bson.M{}
-	if name := strings.TrimSpace(req.UserProfileName); name != "" {
-		updateData["name"] = name
+	if existing.Username == "" || existing.UID == "" {
+		return errors.New("user must sign in with Google and accept an invitation before membership is created")
 	}
 	email := strings.TrimSpace(req.Email)
-	if isEmailUsername(username) {
-		email = username
-	}
 	if email != "" {
-		linkedUser := &models.UserDoc{}
-		if err := svc.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"email": email}, linkedUser); err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
-		if linkedUser.Username != "" && linkedUser.UID != existing.UID && !strings.EqualFold(linkedUser.Username, lookupUsername) {
-			return errors.New("อีเมลนี้เชื่อมกับผู้ใช้อื่นแล้ว")
+		if !strings.EqualFold(strings.TrimSpace(existing.Email), email) {
+			return errors.New("membership email must match the user's verified identity")
 		}
 	}
-	if email != "" {
-		updateData["email"] = email
-	}
-	// Avatar is set only when the caller provided it (nil = leave avatar untouched,
-	// "" = explicit clear). This lets the user screen save/clear the avatar while
-	// LINE-sync/auto-unlink flows that omit Avatar never wipe a stored avatar.
-	if req.Avatar != nil {
-		updateData["avatar"] = strings.TrimSpace(*req.Avatar)
-	}
-	if req.AvatarThumb != nil {
-		updateData["avatarthumb"] = strings.TrimSpace(*req.AvatarThumb)
-	}
-	if !strings.EqualFold(lookupUsername, username) {
-		updateData["username"] = username
-	}
-	now := time.Now().UTC()
-	updateData["updatedat"] = now
-
-	update := bson.M{"$set": updateData}
-	if existing.Username == "" {
-		hashPassword, err := utils.HashPassword(models.DefaultUserPassword)
-		if err != nil {
-			return err
-		}
-		insertData := bson.M{
-			"uid":       utils.NewGUID(),
-			"password":  hashPassword,
-			"createdat": now,
-		}
-		if _, hasUsername := updateData["username"]; !hasUsername {
-			insertData["username"] = username
-		}
-		if _, hasName := updateData["name"]; !hasName {
-			insertData["name"] = username
-		}
-		update["$setOnInsert"] = insertData
-	}
-
-	return svc.pst.Update(ctx, &models.UserDoc{}, bson.M{"username": lookupUsername}, update, options.Update().SetUpsert(true))
+	return nil
 }
 
-func (svc ShopUserRepository) UpdateLastAccess(ctx context.Context, holdingCode string, username string, lastAccessedAt time.Time) error {
-
-	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, svc.shopUserIdentityFilter(ctx, holdingCode, username), bson.M{"$set": bson.M{"lastaccessedat": lastAccessedAt}}, optUpdate)
+func (svc ShopUserRepository) UpdateLastAccess(ctx context.Context, holdingCode string, userUID string, lastAccessedAt time.Time) error {
+	if strings.TrimSpace(userUID) == "" {
+		return errors.New("user identity is required")
+	}
+	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "useruid": userUID}, bson.M{"$set": bson.M{"lastaccessedat": lastAccessedAt}})
 
 	if err != nil {
 		return err
@@ -243,10 +249,11 @@ func (svc ShopUserRepository) UpdateLastAccess(ctx context.Context, holdingCode 
 	return nil
 }
 
-func (svc ShopUserRepository) SaveFavorite(ctx context.Context, holdingCode string, username string, isFavorite bool) error {
-
-	optUpdate := options.Update().SetUpsert(true)
-	err := svc.pst.Update(ctx, &models.ShopUser{}, svc.shopUserIdentityFilter(ctx, holdingCode, username), bson.M{"$set": bson.M{"isfavorite": isFavorite}}, optUpdate)
+func (svc ShopUserRepository) SaveFavorite(ctx context.Context, holdingCode string, userUID string, isFavorite bool) error {
+	if strings.TrimSpace(userUID) == "" {
+		return errors.New("user identity is required")
+	}
+	err := svc.pst.Update(ctx, &models.ShopUser{}, bson.M{"holdingcode": holdingCode, "useruid": userUID}, bson.M{"$set": bson.M{"isfavorite": isFavorite}})
 
 	if err != nil {
 		return err
@@ -319,6 +326,22 @@ func (svc ShopUserRepository) ResolveHoldingCodeByHoldingCode(ctx context.Contex
 		return "", errors.New("holding not found")
 	}
 	return shopDoc.GuidFixed, nil
+}
+
+func (svc ShopUserRepository) ResolveCompanyUID(ctx context.Context, holdingCode string, businessCode string) (string, error) {
+	company := &companymodels.CompanyDoc{}
+	err := svc.pst.FindOne(ctx, company, bson.M{
+		"holdingcode": holdingCode,
+		"code":        companymodels.NormalizeCompanyCode(businessCode),
+		"deletedat":   bson.M{"$exists": false},
+	}, company)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(company.GuidFixed) == "" || !company.IsActive {
+		return "", errors.New("company is inactive or invalid")
+	}
+	return strings.TrimSpace(company.GuidFixed), nil
 }
 
 func (svc ShopUserRepository) FindByHoldingCodeAndUserUID(ctx context.Context, holdingCode string, userUID string) (models.ShopUser, error) {
@@ -457,9 +480,13 @@ func (repo ShopUserRepository) FindByUserUIDPage(ctx context.Context, userUID st
 
 func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bson.M, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
 	docList := []models.ShopUserInfo{}
+	now := time.Now().UTC()
 	matchFilter := bson.M{
-		"deletedat": bson.M{
-			"$exists": false,
+		"isdeleted":        false,
+		"isaccessdisabled": false,
+		"$or": bson.A{
+			bson.M{"accessexpirydate": bson.M{"$exists": false}},
+			bson.M{"accessexpirydate": bson.M{"$gt": now}},
 		},
 	}
 	for key, value := range userMatch {
@@ -484,8 +511,8 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 		bson.M{"$match": matchFilter},
 		bson.M{"$lookup": bson.M{
 			"from":         "shops",
-			"localField":   "holdingcode",
-			"foreignField": "guidfixed",
+			"localField":   "holdinguid",
+			"foreignField": "holdinguid",
 			"as":           "shopInfo",
 		}},
 		bson.M{"$lookup": bson.M{
@@ -505,14 +532,16 @@ func (repo ShopUserRepository) findByUserPage(ctx context.Context, userMatch bso
 		}},
 		bson.M{
 			"$match": bson.M{
-				"shopInfo.0":         bson.M{"$exists": true},
-				"shopInfo.deletedat": bson.M{"$exists": false},
-				"shopInfo.deletedAt": bson.M{"$exists": false},
+				"shopInfo": bson.M{"$elemMatch": bson.M{
+					"isactive":  true,
+					"isdeleted": false,
+				}},
 			},
 		},
 		bson.M{
 			"$project": bson.M{
 				"_id":              1,
+				"holdinguid":       1,
 				"role":             1,
 				"isfavorite":       1,
 				"lastaccessedat":   1,

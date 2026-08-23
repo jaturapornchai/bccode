@@ -56,7 +56,7 @@ func OnConsumeMessagePurchaseOrderDelete(msg string) error {
 		}
 	}()
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_ORDER)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_PURCHASE_ORDER)
 }
 
 // ProcessPurchaseOrderDocument - processes purchase order using build-doc system
@@ -106,13 +106,14 @@ func ProcessPurchaseOrderDocument(msg string) error {
 	}()
 
 	// Delete existing documents (upsert behavior)
-	if err := mypg.DeleteDocPgSqlTx(ctx, tx, purchaseOrderData.DocNo, TRANS_FLAG_PURCHASE_ORDER); err != nil {
+	if err := mypg.DeleteDocPgSqlTx(ctx, tx, purchaseOrderData.BusinessCode, purchaseOrderData.DocNo, TRANS_FLAG_PURCHASE_ORDER); err != nil {
 		return fmt.Errorf("failed to delete existing document: %w", err)
 	}
 
 	// Convert to build-doc structs
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseOrderData.HoldingCode)
 	docDetailStructs := MapPurchaseOrderToDocDetailStructs(processData, purchaseOrderData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, purchaseOrderData.BusinessCode)
 
 	// Create doc references
 	var docRefStructs []models.DocRefStruct
@@ -256,7 +257,6 @@ func MapPurchaseOrderToDocDetailStructs(processData models.ProcessMongoTransMode
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

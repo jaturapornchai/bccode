@@ -51,6 +51,7 @@ import {
 } from "@/lib/product-barcode/utils";
 import { normalizeBusinessCode } from "@/lib/business-code";
 import { cn } from "@/lib/utils";
+import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 import {
   localizedName,
   type AuthSession,
@@ -84,7 +85,6 @@ type ProductBarcodeRecord = {
   sellingPrice: string;
   standValue: number;
   divideValue: number;
-  isMainBarcode: boolean;
   imageURI: string;
   images: ProductBarcodeObject["images"];
   videos: ProductBarcodeObject["videos"];
@@ -400,7 +400,7 @@ export function ProductBarcodeScreen({
       loadDetailAbortRef.current = controller;
 
       try {
-        const response = await fetch(
+        const response = await authFetch(
           `/api/product-barcode/${encodeURIComponent(item.guidFixed)}`,
           {
             method: "GET",
@@ -1324,10 +1324,6 @@ function ProductBarcodeDetail({
         { label: `${text.retailPrice} 1`, value: item.sellingPrice || "-" },
         { label: text.divideValue, value: formatNumber(item.divideValue) },
         { label: text.standValue, value: formatNumber(item.standValue) },
-        {
-          label: text.isMainBarcode,
-          value: formatBoolean(item.isMainBarcode, text),
-        },
       ]
     : [];
 
@@ -1461,14 +1457,7 @@ function DetailField({ label, value }: DetailFieldItem) {
 }
 
 function readAuthSession(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.auth);
-    if (!raw) return null;
-    const auth = JSON.parse(raw) as AuthSession;
-    return auth.token && auth.backendUrl ? auth : null;
-  } catch {
-    return null;
-  }
+  return getAuthSession();
 }
 
 function readWorkspaceSession(): WorkspaceSession | null {
@@ -1522,7 +1511,6 @@ function normalizeBarcodeRecord(value: unknown): ProductBarcodeRecord {
       "barcoderefunitdivide",
       "barcode_ref_unit_divide",
     ]),
-    isMainBarcode: getFirstBoolean(record, ["ismainbarcode"]),
     imageURI: getFirstString(record, ["imageuri"]),
     images: getProductImages(record),
     videos: getProductVideos(record),
@@ -1597,29 +1585,6 @@ function getFirstNumber(
   return 0;
 }
 
-function getFirstBoolean(
-  record: Record<string, unknown>,
-  keys: string[],
-): boolean {
-  for (const key of keys) {
-    if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
-    const value = record[key];
-    if (typeof value === "boolean") return value;
-    if (typeof value === "number") return value !== 0;
-    if (typeof value === "string") {
-      const normalized = value.trim().toLowerCase();
-      if (!normalized) return false;
-      return (
-        normalized === "true" ||
-        normalized === "1" ||
-        normalized === "yes" ||
-        normalized === "y"
-      );
-    }
-  }
-  return false;
-}
-
 function localizedNameFromKeys(
   record: Record<string, unknown>,
   keys: string[],
@@ -1673,10 +1638,6 @@ const numberFormatter = new Intl.NumberFormat("th-TH", {
 
 function formatNumber(value: number): string {
   return numberFormatter.format(value || 0);
-}
-
-function formatBoolean(value: boolean, text: BarcodeText): string {
-  return value ? text.yes : text.no;
 }
 
 function formatCodeName(code: string, name: string): string {

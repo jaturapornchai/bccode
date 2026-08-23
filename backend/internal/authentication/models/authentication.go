@@ -42,9 +42,8 @@ type GoogleLoginRequest struct {
 }
 
 type TokenLoginResponse struct {
-	Token              string `json:"token"`
-	Refresh            string `json:"refresh"`
-	MustChangePassword bool   `json:"mustchangepassword"`
+	Token   string `json:"token"`
+	Refresh string `json:"refresh"`
 }
 
 type PhoneNumberLoginReponse struct {

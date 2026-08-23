@@ -32,8 +32,6 @@ func RegisterRoutes(g *echo.Group) {
 	g.GET("/reports/inventory-valuation", GetInventoryValuation)
 	g.GET("/reports/stock-card/:itemcode", GetStockCard)
 
-	// Database
-	g.POST("/inventory/create-tables", CreateTablesHandler)
 }
 
 // connectAndService — สร้าง DB connection + service จาก holdingCode

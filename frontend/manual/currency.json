@@ -1,0 +1,96 @@
+{
+  "screen": "currency",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — สกุลเงิน",
+      "summary": "จัดการรหัส ชื่อ สัญลักษณ์ และสถานะของสกุลเงินในบริษัทที่เลือก",
+      "sources": [
+        {
+          "name": "หน้าจอจัดการสกุลเงิน",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/currency/currency-screen.tsx"
+        },
+        {
+          "name": "รายการสกุลเงินและสัญลักษณ์อ้างอิง",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/currency-presets.ts"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้เก็บรายการสกุลเงินสำหรับเอกสารของบริษัท ส่วนสกุลเงินหลักที่แสดงมาจาก Branch ที่เลือก",
+      "prerequisites": [
+        "เลือก Company และ Branch ให้ถูกต้อง",
+        "เตรียมรหัสและชื่อสกุลเงินที่ต้องใช้"
+      ],
+      "workflow": [
+        "ค้นหารายการเดิมก่อนเพิ่มเพื่อลดรหัสซ้ำ",
+        "กดเพิ่มสกุลเงิน แล้วเลือกจากรายการที่ตรวจสอบได้",
+        "ตรวจรหัส ชื่อ สัญลักษณ์ และสถานะก่อนบันทึก",
+        "ใช้ปุ่มแก้ไขหรือลบกับรายการที่ต้องการ และอ่านกล่องยืนยันก่อนดำเนินการ"
+      ],
+      "config": [
+        "ป้ายยืนยันบอกว่ารายการตรงกับ preset อ้างอิง",
+        "ป้ายสกุลเงินหลักอ้างอิงค่าจาก Branch ปัจจุบัน",
+        "การ์ดรายการแสดงสถานะและจำนวนอัตราแลกเปลี่ยนที่บันทึกไว้"
+      ],
+      "expectedResults": [
+        "ได้รายการสกุลเงินที่ค้นหาและเลือกใช้ได้",
+        "เห็นสกุลเงินหลักของ Branch แยกจากรายการอื่นชัดเจน"
+      ],
+      "commonMistakes": [
+        "เพิ่มรหัสซ้ำโดยไม่ค้นหารายการเดิม",
+        "เข้าใจว่าการเพิ่มรายการใหม่เปลี่ยนสกุลเงินหลักของ Branch โดยอัตโนมัติ"
+      ],
+      "limitations": [
+        "รายการ preset ใช้ช่วยตรวจรหัส ชื่อ และสัญลักษณ์ ไม่ใช่อัตราแลกเปลี่ยนปัจจุบัน",
+        "การเปลี่ยนสกุลเงินหลักต้องทำในข้อมูล Branch ไม่ใช่หน้านี้"
+      ],
+      "nextSteps": [
+        "ตรวจสกุลเงินหลักในข้อมูล Branch และทดสอบเอกสารที่ใช้สกุลเงินนี้"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Currency",
+      "summary": "Manage currency codes, names, symbols, and status for the selected Company.",
+      "sources": [
+        {
+          "name": "Currency-management screen",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/app/currency/currency-screen.tsx"
+        },
+        {
+          "name": "Currency and symbol reference presets",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/frontend/src/lib/currency-presets.ts"
+        }
+      ],
+      "objective": "Concept: this screen stores document currencies for the Company. The displayed base currency comes from the selected Branch.",
+      "prerequisites": [
+        "Select the correct Company and Branch.",
+        "Prepare the required currency codes and names."
+      ],
+      "workflow": [
+        "Search existing records before adding one to avoid duplicate codes.",
+        "Select Add Currency and choose a verified preset.",
+        "Review code, name, symbol, and status before saving.",
+        "Use Edit or Delete on the intended record and read the confirmation before continuing."
+      ],
+      "config": [
+        "The verified badge shows a match with the reference preset.",
+        "The base-currency badge uses the current Branch value.",
+        "Each card shows status and the saved exchange-rate count."
+      ],
+      "expectedResults": [
+        "Currencies can be found and selected for use.",
+        "The Branch base currency is clearly distinguished from other entries."
+      ],
+      "commonMistakes": [
+        "Adding a duplicate code without searching first.",
+        "Assuming that adding a record automatically changes the Branch base currency."
+      ],
+      "limitations": [
+        "Presets help verify code, name, and symbol; they are not live exchange rates.",
+        "Change the base currency in Branch data, not on this screen."
+      ],
+      "nextSteps": [
+        "Review the Branch base currency and test a document that uses this currency."
+      ]
+    }
+  }
+}

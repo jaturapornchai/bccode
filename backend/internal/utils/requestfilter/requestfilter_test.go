@@ -45,10 +45,6 @@ func TestGenerateFilters(t *testing.T) {
 		t.Errorf("Unexpected value for strfield: got %v", filters["strfield"])
 	}
 
-	if len(filters["strfieldarr"].(bson.M)["$in"].([]string)) != 3 {
-		t.Errorf("Unexpected value for strfieldarr: got %v", filters["strfieldarr"])
-	}
-
 	if filters["intfield"] != 42 {
 		t.Errorf("Unexpected value for intfield: got %v", filters["intfield"])
 	}

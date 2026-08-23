@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -168,7 +169,7 @@ export function ProductSubgroupTreeView({
       setMoveError("");
       try {
         const updated = { ...item, ...changes, holdingcode: workspace.shop.holdingcode };
-        const res = await fetch("/api/system-settings/productsubgroup", {
+        const res = await authFetch("/api/system-settings/productsubgroup", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -438,7 +439,7 @@ export function ProductSubgroupTreeView({
           ) : tree.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
               <FolderPlus className="h-8 w-8 opacity-40" />
-              <p className="text-sm">ยังไม่มีกลุ่มย่อย — กด "เพิ่ม" เพื่อสร้าง</p>
+              <p className="text-sm">ยังไม่มีกลุ่มย่อย — กด &quot;เพิ่ม&quot; เพื่อสร้าง</p>
             </div>
           ) : (
             tree.map((node) => renderNode(node))

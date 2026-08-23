@@ -7,10 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"smlcloudplatform/pkg/microservice"
-	msmodels "smlcloudplatform/pkg/microservice/models"
-
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -50,28 +46,75 @@ func TestHoldingCodeFromPayloadReadsNestedJSONBody(t *testing.T) {
 	}
 }
 
-func TestAuthenticateGoAPIJWTTokenUsesConfiguredSecret(t *testing.T) {
-	t.Setenv("MODE", "production")
-	t.Setenv("JWT_SECRET_KEY", "test-secret")
+func TestGoAPIRouteSurfaceExcludesOperationalEndpoints(t *testing.T) {
+	e := echo.New()
+	New().RegisterRoutes(e.Group("/goapi"), "/goapi")
 
-	claims := microservice.CustomClaims{
-		RegisteredClaims: &jwt.RegisteredClaims{},
-		UserInfo: msmodels.UserInfo{
-			Username:    "user@example.com",
-			HoldingCode: "SHOP003",
-			Role:        2,
-		},
-	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("test-secret"))
-	if err != nil {
-		t.Fatalf("sign token: %v", err)
+	forbidden := []struct {
+		method string
+		path   string
+	}{
+		{http.MethodGet, "/goapi/reportget"},
+		{http.MethodPost, "/goapi/reportpost"},
+		{http.MethodGet, "/goapi/rebuild/progress/:jobId"},
+		{http.MethodPost, "/goapi/resultget"},
+		{http.MethodPost, "/goapi/resulttopdf"},
+		{http.MethodPost, "/goapi/genpdf"},
+		{http.MethodGet, "/goapi/genpdf/history"},
+		{http.MethodPost, "/goapi/genpdf/history"},
+		{http.MethodGet, "/goapi/genpdf/reprint/:id"},
+		{http.MethodPost, "/goapi/get"},
+		{http.MethodPost, "/goapi/exec"},
+		{http.MethodPost, "/goapi/getdoc"},
+		{http.MethodPost, "/goapi/mongogetdata"},
+		{http.MethodPost, "/goapi/resultfromquery"},
+		{http.MethodPost, "/goapi/atlas/get"},
+		{http.MethodPost, "/goapi/atlas/update"},
+		{http.MethodPost, "/goapi/atlas/delete"},
+		{http.MethodPost, "/goapi/clickhouse/query"},
+		{http.MethodPost, "/goapi/clickhouse/querys"},
+		{http.MethodPost, "/goapi/clickhouse/select"},
+		{http.MethodPost, "/goapi/copymongouattodev"},
+		{http.MethodPost, "/goapi/previewcopymongo"},
+		{http.MethodGet, "/goapi/listsourceshops"},
+		{http.MethodGet, "/goapi/api/migrate/currency"},
+		{http.MethodGet, "/goapi/api/migrate/currency-backfill"},
+		{http.MethodGet, "/goapi/api/migrate/clickhouse-softdelete"},
+		{http.MethodPost, "/goapi/api/inventory/create-tables"},
+		{http.MethodPost, "/goapi/test/sale-order"},
+		{http.MethodPost, "/goapi/test/purchase"},
+		{http.MethodPost, "/goapi/test/purchase-order"},
+		{http.MethodPost, "/goapi/test/purchase-partial"},
+		{http.MethodPost, "/goapi/api/lineoa/test"},
+		{http.MethodPost, "/goapi/api/approval/test-email"},
+		{http.MethodPost, "/goapi/api/approval/test-line-push"},
+		{http.MethodPost, "/goapi/api/v1/ai-provider/test"},
+		{http.MethodPost, "/goapi/api/deploy/backend"},
+		{http.MethodPost, "/goapi/api/deploy/frontend"},
+		{http.MethodGet, "/goapi/api/deploy/status"},
 	}
 
-	userInfo, err := authenticateGoAPIJWTToken(token)
-	if err != nil {
-		t.Fatalf("authenticateGoAPIJWTToken returned error: %v", err)
+	routes := make(map[string]struct{}, len(e.Routes()))
+	for _, route := range e.Routes() {
+		routes[route.Method+" "+route.Path] = struct{}{}
 	}
-	if userInfo.HoldingCode != "SHOP003" || userInfo.Username != "user@example.com" {
-		t.Fatalf("userInfo = %+v", userInfo)
+	for _, tc := range forbidden {
+		if _, registered := routes[tc.method+" "+tc.path]; registered {
+			t.Errorf("forbidden route is still registered: %s %s", tc.method, tc.path)
+		}
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/goapi/api/health", nil)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("health status = %d, want 200", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/goapi/api/transaction/calculate", nil)
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("domain route status = %d, want 401 without a token", rec.Code)
 	}
 }

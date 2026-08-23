@@ -1,4 +1,0 @@
-interface:
-  display_name: "Stable CRUD Editor"
-  short_description: "Keep CRUD detail panes stable while switching."
-  default_prompt: "Use $stable-crud-editor to fix this Next.js CRUD detail or editor flicker without accepting stale responses."

@@ -88,12 +88,12 @@ func ReplaceProcessStockCostPartition(
 
 	// 2. Prepare batch insert
 	insertQuery := fmt.Sprintf(`
-        INSERT INTO %s (
-            holdingcode, itemcode, docdatetime, docno, linenumber, transflag,
-            barcodemain, barcode, unitcode, whcode, locationcode,
-            totalqty, unitstand, unitdivide, price, averagecost,
-            calcamount, balanceqty, balanceamount, guid, unitcost, docref
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO %s (
+			holdingcode, itemcode, docdatetime, docno, linenumber, transflag,
+			barcode, unitcode, whcode, locationcode,
+			totalqty, unitstand, unitdivide, price, averagecost,
+			calcamount, balanceqty, balanceamount, guid, unitcost, docref
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, stagingTable)
 
 	batch, err := conn.PrepareBatch(ctx, insertQuery)
@@ -112,7 +112,6 @@ func ReplaceProcessStockCostPartition(
 			row.DocNo,           // docno
 			row.LineNumber,      // linenumber
 			row.TransFlag,       // transflag
-			row.BarcodeMain,     // barcodemain (ถ้าไม่มีให้ใช้ Barcode)
 			row.Barcode,         // barcode
 			row.UnitCode,        // unitcode
 			row.WhCode,          // whcode

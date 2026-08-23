@@ -57,7 +57,6 @@ export type WorkspaceCompany = {
 
 export type AuthSession = {
   token: string;
-  refresh?: string;
   username: string;
   backendUrl: string;
   method?: string;

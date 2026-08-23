@@ -42,7 +42,6 @@ type ProcessStockCostDetailStruct struct {
 	TransFlag       int
 	ItemCode        string
 	Barcode         string
-	BarcodeMain     string
 	UnitCode        string
 	WhCode          string
 	LocationCode    string

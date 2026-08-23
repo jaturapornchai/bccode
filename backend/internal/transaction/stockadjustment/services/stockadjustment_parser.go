@@ -25,8 +25,8 @@ func (StockAdjustmenParser) ParseProductBarcode(detail trans_models.Detail, prod
 	detail.VatType = productBarcode.VatType
 	detail.Discount = productBarcode.Discount
 
-	detail.DivideValue = productBarcode.DivideValue
-	detail.StandValue = productBarcode.StandValue
+	detail.DivideValue = float64(productBarcode.DivideValue)
+	detail.StandValue = float64(productBarcode.StandValue)
 	detail.VatCal = productBarcode.VatCal
 
 	return detail

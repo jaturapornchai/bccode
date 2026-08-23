@@ -2,8 +2,10 @@ package models
 
 import (
 	"encoding/json"
+	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"smlcloudplatform/internal/models"
 	timezone "smlcloudplatform/internal/models/timezone"
@@ -31,7 +33,7 @@ type DedeZoom struct {
 }
 
 type UsernameField struct {
-	Username string `json:"username,omitempty" bson:"username" validate:"required,gte=3,max=233"` // validate:"required,alphanum,gte=3,max=233"
+	Username string `json:"username,omitempty" bson:"username,omitempty" validate:"required,gte=3,max=64"`
 }
 
 type PhoneNumberField struct {
@@ -44,11 +46,44 @@ type EmailField struct {
 }
 
 type UserPassword struct {
-	Password string `json:"password,omitempty" bson:"password" validate:"required,gte=5,max=233"`
+	Password string `json:"password,omitempty" bson:"password,omitempty" validate:"required,gte=15,max=64"`
+}
+
+var usercodePattern = regexp.MustCompile(`^[a-z0-9._-]+$`)
+
+func NormalizeUsercode(usercode string) string {
+	return strings.ToLower(strings.TrimSpace(usercode))
+}
+
+func IsValidUsercode(usercode string) bool {
+	usercode = NormalizeUsercode(usercode)
+	length := utf8.RuneCountInString(usercode)
+	return length >= 3 && length <= 64 && usercodePattern.MatchString(usercode)
+}
+
+func IsValidPasswordLength(password string) bool {
+	length := utf8.RuneCountInString(password)
+	return length >= 15 && length <= 64
+}
+
+var knownCompromisedPasswords = map[string]struct{}{
+	"123456789012345":  {},
+	"passwordpassword": {},
+	"password123456":   {},
+	"qwertyuiop12345":  {},
+	"adminadmin12345":  {},
+	"letmeinletmein":   {},
+	"iloveyouiloveyou": {},
+}
+
+func IsKnownCompromisedPassword(password string) bool {
+	_, found := knownCompromisedPasswords[strings.ToLower(strings.TrimSpace(password))]
+	return found
 }
 
 type UserDoc struct {
 	ID               primitive.ObjectID `json:"-" bson:"_id,omitempty"`
+	GuidFixed        string             `json:"guidfixed" bson:"guidfixed"`
 	UsernameField    `bson:"inline"`
 	EmailField       `bson:"inline"`
 	PhoneNumberField `bson:"inline"`
@@ -63,6 +98,41 @@ type UserDoc struct {
 	CreatedAt  time.Time `json:"-" bson:"createdat,omitempty"`
 	UpdatedAt  time.Time `json:"-" bson:"updatedat,omitempty"`
 	DisabledAt time.Time `json:"disabledat,omitempty" bson:"disabledat,omitempty"`
+	IsDeleted  bool      `json:"isdeleted" bson:"isdeleted"`
+	Version    int64     `json:"-" bson:"__v"`
+}
+
+type GoogleIdentity struct {
+	ID            primitive.ObjectID `json:"-" bson:"_id,omitempty"`
+	IdentityUID   string             `json:"identityuid" bson:"identityuid"`
+	UserUID       string             `json:"useruid" bson:"useruid"`
+	Issuer        string             `json:"issuer" bson:"issuer"`
+	Subject       string             `json:"subject" bson:"subject"`
+	VerifiedEmail string             `json:"verifiedemail" bson:"verifiedemail"`
+	IsActive      bool               `json:"isactive" bson:"isactive"`
+	LinkedAt      time.Time          `json:"linkedat" bson:"linkedat"`
+	RevokedAt     *time.Time         `json:"revokedat,omitempty" bson:"revokedat,omitempty"`
+	RevokedBy     string             `json:"revokedby,omitempty" bson:"revokedby,omitempty"`
+}
+
+func (*GoogleIdentity) CollectionName() string {
+	return "googleidentities"
+}
+
+type AuthAudit struct {
+	ID         primitive.ObjectID     `json:"-" bson:"_id,omitempty"`
+	AuditUID   string                 `json:"audituid" bson:"audituid"`
+	UserUID    string                 `json:"useruid,omitempty" bson:"useruid,omitempty"`
+	Action     string                 `json:"action" bson:"action"`
+	Outcome    string                 `json:"outcome" bson:"outcome"`
+	ReasonCode string                 `json:"reasoncode,omitempty" bson:"reasoncode,omitempty"`
+	SessionUID string                 `json:"sessionuid,omitempty" bson:"sessionuid,omitempty"`
+	OccurredAt time.Time              `json:"occurredat" bson:"occurredat"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty" bson:"metadata,omitempty"`
+}
+
+func (*AuthAudit) CollectionName() string {
+	return "authaudits"
 }
 
 func (*UserDoc) CollectionName() string {
@@ -136,11 +206,10 @@ type UserLoginPhoneNumberRequest struct {
 }
 
 type UserProfile struct {
-	UsernameField     `bson:"inline"`
-	Email             string `json:"email,omitempty" bson:"email,omitempty"`
-	UserDetail        `bson:"inline"`
-	UserPassword      `bson:"inline"`
-	IsDefaultPassword bool `json:"isdefaultpassword" bson:"-"`
+	UsernameField `bson:"inline"`
+	Email         string `json:"email,omitempty" bson:"email,omitempty"`
+	UserDetail    `bson:"inline"`
+	UserPassword  `bson:"inline"`
 
 	// === ข้อมูล LINE (ระดับ user) ===
 	LineUserID      string `json:"lineuserid" bson:"lineuserid"`
@@ -159,8 +228,8 @@ type UserProfileRequest struct {
 }
 
 type UserPasswordRequest struct {
-	CurrentPassword string `json:"currentpassword" bson:"currentpassword" validate:"required,gte=5"`
-	NewPassword     string `json:"newpassword" bson:"newpassword" validate:"required,gte=5"`
+	CurrentPassword string `json:"currentpassword" bson:"currentpassword" validate:"required,gte=15,max=64"`
+	NewPassword     string `json:"newpassword" bson:"newpassword" validate:"required,gte=15,max=64"`
 }
 
 type UserProfileReponse struct {
@@ -171,6 +240,7 @@ type UserProfileReponse struct {
 type ShopSelectRequest struct {
 	HoldingCode  string `json:"holdingcode"`
 	BusinessCode string `json:"businesscode,omitempty"`
+	BranchUID    string `json:"branchuid,omitempty"`
 }
 
 type UserRole = uint8
@@ -183,13 +253,13 @@ const (
 	ROLE_SYSTEM = 255 // APP MANAGER
 )
 
-const DefaultUserPassword = "12345"
-
 type ShopUserBase struct {
-	Username    string   `json:"username" bson:"username"`
-	UserUID     string   `json:"useruid" bson:"useruid"`
-	HoldingCode string   `json:"holdingcode" bson:"holdingcode"`
-	Role        UserRole `json:"role" bson:"role"`
+	MembershipUID string   `json:"membershipuid" bson:"membershipuid"`
+	Username      string   `json:"username" bson:"username"`
+	UserUID       string   `json:"useruid" bson:"useruid"`
+	HoldingUID    string   `json:"holdinguid" bson:"holdinguid"`
+	HoldingCode   string   `json:"holdingcode" bson:"holdingcode"`
+	Role          UserRole `json:"role" bson:"role"`
 }
 
 // DocumentApproval - ข้อมูลการอนุมัติแยกตามประเภทเอกสาร
@@ -199,26 +269,27 @@ type DocumentApproval struct {
 }
 
 type AccessScope struct {
-	ScopeType    string `json:"scopetype" bson:"scopetype"`                           // holding, company, branch
-	BusinessCode string `json:"businesscode,omitempty" bson:"businesscode,omitempty"` // company code
-	BranchCode   string `json:"branchcode,omitempty" bson:"branchcode,omitempty"`     // Thai tax branch code
+	ScopeType    string `json:"scopetype" bson:"scopetype"`                           // company, branch
+	CompanyUID   string `json:"companyuid,omitempty" bson:"companyuid,omitempty"`     // immutable company id
+	BranchUID    string `json:"branchuid,omitempty" bson:"branchuid,omitempty"`       // immutable branch id
+	BusinessCode string `json:"businesscode,omitempty" bson:"businesscode,omitempty"` // legacy display code
+	BranchCode   string `json:"branchcode,omitempty" bson:"branchcode,omitempty"`     // legacy display code
 	AllBranches  bool   `json:"allbranches,omitempty" bson:"allbranches,omitempty"`
 }
 
 // ScopesAllow reports whether the given access scopes permit access to a company (businessCode)
-// and optionally a branch (branchCode, empty to check company-level only). EMPTY scopes mean
-// FULL access (no restriction configured — per the "empty = all companies" policy). This mirrors
-// the frontend scopeRulesApply logic so backend enforcement and UI visibility stay consistent.
+// and optionally a branch. EMPTY scopes fail closed; a Holding role never grants
+// transaction access by itself.
 func ScopesAllow(scopes []AccessScope, businessCode string, branchCode string) bool {
 	if len(scopes) == 0 {
-		return true
+		return false
 	}
 	bc := strings.ToUpper(strings.TrimSpace(businessCode))
 	brc := strings.ToUpper(strings.TrimSpace(branchCode))
 	for _, s := range scopes {
 		st := strings.ToLower(strings.TrimSpace(s.ScopeType))
-		if st == "" || st == "holding" {
-			return true
+		if st != "company" && st != "branch" {
+			continue
 		}
 		sbc := strings.ToUpper(strings.TrimSpace(s.BusinessCode))
 		if sbc == "" || sbc != bc {
@@ -237,44 +308,74 @@ func ScopesAllow(scopes []AccessScope, businessCode string, branchCode string) b
 }
 
 // ScopesAllowCompanySelection reports whether a user may enter a company-wide
-// session. Branch-only scopes must not be promoted to company-wide access.
-func ScopesAllowCompanySelection(scopes []AccessScope, businessCode string) bool {
+// session by immutable CompanyUID. Branch-only scopes and legacy business codes
+// must not be promoted to company-wide access.
+func ScopesAllowCompanySelection(scopes []AccessScope, companyUID string) bool {
 	if len(scopes) == 0 {
-		return true
+		return false
 	}
-	bc := strings.ToUpper(strings.TrimSpace(businessCode))
-	if bc == "" {
+	companyUID = strings.TrimSpace(companyUID)
+	if companyUID == "" {
 		return false
 	}
 	for _, scope := range scopes {
 		scopeType := strings.ToLower(strings.TrimSpace(scope.ScopeType))
-		if scopeType == "" || scopeType == "holding" {
-			return true
-		}
 		if scopeType != "company" {
 			continue
 		}
-		if strings.ToUpper(strings.TrimSpace(scope.BusinessCode)) != bc {
+		if strings.TrimSpace(scope.CompanyUID) != companyUID {
 			continue
 		}
-		if strings.TrimSpace(scope.BranchCode) == "" {
+		if strings.TrimSpace(scope.BranchUID) == "" {
 			return true
 		}
 	}
 	return false
 }
 
+// ScopesAllowBranchSelection permits an exact Branch scope or a Company scope
+// explicitly covering every Branch. It never promotes a Branch scope to a
+// Company-wide workspace.
+func ScopesAllowBranchSelection(scopes []AccessScope, companyUID, branchUID string) bool {
+	companyUID = strings.TrimSpace(companyUID)
+	branchUID = strings.TrimSpace(branchUID)
+	if companyUID == "" || branchUID == "" {
+		return false
+	}
+	for _, scope := range scopes {
+		if strings.TrimSpace(scope.CompanyUID) != companyUID {
+			continue
+		}
+		switch strings.ToLower(strings.TrimSpace(scope.ScopeType)) {
+		case "company":
+			if scope.AllBranches {
+				return true
+			}
+		case "branch":
+			if strings.TrimSpace(scope.BranchUID) == branchUID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type ShopUser struct {
-	ID               primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	ShopUserBase     `bson:"inline"`
-	IsFavorite       bool      `json:"isfavorite" bson:"isfavorite"`
-	LastAccessedAt   time.Time `json:"lastaccessedat" bson:"lastaccessedat"`
-	IsCreator        bool      `json:"iscreator,omitempty" bson:"-"`
-	IsAccessDisabled bool      `json:"isaccessdisabled" bson:"isaccessdisabled"`
-	AccessDisabledAt time.Time `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
-	AccessDisabledBy string    `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
-	AccessEnabledAt  time.Time `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
-	AccessEnabledBy  string    `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
+	ID                primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Version           int64              `json:"-" bson:"__v"`
+	ShopUserBase      `bson:"inline"`
+	PermissionVersion int64     `json:"permissionversion" bson:"permissionversion"`
+	IsDeleted         bool      `json:"isdeleted" bson:"isdeleted"`
+	CreatedAt         time.Time `json:"createdat" bson:"createdat"`
+	CreatedBy         string    `json:"createdby" bson:"createdby"`
+	IsFavorite        bool      `json:"isfavorite" bson:"isfavorite"`
+	LastAccessedAt    time.Time `json:"lastaccessedat" bson:"lastaccessedat"`
+	IsCreator         bool      `json:"iscreator,omitempty" bson:"-"`
+	IsAccessDisabled  bool      `json:"isaccessdisabled" bson:"isaccessdisabled"`
+	AccessDisabledAt  time.Time `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
+	AccessDisabledBy  string    `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
+	AccessEnabledAt   time.Time `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
+	AccessEnabledBy   string    `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
 	// AccessExpiryDate auto-blocks access once the date is reached (offboarding /
 	// last working day). Zero = no expiry. The shop creator is always exempt.
 	AccessExpiryDate time.Time `json:"accessexpirydate,omitempty" bson:"accessexpirydate,omitempty"`
@@ -299,6 +400,7 @@ func (*ShopUser) CollectionName() string {
 }
 
 type ShopUserInfo struct {
+	HoldingUID  string `json:"holdinguid" bson:"holdinguid"`
 	HoldingCode string `json:"holdingcode" bson:"holdingcode"`
 	Name        string `json:"name" bson:"name1"`
 	// Name1          string         `json:"name1" bson:"name1"`

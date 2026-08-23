@@ -8,7 +8,6 @@ import (
 	"os"
 	migrationAPI "smlcloudplatform/cmd/migrationapi/api"
 	"smlcloudplatform/docs"
-	"smlcloudplatform/internal/apikeyservice"
 	"smlcloudplatform/internal/authentication"
 	"smlcloudplatform/internal/channel/salechannel"
 	"smlcloudplatform/internal/channel/transportchannel"
@@ -44,6 +43,7 @@ import (
 	"smlcloudplatform/internal/organization/businesstype"
 	"smlcloudplatform/internal/organization/company"
 	"smlcloudplatform/internal/organization/department"
+	"smlcloudplatform/internal/organization/rolepermission"
 	"smlcloudplatform/internal/payment/bankmaster"
 	"smlcloudplatform/internal/payment/bookbank"
 	"smlcloudplatform/internal/payment/qrpayment"
@@ -252,28 +252,17 @@ func main() {
 		ms.Echo().GET("/swagger/*", echoSwagger.WrapHandler)
 
 		cacher := ms.Cacher(cfg.CacherConfig())
-		authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour)
+		pst := ms.MongoPersister(cfg.MongoPersisterConfig())
+		authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour, pst)
 		publicPath := []string{
 			"/migrationtools/",
 			"/swagger/*",
 
-			"/tokenlogin",
 			"/googlelogin",
 
 			"/login",
-			"/poslogin",
-			"/login/email",
-			"/login/phone-number",
-			"/login/line",
-			"/linelogin",
-			"/register",
+			"/dev-login",
 			"/refresh",
-			"/register-phonenumber",
-			"/register/exists-username",
-			"/register/exists-phonenumber",
-			"/send-phonenumber-otp",
-
-			"/employee/login",
 
 			"/images*",
 			"/productimage/*",
@@ -302,6 +291,8 @@ func main() {
 		exceptShopPath := []string{
 			"/holding",
 			"/shop",
+			"/logout",
+			"/verify-token",
 			"/profile",
 			"/profile/password",
 			"/profile/disable-user",
@@ -316,8 +307,6 @@ func main() {
 			// Holding admin management — works from the holding-selection screen (no shop selected yet);
 			// the handlers resolve the caller's role per-holding from the request holdingcode.
 			"/holding-member/list",
-			"/holding-member/add",
-			"/holding-member/remove",
 		}
 
 		// Reload config endpoint — goapi เรียกหลัง save config เพื่อให้ mainapi ใช้ config ใหม่
@@ -357,9 +346,7 @@ func main() {
 
 		httpServices := []HttpRegister{
 
-			apikeyservice.NewApiKeyServiceHttp(ms, cfg),
 			authentication.NewAuthenticationHttp(ms, cfg),
-			apikeyservice.NewApiKeyServiceHttp(ms, cfg),
 			shop.NewShopHttp(ms, cfg),
 
 			shop.NewShopMemberHttp(ms, cfg),
@@ -425,6 +412,7 @@ func main() {
 			branch.NewBranchHttp(ms, cfg),
 			department.NewDepartmentHttp(ms, cfg),
 			businesstype.NewBusinessTypeHttp(ms, cfg),
+			rolepermission.NewRolePermissionHttp(ms, cfg),
 
 			//transaction
 			purchase.NewPurchaseHttp(ms, cfg),
@@ -553,8 +541,6 @@ func main() {
 		ms.RegisterHttp(media.InitMediaUploadHttp(ms, cfg))
 
 		// เริ่ม cleanup scheduler สำหรับ expired coupon reservations
-		pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-
 		// สร้าง indexes สำหรับ coupon reservations
 		err := coupon_database.CreateCouponReservationIndexes(pst)
 		if err != nil {
@@ -575,7 +561,7 @@ func main() {
 		} else {
 			goapiGroup := ms.Echo().Group("/goapi")
 			goapiServer.RegisterMiddleware(goapiGroup)
-			goapiServer.RegisterRoutes(goapiGroup, "/goapi")
+			goapiServer.RegisterRoutes(goapiGroup, "/goapi", pst)
 			defer goapiServer.Shutdown()
 			log.Println("GoAPI routes registered under /goapi/*")
 

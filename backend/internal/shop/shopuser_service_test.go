@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/smlsoft/mongopagination"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	micromodels "smlcloudplatform/pkg/microservice/models"
 )
 
 func TestShopUserSave(t *testing.T) {
@@ -158,6 +160,74 @@ func TestEnsureHoldingManagerRejectsInactiveUser(t *testing.T) {
 			require.EqualError(t, err, "permission denied")
 		})
 	}
+}
+
+func TestListShopByUserUsesUIDForCreatorWithoutAccessExemption(t *testing.T) {
+	repo := new(ShopUserRepositoryMock)
+	ctx := context.Background()
+	pageable := micromodels.Pageable{Page: 1, Limit: 20}
+	docList := []models.ShopUserInfo{
+		{CreatedBy: "stable-user-uid", IsAccessDisabled: true},
+		{CreatedBy: "renamed@example.com"},
+	}
+	repo.On("FindByUserUIDPage", ctx, "stable-user-uid", pageable).Return(docList, mongopagination.PaginationData{}, nil)
+
+	got, _, err := shop.NewShopUserService(repo).ListShopByUser("renamed@example.com", "stable-user-uid", pageable)
+
+	require.NoError(t, err)
+	require.True(t, got[0].IsCreator)
+	require.True(t, got[0].IsAccessDisabled)
+	require.False(t, got[1].IsCreator)
+	repo.AssertNotCalled(t, "FindByUsernamePage", mock.Anything, mock.Anything)
+	repo.AssertExpectations(t)
+}
+
+func TestSyncLineDataUsesNarrowMembershipUpdate(t *testing.T) {
+	repo := new(ShopUserRepositoryMock)
+	ctx := context.Background()
+	holdingCode := "holdingcode"
+	username := "member@example.com"
+	userUID := "member-uid"
+	lineUserID := "line-user-id"
+
+	member := testShopUser(holdingCode, username, models.ROLE_ADMIN)
+	member.UserUID = userUID
+	member.IsAccessDisabled = true
+	member.AccessScopes = []models.AccessScope{{ScopeType: "company", CompanyUID: "company-uid"}}
+
+	repo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, username).Return(member, nil)
+	repo.On("FindByHoldingCodeAndLineUserID", ctx, holdingCode, lineUserID).Return(models.ShopUser{}, errors.New("not found"))
+	repo.On("UpdateLineFields", ctx, holdingCode, userUID, lineUserID, "Member", "https://example.test/member.png").Return(nil)
+
+	err := shop.NewShopUserService(repo).SyncLineData(holdingCode, username, lineUserID, "Member", "https://example.test/member.png")
+
+	require.NoError(t, err)
+	repo.AssertNotCalled(t, "SaveFullProfile", mock.Anything, mock.Anything, mock.Anything)
+	repo.AssertExpectations(t)
+}
+
+func TestSaveMyLineDataUnlinksPreviousOwnerWithNarrowUpdates(t *testing.T) {
+	repo := new(ShopUserRepositoryMock)
+	ctx := context.Background()
+	holdingCode := "holdingcode"
+	username := "member@example.com"
+	lineUserID := "shared-line-user-id"
+
+	member := testShopUser(holdingCode, username, models.ROLE_USER)
+	member.UserUID = "member-uid"
+	previous := testShopUser(holdingCode, "previous@example.com", models.ROLE_OWNER)
+	previous.UserUID = "previous-uid"
+
+	repo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, username).Return(member, nil)
+	repo.On("FindByHoldingCodeAndLineUserID", ctx, holdingCode, lineUserID).Return(previous, nil)
+	repo.On("UpdateLineFields", ctx, holdingCode, previous.UserUID, "", "", "").Return(nil).Once()
+	repo.On("UpdateLineFields", ctx, holdingCode, member.UserUID, lineUserID, "Member", "https://example.test/member.png").Return(nil).Once()
+
+	err := shop.NewShopUserService(repo).SaveMyLineData(holdingCode, username, lineUserID, "Member", "https://example.test/member.png")
+
+	require.NoError(t, err)
+	repo.AssertNotCalled(t, "SaveFullProfile", mock.Anything, mock.Anything, mock.Anything)
+	repo.AssertExpectations(t)
 }
 
 func testShopUser(holdingCode string, username string, role models.UserRole) models.ShopUser {

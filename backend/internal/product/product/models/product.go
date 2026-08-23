@@ -83,8 +83,8 @@ type Product struct {
 
 	// Units and BOM properties moved from ProductBarcode to Product
 	Condition        bool                    `json:"condition" bson:"condition"`
-	DivideValue      float64                 `json:"dividevalue" bson:"dividevalue"`
-	StandValue       float64                 `json:"standvalue" bson:"standvalue"`
+	DivideValue      int64                   `json:"dividevalue" bson:"dividevalue"`
+	StandValue       int64                   `json:"standvalue" bson:"standvalue"`
 	UnitConversions  []ProductUnitConversion `json:"unitconversions" bson:"unitconversions"`
 	IsUseSubBarcodes bool                    `json:"isusesubbarcodes" bson:"isusesubbarcodes"`
 	RefBarcodes      *[]RefProductBarcode    `json:"refbarcodes" bson:"refbarcodes"`
@@ -146,8 +146,8 @@ type RefProductBarcode struct {
 	ItemUnitNames *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
 	Barcode       string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition     bool            `json:"condition" bson:"condition"`
-	DivideValue   float64         `json:"dividevalue" bson:"dividevalue"`
-	StandValue    float64         `json:"standvalue" bson:"standvalue"`
+	DivideValue   int64           `json:"dividevalue" bson:"dividevalue"`
+	StandValue    int64           `json:"standvalue" bson:"standvalue"`
 	Qty           float64         `json:"qty" bson:"qty"`
 
 	// Marketplace & SKU Logistics
@@ -168,8 +168,8 @@ type BOMProductBarcode struct {
 	ItemUnitNames    *[]models.NameX `json:"itemunitnames" bson:"itemunitnames"`
 	Barcode          string          `json:"barcode" bson:"barcode" validate:"required,min=1"`
 	Condition        bool            `json:"condition" bson:"condition"`
-	DivideValue      float64         `json:"dividevalue" bson:"dividevalue"`
-	StandValue       float64         `json:"standvalue" bson:"standvalue"`
+	DivideValue      int64           `json:"dividevalue" bson:"dividevalue"`
+	StandValue       int64           `json:"standvalue" bson:"standvalue"`
 	Qty              float64         `json:"qty" bson:"qty"`
 }
 
@@ -196,10 +196,9 @@ type Barcodes struct {
 	Description   string          `json:"description" gorm:"-"`
 	Prices        *[]ProductPrice `json:"prices" gorm:"-"`
 	Condition     bool            `json:"condition" gorm:"-"`
-	DivideValue   float64         `json:"dividevalue" gorm:"-"`
-	StandValue    float64         `json:"standvalue" gorm:"-"`
+	DivideValue   int64           `json:"dividevalue" gorm:"-"`
+	StandValue    int64           `json:"standvalue" gorm:"-"`
 	Qty           float64         `json:"qty" gorm:"-"`
-	IsMainBarcode bool            `json:"ismainbarcode" gorm:"-"`
 }
 
 type ProductPrice struct {

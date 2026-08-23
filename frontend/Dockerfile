@@ -23,7 +23,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG BCAI_LOCAL_BACKEND_URL
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+ENV BCAI_LOCAL_BACKEND_URL=${BCAI_LOCAL_BACKEND_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
@@ -40,6 +42,7 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/manual ./manual
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 
 USER nextjs

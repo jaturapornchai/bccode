@@ -1,5 +1,0 @@
-- Each feature package under `internal/<domain>/` follows a fixed layout: `models/`, `repositories/`, `services/` sub-packages plus a `<domain>_http.go` handler file at the package root that wires Echo routes to service methods.
-- HTTP services register themselves by implementing the local `HttpRegister` interface (`RegisterHttp()`) and are collected into a slice passed to `serviceStartHttp(ms, httpServices...)` in `main.go`.
-- Kafka consumers implement `ConsumerRegister` (`RegisterConsumer()`) and are registered via `ms.RegisterConsumer(...)` or `serviceStartConsumer(...)`, keeping consumer registration declarative alongside HTTP routes.
-- External dependencies (PostgreSQL, MongoDB, Redis, Kafka, ClickHouse, ELK, OpenSearch) are obtained exclusively through factory methods on the `Microservice` struct (`Persister`, `MongoPersister`, `Cacher`, `Producer`, …), so feature code never instantiates drivers directly.
-- Config is accessed through the `config.IConfig` interface returned by `config.NewConfig()`, with per-subsystem configs exposed as typed getters (`PersisterConfig`, `MongoPersisterConfig`, `MQConfig`, …) rather than raw env reads.

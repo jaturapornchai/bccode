@@ -1,0 +1,96 @@
+{
+  "screen": "permissiongroup",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — กำหนดสิทธิ์ตามบทบาท",
+      "summary": "กำหนดชุดหน้าจอให้บทบาท USER, ADMIN และ OWNER ภายใน Holding ปัจจุบัน",
+      "sources": [
+        {
+          "name": "กฎ Role, Membership และ Scope",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "API สิทธิ์ตามบทบาท",
+          "href": "https://github.com/jaturapornchai/bccode/tree/dev/backend/internal/organization/rolepermission"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้ประกอบชุดรายการหน้าจอสำหรับแต่ละ Role เพื่อใช้กับเมนู ส่วนกฎสิทธิ์ที่มีผลจริงให้อ่านจากแหล่งอ้างอิง",
+      "prerequisites": [
+        "ตรวจรายการสิทธิ์หน้าจอให้เข้าใจก่อน",
+        "กำหนดหน้าที่ของ USER, ADMIN และ OWNER ตามหลักสิทธิ์เท่าที่จำเป็น"
+      ],
+      "workflow": [
+        "เพิ่มหรือเปิดรายการของบทบาทที่ต้องการตั้งค่า",
+        "เลือก USER, ADMIN หรือ OWNER และกรอกชื่อบทบาท",
+        "เลือกหน้าจอที่บทบาทนั้นต้องใช้งานจากแค็ตตาล็อก",
+        "เปิดสถานะใช้งาน บันทึก แล้วตรวจผลในหน้าตรวจสอบสถานะผู้ใช้งาน"
+      ],
+      "config": [
+        "ช่องบทบาทเป็นรายการให้เลือก และช่องหน้าจอโหลดตัวเลือกจากแค็ตตาล็อกสิทธิ์",
+        "ป้ายตัวเลขแสดงจำนวนหน้าจอที่เลือกไว้",
+        "กฎผู้มีสิทธิ์แก้ Role, Membership และ Scope ฉบับเต็มให้อ่านจากแหล่งอ้างอิง"
+      ],
+      "expectedResults": [
+        "แต่ละบทบาทมีรายการหน้าจอที่สอดคล้องกับหน้าที่",
+        "ระบบสามารถใช้ชุดนี้ประกอบการแสดงเมนูของผู้ใช้"
+      ],
+      "commonMistakes": [
+        "ให้สิทธิ์กว้างเกินหน้าที่เพราะอิงจากชื่อตำแหน่งแทนงานจริง",
+        "ทดสอบเพียงชื่อเมนูโดยไม่ทดสอบผลเปิดหน้าจอและ response จริง"
+      ],
+      "limitations": [
+        "รายการหน้าจอเป็นข้อมูลที่ UI ใช้ประกอบเมนู; ผลอนุญาตจริงต้องตรวจจาก Backend และแหล่งอ้างอิง",
+        "ผลของชุดหน้าจอต่อ Membership และ Scope ให้อ่านจากกฎในแหล่งอ้างอิง"
+      ],
+      "nextSteps": [
+        "ไปที่ผู้ใช้งานและบทบาทเพื่อกำหนด Membership และ Scope"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Role Permissions",
+      "summary": "Assign screen sets to USER, ADMIN, and OWNER roles in the current Holding.",
+      "sources": [
+        {
+          "name": "Role, Membership, and Scope rules",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "Role-permission API",
+          "href": "https://github.com/jaturapornchai/bccode/tree/dev/backend/internal/organization/rolepermission"
+        }
+      ],
+      "objective": "Concept: this screen composes a screen list for each Role for menu use; follow the linked sources for rules governing effective access.",
+      "prerequisites": [
+        "Review the screen-permission catalog first.",
+        "Define USER, ADMIN, and OWNER duties using least privilege."
+      ],
+      "workflow": [
+        "Create or open the record for the role to configure.",
+        "Select USER, ADMIN, or OWNER and enter the role name.",
+        "Select the screens required by that role.",
+        "Enable the record, save it, and verify the result in User Access Audit."
+      ],
+      "config": [
+        "Role is selected from a list, and screen options load from the permission catalog.",
+        "The count badge shows how many screens are selected.",
+        "Use the linked source for complete actor rules covering Role, Membership, and Scope."
+      ],
+      "expectedResults": [
+        "Each role has a screen list aligned with its duties.",
+        "The application can use this set when building the user's menu."
+      ],
+      "commonMistakes": [
+        "Granting broad access from a job title instead of actual duties.",
+        "Checking only the menu label without testing the screen-open result and actual response."
+      ],
+      "limitations": [
+        "Screen entries are UI menu inputs; confirm authorization through the Backend and linked sources.",
+        "Use the linked rules for how screen sets relate to Membership and Scope."
+      ],
+      "nextSteps": [
+        "Continue to Users & Roles to configure Membership and Scope."
+      ]
+    }
+  }
+}

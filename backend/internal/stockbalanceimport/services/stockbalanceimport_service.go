@@ -307,8 +307,8 @@ func (svc StockBalanceImportService) SaveTask(holdingCode string, authUsername s
 				stockbalanceDetail.ItemType = product.ItemType
 				stockbalanceDetail.TaxType = product.TaxType
 				stockbalanceDetail.VatType = product.VatType
-				stockbalanceDetail.DivideValue = product.DivideValue
-				stockbalanceDetail.StandValue = product.StandValue
+				stockbalanceDetail.DivideValue = float64(product.DivideValue)
+				stockbalanceDetail.StandValue = float64(product.StandValue)
 				stockbalanceDetail.VatCal = product.VatCal
 				stockbalanceDetail.UnitCode = product.ItemUnitCode
 				stockbalanceDetail.UnitNames = product.ItemUnitNames
@@ -328,8 +328,8 @@ func (svc StockBalanceImportService) SaveTask(holdingCode string, authUsername s
 				tempDocDetail.ItemType = product.ItemType
 				tempDocDetail.TaxType = product.TaxType
 				tempDocDetail.VatType = product.VatType
-				tempDocDetail.StandValue = product.StandValue
-				tempDocDetail.DivideValue = product.DivideValue
+				tempDocDetail.StandValue = float64(product.StandValue)
+				tempDocDetail.DivideValue = float64(product.DivideValue)
 				tempDocDetail.VatCal = product.VatCal
 				tempDocDetail.UnitCode = product.ItemUnitCode
 				tempDocDetail.WhCode = temp.WarehouseCode

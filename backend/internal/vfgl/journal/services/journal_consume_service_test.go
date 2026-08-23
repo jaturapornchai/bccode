@@ -124,6 +124,7 @@ func TestJournalConsumeServiceCreated(t *testing.T) {
 	}
 
 	mockRepo := new(MockJournalRepsitory)
+	mockRepo.On("Get", give.HoldingCode, give.DocNo).Return(&models.JournalPg{}, gorm.ErrRecordNotFound)
 	mockRepo.On("Create", get).Return(nil)
 
 	journalService := services.NewJournalConsumeService(mockRepo)
@@ -152,7 +153,8 @@ func TestJournalConsumeServiceUpdate(t *testing.T) {
 	}
 
 	mockRepo := new(MockJournalRepsitory)
-	mockRepo.On("Update", "HOLDING_CODE", "0001", get).Return(nil)
+	mockRepo.On("Get", "HOLDING_CODE", "0001").Return(&get, nil)
+	mockRepo.On("Update", "HOLDING_CODE", "0001", mock.Anything).Return(nil)
 
 	journalService := services.NewJournalConsumeService(mockRepo)
 	_, err := journalService.UpSert("HOLDING_CODE", "0001", give)

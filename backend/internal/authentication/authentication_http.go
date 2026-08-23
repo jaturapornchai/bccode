@@ -2,28 +2,40 @@ package authentication
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/authentication/services"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/line"
+	"smlcloudplatform/internal/logger"
 	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
 	companyModels "smlcloudplatform/internal/organization/company/models"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
+
+const devLoginSecretHeader = "X-BC-Dev-Login-Secret"
+
+type devLoginConfig struct {
+	userUID string
+	secret  string
+}
 
 type IAuthenticationHttp interface {
 	Login(ctx microservice.IContext) error
@@ -51,13 +63,18 @@ func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IA
 	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
 	cache := ms.Cacher(cfg.CacherConfig())
 
-	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)
+	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour, pst)
 
 	shopRepo := shop.NewShopRepository(pst)
 	shopUserRepo := shop.NewShopUserRepository(pst)
 	shopUserAccessLogRepo := shop.NewShopUserAccessLogRepository(pst)
 	// authRepo := NewAuthenticationRepository(pst)
 	authRepo := repositories.NewAuthenticationMongoCacheRepository(pst, cache)
+	indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelIndexes()
+	if err := authRepo.EnsureGoogleIdentityIndexes(indexContext); err != nil {
+		logger.GetLogger().Errorf("ensure authentication identity indexes: %v", err)
+	}
 	smsRepo := repositories.NewAuthenticationSMSRepository(cache)
 	firebaseAdapter := firebase.NewFirebaseAdapter()
 	lineAdapter := line.NewLineAdapter(cfg.LineClientId())
@@ -89,24 +106,39 @@ func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IA
 	}
 }
 
+func currentDevLoginConfig() (devLoginConfig, bool) {
+	rawEnvironment := strings.TrimSpace(os.Getenv("BC_ENV"))
+	return devLoginConfigFor(
+		strings.ToLower(rawEnvironment),
+		rawEnvironment != "",
+		os.Getenv("BCAI_DEV_LOGIN_ENABLED"),
+		os.Getenv("BCAI_DEV_LOGIN_USER_UID"),
+		os.Getenv("BCAI_DEV_LOGIN_SECRET"),
+	)
+}
+
+func devLoginConfigFor(dataEnvironment string, environmentConfigured bool, enabled string, userUID string, secret string) (devLoginConfig, bool) {
+	userUID = strings.TrimSpace(userUID)
+	if !environmentConfigured || dataEnvironment != config.DataEnvironmentDev ||
+		!strings.EqualFold(strings.TrimSpace(enabled), "true") || userUID == "" || len(secret) < 32 {
+		return devLoginConfig{}, false
+	}
+	return devLoginConfig{userUID: userUID, secret: secret}, true
+}
+
+func devLoginSecretMatches(expected string, provided string) bool {
+	return subtle.ConstantTimeCompare([]byte(expected), []byte(provided)) == 1
+}
+
 func (h AuthenticationHttp) RegisterHttp() {
 
 	h.ms.POST("/login", h.Login)
-	h.ms.POST("/poslogin", h.Poslogin)
-	h.ms.POST("/login/email", h.LoginEmail)
-	h.ms.POST("/login/phone-number", h.LoginWithPhoneNumber)
-	h.ms.POST("/login/line", h.LoginWithLine)
-	h.ms.POST("/linelogin", h.LoginWithLineUserID)
 	h.ms.POST("/googlelogin", h.GoogleLogin)
-	h.ms.POST("/tokenlogin", h.TokenLogin)
 	h.ms.POST("/logout", h.Logout)
 	h.ms.POST("/refresh", h.RefreshToken)
-	h.ms.POST("/register", h.Register)
-	h.ms.POST("/send-phonenumber-otp", h.SendPhoneNumberOTP)
-	h.ms.POST("/forgot-password-phonenumber", h.ForgotPasswordByPhoneNumber)
-	h.ms.POST("/register-phonenumber", h.RegisterByPhoneNumber)
-	h.ms.POST("/register/exists-phonenumber", h.RegisterCheckExistPhonenumber)
-	h.ms.POST("/register/exists-username", h.RegisterCheckExistUsername)
+	if _, enabled := currentDevLoginConfig(); enabled {
+		h.ms.POST("/dev-login", h.DevLogin)
+	}
 
 	h.ms.GET("/verify-token", h.VerifyToken)
 
@@ -117,7 +149,6 @@ func (h AuthenticationHttp) RegisterHttp() {
 
 	h.ms.PUT("/profile", h.Update)
 	h.ms.PUT("/profile/password", h.UpdatePassword)
-	h.ms.PUT("/profile/password/reset/:username", h.ResetPasswordToDefault)
 	h.ms.PUT("/profile/link-line", h.LinkLine)
 	h.ms.DELETE("/profile/link-line", h.UnlinkLine)
 
@@ -132,6 +163,31 @@ func (h AuthenticationHttp) RegisterHttp() {
 	shopHttp := shop.NewShopHttp(h.ms, h.cfg)
 	h.ms.POST("/create-holding", shopHttp.CreateShop, middlewareShop)
 	h.ms.POST("/create-shop", shopHttp.CreateShop, middlewareShop)
+}
+
+func (h AuthenticationHttp) DevLogin(ctx microservice.IContext) error {
+	devConfig, enabled := currentDevLoginConfig()
+	if !enabled || !devLoginSecretMatches(devConfig.secret, ctx.Header(devLoginSecretHeader)) {
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithMessage("dev login failed"))
+	}
+
+	result, err := h.authenticationService.DevLoginByUID(devConfig.userUID, models.AuthenticationContext{Ip: ctx.RealIp()})
+	if err != nil {
+		if errors.Is(err, &models.UserDisableLoginError{}) {
+			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
+		}
+		if appErr := apperr.FromError(err); appErr != nil {
+			return apperr.Respond(ctx, appErr)
+		}
+		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithMessage("dev login failed"))
+	}
+
+	ctx.Response(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"token":   result.Token,
+		"refresh": result.Refresh,
+	})
+	return nil
 }
 
 // Login with phone number
@@ -168,10 +224,9 @@ func (h AuthenticationHttp) LoginWithPhoneNumber(ctx microservice.IContext) erro
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success":            true,
-		"token":              result.Token,
-		"refresh":            result.Refresh,
-		"mustchangepassword": result.MustChangePassword,
+		"success": true,
+		"token":   result.Token,
+		"refresh": result.Refresh,
 	})
 
 	return nil
@@ -215,10 +270,9 @@ func (h AuthenticationHttp) Login(ctx microservice.IContext) error {
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success":            true,
-		"token":              result.Token,
-		"refresh":            result.Refresh,
-		"mustchangepassword": result.MustChangePassword,
+		"success": true,
+		"token":   result.Token,
+		"refresh": result.Refresh,
 	})
 
 	return nil
@@ -231,7 +285,6 @@ func (h AuthenticationHttp) Login(ctx microservice.IContext) error {
 // @Accept 		json
 // @Success		200	{object}	common.AuthResponse
 // @Failure		400 {object}	common.AuthResponseFailed
-// @Router /poslogin [post]
 func (h AuthenticationHttp) Poslogin(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -258,10 +311,9 @@ func (h AuthenticationHttp) Poslogin(ctx microservice.IContext) error {
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success":            true,
-		"token":              result.Token,
-		"refresh":            result.Refresh,
-		"mustchangepassword": result.MustChangePassword,
+		"success": true,
+		"token":   result.Token,
+		"refresh": result.Refresh,
 	})
 
 	return nil
@@ -274,7 +326,6 @@ func (h AuthenticationHttp) Poslogin(ctx microservice.IContext) error {
 // @Accept 		json
 // @Success		200	{object}	common.AuthResponse
 // @Failure		400 {object}	common.AuthResponseFailed
-// @Router /login/email [post]
 func (h AuthenticationHttp) LoginEmail(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -338,10 +389,9 @@ func (h AuthenticationHttp) RefreshToken(ctx microservice.IContext) error {
 	}
 
 	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success":            true,
-		"token":              result.Token,
-		"refresh":            result.Refresh,
-		"mustchangepassword": result.MustChangePassword,
+		"success": true,
+		"token":   result.Token,
+		"refresh": result.Refresh,
 	})
 
 	return nil
@@ -354,7 +404,6 @@ func (h AuthenticationHttp) RefreshToken(ctx microservice.IContext) error {
 // @Accept 		json
 // @Success		200	{object}	common.AuthResponse
 // @Failure		400 {object}	common.AuthResponseFailed
-// @Router /tokenlogin [post]
 func (h AuthenticationHttp) TokenLogin(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -411,7 +460,7 @@ func (h AuthenticationHttp) GoogleLogin(ctx microservice.IContext) error {
 		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("google token verification failed"))
 	}
 
-	tokenString, err := h.authenticationService.LoginWithGoogleEmail(claims.Email, claims.Name)
+	result, err := h.authenticationService.LoginWithGoogleIdentity(claims.Iss, claims.Sub, claims.Email, claims.Name)
 	if err != nil {
 		if errors.Is(err, &models.UserDisableLoginError{}) {
 			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
@@ -419,9 +468,10 @@ func (h AuthenticationHttp) GoogleLogin(ctx microservice.IContext) error {
 		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
 
-	ctx.Response(http.StatusOK, common.AuthResponse{
-		Success: true,
-		Token:   tokenString,
+	ctx.Response(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"token":   result.Token,
+		"refresh": result.Refresh,
 	})
 
 	return nil
@@ -482,7 +532,6 @@ func verifyGoogleIDToken(credential string, clientID string) (*googleTokenInfo, 
 // @Accept 		json
 // @Success		200	{object}	common.AuthResponse
 // @Failure		400 {object}	common.AuthResponseFailed
-// @Router /login/line [post]
 func (h AuthenticationHttp) LoginWithLine(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -565,7 +614,6 @@ func (h AuthenticationHttp) LoginWithLineUserID(ctx microservice.IContext) error
 // @Success		200	{object}	common.ResponseSuccessWithID
 // @Failure		400 {object}	common.AuthResponseFailed
 // @Accept 		json
-// @Router		/register [post]
 func (h AuthenticationHttp) Register(ctx microservice.IContext) error {
 	h.ms.Logger.Debug("Receive Register Data")
 	input := ctx.ReadInput()
@@ -603,7 +651,6 @@ func (h AuthenticationHttp) Register(ctx microservice.IContext) error {
 // @Success		200	{object}	common.ApiResponse
 // @Failure		400 {object}	common.AuthResponseFailed
 // @Accept 		json
-// @Router		/register-username [post]
 func (h AuthenticationHttp) RegisterByUsername(ctx microservice.IContext) error {
 	h.ms.Logger.Debug("สมัครสมาชิกด้วยรหัสพนักงาน")
 	input := ctx.ReadInput()
@@ -641,7 +688,6 @@ func (h AuthenticationHttp) RegisterByUsername(ctx microservice.IContext) error 
 // @Success		200	{object}	common.ApiResponse
 // @Failure		400 {object}	common.AuthResponseFailed
 // @Accept 		json
-// @Router		/send-phonenumber-otp [post]
 func (h AuthenticationHttp) SendPhoneNumberOTP(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -679,7 +725,6 @@ func (h AuthenticationHttp) SendPhoneNumberOTP(ctx microservice.IContext) error 
 // @Success		200	{object}	common.ApiResponse
 // @Failure		400 {object}	common.AuthResponseFailed
 // @Accept 		json
-// @Router		/register-phonenumber [post]
 func (h AuthenticationHttp) RegisterByPhoneNumber(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -717,7 +762,6 @@ func (h AuthenticationHttp) RegisterByPhoneNumber(ctx microservice.IContext) err
 // @Success		200	{object}	common.ApiResponse
 // @Failure		400 {object}	common.AuthResponseFailed
 // @Accept 		json
-// @Router		/forgot-password-phonenumber [post]
 func (h AuthenticationHttp) ForgotPasswordByPhoneNumber(ctx microservice.IContext) error {
 	input := ctx.ReadInput()
 
@@ -753,7 +797,6 @@ func (h AuthenticationHttp) ForgotPasswordByPhoneNumber(ctx microservice.IContex
 // @Success		200	{object}	common.ResponseSuccessWithID
 // @Failure		400 {object}	common.AuthResponseFailed
 // @Accept 		json
-// @Router		/register/exists-username [post]
 func (h AuthenticationHttp) RegisterCheckExistUsername(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -791,7 +834,6 @@ func (h AuthenticationHttp) RegisterCheckExistUsername(ctx microservice.IContext
 // @Success		200	{object}	common.ResponseSuccessWithID
 // @Failure		400 {object}	common.AuthResponseFailed
 // @Accept 		json
-// @Router		/register/exists-phonenumber [post]
 func (h AuthenticationHttp) RegisterCheckExistPhonenumber(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
@@ -831,7 +873,7 @@ func (h AuthenticationHttp) RegisterCheckExistPhonenumber(ctx microservice.ICont
 // @Accept 		json
 // @Router		/profile [put]
 func (h AuthenticationHttp) Update(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
+	userInfo := ctx.UserInfo()
 	input := ctx.ReadInput()
 
 	userReq := models.UserProfileRequest{}
@@ -845,7 +887,7 @@ func (h AuthenticationHttp) Update(ctx microservice.IContext) error {
 		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
-	err = h.authenticationService.Update(authUsername, userReq)
+	err = h.authenticationService.Update(userInfo.UID, userReq)
 
 	if err != nil {
 		return apperr.RespondErr(ctx, err)
@@ -895,15 +937,7 @@ func (h AuthenticationHttp) UpdatePassword(ctx microservice.IContext) error {
 	return nil
 }
 
-// ResetPasswordToDefault godoc
-// @Summary		Reset user password to default
-// @Description	Reset a shop user's password to the default password by authorized shop user
-// @Tags		Authentication
-// @Param		username  path      string  true  "username"
-// @Success		200	{object}	common.ResponseSuccessWithID
-// @Failure		400 {object}	common.AuthResponseFailed
-// @Accept 		json
-// @Router		/profile/password/reset/{username} [put]
+// ResetPasswordToDefault is retained for interface compatibility but is not registered as an HTTP route.
 func (h AuthenticationHttp) ResetPasswordToDefault(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	targetUsername := ctx.Param("username")
@@ -1047,6 +1081,7 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 	}
 	shopSelectReq.HoldingCode = holdingCode
 	shopSelectReq.BusinessCode = companyModels.NormalizeCompanyCode(shopSelectReq.BusinessCode)
+	shopSelectReq.BranchUID = strings.TrimSpace(shopSelectReq.BranchUID)
 	if shopSelectReq.BusinessCode != "" {
 		companyCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -1066,7 +1101,7 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 		Ip: ctx.RealIp(),
 	}
 
-	err = h.authenticationService.AccessShop(shopSelectReq.HoldingCode, shopSelectReq.BusinessCode, authUsername, userInfo.UID, authorizationHeader, authContext)
+	err = h.authenticationService.AccessShop(shopSelectReq.HoldingCode, shopSelectReq.BusinessCode, shopSelectReq.BranchUID, authUsername, userInfo.UID, authorizationHeader, authContext)
 
 	if err != nil {
 		return apperr.RespondErr(ctx, err)
@@ -1107,12 +1142,14 @@ func (h AuthenticationHttp) ListShopCanAccess(ctx microservice.IContext) error {
 	if err != nil {
 		return apperr.RespondErr(ctx, err)
 	}
+	canCreateHolding := orgaccess.RequireEmailedAccount(h.pst, userInfo) == nil
 
 	ctx.Response(http.StatusOK,
-		common.ApiResponse{
-			Success:    true,
-			Data:       docList,
-			Pagination: pagination,
+		map[string]interface{}{
+			"success":          true,
+			"data":             docList,
+			"pagination":       pagination,
+			"cancreateholding": canCreateHolding,
 		},
 	)
 
@@ -1227,9 +1264,9 @@ func (h AuthenticationHttp) UnlinkLine(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router		/profile/disable-user [put]
 func (h AuthenticationHttp) DisableUser(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
+	userUID := ctx.UserInfo().UID
 
-	err := h.authenticationService.DisableUser(authUsername)
+	err := h.authenticationService.DisableUser(userUID)
 
 	if err != nil {
 		return apperr.RespondErr(ctx, err)

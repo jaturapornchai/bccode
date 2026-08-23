@@ -166,7 +166,8 @@ func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID strin
 	var docList []models.ShopUserInfo
 	var pagination mongopagination.PaginationData
 	var err error
-	if strings.TrimSpace(authUserUID) != "" {
+	authUserUID = strings.TrimSpace(authUserUID)
+	if authUserUID != "" {
 		docList, pagination, err = svc.repo.FindByUserUIDPage(context.Background(), authUserUID, pageable)
 	} else {
 		docList, pagination, err = svc.repo.FindByUsernamePage(context.Background(), authUsername, pageable)
@@ -177,10 +178,7 @@ func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID strin
 	}
 
 	for idx := range docList {
-		docList[idx].IsCreator = sameUsername(authUsername, docList[idx].CreatedBy)
-		if docList[idx].IsCreator {
-			docList[idx].IsAccessDisabled = false
-		}
+		docList[idx].IsCreator = authUserUID != "" && strings.TrimSpace(docList[idx].CreatedBy) == authUserUID
 	}
 
 	return docList, pagination, err
@@ -562,62 +560,15 @@ func (svc ShopUserService) CleanupEmptyUsers(holdingCode string) (int64, error) 
 
 // SyncLineData - sync LINE data จาก LIFF callback (ใช้สำหรับ callback จาก lineoa-liff หลัง linking สำเร็จ)
 func (svc ShopUserService) SyncLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
-	username = utils.NormalizeUsername(username)
-
-	if username == "" {
-		return errors.New("username is required")
-	}
-
-	// ตรวจสอบว่ามี user นี้ใน shop หรือไม่
-	existingUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
-	if err != nil {
-		return errors.New("user not found in shop")
-	}
-
-	if existingUser.Username == "" {
-		return errors.New("user not found in shop")
-	}
-
-	// ถ้า LINE ID ถูกใช้โดยผู้ใช้คนอื่นแล้ว ให้ลบ LINE data ของคนนั้นก่อน (auto-unlink)
-	if lineUserID != "" {
-		existingLineUser, existingLineUserErr := svc.repo.FindByHoldingCodeAndLineUserID(context.Background(), holdingCode, lineUserID)
-		if existingLineUserErr == nil && existingLineUser.Username != "" && !sameUsername(existingLineUser.Username, username) {
-			// ลบ LINE data ของ user เก่า
-			oldReq := &models.UserRoleRequest{
-				Username:        existingLineUser.Username,
-				Role:            existingLineUser.Role,
-				Position:        existingLineUser.Position,
-				Department:      existingLineUser.Department,
-				LineUserID:      "", // clear LINE data
-				LineDisplayName: "",
-				LinePictureURL:  "",
-				AccessScopes:    existingLineUser.AccessScopes,
-			}
-			copyAccessStatusToRequest(oldReq, existingLineUser)
-			svc.repo.SaveFullProfile(context.Background(), holdingCode, oldReq)
-		}
-	}
-
-	// สร้าง request สำหรับ update LINE data
-	req := &models.UserRoleRequest{
-		Username:          username,
-		Role:              existingUser.Role, // keep existing role
-		Position:          existingUser.Position,
-		Department:        existingUser.Department,
-		LineUserID:        lineUserID,
-		LineDisplayName:   lineDisplayName,
-		LinePictureURL:    linePictureURL,
-		POApproval:        existingUser.POApproval,
-		QuotationApproval: existingUser.QuotationApproval,
-		AccessScopes:      existingUser.AccessScopes,
-	}
-	copyAccessStatusToRequest(req, existingUser)
-
-	return svc.repo.SaveFullProfile(context.Background(), holdingCode, req)
+	return svc.updateLineFields(holdingCode, username, lineUserID, lineDisplayName, linePictureURL)
 }
 
 // SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter หลัง LIFF linking)
 func (svc ShopUserService) SaveMyLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
+	return svc.updateLineFields(holdingCode, username, lineUserID, lineDisplayName, linePictureURL)
+}
+
+func (svc ShopUserService) updateLineFields(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
 	username = utils.NormalizeUsername(username)
 
 	if username == "" {
@@ -638,36 +589,11 @@ func (svc ShopUserService) SaveMyLineData(holdingCode string, username string, l
 	if lineUserID != "" {
 		existingLineUser, existingLineUserErr := svc.repo.FindByHoldingCodeAndLineUserID(context.Background(), holdingCode, lineUserID)
 		if existingLineUserErr == nil && existingLineUser.Username != "" && !sameUsername(existingLineUser.Username, username) {
-			// ลบ LINE data ของ user เก่า
-			oldReq := &models.UserRoleRequest{
-				Username:        existingLineUser.Username,
-				Role:            existingLineUser.Role,
-				Position:        existingLineUser.Position,
-				Department:      existingLineUser.Department,
-				LineUserID:      "", // clear LINE data
-				LineDisplayName: "",
-				LinePictureURL:  "",
-				AccessScopes:    existingLineUser.AccessScopes,
+			if err := svc.repo.UpdateLineFields(context.Background(), holdingCode, existingLineUser.UserUID, "", "", ""); err != nil {
+				return err
 			}
-			copyAccessStatusToRequest(oldReq, existingLineUser)
-			svc.repo.SaveFullProfile(context.Background(), holdingCode, oldReq)
 		}
 	}
 
-	// สร้าง request สำหรับ update LINE data (คงค่าอื่นๆ ไว้เหมือนเดิม)
-	req := &models.UserRoleRequest{
-		Username:          username,
-		Role:              existingUser.Role,
-		Position:          existingUser.Position,
-		Department:        existingUser.Department,
-		LineUserID:        lineUserID,
-		LineDisplayName:   lineDisplayName,
-		LinePictureURL:    linePictureURL,
-		POApproval:        existingUser.POApproval,
-		QuotationApproval: existingUser.QuotationApproval,
-		AccessScopes:      existingUser.AccessScopes,
-	}
-	copyAccessStatusToRequest(req, existingUser)
-
-	return svc.repo.SaveFullProfile(context.Background(), holdingCode, req)
+	return svc.repo.UpdateLineFields(context.Background(), holdingCode, existingUser.UserUID, lineUserID, lineDisplayName, linePictureURL)
 }

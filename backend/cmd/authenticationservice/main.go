@@ -18,19 +18,13 @@ func main() {
 
 	cacher := ms.Cacher(cfg.CacherConfig())
 	// jwtService := microservice.NewJwtService(cacher, cfg.JwtSecretKey(), 24*3)
-	authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour)
+	authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour, ms.MongoPersister(cfg.MongoPersisterConfig()))
 
 	publicPath := []string{
 		"/login",
-		"/poslogin",
-		"/register",
-		"/list-holding",
-		"/list-shop",
-		"/select-holding",
-		"/select-shop",
-		"/create-holding",
-		"/create-shop",
-		"/favorite-holding",
+		"/dev-login",
+		"/googlelogin",
+		"/refresh",
 		"/healthz",
 	}
 

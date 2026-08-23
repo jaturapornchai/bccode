@@ -29,6 +29,14 @@ func ProductCalcCost(db *sql.DB, holdingCode string, itemCodeForProcess string, 
 	ProductCalcCostWithOptions(db, holdingCode, itemCodeForProcess, pointQty, pointAmount, pointCost, deleteFrist, false, false, nil)
 }
 
+func ProductCalcCostCompany(db *sql.DB, holdingCode, businessCode, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFirst bool) {
+	if strings.TrimSpace(businessCode) == "" || strings.TrimSpace(itemCodeForProcess) == "" {
+		logger.Error("Company stock calculation requires businesscode and itemcode")
+		return
+	}
+	productCalcCostWithOptions(db, holdingCode, businessCode, itemCodeForProcess, pointQty, pointAmount, pointCost, deleteFirst, false, false, nil)
+}
+
 // ProductCalcCostIncremental - Calculate stock cost with incremental mode
 func ProductCalcCostIncremental(db *sql.DB, holdingCode string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, incremental, minimalLog bool) {
 	// Always deleteFirst: the calc rebuilds the whole per-item ledger from
@@ -36,6 +44,14 @@ func ProductCalcCostIncremental(db *sql.DB, holdingCode string, itemCodeForProce
 	// The old !minimalLog skipped it while the "UPSERT" path was never
 	// implemented — every replay duplicated processstockcost rows.
 	ProductCalcCostWithOptions(db, holdingCode, itemCodeForProcess, pointQty, pointAmount, pointCost, true, incremental, minimalLog, nil)
+}
+
+func ProductCalcCostIncrementalCompany(db *sql.DB, holdingCode, businessCode, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, incremental, minimalLog bool) {
+	if strings.TrimSpace(businessCode) == "" || strings.TrimSpace(itemCodeForProcess) == "" {
+		logger.Error("Company stock calculation requires businesscode and itemcode")
+		return
+	}
+	productCalcCostWithOptions(db, holdingCode, businessCode, itemCodeForProcess, pointQty, pointAmount, pointCost, true, incremental, minimalLog, nil)
 }
 
 // ProductCalcCostWithSaver - Calculate stock cost with custom saver (legacy interface)
@@ -54,13 +70,20 @@ func ProductCalcCostWithSaver(db *sql.DB, holdingCode string, itemCodeForProcess
 //   - minimalLog: if true, use UPSERT to reduce WAL logging
 //   - saver: optional custom saver interface
 func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFirst bool, incremental bool, minimalLog bool, saver StockSaver) {
+	productCalcCostWithOptions(db, holdingCode, "", itemCodeForProcess, pointQty, pointAmount, pointCost, deleteFirst, incremental, minimalLog, saver)
+}
+
+func productCalcCostWithOptions(db *sql.DB, holdingCode, businessCode, itemCodeForProcess string, pointQty int, pointAmount int, pointCost int, deleteFirst bool, incremental bool, minimalLog bool, saver StockSaver) {
+	businessCode = strings.ToUpper(strings.TrimSpace(businessCode))
+	itemCodeForProcess = strings.ToUpper(strings.TrimSpace(itemCodeForProcess))
+	companyScoped := businessCode != ""
 	logger.Info("Starting CalcCost for item code: %s (incremental=%v, minimalLog=%v)", itemCodeForProcess, incremental, minimalLog)
 
 	// ทำการบันทึกข้อมูลเฉพาะสำหรับ item code นี้
 	ctx := context.Background()
 
 	// 🔒 Distributed Lock เพื่อป้องกัน race condition (ใช้ PostgreSQL)
-	lockKey := fmt.Sprintf("stock:calc:%s:%s", holdingCode, itemCodeForProcess)
+	lockKey := fmt.Sprintf("stock:calc:%s:%s:%s", holdingCode, businessCode, itemCodeForProcess)
 	lock := mypostgres.NewDistributedLock(db, lockKey, 5*time.Minute) // Lock timeout 5 นาที
 
 	// พยายาม acquire lock (retry 10 ครั้ง, รอครั้งละ 500ms)
@@ -80,7 +103,13 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 	// Incremental mode: Check if item has changed
 	var currentChecksum string
 	if incremental {
-		changed, checksum, err := CheckItemChanged(ctx, db, holdingCode, itemCodeForProcess)
+		if companyScoped {
+			if err := EnsureCompanyStockCalculationStateTable(ctx, db); err != nil {
+				logger.Error("Failed to ensure company stock calculation state table: %v", err)
+				return
+			}
+		}
+		changed, checksum, err := CheckItemChangedCompany(ctx, db, holdingCode, businessCode, itemCodeForProcess)
 		if err != nil {
 			logger.Warn("Failed to check item change for %s: %v, will recalculate", itemCodeForProcess, err)
 		} else if !changed {
@@ -96,12 +125,14 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 	// what keeps replays idempotent)
 	if deleteFirst {
 		// วิธีเดิม: ลบเฉพาะ item code ที่กำลังประมวลผลโดยใช้หลาย query
-		deleteQueries := []string{
-			"DELETE FROM processstockcost WHERE itemcode = $1",
-			"DELETE FROM processstocklot WHERE itemcode = $1",
+		deleteQueries := []string{"DELETE FROM processstockcost WHERE itemcode = $1", "DELETE FROM processstocklot WHERE itemcode = $1"}
+		deleteArgs := []any{itemCodeForProcess}
+		if companyScoped {
+			deleteQueries = []string{"DELETE FROM processstockcost WHERE businesscode = $1 AND itemcode = $2", "DELETE FROM processstocklot WHERE businesscode = $1 AND itemcode = $2"}
+			deleteArgs = []any{businessCode, itemCodeForProcess}
 		}
 		for _, deleteQuery := range deleteQueries {
-			_, err := db.ExecContext(ctx, deleteQuery, itemCodeForProcess)
+			_, err := db.ExecContext(ctx, deleteQuery, deleteArgs...)
 			if err != nil {
 				logger.Error("delete PostgreSQL: %v", err)
 				return
@@ -111,6 +142,11 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 
 	// ดึงข้อมูลรายวันจาก docdetail และคำนวณค่าสต็อกใหม่แบบ streaming
 	query := "SELECT docdatetime, docno, linenumber, calcseq, calcflag, transflag, itemcode, barcode, whcode, locationcode, unitcode, totalqty as qty, unitstand, unitdivide, price, priceexcludevat, docref, sumamount FROM docdetail WHERE itemcode = $1 and transflag IN (%s) ORDER BY itemcode, docdatetime, linenumber, calcflag DESC, docno"
+	queryArgs := []any{itemCodeForProcess}
+	if companyScoped {
+		query = "SELECT docdatetime, docno, linenumber, calcseq, calcflag, transflag, itemcode, barcode, whcode, locationcode, unitcode, totalqty as qty, unitstand, unitdivide, price, priceexcludevat, docref, sumamount FROM docdetail WHERE businesscode = $1 AND itemcode = $2 and transflag IN (%s) ORDER BY itemcode, docdatetime, linenumber, calcflag DESC, docno"
+		queryArgs = []any{businessCode, itemCodeForProcess}
+	}
 
 	// ตัวแปรสำหรับการคำนวณต้นทุน
 	// lotNumber := 0
@@ -136,7 +172,6 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 				LotNumber:     fmt.Sprintf("%06d", lotNumber),
 				DocNo:         detail.DocNo,
 				TransFlag:     detail.TransFlag,
-				BarcodeMain:   barCodeProcess,
 				Barcode:       detail.Barcode,
 				UnitCode:      detail.UnitCode,
 				WhCode:        detail.WhCode,
@@ -213,7 +248,7 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 
 			// ใช้ bulk insert สำหรับ PostgreSQL
 			columns := []string{
-				"docdatetime", "docno", "linenumber", "transflag", "itemcode", "barcode",
+				"businesscode", "docdatetime", "docno", "linenumber", "transflag", "itemcode", "barcode",
 				"unitcode", "whcode", "locationcode", "totalqty", "price", "unitstand",
 				"unitdivide", "averagecost", "calcamount", "balanceamount", "balanceqty",
 				"guid", "unitcost", "docref",
@@ -222,6 +257,7 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 			var records [][]any
 			for _, detail := range batchItems {
 				record := []any{
+					businessCode,
 					detail.DocDateTime,
 					detail.DocNo,
 					detail.LineNumber,
@@ -293,7 +329,7 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 	logger.Info("TransFlagsToProcess: %s", transFlagForQuery)
 
 	logger.Info("Executing query for itemCode: %s", itemCodeForProcess)
-	dataRows, err := mypg.QuerySelectAll(db, fmt.Sprintf(query, transFlagForQuery), itemCodeForProcess)
+	dataRows, err := mypg.QuerySelectAll(db, fmt.Sprintf(query, transFlagForQuery), queryArgs...)
 	if err != nil {
 		logger.Error("select PostgreSQL: %v", err)
 		return
@@ -310,7 +346,6 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 			TransFlag:       int(row["transflag"].(int64)), // PostgreSQL type conversion
 			ItemCode:        mypg.GetStringValue(row, "itemcode"),
 			Barcode:         mypg.GetStringValue(row, "barcode"),
-			BarcodeMain:     mypg.GetStringValue(row, "barcode"), // ใช้ barcode เป็น barcodemain
 			UnitCode:        mypg.GetStringValue(row, "unitcode"),
 			WhCode:          mypg.GetStringValue(row, "whcode"),
 			LocationCode:    mypg.GetStringValue(row, "locationcode"),
@@ -480,7 +515,7 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 				batchLots := lots[start:end]
 
 				columns := []string{
-					"docdatetime", "lotnumber", "docno", "transflag", "itemcode",
+					"businesscode", "docdatetime", "lotnumber", "docno", "transflag", "itemcode",
 					"unitcode", "whcode", "locationcode", "qty", "price", "unitstand",
 					"unitdivide", "cost", "balanceamount", "balanceqty", "guidref",
 				}
@@ -488,6 +523,7 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 				var records [][]any
 				for _, lot := range batchLots {
 					record := []any{
+						businessCode,
 						lot.DocDateTime,
 						lot.LotNumber,
 						lot.DocNo,
@@ -556,7 +592,13 @@ func ProductCalcCostWithOptions(db *sql.DB, holdingCode string, itemCodeForProce
 
 	// Update checksum after successful calculation (incremental mode)
 	if incremental && currentChecksum != "" {
-		if err := UpdateItemChecksum(ctx, db, holdingCode, itemCodeForProcess, currentChecksum); err != nil {
+		var err error
+		if companyScoped {
+			err = UpdateItemChecksumCompany(ctx, db, holdingCode, businessCode, itemCodeForProcess, currentChecksum)
+		} else {
+			err = UpdateItemChecksum(ctx, db, holdingCode, itemCodeForProcess, currentChecksum)
+		}
+		if err != nil {
 			logger.Warn("Failed to update checksum for %s: %v", itemCodeForProcess, err)
 		} else {
 			logger.Debug("Updated checksum for %s: %s", itemCodeForProcess, currentChecksum)

@@ -6,6 +6,7 @@ import "time"
 
 type DocStruct struct {
 	HoldingCode     string    `json:"holdingcode" db:"holdingcode"`
+	BusinessCode    string    `json:"businesscode" db:"businesscode"`
 	CustCode        string    `json:"custcode" db:"custcode"`
 	TransFlag       int       `json:"transflag" db:"transflag"`
 	DocNo           string    `json:"docno" db:"docno"`
@@ -55,6 +56,7 @@ type DocStruct struct {
 }
 
 type DocRefStruct struct {
+	BusinessCode      string `json:"businesscode" db:"businesscode"`
 	DocNo             string `json:"docno" db:"docno"`
 	DocNoTransFlag    int    `json:"docnotransflag" db:"docnotransflag"`
 	DocRefNo          string `json:"refdocno" db:"docnoref"`
@@ -62,6 +64,7 @@ type DocRefStruct struct {
 }
 
 type DocDetailStruct struct {
+	BusinessCode         string    `json:"businesscode" bson:"businesscode"`
 	DocDateTime          time.Time `json:"docdatetime" bson:"docdatetime"`
 	DocNo                string    `json:"docno" bson:"docno"`
 	TransFlag            int       `json:"transflag" bson:"transflag"`
@@ -78,7 +81,6 @@ type DocDetailStruct struct {
 	Price                float64   `json:"price" bson:"price"`
 	PriceExcludeVat      float64   `json:"priceexcludevat" bson:"priceexcludevat"`
 	ItemCode             string    `json:"itemcode" bson:"itemcode"`
-	BarcodeMain          string    `json:"barcodemain" bson:"barcodemain"`
 	BarcodeRefUnitStand  float64   `json:"barcoderefunitstand" bson:"barcoderefunitstand"`
 	BarcodeRefUnitDivide float64   `json:"barcoderefunitdivide" bson:"barcoderefunitdivide"`
 	UnitStand            float64   `json:"unitstand" bson:"unitstand"`
@@ -99,6 +101,7 @@ type DocDetailStruct struct {
 
 type DocPaymentStruct struct {
 	HoldingCode    string    `json:"holdingcode" db:"holdingcode"`
+	BusinessCode   string    `json:"businesscode" db:"businesscode"`
 	BranchID       string    `json:"branchid" db:"branchid"`
 	DocDateTime    time.Time `json:"docdatetime" db:"docdatetime"`
 	PeriodDateTime time.Time `json:"perioddatetime" db:"perioddatetime"`

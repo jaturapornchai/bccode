@@ -120,8 +120,8 @@ func TestSaveSectionBranch(t *testing.T) {
 		}
 
 		emptyDoc := models.SectionBranchDoc{}
-		mockRepo.On("FindByDocIndentityGuid", holdingCode, "branchcode", branchCode).Return(emptyDoc, nil)
-		mockRepo.On("Create", mock.Anything).Return("testGuidFixed", nil)
+		mockRepo.On("FindByDocIndentityGuid", mock.Anything, holdingCode, "branchcode", branchCode).Return(emptyDoc, nil)
+		mockRepo.On("Create", mock.Anything, mock.Anything).Return("testGuidFixed", nil)
 
 		// Execute
 		guidFixed, err := svc.SaveSectionBranch(holdingCode, authUsername, doc)
@@ -148,8 +148,8 @@ func TestSaveSectionBranch(t *testing.T) {
 		existingDoc.GuidFixed = "testGuidFixed"
 		existingDoc.SectionBranch = doc
 
-		mockRepo.On("FindByDocIndentityGuid", holdingCode, "branchcode", branchCode).Return(existingDoc, nil)
-		mockRepo.On("Update", holdingCode, existingDoc.GuidFixed, mock.Anything).Return(nil)
+		mockRepo.On("FindByDocIndentityGuid", mock.Anything, holdingCode, "branchcode", branchCode).Return(existingDoc, nil)
+		mockRepo.On("Update", mock.Anything, holdingCode, existingDoc.GuidFixed, mock.Anything).Return(nil)
 
 		// Execute
 		guidFixed, err := svc.SaveSectionBranch(holdingCode, authUsername, doc)

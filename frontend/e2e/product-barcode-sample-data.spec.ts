@@ -5,7 +5,7 @@ import { test, expect, type Page } from "@playwright/test";
  * สินค้าชุด /productset), driven entirely through the real UI ("ทำเหมือน user ป้อนเองเลย" — Jead's
  * explicit instruction), reusing every real classification master seeded in the prior phase (brand/
  * class/design/model/pattern/grade/category/group/groupsubone/groupsubtwo — see
- * `.agents/worklog.md`/session report for the exact codes).
+ * the regression fixture report for the exact codes).
  *
  * Theme: small Thai grocery/beverage shop ("ร้านชำ"), same as the master-data phase, so every
  * created record reads as one coherent, hand-entered business, not disconnected random rows.

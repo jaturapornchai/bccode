@@ -29,7 +29,7 @@ func OnConsumeMessagePurchaseRequisitionDelete(msg string) error {
 		return fmt.Errorf("invalid purchase requisition data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE_REQUISITION)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_PURCHASE_REQUISITION)
 }
 
 // ProcessPurchaseRequisitionDocument - processes purchase requisition using build-doc system
@@ -64,11 +64,12 @@ func ProcessPurchaseRequisitionDocument(msg string) error {
 	ctx := context.Background()
 
 	// Delete existing documents (upsert behavior)
-	mypg.DeleteDocPgSql(ctx, db, purchaseRequisitionData.DocNo, TRANS_FLAG_PURCHASE_REQUISITION)
+	mypg.DeleteDocPgSql(ctx, db, purchaseRequisitionData.BusinessCode, purchaseRequisitionData.DocNo, TRANS_FLAG_PURCHASE_REQUISITION)
 
 	// Convert to build-doc structs
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseRequisitionData.HoldingCode)
 	docDetailStructs := MapPurchaseRequisitionToDocDetailStructs(processData, purchaseRequisitionData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, purchaseRequisitionData.BusinessCode)
 
 	// Create doc references if any
 	var docRefStructs []models.DocRefStruct
@@ -131,7 +132,6 @@ func MapPurchaseRequisitionToDocDetailStructs(processData models.ProcessMongoTra
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

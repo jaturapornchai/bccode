@@ -62,8 +62,5 @@ backend/internal/**/logs/
 /.gocache-build/
 /.gocache-mod/
 
-# junction -> backend/internal/goapi/models (avoid duplicate tracking)
-/datamodel/
-
 # third-party 3D graph viewer app (cloned, not ours)
 /jarvisui/

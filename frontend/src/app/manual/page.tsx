@@ -28,39 +28,50 @@ type ManualIndexProps = {
 };
 
 const manualScreens = ["login", "workspace", "settings", "menu", "currency", ...SYSTEM_SETTING_SLUGS] as const;
+const manualLanguages = LANGUAGES.filter((item) => item.code === "th" || item.code === "en");
 
-const indexUi: Record<LanguageCode, {
-  title: string;
-  subtitle: string;
-  language: string;
-  open: string;
-  updated: string;
-  coverage: string;
-  coverageItems: string[];
-}> = {
-  th: { title: "สารบัญคู่มือ BC Ai Account", subtitle: "รวมคู่มือทุกหน้าจอ เรียงตามลำดับการใช้งานจริง อ่านจากหน้านี้ก่อน แล้วเลือกคู่มือที่ต้องการ", language: "ภาษา", open: "เปิดคู่มือ", updated: "อัปเดต", coverage: "คู่มือทุกหน้าต้องมี", coverageItems: ["ขั้นตอนใช้งานแบบละเอียด", "คำอธิบายช่องข้อมูลและปุ่ม", "ผลลัพธ์ที่ควรได้และวิธีแก้ปัญหา", "รองรับภาษาและธีมมืด/สว่าง"] },
-  en: { title: "BC Ai Account Manual Contents", subtitle: "All screen manuals in real workflow order. Start here, then open the guide you need.", language: "Language", open: "Open manual", updated: "Updated", coverage: "Every manual includes", coverageItems: ["Detailed step-by-step workflow", "Field and button explanations", "Expected results and troubleshooting", "Language and dark/light theme support"] },
-  cn: { title: "BC Ai Account 手册目录", subtitle: "按实际工作流程整理所有页面手册。请先从这里开始，再打开需要的手册。", language: "语言", open: "打开手册", updated: "更新", coverage: "每份手册包含", coverageItems: ["详细步骤", "字段和按钮说明", "预期结果和故障排除", "语言和深浅主题支持"] },
-  ja: { title: "BC Ai Account マニュアル目次", subtitle: "実際の作業順にすべての画面マニュアルをまとめています。ここから必要な手順を開いてください。", language: "言語", open: "マニュアルを開く", updated: "更新", coverage: "各マニュアルの内容", coverageItems: ["詳細な操作手順", "項目とボタンの説明", "期待結果とトラブル対応", "言語とダーク/ライトテーマ対応"] },
-  ko: { title: "BC Ai Account 매뉴얼 목차", subtitle: "실제 업무 순서에 맞춘 모든 화면 매뉴얼입니다. 여기에서 필요한 안내를 여세요.", language: "언어", open: "매뉴얼 열기", updated: "업데이트", coverage: "모든 매뉴얼 포함 항목", coverageItems: ["상세 단계별 작업", "필드와 버튼 설명", "예상 결과와 문제 해결", "언어 및 다크/라이트 테마 지원"] },
-  lo: { title: "ສາລະບານຄູ່ມື BC Ai Account", subtitle: "ລວມຄູ່ມືທຸກໜ້າຕາມລໍາດັບໃຊ້ງານຈິງ ເລີ່ມຈາກໜ້ານີ້ແລ້ວເປີດຄູ່ມືທີ່ຕ້ອງການ.", language: "ພາສາ", open: "ເປີດຄູ່ມື", updated: "ອັບເດດ", coverage: "ຄູ່ມືທຸກໜ້າມີ", coverageItems: ["ຂັ້ນຕອນລະອຽດ", "ອະທິບາຍຊ່ອງຂໍ້ມູນແລະປຸ່ມ", "ຜົນທີ່ຄວນໄດ້ແລະແກ້ບັນຫາ", "ຮອງຮັບພາສາແລະທີມມືດ/ສະຫວ່າງ"] },
-  my: { title: "BC Ai Account လမ်းညွှန် မာတိကာ", subtitle: "အသုံးပြုမှုအစဉ်အတိုင်း မျက်နှာပြင်လမ်းညွှန်အားလုံးကိုစုထားသည်။ ဤနေရာမှစပြီး လိုသောလမ်းညွှန်ကိုဖွင့်ပါ။", language: "ဘာသာစကား", open: "လမ်းညွှန်ဖွင့်ရန်", updated: "နောက်ဆုံးပြင်ဆင်", coverage: "လမ်းညွှန်တိုင်းတွင်", coverageItems: ["အသေးစိတ်အဆင့်လိုက်လုပ်ဆောင်နည်း", "အချက်အလက်ကွက်နှင့်ခလုတ်ရှင်းလင်းချက်", "ရရှိသင့်သောရလဒ်နှင့်ပြဿနာဖြေရှင်းနည်း", "ဘာသာစကားနှင့်အမှောင်/အလင်း theme"] },
-  km: { title: "មាតិកាសៀវភៅណែនាំ BC Ai Account", subtitle: "ប្រមូលសៀវភៅណែនាំគ្រប់ទំព័រតាមលំដាប់ប្រើប្រាស់ពិត។ ចាប់ផ្តើមពីទីនេះ រួចបើកសៀវភៅណែនាំដែលត្រូវការ។", language: "ភាសា", open: "បើកសៀវភៅណែនាំ", updated: "បានធ្វើបច្ចុប្បន្នភាព", coverage: "សៀវភៅណែនាំនីមួយៗមាន", coverageItems: ["ជំហានប្រើប្រាស់លម្អិត", "ការពន្យល់វាល និងប៊ូតុង", "លទ្ធផលដែលគួរទទួលបាន និងដោះស្រាយបញ្ហា", "គាំទ្រភាសា និងរូបរាងងងឹត/ភ្លឺ"] },
-  vi: { title: "Mục lục hướng dẫn BC Ai Account", subtitle: "Tập hợp hướng dẫn mọi màn hình theo đúng thứ tự sử dụng. Bắt đầu tại đây rồi mở phần cần đọc.", language: "Ngôn ngữ", open: "Mở hướng dẫn", updated: "Cập nhật", coverage: "Mỗi hướng dẫn có", coverageItems: ["Quy trình từng bước chi tiết", "Giải thích trường dữ liệu và nút", "Kết quả mong đợi và xử lý sự cố", "Hỗ trợ ngôn ngữ và giao diện tối/sáng"] },
-  ms: { title: "Kandungan Manual BC Ai Account", subtitle: "Semua manual skrin disusun mengikut aliran kerja sebenar. Mula di sini, kemudian buka manual yang diperlukan.", language: "Bahasa", open: "Buka manual", updated: "Dikemas kini", coverage: "Setiap manual merangkumi", coverageItems: ["Aliran kerja langkah demi langkah", "Penjelasan medan dan butang", "Hasil dijangka dan penyelesaian masalah", "Sokongan bahasa dan tema gelap/cerah"] },
-  id: { title: "Daftar Isi Panduan BC Ai Account", subtitle: "Semua panduan layar disusun sesuai alur kerja nyata. Mulai dari sini, lalu buka panduan yang diperlukan.", language: "Bahasa", open: "Buka panduan", updated: "Diperbarui", coverage: "Setiap panduan berisi", coverageItems: ["Alur kerja langkah demi langkah", "Penjelasan field dan tombol", "Hasil yang diharapkan dan pemecahan masalah", "Dukungan bahasa dan tema gelap/terang"] },
-  fil: { title: "Nilalaman ng Manual ng BC Ai Account", subtitle: "Lahat ng screen manual ayon sa totoong workflow. Magsimula rito, pagkatapos buksan ang kailangan mong gabay.", language: "Wika", open: "Buksan ang manual", updated: "Na-update", coverage: "Kasama sa bawat manual", coverageItems: ["Detalyadong step-by-step workflow", "Paliwanag ng fields at buttons", "Inaasahang resulta at troubleshooting", "Suporta sa wika at dark/light theme"] },
-};
+const indexUi = {
+  th: {
+    title: "สารบัญคู่มือที่พร้อมใช้งาน",
+    subtitle: "รวมคู่มือเบื้องต้นที่ตรวจเนื้อหาแล้ว เลือกหน้าที่ต้องการจากรายการด้านล่าง",
+    language: "ภาษา",
+    open: "เปิดคู่มือ",
+    updated: "อัปเดต",
+    coverage: "คู่มือชุดนี้ประกอบด้วย",
+    coverageItems: ["แนวคิดและเป้าหมาย", "สิ่งที่ต้องเตรียมและขั้นตอนใช้งาน", "ผลลัพธ์ ข้อผิดพลาดที่พบบ่อย และข้อจำกัด", "ลิงก์แหล่งอ้างอิงของกฎและพฤติกรรมระบบ"],
+  },
+  en: {
+    title: "Available BC Ai Account Guides",
+    subtitle: "Basic guides whose content has been reviewed. Choose the screen you need below.",
+    language: "Language",
+    open: "Open guide",
+    updated: "Updated",
+    coverage: "These guides include",
+    coverageItems: ["Concept and objective", "Prerequisites and workflow", "Results, common mistakes, and limitations", "Source links for system rules and behavior"],
+  },
+} as const;
 
 export default async function ManualIndexPage({ searchParams }: ManualIndexProps) {
   const query = searchParams ? await searchParams : {};
-  const language = normalizeLanguage(query.lang);
+  const requestedLanguage = normalizeLanguage(query.lang);
+  const language: LanguageCode = requestedLanguage === "th" ? "th" : "en";
   const currentScreen = isManualScreen(query.screen) ? query.screen : null;
-  const labels = indexUi[language] ?? indexUi.en;
-  const manuals = await Promise.all(manualScreens.map((screen) => readManual(screen)));
+  const labels = language === "th" ? indexUi.th : indexUi.en;
+  const manuals = (
+    await Promise.all(
+      manualScreens.map(async (screen) => {
+        try {
+          return await readManual(screen);
+        } catch (error) {
+          if (isFileNotFound(error)) return null;
+          throw error;
+        }
+      }),
+    )
+  ).filter((manual): manual is ManualFile => manual !== null);
 
   return (
-    <main className="min-h-dvh w-full max-w-none bg-background px-2 py-2 text-foreground sm:px-3 lg:px-4">
+    <main className="min-h-dvh w-full max-w-none bg-background px-2 py-2 text-foreground sm:px-3 lg:px-4" lang={language}>
       <article className="grid w-full max-w-none gap-3">
         <header className="grid gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -81,8 +92,9 @@ export default async function ManualIndexPage({ searchParams }: ManualIndexProps
               <span>{labels.language}</span>
             </h2>
             <nav className="flex flex-wrap gap-1.5" aria-label={labels.language}>
-              {LANGUAGES.map((item) => (
+              {manualLanguages.map((item) => (
                 <Link
+                  aria-current={item.code === language ? "page" : undefined}
                   className={`min-h-8 rounded-full border px-3 py-1.5 text-xs font-semibold ${item.code === language ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}
                   href={`/manual?lang=${item.code}`}
                   key={item.code}
@@ -139,11 +151,15 @@ export default async function ManualIndexPage({ searchParams }: ManualIndexProps
 }
 
 async function readManual(screen: string): Promise<ManualFile> {
-  const manualPath = path.resolve(process.cwd(), "..", "manual", `${screen}.json`);
+  const manualPath = path.resolve(process.cwd(), "manual", `${screen}.json`);
   const raw = await readFile(manualPath, "utf8");
   return JSON.parse(raw) as ManualFile;
 }
 
 function isManualScreen(screen: string | undefined): screen is typeof manualScreens[number] {
   return Boolean(screen && (manualScreens as readonly string[]).includes(screen));
+}
+
+function isFileNotFound(error: unknown): boolean {
+  return (error as { code?: unknown } | null)?.code === "ENOENT";
 }

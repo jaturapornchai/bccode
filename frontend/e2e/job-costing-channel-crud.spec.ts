@@ -10,7 +10,7 @@ import { test, expect, type Page } from "@playwright/test";
  *
  * The "งาน โครงการ และศูนย์ต้นทุน" (Jobs, Projects & Cost Centers) menu group and its backend
  * modules (`backend/internal/organization/costcenter`, `backend/internal/organization/jobproject`)
- * were fully removed 2026-07-05 — see .agents/worklog.md. The former cost-center CRUD test that
+ * were fully removed in the 2026-07-05 regression. The former cost-center CRUD test that
  * used to live in this file was removed along with it.
  *
  * `/salechannelscreen` -> backend/internal/channel/salechannel (collection salechannel, soft

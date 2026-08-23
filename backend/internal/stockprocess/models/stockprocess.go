@@ -13,7 +13,6 @@ type StockData struct {
 	TransFlag           int16     `json:"transflag" gorm:"column:transflag" `
 	InquiryType         int       `json:"inquirytype" gorm:"column:inquirytype"`
 	Barcode             string    `json:"barcode" gorm:"column:barcode"`
-	MainBarcodeRef      string    `json:"mainbarcoderef" gorm:"column:mainbarcoderef"`
 	ItemType            int8      `json:"itemtype" gorm:"column:itemtype"`
 	WhCode              string    `json:"whcode" gorm:"whcode"`
 	LocationCode        string    `json:"locationcode" gorm:"locationcode"`

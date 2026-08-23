@@ -154,6 +154,15 @@ test("Quick Barcode UAT uses the selected Company and persists only required inp
   ).toHaveCount(0);
   await expect(page.getByText("200 — ใช้ภายในร้าน")).toBeVisible();
   await expect(page.getByText("885 — GS1 Thailand")).toBeVisible();
+  await expect(
+    page.getByText("จำนวนหน่วยขาย (เช่น 1 ลัง)", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("เท่ากับหน่วยฐาน (เช่น 24 ชิ้น)", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("checkbox", { name: "บาร์โค้ดหลัก" }),
+  ).toHaveCount(0);
 
   await clickVisible(page, /^บันทึก$/);
   await expect(page.getByText("จำเป็นต้องระบุ").first()).toBeVisible();
@@ -226,7 +235,19 @@ test("Quick Barcode UAT uses the selected Company and persists only required inp
     .fill(barcodeDescription);
 
   try {
+    const barcodeCreateRequest = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return (
+        request.method() === "POST" &&
+        url.pathname === "/api/product-barcode"
+      );
+    });
     await clickVisible(page, /^บันทึก$/);
+    const barcodeCreatePayload = (await barcodeCreateRequest).postDataJSON() as {
+      data?: Record<string, unknown>;
+    };
+    expect(barcodeCreatePayload.data).toBeDefined();
+    expect(barcodeCreatePayload.data).not.toHaveProperty("ismainbarcode");
     await expect(page.getByText("บันทึกบาร์โค้ดแล้ว")).toBeVisible({
       timeout: 10_000,
     });
@@ -241,6 +262,7 @@ test("Quick Barcode UAT uses the selected Company and persists only required inp
     await expect(detailSummary).toContainText(barcode);
     await expect(detailFields).toBeVisible();
     await expect(detailFields).toContainText("ราคาขาย 1");
+    await expect(detailFields).not.toContainText("บาร์โค้ดหลัก");
     const barcodeMediaDetail = page
       .getByRole("heading", { name: "สื่อบาร์โค้ดและบรรจุภัณฑ์" })
       .locator("..");
@@ -335,7 +357,6 @@ test("Quick Barcode UAT uses the selected Company and persists only required inp
           itemunitcode: "PCS",
           dividevalue: 1,
           standvalue: 1,
-          ismainbarcode: true,
         },
         headers: { Authorization: `Bearer ${sessionToken}` },
       },
@@ -647,7 +668,6 @@ test("Quick Barcode UAT uses the selected Company and persists only required inp
           itemunitnames: [{ code: "th", name: "กล่อง" }],
           dividevalue: 99,
           standvalue: 99,
-          ismainbarcode: false,
         },
         headers: { Authorization: `Bearer ${sessionToken}` },
       },
@@ -795,9 +815,15 @@ test("Quick Barcode UAT uses the selected Company and persists only required inp
         .locator("input")
         .first(),
     ).toHaveValue(`สินค้า ${barcode}`);
-    const ratios = requiredSection.locator('input[inputmode="decimal"]');
-    await expect(ratios.nth(0)).toHaveValue("1");
-    await expect(ratios.nth(1)).toHaveValue("1");
+    await expect(
+      page.getByText("จำนวนหน่วยขาย (เช่น 1 ลัง)", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText("เท่ากับหน่วยฐาน (เช่น 24 ชิ้น)", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("checkbox", { name: "บาร์โค้ดหลัก" }),
+    ).toHaveCount(0);
     await expect(
       page.getByPlaceholder("รายละเอียดเฉพาะของบาร์โค้ดนี้..."),
     ).toHaveValue(barcodeDescription);
@@ -854,7 +880,6 @@ test("Quick Barcode pager reaches records after the first 80 and resets on searc
       prices: [{ keynumber: 1, price: "10.00" }],
       dividevalue: 1,
       standvalue: 1,
-      ismainbarcode: true,
     };
   };
 

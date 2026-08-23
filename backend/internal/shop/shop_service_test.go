@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	auth_model "smlcloudplatform/internal/authentication/models"
+	common "smlcloudplatform/internal/models"
+	organization "smlcloudplatform/internal/organization"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/shop/models"
 	utilmock "smlcloudplatform/mock"
@@ -22,12 +24,22 @@ func TestShop_Create(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
 
 	shopRepo.On("FindByHoldingCode", mock.Anything, "shoptest").Return(models.ShopDoc{}, errors.New("not found"))
+	shopRepo.On("EnsureBootstrapIndexes", mock.Anything).Return(nil)
+	shopRepo.On("Transaction", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		if err := args.Get(0).(func(context.Context) error)(context.Background()); err != nil {
+			t.Fatalf("transaction callback: %v", err)
+		}
+	})
 	shopRepo.On("Create", mock.Anything, mock.MatchedBy(func(doc models.ShopDoc) bool {
-		return doc.HoldingCode == "shoptest" && doc.GuidFixed == "shoptest"
+		return doc.HoldingCode == "shoptest" && doc.HoldingUID == "MOCKGUID001" && doc.GuidFixed == "MOCKGUID001" && doc.IsActive
 	})).Return("", nil)
-	shopUserRepo.On("Save", mock.Anything, "shoptest", "user_create", auth_model.ROLE_OWNER).Return(nil)
+	shopRepo.On("CreateCodeClaim", mock.Anything, mock.Anything).Return(nil)
+	shopRepo.On("CreateAudit", mock.Anything, mock.Anything).Return(nil)
+	shopRepo.On("CreateOutbox", mock.Anything, mock.Anything).Return(nil)
+	shopUserRepo.On("SaveStable", mock.Anything, "shoptest", "MOCKGUID001", "USERUID001", "user_create", auth_model.ROLE_OWNER, utilmock.MockTime()).Return(nil)
 
 	type args struct {
+		userUID  string
 		username string
 		shop     models.Shop
 	}
@@ -41,22 +53,26 @@ func TestShop_Create(t *testing.T) {
 		{
 			name: "success create shop",
 			args: args{
+				userUID:  "USERUID001",
 				username: "user_create",
 				shop: models.Shop{
 					HoldingCode: "shoptest",
 					Name1:       "shop_name",
+					Names:       validHoldingNames(),
 					Telephone:   "0000000000",
 				},
 			},
 			wantErr:  false,
-			wantData: "shoptest",
+			wantData: "MOCKGUID001",
 		},
 		{
 			name: "reject missing holdingcode",
 			args: args{
+				userUID:  "USERUID001",
 				username: "user_create",
 				shop: models.Shop{
 					Name1:     "shop_name",
+					Names:     validHoldingNames(),
 					Telephone: "0000000000",
 				},
 			},
@@ -65,10 +81,24 @@ func TestShop_Create(t *testing.T) {
 		{
 			name: "reject underscore holdingcode",
 			args: args{
+				userUID:  "USERUID001",
 				username: "user_create",
 				shop: models.Shop{
 					HoldingCode: "shop_test",
 					Name1:       "shop_name",
+					Names:       validHoldingNames(),
+					Telephone:   "0000000000",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "reject missing holding name",
+			args: args{
+				userUID:  "USERUID001",
+				username: "user_create",
+				shop: models.Shop{
+					HoldingCode: "shoptest",
 					Telephone:   "0000000000",
 				},
 			},
@@ -80,7 +110,7 @@ func TestShop_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			shopSvc := shop.NewShopService(shopRepo, shopUserRepo, utilmock.MockGUID, utilmock.MockTime)
 
-			shopGUID, err := shopSvc.CreateShop(tt.args.username, tt.args.shop)
+			shopGUID, err := shopSvc.CreateShop(tt.args.userUID, tt.args.username, tt.args.shop)
 
 			if tt.wantErr {
 				assert.NotNil(t, err)
@@ -95,8 +125,41 @@ func TestShop_Create(t *testing.T) {
 
 }
 
+func validHoldingNames() []common.NameX {
+	code, name := "th", "ร้านทดสอบ"
+	return []common.NameX{{Code: &code, Name: &name}}
+}
+
+func TestShopUpdateRejectsHoldingCodeChangeUntilAtomicRenameExists(t *testing.T) {
+	shopRepo := new(ShopRepositoryMock)
+	shopUserRepo := new(ShopUserRepositoryMock)
+	shopRepo.On("FindByGuid", mock.Anything, "HOLDINGUID001").Return(models.ShopDoc{
+		ID: primitive.NewObjectID(),
+		ShopInfo: models.ShopInfo{
+			DocIdentity: common.DocIdentity{GuidFixed: "HOLDINGUID001"},
+			Shop:        models.Shop{HoldingCode: "oldcode", IsActive: true},
+		},
+	}, nil)
+
+	service := shop.NewShopService(shopRepo, shopUserRepo, utilmock.MockGUID, utilmock.MockTime)
+	err := service.UpdateShop("HOLDINGUID001", "actor", models.Shop{HoldingCode: "newcode"})
+	if !errors.Is(err, shop.ErrHoldingCodeRenameUnavailable) {
+		t.Fatalf("UpdateShop error = %v", err)
+	}
+	shopRepo.AssertNotCalled(t, "Update", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
 type ShopRepositoryMock struct {
 	mock.Mock
+}
+
+func (m *ShopRepositoryMock) Transaction(ctx context.Context, queryFunc func(context.Context) error) error {
+	args := m.Called(queryFunc)
+	return args.Error(0)
+}
+
+func (m *ShopRepositoryMock) EnsureBootstrapIndexes(ctx context.Context) error {
+	return m.Called(ctx).Error(0)
 }
 
 func (m *ShopRepositoryMock) Create(ctx context.Context, shop models.ShopDoc) (string, error) {
@@ -105,14 +168,26 @@ func (m *ShopRepositoryMock) Create(ctx context.Context, shop models.ShopDoc) (s
 	return args.String(0), args.Error(1)
 }
 
-func (m *ShopRepositoryMock) Update(ctx context.Context, guid string, shop models.ShopDoc) error {
-	args := m.Called(ctx, guid, shop)
+func (m *ShopRepositoryMock) CreateCodeClaim(ctx context.Context, claim organization.OrganizationCodeClaim) error {
+	return m.Called(ctx, claim).Error(0)
+}
+
+func (m *ShopRepositoryMock) CreateAudit(ctx context.Context, audit organization.OrganizationAudit) error {
+	return m.Called(ctx, audit).Error(0)
+}
+
+func (m *ShopRepositoryMock) CreateOutbox(ctx context.Context, event organization.OrganizationOutboxEvent) error {
+	return m.Called(ctx, event).Error(0)
+}
+
+func (m *ShopRepositoryMock) Update(ctx context.Context, guid string, expectedVersion int64, expectedActive bool, shop models.ShopDoc) error {
+	args := m.Called(ctx, guid, expectedVersion, expectedActive, shop)
 
 	return args.Error(0)
 }
 func (m *ShopRepositoryMock) FindByGuid(ctx context.Context, guid string) (models.ShopDoc, error) {
 	args := m.Called(ctx, guid)
-	return args.Get(0).(models.ShopDoc), args.Error(0)
+	return args.Get(0).(models.ShopDoc), args.Error(1)
 }
 func (m *ShopRepositoryMock) FindByHoldingCode(ctx context.Context, holdingCode string) (models.ShopDoc, error) {
 	args := m.Called(ctx, holdingCode)
@@ -148,18 +223,28 @@ func (m *ShopUserRepositoryMock) Save(ctx context.Context, holdingCode string, u
 	return args.Error(0)
 }
 
+func (m *ShopUserRepositoryMock) SaveStable(ctx context.Context, holdingCode string, holdingUID string, userUID string, username string, role auth_model.UserRole, createdAt time.Time) error {
+	args := m.Called(ctx, holdingCode, holdingUID, userUID, username, role, createdAt)
+	return args.Error(0)
+}
+
 func (m *ShopUserRepositoryMock) SaveFullProfile(ctx context.Context, holdingCode string, req *auth_model.UserRoleRequest) error {
 	args := m.Called(ctx, holdingCode, req)
 	return args.Error(0)
 }
 
-func (m *ShopUserRepositoryMock) UpdateLastAccess(ctx context.Context, holdingCode string, username string, lastAccessedAt time.Time) error {
-	args := m.Called(ctx, holdingCode, username, lastAccessedAt)
+func (m *ShopUserRepositoryMock) UpdateLineFields(ctx context.Context, holdingCode string, userUID string, lineUserID string, lineDisplayName string, linePictureURL string) error {
+	args := m.Called(ctx, holdingCode, userUID, lineUserID, lineDisplayName, linePictureURL)
 	return args.Error(0)
 }
 
-func (m *ShopUserRepositoryMock) SaveFavorite(ctx context.Context, holdingCode string, username string, isFavorite bool) error {
-	args := m.Called(ctx, holdingCode, username, isFavorite)
+func (m *ShopUserRepositoryMock) UpdateLastAccess(ctx context.Context, holdingCode string, userUID string, lastAccessedAt time.Time) error {
+	args := m.Called(ctx, holdingCode, userUID, lastAccessedAt)
+	return args.Error(0)
+}
+
+func (m *ShopUserRepositoryMock) SaveFavorite(ctx context.Context, holdingCode string, userUID string, isFavorite bool) error {
+	args := m.Called(ctx, holdingCode, userUID, isFavorite)
 	return args.Error(0)
 }
 
@@ -190,6 +275,11 @@ func (m *ShopUserRepositoryMock) FindByHoldingCodeAndUserUID(ctx context.Context
 
 func (m *ShopUserRepositoryMock) ResolveHoldingCodeByHoldingCode(ctx context.Context, holdingCode string) (string, error) {
 	args := m.Called(ctx, holdingCode)
+	return args.String(0), args.Error(1)
+}
+
+func (m *ShopUserRepositoryMock) ResolveCompanyUID(ctx context.Context, holdingCode string, businessCode string) (string, error) {
+	args := m.Called(ctx, holdingCode, businessCode)
 	return args.String(0), args.Error(1)
 }
 

@@ -77,6 +77,7 @@ type IProductBarcodeRepository interface {
 	FindByBusinessKey(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error)
 	FindByItemCodeAndBarcode(ctx context.Context, holdingCode string, itemCode string, barcode string) (models.ProductBarcodeDoc, error)
 	FindByBarcodes(ctx context.Context, holdingCode string, barcodes []string) ([]models.ProductBarcodeInfo, error)
+	FindByBarcodesInCompany(ctx context.Context, holdingCode, businessCode string, barcodes []string) ([]models.ProductBarcodeInfo, error)
 	FindPageByUnits(ctx context.Context, holdingCode string, unitCodes []string, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error)
 	FindPageByGroups(ctx context.Context, holdingCode string, groupCodes []string, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error)
 	EnsureIndexes(ctx context.Context) error
@@ -101,7 +102,9 @@ type IProductBarcodeRepository interface {
 	UpdateBranch(ctx context.Context, holdingCode string, branch models.ProductBarcodeBranch, productBarcodeGUIDFixedes []string) error
 	UpdateBusinessType(ctx context.Context, holdingCode string, businessType models.ProductBarcodeBusinessType, productBarcodeGUIDFixedes []string) error
 	FindByBarcodesMap(holdingCode string, barcodes []string) (map[string]models.ProductBarcodeInfo, error)
+	FindByBarcodesMapInCompany(holdingCode, businessCode string, barcodes []string) (map[string]models.ProductBarcodeInfo, error)
 	UpdateByID(id string, updateData bson.M) error
+	UpdateByIDInCompany(holdingCode, businessCode, id string, updateData bson.M) error
 }
 
 type ProductBarcodeRepository struct {
@@ -650,6 +653,21 @@ func (repo ProductBarcodeRepository) FindByBarcodes(ctx context.Context, holding
 	return results, nil
 }
 
+func (repo ProductBarcodeRepository) FindByBarcodesInCompany(ctx context.Context, holdingCode, businessCode string, barcodes []string) ([]models.ProductBarcodeInfo, error) {
+	filters := bson.M{
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"deletedat":    bson.M{"$exists": false},
+		"barcode":      bson.M{"$in": barcodes},
+	}
+
+	var results []models.ProductBarcodeInfo
+	if err := repo.pst.Find(ctx, models.ProductBarcodeInfo{}, filters, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 func (repo ProductBarcodeRepository) FindPageByUnits(ctx context.Context, holdingCode string, unitCodes []string, pageable micromodels.Pageable) ([]models.ProductBarcodeInfo, mongopagination.PaginationData, error) {
 
 	filters := bson.M{
@@ -850,10 +868,40 @@ func (repo ProductBarcodeRepository) FindByBarcodesMap(holdingCode string, barco
 	return productMap, nil
 }
 
+func (repo ProductBarcodeRepository) FindByBarcodesMapInCompany(holdingCode, businessCode string, barcodes []string) (map[string]models.ProductBarcodeInfo, error) {
+	filter := bson.M{
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"barcode":      bson.M{"$in": barcodes},
+		"deletedat":    bson.M{"$exists": false},
+	}
+
+	var docs []models.ProductBarcodeInfo
+	if err := repo.pst.Find(context.Background(), models.ProductBarcodeInfo{}, filter, &docs); err != nil {
+		return nil, err
+	}
+
+	productMap := make(map[string]models.ProductBarcodeInfo, len(docs))
+	for _, product := range docs {
+		productMap[product.Barcode] = product
+	}
+	return productMap, nil
+}
+
 func (repo ProductBarcodeRepository) UpdateByID(id string, updateData bson.M) error {
 	filter := bson.M{
 		"guidfixed": id,
 		"deletedat": bson.M{"$exists": false},
+	}
+	return repo.pst.Update(context.Background(), models.ProductBarcodeDoc{}, filter, updateData)
+}
+
+func (repo ProductBarcodeRepository) UpdateByIDInCompany(holdingCode, businessCode, id string, updateData bson.M) error {
+	filter := bson.M{
+		"holdingcode":  holdingCode,
+		"businesscode": businessCode,
+		"guidfixed":    id,
+		"deletedat":    bson.M{"$exists": false},
 	}
 	return repo.pst.Update(context.Background(), models.ProductBarcodeDoc{}, filter, updateData)
 }

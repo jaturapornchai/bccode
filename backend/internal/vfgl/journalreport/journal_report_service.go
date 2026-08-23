@@ -8,6 +8,7 @@ import (
 	chartofaccountModel "smlcloudplatform/internal/vfgl/chartofaccount/models"
 	"smlcloudplatform/internal/vfgl/journalreport/models"
 	"smlcloudplatform/internal/vfgl/journalreport/usecase"
+	"sort"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -305,6 +306,7 @@ func (svc JournalReportService) ProcessLedgerAccount(holdingCode string, account
 		for k := range docNoList {
 			tempDocNoList = append(tempDocNoList, k)
 		}
+		sort.Strings(tempDocNoList)
 
 		journalSummaryList, err := svc.repoMongo.FindCountDetailByDocs(ctx, holdingCode, tempDocNoList)
 

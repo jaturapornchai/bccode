@@ -30,7 +30,7 @@ func OnConsumeMessagePurchaseDelete(msg string) error {
 	}
 
 	// Delete from both databases
-	err := DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_PURCHASE)
+	err := DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_PURCHASE)
 	if err != nil {
 		logger.Error("OnConsumeMessagePurchaseDelete: Failed to delete: %v", err)
 		return err
@@ -77,12 +77,13 @@ func ProcessPurchaseDocument(msg string) error {
 
 	// Step 4: Delete existing documents from PostgreSQL
 	logger.Info("ProcessPurchaseDocument: Step 4 - Deleting existing documents from PostgreSQL for DocNo=%s", purchaseData.DocNo)
-	mypg.DeleteDocPgSql(ctx, db, purchaseData.DocNo, TRANS_FLAG_PURCHASE)
+	mypg.DeleteDocPgSql(ctx, db, purchaseData.BusinessCode, purchaseData.DocNo, TRANS_FLAG_PURCHASE)
 
 	// Step 5: Convert process model to build-doc structs
 	logger.Info("ProcessPurchaseDocument: Step 5 - Converting process model to build-doc structs")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, purchaseData.HoldingCode)
 	docDetailStructs := MapPurchaseToDocDetailStructs(processData, purchaseData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, purchaseData.BusinessCode)
 
 	// Step 6: Create document references จาก docDetailStructs ที่มี DocRef
 	logger.Info("ProcessPurchaseDocument: Step 6 - Creating document references")
@@ -163,7 +164,6 @@ func MapPurchaseToDocDetailStructs(processData models.ProcessMongoTransModel, ho
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

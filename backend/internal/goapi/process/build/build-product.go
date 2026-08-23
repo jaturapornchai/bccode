@@ -20,9 +20,19 @@ import (
 type mongoProductProjection struct {
 	BusinessCode string `bson:"businesscode"`
 	Code         string `bson:"code"`
+	UnitCode     string `bson:"unitcode"`
 	Names        []struct {
 		Name string `bson:"name"`
 	} `bson:"names"`
+	UnitNames []struct {
+		Name string `bson:"name"`
+	} `bson:"unitnames"`
+}
+
+type productProjectionValue struct {
+	Name     string
+	UnitCode string
+	UnitName string
 }
 
 // ProcessProductRebuildAll reconciles the PostgreSQL product projection with
@@ -60,7 +70,7 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 			"deletedat":    bson.M{"$exists": false},
 		},
 		options.Find().
-			SetProjection(bson.M{"businesscode": 1, "code": 1, "names": 1}).
+			SetProjection(bson.M{"businesscode": 1, "code": 1, "names": 1, "unitcode": 1, "unitnames": 1}).
 			SetSort(bson.D{{Key: "code", Value: 1}, {Key: "_id", Value: 1}}),
 	)
 	if err != nil {
@@ -68,7 +78,7 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 	}
 	defer cursor.Close(ctx)
 
-	productNames := make(map[string]string)
+	products := make(map[string]productProjectionValue)
 	for cursor.Next(ctx) {
 		var product mongoProductProjection
 		if err := cursor.Decode(&product); err != nil {
@@ -81,8 +91,12 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 		if code == "" {
 			return 0, fmt.Errorf("active MongoDB product has an empty code")
 		}
-		if _, exists := productNames[code]; exists {
+		if _, exists := products[code]; exists {
 			return 0, fmt.Errorf("duplicate active MongoDB product code %q", code)
+		}
+		unitCode := utils.NormalizeBusinessCode(product.UnitCode)
+		if unitCode == "" {
+			return 0, fmt.Errorf("active MongoDB product %q has an empty base unit", code)
 		}
 		name := code
 		for _, item := range product.Names {
@@ -91,7 +105,14 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 				break
 			}
 		}
-		productNames[code] = name
+		unitName := unitCode
+		for _, item := range product.UnitNames {
+			if item.Name != "" {
+				unitName = item.Name
+				break
+			}
+		}
+		products[code] = productProjectionValue{Name: name, UnitCode: unitCode, UnitName: unitName}
 	}
 	if err := cursor.Err(); err != nil {
 		return 0, fmt.Errorf("iterate MongoDB products: %w", err)
@@ -104,8 +125,8 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 	if err := TableProductCreate(pgDB); err != nil {
 		return 0, err
 	}
-	codes := make([]string, 0, len(productNames))
-	for code := range productNames {
+	codes := make([]string, 0, len(products))
+	for code := range products {
 		codes = append(codes, code)
 	}
 	sort.Strings(codes)
@@ -143,44 +164,22 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 	}
 	upsert, err := tx.PrepareContext(ctx, `
 		INSERT INTO product (holding_code, businesscode, itemcode, name0, unitcode, unitname)
-		VALUES ($1, $2, $3, $4, '', '')
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT ON CONSTRAINT product_company_itemcode_unique
 		DO UPDATE SET
 			name0 = EXCLUDED.name0,
-			unitcode = '',
-			unitname = ''`)
+			unitcode = EXCLUDED.unitcode,
+			unitname = EXCLUDED.unitname`)
 	if err != nil {
 		return 0, fmt.Errorf("prepare PostgreSQL product projection upsert: %w", err)
 	}
 	defer upsert.Close()
 
 	for _, code := range codes {
-		if _, err := upsert.ExecContext(ctx, holdingCode, businessCode, code, productNames[code]); err != nil {
+		product := products[code]
+		if _, err := upsert.ExecContext(ctx, holdingCode, businessCode, code, product.Name, product.UnitCode, product.UnitName); err != nil {
 			return 0, fmt.Errorf("upsert PostgreSQL product %s: %w", code, err)
 		}
-	}
-
-	if _, err := tx.ExecContext(ctx, `
-		UPDATE product p
-		SET unitcode = units.unitcode,
-			unitname = units.unitname
-		FROM (
-			SELECT DISTINCT ON (itemcode)
-				itemcode,
-				COALESCE(unitcode, '') AS unitcode,
-				COALESCE(unitname, '') AS unitname
-			FROM productbarcode
-			WHERE holding_code = $1
-				AND businesscode = $2
-				AND itemcode IS NOT NULL AND itemcode <> ''
-			ORDER BY itemcode,
-				CASE WHEN barcoderefunitstand = 1 AND barcoderefunitdivide = 1 THEN 0 ELSE 1 END,
-				barcode
-		) units
-		WHERE p.holding_code = $1
-			AND p.businesscode = $2
-			AND units.itemcode = p.itemcode`, holdingCode, businessCode); err != nil {
-		return 0, fmt.Errorf("enrich PostgreSQL product units: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {

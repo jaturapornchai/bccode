@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import { useEffect, useMemo, useState } from "react";
 import { Building2, type LucideIcon } from "lucide-react";
 import { logoThumbUri } from "@/lib/logo-thumb";
@@ -90,7 +91,7 @@ function resolveDisplayUrl(value: string, backendUrl: string): string {
     return typeof window === "undefined" ? raw : `${window.location.protocol}${raw}`;
   }
   // Authenticated GoAPI/S3 proxy paths must be resolved against the backend host,
-  // not the frontend origin. Otherwise fetch() hits localhost:3000 and 404s.
+  // not the frontend origin. Otherwise authFetch() hits localhost:3000 and 404s.
   if (raw.startsWith("/api/") || raw.startsWith("/goapi/")) {
     const base = mainApiBase(backendUrl);
     return base ? `${base}${raw}` : raw;
@@ -162,7 +163,7 @@ function useLogoImage(uri: string, auth: AuthLike, width: number) {
     setLoading(true);
     setFailed(false);
     setDisplayUrl("");
-    void fetch(resolvedUrl, {
+    void authFetch(resolvedUrl, {
       cache: "no-store",
       headers: { Authorization: `Bearer ${token}` },
       signal: controller.signal,
@@ -269,7 +270,7 @@ export function useProfileAvatar(auth: AuthLike): string {
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch(
+        const response = await authFetch(
           `/api/auth/profile?backendUrl=${encodeURIComponent(backendUrl)}`,
           {
             headers: {

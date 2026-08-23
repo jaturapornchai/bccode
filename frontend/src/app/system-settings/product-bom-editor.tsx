@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import {
   useState,
   useEffect,
@@ -387,7 +388,7 @@ export function ProductBomEditor({
     }
 
     setLoading(true);
-    fetch(
+    authFetch(
       `/api/system-settings/productbom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
       {
         headers: {
@@ -699,7 +700,7 @@ export function ProductBomEditor({
     setLoading(true);
     try {
       // Fetch full product details to use existing barcode/unit choices from product.barcodes.
-      const response = await fetch(
+      const response = await authFetch(
         `/api/product/${encodeURIComponent(entry.guidfixed)}`,
         {
           headers: {
@@ -850,7 +851,7 @@ export function ProductBomEditor({
         finishedgoodbarcode: finishedGoodBarcode,
       };
 
-      const saveResponse = await fetch(
+      const saveResponse = await authFetch(
         isCreate
           ? `/api/system-settings/productbom?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`
           : `/api/system-settings/productbom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
@@ -928,7 +929,7 @@ export function ProductBomEditor({
     if (!auth || !workspace) return;
     setDeleting(true);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/system-settings/productbom/${encodeURIComponent(selectedRecord.guidfixed)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
         {
           method: "DELETE",

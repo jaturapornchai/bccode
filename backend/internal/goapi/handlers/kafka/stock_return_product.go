@@ -86,7 +86,7 @@ func OnConsumeMessageStockReturnProductDelete(msg string) error {
 		return fmt.Errorf("invalid stock return product data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, TRANS_FLAG_STOCK_RETURN_PRODUCT)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_RETURN_PRODUCT)
 }
 
 // TransStockReturnProductDecode - decode JSON message to StockReturnProductStruct
@@ -124,12 +124,13 @@ func ProcessStockReturnProductDocument(docData models.StockReturnProductStruct) 
 
 	// Step 3: Delete existing documents from PostgreSQL
 	logger.Info("ProcessStockReturnProductDocument: Step 3 - Deleting existing documents from PostgreSQL for DocNo=%s", docData.DocNo)
-	mypg.DeleteDocPgSql(ctx, db, docData.DocNo, TRANS_FLAG_STOCK_RETURN_PRODUCT)
+	mypg.DeleteDocPgSql(ctx, db, docData.BusinessCode, docData.DocNo, TRANS_FLAG_STOCK_RETURN_PRODUCT)
 
 	// Step 4: Convert process model to build-doc structs
 	logger.Info("ProcessStockReturnProductDocument: Step 4 - Converting process model to build-doc structs")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
 	docDetailStructs := MapStockReturnProductToDocDetailStructs(processData, docData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, docData.BusinessCode)
 
 	// Step 5: Create document references
 	logger.Info("ProcessStockReturnProductDocument: Step 5 - Creating document references")
@@ -276,7 +277,6 @@ func MapStockReturnProductToDocDetailStructs(processData models.ProcessMongoTran
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,

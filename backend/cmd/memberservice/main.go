@@ -15,7 +15,7 @@ func main() {
 	}
 
 	cacher := ms.Cacher(cfg.CacherConfig())
-	authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour)
+	authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour, ms.MongoPersister(cfg.MongoPersisterConfig()))
 	ms.HttpMiddleware(authService.MWFuncWithRedis(cacher))
 
 	memberapi := member.NewMemberHttp(ms, cfg)

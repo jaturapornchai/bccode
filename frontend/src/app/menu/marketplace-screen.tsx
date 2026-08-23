@@ -47,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { pushNotice } from "@/lib/toast";
 import { normalizeBusinessCode } from "@/lib/business-code";
+import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 
 type MarketplaceScreenProps = {
   platform: "shopee" | "lazada" | "tiktok";
@@ -138,9 +139,8 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
 
   useEffect(() => {
     // Read auth/workspace session
-    const authRaw = localStorage.getItem(workspaceStorageKeys.auth);
     const workspaceRaw = localStorage.getItem(workspaceStorageKeys.workspace);
-    if (authRaw) setAuth(JSON.parse(authRaw));
+    setAuth(getAuthSession());
     if (workspaceRaw) setWorkspace(JSON.parse(workspaceRaw));
   }, []);
 
@@ -281,7 +281,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
       const item = updatedBarcodes[matchedIdx];
 
       try {
-        const fetchRes = await fetch(`/api/product-barcode/${encodeURIComponent(item.guidfixed)}`, {
+        const fetchRes = await authFetch(`/api/product-barcode/${encodeURIComponent(item.guidfixed)}`, {
           headers: {
             "x-bc-backend-url": auth.backendUrl,
             Authorization: `Bearer ${auth.token}`,

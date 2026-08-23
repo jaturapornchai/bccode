@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clearRefreshTokenCookie } from "@/lib/auth-session-server";
 import { getBackendUrlFromRequest, getMainApiUrl, proxyMainApiJson, type ApiProxyBody } from "@/lib/workspace-api";
 
 export async function GET(request: Request) {
@@ -18,8 +19,9 @@ export async function PUT(request: Request) {
   const backendUrl = getBackendUrlFromRequest(request, body);
   if (!backendUrl) return NextResponse.json({ success: false, message: "ไม่พบ Backend URL" }, { status: 400 });
 
-  return proxyMainApiJson(request, getMainApiUrl(backendUrl), "/profile/password", {
+  const response = await proxyMainApiJson(request, getMainApiUrl(backendUrl), "/profile/password", {
     method: "PUT",
     body: JSON.stringify(body),
   });
+  return response.ok ? clearRefreshTokenCookie(response) : response;
 }

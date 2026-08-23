@@ -109,13 +109,14 @@ func ProcessStockAdjustmentDocument(msg string) error {
 
 	// Delete existing documents (upsert behavior)
 	logger.Debug("Step 4: Deleting existing documents...")
-	mypg.DeleteDocPgSql(ctx, db, docData.DocNo, docData.TransFlag)
+	mypg.DeleteDocPgSql(ctx, db, docData.BusinessCode, docData.DocNo, docData.TransFlag)
 	logger.Debug("Step 4 completed: Existing documents deleted")
 
 	// Convert to build-doc structs
 	logger.Debug("Step 5: Converting to build-doc structs...")
 	docStruct, docPaymentStruct := myglobal.MapDocStructFromMongo(processData, docData.HoldingCode)
 	docDetailStructs := MapStockAdjustmentToDocDetailStructs(processData, docData.HoldingCode)
+	setDocumentCompany(&docStruct, docDetailStructs, docData.BusinessCode)
 	logger.Debug("Step 5 completed: Converted to %d doc details", len(docDetailStructs))
 
 	// Create doc references if any
@@ -254,7 +255,6 @@ func MapStockAdjustmentToDocDetailStructs(processData models.ProcessMongoTransMo
 			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     GetItemName(detail.ItemNames),
-			BarcodeMain:     detail.Barcode,
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
 			WhCode:          detail.WhCode,
@@ -295,5 +295,5 @@ func OnConsumeMessageStockAdjustmentDelete(msg string) error {
 		return fmt.Errorf("invalid stock adjustment data")
 	}
 
-	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.DocNo, docData.TransFlag)
+	return DeleteDocumentFromDatabases(context.Background(), docData.HoldingCode, docData.BusinessCode, docData.DocNo, docData.TransFlag)
 }

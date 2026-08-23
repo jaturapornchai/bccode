@@ -19,12 +19,12 @@ func NewTaskStatusCacheRepository(cache microservice.ICacher) ITaskStatusReposit
 	}
 }
 
-func (r *TaskStatusCacheRepository) getCacheKey(holdingCode, taskID string) string {
-	return fmt.Sprintf("task_status:%s:%s", holdingCode, taskID)
+func (r *TaskStatusCacheRepository) getCacheKey(holdingCode, businessCode, taskID string) string {
+	return fmt.Sprintf("task_status:%s:%s:%s", holdingCode, businessCode, taskID)
 }
 
 func (r *TaskStatusCacheRepository) Create(ctx context.Context, status models.TaskStatusModel) error {
-	key := r.getCacheKey(status.HoldingCode, status.TaskID)
+	key := r.getCacheKey(status.HoldingCode, status.BusinessCode, status.TaskID)
 
 	data, err := json.Marshal(status)
 	if err != nil {
@@ -36,7 +36,7 @@ func (r *TaskStatusCacheRepository) Create(ctx context.Context, status models.Ta
 }
 
 func (r *TaskStatusCacheRepository) Update(ctx context.Context, taskID string, status models.TaskStatusModel) error {
-	key := r.getCacheKey(status.HoldingCode, taskID)
+	key := r.getCacheKey(status.HoldingCode, status.BusinessCode, taskID)
 
 	data, err := json.Marshal(status)
 	if err != nil {
@@ -47,8 +47,8 @@ func (r *TaskStatusCacheRepository) Update(ctx context.Context, taskID string, s
 	return r.cache.Set(key, string(data), time.Hour*24)
 }
 
-func (r *TaskStatusCacheRepository) FindByTaskID(ctx context.Context, holdingCode, taskID string) (models.TaskStatusModel, error) {
-	key := r.getCacheKey(holdingCode, taskID)
+func (r *TaskStatusCacheRepository) FindByTaskID(ctx context.Context, holdingCode, businessCode, taskID string) (models.TaskStatusModel, error) {
+	key := r.getCacheKey(holdingCode, businessCode, taskID)
 
 	data, err := r.cache.Get(key)
 	if err != nil {
@@ -64,7 +64,7 @@ func (r *TaskStatusCacheRepository) FindByTaskID(ctx context.Context, holdingCod
 	return status, nil
 }
 
-func (r *TaskStatusCacheRepository) Delete(ctx context.Context, holdingCode, taskID string) error {
-	key := r.getCacheKey(holdingCode, taskID)
+func (r *TaskStatusCacheRepository) Delete(ctx context.Context, holdingCode, businessCode, taskID string) error {
+	key := r.getCacheKey(holdingCode, businessCode, taskID)
 	return r.cache.Del(key)
 }

@@ -1,14 +1,17 @@
 package shop
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
-	auth_model "smlcloudplatform/internal/authentication/models"
+	authmodels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/logger"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	orgaccess "smlcloudplatform/internal/organization"
+	orgpolicy "smlcloudplatform/internal/organization/access"
 	branch_model "smlcloudplatform/internal/organization/branch/models"
 	branch_repositories "smlcloudplatform/internal/organization/branch/repositories"
 	branch_services "smlcloudplatform/internal/organization/branch/services"
@@ -21,11 +24,14 @@ import (
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
+	"strings"
 	"time"
 
 	warehouse_models "smlcloudplatform/internal/warehouse/models"
 	warehouse_repositories "smlcloudplatform/internal/warehouse/repositories"
 	warehouse_services "smlcloudplatform/internal/warehouse/services"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type IShopHttp interface {
@@ -57,7 +63,7 @@ func NewShopHttp(ms *microservice.Microservice, cfg config.IConfig) ShopHttp {
 	shopUserRepo := NewShopUserRepository(pst)
 	service := NewShopService(repo, shopUserRepo, utils.NewGUID, ms.TimeNow)
 
-	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)
+	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour, pst)
 
 	repoBrach := branch_repositories.NewBranchRepository(pst)
 
@@ -99,8 +105,6 @@ func (h ShopHttp) RegisterHttp() {
 	h.ms.POST("/shop", h.CreateShop, h.authService.MWFuncWithShop(h.ms.Cacher(h.cfg.CacherConfig())))
 	h.ms.PUT("/holding/:id", h.UpdateShop)
 	h.ms.PUT("/shop/:id", h.UpdateShop)
-	h.ms.DELETE("/holding/:id", h.DeleteShop)
-	h.ms.DELETE("/shop/:id", h.DeleteShop)
 }
 
 // Create Shop On login  godoc
@@ -128,7 +132,7 @@ func Docs() {
 func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
-	if len(authUsername) < 1 {
+	if strings.TrimSpace(userInfo.UID) == "" {
 		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithMessage("user authentication invalid"))
 	}
 	if authErr := orgaccess.RequireEmailedAccount(h.ms.MongoPersister(h.cfg.MongoPersisterConfig()), userInfo); authErr != nil {
@@ -146,27 +150,15 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 
 	shopTemp := shopPayload.Shop
 
-	holdingCode, err := h.service.CreateShop(authUsername, shopTemp)
+	holdingUID, err := h.service.CreateShop(userInfo.UID, authUsername, shopTemp)
 
 	if err != nil {
-		return apperr.RespondErr(ctx, err)
-	}
-
-	err = h.initialShop(holdingCode, authUsername, *shopPayload)
-
-	if err != nil {
-		err2 := h.service.DeleteShop(holdingCode, authUsername)
-
-		if err2 != nil {
-			logger.GetLogger().Error("HTTP:: Error Rollback Shop " + err.Error())
-		}
-
 		return apperr.RespondErr(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, &common.ApiResponse{
 		Success: true,
-		ID:      holdingCode,
+		ID:      holdingUID,
 	})
 
 	return nil
@@ -530,21 +522,83 @@ func (h ShopHttp) UpdateShop(ctx microservice.IContext) error {
 	authUsername := userInfo.Username
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+	membership, err := orgpolicy.FindActiveHoldingManager(mongoCtx, pst, userInfo, time.Now())
+	if err != nil {
+		return respondHoldingAccessError(ctx, err)
+	}
+	existing, err := h.service.InfoShop(id)
+	if err != nil {
+		return apperr.RespondErr(ctx, err)
+	}
+	if !strings.EqualFold(strings.TrimSpace(existing.HoldingCode), strings.TrimSpace(userInfo.HoldingCode)) {
+		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("Holding access denied"))
+	}
 
 	shopRequest := &models.Shop{}
-	err := json.Unmarshal([]byte(input), &shopRequest)
+	err = json.Unmarshal([]byte(input), &shopRequest)
 
 	if err != nil {
 		return apperr.Respond(ctx, apperr.ErrBadRequest.WithWrap(err))
 	}
 
-	if userInfo.Role != auth_model.ROLE_OWNER && userInfo.Role != auth_model.ROLE_ADMIN {
-		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("permission denied"))
+	requestedStatus, statusChanged, err := orgaccess.ResolveRequestedActiveStatus(input, existing.IsActive)
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithWrap(err))
+	}
+	shopRequest.IsActive = requestedStatus
+	if statusChanged && membership.Role != authmodels.ROLE_OWNER {
+		return respondHoldingAccessError(ctx, orgpolicy.ErrHoldingOwnerRequired)
 	}
 
-	err = h.service.UpdateShop(id, authUsername, *shopRequest)
+	if statusChanged {
+		reason, reasonErr := orgaccess.StatusChangeReason(input)
+		if reasonErr != nil {
+			return apperr.Respond(ctx, apperr.ErrBadRequest.WithWrap(reasonErr))
+		}
+		var existingDoc models.ShopDoc
+		if err := pst.FindOne(mongoCtx, &models.ShopDoc{}, bson.M{
+			"$or":       bson.A{bson.M{"guidfixed": id}, bson.M{"holdingcode": id}},
+			"deletedat": bson.M{"$exists": false},
+		}, &existingDoc); err != nil {
+			return apperr.RespondErr(ctx, err)
+		}
+		holdingUID := strings.TrimSpace(membership.HoldingUID)
+		if holdingUID == "" {
+			holdingUID = strings.TrimSpace(existingDoc.GuidFixed)
+		}
+		if holdingUID == "" {
+			return apperr.Respond(ctx, apperr.ErrConflict.WithMessage("stable Holding identity is required"))
+		}
+		now := time.Now().UTC()
+		err = orgaccess.ApplyStatusChange(mongoCtx, pst, orgaccess.StatusChange{
+			TargetModel: &models.ShopDoc{},
+			TargetFilter: bson.M{
+				"$or":       bson.A{bson.M{"guidfixed": id}, bson.M{"holdingcode": id}},
+				"deletedat": bson.M{"$exists": false},
+			},
+			MembershipFilter: orgaccess.HoldingMembershipStatusFilter(existingDoc.HoldingCode),
+			TargetType:       "holding",
+			TargetUID:        holdingUID,
+			HoldingUID:       holdingUID,
+			ActorUID:         userInfo.UID,
+			Reason:           reason,
+			Before:           existing.IsActive,
+			After:            requestedStatus,
+			Version:          existingDoc.Version,
+			Set:              bson.M{"updatedat": now, "updatedby": authUsername},
+			OccurredAt:       now,
+		})
+	} else {
+		err = h.service.UpdateShop(id, authUsername, *shopRequest)
+	}
 
 	if err != nil {
+		if errors.Is(err, orgaccess.ErrStatusChangeConflict) || errors.Is(err, ErrHoldingCodeRenameUnavailable) {
+			return apperr.Respond(ctx, apperr.ErrConflict.WithWrap(err))
+		}
 		return apperr.RespondErr(ctx, err)
 	}
 
@@ -570,12 +624,20 @@ func (h ShopHttp) DeleteShop(ctx microservice.IContext) error {
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
-
-	if userInfo.Role != auth_model.ROLE_OWNER && userInfo.Role != auth_model.ROLE_ADMIN {
-		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("permission denied"))
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if _, err := orgpolicy.FindActiveHoldingManager(mongoCtx, h.ms.MongoPersister(h.cfg.MongoPersisterConfig()), userInfo, time.Now()); err != nil {
+		return respondHoldingAccessError(ctx, err)
+	}
+	existing, err := h.service.InfoShop(id)
+	if err != nil {
+		return apperr.RespondErr(ctx, err)
+	}
+	if !strings.EqualFold(strings.TrimSpace(existing.HoldingCode), strings.TrimSpace(userInfo.HoldingCode)) {
+		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("Holding access denied"))
 	}
 
-	err := h.service.DeleteShop(id, authUsername)
+	err = h.service.DeleteShop(id, authUsername)
 
 	if err != nil {
 		return apperr.RespondErr(ctx, err)
@@ -585,6 +647,15 @@ func (h ShopHttp) DeleteShop(ctx microservice.IContext) error {
 		ID:      id,
 	})
 	return nil
+}
+
+func respondHoldingAccessError(ctx microservice.IContext, err error) error {
+	if errors.Is(err, orgpolicy.ErrActiveMembershipRequired) ||
+		errors.Is(err, orgpolicy.ErrHoldingManagerRequired) ||
+		errors.Is(err, orgpolicy.ErrHoldingOwnerRequired) {
+		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage(err.Error()))
+	}
+	return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 }
 
 // Info Shop godoc

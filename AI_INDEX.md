@@ -1,86 +1,17 @@
-# BC Ai Account AI Routing Index
+# BC Ai Account — Source Router
 
-Purpose: keep every agent (Claude Code / ZCode / Codex / any) fast. Read this file first, then open only the relevant source files. These routing rules are identical for whichever agent is running.
+Start every task at `docs/README.md`, then read the matching Jead-authored files under `docs/**`. Use this file only to locate implementation evidence; it defines no system behavior.
 
-## Default Workflow
-- Before non-trivial work, read `.agents/worklog.md` (cross-model history + open decisions, since Jead runs Claude / Codex / GLM with no shared memory) and append a short entry after finishing meaningful work or finding a bug. See core-rules "Cross-Model Work Journal Rule".
-- Start every task with a concise plan before running command sequences, debugging, editing, deploying, committing, or pushing. Scale the plan to the task; even simple fixes need a short plan.
-- After Jead gives a command, keep working toward an end-to-end result in the same turn: implement, adjust related datamodel/UX/UI/rules/models when appropriate, verify with real evidence, and report blockers only when the task is R0, missing required information that cannot be discovered locally, or blocked by runtime/tool limits. Test like a non-technical user would use the screen and go as deep as the current scope, time, and tools allow. If the change is risky or rollback safety matters, auto-push to GitHub after targeted verification plus secret/diff checks, unless remote divergence, secret risk, or an R0 blocker is found.
-- For project-wide rules, local runtime, storage, secrets, DEV deployment, wiki/LLM knowledge, or reusable agent context, read `.agents/rules/bc-account-core-rules.md` and `.agents/wiki/llm-index.md` first; keep every agent asset model-agnostic so any agent reads the same rules.
-- Identify the task area below.
-- Use `rg -n "symbol|label|route"` before opening large files.
-- For files over 50 KB, read line ranges or exact functions only.
-- Automatically use suitable available plugins/tools/skills for the task, such as Browser/Playwright for UI checks and GitHub/Drive plugins for those domains. Do not install new plugins without Jead's approval, and keep source/runtime evidence as the source of truth.
-- **Opus 4.8 orchestrates** (set 2026-07-17): it splits the task, dispatches subtasks to the advisor/subagent pool (GLM 5.2, Kimi K3 Max, DeepSeek, ChatGPT 5.6, Claude Fable, Claude Sonnet), evaluates the returned work, and re-assigns — while grounding decisions in real source/runtime evidence, applying, verifying, and owning the result. See AGENTS.md / core-rules "Multi-Model Orchestration".
-- Patch the smallest safe scope.
-- Verify with focused commands, not whole-repo checks.
+## Routes
 
-## Agent Fast Execution Contract
-- Applies to every agent working in this repo.
-- Default to targeted checks. Do not run expensive whole-repo commands such as `go test ./...`, broad browser automation, or full-repo scans unless Jead explicitly asks, the touched scope genuinely requires it, or targeted checks cannot provide useful evidence.
-- Docs/rules-only changes: use `git diff --check` plus staged secret scanning. Do not run frontend/backend build or test commands.
-- Frontend code changes: fast-iteration dev mode — rely on `next dev` HMR; run `cd frontend; npm run typecheck` only before commit/summary, not every edit. Use browser verification only when UI behavior, layout, routing, or visual output changed.
-- Backend code changes: write correct code; run touched-package tests only if needed. After backend Go-code edits are complete, auto deploy `mainapi` on local Docker Desktop with the fast local path (`cd backend; .\scripts\deploy-mainapi-fast.ps1`) and verify `/healthz`. Use full image rebuild (`docker-compose up -d --no-deps --build mainapi`) when Dockerfile, dependencies, runtime assets, compose, config, or image contents changed. DEV server deploy still needs `deploy dev`. Avoid repo-wide backend tests by default because this repo has known CGO/Kafka/env-sensitive noisy packages.
-- Long commands must be visible: state what is running, update Jead about every 30 seconds, and if a command exceeds roughly 2 minutes, report whether to continue, narrow, or stop based on evidence.
-- For meaningful changes, push the whole project after targeted verification and secret checks. Keep commits moving; do not wait on irrelevant broad checks.
-- Folders outside `D:\bccode` are outside this GitHub project. Do not include external workspaces in `push to github` for this repo unless Jead explicitly provides a separate remote for that folder.
-- Root-cause fixes for MCP or any MongoModel component are pre-authorized in the separate workspace `D:\mongomodel`: read its `AGENTS.md`, make the smallest complete fix, run targeted tests and `npm run build`, rebuild/deploy on local **Docker Desktop** with `npm run docker:up`, confirm the `mongomodel` container is running, then verify `http://localhost:3100` and a real request to `http://localhost:3100/mcp`. Do not expose the unauthenticated service to LAN or stage/push that separate repository unless explicitly requested.
-
-## Fast Commands
-- Frontend typecheck: `cd frontend; npm run typecheck`
-- Focused frontend lint: `cd frontend; npm run lint -- <file>`
-- Backend local runtime: use Docker Desktop; MainAPI should answer at `http://localhost:8888`; Kafka and Redis must run with MainAPI.
-- Operational CRUD data flow: write/read MongoDB first; propagate writes through `MongoDB -> Kafka -> PostgreSQL -> ClickHouse`. Use PostgreSQL/ClickHouse only from explicit rebuild/sync/projection/BI workers.
-- CRUD datalist source mode: keep one CRUD/workbench system and split only the read provider. Each CRUD screen must explicitly use either `mongodb-direct` (read/list/detail from MongoDB-backed API) or `pgsql-read-mongo-crud` (read list from PostgreSQL projection, but all create/edit/delete/save/detail writes go to MongoDB CRUD). Jead decides screen mode when unclear. `productunit` is `mongodb-direct` through `/unit` and `/unit/list`.
-- CRUD right pane detail: the right-side read-only detail panel and edit form must hydrate from the MongoDB-backed detail API only. List/projection rows are for selection and list display, not right-pane truth. If detail fetch fails or id is missing, show a clear error instead of stale/fallback data.
-- Database no silent fallback: database, projection, cache, report, API query, and datalist failures must surface a clear safe error with source/operation/status/code when available. Do not silently read mock data, old cache, legacy endpoints, or another database as a replacement; retry/rebuild/sync must be explicit.
-- Database naming: new or changed MongoDB/PostgreSQL/ClickHouse contracts, database-facing function names, API route/query/body keys tied to database fields, table/collection/index names, columns/fields, and variables/constants that represent database identifiers must be lowercase (underscore allowed; snake_case OK — only uppercase/camelCase is a violation), such as `holdingcode`, `guidfixed`, and `businesscode`.
-- Company scope/business-key contract: `holdingcode` is the outer security/read-only consolidation boundary; operational CRUD also requires server-validated `businesscode`. Create immutable `guidfixed` once but never use it for relations. Product key = `(holdingcode,businesscode,code)`; active Barcode key = `(holdingcode,businesscode,barcode)` with required same-company `itemcode`. Include `businesscode` in filters, joins, events, idempotency, caches, and projections; branch-owned data also includes `branchcode`. Until every stock/document scan path is company-scoped, keep the transitional active `(holdingcode,barcode)` unique guard; remove it only together with the stock-spine migration and cross-company UAT.
-- Accounting decimal: money, price, cost, VAT/tax, debit, credit, balance, totals, stock value, decimal quantity, unit price, average cost, exchange rate, and rounding must not use floating point or JavaScript/TypeScript `number`. API values are decimal strings; MongoDB uses `Decimal128`/smallest-unit `Long`, PostgreSQL uses `numeric(P,S)`/`bigint`, ClickHouse uses `Decimal(P,S)`/`Int64`; field names still follow the lowercase naming rule (underscore allowed) such as `netamount`, `unitprice`, `exchangerate`, `amountsatang`.
-- Frontend CRUD mutations: create/edit/delete screens call MongoDB-backed operational APIs only; Kafka/projection fan-out is backend responsibility.
-- Data-list row click: select and show read-only detail only. Edit mode requires the pencil/edit action; amber/orange row highlight is editing-only.
-- Model-sensitive system settings/access work: read active `D:\bccode` source, `.agents/rules/bc-account-core-rules.md`, and the relevant runtime/API code before changing API fields, CRUD identity, tenant scope, or cross-record references. Do not depend on external model-document folders.
-- Shared frontend widgets: when the same UX appears in multiple menus/screens, reuse or create a central component/field renderer first so labels, validation, search, save/load mapping, and empty states stay consistent.
-- Holding access scopes: users, screen permissions, permission groups, user permission assignments, and approval rights are Holding-owned under `holdingcode`; configure applicability with `scopetype`, `businesscode`, `branchcode`, and `allbranches`.
-- User access audit: route `/useraccessaudit` is a read-only report in the access setup flow; it summarizes user access, screen permissions, groups, approvals, and can export to PDF through print.
-- Company-owned masters: Product, Barcode, Unit, classification, Warehouse, Customer, Debtor, Creditor, and related business data belong to one company. Do not render/save `businesscodes[]` or `companyguids[]`; the validated active workspace supplies `businesscode`. Holding-wide screens are read-only aggregation and preserve `businesscode`.
-- Backend local Docker Desktop deploy (auto after backend edits): for Go-code-only changes use `cd backend; .\scripts\deploy-mainapi-fast.ps1`; for image/runtime changes use `docker-compose up -d --no-deps --build mainapi`; always verify `/healthz`. DEV server deploy still needs `deploy dev`.
-- Backend health: `curl.exe --max-time 10 -s -i http://localhost:8888/healthz`
-- Real data check: use the selected DEV database/API path; do not rely on mock business data for completion claims.
-- DEV seed data: use `.agents/skills/dev-data-seeder/SKILL.md`; resolve and validate active `holdingcode + businesscode`, then seed through real DEV APIs and verify via the same company-scoped screen path.
-- Product category groups: `groupnumber` is a usage/device/channel group. For `/productcategorygroupselectscreen` and `/productcategorylist`, build/verify a complete tree with `parentguid` and `parentguidall`; attach Product-master-only `codelist[{code,xorder,names}]` to sellable leaf categories, keyed uniquely by normalized Product `code` and never by Barcode.
-- Narrow search: `rg -n "term" <path>`
-- External research: local source first; when needed, start at `https://www.perplexity.ai/`, then verify with the primary official/vendor/GitHub source.
-- Focused git status: `git status --short -- <exact-path-or-module>`
-- Changed-file count only: `git diff --name-only -- <exact-path-or-module> | Measure-Object -Line`
-
-## Large Files
-- `frontend/src/app/system-settings/system-settings-screen.tsx` - do not open full file; search exact route/field/function.
-- `frontend/src/app/menu/main-menu-screen.tsx` - do not open full file; search exact component or label.
-- `frontend/src/app/globals.css` - search class names only.
-- `backend/assets/language/languages.tsv` - never open full file; query exact keys only.
-- Generated Swagger/docs, manuals, Playwright snapshots/logs, duplicate skill packs, backend runtime logs, and lockfiles are not default context.
-
-## Task Routes
-- Thai SME accounting/business-domain workflows: `.agents/rules/bc-account-core-rules.md` Thai SME Business Domain, `.agents/skills/bc-account-expert/SKILL.md`, then exact frontend/backend/legacy source for the affected module.
-- Login/auth UI: `frontend/src/app/login-screen.tsx`, `frontend/src/app/api/auth/**`, backend auth files only when API behavior is involved.
-- Workspace/company selection: `frontend/src/app/workspace/workspace-screen.tsx`, `frontend/src/app/api/workspace/[...workspacePath]/route.ts`, `frontend/src/lib/workspace-models.ts`.
-- Main menu/dashboard/sidebar: `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/app/menu/menu-dashboard-data.ts`, `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`.
-- System settings screens: `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/lib/system-setting-screens.ts`, `frontend/src/app/api/system-settings/[[...settingPath]]/route.ts`.
-- Thai company/branch tax structure: `.agents/rules/bc-account-core-rules.md`, `backend/internal/organization/branch/models/branchcode.go`, `backend/internal/organization/branch/services/branch_http_service.go`, `backend/cmd/branchcode_audit/main.go`, `frontend/src/lib/thai-branch-code.ts`, and the system-settings files above.
-- Thai address dataset/cascading lookup: `backend/assets/address/thailand-addresses.json`, `backend/internal/goapi/handlers/address_handler.go`, `frontend/src/app/api/address/thailand/route.ts`, `frontend/src/lib/thailand-addresses.ts`, and the system-settings branch address fields.
-- Private image upload and preview: `.agents/rules/bc-account-core-rules.md` Image Display Enforcement, `frontend/src/lib/image-upload-proxy.ts`, `frontend/src/app/api/upload/image/route.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `backend/internal/goapi/handlers/image_r2.go`, `backend/internal/goapi/handlers/s3_proxy.go`, and `backend/internal/goapi/handlers/storage_private_test.go`.
-- Product category screen: `frontend/src/app/system-settings/product-category-tree-view.tsx`, `frontend/src/app/system-settings/product-category-items-editor.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/lib/system-setting-screens.ts`, and active backend `backend/internal/product/productcategory/`. Category membership reads Mongo Product masters through `/product`; legacy Flutter under `D:\bcdev` is reference-only and its old Barcode-centric contract is obsolete.
-- Product/product set/barcode DEV sample data and projection rebuild: `.agents/skills/dev-data-seeder/SKILL.md`, `frontend/src/app/menu/product-screen.tsx`, `frontend/src/app/api/product/[[...productPath]]/route.ts`, backend `/product` + `/product/barcode` routes, and `backend/internal/goapi/process/build/build-product.go`. Product projection rebuild is driven by MongoDB `products`; every Barcode already links a same-company Product and never drives Product creation.
-- Frontend density/top chrome: `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/globals.css`, plus `.agents/skills/nextjs-frontend/SKILL.md` and `.agents/skills/formdesign/SKILL.md`.
-- User management: same as System settings plus `backend/internal/authentication/**` and `backend/internal/shop/**` only when server behavior is involved.
-- Permissions/menu access: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-permissions.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, related backend permission services when needed.
-- Language/i18n: frontend language caller first, then exact key lookup in `backend/assets/language/languages.tsv`; record provisional keys under `backend/prompts/language_requests/`.- LINE OA/linking: `frontend/src/app/line-oa/**`, auth LINE API routes, backend LINE OA handlers only when API behavior is involved.
-- Backend auth/password/shop access: `backend/internal/authentication/authentication_http.go`, `backend/internal/authentication/services/authentication_service.go`, `backend/internal/authentication/models/user.go`, `backend/internal/shop/**`.
-- API version compatibility: inspect the exact frontend API caller/proxy route and backend handler first. Current backend contract baseline is `v1`; future versions such as `v2` must run side-by-side with `v1`, and web/iOS/Android clients must declare required backend version.
-
-## Manual Rule
-Do not create, update, regenerate, or restore manuals automatically. Manual generation is only when Jead explicitly requests a specific manual or manual batch.
-
-## Escalation
-Use broad repo review only when the user asks for whole-system review, security review, production readiness, or architecture changes.
+- Organization and tenant isolation: `docs/organization.md`, `docs/login.md` → `backend/internal/organization/**`, `backend/internal/shop/**`, and the exact workspace/company Frontend path.
+- Login, User, Membership, and permissions: `docs/login.md`, `docs/organization.md` → `backend/internal/authentication/**`, `backend/internal/shop/**`, and the exact login/user-management Frontend path.
+- Infrastructure, databases, Kafka topology, cache, and object storage: `docs/system.md` plus any matching Domain file → the exact configuration, producer/consumer, storage, or integration path.
+- MongoDB model and technical-workflow alignment: `docs/README.md` and matching files under `docs/**` → live MongoModel MCP project `BC Ai Account`; use `.agents/skills/audit-mongomodel-sync/SKILL.md` only for the audit procedure, then inspect the exact source/tests/runtime path.
+- Product, Barcode, Unit, and media: matching files under `docs/**` → `backend/internal/product/**`, Product/Barcode handlers, and the exact Product/Barcode Frontend path.
+- Sales, purchase, and stock documents: matching files under `docs/**` → the matching `backend/internal/transaction/**` parser/service and Kafka handler.
+- Inventory costing and stock movement: matching files under `docs/**` → `backend/internal/goapi/process/process-stock/**`, relevant Kafka handlers, stock-process code, migrations, and focused reconciliation tests.
+- API, outbox, retry, and idempotency: `docs/system.md` plus any more specific matching file → the exact caller, handler, outbox/consumer/config path, and contract tests.
+- Record lifecycle changes: matching files under `docs/**` → exact source/tests/runtime; schema changes: live MongoModel MCP → exact model, repository, and target runtime.
+- UAT or release verification: applicable files under `docs/**` and affected technical workflows from live MongoModel MCP → the narrowest relevant browser, API, database, and event evidence.
+- MongoModel MCP maintenance: `docs/README.md`, then `D:\mongomodel\AGENTS.md` → exact MongoModel source, tests, build, container, and MCP runtime evidence.

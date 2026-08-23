@@ -1,0 +1,104 @@
+{
+  "screen": "user",
+  "updatedAt": "2026-08-23",
+  "translations": {
+    "th": {
+      "title": "คู่มือเบื้องต้น — ผู้ใช้งานและบทบาท",
+      "summary": "ตรวจ Membership, Role, สถานะ วันหมดอายุ และ Company/Branch Scope ของผู้ใช้ใน Holding ปัจจุบัน",
+      "sources": [
+        {
+          "name": "กฎ Membership และการบริหาร Role",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "กฎตัวตน คำเชิญ และการเข้าสู่ระบบ",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/login.md"
+        },
+        {
+          "name": "สถานะ endpoint ผู้ใช้ปัจจุบัน",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/backend/internal/shop/shopuser_http.go#L37-L52"
+        }
+      ],
+      "objective": "แนวคิด: หน้านี้รวบรวมข้อมูล Membership ที่โหลดมาให้ตรวจ Role สถานะ วันหมดอายุ และ Scope; นิยามและข้อบังคับให้อ่านจากแหล่งอ้างอิง",
+      "prerequisites": [
+        "เลือกผู้ใช้ที่ปรากฏจากกระบวนการที่ระบบรองรับแล้ว",
+        "กำหนด Company และ Branch ที่จะใช้เป็น Scope ไว้ก่อน"
+      ],
+      "workflow": [
+        "ค้นหาและเลือกผู้ใช้จากรายการที่โหลดมา",
+        "ตรวจบทบาท USER, ADMIN หรือ OWNER เทียบกับหน้าที่จริง",
+        "ตรวจสถานะ วันหมดอายุ และ Company/Branch Scope ว่าครบหรือเกินสิทธิ์หรือไม่",
+        "ถ้าต้องเปลี่ยน Membership ให้ดำเนินการผ่านขั้นตอนคำเชิญและงานบริหาร Membership ที่ Backend รองรับ แล้วรีเฟรชรายงาน"
+      ],
+      "config": [
+        "รายการด้านซ้ายใช้ค้นหาและเลือกผู้ใช้ที่โหลดมาแล้ว",
+        "แผงรายละเอียดแสดง Role, สถานะ วันหมดอายุ และ Scope ที่มีอยู่",
+        "กฎ Membership, Role และ Scope ฉบับเต็มให้อ่านจากแหล่งอ้างอิง"
+      ],
+      "expectedResults": [
+        "ทราบบทบาทและขอบเขตปัจจุบันของผู้ใช้",
+        "ทราบรายการที่ต้องแก้ผ่าน workflow บริหาร Membership ที่ถูกต้อง"
+      ],
+      "commonMistakes": [
+        "กดบันทึกโดยคาดว่าหน้านี้เปลี่ยน Membership ได้โดยตรง ทั้งที่ endpoint บันทึกยังไม่เปิดใช้งาน",
+        "ตีความ Role จากชื่ออย่างเดียวโดยไม่ตรวจ Scope และกฎจากแหล่งอ้างอิง"
+      ],
+      "limitations": [
+        "Runtime ปัจจุบันเปิดเฉพาะการอ่านข้อมูลผู้ใช้; endpoint บันทึกและลบ Membership โดยตรงจากหน้านี้ยังไม่เปิดใช้งาน",
+        "หน้าจอนี้ไม่แสดงทุกขั้นตอนของการสร้างหรือเปลี่ยน Membership; ให้ใช้ workflow และกฎจากแหล่งอ้างอิง"
+      ],
+      "nextSteps": [
+        "ตรวจค่าปัจจุบันต่อในหน้าตรวจสอบสถานะผู้ใช้งาน; หากต้องแก้ ให้ใช้ workflow บริหาร Membership ที่ Backend รองรับ"
+      ]
+    },
+    "en": {
+      "title": "Basic guide — Users & Roles",
+      "summary": "Review each user's Membership, Role, status, expiry, and Company/Branch Scope in the current Holding.",
+      "sources": [
+        {
+          "name": "Membership and Role-management rules",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/organization.md"
+        },
+        {
+          "name": "Identity, invitation, and login rules",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/docs/login.md"
+        },
+        {
+          "name": "Current user-endpoint registration",
+          "href": "https://github.com/jaturapornchai/bccode/blob/dev/backend/internal/shop/shopuser_http.go#L37-L52"
+        }
+      ],
+      "objective": "Concept: this screen collects loaded Membership data for reviewing Role, status, expiry, and Scope; use the linked sources for definitions and governing rules.",
+      "prerequisites": [
+        "Select a user who already appears through a workflow supported by the system.",
+        "Create the Companies and Branches that will be used as Scope."
+      ],
+      "workflow": [
+        "Find and select a user from the loaded list.",
+        "Compare the USER, ADMIN, or OWNER role with the user's actual duties.",
+        "Review status, expiry date, and Company/Branch Scope for missing or excessive access.",
+        "If Membership must change, use the invitation and Membership-management workflow supported by the Backend, then refresh the report."
+      ],
+      "config": [
+        "Use the list to search for and select a loaded user.",
+        "The detail panel shows the stored Role, status, expiry date, and Scope.",
+        "Use the linked sources for complete Membership, Role, and Scope rules."
+      ],
+      "expectedResults": [
+        "You know the user's current role and scope.",
+        "You know what must be corrected through the supported Membership workflow."
+      ],
+      "commonMistakes": [
+        "Expecting Save to change Membership directly while the write endpoint is not enabled.",
+        "Interpreting the Role name alone without checking Scope and the linked rules."
+      ],
+      "limitations": [
+        "The current runtime exposes user reads only; direct Membership save and delete endpoints for this screen are not enabled.",
+        "This screen does not expose every Membership creation or change step; use the workflow and rules in the linked sources."
+      ],
+      "nextSteps": [
+        "Review current values in User Access Audit; use a Backend-supported Membership workflow for changes."
+      ]
+    }
+  }
+}

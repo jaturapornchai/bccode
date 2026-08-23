@@ -50,7 +50,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
-import { normalizeBusinessCode } from "@/lib/business-code";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
   MENU_SECTIONS,
@@ -62,11 +61,13 @@ import {
 } from "@/lib/menu-data";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type MenuUsageMap } from "@/lib/menu-usage";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
+import { authFetch, clearAuthSession, getAuthSession, logoutAuthSession } from "@/lib/client-auth-session";
 import { pushNotice } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   holdingDisplayName,
   shopDisplayName,
+  WORKSPACE_CHANGED_EVENT,
   workspaceBranchDisplayName,
   workspaceCompanyDisplayName,
   type AuthSession,
@@ -123,7 +124,6 @@ type ProfileResponse = {
   success?: boolean;
   data?: {
     email?: string;
-    isdefaultpassword?: boolean;
     name?: string;
     username?: string;
     avatar?: string;
@@ -213,25 +213,6 @@ function normalizeSettingRecords(payload: unknown): SettingRecord[] {
   return isRecord(payload.data) ? [payload.data] : [];
 }
 
-function isWorkspaceOwner(workspace: WorkspaceSession | null, auth: AuthSession | null): boolean {
-  if (!workspace) return false;
-  if (workspace.shop.iscreator) return true;
-  // Owners (role 2) and admins (role 1) get full access to every menu.
-  if (Number(workspace.shop.role) === 2 || Number(workspace.shop.role) === 1) return true;
-  const creator = stringValue(workspace.shop.createdby ?? workspace.shopInfo?.createdby).toLowerCase();
-  const identities = [auth?.username, auth?.profile?.email].map((item) => stringValue(item).toLowerCase()).filter(Boolean);
-  return Boolean(creator && identities.includes(creator));
-}
-
-function workspacePermissionKeys(workspace: WorkspaceSession): string[] {
-  return Array.from(new Set([
-    stringValue(workspace.branch?.guidfixed),
-    stringValue(workspace.branch?.code),
-    stringValue(workspace.shop.branchcode),
-    "company",
-  ].filter(Boolean)));
-}
-
 function WorkspaceContextPanel({
   language,
   mode,
@@ -300,102 +281,6 @@ function WorkspaceContextPanel({
   );
 }
 
-type WorkspaceAccessContext = {
-  holdingcode: string;
-  businesscode: string;
-  branchcode: string;
-};
-
-function workspaceAccessContext(workspace: WorkspaceSession): WorkspaceAccessContext {
-  return {
-    holdingcode: stringValue(workspace.shop.holdingcode),
-    businesscode: normalizeBusinessCode(
-      (workspace.shop as SettingRecord).businesscode ??
-        (workspace.shop as SettingRecord).code ??
-        workspace.shop.holdingcode,
-    ),
-    branchcode: normalizeBranchCode(workspace.branch?.code ?? workspace.shop.branchcode),
-  };
-}
-
-function settingValue(record: SettingRecord, ...keys: string[]): unknown {
-  for (const key of keys) {
-    const value = record[key];
-    if (value !== undefined && value !== null && value !== "") return value;
-  }
-  return undefined;
-}
-
-function booleanSetting(value: unknown): boolean {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return value !== 0;
-  if (typeof value === "string") {
-    const text = value.trim().toLowerCase();
-    return text === "true" || text === "1" || text === "yes" || text === "y";
-  }
-  return false;
-}
-
-function scopeRulesApply(value: unknown, context: WorkspaceAccessContext, defaultAllow = true): boolean {
-  const rules = scopeRuleArray(value);
-  if (!rules.length) return defaultAllow;
-  return rules.some((rule) => {
-    const scopeType = stringValue(settingValue(rule, "scopetype", "scopeType")).toLowerCase();
-    if (!scopeType || scopeType === "holding") return true;
-    const businessCode = normalizeBusinessCode(settingValue(rule, "businesscode", "businessCode", "companycode", "companyCode"));
-    if (!businessCode || businessCode !== context.businesscode) return false;
-    if (scopeType === "company" || booleanSetting(settingValue(rule, "allbranches", "allBranches", "useallbranches"))) return true;
-    if (scopeType === "branch") {
-      const branchCode = normalizeBranchCode(settingValue(rule, "branchcode", "branchCode", "code"));
-      return Boolean(branchCode && branchCode === context.branchcode);
-    }
-    return false;
-  });
-}
-
-function scopeRuleArray(value: unknown): SettingRecord[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => (isRecord(item) ? item : typeof item === "string" ? { scopetype: "company", businesscode: item } : null))
-      .filter((item): item is SettingRecord => item !== null);
-  }
-  if (typeof value === "string" && value.trim()) {
-    try {
-      const parsed = JSON.parse(value) as unknown;
-      if (Array.isArray(parsed)) return scopeRuleArray(parsed);
-    } catch {
-      return value.split(",").map((item) => ({ scopetype: "company", businesscode: item.trim() })).filter((item) => item.businesscode);
-    }
-  }
-  return [];
-}
-
-function normalizeBranchCode(value: unknown): string {
-  const raw = stringValue(value).trim();
-  if (!raw) return "";
-  return /^\d{1,5}$/.test(raw) ? raw.padStart(5, "0") : raw;
-}
-
-function permissionRuleAppliesToWorkspace(
-  scopeKey: string,
-  branchRule: SettingRecord,
-  menuRule: SettingRecord,
-  workspaceKeys: Set<string>,
-): boolean {
-  if (
-    booleanSetting(settingValue(menuRule, "allbranches", "allBranches", "useallbranches")) ||
-    booleanSetting(settingValue(branchRule, "allbranches", "allBranches", "useallbranches"))
-  ) {
-    return true;
-  }
-  return [
-    scopeKey,
-    stringValue(branchRule.branchkey),
-    stringValue(branchRule.branchguid),
-    stringValue(branchRule.branchcode),
-  ].some((key) => key && workspaceKeys.has(key));
-}
-
 async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSession): Promise<Set<string>> {
   const headers = {
     "Content-Type": "application/json",
@@ -404,87 +289,17 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
   };
   const holdingcode = encodeURIComponent(workspace.shop.holdingcode);
   try {
-    const [linksResponse, definitionsResponse, groupsResponse] = await Promise.all([
-      fetch(`/api/system-settings/permissionlink?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permissiondefinition?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }),
-      fetch(`/api/system-settings/permissiongroup?limit=1000&offset=0&holdingcode=${holdingcode}`, { headers, cache: "no-store" }).catch(() => null),
-    ]);
-    if (!linksResponse.ok || !definitionsResponse.ok) return new Set();
-
-    const [linksPayload, definitionsPayload] = await Promise.all([linksResponse.json() as Promise<unknown>, definitionsResponse.json() as Promise<unknown>]);
-
-    let groupsList: SettingRecord[] = [];
-    if (groupsResponse && groupsResponse.ok) {
-      try {
-        const groupsPayload = await groupsResponse.json() as unknown;
-        groupsList = normalizeSettingRecords(groupsPayload);
-      } catch {
-        // ignore
-      }
-    }
-
-    const accessContext = workspaceAccessContext(workspace);
-    const userKeys = new Set([auth.username, auth.profile?.email].map(stringValue).filter(Boolean).map((item) => item.toLowerCase()));
-    const permissionLink = normalizeSettingRecords(linksPayload).find((record) =>
-      userKeys.has(stringValue(settingValue(record, "employeecode", "employeeCode")).toLowerCase()) &&
-      scopeRulesApply(
-        settingValue(record, "scoperules", "accessscopes", "businesscodes", "companyguids"),
-        accessContext,
-        true,
-      ),
+    const response = await authFetch(
+      `/api/system-settings/permissiongroup/me?holdingcode=${holdingcode}`,
+      { headers, cache: "no-store" },
     );
-
-    const finalPermissionCodes = new Set<string>();
-    if (permissionLink) {
-      stringArray(settingValue(permissionLink, "permissioncodes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
-      const empGroupCode = stringValue(settingValue(permissionLink, "groupcode", "groupCode"));
-      if (empGroupCode) {
-        const matchedGroup = groupsList.find((g) =>
-          stringValue(settingValue(g, "groupcode", "groupCode")) === empGroupCode &&
-          scopeRulesApply(settingValue(g, "scoperules", "accessscopes"), accessContext, true),
-        );
-        if (matchedGroup) {
-          stringArray(settingValue(matchedGroup, "permissioncodes", "permissionCodes")).forEach((c) => finalPermissionCodes.add(c));
-        }
-      }
-    }
-
-    if (!finalPermissionCodes.size) return new Set();
-
-    const branchKeys = new Set(workspacePermissionKeys(workspace));
-    const allowed = new Set<string>();
-    for (const definition of normalizeSettingRecords(definitionsPayload)) {
-      if (!finalPermissionCodes.has(stringValue(settingValue(definition, "permissioncode", "permissionCode")))) continue;
-      if (!scopeRulesApply(settingValue(definition, "scoperules", "accessscopes"), accessContext, true)) continue;
-      const branches = toRecord(settingValue(definition, "accessrules", "branches"));
-      for (const [branchKey, branchValue] of Object.entries(branches)) {
-        const branch = toRecord(branchValue);
-        const menus = toRecord(branch.menus);
-        for (const [menuId, value] of Object.entries(menus)) {
-          const menuRule = toRecord(value);
-          if (
-            Boolean(menuRule.access) &&
-            permissionRuleAppliesToWorkspace(branchKey, branch, menuRule, branchKeys)
-          ) {
-            allowed.add(menuId);
-          }
-        }
-      }
-    }
-    return allowed;
+    if (!response.ok) return new Set();
+    const payload = await response.json() as unknown;
+    const rolePermission = normalizeSettingRecords(payload)[0];
+    if (!rolePermission || rolePermission.isactive === false) return new Set();
+    return new Set(stringArray(rolePermission.permissions));
   } catch {
     return new Set();
-  }
-}
-
-function toRecord(value: unknown): SettingRecord {
-  if (isRecord(value)) return value;
-  if (typeof value !== "string" || !value.trim()) return {};
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return isRecord(parsed) ? parsed : {};
-  } catch {
-    return {};
   }
 }
 
@@ -522,13 +337,13 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const setLineNotice = pushNotice;
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const setPasswordNotice = pushNotice;
-  const [isDefaultPassword, setIsDefaultPassword] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [allowedMenuIds, setAllowedMenuIds] = useState<Set<string>>(new Set());
+  const [permissionRevision, setPermissionRevision] = useState(0);
   const linePollTimer = useRef<number | null>(null);
   const lastContentScrollTopRef = useRef(0);
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
@@ -541,15 +356,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const lineLinkWaitingText = backendText(backendLanguage, "waiting_for_link", t(language, "lineLoginWaiting"));
   const requestFailedText = backendText(backendLanguage, "request_failed", language === "th" ? "เรียกข้อมูลไม่สำเร็จ" : "Request failed");
   const changePasswordText = backendText(backendLanguage, "change_password", language === "th" ? "เปลี่ยนรหัสผ่าน" : "Change password");
-  const defaultPasswordWarningText = backendText(
-    backendLanguage,
-    "default_password_warning",
-    language === "th" ? "รหัสผ่านยังเป็นค่าเริ่มต้น 12345 กรุณาเปลี่ยนรหัสผ่าน" : "Password is still the default 12345. Please change it.",
-  );
   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" : "Login");
-  const isOwner = useMemo(() => isWorkspaceOwner(workspace, auth), [auth, workspace]);
-  const canAccessMenuItem = useCallback((item: MenuItem) => isOwner || allowedMenuIds.has(item.id), [allowedMenuIds, isOwner]);
+  const canAccessMenuItem = useCallback((item: MenuItem) => allowedMenuIds.has(item.id), [allowedMenuIds]);
   const allMenuItems = useMemo(() => flattenMenuItems(), []);
 
   useEffect(() => {
@@ -558,9 +367,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     document.documentElement.lang = savedLanguage;
     setMenuLayout(localStorage.getItem(menuLayoutStorageKey) === "top" ? "top" : "left");
 
-    const authRaw = localStorage.getItem(workspaceStorageKeys.auth);
+    const savedAuth = getAuthSession();
     const workspaceRaw = localStorage.getItem(workspaceStorageKeys.workspace);
-    if (!authRaw) {
+    if (!savedAuth) {
       router.replace("/");
       return;
     }
@@ -569,18 +378,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       return;
     }
 
-    try {
-      const auth = JSON.parse(authRaw) as AuthSession;
-      setAuth(auth);
-      const nextMenuUsageKey = menuUsageStorageKey(auth);
-      setMenuUsageKey(nextMenuUsageKey);
-      setMenuUsage(readMenuUsage(localStorage, nextMenuUsageKey));
-    } catch {
-      setAuth(null);
-      const nextMenuUsageKey = menuUsageStorageKey(null);
-      setMenuUsageKey(nextMenuUsageKey);
-      setMenuUsage(readMenuUsage(localStorage, nextMenuUsageKey));
-    }
+    setAuth(savedAuth);
+    const nextMenuUsageKey = menuUsageStorageKey(savedAuth);
+    setMenuUsageKey(nextMenuUsageKey);
+    setMenuUsage(readMenuUsage(localStorage, nextMenuUsageKey));
 
     try {
       setWorkspace(JSON.parse(workspaceRaw) as WorkspaceSession);
@@ -605,7 +406,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
     async function loadProfile() {
       try {
-        const response = await fetch(`/api/auth/profile?backendUrl=${encodeURIComponent(authBackendUrl)}`, {
+        const response = await authFetch(`/api/auth/profile?backendUrl=${encodeURIComponent(authBackendUrl)}`, {
           headers: {
             Authorization: `Bearer ${authToken}`,
             "x-bc-backend-url": authBackendUrl,
@@ -614,12 +415,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
         });
         const payload = await response.json() as ProfileResponse;
         if (cancelled || !response.ok || payload.success === false) return;
-        const usesDefaultPassword = Boolean(payload.data?.isdefaultpassword);
-        setIsDefaultPassword(usesDefaultPassword);
-        if (usesDefaultPassword) setPasswordDialogOpen(true);
         setProfileAvatar(payload.data?.avatarthumb || payload.data?.avatar || "");
       } catch {
-        if (!cancelled) setIsDefaultPassword(false);
+        // Profile picture is optional; authentication remains valid.
       }
     }
 
@@ -633,11 +431,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     if (!auth || !workspace) return;
     const currentAuth = auth;
     const currentWorkspace = workspace;
-    if (isOwner) {
-      setAllowedMenuIds(new Set(allMenuItems.map((item) => item.id)));
-      return;
-    }
-
     let cancelled = false;
     async function loadMenuPermissions() {
       const nextAllowed = await fetchAllowedMenuIds(currentAuth, currentWorkspace);
@@ -648,7 +441,17 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     return () => {
       cancelled = true;
     };
-  }, [allMenuItems, auth, isOwner, workspace]);
+  }, [auth, permissionRevision, workspace]);
+
+  useEffect(() => {
+    const reloadPermissions = () => setPermissionRevision((current) => current + 1);
+    window.addEventListener(WORKSPACE_CHANGED_EVENT, reloadPermissions);
+    window.addEventListener("focus", reloadPermissions);
+    return () => {
+      window.removeEventListener(WORKSPACE_CHANGED_EVENT, reloadPermissions);
+      window.removeEventListener("focus", reloadPermissions);
+    };
+  }, []);
 
   useEffect(() => {
     return () => stopLinePolling();
@@ -774,7 +577,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     setLineDialog({ ...emptyLineDialog, open: true, loading: true });
 
     try {
-      const response = await fetch("/api/auth/line/code", { method: "POST" });
+      const response = await authFetch("/api/auth/line/code", { method: "POST" });
       const data = (await response.json()) as {
         success?: boolean;
         message?: string;
@@ -831,7 +634,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   async function pollLineLink(code: string) {
     if (!auth) return;
 
-    const response = await fetch("/api/auth/line/link/status", {
+    const response = await authFetch("/api/auth/line/link/status", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -889,15 +692,15 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       setPasswordNotice({ type: "error", text: t(language, "passwordMismatch") });
       return;
     }
-    if (newPassword === "12345") {
-      setPasswordNotice({ type: "error", text: language === "th" ? "ห้ามใช้รหัสผ่านเริ่มต้น 12345 เป็นรหัสผ่านใหม่" : "The new password cannot be 12345." });
+    if (newPassword.length < 15 || newPassword.length > 64) {
+      setPasswordNotice({ type: "error", text: language === "th" ? "รหัสผ่านใหม่ต้องยาว 15–64 ตัวอักษร" : "The new password must be 15–64 characters." });
       return;
     }
 
     setPasswordSaving(true);
     setPasswordNotice(null);
     try {
-      const response = await fetch("/api/auth/profile", {
+      const response = await authFetch("/api/auth/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -913,14 +716,15 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       const payload = await response.json() as { success?: boolean; message?: string };
       if (!response.ok || payload.success === false) throw new Error(payload.message ?? requestFailedText);
 
-      const changedDefaultPassword = isDefaultPassword;
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setIsDefaultPassword(false);
-      setPasswordNotice({ type: "success", text: backendText(backendLanguage, "saved", language === "th" ? "บันทึกแล้ว" : "Saved.") });
       setPasswordDialogOpen(false);
-      if (changedDefaultPassword) logout();
+      clearAuthSession();
+      localStorage.removeItem(workspaceStorageKeys.workspace);
+      localStorage.removeItem(workspaceStorageKeys.shopInfo);
+      localStorage.removeItem(workspaceStorageKeys.branch);
+      router.replace("/");
     } catch (error) {
       setPasswordNotice({ type: "error", text: error instanceof Error ? backendText(backendLanguage, error.message, error.message) : requestFailedText });
     } finally {
@@ -928,8 +732,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     }
   }
 
-  function logout() {
-    localStorage.removeItem(workspaceStorageKeys.auth);
+  async function logout() {
+    await logoutAuthSession();
     localStorage.removeItem(workspaceStorageKeys.workspace);
     localStorage.removeItem(workspaceStorageKeys.shopInfo);
     localStorage.removeItem(workspaceStorageKeys.branch);
@@ -1159,24 +963,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             />
           ) : null}
 
-          <div className={cn(
-            "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 p-2 lg:min-h-0 lg:flex-1 lg:overflow-hidden",
-            isDefaultPassword ? "lg:grid-rows-[auto_auto_minmax(0,1fr)]" : "lg:grid-rows-[auto_minmax(0,1fr)]",
-          )}>
-            {isDefaultPassword ? (
-              <Card className="border-amber-300 bg-amber-50 text-amber-950 shadow-sm dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-                <CardContent className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm font-medium">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{defaultPasswordWarningText}</span>
-                  </span>
-                  <Button type="button" size="sm" variant="outline" onClick={() => setPasswordDialogOpen(true)}>
-                    <KeyRound className="h-4 w-4" />
-                    {changePasswordText}
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : null}
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 p-2 lg:min-h-0 lg:flex-1 lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
             <div
               className="menu-tabs-chrome min-w-0 overflow-hidden"
               data-hidden={topChromeHidden ? "true" : "false"}
@@ -1246,18 +1033,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <p className="eyebrow">{loginText}</p>
                 <h2>{changePasswordText}</h2>
               </div>
-              {!isDefaultPassword ? (
-                <button className="icon-button dialog-close" type="button" onClick={() => setPasswordDialogOpen(false)} aria-label={t(language, "lineLoginClose")}>
-                  ×
-                </button>
-              ) : null}
+              <button className="icon-button dialog-close" type="button" onClick={() => setPasswordDialogOpen(false)} aria-label={t(language, "lineLoginClose")}>
+                ×
+              </button>
             </div>
-            {isDefaultPassword ? (
-              <div className="message error">
-                <AlertCircle size={18} />
-                <span>{defaultPasswordWarningText}</span>
-              </div>
-            ) : null}
             <label className="grid gap-1 text-sm font-medium">
               <span>{backendText(backendLanguage, "current_password", language === "th" ? "รหัสผ่านปัจจุบัน" : "Current password")}</span>
               <Input value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} type="password" autoComplete="current-password" />
@@ -1271,11 +1050,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               <Input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" />
             </label>
             <div className="line-dialog-actions">
-              {!isDefaultPassword ? (
-                <button className="secondary-button" type="button" onClick={() => setPasswordDialogOpen(false)}>
-                  {t(language, "lineLoginClose")}
-                </button>
-              ) : null}
+              <button className="secondary-button" type="button" onClick={() => setPasswordDialogOpen(false)}>
+                {t(language, "lineLoginClose")}
+              </button>
               <button className="primary-button" type="submit" disabled={passwordSaving}>
                 {passwordSaving ? <Loader2 className="spin" size={17} /> : <KeyRound aria-hidden="true" size={17} />}
                 <span>{changePasswordText}</span>

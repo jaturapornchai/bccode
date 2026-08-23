@@ -55,8 +55,9 @@ type ProductImport struct {
 }
 
 type ProductImportInfo struct {
-	GUIDFixed   string `json:"guidfixed" ch:"guidfixed"`
-	HoldingCode string `json:"holdingcode" ch:"holdingcode"`
+	GUIDFixed    string `json:"guidfixed" ch:"guidfixed"`
+	HoldingCode  string `json:"holdingcode" ch:"holdingcode"`
+	BusinessCode string `json:"businesscode" ch:"businesscode"`
 	ProductImport
 }
 

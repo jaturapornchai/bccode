@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS productbarcode (
     patterncode TEXT DEFAULT '',
     patternnames TEXT DEFAULT '',
     barcoderef TEXT DEFAULT '',
-    mainbarcoderef TEXT DEFAULT '',
     barcoderefunitstand NUMERIC NOT NULL DEFAULT 1,
     barcoderefunitdivide NUMERIC NOT NULL DEFAULT 1,
     standvalue NUMERIC NOT NULL DEFAULT 1,

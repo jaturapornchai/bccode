@@ -20,6 +20,7 @@ import {
 } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
+import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 import { cn } from "@/lib/utils";
 import {
   localizedName,
@@ -140,7 +141,7 @@ export function ProductPriceHistoryScreen({
       setLoadingProducts(true);
       setNotice(null);
       try {
-        const response = await fetch("/api/product-barcode/list", {
+        const response = await authFetch("/api/product-barcode/list", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -215,7 +216,7 @@ export function ProductPriceHistoryScreen({
           page: "1",
           limit: "100",
         });
-        const response = await fetch(
+        const response = await authFetch(
           `/api/product-price-history?${query.toString()}`,
           {
             headers: {
@@ -491,14 +492,7 @@ export function ProductPriceHistoryScreen({
 }
 
 function readAuth(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.auth);
-    if (!raw) return null;
-    const auth = JSON.parse(raw) as AuthSession;
-    return auth?.token && auth?.backendUrl ? auth : null;
-  } catch {
-    return null;
-  }
+  return getAuthSession();
 }
 
 function readWorkspace(): WorkspaceSession | null {

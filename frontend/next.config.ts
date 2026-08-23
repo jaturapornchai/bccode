@@ -2,11 +2,22 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer-when-downgrade" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
-    // Default to the on-prem backend server. Override with BCAI_LOCAL_BACKEND_URL
-    // for other environments. Note: next start only reads .env at build time,
-    // so the fallback below must be the real default.
-    const localBackendUrl = process.env.BCAI_LOCAL_BACKEND_URL ?? "http://192.168.2.202:8888";
+    const localBackendUrl = process.env.BCAI_LOCAL_BACKEND_URL?.trim();
+    if (!localBackendUrl) {
+      throw new Error("BCAI_LOCAL_BACKEND_URL is required");
+    }
     // The browser legitimately calls many AUTHENTICATED mainapi paths via this same-origin proxy
     // (e.g. /backend/organization/*, /backend/goapi/*, /backend/assets/*), all requiring a Bearer token.
     // So we proxy /backend/* broadly — but BLOCK the unauthenticated, identity-trusting token routes:
@@ -21,6 +32,8 @@ const nextConfig: NextConfig = {
       "/backend/poslogin",
       "/backend/linelogin",
       "/backend/googlelogin",
+      "/backend/dev-login",
+      "/backend/v1/dev-login",
       "/backend/tokenlogin",
       "/backend/register",
       "/backend/register-username",

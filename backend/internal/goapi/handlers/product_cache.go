@@ -196,6 +196,7 @@ func (pc *ProductCache) Stats() map[string]any {
 // ProductSearchRequest - Request for product search
 type ProductSearchRequest struct {
 	HoldingCode      string `json:"holdingcode"`
+	BusinessCode     string `json:"businesscode"`
 	Search           string `json:"search"`
 	BranchCode       string `json:"branchcode"`
 	BusinessTypeCode string `json:"businesstypecode"`
@@ -206,8 +207,8 @@ type ProductSearchRequest struct {
 
 // generateCacheKey - Generate cache key from request
 func generateCacheKey(req ProductSearchRequest) string {
-	data := fmt.Sprintf("%s_%s_%s_%s_%d_%d",
-		req.HoldingCode, req.Search, req.BranchCode,
+	data := fmt.Sprintf("%s_%s_%s_%s_%s_%d_%d",
+		req.HoldingCode, req.BusinessCode, req.Search, req.BranchCode,
 		req.BusinessTypeCode, req.Limit, req.Offset)
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:16]) // Use first 16 bytes
@@ -223,12 +224,16 @@ func ProductSearchHandler(c echo.Context) error {
 		})
 	}
 
-	if req.HoldingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holdingcode is required",
-			"code":  "MISSING_HOLDING_CODE",
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	if scopeErr != nil {
+		return c.JSON(scopeErr.Status, map[string]any{
+			"success": false,
+			"code":    scopeErr.Code,
+			"message": scopeErr.Message,
 		})
 	}
+	req.HoldingCode = holdingCode
+	req.BusinessCode = businessCode
 
 	// Set defaults
 	if req.Limit <= 0 || req.Limit > 500 {
@@ -327,23 +332,23 @@ func ProductSearchHandler(c echo.Context) error {
 
 // buildProductSearchQuery - Build parameterized product search query
 func buildProductSearchQuery(req ProductSearchRequest) (string, []any) {
-	args := make([]any, 0)
-	argIndex := 1
+	args := []any{req.HoldingCode, req.BusinessCode}
+	argIndex := 3
 
 	query := `
 SELECT
 	p.itemcode,
 	COALESCE(pb.barcode, '') as barcode,
 	COALESCE(p.name0, pb.itemname, p.itemcode) as itemname,
-	COALESCE(pb.unitcode, '') as unitcode,
-	COALESCE(pb.unitname, '') as unitname,
+	COALESCE(NULLIF(p.unitcode, ''), pb.unitcode, '') as unitcode,
+	COALESCE(NULLIF(p.unitname, ''), pb.unitname, '') as unitname,
 	COALESCE(pb.price, 0) as price,
 	COALESCE(pb.unitstand, 1) as unitstand,
 	COALESCE(pb.unitdivide, 1) as unitdivide,
 	''::text as categorycode,
 	0::numeric as vattype,
 	0::numeric as costprice,
-	COALESCE(st.balanceqty, 0) as balanceqty,
+	COALESCE(p.balanceqty, 0) as balanceqty,
 	COALESCE(pb.unit_count, 0) as unit_count
 FROM public.product p
 LEFT JOIN (
@@ -358,14 +363,10 @@ LEFT JOIN (
 		MIN(barcoderefunitdivide) as unitdivide,
 		COUNT(*) as unit_count
 	FROM public.productbarcode
+	WHERE holding_code = $1 AND businesscode = $2
 	GROUP BY itemcode
 ) pb ON pb.itemcode = p.itemcode
-LEFT JOIN (
-	SELECT itemcode, SUM(currentqty) as balanceqty
-	FROM public.inventorystockbalances
-	GROUP BY itemcode
-) st ON st.itemcode = p.itemcode
-WHERE 1=1`
+WHERE p.holding_code = $1 AND p.businesscode = $2`
 
 	// Add search filter (parameterized)
 	if req.Search != "" {
@@ -437,9 +438,10 @@ func ProductCacheClearHandler(c echo.Context) error {
 // ProductBarcodeSearchHandler - Search by barcode (optimized single lookup)
 func ProductBarcodeSearchHandler(c echo.Context) error {
 	var req struct {
-		HoldingCode string `json:"holdingcode"`
-		ItemCode    string `json:"itemcode"`
-		Barcode     string `json:"barcode"`
+		HoldingCode  string `json:"holdingcode"`
+		BusinessCode string `json:"businesscode"`
+		ItemCode     string `json:"itemcode"`
+		Barcode      string `json:"barcode"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -449,15 +451,25 @@ func ProductBarcodeSearchHandler(c echo.Context) error {
 		})
 	}
 
-	if req.HoldingCode == "" || req.Barcode == "" {
+	if req.Barcode == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "holdingcode and barcode are required",
+			"error": "barcode is required",
 			"code":  "MISSING_REQUIRED_FIELDS",
 		})
 	}
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	if scopeErr != nil {
+		return c.JSON(scopeErr.Status, map[string]any{
+			"success": false,
+			"code":    scopeErr.Code,
+			"message": scopeErr.Message,
+		})
+	}
+	req.HoldingCode = holdingCode
+	req.BusinessCode = businessCode
 
 	// Check cache first
-	cacheKey := fmt.Sprintf("barcode_%s_%s_%s", req.HoldingCode, req.ItemCode, req.Barcode)
+	cacheKey := fmt.Sprintf("barcode_%s_%s_%s_%s", req.HoldingCode, req.BusinessCode, req.ItemCode, req.Barcode)
 	if cachedData, found := productCache.Get(cacheKey); found && len(cachedData) > 0 {
 		return c.JSON(http.StatusOK, map[string]any{
 			"status": "success",
@@ -480,8 +492,8 @@ func ProductBarcodeSearchHandler(c echo.Context) error {
 	if req.ItemCode == "" {
 		var itemCount int
 		if err := db.QueryRowContext(ctx,
-			"SELECT COUNT(DISTINCT itemcode) FROM public.productbarcode WHERE barcode = $1",
-			req.Barcode,
+			"SELECT COUNT(DISTINCT itemcode) FROM public.productbarcode WHERE holding_code = $1 AND businesscode = $2 AND barcode = $3",
+			req.HoldingCode, req.BusinessCode, req.Barcode,
 		).Scan(&itemCount); err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Barcode lookup failed",
@@ -510,10 +522,10 @@ SELECT
 	NULL::integer AS vattype,
 	NULL::numeric AS costprice
 FROM public.productbarcode pb
-WHERE pb.barcode = $1 AND ($2 = '' OR pb.itemcode = $2)
+WHERE pb.holding_code = $1 AND pb.businesscode = $2 AND pb.barcode = $3 AND ($4 = '' OR pb.itemcode = $4)
 LIMIT 1`
 
-	row := db.QueryRowContext(ctx, query, req.Barcode, req.ItemCode)
+	row := db.QueryRowContext(ctx, query, req.HoldingCode, req.BusinessCode, req.Barcode, req.ItemCode)
 
 	var result struct {
 		ItemCode     string

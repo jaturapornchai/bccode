@@ -125,11 +125,13 @@ export async function POST(request: Request, context: WorkspaceProxyContext) {
       const holdingCode = holdingCodeFromPayload(payload);
       if (!holdingCode) return NextResponse.json({ success: false, message: "ไม่พบรหัส holding" }, { status: 400 });
       const businessCode = normalizeBusinessCode(getPayloadString(payload, "businesscode"));
+      const branchUID = (getPayloadString(payload, "branchuid") ?? "").trim();
       return proxyMainApiJson(request, mainApiUrl, "/select-holding", {
         method: "POST",
         body: JSON.stringify({
           holdingcode: holdingCode,
           ...(businessCode ? { businesscode: businessCode } : {}),
+          ...(branchUID ? { branchuid: branchUID } : {}),
         }),
       });
     }

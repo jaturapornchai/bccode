@@ -1,5 +1,6 @@
 "use client";
 
+import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
   Building2,
@@ -13,10 +14,8 @@ import {
   Save,
   Loader2,
   Check,
-  ArrowRight,
   KeyRound,
   UploadCloud,
-  ImageIcon,
   FileText,
   X,
 } from "lucide-react";
@@ -83,16 +82,22 @@ type LocalizedNames = LocalizedNameEntry[] | Record<string, unknown> | null | un
 
 interface CompanyRecord {
   guidfixed?: string;
+  holdinguid?: string;
+  companyuid?: string;
   code?: string;
   logouri?: string;
   names?: LocalizedNames;
   taxid?: string;
   isactive?: boolean;
+  isdeleted?: boolean;
   deletedat?: string | null;
 }
 
 interface BranchRecord {
   guidfixed?: string;
+  holdinguid?: string;
+  companyuid?: string;
+  branchuid?: string;
   companyguid?: string;
   code?: string;
   logouri?: string;
@@ -119,7 +124,17 @@ interface BranchRecord {
   zipcode?: string;
   etaxenabled?: boolean;
   isactive?: boolean;
+  isdeleted?: boolean;
   deletedat?: string | null;
+}
+
+interface OrganizationSaveResponse {
+  success?: boolean;
+  message?: string;
+  data?: {
+    entity?: CompanyRecord | BranchRecord;
+    kafka_sync?: string;
+  };
 }
 
 const MONTH_OPTIONS = [
@@ -390,12 +405,12 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
 }
 
 type NodeType = "company" | "branch";
-type ConfirmAction = "save" | "delete";
 type OrganizationFormType = "viewcompany" | "viewbranch" | "editcompany" | "editbranch" | "createcompany" | "createbranch";
 
 interface SelectedNode {
   type: NodeType;
   guidfixed?: string;
+  companyuid?: string;
   companyguid?: string;
   data: Partial<CompanyRecord> | Partial<BranchRecord>;
 }
@@ -652,10 +667,16 @@ function BranchGeoAddressPicker({
   );
 }
 
-const isVisibleOrganizationRecord = <T extends { isactive?: boolean; deletedat?: string | null }>(record: T): boolean => {
-  if (record.isactive === false) return false;
+const isVisibleOrganizationRecord = <T extends { isdeleted?: boolean; deletedat?: string | null }>(record: T): boolean => {
+  if (record.isdeleted === true) return false;
   return !record.deletedat || String(record.deletedat).trim().length === 0;
 };
+
+const companyTreeKey = (company: CompanyRecord): string =>
+  company.companyuid?.trim() || company.guidfixed?.trim() || "";
+
+const branchParentTreeKey = (branch: BranchRecord): string =>
+  branch.companyuid?.trim() || branch.companyguid?.trim() || "";
 
 export function CompanyBranchTreeView({
   auth,
@@ -669,7 +690,6 @@ export function CompanyBranchTreeView({
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [deleteError, setDeleteError] = useState("");
   const [loadError, setLoadError] = useState("");
 
   const mainApiUrl = useMemo(() => {
@@ -685,7 +705,7 @@ export function CompanyBranchTreeView({
     const holdingcode = workspace?.shop?.holdingcode?.trim();
     if (!auth || !holdingcode) return;
 
-    const res = await fetch("/api/workspace/select-holding", {
+    const res = await authFetch("/api/workspace/select-holding", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -728,14 +748,9 @@ export function CompanyBranchTreeView({
   const [randomCode, setRandomCode] = useState("");
   const [inputCode, setInputCode] = useState("");
   const [codeError, setCodeError] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction>("save");
-  const [pendingDeleteNode, setPendingDeleteNode] = useState<SelectedNode | null>(null);
 
-  const showConfirmCodeDialog = (action: ConfirmAction, node?: SelectedNode) => {
+  const showConfirmCodeDialog = () => {
     const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setConfirmAction(action);
-    setPendingDeleteNode(action === "delete" ? node ?? null : null);
-    setDeleteError("");
     setRandomCode(code);
     setInputCode("");
     setCodeError(false);
@@ -744,7 +759,6 @@ export function CompanyBranchTreeView({
 
   const closeConfirmCodeDialog = () => {
     setConfirmOpen(false);
-    setPendingDeleteNode(null);
   };
 
   const handleConfirmCodeSubmit = () => {
@@ -754,14 +768,7 @@ export function CompanyBranchTreeView({
     }
 
     setConfirmOpen(false);
-    if (confirmAction === "delete" && pendingDeleteNode) {
-      void handleDelete(pendingDeleteNode);
-      setPendingDeleteNode(null);
-      return;
-    }
-    if (confirmAction === "save") {
-      void handleSave();
-    }
+    void handleSave();
   };
 
   // Fetch Companies & Branches
@@ -774,7 +781,7 @@ export function CompanyBranchTreeView({
 
       // Load Companies
       const cacheBuster = Date.now().toString();
-      const resComp = await fetch(`${mainApiUrl}/organization/company?_=${cacheBuster}`, {
+      const resComp = await authFetch(`${mainApiUrl}/organization/company?management=true&_=${cacheBuster}`, {
         headers: { Authorization: `Bearer ${auth.token}` },
         cache: "no-store",
       });
@@ -787,7 +794,7 @@ export function CompanyBranchTreeView({
       }
 
       // Load Branches
-      const resBranch = await fetch(`${mainApiUrl}/organization/branch?_=${cacheBuster}`, {
+      const resBranch = await authFetch(`${mainApiUrl}/organization/branch?management=true&_=${cacheBuster}`, {
         headers: { Authorization: `Bearer ${auth.token}` },
         cache: "no-store",
       });
@@ -814,6 +821,7 @@ export function CompanyBranchTreeView({
   const [formCode, setFormCode] = useState("");
   const [formTaxId, setFormTaxId] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formStatusReason, setFormStatusReason] = useState("");
   const [formNames, setFormNames] = useState<LocalizedNameEntry[]>([]);
   const [formLogoUri, setFormLogoUri] = useState("");
   const [formTimezone, setFormTimezone] = useState(DEFAULT_TIME_ZONE);
@@ -839,6 +847,10 @@ export function CompanyBranchTreeView({
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
   const logoInputRef = React.useRef<HTMLInputElement>(null);
+  const primaryLanguage = editorLanguages[0] || "th";
+  const hasRequiredName = formNames.some(
+    (entry) => entry.code?.trim().toLowerCase() === primaryLanguage.toLowerCase() && Boolean(entry.name?.trim()),
+  );
 
   useEffect(() => {
     if (!selectedNode) return;
@@ -853,6 +865,7 @@ export function CompanyBranchTreeView({
 
     setFormCode(selectedNode.type === "company" ? normalizeBusinessCode(selectedNode.data.code) : selectedNode.data.code || "");
     setFormIsActive(selectedNode.data.isactive !== false);
+    setFormStatusReason("");
     setFormNames(list);
     setFormLogoUri(String(selectedNode.data.logouri ?? ""));
     setLogoError("");
@@ -913,7 +926,7 @@ export function CompanyBranchTreeView({
       const uploadForm = new FormData();
       uploadForm.append("file", file, file.name);
       uploadForm.append("category", `system-settings/logouri`);
-      const response = await fetch("/api/upload/image", {
+      const response = await authFetch("/api/upload/image", {
         method: "POST",
         headers: {
           "x-bc-backend-url": auth.backendUrl,
@@ -970,11 +983,26 @@ export function CompanyBranchTreeView({
     try {
       await ensureActiveWorkspaceHolding();
 
-      const namesList = formNames;
+      const namesList = formNames.map((entry) => ({
+        ...entry,
+        code: entry.code?.trim(),
+        name: entry.name?.trim(),
+      }));
       const normalizedCompanyCode = formType.includes("company") ? normalizeBusinessCode(formCode) : "";
       const normalizedBranchCode = formType.includes("branch") ? normalizeThaiTaxBranchCode(formCode) : "";
 
       const isBranchForm = formType.includes("branch");
+      if (!hasRequiredName) {
+        setSaveError(formType.includes("company") ? "กรุณากรอกชื่อบริษัทภาษาแรก" : "กรุณากรอกชื่อสาขาภาษาแรก");
+        setSaving(false);
+        return;
+      }
+      const statusChanged = !formType.startsWith("create") && formIsActive !== (selectedNode.data.isactive !== false);
+      if (statusChanged && !formStatusReason.trim()) {
+        setSaveError("กรุณาระบุเหตุผลที่เปลี่ยนสถานะ");
+        setSaving(false);
+        return;
+      }
       if (isBranchForm && (!formTimezone.trim() || !formLanguage.trim())) {
         setSaveError("กรุณาเลือกเขตเวลาและภาษาของสาขา");
         setSaving(false);
@@ -1005,7 +1033,7 @@ export function CompanyBranchTreeView({
           names: namesList,
           taxid: formTaxId,
           logouri: formLogoUri,
-          isactive: formIsActive,
+          isactive: true,
         };
       } else if (formType === "editcompany") {
         url = `${mainApiUrl}/organization/company/${selectedNode.guidfixed}`;
@@ -1016,12 +1044,13 @@ export function CompanyBranchTreeView({
           taxid: formTaxId,
           logouri: formLogoUri,
           isactive: formIsActive,
+          statusreason: formStatusReason.trim(),
         };
       } else if (formType === "createbranch") {
         url = `${mainApiUrl}/organization/branch`;
         method = "POST";
         body = {
-          companyguid: selectedNode.companyguid,
+          companyuid: selectedNode.companyuid,
           code: normalizedBranchCode,
           names: namesList,
           logouri: formLogoUri,
@@ -1046,13 +1075,13 @@ export function CompanyBranchTreeView({
           subdistrictcode: formSubdistrictCode,
           zipcode: formZipCode,
           etaxenabled: formETaxEnabled,
-          isactive: formIsActive,
+          isactive: true,
         };
       } else if (formType === "editbranch") {
         url = `${mainApiUrl}/organization/branch/${selectedNode.guidfixed}`;
         method = "PUT";
         body = {
-          companyguid: selectedNode.companyguid,
+          companyuid: selectedNode.companyuid,
           code: normalizedBranchCode,
           names: namesList,
           logouri: formLogoUri,
@@ -1078,10 +1107,11 @@ export function CompanyBranchTreeView({
           zipcode: formZipCode,
           etaxenabled: formETaxEnabled,
           isactive: formIsActive,
+          statusreason: formStatusReason.trim(),
         };
       }
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -1090,12 +1120,32 @@ export function CompanyBranchTreeView({
         body: JSON.stringify(body),
       });
 
-      const json = (await res.json().catch(() => ({}))) as { success?: boolean; id?: string; message?: string };
+      const json = (await res.json().catch(() => ({}))) as OrganizationSaveResponse;
       if (!res.ok || json.success === false) {
         setSaveError(saveErrorMessage(json.message, formType));
         return;
       }
       if (json.success) {
+        const createdData = formType.startsWith("create") ? json.data?.entity : undefined;
+        const createdGuid = createdData?.guidfixed?.trim() ?? "";
+        const hasSavedIdentity = formType === "createcompany"
+          ? Boolean((createdData as CompanyRecord | undefined)?.holdinguid?.trim() && (createdData as CompanyRecord | undefined)?.companyuid?.trim())
+          : formType === "createbranch"
+            ? Boolean(
+                (createdData as BranchRecord | undefined)?.holdinguid?.trim()
+                && (createdData as BranchRecord | undefined)?.companyuid?.trim()
+                && (createdData as BranchRecord | undefined)?.branchuid?.trim(),
+              )
+            : true;
+        if (
+          formType.startsWith("create")
+          && (!createdData || !createdGuid || !hasSavedIdentity || createdData.isactive !== true || createdData.isdeleted === true)
+        ) {
+          await loadData();
+          setSaveError("บันทึกสำเร็จ แต่ Backend ไม่คืนข้อมูลที่บันทึกครบถ้วน กรุณารีเฟรชหน้าจอ");
+          return;
+        }
+
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2000);
         await loadData();
@@ -1105,53 +1155,21 @@ export function CompanyBranchTreeView({
         // logo (and any other changed fields) show immediately without a manual
         // close/reopen of the form.
         if (formType.startsWith("create")) {
-          const createdCode = formType === "createbranch" ? normalizedBranchCode : normalizedCompanyCode;
-          const createdData = {
-            guidfixed: json.id,
-            code: createdCode,
-            names: namesList,
-            logouri: formLogoUri,
-            isactive: formIsActive,
-            ...(formType === "createcompany"
-              ? { taxid: formTaxId }
-              : {
-                  timezone: formTimezone,
-                  timezonelabel: branchTzMeta.label,
-                  timezoneoffset: branchTzMeta.offset,
-                  language: formLanguage,
-                  dateformat: formDateFormat,
-                  yeartype: formYearType,
-                  basecurrency: formCurrency,
-                  branchtype: formBranchType,
-                  isvatregistered: formIsVatRegistered,
-                  companyregistrationno: formCompanyRegNo,
-                  email: formEmail,
-                  managername: formManagerName,
-                  fiscalstartmonth: formFiscalStartMonth,
-                  documentformats: docFormatsPayload,
-                  addresses: addressesPayload,
-                  countrycode: formCountryCode,
-                  provincecode: formProvinceCode,
-                  districtcode: formDistrictCode,
-                  subdistrictcode: formSubdistrictCode,
-                  zipcode: formZipCode,
-                  etaxenabled: formETaxEnabled,
-                }),
-          };
+          const savedEntity = createdData as CompanyRecord | BranchRecord;
           if (formType === "createcompany") {
-            setCompanies((prev) => prev.some((row) => row.guidfixed === json.id) ? prev : [...prev, createdData]);
+            const savedCompany = savedEntity as CompanyRecord;
+            setCompanies((prev) => [...prev.filter((row) => row.guidfixed !== createdGuid), savedCompany]);
           } else {
-            setBranches((prev) => prev.some((row) => row.guidfixed === json.id) ? prev : [
-              ...prev,
-              { ...createdData, companyguid: selectedNode.companyguid },
-            ]);
+            const savedBranch = savedEntity as BranchRecord;
+            setBranches((prev) => [...prev.filter((row) => row.guidfixed !== createdGuid), savedBranch]);
           }
           // Select newly created node
           setSelectedNode({
             type: formType === "createcompany" ? "company" : "branch",
-            guidfixed: json.id,
-            companyguid: selectedNode.companyguid,
-            data: createdData,
+            guidfixed: createdGuid,
+            companyuid: formType === "createbranch" ? (savedEntity as BranchRecord).companyuid : undefined,
+            companyguid: formType === "createbranch" ? (savedEntity as BranchRecord).companyguid : undefined,
+            data: savedEntity,
           });
           setFormType(formType === "createcompany" ? "editcompany" : "editbranch");
         } else {
@@ -1190,6 +1208,22 @@ export function CompanyBranchTreeView({
                   etaxenabled: formETaxEnabled,
                 }),
           };
+          if (selectedNode.type === "company") {
+            setCompanies((prev) => prev.map((row) => (
+              row.guidfixed === selectedNode.guidfixed ? { ...updatedData, guidfixed: selectedNode.guidfixed } : row
+            )));
+          } else {
+            setBranches((prev) => prev.map((row) => (
+              row.guidfixed === selectedNode.guidfixed
+                ? {
+                    ...updatedData,
+                    guidfixed: selectedNode.guidfixed,
+                    companyuid: selectedNode.companyuid,
+                    companyguid: selectedNode.companyguid,
+                  }
+                : row
+            )));
+          }
           setSelectedNode({
             ...selectedNode,
             data: updatedData,
@@ -1203,51 +1237,6 @@ export function CompanyBranchTreeView({
     } finally {
       setSaving(false);
     }
-  };
-
-  // Handle Delete
-  const handleDelete = async (node: SelectedNode) => {
-    if (!auth || !node.guidfixed) return;
-
-    setLoading(true);
-    try {
-      await ensureActiveWorkspaceHolding();
-
-      const url = `${mainApiUrl}/organization/${node.type}/${node.guidfixed}`;
-      const res = await fetch(url, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
-      if (!res.ok || json.success === false) {
-        throw new Error(deleteErrorMessage(json.message, node));
-      }
-      if (json.success) {
-        await loadData();
-        pruneDeletedNode(node);
-        onRefresh?.();
-        notifyWorkspaceChanged();
-        setSelectedNode(null);
-        setFormType(null);
-        setDeleteError("");
-      }
-    } catch (e) {
-      setDeleteError(e instanceof Error && e.message ? e.message : "ลบข้อมูลไม่สำเร็จ");
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const pruneDeletedNode = (node: SelectedNode) => {
-    const deletedGuid = node.guidfixed ?? "";
-    if (!deletedGuid) return;
-    if (node.type === "company") {
-      setCompanies((prev) => prev.filter((company) => company.guidfixed !== deletedGuid));
-      setBranches((prev) => prev.filter((branch) => branch.companyguid !== deletedGuid));
-      return;
-    }
-    setBranches((prev) => prev.filter((branch) => branch.guidfixed !== deletedGuid));
   };
 
   const sortedCompanies = useMemo(() => {
@@ -1277,6 +1266,9 @@ export function CompanyBranchTreeView({
   }, [branches, language]);
 
   const isReadOnlyMode = formType?.startsWith("view") ?? false;
+  const selectedCompanyUID = selectedNode?.type === "company"
+    ? (selectedNode.data as CompanyRecord).companyuid?.trim() || ""
+    : "";
 
   return (
     <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[clamp(300px,26vw,380px)_minmax(0,1fr)]">
@@ -1305,11 +1297,6 @@ export function CompanyBranchTreeView({
               เพิ่มบริษัท
             </Button>
           </div>
-          {deleteError && (
-            <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
-              {deleteError}
-            </div>
-          )}
           {loadError && (
             <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
               {loadError}
@@ -1328,14 +1315,17 @@ export function CompanyBranchTreeView({
             <div className="space-y-2">
               {sortedCompanies.map((comp) => {
                 const compGuid = comp.guidfixed || "";
+                const companyUID = comp.companyuid?.trim() || "";
+                const companyKey = companyTreeKey(comp);
                 const companyCode = normalizeBusinessCode(comp.code);
-                const isCollapsed = collapsedCompanies[compGuid];
+                const isCollapsed = collapsedCompanies[companyKey];
                 const isSelected = selectedNode?.type === "company" && selectedNode.guidfixed === compGuid;
                 const isEditingCompany = isSelected && formType === "editcompany";
-                const compBranches = sortedBranches.filter((b) => b.companyguid === compGuid);
+                const compBranches = sortedBranches.filter((branch) => branchParentTreeKey(branch) === companyKey);
+                const canAddBranch = canCreateOrganization && Boolean(companyUID);
 
                 return (
-                  <div key={compGuid} className="space-y-1">
+                  <div key={companyKey || compGuid} className="space-y-1">
                     <div
                       className={cn(
                         "group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all",
@@ -1362,7 +1352,7 @@ export function CompanyBranchTreeView({
                             e.stopPropagation();
                             setCollapsedCompanies((prev) => ({
                               ...prev,
-                              [compGuid]: !prev[compGuid],
+                              [companyKey]: !prev[companyKey],
                             }));
                           }}
                           className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded"
@@ -1413,34 +1403,26 @@ export function CompanyBranchTreeView({
                           size="icon"
                           variant="ghost"
                           className="w-7 h-7 text-sky-500 hover:text-sky-600 hover:bg-sky-500/10"
-                          title="เพิ่มสาขา"
-                          disabled={!canCreateOrganization}
+                          title={
+                            !canCreateOrganization
+                              ? "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน"
+                              : !companyUID
+                                ? "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้"
+                                : "เพิ่มสาขา"
+                          }
+                          disabled={!canAddBranch}
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (!canAddBranch) return;
                             setSelectedNode({
                               type: "branch",
-                              companyguid: compGuid,
+                              companyuid: companyUID,
                               data: {},
                             });
                             setFormType("createbranch");
                           }}
                         >
                           <Plus className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="w-7 h-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            showConfirmCodeDialog("delete", {
-                              type: "company",
-                              guidfixed: compGuid,
-                              data: comp,
-                            });
-                          }}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -1452,8 +1434,6 @@ export function CompanyBranchTreeView({
                           const brGuid = br.guidfixed || "";
                           const isBrSelected = selectedNode?.type === "branch" && selectedNode.guidfixed === brGuid;
                           const isEditingBranch = isBrSelected && formType === "editbranch";
-                          const cannotDeleteBranch = isThaiHeadOfficeBranchCode(br.code) || compBranches.length <= 1;
-
                           return (
                             <div
                               key={brGuid}
@@ -1469,7 +1449,8 @@ export function CompanyBranchTreeView({
                                 setSelectedNode({
                                   type: "branch",
                                   guidfixed: brGuid,
-                                  companyguid: compGuid,
+                                  companyuid: br.companyuid?.trim() || undefined,
+                                  companyguid: br.companyguid?.trim() || undefined,
                                   data: br,
                                 });
                                 setFormType("viewbranch");
@@ -1505,32 +1486,14 @@ export function CompanyBranchTreeView({
                                     setSelectedNode({
                                       type: "branch",
                                       guidfixed: brGuid,
-                                      companyguid: compGuid,
+                                      companyuid: br.companyuid?.trim() || undefined,
+                                      companyguid: br.companyguid?.trim() || undefined,
                                       data: br,
                                     });
                                     setFormType("editbranch");
                                   }}
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="w-7 h-7 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
-                                  disabled={cannotDeleteBranch}
-                                  title={cannotDeleteBranch ? "สาขาสำนักงานใหญ่หรือสาขาสุดท้ายของบริษัทลบไม่ได้" : "ลบสาขา"}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (cannotDeleteBranch) return;
-                                    showConfirmCodeDialog("delete", {
-                                      type: "branch",
-                                      guidfixed: brGuid,
-                                      companyguid: compGuid,
-                                      data: br,
-                                    });
-                                  }}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </div>
@@ -1591,10 +1554,19 @@ export function CompanyBranchTreeView({
                       size="sm"
                       variant="outline"
                       className="gap-1 text-xs border-sky-500/30 text-sky-600 hover:bg-sky-500/10 hover:text-sky-700 font-bold shrink-0"
+                      disabled={!canCreateOrganization || !selectedCompanyUID}
+                      title={
+                        !canCreateOrganization
+                          ? "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน"
+                          : !selectedCompanyUID
+                            ? "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้"
+                            : "เพิ่มสาขาในบริษัทนี้"
+                      }
                       onClick={() => {
+                        if (!canCreateOrganization || !selectedCompanyUID) return;
                         setSelectedNode({
                           type: "branch",
-                          companyguid: selectedNode.guidfixed,
+                          companyuid: selectedCompanyUID,
                           data: {},
                         });
                         setFormType("createbranch");
@@ -1608,9 +1580,10 @@ export function CompanyBranchTreeView({
                     <Button
                       type="button"
                       size="sm"
-                      onClick={() => showConfirmCodeDialog("save")}
+                      onClick={showConfirmCodeDialog}
                       disabled={
                         !formCode.trim() ||
+                        !hasRequiredName ||
                         saving ||
                         saveSuccess ||
                         (formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim()))
@@ -1969,6 +1942,7 @@ export function CompanyBranchTreeView({
                     onChange={setFormNames}
                     languages={editorLanguages}
                     label={formType.includes("company") ? "ชื่อบริษัท" : "ชื่อสาขา"}
+                    firstRequired
                     language={language}
                     disabled={isReadOnlyMode}
                   />
@@ -2012,15 +1986,28 @@ export function CompanyBranchTreeView({
                   <input
                     type="checkbox"
                     id="isactive"
-                    checked={formIsActive}
+                    checked={formType.startsWith("create") || formIsActive}
                     onChange={(e) => setFormIsActive(e.target.checked)}
-                    disabled={isReadOnlyMode}
+                    disabled={isReadOnlyMode || formType.startsWith("create")}
                     className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                   />
                   <label htmlFor="isactive" className="text-sm font-semibold text-foreground cursor-pointer select-none">
                     เปิดใช้งานในระบบ
                   </label>
-                </div>
+                 </div>
+                {selectedNode && !formType.startsWith("create") && formIsActive !== (selectedNode.data.isactive !== false) && (
+                  <label className="block space-y-1.5">
+                    <span className="text-sm font-semibold text-foreground">เหตุผลที่เปลี่ยนสถานะ</span>
+                    <textarea
+                      value={formStatusReason}
+                      onChange={(event) => setFormStatusReason(event.target.value)}
+                      disabled={isReadOnlyMode}
+                      rows={3}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="ระบุเหตุผลเพื่อบันทึก Audit"
+                    />
+                  </label>
+                )}
 
               </div>
             </div>
@@ -2073,7 +2060,7 @@ export function CompanyBranchTreeView({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label={confirmAction === "delete" ? "ยืนยันการลบข้อมูล" : "ยืนยันการบันทึกข้อมูล"}
+            aria-label="ยืนยันการบันทึกข้อมูล"
             className="bg-card border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200"
           >
             <div className="text-center space-y-2">
@@ -2081,12 +2068,10 @@ export function CompanyBranchTreeView({
                 <KeyRound size={22} className="animate-pulse" />
               </div>
               <h3 className="text-lg font-bold text-foreground">
-                {confirmAction === "delete" ? "ยืนยันการลบข้อมูล" : "ยืนยันการบันทึกข้อมูล"}
+                ยืนยันการบันทึกข้อมูล
               </h3>
               <p className="text-xs text-muted-foreground">
-                {confirmAction === "delete"
-                  ? "กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการลบข้อมูลโครงสร้างองค์กร"
-                  : "กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการบันทึกข้อมูลโครงสร้างองค์กร"}
+                กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการบันทึกข้อมูลโครงสร้างองค์กร
               </p>
             </div>
 
@@ -2120,14 +2105,11 @@ export function CompanyBranchTreeView({
                 ยกเลิก
               </Button>
               <Button
-                className={cn(
-                  "flex-1 rounded-xl h-11 text-xs font-semibold",
-                  confirmAction === "delete" && "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                )}
+                className="flex-1 rounded-xl h-11 text-xs font-semibold"
                 onClick={handleConfirmCodeSubmit}
                 disabled={inputCode.length !== 4}
               >
-                {confirmAction === "delete" ? "ยืนยันลบ" : "ยืนยันบันทึก"}
+                ยืนยันบันทึก
               </Button>
             </div>
           </div>
@@ -2135,21 +2117,6 @@ export function CompanyBranchTreeView({
       )}
     </div>
   );
-}
-
-function deleteErrorMessage(message: string | undefined, node: SelectedNode): string {
-  switch (message) {
-    case "head office branch cannot be deleted":
-      return "ลบสาขาสำนักงานใหญ่ไม่ได้";
-    case "company must have at least one branch":
-      return "บริษัทต้องมีอย่างน้อย 1 สาขา";
-    case "Branch not found":
-      return "ไม่พบข้อมูลสาขาที่ต้องการลบ";
-    case "Company not found":
-      return "ไม่พบข้อมูลบริษัทที่ต้องการลบ";
-    default:
-      return message || (node.type === "company" ? "ลบบริษัทไม่สำเร็จ" : "ลบสาขาไม่สำเร็จ");
-  }
 }
 
 function saveErrorMessage(message: string | undefined, formType: OrganizationFormType): string {
@@ -2160,6 +2127,7 @@ function saveErrorMessage(message: string | undefined, formType: OrganizationFor
     case "branch code must be numeric and no more than 5 digits":
     case "branch code must be no more than 5 digits":
       return "รหัสสาขาต้องเป็นตัวเลขไม่เกิน 5 หลัก";
+    case "companyuid is required":
     case "companyguid is required":
       return "ไม่พบบริษัทของสาขาที่กำลังเพิ่ม กรุณากดเพิ่มสาขาจากบริษัทอีกครั้ง";
     case "company not found":

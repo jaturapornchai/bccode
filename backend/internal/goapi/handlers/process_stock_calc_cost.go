@@ -21,6 +21,7 @@ const processStockCalcCostCommandID = "processstockcalccost"
 // processStockCalcCostRequest defines the payload structure accepted by ProcessStockCalcCostHandler.
 type processStockCalcCostRequest struct {
 	HoldingCode  string          `json:"holdingcode"`
+	BusinessCode string          `json:"businesscode"`
 	CommandID    string          `json:"commandid"`
 	ItemCodeList json.RawMessage `json:"itemcodelist"`
 	DeleteFirst  *bool           `json:"deletefirst"`
@@ -51,13 +52,16 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		})
 	}
 
-	payload.HoldingCode = strings.TrimSpace(payload.HoldingCode)
-	if payload.HoldingCode == "" {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error": "holdingcode is required",
-			"code":  "MISSING_HOLDING_CODE",
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, payload.HoldingCode, payload.BusinessCode)
+	if scopeErr != nil {
+		return c.JSON(scopeErr.Status, map[string]any{
+			"success": false,
+			"code":    scopeErr.Code,
+			"message": scopeErr.Message,
 		})
 	}
+	payload.HoldingCode = holdingCode
+	payload.BusinessCode = businessCode
 
 	if payload.CommandID == "" {
 		payload.CommandID = processStockCalcCostCommandID
@@ -103,7 +107,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		minimalLog = *payload.MinimalLog
 	}
 
-	results, err := runProcessStockCalcCost(payload.HoldingCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, incremental, minimalLog)
+	results, err := runProcessStockCalcCost(payload.HoldingCode, payload.BusinessCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, incremental, minimalLog)
 	if err != nil {
 		logger.Error("ProcessStockCalcCostHandler failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]any{
@@ -118,6 +122,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		"status":         "success",
 		"code":           200,
 		"holdingcode":    payload.HoldingCode,
+		"businesscode":   payload.BusinessCode,
 		"commandid":      payload.CommandID,
 		"processeditems": len(results),
 		"durationms":     time.Since(start).Milliseconds(),
@@ -187,7 +192,7 @@ func parseItemCodesFromJSON(raw json.RawMessage) ([]string, error) {
 	return nil, fmt.Errorf("item_code_list must be array or string, got: %s", string(raw))
 }
 
-func runProcessStockCalcCost(holdingCode string, itemCodes []string, pointQty, pointAmount, pointCost int, deleteFirst, incremental, minimalLog bool) ([]processStockCalcCostItemResult, error) {
+func runProcessStockCalcCost(holdingCode, businessCode string, itemCodes []string, pointQty, pointAmount, pointCost int, deleteFirst, incremental, minimalLog bool) ([]processStockCalcCostItemResult, error) {
 	if len(itemCodes) == 0 {
 		return nil, errors.New("itemcodelist must contain at least one item")
 	}
@@ -205,10 +210,10 @@ func runProcessStockCalcCost(holdingCode string, itemCodes []string, pointQty, p
 
 		if incremental {
 			// Use incremental mode with checksum checking
-			processstock.ProductCalcCostIncremental(db, holdingCode, itemCode, pointQty, pointAmount, pointCost, incremental, minimalLog)
+			processstock.ProductCalcCostIncrementalCompany(db, holdingCode, businessCode, itemCode, pointQty, pointAmount, pointCost, incremental, minimalLog)
 		} else {
 			// Legacy mode
-			processstock.ProductCalcCost(db, holdingCode, itemCode, pointQty, pointAmount, pointCost, deleteFirst)
+			processstock.ProductCalcCostCompany(db, holdingCode, businessCode, itemCode, pointQty, pointAmount, pointCost, deleteFirst)
 		}
 
 		results = append(results, processStockCalcCostItemResult{

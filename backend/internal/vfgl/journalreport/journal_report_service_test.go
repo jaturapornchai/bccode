@@ -141,8 +141,8 @@ func TestProcessBalanceSheetReport(t *testing.T) {
 	}
 
 	repoMongo := new(MockJournalReportMongoRepository)
-	repoMongo.On("FindCountDetailByDocs", mock.Anything, "TESTSHOP", []string{"DOC001", "DOC002", "DOC003", ""}).Return([]models.JournalSummary{}, nil)
-	repoMongo.On("FindCountImageByDocs", mock.Anything, "TESTSHOP", []string{"DOC001", "DOC002", "DOC003", ""}).Return([]models.JournalImageSummary{}, nil)
+	repoMongo.On("FindCountDetailByDocs", mock.Anything, "TESTSHOP", []string{"", "DOC001", "DOC002", "DOC003"}).Return([]models.JournalSummary{}, nil)
+	repoMongo.On("FindCountImageByDocs", mock.Anything, "TESTSHOP", []string{"", "DOC001", "DOC002", "DOC003"}).Return([]models.JournalImageSummary{}, nil)
 
 	service := journalreport.NewJournalReportService(repo, repoMongo, nil, nil)
 	get, err := service.ProcessBalanceSheetReport("TESTSHOP", "01", false, endDate)
@@ -283,8 +283,8 @@ func TestLedgerAccount(t *testing.T) {
 	}, nil)
 
 	repoMongo := new(MockJournalReportMongoRepository)
-	repoMongo.On("FindCountDetailByDocs", mock.Anything, "TESTSHOP", []string{"DOC001", "DOC002", "DOC003", ""}).Return([]models.JournalSummary{}, nil)
-	repoMongo.On("FindCountImageByDocs", mock.Anything, "TESTSHOP", []string{"DOC001", "DOC002", "DOC003", ""}).Return([]models.JournalImageSummary{}, nil)
+	repoMongo.On("FindCountDetailByDocs", mock.Anything, "TESTSHOP", []string{"", "DOC001", "DOC002", "DOC003"}).Return([]models.JournalSummary{}, nil)
+	repoMongo.On("FindCountImageByDocs", mock.Anything, "TESTSHOP", []string{"", "DOC001", "DOC002", "DOC003"}).Return([]models.JournalImageSummary{}, nil)
 
 	service := journalreport.NewJournalReportService(repo, repoMongo, nil, nil)
 	docList, err := service.ProcessLedgerAccount("TESTSHOP", "accGroup", "", "", "conAcc", []models.LedgerAccountCodeRange{

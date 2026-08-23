@@ -29,10 +29,12 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { motion, MotionConfig } from "motion/react";
 import { cardStaggerParent, cardStaggerChild } from "../shared/motion-variants";
 import { pushNotice } from "@/lib/toast";
+import { authFetch, getAuthSession, logoutAuthSession, setAuthSession } from "@/lib/client-auth-session";
 import { normalizeBusinessCode } from "@/lib/business-code";
 import { SkeletonCardList } from "../shared/skeleton-card";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
+import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import {
   branchDisplayName,
   companyBaseName,
@@ -122,33 +124,21 @@ const accessSettingNavItems = [
   },
   {
     route: "/permissiondefinition",
-    label: { th: "กำหนดสิทธิ์หน้าจอ", en: "Permission Definition" },
-    helper: { th: "เลือกหน้าจอที่เข้าได้", en: "Choose accessible screens" },
+    label: { th: "รายการสิทธิ์หน้าจอ", en: "Screen Permission Catalog" },
+    helper: { th: "ตรวจรายการหน้าจอที่รองรับ", en: "Review supported screens" },
     banner: "/settings/banner-permission-screen.webp",
   },
   {
     route: "/permissiongroup",
-    label: { th: "กำหนดสิทธิ์ตามกลุ่ม", en: "Permission Group" },
-    helper: { th: "รวมสิทธิ์เป็นชุด", en: "Group permission sets" },
+    label: { th: "กำหนดสิทธิ์ตามบทบาท", en: "Role Permissions" },
+    helper: { th: "กำหนดหน้าจอให้ USER/ADMIN/OWNER", en: "Assign screens to USER/ADMIN/OWNER" },
     banner: "/settings/banner-permission-group.webp",
   },
   {
     route: "/user",
-    label: { th: "ผู้ใช้งาน", en: "Users" },
-    helper: { th: "เพิ่มผู้ใช้แล้วผูกสิทธิ์", en: "Add users, then assign permissions" },
+    label: { th: "ผู้ใช้งานและบทบาท", en: "Users & Roles" },
+    helper: { th: "เพิ่มผู้ใช้ กำหนดบทบาทและขอบเขต", en: "Add users and assign role and scope" },
     banner: "/settings/banner-users.webp",
-  },
-  {
-    route: "/permissionlink",
-    label: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permissions" },
-    helper: { th: "ผูกกลุ่มกับผู้ใช้", en: "Assign groups to users" },
-    banner: "/settings/banner-permission-user.webp",
-  },
-  {
-    route: "/approvalsetting",
-    label: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" },
-    helper: { th: "วงเงินและเอกสารอนุมัติ", en: "Approval limits and documents" },
-    banner: "/settings/banner-approval.webp",
   },
   {
     route: "/useraccessaudit",
@@ -452,7 +442,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     }
     if (selectedHoldingCode && !savedAuth.holdingcode) {
       savedAuth = { ...savedAuth, holdingcode: selectedHoldingCode };
-      localStorage.setItem(workspaceStorageKeys.auth, JSON.stringify(savedAuth));
+      setAuthSession(savedAuth);
     }
 
     setAuth(savedAuth);
@@ -668,7 +658,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setLineDialog({ ...emptyLineDialog, open: true, loading: true });
 
     try {
-      const response = await fetch("/api/auth/line/code", { method: "POST" });
+      const response = await authFetch("/api/auth/line/code", { method: "POST" });
       const data = (await response.json()) as {
         success?: boolean;
         message?: string;
@@ -724,7 +714,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   async function pollLineLink(code: string) {
     if (!auth) return;
 
-    const response = await fetch("/api/auth/line/link/status", {
+    const response = await authFetch("/api/auth/line/link/status", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -843,7 +833,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       let nextBranches = Array.isArray(branchPayload.data) ? branchPayload.data : [];
 
       // Filter branches of the selected company
-      let compBranches = nextBranches.filter((b) => b.companyguid === company.guidfixed);
+      const compBranches = nextBranches.filter((b) => b.companyguid === company.guidfixed);
 
       if (compBranches.length === 0) {
         // Create default branch (สำนักงานใหญ่) for this company
@@ -1029,6 +1019,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
         body: {
           holdingcode: tenantCodeForShop(shop),
           businesscode: company.code,
+          ...(branch?.guidfixed ? { branchuid: branch.guidfixed } : {}),
         },
       });
     }
@@ -1100,8 +1091,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     setPendingUnitSetup((current) => current ? { ...current, selectedCodes: [] } : current);
   }
 
-  function logout() {
-    localStorage.removeItem(workspaceStorageKeys.auth);
+  async function logout() {
+    await logoutAuthSession();
     localStorage.removeItem(workspaceStorageKeys.workspace);
     localStorage.removeItem(workspaceStorageKeys.shopInfo);
     localStorage.removeItem(workspaceStorageKeys.branch);
@@ -1111,6 +1102,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   if (step === "access" && activeAccessRoute) {
     const activeNavIndex = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
     const activeNav = activeNavIndex >= 0 ? accessSettingNavItems[activeNavIndex] : null;
+    const activeManual = getSystemSettingConfig(activeAccessRoute)?.manual;
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
         <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
@@ -1132,7 +1124,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </div>
 
             </div>
-            <div className="flex min-w-0 shrink-0 items-center gap-2">
+            <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:shrink-0">
+              {activeManual ? (
+                <ManualLink
+                  label={language === "th" ? "คู่มือเบื้องต้น" : t(language, "manual")}
+                  language={language}
+                  screen={activeManual}
+                />
+              ) : null}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -1872,14 +1871,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 }
 
 function readAuth(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(workspaceStorageKeys.auth);
-    if (!raw) return null;
-    const auth = JSON.parse(raw) as AuthSession;
-    return auth.token && auth.backendUrl ? auth : null;
-  } catch {
-    return null;
-  }
+  return getAuthSession();
 }
 
 function canAuthCreateCompany(auth: AuthSession | null): boolean {
@@ -1911,7 +1903,7 @@ async function callWorkspaceApi<T extends Record<string, unknown>>(
   path: string,
   init?: { method?: "GET" | "POST"; body?: Record<string, unknown> },
 ): Promise<T> {
-  const response = await fetch(`/api/workspace/${path}`, {
+  const response = await authFetch(`/api/workspace/${path}`, {
     method: init?.method ?? "GET",
     headers: {
       "Content-Type": "application/json",

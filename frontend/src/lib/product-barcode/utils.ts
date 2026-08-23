@@ -116,6 +116,144 @@ export function pickName(
   return names.find((n) => n.name)?.name ?? "";
 }
 
+type Fraction = { numerator: bigint; denominator: bigint };
+
+function greatestCommonDivisor(a: bigint, b: bigint): bigint {
+  let left = a < 0n ? -a : a;
+  let right = b < 0n ? -b : b;
+  while (right !== 0n) [left, right] = [right, left % right];
+  return left || 1n;
+}
+
+function reduceFraction(value: Fraction): Fraction {
+  if (value.numerator === 0n) return { numerator: 0n, denominator: 1n };
+  const sign = value.denominator < 0n ? -1n : 1n;
+  const divisor = greatestCommonDivisor(value.numerator, value.denominator);
+  return {
+    numerator: (value.numerator / divisor) * sign,
+    denominator: (value.denominator / divisor) * sign,
+  };
+}
+
+function numberToFraction(value: number): Fraction | null {
+  if (!Number.isFinite(value)) return null;
+  const match = String(value)
+    .toLowerCase()
+    .match(/^([+-]?)(\d+)(?:\.(\d*))?(?:e([+-]?\d+))?$/);
+  if (!match) return null;
+  const fractionDigits = match[3] ?? "";
+  const exponent = Number(match[4] ?? 0) - fractionDigits.length;
+  let numerator = BigInt(`${match[2]}${fractionDigits}` || "0");
+  if (match[1] === "-") numerator = -numerator;
+  if (exponent >= 0) {
+    return reduceFraction({
+      numerator: numerator * 10n ** BigInt(exponent),
+      denominator: 1n,
+    });
+  }
+  return reduceFraction({ numerator, denominator: 10n ** BigInt(-exponent) });
+}
+
+function subtractFraction(left: Fraction, right: Fraction): Fraction {
+  return reduceFraction({
+    numerator:
+      left.numerator * right.denominator - right.numerator * left.denominator,
+    denominator: left.denominator * right.denominator,
+  });
+}
+
+function formatFraction(value: Fraction): string {
+  const reduced = reduceFraction(value);
+  if (reduced.denominator === 1n)
+    return reduced.numerator.toLocaleString("th-TH");
+  let denominator = reduced.denominator;
+  let twos = 0;
+  let fives = 0;
+  while (denominator % 2n === 0n) {
+    denominator /= 2n;
+    twos += 1;
+  }
+  while (denominator % 5n === 0n) {
+    denominator /= 5n;
+    fives += 1;
+  }
+  if (denominator !== 1n) return `${reduced.numerator}/${reduced.denominator}`;
+  const scale = Math.max(twos, fives);
+  const scaled =
+    reduced.numerator * 2n ** BigInt(scale - twos) * 5n ** BigInt(scale - fives);
+  const digits = (scaled < 0n ? -scaled : scaled)
+    .toString()
+    .padStart(scale + 1, "0");
+  const integer = BigInt(digits.slice(0, -scale) || "0").toLocaleString("th-TH");
+  const decimal = digits.slice(-scale).replace(/0+$/, "");
+  return `${scaled < 0n ? "-" : ""}${integer}${decimal ? `.${decimal}` : ""}`;
+}
+
+/** Format Product balance with exact rational unit conversion. */
+export function formatProductBalance(
+  item: Product,
+  language: LanguageCode | string,
+): string {
+  const total = numberToFraction(Math.max(0, Number(item.qty ?? 0))) ?? {
+    numerator: 0n,
+    denominator: 1n,
+  };
+  const baseUnit =
+    pickName(item.unitnames || item.itemunitnames, language) ||
+    item.unitcode ||
+    item.itemunitcode ||
+    "หน่วย";
+  const units = (item.unitconversions ?? [])
+    .flatMap((row) => {
+      if (
+        !Number.isSafeInteger(row.standvalue) ||
+        !Number.isSafeInteger(row.dividevalue) ||
+        row.standvalue <= 0 ||
+        row.dividevalue <= 0
+      )
+        return [];
+      const name = pickName(row.unitnames, language) || row.unitcode;
+      return name
+        ? [
+            {
+              name,
+              size: reduceFraction({
+                numerator: BigInt(row.standvalue),
+                denominator: BigInt(row.dividevalue),
+              }),
+            },
+          ]
+        : [];
+    })
+    .sort((a, b) =>
+      a.size.numerator * b.size.denominator >
+      b.size.numerator * a.size.denominator
+        ? -1
+        : a.size.numerator * b.size.denominator <
+            b.size.numerator * a.size.denominator
+          ? 1
+          : 0,
+    );
+  if (total.numerator === 0n) return `0 ${baseUnit}`;
+
+  let remaining = total;
+  const parts: string[] = [];
+  for (const unit of units) {
+    const count =
+      (remaining.numerator * unit.size.denominator) /
+      (remaining.denominator * unit.size.numerator);
+    if (count <= 0n) continue;
+    parts.push(`${count.toLocaleString("th-TH")} ${unit.name}`);
+    remaining = subtractFraction(remaining, {
+      numerator: count * unit.size.numerator,
+      denominator: unit.size.denominator,
+    });
+  }
+  if (remaining.numerator > 0n)
+    parts.push(`${formatFraction(remaining)} ${baseUnit}`);
+  return parts.join(" + ");
+}
+
 /** Set or replace a NameX entry by code. */
 export function setNameXEntry(
   names: NameX[] | undefined,
@@ -172,7 +310,6 @@ export function toRefBarcodeArray(value: unknown): RefProductBarcode[] {
 export type ProductUnitOption = RefProductBarcode & {
   prices?: ProductPrice[];
   averagecost?: number;
-  ismainbarcode?: boolean;
   productguid?: string;
   productcode?: string;
 };
@@ -219,7 +356,6 @@ export function toProductUnitOptions(product: unknown): ProductUnitOption[] {
           "averagecost",
           getNumber(entry, "unitcost", 0),
         ),
-        ismainbarcode: getBoolean(entry, "ismainbarcode", false),
         productguid: productGuid,
         productcode: productCode,
       },
@@ -548,7 +684,6 @@ export function rawToProductBarcode(
     dividevalue: getNumber(r, "dividevalue", base.dividevalue),
     standvalue: getNumber(r, "standvalue", base.standvalue),
     isusesubbarcodes: getBoolean(r, "isusesubbarcodes", base.isusesubbarcodes),
-    ismainbarcode: getBoolean(r, "ismainbarcode", base.ismainbarcode),
 
     prices: toPriceArray(r.prices),
     fixedcost: Array.isArray(r.fixedcost)

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getInitialBackendLanguage } from "@/lib/backend-language-server";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
@@ -16,6 +16,8 @@ export async function generateMetadata({ params }: SystemSettingPageProps): Prom
 
 export default async function SystemSettingPage({ params }: SystemSettingPageProps) {
   const { systemSetting } = await params;
+  if (systemSetting === "permissionlink") redirect("/user");
+  if (systemSetting === "approvalsetting") redirect("/workspace");
   const config = getSystemSettingConfig(systemSetting);
   if (!config) notFound();
   const initialLanguage = await getInitialBackendLanguage();
