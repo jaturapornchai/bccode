@@ -24,7 +24,7 @@ export function LoginWrapper() {
           flexDirection: "column",
           gap: 18,
           background:
-            "radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--primary, #812920) 14%, transparent) 0, transparent 42%), radial-gradient(circle at 75% 80%, color-mix(in srgb, var(--primary, #812920) 10%, transparent) 0, transparent 40%), var(--background, #fbf9f8)",
+            "radial-gradient(70% 45% at 8% 0%, color-mix(in srgb, var(--primary, #812920) 18%, transparent) 0, transparent 70%), radial-gradient(60% 40% at 100% 100%, color-mix(in srgb, var(--primary, #812920) 12%, transparent) 0, transparent 70%), var(--background, #fbf9f8)",
         }}
       >
         <div
@@ -32,14 +32,15 @@ export function LoginWrapper() {
           style={{
             width: 56,
             height: 56,
-            borderRadius: 8,
+            borderRadius: 16,
             display: "grid",
             placeItems: "center",
-            fontWeight: 900,
-            color: "var(--primary-foreground, #fff)",
+            fontWeight: 800,
+            letterSpacing: "0.02em",
+            color: "#fff",
             background:
-              "linear-gradient(135deg, var(--primary, #812920), color-mix(in srgb, var(--primary, #812920) 70%, #000))",
-            boxShadow: "0 10px 28px rgba(160, 64, 53, 0.28)",
+              "linear-gradient(140deg, var(--primary, #812920), color-mix(in srgb, var(--primary, #812920) 62%, #1a0e0c))",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35), 0 14px 30px -10px rgba(129, 41, 32, 0.6)",
           }}
         >
           BC
