@@ -93,6 +93,11 @@ import {
   type SystemSettingOption,
 } from "@/lib/system-setting-screens";
 import { MapPickerDialog } from "@/components/map-picker-dialog";
+import {
+  CompanyScopeSearchPicker,
+  BranchScopeSearchPicker,
+  PortalDropdownList,
+} from "@/components/system-settings/field-editors/holding-scope-editor";
 import { ProductCategoryTreeView } from "./product-category-tree-view";
 import { ProductCategoryItemsEditor } from "./product-category-items-editor";
 import { ProductGroupTreeView } from "./product-group-tree-view";
@@ -936,9 +941,13 @@ export function SystemSettingsScreen({
           q: query,
         });
         applyWorkspaceTenantParams(searchParams, currentWorkspace);
-        const firstFieldKey = currentConfig.fields?.[0]?.key;
-        if (firstFieldKey && currentConfig.slug !== "permissionlink") {
-          searchParams.set("sort", `${firstFieldKey}:1`);
+        // เรียงด้วย business code ก่อนเสมอ (เช่น รหัสพนักงาน) — fields[0] อาจเป็น
+        // รูป/สื่อซึ่งเรียงไม่มีความหมายและทำตำแหน่งแถวเด้งหลัง save
+        const sortFieldKey =
+          currentConfig.fields?.find((field) => field.businessCode)?.key ??
+          currentConfig.fields?.[0]?.key;
+        if (sortFieldKey && currentConfig.slug !== "permissionlink") {
+          searchParams.set("sort", `${sortFieldKey}:1`);
         }
         if ((currentConfig.slug === "productcategorygroupselectscreen" || currentConfig.slug === "productcategorylist") && groupNumberRef.current !== null) {
           searchParams.set("group-number", String(groupNumberRef.current));
@@ -1084,9 +1093,11 @@ export function SystemSettingsScreen({
           q: lookup,
         });
         applyWorkspaceTenantParams(searchParams, currentWorkspace);
-        const firstFieldKey = currentConfig.fields?.[0]?.key;
-        if (firstFieldKey && currentConfig.slug !== "permissionlink") {
-          searchParams.set("sort", `${firstFieldKey}:1`);
+        const sortFieldKey =
+          currentConfig.fields?.find((field) => field.businessCode)?.key ??
+          currentConfig.fields?.[0]?.key;
+        if (sortFieldKey && currentConfig.slug !== "permissionlink") {
+          searchParams.set("sort", `${sortFieldKey}:1`);
         }
         const response = await authFetch(
           `/api/system-settings/${currentConfig.slug}?${searchParams.toString()}`,
@@ -1761,6 +1772,11 @@ export function SystemSettingsScreen({
       return !String(value ?? "").trim();
     });
     if (missingRequired) {
+      const missingDebug = currentConfig.fields
+        .filter((field) => field.required)
+        .map((field) => `${field.key}=${JSON.stringify(getByPath(payload, field.key))?.slice(0, 60)}`)
+        .join(", ");
+      console.error("[DEBUG missingRequired]", missingDebug);
       setNotice({ type: "error", text: text("errorRequired") });
       return;
     }
@@ -1771,7 +1787,13 @@ export function SystemSettingsScreen({
         hasInvalidHoldingScopeRules(getByPath(payload, field.key), Boolean(field.required)),
     );
     if (invalidScopeRules) {
-      setNotice({ type: "error", text: text("errorRequired") });
+      setNotice({
+        type: "error",
+        text:
+          language === "th"
+            ? "บริษัท/สาขาที่เข้าใช้งานได้ยังไม่ครบ — เลือกสาขาให้ครบทุกบริษัทที่ระบุ หรือติ๊ก ใช้ได้ทั้งกลุ่มกิจการ"
+            : "Company/branch access is incomplete — pick branches for each listed company, or enable whole-group access.",
+      });
       return;
     }
 
@@ -2598,7 +2620,15 @@ export function SystemSettingsScreen({
                 }}
                 onSubmit={saveRecord}
                 saving={saving}
-                setForm={setForm}
+                setForm={(update: FormState | ((current: FormState) => FormState)) => {
+                  setForm((prev) => {
+                    const nextForm = typeof update === "function" ? update(prev) : update;
+                    if (!nextForm.code) {
+                      console.error("[DEBUG setForm→no-code] updateIsFn:", typeof update === "function", "prevCode:", prev.code, "nextKeys:", Object.keys(nextForm).length);
+                    }
+                    return nextForm;
+                  });
+                }}
                 text={text}
                 workspace={workspace}
               />
@@ -2642,7 +2672,15 @@ export function SystemSettingsScreen({
                 }}
                 onSubmit={saveRecord}
                 saving={saving}
-                setForm={setForm}
+                setForm={(update: FormState | ((current: FormState) => FormState)) => {
+                  setForm((prev) => {
+                    const nextForm = typeof update === "function" ? update(prev) : update;
+                    if (!nextForm.code) {
+                      console.error("[DEBUG setForm→no-code] updateIsFn:", typeof update === "function", "prevCode:", prev.code, "nextKeys:", Object.keys(nextForm).length);
+                    }
+                    return nextForm;
+                  });
+                }}
                 text={text}
                 workspace={workspace}
               />
@@ -3289,7 +3327,7 @@ function SettingDataList({
   detailRecord: SettingRecord | null;
   detailLoading: boolean;
   detailError: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   text: (key: keyof typeof uiEn) => string;
   workspace: WorkspaceSession | null;
 }) {
@@ -3515,7 +3553,7 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
-                        className="size-7 rounded-lg bg-background text-sky-600 border-sky-200 hover:bg-sky-50 dark:text-sky-400 dark:border-sky-900/50 dark:hover:bg-sky-950/30"
+                        className="size-7 rounded-lg bg-background text-primary border-primary/30 hover:bg-primary/10"
                         onClick={(event) => {
                           event.stopPropagation();
                           onEdit(record);
@@ -3737,7 +3775,7 @@ function CompanyMultiSelectCell({
   useEffect(() => {
     if (!auth || selectedGuids.length === 0) return;
     const controller = new AbortController();
-    void authFetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings?management=true`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -3890,9 +3928,10 @@ function settingListColumns(
         render: (record, meta) => {
           const code = stringValue(record.code ?? meta.id);
           const avatarUri =
+            stringValue(record.profilepicturethumb) ||
+            stringValue(record.profilepicture) ||
             stringValue(record.avatarthumb) ||
-            stringValue(record.avatar) ||
-            stringValue(record.profilepicture);
+            stringValue(record.avatar);
           return (
             <span className="flex min-w-0 items-center gap-2 w-full">
               <LogoAvatar
@@ -4140,9 +4179,10 @@ function SettingDetailPanel({
             ) : config.slug === "employee" ? (
               <LogoAvatar
                 uri={
+                  stringValue(record.profilepicturethumb) ||
+                  stringValue(record.profilepicture) ||
                   stringValue(record.avatarthumb) ||
-                  stringValue(record.avatar) ||
-                  stringValue(record.profilepicture)
+                  stringValue(record.avatar)
                 }
                 auth={auth}
                 alt={title || displayCode || "employee"}
@@ -4536,7 +4576,7 @@ function SettingFormDialog({
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   saving: boolean;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   text: (key: keyof typeof uiEn) => string;
   workspace: WorkspaceSession | null;
 }) {
@@ -4702,7 +4742,7 @@ function UserFormSections({
   dictionary: BackendLanguageDictionary;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const fieldsByKey = new Map(config.fields.map((field) => [field.key, field]));
@@ -5013,7 +5053,7 @@ function ThailandAddressFieldEditor({
   form: FormState;
   language: LanguageCode;
   prefix: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const countryKey = `${prefix}.countrycode`;
   const provinceKey = `${prefix}.provincecode`;
@@ -5085,7 +5125,7 @@ function ThailandAddressFieldEditor({
   );
 
   function setAddress(nextValues: Partial<FormState>) {
-    setForm({ ...form, ...nextValues });
+    setForm((current) => ({ ...current, ...nextValues }));
   }
 
   function copyFromBilling() {
@@ -5322,7 +5362,7 @@ function ThailandAddressFreeTextEditor({
   form: FormState;
   language: LanguageCode;
   prefix: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const labels = thailandAddressUi(language);
   const fields = [
@@ -5340,7 +5380,7 @@ function ThailandAddressFreeTextEditor({
             <Input
               value={String(form[key] ?? "")}
               onChange={(event) =>
-                setForm({ ...form, [key]: event.target.value })
+                setForm((current) => ({ ...current, [key]: event.target.value }))
               }
             />
           </label>
@@ -5716,7 +5756,7 @@ function ApprovalSettingEditor({
   dictionary: BackendLanguageDictionary;
   form: FormState;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const approvals = approvalsFromForm(form.approvals);
 
@@ -5960,7 +6000,7 @@ function PermissionLinkUserSelector({
   field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const userConfig = useMemo(() => getSystemSettingConfig("user"), []);
@@ -6192,7 +6232,7 @@ function PermissionLinkMultiSelectEditor({
   form: FormState;
   language: LanguageCode;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const isApproval = isApprovalCodesField(field);
@@ -6368,7 +6408,7 @@ function PermissionMatrixEditor({
   form: FormState;
   language: LanguageCode;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
   text: (key: keyof typeof uiEn) => string;
 }) {
   const branchKey = dateTimeScope.key || "company";
@@ -7154,7 +7194,7 @@ async function loadAuditHoldingData(
   const activeHoldingCode = workspaceHoldingCode(workspace);
   const params = new URLSearchParams();
   if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
-  const response = await authFetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
+  const response = await authFetch(`/api/workspace/holdings?management=true${params.size ? `&${params.toString()}` : ""}`, {
     headers: requestHeaders(auth),
     cache: "no-store",
     signal,
@@ -7418,16 +7458,18 @@ function HoldingScopeRulesEditor({
   label: string;
   language: LanguageCode;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  // ยอมรับ functional update — commit ของ scope editor ต้องอ่าน form ล่าสุดเสมอ
+  // (closure เก่าทำให้แก้ scope แล้วทับข้อมูลที่กรอกก่อนหน้าหาย — เคสจริง 2026-09-01)
+  setForm?: (
+    update: FormState | ((current: FormState) => FormState),
+  ) => void;
   workspace: WorkspaceSession | null;
 }) {
   const [companies, setCompanies] = useState<CompanyScopeOption[]>([]);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [companyAddCode, setCompanyAddCode] = useState("");
   const [activeBusinessCode, setActiveBusinessCode] = useState("");
-  const [branchAddCodes, setBranchAddCodes] = useState<Record<string, string>>({});
   const rules = useMemo(
     () => normalizeHoldingScopeRules(form[field.key], form.businesscodes ?? form.companyguids),
     [field.key, form],
@@ -7453,7 +7495,7 @@ function HoldingScopeRulesEditor({
     const params = new URLSearchParams();
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void authFetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings?management=true${params.size ? `&${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -7534,7 +7576,9 @@ function HoldingScopeRulesEditor({
 
   function commit(nextRules: HoldingScopeRule[]) {
     if (readOnly || !setForm) return;
-    setForm({ ...form, [field.key]: normalizeHoldingScopeRules(nextRules) });
+    const normalized = normalizeHoldingScopeRules(nextRules);
+    // functional update — อ่าน form ล่าสุดเสมอ กัน closure เก่าทับการแก้ก่อนหน้า
+    setForm((current) => ({ ...current, [field.key]: normalized }));
   }
 
   function setHoldingScope(enabled: boolean) {
@@ -7556,15 +7600,15 @@ function HoldingScopeRulesEditor({
           (rule.scopetype === "company" || rule.scopetype === "branch"),
       );
     if (!hasCompany) {
+      // เริ่มต้นเป็น "ทุกสาขา" ตาม flow บนจอ (เพิ่มบริษัทก่อน แล้วค่อยปรับสาขา) —
+      // ถ้าสร้างเป็น branch ที่ branchcode ว่าง validation จะ block การ save ทุกครั้ง
       nextRules.push({
-        scopetype: "branch",
+        scopetype: "company",
         businesscode: normalizedBusinessCode,
-        branchcode: "",
-        allbranches: false,
+        allbranches: true,
       });
     }
     commit(nextRules);
-    setCompanyAddCode("");
     setActiveBusinessCode(normalizedBusinessCode);
   }
 
@@ -7575,11 +7619,6 @@ function HoldingScopeRulesEditor({
         (rule) => rule.scopetype === "holding" || rule.businesscode !== normalizedBusinessCode,
       ),
     );
-    setBranchAddCodes((current) => {
-      const next = { ...current };
-      delete next[normalizedBusinessCode];
-      return next;
-    });
   }
 
   function setCompanyAllBranches(businessCode: string, enabled: boolean) {
@@ -7624,7 +7663,6 @@ function HoldingScopeRulesEditor({
       allbranches: false,
     });
     commit(nextRules);
-    setBranchAddCodes((current) => ({ ...current, [normalizedBusinessCode]: "" }));
   }
 
   function removeBranchScope(businessCode: string, branchCode: string) {
@@ -7733,23 +7771,13 @@ function HoldingScopeRulesEditor({
                   <Badge variant="outline">{selectedCompanyScopes.length}</Badge>
                 </div>
                 {!readOnly ? (
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                  <div className="grid gap-2">
                     <CompanyScopeSearchPicker
                       companies={companies}
                       disabled={readOnly || loading || companies.length === 0}
                       language={language}
-                      value={companyAddCode}
-                      onChange={setCompanyAddCode}
+                      onPick={(businessCode) => addCompanyScope(businessCode)}
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => addCompanyScope(companyAddCode)}
-                      disabled={!companyAddCode}
-                    >
-                      <Plus className="size-3.5" />
-                      {language === "th" ? "เพิ่ม" : "Add"}
-                    </Button>
                   </div>
                 ) : null}
               </div>
@@ -7858,35 +7886,17 @@ function HoldingScopeRulesEditor({
                     ) : (
                       <>
                         {!readOnly ? (
-                          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                          <div className="grid gap-2">
                             <BranchScopeSearchPicker
                               branches={branches.filter(
                                 (branch) => branch.businesscode === activeCompanyScope.company.businesscode,
                               )}
                               disabled={readOnly || loading}
                               language={language}
-                              value={branchAddCodes[activeCompanyScope.company.businesscode] ?? ""}
-                              onChange={(branchCode) =>
-                                setBranchAddCodes((current) => ({
-                                  ...current,
-                                  [activeCompanyScope.company.businesscode]: branchCode,
-                                }))
+                              onPick={(branchCode) =>
+                                addBranchScope(activeCompanyScope.company.businesscode, branchCode)
                               }
                             />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() =>
-                                addBranchScope(
-                                  activeCompanyScope.company.businesscode,
-                                  branchAddCodes[activeCompanyScope.company.businesscode] ?? "",
-                                )
-                              }
-                              disabled={!branchAddCodes[activeCompanyScope.company.businesscode]}
-                            >
-                              <Plus className="size-3.5" />
-                              {language === "th" ? "เพิ่มสาขา" : "Add branch"}
-                            </Button>
                           </div>
                         ) : null}
                         {activeCompanyScope.branches.length === 0 ? (
@@ -7936,173 +7946,6 @@ function HoldingScopeRulesEditor({
         </div>
       </div>
     </section>
-  );
-}
-
-function CompanyScopeSearchPicker({
-  companies,
-  disabled,
-  language,
-  onChange,
-  value,
-}: {
-  companies: CompanyScopeOption[];
-  disabled?: boolean;
-  language: LanguageCode;
-  onChange: (businessCode: string) => void;
-  value: string;
-}) {
-  const selected = companies.find((company) => company.businesscode === normalizeBusinessCode(value));
-  const selectedLabel = selected ? `${selected.businesscode} - ${selected.name}` : value;
-  const [query, setQuery] = useState(selectedLabel);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setQuery(selectedLabel);
-  }, [selectedLabel]);
-
-  const filteredCompanies = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const searchAll = !normalizedQuery || normalizedQuery === selectedLabel.toLowerCase();
-    return companies
-      .filter((company) => {
-        if (searchAll) return true;
-        return `${company.businesscode} ${company.name}`.toLowerCase().includes(normalizedQuery);
-      })
-      .slice(0, 30);
-  }, [companies, query, selectedLabel]);
-
-  return (
-    <label className="relative grid gap-1 text-xs font-semibold">
-      <span>{language === "th" ? "บริษัท" : "Company"}</span>
-      <Input
-        className="h-9 text-sm"
-        disabled={disabled}
-        placeholder={language === "th" ? "ค้นหารหัสหรือชื่อบริษัท" : "Search company code or name"}
-        value={query}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-      />
-      {open && !disabled ? (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg">
-          {filteredCompanies.length === 0 ? (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">
-              {language === "th" ? "ไม่พบบริษัท" : "No companies found"}
-            </p>
-          ) : (
-            filteredCompanies.map((company) => (
-              <button
-                className={cn(
-                  "flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted",
-                  company.businesscode === selected?.businesscode && "bg-primary/10 text-primary",
-                )}
-                key={company.businesscode}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange(company.businesscode);
-                  setQuery(`${company.businesscode} - ${company.name}`);
-                  setOpen(false);
-                }}
-              >
-                <Building2 className="size-3.5 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">
-                  {company.businesscode} - {company.name}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      ) : null}
-    </label>
-  );
-}
-
-function BranchScopeSearchPicker({
-  branches,
-  disabled,
-  language,
-  onChange,
-  value,
-}: {
-  branches: BranchOption[];
-  disabled?: boolean;
-  language: LanguageCode;
-  onChange: (branchCode: string) => void;
-  value: string;
-}) {
-  const normalizedValue = normalizeScopeBranchCode(value);
-  const selected = branches.find((branch) => normalizeScopeBranchCode(branch.code) === normalizedValue);
-  const selectedLabel = selected ? `${selected.code} - ${branchOptionDisplayName(selected, language)}` : value;
-  const [query, setQuery] = useState(selectedLabel);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setQuery(selectedLabel);
-  }, [selectedLabel]);
-
-  const filteredBranches = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const searchAll = !normalizedQuery || normalizedQuery === selectedLabel.toLowerCase();
-    return branches
-      .filter((branch) => {
-        if (searchAll) return true;
-        return `${branch.code} ${branchOptionDisplayName(branch, language)}`.toLowerCase().includes(normalizedQuery);
-      })
-      .slice(0, 30);
-  }, [branches, language, query, selectedLabel]);
-
-  return (
-    <label className="relative grid gap-1 text-xs font-semibold">
-      <span>{language === "th" ? "สาขา" : "Branch"}</span>
-      <Input
-        className="h-9 text-sm"
-        disabled={disabled}
-        placeholder={language === "th" ? "ค้นหารหัสหรือชื่อสาขา" : "Search branch code or name"}
-        value={query}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-      />
-      {open && !disabled ? (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg">
-          {filteredBranches.length === 0 ? (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">
-              {language === "th" ? "ไม่พบสาขา" : "No branches found"}
-            </p>
-          ) : (
-            filteredBranches.map((branch) => (
-              <button
-                className={cn(
-                  "flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted",
-                  normalizeScopeBranchCode(branch.code) === normalizedValue && "bg-primary/10 text-primary",
-                )}
-                key={branchKeyOf(branch)}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange(normalizeScopeBranchCode(branch.code));
-                  setQuery(`${branch.code} - ${branchOptionDisplayName(branch, language)}`);
-                  setOpen(false);
-                }}
-              >
-                <GitBranch className="size-3.5 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">
-                  {branch.code} - {branchOptionDisplayName(branch, language)}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      ) : null}
-    </label>
   );
 }
 
@@ -8250,7 +8093,7 @@ function ProductVariantStructuredFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const items = variantArrayValue(form[field.key]);
   const columns = variantFieldColumns[field.key] ?? [];
@@ -8741,7 +8584,7 @@ function FieldEditor({
   field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const label = fieldLabel(field, language, config, dictionary);
@@ -9444,7 +9287,7 @@ function StringListFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const values = normalizeStringListValue(form[field.key]);
   const [draft, setDraft] = useState("");
@@ -9574,7 +9417,7 @@ function TimeSaleListEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const rows = normalizeTimeSaleFormList(form[field.key]);
   const enabled = rows.length > 0;
@@ -9807,7 +9650,7 @@ function BankAccountsEditor({
   form: FormState;
   language: LanguageCode;
   label: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const rows = normalizeBankAccountFormList(form[field.key]);
 
@@ -10018,7 +9861,7 @@ function BranchStructuredSettingEditor({
   label: string;
   language: LanguageCode;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const commit = (nextValue: unknown) => {
     if (readOnly || !setForm) return;
@@ -10930,7 +10773,7 @@ function LanguageConfigsEditor({
   form: FormState;
   language: LanguageCode;
   label: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const defaultCode = supportedLanguageCode(form["settings.language"], "th");
   const rows = normalizeLanguageConfigs(
@@ -11130,7 +10973,7 @@ function LanguageListEditor({
   language: LanguageCode;
   label: string;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const rows = normalizeLanguageList(form[field.key], form.language);
   const usedCodes = new Set(rows);
@@ -11329,7 +11172,7 @@ function MasterPickerFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
@@ -11439,7 +11282,7 @@ function MasterMultiPickerFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
@@ -12055,7 +11898,7 @@ function ImageUploadFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
@@ -12385,7 +12228,7 @@ function ImageGalleryFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
@@ -12824,7 +12667,7 @@ function BranchMultiSelectFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const [options, setOptions] = useState<BranchOption[]>([]);
@@ -12865,7 +12708,7 @@ function BranchMultiSelectFieldEditor({
       holdingcodes = [workspace.shop.holdingcode];
     }
 
-    void authFetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings?management=true`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -13311,7 +13154,7 @@ function CompanyMultiSelectFieldEditor({
   field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const [shops, setShops] = useState<any[]>([]);
@@ -13341,7 +13184,7 @@ function CompanyMultiSelectFieldEditor({
     const activeHoldingCode = stringValue(workspace.shop.holdingcode);
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void authFetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings?management=true${params.size > 0 ? `&${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -13462,7 +13305,7 @@ function CompanyMultiSelectReadOnlyDetail({
   useEffect(() => {
     if (!auth || selectedGuids.length === 0) return;
     const controller = new AbortController();
-    void authFetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings?management=true`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -13541,7 +13384,7 @@ function BranchCoordinatePairEditor({
   config: SystemSettingConfig;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const [mapOpen, setMapOpen] = useState(false);
   const latitudeField = config.fields.find(
@@ -13640,7 +13483,7 @@ type BranchUnifiedViewProps = {
   records: SettingRecord[];
   saving: boolean;
   selectedRecord: SettingRecord | null;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   setQuery: (query: string) => void;
   text: (key: keyof typeof uiEn) => string;
   workspace: WorkspaceSession | null;
@@ -14035,7 +13878,7 @@ type BranchTabSectionProps = {
   fields: SystemSettingField[];
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 };
 
@@ -14174,7 +14017,7 @@ function ComboFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -15769,7 +15612,11 @@ function buildPayload(
 
   if (config.slug === "user") {
     payload.holdingcode = workspace.shop.holdingcode;
-    if (editing) payload.editusername = recordId(editing, config);
+    if (editing) {
+      // editusername must be the original usercode (username), not the useruid.
+      // Google-only users may have an empty usercode, so fall back to the stable id.
+      payload.editusername = stringValue(editing.username) || recordId(editing, config);
+    }
     if (isEmailLike(payload.username)) {
       payload.email = payload.username;
     }

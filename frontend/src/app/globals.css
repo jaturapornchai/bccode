@@ -418,7 +418,7 @@ main.bg-background {
 }
 
 .bg-muted\/30 {
-  background-color: color-mix(in srgb, var(--icon-soft-bg) 46%, transparent);
+  background-color: color-mix(in srgb, var(--muted-bg) 55%, transparent);
 }
 
 .border-border {
@@ -437,9 +437,11 @@ main.bg-background {
   background-color: color-mix(in srgb, var(--primary) 12%, var(--panel-soft));
 }
 
-.rounded-2xl,
 .rounded-xl {
-  border-radius: 4px;
+  border-radius: var(--radius-lg);
+}
+.rounded-2xl {
+  border-radius: var(--radius-xl);
 }
 
 .shadow-sm {
@@ -476,7 +478,7 @@ main.min-h-screen header.bg-card {
 }
 
 .bg-muted\/30 {
-  background-color: color-mix(in srgb, var(--icon-soft-bg) 46%, transparent);
+  background-color: color-mix(in srgb, var(--muted-bg) 55%, transparent);
 }
 
 .border-border {
@@ -495,9 +497,11 @@ main.min-h-screen header.bg-card {
   background-color: color-mix(in srgb, var(--primary) 12%, var(--panel-soft));
 }
 
-.rounded-2xl,
 .rounded-xl {
-  border-radius: 4px;
+  border-radius: var(--radius-lg);
+}
+.rounded-2xl {
+  border-radius: var(--radius-xl);
 }
 
 .shadow-sm {
@@ -8196,4 +8200,26 @@ main.min-h-dvh.overflow-x-hidden.bg-background > div > aside {
 button[class~="bg-primary"]:hover:not(:disabled),
 a[class~="bg-primary"]:hover {
   filter: brightness(1.06);
+}
+
+/* --- BC compact data list (.bc-list-*): calm header/rows, brand only on the
+   selection. Zebra rows come from the Tailwind bridge (bg-muted/30 -> neutral
+   --muted-bg instead of the pink --icon-soft-bg). --- */
+.bc-list-toolbar {
+  background-color: color-mix(in srgb, var(--panel-soft) 60%, transparent);
+  border-bottom-color: var(--surface-hairline);
+}
+.bc-list-header {
+  background: var(--surface-glass-strong);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 30%, var(--surface-hairline));
+  color: color-mix(in srgb, var(--primary) 75%, var(--text));
+}
+.bc-list-row {
+  border-bottom-color: var(--surface-hairline);
+}
+.bc-list-row:hover:not([class*="bg-primary"]) {
+  background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+.bc-list-row[class*="bg-primary"] {
+  box-shadow: inset 3px 0 0 var(--primary);
 }
