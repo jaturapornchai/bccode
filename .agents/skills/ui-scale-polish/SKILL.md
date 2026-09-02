@@ -711,3 +711,6 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 - **ภาษาที่ใช้งาน ก็ย้าย**เป็นแท็บแรกของขั้น "ข้อมูลบริษัทและสาขา" (ขั้น 1 เดิมถูกถอด, `companyTab` เริ่มที่
   `/activelanguages`, ใช้ `effectiveAccessRoute` แทน `activeAccessRoute` ทุกที่ที่เช็คหน้าภาษา) → เมนูหลัก
   **ไม่มีหมวด ตั้งค่า อีกแล้ว** (section ถูกลบจาก MENU_SECTIONS; test ยืนยัน) การตั้งค่าทั้งหมดอยู่ที่ ตั้งค่าระบบ ใน workspace
+- **กับดัก**: `SystemSettingsScreen route=…` รับเฉพาะ slug ใน `system-setting-screens.ts` — จอที่ไม่ใช่ system-setting config
+  (เช่น /currency = `CurrencyScreen`, /line-oa = `LineOaLinkScreen`) จะขึ้น "ไม่พบหน้าจอ" ต้อง branch render component
+  ของมันเองเหมือนที่ `WorkTabPanel` ใน main-menu ทำ (ทำแล้วสำหรับแท็บ สกุลเงิน ใน workspace-screen)

@@ -59,6 +59,7 @@ import {
 import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
+import { CurrencyScreen } from "@/app/currency/currency-screen";
 
 type Step = "loading" | "shops" | "create" | "branches" | "access";
 type Notice = { type: "success" | "error" | "info"; text?: string; textKey?: WorkspaceTextKey } | null;
@@ -1349,6 +1350,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   ))}
                 </div>
               ) : null}
+              {effectiveAccessRoute === "/currency" ? (
+                // สกุลเงินเป็นจอแยก (currency-screen) ไม่ใช่ system-setting config
+                <CurrencyScreen embedded language={language} key={`currency:${tenantCodeForShop(selectedShopForAccess)}`} />
+              ) : (
               <SystemSettingsScreen
                 key={`${effectiveAccessRoute}:${tenantCodeForShop(selectedShopForAccess)}`}
                 route={effectiveAccessRoute ?? "/company"}
@@ -1358,6 +1363,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 language={language}
                 initialLanguage={language}
               />
+              )}
             </div>
           </div>
         </section>
