@@ -30,6 +30,7 @@ type IAuthenticationService interface {
 	LoginWithPhoneNumberOTP(userLoginReq *auth_models.PhoneNumberOTPRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	Login(userReq *auth_models.UserLoginRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	DevLoginByUID(userUID string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
+	DemoLoginByUsername(username string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	Poslogin(userReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	LoginEmail(userReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (string, error)
 	Register(userRequest auth_models.RegisterEmailRequest) (string, error)
@@ -220,6 +221,56 @@ func (svc AuthenticationService) Login(userLoginReq *auth_models.UserLoginReques
 	}
 
 	return resultLogin, nil
+}
+
+// DemoLoginByUsername signs in the public demo account (no password, no Google
+// identity). Same session/audit pipeline as a normal login; audit action DEMO_LOGIN.
+func (svc AuthenticationService) DemoLoginByUsername(username string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {
+	username = strings.ToLower(strings.TrimSpace(username))
+	if username == "" {
+		return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("demo login failed")
+	}
+	ctx := context.Background()
+	user, err := svc.authRepo.FindUser(ctx, username)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
+	}
+	if err != nil || user == nil || strings.TrimSpace(user.UID) == "" {
+		// First demo login in this environment: create the demo account (usercode
+		// login with a random password nobody knows; sample data is seeded later).
+		if _, registerErr := svc.RegisterByUsername(auth_models.RegisterUsernameRequest{
+			UsernameField: auth_models.UsernameField{Username: username},
+			UserPassword:  auth_models.UserPassword{Password: svc.generateGUID() + svc.generateGUID()},
+			UserDetail:    auth_models.UserDetail{Name: "บัญชีทดลองใช้ (Demo)", RegisterType: "demo"},
+		}); registerErr != nil {
+			return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(registerErr)
+		}
+		if user, err = svc.authRepo.FindUser(ctx, username); err != nil || user == nil {
+			return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("demo login failed")
+		}
+	}
+	if user.IsDeleted {
+		return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("demo login failed")
+	}
+	if !user.DisabledAt.IsZero() {
+		return models.TokenLoginResponse{}, &auth_models.UserDisableLoginError{}
+	}
+	result, err := svc.processUserLogin(*user, "", authContext)
+	if err != nil {
+		return models.TokenLoginResponse{}, err
+	}
+	audit := auth_models.AuthAudit{
+		AuditUID:   svc.generateGUID(),
+		UserUID:    user.UID,
+		Action:     "DEMO_LOGIN",
+		Outcome:    "SUCCESS",
+		OccurredAt: svc.timeNow().UTC(),
+	}
+	if err := svc.authRepo.CreateAuthAudit(ctx, audit); err != nil {
+		_ = svc.authService.RevokeSession("Bearer " + result.Token)
+		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
+	}
+	return result, nil
 }
 
 func (svc AuthenticationService) DevLoginByUID(userUID string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
@@ -208,6 +209,13 @@ func init() {
 	time.Local = time.UTC
 }
 
+func validReloadConfigSecret(expectedSecret, suppliedSecret string) bool {
+	if expectedSecret == "" || suppliedSecret == "" || len(expectedSecret) != len(suppliedSecret) {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(expectedSecret), []byte(suppliedSecret)) == 1
+}
+
 // @title           BC Ai Account API
 // @version         1.0
 // @contact.name   API Support
@@ -262,6 +270,7 @@ func main() {
 
 			"/login",
 			"/dev-login",
+			"/demo-login",
 			"/refresh",
 
 			"/images*",
@@ -296,6 +305,7 @@ func main() {
 			"/profile",
 			"/profile/password",
 			"/profile/disable-user",
+			"/sessions/active-count",
 			"/list-holding",
 			"/list-shop",
 			"/select-holding",
@@ -314,7 +324,7 @@ func main() {
 			// ตรวจสอบ shared secret
 			secret := c.Request().Header.Get("X-Reload-Secret")
 			expectedSecret := os.Getenv("RELOAD_CONFIG_SECRET")
-			if expectedSecret != "" && secret != expectedSecret {
+			if !validReloadConfigSecret(expectedSecret, secret) {
 				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 			}
 

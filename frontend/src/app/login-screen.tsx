@@ -19,7 +19,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "motion/react";
-import { isLoopbackHostname, runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
+import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
 import { setAuthSession } from "@/lib/client-auth-session";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
@@ -52,7 +52,7 @@ const staggerChild: Variants = {
 type LoginState = "idle" | "loading" | "success" | "error";
 type ConnectionState = "idle" | "testing" | "success" | "error";
 type ProviderLoginState = "idle" | "google";
-type AuthMethod = "password" | "google" | "dev";
+type AuthMethod = "password" | "google" | "demo";
 type SocialLoginResponse = {
   success?: boolean;
   status?: "pending" | "success" | "failed" | "expired";
@@ -122,7 +122,6 @@ export function LoginScreen() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [connectionMessage, setConnectionMessage] = useState("");
   const [providerLoginState, setProviderLoginState] = useState<ProviderLoginState>("idle");
-  const [isLoopback, setIsLoopback] = useState(false);
   const [message, setMessage] = useState("");
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const googleCredentialRef = useRef<(credential: string) => void>(() => {});
@@ -138,7 +137,6 @@ export function LoginScreen() {
 
   useEffect(() => {
     setMounted(true);
-    setIsLoopback(isLoopbackHostname(window.location.hostname));
     const savedLanguage = normalizeLanguage(localStorage.getItem(storageKeys.language) ?? "th");
     const savedUsername = localStorage.getItem(storageKeys.username);
     const savedHoldingCode = localStorage.getItem(storageKeys.holdingCode);
@@ -302,11 +300,13 @@ export function LoginScreen() {
     });
   }
 
-  async function handleDevLogin() {
+  // Demo = shared sample-data account, available on local and the public server
+  // (backend decides via BCAI_DEMO_LOGIN_ENABLED). Replaces the old loopback-only Dev Login button.
+  async function handleDemoLogin() {
     setLoginState("loading");
     setMessage("");
     try {
-      const response = await fetch("/api/auth/dev-login", {
+      const response = await fetch("/api/auth/demo-login", {
         method: "POST",
         credentials: "same-origin",
         cache: "no-store",
@@ -323,8 +323,8 @@ export function LoginScreen() {
 
       const nextBackendUrl = runtimeBackendUrlForCurrentPage();
       const profile = await loadLoginProfile(nextBackendUrl, data.token);
-      const nextUsername = profile?.email || data.user || "dev";
-      persistLogin(nextBackendUrl, nextUsername, data.token, "dev", profile);
+      const nextUsername = profile?.email || data.user || "demo";
+      persistLogin(nextBackendUrl, nextUsername, data.token, "demo", profile);
       setLoginState("success");
       setMessage(t(language, "loginSuccess"));
       router.push("/holding");
@@ -646,17 +646,15 @@ export function LoginScreen() {
                   <span>{t(language, "loggingIn")}</span>
                 </span>
               ) : null}
-              {isLoopback ? (
-                <button
-                  type="button"
-                  className="social-login-button dev-login-button"
-                  onClick={() => void handleDevLogin()}
-                  disabled={loginState === "loading"}
-                >
-                  {loginState === "loading" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : null}
-                  <span>เข้าทดสอบระบบ (Dev Login)</span>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className="social-login-button dev-login-button"
+                onClick={() => void handleDemoLogin()}
+                disabled={loginState === "loading"}
+              >
+                {loginState === "loading" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : null}
+                <span>{language === "th" ? "ทดลองใช้ระบบ (Demo)" : "Try the demo"}</span>
+              </button>
             </div>
           </motion.section>
 

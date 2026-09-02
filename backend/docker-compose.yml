@@ -61,6 +61,9 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: mainapi
+    env_file:
+      - path: ./storage.local.env
+        required: false
     depends_on:
       - redis
       - kafka
@@ -79,6 +82,7 @@ services:
       LOG_LEVEL: DEBUG
       TZ: Asia/Bangkok
       KAFKA_SERVER_URL: "kafka:29092"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-212036599086-c7aqvm005jiv2kqi4duju8spd9b3jb94.apps.googleusercontent.com}"
       FIREBASE_PROJECT_ID: "test06-a1240"
       GODEBUG: "x509negativeserial=1"
       # Dev Login remains disabled unless all three server-side values are supplied.
@@ -86,6 +90,8 @@ services:
       BCAI_DEV_LOGIN_ENABLED: "${BCAI_DEV_LOGIN_ENABLED:-false}"
       BCAI_DEV_LOGIN_USER_UID: "${BCAI_DEV_LOGIN_USER_UID:-}"
       BCAI_DEV_LOGIN_SECRET: "${BCAI_DEV_LOGIN_SECRET:-}"
+      BCAI_DEMO_LOGIN_ENABLED: "${BCAI_DEMO_LOGIN_ENABLED:-true}"
+      BCAI_DEMO_USERNAME: "${BCAI_DEMO_USERNAME:-demo}"
       R2_ACCOUNT_ID: "${R2_ACCOUNT_ID:-}"
       R2_ACCESS_KEY_ID: "${R2_ACCESS_KEY_ID:-}"
       R2_SECRET_ACCESS_KEY: "${R2_SECRET_ACCESS_KEY:-}"

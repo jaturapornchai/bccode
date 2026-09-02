@@ -13,6 +13,7 @@ import (
 	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/authentication/services"
 	"smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/demo"
 	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/line"
 	"smlcloudplatform/internal/logger"
@@ -139,8 +140,12 @@ func (h AuthenticationHttp) RegisterHttp() {
 	if _, enabled := currentDevLoginConfig(); enabled {
 		h.ms.POST("/dev-login", h.DevLogin)
 	}
+	if demo.Enabled() {
+		h.ms.POST("/demo-login", h.DemoLogin)
+	}
 
 	h.ms.GET("/verify-token", h.VerifyToken)
+	h.ms.GET("/sessions/active-count", h.SessionsActiveCount)
 
 	h.ms.GET("/profile", h.Profile)
 	h.ms.PUT("/profile/disable-user", h.DisableUser)
@@ -1000,6 +1005,26 @@ func (h AuthenticationHttp) VerifyToken(ctx microservice.IContext) error {
 		"username": userInfo.Username,
 		"uid":      userInfo.UID,
 		"name":     userInfo.Name,
+	})
+	return nil
+}
+
+// SessionsActiveCount — จำนวนเซสชันที่กำลังใช้งานระบบ (อ่านจาก Redis)
+// @Description จำนวนเซสชัน login ทั้งหมด และที่ active ใน 30 นาทีหลัง แยกตามกลุ่มกิจการ
+// @Tags		Authentication
+// @Accept 		json
+// @Success		200	{object}	common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /sessions/active-count [get]
+func (h AuthenticationHttp) SessionsActiveCount(ctx microservice.IContext) error {
+	stats, err := h.authService.ActiveSessionStats()
+	if err != nil {
+		return apperr.RespondErr(ctx, err)
+	}
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    stats,
 	})
 	return nil
 }

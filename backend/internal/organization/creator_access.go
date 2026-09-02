@@ -7,6 +7,7 @@ import (
 	"time"
 
 	authmodels "smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/demo"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
@@ -45,12 +46,15 @@ func requireOrganizationCreator(pst microservice.IPersisterMongo, userInfo micro
 	if policyErr := validateCreatorPolicy(user.DisabledAt, authmodels.ROLE_USER, false); policyErr != nil {
 		return policyErr
 	}
-	identity := &authmodels.GoogleIdentity{}
-	if err := pst.FindOne(ctx, identity, bson.M{"useruid": user.UID, "isactive": true, "revokedat": nil}, identity); err != nil {
-		return creatorFindError(err, apperr.ErrForbidden.WithMessage("an active verified Google identity is required").WithThaiMessage("ต้องเชื่อม Google Identity ที่ยืนยันแล้วก่อนสร้างองค์กร"))
-	}
-	if !isActiveGoogleIdentity(*identity) {
-		return apperr.ErrForbidden.WithMessage("an active verified Google identity is required").WithThaiMessage("ต้องเชื่อม Google Identity ที่ยืนยันแล้วก่อนสร้างองค์กร")
+	if demo.IsDemoUser(user.Username) {
+		// The public demo account has no Google identity by design (docs/login.md "บัญชี Demo").
+		if !requireAdmin {
+			return nil
+		}
+	} else {
+		if err := requireActiveGoogleIdentity(ctx, pst, user.UID); err != nil {
+			return err
+		}
 	}
 	if !requireAdmin {
 		return nil
@@ -84,6 +88,17 @@ func holdingAdminMembershipFilter(holdingCode, userUID string) bson.M {
 		"isaccessdisabled": bson.M{"$ne": true},
 		"isdeleted":        false,
 	}
+}
+
+func requireActiveGoogleIdentity(ctx context.Context, pst microservice.IPersisterMongo, userUID string) *apperr.AppError {
+	identity := &authmodels.GoogleIdentity{}
+	if err := pst.FindOne(ctx, identity, bson.M{"useruid": userUID, "isactive": true, "revokedat": nil}, identity); err != nil {
+		return creatorFindError(err, apperr.ErrForbidden.WithMessage("an active verified Google identity is required").WithThaiMessage("ต้องเชื่อม Google Identity ที่ยืนยันแล้วก่อนสร้างองค์กร"))
+	}
+	if !isActiveGoogleIdentity(*identity) {
+		return apperr.ErrForbidden.WithMessage("an active verified Google identity is required").WithThaiMessage("ต้องเชื่อม Google Identity ที่ยืนยันแล้วก่อนสร้างองค์กร")
+	}
+	return nil
 }
 
 func isActiveGoogleIdentity(identity authmodels.GoogleIdentity) bool {

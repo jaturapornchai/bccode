@@ -34,6 +34,8 @@ const nextConfig: NextConfig = {
       "/backend/googlelogin",
       "/backend/dev-login",
       "/backend/v1/dev-login",
+      "/backend/demo-login",
+      "/backend/v1/demo-login",
       "/backend/tokenlogin",
       "/backend/register",
       "/backend/register-username",
@@ -59,6 +61,7 @@ const nextConfig: NextConfig = {
       "/backend/goapi/api/setup/:path*",
       "/backend/goapi/api/mcp/:path*",
       "/backend/goapi/mcp/:path*",
+      "/backend/reload-config",
     ];
     return {
       beforeFiles: [...blockedAuthRoutes, ...blockedDangerousRoutes].map((source) => ({

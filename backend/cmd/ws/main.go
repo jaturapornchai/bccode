@@ -23,6 +23,7 @@ func main() {
 	publicPath := []string{
 		"/login",
 		"/dev-login",
+		"/demo-login",
 		"/googlelogin",
 		"/refresh",
 		"/healthz",

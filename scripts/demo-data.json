@@ -1,0 +1,1168 @@
+{
+  "holding": {
+    "code": "demo",
+    "name_th": "กลุ่มกิจการรุ่งเรือง (สาธิต)",
+    "name_en": "Rungrueang Group (Demo)"
+  },
+  "companies": [
+    {
+      "code": "C01",
+      "name_th": "บริษัท รุ่งเรืองวัสดุก่อสร้าง จำกัด",
+      "name_en": "Rungrueang Construction Materials Co., Ltd.",
+      "taxid": "0105566123450",
+      "businesstype": "ค้าส่ง",
+      "address_th": "เลขที่ 123/45 ถนนสุขาภิบาล 5 แขวงท่าแร้ง เขตบางเขน กรุงเทพมหานคร 10220",
+      "phone": "02-555-1234",
+      "branches": [
+        {
+          "code": "00000",
+          "name_th": "สำนักงานใหญ่",
+          "address_th": "เลขที่ 123/45 ถนนสุขาภิบาล 5 แขวงท่าแร้ง เขตบางเขน กรุงเทพมหานคร 10220",
+          "phone": "02-555-1234"
+        },
+        {
+          "code": "00001",
+          "name_th": "สาขาลาดหลุมแก้ว",
+          "address_th": "เลขที่ 456 หมู่ 7 ถนนลาดหลุมแก้ว-ปทุมธานี ตำบลลาดหลุมแก้ว อำเภอลาดหลุมแก้ว จังหวัดปทุมธานี 12140",
+          "phone": "02-555-5678"
+        }
+      ],
+      "product_groups": [
+        {
+          "code": "PG-CEM",
+          "name_th": "ปูนซีเมนต์และปูนสำเร็จรูป"
+        },
+        {
+          "code": "PG-STL",
+          "name_th": "เหล็กเส้นและเหล็กรูปพรรณ"
+        },
+        {
+          "code": "PG-BRK",
+          "name_th": "อิฐและวัสดุก่อผนัง"
+        },
+        {
+          "code": "PG-PNT",
+          "name_th": "สีทาอาคารและเคมีภัณฑ์"
+        },
+        {
+          "code": "PG-PVC",
+          "name_th": "ท่อพีวีซีและอุปกรณ์ประปา"
+        }
+      ],
+      "products": [
+        {
+          "code": "P1-001",
+          "name_th": "ปูนซีเมนต์ปอร์ตแลนด์ ตรากรุงทอง ถุง 50 กก.",
+          "name_en": "Portland Cement 50 kg (Krungthong)",
+          "barcode": "8850001000019",
+          "unit": "ถุง",
+          "group": "PG-CEM",
+          "cost": 128,
+          "price": 145
+        },
+        {
+          "code": "P1-002",
+          "name_th": "ปูนฉาบสำเร็จรูป ตรากรุงทอง ถุง 50 กก.",
+          "name_en": "Ready-mixed Plastering Mortar 50 kg",
+          "barcode": "8850001000026",
+          "unit": "ถุง",
+          "group": "PG-CEM",
+          "cost": 105,
+          "price": 125
+        },
+        {
+          "code": "P1-003",
+          "name_th": "ปูนกาวซีเมนต์ ตราเพชรทอง ถุง 20 กก.",
+          "name_en": "Tile Adhesive Mortar 20 kg",
+          "barcode": "8850001000033",
+          "unit": "ถุง",
+          "group": "PG-CEM",
+          "cost": 145,
+          "price": 175
+        },
+        {
+          "code": "P1-004",
+          "name_th": "เหล็กเส้นกลม SR24 ขนาด 6 มม. ยาว 10 ม.",
+          "name_en": "Round Bar SR24 6mm x 10m",
+          "barcode": "8850001000040",
+          "unit": "เส้น",
+          "group": "PG-STL",
+          "cost": 55,
+          "price": 68
+        },
+        {
+          "code": "P1-005",
+          "name_th": "เหล็กข้ออ้อย SD40 ขนาด 12 มม. ยาว 10 ม.",
+          "name_en": "Deformed Bar SD40 12mm x 10m",
+          "barcode": "8850001000057",
+          "unit": "เส้น",
+          "group": "PG-STL",
+          "cost": 175,
+          "price": 205
+        },
+        {
+          "code": "P1-006",
+          "name_th": "เหล็กกล่องเหลี่ยม 1½x1½ นิ้ว ยาว 6 ม.",
+          "name_en": "Square Steel Tube 1.5x1.5 in x 6m",
+          "barcode": "8850001000064",
+          "unit": "เส้น",
+          "group": "PG-STL",
+          "cost": 145,
+          "price": 172
+        },
+        {
+          "code": "P1-007",
+          "name_th": "อิฐแดงอบใหม่ (อิฐมอญ)",
+          "name_en": "Red Clay Brick",
+          "barcode": "8850001000071",
+          "unit": "ชิ้น",
+          "group": "PG-BRK",
+          "cost": 1.8,
+          "price": 2.5
+        },
+        {
+          "code": "P1-008",
+          "name_th": "บล็อกปูน ขนาด 7.5x20x40 ซม.",
+          "name_en": "Concrete Block 7.5x20x40 cm",
+          "barcode": "8850001000088",
+          "unit": "ชิ้น",
+          "group": "PG-BRK",
+          "cost": 11,
+          "price": 14
+        },
+        {
+          "code": "P1-009",
+          "name_th": "อิฐมวลเบา ขนาด 7.5x20x60 ซม.",
+          "name_en": "AAC Lightweight Block 7.5x20x60 cm",
+          "barcode": "8850001000095",
+          "unit": "ชิ้น",
+          "group": "PG-BRK",
+          "cost": 22,
+          "price": 28
+        },
+        {
+          "code": "P1-010",
+          "name_th": "สีน้ำอะคริลิกทาภายใน ตราแสงทอง ถัง 2.5 แกลลอน",
+          "name_en": "Interior Acrylic Emulsion Paint 2.5 gal (Saengthong)",
+          "barcode": "8850001000101",
+          "unit": "ถัง",
+          "group": "PG-PNT",
+          "cost": 420,
+          "price": 520
+        },
+        {
+          "code": "P1-011",
+          "name_th": "สีรองพื้นปูนใหม่ ตราแสงทอง ถัง 1 แกลลอน",
+          "name_en": "Alkali-resistant Wall Primer 1 gal",
+          "barcode": "8850001000118",
+          "unit": "ถัง",
+          "group": "PG-PNT",
+          "cost": 260,
+          "price": 330
+        },
+        {
+          "code": "P1-012",
+          "name_th": "สีสเปรย์อเนกประสงค์ สีดำด้าน กล่อง 12 กระป๋อง",
+          "name_en": "Multi-purpose Spray Paint Flat Black (box of 12)",
+          "barcode": "8850001000125",
+          "unit": "กล่อง",
+          "group": "PG-PNT",
+          "cost": 480,
+          "price": 590
+        },
+        {
+          "code": "P1-013",
+          "name_th": "ท่อพีวีซี ชั้น 13.5 ขนาด ½ นิ้ว ยาว 4 ม.",
+          "name_en": "PVC Pipe Class 13.5 1/2 in x 4m",
+          "barcode": "8850001000132",
+          "unit": "เส้น",
+          "group": "PG-PVC",
+          "cost": 32,
+          "price": 42
+        },
+        {
+          "code": "P1-014",
+          "name_th": "ท่อพีวีซีสีฟ้า ขนาด 1 นิ้ว ยาว 4 ม.",
+          "name_en": "Blue PVC Pipe 1 in x 4m",
+          "barcode": "8850001000149",
+          "unit": "เส้น",
+          "group": "PG-PVC",
+          "cost": 58,
+          "price": 75
+        },
+        {
+          "code": "P1-015",
+          "name_th": "ข้องอพีวีซี 90 องศา ขนาด ½ นิ้ว",
+          "name_en": "PVC Elbow 90 Degree 1/2 in",
+          "barcode": "8850001000156",
+          "unit": "ชิ้น",
+          "group": "PG-PVC",
+          "cost": 3.5,
+          "price": 6
+        }
+      ],
+      "customers": [
+        {
+          "code": "AR1-001",
+          "name_th": "นายสมชาย ใจดี",
+          "taxid": "",
+          "address_th": "123/45 หมู่ 3 ต.บางไทร อ.บางไทร จ.พระนครศรีอยุธยา 13290",
+          "phone": "081-234-5678",
+          "credit_days": 0
+        },
+        {
+          "code": "AR1-002",
+          "name_th": "บริษัท สร้างสรรค์โฮม จำกัด",
+          "taxid": "0105565001233",
+          "address_th": "88 อาคารเพิ่มทรัพย์ ชั้น 5 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพมหานคร 10900",
+          "phone": "02-512-3456",
+          "credit_days": 45
+        },
+        {
+          "code": "AR1-003",
+          "name_th": "ห้างหุ้นส่วนจำกัด ช่างวิชัยรับเหมา",
+          "taxid": "0205563015678",
+          "address_th": "45/6 หมู่ 8 ต.บ้านสวน อ.เมืองชลบุรี จ.ชลบุรี 20000",
+          "phone": "089-876-5432",
+          "credit_days": 30
+        },
+        {
+          "code": "AR1-004",
+          "name_th": "นางสาวปวีณา รุ่งเรืองกิจ",
+          "taxid": "",
+          "address_th": "9/2 หมู่ 1 ต.คลองหนึ่ง อ.คลองหลวง จ.ปทุมธานี 12120",
+          "phone": "092-345-6789",
+          "credit_days": 0
+        },
+        {
+          "code": "AR1-005",
+          "name_th": "บริษัท กิจเจริญค้าวัสดุ จำกัด",
+          "taxid": "0145567003217",
+          "address_th": "250 ถ.โรจนะ ต.ประตูชัย อ.พระนครศรีอยุธยา จ.พระนครศรีอยุธยา 13000",
+          "phone": "035-211-789",
+          "credit_days": 30
+        },
+        {
+          "code": "AR1-006",
+          "name_th": "นายอนันต์ พฤกษาเจริญ",
+          "taxid": "",
+          "address_th": "17 หมู่ 4 ต.บ่อพลับ อ.เมืองนครปฐม จ.นครปฐม 73000",
+          "phone": "086-543-2109",
+          "credit_days": 0
+        },
+        {
+          "code": "AR1-007",
+          "name_th": "ห้างหุ้นส่วนจำกัด ทวีทรัพย์ก่อสร้าง",
+          "taxid": "0195554006786",
+          "address_th": "33/3 ถ.มิตรภาพ ต.ปากเพรียว อ.เมืองสระบุรี จ.สระบุรี 18000",
+          "phone": "036-312-456",
+          "credit_days": 30
+        },
+        {
+          "code": "AR1-008",
+          "name_th": "บริษัท บ้านและสวนรีสอร์ท จำกัด",
+          "taxid": "0735562013456",
+          "address_th": "56 หมู่ 2 ต.ศาลายา อ.พุทธมณฑล จ.นครปฐม 73170",
+          "phone": "034-251-890",
+          "credit_days": 15
+        }
+      ],
+      "suppliers": [
+        {
+          "code": "AP1-001",
+          "name_th": "บริษัท กรุงทองซีเมนต์ จำกัด",
+          "taxid": "0105561009876",
+          "address_th": "789 ถ.พระราม 2 แขวงบางมด เขตจอมทอง กรุงเทพมหานคร 10150",
+          "phone": "02-876-5432",
+          "credit_days": 30
+        },
+        {
+          "code": "AP1-002",
+          "name_th": "บริษัท ธนภูมิเหล็กไทย จำกัด",
+          "taxid": "0195560001120",
+          "address_th": "111 หมู่ 5 ต.หนองแค อ.เมืองสระบุรี จ.สระบุรี 18000",
+          "phone": "036-411-222",
+          "credit_days": 45
+        },
+        {
+          "code": "AP1-003",
+          "name_th": "ห้างหุ้นส่วนจำกัด โชคเจริญอิฐบล็อก",
+          "taxid": "0205558014561",
+          "address_th": "78/9 หมู่ 6 ต.หนองขาม อ.ศรีราชา จ.ชลบุรี 20230",
+          "phone": "038-335-678",
+          "credit_days": 15
+        },
+        {
+          "code": "AP1-004",
+          "name_th": "บริษัท สีทองสยามเพนท์ จำกัด",
+          "taxid": "0125559006784",
+          "address_th": "456 ถ.ติวานนท์ ต.บางเขน อ.เมืองนนทบุรี จ.นนทบุรี 11000",
+          "phone": "02-951-2345",
+          "credit_days": 45
+        },
+        {
+          "code": "AP1-005",
+          "name_th": "บริษัท ท่อพลาสติกรุ่งเรือง จำกัด",
+          "taxid": "0105553007894",
+          "address_th": "321 ถ.เทพรัตน แขวงคลองสองต้นนุ่น เขตลาดกระบัง กรุงเทพมหานคร 10520",
+          "phone": "02-360-9988",
+          "credit_days": 30
+        },
+        {
+          "code": "AP1-006",
+          "name_th": "บริษัท รวมใจฮาร์ดแวร์ จำกัด",
+          "taxid": "0735556012346",
+          "address_th": "12 ถ.เพชรเกษม ต.อ้อมใหญ่ อ.สามพราน จ.นครปฐม 73160",
+          "phone": "034-811-777",
+          "credit_days": 30
+        }
+      ]
+    },
+    {
+      "code": "C02",
+      "name_th": "บริษัท หอมกรุ่น คอฟฟี่ แอนด์ เบเกอรี่ จำกัด",
+      "name_en": "Homkrun Coffee and Bakery Co., Ltd.",
+      "taxid": "0125567001236",
+      "businesstype": "ร้านอาหาร",
+      "address_th": "เลขที่ 55/2 ถนนรัตนาธิเบศร์ ตำบลท่าทราย อำเภอเมืองนนทบุรี จังหวัดนนทบุรี 11000",
+      "phone": "02-555-7890",
+      "branches": [
+        {
+          "code": "00000",
+          "name_th": "สำนักงานใหญ่",
+          "address_th": "เลขที่ 55/2 ถนนรัตนาธิเบศร์ ตำบลท่าทราย อำเภอเมืองนนทบุรี จังหวัดนนทบุรี 11000",
+          "phone": "02-555-7890"
+        }
+      ],
+      "product_groups": [
+        {
+          "code": "COF",
+          "name_th": "เครื่องดื่มกาแฟ"
+        },
+        {
+          "code": "TEA",
+          "name_th": "เครื่องดื่มชา"
+        },
+        {
+          "code": "BAK",
+          "name_th": "ขนมอบ"
+        },
+        {
+          "code": "CAK",
+          "name_th": "เค้ก"
+        },
+        {
+          "code": "MAT",
+          "name_th": "วัตถุดิบ"
+        }
+      ],
+      "products": [
+        {
+          "code": "P2-001",
+          "name_th": "เอสเพรสโซ่ร้อน",
+          "name_en": "Espresso (Hot)",
+          "barcode": "8851001000016",
+          "unit": "แก้ว",
+          "group": "COF",
+          "cost": 18,
+          "price": 45
+        },
+        {
+          "code": "P2-002",
+          "name_th": "อเมริกาโน่เย็น",
+          "name_en": "Iced Americano",
+          "barcode": "8851001000023",
+          "unit": "แก้ว",
+          "group": "COF",
+          "cost": 20,
+          "price": 55
+        },
+        {
+          "code": "P2-003",
+          "name_th": "คาปูชิโน่ร้อน",
+          "name_en": "Cappuccino (Hot)",
+          "barcode": "8851001000030",
+          "unit": "แก้ว",
+          "group": "COF",
+          "cost": 22,
+          "price": 60
+        },
+        {
+          "code": "P2-004",
+          "name_th": "ลาเต้เย็น",
+          "name_en": "Iced Latte",
+          "barcode": "8851001000047",
+          "unit": "แก้ว",
+          "group": "COF",
+          "cost": 24,
+          "price": 65
+        },
+        {
+          "code": "P2-005",
+          "name_th": "ชาเขียวนมเย็น",
+          "name_en": "Iced Matcha Green Tea Latte",
+          "barcode": "8851001000054",
+          "unit": "แก้ว",
+          "group": "TEA",
+          "cost": 20,
+          "price": 55
+        },
+        {
+          "code": "P2-006",
+          "name_th": "ชามะนาวน้ำผึ้ง",
+          "name_en": "Honey Lemon Tea",
+          "barcode": "8851001000061",
+          "unit": "แก้ว",
+          "group": "TEA",
+          "cost": 15,
+          "price": 45
+        },
+        {
+          "code": "P2-007",
+          "name_th": "ชาไทยเย็น",
+          "name_en": "Iced Thai Milk Tea",
+          "barcode": "8851001000078",
+          "unit": "แก้ว",
+          "group": "TEA",
+          "cost": 18,
+          "price": 50
+        },
+        {
+          "code": "P2-008",
+          "name_th": "ครัวซองต์เนยสด",
+          "name_en": "Butter Croissant",
+          "barcode": "8851001000085",
+          "unit": "ชิ้น",
+          "group": "BAK",
+          "cost": 18,
+          "price": 45
+        },
+        {
+          "code": "P2-009",
+          "name_th": "ขนมปังบาแกตต์",
+          "name_en": "French Baguette",
+          "barcode": "8851001000092",
+          "unit": "เส้น",
+          "group": "BAK",
+          "cost": 20,
+          "price": 55
+        },
+        {
+          "code": "P2-010",
+          "name_th": "คุกกี้ช็อกโกแลตชิพ แพ็ก 6 ชิ้น",
+          "name_en": "Chocolate Chip Cookies (6 pcs)",
+          "barcode": "8851001000108",
+          "unit": "ถุง",
+          "group": "BAK",
+          "cost": 35,
+          "price": 79
+        },
+        {
+          "code": "P2-011",
+          "name_th": "บราวนี่ช็อกโกแลต",
+          "name_en": "Chocolate Brownie",
+          "barcode": "8851001000115",
+          "unit": "ชิ้น",
+          "group": "BAK",
+          "cost": 22,
+          "price": 55
+        },
+        {
+          "code": "P2-012",
+          "name_th": "เค้กช็อกโกแลตหน้านิ่ม (ชิ้น)",
+          "name_en": "Chocolate Fudge Cake (Slice)",
+          "barcode": "8851001000122",
+          "unit": "ชิ้น",
+          "group": "CAK",
+          "cost": 35,
+          "price": 85
+        },
+        {
+          "code": "P2-013",
+          "name_th": "สตรอว์เบอร์รีช็อตเค้ก (ชิ้น)",
+          "name_en": "Strawberry Shortcake (Slice)",
+          "barcode": "8851001000139",
+          "unit": "ชิ้น",
+          "group": "CAK",
+          "cost": 38,
+          "price": 89
+        },
+        {
+          "code": "P2-014",
+          "name_th": "เมล็ดกาแฟอาราบิก้าคั่วกลาง 250 กรัม",
+          "name_en": "Medium Roast Arabica Coffee Beans 250g",
+          "barcode": "8851001000146",
+          "unit": "ถุง",
+          "group": "MAT",
+          "cost": 120,
+          "price": 250
+        },
+        {
+          "code": "P2-015",
+          "name_th": "นมสดพาสเจอร์ไรส์ 2 ลิตร",
+          "name_en": "Pasteurized Fresh Milk 2L",
+          "barcode": "8851001000153",
+          "unit": "ถัง",
+          "group": "MAT",
+          "cost": 75,
+          "price": 119
+        }
+      ],
+      "customers": [
+        {
+          "code": "AR2-001",
+          "name_th": "คุณวราภรณ์ ใจดี",
+          "taxid": "",
+          "address_th": "123/45 ถนนสุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110",
+          "phone": "081-234-5678",
+          "credit_days": 0
+        },
+        {
+          "code": "AR2-002",
+          "name_th": "บริษัท สยามออฟฟิศซัพพลาย จำกัด",
+          "taxid": "0105556123457",
+          "address_th": "456 ถนนพระราม 4 แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร 10110",
+          "phone": "02-345-6789",
+          "credit_days": 30
+        },
+        {
+          "code": "AR2-003",
+          "name_th": "คุณธนกร พูนสุข",
+          "taxid": "",
+          "address_th": "78/2 หมู่ 3 ตำบลในเมือง อำเภอเมืองเชียงใหม่ จังหวัดเชียงใหม่ 50000",
+          "phone": "089-456-1234",
+          "credit_days": 0
+        },
+        {
+          "code": "AR2-004",
+          "name_th": "ห้างหุ้นส่วนจำกัด เพิ่มพูนมินิมาร์ท",
+          "taxid": "0125563234561",
+          "address_th": "88/9 ถนนรัตนาธิเบศร์ ตำบลบางกระสอ อำเภอเมืองนนทบุรี จังหวัดนนทบุรี 11000",
+          "phone": "02-567-8901",
+          "credit_days": 30
+        },
+        {
+          "code": "AR2-005",
+          "name_th": "คุณสิริพร แสงทอง",
+          "taxid": "",
+          "address_th": "21 ถนนลาดพร้าว 101 แขวงคลองจั่น เขตบางกะปิ กรุงเทพมหานคร 10240",
+          "phone": "086-789-2345",
+          "credit_days": 0
+        },
+        {
+          "code": "AR2-006",
+          "name_th": "บริษัท บางนาโลจิสติกส์ จำกัด",
+          "taxid": "0115547345674",
+          "address_th": "789 หมู่ 12 ถนนบางนา-ตราด ตำบลบางแก้ว อำเภอบางพลี จังหวัดสมุทรปราการ 10540",
+          "phone": "02-678-9012",
+          "credit_days": 30
+        },
+        {
+          "code": "AR2-007",
+          "name_th": "บริษัท ริมน้ำบูทีคโฮเทล จำกัด",
+          "taxid": "0205545456789",
+          "address_th": "55/5 ถนนเลียบชายหาด ตำบลหนองปรือ อำเภอบางละมุง จังหวัดชลบุรี 20150",
+          "phone": "038-123-456",
+          "credit_days": 30
+        },
+        {
+          "code": "AR2-008",
+          "name_th": "คุณภัทรชนก วงศ์เจริญ",
+          "taxid": "",
+          "address_th": "199/8 หมู่ 2 ตำบลคลองหนึ่ง อำเภอคลองหลวง จังหวัดปทุมธานี 12120",
+          "phone": "092-345-6789",
+          "credit_days": 0
+        }
+      ],
+      "suppliers": [
+        {
+          "code": "AP2-001",
+          "name_th": "บริษัท ดอยสะเก็ดคอฟฟี่ จำกัด",
+          "taxid": "0505557023451",
+          "address_th": "234 หมู่ 5 ตำบลสันกลาง อำเภอสันกำแพง จังหวัดเชียงใหม่ 50130",
+          "phone": "053-234-567",
+          "credit_days": 30
+        },
+        {
+          "code": "AP2-002",
+          "name_th": "บริษัท ไทยเบเกอรี่ซัพพลาย จำกัด",
+          "taxid": "0105561034560",
+          "address_th": "567 ถนนบางบอน 3 แขวงบางบอน เขตบางบอน กรุงเทพมหานคร 10150",
+          "phone": "02-789-0123",
+          "credit_days": 45
+        },
+        {
+          "code": "AP2-003",
+          "name_th": "ห้างหุ้นส่วนจำกัด ฟาร์มนมสดเขาใหญ่",
+          "taxid": "0305559045678",
+          "address_th": "45 หมู่ 8 ตำบลหมูสี อำเภอปากช่อง จังหวัดนครราชสีมา 30130",
+          "phone": "044-345-678",
+          "credit_days": 30
+        },
+        {
+          "code": "AP2-004",
+          "name_th": "บริษัท ภูมิใจชาไทย จำกัด",
+          "taxid": "0575558056783",
+          "address_th": "112 หมู่ 3 ตำบลแม่สลองนอก อำเภอแม่ฟ้าหลวง จังหวัดเชียงราย 57110",
+          "phone": "053-456-789",
+          "credit_days": 30
+        },
+        {
+          "code": "AP2-005",
+          "name_th": "บริษัท แพ็คเกจจิ้งพลัส จำกัด",
+          "taxid": "0745562067891",
+          "address_th": "678/9 ถนนเศรษฐกิจ 1 ตำบลอ้อมน้อย อำเภอกระทุ่มแบน จังหวัดสมุทรสาคร 74130",
+          "phone": "034-567-890",
+          "credit_days": 15
+        },
+        {
+          "code": "AP2-006",
+          "name_th": "บริษัท ฟรุตแอนด์เบอร์รี่ฟาร์ม จำกัด",
+          "taxid": "0675554067897",
+          "address_th": "89 หมู่ 10 ตำบลท่าพล อำเภอเขาค้อ จังหวัดเพชรบูรณ์ 67270",
+          "phone": "056-678-901",
+          "credit_days": 30
+        }
+      ]
+    },
+    {
+      "code": "C03",
+      "name_th": "ห้างหุ้นส่วนจำกัด รุ่งเรืองการค้า",
+      "name_en": "Rungrueang Trading Limited Partnership",
+      "taxid": "0115565012348",
+      "businesstype": "ค้าปลีก",
+      "address_th": "เลขที่ 789 หมู่ 2 ถนนสุขุมวิท ตำบลปากน้ำ อำเภอเมืองสมุทรปราการ จังหวัดสมุทรปราการ 10270",
+      "phone": "02-555-3456",
+      "branches": [
+        {
+          "code": "00000",
+          "name_th": "สำนักงานใหญ่",
+          "address_th": "เลขที่ 789 หมู่ 2 ถนนสุขุมวิท ตำบลปากน้ำ อำเภอเมืองสมุทรปราการ จังหวัดสมุทรปราการ 10270",
+          "phone": "02-555-3456"
+        }
+      ],
+      "product_groups": [
+        {
+          "code": "G01",
+          "name_th": "อาหารแห้ง"
+        },
+        {
+          "code": "G02",
+          "name_th": "เครื่องดื่ม"
+        },
+        {
+          "code": "G03",
+          "name_th": "ขนมขบเคี้ยว"
+        },
+        {
+          "code": "G04",
+          "name_th": "ของใช้ในครัวเรือน"
+        },
+        {
+          "code": "G05",
+          "name_th": "ผลิตภัณฑ์ทำความสะอาด"
+        }
+      ],
+      "products": [
+        {
+          "code": "P3-001",
+          "name_th": "ข้าวหอมมะลิ ตรานกพิราบทอง 5 กก.",
+          "name_en": "Jasmine Rice Golden Pigeon Brand 5 kg",
+          "barcode": "8853001018220",
+          "unit": "ถุง",
+          "group": "G01",
+          "cost": 189,
+          "price": 225
+        },
+        {
+          "code": "P3-002",
+          "name_th": "น้ำตาลทรายขาว ตรารวงทอง 1 กก.",
+          "name_en": "Refined Sugar Golden Rice Sheaf Brand 1 kg",
+          "barcode": "8853001018596",
+          "unit": "ถุง",
+          "group": "G01",
+          "cost": 23,
+          "price": 28
+        },
+        {
+          "code": "P3-003",
+          "name_th": "น้ำปลาแท้ ตราเรือสำเภา 700 มล.",
+          "name_en": "Fish Sauce Junk Boat Brand 700 ml",
+          "barcode": "8853001018961",
+          "unit": "ชิ้น",
+          "group": "G01",
+          "cost": 32,
+          "price": 39
+        },
+        {
+          "code": "P3-004",
+          "name_th": "น้ำมันปาล์ม ตราดอกบัวทอง 1 ลิตร",
+          "name_en": "Palm Oil Golden Lotus Brand 1 L",
+          "barcode": "8853001019333",
+          "unit": "ชิ้น",
+          "group": "G01",
+          "cost": 42,
+          "price": 52
+        },
+        {
+          "code": "P3-005",
+          "name_th": "กะทิกระป๋อง ตราชาวเกาะ 400 มล.",
+          "name_en": "Coconut Milk Islander Brand 400 ml",
+          "barcode": "8853001019708",
+          "unit": "ชิ้น",
+          "group": "G01",
+          "cost": 21,
+          "price": 27
+        },
+        {
+          "code": "P3-006",
+          "name_th": "น้ำดื่ม ตราภูเขาใส 600 มล. ยกลัง 12 ขวด",
+          "name_en": "Drinking Water Clear Mountain Brand 600 ml x12",
+          "barcode": "8853001020070",
+          "unit": "ลัง",
+          "group": "G02",
+          "cost": 45,
+          "price": 60
+        },
+        {
+          "code": "P3-007",
+          "name_th": "ชาเขียวพร้อมดื่ม ตราใบเพชร 500 มล.",
+          "name_en": "Ready-to-Drink Green Tea Diamond Leaf Brand 500 ml",
+          "barcode": "8853001020445",
+          "unit": "ชิ้น",
+          "group": "G02",
+          "cost": 13,
+          "price": 17
+        },
+        {
+          "code": "P3-008",
+          "name_th": "กาแฟกระป๋อง ตราคั่วโบราณ 180 มล.",
+          "name_en": "Canned Coffee Old Roast Brand 180 ml",
+          "barcode": "8853001020810",
+          "unit": "ชิ้น",
+          "group": "G02",
+          "cost": 11,
+          "price": 15
+        },
+        {
+          "code": "P3-009",
+          "name_th": "นมโรงเรียนรสจืด ตราแลคต้า 200 มล.",
+          "name_en": "School Milk Plain Lacta Brand 200 ml",
+          "barcode": "8853001021183",
+          "unit": "กล่อง",
+          "group": "G02",
+          "cost": 6.5,
+          "price": 9
+        },
+        {
+          "code": "P3-010",
+          "name_th": "ขนมปังกรอบรสเนย ตราเบาเบา 220 ก.",
+          "name_en": "Butter Rusk Bao Bao Brand 220 g",
+          "barcode": "8850001000002",
+          "unit": "กล่อง",
+          "group": "G03",
+          "cost": 28,
+          "price": 35
+        },
+        {
+          "code": "P3-011",
+          "name_th": "มันฝรั่งแท่งรสต้มยำ ตราเจ้าสัวทอด 75 ก.",
+          "name_en": "Potato Stick Tom Yum Jao Sua Tod Brand 75 g",
+          "barcode": "8850002000018",
+          "unit": "ถุง",
+          "group": "G03",
+          "cost": 18,
+          "price": 25
+        },
+        {
+          "code": "P3-012",
+          "name_th": "สบู่ก้อนสมุนไพร ตราเคียงห้อง 100 ก.",
+          "name_en": "Herbal Soap Bar Kiang Hang Brand 100 g",
+          "barcode": "8850002000025",
+          "unit": "ชิ้น",
+          "group": "G04",
+          "cost": 15,
+          "price": 22
+        },
+        {
+          "code": "P3-013",
+          "name_th": "ไส้เทียนหอม ตราแสงจันทร์ 8 เล่ม",
+          "name_en": "Fragrant Incense Moonlight Brand 8 Packs",
+          "barcode": "8850002000032",
+          "unit": "กล่อง",
+          "group": "G04",
+          "cost": 20,
+          "price": 29
+        },
+        {
+          "code": "P3-014",
+          "name_th": "ผงซักฟอก ตราขาวผ่อง 2.7 กก.",
+          "name_en": "Detergent Powder Bright White Brand 2.7 kg",
+          "barcode": "8850002000049",
+          "unit": "ถุง",
+          "group": "G05",
+          "cost": 99,
+          "price": 125
+        },
+        {
+          "code": "P3-015",
+          "name_th": "น้ำยาล้างจาน ตราสะอาดเนียน 850 มล.",
+          "name_en": "Dishwashing Liquid Clean Shine Brand 850 ml",
+          "barcode": "8850002000056",
+          "unit": "ชิ้น",
+          "group": "G05",
+          "cost": 29,
+          "price": 38
+        }
+      ],
+      "customers": [
+        {
+          "code": "AR3-001",
+          "name_th": "บริษัท สุขสมมาร์ท จำกัด",
+          "taxid": "0105551234567",
+          "address_th": "123/45 ถนนพระราม 4 แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร 10110",
+          "phone": "02-345-6789",
+          "credit_days": 30
+        },
+        {
+          "code": "AR3-002",
+          "name_th": "ร้านโชห่วยเจริญพร (นายสมชาย เจริญพร)",
+          "taxid": "",
+          "address_th": "56 ถนนติวานนท์ ตำบลบางกระสอ อำเภอเมืองนนทบุรี จังหวัดนนทบุรี 11000",
+          "phone": "081-234-5678",
+          "credit_days": 15
+        },
+        {
+          "code": "AR3-003",
+          "name_th": "ห้างหุ้นส่วนจำกัด รวมทรัพย์มินิมาร์ท",
+          "taxid": "0125558123459",
+          "address_th": "88/9 ถนนรังสิต-นครนายก ตำบลประชาธิปัตย์ อำเภอธัญบุรี จังหวัดปทุมธานี 12130",
+          "phone": "02-987-6543",
+          "credit_days": 30
+        },
+        {
+          "code": "AR3-004",
+          "name_th": "นางสาวมาลี ใจดี (ร้านของชำมาลี)",
+          "taxid": "",
+          "address_th": "234 ถนนสุขุมวิท ตำบลปากน้ำ อำเภอเมืองสมุทรปราการ จังหวัดสมุทรปราการ 10270",
+          "phone": "089-456-7890",
+          "credit_days": 7
+        },
+        {
+          "code": "AR3-005",
+          "name_th": "บริษัท ตลาดสดท่าใหม่ จำกัด",
+          "taxid": "0505552012348",
+          "address_th": "45 ถนนวัวลาย ตำบลหายยา อำเภอเมืองเชียงใหม่ จังหวัดเชียงใหม่ 50100",
+          "phone": "053-234-567",
+          "credit_days": 45
+        },
+        {
+          "code": "AR3-006",
+          "name_th": "ร้านขายของชำป้าแดง (นางแดง ศรีสุข)",
+          "taxid": "",
+          "address_th": "78 ถนนมิตรภาพ ตำบลในเมือง อำเภอเมืองขอนแก่น จังหวัดขอนแก่น 40000",
+          "phone": "086-789-0123",
+          "credit_days": 15
+        },
+        {
+          "code": "AR3-007",
+          "name_th": "ห้างหุ้นส่วนจำกัด สองพี่น้องเทรดดิ้ง",
+          "taxid": "0205560987654",
+          "address_th": "199/2 ถนนสุขุมวิท ตำบลบางปลาสร้อย อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
+          "phone": "038-456-789",
+          "credit_days": 30
+        },
+        {
+          "code": "AR3-008",
+          "name_th": "บริษัท บ้านสวนริมน้ำ รีสอร์ท จำกัด",
+          "taxid": "0305553056783",
+          "address_th": "33 ถนนโรจนะ ตำบลหอรัตนไชย อำเภอพระนครศรีอยุธยา จังหวัดพระนครศรีอยุธยา 13000",
+          "phone": "035-678-901",
+          "credit_days": 30
+        }
+      ],
+      "suppliers": [
+        {
+          "code": "AP3-001",
+          "name_th": "บริษัท ธัญญาภิรมย์ฟู้ดส์ จำกัด",
+          "taxid": "0105557123451",
+          "address_th": "55 ถนนเศรษฐกิจ 1 ตำบลท่าทราย อำเภอเมืองสมุทรสาคร จังหวัดสมุทรสาคร 74000",
+          "phone": "034-123-456",
+          "credit_days": 30
+        },
+        {
+          "code": "AP3-002",
+          "name_th": "ห้างหุ้นส่วนจำกัด รวมใจเครื่องปรุง",
+          "taxid": "0125559045674",
+          "address_th": "900 ถนนบางนา-ตราด แขวงบางนา เขตบางนา กรุงเทพมหานคร 10260",
+          "phone": "02-456-7890",
+          "credit_days": 30
+        },
+        {
+          "code": "AP3-003",
+          "name_th": "บริษัท ดริงค์เวิลด์ ดิสทริบิวชั่น จำกัด",
+          "taxid": "0105562345670",
+          "address_th": "15/3 หมู่ 4 ถนนกาญจนาภิเษก ตำบลบางคูวัด อำเภอเมืองปทุมธานี จังหวัดปทุมธานี 12000",
+          "phone": "02-567-8901",
+          "credit_days": 45
+        },
+        {
+          "code": "AP3-004",
+          "name_th": "บริษัท สแน็คแหลนด์ จำกัด",
+          "taxid": "0205561345675",
+          "address_th": "210 ถนนเพชรเกษม ตำบลสนามจันทร์ อำเภอเมืองนครปฐม จังหวัดนครปฐม 73000",
+          "phone": "034-567-890",
+          "credit_days": 30
+        },
+        {
+          "code": "AP3-005",
+          "name_th": "ห้างหุ้นส่วนจำกัด คลีนนิ่งซัพพลายภัณฑ์",
+          "taxid": "0105563345671",
+          "address_th": "44 ถนนมิตรภาพ ตำบลปากเพรียว อำเภอเมืองสระบุรี จังหวัดสระบุรี 18000",
+          "phone": "036-234-567",
+          "credit_days": 30
+        },
+        {
+          "code": "AP3-006",
+          "name_th": "ห้างหุ้นส่วนจำกัด เบ็ดเตล็ดเทรดดิ้ง",
+          "taxid": "0115564345674",
+          "address_th": "77/8 ถนนชลบุรี-บ้านบึง ตำบลหนองไม้แดง อำเภอเมืองชลบุรี จังหวัดชลบุรี 20000",
+          "phone": "038-345-678",
+          "credit_days": 30
+        }
+      ]
+    }
+  ],
+  "departments": [
+    {
+      "code": "MGT",
+      "name_th": "ฝ่ายบริหาร"
+    },
+    {
+      "code": "ACC",
+      "name_th": "ฝ่ายบัญชีและการเงิน"
+    },
+    {
+      "code": "SLS",
+      "name_th": "ฝ่ายขาย"
+    },
+    {
+      "code": "PUR",
+      "name_th": "ฝ่ายจัดซื้อ"
+    },
+    {
+      "code": "WH",
+      "name_th": "ฝ่ายคลังสินค้า"
+    },
+    {
+      "code": "HR",
+      "name_th": "ฝ่ายทรัพยากรบุคคล"
+    }
+  ],
+  "permission_sets": [
+    {
+      "code": "ACCOUNTING",
+      "name_th": "บัญชี",
+      "screens": [
+        "sale-invoice",
+        "purchase",
+        "debtor",
+        "creditor",
+        "currency",
+        "company"
+      ]
+    },
+    {
+      "code": "SALES",
+      "name_th": "ขาย",
+      "screens": [
+        "quotation",
+        "sale-order",
+        "sale-invoice",
+        "debtor",
+        "product-group",
+        "product-barcode"
+      ]
+    },
+    {
+      "code": "STOCK",
+      "name_th": "คลังสินค้า",
+      "screens": [
+        "purchase-order",
+        "purchase",
+        "product-group",
+        "product-barcode",
+        "stock-balance",
+        "stock-transfer",
+        "stock-adjustment",
+        "creditor"
+      ]
+    },
+    {
+      "code": "BRANCH_MANAGER",
+      "name_th": "ผู้จัดการสาขา",
+      "screens": [
+        "quotation",
+        "sale-order",
+        "sale-invoice",
+        "debtor",
+        "stock-balance",
+        "stock-transfer",
+        "stock-adjustment",
+        "employee",
+        "branch"
+      ]
+    }
+  ],
+  "employees": [
+    {
+      "code": "EMP001",
+      "name_th": "สมชาย รุ่งเรืองกิจ",
+      "email": "somchai@demo.bcaicloud.com",
+      "position": "กรรมการผู้จัดการ",
+      "department": "MGT",
+      "company": "C01",
+      "branch": "00000",
+      "permission_sets": [
+        "ACCOUNTING",
+        "SALES",
+        "STOCK",
+        "BRANCH_MANAGER"
+      ]
+    },
+    {
+      "code": "EMP002",
+      "name_th": "วรรณภา ศรีสุวรรณ",
+      "email": "wannapa.s@demo.bcaicloud.com",
+      "position": "ผู้จัดการฝ่ายบัญชี",
+      "department": "ACC",
+      "company": "C01",
+      "branch": "00000",
+      "permission_sets": [
+        "ACCOUNTING"
+      ]
+    },
+    {
+      "code": "EMP003",
+      "name_th": "ธนกร อินทร์แก้ว",
+      "email": "thanakorn.i@demo.bcaicloud.com",
+      "position": "หัวหน้าฝ่ายขาย",
+      "department": "SLS",
+      "company": "C01",
+      "branch": "00000",
+      "permission_sets": [
+        "SALES"
+      ]
+    },
+    {
+      "code": "EMP004",
+      "name_th": "สุภาวดี ทองคำดี",
+      "email": "supawadee.t@demo.bcaicloud.com",
+      "position": "เจ้าหน้าที่จัดซื้อ",
+      "department": "PUR",
+      "company": "C01",
+      "branch": "00000",
+      "permission_sets": [
+        "STOCK"
+      ]
+    },
+    {
+      "code": "EMP005",
+      "name_th": "ประเสริฐ ใจกล้า",
+      "email": "prasert.j@demo.bcaicloud.com",
+      "position": "หัวหน้าคลังสินค้า",
+      "department": "WH",
+      "company": "C01",
+      "branch": "00000",
+      "permission_sets": [
+        "STOCK"
+      ]
+    },
+    {
+      "code": "EMP006",
+      "name_th": "เกียรติศักดิ์ พัฒนาพงศ์",
+      "email": "kiatsak.p@demo.bcaicloud.com",
+      "position": "ผู้จัดการสาขา",
+      "department": "SLS",
+      "company": "C01",
+      "branch": "00001",
+      "permission_sets": [
+        "BRANCH_MANAGER"
+      ]
+    },
+    {
+      "code": "EMP007",
+      "name_th": "ปิยะนุช รักไทย",
+      "email": "piyanuch.r@demo.bcaicloud.com",
+      "position": "พนักงานขาย",
+      "department": "SLS",
+      "company": "C01",
+      "branch": "00001",
+      "permission_sets": [
+        "SALES"
+      ]
+    },
+    {
+      "code": "EMP008",
+      "name_th": "อนุชา แสงจันทร์",
+      "email": "anucha.s@demo.bcaicloud.com",
+      "position": "พนักงานคลังสินค้า",
+      "department": "WH",
+      "company": "C01",
+      "branch": "00001",
+      "permission_sets": [
+        "STOCK"
+      ]
+    },
+    {
+      "code": "EMP009",
+      "name_th": "ณัฐวดี กิตติชัย",
+      "email": "natwadee.k@demo.bcaicloud.com",
+      "position": "ผู้จัดการร้าน",
+      "department": "SLS",
+      "company": "C02",
+      "branch": "00000",
+      "permission_sets": [
+        "BRANCH_MANAGER",
+        "SALES"
+      ]
+    },
+    {
+      "code": "EMP010",
+      "name_th": "จิรายุ วงศ์สว่าง",
+      "email": "jirayu.w@demo.bcaicloud.com",
+      "position": "พนักงานขาย (บาริสต้า)",
+      "department": "SLS",
+      "company": "C02",
+      "branch": "00000",
+      "permission_sets": [
+        "SALES"
+      ]
+    },
+    {
+      "code": "EMP011",
+      "name_th": "มนัสนันท์ เพิ่มพูน",
+      "email": "manatsanan.p@demo.bcaicloud.com",
+      "position": "ผู้จัดการสาขา",
+      "department": "SLS",
+      "company": "C03",
+      "branch": "00000",
+      "permission_sets": [
+        "BRANCH_MANAGER"
+      ]
+    },
+    {
+      "code": "EMP012",
+      "name_th": "วิชัย ธาราทิพย์",
+      "email": "wichai.t@demo.bcaicloud.com",
+      "position": "พนักงานขายและคลังสินค้า",
+      "department": "WH",
+      "company": "C03",
+      "branch": "00000",
+      "permission_sets": [
+        "SALES",
+        "STOCK"
+      ]
+    }
+  ]
+}

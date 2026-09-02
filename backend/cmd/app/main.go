@@ -135,6 +135,7 @@ func main() {
 		"/swagger",
 		"/login",
 		"/dev-login",
+		"/demo-login",
 		"/googlelogin",
 		"/refresh",
 
