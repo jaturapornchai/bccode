@@ -8233,3 +8233,13 @@ a[class~="bg-primary"]:hover {
 .login-shell .google-login.gis-wrap .google-face {
   display: none;
 }
+/* GIS wrapper fills the host (the layout the button was verified clickable in). */
+.login-shell .google-login.gis-wrap .gis-button-host {
+  min-height: 44px;
+}
+.login-shell .google-login.gis-wrap .gis-button-host > div {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
