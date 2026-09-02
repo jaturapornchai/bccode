@@ -372,13 +372,9 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: { key: "system_settings", th: "ตั้งค่าระบบ", en: "System Settings" },
         items: [
           tx("active-languages", "ภาษาที่ใช้งาน", "Active Languages", "/activelanguages", "settings"),
-          // สกุลเงิน / ประเภทธุรกิจ / พนักงาน อยู่ในขั้น "ข้อมูลบริษัทและสาขา" ของ ตั้งค่าระบบ (workspace) แล้ว
-          tx("line-oa-user-link", "เชื่อม LINE OA", "Connect LINE OA", "/line-oa", "settings"),
-          tx("form-design", "ออกแบบฟอร์ม", "Form Design", "/formdesign", "settings"),
-          tx("line-notify", "แจ้งเตือนผ่าน LINE", "LINE Notifications", "/linenotify", "settings"),
-          tx("ai-provider", "ผู้ให้บริการ AI", "AI Service Provider", "/aiprovider", "settings"),
-          tx("copy-uat-dev", "คัดลอกข้อมูลทดสอบ", "Copy Test Data", "/copyuattodev", "settings"),
-          tx("data-model-graph", "โครงสร้างข้อมูล (สมอง)", "Data Model Graph", "/datamodelgraph", "settings"),
+          // สกุลเงิน/ประเภทธุรกิจ/พนักงาน อยู่ในขั้น "ข้อมูลบริษัทและสาขา" ของ ตั้งค่าระบบ (workspace);
+          // "ตั้งค่าทั่วไป" (LINE OA, ออกแบบฟอร์ม, แจ้งเตือน LINE, ผู้ให้บริการ AI, คัดลอกข้อมูลทดสอบ) และ
+          // "โครงสร้างข้อมูล (สมอง)" ถูกถอดออกจากเมนูตามคำสั่งลุงจืด 2026-09-02 (โค้ดจอยังอยู่ เปิดผ่าน route ตรงได้)
         ],
       },
     ],

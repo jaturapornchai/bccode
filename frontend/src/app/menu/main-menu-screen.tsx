@@ -158,17 +158,9 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
-const generalMenuIds = new Set([
-  "line-oa-user-link",
-  "form-design",
-  "line-notify",
-  "ai-provider",
-  "copy-uat-dev"
-]);
 
-const systemTreeFolders = [
-  { id: "general-settings", itemIds: generalMenuIds, label: { key: "general_settings", th: "ตั้งค่าทั่วไป", en: "General Settings" }, seedId: "line-oa-user-link" },
-];
+// ตั้งค่า ไม่มีโฟลเดอร์ย่อยแล้ว (ตั้งค่าบริษัท → ขั้น 2 ของ wizard; ตั้งค่าทั่วไป ถอดออก 2026-09-02) — โครงยังรองรับหากเพิ่มกลับ
+const systemTreeFolders: { id: string; itemIds: Set<string>; label: MenuLabel; seedId: string }[] = [];
 const menuUiKeys = {
   closeTab: "close_tab",
   dashboardRoute: "dashboard",
