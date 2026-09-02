@@ -6327,36 +6327,7 @@ div[class*="ml-auto"]:has(.zoom-control) button[class*="min-h-8"] span[class*="w
 /* Custom Google button face: our styled content is visible; the GIS-drawn
    button/iframe stays stretched and transparent on top as the real
    click-catcher (its own drawn hover doesn't fill stretched frames). */
-.google-login.gis-button-host {
-  position: relative;
-  background: #ffffff;
-  border: 1px solid #dadce0;
-  color: #3c4043;
-}
-.google-login.gis-button-host:hover {
-  background: #f6f8fa;
-}
-.google-login.gis-button-host .google-face {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6em;
-  pointer-events: none;
-}
-.google-login.gis-button-host .google-face svg {
-  flex: 0 0 auto;
-}
-.google-login.gis-button-host > *:not(.google-face) {
-  position: absolute;
-  inset: 0;
-  width: 100% !important;
-  height: 100% !important;
-  opacity: 0 !important;
-  border: 0 !important;
-  background: transparent !important;
-}
+/* (legacy face-inside-host Google button rules removed 2026-09-02 — the official GIS button is shown as-is) */
 
 /* GIS custom-button pattern: our face is visible; the GIS host (wrapper + iframe
    that Google injects) is a transparent full-size click-catcher above it. */
@@ -6391,21 +6362,23 @@ div[class*="ml-auto"]:has(.zoom-control) button[class*="min-h-8"] span[class*="w
   white-space: nowrap;
 }
 .google-login.gis-wrap .gis-button-host {
-  position: absolute;
-  inset: 0;
+  position: relative;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-width: 0;
+  display: flex;
+  justify-content: center;
   border: 0;
   background: transparent;
   box-shadow: none;
 }
+/* GIS clickjacking guard: the official iframe must stay fully visible and keep
+   the size GIS assigns; Chrome (IntersectionObserver v2) ignores clicks on a
+   hidden/opacity-0 Sign-in-with-Google iframe. (2026-09-02 prod fix) */
 .google-login.gis-wrap .gis-button-host > div,
 .google-login.gis-wrap .gis-button-host iframe {
-  width: 100% !important;
-  height: 100% !important;
   max-width: 100% !important;
-  opacity: 0 !important;
+  opacity: 1 !important;
   border: 0 !important;
   background: transparent !important;
 }
@@ -8245,4 +8218,18 @@ a[class~="bg-primary"]:hover {
   .login-shell .form-panel {
     animation: none;
   }
+}
+
+/* --- Google button: show the real GIS iframe (2026-09-02 prod fix) ---
+   The fake face over an opacity-0 iframe made the button silent in real Chrome
+   (see the GIS clickjacking guard note mid-file). Show the official button. */
+.login-shell .google-login.gis-wrap {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  transform: none;
+}
+.login-shell .google-login.gis-wrap .google-face {
+  display: none;
 }
