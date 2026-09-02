@@ -109,6 +109,13 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
+// ขั้น "ข้อมูลบริษัทและสาขา" รวมจอตั้งค่าของบริษัทไว้ที่เดียว (ย้ายจากเมนู ตั้งค่า › ตั้งค่าบริษัท 2026-09-02)
+const companyStepTabs = [
+  { route: "/company", label: { th: "โครงสร้างองค์กร", en: "Organization" } },
+  { route: "/currency", label: { th: "สกุลเงิน", en: "Currency" } },
+  { route: "/businesstypescreen", label: { th: "ประเภทธุรกิจ", en: "Business Type" } },
+  { route: "/employee", label: { th: "พนักงาน", en: "Employee" } },
+] as const;
 const accessSettingNavItems = [
   {
     route: "/activelanguages",
@@ -325,6 +332,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
   const [activeAccessRoute, setActiveAccessRoute] = useState<string | null>(null);
+  const [companyTab, setCompanyTab] = useState<(typeof companyStepTabs)[number]["route"]>("/company");
   const [accessSidebarCollapsed, setAccessSidebarCollapsed] = useState(false);
   useEffect(() => {
     setAccessSidebarCollapsed(localStorage.getItem("bc-access-sidebar-collapsed") === "1");
@@ -1325,9 +1333,25 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   </button>
                 </div>
               ) : null}
+              {activeAccessRoute === "/company" ? (
+                <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label={language === "th" ? "หมวดข้อมูลบริษัท" : "Company sections"}>
+                  {companyStepTabs.map((tab) => (
+                    <button
+                      aria-selected={companyTab === tab.route}
+                      className={`min-h-10 rounded-lg border px-3 text-sm font-semibold transition-colors ${companyTab === tab.route ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
+                      key={tab.route}
+                      onClick={() => setCompanyTab(tab.route)}
+                      role="tab"
+                      type="button"
+                    >
+                      {language === "th" ? tab.label.th : tab.label.en}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <SystemSettingsScreen
-                key={`${activeAccessRoute}:${tenantCodeForShop(selectedShopForAccess)}`}
-                route={activeAccessRoute}
+                key={`${activeAccessRoute === "/company" ? companyTab : activeAccessRoute}:${tenantCodeForShop(selectedShopForAccess)}`}
+                route={activeAccessRoute === "/company" ? companyTab : activeAccessRoute}
                 embedded
                 hideChrome
                 branchOverride={null}

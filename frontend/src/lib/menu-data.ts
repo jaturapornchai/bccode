@@ -372,10 +372,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: { key: "system_settings", th: "ตั้งค่าระบบ", en: "System Settings" },
         items: [
           tx("active-languages", "ภาษาที่ใช้งาน", "Active Languages", "/activelanguages", "settings"),
-
-          tx("currency", "สกุลเงิน", "Currency", "/currency", "settings"),
-          tx("company-type", "ประเภทธุรกิจ", "Business Type", "/businesstypescreen", "settings"),
-          tx("employee", "พนักงาน", "Employee", "/employee", "settings"),
+          // สกุลเงิน / ประเภทธุรกิจ / พนักงาน อยู่ในขั้น "ข้อมูลบริษัทและสาขา" ของ ตั้งค่าระบบ (workspace) แล้ว
           tx("line-oa-user-link", "เชื่อม LINE OA", "Connect LINE OA", "/line-oa", "settings"),
           tx("form-design", "ออกแบบฟอร์ม", "Form Design", "/formdesign", "settings"),
           tx("line-notify", "แจ้งเตือนผ่าน LINE", "LINE Notifications", "/linenotify", "settings"),
@@ -393,6 +390,45 @@ export function menuText(label: MenuLabel, language: LanguageCode, dictionary?: 
   if (fromBackend) return fromBackend;
   if (label.key && dictionary && !isBackendLanguageReady(dictionary)) return label[language] || label.en || label.th || "";
   return label[language] || label.en || label.th || label.key || "";
+}
+
+/**
+ * Menu full-text search (2026-08-30): "ค้นหาไม่เจอ ต้องแบบ full text search
+ * ด้วย ได้ทุกภาษา" — matching used to compare only the CURRENT UI language,
+ * so typing English in a Thai UI (or vice versa) found nothing, and a Thai
+ * query with a wrong tone mark missed exact labels.
+ */
+const SEARCH_NOISE = /[\u200B-\u200D\uFEFF\u2060]/g;
+const THAI_COMBINING = /[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g;
+
+export function normalizeMenuSearchText(value: string): string {
+  return value
+    .replace(SEARCH_NOISE, "")
+    .replace(THAI_COMBINING, "")
+    .toLocaleLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Every searchable variant of one label: all shipped languages, the key and
+    any backend dictionary override — a query in ANY language must match. */
+export function menuSearchHaystack(label: MenuLabel, dictionary?: BackendLanguageDictionary): string {
+  const parts: string[] = [label.th, label.en];
+  for (const code of Object.keys(label)) {
+    if (code === "th" || code === "en" || code === "key") continue;
+    const value = (label as Record<string, unknown>)[code];
+    if (typeof value === "string") parts.push(value);
+  }
+  if (label.key) {
+    parts.push(label.key);
+    const fromBackend = dictionary?.[label.key];
+    if (fromBackend) parts.push(fromBackend);
+  }
+  return normalizeMenuSearchText(parts.filter(Boolean).join(" "));
+}
+
+export function menuSearchMatches(label: MenuLabel, needle: string, dictionary?: BackendLanguageDictionary): boolean {
+  return Boolean(needle) && menuSearchHaystack(label, dictionary).includes(needle);
 }
 
 export function flattenMenuItems(): MenuItem[] {

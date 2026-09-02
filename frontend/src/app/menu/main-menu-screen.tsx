@@ -8,8 +8,10 @@ import {
   Building2,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   ChevronsUpDown,
   CircleX,
+  X,
   Command,
   Copy,
   Crown,
@@ -27,6 +29,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  SearchX,
   Settings,
   Star,
   Store,
@@ -54,9 +57,13 @@ import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
 import {
   MENU_SECTIONS,
   flattenMenuItems,
+  menuSearchHaystack,
+  menuSearchMatches,
   menuText,
+  normalizeMenuSearchText,
   type MenuGroup,
   type MenuItem,
+  type MenuLabel,
   type MenuSection,
 } from "@/lib/menu-data";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type MenuUsageMap } from "@/lib/menu-usage";
@@ -151,7 +158,6 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
-const companyMenuIds = new Set(["company", "branch", "employee", "company-type", "currency"]);
 const generalMenuIds = new Set([
   "line-oa-user-link",
   "form-design",
@@ -161,7 +167,6 @@ const generalMenuIds = new Set([
 ]);
 
 const systemTreeFolders = [
-  { id: "company-settings", itemIds: companyMenuIds, label: { key: "company_settings", th: "ตั้งค่าบริษัท", en: "Company Settings" }, seedId: "company" },
   { id: "general-settings", itemIds: generalMenuIds, label: { key: "general_settings", th: "ตั้งค่าทั่วไป", en: "General Settings" }, seedId: "line-oa-user-link" },
 ];
 const menuUiKeys = {
@@ -213,75 +218,20 @@ function normalizeSettingRecords(payload: unknown): SettingRecord[] {
   return isRecord(payload.data) ? [payload.data] : [];
 }
 
-function WorkspaceContextPanel({
-  language,
-  mode,
-  workspace,
-}: {
-  language: LanguageCode;
-  mode: "sidebar" | "topbar";
-  workspace: WorkspaceSession | null;
-}) {
-  if (!workspace) {
-    return (
-      <div className={cn(
-        "min-w-0 rounded-xl border border-border bg-background/90 px-2 py-1 shadow-sm",
-        mode === "topbar" && "flex-[1_1_18rem]",
-      )}>
-        <p className="text-xs font-bold leading-tight">BC Ai Account</p>
-        <p className="text-[10px] leading-tight text-muted-foreground">Workspace</p>
-      </div>
-    );
-  }
 
-  const companyLabel = language === "th" ? "บริษัท" : "Company";
-  const branchLabel = language === "th" ? "สาขา" : "Branch";
-  const rows = [
-    { icon: Crown, label: "กลุ่มกิจการ", value: holdingDisplayName(workspace) },
-    { icon: Building2, label: companyLabel, value: workspaceCompanyDisplayName(workspace) },
-    { icon: GitBranch, label: branchLabel, value: workspaceBranchDisplayName(workspace) },
-  ];
+type MenuPermissionFailure =
+  | "session-expired" // 401 even after authFetch's one refresh attempt — session is dead
+  | "http-error" // server answered with an error status
+  | "network-error" // request never reached the server
+  | "no-permission-record"; // signed in, but no active permission record for this holding
 
-  return (
-    <div
-      className={cn(
-        "min-w-0 rounded-xl border border-border bg-background/90 shadow-sm",
-        mode === "sidebar"
-          ? "grid gap-1 p-1.5"
-          : "grid w-full grid-cols-1 gap-1 p-1 sm:grid-cols-2 xl:grid-cols-[minmax(10rem,0.8fr)_minmax(20rem,1.45fr)_minmax(12rem,0.9fr)]",
-      )}
-    >
-      {rows.map((row) => {
-        const Icon = row.icon;
-        return (
-          <div
-            className={cn(
-              "min-w-0 rounded-lg border border-border/60 bg-card/80",
-              mode === "sidebar"
-                ? "grid grid-cols-[16px_52px_minmax(0,1fr)] items-start gap-1.5 px-1.5 py-1"
-                : "grid grid-cols-[16px_58px_minmax(0,1fr)] items-start gap-1.5 px-2 py-1",
-            )}
-            key={row.label}
-          >
-            <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-            {mode === "sidebar" || mode === "topbar" ? (
-              <span className="pt-0.5 text-[9px] font-black uppercase leading-tight text-muted-foreground">
-                {row.label}
-              </span>
-            ) : null}
-            <div className="min-w-0">
-              <p className="break-words text-xs font-bold leading-snug text-foreground">
-                {row.value || "-"}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+type MenuPermissionResult = {
+  allowed: Set<string>;
+  failure?: MenuPermissionFailure;
+  status?: number;
+};
 
-async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSession): Promise<Set<string>> {
+async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSession): Promise<MenuPermissionResult> {
   const headers = {
     "Content-Type": "application/json",
     "x-bc-backend-url": auth.backendUrl,
@@ -293,14 +243,114 @@ async function fetchAllowedMenuIds(auth: AuthSession, workspace: WorkspaceSessio
       `/api/system-settings/permissiongroup/me?holdingcode=${holdingcode}`,
       { headers, cache: "no-store" },
     );
-    if (!response.ok) return new Set();
+    if (response.status === 401) return { allowed: new Set(), failure: "session-expired", status: 401 };
+    if (!response.ok) return { allowed: new Set(), failure: "http-error", status: response.status };
     const payload = await response.json() as unknown;
     const rolePermission = normalizeSettingRecords(payload)[0];
-    if (!rolePermission || rolePermission.isactive === false) return new Set();
-    return new Set(stringArray(rolePermission.permissions));
+    if (!rolePermission || rolePermission.isactive === false) {
+      return { allowed: new Set(), failure: "no-permission-record" };
+    }
+    const permissions = stringArray(rolePermission.permissions);
+    // "*" = the backend granted full screen access (ADMIN/OWNER default when
+    // no role permission is assigned).
+    if (permissions.includes("*")) {
+      return { allowed: new Set(flattenMenuItems().map((item) => item.id)) };
+    }
+    return { allowed: new Set(permissions) };
   } catch {
-    return new Set();
+    return { allowed: new Set(), failure: "network-error" };
   }
+}
+
+type SessionStatItem = { holdingcode: string; sessions: number; active: number; lastseenat: number };
+type SessionEntryItem = { username: string; name: string; holdingcode: string; role: string; createdat: number; lastseenat: number; sessions: number; active: boolean };
+type SessionStatsData = { totalsessions: number; activesessions: number; activewindowms: number; holdings: SessionStatItem[]; entries: SessionEntryItem[] };
+
+/** จำนวนเซสชัน + รายชื่อผู้ใช้ที่กำลังใช้งาน (Redis ฝั่ง backend) — ข้อมูลประกอบ เงียบเมื่อล้ม */
+async function fetchSessionStats(auth: AuthSession): Promise<SessionStatsData | null> {
+  try {
+    const response = await authFetch("/api/auth/sessions", {
+      headers: {
+        "Content-Type": "application/json",
+        "x-bc-backend-url": auth.backendUrl,
+        Authorization: `Bearer ${auth.token}`,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const payload = await response.json() as unknown;
+    if (!isRecord(payload) || !isRecord(payload.data)) return null;
+    const data = payload.data as Record<string, unknown>;
+    const holdings = Array.isArray(data.holdings)
+      ? data.holdings.filter(isRecord).map((item) => ({
+          holdingcode: typeof item.holdingcode === "string" ? item.holdingcode : "",
+          sessions: Number(item.sessions) || 0,
+          active: Number(item.active) || 0,
+          lastseenat: Number(item.lastseenat) || 0,
+        }))
+      : [];
+    const entries = Array.isArray(data.entries)
+      ? data.entries.filter(isRecord).map((item) => ({
+          username: typeof item.username === "string" ? item.username : "",
+          name: typeof item.name === "string" ? item.name : "",
+          holdingcode: typeof item.holdingcode === "string" ? item.holdingcode : "",
+          role: typeof item.role === "string" ? item.role : "",
+          createdat: Number(item.createdat) || 0,
+          lastseenat: Number(item.lastseenat) || 0,
+          sessions: Number(item.sessions) || 1,
+          active: item.active === true,
+        }))
+      : [];
+    return {
+      totalsessions: Number(data.totalsessions) || 0,
+      activesessions: Number(data.activesessions) || 0,
+      activewindowms: Number(data.activewindowms) || 0,
+      holdings,
+      entries,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** เวลาแบบไทยอ่านง่าย: วันนี้แสดงแค่เวลา, วันอื่นแสดงวัน+เวลา */
+function sessionTimeText(ms: number): string {
+  if (!ms) return "-";
+  const date = new Date(ms);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  return date.toLocaleString("th-TH", sameDay
+    ? { hour: "2-digit", minute: "2-digit" }
+    : { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+/** "ใช้ล่าสุด x นาทีที่แล้ว" — อ่านคร่าว ๆ ได้ทันที */
+function sessionRelativeText(ms: number, nowMs: number): string {
+  const diffMin = Math.max(0, Math.round((nowMs - ms) / 60000));
+  if (diffMin < 1) return "เมื่อสักครู่";
+  if (diffMin < 60) return `${diffMin} นาทีที่แล้ว`;
+  const hours = Math.floor(diffMin / 60);
+  const mins = diffMin % 60;
+  if (hours < 24) return mins ? `${hours} ชม. ${mins} นาทีที่แล้ว` : `${hours} ชม.ที่แล้ว`;
+  return `${Math.floor(hours / 24)} วันที่แล้ว`;
+}
+
+function sessionStatsTooltip(stats: SessionStatsData, language: LanguageCode): string {
+  const lines = language === "th"
+    ? [
+        `กำลังใช้งาน (30 นาทีหลัง): ${stats.activesessions} เซสชัน`,
+        `เซสชันที่ยังไม่หมดอายุ (8 ชม.): ${stats.totalsessions} เซสชัน`,
+      ]
+    : [
+        `Active sessions (last 30 min): ${stats.activesessions}`,
+        `Sessions not yet expired (8h): ${stats.totalsessions}`,
+      ];
+  for (const holding of stats.holdings.slice(0, 12)) {
+    lines.push(language === "th"
+      ? `${holding.holdingcode || "-"}: กำลังใช้ ${holding.active} / ทั้งหมด ${holding.sessions} เซสชัน`
+      : `${holding.holdingcode || "-"}: ${holding.active} active / ${holding.sessions} total`);
+  }
+  return lines.join("\n");
 }
 
 type MainMenuScreenProps = {
@@ -331,6 +381,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const [menuUsageKey, setMenuUsageKey] = useState("");
   const [menuUsage, setMenuUsage] = useState<MenuUsageMap>({});
   const [menuLayout, setMenuLayout] = useState<MenuLayoutMode>("left");
+  const [sessionStats, setSessionStats] = useState<SessionStatsData | null>(null);
+  const [sessionsDialogOpen, setSessionsDialogOpen] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [topChromeHidden, setTopChromeHidden] = useState(false);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
@@ -360,6 +412,29 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" : "Login");
   const canAccessMenuItem = useCallback((item: MenuItem) => allowedMenuIds.has(item.id), [allowedMenuIds]);
   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+
+  /**
+   * Search results for layouts WITHOUT the sidebar (top menu / hidden sidebar):
+   * while a query is active the content area becomes a results grid — the
+   * sidebar tree already filters itself in left mode, so this only takes over
+   * when that tree is not on screen.
+   */
+  const topSearchResults = useMemo(() => {
+    const needle = normalizeMenuSearchText(globalSearch);
+    const sidebarVisible = menuLayout === "left" && !sidebarHidden;
+    if (sidebarVisible || !needle) return null;
+    const results: Array<{ item: MenuItem; sectionLabel: string; groupLabel: string }> = [];
+    for (const section of MENU_SECTIONS) {
+      const sectionLabel = menuText(section.title, language, backendLanguage);
+      for (const group of section.groups) {
+        const groupLabel = menuText(group.title, language, backendLanguage);
+        for (const item of getVisibleItems(group.items, language, globalSearch, backendLanguage)) {
+          if (canAccessMenuItem(item)) results.push({ item, sectionLabel, groupLabel });
+        }
+      }
+    }
+    return results;
+  }, [globalSearch, menuLayout, sidebarHidden, language, backendLanguage, canAccessMenuItem]);
 
   useEffect(() => {
     const savedLanguage = normalizeLanguage(localStorage.getItem("user_language") ?? initialLanguage);
@@ -433,15 +508,57 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     const currentWorkspace = workspace;
     let cancelled = false;
     async function loadMenuPermissions() {
-      const nextAllowed = await fetchAllowedMenuIds(currentAuth, currentWorkspace);
-      if (!cancelled) setAllowedMenuIds(nextAllowed);
+      const result = await fetchAllowedMenuIds(currentAuth, currentWorkspace);
+      if (cancelled) return;
+      // Fail-closed first so nothing unlocks during handling.
+      setAllowedMenuIds(result.allowed);
+      if (!result.failure) return;
+      if (result.failure === "session-expired") {
+        // 40+ rule: never silently lock the menu — say WHY in Thai, then leave.
+        pushNotice({
+          type: "error",
+          text: language === "th"
+            ? "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่"
+            : "Your session has expired. Please sign in again.",
+        });
+        clearAuthSession();
+        localStorage.removeItem(workspaceStorageKeys.workspace);
+        localStorage.removeItem(workspaceStorageKeys.shopInfo);
+        localStorage.removeItem(workspaceStorageKeys.branch);
+        router.replace("/");
+        return;
+      }
+      if (result.failure === "network-error") {
+        pushNotice({
+          type: "warning",
+          text: language === "th"
+            ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ โหลดสิทธิ์เมนูไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วกลับมาที่หน้านี้เพื่อลองใหม่"
+            : "Cannot reach the server — menu permissions failed to load. Check your connection and return to this page to retry.",
+        });
+        return;
+      }
+      if (result.failure === "no-permission-record") {
+        pushNotice({
+          type: "warning",
+          text: language === "th"
+            ? "ไม่พบสิทธิ์การใช้งานเมนูสำหรับคุณในบริษัทนี้ กรุณาติดต่อผู้ดูแลระบบ"
+            : "No menu permissions found for you in this company. Please contact your administrator.",
+        });
+        return;
+      }
+      pushNotice({
+        type: "warning",
+        text: language === "th"
+          ? `โหลดสิทธิ์เมนูไม่สำเร็จ (รหัส ${result.status ?? "-"}) กรุณาลองใหม่อีกครั้ง`
+          : `Failed to load menu permissions (code ${result.status ?? "-"}). Please try again.`,
+      });
     }
 
     void loadMenuPermissions();
     return () => {
       cancelled = true;
     };
-  }, [auth, permissionRevision, workspace]);
+  }, [auth, language, permissionRevision, workspace]);
 
   useEffect(() => {
     const reloadPermissions = () => setPermissionRevision((current) => current + 1);
@@ -456,6 +573,22 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   useEffect(() => {
     return () => stopLinePolling();
   }, []);
+
+  // จำนวนเซสชันออนไลน์ — โหลดตอนเข้าจอ + ทุกครั้งที่กลับมาที่แท็บ (focus)
+  useEffect(() => {
+    if (!auth || !workspace) return;
+    const currentAuth = auth;
+    const reload = () => {
+      void fetchSessionStats(currentAuth).then((next) => {
+        if (next) setSessionStats(next);
+      });
+    };
+    reload();
+    window.addEventListener("focus", reload);
+    return () => {
+      window.removeEventListener("focus", reload);
+    };
+  }, [auth, workspace]);
 
   const menuQuery = useQuery({
     queryKey: ["erp-menu-rows", language, backendLanguage],
@@ -816,7 +949,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             data-hidden={topChromeHidden ? "true" : "false"}
           >
             <div className="grid min-w-0 gap-1.5">
-              <WorkspaceContextPanel language={language} mode="topbar" workspace={workspace} />
               <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                 <div className="flex min-w-0 shrink-0 items-center gap-1.5">
                 {menuLayout === "left" && sidebarHidden ? (
@@ -854,10 +986,14 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   </Button>
                 </div>
                 </div>
+                {/* header search only when the sidebar (and its search) is not
+                    visible — "ค้นหาเมนูเอาออก เพราะมีอยู่แล้ว ใน เมนู section" */}
+                {!showLeftMenu ? (
                 <label className="relative min-w-52 flex-[1_1_22rem]">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input className="h-8 !pl-10" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
                 </label>
+                ) : null}
                 <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
                 <Button variant="outline" size="icon" className="h-8 w-8" aria-label={backendText(backendLanguage, "notification")}>
                   <Bell className="h-4 w-4" />
@@ -950,6 +1086,98 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               </div>
             </div>
           </header>
+          {workspace ? (
+            <nav
+              aria-label={language === "th" ? "บริบทพื้นที่ทำงาน" : "Workspace context"}
+              className="menu-breadcrumb flex min-w-0 shrink-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 border-b border-border bg-background/70 px-3 py-1 backdrop-blur"
+            >
+              {[
+                { Icon: Crown, label: holdingDisplayName(workspace) },
+                { Icon: Building2, label: workspaceCompanyDisplayName(workspace) },
+                { Icon: GitBranch, label: workspaceBranchDisplayName(workspace) },
+              ].map(({ Icon, label }, index) => (
+                <span key={index} className="flex min-w-0 items-center gap-1.5">
+                  {index > 0 ? <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" /> : null}
+                  <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span className="max-w-[18rem] truncate text-xs font-semibold leading-5 text-foreground" title={label}>{label || "-"}</span>
+                </span>
+              ))}
+              {sessionStats ? (
+                <button
+                  type="button"
+                  className="ml-auto flex min-w-0 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-xs font-semibold leading-5 text-foreground hover:bg-primary/5 hover:text-primary transition-colors"
+                  title={sessionStatsTooltip(sessionStats, language)}
+                  aria-label={language === "th" ? "ดูรายชื่อผู้ใช้ที่กำลังใช้งาน" : "View online users"}
+                  onClick={() => {
+                    setSessionsDialogOpen(true);
+                    if (!auth) return;
+                    void fetchSessionStats(auth).then((next) => {
+                      if (next) setSessionStats(next);
+                    });
+                  }}
+                >
+                  <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
+                  {language === "th"
+                    ? `ผู้ใช้งานออนไลน์: ${sessionStats.activesessions} เซสชัน`
+                    : `Online sessions: ${sessionStats.activesessions}`}
+                </button>
+              ) : null}
+            </nav>
+          ) : null}
+          {topSearchResults ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-3" role="search" aria-label={language === "th" ? "ผลการค้นหาเมนู" : "Menu search results"}>
+              <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <p className="min-w-0 truncate text-sm font-bold">
+                  {language === "th" ? "ผลการค้นหา" : "Search results"}: <span className="text-primary">{globalSearch.trim()}</span>
+                </p>
+                <span className="rounded-full border border-border bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground">{topSearchResults.length}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-7 gap-1 px-2 text-xs"
+                  onClick={() => setGlobalSearch("")}
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  {language === "th" ? "ล้างการค้นหา" : "Clear search"}
+                </Button>
+              </div>
+              {topSearchResults.length === 0 ? (
+                <div className="grid place-items-center gap-2 rounded-xl border border-dashed border-border bg-card/50 p-10 text-center">
+                  <SearchX className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm font-bold">{language === "th" ? "ไม่พบเมนูที่ตรงกับการค้นหา" : "No matching menu"}</p>
+                  <p className="max-w-md text-xs text-muted-foreground">
+                    {language === "th"
+                      ? "ลองคำอื่น — ค้นหาได้ทั้งชื่อไทย อังกฤษ และชื่อหน้าจอ (route) ไม่สนอักษรใหญ่-เล็กและวรรณยุกต์"
+                      : "Try another word — search matches every language, route, case-insensitive and tone-insensitive."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {topSearchResults.map(({ item, sectionLabel, groupLabel }) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="min-w-0 rounded-xl border border-border bg-card/80 p-3 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-card"
+                      onClick={() => {
+                        setGlobalSearch("");
+                        openMenuItem(item);
+                      }}
+                    >
+                      <p className="truncate text-sm font-bold text-foreground" title={menuText(item.label, language, backendLanguage)}>
+                        {menuText(item.label, language, backendLanguage)}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {sectionLabel} · {groupLabel}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+          <>
           {menuLayout === "top" ? (
             <TopMenuChrome
               activeSection={activeSection}
@@ -1022,8 +1250,75 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               )}
             </div>
           </div>
+          </>
+          )}
         </section>
       </div>
+
+      {sessionsDialogOpen && sessionStats ? (
+        <div className="dialog-backdrop" role="presentation">
+          <section className="line-login-dialog" aria-label={language === "th" ? "รายชื่อผู้ใช้ที่กำลังใช้งาน" : "Online users"} role="dialog" aria-modal="true">
+            <div className="dialog-header">
+              <div>
+                <p className="eyebrow">{language === "th" ? "ระบบ" : "System"}</p>
+                <h2>{language === "th" ? "ผู้ใช้งานที่กำลังใช้ระบบ" : "Active users"}</h2>
+              </div>
+              <button className="icon-button dialog-close" type="button" onClick={() => setSessionsDialogOpen(false)} aria-label={t(language, "lineLoginClose")}>
+                ×
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {language === "th"
+                ? `กำลังใช้งาน (30 นาทีหลัง) ${sessionStats.activesessions} เซสชัน · ยังไม่หมดอายุ (8 ชม.) ${sessionStats.totalsessions} เซสชัน`
+                : `${sessionStats.activesessions} active (30 min) · ${sessionStats.totalsessions} unexpired (8h)`}
+            </p>
+            <div className="grid gap-2 overflow-y-auto scrollbar-thin mt-2 max-h-[60vh] pr-1">
+              {sessionStats.entries.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                  {language === "th" ? "ไม่มีเซสชันที่ยังไม่หมดอายุ" : "No active sessions."}
+                </p>
+              ) : (
+                sessionStats.entries.map((entry, index) => {
+                  const who = entry.name || entry.username || (language === "th" ? "ไม่ทราบชื่อ (เซสชันเก่า)" : "Unknown (old session)");
+                  return (
+                    <div
+                      className={cn(
+                        "grid gap-0.5 rounded-xl border px-3 py-2 text-sm",
+                        entry.active ? "border-border bg-card" : "border-border/60 bg-muted/30 text-muted-foreground",
+                      )}
+                      key={`${entry.lastseenat}-${index}`}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", entry.active ? "bg-emerald-600" : "bg-muted-foreground/40")} />
+                        <span className="min-w-0 truncate font-semibold text-foreground" title={who}>{who}</span>
+                        {entry.sessions > 1 ? (
+                          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                            {language === "th" ? `${entry.sessions} เซสชัน` : `${entry.sessions} sessions`}
+                          </span>
+                        ) : null}
+                        <span className="ml-auto shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                          {entry.holdingcode || "-"}
+                        </span>
+                      </div>
+                      <p className="pl-4 text-xs text-muted-foreground">
+                        {language === "th" ? "เข้าใช้ล่าสุด" : "Signed in"}: {sessionTimeText(entry.createdat)}
+                        {" · "}
+                        {language === "th" ? "ใช้งานล่าสุด" : "Last seen"}: {sessionRelativeText(entry.lastseenat, Date.now())}
+                        {entry.active ? (language === "th" ? " (กำลังใช้งาน)" : " (active)") : ""}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div className="line-dialog-actions">
+              <button className="secondary-button" type="button" onClick={() => setSessionsDialogOpen(false)}>
+                {t(language, "lineLoginClose")}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {passwordDialogOpen ? (
         <div className="dialog-backdrop" role="presentation">
@@ -1507,7 +1802,7 @@ function SidebarButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-transparent px-3 py-2 text-left text-xs! font-medium transition-colors",
+        "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-transparent px-3 py-2 text-left text-sm font-medium transition-colors",
         active ? "border-border bg-primary text-primary-foreground shadow-sm" : "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
@@ -1561,7 +1856,7 @@ function MenuSectionAccordion({
         onClick={onToggle}
         aria-expanded={expanded}
         className={cn(
-          "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-xs! font-medium transition-colors",
+          "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-medium transition-colors",
           active ? "border-border bg-primary text-primary-foreground shadow-sm" : "border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
       >
@@ -1802,23 +2097,26 @@ function countSectionItems(section: MenuSection): number {
 }
 
 function getVisibleGroups(section: MenuSection, language: LanguageCode, search: string, dictionary: BackendLanguageDictionary): MenuGroup[] {
-  const needle = search.trim().toLowerCase();
+  const needle = normalizeMenuSearchText(search);
   if (!needle) return section.groups;
   return section.groups.filter((group) => {
-    if (menuText(group.title, language, dictionary).toLowerCase().includes(needle)) return true;
+    if (menuSearchMatches(group.title, needle, dictionary)) return true;
     return getVisibleItems(group.items, language, search, dictionary).length > 0;
   });
 }
 
 function getVisibleItems(items: MenuItem[], language: LanguageCode, search: string, dictionary: BackendLanguageDictionary): MenuItem[] {
-  const needle = search.trim().toLowerCase();
+  const needle = normalizeMenuSearchText(search);
   if (!needle) return items;
-  return items.filter((item) => `${menuText(item.label, language, dictionary)} ${item.route} ${item.id}`.toLowerCase().includes(needle));
+  return items.filter((item) => {
+    const haystack = `${menuSearchHaystack(item.label, dictionary)} ${normalizeMenuSearchText(item.route)} ${normalizeMenuSearchText(item.id)}`;
+    return haystack.includes(needle);
+  });
 }
 
 function getMenuTreeNodes(group: MenuGroup, language: LanguageCode, search: string, dictionary: BackendLanguageDictionary): MenuTreeNode[] {
-  const needle = search.trim().toLowerCase();
-  const groupTitleMatches = Boolean(needle) && menuText(group.title, language, dictionary).toLowerCase().includes(needle);
+  const needle = normalizeMenuSearchText(search);
+  const groupTitleMatches = Boolean(needle) && menuSearchMatches(group.title, needle, dictionary);
 
   if (group.id !== "company-system") {
     const items = groupTitleMatches ? group.items : getVisibleItems(group.items, language, search, dictionary);
@@ -1831,8 +2129,9 @@ function getMenuTreeNodes(group: MenuGroup, language: LanguageCode, search: stri
   const pushSystemFolder = (folder: (typeof systemTreeFolders)[number]) => {
     const folderItems = group.items.filter((item) => folder.itemIds.has(item.id));
     const seedItem = folderItems.find((item) => item.id === folder.seedId) ?? folderItems[0];
-    const label = "label" in folder && folder.label ? menuText(folder.label, language, dictionary) : seedItem ? menuText(seedItem.label, language, dictionary) : folder.id;
-    const labelMatches = Boolean(needle) && label.toLowerCase().includes(needle);
+    const labelObject: MenuLabel = "label" in folder && folder.label ? folder.label : seedItem ? seedItem.label : { th: folder.id, en: folder.id };
+    const label = menuText(labelObject, language, dictionary);
+    const labelMatches = menuSearchMatches(labelObject, needle, dictionary);
     const children = !needle || groupTitleMatches || labelMatches ? folderItems : getVisibleItems(folderItems, language, search, dictionary);
     if (!children.length) return;
 

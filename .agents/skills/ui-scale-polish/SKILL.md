@@ -689,3 +689,19 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 `account-bcaicloud-deploy` (build image ด้วย build-arg 2 ตัว, `docker save | ssh docker load`,
 สลับ `release.env`, `compose up -d --no-deps frontend`, curl 200 + เปิดดูจริง) — deploy = R0
 ต้องได้คำยืนยันจากลุงจืดก่อนทุกครั้ง
+
+## 4.29) ตั้งค่าที่ "เป็นเรื่องบริษัท" อยู่ในขั้น 2 ของ ตั้งค่าระบบ (2026-09-02)
+
+ลุงจืดตัดสินใจ: สกุลเงิน / ประเภทธุรกิจ / พนักงาน ย้ายจากเมนูหลัก ตั้งค่า › ตั้งค่าบริษัท ไปเป็น
+**แท็บในขั้น "ข้อมูลบริษัทและสาขา"** (workspace-screen.tsx: `companyStepTabs` + state `companyTab`;
+`SystemSettingsScreen route={companyTab}`) แม้ข้อมูลยังเป็นระดับ Holding (holdingcode) — ผู้ใช้มองว่า
+"เรื่องบริษัท" ควรอยู่ที่เดียวกับการสร้างบริษัท
+- เมนูหลัก: ลบ 3 item ออกจาก `MENU_SECTIONS` (menu-data.ts) และลบโฟลเดอร์ `company-settings`
+  (main-menu-screen.tsx) → ตั้งค่า เหลือ ภาษาที่ใช้งาน + ตั้งค่าทั่วไป
+- ผลข้างเคียงที่รู้: `useScreenActions` map route→รหัสจอผ่านเมนู — จอที่ไม่อยู่ในเมนูจะไม่ล็อกปุ่ม
+  (ADMIN/OWNER เท่านั้นที่เข้า wizard ได้อยู่แล้ว); รหัสสิทธิ์ `currency/company-type/employee`
+  ยังอยู่ใน permissiondefinition ของ backend
+- MongoModel MCP: workflow `company_settings_hub` (project "BC Ai Account") บันทึกโครงนี้ไว้
+  — เวลาย้าย/รวมจอ ให้บันทึก workflow ที่นั่นด้วยเสมอ (ลุงจืดใช้เป็น bcmodel)
+- แบบแผน: "hub ขั้นตอน + แท็บย่อย" ใช้ปุ่ม tab `min-h-10 rounded-lg` active = bg-primary; key ของ
+  SystemSettingsScreen ต้องรวม route ของแท็บเพื่อ remount ตอนสลับ
