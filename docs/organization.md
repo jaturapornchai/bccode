@@ -19,6 +19,7 @@ Holding ใช้สำหรับบริหารและดูข้อม
 - Branch: สาขาที่อยู่ภายใต้ Company
 - Membership: ความสัมพันธ์ระหว่าง User กับ Holding พร้อม Role สถานะ และวันหมดอายุ โดย Company และ Branch เป็น Scope ภายใน Membership
 - Scope: Allow-list ที่กำหนดขอบเขตสูงสุดของข้อมูลธุรกิจที่ Membership อาจเข้าถึงได้ โดยต้องใช้รหัสถาวรและอยู่ใน Holding เดียวกับ Membership Scope ไม่ให้สิทธิ์โดยลำพัง ทุกคำขอข้อมูลธุรกิจยังต้องผ่าน Organization effective status และ Permission ของ Domain
+- พนักงาน (Employee): บุคคลในกิจการระดับ Holding (`employee`: รหัส ชื่อ อีเมล PIN ใช้ POS รูป และ `accessscopes` = บริษัท/สาขาที่เข้าใช้ได้) เป็นข้อมูลธุรกิจ ไม่ใช่บัญชีเข้าระบบ พนักงานอาจไม่มี Membership (ใช้ PIN ที่ POS) และ Membership อาจไม่มีพนักงาน (เช่น ผู้ดูแลระบบภายนอก) ระบบจับคู่สองสิ่งนี้ด้วยอีเมลที่ normalize แล้วเพื่อแสดงสถานะ "เข้าระบบได้" เท่านั้น ห้ามอนุมานสิทธิ์จอจากพนักงาน — สิทธิ์มาจาก Membership Role และ Role Permission ตามเดิม (นิยามเพิ่ม 2026-09-02 ตามคำสั่งลุงจืด; การรวมเป็น entity เดียวเป็นงานระยะถัดไปที่ต้องเปลี่ยน schema)
 - Holding Owner: User ที่มี Membership Role OWNER ผู้สร้าง Holding ได้ Role นี้โดยอัตโนมัติ และ Holding หนึ่งมี OWNER ได้มากกว่าหนึ่งคน
 - Holding Admin: User ที่มี Membership ภายใน Holding และ Role เป็น ADMIN
 - Organization stored status: สถานะ active หรือ inactive ที่บันทึกไว้กับ Holding, Company หรือ Branch นั้นโดยตรง

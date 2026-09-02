@@ -1,27 +1,6 @@
 "use client";
 
-import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  Building2,
-  CalendarDays,
-  CheckCircle2,
-  Coins,
-  Copy,
-  Crown,
-  ExternalLink,
-  KeyRound,
-  Languages,
-  Loader2,
-  LogOut,
-  MessageCircle,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
-  Search,
-  UserRound,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, Check, CheckCircle2, Coins, Copy, Crown, ExternalLink, KeyRound, Languages, Loader2, LogOut, MessageCircle, PanelLeftClose, PanelLeftOpen, Plus, Search, UserRound } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
@@ -110,43 +89,49 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
-// ขั้น "ข้อมูลบริษัทและสาขา" รวมจอตั้งค่าของบริษัทไว้ที่เดียว (ย้ายจากเมนู ตั้งค่า › ตั้งค่าบริษัท 2026-09-02)
-const companyStepTabs = [
-  { route: "/activelanguages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
-  { route: "/company", label: { th: "โครงสร้างองค์กร", en: "Organization" } },
-  { route: "/currency", label: { th: "สกุลเงิน", en: "Currency" } },
-  { route: "/businesstypescreen", label: { th: "ประเภทธุรกิจ", en: "Business Type" } },
-  { route: "/employee", label: { th: "พนักงาน", en: "Employee" } },
-] as const;
+// ตั้งค่าระบบ = 4 ขั้นตามลำดับที่ต้องทำจริง (ออกแบบใหม่ 2026-09-02): ธุรกิจ → คน → สิทธิ์ → ตรวจสอบ
+// แต่ละขั้นมีแท็บย่อย (STEP_TABS) — route ของแท็บคือจอจริงที่ mount
+const STEP_TABS = {
+  "/company": [
+    { route: "/activelanguages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
+    { route: "/company", label: { th: "บริษัทและสาขา", en: "Companies & Branches" } },
+    { route: "/currency", label: { th: "สกุลเงิน", en: "Currency" } },
+    { route: "/businesstypescreen", label: { th: "ประเภทธุรกิจ", en: "Business Type" } },
+  ],
+  "/people": [
+    { route: "/employee", label: { th: "พนักงาน", en: "Employees" } },
+    { route: "/user", label: { th: "บัญชีเข้าระบบ", en: "Login Accounts" } },
+  ],
+  "/permissiongroup": [
+    { route: "/permissiongroup", label: { th: "สิทธิ์ตามบทบาท", en: "Role Permissions" } },
+    { route: "/permissiondefinition", label: { th: "รายการจอทั้งหมด", en: "All Screens" } },
+  ],
+} as const;
+type StepRoute = keyof typeof STEP_TABS;
+const stepTabsFor = (route: string | null) => (route && route in STEP_TABS ? STEP_TABS[route as StepRoute] : null);
 const accessSettingNavItems = [
   {
     route: "/company",
-    label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" },
-    helper: { th: "ภาษา บริษัท สาขา สกุลเงิน ประเภทธุรกิจ พนักงาน", en: "Languages, companies, branches, currency, business types, employees" },
+    label: { th: "ธุรกิจของฉัน", en: "My Business" },
+    helper: { th: "ภาษา บริษัท สาขา สกุลเงิน ประเภทธุรกิจ", en: "Languages, companies, branches, currency, business types" },
     banner: "/settings/banner-company.webp",
   },
   {
-    route: "/permissiondefinition",
-    label: { th: "รายการสิทธิ์หน้าจอ", en: "Screen Permission Catalog" },
-    helper: { th: "ตรวจรายการหน้าจอที่รองรับ", en: "Review supported screens" },
-    banner: "/settings/banner-permission-screen.webp",
-  },
-  {
-    route: "/permissiongroup",
-    label: { th: "กำหนดสิทธิ์ตามบทบาท", en: "Role Permissions" },
-    helper: { th: "กำหนดหน้าจอให้ USER/ADMIN/OWNER", en: "Assign screens to USER/ADMIN/OWNER" },
-    banner: "/settings/banner-permission-group.webp",
-  },
-  {
-    route: "/user",
-    label: { th: "ผู้ใช้งานและบทบาท", en: "Users & Roles" },
-    helper: { th: "เพิ่มผู้ใช้ กำหนดบทบาทและขอบเขต", en: "Add users and assign role and scope" },
+    route: "/people",
+    label: { th: "คนในองค์กร", en: "People" },
+    helper: { th: "พนักงาน และใครเข้าระบบได้", en: "Employees and who can sign in" },
     banner: "/settings/banner-users.webp",
   },
   {
+    route: "/permissiongroup",
+    label: { th: "สิทธิ์การใช้งาน", en: "Permissions" },
+    helper: { th: "แต่ละบทบาททำอะไรได้บ้าง", en: "What each role can do" },
+    banner: "/settings/banner-permission-group.webp",
+  },
+  {
     route: "/useraccessaudit",
-    label: { th: "ตรวจสอบสถานะผู้ใช้งาน", en: "User Access Audit" },
-    helper: { th: "รายงานสิทธิ์และการเข้าถึง", en: "Access and permission report" },
+    label: { th: "ตรวจสอบ", en: "Review" },
+    helper: { th: "ใครเข้าอะไรได้จริงตอนนี้", en: "Who can access what right now" },
     banner: "/settings/banner-audit.webp",
   },
 ] as const;
@@ -328,8 +313,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
   const [activeAccessRoute, setActiveAccessRoute] = useState<string | null>(null);
-  const [companyTab, setCompanyTab] = useState<(typeof companyStepTabs)[number]["route"]>("/activelanguages");
-  const effectiveAccessRoute = activeAccessRoute === "/company" ? companyTab : activeAccessRoute;
+  const [stepTabs, setStepTabs] = useState<Record<string, string>>({});
+  const activeStepTabs = stepTabsFor(activeAccessRoute);
+  const effectiveAccessRoute = activeStepTabs
+    ? (stepTabs[activeAccessRoute ?? ""] ?? activeStepTabs[0].route)
+    : activeAccessRoute;
+  const selectStepTab = (step: string, route: string) => setStepTabs((current) => ({ ...current, [step]: route }));
+  // ✔ ความคืบหน้าต่อขั้น (นับจากข้อมูลจริงของ holding ที่กำลังตั้งค่า)
+  const [stepProgress, setStepProgress] = useState<Record<string, boolean>>({});
+  const [peopleSummary, setPeopleSummary] = useState<{ employees: number; accounts: number; linked: number } | null>(null);
   const [accessSidebarCollapsed, setAccessSidebarCollapsed] = useState(false);
   useEffect(() => {
     setAccessSidebarCollapsed(localStorage.getItem("bc-access-sidebar-collapsed") === "1");
@@ -512,6 +504,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     };
   }, [activeAccessRoute, step, auth, selectedCompany, selectedShopForAccess]);
 
+
   const flatCompanies = useMemo(() => {
     const list: Array<{
       shop: ShopListItem;
@@ -579,6 +572,50 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       return nameA.localeCompare(nameB, "th", { sensitivity: "base" });
     });
   }, [query, shops, language]);
+
+  // ✔ ต่อขั้น + สรุป "คนในองค์กร": นับจากรายการจริงของ holding (เบา: limit เล็ก ยกเว้นพนักงาน/บัญชีที่ต้องจับคู่อีเมล)
+  useEffect(() => {
+    if (step !== "access" || !auth || !selectedShopForAccess) return;
+    const code = tenantCodeForShop(selectedShopForAccess);
+    if (!code) return;
+    let cancelled = false;
+    const list = async (slug: string, limit: number): Promise<Record<string, unknown>[]> => {
+      const response = await authFetch(
+        `/api/system-settings/${slug}?limit=${limit}&offset=0&page=1&q=&holdingcode=${encodeURIComponent(code)}`,
+        { headers: { Authorization: `Bearer ${auth.token}`, "x-bc-backend-url": auth.backendUrl }, cache: "no-store" },
+      );
+      if (!response.ok) return [];
+      const payload = (await response.json()) as { data?: unknown };
+      return Array.isArray(payload.data) ? (payload.data as Record<string, unknown>[]) : [];
+    };
+    const emailOf = (record: Record<string, unknown>) =>
+      String(record.email ?? record.username ?? "").trim().toLowerCase();
+    void (async () => {
+      try {
+        const [companies, employees, accounts, roles] = await Promise.all([
+          list("company", 1),
+          list("employee", 1000),
+          list("user", 1000),
+          list("permissiongroup", 1),
+        ]);
+        if (cancelled) return;
+        const accountEmails = new Set(accounts.map(emailOf).filter(Boolean));
+        const linked = employees.filter((e) => accountEmails.has(emailOf(e))).length;
+        setPeopleSummary({ employees: employees.length, accounts: accounts.length, linked });
+        setStepProgress({
+          // slug "company" ตอบเป็นโครงต้นไม้ ไม่ใช่รายการ → ใช้รายการบริษัทที่หน้าเลือกบริษัทโหลดไว้แล้วเป็นหลัก
+          "/company": (flatCompanies.length > 0 || companies.length > 0) && hasExplicitLanguageSettings(selectedShopForAccess),
+          "/people": employees.length > 0 || accounts.length > 0,
+          "/permissiongroup": roles.length > 0,
+        });
+      } catch {
+        // progress marks are a hint only
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, auth, selectedShopForAccess, activeAccessRoute, flatCompanies.length]);
 
   const filteredBranches = useMemo(() => {
     const needle = branchQuery.trim().toLowerCase();
@@ -936,7 +973,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       router.push("/holding");
       return;
     }
-    setCompanyTab("/activelanguages");
+    selectStepTab("/company", "/activelanguages");
     void openAccessSettings("/company");
   }
 
@@ -1108,7 +1145,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   if (step === "access" && activeAccessRoute) {
     const activeNavIndex = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
     const activeNav = activeNavIndex >= 0 ? accessSettingNavItems[activeNavIndex] : null;
-    const activeManual = getSystemSettingConfig(activeAccessRoute)?.manual;
+    const activeManual = getSystemSettingConfig(effectiveAccessRoute ?? "")?.manual;
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
         <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
@@ -1243,7 +1280,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           : "bg-primary/10 text-primary"
                       }`}
                     >
-                      {index + 1}
+                      {stepProgress[item.route] ? <Check size={12} aria-label={language === "th" ? "มีข้อมูลแล้ว" : "has data"} /> : index + 1}
                     </span>
                     <span className={`min-w-0 ${accessSidebarCollapsed ? "md:hidden" : ""}`}>
                       <span className="block leading-tight md:truncate">
@@ -1325,7 +1362,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     className="secondary-button inline-flex items-center gap-1.5 px-2.5 py-1 text-xs"
                     type="button"
                     onClick={() => {
-                      setCompanyTab("/activelanguages");
+                      selectStepTab("/company", "/activelanguages");
                       setActiveAccessRoute("/company");
                     }}
                   >
@@ -1334,20 +1371,28 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   </button>
                 </div>
               ) : null}
-              {activeAccessRoute === "/company" ? (
-                <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label={language === "th" ? "หมวดข้อมูลบริษัท" : "Company sections"}>
-                  {companyStepTabs.map((tab) => (
+              {activeStepTabs ? (
+                <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label={language === "th" ? "หมวดในขั้นนี้" : "Sections in this step"}>
+                  {activeStepTabs.map((tab) => (
                     <button
-                      aria-selected={companyTab === tab.route}
-                      className={`min-h-10 rounded-lg border px-3 text-sm font-semibold transition-colors ${companyTab === tab.route ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
+                      aria-selected={effectiveAccessRoute === tab.route}
+                      className={`min-h-10 rounded-lg border px-3 text-sm font-semibold transition-colors ${effectiveAccessRoute === tab.route ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
                       key={tab.route}
-                      onClick={() => setCompanyTab(tab.route)}
+                      onClick={() => selectStepTab(activeAccessRoute ?? "", tab.route)}
                       role="tab"
                       type="button"
                     >
                       {language === "th" ? tab.label.th : tab.label.en}
                     </button>
                   ))}
+                </div>
+              ) : null}
+              {activeAccessRoute === "/people" && peopleSummary ? (
+                <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-card px-3 py-2 text-sm">
+                  <span><strong>{peopleSummary.employees}</strong> {language === "th" ? "พนักงาน" : "employees"}</span>
+                  <span><strong>{peopleSummary.accounts}</strong> {language === "th" ? "บัญชีเข้าระบบ" : "login accounts"}</span>
+                  <span><strong>{peopleSummary.linked}</strong> {language === "th" ? "คนที่มีทั้งสองอย่าง (จับคู่ด้วยอีเมล)" : "with both (matched by email)"}</span>
+                  <span className="text-xs text-muted-foreground">{language === "th" ? "พนักงานที่ต้องเข้าระบบ: เพิ่มที่แท็บ บัญชีเข้าระบบ ด้วยอีเมลเดียวกัน" : "Employees who need to sign in: add them under Login Accounts with the same email"}</span>
                 </div>
               ) : null}
               {effectiveAccessRoute === "/currency" ? (
@@ -1364,6 +1409,19 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 initialLanguage={language}
               />
               )}
+              {(() => {
+                const idx = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
+                const next = idx >= 0 ? accessSettingNavItems[idx + 1] : undefined;
+                if (!next) return null;
+                return (
+                  <div className="mt-4 flex justify-end">
+                    <button className="primary-button inline-flex items-center gap-2" type="button" onClick={() => setActiveAccessRoute(next.route)}>
+                      {language === "th" ? `ถัดไป: ${next.label.th}` : `Next: ${next.label.en}`}
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </section>

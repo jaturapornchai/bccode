@@ -32,6 +32,8 @@ const TEXT = {
   enter: { th: "เข้า", en: "Enter" },
   every: { th: "ทั้งหมด", en: "All" },
   noMatch: { th: "ไม่พบจอที่ตรงกับคำค้น", en: "No screens match" },
+  preset: { th: "ใช้ค่าแนะนำ", en: "Use recommended" },
+  presetHint: { th: "ผู้ใช้ = เข้า+เพิ่ม+แก้ไข · ผู้ดูแล/เจ้าของ = ทั้งหมด (ใช้กับจอที่แสดงอยู่)", en: "User = enter+create+edit · Admin/Owner = everything (applies to the screens shown)" },
   other: { th: "อื่น ๆ", en: "Other" },
   visibleHint: { th: "ติ๊กที่หัวตารางเพื่อเลือกทุกจอที่แสดงอยู่", en: "Header checkboxes apply to the screens shown" },
 };
@@ -46,12 +48,14 @@ export function RoleScreenMatrix({
   onChange,
   options,
   readOnly,
+  role,
   selected,
 }: {
   language: LanguageCode;
   onChange: (next: string[]) => void;
   options: RoleScreenOption[];
   readOnly: boolean;
+  role?: string;
   selected: string[];
 }) {
   const lang = language === "th" ? "th" : "en";
@@ -140,6 +144,17 @@ export function RoleScreenMatrix({
       }
     });
 
+  // ค่าแนะนำต่อบทบาท: ผู้ใช้ทั่วไปทำงานประจำได้แต่ไม่ลบ, ผู้ดูแล/เจ้าของได้ทั้งหมด
+  const presetActions: PermissionAction[] | null = role === "USER" ? ["create", "update"] : role === "ADMIN" || role === "OWNER" ? [...PERMISSION_ACTIONS] : null;
+  const applyPreset = () =>
+    apply((next) => {
+      for (const row of visible) {
+        revoke(next, row.code);
+        grant(next, row.code);
+        for (const action of presetActions ?? []) grant(next, row.code, action);
+      }
+    });
+
   const columnChecked = (action?: PermissionAction) =>
     visible.length > 0 && visible.every((row) => has(row.code, action));
   const columnAllChecked = visible.length > 0 && visible.every((row) => hasAll(row.code));
@@ -159,6 +174,17 @@ export function RoleScreenMatrix({
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
+        {presetActions ? (
+          <button
+            className="min-h-10 rounded-lg border border-primary/40 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+            disabled={readOnly || visible.length === 0}
+            onClick={applyPreset}
+            title={t("presetHint")}
+            type="button"
+          >
+            {t("preset")}
+          </button>
+        ) : null}
         <div className="flex gap-1" role="group">
           {(["all", "selected", "unselected"] as const).map((key) => (
             <button

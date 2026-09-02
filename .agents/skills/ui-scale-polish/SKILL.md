@@ -714,3 +714,16 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 - **กับดัก**: `SystemSettingsScreen route=…` รับเฉพาะ slug ใน `system-setting-screens.ts` — จอที่ไม่ใช่ system-setting config
   (เช่น /currency = `CurrencyScreen`, /line-oa = `LineOaLinkScreen`) จะขึ้น "ไม่พบหน้าจอ" ต้อง branch render component
   ของมันเองเหมือนที่ `WorkTabPanel` ใน main-menu ทำ (ทำแล้วสำหรับแท็บ สกุลเงิน ใน workspace-screen)
+
+## 4.30) ตั้งค่าระบบ 4 ขั้น: ธุรกิจ → คน → สิทธิ์ → ตรวจสอบ (2026-09-02)
+
+โครง wizard ใหม่ (workspace-screen.tsx): `accessSettingNavItems` 4 ขั้นชื่อเป็นคำถามชาวบ้าน + `STEP_TABS` แท็บย่อยต่อขั้น
+(`stepTabs` state, `effectiveAccessRoute` = แท็บที่เลือก) — ใช้ `effectiveAccessRoute` ทุกที่ที่เคยเช็ค `activeAccessRoute`
+(manual, banner ภาษา, mount) · ปุ่ม "ถัดไป: <ขั้นถัดไป>" ท้ายทุกขั้น · ✔ ในเมนูซ้ายเมื่อขั้นมีข้อมูล
+(`stepProgress` นับจาก list API: employee/user limit 1000, permissiongroup limit 1; บริษัทใช้ `flatCompanies` เพราะ slug company ตอบเป็นต้นไม้)
+- **กับดัก API list**: `/api/system-settings/<slug>` ต้องส่ง `page=1&q=` และ header `x-bc-backend-url` (ไม่งั้น 400 "กรุณากรอก Backend URL")
+- ขั้น 2 "คนในองค์กร": แท็บ พนักงาน/บัญชีเข้าระบบ + แถบสรุป จำนวนพนักงาน/บัญชี/คนที่มีทั้งสอง (จับคู่ email ↔ username normalize)
+  — การรวมเป็น entity เดียวยังไม่ทำ (ต้องเปลี่ยน schema) นิยาม "พนักงาน" เพิ่มใน docs/organization.md แล้ว
+- ขั้น 3: ตารางสิทธิ์มีปุ่ม **ใช้ค่าแนะนำ** (`RoleScreenMatrix role=`; USER = เข้า+เพิ่ม+แก้ไข, ADMIN/OWNER = ทั้งหมด, กับจอที่แสดงอยู่)
+  + แท็บ รายการจอทั้งหมด (permissiondefinition) แทนการเป็นขั้นแยก
+- MongoModel: workflow `system_setup_steps` (rev 1355) · เมนูหลักไม่มีหมวด ตั้งค่า

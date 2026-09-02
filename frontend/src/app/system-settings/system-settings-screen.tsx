@@ -6363,6 +6363,7 @@ function PermissionLinkMultiSelectEditor({
           }}
           options={options}
           readOnly={readOnly || !selectedUserCode}
+          role={stringValue(form.rolecode).toUpperCase()}
           selected={selectedCodes}
         />
       ) : (
