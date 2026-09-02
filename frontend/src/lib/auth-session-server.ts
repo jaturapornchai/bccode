@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const REFRESH_TOKEN_COOKIE = "bc_refresh_token";
-export const REFRESH_TOKEN_MAX_AGE_SECONDS = 8 * 60 * 60;
+export const REFRESH_TOKEN_MAX_AGE_SECONDS = 12 * 60 * 60;
 
 export function getRefreshToken(request: Request): string {
   const cookieHeader = request.headers.get("cookie") ?? "";

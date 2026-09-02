@@ -42,7 +42,7 @@ describe("password login route", () => {
     expect(json).not.toHaveProperty("refresh");
     const cookie = response.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("bc_refresh_token=refresh-0");
-    expect(cookie).toContain("Max-Age=28800");
+    expect(cookie).toContain("Max-Age=43200");
     expect(cookie).toContain("Path=/");
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");

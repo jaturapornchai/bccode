@@ -8,6 +8,7 @@ import (
 	"smlcloudplatform/internal/encrypt"
 	"smlcloudplatform/pkg/memorycache"
 	"smlcloudplatform/pkg/microservice/models"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -72,8 +73,8 @@ type AuthService struct {
 
 const (
 	accessTokenMaxAge = 15 * time.Minute
-	sessionIdleMaxAge = 30 * time.Minute
-	sessionMaxAge     = 8 * time.Hour
+	sessionIdleMaxAge = 12 * time.Hour
+	sessionMaxAge     = 12 * time.Hour
 )
 
 func cacheString(value interface{}) string {
@@ -502,6 +503,7 @@ func (authService *AuthService) CreateSession(userInfo models.UserInfo) (string,
 	err = authService.cacher.HMSet(sessionKey, map[string]interface{}{
 		"sessionuid":        sessionUID,
 		"username":          userInfo.Username,
+		"name":              userInfo.Name,
 		"createdat":         now.UnixMilli(),
 		"lastseenat":        now.UnixMilli(),
 		"accesskey":         accessKey,
@@ -525,6 +527,157 @@ func (authService *AuthService) CreateSession(userInfo models.UserInfo) (string,
 	}
 
 	return accessToken, refreshToken, nil
+}
+
+// SessionStat สรุปเซสชันที่ยังมีชีวิตของหนึ่งกลุ่มกิจการ
+type SessionStat struct {
+	HoldingCode string `json:"holdingcode"`
+	Sessions    int    `json:"sessions"`
+	Active      int    `json:"active"`
+	LastSeenAt  int64  `json:"lastseenat"`
+}
+
+// SessionEntry — ผู้ใช้หนึ่งคน (distinct ตามชื่อ) รวมทุกเซสชันที่ยังไม่หมดอายุ
+// — Sessions = จำนวนเซสชันที่รวมมา, CreatedAt = เข้าใช้ล่าสุด,
+// LastSeenAt = ใช้งานล่าสุดของทุกเซสชันที่รวม
+type SessionEntry struct {
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	HoldingCode string `json:"holdingcode"`
+	Role        string `json:"role"`
+	CreatedAt   int64  `json:"createdat"`
+	LastSeenAt  int64  `json:"lastseenat"`
+	Sessions    int    `json:"sessions"`
+	Active      bool   `json:"active"`
+}
+
+// SessionStats คือ payload ของ GET /sessions/active-count
+// Active = lastseenat อยู่ใน session idle window (30 นาที) — เซสชันที่
+// "กำลังใช้งาน" จริง ส่วน Total นับทุกเซสชันที่ยังไม่หมดอายุ (≤8 ชม.)
+type SessionStats struct {
+	TotalSessions  int           `json:"totalsessions"`
+	ActiveSessions int           `json:"activesessions"`
+	ActiveWindowMs int64         `json:"activewindowms"`
+	Holdings       []SessionStat `json:"holdings"`
+	Entries        []SessionEntry `json:"entries"`
+}
+
+func hmStringValue(value interface{}) string {
+	if s, ok := value.(string); ok {
+		return s
+	}
+	return ""
+}
+
+func hmInt64Value(value interface{}) int64 {
+	raw := hmStringValue(value)
+	parsed, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return parsed
+}
+
+// ActiveSessionStats นับเซสชันใน Redis แยกตามกลุ่มกิจการ
+// (ผู้ดูแลเรียกดูว่า "ขณะนี้มีใคร/กี่เซสชันกำลังใช้ระบบอยู่")
+func (authService *AuthService) ActiveSessionStats() (*SessionStats, error) {
+	keys, err := authService.cacher.Keys(authService.prefixSessionCacheKey + "*")
+	if err != nil {
+		return nil, err
+	}
+	now := authService.timeNow().UnixMilli()
+	activeWindowMs := authService.sessionIdleTimeout.Milliseconds()
+	stats := &SessionStats{ActiveWindowMs: activeWindowMs, Holdings: []SessionStat{}, Entries: []SessionEntry{}}
+	byHolding := map[string]*SessionStat{}
+	byUser := map[string]*SessionEntry{}
+
+	for _, key := range keys {
+		// Keys("session-*") จับ marker session-revoked-* มาด้วย — เซ็นห์ออก
+		if strings.HasPrefix(key, authService.prefixRevokedSessionKey) {
+			continue
+		}
+		values, err := authService.cacher.HMGet(key, []string{"holdingcode", "lastseenat", "username", "name", "role", "createdat", "accesskey"})
+		if err != nil || len(values) < 7 {
+			continue
+		}
+		holding := strings.TrimSpace(hmStringValue(values[0]))
+		lastSeen := hmInt64Value(values[1])
+		username := strings.TrimSpace(hmStringValue(values[2]))
+		displayName := strings.TrimSpace(hmStringValue(values[3]))
+		role := strings.TrimSpace(hmStringValue(values[4]))
+		createdAt := hmInt64Value(values[5])
+		accessKey := strings.TrimSpace(hmStringValue(values[6]))
+
+		// เซสชันเก่าก่อนเพิ่มฟิลด์ username/name — ดึงจาก bearer cache ถ้ายังไม่หมดอายุ
+		if username == "" && accessKey != "" {
+			if bearer, err := authService.cacher.HMGet(accessKey, []string{"username", "name"}); err == nil && len(bearer) >= 2 {
+				username = strings.TrimSpace(hmStringValue(bearer[0]))
+				displayName = strings.TrimSpace(hmStringValue(bearer[1]))
+			}
+		}
+
+		stats.TotalSessions++
+		active := now-lastSeen <= activeWindowMs
+		if active {
+			stats.ActiveSessions++
+		}
+		stat, exists := byHolding[holding]
+		if !exists {
+			stat = &SessionStat{HoldingCode: holding}
+			byHolding[holding] = stat
+		}
+		stat.Sessions++
+		if active {
+			stat.Active++
+		}
+		if lastSeen > stat.LastSeenAt {
+			stat.LastSeenAt = lastSeen
+		}
+
+		// distinct ตามผู้ใช้: คนเดียวเปิดหลายแท็บ/หลายเครื่อง = 1 แถว
+		// ไม่รู้ชื่อ (เซสชันเก่า) จับเป็นกลุ่มเดียวกันต่อ holding เพื่อไม่สับสน
+		userKey := username + "|" + displayName + "|" + holding
+		entry, exists := byUser[userKey]
+		if !exists {
+			entry = &SessionEntry{
+				Username:    username,
+				Name:        displayName,
+				HoldingCode: holding,
+				Role:        role,
+			}
+			byUser[userKey] = entry
+		}
+		entry.Sessions++
+		if active {
+			entry.Active = true
+		}
+		if createdAt > entry.CreatedAt {
+			entry.CreatedAt = createdAt
+		}
+		if lastSeen > entry.LastSeenAt {
+			entry.LastSeenAt = lastSeen
+		}
+	}
+
+	stats.Holdings = make([]SessionStat, 0, len(byHolding))
+	for _, stat := range byHolding {
+		stats.Holdings = append(stats.Holdings, *stat)
+	}
+	sort.Slice(stats.Holdings, func(i, j int) bool {
+		if stats.Holdings[i].Sessions != stats.Holdings[j].Sessions {
+			return stats.Holdings[i].Sessions > stats.Holdings[j].Sessions
+		}
+		return stats.Holdings[i].HoldingCode < stats.Holdings[j].HoldingCode
+	})
+	stats.Entries = make([]SessionEntry, 0, len(byUser))
+	for _, entry := range byUser {
+		stats.Entries = append(stats.Entries, *entry)
+	}
+	// ล่าสุดที่ใช้ก่อน — รายการบนหน้าต่างเห็นใครกำลังออนไลน์ทันที
+	sort.Slice(stats.Entries, func(i, j int) bool {
+		return stats.Entries[i].LastSeenAt > stats.Entries[j].LastSeenAt
+	})
+	return stats, nil
 }
 
 func (authService *AuthService) issueSessionTokens(userInfo models.UserInfo, remaining time.Duration) (string, string, string, string, error) {

@@ -28,7 +28,7 @@ describe("refresh route", () => {
     expect(json).toEqual({ success: true, token: "access-new" });
     const cookie = response.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("bc_refresh_token=refresh-new");
-    expect(cookie).toContain("Max-Age=28800");
+    expect(cookie).toContain("Max-Age=43200");
     expect(cookie).toContain("Path=/");
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");
