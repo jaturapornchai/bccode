@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { PRODUCT_VIDEO_REQUEST_MAX_BYTES } from "@/lib/product-barcode/types";
 import {
   imageNeedsAuthenticatedFetch,
+  imageThumbnailProxyUrl,
   normalizeImageUploadPayload,
   proxyImageUploadToGoApi,
 } from "./image-upload-proxy";
@@ -117,6 +118,25 @@ describe("image upload proxy response", () => {
     expect(imageNeedsAuthenticatedFetch("data:image/png;base64,xxx")).toBe(false);
     expect(imageNeedsAuthenticatedFetch("/flags/th.png")).toBe(false);
     expect(imageNeedsAuthenticatedFetch("https://cdn.example.com/logo.png")).toBe(false);
+  });
+
+  it("adds the fixed WebP thumbnail variant without changing the object path", () => {
+    expect(imageThumbnailProxyUrl("/goapi/s3/file/SHOP/images/a.png")).toBe(
+      "/goapi/s3/file/SHOP/images/a.png?variant=thumbnail",
+    );
+    expect(
+      imageThumbnailProxyUrl(
+        "https://account.bcaicloud.com/goapi/s3/file/SHOP/images/a.png?download=0#image",
+      ),
+    ).toBe(
+      "https://account.bcaicloud.com/goapi/s3/file/SHOP/images/a.png?download=0&variant=thumbnail#image",
+    );
+    expect(imageThumbnailProxyUrl("/goapi/s3/file/SHOP/images/a.png?variant=original")).toBe(
+      "/goapi/s3/file/SHOP/images/a.png?variant=thumbnail",
+    );
+    expect(imageThumbnailProxyUrl("https://cdn.example.com/a.png")).toBe(
+      "https://cdn.example.com/a.png",
+    );
   });
 
   it("returns an explicit error when a required upload category is missing", async () => {

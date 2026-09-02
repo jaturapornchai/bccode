@@ -7,11 +7,50 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	msmodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
 )
+
+func TestStorageInlineResponseUsesPrivateConditionalCache(t *testing.T) {
+	e := echo.New()
+	modified := time.Date(2026, time.August, 23, 6, 0, 0, 0, time.UTC)
+
+	req := httptest.NewRequest(http.MethodGet, "/s3/file/SHOP001/images/a.png", nil)
+	req.Header.Set("If-None-Match", `"image-version"`)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if !storageObjectNotModified(c, `"image-version"`, &modified, "") {
+		t.Fatal("expected matching ETag to return not modified")
+	}
+	if got := rec.Header().Get("Cache-Control"); got != storagePrivateBrowserCache {
+		t.Fatalf("Cache-Control = %q, want %q", got, storagePrivateBrowserCache)
+	}
+	if got := rec.Header().Get("Vary"); got != "Authorization" {
+		t.Fatalf("Vary = %q, want Authorization", got)
+	}
+	if got := rec.Header().Get("Last-Modified"); got != modified.Format(http.TimeFormat) {
+		t.Fatalf("Last-Modified = %q, want %q", got, modified.Format(http.TimeFormat))
+	}
+}
+
+func TestStorageDownloadResponseRemainsNoStore(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/s3/file/SHOP001/private.pdf", nil)
+	req.Header.Set("If-None-Match", `"document-version"`)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	if storageObjectNotModified(c, `"document-version"`, nil, "private.pdf") {
+		t.Fatal("download response must not use browser cache")
+	}
+	if got := rec.Header().Get("Cache-Control"); got != "private, no-store" {
+		t.Fatalf("Cache-Control = %q, want private, no-store", got)
+	}
+}
 
 func TestStoragePrivateURLDefaultUsesBackendProxy(t *testing.T) {
 	t.Setenv(storageAllowPresignedURLEnv, "")
@@ -222,6 +261,23 @@ func TestS3FileProxyRequiresAuthShop(t *testing.T) {
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status %d when shop not selected, got %d", http.StatusUnauthorized, rec.Code)
+	}
+}
+
+func TestS3FileProxyRejectsUnsupportedImageVariantBeforeStorage(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/s3/file/SHOP001/images/a.png?variant=large", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("*")
+	c.SetParamValues("SHOP001/images/a.png")
+	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
+
+	if err := S3FileProxyHandler(c); err != nil {
+		t.Fatalf("S3FileProxyHandler returned error: %v", err)
+	}
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, rec.Code)
 	}
 }
 

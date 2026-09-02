@@ -58,7 +58,9 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
   const url = new URL(request.url);
   switch (path) {
     case "holdings":
-      return listHoldingsWithDisplayNames(request, mainApiUrl);
+      // management=true is sent only by system-settings admin screens; the
+      // workspace company selector must stay scope-filtered (docs organization.md).
+      return listHoldingsWithDisplayNames(request, mainApiUrl, url.searchParams.get("management") === "true");
     case "holding-info": {
       const holdingCode = holdingCodeFromSearchParams(url.searchParams);
       const holdingcode = url.searchParams.get("holdingcode")?.trim() || holdingCode;
@@ -200,7 +202,7 @@ async function listMissingStandardProductUnits(request: Request, mainApiUrl: str
   }
 }
 
-async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string): Promise<NextResponse> {
+async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string, useManagement = false): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
   const url = new URL(request.url);
@@ -254,20 +256,24 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
         );
 
         if (selectResult.ok) {
-          // Fetch Companies
+          // Fetch Companies — management variant lists the whole holding for the
+          // admin screens regardless of the caller's business scopes; the default
+          // (no flag) keeps the workspace selector scope-filtered.
+          const companyPath = useManagement ? "/organization/company?management=true" : "/organization/company";
           const compResult = await callMainApiJson(
             request,
             mainApiUrl,
-            "/organization/company",
+            companyPath,
             { method: "GET" },
             authorization,
           );
 
           // Fetch Branches
+          const branchPath = useManagement ? "/organization/branch?management=true" : "/organization/branch";
           const branchResult = await callMainApiJson(
             request,
             mainApiUrl,
-            "/organization/branch",
+            branchPath,
             { method: "GET" },
             authorization,
           );

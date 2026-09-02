@@ -359,7 +359,7 @@ export function LanguageConfigsEditor({
   form: FormState;
   language: LanguageCode;
   label: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const defaultCode = supportedLanguageCode(form["settings.language"], "th");
   const rows = normalizeLanguageConfigs(
@@ -563,7 +563,7 @@ export function LanguageListEditor({
   language: LanguageCode;
   label: string;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const rows = normalizeLanguageList(form[field.key], form.language);
   const usedCodes = new Set(rows);

@@ -127,7 +127,7 @@ export function ProductVariantStructuredFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const items = variantArrayValue(form[field.key]);
   const columns = variantFieldColumns[field.key] ?? [];
@@ -576,7 +576,7 @@ export function TimeSaleListEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const rows = normalizeTimeSaleFormList(form[field.key]);
   const enabled = rows.length > 0;
@@ -781,7 +781,7 @@ export function BankAccountsEditor({
   form: FormState;
   language: LanguageCode;
   label: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const rows = normalizeBankAccountFormList(form[field.key]);
 
@@ -1361,7 +1361,7 @@ export function BranchStructuredSettingEditor({
   label: string;
   language: LanguageCode;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const commit = (nextValue: unknown) => {
     if (readOnly || !setForm) return;

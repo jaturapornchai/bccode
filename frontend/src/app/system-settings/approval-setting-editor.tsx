@@ -50,7 +50,7 @@ export function ApprovalSettingEditor({
   dictionary: BackendLanguageDictionary;
   form: FormState;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const approvals = approvalsFromForm(form.approvals);
 

@@ -234,10 +234,9 @@ func uploadPDFToR2AndSaveHistory(ctx context.Context, filePath string, payload g
 	fileName := fmt.Sprintf("%s_%s_%s.pdf", payload.Collection, payload.DocNo, timestamp)
 	r2Key := fmt.Sprintf("%s/pdf/%s", payload.HoldingCode, fileName)
 
-	// Get bucket name from env
-	r2BucketName := strings.TrimSpace(os.Getenv("R2_BUCKET_NAME"))
+	// GetR2Client initializes the shared bucket from S3_* first, then legacy R2_*.
 	if r2BucketName == "" {
-		return fmt.Errorf("R2_BUCKET_NAME not configured")
+		return fmt.Errorf("object storage bucket is not configured")
 	}
 
 	// Upload to R2
@@ -775,9 +774,6 @@ func PdfReprintHandler(c echo.Context) error {
 			"message": "PDF history not found",
 		})
 	}
-
-	// Get bucket name
-	r2BucketName := strings.TrimSpace(os.Getenv("R2_BUCKET_NAME"))
 
 	// Download PDF from R2
 	output, err := r2Client.GetObject(ctx, &s3.GetObjectInput{

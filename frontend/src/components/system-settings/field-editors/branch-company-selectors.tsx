@@ -146,7 +146,7 @@ export function BranchMultiSelectFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const [options, setOptions] = useState<BranchOption[]>([]);
@@ -187,7 +187,7 @@ export function BranchMultiSelectFieldEditor({
       holdingcodes = [workspace.shop.holdingcode];
     }
 
-    void authFetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings?management=true`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -260,7 +260,7 @@ export function BranchMultiSelectFieldEditor({
   }, [auth, language, workspace, form.businesscodes, form.companyguids]);
 
   function commitSelection(next: BranchOption[]) {
-    setForm({ ...form, [field.key]: next });
+    setForm((current) => ({ ...current, [field.key]: next }));
   }
 
   function removeBranch(option: BranchOption) {
@@ -631,7 +631,7 @@ export function CompanyMultiSelectFieldEditor({
   field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const [shops, setShops] = useState<any[]>([]);
@@ -661,7 +661,7 @@ export function CompanyMultiSelectFieldEditor({
     const activeHoldingCode = stringValue(workspace.shop.holdingcode);
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void authFetch(`/api/workspace/holdings${params.size > 0 ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings?management=true${params.size > 0 ? `&${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -786,7 +786,7 @@ export function CompanyMultiSelectReadOnlyDetail({
   useEffect(() => {
     if (!auth || selectedGuids.length === 0) return;
     const controller = new AbortController();
-    void authFetch(`/api/workspace/holdings`, {
+    void authFetch(`/api/workspace/holdings?management=true`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -861,7 +861,7 @@ export function BranchCoordinatePairEditor({
   config: SystemSettingConfig;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const [mapOpen, setMapOpen] = useState(false);
   const latitudeField = config.fields.find(

@@ -176,8 +176,8 @@ export function SettingsScreen() {
     integrations: {
       s3endpoint: "http://minio:9000",
       s3publicendpoint: "http://192.168.2.202:9100",
-      s3accesskeyid: "smlsoft",
-      s3secretaccesskey: "smlsoft123",
+      s3accesskeyid: "",
+      s3secretaccesskey: "",
       s3bucketname: "app-images",
     },
   };

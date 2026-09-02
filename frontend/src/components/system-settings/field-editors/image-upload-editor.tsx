@@ -518,7 +518,7 @@ export function ImageUploadFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
@@ -587,16 +587,19 @@ export function ImageUploadFieldEditor({
     setError("");
     try {
       if (field.thumbnailKey) {
+        const thumbKey: string = field.thumbnailKey;
         const originalUri = await uploadOne(file);
         const thumbUri = await uploadOne(await makeThumbnailFile(file));
-        setForm({
-          ...form,
+        // functional update — การอัปโหลดใช้เวลาหลายวินาที ระหว่างนั้นผู้ใช้แก้
+        // field อื่นได้ ถ้าใช้ form snapshot จะทับการแก้เหล่านั้นทิ้ง (เคสจริง)
+        setForm((current) => ({
+          ...current,
           [field.key]: originalUri,
-          [field.thumbnailKey]: thumbUri,
-        });
+          [thumbKey]: thumbUri,
+        }));
       } else {
         const uri = await uploadOne(await resizeLogoFile(file));
-        setForm({ ...form, [field.key]: uri });
+        setForm((current) => ({ ...current, [field.key]: uri }));
       }
     } catch (uploadError) {
       setError(
@@ -818,7 +821,7 @@ export function ImageGalleryFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
@@ -831,7 +834,7 @@ export function ImageGalleryFieldEditor({
   const removeLabel = language === "th" ? "ลบ" : "Remove";
 
   function updateValues(next: string[]) {
-    setForm({ ...form, [field.key]: next });
+    setForm((current) => ({ ...current, [field.key]: next }));
   }
 
   function removeAt(index: number) {

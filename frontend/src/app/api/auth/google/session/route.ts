@@ -13,9 +13,8 @@ export async function POST(request: Request) {
     body = {};
   }
 
-  const bridgeUrl = getAuthBridgeUrl();
-
   try {
+    const bridgeUrl = getAuthBridgeUrl();
     const response = await fetch(`${bridgeUrl}/api/google/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

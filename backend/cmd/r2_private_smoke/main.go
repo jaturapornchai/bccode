@@ -124,13 +124,13 @@ func loadConfig() (r2SmokeConfig, error) {
 		HoldingCode:     strings.Trim(strings.TrimSpace(os.Getenv("BC_R2_SMOKE_HOLDING_CODE")), "/"),
 	}
 
-	if cfg.AccountID != "" {
-		cfg.Provider = "R2"
-	} else if cfg.Endpoint != "" {
+	if cfg.Endpoint != "" {
 		cfg.Provider = "S3"
 		cfg.AccessKeyID = firstNonEmpty(os.Getenv("S3_ACCESS_KEY_ID"), bootstrapValue(bootstrap, "s3_access_key_id"))
 		cfg.SecretAccessKey = firstNonEmpty(os.Getenv("S3_SECRET_ACCESS_KEY"), bootstrapValue(bootstrap, "s3_secret_access_key"))
 		cfg.BucketName = firstNonEmpty(os.Getenv("S3_BUCKET_NAME"), bootstrapValue(bootstrap, "s3_bucket_name"))
+	} else if cfg.AccountID != "" {
+		cfg.Provider = "R2"
 	} else {
 		cfg.Provider = "R2"
 	}

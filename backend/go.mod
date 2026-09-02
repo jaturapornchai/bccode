@@ -5,6 +5,7 @@ go 1.26
 require (
 	firebase.google.com/go/v4 v4.11.0
 	github.com/3dsinteractive/wrkgo v0.0.0-20210911134244-26f18db8d978
+	github.com/SeriousBug/webp-go-pure v1.2.0
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
@@ -23,6 +24,7 @@ require (
 	github.com/tj/assert v0.0.3
 	github.com/xuri/excelize/v2 v2.9.1
 	go.uber.org/zap v1.27.0
+	golang.org/x/image v0.25.0
 	google.golang.org/api v0.120.0
 	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0
 	gorm.io/driver/postgres v1.5.0

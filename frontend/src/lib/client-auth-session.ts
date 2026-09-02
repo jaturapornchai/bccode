@@ -191,17 +191,28 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
   return fetch(retryInput, { ...init, headers });
 }
 
-export async function logoutAuthSession(): Promise<void> {
-  const authorization = activeSession?.token ? { Authorization: `Bearer ${activeSession.token}` } : undefined;
-  const response = await authFetch("/api/auth/logout", {
-    method: "POST",
-    headers: authorization,
-    credentials: "same-origin",
-    cache: "no-store",
-  });
-  const payload = (await response.json().catch(() => null)) as { success?: boolean; message?: string } | null;
-  if (!response.ok || payload?.success !== true) {
-    throw new Error(payload?.message ?? "ไม่สามารถเพิกถอน Session ได้");
+/**
+ * Revoke the server session if possible, then ALWAYS clear the local session.
+ * Logging out must never strand the user on a protected screen: when the
+ * tokens are already expired (or the backend is unreachable) the server-side
+ * session dies on its own, so a failed revoke must not block the redirect.
+ * Returns whether the server confirmed the revoke.
+ */
+export async function logoutAuthSession(): Promise<{ revoked: boolean }> {
+  let revoked = false;
+  try {
+    const authorization = activeSession?.token ? { Authorization: `Bearer ${activeSession.token}` } : undefined;
+    const response = await authFetch("/api/auth/logout", {
+      method: "POST",
+      headers: authorization,
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const payload = (await response.json().catch(() => null)) as { success?: boolean; message?: string } | null;
+    revoked = response.ok && payload?.success === true;
+  } catch {
+    // backend unreachable — local logout still proceeds
   }
   clearAuthSession();
+  return { revoked };
 }

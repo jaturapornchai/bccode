@@ -1,0 +1,13 @@
+account.bcaicloud.com {
+  encode zstd gzip
+
+  @internal_health path \
+    /backend/goapi/api/health/kafka \
+    /backend/goapi/api/health/background \
+    /backend/goapi/api/health/queue* \
+    /backend/goapi/api/health/database \
+    /backend/goapi/api/health/system
+  respond @internal_health 404
+
+  reverse_proxy 127.0.0.1:3200
+}

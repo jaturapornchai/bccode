@@ -114,7 +114,7 @@ func (*Config) HttpCORS() []string {
 // }
 
 func (*Config) JwtSecretKey() string {
-	return getEnv("JWT_SECRET_KEY", "54cfcbf5437a029d48a9f67552eeb04b48a65703")
+	return getEnv("JWT_SECRET_KEY", "")
 }
 
 func (cfg *Config) ElkPersisterConfig() IPersisterElkConfig {
@@ -151,5 +151,5 @@ func (*Config) LineClientId() string {
 // of Google ID tokens at /googlelogin. A client ID is public (it ships in the web bundle),
 // not a secret. Override via bootstrap.json -> GOOGLE_CLIENT_ID when needed.
 func (*Config) GoogleClientId() string {
-	return getEnv("GOOGLE_CLIENT_ID", "501250317679-05usebjtla636rm1an1dcdv3d0aeb4v1.apps.googleusercontent.com")
+	return getEnv("GOOGLE_CLIENT_ID", "212036599086-c7aqvm005jiv2kqi4duju8spd9b3jb94.apps.googleusercontent.com")
 }

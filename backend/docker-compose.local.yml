@@ -55,18 +55,66 @@ services:
       - app-network
 
   minio:
-    image: minio/minio
+    image: minio/minio@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
     container_name: minio
     command: ["server", "/data", "--console-address", ":9001"]
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+    env_file:
+      - ./minio.local.env
     ports:
       - "127.0.0.1:9100:9000"
       - "127.0.0.1:9001:9001"
     volumes:
       - minio-data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    mem_limit: 1g
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks:
+      - app-network
+
+  minio-init:
+    image: minio/mc@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780
+    container_name: minio-init
+    env_file:
+      - ./minio.local.env
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null
+        mc ready local
+        mc mb --ignore-existing "local/$${MINIO_BUCKET_NAME}" >/dev/null
+        mc version enable "local/$${MINIO_BUCKET_NAME}" >/dev/null
+        mc anonymous set none "local/$${MINIO_BUCKET_NAME}" >/dev/null
+        mc admin policy create local bcai-account-app /etc/minio/policy.json >/dev/null
+        (mc admin user add local "$${MINIO_APP_ACCESS_KEY}" "$${MINIO_APP_SECRET_KEY}" >/dev/null || mc admin user enable local "$${MINIO_APP_ACCESS_KEY}" >/dev/null)
+        mc admin policy attach local bcai-account-app --user "$${MINIO_APP_ACCESS_KEY}" >/dev/null
+        mc alias set app http://minio:9000 "$${MINIO_APP_ACCESS_KEY}" "$${MINIO_APP_SECRET_KEY}" >/dev/null
+        mc stat "app/$${MINIO_BUCKET_NAME}" >/dev/null
+    volumes:
+      - ../deploy/account/minio-app-policy.json:/etc/minio/policy.json:ro
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp
+    environment:
+      MC_CONFIG_DIR: /tmp/.mc
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
     networks:
       - app-network
 
@@ -74,13 +122,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.local
+    env_file:
+      - ./storage.local.env
     depends_on:
-      - redis
-      - kafka
-      - mongodb
-      - postgres
-      - clickhouse
-      - minio
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+      mongodb:
+        condition: service_started
+      postgres:
+        condition: service_started
+      clickhouse:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     volumes:
       # Override the base bootstrap mount with the LOCAL bootstrap (all stores → local containers)
       - ./bootstrap.local.json:/app/bootstrap.json:ro

@@ -46,6 +46,20 @@ export function ZoomControl({ dictionary, language }: ZoomControlProps) {
     localStorage.setItem(zoomStorageKey, String(zoom));
   }, [ready, zoom]);
 
+  useEffect(() => {
+    if (!ready) return;
+    // Keep the applied scale correct when the window moves between monitors of
+    // different sizes / OS scaling (the calc is viewport-based and re-resolves
+    // on resize, but re-applying also refreshes dataset state on the same tick).
+    const reapply = () => applyUiZoom(zoom);
+    window.addEventListener("resize", reapply);
+    window.addEventListener("focus", reapply);
+    return () => {
+      window.removeEventListener("resize", reapply);
+      window.removeEventListener("focus", reapply);
+    };
+  }, [ready, zoom]);
+
   const labels = useMemo(
     () => ({
       selectZoom: languageText(dictionary, "select_zoom", t(language, "selectZoom")),
@@ -120,6 +134,13 @@ function stepZoom(current: number, direction: 1 | -1): number {
 
 function applyUiZoom(zoom: number) {
   document.documentElement.dataset.uiZoom = String(zoom);
-  document.documentElement.style.fontSize = `${zoom}%`;
+  // The control displays the nominal zoom (default 100%). The applied root
+  // scale is the fluid viewport-based base from globals.css multiplied by the
+  // nominal zoom. System base is ×1.5 of the historical scale (2026-08-29:
+  // "100% = 150%") — nominal 100% now renders what 150% used to. The login
+  // page is exempt via html[data-login-scale] in globals.css (higher
+  // precedence than this inline style). Keep the base formula in sync with
+  // the html rule in globals.css.
+  document.documentElement.style.fontSize = `calc(clamp(15px, 0.46875vw + 9px, 21px) * ${zoom / 100})`;
   document.body.style.removeProperty("zoom");
 }

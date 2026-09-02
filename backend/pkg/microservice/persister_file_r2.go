@@ -19,55 +19,91 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-// PersisterR2 implements IPersisterFile using Cloudflare R2 storage
+// PersisterR2 implements IPersisterFile using Cloudflare R2 or S3-compatible storage.
 type PersisterR2 struct {
 	client     *s3.Client
-	accountID  string
 	bucketName string
-	initOnce   sync.Once
-	initErr    error
+	endpoint   string
+	initMu     sync.Mutex
 }
 
 func NewPersisterR2() *PersisterR2 {
 	return &PersisterR2{}
 }
 
-func (p *PersisterR2) init() {
-	p.initOnce.Do(func() {
-		p.accountID = strings.TrimSpace(os.Getenv("R2_ACCOUNT_ID"))
-		accessKeyID := strings.TrimSpace(os.Getenv("R2_ACCESS_KEY_ID"))
-		secretAccessKey := strings.TrimSpace(os.Getenv("R2_SECRET_ACCESS_KEY"))
-		p.bucketName = strings.TrimSpace(os.Getenv("R2_BUCKET_NAME"))
-
-		if p.accountID == "" || accessKeyID == "" || secretAccessKey == "" || p.bucketName == "" {
-			p.initErr = fmt.Errorf("missing R2 config (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME)")
-			return
+func firstNonEmptyStorageEnv(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
 		}
+	}
+	return ""
+}
 
-		r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL: fmt.Sprintf("https://%s.r2.cloudflarestorage.com", p.accountID),
-			}, nil
+func (p *PersisterR2) init() error {
+	p.initMu.Lock()
+	defer p.initMu.Unlock()
+
+	if p.client != nil {
+		return nil
+	}
+
+	accountID := firstNonEmptyStorageEnv(os.Getenv("S3_ACCOUNT_ID"), os.Getenv("R2_ACCOUNT_ID"))
+	endpoint := firstNonEmptyStorageEnv(os.Getenv("S3_ENDPOINT"), os.Getenv("R2_ENDPOINT"))
+	accessKeyID := firstNonEmptyStorageEnv(os.Getenv("S3_ACCESS_KEY_ID"), os.Getenv("R2_ACCESS_KEY_ID"))
+	secretAccessKey := firstNonEmptyStorageEnv(os.Getenv("S3_SECRET_ACCESS_KEY"), os.Getenv("R2_SECRET_ACCESS_KEY"))
+	bucketName := firstNonEmptyStorageEnv(os.Getenv("S3_BUCKET_NAME"), os.Getenv("R2_BUCKET_NAME"))
+
+	if (accountID == "" && endpoint == "") || accessKeyID == "" || secretAccessKey == "" || bucketName == "" {
+		return fmt.Errorf("missing object storage config (S3_ENDPOINT or R2_ACCOUNT_ID, access key, secret key, bucket)")
+	}
+
+	var (
+		cfg    aws.Config
+		err    error
+		client *s3.Client
+	)
+	if endpoint != "" {
+		endpoint = strings.TrimRight(endpoint, "/")
+		region := firstNonEmptyStorageEnv(os.Getenv("S3_REGION"), "us-east-1")
+		cfg, err = awsconfig.LoadDefaultConfig(context.TODO(),
+			awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
+			awsconfig.WithRegion(region),
+		)
+		if err == nil {
+			client = s3.NewFromConfig(cfg, func(options *s3.Options) {
+				options.BaseEndpoint = aws.String(endpoint)
+				options.UsePathStyle = true
+				options.Region = region
+			})
+		}
+	} else {
+		endpoint = fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID)
+		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{URL: endpoint}, nil
 		})
-
-		cfg, err := awsconfig.LoadDefaultConfig(context.TODO(),
-			awsconfig.WithEndpointResolverWithOptions(r2Resolver),
+		cfg, err = awsconfig.LoadDefaultConfig(context.TODO(),
+			awsconfig.WithEndpointResolverWithOptions(resolver),
 			awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
 			awsconfig.WithRegion("auto"),
 		)
-		if err != nil {
-			p.initErr = fmt.Errorf("R2 SDK config error: %w", err)
-			return
+		if err == nil {
+			client = s3.NewFromConfig(cfg)
 		}
+	}
+	if err != nil {
+		return fmt.Errorf("object storage SDK config error: %w", err)
+	}
 
-		p.client = s3.NewFromConfig(cfg)
-	})
+	p.client = client
+	p.bucketName = bucketName
+	p.endpoint = endpoint
+	return nil
 }
 
 func (p *PersisterR2) Save(fh *multipart.FileHeader, fileName string, fileExtension string) (string, error) {
-	p.init()
-	if p.initErr != nil {
-		return "", p.initErr
+	if err := p.init(); err != nil {
+		return "", err
 	}
 
 	file, err := fh.Open()
@@ -98,29 +134,23 @@ func (p *PersisterR2) Save(fh *multipart.FileHeader, fileName string, fileExtens
 		ContentType: aws.String(contentType),
 	})
 	if err != nil {
-		return "", fmt.Errorf("R2 upload error: %w", err)
+		return "", fmt.Errorf("object storage upload error: %w", err)
 	}
 
-	// Construct standardized R2 S3 endpoint URL
-	objectURI := fmt.Sprintf("https://%s.r2.cloudflarestorage.com/%s/%s", p.accountID, p.bucketName, objectKey)
+	// Preserve the existing endpoint/bucket/key URI format for stored metadata.
+	objectURI := fmt.Sprintf("%s/%s/%s", strings.TrimRight(p.endpoint, "/"), p.bucketName, objectKey)
 	return objectURI, nil
 }
 
 func (p *PersisterR2) LoadFile(fileName string) (string, *bytes.Buffer, error) {
-	p.init()
-	if p.initErr != nil {
-		return "", nil, p.initErr
+	if err := p.init(); err != nil {
+		return "", nil, err
 	}
 
-	// If fileName is an HTTP URL, check if it's our own R2 URL first to use S3 client (authorized)
+	// If fileName is our own object-storage URL, use the authenticated S3 client.
 	if strings.HasPrefix(fileName, "http") {
-		if u, err := url.Parse(fileName); err == nil {
-			if strings.HasSuffix(u.Host, ".r2.cloudflarestorage.com") {
-				parts := strings.SplitN(strings.TrimPrefix(u.Path, "/"), "/", 2)
-				if len(parts) == 2 {
-					return p.downloadFromR2(parts[1])
-				}
-			}
+		if objectKey, ok := p.objectKeyFromURI(fileName); ok {
+			return p.downloadFromR2(objectKey)
 		}
 
 		// Fallback: anonymous HTTP GET for other external URLs
@@ -129,6 +159,23 @@ func (p *PersisterR2) LoadFile(fileName string) (string, *bytes.Buffer, error) {
 
 	// Otherwise, it is a raw key. Retrieve it using GetObject from R2.
 	return p.downloadFromR2(fileName)
+}
+
+func (p *PersisterR2) objectKeyFromURI(fileName string) (string, bool) {
+	objectURL, err := url.Parse(fileName)
+	if err != nil {
+		return "", false
+	}
+	storageURL, err := url.Parse(p.endpoint)
+	if err != nil || !strings.EqualFold(objectURL.Scheme, storageURL.Scheme) || !strings.EqualFold(objectURL.Host, storageURL.Host) {
+		return "", false
+	}
+
+	parts := strings.SplitN(strings.TrimPrefix(objectURL.Path, "/"), "/", 2)
+	if len(parts) != 2 || parts[0] != p.bucketName || strings.TrimSpace(parts[1]) == "" {
+		return "", false
+	}
+	return parts[1], true
 }
 
 func (p *PersisterR2) downloadFromR2(objectKey string) (string, *bytes.Buffer, error) {
@@ -140,7 +187,7 @@ func (p *PersisterR2) downloadFromR2(objectKey string) (string, *bytes.Buffer, e
 		Key:    aws.String(objectKey),
 	})
 	if err != nil {
-		return "", nil, fmt.Errorf("R2 download error: %w", err)
+		return "", nil, fmt.Errorf("object storage download error: %w", err)
 	}
 	defer output.Body.Close()
 

@@ -75,7 +75,7 @@ func (svc BusinessTypeHttpService) CreateBusinessType(holdingCode string, authUs
 	}
 
 	if findDoc.Code != "" {
-		return "", errors.New("code is exists")
+		return "", errors.New("รหัสนี้มีอยู่แล้ว")
 	}
 
 	// Create new GuidFixed
@@ -271,6 +271,7 @@ func (svc BusinessTypeHttpService) SearchBusinessType(holdingCode string, filter
 
 	searchInFields := []string{
 		"code",
+		"names.name",
 	}
 
 	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
@@ -289,6 +290,7 @@ func (svc BusinessTypeHttpService) SearchBusinessTypeStep(holdingCode string, la
 
 	searchInFields := []string{
 		"code",
+		"names.name",
 	}
 
 	selectFields := map[string]interface{}{}

@@ -12,13 +12,14 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
+import { deriveMainApiUrl } from "@/lib/backend-url";
 import { applyCurrencySymbolPreset, currencyPresetSource, filterCurrencySymbolPresets, findCurrencySymbolPreset } from "@/lib/currency-presets";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
@@ -60,6 +61,7 @@ type CurrencyForm = {
   name: string;
   symbol: string;
   isdisabled: boolean;
+  rate: number;
 };
 
 type ApiResponse<T> = {
@@ -124,6 +126,15 @@ const currencyTextEn = {
   branch: "Branch",
   exchangeRates: "Exchange rates",
   none: "None",
+  setBase: "Set as base currency",
+  baseSetSuccess: "Base currency of this branch updated.",
+  baseSetFailed: "Could not set base currency.",
+  lastActiveGuard: "At least one active currency is required — add or enable another currency first.",
+  baseGuardDelete: "This currency is the base of this branch — set another base currency first.",
+  autoSeedNotice: "No currency found — THB was added and set as the base currency automatically.",
+  rateVsBase: "Exchange rate (vs base)",
+  quickAdd: "Quick add (ISO 4217)",
+  baseNoneHint: "No base currency set for this branch yet.",
 } as const;
 
 type CurrencyTextKey = keyof typeof currencyTextEn;
@@ -178,6 +189,15 @@ const currencyText: Partial<Record<LanguageCode, Partial<Record<CurrencyTextKey,
     branch: "สาขา",
     exchangeRates: "อัตราแลกเปลี่ยน",
     none: "ไม่มี",
+    setBase: "ตั้งเป็นสกุลเงินหลัก",
+    baseSetSuccess: "ตั้งสกุลเงินหลักของสาขานี้เรียบร้อย",
+    baseSetFailed: "ตั้งสกุลเงินหลักไม่สำเร็จ",
+    lastActiveGuard: "ต้องมีสกุลเงินที่ใช้งานอยู่อย่างน้อย 1 สกุลเสมอ — เพิ่มหรือเปิดใช้งานสกุลอื่นก่อน",
+    baseGuardDelete: "สกุลนี้เป็นสกุลเงินหลักของสาขาอยู่ — ตั้งสกุลหลักตัวอื่นก่อน",
+    autoSeedNotice: "ยังไม่มีสกุลเงิน — ระบบเพิ่ม THB และตั้งเป็นสกุลเงินหลักให้อัตโนมัติแล้ว",
+    rateVsBase: "อัตราแลกเปลี่ยน (เทียบสกุลหลัก)",
+    quickAdd: "เพิ่มด่วน (มาตรฐาน ISO 4217)",
+    baseNoneHint: "สาขานี้ยังไม่ได้ตั้งสกุลเงินหลัก",
   },
   en: currencyTextEn,
   cn: {
@@ -374,7 +394,11 @@ const emptyForm: CurrencyForm = {
   name: "",
   symbol: "",
   isdisabled: false,
+  rate: 1,
 };
+
+/** เพิ่มด่วนจากมาตรฐาน ISO 4217 — สกุลที่ธุรกิจไทยใช้บ่อยที่สุด */
+const QUICK_ADD_CODES = ["THB", "USD", "EUR", "JPY", "CNY", "GBP", "MYR", "SGD"] as const;
 
 export function CurrencyScreen({ embedded = false, initialBackendLanguage, initialBackendUrl, initialLanguage = "th", language: externalLanguage }: CurrencyScreenProps) {
   const router = useRouter();
@@ -451,7 +475,8 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     if (!externalLanguage) localStorage.setItem("user_language", language);
   }, [externalLanguage, language]);
 
-  const baseCurrency = (workspace?.branch?.basecurrency || "").trim().toUpperCase();
+  const [baseCurrencyOverride, setBaseCurrencyOverride] = useState("");
+  const baseCurrency = (baseCurrencyOverride || workspace?.branch?.basecurrency || "").trim().toUpperCase();
   const activeCount = currencies.filter((item) => !item.isdisabled).length;
   const disabledCount = currencies.length - activeCount;
   const visibleCurrencies = useMemo(() => {
@@ -476,9 +501,108 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
       name: currency.name,
       symbol: currency.symbol || "฿",
       isdisabled: currency.isdisabled,
+      rate: latestRateVsBase(currency, baseCurrency) ?? 1,
     });
     setFormOpen(true);
     setNotice(null);
+  }
+
+  function isLastActive(currency: CurrencyRecord): boolean {
+    return activeCount === 1 && !currency.isdisabled;
+  }
+
+  function isBaseCurrency(currency: CurrencyRecord): boolean {
+    return Boolean(baseCurrency) && currency.code.toUpperCase() === baseCurrency;
+  }
+
+  /** ตั้งสกุลหลักของสาขาปัจจุบันจากหน้านี้เลย (เดิมซ่อนอยู่ในฟอร์มแก้ไขสาขา) */
+  async function setBaseCurrency(code: string) {
+    if (!auth) return;
+    const branchGuid = workspace?.branch?.guidfixed ?? "";
+    if (!branchGuid) {
+      setNotice({ type: "error", text: text("baseSetFailed") });
+      return;
+    }
+    setSaving(true);
+    try {
+      const mainApiUrl = deriveMainApiUrl(auth.backendUrl);
+      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` };
+      const listRes = await authFetch(`${mainApiUrl}/organization/branch?management=true&_=${Date.now()}`, { headers, cache: "no-store" });
+      const listPayload = await listRes.json() as ApiResponse<unknown>;
+      if (!listRes.ok || listPayload.success === false) throw new Error(String(listPayload.message || text("requestFailed")));
+      const branchDoc = (Array.isArray(listPayload.data) ? listPayload.data : []).find(
+        (item) => (item as { guidfixed?: string })?.guidfixed === branchGuid,
+      ) as Record<string, unknown> | undefined;
+      if (!branchDoc) throw new Error(text("requestFailed"));
+      const putRes = await authFetch(`${mainApiUrl}/organization/branch/${encodeURIComponent(branchGuid)}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ ...branchDoc, basecurrency: code }),
+      });
+      const putPayload = await putRes.json() as ApiResponse<unknown>;
+      if (!putRes.ok || putPayload.success === false) throw new Error(String(putPayload.message || text("requestFailed")));
+      setBaseCurrencyOverride(code);
+      setNotice({ type: "success", text: `${text("baseSetSuccess")} (${code})` });
+    } catch (error) {
+      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : text("baseSetFailed") });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** ระบบต้องมีสกุลเงินอย่างน้อย 1 สกุลเสมอ — ถ้าว่างเปล่าให้ seed THB + ตั้งเป็นสกุลหลักอัตโนมัติ */
+  const seedAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (seedAttemptedRef.current || loading || !auth || currencies.length > 0) return;
+    seedAttemptedRef.current = true;
+    void (async () => {
+      try {
+        const response = await authFetch("/api/currency", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-bc-backend-url": auth.backendUrl, Authorization: `Bearer ${auth.token}` },
+          body: JSON.stringify({ backendUrl: auth.backendUrl, guidfixed: "", code: "THB", name: "Thai Baht", symbol: "฿", isdisabled: false }),
+        });
+        const payload = await response.json() as ApiResponse<unknown>;
+        if (!response.ok || payload.success === false) throw new Error(String(payload.message || ""));
+        if (!baseCurrency) await setBaseCurrency("THB");
+        setNotice({ type: "success", text: text("autoSeedNotice") });
+        await loadCurrencies(auth);
+      } catch {
+        seedAttemptedRef.current = false;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth, currencies.length, loading]);
+
+  /** เพิ่มด่วนจาก preset ISO 4217 คลิกเดียวจบ */
+  async function quickAdd(code: string) {
+    if (!auth) return;
+    if (currencies.some((item) => item.code === code)) {
+      setNotice({ type: "error", text: text("duplicateCode") });
+      return;
+    }
+    // หา preset ด้วยรหัส — ต้องได้ name+symbol มาตรฐาน ไม่ใช่ fallback ตัวรหัสเอง
+    // (ชื่อ/สัญลักษณ์ไม่ตรง preset จะทำให้ validateForm ปฏิเสธตอนแก้ไขภายหลัง)
+    const preset = filterCurrencySymbolPresets(code).find((item) => item.code === code);
+    const name = preset?.name || preset?.isoName || code;
+    const symbol = preset?.symbol || code;
+    setSaving(true);
+    try {
+      const response = await authFetch("/api/currency", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-bc-backend-url": auth.backendUrl, Authorization: `Bearer ${auth.token}` },
+        body: JSON.stringify({ backendUrl: auth.backendUrl, guidfixed: "", code, name, symbol, isdisabled: false }),
+      });
+      const payload = await response.json() as ApiResponse<unknown>;
+      if (!response.ok || payload.success === false) throw new Error(String(payload.message || text("requestFailed")));
+      if (!baseCurrency) await setBaseCurrency(code);
+      setNotice({ type: "success", text: text("addSuccess") });
+      await loadCurrencies(auth);
+    } catch (error) {
+      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : text("requestFailed") });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveCurrency(event: FormEvent<HTMLFormElement>) {
@@ -500,6 +624,18 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
       return;
     }
 
+    // Guard (กฎ 2026-08-30): ห้ามปิดใช้งาน active ตัวสุดท้าย / ห้ามปิดสกุลที่เป็นสกุลหลัก
+    if (editing && !editing.isdisabled && payload.isdisabled) {
+      if (isBaseCurrency(editing)) {
+        setNotice({ type: "error", text: text("baseGuardDelete") });
+        return;
+      }
+      if (isLastActive(editing)) {
+        setNotice({ type: "error", text: text("lastActiveGuard") });
+        return;
+      }
+    }
+
     setSaving(true);
     setNotice(null);
     try {
@@ -514,7 +650,13 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
         body: JSON.stringify({
           backendUrl: auth.backendUrl,
           guidfixed: editing?.guidfixed ?? "",
-          ...payload,
+          code: payload.code,
+          name: payload.name,
+          symbol: payload.symbol,
+          isdisabled: payload.isdisabled,
+          ...(editing && Number.isFinite(payload.rate) && payload.rate > 0 && payload.code !== baseCurrency
+            ? { exchangerates: upsertRateEntry(editing.exchangerates, payload.rate) }
+            : {}),
         }),
       });
       const data = await response.json() as ApiResponse<unknown>;
@@ -535,6 +677,15 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
 
   async function deleteCurrency(currency: CurrencyRecord) {
     if (!auth) return;
+    // Guard (กฎ 2026-08-30): ห้ามลบสกุลหลัก / ห้ามลบ active ตัวสุดท้าย
+    if (isBaseCurrency(currency)) {
+      setNotice({ type: "error", text: text("baseGuardDelete") });
+      return;
+    }
+    if (isLastActive(currency)) {
+      setNotice({ type: "error", text: text("lastActiveGuard") });
+      return;
+    }
     const deleteIds = uniqueStrings([currency.guidfixed, ...(currency.duplicate_guidfixeds ?? [])]);
     if (!deleteIds.length) {
       setNotice({ type: "error", text: text("requestFailed") });
@@ -626,11 +777,30 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
               {text("add")}
             </Button>
           </div>
+          {formOpen ? null : (
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">{text("quickAdd")}:</span>
+              {QUICK_ADD_CODES.map((code) => (
+                <Button
+                  key={code}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs font-bold"
+                  disabled={saving || !auth || currencies.some((item) => item.code === code)}
+                  onClick={() => void quickAdd(code)}
+                >
+                  {code}
+                </Button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {formOpen ? (
         <CurrencyFormPanel
+          baseCurrency={baseCurrency}
           editing={editing}
           form={form}
           onClose={() => {
@@ -656,9 +826,12 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
             <CurrencyCard
               baseCurrency={baseCurrency}
               currency={currency}
+              isBaseFlag={Boolean(baseCurrency) && currency.code.toUpperCase() === baseCurrency}
+              isLastActiveFlag={activeCount === 1 && !currency.isdisabled}
               key={currency.guidfixed || currency.code}
               onDelete={deleteCurrency}
               onEdit={openEdit}
+              onSetBase={(code) => void setBaseCurrency(code)}
               text={text}
             />
           ))}
@@ -703,18 +876,30 @@ function StatCard({ label, tone, value }: { label: string; tone?: "success" | "w
 function CurrencyCard({
   baseCurrency,
   currency,
+  isBaseFlag,
+  isLastActiveFlag,
   onDelete,
   onEdit,
+  onSetBase,
   text,
 }: {
   baseCurrency: string;
   currency: CurrencyRecord;
+  isBaseFlag: boolean;
+  isLastActiveFlag: boolean;
   onDelete: (currency: CurrencyRecord) => void;
   onEdit: (currency: CurrencyRecord) => void;
+  onSetBase: (code: string) => void;
   text: (key: CurrencyTextKey) => string;
 }) {
   const isBase = baseCurrency && currency.code.toUpperCase() === baseCurrency;
   const verifiedPreset = findCurrencySymbolPreset(currency);
+  const deleteBlockedReason = isBaseFlag
+    ? text("baseGuardDelete")
+    : isLastActiveFlag
+      ? text("lastActiveGuard")
+      : "";
+  const rate = latestRateVsBase(currency, baseCurrency);
 
   return (
     <Card className="min-w-0 shadow-sm">
@@ -745,7 +930,15 @@ function CurrencyCard({
             <Button type="button" variant="outline" size="icon" onClick={() => onEdit(currency)} aria-label={text("edit")} title={text("edit")}>
               <Edit3 />
             </Button>
-            <Button type="button" variant="outline" size="icon" onClick={() => onDelete(currency)} aria-label={text("delete")} title={text("delete")}>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => onDelete(currency)}
+              disabled={Boolean(deleteBlockedReason)}
+              aria-label={deleteBlockedReason || text("delete")}
+              title={deleteBlockedReason || text("delete")}
+            >
               <Trash2 />
             </Button>
           </div>
@@ -756,16 +949,37 @@ function CurrencyCard({
             <b className="text-foreground">{currency.isdisabled ? text("disabled") : text("enabled")}</b>
           </span>
           <span className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background px-2 py-1.5">
-            <span>{text("exchangeRates")}</span>
-            <b className="text-foreground">{(currency.exchangerates?.length ?? 0).toLocaleString()}</b>
+            <span>{text("rateVsBase")}</span>
+            <b className="text-foreground">
+              {isBase || !baseCurrency
+                ? text("baseBadge")
+                : rate
+                  ? `1 ${currency.code} = ${rate.toLocaleString()} ${baseCurrency}`
+                  : text("none")}
+            </b>
           </span>
         </div>
+        {!isBase ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full font-semibold"
+            disabled={currency.isdisabled}
+            onClick={() => onSetBase(currency.code)}
+            title={text("setBase")}
+          >
+            <CircleDollarSign className="size-4" />
+            {text("setBase")}
+          </Button>
+        ) : null}
       </CardContent>
     </Card>
   );
 }
 
 function CurrencyFormPanel({
+  baseCurrency,
   editing,
   form,
   onClose,
@@ -774,6 +988,7 @@ function CurrencyFormPanel({
   saving,
   text,
 }: {
+  baseCurrency: string;
   editing: CurrencyRecord | null;
   form: CurrencyForm;
   onClose: () => void;
@@ -863,6 +1078,20 @@ function CurrencyFormPanel({
               )}
             </div>
           </section>
+
+          {editing && baseCurrency && form.code !== baseCurrency ? (
+            <label className="grid gap-1 text-sm font-semibold">
+              <span>{text("rateVsBase")} (1 {form.code} = ? {baseCurrency})</span>
+              <Input
+                type="number"
+                min="0"
+                step="0.0001"
+                value={form.rate || ""}
+                onChange={(event) => onFormChange({ ...form, rate: Number(event.target.value) })}
+                placeholder="เช่น 35.5"
+              />
+            </label>
+          ) : null}
         </div>
 
         <footer className="flex flex-wrap justify-end gap-2">
@@ -943,7 +1172,24 @@ function normalizeForm(form: CurrencyForm): CurrencyForm {
     name: form.name.trim(),
     symbol: form.symbol.trim(),
     isdisabled: form.isdisabled,
+    rate: Number(form.rate) || 0,
   };
+}
+
+/** อัตราล่าสุดเทียบสกุลหลักจากประวัติ exchangerates (เอา entry วันที่มากสุด) */
+function latestRateVsBase(currency: CurrencyRecord, baseCurrency: string): number | null {
+  if (!baseCurrency || currency.code.toUpperCase() === baseCurrency) return null;
+  const rates = (currency.exchangerates ?? []).filter((entry) => Number(entry.rate) > 0);
+  if (!rates.length) return null;
+  const sorted = [...rates].sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
+  return Number(sorted[0].rate) || null;
+}
+
+/** append rate วันนี้เข้าประวัติ (ไม่ทับของเก่า — เก็บ history ตามแบบ backend) */
+function upsertRateEntry(existing: ExchangeRateEntry[] | undefined, rate: number): ExchangeRateEntry[] {
+  const today = new Date().toISOString().slice(0, 10);
+  const history = (existing ?? []).filter((entry) => entry.date !== today);
+  return [...history, { date: today, rate }];
 }
 
 function validateForm(form: CurrencyForm, text: (key: CurrencyTextKey) => string): string | null {

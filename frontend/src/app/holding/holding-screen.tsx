@@ -916,9 +916,20 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     router.replace("/");
   }
 
+  // This page shares the login family classes (.login-card, .primary-button)
+  // whose approved type scale lives on the OLD root ladder. Like LoginWrapper,
+  // pin the root to that ladder — without this the system ×1.5 (2026-08-29)
+  // inflates every control here beyond the approved login look.
+  useEffect(() => {
+    document.documentElement.dataset.loginScale = "1";
+    return () => {
+      delete document.documentElement.dataset.loginScale;
+    };
+  }, []);
+
   return (
     <MotionConfig reducedMotion="user">
-    <main className="login-shell">
+    <main className="login-shell holding-shell">
       <section className="brand-panel" aria-label="BC Ai Account">
         <div className="brand-badge-row">
           <span className="brand-mark">BC</span>
@@ -978,12 +989,6 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                 placeholder={ht(language, "searchPlaceholder")}
               />
             </label>
-            {canCreateHolding ? (
-              <button className="primary-button holding-add-button" type="button" onClick={openCreateHolding}>
-                <Plus aria-hidden="true" size={18} />
-                <span>{ht(language, "addHolding")}</span>
-              </button>
-            ) : null}
           </div>
 
           {createOpen ? (
@@ -1353,6 +1358,17 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
               })}
             </div>
           )}
+
+          {/* Primary CTA at the bottom of the card — moved from the search row
+              (2026-08-29): the add action belongs after the list it acts on. */}
+          {canCreateHolding ? (
+            <div className="holding-add-row">
+              <button className="primary-button holding-add-button" type="button" onClick={openCreateHolding}>
+                <Plus aria-hidden="true" size={18} />
+                <span>{ht(language, "addHolding")}</span>
+              </button>
+            </div>
+          ) : null}
         </section>
       </section>
     </main>

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   const secret = process.env.BCAI_DEV_LOGIN_SECRET ?? "";
-  const backendBase = loopbackBackendBase();
+  const backendBase = devLoginBackendBase();
   if (secret.length < 32 || !backendBase) {
     return NextResponse.json(
       { success: false, errorcode: "DEV_LOGIN_DISABLED", message: "Dev Login ยังไม่พร้อมใช้งาน" },
@@ -77,10 +77,21 @@ export async function POST(request: Request) {
 }
 
 function isExactLoopbackRequest(request: Request): boolean {
-  const requestUrl = new URL(request.url);
-  return isLoopbackHostname(requestUrl.hostname) &&
-    request.headers.get("host") === requestUrl.host &&
-    request.headers.get("origin") === requestUrl.origin;
+  // The browser must be on a loopback origin (docs: Dev Login is loopback-only)
+  // and the Origin header must match the Host actually served — i.e. a
+  // same-origin call. Both loopback spellings (localhost / 127.0.0.1 / ::1)
+  // are accepted so the origin registered in the Google Cloud Console for
+  // Google Login works for Dev Login too.
+  const originHeader = request.headers.get("origin");
+  if (!originHeader) return false;
+  try {
+    const origin = new URL(originHeader);
+    if (origin.protocol !== "http:" && origin.protocol !== "https:") return false;
+    if (!isLoopbackHostname(origin.hostname)) return false;
+    return request.headers.get("host") === origin.host;
+  } catch {
+    return false;
+  }
 }
 
 function loopbackBackendBase(): string | undefined {
@@ -90,6 +101,32 @@ function loopbackBackendBase(): string | undefined {
     if (
       (parsed.protocol !== "http:" && parsed.protocol !== "https:") ||
       !isLoopbackHostname(parsed.hostname) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== "/" ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      return undefined;
+    }
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
+}
+
+// Server-side-only override for container deployments where the backend is
+// reachable by docker-network hostname instead of host loopback. Explicitly
+// set per environment; absent by default so the loopback rule still applies.
+function devLoginBackendBase(): string | undefined {
+  const override = process.env.BCAI_DEV_LOGIN_BACKEND_URL?.trim();
+  if (!override) {
+    return loopbackBackendBase();
+  }
+  try {
+    const parsed = new URL(override);
+    if (
+      (parsed.protocol !== "http:" && parsed.protocol !== "https:") ||
       parsed.username ||
       parsed.password ||
       parsed.pathname !== "/" ||

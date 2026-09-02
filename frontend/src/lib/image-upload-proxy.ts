@@ -239,6 +239,22 @@ export function imageNeedsAuthenticatedFetch(imageUrl: string, trustedBackendUrl
   }
 }
 
+export function imageThumbnailProxyUrl(imageUrl: string): string {
+  const value = imageUrl.trim();
+  if (!value) return value;
+  const pathOnly = value.split(/[?#]/, 1)[0];
+  if (!pathOnly.includes("/s3/file/")) return value;
+
+  const hashIndex = value.indexOf("#");
+  const hash = hashIndex >= 0 ? value.slice(hashIndex) : "";
+  const withoutHash = hashIndex >= 0 ? value.slice(0, hashIndex) : value;
+  if (/(?:\?|&)variant=[^&#]*/i.test(withoutHash)) {
+    return `${withoutHash.replace(/([?&])variant=[^&#]*/i, "$1variant=thumbnail")}${hash}`;
+  }
+  const separator = withoutHash.includes("?") ? "&" : "?";
+  return `${withoutHash}${separator}variant=thumbnail${hash}`;
+}
+
 function uploadOrigin(value: string, fallbackOrigin: string): string {
   const normalized = value.trim();
   if (!normalized) return fallbackOrigin;

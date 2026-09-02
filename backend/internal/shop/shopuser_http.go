@@ -1,6 +1,7 @@
 package shop
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -11,15 +12,21 @@ import (
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
+	companyModels "smlcloudplatform/internal/organization/company/models"
+	branchModels "smlcloudplatform/internal/organization/branch/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type IShopMemberHttp interface{}
 
 type ShopMemberHttp struct {
 	ms  *microservice.Microservice
+	cfg config.IConfig
 	svc IShopUserService
 }
 
@@ -31,6 +38,7 @@ func NewShopMemberHttp(ms *microservice.Microservice, cfg config.IConfig) *ShopM
 	return &ShopMemberHttp{
 		svc: svc,
 		ms:  ms,
+		cfg: cfg,
 	}
 }
 
@@ -41,6 +49,12 @@ func (h *ShopMemberHttp) RegisterHttp() {
 
 	h.ms.GET("/holding/permission/:username", h.InfoShopUser)
 	h.ms.GET("/shop/permission/:username", h.InfoShopUser)
+
+	// Save user profile + scope (system-settings "ผู้ใช้งาน" screen) and delete.
+	// The screen writes via PUT /holding/permission (id in body, not path).
+	h.ms.PUT("/holding/permission", h.SaveUserPermissionShop)
+	h.ms.POST("/holding/permission", h.SaveUserPermissionShop)
+	h.ms.DELETE("/holding/permission/:username", h.DeleteUserPermissionShop)
 
 	// Bulk import users into the holding from an uploaded .csv/.xlsx (base64 in JSON body).
 
@@ -309,8 +323,10 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 	h.ms.Logger.Debug("SaveUserPermissionShop - LineDisplayName: " + userRoleReq.LineDisplayName)
 
 	// ใช้ SaveUserFullProfile เพื่อบันทึกข้อมูลทั้งหมด (รวม position, department, LINE, approval)
+	h.hydrateAccessScopes(holdingCode, userRoleReq)
 	err = h.svc.SaveUserFullProfile(holdingCode, authUsername, userRoleReq)
 	if err != nil {
+		h.ms.Logger.Error("SaveUserPermissionShop failed: " + err.Error())
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
@@ -320,6 +336,79 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 		})
 
 	return nil
+}
+
+// hydrateAccessScopes resolves immutable ids for saved scope rules and expands
+// a holding-wide scope into per-company scopes (allow-list semantics,
+// docs/organization.md): ScopeType "company"/"branch" must carry CompanyUID /
+// BranchUID or scope enforcement cannot see them; ScopeType "holding" is a UI
+// shorthand for "every company in this holding".
+func (h ShopMemberHttp) hydrateAccessScopes(holdingCode string, req *models.UserRoleRequest) {
+	if req == nil || len(req.AccessScopes) == 0 {
+		return
+	}
+	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	findCompanyUID := func(businessCode string) string {
+		if strings.TrimSpace(businessCode) == "" {
+			return ""
+		}
+		var company companyModels.CompanyDoc
+		err := pst.FindOne(mongoCtx, &companyModels.CompanyDoc{}, bson.M{
+			"holdingcode": holdingCode,
+			"code":        businessCode,
+			"isdeleted":   bson.M{"$ne": true},
+		}, &company)
+		if err != nil {
+			return ""
+		}
+		return company.CompanyUID
+	}
+
+	expanded := make([]models.AccessScope, 0, len(req.AccessScopes))
+	for _, scope := range req.AccessScopes {
+		switch strings.ToLower(strings.TrimSpace(scope.ScopeType)) {
+		case "holding":
+			var companies []companyModels.CompanyDoc
+			if err := pst.Find(mongoCtx, &companyModels.CompanyDoc{}, bson.M{
+				"holdingcode": holdingCode,
+				"isdeleted":   bson.M{"$ne": true},
+			}, &companies); err == nil {
+				for _, company := range companies {
+					expanded = append(expanded, models.AccessScope{
+						ScopeType:    "company",
+						CompanyUID:   company.CompanyUID,
+						BusinessCode: company.Code,
+						AllBranches:  true,
+					})
+				}
+			}
+		case "branch":
+			if scope.CompanyUID == "" && scope.BusinessCode != "" {
+				scope.CompanyUID = findCompanyUID(scope.BusinessCode)
+			}
+			if scope.BranchUID == "" && scope.BranchCode != "" && scope.CompanyUID != "" {
+				var branch branchModels.BranchOrgDoc
+				if err := pst.FindOne(mongoCtx, &branchModels.BranchOrgDoc{}, bson.M{
+					"holdingcode": holdingCode,
+					"code":        scope.BranchCode,
+					"companyuid":  scope.CompanyUID,
+					"isdeleted":   bson.M{"$ne": true},
+				}, &branch); err == nil {
+					scope.BranchUID = branch.BranchUID
+				}
+			}
+			expanded = append(expanded, scope)
+		default:
+			if scope.CompanyUID == "" && scope.BusinessCode != "" {
+				scope.CompanyUID = findCompanyUID(scope.BusinessCode)
+			}
+			expanded = append(expanded, scope)
+		}
+	}
+	req.AccessScopes = expanded
 }
 
 // Delete Shop User godoc

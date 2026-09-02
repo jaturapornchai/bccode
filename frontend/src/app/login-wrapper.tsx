@@ -11,6 +11,16 @@ export function LoginWrapper() {
     setMounted(true);
   }, []);
 
+  // The login page keeps its approved (pre-×1.5) root scale: globals.css
+  // resolves html[data-login-scale] back to the historical 10/12/14px ladder.
+  // Every other page renders at the new system scale (15/18/21px).
+  useEffect(() => {
+    document.documentElement.dataset.loginScale = "1";
+    return () => {
+      delete document.documentElement.dataset.loginScale;
+    };
+  }, []);
+
   if (!mounted) {
     // Keep the pre-hydration tree static so React hydrates identical HTML.
     return (

@@ -26,7 +26,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 FROM alpine:3.21
 
 RUN apk add --no-cache librdkafka ca-certificates python3 && update-ca-certificates
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S -g 10001 appgroup && \
+    adduser -S -D -H -u 10001 -G appgroup appuser
 
 WORKDIR /app/
 COPY --from=builder /go/app/go-app .

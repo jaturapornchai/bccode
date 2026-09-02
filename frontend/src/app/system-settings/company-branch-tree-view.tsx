@@ -725,7 +725,7 @@ export function CompanyBranchTreeView({
     if (!workspace) return ["th"];
     const configs = workspace.shopInfo?.settings?.languageconfigs || [];
     const defaultCode = workspace.shopInfo?.settings?.language || "th";
-    return normalizeLanguageConfigs(configs, defaultCode).map((row) => row.code);
+    return normalizeLanguageConfigs(configs, defaultCode, { forcePrimaryFirst: true }).map((row) => row.code);
   }, [workspace]);
 
   const timezoneChoices = useMemo(() => timezoneSelectOptions(language), [language]);
@@ -748,28 +748,6 @@ export function CompanyBranchTreeView({
   const [randomCode, setRandomCode] = useState("");
   const [inputCode, setInputCode] = useState("");
   const [codeError, setCodeError] = useState(false);
-
-  const showConfirmCodeDialog = () => {
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setRandomCode(code);
-    setInputCode("");
-    setCodeError(false);
-    setConfirmOpen(true);
-  };
-
-  const closeConfirmCodeDialog = () => {
-    setConfirmOpen(false);
-  };
-
-  const handleConfirmCodeSubmit = () => {
-    if (inputCode !== randomCode) {
-      setCodeError(true);
-      return;
-    }
-
-    setConfirmOpen(false);
-    void handleSave();
-  };
 
   // Fetch Companies & Branches
   const loadData = useCallback(async () => {
@@ -851,6 +829,41 @@ export function CompanyBranchTreeView({
   const hasRequiredName = formNames.some(
     (entry) => entry.code?.trim().toLowerCase() === primaryLanguage.toLowerCase() && Boolean(entry.name?.trim()),
   );
+  const requiredFormError = !formType || formType.startsWith("view")
+    ? ""
+    : !formCode.trim()
+      ? formType.includes("company")
+        ? "กรุณากรอกรหัสบริษัท"
+        : "กรุณากรอกรหัสสาขา"
+      : !hasRequiredName
+        ? `กรุณากรอก${formType.includes("company") ? "ชื่อบริษัท" : "ชื่อสาขา"}ในช่องภาษาแรก (${primaryLanguage.toUpperCase()}) — รหัสภาษาไม่ใช่ชื่อ`
+        : formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim())
+          ? "กรุณาเลือกเขตเวลาและภาษาของสาขา"
+          : "";
+
+  const showConfirmCodeDialog = () => {
+    if (requiredFormError) return;
+    setSaveError("");
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setRandomCode(code);
+    setInputCode("");
+    setCodeError(false);
+    setConfirmOpen(true);
+  };
+
+  const closeConfirmCodeDialog = () => {
+    setConfirmOpen(false);
+  };
+
+  const handleConfirmCodeSubmit = () => {
+    if (inputCode !== randomCode) {
+      setCodeError(true);
+      return;
+    }
+
+    setConfirmOpen(false);
+    void handleSave();
+  };
 
   useEffect(() => {
     if (!selectedNode) return;
@@ -1581,13 +1594,9 @@ export function CompanyBranchTreeView({
                       type="button"
                       size="sm"
                       onClick={showConfirmCodeDialog}
-                      disabled={
-                        !formCode.trim() ||
-                        !hasRequiredName ||
-                        saving ||
-                        saveSuccess ||
-                        (formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim()))
-                      }
+                      disabled={saving || saveSuccess || logoUploading}
+                      title={requiredFormError || undefined}
+                      aria-describedby={requiredFormError ? "company-branch-required-fields" : undefined}
                       className="gap-1.5 text-xs font-bold"
                       data-testid="company-branch-save-action"
                     >
@@ -1603,6 +1612,16 @@ export function CompanyBranchTreeView({
                   ) : null}
                 </div>
               </div>
+
+              {!isReadOnlyMode && requiredFormError ? (
+                <div
+                  id="company-branch-required-fields"
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-800 dark:text-amber-200"
+                  role="status"
+                >
+                  {requiredFormError}
+                </div>
+              ) : null}
 
               <div className="space-y-4">
                 {/* Logo */}
@@ -1651,6 +1670,9 @@ export function CompanyBranchTreeView({
                         </div>
                         <p className="text-xs text-muted-foreground">
                           รองรับเฉพาะไฟล์ PNG พื้นหลังโปร่งใสได้ ใช้สำหรับออกแบบฟอร์มและพิมพ์เอกสาร
+                          {formType.includes("company")
+                            ? " โลโก้นี้บันทึกเฉพาะบริษัท"
+                            : " โลโก้นี้บันทึกเฉพาะสาขานี้ และแตกต่างจากสาขาอื่นได้"}
                         </p>
                         {logoError && (
                           <p className="text-xs font-semibold text-destructive">{logoError}</p>
@@ -1938,6 +1960,7 @@ export function CompanyBranchTreeView({
                 {/* Multilingual names */}
                 <div className="space-y-3">
                   <NamesEditor
+                    key={`${formType}:${selectedNode?.guidfixed || selectedNode?.companyuid || "new"}`}
                     names={formNames}
                     onChange={setFormNames}
                     languages={editorLanguages}
@@ -1945,6 +1968,7 @@ export function CompanyBranchTreeView({
                     firstRequired
                     language={language}
                     disabled={isReadOnlyMode}
+                    languageSelect
                   />
                   {formType.includes("branch") && (
                     <AddressesEditor

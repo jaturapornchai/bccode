@@ -277,7 +277,7 @@ export function PermissionLinkUserSelector({
   form: FormState;
   language: LanguageCode;
   normalizeRecords: (payload: unknown, config: SystemSettingConfig) => SettingRecord[];
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const userConfig = useMemo(() => getSystemSettingConfig("user"), []);
@@ -362,7 +362,7 @@ export function PermissionLinkUserSelector({
 
   function choose(user: PermissionLinkUserOption) {
     if (user.isDisabled) return;
-    setForm({ ...form, employeecode: user.code, employeename: user.name, useruid: user.userUid });
+    setForm((current) => ({ ...current, employeecode: user.code, employeename: user.name, useruid: user.userUid }));
     setSelectedAvatar(user.avatar);
     setQuery("");
     setUsers([]);
@@ -508,7 +508,7 @@ export function PermissionLinkMultiSelectEditor({
   language: LanguageCode;
   normalizeRecords: (payload: unknown, config: SystemSettingConfig) => SettingRecord[];
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const isApproval = isApprovalCodesField(field);
@@ -591,7 +591,7 @@ export function PermissionLinkMultiSelectEditor({
     const next = checked
       ? uniqueStrings([...selectedCodes, code])
       : selectedCodes.filter((item) => item !== code);
-    setForm({ ...form, [field.key]: next });
+    setForm((current) => ({ ...current, [field.key]: next }));
   }
 
   return (
@@ -687,7 +687,7 @@ export function PermissionMatrixEditor({
   form: FormState;
   language: LanguageCode;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const branchKey = dateTimeScope.key || "company";
   const branches = permissionBranchesFromForm(form.accessrules ?? form.branches);
@@ -713,7 +713,7 @@ export function PermissionMatrixEditor({
       ...dateTimeScopePayload(dateTimeScope),
       menus: nextMenus,
     };
-    setForm({ ...form, accessrules: nextBranches });
+    setForm((current) => ({ ...current, accessrules: nextBranches }));
   }
 
   function updateMenuPermission(

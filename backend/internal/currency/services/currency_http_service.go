@@ -93,6 +93,33 @@ func (svc CurrencyHttpService) CreateCurrency(holdingCode string, authUsername s
 	return newGuidFixed, nil
 }
 
+// lastActiveCurrencyGuard - ระบบต้องมีสกุลเงินที่ใช้งานอยู่เสมอ (กฎ 2026-08-30:
+// "อย่างน้อยต้องมี 1 สกุลเงิน") ตรวจว่าการลบ/ปิดใช้งานชุด guids นี้จะไม่ทำให้
+// active เหลือ 0 — ถ้ากระทบทุกตัวที่ active อยู่ = ปฏิเสธ
+func (svc CurrencyHttpService) lastActiveCurrencyGuard(ctx context.Context, holdingCode string, guids []string) error {
+	if len(guids) == 0 {
+		return nil
+	}
+	filters := map[string]interface{}{"isdisabled": false}
+	docList, _, err := svc.repo.FindStep(ctx, holdingCode, filters, nil, map[string]interface{}{}, micromodels.PageableStep{Skip: 0, Limit: 1000})
+	if err != nil {
+		return err
+	}
+	if len(docList) == 0 {
+		return nil // ไม่มี active อยู่แล้ว (เคสข้อมูลเก่า) — ไม่ต้องกัน
+	}
+	affected := make(map[string]bool, len(guids))
+	for _, guid := range guids {
+		affected[guid] = true
+	}
+	for _, doc := range docList {
+		if !affected[doc.GuidFixed] {
+			return nil // ยังมี active ตัวอื่นรอดอยู่
+		}
+	}
+	return errors.New("ต้องมีสกุลเงินที่ใช้งานอยู่อย่างน้อย 1 สกุลเสมอ — เพิ่มหรือเปิดใช้งานสกุลอื่นก่อน")
+}
+
 func (svc CurrencyHttpService) UpdateCurrency(holdingCode string, guid string, authUsername string, doc models.Currency) error {
 
 	ctx, ctxCancel := svc.getContextTimeout()
@@ -114,6 +141,13 @@ func (svc CurrencyHttpService) UpdateCurrency(holdingCode string, guid string, a
 		existingDoc, err := svc.repo.FindByCode(ctx, holdingCode, doc.Code)
 		if err == nil && len(existingDoc.GuidFixed) > 0 && existingDoc.GuidFixed != guid {
 			return errors.New("currency code already exists")
+		}
+	}
+
+	// Guard: ห้ามปิดใช้งานสกุลเงิน active ตัวสุดท้าย
+	if !findDoc.IsDisabled && doc.IsDisabled {
+		if err := svc.lastActiveCurrencyGuard(ctx, holdingCode, []string{guid}); err != nil {
+			return err
 		}
 	}
 
@@ -152,6 +186,13 @@ func (svc CurrencyHttpService) DeleteCurrency(holdingCode string, guid string, a
 		return errors.New("document not found")
 	}
 
+	// Guard: ห้ามลบสกุลเงิน active ตัวสุดท้าย (ลบ = ไม่มี active เหลือ)
+	if !findDoc.IsDisabled {
+		if err := svc.lastActiveCurrencyGuard(ctx, holdingCode, []string{guid}); err != nil {
+			return err
+		}
+	}
+
 	err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	if err != nil {
 		return err
@@ -168,6 +209,11 @@ func (svc CurrencyHttpService) DeleteCurrencyByGUIDs(holdingCode string, authUse
 
 	ctx, ctxCancel := svc.getContextTimeout()
 	defer ctxCancel()
+
+	// Guard: ห้ามลบจนไม่เหลือสกุลเงิน active
+	if err := svc.lastActiveCurrencyGuard(ctx, holdingCode, GUIDs); err != nil {
+		return err
+	}
 
 	deleteFilterQuery := map[string]interface{}{
 		"guidfixed": bson.M{"$in": GUIDs},

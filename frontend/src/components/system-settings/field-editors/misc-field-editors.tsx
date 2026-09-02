@@ -49,7 +49,7 @@ export function StringListFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const values = normalizeStringListValue(form[field.key]);
   const [draft, setDraft] = useState("");
@@ -164,7 +164,7 @@ export function MasterPickerFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
@@ -220,7 +220,7 @@ export function MasterPickerFieldEditor({
             type="button"
             variant="outline"
             size="icon"
-            onClick={() => setForm({ ...form, [field.key]: {} })}
+            onClick={() => setForm((current) => ({ ...current, [field.key]: {} }))}
             aria-label={language === "th" ? "ล้างค่า" : "Clear"}
           >
             <X />
@@ -272,7 +272,7 @@ export function MasterMultiPickerFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
@@ -473,7 +473,7 @@ export function ComboFieldEditor({
   form: FormState;
   label: string;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   applyCountryDefaults?: (form: FormState, fieldKey: string, countryCode: string) => void;
 }) {
   const [open, setOpen] = useState(false);

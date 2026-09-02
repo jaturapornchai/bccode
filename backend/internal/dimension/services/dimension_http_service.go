@@ -220,7 +220,7 @@ func (svc DimensionHttpService) SearchDimension(holdingCode string, filters map[
 
 	searchInFields := []string{
 		"guidfixed",
-		"names",
+		"names.name",
 	}
 
 	docList, pagination, err := svc.repo.FindPageFilter(ctx, holdingCode, filters, searchInFields, pageable)
@@ -239,7 +239,7 @@ func (svc DimensionHttpService) SearchDimensionStep(holdingCode string, langCode
 
 	searchInFields := []string{
 		"guidfixed",
-		"names",
+		"names.name",
 	}
 
 	selectFields := map[string]interface{}{}

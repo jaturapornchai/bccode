@@ -47,7 +47,14 @@ vendor/
 # Environment files
 .env
 .env.*
+*.env
 !.env.development.local
+
+# Runtime credentials and local authorization material
+bootstrap*.json
+custom_config*.json
+*.key
+simple_test.sh
 
 # Docker
 docker-compose*.yml

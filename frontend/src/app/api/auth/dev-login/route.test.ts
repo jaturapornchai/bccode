@@ -21,6 +21,7 @@ describe("Dev Login BFF route", () => {
   afterEach(() => {
     delete process.env.BCAI_DEV_LOGIN_ENABLED;
     delete process.env.BCAI_DEV_LOGIN_SECRET;
+    delete process.env.BCAI_DEV_LOGIN_BACKEND_URL;
     delete process.env.BCAI_LOCAL_BACKEND_URL;
     vi.unstubAllGlobals();
   });
@@ -55,6 +56,15 @@ describe("Dev Login BFF route", () => {
     },
   );
 
+  it("accepts a 127.0.0.1 browser even when the route's own URL spells localhost", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ token: "access", refresh: "refresh" })));
+    const request = new Request(new URL("/api/auth/dev-login", "http://127.0.0.1:3000"), {
+      method: "POST",
+      headers: { host: "127.0.0.1:3000", origin: "http://127.0.0.1:3000" },
+    });
+    expect((await POST(request)).status).toBe(200);
+  });
+
   it("returns 404 while the server-side feature flag is disabled", async () => {
     process.env.BCAI_DEV_LOGIN_ENABLED = "false";
     const fetchMock = vi.fn();
@@ -84,6 +94,32 @@ describe("Dev Login BFF route", () => {
   ])("fails closed for %s", async (_case, secret, backendUrl) => {
     process.env.BCAI_DEV_LOGIN_SECRET = secret;
     process.env.BCAI_LOCAL_BACKEND_URL = backendUrl;
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect((await POST(devRequest())).status).toBe(503);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the explicit BCAI_DEV_LOGIN_BACKEND_URL override for container deployments", async () => {
+    process.env.BCAI_DEV_LOGIN_BACKEND_URL = "http://mainapi:8888";
+    process.env.BCAI_LOCAL_BACKEND_URL = "http://192.168.2.202:8888";
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      expect(String(url)).toBe("http://mainapi:8888/dev-login");
+      expect(init?.headers).toEqual({ "X-BC-Dev-Login-Secret": DEV_SECRET });
+      return Response.json({ token: "access", refresh: "refresh" });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect((await POST(devRequest())).status).toBe(200);
+  });
+
+  it.each([
+    ["a backend path", "http://mainapi:8888/goapi"],
+    ["a non-http override", "ftp://mainapi:8888"],
+    ["a url with credentials", "http://user:pass@mainapi:8888"],
+  ])("fails closed for %s in BCAI_DEV_LOGIN_BACKEND_URL", async (_case, override) => {
+    process.env.BCAI_DEV_LOGIN_BACKEND_URL = override;
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 

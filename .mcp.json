@@ -29,7 +29,11 @@
       "args": [
         "-y",
         "@playwright/mcp@latest",
-        "--allow-unrestricted-file-access"
+        "--browser",
+        "firefox",
+        "--allow-unrestricted-file-access",
+        "--user-data-dir",
+        "C:/Users/jatur/AppData/Local/bcai-firefox-profile"
       ],
       "env": {}
     },
@@ -38,6 +42,14 @@
       "args": [
         "-y",
         "@upstash/context7-mcp@latest"
+      ],
+      "env": {}
+    },
+    "windows": {
+      "command": "uvx",
+      "args": [
+        "windows-mcp",
+        "serve"
       ],
       "env": {}
     }

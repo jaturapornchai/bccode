@@ -2,7 +2,8 @@
 
 import { authFetch } from "@/lib/client-auth-session";
 import { Building2, GitBranch, Loader2, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,16 +230,14 @@ export function HoldingScopeRulesEditor({
   label: string;
   language: LanguageCode;
   readOnly?: boolean;
-  setForm?: (form: FormState) => void;
+  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const [companies, setCompanies] = useState<CompanyScopeOption[]>([]);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [companyAddCode, setCompanyAddCode] = useState("");
   const [activeBusinessCode, setActiveBusinessCode] = useState("");
-  const [branchAddCodes, setBranchAddCodes] = useState<Record<string, string>>({});
   const rules = useMemo(
     () => normalizeHoldingScopeRules(form[field.key], form.businesscodes ?? form.companyguids),
     [field.key, form],
@@ -264,7 +263,7 @@ export function HoldingScopeRulesEditor({
     const params = new URLSearchParams();
     if (activeHoldingCode) params.set("activeholdingcode", activeHoldingCode);
 
-    void authFetch(`/api/workspace/holdings${params.size ? `?${params.toString()}` : ""}`, {
+    void authFetch(`/api/workspace/holdings?management=true${params.size ? `&${params.toString()}` : ""}`, {
       headers: requestHeaders(auth),
       cache: "no-store",
       signal: controller.signal,
@@ -345,7 +344,7 @@ export function HoldingScopeRulesEditor({
 
   function commit(nextRules: HoldingScopeRule[]) {
     if (readOnly || !setForm) return;
-    setForm({ ...form, [field.key]: normalizeHoldingScopeRules(nextRules) });
+    setForm((current) => ({ ...current, [field.key]: normalizeHoldingScopeRules(nextRules) }));
   }
 
   function setHoldingScope(enabled: boolean) {
@@ -375,7 +374,6 @@ export function HoldingScopeRulesEditor({
       });
     }
     commit(nextRules);
-    setCompanyAddCode("");
     setActiveBusinessCode(normalizedBusinessCode);
   }
 
@@ -386,11 +384,6 @@ export function HoldingScopeRulesEditor({
         (rule) => rule.scopetype === "holding" || rule.businesscode !== normalizedBusinessCode,
       ),
     );
-    setBranchAddCodes((current) => {
-      const next = { ...current };
-      delete next[normalizedBusinessCode];
-      return next;
-    });
   }
 
   function setCompanyAllBranches(businessCode: string, enabled: boolean) {
@@ -435,7 +428,6 @@ export function HoldingScopeRulesEditor({
       allbranches: false,
     });
     commit(nextRules);
-    setBranchAddCodes((current) => ({ ...current, [normalizedBusinessCode]: "" }));
   }
 
   function removeBranchScope(businessCode: string, branchCode: string) {
@@ -544,23 +536,13 @@ export function HoldingScopeRulesEditor({
                   <Badge variant="outline">{selectedCompanyScopes.length}</Badge>
                 </div>
                 {!readOnly ? (
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                  <div className="grid gap-2">
                     <CompanyScopeSearchPicker
                       companies={companies}
                       disabled={readOnly || loading || companies.length === 0}
                       language={language}
-                      value={companyAddCode}
-                      onChange={setCompanyAddCode}
+                      onPick={(businessCode) => addCompanyScope(businessCode)}
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => addCompanyScope(companyAddCode)}
-                      disabled={!companyAddCode}
-                    >
-                      <Plus className="size-3.5" />
-                      {language === "th" ? "เพิ่ม" : "Add"}
-                    </Button>
                   </div>
                 ) : null}
               </div>
@@ -669,35 +651,17 @@ export function HoldingScopeRulesEditor({
                     ) : (
                       <>
                         {!readOnly ? (
-                          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                          <div className="grid gap-2">
                             <BranchScopeSearchPicker
                               branches={branches.filter(
                                 (branch) => branch.businesscode === activeCompanyScope.company.businesscode,
                               )}
                               disabled={readOnly || loading}
                               language={language}
-                              value={branchAddCodes[activeCompanyScope.company.businesscode] ?? ""}
-                              onChange={(branchCode) =>
-                                setBranchAddCodes((current) => ({
-                                  ...current,
-                                  [activeCompanyScope.company.businesscode]: branchCode,
-                                }))
+                              onPick={(branchCode) =>
+                                addBranchScope(activeCompanyScope.company.businesscode, branchCode)
                               }
                             />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() =>
-                                addBranchScope(
-                                  activeCompanyScope.company.businesscode,
-                                  branchAddCodes[activeCompanyScope.company.businesscode] ?? "",
-                                )
-                              }
-                              disabled={!branchAddCodes[activeCompanyScope.company.businesscode]}
-                            >
-                              <Plus className="size-3.5" />
-                              {language === "th" ? "เพิ่มสาขา" : "Add branch"}
-                            </Button>
                           </div>
                         ) : null}
                         {activeCompanyScope.branches.length === 0 ? (
@@ -751,89 +715,176 @@ export function HoldingScopeRulesEditor({
 }
 
 // ---------------------------------------------------------------------------
+// PortalDropdownList — รายการ dropdown ที่ render ผ่าน portal ไปที่ body ด้วย
+// position:fixed เพื่อไม่ให้ container overflow-y-auto (เช่น ส่วน "รายละเอียด"
+// บนจอเมนู สูง ~440px) ตัดครึ่งล่างของ dropdown ทิ้ง — เคสจริง 2026-08-31
+// พื้นที่ด้านล่างไม่พอจะเปิด "ขึ้นบน" (drop-up) แทน และตำแหน่งตาม scroll/resize
+// ---------------------------------------------------------------------------
+
+const PORTAL_DROPDOWN_MAX_H = 224; // max-h-56 + ระยะ mt-1
+
+export function PortalDropdownList({ anchor, children }: { anchor: HTMLElement | null; children: ReactNode }) {
+  const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden" });
+
+  useEffect(() => {
+    if (!anchor) return;
+    const place = () => {
+      const rect = anchor.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom;
+      const openUp = below < PORTAL_DROPDOWN_MAX_H && rect.top > below;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8));
+      setStyle({
+        position: "fixed",
+        left,
+        width: rect.width,
+        visibility: "visible",
+        ...(openUp ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
+      });
+    };
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [anchor]);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      className="z-50 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg"
+      role="listbox"
+      style={style}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // CompanyScopeSearchPicker
 // ---------------------------------------------------------------------------
+
+// ScopePickerPopup — popup เลือกบริษัท/สาขา (แทน combobox แบบ dropdown —
+// ลุงจืดขอ 2026-09-01): dialog มีช่องค้นหา + รายการใหญ่กดง่าย กดรายการ = เลือกทันที
+function ScopePickerPopup({
+  closeLabel,
+  noMatchLabel,
+  title,
+  placeholder,
+  options,
+  open,
+  onClose,
+  onPick,
+  selectedKey,
+}: {
+  closeLabel: string;
+  noMatchLabel: string;
+  title: string;
+  placeholder: string;
+  options: { key: string; label: string }[];
+  open: boolean;
+  onClose: () => void;
+  onPick: (key: string) => void;
+  selectedKey?: string;
+}) {
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    if (open) setQuery("");
+  }, [open]);
+  if (!open) return null;
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = options
+    .filter((option) => !normalizedQuery || option.label.toLowerCase().includes(normalizedQuery))
+    .slice(0, 30);
+  return (
+    <div className="dialog-backdrop" role="presentation">
+      <section className="line-login-dialog" aria-label={title} role="dialog" aria-modal="true">
+        <div className="dialog-header">
+          <div>
+            <h2>{title}</h2>
+          </div>
+          <button className="icon-button dialog-close" type="button" onClick={onClose} aria-label={closeLabel}>
+            ×
+          </button>
+        </div>
+        <Input
+          autoFocus
+          className="h-9 text-sm"
+          placeholder={placeholder}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <div className="grid gap-1 overflow-y-auto scrollbar-thin mt-2 max-h-[55vh] pr-1">
+          {filtered.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+              {noMatchLabel}
+            </p>
+          ) : (
+            filtered.map((option) => (
+              <button
+                className={cn(
+                  "flex w-full min-w-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition hover:border-primary/50 hover:bg-primary/5",
+                  option.key === selectedKey ? "border-primary bg-primary/10 text-primary" : "border-border bg-card",
+                )}
+                key={option.key}
+                type="button"
+                onClick={() => {
+                  onPick(option.key);
+                  onClose();
+                }}
+              >
+                <Building2 className="size-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+              </button>
+            ))
+          )}
+        </div>
+        <div className="line-dialog-actions">
+          <button className="secondary-button" type="button" onClick={onClose}>
+            {closeLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 export function CompanyScopeSearchPicker({
   companies,
   disabled,
   language,
-  onChange,
-  value,
+  onPick,
 }: {
   companies: CompanyScopeOption[];
   disabled?: boolean;
   language: LanguageCode;
-  onChange: (businessCode: string) => void;
-  value: string;
+  onPick: (businessCode: string) => void;
 }) {
-  const selected = companies.find((company) => company.businesscode === normalizeBusinessCode(value));
-  const selectedLabel = selected ? `${selected.businesscode} - ${selected.name}` : value;
-  const [query, setQuery] = useState(selectedLabel);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setQuery(selectedLabel);
-  }, [selectedLabel]);
-
-  const filteredCompanies = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const searchAll = !normalizedQuery || normalizedQuery === selectedLabel.toLowerCase();
-    return companies
-      .filter((company) => {
-        if (searchAll) return true;
-        return `${company.businesscode} ${company.name}`.toLowerCase().includes(normalizedQuery);
-      })
-      .slice(0, 30);
-  }, [companies, query, selectedLabel]);
+  const [popupOpen, setPopupOpen] = useState(false);
 
   return (
-    <label className="relative grid gap-1 text-xs font-semibold">
-      <span>{language === "th" ? "บริษัท" : "Company"}</span>
-      <Input
-        className="h-9 text-sm"
-        disabled={disabled}
+    <div className="grid gap-1 text-xs font-semibold">
+      <Button type="button" variant="outline" className="h-9 justify-start text-sm" disabled={disabled} onClick={() => setPopupOpen(true)}>
+        <Plus />
+        {language === "th" ? "เพิ่มบริษัท" : "Add company"}
+      </Button>
+      <ScopePickerPopup
+        closeLabel={language === "th" ? "ปิด" : "Close"}
+        noMatchLabel={language === "th" ? "ไม่พบบริษัท" : "No companies found"}
+        title={language === "th" ? "เลือกบริษัท" : "Choose a company"}
         placeholder={language === "th" ? "ค้นหารหัสหรือชื่อบริษัท" : "Search company code or name"}
-        value={query}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
+        open={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        onPick={(key) => onPick(key)}
+        options={companies.map((company) => ({
+          key: company.businesscode,
+          label: `${company.businesscode} - ${company.name}`,
+        }))}
       />
-      {open && !disabled ? (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg">
-          {filteredCompanies.length === 0 ? (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">
-              {language === "th" ? "ไม่พบบริษัท" : "No companies found"}
-            </p>
-          ) : (
-            filteredCompanies.map((company) => (
-              <button
-                className={cn(
-                  "flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted",
-                  company.businesscode === selected?.businesscode && "bg-primary/10 text-primary",
-                )}
-                key={company.businesscode}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange(company.businesscode);
-                  setQuery(`${company.businesscode} - ${company.name}`);
-                  setOpen(false);
-                }}
-              >
-                <Building2 className="size-3.5 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">
-                  {company.businesscode} - {company.name}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      ) : null}
-    </label>
+    </div>
   );
 }
 
@@ -845,82 +896,34 @@ export function BranchScopeSearchPicker({
   branches,
   disabled,
   language,
-  onChange,
-  value,
+  onPick,
 }: {
   branches: BranchOption[];
   disabled?: boolean;
   language: LanguageCode;
-  onChange: (branchCode: string) => void;
-  value: string;
+  onPick: (branchCode: string) => void;
 }) {
-  const normalizedValue = normalizeScopeBranchCode(value);
-  const selected = branches.find((branch) => normalizeScopeBranchCode(branch.code) === normalizedValue);
-  const selectedLabel = selected ? `${selected.code} - ${branchOptionDisplayName(selected, language)}` : value;
-  const [query, setQuery] = useState(selectedLabel);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setQuery(selectedLabel);
-  }, [selectedLabel]);
-
-  const filteredBranches = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const searchAll = !normalizedQuery || normalizedQuery === selectedLabel.toLowerCase();
-    return branches
-      .filter((branch) => {
-        if (searchAll) return true;
-        return `${branch.code} ${branchOptionDisplayName(branch, language)}`.toLowerCase().includes(normalizedQuery);
-      })
-      .slice(0, 30);
-  }, [branches, language, query, selectedLabel]);
+  const [popupOpen, setPopupOpen] = useState(false);
 
   return (
-    <label className="relative grid gap-1 text-xs font-semibold">
-      <span>{language === "th" ? "สาขา" : "Branch"}</span>
-      <Input
-        className="h-9 text-sm"
-        disabled={disabled}
+    <div className="grid gap-1 text-xs font-semibold">
+      <Button type="button" variant="outline" className="h-9 justify-start text-sm" disabled={disabled} onClick={() => setPopupOpen(true)}>
+        <Plus />
+        {language === "th" ? "เพิ่มสาขา" : "Add branch"}
+      </Button>
+      <ScopePickerPopup
+        closeLabel={language === "th" ? "ปิด" : "Close"}
+        noMatchLabel={language === "th" ? "ไม่พบสาขา" : "No branches found"}
+        title={language === "th" ? "เลือกสาขา" : "Choose a branch"}
         placeholder={language === "th" ? "ค้นหารหัสหรือชื่อสาขา" : "Search branch code or name"}
-        value={query}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
+        open={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        onPick={(key) => onPick(key)}
+        options={branches.map((branch) => ({
+          key: normalizeScopeBranchCode(branch.code),
+          label: `${branch.code} - ${branchOptionDisplayName(branch, language)}`,
+        }))}
       />
-      {open && !disabled ? (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg">
-          {filteredBranches.length === 0 ? (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">
-              {language === "th" ? "ไม่พบสาขา" : "No branches found"}
-            </p>
-          ) : (
-            filteredBranches.map((branch) => (
-              <button
-                className={cn(
-                  "flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-muted",
-                  normalizeScopeBranchCode(branch.code) === normalizedValue && "bg-primary/10 text-primary",
-                )}
-                key={branchKeyOf(branch)}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange(normalizeScopeBranchCode(branch.code));
-                  setQuery(`${branch.code} - ${branchOptionDisplayName(branch, language)}`);
-                  setOpen(false);
-                }}
-              >
-                <GitBranch className="size-3.5 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">
-                  {branch.code} - {branchOptionDisplayName(branch, language)}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      ) : null}
-    </label>
+    </div>
   );
 }

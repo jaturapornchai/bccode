@@ -33,18 +33,27 @@ import (
 var (
 	r2Client     *s3.Client
 	r2BucketName string
-	r2InitOnce   sync.Once
-	r2InitErr    error
+	r2InitMu     sync.Mutex
 )
 
-// GetR2Client returns the explicitly configured Cloudflare R2 client.
+// GetR2Client returns the configured S3-compatible storage client.
+// Failed initialization is intentionally retryable so a configuration reload can
+// recover without leaving the process permanently stuck on the first error.
 func GetR2Client() (*s3.Client, error) {
-	r2InitOnce.Do(func() {
-		// ─── Cloudflare R2 Path ───
-		initR2()
-	})
+	r2InitMu.Lock()
+	defer r2InitMu.Unlock()
 
-	return r2Client, r2InitErr
+	if r2Client != nil {
+		return r2Client, nil
+	}
+
+	client, bucketName, err := initR2()
+	if err != nil {
+		return nil, err
+	}
+	r2Client = client
+	r2BucketName = bucketName
+	return r2Client, nil
 }
 
 // firstNonEmpty returns the first trimmed non-empty string from the given values.
@@ -62,34 +71,32 @@ func firstNonEmpty(values ...string) string {
 // initR2 สร้าง S3 client สำหรับ Cloudflare R2 หรือ S3-compatible storage เช่น MinIO
 // อ่านค่าจาก config ที่ settings screen ส่งมา (ผ่าน setup config/save → env) เป็นหลัก
 // fallback ไป R2_* env ถ้า config ไม่มี
-func initR2() {
+func initR2() (*s3.Client, string, error) {
 	accountID := firstNonEmpty(os.Getenv("S3_ACCOUNT_ID"), os.Getenv("R2_ACCOUNT_ID"))
 	accessKeyID := firstNonEmpty(os.Getenv("S3_ACCESS_KEY_ID"), os.Getenv("R2_ACCESS_KEY_ID"))
 	secretAccessKey := firstNonEmpty(os.Getenv("S3_SECRET_ACCESS_KEY"), os.Getenv("R2_SECRET_ACCESS_KEY"))
-	// Assign to the package-level r2BucketName (NOT a new local). Using `:=` here
-	// would shadow the global, leaving PutObject with an empty bucket name → NoSuchBucket.
-	r2BucketName = firstNonEmpty(os.Getenv("S3_BUCKET_NAME"), os.Getenv("R2_BUCKET_NAME"))
+	bucketName := firstNonEmpty(os.Getenv("S3_BUCKET_NAME"), os.Getenv("R2_BUCKET_NAME"))
 	// Endpoint: อ่านจาก S3_ENDPOINT (ที่ settings screen ส่ง) ก่อน, fallback R2_ENDPOINT
 	r2Endpoint := firstNonEmpty(os.Getenv("S3_ENDPOINT"), os.Getenv("R2_ENDPOINT"))
 	usePathStyle := strings.EqualFold(strings.TrimSpace(firstNonEmpty(os.Getenv("S3_FORCE_PATH_STYLE"), os.Getenv("R2_FORCE_PATH_STYLE"))), "true") || r2Endpoint != ""
 
-	if accountID == "" || accessKeyID == "" || secretAccessKey == "" || r2BucketName == "" {
+	if (accountID == "" && r2Endpoint == "") || accessKeyID == "" || secretAccessKey == "" || bucketName == "" {
 		missing := []string{}
-		if accountID == "" {
-			missing = append(missing, "R2_ACCOUNT_ID")
+		if accountID == "" && r2Endpoint == "" {
+			missing = append(missing, "S3_ENDPOINT or R2_ACCOUNT_ID")
 		}
 		if accessKeyID == "" {
-			missing = append(missing, "R2_ACCESS_KEY_ID")
+			missing = append(missing, "S3_ACCESS_KEY_ID or R2_ACCESS_KEY_ID")
 		}
 		if secretAccessKey == "" {
-			missing = append(missing, "R2_SECRET_ACCESS_KEY")
+			missing = append(missing, "S3_SECRET_ACCESS_KEY or R2_SECRET_ACCESS_KEY")
 		}
-		if r2BucketName == "" {
-			missing = append(missing, "R2_BUCKET_NAME")
+		if bucketName == "" {
+			missing = append(missing, "S3_BUCKET_NAME or R2_BUCKET_NAME")
 		}
-		r2InitErr = fmt.Errorf("missing R2 environment variables: %s", strings.Join(missing, ", "))
-		logger.Error("❌ R2 Init Error: %v", r2InitErr)
-		return
+		err := fmt.Errorf("missing object storage environment variables: %s", strings.Join(missing, ", "))
+		logger.Error("❌ Object storage init error: %v", err)
+		return nil, "", err
 	}
 
 	// Resolve S3 endpoint: explicit override (MinIO/on-prem) wins, otherwise Cloudflare R2.
@@ -101,22 +108,25 @@ func initR2() {
 	var cfg aws.Config
 	if r2Endpoint != "" {
 		// S3-compatible storage (MinIO, Wasabi, etc.) — use path-style addressing.
+		region := firstNonEmpty(os.Getenv("S3_REGION"), "us-east-1")
 		customCfg, customErr := config.LoadDefaultConfig(context.TODO(),
-			config.WithRegion("auto"),
+			config.WithRegion(region),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
 		)
 		if customErr != nil {
-			r2InitErr = fmt.Errorf("unable to load R2 SDK config: %w", customErr)
-			logger.Error("❌ R2 Config Error: %v", r2InitErr)
-			return
+			err := fmt.Errorf("unable to load object storage SDK config: %w", customErr)
+			logger.Error("❌ Object storage config error: %v", err)
+			return nil, "", err
 		}
 		cfg = customCfg
-		r2Client = s3.NewFromConfig(cfg, func(o *s3.Options) {
+		client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.BaseEndpoint = &endpointURL
 			o.UsePathStyle = usePathStyle
 			o.Credentials = credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")
-			o.Region = "auto"
+			o.Region = region
 		})
+		logger.Info("✅ Object storage client initialized successfully (bucket: %s, endpoint: %s, pathStyle: %v)", bucketName, endpointURL, usePathStyle)
+		return client, bucketName, nil
 	} else {
 		// Cloudflare R2 — keep the original resolver-based config for backwards compatibility.
 		r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
@@ -124,18 +134,19 @@ func initR2() {
 				URL: fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID),
 			}, nil
 		})
-		cfg, r2InitErr = config.LoadDefaultConfig(context.TODO(),
+		cloudflareCfg, err := config.LoadDefaultConfig(context.TODO(),
 			config.WithEndpointResolverWithOptions(r2Resolver),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, "")),
 			config.WithRegion("auto"),
 		)
-		if r2InitErr != nil {
-			logger.Error("❌ R2 Config Error: %v", r2InitErr)
-			return
+		if err != nil {
+			logger.Error("❌ R2 config error: %v", err)
+			return nil, "", err
 		}
-		r2Client = s3.NewFromConfig(cfg)
+		client := s3.NewFromConfig(cloudflareCfg)
+		logger.Info("✅ R2 client initialized successfully (bucket: %s, endpoint: %s, pathStyle: %v)", bucketName, endpointURL, usePathStyle)
+		return client, bucketName, nil
 	}
-	logger.Info("✅ R2 client initialized successfully (bucket: %s, endpoint: %s, pathStyle: %v)", r2BucketName, endpointURL, usePathStyle)
 }
 
 // getPresignedURL - สร้าง URL สำหรับดูไฟล์
@@ -174,7 +185,7 @@ func InitR2Client() error {
 }
 
 func storageConfigErrorMessage(err error) string {
-	const message = "R2 storage is not configured"
+	const message = "Object storage is not configured"
 	if err == nil {
 		return message
 	}
@@ -342,6 +353,16 @@ func ImageUploadHandler(c echo.Context) error {
 			"message": "Invalid image content. Only PNG and JPG are allowed.",
 		})
 	}
+	thumbnailData, err := createWebPThumbnail(buf.Bytes())
+	if err != nil {
+		logger.Warn("Image upload rejected while creating thumbnail: %v", err)
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"status":  "error",
+			"code":    400,
+			"message": "Invalid image dimensions or content.",
+		})
+	}
+	thumbnailKey := storageThumbnailObjectKey(r2Key)
 
 	// Upload to R2
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -359,6 +380,21 @@ func ImageUploadHandler(c echo.Context) error {
 			"status":  "error",
 			"code":    500,
 			"message": "Failed to upload image to storage",
+		})
+	}
+	_, err = client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(r2BucketName),
+		Key:         aws.String(thumbnailKey),
+		Body:        bytes.NewReader(thumbnailData),
+		ContentType: aws.String("image/webp"),
+	})
+	if err != nil {
+		logger.Error("Failed to upload WebP thumbnail to R2: %v", err)
+		deleteImageStorageObjects(ctx, client, r2Key)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"status":  "error",
+			"code":    500,
+			"message": "Failed to upload image thumbnail to storage",
 		})
 	}
 
@@ -395,6 +431,7 @@ func ImageUploadHandler(c echo.Context) error {
 	result, err := collection.InsertOne(ctx, imageDoc)
 	if err != nil {
 		logger.Error("Failed to save image metadata to MongoDB: %v", err)
+		deleteImageStorageObjects(ctx, client, r2Key)
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"status":  "error",
 			"code":    500,
@@ -763,15 +800,8 @@ func ImageDeleteHandler(c echo.Context) error {
 		})
 	}
 
-	// Delete from R2
-	_, err = client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(r2BucketName),
-		Key:    aws.String(imageDoc.R2Key),
-	})
-	if err != nil {
-		logger.Error("Failed to delete from R2: %v", err)
-		// Continue to delete from MongoDB anyway
-	}
+	// Delete the original and its deterministic WebP thumbnail from R2.
+	deleteImageStorageObjects(ctx, client, imageDoc.R2Key)
 
 	// Delete from MongoDB
 	_, err = collection.DeleteOne(ctx, filter)
@@ -791,6 +821,17 @@ func ImageDeleteHandler(c echo.Context) error {
 		"code":    200,
 		"message": "Image deleted successfully",
 	})
+}
+
+func deleteImageStorageObjects(ctx context.Context, client *s3.Client, objectKey string) {
+	for _, key := range storageImageObjectKeys(objectKey) {
+		if _, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket: aws.String(r2BucketName),
+			Key:    aws.String(key),
+		}); err != nil {
+			logger.Error("Failed to delete image storage object '%s': %v", key, err)
+		}
+	}
 }
 
 // ImageInfoHandler - ดึงข้อมูล metadata ของรูปภาพ (ไม่รวม base64)

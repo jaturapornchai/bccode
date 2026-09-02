@@ -4,7 +4,10 @@ import { authFetch } from "@/lib/client-auth-session";
 import { useEffect, useMemo, useState } from "react";
 import { Building2, type LucideIcon } from "lucide-react";
 import { logoThumbUri } from "@/lib/logo-thumb";
-import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
+import {
+  imageNeedsAuthenticatedFetch,
+  imageThumbnailProxyUrl,
+} from "@/lib/image-upload-proxy";
 
 /**
  * LogoAvatar — shared brand-logo avatar used across BC Ai Account screens.
@@ -31,13 +34,20 @@ const objectUrlCache = new Map<string, CacheEntry>();
 let cacheOwner = "";
 
 function cacheKeyFor(url: string, backendUrl: string, username: string, token: string): string {
-  return [backendUrl.trim(), username.trim().toLowerCase(), token, url].join("\u0000");
+  // ไม่ใส่ token ใน key — token หมุนบ่อย ถ้าอยู่ใน key ทุกครั้งที่ rotate จะ
+  // cache miss + revoke blob เก่าทั้งที่ <img> ยังแสดงอยู่ (รูปแถวรายการแตก)
+  return [backendUrl.trim(), username.trim().toLowerCase(), url].join("\u0000");
+}
+
+function revokeObjectUrlLater(objectUrl: string) {
+  // เลื่อน revoke — <img> ที่ยังแสดง blob นี้ต้องได้เวลา re-render ก่อน
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 120_000);
 }
 
 function syncCacheOwner(backendUrl: string, username: string, token: string) {
-  const owner = [backendUrl.trim(), username.trim().toLowerCase(), token].join("\u0000");
+  const owner = [backendUrl.trim(), username.trim().toLowerCase()].join("\u0000");
   if (cacheOwner && cacheOwner !== owner) {
-    for (const entry of objectUrlCache.values()) URL.revokeObjectURL(entry.objectUrl);
+    for (const entry of objectUrlCache.values()) revokeObjectUrlLater(entry.objectUrl);
     objectUrlCache.clear();
   }
   cacheOwner = owner;
@@ -53,7 +63,7 @@ function getCached(cacheKey: string): string {
 function setCached(cacheKey: string, objectUrl: string) {
   const existing = objectUrlCache.get(cacheKey);
   if (existing?.objectUrl && existing.objectUrl !== objectUrl) {
-    URL.revokeObjectURL(existing.objectUrl);
+    revokeObjectUrlLater(existing.objectUrl);
   }
   objectUrlCache.set(cacheKey, { objectUrl, lastAccessAt: Date.now() });
   if (objectUrlCache.size <= AUTHENTICATED_LOGO_CACHE_MAX) return;
@@ -61,7 +71,7 @@ function setCached(cacheKey: string, objectUrl: string) {
     (a, b) => a[1].lastAccessAt - b[1].lastAccessAt,
   );
   for (const [key, entry] of sorted.slice(0, objectUrlCache.size - AUTHENTICATED_LOGO_CACHE_MAX)) {
-    URL.revokeObjectURL(entry.objectUrl);
+    revokeObjectUrlLater(entry.objectUrl);
     objectUrlCache.delete(key);
   }
 }
@@ -123,7 +133,10 @@ function useLogoImage(uri: string, auth: AuthLike, width: number) {
     [isProtected, uri, width],
   );
   const resolvedUrl = useMemo(
-    () => (isProtected ? resolveDisplayUrl(uri, backendUrl) : publicThumb),
+    () =>
+      isProtected
+        ? imageThumbnailProxyUrl(resolveDisplayUrl(uri, backendUrl))
+        : publicThumb,
     [isProtected, uri, backendUrl, publicThumb],
   );
   const [displayUrl, setDisplayUrl] = useState("");
@@ -164,7 +177,7 @@ function useLogoImage(uri: string, auth: AuthLike, width: number) {
     setFailed(false);
     setDisplayUrl("");
     void authFetch(resolvedUrl, {
-      cache: "no-store",
+      cache: "default",
       headers: { Authorization: `Bearer ${token}` },
       signal: controller.signal,
     })

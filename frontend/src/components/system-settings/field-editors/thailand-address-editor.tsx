@@ -173,7 +173,7 @@ export function ThailandAddressFieldEditor({
   form: FormState;
   language: LanguageCode;
   prefix: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const countryKey = `${prefix}.countrycode`;
   const provinceKey = `${prefix}.provincecode`;
@@ -484,7 +484,7 @@ export function ThailandAddressFreeTextEditor({
   form: FormState;
   language: LanguageCode;
   prefix: string;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const labels = thailandAddressUi(language);
   const fields = [

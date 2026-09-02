@@ -1,0 +1,31 @@
+{
+  "name": "bccode",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "dev:frontend": "cd frontend && npm run dev -- -p 3001"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaturapornchai/bccode.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jaturapornchai/bccode/issues"
+  },
+  "homepage": "https://github.com/jaturapornchai/bccode#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.4.0"
+  }
+}

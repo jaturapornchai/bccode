@@ -1,12 +1,12 @@
-export const DEFAULT_AUTH_BRIDGE_URL = "https://dev-api.bcaicloud.com/liff";
-
 type AuthBridgeEnv = {
   [key: string]: string | undefined;
   BC_AUTH_BRIDGE_URL?: string;
 };
 
 export function getAuthBridgeUrl(env: AuthBridgeEnv = process.env): string {
-  return normalizeAuthBridgeUrl(env.BC_AUTH_BRIDGE_URL ?? DEFAULT_AUTH_BRIDGE_URL);
+  const configuredUrl = env.BC_AUTH_BRIDGE_URL?.trim();
+  if (!configuredUrl) throw new Error("ระบบยังไม่ได้ตั้งค่า Auth bridge");
+  return normalizeAuthBridgeUrl(configuredUrl);
 }
 
 export function normalizeAuthBridgeUrl(rawUrl: string): string {

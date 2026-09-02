@@ -6,6 +6,10 @@ const source = readFileSync(
   fileURLToPath(new URL("./company-branch-tree-view.tsx", import.meta.url)),
   "utf8",
 );
+const namesEditorSource = readFileSync(
+  fileURLToPath(new URL("../../components/product-barcode/names-editor.tsx", import.meta.url)),
+  "utf8",
+);
 
 describe("CompanyBranchTreeView organization-management contract", () => {
   it("loads the complete management tree and keeps inactive records manageable", () => {
@@ -14,10 +18,37 @@ describe("CompanyBranchTreeView organization-management contract", () => {
     expect(source).not.toContain("if (record.isactive === false) return false");
   });
 
-  it("requires a nonblank primary-language name before saving", () => {
+  it("explains missing required fields before confirmation instead of silently disabling save", () => {
     expect(source).toContain("const hasRequiredName = formNames.some");
-    expect(source).toContain("!hasRequiredName ||");
+    expect(source).toContain("const requiredFormError =");
+    expect(source).toContain("if (requiredFormError)");
+    expect(source).toContain('disabled={saving || saveSuccess || logoUploading}');
+    expect(source).toContain('id="company-branch-required-fields"');
+    expect(source).toContain("รหัสภาษาไม่ใช่ชื่อ");
     expect(source).toContain("firstRequired");
+  });
+
+  it("keeps company and branch logos independent in both payloads and UI guidance", () => {
+    const createCompany = source.slice(
+      source.indexOf('if (formType === "createcompany")'),
+      source.indexOf('} else if (formType === "editcompany")'),
+    );
+    const createBranch = source.slice(
+      source.indexOf('} else if (formType === "createbranch")'),
+      source.indexOf('} else if (formType === "editbranch")'),
+    );
+
+    expect(createCompany).toContain("logouri: formLogoUri");
+    expect(createBranch).toContain("logouri: formLogoUri");
+    expect(source).toContain("โลโก้นี้บันทึกเฉพาะสาขานี้ และแตกต่างจากสาขาอื่นได้");
+  });
+
+  it("selects name language from the active languages configured in step one", () => {
+    expect(source).toContain("normalizeLanguageConfigs(configs, defaultCode, { forcePrimaryFirst: true })");
+    expect(source).toContain("languageSelect");
+    expect(namesEditorSource).toContain("if (languageSelect)");
+    expect(namesEditorSource).toContain('aria-label={language === "th" ? "เลือกภาษาของชื่อ"');
+    expect(namesEditorSource).toContain("selectableLanguages.map((code) =>");
   });
 
   it("updates the tree after editing and does not expose unsupported organization deletion", () => {

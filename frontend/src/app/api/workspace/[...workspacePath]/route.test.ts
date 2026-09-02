@@ -81,6 +81,50 @@ describe("workspace product unit setup route", () => {
     expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
+  it("lists the whole holding only when the caller passes management=true", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const requestUrl = String(url);
+      if (requestUrl === "http://localhost:8888/list-holding?limit=100") {
+        return Response.json({
+          success: true,
+          data: [{ holdingcode: "SHOP001", names: [{ code: "th", name: "กิจการทดสอบ" }] }],
+          total: 1,
+        });
+      }
+      if (requestUrl === "http://localhost:8888/select-holding") {
+        return Response.json({ success: true });
+      }
+      if (requestUrl === "http://localhost:8888/holding/SHOP001") {
+        return Response.json({
+          success: true,
+          data: { names: [{ code: "th", name: "กิจการทดสอบ" }] },
+        });
+      }
+      if (requestUrl === "http://localhost:8888/organization/company?management=true") {
+        return Response.json({ success: true, data: [{ guidfixed: "COMP-GUID", code: "COMPANY01" }] });
+      }
+      if (requestUrl === "http://localhost:8888/organization/branch?management=true") {
+        return Response.json({ success: true, data: [] });
+      }
+      throw new Error(`Unexpected URL ${requestUrl}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/workspace/holdings?backendUrl=http://localhost:8888/goapi&activeholdingcode=SHOP001&management=true",
+        { headers: { Authorization: "Bearer test-token" } },
+      ),
+      workspaceContext("holdings"),
+    );
+
+    expect(response.status).toBe(200);
+    const calledManagementCompany = fetchMock.mock.calls.some(([u]) =>
+      String(u).includes("organization/company?management=true"),
+    );
+    expect(calledManagementCompany).toBe(true);
+  });
+
   it("enriches company cards with names from holding info when list-holding only returns ids", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       const requestUrl = String(url);

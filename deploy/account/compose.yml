@@ -1,0 +1,345 @@
+name: bcai-account
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mongo:
+    image: mongo:7.0@sha256:b6421fd6d1c5ded6377b397d8983e2f82e2100dc5123332dcfda2065a472be5b
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    mem_limit: 1g
+    logging: *default-logging
+
+  mongo-init:
+    image: mongo:7.0@sha256:b6421fd6d1c5ded6377b397d8983e2f82e2100dc5123332dcfda2065a472be5b
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command:
+      - bash
+      - -ec
+      - |
+        mongosh --host mongo:27017 --quiet /opt/init/mongo-init.js
+        for attempt in $$(seq 1 60); do
+          mongosh --host mongo:27017 --quiet --eval 'quit(rs.status().myState === 1 ? 0 : 1)' && exit 0
+          sleep 1
+        done
+        exit 1
+    volumes:
+      - ./mongo-init.js:/opt/init/mongo-init.js:ro
+    networks: [data]
+    restart: "no"
+    logging: *default-logging
+
+  postgres:
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+    env_file: /etc/bcai-account/postgres.env
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    mem_limit: 512m
+    logging: *default-logging
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8-alpine@sha256:1719fc741a47bdb3827e7a28c1104561efbef6e5e0fbd8a7b023bc5ccd035542
+    env_file: /etc/bcai-account/clickhouse.env
+    restart: unless-stopped
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8123/ping | grep -q Ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: 1g
+    logging: *default-logging
+
+  redis:
+    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "192mb", "--maxmemory-policy", "allkeys-lru"]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 256m
+    logging: *default-logging
+
+  minio:
+    image: minio/minio@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
+    command: ["server", "/data"]
+    env_file: /etc/bcai-account/minio.env
+    restart: unless-stopped
+    volumes:
+      - minio-data:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: 1g
+    cpus: "1.0"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    logging: *default-logging
+
+  minio-init:
+    image: minio/mc@sha256:eb4ea9884b77704230e2423e9004d2fa738dc272876b9cc41a297d29443b8780
+    env_file: /etc/bcai-account/minio.env
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null
+        mc ready local
+        mc mb --ignore-existing "local/$${MINIO_BUCKET_NAME}" >/dev/null
+        mc version enable "local/$${MINIO_BUCKET_NAME}" >/dev/null
+        mc anonymous set none "local/$${MINIO_BUCKET_NAME}" >/dev/null
+        mc admin policy create local bcai-account-app /etc/minio/policy.json >/dev/null
+        (mc admin user add local "$${MINIO_APP_ACCESS_KEY}" "$${MINIO_APP_SECRET_KEY}" >/dev/null || mc admin user enable local "$${MINIO_APP_ACCESS_KEY}" >/dev/null)
+        mc admin policy attach local bcai-account-app --user "$${MINIO_APP_ACCESS_KEY}" >/dev/null
+        mc alias set app http://minio:9000 "$${MINIO_APP_ACCESS_KEY}" "$${MINIO_APP_SECRET_KEY}" >/dev/null
+        mc stat "app/$${MINIO_BUCKET_NAME}" >/dev/null
+    volumes:
+      - ./minio-app-policy.json:/etc/minio/policy.json:ro
+    networks: [data]
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp
+    environment:
+      MC_CONFIG_DIR: /tmp/.mc
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    mem_limit: 256m
+    logging: *default-logging
+
+  kafka-init:
+    image: alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
+    user: "0:0"
+    command: ["sh", "-ec", "chown -R 1000:1000 /data"]
+    restart: "no"
+    network_mode: none
+    volumes:
+      - kafka-data:/data
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    mem_limit: 32m
+    logging: *default-logging
+
+  kafka:
+    image: apache/kafka:4.3.1@sha256:77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837
+    hostname: kafka
+    env_file: /etc/bcai-account/kafka.env
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: CONTROLLER://:29093,PLAINTEXT://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx768m
+    restart: unless-stopped
+    volumes:
+      - kafka-data:/tmp/kraft-combined-logs
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:29092 --list >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 45s
+    mem_limit: 1280m
+    logging: *default-logging
+
+  migrate:
+    image: ${MAINAPI_IMAGE:?MAINAPI_IMAGE is required}
+    env_file: /etc/bcai-account/backend.env
+    environment:
+      DEV_API_MODE: "3"
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: "no"
+    volumes:
+      - /var/lib/bcai-account/config:/app/bootstrap
+    networks: [data]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    mem_limit: 1536m
+    logging: *default-logging
+
+  mainapi:
+    image: ${MAINAPI_IMAGE:?MAINAPI_IMAGE is required}
+    env_file: /etc/bcai-account/backend.env
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    init: true
+    ports:
+      - 127.0.0.1:8888:8888
+    volumes:
+      - /var/lib/bcai-account/config:/app/bootstrap
+    networks: [edge, data]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8888/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    mem_limit: 1536m
+    logging: *default-logging
+
+  worker:
+    image: ${MAINAPI_IMAGE:?MAINAPI_IMAGE is required}
+    env_file: /etc/bcai-account/backend.env
+    environment:
+      DEV_API_MODE: "1"
+      CONSUMER_GROUP_NAME: bcai-account-01
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    init: true
+    volumes:
+      - /var/lib/bcai-account/config:/app/bootstrap
+    networks: [data]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8888/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    mem_limit: 1g
+    logging: *default-logging
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE is required}
+    env_file: /etc/bcai-account/frontend.env
+    depends_on:
+      mainapi:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    ports:
+      - 127.0.0.1:3200:3000
+    networks: [edge]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    mem_limit: 768m
+    logging: *default-logging
+
+networks:
+  edge:
+    driver: bridge
+  data:
+    driver: bridge
+    internal: true
+
+volumes:
+  mongo-data:
+  postgres-data:
+  clickhouse-data:
+  redis-data:
+  kafka-data:
+  minio-data:

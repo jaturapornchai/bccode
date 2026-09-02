@@ -3,7 +3,10 @@
 import { authFetch } from "@/lib/client-auth-session";
 import type { ImgHTMLAttributes, ReactNode, VideoHTMLAttributes } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { imageNeedsAuthenticatedFetch } from "@/lib/image-upload-proxy";
+import {
+  imageNeedsAuthenticatedFetch,
+  imageThumbnailProxyUrl,
+} from "@/lib/image-upload-proxy";
 import type { AuthSession } from "@/lib/workspace-models";
 
 // ─── Authenticated image display (product/barcode/logo/gallery images) ────
@@ -35,13 +38,16 @@ function authenticatedImageCacheKey(
   username: string,
   token: string,
 ): string {
-  return [backendUrl.trim(), username.trim().toLowerCase(), token, imageUrl].join(
+  // ไม่ใส่ token ใน key — token หมุนบ่อย (single-use refresh) ถ้าอยู่ใน key
+  // ทุกครั้งที่ rotate จะ cache miss → fetch ซ้ำ + blob เก่าถูก revoke ทั้งที่
+  // <img> อื่นยังแสดงอยู่ (รูปเล็กในรายการแตกเป็น alt text — เคสจริง 2026-08-31)
+  return [backendUrl.trim(), username.trim().toLowerCase(), imageUrl].join(
     String.fromCharCode(0),
   );
 }
 
 function syncAuthenticatedImageCacheOwner(backendUrl: string, username: string, token: string) {
-  const owner = [backendUrl.trim(), username.trim().toLowerCase(), token].join(
+  const owner = [backendUrl.trim(), username.trim().toLowerCase()].join(
     String.fromCharCode(0),
   );
   if (authenticatedImageCacheOwner && authenticatedImageCacheOwner !== owner) {
@@ -57,10 +63,16 @@ function getCachedAuthenticatedImageObjectUrl(cacheKey: string): string {
   return cached.objectUrl;
 }
 
+function revokeObjectUrlLater(objectUrl: string) {
+  // เลื่อน revoke ออกไป — <img> ที่ยังแสดง blob นี้อยู่ต้องได้เวลา re-render
+  // ด้วย URL จาก cache ก่อน (revoke ทันทีทำรูปแถวรายการแตก)
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 120_000);
+}
+
 function cacheAuthenticatedImageObjectUrl(cacheKey: string, objectUrl: string) {
   const existing = authenticatedImageObjectUrlCache.get(cacheKey);
   if (existing?.objectUrl && existing.objectUrl !== objectUrl) {
-    URL.revokeObjectURL(existing.objectUrl);
+    revokeObjectUrlLater(existing.objectUrl);
   }
   authenticatedImageObjectUrlCache.set(cacheKey, { objectUrl, lastAccessAt: Date.now() });
   if (authenticatedImageObjectUrlCache.size <= AUTHENTICATED_IMAGE_CACHE_MAX_ENTRIES) return;
@@ -71,7 +83,7 @@ function cacheAuthenticatedImageObjectUrl(cacheKey: string, objectUrl: string) {
     0,
     authenticatedImageObjectUrlCache.size - AUTHENTICATED_IMAGE_CACHE_MAX_ENTRIES,
   )) {
-    URL.revokeObjectURL(entry.objectUrl);
+    revokeObjectUrlLater(entry.objectUrl);
     authenticatedImageObjectUrlCache.delete(key);
   }
 }
@@ -136,6 +148,7 @@ function stringValue(value: unknown): string {
 export function useAuthenticatedImageDisplaySource(
   value: unknown,
   auth: AuthSession | null,
+  options?: { thumbnail?: boolean },
 ): {
   displayUrl: string;
   failed: boolean;
@@ -145,9 +158,15 @@ export function useAuthenticatedImageDisplaySource(
   const authBackendUrl = auth?.backendUrl ?? "";
   const authToken = auth?.token ?? "";
   const authUsername = auth?.username ?? "";
+  const useThumbnail = options?.thumbnail === true;
   const requestedUrl = useMemo(
-    () => imageDisplayUrl(value, authBackendUrl),
-    [authBackendUrl, value],
+    () => {
+      const displayUrl = imageDisplayUrl(value, authBackendUrl);
+      return useThumbnail && imageNeedsAuthenticatedFetch(displayUrl, authBackendUrl)
+        ? imageThumbnailProxyUrl(displayUrl)
+        : displayUrl;
+    },
+    [authBackendUrl, useThumbnail, value],
   );
   const [state, setState] = useState({
     displayUrl: "",
@@ -190,7 +209,7 @@ export function useAuthenticatedImageDisplaySource(
 
     setState({ displayUrl: "", failed: false, loading: true });
     void authFetch(requestedUrl, {
-      cache: "no-store",
+      cache: "default",
       headers: { Authorization: `Bearer ${authToken}` },
       signal: controller.signal,
     })
@@ -250,7 +269,9 @@ export function AuthenticatedImg({
   className,
   ...imgProps
 }: AuthenticatedImgProps) {
-  const { displayUrl, loading } = useAuthenticatedImageDisplaySource(src ?? "", auth);
+  const { displayUrl, loading } = useAuthenticatedImageDisplaySource(src ?? "", auth, {
+    thumbnail: true,
+  });
   if (displayUrl) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={displayUrl} alt={alt} className={className} {...imgProps} />;
@@ -285,7 +306,9 @@ export function AuthenticatedVideo({
     () => imageDisplayUrl(src, auth?.backendUrl),
     [auth?.backendUrl, src],
   );
-  const poster = useAuthenticatedImageDisplaySource(posterSrc ?? "", auth);
+  const poster = useAuthenticatedImageDisplaySource(posterSrc ?? "", auth, {
+    thumbnail: true,
+  });
 
   useEffect(() => {
     setRequested(false);
@@ -308,7 +331,7 @@ export function AuthenticatedVideo({
     let objectUrl = "";
     setState({ displayUrl: "", failed: false, loading: true });
     void authFetch(requestedUrl, {
-      cache: "no-store",
+      cache: "default",
       headers: { Authorization: `Bearer ${auth.token}` },
       signal: controller.signal,
     })
