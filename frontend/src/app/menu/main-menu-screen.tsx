@@ -89,6 +89,8 @@ import { SystemSettingsScreen } from "../system-settings/system-settings-screen"
 import { ZoomControl } from "../zoom-control";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
 import { MenuDataTable } from "./menu-data-table";
+import { DashboardHome } from "./dashboard-home";
+import { deriveMainApiUrl } from "@/lib/backend-url";
 import { buildChartData, buildKpis, fetchErpMenuRows, type ErpMenuRow } from "./menu-dashboard-data";
 import { MenuKpiChart } from "./menu-kpi-chart";
 import { MenuQueryProvider } from "./menu-query-provider";
@@ -404,6 +406,14 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" : "Login");
   const canAccessMenuItem = useCallback((item: MenuItem) => allowedMenuIds.has(item.id), [allowedMenuIds]);
   const allMenuItems = useMemo(() => flattenMenuItems(), []);
+  const mainApiUrl = useMemo(() => {
+    if (!auth?.backendUrl) return "";
+    try {
+      return deriveMainApiUrl(auth.backendUrl);
+    } catch {
+      return "";
+    }
+  }, [auth]);
 
   /**
    * Search results for layouts WITHOUT the sidebar (top menu / hidden sidebar):
@@ -1222,7 +1232,17 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       role="tabpanel"
                     >
                       {tab.id === "home" ? (
-                        <DashboardHome />
+                        <DashboardHome
+                          auth={auth}
+                          workspace={workspace}
+                          language={language}
+                          backendLanguage={backendLanguage}
+                          mainApiUrl={mainApiUrl}
+                          allowedMenuIds={allowedMenuIds}
+                          allMenuItems={allMenuItems}
+                          frequentMenuEntries={frequentMenuEntries}
+                          onOpenItem={(item) => openMenuItem(item)}
+                        />
                       ) : (
                         <WorkTabPanel
                           active={tab.id === activeTabId}
@@ -2350,9 +2370,6 @@ function OpenTabs({
   );
 }
 
-function DashboardHome() {
-  return <div className="min-h-[320px] min-w-0" aria-label="overview" />;
-}
 
 function WorkTabPanel({ active, activeTab, backendLanguage, language, onOpenRoute, tabCount }: { active: boolean; activeTab: WorkTab; backendLanguage: BackendLanguageDictionary; language: LanguageCode; onOpenRoute: (route: string, productCode?: string) => void; tabCount: number }) {
   if (activeTab.route === "/currency") {
