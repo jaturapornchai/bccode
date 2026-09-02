@@ -4781,8 +4781,8 @@ function UserFormSections({
       title: language === "th" ? "สิทธิ์ผู้ใช้งาน" : "User role",
       description:
         language === "th"
-          ? "เลือกระดับสิทธิ์ แล้วเพิ่มชุดสิทธิ์สำเร็จรูปได้หลายชุด (สร้างชุดที่ขั้น 3 ชุดสิทธิ์)"
-          : "Pick the access level, then add any number of reusable permission sets (managed in step 3).",
+          ? "เลือกระดับสิทธิ์ แล้วเพิ่มสิทธิ์การใช้งานสำเร็จรูปได้หลายชุด (สร้างชุดที่ขั้น 2 สิทธิ์การใช้งาน)"
+          : "Pick the access level, then add any number of reusable permission sets (managed in step 2).",
     },
     {
       keys: ["isaccessdisabled"],

@@ -685,7 +685,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
           en: "User = access as granted · Admin = manage users and all settings · Owner = highest rights, the business group creator.",
         },
       },
-      jsonField("permissionsets", "ชุดสิทธิ์เพิ่มเติม", "Additional permission sets"),
+      jsonField("permissionsets", "สิทธิ์การใช้งานเพิ่มเติม", "Additional permission sets"),
       {
         ...radioField(
           "isaccessdisabled",
@@ -856,9 +856,9 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     listPath: "/organization/role-permission",
     idField: "_id",
     deleteKey: "_id",
-    title: { th: "ชุดสิทธิ์", en: "Permission sets" },
+    title: { th: "สิทธิ์การใช้งาน", en: "Permission sets" },
     subtitle: {
-      th: "ตั้งชุดสิทธิ์สำเร็จรูป (เช่น บัญชี ขาย คลัง) แล้วให้คนในองค์กรเลือกได้หลายชุด · USER/ADMIN/OWNER คือชุดมาตรฐานตามระดับสิทธิ์",
+      th: "ตั้งชุดสิทธิ์การใช้งานสำเร็จรูป (เช่น บัญชี ขาย คลัง) แล้วให้คนในองค์กรเลือกได้หลายชุด · USER/ADMIN/OWNER คือชุดมาตรฐานตามระดับสิทธิ์ ข้ามขั้นนี้ได้ถ้าใช้แค่ชุดมาตรฐาน",
       en: "Define reusable permission sets (e.g. Accounting, Sales, Stock) that people can combine · USER/ADMIN/OWNER are the access-level defaults.",
     },
     fields: [

@@ -48,7 +48,7 @@ function optionFromRecord(record: Record<string, unknown>, language: LanguageCod
 
 /**
  * ชุดสิทธิ์เพิ่มเติมของคนในองค์กร: เลือกได้หลายชุดจาก role_permission ของ holding
- * (ขั้น 3 ตั้งค่าระบบ). สิทธิ์จริง = รวมทุกชุด + ชุดมาตรฐานของระดับสิทธิ์.
+ * (ขั้น 2 ตั้งค่าระบบ). สิทธิ์จริง = รวมทุกชุด + ชุดมาตรฐานของระดับสิทธิ์.
  */
 export function PermissionSetsEditor({
   auth,
@@ -138,8 +138,8 @@ export function PermissionSetsEditor({
       </div>
       <p className="text-xs font-normal text-muted-foreground">
         {isThai
-          ? "เลือกได้หลายชุด สิทธิ์ที่ได้ = รวมทุกชุดที่เลือก + ชุดมาตรฐานของระดับสิทธิ์ · สร้าง/แก้ชุดได้ที่ขั้น 3 ชุดสิทธิ์"
-          : "Pick any number of sets. Effective rights = union of the chosen sets + the access-level default. Manage sets in step 3."}
+          ? "เลือกได้หลายชุด สิทธิ์ที่ได้ = รวมทุกชุดที่เลือก + ชุดมาตรฐานของระดับสิทธิ์ · สร้าง/แก้ชุดได้ที่ขั้น 2 สิทธิ์การใช้งาน"
+          : "Pick any number of sets. Effective rights = union of the chosen sets + the access-level default. Manage sets in step 2."}
       </p>
       {options.length > 6 ? (
         <label className="relative block">
@@ -148,7 +148,7 @@ export function PermissionSetsEditor({
             className="pl-9"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder={isThai ? "ค้นหาชุดสิทธิ์ (รหัส/ชื่อ)" : "Search permission sets"}
+            placeholder={isThai ? "ค้นหาสิทธิ์การใช้งาน (รหัส/ชื่อ)" : "Search permission sets"}
           />
         </label>
       ) : null}
@@ -198,10 +198,10 @@ export function PermissionSetsEditor({
         ) : (
           <div className="rounded-xl border border-dashed border-border bg-card p-3 text-sm font-normal text-muted-foreground md:col-span-2 xl:col-span-3">
             {options.length
-              ? isThai ? "ไม่พบชุดสิทธิ์ที่ค้นหา" : "No matching permission set"
+              ? isThai ? "ไม่พบสิทธิ์การใช้งานที่ค้นหา" : "No matching permission set"
               : isThai
-                ? "ยังไม่มีชุดสิทธิ์เพิ่มเติม — สร้างได้ที่ขั้น 3 ชุดสิทธิ์ (เช่น บัญชี, ขาย, คลัง)"
-                : "No custom permission sets yet — create them in step 3 (e.g. Accounting, Sales, Stock)."}
+                ? "ยังไม่มีชุดสิทธิ์การใช้งานเพิ่มเติม — สร้างได้ที่ขั้น 2 สิทธิ์การใช้งาน (เช่น บัญชี, ขาย, คลัง)"
+                : "No custom permission sets yet — create them in step 2 (e.g. Accounting, Sales, Stock)."}
           </div>
         )}
       </div>

@@ -98,13 +98,13 @@ const STEP_TABS = {
     { route: "/currency", label: { th: "สกุลเงิน", en: "Currency" } },
     { route: "/businesstypescreen", label: { th: "ประเภทธุรกิจ", en: "Business Type" } },
   ],
+  "/permissiongroup": [
+    { route: "/permissiongroup", label: { th: "ชุดสิทธิ์การใช้งาน", en: "Permission sets" } },
+    { route: "/permissiondefinition", label: { th: "รายการจอทั้งหมด", en: "All Screens" } },
+  ],
   "/people": [
     { route: "/employee", label: { th: "พนักงาน", en: "Employees" } },
     { route: "/user", label: { th: "บัญชีเข้าระบบ", en: "Login Accounts" } },
-  ],
-  "/permissiongroup": [
-    { route: "/permissiongroup", label: { th: "สิทธิ์ตามบทบาท", en: "Role Permissions" } },
-    { route: "/permissiondefinition", label: { th: "รายการจอทั้งหมด", en: "All Screens" } },
   ],
 } as const;
 type StepRoute = keyof typeof STEP_TABS;
@@ -117,16 +117,16 @@ const accessSettingNavItems = [
     banner: "/settings/banner-company.webp",
   },
   {
-    route: "/people",
-    label: { th: "คนในองค์กร", en: "People" },
-    helper: { th: "พนักงาน และใครเข้าระบบได้", en: "Employees and who can sign in" },
-    banner: "/settings/banner-users.webp",
-  },
-  {
     route: "/permissiongroup",
     label: { th: "สิทธิ์การใช้งาน", en: "Permissions" },
-    helper: { th: "แต่ละบทบาททำอะไรได้บ้าง", en: "What each role can do" },
+    helper: { th: "ใช้ชุดมาตรฐาน หรือสร้างชุดเอง เช่น บัญชี ขาย คลัง (ข้ามได้)", en: "Use the defaults or create sets like Accounting, Sales, Stock (optional)" },
     banner: "/settings/banner-permission-group.webp",
+  },
+  {
+    route: "/people",
+    label: { th: "คนในองค์กร", en: "People" },
+    helper: { th: "เพิ่มพนักงานและบัญชีเข้าระบบ แล้วมอบสิทธิ์ให้แต่ละคน", en: "Add employees and sign-in accounts, then assign their permissions" },
+    banner: "/settings/banner-users.webp",
   },
   {
     route: "/useraccessaudit",
