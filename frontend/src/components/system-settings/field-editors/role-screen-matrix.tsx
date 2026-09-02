@@ -144,8 +144,8 @@ export function RoleScreenMatrix({
     visible.length > 0 && visible.every((row) => has(row.code, action));
   const columnAllChecked = visible.length > 0 && visible.every((row) => hasAll(row.code));
 
-  const box = "size-4 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed";
-  const cell = "px-2 py-1.5 text-center";
+  const box = "size-5 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed";
+  const cell = "px-2 py-2 text-center align-middle";
 
   return (
     <div className="grid gap-2">
@@ -153,7 +153,7 @@ export function RoleScreenMatrix({
         <label className="relative min-w-0 flex-1 basis-56">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="!pl-8"
+            className="!pl-9 h-10 text-sm"
             placeholder={t("search")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -163,7 +163,7 @@ export function RoleScreenMatrix({
           {(["all", "selected", "unselected"] as const).map((key) => (
             <button
               className={cn(
-                "rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors",
+                "min-h-10 rounded-lg border px-3 text-sm font-semibold transition-colors",
                 filter === key
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-muted-foreground hover:bg-muted/60",
@@ -180,15 +180,15 @@ export function RoleScreenMatrix({
       </div>
 
       <div className="max-h-[60vh] overflow-auto rounded-xl border border-border bg-card">
-        <table className="w-full border-collapse text-xs">
+        <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-card shadow-[inset_0_-1px_0_var(--line)]">
             <tr className="text-muted-foreground">
-              <th className="px-2 py-2 text-left font-semibold">
+              <th className="px-3 py-2 text-left text-sm font-bold text-foreground">
                 {t("screen")}
                 <span className="ml-2 font-normal">({visible.length})</span>
               </th>
               <th className={cell}>
-                <label className="inline-grid cursor-pointer justify-items-center gap-0.5">
+                <label className="inline-grid cursor-pointer justify-items-center gap-1 text-xs font-bold text-foreground">
                   <input
                     className={box}
                     checked={columnChecked()}
@@ -202,7 +202,7 @@ export function RoleScreenMatrix({
               </th>
               {PERMISSION_ACTIONS.map((action) => (
                 <th className={cell} key={action}>
-                  <label className="inline-grid cursor-pointer justify-items-center gap-0.5">
+                  <label className="inline-grid cursor-pointer justify-items-center gap-1 text-xs font-bold text-foreground">
                     <input
                       className={box}
                       checked={columnChecked(action)}
@@ -216,7 +216,7 @@ export function RoleScreenMatrix({
                 </th>
               ))}
               <th className={cell}>
-                <label className="inline-grid cursor-pointer justify-items-center gap-0.5">
+                <label className="inline-grid cursor-pointer justify-items-center gap-1 text-xs font-bold text-foreground">
                   <input
                     className={box}
                     checked={columnAllChecked}
@@ -284,7 +284,7 @@ function GroupRows({
     <>
       <tr>
         <td
-          className="bg-muted/40 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
+          className="bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground"
           colSpan={6}
         >
           {title}
@@ -297,18 +297,24 @@ function GroupRows({
             className={cn(
               "border-t border-border/60 transition-colors",
               entered ? "bg-primary/5" : "hover:bg-muted/40",
+              !readOnly && "cursor-pointer",
               !row.isActive && "opacity-60",
             )}
             key={row.code}
+            onClick={(event) => {
+              // คลิกที่ชื่อ/พื้นที่ว่างของแถว = สลับ "เข้า" (ช่องติ๊กจัดการตัวเองอยู่แล้ว)
+              if (readOnly || (event.target as HTMLElement).closest("input")) return;
+              setRow(row.code, !entered);
+            }}
           >
-            <td className="px-2 py-1.5">
-              <label className="grid cursor-pointer gap-0.5">
-                <span className={cn("font-semibold", entered && "text-primary")}>{row.name || row.code}</span>
-                <span className="text-[11px] text-muted-foreground">
+            <td className="px-3 py-2">
+              <div className="grid gap-0.5">
+                <span className={cn("text-sm font-semibold leading-snug", entered && "text-primary")}>{row.name || row.code}</span>
+                <span className="text-xs leading-snug text-muted-foreground">
                   {row.code}
                   {row.description ? ` · ${row.description}` : ""}
                 </span>
-              </label>
+              </div>
             </td>
             <td className={cell}>
               <input
