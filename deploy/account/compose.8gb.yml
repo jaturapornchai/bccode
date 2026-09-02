@@ -1,0 +1,29 @@
+# Override for a 4 vCPU / 8 GB droplet (DigitalOcean SGP1, 2026-09-02).
+# compose.yml limits sum to ~9 GB; this trims them to ~6.3 GB so the host keeps
+# ~1.5 GB for the OS/Caddy plus a 4 GB swapfile as a safety net.
+# Use: docker compose --env-file /etc/bcai-account/release.env \
+#        -f compose.yml -f compose.8gb.yml up -d
+services:
+  mongo:
+    mem_limit: 768m
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+  postgres:
+    mem_limit: 384m
+  clickhouse:
+    mem_limit: 768m
+  redis:
+    mem_limit: 128m
+  minio:
+    mem_limit: 512m
+  kafka:
+    mem_limit: 1g
+    environment:
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+  migrate:
+    mem_limit: 768m
+  mainapi:
+    mem_limit: 1g
+  worker:
+    mem_limit: 512m
+  frontend:
+    mem_limit: 512m
