@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,16 +29,12 @@ import { Input } from "@/components/ui/input";
 import { AppHeaderControls } from "./app-header-controls";
 
 // Shared motion variants — subtle, premium, never cluttered.
+// Panel entrance is a CSS keyframe (globals.css: login-panel-enter) so a page loaded in a
+// background tab (no rAF) never sits at opacity 0; motion only staggers the children.
 // Reduced-motion is handled by the client-only <MotionConfig> in LoginWrapper.
 // The login screen is mounted after hydration, so Motion can read the user's
 // preference without creating a server/client style mismatch.
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
-
-const panelEnter = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease: EASE_OUT },
-} as const;
 
 const staggerParent: Variants = {
   animate: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
@@ -229,14 +226,16 @@ export function LoginScreen() {
       // Render the Google button at the host's full width (GIS caps width at 400) with a
       // centered logo so it reads as one clean full-width button, not a button-in-a-button.
       const hostWidth = Math.round(container.getBoundingClientRect().width);
-      const width = Math.min(400, Math.max(240, hostWidth || 320));
+      // Match the sibling buttons exactly: the iframe stretches to 100% via CSS,
+      // so pass the real host width (Google accepts 200–400+ and the CSS caps it).
+      const width = Math.min(500, Math.max(240, hostWidth || 320));
       window.google.accounts.id.renderButton(container, {
         type: "standard",
         theme: "outline",
         size: "large",
         text: "continue_with",
-        shape: "pill",
-        logo_alignment: "center",
+        shape: "rectangular",
+        logo_alignment: "left",
         width,
       });
     }
@@ -490,9 +489,8 @@ export function LoginScreen() {
       <motion.section
         className="brand-panel"
         aria-label="BC Ai Account"
-        initial={panelEnter.initial}
-        animate={panelEnter.animate}
-        transition={panelEnter.transition}
+        initial={false}
+        animate="animate"
       >
         <motion.div className="brand-badge-row" variants={staggerChild} {...staggerParent}>
           <div className="brand-mark" aria-hidden="true">
@@ -553,9 +551,8 @@ export function LoginScreen() {
       <motion.section
         className="form-panel"
         aria-label="Login form"
-        initial={panelEnter.initial}
-        animate={panelEnter.animate}
-        transition={{ ...panelEnter.transition, delay: 0.1 }}
+        initial={false}
+        animate="animate"
       >
         <AnimatePresence>
           {connectionState === "error" ? (
@@ -621,11 +618,25 @@ export function LoginScreen() {
             </div>
 
             <div className="social-login-grid">
-              <div
-                className="social-login-button google-login gis-button-host"
-                ref={googleButtonRef}
-                aria-label={t(language, "loginWithGoogle")}
-              />
+              {/* GIS renderButton wipes its container's children, so the visible
+                  face lives OUTSIDE the host — the host is a transparent
+                  full-size click-catcher stretched over it. */}
+              <div className="google-login gis-wrap">
+                <span className="google-face" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a7.93 7.93 0 0 1-3.4 5.2v3.86h3.86C22.3 19.95 23.49 16.36 23.49 12.27z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29A11.86 11.86 0 0 0 0 12c0 1.94.47 3.76 1.29 5.38l3.98-3.09z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 1.7 1.29 4.62l3.98 3.09C6.22 5.64 8.87 4.75 12 4.75z" />
+                  </svg>
+                  <span className="google-face-text">{t(language, "loginWithGoogle")}</span>
+                </span>
+                <div
+                  className="social-login-button google-login gis-button-host"
+                  ref={googleButtonRef}
+                  aria-label={t(language, "loginWithGoogle")}
+                />
+              </div>
               {providerLoginState === "google" && loginState === "loading" ? (
                 <span className="gis-login-progress" aria-live="polite">
                   <Loader2 className="spin" aria-hidden="true" size={18} />
@@ -670,7 +681,7 @@ export function LoginScreen() {
 
             <div className="field-group holding-code-field">
               <span id="holding-code-label">{t(language, "holdingCode")}</span>
-              <div className="input-with-icon">
+              <div className={`input-with-icon${holdingCode ? " has-clear" : ""}`}>
                 <Building2 aria-hidden="true" size={18} className="input-leading-icon" />
                 <Input
                   aria-labelledby="holding-code-label"
@@ -681,13 +692,23 @@ export function LoginScreen() {
                   placeholder="bcdemo01"
                   className="!pl-10 h-11"
                 />
+                {holdingCode ? (
+                  <button
+                    aria-label={`${t(language, "clearField")} ${t(language, "holdingCode")}`}
+                    className="input-clear-icon"
+                    onClick={() => setHoldingCode("")}
+                    type="button"
+                  >
+                    <X aria-hidden="true" size={18} />
+                  </button>
+                ) : null}
               </div>
               <small id="holding-code-help" className="field-help">{t(language, "holdingCodeHint")}</small>
             </div>
 
             <label className="field-group" htmlFor="login-username">
               <span>{t(language, "username")}</span>
-              <div className="input-with-icon">
+              <div className={`input-with-icon${username ? " has-clear" : ""}`}>
                 <UserRound aria-hidden="true" size={18} className="input-leading-icon" />
                 <Input
                   id="login-username"
@@ -697,12 +718,22 @@ export function LoginScreen() {
                   placeholder={t(language, "usernamePlaceholder")}
                   className="!pl-10 h-11"
                 />
+                {username ? (
+                  <button
+                    aria-label={`${t(language, "clearField")} ${t(language, "username")}`}
+                    className="input-clear-icon"
+                    onClick={() => setUsername("")}
+                    type="button"
+                  >
+                    <X aria-hidden="true" size={18} />
+                  </button>
+                ) : null}
               </div>
             </label>
 
             <label className="field-group" htmlFor="login-password">
               <span>{t(language, "password")}</span>
-              <div className="input-with-icon">
+              <div className={`input-with-icon${password ? " has-clear" : ""}`}>
                 <LockKeyhole aria-hidden="true" size={18} className="input-leading-icon" />
                 <Input
                   id="login-password"
@@ -713,6 +744,16 @@ export function LoginScreen() {
                   type={showPassword ? "text" : "password"}
                   className="!pl-10 !pr-10 h-11"
                 />
+                {password ? (
+                  <button
+                    aria-label={`${t(language, "clearField")} ${t(language, "password")}`}
+                    className="input-clear-icon before-trailing"
+                    onClick={() => setPassword("")}
+                    type="button"
+                  >
+                    <X aria-hidden="true" size={18} />
+                  </button>
+                ) : null}
                 <button
                   className="input-trailing-icon"
                   type="button"
@@ -739,13 +780,13 @@ export function LoginScreen() {
               {message ? (
                 <motion.div
                   key={message + loginState}
-                  className={`message ${loginState === "success" || connectionState === "success" ? "success" : "error"}`}
+                  className={`message ${loginState === "success" ? "success" : "error"}`}
                   initial={{ opacity: 0, y: -6, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: "auto" }}
                   exit={{ opacity: 0, y: -6, height: 0 }}
                   transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {loginState === "success" || connectionState === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                  {loginState === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
                   <span>{message}</span>
                 </motion.div>
               ) : null}

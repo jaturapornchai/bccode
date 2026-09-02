@@ -8223,3 +8223,26 @@ a[class~="bg-primary"]:hover {
 .bc-list-row[class*="bg-primary"] {
   box-shadow: inset 3px 0 0 var(--primary);
 }
+
+/* --- Login panels enter via CSS, not motion (2026-09-02 prod fix) ---
+   motion/react drives its mount animation with requestAnimationFrame, which never
+   fires in a background tab: a page opened behind another tab stayed at the
+   inline opacity:0 forever (blank form, Google button unreachable). A CSS
+   keyframe with fill-mode both always settles at the visible state. */
+@keyframes login-panel-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.login-shell .brand-panel,
+.login-shell .form-panel {
+  animation: login-panel-enter 0.5s var(--login-ease) both;
+}
+.login-shell .form-panel {
+  animation-delay: 0.1s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-shell .brand-panel,
+  .login-shell .form-panel {
+    animation: none;
+  }
+}
