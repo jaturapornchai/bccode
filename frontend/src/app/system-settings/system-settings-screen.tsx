@@ -128,7 +128,8 @@ import {
 } from "@/lib/thailand-addresses";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
-import { ALL_SCREEN_ACTIONS, PERMISSION_ACTIONS, PERMISSION_ACTION_LABELS, actionEntry, isActionEntry, type ScreenActions } from "@/lib/permission-actions";
+import { ALL_SCREEN_ACTIONS, isActionEntry, type ScreenActions } from "@/lib/permission-actions";
+import { RoleScreenMatrix } from "@/components/system-settings/field-editors/role-screen-matrix";
 import { useScreenActions } from "@/lib/use-screen-actions";
 import type { MasterEntry, MasterName } from "@/lib/product-barcode/api";
 import { pickName } from "@/lib/product-barcode/utils";
@@ -6327,28 +6328,9 @@ function PermissionLinkMultiSelectEditor({
 
   function toggle(code: string, checked: boolean) {
     if (readOnly || !setForm || !selectedUserCode) return;
-    // Unchecking เข้า also drops the screen's เพิ่ม/แก้ไข/ลบ entries.
     const next = checked
       ? uniqueStrings([...selectedCodes, code])
-      : selectedCodes.filter((item) => item !== code && !item.startsWith(`${code}:`));
-    setForm({ ...form, [field.key]: next });
-  }
-
-  function toggleAction(code: string, action: (typeof PERMISSION_ACTIONS)[number], checked: boolean) {
-    if (readOnly || !setForm || !selectedUserCode) return;
-    const entry = actionEntry(code, action);
-    const next = checked
-      ? uniqueStrings([...selectedCodes, code, entry])
-      : selectedCodes.filter((item) => item !== entry);
-    setForm({ ...form, [field.key]: next });
-  }
-
-  function toggleAll(code: string, checked: boolean) {
-    if (readOnly || !setForm || !selectedUserCode) return;
-    const entries = PERMISSION_ACTIONS.map((action) => actionEntry(code, action));
-    const next = checked
-      ? uniqueStrings([...selectedCodes, code, ...entries])
-      : selectedCodes.filter((item) => item !== code && !item.startsWith(`${code}:`));
+      : selectedCodes.filter((item) => item !== code);
     setForm({ ...form, [field.key]: next });
   }
 
@@ -6373,6 +6355,17 @@ function PermissionLinkMultiSelectEditor({
           {error}
         </p>
       ) : null}
+      {isGroup && !loading ? (
+        <RoleScreenMatrix
+          language={language}
+          onChange={(next) => {
+            if (!readOnly && setForm) setForm({ ...form, [field.key]: next });
+          }}
+          options={options}
+          readOnly={readOnly || !selectedUserCode}
+          selected={selectedCodes}
+        />
+      ) : (
       <div className="grid gap-2 md:grid-cols-2">
         {loading ? (
           <div className="flex min-h-20 items-center gap-2 rounded-xl border border-border bg-card p-3 text-muted-foreground md:col-span-2">
@@ -6410,38 +6403,6 @@ function PermissionLinkMultiSelectEditor({
                 <span className="truncate text-xs text-muted-foreground">
                   {language === "th" ? "รหัสสิทธิ์" : "Permission code"}: {option.code}
                 </span>
-                {isGroup ? (
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
-                    {PERMISSION_ACTIONS.map((action) => {
-                      const entry = actionEntry(option.code, action);
-                      const actionChecked = selectedCodes.includes(entry);
-                      return (
-                        <label className="inline-flex cursor-pointer items-center gap-1" key={entry}>
-                          <input
-                            className="size-4 shrink-0 cursor-pointer accent-primary"
-                            type="checkbox"
-                            checked={actionChecked}
-                            disabled={readOnly || !selectedUserCode}
-                            aria-label={`${PERMISSION_ACTION_LABELS[action][language === "th" ? "th" : "en"]} ${option.name || option.code}`}
-                            onChange={(event) => toggleAction(option.code, action, event.target.checked)}
-                          />
-                          {PERMISSION_ACTION_LABELS[action][language === "th" ? "th" : "en"]}
-                        </label>
-                      );
-                    })}
-                    <label className="inline-flex cursor-pointer items-center gap-1 text-muted-foreground">
-                      <input
-                        className="size-4 shrink-0 accent-primary"
-                        type="checkbox"
-                        checked={checked && PERMISSION_ACTIONS.every((action) => selectedCodes.includes(actionEntry(option.code, action)))}
-                        disabled={readOnly || !selectedUserCode}
-                        aria-label={`${language === "th" ? "ทั้งหมด" : "All"} ${option.name || option.code}`}
-                        onChange={(event) => toggleAll(option.code, event.target.checked)}
-                      />
-                      {language === "th" ? "ทั้งหมด" : "All"}
-                    </label>
-                  </span>
-                ) : null}
                 {option.description ? (
                   <span className="line-clamp-2 text-xs font-normal text-muted-foreground">
                     {option.description}
@@ -6456,6 +6417,7 @@ function PermissionLinkMultiSelectEditor({
           </div>
         )}
       </div>
+      )}
     </section>
   );
 }
