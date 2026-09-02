@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -127,27 +128,72 @@ func (h RolePermissionHttp) InfoMyRolePermission(ctx microservice.IContext) erro
 		ctx.ResponseError(http.StatusForbidden, "บทบาทผู้ใช้งานไม่รองรับ")
 		return err
 	}
+	// Effective permissions = union of the role's built-in set and every
+	// permission set the member picked (docs/organization.md).
+	setCodes := append([]string{roleCode}, membership.PermissionSets...)
 	var records []rolemodels.RolePermissionDoc
 	err = pst.Find(mongoCtx, rolemodels.RolePermissionDoc{}, bson.M{
 		"holdingcode": userInfo.HoldingCode,
-		"rolecode":    roleCode,
+		"rolecode":    bson.M{"$in": setCodes},
 		"isactive":    true,
 		"isdeleted":   false,
-	}, &records, options.Find().SetLimit(2))
+	}, &records, options.Find().SetLimit(int64(len(setCodes)+1)))
 	if err != nil {
 		return respondInternalError(ctx, err, "โหลดสิทธิ์ของผู้ใช้งานไม่สำเร็จ")
 	}
-	if len(records) == 0 {
+	h.ms.Logger.Debug(fmt.Sprintf("InfoMyRolePermission: holding=%s role=%d sets=%v records=%d", userInfo.HoldingCode, membership.Role, setCodes, len(records)))
+	permissions := unionPermissions(records)
+	// ADMIN/OWNER default to full screen access when nothing is assigned for
+	// the role itself (product rule: an admin must reach every screen by
+	// default, whatever extra sets they picked). The frontend expands the "*"
+	// wildcard to every menu item. USER without any assignment stays fail-closed.
+	if (roleCode == "ADMIN" || roleCode == "OWNER") && !hasRoleRecord(records, roleCode) {
+		permissions = []string{"*"}
+	}
+	if len(permissions) == 0 {
 		ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
 		return nil
 	}
-	if len(records) > 1 {
-		err = errors.New("duplicate active role permissions")
-		ctx.ResponseError(http.StatusInternalServerError, "พบรายการสิทธิ์ซ้ำสำหรับบทบาทนี้ กรุณาให้ผู้ดูแลแก้ข้อมูล")
-		return err
-	}
-	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: records[0]})
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"holdingcode":    userInfo.HoldingCode,
+			"rolecode":       roleCode,
+			"permissionsets": membership.PermissionSets,
+			"permissions":    permissions,
+			"isactive":       true,
+		},
+	})
 	return nil
+}
+
+func hasRoleRecord(records []rolemodels.RolePermissionDoc, roleCode string) bool {
+	for _, record := range records {
+		if record.RoleCode == roleCode {
+			return true
+		}
+	}
+	return false
+}
+
+// unionPermissions merges the permission entries of every set, sorted and
+// deduplicated; a "*" anywhere collapses the result to ["*"].
+func unionPermissions(records []rolemodels.RolePermissionDoc) []string {
+	seen := map[string]struct{}{}
+	for _, record := range records {
+		for _, entry := range record.Permissions {
+			if entry == "*" {
+				return []string{"*"}
+			}
+			seen[entry] = struct{}{}
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for entry := range seen {
+		out = append(out, entry)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func (h RolePermissionHttp) CreateRolePermission(ctx microservice.IContext) error {

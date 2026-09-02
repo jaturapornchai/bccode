@@ -393,6 +393,7 @@ type ShopUser struct {
 	POApproval        *DocumentApproval `json:"poapproval,omitempty" bson:"poapproval,omitempty"`               // อนุมัติใบสั่งซื้อ
 	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"` // อนุมัติใบเสนอราคา
 	AccessScopes      []AccessScope     `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
+	PermissionSets    []string          `json:"permissionsets" bson:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
 }
 
 func (*ShopUser) CollectionName() string {
@@ -458,6 +459,7 @@ type UserRoleRequest struct {
 	AccessEnabledBy  string        `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
 	AccessExpiryDate time.Time     `json:"accessexpirydate,omitempty" bson:"accessexpirydate,omitempty"`
 	AccessScopes     []AccessScope `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
+	PermissionSets   []string      `json:"permissionsets" bson:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
@@ -519,6 +521,7 @@ type ShopUserProfile struct {
 	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
 	AccessEnabledBy  string        `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
 	AccessScopes     []AccessScope `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
+	PermissionSets   []string      `json:"permissionsets" bson:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน

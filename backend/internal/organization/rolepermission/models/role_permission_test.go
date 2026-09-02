@@ -29,12 +29,24 @@ func TestNormalizeRequestUsesFixedMembershipRolesAndCanonicalValues(t *testing.T
 	}
 }
 
-func TestNormalizeRequestRejectsUnmappedCustomRole(t *testing.T) {
+func TestNormalizeRequestAcceptsCustomPermissionSetCode(t *testing.T) {
 	req := RolePermissionRequest{
-		RoleCode: "ACCOUNTANT",
+		RoleCode: " accounting-th ",
 		Names:    []LocalizedName{{Code: "th", Name: "บัญชี"}},
 	}
-	if err := NormalizeRequest(&req); err == nil {
-		t.Fatal("NormalizeRequest() error = nil, want unsupported role error")
+	if err := NormalizeRequest(&req); err != nil {
+		t.Fatalf("NormalizeRequest() error = %v", err)
+	}
+	if req.RoleCode != "ACCOUNTING-TH" {
+		t.Fatalf("RoleCode = %q, want ACCOUNTING-TH", req.RoleCode)
+	}
+}
+
+func TestNormalizeRequestRejectsMalformedSetCode(t *testing.T) {
+	for _, code := range []string{"", "A", "has space", "ไทย", "x123456789012345678901234567890"} {
+		req := RolePermissionRequest{RoleCode: code, Names: []LocalizedName{{Code: "th", Name: "x"}}}
+		if err := NormalizeRequest(&req); err == nil {
+			t.Fatalf("NormalizeRequest(%q) error = nil, want invalid code error", code)
+		}
 	}
 }

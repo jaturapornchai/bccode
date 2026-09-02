@@ -603,7 +603,14 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Manage employees, email, POS access, and PIN.",
     },
     fields: [
-      textField("code", "รหัสพนักงาน", "Employee code", true),
+      {
+        ...imageUploadField("profilepicture", "รูปพนักงาน", "Employee photo", undefined, "profilepicturethumb"),
+        helper: {
+          th: "รองรับ JPG/PNG — ระบบย่อรูปก่อนอัปโหลด และเก็บไฟล์ในระบบจัดเก็บภาพ (S3) พร้อมรูปย่ออัตโนมัติ",
+          en: "JPG/PNG supported — resized before upload, stored in S3 with an automatic thumbnail.",
+        },
+      },
+      businessCodeField("code", "รหัสพนักงาน", "Employee code", true),
       textField("name", "ชื่อพนักงาน", "Employee name", true),
       textField("email", "อีเมล", "Email"),
       textField("pincode", "PIN", "PIN"),
@@ -620,7 +627,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     icon: "users",
     basePath: "/holding/permission",
     listPath: "/holding/users",
-    idField: "username",
+    idField: "useruid",
     title: { th: "ผู้ใช้งาน", en: "User" },
     subtitle: {
       th: "จัดการผู้ใช้งาน บทบาท แผนก LINE และสิทธิ์อนุมัติ",
@@ -678,6 +685,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
           en: "User = access as granted · Admin = manage users and all settings · Owner = highest rights, the business group creator.",
         },
       },
+      jsonField("permissionsets", "ชุดสิทธิ์เพิ่มเติม", "Additional permission sets"),
       {
         ...radioField(
           "isaccessdisabled",
@@ -848,24 +856,21 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     listPath: "/organization/role-permission",
     idField: "_id",
     deleteKey: "_id",
-    title: { th: "กำหนดสิทธิ์ตามบทบาท", en: "Role Permissions" },
+    title: { th: "ชุดสิทธิ์", en: "Permission sets" },
     subtitle: {
-      th: "กำหนดหน้าจอที่บทบาท USER, ADMIN และ OWNER เข้าใช้งานได้",
-      en: "Assign accessible screens to the USER, ADMIN, and OWNER roles.",
+      th: "ตั้งชุดสิทธิ์สำเร็จรูป (เช่น บัญชี ขาย คลัง) แล้วให้คนในองค์กรเลือกได้หลายชุด · USER/ADMIN/OWNER คือชุดมาตรฐานตามระดับสิทธิ์",
+      en: "Define reusable permission sets (e.g. Accounting, Sales, Stock) that people can combine · USER/ADMIN/OWNER are the access-level defaults.",
     },
     fields: [
-      selectField(
-        "rolecode",
-        "บทบาท",
-        "Role",
-        [
-          { value: "USER", label: roleUserLabel.en, labels: roleUserLabel },
-          { value: "ADMIN", label: roleAdminLabel.en, labels: roleAdminLabel },
-          { value: "OWNER", label: roleOwnerLabel.en, labels: roleOwnerLabel },
-        ],
-        true,
-      ),
-      namesField("names", "ชื่อบทบาท", "Role name"),
+      {
+        ...businessCodeField("rolecode", "รหัสชุดสิทธิ์", "Permission set code", true),
+        placeholder: "เช่น ACCOUNTING, SALES, STOCK",
+        helper: {
+          th: "ตัวพิมพ์ใหญ่ A-Z 0-9 _ - ยาว 2-30 ตัว · USER / ADMIN / OWNER = ชุดมาตรฐานของระดับสิทธิ์ (ทุกคนในระดับนั้นได้อัตโนมัติ)",
+          en: "Uppercase A-Z 0-9 _ - (2-30 chars) · USER / ADMIN / OWNER are the access-level defaults everyone at that level gets.",
+        },
+      },
+      namesField("names", "ชื่อชุดสิทธิ์", "Permission set name"),
       checkboxField("isactive", "เปิดใช้งาน", "Active"),
       jsonField("permissions", "หน้าจอที่เข้าใช้งานได้", "Accessible screens"),
     ],
@@ -1431,7 +1436,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
         en: "Manage warehouses, storage zones, and shelves.",
       },
       fields: [
-        textField("code", "รหัสคลังสินค้า", "Warehouse code", true),
+        businessCodeField("code", "รหัสคลังสินค้า", "Warehouse code", true),
         namesField("names", "ชื่อคลังสินค้า", "Warehouse names"),
         {
           key: "location",

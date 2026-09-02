@@ -107,17 +107,35 @@ func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (
 		return models.ShopUserProfile{}, err
 	}
 	if shopUser.Username == "" {
-		return models.ShopUserProfile{}, errors.New("user not found")
+		// Users without a usercode (Google-only) are addressed by their stable useruid
+		// because their shopuser row keeps an empty username by design.
+		resolved, uidErr := svc.repo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, username)
+		if uidErr != nil {
+			return models.ShopUserProfile{}, errors.New("user not found")
+		}
+		shopUser = resolved
+		err = nil
 	}
 
-	userProfiles, err := svc.repo.FindUserProfileByUsernames(context.Background(), []string{username})
-	if err != nil {
-		return models.ShopUserProfile{}, err
+	if strings.TrimSpace(username) != "" {
+		userProfiles, profileErr := svc.repo.FindUserProfileByUsernames(context.Background(), []string{username})
+		if profileErr != nil {
+			return models.ShopUserProfile{}, profileErr
+		}
+
+		// Profile name
+		if len(userProfiles) > 0 {
+			shopUserProfile.UID = userProfiles[0].UID
+			shopUserProfile.Email = userProfiles[0].Email
+			shopUserProfile.UserProfileName = userProfiles[0].Name
+			shopUserProfile.Avatar = userProfiles[0].Avatar
+			shopUserProfile.AvatarThumb = userProfiles[0].AvatarThumb
+		}
 	}
 
 	// Basic info
 	shopUserProfile.HoldingCode = shopUser.HoldingCode
-	shopUserProfile.Username = username
+	shopUserProfile.Username = shopUser.Username
 	shopUserProfile.UserUID = shopUser.UserUID
 	shopUserProfile.Role = shopUser.Role
 	shopUserProfile.IsAccessDisabled = shopUser.IsAccessDisabled
@@ -130,18 +148,9 @@ func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (
 	if err != nil {
 		return models.ShopUserProfile{}, err
 	}
-	shopUserProfile.IsCreator = sameUsername(username, createdBy)
+	shopUserProfile.IsCreator = sameUsername(shopUser.Username, createdBy) || sameUsername(shopUser.UserUID, createdBy)
 	if shopUserProfile.IsCreator {
 		shopUserProfile.IsAccessDisabled = false
-	}
-
-	// Profile name
-	if len(userProfiles) > 0 {
-		shopUserProfile.UID = userProfiles[0].UID
-		shopUserProfile.Email = userProfiles[0].Email
-		shopUserProfile.UserProfileName = userProfiles[0].Name
-		shopUserProfile.Avatar = userProfiles[0].Avatar
-		shopUserProfile.AvatarThumb = userProfiles[0].AvatarThumb
 	}
 
 	// === ข้อมูลพนักงาน ===
@@ -157,8 +166,35 @@ func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (
 	shopUserProfile.POApproval = shopUser.POApproval
 	shopUserProfile.QuotationApproval = shopUser.QuotationApproval
 	shopUserProfile.AccessScopes = shopUser.AccessScopes
+	shopUserProfile.PermissionSets = shopUser.PermissionSets
 
 	return shopUserProfile, err
+}
+
+// resolveShopUser finds a shop user by username first, then by useruid, so
+// usercode-less users (Google-only) can be addressed by their stable uid.
+// Callers may pass a lowercased uid (NormalizeUsername) — both cases are tried.
+// An empty id resolves to nothing on purpose: only users WITH a username may
+// be matched through the username query.
+func (svc ShopUserService) resolveShopUser(holdingCode string, id string) (models.ShopUser, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return models.ShopUser{}, errors.New("user not found")
+	}
+	shopUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, id)
+	if err == nil && shopUser.Username != "" {
+		return shopUser, nil
+	}
+	if resolved, uidErr := svc.repo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, id); uidErr == nil {
+		return resolved, nil
+	}
+	if lowered := strings.ToLower(id); lowered != id {
+		resolved, uidErr := svc.repo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, lowered)
+		if uidErr == nil {
+			return resolved, nil
+		}
+	}
+	return models.ShopUser{}, errors.New("user not found")
 }
 
 func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
@@ -242,6 +278,7 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername strin
 		shopUserProfile.POApproval = doc.POApproval
 		shopUserProfile.QuotationApproval = doc.QuotationApproval
 		shopUserProfile.AccessScopes = doc.AccessScopes
+		shopUserProfile.PermissionSets = doc.PermissionSets
 		shopUserProfile.IsAccessDisabled = doc.IsAccessDisabled
 		shopUserProfile.AccessDisabledAt = doc.AccessDisabledAt
 		shopUserProfile.AccessDisabledBy = doc.AccessDisabledBy
@@ -275,10 +312,6 @@ func (svc ShopUserService) SaveUserPermissionShop(holdingCode string, authUserna
 
 	username = utils.NormalizeUsername(username)
 
-	if authUsername == username || authUsername == editusername {
-		return errors.New("can not edit self permission")
-	}
-
 	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
 
 	if err != nil {
@@ -289,33 +322,31 @@ func (svc ShopUserService) SaveUserPermissionShop(holdingCode string, authUserna
 		return errors.New("permission denied")
 	}
 
+	// Resolve the target with the RAW id first: a useruid keeps its original
+	// casing and NormalizeUsername would lowercase it into a lookup miss.
+	findEditUser, err := svc.resolveShopUser(holdingCode, editusername)
+
+	if err != nil {
+		return err
+	}
+
 	editusername = utils.NormalizeUsername(editusername)
 
-	if editusername != "" {
+	// Self edit: allowed only when the role is unchanged (see SaveUserFullProfile).
+	isSelf := sameUsername(authUsername, username) || sameUsername(authUsername, editusername) ||
+		(findEditUser.UserUID != "" && findEditUser.UserUID == authUser.UserUID)
+	if isSelf && role != findEditUser.Role {
+		return errors.New("can not edit self permission")
+	}
 
-		findEditUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, editusername)
+	if findEditUser.Username != "" || findEditUser.UserUID != "" {
+		tempID := findEditUser.ID
 
+		err = svc.repo.Update(context.Background(), tempID, holdingCode, username, role)
 		if err != nil {
 			return err
 		}
-
-		if findEditUser.Username != "" {
-			tempID := findEditUser.ID
-
-			err = svc.repo.Update(context.Background(), tempID, holdingCode, username, role)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = svc.repo.Save(context.Background(), holdingCode, username, role)
-
-			if err != nil {
-				return err
-			}
-		}
-
 	} else {
-
 		err = svc.repo.Save(context.Background(), holdingCode, username, role)
 
 		if err != nil {
@@ -341,13 +372,10 @@ func (svc ShopUserService) create(ctx context.Context, holdingCode string, usern
 
 // SaveUserFullProfile - บันทึกข้อมูลผู้ใช้แบบครบถ้วน (รวม position, department, LINE, approval)
 func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername string, req *models.UserRoleRequest) error {
+	rawEditID := strings.TrimSpace(req.EditUsername)
 	username := utils.NormalizeUsername(req.Username)
 	editusername := utils.NormalizeUsername(req.EditUsername)
 	req.EditUsername = editusername
-
-	if sameUsername(authUsername, username) || sameUsername(authUsername, editusername) {
-		return errors.New("can not edit self permission")
-	}
 
 	authUser, err := svc.requireHoldingManager(holdingCode, authUsername)
 	if err != nil {
@@ -359,16 +387,33 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 		return err
 	}
 
-	lookupUsername := username
-	if editusername != "" {
-		lookupUsername = editusername
+	lookupUsername := rawEditID
+	if lookupUsername == "" {
+		lookupUsername = username
 	}
-	existingTarget, existingTargetErr := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, lookupUsername)
-	if existingTargetErr != nil {
-		existingTarget = models.ShopUser{}
+	existingTarget := models.ShopUser{}
+	if lookupUsername != "" {
+		// Resolve with the RAW id: a useruid keeps its original casing and
+		// NormalizeUsername would lowercase it into a lookup miss.
+		existingTarget, err = svc.resolveShopUser(holdingCode, lookupUsername)
+		if err != nil {
+			existingTarget = models.ShopUser{}
+		}
 	}
 	if existingTarget.UserUID != "" {
 		req.UserUID = existingTarget.UserUID
+	}
+
+	// Self edit: allowed only when the role is unchanged (scope/permission
+	// self-service, e.g. an owner granting their own company access). Changing
+	// your own role stays forbidden to prevent lock-out — a Holding must always
+	// keep a working OWNER (docs/organization.md).
+	targetIsCreator := sameUsername(existingTarget.Username, createdBy) ||
+		(existingTarget.UserUID != "" && existingTarget.UserUID == createdBy)
+	isSelf := sameUsername(authUsername, username) || sameUsername(authUsername, editusername) ||
+		(existingTarget.UserUID != "" && existingTarget.UserUID == authUser.UserUID)
+	if isSelf && req.Role != existingTarget.Role {
+		return errors.New("can not edit self permission")
 	}
 
 	// Admins have full access but must not be able to modify an owner or promote anyone to owner.
@@ -376,7 +421,7 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 		return errors.New("permission denied")
 	}
 
-	if err = applyAccessStatus(req, existingTarget, authUsername, time.Now().UTC(), sameUsername(username, createdBy)); err != nil {
+	if err = applyAccessStatus(req, existingTarget, authUsername, time.Now().UTC(), targetIsCreator); err != nil {
 		return err
 	}
 
@@ -397,6 +442,7 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 				POApproval:        existingUser.POApproval,
 				QuotationApproval: existingUser.QuotationApproval,
 				AccessScopes:      existingUser.AccessScopes,
+				PermissionSets:    existingUser.PermissionSets,
 			}
 			copyAccessStatusToRequest(oldReq, existingUser)
 			svc.repo.SaveFullProfile(context.Background(), holdingCode, oldReq)
@@ -422,15 +468,10 @@ func (svc ShopUserService) DeleteUserPermissionShop(holdingCode string, authUser
 		return err
 	}
 
-	findUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
+	findUser, err := svc.resolveShopUser(holdingCode, username)
 
 	if err != nil {
 		return err
-	}
-
-	// ตรวจสอบว่าพบผู้ใช้ที่ต้องการลบหรือไม่
-	if findUser.Username == "" {
-		return errors.New("user not found")
 	}
 
 	createdBy, err := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
@@ -438,7 +479,7 @@ func (svc ShopUserService) DeleteUserPermissionShop(holdingCode string, authUser
 		return err
 	}
 
-	if sameUsername(findUser.Username, createdBy) {
+	if sameUsername(findUser.Username, createdBy) || (findUser.UserUID != "" && findUser.UserUID == createdBy) {
 		return errors.New("creator_cannot_delete")
 	}
 
@@ -446,7 +487,7 @@ func (svc ShopUserService) DeleteUserPermissionShop(holdingCode string, authUser
 		return errors.New("permission denied")
 	}
 
-	if findUser.Username == authUsername {
+	if sameUsername(findUser.Username, authUsername) || (findUser.UserUID != "" && findUser.UserUID == authUser.UserUID) {
 		return errors.New("can't delete your permission")
 	}
 

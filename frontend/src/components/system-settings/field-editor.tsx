@@ -61,6 +61,7 @@ import {
   PermissionLinkMultiSelectEditor,
 } from "./field-editors/permission-editors";
 import { HoldingScopeRulesEditor } from "./field-editors/holding-scope-editor";
+import { PermissionSetsEditor } from "./field-editors/permission-sets-editor";
 import {
   ProductVariantStructuredFieldEditor,
   BranchStructuredSettingEditor,
@@ -102,7 +103,7 @@ export function FieldEditor({
   field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const label = fieldLabel(field, language, config, dictionary);
@@ -159,6 +160,20 @@ export function FieldEditor({
         <span>{label}</span>
         <Input value={String(value ?? "")} readOnly disabled aria-readonly />
       </label>
+    );
+  }
+
+  if (config.slug === "user" && field.key === "permissionsets") {
+    return (
+      <PermissionSetsEditor
+        auth={auth}
+        dictionary={dictionary}
+        field={field}
+        form={form}
+        language={language}
+        setForm={setForm}
+        workspace={workspace}
+      />
     );
   }
 

@@ -59,7 +59,7 @@ export function SettingFormDialog({
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   saving: boolean;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   text: (key: UiTextKey) => string;
   workspace: WorkspaceSession | null;
 }) {
@@ -227,7 +227,7 @@ function UserFormSections({
   dictionary: BackendLanguageDictionary;
   form: FormState;
   language: LanguageCode;
-  setForm: (form: FormState) => void;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
   const fieldsByKey = new Map(config.fields.map((field) => [field.key, field]));
@@ -245,12 +245,12 @@ function UserFormSections({
       description: loginHint,
     },
     {
-      keys: ["role"],
+      keys: ["role", "permissionsets"],
       title: language === "th" ? "สิทธิ์ผู้ใช้งาน" : "User role",
       description:
         language === "th"
-          ? "กำหนดว่าผู้ใช้คนนี้ทำอะไรได้บ้างในกลุ่มกิจการนี้"
-          : "Set what this user can do in this business group.",
+          ? "เลือกระดับสิทธิ์ แล้วเพิ่มชุดสิทธิ์สำเร็จรูปได้หลายชุด (สร้างชุดที่ขั้น 3 ชุดสิทธิ์)"
+          : "Pick the access level, then add any number of reusable permission sets (managed in step 3).",
     },
     {
       keys: ["isaccessdisabled"],

@@ -98,6 +98,7 @@ import {
   BranchScopeSearchPicker,
   PortalDropdownList,
 } from "@/components/system-settings/field-editors/holding-scope-editor";
+import { PermissionSetsEditor } from "@/components/system-settings/field-editors/permission-sets-editor";
 import { ProductCategoryTreeView } from "./product-category-tree-view";
 import { ProductCategoryItemsEditor } from "./product-category-items-editor";
 import { ProductGroupTreeView } from "./product-group-tree-view";
@@ -4776,12 +4777,12 @@ function UserFormSections({
       description: loginHint,
     },
     {
-      keys: ["role"],
+      keys: ["role", "permissionsets"],
       title: language === "th" ? "สิทธิ์ผู้ใช้งาน" : "User role",
       description:
         language === "th"
-          ? "กำหนดว่าผู้ใช้คนนี้ทำอะไรได้บ้างในกลุ่มกิจการนี้"
-          : "Set what this user can do in this business group.",
+          ? "เลือกระดับสิทธิ์ แล้วเพิ่มชุดสิทธิ์สำเร็จรูปได้หลายชุด (สร้างชุดที่ขั้น 3 ชุดสิทธิ์)"
+          : "Pick the access level, then add any number of reusable permission sets (managed in step 3).",
     },
     {
       keys: ["isaccessdisabled"],
@@ -8675,6 +8676,20 @@ function FieldEditor({
         <span>{label}</span>
         <Input value={String(value ?? "")} readOnly disabled aria-readonly />
       </label>
+    );
+  }
+
+  if (config.slug === "user" && field.key === "permissionsets") {
+    return (
+      <PermissionSetsEditor
+        auth={auth}
+        dictionary={dictionary}
+        field={field}
+        form={form}
+        language={language}
+        setForm={setForm}
+        workspace={workspace}
+      />
     );
   }
 

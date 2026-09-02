@@ -158,6 +158,7 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		"linedisplayname":  req.LineDisplayName,
 		"linepictureurl":   req.LinePictureURL,
 		"accessscopes":     req.AccessScopes,
+		"permissionsets":   normalizePermissionSets(req.PermissionSets),
 	}
 
 	// เพิ่มข้อมูลการอนุมัติแยกตามประเภทเอกสาร
@@ -168,25 +169,41 @@ func (svc ShopUserRepository) SaveFullProfile(ctx context.Context, holdingCode s
 		updateData["quotationapproval"] = req.QuotationApproval
 	}
 
-	// Upsert keyed by the stable email username (one membership per user per holding).
-	// useruid is stored in updateData but NOT used as the match key: email-created memberships
-	// have an empty useruid until first login, and keying on useruid would create a duplicate
-	// row once login assigns a fresh uid.
-	filter := bson.M{"holdingcode": holdingCode, "username": req.Username}
-	if strings.TrimSpace(req.EditUsername) != "" {
-		filter = bson.M{"holdingcode": holdingCode, "username": req.EditUsername}
+	// Upsert keyed by the stable identity. username (usercode) when present —
+	// one membership per user per holding, and useruid is NOT the match key
+	// because email-created memberships carry an empty useruid until first
+	// login. Usercode-less members (Google-only, docs login.md) are keyed by
+	// the stable useruid instead, and no global login profile is synced.
+	var filter bson.M
+	if strings.TrimSpace(req.Username) != "" {
+		filter = bson.M{"holdingcode": holdingCode, "username": req.Username}
+		if strings.TrimSpace(req.EditUsername) != "" {
+			filter = bson.M{"holdingcode": holdingCode, "username": req.EditUsername}
+		}
+		if err := svc.saveUserLoginProfile(ctx, holdingCode, req); err != nil {
+			return err
+		}
+		if userUID == "" {
+			userUID = svc.lookupUserUID(ctx, req.Username)
+			updateData["useruid"] = userUID
+		}
+	} else {
+		filter = bson.M{"holdingcode": holdingCode, "useruid": userUID}
 	}
 
-	if err := svc.saveUserLoginProfile(ctx, req); err != nil {
-		return err
+	// Zero expiry means "no expiry": drop the field instead of writing the zero
+	// time — listing queries match accessexpirydate $exists:false OR > now, so a
+	// stored zero value would hide the membership from every listing.
+	if req.AccessExpiryDate.IsZero() {
+		delete(updateData, "accessexpirydate")
 	}
-	if userUID == "" {
-		userUID = svc.lookupUserUID(ctx, req.Username)
-		updateData["useruid"] = userUID
+	update := bson.M{"$set": updateData}
+	if req.AccessExpiryDate.IsZero() {
+		update["$unset"] = bson.M{"accessexpirydate": ""}
 	}
 
 	optUpdate := options.Update().SetUpsert(true)
-	return svc.pst.Update(ctx, &models.ShopUser{}, filter, bson.M{"$set": updateData}, optUpdate)
+	return svc.pst.Update(ctx, &models.ShopUser{}, filter, update, optUpdate)
 }
 
 func (svc ShopUserRepository) UpdateLineFields(ctx context.Context, holdingCode string, userUID string, lineUserID string, lineDisplayName string, linePictureURL string) error {
@@ -207,21 +224,35 @@ func (svc ShopUserRepository) UpdateLineFields(ctx context.Context, holdingCode 
 	}})
 }
 
-func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, req *models.UserRoleRequest) error {
+func (svc ShopUserRepository) saveUserLoginProfile(ctx context.Context, holdingCode string, req *models.UserRoleRequest) error {
 	username := strings.TrimSpace(req.Username)
 	if username == "" {
 		return errors.New("user identity is required")
 	}
-	lookupUsername := username
-	if editUsername := strings.TrimSpace(req.EditUsername); editUsername != "" {
-		lookupUsername = editUsername
-	}
-	if !strings.EqualFold(lookupUsername, username) {
-		return errors.New("global usercode cannot be changed by holding administration")
+
+	// Editing: verify the usercode is not being changed by holding administration.
+	// editusername may be the original usercode or, for legacy callers, the useruid.
+	editUsername := strings.TrimSpace(req.EditUsername)
+	if editUsername != "" {
+		var existingMembership models.ShopUser
+		err := svc.pst.FindOne(ctx, &models.ShopUser{}, bson.M{
+			"holdingcode": holdingCode,
+			"isdeleted":   bson.M{"$ne": true},
+			"$or": bson.A{
+				bson.M{"username": editUsername},
+				bson.M{"useruid": editUsername},
+			},
+		}, &existingMembership)
+		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+			return err
+		}
+		if existingMembership.Username != "" && !strings.EqualFold(existingMembership.Username, username) {
+			return errors.New("global usercode cannot be changed by holding administration")
+		}
 	}
 
 	existing := &models.UserDoc{}
-	if err := svc.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"username": lookupUsername}, existing); err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+	if err := svc.pst.FindOne(ctx, &models.UserDoc{}, bson.M{"username": username}, existing); err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
 	if existing.Username == "" || existing.UID == "" {
@@ -751,4 +782,23 @@ func (svc ShopUserRepository) lookupUserUID(ctx context.Context, username string
 		return ""
 	}
 	return userDoc.UID
+}
+
+// normalizePermissionSets upper-cases, trims and dedups permission set codes so
+// they always match role_permission.rolecode; never nil so the field is stored.
+func normalizePermissionSets(codes []string) []string {
+	out := make([]string, 0, len(codes))
+	seen := map[string]struct{}{}
+	for _, code := range codes {
+		code = strings.ToUpper(strings.TrimSpace(code))
+		if code == "" {
+			continue
+		}
+		if _, dup := seen[code]; dup {
+			continue
+		}
+		seen[code] = struct{}{}
+		out = append(out, code)
+	}
+	return out
 }

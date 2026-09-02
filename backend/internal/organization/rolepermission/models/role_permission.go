@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -11,6 +12,10 @@ import (
 )
 
 const collectionName = "role_permission"
+
+// A permission set code: USER/ADMIN/OWNER are the built-in sets; any other
+// code (ACCOUNTING, SALES, …) is a custom set a member can pick several of.
+var roleCodePattern = regexp.MustCompile(`^[A-Z0-9_-]{2,30}$`)
 
 type LocalizedName struct {
 	Code string `json:"code" bson:"code"`
@@ -46,10 +51,8 @@ type RolePermissionRequest struct {
 
 func NormalizeRequest(req *RolePermissionRequest) error {
 	req.RoleCode = strings.ToUpper(strings.TrimSpace(req.RoleCode))
-	switch req.RoleCode {
-	case "USER", "ADMIN", "OWNER":
-	default:
-		return errors.New("rolecode ต้องเป็น USER, ADMIN หรือ OWNER")
+	if !roleCodePattern.MatchString(req.RoleCode) {
+		return errors.New("rolecode ต้องเป็น A-Z 0-9 _ - ยาว 2-30 ตัว (เช่น USER, ADMIN, ACCOUNTING)")
 	}
 
 	seenNames := make(map[string]struct{}, len(req.Names))
