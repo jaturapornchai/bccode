@@ -1268,7 +1268,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <div
                     className="relative mb-4 h-24 w-full overflow-hidden rounded-2xl border border-border/60 shadow-sm sm:h-36 md:h-44"
                     style={{
-                      backgroundColor: "#812920",
+                      backgroundColor: "var(--primary)",
                       backgroundImage: `url(${bItem.banner})`,
                       backgroundSize: "auto 100%",
                       backgroundPosition: "right center",
@@ -1280,7 +1280,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       className="absolute inset-0"
                       style={{
                         background:
-                          "linear-gradient(to right, rgba(129,41,32,0.96) 0%, rgba(129,41,32,0.92) 28%, rgba(129,41,32,0.72) 52%, rgba(129,41,32,0.36) 76%, rgba(129,41,32,0.08) 92%, rgba(129,41,32,0) 100%)",
+                          "linear-gradient(to right, color-mix(in srgb, var(--primary) 96%, transparent) 0%, color-mix(in srgb, var(--primary) 92%, transparent) 28%, color-mix(in srgb, var(--primary) 72%, transparent) 52%, color-mix(in srgb, var(--primary) 36%, transparent) 76%, color-mix(in srgb, var(--primary) 8%, transparent) 92%, transparent 100%)",
                       }}
                     />
                     {/* Subtle vignette so the image edges blend instead of hard-fading */}
@@ -1292,14 +1292,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       }}
                     />
                     <div className="relative z-10 flex h-full items-center gap-3 px-5">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/25 text-lg font-black text-white ring-1 ring-white/50 backdrop-blur-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-foreground/25 text-lg font-black text-primary-foreground ring-1 ring-primary-foreground/50 backdrop-blur-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
                         {bIdx + 1}
                       </span>
                       <div className="min-w-0">
-                        <h3 className="text-xl font-black leading-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_6px_rgba(0,0,0,0.55)] sm:text-2xl">
+                        <h3 className="text-xl font-black leading-tight text-primary-foreground [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_6px_rgba(0,0,0,0.55)] sm:text-2xl">
                           {language === "th" ? bItem.label.th : bItem.label.en}
                         </h3>
-                        <p className="text-xs font-semibold text-white/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_5px_rgba(0,0,0,0.5)] sm:text-sm">
+                        <p className="text-xs font-semibold text-primary-foreground/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_5px_rgba(0,0,0,0.5)] sm:text-sm">
                           {language === "th" ? bItem.helper.th : bItem.helper.en}
                         </p>
                       </div>
@@ -1538,7 +1538,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               </div>
             ) : (
               <motion.div
-                className="flex flex-wrap gap-6 justify-center w-full py-2"
+                className="flex flex-col gap-3 max-w-3xl mx-auto w-full py-2"
                 variants={cardStaggerParent}
                 initial="initial"
                 animate="animate"
@@ -1563,56 +1563,51 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       disabled={busy}
                       onClick={() => void selectCompany(shop, company)}
                       variants={cardStaggerChild}
-                      className="group/company text-left relative w-full md:w-[calc(50%-12px)] lg:w-[350px] shrink-0 border border-border/80 rounded-2xl bg-card/85 backdrop-blur-md overflow-hidden shadow-md hover:shadow-xl hover:border-primary/40 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
+                      className="group/company text-left relative w-full flex items-center gap-4 border border-border/80 rounded-xl bg-card px-4 py-3 pl-5 hover:border-primary/50 hover:bg-accent/30 transition-all duration-200 cursor-pointer disabled:opacity-60"
                     >
-                      {/* Left color bar accent — amber for OWNER, primary for USER */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${isCreator ? "from-amber-500 to-amber-600" : "from-primary to-primary/80"}`} />
+                      {/* Left color bar accent — amber for OWNER/creator, primary for USER */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${isCreator ? "bg-amber-500" : "bg-primary/70"}`} />
 
-                      {/* Company Header */}
-                      <div className="flex flex-col p-4 pl-6">
-                        <div className="flex items-center gap-3">
-                          <LogoAvatar
-                            uri={company.logouri}
-                            auth={auth}
-                            alt={companyName}
-                            sizeClass="w-10 h-10 rounded-xl transition-transform duration-300 group-hover/company:scale-110 group-hover/company:rotate-3"
-                            className={isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <h3
-                              className="font-bold text-foreground text-sm sm:text-base tracking-tight break-words leading-snug group-hover/company:text-primary transition-colors duration-200"
-                              title={`${companyName}${companyCode ? ` · ${language === "th" ? "รหัส" : "Code"} ${companyCode}` : ""}`}
-                            >
-                              {companyName}
-                            </h3>
-                          </div>
-                        </div>
+                      <LogoAvatar
+                        uri={company.logouri}
+                        auth={auth}
+                        alt={companyName}
+                        sizeClass="w-11 h-11 rounded-lg shrink-0"
+                        className={isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}
+                      />
 
-                        <div className="flex flex-wrap items-center gap-1.5 mt-3 mb-1">
-                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded border uppercase shrink-0 ${
+                      <div className="min-w-0 flex-1">
+                        <h3
+                          className="font-bold text-foreground text-base tracking-tight break-words leading-snug group-hover/company:text-primary transition-colors duration-200"
+                          title={`${companyName}${companyCode ? ` · ${language === "th" ? "รหัส" : "Code"} ${companyCode}` : ""}`}
+                        >
+                          {companyName}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border uppercase shrink-0 ${
                             isCreator
                               ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20"
-                              : "bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/20"
+                              : "bg-primary/10 text-primary border-primary/20"
                           }`}>
                             {isCreator ? "OWNER" : "USER"}
                           </span>
                           {languageCodes.map((code) => (
-                            <span key={code} className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
+                            <span key={code} className="px-1.5 py-0.5 text-[10px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
                               {code}
                             </span>
                           ))}
                           {currencyLabel && (
-                            <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
+                            <span className="px-1.5 py-0.5 text-[10px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
                               {currencyLabel.split(" ")[0]}
                             </span>
                           )}
                         </div>
-                        {companyCode ? (
-                          <div className="flex justify-end mt-2 pt-2 border-t border-border/40">
-                            <span className="code-badge">{companyCode}</span>
-                          </div>
-                        ) : null}
                       </div>
+
+                      {companyCode ? (
+                        <span className="code-badge shrink-0">{companyCode}</span>
+                      ) : null}
+                      <ArrowRight className="shrink-0 h-5 w-5 text-muted-foreground group-hover/company:text-primary group-hover/company:translate-x-0.5 transition-all" aria-hidden="true" />
                     </motion.button>
                   );
                 })}

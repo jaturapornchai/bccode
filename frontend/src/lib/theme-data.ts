@@ -602,8 +602,12 @@ function paletteVars(seed: PaletteSeed, mode: ThemeMode): ThemeVars {
     "--secondary": seed.secondary,
     "--secondary-foreground": seed.secondaryForeground,
     "--shadow": isDark ? "0 24px 80px rgba(0, 0, 0, 0.42)" : `0 8px 24px ${colorMixAlpha(seed.primary, 0.12)}`,
-    "--shadow-card": isDark ? "0 4px 12px rgba(0, 0, 0, 0.28)" : `0 4px 12px ${colorMixAlpha(seed.primary, 0.08)}`,
-    "--shadow-popover": isDark ? "0 8px 24px rgba(0, 0, 0, 0.38)" : `0 8px 24px ${colorMixAlpha(seed.primary, 0.12)}`,
+    "--shadow-card": isDark
+      ? "0 1px 2px rgba(0, 0, 0, 0.2), 0 12px 32px -14px rgba(0, 0, 0, 0.5)"
+      : `0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -14px ${colorMixAlpha(seed.primary, 0.26)}`,
+    "--shadow-popover": isDark
+      ? "0 8px 24px rgba(0, 0, 0, 0.4), 0 28px 64px -24px rgba(0, 0, 0, 0.6)"
+      : `0 8px 24px rgba(0, 0, 0, 0.08), 0 28px 64px -24px ${colorMixAlpha(seed.primary, 0.3)}`,
     "--success": "#13795b",
     "--teal": seed.tertiary,
     "--text": seed.foreground,

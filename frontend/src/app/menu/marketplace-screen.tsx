@@ -722,7 +722,7 @@ export function MarketplaceMappingsScreen({ platform, embedded = false, language
                               <Badge className={cn(
                                 "text-[10px]",
                                 platform === "shopee" && "bg-[#ee4d2d]/10 text-[#ee4d2d] border-[#ee4d2d]/20",
-                                platform === "lazada" && "bg-[#101566]/10 text-[#101566] border-[#101566]/20",
+                                platform === "lazada" && "bg-[#101566]/10 text-[#101566] border-[#101566]/20 dark:bg-[#101566]/40 dark:text-[#aab0ff] dark:border-[#aab0ff]/30",
                                 platform === "tiktok" && "bg-black/5 text-black border-black/10 dark:bg-white/10 dark:text-white"
                               )}>
                                 {platformMap.holdingcode}

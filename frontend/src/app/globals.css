@@ -336,6 +336,13 @@ body {
   overflow-y: auto;
 }
 
+/* System-wide base scale: every screen sizes from this root value. The zoom
+   control displays the nominal zoom (default 100%) while the applied scale is
+   half of it — this rule is the default before the control mounts. */
+html {
+  font-size: 50%;
+}
+
 @media (min-width: 1024px) {
   html,
   body {
@@ -457,7 +464,8 @@ main.min-h-screen header.bg-card {
     var(--panel-strong);
   box-shadow: var(--shadow-card);
 }
-/* Duplicate base styles block removed */
+
+/* Duplicate base styles block removed */
 
 .bg-background {
   background-color: var(--bg);
@@ -791,7 +799,6 @@ h2:not([class]) {
   display: grid;
   place-items: center;
   padding: clamp(16px, 3vw, 32px) 0;
-  align-content: start;
 }
 
 .connection-error-banner {
@@ -868,12 +875,12 @@ h2:not([class]) {
 
 .login-card {
   width: 100%;
-  max-width: 460px;
+  max-width: 26rem;
   display: grid;
-  gap: 16px;
-  padding: clamp(18px, 3vw, 32px);
+  gap: 1rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
   border: 1px solid var(--login-form-border);
-  border-radius: 7px;
+  border-radius: 0.75rem;
   background:
     linear-gradient(180deg, var(--login-form-surface) 0%, color-mix(in srgb, var(--login-form-surface) 88%, var(--login-form-surface-subtle)) 100%),
     var(--panel);
@@ -885,10 +892,6 @@ h2:not([class]) {
 @media (min-width: 1600px) {
   .login-shell {
     grid-template-columns: minmax(0, 680px) minmax(400px, 480px);
-  }
-
-  .login-card {
-    max-width: 480px;
   }
 }
 
@@ -1377,7 +1380,7 @@ h2:not([class]) {
 }
 
 .language-choice.selected {
-  border-color: rgba(0, 137, 123, 0.35);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
   background: var(--action-bg);
   color: var(--action-text);
 }
@@ -2299,6 +2302,34 @@ h2:not([class]) {
   color: var(--text);
 }
 
+/* Leading/trailing icons and input padding scale with the text (em units) so
+   they never overlap at any UI zoom — fixed-px icons break once the root
+   font-size halves. These rules override Tailwind's !pl-10 / !pr-10. */
+.input-with-icon .input-leading-icon {
+  left: 0.75em;
+  width: 1.25em;
+  height: 1.25em;
+}
+.input-with-icon .input-trailing-icon {
+  right: 0.4em;
+  width: 2.2em;
+  height: 2.2em;
+}
+.input-with-icon .input-leading-icon svg,
+.input-with-icon .input-trailing-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.input-with-icon input {
+  padding-left: 2.6em !important;
+  padding-right: 0.75em;
+  min-height: 3.5em;
+}
+.input-with-icon input[type="password"],
+.input-with-icon input.has-trailing-control {
+  padding-right: 3.2em !important;
+}
+
 /* Premium primary button on top of shadcn Button: brand glow + lift.
    Applied together with shadcn <Button className="primary-button ...">. */
 .primary-button.primary-button,
@@ -2494,6 +2525,17 @@ h2:not([class]) {
 .holding-add-button {
   flex: 0 0 auto;
   white-space: nowrap;
+}
+
+/* Bottom add-row (2026-08-29): the CTA moved from the search row to the end
+   of the card — full-width like the login card's primary CTA. */
+.holding-add-row {
+  display: flex;
+  margin-top: 0.4rem;
+}
+.holding-add-row .holding-add-button {
+  flex: 1 1 auto;
+  width: 100%;
 }
 
 /* Holding create/edit modal — centered dialog with backdrop, not inline. */
@@ -3508,7 +3550,7 @@ h2:not([class]) {
 
 .checkbox-control.checked,
 .radio-option.selected {
-  border-color: rgba(0, 137, 123, 0.38);
+  border-color: color-mix(in srgb, var(--primary) 38%, transparent);
   background: var(--action-bg);
   color: var(--action-text);
 }
@@ -3648,7 +3690,7 @@ h2:not([class]) {
 }
 
 .provider-option.selected {
-  border-color: rgba(0, 137, 123, 0.38);
+  border-color: color-mix(in srgb, var(--primary) 38%, transparent);
   background: var(--action-bg);
   color: var(--action-text);
 }
@@ -3749,7 +3791,7 @@ h2:not([class]) {
   flex: 1 1 min(100%, 170px);
   max-width: 100%;
   padding: 0 8px;
-  border: 1px solid rgba(0, 137, 123, 0.22);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
   border-radius: 999px;
   background: var(--panel);
   color: var(--action-text);
@@ -4681,7 +4723,7 @@ h2:not([class]) {
 
 .menu-section-tabs button.active,
 .menu-section-tabs button:hover {
-  border-color: rgba(0, 137, 123, 0.35);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
   background: var(--action-bg);
   color: var(--action-text);
 }
@@ -4711,7 +4753,7 @@ h2:not([class]) {
 }
 
 .work-tab.active {
-  border-color: rgba(0, 137, 123, 0.35);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
   background: var(--action-bg);
   color: var(--action-text);
 }
@@ -5627,4 +5669,2531 @@ select:-webkit-autofill:active {
   -webkit-text-fill-color: var(--text) !important;
   transition: background-color 5000s ease-in-out 0s;
   background-color: transparent !important;
+}
+
+/* Login card readability at any scale: single-column credentials, buttons never
+   overflow the card, icons travel with the text (2026-08-28 login polish). */
+@media (min-width: 901px) {
+  .login-card .password-login-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .login-card .password-login-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+.login-card .password-login-section > .holding-code-field,
+.login-card .password-login-section > label.field-group[for="login-username"] {
+  grid-column: auto;
+}
+
+.login-card .social-login-grid {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.login-card .social-login-grid .social-login-button {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+}
+
+/* Login card header: icon controls compact and right-aligned on the narrow card. */
+.login-card .card-header {
+  row-gap: 0.5rem;
+}
+.login-card .card-header .language-dialog-trigger {
+  min-width: 0;
+  flex: 0 0 auto;
+  padding-inline: 0.6em;
+}
+.login-card .header-controls {
+  gap: 0.4rem;
+}
+.login-card .header-controls .header-control-button {
+  padding-inline: 0.7em;
+}
+
+/* High-resolution displays (2K+): the half-scale default leaves big screens
+   mostly empty. Step the root scale up progressively so content breathes.
+   The zoom control mirrors these exact factors when it applies zoom inline. */
+@media (min-width: 1600px) {
+  html {
+    font-size: 56.25%;
+  }
+}
+@media (min-width: 2200px) {
+  html {
+    font-size: 75%;
+  }
+
+  .login-shell {
+    grid-template-columns: minmax(0, 880px) minmax(480px, 560px);
+    gap: clamp(24px, 3vw, 48px);
+  }
+
+  .login-card {
+    max-width: 34rem;
+    padding: clamp(1.75rem, 2.5vw, 2.5rem);
+    gap: 1.25rem;
+  }
+
+  .brand-panel {
+    padding: clamp(28px, 3vw, 56px);
+  }
+
+  .brand-copy h1 {
+    font-size: clamp(2.4rem, 3vw, 4rem);
+  }
+
+  .brand-tagline {
+    font-size: 1.05rem;
+  }
+}
+
+/* ===== Login visual polish (design-pass 2026-08-28) — rem-based, scales with
+   the responsive root. Scoped to the login shell only. ===== */
+
+/* Connect the composition: shared ambient behind both panels + soft glow that
+   anchors the card instead of letting it float. */
+.form-panel {
+  position: relative;
+  background: radial-gradient(42rem 30rem at 70% 18%, color-mix(in srgb, var(--teal, #14b8a6) 7%, transparent), transparent 70%);
+}
+
+/* Crisper card surface: clean white, hairline border, one confident shadow. */
+.login-card {
+  background: color-mix(in srgb, #ffffff 96%, var(--teal, #14b8a6) 4%);
+  border: 1px solid color-mix(in srgb, #101828 10%, transparent);
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.05),
+    0 24px 48px -16px rgba(16, 24, 40, 0.22);
+}
+
+/* Heading hierarchy: quiet eyebrow, confident title. */
+.login-card .card-header .eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 1;
+}
+.login-card .card-header h2 {
+  font-size: 1.9rem;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+/* Uniform icon-button group on the card header. */
+.login-card .header-controls .header-control-button {
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, #101828 10%, transparent);
+  border-radius: 0.55rem;
+}
+
+/* Section headings: smaller, quieter, consistent bottom rule. */
+.login-card .auth-login-heading,
+.login-card .password-login-heading {
+  font-size: 0.95rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid color-mix(in srgb, #101828 8%, transparent);
+}
+.login-card .password-login-heading small {
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+/* Inputs: softer radius, clear focus ring. */
+.login-card .input-with-icon input {
+  border-radius: 0.55rem;
+}
+.login-card .input-with-icon input:focus-visible {
+  border-color: var(--teal, #14b8a6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal, #14b8a6) 18%, transparent);
+}
+
+/* Primary CTA: solid brand teal, one weight, gentle lift. */
+.login-card .primary-button {
+  background: var(--teal, #0f9d8f);
+  color: #ffffff;
+  font-weight: 800;
+  border-radius: 0.65rem;
+  min-height: 3rem;
+}
+.login-card .primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Left panel: calmer feature cards, consistent padding + radius. */
+.brand-feature-card {
+  padding: 0.8rem 1rem;
+  border-radius: 0.65rem;
+  border-color: color-mix(in srgb, var(--teal, #14b8a6) 16%, transparent);
+}
+.brand-feature-card strong {
+  font-weight: 700;
+}
+.brand-feature-card svg {
+  color: var(--teal, #14b8a6);
+}
+
+/* Status strip reads as a success chip. */
+.brand-status-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #059669 25%, transparent);
+  background: color-mix(in srgb, #10b981 12%, transparent);
+  font-weight: 700;
+}
+
+/* Design-pass fixes round 2 (vision review 8/10 -> target 9+). */
+.login-card .primary-button {
+  background: #0e7f74; /* darker teal: white text now ~4.6:1 */
+}
+.brand-status-strip {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: rgba(6, 95, 70, 0.35);
+}
+.brand-feature-grid {
+  margin-top: 1rem;
+}
+@media (min-width: 2200px) {
+  .login-card {
+    max-width: 36rem;
+  }
+}
+
+/* Fluid system scale (final): one continuous formula from viewport width —
+   8px at <=1280px up to 12px at >=2560px. Replaces the stepped media-query
+   tiers above so every browser renders identically at the same viewport
+   (no jumps between ZCode's pane and a real maximized browser). */
+html {
+  font-size: clamp(8px, calc(0.3125vw + 4px), 12px);
+}
+
+/* Fully fluid layout (auto across monitors): replaces the stepped >=2200px
+   layout block so dragging the window between differently sized screens glides
+   with no jumps. Guarded to >=901px so the <=900px single-column stack still
+   wins. Font scale is the fluid clamp rule above. */
+@media (min-width: 901px) {
+  .login-shell {
+    grid-template-columns: minmax(0, clamp(620px, 34vw, 880px)) minmax(clamp(360px, 22vw, 560px), 560px);
+    gap: clamp(12px, 2vw, 48px);
+  }
+
+  .login-card {
+    max-width: clamp(26rem, 23vw, 36rem);
+    padding: clamp(1.25rem, 2.2vw, 2.5rem);
+    gap: clamp(1rem, 1.2vw, 1.25rem);
+  }
+
+  .brand-panel {
+    padding: clamp(18px, 3vw, 56px);
+  }
+
+  .brand-copy h1 {
+    font-size: clamp(1.9rem, 2.6vw, 4rem);
+  }
+
+  .brand-tagline {
+    font-size: clamp(0.95rem, 0.8vw, 1.05rem);
+  }
+}
+
+/* System scale ×1.5 (2026-08-29): ผู้ใช้กำหนด "ทั้งระบบ 100% = 150%" — nominal 100%
+   ตอนนี้เท่ากับของเดิม 150% (15/18/21px ที่ 1280/1920/2560) ยกเว้นหน้า login ที่
+   อนุมัติขนาดไปแล้ว (ดู exempt ด้านล่าง) Keep in sync with zoom-control.tsx
+   applyUiZoom. */
+html {
+  font-size: clamp(15px, calc(0.46875vw + 9px), 21px);
+}
+
+/* หน้า login คงสเกลเดิมเป๊ะ (10/12/14px): LoginWrapper ตั้ง data-login-scale บน
+   <html> ตอน mount และถอดตอน unmount — !important ชนะ inline style ที่
+   zoom-control เคยตั้งค้างไว้ตอน SPA navigation จาก /menu ด้วย */
+html[data-login-scale="1"] {
+  font-size: clamp(10px, calc(0.3125vw + 6px), 14px) !important;
+}
+
+/* ===== Holding page: balanced split (2026-08-29) =====
+   /holding uses the login shell but its brand panel carries less content
+   (no feature cards/status strip), so the login 78/22 split read as lopsided
+   with the functional card squeezed into a 560px rail. Widen the form column
+   for this page only (~34vw, capped 800px) so the card grid breathes and the
+   two sides balance. Root scale for this page is pinned to the login ladder
+   by holding-screen's data-login-scale effect (same as /login). */
+@media (min-width: 1024px) {
+  .login-shell.holding-shell {
+    /* Definite clamp track (not minmax): the form column is exactly 34vw
+       capped 800px at every size — minmax let content push it to the cap even
+       on narrow screens, flipping the split form-heavy at 1280. */
+    grid-template-columns: minmax(0, 1fr) clamp(520px, 34vw, 800px);
+  }
+}
+
+/* ===== Baseline system (vertical rhythm) =====
+   Grid unit: --baseline = 0.25rem → scales with the fluid root, so rhythm is
+   identical on every monitor. Rule: every line-height and vertical spacing is
+   an integer multiple of the unit (4 / 8 / 12 / 16...). */
+:root {
+  --baseline: 0.25rem;
+  --space-1: calc(var(--baseline) * 1);  /*  4px @16 */
+  --space-2: calc(var(--baseline) * 2);  /*  8px */
+  --space-3: calc(var(--baseline) * 3);  /* 12px */
+  --space-4: calc(var(--baseline) * 4);  /* 16px */
+  --space-5: calc(var(--baseline) * 5);  /* 20px */
+  --space-6: calc(var(--baseline) * 6);  /* 24px */
+  --leading-tight: calc(var(--baseline) * 5);   /* 1.25 */
+  --leading-normal: calc(var(--baseline) * 6);  /* 1.5  */
+}
+
+/* Login shell rolls out the baseline first (other screens adopt gradually):
+   text sits on the grid; card rhythm already uses rem multiples. */
+.login-card,
+.brand-panel {
+  line-height: var(--leading-normal);
+}
+.login-card h1,
+.login-card h2,
+.login-card h3,
+.brand-copy h1 {
+  /* Thai script stacks vowels/tone marks above and below the line — Latin
+     tight leading (1.25) collides with the next line. Thai needs >= 1.45. */
+  line-height: 1.45;
+  margin-block: 0.2em 0.3em;
+}
+.login-card .field-group > span,
+.login-card .field-help,
+.login-card .password-login-heading small {
+  line-height: 1.4;
+}
+.login-card .input-with-icon input {
+  line-height: var(--leading-tight);
+}
+.login-card {
+  gap: var(--space-4);
+}
+.login-card .field-group {
+  gap: var(--space-2);
+}
+.login-card .auth-login-heading,
+.login-card .password-login-heading {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+.login-card .social-login-grid {
+  gap: var(--space-2);
+}
+.brand-feature-grid {
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* ===== Uniform controls + tight spacing (login, 2026-08-28) =====
+   The Google button is drawn inside Google's iframe at a FIXED 40px height —
+   it cannot scale with the root. So every login control locks to the same
+   px metrics for pixel-identical buttons at any zoom: 40px tall, 6px radius,
+   14px/600 text. Geometry identical; only fill differs (outline vs teal). */
+.login-card .gis-button-host,
+.login-card .dev-login-button,
+.login-card .primary-button {
+  height: 40px;
+  min-height: 40px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.login-card .gis-button-host,
+.login-card .dev-login-button {
+  border: 1px solid #dadce0;
+  background: #ffffff;
+  color: #3c4043;
+}
+.login-card .dev-login-button:hover:not(:disabled) {
+  background: #f6f8fa;
+  transform: none;
+}
+.login-card .primary-button {
+  transform: none;
+}
+.login-card .primary-button:hover:not(:disabled) {
+  transform: none;
+  filter: brightness(1.04);
+}
+.login-card .input-with-icon input {
+  height: 40px;
+  min-height: 40px;
+  border-radius: 6px;
+}
+
+/* Tighter rhythm: less air, same grid. */
+.login-card {
+  padding: clamp(1rem, 1.6vw, 1.5rem);
+  gap: var(--space-3);
+}
+.login-card .card-header {
+  gap: var(--space-3);
+  margin-bottom: 0;
+}
+.login-card .auth-login-heading,
+.login-card .password-login-heading {
+  padding-bottom: var(--space-2);
+  margin-bottom: 0;
+}
+.login-card .field-group {
+  gap: var(--space-2);
+}
+.login-card .form-row {
+  gap: var(--space-2);
+  margin: 0;
+}
+.login-card .social-login-grid {
+  gap: var(--space-2);
+}
+.login-card .first-use-note {
+  padding: var(--space-2) var(--space-3);
+}
+.brand-panel {
+  padding: clamp(16px, 2vw, 40px);
+}
+.brand-feature-card {
+  padding: 0.6rem 0.85rem;
+}
+.login-shell {
+  gap: clamp(12px, 1.6vw, 32px);
+}
+
+/* ===== Density pass (system-wide): maximize data per screen. =====
+   Less chrome, text fills its box. Uses the baseline vars so it tracks the
+   fluid scale on every monitor. */
+table {
+  border-collapse: collapse;
+}
+table th,
+table td {
+  padding: 0.45em 0.7em;
+  line-height: 1.35;
+}
+thead th {
+  font-weight: 800;
+}
+.field-group {
+  gap: var(--space-2);
+}
+.field-group > span {
+  line-height: var(--leading-tight);
+}
+input,
+select,
+textarea {
+  min-height: 2.6em;
+}
+button {
+  line-height: 1.2;
+}
+p,
+small,
+label,
+span {
+  text-wrap: pretty;
+}
+/* Tree/section cards in workspace sidebars: tighter inner air. */
+[role="treeitem"],
+[role="tree"] button {
+  min-height: 2.4em;
+}
+
+/* ===== Menu chrome uniformity (2026-08-28): one control height, tight rows ===== */
+
+/* Top toolbar: every control 36px tall (kills the 42px font-toggle + h-auto email chip). */
+.header-controls .font-toggle {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  flex: 0 0 36px !important;
+}
+.header-controls .font-toggle .font-toggle-chev {
+  display: none;
+}
+.header-controls .header-control-button,
+.header-controls .language-dialog-trigger,
+.header-controls .theme-palette-toggle,
+.header-controls .icon-button {
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+.header-controls .zoom-control {
+  height: 36px;
+  min-height: 36px;
+  padding: 1px;
+}
+.header-controls .zoom-control .zoom-control-button,
+.header-controls .zoom-control .zoom-control-trigger {
+  height: 32px;
+  min-height: 32px;
+}
+
+/* Email/workspace chip: single line, ellipsis, same 36px height. */
+.header-controls button[class*="min-h-8"] {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-width: 18rem;
+}
+.header-controls button[class*="min-h-8"] span[class*="whitespace-normal"] {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Work tabs: tighter strip, thinner route line. */
+.work-tab {
+  min-height: 34px;
+}
+.work-tab-button {
+  padding: 3px 8px;
+  line-height: 1.15;
+}
+.work-tab-button small,
+.work-tab-button .text-muted-foreground {
+  font-size: 0.66rem;
+  line-height: 1.1;
+}
+
+/* Product list header/rows: tighter vertical rhythm. */
+.bc-list-header {
+  padding: 3px 8px;
+  line-height: 1.25;
+  border-bottom-width: 1px;
+}
+.bc-list-row {
+  padding: 2px 8px;
+  line-height: 1.3;
+}
+
+/* Toolbar height: EVERY control in the menu toolbar is exactly 36px.
+   Blanket rule so nothing escapes (bell, history pill, pickers, email chip,
+   zoom control and its inner buttons). */
+.header-controls button,
+.header-controls a,
+.header-controls .zoom-control,
+[class*="ml-auto"][class*="flex-wrap"] button.h-8 {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  box-sizing: border-box;
+}
+.header-controls .zoom-control .zoom-control-button,
+.header-controls .zoom-control .zoom-control-trigger {
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+}
+[class*="ml-auto"][class*="flex-wrap"] {
+  align-items: center;
+}
+
+/* Toolbar row (menu): force EVERY button in the row that contains the zoom
+   control to one uniform 36px — includes bell, history pill, pickers, email
+   chip. Uses :has() so no per-button class needs to be known. */
+div[class*="ml-auto"]:has(.zoom-control) button {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+div[class*="ml-auto"]:has(.zoom-control) .zoom-control {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+}
+div[class*="ml-auto"]:has(.zoom-control) .zoom-control .zoom-control-button,
+div[class*="ml-auto"]:has(.zoom-control) .zoom-control .zoom-control-trigger {
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+}
+div[class*="ml-auto"]:has(.zoom-control) button[class*="min-h-8"] span[class*="whitespace-normal"] {
+  white-space: nowrap;
+}
+
+/* ===== Global density via Tailwind utilities (system-wide) =====
+   Every padding utility renders one step tighter so screens show more data.
+   Exact-token attribute selectors only — responsive variants (md:p-3) and the
+   login card's own padding are untouched. */
+[class~="p-6"],
+[class~="p-5"] {
+  padding: 1rem !important;
+}
+[class~="p-4"] {
+  padding: 0.8rem !important;
+}
+[class~="p-3"] {
+  padding: 0.65rem !important;
+}
+[class~="px-4"],
+[class~="px-5"] {
+  padding-left: 0.85rem !important;
+  padding-right: 0.85rem !important;
+}
+[class~="px-3"] {
+  padding-left: 0.7rem !important;
+  padding-right: 0.7rem !important;
+}
+[class~="py-3"],
+[class~="py-4"] {
+  padding-top: 0.6rem !important;
+  padding-bottom: 0.6rem !important;
+}
+[class~="py-2"] {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+}
+[class~="rounded-2xl"] {
+  border-radius: 0.9rem !important;
+}
+
+/* Login card 2K: tighter section rhythm + Google button fills exactly like the others. */
+@media (min-width: 2200px) {
+  .login-card {
+    gap: 0.7rem;
+  }
+  .login-card .auth-login-heading,
+  .login-card .password-login-heading {
+    padding-bottom: 0.5rem;
+  }
+  .login-card .password-login-section {
+    padding-top: 0.4rem;
+    gap: 0.7rem;
+  }
+  .login-card .card-header {
+    margin-bottom: 0;
+  }
+}
+.login-card .gis-button-host {
+  width: 100%;
+}
+.login-card .gis-button-host iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* ===== .field-group uniform density (2026-08-28) =====
+   Label hugs its input (1 baseline unit), no stray margins — the parent
+   container owns the rhythm. Applies system-wide. */
+.field-group {
+  gap: var(--space-1);
+  margin: 0;
+}
+.field-group > span {
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+.field-group > .input-with-icon input,
+.field-group > input {
+  width: 100%;
+}
+.login-card .field-group {
+  gap: var(--space-1);
+}
+
+/* GIS (Google button) fills the card width exactly like the sibling buttons —
+   Google renders its own fixed-width wrapper div + iframe inside the host. */
+.login-card .gis-button-host > div,
+.login-card .gis-button-host iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Custom Google button face: our styled content is visible; the GIS-drawn
+   button/iframe stays stretched and transparent on top as the real
+   click-catcher (its own drawn hover doesn't fill stretched frames). */
+.google-login.gis-button-host {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  color: #3c4043;
+}
+.google-login.gis-button-host:hover {
+  background: #f6f8fa;
+}
+.google-login.gis-button-host .google-face {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  pointer-events: none;
+}
+.google-login.gis-button-host .google-face svg {
+  flex: 0 0 auto;
+}
+.google-login.gis-button-host > *:not(.google-face) {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+/* GIS custom-button pattern: our face is visible; the GIS host (wrapper + iframe
+   that Google injects) is a transparent full-size click-catcher above it. */
+.google-login.gis-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.google-login.gis-wrap:hover {
+  border-color: color-mix(in srgb, var(--primary) 48%, var(--line));
+  background: #f6f8fa;
+  color: var(--primary);
+  box-shadow: var(--login-form-shadow-hover);
+}
+.google-login.gis-wrap .google-face {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  pointer-events: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+  white-space: nowrap;
+}
+.google-login.gis-wrap .gis-button-host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.google-login.gis-wrap .gis-button-host > div,
+.google-login.gis-wrap .gis-button-host iframe {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  opacity: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+/* ===== Global vertical padding reduction (2026-08-28) =====
+   Less top/bottom air system-wide so screens show more data. Horizontal
+   padding is untouched (keeps line lengths readable). */
+[class~="pt-4"], [class~="pt-5"], [class~="pt-6"] {
+  padding-top: 0.6rem !important;
+}
+[class~="pb-4"], [class~="pb-5"], [class~="pb-6"] {
+  padding-bottom: 0.6rem !important;
+}
+[class~="py-3"], [class~="py-4"], [class~="py-5"] {
+  padding-top: 0.6rem !important;
+  padding-bottom: 0.6rem !important;
+}
+[class~="p-4"], [class~="p-5"] {
+  padding-top: 0.6rem !important;
+  padding-bottom: 0.6rem !important;
+}
+[class~="pt-2"] {
+  padding-top: 0.35rem !important;
+}
+[class~="pb-2"] {
+  padding-bottom: 0.35rem !important;
+}
+
+/* ===== Density round 3 (2026-08-28): squeeze form sections further ===== */
+.login-card {
+  gap: 0.55rem;
+  padding: 0.9rem 1.1rem;
+}
+.login-card .field-group {
+  gap: 0.125rem;
+}
+.login-card .field-help {
+  margin-top: 0.1rem;
+}
+.login-card .auth-login-heading,
+.login-card .password-login-heading {
+  padding-bottom: 0.3rem;
+}
+.login-card .auth-login-section,
+.login-card .password-login-section {
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+.login-card .form-row {
+  margin: 0;
+  padding: 0;
+}
+.login-card .first-use-note {
+  padding: 0.3rem 0.5rem;
+}
+.login-card .card-header {
+  margin-bottom: 0;
+  padding-bottom: 0.2rem;
+}
+
+/* Global: gap utilities tighter too (matches the padding pass). */
+[class~="gap-3"] { gap: 0.45rem !important; }
+[class~="gap-4"] { gap: 0.55rem !important; }
+[class~="space-y-3"] > :not([hidden]) ~ :not([hidden]) { margin-top: 0.45rem !important; }
+[class~="space-y-4"] > :not([hidden]) ~ :not([hidden]) { margin-top: 0.55rem !important; }
+[class~="mb-3"], [class~="mb-4"] { margin-bottom: 0.4rem !important; }
+[class~="mt-3"], [class~="mt-4"] { margin-top: 0.4rem !important; }
+
+/* ===== Density round 4: controls 36px + slimmer icons (2026-08-28) =====
+   The 40px lock existed to match Google's iframe — the visible Google face
+   is our own CSS now, so the whole control set drops to 36px. Icons hug the
+   edge and shrink slightly, giving text more room. */
+.login-card .gis-button-host,
+.login-card .dev-login-button,
+.login-card .primary-button {
+  height: 36px;
+  min-height: 36px;
+}
+.login-card .gis-wrap {
+  min-height: 36px;
+}
+.login-card .input-with-icon input {
+  height: 36px;
+  min-height: 36px;
+}
+.input-with-icon .input-leading-icon {
+  left: 0.55em;
+  width: 1.1em;
+  height: 1.1em;
+}
+.input-with-icon input {
+  padding-left: 2.05em !important;
+}
+.input-with-icon .input-trailing-icon {
+  width: 2em;
+  height: 2em;
+}
+
+/* ===== Menu top chrome: uniform text metrics + baseline (2026-08-29) =====
+   One font-size/line-height for every control in the toolbar row (buttons,
+   search, zoom label, email chip) so text sits on the same baseline;
+   breadcrumb cells center vertically; eyebrow labels readable but subordinate. */
+.menu-top-chrome button,
+.menu-top-chrome .zoom-control-trigger,
+.menu-top-chrome input,
+.menu-top-chrome [class*="min-h-8"] span {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.menu-top-chrome [class*="text-[9px]"] {
+  font-size: 0.68rem;
+  line-height: 1.4;
+  padding-top: 0;
+}
+.menu-top-chrome [class*="grid-cols-[16px"] {
+  align-items: center;
+}
+.menu-top-chrome [class*="grid-cols-[16px"] svg {
+  margin-top: 0;
+}
+
+/* ===== Global button system (2026-08-29): one CSS for every button =====
+   Geometry identical across all variants (height/radius/font/weight/gap);
+   variants differ ONLY in color & fill. Applies system-wide so every screen
+   renders the same buttons. */
+button[class*="rounded-lg"],
+button[class*="h-8"],
+button[class*="h-9"],
+.header-control-button,
+.icon-button,
+.zoom-control-trigger,
+.zoom-control-button {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  border-radius: 6px;
+  padding-inline: 0.7em;
+  gap: 0.45em;
+}
+/* Square icon-only buttons stay square. */
+button[class*="w-8"],
+button[class*="w-9"] {
+  padding: 0;
+  width: 36px;
+  min-width: 36px;
+}
+/* Login card keeps its own 36px set already; GIS face unaffected. */
+
+/* Two-tier button system — navigation rows share the SAME text/radius language
+   as action buttons but sit at 30px (density); every button one font-size. */
+.menu-top-chrome [class*="ml-auto"]:has(.zoom-control) .zoom-control .zoom-control-button,
+.menu-top-chrome [class*="ml-auto"]:has(.zoom-control) .zoom-control .zoom-control-trigger {
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  font-size: 0.8rem;
+}
+button[class*="rounded-2xl"][class*="w-full"] {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.work-tab-button {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.work-tab-button small {
+  font-size: 0.66rem;
+}
+
+/* Beat Tailwind's text-xs! (important) on sidebar section/tree rows so every
+   button shares the one 0.8rem text language of the two-tier system. */
+button[class*="rounded-2xl"][class*="w-full"],
+[role="treeitem"] > div > button,
+[role="tree"] button {
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+
+/* Max-specificity override: sidebar section/tree rows join the 0.8rem text
+   language (Tailwind text-xs! loses to html body + double attr + important). */
+html body button[class*="rounded-2xl"][class*="w-full"],
+html body [role="treeitem"] button,
+html body [role="tree"] button {
+  font-size: 0.8rem !important;
+}
+
+/* Final two outliers join the uniform text language. */
+.header-controls .language-dialog-trigger,
+.work-tab button {
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+.work-tab button small {
+  font-size: 0.66rem !important;
+}
+
+/* Work-tab strip buttons (the draggable tab pills) join the text language too. */
+[class*="cursor-grab"] > button {
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+
+/* ===== Icon-height text pairing + baseline (2026-08-29) =====
+   Buttons with icons: the label's x-height matches the icon box (1em icon →
+   0.8rem text scales proportionally at every viewport), and icon+text sit on
+   one baseline via flex align-items: first baseline. Global for all buttons. */
+button[class*="rounded-lg"] svg,
+button[class*="h-8"] svg,
+button[class*="h-9"] svg,
+.header-control-button svg,
+.icon-button svg,
+.menu-top-chrome button svg {
+  width: 1em;
+  height: 1em;
+}
+.menu-top-chrome button,
+.header-controls button,
+.header-control-button,
+.icon-button {
+  align-items: first baseline;
+}
+.menu-top-chrome button svg,
+.header-controls button svg,
+.header-control-button svg,
+.icon-button svg {
+  align-self: center;
+  flex: 0 0 auto;
+}
+/* Thai text needs the room; keep 0.8rem but allow the label to optically
+   match the 1em icon by nudging line-height to the icon box. */
+.menu-top-chrome button span,
+.header-controls button span {
+  line-height: 1.4;
+}
+
+/* Icon-only buttons keep a confident glyph (1.25em) — only text-paired buttons
+   use the 1em pairing. Fixes the over-shrink from the previous pass. */
+button[class*="w-8"] svg,
+button[class*="w-9"] svg,
+.icon-button svg,
+.header-control-button svg,
+button[class*="rounded-lg"]:not(:has(span:not([hidden]))) svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+/* Search input leading icon pairs with its text (1em) — keep proportional. */
+.menu-top-chrome label svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* Fix icon jump: center everything in buttons (first-baseline misplaces icons
+   in text-less buttons). Uniform line-height keeps text on the same visual
+   baseline across the row. */
+.menu-top-chrome button,
+.header-controls button,
+.header-control-button,
+.icon-button,
+button[class*="rounded-lg"],
+button[class*="h-8"],
+button[class*="h-9"] {
+  align-items: center !important;
+}
+.menu-top-chrome button svg,
+.header-controls button svg,
+.header-control-button svg,
+.icon-button svg {
+  align-self: auto;
+  margin-top: 0 !important;
+}
+
+/* ===== Content cards breathe again (2026-08-29) =====
+   Density passes target CHROME (toolbars/nav). Content cards — company and
+   branch selectors on /workspace — get reading room back: real padding,
+   comfortable line-height, healthy gaps. */
+[class*="group/company"] {
+  padding: 1rem 1.1rem !important;
+  gap: 0.75rem !important;
+}
+[class*="group/company"] p,
+[class*="group/company"] span,
+[class*="group/company"] small {
+  line-height: 1.5 !important;
+}
+[class*="group/branch"] {
+  padding: 0.9rem 1rem !important;
+  gap: 0.7rem !important;
+}
+[class*="group/branch"] strong,
+[class*="group/branch"] span,
+[class*="group/branch"] div {
+  line-height: 1.45 !important;
+}
+/* Badge chips inside cards keep a little air. */
+[class*="group/company"] [class*="rounded-full"],
+[class*="group/branch"] [class*="rounded-full"] {
+  padding: 0.25em 0.7em;
+  margin-block: 0.15em;
+}
+
+/* ===== Settings wizard sidebar: wrap instead of truncate (2026-08-29) =====
+   Long Thai labels wrap to a second line with Thai-safe leading instead of
+   being clipped with an ellipsis. */
+aside[class*="md:w-60"] [class*="truncate"] {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.45 !important;
+  overflow-wrap: anywhere;
+}
+/* Keep the two-line rhythm tidy when a label wraps. */
+aside[class*="md:w-60"] button {
+  min-height: 2.6em;
+  align-items: flex-start !important;
+  padding-block: 0.5em;
+}
+
+/* ===== Wizard sidebar steps: Thai-safe leading + helper spacing (2026-08-29) =====
+   Step label + helper text were colliding (leading-tight 1.25 + zero gap).
+   Thai stacked marks need >= 1.45; helper gets its own air. */
+aside[class*="md:w-60"] button {
+  padding-block: 0.55em;
+  min-height: 2.8em;
+}
+aside[class*="md:w-60"] button span[class*="leading-tight"] {
+  line-height: 1.45 !important;
+}
+aside[class*="md:w-60"] button span[class*="text-[10px]"] {
+  margin-top: 0.25em;
+  line-height: 1.35 !important;
+}
+
+/* ===== Login redesign v2 (2026-08-29): cinematic hero + refined card ===== */
+
+/* Hero: dark cinematic gradient over the photo, white type */
+.brand-hero {
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(8, 24, 40, 0.82) 0%, rgba(13, 59, 66, 0.68) 55%, rgba(20, 108, 108, 0.42) 100%);
+  box-shadow: 0 24px 64px -24px rgba(4, 20, 27, 0.55);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+}
+.brand-copy,
+.brand-copy p,
+.brand-copy strong {
+  color: #f4fafb;
+}
+.brand-copy h1 {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 24px rgba(4, 20, 27, 0.45);
+}
+.brand-copy .eyebrow,
+.brand-eyebrow-line {
+  color: #7dd8cc !important;
+  opacity: 1;
+}
+.brand-tagline {
+  color: rgba(244, 250, 251, 0.82) !important;
+}
+.brand-status-strip {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #eafcf8;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.brand-feature-card {
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.brand-feature-card strong,
+.brand-feature-card div {
+  color: #f4fafb;
+}
+.brand-feature-card p {
+  color: rgba(244, 250, 251, 0.75);
+}
+.brand-feature-card > svg {
+  color: #5fd4c4;
+}
+
+/* Card: clean white, confident radius + shadow, tighter title */
+.login-card {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(16, 24, 40, 0.06);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.05),
+    0 24px 56px -20px rgba(16, 24, 40, 0.25);
+  gap: 1.05rem;
+}
+.login-card h2 {
+  font-size: 1.65rem;
+  letter-spacing: -0.02em;
+}
+
+/* Card-header icon buttons: quiet ghost squares */
+.login-card .header-controls .icon-button,
+.login-card .header-controls .header-control-button,
+.login-card .header-controls .language-dialog-trigger,
+.login-card .header-controls .theme-palette-toggle {
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  border-radius: 0.6rem;
+}
+
+/* Inputs: crisper radius + teal focus ring */
+.login-card .input-with-icon input {
+  border-radius: 0.6rem;
+}
+.login-card .input-with-icon input:focus-visible {
+  border-color: var(--teal, #14b8a6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal, #14b8a6) 18%, transparent);
+}
+
+/* Primary CTA: solid brand teal, one confident weight */
+.login-card .primary-button {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0.65rem;
+  min-height: 3rem;
+  box-shadow: 0 8px 20px -8px rgba(13, 148, 136, 0.55);
+}
+.login-card .primary-button:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -8px rgba(13, 148, 136, 0.6);
+}
+
+/* Hero companions: dark glass so they read on the bright photo. */
+.brand-feature-card {
+  background: rgba(8, 24, 40, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.brand-feature-card:hover {
+  background: rgba(8, 24, 40, 0.68);
+}
+.brand-feature-card strong,
+.brand-feature-card div {
+  color: #f4fafb;
+}
+.brand-feature-card p {
+  color: rgba(244, 250, 251, 0.78);
+}
+.brand-status-strip {
+  background: rgba(8, 24, 40, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #7dd8cc;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.brand-status-strip * {
+  color: #7dd8cc;
+}
+.brand-badge-row .eyebrow,
+.brand-badge-row div {
+  color: #0b1720;
+}
+
+/* ===== Login full-viewport layout (2026-08-29): เต็มจอ =====
+   Before: the shell centered a ~1.3–1.6kpx strip (fixed column clamps +
+   justify-content: center), leaving ~320px dead margin per side at 1920 and
+   ~500px at 2560. Now: true split-screen — the hero panel is full-bleed (1fr,
+   no shell padding, square corners) and both panels span the full viewport
+   height; the form column keeps a readable clamp width on the right. Hero
+   copy/features anchor to one content column so ultrawide panels don't
+   stretch text edge-to-edge. Scoped >=1024px: 768–1023 portrait keeps the
+   single-column card layout (brand panel is hidden there). */
+@media (min-width: 1024px) {
+  .login-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(clamp(400px, 28vw, 560px), 560px);
+    gap: 0;
+    padding: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .brand-panel {
+    min-height: 100vh;
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    padding: clamp(24px, 3.5vw, 64px);
+  }
+
+  /* One content column inside the now full-bleed hero (left-anchored).
+     Expanded to 100% (2026-08-29): the hero box and feature cards span the
+     full panel interior (padding is the only inset) — the user asked for
+     "ขนาด 100%" after the capped box still left a photo strip on the right.
+     Copy stays left-anchored; the wide glass reads as a banner. */
+  .brand-hero,
+  .brand-feature-grid,
+  .brand-status-strip {
+    max-width: 100%;
+  }
+  .brand-hero {
+    padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.75rem, 3.5vw, 3.5rem);
+  }
+
+  .brand-copy {
+    max-width: 100%;
+  }
+  .brand-copy p:last-child {
+    max-width: min(100%, 680px);
+  }
+
+  .form-panel {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: clamp(16px, 2.5vw, 48px);
+  }
+
+  .login-card {
+    /* max-height<=820 short screens set align-self:start (old top-hug layout) —
+       the full-viewport design centers the card vertically at every height. */
+    align-self: center;
+    /* Expanded: fill the form column (padding provides the edge guard) instead
+       of the old narrow vw-capped card that left ~125px of bare background per
+       side at 1280. */
+    max-width: min(100%, 44rem);
+  }
+
+  .connection-error-banner {
+    max-width: 44rem;
+  }
+}
+
+/* 901–1023px repair: the portrait block (768–1023) hides the brand panel and
+   wants ONE column, but the fluid >=901 block still reserved a second grid
+   track — the form shrank to ~525px with a phantom column beside it. Collapse
+   back to a single full-width column. */
+@media (min-width: 901px) and (max-width: 1023px) {
+  .login-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ===== Login text contrast on photo backgrounds (2026-08-29) =====
+   Rule: every word sits on an opaque-enough surface — semi-transparent glass
+   over a bright photo washes text out. Raise glass opacity + text alpha so
+   Thai copy stays readable at every viewport; the badge row (dark text with
+   NO backing) gets its own light glass chip. */
+.brand-hero {
+  background: linear-gradient(135deg, rgba(8, 24, 40, 0.9) 0%, rgba(13, 59, 66, 0.8) 55%, rgba(20, 108, 108, 0.64) 100%);
+}
+
+.brand-tagline {
+  color: rgba(244, 250, 251, 0.92) !important;
+}
+
+.brand-feature-card {
+  background: rgba(8, 24, 40, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.brand-feature-card:hover {
+  background: rgba(8, 24, 40, 0.9);
+}
+.brand-feature-card strong {
+  color: #ffffff;
+}
+.brand-feature-card span {
+  color: rgba(240, 250, 252, 0.92);
+}
+
+.brand-status-strip {
+  background: rgba(8, 24, 40, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+.brand-status-strip,
+.brand-status-strip * {
+  color: #aef0e2;
+}
+
+/* Badge row: dark text directly on the photo had no guaranteed backing —
+   put it on a light glass chip so it reads on any photo and either theme. */
+.brand-badge-row {
+  justify-self: start;
+  width: fit-content;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 24px -12px rgba(4, 20, 27, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.brand-badge-row .eyebrow,
+.brand-badge-row div {
+  color: #0b1720;
+}
+
+/* ===== Login fluid text (2026-08-29): ตัวหนังสือ auto ตามขนาดจอ =====
+   The three login buttons + Google label + error-banner texts were locked at
+   px font sizes — the ONLY text on the page that ignored the fluid root scale
+   (10px@1280 → 14px@2560). 14px → 0.875rem (same visual at the classic 16px
+   root) so they track the root like every other element; the Google svg was
+   attribute-locked at 18px → em so the icon scales with its label. */
+.login-card .gis-button-host,
+.login-card .dev-login-button,
+.login-card .primary-button {
+  font-size: 0.875rem;
+}
+
+.google-login.gis-wrap .google-face {
+  font-size: 0.875rem;
+}
+.google-login.gis-wrap .google-face svg {
+  width: 1.2857em;
+  height: 1.2857em;
+}
+
+.connection-error-content > strong {
+  font-size: 0.875rem;
+}
+.connection-error-detail {
+  font-size: 0.8125rem;
+}
+.connection-error-hint,
+.connection-error-link {
+  font-size: 0.75rem;
+}
+.connection-error-url {
+  font-size: 0.6875rem;
+}
+
+/* ===== Hero type scale ×2 (2026-08-29): "ตัวหนังสือเล็กเกินไป ขนาดอีก 200%" =====
+   The hero panel typography was half the size the user expects at 100% zoom —
+   every hero text rule doubles (they were the only rem rules left small).
+   Icons/paddings/gaps scale with the type so cards don't read as inflated
+   text in tight boxes. Scoped to the brand panel only; the login card keeps
+   the system-wide density scale. */
+.brand-copy h1 {
+  font-size: clamp(3.8rem, 5.2vw, 8rem);
+  line-height: 1.15;
+}
+.brand-hero .brand-copy p.brand-eyebrow-line,
+.brand-hero .brand-copy .eyebrow {
+  font-size: 1.52rem;
+  line-height: 1.45;
+}
+.brand-hero .brand-copy p.brand-tagline {
+  font-size: clamp(2rem, 2.7vw, 2.32rem);
+  line-height: 1.45;
+}
+.brand-feature-card {
+  gap: 1rem;
+  padding: clamp(0.9rem, 1.2vw, 1.4rem) clamp(1.1rem, 1.5vw, 1.75rem);
+}
+.brand-feature-card strong {
+  font-size: 1.8rem;
+  line-height: 1.45;
+}
+.brand-feature-card span {
+  font-size: 1.56rem;
+  line-height: 1.45;
+}
+.brand-feature-card > svg {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+.brand-badge-row {
+  gap: 1.1rem;
+}
+.brand-badge-row .eyebrow {
+  font-size: 1.52rem;
+}
+.brand-badge-row strong {
+  font-size: 1.96rem;
+}
+.brand-mark {
+  width: 5.75rem;
+  height: 5.75rem;
+  flex-basis: 5.75rem;
+  font-size: 2rem;
+}
+.brand-mark svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+.brand-status-strip {
+  font-size: 1.56rem;
+  gap: 0.75rem;
+  padding: 0.7rem 1.3rem;
+}
+.brand-status-dot {
+  width: 1rem;
+  height: 1rem;
+  box-shadow: 0 0 0 0.35rem color-mix(in srgb, var(--success, #13795b) 18%, transparent);
+}
+
+/* ===== Holding page type parity with login (2026-08-29) =====
+   "ปรับให้ขนาด font ฯลฯ เท่าๆ กัน กับหน้า login" — role-matched sizes on the
+   old root ladder (both pages pinned by data-login-scale): search input =
+   login input (1.8rem), card names = login labels (1.8rem), summary chips &
+   code badges = login help text (1.25rem). Scoped to .holding-shell so the
+   /workspace page's own card grid is untouched. */
+.holding-shell .holding-search input {
+  font-size: 1.8rem;
+}
+.holding-shell .search-shell svg {
+  width: 1.2em;
+  height: 1.2em;
+}
+.holding-shell .holding-summary-chip {
+  font-size: 1.25rem;
+}
+.holding-shell .workspace-card-grid strong {
+  font-size: 1.8rem;
+  line-height: 1.35;
+}
+.holding-shell .workspace-card-grid .font-mono {
+  font-size: 1.25rem;
+}
+.holding-shell .workspace-card-grid [class*="rounded-full"] {
+  font-size: 1.25rem;
+}
+.holding-shell .workspace-card-grid [class*="rounded-full"] svg {
+  width: 1em;
+  height: 1em;
+}
+.holding-shell .workspace-empty-state strong {
+  font-size: 1.8rem;
+}
+.holding-shell .workspace-empty-state span {
+  font-size: 1.5rem;
+  line-height: 1.45;
+}
+
+/* ===== Badge chip overlap fix (2026-08-29): "ตัวหนังสือทับกัน" =====
+   After the ×2 pass the eyebrow's 1.5 line box intersected the strong below
+   (measured 171x7px overlap). Explicit leading + a real gap between the two
+   stacked lines fixes it. */
+.brand-badge-row {
+  align-items: center;
+  padding: 0.75rem 1.05rem;
+}
+.brand-badge-row > div {
+  gap: 0.3rem;
+}
+.brand-badge-row .eyebrow {
+  line-height: 1.3;
+}
+.brand-badge-row strong {
+  line-height: 1.35;
+}
+
+/* ===== Login card type ×2 (2026-08-29): "เพิ่ม x2 ด้วย" =====
+   The hero panel was doubled; the login card text doubles to match. All
+   control heights switch from locked px to em so they grow with their own
+   font (uniform per-row heights are preserved because each row shares one
+   font size). Icons join via rem. The GIS G-icon was already em-based. */
+.login-card {
+  gap: 0.75rem;
+  padding: clamp(1.2rem, 1.6vw, 1.8rem) clamp(1.4rem, 1.9vw, 2.1rem);
+}
+.login-card .card-header .eyebrow {
+  font-size: 1.52rem;
+  line-height: 1.35;
+}
+.login-card h2 {
+  font-size: 3.3rem;
+  line-height: 1.2;
+}
+.login-card .auth-login-heading strong,
+.login-card .password-login-heading span {
+  font-size: 1.8rem;
+  line-height: 1.45;
+}
+.login-card .auth-login-heading svg,
+.login-card .password-login-heading svg {
+  width: 2rem;
+  height: 2rem;
+}
+.login-card .password-login-heading small {
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+.login-card .auth-login-section,
+.login-card .password-login-section {
+  gap: 0.7rem;
+}
+.login-card .field-group > span {
+  font-size: 1.8rem;
+  line-height: 1.35;
+}
+.login-card .field-group input {
+  font-size: 1.8rem;
+  height: auto;
+  min-height: 2.6em;
+}
+.login-card .field-help {
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+.login-card .check-row span {
+  font-size: 1.6rem;
+}
+.login-card .check-row input[type="checkbox"] {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.login-card .message {
+  font-size: 1.5rem;
+  line-height: 1.45;
+}
+.login-card .message svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.login-card .gis-button-host,
+.login-card .dev-login-button,
+.login-card .primary-button {
+  font-size: 1.75rem;
+  height: auto;
+  min-height: 2.6em;
+  max-height: none;
+}
+/* The visible Google face lives on .gis-wrap, not .gis-button-host — it must
+   double with its siblings or the row shows one small label between big ones. */
+.login-card .google-login.gis-wrap .google-face {
+  font-size: 1.75rem;
+}
+/* Equal heights (2026-08-29): the wrap's own font-size drives its em-based
+   min-height — inherit the sibling button size or the Google button renders
+   ~36px next to 64px Dev/CTA buttons in the same grid. */
+.login-card .google-login.gis-wrap {
+  font-size: 1.75rem;
+  height: auto;
+  min-height: 2.6em;
+}
+.login-card .social-login-grid {
+  align-items: stretch;
+}
+.login-card .social-login-grid .social-login-button,
+.login-card .social-login-grid > .gis-wrap {
+  height: auto;
+  min-height: 2.6em;
+  max-height: none;
+  flex: 1 1 auto;
+}
+.login-card .gis-wrap {
+  min-height: 2.6em;
+}
+.login-card .input-with-icon .input-leading-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.login-card .input-with-icon .input-trailing-icon {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+/* ===== Settings wizard sidebar: stack in one column at every width (2026-08-29) =====
+   "เมนูไม่เรียงกันลงมา มีการโดนทับ เมื่อกด" — below md the aside fell back to
+   grid-cols-2/3 and the long Thai step labels (wrap-anywhere) overflowed the
+   height-capped buttons, overlapping the neighbouring cell's text (measured
+   26x16px at ~700px panes). Below md: one column, uncapped heights. */
+@media (max-width: 767.98px) {
+  aside[class*="md:w-60"] {
+    grid-template-columns: 1fr !important;
+  }
+  aside[class*="md:w-60"] button {
+    height: auto;
+    max-height: none;
+    min-height: 2.6em;
+  }
+}
+/* Step headings in the wizard content panel: Thai stacked marks need leading
+   room — text-xl h3 was clipped into its description line (5px at 900px), and
+   the step-6 h2 heading touched the brand line above it (4px). */
+h3[class~="text-xl"][class~="font-black"],
+h2[class~="text-xl"][class~="font-bold"] {
+  line-height: 1.45;
+  margin-block: 0.25em 0.3em;
+}
+
+/* ===== Settings screen overlap fixes round 2 (2026-08-29) =====
+   Two real overlaps found while clicking through the wizard:
+   (1) Sidebar step buttons: the helper line (text-[10px]) wrapped past the
+   height-capped button and bled onto the NEXT button's label (92x5px). Buttons
+   in this aside auto-height at every width — the 36px chrome lock does not
+   apply to a wrapping nav list.
+   (2) Step-3 permission list (.bc-list-row): long unbroken tokens
+   (/transaction/purchaserequisition) stayed on ONE line because Tailwind's
+   break-words (overflow-wrap: break-word) did not split them, so the text
+   overflowed its cell onto the neighbouring cell's text (28x14px).
+   overflow-wrap: anywhere actually breaks and shrinks min-content. */
+aside[class*="md:w-60"] button {
+  height: auto;
+  max-height: none;
+}
+aside[class*="md:w-60"] {
+  row-gap: 0.45rem;
+}
+aside[class*="md:w-60"] button span[class*="leading-tight"] {
+  line-height: 1.45;
+}
+aside[class*="md:w-60"] button span[class*="text-[10px]"] {
+  margin-top: 0.2em;
+  line-height: 1.35;
+}
+.bc-list-row span[class*="break-words"] {
+  overflow-wrap: anywhere !important;
+}
+
+/* ===== Login-family card header controls: button affordance + fluid scale (2026-08-29) =====
+   User complaint: icons too small, controls did not read as buttons.
+   Cause: the menu chrome uniformity block (36px !important) also hit the login
+   card header, and the lucide icons are px-locked (18px) — they never grow with
+   the login root ladder, so next to the ×2 typography they read as tiny glyphs.
+   Fix (scoped to .card-header — used ONLY by login + holding cards):
+   every control becomes a real 3em button (45px @1280 → 59px @1920) with a
+   1.4em icon, border + surface + hover lift. Menu screens keep the 36px chrome
+   lock by design (skill §1). */
+.card-header .header-controls {
+  gap: 0.5rem;
+}
+.card-header .header-controls .font-toggle,
+.card-header .header-controls .theme-palette-toggle,
+.card-header .header-controls .icon-button,
+.card-header .header-controls .header-control-button,
+.card-header .header-controls .language-dialog-trigger {
+  /* !important: beats the two-tier text block that pins
+     .header-controls .language-dialog-trigger to 0.8rem !important */
+  font-size: 1.5rem !important;
+  width: 3em !important;
+  height: 3em !important;
+  min-width: 3em !important;
+  max-width: 3em !important;
+  min-height: 3em !important;
+  max-height: 3em !important;
+  flex: 0 0 3em !important;
+  padding: 0 !important;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: border-color 160ms ease, background-color 160ms ease,
+    color 160ms ease, transform 160ms ease;
+}
+.card-header .header-controls .font-toggle:hover,
+.card-header .header-controls .theme-palette-toggle:hover,
+.card-header .header-controls .icon-button:hover,
+.card-header .header-controls .header-control-button:hover,
+.card-header .header-controls .language-dialog-trigger:hover {
+  border-color: var(--indigo);
+  background: var(--input-focus-bg);
+  color: var(--indigo);
+  transform: translateY(-1px);
+}
+.card-header .header-controls .font-toggle:focus-visible,
+.card-header .header-controls .theme-palette-toggle:focus-visible,
+.card-header .header-controls .icon-button:focus-visible,
+.card-header .header-controls .header-control-button:focus-visible,
+.card-header .header-controls .language-dialog-trigger:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+/* Icons scale with the button's own font-size (em), not the 18px svg attribute. */
+.card-header .header-controls svg {
+  width: 1.4em;
+  height: 1.4em;
+}
+/* Palette icon nudged up-left so the corner theme dot clears the glyph —
+   keep it at 1.4em so ALL five icons share one height (flag included). */
+.card-header .header-controls .theme-palette-toggle svg {
+  transform: translate(-0.14em, -0.14em);
+}
+.card-header .header-controls .flag-icon {
+  /* same visual height as the 1.4em svg icons; 2.1em keeps the 3:2 flag ratio */
+  width: 2.1em !important;
+  height: 1.4em !important;
+  flex: 0 0 2.1em !important;
+}
+.card-header .header-controls .theme-palette-dot {
+  width: 0.56em;
+  height: 0.56em;
+  right: 0.26em;
+  bottom: 0.26em;
+}
+
+/* ===== Login card: clear (X) buttons inside the three inputs (2026-08-29) =====
+   "ช่อง รหัส ชื่อ รหัสผ่าน ให้มี Clean X อยู่ด้านใน textbox ด้วย" — the clear
+   button mounts only when the field has text (wrapper gets .has-clear so the
+   input reserves right padding in the same breath). On the password field the
+   X parks LEFT of the eye toggle (.before-trailing). Sizes mirror the eye
+   (.input-trailing-icon): em-based so it tracks the fluid scale. */
+.input-clear-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 0.4em;
+  width: 2.2em;
+  height: 2.2em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.input-clear-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.input-clear-icon:hover {
+  background: var(--muted-bg, color-mix(in srgb, var(--text) 6%, transparent));
+  color: var(--text);
+}
+.input-clear-icon:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.login-card .input-clear-icon {
+  right: 0.4em;
+  width: 2.6rem;
+  height: 2.6rem;
+}
+/* password field: X sits left of the eye (eye = 2.6rem @ right 0.4em + gap) */
+.login-card .input-clear-icon.before-trailing {
+  right: calc(0.4em + 2.6rem + 0.2em);
+}
+/* reserve input padding only while the clear button exists */
+.input-with-icon.has-clear input {
+  padding-right: 3.2em !important;
+}
+.input-with-icon.has-clear input[type="password"] {
+  padding-right: calc(0.4em + 2.6rem + 0.2em + 2.6rem + 0.45em) !important;
+}
+
+/* ===== Login card: slimmer padding, wider box (2026-08-29) =====
+   "ลด padding ลง อีก กล่อง login จะได้ใหญ่ขึ้น" — previous winner was the ×2
+   type block (padding clamp(1.2,1.6vw,1.8) / clamp(1.4,1.9vw,2.1)rem, gap
+   1.05rem, max-width 44rem). Scoped to :not(.holding-shell) so the holding
+   card (approved layout, 34vw column) keeps its own geometry. */
+.login-shell:not(.holding-shell) .login-card {
+  max-width: min(100%, 50rem, 532px);
+  padding: clamp(0.85rem, 1.1vw, 1.25rem) clamp(1rem, 1.4vw, 1.7rem);
+  gap: 0.8rem;
+}
+
+/* ===== Holding create/edit modal: ordinary form scale (2026-08-29) =====
+   "ปรับ font ให้เหมือนชาวบ้าน" + "ปุ่มด้วย" — the modal inherited the login ×2
+   pass (labels/inputs 1.8rem, primary 1.75rem) while its own head/captions
+   stayed density-era 0.78-0.94rem and the secondary button sat on --text-sm
+   (9px): microscopic captions, giant inputs, and two action buttons 9px vs
+   17.5px in the same row. One coherent everyday scale, modal-scoped so the
+   login card and the holding list keep their approved sizes. */
+.holding-modal-panel .holding-create-head strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.holding-modal-panel .holding-create-head span,
+.holding-modal-panel .holding-confirm-box small {
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.holding-modal-panel .field-group > span {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.holding-modal-panel .field-group input {
+  font-size: 1.4rem;
+}
+.holding-modal-panel .field-help {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.holding-modal-panel .holding-confirm-box span {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+.holding-modal-panel .holding-confirm-box strong {
+  font-size: 1.5rem;
+}
+.holding-modal-panel .input-shell svg {
+  width: 1.2em;
+  height: 1.2em;
+}
+/* Action buttons: same text size, same height — ยกเลิก stops being 9px
+   next to a 17.5px create button. */
+.holding-modal-panel .secondary-button,
+.holding-modal-panel .primary-button {
+  font-size: 1.4rem;
+  font-weight: 700;
+  min-height: 3em;
+  height: auto;
+}
+.holding-modal-panel .primary-button span,
+.holding-modal-panel .secondary-button {
+  line-height: 1.3;
+}
+/* A login-form media block sets .primary-button { grid-column: 1 / -1 } —
+   inside this modal it pushed the create button to its own full-width row,
+   stranding ยกเลิก alone above it. Restore the side-by-side pair. */
+.holding-modal-panel .primary-button {
+  grid-column: auto;
+}
+
+/* ===== Login premium restyle (2026-09-02) ============================
+   Appended override block — wins the cascade over the scattered legacy
+   login rules above. Skin-only: radius / depth / hairlines / backdrop.
+   Layout and the ×2 login-card type scale (2026-08-29) are untouched.
+   All colors are var/color-mix based so every palette + dark mode adapts. */
+
+.login-shell {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Backdrop: calmer, airier — soft brand glows on a clean base */
+:root {
+  --login-shell-bg:
+    radial-gradient(1100px 720px at 12% 8%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 62%),
+    radial-gradient(900px 640px at 88% 92%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+    linear-gradient(168deg, var(--bg) 0%, var(--panel-soft) 100%);
+}
+
+:root[data-theme="dark"] {
+  --login-shell-bg:
+    radial-gradient(1100px 720px at 12% 8%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 60%),
+    radial-gradient(900px 640px at 88% 92%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 58%),
+    linear-gradient(168deg, var(--bg) 0%, var(--panel) 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --login-shell-bg:
+      radial-gradient(1100px 720px at 12% 8%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 60%),
+      radial-gradient(900px 640px at 88% 92%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 58%),
+      linear-gradient(168deg, var(--bg) 0%, var(--panel) 100%);
+  }
+}
+
+/* Panels: soft-radius floating glass instead of sharp 4px corners */
+.login-shell .brand-panel {
+  border-radius: 28px;
+  border-color: color-mix(in srgb, var(--login-glass-border) 80%, white 20%);
+  box-shadow:
+    0 30px 90px color-mix(in srgb, var(--primary) 16%, transparent),
+    0 6px 20px rgba(0, 0, 0, 0.07);
+}
+
+.login-shell .brand-hero {
+  border-radius: 20px;
+}
+
+.login-shell .brand-feature-card {
+  border-radius: 16px;
+}
+
+.login-shell .brand-mark {
+  border-radius: 18px;
+}
+
+/* Card: floating surface — deeper tinted shadow, hairline brand border */
+.login-shell .login-card {
+  border-radius: 24px;
+  border-color: color-mix(in srgb, var(--primary) 14%, var(--login-form-border));
+  box-shadow:
+    0 30px 80px color-mix(in srgb, var(--primary) 18%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.login-shell .connection-error-banner,
+.login-shell .message {
+  border-radius: 14px;
+}
+
+/* Controls: one rounded language across inputs, buttons, social row */
+.login-shell .input-with-icon input {
+  border-radius: 0.6em;
+  border-color: color-mix(in srgb, var(--text) 14%, transparent);
+  background: var(--login-input-bg);
+}
+
+.login-shell .input-with-icon input:focus-visible {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+.login-shell .login-card .primary-button,
+.login-shell .login-card .dev-login-button,
+.login-shell .google-login.gis-wrap {
+  border-radius: 0.55em;
+}
+
+/* ===== Login premium restyle: card surface fix (2026-09-02) =====
+   The 2026-08-28 design-pass block mid-file hard-codes a white card
+   surface, which beats the var-based gradient and leaves light text
+   on a light card in dark mode. Restore the var-driven surface so
+   every palette and dark mode adapt automatically. */
+.login-shell .login-card {
+  background:
+    linear-gradient(180deg, var(--login-form-surface) 0%, color-mix(in srgb, var(--login-form-surface) 88%, var(--login-form-surface-subtle)) 100%),
+    var(--panel);
+}
+
+/* ===== Login premium polish round 2 (2026-09-02) =====================
+   Two leftovers from the premium restyle block above:
+   1) That block rounded the brand panel (28px + drop shadow) at EVERY width,
+      but at >=1024 the full-viewport layout makes the panel full-bleed
+      (x=0, y=0, 100dvh) — the shell background peeked through the rounded
+      viewport corners and the shadow had nothing to lift. Square the panel
+      again inside the full-viewport range; keep the floating radius below
+      1024 where the panel really floats.
+   2) The CTA gradient + glow + input focus ring were hardcoded teal
+      (#0d9488/#0f766e/var(--teal)) — the only accents ignoring the active
+      palette (eyebrows, section icons, brand mark already follow --primary).
+      Derive them from --primary so every palette and dark mode stay
+      coherent: one accent family per screen. */
+@media (min-width: 1024px) {
+  .login-shell .brand-panel {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+.login-shell .login-card .primary-button {
+  background: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 76%, #000000) 100%);
+  color: var(--primary-foreground);
+  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+.login-shell .login-card .primary-button:hover:not(:disabled) {
+  box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+
+.login-shell .input-with-icon input:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* Card-header icon buttons: hover was var(--indigo) — a third accent family
+   on one screen. Follow --primary like everything else (login + holding). */
+.card-header .header-controls .font-toggle:hover,
+.card-header .header-controls .theme-palette-toggle:hover,
+.card-header .header-controls .icon-button:hover,
+.card-header .header-controls .header-control-button:hover,
+.card-header .header-controls .language-dialog-trigger:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ===== Login premium pass 3 (2026-09-02): one brand family, grounded hero,
+   living backdrop =====
+   - Hero glass / eyebrow / feature cards / status strip drop the last
+     hard-coded teal (#7dd8cc, rgba(13,59,66)) and derive from --primary,
+     matching the card CTA: one accent family per screen.
+   - Bottom vignette over the photo so the feature cards + status strip sit on
+     a dark base instead of the bright desk.
+   - Form column: hairline divider + two slow ambient glows behind the card
+     (static under prefers-reduced-motion). Card gets an inner highlight and a
+     brand hairline on its top edge.
+   - Google / Dev / inputs adapt to dark mode (were hard-coded #fff/#dadce0).
+   Skin-only, appended tail block, all values var/color-mix based. */
+
+/* --- Hero: brand-tinted charcoal glass --- */
+.login-shell .brand-hero {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 14%, rgba(10, 12, 16, 0.9)) 0%,
+    color-mix(in srgb, var(--primary) 22%, rgba(14, 17, 22, 0.84)) 60%,
+    color-mix(in srgb, var(--primary) 34%, rgba(18, 21, 27, 0.72)) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 30px 70px -30px rgba(0, 0, 0, 0.6);
+}
+.login-shell .brand-hero .brand-copy .eyebrow,
+.login-shell .brand-hero .brand-eyebrow-line {
+  color: color-mix(in srgb, var(--primary) 38%, #ffffff) !important;
+}
+.login-shell .brand-hero .brand-copy h1 {
+  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.78) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+.login-shell .brand-feature-card {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--primary) 10%, rgba(10, 12, 16, 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.login-shell .brand-feature-card:hover {
+  background: color-mix(in srgb, var(--primary) 16%, rgba(10, 12, 16, 0.88));
+  border-color: color-mix(in srgb, var(--primary) 45%, rgba(255, 255, 255, 0.3));
+}
+.login-shell .brand-feature-card > svg {
+  color: color-mix(in srgb, var(--primary) 40%, #ffffff);
+}
+.login-shell .brand-status-strip {
+  background: rgba(10, 12, 16, 0.78);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Bottom vignette: paints above the panel photo (and the ::before wash) but
+   below every static child thanks to the isolated stacking context. */
+.login-shell .brand-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 26%, transparent 50%, rgba(0, 0, 0, 0.52) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0%, transparent 45%);
+}
+
+/* --- Form column: hairline divider + ambient glows --- */
+/* Clip the glows at the shell, not the form panel: card-header popovers
+   (font/palette pickers) open past the panel edge and must not be cut. */
+.login-shell {
+  overflow: hidden;
+}
+/* Divider + column tint only where the column sits beside the hero; below
+   1024 the panel is the lone centered column and the tint read as a box. */
+@media (min-width: 1024px) {
+  .login-shell .form-panel {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 40%, transparent) 0%, transparent 40%, color-mix(in srgb, var(--primary) 4%, transparent) 100%);
+    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--text) 8%, transparent);
+  }
+}
+.login-shell .form-panel::before,
+.login-shell .form-panel::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+.login-shell .form-panel::before {
+  width: 48rem;
+  height: 48rem;
+  left: 50%;
+  top: 50%;
+  margin: -24rem 0 0 -24rem;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 15%, transparent), transparent);
+  animation: login-glow-drift 18s ease-in-out infinite alternate;
+}
+.login-shell .form-panel::after {
+  width: 34rem;
+  height: 34rem;
+  right: -12rem;
+  bottom: -10rem;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent, var(--primary)) 14%, transparent), transparent);
+  animation: login-glow-drift 24s ease-in-out infinite alternate-reverse;
+}
+@keyframes login-glow-drift {
+  from { transform: translate3d(-6%, -4%, 0) scale(1); }
+  to   { transform: translate3d(6%, 5%, 0) scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-shell .form-panel::before,
+  .login-shell .form-panel::after { animation: none; }
+}
+.login-shell .login-card,
+.login-shell .connection-error-banner {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Card: inner highlight + brand hairline on the top edge --- */
+.login-shell .login-card {
+  border-color: color-mix(in srgb, var(--primary) 12%, var(--login-form-border));
+  box-shadow:
+    inset 0 1px 0 var(--login-glass-inner-border),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 32px 80px -20px color-mix(in srgb, var(--primary) 30%, transparent),
+    0 12px 32px -12px rgba(0, 0, 0, 0.12);
+}
+.login-shell .login-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 70%, transparent), transparent);
+}
+
+/* --- Controls: adapt to dark, softer hairlines, gentle lift --- */
+.login-shell .google-login.gis-wrap,
+.login-shell .login-card .dev-login-button {
+  background: var(--login-input-bg);
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), inset 0 1px 0 var(--login-glass-inner-border);
+  transition: transform 160ms var(--login-ease), box-shadow 160ms var(--login-ease), border-color 160ms var(--login-ease), background 160ms var(--login-ease);
+}
+.login-shell .google-login.gis-wrap .google-face {
+  color: var(--text);
+  font-weight: 600;
+}
+.login-shell .google-login.gis-wrap:hover,
+.login-shell .login-card .dev-login-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 5%, var(--login-input-bg));
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--primary) 40%, transparent), inset 0 1px 0 var(--login-glass-inner-border);
+}
+/* Dev login is a loopback-only affordance: read as secondary. */
+.login-shell .login-card .dev-login-button {
+  border-style: dashed;
+  color: var(--muted-foreground);
+}
+
+.login-shell .input-with-icon input {
+  background: var(--login-input-bg);
+  border-color: color-mix(in srgb, var(--text) 14%, transparent);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 160ms var(--login-ease), box-shadow 160ms var(--login-ease);
+}
+.login-shell .input-with-icon input:hover:not(:focus-visible) {
+  border-color: color-mix(in srgb, var(--text) 26%, transparent);
+}
+.login-shell .input-with-icon input:focus-visible {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent), inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.login-shell .login-card .primary-button {
+  letter-spacing: 0.01em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 24px -10px color-mix(in srgb, var(--primary) 60%, transparent);
+  transition: transform 160ms var(--login-ease), box-shadow 160ms var(--login-ease), filter 160ms var(--login-ease);
+}
+.login-shell .login-card .primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 14px 30px -10px color-mix(in srgb, var(--primary) 65%, transparent);
+}
+.login-shell .login-card .primary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-shell .auth-login-heading > svg,
+.login-shell .password-login-heading > svg {
+  color: var(--primary);
+}
+.login-shell .check-row input {
+  accent-color: var(--primary);
+}
+
+/* ===== Global premium skin (2026-09-02) ==================================
+   Rule: "UX/UI พรีเมี่ยม + ใช้ง่าย + เหมาะกับคนไทย" (AGENTS.md) applied
+   system-wide, not per screen. One appended block, values var/color-mix only:
+   - Tokens: rounder radius ladder + brand-tinted shadows (every Tailwind
+     rounded-* and every var(--radius-*) user picks this up for free).
+   - Page backdrops (workspace / settings wizard) drop the slate +
+     indigo + teal hard-codes and derive from --bg / --primary in both themes.
+   - Surfaces (topbar, panels, cards, empty state, stepper) get the login
+     language: soft radius, hairline, inner highlight, tinted soft shadow.
+   - Buttons / inputs share one control language with the login card.
+   Layout, spacing and type scale untouched. */
+
+/* --- Tokens --- */
+:root {
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --surface-hairline: color-mix(in srgb, var(--text) 10%, transparent);
+  --surface-hairline-strong: color-mix(in srgb, var(--text) 16%, transparent);
+  --surface-glass: color-mix(in srgb, var(--panel) 74%, transparent);
+  --surface-glass-strong: color-mix(in srgb, var(--panel) 88%, transparent);
+  --surface-shadow:
+    inset 0 1px 0 var(--login-glass-inner-border),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 18px 44px -22px color-mix(in srgb, var(--primary) 30%, transparent);
+  --surface-shadow-hover:
+    inset 0 1px 0 var(--login-glass-inner-border),
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 24px 52px -22px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+/* --- Page backdrops: brand glows over the theme base, photo kept --- */
+:root[data-theme="light"] .workspace-page,
+:root[data-theme="dark"] .workspace-page,
+.workspace-page {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--bg) 94%, transparent) 0%, color-mix(in srgb, var(--bg) 86%, transparent) 44%, color-mix(in srgb, var(--bg) 72%, transparent) 100%),
+    radial-gradient(1100px 720px at 6% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 62%),
+    radial-gradient(900px 640px at 100% 100%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 60%),
+    url("/workspace-background-light.webp?v=20260531-workspace-thai-sme") center / cover no-repeat,
+    var(--bg);
+}
+:root[data-theme="dark"] .workspace-page {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--bg) 94%, transparent) 0%, color-mix(in srgb, var(--bg) 88%, transparent) 45%, color-mix(in srgb, var(--bg) 76%, transparent) 100%),
+    radial-gradient(1100px 720px at 6% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 60%),
+    radial-gradient(900px 640px at 100% 100%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 58%),
+    url("/workspace-background-dark.webp?v=20260531-workspace-thai-sme") center / cover no-repeat,
+    var(--bg);
+}
+
+/* --- Surfaces: topbar + panels --- */
+:root[data-theme="light"] .workspace-topbar,
+:root[data-theme="dark"] .workspace-topbar,
+.workspace-topbar {
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, var(--surface-hairline));
+  border-radius: var(--radius-2xl);
+  background: var(--surface-glass);
+  box-shadow: var(--surface-shadow);
+}
+:root[data-theme="light"] .workspace-panel,
+:root[data-theme="dark"] .workspace-panel,
+.workspace-panel {
+  border: 1px solid color-mix(in srgb, var(--primary) 10%, var(--surface-hairline));
+  border-radius: var(--radius-2xl);
+  background: var(--surface-glass);
+  box-shadow: var(--surface-shadow);
+}
+.workspace-panel-head h2 {
+  letter-spacing: -0.01em;
+}
+
+/* Brand mark + holding chip: follow --primary (were indigo / teal) */
+.workspace-mark {
+  border-radius: var(--radius-lg);
+  color: var(--primary-foreground);
+  background: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 72%, #000) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 8px 18px -8px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.workspace-holding-context {
+  border-radius: var(--radius-md);
+  border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface-glass-strong));
+}
+.workspace-holding-context code {
+  color: var(--primary);
+}
+
+/* --- Controls: one language across the system --- */
+.primary-button.primary-button,
+.primary-button {
+  border-radius: var(--radius-md);
+  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+  background: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 76%, #000) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 24px -10px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 14px 30px -10px color-mix(in srgb, var(--primary) 65%, transparent);
+}
+.primary-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 6px 16px -10px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.workspace-setup-button {
+  border-radius: var(--radius-md);
+}
+
+.secondary-button {
+  border: 1px solid var(--surface-hairline-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass-strong);
+  text-shadow: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), inset 0 1px 0 var(--login-glass-inner-border);
+  transition: transform 160ms var(--login-ease), box-shadow 160ms var(--login-ease), border-color 160ms var(--login-ease), background 160ms var(--login-ease), color 160ms var(--login-ease);
+}
+.secondary-button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface-glass-strong));
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--primary) 40%, transparent), inset 0 1px 0 var(--login-glass-inner-border);
+}
+
+/* Global button system set a hard 6px; join the radius ladder. */
+button[class*="rounded-lg"]:not([class*="rounded-full"]):not([class*="rounded-xl"]):not([class*="rounded-2xl"]),
+button[class*="h-8"]:not([class*="rounded-full"]):not([class*="rounded-xl"]):not([class*="rounded-2xl"]),
+button[class*="h-9"]:not([class*="rounded-full"]):not([class*="rounded-xl"]):not([class*="rounded-2xl"]),
+.header-control-button,
+.icon-button,
+.zoom-control-trigger,
+.zoom-control-button {
+  border-radius: var(--radius-md);
+}
+/* Explicit circles stay circles (the 2026-08-29 button system squared them). */
+button[class*="rounded-full"] {
+  border-radius: var(--radius-full);
+}
+/* Small controls keep small corners: 32px inputs and <=24px boxes read as
+   pills at the card-level radius. */
+input[class*="h-8"],
+input[class*="h-9"],
+select[class*="h-8"],
+select[class*="h-9"] {
+  border-radius: var(--radius-md);
+}
+[class~="size-4"][class~="rounded-md"],
+[class~="size-5"][class~="rounded-md"],
+[class~="h-4"][class~="rounded-md"],
+[class~="h-5"][class~="rounded-md"] {
+  border-radius: 4px;
+}
+.workspace-actions .icon-button,
+.workspace-actions .header-control-button,
+.workspace-actions .language-dialog-trigger {
+  border: 1px solid var(--surface-hairline);
+  background: var(--surface-glass-strong);
+  color: var(--text);
+  transition: border-color 160ms var(--login-ease), color 160ms var(--login-ease), background 160ms var(--login-ease);
+}
+.workspace-actions .icon-button:hover,
+.workspace-actions .header-control-button:hover,
+.workspace-actions .language-dialog-trigger:hover,
+.workspace-actions .icon-button[aria-expanded="true"],
+.workspace-actions .header-control-button[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface-glass-strong));
+}
+
+.search-shell {
+  border: 1px solid var(--surface-hairline-strong);
+  border-radius: var(--radius-md);
+  background: var(--login-input-bg);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 160ms var(--login-ease), box-shadow 160ms var(--login-ease);
+}
+.search-shell:hover:not(:focus-within) {
+  border-color: color-mix(in srgb, var(--text) 26%, transparent);
+}
+.search-shell:focus-within {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  background: var(--login-input-bg);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent), inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* --- Progress stepper --- */
+.step-strip::before {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--surface-hairline-strong), transparent);
+}
+.step-strip {
+  padding: 8px 10px;
+  border: 1px solid var(--surface-hairline);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--panel) 40%, transparent);
+}
+.step-strip > span {
+  min-height: 40px;
+  border: 1px solid var(--surface-hairline);
+  background: var(--surface-glass-strong);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), inset 0 1px 0 var(--login-glass-inner-border);
+}
+.step-strip > span.active {
+  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+  background: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 76%, #000) 100%);
+  color: var(--primary-foreground);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 24px -10px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+.step-strip > span.done {
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface-glass-strong));
+  color: var(--primary);
+}
+.step-strip > span.pending {
+  opacity: 0.6;
+  border: 1px solid var(--surface-hairline);
+  background: var(--surface-glass-strong);
+  color: var(--muted);
+}
+
+/* --- Empty state: quiet glass, brand accent (was indigo dashed) --- */
+.workspace-empty-state {
+  border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--surface-hairline));
+  border-radius: var(--radius-2xl);
+  background: color-mix(in srgb, var(--primary) 3%, var(--surface-glass));
+  box-shadow: var(--surface-shadow);
+  color: var(--muted);
+}
+.workspace-empty-state svg {
+  color: var(--primary);
+}
+
+/* --- Settings screen panels: brand-tinted surface shadow (were navy rgba) --- */
+.settings-card,
+.overview-tile {
+  box-shadow: var(--surface-shadow);
+}
+.language-dialog-trigger:hover {
+  color: var(--primary);
+}
+
+/* --- Info message: brand tint (was indigo) --- */
+.message.info {
+  border-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, var(--panel-soft));
+  color: color-mix(in srgb, var(--primary) 80%, var(--text));
+}
+.message {
+  border-radius: var(--radius-lg);
+}
+
+/* --- Modals (.line-login-dialog family: LINE connect, change password,
+   online users, unit setup, holding scope) join the surface language --- */
+.line-login-dialog {
+  border-color: var(--surface-hairline-strong);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--surface-shadow-hover);
+}
+.line-login-dialog > .dialog-header {
+  padding-bottom: var(--density-gap);
+  border-bottom: 1px solid var(--surface-hairline);
+}
+
+/* --- Settings wizard (Tailwind-built): backdrop, sidebar, active step --- */
+section[role="dialog"][aria-modal="true"].h-full.bg-card {
+  background:
+    radial-gradient(1000px 640px at 0% 0%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 60%),
+    radial-gradient(800px 560px at 100% 100%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 60%),
+    var(--card);
+}
+section[role="dialog"].h-full.bg-card > .dialog-header {
+  border-bottom: 1px solid var(--surface-hairline);
+  background: var(--surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+section[role="dialog"].h-full.bg-card aside[class*="bg-muted"] {
+  background: color-mix(in srgb, var(--panel-soft) 55%, transparent);
+  border-color: var(--surface-hairline);
+}
+section[role="dialog"].h-full.bg-card aside button[class*="bg-primary"] {
+  background: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 76%, #000) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 24px -10px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+section[role="dialog"].h-full.bg-card aside button:not([class*="bg-primary"]):hover {
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+/* --- Main menu shell (/menu, Tailwind-built): backdrop, sidebar, chrome.
+   Shadcn primitives (Button/Card/Dropdown) already consume --shadow-card /
+   --shadow-popover, which theme-data.ts now emits brand-tinted + layered. --- */
+main.min-h-dvh.overflow-x-hidden.bg-background {
+  background:
+    radial-gradient(1100px 720px at 0% 0%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 60%),
+    radial-gradient(900px 640px at 100% 100%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 60%),
+    var(--bg);
+}
+main.min-h-dvh.overflow-x-hidden.bg-background > div > aside {
+  background: var(--surface-glass);
+  border-color: var(--surface-hairline);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.menu-top-chrome {
+  background: var(--surface-glass-strong);
+  border-bottom-color: var(--surface-hairline);
+  box-shadow: 0 10px 28px -22px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+.menu-breadcrumb {
+  background: color-mix(in srgb, var(--panel) 50%, transparent);
+  border-bottom-color: var(--surface-hairline);
+}
+/* Primary-filled controls everywhere (Button default, active nav rows, active
+   work tabs, badges) share the CTA gradient; hover stays visible via brightness
+   because the gradient covers Tailwind's hover:bg-primary/90. */
+[class~="bg-primary"] {
+  background-image: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 78%, #000) 100%);
+}
+button[class~="bg-primary"]:hover:not(:disabled),
+a[class~="bg-primary"]:hover {
+  filter: brightness(1.06);
 }

@@ -34,10 +34,10 @@ export function MenuKpiChart({ data, dictionary }: { data: ChartDatum[]; diction
           {chartWidth > 0 ? (
             <BarChart data={data} height={256} margin={{ top: 8, right: 8, left: -24, bottom: 0 }} width={chartWidth}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
-              <YAxis tickLine={false} axisLine={false} fontSize={12} />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} tick={{ fill: "var(--muted-foreground)" }} />
+              <YAxis tickLine={false} axisLine={false} fontSize={12} tick={{ fill: "var(--muted-foreground)" }} />
               <Tooltip
-                cursor={{ fill: "rgba(148, 163, 184, 0.12)" }}
+                cursor={{ fill: "color-mix(in srgb, var(--primary) 10%, transparent)" }}
                 contentStyle={{
                   borderRadius: 8,
                   border: "1px solid var(--border)",
