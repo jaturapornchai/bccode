@@ -223,12 +223,14 @@ export function LoginScreen() {
         ux_mode: "popup",
       });
       container.innerHTML = "";
-      // Render the Google button at the host's full width (GIS caps width at 400) with a
-      // centered logo so it reads as one clean full-width button, not a button-in-a-button.
       const hostWidth = Math.round(container.getBoundingClientRect().width);
-      // Match the sibling buttons exactly: the iframe stretches to 100% via CSS,
-      // so pass the real host width (Google accepts 200–400+ and the CSS caps it).
-      const width = Math.min(500, Math.max(240, hostWidth || 320));
+      // GIS draws a fixed 40px-tall button capped at 400px wide. Zoom (layout, not
+      // transform — transforms trip the GIS visibility guard) scales it to the
+      // sibling button height; the requested width is pre-divided so the zoomed
+      // button still fills the host without overflowing.
+      const siblingHeight = container.closest(".social-login-grid")?.querySelector<HTMLElement>(".dev-login-button, .primary-button")?.offsetHeight || 52;
+      const zoom = Math.min(1.4, Math.max(1, siblingHeight / 40));
+      const width = Math.min(400, Math.max(200, Math.round((hostWidth || 320) / zoom)));
       window.google.accounts.id.renderButton(container, {
         type: "standard",
         theme: "outline",
@@ -238,6 +240,7 @@ export function LoginScreen() {
         logo_alignment: "left",
         width,
       });
+      container.style.zoom = String(zoom);
     }
 
     if (window.google) {
