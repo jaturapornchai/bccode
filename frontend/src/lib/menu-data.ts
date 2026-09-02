@@ -363,22 +363,6 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
     ],
   },
-  {
-    id: "settings",
-    title: { key: "settings", th: "ตั้งค่า", en: "Settings" },
-    groups: [
-      {
-        id: "company-system",
-        title: { key: "system_settings", th: "ตั้งค่าระบบ", en: "System Settings" },
-        items: [
-          tx("active-languages", "ภาษาที่ใช้งาน", "Active Languages", "/activelanguages", "settings"),
-          // สกุลเงิน/ประเภทธุรกิจ/พนักงาน อยู่ในขั้น "ข้อมูลบริษัทและสาขา" ของ ตั้งค่าระบบ (workspace);
-          // "ตั้งค่าทั่วไป" (LINE OA, ออกแบบฟอร์ม, แจ้งเตือน LINE, ผู้ให้บริการ AI, คัดลอกข้อมูลทดสอบ) และ
-          // "โครงสร้างข้อมูล (สมอง)" ถูกถอดออกจากเมนูตามคำสั่งลุงจืด 2026-09-02 (โค้ดจอยังอยู่ เปิดผ่าน route ตรงได้)
-        ],
-      },
-    ],
-  },
 ];
 
 export function menuText(label: MenuLabel, language: LanguageCode, dictionary?: BackendLanguageDictionary): string {

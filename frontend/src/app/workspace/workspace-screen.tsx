@@ -111,6 +111,7 @@ const emptyLineDialog: LineDialogState = {
 };
 // ขั้น "ข้อมูลบริษัทและสาขา" รวมจอตั้งค่าของบริษัทไว้ที่เดียว (ย้ายจากเมนู ตั้งค่า › ตั้งค่าบริษัท 2026-09-02)
 const companyStepTabs = [
+  { route: "/activelanguages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
   { route: "/company", label: { th: "โครงสร้างองค์กร", en: "Organization" } },
   { route: "/currency", label: { th: "สกุลเงิน", en: "Currency" } },
   { route: "/businesstypescreen", label: { th: "ประเภทธุรกิจ", en: "Business Type" } },
@@ -118,15 +119,9 @@ const companyStepTabs = [
 ] as const;
 const accessSettingNavItems = [
   {
-    route: "/activelanguages",
-    label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" },
-    helper: { th: "กำหนดก่อนข้อมูลอื่น", en: "Set before other data" },
-    banner: "/settings/banner-language.webp",
-  },
-  {
     route: "/company",
     label: { th: "ข้อมูลบริษัทและสาขา", en: "Company & Branch" },
-    helper: { th: "สร้างบริษัทและสำนักงานใหญ่", en: "Create companies and branches" },
+    helper: { th: "ภาษา บริษัท สาขา สกุลเงิน ประเภทธุรกิจ พนักงาน", en: "Languages, companies, branches, currency, business types, employees" },
     banner: "/settings/banner-company.webp",
   },
   {
@@ -332,7 +327,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
   const [activeAccessRoute, setActiveAccessRoute] = useState<string | null>(null);
-  const [companyTab, setCompanyTab] = useState<(typeof companyStepTabs)[number]["route"]>("/company");
+  const [companyTab, setCompanyTab] = useState<(typeof companyStepTabs)[number]["route"]>("/activelanguages");
+  const effectiveAccessRoute = activeAccessRoute === "/company" ? companyTab : activeAccessRoute;
   const [accessSidebarCollapsed, setAccessSidebarCollapsed] = useState(false);
   useEffect(() => {
     setAccessSidebarCollapsed(localStorage.getItem("bc-access-sidebar-collapsed") === "1");
@@ -492,7 +488,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   // so the banner reflects what was actually saved. The guard stops it once languages are known.
   useEffect(() => {
     if (step !== "access" || !auth || !selectedShopForAccess) return;
-    if (activeAccessRoute === "/activelanguages") return;
+    if (effectiveAccessRoute === "/activelanguages") return;
     if (hasExplicitLanguageSettings(selectedShopForAccess)) return;
     const code = tenantCodeForShop(selectedShopForAccess);
     if (!code) return;
@@ -939,7 +935,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       router.push("/holding");
       return;
     }
-    void openAccessSettings("/activelanguages");
+    setCompanyTab("/activelanguages");
+    void openAccessSettings("/company");
   }
 
   async function handleAccessShopChange(shop: ShopListItem) {
@@ -1315,7 +1312,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   </div>
                 );
               })()}
-              {activeAccessRoute !== "/activelanguages" &&
+              {effectiveAccessRoute !== "/activelanguages" &&
               !hasExplicitLanguageSettings(selectedShopForAccess) ? (
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 text-sm text-foreground">
                   <span className="min-w-0 text-xs font-semibold text-muted-foreground">
@@ -1326,7 +1323,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <button
                     className="secondary-button inline-flex items-center gap-1.5 px-2.5 py-1 text-xs"
                     type="button"
-                    onClick={() => setActiveAccessRoute("/activelanguages")}
+                    onClick={() => {
+                      setCompanyTab("/activelanguages");
+                      setActiveAccessRoute("/company");
+                    }}
                   >
                     <Languages size={14} />
                     <span>{language === "th" ? "ไปตั้งภาษา" : "Set languages"}</span>
@@ -1350,8 +1350,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </div>
               ) : null}
               <SystemSettingsScreen
-                key={`${activeAccessRoute === "/company" ? companyTab : activeAccessRoute}:${tenantCodeForShop(selectedShopForAccess)}`}
-                route={activeAccessRoute === "/company" ? companyTab : activeAccessRoute}
+                key={`${effectiveAccessRoute}:${tenantCodeForShop(selectedShopForAccess)}`}
+                route={effectiveAccessRoute ?? "/company"}
                 embedded
                 hideChrome
                 branchOverride={null}

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MENU_SECTIONS, flattenMenuItems, menuText } from "./menu-data";
+import { MENU_SECTIONS, flattenMenuItems, menuSearchHaystack, menuSearchMatches, menuText, normalizeMenuSearchText } from "./menu-data";
 import type { BackendLanguageDictionary } from "./backend-language";
 
 function readyDictionary(values: BackendLanguageDictionary): BackendLanguageDictionary {
@@ -91,11 +91,8 @@ describe("menu language labels", () => {
     expect(menuText({ key: "settings", th: "ตั้งค่า", en: "Settings" }, "th", {})).toBe("ตั้งค่า");
   });
 
-  it("keeps employee before form design", () => {
-    const settingsGroup = MENU_SECTIONS.find((section) => section.id === "settings")?.groups.find((group) => group.id === "company-system");
-    const itemIds = settingsGroup?.items.map((item) => item.id) ?? [];
-
-    expect(itemIds.indexOf("employee")).toBeLessThan(itemIds.indexOf("form-design"));
+  it("has no settings section in the main menu (settings live in the workspace wizard, 2026-09-02)", () => {
+    expect(MENU_SECTIONS.find((section) => section.id === "settings")).toBeUndefined();
   });
 
   it("hides sub-screens that were merged into the branch screen", () => {
@@ -265,5 +262,51 @@ describe("menu language labels", () => {
     });
 
     expect(missing).toEqual([]);
+  });
+});
+
+describe("menu full-text search (all languages)", () => {
+  const first = flattenMenuItems()[0];
+
+  it("English query finds a Thai-labeled item (all-language haystack)", () => {
+    expect(first).toBeTruthy();
+    const enNeedle = normalizeMenuSearchText(first.label.en);
+    expect(enNeedle.length).toBeGreaterThan(1);
+    expect(menuSearchHaystack(first.label).includes(enNeedle)).toBe(true);
+  });
+
+  it("route/id are searchable in the combined haystack", () => {
+    const haystack = `${menuSearchHaystack(first.label)} ${normalizeMenuSearchText(first.route)} ${normalizeMenuSearchText(first.id)}`;
+    expect(haystack.includes(normalizeMenuSearchText(first.route))).toBe(true);
+    expect(haystack.includes(normalizeMenuSearchText(first.id))).toBe(true);
+  });
+
+  it("matches across the OTHER language regardless of UI language", () => {
+    const salesItem = flattenMenuItems().find((item) => menuSearchHaystack(item.label).includes(normalizeMenuSearchText("sale")));
+    expect(salesItem).toBeTruthy();
+    // same item must also be reachable with its Thai text
+    expect(menuSearchHaystack(salesItem!.label)).toContain(normalizeMenuSearchText(salesItem!.label.th));
+  });
+
+  it("is case-insensitive for Latin", () => {
+    expect(normalizeMenuSearchText("InVoice")).toBe(normalizeMenuSearchText("invoice"));
+  });
+
+  it("Thai tone-mark typos still match (combining marks stripped on both sides)", () => {
+    const needle = normalizeMenuSearchText("\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19"); // รายงาน
+    const wrongTone = normalizeMenuSearchText("\u0e23\u0e32\u0e49\u0e22\u0e07\u0e32\u0e19"); // รา้ยงาน (extra mark)
+    expect(needle).toBe(wrongTone);
+    const reportItem = flattenMenuItems().find((item) => item.label.key === "report" || /report/i.test(item.route));
+    void reportItem;
+  });
+
+  it("menuSearchMatches uses key and backend dictionary override", () => {
+    const label = { key: "invoice", th: "ใบแจ้งหนี้", en: "Invoice" };
+    expect(menuSearchMatches(label, normalizeMenuSearchText("invoice"))).toBe(true);
+    expect(menuSearchMatches(label, normalizeMenuSearchText("ใบแจ้งหนี้"))).toBe(true);
+    expect(menuSearchMatches(label, normalizeMenuSearchText("invoice"), { invoice: "請求書" } as BackendLanguageDictionary)).toBe(true);
+    const cnNeedle = normalizeMenuSearchText("請求書");
+    expect(menuSearchMatches(label, cnNeedle, { invoice: "請求書" } as BackendLanguageDictionary)).toBe(true);
+    expect(menuSearchMatches(label, normalizeMenuSearchText("xyz-not-exist"))).toBe(false);
   });
 });
