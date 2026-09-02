@@ -78,6 +78,9 @@ func NormalizeRequest(req *RolePermissionRequest) error {
 		if permission == "" {
 			continue
 		}
+		if !isValidPermissionEntry(permission) {
+			return fmt.Errorf("รูปแบบสิทธิ์ %q ไม่ถูกต้อง (ต้องเป็น รหัสจอ หรือ รหัสจอ:create|update|delete)", permission)
+		}
 		if _, duplicate := seenPermissions[permission]; duplicate {
 			continue
 		}
@@ -87,4 +90,23 @@ func NormalizeRequest(req *RolePermissionRequest) error {
 	sort.Strings(permissions)
 	req.Permissions = permissions
 	return nil
+}
+
+// Permission entries: "<screen>" grants entry (เข้า) to a screen; "<screen>:create",
+// "<screen>:update", "<screen>:delete" grant the matching action. "*" = everything.
+var permissionActions = map[string]struct{}{"create": {}, "update": {}, "delete": {}}
+
+func isValidPermissionEntry(entry string) bool {
+	if entry == "*" {
+		return true
+	}
+	screen, action, hasAction := strings.Cut(entry, ":")
+	if screen == "" || strings.ContainsAny(screen, " 	") {
+		return false
+	}
+	if !hasAction {
+		return true
+	}
+	_, ok := permissionActions[action]
+	return ok
 }

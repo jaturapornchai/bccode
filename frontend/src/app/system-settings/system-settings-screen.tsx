@@ -128,6 +128,8 @@ import {
 } from "@/lib/thailand-addresses";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
+import { ALL_SCREEN_ACTIONS, PERMISSION_ACTIONS, PERMISSION_ACTION_LABELS, actionEntry, isActionEntry, type ScreenActions } from "@/lib/permission-actions";
+import { useScreenActions } from "@/lib/use-screen-actions";
 import type { MasterEntry, MasterName } from "@/lib/product-barcode/api";
 import { pickName } from "@/lib/product-barcode/utils";
 import {
@@ -720,6 +722,8 @@ export function SystemSettingsScreen({
     if (!branchOverride) return workspaceState;
     return { ...workspaceState, branch: branchOverride };
   }, [branchOverride, workspaceState]);
+  // เพิ่ม/แก้ไข/ลบ ที่บทบาทของผู้ใช้ทำได้บนจอนี้ (role permission: "<screen>:<action>")
+  const screenActions = useScreenActions(auth, workspace, route);
   const [records, setRecords] = useState<SettingRecord[]>([]);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1425,6 +1429,7 @@ export function SystemSettingsScreen({
   const isOwnerOrAdmin = isCreator || workspace?.shop?.role === 1 || workspace?.shop?.role === 2;
   const isProductUnit = currentConfig.slug === "productunit";
   const canEdit = currentConfig.editable !== false && (!isProductUnit || isOwnerOrAdmin);
+  const canCreate = canEdit && screenActions.create;
   const selectedDetailRecord =
     detailRecordId && detailRecordId === selectedRecordId ? detailRecord : null;
   const categoryDetailRecord =
@@ -2932,6 +2937,7 @@ export function SystemSettingsScreen({
                 <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm">
                   <CardContent className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3" aria-busy={categoryDetailPending}>
                     <SettingDetailPanel
+                      actions={screenActions}
                       auth={auth}
                       categoryHasChildren={records.some(
                         (record) =>
@@ -3098,7 +3104,7 @@ export function SystemSettingsScreen({
                   )}
                   {text("refresh")}
                 </Button>
-                {canEdit && currentConfig.slug !== "permissionlink" ? (
+                {canCreate && currentConfig.slug !== "permissionlink" ? (
                   <>
                     {/* Always render Copy (disabled when no row is selected) so the toolbar
                         buttons never shift position when a row is picked. */}
@@ -3156,6 +3162,7 @@ export function SystemSettingsScreen({
             </Card>
           ) : visibleRecords.length || formOpen ? (
             <SettingDataList
+              actions={screenActions}
               auth={auth}
               config={config}
               dateTimeScope={dateTimeScope}
@@ -3214,7 +3221,7 @@ export function SystemSettingsScreen({
                   <p className="text-sm text-muted-foreground">
                     {canEdit ? text("emptyHint") : text("readOnlyEmptyHint")}
                   </p>
-                  {canEdit && currentConfig.slug !== "permissionlink" ? (
+                  {canCreate && currentConfig.slug !== "permissionlink" ? (
                     <Button type="button" onClick={openCreate} disabled={!auth}>
                       <Plus />
                       {text("addItem")}
@@ -3273,6 +3280,7 @@ export function SystemSettingsScreen({
 }
 
 function SettingDataList({
+  actions = ALL_SCREEN_ACTIONS,
   auth,
   config,
   dateTimeScope,
@@ -3302,6 +3310,7 @@ function SettingDataList({
   text,
   workspace,
 }: {
+  actions?: ScreenActions;
   auth: AuthSession | null;
   config: SystemSettingConfig;
   dateTimeScope: DateTimeScope;
@@ -3548,7 +3557,7 @@ function SettingDataList({
                   <span
                     className="flex min-w-0 basis-24 grow flex-wrap justify-end gap-1"
                   >
-                    {config.editable !== false ? (
+                    {config.editable !== false && actions.update ? (
                       <Button
                         type="button"
                         size="icon"
@@ -3589,7 +3598,8 @@ function SettingDataList({
                       </Button>
                     ) : null}
                     {config.kind === "company" ||
-                    config.editable === false ? null : (
+                    config.editable === false ||
+                    !actions.delete ? null : (
                       <Button
                         type="button"
                         size="icon"
@@ -3663,6 +3673,7 @@ function SettingDataList({
             />
           ) : panelRecord ? (
             <SettingDetailPanel
+              actions={actions}
               auth={auth}
               config={config}
               dictionary={dictionary}
@@ -4107,6 +4118,7 @@ function settingListColumns(
 }
 
 function SettingDetailPanel({
+  actions = ALL_SCREEN_ACTIONS,
   auth,
   categoryHasChildren = false,
   config,
@@ -4121,6 +4133,7 @@ function SettingDetailPanel({
   text,
   workspace,
 }: {
+  actions?: ScreenActions;
   auth: AuthSession | null;
   categoryHasChildren?: boolean;
   config: SystemSettingConfig;
@@ -4253,7 +4266,7 @@ function SettingDetailPanel({
             </div>
           </div>
           <div className="flex flex-wrap justify-end gap-1.5">
-            {canEdit ? (
+            {canEdit && actions.update ? (
               <Button
                 type="button"
                 size="sm"
@@ -4298,7 +4311,7 @@ function SettingDetailPanel({
                   : text("temporarilyDisableAccess")}
               </Button>
             ) : null}
-            {config.kind === "company" || !canEdit ? null : (
+            {config.kind === "company" || !canEdit || !actions.delete ? null : (
               <Button
                 type="button"
                 size="sm"
@@ -4565,6 +4578,7 @@ function SettingFormDialog({
   text,
   workspace,
 }: {
+  actions?: ScreenActions;
   auth: AuthSession | null;
   config: SystemSettingConfig;
   dateTimeScope: DateTimeScope;
@@ -4736,6 +4750,7 @@ function UserFormSections({
   setForm,
   workspace,
 }: {
+  actions?: ScreenActions;
   auth: AuthSession | null;
   config: SystemSettingConfig;
   dateTimeScope: DateTimeScope;
@@ -6312,9 +6327,28 @@ function PermissionLinkMultiSelectEditor({
 
   function toggle(code: string, checked: boolean) {
     if (readOnly || !setForm || !selectedUserCode) return;
+    // Unchecking เข้า also drops the screen's เพิ่ม/แก้ไข/ลบ entries.
     const next = checked
       ? uniqueStrings([...selectedCodes, code])
-      : selectedCodes.filter((item) => item !== code);
+      : selectedCodes.filter((item) => item !== code && !item.startsWith(`${code}:`));
+    setForm({ ...form, [field.key]: next });
+  }
+
+  function toggleAction(code: string, action: (typeof PERMISSION_ACTIONS)[number], checked: boolean) {
+    if (readOnly || !setForm || !selectedUserCode) return;
+    const entry = actionEntry(code, action);
+    const next = checked
+      ? uniqueStrings([...selectedCodes, code, entry])
+      : selectedCodes.filter((item) => item !== entry);
+    setForm({ ...form, [field.key]: next });
+  }
+
+  function toggleAll(code: string, checked: boolean) {
+    if (readOnly || !setForm || !selectedUserCode) return;
+    const entries = PERMISSION_ACTIONS.map((action) => actionEntry(code, action));
+    const next = checked
+      ? uniqueStrings([...selectedCodes, code, ...entries])
+      : selectedCodes.filter((item) => item !== code && !item.startsWith(`${code}:`));
     setForm({ ...form, [field.key]: next });
   }
 
@@ -6326,7 +6360,7 @@ function PermissionLinkMultiSelectEditor({
           {field.required ? " *" : ""}
         </span>
         <Badge variant="outline">
-          {selectedCodes.length.toLocaleString(localeOf(language))}
+          {selectedCodes.filter((item) => !isActionEntry(item)).length.toLocaleString(localeOf(language))}
         </Badge>
       </div>
       {!selectedUserCode ? (
@@ -6349,9 +6383,9 @@ function PermissionLinkMultiSelectEditor({
           options.map((option) => {
             const checked = selectedCodes.includes(option.code);
             return (
-              <label
+              <div
                 className={cn(
-                  "grid cursor-pointer gap-1 rounded-xl border p-2 transition-colors",
+                  "grid gap-1 rounded-xl border p-2 transition-colors",
                   checked
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-card text-foreground hover:bg-muted/60",
@@ -6359,7 +6393,7 @@ function PermissionLinkMultiSelectEditor({
                 )}
                 key={option.code}
               >
-                <span className="flex min-w-0 items-center gap-2">
+                <label className="flex min-w-0 cursor-pointer items-center gap-2">
                   <input
                     className="size-4 shrink-0 accent-primary"
                     type="checkbox"
@@ -6372,16 +6406,48 @@ function PermissionLinkMultiSelectEditor({
                   <span className="min-w-0 truncate font-semibold">
                     {option.name || option.code}
                   </span>
-                </span>
+                </label>
                 <span className="truncate text-xs text-muted-foreground">
                   {language === "th" ? "รหัสสิทธิ์" : "Permission code"}: {option.code}
                 </span>
+                {isGroup ? (
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
+                    {PERMISSION_ACTIONS.map((action) => {
+                      const entry = actionEntry(option.code, action);
+                      const actionChecked = selectedCodes.includes(entry);
+                      return (
+                        <label className="inline-flex cursor-pointer items-center gap-1" key={entry}>
+                          <input
+                            className="size-4 shrink-0 cursor-pointer accent-primary"
+                            type="checkbox"
+                            checked={actionChecked}
+                            disabled={readOnly || !selectedUserCode}
+                            aria-label={`${PERMISSION_ACTION_LABELS[action][language === "th" ? "th" : "en"]} ${option.name || option.code}`}
+                            onChange={(event) => toggleAction(option.code, action, event.target.checked)}
+                          />
+                          {PERMISSION_ACTION_LABELS[action][language === "th" ? "th" : "en"]}
+                        </label>
+                      );
+                    })}
+                    <label className="inline-flex cursor-pointer items-center gap-1 text-muted-foreground">
+                      <input
+                        className="size-4 shrink-0 accent-primary"
+                        type="checkbox"
+                        checked={checked && PERMISSION_ACTIONS.every((action) => selectedCodes.includes(actionEntry(option.code, action)))}
+                        disabled={readOnly || !selectedUserCode}
+                        aria-label={`${language === "th" ? "ทั้งหมด" : "All"} ${option.name || option.code}`}
+                        onChange={(event) => toggleAll(option.code, event.target.checked)}
+                      />
+                      {language === "th" ? "ทั้งหมด" : "All"}
+                    </label>
+                  </span>
+                ) : null}
                 {option.description ? (
                   <span className="line-clamp-2 text-xs font-normal text-muted-foreground">
                     {option.description}
                   </span>
                 ) : null}
-              </label>
+              </div>
             );
           })
         ) : (
@@ -8577,6 +8643,7 @@ function FieldEditor({
   setForm,
   workspace,
 }: {
+  actions?: ScreenActions;
   auth: AuthSession | null;
   config: SystemSettingConfig;
   dateTimeScope: DateTimeScope;
@@ -9158,6 +9225,7 @@ function TaxIdLinkBadge({
   language,
   workspace,
 }: {
+  actions?: ScreenActions;
   auth: AuthSession | null;
   config: SystemSettingConfig;
   form: FormState;
