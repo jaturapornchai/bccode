@@ -727,3 +727,10 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 - ขั้น 3: ตารางสิทธิ์มีปุ่ม **ใช้ค่าแนะนำ** (`RoleScreenMatrix role=`; USER = เข้า+เพิ่ม+แก้ไข, ADMIN/OWNER = ทั้งหมด, กับจอที่แสดงอยู่)
   + แท็บ รายการจอทั้งหมด (permissiondefinition) แทนการเป็นขั้นแยก
 - MongoModel: workflow `system_setup_steps` (rev 1355) · เมนูหลักไม่มีหมวด ตั้งค่า
+
+## 4.31) อัปโหลดรูป local ล้ม "Failed to upload image to storage" ทั้งที่ env ถูก → ดู bootstrap.json (2026-09-02)
+- **อาการ:** upload PNG (โลโก้สาขา ฯลฯ) ตอบ `Failed to upload image to storage`; `docker logs mainapi` มี `S3 … 403 InvalidAccessKeyId` ทั้ง GetObject/PutObject แม้ `docker exec mainapi env` และ `/proc/1/environ` แสดง `S3_ACCESS_KEY_ID` ที่ถูกต้อง และ `mc` ด้วย creds เดียวกัน (ผ่าน `--network container:mainapi`) ใช้ได้
+- **สาเหตุ:** `backend/internal/goapi/setupconfig/loader.go` (`applyBootstrapSection` → `os.Setenv`) เอาค่าใน `bootstrap.json` (local = `bootstrap.local.json` mount เป็น `/app/bootstrap.json`) **ทับ env ของ compose ตอน start** — `s3accesskeyid: minioadmin` + `s3bucketname: app-images` ไม่มีใน MinIO local → client singleton (`GetR2Client`) ถูก cache ด้วย creds ผิดตลอดอายุ process. env ที่เห็นจาก `docker exec`/`/proc/*/environ` คือค่าตอน spawn จึงหลอกตา
+- **วิธีตรวจให้ไว:** `docker logs mainapi | grep "Object storage client initialized"` → ถ้า `bucket:` ไม่ตรง `S3_BUCKET_NAME` ใน `storage.local.env` แปลว่า bootstrap ทับ; ดู `[Bootstrap] override S3_*` บรรทัดก่อนหน้า
+- **แก้:** ให้ `s3accesskeyid/s3secretaccesskey/s3bucketname` ใน `bootstrap.local.json` ตรงกับ `storage.local.env`/`minio.local.env` แล้ว `docker restart mainapi`; verify ด้วย POST `/api/upload/image` (category `branch`) จากหน้าเว็บที่ login แล้ว → 200 + `mc ls t/bcai-account/bc001/branch/` เห็น `.png` + `.png.thumb.webp` + GET `/goapi/s3/file/<key>.thumb.webp` = 200 image/webp
+- **กติกา:** ไฟล์ทั้งคู่เป็น local-only (gitignored) — เวลา rotate key MinIO ต้องแก้ 3 ที่: `minio.local.env`, `storage.local.env`, `bootstrap.local.json` (ต่อยอด §4.21)
