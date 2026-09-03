@@ -55,7 +55,7 @@ describe("setup basic manuals", () => {
       "utf8",
     );
 
-    expect(source).toContain("getSystemSettingConfig(activeAccessRoute)?.manual");
+    expect(source).toContain('getSystemSettingConfig(effectiveAccessRoute ?? "")?.manual');
     expect(source).toContain('label={language === "th" ? "คู่มือเบื้องต้น" : t(language, "manual")}');
   });
 

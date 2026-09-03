@@ -2,33 +2,18 @@
 
 For every task under `D:\bccode`:
 
-1. Read `D:\bccode\docs\README.md` in full.
-2. Read every matching Jead-authored file under `D:\bccode\docs\**`.
+1. `docs/` was removed 2026-09-03 (ลุงจืด: ออกแบบใหม่) — no business-rule Source of Truth exists yet; treat requirement questions as ห้ามเดา and ask.
+2. (reserved for the new docs entrypoint)
 3. Use `D:\bccode\AI_INDEX.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
 
-This file is only a routing entrypoint. Source-of-truth boundaries are defined only in `D:\bccode\docs\README.md`.
+This file is only a routing entrypoint. Source-of-truth boundaries will be defined by the new docs (pending).
 
-## กฎ: DeepSeek เป็นที่ปรึกษา (ตั้งโดยลุงจืด 2026-08-29)
+## กฎ: ผู้ช่วยคิด = Kimi K3 + GLM (ตั้งโดยลุงจืด 2026-09-02; DeepSeek ถอดออก 2026-09-03)
 
-- เมื่อต้องการความเห็นที่สอง ติดขัด หรือก่อนตัดสินใจงานด้านดีไซน์/สถาปัตยกรรมที่ไม่มีกฎครอบ ให้ปรึกษา DeepSeek ผ่าน:
-  `node scripts/ask-deepseek.mjs "โจทย์/บริบท"` (หรือ `--model deepseek-reasoner` สำหรับโจทย์ซับซ้อน)
-- Key อยู่ใน `deepseek.env` (git-ignored ผ่าน pattern `*.env`) — **ห้าม commit key หรือคัดลอก key ลงไฟล์/log อื่น**
-- **ห้ามส่ง** secret, password, token, ข้อมูลส่วนบุคคล หรือข้อมูลลับของระบบไปปรึกษา — ส่งเฉพาะโจทย์/โครงสร้างที่จำเป็น
-- คำตอบของ DeepSeek เป็น **ความเห็นที่ปรึกษาเท่านั้น ไม่ใช่กฎ** — ยังต้องยึดลำดับความน่าเชื่อถือใน `docs/README.md` และการตัดสินใจสุดท้ายเป็นของลุงจืด
-
-## กฎ: Kimi K3 Max เป็นที่ปรึกษาเช่นกัน (ตั้งโดยลุงจืด 2026-08-30)
-
-- ใช้ผ่าน: ไม่มีโจทย์อะไรมา — มีแค่คำว่า "โจทย์" กับเครื่องหมายผิดพลาด
-
-ถามมาให้ชัด:
-- วิเคราะห์โจทย์ธุรกิจ SME ไทย 40+ ?
-- รีวิวโจทย์เทคนิค (Next.js/Go/MongoDB) ?
-- ตั้ง requirements/UI ให้ ?
-
-ไม่ระบุมา = ตอบไม่ได้ อย่าเสียเวลากัน (default model kimi-k3-max; --model เปลี่ยนได้)
-- Key อ่านจาก ~/.kimi/kimi-claw/openclaw.json ตอน runtime — **ห้าม copy key ลงไฟล์/log/commit**
-- กฎความปลอดภัย/ขอบเขตเหมือน DeepSeek ทุกประการ: ห้ามส่ง secret/PII, คำตอบเป็นความเห็นที่ปรึกษาเท่านั้น
+- ใช้ตาม Orchestration Rule ใน ~/.claude/CLAUDE.md: py ~/.claude/tools/kimi-ask.py หรือ glm-ask.py (ต้องใช้ py launcher + PYTHONIOENCODING=utf-8)
+- คำตอบผู้ช่วยเป็นความเห็นเท่านั้น Claude ต้อง verify กับ source/build/test ก่อนใช้; ห้ามส่ง secret/PII; R0/R1 ตัดสินโดย Claude + ลุงจืด
+- DeepSeek/ChatGPT/OpenRouter ยังไม่เปิดใช้ (ถามก่อน)
 
 ## กฎ: UX/UI ยึด "คนไทย อายุ 40+" เป็นบุคลิกหลัก (ตั้งโดยลุงจืด 2026-08-30)
 
