@@ -78,6 +78,10 @@ type ProductBarcodeBase struct {
 	PackageHeight       float64                  `json:"packageheight" bson:"packageheight"`
 	MarketplaceProducts *[]MarketplaceProductMap `json:"marketplaceproducts" bson:"marketplaceproducts"`
 
+	// ชั้นลงขาย (ช่องทางขายออนไลน์) — omitempty จำเป็น เพราะการบันทึกฝั่งบัญชี $set ทั้ง struct จะได้ไม่ลบค่าเหล่านี้ทิ้ง
+	ImageURIThumb string                 `json:"imageurithumb,omitempty" bson:"imageurithumb,omitempty"`
+	Listing       *ProductBarcodeListing `json:"listing,omitempty" bson:"listing,omitempty"`
+
 	ItemType     int8   `json:"itemtype" bson:"itemtype"`
 	MaterialType int8   `json:"materialtype" bson:"materialtype"`
 	TaxType      int8   `json:"taxtype" bson:"taxtype"`
@@ -214,8 +218,16 @@ type ProductBarcodeSupplier struct {
 }
 
 type ProductImage struct {
-	XOrder int    `json:"xorder" bson:"xorder"`
-	URI    string `json:"uri" bson:"uri"`
+	XOrder   int    `json:"xorder" bson:"xorder"`
+	URI      string `json:"uri" bson:"uri"`
+	URIThumb string `json:"urithumb,omitempty" bson:"urithumb,omitempty"` // รูปย่อ (ชั้นลงขาย)
+}
+
+// ProductBarcodeListing ข้อมูลชั้นลงขายระดับรุ่นสินค้า (ช่องทางขายออนไลน์)
+type ProductBarcodeListing struct {
+	TierIndex []int  `json:"tierindex" bson:"tierindex"` // ดัชนีตัวเลือกในแต่ละชั้น (tiers) ของสินค้าหลัก
+	GTIN      string `json:"gtin" bson:"gtin"`           // รหัสสากลของสินค้า (ถ้ามี)
+	IsForSale bool   `json:"isforsale" bson:"isforsale"` // เปิดขายรุ่นนี้ในช่องทางขายออนไลน์หรือไม่
 }
 
 type ProductVideo struct {

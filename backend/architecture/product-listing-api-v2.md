@@ -31,7 +31,7 @@ API ชุดนี้ให้บริการ**ชั้นลงขาย�
 | Response สำเร็จ | `{"success": true, "data": …}` |
 | Response ผิดพลาด | `{"success": false, "code": "SNAKE_CASE", "message": "ข้อความไทยที่บอกว่าต้องทำอะไรต่อ", "fields": [{"field": "listing.title", "code": "TOO_LONG", "message": "…"}]}` — `fields` ใส่เฉพาะ validation |
 | รหัสอ้างอิง | ใช้ business key เสมอ: `itemcode` (= `product.code`), `barcode` (= `productbarcode.barcode`), `shopid`, `channel` — ไม่ใช้ `_id`/`guidfixed` ใน API |
-| เงิน | string ทศนิยม เช่น `"199.00"` (backend เก็บ Decimal128) |
+| เงิน | ตอบกลับเป็น string ทศนิยม เช่น `"199.00"` เสมอ (backend เก็บ Decimal128); request รับได้ทั้ง string และ JSON number |
 | เวลา | ISO 8601 UTC เช่น `"2026-09-03T04:00:00Z"` |
 | น้ำหนัก/ขนาด | กิโลกรัม / เซนติเมตร (Number) |
 | Pagination | `offset` + `limit` (ค่าเริ่มต้น 0 / 50, สูงสุด 200) ตอบ `{"items": [], "total": n, "offset": 0, "limit": 50}` — เลือก offset ตาม `reports.go` เดิม จอ list ของระบบเป็นตารางเลขหน้า ไม่ใช่ infinite scroll |
@@ -83,7 +83,7 @@ API ชุดนี้ให้บริการ**ชั้นลงขาย�
 | Method | Path | สิทธิ์ | คำอธิบาย |
 |---|---|---|---|
 | POST | `tier/init` | `/product/listing` | กำหนดชั้นตัวเลือก (≤2 ชั้น) พร้อมสร้าง/จับคู่ productbarcode ให้ทุกชุดผสม |
-| POST | `tier/update` | `/product/listing` | เพิ่ม/ลบ/เรียงตัวเลือก (ลบได้เฉพาะตัวเลือกที่ยังไม่มี model เผยแพร่) |
+| POST | `tier/update` | `/product/listing` | แก้ชั้นตัวเลือกของสินค้าที่มีอยู่แล้ว (body เดียวกับ `tier/init` = สถานะสุดท้ายทั้งชุด); ชุดผสมที่หายไปถูกปิดขาย ไม่ถูกลบ |
 
 ### 4.3 Model (ตัวเลือกที่ขายได้ = `productbarcode`)
 
@@ -240,7 +240,7 @@ Response
 } }
 ```
 
-### 5.4 `tier/init`
+### 5.4 `tier/init` และ `tier/update`
 
 Request
 ```json
@@ -248,7 +248,7 @@ Request
   "itemcode": "SHIRT-001",
   "__v": 8,
   "tiers": [
-    { "name": "สี", "options": [{ "name": "ดำ", "imageuri": "…" }, { "name": "ขาว", "imageuri": "…" }] },
+    { "name": "สี", "options": [{ "name": "ดำ", "imageuri": "…", "imageurithumb": "…" }, { "name": "ขาว", "imageuri": "…", "imageurithumb": "…" }] },
     { "name": "ขนาด", "options": [{ "name": "M" }, { "name": "L" }] }
   ],
   "models": [
@@ -266,7 +266,17 @@ Request
 - `barcode` ที่ระบุต้องมีอยู่และ `itemcode` ตรงกัน (E10); `generate=true` → สร้างบาร์โค้ดใหม่ (รูปแบบเลขตาม `barcode-form.tsx` เดิม, `ismainbarcode=false`, `itemunitcode` ตามที่ส่ง, `names` = ชื่อสินค้า + ชื่อตัวเลือก) — ต้องมีสิทธิ์ `/product` เพราะสร้างเอกสารชั้นบัญชี
 - ถ้าสินค้ามี `channel_listing` ที่ `sync.state=published` และ `platform.haspromotion=true` → `409 LISTING_LOCKED_BY_PROMOTION` (E17)
 
-Response `{"success": true, "data": {"itemcode": "…", "__v": 9, "models": [{"tierindex": [1,0], "barcode": "SHIRT-001-03", "created": true}, …]}}`
+Response `{"success": true, "data": {"itemcode": "…", "__v": 9, "tiers": [...], "models": [{"tierindex": [1,0], "barcode": "SHIRT-001-03", "created": true}, …]}}`
+
+พฤติกรรมเพิ่มเติมของ `tier/update` (body รูปแบบเดียวกับ `tier/init`)
+
+- ทั้งสอง endpoint รับ **สถานะสุดท้ายทั้งชุด**: `tiers[]` ใหม่ทั้งหมด และ `models[]` ที่ครบทุกชุดผสมพอดี พร้อมระบุว่าชุดใดใช้บาร์โค้ดใด — เซิร์ฟเวอร์ไม่จับคู่ตัวเลือกเดิมด้วยชื่อ จึงเปลี่ยนชื่อตัวเลือก (แก้คำผิด) ได้โดยบาร์โค้ดไม่หลุดตำแหน่ง
+- `xorder` ของชั้นและตัวเลือกกำหนดโดยเซิร์ฟเวอร์ตามลำดับใน array (request ไม่ต้องส่ง)
+- ชุดผสมเดิมที่ไม่อยู่ในคำขอ → `listing.tierindex=[]`, `listing.isforsale=false` (ปิดขาย ไม่ลบ productbarcode เพราะผูกประวัติสต๊อก)
+- `tier/init` ใช้กับสินค้าที่ยังไม่มี `listing.tiers` (มีแล้ว → `409 TIER_ALREADY_EXISTS`) · `tier/update` ใช้กับสินค้าที่มีแล้ว (ไม่มี → `409 TIER_NOT_INITIALIZED`)
+- รูปตัวเลือกต้องมาคู่กับรูปย่อ (`imageuri` + `imageurithumb`) ตามกฎรูปภาพของระบบ
+- เขียน `product` และ `productbarcode` ใน transaction เดียว; ถ้าเซิร์ฟเวอร์ MongoDB ไม่รองรับ transaction จะเขียนแบบเรียงลำดับพร้อมบันทึกคำเตือนใน log
+- บาร์โค้ดที่ระบบสร้างชนกับของเดิม → `409 BARCODE_GENERATE_FAILED` (ให้ผู้ใช้กดใหม่)
 
 Validation: E03 E04 E09 E10 E11 E12
 

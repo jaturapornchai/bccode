@@ -97,6 +97,10 @@ type Product struct {
 	PackageHeight       float64                  `json:"packageheight" bson:"packageheight"`
 	MarketplaceProducts *[]MarketplaceProductMap `json:"marketplaceproducts" bson:"marketplaceproducts"`
 
+	// ชั้นลงขาย (ช่องทางขายออนไลน์) — omitempty จำเป็น เพราะการบันทึกฝั่งบัญชี $set ทั้ง struct จะได้ไม่ลบค่าเหล่านี้ทิ้ง
+	ImageURIThumb string          `json:"imageurithumb,omitempty" bson:"imageurithumb,omitempty"`
+	Listing       *ProductListing `json:"listing,omitempty" bson:"listing,omitempty"`
+
 	// Stock properties
 	OrderPoint   float64 `json:"orderpoint" bson:"orderpoint"`
 	MinPoint     float64 `json:"minpoint" bson:"minpoint"`
@@ -271,14 +275,17 @@ func (ProductDeleteActivity) CollectionName() string {
 }
 
 type ProductImage struct {
-	XOrder int    `json:"xorder" bson:"xorder"`
-	URI    string `json:"uri" bson:"uri"`
+	XOrder   int    `json:"xorder" bson:"xorder"`
+	URI      string `json:"uri" bson:"uri"`
+	URIThumb string `json:"urithumb,omitempty" bson:"urithumb,omitempty"` // รูปย่อ (ชั้นลงขาย)
 }
 
 type ProductVideo struct {
-	XOrder    int    `json:"xorder" bson:"xorder"`
-	URI       string `json:"uri" bson:"uri"`
-	PosterURI string `json:"posteruri" bson:"posteruri"`
+	XOrder      int    `json:"xorder" bson:"xorder"`
+	URI         string `json:"uri" bson:"uri"`
+	PosterURI   string `json:"posteruri" bson:"posteruri"`
+	DurationSec int    `json:"durationsec,omitempty" bson:"durationsec,omitempty"` // ความยาววิดีโอ (วินาที)
+	SizeBytes   int64  `json:"sizebytes,omitempty" bson:"sizebytes,omitempty"`     // ขนาดไฟล์ (ไบต์)
 }
 
 type MarketplaceMediaAsset struct {

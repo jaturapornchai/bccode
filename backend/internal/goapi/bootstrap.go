@@ -413,6 +413,13 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, authorization
 	authGroup.POST("/api/product/cache/clear", handlers.ProductCacheClearHandler)
 	authGroup.POST("/api/product/search/unified", handlers.UnifiedProductSearchHandler)
 
+	// ชั้นลงขาย (Product Listing API v2) — backend/architecture/product-listing-api-v2.md
+	authGroup.POST("/product/v2/item/get", handlers.ProductV2ItemGetHandler)
+	authGroup.POST("/product/v2/item/update-listing", handlers.ProductV2ItemUpdateListingHandler)
+	authGroup.POST("/product/v2/item/readiness", handlers.ProductV2ItemReadinessHandler)
+	authGroup.POST("/product/v2/tier/init", handlers.ProductV2TierInitHandler)
+	authGroup.POST("/product/v2/tier/update", handlers.ProductV2TierUpdateHandler)
+
 	// Stock Report Lookup
 	authGroup.POST("/api/stock-report/barcodes", handlers.StockReportBarcodesHandler)
 	authGroup.POST("/api/stock-report/warehouses", handlers.StockReportWarehousesHandler)
