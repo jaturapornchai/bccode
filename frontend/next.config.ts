@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // อนุญาตให้เครื่องอื่นใน Tailscale เรียก dev server นี้ได้ (กัน cross-origin block ของ Next dev)
+  allowedDevOrigins: ["100.118.122.7"],
   async headers() {
     return [
       {

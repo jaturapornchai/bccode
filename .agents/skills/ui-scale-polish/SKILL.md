@@ -764,3 +764,30 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 - **กับดัก:** menu id ≠ ชื่อ route: ขายสินค้า = `sale` (ไม่ใช่ sale-invoice), ปรับปรุงสต็อก = `stock-adjust`; list endpoint คืน `total` ระดับบน ไม่ใช่ใน pagination; ยังไม่มี filter สถานะ/ช่วงวัน (param "-" = docdatetime range ยังไม่ได้ใช้)
 - **ยังไม่ทำ (เฟส 2):** แถวตัวเลขเงิน (ยอดขาย/ซื้อ/กำไร — ไม่มี summary endpoint), รออนุมัติ (`/api/approval/*-status/pending` เป็น POST payload ยังไม่ได้ไล่), สินค้าใกล้หมด, ประกาศจากเจ้าของ
 - **Verify:** demo owner เห็นการ์ด 8 ประเภท (0 เอกสาร) + ทางลัด 8 + empty state; tsc/eslint ผ่าน
+
+## 4.36) กับดัก: sidebar โชว์แต่ตัวเลข (ไม่มีไอคอน/label) หลัง restart dev server = tab ค้าง ไม่ใช่ CSS bug (2026-09-04)
+
+ลุงจืดรายงานสกรีนช็อตจอ `/product`: sidebar ซ้ายเหลือแต่ pill ตัวเลขลอย ๆ (4,3,3,10,2,4,3,4,3,3,2,6,3,3,2,3 —
+ตรงกับ count ของกลุ่มย่อยใน "ข้อมูลหลัก" เป๊ะ) ไม่มีไอคอน/label/chevron เลย ข้างขวาเนื้อหา `/product` ก็ไม่ครบ —
+พร้อมสั่ง "ต้องมี base line แก้ skill ด้วย"
+
+**สืบสวนแล้ว ไม่ใช่ CSS bug จริง — reproduce ไม่ได้เลย:**
+- ไล่ทดสอบจอ `/product` ทุก breakpoint ที่เกี่ยวข้อง (`showLeftMenu` ที่ `lg:` 1024 ใน main-menu-screen.tsx,
+  `product-workbench` ที่ `xl:` 1280 ใน product-screen.tsx): 360/480/620/768/850/1024/1280 px ทุกจอ label+icon+badge
+  ครบเสมอ (ต่ำกว่า 1024 = sidebar เต็มจอแบบ mobile overlay อ่านง่าย, ≥1024 = 280px column โชว์ครบ)
+- ลองบวก app zoom-control (`~/zoom-control.tsx`, ค่าสูงสุด 150%) ที่ 1024px ด้วย — label ห่อบรรทัดสอง
+  แต่ไม่หายไปไหน ไม่ตรงกับที่รายงาน (badge ล้วน ไม่มี label เลย)
+- โครง JSX ของแถวกลุ่ม (`MenuSectionAccordion`/`MenuTreeGroup`) ผูก badge+chevron ด้วย `shrink-0` เสมอ
+  คู่กับ icon+label ที่ `min-w-0 truncate` — ไม่มี path ไหนที่ badge โผล่ได้โดยไม่มี chevron ติดมาด้วย
+  (ในสกรีนช็อตที่รายงานไม่มี chevron เลยสักตัว) → โครงสร้าง DOM ปัจจุบันสร้างอาการนี้ไม่ได้
+
+**ข้อสงสัยหลัก — ตรงกับที่เพิ่งเจอเรื่อง 403/HMR ในเซสชันเดียวกัน**: ก่อนหน้านี้ผมเพิ่ง `taskkill` +
+restart `next dev` (เพื่อให้ `allowedDevOrigins` มีผล ดู memory เครื่อง) — ถ้า tab ของลุงจืดเปิดค้างอยู่ตอนนั้น
+WebSocket HMR หลุดกลางคัน แล้ว React patch เพี้ยนจนจอค้างสภาพผสม (บาง component re-render บาง component ไม่)
+ก็เป็นไปได้สูงว่าเป็นสาเหตุ ไม่ใช่ CSS ผิดจริง — สังเกตแบบเดียวกับที่ลุงจืด paste console 403 ซ้ำหลัง restart
+ไปแล้วในเทิร์นก่อนหน้า (ของเก่าที่ค้างอยู่ใน tab ไม่ใช่ของสด)
+
+**วิธีตรวจก่อนเชื่อว่าเป็น CSS bug ครั้งหน้า**: กด hard refresh (Ctrl+Shift+R) ที่ tab ที่รายงานปัญหาก่อนเสมอ —
+ถ้าหายหลัง refresh = tab ค้าง ไม่ใช่โค้ด; ถ้ายังเป็นอยู่ ให้ขอ **ความกว้างหน้าต่างจริง + browser zoom% จริง**
+(ไม่ใช่ resize จำลอง) จากลุงจืดมาก่อน แล้ว reproduce ด้วยค่านั้นเป๊ะ ๆ ก่อนแก้ CSS — ห้ามแก้ CSS แบบเดา
+เมื่อ reproduce ไม่ได้ (Rule 2/7 ห้าม fabricate ว่า "แก้แล้ว" ทั้งที่ไม่เห็นบั๊กจริง)

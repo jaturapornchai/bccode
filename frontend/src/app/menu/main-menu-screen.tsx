@@ -70,7 +70,7 @@ import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuU
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import { authFetch, clearAuthSession, getAuthSession, logoutAuthSession } from "@/lib/client-auth-session";
 import { pushNotice } from "@/lib/toast";
-import { cn } from "@/lib/utils";
+import { cn, randomId } from "@/lib/utils";
 import {
   holdingDisplayName,
   shopDisplayName,
@@ -610,7 +610,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     const title = menuText(item.label, language, backendLanguage);
     const productCode = options.productCode?.trim().toUpperCase();
     const productFocusRequest = productCode
-      ? { code: productCode, requestId: crypto.randomUUID() }
+      ? { code: productCode, requestId: randomId() }
       : undefined;
     if (menuUsageKey) {
       setMenuUsage(recordMenuUsage(localStorage, menuUsageKey, item.id));
@@ -631,7 +631,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       }
     }
 
-    const tabId = `${item.route}::${crypto.randomUUID()}`;
+    const tabId = `${item.route}::${randomId()}`;
     setTabs((current) => {
       return [
         ...current,

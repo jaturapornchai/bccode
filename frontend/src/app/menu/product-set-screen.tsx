@@ -66,7 +66,7 @@ import {
   type ProductChoice,
   type ProductBarcodeListRow
 } from "@/lib/product-barcode/types";
-import { cn } from "@/lib/utils";
+import { cn, randomId } from "@/lib/utils";
 import { pushNotice } from "@/lib/toast";
 import { normalizeBusinessCode } from "@/lib/business-code";
 import { authFetch, getAuthSession } from "@/lib/client-auth-session";
@@ -81,7 +81,7 @@ function productSetRowKey(item: Product, index: number): string {
   return item.guidfixed || `${item.code || "product-set"}-${index}`;
 }
 
-async function ensureActiveProductSetHolding(auth: AuthSession, holdingcode: string): Promise<void> {
+async function ensureActiveProductSetHolding(auth: AuthSession, holdingcode: string, businesscode: string): Promise<void> {
   const response = await authFetch("/api/workspace/select-holding", {
     method: "POST",
     headers: {
@@ -89,7 +89,7 @@ async function ensureActiveProductSetHolding(auth: AuthSession, holdingcode: str
       "x-bc-backend-url": auth.backendUrl,
       Authorization: `Bearer ${auth.token}`,
     },
-    body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode }),
+    body: JSON.stringify({ backendUrl: auth.backendUrl, holdingcode, businesscode }),
     cache: "no-store",
   });
   const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
@@ -300,13 +300,13 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
 
   // Load products of type SET (itemtype: 2)
   const loadProductSets = useCallback(async () => {
-    if (!auth || !activeHoldingCode) return;
+    if (!auth || !activeHoldingCode || !activeBusinessCode) return;
     setLoading(true);
     setNotice(null);
     try {
-      const tokenShopKey = `${auth.token}:${activeHoldingCode}`;
+      const tokenShopKey = `${auth.token}:${activeHoldingCode}:${activeBusinessCode}`;
       if (selectedShopTokenRef.current !== tokenShopKey) {
-        await ensureActiveProductSetHolding(auth, activeHoldingCode);
+        await ensureActiveProductSetHolding(auth, activeHoldingCode, activeBusinessCode);
         selectedShopTokenRef.current = tokenShopKey;
       }
       const params = new URLSearchParams({
@@ -344,7 +344,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     } finally {
       setLoading(false);
     }
-  }, [auth, activeHoldingCode, search]);
+  }, [auth, activeHoldingCode, activeBusinessCode, search]);
 
   useEffect(() => {
     if (active && auth && activeHoldingCode) {
@@ -704,7 +704,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     if (!editProduct) return;
     const current = editProduct.options || [];
     const newGroup: ProductOption = {
-      guid: `group_${crypto.randomUUID()}`,
+      guid: `group_${randomId()}`,
       names: [{ code: "th", name: "กลุ่มส่วนประกอบย่อยใหม่" }],
       choicetype: 1, // Default to single choice
       minselect: 1,
@@ -772,7 +772,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
     }));
 
     const newChoice: ProductChoice = {
-      guid: `choice_${crypto.randomUUID()}`,
+      guid: `choice_${randomId()}`,
       names: entry.names,
       refbarcode: entry.barcode,
       refbarcodenames: entry.names,
