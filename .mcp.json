@@ -1,50 +1,38 @@
 {
   "mcpServers": {
     "mongodb": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "mongodb-mcp-server"
+        "C:/Users/jatur/AppData/Roaming/npm/node_modules/mongodb-mcp-server/dist/esm/index.js"
       ],
       "env": {}
     },
     "docker": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "mcp-server-docker"
+        "C:/Users/jatur/AppData/Roaming/npm/node_modules/mcp-server-docker/dist/index.js"
       ],
       "env": {}
     },
-    "codebase-memory-mcp": {
-      "command": "C:/Users/jatur/AppData/Local/Programs/codebase-memory-mcp-ui/codebase-memory-mcp.exe",
-      "args": []
-    },
+
     "mongomodel": {
       "type": "http",
       "url": "http://localhost:3100/mcp"
     },
     "playwright": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "@playwright/mcp@latest",
+        "C:/Users/jatur/AppData/Roaming/npm/node_modules/@playwright/mcp/cli.js",
         "--browser",
         "firefox",
         "--allow-unrestricted-file-access",
         "--user-data-dir",
         "C:/Users/jatur/AppData/Local/bcai-firefox-profile"
       ],
-      "env": {}
+      "env": {},
+      "disabled": true
     },
-    "context7": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp@latest"
-      ],
-      "env": {}
-    },
+
     "windows": {
       "command": "uvx",
       "args": [
