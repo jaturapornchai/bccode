@@ -109,7 +109,17 @@ func ensureProductFence(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
+// PostgreSQL's shared lock table holds about max_locks_per_transaction x
+// max_connections entries (6400 by default), so one bulk message must not claim
+// thousands of row locks. A large batch takes the exclusive company lock instead,
+// exactly like a company rebuild, and therefore never deadlocks with row holders.
+const maxRowLocksPerTransaction = 256
+
 func lockProjectionRows(ctx context.Context, tx *sql.Tx, kind, holding, business string, codes []string) error {
+	if len(codes) > maxRowLocksPerTransaction {
+		_, err := tx.ExecContext(ctx, projection.ExclusiveSQL, projection.LockKey(kind, holding, business, ""))
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, projection.CompanySharedSQL, projection.LockKey(kind, holding, business, "")); err != nil {
 		return err
 	}
@@ -129,7 +139,7 @@ func reconcileProductSignal(ctx context.Context, db *sql.DB, source projectionSo
 		meta := signal.Projection
 		if meta.Version < 1 || meta.EventUID == "" || signal.GuidFixed == "" ||
 			meta.AggregateUID != projection.AggregateKey(signal.HoldingCode, signal.BusinessCode, signal.GuidFixed) {
-			return errors.New("invalid product projection fence identity")
+			return fmt.Errorf("%w: invalid product projection fence identity", projection.ErrRejected)
 		}
 	}
 	if err := ensureProductFence(ctx, db); err != nil {
@@ -269,7 +279,7 @@ func projectionRuntime(holding string) (*sql.DB, projectionSource, error) {
 func consumeProductSignal(msg string) error {
 	var p MongoProductModel
 	if err := json.Unmarshal([]byte(msg), &p); err != nil {
-		return err
+		return fmt.Errorf("%w: %v", projection.ErrRejected, err)
 	}
 	if err := normalizeProductSignal(&p); err != nil {
 		return err
@@ -286,12 +296,12 @@ func consumeBarcodeSignals(msg string, batch bool) error {
 	var signals []models.MongoProductBarcodeModel
 	if batch {
 		if err := json.Unmarshal([]byte(msg), &signals); err != nil {
-			return err
+			return fmt.Errorf("%w: %v", projection.ErrRejected, err)
 		}
 	} else {
 		var p models.MongoProductBarcodeModel
 		if err := json.Unmarshal([]byte(msg), &p); err != nil {
-			return err
+			return fmt.Errorf("%w: %v", projection.ErrRejected, err)
 		}
 		signals = []models.MongoProductBarcodeModel{p}
 	}

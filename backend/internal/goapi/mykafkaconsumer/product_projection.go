@@ -2,7 +2,9 @@ package mykafkaconsumer
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/product/projection"
 	"time"
 
@@ -42,14 +44,24 @@ func handleProductProjection(message kafka.Message, handler ConsumerHandleFunc) 
 		}
 	}()
 	if extractHoldingCodeFromMessage(string(message.Value)) == "" {
-		return fmt.Errorf("product projection has no holding identity at offset %d", message.Offset)
+		return rejectProjectionMessage(message, errors.New("no holding identity"))
 	}
-	if handler(string(message.Value)) != nil {
+	if herr := handler(string(message.Value)); herr != nil {
+		if errors.Is(herr, projection.ErrRejected) {
+			return rejectProjectionMessage(message, herr)
+		}
 		// The handler already owns diagnostic logging. Do not echo payload or raw
 		// connection errors into the retry loop.
 		return fmt.Errorf("product projection handler failed at offset %d", message.Offset)
 	}
 	return nil
+}
+
+// A structurally unusable message is logged by position, never by payload, and
+// acknowledged: replaying it could never succeed and would block the partition.
+func rejectProjectionMessage(message kafka.Message, cause error) error {
+	logger.Error("⛔ ข้ามข้อความ projection ที่ใช้ไม่ได้ topic=%s partition=%d offset=%d: %v", message.Topic, message.Partition, message.Offset, cause)
+	return fmt.Errorf("%w at offset %d: %v", projection.ErrRejected, message.Offset, cause)
 }
 
 // ConsumeProjectionMessages processes a reader using acknowledged handler completion.

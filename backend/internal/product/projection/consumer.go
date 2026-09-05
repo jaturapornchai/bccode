@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+// ErrRejected marks a message that can never be applied: unparsable JSON or a
+// missing tenant identity. The handler logs the position and reason; Consume
+// acknowledges the offset so one unusable message cannot block every later
+// message on the partition. Infrastructure or source failures must not use it.
+var ErrRejected = errors.New("projection message rejected")
+
 type Reader interface {
 	FetchMessage(context.Context) (kafka.Message, error)
 	CommitMessages(context.Context, ...kafka.Message) error
@@ -25,7 +31,7 @@ func Consume(ctx context.Context, reader Reader, handle func(kafka.Message) erro
 		if err != nil {
 			return err
 		}
-		if err := handle(message); err != nil {
+		if err := handle(message); err != nil && !errors.Is(err, ErrRejected) {
 			return err
 		}
 		commitCtx, stop := context.WithTimeout(ctx, 30*time.Second)

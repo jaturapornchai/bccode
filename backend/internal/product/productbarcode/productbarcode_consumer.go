@@ -3,6 +3,7 @@ package productbarcode
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"smlcloudplatform/internal/logger"
 	ordertype_config "smlcloudplatform/internal/product/ordertype/config"
 	"smlcloudplatform/internal/product/productbarcode/config"
@@ -11,6 +12,7 @@ import (
 	"smlcloudplatform/internal/product/productbarcode/usecases"
 	productgroup_config "smlcloudplatform/internal/product/productgroup/config"
 	producttype_config "smlcloudplatform/internal/product/producttype/config"
+	"smlcloudplatform/internal/product/projection"
 	unit_config "smlcloudplatform/internal/product/unit/config"
 	"smlcloudplatform/pkg/microservice"
 	"time"
@@ -110,7 +112,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeCreate(ctx microservi
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
-		return err
+		return fmt.Errorf("%w: %v", projection.ErrRejected, err)
 	}
 
 	_, err = pbc.svc.UpSert(doc.HoldingCode, doc.BusinessCode, doc.Barcode, doc)
@@ -132,7 +134,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeBulkCreate(ctx micros
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
-		return err
+		return fmt.Errorf("%w: %v", projection.ErrRejected, err)
 	}
 
 	for _, item := range doc {
@@ -155,7 +157,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeUpdate(ctx microservi
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
-		return err
+		return fmt.Errorf("%w: %v", projection.ErrRejected, err)
 	}
 
 	// err = pbc.svc.UpdateRefBarcode(doc.HoldingCode, doc)
@@ -185,7 +187,7 @@ func (pbc *ProductBarcodeConsumer) ConsumerOnProductBarcodeDelete(ctx microservi
 
 	if err != nil {
 		pbc.ms.Logger.Errorf(moduleName, err.Error())
-		return err
+		return fmt.Errorf("%w: %v", projection.ErrRejected, err)
 	}
 
 	err = pbc.svc.Delete(context.Background(), doc.HoldingCode, doc.BusinessCode, doc.Barcode)

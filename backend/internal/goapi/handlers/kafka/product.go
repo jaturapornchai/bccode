@@ -27,7 +27,7 @@ func normalizeProductSignal(p *MongoProductModel) error {
 	p.BusinessCode = utils.NormalizeBusinessCode(p.BusinessCode)
 	p.Code = utils.NormalizeBusinessCode(p.Code)
 	if p.HoldingCode == "" || p.BusinessCode == "" || p.Code == "" {
-		return fmt.Errorf("holdingcode, businesscode and code are required for product signal")
+		return fmt.Errorf("%w: holdingcode, businesscode and code are required for product signal", projection.ErrRejected)
 	}
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
 	"smlcloudplatform/internal/product/productbarcode/usecases"
+	"smlcloudplatform/internal/product/projection"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
@@ -189,7 +190,7 @@ func (svc ProductBarcodeConsumeService) reconcileCurrentBarcode(ctx context.Cont
 	businessCode = utils.NormalizeBusinessCode(businessCode)
 	barcode = utils.NormalizeBusinessCode(barcode)
 	if holdingCode == "" || businessCode == "" || barcode == "" {
-		return nil, fmt.Errorf("holdingcode, businesscode and barcode are required")
+		return nil, fmt.Errorf("%w: holdingcode, businesscode and barcode are required", projection.ErrRejected)
 	}
 	return svc.productPgRepo.ReconcileInCompany(ctx, holdingCode, businessCode, barcode, func(readCtx context.Context) (*models.ProductBarcodePg, error) {
 		current, err := svc.productMongoRepo.FindByBarcodeInCompany(readCtx, holdingCode, businessCode, barcode)

@@ -14,7 +14,9 @@ services:
       mongo:
         condition: service_healthy
     entrypoint: ["mongosh", "--host", "mongo:27017", "--quiet", "--eval"]
-    command: ['rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]})']
+    # Idempotent: `docker compose run` restarts exited dependencies, so a second
+    # rs.initiate must not fail the tests service's completed_successfully gate.
+    command: ['try { rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}) } catch (e) { if (e.codeName !== "AlreadyInitialized") throw e }']
   postgres:
     image: postgres:18-alpine
     environment:

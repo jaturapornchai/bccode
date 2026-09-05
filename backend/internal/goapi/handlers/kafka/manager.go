@@ -88,9 +88,9 @@ func startInventoryConsumers(consumers *mykafkaconsumer.KafkaConsumer, kafkaServ
 	// Note: Bulk delete is commented out in original code
 	// go consumers.ConsumeMessage(kafkaServer, MQ_TOPIC_BULK_DELETED, CONSUMER_GROUP_INVENTORY_BULK, 0, OnConsumeMessageInventoryBulkDelete)
 
-	// Additional inventory consumers for warehouse group (ใช้ function เดียวกันกับ CONSUMER_GROUP_INVENTORY)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_INVENTORY_CREATE, CONSUMER_GROUP_WAREHOUSE, 0, OnConsumeMessageInventoryCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_INVENTORY_UPDATE, CONSUMER_GROUP_WAREHOUSE, 0, OnConsumeMessageInventoryCreateOrUpdate)
+	// Barcode topics are reconciled once, by CONSUMER_GROUP_INVENTORY only. A second
+	// copy in CONSUMER_GROUP_WAREHOUSE duplicated every write and let a blocked
+	// barcode head rebalance the unrelated warehouse readers on each retry.
 }
 
 // startWarehouseConsumers - starts warehouse consumers

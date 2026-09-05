@@ -429,6 +429,8 @@ func (svc ProductHttpService) Delete(holdingCode string, businessCode string, gu
 }
 
 // ✅ Resync — republish ทุก product ของ tenant เข้า Kafka เพื่อ rebuild PG projection
+var errResyncProductRemoved = errors.New("product removed during resync")
+
 func (svc ProductHttpService) Resync(holdingCode string, businessCode string) (int, error) {
 	ctx, cancel := svc.getContextTimeout()
 	defer cancel()
@@ -446,10 +448,15 @@ func (svc ProductHttpService) Resync(holdingCode string, businessCode string) (i
 				return nil, err
 			}
 			if current.ID == primitive.NilObjectID {
-				return nil, errors.New("product no longer exists")
+				return nil, errResyncProductRemoved
 			}
 			return productProjectionMessages(productconfig.MQ_TOPIC_CREATED, current, nil)
 		}); err != nil {
+			// A product deleted between listing and commit is simply not resynced;
+			// its delete intent already exists in the outbox.
+			if errors.Is(err, errResyncProductRemoved) {
+				continue
+			}
 			return queued, err
 		}
 		queued++

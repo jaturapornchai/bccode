@@ -77,7 +77,7 @@ From the repo root, a fresh disposable Compose project can run the entire isolat
 ```sh
 docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml up -d mongo mongo-init postgres kafka
 docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml up -d --wait mongo postgres kafka
-docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml run --rm tests
+docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml run --rm --no-deps tests
 # Verify that bc-projection-check identifies only this disposable stack first:
 docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml down -v --remove-orphans
 ```
@@ -91,10 +91,10 @@ The default test image is glibc `golang:1.26`. For an installed Alpine builder s
 - This convergence guarantee requires all competing writers to use the lock/source-read protocol. GoAPI Product/Barcode event handlers, legacy Barcode UpSert/Delete and Product company rebuild participate. Other manual Barcode/admin/stock rebuilds have not all been converted; do not run them concurrently and assume the same guarantee.
 - Legacy Barcode writers without businesscode, standalone Unit writes and raw import/batch paths still have DB-before-MQ gaps. Company Barcode CRUD and its automatically created Unit are covered now. Reconciliation prevents stale snapshots from winning but cannot recreate a signal that was never published. Other legacy Microservice topics retain their old auto-commit/error behavior pending separate review. No ledger/event idempotency retrofit was performed.
 - Product metadata upsert preserves stock columns; ClickHouse behavior was not validated by these tests.
-- A poison head remains pending; a failed consumer message prevents advancing its partition. No automatic dead-letter skip or production alert routing was added.
+- A structurally unusable message (unparsable JSON, missing holding/business/barcode identity, invalid fence identity) is logged by topic/partition/offset and acknowledged so it cannot block the partition; this restores the pre-outbox behaviour for holding-level bulk Barcode payloads. Infrastructure or source failures still hold the offset: that head remains pending until the cause is fixed. No dead-letter topic or production alert routing was added.
 - Historical events already lost before this change are not recreated automatically. Organization fallback delivery and unrelated topics are not covered.
 - Review pending age and database/consumer metrics during rollout. Broker PUBLISHED proves broker delivery, not downstream database completion.
-- Roll out compatible consumers and source-read/locking paths together. The legacy Kafka transport retains the configured group ID; do not reset offsets during the switch. Existing consumer connections remain plaintext as in the original implementation; the new producer retains its existing TLS configuration support.
+- Roll out compatible consumers and source-read/locking paths together. The legacy Barcode readers use `<CONSUMER_GROUP_ID>-projection` (kafka-go cannot share a group with the librdkafka members that still serve the other legacy topics); the first start replays the Barcode topics from the earliest offset through idempotent current-source reconciliation. GoAPI reconciles Barcode topics in `biapi-inventory-consumer` only. Existing consumer connections remain plaintext as in the original implementation; the new producer retains its existing TLS configuration support.
 - For rollback, stop writes while resolving/draining Product intents with a compatible worker. Preserve intent history, `product_projection_fences` and consumer offsets as a coordinated recovery set. Rolling back only a writer/consumer removes its fence/lock guarantee; reconcile before resuming. No live replay, accounting migration or deployment was performed in this task.
 
 ## MongoModel alignment

@@ -119,7 +119,7 @@ func (s *Store) commit(ctx context.Context, holding, business, guid, key string,
 	if err != nil {
 		return err
 	}
-	return s.pst.Transaction(ctx, func(tx context.Context) error {
+	return runTransaction(ctx, s.pst, func(tx context.Context) error {
 		var previous Event
 		err := col.FindOne(tx, bson.M{"aggregatetype": aggregateType, "aggregateuid": key},
 			options.FindOne().SetSort(bson.D{{Key: "version", Value: -1}})).Decode(&previous)
@@ -150,6 +150,31 @@ func (s *Store) commit(ctx context.Context, holding, business, guid, key string,
 		})
 		return err
 	})
+}
+
+// MongoDB aborts one of two transactions that touch the same product document
+// or the same outbox version and labels that outcome transient. The mutation
+// re-reads inside the fresh transaction, so replaying it is safe; a legitimate
+// conflict still surfaces after the last attempt.
+const transientTransactionAttempts = 5
+
+func runTransaction(ctx context.Context, pst Persister, fn func(context.Context) error) error {
+	for attempt := 1; ; attempt++ {
+		err := pst.Transaction(ctx, fn)
+		if err == nil || attempt >= transientTransactionAttempts || !isTransientTransactionError(err) {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return err
+		case <-time.After(time.Duration(attempt) * 25 * time.Millisecond):
+		}
+	}
+}
+
+func isTransientTransactionError(err error) bool {
+	var labeled interface{ HasErrorLabel(string) bool }
+	return errors.As(err, &labeled) && labeled.HasErrorLabel("TransientTransactionError")
 }
 
 type SendFunc func(topic, key string, payload interface{}) error

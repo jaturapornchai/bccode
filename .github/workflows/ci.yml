@@ -150,7 +150,7 @@ jobs:
       - name: Verify cross-topic fences and legacy writers
         run: |
           set -euo pipefail
-          docker compose -p bc-projection-ci -f backend/.ci/projection.compose.yml run --rm tests 'go test -tags=integration -count=1 -timeout=180s -json -run "^Test(Projection(Kafka|Rebalance)|BarcodeServiceOutbox|LegacyBarcode(Reconcile|PrimarySource))Integration$" ./internal/goapi/handlers/kafka ./internal/product/productbarcode/repositories ./internal/product/productbarcode/services ./internal/product/projection' | tee backend/projection-test-results.json
+          docker compose -p bc-projection-ci -f backend/.ci/projection.compose.yml run --rm --no-deps tests 'go test -tags=integration -count=1 -timeout=180s -json -run "^Test(Projection(Kafka|Rebalance)|BarcodeServiceOutbox|LegacyBarcode(Reconcile|PrimarySource))Integration$" ./internal/goapi/handlers/kafka ./internal/product/productbarcode/repositories ./internal/product/productbarcode/services ./internal/product/projection' | tee backend/projection-test-results.json
 
       - name: Save Kafka integration results
         if: always()

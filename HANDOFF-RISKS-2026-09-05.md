@@ -2,6 +2,23 @@
 
 อัปเดต: 5 กันยายน 2026 | Workspace: `D:\bccode`
 
+## อัปเดตรอบต่อ (5 กันยายน 2026 ช่วงบ่าย) — checkpoint, adversarial review, แก้ 8 จุด, UAT จริง
+
+สิ่งที่ทำต่อจาก handoff ด้านบน (ลุงจืดสั่ง "ทำต่อเลย"):
+
+1. **Checkpoint** — commit working tree 3 ก้อน (`caaf5c59` frontend, `ef0b62e7` backend outbox, `42e11748` chore) แล้ว push `origin/dev`; backend compile/unit/integration-compile และ frontend typecheck + vitest 44 files/320 tests ผ่านก่อน push
+2. **Adversarial review workflow** (7 มิติ × 3 skeptic lenses, 49 agents) ยืนยัน 8 ข้อ ปฏิเสธ 6 ข้อ — แก้ครบ 8 ข้อแล้ว:
+   - **[สูง] head-of-line block**: bulk Barcode ระดับ holding (`businesscode` ว่าง) หรือ JSON ที่ parse ไม่ได้ ทำให้ consumer ใหม่ replay offset เดิมตลอดกาล → เพิ่ม `projection.ErrRejected`; identity/parse error เป็น rejection → log topic/partition/offset (ไม่ log payload) แล้ว ack; infra/source error ยังถือ offset เหมือนเดิม (ทั้ง GoAPI และ legacy transport)
+   - **[สูง] legacy group ผสม kafka-go + librdkafka**: JoinGroup metadata คนละรูปแบบ → Barcode readers ใช้ group `<CONSUMER_GROUP_ID>-projection` แยกต่างหาก (offset disposable ตามกฎ pre-launch)
+   - **[กลาง] GoAPI อ่าน barcode topics ซ้ำใน `biapi-warehouse-consumer`** (เขียน PG ซ้ำ + rebalance storm ปน warehouse) → ลบ registration ซ้ำ เหลือ `biapi-inventory-consumer` กลุ่มเดียว
+   - **[กลาง] 5000 advisory locks/transaction** (lock table PG default ≈6400) → batch > 256 codes ใช้ exclusive company lock แทน row locks (เหมือน rebuild)
+   - **[สูง] CI job Kafka พัง**: `docker compose run tests` รัน `mongo-init` ซ้ำแล้ว `rs.initiate` ล้ม → init idempotent + `--no-deps` (ci.yml + README recipe) ทดสอบ rerun mongo-init exit 0 แล้ว
+   - **[ต่ำ] WriteConflict บน aggregate เดียวกัน**: outbox commit retry เฉพาะ error ที่มี label `TransientTransactionError` สูงสุด 5 ครั้ง
+   - **[ต่ำ] Resync ล้มทั้งชุดเมื่อสินค้าถูกลบระหว่าง loop** → ข้ามตัวนั้น (`errResyncProductRemoved`)
+   - unit tests ใหม่: `projection/consumer_test.go`, `handlers/kafka/projection_reject_test.go` (sqlmock lock cap), `outbox_test.go` (transient retry), `barcode_projection_consumer_test.go` (group), แก้ `product_projection_test.go`
+3. **หลักฐาน**: gofmt/vet สะอาด, full unit suite (ตัด quarantine 15 แพ็กเกจ) ผ่าน, isolated compose suite บน Kafka 4.3.1 + Mongo 7 + PG 18 ผ่านทั้ง 8 integration tests, mainapi local rebuild แล้ว UAT ผ่าน browser บน `demo/C02`: Product Create→Update→Delete และ Barcode Create→Update→Delete ตรวจ MongoDB (doc เดิม/soft-delete) + `outboxevents` (v1..v3 PUBLISHED ทุกตัว, pending 0) + PostgreSQL (row สร้าง/แก้/ลบ, `product_projection_fences` v3 deleted=true) ทีละ step, ข้อมูลเดิม 15/15 ไม่กระทบ, consumer lag 0 ทุก group; poison test ส่ง message ไม่มี businesscode เข้า `when-product-barcode-bulk-created` จริง → log ⛔ แล้วข้าม, message ถัดไปประมวลผลปกติ
+4. **ยังไม่ทำ / พบระหว่างทาง (ไม่แก้ เพราะนอกขอบเขต)**: `handlers/kafka.go:191` log format ผิด (`$0%!(EXTRA ...)`) และ echo payload ทั้งก้อน; dialog ลบสินค้าใช้ข้อความ "ลบบาร์โค้ด"; แถวใน unit picker ไม่มี accessible name; tenant PG `test` มี schema เก่า (product ไม่มี holding_code/businesscode) ต้อง rebuild ตามกฎ disposable; `pkg/microservice/persister_mongo_test.go` มี vet warning เก่า 15 จุด; คำถาม 4 ข้อท้ายไฟล์ยังรอลุงจืดตอบเหมือนเดิม
+
 ## สถานะตามลำดับงานของลุงจืด
 
 แก้ source และทดสอบบนระบบแยกแล้วตามรายการนี้ รักษางาน UI/config/language/skill ที่มีอยู่ก่อน ไม่ได้ commit, deploy, restart ระบบจริง หรือ migrate ข้อมูลบัญชี

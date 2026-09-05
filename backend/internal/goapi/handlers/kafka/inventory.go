@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"smlcloudplatform/internal/goapi/models"
+	"smlcloudplatform/internal/product/projection"
 	"smlcloudplatform/internal/utils"
 )
 
@@ -94,10 +95,10 @@ func normalizeProductBarcodeIdentity(productData *models.MongoProductBarcodeMode
 	productData.Barcode = utils.NormalizeBusinessCode(productData.Barcode)
 
 	if productData.HoldingCode == "" || productData.BusinessCode == "" || productData.Barcode == "" {
-		return fmt.Errorf("holdingcode, businesscode and barcode are required")
+		return fmt.Errorf("%w: holdingcode, businesscode and barcode are required", projection.ErrRejected)
 	}
 	if requireItemCode && productData.ItemCode == "" {
-		return fmt.Errorf("itemcode is required for product barcode upsert")
+		return fmt.Errorf("%w: itemcode is required for product barcode upsert", projection.ErrRejected)
 	}
 	return nil
 }

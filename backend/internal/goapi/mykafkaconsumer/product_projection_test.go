@@ -3,10 +3,12 @@ package mykafkaconsumer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"testing"
 
 	"github.com/segmentio/kafka-go"
+	"smlcloudplatform/internal/product/projection"
 )
 
 type fakeProjectionReader struct {
@@ -34,7 +36,7 @@ func (r *fakeProjectionReader) CommitMessages(_ context.Context, messages ...kaf
 }
 
 func TestProductProjectionAcknowledgesOnlySuccessfulWork(t *testing.T) {
-	for _, mode := range []string{"success", "handler failure", "panic", "missing holding", "commit failure"} {
+	for _, mode := range []string{"success", "handler failure", "panic", "missing holding", "rejected handler", "commit failure"} {
 		t.Run(mode, func(t *testing.T) {
 			payload := []byte("{\"holdingcode\":\"HOLDING\",\"businesscode\":\"COMPANY\"}")
 			if mode == "missing holding" {
@@ -56,14 +58,26 @@ func TestProductProjectionAcknowledgesOnlySuccessfulWork(t *testing.T) {
 				if mode == "panic" {
 					panic("private payload")
 				}
+				if mode == "rejected handler" {
+					return fmt.Errorf("%w: holdingcode, businesscode and barcode are required", projection.ErrRejected)
+				}
 				return nil
 			})
-			if mode == "success" {
+			switch mode {
+			case "success":
 				if !errors.Is(err, io.EOF) || len(reader.committed) != 2 || reader.committed[0].Offset != 7 || reader.committed[1].Offset != 8 {
 					t.Fatal("successful offsets not acknowledged in order")
 				}
-			} else if err == nil || len(reader.committed) != 0 || reader.fetched != 1 {
-				t.Fatalf("failure skipped/committed offset: err=%v committed=%d fetched=%d", err, len(reader.committed), reader.fetched)
+			case "missing holding", "rejected handler":
+				// An unusable message can never succeed; it is acknowledged so the
+				// partition keeps moving instead of replaying the same offset forever.
+				if !errors.Is(err, io.EOF) || len(reader.committed) != 2 || reader.committed[0].Offset != 7 || reader.committed[1].Offset != 8 {
+					t.Fatalf("unusable message was not acknowledged: err=%v committed=%d", err, len(reader.committed))
+				}
+			default:
+				if err == nil || len(reader.committed) != 0 || reader.fetched != 1 {
+					t.Fatalf("failure skipped/committed offset: err=%v committed=%d fetched=%d", err, len(reader.committed), reader.fetched)
+				}
 			}
 		})
 	}
