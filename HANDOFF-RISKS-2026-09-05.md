@@ -1,5 +1,33 @@
 # Handoff: จุดเสี่ยงและงานปรับปรุง BC Ai Account
 
+## อัปเดต 6 กันยายน 2026 — audit บทบาท MongoDB / PostgreSQL / ClickHouse + พัก ClickHouse บนเครื่อง dev
+
+**คำถามลุงจืด:** 3 store ทำงานสัมพันธ์กันถูกต้องไหม (Mongo = เก็บทุกอย่าง, PG = เพิ่มความเร็ว/ประมวลผล, ClickHouse = dimension DB) และ ClickHouse จำเป็นไหม
+**วิธีตรวจ:** scout + workflow 6 mapper (verify ถูกตัดที่ 67/180 เพราะ session limit) → Claude verify จุดชี้ขาดเองด้วยมือบน local stack (.202 ssh timeout — ไม่ได้ดู on-prem)
+
+### ผลสรุป
+- **MongoDB = SoT จริง** — ทุกหน้าจอ frontend อ่าน Mongo (รวม `/goapi/api/product/barcode/list` ที่อ่าน Mongo ไม่ใช่ PG) ข้อยกเว้นที่เขียน PG อย่างเดียว (manual-close PO, search alias, `/goapi/inventory/*`) UI ไม่ได้เรียก
+- **PostgreSQL = projection ที่เขียนอย่างเดียว แทบไม่มี reader และครึ่งหนึ่งพังเงียบ**
+  - ใช้ได้: product / productbarcode / ic_warehouse (biapi-* consumers) แต่ demo/C03 มี barcode ค้างใน PG 9 แถวที่ Mongo ไม่มี
+  - พัง: debtor / creditor / erp_user — consumer INSERT คอลัมน์ `name0, createdat, updatedat` (และ position/department/approval_role/max_approval_amount) ที่ DDL จาก GORM model ไม่มี → ทดสอบยิง `when-debtor-created` จริง ได้ `column "name0" of relation "debtor" does not exist` → DLQ เป็น log-only (`mydlq/dlq.go:91`) offset commit ต่อ → PG ลูกหนี้ 0 แถว ทั้งที่ Mongo มี 38 (`handlers/kafka/debtor.go:110`, `creditor.go:111`, `employee.go:119`)
+  - ไม่มี reader: frontend ไม่เรียก endpoint ที่อ่าน PG เลย; GL report (`vfgl/journalreport`) อ่าน PG แต่ UI ไม่ใช้; `stockwaitprocess` ไม่มีใคร drain (ProcessStockCostAll เรียกได้จาก rebuild ที่ไม่ได้ register เท่านั้น); `docwaitprocess` ใน holding test ค้าง transflag 12/44 (drainer จัดการเฉพาะ transflag 6)
+  - สิ้นเปลือง: worker pool 24 ตัว poll ตาราง `queues` ว่างทุก 100 ms (`workers/doc_processor.go:239`) → 133M index scans / 136M commits
+  - prod: `worker` (DEV_API_MODE=1) รัน legacy gorm consumers เขียน schema อีกชุดลง PG เดียวกับ goapi consumers; `ReportPostHandler` (rebuild ทุกคำสั่ง) ไม่ได้ register route
+- **ClickHouse = ไม่มีบทบาทจริง**
+  - goapi ปิดตั้งแต่ commit `dcceb83f` (2026-05-31): `myclickhouse.ClickHouseFastConnect/CreateClickHouseConnection` คืน "clickhouse is disabled", `InsertDocumentToClickHouse`/`SoftDeleteDocClickHouse` no-op, `connectClickHouse` bypass, `performBackgroundTask` ว่าง (17+3 call sites ทำงานเปล่า)
+  - legacy ที่ยัง register และจะพังเมื่อเรียก: `/productimport/*` (13 routes ใช้ CH เป็น SoT ของ staging), `/stockbalanceimport/*` (9), `/product/barcode2` (hard-code holding `productbarcode_http_service.go:1886`) — ไม่มี DDL ตาราง CH ใน repo, UI ไม่เรียก; `reportqueryc` ไม่ได้ register
+  - runtime local: 0 ตาราง, 7 วันมี 2 query, container RSS 5.2 GB; prod compose จอง 1 GB / 768 MB และ migrate/mainapi/worker `depends_on: clickhouse service_healthy`
+
+### ที่ทำไปแล้ว (2026-09-06)
+- **พัก ClickHouse บนเครื่อง dev** ตามคำสั่งลุงจืด ("ปิดไว้ก่อน ai coding จะได้ไม่ทำงานหนัก"): stop+rm container `clickhouse`, ลบ service/depends_on/volume ออกจาก `backend/docker-compose.local.yml` (volume `backend_clickhouse-data` ยังอยู่, 0 ตาราง); force-recreate `mainapi` แบบ cold start → healthy ใน 10 วิ, ไม่มี error, consumer groups Stable 3 members, RAM ประหยัด ≈ 5 GB
+- **ไม่ได้แตะ**: โค้ด Go, `bootstrap.local.json` (block `clickhouse` ยังอยู่ → env `CH_SERVER_ADDRESS=clickhouse:9000` ชี้ host ที่ไม่มี; ไม่กระทบ startup เพราะ clickhouse-go Open ไม่ dial), prod compose, .202
+
+### ค้างให้ลุงจืดตัดสิน
+1. ถอด ClickHouse ถาวร (R1): compose local/prod + `provision-server.sh` 9 keys + bootstrap/setupconfig mapping + frontend `setup-config.ts`/`settings-screen.tsx` + goapi CH layer (~2.8k บรรทัด) + `reportqueryc` (1.1k) + 3 module legacy (ลบ หรือย้าย staging ไป Mongo/PG) + `go.mod` clickhouse-go/ch-go + `architecture/high-scale-multitenant-bi.md`
+2. Mongo→PG: แก้ schema drift debtor/creditor/erp_user หรือถอด consumer ทิ้ง; DLQ → ตาราง PG + metric; ลบ/แก้ busy-poll 24 workers; prod หยุด `worker` mode 1 จนกว่าจะเหลือ projection ชุดเดียว; ล้าง barcode ค้าง demo/C03 (9 แถว) ผ่าน `/product/resync`
+3. ยังไม่รู้: on-prem .202 (ssh timeout), prod `ENABLE_KAFKA`/bootstrap ที่ `/var/lib/bcai-account/config`, มี client นอก web เรียก `/productimport` หรือไม่ (ดู `shopuseraccesslogs`)
+
+
 อัปเดต: 5 กันยายน 2026 | Workspace: `D:\bccode`
 
 ## อัปเดตรอบต่อ (5 กันยายน 2026 ช่วงบ่าย) — checkpoint, adversarial review, แก้ 8 จุด, UAT จริง
