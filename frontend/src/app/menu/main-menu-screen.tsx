@@ -4,36 +4,66 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   AlertTriangle,
+  Archive,
+  BarChart3,
   Bell,
+  Bot,
+  BriefcaseBusiness,
   Building2,
+  Calculator,
+  CheckCheck,
   CheckCircle2,
+  ChefHat,
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
+  CircleDollarSign,
   CircleX,
+  CloudDownload,
   X,
   Command,
   Copy,
+  CreditCard,
   Crown,
+  Database,
   ExternalLink,
+  FileText,
+  Folder,
+  FolderGit2,
+  Gift,
   GitBranch,
+  Globe,
+  HandCoins,
   KeyRound,
+  Landmark,
   LayoutDashboard,
   LayoutPanelTop,
   Lock,
   Loader2,
   LogOut,
   MessageCircle,
+  MonitorCog,
+  Package,
+  Palette,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  Printer,
+  ReceiptText,
   RefreshCcw,
   Search,
   SearchX,
   Settings,
+  ShoppingCart,
+  SlidersHorizontal,
   Star,
   Store,
+  Tag,
+  Truck,
   UserRound,
+  UsersRound,
+  Warehouse,
+  type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -600,7 +630,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const rows = useMemo(() => menuQuery.data ?? [], [menuQuery.data]);
   const frequentMenuEntries = useMemo(() => getFrequentMenuEntries(allMenuItems, menuUsage, 20), [allMenuItems, menuUsage]);
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
-  const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productset" || activeWorkTab.route === "/datamodelgraph";
+  const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productextension" || activeWorkTab.route === "/productset" || activeWorkTab.route === "/datamodelgraph";
 
   function openMenuItem(
     item: MenuItem,
@@ -1226,7 +1256,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   {tabs.map((tab) => (
                     <section
                       aria-hidden={tab.id !== activeTabId}
-                      className={cn("min-w-0", (tab.route === "/productbarcode" || tab.route === "/product" || tab.route === "/productset" || tab.route === "/datamodelgraph") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
+                      className={cn("min-w-0", (tab.route === "/productbarcode" || tab.route === "/product" || tab.route === "/productextension" || tab.route === "/productset" || tab.route === "/datamodelgraph") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
                       hidden={tab.id !== activeTabId}
                       key={tab.id}
                       role="tabpanel"
@@ -1573,7 +1603,7 @@ function TopMenuChrome({
               onOpenNewItem(item);
             }}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
@@ -1741,7 +1771,7 @@ function TopMenuChrome({
                         key={group.id}
                         type="button"
                         className={cn(
-                          "flex h-9 min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
+                          "group flex h-9 min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
                           active && "bg-primary/10 text-primary",
                         )}
                         onClick={() => {
@@ -1753,7 +1783,10 @@ function TopMenuChrome({
                           setActiveFolderId(null);
                         }}
                       >
-                        <span className="truncate">{menuText(group.title, language, backendLanguage)}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <MenuGroupIcon groupId={group.id} size={14} />
+                          <span className="truncate">{menuText(group.title, language, backendLanguage)}</span>
+                        </span>
                         <span className="flex shrink-0 items-center gap-1">
                           <Badge variant={active ? "secondary" : "outline"} className="h-5 px-1.5">{items.length}</Badge>
                           <ChevronDown className={cn("h-3.5 w-3.5 -rotate-90 opacity-70", active && "opacity-100")} />
@@ -1914,6 +1947,28 @@ function MenuSectionAccordion({
               })()
             ) : (
               visibleGroups.map((group) => {
+                const nodes = getMenuTreeNodes(group, language, search, backendLanguage);
+                if (!nodes.length) return null;
+
+                // ถ้าข้างในมี เมนูเดียว ไม่ต้องทำเป็น Group
+                if (group.items.length === 1 && nodes.length === 1 && nodes[0].type === "item") {
+                  const node = nodes[0];
+                  return (
+                    <div key={group.id} className="rounded-xl border border-border/70 bg-card/60 px-1 py-0.5 shadow-2xs">
+                      <MenuTreeItemButton
+                        backendLanguage={backendLanguage}
+                        isLocked={!canAccessMenuItem(node.item)}
+                        item={node.item}
+                        key={node.id}
+                        language={language}
+                        nested={false}
+                        onOpenNewItem={onOpenNewItem}
+                        onOpenItem={onOpenItem}
+                      />
+                    </div>
+                  );
+                }
+
                 const groupKey = `${section.id}:${group.id}`;
                 return (
                   <MenuTreeGroup
@@ -1970,24 +2025,25 @@ function MenuTreeGroup({
   if (!nodes.length) return null;
 
   return (
-    <div className="grid gap-1 rounded-xl border border-border bg-card" role="treeitem" aria-expanded={expanded} aria-selected={expanded}>
+    <div className="grid gap-1 rounded-xl border border-border/70 bg-card/60 shadow-2xs" role="treeitem" aria-expanded={expanded} aria-selected={expanded}>
       <button
         aria-controls={`menu-tree-${groupKey}`}
         aria-expanded={expanded}
-        className="grid min-h-9 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-2 py-1.5 text-left text-sm font-semibold"
+        className="group grid min-h-10 w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 text-left text-sm font-semibold transition-colors hover:bg-muted/40 rounded-t-xl"
         onClick={onToggle}
         type="button"
       >
-        <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden="true" />
-        <span className="min-w-0 truncate">{menuText(group.title, language, backendLanguage)}</span>
-        <Badge variant="outline" className="h-6 px-2 text-[11px]">{count}</Badge>
+        <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", expanded && "rotate-180")} aria-hidden="true" />
+        <MenuGroupIcon groupId={group.id} size={14} />
+        <span className="min-w-0 truncate text-foreground/90">{menuText(group.title, language, backendLanguage)}</span>
+        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-muted/80 px-1.5 text-[11px] font-medium text-muted-foreground">{count}</span>
       </button>
       {expanded ? (
-      <div id={`menu-tree-${groupKey}`} className="ml-4 grid gap-1 border-l border-border/80 pb-1 pl-2" role="group">
+      <div id={`menu-tree-${groupKey}`} className="ml-3.5 grid gap-0.5 border-l border-border/50 pb-1.5 pl-2" role="group">
         {nodes.map((node) => node.type === "folder" ? (
           <MenuTreeFolder backendLanguage={backendLanguage} canAccessMenuItem={canAccessMenuItem} folder={node} key={node.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} search={search} />
         ) : (
-          <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(node.item)} item={node.item} key={node.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} />
+          <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(node.item)} item={node.item} key={node.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} nested />
         ))}
       </div>
       ) : null}
@@ -2018,20 +2074,26 @@ function MenuTreeFolder({
   }, [search]);
 
   return (
-    <div className="relative grid gap-1" role="treeitem" aria-expanded={expanded} aria-selected={expanded}>
+    <div className="relative grid gap-0.5" role="treeitem" aria-expanded={expanded} aria-selected={expanded}>
       <button
-        className="relative grid min-h-9 w-full min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
+        className="relative grid min-h-9 w-full min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         onClick={() => setExpanded((current) => !current)}
         type="button"
       >
-        <span className="absolute -left-2 top-1/2 h-px w-2 bg-border/80" aria-hidden="true" />
-        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} aria-hidden="true" />
-        {folder.seedItem ? <MenuRouteIcon item={folder.seedItem} size={15} /> : <Command className="h-4 w-4" />}
+        <span className="absolute -left-2 top-1/2 h-px w-2 bg-border/50" aria-hidden="true" />
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", expanded && "rotate-180")} aria-hidden="true" />
+        {folder.seedItem ? (
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground">
+            <MenuRouteIcon item={folder.seedItem} size={14} />
+          </span>
+        ) : (
+          <Command className="h-4 w-4" />
+        )}
         <span className="min-w-0 truncate">{folder.label}</span>
-        <Badge variant="outline" className="h-6 px-2 text-[11px]">{folder.children.length}</Badge>
+        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-muted/80 px-1.5 text-[11px] font-medium text-muted-foreground">{folder.children.length}</span>
       </button>
       {expanded ? (
-        <div className="ml-5 grid gap-1 border-l border-border/80 pl-2" role="group">
+        <div className="ml-4 grid gap-0.5 border-l border-border/50 pl-2" role="group">
           {folder.children.map((item) => (
             <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(item)} item={item} key={item.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} nested />
           ))}
@@ -2065,9 +2127,9 @@ function MenuTreeItemButton({
   return (
     <div
       className={cn(
-        "relative flex min-h-9 w-full min-w-0 items-center gap-1 rounded-lg px-1.5 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-foreground",
-        isLocked && "cursor-not-allowed opacity-70",
-        nested && "text-[13px]",
+        "group/item relative flex min-h-10 w-full min-w-0 items-center justify-between gap-1 rounded-lg px-2 py-1 text-sm transition-colors",
+        isLocked ? "cursor-not-allowed opacity-65 text-muted-foreground" : "text-foreground/80 hover:bg-primary/10 hover:text-primary",
+        nested && "min-h-9 text-[13px] px-1.5",
       )}
       key={item.id}
       role="treeitem"
@@ -2075,21 +2137,23 @@ function MenuTreeItemButton({
       aria-disabled={isLocked}
       title={isLocked ? noPermissionText : undefined}
     >
-      <span className="absolute -left-2 top-1/2 h-px w-2 bg-border/80" aria-hidden="true" />
+      {nested ? <span className="absolute -left-2 top-1/2 h-px w-2 bg-border/50" aria-hidden="true" /> : null}
       <button
         type="button"
-        className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-left disabled:cursor-not-allowed"
+        className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left disabled:cursor-not-allowed focus-visible:outline-hidden"
         disabled={isLocked}
         onClick={() => onOpenItem(item)}
       >
-        <MenuRouteIcon item={item} size={15} />
-        <span className="min-w-0 flex-1 truncate">{label}</span>
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground transition-colors group-hover/item:bg-primary/20 group-hover/item:text-primary">
+          <MenuRouteIcon item={item} size={14} />
+        </span>
+        <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
         {isLocked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label={noPermissionText} /> : null}
       </button>
       {isLocked ? null : (
         <button
           type="button"
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground/60 transition-colors hover:bg-background hover:text-primary hover:shadow-xs focus-visible:outline-hidden"
           aria-label={newTabLabel}
           title={newTabLabel}
           onClick={(event) => {
@@ -2097,7 +2161,7 @@ function MenuTreeItemButton({
             onOpenNewItem(item);
           }}
         >
-          <Plus className="h-3.5 w-3.5" />
+          <ExternalLink className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
@@ -2174,11 +2238,63 @@ function getMenuTreeNodes(group: MenuGroup, language: LanguageCode, search: stri
   return nodes;
 }
 
+const MENU_GROUP_ICONS: Record<string, LucideIcon> = {
+  // ค่าเริ่มต้น (Defaults / Setup)
+  "product-classification": FolderGit2,
+  "product-descriptors": Tag,
+  "product-sku-options": Palette,
+  "warehouse-setup": Warehouse,
+  "partner-groups": UsersRound,
+  "sales-payment-banking": Landmark,
+  "sales-channel-pricing": Truck,
+  "sales-documents": ReceiptText,
+  "approval": CheckCheck,
+  "sales-pos": MonitorCog,
+  "sales-loyalty": Gift,
+  "restaurant-setup": ChefHat,
+  "marketplace-connectors": Globe,
+
+  // ข้อมูลหลัก (Master data)
+  "products": Package,
+  "partners": UsersRound,
+  "bank-accounts": Landmark,
+  "product-tools": Printer,
+  "import-export": CloudDownload,
+  "product-assistant": Bot,
+  "product-stock-production": Warehouse,
+  "restaurant": ChefHat,
+
+  // งานประจำ (Transactions / Operations)
+  "procurement": ShoppingCart,
+  "purchase": Package,
+  "purchase-payment": CreditCard,
+  "sales": HandCoins,
+  "stock": Warehouse,
+  "payment": CircleDollarSign,
+  "accounting": Calculator,
+
+  // รายงาน (Reports)
+  "inventory-reports": Package,
+  "sales-reports": BarChart3,
+  "other-reports": FileText,
+  "audit-reports": Archive,
+};
+
+function MenuGroupIcon({ groupId, size = 14 }: { groupId: string; size?: number }) {
+  const Icon = MENU_GROUP_ICONS[groupId] ?? Folder;
+  return (
+    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground transition-colors group-hover:bg-primary/20 group-hover:text-primary">
+      <Icon aria-hidden="true" size={size} />
+    </span>
+  );
+}
+
 function SectionIcon({ sectionId }: { sectionId: string }) {
-  if (sectionId === "transactions") return <Store className="h-4 w-4" />;
-  if (sectionId === "reports") return <LayoutDashboard className="h-4 w-4" />;
+  if (sectionId === "transactions") return <BriefcaseBusiness className="h-4 w-4" />;
+  if (sectionId === "reports") return <BarChart3 className="h-4 w-4" />;
+  if (sectionId === "defaults") return <SlidersHorizontal className="h-4 w-4" />;
   if (sectionId === "settings") return <Settings className="h-4 w-4" />;
-  return <Command className="h-4 w-4" />;
+  return <Database className="h-4 w-4" />;
 }
 
 function OpenTabs({
@@ -2389,6 +2505,10 @@ function WorkTabPanel({ active, activeTab, backendLanguage, language, onOpenRout
         language={language}
       />
     );
+  }
+
+  if (activeTab.route === "/productextension") {
+    return <ProductScreen active={active} embedded language={language} mode="extension" />;
   }
 
   if (activeTab.route === "/productset") {

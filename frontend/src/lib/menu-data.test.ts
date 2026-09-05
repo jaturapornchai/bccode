@@ -144,51 +144,90 @@ describe("menu language labels", () => {
     expect(productIds).not.toContain("add-product-branch");
     expect(productIds).not.toContain("add-product-department");
     expect(productToolsGroup?.title.th).toBe("เครื่องมือสินค้า");
-    expect(toolIds).toEqual(["product-serial-registry", "price-history", "label-print"]);
+    expect(toolIds).toEqual(["product-serial-registry", "price-history", "label-print", "add-product-kitchen"]);
   });
 
-  it("splits product setup into user-focused groups instead of one long technical list", () => {
+  it("splits defaults and master data into dependency-ordered groups", () => {
+    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
     const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
-    const groupsById = new Map(masterSection?.groups.map((group) => [group.id, group]) ?? []);
+    const defaultGroupsById = new Map(defaultsSection?.groups.map((group) => [group.id, group]) ?? []);
+    const masterGroupsById = new Map(masterSection?.groups.map((group) => [group.id, group]) ?? []);
 
-    expect(groupsById.get("products")?.title.th).toBe("สินค้าและบาร์โค้ด");
-    expect(groupsById.get("products")?.items.map((item) => item.id)).toEqual([
+    // Master Data holds core business records
+    expect(masterGroupsById.get("products")?.title.th).toBe("สินค้าและบาร์โค้ด");
+    expect(masterGroupsById.get("products")?.items.map((item) => item.id)).toEqual([
       "product",
+      "product-extension",
       "barcode",
       "productset",
-      "product-unit",
+      "bom",
     ]);
-    // "ตั้งค่าการขาย" was itself a 15-item flat list — split 2026-07-03 into 5 focused groups so a
-    // real "sales-settings" group id no longer exists; assert the split landed each item somewhere.
-    expect(groupsById.get("sales-loyalty")?.items.map((item) => item.id)).toContain("promotion");
-    expect(groupsById.get("sales-channel-pricing")?.items.map((item) => item.id)).toContain("channel-price");
-    expect(groupsById.get("product-classification")?.title.th).toBe("จัดกลุ่มสินค้า");
-    expect(groupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
+    expect(masterGroupsById.get("partners")?.items.map((item) => item.id)).toEqual([
+      "debtor",
+      "creditor",
+    ]);
+    expect(masterGroupsById.get("bank-accounts")?.items.map((item) => item.id)).toEqual([
+      "book-bank",
+    ]);
+
+    // Defaults holds baseline definitions in dependency order
+    expect(defaultGroupsById.get("product-classification")?.title.th).toBe("จัดกลุ่มสินค้า");
+    expect(defaultGroupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
+      "product-unit",
       "product-group",
+      "groupsubone",
+      "groupsubtwo",
       "product-category",
       "product-category-list",
     ]);
-    expect(groupsById.get("product-sku-options")?.title.th).toBe("สี ไซซ์ และตัวเลือก");
-    expect(groupsById.get("product-sku-options")?.items.map((item) => item.id)).toEqual([
-      "product-variant-matrix",
+    expect(defaultGroupsById.get("product-descriptors")?.title.th).toBe("รายละเอียดประกอบสินค้า");
+    expect(defaultGroupsById.get("product-sku-options")?.title.th).toBe("สี ไซซ์ และตัวเลือก");
+    expect(defaultGroupsById.get("product-sku-options")?.items.map((item) => item.id)).toEqual([
       "product-color",
       "product-size",
+      "product-variant-matrix",
     ]);
-    expect(groupsById.get("product-stock-production")?.items.map((item) => item.id)).toEqual([
+    expect(defaultGroupsById.get("warehouse-setup")?.items.map((item) => item.id)).toEqual([
       "warehouse",
-      "bom",
+    ]);
+    expect(defaultGroupsById.get("partner-groups")?.items.map((item) => item.id)).toEqual([
+      "debtor-group",
+      "creditor-group",
+    ]);
+    expect(defaultGroupsById.get("sales-channel-pricing")?.items.map((item) => item.id)).toContain("channel-price");
+    expect(defaultGroupsById.get("sales-loyalty")?.items.map((item) => item.id)).toContain("promotion");
+  });
+
+  it("orders the defaults section according to business dependency workflow", () => {
+    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
+    const groupOrder = defaultsSection?.groups.map((group) => group.id) ?? [];
+
+    expect(groupOrder).toEqual([
+      "product-classification",
+      "product-descriptors",
+      "product-sku-options",
+      "warehouse-setup",
+      "partner-groups",
+      "sales-payment-banking",
+      "sales-channel-pricing",
+      "sales-documents",
+      "approval",
+      "sales-pos",
+      "sales-loyalty",
+      "restaurant-setup",
+      "marketplace-connectors",
     ]);
   });
 
   it("uses distinct product category labels for category structure and attribute category", () => {
-    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
-    const masterItems = masterSection?.groups.flatMap((group) => group.items) ?? [];
-    const labelsById = new Map(masterItems.map((item) => [item.id, item.label.th]));
+    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
+    const defaultItems = defaultsSection?.groups.flatMap((group) => group.items) ?? [];
+    const labelsById = new Map(defaultItems.map((item) => [item.id, item.label.th]));
 
     expect(labelsById.get("product-category")).toBe("จัดหมวดสินค้า");
     expect(labelsById.get("product-category-list")).toBe("สินค้าในหมวด");
     expect(labelsById.get("category")).toBe("คุณลักษณะสินค้า");
-    expect(masterItems.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
+    expect(defaultItems.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
   });
 
   it("uses plain Thai business words for visible menu labels", () => {
@@ -219,8 +258,8 @@ describe("menu language labels", () => {
   });
 
   it("adds neutral SKU option masters for import-ready product variants", () => {
-    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
-    const skuGroup = masterSection?.groups.find((group) => group.id === "product-sku-options");
+    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
+    const skuGroup = defaultsSection?.groups.find((group) => group.id === "product-sku-options");
     const routesById = new Map(skuGroup?.items.map((item) => [item.id, item.route]) ?? []);
 
     expect(routesById.get("product-color")).toBe("/productcolor");

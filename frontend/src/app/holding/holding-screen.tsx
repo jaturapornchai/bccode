@@ -1187,12 +1187,12 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                     return (
                       <div key={email} className="flex items-center justify-between gap-3 p-2 rounded-lg border border-border/60 bg-card/60">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${owner ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}`}>
+                          <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10 text-primary">
                             <UserRound aria-hidden="true" size={16} />
                           </span>
                           <div className="min-w-0">
                             <div className="text-sm font-medium text-foreground truncate">{email || "-"}</div>
-                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${owner ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20" : "bg-primary/5 text-primary border border-primary/10"}`}>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${owner ? "bg-primary/15 text-primary border border-primary/30" : "bg-primary/5 text-primary border border-primary/10"}`}>
                               <ShieldCheck size={10} />
                               {owner
                                 ? (language === "th" ? "เจ้าของ" : "Owner")
@@ -1266,10 +1266,10 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: Math.min(index * 0.05, 0.4) }}
                   >
-                    {/* Left accent ribbon — single brand color, amber for owners */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                      isOwner ? "bg-amber-500" : "bg-primary"
-                    }`} />
+                    {/* Left accent ribbon — derive from brand primary */}
+                    <div className={`absolute left-0 top-0 bottom-0 ${
+                      isOwner ? "w-1.5 bg-primary shadow-sm" : "w-1 bg-primary/40"
+                    } group-hover/card:w-2 transition-all duration-200`} />
 
                     {/* Card body: click to select directly */}
                     <button
@@ -1280,7 +1280,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                     >
                       {/* Avatar */}
                       <span className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover/card:scale-105 ${
-                        isOwner ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"
+                        isOwner ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
                       }`}>
                         {busy ? (
                           <Loader2 className="spin" aria-hidden="true" size={18} />
@@ -1303,7 +1303,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                         {/* Stats badges */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                           {isOwner ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/30">
                               <ShieldCheck size={10} />
                               <span>{language === "th" ? "เจ้าของ" : "Owner"}</span>
                             </span>

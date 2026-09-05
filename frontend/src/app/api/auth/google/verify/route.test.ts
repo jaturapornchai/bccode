@@ -1,16 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+let POST: typeof import("./route").POST;
 
-describe("Google verify route", () => {
-  beforeEach(() => {
+describe.each(["development", "test", "production"] as const)("Google verify route (%s)", (environment) => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", environment);
     process.env.GOOGLE_CLIENT_ID = "google-client-id";
     process.env.BCAI_LOCAL_BACKEND_URL = "http://localhost:8888";
+    ({ POST } = await import("./route"));
   });
 
   afterEach(() => {
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.BCAI_LOCAL_BACKEND_URL;
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("keeps the refresh token in an HttpOnly cookie", async () => {
@@ -42,7 +46,7 @@ describe("Google verify route", () => {
     const cookie = response.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("bc_refresh_token=refresh-google");
     expect(cookie).toContain("HttpOnly");
-    expect(cookie).toContain("Secure");
+    expect(cookie.includes("; Secure")).toBe(environment === "production");
     expect(cookie).toContain("SameSite=lax");
   });
 });

@@ -180,42 +180,75 @@ export const MENU_SECTIONS: MenuSection[] = [
     id: "master",
     title: { key: "master_data", th: "ข้อมูลหลัก", en: "Master Data" },
     groups: [
-      // Reorganized 2026-07-03 as a natural first-time-setup workflow (s/ (formerly scopeofwork/) feedback +
-      // GPT UX review + Fable chief-architect review): products first (everything references a
-      // product), then classify/variants/details, warehouse, trade partners, org basics, sales
-      // settings split into 5 focused groups instead of one 15-item wall, approval, marketplace,
-      // tools, a new small group for the 2 items that were miscategorized under import/export
-      // (knowledge-base and alert-agent are not import/export tools), then import/export itself,
-      // then restaurant/cafe last since it's business-type-specific, not core to every business.
-      // Every item id/route is unchanged from before — only grouping, group order, and 2 group
-      // titles (partners, organization) changed.
       {
         id: "products",
         title: ml("product_catalog", "สินค้าและบาร์โค้ด", "Product Catalog"),
         items: [
-          // Core product management (daily use)
           tx("product", "สินค้า", "Product", "/product", "master"),
+          tx("product-extension", "ข้อมูลเสริมสินค้า", "Product Extended Data", "/productextension", "master"),
           { ...tx("barcode", "บาร์โค้ด", "Barcode", "/productbarcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
           tx("productset", "สินค้าชุด", "Product Set", "/productset", "master"),
-          tx("product-unit", "หน่วยนับสินค้า", "Product Unit", "/productunit", "master"),
+          tx("bom", "สูตรผลิต", "Product BOM", "/productbom", "master"),
         ],
       },
+      {
+        id: "partners",
+        title: ml("creditor_debtor", "คู่ค้า (ลูกค้า/ผู้ขาย)", "Trade Partners"),
+        items: [
+          tx("debtor", "ลูกหนี้", "Debtor", "/debtor", "master"),
+          tx("creditor", "เจ้าหนี้", "Creditor", "/creditor", "master"),
+        ],
+      },
+      {
+        id: "bank-accounts",
+        title: ml("bookbank", "สมุดบัญชีธนาคาร", "Bank Accounts"),
+        items: [
+          tx("book-bank", "สมุดบัญชีธนาคาร", "Bank Book", "/bookbankscreen", "master"),
+        ],
+      },
+      {
+        id: "product-tools",
+        title: ml("product_tools", "เครื่องมือสินค้า", "Product Tools"),
+        items: [
+          tx("product-serial-registry", "ทะเบียนเลขเครื่อง", "Serial Registry", "/productserialregistry", "master"),
+          tx("price-history", "ประวัติแก้ไขราคา", "Price Edit History", "/pricehistory", "master"),
+          tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/productbarcodeshelf", "master"),
+          tx("add-product-kitchen", "เพิ่มสินค้าเข้าครัว", "Add Product to Kitchen", "/addproducttokitchenscreen", "restaurant"),
+        ],
+      },
+      {
+        id: "import-export",
+        title: ml("import_export_data", "นำเข้า/ส่งออกข้อมูล", "Import / Export"),
+        items: [
+          tx("import-product", "นำเข้ารายการสินค้า", "Import Product List", "/importproduct", "master"),
+          tx("import-product-file", "นำเข้าสินค้าจากไฟล์", "Import Product File", "/importproductfromfile", "master"),
+          tx("import-product-image", "นำเข้ารูปสินค้า", "Import Product Image", "/importproductimage", "master"),
+        ],
+      },
+      {
+        id: "product-assistant",
+        title: ml("product_assistant", "ผู้ช่วย AI และคลังความรู้", "AI Assistant & Knowledge Base"),
+        items: [
+          tx("knowledge-base", "คลังความรู้", "Knowledge Base", "/knowledgebasescreen", "master"),
+          tx("alert-agent", "ผู้ช่วยแจ้งเตือน", "Alert Assistant", "/alertagentscreen", "master"),
+        ],
+      },
+    ],
+  },
+  {
+    id: "defaults",
+    title: { key: "menu_setup", th: "ค่าเริ่มต้น", en: "Defaults" },
+    groups: [
       {
         id: "product-classification",
         title: ml("product_classification", "จัดกลุ่มสินค้า", "Product Grouping"),
         items: [
+          tx("product-unit", "หน่วยนับสินค้า", "Product Unit", "/productunit", "master"),
           tx("product-group", "กลุ่มสินค้า", "Product Group", "/productgroup", "master"),
+          tx("groupsubone", "กลุ่มย่อยระดับ 1", "Subgroup Level 1", "/mastergroupsubonescreen", "master", "group_sub_one"),
+          tx("groupsubtwo", "กลุ่มย่อยระดับ 2", "Subgroup Level 2", "/mastergroupsubtwoscreen", "master", "group_sub_two"),
           tx("product-category", "จัดหมวดสินค้า", "Product Categories", "/productcategorygroupselectscreen", "master"),
           tx("product-category-list", "สินค้าในหมวด", "Products in Category", "/productcategorylist", "master"),
-        ],
-      },
-      {
-        id: "product-sku-options",
-        title: ml("product_sku_options", "สี ไซซ์ และตัวเลือก", "Product Options"),
-        items: [
-          tx("product-variant-matrix", "ชุดตัวเลือกสินค้า", "Product Option Sets", "/productvariantmatrix", "master"),
-          tx("product-color", "สีสินค้า", "Product Color", "/productcolor", "master"),
-          tx("product-size", "ไซซ์/ขนาดสินค้า", "Product Size", "/productsize", "master"),
         ],
       },
       {
@@ -224,35 +257,48 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("brand", "ยี่ห้อสินค้า", "Brand", "/masterbrandscreen", "master"),
           tx("model", "รุ่นสินค้า", "Model", "/mastermodelscreen", "master"),
-          tx("pattern", "รูปแบบสินค้า", "Pattern", "/masterpatternscreen", "master"),
           {
             ...tx("category", "คุณลักษณะสินค้า", "Product Attributes", "/mastercategoryscreen", "master"),
             label: ml("product_attribute_category", "คุณลักษณะสินค้า", "Product Attributes"),
           },
+          tx("pattern", "รูปแบบสินค้า", "Pattern", "/masterpatternscreen", "master"),
           tx("dimension", "ขนาด/มิติสินค้า", "Product Dimensions", "/productdimension", "master"),
+          tx("grade", "เกรดสินค้า", "Product Grade", "/mastergradescreen", "master"),
           tx("class", "ระดับสินค้า", "Product Class", "/masterclassscreen", "master"),
           tx("design", "รูปทรงสินค้า", "Product Shape", "/masterdesignscreen", "master"),
-          tx("grade", "เกรดสินค้า", "Product Grade", "/mastergradescreen", "master"),
-          tx("groupsubone", "กลุ่มย่อยระดับ 1", "Subgroup Level 1", "/mastergroupsubonescreen", "master", "group_sub_one"),
-          tx("groupsubtwo", "กลุ่มย่อยระดับ 2", "Subgroup Level 2", "/mastergroupsubtwoscreen", "master", "group_sub_two"),
         ],
       },
       {
-        id: "product-stock-production",
-        title: ml("product_stock_production", "คลังและการผลิต", "Stock and Production"),
+        id: "product-sku-options",
+        title: ml("product_sku_options", "สี ไซซ์ และตัวเลือก", "Product Options"),
+        items: [
+          tx("product-color", "สีสินค้า", "Product Color", "/productcolor", "master"),
+          tx("product-size", "ไซซ์/ขนาดสินค้า", "Product Size", "/productsize", "master"),
+          tx("product-variant-matrix", "ชุดตัวเลือกสินค้า", "Product Option Sets", "/productvariantmatrix", "master"),
+        ],
+      },
+      {
+        id: "warehouse-setup",
+        title: ml("warehouse", "คลังสินค้า", "Warehouse"),
         items: [
           tx("warehouse", "คลัง", "Warehouse", "/productwarehousescreen", "master"),
-          tx("bom", "สูตรผลิต", "Product BOM", "/productbom", "master"),
         ],
       },
       {
-        id: "partners",
-        title: ml("creditor_debtor", "คู่ค้า (ลูกค้า/ผู้ขาย)", "Trade Partners"),
+        id: "partner-groups",
+        title: ml("partner_groups", "กลุ่มคู่ค้า", "Partner Groups"),
         items: [
-          tx("creditor", "เจ้าหนี้", "Creditor", "/creditor", "master"),
-          tx("creditor-group", "กลุ่มเจ้าหนี้", "Creditor Group", "/creditorgroup", "master"),
-          tx("debtor", "ลูกหนี้", "Debtor", "/debtor", "master"),
           tx("debtor-group", "กลุ่มลูกหนี้", "Debtor Group", "/debtorgroup", "master"),
+          tx("creditor-group", "กลุ่มเจ้าหนี้", "Creditor Group", "/creditorgroup", "master"),
+        ],
+      },
+      {
+        id: "sales-payment-banking",
+        title: ml("sales_payment_banking", "การรับเงินและบัญชีธนาคาร", "Payment & Banking"),
+        items: [
+          tx("bank", "ธนาคาร", "Bank", "/bank", "master"),
+          tx("qr-provider", "ผู้ให้บริการรับเงิน QR", "QR Payment Provider", "/qrprovider", "master"),
+          tx("exchange-rate", "อัตราแลกเปลี่ยน", "Exchange Rate", "/exchangerate", "finance"),
         ],
       },
       {
@@ -262,34 +308,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("sale-channel", "ช่องทางขาย", "Sale Channel", "/salechannelscreen", "master"),
           tx("transport-channel", "ช่องทางขนส่ง", "Transport Channel", "/transportchannelscreen", "master"),
           tx("channel-price", "ราคาตามช่องทางขาย", "Channel Prices", "/channelprice", "master"),
-        ],
-      },
-      {
-        id: "sales-payment-banking",
-        title: ml("sales_payment_banking", "การรับเงินและบัญชีธนาคาร", "Payment & Banking"),
-        items: [
-          tx("qr-provider", "ผู้ให้บริการรับเงิน QR", "QR Payment Provider", "/qrprovider", "master"),
-          tx("bank", "ธนาคาร", "Bank", "/bank", "master"),
-          tx("book-bank", "สมุดบัญชีธนาคาร", "Bank Book", "/bookbankscreen", "master"),
-          tx("exchange-rate", "อัตราแลกเปลี่ยน", "Exchange Rate", "/exchangerate", "finance"),
-        ],
-      },
-      {
-        id: "sales-pos",
-        title: ml("sales_pos", "หน้าร้าน POS", "Point of Sale"),
-        items: [
-          tx("pos-setting", "ตั้งค่าเครื่องขายหน้าร้าน (POS)", "Point of Sale Settings", "/possetting", "master"),
-          tx("pos-media", "รูป/สื่อหน้าจอขาย", "Point of Sale Media", "/posmedia", "master"),
-          { ...tx("color", "สีสำหรับงานขาย", "Sales Colors", "/colorscreen", "master"), label: ml("sales_color", "สีสำหรับงานขาย", "Sales Colors") },
-        ],
-      },
-      {
-        id: "sales-loyalty",
-        title: ml("sales_loyalty", "สมาชิก คูปอง และโปรโมชัน", "Loyalty, Coupons & Promotions"),
-        items: [
-          tx("point-setting", "ตั้งค่าคะแนนสะสม", "Point Setting", "/pointsetting", "master"),
-          tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/couponsetting", "master"),
-          tx("promotion", "โปรโมชั่น", "Promotion", "/promotionscreen", "master"),
         ],
       },
       {
@@ -313,52 +331,43 @@ export const MENU_SECTIONS: MenuSection[] = [
         ],
       },
       {
-        id: "marketplace-connectors",
-        title: ml("marketplace_connectors", "เชื่อมข้อมูลตลาดออนไลน์", "Marketplace Connections"),
+        id: "sales-pos",
+        title: ml("sales_pos", "หน้าร้าน POS", "Point of Sale"),
         items: [
-          tx("shopee-mappings", "เชื่อม Shopee", "Shopee Connection", "/marketplace/shopee", "master"),
-          tx("lazada-mappings", "เชื่อม Lazada", "Lazada Connection", "/marketplace/lazada", "master"),
-          tx("tiktok-mappings", "เชื่อม TikTok", "TikTok Connection", "/marketplace/tiktok", "master"),
+          tx("pos-setting", "ตั้งค่าเครื่องขายหน้าร้าน (POS)", "Point of Sale Settings", "/possetting", "master"),
+          tx("pos-media", "รูป/สื่อหน้าจอขาย", "Point of Sale Media", "/posmedia", "master"),
+          { ...tx("color", "สีสำหรับงานขาย", "Sales Colors", "/colorscreen", "master"), label: ml("sales_color", "สีสำหรับงานขาย", "Sales Colors") },
         ],
       },
       {
-        id: "product-tools",
-        title: ml("product_tools", "เครื่องมือสินค้า", "Product Tools"),
+        id: "sales-loyalty",
+        title: ml("sales_loyalty", "สมาชิก คูปอง และโปรโมชัน", "Loyalty, Coupons & Promotions"),
         items: [
-          tx("product-serial-registry", "ทะเบียนเลขเครื่อง", "Serial Registry", "/productserialregistry", "master"),
-          tx("price-history", "ประวัติแก้ไขราคา", "Price Edit History", "/pricehistory", "master"),
-          tx("label-print", "พิมพ์ป้ายสินค้า", "Print Product Label", "/productbarcodeshelf", "master"),
+          tx("point-setting", "ตั้งค่าคะแนนสะสม", "Point Setting", "/pointsetting", "master"),
+          tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/couponsetting", "master"),
+          tx("promotion", "โปรโมชั่น", "Promotion", "/promotionscreen", "master"),
         ],
       },
       {
-        id: "product-assistant",
-        title: ml("product_assistant", "ผู้ช่วย AI และคลังความรู้", "AI Assistant & Knowledge Base"),
-        items: [
-          tx("knowledge-base", "คลังความรู้", "Knowledge Base", "/knowledgebasescreen", "master"),
-          tx("alert-agent", "ผู้ช่วยแจ้งเตือน", "Alert Assistant", "/alertagentscreen", "master"),
-        ],
-      },
-      {
-        id: "import-export",
-        title: ml("import_export_data", "นำเข้า/ส่งออกข้อมูล", "Import / Export"),
-        items: [
-          tx("import-product", "นำเข้ารายการสินค้า", "Import Product List", "/importproduct", "master"),
-          tx("import-product-file", "นำเข้าสินค้าจากไฟล์", "Import Product File", "/importproductfromfile", "master"),
-          tx("import-product-image", "นำเข้ารูปสินค้า", "Import Product Image", "/importproductimage", "master"),
-        ],
-      },
-      {
-        id: "restaurant",
+        id: "restaurant-setup",
         title: ml("restaurant_cafe", "ร้านอาหาร/คาเฟ่", "Restaurant / Cafe"),
         items: [
           tx("zone", "โซน", "Zone", "/zonegroupselectscreen", "restaurant"),
           tx("table", "โต๊ะ", "Table", "/tablegroupselectscreen", "restaurant"),
           tx("table-map", "ผังโต๊ะ", "Table Map", "/tablemapgroupselectscreen", "restaurant"),
           tx("kitchen", "ครัว", "Kitchen", "/kitchengroupselectscreen", "restaurant"),
-          tx("add-product-kitchen", "เพิ่มสินค้าเข้าครัว", "Add Product to Kitchen", "/addproducttokitchenscreen", "restaurant"),
-          tx("qr-order", "สั่งอาหารด้วย QR", "QR Ordering", "/qrcodeordergroupselectscreen", "restaurant"),
           tx("order-template", "ตั้งค่าเครื่องสั่งอาหาร", "Ordering Station Settings", "/ordertemplatsetting", "restaurant"),
           tx("order-setting", "ตั้งค่าการสั่งอาหาร", "Ordering Settings", "/ordersetting", "restaurant"),
+          tx("qr-order", "สั่งอาหารด้วย QR", "QR Ordering", "/qrcodeordergroupselectscreen", "restaurant"),
+        ],
+      },
+      {
+        id: "marketplace-connectors",
+        title: ml("marketplace_connectors", "เชื่อมข้อมูลตลาดออนไลน์", "Marketplace Connections"),
+        items: [
+          tx("shopee-mappings", "เชื่อม Shopee", "Shopee Connection", "/marketplace/shopee", "master"),
+          tx("lazada-mappings", "เชื่อม Lazada", "Lazada Connection", "/marketplace/lazada", "master"),
+          tx("tiktok-mappings", "เชื่อม TikTok", "TikTok Connection", "/marketplace/tiktok", "master"),
         ],
       },
     ],
@@ -408,7 +417,8 @@ export function menuSearchHaystack(label: MenuLabel, dictionary?: BackendLanguag
 }
 
 export function menuSearchMatches(label: MenuLabel, needle: string, dictionary?: BackendLanguageDictionary): boolean {
-  return Boolean(needle) && menuSearchHaystack(label, dictionary).includes(needle);
+  const normalizedNeedle = normalizeMenuSearchText(needle);
+  return Boolean(normalizedNeedle) && menuSearchHaystack(label, dictionary).includes(normalizedNeedle);
 }
 
 export function flattenMenuItems(): MenuItem[] {

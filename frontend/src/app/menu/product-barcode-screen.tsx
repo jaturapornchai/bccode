@@ -146,6 +146,11 @@ export function ProductBarcodeScreen({
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKey, setSelectedKey] = useState("");
   const [checkedBarcodes, setCheckedBarcodes] = useState<string[]>([]);
+  const [compactRows, setCompactRows] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const saved = window.localStorage.getItem("bcproductbarcodecompact");
+    return saved !== null ? saved === "true" : true;
+  });
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
   const [editorGuid, setEditorGuid] = useState("");
@@ -878,6 +883,24 @@ export function ProductBarcodeScreen({
                 <Copy size={16} />
                 คัดลอก
               </Button>
+              <Button
+                variant={compactRows ? "secondary" : "outline"}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setCompactRows((prev) => {
+                    const next = !prev;
+                    if (typeof window !== "undefined") {
+                      window.localStorage.setItem("bcproductbarcodecompact", String(next));
+                    }
+                    return next;
+                  });
+                }}
+                className="h-9 text-xs"
+                title={compactRows ? "คลิกเพื่อขยายบรรทัด" : "คลิกเพื่อย่อบรรทัด"}
+              >
+                {compactRows ? "ย่อบรรทัด" : "ขยายบรรทัด"}
+              </Button>
               <Button size="sm" onClick={() => void openCreateEditor()}>
                 <Plus size={16} />
                 {text.add}
@@ -918,6 +941,24 @@ export function ProductBarcodeScreen({
                 <RefreshCcw size={16} />
               )}
               {text.refresh}
+            </Button>
+            <Button
+              variant={compactRows ? "secondary" : "outline"}
+              size="sm"
+              type="button"
+              onClick={() => {
+                setCompactRows((prev) => {
+                  const next = !prev;
+                  if (typeof window !== "undefined") {
+                    window.localStorage.setItem("bcproductbarcodecompact", String(next));
+                  }
+                  return next;
+                });
+              }}
+              className="h-9 text-xs"
+              title={compactRows ? "คลิกเพื่อขยายบรรทัด" : "คลิกเพื่อย่อบรรทัด"}
+            >
+              {compactRows ? "ย่อบรรทัด" : "ขยายบรรทัด"}
             </Button>
             <Button
               size="sm"
@@ -1048,6 +1089,7 @@ export function ProductBarcodeScreen({
                               barcodeIdentity(item)
                             : false
                         }
+                        compact={compactRows}
                         editing={
                           selected
                             ? barcodeIdentity(selected) ===
@@ -1196,6 +1238,7 @@ export function ProductBarcodeScreen({
 
 function BarcodeRow({
   checked,
+  compact = true,
   index,
   item,
   onSelect,
@@ -1206,6 +1249,7 @@ function BarcodeRow({
   text,
 }: {
   checked: boolean;
+  compact?: boolean;
   index: number;
   item: ProductBarcodeRecord;
   onSelect: () => void;
@@ -1226,8 +1270,10 @@ function BarcodeRow({
     <div
       aria-label={`${text.barcode}: ${item.barcode || item.itemCode || "-"}`}
       aria-pressed={selected}
+      data-compact={compact ? "true" : "false"}
       className={cn(
         "bc-list-row grid gap-x-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:grid-cols-[1.2fr_1.8fr] 2xl:grid-cols-[1.35fr_2.2fr_0.9fr_1.1fr]",
+        compact ? "is-compact py-0.5 items-center min-h-[28px]" : "py-2 items-start",
         editing
           ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
           : selected
@@ -1249,30 +1295,39 @@ function BarcodeRow({
           {selectMode ? (
             <span
               className={cn(
-                "grid size-6 shrink-0 place-items-center rounded-md border",
+                "grid size-5 shrink-0 place-items-center rounded-md border",
                 checked && "border-primary bg-primary text-primary-foreground",
               )}
             >
-              {checked ? <CheckSquare size={14} /> : null}
+              {checked ? <CheckSquare size={12} /> : null}
             </span>
           ) : null}
-          <span className="truncate">{item.barcode || "-"}</span>
+          <span className={cn("min-w-0 font-semibold", compact ? "bc-cell-text text-xs sm:text-sm" : "truncate")} title={item.barcode || "-"}>
+            {item.barcode || "-"}
+          </span>
         </div>
       </div>
       <div className="min-w-0">
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">
           {text.productName}
         </span>
-        <div className="line-clamp-2">{item.name || "-"}</div>
-        <div className="mt-0.5 truncate text-xs text-muted-foreground">
-          {text.retailPrice} 1: {item.sellingPrice || "-"}
+        <div
+          className={cn("font-medium", compact ? "bc-cell-text text-xs sm:text-sm" : "line-clamp-2")}
+          title={`${item.name || "-"} (${text.retailPrice} 1: ${item.sellingPrice || "-"})`}
+        >
+          {item.name || "-"}
         </div>
+        {!compact ? (
+          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+            {text.retailPrice} 1: {item.sellingPrice || "-"}
+          </div>
+        ) : null}
       </div>
       <div className="hidden min-w-0 2xl:block">
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">
           {text.unit}
         </span>
-        <div className="truncate">
+        <div className={cn(compact ? "bc-cell-text text-xs text-muted-foreground" : "truncate")} title={item.unitName || item.unitCode || "-"}>
           {item.unitName || item.unitCode || "-"}
         </div>
       </div>
@@ -1280,7 +1335,9 @@ function BarcodeRow({
         <span className="lg:hidden text-xs font-semibold text-muted-foreground">
           {text.itemCode}
         </span>
-        <div className="truncate">{item.itemCode || "-"}</div>
+        <div className={cn(compact ? "bc-cell-text text-xs text-muted-foreground" : "truncate")} title={item.itemCode || "-"}>
+          {item.itemCode || "-"}
+        </div>
       </div>
     </div>
   );
@@ -1433,8 +1490,8 @@ function DetailSection({
       className="rounded-2xl border border-border p-3"
       data-testid="barcode-detail-fields"
     >
-      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <h3 className="mb-1.5 text-xs sm:text-sm font-bold text-primary">{title}</h3>
+      <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
         {fields.map((field) => (
           <DetailField
             key={`${title}-${field.label}`}
@@ -1449,9 +1506,9 @@ function DetailSection({
 
 function DetailField({ label, value }: DetailFieldItem) {
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-background p-2">
-      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words text-sm font-medium">{value || "-"}</p>
+    <div className="min-w-0 rounded-lg border border-border bg-background px-2.5 py-1.5 flex flex-col justify-center">
+      <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground truncate" title={label}>{label}</p>
+      <p className="mt-0.5 break-words text-xs sm:text-sm font-semibold">{value || "-"}</p>
     </div>
   );
 }

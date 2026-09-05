@@ -214,7 +214,7 @@ export function MenuDataTable({ data, dictionary, globalSearch, onGlobalSearchCh
       </div>
 
       <div className="hidden min-w-0 overflow-hidden rounded-2xl border border-border bg-card md:block">
-        <Table>
+        <Table className="bc-table-compact">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

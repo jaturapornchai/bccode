@@ -1,14 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+let POST: typeof import("./route").POST;
 
-describe("password login route", () => {
-  beforeEach(() => {
+describe.each(["development", "test", "production"] as const)("password login route (%s)", (environment) => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", environment);
     process.env.BCAI_LOCAL_BACKEND_URL = "http://localhost:8888";
+    ({ POST } = await import("./route"));
   });
 
   afterEach(() => {
     delete process.env.BCAI_LOCAL_BACKEND_URL;
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("allows password login without holdingcode", async () => {
@@ -45,7 +49,7 @@ describe("password login route", () => {
     expect(cookie).toContain("Max-Age=43200");
     expect(cookie).toContain("Path=/");
     expect(cookie).toContain("HttpOnly");
-    expect(cookie).toContain("Secure");
+    expect(cookie.includes("; Secure")).toBe(environment === "production");
     expect(cookie).toContain("SameSite=lax");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

@@ -1149,23 +1149,24 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
         <section className="w-full h-full flex flex-col bg-card" role="dialog" aria-modal="true">
-          <div className="dialog-header shrink-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2 sm:px-6">
-            <div className="flex items-center gap-2 sm:gap-6 min-w-0">
+          <div className="dialog-header shrink-0 flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-4 py-2.5 sm:px-6 border-b border-border/80 bg-card/80 backdrop-blur-md">
+            <div className="flex items-center gap-3 sm:gap-6 min-w-0">
               <button
-                className="secondary-button flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm shrink-0"
+                className="secondary-button flex items-center gap-2 px-3.5 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-xs shrink-0 min-h-[2.5em]"
                 type="button"
                 onClick={() => void returnToShopSelection()}
               >
                 <ArrowLeft size={16} className="text-muted-foreground" />
-                <span className="hidden sm:inline">{language === "th" ? "ย้อนกลับ" : "Back"}</span>
+                <span className="hidden sm:inline font-bold">{language === "th" ? "ย้อนกลับ" : "Back"}</span>
               </button>
               <div className="hidden sm:block min-w-0">
-                <p className="eyebrow">{language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}</p>
-                <h2 className="text-base font-bold leading-tight sm:text-xl">
+                <p className="eyebrow text-xs font-bold uppercase tracking-wider text-primary leading-none mb-1">
+                  {language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}
+                </p>
+                <h2 className="text-base font-extrabold leading-tight sm:text-xl text-foreground tracking-tight">
                   {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access Control"}
                 </h2>
               </div>
-
             </div>
             <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:shrink-0">
               {activeManual ? (
@@ -1178,7 +1179,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="secondary-button flex min-w-0 max-w-[70vw] sm:max-w-[42vw] items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-sm"
+                    className="secondary-button flex min-w-0 max-w-[70vw] sm:max-w-[36vw] items-center gap-2 px-3 py-1.5 text-sm font-bold text-foreground hover:bg-muted hover:text-primary border border-border rounded-xl transition-all shadow-xs min-h-[2.5em]"
                     type="button"
                     disabled={busy || accessShopOptions.length <= 1}
                   >
@@ -1206,6 +1207,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   })}
                 </DropdownMenuContent>
               </DropdownMenu>
+              <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
             </div>
           </div>
           <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-card overflow-hidden">
@@ -1255,14 +1257,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <button
                     key={item.route}
                     title={accessSidebarCollapsed ? `${index + 1}. ${language === "th" ? item.label.th : item.label.en}` : undefined}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    className={`w-full text-left p-2.5 rounded-xl text-sm font-bold transition-all duration-200 border ${
                       accessSidebarCollapsed ? "hidden md:flex" : "flex"
-                    } items-center md:items-start gap-2 ${
-                      accessSidebarCollapsed ? "md:justify-center md:px-1" : ""
+                    } items-center md:items-start gap-3 ${
+                      accessSidebarCollapsed ? "md:justify-center md:p-2" : ""
                     } ${
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
-                        : "text-foreground hover:bg-muted md:hover:translate-x-0.5"
+                        ? "bg-primary text-primary-foreground shadow-sm border-primary ring-2 ring-primary/20"
+                        : "border-transparent bg-transparent text-foreground/90 hover:bg-card hover:border-border/70 hover:text-foreground md:hover:translate-x-0.5"
                     }`}
                     type="button"
                     onClick={() => {
@@ -1274,22 +1276,22 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     }}
                   >
                     <span
-                      className={`mt-0 md:mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      className={`mt-0 md:mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-black transition-all ${
                         isActive
-                          ? "bg-primary-foreground/20 text-primary-foreground"
-                          : "bg-primary/10 text-primary"
+                          ? "bg-primary-foreground/25 text-primary-foreground ring-1 ring-primary-foreground/40"
+                          : "bg-primary/10 text-primary border border-primary/20"
                       }`}
                     >
-                      {stepProgress[item.route] ? <Check size={12} aria-label={language === "th" ? "มีข้อมูลแล้ว" : "has data"} /> : index + 1}
+                      {index + 1}
                     </span>
                     <span className={`min-w-0 ${accessSidebarCollapsed ? "md:hidden" : ""}`}>
-                      <span className="block leading-tight md:truncate">
+                      <span className="block font-bold leading-tight md:truncate text-sm">
                         {language === "th" ? item.label.th : item.label.en}
                       </span>
                       <span
-                        className={`hidden md:block truncate text-[10px] font-medium ${
+                        className={`hidden md:block truncate text-xs font-medium mt-0.5 leading-normal ${
                           isActive
-                            ? "text-primary-foreground/80"
+                            ? "text-primary-foreground/85"
                             : "text-muted-foreground"
                         }`}
                       >
@@ -1372,11 +1374,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </div>
               ) : null}
               {activeStepTabs ? (
-                <div className="mb-3 flex flex-wrap gap-1.5" role="tablist" aria-label={language === "th" ? "หมวดในขั้นนี้" : "Sections in this step"}>
+                <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label={language === "th" ? "หมวดในขั้นนี้" : "Sections in this step"}>
                   {activeStepTabs.map((tab) => (
                     <button
                       aria-selected={effectiveAccessRoute === tab.route}
-                      className={`min-h-10 rounded-lg border px-3 text-sm font-semibold transition-colors ${effectiveAccessRoute === tab.route ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
+                      className={`min-h-[2.6em] rounded-xl border px-4 py-2 text-sm font-bold transition-all shadow-xs cursor-pointer ${
+                        effectiveAccessRoute === tab.route
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20"
+                          : "border-border/80 bg-card/90 text-foreground/85 hover:bg-primary/5 hover:border-primary/40 hover:text-primary"
+                      }`}
                       key={tab.route}
                       onClick={() => selectStepTab(activeAccessRoute ?? "", tab.route)}
                       role="tab"
@@ -1388,11 +1394,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </div>
               ) : null}
               {activeAccessRoute === "/people" && peopleSummary ? (
-                <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-card px-3 py-2 text-sm">
-                  <span><strong>{peopleSummary.employees}</strong> {language === "th" ? "พนักงาน" : "employees"}</span>
-                  <span><strong>{peopleSummary.accounts}</strong> {language === "th" ? "บัญชีเข้าระบบ" : "login accounts"}</span>
-                  <span><strong>{peopleSummary.linked}</strong> {language === "th" ? "คนที่มีทั้งสองอย่าง (จับคู่ด้วยอีเมล)" : "with both (matched by email)"}</span>
-                  <span className="text-xs text-muted-foreground">{language === "th" ? "พนักงานที่ต้องเข้าระบบ: เพิ่มที่แท็บ บัญชีเข้าระบบ ด้วยอีเมลเดียวกัน" : "Employees who need to sign in: add them under Login Accounts with the same email"}</span>
+                <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm shadow-xs">
+                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.employees}</strong> {language === "th" ? "พนักงาน" : "employees"}</span>
+                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.accounts}</strong> {language === "th" ? "บัญชีเข้าระบบ" : "login accounts"}</span>
+                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.linked}</strong> {language === "th" ? "คนที่มีทั้งสองอย่าง (จับคู่ด้วยอีเมล)" : "with both (matched by email)"}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{language === "th" ? "พนักงานที่ต้องเข้าระบบ: เพิ่มที่แท็บ บัญชีเข้าระบบ ด้วยอีเมลเดียวกัน" : "Employees who need to sign in: add them under Login Accounts with the same email"}</span>
                 </div>
               ) : null}
               {effectiveAccessRoute === "/currency" ? (
@@ -1414,10 +1420,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 const next = idx >= 0 ? accessSettingNavItems[idx + 1] : undefined;
                 if (!next) return null;
                 return (
-                  <div className="mt-4 flex justify-end">
-                    <button className="primary-button inline-flex items-center gap-2" type="button" onClick={() => setActiveAccessRoute(next.route)}>
-                      {language === "th" ? `ถัดไป: ${next.label.th}` : `Next: ${next.label.en}`}
-                      <ArrowRight size={16} />
+                  <div className="mt-6 flex justify-end">
+                    <button className="primary-button inline-flex items-center gap-2 px-5 py-2.5 text-base font-bold min-h-[2.6em]" type="button" onClick={() => setActiveAccessRoute(next.route)}>
+                      <span>{language === "th" ? `ถัดไป: ${next.label.th}` : `Next: ${next.label.en}`}</span>
+                      <ArrowRight size={18} />
                     </button>
                   </div>
                 );
@@ -1653,15 +1659,15 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       variants={cardStaggerChild}
                       className="group/company text-left relative w-full flex items-center gap-4 border border-border/80 rounded-xl bg-card px-4 py-3 pl-5 hover:border-primary/50 hover:bg-accent/30 transition-all duration-200 cursor-pointer disabled:opacity-60"
                     >
-                      {/* Left color bar accent — amber for OWNER/creator, primary for USER */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${isCreator ? "bg-amber-500" : "bg-primary/70"}`} />
+                      {/* Left color bar accent — primary-derived */}
+                      <div className={`absolute left-0 top-0 bottom-0 ${isCreator ? "w-1.5 bg-primary shadow-sm" : "w-1 bg-primary/40"} group-hover/company:w-2 transition-all duration-200`} />
 
                       <LogoAvatar
                         uri={company.logouri}
                         auth={auth}
                         alt={companyName}
-                        sizeClass="w-11 h-11 rounded-lg shrink-0"
-                        className={isCreator ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}
+                        sizeClass="w-11 h-11 rounded-xl shrink-0 transition-transform duration-200 group-hover/company:scale-105"
+                        className={isCreator ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"}
                       />
 
                       <div className="min-w-0 flex-1">
@@ -1672,12 +1678,12 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           {companyName}
                         </h3>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border uppercase shrink-0 ${
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border uppercase shrink-0 ${
                             isCreator
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20"
-                              : "bg-primary/10 text-primary border-primary/20"
+                              ? "bg-primary/15 text-primary border-primary/30"
+                              : "bg-muted text-muted-foreground border-border/60"
                           }`}>
-                            {isCreator ? "OWNER" : "USER"}
+                            {isCreator ? (language === "th" ? "เจ้าของ" : "OWNER") : "USER"}
                           </span>
                           {languageCodes.map((code) => (
                             <span key={code} className="px-1.5 py-0.5 text-[10px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
@@ -1772,20 +1778,20 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   return (
                     <motion.button
                       className="group/branch relative flex items-center gap-3 p-4 rounded-2xl border bg-card/85 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 text-left disabled:opacity-60 disabled:cursor-wait"
-                      style={{ borderColor: isHQ ? "color-mix(in srgb, var(--amber, #b7791f) 35%, var(--border))" : "var(--border)" }}
+                      style={{ borderColor: isHQ ? "color-mix(in srgb, var(--primary) 35%, var(--border))" : "var(--border)" }}
                       disabled={busy}
                       key={branch.guidfixed || branch.code}
                       type="button"
                       onClick={() => void selectBranch(branch)}
                       variants={cardStaggerChild}
                     >
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${isHQ ? "bg-amber-500" : "bg-primary"}`} />
+                      <div className={`absolute left-0 top-0 bottom-0 ${isHQ ? "w-1.5 bg-primary shadow-sm" : "w-1 bg-primary/40"} group-hover/branch:w-2 transition-all duration-200`} />
                       <LogoAvatar
                         uri={branch.logouri}
                         auth={auth}
                         alt={branchName}
                         sizeClass="w-10 h-10 rounded-xl shrink-0 transition-transform duration-300 group-hover/branch:scale-110 group-hover/branch:rotate-3"
-                        className={isHQ ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-primary/10 text-primary"}
+                        className={isHQ ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"}
                       />
                       <div className="min-w-0 flex-1">
                         <strong className="block font-bold text-foreground text-sm sm:text-base tracking-tight break-words leading-snug group-hover/branch:text-primary transition-colors">
@@ -1793,7 +1799,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                         </strong>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                           {isHQ ? (
-                            <span className="px-2 py-0.5 text-[9px] font-bold rounded border uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                            <span className="px-2 py-0.5 text-[9px] font-bold rounded-full border uppercase bg-primary/15 text-primary border-primary/30">
                               {language === "th" ? "สำนักงานใหญ่" : "Headquarters"}
                             </span>
                           ) : null}

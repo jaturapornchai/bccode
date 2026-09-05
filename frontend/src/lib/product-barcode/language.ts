@@ -411,6 +411,7 @@ const barcodeTextTh = {
     "ข้อมูลการจัดกลุ่ม คู่ค้า รูปภาพ และการตั้งค่า POS ของบาร์โค้ดนี้ถูกสืบทอดมาจากสินค้าหลัก",
   inheritedInfoEditHint: "หากต้องการแก้ไขข้อมูลเหล่านี้ กรุณาไปที่เมนู",
   productMenuName: "สินค้า",
+  productExtensionMenuName: "ข้อมูลเสริมสินค้า",
   loadingProductDetail: "กำลังดึงข้อมูลรายละเอียดสินค้าหลัก...",
   noProductDetailFound:
     "ไม่พบข้อมูลสินค้าหลักในระบบ กรุณาตรวจสอบการผูกสินค้าหลักที่แท็บข้อมูลหลัก",
@@ -942,6 +943,7 @@ const barcodeTextEn: BarcodeText = {
     "Classification, creditors, images, and POS settings of this barcode are inherited from the main product",
   inheritedInfoEditHint: "To edit these fields, go to menu",
   productMenuName: "Products",
+  productExtensionMenuName: "Product Extended Data",
   loadingProductDetail: "Loading main product details...",
   noProductDetailFound:
     "Main product not found. Please check the product link in the Basic tab.",

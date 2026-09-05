@@ -258,6 +258,11 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
   const [setFilter, setSetFilter] = useState("all");
   const [selectMode, setSelectMode] = useState(false);
   const [checkedSetKeys, setCheckedSetKeys] = useState<string[]>([]);
+  const [compactRows, setCompactRows] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const saved = window.localStorage.getItem("bcproductsetcompact");
+    return saved !== null ? saved === "true" : true;
+  });
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
@@ -952,6 +957,24 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                 <Trash2 className="h-4 w-4" />
                 {checkedSetKeys.length || ""}
               </Button>
+              <Button
+                variant={compactRows ? "secondary" : "outline"}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setCompactRows((prev) => {
+                    const next = !prev;
+                    if (typeof window !== "undefined") {
+                      window.localStorage.setItem("bcproductsetcompact", String(next));
+                    }
+                    return next;
+                  });
+                }}
+                className="h-9 text-xs"
+                title={compactRows ? "คลิกเพื่อขยายบรรทัด" : "คลิกเพื่อย่อบรรทัด"}
+              >
+                {compactRows ? "ย่อบรรทัด" : "ขยายบรรทัด"}
+              </Button>
             </div>
             {filterOpen ? (
               <div className="mt-3 flex flex-wrap gap-2 rounded-lg border border-border bg-muted/20 p-2">
@@ -966,7 +989,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground flex justify-center items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -981,9 +1004,66 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                 const optionCount = item.options?.length || 0;
                 const isCompStock = item.isusesubbarcodes ?? false;
 
+                if (compactRows) {
+                  return (
+                    <button
+                      key={item.guidfixed}
+                      data-testid="product-set-row"
+                      className={cn(
+                        "bc-list-row is-compact w-full text-left px-2 py-1 rounded-lg border transition-all flex items-center gap-2 hover:bg-muted/80 min-h-[30px]",
+                        active
+                          ? "bg-primary/10 border-primary/40 text-foreground shadow-sm shadow-primary/5"
+                          : "border-transparent text-foreground hover:border-border/40"
+                      )}
+                      onClick={() => {
+                        if (selectMode) {
+                          toggleCheckedSet(rowKey);
+                        } else {
+                          setSelectedGuid(item.guidfixed);
+                          setEditorOpen(false);
+                        }
+                      }}
+                    >
+                      {selectMode ? (
+                        <span
+                          className={cn(
+                            "grid size-4 shrink-0 place-items-center rounded border",
+                            checkedSetKeys.includes(rowKey) && "border-primary bg-primary text-primary-foreground"
+                          )}
+                        >
+                          {checkedSetKeys.includes(rowKey) ? <CheckSquare className="h-3 w-3" /> : null}
+                        </span>
+                      ) : (
+                        <Layers className={cn("h-3.5 w-3.5 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                      )}
+                      <span className="font-bold bc-cell-text text-xs text-foreground shrink-0 max-w-[90px]" title={item.code}>
+                        {item.code}
+                      </span>
+                      <span className="bc-cell-text text-xs text-muted-foreground flex-1 min-w-0" title={pickName(item.names, lang)}>
+                        {pickName(item.names, lang)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground shrink-0 hidden sm:inline">
+                        {optionCount} ตัวเลือก
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[9px] py-0 px-1 font-semibold shrink-0",
+                          isCompStock
+                            ? "border-violet-500/20 text-violet-600 bg-violet-500/5"
+                            : "border-amber-500/20 text-amber-600 bg-amber-500/5"
+                        )}
+                      >
+                        {isCompStock ? "ชิ้นส่วน" : "ชุด"}
+                      </Badge>
+                    </button>
+                  );
+                }
+
                 return (
                   <button
                     key={item.guidfixed}
+                    data-testid="product-set-row"
                     className={cn(
                       "w-full text-left p-3 rounded-xl border transition-all duration-200 flex items-start gap-3 hover:bg-muted/80",
                       active
@@ -1040,7 +1120,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
         <div className="flex-1 overflow-hidden bg-background min-h-0 flex flex-col lg:flex-row">
 
           {/* Middle Card: Detail/Edit Form */}
-          <div className="flex-1 overflow-y-auto p-6 border-r border-border">
+          <div className="flex-1 overflow-y-auto p-3.5 border-r border-border">
             {selectedGuid && !editorOpen && (
               <Button
                 variant="ghost"
@@ -1055,8 +1135,8 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
 
             {editorOpen && editProduct ? (
               /* PRODUCT BUNDLE EDITOR FORM */
-              <form onSubmit={handleSave} className="space-y-6 max-w-3xl mx-auto">
-                <div className="flex items-center justify-between border-b border-border pb-4">
+              <form onSubmit={handleSave} className="space-y-3 max-w-4xl mx-auto">
+                <div className="flex items-center justify-between border-b border-border pb-2.5">
                   <div>
                     <span className="text-[10px] uppercase tracking-wider font-extrabold text-primary block">
                       {editorMode === "create" ? "NEW PRODUCT BUNDLE" : "EDIT CONFIGURATION"}
@@ -1090,12 +1170,12 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                 </div>
 
                 {/* Form Navigation Tabs */}
-                <div className="flex border-b border-border/60 bg-muted/20 p-1 rounded-xl">
+                <div className="flex border-b border-border/60 bg-muted/20 p-1 rounded-lg">
                   <button
                     type="button"
                     onClick={() => setActiveTab("general")}
                     className={cn(
-                      "flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5",
+                      "flex-1 py-1.5 px-2.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5",
                       activeTab === "general"
                         ? "bg-card text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -1108,7 +1188,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                     type="button"
                     onClick={() => setActiveTab("components")}
                     className={cn(
-                      "flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5",
+                      "flex-1 py-1.5 px-2.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5",
                       activeTab === "components"
                         ? "bg-card text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -1121,7 +1201,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                     type="button"
                     onClick={() => setActiveTab("pricing_stock")}
                     className={cn(
-                      "flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5",
+                      "flex-1 py-1.5 px-2.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5",
                       activeTab === "pricing_stock"
                         ? "bg-card text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -1134,14 +1214,14 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
 
                 {/* Tab Content 1: General Info */}
                 {activeTab === "general" && (
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <Card className="border-border shadow-sm">
-                      <CardHeader className="pb-3">
+                      <CardHeader className="p-3 pb-1">
                         <CardTitle className="text-sm font-bold text-foreground">รายละเอียดพื้นฐาน</CardTitle>
                         <CardDescription className="text-xs">ตั้งค่ารหัสและชื่อเรียกสินค้าชุดคอมโบ</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
+                      <CardContent className="p-3 space-y-2.5">
+                        <div className="grid gap-2.5 sm:grid-cols-2">
                           <div className="space-y-1.5">
                             <span className="font-semibold text-xs text-foreground">รหัสสินค้าชุด (Set SKU) *</span>
                             <Input
@@ -1550,13 +1630,13 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
               </form>
             ) : selectedProduct ? (
               /* PRODUCT BUNDLE DETAILS VIEW MODE */
-              <div className="space-y-6 w-full">
+              <div className="space-y-3 w-full">
                 {/* Premium Banner Header */}
-                <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-primary/10 via-violet-500/5 to-card p-6 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-r from-primary/10 via-violet-500/5 to-card p-3.5 shadow-sm">
                   <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Sparkles className="h-24 w-24 text-primary animate-pulse" />
+                    <Sparkles className="h-16 w-16 text-primary animate-pulse" />
                   </div>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <Badge variant="default" className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-primary/20 text-primary border border-primary/20">
@@ -1571,14 +1651,14 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                           {selectedProduct.isusesubbarcodes ? "หักสต๊อกตามส่วนประกอบ" : "หักสต๊อกตาม SKU ชุด"}
                         </Badge>
                       </div>
-                      <h3 className="text-2xl font-black text-foreground mt-2 flex items-center gap-2">
+                      <h3 className="text-xl font-bold text-foreground mt-1 flex items-center gap-2">
                         {selectedProduct.code}
                       </h3>
                       <p className="text-sm font-bold text-muted-foreground mt-0.5">
                         {pickName(selectedProduct.names, lang)}
                       </p>
                       {selectedProduct.description && (
-                        <p className="text-xs text-muted-foreground/80 mt-2 max-w-xl leading-relaxed italic bg-background/50 p-2 rounded-lg border border-border/40">
+                        <p className="text-xs text-muted-foreground/80 mt-1.5 max-w-xl leading-relaxed italic bg-background/50 p-2 rounded-lg border border-border/40">
                           {selectedProduct.description}
                         </p>
                       )}
@@ -1611,37 +1691,37 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                 </div>
 
                 {/* Dashboard layout: General info on left, choices on right */}
-                <div className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+                <div className="grid gap-3 xl:grid-cols-[1fr_1.4fr]">
                   {/* Left Column: Specs & Settings */}
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     {/* General specs and policies */}
                     <Card className="border border-border/80 shadow-sm overflow-hidden bg-card/50 backdrop-blur-sm">
-                      <CardHeader className="p-4 border-b border-border/60 bg-muted/20">
+                      <CardHeader className="p-2.5 border-b border-border/60 bg-muted/20">
                         <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5">
                           <Settings2 className="h-4 w-4 text-primary" />
                           กติกาและข้อมูลทั่วไป
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-4 space-y-4 text-xs">
-                        <div className="flex justify-between items-center py-2 border-b border-border/40">
+                      <CardContent className="p-2.5 space-y-2 text-xs">
+                        <div className="flex justify-between items-center py-1.5 border-b border-border/40">
                           <span className="text-muted-foreground">กลุ่มสินค้าหลัก:</span>
                           <strong className="text-foreground font-semibold">
                             {selectedProduct.groupcode ? `${selectedProduct.groupcode} - ${pickName(selectedProduct.groupnames, lang)}` : "ไม่ระบุ"}
                           </strong>
                         </div>
-                        <div className="flex justify-between items-center py-2 border-b border-border/40">
+                        <div className="flex justify-between items-center py-1.5 border-b border-border/40">
                           <span className="text-muted-foreground">นโยบายคิดราคา:</span>
                           <Badge variant="outline" className={cn("text-[10px] font-bold", selectedProduct.condition ? "border-violet-500/20 text-violet-600 bg-violet-500/5" : "border-muted-foreground/20 text-muted-foreground bg-muted/10")}>
                             {selectedProduct.condition ? "ราคาผันแปรตามสินค้าที่เลือกจริง" : "ราคาคงที่ (กำหนดแยกที่บาร์โค้ด)"}
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center py-2 border-b border-border/40">
+                        <div className="flex justify-between items-center py-1.5 border-b border-border/40">
                           <span className="text-muted-foreground">การตัดสต๊อกจริง:</span>
                           <Badge variant="outline" className={cn("text-[10px] font-bold", selectedProduct.isusesubbarcodes ? "border-violet-500/20 text-violet-600 bg-violet-500/5" : "border-muted-foreground/20 text-muted-foreground bg-muted/10")}>
                             {selectedProduct.isusesubbarcodes ? "ตัดแยกทีละชิ้นส่วนตามที่เลือก" : "ตัดที่ตัว SKU สินค้าชุดโดยตรง"}
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center py-2">
+                        <div className="flex justify-between items-center py-1.5">
                           <span className="text-muted-foreground">จำนวนกลุ่มตัวเลือกสินค้า:</span>
                           <strong className="text-foreground font-semibold">{selectedProduct.options?.length || 0} กลุ่ม</strong>
                         </div>
@@ -1650,18 +1730,18 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
 
                     {/* Logistics cards */}
                     <Card className="border border-border/80 shadow-sm overflow-hidden bg-card/50 backdrop-blur-sm">
-                      <CardHeader className="p-4 border-b border-border/60 bg-muted/20">
+                      <CardHeader className="p-2.5 border-b border-border/60 bg-muted/20">
                         <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5">
                           <Box className="h-4 w-4 text-primary" />
                           ข้อมูลขนส่ง & พัสดุ (Logistics)
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="grid grid-cols-2 gap-3 text-xs p-4 bg-card/40">
-                        <div className="bg-background p-3 rounded-xl border border-border/60 flex items-center justify-between">
+                      <CardContent className="grid grid-cols-2 gap-2 text-xs p-2.5 bg-card/40">
+                        <div className="bg-background p-2 rounded-lg border border-border/60 flex items-center justify-between">
                           <span className="text-muted-foreground text-[10px]">น้ำหนักรวม:</span>
                           <strong className="text-xs font-extrabold text-foreground">{selectedProduct.packageweight ?? 0} kg</strong>
                         </div>
-                        <div className="bg-background p-3 rounded-xl border border-border/60 flex items-center justify-between">
+                        <div className="bg-background p-2 rounded-lg border border-border/60 flex items-center justify-between">
                           <span className="text-muted-foreground text-[10px]">ขนาดกล่อง (กxยxส):</span>
                           <strong className="text-xs font-extrabold text-foreground">
                             {selectedProduct.packagewidth ?? 0}x{selectedProduct.packagelength ?? 0}x{selectedProduct.packageheight ?? 0} cm
@@ -1672,9 +1752,9 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                   </div>
 
                   {/* Right Column: Choices and Options */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <Card className="border border-border/80 shadow-sm overflow-hidden bg-card/50 backdrop-blur-sm">
-                      <CardHeader className="p-4 border-b border-border/60 bg-muted/20 flex flex-row items-center justify-between">
+                      <CardHeader className="p-2.5 border-b border-border/60 bg-muted/20 flex flex-row items-center justify-between">
                         <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5">
                           <Layers className="h-4 w-4 text-primary" />
                           รายการชิ้นส่วนและตัวเลือกภายในเซ็ต
@@ -1683,7 +1763,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                           {selectedProduct.options?.length || 0} กลุ่มตัวเลือก
                         </Badge>
                       </CardHeader>
-                      <CardContent className="p-4 space-y-4">
+                      <CardContent className="p-2.5 space-y-2.5">
                         {(!selectedProduct.options || selectedProduct.options.length === 0) ? (
                           <div className="text-center py-10 border border-dashed rounded-xl bg-muted/5 italic text-xs text-muted-foreground">
                             สินค้าชุดนี้ยังไม่มีการกำหนดบาร์โค้ดชิ้นส่วนประกอบ

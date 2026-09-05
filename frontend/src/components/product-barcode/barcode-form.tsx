@@ -220,12 +220,12 @@ function FieldGrid({ children }: { children: ReactNode }) {
 
 function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-3 py-2">
+    <section className="mb-2.5 overflow-hidden rounded-lg border border-border bg-card">
+      <header className="flex items-center justify-between border-b border-border px-3 py-1.5 bg-muted/20">
         <h3 className="text-sm font-semibold">{title}</h3>
         {action}
       </header>
-      <div className="p-3">{children}</div>
+      <div className="p-2.5">{children}</div>
     </section>
   );
 }
@@ -444,7 +444,7 @@ function QuickBarcodeFields({
                 </p>
               ) : null}
               {generateError ? <p className="text-xs text-destructive">{generateError}</p> : null}
-              <Ean13Barcode className="h-24 w-full max-w-sm rounded-md border border-border" value={value.barcode} />
+              <Ean13Barcode className="h-16 w-full max-w-xs rounded-md border border-border" value={value.barcode} />
               {mode === "edit" ? (
                 <p className="text-xs text-muted-foreground">{text.barcodeLockedHint}</p>
               ) : null}

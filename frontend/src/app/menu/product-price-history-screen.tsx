@@ -352,7 +352,7 @@ export function ProductPriceHistoryScreen({
               products.map((product) => (
                 <button
                   className={cn(
-                    "grid w-full min-w-0 gap-1 rounded-xl border border-border bg-background p-2 text-left transition hover:border-primary",
+                    "grid w-full min-w-0 gap-0.5 rounded-lg border border-border bg-background p-1.5 px-2 text-left transition hover:border-primary",
                     selectedProduct
                       ? productIdentity(selectedProduct) ===
                           productIdentity(product) &&
@@ -363,14 +363,11 @@ export function ProductPriceHistoryScreen({
                   onClick={() => setSelectedKey(productIdentity(product))}
                   type="button"
                 >
-                  <b className="truncate">{product.name || product.barcode}</b>
-                  <div className="grid gap-1 text-xs text-muted-foreground">
+                  <b className="truncate text-xs sm:text-sm">{product.name || product.barcode}</b>
+                  <div className="grid gap-1 text-[11px] text-muted-foreground">
                     <span className="truncate">
                       <Barcode className="mr-1 inline size-3" />
-                      {product.barcode || "-"}
-                    </span>
-                    <span className="truncate">
-                      {product.itemCode || "-"} · {product.unitName || "-"}
+                      {product.barcode || "-"} · {product.itemCode || "-"} · {product.unitName || "-"}
                     </span>
                   </div>
                 </button>
@@ -406,23 +403,24 @@ export function ProductPriceHistoryScreen({
             ) : history.length ? (
               history.map((item) => (
                 <div
-                  className="grid gap-2 rounded-xl border border-border bg-background p-2"
+                  className="grid gap-1 rounded-lg border border-border bg-background p-1.5 px-2.5"
                   key={
                     item.guidFixed ||
                     `${item.barcode}-${item.createdAt}-${item.keyNumber}`
                   }
                 >
-                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-                    <b className="truncate">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-1">
+                    <b className="truncate text-xs sm:text-sm">
                       {item.priceType || item.action || "-"}
                     </b>
                     <Badge
                       variant={item.difference >= 0 ? "success" : "warning"}
+                      className="text-xs py-0 px-1.5 font-semibold"
                     >
                       {formatNumber(item.difference)}
                     </Badge>
                   </div>
-                  <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-1 text-[11px] text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
                     <span>
                       {dictionary.oldPrice}:{" "}
                       <b className="text-foreground">
@@ -441,9 +439,9 @@ export function ProductPriceHistoryScreen({
                         uri={item.createdByAvatarThumb}
                         auth={auth}
                         alt={item.createdBy || "-"}
-                        sizeClass="size-5 rounded-full shrink-0"
-                        iconSize={11}
-                        width={48}
+                        sizeClass="size-4 rounded-full shrink-0"
+                        iconSize={10}
+                        width={32}
                         fallbackIcon={UserRound}
                       />
                       <b className="truncate text-foreground">

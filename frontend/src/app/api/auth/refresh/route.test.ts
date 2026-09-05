@@ -1,14 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+let POST: typeof import("./route").POST;
 
-describe("refresh route", () => {
-  beforeEach(() => {
+describe.each(["development", "test", "production"] as const)("refresh route (%s)", (environment) => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", environment);
     process.env.BCAI_LOCAL_BACKEND_URL = "http://localhost:8888";
+    ({ POST } = await import("./route"));
   });
 
   afterEach(() => {
     delete process.env.BCAI_LOCAL_BACKEND_URL;
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("rotates the HttpOnly cookie and returns only an access token", async () => {
@@ -31,7 +35,7 @@ describe("refresh route", () => {
     expect(cookie).toContain("Max-Age=43200");
     expect(cookie).toContain("Path=/");
     expect(cookie).toContain("HttpOnly");
-    expect(cookie).toContain("Secure");
+    expect(cookie.includes("; Secure")).toBe(environment === "production");
     expect(cookie).toContain("SameSite=lax");
   });
 
@@ -43,6 +47,7 @@ describe("refresh route", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("set-cookie")).toMatch(/bc_refresh_token=;.*Max-Age=0/i);
+    expect(response.headers.get("set-cookie")?.includes("; Secure")).toBe(environment === "production");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

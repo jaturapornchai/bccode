@@ -55,7 +55,7 @@ describe("product route", () => {
         expect(init?.body).toBeUndefined();
         return Response.json({
           success: true,
-          data: { rebuilt: 2, published: 2 },
+          data: { rebuilt: 2, queued: 2, published: 0 },
         });
       },
     );
@@ -76,7 +76,7 @@ describe("product route", () => {
     expect(response.status).toBe(200);
     expect(json).toMatchObject({
       success: true,
-      data: { rebuilt: 2, published: 2 },
+      data: { rebuilt: 2, queued: 2, published: 0 },
     });
   });
 });

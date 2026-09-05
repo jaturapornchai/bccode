@@ -20,6 +20,8 @@ import {
   Save,
   Link,
   ChevronLeft,
+  FoldVertical,
+  UnfoldVertical,
 } from "lucide-react";
 import {
   useCallback,
@@ -132,16 +134,32 @@ async function ensureActiveProductHolding(
   }
 }
 
-const PRIMARY_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
+type ProductTabKey =
+  | "basic"
+  | "classification"
+  | "units"
+  | "bom"
+  | "stock"
+  | "media"
+  | "logistics"
+  | "restaurant"
+  | "timeforsales"
+  | "business"
+  | "misc";
+
+export type ProductScreenMode = "core" | "extension";
+
+// เมนู "สินค้า" เหลือเฉพาะข้อมูลที่งานบัญชีต้องใช้ ส่วนที่เหลือย้ายไปเมนู "สินค้า (ส่วนขยาย)" (ลุงจืด 2026-09-04)
+const CORE_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>): Partial<Record<ProductTabKey, string>> => ({
   basic: text.tabBasic,
-  classification: text.tabClassification,
   units: text.tabUnitsBarcode,
-  bom: text.tabBomShort,
   stock: text.tabStock,
-  media: text.tabMedia,
 });
 
-const ADVANCED_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>) => ({
+const EXTENSION_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>): Partial<Record<ProductTabKey, string>> => ({
+  classification: text.tabClassification,
+  bom: text.tabBomShort,
+  media: text.tabMedia,
   logistics: "การจัดส่ง / โลจิสติกส์",
   restaurant: text.tabRestaurant,
   timeforsales: text.tabTimeForSales,
@@ -167,12 +185,15 @@ export function ProductScreen({
   embedded = false,
   focusRequest,
   language = "th",
+  mode = "core",
 }: {
   active?: boolean;
   embedded?: boolean;
   focusRequest?: { code: string; requestId: string };
   language?: LanguageCode;
+  mode?: ProductScreenMode;
 }) {
+  const isExtensionMode = mode === "extension";
   const lang = normalizeLanguage(language);
   const text = getBarcodeText(lang);
   const { confirm, confirmationDialog } = useConfirmDialog();
@@ -190,6 +211,7 @@ export function ProductScreen({
   const [showListImage, setShowListImage] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [checkedProductKeys, setCheckedProductKeys] = useState<string[]>([]);
+  const [compactRows, setCompactRows] = useState(true);
 
   // Resizable split states
   const [splitLeftPercent, setSplitLeftPercent] = useState(
@@ -203,13 +225,17 @@ export function ProductScreen({
   const productDetailRequestRef = useRef(0);
   const productDetailRef = useRef<Product | null>(null);
 
-  // Restore split settings
+  // Restore split settings and row density preference
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = window.localStorage.getItem(PRODUCT_SPLIT_STORAGE_KEY);
     if (saved) {
       const next = clampProductSplitLeft(Number(saved));
       setSplitLeftPercent(next);
+    }
+    const savedCompact = window.localStorage.getItem("bc_product_list_compact");
+    if (savedCompact !== null) {
+      setCompactRows(savedCompact === "true");
     }
   }, []);
 
@@ -320,19 +346,7 @@ export function ProductScreen({
   /** Ref to the product editor form element for programmatic submission. */
   const productFormRef = useRef<HTMLFormElement>(null);
   const pickerAnchorRef = useRef<HTMLElement | null>(null);
-  const [productTab, setProductTab] = useState<
-    | "basic"
-    | "classification"
-    | "units"
-    | "bom"
-    | "stock"
-    | "media"
-    | "logistics"
-    | "restaurant"
-    | "timeforsales"
-    | "business"
-    | "misc"
-  >("basic");
+  const [productTab, setProductTab] = useState<ProductTabKey>(isExtensionMode ? "classification" : "basic");
 
   const [showEmptyDetails, setShowEmptyDetails] = useState(false);
   const [selectedProductDetail, setSelectedProductDetail] =
@@ -1409,11 +1423,15 @@ export function ProductScreen({
       {/* Header Toolbar */}
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3">
         <div>
-          <h2 className="text-lg font-bold">{text.productMenuName}</h2>
+          <h2 className="text-lg font-bold">{isExtensionMode ? text.productExtensionMenuName : text.productMenuName}</h2>
           <p className="text-xs text-muted-foreground">
-            {lang === "th"
-              ? "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด"
-              : "Manage products and related data"}
+            {isExtensionMode
+              ? lang === "th"
+                ? "ข้อมูลเสริมของสินค้า — หมวดหมู่ ส่วนประกอบ รูปภาพ การจัดส่ง ร้านอาหาร/POS เวลาขาย และสาขา (เพิ่มสินค้าใหม่ที่เมนู \"สินค้า\")"
+                : "Extended product data — classification, BOM, media, logistics, restaurant/POS, sale hours and branches (create products in the \"Products\" menu)"
+              : lang === "th"
+                ? "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด"
+                : "Manage products and related data"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -1430,29 +1448,34 @@ export function ProductScreen({
             )}
             {text.refresh}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCreateCopyOpen}
-            disabled={
-              loading ||
-              !selectedProduct?.guidfixed ||
-              detailLoading ||
-              Boolean(detailError)
-            }
-          >
-            <Copy className="h-4 w-4" />
-            คัดลอก
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleCreateOpen}
-            disabled={loading || !activeHoldingCode}
-          >
-            <Plus className="h-4 w-4" />
-            {text.add}
-          </Button>
+          {/* ส่วนขยายแก้ได้เฉพาะสินค้าที่มีอยู่ — สร้างจากที่นี่จะได้สินค้าที่ไม่มีชื่อ/หน่วยนับ */}
+          {!isExtensionMode && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateCopyOpen}
+                disabled={
+                  loading ||
+                  !selectedProduct?.guidfixed ||
+                  detailLoading ||
+                  Boolean(detailError)
+                }
+              >
+                <Copy className="h-4 w-4" />
+                คัดลอก
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleCreateOpen}
+                disabled={loading || !activeHoldingCode}
+              >
+                <Plus className="h-4 w-4" />
+                {text.add}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1506,6 +1529,35 @@ export function ProductScreen({
                   <ImageIcon className="h-4 w-4" />
                 )}
                 รูป
+              </Button>
+              <Button
+                variant={compactRows ? "secondary" : "outline"}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setCompactRows((current) => {
+                    const next = !current;
+                    try {
+                      window.localStorage.setItem(
+                        "bc_product_list_compact",
+                        String(next),
+                      );
+                    } catch {}
+                    return next;
+                  });
+                }}
+                title={
+                  compactRows
+                    ? "คลิกเพื่อขยายบรรทัด (ดูรายละเอียดประเภทสินค้า)"
+                    : "คลิกเพื่อย่อบรรทัด (แสดงรายการได้มากขึ้น)"
+                }
+              >
+                {compactRows ? (
+                  <FoldVertical className="h-4 w-4" />
+                ) : (
+                  <UnfoldVertical className="h-4 w-4" />
+                )}
+                ย่อบรรทัด
               </Button>
               <Button
                 variant={selectMode ? "secondary" : "outline"}
@@ -1576,7 +1628,7 @@ export function ProductScreen({
           </div>
 
           {/* Table Header inside list on Desktop */}
-          <div className="bc-list-header grid grid-cols-[minmax(76px,0.9fr)_minmax(0,1.7fr)_minmax(72px,0.8fr)] gap-x-2 shrink-0">
+          <div className="bc-list-header grid grid-cols-[minmax(72px,0.85fr)_minmax(0,2fr)_minmax(65px,0.75fr)] gap-x-2 shrink-0">
             <span>{text.itemCode ?? "รหัสสินค้า"}</span>
             <span>{text.productName ?? "ชื่อสินค้า"}</span>
             <span className="text-right">ยอดคงเหลือ</span>
@@ -1615,8 +1667,12 @@ export function ProductScreen({
                     aria-pressed={
                       selectMode ? checkedProductKeys.includes(rowKey) : active
                     }
+                    data-compact={compactRows ? "true" : "false"}
                     className={cn(
-                      "bc-list-row grid grid-cols-[minmax(76px,0.9fr)_minmax(0,1.7fr)_minmax(72px,0.8fr)] gap-x-2 py-2",
+                      "bc-list-row grid grid-cols-[minmax(72px,0.85fr)_minmax(0,2fr)_minmax(65px,0.75fr)] gap-x-2",
+                      compactRows
+                        ? "is-compact py-0.5 items-center min-h-[28px]"
+                        : "py-2 items-start",
                       isEditing
                         ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50"
                         : active
@@ -1637,11 +1693,17 @@ export function ProductScreen({
                       else handleSelectProduct(item.code);
                     }}
                   >
-                    <div className="flex min-w-0 items-start gap-1.5">
+                    <div
+                      className={cn(
+                        "flex min-w-0 gap-1.5",
+                        compactRows ? "items-center" : "items-start",
+                      )}
+                    >
                       {selectMode ? (
                         <span
                           className={cn(
-                            "mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border",
+                            "grid size-5 shrink-0 place-items-center rounded-md border",
+                            !compactRows && "mt-0.5",
                             checkedProductKeys.includes(rowKey) &&
                               "border-primary bg-primary text-primary-foreground",
                           )}
@@ -1653,54 +1715,99 @@ export function ProductScreen({
                       ) : null}
                       <span
                         className={cn(
-                          "min-w-0 break-all font-semibold text-foreground",
+                          "min-w-0 font-semibold text-foreground",
+                          compactRows ? "bc-cell-text text-xs sm:text-sm" : "break-all",
                           isEditing && "text-amber-950 dark:text-amber-100",
                         )}
+                        title={item.code || "-"}
                       >
                         {item.code || "-"}
                       </span>
                     </div>
-                    <div className="flex min-w-0 items-start gap-2">
+                    <div
+                      className={cn(
+                        "flex min-w-0 gap-2",
+                        compactRows ? "items-center" : "items-start",
+                      )}
+                    >
                       {showListImage ? (
                         item.imageuri ? (
                           <AuthenticatedImg
                             alt=""
-                            className="size-9 shrink-0 rounded-lg border border-border object-cover"
+                            className={cn(
+                              "shrink-0 rounded-lg border border-border object-cover",
+                              compactRows ? "size-6" : "size-9",
+                            )}
                             src={item.imageuri}
                             auth={auth}
                             fallback={
-                              <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
-                                <ImageOff className="h-3.5 w-3.5" />
+                              <span
+                                className={cn(
+                                  "grid shrink-0 place-items-center rounded-lg border border-border text-muted-foreground",
+                                  compactRows ? "size-6" : "size-9",
+                                )}
+                              >
+                                <ImageOff
+                                  className={
+                                    compactRows ? "h-3 w-3" : "h-3.5 w-3.5"
+                                  }
+                                />
                               </span>
                             }
                           />
                         ) : (
-                          <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
-                            <ImageOff className="h-3.5 w-3.5" />
+                          <span
+                            className={cn(
+                              "grid shrink-0 place-items-center rounded-lg border border-border text-muted-foreground",
+                              compactRows ? "size-6" : "size-9",
+                            )}
+                          >
+                            <ImageOff
+                              className={
+                                compactRows ? "h-3 w-3" : "h-3.5 w-3.5"
+                              }
+                            />
                           </span>
                         )
                       ) : null}
-                      <div className="min-w-0">
-                        <div className="break-words font-medium leading-snug">
-                          {pickName(item.names, lang) || "-"}
-                        </div>
+                      <div className="min-w-0 flex-1">
                         <div
                           className={cn(
-                            "mt-0.5 break-words text-[10px] leading-tight text-muted-foreground",
-                            isEditing &&
-                              "text-amber-900/60 dark:text-amber-200/60",
+                            "font-medium leading-snug",
+                            compactRows
+                              ? "bc-cell-text text-xs sm:text-sm"
+                              : "break-words",
                           )}
+                          title={`${pickName(item.names, lang) || "-"} (${typeLabel} · ${formatProductUnitType(item)})`}
                         >
-                          {typeLabel} · {formatProductUnitType(item)}
+                          {pickName(item.names, lang) || "-"}
                         </div>
+                        {!compactRows ? (
+                          <div
+                            className={cn(
+                              "mt-0.5 break-words text-[10px] leading-tight text-muted-foreground",
+                              isEditing &&
+                                "text-amber-900/60 dark:text-amber-200/60",
+                            )}
+                          >
+                            {typeLabel} · {formatProductUnitType(item)}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="min-w-0 text-right">
+                    <div
+                      className={cn(
+                        "min-w-0 text-right",
+                        compactRows && "self-center",
+                      )}
+                    >
                       <div
                         className={cn(
-                          "break-words font-semibold",
+                          "font-semibold",
+                          compactRows ? "bc-cell-text text-xs sm:text-sm" : "break-words",
                           (item.qty ?? 0) <= 0 && "text-destructive",
                         )}
+                        title={formatProductBalance(item, lang)}
                       >
                         {formatProductBalance(item, lang)}
                       </div>
@@ -1834,48 +1941,7 @@ export function ProductScreen({
               {/* Product Form Tab bar — flex-wrap so every tab stays visible (no hidden overflow) */}
               <div className="mt-2 flex shrink-0 flex-wrap gap-1 border-b border-border bg-muted/30 px-1 py-1.5">
                 {(
-                  Object.entries(PRIMARY_PRODUCT_TABS(text)) as [
-                    (
-                      | "basic"
-                      | "classification"
-                      | "units"
-                      | "bom"
-                      | "stock"
-                      | "media"
-                    ),
-                    string,
-                  ][]
-                ).map(([k, label]) => {
-                  const isActive = productTab === k;
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => setProductTab(k)}
-                      className={cn(
-                        "shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-                {// Show every tab directly — no "ขั้นสูง" overflow toggle
-                // (per Jead 2026-07-19: ไม่ต้องมีปุ่มขั้นสูง ให้แสดงเมนูทุกตัวเลย).
-                (
-                  Object.entries(ADVANCED_PRODUCT_TABS(text)) as [
-                    (
-                      | "logistics"
-                      | "restaurant"
-                      | "timeforsales"
-                      | "business"
-                      | "misc"
-                    ),
-                    string,
-                  ][]
+                  Object.entries((isExtensionMode ? EXTENSION_PRODUCT_TABS : CORE_PRODUCT_TABS)(text)) as [ProductTabKey, string][]
                 ).map(([k, label]) => {
                   const isActive = productTab === k;
                   return (
@@ -2190,7 +2256,7 @@ export function ProductScreen({
                       }
                     />
                   </div>
-                  <div className="grid gap-3 2xl:grid-cols-2">
+                  <div className="grid gap-2.5 lg:grid-cols-2">
                     <DetailSection
                       title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
                       showEmptyFields={showEmptyDetails}
@@ -2275,70 +2341,68 @@ export function ProductScreen({
                         },
                       ]}
                     />
-                  </div>
 
-                  <DetailSection
-                    title={text.groupingCard ?? "ข้อมูลการจัดกลุ่ม"}
-                    showEmptyFields={showEmptyDetails}
-                    fields={[
-                      {
-                        label: text.group,
-                        value: selectedProduct.groupcode
-                          ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.groupsubone,
-                        value: selectedProduct.subgroupcode
-                          ? `${selectedProduct.subgroupcode} — ${pickName(selectedProduct.subgroupnames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.brand,
-                        value: selectedProduct.brandcode
-                          ? `${selectedProduct.brandcode} — ${pickName(selectedProduct.brandnames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.category,
-                        value: selectedProduct.categorycode
-                          ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.class,
-                        value: selectedProduct.classcode
-                          ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.design,
-                        value: selectedProduct.designcode
-                          ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.model,
-                        value: selectedProduct.modelcode
-                          ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.pattern,
-                        value: selectedProduct.patterncode
-                          ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}`
-                          : "-",
-                      },
-                      {
-                        label: text.grade,
-                        value: selectedProduct.gradecode
-                          ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}`
-                          : "-",
-                      },
-                    ]}
-                  />
+                    <DetailSection
+                      title={text.groupingCard ?? "ข้อมูลการจัดกลุ่ม"}
+                      showEmptyFields={showEmptyDetails}
+                      fields={[
+                        {
+                          label: text.group,
+                          value: selectedProduct.groupcode
+                            ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.groupsubone,
+                          value: selectedProduct.subgroupcode
+                            ? `${selectedProduct.subgroupcode} — ${pickName(selectedProduct.subgroupnames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.brand,
+                          value: selectedProduct.brandcode
+                            ? `${selectedProduct.brandcode} — ${pickName(selectedProduct.brandnames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.category,
+                          value: selectedProduct.categorycode
+                            ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.class,
+                          value: selectedProduct.classcode
+                            ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.design,
+                          value: selectedProduct.designcode
+                            ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.model,
+                          value: selectedProduct.modelcode
+                            ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.pattern,
+                          value: selectedProduct.patterncode
+                            ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}`
+                            : "-",
+                        },
+                        {
+                          label: text.grade,
+                          value: selectedProduct.gradecode
+                            ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}`
+                            : "-",
+                        },
+                      ]}
+                    />
 
-                  <div className="grid gap-3 2xl:grid-cols-2">
                     <DetailSection
                       title={text.tabStock ?? "การควบคุมคลังสินค้า"}
                       showEmptyFields={showEmptyDetails}
@@ -2431,9 +2495,7 @@ export function ProductScreen({
                         },
                       ]}
                     />
-                  </div>
 
-                  <div className="grid gap-3 2xl:grid-cols-2">
                     <DetailSection
                       title={text.tabRestaurant ?? "ร้านอาหาร/POS"}
                       showEmptyFields={showEmptyDetails}
@@ -2560,9 +2622,7 @@ export function ProductScreen({
                         },
                       ]}
                     />
-                  </div>
 
-                  <div className="grid gap-3 2xl:grid-cols-2">
                     <DetailSection
                       title={`${text.tabMedia} / Marketplace`}
                       showEmptyFields={showEmptyDetails}
@@ -2973,16 +3033,17 @@ function DetailSummary({
   return (
     <div
       className={cn(
-        "min-w-0 rounded-lg border border-border bg-background px-3 py-2",
+        "min-w-0 rounded-lg border border-border bg-background px-2.5 py-1.5",
         emphasize && "border-destructive/30 bg-destructive/5",
       )}
     >
       <p className="text-[10px] font-semibold text-muted-foreground">{label}</p>
       <p
         className={cn(
-          "mt-0.5 break-words text-sm font-bold leading-snug text-foreground",
+          "mt-0.5 truncate text-xs sm:text-sm font-bold leading-tight text-foreground",
           emphasize && "text-destructive",
         )}
+        title={value || "-"}
       >
         {value || "-"}
       </p>
@@ -3003,13 +3064,17 @@ function DetailSection({
     ? fields
     : fields.filter((field) => !isEmptyDetailValue(field.value));
 
+  if (!showEmptyFields && visibleFields.length === 0) {
+    return null;
+  }
+
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="border-b border-border bg-background px-3 py-2.5">
-        <h3 className="text-sm font-bold text-primary">{title}</h3>
+      <div className="border-b border-border bg-background/80 px-3 py-1.5">
+        <h3 className="text-xs sm:text-sm font-bold text-primary">{title}</h3>
       </div>
       {visibleFields.length > 0 ? (
-        <dl className="grid md:grid-cols-2">
+        <dl className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4">
           {visibleFields.map((field, index) => (
             <DetailField
               key={`${title}-${field.label}-${index}`}
@@ -3019,7 +3084,7 @@ function DetailSection({
           ))}
         </dl>
       ) : (
-        <p className="px-3 py-5 text-center text-sm text-muted-foreground">
+        <p className="px-3 py-2 text-center text-xs text-muted-foreground">
           ยังไม่มีข้อมูลในส่วนนี้
         </p>
       )}
@@ -3029,11 +3094,14 @@ function DetailSection({
 
 function DetailField({ label, value }: DetailFieldItem) {
   return (
-    <div className="min-w-0 border-b border-border/60 px-3 py-2.5 md:odd:border-r">
-      <dt className="text-[10px] font-semibold leading-tight text-muted-foreground">
+    <div className="min-w-0 border-b border-r border-border/40 px-2.5 py-1.5 flex flex-col justify-center">
+      <dt
+        className="text-[10px] sm:text-[11px] font-medium leading-tight text-muted-foreground truncate"
+        title={label}
+      >
         {label}
       </dt>
-      <dd className="mt-1 whitespace-pre-line break-words text-sm font-semibold leading-snug text-foreground">
+      <dd className="mt-0.5 whitespace-pre-line break-words text-xs sm:text-sm font-semibold leading-snug text-foreground">
         {value || "-"}
       </dd>
     </div>

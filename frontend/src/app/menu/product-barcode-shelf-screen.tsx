@@ -331,7 +331,7 @@ export function ProductBarcodeShelfScreen({
                 return (
                   <button
                     className={cn(
-                      "grid w-full min-w-0 gap-1 rounded-xl border border-border bg-background p-2 text-left transition hover:border-primary",
+                      "grid w-full min-w-0 gap-0.5 rounded-lg border border-border bg-background p-1.5 px-2 text-left transition hover:border-primary",
                       active && "border-primary bg-primary/5",
                     )}
                     key={key}
@@ -339,14 +339,14 @@ export function ProductBarcodeShelfScreen({
                     type="button"
                   >
                     <div className="flex min-w-0 items-center justify-between gap-2">
-                      <b className="truncate">
+                      <b className="truncate text-xs sm:text-sm">
                         {product.name || product.barcode}
                       </b>
-                      <Badge variant={active ? "success" : "outline"}>
+                      <Badge variant={active ? "success" : "outline"} className="text-xs py-0 px-1.5 font-semibold shrink-0">
                         {product.price || "-"}
                       </Badge>
                     </div>
-                    <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
+                    <div className="grid gap-1 text-[11px] text-muted-foreground sm:grid-cols-3">
                       <span className="truncate">
                         <Barcode className="mr-1 inline size-3" />
                         {product.barcode || "-"}
@@ -382,48 +382,45 @@ export function ProductBarcodeShelfScreen({
               <Trash2 /> {dictionary.clear}
             </Button>
           </CardHeader>
-          <CardContent className="grid max-h-[62dvh] gap-2 overflow-auto p-3">
+          <CardContent className="grid max-h-[62dvh] gap-1.5 overflow-auto p-3">
             {selectedList.length ? (
               selectedList.map(({ product, copies }) => (
                 <div
-                  className="grid gap-2 rounded-xl border border-border bg-background p-2"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background p-1.5 px-2.5"
                   key={productIdentity(product)}
                 >
-                  <div className="min-w-0">
-                    <b className="block truncate">
+                  <div className="min-w-0 flex-1">
+                    <b className="block truncate text-xs sm:text-sm">
                       {product.name || product.barcode}
                     </b>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="truncate text-[11px] text-muted-foreground">
                       {product.barcode} · {product.itemCode || "-"}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {dictionary.copies}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() =>
-                          updateCopies(productIdentity(product), -1)
-                        }
-                      >
-                        <Minus />
-                      </Button>
-                      <b className="min-w-10 text-center">{copies}</b>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() =>
-                          updateCopies(productIdentity(product), 1)
-                        }
-                      >
-                        <Plus />
-                      </Button>
-                    </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-7"
+                      onClick={() =>
+                        updateCopies(productIdentity(product), -1)
+                      }
+                    >
+                      <Minus className="size-3" />
+                    </Button>
+                    <b className="min-w-8 text-center text-xs">{copies}</b>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-7"
+                      onClick={() =>
+                        updateCopies(productIdentity(product), 1)
+                      }
+                    >
+                      <Plus className="size-3" />
+                    </Button>
                   </div>
                 </div>
               ))

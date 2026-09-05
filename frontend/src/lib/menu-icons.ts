@@ -7,6 +7,7 @@ export type MenuIconKey =
   | "bank"
   | "barChart"
   | "bot"
+  | "boxes"
   | "branch"
   | "briefcase"
   | "building"
@@ -41,8 +42,10 @@ export type MenuIconKey =
   | "map"
   | "media"
   | "money"
+  | "network"
   | "notification"
   | "outbox"
+  | "package"
   | "payment"
   | "photoAdd"
   | "photoLibrary"
@@ -83,7 +86,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/": "grid",
   "/menu": "grid",
   "/transaction/purchaserequisition": "fileText",
-  "/transaction/rfq": "activity",
+  "/transaction/rfq": "fileText",
   "/transaction/purchaseorder": "shoppingCart",
   "/procurement/dashboard": "barChart",
   "/transaction/purchase": "inventory",
@@ -102,7 +105,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/transaction/receivedepositrefund": "money",
   "/transaction/sale": "pos",
   "/transaction/salereturn": "return",
-  "/transaction/stocktransfer": "activity",
+  "/transaction/stocktransfer": "truck",
   "/transaction/stockreceiveproduct": "inbox",
   "/transaction/stockpickupproduct": "outbox",
   "/transaction/stockreturnproduct": "return",
@@ -112,8 +115,8 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/transaction/pay": "creditCard",
   "/slipmoneyin": "photoAdd",
   "/slipmoneyout": "photoLibrary",
-  "/checkdaily/dailyinfoscreen": "check",
-  "/cashinginthedrawer": "check",
+  "/checkdaily/dailyinfoscreen": "calendarCheck",
+  "/cashinginthedrawer": "money",
   "/report/stockbalanceitem": "fileText",
   "/report/stockbalancewarehouse": "fileChart",
   "/report/stockbalancelocation": "barChart",
@@ -130,13 +133,14 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/report/reportgrossprofitbyproduct": "fileChart",
   "/report/reportvatsale": "fileChart",
   "/report/reportvatbuy": "fileChart",
-  "/rebuildstockscreen": "settings",
+  "/rebuildstockscreen": "cloudSync",
   "/auditscreen": "archive",
   "/rebuildproductsscreen": "cloudSync",
   "/rebuildproductbalancescreen": "calculator",
-  "/product": "grid",
+  "/product": "package",
+  "/productextension": "tag",
   "/productbarcode": "qr",
-  "/productset": "grid",
+  "/productset": "boxes",
   "/productunit": "ruler",
   "/productbarcodeshelf": "print",
   "/promotionscreen": "gift",
@@ -152,15 +156,15 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/productvariantmatrix": "grid",
   "/productdimension": "design",
   "/productbom": "fileText",
-  "/masterbrandscreen": "settings",
+  "/masterbrandscreen": "badge",
   "/mastercategoryscreen": "category",
   "/masterclassscreen": "category",
   "/masterdesignscreen": "design",
   "/mastergradescreen": "badge",
   "/mastergroupsubonescreen": "group",
   "/mastergroupsubtwoscreen": "group",
-  "/mastermodelscreen": "activity",
-  "/masterpatternscreen": "grid",
+  "/mastermodelscreen": "design",
+  "/masterpatternscreen": "table",
   "/addproducttobranchscreen": "building",
   "/addproducttodepartmentscreen": "department",
   "/creditor": "user",
@@ -188,10 +192,10 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/soapprovalsettingscreen": "sale",
   "/importproduct": "upload",
   "/importproductfromfile": "upload",
-  "/knowledgebasescreen": "upload",
+  "/knowledgebasescreen": "archive",
   "/alertagentscreen": "notification",
   "/importproductimage": "photoLibrary",
-  "/zonegroupselectscreen": "grid",
+  "/zonegroupselectscreen": "map",
   "/tablegroupselectscreen": "table",
   "/tablemapgroupselectscreen": "map",
   "/kitchengroupselectscreen": "kitchen",
@@ -221,7 +225,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/marketplace/tiktok": "shoppingBasket",
   "/aiprovider": "bot",
   "/copyuattodev": "cloudDownload",
-  "/datamodelgraph": "table",
+  "/datamodelgraph": "network",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {
