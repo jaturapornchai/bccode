@@ -14,6 +14,7 @@ import (
 	"smlcloudplatform/internal/logger"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
+	"smlcloudplatform/internal/product/product/outbox"
 	productmaster "smlcloudplatform/internal/product/product/repositories"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
@@ -74,7 +75,16 @@ func NewProductBarcodeHttp(ms *microservice.Microservice, cfg config.IConfig) Pr
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(prod)
 	unitSvc := unit_services.NewUnitHttpService(unitmaster, repo, unitMqRepo, masterSyncCacheRepo)
 
-	svc := services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, productMQRepo)
+	eventOutbox := outbox.New(pst)
+	mq := cfg.MQConfig()
+	delivery := microservice.NewProducerWithTimeout(mq.URI(), mq.SecurityProtocol(), mq.SSLCAFile(), mq.SSLKeyFile(), mq.SSLCertFile(), ms.Logger, 30*time.Second)
+	ms.RegisterBackgroundWorker(func(ctx context.Context) {
+		defer delivery.Close()
+		eventOutbox.Run(ctx, delivery.SendMessage, func(error) {
+			logger.GetLogger().Warnf("Barcode outbox delivery pending; inspect pending event IDs and retry status")
+		})
+	})
+	svc := services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, eventOutbox, productMQRepo)
 
 	return ProductBarcodeHttp{
 		ms:  ms,

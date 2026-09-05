@@ -11,6 +11,7 @@ import (
 	"smlcloudplatform/internal/logger"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/product/product/models"
+	"smlcloudplatform/internal/product/product/outbox"
 	"smlcloudplatform/internal/product/product/repositories"
 	"smlcloudplatform/internal/product/product/services"
 	productBarcodeRepo "smlcloudplatform/internal/product/productbarcode/repositories"
@@ -47,10 +48,16 @@ func NewProductHttp(ms *microservice.Microservice, cfg config.IConfig) ProductHt
 	repoUnit := unitRepo.NewUnitRepository(pstmg)
 	repomgCreditor := creditorepo.NewCreditorRepository(pstmg)
 	repomgProductBarcode := productBarcodeRepo.NewProductBarcodeRepository(pstmg, cache)
-	prod := ms.Producer(cfg.MQConfig())
-	mqRepo := repositories.NewProductMessageQueueRepository(prod)
-	barcodeMQRepo := productBarcodeRepo.NewProductBarcodeMessageQueueRepository(prod)
-	svc := services.NewProductHttpService(repo, repoUnit, *repomgCreditor, *repomgProductBarcode, mqRepo, barcodeMQRepo)
+	mq := cfg.MQConfig()
+	prod := microservice.NewProducerWithTimeout(mq.URI(), mq.SecurityProtocol(), mq.SSLCAFile(), mq.SSLKeyFile(), mq.SSLCertFile(), ms.Logger, 30*time.Second)
+	eventOutbox := outbox.New(pstmg)
+	ms.RegisterBackgroundWorker(func(ctx context.Context) {
+		defer prod.Close()
+		eventOutbox.Run(ctx, prod.SendMessage, func(error) {
+			logger.GetLogger().Warnf("Product outbox delivery pending; inspect pending event IDs and retry status")
+		})
+	})
+	svc := services.NewProductHttpService(repo, repoUnit, *repomgCreditor, *repomgProductBarcode, eventOutbox)
 
 	return ProductHttp{
 		ms:  ms,
@@ -320,7 +327,7 @@ func (h ProductHttp) DeleteProduct(ctx microservice.IContext) error {
 }
 
 // @Summary		Resync products into PostgreSQL projection
-// @Description Replace the PostgreSQL product projection from active MongoDB products, then republish Kafka events
+// @Description Replace the PostgreSQL product projection from active MongoDB products, then queue delivery through the outbox
 // @Tags		Product
 // @Produce 	json
 // @Success		200 {object} common.ApiResponse
@@ -339,15 +346,16 @@ func (h ProductHttp) ResyncProduct(ctx microservice.IContext) error {
 	if err != nil {
 		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err).WithMessage("product rebuild failed"))
 	}
-	published, err := h.svc.Resync(holdingCode, businessCode)
+	queued, err := h.svc.Resync(holdingCode, businessCode)
 	if err != nil {
 		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err).WithMessage("product resync failed"))
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
-		Message: fmt.Sprintf("rebuilt %d products and published %d events", rebuilt, published),
-		Data:    map[string]int{"rebuilt": rebuilt, "published": published},
+		Message: fmt.Sprintf("rebuilt %d products and queued %d events for delivery", rebuilt, queued),
+		// Retain the legacy field: this request makes no synchronous Kafka sends.
+		Data: map[string]int{"rebuilt": rebuilt, "queued": queued, "published": 0},
 	})
 	return nil
 }

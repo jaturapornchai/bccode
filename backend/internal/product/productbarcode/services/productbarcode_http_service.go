@@ -10,6 +10,7 @@ import (
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	productmodels "smlcloudplatform/internal/product/product/models"
+	"smlcloudplatform/internal/product/product/outbox"
 	productmaster "smlcloudplatform/internal/product/product/repositories"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
@@ -89,6 +90,7 @@ type ProductBarcodeHttpService struct {
 	warehouseRepo   warehouseRepo.IWarehouseRepository
 	services.ActivityService[models.ProductBarcodeActivity, models.ProductBarcodeDeleteActivity]
 	contextTimeout time.Duration
+	eventOutbox    *outbox.Store
 }
 
 func NewProductBarcodeHttpService(
@@ -102,6 +104,7 @@ func NewProductBarcodeHttpService(
 	syncCacheRepo mastersync.IMasterSyncCacheRepository,
 	priceHistorySvc IProductPriceHistoryService,
 	warehouseRepo warehouseRepo.IWarehouseRepository,
+	eventOutbox *outbox.Store,
 	productMQRepos ...productmaster.IProductMessageQueueRepository,
 ) *ProductBarcodeHttpService {
 
@@ -119,6 +122,7 @@ func NewProductBarcodeHttpService(
 		priceHistorySvc: priceHistorySvc,
 		warehouseRepo:   warehouseRepo,
 		contextTimeout:  contextTimeout,
+		eventOutbox:     eventOutbox,
 	}
 	insSvc.ActivityService = services.NewActivityService[models.ProductBarcodeActivity, models.ProductBarcodeDeleteActivity](repo)
 	if len(productMQRepos) > 0 {
@@ -241,8 +245,8 @@ func (svc ProductBarcodeHttpService) createProductBarcode(holdingCode string, bu
 		if err != nil {
 			return "", err
 		}
-		if svc.productMQRepo == nil {
-			return "", errors.New("Product message queue repository is required")
+		if svc.eventOutbox == nil {
+			return "", errors.New("Barcode projection outbox is required")
 		}
 	} else {
 		docReq.ItemCode = utils.NormalizeBusinessCode(docReq.ItemCode)
@@ -291,8 +295,8 @@ func (svc ProductBarcodeHttpService) createProductBarcode(holdingCode string, bu
 	docData.IgnoreBranches = &docReq.IgnoreBranches
 	docData.BusinessTypes = &docReq.BusinessTypes
 
-	// Unit validation and creation logic
-	if docReq.ItemUnitCode != "" {
+	// Legacy unit creation remains unchanged; company creation joins the outbox transaction below.
+	if businessCode == "" && docReq.ItemUnitCode != "" {
 		// Check if unit exists in master units
 		unitDoc, err := svc.repoUnit.FindByDocIndentityGuid(ctx, holdingCode, "unitcode", docReq.ItemUnitCode)
 		if err != nil {
@@ -378,35 +382,45 @@ func (svc ProductBarcodeHttpService) createProductBarcode(holdingCode string, bu
 	}
 
 	var createdProduct *productmodels.ProductDoc
+	var createdUnit *unit_models.UnitDoc
 	if businessCode != "" {
-		err = svc.repo.Transaction(ctx, func(transactionContext context.Context) error {
+		err = svc.eventOutbox.CommitBarcode(ctx, holdingCode, businessCode, docData.GuidFixed, func(transactionContext context.Context) ([]outbox.Message, error) {
+			createdProduct = nil
+			createdUnit = nil
 			duplicate, err := svc.repo.FindByBarcodeInCompany(transactionContext, holdingCode, businessCode, docData.Barcode)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if duplicate.ID != primitive.NilObjectID {
-				return errors.New("บาร์โค้ดนี้มีอยู่แล้วในบริษัท")
+				return nil, errors.New("บาร์โค้ดนี้มีอยู่แล้วในบริษัท")
+			}
+
+			createdUnit, err = svc.ensureBarcodeUnit(transactionContext, holdingCode, authUsername, &docData)
+			if err != nil {
+				return nil, err
 			}
 
 			product, err := svc.repoMaster.FindByCodeInCompany(transactionContext, holdingCode, businessCode, docData.ItemCode)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if product.ID == primitive.NilObjectID {
 				minimumProduct := minimumProductForBarcode(holdingCode, businessCode, authUsername, docData, docData.CreatedAt)
 				if err := applyProductUnitToBarcode(&docData, minimumProduct); err != nil {
-					return err
+					return nil, err
 				}
 				if _, err := svc.repoMaster.Create(transactionContext, minimumProduct); err != nil {
-					return err
+					return nil, err
 				}
 				createdProduct = &minimumProduct
 			} else if err := applyProductUnitToBarcode(&docData, product); err != nil {
-				return err
+				return nil, err
 			}
 
-			_, err = svc.repo.Create(transactionContext, docData)
-			return err
+			if _, err = svc.repo.Create(transactionContext, docData); err != nil {
+				return nil, err
+			}
+			return barcodeProjectionMessages("when-product-barcode-created", docData, createdProduct, createdUnit)
 		})
 	} else {
 		_, err = svc.repo.Create(ctx, docData)
@@ -415,13 +429,15 @@ func (svc ProductBarcodeHttpService) createProductBarcode(holdingCode string, bu
 		return "", err
 	}
 
-	if createdProduct != nil {
-		if err := svc.productMQRepo.Create(*createdProduct); err != nil {
-			return "", err
+	if createdUnit != nil && svc.syncCacheRepo != nil {
+		if err := svc.syncCacheRepo.Save(holdingCode, svc.unitSvc.GetModuleName()); err != nil {
+			fmt.Println("save product unit cache failed")
 		}
 	}
-	if err = svc.mqRepo.Create(docData); err != nil {
-		return "", err
+	if businessCode == "" {
+		if err = svc.mqRepo.Create(docData); err != nil {
+			return "", err
+		}
 	}
 
 	// Legacy price history has no BusinessCode. Skip company-owned writes until
@@ -498,8 +514,8 @@ func (svc ProductBarcodeHttpService) updateProductBarcode(holdingCode string, bu
 		if err := validateImmutableBarcodeIdentity(docReq, findDoc); err != nil {
 			return err
 		}
-		if svc.productMQRepo == nil {
-			return errors.New("Product message queue repository is required")
+		if svc.eventOutbox == nil {
+			return errors.New("Barcode projection outbox is required")
 		}
 	} else {
 		docReq.ItemCode = utils.NormalizeBusinessCode(docReq.ItemCode)
@@ -583,31 +599,35 @@ func (svc ProductBarcodeHttpService) updateProductBarcode(holdingCode string, bu
 
 	var createdProduct *productmodels.ProductDoc
 	if businessCode != "" {
-		err = svc.repo.Transaction(ctx, func(transactionContext context.Context) error {
+		err = svc.eventOutbox.CommitBarcode(ctx, holdingCode, businessCode, docData.GuidFixed, func(transactionContext context.Context) ([]outbox.Message, error) {
+			createdProduct = nil
 			product, err := svc.repoMaster.FindByCodeInCompany(transactionContext, holdingCode, businessCode, docData.ItemCode)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if product.ID == primitive.NilObjectID {
 				minimumProduct := minimumProductForBarcode(holdingCode, businessCode, authUsername, docData, docData.UpdatedAt)
 				if err := applyProductUnitToBarcode(&docData, minimumProduct); err != nil {
-					return err
+					return nil, err
 				}
 				if _, err := svc.repoMaster.Create(transactionContext, minimumProduct); err != nil {
-					return err
+					return nil, err
 				}
 				createdProduct = &minimumProduct
 			} else if err := applyProductUnitToBarcode(&docData, product); err != nil {
-				return err
+				return nil, err
 			}
 
 			if err := svc.updateMetaInRefBarcode(transactionContext, holdingCode, businessCode, findDoc.ItemCode, docData); err != nil {
-				return err
+				return nil, err
 			}
 			if err := svc.updateMetaInBOMBarcode(transactionContext, holdingCode, businessCode, findDoc.ItemCode, docData); err != nil {
-				return err
+				return nil, err
 			}
-			return svc.repo.UpdateInCompany(transactionContext, holdingCode, businessCode, guid, docData)
+			if err := svc.repo.UpdateInCompany(transactionContext, holdingCode, businessCode, guid, docData); err != nil {
+				return nil, err
+			}
+			return barcodeProjectionMessages("when-product-barcode-updated", docData, createdProduct, nil)
 		})
 	} else {
 		if err = svc.updateMetaInRefBarcode(ctx, holdingCode, "", findDoc.ItemCode, docData); err != nil {
@@ -621,11 +641,6 @@ func (svc ProductBarcodeHttpService) updateProductBarcode(holdingCode string, bu
 	if err != nil {
 		return err
 	}
-	if createdProduct != nil {
-		if err := svc.productMQRepo.Create(*createdProduct); err != nil {
-			return err
-		}
-	}
 
 	if businessCode == "" && findDoc.ItemCode != docData.ItemCode {
 		if err := svc.mqRepo.Delete(findDoc); err != nil {
@@ -633,9 +648,10 @@ func (svc ProductBarcodeHttpService) updateProductBarcode(holdingCode string, bu
 		}
 	}
 
-	err = svc.mqRepo.Update(docData)
-	if err != nil {
-		return err
+	if businessCode == "" {
+		if err = svc.mqRepo.Update(docData); err != nil {
+			return err
+		}
 	}
 
 	if shouldRecordLegacyPriceHistory(businessCode) {
@@ -999,7 +1015,15 @@ func (svc ProductBarcodeHttpService) deleteProductBarcode(holdingCode string, bu
 	}
 
 	if businessCode != "" {
-		err = svc.repo.DeleteByGuidfixedInCompany(ctx, holdingCode, businessCode, guid, authUsername)
+		if svc.eventOutbox == nil {
+			return errors.New("Barcode projection outbox is required")
+		}
+		err = svc.eventOutbox.CommitBarcode(ctx, holdingCode, businessCode, guid, func(tx context.Context) ([]outbox.Message, error) {
+			if err := svc.repo.DeleteByGuidfixedInCompany(tx, holdingCode, businessCode, guid, authUsername); err != nil {
+				return nil, err
+			}
+			return barcodeProjectionMessages("when-product-barcode-deleted", findDoc, nil, nil)
+		})
 	} else {
 		err = svc.repo.DeleteByGuidfixed(ctx, holdingCode, guid, authUsername)
 	}
@@ -1007,9 +1031,10 @@ func (svc ProductBarcodeHttpService) deleteProductBarcode(holdingCode string, bu
 		return err
 	}
 
-	err = svc.mqRepo.Delete(findDoc)
-	if err != nil {
-		return err
+	if businessCode == "" {
+		if err = svc.mqRepo.Delete(findDoc); err != nil {
+			return err
+		}
 	}
 
 	svc.saveMasterSync(holdingCode)

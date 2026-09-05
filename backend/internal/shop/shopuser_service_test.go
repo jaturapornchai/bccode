@@ -36,7 +36,7 @@ func TestShopUserSave(t *testing.T) {
 	err := shopUserSvc.SaveUserPermissionShop(mockHoldingCode, authUser, "", "user_create", models.ROLE_OWNER)
 
 	require.NoError(t, err)
-
+	shopUserRepo.AssertExpectations(t)
 }
 
 func TestShopUserDeleteCannotDeleteCreator(t *testing.T) {
@@ -248,4 +248,35 @@ func requireAccessDisabledRequest(t *testing.T, username string, disabledBy stri
 			req.AccessEnabledAt.Equal(time.Time{}) &&
 			req.AccessEnabledBy == ""
 	})
+}
+
+func TestShopUserSaveRejectsMissingEditTarget(t *testing.T) {
+	repo := new(ShopUserRepositoryMock)
+	ctx := context.Background()
+	holding, owner, missing := "holding", "owner", "missing"
+	repo.On("FindByHoldingCodeAndUsername", ctx, holding, owner).
+		Return(testShopUser(holding, owner, models.ROLE_OWNER), nil).Once()
+	repo.On("FindByHoldingCodeAndUsername", ctx, holding, missing).
+		Return(models.ShopUser{}, errors.New("not found")).Once()
+	repo.On("FindByHoldingCodeAndUserUID", ctx, holding, missing).
+		Return(models.ShopUser{}, errors.New("not found")).Once()
+
+	err := shop.NewShopUserService(repo).SaveUserPermissionShop(holding, owner, missing, "target", models.ROLE_OWNER)
+	require.EqualError(t, err, "user not found")
+	repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	repo.AssertExpectations(t)
+}
+
+func TestShopUserSavePropagatesCreateFailure(t *testing.T) {
+	repo := new(ShopUserRepositoryMock)
+	ctx := context.Background()
+	holding, owner := "holding", "owner"
+	saveErr := errors.New("write failed")
+	repo.On("FindByHoldingCodeAndUsername", ctx, holding, owner).
+		Return(testShopUser(holding, owner, models.ROLE_OWNER), nil).Once()
+	repo.On("Save", ctx, holding, "target", models.ROLE_OWNER).Return(saveErr).Once()
+
+	err := shop.NewShopUserService(repo).SaveUserPermissionShop(holding, owner, "", "target", models.ROLE_OWNER)
+	require.ErrorIs(t, err, saveErr)
+	repo.AssertExpectations(t)
 }

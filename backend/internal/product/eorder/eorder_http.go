@@ -87,7 +87,7 @@ func NewEOrderHttp(ms *microservice.Microservice, cfg config.IConfig) EOrderHttp
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(prod)
 	unitSvc := unit_services.NewUnitHttpService(unitmaster, repo, unitMqRepo, masterSyncCacheRepo)
 
-	svcProduct := product_services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	svcProduct := product_services.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, mqRepo, clickHouseRepo, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, nil)
 
 	repoCust := repoCust.NewDebtorRepository(pst)
 	repoShop := shop.NewShopRepository(pst)

@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	creditorRepo "smlcloudplatform/internal/debtaccount/creditor/repositories"
+	productconfig "smlcloudplatform/internal/product/product/config"
 	"smlcloudplatform/internal/product/product/models"
+	"smlcloudplatform/internal/product/product/outbox"
 	"smlcloudplatform/internal/product/product/repositories"
+	barcodeconfig "smlcloudplatform/internal/product/productbarcode/config"
 	barcodeModel "smlcloudplatform/internal/product/productbarcode/models"
 	productBarcodeRepo "smlcloudplatform/internal/product/productbarcode/repositories"
 	unitRepo "smlcloudplatform/internal/product/unit/repositories"
@@ -30,24 +33,22 @@ type IProductHttpService interface {
 }
 
 type ProductHttpService struct {
+	eventOutbox          *outbox.Store
 	repo                 repositories.IProductRepository
 	repoUnit             unitRepo.IUnitRepository
 	repomgCreditror      creditorRepo.CreditorRepository
 	repomgProductBarcode productBarcodeRepo.ProductBarcodeRepository
-	mqRepo               repositories.IProductMessageQueueRepository
-	barcodeMQRepo        productBarcodeRepo.IProductBarcodeMessageQueueRepository
 	contextTimeout       time.Duration
 }
 
 // ✅ **สร้าง Service**
-func NewProductHttpService(repo repositories.IProductRepository, repoUnit unitRepo.IUnitRepository, repomgCreditror creditorRepo.CreditorRepository, repomgProductBarcode productBarcodeRepo.ProductBarcodeRepository, mqRepo repositories.IProductMessageQueueRepository, barcodeMQRepo productBarcodeRepo.IProductBarcodeMessageQueueRepository) *ProductHttpService {
+func NewProductHttpService(repo repositories.IProductRepository, repoUnit unitRepo.IUnitRepository, repomgCreditror creditorRepo.CreditorRepository, repomgProductBarcode productBarcodeRepo.ProductBarcodeRepository, eventOutbox *outbox.Store) *ProductHttpService {
 	return &ProductHttpService{
+		eventOutbox:          eventOutbox,
 		repo:                 repo,
 		repoUnit:             repoUnit,
 		repomgCreditror:      repomgCreditror,
 		repomgProductBarcode: repomgProductBarcode,
-		mqRepo:               mqRepo,
-		barcodeMQRepo:        barcodeMQRepo,
 		contextTimeout:       15 * time.Second,
 	}
 }
@@ -306,18 +307,12 @@ func (svc ProductHttpService) Create(doc *models.ProductDoc) error {
 	doc.CreatedAt = time.Now().UTC()
 	doc.UpdatedAt = doc.CreatedAt
 
-	// ✅ เรียก `Create()`
-	_, err := svc.repo.Create(ctx, *doc)
-
-	if err != nil {
-		return err
-	}
-
-	if err := svc.mqRepo.Create(*doc); err != nil {
-		return err
-	}
-
-	return nil
+	return svc.eventOutbox.Commit(ctx, doc.HoldingCode, doc.BusinessCode, doc.GuidFixed, func(tx context.Context) ([]outbox.Message, error) {
+		if _, err := svc.repo.Create(tx, *doc); err != nil {
+			return nil, err
+		}
+		return productProjectionMessages(productconfig.MQ_TOPIC_CREATED, *doc, nil)
+	})
 }
 
 // ✅ **Update (อัปเดต Product)**
@@ -379,30 +374,22 @@ func (svc ProductHttpService) Update(holdingCode string, businessCode string, co
 	docData.UpdatedBy = authUsername
 	docData.UpdatedAt = now
 
-	// Keep the Product-owned unit definitions and every linked Barcode snapshot atomic.
-	var linkedBarcodes []barcodeModel.ProductBarcodeDoc
-	errx := svc.repomgProductBarcode.Transaction(ctx, func(txCtx context.Context) error {
-		var err error
-		linkedBarcodes, err = svc.linkedBarcodeUnitSnapshots(txCtx, docData, authUsername, now)
+	// Product, linked Barcode snapshots, and delivery intent commit together.
+	errx := svc.eventOutbox.Commit(ctx, holdingCode, businessCode, findDoc.GuidFixed, func(txCtx context.Context) ([]outbox.Message, error) {
+		linkedBarcodes, err := svc.linkedBarcodeUnitSnapshots(txCtx, docData, authUsername, now)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := svc.repo.UpdateInCompany(txCtx, holdingCode, businessCode, findDoc.GuidFixed, docData); err != nil {
-			return err
+			return nil, err
 		}
-		return svc.repomgProductBarcode.UpdateUnitSnapshotsInCompany(txCtx, holdingCode, businessCode, linkedBarcodes)
+		if err := svc.repomgProductBarcode.UpdateUnitSnapshotsInCompany(txCtx, holdingCode, businessCode, linkedBarcodes); err != nil {
+			return nil, err
+		}
+		return productProjectionMessages(productconfig.MQ_TOPIC_UPDATED, docData, linkedBarcodes)
 	})
 	if errx != nil {
 		return models.ProductDoc{}, errx
-	}
-
-	if err := svc.mqRepo.Update(docData); err != nil {
-		return models.ProductDoc{}, err
-	}
-	if len(linkedBarcodes) > 0 {
-		if err := svc.barcodeMQRepo.UpdateInBatch(linkedBarcodes); err != nil {
-			return models.ProductDoc{}, err
-		}
 	}
 
 	return docData, nil
@@ -433,16 +420,12 @@ func (svc ProductHttpService) Delete(holdingCode string, businessCode string, gu
 		deleteGuid = findDoc.GuidFixed
 	}
 
-	err = svc.repo.DeleteByGuidfixedInCompany(ctx, holdingCode, businessCode, deleteGuid, user)
-	if err != nil {
-		return err
-	}
-
-	if err := svc.mqRepo.Delete(findDoc); err != nil {
-		return err
-	}
-
-	return nil
+	return svc.eventOutbox.Commit(ctx, holdingCode, businessCode, findDoc.GuidFixed, func(tx context.Context) ([]outbox.Message, error) {
+		if err := svc.repo.DeleteByGuidfixedInCompany(tx, holdingCode, businessCode, deleteGuid, user); err != nil {
+			return nil, err
+		}
+		return productProjectionMessages(productconfig.MQ_TOPIC_DELETED, findDoc, nil)
+	})
 }
 
 // ✅ Resync — republish ทุก product ของ tenant เข้า Kafka เพื่อ rebuild PG projection
@@ -455,13 +438,41 @@ func (svc ProductHttpService) Resync(holdingCode string, businessCode string) (i
 		return 0, err
 	}
 
-	published := 0
+	queued := 0
 	for _, doc := range docs {
-		if err := svc.mqRepo.Create(doc); err != nil {
-			return published, err
+		if err := svc.eventOutbox.Commit(ctx, holdingCode, businessCode, doc.GuidFixed, func(tx context.Context) ([]outbox.Message, error) {
+			current, err := svc.repo.FindByGuidInCompany(tx, holdingCode, businessCode, doc.GuidFixed)
+			if err != nil {
+				return nil, err
+			}
+			if current.ID == primitive.NilObjectID {
+				return nil, errors.New("product no longer exists")
+			}
+			return productProjectionMessages(productconfig.MQ_TOPIC_CREATED, current, nil)
+		}); err != nil {
+			return queued, err
 		}
-		published++
+		queued++
 	}
 
-	return published, nil
+	return queued, nil
+}
+
+// Keep the existing Kafka payload/topic contract and exclude read-only Barcodes.
+func productProjectionMessages(topic string, doc models.ProductDoc, barcodes []barcodeModel.ProductBarcodeDoc) ([]outbox.Message, error) {
+	doc.Barcodes = nil
+	key := outbox.AggregateKey(doc.HoldingCode, doc.BusinessCode, doc.GuidFixed)
+	message, err := outbox.NewMessage(topic, key, doc)
+	if err != nil {
+		return nil, err
+	}
+	messages := []outbox.Message{message}
+	if len(barcodes) > 0 {
+		message, err = outbox.NewMessage(barcodeconfig.MQ_TOPIC_BULK_UPDATED, key, barcodes)
+		if err != nil {
+			return nil, err
+		}
+		messages = append(messages, message)
+	}
+	return messages, nil
 }

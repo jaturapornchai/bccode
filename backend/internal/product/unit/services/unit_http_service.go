@@ -195,37 +195,19 @@ func (svc *UnitHttpService) ImportUnitsFromFile(file []byte, holdingCode string,
 
 func (svc UnitHttpService) CreateUnit(holdingCode string, authUsername string, doc models.Unit) (string, error) {
 
-	// Business Code Uppercase + No-Space rules: unitcode is a business key
-	// referenced by products/barcodes/documents — normalize before dup-check
-	// and persistence (mirrors brandproduct and the other masters).
-	doc.UnitCode = utils.NormalizeBusinessCode(doc.UnitCode)
-	if doc.UnitCode == "" {
-		return "", errors.New("unit code is required")
-	}
-
-	ctx, ctxCancel := svc.getContextTimeout()
-	defer ctxCancel()
-
-	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "unitcode", doc.UnitCode)
-
+	docData, err := NewUnitDoc(holdingCode, authUsername, doc)
 	if err != nil {
 		return "", err
 	}
-
+	ctx, ctxCancel := svc.getContextTimeout()
+	defer ctxCancel()
+	findDoc, err := svc.repo.FindByDocIndentityGuid(ctx, holdingCode, "unitcode", docData.UnitCode)
+	if err != nil {
+		return "", err
+	}
 	if findDoc.UnitCode != "" {
 		return "", errors.New("unit code is exists")
 	}
-
-	newGuidFixed := utils.NewGUID()
-
-	docData := models.UnitDoc{}
-	docData.HoldingCode = holdingCode
-	docData.GuidFixed = newGuidFixed
-	docData.Unit = doc
-	svc.syncUnitNames(&docData.Unit)
-
-	docData.CreatedBy = authUsername
-	docData.CreatedAt = time.Now()
 
 	_, err = svc.repo.Create(ctx, docData)
 
@@ -239,7 +221,7 @@ func (svc UnitHttpService) CreateUnit(holdingCode string, authUsername string, d
 	}()
 	svc.saveMasterSync(holdingCode)
 
-	return newGuidFixed, nil
+	return docData.GuidFixed, nil
 }
 
 func (svc UnitHttpService) UpdateUnit(holdingCode string, guid string, authUsername string, doc models.Unit) error {
@@ -266,7 +248,7 @@ func (svc UnitHttpService) UpdateUnit(holdingCode string, guid string, authUsern
 	tempCode := findDoc.UnitCode
 
 	findDoc.Unit = doc
-	svc.syncUnitNames(&findDoc.Unit)
+	syncUnitNames(&findDoc.Unit)
 
 	//
 	findDoc.UnitCode = tempCode
@@ -325,7 +307,7 @@ func (svc UnitHttpService) UpdateFieldUnit(holdingCode string, guid string, auth
 	}
 
 	findDoc.Unit.Names = &tempNames
-	svc.syncUnitNames(&findDoc.Unit)
+	syncUnitNames(&findDoc.Unit)
 
 	findDoc.UpdatedBy = authUsername
 	findDoc.UpdatedAt = time.Now()
@@ -771,7 +753,7 @@ func (svc UnitHttpService) GetModuleName() string {
 	return "productunit"
 }
 
-func (svc UnitHttpService) syncUnitNames(doc *models.Unit) {
+func syncUnitNames(doc *models.Unit) {
 	if doc.Names == nil {
 		return
 	}

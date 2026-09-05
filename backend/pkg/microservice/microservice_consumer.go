@@ -1,6 +1,8 @@
 package microservice
 
 import (
+	"context"
+	"smlcloudplatform/internal/product/projection"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -50,6 +52,10 @@ func (ms *Microservice) consumeSingle(servers string, topic string, groupID stri
 
 // Consume register service endpoint for Consumer service
 func (ms *Microservice) Consume(servers string, topic string, groupID string, readTimeout time.Duration, h ServiceHandleFunc) error {
+	if projection.IsBarcodeTopic(topic) {
+		ms.RegisterBackgroundWorker(func(ctx context.Context) { ms.consumeBarcodeProjection(ctx, servers, topic, groupID, h) })
+		return nil
+	}
 	go ms.consumeSingle(servers, topic, groupID, readTimeout, h)
 	return nil
 }

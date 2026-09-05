@@ -1,115 +1,38 @@
 package kafka
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
-
-	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/mypg"
-	build "smlcloudplatform/internal/goapi/process/build"
+	"smlcloudplatform/internal/product/projection"
 	"smlcloudplatform/internal/utils"
+	"strings"
 )
 
-// MongoProductModel — minimal projection of the mainapi ProductDoc payload
 type MongoProductModel struct {
-	HoldingCode  string `json:"holdingcode"`
-	BusinessCode string `json:"businesscode"`
-	Code         string `json:"code"`
-	UnitCode     string `json:"unitcode"`
+	HoldingCode  string `json:"holdingcode" bson:"holdingcode"`
+	BusinessCode string `json:"businesscode" bson:"businesscode"`
+	GuidFixed    string `json:"guidfixed" bson:"guidfixed"`
+	Code         string `json:"code" bson:"code"`
+	UnitCode     string `json:"unitcode" bson:"unitcode"`
 	Names        []struct {
-		Name *string `json:"name"`
-	} `json:"names"`
+		Name *string `json:"name" bson:"name"`
+	} `json:"names" bson:"names"`
 	UnitNames []struct {
-		Name *string `json:"name"`
-	} `json:"unitnames"`
+		Name *string `json:"name" bson:"name"`
+	} `json:"unitnames" bson:"unitnames"`
+	Projection *projection.Metadata `json:"_projection,omitempty" bson:"-"`
 }
 
-// OnConsumeMessageProductCreateOrUpdate — when-product-created / when-product-updated
-func OnConsumeMessageProductCreateOrUpdate(msg string) error {
-	var p MongoProductModel
-	if err := json.Unmarshal([]byte(msg), &p); err != nil {
-		logger.Error("unmarshaling product: %v", err)
-		return err
-	}
-	p.HoldingCode = strings.TrimSpace(p.HoldingCode)
-	p.BusinessCode = utils.NormalizeBusinessCode(p.BusinessCode)
-	p.Code = utils.NormalizeBusinessCode(p.Code)
-	p.UnitCode = utils.NormalizeBusinessCode(p.UnitCode)
-	if p.HoldingCode == "" || p.BusinessCode == "" || p.Code == "" || p.UnitCode == "" {
-		logger.Warn("Product message missing HoldingCode, BusinessCode, Code or UnitCode")
-		return fmt.Errorf("missing HoldingCode, BusinessCode, Code or UnitCode for product upsert")
-	}
-
-	build.DatabaseChecker(p.HoldingCode, false)
-
-	db, err := mypg.PgSqlFastConnect(p.HoldingCode)
-	if err != nil {
-		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
-	}
-
-	name0 := p.Code // name0 is NOT NULL — fall back to itemcode
-	if len(p.Names) > 0 && p.Names[0].Name != nil && *p.Names[0].Name != "" {
-		name0 = *p.Names[0].Name
-	}
-	unitName := p.UnitCode
-	if len(p.UnitNames) > 0 && p.UnitNames[0].Name != nil && *p.UnitNames[0].Name != "" {
-		unitName = *p.UnitNames[0].Name
-	}
-
-	// Metadata-only upsert. Stock columns (balanceqty*, pending*) belong to
-	// processstock/batchUpdateProduct — never written here.
-	_, err = db.ExecContext(context.Background(), `
-		INSERT INTO product (holding_code, businesscode, itemcode, name0, unitcode, unitname)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT ON CONSTRAINT product_company_itemcode_unique
-		DO UPDATE SET name0 = EXCLUDED.name0,
-			unitcode = EXCLUDED.unitcode,
-			unitname = EXCLUDED.unitname`,
-		p.HoldingCode, p.BusinessCode, p.Code, name0, p.UnitCode, unitName)
-	if err != nil {
-		return fmt.Errorf("error upserting product %s: %v", p.Code, err)
-	}
-	logger.Info("Upserted product (PG): %s", p.Code)
-
-	// Stock projection is intentionally not touched until stock rows also carry
-	// BusinessCode. Recalculating by Holding+itemcode can mix two companies.
-	return nil
-}
-
-// OnConsumeMessageProductDelete — when-product-deleted
-func OnConsumeMessageProductDelete(msg string) error {
-	var p MongoProductModel
-	if err := json.Unmarshal([]byte(msg), &p); err != nil {
-		logger.Error("unmarshaling product for deletion: %v", err)
-		return err
-	}
+func normalizeProductSignal(p *MongoProductModel) error {
 	p.HoldingCode = strings.TrimSpace(p.HoldingCode)
 	p.BusinessCode = utils.NormalizeBusinessCode(p.BusinessCode)
 	p.Code = utils.NormalizeBusinessCode(p.Code)
 	if p.HoldingCode == "" || p.BusinessCode == "" || p.Code == "" {
-		return fmt.Errorf("missing HoldingCode, BusinessCode or Code for product deletion")
+		return fmt.Errorf("holdingcode, businesscode and code are required for product signal")
 	}
-
-	build.DatabaseChecker(p.HoldingCode, false)
-
-	db, err := mypg.PgSqlFastConnect(p.HoldingCode)
-	if err != nil {
-		return fmt.Errorf("failed to connect to PostgreSQL: %v", err)
-	}
-
-	result, err := db.ExecContext(
-		context.Background(),
-		"DELETE FROM product WHERE holding_code = $1 AND businesscode = $2 AND itemcode = $3",
-		p.HoldingCode,
-		p.BusinessCode,
-		p.Code,
-	)
-	if err != nil {
-		return fmt.Errorf("error deleting product %s: %v", p.Code, err)
-	}
-	rows, _ := result.RowsAffected()
-	logger.Info("Deleted %d product row(s) for itemcode %s (PG)", rows, p.Code)
 	return nil
 }
+
+// All three topics are signals to reconcile the same company-scoped row.
+// A delayed delete must not delete a newly-created incarnation of that code.
+func OnConsumeMessageProductCreateOrUpdate(msg string) error { return consumeProductSignal(msg) }
+func OnConsumeMessageProductDelete(msg string) error         { return consumeProductSignal(msg) }

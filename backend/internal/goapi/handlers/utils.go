@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"smlcloudplatform/internal/goapi/handlers/kafka"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/models"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -154,18 +155,8 @@ func ProductBarcodeDecode(jsonData string) models.MongoProductBarcodeModel {
 
 // ProductBarcodeBuild - processes product barcode data
 func ProductBarcodeBuild(jsonData string) {
-	productBarcode := ProductBarcodeDecode(jsonData)
-
-	// Validate HoldingCode before proceeding
-	if productBarcode.HoldingCode == "" {
-		logger.Warn("Product barcode data missing HoldingCode, skipping processing")
-		return
-	}
-
-	build.DatabaseChecker(productBarcode.HoldingCode, false) // เช็ค database
-	err := mypg.ProductBarcodeUpdate(productBarcode)
-	if err != nil {
-		logger.Error("in PostgreSQL ProductBarcodeUpdate: %v", err)
+	if err := kafka.OnConsumeMessageInventoryCreateOrUpdate(jsonData); err != nil {
+		logger.Error("Barcode source reconciliation failed")
 	}
 }
 

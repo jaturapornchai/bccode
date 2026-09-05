@@ -1,6 +1,7 @@
 package productimport
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	common "smlcloudplatform/internal/models"
 	branch_repositories "smlcloudplatform/internal/organization/branch/repositories"
 	businesstype_repositories "smlcloudplatform/internal/organization/businesstype/repositories"
+	"smlcloudplatform/internal/product/product/outbox"
 	productmaster "smlcloudplatform/internal/product/product/repositories"
 	product_repositories "smlcloudplatform/internal/product/productbarcode/repositories"
 	product_serrvices "smlcloudplatform/internal/product/productbarcode/services"
@@ -103,7 +105,16 @@ func NewProductImportHttp(ms *microservice.Microservice, cfg config.IConfig) Pro
 	unitMqRepo := unit_repositories.NewUnitMessageQueueRepository(producer)
 	unitSvc := unit_services.NewUnitHttpService(unitRepo, repo, unitMqRepo, masterSyncCacheRepo)
 
-	stockBalanceSvc := product_serrvices.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, repoMq, repoCh, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, productMQRepo)
+	eventOutbox := outbox.New(pst)
+	mq := cfg.MQConfig()
+	delivery := microservice.NewProducerWithTimeout(mq.URI(), mq.SecurityProtocol(), mq.SSLCAFile(), mq.SSLKeyFile(), mq.SSLCertFile(), ms.Logger, 30*time.Second)
+	ms.RegisterBackgroundWorker(func(ctx context.Context) {
+		defer delivery.Close()
+		eventOutbox.Run(ctx, delivery.SendMessage, func(error) {
+			ms.Logger.Warnf("Barcode import outbox delivery pending; inspect pending event IDs and retry status")
+		})
+	})
+	stockBalanceSvc := product_serrvices.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, repoMq, repoCh, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, eventOutbox, productMQRepo)
 
 	svc := services.NewProductImportService(chRepo, taskStatusRepo, repo, stockBalanceSvc, unitRepo, groupProductRepo, groupsuboneProductRepo, groupsubtwoproductRepo, brandProductRepo, designProductRepo, modelProductRepo, patternProductRepo, gradeProductRepo, categoryProductRepo, classProductRepo, branchRepo, businessTypeRepo, utils.RandStringBytesMaskImprSrcUnsafe, utils.NewGUID, safeTimeNow)
 

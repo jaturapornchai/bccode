@@ -344,15 +344,13 @@ func (pst *Persister) TestConnect() error {
 }
 
 func (pst *Persister) Transaction(funcTransaction func(*Persister) error) error {
-	pst.db.Transaction(func(tx *gorm.DB) error {
+	return pst.db.Transaction(func(tx *gorm.DB) error {
 		pst := &Persister{
 			config: nil,
 			db:     tx,
 		}
 		return funcTransaction(pst)
 	})
-
-	return nil
 }
 
 func (pst *Persister) Raw(queryStr string, where map[string]interface{}, model interface{}) ( /*result*/ interface{}, error) {

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -91,5 +92,38 @@ func TestEnforceProductUnitConversions(t *testing.T) {
 	divide, stand, ok := doc.UnitRatio("box")
 	if !ok || divide != 1 || stand != 12 {
 		t.Fatalf("unexpected exact unit ratio: %d/%d, %v", stand, divide, ok)
+	}
+}
+
+func TestProductProjectionMessagesPreserveContract(t *testing.T) {
+	doc := models.ProductDoc{}
+	doc.HoldingCode = "H"
+	doc.BusinessCode = "A"
+	doc.GuidFixed = "P"
+	doc.Barcodes = []models.Barcodes{{Barcode: "read-only"}}
+	barcode := barcodeModel.ProductBarcodeDoc{}
+	barcode.HoldingCode = "H"
+	barcode.BusinessCode = "A"
+	barcode.Barcode = "SKU"
+	messages, err := productProjectionMessages("when-product-updated", doc, []barcodeModel.ProductBarcodeDoc{barcode})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(messages) != 2 || messages[0].Topic != "when-product-updated" || messages[1].Topic != "when-product-barcode-bulk-updated" || messages[0].Key != messages[1].Key {
+		t.Fatal("product/barcode event routing changed")
+	}
+	var restored models.ProductDoc
+	if err := json.Unmarshal(messages[0].Payload, &restored); err != nil {
+		t.Fatal(err)
+	}
+	if len(restored.Barcodes) != 0 || len(doc.Barcodes) != 1 {
+		t.Fatal("read-only barcode data leaked or source mutated")
+	}
+	var restoredBarcodes []barcodeModel.ProductBarcodeDoc
+	if err := json.Unmarshal(messages[1].Payload, &restoredBarcodes); err != nil {
+		t.Fatal(err)
+	}
+	if len(restoredBarcodes) != 1 || restoredBarcodes[0].BusinessCode != "A" || restoredBarcodes[0].Barcode != "SKU" {
+		t.Fatal("barcode snapshot changed")
 	}
 }

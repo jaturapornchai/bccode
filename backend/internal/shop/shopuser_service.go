@@ -324,10 +324,12 @@ func (svc ShopUserService) SaveUserPermissionShop(holdingCode string, authUserna
 
 	// Resolve the target with the RAW id first: a useruid keeps its original
 	// casing and NormalizeUsername would lowercase it into a lookup miss.
-	findEditUser, err := svc.resolveShopUser(holdingCode, editusername)
-
-	if err != nil {
-		return err
+	findEditUser := models.ShopUser{}
+	if strings.TrimSpace(editusername) != "" {
+		findEditUser, err = svc.resolveShopUser(holdingCode, editusername)
+		if err != nil {
+			return err
+		}
 	}
 
 	editusername = utils.NormalizeUsername(editusername)

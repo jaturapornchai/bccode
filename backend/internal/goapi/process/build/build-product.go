@@ -11,10 +11,12 @@ import (
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
+	"smlcloudplatform/internal/product/projection"
 	"smlcloudplatform/internal/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 type mongoProductProjection struct {
@@ -59,9 +61,27 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 		return 0, fmt.Errorf("connect MongoDB for product projection")
 	}
 
+	pgDB, err := mypg.PgSqlFastConnect(holdingCode)
+	if err != nil {
+		return 0, fmt.Errorf("connect PostgreSQL product projection: %w", err)
+	}
+	if err := TableProductCreate(pgDB); err != nil {
+		return 0, err
+	}
+	tx, err := pgDB.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin product projection rebuild: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Exclude event reconciliation before taking the MongoDB snapshot.
+	if _, err := tx.ExecContext(ctx, projection.ExclusiveSQL, projection.LockKey("product", holdingCode, businessCode, "")); err != nil {
+		return 0, err
+	}
+
 	collection := mongoClient.
 		Database(config.NewServiceConfig().MongodbDatabaseName()).
-		Collection("products")
+		Collection("products", options.Collection().SetReadPreference(readpref.Primary()))
 	cursor, err := collection.Find(
 		ctx,
 		bson.M{
@@ -118,24 +138,11 @@ func ProcessProductRebuildCompany(holdingCode string, businessCode string) (int,
 		return 0, fmt.Errorf("iterate MongoDB products: %w", err)
 	}
 
-	pgDB, err := mypg.PgSqlFastConnect(holdingCode)
-	if err != nil {
-		return 0, fmt.Errorf("connect PostgreSQL product projection: %w", err)
-	}
-	if err := TableProductCreate(pgDB); err != nil {
-		return 0, err
-	}
 	codes := make([]string, 0, len(products))
 	for code := range products {
 		codes = append(codes, code)
 	}
 	sort.Strings(codes)
-
-	tx, err := pgDB.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, fmt.Errorf("begin product projection rebuild: %w", err)
-	}
-	defer tx.Rollback()
 
 	if len(codes) == 0 {
 		if _, err := tx.ExecContext(

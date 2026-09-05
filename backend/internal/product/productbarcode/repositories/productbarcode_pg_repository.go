@@ -1,8 +1,11 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
+	"gorm.io/gorm/clause"
 	"smlcloudplatform/internal/product/productbarcode/models"
+	"smlcloudplatform/internal/product/projection"
 	"smlcloudplatform/pkg/microservice"
 
 	"gorm.io/gorm"
@@ -22,6 +25,7 @@ type IProductBarcodePGRepository interface {
 // It stays separate from the legacy stock repository contract so stock code
 // cannot accidentally resolve a duplicate barcode across companies.
 type ICompanyProductBarcodePGRepository interface {
+	ReconcileInCompany(context.Context, string, string, string, func(context.Context) (*models.ProductBarcodePg, error)) (*models.ProductBarcodePg, error)
 	GetByCompanyBarcode(holdingCode string, businessCode string, barcode string) (*models.ProductBarcodePg, error)
 	Create(doc *models.ProductBarcodePg) error
 	UpdateInCompany(holdingCode string, businessCode string, barcode string, doc *models.ProductBarcodePg) error
@@ -157,4 +161,38 @@ func (repo *ProductBarcodePGRepository) DeleteInCompany(holdingCode string, busi
 		"businesscode": businessCode,
 		"barcode":      barcode,
 	})
+}
+
+func (repo *ProductBarcodePGRepository) ReconcileInCompany(ctx context.Context, holding, business, barcode string, load func(context.Context) (*models.ProductBarcodePg, error)) (*models.ProductBarcodePg, error) {
+	var current *models.ProductBarcodePg
+	err := repo.pst.DBClient().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(projection.CompanySharedSQL, projection.LockKey("barcode", holding, business, "")).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(projection.ExclusiveSQL, projection.LockKey("barcode", holding, business, barcode)).Error; err != nil {
+			return err
+		}
+		var err error
+		current, err = load(ctx)
+		if err != nil {
+			return err
+		}
+		if current == nil {
+			return tx.Where("holding_code=? AND businesscode=? AND barcode=?", holding, business, barcode).Delete(&models.ProductBarcodePg{}).Error
+		}
+		current.HoldingCode = holding
+		current.BusinessCode = business
+		current.Barcode = barcode
+		// This consumer owns metadata only. Never zero stock/cost columns when a
+		// duplicate or stale message causes metadata reconciliation.
+		columns := []string{"names", "unitcode", "unitnames", "standvalue", "dividevalue", "itemcode", "itemtype", "materialtype",
+			"brandcode", "brandnames", "categorycode", "categorynames", "classcode", "classnames", "designcode", "designnames",
+			"gradecode", "gradenames", "groupcode", "groupnames", "groupsubonecode", "groupsubonenames", "groupsubtwocode", "groupsubtwonames",
+			"modelcode", "modelnames", "patterncode", "patternnames", "bom"}
+		return tx.Omit("balanceqty", "balanceamount", "averagecost").Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "holding_code"}, {Name: "businesscode"}, {Name: "barcode"}},
+			DoUpdates: clause.AssignmentColumns(columns),
+		}).Create(current).Error
+	})
+	return current, err
 }

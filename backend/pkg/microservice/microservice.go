@@ -49,6 +49,7 @@ type IMicroservice interface {
 }
 
 type Microservice struct {
+	backgroundWorkers         []func(context.Context)
 	echo                      *echo.Echo
 	exitChannel               chan bool
 	cachers                   map[string]ICacher
@@ -222,8 +223,28 @@ func maskConnectionString(raw string) string {
 	return parsed.String()
 }
 
+// RegisterBackgroundWorker registers a worker before Start. Workers must stop
+// when ctx is cancelled; resources remain open until all workers have stopped.
+func (ms *Microservice) RegisterBackgroundWorker(worker func(context.Context)) {
+	ms.backgroundWorkers = append(ms.backgroundWorkers, worker)
+}
+
 // Start start all registered services
 func (ms *Microservice) Start() error {
+	workerCtx, cancelWorkers := context.WithCancel(context.Background())
+	var workers sync.WaitGroup
+	for _, worker := range ms.backgroundWorkers {
+		workers.Add(1)
+		go func(run func(context.Context)) {
+			defer workers.Done()
+			run(workerCtx)
+		}(worker)
+	}
+	defer func() {
+		cancelWorkers()
+		workers.Wait()
+		ms.Cleanup()
+	}()
 
 	ms.Logger.Debugf("Start App: %s Mode: %s", ms.config.ApplicationName(), ms.Mode)
 
@@ -267,8 +288,6 @@ func (ms *Microservice) Start() error {
 			exit = true
 		}
 	}
-
-	defer ms.Cleanup()
 
 	return nil
 }

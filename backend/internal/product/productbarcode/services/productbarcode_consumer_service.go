@@ -3,12 +3,14 @@ package services
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"smlcloudplatform/internal/product/productbarcode/models"
 	"smlcloudplatform/internal/product/productbarcode/repositories"
 	"smlcloudplatform/internal/product/productbarcode/usecases"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
+	"time"
 
 	commonModels "smlcloudplatform/internal/models"
 	msModels "smlcloudplatform/pkg/microservice/models"
@@ -40,7 +42,7 @@ func NewProductBarcodeConsumerService(
 ) IProductBarcodeConsumeService {
 
 	productPgRepo := repositories.NewProductBarcodePGRepository(pst)
-	productMongoRepo := repositories.NewProductBarcodeRepository(mongoDBPersister, nil)
+	productMongoRepo := repositories.NewProductBarcodeRepository(primaryProjectionReads{mongoDBPersister}, nil)
 	productClickhouseRepo := repositories.NewProductBarcodeClickhouseRepository(clickhousePersister)
 
 	return &ProductBarcodeConsumeService{
@@ -111,54 +113,16 @@ func (svc ProductBarcodeConsumeService) UpdateProductOrderType(holdingCode strin
 }
 
 func (svc ProductBarcodeConsumeService) UpSert(holdingCode string, businessCode string, barcode string, doc models.ProductBarcodeDoc) (*models.ProductBarcodePg, error) {
-	holdingCode = strings.TrimSpace(holdingCode)
-	businessCode = utils.NormalizeBusinessCode(businessCode)
-	barcode = utils.NormalizeBusinessCode(barcode)
-	if holdingCode == "" || businessCode == "" || barcode == "" {
-		return nil, fmt.Errorf("holdingcode, businesscode and barcode are required")
-	}
-	doc.HoldingCode = holdingCode
-	doc.BusinessCode = businessCode
-	doc.Barcode = barcode
-
-	pgDoc, err := svc.phaser.PhaseProductBarcodeDoc(&doc)
-	if err != nil {
-		return nil, err
-	}
-
-	pgDoc.HoldingCode = holdingCode
-	pgDoc.BusinessCode = businessCode
-	findbarcodePG, err := svc.productPgRepo.GetByCompanyBarcode(holdingCode, businessCode, barcode)
-	if err != nil {
-		return nil, err
-	}
-
-	if findbarcodePG != nil {
-		err = svc.productPgRepo.UpdateInCompany(holdingCode, businessCode, barcode, pgDoc)
-	} else {
-		err = svc.productPgRepo.Create(pgDoc)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return pgDoc, nil
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	return svc.reconcileCurrentBarcode(ctx, holdingCode, businessCode, barcode)
 }
 
 func (svc ProductBarcodeConsumeService) Delete(ctx context.Context, holdingCode string, businessCode string, barcode string) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	businessCode = utils.NormalizeBusinessCode(businessCode)
-	barcode = utils.NormalizeBusinessCode(barcode)
-	if holdingCode == "" || businessCode == "" || barcode == "" {
-		return fmt.Errorf("holdingcode, businesscode and barcode are required")
-	}
-
-	err := svc.productPgRepo.DeleteInCompany(holdingCode, businessCode, barcode)
-	if err != nil {
-		return err
-	}
-	return nil
+	readCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	_, err := svc.reconcileCurrentBarcode(readCtx, holdingCode, businessCode, barcode)
+	return err
 }
 func (svc ProductBarcodeConsumeService) ReSync(holdingCode string, businessCode string) error {
 	holdingCode = strings.TrimSpace(holdingCode)
@@ -218,4 +182,23 @@ func (svc ProductBarcodeConsumeService) ReSync(holdingCode string, businessCode 
 	}
 
 	return nil
+}
+
+func (svc ProductBarcodeConsumeService) reconcileCurrentBarcode(ctx context.Context, holdingCode, businessCode, barcode string) (*models.ProductBarcodePg, error) {
+	holdingCode = strings.TrimSpace(holdingCode)
+	businessCode = utils.NormalizeBusinessCode(businessCode)
+	barcode = utils.NormalizeBusinessCode(barcode)
+	if holdingCode == "" || businessCode == "" || barcode == "" {
+		return nil, fmt.Errorf("holdingcode, businesscode and barcode are required")
+	}
+	return svc.productPgRepo.ReconcileInCompany(ctx, holdingCode, businessCode, barcode, func(readCtx context.Context) (*models.ProductBarcodePg, error) {
+		current, err := svc.productMongoRepo.FindByBarcodeInCompany(readCtx, holdingCode, businessCode, barcode)
+		if err != nil {
+			return nil, err
+		}
+		if current.ID == primitive.NilObjectID {
+			return nil, nil
+		}
+		return svc.phaser.PhaseProductBarcodeDoc(&current)
+	})
 }

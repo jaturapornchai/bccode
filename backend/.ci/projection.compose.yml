@@ -1,0 +1,73 @@
+# Isolated projection integration stack: no host ports or production volumes.
+services:
+  mongo:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand({ping:1}).ok ? 0 : 1)"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongo:
+        condition: service_healthy
+    entrypoint: ["mongosh", "--host", "mongo:27017", "--quiet", "--eval"]
+    command: ['rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]})']
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  kafka:
+    image: apache/kafka:4.3.1
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: CONTROLLER://:29093,PLAINTEXT://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:29092 --list >/dev/null 2>&1"]
+      interval: 3s
+      timeout: 10s
+      retries: 40
+  tests:
+    profiles: ["test"]
+    image: ${BC_PROJECTION_GO_IMAGE:-golang:1.26}
+    working_dir: /src
+    volumes: ["..:/src"]
+    entrypoint: ["/bin/sh", "-c"]
+    environment:
+      SERVERLESS: serverless
+      BC_OUTBOX_TEST_MONGODB_URI: mongodb://mongo:27017/?replicaSet=rs0
+      BC_BARCODE_TEST_POSTGRES_DSN: postgres://postgres@postgres:5432/postgres?sslmode=disable
+      BC_PROJECTION_TEST_KAFKA: kafka:29092
+    command:
+      - >-
+        go test -tags=${BC_PROJECTION_GO_TAGS:-integration} -count=1 -timeout=180s -json
+        -run '^Test(Product(Outbox|ServiceOutbox)Integration|Projection(Kafka|Rebalance)Integration|Barcode(Batch|ServiceOutbox)Integration|LegacyBarcode(Reconcile|PrimarySource)Integration)$'
+        ./internal/product/product/outbox ./internal/product/product/services
+        ./internal/goapi/handlers/kafka ./internal/product/productbarcode/repositories ./internal/product/productbarcode/services ./internal/product/projection
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy

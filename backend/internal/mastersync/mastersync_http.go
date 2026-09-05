@@ -101,7 +101,7 @@ func NewMasterSyncHttp(ms *microservice.Microservice, cfg config.IConfig) Master
 	priceHistoryRepo := productbarcodeRepo.NewProductPriceHistoryRepository(pst)
 	priceHistorySvc := productbarcodeService.NewProductPriceHistoryService(priceHistoryRepo, utils.NewGUID, time.Now)
 
-	svcProductBarcode := productbarcodeService.NewProductBarcodeHttpService(repoProductBarcode, repoMaster, unitmaster, svcProductUnit, *creditorRepo, nil, nil, masterSyncCacheRepo, priceHistorySvc, warehouseRepo)
+	svcProductBarcode := productbarcodeService.NewProductBarcodeHttpService(repoProductBarcode, repoMaster, unitmaster, svcProductUnit, *creditorRepo, nil, nil, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, nil)
 	activityModuleManager.Add(svcProductBarcode)
 
 	// Kitchen

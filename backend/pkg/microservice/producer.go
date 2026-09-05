@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"smlcloudplatform/internal/logger"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
@@ -19,25 +20,37 @@ type IProducer interface {
 
 // Producer implement IProducer, is the service to send message to Kafka
 type Producer struct {
-	logger   logger.ILogger
-	servers  string
-	protocol string
-	sslca    string
-	sslkey   string
-	sslcert  string
-	prod     *kafka.Producer
+	logger           logger.ILogger
+	servers          string
+	protocol         string
+	sslca            string
+	sslkey           string
+	sslcert          string
+	prod             *kafka.Producer
+	messageTimeoutMs int
 }
 
 // NewProducer return new instance of Producer
 func NewProducer(servers string, protocol string, sslca string, sslkey string, sslcert string, logger logger.ILogger) *Producer {
 	return &Producer{
-		logger:   logger,
-		servers:  servers,
-		protocol: protocol,
-		sslca:    sslca,
-		sslkey:   sslkey,
-		sslcert:  sslcert,
+		logger:           logger,
+		messageTimeoutMs: 43200000,
+		servers:          servers,
+		protocol:         protocol,
+		sslca:            sslca,
+		sslkey:           sslkey,
+		sslcert:          sslcert,
 	}
+}
+
+// NewProducerWithTimeout gives durable outbox delivery a bounded wait while
+// preserving the legacy producer timeout for existing callers.
+func NewProducerWithTimeout(servers, protocol, sslca, sslkey, sslcert string, logger logger.ILogger, timeout time.Duration) *Producer {
+	p := NewProducer(servers, protocol, sslca, sslkey, sslcert, logger)
+	if timeout > 0 {
+		p.messageTimeoutMs = int(max(timeout.Milliseconds(), 1))
+	}
+	return p
 }
 
 func (p *Producer) getProducer() *kafka.Producer {
@@ -205,7 +218,7 @@ func (p *Producer) newKafkaProducer(servers string, protocal string, sslca strin
 		// 10800000 = 3h
 		// 21600000 = 6h
 		// 43200000 = 12h
-		"message.timeout.ms": 43200000,
+		"message.timeout.ms": p.messageTimeoutMs,
 
 		// Default timeout for network requests.
 		// Producer: ProduceRequests will use the lesser value of socket.timeout.ms and remaining message.timeout.ms for the **first message in the batch.

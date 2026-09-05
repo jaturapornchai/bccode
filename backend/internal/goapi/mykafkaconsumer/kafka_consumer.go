@@ -279,6 +279,9 @@ func (kc *KafkaConsumer) consumeWithRetry(server string, topic string, groupID s
 		return fmt.Errorf("error connecting to Kafka for consumer topic %s: %w", topic, err)
 	}
 	defer reader.Close()
+	if isProductProjectionTopic(topic) {
+		return ConsumeProjectionMessages(context.Background(), reader, h)
+	}
 
 	logger.Success("✅ เชื่อมต่อสำเร็จ! กำลังฟัง topic: %s (group: %s)", topic, groupID)
 
@@ -427,10 +430,10 @@ func (kc *KafkaConsumer) newKafkaReader(servers string, topic string, groupID st
 		StartOffset: kafka.FirstOffset, // ⚠️ อ่านตั้งแต่ต้น เพื่อไม่พลาด message (เสถียร)
 
 		// Stable settings - เน้นความเสถียรของการทำงาน
-		QueueCapacity:  100,                    // 100 messages prefetch (พอดี)
-		CommitInterval: 5 * time.Second,        // Commit ทุก 5s
-		ReadBackoffMin: 500 * time.Millisecond, // 500ms minimum backoff
-		ReadBackoffMax: 30 * time.Second,       // 30s max backoff
+		QueueCapacity:  100,                             // 100 messages prefetch (พอดี)
+		CommitInterval: projectionCommitInterval(topic), // Product waits for broker acknowledgement
+		ReadBackoffMin: 500 * time.Millisecond,          // 500ms minimum backoff
+		ReadBackoffMax: 30 * time.Second,                // 30s max backoff
 
 		// Stable session settings for reliable operation
 		SessionTimeout:    30 * time.Second, // 30s session timeout (มาตรฐาน Kafka)
