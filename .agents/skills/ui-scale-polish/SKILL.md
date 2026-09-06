@@ -97,13 +97,29 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
      - **Radio/Checkbox Wrap**: ตัวเลือก radio และ checkbox ห่อแนวนอน (`flex flex-wrap gap-2`)
      - **จำกัดความสูงพรีวิวสื่อ**: บาร์โค้ด SVG, พรีวิวรูปภาพ, หรือกล่อง Media จำกัดความสูงเหมาะสม (เช่น บาร์โค้ด `max-h-16`) เพื่อไม่ให้ดันปุ่ม Save/Cancel หลุดขอบล่างของหน้าจอ
      - **Internal Scroll Only**: Modal หรือ Pane ของฟอร์มต้องกำหนดความสูงสูงสุดสัมพันธ์กับ viewport (`max-h-[85vh]` ถึง `[90vh]`) โดยส่วนหัว (Header) และปุ่มบันทึก (Footer) อยู่กับที่ และให้เลื่อนเฉพาะส่วนเนื้อหาฟอร์ม (`overflow-y-auto`) เท่านั้น
-    * **แบบแผน: ทางลัดส่วนตัวผู้ใช้ (Personalized Shortcuts) — เพิ่ม/ลบ/ย้าย (ตั้งโดยลุงจืด 2026-09-05; ปรับปรุง icon และ tactile UX 2026-09-06)**:
-      - **แยกตามตัวตนผู้ใช้ (Per-user Storage)**: บันทึกรายการ ID เมนูลง `localStorage` แยกคีย์ตาม user (`bc_user_shortcuts_v1:{backend}:{username}`)
-      - **Fail-closed ตามสิทธิ์**: กรองแสดงเฉพาะเมนูที่อยู่ใน `allowedMenuIds` เสมอ
-      - **ออกแบบปุ่มเพื่อคนไทย 40+**: จัดการลำดับด้วยปุ่มลูกศร `[▲ เลื่อนขึ้น]` และ `[▼ เลื่อนลง]` พร้อมปุ่ม `[ลบ]` ชัดเจน ไม่บังคับ Drag-and-Drop เพียงอย่างเดียว เพื่อความแม่นยำบนจอสัมผัสและเมาส์
-      - **ค้นหาภาษาไทยยืดหยุ่น**: ช่องค้นหาเมนูต้องใช้ `menuSearchMatches` ซึ่งตัดวรรณยุกต์/สระไทย (`normalizeMenuSearchText`) และค้นหาได้หลายภาษาพร้อมกัน
-      - **มีปุ่มรีเซ็ต**: มีปุ่ม "รีเซ็ตเป็นค่าเริ่มต้น" (Smart Fallback) ให้ผู้ใช้ย้อนกลับได้เสมอหากจัดลำดับพลาด
-      - **มี Icon ประจำเมนู (Visual Anchor & Playful Tactile UX — 2026-09-06)**: ปุ่มทางลัดทุกปุ่มต้องมีไอคอน (`MenuRouteIcon`) ใน badge มนกลม (`bg-primary/10 text-primary`) วางคู่กับข้อความไทยเสมอ เพื่อให้ผู้ใช้สแกนสายตาเจอทันทีโดยไม่ต้องอ่านทุกตัวอักษร, สไตล์การ์ดขอบมน `rounded-xl` ยกตัวเบาๆ เมื่อ hover (`hover:-translate-y-0.5`) มีเงาย้อมสี primary, และใน Modal จัดการทางลัดต้องแสดงไอคอนคู่กับทั้งเมนูแนะนำและรายการทางลัดปัจจุบัน (`frontend/src/app/menu/dashboard-home.tsx`)
+    * **แบบแผน: ทางลัดส่วนตัวผู้ใช้ (Personalized Shortcuts) — แยกจอเต็ม ไม่ใช้ Popup (ตั้งโดยลุงจืด 2026-09-05; ปรับปรุงจอเต็ม High Density 2026-09-06)**:
+      1) **แบบแผนใหม่ (New Standard Pattern)**:
+         - **แยกเป็นหน้าจอเต็ม (Dedicated Full Screen / Tab)**: เมื่อผู้ใช้กด "จัดการทางลัด" หรือ "+ เพิ่มทางลัด" ให้เปิดเป็นแท็บหน้าจอเต็ม `⭐ จัดการทางลัด` (`route: "/shortcuts"`) เพื่อใช้พื้นที่หน้าจอเดสก์ท็อปอย่างเต็มที่ ไม่ใช้ Modal Popup ขนาดเล็ก
+         - **โครงสร้าง Split View 2 คอลัมน์ (High Information Density)**:
+           * **ซ้าย: คลังเมนูทั้งหมด (Catalog Grid)**: กริดการ์ด 2-3 คอลัมน์ (`grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5`) แสดงไอคอน `MenuRouteIcon`, ชื่อไทยหนา, เส้นทาง route, สถานะ `✓ เพิ่มแล้ว` หรือปุ่ม `+ เพิ่มเป็นทางลัด`
+           * **ขวา: รายการทางลัดปัจจุบัน (Sticky Reorder Panel)**: ตรึงสายตาด้านขวา (`sticky top-3`) แสดงลำดับ `1..N`, ไอคอน, ปุ่มเลื่อน `[▲]` `[▼]` (พร้อม tooltip/aria-label) และปุ่ม `[ลบออก]`, พร้อมข้อความยืนยันการบันทึกอัตโนมัติ
+           * **บน: แถบจำลองผลจริง (Live Preview Strip)**: แสดงตัวอย่างปุ่มทางลัดแบบ Real-time ตามที่ผู้ใช้ปรับแต่งทันที
+         - **ตัวกรองหมวดหมู่และค้นหาด่วน**:
+           * แถบปุ่มกรองหมวดหมู่งานแนวนอน (Horizontal Pills): ทั้งหมด, งานประจำ (ซื้อ/ขาย/คลัง), ข้อมูลหลัก (สินค้า/คู่ค้า), รายงาน, การเงินและบัญชี, ตั้งค่าระบบ พร้อมตัวเลข badge แสดงจำนวนเมนูในหมวดนั้น
+           * ช่องค้นหาด่วนใช้คลาส `!pl-10 !pr-10 [&::-webkit-search-cancel-button]:appearance-none` เพื่อหลบ icon ซ้าย และซ่อนปุ่ม cancel ซ้ำซ้อนของเบราว์เซอร์
+           * ตัวเลือกกรอง `[ ] แสดงเฉพาะเมนูที่ยังไม่ได้เพิ่มเข้าทางลัด` (Checkbox toggle)
+         - **การซิงก์ข้อมูลข้ามแท็บแบบ Real-time**: บันทึกลง `localStorage` และยิง Custom Event `window.dispatchEvent(new CustomEvent("bc_shortcuts_updated"))` เพื่อให้หน้าภาพรวม (Dashboard Home) อัปเดตรายการทันทีโดยไม่ต้องรีโหลดหน้าเว็บ
+      2) **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
+         - **ห้ามใช้ Modal Popup (`role="dialog"`) กับการจัดการคลังเมนูขนาดใหญ่**: พื้นที่ Popup ที่ถูกจำกัดความกว้าง/ความสูงทำให้แสดงผลได้ทีละไม่กี่เมนู ผู้ใช้ 40+ มองภาพรวมยากและต้องเลื่อน scroll ซ้ำซ้อน
+         - **ห้ามลืมซ่อน native cancel button**: ใน `input[type="search"]` หากมีปุ่ม clear `[✕]` แบบ custom ต้องใส่ `[&::-webkit-search-cancel-button]:appearance-none` เสมอ เพื่อป้องกัน icon กากบาทซ้อนกัน 2 ตัว
+         - **ห้ามบังคับ Drag-and-Drop เพียงอย่างเดียว**: ต้องมีปุ่มลูกศร `[▲]` และ `[▼]` ขนาดสัมผัสชัดเจน ($\ge 30\text{px}$) สำหรับผู้ใช้จอสัมผัสและเมาส์
+      3) **เหตุผลทางเทคนิค (Root Cause & Rationale)**:
+         - **High Information Density บนจอกว้าง**: พนักงานบัญชีและเจ้าของกิจการต้องการเห็นตัวเลือกทั้งหมดในพริบตา การแยกเป็นหน้าจอเต็มทำให้สามารถสแกนเมนูเป็นร้อยรายการและค้นหาได้เร็วกว่า Popup หลายเท่า
+         - **Zero Context Loss**: การเปิดเป็นแท็บในระบบ ช่วยให้ผู้ใช้สลับกลับไปดูหน้าภาพรวม หรือเปิดหน้าจออื่นคู่ขนานได้โดยที่สถานะการค้นหาหรือคลังเมนูไม่สูญหาย
+      4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
+         - หน้าจอจัดการทางลัดเต็มจอ: [`frontend/src/app/menu/manage-shortcuts-screen.tsx`](frontend/src/app/menu/manage-shortcuts-screen.tsx)
+         - การเชื่อมแท็บและ Route `/shortcuts`: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx#L683-L702) และ [`WorkTabPanel`](frontend/src/app/menu/main-menu-screen.tsx#L2540-L2555)
+         - หน้า Dashboard ภาพรวมที่ถอด Modal ออก: [`frontend/src/app/menu/dashboard-home.tsx`](frontend/src/app/menu/dashboard-home.tsx#L163-L175)
 
 ---
 

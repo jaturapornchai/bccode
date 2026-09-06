@@ -96,7 +96,7 @@ import {
   type MenuLabel,
   type MenuSection,
 } from "@/lib/menu-data";
-import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type MenuUsageMap } from "@/lib/menu-usage";
+import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type FrequentMenuEntry, type MenuUsageMap } from "@/lib/menu-usage";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import { authFetch, clearAuthSession, getAuthSession, logoutAuthSession } from "@/lib/client-auth-session";
 import { pushNotice } from "@/lib/toast";
@@ -120,6 +120,7 @@ import { ZoomControl } from "../zoom-control";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
 import { MenuDataTable } from "./menu-data-table";
 import { DashboardHome } from "./dashboard-home";
+import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
 import { deriveMainApiUrl } from "@/lib/backend-url";
 import { buildChartData, buildKpis, fetchErpMenuRows, type ErpMenuRow } from "./menu-dashboard-data";
 import { MenuKpiChart } from "./menu-kpi-chart";
@@ -680,6 +681,25 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
   function openMenuItemInNewTab(item: MenuItem) {
     openMenuItem(item, { forceNew: true });
+  }
+
+  function openManageShortcuts() {
+    const existingTab = tabs.find((tab) => tab.route === "/shortcuts");
+    if (existingTab) {
+      setActiveTabId(existingTab.id);
+      return;
+    }
+    const tabId = "manage-shortcuts";
+    setTabs((current) => [
+      ...current,
+      {
+        id: tabId,
+        title: language === "th" ? "จัดการทางลัด" : "Manage Shortcuts",
+        route: "/shortcuts",
+        closable: true,
+      },
+    ]);
+    setActiveTabId(tabId);
   }
 
   function openOverview() {
@@ -1272,11 +1292,18 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                           allMenuItems={allMenuItems}
                           frequentMenuEntries={frequentMenuEntries}
                           onOpenItem={(item) => openMenuItem(item)}
+                          onOpenManageShortcuts={openManageShortcuts}
                         />
                       ) : (
                         <WorkTabPanel
                           active={tab.id === activeTabId}
                           activeTab={tab}
+                          auth={auth}
+                          allowedMenuIds={allowedMenuIds}
+                          allMenuItems={allMenuItems}
+                          frequentMenuEntries={frequentMenuEntries}
+                          onOpenItem={(item) => openMenuItem(item)}
+                          onBackToHome={openOverview}
                           backendLanguage={backendLanguage}
                           language={language}
                           onOpenRoute={(route, productCode) => {
@@ -2456,10 +2483,22 @@ function OpenTabs({
                 tab.id === activeTabId ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background",
               )}
             >
-              {tab.item ? <MenuRouteIcon item={tab.item} size={13} /> : <HomeMenuIcon size={13} />}
+              {tab.item ? (
+                <MenuRouteIcon item={tab.item} size={13} />
+              ) : tab.route === "/shortcuts" ? (
+                <Star size={13} className="text-primary fill-primary/30" />
+              ) : (
+                <HomeMenuIcon size={13} />
+              )}
             </span>
             <b className="flex min-w-0 items-center gap-1 text-[12px] leading-[14px]">
-              <span className="truncate">{tab.item ? menuText(tab.item.label, language, backendLanguage) : mt(backendLanguage, "overviewErp")}</span>
+              <span className="truncate">
+                {tab.item
+                  ? menuText(tab.item.label, language, backendLanguage)
+                  : tab.route === "/shortcuts"
+                  ? (language === "th" ? "จัดการทางลัด" : "Manage Shortcuts")
+                  : mt(backendLanguage, "overviewErp")}
+              </span>
             </b>
             <small className={cn("truncate text-[10px] leading-3", tab.id === activeTabId ? "text-primary-foreground/80" : "text-muted-foreground")}>
               {tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}
@@ -2487,7 +2526,48 @@ function OpenTabs({
 }
 
 
-function WorkTabPanel({ active, activeTab, backendLanguage, language, onOpenRoute, tabCount }: { active: boolean; activeTab: WorkTab; backendLanguage: BackendLanguageDictionary; language: LanguageCode; onOpenRoute: (route: string, productCode?: string) => void; tabCount: number }) {
+function WorkTabPanel({
+  active,
+  activeTab,
+  auth,
+  allowedMenuIds,
+  allMenuItems,
+  frequentMenuEntries,
+  onOpenItem,
+  onBackToHome,
+  backendLanguage,
+  language,
+  onOpenRoute,
+  tabCount,
+}: {
+  active: boolean;
+  activeTab: WorkTab;
+  auth?: AuthSession | null;
+  allowedMenuIds?: Set<string>;
+  allMenuItems?: MenuItem[];
+  frequentMenuEntries?: FrequentMenuEntry[];
+  onOpenItem?: (item: MenuItem) => void;
+  onBackToHome?: () => void;
+  backendLanguage: BackendLanguageDictionary;
+  language: LanguageCode;
+  onOpenRoute: (route: string, productCode?: string) => void;
+  tabCount: number;
+}) {
+  if (activeTab.route === "/shortcuts") {
+    return (
+      <ManageShortcutsScreen
+        auth={auth ?? null}
+        language={language}
+        backendLanguage={backendLanguage}
+        allowedMenuIds={allowedMenuIds ?? new Set()}
+        allMenuItems={allMenuItems ?? []}
+        frequentMenuEntries={frequentMenuEntries ?? []}
+        onOpenItem={onOpenItem}
+        onBackToHome={onBackToHome}
+      />
+    );
+  }
+
   if (activeTab.route === "/currency") {
     return <CurrencyScreen embedded language={language} />;
   }
