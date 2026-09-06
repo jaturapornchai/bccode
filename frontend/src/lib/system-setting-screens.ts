@@ -1329,7 +1329,6 @@ function productMasterConfigs(): SystemSettingConfig[] {
       fields: [
         businessCodeField("unitcode", "รหัสหน่วยนับ", "Unit code", true),
         namesField("names", "ชื่อหน่วยนับ", "Unit names"),
-        companyMultiSelectField("businesscodes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
       ],
     },
     {

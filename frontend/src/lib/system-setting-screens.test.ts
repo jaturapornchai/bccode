@@ -3,11 +3,13 @@ import { THAI_ADDRESS_SUBKEYS } from "@/components/system-settings/types";
 import { getSystemSettingConfig } from "./system-setting-screens";
 
 describe("system setting screen configs", () => {
-  it("uses the immutable guidfixed field when deleting product units", () => {
+  it("uses the immutable guidfixed field when deleting product units and allows all companies", () => {
     const config = getSystemSettingConfig("productunit");
 
     expect(config?.basePath).toBe("/unit");
     expect(config?.idField).toBe("guidfixed");
+    expect(config?.fields.map((field) => field.key)).toEqual(["unitcode", "names"]);
+    expect(config?.fields.some((field) => field.key === "businesscodes")).toBe(false);
   });
 
   it("keeps branch settings aligned with the legacy Flutter branch model", () => {
