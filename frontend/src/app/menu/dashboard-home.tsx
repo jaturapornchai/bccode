@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { authFetch } from "@/lib/client-auth-session";
 import type { LanguageCode } from "@/lib/i18n";
 import { menuSearchMatches, menuText, type MenuItem } from "@/lib/menu-data";
+import { MenuRouteIcon } from "./menu-icon";
 import type { FrequentMenuEntry } from "@/lib/menu-usage";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
@@ -284,15 +285,20 @@ export function DashboardHome({
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           {shortcuts.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => onOpenItem(item)}
-              className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-primary hover:text-primary"
+              className="group inline-flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/[0.04] hover:shadow-md hover:shadow-primary/10 active:translate-y-0 active:scale-[0.98]"
             >
-              {menuText(item.label, language, backendLanguage)}
+              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <MenuRouteIcon item={item} size={15} />
+              </span>
+              <span className="truncate group-hover:text-primary transition-colors">
+                {menuText(item.label, language, backendLanguage)}
+              </span>
             </button>
           ))}
           <button
@@ -301,11 +307,13 @@ export function DashboardHome({
               setSearchQuery("");
               setIsManageOpen(true);
             }}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            className="group inline-flex items-center gap-2 rounded-xl border border-dashed border-border/90 bg-card/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.05] hover:text-primary hover:shadow-xs active:translate-y-0"
             title={t("เพิ่มหรือปรับแต่งทางลัด", "Add or customize shortcuts")}
           >
-            <Plus className="size-3.5" aria-hidden="true" />
-            {t("เพิ่มทางลัด", "Add shortcut")}
+            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-muted/60 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+              <Plus className="size-4" aria-hidden="true" />
+            </span>
+            <span>{t("เพิ่มทางลัด", "Add shortcut")}</span>
           </button>
         </div>
       </section>
@@ -386,11 +394,16 @@ export function DashboardHome({
                       {availableCandidates.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs shadow-xs"
+                          className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs shadow-xs transition-colors hover:border-primary/40 hover:bg-muted/20"
                         >
-                          <span className="truncate font-medium text-foreground">
-                            {menuText(item.label, language, backendLanguage)}
-                          </span>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="grid size-6.5 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                              <MenuRouteIcon item={item} size={14} />
+                            </span>
+                            <span className="truncate font-medium text-foreground">
+                              {menuText(item.label, language, backendLanguage)}
+                            </span>
+                          </div>
                           <button
                             type="button"
                             onClick={() => handleAddShortcut(item.id)}
@@ -434,6 +447,9 @@ export function DashboardHome({
                           <div className="flex min-w-0 items-center gap-2.5">
                             <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-bold text-primary">
                               {index + 1}
+                            </span>
+                            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                              <MenuRouteIcon item={item} size={15} />
                             </span>
                             <span className="truncate font-medium text-foreground">
                               {menuText(item.label, language, backendLanguage)}
