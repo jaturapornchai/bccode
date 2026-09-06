@@ -8425,3 +8425,61 @@ section[role="dialog"] strong {
   padding-bottom: 5px !important;
   height: 32px !important;
 }
+
+/* ===== Data List Single-line & Baseline Alignment (2026-09-06: แก้ icon ตกบรรทัด + คุม baseline) =====
+   Problem: .bc-list-header and .bc-list-row had flex-wrap: wrap which caused action buttons
+   and 'จัดการ' to wrap onto a 2nd line when width is constrained, pushing icons to the bottom.
+   Fix: Enforce single-line nowrap, link min-height and padding directly to --baseline rhythm,
+   and align actions to the vertical center/baseline.
+*/
+.bc-list-header:not(.grid) {
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  min-height: calc(var(--baseline) * 8) !important; /* 32px @16 */
+  gap: calc(var(--baseline) * 1.5) !important; /* 6px */
+  padding-top: calc(var(--baseline) * 1) !important; /* 4px */
+  padding-bottom: calc(var(--baseline) * 1) !important; /* 4px */
+}
+
+.bc-list-row:not(.grid) {
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  min-height: calc(var(--baseline) * 9) !important; /* 36px @16 */
+  gap: calc(var(--baseline) * 1.5) !important; /* 6px */
+  padding-top: calc(var(--baseline) * 1) !important; /* 4px */
+  padding-bottom: calc(var(--baseline) * 1) !important; /* 4px */
+}
+
+.bc-list-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  gap: calc(var(--baseline) * 1) !important; /* 4px */
+}
+
+.bc-list-actions button {
+  height: calc(var(--baseline) * 7) !important; /* 28px @16 */
+  width: calc(var(--baseline) * 7) !important; /* 28px @16 */
+  min-height: calc(var(--baseline) * 7) !important;
+  max-height: calc(var(--baseline) * 7) !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.bc-list-actions button svg {
+  width: calc(var(--baseline) * 3.5) !important; /* 14px */
+  height: calc(var(--baseline) * 3.5) !important; /* 14px */
+  flex-shrink: 0 !important;
+}
+.bc-list-header:not(.grid) span:not(.bc-list-actions),
+.bc-list-row:not(.grid) span:not(.bc-list-actions),
+.bc-list-row:not(.grid) b,
+.bc-list-row:not(.grid) .bc-cell-text {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}

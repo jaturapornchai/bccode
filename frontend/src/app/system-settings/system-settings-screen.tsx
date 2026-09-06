@@ -3479,13 +3479,14 @@ function SettingDataList({
             <div className="bc-list-header">
               {columns.map((column) => (
                 <span
-                  className={cn("min-w-0 break-words", column.className)}
+                  className={cn("min-w-0 truncate select-none", column.className)}
                   key={column.key}
+                  title={column.label}
                 >
                   {column.label}
                 </span>
               ))}
-              <span className="basis-24 grow text-right">
+              <span className="bc-list-actions w-16 sm:w-20 shrink-0 text-right pr-1 select-none text-xs font-semibold">
                 {language === "th" ? "จัดการ" : "Actions"}
               </span>
             </div>
@@ -3545,7 +3546,7 @@ function SettingDataList({
                 >
                   {columns.map((column, columnIndex) => (
                     <span
-                      className={cn("min-w-0 break-words", column.className)}
+                      className={cn("min-w-0 truncate", column.className)}
                       key={column.key}
                     >
                       {column.render(record, {
@@ -3557,14 +3558,15 @@ function SettingDataList({
                     </span>
                   ))}
                   <span
-                    className="flex min-w-0 basis-24 grow flex-wrap justify-end gap-1"
+                    className="bc-list-actions w-16 sm:w-20 shrink-0 ml-auto flex items-center justify-end gap-1"
+                    onClick={(event) => event.stopPropagation()}
                   >
                     {config.editable !== false && actions.update ? (
                       <Button
                         type="button"
                         size="icon"
                         variant="outline"
-                        className="size-7 rounded-lg bg-background text-primary border-primary/30 hover:bg-primary/10"
+                        className="size-7 rounded-md bg-background/80 text-primary border-primary/30 hover:bg-primary/15 hover:border-primary/50 shadow-none transition-colors shrink-0"
                         onClick={(event) => {
                           event.stopPropagation();
                           onEdit(record);
@@ -3576,7 +3578,7 @@ function SettingDataList({
                         aria-label={text("edit")}
                         title={text("edit")}
                       >
-                        <Pencil className="size-3.5" />
+                        <Pencil className="size-3.5 shrink-0" />
                       </Button>
                     ) : null}
                     {passwordResetLinkAvailable &&
@@ -3587,7 +3589,7 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
-                        className="size-7 rounded-lg bg-background text-primary hover:bg-primary/10 border-border"
+                        className="size-7 rounded-md bg-background/80 text-primary hover:bg-primary/15 border-border shadow-none transition-colors shrink-0"
                         onClick={(event) => {
                           event.stopPropagation();
                           onResetPassword(record);
@@ -3596,7 +3598,7 @@ function SettingDataList({
                         aria-label={text("resetPassword")}
                         title={text("resetPassword")}
                       >
-                        <KeyRound className="size-3.5" />
+                        <KeyRound className="size-3.5 shrink-0" />
                       </Button>
                     ) : null}
                     {config.kind === "company" ||
@@ -3606,7 +3608,7 @@ function SettingDataList({
                         type="button"
                         size="icon"
                         variant="outline"
-                        className="size-7 rounded-lg bg-background text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30"
+                        className="size-7 rounded-md bg-background/80 text-red-600 border-red-200/70 hover:bg-red-50 hover:border-red-300 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/40 shadow-none transition-colors shrink-0"
                         onClick={(event) => {
                           event.stopPropagation();
                           onDelete(record);
@@ -3615,7 +3617,7 @@ function SettingDataList({
                         aria-label={text("delete")}
                         title={text("delete")}
                       >
-                        <Trash2 className="size-3.5" />
+                        <Trash2 className="size-3.5 shrink-0" />
                       </Button>
                     )}
                   </span>
@@ -3811,7 +3813,7 @@ function CompanyMultiSelectCell({
   }, [auth, selectedGuids.length]);
 
   if (selectedGuids.length === 0)
-    return <span className="italic text-muted-foreground">{language === "th" ? "ทุกบริษัท" : "All companies"}</span>;
+    return <span className="italic text-muted-foreground truncate block">{language === "th" ? "ทุกบริษัท" : "All companies"}</span>;
 
   const names = selectedGuids.map((guid) => {
     const match = options.find((opt) => opt.guidfixed === guid);
@@ -3822,10 +3824,10 @@ function CompanyMultiSelectCell({
   }).filter(Boolean);
 
   if (names.length === 0) {
-    return <span>{selectedGuids.length} บริษัท</span>;
+    return <span className="truncate block">{selectedGuids.length} บริษัท</span>;
   }
 
-  return <span title={names.join(", ")}>{names.join(", ")}</span>;
+  return <span className="truncate block" title={names.join(", ")}>{names.join(", ")}</span>;
 }
 
 function settingListColumns(
@@ -3841,7 +3843,7 @@ function settingListColumns(
       {
         key: "username",
         label: language === "th" ? "ชื่อ-นามสกุล" : "Full name",
-        className: "basis-40 grow-[2] min-w-[140px] shrink-0",
+        className: "basis-40 grow-[2] min-w-[110px]",
         render: (record, meta) => {
           const loginCode = stringValue(record.username ?? record.email ?? meta.id);
           const emailValue = stringValue(record.email);
@@ -3898,7 +3900,7 @@ function settingListColumns(
       {
         key: "role",
         label: language === "th" ? "สิทธิ์" : "Role",
-        className: "basis-24 grow min-w-[95px] shrink-0 hidden md:inline-flex",
+        className: "basis-24 grow min-w-[70px] hidden md:inline-flex",
         render: (record) => (
           <span
             className="block truncate"
@@ -3917,7 +3919,7 @@ function settingListColumns(
       {
         key: "status",
         label: language === "th" ? "สถานะ" : "Status",
-        className: "basis-24 grow min-w-[95px] shrink-0 hidden lg:inline-flex",
+        className: "basis-24 grow min-w-[70px] hidden lg:inline-flex",
         render: (_record, meta) => (
           <Badge
             variant={meta.accessDisabled ? "warning" : "success"}
@@ -3937,7 +3939,7 @@ function settingListColumns(
       {
         key: "code",
         label: language === "th" ? "รหัสพนักงาน" : "Employee code",
-        className: "basis-36 grow-[2] min-w-[120px] shrink-0",
+        className: "basis-36 grow-[1.5] min-w-[90px]",
         render: (record, meta) => {
           const code = stringValue(record.code ?? meta.id);
           const avatarUri =
@@ -3966,7 +3968,7 @@ function settingListColumns(
       {
         key: "name",
         label: language === "th" ? "ชื่อพนักงาน" : "Employee name",
-        className: "basis-28 grow min-w-[100px] shrink-0",
+        className: "basis-28 grow min-w-[80px]",
         render: (record) => (
           <span
             className="block truncate"
@@ -3979,7 +3981,7 @@ function settingListColumns(
       {
         key: "email",
         label: language === "th" ? "อีเมล" : "Email",
-        className: "basis-28 grow min-w-[120px] shrink-0 hidden xl:inline-flex",
+        className: "basis-28 grow min-w-[80px] hidden xl:inline-flex",
         render: (record) => (
           <span className="block truncate" title={stringValue(record.email)}>
             {stringValue(record.email) || "-"}
@@ -3989,7 +3991,7 @@ function settingListColumns(
       {
         key: "status",
         label: language === "th" ? "สถานะ" : "Status",
-        className: "basis-24 grow min-w-[90px] shrink-0 hidden sm:inline-flex",
+        className: "basis-24 grow min-w-[70px] hidden sm:inline-flex",
         render: (record) => (
           <Badge
             variant={isActiveRecord(record) ? "success" : "warning"}
@@ -4011,7 +4013,7 @@ function settingListColumns(
       {
         key: "employeename",
         label: language === "th" ? "ผู้ใช้งาน" : "User",
-        className: "basis-40 grow-[2] min-w-[140px] shrink-0",
+        className: "basis-40 grow-[2] min-w-[110px]",
         render: (record, meta) => {
           const code = stringValue(
             record.employeecode ?? record.username ?? meta.id,
@@ -4050,7 +4052,7 @@ function settingListColumns(
       {
         key: "groupcode",
         label: language === "th" ? "กลุ่มสิทธิ์" : "Permission group",
-        className: "basis-28 grow min-w-[100px] shrink-0 hidden sm:inline-flex",
+        className: "basis-28 grow min-w-[80px] hidden sm:inline-flex",
         render: (record) => (
           <span
             className="block break-words"
@@ -4085,13 +4087,13 @@ function settingListColumns(
   return fields.map((field, columnIndex) => {
     let className = "";
     if (columnIndex === 0) {
-      className = "basis-36 grow-[2] min-w-[120px] shrink-0";
+      className = "basis-28 grow-[1.2] min-w-[64px]";
     } else if (columnIndex === 1) {
-      className = "basis-24 grow min-w-[100px] shrink-0 hidden sm:inline-flex";
+      className = "basis-36 grow-[2] min-w-[80px]";
     } else if (columnIndex === 2) {
-      className = "basis-24 grow min-w-[100px] shrink-0 hidden md:inline-flex";
+      className = "basis-28 grow min-w-[70px] hidden md:inline-flex";
     } else {
-      className = "basis-24 grow min-w-[100px] shrink-0 hidden lg:inline-flex";
+      className = "basis-24 grow min-w-[60px] hidden lg:inline-flex";
     }
     return {
       key: field.key,
@@ -4110,7 +4112,7 @@ function settingListColumns(
         }
         const displayVal = fieldDisplayValue(field, val, language);
         return (
-          <span className="block break-words" title={String(displayVal)}>
+          <span className="block truncate" title={String(displayVal)}>
             {displayVal}
           </span>
         );

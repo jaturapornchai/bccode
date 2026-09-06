@@ -97,6 +97,33 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
      - **Radio/Checkbox Wrap**: ตัวเลือก radio และ checkbox ห่อแนวนอน (`flex flex-wrap gap-2`)
      - **จำกัดความสูงพรีวิวสื่อ**: บาร์โค้ด SVG, พรีวิวรูปภาพ, หรือกล่อง Media จำกัดความสูงเหมาะสม (เช่น บาร์โค้ด `max-h-16`) เพื่อไม่ให้ดันปุ่ม Save/Cancel หลุดขอบล่างของหน้าจอ
      - **Internal Scroll Only**: Modal หรือ Pane ของฟอร์มต้องกำหนดความสูงสูงสุดสัมพันธ์กับ viewport (`max-h-[85vh]` ถึง `[90vh]`) โดยส่วนหัว (Header) และปุ่มบันทึก (Footer) อยู่กับที่ และให้เลื่อนเฉพาะส่วนเนื้อหาฟอร์ม (`overflow-y-auto`) เท่านั้น
+     * **แบบแผน: ตารางรายการข้อมูล Master Data — Single-line Baseline Rhythm & Pinned Actions (แก้ปัญหา Icon ตกบรรทัด — ตั้งโดยลุงจืด 2026-09-06)**:
+       1) **แบบแผนใหม่ (New Standard Pattern)**:
+          - **บังคับ Single-line แถวเดียว ไม่ตกบรรทัด (`flex-nowrap items-center`)**: แถวข้อมูล `.bc-list-row` และหัวตาราง `.bc-list-header` ต้องใช้ `flex-nowrap items-center` หรือ CSS Grid คุมตายตัว ห้ามแถวตารางข้อมูลตกบรรทัดเด็ดขาด
+          - **Baseline Rhythm Alignment**: ควบคุมความสูงแถวและช่องไฟด้วย `--baseline: 0.25rem` (หน่วยกริด 4px)
+            * หัวตาราง: `min-height: calc(var(--baseline) * 8)` (32px), `padding: 4px 8px`, `gap: 6px`
+            * แถวข้อมูลมาตรฐาน: `min-height: calc(var(--baseline) * 9)` (36px), `padding: 4px 8px`, `gap: 6px` (หรือ 28–32px ในโหมด Compact)
+            * ปุ่ม Action ในแถว: ขนาดมาตรฐาน `size-7` (28px), icon `size-3.5` (14px), อยู่กึ่งกลางความสูง 36px พอดีอย่างสมดุล (บน-ล่างเหลือ 4px พอดี) ขนานกับเส้นฐานของข้อความในแถว 100%
+          - **ตรึงคอลัมน์ปุ่มจัดการขวาสุดเสมอ (Pinned Right Actions)**:
+            * คลาส `.bc-list-actions`: `shrink-0 ml-auto w-16 sm:w-20 flex items-center justify-end gap-1`
+            * หัวตารางคอลัมน์ "จัดการ" และปุ่ม Action แถวข้อมูลต้องใช้ความกว้างเท่ากัน (`w-16 sm:w-20 shrink-0 text-right`) เพื่อให้ตรงแนวกันแบบ Pixel-perfect
+          - **Responsive Fluid Columns & Ellipsis Truncation**:
+            * คอลัมน์รหัส (Code): ใช้ `basis-28 grow-[1.2] min-w-[64px]` (ตัวหนา / Badge กะทัดรัด)
+            * คอลัมน์ชื่อ (Name): ใช้ `basis-36 grow-[2] min-w-[80px]` ยืดหยุ่นรับพื้นที่ส่วนใหญ่
+            * คอลัมน์รอง (เช่น สิทธิ์บริษัท/สถานะ): ใช้ `hidden md:inline-flex` หรือ `hidden lg:inline-flex` เพื่อหลบให้คอลัมน์หลักเมื่อหน้าจอหรือ Split Pane แคบ และขยายตัวเมื่อผู้ใช้ลากแบ่ง Pane กว้างขึ้น
+            * ทุกเซลล์ข้อความใช้ `.bc-cell-text` หรือคลาส truncation พร้อมใส่ `title={value}` เพื่อให้อ่านข้อความเต็มผ่าน hover tooltip ได้เสมอ
+       2) **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
+          - **ห้ามใส่ `flex-wrap: wrap` บน `.bc-list-header` หรือ `.bc-list-row`เด็ดขาด**: เมื่อพื้นที่แนวนอนจำกัด (เช่น Master-Detail Split Pane กว้าง 30% หรือ ~300px) คอลัมน์สุดท้ายจะถูกบีบให้ตกบรรทัดไปอยู่ชั้นที่ 2 ด้านล่างขวา ทำให้ icon โดนผลักไปก้นช่อง และความสูงแถวบวมขึ้นเป็น 2 เท่า (~64px) เสียพื้นที่โดยเปล่าประโยชน์
+          - **ห้ามล็อก `shrink-0` บนทุกคอลัมน์พร้อมกัน**: การล็อก `shrink-0` กับ `min-w-[100px]+` หลายๆ คอลัมน์จะทำให้ความกว้างรวมล้น Container เสมอ
+          - **กับดัก `.truncate` ใน `globals.css:27-31`**: ในโปรเจกต์นี้มีกฎ `.truncate { white-space: normal !important; }` บังคับไว้เพื่อไม่ให้ข้อความทั่วไปซ่อนหลัง `...` ดังนั้นในตารางข้อมูลที่ต้องการตัดคำบรรทัดเดียว **ต้องใช้คลาส `.bc-cell-text` หรือกฎ `.bc-list-row span { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }` เท่านั้น**
+       3) **เหตุผลทางเทคนิค (Root Cause & Rationale)**:
+          - **High Information Density & Visual Rhythm**: ผู้ใช้ 40+ และนักบัญชีต้องการสแกนข้อมูลจำนวนมากอย่างเป็นระเบียบ การที่ปุ่ม Action ตกไปอยู่บรรทัดที่สองทำให้ตารางดูเบี้ยวและสายตากระโดด การจัดเป็นบรรทัดเดียวทำให้สแกนได้เร็วและแสดงผลได้หลายสิบรายการพร้อมกัน
+          - **Mathematical Balance**: การคุมขนาดด้วย `--baseline` rhythm (ปุ่ม 28px ในแถว 36px พร้อม padding 4px) ทำให้จุดศูนย์กลางของ Icon ตรงกับจุดกึ่งกลางของฟอนต์ภาษาไทยขนาด 15–18px อย่างแม่นยำ ไม่เอียง ไม่จม
+       4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
+          - Global CSS Single-line & Baseline overrides: [`frontend/src/app/globals.css`](frontend/src/app/globals.css#L8430-L8475)
+          - Header & Row implementation: [`frontend/src/app/system-settings/system-settings-screen.tsx`](frontend/src/app/system-settings/system-settings-screen.tsx#L3479-L3625)
+          - Proportional column scaling & truncation: [`frontend/src/app/system-settings/system-settings-screen.tsx`](frontend/src/app/system-settings/system-settings-screen.tsx#L4085-L4120)
+
     * **แบบแผน: ทางลัดส่วนตัวผู้ใช้ (Personalized Shortcuts) — แยกจอเต็ม ไม่ใช้ Popup (ตั้งโดยลุงจืด 2026-09-05; ปรับปรุงจอเต็ม High Density 2026-09-06)**:
       1) **แบบแผนใหม่ (New Standard Pattern)**:
          - **แยกเป็นหน้าจอเต็ม (Dedicated Full Screen / Tab)**: เมื่อผู้ใช้กด "จัดการทางลัด" หรือ "+ เพิ่มทางลัด" ให้เปิดเป็นแท็บหน้าจอเต็ม `⭐ จัดการทางลัด` (`route: "/shortcuts"`) เพื่อใช้พื้นที่หน้าจอเดสก์ท็อปอย่างเต็มที่ ไม่ใช้ Modal Popup ขนาดเล็ก
