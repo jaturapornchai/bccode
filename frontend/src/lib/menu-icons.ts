@@ -161,8 +161,6 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/masterclassscreen": "category",
   "/masterdesignscreen": "design",
   "/mastergradescreen": "badge",
-  "/mastergroupsubonescreen": "group",
-  "/mastergroupsubtwoscreen": "group",
   "/mastermodelscreen": "design",
   "/masterpatternscreen": "table",
   "/addproducttobranchscreen": "building",

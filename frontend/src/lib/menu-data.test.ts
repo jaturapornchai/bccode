@@ -175,8 +175,6 @@ describe("menu language labels", () => {
     expect(defaultGroupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
       "product-unit",
       "product-group",
-      "groupsubone",
-      "groupsubtwo",
       "product-category",
       "product-category-list",
     ]);
