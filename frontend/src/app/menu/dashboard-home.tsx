@@ -367,14 +367,14 @@ export function DashboardHome({
                   {t("ค้นหาและเพิ่มเมนูเข้าทางลัด", "Search and add menu to shortcuts")}
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                   <input
                     id="shortcut-search"
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t("พิมพ์ชื่อเมนูเพื่อค้นหา... (เช่น สินค้า, บาร์โค้ด, ขาย, ซื้อ)", "Type menu name... (e.g. Product, Barcode, Sale)")}
-                    className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="h-9 w-full rounded-lg border border-border bg-background !pl-10 !pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
