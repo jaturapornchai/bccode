@@ -7,7 +7,7 @@ Start every task at `AGENTS.md`. Business-rule documentation in `docs/` was remo
 - Organization and tenant isolation: `backend/internal/organization/**`, `backend/internal/shop/**`, and the exact workspace/company Frontend path.
 - Login, User, Membership, and permissions: `backend/internal/authentication/**`, `backend/internal/shop/**`, and the exact login/user-management Frontend path.
 - Infrastructure, databases, Kafka topology, cache, and object storage: `backend/README.md`, `deploy/account/**`, and the exact configuration, producer/consumer, storage, or integration path.
-- MongoDB model and technical-workflow alignment: live MongoModel MCP project `BC Ai Account`; use `.agents/skills/audit-mongomodel-sync/SKILL.md` only for the audit procedure, then inspect the exact source/tests/runtime path.
+- MongoDB model and technical-workflow alignment: live MongoModel MCP project `BC Ai Account`; use `docs/skills/audit-mongomodel-sync/SKILL.md` only for the audit procedure, then inspect the exact source/tests/runtime path.
 - Product, Barcode, Unit, and media: `backend/internal/product/**`, Product/Barcode handlers, and the exact Product/Barcode Frontend path.
 - Sales, purchase, and stock documents: the matching `backend/internal/transaction/**` parser/service and Kafka handler.
 - Inventory costing and stock movement: `backend/internal/goapi/process/process-stock/**`, relevant Kafka handlers, stock-process code, migrations, and focused reconciliation tests.

@@ -2,12 +2,19 @@
 
 For every task under `D:\bccode`:
 
-1. `docs/` was removed 2026-09-03 (ลุงจืด: ออกแบบใหม่) — no business-rule Source of Truth exists yet; treat requirement questions as ห้ามเดา and ask.
-2. (reserved for the new docs entrypoint)
+1. Business-rule Source of Truth ยังไม่มี (`docs/` เดิมถูกลบ 2026-09-03 และกำลังสร้างใหม่) — requirement ที่ไม่ชัด = ห้ามเดา ต้องถาม.
+2. ฐานความรู้ใหม่อยู่ที่ `docs/kms/` (เริ่มที่ `docs/kms/README.md`) และ skill ส่วนตัวของลุงจืดอยู่ที่ `docs/skills/` — อ่านสองที่นี้ก่อนลงมือ (กฎด้านล่าง).
 3. Use `D:\bccode\AI_INDEX.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
 
-This file is only a routing entrypoint. Source-of-truth boundaries will be defined by the new docs (pending).
+This file is only a routing entrypoint. Source-of-truth boundaries will be defined by the new docs under `docs/kms/` (in progress).
+
+## กฎ: skill ส่วนตัวอยู่ที่ `docs/skills/` และฐานความรู้อยู่ที่ `docs/kms/` (ตั้งโดยลุงจืด 2026-09-07)
+
+1. **skill ส่วนตัวของลุงจืดทุกตัวเก็บใน `docs/skills/<name>/SKILL.md`** (ย้ายจาก `.agents/skills/` แล้ว 2026-09-07) — ห้ามสร้าง/คัดลอกไปที่ `.agents/skills/`, `.claude/skills/` หรือที่อื่น เพื่อให้ตรวจง่ายที่เดียว
+2. **ต้องใช้ skill จากที่นี่จริง ๆ** — ก่อนทำงานที่ skill ครอบคลุม (เช่น UI → `docs/skills/ui-scale-polish/SKILL.md`, MongoModel → `docs/skills/audit-mongomodel-sync/SKILL.md`) ให้เปิดอ่านไฟล์ล่าสุดจาก disk ทุกครั้ง **ห้ามใช้เวอร์ชันที่จำได้/cache** เพราะลุงจืดอาจแก้ด้วยมือ; ถ้า AI ตัวใดโหลด skill ผ่านกลไกอัตโนมัติจากที่อื่นได้ ก็ยังต้องยึดไฟล์ใน `docs/skills/` เป็นตัวจริง
+3. **บทเรียน/กับดัก/ความรู้ที่ต้องไม่ลืม → เขียนลง `docs/kms/`** (ไม่ใช่แค่ memory ส่วนตัวของ AI ตัวใดตัวหนึ่ง) เป็นไฟล์ Markdown หัวข้อละไฟล์ อ้าง `file:line` ของโค้ดจริง และเพิ่มบรรทัดใน `docs/kms/README.md`; docs ต้องตามโค้ด (code = truth) — ถ้าโค้ดเปลี่ยนให้แก้ docs ใน commit เดียวกัน
+4. commit ที่แก้ skill/kms ให้รวมไปกับ commit งานที่ทำให้เกิดการเปลี่ยนแปลงนั้น (เหมือนกฎ Mandatory Skill Upgrade ด้านล่าง)
 
 ## กฎ: ผู้ช่วยคิด = Kimi K3 + GLM (ตั้งโดยลุงจืด 2026-09-02; DeepSeek ถอดออก 2026-09-03)
 
@@ -45,7 +52,7 @@ This file is only a routing entrypoint. Source-of-truth boundaries will be defin
 7. **Popover/Dialog ห้ามโดนตัด** — อย่าใส่ `overflow: hidden` บน panel ที่มี popover ลูก (font/palette picker, dropdown); ถ้าต้อง clip effect ให้ clip ที่ shell ชั้นนอกสุด และเปิด popover ทุกตัวทดสอบหลังแก้ CSS ทุกครั้ง
 8. **ตรวจรับพรีเมี่ยมด้วย screenshot จริง** — ก่อนบอกเสร็จ: light+dark × 1600 / 1280 / 1024 / 768-portrait (iPad ขึ้นไปตาม [[viewport-target-ipad-up]]) + hover/focus/disabled/error state + ไม่มี console error; "น่าจะสวย" ไม่นับ
 9. **CSS แบบไม่ทำลายของเดิม** — skin pass ใหม่ = block เดียวต่อท้าย `globals.css` มี comment วันที่+เหตุผล, selector prefix `.login-shell`/`.workspace-page` ฯลฯ ให้ชนะ cascade, ไม่แตะ layout/type scale ที่ approve แล้ว, ค่าใช้ตัวแปรล้วน; แก้ไฟล์นี้ด้วย Node byte-preserving (EOL ผสม) ไม่ใช้ Edit tool
-10. **อัปเดต skill ทุกครั้ง (ตั้งโดยลุงจืด 2026-09-02)** — จบงาน UX/UI ใด ๆ (ใหม่/แก้/บทเรียน/กับดัก) ต้อง**สะท้อนกลับเข้า `.agents/skills/ui-scale-polish/SKILL.md`** เป็นหัวข้อใหม่ (แบบแผน + เหตุผล + วิธีตรวจ + ไฟล์/บรรทัด) และ **commit skill พร้อมงาน** — เพื่อให้ AI ตัวอื่น/เครื่องอื่นทำต่อแล้วได้ผลลัพธ์เหมือนกัน; ก่อนแตะ UI ต้องโหลด skill นี้ก่อนเสมอ ถ้ากฎใน AGENTS.md กับ skill ขัดกัน ให้ AGENTS.md ชนะแล้วแก้ skill ให้ตรง
+10. **อัปเดต skill ทุกครั้ง (ตั้งโดยลุงจืด 2026-09-02)** — จบงาน UX/UI ใด ๆ (ใหม่/แก้/บทเรียน/กับดัก) ต้อง**สะท้อนกลับเข้า `docs/skills/ui-scale-polish/SKILL.md`** เป็นหัวข้อใหม่ (แบบแผน + เหตุผล + วิธีตรวจ + ไฟล์/บรรทัด) และ **commit skill พร้อมงาน** — เพื่อให้ AI ตัวอื่น/เครื่องอื่นทำต่อแล้วได้ผลลัพธ์เหมือนกัน; ก่อนแตะ UI ต้องโหลด skill นี้ก่อนเสมอ ถ้ากฎใน AGENTS.md กับ skill ขัดกัน ให้ AGENTS.md ชนะแล้วแก้ skill ให้ตรง
 
 ตัวอย่างที่ผ่านมาตรฐาน: หน้า login + holding หลัง pass 2026-09-02 (block "Login premium pass 3" ท้าย `frontend/src/app/globals.css`)
 
@@ -55,7 +62,7 @@ This file is only a routing entrypoint. Source-of-truth boundaries will be defin
 ทุกการแก้ไขหรือสร้าง UX/UI ที่เป็นมาตรฐานกลางหรือใช้ทั้งระบบ (เช่น Icon ประจำปุ่ม, สไตล์ทางลัด, การหลบ Icon ใน Input ด้วย `!pl-10`, ความสูงปุ่ม, สี Palette, Density, การจัดวาง ฯลฯ):
 
 1. **ต้อง Upgrade Skill ทันที (Mandatory Skill Upgrade)**:
-   - ต้องสะท้อนการเปลี่ยนแปลงเข้าสู่ `.agents/skills/ui-scale-polish/SKILL.md` ทันทีเสมอ
+   - ต้องสะท้อนการเปลี่ยนแปลงเข้าสู่ `docs/skills/ui-scale-polish/SKILL.md` ทันทีเสมอ
    - ต้องระบุชัดเจนทั้ง 4 ส่วน:
      1) **แบบแผนใหม่ (New Standard Pattern)**: โค้ดตัวอย่าง คลาส CSS และคุณสมบัติที่ถูกต้อง
      2) **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**: รูปแบบเดิมที่ผิดพลาดหรือทำให้เกิดปัญหา
