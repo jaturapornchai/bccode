@@ -35,6 +35,9 @@
 | **02** | [`02-peak-account-in-depth.md`](02-peak-account-in-depth.md) | เจาะลึกคุณสมบัติ PEAK Account (PeakEngine): เอกสาร All-In-One, ต้นทุน FIFO อัตโนมัติ, PEAK Asset (คิดค่าเสื่อม), PEAK Tax, PEAK Board (BI) และ Open API & Webhook |
 | **03** | [`03-comparative-matrix.md`](03-comparative-matrix.md) | ตารางเปรียบเทียบคุณสมบัติต่อคุณสมบัติ (Feature-by-Feature Matrix) รวม 10 หมวดหมู่หลักแบบละเอียด |
 | **04** | [`04-bc-account-alignment-and-gaps.md`](04-bc-account-alignment-and-gaps.md) | แผนที่การประยุกต์ใช้กับ **BC Ai Account**: การผสานกับสถาปัตยกรรม 2-Tier (MongoDB Storage + PostgreSQL Processing Engine), จุดที่ BC เหนือกว่า และจุดที่ควรพัฒนาเสริม |
+| **05** | [`05-flowaccount-data-model.md`](05-flowaccount-data-model.md) | Data Model & Schema ของ FlowAccount: Entity-Relationship, JSON Payload, Master Data, Sales/Purchase, Banking, 5 Journals, Payroll |
+| **06** | [`06-peak-account-data-model.md`](06-peak-account-data-model.md) | Data Model & Schema ของ PEAK Account: ER Diagram, FIFO Cost Layers, AllInOne Transaction, PEAK Asset Register, Tags/Dimensions, Period Lock |
+| **07** | [`07-bc-account-2tier-data-model.md`](07-bc-account-2tier-data-model.md) | **BC Ai Account 2-Tier Architecture Blueprint**: MongoDB Lean Storage Layer + PostgreSQL Self-Contained Processing Engine (Zero Cross-DB Join), FIFO & GL DDL, CDC Pipeline |
 
 ---
 
