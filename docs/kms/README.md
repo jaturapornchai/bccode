@@ -71,6 +71,7 @@
 - [decisions/2026-09-06-pause-clickhouse-local.md](decisions/2026-09-06-pause-clickhouse-local.md)
 - [decisions/2026-09-07-consolidate-docs-for-multi-ai.md](decisions/2026-09-07-consolidate-docs-for-multi-ai.md)
 - [decisions/2026-09-07-on-demand-docs-context-efficiency.md](decisions/2026-09-07-on-demand-docs-context-efficiency.md)
+- [decisions/2026-09-07-speed-and-context-hygiene.md](decisions/2026-09-07-speed-and-context-hygiene.md)
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 16 ไฟล์ใน `bugs/`
 

@@ -95,3 +95,24 @@ This file is only a routing entrypoint. Source-of-truth boundaries will be defin
 2. **ไฟล์รูปเก็บใน S3/MinIO เท่านั้น** — ใช้ช่องทางอัปโหลดที่มีอยู่ (`POST /api/upload/image` → `/goapi/image/upload` → PutObject ลง bucket จาก env S3_*)
 3. **ต้องมี thumbnail เสมอ** — ทุกรูปต้องมีรูปย่อ (editor สร้างอัตโนมัติและอัปโหลดเป็นอีก object) — เก็บ uri ของ thumb ใน field `<field>thumb` คู่กับ field หลักเสมอ (เช่น `avatar`/`avatarthumb`, `profilepicture`/`profilepicturethumb`) และจอ list ต้องใช้ thumb เป็นตัวแสดงหลัก
 4. **ตอน UAT ตรวจตามกฎ UAT + Mongo** — ต้องยืนยันว่า Mongo เก็บแค่ URI, ไฟล์จริงอยู่ใน bucket (ตรวจผ่าน minio client/mc หรือ GET ผ่าน endpoint), และมี object thumbnail คู่กัน
+
+
+## กฎ: ความเร็วสูงสุด + ประหยัด Context และ Token (ตั้งโดยลุงจืด 2026-09-07)
+
+ทุก AI agent (Gemini, Claude, Codex) ต้องปฏิบัติตามกฎนี้อย่างเคร่งครัดเพื่อรักษาความเร็วและไม่เปลือง token:
+
+1. **Surgical Read (อ่านตรงจุด)**:
+   - ห้ามเปิดอ่านทั้งไฟล์ขนาดใหญ่ (>300 บรรทัด) โดยไม่จำเป็น; ให้ระบุเลขบรรทัด StartLine/EndLine เสมอ
+   - สำหรับไฟล์ขนาดยักษ์ (>1,000 บรรทัด เช่น `system-settings-screen.tsx`) ให้ดูตำแหน่งฟังก์ชันจาก `docs/reference/CODE-MAP.md` ก่อนเปิดอ่าน
+2. **Surgical Patch (แก้เฉพาะจุด)**:
+   - ใช้ targeted replace/patch แก้เฉพาะ block ที่จำเป็น ห้าม rewrite หรือ print ทั้งไฟล์ซ้ำ
+   - Token ขาออก (Output Token) แพงและช้ากว่าขาเข้า 3–5 เท่า — ยิ่งแก้ตรงจุด AI ยิ่งทำงานเร็ว
+3. **Command Output Hygiene (คุม Output ใน Terminal ไม่ให้บวม)**:
+   - **ห้ามรัน full test suite ทั้งระบบโดยไม่จำเป็น**: รันเฉพาะไฟล์เทสต์ที่เกี่ยวข้องตรง ๆ เช่น `npm test -- <path>.test.ts`
+   - **Git สรุปสั้น**: ใช้ `git status -s` และ `git diff --stat` เป็นหลัก
+   - **จำกัดบรรทัด**: คำสั่งที่อาจพ่น log เกิน 50 บรรทัด ต้องครอบด้วย filter หรือ head เสมอ (เช่น `| Select-Object -First 30` หรือ `| head -n 30`)
+4. **Context Isolation ด้วย Subagent**:
+   - งานสำรวจ/วิจัยที่ต้องเปิดอ่านไฟล์จำนวนมาก (>5 ไฟล์) หรือค้นหากว้างขวาง ให้ delegate ให้ Subagent (เช่น `research`) ทำใน sandbox แยก แล้วส่งกลับมาเฉพาะสรุปสั้น 5-10 บรรทัด เพื่อไม่ให้ context หลักบวม
+5. **Prompt Caching Discipline**:
+   - ไม่แก้ไขสลับไปมาใน system instructions / rules บ่อย เพื่อให้ backend ของโมเดลติด Prompt Cache สูงสุด (ประหยัด token 90% และตอบเร็วกว่าปกติ 2-4 เท่า)
+

@@ -28,3 +28,14 @@
 - [`handoff/`](handoff/) — รายงานส่งต่องานระหว่างเซสชัน
 - [`reference/`](reference/CODE-MAP.md) — แผนที่ระบุบรรทัดของไฟล์ขนาดยักษ์
 - [`runbooks/`](runbooks/RECOVERY-READINESS.md) — คู่มือเตรียมความพร้อมในการกู้คืนระบบ
+
+---
+
+## กฎเหล็ก: ความเร็วและสุขอนามัย Context (Speed & Context Hygiene)
+
+1. **Surgical Read**: อ่านไฟล์ด้วย StartLine/EndLine เจาะจงเสมอ, ไฟล์ขนาดยักษ์ดูตำแหน่งจาก [`reference/CODE-MAP.md`](reference/CODE-MAP.md)
+2. **Surgical Patch**: แก้ไขเฉพาะบล็อกที่เปลี่ยนด้วย targeted edit ห้าม rewrite ทั้งไฟล์
+3. **Command Output Hygiene**: รันเทสต์เฉพาะไฟล์ที่แตะ (`npm test -- <path>.test.ts`), ใช้ `git status -s`, คุม output ไม่ให้พ่น log ยาว
+4. **Context Isolation**: งานสำรวจกว้างขวางให้ใช้ Subagent แยกเพื่อไม่ให้ context หน้าต่างหลักบวม
+5. **Prompt Caching Friendly**: ไม่แก้ไขสลับไปมาในโครงสร้าง system config บ่อย เพื่อรักษา cache hit rate 90%
+
