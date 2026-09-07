@@ -38,6 +38,7 @@
 | **05** | [`05-flowaccount-data-model.md`](05-flowaccount-data-model.md) | Data Model & Schema ของ FlowAccount: Entity-Relationship, JSON Payload, Master Data, Sales/Purchase, Banking, 5 Journals, Payroll |
 | **06** | [`06-peak-account-data-model.md`](06-peak-account-data-model.md) | Data Model & Schema ของ PEAK Account: ER Diagram, FIFO Cost Layers, AllInOne Transaction, PEAK Asset Register, Tags/Dimensions, Period Lock |
 | **07** | [`07-bc-account-2tier-data-model.md`](07-bc-account-2tier-data-model.md) | **BC Ai Account 2-Tier Architecture Blueprint**: MongoDB Lean Storage Layer + PostgreSQL Self-Contained Processing Engine (Zero Cross-DB Join), FIFO & GL DDL, CDC Pipeline |
+| **08** | [`08-unified-flowpeak-specification.md`](08-unified-flowpeak-specification.md) | **FlowPEAK Unified Masterpiece Blueprint**: สเปกระบบและการผสมผสาน FlowAccount + PEAK Account เป็นระบบเดียว (UX ง่าย + AutoKey OCR + Payroll + FIFO Layers + ทะเบียนสินทรัพย์ + AllInOne + Double-Entry GL + Tags + DDL ครบวงจร) |
 
 ---
 
