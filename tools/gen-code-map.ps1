@@ -1,15 +1,15 @@
-# gen-code-map.ps1 - auto-generate CODE-MAP.md index of large source files.
+# gen-code-map.ps1 - auto-generate docs/reference/CODE-MAP.md index of large source files.
 # Indexes function, component, type, const-export, and section-comment names so
 # any agent can jump straight to the right line range instead of grep+re-read.
 #
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File D:\bccode\tools\gen-code-map.ps1
-# Output: D:\bccode\CODE-MAP.md
+# Output: D:\bccode\docs\reference\docs/reference/CODE-MAP.md
 $ErrorActionPreference = "Stop"
 
 $repoRoot = "D:\bccode"
 $frontendSrc = Join-Path $repoRoot "frontend\src"
 $backendRoot = Join-Path $repoRoot "backend"
-$outFile = Join-Path $repoRoot "CODE-MAP.md"
+$outFile = Join-Path $repoRoot "docs/reference/CODE-MAP.md"
 $lineThreshold = 1000  # only index files at or above this size
 
 # Patterns: line starts with one of these anchors. Capture leading indent + name.

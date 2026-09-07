@@ -1,6 +1,6 @@
 package handlers
 
-// ชั้นลงขาย (Product Listing API v2) — สัญญา: backend/architecture/product-listing-api-v2.md
+// ชั้นลงขาย (Product Listing API v2) — สัญญา: docs/kms/architecture/product-listing-api-v2.md
 // ไฟล์นี้รวม DTO / ค่าคงที่ / ข้อความภาษาไทย ที่ handler product_v2_*.go ใช้ร่วมกัน
 
 import (

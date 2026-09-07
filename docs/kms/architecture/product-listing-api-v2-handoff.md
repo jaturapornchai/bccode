@@ -15,7 +15,7 @@
 ## 1. สถานะ repo
 
 - branch `dev` · checkpoint ล่าสุดที่ push แล้ว = `5ee63a38` (ก่อนเริ่มเฟส 1)
-- **งานเฟส 1 ยังไม่ commit** (20 ไฟล์): แก้ `backend/internal/goapi/bootstrap.go`, `internal/product/product/models/product.go`, `internal/product/productbarcode/models/product_barcode.go`, `backend/architecture/product-listing-api-v2.md`; ไฟล์ใหม่ `internal/goapi/handlers/product_v2_*.go` (13 ไฟล์), `internal/product/product/models/product_listing.go` (+test), `internal/product/productbarcode/models/product_barcode_listing_test.go`
+- **งานเฟส 1 ยังไม่ commit** (20 ไฟล์): แก้ `backend/internal/goapi/bootstrap.go`, `internal/product/product/models/product.go`, `internal/product/productbarcode/models/product_barcode.go`, `docs/kms/architecture/product-listing-api-v2.md`; ไฟล์ใหม่ `internal/goapi/handlers/product_v2_*.go` (13 ไฟล์), `internal/product/product/models/product_listing.go` (+test), `internal/product/productbarcode/models/product_barcode_listing_test.go`
 - ถ้าต้องย้อน: `git stash` หรือ `git checkout 5ee63a38 -- <path>` (ไฟล์ใหม่ลบทิ้ง)
 
 ## 2. สิ่งที่ทำเสร็จแล้ว (เฟส 1)

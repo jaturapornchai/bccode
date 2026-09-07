@@ -68,7 +68,7 @@ Place each difference in exactly one group:
 1. **Docs decision needed** — a requirement in the scope owned by `docs/**` is missing, unclear, or conflicting. Follow `docs/README.md` for conflict and question handling.
 2. **BC implementation change** — source, tests, or runtime differ from the applicable Source of Truth identified through `docs/README.md`.
 3. **MongoModel content change** — live MongoModel does not represent an applicable confirmed requirement, or a confirmed Data Model/Technical Workflow change has not been recorded there.
-4. **MongoModel MCP product change** — the MCP/UI/tool behavior cannot represent, validate, retrieve, or safely update the required model. Follow the maintenance route in `D:\bccode\AI_INDEX.md`.
+4. **MongoModel MCP product change** — the MCP/UI/tool behavior cannot represent, validate, retrieve, or safely update the required model. Follow the maintenance route in `D:\bccode\docs\kms\00-source-router.md`.
 5. **Aligned** — no change is required for the inspected scope.
 
 Always include the MongoModel change section, even when the result is `ไม่มีรายการต้องปรับ`.

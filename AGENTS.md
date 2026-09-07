@@ -4,7 +4,7 @@ For every task under `D:\bccode`:
 
 1. Business-rule Source of Truth ยังไม่มี (`docs/` เดิมถูกลบ 2026-09-03 และกำลังสร้างใหม่) — requirement ที่ไม่ชัด = ห้ามเดา ต้องถาม.
 2. ฐานความรู้ใหม่อยู่ที่ `docs/kms/` (เริ่มที่ `docs/kms/README.md`) และ skill ส่วนตัวของลุงจืดอยู่ที่ `docs/skills/` — อ่านสองที่นี้ก่อนลงมือ (กฎด้านล่าง).
-3. Use `D:\bccode\AI_INDEX.md` only to locate implementation evidence.
+3. Use `D:\bccode\docs\kms\00-source-router.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
 
 This file is only a routing entrypoint. Source-of-truth boundaries will be defined by the new docs under `docs/kms/` (in progress).
