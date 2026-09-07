@@ -1,13 +1,16 @@
 # ข้อตกลงและการตัดสินใจของโปรเจ็กต์ (ที่ไม่ได้อยู่ในโค้ด)
 > ตรวจล่าสุด: 2026-09-07 (commit d93a210d) — กฎที่ "บังคับใช้" อยู่ใน `AGENTS.md` (ไฟล์นั้นชนะเสมอ); ไฟล์นี้เก็บ**ที่มา/วันที่/เหตุผล**และการตัดสินใจอื่นที่ AI ทุกตัวต้องรู้ตรงกัน; ADR ฉบับเต็มอยู่ใน `docs/kms/decisions/`
 
-## ลำดับการอ่านสำหรับ AI ทุกตัว
+## ลำดับการอ่านสำหรับ AI ทุกตัว (On-Demand ประหยัด Context)
 
-1. `AGENTS.md` (กฎบังคับ) ← `CLAUDE.md` import ไฟล์นี้
-2. `docs/kms/README.md` → บทความที่เกี่ยวกับงาน
-3. `docs/skills/<skill>/SKILL.md` ที่เกี่ยว (UI → `ui-scale-polish`, MongoModel → `audit-mongomodel-sync`) — **อ่านจาก disk ทุกครั้ง** ลุงจืดแก้ด้วยมือได้
-4. `docs/handoff/HANDOFF-*.md` ล่าสุด (สถานะงานค้าง)
-5. โค้ดจริง — โค้ดคือความจริง docs ตามโค้ด
+1. `AGENTS.md` (กฎบังคับหลัก)
+2. **โหลดเฉพาะเรื่องที่ต้องใช้จริง (On-Demand Loading เพื่อไม่เปลือง Context Window)**:
+   - งานทั่วไป / เล็กน้อย / แก้บั๊ก: ตรวจและแก้ที่โค้ดจริงโดยตรง (`code = truth`) ไม่ต้องเปิดอ่าน docs
+   - งาน UX/UI: อ่านเฉพาะ `docs/skills/ui-scale-polish/SKILL.md`
+   - งาน Schema / MongoModel: อ่านเฉพาะ `docs/skills/audit-mongomodel-sync/SKILL.md`
+   - งานสถาปัตยกรรม / โดเมนเฉพาะ: เปิดสารบัญ `docs/kms/README.md` แล้วเลือกอ่านเฉพาะ **1 บทความที่ตรงกับเรื่อง**
+   - สถานะงานค้าง / Handoff: เปิด `docs/handoff/HANDOFF-*.md` เฉพาะเมื่อลุงจืดสั่งหรือถามความเสี่ยง
+   - แผนที่ไฟล์ใหญ่: ดู `docs/reference/CODE-MAP.md` เฉพาะเมื่อต้องแตะไฟล์ขนาดยักษ์ (>1,000 บรรทัด)
 
 ## การตัดสินใจหลัก (เรียงตามวันที่)
 
@@ -33,6 +36,7 @@
 | 2026-09-05 | Product/Barcode/Unit ใช้ **transactional outbox** (`outboxevents`) + consumer แบบ ack-after-success + fences ใน PG; **ห้าม purge history ของ outbox** | แก้ Mongo/PG divergence จาก fire-and-forget |
 | 2026-09-06 | **พัก ClickHouse บนเครื่อง dev**; ถอดถาวรรอตัดสิน | ไม่มีบทบาทจริง กิน RAM 5 GB (ADR `decisions/2026-09-06-pause-clickhouse-local.md`) |
 | 2026-09-07 | **skill ส่วนตัวอยู่ที่ `docs/skills/`, ฐานความรู้อยู่ที่ `docs/kms/`, ทุกอย่างรวมใน `docs/`** เพื่อให้ AI หลายตัวเข้าใจตรงกัน | ลุงจืดใช้ AI หลายตัว; memory ส่วนตัวของ AI ตัวเดียวคนอื่นมองไม่เห็น |
+| 2026-09-07 | **ปรับการอ่าน docs เป็น On-Demand (Lazy Loading) ไม่เปลือง context** | ห้ามโหลดเอกสารทั้งโฟลเดอร์หรือ handoff ล่วงหน้า; เปิดอ่านเฉพาะไฟล์ที่ตรงกับงานจริงเพื่อประหยัด Context Window |
 
 ## คำถามที่ยังไม่มีคำตอบ (ห้ามเดา — ถามลุงจืด)
 

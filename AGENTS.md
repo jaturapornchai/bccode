@@ -3,7 +3,7 @@
 For every task under `D:\bccode`:
 
 1. Business-rule Source of Truth ยังไม่มี (`docs/` เดิมถูกลบ 2026-09-03 และกำลังสร้างใหม่) — requirement ที่ไม่ชัด = ห้ามเดา ต้องถาม.
-2. ฐานความรู้ใหม่อยู่ที่ `docs/kms/` (เริ่มที่ `docs/kms/README.md`) และ skill ส่วนตัวของลุงจืดอยู่ที่ `docs/skills/` — อ่านสองที่นี้ก่อนลงมือ (กฎด้านล่าง).
+2. **On-Demand Context Rule**: ฐานความรู้อยู่ที่ `docs/kms/` และ skill ส่วนตัวอยู่ที่ `docs/skills/` — **เปิดอ่านเฉพาะไฟล์ที่จำเป็นกับงานนั้นเท่านั้น (ดูผังเลือกอ่านใน `docs/README.md`)** ห้ามกวาดอ่านทั้งโฟลเดอร์ หรือเปิด handoff ล่วงหน้าโดยไม่จำเป็น เพื่อประหยัด Context Window ของ AI.
 3. Use `D:\bccode\docs\kms\00-source-router.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
 

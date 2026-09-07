@@ -3,9 +3,15 @@
 ที่เก็บความรู้ที่ "ต้องไม่ลืม" ของโปรเจ็กต์ — ใช้ร่วมกันโดยลุงจืดและ AI ทุกตัว (Claude / Codex / Gemini) เพื่อให้เข้าใจตรงกัน
 ตั้งโดยลุงจืด 2026-09-07 · กฎบังคับอยู่ใน `AGENTS.md` (ไฟล์นั้นชนะเสมอ) · skill ส่วนตัวอยู่ที่ `docs/skills/` · handoff ล่าสุดอยู่ที่ `docs/handoff/`
 
-## ลำดับการอ่าน
+## ลำดับการอ่าน (On-Demand: โหลดเฉพาะเมื่อจำเป็น ไม่เปลือง Context)
 
-1. `AGENTS.md` → 2. ไฟล์นี้ + บทความที่เกี่ยว → 3. `docs/skills/<skill>/SKILL.md` ที่เกี่ยว (อ่านจาก disk ทุกครั้ง) → 4. `docs/handoff/HANDOFF-*.md` ล่าสุด → 5. โค้ดจริง (โค้ด = ความจริง)
+> [!IMPORTANT]
+> **ห้ามอ่านเอกสารทั้งหมดพร้อมกันเด็ดขาด**: อ่านเฉพาะไฟล์ที่ตรงกับงานเพื่อประหยัด Context Window ของ AI
+> 1. **งานเล็ก / แก้บั๊ก 1 บรรทัด / คำถามทั่วไป** → ดูโค้ดจริงโดยตรง (`code = truth`) ไม่ต้องเปิด docs
+> 2. **งาน UX/UI** → อ่านเฉพาะ `docs/skills/ui-scale-polish/SKILL.md`
+> 3. **งาน Schema / MongoModel** → อ่านเฉพาะ `docs/skills/audit-mongomodel-sync/SKILL.md`
+> 4. **งานสถาปัตยกรรม / โดเมนเฉพาะเรื่อง** → ดูตารางสรุป 1 บรรทัดด้านล่าง แล้วเลือกเปิดเฉพาะ **1 บทความที่เกี่ยวข้อง**
+> 5. **Handoff (`docs/handoff/`)** → อ่านเฉพาะเมื่อลุงจืดถามสถานะงานค้าง/ความเสี่ยง หรือเริ่มงานสถาปัตยกรรมใหญ่ข้ามระบบ
 
 ## กติกา
 
@@ -64,6 +70,7 @@
 - [decisions/2026-09-04-product-form-core-vs-extension-menu.md](decisions/2026-09-04-product-form-core-vs-extension-menu.md)
 - [decisions/2026-09-06-pause-clickhouse-local.md](decisions/2026-09-06-pause-clickhouse-local.md)
 - [decisions/2026-09-07-consolidate-docs-for-multi-ai.md](decisions/2026-09-07-consolidate-docs-for-multi-ai.md)
+- [decisions/2026-09-07-on-demand-docs-context-efficiency.md](decisions/2026-09-07-on-demand-docs-context-efficiency.md)
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 16 ไฟล์ใน `bugs/`
 
