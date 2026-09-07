@@ -66,6 +66,9 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("purchase", "ซื้อสินค้า", "Purchase", "/transaction/purchase"),
           tx("purchase-return", "คืนซื้อ", "Purchase Return", "/transaction/purchasereturn"),
+          tx("purchase-debit-note", "ใบลดหนี้เจ้าหนี้", "Purchase Debit Note", "/transaction/purchasedebitnote"),
+          tx("expense-record", "บันทึกค่าใช้จ่าย", "Expense Record", "/transaction/expense"),
+          tx("withholding-tax-deduction", "ภาษีหัก ณ ที่จ่าย", "Withholding Tax", "/transaction/withholdingtax", "finance"),
           tx("purchase-partial", "รับสินค้าแบบทยอยรับ", "Gradual Receipt", "/transaction/purchasepartial"),
           tx("accrual-receive", "ตั้งหนี้จากทยอยรับ", "Set Debt from Receipt", "/transaction/accrualreceive"),
         ],
@@ -86,6 +89,12 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("quotation", "ใบเสนอราคา", "Quotation", "/transaction/quotation"),
           tx("sale-order", "ใบสั่งขาย", "Sale Order", "/transaction/saleorder"),
+          tx("billing-note", "ใบวางบิล", "Billing Note", "/transaction/billingnote"),
+          tx("sale-invoice", "ใบแจ้งหนี้", "Sale Invoice", "/transaction/saleinvoice"),
+          tx("tax-invoice", "ใบเสร็จรับเงิน/ใบกำกับภาษี", "Tax Invoice / Receipt", "/transaction/taxinvoice"),
+          tx("credit-note", "ใบลดหนี้", "Credit Note", "/transaction/creditnote"),
+          tx("debit-note", "ใบเพิ่มหนี้", "Debit Note", "/transaction/debitnote"),
+          tx("etax-invoice", "ใบกำกับภาษีอิเล็กทรอนิกส์", "e-Tax Invoice & e-Receipt", "/transaction/etax"),
           tx("receive-advance", "รับเงินล่วงหน้า", "Receive Advance", "/transaction/paidadvance", "finance"),
           tx("return-advance", "คืนเงินล่วงหน้า", "Return Advance", "/transaction/paidadvancerefund", "finance"),
           tx("receive-deposit", "รับเงินมัดจำ", "Receive Deposit", "/transaction/receivedeposit", "finance"),
@@ -103,6 +112,8 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("stock-pickup", "เบิกสินค้า", "Stock Pickup", "/transaction/stockpickupproduct"),
           tx("stock-return", "คืนสินค้าเข้าคลัง", "Stock Return", "/transaction/stockreturnproduct"),
           tx("stock-adjust", "ปรับปรุงสต็อก", "Stock Adjustment", "/transaction/adjust"),
+          tx("stock-count", "ตรวจนับสต็อก", "Stock Count", "/transaction/stockcount"),
+          tx("fifo-cost-layers", "ชั้นต้นทุนสต็อกเข้าก่อนออกก่อน", "FIFO Cost Layers", "/inventory/cost-layers"),
           tx("stock-balance", "ยอดยกมาสินค้า", "Stock Balance", "/transaction/stockbalance"),
         ],
       },
@@ -112,6 +123,8 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("paid", "รับชำระ", "Receive Payment", "/transaction/paid", "finance"),
           tx("pay", "จ่ายชำระ", "Pay", "/transaction/pay", "finance"),
+          tx("bank-statement", "รายการเดินบัญชีธนาคาร", "Bank Statement", "/banking/statements", "finance"),
+          tx("bank-reconcile", "กระทบยอดเงินฝากธนาคาร", "Bank Reconciliation", "/banking/reconciliation", "finance"),
           tx("slip-in", "รูปสลิปเงินเข้า", "Money In Slip", "/slipmoneyin", "finance"),
           tx("slip-out", "รูปสลิปเงินออก", "Money Out Slip", "/slipmoneyout", "finance"),
         ],
@@ -120,6 +133,13 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "accounting",
         title: ml("accounting", "บัญชี", "Accounting"),
         items: [
+          tx("uv-journal", "สมุดรายวันขาย", "Sales Journal (UV)", "/gl/journal/uv", "finance"),
+          tx("sv-journal", "สมุดรายวันซื้อ", "Purchase Journal (SV)", "/gl/journal/sv", "finance"),
+          tx("rv-journal", "สมุดรายวันรับเงิน", "Receipt Voucher Journal (RV)", "/gl/journal/rv", "finance"),
+          tx("pv-journal", "สมุดรายวันจ่ายเงิน", "Payment Voucher Journal (PV)", "/gl/journal/pv", "finance"),
+          tx("jv-journal", "สมุดรายวันทั่วไป", "General Journal (JV)", "/gl/journal/jv", "finance"),
+          tx("chart-of-accounts", "ผังบัญชี", "Chart of Accounts", "/gl/chartofaccounts", "finance"),
+          tx("period-lock", "ล็อกงวดบัญชี", "Period Lock", "/gl/periodlock", "finance"),
           tx("daily-info", "ตรวจสอบประจำวัน", "Daily Check", "/checkdaily/dailyinfoscreen", "finance"),
           tx("cash-drawer", "รับ-ส่งเงิน POS", "POS Cash Drawer", "/cashinginthedrawer", "finance"),
         ],
@@ -130,6 +150,27 @@ export const MENU_SECTIONS: MenuSection[] = [
     id: "reports",
     title: { key: "report", th: "รายงาน", en: "Reports" },
     groups: [
+      {
+        id: "financial-reports",
+        title: ml("financial_reports", "รายงานการเงิน", "Financial Reports"),
+        items: [
+          tx("profit-loss", "งบกำไรขาดทุน", "Profit and Loss", "/report/pnl", "report"),
+          tx("balance-sheet", "งบดุล", "Balance Sheet", "/report/balancesheet", "report"),
+          tx("trial-balance", "งบทดลอง", "Trial Balance", "/report/trialbalance", "report"),
+          tx("cash-flow", "งบกระแสเงินสด", "Cash Flow Statement", "/report/cashflow", "report"),
+          tx("project-pnl", "กำไรขาดทุนตามโครงการ", "Project P&L", "/report/project-pnl", "report"),
+        ],
+      },
+      {
+        id: "tax-reports",
+        title: ml("tax_reports", "รายงานภาษี", "Tax Reports"),
+        items: [
+          tx("vat-sale", "รายงานภาษีขาย", "VAT Sale", "/report/reportvatsale", "report"),
+          tx("vat-buy", "รายงานภาษีซื้อ", "VAT Purchase", "/report/reportvatbuy", "report"),
+          tx("vat-pp30", "แบบยื่นภาษี ภ.พ.30", "VAT Return (P.P.30)", "/report/vatpp30", "report"),
+          tx("withholding-tax-report", "รายงานภาษีหัก ณ ที่จ่าย", "Withholding Tax Report", "/report/wht-reports", "report"),
+        ],
+      },
       {
         id: "inventory-reports",
         title: ml("inventory_reports", "รายงานสินค้า", "Inventory Reports"),
@@ -160,8 +201,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("gradual-receipt", "รายงานทยอยรับ", "Gradual Receipt Report", "/report/reportdedebipurchasepartial", "report"),
           tx("gross-profit-by-document", "กำไรขั้นต้นตามเอกสาร", "Gross Profit by Document", "/report/reportgrossprofitbydocument", "report"),
           tx("gross-profit-by-product", "กำไรขั้นต้นตามสินค้า", "Gross Profit by Product", "/report/reportgrossprofitbyproduct", "report"),
-          tx("vat-sale", "รายงานภาษีขาย", "VAT Sale", "/report/reportvatsale", "report"),
-          tx("vat-buy", "รายงานภาษีซื้อ", "VAT Purchase", "/report/reportvatbuy", "report"),
         ],
       },
       {
@@ -204,6 +243,21 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("bookbank", "สมุดบัญชีธนาคาร", "Bank Accounts"),
         items: [
           tx("book-bank", "สมุดบัญชีธนาคาร", "Bank Book", "/bookbankscreen", "master"),
+        ],
+      },
+      {
+        id: "fixed-assets",
+        title: ml("fixed_assets", "สินทรัพย์ถาวร", "Fixed Assets"),
+        items: [
+          tx("asset-registry", "ทะเบียนสินทรัพย์ถาวร", "Fixed Asset Registry", "/asset/registry", "master"),
+          tx("asset-depreciation", "คำนวณค่าเสื่อมราคา", "Asset Depreciation", "/asset/depreciation", "master"),
+        ],
+      },
+      {
+        id: "dimensions",
+        title: ml("dimensions", "มิติข้อมูล", "Dimensions"),
+        items: [
+          tx("project-department-tags", "แท็กโครงการและแผนก", "Project & Department Tags", "/dimensions/tags", "master"),
         ],
       },
       {
@@ -297,6 +351,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("bank", "ธนาคาร", "Bank", "/bank", "master"),
           tx("qr-provider", "ผู้ให้บริการรับเงิน QR", "QR Payment Provider", "/qrprovider", "master"),
           tx("exchange-rate", "อัตราแลกเปลี่ยน", "Exchange Rate", "/exchangerate", "finance"),
+          tx("bank-rules", "กฎจับคู่บัญชีอัตโนมัติ", "Bank Matching Rules", "/banking/rules", "master"),
         ],
       },
       {
@@ -314,6 +369,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("doc-format", "รูปแบบเอกสาร", "Document Format", "/docformat", "master"),
           tx("bill-design", "ออกแบบบิล", "Bill Design", "/billdesign", "master"),
+          tx("etax-setting", "ตั้งค่าใบกำกับภาษีอิเล็กทรอนิกส์", "e-Tax Invoice Setting", "/etaxsetting", "master"),
         ],
       },
       {
