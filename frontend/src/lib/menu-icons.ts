@@ -256,6 +256,17 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/asset/depreciation": "calculator",
   "/dimensions/tags": "tag",
   "/etaxsetting": "settings",
+  "/transaction/documentvault": "archive",
+  "/gl/workingpaper": "table",
+  "/report/financialgraphs": "activity",
+  "/serviceproduct": "briefcase",
+  "/nonstockproduct": "boxes",
+  "/debtorbeginningbalance": "user",
+  "/creditorbeginningbalance": "building",
+  "/apidashboard": "network",
+  "/taxinvoicerequestsetting": "qr",
+  "/posprintersetting": "print",
+  "/customerpurchasecycle": "calendarCheck",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {

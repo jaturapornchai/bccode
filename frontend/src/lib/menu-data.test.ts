@@ -157,6 +157,8 @@ describe("menu language labels", () => {
     expect(masterGroupsById.get("products")?.title.th).toBe("สินค้าและบาร์โค้ด");
     expect(masterGroupsById.get("products")?.items.map((item) => item.id)).toEqual([
       "product",
+      "service-product",
+      "non-stock-product",
       "product-extension",
       "barcode",
       "productset",
@@ -165,6 +167,8 @@ describe("menu language labels", () => {
     expect(masterGroupsById.get("partners")?.items.map((item) => item.id)).toEqual([
       "debtor",
       "creditor",
+      "debtor-beginning-balance",
+      "creditor-beginning-balance",
     ]);
     expect(masterGroupsById.get("bank-accounts")?.items.map((item) => item.id)).toEqual([
       "book-bank",

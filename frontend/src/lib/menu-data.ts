@@ -68,6 +68,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("purchase-return", "คืนซื้อ", "Purchase Return", "/transaction/purchasereturn"),
           tx("purchase-debit-note", "ใบลดหนี้เจ้าหนี้", "Purchase Debit Note", "/transaction/purchasedebitnote"),
           tx("expense-record", "บันทึกค่าใช้จ่าย", "Expense Record", "/transaction/expense"),
+          tx("document-vault", "คลังเอกสารและสแกนบิล", "Document Vault & Scan", "/transaction/documentvault"),
           tx("withholding-tax-deduction", "ภาษีหัก ณ ที่จ่าย", "Withholding Tax", "/transaction/withholdingtax", "finance"),
           tx("purchase-partial", "รับสินค้าแบบทยอยรับ", "Gradual Receipt", "/transaction/purchasepartial"),
           tx("accrual-receive", "ตั้งหนี้จากทยอยรับ", "Set Debt from Receipt", "/transaction/accrualreceive"),
@@ -139,6 +140,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("pv-journal", "สมุดรายวันจ่ายเงิน", "Payment Voucher Journal (PV)", "/gl/journal/pv", "finance"),
           tx("jv-journal", "สมุดรายวันทั่วไป", "General Journal (JV)", "/gl/journal/jv", "finance"),
           tx("chart-of-accounts", "ผังบัญชี", "Chart of Accounts", "/gl/chartofaccounts", "finance"),
+          tx("working-paper", "กระดาษทำการ", "Working Paper", "/gl/workingpaper", "finance"),
           tx("period-lock", "ล็อกงวดบัญชี", "Period Lock", "/gl/periodlock", "finance"),
           tx("daily-info", "ตรวจสอบประจำวัน", "Daily Check", "/checkdaily/dailyinfoscreen", "finance"),
           tx("cash-drawer", "รับ-ส่งเงิน POS", "POS Cash Drawer", "/cashinginthedrawer", "finance"),
@@ -158,6 +160,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("balance-sheet", "งบดุล", "Balance Sheet", "/report/balancesheet", "report"),
           tx("trial-balance", "งบทดลอง", "Trial Balance", "/report/trialbalance", "report"),
           tx("cash-flow", "งบกระแสเงินสด", "Cash Flow Statement", "/report/cashflow", "report"),
+          tx("financial-graphs", "กราฟประกอบงบการเงิน", "Financial Statement Graphs", "/report/financialgraphs", "report"),
           tx("project-pnl", "กำไรขาดทุนตามโครงการ", "Project P&L", "/report/project-pnl", "report"),
         ],
       },
@@ -224,6 +227,8 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("product_catalog", "สินค้าและบาร์โค้ด", "Product Catalog"),
         items: [
           tx("product", "สินค้า", "Product", "/product", "master"),
+          tx("service-product", "สินค้าบริการ", "Service Products", "/serviceproduct", "master"),
+          tx("non-stock-product", "สินค้าไม่นับสต็อก", "Non-Stock Products", "/nonstockproduct", "master"),
           tx("product-extension", "ข้อมูลเสริมสินค้า", "Product Extended Data", "/productextension", "master"),
           { ...tx("barcode", "บาร์โค้ด", "Barcode", "/productbarcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
           tx("productset", "สินค้าชุด", "Product Set", "/productset", "master"),
@@ -236,6 +241,8 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("debtor", "ลูกหนี้", "Debtor", "/debtor", "master"),
           tx("creditor", "เจ้าหนี้", "Creditor", "/creditor", "master"),
+          tx("debtor-beginning-balance", "ลูกหนี้ตั้งต้นรายเอกสาร", "Debtor Beginning Balance", "/debtorbeginningbalance", "master"),
+          tx("creditor-beginning-balance", "เจ้าหนี้ตั้งต้นรายเอกสาร", "Creditor Beginning Balance", "/creditorbeginningbalance", "master"),
         ],
       },
       {
@@ -285,6 +292,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("knowledge-base", "คลังความรู้", "Knowledge Base", "/knowledgebasescreen", "master"),
           tx("alert-agent", "ผู้ช่วยแจ้งเตือน", "Alert Assistant", "/alertagentscreen", "master"),
+          tx("api-dashboard", "ศูนย์การเชื่อมต่อ API", "API Integration Dashboard", "/apidashboard", "master"),
         ],
       },
     ],
@@ -370,6 +378,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("doc-format", "รูปแบบเอกสาร", "Document Format", "/docformat", "master"),
           tx("bill-design", "ออกแบบบิล", "Bill Design", "/billdesign", "master"),
           tx("etax-setting", "ตั้งค่าใบกำกับภาษีอิเล็กทรอนิกส์", "e-Tax Invoice Setting", "/etaxsetting", "master"),
+          tx("tax-invoice-request-setting", "ขอใบกำกับภาษีออนไลน์", "Online Tax Invoice Request", "/taxinvoicerequestsetting", "master"),
         ],
       },
       {
@@ -390,6 +399,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("pos-setting", "ตั้งค่าเครื่องขายหน้าร้าน (POS)", "Point of Sale Settings", "/possetting", "master"),
           tx("pos-media", "รูป/สื่อหน้าจอขาย", "Point of Sale Media", "/posmedia", "master"),
+          tx("thermal-printer-setting", "เครื่องพิมพ์ใบเสร็จเทอร์มัล", "Thermal Printer Settings", "/posprintersetting", "master"),
           { ...tx("color", "สีสำหรับงานขาย", "Sales Colors", "/colorscreen", "master"), label: ml("sales_color", "สีสำหรับงานขาย", "Sales Colors") },
         ],
       },
@@ -400,6 +410,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("point-setting", "ตั้งค่าคะแนนสะสม", "Point Setting", "/pointsetting", "master"),
           tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/couponsetting", "master"),
           tx("promotion", "โปรโมชั่น", "Promotion", "/promotionscreen", "master"),
+          tx("customer-purchase-cycle", "รอบซื้อลูกค้าประจำ", "Customer Purchase Cycles", "/customerpurchasecycle", "master"),
         ],
       },
       {
