@@ -27,7 +27,7 @@
 |---|---|---|---|---|---|
 | 00 | [00-source-router.md](00-source-router.md) | แผนที่หาโค้ดตาม feature | router เดิม (AI_INDEX) — ชี้ว่า feature ไหนอยู่ package ไหน | — | — |
 | 01 | [01-architecture-overview.md](01-architecture-overview.md) | ภาพรวมสถาปัตยกรรมระบบ BC Ai Account | binary Go ตัวเดียวสลับ 3 บทบาทด้วย DEV_API_MODE, goapi ซ้อนใต้ /goapi ของ mainapi:8888, browser ผ่าน Next.js เสมอ, bootstrap.json ชนะ env | 65 | 175 claims (12/3) |
-| 02 | [02-data-stores.md](02-data-stores.md) | 02 — ที่เก็บข้อมูล (Data stores) และบทบาทจริงของแต่ละตัว | Mongo (appdb, แยก tenant ด้วย holdingcode/businesscode) คือ SoT จริง; PG per-holding เป็น projection ที่ frontend ไม่เคยอ่านและ 3 ตารางพังเงียบ; Redis แค่ cache token; MinIO เก็บรูป+thumb; ClickHouse พักแล้ว | 87 | 168 claims (17/6) |
+| 02 | [02-data-stores.md](02-data-stores.md) | 02 — ที่เก็บข้อมูล (Data stores) และบทบาทจริงของแต่ละตัว | สถาปัตยกรรม 2-Tier: Mongo (appdb) เป็น Storage Layer รับเขียน/เก็บย่อ (compact); PG per-holding เป็น Processing Engine ประมวลผลเร็วแบบ self-contained ไม่พึ่ง Mongo อีก; Redis แค่ cache token; MinIO เก็บรูป+thumb; ClickHouse พักแล้ว | 87 | 168 claims (17/6) |
 | 03 | [03-auth-tenancy.md](03-auth-tenancy.md) | การยืนยันตัวตน เซสชัน และ Tenancy (Holding / Company / Branch) | token ไม่ใช่ JWT แต่เป็น Redis session 15 นาที/12 ชม. ที่ตรวจสิทธิ์สดจาก Mongo ทุก request; holding ถูกเลือกฝั่ง server ผ่าน /select-holding ไม่ใช่ header; /systemadm/* ไม่มี role guard | 138 | 118 claims (22/0) |
 | 04 | [04-product-domain.md](04-product-domain.md) | โดเมนสินค้า (Product / Barcode / Unit / BOM) — Mongo SoT, outbox, projection PG, import, listing v2, จอ frontend | สินค้าเขียนลง Mongo + outbox แล้วค่อย project ไป PG ต่อ holding ผ่าน Kafka; import/barcode2 ยังผูก ClickHouse ที่ถอดไปแล้ว | 148 | 168 claims (5/0) |
 | 05 | [05-transaction-sales-purchase.md](05-transaction-sales-purchase.md) | ธุรกรรมซื้อ–ขาย (Transaction: Sales & Purchase) — เส้นทางจาก Mongo → Kafka → PG projection | เอกสารซื้อ-ขาย 19 module: Mongo เป็นต้นทาง, Kafka ยิงแบบ fire-and-forget, goapi project ลง PG doc/docdetail — พร้อมตาราง transflag, สูตรเลขที่เอกสาร และจุดที่โค้ดค้าง (docwaitprocess ไม่ถูกลบ, docref ซ้ำ, PP/PO prefix ชน, quotation/paid/pay ไม่มี consumer) | 180 | 168 claims (27/1) |
@@ -72,6 +72,8 @@
 - [decisions/2026-09-07-consolidate-docs-for-multi-ai.md](decisions/2026-09-07-consolidate-docs-for-multi-ai.md)
 - [decisions/2026-09-07-on-demand-docs-context-efficiency.md](decisions/2026-09-07-on-demand-docs-context-efficiency.md)
 - [decisions/2026-09-07-speed-and-context-hygiene.md](decisions/2026-09-07-speed-and-context-hygiene.md)
+- [decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md](decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md)
+
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 16 ไฟล์ใน `bugs/`
 

@@ -116,3 +116,21 @@ This file is only a routing entrypoint. Source-of-truth boundaries will be defin
 5. **Prompt Caching Discipline**:
    - ไม่แก้ไขสลับไปมาใน system instructions / rules บ่อย เพื่อให้ backend ของโมเดลติด Prompt Cache สูงสุด (ประหยัด token 90% และตอบเร็วกว่าปกติ 2-4 เท่า)
 
+
+## กฎ: สถาปัตยกรรม 2-Tier — MongoDB เก็บย่อ (Storage) + PostgreSQL ประมวลผลเร็วแบบครบจบ (Processing Engine) (ตั้งโดยลุงจืด 2026-09-07)
+
+ระบบกำหนดบทบาทและข้อตกลงการจัดการข้อมูลระหว่าง MongoDB และ PostgreSQL ไว้อย่างเคร่งครัด ดังนี้:
+
+1. **Clone จาก MongoDB ไปสร้างใน PostgreSQL เสมอ (Single Direction of Clone / Projection)**:
+   - ข้อมูลทุกอย่างที่ถูกบันทึกลงใน MongoDB ต้องมีกลไก (Outbox / Kafka Consumer / Worker Sync) ไปสร้างสำเนา (Clone / Read Model) ใน PostgreSQL (per-holding database `<holdingcode>`) เสมอ
+   - ทุก entity / collection ที่มีการเขียนในระบบ ต้องมีคู่ตารางใน PostgreSQL รองรับ
+2. **MongoDB = Storage Layer (เน้นเก็บข้อมูล ประหยัดขนาด ไม่บวม)**:
+   - MongoDB ทำหน้าที่เป็น Store หลักในการรับเข้าและบันทึกข้อมูล (Intake & Persistence)
+   - **ต้องประหยัดขนาดข้อมูล (Compact & Slim Storage)**: เก็บเฉพาะฟิลด์ที่จำเป็น ไม่เก็บข้อมูลบวมซ้ำซ้อน (No Redundant Data) และห้ามเก็บไฟล์ binary หรือรูปภาพใน MongoDB เด็ดขาด (เก็บแค่ URI / Object Key ตามกฎรูปภาพ)
+3. **PostgreSQL = Processing & Computation Engine (การประมวลผลทั้งหมดเพื่อความเร็วสูงสุด)**:
+   - การประมวลผลทางธุรกิจ การคำนวณซับซ้อน งานรายงาน และการสืบค้นทั้งหมด ต้องเกิดขึ้นและประมวลผลใน PostgreSQL เท่านั้น (เช่น งานตัดสต็อก, คำนวณต้นทุน FIFO/Average, สรุปยอดขาย, ภาษี, บัญชีแยกประเภท, งบการเงิน, Search & Filter ขั้นสูง)
+   - ใช้ความสามารถเชิงสัมพันธ์ (Relational, B-Tree/GIN Indexing, CTE, Window Functions, Views) เพื่อให้ระบบทำงานได้เร็วที่สุด
+4. **PostgreSQL ต้องมีรายละเอียดครบถ้วนในตัว (Self-Contained — ไม่พึ่งพา MongoDB อีก)**:
+   - โครงสร้างตาราง / แถวข้อมูลใน PostgreSQL ต้อง Denormalize และ Enrich ข้อมูลที่จำเป็นในการคำนวณและออกรายงานให้ครบถ้วนในตัว (เช่น ชื่อภาษาต่างๆ, รหัสบาร์โค้ด, ข้อมูลอ้างอิง, สถานะ, หน่วยนับ)
+   - **ตอนดึงข้อมูลจาก PostgreSQL ไปประมวลผล จะต้องจบในตัว 100% ห้ามมีการ query ข้ามกลับมาต่อหรือ join กับ MongoDB อีกเด็ดขาด** (Zero Cross-DB Runtime Dependency) เพื่อรักษาความเร็วสูงสุดและความเป็นอิสระของ Processing Engine
+

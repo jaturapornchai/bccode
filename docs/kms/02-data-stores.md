@@ -5,8 +5,8 @@
 
 | store | บทบาทจริง | ใครเขียน / ใครอ่าน | สถานะ | อ้างอิง |
 |---|---|---|---|---|
-| MongoDB (db เดียว, tenant แยกด้วย field) | **Source of truth** ของทุกจอ — ทุก HTTP module ใน `main.go` และ goapi handler เขียน/อ่าน Mongo | เขียน: legacy modules + goapi; อ่าน: frontend ผ่าน API ทั้งหมด | LIVE | `backend/main.go:256`, `backend/main.go:357-548`, `backend/internal/repositories/crud_repository.go:42-153` |
-| PostgreSQL แบบ per-holding | projection/report engine ที่ Kafka consumer ของ goapi เขียนลง DB ชื่อ `<holdingcode>` | เขียน: `handlers/kafka/*`; อ่าน: route goapi ไม่กี่เส้นที่ **frontend ไม่เรียก** | LIVE บางตาราง / BROKEN 3 ตาราง / NO reader เกือบทั้งหมด (ดู §3) | `backend/internal/goapi/process/build/create-database.go:2019`, `:2138` |
+| MongoDB (db เดียว, tenant แยกด้วย field) | **Storage Layer (รับเขียนและเก็บย่อ)** — Source of truth ของการรับเข้า/บันทึกเอกสาร ต้องประหยัดขนาดข้อมูล (compact/slim) ไม่เก็บขยะ/bloat และ clone ส่งต่อ PG ทั้งหมด | เขียน: legacy modules + goapi; อ่าน: frontend ผ่าน API ทั้งหมด | LIVE | `backend/main.go:256`, `backend/main.go:357-548`, `backend/internal/repositories/crud_repository.go:42-153` |
+| PostgreSQL แบบ per-holding | **Processing & Computation Engine (ประมวลผลเร็วแบบครบจบ)** — ทุกข้อมูลจาก Mongo ถูก clone มาที่นี่เพื่อประมวลผลทั้งหมด (สต็อก, ต้นทุน, บัญชี, รายงาน, ค้นหา) ด้วยความเร็วสูงสุด ข้อมูลครบถ้วน self-contained ไม่ต่อ Mongo อีก | เขียน: `handlers/kafka/*`; อ่าน: stock/cost/report/search/AI engine (ตามกฎ 2-Tier 2026-09-07) | LIVE บางตาราง / อยู่ระหว่างซ่อมแซม feed ให้ครบทุกตาราง (ดู §3) | `backend/internal/goapi/process/build/create-database.go:2019`, `:2138` |
 | PostgreSQL global (`postgres`) | คิว/ล็อกของ worker pool + ตาราง GORM ของ legacy consumer | เขียน: goapi `InitQueueSchema` + legacy `ms.Persister` | LIVE แต่ busy-poll คิวว่าง | `backend/internal/goapi/bootstrap.go:105-128`, `backend/internal/config/config_postgresql.go:31-34` |
 | Redis | cache token auth/JWT (bearer, xapikey, refresh, session, revoked/used marker) + timestamp mastersync เท่านั้น | เขียน/อ่าน: `pkg/microservice/auth.go`, `jwt.go`, `mastersync` | LIVE (79 key บนเครื่อง dev) | `backend/pkg/microservice/auth.go:95-101`, `backend/internal/mastersync/repositories/mastersync_cache_repository.go:61` |
 | MinIO / S3 | ไฟล์รูป/วิดีโอ/ไฟล์แนบ + thumbnail `.thumb.webp` คู่เสมอ; Mongo เก็บแค่ object key | เขียน: goapi `/image/upload`; อ่าน: `/s3/file/*` | LIVE | `backend/internal/goapi/bootstrap.go:509,524-525`, `backend/internal/goapi/handlers/image_r2.go:356-388` |
@@ -59,6 +59,13 @@
 | `shopusers`, `units`, `shopuseraccesslogs` | **ไม่มี index นอกจาก `_id_`** | — | `_id_` เท่านั้น (`shopuseraccesslogs` 49,919 เอกสารก็ไม่มี index) |
 
 ## 3. PostgreSQL
+
+### 3.0 สถาปัตยกรรม 2-Tier Data Store (กฎตั้งโดยลุงจืด 2026-09-07)
+- **Single Direction Clone (Mongo → PG)**: ทุกข้อมูลใน MongoDB ต้องมีกลไก (Outbox/Kafka) โคลนไปสร้างตารางใน PostgreSQL per-holding (`<holdingcode>`) เสมอ
+- **MongoDB = Storage Layer**: เน้นเก็บข้อมูลดิบและรับเขียน (CRUD) โดยต้องประหยัดขนาดข้อมูล (compact/slim) ไม่เก็บข้อมูลบวมซ้ำซ้อน ไม่เก็บ binary
+- **PostgreSQL = Processing & Computation Engine**: การคำนวณทั้งหมดของระบบ (ตัดสต็อก, คำนวณต้นทุน, บัญชี, สรุปยอดขาย, ภาษี, ค้นหา, ออกรายงาน) ทำใน PostgreSQL เท่านั้น เพื่อความเร็วสูงสุด
+- **PostgreSQL Self-Contained**: ข้อมูลใน PG ต้อง Denormalize / Enrich รายละเอียดให้ครบถ้วนในตัว (ชื่อภาษาต่างๆ, รหัสอ้างอิง, หน่วยนับ) เพื่อให้ตอนประมวลผลไม่ต้องเชื่อมต่อกลับมาดึงข้อมูลจาก MongoDB อีกเด็ดขาด (Zero Cross-DB Runtime Dependency)
+- ดู ADR ฉบับเต็ม: `docs/kms/decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md`
 
 ### 3.1 สอง database คนละหน้าที่
 1. **Global DB `postgres`** — goapi ขอ manager ชื่อ `"postgres"` แล้ว `InitQueueSchema` สร้าง `queues` + `deadletterqueue` (`backend/internal/goapi/bootstrap.go:105-128`, `backend/internal/goapi/mypostgres/init_schema.go:19-34`); legacy `PersisterConfig.DB()` ใช้ `POSTGRES_DB_NAME` ไม่งั้น `"postgres"` (`backend/internal/config/config_postgresql.go:31-34`) → legacy consumer `AutoMigrate` ลง DB นี้ (`backend/internal/vfgl/journal/journal_consume.go:48-49`). บน dev พบ: `journals journalsdetail journaltaxesdetails journalvatsdetails organizationbranches organizationcompanies queues deadletterqueue distributedlocks` (ทุกตัว 0 แถว)
@@ -118,4 +125,4 @@ Consumer ฝั่ง goapi ทั้งหมดอยู่ใน `StartConsum
 7. PG tenant DB `test` schema เก่า (HANDOFF §2) และ DB `appdb bctest01 qa23995213 uat260810a` ยังไม่เปิดดูว่ามีตารางชุดไหน
 8. `search_aliases` ไม่มีตารางในทุก DB บน dev (ดู §3.2) — ยังไม่ตรวจว่าเคยมีใครสั่ง `rebuildproductsonly` หรือไม่; ตัวเลข "170 ชื่อ collection ในโค้ด" (§2.3) และ "48 ชื่อ `transaction*`" ยังไม่นับซ้ำ; collection dev อีก 5 ตัว (`transportchannel salechannel couponreservations currency dimension`) ยังไม่หาโค้ดที่เขียน
 9. on-prem 192.168.2.202 / prod SGP1 ไม่ได้ตรวจ (ไม่มี access ในงานนี้) — ข้อมูล dev ทั้งหมดในบทความนี้เป็นเครื่อง dev เท่านั้น
-10. คำถามใหญ่ให้ลุงจืด (ซ้ำกับ HANDOFF-2026-09-06 §5 ข้อ 6): ตอนนี้ **ไม่มี route ที่ frontend เรียกแล้วอ่าน PG เลย** (rg ทุก reader route = 0) — จะลงทุนซ่อม debtor/creditor/erp_user + doc* หรือหยุด projection ทั้งหมดยกเว้น product/barcode
+10. คำถามใหญ่ให้ลุงจืด: ตอนนี้ไม่มี route ที่ frontend เรียกแล้วอ่าน PG เลย — จะลงทุนซ่อม debtor/creditor/erp_user + doc* หรือหยุด projection → **ตัดสินแล้ว 2026-09-07**: ลุงจืดกำหนดกฎสถาปัตยกรรม 2-Tier ข้อมูลใน Mongo ต้องโคลนไปสร้างใน PG ทั้งหมด เพื่อให้ PG เป็น Processing Engine ประมวลผลเร็วแบบครบถ้วน self-contained ดังนั้นทิศทางคือต้องซ่อมแซมและบำรุงรักษา Consumer/Projection ให้สมบูรณ์ครบทุกตาราง (ดู ADR `decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md`)

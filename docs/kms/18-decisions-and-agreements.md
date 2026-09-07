@@ -38,6 +38,7 @@
 | 2026-09-07 | **skill ส่วนตัวอยู่ที่ `docs/skills/`, ฐานความรู้อยู่ที่ `docs/kms/`, ทุกอย่างรวมใน `docs/`** เพื่อให้ AI หลายตัวเข้าใจตรงกัน | ลุงจืดใช้ AI หลายตัว; memory ส่วนตัวของ AI ตัวเดียวคนอื่นมองไม่เห็น |
 | 2026-09-07 | **ปรับการอ่าน docs เป็น On-Demand (Lazy Loading) ไม่เปลือง context** | ห้ามโหลดเอกสารทั้งโฟลเดอร์หรือ handoff ล่วงหน้า; เปิดอ่านเฉพาะไฟล์ที่ตรงกับงานจริงเพื่อประหยัด Context Window |
 | 2026-09-07 | **บังคับใช้กฎความเร็วสูงสุดและสุขอนามัย Context (Surgical Read/Patch/Terminal/Subagent)** | อ่านและแก้เฉพาะบรรทัด, ห้ามรัน full test suite โดยไม่จำเป็น, คุม output terminal, ใช้ subagent กัก context บวม, รักษา prompt cache |
+| 2026-09-07 | **สถาปัตยกรรม 2-Tier: MongoDB เก็บย่อ (Storage) + PostgreSQL ประมวลผลเร็วแบบครบจบ (Processing Engine)** | ข้อมูลใน Mongo ต้องโคลนไปสร้างใน PG ทั้งหมด; Mongo เก็บแบบประหยัดขนาด; PG มีรายละเอียดครบถ้วนเพื่อประมวลผลจบในตัว ไม่ต้องต่อกลับมา Mongo อีก; ตอบคำถามข้อ 6 เดิม (ADR `decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md`) |
 
 ## คำถามที่ยังไม่มีคำตอบ (ห้ามเดา — ถามลุงจืด)
 
@@ -46,4 +47,3 @@
 3. backup platform / RPO / RTO ของ prod
 4. Unit contract: `unit_of_measure/code/businesscode` vs `units/unitcode` (MongoModel partial index)
 5. ถอด ClickHouse ถาวรหรือพักต่อ
-6. PostgreSQL มีไว้เพื่ออะไรแน่ — ตอนนี้ไม่มี feature ใดอ่าน; จะซ่อม projection ที่พัง (debtor/creditor/erp_user) หรือหยุด project ทุกอย่างยกเว้น product/barcode
