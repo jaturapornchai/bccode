@@ -2429,6 +2429,8 @@ const MENU_GROUP_ICONS: Record<string, LucideIcon> = {
   "products": Package,
   "partners": UsersRound,
   "bank-accounts": Landmark,
+  "fixed-assets": Landmark,
+  "dimensions": Tag,
   "product-tools": Printer,
   "import-export": CloudDownload,
   "product-assistant": Bot,
@@ -2440,14 +2442,17 @@ const MENU_GROUP_ICONS: Record<string, LucideIcon> = {
   "purchase": Package,
   "purchase-payment": CreditCard,
   "sales": HandCoins,
+  "sales-payment": CreditCard,
   "stock": Warehouse,
   "payment": CircleDollarSign,
   "accounting": Calculator,
 
   // รายงาน (Reports)
-  "inventory-reports": Package,
+  "financial-reports": Landmark,
+  "tax-reports": ReceiptText,
   "sales-reports": BarChart3,
-  "other-reports": FileText,
+  "purchase-reports": ShoppingCart,
+  "inventory-reports": Package,
   "audit-reports": Archive,
 };
 
