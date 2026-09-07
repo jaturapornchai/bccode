@@ -205,9 +205,9 @@ export function DashboardHome({
   const t = (th: string, en: string) => (isThai ? th : en);
 
   return (
-    <div className="grid min-w-0 gap-3" aria-label="overview">
+    <div className="grid min-w-0 gap-2" aria-label="overview">
       {widgets.length > 0 ? (
-        <section className="grid gap-2">
+        <section className="grid gap-1.5">
           <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
             <ClipboardList className="size-4 text-primary" aria-hidden="true" />
             {t("เอกสารที่ดูแล", "Your documents")}
@@ -215,7 +215,7 @@ export function DashboardHome({
               {workspace?.branch ? `· ${localizedName(workspace.branch.names, language) || workspace.branch.code}` : ""}
             </span>
           </h2>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
             {widgets.map((w) => {
               const item = itemById.get(w.menuId)!;
               const stat = stats[w.menuId];
@@ -224,10 +224,10 @@ export function DashboardHome({
                   key={w.menuId}
                   type="button"
                   onClick={() => onOpenItem(item)}
-                  className="group grid min-w-0 gap-1 rounded-xl border border-border bg-card p-3 text-left shadow-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
+                  className="group grid min-w-0 gap-0.5 rounded-xl border border-border bg-card p-2 text-left shadow-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
                 >
                   <span className="truncate text-xs text-muted-foreground">{menuText(item.label, language, backendLanguage) || t(w.th, w.en)}</span>
-                  <span className="text-2xl font-bold tabular-nums text-foreground">
+                  <span className="text-xl font-bold tabular-nums text-foreground">
                     {loading && !stat ? "…" : (stat?.total ?? 0).toLocaleString(isThai ? "th-TH" : "en-US")}
                   </span>
                   <span className="flex items-center gap-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
@@ -240,7 +240,7 @@ export function DashboardHome({
         </section>
       ) : null}
 
-      <section className="grid gap-2" aria-label="shortcuts-section">
+      <section className="grid gap-1.5" aria-label="shortcuts-section">
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
             <Star className="size-4 text-primary" aria-hidden="true" />
@@ -257,16 +257,16 @@ export function DashboardHome({
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {shortcuts.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => onOpenItem(item)}
-              className="group inline-flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/[0.04] hover:shadow-md hover:shadow-primary/10 active:translate-y-0 active:scale-[0.98]"
+              className="group inline-flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/[0.04] hover:shadow-md hover:shadow-primary/10 active:translate-y-0 active:scale-[0.98]"
             >
-              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                <MenuRouteIcon item={item} size={15} />
+              <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <MenuRouteIcon item={item} size={13} />
               </span>
               <span className="truncate group-hover:text-primary transition-colors">
                 {menuText(item.label, language, backendLanguage)}
@@ -276,11 +276,11 @@ export function DashboardHome({
           <button
             type="button"
             onClick={handleOpenManage}
-            className="group inline-flex items-center gap-2 rounded-xl border border-dashed border-border/90 bg-card/60 px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.05] hover:text-primary hover:shadow-xs active:translate-y-0"
+            className="group inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border/90 bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.05] hover:text-primary hover:shadow-xs active:translate-y-0"
             title={t("เพิ่มหรือปรับแต่งทางลัด", "Add or customize shortcuts")}
           >
-            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-muted/60 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
-              <Plus className="size-4" aria-hidden="true" />
+            <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+              <Plus className="size-3.5" aria-hidden="true" />
             </span>
             <span>{t("เพิ่มทางลัด", "Add shortcut")}</span>
           </button>
@@ -288,17 +288,17 @@ export function DashboardHome({
       </section>
 
       {widgets.length > 0 ? (
-        <section className="grid gap-2">
+        <section className="grid gap-1.5">
           <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
             <Clock3 className="size-4 text-primary" aria-hidden="true" />
             {t("ความเคลื่อนไหวล่าสุด", "Recent activity")}
           </h2>
           {recent.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border bg-card p-4 text-sm text-muted-foreground">
+            <p className="rounded-xl border border-dashed border-border bg-card p-3 text-sm text-muted-foreground">
               {loading ? t("กำลังโหลด…", "Loading…") : t("ยังไม่มีเอกสาร — เริ่มจากทางลัดด้านบนได้เลย", "No documents yet — start from a shortcut above.")}
             </p>
           ) : (
-            <ul className="grid gap-1 rounded-xl border border-border bg-card p-2 shadow-sm">
+            <ul className="grid gap-1 rounded-xl border border-border bg-card p-1.5 shadow-sm">
               {recent.map(({ widget, doc }, index) => {
                 const item = itemById.get(widget.menuId)!;
                 const party = widget.party ? localizedName(doc[widget.party], language) : "";
@@ -307,7 +307,7 @@ export function DashboardHome({
                     <button
                       type="button"
                       onClick={() => onOpenItem(item)}
-                      className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-primary/5"
+                      className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1 text-left text-xs transition-colors hover:bg-primary/5"
                     >
                       <span className="w-12 shrink-0 text-xs text-muted-foreground">{dateText(doc.docdatetime, language)}</span>
                       <span className="min-w-0 truncate">

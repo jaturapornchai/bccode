@@ -170,6 +170,27 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - โค้ดควบคุมและ Drag handle: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx#L950-L1085)
          - ชุดการทดสอบความกว้างและการจดจำ: [`frontend/src/app/menu/main-menu-sidebar-resize.test.ts`](frontend/src/app/menu/main-menu-sidebar-resize.test.ts)
 
+    * **แบบแผน: ปรับ Padding & Margin ให้น้อยลงเพื่อแสดงข้อมูลได้เยอะที่สุด (Ultra-High Density Spacing) (ตั้งโดยลุงจืด 2026-09-07)**:
+      1) **แบบแผนใหม่ (New Standard Pattern)**:
+         - **ลด Padding & Margin ทั้งระบบ (System-wide Compaction)**:
+           * `:root` Density Tokens: `--density-page-pad: clamp(4px, 1vw, 8px)`, `--density-card-pad: clamp(6px, 1.2vw, 8px)`, `--density-modal-pad: clamp(8px, 1.5vw, 12px)`, `--density-gap: 4px`, `--density-gap-lg: 6px`, `--density-control-h: 34px`, `--density-control-compact-h: 30px`
+           * Card & Panels: `CardHeader` และ `CardContent` ลด padding เหลือ `p-2.5` และ `gap-1`
+           * Tables & Data Lists: `table th` สูง `26px` padding `3px 6px`, `table td` padding `2px 6px text-xs`, `.bc-list-row` min-height `26px` padding `2px 6px`
+           * Sidebar Navigation: เมนูซ้ายใช้ `p-1.5 gap-1`, ปุ่มหมวดหมู่และเมนูย่อยปรับความสูงกระชับ `min-h-7` ถึง `min-h-8` padding `px-2 py-1` (แสดงเมนูได้มากกว่าเดิม 35% โดยไม่ต้องเลื่อน)
+           * Dashboard Home: กริดเอกสาร `p-2 gap-1.5`, ทางลัด `px-2.5 py-1.5 text-xs`, ประวัติความเคลื่อนไหว `px-2 py-1 text-xs` (หน้าจอ 1080p แสดงครบทุกส่วนในสายตาเดียว)
+         - **ยกเว้นหน้าจอ Login และ Holding**: ใช้ selector `main:not(.login-shell):not(.holding-shell)` เพื่อรักษาสเกลและ layout hero ที่ผ่านการ approve แล้ว
+      2) **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
+         - **ห้ามใช้ padding ขนาดใหญ่ (เช่น `p-5`, `p-6`, `gap-4`) บนหน้าจอจัดการข้อมูลบัญชี/ERP**: ทำให้เกิดพื้นที่ว่างเปล่าแนวตั้ง (Vertical Sprawl) นักบัญชีต้อง scroll ตลอดเวลา
+         - **ห้ามทำแถวตารางสูงเกิน 36px ในโหมดข้อมูลปกติ**: ทำให้แสดงผลได้ทีละ 5-8 รายการ การย่อลงมาเหลือ 26-28px ช่วยให้มองเห็นข้อมูลได้ 15-20 รายการพร้อมกัน
+      3) **เหตุผลทางเทคนิค (Root Cause & Rationale)**:
+         - **High Information Density**: ผู้ใช้งานระบบบัญชีต้องการกวาดสายตาตรวจข้อมูลจำนวนมากได้อย่างรวดเร็วในหน้าจอเดียว
+         - **Screen Real Estate Optimization**: การลด padding จาก 16-24px เหลือ 6-10px คืนพื้นที่หน้าจอให้กับตารางและฟอร์มข้อมูลจริงถึง 30–50%
+      4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
+         - Global high-density pass: [`frontend/src/app/globals.css`](frontend/src/app/globals.css)
+         - Card & Table primitives: [`frontend/src/components/ui/card.tsx`](frontend/src/components/ui/card.tsx) และ [`frontend/src/components/ui/table.tsx`](frontend/src/components/ui/table.tsx)
+         - Sidebar & Menu compaction: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx)
+         - Dashboard overview compaction: [`frontend/src/app/menu/dashboard-home.tsx`](frontend/src/app/menu/dashboard-home.tsx)
+
 ---
 
 ## 5. CSS Architecture & การแก้ไข

@@ -1043,13 +1043,13 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       >
         {showLeftMenu ? (
           <aside className="relative flex max-h-dvh min-w-0 flex-col border-b border-border bg-card/80 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
-            <div className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain p-3">
-              <label className="relative mb-3 block">
+            <div className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain p-1.5">
+              <label className="relative mb-1.5 block">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input className="!pl-10" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
               </label>
 
-              <nav aria-label={mt(backendLanguage, "navigation")} className="grid w-full max-w-full gap-2" role="tree">
+              <nav aria-label={mt(backendLanguage, "navigation")} className="grid w-full max-w-full gap-1" role="tree">
                 <SidebarButton active={activeSection === "all" && activeTabId === firstTab.id} count={rows.length} icon={<LayoutDashboard className="h-4 w-4" />} label={mt(backendLanguage, "overview")} onClick={openOverview} />
                 {MENU_SECTIONS.map((section) => {
                   const label = menuText(section.title, language, backendLanguage);
@@ -1387,7 +1387,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
             />
           ) : null}
 
-          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 p-2 lg:min-h-0 lg:flex-1 lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 p-1 lg:min-h-0 lg:flex-1 lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
             <div
               className="menu-tabs-chrome min-w-0 overflow-hidden"
               data-hidden={topChromeHidden ? "true" : "false"}
@@ -2018,7 +2018,7 @@ function SidebarButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-transparent px-3 py-2 text-left text-sm font-medium transition-colors",
+        "flex w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-transparent px-2 py-1.5 text-left text-xs font-semibold transition-colors",
         active ? "border-border bg-primary text-primary-foreground shadow-sm" : "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
@@ -2072,7 +2072,7 @@ function MenuSectionAccordion({
         onClick={onToggle}
         aria-expanded={expanded}
         className={cn(
-          "flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-medium transition-colors",
+          "flex w-full min-w-0 items-center justify-between gap-2 rounded-xl border px-2 py-1.5 text-left text-xs font-semibold transition-colors",
           active ? "border-border bg-primary text-primary-foreground shadow-sm" : "border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
       >
@@ -2200,7 +2200,7 @@ function MenuTreeGroup({
       <button
         aria-controls={`menu-tree-${groupKey}`}
         aria-expanded={expanded}
-        className="group grid min-h-10 w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 text-left text-sm font-semibold transition-colors hover:bg-muted/40 rounded-t-xl"
+        className="group grid min-h-8 w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 px-2 py-1 text-left text-xs font-semibold transition-colors hover:bg-muted/40 rounded-t-lg"
         onClick={onToggle}
         type="button"
       >
@@ -2247,7 +2247,7 @@ function MenuTreeFolder({
   return (
     <div className="relative grid gap-0.5" role="treeitem" aria-expanded={expanded} aria-selected={expanded}>
       <button
-        className="relative grid min-h-9 w-full min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        className="relative grid min-h-7 w-full min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         onClick={() => setExpanded((current) => !current)}
         type="button"
       >
@@ -2298,9 +2298,9 @@ function MenuTreeItemButton({
   return (
     <div
       className={cn(
-        "group/item relative flex min-h-10 w-full min-w-0 items-center justify-between gap-1 rounded-lg px-2 py-1 text-sm transition-colors",
+        "group/item relative flex min-h-7 w-full min-w-0 items-center justify-between gap-1 rounded-md px-1.5 py-0.5 text-xs transition-colors",
         isLocked ? "cursor-not-allowed opacity-65 text-muted-foreground" : "text-foreground/80 hover:bg-primary/10 hover:text-primary",
-        nested && "min-h-9 text-[13px] px-1.5",
+        nested && "min-h-6 text-xs px-1",
       )}
       key={item.id}
       role="treeitem"
@@ -2812,9 +2812,9 @@ function WorkTabPanel({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-2.5 shadow-xs">
       <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-      <strong className="mt-1 block truncate text-lg">{value}</strong>
+      <strong className="mt-0.5 block truncate text-base">{value}</strong>
     </div>
   );
 }

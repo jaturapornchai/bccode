@@ -110,16 +110,16 @@
   --login-input-border: rgba(137, 114, 110, 0.32);
   --login-input-focus-shadow: 0 0 0 4px rgba(160, 64, 53, 0.16), 0 10px 24px rgba(129, 41, 32, 0.14);
   --login-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --density-page-pad: clamp(8px, 2vw, 18px);
-  --density-card-pad: clamp(10px, 2.4vw, 14px);
-  --density-modal-pad: clamp(12px, 3vw, 18px);
-  --density-gap: 8px;
-  --density-gap-lg: 10px;
-  --density-control-h: 40px;
-  --density-control-compact-h: 38px;
-  --density-control-pad-x: 10px;
-  --density-icon: 34px;
-  --density-icon-button: 36px;
+  --density-page-pad: clamp(4px, 1vw, 8px);
+  --density-card-pad: clamp(6px, 1.2vw, 8px);
+  --density-modal-pad: clamp(8px, 1.5vw, 12px);
+  --density-gap: 4px;
+  --density-gap-lg: 6px;
+  --density-control-h: 34px;
+  --density-control-compact-h: 30px;
+  --density-control-pad-x: 6px;
+  --density-icon: 28px;
+  --density-icon-button: 30px;
 
   /* Production-grade design system tokens (set 2026-06-17).
      Type scale (responsive clamp), radius scale, shadow scale, motion tokens.
@@ -8482,4 +8482,94 @@ section[role="dialog"] strong {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+}
+
+/* ==========================================================================
+   High-density global compaction pass (2026-09-07: ปรับ padding margin ให้น้อยๆ แสดงข้อมูลได้เยอะๆ ทั้งระบบ — ตั้งโดยลุงจืด)
+   Scope: App shell, tables, data lists, cards, form grids, tree views (excluding login/holding hero)
+   Goal: Maximum information density, minimal vertical sprawl, see maximum data at once
+   ========================================================================== */
+
+/* 1. Global Compact Card & Container Padding */
+main:not(.login-shell):not(.holding-shell) .rounded-2xl.border.bg-card,
+main:not(.login-shell):not(.holding-shell) .rounded-xl.border.bg-card,
+main:not(.login-shell):not(.holding-shell) [data-slot="card"] {
+  padding: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .p-4 {
+  padding: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .p-5,
+main:not(.login-shell):not(.holding-shell) .p-6 {
+  padding: 10px !important;
+}
+
+/* 2. Global Compact Data List Rows & Headers (.bc-list-*) */
+.bc-list-row {
+  min-height: 26px !important;
+  padding: 2px 6px !important;
+  gap: 4px !important;
+}
+
+.bc-list-header {
+  min-height: 26px !important;
+  padding: 2px 6px !important;
+  gap: 4px !important;
+}
+
+.bc-list-toolbar {
+  padding: 2px 6px !important;
+  gap: 4px !important;
+}
+
+/* 3. Global Compact Tables */
+main:not(.login-shell):not(.holding-shell) table th {
+  padding: 3px 6px !important;
+  height: 26px !important;
+  font-size: 0.75rem !important;
+}
+
+main:not(.login-shell):not(.holding-shell) table td {
+  padding: 2px 6px !important;
+  font-size: 0.78rem !important;
+  line-height: 1.35 !important;
+}
+
+/* 4. Global Compact Spacing / Margins */
+main:not(.login-shell):not(.holding-shell) .gap-4 {
+  gap: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .gap-3 {
+  gap: 6px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .mb-4,
+main:not(.login-shell):not(.holding-shell) .my-4 {
+  margin-bottom: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .mb-3,
+main:not(.login-shell):not(.holding-shell) .my-3 {
+  margin-bottom: 6px !important;
+}
+
+/* 5. Tree Views & Master Data Lists */
+.tree-node-row,
+.branch-tree-node,
+.category-tree-node {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  gap: 4px !important;
+}
+
+/* 6. Form Groups & Config Grids */
+.config-field-grid {
+  gap: 6px !important;
+}
+
+.field-group {
+  margin-bottom: 6px !important;
 }
