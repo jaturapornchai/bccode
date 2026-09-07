@@ -18,12 +18,14 @@
 | **นำทางไฟล์ขนาดใหญ่ (>1,000 บรรทัด)** | [`docs/reference/CODE-MAP.md`](reference/CODE-MAP.md) | ไม่ต้อง grep ทั้งไฟล์ |
 | **สถานะงานค้าง / สรุปความเสี่ยงระบบ** | [`docs/handoff/HANDOFF-2026-09-06.md`](handoff/HANDOFF-2026-09-06.md) | อ่านเฉพาะเมื่อลุงจืดสั่ง/ถามความเสี่ยง |
 | **การเตรียมพร้อมกู้คืนระบบ (Disaster Recovery)** | [`docs/runbooks/RECOVERY-READINESS.md`](runbooks/RECOVERY-READINESS.md) | อ่านเฉพาะเมื่องานเกี่ยวกับ Backup/Restore |
+| **ศึกษา Benchmark โปรแกรมบัญชี (FlowAccount / PEAK)** | [`docs/features-flowaccount-peak/README.md`](features-flowaccount-peak/README.md) | ไม่ต้องอ่านไฟล์โค้ด |
 
 ---
 
 ## โครงสร้างใน `docs/`
 
 - [`kms/`](kms/README.md) — ฐานความรู้ระบบ (18 บทความ + ADR + Bugs) จัดทำแบบมี citation `path:line`
+- [`features-flowaccount-peak/`](features-flowaccount-peak/README.md) — บทวิเคราะห์และเปรียบเทียบคุณสมบัติเชิงลึก FlowAccount vs PEAK Account
 - [`skills/`](skills/) — Skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
 - [`handoff/`](handoff/) — รายงานส่งต่องานระหว่างเซสชัน
 - [`reference/`](reference/CODE-MAP.md) — แผนที่ระบุบรรทัดของไฟล์ขนาดยักษ์
