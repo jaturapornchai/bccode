@@ -1,4 +1,7 @@
 # HANDOFF: FlowAccount & PEAK Account Benchmark to Unified FlowPEAK Engine
+
+> **เอกสารประวัติ — ไม่ใช่ขอบเขตงานปัจจุบัน:** วันที่ 2026-09-07 ลุงจืดกำหนดให้โฟลเดอร์ features-flowaccount-peak มีเฉพาะข้อมูล FlowAccount และ PEAK Account ไม่รวมเงินเดือนและสเปก BC/ระบบออกแบบเอง เอกสารที่ลิงก์ด้านล่างเป็นสำเนาประวัติซึ่งย้ายออกแล้ว ให้เริ่มจาก [ดัชนีปัจจุบัน](../features-flowaccount-peak/README.md) แทนคำสั่งทำงานต่อใน handoff นี้
+
 **Date**: 2026-09-07  
 **Author**: Gemini / Antigravity  
 **Target Recipient**: OpenAI Codex (or Peer Agent)  
@@ -31,15 +34,15 @@
 
 | ไฟล์ | สาระสำคัญ |
 | :--- | :--- |
-| [`README.md`](file:///d:/bccode/docs/features-flowaccount-peak/README.md) | ดัชนีและภาพรวมเปรียบเทียบ FlowAccount vs PEAK |
-| [`01-flowaccount-in-depth.md`](file:///d:/bccode/docs/features-flowaccount-peak/01-flowaccount-in-depth.md) | เจาะลึกฟีเจอร์ FlowAccount (Sales, Purchase, 5 Journals, AutoKey OCR, FlowPayroll, e-Tax, Open API) |
-| [`02-peak-account-in-depth.md`](file:///d:/bccode/docs/features-flowaccount-peak/02-peak-account-in-depth.md) | เจาะลึกฟีเจอร์ PEAK (AllInOne API, FIFO Costing, PEAK Asset, PEAK Tax, PEAK Board, Webhooks) |
-| [`03-comparative-matrix.md`](file:///d:/bccode/docs/features-flowaccount-peak/03-comparative-matrix.md) | ตารางเปรียบเทียบ Feature-by-Feature 10 หมวดหมู่ |
-| [`04-bc-account-alignment-and-gaps.md`](file:///d:/bccode/docs/features-flowaccount-peak/04-bc-account-alignment-and-gaps.md) | การวิเคราะห์จุดแข็ง-จุดที่ควรเสริมเมื่อนำมาใช้กับระบบ |
-| [`05-flowaccount-data-model.md`](file:///d:/bccode/docs/features-flowaccount-peak/05-flowaccount-data-model.md) | โครงสร้าง ER Diagram & JSON Schemas ของ FlowAccount |
-| [`06-peak-account-data-model.md`](file:///d:/bccode/docs/features-flowaccount-peak/06-peak-account-data-model.md) | โครงสร้าง ER Diagram, FIFO Layer Table & Payload ของ PEAK Account |
-| [`07-bc-account-2tier-data-model.md`](file:///d:/bccode/docs/features-flowaccount-peak/07-bc-account-2tier-data-model.md) | สถาปัตยกรรม 2-Tier: MongoDB (Lean) + PostgreSQL (Enriched DDL) + Sync Pipeline Matrix |
-| [`08-unified-flowpeak-specification.md`](file:///d:/bccode/docs/features-flowaccount-peak/08-unified-flowpeak-specification.md) | **พิมพ์เขียวระบบผสมผสาน FlowPEAK**: รวม 8 โมดูลหลัก + PostgreSQL DDL ฉบับสมบูรณ์ |
+| [`README.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/README.md) | ดัชนีและภาพรวมเปรียบเทียบ FlowAccount vs PEAK |
+| [`01-flowaccount-in-depth.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/01-flowaccount-in-depth.md) | เจาะลึกฟีเจอร์ FlowAccount (Sales, Purchase, 5 Journals, AutoKey OCR, FlowPayroll, e-Tax, Open API) |
+| [`02-peak-account-in-depth.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/02-peak-account-in-depth.md) | เจาะลึกฟีเจอร์ PEAK (AllInOne API, FIFO Costing, PEAK Asset, PEAK Tax, PEAK Board, Webhooks) |
+| [`03-comparative-matrix.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/03-comparative-matrix.md) | ตารางเปรียบเทียบ Feature-by-Feature 10 หมวดหมู่ |
+| [`04-bc-account-alignment-and-gaps.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/04-bc-account-alignment-and-gaps.md) | การวิเคราะห์จุดแข็ง-จุดที่ควรเสริมเมื่อนำมาใช้กับระบบ |
+| [`05-flowaccount-data-model.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/05-flowaccount-data-model.md) | โครงสร้าง ER Diagram & JSON Schemas ของ FlowAccount |
+| [`06-peak-account-data-model.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/06-peak-account-data-model.md) | โครงสร้าง ER Diagram, FIFO Layer Table & Payload ของ PEAK Account |
+| [`07-bc-account-2tier-data-model.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/07-bc-account-2tier-data-model.md) | สถาปัตยกรรม 2-Tier: MongoDB (Lean) + PostgreSQL (Enriched DDL) + Sync Pipeline Matrix |
+| [`08-unified-flowpeak-specification.md`](file:///d:/bccode/docs/archive/flowpeak-legacy-2026-09-07/08-unified-flowpeak-specification.md) | **พิมพ์เขียวระบบผสมผสาน FlowPEAK**: รวม 8 โมดูลหลัก + PostgreSQL DDL ฉบับสมบูรณ์ |
 
 ---
 
@@ -69,7 +72,7 @@ Codex สามารถเลือกหยิบหัวข้อต่อ�
   - `POST /api/v1/assets/{id}/depreciate` (รันคำนวณค่าเสื่อมราคาและสร้าง JV)
 
 ### Option B: สร้าง Go Code Scaffolding & SQL Migrations
-- แปลง DDL ใน `docs/features-flowaccount-peak/08-unified-flowpeak-specification.md` เป็นไฟล์ Migration (เช่น `backend/migrations/*.sql`)
+- แปลง DDL ใน `docs/archive/flowpeak-legacy-2026-09-07/08-unified-flowpeak-specification.md` เป็นไฟล์ Migration (เช่น `backend/migrations/*.sql`)
 - สร้าง Go Structs สำหรับ Domain Entities และ FIFO Engine Logic:
   - `InventoryCostLayerService`: ฟังก์ชัน `ConsumeFIFOLayers(ctx, productID, warehouseID, qty)` ใน PostgreSQL
 
@@ -83,7 +86,7 @@ Codex สามารถเลือกหยิบหัวข้อต่อ�
 ```text
 คุณคือ Codex กำลังทำงานในโปรเจกต์ D:\bccode (branch: dev)
 กรุณาอ่าน HANDOFF ล่าสุดที่ docs/handoff/HANDOFF-2026-09-07-FLOWPEAK.md
-และศึกษาพิมพ์เขียวระบบผสมผสาน FlowPEAK ที่ docs/features-flowaccount-peak/08-unified-flowpeak-specification.md
+และศึกษาพิมพ์เขียวระบบผสมผสาน FlowPEAK ที่ docs/archive/flowpeak-legacy-2026-09-07/08-unified-flowpeak-specification.md
 
 สถานะปัจจุบัน:
 - ได้ศึกษาและสร้างสเปกของ FlowAccount + PEAK Account รวมร่างเป็น FlowPEAK เรียบร้อยแล้ว (commit: 0b35f791)
