@@ -267,6 +267,20 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/taxinvoicerequestsetting": "qr",
   "/posprintersetting": "print",
   "/customerpurchasecycle": "calendarCheck",
+  "/pettycashscreen": "money",
+  "/transaction/chequereceived": "creditCard",
+  "/transaction/chequeissued": "creditCard",
+  "/transaction/recurringinvoice": "receipt",
+  "/transaction/purchasecreditnote": "fileText",
+  "/transaction/recurringexpense": "calendarCheck",
+  "/transaction/costadjustment": "calculator",
+  "/dimensions/projects": "project",
+  "/report/araging": "barChart",
+  "/report/apaging": "fileChart",
+  "/report/expensesummary": "fileChart",
+  "/report/vatpnd3": "fileText",
+  "/report/vatpnd53": "fileText",
+  "/report/whtcertificate": "badge",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {
