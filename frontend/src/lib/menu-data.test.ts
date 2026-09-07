@@ -213,7 +213,6 @@ describe("menu language labels", () => {
       "sales-pos",
       "sales-loyalty",
       "restaurant-setup",
-      "marketplace-connectors",
     ]);
   });
 

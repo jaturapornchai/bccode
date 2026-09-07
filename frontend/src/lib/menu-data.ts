@@ -415,15 +415,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("qr-order", "สั่งอาหารด้วย QR", "QR Ordering", "/qrcodeordergroupselectscreen", "restaurant"),
         ],
       },
-      {
-        id: "marketplace-connectors",
-        title: ml("marketplace_connectors", "เชื่อมข้อมูลตลาดออนไลน์", "Marketplace Connections"),
-        items: [
-          tx("shopee-mappings", "เชื่อม Shopee", "Shopee Connection", "/marketplace/shopee", "master"),
-          tx("lazada-mappings", "เชื่อม Lazada", "Lazada Connection", "/marketplace/lazada", "master"),
-          tx("tiktok-mappings", "เชื่อม TikTok", "TikTok Connection", "/marketplace/tiktok", "master"),
-        ],
-      },
     ],
   },
 ];
