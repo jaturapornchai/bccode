@@ -144,9 +144,31 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - **High Information Density บนจอกว้าง**: พนักงานบัญชีและเจ้าของกิจการต้องการเห็นตัวเลือกทั้งหมดในพริบตา การแยกเป็นหน้าจอเต็มทำให้สามารถสแกนเมนูเป็นร้อยรายการและค้นหาได้เร็วกว่า Popup หลายเท่า
          - **Zero Context Loss**: การเปิดเป็นแท็บในระบบ ช่วยให้ผู้ใช้สลับกลับไปดูหน้าภาพรวม หรือเปิดหน้าจออื่นคู่ขนานได้โดยที่สถานะการค้นหาหรือคลังเมนูไม่สูญหาย
       4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-         - หน้าจอจัดการทางลัดเต็มจอ: [`frontend/src/app/menu/manage-shortcuts-screen.tsx`](frontend/src/app/menu/manage-shortcuts-screen.tsx)
-         - การเชื่อมแท็บและ Route `/shortcuts`: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx#L683-L702) และ [`WorkTabPanel`](frontend/src/app/menu/main-menu-screen.tsx#L2540-L2555)
-         - หน้า Dashboard ภาพรวมที่ถอด Modal ออก: [`frontend/src/app/menu/dashboard-home.tsx`](frontend/src/app/menu/dashboard-home.tsx#L163-L175)
+          - หน้าจอจัดการทางลัดเต็มจอ: [`frontend/src/app/menu/manage-shortcuts-screen.tsx`](frontend/src/app/menu/manage-shortcuts-screen.tsx)
+          - การเชื่อมแท็บและ Route `/shortcuts`: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx#L683-L702) และ [`WorkTabPanel`](frontend/src/app/menu/main-menu-screen.tsx#L2540-L2555)
+          - หน้า Dashboard ภาพรวมที่ถอด Modal ออก: [`frontend/src/app/menu/dashboard-home.tsx`](frontend/src/app/menu/dashboard-home.tsx#L163-L175)
+
+    * **แบบแผน: แถบเมนูข้างปรับความกว้างได้ (Resizable Navigation Sidebar with Grip Handle & Persistence) (ตั้งโดยลุงจืด 2026-09-07)**:
+      1) **แบบแผนใหม่ (New Standard Pattern)**:
+         - **ปรับความกว้างได้อิสระ (Resizable Sidebar Width)**: แถบเมนูนำทางด้านซ้ายใน `main-menu-screen.tsx` ปรับความกว้างได้ตั้งแต่ 260px ถึง 540px (ค่าเริ่มต้น 320px) โดยใช้ CSS variable `--menu-sidebar-width` กับ Tailwind arbitrary grid `lg:grid-cols-[var(--menu-sidebar-width)_minmax(0,1fr)]` บน desktop และคง `grid-cols-[minmax(0,1fr)]` บน mobile
+         - **มือจับลากชัดเจน (Prominent Floating Grip Handle)**:
+           * บริเวณมือจับกว้าง 16px (`w-4 -right-2 top-0 z-30`) ซ้อนกึ่งกลางเส้นขอบขวาของ `<aside>` พอดี จับง่ายทั้งเมาส์และจอสัมผัส
+           * เส้นไฮไลต์แนวตั้งตลอดความสูง (`inset-y-0 left-1/2 w-0.5 group-hover:bg-primary/50`) และปุ่มเม็ดยาตรงกลางพร้อมไอคอนกริป `GripVertical` (`h-10 w-3 rounded-full border bg-background/95 shadow-sm group-hover:h-12 group-hover:border-primary/50`)
+           * ขณะลาก (`isResizingSidebar`): เม็ดยาขยายเป็น `h-14 bg-primary text-primary-foreground`, แสดงคอร์เซอร์ `col-resize` ทั่วทั้งจอ และระงับ text selection (`select-none`)
+         - **จดจำค่าอัตโนมัติและทางลัดรีเซ็ต**:
+           * บันทึกค่าลง `localStorage` คีย์ `bc_menu_sidebar_width` ทันทีที่ปล่อยมือ
+           * **ดับเบิ้ลคลิก (Double-click)**: คืนค่าความกว้างเริ่มต้น (320px) ทันที
+           * **Keyboard Accessibility**: รองรับปุ่ม `ArrowLeft` / `ArrowRight` (ขยับทีละ 16px), `Home` (ต่ำสุด 260px), `End` (สูงสุด 540px), และ `Enter`/`Space` (รีเซ็ตเป็น 320px)
+      2) **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
+         - **ห้าม hardcode ความกว้างแถบเมนูด้านซ้ายตายตัว เช่น `lg:grid-cols-[280px_...]`**: เมนูภาษาไทยของระบบ ERP บัญชีมีข้อความยาว (เช่น "รายงานการเงิน", "ตรวจและซ่อมข้อมูล", "แท็กโครงการและแผนก") หากความกว้างแคบเกินไป ข้อความจะถูกตัดตกบรรทัด ทำให้อ่านยากและรกสายตา
+         - **ห้ามใส่ inline `gridTemplateColumns` ทับโดยตรงบน root grid**: เพราะจะทำให้ layout จอมือถือ (< lg) ถูกบีบเป็น 2 คอลัมน์พัง ต้องใช้ตัวแปร CSS `--menu-sidebar-width` ผ่าน Tailwind responsive class `lg:grid-cols-[var(--menu-sidebar-width)_...]` เท่านั้น
+         - **ห้ามทำมือจับลากเป็นเส้นบาง 1px ที่เล็งยาก**: คนไทย 40+ เล็งเมาส์ยาก ต้องมี hit area กว้างอย่างน้อย 16px และมี visual grip pill แสดงสถานะชัดเจน
+      3) **เหตุผลทางเทคนิค (Root Cause & Rationale)**:
+         - **Thai-First 40+ Accessibility**: ป้ายเมนูภาษาไทยต้องการความกว้างอย่างน้อย 300–320px เพื่อให้ข้อความส่วนใหญ่เรียงตัวในบรรทัดเดียว (Single-line) ไม่ตกบรรทัด
+         - **Universal Display Compatibility**: หน้าจอผู้ใช้มีตั้งแต่แล็ปท็อป 13 นิ้ว ไปจนถึงจอเดสก์ท็อป 4K การให้ผู้ใช้ลากปรับความกว้างได้เองและจดจำค่าถาวรช่วยให้ทุกคนปรับให้เหมาะกับสายตาและขนาดจอของตนเองได้สมบูรณ์แบบ
+      4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
+         - โค้ดควบคุมและ Drag handle: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx#L950-L1085)
+         - ชุดการทดสอบความกว้างและการจดจำ: [`frontend/src/app/menu/main-menu-sidebar-resize.test.ts`](frontend/src/app/menu/main-menu-sidebar-resize.test.ts)
 
 ---
 

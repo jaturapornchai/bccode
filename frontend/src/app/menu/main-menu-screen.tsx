@@ -33,6 +33,7 @@ import {
   Gift,
   GitBranch,
   Globe,
+  GripVertical,
   HandCoins,
   KeyRound,
   Landmark,
@@ -178,6 +179,10 @@ type SettingRecord = Record<string, unknown>;
 
 const firstTab: WorkTab = { id: "home", title: "ภาพรวม", route: "/menu", closable: false };
 const menuLayoutStorageKey = "bc_menu_layout_mode";
+const SIDEBAR_MIN_WIDTH = 260;
+const SIDEBAR_MAX_WIDTH = 540;
+const SIDEBAR_DEFAULT_WIDTH = 320;
+const SIDEBAR_WIDTH_STORAGE_KEY = "bc_menu_sidebar_width";
 const SOCIAL_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const DEFAULT_SOCIAL_POLL_INTERVAL_MS = 2000;
 const emptyLineDialog: LineDialogState = {
@@ -409,6 +414,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const [sessionStats, setSessionStats] = useState<SessionStatsData | null>(null);
   const [sessionsDialogOpen, setSessionsDialogOpen] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT_WIDTH);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [topChromeHidden, setTopChromeHidden] = useState(false);
   const [lineDialog, setLineDialog] = useState<LineDialogState>(emptyLineDialog);
   const setLineNotice = pushNotice;
@@ -474,6 +481,13 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     setLanguage(savedLanguage);
     document.documentElement.lang = savedLanguage;
     setMenuLayout(localStorage.getItem(menuLayoutStorageKey) === "top" ? "top" : "left");
+    const savedSidebarWidth = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
+    if (savedSidebarWidth) {
+      const parsed = Number(savedSidebarWidth);
+      if (Number.isFinite(parsed) && parsed >= SIDEBAR_MIN_WIDTH && parsed <= SIDEBAR_MAX_WIDTH) {
+        setSidebarWidth(parsed);
+      }
+    }
 
     const savedAuth = getAuthSession();
     const workspaceRaw = localStorage.getItem(workspaceStorageKeys.workspace);
@@ -935,59 +949,189 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     lastContentScrollTopRef.current = nextScrollTop;
   }
 
+  useEffect(() => {
+    if (!isResizingSidebar) return;
+    const prevCursor = document.body.style.cursor;
+    const prevUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      document.body.style.cursor = prevCursor;
+      document.body.style.userSelect = prevUserSelect;
+    };
+  }, [isResizingSidebar]);
+
+  const handleSidebarResizeStart = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      setIsResizingSidebar(true);
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        const maxWidth = typeof window !== "undefined" ? Math.min(SIDEBAR_MAX_WIDTH, Math.floor(window.innerWidth * 0.6)) : SIDEBAR_MAX_WIDTH;
+        const next = Math.min(maxWidth, Math.max(SIDEBAR_MIN_WIDTH, moveEvent.clientX));
+        setSidebarWidth(next);
+      };
+
+      const onPointerUp = (upEvent: PointerEvent) => {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+        setIsResizingSidebar(false);
+        const maxWidth = typeof window !== "undefined" ? Math.min(SIDEBAR_MAX_WIDTH, Math.floor(window.innerWidth * 0.6)) : SIDEBAR_MAX_WIDTH;
+        const finalWidth = Math.min(maxWidth, Math.max(SIDEBAR_MIN_WIDTH, upEvent.clientX));
+        const rounded = Math.round(finalWidth);
+        setSidebarWidth(rounded);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(rounded));
+        }
+      };
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    },
+    [],
+  );
+
+  const handleSidebarResizeReset = useCallback(() => {
+    setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(SIDEBAR_DEFAULT_WIDTH));
+    }
+  }, []);
+
+  const handleSidebarKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    let next: ((prev: number) => number) | number | null = null;
+    if (event.key === "ArrowLeft") {
+      next = (prev: number) => Math.max(SIDEBAR_MIN_WIDTH, prev - 16);
+    } else if (event.key === "ArrowRight") {
+      next = (prev: number) => Math.min(SIDEBAR_MAX_WIDTH, prev + 16);
+    } else if (event.key === "Home") {
+      next = SIDEBAR_MIN_WIDTH;
+    } else if (event.key === "End") {
+      next = SIDEBAR_MAX_WIDTH;
+    } else if (event.key === "Enter" || event.key === " ") {
+      next = SIDEBAR_DEFAULT_WIDTH;
+    }
+    if (next !== null) {
+      event.preventDefault();
+      setSidebarWidth((prev) => {
+        const computed = typeof next === "function" ? next(prev) : next;
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(computed));
+        }
+        return computed;
+      });
+    }
+  }, []);
+
   const showLeftMenu = menuLayout === "left" && !sidebarHidden;
   const menuLayoutLeftText = backendText(backendLanguage, "menu_layout_left", language === "th" ? "เมนูซ้าย" : "Left menu");
   const menuLayoutTopText = backendText(backendLanguage, "menu_layout_top", language === "th" ? "เมนูบน" : "Top menu");
 
   return (
-    <main className="min-h-dvh overflow-x-hidden bg-background text-foreground lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden">
-      <div className={cn("grid min-h-dvh min-w-0 grid-cols-[minmax(0,1fr)] lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden", showLeftMenu && "lg:grid-cols-[280px_minmax(0,1fr)]")}>
+    <main className={cn("min-h-dvh overflow-x-hidden bg-background text-foreground lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden", isResizingSidebar && "select-none")}>
+      <div
+        className={cn(
+          "grid min-h-dvh min-w-0 grid-cols-[minmax(0,1fr)] lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden",
+          showLeftMenu && "lg:grid-cols-[var(--menu-sidebar-width)_minmax(0,1fr)]",
+        )}
+        style={
+          showLeftMenu
+            ? ({ "--menu-sidebar-width": `${sidebarWidth}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
         {showLeftMenu ? (
-        <aside className="flex max-h-dvh min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-card/80 p-3 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
-          <label className="relative mb-3 block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="!pl-10" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
-          </label>
+          <aside className="relative flex max-h-dvh min-w-0 flex-col border-b border-border bg-card/80 lg:sticky lg:top-0 lg:h-dvh lg:border-b-0 lg:border-r">
+            <div className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain p-3">
+              <label className="relative mb-3 block">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input className="!pl-10" placeholder={mt(backendLanguage, "searchMenu")} value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} />
+              </label>
 
-          <nav aria-label={mt(backendLanguage, "navigation")} className="grid w-full max-w-full gap-2" role="tree">
-            <SidebarButton active={activeSection === "all" && activeTabId === firstTab.id} count={rows.length} icon={<LayoutDashboard className="h-4 w-4" />} label={mt(backendLanguage, "overview")} onClick={openOverview} />
-            {MENU_SECTIONS.map((section) => {
-              const label = menuText(section.title, language, backendLanguage);
-              return (
-                <MenuSectionAccordion
-                  active={activeSection === section.id}
-                  backendLanguage={backendLanguage}
-                  canAccessMenuItem={canAccessMenuItem}
-                  count={countSectionItems(section)}
-                  expanded={expandedSections.includes(section.id) || Boolean(globalSearch.trim())}
-                  expandedGroups={expandedGroups}
-                  key={section.id}
-                  language={language}
-                  label={label}
-                  onOpenNewItem={openMenuItemInNewTab}
-                  onOpenItem={openMenuItem}
-                  onToggleGroup={toggleGroup}
-                  onToggle={() => toggleSection(section.id)}
-                  search={globalSearch}
-                  section={section}
-                />
-              );
-            })}
-          </nav>
-          <div className="pointer-events-none sticky bottom-3 z-20 mt-auto flex justify-end pt-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="pointer-events-auto h-9 w-9 rounded-xl bg-background/95 shadow-lg backdrop-blur"
-              aria-label={mt(backendLanguage, "hideMenu")}
-              title={mt(backendLanguage, "hideMenu")}
-              onClick={() => setSidebarHidden(true)}
+              <nav aria-label={mt(backendLanguage, "navigation")} className="grid w-full max-w-full gap-2" role="tree">
+                <SidebarButton active={activeSection === "all" && activeTabId === firstTab.id} count={rows.length} icon={<LayoutDashboard className="h-4 w-4" />} label={mt(backendLanguage, "overview")} onClick={openOverview} />
+                {MENU_SECTIONS.map((section) => {
+                  const label = menuText(section.title, language, backendLanguage);
+                  return (
+                    <MenuSectionAccordion
+                      active={activeSection === section.id}
+                      backendLanguage={backendLanguage}
+                      canAccessMenuItem={canAccessMenuItem}
+                      count={countSectionItems(section)}
+                      expanded={expandedSections.includes(section.id) || Boolean(globalSearch.trim())}
+                      expandedGroups={expandedGroups}
+                      key={section.id}
+                      language={language}
+                      label={label}
+                      onOpenNewItem={openMenuItemInNewTab}
+                      onOpenItem={openMenuItem}
+                      onToggleGroup={toggleGroup}
+                      onToggle={() => toggleSection(section.id)}
+                      search={globalSearch}
+                      section={section}
+                    />
+                  );
+                })}
+              </nav>
+              <div className="pointer-events-none sticky bottom-3 z-20 mt-auto flex justify-end pt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="pointer-events-auto h-9 w-9 rounded-xl bg-background/95 shadow-lg backdrop-blur"
+                  aria-label={mt(backendLanguage, "hideMenu")}
+                  title={mt(backendLanguage, "hideMenu")}
+                  onClick={() => setSidebarHidden(true)}
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Drag handle for resizing sidebar */}
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-valuenow={sidebarWidth}
+              aria-valuemin={SIDEBAR_MIN_WIDTH}
+              aria-valuemax={SIDEBAR_MAX_WIDTH}
+              aria-label={language === "th" ? "ปรับขนาดความกว้างเมนู (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)" : "Resize menu sidebar (drag to resize, double click to reset)"}
+              title={language === "th" ? "ปรับขนาดความกว้างเมนู (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)" : "Resize menu sidebar (drag to resize, double click to reset)"}
+              tabIndex={0}
+              onPointerDown={handleSidebarResizeStart}
+              onDoubleClick={handleSidebarResizeReset}
+              onKeyDown={handleSidebarKeyDown}
+              className={cn(
+                "group absolute -right-2 top-0 z-30 hidden h-full w-4 cursor-col-resize select-none items-center justify-center transition-colors lg:flex",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                isResizingSidebar && "bg-primary/10",
+              )}
             >
-              <PanelLeftClose className="h-4 w-4" />
-            </Button>
-          </div>
-        </aside>
+              <div
+                className={cn(
+                  "absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 transition-colors duration-150",
+                  "group-hover:bg-primary/50",
+                  isResizingSidebar ? "bg-primary" : "bg-transparent",
+                )}
+              />
+              <div
+                className={cn(
+                  "relative z-10 flex h-10 w-3 items-center justify-center rounded-full border border-border/80 bg-background/95 shadow-sm transition-all duration-150",
+                  "group-hover:h-12 group-hover:border-primary/50 group-hover:bg-card group-hover:shadow",
+                  isResizingSidebar && "h-14 border-primary bg-primary text-primary-foreground shadow-md",
+                )}
+              >
+                <GripVertical
+                  className={cn(
+                    "h-3 w-3 text-muted-foreground/70 transition-colors",
+                    "group-hover:text-primary",
+                    isResizingSidebar && "text-primary-foreground",
+                  )}
+                />
+              </div>
+            </div>
+          </aside>
         ) : null}
 
         <section
