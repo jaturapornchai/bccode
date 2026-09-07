@@ -68,6 +68,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("expense-record", "บันทึกค่าใช้จ่าย", "Expense Record", "/transaction/expense"),
           tx("recurring-expense", "ค่าใช้จ่ายประจำ", "Recurring Expenses", "/transaction/recurringexpense"),
           tx("document-vault", "คลังเอกสารและสแกนบิล", "Document Vault & Scan", "/transaction/documentvault"),
+          tx("inter-company-inbox", "กล่องรับเอกสารระหว่างกิจการ", "Inter-Company Document Inbox", "/transaction/documentinbox"),
           tx("withholding-tax-deduction", "ภาษีหัก ณ ที่จ่าย", "Withholding Tax", "/transaction/withholdingtax", "finance"),
           tx("purchase-partial", "รับสินค้าแบบทยอยรับ", "Gradual Receipt", "/transaction/purchasepartial"),
           tx("accrual-receive", "ตั้งหนี้จากทยอยรับ", "Set Debt from Receipt", "/transaction/accrualreceive"),
@@ -84,6 +85,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("advance-payment-refund", "รับคืนเงินล่วงหน้า", "Advance Refund", "/transaction/advancepaymentrefund", "finance"),
           tx("deposit", "จ่ายเงินมัดจำ", "Pay Deposit", "/transaction/deposit", "finance"),
           tx("deposit-refund", "รับคืนเงินมัดจำ", "Deposit Refund", "/transaction/depositrefund", "finance"),
+          tx("payment-voucher", "ใบสำคัญจ่าย", "Payment Voucher", "/transaction/paymentvoucher", "finance"),
         ],
       },
       {
@@ -135,6 +137,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("paid", "รับชำระ", "Receive Payment", "/transaction/paid", "finance"),
           tx("pay", "จ่ายชำระ", "Pay", "/transaction/pay", "finance"),
           tx("petty-cash", "เงินสดย่อย", "Petty Cash", "/pettycashscreen", "finance"),
+          tx("account-transfer", "โอนเงินระหว่างบัญชี", "Account Transfer", "/transaction/accounttransfer", "finance"),
           tx("cheque-received", "ทะเบียนเช็ครับ", "Cheques Received", "/transaction/chequereceived", "finance"),
           tx("cheque-issued", "ทะเบียนเช็คจ่าย", "Cheques Issued", "/transaction/chequeissued", "finance"),
           tx("cash-drawer", "รับ-ส่งเงิน POS", "POS Cash Drawer", "/cashinginthedrawer", "finance"),
@@ -156,6 +159,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("chart-of-accounts", "ผังบัญชี", "Chart of Accounts", "/gl/chartofaccounts", "finance"),
           tx("working-paper", "กระดาษทำการ", "Working Paper", "/gl/workingpaper", "finance"),
           tx("period-lock", "ล็อกงวดบัญชี", "Period Lock", "/gl/periodlock", "finance"),
+          tx("financial-close", "ปิดงบบัญชีสิ้นงวด", "Financial Period Close", "/gl/financialclose", "finance"),
           tx("daily-info", "ตรวจสอบประจำวัน", "Daily Check", "/checkdaily/dailyinfoscreen", "finance"),
         ],
       },
@@ -172,9 +176,12 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("profit-loss", "งบกำไรขาดทุน", "Profit and Loss", "/report/pnl", "report"),
           tx("balance-sheet", "งบดุล", "Balance Sheet", "/report/balancesheet", "report"),
           tx("trial-balance", "งบทดลอง", "Trial Balance", "/report/trialbalance", "report"),
+          tx("general-ledger", "บัญชีแยกประเภท", "General Ledger", "/report/ledger", "report", "ledger"),
           tx("cash-flow", "งบกระแสเงินสด", "Cash Flow Statement", "/report/cashflow", "report"),
+          tx("cash-flow-forecast", "ประมาณการกระแสเงินสด", "Cash Flow Forecast", "/report/cashflowforecast", "report"),
           tx("financial-graphs", "กราฟประกอบงบการเงิน", "Financial Statement Graphs", "/report/financialgraphs", "report"),
           tx("project-pnl", "กำไรขาดทุนตามโครงการ", "Project P&L", "/report/project-pnl", "report"),
+          tx("project-summary-report", "สรุปภาพรวมโครงการ", "Project Summary Report", "/report/projectsummary", "report"),
         ],
       },
       {
@@ -183,10 +190,13 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("vat-sale", "รายงานภาษีขาย", "VAT Sale", "/report/reportvatsale", "report"),
           tx("vat-buy", "รายงานภาษีซื้อ", "VAT Purchase", "/report/reportvatbuy", "report"),
+          tx("unreceived-tax-invoice", "ค่าใช้จ่ายยังไม่ได้รับใบกำกับ", "Unreceived Tax Invoices", "/report/unreceivedtaxinvoice", "report"),
           tx("vat-pp30", "แบบยื่นภาษี ภ.พ.30", "VAT Return (P.P.30)", "/report/vatpp30", "report"),
+          tx("vat-pp36", "แบบยื่น ภ.พ.36", "P.P.36 Return", "/report/vatpp36", "report"),
           tx("vat-pnd3", "แบบยื่น ภ.ง.ด.3", "P.N.D.3 Return", "/report/vatpnd3", "report"),
           tx("vat-pnd53", "แบบยื่น ภ.ง.ด.53", "P.N.D.53 Return", "/report/vatpnd53", "report"),
           tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
+          tx("withholding-tax-received", "ทะเบียนถูกหัก ณ ที่จ่าย", "Withholding Tax Received", "/report/whtreceived", "report"),
           tx("withholding-tax-report", "รายงานภาษีหัก ณ ที่จ่าย", "Withholding Tax Report", "/report/wht-reports", "report"),
         ],
       },
@@ -196,6 +206,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("sales", "รายงานขาย", "Sales Report", "/report/reportdedebisales", "report"),
           tx("sales-daily", "รายงานขายรายวัน", "Daily Sales", "/report/reportdedebisalesdaily", "report"),
+          tx("sales-by-seller", "ยอดขายตามพนักงาน", "Sales by Seller", "/report/salesbyseller", "report", "sales_by_seller"),
           tx("ar-aging", "รายงานอายุลูกหนี้", "AR Aging Report", "/report/araging", "report"),
           tx("gross-profit-doc", "กำไรขั้นต้นตามเอกสาร", "Gross Profit by Document", "/report/salesreportbydocument", "report"),
           tx("gross-profit-by-document", "กำไรขั้นต้นตามเอกสาร", "Gross Profit by Document", "/report/reportgrossprofitbydocument", "report"),
@@ -221,6 +232,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("stock-balance-warehouse", "คงเหลือตามคลัง", "Stock by Warehouse", "/report/stockbalancewarehouse", "report"),
           tx("stock-balance-location", "คงเหลือตามโซนเก็บสินค้า", "Stock by Storage Zone", "/report/stockbalancelocation", "report"),
           tx("inventory", "รายงานสินค้าคงเหลือ", "Inventory Report", "/report/reportdedebistockbalance", "report"),
+          tx("low-stock-alert", "สินค้าใกล้หมดขั้นต่ำ", "Low Stock Alert", "/report/lowstock", "report"),
           tx("stock-movement-cost", "เคลื่อนไหวสินค้าพร้อมต้นทุน", "Stock Movement with Cost", "/report/stockmovementcost", "report"),
           tx("product-movement", "ความเคลื่อนไหวสินค้า", "Product Movement", "/report/reportstockmovement", "report"),
         ],
@@ -277,6 +289,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("asset-registry", "ทะเบียนสินทรัพย์ถาวร", "Fixed Asset Registry", "/asset/registry", "master"),
           tx("asset-depreciation", "คำนวณค่าเสื่อมราคา", "Asset Depreciation", "/asset/depreciation", "master"),
+          tx("asset-disposal", "จำหน่ายและตัดสินทรัพย์", "Asset Disposal", "/asset/disposal", "master"),
         ],
       },
       {
@@ -285,6 +298,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("project-registry", "ทะเบียนโครงการ", "Project Registry", "/dimensions/projects", "master"),
           tx("project-department-tags", "แท็กโครงการและแผนก", "Project & Department Tags", "/dimensions/tags", "master"),
+          tx("boq-project", "ประมาณการราคา (BOQ)", "Bill of Quantities (BOQ)", "/dimensions/boq", "master"),
         ],
       },
       {

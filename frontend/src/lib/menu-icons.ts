@@ -281,6 +281,20 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/report/vatpnd3": "fileText",
   "/report/vatpnd53": "fileText",
   "/report/whtcertificate": "badge",
+  "/transaction/documentinbox": "inbox",
+  "/transaction/paymentvoucher": "receipt",
+  "/transaction/accounttransfer": "payment",
+  "/gl/financialclose": "check",
+  "/report/ledger": "table",
+  "/report/cashflowforecast": "activity",
+  "/report/projectsummary": "project",
+  "/report/unreceivedtaxinvoice": "fileChart",
+  "/report/vatpp36": "fileText",
+  "/report/whtreceived": "badge",
+  "/report/salesbyseller": "user",
+  "/report/lowstock": "boxes",
+  "/asset/disposal": "archive",
+  "/dimensions/boq": "calculator",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {

@@ -2,17 +2,19 @@
 
 ตรวจแหล่งข้อมูล: 2026-09-07 | ไม่รวมระบบเงินเดือนและ HR
 
-เทียบ 268 รายการใน 18 หมวดจาก[บัญชีเมนูพร้อมรายละเอียด](09-flowaccount-peak-menu-catalog.md) ช่องที่มีรหัสลิงก์หมายถึงพบหัวข้อ/ความสามารถในคู่มือของค่ายนั้น ส่วน “ยังไม่ยืนยัน” ไม่ได้แปลว่าไม่มี ไม่มีการจัดอันดับว่าค่ายใดดีกว่าหรืออ้างสถาปัตยกรรมภายในโดยไม่มีหลักฐาน
+เทียบ 311 รายการใน 18 หมวดจาก[บัญชีเมนูพร้อมรายละเอียด](09-flowaccount-peak-menu-catalog.md) ช่องที่มีรหัสลิงก์หมายถึงพบหัวข้อ/ความสามารถในคู่มือของค่ายนั้น ส่วน “ยังไม่ยืนยัน” ไม่ได้แปลว่าไม่มี ไม่มีการจัดอันดับว่าค่ายใดดีกว่าหรืออ้างสถาปัตยกรรมภายในโดยไม่มีหลักฐาน
 
 จำนวนรวมมีทั้งเมนู ขั้นตอน รายงาน ตั้งค่า และการเชื่อมต่อ รวมทางลัดที่ระบุในบัญชีเมนู จึงไม่ใช่จำนวนหน้าจอไม่ซ้ำ รายการที่ชื่อคล้ายกันอาจมีขอบเขตหรือแพ็กเกจต่างกัน
 
-## ## 01 — ภาพรวมกิจการ
+##
+
+## 01 — ภาพรวมกิจการ
 
 | รหัส | เมนู/ความสามารถ | FlowAccount | PEAK Account |
 |---|---|---|---|
 | 01.01 | ภาพรวมกิจการ | [F01] | [P08] |
 | 01.02 | ภาพรวมเงินคงเหลือ | [F06] | [P03] |
-| 01.03 | ภาพรวมยอดค้างรับ/ค้างจ่าย | ยังไม่ยืนยัน | [P18] |
+| 01.03 | ภาพรวมยอดค้างรับ/ค้างจ่าย | [F00] | [P09] |
 | 01.04 | วิเคราะห์กิจการสำหรับผู้บริหาร | ยังไม่ยืนยัน | [P08] |
 
 ## 02 — ขายและเอกสารรับเงิน
@@ -21,27 +23,30 @@
 |---|---|---|---|
 | 02.01 | ใบเสนอราคา | [F02] | [P01] |
 | 02.02 | ตอบรับ/ปฏิเสธใบเสนอราคา | ยังไม่ยืนยัน | [P01] |
-| 02.03 | ใบส่งของ | [F02] | [P01] |
+| 02.03 | ใบส่งของ | [F02], [F26] | [P01], [P66] |
 | 02.04 | ใบแจ้งหนี้ | [F02] | [P01] |
 | 02.05 | ใบกำกับภาษีขาย | [F02] | [P01] |
-| 02.06 | ใบกำกับภาษีอย่างย่อ | [F02] | ยังไม่ยืนยัน |
+| 02.06 | ใบกำกับภาษีอย่างย่อ | [F02] | [P56] |
 | 02.07 | ขายเงินสด | [F02] | ยังไม่ยืนยัน |
 | 02.08 | ใบเสร็จรับเงิน | [F02] | [P01] |
 | 02.09 | รับเงินอื่น | [F02] | ยังไม่ยืนยัน |
-| 02.10 | ใบรับเงินมัดจำ | [F02] | [P01] |
+| 02.10 | ใบรับเงินมัดจำ | [F02], [F27] | [P01] |
 | 02.11 | ใช้/คืนเงินมัดจำ | ยังไม่ยืนยัน | [P01] |
 | 02.12 | แบ่งเอกสารและแบ่งรับชำระ | [F02] | [P01] |
 | 02.13 | ใบลดหนี้ขาย | [F02] | [P01] |
 | 02.14 | ใบเพิ่มหนี้ขาย | [F02] | [P01] |
 | 02.15 | เอกสารขายประจำ | ยังไม่ยืนยัน | [P01] |
-| 02.16 | เอกสารสกุลเงินต่างประเทศ | [F02] | ยังไม่ยืนยัน |
+| 02.16 | เอกสารสกุลเงินต่างประเทศ | [F02] | [P57] |
 | 02.17 | เงินประกันผลงาน | [F02] | [P29] |
 | 02.18 | รับเงินขาด/เกินและผลต่าง | [F02] | [P01] |
 | 02.19 | นำเข้าเอกสารขาย | [F02] | [P01] |
-| 02.20 | VAT และส่วนลดรายบรรทัด | [F18] | ยังไม่ยืนยัน |
+| 02.20 | VAT และส่วนลดรายบรรทัด | [F18], [F28] | ยังไม่ยืนยัน |
 | 02.21 | บันทึกภายในเอกสาร | [F18] | ยังไม่ยืนยัน |
 | 02.22 | ประวัติการส่งอีเมลเอกสาร | ยังไม่ยืนยัน | [P25] |
 | 02.23 | ลูกค้าขอใบกำกับภาษีภายหลัง | ยังไม่ยืนยัน | [P28] |
+| 02.24 | แท็บสถานะใบเสนอราคา | ยังไม่ยืนยัน | [P39] |
+| 02.25 | เปลี่ยนสถานะใบเสนอราคา/ใบสั่งซื้อเป็นชุด | ยังไม่ยืนยัน | [P40] |
+| 02.26 | ดึงอัตราแลกเปลี่ยน | ยังไม่ยืนยัน | [P70] |
 
 ## 03 — ซื้อและรับสินค้า
 
@@ -55,10 +60,10 @@
 | 03.06 | ใบจ่ายเงินมัดจำ | ยังไม่ยืนยัน | [P02] |
 | 03.07 | แบ่งรายการซื้อ/แบ่งจ่าย | [F03] | [P02] |
 | 03.08 | รับใบกำกับภาษีซื้อ | ยังไม่ยืนยัน | [P02] |
-| 03.09 | รับใบลดหนี้ | ยังไม่ยืนยัน | [P02] |
+| 03.09 | รับใบลดหนี้ | [F29] | [P02] |
 | 03.10 | รับใบเพิ่มหนี้ | ยังไม่ยืนยัน | [P02] |
-| 03.11 | รับเงินคืนจากผู้ขาย | ยังไม่ยืนยัน | [P02] |
-| 03.12 | พิมพ์เอกสารจัดซื้อทางเลือก | ยังไม่ยืนยัน | [P02] |
+| 03.11 | รับเงินคืนจากผู้ขาย | [F29] | [P02] |
+| 03.12 | พิมพ์เอกสารจัดซื้อทางเลือก | ยังไม่ยืนยัน | [P02], [P58] |
 
 ## 04 — ค่าใช้จ่ายและการจ่ายเงิน
 
@@ -71,9 +76,14 @@
 | 04.05 | จ่ายหลายช่องทาง/แบ่งจ่าย | ยังไม่ยืนยัน | [P02] |
 | 04.06 | ค่าธรรมเนียมและผลต่างเงินตรา | ยังไม่ยืนยัน | [P02] |
 | 04.07 | รับใบเสร็จจากคู่ค้า | ยังไม่ยืนยัน | [P02] |
-| 04.08 | พิมพ์ใบสำคัญจ่าย | ยังไม่ยืนยัน | [P02] |
+| 04.08 | พิมพ์ใบสำคัญจ่าย | [F30] | [P02] |
 | 04.09 | ใบรับรองแทนใบเสร็จรับเงิน | ยังไม่ยืนยัน | [P02] |
 | 04.10 | หัก ณ ที่จ่ายระหว่างจ่ายเงิน | ยังไม่ยืนยัน | [P02] |
+| 04.11 | เตรียมจ่ายชำระหนี้/จ่ายเงินทุน | [F41] | ยังไม่ยืนยัน |
+| 04.12 | คืนเงินสำรองจ่าย | [F42] | ยังไม่ยืนยัน |
+| 04.13 | ส่งจ่ายผู้จำหน่ายผ่าน K Cash Connect Plus อัตโนมัติ | [F43] | ยังไม่ยืนยัน |
+| 04.14 | ติดตามสถานะส่งไฟล์และจ่ายผู้จำหน่าย | [F43] | ยังไม่ยืนยัน |
+| 04.15 | หมวดหมู่ค่าใช้จ่ายสำหรับนักบัญชี | [F51] | ยังไม่ยืนยัน |
 
 ## 05 — ลูกหนี้และเจ้าหนี้
 
@@ -85,8 +95,8 @@
 | 05.04 | อายุเจ้าหนี้ | ยังไม่ยืนยัน | [P09] |
 | 05.05 | ใบวางบิลรวม | [F02] | [P01] |
 | 05.06 | ใบเสร็จรวม/รับชำระรวม | [F02] | [P01] |
-| 05.07 | ใบรวมจ่าย | ยังไม่ยืนยัน | [P02] |
-| 05.08 | แบ่งชำระใบรวมจ่าย | ยังไม่ยืนยัน | [P02] |
+| 05.07 | ใบรวมจ่าย | [F30] | [P02] |
+| 05.08 | แบ่งชำระใบรวมจ่าย | [F30] | [P02] |
 | 05.09 | ลูกหนี้ตั้งต้นรายเอกสาร | ยังไม่ยืนยัน | [P26] |
 | 05.10 | เจ้าหนี้ตั้งต้นรายเอกสาร | ยังไม่ยืนยัน | [P27] |
 
@@ -104,7 +114,7 @@
 | 06.08 | เช็ครับ | [F05] | [P03] |
 | 06.09 | เช็คจ่าย | [F06] | [P03] |
 | 06.10 | เช็คเรียกเก็บไม่ได้ | ยังไม่ยืนยัน | [P03] |
-| 06.11 | ไฟล์โอนเงินธุรกิจเป็นชุด | ยังไม่ยืนยัน | [P03] |
+| 06.11 | ไฟล์โอนเงินธุรกิจเป็นชุด | [F31] | [P03] |
 | 06.12 | เปิด/ปิดช่องทางรับจ่าย | [F06] | [P03] |
 
 ## 07 — กระทบยอด
@@ -113,21 +123,23 @@
 |---|---|---|---|
 | 07.01 | รายการเดินบัญชีธนาคาร | [F06] | [P03] |
 | 07.02 | นำเข้า Statement | [F06] | [P03] |
-| 07.03 | เชื่อมรายการธนาคาร | [F06] | [P03] |
+| 07.03 | เชื่อมรายการธนาคาร | [F06], [F32] | [P03] |
 | 07.04 | จับคู่รายการ | [F06] | [P03] |
 | 07.05 | กระทบยอดอัตโนมัติ/ด้วยตนเอง | ยังไม่ยืนยัน | [P03] |
 | 07.06 | สร้างรายการจากหน้ากระทบยอด | ยังไม่ยืนยัน | [P03] |
-| 07.07 | ยกเลิกการจับคู่/รายการนำเข้า | ยังไม่ยืนยัน | [P03] |
+| 07.07 | ยกเลิกการจับคู่/รายการนำเข้า | [F33] | [P03] |
 | 07.08 | ตรวจรายการธนาคารซ้ำ | ยังไม่ยืนยัน | [P03] |
 | 07.09 | กระทบยอดเงินสดและสำรองรับจ่าย | ยังไม่ยืนยัน | [P03] |
+| 07.10 | แก้ไขการจับคู่กระทบยอด | [F33] | ยังไม่ยืนยัน |
+| 07.11 | บันทึกบัญชีผลต่างกระทบยอด | [F33] | ยังไม่ยืนยัน |
 
 ## 08 — สินค้า บริการ และคลัง
 
 | รหัส | เมนู/ความสามารถ | FlowAccount | PEAK Account |
 |---|---|---|---|
 | 08.01 | สินค้า | [F04] | [P04] |
-| 08.02 | บริการ | [F19] | [P04] |
-| 08.03 | หน่วยนับและหน่วยย่อย | [F19] | [P04] |
+| 08.02 | บริการ | [F19], [F34] | [P04] |
+| 08.03 | หน่วยนับและหน่วยย่อย | [F19], [F35] | [P04] |
 | 08.04 | ฐานราคาซื้อ/ขาย | [F19] | [P04] |
 | 08.05 | รายการจัดชุด | ยังไม่ยืนยัน | [P04], [P32] |
 | 08.06 | คลังสินค้า | [F04] | ยังไม่ยืนยัน |
@@ -142,10 +154,11 @@
 | 08.15 | ใบปรับต้นทุนสินค้า | ยังไม่ยืนยัน | [P04] |
 | 08.16 | คำนวณต้นทุนขายใหม่ | ยังไม่ยืนยัน | [P04] |
 | 08.17 | นโยบายคำนวณต้นทุน | [F24], [F25] | [P04], [P15], [P31] |
-| 08.18 | แจ้งเตือนสินค้าใกล้หมด | [F05] | ยังไม่ยืนยัน |
+| 08.18 | แจ้งเตือนสินค้าใกล้หมด | [F05], [F36] | ยังไม่ยืนยัน |
 | 08.19 | ใช้เครื่องอ่านบาร์โค้ด | [F19], [F23] | [P04], [P37] |
 | 08.20 | นำเข้า/ส่งออกข้อมูลสินค้า | [F04], [F05] | [P04] |
 | 08.21 | สินค้าไม่นับสต็อก | [F19], [F24] | ยังไม่ยืนยัน |
+| 08.22 | รายการสินค้าใกล้หมด | [F36] | ยังไม่ยืนยัน |
 
 ## 09 — สินทรัพย์
 
@@ -169,50 +182,55 @@
 | รหัส | เมนู/ความสามารถ | FlowAccount | PEAK Account |
 |---|---|---|---|
 | 10.01 | ทะเบียนภาษีขาย | [F08] | [P06] |
-| 10.02 | ทะเบียนภาษีซื้อ | [F08] | [P06] |
+| 10.02 | ทะเบียนภาษีซื้อ | [F08], [F37] | [P06] |
 | 10.03 | ภาษีซื้อข้ามเดือน/ไม่ขอคืน | ยังไม่ยืนยัน | [P02], [P06] |
 | 10.04 | ค่าใช้จ่ายที่ยังไม่ได้ใบกำกับ | ยังไม่ยืนยัน | [P09] |
 | 10.05 | ภ.พ.30 | [F08] | [P06] |
 | 10.06 | ภ.พ.30 เพิ่มเติม/เกินกำหนด | ยังไม่ยืนยัน | [P06] |
 | 10.07 | ภ.พ.36 | [F08] | ยังไม่ยืนยัน |
-| 10.08 | หนังสือรับรองหัก ณ ที่จ่ายคู่ค้า | [F08] | [P02], [P06] |
+| 10.08 | หนังสือรับรองหัก ณ ที่จ่ายคู่ค้า | [F08] | [P02], [P06], [P65] |
 | 10.09 | ทะเบียนถูกหัก ณ ที่จ่าย | ยังไม่ยืนยัน | [P03], [P09] |
 | 10.10 | ภ.ง.ด.3 | [F08] | [P06] |
 | 10.11 | ภ.ง.ด.53 | [F08] | [P06] |
 | 10.12 | ส่งออกไฟล์ยื่นภาษี | [F08] | [P09] |
-| 10.13 | ปิดยอดภาษีและบันทึกจ่าย | ยังไม่ยืนยัน | [P02], [P03], [P06] |
-| 10.14 | e-Withholding Tax | ยังไม่ยืนยัน | [P02] |
+| 10.13 | ปิดยอดภาษีและบันทึกจ่าย | ยังไม่ยืนยัน | [P02], [P03], [P06], [P64] |
+| 10.14 | e-Withholding Tax | [F31] | [P02] |
 | 10.15 | e-Tax Invoice by Time Stamp | [F05] | [P10] |
 | 10.16 | e-Tax Invoice & e-Receipt | ยังไม่ยืนยัน | [P10] |
 | 10.17 | ขอใบกำกับผ่าน QR/ลิงก์ | [F05] | [P11] |
 | 10.18 | ส่งหนังสือหัก ณ ที่จ่ายทางอีเมล | ยังไม่ยืนยัน | [P06] |
 | 10.19 | บันทึกธุรกรรมที่เกี่ยวกับ ภ.ง.ด.54 | ยังไม่ยืนยัน | [P02] |
+| 10.20 | ภ.พ.30 ยื่นเพิ่มเติม | ยังไม่ยืนยัน | [P41] |
+| 10.21 | ภ.พ.30 เกินกำหนดเวลา | ยังไม่ยืนยัน | [P42] |
+| 10.22 | รับใบกำกับภาษีซื้อเป็นชุด | [F44] | ยังไม่ยืนยัน |
+| 10.23 | ไม่ใช้สิทธิขอคืนภาษีซื้อเป็นชุด | [F44] | ยังไม่ยืนยัน |
 
 ## 11 — บัญชีและปิดงวด
 
 | รหัส | เมนู/ความสามารถ | FlowAccount | PEAK Account |
 |---|---|---|---|
 | 11.01 | ผังบัญชี | [F05] | [P03] |
-| 11.02 | สมุดรายวันซื้อ | [F09] | ยังไม่ยืนยัน |
-| 11.03 | สมุดรายวันขาย | [F09] | ยังไม่ยืนยัน |
-| 11.04 | สมุดรายวันรับ | [F09] | ยังไม่ยืนยัน |
-| 11.05 | สมุดรายวันจ่าย | [F09] | ยังไม่ยืนยัน |
-| 11.06 | สมุดรายวันทั่วไป | [F09] | [P03] |
-| 11.07 | ตรวจและอนุมัติรายการรายวัน | [F20] | [P03] |
-| 11.08 | บัญชีแยกประเภท | [F09] | [P03] |
-| 11.09 | งบทดลอง | [F09] | [P03] |
-| 11.10 | กระดาษทำการ | ยังไม่ยืนยัน | [P09], [P33] |
-| 11.11 | ปรับปรุง/โอนปิดภาษี | ยังไม่ยืนยัน | [P03] |
-| 11.12 | ล็อกและปลดล็อกงวด | [F05] | [P11] |
-| 11.13 | ปิดงบการเงิน | [F10] | ยังไม่ยืนยัน |
-| 11.14 | จัดรูปแบบงบกำไรขาดทุน | ยังไม่ยืนยัน | [P03] |
-| 11.15 | ส่งออก XBRL | ยังไม่ยืนยัน | [P03] |
+| 11.02 | สมุดรายวัน | [F09] | [P03], [P59] |
+| 11.03 | เลือกประเภทสมุดรายวัน | [F09] | [P59] |
+| 11.04 | ตรวจและอนุมัติรายการรายวัน | [F20] | [P03], [P62] |
+| 11.05 | บัญชีแยกประเภท | [F09] | [P03] |
+| 11.06 | งบทดลอง | [F09] | [P03] |
+| 11.07 | กระดาษทำการ | ยังไม่ยืนยัน | [P09], [P33] |
+| 11.08 | ปรับปรุง/โอนปิดภาษี | ยังไม่ยืนยัน | [P03] |
+| 11.09 | ล็อกและปลดล็อกงวด | [F05] | [P11] |
+| 11.10 | ปิดงบการเงิน | [F10], [F38] | [P60] |
+| 11.11 | จัดรูปแบบงบกำไรขาดทุน | ยังไม่ยืนยัน | [P03] |
+| 11.12 | ส่งออก XBRL | ยังไม่ยืนยัน | [P03] |
+| 11.13 | นำเข้าสมุดบัญชีรายวัน | ยังไม่ยืนยัน | [P43] |
+| 11.14 | รีเซ็ตและอนุมัติปิดบัญชีใหม่ | [F38] | ยังไม่ยืนยัน |
+| 11.15 | แจ้งเตือนรายการที่ควรตรวจสอบในสมุดบัญชีรายวัน | ยังไม่ยืนยัน | [P63] |
+| 11.16 | ย้ายข้อมูล/ยอดยกมาจากระบบบัญชีเดิม | ยังไม่ยืนยัน | [P72], [P73] |
 
 ## 12 — โครงการ มิติข้อมูล และ BOQ
 
 | รหัส | เมนู/ความสามารถ | FlowAccount | PEAK Account |
 |---|---|---|---|
-| 12.01 | โครงการ | [F09] | [P08] |
+| 12.01 | โครงการ | [F09], [F39] | [P08] |
 | 12.02 | กลุ่มจัดประเภท | ยังไม่ยืนยัน | [P08], [P13] |
 | 12.03 | รายการย่อยของมิติ | ยังไม่ยืนยัน | [P08], [P13] |
 | 12.04 | จัดประเภทระดับเอกสาร | ยังไม่ยืนยัน | [P08] |
@@ -222,6 +240,7 @@
 | 12.08 | เทมเพลต BOQ | [F11] | ยังไม่ยืนยัน |
 | 12.09 | สถานะและการพิมพ์ BOQ | [F11] | ยังไม่ยืนยัน |
 | 12.10 | ออกเอกสารจาก BOQ | [F11] | ยังไม่ยืนยัน |
+| 12.11 | แท็กเอกสารและรายงานตามแท็ก | ยังไม่ยืนยัน | [P44] |
 
 ## 13 — คลังเอกสารและสแกนบิล
 
@@ -240,6 +259,8 @@
 | 13.11 | แก้ไขรายการในไฟล์พร้อมกัน | ยังไม่ยืนยัน | [P30] |
 | 13.12 | เลือกรายชื่อผู้อนุมัติเอกสารจากคลัง | ยังไม่ยืนยัน | [P30] |
 | 13.13 | สแกนเพื่อลงทะเบียนใบกำกับภาษีซื้อ | ยังไม่ยืนยัน | [P34] |
+| 13.14 | ประวัติการบันทึกค่าใช้จ่าย AutoKey | [F45] | ยังไม่ยืนยัน |
+| 13.15 | ประวัติเอกสารและบันทึกบัญชีจากเอกสาร | [F42] | ยังไม่ยืนยัน |
 
 ## 14 — ลูกค้าและคู่ค้า
 
@@ -302,6 +323,8 @@
 | 15.38 | รายชื่อผู้ติดต่อ | ยังไม่ยืนยัน | [P09] |
 | 15.39 | รายงานตามตัวกรองขั้นสูง | [F13] | [P09], [P13] |
 | 15.40 | กราฟประกอบงบการเงิน | ยังไม่ยืนยัน | [P34] |
+| 15.41 | รายงานใบเตรียมจ่าย | [F30] | ยังไม่ยืนยัน |
+| 15.42 | รายงานรายการปิดบัญชี | [F38] | ยังไม่ยืนยัน |
 
 ## 16 — ขายหน้าร้าน
 
@@ -320,12 +343,12 @@
 |---|---|---|---|
 | 17.01 | Shopee | [F15] | [P10] |
 | 17.02 | Lazada | [F15] | [P10] |
-| 17.03 | TikTok Shop | [F15] | [P10] |
+| 17.03 | TikTok Shop | [F15] | [P10], [P61] |
 | 17.04 | ร้านค้าออนไลน์หลายร้าน | [F15] | [P10] |
 | 17.05 | LINE Shopping | ยังไม่ยืนยัน | [P10] |
 | 17.06 | ระบบร้านค้า/POS ภายนอก | ยังไม่ยืนยัน | [P10] |
 | 17.07 | Open API | [F00], [F17] | [P10], [P38] |
-| 17.08 | AI Connector / MCP | [F21] | [P35] |
+| 17.08 | AI Connector / MCP | [F21], [F53] | [P35] |
 | 17.09 | รับชำระออนไลน์/QR | [F00] | [P11] |
 | 17.10 | ใช้งานผ่านมือถือ | [F00] | [P00] |
 | 17.11 | ใช้งานผ่าน LINE | ยังไม่ยืนยัน | [P00] |
@@ -349,7 +372,7 @@
 | 18.07 | การยืนยันตัวตน | ยังไม่ยืนยัน | [P11] |
 | 18.08 | เลขที่เอกสาร | ยังไม่ยืนยัน | [P11] |
 | 18.09 | วันครบกำหนดและข้อความเอกสาร | ยังไม่ยืนยัน | [P11] |
-| 18.10 | รูปแบบพิมพ์เอกสาร | [F05] | [P11] |
+| 18.10 | รูปแบบพิมพ์เอกสาร | [F05], [F40] | [P11] |
 | 18.11 | VAT ส่วนลด และหัก ณ ที่จ่าย | [F05] | ยังไม่ยืนยัน |
 | 18.12 | ช่องทางรับเงินบนเอกสาร | ยังไม่ยืนยัน | [P11] |
 | 18.13 | การเข้าถึงเอกสารออนไลน์ | ยังไม่ยืนยัน | [P11] |
@@ -363,10 +386,32 @@
 | 18.21 | ศูนย์สำนักงานบัญชี | [F16] | ยังไม่ยืนยัน |
 | 18.22 | คู่มือและติดต่อผู้ช่วยใช้งาน | [F00] | [P00] |
 | 18.23 | อนุมัติ/ปฏิเสธเอกสารผ่านมือถือเป็นชุด | ยังไม่ยืนยัน | [P36] |
+| 18.24 | รายการโปรดสำหรับเอกสารต้นแบบ | ยังไม่ยืนยัน | [P45] |
+| 18.25 | คัดลอกเอกสาร | ยังไม่ยืนยัน | [P46] |
+| 18.26 | ส่งเอกสารทางอีเมล/ลิงก์ | ยังไม่ยืนยัน | [P47] |
+| 18.27 | พิมพ์/ดาวน์โหลดเอกสารหลายใบ | ยังไม่ยืนยัน | [P48] |
+| 18.28 | ล็อก/ปลดล็อกเอกสารรายใบ | ยังไม่ยืนยัน | [P49] |
+| 18.29 | ยกเลิกชุดนำเข้าเอกสาร | ยังไม่ยืนยัน | [P50] |
+| 18.30 | โอนสิทธิ์ผู้ดูแลระบบสูงสุด | ยังไม่ยืนยัน | [P51] |
+| 18.31 | เพิ่ม/ลบเจ้าหน้าที่ PEAK Support | ยังไม่ยืนยัน | [P52] |
+| 18.32 | ตั้งค่าการแสดงผู้สร้าง/อนุมัติในบัญชีรายวัน | ยังไม่ยืนยัน | [P53] |
+| 18.33 | รูปแบบพิมพ์รายลูกค้า | ยังไม่ยืนยัน | [P54] |
+| 18.34 | ศูนย์แอปพลิเคชัน | ยังไม่ยืนยัน | [P55] |
+| 18.35 | พิมพ์จ่าหน้าซอง | [F46] | [P46] |
+| 18.36 | เครดิตไม่แสดงวันที่ | [F47] | ยังไม่ยืนยัน |
+| 18.37 | แก้ไขเลขที่เอกสารและตรวจประวัติ | [F48] | ยังไม่ยืนยัน |
+| 18.38 | ตั้งค่ายอดเริ่มต้นบัญชี | [F49] | ยังไม่ยืนยัน |
+| 18.39 | ตั้งค่างวดบัญชี | [F49] | ยังไม่ยืนยัน |
+| 18.40 | Partner Center: นักบัญชีและบริษัทที่มอบหมาย | [F50] | ยังไม่ยืนยัน |
+| 18.41 | Partner Center: รายชื่อลูกค้า | [F50] | ยังไม่ยืนยัน |
+| 18.42 | PEAK Partner สำนักงานบัญชี | ยังไม่ยืนยัน | [P67], [P68] |
+| 18.43 | ออกเอกสารด้วยที่อยู่สาขา | ยังไม่ยืนยัน | [P69] |
+| 18.44 | สร้างเอกสารวันที่ย้อนหลัง | [F52] | ยังไม่ยืนยัน |
+| 18.45 | ตั้งค่าเริ่มต้นเอกสาร แบบรวม/แยกภาษี | ยังไม่ยืนยัน | [P71] |
 
 ## ข้อจำกัดของหลักฐาน
 
-ยังไม่รับรองเมนูครบทุกแพ็กเกจ/บทบาท และไม่ได้ทดสอบในบัญชีจริง ข้อกำหนด API ที่อ้างอิงเป็นสัญญาสาธารณะ ไม่ใช่โครงสร้างภายใน ดูข้อค้นพบ ข้อขัดแย้ง และรายการที่ยังต้องยืนยันใน[ผลค้นสเปกเพิ่มเติม](10-product-spec-research.md) และ[บัญชีเมนู](09-flowaccount-peak-menu-catalog.md)
+ยังไม่รับรอง sidebar ครบทุกแพ็กเกจ/บทบาท และยังไม่ได้ทดสอบทุกหน้าจอจริง ชื่อกลางอาจรวมเมนู ปุ่ม แบบพิมพ์ และ workflow ดูชื่อและเส้นทางที่[ผัง FlowAccount](11-flowaccount-menu-map.md) / [ผัง PEAK](12-peak-account-menu-map.md) และข้อจำกัดใน[บัญชีเมนู](09-flowaccount-peak-menu-catalog.md)
 
 [F00]: https://flowaccount.com/help-center
 [F01]: https://flowaccount.com/help-center/category/dashboard
@@ -433,3 +478,66 @@
 [P36]: https://www.peakaccount.com/blog/program-usage/update-peak-function-en/update-function-02092026-en
 [P37]: https://www.peakaccount.com/blog/program-usage/update-peak-function-en/update-function-01042026-en
 [P38]: https://developers.peakaccount.com/reference/peak-open-api
+[P39]: https://www.peakaccount.com/peak-manual/sales-document/create-quote/check-quotation-document-status
+[P40]: https://www.peakaccount.com/peak-manual/sales-document/create-quote/bulk-update-quotation-po-status
+[P41]: https://www.peakaccount.com/peak-manual/peak-tax/tax-form-create/creating-pp30-form-peak-tax-for-late-submission-pro-plus
+[P42]: https://www.peakaccount.com/peak-manual/peak-tax/tax-form-create/creating-pp30-normal-filing-late-submission-peak-tax
+[P43]: https://www.peakaccount.com/peak-manual/peak-others/import-documents/import-general-journal-book
+[P44]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/add-remove-tags-view-reports
+[P45]: https://www.peakaccount.com/peak-manual/sales-document/create-quote/create-favorite-quotation
+[P46]: https://www.peakaccount.com/peak-manual/peak-others
+[P47]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/copy-document-link-public
+[P48]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/print-multiple-docs
+[P49]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/lock-documents-by-item
+[P50]: https://www.peakaccount.com/peak-manual/peak-others/import-documents/cancel-imported-documents
+[P51]: https://www.peakaccount.com/peak-manual/setup-guide/set-user-permissions/transfer-super-admin-rights
+[P52]: https://www.peakaccount.com/peak-manual/setup-guide/set-user-permissions/adding-deleting-peak-support-officers
+[P53]: https://www.peakaccount.com/peak-manual/setup-guide/configure-documents/daily-account-setup
+[P54]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/setup-display-customer-on-documents
+[P55]: https://www.peakaccount.com/peak-manual/peak-others/other-related-program/selecting-peak-login-from-new-peak-page
+[P56]: https://www.peakaccount.com/peak-manual/sales-document/sales-tax-invoice/create-print-abbreviated-receipt-tax-invoice
+[P57]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/create-docs-foreign-currency
+[P58]: https://www.peakaccount.com/peak-manual/purchase-document/create-purchase-order/print-purchase-order-approval-claim-documents
+[P59]: https://www.peakaccount.com/peak-manual/financial-accounting-data/create-journal-entry/direct-recording-of-accounting-entry-in-daily-journal
+[P60]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/close-financial-statement
+[P61]: https://www.peakaccount.com/peak-manual/api-integration/tiktokshop-integration/connecting-peak-with-tiktok-shop
+[F26]: https://flowaccount.com/help-center/category/sales-function/delivery-note
+[F27]: https://flowaccount.com/help-center/category/sales-function/deposit-invoice
+[F28]: https://flowaccount.com/help-center/category/customize-template/vat-discount-in-line
+[F29]: https://flowaccount.com/help-center/category/buy-function/vendor-credit
+[F30]: https://flowaccount.com/help-center/category/expense/vendor-payment
+[F31]: https://flowaccount.com/help-center/category/expense/payment-file-kcash-scb
+[F32]: https://flowaccount.com/help-center/category/kbank/k-cash-connect-plus-bank-statement
+[F33]: https://flowaccount.com/help-center/category/financial-close/edit-reconcile
+[F34]: https://flowaccount.com/help-center/category/inventory/warehouse-items
+[F35]: https://flowaccount.com/help-center/category/inventory/multi-unit
+[F36]: https://flowaccount.com/help-center/category/flowaccount-setting/low-stock-alert
+[F37]: https://flowaccount.com/help-center/category/tax-management/vat-management
+[F38]: https://flowaccount.com/help-center/category/financial-close/how-to-use-flowaccount-close-financial
+[F39]: https://flowaccount.com/help-center/category/accounting-report/profit-loss-by-project
+[F40]: https://flowaccount.com/help-center/category/flowaccount-setting/customize-template
+[F41]: https://flowaccount.com/help-center/category/expense/reverse-accrual
+[F42]: https://flowaccount.com/help-center/category/expense/advance-expense
+[F43]: https://flowaccount.com/help-center/category/kbank/k-cash-connect-plus-vendor-payment
+[F44]: https://flowaccount.com/help-center/category/tax-management/batch-vat
+[F45]: https://flowaccount.com/help-center/category/autokey/autokey-expense
+[F46]: https://flowaccount.com/help-center/category/customize-template/print-envelope
+[F47]: https://flowaccount.com/help-center/category/customize-template/hide-date
+[F48]: https://flowaccount.com/help-center/category/customize-template/custom-docserial
+[F49]: https://flowaccount.com/help-center/category/sales-function/record-revenue-flowaccount
+[F50]: https://flowaccount.com/help-center/category/partner-center/partner-center-user-guide
+[F51]: https://flowaccount.com/help-center/category/expense/expense-category
+[F52]: https://flowaccount.com/help-center/category/customize-template/backdated-document
+[F53]: https://flowaccount.com/help-center/category/ai-connector-mcp/flowaccount-connector-in-grok
+[P62]: https://www.peakaccount.com/peak-manual/financial-accounting-data/create-journal-entry/approve-all-journal
+[P63]: https://www.peakaccount.com/peak-manual/financial-accounting-data/create-journal-entry/checking-warning-reasons-for-journal-entry-review
+[P64]: https://www.peakaccount.com/peak-manual/peak-tax/tax-form-create/combine-tax-payments-pnd-pp30-peak-tax
+[P65]: https://www.peakaccount.com/peak-manual/summary-reports/tax-reports-peak-tax/print-multiple-withholding-tax-forms
+[P66]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/hide-amount-on-delivery-order-peak
+[P67]: https://www.peakaccount.com/peak-manual/peak-others/other-related-program/register-accounting-firm-peak-partner
+[P68]: https://www.peakaccount.com/peak-manual/peak-others/other-related-program/search-peak-partner-accounting-firm
+[P69]: https://www.peakaccount.com/peak-manual/peak-others/other-related-documents/create-documents-with-branch-address
+[P70]: https://www.peakaccount.com/peak-manual/peak-others/other-related-program/exchange-rate-fetch
+[P71]: https://www.peakaccount.com/peak-manual/setup-guide/set-accounting-policies/setting-default-tax-inclusive-or-exclusive-documents
+[P72]: https://www.peakaccount.com/peak-manual/setup-guide/beginning-balances/migrating-data-from-legacy-accounting-to-peak-accounting-system
+[P73]: https://www.peakaccount.com/peak-manual/setup-guide/beginning-balances/adjusting-trial-balance-and-journal-entry-beginning-balance-part-8
