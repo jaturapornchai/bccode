@@ -41,6 +41,17 @@
 - Kafka poison test: `printf '%s\n' '[{"holdingcode":"demo","barcode":"X"}]' | docker exec -i kafka kafka-console-producer --bootstrap-server localhost:9092 --topic when-product-barcode-bulk-created` แล้วดู `docker logs mainapi | grep ⛔`
 - **ล้างข้อมูลทดสอบด้วย id/code ที่ระบุเป้าเท่านั้น** — เคยใช้ regex กว้างแล้วลบสาขาจริงไป 2 ตัว
 
+## สคริปต์ / PowerShell
+
+| กับดัก | อาการ | วิธีที่ถูก | ยืนยัน |
+|---|---|---|---|
+| `Get-Date -Format yyyy-MM-dd` บนเครื่องที่ตั้ง culture ไทย | ได้ปีพุทธศักราช — stamp ใน `CODE-MAP.md` ออกมาเป็น `2569-09-09` แทน `2026-09-09` | pin culture เสมอ: `[datetime]::Now.ToString('yyyy-MM-dd', [System.Globalization.CultureInfo]::InvariantCulture)` | เจอจริง 2026-09-09 ตอนทำ `-Check` mode ของ `tools/gen-code-map.ps1:139-140,154` |
+| สคริปต์ `.ps1` ที่มีข้อความไทยต้องมี BOM | Windows PowerShell 5.1 อ่านไฟล์เป็น ANSI → ข้อความไทยเพี้ยน | เขียนไฟล์ด้วย `utf-8-sig` (ห้ามใช้ Write tool ที่ตัด BOM ทิ้ง) | `tools/gen-code-map.ps1` ขึ้นต้นด้วย BOM |
+| hook ใน `.githooks/` ไม่ทำงานเองหลัง clone | git อ่านเฉพาะ `.git/hooks/` เท่านั้น ไม่อ่านโฟลเดอร์ที่ track ไว้ | `npm run hooks:install` ครั้งเดียวต่อ clone (คัดลอกไฟล์เข้า `.git/hooks/`) — ต้องรันซ้ำทุกครั้งที่ pull การแก้ `.githooks/` | `tools/install-hooks.mjs` |
+| **ห้ามใช้ `git config core.hooksPath .githooks`** | hooksPath **แทนที่** `.git/hooks` ทั้งโฟลเดอร์ — hook ส่วนตัวที่มีอยู่เดิมหยุดทำงานเงียบ ๆ ไม่มี error | ใช้วิธีคัดลอก (`npm run hooks:install`) เท่านั้น; ถ้าเคยตั้งไปแล้ว `git config --unset core.hooksPath` | เจอจริง 2026-09-09: การตั้ง hooksPath ปิด `post-commit` ของลุงจืด (sync Obsidian vault) โดยไม่แจ้ง |
+| hook ที่ commit จาก Windows ไม่มี exec bit | repo ตั้ง `core.fileMode=false` → git เก็บเป็น `100644` → บน Linux/macOS รันไม่ได้ (การ์ดเงียบ) | `git update-index --chmod=+x .githooks/<hook>` ก่อน commit; ตรวจด้วย `git ls-files -s .githooks` ต้องเห็น `100755` | `.githooks/pre-commit`, `.githooks/pre-merge-commit` |
+| merge commit ไม่วิ่ง `pre-commit` | git เรียก `pre-merge-commit` แทน — สอง branch ที่ต่างก็ผ่าน พอ merge แล้วแผนที่ผิด | มีไฟล์ `.githooks/pre-merge-commit` ที่ `exec` ต่อไปยัง pre-commit | `.githooks/pre-merge-commit:5` (ทดสอบ merge จริงแล้ว 2026-09-09) |
+
 ## ผู้ช่วย AI / เครื่องมือ
 
 - Kimi K3 / GLM (`py ~/.claude/tools/kimi-ask.py|glm-ask.py`, ต้องใช้ `py` launcher + `PYTHONIOENCODING=utf-8`) — เหมาะกับงานสั้น; ร่างยาว 400+ บรรทัดจะ timeout

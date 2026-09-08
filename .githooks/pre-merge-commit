@@ -1,0 +1,5 @@
+#!/bin/sh
+# git does NOT run pre-commit for an automatic merge commit — it looks for pre-merge-commit.
+# Two branches that each passed the check can merge into a tree whose CODE-MAP is wrong, so
+# delegate to the same check. See .githooks/pre-commit for the rationale.
+exec "$(dirname "$0")/pre-commit"

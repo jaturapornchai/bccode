@@ -40,6 +40,7 @@
 | KI-25 | `Persister.Transaction` กลืน error ของ GORM | แก้แล้ว | `backend/pkg/microservice/persister.go:346-354` คืน error จาก `db.Transaction` แล้ว | — | ไม่ |
 | KI-26 | CI job Kafka พังจาก `mongo-init` รันซ้ำ | แก้แล้ว (ในโค้ด) | `.github/workflows/ci.yml:138-153` ใช้ `run --rm --no-deps tests`; แต่ยังพิสูจน์บน GitHub ไม่ได้เพราะ KI-23 | — | ไม่ |
 | KI-27 | head-of-line block จาก message ที่ใช้ไม่ได้ใน projection ใหม่ | แก้แล้ว | `backend/internal/product/projection/consumer.go:14` (`ErrRejected`); ทดสอบ poison จริงตาม `docs/handoff/HANDOFF-2026-09-06.md` §3 ข้อ 3 | — | ไม่ |
+| KI-28 | **GitHub Actions ของ repo นี้รันไม่ได้เลยตั้งแต่ 2026-09-02** | ยังอยู่ | `gh run list -L 20` — ทุก run หลัง 2026-09-02 ขึ้น `failure` ภายใน 3-5 วินาที; `gh run view <id> --json jobs` → ทุก job `failure` โดยไม่มี step เลย (บัญชีถูกล็อกเรื่อง billing) | **อย่าเชื่อว่า CI กันอะไรให้ได้** — ตัวกันจริงคือ git hook ฝั่ง local (`npm run hooks:install`); job `code-map-check` เขียนรอไว้ใน `.github/workflows/ci.yml` แล้ว จะทำงานทันทีที่ปลดล็อก billing | ใช่ — ต้องใช้บัญชี GitHub ของลุงจืดปลดล็อก และตัดสินใจว่าจะตั้ง required status check หรือไม่ |
 
 ## 3. Inventory ส่วนที่เกี่ยวข้อง
 

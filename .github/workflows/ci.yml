@@ -79,6 +79,20 @@ jobs:
           cd frontend
           npm run build
 
+  code-map-check:
+    # docs/reference/CODE-MAP.md tells every AI agent which line to jump to instead of grepping
+    # (AGENTS.md "Surgical Read"). It silently drifted to 87% wrong over 71 commits once, so the
+    # map is now regenerated here and compared: if a large file moved and the map was not
+    # regenerated, this job fails with the exact rows that shifted.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify CODE-MAP matches the source tree
+        shell: pwsh
+        run: ./tools/gen-code-map.ps1 -Check
+
   backend-outbox-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15

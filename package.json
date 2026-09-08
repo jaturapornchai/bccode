@@ -10,7 +10,10 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
-    "dev:frontend": "cd frontend && npm run dev -- -p 3001"
+    "dev:frontend": "cd frontend && npm run dev -- -p 3001",
+    "hooks:install": "node tools/install-hooks.mjs",
+    "codemap": "pwsh -NoProfile -File tools/gen-code-map.ps1",
+    "codemap:check": "pwsh -NoProfile -File tools/gen-code-map.ps1 -Check"
   },
   "repository": {
     "type": "git",

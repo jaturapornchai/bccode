@@ -111,7 +111,11 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 1. **Surgical Read (อ่านตรงจุด)**:
    - ห้ามเปิดอ่านทั้งไฟล์ขนาดใหญ่ (>300 บรรทัด) โดยไม่จำเป็น; ให้ระบุเลขบรรทัด StartLine/EndLine เสมอ
-   - สำหรับไฟล์ขนาดยักษ์ (>1,000 บรรทัด เช่น `frontend/src/app/system-settings/system-settings-screen.tsx`) ให้ดูตำแหน่งฟังก์ชันจาก `docs/reference/CODE-MAP.md` ก่อนเปิดอ่าน — **CODE-MAP เป็นไฟล์ auto-generated และเก่าได้**: ก่อนใช้เลขบรรทัด ให้เทียบจำนวนบรรทัดในหัวข้อกับ `wc -l` จริงก่อน ถ้าไม่ตรงแปลว่าเลขคลาดเคลื่อน ให้ `grep -n` ชื่อฟังก์ชันยืนยัน หรือ regenerate ด้วย `tools/gen-code-map.ps1`
+   - สำหรับไฟล์ขนาดยักษ์ (>1,000 บรรทัด เช่น `frontend/src/app/system-settings/system-settings-screen.tsx`) ให้ดูตำแหน่งฟังก์ชันจาก `docs/reference/CODE-MAP.md` ก่อนเปิดอ่าน — **CODE-MAP เป็นไฟล์ auto-generated และเก่าได้**: ก่อนใช้เลขบรรทัด ให้เทียบจำนวนบรรทัดในหัวข้อกับ `wc -l` จริงก่อน ถ้าไม่ตรงแปลว่าเลขคลาดเคลื่อน ให้ `grep -n` ชื่อฟังก์ชันยืนยัน หรือ regenerate ด้วย `pwsh -NoProfile -File tools/gen-code-map.ps1`
+   - **มีตัวกันแล้ว แต่ต้องติดตั้งเอง (2026-09-09)**: git hook `.githooks/pre-commit` รัน `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` ทุกครั้งที่ commit แตะไฟล์ ≥ 950 บรรทัด หรือไฟล์ที่อยู่ในแผนที่อยู่แล้ว (ครอบคลุมการลบ/ย้าย/ทำให้เล็กลงด้วย) — **ทุก clone ต้องสั่ง `npm run hooks:install` ครั้งหนึ่ง ไม่งั้น hook ไม่ทำงาน**
+     (ติดตั้งแบบ copy เข้า `.git/hooks/` โดยตั้งใจ — **ห้ามใช้ `git config core.hooksPath`** เพราะมันปิด hook เดิมใน `.git/hooks/` ทิ้งทั้งหมด รวมถึง `post-commit` ที่ refresh Obsidian vault ของลุงจืด; แก้ `.githooks/` แล้วต้องรัน `npm run hooks:install` ซ้ำ)
+     ข้ามรอบเดียวใช้ `SKIP_CODE_MAP_CHECK=1 git commit ...`
+   - **CI ช่วยไม่ได้**: job `code-map-check` ใน `.github/workflows/ci.yml` เขียนไว้พร้อมแล้ว แต่ **GitHub Actions ของ repo นี้ไม่ได้รันเลยตั้งแต่ 2026-09-02** (ทุก run ตายใน 3-5 วินาที job ไม่ถูก start — บัญชีถูกล็อกเรื่อง billing) อย่านับเป็นตัวกันจนกว่าจะแก้ billing เสร็จ
 2. **Surgical Patch (แก้เฉพาะจุด)**:
    - ใช้ targeted replace/patch แก้เฉพาะ block ที่จำเป็น ห้าม rewrite หรือ print ทั้งไฟล์ซ้ำ
    - Token ขาออก (Output Token) แพงและช้ากว่าขาเข้า 3–5 เท่า — ยิ่งแก้ตรงจุด AI ยิ่งทำงานเร็ว

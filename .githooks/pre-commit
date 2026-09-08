@@ -1,0 +1,164 @@
+#!/bin/sh
+# BC Ai Account — pre-commit: keep docs/reference/CODE-MAP.md honest.
+#
+# CODE-MAP tells every AI agent which line to jump to in files >= 1000 lines instead of grepping
+# (AGENTS.md "Surgical Read"). It silently drifted to 87% wrong over 71 commits before anyone
+# noticed, so this hook is the guard. CI cannot help: GitHub Actions on this repo has not executed
+# a single job since 2026-09-02 (account locked for billing), so THIS HOOK IS THE ONLY CHECK.
+#
+# Install (copies into .git/hooks, so a local post-commit hook keeps working):
+#   npm run hooks:install
+# Skip one commit:
+#   SKIP_CODE_MAP_CHECK=1 git commit ...      (or git commit --no-verify)
+#
+# Deliberately no `set -e`: `[ test ] && exit 0` interacts badly with it, and a hook that dies
+# halfway through would fail commits for reasons that have nothing to do with the map.
+
+MAP="docs/reference/CODE-MAP.md"
+THRESHOLD=950   # not 1000: a file just under the threshold can cross it with this very commit
+
+if [ -n "$SKIP_CODE_MAP_CHECK" ]; then
+  exit 0
+fi
+
+# --no-renames so a moved file shows up as BOTH old and new path; ACMD keeps deletions, which
+# matter just as much (a deleted file leaves a whole stale section behind in the map).
+staged=$(git -c core.quotePath=false diff --cached --no-renames --name-only --diff-filter=ACMD -- frontend/src backend "$MAP" 2>/dev/null)
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+# Paths with a literal newline are not supported (git quotes them; treat as out of scope).
+OLD_IFS=$IFS
+IFS='
+'
+set -f
+
+relevant=""
+for f in $staged; do
+  if [ "$f" = "$MAP" ]; then
+    # The map itself is being committed (hand-edited, reverted, or merged) — always verify.
+    relevant="yes"
+    break
+  fi
+  case "$f" in
+    */node_modules/*|*/.next/*|*/vendor/*|*/dist/*|*/mock/*|*/mockdata/*|*.gen.*) continue ;;
+  esac
+  case "$f" in
+    *.ts|*.tsx|*.go) ;;
+    *) continue ;;
+  esac
+
+  # Already named in the map? Then ANY change to it matters, including shrinking below the
+  # threshold or being deleted — those are exactly the cases a size test alone would miss.
+  if grep -qF "## $f (" "$MAP" 2>/dev/null; then
+    relevant="yes"
+    break
+  fi
+
+  # Size the STAGED blob and the HEAD blob, never the working tree: a missing blob yields 0,
+  # so growth, shrinkage and deletion are all covered.
+  new=$(git cat-file -p ":$f" 2>/dev/null | wc -l)
+  old=$(git cat-file -p "HEAD:$f" 2>/dev/null | wc -l)
+  [ -z "$new" ] && new=0
+  [ -z "$old" ] && old=0
+  if [ "$new" -ge "$THRESHOLD" ] || [ "$old" -ge "$THRESHOLD" ]; then
+    relevant="yes"
+    break
+  fi
+done
+
+set +f
+IFS=$OLD_IFS
+
+if [ -z "$relevant" ]; then
+  exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# The generator reads the WORKING TREE, so a working-tree check only proves
+# something about the commit when every input is identical to what is staged.
+# Refuse to guess: name the files that differ and stop.
+# ---------------------------------------------------------------------------
+blockers=""
+dirty=$(git -c core.quotePath=false diff --name-only -- frontend/src backend "$MAP" 2>/dev/null)
+untracked=$(git -c core.quotePath=false ls-files --others --exclude-standard -- frontend/src backend 2>/dev/null)
+
+OLD_IFS=$IFS
+IFS='
+'
+set -f
+for f in $dirty $untracked; do
+  if [ "$f" = "$MAP" ]; then
+    blockers="$blockers  $f"'
+'
+    continue
+  fi
+  case "$f" in
+    */node_modules/*|*/.next/*|*/vendor/*|*/dist/*|*/mock/*|*/mockdata/*|*.gen.*) continue ;;
+  esac
+  case "$f" in
+    *.ts|*.tsx|*.go) ;;
+    *) continue ;;
+  esac
+  if grep -qF "## $f (" "$MAP" 2>/dev/null; then
+    blockers="$blockers  $f"'
+'
+    continue
+  fi
+  wt=0
+  if [ -f "$f" ]; then
+    wt=$(wc -l < "$f" 2>/dev/null)
+    [ -z "$wt" ] && wt=0
+  fi
+  if [ "$wt" -ge "$THRESHOLD" ]; then
+    blockers="$blockers  $f"'
+'
+  fi
+done
+set +f
+IFS=$OLD_IFS
+
+if [ -n "$blockers" ]; then
+  printf '%s\n' "pre-commit: ตรวจ CODE-MAP ไม่ได้ เพราะไฟล์ใหญ่เหล่านี้ใน working tree ไม่ตรงกับที่ stage ไว้:"
+  printf '%s' "$blockers"
+  cat <<'MSG'
+            แผนที่ถูกสร้างจาก working tree ถ้ายังต่างกันอยู่ เลขบรรทัดที่ commit จะเป็นของโค้ดที่ไม่ได้ commit
+            แก้ด้วยวิธีใดวิธีหนึ่ง: git add <ไฟล์ข้างบน>   หรือ   git stash -k   แล้ว commit ใหม่
+            ข้ามรอบนี้: SKIP_CODE_MAP_CHECK=1 git commit ...
+MSG
+  exit 1
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+  PS=pwsh
+elif command -v powershell >/dev/null 2>&1; then
+  PS=powershell
+else
+  cat <<'MSG'
+pre-commit: ไม่พบ PowerShell — ตรวจ CODE-MAP ไม่ได้ และ **ไม่มีตัวตรวจสำรอง**
+            (CI job code-map-check เขียนไว้แล้วแต่ยังรันไม่ได้ — GitHub Actions ล็อกเรื่อง billing ตั้งแต่ 2026-09-02)
+            ติดตั้ง PowerShell 7 หรือรัน `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` บนเครื่องอื่นก่อน push
+            ยืนยันว่าจะ commit ทั้งที่ยังไม่ได้ตรวจ: SKIP_CODE_MAP_CHECK=1 git commit ...
+MSG
+  exit 1
+fi
+
+echo "pre-commit: ไฟล์ใหญ่ถูกแก้ — ตรวจ docs/reference/CODE-MAP.md"
+if "$PS" -NoProfile -ExecutionPolicy Bypass -File tools/gen-code-map.ps1 -Check; then
+  # -Check validated the working tree; the block above proved the working tree matches the index
+  # for every input, so this commit really does carry a correct map.
+  exit 0
+fi
+
+cat <<'MSG'
+
+docs/reference/CODE-MAP.md ไม่ตรงกับโค้ดแล้ว (ไฟล์ใหญ่ที่แก้ทำให้เลขบรรทัดเลื่อน)
+
+แก้ด้วย:
+  pwsh -NoProfile -File tools/gen-code-map.ps1
+  git add docs/reference/CODE-MAP.md
+
+ถ้าจงใจข้ามรอบนี้: SKIP_CODE_MAP_CHECK=1 git commit ...
+MSG
+exit 1

@@ -37,7 +37,7 @@
 
 ## กฎเหล็ก: ความเร็วและสุขอนามัย Context (Speed & Context Hygiene)
 
-1. **Surgical Read**: อ่านไฟล์ด้วย StartLine/EndLine เจาะจงเสมอ, ไฟล์ขนาดยักษ์ดูตำแหน่งจาก [`reference/CODE-MAP.md`](reference/CODE-MAP.md) — ถ้าจำนวนบรรทัดใน CODE-MAP ไม่ตรงกับ `wc -l` จริง ให้ `grep -n` ยืนยันตำแหน่ง หรือ regenerate ด้วย `tools/gen-code-map.ps1`
+1. **Surgical Read**: อ่านไฟล์ด้วย StartLine/EndLine เจาะจงเสมอ, ไฟล์ขนาดยักษ์ดูตำแหน่งจาก [`reference/CODE-MAP.md`](reference/CODE-MAP.md) — ถ้าจำนวนบรรทัดใน CODE-MAP ไม่ตรงกับ `wc -l` จริง ให้ `grep -n` ยืนยันตำแหน่ง หรือ regenerate ด้วย `pwsh -NoProfile -File tools/gen-code-map.ps1` (git hook `.githooks/pre-commit` ตรวจให้ — **clone ใหม่ต้องสั่ง `npm run hooks:install` ครั้งหนึ่ง ไม่งั้นไม่มีอะไรตรวจ**; CI job `code-map-check` เขียนไว้แต่ GitHub Actions ของ repo นี้ยังรันไม่ได้ตั้งแต่ 2026-09-02 เพราะบัญชีถูกล็อกเรื่อง billing)
 2. **Surgical Patch**: แก้ไขเฉพาะบล็อกที่เปลี่ยนด้วย targeted edit ห้าม rewrite ทั้งไฟล์
 3. **Command Output Hygiene**: รันเทสต์เฉพาะไฟล์ที่แตะ (`npm test -- <path>.test.ts`), ใช้ `git status -s`, คุม output ไม่ให้พ่น log ยาว
 4. **Context Isolation**: งานสำรวจกว้างขวางให้ใช้ Subagent แยกเพื่อไม่ให้ context หน้าต่างหลักบวม
