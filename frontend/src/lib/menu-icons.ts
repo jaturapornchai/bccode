@@ -310,6 +310,20 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/importpartner": "upload",
   "/importdocuments": "upload",
   "/expenseapprovalsettingscreen": "check",
+  "/inventory/lotexpiry": "boxes",
+  "/report/stocklotmovement": "boxes",
+  "/report/expiringstock": "notification",
+  "/transaction/combinedpayment": "payment",
+  "/transaction/combinedreceipt": "receipt",
+  "/transaction/creditcardexpense": "creditCard",
+  "/transaction/directoradvance": "money",
+  "/asset/purchase": "shoppingCart",
+  "/asset/cip": "project",
+  "/report/assetschedule": "table",
+  "/report/deferredtax": "fileText",
+  "/useraccessaudit": "shield",
+  "/tools/databackup": "cloudDownload",
+  "/tools/scheduledreports": "notification",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {

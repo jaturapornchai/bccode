@@ -87,6 +87,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("deposit", "จ่ายเงินมัดจำ", "Pay Deposit", "/transaction/deposit", "finance"),
           tx("deposit-refund", "รับคืนเงินมัดจำ", "Deposit Refund", "/transaction/depositrefund", "finance"),
           tx("payment-voucher", "ใบสำคัญจ่าย", "Payment Voucher", "/transaction/paymentvoucher", "finance"),
+          tx("combined-payment", "ใบรวมจ่าย", "Combined Payment", "/transaction/combinedpayment", "finance", "combined_payment"),
         ],
       },
       {
@@ -114,6 +115,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("return-advance", "คืนเงินล่วงหน้า", "Return Advance", "/transaction/paidadvancerefund", "finance"),
           tx("receive-deposit", "รับเงินมัดจำ", "Receive Deposit", "/transaction/receivedeposit", "finance"),
           tx("return-deposit", "คืนเงินมัดจำ", "Return Deposit", "/transaction/receivedepositrefund", "finance"),
+          tx("combined-receipt", "ใบเสร็จรวม", "Combined Receipt", "/transaction/combinedreceipt", "finance", "combined_receipt"),
         ],
       },
       {
@@ -129,6 +131,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("cost-adjustment", "ปรับปรุงต้นทุนสินค้า", "Cost Adjustment", "/transaction/costadjustment"),
           tx("stock-count", "ตรวจนับสต็อก", "Stock Count", "/transaction/stockcount"),
           tx("fifo-cost-layers", "ชั้นต้นทุนสต็อกเข้าก่อนออกก่อน", "FIFO Cost Layers", "/inventory/cost-layers"),
+          tx("stock-lot", "จัดการล็อตและวันหมดอายุ", "Lot & Expiry Management", "/inventory/lotexpiry", "transaction", "stock_lot"),
         ],
       },
       {
@@ -137,7 +140,10 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("paid", "รับชำระ", "Receive Payment", "/transaction/paid", "finance"),
           tx("pay", "จ่ายชำระ", "Pay", "/transaction/pay", "finance"),
+          tx("credit-card-expense", "บัตรเครดิตกิจการ", "Corporate Credit Card", "/transaction/creditcardexpense", "finance", "credit_card_expense"),
           tx("petty-cash", "เงินสดย่อย", "Petty Cash", "/pettycashscreen", "finance"),
+          tx("director-advance", "เงินทดรองจ่ายกรรมการ", "Director Advance", "/transaction/directoradvance", "finance", "director_advance"),
+          tx("employee-advance", "เงินทดรองจ่ายพนักงาน", "Employee Advance", "/transaction/employeeadvance", "finance"),
           tx("account-transfer", "โอนเงินระหว่างบัญชี", "Account Transfer", "/transaction/accounttransfer", "finance"),
           tx("cheque-received", "ทะเบียนเช็ครับ", "Cheques Received", "/transaction/chequereceived", "finance"),
           tx("cheque-issued", "ทะเบียนเช็คจ่าย", "Cheques Issued", "/transaction/chequeissued", "finance"),
@@ -147,7 +153,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("bank-statement", "รายการเดินบัญชีธนาคาร", "Bank Statement", "/banking/statements", "finance"),
           tx("bank-reconcile", "กระทบยอดเงินฝากธนาคาร", "Bank Reconciliation", "/banking/reconciliation", "finance"),
           tx("other-income-receipt", "ใบเสร็จรับเงินรายได้อื่น", "Other Income Receipt", "/transaction/otherincomereceipt", "finance"),
-          tx("employee-advance", "เงินทดรองจ่ายพนักงาน", "Employee Advance", "/transaction/employeeadvance", "finance"),
           tx("bank-payment-file", "ไฟล์โอนเงินจ่ายผ่านธนาคาร", "Bank Payment File", "/transaction/bankpaymentfile", "finance"),
         ],
       },
@@ -189,6 +194,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("project-summary-report", "สรุปภาพรวมโครงการ", "Project Summary Report", "/report/projectsummary", "report"),
           tx("business-dashboard", "ภาพรวมธุรกิจ", "Business Dashboard", "/report/dashboard", "report"),
           tx("executive-summary", "วิเคราะห์ธุรกิจสำหรับผู้บริหาร", "Executive Business Analysis", "/report/executivesummary", "report"),
+          tx("fixed-asset-schedule", "ตารางค่าเสื่อมและสินทรัพย์", "Fixed Asset Schedule", "/report/assetschedule", "report", "fixed_asset_schedule"),
           tx("xbrl-export", "ส่งออกงบการเงิน XBRL (ยื่น DBD)", "XBRL Export for DBD", "/report/xbrl", "report"),
         ],
       },
@@ -206,6 +212,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
           tx("withholding-tax-received", "ทะเบียนถูกหัก ณ ที่จ่าย", "Withholding Tax Received", "/report/whtreceived", "report"),
           tx("withholding-tax-report", "รายงานภาษีหัก ณ ที่จ่าย", "Withholding Tax Report", "/report/wht-reports", "report"),
+          tx("deferred-tax", "ภาษีเงินได้รอการตัดบัญชี", "Deferred Tax", "/report/deferredtax", "report", "deferred_tax"),
         ],
       },
       {
@@ -245,8 +252,10 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("stock-balance-location", "คงเหลือตามโซนเก็บสินค้า", "Stock by Storage Zone", "/report/stockbalancelocation", "report"),
           tx("inventory", "รายงานสินค้าคงเหลือ", "Inventory Report", "/report/reportdedebistockbalance", "report"),
           tx("low-stock-alert", "สินค้าใกล้หมดขั้นต่ำ", "Low Stock Alert", "/report/lowstock", "report"),
+          tx("expiring-stock-alert", "สินค้าใกล้หมดอายุ", "Expiring Stock Alert", "/report/expiringstock", "report", "expiring_stock_alert"),
           tx("stock-movement-cost", "เคลื่อนไหวสินค้าพร้อมต้นทุน", "Stock Movement with Cost", "/report/stockmovementcost", "report"),
           tx("product-movement", "ความเคลื่อนไหวสินค้า", "Product Movement", "/report/reportstockmovement", "report"),
+          tx("stock-lot-movement", "ความเคลื่อนไหวล็อตสินค้า", "Stock Lot Movement", "/report/stocklotmovement", "report", "stock_lot_movement"),
         ],
       },
       {
@@ -301,6 +310,8 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("asset-registry", "ทะเบียนสินทรัพย์ถาวร", "Fixed Asset Registry", "/asset/registry", "master"),
           tx("asset-depreciation", "คำนวณค่าเสื่อมราคา", "Asset Depreciation", "/asset/depreciation", "master"),
+          tx("asset-purchase", "บันทึกซื้อสินทรัพย์", "Asset Purchase Record", "/asset/purchase", "master", "asset_purchase"),
+          tx("asset-construction-in-progress", "งานระหว่างก่อสร้าง", "Construction in Progress", "/asset/cip", "master", "asset_construction_in_progress"),
           tx("asset-disposal", "จำหน่ายและตัดสินทรัพย์", "Asset Disposal", "/asset/disposal", "master"),
         ],
       },
@@ -332,6 +343,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("import-product-image", "นำเข้ารูปสินค้า", "Import Product Image", "/importproductimage", "master"),
           tx("import-partner", "นำเข้ารายชื่อคู่ค้า", "Import Trade Partners", "/importpartner", "master"),
           tx("import-documents", "นำเข้าเอกสารจากไฟล์", "Import Documents from File", "/importdocuments", "master"),
+          tx("data-backup-export", "สำรองและส่งออกข้อมูล", "Backup & Export Data", "/tools/databackup", "master", "data_backup_export"),
         ],
       },
       {
@@ -340,7 +352,19 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("knowledge-base", "คลังความรู้", "Knowledge Base", "/knowledgebasescreen", "master"),
           tx("alert-agent", "ผู้ช่วยแจ้งเตือน", "Alert Assistant", "/alertagentscreen", "master"),
+          tx("automated-report-email", "ส่งรายงานอัตโนมัติ", "Automated Scheduled Reports", "/tools/scheduledreports", "master", "automated_report_email"),
+          tx("line-official-account", "เชื่อมต่อ LINE", "LINE Official Account", "/line-oa", "master", "line_official_account"),
           tx("api-dashboard", "ศูนย์การเชื่อมต่อ API", "API Integration Dashboard", "/apidashboard", "master"),
+        ],
+      },
+      {
+        id: "organization-people",
+        title: ml("organization_people", "บุคลากรและผู้ใช้งาน", "Personnel & Users"),
+        items: [
+          tx("employee-registry", "ทะเบียนพนักงาน", "Employee Registry", "/employee", "master", "employee_registry"),
+          tx("system-user", "ผู้ใช้งานระบบ", "System Users", "/user", "master", "system_users"),
+          tx("permission-group", "กลุ่มสิทธิ์การใช้งาน", "Permission Groups", "/permissiongroup", "master", "permission_group"),
+          tx("user-access-audit", "ประวัติการเข้าใช้งาน", "User Access Audit", "/useraccessaudit", "master", "user_access_audit"),
         ],
       },
     ],
