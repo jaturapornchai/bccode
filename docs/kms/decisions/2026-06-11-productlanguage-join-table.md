@@ -6,6 +6,8 @@ tags: [bc-account, postgres, read-model, i18n]
 
 # pgsql เลือกชื่อตามภาษาด้วยตาราง productlanguage join แทน function picklangname
 
+> ℹ️ **ขอบเขต:** ADR นี้ตัดสินเรื่อง read model ในเอกสาร schema ของ repo พี่น้อง `D:\bccode-model` (ไฟล์จริงอยู่ที่ `product\pgsql\productlanguage-schema.html` และ `tests\ui-modernization.test.mjs` ของ repo นั้น ไม่ใช่ `D:\bccode`) — ตรวจ 2026-09-09 แล้ว **ไม่มีคำว่า `productlanguage` หรือ `picklangname` ในโค้ด `backend/` และ `frontend/` ของ `D:\bccode` เลยแม้แต่ที่เดียว** (พบเฉพาะในเอกสาร — `docs/kms/snippets/picklangname.md` ซึ่งกำกับไว้แล้วว่าเลิกใช้ฝั่ง pgsql) ยังไม่ถูก implement ในโค้ด backend ของ repo นี้ อย่าไล่หาในโค้ด
+
 ## Context
 Product read model (PostgreSQL, per-holding tenant DB) เก็บชื่อหลายภาษาเป็น `names`/`unitnamesmain` jsonb (`[]NameX`) และเลือกชื่อตามภาษาใน select ด้วย function `picklangname(names, langcode, fallbacklangcode, defaultname)` (SQL IMMUTABLE, planner inline) ซึ่งต้องดูแลใน migration ของทุก tenant DB และอ่าน query ยาก
 

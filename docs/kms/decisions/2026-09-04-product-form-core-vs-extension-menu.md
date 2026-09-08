@@ -4,7 +4,7 @@ status: accepted
 tags: [bc-account, frontend, product, ux, menu]
 ---
 
-# แยกฟอร์มสินค้าเป็น 2 เมนู: "สินค้า" (งานบัญชี) กับ "สินค้า (ส่วนขยาย)"
+# แยกฟอร์มสินค้าเป็น 2 เมนู: "สินค้า" (งานบัญชี) กับ "ข้อมูลเสริมสินค้า"
 
 ## Context
 ฟอร์มสินค้าเดิม (`frontend/src/app/menu/product-screen.tsx`) มี 11 tab ในจอเดียว — พนักงานบัญชี (ผู้ใช้หลัก
@@ -14,9 +14,9 @@ tags: [bc-account, frontend, product, ux, menu]
 
 ## Decision
 - เมนู **สินค้า** (`/product`) เหลือ 3 tab: ข้อมูลหลัก, หน่วยนับและบาร์โค้ด, คงคลัง
-- เมนูใหม่ **สินค้า (ส่วนขยาย)** (`/productextension`, id `product-extension`) วางต่อจาก "สินค้า" ใน group
+- เมนูใหม่ **ข้อมูลเสริมสินค้า** (`/productextension`, id `product-extension`) วางต่อจาก "สินค้า" ใน group
   `products` มี 8 tab: หมวดหมู่, ส่วนประกอบ (BOM), ภาพและสี, การจัดส่ง/โลจิสติกส์, ร้านอาหาร/POS, เวลาขาย,
-  สาขา/ธุรกิจ, อื่นๆ
+  สาขา/ธุรกิจ, อื่นๆ (ป้ายเดิมตอนตัดสินใจคือ "สินค้า (ส่วนขยาย)" เปลี่ยนเป็น "ข้อมูลเสริมสินค้า" ที่ commit `caaf5c59` — ดู `frontend/src/lib/menu-data.ts:287`)
 - ทำด้วย prop `mode: "core" | "extension"` บน `ProductScreen` เดิม — list ซ้าย + panel ขวา + save handler
   ใช้ร่วมกัน; โหมดส่วนขยายเป็น **edit-only** (ซ่อน เพิ่ม/คัดลอก) เพราะสร้างสินค้าโดยไม่มี tab ข้อมูลหลัก
   จะได้สินค้าไร้ชื่อ/หน่วยนับ

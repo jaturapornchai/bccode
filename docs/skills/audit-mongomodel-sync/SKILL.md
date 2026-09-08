@@ -5,7 +5,7 @@ description: Pull the live BC Ai Account design from MongoModel MCP, compare its
 
 # Audit MongoModel Sync
 
-Follow the source-of-truth boundaries in `D:\bccode\docs\README.md`. Never infer authority from recency or a higher MongoModel revision.
+Follow `D:\bccode\AGENTS.md`, and use `D:\bccode\docs\kms\00-source-router.md` only to locate implementation evidence. Business-rule documentation in `docs/` was removed on 2026-09-03 and its replacement is pending, so there is no business-rule Source of Truth yet. Never infer authority from recency, from a higher MongoModel revision, or from existing code.
 
 ## Fixed Inputs
 
@@ -26,7 +26,7 @@ Prefer the registered `mongomodel` MCP tools. If the current Codex session has n
   -ArgumentsJson '{}'
 ```
 
-The fallback still reads the live MCP endpoint. It must never read `D:\mongomodel\data\projects.json` as a substitute and refuses mutation tools.
+The fallback still reads the live MCP endpoint and supports every read tool this workflow uses (`list_projects`, `list_diagrams`, `list_workflows`, `get_diagram`, `get_workflow`, `get_shared_brain`, `list_revisions`, `check_descriptions`, `lint_model`, `lint_workflows`, `generate_code`, `get_project_context`, `wait_for_project_change`). It must never read `D:\mongomodel\data\projects.json` as a substitute and refuses mutation tools.
 
 ## Required Workflow
 
@@ -65,8 +65,8 @@ Check every applicable item:
 
 Place each difference in exactly one group:
 
-1. **Docs decision needed** — a requirement in the scope owned by `docs/**` is missing, unclear, or conflicting. Follow `docs/README.md` for conflict and question handling.
-2. **BC implementation change** — source, tests, or runtime differ from the applicable Source of Truth identified through `docs/README.md`.
+1. **Docs decision needed** — a business requirement in the affected scope is missing, unclear, or conflicting. There is no business-rule Source of Truth in `docs/` right now, so stop and ask Jead instead of guessing (`AGENTS.md` rule 1).
+2. **BC implementation change** — source, tests, or runtime differ from the exact implementation evidence located through `D:\bccode\docs\kms\00-source-router.md`, or from a business rule Jead has confirmed.
 3. **MongoModel content change** — live MongoModel does not represent an applicable confirmed requirement, or a confirmed Data Model/Technical Workflow change has not been recorded there.
 4. **MongoModel MCP product change** — the MCP/UI/tool behavior cannot represent, validate, retrieve, or safely update the required model. Follow the maintenance route in `D:\bccode\docs\kms\00-source-router.md`.
 5. **Aligned** — no change is required for the inspected scope.
@@ -76,7 +76,7 @@ Always include the MongoModel change section, even when the result is `ไม่
 ## Applying Authorized Changes
 
 - For audit or review requests, remain read-only and report the exact required changes.
-- For an implementation request, follow the authorization and ordering in `docs/README.md`.
+- For an implementation request, get Jead's confirmation for every unresolved business rule first, then apply the narrowest change and verify it (`AGENTS.md`).
 - Before any MongoModel mutation, reread the relevant diagram or workflow and use its current revision/expected revision when the tool supports it.
 - Never bulk-replace a diagram when a narrow field, collection, relation, or workflow update is sufficient.
 - Never write generated output over BC source blindly. Use `generate_code` only as comparison evidence, then apply a reviewed patch to the exact source.

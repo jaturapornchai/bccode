@@ -15,8 +15,8 @@
 stock fields ใน mongo เป็น duplicate ของ pgsql อาจไม่ตรงกันชั่วขณะระหว่าง sync — mitigate ด้วย single-writer (stock engine) + doc ระบุให้อ่านจาก read model
 
 ## Files
-- `D:\bccode-model\pgsql\product-schema.html` (+ mirrors `public/pgsql`, `public/scripts/pgsql`)
-- `D:\bccode-model\mongodb\product-schema.html`, `clickhouse\product-schema.html` (+ mirrors)
-- `styles/schema-doc.css` (เพิ่ม `.null-no`/`.null-yes`/`.src-path`)
-- Regression: `tests/schema-language-doc.test.mjs` (test ใหม่ parity), `tests/ui-modernization.test.mjs` (อัปเดต assertion เก่า)
+- `D:\bccode-model\product\pgsql\product-schema.html`
+- `D:\bccode-model\product\mongodb\product-schema.html`, `product\clickhouse\product-schema.html`
+- `D:\bccode-model\styles\schema-doc.css` (เพิ่ม `.null-no`/`.null-yes`/`.src-path`)
+- Regression (อยู่ใน `D:\bccode-model`): `tests/schema-language-doc.test.mjs` (test ใหม่ parity), `tests/ui-modernization.test.mjs` (อัปเดต assertion เก่า) — **ไม่มีไฟล์เหล่านี้ใน `D:\bccode`** ส่วนที่มีผลกับ repo นี้คือชื่อฟิลด์ `pendingrecvqty`/`pendingsendqty` ที่ใช้จริงใน `backend/internal/goapi/process/build/create-database.go:62-63` และ `taxtype` ที่ `backend/internal/product/product/models/product.go:57` (`bson:"taxtype"`) + `backend/internal/goapi/handlers/product_v2_whitelist.go:59` — **ไม่มีคำว่า `taxtype` ใน create-database.go**
 - Tests: 51/51 pass; DDL ยังไม่ได้รันบน PostgreSQL จริง (ไม่มี psql ในเครื่อง)

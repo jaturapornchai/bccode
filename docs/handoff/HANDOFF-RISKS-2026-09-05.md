@@ -92,7 +92,7 @@ API success ของ Product และ company Barcode CRUD หมายถึ�
 
 Resync HTTP ยัง rebuild PostgreSQL แล้ว queue active snapshots และตอบ `queued` พร้อม legacy `published:0` การ rebuild กับ queue ทั้งชุดไม่ได้เป็น cross-database transaction
 
-ดู configuration, คำสั่งทดสอบ, การตรวจคิว และ rollback ใน [Product outbox README](backend/internal/product/product/outbox/README.md)
+ดู configuration, คำสั่งทดสอบ, การตรวจคิว และ rollback ใน [Product outbox README](../../backend/internal/product/product/outbox/README.md)
 
 ## จุดแก้เพิ่มเติมที่พบระหว่างตรวจ
 
@@ -149,7 +149,7 @@ Description/model error-level lint ผ่าน; ทุก 12 workflows มี 0
 
 1. ยืนยัน workflow แรก, currency, precision/scale ของเงิน/จำนวน/ต้นทุน/FX, rounding mode/จุดปัดเศษ และ trusted source จากนั้นไล่ request → calculation → MongoDB → Kafka → PostgreSQL/report พร้อม round-trip, 0.1+0.2, rounding boundaries, debit=credit, idempotency และ exact reconciliation
 2. ยืนยัน business contracts ของ 15 quarantined packages แล้วปลดทีละ package; เพิ่ม browser Create → DB query → Read → Update → DB query → Delete → DB query พร้อม seeded data และ cleanup ตาม id
-3. ระบุ backup platform/config reference, source/isolated target, format, RPO/RTO และหลักฐาน backup ล่าสุด โดยไม่ส่ง secrets; ทำ drill ตาม [Recovery readiness](docs/runbooks/RECOVERY-READINESS.md)
+3. ระบุ backup platform/config reference, source/isolated target, format, RPO/RTO และหลักฐาน backup ล่าสุด โดยไม่ส่ง secrets; ทำ drill ตาม [Recovery readiness](../runbooks/RECOVERY-READINESS.md)
 4. ปิด structural partial-index gap เมื่อเครื่องมือรองรับ; ยืนยัน Unit contract เพราะแบบใช้ `unit_of_measure/code/businesscode` แต่ implementation ใช้ `units/unitcode` ระดับ holding ไม่ควรย้ายขอบเขต tenant โดยเดา
 
 ตรวจ runtime แบบ read-only พบ mainapi เริ่ม 2026-09-03 และ frontend build artifact วันที่ 2026-09-02 ซึ่งเก่ากว่า source รอบนี้ จึงยังไม่มี browser UAT ที่รับรอง source ล่าสุด ไม่ได้ restart runtime เดิมหรือใช้ผลจาก binary เก่ามารับรอง diff ใหม่

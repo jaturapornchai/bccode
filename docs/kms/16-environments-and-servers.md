@@ -24,7 +24,7 @@
 
 ## on-prem `192.168.2.202`
 
-- ทุกอย่างเป็น Docker บน network `bc-backend_app-network`: `postgres` (18), `clickhouse` (25.5), `mongodb` (7, replica set `rs0` + keyFile), `minio` (bucket `app-images`), `mainapi` :8888, `redis`, `kafka`; frontend container `bc-frontend` :3000 build จาก `frontend/Dockerfile.onprem` (**ห้าม `output: standalone`**)
+- ทุกอย่างเป็น Docker บน network `bc-backend_app-network`: `postgres` (18), `clickhouse` (25.5), `mongodb` (7, replica set `rs0` + keyFile), `minio` (bucket `app-images`), `mainapi` :8888, `redis`, `kafka`; frontend container `bc-frontend` :3000 build จาก `frontend/Dockerfile` (**ห้าม `output: standalone`**; ไม่มีไฟล์ `Dockerfile.onprem` ในรีโป — ดู `10-infra-deploy.md:90`)
 - deploy backend = tar source (ไม่รวม `bootstrap.json`/`custom_config.json` ของเซิร์ฟเวอร์) → ssh → `/home/smlsoft/bc-backend` → `docker compose up -d --build --no-deps --force-recreate mainapi` → เช็ค `/healthz` 200 และ md5 ของ `bootstrap.json` ไม่เปลี่ยน
 - Cloudflare Tunnel `bcaicloud` (systemd `cloudflared`, token = secret) เคยให้บริการ `app.bcaicloud.com` — **โดเมนนี้เลิกใช้ 2026-06-28**; tunnel ยัง active ใช้ซ้ำกับโดเมนใหม่ได้; โซน `bcaicloud.com` อยู่บน Cloudflare NS แบบ Full
 - ไม่มี port-forward (CGNAT) — เข้าจาก LAN/tunnel เท่านั้น

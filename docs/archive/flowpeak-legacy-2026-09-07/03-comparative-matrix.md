@@ -1,5 +1,7 @@
 # ตารางเปรียบเทียบคุณสมบัติเชิงลึก (Feature Matrix): FlowAccount vs PEAK Account
 
+> **⚠️ เอกสารประวัติ (ARCHIVED 2026-09-07) — ไม่ใช่ข้อกำหนดปัจจุบัน ไม่ใช่แหล่งยืนยัน schema/API และห้ามใช้เป็นคำสั่งงานต่อ** เหตุผลการเก็บถาวรอยู่ที่ [`ARCHIVE-NOTE.md`](ARCHIVE-NOTE.md) · ขอบเขตปัจจุบันดูที่ `AGENTS.md`, [`docs/features-flowaccount-peak/README.md`](../../features-flowaccount-peak/README.md) (หลักฐานฝั่งคู่แข่ง) และ [`docs/kms/19-menu-coverage-flowaccount-peak.md`](../../kms/19-menu-coverage-flowaccount-peak.md) (เมนู BC 224 รายการ) · ระบบเงินเดือนถูกตัดออกจากขอบเขตผลิตภัณฑ์แล้ว
+
 > รวบรวมและวิเคราะห์เปรียบเทียบ: 2026-09-07  
 > เครื่องหมาย: ✅ มีและสมบูรณ์ | 🟡 มีบางส่วน / มีข้อจำกัด | ❌ ไม่มี / ต้องซื้อเพิ่ม | 💡 ข้อสังเกตเชิงเทคนิค
 

@@ -6,6 +6,8 @@ tags: [bc-account, architecture, product, marketplace, mongodb]
 
 # สินค้า 2 ชั้นใน collection เดียว + channel_* แยกสำหรับลงขายออนไลน์
 
+> แทนที่ [2026-06-30-marketplace-channelmappings-field.md](2026-06-30-marketplace-channelmappings-field.md) (ADR เดิม status: superseded แล้ว)
+
 ## Context
 ผู้ใช้ไทย 2 กลุ่มใช้ระบบเดียวกัน: นักบัญชี (ต้องการรหัส/ชื่อ/หน่วย/หมวดครบเร็ว ๆ เพื่อออกเอกสารภาษี) และเจ้าของกิจการ (ต้องการ สี/ขนาด/น้ำหนัก/รูป/ราคาขายส่ง เพื่อลง marketplace) ลุงจืดไม่อยากแยกระบบเพราะข้อมูลเชื่อมกัน (ขายออนไลน์ → สต๊อก/บัญชีตัวเดียวกัน)
 

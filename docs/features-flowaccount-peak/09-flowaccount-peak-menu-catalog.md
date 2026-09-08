@@ -472,7 +472,7 @@
 
 รอบค้นสเปกก่อนหน้า: เพิ่ม 25 รายการและขยายหลักฐาน 14 รายการเดิม จาก 65 แหล่ง ดูรายละเอียดและข้อขัดแย้งใน[เอกสาร 10](10-product-spec-research.md)
 
-รอบไล่เมนู: เพิ่ม 38 รายการและเติม/แก้หลักฐาน 28 รายการเดิม รวมแหล่งในบัญชีเมนู 113 URL ดู[ผัง FlowAccount](11-flowaccount-menu-map.md), [ผัง PEAK](12-peak-account-menu-map.md) และดัชนีหลักฐาน [FlowAccount](14-flowaccount-manual-coverage.md) / [PEAK](13-peak-manual-coverage.md)
+รอบไล่เมนู: เพิ่ม 38 รายการและเติม/แก้หลักฐาน 28 รายการเดิม รวมแหล่งในบัญชีเมนู ณ รอบนั้น 113 URL (ปัจจุบัน 128 URL — ดูบรรทัดถัดไป) ดู[ผัง FlowAccount](11-flowaccount-menu-map.md), [ผัง PEAK](12-peak-account-menu-map.md) และดัชนีหลักฐาน [FlowAccount](14-flowaccount-manual-coverage.md) / [PEAK](13-peak-manual-coverage.md)
 
 รอบวิเคราะห์ตามเอกสาร 15 (2026-09-07): รวมบัญชีเป็น 311 รายการจาก 128 URL — merge หมวด 11 สมุดรายวันให้เหลือข้อเดียวต่อระบบ, เพิ่มรายการจากการไล่เมนูรอบล่าสุด ([P62]–[P73], [F51]–[F53]), ติดป้ายทางลัดในหมวด 15 และปรับ 02.06 เป็น A ดู[บันทึก handoff](15-handoff-kimi-k3-menu-analysis.md)
 

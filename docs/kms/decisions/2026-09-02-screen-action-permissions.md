@@ -16,7 +16,7 @@ tags: [bc-account, backend, frontend, permission]
 - จอที่ไม่อยู่ในเมนู (เช่น wizard) / โหลดสิทธิ์ไม่ได้ → ไม่ล็อกปุ่ม (fail-open เฉพาะ UI; การเข้าจอถูกคุมที่เมนูหลักแล้ว)
 
 ## ผลกระทบ / งานต่อ
-ระยะ 2: บังคับที่ backend (POST/PUT/DELETE ของ system-settings ตรวจ `รหัสจอ:action` จาก role permission ของ membership) · commit `9af96103` · docs/organization.md อัปเดต
+ระยะ 2: บังคับที่ backend (POST/PUT/DELETE ของ system-settings ตรวจ `รหัสจอ:action` จาก role permission ของ membership) · commit `9af96103` · เอกสารประกอบเดิม `docs/organization.md` ถูกลบพร้อมการรื้อโฟลเดอร์ `docs/` (commit `5ee63a38`) และยังไม่มีไฟล์ทดแทน — ให้ยึดโค้ดจริงที่ `backend/internal/organization/rolepermission/models/role_permission.go` และ `frontend/src/components/system-settings/field-editors/role-screen-matrix.tsx`
 
 ## UX (ปรับตามลุงจืด "เลือกยาก")
 เปลี่ยนจาก card grid เป็นตาราง `RoleScreenMatrix` (components/system-settings/field-editors/role-screen-matrix.tsx): แถวจัดกลุ่มตามเมนู (section › group) คอลัมน์ เข้า/เพิ่ม/แก้ไข/ลบ/ทั้งหมด, ค้นหา + กรอง เลือกแล้ว/ยังไม่เลือก, หัวตารางติ๊กทีเดียวกับจอที่แสดง · verify: 128 จอ → ค้น "ซื้อ" เหลือ 8, header เข้า = 8, ติ๊กแก้ไขแล้วเข้าอัตโนมัติ, ยกเลิกเข้า = ล้าง action

@@ -3,6 +3,8 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet(
         "list_projects",
+        "list_diagrams",
+        "list_workflows",
         "get_project_context",
         "get_diagram",
         "get_workflow",

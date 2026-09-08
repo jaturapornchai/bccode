@@ -17,12 +17,12 @@ tags: [bc-account, docs, process, multi-ai, context-efficiency]
 1. **ห้ามโหลดเอกสารแบบเหมาหมด (Eager Loading)**: AI ทุกตัวห้ามกวาดอ่านทั้งโฟลเดอร์ `docs/` หรืออ่าน `docs/handoff/` ล่วงหน้าในงานทั่วไป
 2. **ใช้การโหลดแบบตรงจุด (On-Demand / Lazy Loading)**:
    - **งานย่อย / แก้ไขบรรทัดเดียว / แก้บั๊กเฉพาะจุด**: ตรวจและแก้ที่โค้ดจริงโดยตรง (`code = truth`) โดยไม่ต้องเปิดอ่าน docs
-   - **งาน UX/UI**: เปิดอ่านเฉพาะ [`docs/skills/ui-scale-polish/SKILL.md`](../skills/ui-scale-polish/SKILL.md)
-   - **งาน Schema / MongoDB / MongoModel**: เปิดอ่านเฉพาะ [`docs/skills/audit-mongomodel-sync/SKILL.md`](../skills/audit-mongomodel-sync/SKILL.md)
-   - **งานสถาปัตยกรรม / โดเมนเฉพาะเรื่อง**: อ่านตารางสรุป 1 บรรทัดใน [`docs/kms/README.md`](../kms/README.md) แล้วเลือกเปิดเพียง **1 บทความ** ที่ตรงกับเรื่องนั้นโดยตรง
+   - **งาน UX/UI**: เปิดอ่านเฉพาะ [`docs/skills/ui-scale-polish/SKILL.md`](../../skills/ui-scale-polish/SKILL.md)
+   - **งาน Schema / MongoDB / MongoModel**: เปิดอ่านเฉพาะ [`docs/skills/audit-mongomodel-sync/SKILL.md`](../../skills/audit-mongomodel-sync/SKILL.md)
+   - **งานสถาปัตยกรรม / โดเมนเฉพาะเรื่อง**: อ่านตารางสรุป 1 บรรทัดใน [`docs/kms/README.md`](../README.md) แล้วเลือกเปิดเพียง **1 บทความ** ที่ตรงกับเรื่องนั้นโดยตรง
    - **Handoff (`docs/handoff/`)**: เปิดเฉพาะเมื่อลุงจืดสั่งให้ดูสถานะงานค้าง/ความเสี่ยง หรือเริ่มงานสถาปัตยกรรมใหญ่
-   - **ไฟล์ขนาดใหญ่ (>1,000 บรรทัด)**: ดูแผนที่บรรทัดใน [`docs/reference/CODE-MAP.md`](../reference/CODE-MAP.md) แทนการ grep ทั้งไฟล์
-3. **จัดทำ [`docs/README.md`](../README.md)** เป็นแผนที่ Router ขนาดเล็ก (~30 บรรทัด) เพื่อเป็นสารบัญชี้ทางเลือกอ่านแบบ On-Demand
+   - **ไฟล์ขนาดใหญ่ (>1,000 บรรทัด)**: ดูแผนที่บรรทัดใน [`docs/reference/CODE-MAP.md`](../../reference/CODE-MAP.md) แทนการ grep ทั้งไฟล์
+3. **จัดทำ [`docs/README.md`](../../README.md)** เป็นแผนที่ Router ขนาดเล็ก (~30 บรรทัด) เพื่อเป็นสารบัญชี้ทางเลือกอ่านแบบ On-Demand
 
 ## Consequences
 

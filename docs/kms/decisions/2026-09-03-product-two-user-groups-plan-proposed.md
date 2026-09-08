@@ -1,6 +1,6 @@
 ---
 date: 2026-09-03
-status: proposed
+status: superseded
 tags: [bc-account, architecture, product, plan, workflow-output]
 ---
 
@@ -8,6 +8,8 @@ tags: [bc-account, architecture, product, plan, workflow-output]
 
 > เอกสารนี้เป็น output ของ workflow (11 agents) ยังไม่ผ่านการตัดสินใจของลุงจืด; Claude verify แล้วเฉพาะ ม.86/4 และ ม.87 (rd.go.th 5208/5209) ข้ออ้างกฎหมาย/บัญชีอื่นยังต้อง re-verify กับ primary source ก่อนใช้ (ดูหัวข้อ critique) และ**ห้ามใช้ชื่อ vendor ใน code/field/docs ของ repo** (แผนนี้เอ่ยชื่อเพื่อการวิจัยเท่านั้น)
 > คะแนน judge: {"1. บัญชีเป็นแกน–ขายออนไลน์เป็นชั้นเสริม (Ledger-Core / Listing-Overlay)":7,"2. SKU-Atom — บาร์โค้ด = หน่วยขาย (SKU), สินค้า = แม่แบบบัญชี":6,"3. Progressive Profile — สินค้า 1 เรคคอร์ด 3 ระดับความพร้อม + productlisting":7.5,"A — บัญชีเป็นแกน–ขายออนไลน์เป็นชั้นเสริม (Ledger-Core / Listing-Overlay)":6,"B — SKU-Atom (บาร์โค้ด = หน่วยขาย, สินค้า = แม่แบบบัญชี)":7,"C — Progressive Profile (L1→L2→L3) + productlisting เป็นเรคคอร์ดลูก":8,"บัญชีเป็นแกน–ขายออนไลน์เป็นชั้นเสริม (Ledger-Core / Listing-Overlay)":7.5,"SKU-Atom — บาร์โค้ด = หน่วยขาย (SKU), สินค้า = แม่แบบบัญชี":5.5,"Progressive Profile — 3 ระดับความพร้อม + productlisting เป็นเรคคอร์ดลูก":7}
+
+> ⛔ **ถูกแทนที่ (superseded) 2026-09-03** โดย [2026-09-03-product-two-layer-marketplace-model.md](2026-09-03-product-two-layer-marketplace-model.md) (accepted วันเดียวกัน) + สัญญา `docs/kms/architecture/product-listing-api-v2.md` — โมเดลที่ใช้จริงคือ `product.listing.tiers[]` (≤2 ชั้น, ≤50 ชุดผสม; ตรวจได้ที่ `backend/internal/goapi/handlers/product_v2_types.go:104-105` `TierMax: 2` / `TierCombinationMax: 50`) และ collection `channel_shops`/`channel_listings`/`channel_category_maps`/`channel_brand_maps` (`product_v2_types.go:20-23`) **ไม่ใช่** `variantaxes[]` (≤3 แกน — ตรวจ 2026-09-09 ไม่มีชื่อนี้ในโค้ดเลย) และ**ไม่ใช่** collection ลูก `productlisting` แยกต่างหากตามแผนนี้ (โค้ดจริงฝัง struct `ProductListing` เป็นฟิลด์ `listing` ในเอกสาร `product` — `backend/internal/product/product/models/product.go:102` + `product_listing.go:58`) เก็บไว้เป็นบันทึกการวิเคราะห์เท่านั้น **ห้ามนำไป implement และไม่ต้องอ่านทั้งไฟล์**
 
 # แผนสุดท้าย: สินค้า/บริการ BC Ai Account
 ฐาน = Progressive Profile (คะแนนรวม 22.5 สูงสุด) + graft จาก Ledger-Core (20.5) และ SKU-Atom (18.5)

@@ -15,4 +15,4 @@ tags: [bc-account, frontend, ux]
 ## ผลกระทบ
 จอถัดไปที่ต้องยกระดับ: /workspace, settings wizard, menu · reference = login/holding
 
-เกี่ยวข้อง: [[2026-09-02]] · [[2026-09-02-dev-login-401-secret-drift]]
+เกี่ยวข้อง: [[2026-09-02-dev-login-401-secret-drift]]

@@ -79,7 +79,7 @@ transflag ต่อชนิด: 72 โอน, 60 รับ, 56 เบิก, 58
 ### 5.4 คิว `stockwaitprocess` — ใครเติม / ใคร drain
 - เติม: ทุกเอกสารผ่าน `AddToDocWaitProcessQueues` (§5.2 ข้อ 4), rebuild (`backend/internal/goapi/process/build/build-doc.go:480-490`), `TruncateProcessTables` (`backend/internal/goapi/process/utils.go:19-35`)
 - drain: **เฉพาะ** `ProcessStockCostAllWithCallback` — `SELECT DISTINCT itemcode FROM stockwaitprocess` แล้วลบทีละ batch (`product-calc-cost.go:67,280-300`) — ผู้เรียกมีแค่ `build.DatabaseRebuild` (`create-database.go:2065`) และ `CalcStockCostAll` (:2370) ผ่าน wrapper `ProcessStockCostAll` (`product-calc-cost.go:49-51`), `DatabaseRebuildWithProgress` (:2523), `CalcStockCostAllWithProgress` (:2546) และ comment ใน `handlers/process_consumer.go:107`
-- ฟังก์ชัน build เหล่านั้นถูกเรียกจาก `ReportPostHandler` command `rebuild` (`backend/internal/goapi/handlers/commands.go:154,197-226`) ซึ่ง **ไม่ได้ลงทะเบียน route ใน `bootstrap.go`** (rg `ReportPostHandler` เจอเฉพาะนิยาม) → ไม่มีทาง HTTP/consumer ใด drain คิวนี้ (ตรงกับ `docs/handoff/HANDOFF-2026-09-06.md:59`)
+- ฟังก์ชัน build เหล่านั้นถูกเรียกจาก `ReportPostHandler` command `rebuild` (`backend/internal/goapi/handlers/commands.go:154,197-226`) ซึ่ง **ไม่ได้ลงทะเบียน route ใน `bootstrap.go`** (rg `ReportPostHandler` เจอเฉพาะนิยาม) → ไม่มีทาง HTTP/consumer ใด drain คิวนี้ (ตรงกับ `docs/handoff/HANDOFF-2026-09-06.md:62`)
 - runtime local `test`: `stockwaitprocess` 8 แถว, `docwaitprocess` 8, `docdetail` 9 → คิวโตไปเรื่อยโดยไม่มีผลต่อความถูกต้องของ `processstockcost` (เพราะ consumer คำนวณทันทีอยู่แล้ว) แต่เป็นขยะสะสม
 
 ### 5.5 route goapi ที่เกี่ยวกับต้นทุน (ทั้งหมด LIVE แต่ไม่มี frontend เรียก — rg `frontend/src` 2026-09-07 ไม่พบ)

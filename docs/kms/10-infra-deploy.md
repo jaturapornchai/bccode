@@ -12,7 +12,7 @@
 | `"1"` | legacy Kafka consumers (gorm → PostgreSQL), `CONSUMER_GROUP_NAME` default `"03"` | backend/main.go:654-662 | prod `worker` (deploy/account/compose.yml:275-276) |
 | `"3"` | migrations อย่างเดียวแล้ว `return` | backend/main.go:585-652 | prod `migrate` (deploy/account/compose.yml:212) |
 
-ทุกโหมดจบด้วย `ms.Start()` (backend/main.go:728) ซึ่งเปิด HTTP เมื่อมี route ≥ 1 (backend/pkg/microservice/microservice.go:255-260); โหมด 1 ลงทะเบียน `/healthz` (backend/main.go:658) จึงตอบ healthcheck ของ `worker` ได้ (deploy/account/compose.yml:301). goapi เริ่ม Kafka consumers ของตัวเองเมื่อ `ENABLE_KAFKA=true` (backend/internal/goapi/bootstrap.go:157-161) → prod จึงมี consumer 2 ชุดเขียน PG เดียวกัน (mainapi mode 2 + worker mode 1) ตามที่ docs/handoff/HANDOFF-2026-09-06.md:58 ระบุเป็น P3.
+ทุกโหมดจบด้วย `ms.Start()` (backend/main.go:728) ซึ่งเปิด HTTP เมื่อมี route ≥ 1 (backend/pkg/microservice/microservice.go:255-260); โหมด 1 ลงทะเบียน `/healthz` (backend/main.go:658) จึงตอบ healthcheck ของ `worker` ได้ (deploy/account/compose.yml:301). goapi เริ่ม Kafka consumers ของตัวเองเมื่อ `ENABLE_KAFKA=true` (backend/internal/goapi/bootstrap.go:157-161) → prod จึงมี consumer 2 ชุดเขียน PG เดียวกัน (mainapi mode 2 + worker mode 1) ตามที่ docs/handoff/HANDOFF-2026-09-06.md:61 ระบุเป็น P3.
 
 ## 2. Local stack (Docker Desktop)
 คำสั่งเริ่ม: `cd backend && docker compose -f docker-compose.yml -f docker-compose.local.yml up -d` (docs/handoff/HANDOFF-2026-09-06.md:19-22)
@@ -114,9 +114,9 @@ Reload runtime: mainapi เปิด `POST /reload-config` (อยู่ใน p
 | เครื่อง | บทบาท | สถานะล่าสุดที่มีหลักฐาน | อ้างอิง |
 |---|---|---|---|
 | dev Windows (Docker Desktop) | local stack §2 + `next dev` :3000 | ใช้งานอยู่ (runtime 2026-09-07) | docs/handoff/HANDOFF-2026-09-06.md:17-23 |
-| on-prem 192.168.2.202 | Docker stack เดิม (คนละ compose กับ local) | ssh timeout 2026-09-06 → ไม่ทราบสถานะ | docs/handoff/HANDOFF-2026-09-06.md:76 |
-| DigitalOcean SGP1 159.223.43.229 (4 vCPU/8 GB) | prod ใหม่สำหรับ `account.bcaicloud.com` ด้วย compose.yml + compose.8gb.yml | **ขัดกัน**: docs/handoff/HANDOFF-2026-09-06.md:77 บอก "provision แล้ว ยังไม่ deploy app" แต่ memory `do-sgp1-new-prod-server` บันทึกว่า deploy ครบ 9 service เมื่อ 2026-09-02/03 → ยังไม่ตรวจ (ไม่ได้ ssh ในงานนี้) | docs/handoff/HANDOFF-2026-09-06.md:77 |
-| 188.212.158.39 (prod เก่า) | host เดิมของ `account.bcaicloud.com` | เข้าไม่ได้แล้ว | docs/handoff/HANDOFF-2026-09-06.md:77 |
+| on-prem 192.168.2.202 | Docker stack เดิม (คนละ compose กับ local) | ssh timeout 2026-09-06 → ไม่ทราบสถานะ | docs/handoff/HANDOFF-2026-09-06.md:79 |
+| DigitalOcean SGP1 159.223.43.229 (4 vCPU/8 GB) | prod ใหม่สำหรับ `account.bcaicloud.com` ด้วย compose.yml + compose.8gb.yml | **ขัดกัน**: docs/handoff/HANDOFF-2026-09-06.md:80 บอก "provision แล้ว ยังไม่ deploy app" แต่ memory `do-sgp1-new-prod-server` บันทึกว่า deploy ครบ 9 service เมื่อ 2026-09-02/03 → ยังไม่ตรวจ (ไม่ได้ ssh ในงานนี้) | docs/handoff/HANDOFF-2026-09-06.md:80 |
+| 188.212.158.39 (prod เก่า) | host เดิมของ `account.bcaicloud.com` | เข้าไม่ได้แล้ว | docs/handoff/HANDOFF-2026-09-06.md:80 |
 
 ## 10. โครง runbook deploy (สกัดจากไฟล์ — ทุกขั้นที่แตะ prod เป็น R0 ต้องถามลุงจืดก่อน)
 1. **Build image บนเครื่อง dev** (ต้องมี BuildKit สำหรับ `backend/Dockerfile`): `docker build -f backend/Dockerfile -t bcai-account-mainapi:rYYYYMMDD-N backend` และ `docker build --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=… --build-arg BCAI_LOCAL_BACKEND_URL=http://mainapi:8888 -t bcai-account-frontend:rYYYYMMDD-N frontend` (frontend/Dockerfile:25-32; provision-server.sh:151 กำหนด URL ภายในเป็น `http://mainapi:8888`)
@@ -133,7 +133,7 @@ Reload runtime: mainapi เปิด `POST /reload-config` (อยู่ใน p
 - `backend/Dockerfile.goapi` + `backend/cmd/goapi/` มีใครใช้ deploy แยกหรือไม่ — ไม่มี compose/CI อ้าง; ถ้าไม่ใช้ควรลบ (คำถามลุงจืด)
 - ผลกระทบจริงของ key snake_case ใน `bootstrap.json` ต่อ mainapi loader (§6) — ยืนยันจากโค้ดและชื่อ key เท่านั้น ยังไม่ได้เขียน test/พิสูจน์ด้วย log เฉพาะ key; ควรตัดสินว่าจะ normalize ใน `internal/setupconfig/loader.go` หรือแก้ไฟล์
 - `worker` (mode 1) บน prod ยังจำเป็นไหม เมื่อ goapi consumers ใน mainapi ทำงานอยู่แล้ว (HANDOFF P3) — เป็น R1 รอลุงจืด
-- ClickHouse ยังเป็น `depends_on: service_healthy` ของ migrate/mainapi/worker บน prod (compose.yml:216-219, 240-243, 280-283) ทั้งที่โค้ด stub → ถ้าถอด container บน prod โดยไม่แก้ compose stack จะไม่ขึ้น; การถอดถาวรเป็น R1 (docs/handoff/HANDOFF-2026-09-06.md:57)
+- ClickHouse ยังเป็น `depends_on: service_healthy` ของ migrate/mainapi/worker บน prod (compose.yml:216-219, 240-243, 280-283) ทั้งที่โค้ด stub → ถ้าถอด container บน prod โดยไม่แก้ compose stack จะไม่ขึ้น; การถอดถาวรเป็น R1 (docs/handoff/HANDOFF-2026-09-06.md:60)
 - Backup/restore: ไม่มี job/หลักฐานใด ๆ ใน repo (docs/runbooks/RECOVERY-READINESS.md:40); ต้องกำหนด RPO/RTO/ปลายทาง
 - `mongodb` local ไม่มี host port mapping ที่ runtime แม้ compose ประกาศไว้ — ยังไม่ recreate (งานนี้อ่านอย่างเดียว)
 - ไม่ได้ตรวจ `deploy/account/*` เทียบกับสำเนาบนเซิร์ฟเวอร์ (drift), และไม่ได้ตรวจ Caddy config จริงบนเครื่อง

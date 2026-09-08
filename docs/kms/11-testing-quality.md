@@ -66,7 +66,7 @@ MSYS_NO_PATHCONV=1 docker run --rm -v D:/bccode/backend:/src -w /src -e GOFLAGS=
 | 14 | `internal/vfgl/accountperiodmaster/services` | `:16` |
 | 15 | `internal/vfgl/journal/services` | `:17` |
 
-ทั้ง 15 ตัวเป็น legacy transaction consumer / paymentdetail / GL (vfgl) — ยังไม่ตรวจว่าทุกตัวถูกโหลดเฉพาะ DEV_API_MODE=1; คำถามค้างถึงลุงจืดคือ business contract ของแต่ละตัวคืออะไรจึงจะปลดได้ (`docs/handoff/HANDOFF-2026-09-06.md:68`)
+ทั้ง 15 ตัวเป็น legacy transaction consumer / paymentdetail / GL (vfgl) — ยังไม่ตรวจว่าทุกตัวถูกโหลดเฉพาะ DEV_API_MODE=1; คำถามค้างถึงลุงจืดคือ business contract ของแต่ละตัวคืออะไรจึงจะปลดได้ (`docs/handoff/HANDOFF-2026-09-06.md:71`)
 
 ## 4. Integration suite — `backend/.ci/projection.compose.yml`
 | service | image | หน้าที่ | อ้างอิง |
@@ -87,7 +87,7 @@ docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml up -
 docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml run --rm --no-deps tests
 docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml down -v --remove-orphans
 ```
-ทำไมต้อง `--no-deps`: `docker compose run` (v5.3) จะ restart one-shot dependency (`mongo-init`) ที่ exit ไปแล้ว ทำให้ gate `service_completed_successfully` ล้ม (`docs/handoff/HANDOFF-2026-09-06.md:63`, comment ใน `backend/.ci/projection.compose.yml:17-18`) — จึงต้อง `up -d` ก่อนแล้วค่อย `run --no-deps`; stack นี้ไม่เปิด host port และไม่แตะ volume ของ stack local (`backend/.ci/projection.compose.yml:1`) ผลรอบล่าสุดที่บันทึกไว้: ผ่านทั้ง 8 บน Kafka 4.3.1 + Mongo 7 + PG 18 (`docs/handoff/HANDOFF-RISKS-2026-09-05.md:47`)
+ทำไมต้อง `--no-deps`: `docker compose run` (v5.3) จะ restart one-shot dependency (`mongo-init`) ที่ exit ไปแล้ว ทำให้ gate `service_completed_successfully` ล้ม (`docs/handoff/HANDOFF-2026-09-06.md:66`, comment ใน `backend/.ci/projection.compose.yml:17-18`) — จึงต้อง `up -d` ก่อนแล้วค่อย `run --no-deps`; stack นี้ไม่เปิด host port และไม่แตะ volume ของ stack local (`backend/.ci/projection.compose.yml:1`) ผลรอบล่าสุดที่บันทึกไว้: ผ่านทั้ง 8 บน Kafka 4.3.1 + Mongo 7 + PG 18 (`docs/handoff/HANDOFF-RISKS-2026-09-05.md:47`)
 
 ## 5. GitHub Actions — `.github/workflows/ci.yml`
 | job | ทำอะไร | สถานะจริง | อ้างอิง |

@@ -1,5 +1,5 @@
 # กับดักตอนพัฒนา (dev gotchas) ที่เคยเสียเวลาไปแล้ว — อย่าเจอซ้ำ
-> ตรวจล่าสุด: 2026-09-07 (commit d93a210d) — รวมจาก memory ของ Claude + handoff; แต่ละข้อมีวันที่ที่ยืนยันจริง
+> ตรวจล่าสุด: 2026-09-07 (commit d93a210d) · แถวที่ระบุวันที่ 2026-09-09 ตรวจซ้ำที่ commit 098107e1 — รวมจาก memory ของ Claude + handoff; แต่ละข้อมีวันที่ที่ยืนยันจริง
 
 ## Frontend
 
@@ -11,7 +11,7 @@
 | แก้ CSS login แล้วไม่เปลี่ยน | block กลางไฟล์ (design-pass 2026-08-28) hard-code สีขาว ชนะ tail override | selector ท้ายไฟล์ต้อง `.login-shell .login-card` ขึ้นไป และใช้ตัวแปร `--login-*` | 2026-09-02 |
 | `localhost:3000` โชว์ UI เก่า | มี `next start` (production build) ค้างอยู่ | `netstat -ano \| grep :3000` → kill → `npm run dev` | 2026-09-02 |
 | `npm`/`npx` ใน Git Bash บน Windows พัง ("cannot find the path specified") | postinstall/npx ล้ม | `npm install --ignore-scripts`; รัน `node node_modules/next/dist/bin/next dev` ตรง ๆ ถ้า `npm run dev` ไม่ขึ้น | 2026-06-29 |
-| `next.config.ts` ต้องไม่มี `output: "standalone"` | `next start` พังใน Docker on-prem | ใช้ `frontend/Dockerfile.onprem` (build && start) | 2026-06 |
+| `next.config.ts` ต้องไม่มี `output: "standalone"` | `next start` พังใน Docker on-prem | build ด้วย `frontend/Dockerfile` (multi-stage, จบที่ `CMD ["npm","run","start"]`) และต้องส่ง build-arg `BCAI_LOCAL_BACKEND_URL` เสมอ ไม่งั้น `next build` ล้มที่ rewrites (frontend/next.config.ts:19-21) — **ไม่มีไฟล์ `frontend/Dockerfile.onprem` ในรีโป** (`git ls-files frontend/Dockerfile*` มีแค่ `frontend/Dockerfile`; ดู `10-infra-deploy.md:90`) | 2026-09-09 |
 | viewport | ออกแบบไว้สำหรับ **iPad (≥768px) ขึ้นไป** — มือถือแค่ไม่พัง | ใช้ grid หลายคอลัมน์บนจอกว้าง ไม่ stack ทุก field แนวตั้ง | กฎ 2026-06-28 |
 | Popover โดนตัด | `overflow: hidden` บน panel ที่มี popover ลูก | clip ที่ shell ชั้นนอกสุดเท่านั้น (กฎ premium ข้อ 7 ใน AGENTS.md) | 2026-09-02 |
 
@@ -29,13 +29,14 @@
 | ไฟล์ log ถูก track ใน git | `backend/internal/goapi/process/report-stock/logs/goapi_debug.log` เปลี่ยนทุกครั้งที่รัน test → `git checkout --` ก่อน commit (ควรเลิก track) | 2026-09-05 |
 | curl.exe บน Windows กับข้อความไทย | `curl -d "…ไทย…"` inline กลายเป็น `?????` ใน DB → เขียน JSON ลงไฟล์ UTF-8ก่อนแล้ว `--data-binary @file.json` | 2026-07-02 |
 | Dev Login 401/404/503 | ดู `16-environments-and-servers.md` §DEV (secret drift ระหว่าง env กับ container) | 2026-09-02 |
-| `.mcp.json` / MCP AI tools เขียน collection ชื่อ camelCase | `productGroups`/`productCategories` ≠ ของจริง `productgroups`/`productcategories` (ยังไม่มี doc ใน collection ผี = ยังไม่เคยถูกเรียก) — ถ้าจะใช้ MCP tools ต้องแก้ก่อน | 2026-06-21 |
+| ชื่อ collection แบบ camelCase (`productGroups`/`productCategories`) = ชื่อ **ก่อน migration** ไม่ใช่ของจริง | ของจริงเป็นตัวพิมพ์เล็กล้วน (`productgroups`/`productcategories`) ตามตารางแปลงชื่อที่ `backend/cmd/storage_name_migration/MIGRATION_HISTORY.md:83-84`; live `appdb` ไม่มี collection ตัวพิมพ์ใหญ่เหลือแล้ว และ `.mcp.json` ปัจจุบันมีแค่ server `mongodb`/`docker`/`mongomodel`/`playwright`(disabled)/`windows` ไม่มี AI write-tool ที่ใช้ชื่อเก่า — ถ้าเจอสคริปต์/เครื่องมือ**นอกรีโป**ที่ยังเขียนชื่อ camelCase ให้แก้ที่เครื่องมือนั้น อย่าสร้าง collection ใหม่ | 2026-09-09 |
+| `backend/assets/language/languages.tsv` ต้องมี **13 คอลัมน์ต่อบรรทัดพอดี** (`key,th,en,cn,ja,km,ko,lo,my,vi,ms,id,fil` ตามบรรทัดหัวไฟล์) | tab ขาดแล้วไม่มีอะไรเตือน: แถวที่มีน้อยกว่า 2 คอลัมน์ถูกข้ามเงียบ ๆ (`backend/internal/goapi/language/language.go:166-168`) → `Text()` คืน key ดิบให้ผู้ใช้เห็น (`:69-78`); แถวที่ขาดคอลัมน์กลางทำให้ค่าภาษา**เลื่อนช่อง** (`line_oa_qrcode` บรรทัด 2127 มี 12 คอลัมน์ ขาด `km` → ช่อง `km` เก็บข้อความเกาหลี, `ko` เก็บลาว, `lo` เก็บพม่า … `fil` ว่าง; key นี้ใช้จริงที่ `frontend/src/app/line-oa/line-oa-link-screen.tsx:114`); test ที่มี (`frontend/src/lib/menu-data.test.ts:293-304`) ตรวจครบทุกภาษาเฉพาะ key ที่ผูกกับเมนูเท่านั้น จึงไม่จับแถวเหล่านี้ — ตรวจทั้งไฟล์ก่อน commit ด้วย `awk -F'\t' 'NF!=13 && NF>0 {print NR": "NF}' backend/assets/language/languages.tsv` (2026-09-09 ยังค้าง 11 แถว: 893, 2025, 2127, 2273, 2550, 2551, 3130, 3199, 3841, 4389, 4408 โดย 4408 ใช้ข้อความไทยเป็น key และไม่มีแถวใดเป็น key ของเมนู) | 2026-09-09 |
 
 ## UAT ผ่าน browser (harness)
 
 - ฟอร์มแก้ **บาร์โค้ด** ไม่ยิง PUT ถ้าใช้ `form_input` อย่างเดียว — ต้องพิมพ์คีย์จริงในช่องอย่างน้อย 1 ครั้ง (End → space → BackSpace) ก่อนกดบันทึก; ฟอร์มสินค้าไม่มีปัญหานี้
 - เปิดแท็บสินค้า+บาร์โค้ดพร้อมกันจะมีปุ่ม "แก้ไข/ลบ" 2 ชุด — ref ใหม่กว่าเป็นของแท็บที่ active; เช็ค header ก่อนกด (dirty guard "ทิ้งการแก้ไข" ช่วยได้)
-- หน้าจอ datacrud มีปุ่ม แก้ไข/ลบ รายแถว; ลบมี modal "ต้องการลบจริงหรือไม่" ต้องกด `ลบ` ซ้ำ; บางจอ (`warehouse-tree-view.tsx`) ใช้ `window.confirm` → Stagehand ต้อง monkey-patch `window.confirm = () => true`
+- หน้าจอ datacrud มีปุ่ม แก้ไข/ลบ รายแถว; ลบมี modal "ต้องการลบจริงหรือไม่" ต้องกด `ลบ` ซ้ำ; **ทุกจอใช้ confirm dialog ในแอปแล้ว ไม่มี `window.confirm` เหลือใน `frontend/src`** (`frontend/src/app/system-settings/warehouse-tree-view.tsx:855` เขียนกำกับไว้ว่า "never window.confirm" ตั้งแต่ commit b4a4898f 2026-07-03) → Stagehand ไม่ต้อง monkey-patch `window.confirm` แต่ต้องกดปุ่มยืนยันใน modal จริง
 - Stagehand v3 + DeepSeek: ต้องสร้าง `AISdkClient` จาก `@ai-sdk/deepseek` ที่ bundle มา แล้วส่งเป็น `llmClient` (ห้าม `modelName:"openai/deepseek-chat"`); `act/observe/extract` อยู่บน instance ไม่ใช่ `sh.page`
 - Kafka poison test: `printf '%s\n' '[{"holdingcode":"demo","barcode":"X"}]' | docker exec -i kafka kafka-console-producer --bootstrap-server localhost:9092 --topic when-product-barcode-bulk-created` แล้วดู `docker logs mainapi | grep ⛔`
 - **ล้างข้อมูลทดสอบด้วย id/code ที่ระบุเป้าเท่านั้น** — เคยใช้ regex กว้างแล้วลบสาขาจริงไป 2 ตัว

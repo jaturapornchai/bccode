@@ -120,9 +120,9 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
           - **High Information Density & Visual Rhythm**: ผู้ใช้ 40+ และนักบัญชีต้องการสแกนข้อมูลจำนวนมากอย่างเป็นระเบียบ การที่ปุ่ม Action ตกไปอยู่บรรทัดที่สองทำให้ตารางดูเบี้ยวและสายตากระโดด การจัดเป็นบรรทัดเดียวทำให้สแกนได้เร็วและแสดงผลได้หลายสิบรายการพร้อมกัน
           - **Mathematical Balance**: การคุมขนาดด้วย `--baseline` rhythm (ปุ่ม 28px ในแถว 36px พร้อม padding 4px) ทำให้จุดศูนย์กลางของ Icon ตรงกับจุดกึ่งกลางของฟอนต์ภาษาไทยขนาด 15–18px อย่างแม่นยำ ไม่เอียง ไม่จม
        4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-          - Global CSS Single-line & Baseline overrides: [`frontend/src/app/globals.css`](frontend/src/app/globals.css#L8430-L8475)
-          - Header & Row implementation: [`frontend/src/app/system-settings/system-settings-screen.tsx`](frontend/src/app/system-settings/system-settings-screen.tsx#L3479-L3625)
-          - Proportional column scaling & truncation: [`frontend/src/app/system-settings/system-settings-screen.tsx`](frontend/src/app/system-settings/system-settings-screen.tsx#L4085-L4120)
+          - Global CSS Single-line & Baseline overrides: [`frontend/src/app/globals.css`](../../../frontend/src/app/globals.css#L8430-L8475)
+          - Header & Row implementation: [`frontend/src/app/system-settings/system-settings-screen.tsx`](../../../frontend/src/app/system-settings/system-settings-screen.tsx#L3479-L3625)
+          - Proportional column scaling & truncation: [`frontend/src/app/system-settings/system-settings-screen.tsx`](../../../frontend/src/app/system-settings/system-settings-screen.tsx#L4085-L4120)
 
     * **แบบแผน: ทางลัดส่วนตัวผู้ใช้ (Personalized Shortcuts) — แยกจอเต็ม ไม่ใช้ Popup (ตั้งโดยลุงจืด 2026-09-05; ปรับปรุงจอเต็ม High Density 2026-09-06)**:
       1) **แบบแผนใหม่ (New Standard Pattern)**:
@@ -144,9 +144,9 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - **High Information Density บนจอกว้าง**: พนักงานบัญชีและเจ้าของกิจการต้องการเห็นตัวเลือกทั้งหมดในพริบตา การแยกเป็นหน้าจอเต็มทำให้สามารถสแกนเมนูเป็นร้อยรายการและค้นหาได้เร็วกว่า Popup หลายเท่า
          - **Zero Context Loss**: การเปิดเป็นแท็บในระบบ ช่วยให้ผู้ใช้สลับกลับไปดูหน้าภาพรวม หรือเปิดหน้าจออื่นคู่ขนานได้โดยที่สถานะการค้นหาหรือคลังเมนูไม่สูญหาย
       4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-          - หน้าจอจัดการทางลัดเต็มจอ: [`frontend/src/app/menu/manage-shortcuts-screen.tsx`](frontend/src/app/menu/manage-shortcuts-screen.tsx)
-          - การเชื่อมแท็บและ Route `/shortcuts`: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx#L683-L702) และ [`WorkTabPanel`](frontend/src/app/menu/main-menu-screen.tsx#L2540-L2555)
-          - หน้า Dashboard ภาพรวมที่ถอด Modal ออก: [`frontend/src/app/menu/dashboard-home.tsx`](frontend/src/app/menu/dashboard-home.tsx#L163-L175)
+          - หน้าจอจัดการทางลัดเต็มจอ: [`frontend/src/app/menu/manage-shortcuts-screen.tsx`](../../../frontend/src/app/menu/manage-shortcuts-screen.tsx)
+          - การเชื่อมแท็บและ Route `/shortcuts`: [`openManageShortcuts()`](../../../frontend/src/app/menu/main-menu-screen.tsx#L700-L717) และ [`WorkTabPanel`](../../../frontend/src/app/menu/main-menu-screen.tsx#L2678-L2718)
+          - หน้า Dashboard ภาพรวมที่ถอด Modal ออก: [`frontend/src/app/menu/dashboard-home.tsx`](../../../frontend/src/app/menu/dashboard-home.tsx#L163-L175)
 
     * **แบบแผน: แถบเมนูข้างปรับความกว้างได้ (Resizable Navigation Sidebar with Grip Handle & Persistence) (ตั้งโดยลุงจืด 2026-09-07)**:
       1) **แบบแผนใหม่ (New Standard Pattern)**:
@@ -167,8 +167,8 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - **Thai-First 40+ Accessibility**: ป้ายเมนูภาษาไทยต้องการความกว้างอย่างน้อย 300–320px เพื่อให้ข้อความส่วนใหญ่เรียงตัวในบรรทัดเดียว (Single-line) ไม่ตกบรรทัด
          - **Universal Display Compatibility**: หน้าจอผู้ใช้มีตั้งแต่แล็ปท็อป 13 นิ้ว ไปจนถึงจอเดสก์ท็อป 4K การให้ผู้ใช้ลากปรับความกว้างได้เองและจดจำค่าถาวรช่วยให้ทุกคนปรับให้เหมาะกับสายตาและขนาดจอของตนเองได้สมบูรณ์แบบ
       4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-         - โค้ดควบคุมและ Drag handle: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx#L950-L1085)
-         - ชุดการทดสอบความกว้างและการจดจำ: [`frontend/src/app/menu/main-menu-sidebar-resize.test.ts`](frontend/src/app/menu/main-menu-sidebar-resize.test.ts)
+         - ตรรกะควบคุมความกว้าง/จดจำค่า/คีย์บอร์ด: [`frontend/src/app/menu/main-menu-screen.tsx`](../../../frontend/src/app/menu/main-menu-screen.tsx#L952-L1045) · โหลดค่าที่จดจำไว้ตอน mount: [`frontend/src/app/menu/main-menu-screen.tsx`](../../../frontend/src/app/menu/main-menu-screen.tsx#L484-L489) · Grip handle (markup + `role="separator"` + `onKeyDown`): [`frontend/src/app/menu/main-menu-screen.tsx`](../../../frontend/src/app/menu/main-menu-screen.tsx#L1092-L1133)
+         - ชุดการทดสอบความกว้างและการจดจำ: [`frontend/src/app/menu/main-menu-sidebar-resize.test.ts`](../../../frontend/src/app/menu/main-menu-sidebar-resize.test.ts)
 
     * **แบบแผน: ปรับ Padding & Margin ให้น้อยลงเพื่อแสดงข้อมูลได้เยอะที่สุด (Ultra-High Density Spacing) (ตั้งโดยลุงจืด 2026-09-07)**:
       1) **แบบแผนใหม่ (New Standard Pattern)**:
@@ -186,10 +186,10 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - **High Information Density**: ผู้ใช้งานระบบบัญชีต้องการกวาดสายตาตรวจข้อมูลจำนวนมากได้อย่างรวดเร็วในหน้าจอเดียว
          - **Screen Real Estate Optimization**: การลด padding จาก 16-24px เหลือ 6-10px คืนพื้นที่หน้าจอให้กับตารางและฟอร์มข้อมูลจริงถึง 30–50%
       4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-         - Global high-density pass: [`frontend/src/app/globals.css`](frontend/src/app/globals.css)
-         - Card & Table primitives: [`frontend/src/components/ui/card.tsx`](frontend/src/components/ui/card.tsx) และ [`frontend/src/components/ui/table.tsx`](frontend/src/components/ui/table.tsx)
-         - Sidebar & Menu compaction: [`frontend/src/app/menu/main-menu-screen.tsx`](frontend/src/app/menu/main-menu-screen.tsx)
-         - Dashboard overview compaction: [`frontend/src/app/menu/dashboard-home.tsx`](frontend/src/app/menu/dashboard-home.tsx)
+         - Global high-density pass: [`frontend/src/app/globals.css`](../../../frontend/src/app/globals.css)
+         - Card & Table primitives: [`frontend/src/components/ui/card.tsx`](../../../frontend/src/components/ui/card.tsx) และ [`frontend/src/components/ui/table.tsx`](../../../frontend/src/components/ui/table.tsx)
+         - Sidebar & Menu compaction: [`frontend/src/app/menu/main-menu-screen.tsx`](../../../frontend/src/app/menu/main-menu-screen.tsx)
+         - Dashboard overview compaction: [`frontend/src/app/menu/dashboard-home.tsx`](../../../frontend/src/app/menu/dashboard-home.tsx)
 
 ---
 
@@ -204,8 +204,9 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 ## 6. Checklist ตรวจรับงาน UI ก่อนบอกเสร็จ
 
 ก่อนส่งมอบงาน UI ต้องตรวจหลักฐานจริงครบทุกข้อ:
-- [ ] **Viewport Check**: ตรวจสอบทั้ง 3 ขนาดหน้าจอ (1280, 1920, 2560) Layout ไม่แตก ไม่ตกขอบ
+- [ ] **Viewport Check**: ตรวจครบ 4 ขนาดตามกฎพรีเมี่ยม `AGENTS.md` ข้อ 8 (กว้าง 1600, 1280, 1024 และ 768 แนวตั้ง = iPad ขึ้นไป) ทั้ง Light และ Dark — Layout ไม่แตก ไม่ตกขอบ
 - [ ] **Dual Theme**: ทดสอบทั้ง Light Mode และ Dark Mode จริง (กดปุ่มสลับธีม) คอนทราสต์อ่านออก
+- [ ] **State Coverage**: ตรวจ hover / focus (ring ชัด) / disabled / error ของ control หลักครบทุกสถานะ ทั้ง Light และ Dark ตามกฎพรีเมี่ยม `AGENTS.md` ข้อ 8
 - [ ] **Thai Text Safety**: ตรวจดูสระบน/ล่างและวรรณยุกต์ไทย ต้องไม่ทับซ้อนกับขอบหรือบรรทัดอื่น
 - [ ] **No Text Clip**: ไม่มีตัวหนังสือหรือปุ่มใดถูกตัดขาดหรือล้นขอบจอ (`scrollHeight <= clientHeight`)
 - [ ] **Popover Safety**: Dropdown, Dialog, Datepicker เปิดแล้วไม่ถูกตัดหรือจมหายไปใต้ Card
@@ -216,7 +217,7 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 
 ## 7. เอกสารประวัติและบทเรียนย้อนหลัง (Archive)
 
-รายละเอียดเชิงลึกและบันทึกประวัติการแก้บักเฉพาะกรณี (เคส 4.1 ถึง 4.39) ดูได้ที่:
+รายละเอียดเชิงลึกและบันทึกประวัติการแก้บักเฉพาะกรณี (เคส 4.1 ถึง 4.40) ดูได้ที่:
 * 👉 [references/case-studies-and-gotchas.md](references/case-studies-and-gotchas.md)
 
 ---
@@ -225,11 +226,11 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 
 **แบบแผนใหม่ (New Standard Pattern)** — เพิ่ม 1 เมนู = แก้ 4 ไฟล์ ถ้าขาดข้อใดข้อหนึ่ง unit test จะ fail ทันที:
 
-1. `frontend/src/lib/menu-data.ts` — เพิ่มบรรทัดใน `MENU_SECTIONS` ด้วยเฮลเปอร์ `tx(id, th, en, route, category)` (ค่า default ของ category คือ `"transaction"`); กลุ่มใหม่ใช้ `ml(key, th, en)` เป็น title
+1. `frontend/src/lib/menu-data.ts` — เพิ่มบรรทัดใน `MENU_SECTIONS` ด้วยเฮลเปอร์ `tx(id, th, en, route, category, languageKey?)` (ค่า default: `category = "transaction"`, `languageKey = menuKey(id)`); ถ้าจอนั้นมีคีย์ภาษาอยู่แล้วใน `languages.tsv` ให้ส่งพารามิเตอร์ที่ 6 เช่น `tx("marketplace-shopee", "เชื่อม Shopee", "Shopee Connection", "/marketplace/shopee", "master", "shopee_mappings")` แล้วข้ามข้อ 2 ได้ (ห้ามเพิ่มแถวซ้ำ); กลุ่มใหม่ใช้ `ml(id, th, en)` เป็น title
    ```ts
    tx("sales-by-customer", "ยอดขายตามลูกค้า", "Sales by Customer", "/report/salesbycustomer", "report"),
    ```
-2. `backend/assets/language/languages.tsv` — เพิ่ม 1 แถวต่อ 1 key **ครบ 13 คอลัมน์** (`key th en cn ja km ko lo my vi ms id fil`) คั่นด้วย TAB; key = id ที่แทน `-` ด้วย `_` (`menuKey()` ใน `menu-data.ts:31`) ไฟล์นี้ EOL ผสม (ท้ายไฟล์เป็น CRLF) → เขียนต่อท้ายด้วยสคริปต์ที่คุม newline เอง อย่าใช้ Edit tool
+2. `backend/assets/language/languages.tsv` — เพิ่ม 1 แถวต่อ 1 key **ครบ 13 คอลัมน์** (`key th en cn ja km ko lo my vi ms id fil`) คั่นด้วย TAB; key = id ที่แทน `-` ด้วย `_` (`menuKey()` ใน `menu-data.ts:31`) **ยกเว้น** เมนูที่ส่ง `languageKey` เป็นพารามิเตอร์ที่ 6 ของ `tx()` ให้ยึดคีย์นั้นแทน; ไฟล์นี้ EOL ผสม (ท้ายไฟล์เป็น CRLF) → เขียนต่อท้ายด้วยสคริปต์ที่คุม newline เอง อย่าใช้ Edit tool
 3. `frontend/src/lib/menu-icons.ts` — เพิ่ม `"<route>": "<iconKey>",` ใน `ROUTE_ICON_KEYS` โดยเลือกจาก union `MenuIconKey` ที่มีอยู่ ห้ามคิด key ใหม่
 4. `frontend/src/lib/menu-icons.test.ts` — อัปเดตจำนวนใน `expect(items).toHaveLength(N)` ให้เท่าจำนวนเมนูใหม่ทั้งหมด
 
@@ -238,7 +239,7 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 * ห้ามเพิ่มเมนูโดยไม่เพิ่มแถวภาษา — เทสต์ `has backend language keys for every menu item` และ `has all supported language cells...` จะ fail และผู้ใช้ภาษาอื่นจะเห็น slug
 * ห้ามเติมแค่ th/en แล้วปล่อยคอลัมน์อื่นว่าง — เทสต์ตรวจครบทุกภาษา
 * ห้ามตั้ง id ซ้ำ — id ถูกใช้เป็นรหัสสิทธิ์ (`keeps menu item ids unique for permission codes`) และถูกอ่านโดย `role-screen-matrix.tsx` / `permission-editors.tsx`
-* ห้ามใส่หน้าจอตั้งค่าองค์กร (บริษัท/สาขา/ผู้ใช้/สิทธิ์/พนักงาน/ภาษา/สกุลเงิน) ลงเมนูหลัก — อยู่ใน workspace wizard และมีเทสต์ห้ามไว้ (`has no settings section in the main menu`)
+* ห้ามสร้าง section id `settings` ในเมนูหลัก — เทสต์ `has no settings section in the main menu` ตรวจแค่ `section.id === "settings"` (`frontend/src/lib/menu-data.test.ts:94-96`); แต่จอทะเบียนพนักงาน/ผู้ใช้/สิทธิ์/audit อยู่ในกลุ่ม `organization-people` ใต้ section `master` ได้ตั้งแต่ 2026-09-08 (`frontend/src/lib/menu-data.ts:373-379`) **อย่าถอดออก**
 
 **เหตุผลทางเทคนิค (Root Cause & Rationale)**
 
@@ -260,11 +261,11 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 ```bash
 grep -ohE '"/[a-z0-9/-]+"' frontend/src/app/menu/main-menu-screen.tsx frontend/src/lib/system-setting-screens.ts | tr -d '"' | sort -u > /tmp/screens.txt
 grep -oE '"/[^"]+"' frontend/src/lib/menu-data.ts | tr -d '"' | sort -u > /tmp/menu.txt
-comm -23 /tmp/screens.txt /tmp/menu.txt
+comm -23 /tmp/screens.txt /tmp/menu.txt | grep -vE '^/api/'
 ```
 
 **กับดัก / สิ่งที่ห้ามทำซ้ำ** — เขียนจอเสร็จแล้วไม่เพิ่มรายการเมนู แล้วคิดว่า "เดี๋ยวค่อยต่อ" · สรุปว่าระบบไม่มีฟีเจอร์นั้นทั้งที่จอมีอยู่ แล้วเขียนจอซ้ำ · เชื่อว่า unit test จะจับให้ (ไม่จับ — เทสต์ตรวจจากเมนูไปหาไอคอน/ภาษา ไม่ได้ตรวจย้อนกลับ)
 
 **เหตุผลทางเทคนิค** — `onOpenRoute` (`frontend/src/app/menu/main-menu-screen.tsx:1453-1455`) เปิดแท็บได้เฉพาะ route ที่หาเจอใน `allMenuItems` เท่านั้น จอที่ dispatch ไว้แล้วแต่ไม่มีรายการเมนูจึงเป็นโค้ดตายในสายตาผู้ใช้ ทั้งที่ไอคอนและ language key อาจเตรียมไว้ครบแล้ว
 
-**ไฟล์อ้างอิงจริง** — `frontend/src/app/menu/marketplace-screen.tsx` (3 จอ Shopee/Lazada/TikTok ทำงานได้เต็มรูปแบบ แต่เข้าไม่ถึงจนถึง 2026-09-08 เพราะไม่มีเมนู; ไอคอนอยู่ที่ `menu-icons.ts:221-223` และ language key `shopee_mappings`/`lazada_mappings`/`tiktok_mappings`/`marketplace_connectors` มีใน `languages.tsv` มาก่อนแล้ว) · route ที่อยู่นอกเมนูโดยตั้งใจและไม่ต้องแก้: `/currency`, `/datamodelgraph`, `/shortcuts` และ route ตั้งค่าองค์กรทั้งหมด
+**ไฟล์อ้างอิงจริง** — `frontend/src/app/menu/marketplace-screen.tsx` (3 จอ Shopee/Lazada/TikTok ทำงานได้เต็มรูปแบบ แต่เข้าไม่ถึงจนถึง 2026-09-08 เพราะไม่มีเมนู; ไอคอนอยู่ที่ `menu-icons.ts:221-223` และ language key `shopee_mappings`/`lazada_mappings`/`tiktok_mappings`/`marketplace_connectors` มีใน `languages.tsv` มาก่อนแล้ว) · route ที่อยู่นอกเมนูโดยตั้งใจและไม่ต้องแก้: `/currency`, `/datamodelgraph`, `/shortcuts`, `/menu` (แท็บภาพรวม), `/workspace` (หน้าเลือกกิจการ) และ route ตั้งค่าองค์กรทั้งหมดใน `system-setting-screens.ts`

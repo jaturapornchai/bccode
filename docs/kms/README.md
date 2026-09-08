@@ -21,7 +21,7 @@
 - ADR ใหม่ → `decisions/YYYY-MM-DD-<slug>.md` (template ใน `decisions/README.md`); บั๊กที่แก้แล้ว → `bugs/YYYY-MM-DD-<symptom>.md` (template ใน `bugs/README.md`)
 - `D:\bcdev` (project เก่า Flutter) ไม่เกี่ยวกับ repo นี้ — อย่านำความรู้จากที่นั่นมาปน
 
-## บทความหลัก (อ่านโค้ดทั้ง repo 2026-09-07 ที่ commit d93a210d — 15 นักอ่าน + 15 fact-checker เปิดไฟล์ตรวจทุก citation)
+## บทความหลัก (อ่านโค้ดทั้ง repo 2026-09-07 ที่ commit d93a210d — 15 นักอ่าน + 15 fact-checker เปิดไฟล์ตรวจทุก citation; ยังไม่ได้ตรวจซ้ำทั้งชุดที่ HEAD `098107e1`)
 
 | # | ไฟล์ | เรื่อง | สรุปบรรทัดเดียว | อ้างอิง path:line | ตรวจซ้ำ (แก้/ยังไม่ตรวจ) |
 |---|---|---|---|---|---|
@@ -53,7 +53,7 @@
 - [architecture/product-listing-api-v2-handoff.md](architecture/product-listing-api-v2-handoff.md)
 - [architecture/product-listing-api-v2.md](architecture/product-listing-api-v2.md)
 
-## การตัดสินใจ (ADR) — 19 ไฟล์ใน `decisions/`
+## การตัดสินใจ (ADR) — 21 ไฟล์ใน `decisions/`
 
 - [decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md](decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md)
 - [decisions/2026-06-11-productlanguage-join-table.md](decisions/2026-06-11-productlanguage-join-table.md)
@@ -71,13 +71,11 @@
 - [decisions/2026-09-04-product-form-core-vs-extension-menu.md](decisions/2026-09-04-product-form-core-vs-extension-menu.md)
 - [decisions/2026-09-06-pause-clickhouse-local.md](decisions/2026-09-06-pause-clickhouse-local.md)
 - [decisions/2026-09-07-consolidate-docs-for-multi-ai.md](decisions/2026-09-07-consolidate-docs-for-multi-ai.md)
+- [decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md](decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md)
 - [decisions/2026-09-07-on-demand-docs-context-efficiency.md](decisions/2026-09-07-on-demand-docs-context-efficiency.md)
+- [decisions/2026-09-07-speed-and-context-hygiene.md](decisions/2026-09-07-speed-and-context-hygiene.md)
 - [decisions/2026-09-08-menu-parity-flowaccount-peak.md](decisions/2026-09-08-menu-parity-flowaccount-peak.md)
 - [decisions/2026-09-08-menu-parity-social-sweep.md](decisions/2026-09-08-menu-parity-social-sweep.md)
-- [decisions/2026-09-07-speed-and-context-hygiene.md](decisions/2026-09-07-speed-and-context-hygiene.md)
-- [decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md](decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md)
-- [decisions/2026-09-08-menu-parity-flowaccount-peak.md](decisions/2026-09-08-menu-parity-flowaccount-peak.md)
-
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 16 ไฟล์ใน `bugs/`
 
@@ -98,17 +96,18 @@
 - [bugs/2026-09-04-refresh-logs-out-non-https.md](bugs/2026-09-04-refresh-logs-out-non-https.md)
 - [bugs/2026-09-05-projection-consumer-head-of-line-block.md](bugs/2026-09-05-projection-consumer-head-of-line-block.md)
 
-## Snippets
+## Snippets (รูปแบบการเขียนดูที่ `snippets/README.md`)
 
 - [snippets/picklangname.md](snippets/picklangname.md)
 
 ## ที่อื่นใน `docs/`
 
-- `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-08.md` ล่าสุด: เมนู parity + ขอบเขตที่ตัดออก, `HANDOFF-2026-09-06.md` วิธีรัน/งานค้าง backend, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store)
+- `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-08.md` ล่าสุด: เมนู parity + ขอบเขตที่ตัดออก, `HANDOFF-2026-09-06.md` วิธีรัน/งานค้าง backend, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store, `HANDOFF-2026-09-07-FLOWPEAK.md` = เอกสารประวัติ ห้ามใช้เป็นคำสั่งงานปัจจุบัน)
 - `docs/runbooks/RECOVERY-READINESS.md` — runbook กู้คืน prod (รอข้อมูล backup/RPO/RTO จากลุงจืด)
 - `docs/reference/CODE-MAP.md` — ดัชนีไฟล์ใหญ่ที่สร้างอัตโนมัติด้วย `tools/gen-code-map.ps1`
 - `docs/features-flowaccount-peak/` — หลักฐานฟีเจอร์/เมนูของ FlowAccount และ PEAK (ของคู่แข่ง) ใช้คู่กับบทความ 19
 - `docs/skills/` — skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
+- `docs/archive/` — เอกสารประวัติที่เลิกใช้แล้ว (`flowpeak-legacy-2026-09-07/`) **ห้ามใช้อ้างอิงหรือทำตาม** (เช่น "เมนูรวม 243 รายการ" และเนื้อหาเงินเดือนในนั้นขัดกับขอบเขตปัจจุบัน) อ่านเหตุผลที่ `docs/archive/flowpeak-legacy-2026-09-07/ARCHIVE-NOTE.md` เท่านั้น
 
 ## README ที่ยังอยู่ข้างโค้ด (เอกสารเฉพาะ package — อ่านคู่กับบทความด้านบน)
 

@@ -23,7 +23,7 @@ tags: [bc-account, frontend, menu, product-scope, marketplace]
 | แบบยื่น ภ.ง.ด.2 | `/report/vatpnd2` | รายงาน › รายงานภาษี | คู่มือ PEAK Tax + ยืนยันกับ **กรมสรรพากร** `https://efiling.rd.go.th` |
 | กำไรขาดทุนตามสาขาและแผนก | `/report/dimensionpnl` | รายงาน › รายงานการเงิน | PEAK Board (มิติสาขา/แผนก) |
 | ดึงคำสั่งซื้อจากร้านค้าออนไลน์ | `/transaction/marketplaceorder` | งานประจำ › ขาย | FlowAccount e-commerce + PEAK ระบบจัดการร้านค้าออนไลน์ |
-| เชื่อม Shopee / Lazada / TikTok | `/marketplace/shopee|lazada|tiktok` | ข้อมูลหลัก › เชื่อมข้อมูลตลาดออนไลน์ | เดียวกัน |
+| เชื่อม Shopee / Lazada / TikTok | `/marketplace/shopee` · `/marketplace/lazada` · `/marketplace/tiktok` | ข้อมูลหลัก › เชื่อมข้อมูลตลาดออนไลน์ | เดียวกัน |
 
 **ภ.ง.ด.2 ไม่ขัดกับกฎ "ไม่ทำเงินเดือน"** — เป็นภาษีหัก ณ ที่จ่ายของเงินได้ 40(3)/(4) คือ ดอกเบี้ย เงินปันผล ค่าสิทธิ ที่จ่ายให้บุคคลธรรมดา ต้นทางคือรายการจ่ายเงินในระบบ ไม่ใช่เงินเดือน (ต่างจาก **ภ.ง.ด.1** ที่ยังตัดออกตามเดิม)
 

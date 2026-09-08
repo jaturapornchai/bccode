@@ -2,20 +2,20 @@
 
 For every task under `D:\bccode`:
 
-1. Business-rule Source of Truth ยังไม่มี (`docs/` เดิมถูกลบ 2026-09-03 และกำลังสร้างใหม่) — requirement ที่ไม่ชัด = ห้ามเดา ต้องถาม.
+1. ฐานความรู้ระบบ **สร้างเสร็จและใช้งานได้แล้ว** ที่ `docs/kms/` (บทความ `00`–`19` รวม 20 ไฟล์ + `README.md` เป็นดัชนี + `decisions/` (ADR) + `bugs/` + `architecture/` + `snippets/`) — แต่ docs อธิบายว่า **โค้ดทำอะไร** ไม่ใช่ข้อกำหนดทางธุรกิจ: requirement/business rule ที่ไม่ชัด = ห้ามเดา ต้องถามลุงจืด.
 2. **On-Demand Context Rule**: ฐานความรู้อยู่ที่ `docs/kms/` และ skill ส่วนตัวอยู่ที่ `docs/skills/` — **เปิดอ่านเฉพาะไฟล์ที่จำเป็นกับงานนั้นเท่านั้น (ดูผังเลือกอ่านใน `docs/README.md`)** ห้ามกวาดอ่านทั้งโฟลเดอร์ หรือเปิด handoff ล่วงหน้าโดยไม่จำเป็น เพื่อประหยัด Context Window ของ AI.
 3. Use `D:\bccode\docs\kms\00-source-router.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
 
-This file is only a routing entrypoint. Source-of-truth boundaries will be defined by the new docs under `docs/kms/` (in progress).
+ไฟล์นี้เป็นทั้งจุดเข้าเส้นทาง (routing) และกฎบังคับของโปรเจ็กต์ — รายละเอียดว่าระบบทำงานอย่างไรอยู่ที่ `docs/kms/` (code = truth: ถ้า docs ขัดกับโค้ด ให้ยึดโค้ดแล้วแก้ docs ใน commit เดียวกัน)
 
 ## กฎ: ขอบเขตผลิตภัณฑ์ — ไม่ทำระบบเงินเดือน (ตั้งโดยลุงจืด 2026-09-08)
 
 BC **ไม่ทำระบบเงินเดือน (payroll)** และไม่ทำสิ่งที่เป็นผลจากเงินเดือน คือ **ภ.ง.ด.1 / ภ.ง.ด.1ก** และ **ไฟล์นำส่งเงินสมทบประกันสังคม (สปส. / กท.20 ก)** — ห้าม AI ตัวใดเพิ่มเมนู จอ สเปก หรือ API เหล่านี้กลับเข้ามาเอง แม้จะเห็นว่า FlowAccount/PEAK มี (เอกสารของคู่แข่งใน `docs/features-flowaccount-peak/` เป็นหลักฐานเปรียบเทียบเท่านั้น)
 
-ยังอยู่ในขอบเขตตามปกติ: ภาษีหัก ณ ที่จ่ายของคู่ค้า (ภ.ง.ด.3/53 + หนังสือรับรอง 50 ทวิ), เงินทดรองจ่ายพนักงาน (งานการเงิน), ทะเบียนพนักงานในหน้าตั้งค่า (`/employee`)
+ยังอยู่ในขอบเขตตามปกติ: ภาษีหัก ณ ที่จ่ายของคู่ค้า — **ภ.ง.ด.2** (เงินได้ 40(3)/(4) ดอกเบี้ย/เงินปันผล/ค่าสิทธิ ต้นทางคือรายการจ่ายเงิน ไม่ใช่เงินเดือน; เมนู `vat-pnd2` → `/report/vatpnd2` ใน `frontend/src/lib/menu-data.ts` **ห้ามลบทิ้งเพราะเข้าใจผิดว่าเป็นเรื่องเงินเดือน**) + **ภ.ง.ด.3/53** + หนังสือรับรอง 50 ทวิ, เงินทดรองจ่ายพนักงาน (งานการเงิน), ทะเบียนพนักงาน (`/employee`) ซึ่งอยู่ **ทั้ง** ในหน้าตั้งค่า (`frontend/src/lib/system-setting-screens.ts` slug `employee`) **และ** ในเมนูหลัก ข้อมูลหลัก › บุคลากรและผู้ใช้งาน ตั้งแต่ 2026-09-08 (ส่วน `/line-oa` เป็นรายการเมนูหลักตั้งแต่ 2026-09-08 เช่นกัน แต่อยู่กลุ่ม ข้อมูลหลัก › ผู้ช่วย AI และคลังความรู้ และไม่ใช่จอในหน้าตั้งค่า)
 
-เหตุผลและรายละเอียดการเทียบเมนูกับ FlowAccount/PEAK: `docs/kms/19-menu-coverage-flowaccount-peak.md` + ADR `docs/kms/decisions/2026-09-08-menu-parity-flowaccount-peak.md`
+เหตุผลและรายละเอียดการเทียบเมนูกับ FlowAccount/PEAK: `docs/kms/19-menu-coverage-flowaccount-peak.md` + ADR `docs/kms/decisions/2026-09-08-menu-parity-flowaccount-peak.md` (รอบเว็บทางการ: ตัดระบบเงินเดือนออก + เพิ่ม 15 เมนู เป็น 200) และ `docs/kms/decisions/2026-09-08-menu-parity-social-sweep.md` (รอบแหล่งนอกทางการ: เพิ่มอีก 6 เมนู 218 → 224 — ที่มาของ ภ.ง.ด.2 และกลุ่มเชื่อมข้อมูลตลาดออนไลน์ พร้อมข้อห้ามเขียนว่า "ครบ 100%")
 
 ## กฎ: skill ส่วนตัวอยู่ที่ `docs/skills/` และฐานความรู้อยู่ที่ `docs/kms/` (ตั้งโดยลุงจืด 2026-09-07)
 
@@ -111,7 +111,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 1. **Surgical Read (อ่านตรงจุด)**:
    - ห้ามเปิดอ่านทั้งไฟล์ขนาดใหญ่ (>300 บรรทัด) โดยไม่จำเป็น; ให้ระบุเลขบรรทัด StartLine/EndLine เสมอ
-   - สำหรับไฟล์ขนาดยักษ์ (>1,000 บรรทัด เช่น `system-settings-screen.tsx`) ให้ดูตำแหน่งฟังก์ชันจาก `docs/reference/CODE-MAP.md` ก่อนเปิดอ่าน
+   - สำหรับไฟล์ขนาดยักษ์ (>1,000 บรรทัด เช่น `frontend/src/app/system-settings/system-settings-screen.tsx`) ให้ดูตำแหน่งฟังก์ชันจาก `docs/reference/CODE-MAP.md` ก่อนเปิดอ่าน — **CODE-MAP เป็นไฟล์ auto-generated และเก่าได้**: ก่อนใช้เลขบรรทัด ให้เทียบจำนวนบรรทัดในหัวข้อกับ `wc -l` จริงก่อน ถ้าไม่ตรงแปลว่าเลขคลาดเคลื่อน ให้ `grep -n` ชื่อฟังก์ชันยืนยัน หรือ regenerate ด้วย `tools/gen-code-map.ps1`
 2. **Surgical Patch (แก้เฉพาะจุด)**:
    - ใช้ targeted replace/patch แก้เฉพาะ block ที่จำเป็น ห้าม rewrite หรือ print ทั้งไฟล์ซ้ำ
    - Token ขาออก (Output Token) แพงและช้ากว่าขาเข้า 3–5 เท่า — ยิ่งแก้ตรงจุด AI ยิ่งทำงานเร็ว

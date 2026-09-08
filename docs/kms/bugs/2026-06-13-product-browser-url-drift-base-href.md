@@ -14,3 +14,5 @@ Shell ฉีด `<base href="/product/">` เพื่อให้ relative link
 
 ## Regression test
 `tests/ui-modernization.test.mjs` pin โค้ดใหม่ของ shell; `tests/product-browser.test.mjs` กัน shell 3 สำเนา drift (product/index.html = product.astro = public/product/index.html)
+
+> ⚠️ ตรวจ 2026-09-09: ไม่มีไฟล์ `tests/*.test.mjs` ใน repo นี้เลย — `git ls-files | grep test.mjs` ว่าง และ `git log --all --diff-filter=A --name-only -- '*.test.mjs'` ก็ไม่คืนอะไร (ไม่ใช่แค่ถูกลบ); `tests/` มีแต่ Playwright `.spec.ts` → regression guard ชุดนี้ **ไม่มีผลบังคับ** ถ้าจะกันซ้ำต้องเขียน test ใหม่

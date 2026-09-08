@@ -1,9 +1,12 @@
 ---
 tags: [decision, bc-account, marketplace, datamodel]
 date: 2026-06-30
+status: superseded
 ---
 
 # Marketplace mapping = single product/SKU master (channelmappings reverted)
+
+> ⚠️ **ถูกแทนที่โดย** [2026-09-03-product-two-layer-marketplace-model.md](2026-09-03-product-two-layer-marketplace-model.md) — หลักการ "master ตัวเดียว/สต๊อกเดียว" ยังใช้ได้ แต่ที่เก็บข้อมูลช่องทางย้ายไป collection `channel_shops`/`channel_listings`/`channel_category_maps`/`channel_brand_maps` แล้ว (`backend/internal/goapi/handlers/product_v2_types.go:20-23`) ส่วน Go `MarketplaceProductMap`/`MarketplaceSKUMap`/`marketplaceproducts[]`/`marketplaceskumappings` (`backend/internal/product/product/models/product.go:98,163,408,466`) **ถูกกำหนดให้ deprecate แต่ยังรอลุงจืดยืนยัน จึงยังอยู่ในโค้ด — ห้ามต่อยอดเพิ่ม และห้ามลบทิ้งเอง**
 
 ## Context
 Jead: ระบบรองรับ marketplace (Shopee/Lazada/TikTok/AliExpress) ข้อมูลเข้า-ออก 100%, ต้องอ้างเอกสารทางการ. Design principle จาก Jead: **"master มีตัวเดียว รองรับทุก marketplace เพราะใช้ยอดคงเหลือเดียวกัน แต่ราคาอาจต่างกัน ยอดพร้อมขายต่างกัน"**.
@@ -25,8 +28,8 @@ Jead: ระบบรองรับ marketplace (Shopee/Lazada/TikTok/AliExpres
 - บทเรียน: เช็ค product/barcode datamodel ก่อนเพิ่ม field marketplace — มี contract สมบูรณ์อยู่แล้ว.
 
 ## Docs
-- Rule: `.agents/rules/bc-account-core-rules.md` "System Scope & Marketplace Support".
-- Field mapping (contract ↔ 4 marketplace API จริง + Shopee example + official URLs): `.agents/wiki/marketplace-field-mapping.md`.
+- Rule: `.agents/rules/bc-account-core-rules.md` (หัวข้อ "System Scope & Marketplace Support") **ถูกลบไปแล้วที่ commit `07c9c21c` (2026-08-23) และยังไม่มีกฎ marketplace ใน `AGENTS.md` ปัจจุบัน** — ถ้าต้องการขอบเขต/กฎ ให้ถามลุงจืด ห้ามเดา
+- Field mapping (contract ↔ marketplace API จริง): เอกสารเดิม `.agents/wiki/marketplace-field-mapping.md` **ถูกลบพร้อมกันที่ commit `07c9c21c` ยังไม่มีไฟล์ทดแทนใน `docs/`** — สัญญาที่ใช้อ้างอิงตอนนี้คือ `docs/kms/architecture/product-listing-api-v2.md`
 
 ## Still NOT built
 Connectors จริง (OAuth/token, API client ต่อเจ้า, sync push/pull, category+attribute fetch). Schema พร้อม — 100% in/out ทำได้เมื่อสร้าง connector + verify field กับ live doc ตอน build.

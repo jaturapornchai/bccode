@@ -35,4 +35,4 @@ audit บทบาท 3 store (Mongo = SoT, PG = speed layer, ClickHouse = dimen
 - ⚠️ 3 route legacy ยัง 500 เมื่อเรียก (เหมือนเดิม); env `CH_SERVER_ADDRESS=clickhouse:9000` ชี้ host ที่ไม่มี (ไม่กระทบเพราะ clickhouse-go `Open` ไม่ dial)
 - 🔁 ย้อนกลับ: `git revert` commit compose แล้ว `up -d` (volume ยังอยู่)
 
-เกี่ยวข้อง: [[2026-09-06]], [[2026-09-05-projection-consumer-head-of-line-block]], `docs/handoff/HANDOFF-RISKS-2026-09-05.md` (section 6 ก.ย.)
+เกี่ยวข้อง: [[2026-09-05-projection-consumer-head-of-line-block]], `docs/handoff/HANDOFF-RISKS-2026-09-05.md` (section 6 ก.ย.)

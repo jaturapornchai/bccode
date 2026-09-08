@@ -1,3 +1,9 @@
+---
+date: 2026-07-25
+status: accepted
+tags: [bc-account, go, nextjs, datamodel]
+---
+
 # ADR 2026-07-25 — names array canonical = {code, name}
 
 #bc-account #go #nextjs #datamodel
@@ -14,7 +20,7 @@ mongomodel diagram normalize names 42 array เหลือ `{code, name}` ไ�
 - `models.NameX` / `models.NameNormal` / `LanguageModel` เหลือ 2 field
 - `isdelete` **ระดับเอกสาร** (soft delete) ไม่เกี่ยว — ยังอยู่เหมือนเดิม
 - payload เก่าที่ยังส่ง 2 flag มา: Go ignore field ที่ไม่รู้จัก → ไม่พัง (fixture test เดิมยังมี flag ไว้เป็น backward-compat case)
-- ข้อมูลเดิมใน MongoDB ที่มี flag: ปล่อยตาย ตาม [[disposable-database-rule]] (pre-launch ไม่ทำ migration)
+- ข้อมูลเดิมใน MongoDB ที่มี flag: ปล่อยตาย ตามกฎ "ฐานข้อมูลใช้แล้วทิ้ง" ช่วง pre-launch (ไม่ทำ migration/backfill)
 - codegen ของ mongomodel มี `namesShapeWarnings()` เตือนแล้วถ้ามี array ไหน drift ออกจาก shape นี้
 
 ## Verify

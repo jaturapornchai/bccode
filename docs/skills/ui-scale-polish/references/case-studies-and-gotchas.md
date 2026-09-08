@@ -1,6 +1,6 @@
 ﻿# UI Scale & Polish — Case Studies, Change History & Gotchas (Archive)
 
-> ข้อมูลอ้างอิงประวัติการแก้บั๊ก บทเรียน และเคสเฉพาะกิจ (ข้อ 4.1 – 4.39) แยกออกจาก SKILL.md หลักเพื่อประหยัด Token
+> ข้อมูลอ้างอิงประวัติการแก้บั๊ก บทเรียน และเคสเฉพาะกิจ (ข้อ 4.1 – 4.40) แยกออกจาก SKILL.md หลักเพื่อประหยัด Token
 
 
 ## 4.1) หลีกเลี่ยง iframe (กฎ)
@@ -603,7 +603,7 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 (`stepProgress` นับจาก list API: employee/user limit 1000, permissiongroup limit 1; บริษัทใช้ `flatCompanies` เพราะ slug company ตอบเป็นต้นไม้)
 - **กับดัก API list**: `/api/system-settings/<slug>` ต้องส่ง `page=1&q=` และ header `x-bc-backend-url` (ไม่งั้น 400 "กรุณากรอก Backend URL")
 - ขั้น 2 "คนในองค์กร": แท็บ พนักงาน/บัญชีเข้าระบบ + แถบสรุป จำนวนพนักงาน/บัญชี/คนที่มีทั้งสอง (จับคู่ email ↔ username normalize)
-  — การรวมเป็น entity เดียวยังไม่ทำ (ต้องเปลี่ยน schema) นิยาม "พนักงาน" เพิ่มใน docs/organization.md แล้ว
+  — การรวมเป็น entity เดียวยังไม่ทำ (ต้องเปลี่ยน schema) นิยาม "พนักงาน" เคยเขียนไว้ใน `docs/organization.md` ซึ่งถูกลบไปพร้อม business-rule docs เมื่อ 2026-09-03 (ยังไม่มีเอกสารแทน — ต้องถามลุงจืด)
 - ขั้น 3: ตารางสิทธิ์มีปุ่ม **ใช้ค่าแนะนำ** (`RoleScreenMatrix role=`; USER = เข้า+เพิ่ม+แก้ไข, ADMIN/OWNER = ทั้งหมด, กับจอที่แสดงอยู่)
   + แท็บ รายการจอทั้งหมด (permissiondefinition) แทนการเป็นขั้นแยก
 - MongoModel: workflow `system_setup_steps` (rev 1355) · เมนูหลักไม่มีหมวด ตั้งค่า

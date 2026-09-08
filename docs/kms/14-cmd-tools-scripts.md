@@ -66,7 +66,7 @@
 
 | ไฟล์ | หน้าที่ | invoked by | สถานะ | อ้างอิง |
 |---|---|---|---|---|
-| `tools/gen-code-map.ps1` | สร้าง `docs/reference/CODE-MAP.md` index ไฟล์ ≥ 1000 บรรทัด (function/component/type) | `powershell -File tools/gen-code-map.ps1` | LIVE (docs/reference/CODE-MAP.md:3 ระบุว่า auto-generated จากไฟล์นี้) | `tools/gen-code-map.ps1:1-12` |
+| `tools/gen-code-map.ps1` | สร้าง `docs/reference/CODE-MAP.md` index ไฟล์ ≥ 1000 บรรทัด (function/component/section-comment) | `powershell -File tools/gen-code-map.ps1` | LIVE (docs/reference/CODE-MAP.md:3 ระบุว่า auto-generated จากไฟล์นี้) | `tools/gen-code-map.ps1:1-12` |
 | `tools/kung_test.py`, `kung_loop.py`, `kung_small.py`, `kung_test.sh`, `kung_analyze.sh`, `kung_analyze.go` | test runner ของ chatbot "น้องกุ้ง" ยิง `http://localhost:8888/goapi/api/v1/chatbot/chat-agent-v2-sync` | รันมือ | **DEAD** — goapi ปัจจุบัน register แค่ `/api/v1/chatbot/chat-gemini` และ `/analyze-document` (`backend/internal/goapi/bootstrap.go:542-544`); ไม่มี `chat-agent` ใน `.go` ใด (rg --no-ignore) | `tools/kung_test.py:22`; `tools/kung_test.sh:4-5` |
 | `tools/__pycache__/*.pyc` (2 ไฟล์) | ไบต์โค้ด Python ถูก commit ทั้งที่ `.gitignore:47` มี `__pycache__/` | — | DEAD (ควรลบออกจาก index) | `git ls-files tools/__pycache__` |
 | `tools/playwright-mcp.config.json` | ตั้ง `chromiumSandbox: false` ให้ Playwright MCP | Playwright MCP (ปิดอยู่ตาม `~/.claude.json` — ยังไม่ตรวจ) | unused ตอนนี้ | `tools/playwright-mcp.config.json:1-7` |

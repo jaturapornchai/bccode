@@ -39,7 +39,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/` | Login (username, Google, Demo — ไม่มีปุ่ม Dev Login; ปุ่มที่ใช้ class `dev-login-button` คือปุ่ม Demo) | `login-wrapper.tsx` → `login-screen.tsx` (835 บรรทัด) | LIVE | `frontend/src/app/page.tsx:2,9-10`, `frontend/src/app/login-wrapper.tsx:4,73`, `frontend/src/app/login-screen.tsx:304-309,649-657` |
 | `/holding` | เลือก/สร้างกลุ่มกิจการ + จัดการ admin ตาม email | `holding/holding-screen.tsx` (1547) | LIVE | `frontend/src/app/holding/page.tsx:3,11` |
 | `/workspace` | เลือกบริษัท/สาขา, สร้าง holding/branch, หน่วยนับเริ่มต้น, ผูก LINE | `workspace/workspace-screen.tsx` (2315) | LIVE | `frontend/src/app/workspace/page.tsx:3,11` |
-| `/menu` | เมนูหลัก + dashboard + ทางลัด + สินค้า/บาร์โค้ด/ชุดสินค้า/marketplace (tabs) | `menu/main-menu-screen.tsx` (2693) และ `menu/*-screen.tsx` | LIVE | `frontend/src/app/menu/page.tsx:3,11` |
+| `/menu` | เมนูหลัก + dashboard + ทางลัด + สินค้า/บาร์โค้ด/ชุดสินค้า/marketplace (tabs) | `menu/main-menu-screen.tsx` (2842) และ `menu/*-screen.tsx` | LIVE | `frontend/src/app/menu/page.tsx:3,11` |
 | `/[systemSetting]` | 31 config slug (นับ `slug:` ไม่ซ้ำใน `SYSTEM_SETTING_CONFIGS` + `productMasterConfigs()`; 2 ตัวคือ `permissionlink`→redirect `/user`, `approvalsetting`→redirect `/workspace` จึงเหลือ 29 จอที่ render จริง) เช่น company, branch, employee, user, productunit, debtor; slug ไม่รู้จัก → 404 | `system-settings/system-settings-screen.tsx` (**16600 บรรทัด**) | LIVE | `frontend/src/app/[systemSetting]/page.tsx:17-24`, `frontend/src/lib/system-setting-screens.ts:287-1180,1182-1769,1771-1777` |
 | `/currency` | สกุลเงิน CRUD | `currency/currency-screen.tsx` (1224) | LIVE | `frontend/src/app/currency/page.tsx:3,11` |
 | `/price_history` | ประวัติราคาสินค้า | `menu/product-price-history-screen.tsx` | LIVE | `frontend/src/app/price_history/page.tsx:3,11` |
@@ -125,7 +125,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `i18n.ts` + `locales/*.json` | 12 ภาษา (th, en, cn, ja, ko, lo, my, km, vi, ms, id, fil) ไฟล์ละ 93 key เท่ากัน; `t(language,key)` | `frontend/src/lib/i18n.ts:19-31,67` |
 | `backend-language*.ts` | dictionary จาก goapi `/api/language/{lang}` (preload fetch goapi ตรง; client refresh ผ่าน Next `/api/language/{lang}`); cookie `user_language`, `backend_url`; server อ่าน cookie ก่อน render | `frontend/src/lib/backend-language-preload.ts:6-7,25,41`, `frontend/src/lib/backend-language.ts:135`, `frontend/src/lib/backend-language-server.ts:16-19` |
 | `system-setting-screens.ts` | config 31 slug (slug/route/kind/basePath/ฟิลด์; kind มี 9 แบบ) = source ของ `/[systemSetting]` | `frontend/src/lib/system-setting-screens.ts:78-88,287-1769,1771` |
-| `menu-data.ts`, `menu-icons.ts`, `menu-usage.ts`, `user-shortcuts.ts` | โครงเมนู `MENU_SECTIONS` (transactions/reports …), icon ต่อ route, นับการใช้เมนู, ทางลัดผู้ใช้ใน storage | `frontend/src/lib/menu-data.ts:48-155` |
+| `menu-data.ts`, `menu-icons.ts`, `menu-usage.ts`, `user-shortcuts.ts` | โครงเมนู `MENU_SECTIONS` (transactions/reports …), icon ต่อ route, นับการใช้เมนู, ทางลัดผู้ใช้ใน storage; **เพิ่ม/ลบ 1 เมนู = แก้ 4 จุดพร้อมกันเสมอ** `menu-data.ts` → `backend/assets/language/languages.tsv` (13 คอลัมน์ ครบทุกภาษา) → `ROUTE_ICON_KEYS` ใน `menu-icons.ts` → จำนวนใน `menu-icons.test.ts` (ปัจจุบัน `toHaveLength(224)`) ไม่งั้น `frontend/src/lib/menu-data.test.ts` + `frontend/src/lib/menu-icons.test.ts` fail — ดู `docs/kms/19-menu-coverage-flowaccount-peak.md:61-62` และ `docs/skills/ui-scale-polish/SKILL.md` §8 | `frontend/src/lib/menu-data.ts:48-155` |
 | `permission-actions.ts`, `use-screen-actions.ts` | สิทธิ์ต่อจอ (`hasScreenAccess/hasScreenAction`) | `frontend/src/lib/permission-actions.ts` |
 | `date-time.ts`, `thailand-addresses.ts`, `thai-branch-code.ts`, `holding-code.ts`, `business-code.ts`, `currency-presets.ts` | พ.ศ./timezone, ที่อยู่ไทย, รหัสสาขาสรรพากร (`00000` = สำนักงานใหญ่), validate รหัส | `frontend/src/lib/thai-branch-code.ts`, `frontend/src/lib/holding-code.ts` |
 | `image-upload-proxy.ts`, `logo-thumb.ts` | proxy multipart ไป goapi, URI thumbnail | `frontend/src/lib/image-upload-proxy.ts:24-129` |
@@ -141,16 +141,16 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 
 ## 9. กฎ UX/UI ที่บังคับใช้ (สรุป non-negotiables)
 
-ที่มา: `AGENTS.md` (กฎ "คนไทย 40+" และ "พรีเมี่ยม" + กฎ upgrade skill 2026-09-06) และ `docs/skills/ui-scale-polish/SKILL.md:13-49,153-172`
+ที่มา: `AGENTS.md` (กฎ "คนไทย 40+" และ "พรีเมี่ยม" + กฎ upgrade skill 2026-09-06) และ `docs/skills/ui-scale-polish/SKILL.md:13-49,196-214`
 1. ข้อความตัดสินใจ ≥ 0.9rem, Thai-first, `line-height ≥ 1.45`, ปุ่มหลัก ≥ 2.6em, ห้าม icon เปล่าใน action สำคัญ, contrast WCAG AA, ห้ามสื่อสถานะด้วยสีเดียว, dirty guard + dialog ไทยก่อนทำลาย, feedback ไทยทุก action, motion ≤ 300ms + `prefers-reduced-motion` (`SKILL.md:23-36`)
 2. สีทุกจุด derive จาก `--primary` ผ่าน `color-mix` ห้าม hard-code (10 พาเลต × dark); ทดสอบ dark โดย **กดปุ่มสลับธีมจริง** เพราะตัวแปรถูก inline บน `<html>` (`frontend/src/app/layout.tsx:59-72`); popover ห้ามโดน `overflow:hidden` (`SKILL.md:39-47`)
-3. CSS = skin block ต่อท้าย `globals.css` มี comment วันที่ + selector prefix, ห้ามแตะ type scale เดิม (`SKILL.md:153-158`); ตัวอย่าง block ล่าสุด 2026-09-02…09-06 (`frontend/src/app/globals.css:7500,7848,8247,8429`)
-4. Checklist ก่อนบอกเสร็จ: viewport 1280/1920/2560, dual theme, Thai glyph ไม่ทับ, no clip, popover safety, console สะอาด, `npm run typecheck` + unit test ผ่าน (`SKILL.md:161-171`); ทุกงาน UI ต้อง append section ใน SKILL.md และ commit พร้อมโค้ด (`SKILL.md:13-21`)
+3. CSS = skin block ต่อท้าย `globals.css` มี comment วันที่ + selector prefix, ห้ามแตะ type scale เดิม (`SKILL.md:196-200`); ตัวอย่าง block ล่าสุด 2026-09-02…09-07 (`frontend/src/app/globals.css:7500,7848,8247,8429,8487`)
+4. Checklist ก่อนบอกเสร็จ: viewport **1600 / 1280 / 1024 / 768-portrait** (บังคับตาม `AGENTS.md:61` กฎพรีเมี่ยมข้อ 8 — เป้าหมาย iPad ขึ้นไป), dual theme (กดปุ่มสลับธีมจริง), Thai glyph ไม่ทับ, no clip, popover safety, console สะอาด, `npm run typecheck` + unit test ผ่าน (`SKILL.md:204-214`); ทุกงาน UI ต้อง append section ใน SKILL.md และ commit พร้อมโค้ด (`SKILL.md:13-21`) — `SKILL.md:207` แก้ให้ตรงกับ `AGENTS.md:61` แล้ว 2026-09-09 (ห้ามแก้กลับเป็น 1280/1920/2560)
 5. Gotcha: reset แบบไม่มี layer `button, input, select, textarea { font: inherit; }` ใน `globals.css` ทับ Tailwind `text-*` บนปุ่ม → ใช้ `text-xs!` (important) หรือ inline style (memory `tailwind-button-font-size-gotcha`; ตรวจแล้ว `frontend/src/app/globals.css:364-369` — ไม่มี `font-size: inherit` ตรง ๆ แต่ `font: inherit` ให้ผลเดียวกัน)
 
 ## 10. `globals.css` mixed EOL gotcha
 
-- ไฟล์ยาว 8485 บรรทัด / 226,569 bytes; นับด้วย node ได้ **CRLF 7510, LF 975, CR 0** (วันที่ตรวจ) → EOL ผสมจริง
+- ไฟล์ยาว 8,575 บรรทัด (`wc -l`) / 229,204 bytes; นับด้วย node ได้ **CRLF 7600, LF 975, CR 0** (ตรวจ 2026-09-09) → EOL ผสมจริง
 - ห้ามใช้ Edit/Write tool ทั้งไฟล์ (จะ normalize EOL ทำให้ diff ทั้งไฟล์) — แก้ด้วย Node byte-preserving patch ต่อท้ายไฟล์ตามกฎ AGENTS.md ข้อ 9 และ memory `globals-css-mixed-eol-gotcha`
 - ไฟล์แปลก: `frontend/src/app/.dialog-header` (1 บรรทัด เนื้อหา `8134:section[role=dialog].h-full.bg-card {` ดูเหมือน grep output ที่ commit หลุด) — ควรลบ (รอลุงจืดตัดสิน)
 
@@ -158,7 +158,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 
 | ชุด | config | จำนวน | วิธี login | อ้างอิง |
 |---|---|---|---|---|
-| Unit (vitest, env node) | `frontend/vitest.config.ts:3-12` include `src/**/*.test.ts` | 44 ไฟล์ (lib, api route, security tests เช่น `login-screen.security.test.ts`, `holding-screen.security.test.ts`, `main-menu-password.security.test.ts`) | — | `frontend/src/app/login-screen.security.test.ts:7-21` |
+| Unit (vitest, env node) | `frontend/vitest.config.ts:3-12` include `src/**/*.test.ts` | 45 ไฟล์ (lib, api route, security tests เช่น `login-screen.security.test.ts`, `holding-screen.security.test.ts`, `main-menu-password.security.test.ts`, `menu/main-menu-sidebar-resize.test.ts`) | — | `frontend/src/app/login-screen.security.test.ts:7-21` |
 | e2e ใน frontend | `frontend/playwright.config.ts` testDir `./e2e`, baseURL `E2E_BASE_URL` (default `localhost:3000`), ไม่ start server เอง | 14 spec (product/barcode/BOM/warehouse/category-list/group-tree/set/brand/trade-partners/job-costing-channel CRUD, barcode company-scope + sample-data, dev-login, Thai address cascade) | spec คลิกปุ่ม "เข้าทดสอบระบบ (Dev Login)" → `POST /api/auth/dev-login` — **แต่ปุ่มนี้ไม่มีใน `login-screen.tsx` แล้ว** (ดูช่องว่าง) | `frontend/playwright.config.ts:6-17`, `frontend/e2e/dev-login.spec.ts:6-21` |
 | UAT ที่ root | `playwright.config.ts` testDir `./tests`, baseURL `PW_BASE_URL` (default `127.0.0.1:3000`), project `setup` สร้าง `.auth/user.json` แล้ว chromium reuse | 13 spec + `auth.setup.ts` | คลิกปุ่ม /Dev Login/ → `/holding` เลือก "บ้านเชียง" → `/workspace` เลือกสาขา TST03 / 00001 (ปุ่ม Dev Login ไม่มีในหน้า login แล้ว — ดูช่องว่าง) | `playwright.config.ts:17,32,42-54`, `tests/auth.setup.ts:14-25` |
 | CI | `.github/workflows/ci.yml` job `frontend-test`: node 24.18.0, `npm ci`, lint, typecheck, `npm test -- --run` ด้วย `BCAI_LOCAL_BACKEND_URL=http://localhost:8888` | — | — | `.github/workflows/ci.yml:42-75` (lead ระบุ Actions ถูก billing-lock — ยังไม่ตรวจเอง) |
@@ -176,7 +176,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 - **ยังไม่ตรวจ** ว่า backend มี route ครบตามที่ BFF เรียกทุกตัว (เช่น `/holding/users/import`, `/product/resync`, `/sessions/active-count`, `/unit/bulk`, `/api/user/lineoa/*`) — ต้อง cross-check กับ `backend/main.go` exceptShopPath และ module routes (บทความ backend)
 - **ยังไม่ตรวจ** `BC_AUTH_BRIDGE_URL` ชี้ไปที่บริการใด/ยังรันอยู่ไหม — ถ้าไม่มี flow ผูก LINE (`/api/auth/line/code`, `link/status`) จะตอบ error ไทย "ระบบยังไม่ได้ตั้งค่า Auth bridge" (`frontend/src/lib/auth-bridge.ts:8`)
 - ขัดกันจริงในโค้ด: `frontend/src/app/login-screen.tsx:304-309,649-657` มีเฉพาะปุ่ม "ทดลองใช้ระบบ (Demo)" (comment บอกว่าแทนปุ่ม Dev Login เดิม) และ `frontend/src/app/login-screen.security.test.ts:8-12` บังคับว่าห้ามมี `/api/auth/dev-login` ในหน้า login — แต่ `frontend/e2e/dev-login.spec.ts:8` และ `tests/auth.setup.ts:16` ยังหาปุ่ม "Dev Login" อยู่ → e2e/UAT ชุดนี้น่าจะไม่ผ่านตั้งแต่ขั้น login (**ยังไม่รันยืนยัน**); ถามลุงจืดว่าจะย้าย e2e ไป Demo หรือคืนปุ่ม Dev
-- `AGENTS.md` (กฎ UX/UI) ชี้ skill ที่ `.agents/skills/ui-scale-polish/SKILL.md` แต่ path นี้ไม่มีใน git (`git ls-files .agents` ว่าง); ไฟล์จริงอยู่ `docs/skills/ui-scale-polish/SKILL.md` (176 บรรทัด) — ควรแก้ path ใน AGENTS.md
+- (ปิดแล้ว 2026-09-07) skill ส่วนตัวอยู่ที่ `docs/skills/ui-scale-polish/SKILL.md` (271 บรรทัด, ตรวจ 2026-09-09) ตามกฎใน `AGENTS.md:20-25` ซึ่งชี้ path นี้ถูกต้องแล้ว — โฟลเดอร์ `.agents/skills/` ถูกย้ายออกไปแล้ว (`git ls-files .agents` ว่างเป็นเรื่องปกติ ไม่ใช่ bug) ห้ามสร้างกลับ และ **ห้ามแก้ path ใน AGENTS.md อีก**
 - `/settings` + `setup-config.ts` ยังอ้าง ClickHouse/R2 และเรียก BFF ที่ตอบ 410 — ควรตัดสินว่าจะลบจอนี้หรือรอ Control Plane auth
 - `system-settings-screen.tsx` 16,600 บรรทัดในไฟล์เดียว — ไม่ได้อ่านทั้งไฟล์ (ใช้ grep) จึง**ยังไม่ตรวจ** พฤติกรรมรายจอ 31 slug
 - ไม่ได้รัน `npm test`/`typecheck`/playwright ในรอบนี้ (อ่านโค้ดอย่างเดียว) — สถานะผ่าน/ตกล่าสุด**ยังไม่ตรวจ**

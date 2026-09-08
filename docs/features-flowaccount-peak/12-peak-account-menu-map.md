@@ -253,7 +253,6 @@
 
 | ตัวเลือกเชื่อมต่อ | หลักฐานรายเรื่อง |
 |---|---|
-
 | ReadyPlanet | [คู่มือ](https://www.peakaccount.com/peak-manual/api-integration/setting-api-integration/connecting-peak-with-readyplanet) |
 | Shopee | [คู่มือ](https://www.peakaccount.com/peak-manual/api-integration/setting-api-integration/connecting-peak-with-shopee) |
 | Lazada | [คู่มือ](https://www.peakaccount.com/peak-manual/api-integration/setting-api-integration/connecting-peak-with-lazada) |
