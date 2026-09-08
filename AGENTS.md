@@ -9,6 +9,14 @@ For every task under `D:\bccode`:
 
 This file is only a routing entrypoint. Source-of-truth boundaries will be defined by the new docs under `docs/kms/` (in progress).
 
+## กฎ: ขอบเขตผลิตภัณฑ์ — ไม่ทำระบบเงินเดือน (ตั้งโดยลุงจืด 2026-09-08)
+
+BC **ไม่ทำระบบเงินเดือน (payroll)** และไม่ทำสิ่งที่เป็นผลจากเงินเดือน คือ **ภ.ง.ด.1 / ภ.ง.ด.1ก** และ **ไฟล์นำส่งเงินสมทบประกันสังคม (สปส. / กท.20 ก)** — ห้าม AI ตัวใดเพิ่มเมนู จอ สเปก หรือ API เหล่านี้กลับเข้ามาเอง แม้จะเห็นว่า FlowAccount/PEAK มี (เอกสารของคู่แข่งใน `docs/features-flowaccount-peak/` เป็นหลักฐานเปรียบเทียบเท่านั้น)
+
+ยังอยู่ในขอบเขตตามปกติ: ภาษีหัก ณ ที่จ่ายของคู่ค้า (ภ.ง.ด.3/53 + หนังสือรับรอง 50 ทวิ), เงินทดรองจ่ายพนักงาน (งานการเงิน), ทะเบียนพนักงานในหน้าตั้งค่า (`/employee`)
+
+เหตุผลและรายละเอียดการเทียบเมนูกับ FlowAccount/PEAK: `docs/kms/19-menu-coverage-flowaccount-peak.md` + ADR `docs/kms/decisions/2026-09-08-menu-parity-flowaccount-peak.md`
+
 ## กฎ: skill ส่วนตัวอยู่ที่ `docs/skills/` และฐานความรู้อยู่ที่ `docs/kms/` (ตั้งโดยลุงจืด 2026-09-07)
 
 1. **skill ส่วนตัวของลุงจืดทุกตัวเก็บใน `docs/skills/<name>/SKILL.md`** (ย้ายจาก `.agents/skills/` แล้ว 2026-09-07) — ห้ามสร้าง/คัดลอกไปที่ `.agents/skills/`, `.claude/skills/` หรือที่อื่น เพื่อให้ตรวจง่ายที่เดียว

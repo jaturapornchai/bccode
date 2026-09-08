@@ -246,7 +246,7 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 
 **ไฟล์อ้างอิงจริง (Reference Implementation)**
 
-* กลุ่มใหม่ + 19 เมนู (parity กับ FlowAccount/PEAK) 2026-09-08: `frontend/src/lib/menu-data.ts` กลุ่ม `payroll` และรายการ `business-dashboard` / `vat-pnd1` / `import-partner`
+* 15 เมนู parity กับ FlowAccount/PEAK 2026-09-08: `frontend/src/lib/menu-data.ts` รายการ `business-dashboard` / `purchase-tax-invoice-register` / `import-partner` (ระบบเงินเดือนถูกตัดออกจากขอบเขตวันเดียวกัน — ห้ามเพิ่มเมนู payroll/ภ.ง.ด.1/ประกันสังคมกลับเอง)
 * เหตุผลและช่องว่างที่ยังไม่ตัดสิน: `docs/kms/19-menu-coverage-flowaccount-peak.md`, ADR `docs/kms/decisions/2026-09-08-menu-parity-flowaccount-peak.md`
 * วิธีตรวจ: `npx vitest run src/lib/menu-data.test.ts src/lib/menu-icons.test.ts src/lib/menu-usage.test.ts` + `npx tsc --noEmit` + เปิดเมนูจริง ค้นชื่อไทยที่เพิ่ม แล้วดูทั้ง light/dark ด้วยการกดปุ่มสลับธีม
 

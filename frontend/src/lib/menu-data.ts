@@ -168,14 +168,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("daily-info", "ตรวจสอบประจำวัน", "Daily Check", "/checkdaily/dailyinfoscreen", "finance"),
         ],
       },
-      {
-        id: "payroll",
-        title: ml("payroll", "เงินเดือนและพนักงาน", "Payroll & HR"),
-        items: [
-          tx("payroll-run", "คำนวณเงินเดือนประจำงวด", "Monthly Payroll Run", "/transaction/payroll", "finance"),
-          tx("payroll-slip", "สลิปเงินเดือนและส่งธนาคาร", "Payslips & Bank Transfer", "/transaction/payslip", "finance"),
-        ],
-      },
     ],
   },
   {
@@ -214,8 +206,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
           tx("withholding-tax-received", "ทะเบียนถูกหัก ณ ที่จ่าย", "Withholding Tax Received", "/report/whtreceived", "report"),
           tx("withholding-tax-report", "รายงานภาษีหัก ณ ที่จ่าย", "Withholding Tax Report", "/report/wht-reports", "report"),
-          tx("vat-pnd1", "แบบยื่น ภ.ง.ด.1", "P.N.D.1 Return", "/report/vatpnd1", "report"),
-          tx("sso-contribution-file", "ไฟล์นำส่งเงินสมทบประกันสังคม", "Social Security Contribution File", "/report/ssofile", "report"),
         ],
       },
       {

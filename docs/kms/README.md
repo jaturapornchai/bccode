@@ -44,7 +44,7 @@
 | 16 | [16-environments-and-servers.md](16-environments-and-servers.md) | สภาพแวดล้อมและเซิร์ฟเวอร์ | dev local / on-prem .202 / prod DigitalOcean / prod เก่า / tunnel / Google sign-in — ค่า secret ไม่อยู่ในนี้ | จาก memory/handoff | ผู้เขียนหลัก |
 | 17 | [17-dev-gotchas.md](17-dev-gotchas.md) | กับดักตอนพัฒนา | กับดัก frontend/backend/UAT/เครื่องมือ พร้อมวันที่ยืนยัน — อ่านก่อนเสียเวลาซ้ำ | จาก memory/handoff | ผู้เขียนหลัก |
 | 18 | [18-decisions-and-agreements.md](18-decisions-and-agreements.md) | ข้อตกลงและการตัดสินใจ | ลำดับการอ่านสำหรับ AI ทุกตัว + ไทม์ไลน์การตัดสินใจ 2026-06→09 + คำถามค้าง 6 ข้อ | จาก memory/handoff | ผู้เขียนหลัก |
-| 19 | [19-menu-coverage-flowaccount-peak.md](19-menu-coverage-flowaccount-peak.md) | ความครบของเมนูเทียบ FlowAccount + PEAK | เมนู 204 รายการครอบคลุมงานหลักของทั้งสองเจ้าแล้ว + ช่องว่างที่ยังไม่ตัดสิน 4 ข้อ | เทียบ 411 ฟีเจอร์จากเว็บทางการ 2026-09-08 | ตรวจซ้ำแบบ adversarial 20 ข้อ |
+| 19 | [19-menu-coverage-flowaccount-peak.md](19-menu-coverage-flowaccount-peak.md) | ความครบของเมนูเทียบ FlowAccount + PEAK | เมนู 200 รายการครอบคลุมงานหลักของทั้งสองเจ้า (ยกเว้นเงินเดือนที่ตัดออกจากขอบเขต) + ช่องว่างที่ยังไม่ตัดสิน 3 ข้อ | เทียบ 411 ฟีเจอร์จากเว็บทางการ 2026-09-08 | ตรวจซ้ำแบบ adversarial 20 ข้อ |
 
 ## เอกสารสถาปัตยกรรม/สัญญา (ย้ายจาก `backend/architecture/` 2026-09-07)
 
@@ -102,9 +102,10 @@
 
 ## ที่อื่นใน `docs/`
 
-- `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-06.md` ล่าสุด, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store)
+- `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-08.md` ล่าสุด: เมนู parity + ขอบเขตที่ตัดออก, `HANDOFF-2026-09-06.md` วิธีรัน/งานค้าง backend, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store)
 - `docs/runbooks/RECOVERY-READINESS.md` — runbook กู้คืน prod (รอข้อมูล backup/RPO/RTO จากลุงจืด)
 - `docs/reference/CODE-MAP.md` — ดัชนีไฟล์ใหญ่ที่สร้างอัตโนมัติด้วย `tools/gen-code-map.ps1`
+- `docs/features-flowaccount-peak/` — หลักฐานฟีเจอร์/เมนูของ FlowAccount และ PEAK (ของคู่แข่ง) ใช้คู่กับบทความ 19
 - `docs/skills/` — skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
 
 ## README ที่ยังอยู่ข้างโค้ด (เอกสารเฉพาะ package — อ่านคู่กับบทความด้านบน)

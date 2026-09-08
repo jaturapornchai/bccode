@@ -53,7 +53,7 @@
 2. **Purchase & AP**: AutoKey OCR สแกนบิลแบบ FlowAccount + ออกหนังสือรับรอง 50 ทวิ e-Withholding Tax แบบ PEAK
 3. **Inventory & FIFO**: สต็อกหลายคลังแบบ FlowAccount + เครื่องยนต์ตัดต้นทุนตาม Lot (FIFO Cost Layers) แบบ PEAK
 4. **Fixed Assets**: ทะเบียนสินทรัพย์ + เครื่องคิดค่าเสื่อมราคาเส้นตรงรายวัน/เดือน + ออก Draft JV สิ้นเดือน (PEAK Asset)
-5. **Integrated Payroll**: จัดการเงินเดือน, คำนวณหัก ปกส., ภ.ง.ด.1, สลิปเงินเดือน, ไฟล์ส่งธนาคาร, ลงสมุดรายวัน PV/JV อัตโนมัติ (FlowPayroll)
+5. ~~**Integrated Payroll**~~ **(ยกเลิก 2026-09-08 — ลุงจืดสั่งไม่เอาระบบเงินเดือน ห้ามทำ รวม ภ.ง.ด.1 และไฟล์ประกันสังคม)**: จัดการเงินเดือน, คำนวณหัก ปกส., ภ.ง.ด.1, สลิปเงินเดือน, ไฟล์ส่งธนาคาร, ลงสมุดรายวัน PV/JV อัตโนมัติ (FlowPayroll)
 6. **Banking & Reconciliation**: Bank Feed เชื่อม Statement ธนาคารไทย + Bank Rules จับคู่อัตโนมัติ (FlowAccount)
 7. **Double-Entry General Ledger**: สมุดรายวัน 5 เล่ม (`UV`, `SV`, `RV`, `PV`, `JV`) + บัญชีแยกประเภท + ฟังก์ชันล็อกงวดบัญชี (`LockDate` จาก PEAK)
 8. **Multi-dimensional Dimensions**: แท็กโครงการ (Project), แผนก (Department), สาขา (Branch) ออกงบ Project P&L ได้ทันที
@@ -68,7 +68,7 @@ Codex สามารถเลือกหยิบหัวข้อต่อ�
 - กำหนด Schema request/response สำหรับ:
   - `POST /api/v1/transactions/sales/all-in-one` (Header, Items, Payments, WHT, Tags)
   - `POST /api/v1/expenses/ocr-scan` (AutoKey Payload $\rightarrow$ Form Draft)
-  - `POST /api/v1/payroll/runs` (คำนวณและปิดยอดเงินเดือนประจำเดือน)
+  - `POST /api/v1/payroll/runs` (คำนวณและปิดยอดเงินเดือนประจำเดือน) — **ยกเลิก 2026-09-08 ไม่ต้องทำ**
   - `POST /api/v1/assets/{id}/depreciate` (รันคำนวณค่าเสื่อมราคาและสร้าง JV)
 
 ### Option B: สร้าง Go Code Scaffolding & SQL Migrations
