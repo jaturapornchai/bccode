@@ -223,7 +223,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("sales-daily", "รายงานขายรายวัน", "Daily Sales", "/report/reportdedebisalesdaily", "report"),
           tx("sales-by-seller", "ยอดขายตามพนักงาน", "Sales by Seller", "/report/salesbyseller", "report", "sales_by_seller"),
           tx("ar-aging", "รายงานอายุลูกหนี้", "AR Aging Report", "/report/araging", "report"),
-          tx("gross-profit-doc", "กำไรขั้นต้นตามเอกสาร", "Gross Profit by Document", "/report/salesreportbydocument", "report"),
+          tx("sales-by-document", "รายงานขายตามเอกสาร", "Sales by Document", "/report/salesreportbydocument", "report", "sales_by_document"),
           tx("gross-profit-by-document", "กำไรขั้นต้นตามเอกสาร", "Gross Profit by Document", "/report/reportgrossprofitbydocument", "report"),
           tx("gross-profit-by-product", "กำไรขั้นต้นตามสินค้า", "Gross Profit by Product", "/report/reportgrossprofitbyproduct", "report"),
           tx("payment-daily", "รายงานรับชำระรายวัน", "Daily Payment", "/report/reportdedebipaymentdaily", "report"),
@@ -363,7 +363,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("employee-registry", "ทะเบียนพนักงาน", "Employee Registry", "/employee", "master", "employee_registry"),
           tx("system-user", "ผู้ใช้งานระบบ", "System Users", "/user", "master", "system_users"),
-          tx("permission-group", "กลุ่มสิทธิ์การใช้งาน", "Permission Groups", "/permissiongroup", "master", "permission_group"),
+          tx("permission-group", "กลุ่มสิทธิ์การใช้งาน", "Permission Groups", "/permissiongroup", "master", "permission_groups"),
           tx("user-access-audit", "ประวัติการเข้าใช้งาน", "User Access Audit", "/useraccessaudit", "master", "user_access_audit"),
         ],
       },
