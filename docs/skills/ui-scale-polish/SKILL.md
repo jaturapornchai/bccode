@@ -246,8 +246,25 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 
 **ไฟล์อ้างอิงจริง (Reference Implementation)**
 
-* 15 เมนู parity กับ FlowAccount/PEAK 2026-09-08: `frontend/src/lib/menu-data.ts` รายการ `business-dashboard` / `purchase-tax-invoice-register` / `import-partner` (ระบบเงินเดือนถูกตัดออกจากขอบเขตวันเดียวกัน — ห้ามเพิ่มเมนู payroll/ภ.ง.ด.1/ประกันสังคมกลับเอง)
+* parity กับ FlowAccount/PEAK 2026-09-08 (รวม 224 รายการ): `frontend/src/lib/menu-data.ts` รายการ `business-dashboard` / `purchase-tax-invoice-register` / `import-partner` / `vat-pnd2` / `dimension-pnl` และกลุ่ม `marketplace`
+* **ระบบเงินเดือนอยู่นอกขอบเขต** — ห้ามเพิ่มเมนู payroll / ภ.ง.ด.1 / ประกันสังคมกลับเอง (กฎใน `AGENTS.md`); แต่ **ภ.ง.ด.2 อยู่ในขอบเขต** เพราะเป็นภาษีหัก ณ ที่จ่ายเงินได้ 40(3)/(4) ที่มีต้นทางจากรายการจ่ายเงิน ไม่ใช่เงินเดือน
 * เหตุผลและช่องว่างที่ยังไม่ตัดสิน: `docs/kms/19-menu-coverage-flowaccount-peak.md`, ADR `docs/kms/decisions/2026-09-08-menu-parity-flowaccount-peak.md`
 * วิธีตรวจ: `npx vitest run src/lib/menu-data.test.ts src/lib/menu-icons.test.ts src/lib/menu-usage.test.ts` + `npx tsc --noEmit` + เปิดเมนูจริง ค้นชื่อไทยที่เพิ่ม แล้วดูทั้ง light/dark ด้วยการกดปุ่มสลับธีม
 
 ---
+
+## 8.1 ก่อนเพิ่มเมนู ให้เช็ค "จอกำพร้า" ก่อนเสมอ (บทเรียน 2026-09-08)
+
+**แบบแผนใหม่** — ก่อนจะเขียนจอใหม่หรือสรุปว่า "ฟีเจอร์นี้ยังไม่มี" ต้องเทียบ route ที่ `main-menu-screen.tsx` เปิดได้ กับ route ที่มีในเมนูก่อน:
+
+```bash
+grep -ohE '"/[a-z0-9/-]+"' frontend/src/app/menu/main-menu-screen.tsx frontend/src/lib/system-setting-screens.ts | tr -d '"' | sort -u > /tmp/screens.txt
+grep -oE '"/[^"]+"' frontend/src/lib/menu-data.ts | tr -d '"' | sort -u > /tmp/menu.txt
+comm -23 /tmp/screens.txt /tmp/menu.txt
+```
+
+**กับดัก / สิ่งที่ห้ามทำซ้ำ** — เขียนจอเสร็จแล้วไม่เพิ่มรายการเมนู แล้วคิดว่า "เดี๋ยวค่อยต่อ" · สรุปว่าระบบไม่มีฟีเจอร์นั้นทั้งที่จอมีอยู่ แล้วเขียนจอซ้ำ · เชื่อว่า unit test จะจับให้ (ไม่จับ — เทสต์ตรวจจากเมนูไปหาไอคอน/ภาษา ไม่ได้ตรวจย้อนกลับ)
+
+**เหตุผลทางเทคนิค** — `onOpenRoute` (`frontend/src/app/menu/main-menu-screen.tsx:1453-1455`) เปิดแท็บได้เฉพาะ route ที่หาเจอใน `allMenuItems` เท่านั้น จอที่ dispatch ไว้แล้วแต่ไม่มีรายการเมนูจึงเป็นโค้ดตายในสายตาผู้ใช้ ทั้งที่ไอคอนและ language key อาจเตรียมไว้ครบแล้ว
+
+**ไฟล์อ้างอิงจริง** — `frontend/src/app/menu/marketplace-screen.tsx` (3 จอ Shopee/Lazada/TikTok ทำงานได้เต็มรูปแบบ แต่เข้าไม่ถึงจนถึง 2026-09-08 เพราะไม่มีเมนู; ไอคอนอยู่ที่ `menu-icons.ts:221-223` และ language key `shopee_mappings`/`lazada_mappings`/`tiktok_mappings`/`marketplace_connectors` มีใน `languages.tsv` มาก่อนแล้ว) · route ที่อยู่นอกเมนูโดยตั้งใจและไม่ต้องแก้: `/currency`, `/datamodelgraph`, `/shortcuts` และ route ตั้งค่าองค์กรทั้งหมด

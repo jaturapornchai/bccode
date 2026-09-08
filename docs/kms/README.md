@@ -44,7 +44,7 @@
 | 16 | [16-environments-and-servers.md](16-environments-and-servers.md) | สภาพแวดล้อมและเซิร์ฟเวอร์ | dev local / on-prem .202 / prod DigitalOcean / prod เก่า / tunnel / Google sign-in — ค่า secret ไม่อยู่ในนี้ | จาก memory/handoff | ผู้เขียนหลัก |
 | 17 | [17-dev-gotchas.md](17-dev-gotchas.md) | กับดักตอนพัฒนา | กับดัก frontend/backend/UAT/เครื่องมือ พร้อมวันที่ยืนยัน — อ่านก่อนเสียเวลาซ้ำ | จาก memory/handoff | ผู้เขียนหลัก |
 | 18 | [18-decisions-and-agreements.md](18-decisions-and-agreements.md) | ข้อตกลงและการตัดสินใจ | ลำดับการอ่านสำหรับ AI ทุกตัว + ไทม์ไลน์การตัดสินใจ 2026-06→09 + คำถามค้าง 6 ข้อ | จาก memory/handoff | ผู้เขียนหลัก |
-| 19 | [19-menu-coverage-flowaccount-peak.md](19-menu-coverage-flowaccount-peak.md) | ความครบของเมนูเทียบ FlowAccount + PEAK | เมนู 200 รายการครอบคลุมงานหลักของทั้งสองเจ้า (ยกเว้นเงินเดือนที่ตัดออกจากขอบเขต) + ช่องว่างที่ยังไม่ตัดสิน 3 ข้อ | เทียบ 411 ฟีเจอร์จากเว็บทางการ 2026-09-08 | ตรวจซ้ำแบบ adversarial 20 ข้อ |
+| 19 | [19-menu-coverage-flowaccount-peak.md](19-menu-coverage-flowaccount-peak.md) | ความครบของเมนูเทียบ FlowAccount + PEAK | เมนู 224 รายการครอบคลุมงานของทั้งสองเจ้าเท่าที่หลักฐาน 2 ชุดครอบคลุม (ยกเว้นเงินเดือนที่ตัดออกจากขอบเขต) + วิธีตรวจจอกำพร้า | เว็บทางการ 411 ฟีเจอร์ + แหล่งนอกทางการ 12 มุม 442 ข้อกล่าวอ้าง (2026-09-08) | ตรวจซ้ำแบบหักล้างทั้งสองรอบ |
 
 ## เอกสารสถาปัตยกรรม/สัญญา (ย้ายจาก `backend/architecture/` 2026-09-07)
 
@@ -53,7 +53,7 @@
 - [architecture/product-listing-api-v2-handoff.md](architecture/product-listing-api-v2-handoff.md)
 - [architecture/product-listing-api-v2.md](architecture/product-listing-api-v2.md)
 
-## การตัดสินใจ (ADR) — 17 ไฟล์ใน `decisions/`
+## การตัดสินใจ (ADR) — 19 ไฟล์ใน `decisions/`
 
 - [decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md](decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md)
 - [decisions/2026-06-11-productlanguage-join-table.md](decisions/2026-06-11-productlanguage-join-table.md)
@@ -72,6 +72,8 @@
 - [decisions/2026-09-06-pause-clickhouse-local.md](decisions/2026-09-06-pause-clickhouse-local.md)
 - [decisions/2026-09-07-consolidate-docs-for-multi-ai.md](decisions/2026-09-07-consolidate-docs-for-multi-ai.md)
 - [decisions/2026-09-07-on-demand-docs-context-efficiency.md](decisions/2026-09-07-on-demand-docs-context-efficiency.md)
+- [decisions/2026-09-08-menu-parity-flowaccount-peak.md](decisions/2026-09-08-menu-parity-flowaccount-peak.md)
+- [decisions/2026-09-08-menu-parity-social-sweep.md](decisions/2026-09-08-menu-parity-social-sweep.md)
 - [decisions/2026-09-07-speed-and-context-hygiene.md](decisions/2026-09-07-speed-and-context-hygiene.md)
 - [decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md](decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md)
 - [decisions/2026-09-08-menu-parity-flowaccount-peak.md](decisions/2026-09-08-menu-parity-flowaccount-peak.md)

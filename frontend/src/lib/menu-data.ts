@@ -105,6 +105,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("debit-note", "ใบเพิ่มหนี้", "Debit Note", "/transaction/debitnote"),
           tx("sale-return", "คืนขาย", "Sale Return", "/transaction/salereturn"),
           tx("etax-invoice", "ใบกำกับภาษีอิเล็กทรอนิกส์", "e-Tax Invoice & e-Receipt", "/transaction/etax"),
+          tx("marketplace-order-import", "ดึงคำสั่งซื้อจากร้านค้าออนไลน์", "Import Online Store Orders", "/transaction/marketplaceorder"),
         ],
       },
       {
@@ -191,6 +192,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("cash-flow-forecast", "ประมาณการกระแสเงินสด", "Cash Flow Forecast", "/report/cashflowforecast", "report"),
           tx("financial-graphs", "กราฟประกอบงบการเงิน", "Financial Statement Graphs", "/report/financialgraphs", "report"),
           tx("project-pnl", "กำไรขาดทุนตามโครงการ", "Project P&L", "/report/project-pnl", "report"),
+          tx("dimension-pnl", "กำไรขาดทุนตามสาขาและแผนก", "P&L by Branch and Department", "/report/dimensionpnl", "report"),
           tx("project-summary-report", "สรุปภาพรวมโครงการ", "Project Summary Report", "/report/projectsummary", "report"),
           tx("business-dashboard", "ภาพรวมธุรกิจ", "Business Dashboard", "/report/dashboard", "report"),
           tx("executive-summary", "วิเคราะห์ธุรกิจสำหรับผู้บริหาร", "Executive Business Analysis", "/report/executivesummary", "report"),
@@ -207,6 +209,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("unreceived-tax-invoice", "ค่าใช้จ่ายยังไม่ได้รับใบกำกับ", "Unreceived Tax Invoices", "/report/unreceivedtaxinvoice", "report"),
           tx("vat-pp30", "แบบยื่นภาษี ภ.พ.30", "VAT Return (P.P.30)", "/report/vatpp30", "report"),
           tx("vat-pp36", "แบบยื่น ภ.พ.36", "P.P.36 Return", "/report/vatpp36", "report"),
+          tx("vat-pnd2", "แบบยื่น ภ.ง.ด.2", "P.N.D.2 Return", "/report/vatpnd2", "report"),
           tx("vat-pnd3", "แบบยื่น ภ.ง.ด.3", "P.N.D.3 Return", "/report/vatpnd3", "report"),
           tx("vat-pnd53", "แบบยื่น ภ.ง.ด.53", "P.N.D.53 Return", "/report/vatpnd53", "report"),
           tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
@@ -355,6 +358,15 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("automated-report-email", "ส่งรายงานอัตโนมัติ", "Automated Scheduled Reports", "/tools/scheduledreports", "master", "automated_report_email"),
           tx("line-official-account", "เชื่อมต่อ LINE", "LINE Official Account", "/line-oa", "master", "line_official_account"),
           tx("api-dashboard", "ศูนย์การเชื่อมต่อ API", "API Integration Dashboard", "/apidashboard", "master"),
+        ],
+      },
+      {
+        id: "marketplace",
+        title: ml("marketplace_connectors", "เชื่อมข้อมูลตลาดออนไลน์", "Marketplace Connections"),
+        items: [
+          tx("marketplace-shopee", "เชื่อม Shopee", "Shopee Connection", "/marketplace/shopee", "master", "shopee_mappings"),
+          tx("marketplace-lazada", "เชื่อม Lazada", "Lazada Connection", "/marketplace/lazada", "master", "lazada_mappings"),
+          tx("marketplace-tiktok", "เชื่อม TikTok", "TikTok Connection", "/marketplace/tiktok", "master", "tiktok_mappings"),
         ],
       },
       {
