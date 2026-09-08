@@ -218,3 +218,36 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 
 รายละเอียดเชิงลึกและบันทึกประวัติการแก้บักเฉพาะกรณี (เคส 4.1 ถึง 4.39) ดูได้ที่:
 * 👉 [references/case-studies-and-gotchas.md](references/case-studies-and-gotchas.md)
+
+---
+
+## 8. เพิ่มเมนูใหม่ในเมนูหลัก (ต้องแก้ครบ 4 จุด เสมอ)
+
+**แบบแผนใหม่ (New Standard Pattern)** — เพิ่ม 1 เมนู = แก้ 4 ไฟล์ ถ้าขาดข้อใดข้อหนึ่ง unit test จะ fail ทันที:
+
+1. `frontend/src/lib/menu-data.ts` — เพิ่มบรรทัดใน `MENU_SECTIONS` ด้วยเฮลเปอร์ `tx(id, th, en, route, category)` (ค่า default ของ category คือ `"transaction"`); กลุ่มใหม่ใช้ `ml(key, th, en)` เป็น title
+   ```ts
+   tx("sales-by-customer", "ยอดขายตามลูกค้า", "Sales by Customer", "/report/salesbycustomer", "report"),
+   ```
+2. `backend/assets/language/languages.tsv` — เพิ่ม 1 แถวต่อ 1 key **ครบ 13 คอลัมน์** (`key th en cn ja km ko lo my vi ms id fil`) คั่นด้วย TAB; key = id ที่แทน `-` ด้วย `_` (`menuKey()` ใน `menu-data.ts:31`) ไฟล์นี้ EOL ผสม (ท้ายไฟล์เป็น CRLF) → เขียนต่อท้ายด้วยสคริปต์ที่คุม newline เอง อย่าใช้ Edit tool
+3. `frontend/src/lib/menu-icons.ts` — เพิ่ม `"<route>": "<iconKey>",` ใน `ROUTE_ICON_KEYS` โดยเลือกจาก union `MenuIconKey` ที่มีอยู่ ห้ามคิด key ใหม่
+4. `frontend/src/lib/menu-icons.test.ts` — อัปเดตจำนวนใน `expect(items).toHaveLength(N)` ให้เท่าจำนวนเมนูใหม่ทั้งหมด
+
+**กับดัก / สิ่งที่ห้ามทำซ้ำ (Anti-pattern)**
+
+* ห้ามเพิ่มเมนูโดยไม่เพิ่มแถวภาษา — เทสต์ `has backend language keys for every menu item` และ `has all supported language cells...` จะ fail และผู้ใช้ภาษาอื่นจะเห็น slug
+* ห้ามเติมแค่ th/en แล้วปล่อยคอลัมน์อื่นว่าง — เทสต์ตรวจครบทุกภาษา
+* ห้ามตั้ง id ซ้ำ — id ถูกใช้เป็นรหัสสิทธิ์ (`keeps menu item ids unique for permission codes`) และถูกอ่านโดย `role-screen-matrix.tsx` / `permission-editors.tsx`
+* ห้ามใส่หน้าจอตั้งค่าองค์กร (บริษัท/สาขา/ผู้ใช้/สิทธิ์/พนักงาน/ภาษา/สกุลเงิน) ลงเมนูหลัก — อยู่ใน workspace wizard และมีเทสต์ห้ามไว้ (`has no settings section in the main menu`)
+
+**เหตุผลทางเทคนิค (Root Cause & Rationale)**
+
+`menuText()` ดึงป้ายจาก dictionary ของ backend ด้วย key ก่อน แล้วค่อย fallback มาที่ป้ายในโค้ด — เมนูที่ไม่มี key จะโชว์ slug ให้ผู้ใช้เห็นตอน backend ตอบ dictionary มาแล้ว; ส่วนไอคอนใช้ `menuIconKeyForRoute()` ที่ fallback เป็นไอคอนประจำหมวด ทำให้เมนูหลายตัวหน้าตาเหมือนกันจนแยกไม่ออก (ผิดกฎคนไทย 40+ ที่ต้องแยกจุดคลิกได้ด้วยตา) จึงบังคับให้ทุก route มีไอคอนของตัวเองด้วยเทสต์
+
+**ไฟล์อ้างอิงจริง (Reference Implementation)**
+
+* กลุ่มใหม่ + 19 เมนู (parity กับ FlowAccount/PEAK) 2026-09-08: `frontend/src/lib/menu-data.ts` กลุ่ม `payroll` และรายการ `business-dashboard` / `vat-pnd1` / `import-partner`
+* เหตุผลและช่องว่างที่ยังไม่ตัดสิน: `docs/kms/19-menu-coverage-flowaccount-peak.md`, ADR `docs/kms/decisions/2026-09-08-menu-parity-flowaccount-peak.md`
+* วิธีตรวจ: `npx vitest run src/lib/menu-data.test.ts src/lib/menu-icons.test.ts src/lib/menu-usage.test.ts` + `npx tsc --noEmit` + เปิดเมนูจริง ค้นชื่อไทยที่เพิ่ม แล้วดูทั้ง light/dark ด้วยการกดปุ่มสลับธีม
+
+---

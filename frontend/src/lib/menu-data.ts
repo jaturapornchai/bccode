@@ -75,6 +75,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("purchase-credit-note", "ใบเพิ่มหนี้เจ้าหนี้", "Purchase Credit Note", "/transaction/purchasecreditnote"),
           tx("purchase-debit-note", "ใบลดหนี้เจ้าหนี้", "Purchase Debit Note", "/transaction/purchasedebitnote"),
           tx("purchase-return", "คืนซื้อ", "Purchase Return", "/transaction/purchasereturn"),
+          tx("purchase-tax-invoice-register", "ทะเบียนใบกำกับภาษีซื้อ", "Purchase Tax Invoice Register", "/transaction/purchasetaxinvoice"),
         ],
       },
       {
@@ -145,6 +146,9 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("slip-out", "รูปสลิปเงินออก", "Money Out Slip", "/slipmoneyout", "finance"),
           tx("bank-statement", "รายการเดินบัญชีธนาคาร", "Bank Statement", "/banking/statements", "finance"),
           tx("bank-reconcile", "กระทบยอดเงินฝากธนาคาร", "Bank Reconciliation", "/banking/reconciliation", "finance"),
+          tx("other-income-receipt", "ใบเสร็จรับเงินรายได้อื่น", "Other Income Receipt", "/transaction/otherincomereceipt", "finance"),
+          tx("employee-advance", "เงินทดรองจ่ายพนักงาน", "Employee Advance", "/transaction/employeeadvance", "finance"),
+          tx("bank-payment-file", "ไฟล์โอนเงินจ่ายผ่านธนาคาร", "Bank Payment File", "/transaction/bankpaymentfile", "finance"),
         ],
       },
       {
@@ -157,10 +161,19 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("pv-journal", "สมุดรายวันจ่ายเงิน", "Payment Voucher Journal (PV)", "/gl/journal/pv", "finance"),
           tx("jv-journal", "สมุดรายวันทั่วไป", "General Journal (JV)", "/gl/journal/jv", "finance"),
           tx("chart-of-accounts", "ผังบัญชี", "Chart of Accounts", "/gl/chartofaccounts", "finance"),
+          tx("gl-opening-balance", "ยอดยกมาทางบัญชี", "GL Opening Balances", "/gl/openingbalance", "finance"),
           tx("working-paper", "กระดาษทำการ", "Working Paper", "/gl/workingpaper", "finance"),
           tx("period-lock", "ล็อกงวดบัญชี", "Period Lock", "/gl/periodlock", "finance"),
           tx("financial-close", "ปิดงบบัญชีสิ้นงวด", "Financial Period Close", "/gl/financialclose", "finance"),
           tx("daily-info", "ตรวจสอบประจำวัน", "Daily Check", "/checkdaily/dailyinfoscreen", "finance"),
+        ],
+      },
+      {
+        id: "payroll",
+        title: ml("payroll", "เงินเดือนและพนักงาน", "Payroll & HR"),
+        items: [
+          tx("payroll-run", "คำนวณเงินเดือนประจำงวด", "Monthly Payroll Run", "/transaction/payroll", "finance"),
+          tx("payroll-slip", "สลิปเงินเดือนและส่งธนาคาร", "Payslips & Bank Transfer", "/transaction/payslip", "finance"),
         ],
       },
     ],
@@ -182,6 +195,9 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("financial-graphs", "กราฟประกอบงบการเงิน", "Financial Statement Graphs", "/report/financialgraphs", "report"),
           tx("project-pnl", "กำไรขาดทุนตามโครงการ", "Project P&L", "/report/project-pnl", "report"),
           tx("project-summary-report", "สรุปภาพรวมโครงการ", "Project Summary Report", "/report/projectsummary", "report"),
+          tx("business-dashboard", "ภาพรวมธุรกิจ", "Business Dashboard", "/report/dashboard", "report"),
+          tx("executive-summary", "วิเคราะห์ธุรกิจสำหรับผู้บริหาร", "Executive Business Analysis", "/report/executivesummary", "report"),
+          tx("xbrl-export", "ส่งออกงบการเงิน XBRL (ยื่น DBD)", "XBRL Export for DBD", "/report/xbrl", "report"),
         ],
       },
       {
@@ -198,6 +214,8 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
           tx("withholding-tax-received", "ทะเบียนถูกหัก ณ ที่จ่าย", "Withholding Tax Received", "/report/whtreceived", "report"),
           tx("withholding-tax-report", "รายงานภาษีหัก ณ ที่จ่าย", "Withholding Tax Report", "/report/wht-reports", "report"),
+          tx("vat-pnd1", "แบบยื่น ภ.ง.ด.1", "P.N.D.1 Return", "/report/vatpnd1", "report"),
+          tx("sso-contribution-file", "ไฟล์นำส่งเงินสมทบประกันสังคม", "Social Security Contribution File", "/report/ssofile", "report"),
         ],
       },
       {
@@ -213,12 +231,16 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("gross-profit-by-product", "กำไรขั้นต้นตามสินค้า", "Gross Profit by Product", "/report/reportgrossprofitbyproduct", "report"),
           tx("payment-daily", "รายงานรับชำระรายวัน", "Daily Payment", "/report/reportdedebipaymentdaily", "report"),
           tx("sale-return-report", "รายงานคืนขาย", "Sale Return Report", "/report/reportdedebisalereturn", "report"),
+          tx("sales-by-customer", "ยอดขายตามลูกค้า", "Sales by Customer", "/report/salesbycustomer", "report"),
+          tx("sales-by-channel", "ยอดขายตามช่องทางขาย", "Sales by Channel", "/report/salesbychannel", "report"),
         ],
       },
       {
         id: "purchase-reports",
         title: ml("purchase_reports", "รายงานจัดซื้อ", "Purchase Reports"),
         items: [
+          tx("purchase-report", "รายงานซื้อ", "Purchase Report", "/report/reportdedebipurchase", "report"),
+          tx("purchase-by-product", "รายงานซื้อตามสินค้า", "Purchase by Product", "/report/purchasebyproduct", "report"),
           tx("ap-aging", "รายงานอายุเจ้าหนี้", "AP Aging Report", "/report/apaging", "report"),
           tx("expense-summary-report", "รายงานสรุปรายจ่าย", "Expense Summary Report", "/report/expensesummary", "report"),
           tx("gradual-receipt", "รายงานทยอยรับ", "Gradual Receipt Report", "/report/reportdedebipurchasepartial", "report"),
@@ -318,6 +340,8 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("import-product", "นำเข้ารายการสินค้า", "Import Product List", "/importproduct", "master"),
           tx("import-product-file", "นำเข้าสินค้าจากไฟล์", "Import Product File", "/importproductfromfile", "master"),
           tx("import-product-image", "นำเข้ารูปสินค้า", "Import Product Image", "/importproductimage", "master"),
+          tx("import-partner", "นำเข้ารายชื่อคู่ค้า", "Import Trade Partners", "/importpartner", "master"),
+          tx("import-documents", "นำเข้าเอกสารจากไฟล์", "Import Documents from File", "/importdocuments", "master"),
         ],
       },
       {
@@ -425,6 +449,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("qt-approval", "อนุมัติใบเสนอราคา", "Quotation Approval", "/qtapprovalsettingscreen", "approval"),
           tx("sale-order-type", "ประเภทใบสั่งขาย", "Sale Order Type", "/saleordertypescreen", "approval"),
           tx("so-approval", "อนุมัติใบสั่งขาย", "Sale Order Approval", "/soapprovalsettingscreen", "approval"),
+          tx("expense-approval", "อนุมัติรายจ่ายและสมุดรายวัน", "Expense & Journal Approval", "/expenseapprovalsettingscreen", "approval"),
         ],
       },
       {

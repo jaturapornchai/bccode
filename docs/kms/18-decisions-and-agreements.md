@@ -39,6 +39,7 @@
 | 2026-09-07 | **ปรับการอ่าน docs เป็น On-Demand (Lazy Loading) ไม่เปลือง context** | ห้ามโหลดเอกสารทั้งโฟลเดอร์หรือ handoff ล่วงหน้า; เปิดอ่านเฉพาะไฟล์ที่ตรงกับงานจริงเพื่อประหยัด Context Window |
 | 2026-09-07 | **บังคับใช้กฎความเร็วสูงสุดและสุขอนามัย Context (Surgical Read/Patch/Terminal/Subagent)** | อ่านและแก้เฉพาะบรรทัด, ห้ามรัน full test suite โดยไม่จำเป็น, คุม output terminal, ใช้ subagent กัก context บวม, รักษา prompt cache |
 | 2026-09-07 | **สถาปัตยกรรม 2-Tier: MongoDB เก็บย่อ (Storage) + PostgreSQL ประมวลผลเร็วแบบครบจบ (Processing Engine)** | ข้อมูลใน Mongo ต้องโคลนไปสร้างใน PG ทั้งหมด; Mongo เก็บแบบประหยัดขนาด; PG มีรายละเอียดครบถ้วนเพื่อประมวลผลจบในตัว ไม่ต้องต่อกลับมา Mongo อีก; ตอบคำถามข้อ 6 เดิม (ADR `decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md`) |
+| 2026-09-08 | **เพิ่มเมนู 19 รายการ + กลุ่ม "เงินเดือนและพนักงาน" ให้เทียบเท่า FlowAccount + PEAK (185 → 204 เมนู)** | เพิ่มเฉพาะรายการเมนู ยังไม่สร้างจอ/กฎธุรกิจ; รายการที่กฎยังไม่ชัด (เงินเดือน ภ.ง.ด.1 ประกันสังคม XBRL ไฟล์ธนาคาร ระดับอนุมัติ) เปิดเมนูไว้ก่อนและรอลุงจืดกำหนดกฎ (ADR decisions/2026-09-08-menu-parity-flowaccount-peak.md, รายละเอียด 19-menu-coverage-flowaccount-peak.md) |
 
 ## คำถามที่ยังไม่มีคำตอบ (ห้ามเดา — ถามลุงจืด)
 
@@ -47,3 +48,5 @@
 3. backup platform / RPO / RTO ของ prod
 4. Unit contract: `unit_of_measure/code/businesscode` vs `units/unitcode` (MongoModel partial index)
 5. ถอด ClickHouse ถาวรหรือพักต่อ
+6. กฎเงินเดือน/ประกันสังคม/ภ.ง.ด.1, taxonomy XBRL ของ DBD, รูปแบบไฟล์โอนเงินธนาคาร, ระดับการอนุมัติรายจ่าย — เมนูเปิดไว้แล้ว 2026-09-08 แต่ยังไม่มีกฎ
+7. ล็อตสินค้า/วันหมดอายุ, รายงานส่งอีเมลอัตโนมัติ, ส่งออก-สำรองข้อมูลกิจการ — จะทำหรือไม่ (ยังไม่ยืนยันว่าคู่แข่งมีแค่ไหน)
