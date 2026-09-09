@@ -174,6 +174,18 @@ export function DashboardHome({
     }
   };
 
+  // ความเคลื่อนไหว: รวมเอกสารล่าสุดทุกประเภท เรียงวันที่
+  const recent = useMemo(() => {
+    const rows: { widget: (typeof DOC_WIDGETS)[number]; doc: DocRecord; at: number }[] = [];
+    for (const w of widgets) {
+      for (const doc of stats[w.menuId]?.latest ?? []) {
+        const at = typeof doc.docdatetime === "string" ? Date.parse(doc.docdatetime) : 0;
+        rows.push({ widget: w, doc, at: Number.isFinite(at) ? at : 0 });
+      }
+    }
+    return rows.sort((a, b) => b.at - a.at).slice(0, 8);
+  }, [widgets, stats]);
+
   // If in standalone manage mode, render dedicated ManageShortcutsScreen
   if (isManageMode) {
     return (
@@ -189,18 +201,6 @@ export function DashboardHome({
       />
     );
   }
-
-  // ความเคลื่อนไหว: รวมเอกสารล่าสุดทุกประเภท เรียงวันที่
-  const recent = useMemo(() => {
-    const rows: { widget: (typeof DOC_WIDGETS)[number]; doc: DocRecord; at: number }[] = [];
-    for (const w of widgets) {
-      for (const doc of stats[w.menuId]?.latest ?? []) {
-        const at = typeof doc.docdatetime === "string" ? Date.parse(doc.docdatetime) : 0;
-        rows.push({ widget: w, doc, at: Number.isFinite(at) ? at : 0 });
-      }
-    }
-    return rows.sort((a, b) => b.at - a.at).slice(0, 8);
-  }, [widgets, stats]);
 
   const t = (th: string, en: string) => (isThai ? th : en);
 

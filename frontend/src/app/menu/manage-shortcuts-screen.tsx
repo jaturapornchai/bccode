@@ -97,7 +97,6 @@ export function ManageShortcutsScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [onlyUnadded, setOnlyUnadded] = useState(false);
-  const [lastSavedTime, setLastSavedTime] = useState<number | null>(null);
 
   // Read shortcuts from localStorage
   useEffect(() => {
@@ -130,7 +129,6 @@ export function ManageShortcutsScreen({
 
   const saveShortcuts = (nextIds: string[] | null) => {
     setCustomShortcutIds(nextIds);
-    setLastSavedTime(Date.now());
     if (typeof window !== "undefined") {
       if (nextIds === null) {
         clearUserShortcuts(window.localStorage, storageKey);
