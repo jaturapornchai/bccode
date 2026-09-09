@@ -14,6 +14,31 @@
 # Deliberately no `set -e`: `[ test ] && exit 0` interacts badly with it, and a hook that dies
 # halfway through would fail commits for reasons that have nothing to do with the map.
 
+# ---------------------------------------------------------------------------
+# Check 1: README.md Activity Log guard (ตั้งโดยลุงจืด 2026-09-09)
+# If code files in frontend/src or backend are staged, README.md MUST be staged as well.
+# ---------------------------------------------------------------------------
+if [ -z "$SKIP_README_CHECK" ]; then
+  code_staged=$(git -c core.quotePath=false diff --cached --no-renames --name-only --diff-filter=ACMD -- frontend/src backend 2>/dev/null)
+  if [ -n "$code_staged" ]; then
+    readme_staged=$(git -c core.quotePath=false diff --cached --name-only -- README.md 2>/dev/null)
+    if [ -z "$readme_staged" ]; then
+      cat <<'MSG'
+❌ pre-commit: พบการแก้ไขโค้ด (frontend/src หรือ backend) แต่ยังไม่ได้อัปเดต README.md!
+   ตามกฎของระบบ (AGENTS.md): ทุกครั้งที่มีการแก้โค้ด ต้องบันทึกรายการใน "Project Activity Log" ของ README.md เสมอ
+   
+   วิธีแก้:
+     1. เปิดไฟล์ README.md แล้วเพิ่มบันทึกสิ่งที่แก้ไขลงในหัวข้อ "## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ"
+     2. สั่ง: git add README.md
+     3. ทำการ commit ใหม่อีกครั้ง
+   
+   (ข้ามการตรวจสอบรอบนี้กรณีจำเป็นพิเศษ: SKIP_README_CHECK=1 git commit ...)
+MSG
+      exit 1
+    fi
+  fi
+fi
+
 MAP="docs/reference/CODE-MAP.md"
 THRESHOLD=950   # not 1000: a file just under the threshold can cross it with this very commit
 
