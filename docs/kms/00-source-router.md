@@ -13,7 +13,7 @@ Start every task at `AGENTS.md`. Business-rule documentation in `docs/` was remo
 - Inventory costing and stock movement: `backend/internal/goapi/process/process-stock/**`, relevant Kafka handlers, stock-process code, migrations, and focused reconciliation tests.
 - API, outbox, retry, and idempotency: the exact caller, handler, outbox/consumer/config path, and contract tests.
 - Record lifecycle changes: exact source/tests/runtime; schema changes: live MongoModel MCP → exact model, repository, and target runtime.
-- UAT or release verification: `.github/workflows/ci.yml`, `backend/.ci/test-quarantine.txt`, and affected technical workflows from live MongoModel MCP → the narrowest relevant browser, API, database, and event evidence.
+- UAT or release verification: `tools/verify.sh` (the local runner that replaced GitHub CI on 2026-09-09), `backend/.ci/test-quarantine.txt`, and affected technical workflows from live MongoModel MCP → the narrowest relevant browser, API, database, and event evidence.
 - MongoModel MCP maintenance: `D:\mongomodel\AGENTS.md` → exact MongoModel source, tests, build, container, and MCP runtime evidence.
 
 The missing-docs rule in `AGENTS.md` takes precedence over stale docs links in supporting instructions. Compile-only or quarantined tests do not establish business correctness. Inspect runtime configuration without exposing secrets.

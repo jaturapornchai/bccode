@@ -36,7 +36,7 @@
 | 08 | [08-legacy-modules.md](08-legacy-modules.md) | โมดูล legacy/อื่น ๆ ใน backend/internal — inventory, สถานะ และผู้เรียกใช้ | แผนที่โมดูล legacy 40+ ตัวใน backend/internal: ตัวไหน register จริงใน main.go (mode 1/2/3), frontend เรียกอะไรบ้าง, และ 15+ ตัวที่เป็นซากตายพร้อมหลักฐาน path:line + runtime | 221 | 212 claims (10/0) |
 | 09 | [09-frontend.md](09-frontend.md) | 09 — Frontend (Next.js BFF): หน้าจอ, API proxy, session, ธีม และกฎ UX | Next 16 BFF: 12 หน้าจอ + 36 route proxy ไป mainapi/goapi, refresh cookie 12 ชม., 10 พาเลต/8 ฟอนต์/12 ภาษา, จอ /settings ตายเพราะ BFF ตอบ 410 | 118 | 148 claims (19/2) |
 | 10 | [10-infra-deploy.md](10-infra-deploy.md) | โครงสร้างพื้นฐานและการ deploy (Infra & Deploy) | binary เดียวสลับ 4 โหมดด้วย DEV_API_MODE, local/CI/prod compose 3 ชุด, config โหลด 2 loader ที่ normalize key ไม่เหมือนกัน, prod ยังผูก ClickHouse ที่ stub แล้ว | 124 | 142 claims (11/1) |
-| 11 | [11-testing-quality.md](11-testing-quality.md) | การทดสอบและคุณภาพโค้ด (Testing & Quality) | Go test 204 ไฟล์แต่ 15 package ถูก quarantine, CI 4 jobs ตายเพราะ billing lock, Playwright UAT ที่ root เท่านั้นที่ตรวจ Mongo ทีละ step | 71 | 118 claims (11/1) |
+| 11 | [11-testing-quality.md](11-testing-quality.md) | การทดสอบและคุณภาพโค้ด (Testing & Quality) | Go test 204 ไฟล์แต่ 15 package ถูก quarantine, ไม่มี CI แล้ว (ลบ 2026-09-09) ใช้ `tools/verify.sh` แทน, Playwright UAT ที่ root เท่านั้นที่ตรวจ Mongo ทีละ step | 71 | 118 claims (11/1) |
 | 12 | [12-kafka-messaging.md](12-kafka-messaging.md) | Kafka Messaging — แคตตาล็อก topic / producer / consumer / offset semantics | Kafka มี 384 topic `when-*`, consumer 3 ตระกูล (goapi kafka-go `-v1` / legacy librdkafka / barcode `-projection`) — goapi ส่วนใหญ่ commit offset ก่อน handler เสร็จ (at-most-once) มีเพียง 9 topic product/barcode ที่ ack-after-success, DLQ เป็น log-only | 99 | 118 claims (19/2) |
 | 13 | [13-pkg-framework.md](13-pkg-framework.md) | แพ็กเกจ framework กลางของ backend: pkg/microservice, pkg/*, internal/config, utils, models, repositories | แผนที่ framework กลาง (Microservice/persister/cacher/producer/config env/utils/models/repositories) พร้อมสถานะ LIVE/DEAD และกับดักที่ตรวจจากโค้ดจริง | 142 | 190 claims (29/2) |
 | 14 | [14-cmd-tools-scripts.md](14-cmd-tools-scripts.md) | เครื่องมือบรรทัดคำสั่งและสคริปต์ (backend/cmd, scripts, tools, scratch, prompts, cluster) | binary จริงมีตัวเดียวคือ root main.go — backend/cmd 30 dir เป็น legacy/dead/one-off, tools/kung_* กับ prompt chat-agent ชี้ route ที่ไม่มีแล้ว, scratch 18 ไฟล์ติด git ทั้งที่ .gitignore ห้าม | 88 | 118 claims (11/0) |
@@ -76,6 +76,7 @@
 - [decisions/2026-09-07-speed-and-context-hygiene.md](decisions/2026-09-07-speed-and-context-hygiene.md)
 - [decisions/2026-09-08-menu-parity-flowaccount-peak.md](decisions/2026-09-08-menu-parity-flowaccount-peak.md)
 - [decisions/2026-09-08-menu-parity-social-sweep.md](decisions/2026-09-08-menu-parity-social-sweep.md)
+- [decisions/2026-09-09-github-storage-only.md](decisions/2026-09-09-github-storage-only.md)
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 16 ไฟล์ใน `bugs/`
 

@@ -13,7 +13,9 @@
     "dev:frontend": "cd frontend && npm run dev -- -p 3001",
     "hooks:install": "node tools/install-hooks.mjs",
     "codemap": "pwsh -NoProfile -File tools/gen-code-map.ps1",
-    "codemap:check": "pwsh -NoProfile -File tools/gen-code-map.ps1 -Check"
+    "codemap:check": "pwsh -NoProfile -File tools/gen-code-map.ps1 -Check",
+    "verify": "sh tools/verify.sh fast",
+    "verify:all": "sh tools/verify.sh all"
   },
   "repository": {
     "type": "git",

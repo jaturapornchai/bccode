@@ -3,8 +3,8 @@
 #
 # CODE-MAP tells every AI agent which line to jump to in files >= 1000 lines instead of grepping
 # (AGENTS.md "Surgical Read"). It silently drifted to 87% wrong over 71 commits before anyone
-# noticed, so this hook is the guard. CI cannot help: GitHub Actions on this repo has not executed
-# a single job since 2026-09-02 (account locked for billing), so THIS HOOK IS THE ONLY CHECK.
+# noticed, so this hook is the guard. There is no CI to fall back on: the GitHub workflow was
+# deleted on 2026-09-09 (GitHub is code storage only), so THIS HOOK IS THE ONLY AUTOMATIC CHECK.
 #
 # Install (copies into .git/hooks, so a local post-commit hook keeps working):
 #   npm run hooks:install
@@ -137,7 +137,7 @@ elif command -v powershell >/dev/null 2>&1; then
 else
   cat <<'MSG'
 pre-commit: ไม่พบ PowerShell — ตรวจ CODE-MAP ไม่ได้ และ **ไม่มีตัวตรวจสำรอง**
-            (CI job code-map-check เขียนไว้แล้วแต่ยังรันไม่ได้ — GitHub Actions ล็อกเรื่อง billing ตั้งแต่ 2026-09-02)
+            (GitHub ไม่มี CI แล้วตั้งแต่ 2026-09-09 — เก็บโค้ดอย่างเดียว)
             ติดตั้ง PowerShell 7 หรือรัน `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` บนเครื่องอื่นก่อน push
             ยืนยันว่าจะ commit ทั้งที่ยังไม่ได้ตรวจ: SKIP_CODE_MAP_CHECK=1 git commit ...
 MSG

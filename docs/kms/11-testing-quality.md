@@ -3,7 +3,7 @@
 
 ## 1. ภาพรวม 30 วินาที
 - Backend Go มี test file 204 ไฟล์ (นับจาก `git ls-files 'backend/**/*_test.go'`) — กระจุกอยู่ที่ `internal/transaction/transactionconsumer` (37) และ `internal/goapi/handlers` (22); ส่วนใหญ่เป็น unit test ที่ mock DB, มี integration test ที่ต้องมี DB/Kafka จริง 8 ตัวซึ่งถูก gate ด้วย build tag `integration` + env var
-- CI ที่ออกแบบไว้คือ GitHub Actions 4 jobs (`.github/workflows/ci.yml:10,42,82,138`) แต่ **ทุก run ล้มเหลวเพราะบัญชีถูกล็อกจาก billing** (annotation ใน `gh run view 33955186992`: "The job was not started because your account is locked due to a billing issue" — ตรงกับ `docs/handoff/HANDOFF-2026-09-06.md:13`) → หลักฐาน build/test ปัจจุบันมาจาก local Docker เท่านั้น
+- **ไม่มี CI อัตโนมัติแล้ว**: `.github/workflows/ci.yml` (4 jobs) ถูกลบ 2026-09-09 ตามมติลุงจืด "GitHub เก็บ code อย่างเดียว" (ก่อนหน้านั้นทุก run ล้มเหลวเพราะบัญชีถูกล็อกจาก billing — annotation ใน `gh run view 34182717816`: "The job was not started because your account is locked due to a billing issue") → ตัวตรวจเดียวที่เหลือคือ `sh tools/verify.sh` ที่ **คนต้องสั่งเอง** ทุกครั้ง
 - Frontend มี 3 ชั้น: vitest unit 44 ไฟล์ (`frontend/vitest.config.ts:6` include `src/**/*.test.ts`), Playwright e2e ใน `frontend/e2e/*.spec.ts` 14 ไฟล์ (`frontend/playwright.config.ts:7`), และ Playwright UAT ที่ root `tests/*.spec.ts` 13 ไฟล์ (`playwright.config.ts:17`) ซึ่งเป็นชุดที่ยิง mongosh ตรวจ MongoDB ทีละ step
 - กฎ UAT ของลุงจืด (`AGENTS.md:78-87`) = CRUD ครบ + ตรวจ `appdb` ทีละ step + ลบด้วย id เท่านั้น + seeded random ตาม `tests/uat-crud.spec.ts`
 
@@ -23,7 +23,7 @@
 
 หลักการ gate ที่ใช้จริงในโค้ด:
 - env `SERVERLESS=serverless` ทำให้ test ที่ต้องต่อ DB จริง `t.Skip()` เช่น `backend/internal/authentication/repositories/authentication_repository_test.go:31-33`, `backend/internal/member/member_pg_repository_test.go:20,38`, `backend/pkg/microservice/persister_mongo_test.go:211` — CI ตั้ง env นี้ทุก job (`.github/workflows/ci.yml:30,103,119`, `backend/.ci/projection.compose.yml:59`)
-- build tag `//go:build integration` มี 25 ไฟล์ (รายชื่อจาก `git ls-files | xargs grep -l "^//go:build integration"`) — CI คอมไพล์ทั้งหมดด้วย `-run "^$"` (`.github/workflows/ci.yml:39`) แต่รันจริงเฉพาะ 8 test ที่ระบุใน regex (§4)
+- build tag `//go:build integration` มี 25 ไฟล์ (รายชื่อจาก `git ls-files | xargs grep -l "^//go:build integration"`) — ชุดตรวจคอมไพล์ทั้งหมดด้วย `-run "^$"` (`tools/verify.sh:102`) แต่ไม่รันจริง เพราะต้องมี Kafka/Mongo/PG ครบ
 - integration test ตัวใหม่ skip ตัวเองเมื่อไม่มี env: `BC_OUTBOX_TEST_MONGODB_URI` (`backend/internal/product/product/outbox/outbox_integration_test.go:22-24`), `BC_BARCODE_TEST_POSTGRES_DSN` (`backend/internal/goapi/handlers/kafka/inventory_batch_integration_test.go:18-20`), `BC_PROJECTION_TEST_KAFKA` (`backend/internal/product/projection/consumer_kafka_integration_test.go:39`)
 
 ### 2.2 วิธีรันบนเครื่อง dev (Windows) — ต้องผ่าน Docker เท่านั้น
@@ -34,16 +34,16 @@ MSYS_NO_PATHCONV=1 docker run --rm -v D:/bccode/backend:/src -w /src -e GOFLAGS=
          gofmt -l . ; go build ./... && go vet ./internal/goapi/... ./internal/product/... && go test ./internal/goapi/... ./internal/product/..."
 ```
 - image `golang:1.26` ตรงกับ `go 1.26` ใน `backend/go.mod:3`; ต้องติดตั้ง `librdkafka-dev` ก่อนเพราะ CGO ของ confluent-kafka
-- ถ้าจะรัน full suite แบบเดียวกับ CI ให้ตั้ง `-e SERVERLESS=serverless` และตัด quarantine ด้วยคำสั่งใน `.github/workflows/ci.yml:37-38` (ใช้ `tr -d "\r"` เพราะไฟล์ quarantine อาจเป็น CRLF เมื่อ mount จาก Windows — `docs/handoff/HANDOFF-RISKS-2026-09-05.md:101`)
+- ถ้าจะรัน full suite ให้ใช้ `sh tools/verify.sh backend` (ตั้ง `-e SERVERLESS=serverless` และตัด quarantine ให้แล้วที่ `tools/verify.sh:99-101`; ใช้ `tr -d "\r"` เพราะไฟล์ quarantine อาจเป็น CRLF เมื่อ mount จาก Windows — `docs/handoff/HANDOFF-RISKS-2026-09-05.md:101`)
 - `backend/Makefile` (125 บรรทัด) มี target test อยู่ 2 ตัวแต่ผูกกับเครื่อง macOS M1 ของทีมเดิม: `run_test_m1` (`backend/Makefile:103-104` — `PKG_CONFIG_PATH=/opt/homebrew/...` + `POSTGRES_HOST=192.168.2.209` รัน `go test --tags dynamic` ไฟล์ journalreport ไฟล์เดียว) และ `run_m1_test_all` (`backend/Makefile:109-110` — `go test --tags dynamic ./...`) — ใช้บน Windows/Docker ไม่ได้ตรงๆ; ที่เหลือเป็น swagger + docker build/push; **ไม่มี target lint/vet/gofmt** และไม่มี `.golangci.yml` ทั้งใน `backend/` และ root (ตรวจด้วย `ls backend/.golangci* .golangci*` → ไม่พบ)
 
 ### 2.3 gofmt / vet — ความคาดหวังที่บังคับใช้จริง
 | เครื่องมือ | บังคับที่ไหน | สถานะ | อ้างอิง |
 |---|---|---|---|
-| `gofmt -l .` | เฉพาะคำสั่ง local ใน handoff; CI ไม่เช็ค | ทำด้วยมือ | `docs/handoff/HANDOFF-2026-09-06.md:34`; ci.yml ไม่มีคำว่า gofmt (ตรวจ `rg gofmt .github` → ว่าง) |
+| `gofmt -l .` | เฉพาะคำสั่ง local ใน handoff; `tools/verify.sh` ไม่เช็ค | ทำด้วยมือ | `docs/handoff/HANDOFF-2026-09-06.md:34`; `tools/verify.sh` ไม่มีคำว่า gofmt (ตรวจ `grep -n gofmt tools/verify.sh` → ว่าง) |
 | `go vet` | เฉพาะคำสั่ง local, scope `./internal/goapi/... ./internal/product/...` | ทำด้วยมือ | `docs/handoff/HANDOFF-2026-09-06.md:34`, `docs/kms/architecture/product-listing-api-v2-handoff.md:54` |
 | กับดัก EOL | ไฟล์เก่าบางไฟล์เป็น CRLF (`product.go`, `bootstrap.go`) ห้าม `gofmt -w` ทั้งไฟล์ | — | `docs/kms/architecture/product-listing-api-v2-handoff.md:62` |
-| compile-all | `go test -run "^$" ./cmd/... ./pkg/... ./internal/...` ทั้ง tag ปกติและ `integration` | อยู่ใน CI (แต่ CI ล็อก) | `.github/workflows/ci.yml:36,39` |
+| compile-all | `go test -run "^$" ./cmd/... ./pkg/... ./internal/...` ทั้ง tag ปกติและ `integration` | อยู่ใน `tools/verify.sh backend` (ต้องสั่งเอง ไม่มีอะไรรันให้) | `tools/verify.sh:99,102` |
 
 ## 3. Quarantine — 15 package ที่คอมไพล์แต่ไม่รัน
 ไฟล์ `backend/.ci/test-quarantine.txt:1-2` ระบุเหตุผล: "legacy business-contract assertions that conflict with current code… Remove a package only after its contract is confirmed and tests pass" CI อ่านไฟล์นี้ไปกรอง `go list` ออก (`.github/workflows/ci.yml:37`) และพิมพ์รายชื่อลง step summary พร้อมข้อความ "A green build does not certify these business contracts" (`.github/workflows/ci.yml:16-25`)
@@ -80,7 +80,7 @@ MSYS_NO_PATHCONV=1 docker run --rm -v D:/bccode/backend:/src -w /src -e GOFLAGS=
 8 test ที่ regex ครอบคลุม (ทั้งหมดมี `//go:build integration`):
 `TestProductOutboxIntegration` (`backend/internal/product/product/outbox/outbox_integration_test.go:21`), `TestProductServiceOutboxIntegration` (`backend/internal/product/product/services/product_outbox_integration_test.go:24`), `TestProjectionKafkaIntegration` (`backend/internal/goapi/handlers/kafka/projection_kafka_integration_test.go:50`), `TestProjectionRebalanceIntegration` (`backend/internal/product/projection/consumer_kafka_integration_test.go:38`), `TestBarcodeBatchIntegration` (`backend/internal/goapi/handlers/kafka/inventory_batch_integration_test.go:17`), `TestBarcodeServiceOutboxIntegration` (`backend/internal/product/productbarcode/services/productbarcode_outbox_integration_test.go:25`), `TestLegacyBarcodeReconcileIntegration` (`backend/internal/product/productbarcode/repositories/productbarcode_reconcile_integration_test.go:24`), `TestLegacyBarcodePrimarySourceIntegration` (`backend/internal/product/productbarcode/services/productbarcode_projection_source_integration_test.go:21`)
 
-วิธีรัน local (จาก `backend/internal/product/product/outbox/README.md:78-82`, ตรงกับ CI `.github/workflows/ci.yml:147-153,165`):
+วิธีรัน local (จาก `backend/internal/product/product/outbox/README.md:78-82`, ตรงกับที่ `tools/verify.sh:169` รันให้แล้ว):
 ```bash
 docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml up -d mongo mongo-init postgres kafka
 docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml up -d --wait mongo postgres kafka
@@ -89,15 +89,15 @@ docker compose -p bc-projection-check -f backend/.ci/projection.compose.yml down
 ```
 ทำไมต้อง `--no-deps`: `docker compose run` (v5.3) จะ restart one-shot dependency (`mongo-init`) ที่ exit ไปแล้ว ทำให้ gate `service_completed_successfully` ล้ม (`docs/handoff/HANDOFF-2026-09-06.md:66`, comment ใน `backend/.ci/projection.compose.yml:17-18`) — จึงต้อง `up -d` ก่อนแล้วค่อย `run --no-deps`; stack นี้ไม่เปิด host port และไม่แตะ volume ของ stack local (`backend/.ci/projection.compose.yml:1`) ผลรอบล่าสุดที่บันทึกไว้: ผ่านทั้ง 8 บน Kafka 4.3.1 + Mongo 7 + PG 18 (`docs/handoff/HANDOFF-RISKS-2026-09-05.md:47`)
 
-## 5. GitHub Actions — `.github/workflows/ci.yml`
-| job | ทำอะไร | สถานะจริง | อ้างอิง |
+## 5. การตรวจอัตโนมัติ — `tools/verify.sh` (แทน GitHub Actions ที่ถูกลบ 2026-09-09)
+| target | ทำอะไร | สถานะจริง | อ้างอิง |
 |---|---|---|---|
-| `backend-test` | พิมพ์ quarantine ลง summary → `docker run golang:1.26`: compile-all, `go test -short` เฉพาะ package นอก quarantine, compile tag integration | DEAD (billing lock) | `.github/workflows/ci.yml:10-40` |
-| `frontend-test` | Node `24.18.0`, `npm ci` → `npm run lint` → `npm run typecheck` → `npm test -- --run` (vitest) → `npm run build`; env `BCAI_LOCAL_BACKEND_URL` | DEAD (billing lock) | `:42-80`; scripts ใน `frontend/package.json:12-15` (`lint`=`eslint .`, `typecheck`=`tsc --noEmit`, `test`=`vitest run`) |
-| `backend-outbox-integration` | mongo:7 replica set แบบ `docker run` + postgres:17-alpine → รัน `TestProduct(Outbox\|ServiceOutbox)Integration` (`:106`) และ `TestBarcodeBatchIntegration` (`:122`) เก็บ JSON artifact | DEAD (billing lock) | `:82-136` |
-| `backend-projection-kafka-integration` | ใช้ `projection.compose.yml` รัน 5 test ที่เหลือ (`TestProjection(Kafka\|Rebalance)`, `TestBarcodeServiceOutbox`, `TestLegacyBarcode(Reconcile\|PrimarySource)` — regex ที่ `:153`) เก็บ artifact `projection-test-results.json` | DEAD (billing lock) | `:138-165` |
+| `backend` | พิมพ์ quarantine → `docker run golang:1.26`: compile-all, `go test -short` เฉพาะ package นอก quarantine, compile tag integration | ใช้ได้ แต่รันเมื่อสั่งเท่านั้น | `tools/verify.sh:87-106` |
+| `frontend` / `frontend-build` | `npm run lint` → `npm run typecheck` → `npm test -- --run` (vitest) แล้ว `npm run build` แยก target; env `BCAI_LOCAL_BACKEND_URL` | ใช้ได้ — **ตรวจ 2026-09-09 แล้ว lint ไม่ผ่าน 2 error** (`dashboard-home.tsx:194` hooks ถูกเรียกแบบมีเงื่อนไข, `manage-shortcuts-screen.tsx:133` `Date.now()` ระหว่าง render) | `tools/verify.sh:64-84`; scripts ใน `frontend/package.json:12-15` |
+| `outbox` | mongo:7 replica set แบบ `docker run` + postgres:17-alpine → รัน `TestProduct(Outbox\|ServiceOutbox)Integration` และ `TestBarcodeBatchIntegration` เก็บ JSON ผลลัพธ์ | ใช้ได้ แต่ยังไม่ได้รันหลังย้าย | `tools/verify.sh:108-153` |
+| `projection` | ใช้ `projection.compose.yml` รัน 5 test ที่เหลือ (`TestProjection(Kafka\|Rebalance)`, `TestBarcodeServiceOutbox`, `TestLegacyBarcode(Reconcile\|PrimarySource)`) เก็บ `backend/projection-test-results.json` | ใช้ได้ แต่ยังไม่ได้รันหลังย้าย | `tools/verify.sh:155-180` |
 
-trigger: push/PR ไปที่ `main`, `master`, `dev` (`.github/workflows/ci.yml:3-7`) แก้ล่าสุด `20e7666e` 2026-09-05 (`git log -- .github/workflows/ci.yml`) หลักฐาน lock: `gh run list --limit 3` → conclusion `failure` ทั้ง 3 (2026-09-03, 09-05 ×2) และ `gh run view 33955186992` ทุก job จบใน 3 วิ พร้อม annotation billing ข้างต้น **ข้อสังเกต:** CI ไม่รัน `gofmt`/`go vet`/`golangci-lint` เลย และ `frontend/e2e` + `tests/` (Playwright) ไม่อยู่ใน workflow ใด — เป็นชุดที่รันมือเท่านั้น
+trigger: **ไม่มี** — ไม่มีอะไรรันให้อัตโนมัติอีกแล้ว ต้องสั่ง `npm run verify` (เร็ว: codemap + frontend) หรือ `npm run verify:all` เอง ก่อน push/deploy; hook เดียวที่ยังทำงานอัตโนมัติคือ `.githooks/pre-commit` ซึ่งตรวจแค่ `docs/reference/CODE-MAP.md` **ข้อสังเกต:** ชุดตรวจนี้ไม่รัน `gofmt`/`go vet`/`golangci-lint` เลย และ `frontend/e2e` + `tests/` (Playwright) ไม่อยู่ใน target ใด — เป็นชุดที่รันมือเท่านั้น (เหมือนตอนเป็น CI) กู้ workflow เดิม: `git show 1799b069:.github/workflows/ci.yml`
 
 ## 6. Frontend tests
 ### 6.1 vitest (unit, 44 ไฟล์)
@@ -156,4 +156,4 @@ trigger: push/PR ไปที่ `main`, `master`, `dev` (`.github/workflows/ci.
 - ยังไม่ตรวจ: เนื้อหา spec ราย ไฟล์ของ `tests/uat.spec.ts`, `tests/employee-*.spec.ts`, `tests/currency-uat.spec.ts` ว่ายังผ่านกับ UI ปัจจุบันหรือไม่ (auth.setup ผูกกับ holding `bc001`/สาขา `TST03` ที่อาจไม่มีใน DB disposable)
 - ยังไม่ตรวจ: `backend/http_test/*.http` (REST client แบบ manual, coupon/debtor) และ `backend/loadtest/runtest.go` ยังใช้ได้กับ endpoint ปัจจุบันหรือไม่
 - ยังไม่ตรวจ: อีก 17 ไฟล์ที่ติด tag `integration` (25 ไฟล์ทั้งหมด − 8 ที่ CI รัน) แต่ไม่อยู่ใน regex ของ CI — ส่วนใหญ่เป็น `*_realdb_test.go` (เช่น `backend/internal/stockprocess/stockcalculator_realdb_test.go`, `backend/internal/vfgl/journal/repositories/journal_pg_repository_realdb_test.go`) รวมถึง `backend/internal/firebase/firebase_test.go`, `backend/internal/line/line_test.go`, `backend/pkg/microservice/persister_clickhouse_test.go` — ไม่รู้ว่ายังต่อ DB/บริการจริงได้หรือเป็นซากที่คอมไพล์ผ่านอย่างเดียว
-- คำถามถึงลุงจืด: (1) จะปลด quarantine ทีละ package หรือทิ้ง legacy consumer ทั้งชุดเมื่อ DEV_API_MODE=1 เลิกใช้? (2) ต้องการให้ `frontend/e2e` เพิ่มขั้นตรวจ `mongosh` ทีละ step ตามกฎ `AGENTS.md:83` หรือยอมรับการตรวจผ่าน API? (3) จะปลดล็อก billing GitHub Actions หรือย้าย CI ไปรันบน `.202`/DO server แทน? (4) ให้เพิ่ม `gofmt -l` + `go vet` เข้า `backend-test` job ไหม (ตอนนี้ไม่มี)
+- คำถามถึงลุงจืด: (1) จะปลด quarantine ทีละ package หรือทิ้ง legacy consumer ทั้งชุดเมื่อ DEV_API_MODE=1 เลิกใช้? (2) ต้องการให้ `frontend/e2e` เพิ่มขั้นตรวจ `mongosh` ทีละ step ตามกฎ `AGENTS.md:83` หรือยอมรับการตรวจผ่าน API? (3) ~~จะปลดล็อก billing GitHub Actions หรือไม่~~ **ตอบแล้ว 2026-09-09: ไม่จ่าย ไม่ใช้ CI — GitHub เก็บโค้ดอย่างเดียว ตัวตรวจคือ `tools/verify.sh`** (4) ให้เพิ่ม `gofmt -l` + `go vet` เข้า target `backend` ของ `tools/verify.sh` ไหม (ตอนนี้ไม่มี)

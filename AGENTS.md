@@ -115,7 +115,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
    - **มีตัวกันแล้ว แต่ต้องติดตั้งเอง (2026-09-09)**: git hook `.githooks/pre-commit` รัน `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` ทุกครั้งที่ commit แตะไฟล์ ≥ 950 บรรทัด หรือไฟล์ที่อยู่ในแผนที่อยู่แล้ว (ครอบคลุมการลบ/ย้าย/ทำให้เล็กลงด้วย) — **ทุก clone ต้องสั่ง `npm run hooks:install` ครั้งหนึ่ง ไม่งั้น hook ไม่ทำงาน**
      (ติดตั้งแบบ copy เข้า `.git/hooks/` โดยตั้งใจ — **ห้ามใช้ `git config core.hooksPath`** เพราะมันปิด hook เดิมใน `.git/hooks/` ทิ้งทั้งหมด รวมถึง `post-commit` ที่ refresh Obsidian vault ของลุงจืด; แก้ `.githooks/` แล้วต้องรัน `npm run hooks:install` ซ้ำ)
      ข้ามรอบเดียวใช้ `SKIP_CODE_MAP_CHECK=1 git commit ...`
-   - **CI ช่วยไม่ได้**: job `code-map-check` ใน `.github/workflows/ci.yml` เขียนไว้พร้อมแล้ว แต่ **GitHub Actions ของ repo นี้ไม่ได้รันเลยตั้งแต่ 2026-09-02** (ทุก run ตายใน 3-5 วินาที job ไม่ถูก start — บัญชีถูกล็อกเรื่อง billing) อย่านับเป็นตัวกันจนกว่าจะแก้ billing เสร็จ
+   - **ไม่มี CI แล้ว**: `.github/workflows/ci.yml` ถูกลบ 2026-09-09 ตามมติลุงจืด "GitHub เก็บ code อย่างเดียว" — ทุกอย่างที่ CI เคยตรวจย้ายมาที่ `tools/verify.sh` ซึ่ง**รันเมื่อคนสั่งเท่านั้น** (`npm run verify` ก่อน push ทุกครั้ง, `npm run verify:all` ก่อน deploy); กู้ workflow เดิมได้ด้วย `git show 1799b069:.github/workflows/ci.yml`
 2. **Surgical Patch (แก้เฉพาะจุด)**:
    - ใช้ targeted replace/patch แก้เฉพาะ block ที่จำเป็น ห้าม rewrite หรือ print ทั้งไฟล์ซ้ำ
    - Token ขาออก (Output Token) แพงและช้ากว่าขาเข้า 3–5 เท่า — ยิ่งแก้ตรงจุด AI ยิ่งทำงานเร็ว
@@ -146,3 +146,16 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
    - โครงสร้างตาราง / แถวข้อมูลใน PostgreSQL ต้อง Denormalize และ Enrich ข้อมูลที่จำเป็นในการคำนวณและออกรายงานให้ครบถ้วนในตัว (เช่น ชื่อภาษาต่างๆ, รหัสบาร์โค้ด, ข้อมูลอ้างอิง, สถานะ, หน่วยนับ)
    - **ตอนดึงข้อมูลจาก PostgreSQL ไปประมวลผล จะต้องจบในตัว 100% ห้ามมีการ query ข้ามกลับมาต่อหรือ join กับ MongoDB อีกเด็ดขาด** (Zero Cross-DB Runtime Dependency) เพื่อรักษาความเร็วสูงสุดและความเป็นอิสระของ Processing Engine
 
+
+## กฎ: GitHub เก็บโค้ดอย่างเดียว — ไม่มี CI ต้องตรวจเองก่อน push (ตั้งโดยลุงจืด 2026-09-09)
+
+ลุงจืดตัดสินใจว่า **จะไม่จ่ายเงินให้ GitHub อีก** และให้ GitHub ทำหน้าที่เดียวคือเก็บ/แชร์โค้ด (`origin`) — `.github/workflows/ci.yml` ถูกลบทิ้งถาวรแล้ว (บัญชีถูกล็อกเรื่อง billing ตั้งแต่ 2026-09-02 ทำให้ทุก run ตายก่อนเริ่ม job อยู่แล้ว)
+
+1. **ห้าม AI ตัวใดสร้าง workflow ใหม่ใน `.github/`** หรือเสนอให้ "เปิด CI กลับมา" โดยไม่ได้ถามลุงจืดก่อน — รวมถึงห้ามย้าย `backend/.github/workflows/*.yaml` (ของค้างยุค repo เก่า ที่มี `git push origin main` และ push image ไป `ghcr.io/smlsoft/*`) ขึ้นมาที่ root เด็ดขาด
+2. **ตัวตรวจจริงมีสองอย่างเท่านั้น**:
+   - `.githooks/pre-commit` (อัตโนมัติ แต่ตรวจแค่ `docs/reference/CODE-MAP.md`) — ทุก clone ต้อง `npm run hooks:install` ครั้งหนึ่ง
+   - `tools/verify.sh` (คนสั่งเอง) — `npm run verify` = codemap + frontend lint/typecheck/test ก่อน push ทุกครั้ง, `npm run verify:all` = รวม backend/outbox/projection ก่อน deploy
+3. **ห้ามเขียนในเอกสารหรือรายงานว่า "CI จะจับให้"** — ไม่มีอะไรตรวจให้อัตโนมัติหลัง push แล้ว ถ้าไม่ได้รัน `verify` เอง ให้บอกตรง ๆ ว่ายังไม่ได้ตรวจ (กฎ VERIFY BEFORE DONE)
+4. คำสั่งใน `tools/verify.sh` คัดลอกจาก workflow เดิมแบบคำต่อคำ — ถ้าแก้คำสั่งทดสอบ ต้องแก้ที่นี่ที่เดียว และอัปเดต `docs/kms/11-testing-quality.md` §5 ในคอมมิตเดียวกัน
+
+เหตุผลเต็ม + ทางเลือกที่พิจารณาแล้ว: `docs/kms/decisions/2026-09-09-github-storage-only.md`
