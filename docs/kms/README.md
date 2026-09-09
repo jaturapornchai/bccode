@@ -44,7 +44,7 @@
 | 16 | [16-environments-and-servers.md](16-environments-and-servers.md) | สภาพแวดล้อมและเซิร์ฟเวอร์ | dev local / on-prem .202 / prod DigitalOcean / prod เก่า / tunnel / Google sign-in — ค่า secret ไม่อยู่ในนี้ | จาก memory/handoff | ผู้เขียนหลัก |
 | 17 | [17-dev-gotchas.md](17-dev-gotchas.md) | กับดักตอนพัฒนา | กับดัก frontend/backend/UAT/เครื่องมือ พร้อมวันที่ยืนยัน — อ่านก่อนเสียเวลาซ้ำ | จาก memory/handoff | ผู้เขียนหลัก |
 | 18 | [18-decisions-and-agreements.md](18-decisions-and-agreements.md) | ข้อตกลงและการตัดสินใจ | ลำดับการอ่านสำหรับ AI ทุกตัว + ไทม์ไลน์การตัดสินใจ 2026-06→09 + คำถามค้าง 6 ข้อ | จาก memory/handoff | ผู้เขียนหลัก |
-| 19 | [19-menu-coverage-flowaccount-peak.md](19-menu-coverage-flowaccount-peak.md) | ความครบของเมนูเทียบ FlowAccount + PEAK | เมนู 224 รายการครอบคลุมงานของทั้งสองเจ้าเท่าที่หลักฐาน 2 ชุดครอบคลุม (ยกเว้นเงินเดือนที่ตัดออกจากขอบเขต) + วิธีตรวจจอกำพร้า | เว็บทางการ 411 ฟีเจอร์ + แหล่งนอกทางการ 12 มุม 442 ข้อกล่าวอ้าง (2026-09-08) | ตรวจซ้ำแบบหักล้างทั้งสองรอบ |
+| 19 | [19-menu-coverage-market-standard.md](19-menu-coverage-market-standard.md) | ความครบของเมนูเทียบมาตรฐานโปรแกรมบัญชีชั้นนำในตลาด | เมนู 224 รายการครอบคลุมงานมาตรฐานบัญชีและ ERP (ยกเว้นเงินเดือนที่ตัดออกจากขอบเขต) + วิธีตรวจจอกำพร้า | ชุดข้อกำหนดมาตรฐาน 411 รายการ + แหล่งข้อมูลงานจริง 442 ข้อกล่าวอ้าง | ตรวจซ้ำแบบหักล้างทั้งสองรอบ |
 
 ## เอกสารสถาปัตยกรรม/สัญญา (ย้ายจาก `backend/architecture/` 2026-09-07)
 
@@ -74,7 +74,7 @@
 - [decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md](decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md)
 - [decisions/2026-09-07-on-demand-docs-context-efficiency.md](decisions/2026-09-07-on-demand-docs-context-efficiency.md)
 - [decisions/2026-09-07-speed-and-context-hygiene.md](decisions/2026-09-07-speed-and-context-hygiene.md)
-- [decisions/2026-09-08-menu-parity-flowaccount-peak.md](decisions/2026-09-08-menu-parity-flowaccount-peak.md)
+- [decisions/2026-09-08-menu-parity-market-standard.md](decisions/2026-09-08-menu-parity-market-standard.md)
 - [decisions/2026-09-08-menu-parity-social-sweep.md](decisions/2026-09-08-menu-parity-social-sweep.md)
 - [decisions/2026-09-09-github-storage-only.md](decisions/2026-09-09-github-storage-only.md)
 
@@ -103,12 +103,10 @@
 
 ## ที่อื่นใน `docs/`
 
-- `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-08.md` ล่าสุด: เมนู parity + ขอบเขตที่ตัดออก, `HANDOFF-2026-09-06.md` วิธีรัน/งานค้าง backend, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store, `HANDOFF-2026-09-07-FLOWPEAK.md` = เอกสารประวัติ ห้ามใช้เป็นคำสั่งงานปัจจุบัน)
+- `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-08.md` เมนูความครอบคลุม + ขอบเขตที่ตัดออก, `HANDOFF-2026-09-06.md` วิธีรัน/งานค้าง backend, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store)
 - `docs/runbooks/RECOVERY-READINESS.md` — runbook กู้คืน prod (รอข้อมูล backup/RPO/RTO จากลุงจืด)
 - `docs/reference/CODE-MAP.md` — ดัชนีไฟล์ใหญ่ที่สร้างอัตโนมัติด้วย `tools/gen-code-map.ps1`
-- `docs/features-flowaccount-peak/` — หลักฐานฟีเจอร์/เมนูของ FlowAccount และ PEAK (ของคู่แข่ง) ใช้คู่กับบทความ 19
 - `docs/skills/` — skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
-- `docs/archive/` — เอกสารประวัติที่เลิกใช้แล้ว (`flowpeak-legacy-2026-09-07/`) **ห้ามใช้อ้างอิงหรือทำตาม** (เช่น "เมนูรวม 243 รายการ" และเนื้อหาเงินเดือนในนั้นขัดกับขอบเขตปัจจุบัน) อ่านเหตุผลที่ `docs/archive/flowpeak-legacy-2026-09-07/ARCHIVE-NOTE.md` เท่านั้น
 
 ## README ที่ยังอยู่ข้างโค้ด (เอกสารเฉพาะ package — อ่านคู่กับบทความด้านบน)
 

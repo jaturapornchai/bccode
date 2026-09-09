@@ -39,6 +39,30 @@ MSG
   fi
 fi
 
+# ---------------------------------------------------------------------------
+# Check 2: Zero Competitor Reference Guard (ตั้งโดยลุงจืด 2026-09-09)
+# Scan staged additions in any file for prohibited competitor brand names:
+# FlowAccount, PEAK Account
+# ---------------------------------------------------------------------------
+if [ -z "$SKIP_BRAND_CHECK" ]; then
+  banned_hits=$(git -c core.quotePath=false diff --cached -U0 -- . ':(exclude)AGENTS.md' ':(exclude).githooks/pre-commit' 2>/dev/null | grep -E '^\+[^+]' | grep -iE 'flowaccount|peak\s*account' | head -n 5)
+  if [ -n "$banned_hits" ]; then
+    printf '%s\n' "❌ pre-commit: พบข้อความต้องห้ามที่อ้างอิงถึงบุคคลภายนอก (FlowAccount / PEAK Account) ในไฟล์ที่ stage:"
+    printf '%s\n' "$banned_hits"
+    cat <<'MSG'
+
+   ตามกฎของระบบ (AGENTS.md): ห้ามมีชื่อ ยี่ห้อ หรือการอ้างอิงถึงบุคคลที่สามในโค้ดหรือเอกสารเด็ดขาด
+   
+   วิธีแก้:
+     - ให้เปลี่ยนเป็นคำกลาง เช่น "มาตรฐานโปรแกรมบัญชีในตลาด" หรือ "มาตรฐานระบบบัญชีและ ERP"
+     - แก้ไขไฟล์แล้ว git add อีกครั้ง
+   
+   (ข้ามการตรวจสอบรอบนี้กรณีจำเป็นพิเศษ: SKIP_BRAND_CHECK=1 git commit ...)
+MSG
+    exit 1
+  fi
+fi
+
 MAP="docs/reference/CODE-MAP.md"
 THRESHOLD=950   # not 1000: a file just under the threshold can cross it with this very commit
 

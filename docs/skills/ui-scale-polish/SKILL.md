@@ -247,9 +247,9 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
 
 **ไฟล์อ้างอิงจริง (Reference Implementation)**
 
-* parity กับ FlowAccount/PEAK 2026-09-08 (รวม 224 รายการ): `frontend/src/lib/menu-data.ts` รายการ `business-dashboard` / `purchase-tax-invoice-register` / `import-partner` / `vat-pnd2` / `dimension-pnl` และกลุ่ม `marketplace`
+* ผังเมนูครอบคลุมมาตรฐานระบบบัญชี 2026-09-08 (รวม 224 รายการ): `frontend/src/lib/menu-data.ts` รายการ `business-dashboard` / `purchase-tax-invoice-register` / `import-partner` / `vat-pnd2` / `dimension-pnl` และกลุ่ม `marketplace`
 * **ระบบเงินเดือนอยู่นอกขอบเขต** — ห้ามเพิ่มเมนู payroll / ภ.ง.ด.1 / ประกันสังคมกลับเอง (กฎใน `AGENTS.md`); แต่ **ภ.ง.ด.2 อยู่ในขอบเขต** เพราะเป็นภาษีหัก ณ ที่จ่ายเงินได้ 40(3)/(4) ที่มีต้นทางจากรายการจ่ายเงิน ไม่ใช่เงินเดือน
-* เหตุผลและช่องว่างที่ยังไม่ตัดสิน: `docs/kms/19-menu-coverage-flowaccount-peak.md`, ADR `docs/kms/decisions/2026-09-08-menu-parity-flowaccount-peak.md`
+* เหตุผลและข้อกำหนดผังเมนู: `docs/kms/19-menu-coverage-market-standard.md`, ADR `docs/kms/decisions/2026-09-08-menu-parity-market-standard.md`
 * วิธีตรวจ: `npx vitest run src/lib/menu-data.test.ts src/lib/menu-icons.test.ts src/lib/menu-usage.test.ts` + `npx tsc --noEmit` + เปิดเมนูจริง ค้นชื่อไทยที่เพิ่ม แล้วดูทั้ง light/dark ด้วยการกดปุ่มสลับธีม
 
 ---

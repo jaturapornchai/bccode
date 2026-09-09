@@ -20,6 +20,23 @@
   - <ผลการทดสอบ เช่น ผ่าน vitest ... tests, typecheck 0 errors, curl 200 OK>
 -->
 
+### 2026-09-09 — ตั้งกฎห้ามอ้างอิงบุคคลภายนอก (ซอฟต์แวร์คู่แข่ง) และชำระล้างเอกสารทั้งระบบ พร้อม Pre-commit Guard
+- **ประเภท**: `[Docs]` `[Tooling]` `[Compliance]`
+- **สิ่งที่ทำ**:
+  1. **ตั้งกฎ Zero Reference Policy ใน AGENTS.md**: สั่งเด็ดขาดห้ามมีชื่อ ยี่ห้อ หรือการอ้างอิงถึงซอฟต์แวร์ภายนอกในโค้ด, คอมเมนต์, ชื่อไฟล์, ตัวแปร, หน้าจอ UI, commit message, และเอกสารทุกชนิด เพื่อป้องกันปัญหาลิขสิทธิ์และเครื่องหมายการค้า โดยให้ใช้คำกลาง ("มาตรฐานโปรแกรมบัญชีในตลาด") แทน
+  2. **ลบโฟลเดอร์เอกสารวิจัยคู่แข่งเดิม**: ลบโฟลเดอร์เอกสารวิจัยเดิม 2 โฟลเดอร์และ handoff เก่า รวม 23 ไฟล์ออกจาก repository
+  3. **ชำระล้างเอกสารทั้งระบบ**: เปลี่ยนชื่อไฟล์และปรับถ้อยคำใน `docs/kms/` (บทความ 19, ADRs, ดัชนี), `docs/README.md`, `docs/skills/ui-scale-polish/SKILL.md` และ `docs/handoff/` ให้เป็นคำกลางทั้งหมด
+  4. **เพิ่มระบบตรวจจับอัตโนมัติ (Git Pre-commit Guard)**: อัปเดต `.githooks/pre-commit` ให้สแกนทุกไฟล์ที่ staged หากพบคำต้องห้ามจะสกัดและปฏิเสธ commit ทันที
+- **ไฟล์สำคัญ**:
+  - `AGENTS.md`
+  - `.githooks/pre-commit`
+  - `docs/kms/19-menu-coverage-market-standard.md`
+  - `docs/kms/decisions/2026-09-08-menu-parity-market-standard.md`
+  - `docs/README.md`
+- **ผลการทดสอบ (Evidence)**:
+  - สแกนทั้ง repository: ปลอดคำต้องห้าม 100%
+  - ทดสอบ Pre-commit Guard: สกัดคำต้องห้ามสำเร็จทุกกรณี (`ExitCode: 1`)
+
 ### 2026-09-09 — ตั้งกฎและระบบ Activity Log ใน README.md พร้อม Git Pre-commit Hook
 - **ประเภท**: `[Docs]` `[Tooling]`
 - **สิ่งที่ทำ**:
