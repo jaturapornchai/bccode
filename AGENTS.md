@@ -152,8 +152,9 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 ลุงจืดตัดสินใจว่า **จะไม่จ่ายเงินให้ GitHub อีก** และให้ GitHub ทำหน้าที่เดียวคือเก็บ/แชร์โค้ด (`origin`) — `.github/workflows/ci.yml` ถูกลบทิ้งถาวรแล้ว (บัญชีถูกล็อกเรื่อง billing ตั้งแต่ 2026-09-02 ทำให้ทุก run ตายก่อนเริ่ม job อยู่แล้ว)
 
 1. **ห้าม AI ตัวใดสร้าง workflow ใหม่ใน `.github/`** หรือเสนอให้ "เปิด CI กลับมา" โดยไม่ได้ถามลุงจืดก่อน — รวมถึงห้ามย้าย `backend/.github/workflows/*.yaml` (ของค้างยุค repo เก่า ที่มี `git push origin main` และ push image ไป `ghcr.io/smlsoft/*`) ขึ้นมาที่ root เด็ดขาด
-2. **ตัวตรวจจริงมีสองอย่างเท่านั้น**:
-   - `.githooks/pre-commit` (อัตโนมัติ แต่ตรวจแค่ `docs/reference/CODE-MAP.md`) — ทุก clone ต้อง `npm run hooks:install` ครั้งหนึ่ง
+2. **ตัวตรวจจริงมีสามอย่างเท่านั้น** (ทุก clone ต้อง `npm run hooks:install` ครั้งหนึ่ง ไม่งั้น hook ทั้งสองตัวไม่ทำงาน):
+   - `.githooks/pre-commit` — อัตโนมัติตอน commit แต่ตรวจแค่ `docs/reference/CODE-MAP.md` (ข้าม: `SKIP_CODE_MAP_CHECK=1`)
+   - `.githooks/pre-push` — อัตโนมัติตอน push: รัน `tools/verify.sh codemap` เสมอ และเพิ่ม `frontend` เมื่อ commit ที่จะ push แตะไฟล์ใต้ `frontend/`; ไม่รัน target `backend` เพราะช้าเกินไป (เตือนให้รัน `npm run verify:all` เองแทน) — ข้าม: `SKIP_VERIFY=1 git push`
    - `tools/verify.sh` (คนสั่งเอง) — `npm run verify` = codemap + frontend lint/typecheck/test ก่อน push ทุกครั้ง, `npm run verify:all` = รวม backend/outbox/projection ก่อน deploy
 3. **ห้ามเขียนในเอกสารหรือรายงานว่า "CI จะจับให้"** — ไม่มีอะไรตรวจให้อัตโนมัติหลัง push แล้ว ถ้าไม่ได้รัน `verify` เอง ให้บอกตรง ๆ ว่ายังไม่ได้ตรวจ (กฎ VERIFY BEFORE DONE)
 4. คำสั่งใน `tools/verify.sh` คัดลอกจาก workflow เดิมแบบคำต่อคำ — ถ้าแก้คำสั่งทดสอบ ต้องแก้ที่นี่ที่เดียว และอัปเดต `docs/kms/11-testing-quality.md` §5 ในคอมมิตเดียวกัน

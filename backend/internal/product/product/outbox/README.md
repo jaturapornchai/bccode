@@ -50,7 +50,7 @@ If pending age grows: inspect broker connectivity, worker lifecycle, indexes and
 
 ## Verification
 
-Run tests only against isolated infrastructure. Tests create unique MongoDB databases, PostgreSQL schemas and Kafka topics, then remove only those targets. `.github/workflows/ci.yml` retains the database integration job and adds `backend-projection-kafka-integration`. `backend/.ci/projection.compose.yml` runs MongoDB 7, PostgreSQL 18 and Kafka 4.3.1 without host ports or production volumes; CI uploads JSON results.
+Run tests only against isolated infrastructure. Tests create unique MongoDB databases, PostgreSQL schemas and Kafka topics, then remove only those targets. `tools/verify.sh` (targets `outbox` and `projection`) runs those isolated suites; there is no GitHub CI any more — it was deleted on 2026-09-09 when GitHub became code storage only. `backend/.ci/projection.compose.yml` runs MongoDB 7, PostgreSQL 18 and Kafka 4.3.1 without host ports or production volumes; the script writes the JSON results to `backend/projection-test-results.json`.
 
 From `backend` on a glibc Go environment with dependencies available:
 

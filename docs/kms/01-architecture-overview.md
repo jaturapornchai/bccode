@@ -55,7 +55,7 @@
 | `backend/Dockerfile-member` | `cmd/member/main.go` (`:20`), `golang:1.20.2` | member service | `backend/.github/workflows/build_api_member.yaml:35`, `build_deploy_api_member_dev.yaml:35` | DEAD |
 | `backend/DockerfileM1` | `main.go`, `golang:1.18` | — | `backend/Makefile:101` | DEAD |
 | `backend/cmd/app/main.go` | entry คู่ขนานที่สร้าง `NewMicroservice` เอง (`:120-123`) + เขียน `routes.json` (`:389`) | — | `backend/dev.sh:3` (`cd cmd/app/`) | ยังไม่ตรวจว่ายัง build ผ่าน |
-| `backend/cmd/*` อื่น (30 โฟลเดอร์, 52 ไฟล์) | — | — | `tools/verify.sh:99` compile ด้วย `go test -run "^$" ./cmd/...` เท่านั้น (เดิมอยู่ใน `.github/workflows/ci.yml` ที่ถูกลบ 2026-09-09); `backend/Makefile` อ้าง `cmd/inventoryservice`, `cmd/uploadmediaservice` ฯลฯ ที่ **ไม่มีอยู่ใน tree** | ส่วนใหญ่ DEAD; `cmd/migrationapi/api` ถูก import โดย `backend/main.go:10,550` (LIVE) |
+| `backend/cmd/*` อื่น (30 โฟลเดอร์, 52 ไฟล์) | — | — | `tools/verify.sh:102` compile ด้วย `go test -run "^$" ./cmd/...` เท่านั้น (เดิมอยู่ใน `.github/workflows/ci.yml` ที่ถูกลบ 2026-09-09); `backend/Makefile` อ้าง `cmd/inventoryservice`, `cmd/uploadmediaservice` ฯลฯ ที่ **ไม่มีอยู่ใน tree** | ส่วนใหญ่ DEAD; `cmd/migrationapi/api` ถูก import โดย `backend/main.go:10,550` (LIVE) |
 
 Stack prod (`deploy/account/compose.yml`): mongo 7.0 (`:10`), postgres 18 (`:47`), clickhouse 25.8 (`:63`, ยังประกาศอยู่แม้โค้ด stub), redis 7 (`:79`), minio (`:94`), kafka `apache/kafka:4.3.1` (`:170`), migrate (`:208`), mainapi publish `127.0.0.1:8888` (`:254-255`), worker (`:271`), frontend publish `127.0.0.1:3200` (`:317-318`); edge = Caddy บน host proxy ไป `:3200` และตอบ 404 ให้ `/backend/goapi/api/health/*` (`deploy/account/Caddyfile.account:4-12`). service ส่วนใหญ่อ่าน `env_file: /etc/bcai-account/*.env` ที่ไม่อยู่ใน repo (postgres `:49`, clickhouse `:65`, minio `:97,122`, kafka `:173`, migrate/mainapi/worker ใช้ `backend.env` `:210,236,273`, frontend `:311`); mongo กับ redis ไม่มี `env_file`
 
@@ -114,11 +114,11 @@ Stack prod (`deploy/account/compose.yml`): mongo 7.0 (`:10`), postgres 18 (`:47`
 | `frontend/` | Next.js: `src/app` 129 (route handlers 36 `route.ts` + test), `src/lib` 58, `src/components` 41, `src/locales` 12 | 311 |
 | `scratch/` | งานทดลอง / UAT harness | 18 |
 | `tests/` | Playwright spec ระดับ repo (`uat-crud.spec.ts`, employee/login/currency) + `playwright.config.ts` ที่ root | 15 |
-| `tools/` | สคริปต์ช่วยงาน | 13 |
+| `tools/` | สคริปต์ช่วยงาน (รวม `verify.sh` ที่แทน CI และ `install-hooks.mjs`) | 15 |
 | `deploy/` | `deploy/account/*`: compose prod, Caddyfile, provision/rotate scripts, mongo-init, docs/runbooks/RECOVERY-READINESS.md | 9 |
 | `docs/` | `docs/kms/` (ชุดนี้) + `docs/skills/{ui-scale-polish,audit-mongomodel-sync}` | 6 |
 | `scripts/` | สคริปต์ระดับ repo | 5 |
-| `.github/` | **ไม่มีแล้ว** — ลบ `workflows/ci.yml` (4 jobs) ทิ้งทั้งโฟลเดอร์ 2026-09-09 ตามมติ "GitHub เก็บ code อย่างเดียว"; การตรวจย้ายไป `tools/verify.sh` ทั้งหมด กู้ของเดิมได้ด้วย `git show 1799b069:.github/workflows/ci.yml` | 0 |
+| `.github/` | **ไม่มีแล้ว** — ลบ `workflows/ci.yml` (5 jobs) ทิ้งทั้งโฟลเดอร์ 2026-09-09 ตามมติ "GitHub เก็บ code อย่างเดียว"; การตรวจย้ายไป `tools/verify.sh` ทั้งหมด กู้ของเดิมได้ด้วย `git show 1799b069:.github/workflows/ci.yml` | 0 |
 | root | `AGENTS.md`, `CLAUDE.md`, `docs/kms/00-source-router.md`, `docs/reference/CODE-MAP.md`, `docs/handoff/HANDOFF-*.md` ×2, `package.json`, `package-lock.json`, `playwright.config.ts`, `.mcp.json`, `.gitignore`, `.ignore` (exclude `**/build/`), `.mongo_all_cols.txt`, `.mongo_audit_out.txt` | 14 |
 
 ## ช่องว่าง / สิ่งที่ยังไม่ตรวจ

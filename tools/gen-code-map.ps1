@@ -6,9 +6,9 @@
 # Usage (regenerate):  pwsh -NoProfile -File tools/gen-code-map.ps1
 # Usage (verify only): pwsh -NoProfile -File tools/gen-code-map.ps1 -Check
 #   -Check regenerates in memory and compares with the committed file, ignoring the volatile
-#   "> Generated:" line. Exit 0 = in sync, exit 1 = drifted (CI and the pre-commit hook use this).
+#   "> Generated:" line. Exit 0 = in sync, exit 1 = drifted (the pre-commit hook and `tools/verify.sh codemap` use this; there is no CI).
 # Output: docs/reference/CODE-MAP.md (repo root is derived from this script's location,
-#   so it works on any machine and on Linux CI runners - do not hard-code a path here again).
+#   so it works on any machine, Windows or Linux - do not hard-code a path here again).
 [CmdletBinding()]
 param(
     [switch]$Check
@@ -39,7 +39,7 @@ function ConvertTo-RelPath {
 
 function Test-ExcludedPath {
     param([string]$FullPath)
-    # Normalize to forward slashes first: Windows gives '\', Linux CI gives '/'.
+    # Normalize to forward slashes first: Windows gives '\', Linux gives '/'.
     $p = $FullPath.Replace('\', '/')
     return (
         $p -like '*/node_modules/*' -or
@@ -132,7 +132,7 @@ function Index-File {
 
 # Deterministic order: biggest file first, ties broken by repo-relative path.
 # Without the secondary key the order follows OS directory enumeration, so Windows and
-# Linux CI produce different files and -Check fails for no real reason.
+# Linux produce different files and -Check fails for no real reason.
 # Sort-Object compares strings with the CURRENT CULTURE, so a Thai and an invariant machine can
 # order two files with equal line counts differently and -Check fails for no real reason.
 # CompareOrdinal is byte order: same answer everywhere.

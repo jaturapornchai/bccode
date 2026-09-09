@@ -1,5 +1,5 @@
 # These packages still contain legacy business-contract assertions that conflict with current code.
-# CI compiles them but does not run them. Remove a package only after its contract is confirmed and tests pass.
+# `tools/verify.sh backend` compiles them but does not run them (no GitHub CI since 2026-09-09 — run it yourself). Remove a package only after its contract is confirmed and tests pass.
 smlcloudplatform/internal/transaction/paymentdetail/usecase
 smlcloudplatform/internal/transaction/transactionconsumer/appurchasereceive
 smlcloudplatform/internal/transaction/transactionconsumer/purchase

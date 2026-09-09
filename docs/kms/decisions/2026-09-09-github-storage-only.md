@@ -32,7 +32,9 @@ tags: [bc-account, ci, tooling, github, decision-by-owner]
    | `projection` | `backend-projection-kafka-integration` | `backend/.ci/projection.compose.yml` |
 
    ทางลัด: `npm run verify` (= `fast` = codemap + frontend) ก่อน push, `npm run verify:all` ก่อน deploy
-3. **`.githooks/pre-commit` คือการตรวจอัตโนมัติเดียวที่เหลือ** และตรวจแค่ `docs/reference/CODE-MAP.md` — ทุก clone ต้อง `npm run hooks:install` เอง
+3. **การตรวจอัตโนมัติที่เหลืออยู่ฝั่งเครื่องเท่านั้น** — ทุก clone ต้อง `npm run hooks:install` เอง:
+   - `.githooks/pre-commit` ตรวจแค่ `docs/reference/CODE-MAP.md`
+   - `.githooks/pre-push` (เพิ่ม 2026-09-09) รัน `tools/verify.sh codemap` ทุกครั้ง และ `frontend` เมื่อ push แตะ `frontend/` — เป็นด่านสุดท้ายก่อนโค้ดออกจากเครื่อง; ไม่รัน `backend` เพราะกินเวลาหลายนาที แค่เตือนให้รัน `npm run verify:all` เอง
 4. กู้ workflow เดิมได้เสมอ: `git show 1799b069:.github/workflows/ci.yml > .github/workflows/ci.yml`
 
 ## Consequences
@@ -45,7 +47,7 @@ tags: [bc-account, ci, tooling, github, decision-by-owner]
 **ผลเสีย / ความเสี่ยง (ยอมรับแล้ว)**
 - **ไม่มีอะไรบังคับให้ตรวจ** — ถ้าไม่มีคนพิมพ์ `npm run verify` ก็ไม่มีใครรู้ว่าพัง; PR จากคนนอกจะไม่ถูกตรวจอัตโนมัติเลย
 - ผลตรวจไม่ถูกเก็บเป็นหลักฐานกลาง (ไม่มี artifact/summary ในระบบ) ต้องแปะผลเองตอนรายงาน
-- พิสูจน์ได้ทันทีว่าความเสี่ยงนี้เป็นจริง: รัน `sh tools/verify.sh frontend` ครั้งแรกหลังย้าย **ไม่ผ่าน** — eslint มี 2 error ค้างอยู่ที่ HEAD (`frontend/src/app/menu/dashboard-home.tsx:194` เรียก `useMemo` แบบมีเงื่อนไข, `frontend/src/app/menu/manage-shortcuts-screen.tsx:133` เรียก `Date.now()` ระหว่าง render) ซึ่งหลุดเข้ามาช่วงที่ CI ตายพอดี
+- พิสูจน์ได้ทันทีว่าความเสี่ยงนี้เป็นจริง: รัน `sh tools/verify.sh frontend` ครั้งแรกหลังย้าย **ไม่ผ่าน** — eslint มี 2 error ค้างอยู่ที่ HEAD (`frontend/src/app/menu/dashboard-home.tsx:194` เรียก `useMemo` แบบมีเงื่อนไข, `frontend/src/app/menu/manage-shortcuts-screen.tsx:133` เรียก `Date.now()` ระหว่าง render) ซึ่งหลุดเข้ามาช่วงที่ CI ตายพอดี — **แก้แล้วใน commit `4205b1cf`** และเป็นเหตุผลที่เพิ่ม `pre-push` เข้ามาในวันเดียวกัน
 - `backend/.github/workflows/*.yaml` (9 ไฟล์ยุค repo เก่า) ยังอยู่ — ไม่เคยถูก GitHub รันเพราะไม่ได้อยู่ root แต่ยังไม่ลบเพราะอยู่นอกขอบเขตงานนี้ (ต้องถามลุงจืดก่อน)
 
 ## Alternatives considered
@@ -60,6 +62,6 @@ tags: [bc-account, ci, tooling, github, decision-by-owner]
 ## Reference
 
 - `tools/verify.sh` — ตัวรันจริง
-- `.githooks/pre-commit`, `tools/install-hooks.mjs` — การตรวจอัตโนมัติที่เหลือ
+- `.githooks/pre-commit`, `.githooks/pre-push`, `tools/install-hooks.mjs` — การตรวจอัตโนมัติที่เหลือ
 - `docs/kms/11-testing-quality.md` §5 — ตารางเทียบ target ↔ job เดิม
 - `docs/kms/15-known-issues.md` KI-23 — ประวัติการล็อก billing (ปิดเรื่องด้วย ADR นี้)

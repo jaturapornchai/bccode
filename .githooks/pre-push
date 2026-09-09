@@ -1,0 +1,88 @@
+#!/bin/sh
+# BC Ai Account — pre-push: run the local checks that replaced GitHub CI, before code leaves
+# this machine.
+#
+# There is no CI any more (.github/workflows/ci.yml deleted 2026-09-09, GitHub is code storage
+# only — see docs/kms/decisions/2026-09-09-github-storage-only.md). Nothing on the server side
+# will ever tell you a push was broken, so this is the last automatic gate.
+#
+# What it runs (fast on purpose — a gate nobody waits for is a gate nobody keeps):
+#   codemap   always (~3 s)
+#   frontend  only when the push contains changes under frontend/  (lint + typecheck + vitest)
+#   backend   NEVER — golang:1.26 compile is minutes; it only warns you to run it yourself
+#
+# Skip:  SKIP_VERIFY=1 git push ...    (or git push --no-verify)
+#
+# git feeds this hook lines of "<local_ref> <local_sha> <remote_ref> <remote_sha>" on stdin.
+
+if [ -n "${SKIP_VERIFY:-}" ]; then
+  exit 0
+fi
+
+ZERO=0000000000000000000000000000000000000000
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$ROOT" || exit 0
+
+changed=""
+pushing=""
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  # Branch deletion — nothing to check.
+  case "$local_sha" in
+    "$ZERO"|"") continue ;;
+  esac
+  pushing=yes
+  if [ "$remote_sha" = "$ZERO" ] || [ -z "$remote_sha" ]; then
+    # New branch on the remote: diff against whatever the remote already has, so a first push
+    # of a long-lived branch does not try to check its entire history.
+    base=$(git merge-base "$local_sha" origin/dev 2>/dev/null)
+    if [ -z "$base" ]; then
+      # No usable base — check the working tree as it stands rather than guessing a range.
+      changed="ALL"
+      continue
+    fi
+    range="$base..$local_sha"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  files=$(git -c core.quotePath=false diff --name-only "$range" 2>/dev/null)
+  changed="$changed
+$files"
+done
+
+if [ -z "$pushing" ]; then
+  exit 0
+fi
+
+targets="codemap"
+if [ "$changed" = "ALL" ]; then
+  targets="codemap frontend"
+else
+  if printf '%s\n' "$changed" | grep -q '^frontend/'; then
+    targets="codemap frontend"
+  fi
+  if printf '%s\n' "$changed" | grep -q '^backend/'; then
+    backend_touched=yes
+  fi
+fi
+
+echo "pre-push: ไม่มี CI แล้ว — ตรวจเองก่อนส่งขึ้น GitHub ($targets)"
+# shellcheck disable=SC2086
+if ! sh tools/verify.sh $targets; then
+  cat <<'MSG'
+
+หยุด push ไว้ก่อน — ชุดตรวจไม่ผ่าน (GitHub ไม่ได้ตรวจอะไรให้แล้ว ถ้าปล่อยขึ้นไปคือของเสียขึ้นไปเงียบ ๆ)
+แก้ให้ผ่านแล้วค่อย push ใหม่ หรือถ้าจงใจข้ามรอบนี้: SKIP_VERIFY=1 git push ...
+MSG
+  exit 1
+fi
+
+if [ -n "${backend_touched:-}" ]; then
+  cat <<'MSG'
+
+หมายเหตุ: push นี้มีการแก้ `backend/` ซึ่ง pre-push ไม่ได้ตรวจ (ช้าเกินไป)
+          ควรรัน `npm run verify:all` เองอย่างน้อยหนึ่งครั้งก่อน deploy
+MSG
+fi
+
+exit 0

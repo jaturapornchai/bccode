@@ -60,7 +60,7 @@ Model สำคัญ: `ProductDoc.Listing *ProductListing` (product.go:102), pa
 
 หลักฐาน runtime local (อ่านอย่างเดียว 2026-09-07): `outboxevents` productprojection = PUBLISHED 7 / PENDING 0; Mongo `demo` active products 45 = PG `demo.product` 45 ✓; Mongo `demo` active productbarcodes **45 ≠ PG `demo.productbarcode` 54** (ยังไม่วินิจฉัย — docs/handoff/HANDOFF-2026-09-06.md:63 ระบุแถวค้าง 9 แถวใน C03); `product_projection_fences` 2 แถว; PG `bc001` product 20/productbarcode 20, `test` 49/45
 
-ช่องโหว่ที่ README ยอมรับเอง (backend/internal/product/product/outbox/README.md): at-least-once; unit เดี่ยว/legacy batch ยัง DB-before-MQ; ไม่มี DLQ/alert; ClickHouse ไม่ได้ทดสอบ. Test/CI: `.github/workflows/ci.yml:82-122` (outbox + barcode batch integration), `:138` (`backend-projection-kafka-integration` ใช้ backend/.ci/projection.compose.yml services mongo/mongo-init/postgres/kafka/tests :3-52) — Actions ถูก billing-lock ตามที่ lead แจ้ง (ยังไม่ตรวจเอง)
+ช่องโหว่ที่ README ยอมรับเอง (backend/internal/product/product/outbox/README.md): at-least-once; unit เดี่ยว/legacy batch ยัง DB-before-MQ; ไม่มี DLQ/alert; ClickHouse ไม่ได้ทดสอบ. Test: `tools/verify.sh:111-156` (outbox + barcode batch integration), `tools/verify.sh:158-182` (`projection` ใช้ backend/.ci/projection.compose.yml services mongo/mongo-init/postgres/kafka/tests :3-52) — ไม่มี CI ฝั่ง GitHub แล้ว (ลบ 2026-09-09) ต้องสั่ง `sh tools/verify.sh` เอง
 
 ## 5. Price history, รูปภาพ, BOM
 

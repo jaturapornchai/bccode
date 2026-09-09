@@ -2,7 +2,7 @@
 > ตรวจล่าสุด: 2026-09-07 (commit d93a210d) — ผู้เขียน: AI reader; ทุกข้อเท็จจริงอ้าง path:line · ตรวจซ้ำโดย fact-checker
 
 ## 1. ภาพรวม
-ระบบมี binary หลักตัวเดียว (`backend/main.go`) ที่สลับบทบาทด้วย env `DEV_API_MODE` และมี 3 ชุด compose ที่ใช้งานจริง: local dev (`backend/docker-compose.yml` + overlay `docker-compose.local.yml`), CI integration (`backend/.ci/projection.compose.yml`) และ production (`deploy/account/compose.yml` + override `compose.8gb.yml`). Frontend เป็น Next.js image แยก (`frontend/Dockerfile`) ที่ proxy `/backend/*` ไป mainapi ผ่าน `BCAI_LOCAL_BACKEND_URL` (frontend/next.config.ts:19-21, 74).
+ระบบมี binary หลักตัวเดียว (`backend/main.go`) ที่สลับบทบาทด้วย env `DEV_API_MODE` และมี 3 ชุด compose ที่ใช้งานจริง: local dev (`backend/docker-compose.yml` + overlay `docker-compose.local.yml`), integration test ที่รันมือผ่าน `sh tools/verify.sh projection` (`backend/.ci/projection.compose.yml`) และ production (`deploy/account/compose.yml` + override `compose.8gb.yml`). Frontend เป็น Next.js image แยก (`frontend/Dockerfile`) ที่ proxy `/backend/*` ไป mainapi ผ่าน `BCAI_LOCAL_BACKEND_URL` (frontend/next.config.ts:19-21, 74).
 
 ### โหมดของ binary (`DEV_API_MODE`)
 | ค่า | หน้าที่ | หลักฐาน | ใช้โดย |
@@ -105,8 +105,8 @@ Reload runtime: mainapi เปิด `POST /reload-config` (อยู่ใน p
 - goapi: `handlers.InitR2Client()` (backend/internal/goapi/bootstrap.go:82) ใช้ชุด env เดียวกัน + `S3_FORCE_PATH_STYLE|R2_FORCE_PATH_STYLE` (backend/internal/goapi/handlers/image_r2.go:75-86, 111); presigned URL ตรงต้องเปิด `STORAGE_ALLOW_PRESIGNED_URL=true` (image_r2.go:154, backend/internal/goapi/handlers/storage_private.go:14) — prod ตั้ง `false` (provision-server.sh:146)
 - bucket: local จาก `minio.local.env` (`MINIO_BUCKET_NAME`) และ prod = `bcai-account` เปิด versioning ผ่าน minio-init (compose.yml:131-132) ใช้ app user สิทธิ์จำกัด (minio-app-policy.json) — Mongo เก็บแค่ URI ตามกฎใน AGENTS.md
 
-## 8. CI / test infra
-- `tools/verify.sh` (แทน `.github/workflows/ci.yml` ที่ถูกลบ 2026-09-09): target `backend` (compile ทุก package + unit test ยกเว้น `backend/.ci/test-quarantine.txt` + compile integration tags ใน `golang:1.26`) (`tools/verify.sh:87-106`), `frontend` (lint/typecheck/vitest ด้วย `BCAI_LOCAL_BACKEND_URL=http://localhost:8888`) และ `frontend-build` (`:64-84`), `outbox` (mongo rs0 + postgres:17-alpine ชั่วคราว) (`:108-153`), `projection` ใช้ `backend/.ci/projection.compose.yml` (`:155-180`) — คำสั่งทั้งหมดคัดลอกจาก workflow เดิมแบบคำต่อคำ
+## 8. ชุดตรวจ (local) / test infra — ไม่มี CI ฝั่ง GitHub แล้ว
+- `tools/verify.sh` (แทน `.github/workflows/ci.yml` ที่ถูกลบ 2026-09-09): target `backend` (compile ทุก package + unit test ยกเว้น `backend/.ci/test-quarantine.txt` + compile integration tags ใน `golang:1.26`) (`tools/verify.sh:87-109`), `frontend` (lint/typecheck/vitest ด้วย `BCAI_LOCAL_BACKEND_URL=http://localhost:8888`) และ `frontend-build` (`:64-84`), `outbox` (mongo rs0 + postgres:17-alpine ชั่วคราว) (`:111-156`), `projection` ใช้ `backend/.ci/projection.compose.yml` (`:158-182`) — คำสั่งทั้งหมดคัดลอกจาก workflow เดิมแบบคำต่อคำ
 - `projection.compose.yml`: mongo rs0 + mongo-init idempotent, postgres:18-alpine trust, apache/kafka:4.3.1 auto-create **ปิด**, service `tests` profile `test` รัน integration tests ชุด outbox/projection/barcode (backend/.ci/projection.compose.yml:3-75)
 - **ไม่มี CI/CD ฝั่ง GitHub เลย** ตั้งแต่ 2026-09-09 (มติลุงจืด: GitHub = ที่เก็บโค้ดอย่างเดียว ไม่จ่ายค่า GitHub; ก่อนหน้านั้น Actions ล็อกเพราะ billing ตั้งแต่ 2026-09-03 อยู่แล้ว) → หลักฐาน build/test ทั้งหมดเป็น local เท่านั้น; โฟลเดอร์ root `.github/` ถูกลบทั้งโฟลเดอร์ (`git ls-files .github` → ว่าง) ส่วน `backend/.github/workflows/*.yaml` (9 ไฟล์ tracked: build_api_image, build_api_member, build_consumer, build_deploy_*_dev, build_migration, ci.yml) เป็นของค้างยุค repo แยก อยู่นอก root `.github/` จึงไม่เคยถูก GitHub Actions รัน — **ยังไม่ลบ ต้องถามลุงจืดก่อน** (อยู่นอกขอบเขตงานที่ลบ CI)
 

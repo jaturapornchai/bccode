@@ -169,7 +169,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 - Env ที่โค้ดอ่าน: `BCAI_LOCAL_BACKEND_URL`, `JWT_SECRET_KEY`, `BCAI_DEV_LOGIN_ENABLED`, `BCAI_DEV_LOGIN_SECRET`, `BCAI_DEV_LOGIN_BACKEND_URL`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BC_AUTH_BRIDGE_URL`, `NEXT_PUBLIC_DEFAULT_BACKEND_URL`, `NODE_ENV`, `E2E_BASE_URL`, `E2E_BROWSER_CHANNEL`, `PW_BASE_URL`, `CI` (grep `process.env.*` ใน `frontend/src`, `next.config.ts`, `playwright.config.ts`); `BCAI_DEMO_LOGIN_ENABLED` เป็นของ backend (`frontend/src/app/api/auth/demo-login/route.ts:9`)
 - Docker: `frontend/Dockerfile` multi-stage `node:24.18.0-alpine`, build-args `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BCAI_LOCAL_BACKEND_URL`, `NEXT_PUBLIC_DEFAULT_BACKEND_URL`, copy `manual/` + `.next` แล้ว `npm run start` (ไม่ใช้ standalone) (`frontend/Dockerfile:2,25-32,44-57`)
 - Prod compose: service `frontend` image `${FRONTEND_IMAGE}` + `env_file /etc/bcai-account/frontend.env` (`deploy/account/compose.yml:309-311`)
-- ไฟล์ log ถูก track ใน git: `frontend/.next-dev.log`, `frontend/.next-dev.err.log` เพราะ `.gitignore` ignore เฉพาะ `npm-debug.log*`, `yarn-debug.log*`, `yarn-error.log*`, `pnpm-debug.log*` (`git ls-files frontend | grep .log`, `frontend/.gitignore:9-12`)
+- ~~ไฟล์ log ถูก track ใน git~~ **เลิก track แล้ว 2026-09-09** (`git rm --cached frontend/.next-dev.log frontend/.next-dev.err.log`) — root `.gitignore:53` (`*.log`) คุมอยู่แล้ว ส่วน `frontend/.gitignore:9-12` ยัง ignore เฉพาะ `npm-debug.log*`, `yarn-debug.log*`, `yarn-error.log*`, `pnpm-debug.log*` (`git ls-files frontend | grep .log`, `frontend/.gitignore:9-12`)
 
 ## ช่องว่าง / สิ่งที่ยังไม่ตรวจ
 

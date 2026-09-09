@@ -40,7 +40,7 @@
    - **[สูง] legacy group ผสม kafka-go + librdkafka**: JoinGroup metadata คนละรูปแบบ → Barcode readers ใช้ group `<CONSUMER_GROUP_ID>-projection` แยกต่างหาก (offset disposable ตามกฎ pre-launch)
    - **[กลาง] GoAPI อ่าน barcode topics ซ้ำใน `biapi-warehouse-consumer`** (เขียน PG ซ้ำ + rebalance storm ปน warehouse) → ลบ registration ซ้ำ เหลือ `biapi-inventory-consumer` กลุ่มเดียว
    - **[กลาง] 5000 advisory locks/transaction** (lock table PG default ≈6400) → batch > 256 codes ใช้ exclusive company lock แทน row locks (เหมือน rebuild)
-   - **[สูง] CI job Kafka พัง**: `docker compose run tests` รัน `mongo-init` ซ้ำแล้ว `rs.initiate` ล้ม → init idempotent + `--no-deps` (ci.yml + README recipe) ทดสอบ rerun mongo-init exit 0 แล้ว
+   - **[สูง] CI job Kafka พัง**: `docker compose run tests` รัน `mongo-init` ซ้ำแล้ว `rs.initiate` ล้ม → init idempotent + `--no-deps` (เดิม ci.yml + README recipe — ci.yml ถูกลบ 2026-09-09 ท่าเดียวกันอยู่ที่ `tools/verify.sh:172`) ทดสอบ rerun mongo-init exit 0 แล้ว
    - **[ต่ำ] WriteConflict บน aggregate เดียวกัน**: outbox commit retry เฉพาะ error ที่มี label `TransientTransactionError` สูงสุด 5 ครั้ง
    - **[ต่ำ] Resync ล้มทั้งชุดเมื่อสินค้าถูกลบระหว่าง loop** → ข้ามตัวนั้น (`errResyncProductRemoved`)
    - unit tests ใหม่: `projection/consumer_test.go`, `handlers/kafka/projection_reject_test.go` (sqlmock lock cap), `outbox_test.go` (transient retry), `barcode_projection_consumer_test.go` (group), แก้ `product_projection_test.go`
@@ -55,7 +55,7 @@
 | --- | --- | --- |
 | 1. Product version fence / legacy Barcode / real Kafka | เพิ่ม fence ข้าม Product topics, primary-source reconciliation, legacy Barcode writer/ack; company Barcode CRUD + Unit อัตโนมัติใช้ outbox; real Kafka 2 consumers/2 partitions + MongoDB 7 + PostgreSQL 18 ผ่าน | ยังไม่ตรวจหลาย broker/full service deployment และ legacy source writers นอก company CRUD |
 | 2. Exact accounting numbers | ระบุเส้นทาง float เดิมและเกณฑ์ตรวจ; outbox รักษารูปแบบ payload เดิม; version ส่งเป็น decimal string | รอยืนยัน workflow แรก, currency, precision/scale, rounding mode/จุดปัดเศษ และ trusted source ก่อนเปลี่ยนสัญญาข้อมูล |
-| 3. Quarantine / browser CRUD UAT | CI รายงาน quarantine และแก้ตัวกรองให้รองรับ CRLF; unit suite ที่ตัด 15 แพ็กเกจเดิมผ่าน; service CRUD query DB ทีละ step ผ่าน | ยังไม่ปลด quarantine หรือทำ browser CRUD UAT เพราะ business contracts ยังไม่ยืนยัน |
+| 3. Quarantine / browser CRUD UAT | ชุดตรวจรายงาน quarantine (ตอนนั้นคือ CI job `backend-test`; ปัจจุบัน `tools/verify.sh:90-94`) และแก้ตัวกรองให้รองรับ CRLF; unit suite ที่ตัด 15 แพ็กเกจเดิมผ่าน; service CRUD query DB ทีละ step ผ่าน | ยังไม่ปลด quarantine หรือทำ browser CRUD UAT เพราะ business contracts ยังไม่ยืนยัน |
 | 4. Backup / restore drill | มี runbook อ้างอิง compose/provision จริง เพิ่มการกู้ fences/offsets/outbox ให้สอดคล้องกัน | รอข้อมูล backup ภายนอก, source/target, format, RPO/RTO; ยังไม่ได้ restore |
 | 5. MongoModel technical workflow/index | revision 1423: technical workflow draft 18 steps/22 transitions, queue index และคำอธิบาย; แก้ field references เดิม 6 จุดแล้ว ทุก 12 workflows lint 0 issues | เครื่องมือแทน partialFilter/index name ไม่ได้; Unit model ยังต่างจาก implementation |
 
@@ -98,7 +98,7 @@ Resync HTTP ยัง rebuild PostgreSQL แล้ว queue active snapshots แ
 
 - `backend/pkg/microservice/persister.go`: เดิมทิ้ง error จาก GORM Transaction และคืน nil เสมอ แก้ให้ส่ง begin/callback/commit failure กลับ พร้อม regression tests
 - `backend/internal/shop/shopuser_service.go`: ฟังก์ชัน SaveUserPermissionShop เดิม resolve edit target แม้เป็น create ที่ editusername ว่าง ทำให้ create branch เข้าไม่ถึง แก้ให้ resolve เฉพาะเมื่อมี edit id; unit test ยืนยัน create สำเร็จ, ส่ง write error กลับ และ edit เป้าหมายที่ไม่มีอยู่ยังถูกปฏิเสธ ไม่เปลี่ยน role policy ทั้งนี้ HTTP ปัจจุบันใช้ SaveUserFullProfile อยู่แล้ว
-- `.github/workflows/ci.yml`: เพิ่ม real Kafka integration job แยกจาก outbox job เดิม พร้อม artifacts/cleanup; ตัด CR จาก quarantine file ก่อนเปรียบเทียบ package names เพื่อให้ผล Windows mount ตรงกับ CI
+- `.github/workflows/ci.yml`: เพิ่ม real Kafka integration job แยกจาก outbox job เดิม พร้อม artifacts/cleanup; ตัด CR จาก quarantine file ก่อนเปรียบเทียบ package names เพื่อให้ผล Windows mount ตรงกับ CI (ไฟล์นี้ถูกลบ 2026-09-09 — ตรรกะเดียวกันย้ายไป `tools/verify.sh:102-104`; กู้ของเดิม: `git show 1799b069:.github/workflows/ci.yml`)
 - งานก่อนหน้า: auth tests แยก development/test/production ก่อน import และตรวจ Secure ตาม environment; Product proxy ส่งต่อ queued count; AI_INDEX แก้ทางเข้าที่อ้าง docs ที่ลบแล้ว
 
 ## หลักฐานทดสอบ
@@ -119,7 +119,7 @@ Resync HTTP ยัง rebuild PostgreSQL แล้ว queue active snapshots แ
 - actionlint, Compose configuration และ git diff --check ผ่าน
 - Frontend รอบก่อน: 44 files / 320 tests และ typecheck ผ่าน; รอบนี้ไม่แก้ UI หรือรัน visual UAT ใหม่
 
-ชุดแยกใช้ `backend/.ci/projection.compose.yml` ไม่มี host ports หรือ production volumes และ tests สร้าง/ลบเฉพาะชื่อ database/schema/topic ของรอบนั้น ตรวจ Compose project labels แล้วลบ container/network/volumes ของรอบทดสอบเรียบร้อย และคืน tracked log ที่ tests สร้างแล้ว CI workflow ยังไม่ได้ push ให้ GitHub รัน
+ชุดแยกใช้ `backend/.ci/projection.compose.yml` ไม่มี host ports หรือ production volumes และ tests สร้าง/ลบเฉพาะชื่อ database/schema/topic ของรอบนั้น ตรวจ Compose project labels แล้วลบ container/network/volumes ของรอบทดสอบเรียบร้อย และคืน tracked log ที่ tests สร้างแล้ว — CI workflow ตัวนี้ถูกลบถาวร 2026-09-09 (GitHub เก็บโค้ดอย่างเดียว) จึงไม่เคยรันบน GitHub เลย ใช้ `sh tools/verify.sh projection` แทน
 
 ข้อจำกัด: ชุดนี้เป็น service/integration tests ไม่ใช่ browser UAT ใน appdb, ไม่ใช่ full deployed legacy-service test, ยังไม่ทดสอบ broker failover, ClickHouse หรือ backup restore
 

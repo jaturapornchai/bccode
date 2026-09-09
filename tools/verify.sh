@@ -89,6 +89,9 @@ t_backend() {
   need_docker || { record backend 1; return; }
   echo "แพ็กเกจที่ถูกกักไว้ (compile อย่างเดียว ไม่รัน test):"
   sed '/^#/d; /^[[:space:]]*$/d; s/^/  - /' backend/.ci/test-quarantine.txt
+  # The deleted workflow printed this into the GitHub step summary; keep the warning where the
+  # person running the tests will actually see it.
+  echo "ผ่านชุดนี้ไม่ได้แปลว่า business contract ของแพ็กเกจข้างบนถูกต้อง (a green run does not certify them)"
   docker run --rm \
     -e SERVERLESS=serverless \
     -v "$WINROOT/backend:/src" \

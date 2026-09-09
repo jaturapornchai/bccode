@@ -14,7 +14,7 @@ fixed: true
 2. legacy service ลง Barcode topics ด้วย kafka-go reader ใน consumer group เดียวกับ librdkafka members ของ topic อื่น → JoinGroup member metadata คนละรูปแบบ (kafka-go ไม่รับ trailing OwnedPartitions ของ librdkafka v1.9.2) → rebalance วนหรือ kafka-go ไม่ได้ partition
 3. GoAPI ลง `when-product-barcode-created/updated` ซ้ำใน `biapi-warehouse-consumer` (handler เดียวกับ `biapi-inventory-consumer`) → เขียน PG ซ้ำ และ head ที่ค้างทำ warehouse readers โดน rebalance ไปด้วย
 4. bulk message 5000 barcode → `pg_advisory_xact_lock` 5000 ตัวใน transaction เดียว เกิน lock table default (64 × 100 ≈ 6400) → "out of shared memory" ค้างทั้ง partition
-5. CI job `backend-projection-kafka-integration`: `docker compose run tests` restart `mongo-init` ที่ exit ไปแล้ว → `rs.initiate` ซ้ำล้ม (AlreadyInitialized) → gate `service_completed_successfully` แดงก่อนรัน test
+5. ชุด integration Kafka (ตอนนั้นคือ CI job `backend-projection-kafka-integration`; workflow ถูกลบ 2026-09-09 ท่าเดียวกันอยู่ที่ `tools/verify.sh projection`): `docker compose run tests` restart `mongo-init` ที่ exit ไปแล้ว → `rs.initiate` ซ้ำล้ม (AlreadyInitialized) → gate `service_completed_successfully` แดงก่อนรัน test
 
 พบโดย adversarial review workflow (7 มิติ × 3 lenses, 49 agents) ไม่ใช่จาก production
 
@@ -35,7 +35,7 @@ commit ถัดจาก `42e11748` บน `dev` (ดู `git log --oneline -3`
 - `pkg/microservice/barcode_projection_consumer.go`: `barcodeProjectionGroup(group) = group+"-projection"` (offset disposable pre-launch)
 - `handlers/kafka/manager.go`: ลบ 2 registration ซ้ำใน warehouse group
 - `projection_reconcile.go`: `maxRowLocksPerTransaction = 256`; เกินนั้นใช้ exclusive company lock (เหมือน rebuild → ไม่ deadlock)
-- `.ci/projection.compose.yml`: `rs.initiate` ใน try/catch AlreadyInitialized; `ci.yml` + README ใช้ `run --rm --no-deps tests`
+- `.ci/projection.compose.yml`: `rs.initiate` ใน try/catch AlreadyInitialized; `tools/verify.sh:172` + README ใช้ `run --rm --no-deps tests` (เดิมอยู่ใน `.github/workflows/ci.yml` ที่ถูกลบ 2026-09-09)
 - แถม (ต่ำ): `outbox.runTransaction` retry เฉพาะ `TransientTransactionError` ≤ 5 ครั้ง; Resync ข้ามสินค้าที่ถูกลบระหว่าง loop
 
 ## Regression test
