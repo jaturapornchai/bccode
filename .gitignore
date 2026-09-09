@@ -51,6 +51,11 @@ generated-images/
 # Runtime logs and temporary screenshots
 backend/internal/**/logs/
 *.log
+
+# go test -json output written by tools/verify.sh (was a CI artifact before 2026-09-09)
+backend/outbox-test-results.json
+backend/barcode-test-results.json
+backend/projection-test-results.json
 /page-*.png
 /*-check.png
 

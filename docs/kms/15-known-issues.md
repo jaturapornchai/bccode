@@ -40,6 +40,7 @@
 | KI-25 | `Persister.Transaction` กลืน error ของ GORM | แก้แล้ว | `backend/pkg/microservice/persister.go:346-354` คืน error จาก `db.Transaction` แล้ว | — | ไม่ |
 | KI-26 | CI job Kafka พังจาก `mongo-init` รันซ้ำ | แก้แล้ว (ในโค้ด) | ท่า `run --rm --no-deps tests` ย้ายมาอยู่ที่ `tools/verify.sh:172` (เดิม `.github/workflows/ci.yml:138-153` ที่ถูกลบ 2026-09-09) | พิสูจน์ได้ทางเดียวคือรัน `sh tools/verify.sh projection` บนเครื่อง — ยังไม่ได้รัน | ไม่ |
 | KI-27 | head-of-line block จาก message ที่ใช้ไม่ได้ใน projection ใหม่ | แก้แล้ว | `backend/internal/product/projection/consumer.go:14` (`ErrRejected`); ทดสอบ poison จริงตาม `docs/handoff/HANDOFF-2026-09-06.md` §3 ข้อ 3 | — | ไม่ |
+| KI-29 | `TestProjectionRebalanceIntegration` แพ้ race ของ Kafka metadata (flaky) | ยังอยู่ | รันครั้งแรก 2026-09-09 ด้วย `sh tools/verify.sh projection` → `backend/internal/product/projection/consumer_kafka_integration_test.go:83` ตอบ `[6] Not Leader For Partition: ... the client's metadata are likely out of date` แล้ว **รันซ้ำทันทีผ่าน** (job นี้เพิ่งเพิ่มเข้า workflow 2026-09-05 หลัง Actions ถูกล็อกแล้ว จึงไม่เคยรันที่ไหนมาก่อน) | รอ leader election ให้เสร็จก่อนเขียน: หลัง `CreateTopics` ให้ retry `kafka.DialLeader`/`WriteMessages` จนกว่า metadata จะนิ่ง (หรือ poll `conn.ReadPartitions` ให้เห็น leader ครบ 2 partition) | ไม่ |
 
 ## 3. Inventory ส่วนที่เกี่ยวข้อง
 

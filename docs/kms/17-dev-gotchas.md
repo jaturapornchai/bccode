@@ -5,6 +5,7 @@
 
 | กับดัก | อาการ | วิธีที่ถูก | ยืนยัน |
 |---|---|---|---|
+| `frontend/next-env.d.ts` เด้งไปมา | ไฟล์นี้ถูก Next generate ใหม่ทุกครั้ง: `next dev` เขียน `./.next/dev/types/*`, `next build` (เช่น `sh tools/verify.sh frontend-build`) เขียน `./.next/types/*` → ขึ้น modified ทั้งที่ไม่ได้แก้เอง | `git checkout -- frontend/next-env.d.ts` ก่อน commit (ห้ามแก้ไฟล์นี้เอง ตามที่ Next กำกับไว้ในหัวไฟล์) | 2026-09-09 |
 | `frontend/src/app/globals.css` มี EOL ผสม (CRLF/CR/LF) | Edit/Write tool normalize ทั้งไฟล์ → diff 1,400+ บรรทัดจากการแก้ 1 บรรทัด | แก้ด้วย Node script แบบ byte-preserving (`readFileSync` → `String.replace` ตรง ๆ → `writeFileSync`); ตรวจ `git diff --stat` ต้องเล็ก | 2026-08 |
 | ปุ่มไม่รับ `text-xs`/`text-sm` | มี reset แบบ unlayered `button{font-size:inherit}` ชนะ Tailwind v4 utilities เสมอ | ใช้ `text-xs!` (important) หรือ inline style | 2026-06-29 |
 | dark mode ทดสอบผิดวิธี | flip `data-theme` ด้วย JS แล้วดูเหมือน bug | palette ถูกเขียน inline บน `<html>` โดย `applyVisualTheme()` (`src/lib/theme-data.ts`) → ต้อง**กดปุ่มสลับธีมจริง** | 2026-09-02 |
