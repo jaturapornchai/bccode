@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-09 @ commit 5e553d28 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-09 @ commit f6c03d7e - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 45
 
@@ -445,7 +445,7 @@ Files indexed: 45
 | 3270 | function | `ApplyChangesWithProgress` |
 | 3678 | function | `max` |
 
-## frontend/src/app/menu/product-screen.tsx (3045 lines)
+## frontend/src/app/menu/product-screen.tsx (3029 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -469,23 +469,23 @@ Files indexed: 45
 | 1002 | const-arrow | `handleSave` |
 | 1161 | const-arrow | `openPicker` |
 | 1172 | const-arrow | `handlePickerSelect` |
-| 2760 | function | `setNameXEntry` |
-| 2775 | function | `productRowKey` |
-| 2779 | function | `productUnitRows` |
-| 2783 | function | `formatProductUnitType` |
-| 2794 | function | `formatYesNo` |
-| 2798 | function | `formatNamedList` |
-| 2811 | function | `formatUnitConversionList` |
-| 2826 | function | `formatRefBarcodeList` |
-| 2866 | function | `formatBomList` |
-| 2883 | function | `formatOptionList` |
-| 2905 | function | `formatDimensionList` |
-| 2917 | function | `formatMarketplaceProductList` |
-| 2935 | function | `formatTimeForSaleList` |
-| 2947 | function | `isEmptyDetailValue` |
-| 2960 | function | `DetailSummary` |
-| 2990 | function | `DetailSection` |
-| 3031 | function | `DetailField` |
+| 2744 | function | `setNameXEntry` |
+| 2759 | function | `productRowKey` |
+| 2763 | function | `productUnitRows` |
+| 2767 | function | `formatProductUnitType` |
+| 2778 | function | `formatYesNo` |
+| 2782 | function | `formatNamedList` |
+| 2795 | function | `formatUnitConversionList` |
+| 2810 | function | `formatRefBarcodeList` |
+| 2850 | function | `formatBomList` |
+| 2867 | function | `formatOptionList` |
+| 2889 | function | `formatDimensionList` |
+| 2901 | function | `formatMarketplaceProductList` |
+| 2919 | function | `formatTimeForSaleList` |
+| 2931 | function | `isEmptyDetailValue` |
+| 2944 | function | `DetailSummary` |
+| 2974 | function | `DetailSection` |
+| 3015 | function | `DetailField` |
 
 ## frontend/src/app/menu/main-menu-screen.tsx (2842 lines)
 
@@ -928,48 +928,48 @@ Files indexed: 45
 | 987 | const-arrow | `handleSave` |
 | 2146 | function | `saveErrorMessage` |
 
-## frontend/src/lib/system-setting-screens.ts (2133 lines)
+## frontend/src/lib/system-setting-screens.ts (2125 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 | 1182 | function | `productMasterConfigs` |
-| 1715 | function | `getSystemSettingConfig` |
-| 1726 | function | `systemSettingLabel` |
-| 1733 | function | `textField` |
-| 1745 | function | `businessCodeField` |
-| 1756 | function | `uniqueCodeField` |
-| 1765 | function | `textareaField` |
-| 1773 | function | `numberField` |
-| 1777 | function | `dateField` |
-| 1786 | function | `imageUploadField` |
-| 1799 | function | `imageGalleryField` |
-| 1807 | function | `timeSaleListField` |
-| 1815 | function | `branchMultiSelectField` |
-| 1823 | function | `companyMultiSelectField` |
-| 1831 | function | `checkboxField` |
-| 1839 | function | `namesField` |
-| 1848 | function | `jsonField` |
-| 1852 | function | `stringListField` |
-| 1859 | function | `thaiAddressField` |
-| 1865 | function | `bankAccountsField` |
-| 1869 | function | `holdingScopeRulesField` |
-| 1878 | function | `languageListField` |
-| 1886 | function | `masterPickerField` |
-| 1898 | function | `masterMultiPickerField` |
-| 1907 | function | `comboField` |
-| 1925 | function | `radioField` |
-| 1943 | function | `selectField` |
-| 1961 | function | `languageConfigsField` |
-| 1969 | function | `vatTypeOptions` |
-| 1994 | function | `inquiryTypeOptions` |
-| 2001 | function | `couponUseTypeOptions` |
-| 2016 | function | `currencyOptions` |
-| 2023 | function | `countryOptions` |
-| 2048 | function | `dateFormatOptions` |
-| 2076 | function | `formatDatePatternExample` |
-| 2091 | function | `datePartsForLanguage` |
-| 2104 | function | `datePart` |
-| 2117 | function | `localeOf` |
+| 1707 | function | `getSystemSettingConfig` |
+| 1718 | function | `systemSettingLabel` |
+| 1725 | function | `textField` |
+| 1737 | function | `businessCodeField` |
+| 1748 | function | `uniqueCodeField` |
+| 1757 | function | `textareaField` |
+| 1765 | function | `numberField` |
+| 1769 | function | `dateField` |
+| 1778 | function | `imageUploadField` |
+| 1791 | function | `imageGalleryField` |
+| 1799 | function | `timeSaleListField` |
+| 1807 | function | `branchMultiSelectField` |
+| 1815 | function | `companyMultiSelectField` |
+| 1823 | function | `checkboxField` |
+| 1831 | function | `namesField` |
+| 1840 | function | `jsonField` |
+| 1844 | function | `stringListField` |
+| 1851 | function | `thaiAddressField` |
+| 1857 | function | `bankAccountsField` |
+| 1861 | function | `holdingScopeRulesField` |
+| 1870 | function | `languageListField` |
+| 1878 | function | `masterPickerField` |
+| 1890 | function | `masterMultiPickerField` |
+| 1899 | function | `comboField` |
+| 1917 | function | `radioField` |
+| 1935 | function | `selectField` |
+| 1953 | function | `languageConfigsField` |
+| 1961 | function | `vatTypeOptions` |
+| 1986 | function | `inquiryTypeOptions` |
+| 1993 | function | `couponUseTypeOptions` |
+| 2008 | function | `currencyOptions` |
+| 2015 | function | `countryOptions` |
+| 2040 | function | `dateFormatOptions` |
+| 2068 | function | `formatDatePatternExample` |
+| 2083 | function | `datePartsForLanguage` |
+| 2096 | function | `datePart` |
+| 2109 | function | `localeOf` |
 
 ## backend/internal/coupon/services/coupon_http_service.go (2113 lines)
 

@@ -245,7 +245,6 @@ export type MasterName =
   | "groupsubtwo"
   | "brand"
   | "category"
-  | "model"
   | "unit"
   | "producttype"
   | "ordertype"

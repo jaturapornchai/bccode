@@ -1264,11 +1264,6 @@ export function ProductScreen({
         code: "categorycode",
         names: "categorynames",
       },
-      model: {
-        guid: "modelguid" as keyof Product,
-        code: "modelcode",
-        names: "modelnames",
-      },
     };
     const cf = classificationFields[pickerTarget];
     if (!cf) return;
@@ -1316,11 +1311,6 @@ export function ProductScreen({
         guid: "categoryguid" as keyof Product,
         code: "categorycode",
         names: "categorynames",
-      },
-      model: {
-        guid: "modelguid" as keyof Product,
-        code: "modelcode",
-        names: "modelnames",
       },
     };
     const cf = clearFields[field];
@@ -2328,12 +2318,6 @@ export function ProductScreen({
                           label: text.category,
                           value: selectedProduct.categorycode
                             ? `${selectedProduct.categorycode} — ${pickName(selectedProduct.categorynames, lang)}`
-                            : "-",
-                        },
-                        {
-                          label: text.model,
-                          value: selectedProduct.modelcode
-                            ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
                             : "-",
                         },
                       ]}

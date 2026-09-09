@@ -20,6 +20,57 @@
   - <ผลการทดสอบ เช่น ผ่าน vitest ... tests, typecheck 0 errors, curl 200 OK>
 -->
 
+### 2026-09-09 — ลบกลุ่มเมนู "ร้านอาหาร/คาเฟ่" ทั้งหมด 7 เมนูออกจากระบบ
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**:
+  1. **ลบกลุ่มเมนูร้านอาหาร/คาเฟ่ออกจากระบบ**:
+     - ลบกลุ่มเมนู `ร้านอาหาร/คาเฟ่` (`restaurant-setup`) ทั้งหมด 7 เมนู ได้แก่ `โซน` (`/zonegroupselectscreen`), `โต๊ะ` (`/tablegroupselectscreen`), `ผังโต๊ะ` (`/tablemapgroupselectscreen`), `ครัว` (`/kitchengroupselectscreen`), `ตั้งค่าเครื่องสั่งอาหาร` (`/ordertemplatsetting`), `ตั้งค่าการสั่งอาหาร` (`/ordersetting`), `สั่งอาหารด้วย QR` (`/qrcodeordergroupselectscreen`) ออกจาก `frontend/src/lib/menu-data.ts`
+     - ลบแมปปิ้งไอคอนทั้ง 7 เส้นทางใน `frontend/src/lib/menu-icons.ts`
+     - อัปเดตจำนวนเมนูระบบใน `menu-icons.test.ts` จาก 213 เหลือ 206 เมนู
+     - อัปเดต unit tests ใน `menu-data.test.ts` เอา `restaurant-setup` ออกจาก `groupOrder`
+  2. **อัปเดต CODE-MAP**: ซิงค์แผนผังโค้ดระบบ `docs/reference/CODE-MAP.md` ให้ตรงกับขนาดและบรรทัดของไฟล์หลังตัดโค้ด
+- **ไฟล์สำคัญ**:
+  - `frontend/src/lib/menu-data.ts`
+  - `frontend/src/lib/menu-icons.ts`
+  - `frontend/src/lib/menu-icons.test.ts`
+  - `frontend/src/lib/menu-data.test.ts`
+  - `docs/reference/CODE-MAP.md`
+- **ผลการทดสอบ (Evidence)**:
+  - Unit tests: `menu-icons.test.ts`, `menu-data.test.ts`, `system-setting-screens.test.ts` ผ่าน 100% (32/32 tests)
+  - Typecheck: `tsc --noEmit` ผ่าน 0 errors
+  - Codemap check: `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` ซิงค์ถูกต้อง (45 files indexed)
+
+### 2026-09-09 — ลบเมนู "รุ่นสินค้า" (Model) และตัดการเชื่อมโยงจากระบบอื่นอย่างสมบูรณ์
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**:
+  1. **ลบเมนูและไอคอนรุ่นสินค้า**:
+     - ลบรายการเมนู `รุ่นสินค้า` (`/mastermodelscreen`) ออกจากกลุ่มรายละเอียดประกอบสินค้าใน `frontend/src/lib/menu-data.ts`
+     - ลบแมปปิ้งไอคอน `"/mastermodelscreen": "design"` ใน `frontend/src/lib/menu-icons.ts`
+     - อัปเดตจำนวนเมนูระบบใน `menu-icons.test.ts` จาก 214 เหลือ 213 เมนู
+  2. **ถอดคอนฟิกหน้าตั้งค่าระบบ**:
+     - ลบคอนฟิก `master_model_screen` ออกจาก `frontend/src/lib/system-setting-screens.ts`
+  3. **ตัดการเชื่อมโยงจากหน้าจอสินค้า (Product)**:
+     - ลบฟิลด์เลือก `model` ออกจากแถบจัดหมวดหมู่สินค้าใน `frontend/src/app/menu/tab-product-classification.tsx`
+     - ลบฟิลด์ `model` ออกจาก `classificationFields`, `clearFields` และการแสดงผลรายละเอียดสินค้าใน `frontend/src/app/menu/product-screen.tsx`
+  4. **ตัดการเชื่อมโยง API Proxy Master Picker**:
+     - ลบ endpoint mapping `model: "/aicloud/model"` ออกจาก `frontend/src/app/api/product-barcode/master/[master]/route.ts`
+     - ลบ `| "model"` ออกจากประเภท `MasterName` ใน `frontend/src/lib/product-barcode/api.ts`
+  5. **อัปเดต CODE-MAP**: ซิงค์แผนผังโค้ดระบบ `docs/reference/CODE-MAP.md` ให้ตรงกับขนาดและบรรทัดของไฟล์หลังตัดโค้ด
+- **ไฟล์สำคัญ**:
+  - `frontend/src/lib/menu-data.ts`
+  - `frontend/src/lib/menu-icons.ts`
+  - `frontend/src/lib/menu-icons.test.ts`
+  - `frontend/src/lib/system-setting-screens.ts`
+  - `frontend/src/app/menu/tab-product-classification.tsx`
+  - `frontend/src/app/menu/product-screen.tsx`
+  - `frontend/src/app/api/product-barcode/master/[master]/route.ts`
+  - `frontend/src/lib/product-barcode/api.ts`
+  - `docs/reference/CODE-MAP.md`
+- **ผลการทดสอบ (Evidence)**:
+  - Unit tests: `menu-icons.test.ts`, `menu-data.test.ts`, `system-setting-screens.test.ts` ผ่าน 100% (32/32 tests)
+  - Typecheck: `tsc --noEmit` ผ่าน 0 errors
+  - Codemap check: `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` ซิงค์ถูกต้อง (45 files indexed)
+
 ### 2026-09-09 — ลบเมนู "คุณลักษณะสินค้า" และกลุ่มเมนู "สี ไซซ์ และตัวเลือก" ออกจากระบบ
 - **ประเภท**: `[UI/UX]` `[Cleanup]`
 - **สิ่งที่ทำ**:

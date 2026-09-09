@@ -1680,14 +1680,6 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "ยี่ห้อ",
       "Brand",
     ),
-    aicloudConfig(
-      "master_model_screen",
-      "/mastermodelscreen",
-      "activity",
-      "model",
-      "Model",
-      "Model",
-    ),
     atlasMasterConfig(
       "productsubgroup",
       "/productsubgroup",

@@ -21,7 +21,6 @@ const MASTER_PATHS: Record<string, string> = {
   groupsubtwo: "/aicloud/groupsubtwo",
   brand: "/aicloud/brand",
   category: "/aicloud/category",
-  model: "/aicloud/model",
   unit: "/unit",
   producttype: "/product/type",
   ordertype: "/product/order-type",

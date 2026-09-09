@@ -208,7 +208,6 @@ describe("menu language labels", () => {
       "approval",
       "sales-pos",
       "sales-loyalty",
-      "restaurant-setup",
     ]);
   });
 

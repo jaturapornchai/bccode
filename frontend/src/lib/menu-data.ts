@@ -399,7 +399,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("product_descriptors", "รายละเอียดประกอบสินค้า", "Product Details"),
         items: [
           tx("brand", "ยี่ห้อสินค้า", "Brand", "/masterbrandscreen", "master"),
-          tx("model", "รุ่นสินค้า", "Model", "/mastermodelscreen", "master"),
         ],
       },
       {
@@ -477,19 +476,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("coupon-setting", "ตั้งค่าคูปอง", "Coupon Setting", "/couponsetting", "master"),
           tx("promotion", "โปรโมชั่น", "Promotion", "/promotionscreen", "master"),
           tx("customer-purchase-cycle", "รอบซื้อลูกค้าประจำ", "Customer Purchase Cycles", "/customerpurchasecycle", "master"),
-        ],
-      },
-      {
-        id: "restaurant-setup",
-        title: ml("restaurant_cafe", "ร้านอาหาร/คาเฟ่", "Restaurant / Cafe"),
-        items: [
-          tx("zone", "โซน", "Zone", "/zonegroupselectscreen", "restaurant"),
-          tx("table", "โต๊ะ", "Table", "/tablegroupselectscreen", "restaurant"),
-          tx("table-map", "ผังโต๊ะ", "Table Map", "/tablemapgroupselectscreen", "restaurant"),
-          tx("kitchen", "ครัว", "Kitchen", "/kitchengroupselectscreen", "restaurant"),
-          tx("order-template", "ตั้งค่าเครื่องสั่งอาหาร", "Ordering Station Settings", "/ordertemplatsetting", "restaurant"),
-          tx("order-setting", "ตั้งค่าการสั่งอาหาร", "Ordering Settings", "/ordersetting", "restaurant"),
-          tx("qr-order", "สั่งอาหารด้วย QR", "QR Ordering", "/qrcodeordergroupselectscreen", "restaurant"),
         ],
       },
     ],
