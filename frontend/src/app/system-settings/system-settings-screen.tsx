@@ -2891,8 +2891,12 @@ export function SystemSettingsScreen({
             groupNumber={groupNumber}
             setGroupNumber={setGroupNumber}
             selectedGuid={categorySelectedGuid}
+            setSelectedGuid={setCategorySelectedGuid}
             searchQuery={categorySearchQuery}
             onSelectRecord={handleSelectCategoryRecord}
+            onOpenCreate={handleOpenCategoryCreate}
+            onOpenEdit={openEdit}
+            onDeleteRecord={deleteRecord}
             onRefresh={() => void loadRecords(auth, workspace, config)}
             saving={saving}
             loading={loading}

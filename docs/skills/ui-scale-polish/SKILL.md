@@ -304,3 +304,34 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
 - `frontend/src/app/system-settings/product-category-tree-view.tsx` (ปุ่มเลือกกลุ่มหมวด 1-20 ในหน้าจัดหมวดสินค้า `data-testid="product-category-group-grid"`)
 
+---
+
+## 8.3 แบบแผน UX/UI สำหรับ Tree View ลากวางและปุ่มจัดการบนแถว (Unified Tree UX/UI)
+
+**แบบแผนใหม่ (New Standard Pattern)** — หน้าจอจัดการโครงสร้างแบบต้นไม้ (เช่น กลุ่มสินค้า `productgroup` และ จัดหมวดสินค้า `productcategorygroupselectscreen`) ต้องมี UX/UI ที่เป็นมาตรฐานเดียวกันทั้งระบบ:
+
+1. **Row Actions Toolbar บนแถวรายการ**:
+   - `GripVertical`: ตัวจับลากทางซ้ายสุด สำหรับจัดลำดับและเปลี่ยนระดับ
+   - `ChevronUp` / `ChevronDown`: ปรับลำดับขึ้น-ลงระหว่างพี่น้อง (Sibling reorder) สำหรับผู้ใช้ที่ไม่ถนัดลากเมาส์
+   - `FolderPlus` (สีเขียว `text-emerald-600`): เพิ่มรายการย่อยใต้รายการนั้นโดยตรง โดยไม่ต้องกวาดสายตาขึ้น Header
+   - `Edit3` (สีน้ำเงิน `text-blue-600`): เปิดฟอร์มแก้ไขรายการนั้นทันที
+   - `Trash2` (สีแดง `text-destructive`): ลบรายการ พร้อม Confirm Dialog ภาษาไทยก่อนทำลาย
+2. **ระดับสีลำดับชั้น (Multi-level Hierarchy Styles)**:
+   - ใช้ 5 ระดับสีที่ตัดกันชัดเจน (`GROUP_LEVEL_STYLES` / `CATEGORY_LEVEL_STYLES`) แทนการใช้สีเดียวทั้งต้นไม้: Level 0 (Primary), Level 1 (Sky), Level 2 (Emerald), Level 3 (Amber), Level 4 (Violet)
+3. **การลากวาง (Drag & Drop Hierarchy)**:
+   - **วางเป็นลูก (Drop Inside)**: มีชิปป้ายเขียวเด่นชัด `data-*-inside-drop-guid` แสดงตอนลากผ่าน
+   - **วางเป็นหลัก (Drop as Root)**: มีแถบสีเขียวด้านล่างสุดของรายการต้นไม้ `data-*-root-drop="true"` สำหรับดึงรายการลูกกลับมาเป็นระดับหลัก
+   - **Undo / Redo Toolbar**: มีปุ่ม "เลิกทำ" และ "ทำซ้ำ" ด้านบนเสมอ เพื่อให้กู้คืนการลากผิดพลาดได้ทันที
+
+**กับดัก / สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
+- **ห้ามบังคับให้ผู้ใช้ต้องคลิกเลือกรายการก่อน แล้วกวาดสายตาขึ้นไปหาปุ่ม "เพิ่มย่อย" บน Header**: ทำให้คนไทย 40+ สับสน ไม่เข้าใจว่าทำไมปุ่มถึง disabled และหาจุดกดยาก
+- **ห้ามทำ Tree View ที่ขาดปุ่มเพิ่มย่อย/แก้ไข/ลบ บนแถว**: การซ่อน Action ไว้หลังการคลิกแถวทำให้การทำงานช้าและไม่เป็นธรรมชาติ
+- **ห้ามใช้สีระดับชั้นเหมือนกันทุกระดับ**: ทำให้แยกไม่ออกระหว่างหมวดหลักและหมวดย่อย
+
+**เหตุผลทางเทคนิค (Root Cause & Rationale)**:
+การมี Action buttons บนแถวโดยตรง (Direct Row Manipulation) ลด Cognitive Load ของผู้ใช้ โดยผู้ใช้เห็นเป้าหมายและจุดกดในตำแหน่งสายตาเดียวกัน (Fitts's Law) และการมี Drag & Drop ควบคู่กับปุ่ม Up/Down รองรับทั้งผู้ใช้เมาส์ จอสัมผัส และคีย์บอร์ด (WCAG 2.1 Accessibility)
+
+**ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
+- `frontend/src/app/system-settings/product-group-tree-view.tsx` (ต้นแบบของระบบ)
+- `frontend/src/app/system-settings/product-category-tree-view.tsx` (ยกระดับให้เหมือนกันครบถ้วน)
+

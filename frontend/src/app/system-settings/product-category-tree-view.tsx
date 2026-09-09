@@ -6,10 +6,13 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  Edit3,
+  FolderPlus,
   GripVertical,
   Home,
   Loader2,
   Redo2,
+  Trash2,
   Undo2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,8 +30,12 @@ interface ProductCategoryTreeViewProps {
   groupNumber: number | null;
   setGroupNumber: (num: number | null) => void;
   selectedGuid: string;
+  setSelectedGuid?: (guid: string) => void;
   searchQuery: string;
   onSelectRecord: (record: SettingRecord) => void | Promise<void>;
+  onOpenCreate?: (parentGuid?: string) => void;
+  onOpenEdit?: (record: SettingRecord) => void;
+  onDeleteRecord?: (record: SettingRecord) => void;
   onRefresh?: () => void;
   saving: boolean;
   loading: boolean;
@@ -66,14 +73,32 @@ const CATEGORY_LEVEL_STYLES = [
   {
     caret: "text-primary",
     grip: "text-primary/45 group-hover/row:text-primary",
-    name: "font-bold text-foreground",
+    name: "text-[15px] font-bold text-foreground",
     order: "text-primary",
   },
   {
-    caret: "text-muted-foreground",
-    grip: "text-muted-foreground/45 group-hover/row:text-primary",
-    name: "font-medium text-foreground",
-    order: "text-muted-foreground",
+    caret: "text-sky-600 dark:text-sky-300",
+    grip: "text-sky-500/55 group-hover/row:text-sky-600 dark:group-hover/row:text-sky-300",
+    name: "font-semibold text-sky-900 dark:text-sky-100",
+    order: "text-sky-600 dark:text-sky-300",
+  },
+  {
+    caret: "text-emerald-600 dark:text-emerald-300",
+    grip: "text-emerald-500/55 group-hover/row:text-emerald-600 dark:group-hover/row:text-emerald-300",
+    name: "font-semibold text-emerald-900 dark:text-emerald-100",
+    order: "text-emerald-600 dark:text-emerald-300",
+  },
+  {
+    caret: "text-amber-600 dark:text-amber-300",
+    grip: "text-amber-500/60 group-hover/row:text-amber-600 dark:group-hover/row:text-amber-300",
+    name: "font-medium text-amber-900 dark:text-amber-100",
+    order: "text-amber-600 dark:text-amber-300",
+  },
+  {
+    caret: "text-violet-600 dark:text-violet-300",
+    grip: "text-violet-500/55 group-hover/row:text-violet-600 dark:group-hover/row:text-violet-300",
+    name: "font-medium text-violet-900 dark:text-violet-100",
+    order: "text-violet-600 dark:text-violet-300",
   },
 ] as const;
 
@@ -174,8 +199,12 @@ export function ProductCategoryTreeView({
   groupNumber,
   setGroupNumber,
   selectedGuid,
+  setSelectedGuid,
   searchQuery,
   onSelectRecord,
+  onOpenCreate,
+  onOpenEdit,
+  onDeleteRecord,
   onRefresh,
   saving,
   loading,
@@ -1696,6 +1725,62 @@ export function ProductCategoryTreeView({
                     >
                       <ChevronDown className="size-3.5" />
                     </Button>
+                    {onOpenCreate && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                        aria-label={language === "th" ? "เพิ่มหมวดย่อย" : "Add subcategory"}
+                        title={language === "th" ? "เพิ่มหมวดย่อยใต้หมวดนี้" : "Add subcategory"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedGuid?.(node.detail.guidfixed);
+                          onOpenCreate(node.detail.guidfixed);
+                        }}
+                      >
+                        <FolderPlus className="size-3.5" />
+                      </Button>
+                    )}
+                    {onOpenEdit && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                        aria-label={language === "th" ? "แก้ไข" : "Edit"}
+                        title={language === "th" ? "แก้ไขหมวดนี้" : "Edit"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedGuid?.(node.detail.guidfixed);
+                          const orig = records.find(
+                            (r) => recordGuid(r) === node.detail.guidfixed
+                          );
+                          if (orig) onOpenEdit(recordWithOptimisticOverrides(orig));
+                        }}
+                      >
+                        <Edit3 className="size-3.5" />
+                      </Button>
+                    )}
+                    {onDeleteRecord && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 rounded-full text-destructive hover:bg-destructive/10"
+                        aria-label={language === "th" ? "ลบ" : "Delete"}
+                        title={language === "th" ? "ลบหมวดนี้" : "Delete"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const orig = records.find(
+                            (r) => recordGuid(r) === node.detail.guidfixed
+                          );
+                          if (orig) onDeleteRecord(orig);
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
