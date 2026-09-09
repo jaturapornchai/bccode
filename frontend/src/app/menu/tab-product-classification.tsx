@@ -29,10 +29,7 @@ export function TabProductClassification({
           { key: "subgroup", label: text.groupsubone, code: value.subgroupcode, names: value.subgroupnames },
           { key: "brand", label: text.brand, code: value.brandcode, names: value.brandnames },
           { key: "category", label: text.category, code: value.categorycode, names: value.categorynames },
-          { key: "class", label: text.class, code: value.classcode, names: value.classnames },
-          { key: "design", label: text.design, code: value.designcode, names: value.designnames },
           { key: "model", label: text.model, code: value.modelcode, names: value.modelnames },
-          { key: "grade", label: text.grade, code: value.gradecode, names: value.gradenames },
         ].map((field) => (
           <div key={field.key} className="space-y-1">
             <label className="text-xs text-muted-foreground">{field.label}</label>

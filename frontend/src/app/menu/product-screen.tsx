@@ -1264,25 +1264,10 @@ export function ProductScreen({
         code: "categorycode",
         names: "categorynames",
       },
-      class: {
-        guid: "classguid" as keyof Product,
-        code: "classcode",
-        names: "classnames",
-      },
-      design: {
-        guid: "designguid" as keyof Product,
-        code: "designcode",
-        names: "designnames",
-      },
       model: {
         guid: "modelguid" as keyof Product,
         code: "modelcode",
         names: "modelnames",
-      },
-      grade: {
-        guid: "gradeguid" as keyof Product,
-        code: "gradecode",
-        names: "gradenames",
       },
     };
     const cf = classificationFields[pickerTarget];
@@ -1332,25 +1317,10 @@ export function ProductScreen({
         code: "categorycode",
         names: "categorynames",
       },
-      class: {
-        guid: "classguid" as keyof Product,
-        code: "classcode",
-        names: "classnames",
-      },
-      design: {
-        guid: "designguid" as keyof Product,
-        code: "designcode",
-        names: "designnames",
-      },
       model: {
         guid: "modelguid" as keyof Product,
         code: "modelcode",
         names: "modelnames",
-      },
-      grade: {
-        guid: "gradeguid" as keyof Product,
-        code: "gradecode",
-        names: "gradenames",
       },
     };
     const cf = clearFields[field];
@@ -2361,27 +2331,9 @@ export function ProductScreen({
                             : "-",
                         },
                         {
-                          label: text.class,
-                          value: selectedProduct.classcode
-                            ? `${selectedProduct.classcode} — ${pickName(selectedProduct.classnames, lang)}`
-                            : "-",
-                        },
-                        {
-                          label: text.design,
-                          value: selectedProduct.designcode
-                            ? `${selectedProduct.designcode} — ${pickName(selectedProduct.designnames, lang)}`
-                            : "-",
-                        },
-                        {
                           label: text.model,
                           value: selectedProduct.modelcode
                             ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
-                            : "-",
-                        },
-                        {
-                          label: text.grade,
-                          value: selectedProduct.gradecode
-                            ? `${selectedProduct.gradecode} — ${pickName(selectedProduct.gradenames, lang)}`
                             : "-",
                         },
                       ]}
