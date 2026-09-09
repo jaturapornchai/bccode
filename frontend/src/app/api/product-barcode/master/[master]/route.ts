@@ -25,7 +25,6 @@ const MASTER_PATHS: Record<string, string> = {
   design: "/aicloud/design",
   grade: "/aicloud/grade",
   model: "/aicloud/model",
-  pattern: "/aicloud/pattern",
   unit: "/unit",
   producttype: "/product/type",
   ordertype: "/product/order-type",

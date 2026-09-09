@@ -20,6 +20,33 @@
   - <ผลการทดสอบ เช่น ผ่าน vitest ... tests, typecheck 0 errors, curl 200 OK>
 -->
 
+### 2026-09-09 — ลบเมนู "รูปแบบสินค้า" และตัดการเชื่อมโยงจากระบบอื่นอย่างสมบูรณ์
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**:
+  1. **ลบเมนูและไอคอนรูปแบบสินค้า**: ลบรายการเมนู `รูปแบบสินค้า` (`/masterpatternscreen`) ออกจากกลุ่มข้อมูลหลักใน `frontend/src/lib/menu-data.ts`, ลบไอคอนใน `frontend/src/lib/menu-icons.ts` และอัปเดตจำนวนเมนูใน `menu-icons.test.ts` จาก 223 เหลือ 222 เมนู
+  2. **ถอดคอนฟิกหน้าตั้งค่าระบบ**: ลบคอนฟิก `master_pattern_screen` ออกจาก `frontend/src/lib/system-setting-screens.ts` ไม่ให้เข้าถึงผ่าน `/[systemSetting]`
+  3. **ตัดการเชื่อมโยงจากหน้าสินค้า (Product)**:
+     - ลบช่องเลือก `pattern` ออกจากแถบจัดหมวดหมู่สินค้าใน `frontend/src/app/menu/tab-product-classification.tsx`
+     - ลบฟิลด์ `pattern` ออกจาก `classificationFields`, `clearFields` และการแสดงผลรายละเอียดสินค้าใน `frontend/src/app/menu/product-screen.tsx`
+  4. **ตัดการเชื่อมโยง API Proxy Master Picker**:
+     - ลบ endpoint mapping `pattern: "/aicloud/pattern"` ออกจาก `frontend/src/app/api/product-barcode/master/[master]/route.ts`
+     - ลบ `| "pattern"` ออกจากประเภท `MasterName` ใน `frontend/src/lib/product-barcode/api.ts`
+  5. **อัปเดต CODE-MAP**: ซิงค์แผนผังโค้ดระบบ `docs/reference/CODE-MAP.md` ให้ตรงกับขนาดและบรรทัดของไฟล์หลังตัดโค้ด
+- **ไฟล์สำคัญ**:
+  - `frontend/src/lib/menu-data.ts`
+  - `frontend/src/lib/menu-icons.ts`
+  - `frontend/src/lib/menu-icons.test.ts`
+  - `frontend/src/lib/system-setting-screens.ts`
+  - `frontend/src/app/menu/tab-product-classification.tsx`
+  - `frontend/src/app/menu/product-screen.tsx`
+  - `frontend/src/app/api/product-barcode/master/[master]/route.ts`
+  - `frontend/src/lib/product-barcode/api.ts`
+  - `docs/reference/CODE-MAP.md`
+- **ผลการทดสอบ (Evidence)**:
+  - Unit tests: `menu-icons.test.ts`, `menu-data.test.ts`, `system-setting-screens.test.ts` ผ่าน 100% (33/33 tests)
+  - Typecheck: `tsc --noEmit` ผ่าน 0 errors
+  - Codemap check: `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` ซิงค์ถูกต้อง (45 files indexed)
+
 ### 2026-09-09 — ตั้งกฎห้ามอ้างอิงบุคคลภายนอก (ซอฟต์แวร์คู่แข่ง) และชำระล้างเอกสารทั้งระบบ พร้อม Pre-commit Guard
 - **ประเภท**: `[Docs]` `[Tooling]` `[Compliance]`
 - **สิ่งที่ทำ**:

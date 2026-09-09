@@ -404,7 +404,6 @@ export const MENU_SECTIONS: MenuSection[] = [
             ...tx("category", "คุณลักษณะสินค้า", "Product Attributes", "/mastercategoryscreen", "master"),
             label: ml("product_attribute_category", "คุณลักษณะสินค้า", "Product Attributes"),
           },
-          tx("pattern", "รูปแบบสินค้า", "Pattern", "/masterpatternscreen", "master"),
           tx("dimension", "ขนาด/มิติสินค้า", "Product Dimensions", "/productdimension", "master"),
           tx("grade", "เกรดสินค้า", "Product Grade", "/mastergradescreen", "master"),
           tx("class", "ระดับสินค้า", "Product Class", "/masterclassscreen", "master"),

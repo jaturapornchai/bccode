@@ -249,7 +249,6 @@ export type MasterName =
   | "design"
   | "grade"
   | "model"
-  | "pattern"
   | "unit"
   | "producttype"
   | "ordertype"

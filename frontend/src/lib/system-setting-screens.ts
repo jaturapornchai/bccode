@@ -1740,14 +1740,6 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "Model",
       "Model",
     ),
-    aicloudConfig(
-      "master_pattern_screen",
-      "/masterpatternscreen",
-      "grid",
-      "pattern",
-      "Pattern",
-      "Pattern",
-    ),
     atlasMasterConfig(
       "productsubgroup",
       "/productsubgroup",

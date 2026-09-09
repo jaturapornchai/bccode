@@ -1279,11 +1279,6 @@ export function ProductScreen({
         code: "modelcode",
         names: "modelnames",
       },
-      pattern: {
-        guid: "patternguid" as keyof Product,
-        code: "patterncode",
-        names: "patternnames",
-      },
       grade: {
         guid: "gradeguid" as keyof Product,
         code: "gradecode",
@@ -1351,11 +1346,6 @@ export function ProductScreen({
         guid: "modelguid" as keyof Product,
         code: "modelcode",
         names: "modelnames",
-      },
-      pattern: {
-        guid: "patternguid" as keyof Product,
-        code: "patterncode",
-        names: "patternnames",
       },
       grade: {
         guid: "gradeguid" as keyof Product,
@@ -2386,12 +2376,6 @@ export function ProductScreen({
                           label: text.model,
                           value: selectedProduct.modelcode
                             ? `${selectedProduct.modelcode} — ${pickName(selectedProduct.modelnames, lang)}`
-                            : "-",
-                        },
-                        {
-                          label: text.pattern,
-                          value: selectedProduct.patterncode
-                            ? `${selectedProduct.patterncode} — ${pickName(selectedProduct.patternnames, lang)}`
                             : "-",
                         },
                         {

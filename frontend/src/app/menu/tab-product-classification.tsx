@@ -32,7 +32,6 @@ export function TabProductClassification({
           { key: "class", label: text.class, code: value.classcode, names: value.classnames },
           { key: "design", label: text.design, code: value.designcode, names: value.designnames },
           { key: "model", label: text.model, code: value.modelcode, names: value.modelnames },
-          { key: "pattern", label: text.pattern, code: value.patterncode, names: value.patternnames },
           { key: "grade", label: text.grade, code: value.gradecode, names: value.gradenames },
         ].map((field) => (
           <div key={field.key} className="space-y-1">
