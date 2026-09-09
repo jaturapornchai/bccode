@@ -161,6 +161,7 @@ describe("menu language labels", () => {
       "non-stock-product",
       "product-extension",
       "barcode",
+      "product-category",
       "productset",
       "bom",
     ]);
@@ -179,8 +180,6 @@ describe("menu language labels", () => {
     expect(defaultGroupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
       "product-unit",
       "product-group",
-      "product-category",
-      "product-category-list",
     ]);
     expect(defaultGroupsById.get("product-descriptors")?.title.th).toBe("รายละเอียดประกอบสินค้า");
     expect(defaultGroupsById.get("product-sku-options")?.title.th).toBe("สี ไซซ์ และตัวเลือก");
@@ -221,14 +220,12 @@ describe("menu language labels", () => {
   });
 
   it("uses distinct product category labels for category structure and attribute category", () => {
-    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
-    const defaultItems = defaultsSection?.groups.flatMap((group) => group.items) ?? [];
-    const labelsById = new Map(defaultItems.map((item) => [item.id, item.label.th]));
+    const allItems = flattenMenuItems();
+    const labelsById = new Map(allItems.map((item) => [item.id, item.label.th]));
 
     expect(labelsById.get("product-category")).toBe("จัดหมวดสินค้า");
-    expect(labelsById.get("product-category-list")).toBe("สินค้าในหมวด");
     expect(labelsById.get("category")).toBe("คุณลักษณะสินค้า");
-    expect(defaultItems.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
+    expect(allItems.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
   });
 
   it("uses plain Thai business words for visible menu labels", () => {

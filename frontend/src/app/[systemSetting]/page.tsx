@@ -18,6 +18,7 @@ export default async function SystemSettingPage({ params }: SystemSettingPagePro
   const { systemSetting } = await params;
   if (systemSetting === "permissionlink") redirect("/user");
   if (systemSetting === "approvalsetting") redirect("/workspace");
+  if (systemSetting === "productcategorylist") redirect("/productcategorygroupselectscreen");
   const config = getSystemSettingConfig(systemSetting);
   if (!config) notFound();
   const initialLanguage = await getInitialBackendLanguage();

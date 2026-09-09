@@ -7,7 +7,6 @@ import {
   ChevronRight,
   ChevronUp,
   Edit3,
-  FolderPlus,
   GripVertical,
   Home,
   Loader2,
@@ -1725,23 +1724,6 @@ export function ProductCategoryTreeView({
                     >
                       <ChevronDown className="size-3.5" />
                     </Button>
-                    {onOpenCreate && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                        aria-label={language === "th" ? "เพิ่มหมวดย่อย" : "Add subcategory"}
-                        title={language === "th" ? "เพิ่มหมวดย่อยใต้หมวดนี้" : "Add subcategory"}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedGuid?.(node.detail.guidfixed);
-                          onOpenCreate(node.detail.guidfixed);
-                        }}
-                      >
-                        <FolderPlus className="size-3.5" />
-                      </Button>
-                    )}
                     {onOpenEdit && (
                       <Button
                         type="button"
@@ -1865,8 +1847,8 @@ export function ProductCategoryTreeView({
                     ? "กลุ่มนี้ยังไม่มีหมวดสินค้า กรุณาไปสร้างหมวดสินค้าที่หน้าจอ 'จัดหมวดสินค้า' ก่อน"
                     : "This group has no categories yet. Please create categories on the 'Product Categories' screen first."
                   : language === "th"
-                    ? "คุณสามารถกดปุ่ม 'เพิ่มหมวดหลัก' ด้านบนเพื่อสร้างข้อมูลใหม่ได้"
-                    : "You can click 'Add Root' above to start adding categories."}
+                    ? "คุณสามารถกดปุ่ม 'เพิ่มหมวดสินค้า' ด้านบนเพื่อสร้างข้อมูลใหม่ได้"
+                    : "You can click 'Add Category' above to start adding categories."}
               </span>
             </div>
           ) : (

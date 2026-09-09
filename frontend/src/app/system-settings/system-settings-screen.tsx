@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowUp,
   BadgeCheck,
+  Barcode,
   Bot,
   Building2,
   CalendarCheck2,
@@ -17,8 +18,10 @@ import {
   Edit3,
   Pencil,
   FileCog,
+  FileText,
   FolderOpen,
   FolderPlus,
+  FolderTree,
   GitBranch,
   Globe,
   ImageIcon,
@@ -27,6 +30,7 @@ import {
   Loader2,
   MapPin,
   Network,
+  Package,
   Plus,
   RefreshCcw,
   Save,
@@ -751,6 +755,11 @@ export function SystemSettingsScreen({
   const [categorySelectedGuid, setCategorySelectedGuid] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [categoryUnsavedChanges, setCategoryUnsavedChanges] = useState(false);
+  const [categoryDetailTab, setCategoryDetailTab] = useState<
+    "items" | "details"
+  >("items");
+  const [triggerProductSearchNonce, setTriggerProductSearchNonce] =
+    useState(0);
   const groupNumberRef = useRef<number | null>(null);
   const editorHydrationRef = useRef(0);
   groupNumberRef.current = groupNumber;
@@ -1512,7 +1521,24 @@ export function SystemSettingsScreen({
 
     const nextId = recordId(record, currentConfig);
     const currentId = editing ? recordId(editing, currentConfig) : "";
-    if (formOpen && nextId === currentId) return;
+    if (formOpen && nextId === currentId) {
+      setFormOpen(false);
+      setCategoryDetailTab("items");
+      return;
+    }
+    if (categoryUnsavedChanges && nextId !== categorySelectedGuid) {
+      const confirmLeave = await confirm({
+        title: language === "th" ? "คุณมีข้อมูลที่ยังไม่ได้บันทึก" : "You have unsaved changes",
+        description: language === "th"
+          ? "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการเปลี่ยนหมวดหมู่โดยไม่บันทึกหรือไม่?"
+          : "You have unsaved changes in category products. Do you want to switch categories without saving?",
+        confirmLabel: language === "th" ? "เปลี่ยนหมวดหมู่โดยไม่บันทึก" : "Leave without saving",
+        cancelLabel: language === "th" ? "กลับไปแก้ไข" : "Cancel",
+        tone: "warning",
+      });
+      if (!confirmLeave) return;
+      setCategoryUnsavedChanges(false);
+    }
     if (formOpen && isFormDirty) {
       const confirmLeave = await confirm({
         title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
@@ -1531,6 +1557,7 @@ export function SystemSettingsScreen({
     setFormOpen(false);
     setEditing(null);
     setNotice(null);
+    setCategoryDetailTab("items");
   }
 
   async function openEdit(record: SettingRecord) {
@@ -2510,29 +2537,16 @@ export function SystemSettingsScreen({
                   onChange={(event) => setCategorySearchQuery(event.target.value)}
                 />
                 {config.slug === "productcategorygroupselectscreen" && (
-                  <>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-8 shrink-0 rounded-lg gap-1.5"
-                      onClick={() => handleOpenCategoryCreate()}
-                      disabled={loading || saving}
-                    >
-                      <Plus className="size-4" />
-                      {language === "th" ? "เพิ่มหมวดหลัก" : "Add Root"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 shrink-0 rounded-lg gap-1.5"
-                      onClick={() => categorySelectedGuid && handleOpenCategoryCreate(categorySelectedGuid)}
-                      disabled={loading || saving || !categorySelectedGuid}
-                    >
-                      <FolderPlus className="size-4 text-primary" />
-                      {language === "th" ? "เพิ่มหมวดย่อย" : "Add Subcategory"}
-                    </Button>
-                  </>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 shrink-0 rounded-lg gap-1.5"
+                    onClick={() => handleOpenCategoryCreate()}
+                    disabled={loading || saving}
+                  >
+                    <Plus className="size-4" />
+                    {language === "th" ? "เพิ่มหมวดสินค้า" : "Add Category"}
+                  </Button>
                 )}
               </div>
             ) : null}
@@ -2900,24 +2914,11 @@ export function SystemSettingsScreen({
             onRefresh={() => void loadRecords(auth, workspace, config)}
             saving={saving}
             loading={loading}
-            readOnly={config.slug === "productcategorylist"}
+            readOnly={false}
           />
           {groupNumber === null ? null : (
             <div className="h-full min-h-0 overflow-hidden" data-testid="product-category-detail-pane">
-              {config.slug === "productcategorylist" ? (
-                <ProductCategoryItemsEditor
-                  auth={auth}
-                  workspace={workspace}
-                  language={language}
-                  categorySelectedGuid={categorySelectedGuid}
-                  categoryRecord={editing}
-                  setEditing={setEditing}
-                  saving={saving}
-                  setSaving={setSaving}
-                  onRefresh={() => void loadRecords(auth, workspace, config)}
-                  onUnsavedChangesChange={setCategoryUnsavedChanges}
-                />
-              ) : formOpen ? (
+              {formOpen ? (
                 <SettingFormDialog
                   inline
                   auth={auth}
@@ -2938,43 +2939,215 @@ export function SystemSettingsScreen({
                   setForm={setForm}
                   text={text}
                   workspace={workspace}
+                  onManageCategoryItems={() => {
+                    setFormOpen(false);
+                    setCategoryDetailTab("items");
+                    setTriggerProductSearchNonce((n) => n + 1);
+                  }}
+                  categoryItemCount={
+                    editing
+                      ? Array.isArray(editing.codelist)
+                        ? editing.codelist.length
+                        : 0
+                      : (categoryDetailRecord && Array.isArray(categoryDetailRecord.codelist)
+                        ? categoryDetailRecord.codelist.length
+                        : 0)
+                  }
                 />
-              ) : categoryDetailRecord ? (
-                <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm">
-                  <CardContent className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3" aria-busy={categoryDetailPending}>
-                    <SettingDetailPanel
-                      actions={screenActions}
-                      auth={auth}
-                      categoryHasChildren={records.some(
+              ) : (() => {
+                const activeCategoryRecord =
+                  categoryDetailRecord ||
+                  editing ||
+                  (categorySelectedGuid
+                    ? records.find(
                         (record) =>
-                          productCategoryParentGuid(record) ===
-                          recordId(categoryDetailRecord, currentConfig),
-                      )}
-                      config={config}
-                      dictionary={backendLanguage}
-                      language={language}
-                      onDelete={categoryDetailPending ? () => undefined : deleteRecord}
-                      onEdit={categoryDetailPending ? () => undefined : openEdit}
-                      onResetPassword={resetUserPassword}
-                      onToggleAccess={toggleUserAccess}
-                      record={categoryDetailRecord}
-                      saving={saving}
-                      text={text}
-                      workspace={workspace}
-                    />
-                  </CardContent>
-                </Card>
-              ) : detailError ? (
-                <Card className="h-full border-destructive/30 bg-card shadow-sm">
-                  <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-destructive">
-                    <div className="grid gap-2">
-                      <AlertCircle className="mx-auto size-8" />
-                      <b>{language === "th" ? "โหลดรายละเอียดไม่สำเร็จ" : "Could not load details"}</b>
-                      <span className="break-words text-xs">{detailError}</span>
+                          recordId(record, currentConfig) ===
+                          categorySelectedGuid,
+                      ) ?? null
+                    : null);
+
+                if (activeCategoryRecord) {
+                  const categoryItemCount = Array.isArray(
+                    activeCategoryRecord.codelist,
+                  )
+                    ? activeCategoryRecord.codelist.length
+                    : 0;
+
+                  return (
+                    <Card className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm">
+                      <div
+                        className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-1.5"
+                        role="tablist"
+                      >
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={categoryDetailTab === "items"}
+                            onClick={() => setCategoryDetailTab("items")}
+                            className={cn(
+                              "inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                              categoryDetailTab === "items"
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                            )}
+                          >
+                            <Barcode className="size-3.5" />
+                            <span>
+                              {language === "th"
+                                ? "บาร์โค้ดในหมวด"
+                                : "Barcodes in Category"}
+                            </span>
+                            {categoryItemCount > 0 ? (
+                              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[11px] font-bold text-primary">
+                                {categoryItemCount}
+                              </span>
+                            ) : null}
+                          </button>
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={categoryDetailTab === "details"}
+                            onClick={() => setCategoryDetailTab("details")}
+                            className={cn(
+                              "inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                              categoryDetailTab === "details"
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                            )}
+                          >
+                            <FileText className="size-3.5" />
+                            <span>
+                              {language === "th"
+                                ? "ข้อมูลหมวดสินค้า"
+                                : "Category Details"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-h-0 overflow-hidden">
+                        {categoryDetailTab === "items" ? (
+                          <ProductCategoryItemsEditor
+                            auth={auth}
+                            workspace={workspace}
+                            language={language}
+                            categorySelectedGuid={categorySelectedGuid}
+                            categoryRecord={activeCategoryRecord}
+                            setEditing={setEditing}
+                            saving={saving}
+                            setSaving={setSaving}
+                            onRefresh={() =>
+                              void loadRecords(auth, workspace, config)
+                            }
+                            onUnsavedChangesChange={setCategoryUnsavedChanges}
+                            onOpenEdit={() => openEdit(activeCategoryRecord)}
+                            configSlug={config.slug}
+                            className="border-0 shadow-none rounded-none"
+                            triggerSearchNonce={triggerProductSearchNonce}
+                          />
+                        ) : (
+                          <CardContent
+                            className="h-full min-h-0 overflow-y-auto overscroll-contain p-3"
+                            aria-busy={categoryDetailPending}
+                          >
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+                              <div className="flex items-center gap-2">
+                                <Barcode className="size-4 text-primary" />
+                                <span className="text-xs font-semibold text-foreground">
+                                  {language === "th"
+                                    ? `บาร์โค้ดในหมวดนี้ (${categoryItemCount} รายการ)`
+                                    : `Barcodes in Category (${categoryItemCount})`}
+                                </span>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="h-7 gap-1 text-xs font-semibold"
+                                onClick={() => {
+                                  setCategoryDetailTab("items");
+                                  setTriggerProductSearchNonce((n) => n + 1);
+                                }}
+                              >
+                                <Plus className="size-3.5" />
+                                {language === "th"
+                                  ? "เพิ่มบาร์โค้ด"
+                                  : "Add Barcode"}
+                              </Button>
+                            </div>
+                            <SettingDetailPanel
+                              actions={screenActions}
+                              auth={auth}
+                              categoryHasChildren={records.some(
+                                (record) =>
+                                  productCategoryParentGuid(record) ===
+                                  recordId(activeCategoryRecord, currentConfig),
+                              )}
+                              config={config}
+                              dictionary={backendLanguage}
+                              language={language}
+                              onDelete={
+                                categoryDetailPending
+                                  ? () => undefined
+                                  : deleteRecord
+                              }
+                              onEdit={
+                                categoryDetailPending
+                                  ? () => undefined
+                                  : openEdit
+                              }
+                              onResetPassword={resetUserPassword}
+                              onToggleAccess={toggleUserAccess}
+                              record={activeCategoryRecord}
+                              saving={saving}
+                              text={text}
+                              workspace={workspace}
+                            />
+                          </CardContent>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                }
+
+                if (detailError) {
+                  return (
+                    <Card className="h-full border-destructive/30 bg-card shadow-sm">
+                      <CardContent className="grid h-full min-h-60 place-items-center p-4 text-center text-sm text-destructive">
+                        <div className="grid gap-2">
+                          <AlertCircle className="mx-auto size-8" />
+                          <b>
+                            {language === "th"
+                              ? "โหลดรายละเอียดไม่สำเร็จ"
+                              : "Could not load details"}
+                          </b>
+                          <span className="break-words text-xs">
+                            {detailError}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <Card className="flex h-full min-h-0 flex-col items-center justify-center border-dashed border-border bg-card/60 p-8 text-center text-muted-foreground shadow-sm">
+                    <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground">
+                      <FolderTree className="size-7" />
                     </div>
-                  </CardContent>
-                </Card>
-              ) : null}
+                    <p className="text-base font-medium text-foreground">
+                      {language === "th"
+                        ? "เลือกหมวดสินค้าเพื่อดูข้อมูลและจัดการบาร์โค้ด"
+                        : "Select a category to view details and manage barcodes"}
+                    </p>
+                    <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                      {language === "th"
+                        ? "เลือกหมวดหมู่จากแผนผังทางซ้ายเพื่อจัดการบาร์โค้ดในหมวด หรือคลิกแก้ไขข้อมูลหมวดหมู่"
+                        : "Select a category from the tree on the left to manage assigned barcodes or edit category details."}
+                    </p>
+                  </Card>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -4585,6 +4758,8 @@ function SettingFormDialog({
   setForm,
   text,
   workspace,
+  onManageCategoryItems,
+  categoryItemCount,
 }: {
   actions?: ScreenActions;
   auth: AuthSession | null;
@@ -4601,6 +4776,8 @@ function SettingFormDialog({
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   text: (key: keyof typeof uiEn) => string;
   workspace: WorkspaceSession | null;
+  onManageCategoryItems?: () => void;
+  categoryItemCount?: number;
 }) {
   const isProductCategoryForm = config.slug === "productcategorygroupselectscreen";
   const categoryUsesColor = form.useimageorcolor === true || String(form.useimageorcolor).toLowerCase() === "true";
@@ -4684,6 +4861,34 @@ function SettingFormDialog({
       <div
         className="grid min-h-0 gap-2 overflow-y-auto overscroll-contain pr-1"
       >
+        {isProductCategoryForm && onManageCategoryItems ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Barcode className="size-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-foreground">
+                  {language === "th" ? "บาร์โค้ดในหมวดนี้" : "Barcodes in this Category"}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {language === "th"
+                    ? `มีบาร์โค้ดผูกอยู่ ${categoryItemCount ?? (Array.isArray(editing?.codelist) ? editing.codelist.length : 0)} รายการ`
+                    : `${categoryItemCount ?? (Array.isArray(editing?.codelist) ? editing.codelist.length : 0)} barcodes assigned`}
+                </div>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 gap-1.5 rounded-lg font-semibold"
+              onClick={onManageCategoryItems}
+            >
+              <Plus className="size-4" />
+              {language === "th" ? "เพิ่มบาร์โค้ด" : "Add Barcode"}
+            </Button>
+          </div>
+        ) : null}
         {config.slug === "user" ? (
           <UserFormSections
             auth={auth}

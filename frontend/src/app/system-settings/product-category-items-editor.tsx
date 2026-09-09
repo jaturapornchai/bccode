@@ -13,6 +13,8 @@ import {
   Info,
   Check,
   GripVertical,
+  Edit3,
+  Barcode,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,11 +34,26 @@ interface CategoryProduct {
   code: string;
   xorder: number;
   names: NameX[];
+  itemcode?: string;
+  unitname?: string;
+  price?: number;
 }
 
-interface ProductSearchResult {
-  code: string;
+interface BarcodeSearchResult {
+  barcode: string;
   names: NameX[];
+  itemcode: string;
+  itemunitcode: string;
+  itemunitnames: NameX[];
+  unitname: string;
+  price: number;
+}
+
+function formatMoney(amount: number): string {
+  return Number(amount || 0).toLocaleString("th-TH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function normalizeProductCode(value: unknown): string {
@@ -64,14 +81,6 @@ function pickName(value: unknown, language: string): string {
     names[0]?.name ??
     ""
   );
-}
-
-function productSearchResultFrom(value: unknown): ProductSearchResult | null {
-  if (!value || typeof value !== "object") return null;
-  const raw = value as Record<string, unknown>;
-  const code = normalizeProductCode(raw.code);
-  if (!code) return null;
-  return { code, names: categoryNamesFrom(raw.names) };
 }
 
 function categoryProductsFrom(value: unknown): CategoryProduct[] {
@@ -105,6 +114,10 @@ export interface ProductCategoryItemsEditorProps {
   saving: boolean;
   setSaving: (saving: boolean) => void;
   onUnsavedChangesChange?: (hasChanges: boolean) => void;
+  onOpenEdit?: () => void;
+  configSlug?: string;
+  className?: string;
+  triggerSearchNonce?: number;
 }
 
 export function ProductCategoryItemsEditor({
@@ -118,14 +131,25 @@ export function ProductCategoryItemsEditor({
   saving,
   setSaving,
   onUnsavedChangesChange,
+  onOpenEdit,
+  configSlug,
+  className,
+  triggerSearchNonce,
 }: ProductCategoryItemsEditorProps) {
   const [localCodelist, setLocalCodelist] = useState<CategoryProduct[]>([]);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<BarcodeSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+
+  useEffect(() => {
+    if (triggerSearchNonce && triggerSearchNonce > 0) {
+      setSearchQuery("");
+      setSearchDialogOpen(true);
+    }
+  }, [triggerSearchNonce]);
   const setNotice = pushNotice;
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -177,49 +201,74 @@ export function ProductCategoryItemsEditor({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Query Product master from MongoDB through the Product API.
+  // Query Barcode list from backend through /api/product-barcode/list.
   useEffect(() => {
     if (!searchDialogOpen || !auth || !workspace) return;
 
     const authSession = auth;
+    const workspaceSession = workspace;
     let active = true;
-    async function fetchProducts() {
+    async function fetchBarcodes() {
       setSearching(true);
       setSearchError("");
       try {
-        const params = new URLSearchParams({
-          q: debouncedQuery,
-          limit: "50",
-        });
-        const response = await authFetch(`/api/product?${params.toString()}`, {
+        const response = await authFetch("/api/product-barcode/list", {
+          method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${authSession.token}`,
             "x-bc-backend-url": authSession.backendUrl,
             "Accept-Language": language,
           },
+          body: JSON.stringify({
+            holdingcode: workspaceSession.shop.holdingcode,
+            keyword: debouncedQuery,
+            limit: 50,
+            backendUrl: authSession.backendUrl,
+          }),
           cache: "no-store",
         });
         const payload = await response.json();
         if (!active) return;
         if (response.ok && payload.success !== false) {
-          const products = Array.isArray(payload.data)
-            ? payload.data
-                .map(productSearchResultFrom)
-                .filter((item: ProductSearchResult | null): item is ProductSearchResult => item !== null)
-            : [];
-          setSearchResults(products);
+          const rawList = Array.isArray(payload.data) ? payload.data : [];
+          const barcodes: BarcodeSearchResult[] = rawList
+            .map((raw: any): BarcodeSearchResult | null => {
+              if (!raw || typeof raw !== "object") return null;
+              const barcode = normalizeProductCode(raw.barcode);
+              if (!barcode) return null;
+              const unitNames = categoryNamesFrom(raw.itemunitnames);
+              const unitName = pickName(unitNames, language) || String(raw.itemunitcode || "");
+              const price =
+                typeof raw.price === "number"
+                  ? raw.price
+                  : Array.isArray(raw.prices) && raw.prices[0]
+                    ? Number(raw.prices[0].price || 0)
+                    : 0;
+              return {
+                barcode,
+                names: categoryNamesFrom(raw.names),
+                itemcode: String(raw.itemcode || "").trim(),
+                itemunitcode: String(raw.itemunitcode || "").trim(),
+                itemunitnames: unitNames,
+                unitname: unitName,
+                price,
+              };
+            })
+            .filter((item: BarcodeSearchResult | null): item is BarcodeSearchResult => item !== null);
+          setSearchResults(barcodes);
         } else {
-          setSearchError(payload.message || "Failed to load products");
+          setSearchError(payload.message || (language === "th" ? "โหลดบาร์โค้ดไม่สำเร็จ" : "Failed to load barcodes"));
         }
       } catch (err: any) {
         if (!active) return;
-        setSearchError(err.message || "Network error");
+        setSearchError(err.message || (language === "th" ? "เกิดข้อผิดพลาดในการเชื่อมต่อ" : "Network error"));
       } finally {
         if (active) setSearching(false);
       }
     }
 
-    void fetchProducts();
+    void fetchBarcodes();
     return () => {
       active = false;
     };
@@ -233,21 +282,31 @@ export function ProductCategoryItemsEditor({
   );
 
   if (!categoryRecord) {
-    return null;
+    return (
+      <Card className={cn("flex h-full min-h-0 flex-col items-center justify-center border-border bg-card p-6 shadow-sm", className)}>
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <span className="mt-2 text-xs text-muted-foreground">
+          {language === "th" ? "กำลังโหลดข้อมูลบาร์โค้ดในหมวด..." : "Loading barcodes in category..."}
+        </span>
+      </Card>
+    );
   }
 
   const categoryName = pickName(categoryRecord.names, language) || String(categoryRecord.code || "");
 
-  // Add item to local codelist
-  const handleAddItem = (item: ProductSearchResult) => {
-    const code = normalizeProductCode(item.code);
+  // Add barcode to local codelist
+  const handleAddItem = (item: BarcodeSearchResult) => {
+    const code = normalizeProductCode(item.barcode);
     const isDuplicate = localCodelist.some((x) => x.code === code);
     if (isDuplicate) return;
 
     const newItem: CategoryProduct = {
       code,
       xorder: localCodelist.length,
-      names: categoryNamesFrom(item.names),
+      names: item.names,
+      itemcode: item.itemcode,
+      unitname: item.unitname,
+      price: item.price,
     };
 
     setLocalCodelist((prev) => [...prev, newItem]);
@@ -310,8 +369,9 @@ export function ProductCategoryItemsEditor({
         codelist,
       };
 
+      const endpointSlug = configSlug || "productcategorygroupselectscreen";
       const response = await authFetch(
-        `/api/system-settings/productcategorylist/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
+        `/api/system-settings/${endpointSlug}/${encodeURIComponent(guid)}?holdingcode=${encodeURIComponent(workspace.shop.holdingcode)}`,
         {
           method: "PUT",
           headers: {
@@ -351,7 +411,7 @@ export function ProductCategoryItemsEditor({
     }
   };
 
-  // Render product search modal dialog
+  // Render barcode search modal dialog
   const renderSearchDialog = () => {
     if (!searchDialogOpen) return null;
 
@@ -363,14 +423,17 @@ export function ProductCategoryItemsEditor({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={language === "th" ? "ค้นหาและเพิ่มสินค้า" : "Search and add products"}
+          aria-label={language === "th" ? "ค้นหาและเพิ่มบาร์โค้ด" : "Search and add barcodes"}
           className="flex h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <header className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="text-base font-bold">
-              {language === "th" ? "ค้นหาและเพิ่มสินค้า" : "Search and Add Products"}
-            </span>
+            <div className="flex items-center gap-2">
+              <Barcode className="size-5 text-primary" />
+              <span className="text-base font-bold">
+                {language === "th" ? "ค้นหาและเพิ่มบาร์โค้ด" : "Search and Add Barcodes"}
+              </span>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -386,7 +449,11 @@ export function ProductCategoryItemsEditor({
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 autoFocus
-                placeholder={language === "th" ? "ค้นหาด้วยรหัสสินค้า หรือชื่อสินค้า..." : "Search by product code or name..."}
+                placeholder={
+                  language === "th"
+                    ? "ค้นหาด้วยบาร์โค้ด, รหัสสินค้า, หรือชื่อสินค้า..."
+                    : "Search by barcode, product code, or name..."
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-10 !pl-10 rounded-lg border-input bg-background"
@@ -398,7 +465,7 @@ export function ProductCategoryItemsEditor({
             {searching ? (
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
                 <Loader2 className="size-6 animate-spin text-primary" />
-                <span>{language === "th" ? "กำลังโหลดสินค้า..." : "Loading products..."}</span>
+                <span>{language === "th" ? "กำลังค้นหาบาร์โค้ด..." : "Searching barcodes..."}</span>
               </div>
             ) : searchError ? (
               <div className="p-4 text-center text-sm text-destructive font-medium">
@@ -406,12 +473,12 @@ export function ProductCategoryItemsEditor({
               </div>
             ) : searchResults.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                {language === "th" ? "ไม่พบสินค้าที่ตรงตามคำค้นหา" : "No products found"}
+                {language === "th" ? "ไม่พบบาร์โค้ดที่ตรงตามคำค้นหา" : "No barcodes found"}
               </div>
             ) : (
               <div className="divide-y divide-border/60">
                 {searchResults.map((item, idx) => {
-                  const code = normalizeProductCode(item.code);
+                  const code = normalizeProductCode(item.barcode);
                   const isAdded = localCodelist.some((x) => x.code === code);
                   const pName = pickName(item.names, language) || code;
                   return (
@@ -420,11 +487,27 @@ export function ProductCategoryItemsEditor({
                       className="flex items-center justify-between gap-4 p-3 hover:bg-muted/40 rounded-lg transition-colors"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-sm text-foreground truncate">
-                          {pName}
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-bold text-foreground">
+                            <Barcode className="size-3 text-muted-foreground" />
+                            {code}
+                          </span>
+                          <span className="font-semibold text-sm text-foreground truncate">
+                            {pName}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground font-medium">
-                          <span>{language === "th" ? "รหัสสินค้า" : "Product code"}: {code}</span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground font-medium">
+                          {item.itemcode ? (
+                            <span>{language === "th" ? "รหัสสินค้า" : "Code"}: {item.itemcode}</span>
+                          ) : null}
+                          {item.unitname ? (
+                            <span>{language === "th" ? "หน่วย" : "Unit"}: {item.unitname}</span>
+                          ) : null}
+                          {item.price > 0 ? (
+                            <span className="font-semibold text-primary">
+                              {language === "th" ? "ราคา" : "Price"}: {formatMoney(item.price)}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       <Button
@@ -433,8 +516,10 @@ export function ProductCategoryItemsEditor({
                         variant={isAdded ? "ghost" : "outline"}
                         disabled={isAdded}
                         className={cn(
-                          "h-8 rounded-lg font-semibold",
-                          isAdded ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20" : "hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                          "h-8 rounded-lg font-semibold shrink-0",
+                          isAdded
+                            ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                            : "hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                         )}
                         onClick={() => handleAddItem(item)}
                       >
@@ -477,13 +562,13 @@ export function ProductCategoryItemsEditor({
   return (
     <Card
       aria-busy={categoryPending}
-      className="flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm"
+      className={cn("flex h-full min-h-0 flex-col overflow-hidden border-border bg-card shadow-sm", className)}
       inert={categoryPending ? true : undefined}
     >
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/20 px-4 py-3 shrink-0">
         <div className="grid gap-0.5">
           <CardTitle className="text-sm font-bold text-foreground">
-            {language === "th" ? "สินค้าในหมวด" : "Products in Category"}
+            {language === "th" ? "บาร์โค้ดในหมวด" : "Barcodes in Category"}
           </CardTitle>
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs font-semibold">
             <span className="text-primary">{categoryName}</span>
@@ -493,6 +578,18 @@ export function ProductCategoryItemsEditor({
           </div>
         </div>
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto" data-testid="product-category-item-actions">
+          {onOpenEdit ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-lg gap-1 font-semibold"
+              onClick={onOpenEdit}
+            >
+              <Edit3 className="size-3.5" />
+              {language === "th" ? "แก้ไขข้อมูลหมวด" : "Edit Category"}
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"
@@ -503,7 +600,7 @@ export function ProductCategoryItemsEditor({
             }}
           >
             <Plus className="size-4" />
-            {language === "th" ? "เพิ่มสินค้า" : "Add Product"}
+            {language === "th" ? "เพิ่มบาร์โค้ด" : "Add Barcode"}
           </Button>
           <Button
             type="button"
@@ -542,16 +639,28 @@ export function ProductCategoryItemsEditor({
       <CardContent className="flex min-h-0 flex-1 flex-col p-0">
         <div className="flex-1 overflow-y-auto">
           {localCodelist.length === 0 ? (
-            <div className="flex h-60 flex-col items-center justify-center gap-1.5 p-4 text-center text-sm text-muted-foreground">
+            <div className="flex h-60 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
               <Info className="size-8 text-muted-foreground/60" />
               <span className="font-semibold text-foreground">
-                {language === "th" ? "ยังไม่มีสินค้าในหมวดนี้" : "No products in this category"}
+                {language === "th" ? "ยังไม่มีบาร์โค้ดในหมวดนี้" : "No barcodes in this category"}
               </span>
               <span className="text-xs text-muted-foreground max-w-xs leading-normal">
                 {language === "th"
-                  ? "กดปุ่ม 'เพิ่มสินค้า' ด้านบนเพื่อค้นหาสินค้าจาก Master สินค้า"
-                  : "Click 'Add Product' above to search Product master records for this category."}
+                  ? "กดปุ่มด้านล่างเพื่อค้นหาและเพิ่มบาร์โค้ดเข้าหมวดนี้"
+                  : "Click the button below to search and add barcodes to this category."}
               </span>
+              <Button
+                type="button"
+                size="sm"
+                className="mt-1 h-8 rounded-lg gap-1.5 font-semibold"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSearchDialogOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                {language === "th" ? "เพิ่มบาร์โค้ด" : "Add Barcode"}
+              </Button>
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
@@ -559,9 +668,11 @@ export function ProductCategoryItemsEditor({
                 <thead>
                   <tr className="border-b border-border bg-muted/30 text-xs font-bold text-muted-foreground uppercase tracking-wider select-none">
                     <th className="w-8 px-2 py-2.5"></th>
-                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "รหัสสินค้า" : "Product Code"}</th>
-                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "ชื่อสินค้า" : "Name"}</th>
-                    <th className="px-4 py-2.5 text-center font-bold w-12">{language === "th" ? "จัดการ" : "Action"}</th>
+                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "บาร์โค้ด" : "Barcode"}</th>
+                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "ชื่อสินค้า/บาร์โค้ด" : "Name"}</th>
+                    <th className="px-4 py-2.5 font-bold text-center w-24">{language === "th" ? "หน่วยนับ" : "Unit"}</th>
+                    <th className="px-4 py-2.5 font-bold text-right w-28">{language === "th" ? "ราคา" : "Price"}</th>
+                    <th className="px-4 py-2.5 text-center font-bold w-14">{language === "th" ? "จัดการ" : "Action"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -584,11 +695,20 @@ export function ProductCategoryItemsEditor({
                         <td className="w-8 px-2 py-3 text-center cursor-grab active:cursor-grabbing select-none">
                           <GripVertical className="size-4 text-muted-foreground/60 mx-auto" />
                         </td>
-                        <td className="px-4 py-3 text-xs font-mono font-medium">
-                          {item.code}
+                        <td className="px-4 py-3 text-xs font-mono font-bold text-foreground">
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1">
+                            <Barcode className="size-3 text-muted-foreground" />
+                            {item.code}
+                          </span>
                         </td>
                         <td className="px-4 py-3 font-semibold text-foreground max-w-xs truncate">
                           {pName}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-center text-muted-foreground">
+                          {item.unitname || "-"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-right font-mono font-medium text-foreground">
+                          {item.price !== undefined ? formatMoney(item.price) : "-"}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <Button
@@ -597,8 +717,8 @@ export function ProductCategoryItemsEditor({
                             size="icon"
                             className="size-7 rounded-full text-destructive hover:bg-destructive/10"
                             onClick={() => handleRemoveItem(item.code)}
-                            aria-label={language === "th" ? "ลบสินค้าออกจากหมวด" : "Remove product"}
-                            title={language === "th" ? "ลบสินค้าออกจากหมวด" : "Remove product"}
+                            aria-label={language === "th" ? "ลบบาร์โค้ดออกจากหมวด" : "Remove barcode"}
+                            title={language === "th" ? "ลบบาร์โค้ดออกจากหมวด" : "Remove barcode"}
                           >
                             <Trash2 className="size-3.5" />
                           </Button>

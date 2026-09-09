@@ -286,6 +286,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("non-stock-product", "สินค้าไม่นับสต็อก", "Non-Stock Products", "/nonstockproduct", "master"),
           tx("product-extension", "ข้อมูลเสริมสินค้า", "Product Extended Data", "/productextension", "master"),
           { ...tx("barcode", "บาร์โค้ด", "Barcode", "/productbarcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
+          tx("product-category", "จัดหมวดสินค้า", "Product Categories", "/productcategorygroupselectscreen", "master"),
           tx("productset", "สินค้าชุด", "Product Set", "/productset", "master"),
           tx("bom", "สูตรผลิต", "Product BOM", "/productbom", "master"),
         ],
@@ -391,8 +392,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("product-unit", "หน่วยนับสินค้า", "Product Unit", "/productunit", "master"),
           tx("product-group", "กลุ่มสินค้า", "Product Group", "/productgroup", "master"),
-          tx("product-category", "จัดหมวดสินค้า", "Product Categories", "/productcategorygroupselectscreen", "master"),
-          tx("product-category-list", "สินค้าในหมวด", "Products in Category", "/productcategorylist", "master"),
         ],
       },
       {

@@ -335,3 +335,47 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 - `frontend/src/app/system-settings/product-group-tree-view.tsx` (ต้นแบบของระบบ)
 - `frontend/src/app/system-settings/product-category-tree-view.tsx` (ยกระดับให้เหมือนกันครบถ้วน)
 
+---
+
+## 8.4 รวมการจัดหมวดสินค้าและบาร์โค้ดในหมวดไว้ในหน้าจอเดียว (Master-Detail Category & Barcodes Consolidation)
+
+**แบบแผนใหม่ (New Standard Pattern)** — สำหรับ Master Data ที่มีโครงสร้างหมวดหมู่และรายการบาร์โค้ดผูกในหมวด (เช่น จัดหมวดสินค้า):
+1. **ตำแหน่งเมนูในกลุ่มข้อมูลหลัก (Master Data Placement)**:
+   - "จัดหมวดสินค้า" (`/productcategorygroupselectscreen`) จัดอยู่ในส่วน **"ข้อมูลหลัก" (Master Data)** ภายใต้กลุ่ม **"สินค้าและบาร์โค้ด" (Product Catalog)** โดยวางต่อท้าย "บาร์โค้ด" (`/productbarcode`) ทันที เพื่อให้สอดคล้องกับขั้นตอนการทำงานจริง (ต้องกำหนดรหัสสินค้าและบาร์โค้ดก่อน จึงจะนำบาร์โค้ดมาจัดเข้าหมวดหมู่สำหรับ POS/ขายหน้าร้านได้)
+   - กลุ่ม "จัดกลุ่มสินค้า" ในส่วน "ค่าเริ่มต้น" (Defaults) จะคงเหลือเฉพาะ "หน่วยนับสินค้า" (`/productunit`) และ "กลุ่มสินค้า" (`/productgroup`)
+2. **ผูกรายการระดับ "บาร์โค้ด" ไม่ใช่ระดับสินค้าทั่วไป (Barcode-Level Items)**:
+   - ใช้ศัพท์ **"บาร์โค้ดในหมวด"** (Barcodes in Category) และปุ่ม **`+ เพิ่มบาร์โค้ด`** (Add Barcode) แทนคำว่า "สินค้า" เพราะในระบบขายหน้าร้าน/แคชเชียร์ หมวดสินค้าจะจัดกลุ่มหน่วยขายย่อยระดับบาร์โค้ด (SKU Barcodes)
+   - ค้นหาผ่าน API `POST /api/product-barcode/list` (พร้อม `{ holdingcode, keyword, limit }`) เพื่อดึงบาร์โค้ดจริงจาก MongoDB พร้อมข้อมูลประกอบ: บาร์โค้ด, ชื่อสินค้า/บาร์โค้ด, รหัสสินค้า, หน่วยนับ, และราคาขาย
+   - บันทึกลงฟิลด์ `codelist: [{ code: barcode, xorder: index, names: [...] }]` ของคอลเลกชัน `productcategories`
+3. **รวมเป็นหน้าจอเดียว (Consolidated Master-Detail Layout)**:
+   - หน้าจอเดียวจบที่ "จัดหมวดสินค้า" (`/productcategorygroupselectscreen`) ไม่แยกเมนู "สินค้าในหมวด" ออกไปเป็นเมนูโดดเดี่ยวที่ทำให้ผู้ใช้สับสน
+   - **ฝั่งซ้าย**: `ProductCategoryTreeView` เลือกกลุ่ม 1–20 และผังหมวดหมู่แบบลากวาง (Drag & Drop Hierarchy)
+     - **ตัดปุ่ม "เพิ่มหมวดย่อย" ออกทั้งหมด**: ทั้งปุ่มบน Header และปุ่ม `FolderPlus` บนแถวรายการ (Row Action) โดยให้ผู้ใช้สร้างหมวดด้วยปุ่ม "เพิ่มหมวดสินค้า" แล้วใช้วิธีลากวาง (Drag & Drop) จัดระดับเข้าเป็นลูกแทน เพื่อลดความรกรุงรังของหน้าจอ
+   - **ฝั่งขวา**: เมื่อเลือกหมวดหมู่ แสดงแท็บ 2 แท็บ:
+     - 🏷️ **บาร์โค้ดในหมวด** (Default Tab): ปุ่มหลักชัดเจน **`+ เพิ่มบาร์โค้ด`** ค้นหาบาร์โค้ด, เพิ่ม, ลากจัดลำดับ (Drag & Drop), ลบออก, พร้อมปุ่ม "แก้ไขข้อมูลหมวด" และ Badge นับจำนวนบาร์โค้ด (รวมถึงปุ่มเพิ่มในสถานะกล่องว่าง Empty State)
+     - ⚙️ **ข้อมูลหมวดสินค้า**: รายละเอียดหมวดหมู่ (รหัส, ชื่อ, ระดับชั้น) พร้อมปุ่มแก้ไข/ลบ
+     - **แบนเนอร์เชื่อมโยงในฟอร์มแก้ไข**: ในหน้าฟอร์มแก้ไขหมวด (`SettingFormDialog`) จะมีแบนเนอร์ด้านบนระบุจำนวนบาร์โค้ดที่ผูกอยู่ พร้อมปุ่ม **`+ เพิ่มบาร์โค้ด`** ที่กดแล้วสลับไปแท็บรายการบาร์โค้ดและเปิดหน้าต่างค้นหาเพิ่มบาร์โค้ดทันที
+4. **Backward Compatibility & Menu Cleanup**:
+   - หน้า `/productcategorylist` ทำ Next.js `redirect("/productcategorygroupselectscreen")` เพื่อรองรับ bookmark/url เดิม
+   - ตัดเมนูย่อยซ้ำซ้อน `product-category-list` ออกจาก `MENU_SECTIONS` (คงเหลือเมนูทั้งหมด 223 เมนู)
+5. **Dirty State Guards & Responsive Switching**:
+   - ตรวจสอบ `categoryUnsavedChanges` ก่อนให้ผู้ใช้สลับรายการหมวดใน Tree ป้องกันรายการที่เพิ่งเพิ่ม/จัดลำดับสูญหาย
+   - เมื่อผู้ใช้อยู่ในฟอร์มแก้ไขแล้วคลิกแถวหมวดเดิมใน Tree ให้ปิดฟอร์มและสลับกลับสู่แท็บ "บาร์โค้ดในหมวด" ทันที ไม่ติดค้างในหน้าจอแก้ไข
+
+**กับดัก / สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
+- **ห้ามเอา "จัดหมวดสินค้า" ไปวางก่อนบาร์โค้ด หรือทิ้งไว้ใน Defaults**: ในทางปฏิบัติ ผู้ใช้ไม่สามารถจัดหมวดสินค้าได้หากยังไม่ได้สร้างบาร์โค้ด
+- **ห้ามใช้คำว่า "สินค้า" กับรายการในหมวด**: การระบุว่า "เพิ่มสินค้า" ทำให้ผู้ใช้เข้าใจผิดว่าจะได้สินค้าหลักมาแทนที่จะเป็นบาร์โค้ดที่ขายจริง
+- **ห้ามใส่ปุ่ม "เพิ่มหมวดย่อย" แยกต่างหาก**: เมื่อระบบมี Drag & Drop แล้ว การมีทั้งปุ่ม "เพิ่มหมวดหลัก" และ "เพิ่มหมวดย่อย" ทำให้ผู้ใช้ 40+ สับสนว่าต้องกดปุ่มไหน
+- **ห้ามซ่อนปุ่มเพิ่มรายการเมื่อผู้ใช้อยู่ในหน้าจอแก้ไขหมวด**: ผู้ใช้มองว่าการแก้ไขหมวดรวมถึงการจัดการบาร์โค้ดในหมวดด้วย การไม่มีปุ่มเพิ่มในหน้าแก้ไขทำให้เข้าใจผิดว่าระบบไม่มีฟังก์ชันนี้
+
+**เหตุผลทางเทคนิค (Root Cause & Rationale)**:
+โครงสร้างข้อมูล MongoDB สำหรับหมวดสินค้าเก็บทั้ง Tree Metadata (`guidfixed`, `parentguid`, `groupnumber`, `names`) และ `codelist` (รายการบาร์โค้ดที่ผูกในหมวด) อยู่ใน collection เดียวกัน (`productcategories`) โดย `codelist.code` เก็บค่า barcode string การเชื่อมต่อด้วย `/api/product-barcode/list` และจัดวาง UI ในกลุ่ม Master Data สอดคล้องกับ Business Process และ Data Model จริง 100%
+
+**ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
+- `frontend/src/app/system-settings/system-settings-screen.tsx` (`data-testid="product-category-detail-pane"`, `SettingFormDialog`)
+- `frontend/src/app/system-settings/product-category-tree-view.tsx` (`ProductCategoryTreeView`)
+- `frontend/src/app/system-settings/product-category-items-editor.tsx` (`ProductCategoryItemsEditor`)
+- `frontend/src/app/[systemSetting]/page.tsx` (Route redirect)
+- `frontend/src/lib/menu-data.ts` (`MENU_SECTIONS` -> `master` -> `products`)
+
+
