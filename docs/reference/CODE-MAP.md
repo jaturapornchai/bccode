@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-09 @ commit 1799b069 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-09 @ commit a3fe9160 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 45
 
@@ -1155,19 +1155,19 @@ Files indexed: 45
 | 894 | const-arrow | `handleDeleteLocation` |
 | 931 | const-arrow | `handleDeleteBin` |
 
-## frontend/src/app/system-settings/product-category-tree-view.tsx (1866 lines)
+## frontend/src/app/system-settings/product-category-tree-view.tsx (1829 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 171 | function | `ProductCategoryTreeView` |
-| 615 | const-arrow | `onScroll` |
-| 744 | const-arrow | `toggleExpand` |
-| 802 | const-arrow | `saveXSorts` |
-| 823 | const-arrow | `saveCategoryRecord` |
-| 1311 | const-arrow | `handleRawPointerMove` |
-| 1431 | const-arrow | `handlePointerDown` |
-| 1471 | const-arrow | `renderDragOverlay` |
-| 1527 | const-arrow | `renderTreeNodes` |
+| 169 | function | `ProductCategoryTreeView` |
+| 583 | const-arrow | `onScroll` |
+| 707 | const-arrow | `toggleExpand` |
+| 765 | const-arrow | `saveXSorts` |
+| 786 | const-arrow | `saveCategoryRecord` |
+| 1274 | const-arrow | `handleRawPointerMove` |
+| 1394 | const-arrow | `handlePointerDown` |
+| 1434 | const-arrow | `renderDragOverlay` |
+| 1490 | const-arrow | `renderTreeNodes` |
 
 ## backend/internal/coupon/coupon_http.go (1809 lines)
 

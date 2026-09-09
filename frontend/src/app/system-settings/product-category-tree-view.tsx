@@ -60,8 +60,6 @@ type GroupSummary = {
   label: string;
 };
 
-const GROUP_CARD_GAP_PX = 8;
-const GROUP_CARD_MIN_WIDTH_PX = 280;
 const GROUP_PREVIEW_LIMIT = 3;
 const TREE_LAYOUT_ANIMATION_MS = 220;
 const CATEGORY_LEVEL_STYLES = [
@@ -199,7 +197,6 @@ export function ProductCategoryTreeView({
   // move AND undo/redo apply) so they can't race each other.
   const [isMoveInFlight, setIsMoveInFlight] = useState(false);
   const [arrivalHighlight, setArrivalHighlight] = useState<{ guid: string; nonce: number } | null>(null);
-  const groupSelectorRef = useRef<HTMLElement | null>(null);
   const treeListRef = useRef<HTMLDivElement | null>(null);
   const pointerDragRef = useRef<PointerDragState | null>(null);
   const dropTargetRef = useRef<{ guid: string; position: DropPosition } | null>(null);
@@ -219,7 +216,6 @@ export function ProductCategoryTreeView({
   const dragRafRef = useRef<number | null>(null);
   const dragGhostRef = useRef<HTMLDivElement | null>(null);
   const dragGeometryRef = useRef<DragGeometry | null>(null);
-  const [groupCardWidth, setGroupCardWidth] = useState<number | null>(null);
 
   const setDropTargetState = (next: { guid: string; position: DropPosition } | null) => {
     dropTargetRef.current = next;
@@ -412,34 +408,6 @@ export function ProductCategoryTreeView({
 
     return () => window.cancelAnimationFrame(animationFrame);
   }, [arrivalHighlight, findCategoryRowElement]);
-
-  useLayoutEffect(() => {
-    if (groupNumber !== null) return;
-    const element = groupSelectorRef.current;
-    if (!element) return;
-
-    const measure = () => {
-      const containerWidth = element.clientWidth;
-      if (!containerWidth) return;
-      const columns = Math.max(
-        1,
-        Math.floor((containerWidth + GROUP_CARD_GAP_PX) / (GROUP_CARD_MIN_WIDTH_PX + GROUP_CARD_GAP_PX)),
-      );
-      const nextWidth = Math.floor(
-        (containerWidth - GROUP_CARD_GAP_PX * (columns - 1)) / columns,
-      );
-      setGroupCardWidth(nextWidth);
-    };
-
-    measure();
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", measure);
-      return () => window.removeEventListener("resize", measure);
-    }
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [groupNumber]);
 
   // Helper to extract display name in correct language
   const getDisplayName = useCallback((names: CategoryName[]): string => {
@@ -684,7 +652,7 @@ export function ProductCategoryTreeView({
             {language === "th" ? "กำลังโหลดข้อมูล..." : "Loading..."}
           </div>
         ) : (
-          <main ref={groupSelectorRef} className="flex w-full flex-wrap gap-2">
+          <main className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" data-testid="product-category-group-grid">
             {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => {
               const summary = groupSummaries[num] ?? { count: 0, itemCount: 0, label: "" };
               const hasData = summary.count > 0;
@@ -696,13 +664,8 @@ export function ProductCategoryTreeView({
                 <button
                   type="button"
                   key={num}
-                  style={
-                    groupCardWidth
-                      ? { flexBasis: `${groupCardWidth}px`, width: `${groupCardWidth}px` }
-                      : undefined
-                  }
                   className={cn(
-                    "group flex min-h-14 flex-none items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    "group flex min-h-14 w-full items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     hasData && "border-primary/25 bg-primary/[0.04]",
                   )}
                   onClick={() => setGroupNumber(num)}

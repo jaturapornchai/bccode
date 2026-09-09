@@ -269,3 +269,38 @@ comm -23 /tmp/screens.txt /tmp/menu.txt | grep -vE '^/api/'
 **เหตุผลทางเทคนิค** — `onOpenRoute` (`frontend/src/app/menu/main-menu-screen.tsx:1453-1455`) เปิดแท็บได้เฉพาะ route ที่หาเจอใน `allMenuItems` เท่านั้น จอที่ dispatch ไว้แล้วแต่ไม่มีรายการเมนูจึงเป็นโค้ดตายในสายตาผู้ใช้ ทั้งที่ไอคอนและ language key อาจเตรียมไว้ครบแล้ว
 
 **ไฟล์อ้างอิงจริง** — `frontend/src/app/menu/marketplace-screen.tsx` (3 จอ Shopee/Lazada/TikTok ทำงานได้เต็มรูปแบบ แต่เข้าไม่ถึงจนถึง 2026-09-08 เพราะไม่มีเมนู; ไอคอนอยู่ที่ `menu-icons.ts:221-223` และ language key `shopee_mappings`/`lazada_mappings`/`tiktok_mappings`/`marketplace_connectors` มีใน `languages.tsv` มาก่อนแล้ว) · route ที่อยู่นอกเมนูโดยตั้งใจและไม่ต้องแก้: `/currency`, `/datamodelgraph`, `/shortcuts`, `/menu` (แท็บภาพรวม), `/workspace` (หน้าเลือกกิจการ) และ route ตั้งค่าองค์กรทั้งหมดใน `system-setting-screens.ts`
+
+---
+
+## 8.2 การจัดวาง Selector Grid ให้เต็มแนวนอน (Full-width Grid) ห้ามใช้ JS ResizeObserver
+
+**แบบแผนใหม่ (New Standard Pattern)** — ตัวเลือกกลุ่ม / การ์ดตัวเลือกจำนวนคงที่ (เช่น ปุ่มกลุ่มหมวด 1-20) ต้องใช้ Tailwind CSS Grid ที่กระจายคอลัมน์สม่ำเสมอและกว้างเต็มพื้นที่ (`w-full`) โดยแบ่งตาม breakpoint เพื่อให้ลงตัวในทุกหน้าจอ:
+
+```tsx
+<main className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" data-testid="product-category-group-grid">
+  {groups.map((item) => (
+    <button
+      type="button"
+      key={item.id}
+      className="group flex min-h-14 w-full items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left shadow-sm ..."
+    >
+      ...
+    </button>
+  ))}
+</main>
+```
+
+- ปุ่มหรือการ์ดภายในใช้ `w-full` เพื่อยืดเต็มช่องกริดเสมอ
+- กำหนด breakpoint ให้หารจำนวนการ์ดลงตัวสวยงาม (เช่น 20 รายการ: `xl:grid-cols-5` = 4 แถวพอดี, `lg:grid-cols-4` = 5 แถวพอดี, `sm:grid-cols-2` = 10 แถวพอดี)
+
+**กับดัก / สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
+- **ห้ามใช้ JS `useLayoutEffect` / `ResizeObserver` เพื่อคำนวณความกว้างการ์ดแบบ dynamic**: เสี่ยงต่อ mount-timing bug (เช่น ขณะ initial mount ติด `loading` element ยังไม่ render ใน DOM ทำให้ ref เป็น `null` และคำนวณไม่ได้) ส่งผลให้การ์ด fallback ไปใช้ขนาด intrinsic แคบๆ
+- **ห้ามใช้ `flex-wrap` คู่กับ `flex-none` หรือ inline style `width/flexBasis`**: ทำให้เกิดช่องว่างสีดำ/พื้นหลังโล่งขนาดใหญ่ฝั่งขวา (unused horizontal space) เมื่อการ์ดขึ้นบรรทัดใหม่แล้วแบ่งพื้นที่ไม่เต็มความกว้างคอนเทนเนอร์
+- **ห้ามฮาร์ดโค้ดค่า minimum width (เช่น `const GROUP_CARD_MIN_WIDTH_PX = 280`)**: ทำให้จำนวนคอลัมน์ที่ได้กระโดดและเหลือเศษพื้นที่ขวาสุดเสมอ
+
+**เหตุผลทางเทคนิค (Root Cause & Rationale)**:
+CSS Grid เป็น native browser layout engine ที่คำนวณพื้นที่แบบ sub-pixel accuracy ทันทีใน render tree เดียว โดยไม่มี layout shift (CLS), ไม่ต้องรอ JS hydration หรือ lifecycle hooks, และไม่มีปัญหา ref timing เมื่อมี conditional loading state ยิ่งไปกว่านั้น CSS Grid ยังรับประกันว่าการ์ดทุกใบจะขยายเต็มความกว้างของ grid cell 100% เสมอ ทำให้ไม่มีช่องว่างว่างเปล่าทางขวาของหน้าจอ
+
+**ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
+- `frontend/src/app/system-settings/product-category-tree-view.tsx` (ปุ่มเลือกกลุ่มหมวด 1-20 ในหน้าจัดหมวดสินค้า `data-testid="product-category-group-grid"`)
+
