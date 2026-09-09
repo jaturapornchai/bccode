@@ -400,19 +400,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("brand", "ยี่ห้อสินค้า", "Brand", "/masterbrandscreen", "master"),
           tx("model", "รุ่นสินค้า", "Model", "/mastermodelscreen", "master"),
-          {
-            ...tx("category", "คุณลักษณะสินค้า", "Product Attributes", "/mastercategoryscreen", "master"),
-            label: ml("product_attribute_category", "คุณลักษณะสินค้า", "Product Attributes"),
-          },
-        ],
-      },
-      {
-        id: "product-sku-options",
-        title: ml("product_sku_options", "สี ไซซ์ และตัวเลือก", "Product Options"),
-        items: [
-          tx("product-color", "สีสินค้า", "Product Color", "/productcolor", "master"),
-          tx("product-size", "ไซซ์/ขนาดสินค้า", "Product Size", "/productsize", "master"),
-          tx("product-variant-matrix", "ชุดตัวเลือกสินค้า", "Product Option Sets", "/productvariantmatrix", "master"),
         ],
       },
       {

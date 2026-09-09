@@ -1681,14 +1681,6 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "Brand",
     ),
     aicloudConfig(
-      "master_category_screen",
-      "/mastercategoryscreen",
-      "category",
-      "category",
-      "หมวดคุณลักษณะสินค้า",
-      "Product Attribute Category",
-    ),
-    aicloudConfig(
       "master_model_screen",
       "/mastermodelscreen",
       "activity",

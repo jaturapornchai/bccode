@@ -20,6 +20,30 @@
   - <ผลการทดสอบ เช่น ผ่าน vitest ... tests, typecheck 0 errors, curl 200 OK>
 -->
 
+### 2026-09-09 — ลบเมนู "คุณลักษณะสินค้า" และกลุ่มเมนู "สี ไซซ์ และตัวเลือก" ออกจากระบบ
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**:
+  1. **ลบเมนูและกลุ่มเมนูออกจากระบบ**:
+     - ลบรายการเมนู `คุณลักษณะสินค้า` (`/mastercategoryscreen`) ออกจากกลุ่มรายละเอียดประกอบสินค้าใน `frontend/src/lib/menu-data.ts`
+     - ลบกลุ่มเมนู `สี ไซซ์ และตัวเลือก` (`product-sku-options`) ทั้งกลุ่ม ซึ่งประกอบด้วย `สีสินค้า` (`/productcolor`), `ไซซ์/ขนาดสินค้า` (`/productsize`), `ชุดตัวเลือกสินค้า` (`/productvariantmatrix`) ออกจาก `frontend/src/lib/menu-data.ts`
+     - ลบแมปปิ้งไอคอนทั้ง 4 เส้นทางใน `frontend/src/lib/menu-icons.ts`
+     - อัปเดตจำนวนเมนูระบบใน `menu-icons.test.ts` จาก 218 เหลือ 214 เมนู
+     - อัปเดต unit tests ใน `menu-data.test.ts` ให้สอดคล้องกับโครงสร้างเมนูใหม่
+  2. **ถอดคอนฟิกหน้าตั้งค่าระบบ**:
+     - ลบคอนฟิก `master_category_screen` ออกจาก `frontend/src/lib/system-setting-screens.ts`
+  3. **อัปเดต CODE-MAP**: ซิงค์แผนผังโค้ดระบบ `docs/reference/CODE-MAP.md` ให้ตรงกับขนาดและบรรทัดของไฟล์หลังตัดโค้ด
+- **ไฟล์สำคัญ**:
+  - `frontend/src/lib/menu-data.ts`
+  - `frontend/src/lib/menu-icons.ts`
+  - `frontend/src/lib/menu-icons.test.ts`
+  - `frontend/src/lib/menu-data.test.ts`
+  - `frontend/src/lib/system-setting-screens.ts`
+  - `docs/reference/CODE-MAP.md`
+- **ผลการทดสอบ (Evidence)**:
+  - Unit tests: `menu-icons.test.ts`, `menu-data.test.ts`, `system-setting-screens.test.ts` ผ่าน 100% (32/32 tests)
+  - Typecheck: `tsc --noEmit` ผ่าน 0 errors
+  - Codemap check: `pwsh -NoProfile -File tools/gen-code-map.ps1 -Check` ซิงค์ถูกต้อง (45 files indexed)
+
 ### 2026-09-09 — ลบเมนู "รูปทรงสินค้า", "ระดับสินค้า", "เกรดสินค้า", "มิติสินค้า" และตัดการเชื่อมโยงจากระบบอื่นอย่างสมบูรณ์
 - **ประเภท**: `[UI/UX]` `[Cleanup]`
 - **สิ่งที่ทำ**:

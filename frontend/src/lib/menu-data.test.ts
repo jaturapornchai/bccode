@@ -182,12 +182,6 @@ describe("menu language labels", () => {
       "product-group",
     ]);
     expect(defaultGroupsById.get("product-descriptors")?.title.th).toBe("รายละเอียดประกอบสินค้า");
-    expect(defaultGroupsById.get("product-sku-options")?.title.th).toBe("สี ไซซ์ และตัวเลือก");
-    expect(defaultGroupsById.get("product-sku-options")?.items.map((item) => item.id)).toEqual([
-      "product-color",
-      "product-size",
-      "product-variant-matrix",
-    ]);
     expect(defaultGroupsById.get("warehouse-setup")?.items.map((item) => item.id)).toEqual([
       "warehouse",
     ]);
@@ -206,7 +200,6 @@ describe("menu language labels", () => {
     expect(groupOrder).toEqual([
       "product-classification",
       "product-descriptors",
-      "product-sku-options",
       "warehouse-setup",
       "partner-groups",
       "sales-payment-banking",
@@ -219,12 +212,11 @@ describe("menu language labels", () => {
     ]);
   });
 
-  it("uses distinct product category labels for category structure and attribute category", () => {
+  it("uses plain business label for category structure", () => {
     const allItems = flattenMenuItems();
     const labelsById = new Map(allItems.map((item) => [item.id, item.label.th]));
 
     expect(labelsById.get("product-category")).toBe("จัดหมวดสินค้า");
-    expect(labelsById.get("category")).toBe("คุณลักษณะสินค้า");
     expect(allItems.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
   });
 
@@ -253,17 +245,6 @@ describe("menu language labels", () => {
 
     const offenders = visibleLabels.filter((label) => technicalWords.some((word) => label.includes(word)));
     expect(offenders).toEqual([]);
-  });
-
-  it("adds neutral SKU option masters for import-ready product variants", () => {
-    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
-    const skuGroup = defaultsSection?.groups.find((group) => group.id === "product-sku-options");
-    const routesById = new Map(skuGroup?.items.map((item) => [item.id, item.route]) ?? []);
-
-    expect(routesById.get("product-color")).toBe("/productcolor");
-    expect(routesById.get("product-size")).toBe("/productsize");
-    expect(routesById.get("product-variant-matrix")).toBe("/productvariantmatrix");
-    expect(skuGroup?.items.find((item) => item.id === "product-variant-matrix")?.label.th).toBe("ชุดตัวเลือกสินค้า");
   });
 
   it("has backend language keys for every keyed menu section and group", () => {
