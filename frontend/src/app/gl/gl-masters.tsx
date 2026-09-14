@@ -21,7 +21,9 @@ export function pageErrorText(error: string, hasRecord: boolean) { return hasRec
 export function paneErrorText(error: string, hasRecord: boolean) { return hasRecord ? error : ""; }
 export function FormErrorAlert({ text }: { text: string }) { return text ? <div className="shrink-0"><Notice error text={text} /></div> : null; }
 /** The only state a failed save may touch: the message and the field to focus. Entered values are kept. */
-export function errorStatePatch(info: { message: string; field: string }, code = "") { return { error: info.message, errorField: code === "duplicate_code" || code === "immutable_code" || code === "validation_failed" ? "accountcode" : info.field }; }
+export function errorStatePatch(info: { message: string; field: string }, code = "", fallbackField = "") { return { error: info.message, errorField: code === "duplicate_code" || code === "immutable_code" || code === "validation_failed" ? "accountcode" : info.field || fallbackField }; }
+/** ช่องที่ต้องโฟกัสเมื่อบันทึกไม่ผ่านและเซิร์ฟเวอร์ไม่ได้ระบุ field */
+export function saveFailureTarget(resource: string) { return resource === "accounts" ? "accountcode" : "code"; }
 
 function recordCode(record: GLRecord) { return "accountcode" in record && "names" in record ? record.accountcode : "code" in record ? record.code : ""; }
 function recordName(record: GLRecord) { return "names" in record ? accountName(record) : "name" in record ? record.name : "currency" in record ? record.currency : ""; }
@@ -51,16 +53,26 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   // Failures must never be silent: keep the Thai text in the pane the user is looking at and move
   // focus to the offending field (no scrolling, so the screen does not jump).
   function showFormError(cause: unknown, fallback: string, field = "") {
-    const patch = errorStatePatch(commandFailure(cause, fallback, field), cause instanceof GLCommandError ? cause.code : "");
+    const patch = errorStatePatch(commandFailure(cause, fallback, field), cause instanceof GLCommandError ? cause.code : "", saveFailureTarget(resource));
     setError(patch.error);
     setErrorField(patch.errorField);
   }
   useEffect(() => {
-    if (!error || !errorField) return;
-    const root = formRef.current?.querySelector<HTMLElement>(`[data-field="${errorField}"]`);
-    const node = root?.matches("input,select,textarea,button") ? root : root?.querySelector<HTMLElement>("input,select,textarea,button");
-    node?.focus({ preventScroll: true });
-  }, [error, errorField]);
+    // รอให้คำสั่งจบก่อน (fieldset ถูก disable ระหว่าง busy ทำให้ focus ไม่ติด) แล้วค่อยย้ายโฟกัส
+    if (!error || !errorField || busy) return;
+    const find = (name: string) => {
+      const root = formRef.current?.querySelector<HTMLElement>(`[data-field="${name}"]`);
+      return root?.matches("input,select,textarea,button") ? root : root?.querySelector<HTMLElement>("input,select,textarea,button");
+    };
+    const target = () => {
+      const node = find(errorField) ?? find(saveFailureTarget(resource));
+      if (node && document.activeElement !== node) node.focus({ preventScroll: true });
+      return node;
+    };
+    if (target()) return;
+    const frame = requestAnimationFrame(() => { target(); });
+    return () => cancelAnimationFrame(frame);
+  }, [error, errorField, busy]);
 
   async function openView(item: GLRecord) {
     if (dirty && !await confirm({ title: "ละทิ้งข้อมูลที่ยังไม่บันทึก?", description: "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก", tone: "warning", confirmLabel: "ละทิ้งการแก้ไข" })) return;
@@ -134,7 +146,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       list.reload();
       setRevision((value) => value + 1);
       setMessage(result.projectionpending ? "บันทึกแล้ว กำลังปรับปรุงข้อมูลสำหรับรายงาน กดโหลดใหม่เพื่อตรวจสอบ" : "บันทึกเรียบร้อยแล้ว");
-    } catch (e) { showFormError(e, "บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"); }
+    } catch (e) { showFormError(e, "บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", saveFailureTarget(resource)); }
   }
 
   async function deleteItem(item: GLRecord) {
@@ -533,7 +545,7 @@ function AccountFields({ value, set, accounts }: { value: GLAccount; set: (patch
   return <>{value.id && <Notice text="ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน" />}<div className="grid gap-3 sm:grid-cols-2">
     <Field label="รหัสบัญชี"><input className={control} data-field="accountcode" required disabled={!!value.id} value={value.accountcode} onChange={(e) => set({ accountcode: e.target.value })} maxLength={60} /></Field>
     <Field label="ชื่อบัญชีภาษาไทย"><input className={control} data-field="accountnameth" required value={accountName(value)} onChange={(e) => set({ names: [...value.names.filter((name) => name.code !== "th"), { code: "th", name: e.target.value }] })} maxLength={300} /></Field>
-    <Field label="ชื่อบัญชีภาษาอังกฤษ (ไม่บังคับ)"><input className={control} data-field="accountnameen" value={value.names.find((name) => name.code === "en")?.name ?? ""} onChange={(e) => set({ names: [...value.names.filter((name) => name.code !== "en"), { code: "en", name: e.target.value }] })} maxLength={300} placeholder="เช่น Cash on hand" /></Field>
+    <Field label="ชื่อบัญชีภาษาอังกฤษ"><input className={control} data-field="accountnameen" value={value.names.find((name) => name.code === "en")?.name ?? ""} onChange={(e) => set({ names: [...value.names.filter((name) => name.code !== "en"), { code: "en", name: e.target.value }] })} maxLength={300} placeholder="ไม่บังคับ เช่น Cash on hand" /></Field>
     <Field label="หมวดบัญชี"><select className={control} value={value.accounttype} onChange={(e) => set({ accounttype: e.target.value })}>{Object.entries(accountTypes).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></Field>
     <Field label="ยอดคงเหลือปกติ"><select className={control} value={value.normalbalance} onChange={(e) => set({ normalbalance: e.target.value })}><option value="debit">เดบิต</option><option value="credit">เครดิต</option></select></Field>
     <Field label="บัญชีแม่"><AccountSelect field="parentaccountcode" value={value.parentaccountcode} onChange={onParentChange} accounts={accounts.filter((item) => item.accountcode !== value.accountcode)} all label="บัญชีแม่" /></Field>

@@ -101,7 +101,7 @@ test("ผังบัญชี rejected save: one Thai alert, values kept, zero 
   // 4) values kept + focus moved to รหัสบัญชี without scrolling the page
   expect(await codeInput.inputValue()).toBe(existingCode);
   expect(await page.locator('input[data-field="accountnameth"]').inputValue()).toBe("ทดสอบรหัสซ้ำ (E2E)");
-  expect(await codeInput.evaluate((el) => el === document.activeElement)).toBe(true);
+  await expect(codeInput, "focus must land on รหัสบัญชี after the rejected save").toBeFocused({ timeout: 10_000 });
 
   // 5) the rejected save added no console error and no unhandled rejection
   const after = consoleErrors.filter((text) => !preExistingNoise.test(text)).length;
@@ -147,6 +147,23 @@ test("ผังบัญชี rejected save: one Thai alert, values kept, zero 
   await page.waitForTimeout(350);
   await shot("chartofaccounts-state-disabled-1280");
 
+  // EN name (CHAMP Name2 parity): the visible label text and the accessible name must be identical,
+  // and the field must be reachable in the add form.
+  const enInput = page.locator('input[data-field="accountnameen"]');
+  await expect(enInput).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "ชื่อบัญชีภาษาอังกฤษ", exact: true })).toHaveCount(1);
+  await expect(page.getByText("ชื่อบัญชีภาษาอังกฤษ", { exact: true })).toBeVisible();
+  await enInput.focus();
+  await expect(enInput).toBeFocused();
+
+  // the same AccountFields component renders in the view card and in the edit form
+  await firstRow.click();
+  await page.waitForTimeout(1500);
+  await expect(page.locator('input[data-field="accountnameen"]'), "view card").toBeVisible();
+  await clickByText(page, /แก้ไข/);
+  await page.waitForTimeout(1500);
+  await expect(page.locator('input[data-field="accountnameen"]'), "edit form").toBeVisible();
+  await expect(page.getByRole("textbox", { name: "ชื่อบัญชีภาษาอังกฤษ", exact: true })).toHaveCount(1);
   console.log(`SCREENSHOTS(${shots.length}):\n${shots.join("\n")}`);
   expect(shots.length).toBe(11);
 });

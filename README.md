@@ -8,6 +8,14 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ผังบัญชี (Chart of Accounts): ปรับปรุงการแจ้งเตือนข้อผิดพลาดและย้ายโฟกัสไปยังช่องที่ผิด
+
+- [Fix] ปรับ `errorStatePatch` ให้รับ `fallbackField` และเพิ่ม `saveFailureTarget` เพื่อชี้เป้าหมายช่องที่ผิดพลาด (เช่น `accountcode`) เสมอ แม้ API จะไม่ได้ระบุฟิลด์
+- [Fix] ปรับปรุง `useEffect` ย้ายโฟกัสใน `frontend/src/app/gl/gl-masters.tsx` ให้รอจนกว่าสถานะ `busy` จะเสร็จสิ้น เพื่อไม่ให้ติดสถานะ `disabled` ของฟิลด์เซ็ต
+- [Test] เพิ่ม Unit Test ใน `gl-masters.test.ts` และอัปเดต Playwright E2E assertion ใน `gl-chart-of-accounts-error.spec.ts`
+- ไฟล์: `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-masters.test.ts`, `frontend/e2e/gl-chart-of-accounts-error.spec.ts`
+- หลักฐาน: `tsc --noEmit` ผ่าน, vitest 472/472 ผ่าน
+
 ### 2026-09-14 — ยกเลิกการแต่งชื่อธนาคารจากรหัสใน API Proxy ของสมุดบัญชีธนาคาร
 
 - [Fix] แก้ไข `frontend/src/app/api/system-settings/[[...settingPath]]/route.ts`: ยกเลิกการแต่งค่า `banknames` จาก `bankcode` เมื่อผู้ใช้ไม่กรอกชื่อธนาคาร ซึ่งเดิมทำให้ผ่าน validation ไปบันทึกชื่อธนาคารเป็นรหัส (เช่น KBANK/BBL) ในฐานข้อมูล

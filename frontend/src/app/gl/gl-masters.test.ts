@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, editorAlert, errorStatePatch, pageErrorText, paneErrorText } from "./gl-masters";
+import { FormErrorAlert, GLMasters, editorAlert, errorStatePatch, pageErrorText, paneErrorText, saveFailureTarget } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -231,6 +231,13 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
     expect(patch).toEqual({ error: duplicateThai, errorField: "accountcode" });
   });
 
+
+  it("a rejected save always has a field to focus, even when the API sends none", () => {
+    expect(saveFailureTarget("accounts")).toBe("accountcode");
+    expect(saveFailureTarget("mappings")).toBe("code");
+    expect(errorStatePatch({ message: "ทำรายการไม่สำเร็จ กรุณาลองใหม่ หากยังไม่ได้ให้ติดต่อผู้ดูแลระบบ", field: "" }, "unavailable", saveFailureTarget("accounts"))).toEqual({ error: "ทำรายการไม่สำเร็จ กรุณาลองใหม่ หากยังไม่ได้ให้ติดต่อผู้ดูแลระบบ", errorField: "accountcode" });
+    expect(errorStatePatch({ message: "ซ้ำ", field: "" }, "duplicate_code", "accountcode").errorField).toBe("accountcode");
+  });
   it("falls back to a Thai sentence (never provider/English text) when the API sends none", () => {
     const patch = errorStatePatch({ message: "ทำรายการไม่สำเร็จ กรุณาลองใหม่ หากยังไม่ได้ให้ติดต่อผู้ดูแลระบบ", field: "" }, "unavailable");
     expect(/[ก-๛]/.test(patch.error)).toBe(true);
