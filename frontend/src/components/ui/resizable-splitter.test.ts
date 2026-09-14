@@ -134,4 +134,14 @@ describe("ResizableSplitter component & usage", () => {
     expect(shortcutsSource).toContain("startSplitResize");
     expect(shortcutsSource).toContain("adjustSplitWithKeyboard");
   });
+
+  it("exports useSplitPercent and is adopted across screens", () => {
+    expect(splitterSource).toContain("useSplitPercent");
+    expect(shortcutsSource).toContain("useSplitPercent");
+    expect(barcodeShelfSource).toContain("useSplitPercent");
+    expect(productSetSource).toContain("useSplitPercent");
+    expect(companyBranchSource).toContain("useSplitPercent");
+    expect(settingSource).toContain("useSplitPercent");
+  });
 });
+

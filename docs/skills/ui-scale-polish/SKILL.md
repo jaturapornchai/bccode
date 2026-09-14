@@ -648,6 +648,30 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 3. **การประยุกต์ใช้ 2 รูปแบบ**:
    - **Pixel-width Sidebar**: ใช้กับ Master List ที่ต้องการความกว้างคงที่ (เช่น 260px - 620px, default 340px)
    - **Percentage-basis Split**: ใช้กับหน้าจอ Workbench ที่ต้องแบ่งสัดส่วนเนื้อหาให้สมดุลทั้งจอ เช่น 60%/40% หรือ 65%/35%
+4. **Hook กลาง `useSplitPercent` (`frontend/src/components/ui/use-split-percent.ts`)**:
+   - รวมศูนย์การจัดการ state ทั้งหมดของตัวแบ่ง: drag pointer event listeners, window event cleanup, keyboard navigation (`ArrowLeft`, `ArrowRight`, `Home`, `End`), double-click reset, และ localStorage persistence
+   - ป้องกันการคัดลอกโค้ด boilerplate จัดการ pointermove/pointerup ซ้ำซ้อน 50+ บรรทัดในแต่ละหน้าจอ
+   - รองรับทั้ง `mode: "percent"` (ค่าเริ่มต้น) และ `mode: "pixel"` (สำหรับ sidebar กว้างเป็น px พร้อม `containerRef`)
+   - ใช้งานง่ายด้วย signature:
+     ```tsx
+     import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
+
+     const {
+       splitPercent,
+       setSplitPercent,
+       isResizing,
+       startResize,
+       resetSplit,
+       adjustWithKeyboard,
+     } = useSplitPercent({
+       storageKey: "my_split_storage_key",
+       defaultLeft: 50,
+       min: 20,
+       max: 80,
+       mode: "percent", // หรือ "pixel"
+       containerRef,    // ส่ง container ref เมื่อ mode เป็น pixel
+     });
+     ```
 
 **กับดัก / สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**:
 - **ห้ามใช้ตัวคั่นเส้นทื่อแบบเดิม**: เช่น `<div className="hidden w-1.5 shrink-0 cursor-col-resize bg-border/70 ... lg:block" />` เส้นเรียบไม่มี Grip handle คนมองไม่ออกว่าลากได้

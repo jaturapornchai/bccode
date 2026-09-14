@@ -113,7 +113,7 @@ import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { BulkUserImport } from "./bulk-user-import";
 import { ProductBomEditor } from "./product-bom-editor";
-import { ResizableSplitter } from "@/components/ui/resizable-splitter";
+import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { useAuthenticatedImageDisplaySource } from "@/components/authenticated-image";
 import { normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 import {
@@ -887,72 +887,18 @@ export function SystemSettingsScreen({
   const TREE_SPLIT_MIN_LEFT = 20;
   const TREE_SPLIT_MAX_LEFT = 75;
 
-  const [treeSplitPercent, setTreeSplitPercent] = useState(TREE_SPLIT_DEFAULT_LEFT);
-  const [resizingTreeSplit, setResizingTreeSplit] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(TREE_SPLIT_STORAGE_KEY);
-    if (saved) {
-      const parsed = Number(saved);
-      if (Number.isFinite(parsed)) {
-        setTreeSplitPercent(Math.min(TREE_SPLIT_MAX_LEFT, Math.max(TREE_SPLIT_MIN_LEFT, parsed)));
-      }
-    }
-  }, []);
-
-  const startTreeSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const container = event.currentTarget.parentElement;
-    if (!container) return;
-    event.preventDefault();
-    setResizingTreeSplit(true);
-    const rect = container.getBoundingClientRect();
-    const update = (clientX: number) => {
-      const next = ((clientX - rect.left) / rect.width) * 100;
-      const clamped = Math.min(TREE_SPLIT_MAX_LEFT, Math.max(TREE_SPLIT_MIN_LEFT, next));
-      setTreeSplitPercent(clamped);
-      window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(Math.round(clamped)));
-    };
-    update(event.clientX);
-    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      setResizingTreeSplit(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  }, []);
-
-  const adjustTreeSplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      setTreeSplitPercent((prev) => {
-        const next = Math.max(TREE_SPLIT_MIN_LEFT, prev - 2);
-        window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(Math.round(next)));
-        return next;
-      });
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      setTreeSplitPercent((prev) => {
-        const next = Math.min(TREE_SPLIT_MAX_LEFT, prev + 2);
-        window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(Math.round(next)));
-        return next;
-      });
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      setTreeSplitPercent(TREE_SPLIT_MIN_LEFT);
-      window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(TREE_SPLIT_MIN_LEFT));
-    } else if (event.key === "End") {
-      event.preventDefault();
-      setTreeSplitPercent(TREE_SPLIT_MAX_LEFT);
-      window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(TREE_SPLIT_MAX_LEFT));
-    }
-  }, []);
+  const {
+    splitPercent: treeSplitPercent,
+    setSplitPercent: setTreeSplitPercent,
+    isResizing: resizingTreeSplit,
+    startResize: startTreeSplitResize,
+    adjustWithKeyboard: adjustTreeSplitWithKeyboard,
+  } = useSplitPercent({
+    storageKey: TREE_SPLIT_STORAGE_KEY,
+    defaultLeft: TREE_SPLIT_DEFAULT_LEFT,
+    min: TREE_SPLIT_MIN_LEFT,
+    max: TREE_SPLIT_MAX_LEFT,
+  });
 
   // Product Category Tree Resizable Split States
   const CATEGORY_SPLIT_DEFAULT_LEFT = 42;
@@ -960,72 +906,19 @@ export function SystemSettingsScreen({
   const CATEGORY_SPLIT_MIN_LEFT = 20;
   const CATEGORY_SPLIT_MAX_LEFT = 75;
 
-  const [categorySplitPercent, setCategorySplitPercent] = useState(CATEGORY_SPLIT_DEFAULT_LEFT);
-  const [resizingCategorySplit, setResizingCategorySplit] = useState(false);
+  const {
+    splitPercent: categorySplitPercent,
+    setSplitPercent: setCategorySplitPercent,
+    isResizing: resizingCategorySplit,
+    startResize: startCategorySplitResize,
+    adjustWithKeyboard: adjustCategorySplitWithKeyboard,
+  } = useSplitPercent({
+    storageKey: CATEGORY_SPLIT_STORAGE_KEY,
+    defaultLeft: CATEGORY_SPLIT_DEFAULT_LEFT,
+    min: CATEGORY_SPLIT_MIN_LEFT,
+    max: CATEGORY_SPLIT_MAX_LEFT,
+  });
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(CATEGORY_SPLIT_STORAGE_KEY);
-    if (saved) {
-      const parsed = Number(saved);
-      if (Number.isFinite(parsed)) {
-        setCategorySplitPercent(Math.min(CATEGORY_SPLIT_MAX_LEFT, Math.max(CATEGORY_SPLIT_MIN_LEFT, parsed)));
-      }
-    }
-  }, []);
-
-  const startCategorySplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const container = event.currentTarget.parentElement;
-    if (!container) return;
-    event.preventDefault();
-    setResizingCategorySplit(true);
-    const rect = container.getBoundingClientRect();
-    const update = (clientX: number) => {
-      const next = ((clientX - rect.left) / rect.width) * 100;
-      const clamped = Math.min(CATEGORY_SPLIT_MAX_LEFT, Math.max(CATEGORY_SPLIT_MIN_LEFT, next));
-      setCategorySplitPercent(clamped);
-      window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(Math.round(clamped)));
-    };
-    update(event.clientX);
-    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      setResizingCategorySplit(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  }, []);
-
-  const adjustCategorySplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      setCategorySplitPercent((prev) => {
-        const next = Math.max(CATEGORY_SPLIT_MIN_LEFT, prev - 2);
-        window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(Math.round(next)));
-        return next;
-      });
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      setCategorySplitPercent((prev) => {
-        const next = Math.min(CATEGORY_SPLIT_MAX_LEFT, prev + 2);
-        window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(Math.round(next)));
-        return next;
-      });
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      setCategorySplitPercent(CATEGORY_SPLIT_MIN_LEFT);
-      window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(CATEGORY_SPLIT_MIN_LEFT));
-    } else if (event.key === "End") {
-      event.preventDefault();
-      setCategorySplitPercent(CATEGORY_SPLIT_MAX_LEFT);
-      window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(CATEGORY_SPLIT_MAX_LEFT));
-    }
-  }, []);
 
   const backendLanguage = useBackendLanguage(
     language,

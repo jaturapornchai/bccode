@@ -4,6 +4,9 @@ import React, { forwardRef } from "react";
 import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+export { useSplitPercent } from "./use-split-percent";
+export type { UseSplitPercentOptions, UseSplitPercentResult } from "./use-split-percent";
+
 export interface ResizableSplitterProps extends React.HTMLAttributes<HTMLDivElement> {
   isResizing?: boolean;
   min?: number;

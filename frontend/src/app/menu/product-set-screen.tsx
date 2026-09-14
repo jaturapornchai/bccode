@@ -45,7 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { ResizableSplitter } from "@/components/ui/resizable-splitter";
+import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { listBarcodes, type MasterEntry } from "@/lib/product-barcode/api";
@@ -258,74 +258,23 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH;
-    const saved = localStorage.getItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY);
-    if (!saved) return PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH;
-    const parsed = Number(saved);
-    return Number.isFinite(parsed) && parsed >= PRODUCT_SET_SIDEBAR_MIN_WIDTH && parsed <= PRODUCT_SET_SIDEBAR_MAX_WIDTH
-      ? parsed
-      : PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH;
-  });
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const {
+    splitPercent: sidebarWidth,
+    setSplitPercent: setSidebarWidth,
+    isResizing: isResizingSidebar,
+    startResize: handleSidebarResizeStart,
+    resetSplit: handleSidebarResizeReset,
+    adjustWithKeyboard: handleSidebarKeyDown,
+  } = useSplitPercent({
+    storageKey: PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY,
+    defaultLeft: PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH,
+    min: PRODUCT_SET_SIDEBAR_MIN_WIDTH,
+    max: PRODUCT_SET_SIDEBAR_MAX_WIDTH,
+    mode: "pixel",
+    containerRef,
+  });
 
-  const handleSidebarResizeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsResizingSidebar(true);
-    const container = containerRef.current;
-    const update = (clientX: number) => {
-      const containerLeft = container?.getBoundingClientRect().left ?? 0;
-      const nextWidth = Math.round(clientX - containerLeft);
-      const clamped = Math.min(PRODUCT_SET_SIDEBAR_MAX_WIDTH, Math.max(PRODUCT_SET_SIDEBAR_MIN_WIDTH, nextWidth));
-      setSidebarWidth(clamped);
-      localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
-    };
-    update(event.clientX);
-    const onPointerMove = (e: PointerEvent) => update(e.clientX);
-    const onPointerUp = () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      setIsResizingSidebar(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-  }, []);
-
-  const handleSidebarResizeReset = useCallback(() => {
-    setSidebarWidth(PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH);
-    localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH));
-  }, []);
-
-  const handleSidebarKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      setSidebarWidth((prev) => {
-        const next = Math.max(PRODUCT_SET_SIDEBAR_MIN_WIDTH, prev - 16);
-        localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
-        return next;
-      });
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      setSidebarWidth((prev) => {
-        const next = Math.min(PRODUCT_SET_SIDEBAR_MAX_WIDTH, prev + 16);
-        localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
-        return next;
-      });
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      setSidebarWidth(PRODUCT_SET_SIDEBAR_MIN_WIDTH);
-      localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(PRODUCT_SET_SIDEBAR_MIN_WIDTH));
-    } else if (event.key === "End") {
-      event.preventDefault();
-      setSidebarWidth(PRODUCT_SET_SIDEBAR_MAX_WIDTH);
-      localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(PRODUCT_SET_SIDEBAR_MAX_WIDTH));
-    }
-  }, []);
   const setNotice = pushNotice;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");

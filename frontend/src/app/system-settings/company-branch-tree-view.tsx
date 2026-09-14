@@ -24,7 +24,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ResizableSplitter } from "@/components/ui/resizable-splitter";
+import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { LogoAvatar } from "@/components/logo-avatar";
 import { type LanguageCode, LANGUAGES } from "@/lib/i18n";
 import { DEFAULT_TIME_ZONE, timezoneMeta, timezoneSelectOptions } from "@/lib/date-time";
@@ -687,74 +687,23 @@ export function CompanyBranchTreeView({
   const [saveError, setSaveError] = useState("");
   const [loadError, setLoadError] = useState("");
 
-  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return ORG_TREE_SIDEBAR_DEFAULT_WIDTH;
-    const saved = localStorage.getItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY);
-    if (!saved) return ORG_TREE_SIDEBAR_DEFAULT_WIDTH;
-    const parsed = Number(saved);
-    return Number.isFinite(parsed) && parsed >= ORG_TREE_SIDEBAR_MIN_WIDTH && parsed <= ORG_TREE_SIDEBAR_MAX_WIDTH
-      ? parsed
-      : ORG_TREE_SIDEBAR_DEFAULT_WIDTH;
-  });
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const {
+    splitPercent: sidebarWidth,
+    setSplitPercent: setSidebarWidth,
+    isResizing: isResizingSidebar,
+    startResize: handleSidebarResizeStart,
+    resetSplit: handleSidebarResizeReset,
+    adjustWithKeyboard: handleSidebarKeyDown,
+  } = useSplitPercent({
+    storageKey: ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY,
+    defaultLeft: ORG_TREE_SIDEBAR_DEFAULT_WIDTH,
+    min: ORG_TREE_SIDEBAR_MIN_WIDTH,
+    max: ORG_TREE_SIDEBAR_MAX_WIDTH,
+    mode: "pixel",
+    containerRef,
+  });
 
-  const handleSidebarResizeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsResizingSidebar(true);
-    const container = containerRef.current;
-    const update = (clientX: number) => {
-      const containerLeft = container?.getBoundingClientRect().left ?? 0;
-      const nextWidth = Math.round(clientX - containerLeft);
-      const clamped = Math.min(ORG_TREE_SIDEBAR_MAX_WIDTH, Math.max(ORG_TREE_SIDEBAR_MIN_WIDTH, nextWidth));
-      setSidebarWidth(clamped);
-      localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
-    };
-    update(event.clientX);
-    const onPointerMove = (e: PointerEvent) => update(e.clientX);
-    const onPointerUp = () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      setIsResizingSidebar(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-  }, []);
-
-  const handleSidebarResizeReset = useCallback(() => {
-    setSidebarWidth(ORG_TREE_SIDEBAR_DEFAULT_WIDTH);
-    localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(ORG_TREE_SIDEBAR_DEFAULT_WIDTH));
-  }, []);
-
-  const handleSidebarKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      setSidebarWidth((prev) => {
-        const next = Math.max(ORG_TREE_SIDEBAR_MIN_WIDTH, prev - 16);
-        localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
-        return next;
-      });
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      setSidebarWidth((prev) => {
-        const next = Math.min(ORG_TREE_SIDEBAR_MAX_WIDTH, prev + 16);
-        localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
-        return next;
-      });
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      setSidebarWidth(ORG_TREE_SIDEBAR_MIN_WIDTH);
-      localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(ORG_TREE_SIDEBAR_MIN_WIDTH));
-    } else if (event.key === "End") {
-      event.preventDefault();
-      setSidebarWidth(ORG_TREE_SIDEBAR_MAX_WIDTH);
-      localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(ORG_TREE_SIDEBAR_MAX_WIDTH));
-    }
-  }, []);
 
   const mainApiUrl = useMemo(() => {
     if (!auth?.backendUrl) return "";

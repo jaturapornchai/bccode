@@ -8,7 +8,18 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — รวมศูนย์การปรับความกว้าง Splitter ด้วย useSplitPercent Hook กลาง (Item 16)
+
+- [Refactor] สร้าง Hook กลาง `useSplitPercent` (`frontend/src/components/ui/use-split-percent.ts`) รวมศูนย์การจัดการ state ทั้งหมดของตัวแบ่งความกว้าง: pointer drag, keyboard navigation (`ArrowLeft`, `ArrowRight`, `Home`, `End`), double-click reset, และ localStorage persistence
+- [Refactor] ปรับปรุงหน้าจอที่ใช้งานตัวแบ่งความกว้าง (`manage-shortcuts-screen.tsx`, `product-barcode-shelf-screen.tsx`, `product-set-screen.tsx`, `company-branch-tree-view.tsx`, `system-settings-screen.tsx`) ให้เรียกใช้ `useSplitPercent` ลด boilerplate โค้ด pointermove/pointerup ซ้ำซ้อน
+- [Feature] รองรับทั้ง `mode: "percent"` (ค่าเริ่มต้น) และ `mode: "pixel"` (สำหรับ sidebar กว้างเป็นพิกเซลพร้อม `containerRef`)
+- [Test] ปรับปรุงและขยาย Unit Test `resizable-splitter.test.ts` ตรวจสอบการ export `useSplitPercent` และการนำไปใช้งานในทุกหน้าจอ
+- [Docs] อัปเดต `docs/skills/ui-scale-polish/SKILL.md` หัวข้อ §8.7 และรัน `tools/gen-code-map.ps1` อัปเดต `docs/reference/CODE-MAP.md`
+- ไฟล์: `frontend/src/components/ui/use-split-percent.ts`, `frontend/src/components/ui/resizable-splitter.tsx`, `frontend/src/components/ui/resizable-splitter.test.ts`, `frontend/src/app/menu/manage-shortcuts-screen.tsx`, `frontend/src/app/menu/product-barcode-shelf-screen.tsx`, `frontend/src/app/menu/product-set-screen.tsx`, `frontend/src/app/system-settings/company-branch-tree-view.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `docs/skills/ui-scale-polish/SKILL.md`, `docs/reference/CODE-MAP.md`
+- หลักฐาน: Vitest 477/477 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — เพิ่มประสิทธิภาพการโหลดผังบัญชีและปีบัญชี: Module-Level Cache และ Parallel Pagination (Item 15)
+
 
 - [Perf] เพิ่มระบบ Module-Level Cache สำหรับผังบัญชี (accounts) และปีบัญชี (fiscal-years) ใน `useReferences` (`frontend/src/app/gl/gl-common.tsx`) พร้อมฟังก์ชัน `invalidateReferencesCache` และการทำ In-flight Request Deduplication ทำให้การสลับไปมาระหว่าง 5 หน้าจอ GL ไม่ต้องดาวน์โหลดผังบัญชีขนาดใหญ่ซ้ำซ้อน
 - [Perf] ปรับปรุงฟังก์ชัน `glAllRecords` ใน `frontend/src/lib/general-ledger-api.ts` ให้ดาวน์โหลดข้อมูลหน้า 2 ถึง N แบบคู่ขนานด้วย `Promise.all` ภายใต้ snapshot sequence เดียวกัน ช่วยลดเวลาโหลดข้อมูลขนาดใหญ่ลงอย่างมากเมื่อเทียบกับการวนลูปดึงข้อมูลทีละหน้าแบบ serial

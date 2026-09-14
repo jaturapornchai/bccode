@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ResizableSplitter } from "@/components/ui/resizable-splitter";
+import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import type { LanguageCode } from "@/lib/i18n";
 import {
   MENU_SECTIONS,
@@ -85,72 +85,19 @@ export function ManageShortcutsScreen({
 }) {
   const t = (key: string, th: string) => backendText(backendLanguage, key, th);
 
-  const [splitLeftPercent, setSplitLeftPercent] = useState<number>(SHORTCUTS_SPLIT_DEFAULT_LEFT);
-  const [resizingSplit, setResizingSplit] = useState(false);
+  const {
+    splitPercent: splitLeftPercent,
+    setSplitPercent: setSplitLeftPercent,
+    isResizing: resizingSplit,
+    startResize: startSplitResize,
+    adjustWithKeyboard: adjustSplitWithKeyboard,
+  } = useSplitPercent({
+    storageKey: SHORTCUTS_SPLIT_STORAGE_KEY,
+    defaultLeft: SHORTCUTS_SPLIT_DEFAULT_LEFT,
+    min: SHORTCUTS_SPLIT_MIN_LEFT,
+    max: SHORTCUTS_SPLIT_MAX_LEFT,
+  });
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(SHORTCUTS_SPLIT_STORAGE_KEY);
-    if (saved) {
-      const parsed = Number(saved);
-      if (Number.isFinite(parsed)) {
-        setSplitLeftPercent(Math.min(SHORTCUTS_SPLIT_MAX_LEFT, Math.max(SHORTCUTS_SPLIT_MIN_LEFT, parsed)));
-      }
-    }
-  }, []);
-
-  const startSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const container = event.currentTarget.parentElement;
-    if (!container) return;
-    event.preventDefault();
-    setResizingSplit(true);
-    const rect = container.getBoundingClientRect();
-    const update = (clientX: number) => {
-      const next = ((clientX - rect.left) / rect.width) * 100;
-      const clamped = Math.min(SHORTCUTS_SPLIT_MAX_LEFT, Math.max(SHORTCUTS_SPLIT_MIN_LEFT, next));
-      setSplitLeftPercent(clamped);
-      window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(Math.round(clamped)));
-    };
-    update(event.clientX);
-    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      setResizingSplit(false);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  }, []);
-
-  const adjustSplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      setSplitLeftPercent((prev) => {
-        const next = Math.max(SHORTCUTS_SPLIT_MIN_LEFT, prev - 2);
-        window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(Math.round(next)));
-        return next;
-      });
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      setSplitLeftPercent((prev) => {
-        const next = Math.min(SHORTCUTS_SPLIT_MAX_LEFT, prev + 2);
-        window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(Math.round(next)));
-        return next;
-      });
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      setSplitLeftPercent(SHORTCUTS_SPLIT_MIN_LEFT);
-      window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(SHORTCUTS_SPLIT_MIN_LEFT));
-    } else if (event.key === "End") {
-      event.preventDefault();
-      setSplitLeftPercent(SHORTCUTS_SPLIT_MAX_LEFT);
-      window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(SHORTCUTS_SPLIT_MAX_LEFT));
-    }
-  }, []);
 
   const itemById = useMemo(() => new Map(allMenuItems.map((item) => [item.id, item])), [allMenuItems]);
 
