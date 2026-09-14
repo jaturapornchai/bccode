@@ -1174,8 +1174,28 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
   - `npm test`
   - `npm run build`
   - ตรวจวัดขนาด DOM จริงบนหน้าจอ (เช่น `listPaneBox.height` ขยายเต็มพื้นที่ เหลือช่องว่างด้านล่าง < 10px)
+## 8.24 มาตรฐานแจ้งข้อผิดพลาดจาก API แบบไทยในหน้าต่างแก้ไข (Thai Inline API-Error Standard — 2026-09-14)
 
-
-
-
-
+- **New Standard Pattern:**
+  - **หนึ่งหน้าจอ หนึ่งกล่องข้อความ Thai ** — เมื่อบันทึกไม่ผ่าน ให้แสดงข้อความไทยในกรอบของหน้าต่าง/ส่วนแก้ไขที่ผู้ใช้กำลังกรอกอยู่ (ไม่ใช่แถบด้านบนสุดของหน้า) ใช้คอมโพเนนต์ `Notice` ที่ให้ `role="alert"` + `text-[0.95rem]` อยู่แล้ว → `frontend/src/app/gl/gl-masters.tsx:384, :460` (ทั้งโหมดดูและโหมดแก้ไข)
+  - **ข้อความมาจากเซิร์ฟเวอร์เสมอ** — อ่านฟิลด์ `message` (ถ้าไม่มี อ่าน `error.message`) ถ้าเป็นข้อความไทยให้ใช้ทันที ถ้าไม่ใช่/ว่าง ให้แปลจากรหัสเครื่อง `code` ผ่านตารางไทยสำรอง แล้วจึงค่อยใช้ประโยคกลาง → `frontend/src/lib/general-ledger-api.ts:14-45` (`commandCodeMessages`) + `:73` (`commandErrorInfo`, `GLCommandError`)
+  - **ห้ามโชว์ข้อความอังกฤษ/รหัสเทคนิค** — ตัดข้อความที่ไม่มีอักษรไทยทิ้งทั้งหมด (regex `[ก-๛]`) แล้วแทนด้วยประโยคไทยกลาง `frontend/src/lib/general-ledger-api.ts:67-71` (`commandFailure`)
+  - **ค่าในฟอร์มต้องอยู่ครบ และโฟกัสไปช่องที่ผิด** — ตอนบันทึกไม่ผ่าน อนุญาตให้แก้เฉพาะ state `{ error, errorField }` เท่านั้น (ไม่แตะ record) → `frontend/src/app/gl/gl-masters.tsx:24` (`errorStatePatch`) และย้ายโฟกัสด้วย `data-field` ที่วางบนคอนโทรลจริง + `focus({ preventScroll: true })` เพื่อไม่ให้หน้าจอกระโดด → `frontend/src/app/gl/gl-masters.tsx:60-65`; ตัวคอนโทรล: `gl-masters.tsx:534` (`data-field="accountcode"`), `:535` (`accountnameth`, `accountnameen`), `:539`+ `gl-common.tsx:342,349` (`AccountSelect field=...`)
+  - **BFF: ข้อผิดพลาดที่ผู้ใช้แก้เองได้ ไม่ต้องทำให้ console ขึ้น error** — ถ้า 4xx และ body มี `code` (ไม่ใช่ 401/403) ให้ส่งต่อเป็น HTTP 200 + `success:false` แล้วให้หน้าจอเช็ค `success` เอง ส่วน 401/403/5xx คงสถานะจริง → `frontend/src/lib/workspace-api.ts:61-91` และเปิดใช้เฉพาะคำสั่ง GL ที่ `frontend/src/app/api/gl/[...glPath]/route.ts:19`
+  - **สีของสถานะผิดพลาดต้องมาจากโทเคนธีม** — `text-destructive`, `border-border`, `hover:bg-destructive/10`, `hover:border-destructive/40`, `focus-visible:ring-destructive/30` → `frontend/src/app/gl/gl-masters.tsx:314, 428, 499`
+- **Anti-pattern / Deprecated:**
+  - ปล่อยให้บันทึกไม่ผ่านแล้วเงียบ (มีแต่ `console.error`) หรือให้ผู้ใช้เดาเองจากปุ่มที่กดไม่ติด
+  - แสดงข้อความจากผู้ให้บริการดิบ ๆ เช่น `E11000 duplicate key`, `Unexpected token <`, `Failed to load resource`, เลข HTTP หรือ stack trace
+  - แสดงกล่องข้อผิดพลาดสองที่พร้อมกัน (แถบบนสุดของหน้า + ในหน้าต่าง) — ผู้ใช้จะอ่านไม่รู้ว่าอันไหนคือสาเหตุ; ถ้ามี record เปิดอยู่ ให้ส่วนแก้ไขเป็นเจ้าของข้อความ และแถบหน้าเงียบ (`editorAlert` → `frontend/src/app/gl/gl-masters.tsx:15-19`, ใช้ที่ `:193, :384, :460`)
+  - วาง `data-field` ไว้ที่ `<label>`/ตัวห่อ แล้วโฟกัสไม่ได้จริง — ต้องวางบน `input/select` (หรือให้คอมโพเนนต์ส่งต่อ prop ให้คอนโทรลของตัวเอง) หรือมี fallback `root.querySelector("input,select,textarea,button")`
+  - `text-red-600`, `border-red-200`, `hover:bg-red-50` และคู่ dark mode ที่เขียนตายตัว — สีจะไม่ตรงกับพาเลตที่ผู้ใช้เลือก
+  - ใช้ `response.json()` ตรง ๆ กับทุก response — ถ้า backend ตอบ HTML/ข้อความเปล่า จะได้ error อังกฤษหลุดถึงผู้ใช้ (ต้อง `.catch(() => ({}))` → `frontend/src/lib/general-ledger-api.ts:108`)
+- **Root Cause & Rationale:**
+  - การล้มเหลวแบบเงียบคือกับดักใหญ่ของผู้ใช้อายุ 40+ (กฎข้อ 8: ทุก action ต้องมี feedback ภาษาไทย) และการ์ดข้อความที่อยู่ไกลจุดกดทำให้ผู้ใช้คิดว่า “กดไม่ติด” — จึงต้องวางกล่องข้อความในบริเวณที่ตากำลังมอง (หน้าต่างแก้ไข)
+  - เบราว์เซอร์ (Chrome) จะบันทึก console error ให้ทุก response ที่สถานะ 4xx/5xx ของ fetch → ถ้าอยากให้ “console error = 0” ระหว่างที่ผู้ใช้แก้ฟอร์ม ต้องให้ BFF แปลงข้อผิดพลาดที่คาดได้ (มี `code`) เป็น 200 + `success:false`; แต่ 401/403/5xx ต้องคงสถานะจริงเพื่อไม่บัง auth failure
+  - ข้อความไทยต้องเป็นของเซิร์ฟเวอร์ (แหล่งเดียว) เพื่อไม่ให้ข้อความสองฝั่งไม่ตรงกัน ส่วนตารางไทยสำรองมีไว้กันกรณี message หาย ไม่ใช่แทนที่
+- **Reference Implementation:**
+  - หน้าจอ: `frontend/src/app/gl/gl-masters.tsx` (ผังบัญชี `/gl/chartofaccounts`) — `showFormError` `:53-58`, `editorAlert` `:15-21`, โฟกัส `:60-65`, กล่องข้อความ `:384, :460`
+  - ชั้น API: `frontend/src/lib/general-ledger-api.ts` (`commandErrorInfo` `:73`, `commandFailure` `:67-71`), `frontend/src/lib/workspace-api.ts:61-91`, `frontend/src/app/api/gl/[...glPath]/route.ts:19`
+  - ฝั่งเซิร์ฟเวอร์ (สัญญาข้อผิดพลาด): `backend/internal/generalledger/errors.go` (`duplicate_code` = 409 + `message` ไทย), `backend/internal/generalledger/httpapi/http.go:159`
+  - ทดสอบ: `frontend/src/app/gl/gl-masters.test.ts:180-235` (หนึ่ง alert, ค่าคงอยู่, mutual exclusivity), `frontend/src/lib/workspace-api.test.ts`, `frontend/src/lib/general-ledger-api.test.ts`; E2E `frontend/e2e/gl-chart-of-accounts-error.spec.ts`
