@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Store) accountMasterReferences(ctx context.Context, scope Scope, code string) error {
-	fields := []string{"accountcode", "rules.accountcode", "itemaccount", "costaccount", "revenueaccount", "profitlossaccount", "retainedearningsaccount"}
+	fields := []string{"accountcode", "rules.accountcode", "itemaccount", "costaccount", "revenueaccount", "profitlossaccount", "retainedearningsaccount", "rows.accountcodes"}
 	conditions := make(bson.A, 0, len(fields))
 	for _, field := range fields {
 		conditions = append(conditions, bson.M{field: code})
