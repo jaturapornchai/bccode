@@ -218,10 +218,13 @@ export function validateJournal(journal: GLJournal, year: GLFiscalYear | undefin
   return null;
 }
 
-/** Spreadsheet apps must treat untrusted labels as text, never formulas. */
-export function csvCell(value: string) { return `"${(/^[\s]*[=+\-@\t\r]/.test(value) ? "'" : "") + value.replace(/"/g, '""')}"`; }
+/** Spreadsheet apps must treat untrusted labels as text, never formulas. Amounts are raw numbers. */
+export function csvCell(value: string, isAmount = false) {
+  const needsApostrophe = !isAmount && /^[\s]*[=+\-@\t\r]/.test(value);
+  return `"${(needsApostrophe ? "'" : "") + value.replace(/"/g, '""')}"`;
+}
 export function reportCsv(report: GLReport) {
-  return "\uFEFF" + [report.columns.map((column) => csvCell(column.label)).join(","), ...report.rows.map((row) => report.columns.map((column) => csvCell((column.amount ? "'" : "") + (row[column.key] ?? ""))).join(","))].join("\r\n");
+  return "\uFEFF" + [report.columns.map((column) => csvCell(column.label)).join(","), ...report.rows.map((row) => report.columns.map((column) => csvCell(row[column.key] ?? "", Boolean(column.amount))).join(","))].join("\r\n");
 }
 
 export type StatementType = "balance_sheet" | "pnl" | "production_cost" | "cash_flow" | "custom";

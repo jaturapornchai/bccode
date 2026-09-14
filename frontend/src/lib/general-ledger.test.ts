@@ -30,11 +30,13 @@ describe("general ledger exact accounting helpers", () => {
     expect(validateJournal(journal, year, [{ ...accounts[0], allowposting: false }, accounts[1]])).toContain("ลงรายการได้");
     expect(validateJournal({ ...journal, lines: [journal.lines[0], { ...journal.lines[1], credit: "0.2" }] }, year, accounts)).toContain("เท่ากัน");
   });
-  it("protects CSV formulas and exports amounts as exact spreadsheet text", () => {
+  it("protects CSV formulas and exports amounts as numeric values without apostrophes", () => {
     expect(csvCell("=HYPERLINK(\"https://bad\")")).toBe('"\'=HYPERLINK(""https://bad"")"');
     expect(csvCell("\t+cmd")).toBe('"\'\t+cmd"');
-    const csv = reportCsv({ columns: [{ key: "name", label: "ชื่อ" }, { key: "amount", label: "จำนวนเงิน", amount: true }], rows: [{ name: "=1+1", amount: "999999999999999999.01" }], totals: {}, totalrows: 1, warnings: [], asof: "", sequence: 1 });
-    expect(csv).toContain('"\'=1+1","\'999999999999999999.01"');
+    const csv = reportCsv({ columns: [{ key: "name", label: "ชื่อ" }, { key: "amount", label: "จำนวนเงิน", amount: true }], rows: [{ name: "=1+1", amount: "999999999999999999.01" }, { name: "ติดลบ", amount: "-1234.50" }], totals: {}, totalrows: 2, warnings: [], asof: "", sequence: 1 });
+    expect(csv).toContain('"\'=1+1","999999999999999999.01"');
+    expect(csv).toContain('"ติดลบ","-1234.50"');
+    expect(csv).not.toContain("'-1234.50");
   });
   it("provides default level 1 and supports 1 to 12 in account models", () => {
     const defaultAcc = emptyAccount();
