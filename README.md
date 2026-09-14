@@ -8,6 +8,17 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — เพิ่ม Regression Guard Test สำหรับคีย์ภาษาในกลุ่มหน้าจอสินค้า (Item 26)
+
+- [Test] เพิ่มชุดการทดสอบการถดถอย (Regression Guard) ใน `frontend/src/app/menu/product-language-keys.test.ts` ครอบคลุมหน้าจอสินค้า 3 หน้าจอหลัก (`product-screen.tsx`, `product-barcode-screen.tsx`, `product-set-screen.tsx`):
+  1. ตรวจสอบว่าทุกคีย์ภาษาที่ใช้ในโค้ดมีแถวอยู่ใน `backend/assets/language/languages.tsv` และมีข้อความครบทั้ง 12 ภาษา (13 คอลัมน์) ไม่เว้นว่าง
+  2. ตรวจสอบว่าไม่มีข้อความภาษาไทย hardcode อยู่นอกการเรียกฟังก์ชัน `tr()`, `t()`, `backendText()` หรือโครงสร้าง tuple
+- [i18n] เพิ่มและปรับแต่งคีย์ส่วนกลาง/แท็บใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษา: `common_total`, `common_all`, `common_refresh`, `common_copy`, `common_filter`, `common_loading`, `common_select`, `common_unspecified`, `tab_basic_info`, `tab_classification`, `tab_stock`, `tab_units`, `tab_restaurant`
+- [i18n] ปรับปรุง `frontend/src/app/menu/product-screen.tsx`: เปลี่ยนการอ้างอิง `productname` เป็น `product_name`, ปรับ fallback `emptyText` ใน `DetailSection` ให้เป็นเครื่องหมาย `-` เมื่อไม่ระบุ, และปรับ `EXTENSION_PRODUCT_TABS` ให้ใช้ `tr()` ตามมาตรฐาน
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `frontend/src/app/menu/product-language-keys.test.ts`, `backend/assets/language/languages.tsv`, `frontend/src/app/menu/product-screen.tsx`, `docs/reference/CODE-MAP.md`, `README.md`
+- หลักฐาน: Vitest 479/479 ผ่าน 100% (รวม 2 tests ใหม่ใน `product-language-keys.test.ts`), `tsc --noEmit` 0 error, Go test passed
+
 ### 2026-09-14 — รองรับภาษาหลากหลายและกำจัดข้อความ Hardcode ในหน้าจอสินค้าชุด (Item 24 - ตอนที่ 3 ครบถ้วน)
 
 - [i18n] เพิ่มคีย์ภาษาสำหรับหน้าจอสินค้าชุด (Product Bundles) และส่วนประกอบ 61 รายการลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษาตามมาตรฐาน (ครอบคลุมหัวข้อ, แถบเครื่องมือ, ตัวกรอง, การตัดสต๊อก, การเลือกบาร์โค้ด, ไดอะล็อกยืนยันลบ, แท็บข้อมูลทั่วไป, กลุ่มตัวเลือกสินค้า, นโยบายตัดสต๊อก/คิดราคา, ขนาดพัสดุจัดส่ง, และระบบจำลองการขาย Customer Simulator พร้อมวิเคราะห์กำไรขั้นต้น)

@@ -166,7 +166,7 @@ const EXTENSION_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>, tr?: (k
   classification: text.tabClassification,
   bom: text.tabBomShort,
   media: text.tabMedia,
-  logistics: tr ? tr("product_tab_logistics", "การจัดส่ง / โลจิสติกส์") : ((text as unknown as Record<string, string>).tabLogistics ?? "การจัดส่ง / โลจิสติกส์"),
+  logistics: tr ? tr("product_tab_logistics", "การจัดส่ง / โลจิสติกส์") : "Logistics",
   restaurant: text.tabRestaurant,
   timeforsales: text.tabTimeForSales,
   business: text.tabBusinessBranchShort,
@@ -1602,7 +1602,7 @@ export function ProductScreen({
           {/* Table Header inside list on Desktop */}
           <div className="bc-list-header grid grid-cols-[minmax(72px,0.85fr)_minmax(0,2fr)_minmax(65px,0.75fr)] gap-x-2 shrink-0">
             <span>{text.itemCode ?? tr("itemcode", "รหัสสินค้า")}</span>
-            <span>{text.productName ?? tr("productname", "ชื่อสินค้า")}</span>
+            <span>{text.productName ?? tr("product_name", "ชื่อสินค้า")}</span>
             <span className="text-right">{text.balance ?? tr("balanceqty", "ยอดคงเหลือ")}</span>
           </div>
 
@@ -2919,9 +2919,10 @@ function formatProductUnitType(
   item: Product,
   tr?: (key: string, fallback: string) => string,
 ): string {
+  const t = tr ?? ((_k, fb) => fb);
   return productUnitRows(item).length > 0
-    ? (tr ? tr("product_multiple_units", "หลายหน่วยนับ") : "หลายหน่วยนับ")
-    : (tr ? tr("product_single_unit", "หน่วยนับเดียว") : "หน่วยนับเดียว");
+    ? t("product_multiple_units", "หลายหน่วยนับ")
+    : t("product_single_unit", "หน่วยนับเดียว");
 }
 
 // ─── Tab Components ───────────────────────────────────────────────────────
@@ -2935,9 +2936,10 @@ function formatYesNo(
   value?: boolean,
   tr?: (key: string, fallback: string) => string,
 ) {
+  const t = tr ?? ((_k, fb) => fb);
   return value
-    ? (tr ? tr("common_yes", "ใช่") : "ใช่")
-    : (tr ? tr("common_no", "ไม่ใช่") : "ไม่ใช่");
+    ? t("common_yes", "ใช่")
+    : t("common_no", "ไม่ใช่");
 }
 
 function formatNamedList(
@@ -2985,10 +2987,11 @@ function formatRefBarcodeList(
         .join(" / ");
       const marketplaceText = (item.marketplaceskumappings || [])
         .map((mapping) => {
+          const t = tr ?? ((_k, fb) => fb);
           const stockText = (mapping.marketplacedimensionstocks || [])
             .map(
               (stock) =>
-                `${stock.dimensionname || stock.dimensionkey}: ${tr ? tr("product_available_to_sell", "พร้อมขาย") : "พร้อมขาย"} ${stock.availableqty}`,
+                `${stock.dimensionname || stock.dimensionkey}: ${t("product_available_to_sell", "พร้อมขาย")} ${stock.availableqty}`,
             )
             .join("; ");
           return [
@@ -3032,24 +3035,25 @@ function formatOptionList(
   tr?: (key: string, fallback: string) => string,
 ) {
   if (!items || items.length === 0) return "-";
+  const t = tr ?? ((_k, fb) => fb);
   return items
     .map((item) => {
       const name =
         pickName(item.names, language) ||
-        (tr ? tr("product_option_set", "ชุดตัวเลือก") : "ชุดตัวเลือก");
+        t("product_option_set", "ชุดตัวเลือก");
       const choiceText = (item.choices || [])
         .map((choice) => {
           const choiceName =
             pickName(choice.names, language) ||
             choice.refbarcode ||
-            (tr ? tr("product_choice", "ตัวเลือก") : "ตัวเลือก");
+            t("product_choice", "ตัวเลือก");
           const price = choice.price
-            ? `${tr ? tr("common_price", "ราคา") : "ราคา"} ${choice.price}`
+            ? `${t("common_price", "ราคา")} ${choice.price}`
             : "";
           const qty =
             choice.qty == null
               ? ""
-              : `${tr ? tr("common_qty", "จำนวน") : "จำนวน"} ${choice.qty}`;
+              : `${t("common_qty", "จำนวน")} ${choice.qty}`;
           return [choiceName, price, qty].filter(Boolean).join(" ");
         })
         .join("; ");
@@ -3064,12 +3068,13 @@ function formatDimensionList(
   tr?: (key: string, fallback: string) => string,
 ) {
   if (!items || items.length === 0) return "-";
+  const t = tr ?? ((_k, fb) => fb);
   return items
     .map((item) => {
       const dimensionName = pickName(item.names, language) || item.guidfixed;
       const choiceName =
         pickName(item.item?.names, language) || item.item?.guidfixed || "-";
-      return `${dimensionName}: ${choiceName}${item.isdisabled || item.item?.isdisabled ? ` (${tr ? tr("common_disabled", "ปิดใช้") : "ปิดใช้"})` : ""}`;
+      return `${dimensionName}: ${choiceName}${item.isdisabled || item.item?.isdisabled ? ` (${t("common_disabled", "ปิดใช้")})` : ""}`;
     })
     .join(", ");
 }
@@ -3079,6 +3084,7 @@ function formatMarketplaceProductList(
   tr?: (key: string, fallback: string) => string,
 ) {
   if (!items || items.length === 0) return "-";
+  const t = tr ?? ((_k, fb) => fb);
   return items
     .map((item) =>
       [
@@ -3089,7 +3095,7 @@ function formatMarketplaceProductList(
         item.status,
         item.syncenabled
           ? "sync"
-          : (tr ? tr("product_not_sync", "ไม่ sync") : "ไม่ sync"),
+          : t("product_not_sync", "ไม่ sync"),
       ]
         .filter(Boolean)
         .join(" / "),
@@ -3189,7 +3195,7 @@ function DetailSection({
         </dl>
       ) : (
         <p className="px-3 py-2 text-center text-xs text-muted-foreground">
-          {emptyText || "ยังไม่มีข้อมูลในส่วนนี้"}
+          {emptyText || "-"}
         </p>
       )}
     </section>
