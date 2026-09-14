@@ -8,6 +8,13 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — เพิ่มประสิทธิภาพการโหลดผังบัญชีและปีบัญชี: Module-Level Cache และ Parallel Pagination (Item 15)
+
+- [Perf] เพิ่มระบบ Module-Level Cache สำหรับผังบัญชี (accounts) และปีบัญชี (fiscal-years) ใน `useReferences` (`frontend/src/app/gl/gl-common.tsx`) พร้อมฟังก์ชัน `invalidateReferencesCache` และการทำ In-flight Request Deduplication ทำให้การสลับไปมาระหว่าง 5 หน้าจอ GL ไม่ต้องดาวน์โหลดผังบัญชีขนาดใหญ่ซ้ำซ้อน
+- [Perf] ปรับปรุงฟังก์ชัน `glAllRecords` ใน `frontend/src/lib/general-ledger-api.ts` ให้ดาวน์โหลดข้อมูลหน้า 2 ถึง N แบบคู่ขนานด้วย `Promise.all` ภายใต้ snapshot sequence เดียวกัน ช่วยลดเวลาโหลดข้อมูลขนาดใหญ่ลงอย่างมากเมื่อเทียบกับการวนลูปดึงข้อมูลทีละหน้าแบบ serial
+- ไฟล์: `frontend/src/app/gl/gl-common.tsx`, `frontend/src/lib/general-ledger-api.ts`
+- หลักฐาน: Vitest 476/476 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — รวมโครงสร้าง Error Envelope ของ GL เข้ากับ apperr.AppError และ ToResponse (Item 14)
 
 - [Refactor] ย้ายโครงสร้าง error envelope ของ GL ใน `backend/internal/generalledger/errors.go` และ `httpapi/http.go` ให้ใช้มาตรฐานกลาง `backend/pkg/apperr` (`apperr.AppError` และ `ToResponse()`) ร่วมกับทั้งระบบ

@@ -138,18 +138,37 @@ export function glCommand(command: Omit<GLCommand, "requestid">, requestid: stri
 }
 /** Abort instead of silently producing a partial accounting export. */
 export async function glAllRecords<T extends GLRecord>(resource: GLResource, query = "", cap = 100000, snapshot?: number): Promise<T[]> {
-  const items: T[] = []; let expected: number | undefined; let sequence = snapshot;
-  for (let page = 1; ; page++) {
-    const data = await glRequest<GLPage<T>>(`${resource}?${new URLSearchParams({ q: query, page: String(page), limit: "500", ...(sequence === undefined ? {} : { snapshot: String(sequence) }) })}`);
-    if (sequence !== undefined && sequence !== data.sequence) throw new Error("ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่");
-    sequence = data.sequence;
-    if (expected !== undefined && data.total !== expected) throw new Error("ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่");
-    expected = data.total;
-    if (expected > cap) throw new Error(`ข้อมูลเกิน ${cap.toLocaleString("th-TH")} รายการ กรุณาจำกัดช่วงข้อมูลก่อนส่งออก`);
-    items.push(...(data.items ?? []));
-    if (items.length >= expected) break;
-    if (!data.items?.length) throw new Error("ได้รับข้อมูลไม่ครบ กรุณาลองส่งออกใหม่");
+  const limit = "500";
+  const first = await glRequest<GLPage<T>>(`${resource}?${new URLSearchParams({ q: query, page: "1", limit, ...(snapshot === undefined ? {} : { snapshot: String(snapshot) }) })}`);
+  const sequence = first.sequence;
+  if (snapshot !== undefined && snapshot !== sequence) throw new Error("ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่");
+  const expected = first.total;
+  if (expected > cap) throw new Error(`ข้อมูลเกิน ${cap.toLocaleString("th-TH")} รายการ กรุณาจำกัดช่วงข้อมูลก่อนส่งออก`);
+  const items: T[] = [...(first.items ?? [])];
+  if (items.length >= expected) {
+    if (new Set(items.map((item) => item.id)).size !== items.length) throw new Error("พบข้อมูลซ้ำระหว่างส่งออก กรุณาลองใหม่");
+    return items;
   }
+  if (!first.items?.length) throw new Error("ได้รับข้อมูลไม่ครบ กรุณาลองส่งออกใหม่");
+
+  const pageSize = first.items.length;
+  const totalPages = Math.ceil(expected / pageSize);
+  const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+
+  const pagesData = await Promise.all(
+    remainingPages.map((page) =>
+      glRequest<GLPage<T>>(`${resource}?${new URLSearchParams({ q: query, page: String(page), limit, ...(sequence === undefined ? {} : { snapshot: String(sequence) }) })}`)
+    )
+  );
+
+  for (const data of pagesData) {
+    if (sequence !== undefined && sequence !== data.sequence) throw new Error("ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่");
+    if (data.total !== expected) throw new Error("ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่");
+    if (!data.items?.length) throw new Error("ได้รับข้อมูลไม่ครบ กรุณาลองส่งออกใหม่");
+    items.push(...data.items);
+  }
+
+  if (items.length < expected) throw new Error("ได้รับข้อมูลไม่ครบ กรุณาลองส่งออกใหม่");
   if (new Set(items.map((item) => item.id)).size !== items.length) throw new Error("พบข้อมูลซ้ำระหว่างส่งออก กรุณาลองใหม่");
   return items;
 }

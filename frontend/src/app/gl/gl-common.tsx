@@ -455,15 +455,73 @@ export function YearSelect({ value, onChange, years, label: labelProp, disabled 
   const label = labelProp ?? tr("gl_fiscal_year", "ปีบัญชี");
   return <select aria-label={label} className={control} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}><option value="">{tr("gl_select_fiscal_year", "เลือกปีบัญชี")}</option>{years.map((year) => <option key={year.id ?? year.code} value={year.code}>{year.code}{year.closed ? ` · ${tr("gl_closed", "ปิดแล้ว")}` : ""}</option>)}</select>;
 }
+interface ReferencesCache {
+  accounts: GLAccount[];
+  years: GLFiscalYear[];
+  loaded: boolean;
+}
+
+let referencesCache: ReferencesCache = {
+  accounts: [],
+  years: [],
+  loaded: false,
+};
+
+let inFlightReferences: Promise<ReferencesCache> | null = null;
+
+export function invalidateReferencesCache() {
+  referencesCache = { accounts: [], years: [], loaded: false };
+  inFlightReferences = null;
+}
+
 export function useReferences(refresh = 0) {
   const [revision, setRevision] = useState(0);
-  const reload = useCallback(() => setRevision((value) => value + 1), []);
-  const [accounts, setAccounts] = useState<GLAccount[]>([]), [years, setYears] = useState<GLFiscalYear[]>([]), [error, setError] = useState("");
-  useEffect(() => { let active = true;
-    Promise.all([glAllRecords<GLAccount>("accounts", "", 10000), glAllRecords<GLFiscalYear>("fiscal-years", "", 1000)])
-      .then(([a, y]) => { if (active) { setAccounts(a); setYears(y); setError(""); } }).catch((e: Error) => { if (active) setError(e.message); });
-    return () => { active = false; };
+  const reload = useCallback(() => {
+    invalidateReferencesCache();
+    setRevision((value) => value + 1);
+  }, []);
+  const [accounts, setAccounts] = useState<GLAccount[]>(() => referencesCache.accounts);
+  const [years, setYears] = useState<GLFiscalYear[]>(() => referencesCache.years);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (referencesCache.loaded && revision === 0 && refresh === 0) {
+      setAccounts(referencesCache.accounts);
+      setYears(referencesCache.years);
+      return;
+    }
+    if (!inFlightReferences) {
+      inFlightReferences = Promise.all([
+        glAllRecords<GLAccount>("accounts", "", 10000),
+        glAllRecords<GLFiscalYear>("fiscal-years", "", 1000),
+      ])
+        .then(([a, y]) => {
+          referencesCache = { accounts: a, years: y, loaded: true };
+          inFlightReferences = null;
+          return referencesCache;
+        })
+        .catch((err) => {
+          inFlightReferences = null;
+          throw err;
+        });
+    }
+    inFlightReferences
+      .then((cache) => {
+        if (active) {
+          setAccounts(cache.accounts);
+          setYears(cache.years);
+          setError("");
+        }
+      })
+      .catch((e: Error) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
   }, [refresh, revision]);
+
   return { accounts, years, error, reload };
 }
 export function useGLList<T extends GLRecord>(resource: GLResource, query = "", extra = "") {
