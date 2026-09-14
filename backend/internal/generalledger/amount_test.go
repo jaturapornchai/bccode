@@ -78,12 +78,12 @@ func TestAmountExactBoundaries(t *testing.T) {
 
 func TestJournalValidation(t *testing.T) {
 	accounts := map[string]Account{"101": {AccountCode: "101", IsActive: true, AllowPosting: true}, "301": {AccountCode: "301", IsActive: true, AllowPosting: true}}
-	year := FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true, Currency: "THB", Scale: 2}
-	journal := Journal{DocNo: "JV-001", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Description: "ทุนเริ่มต้น", Currency: "THB", Kind: "manual", Lines: []Line{{AccountCode: "101", Debit: "0.1"}, {AccountCode: "101", Debit: "0.2"}, {AccountCode: "301", Credit: "0.3"}}}
+	year := FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true, Scale: 2}
+	journal := Journal{DocNo: "JV-001", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Description: "ทุนเริ่มต้น", Kind: "manual", Lines: []Line{{AccountCode: "101", Debit: "0.1"}, {AccountCode: "101", Debit: "0.2"}, {AccountCode: "301", Credit: "0.3"}}}
 	if err := journal.Validate(year, accounts); err != nil {
 		t.Fatal(err)
 	}
-	cases := map[string]func(*Journal){"unbalanced": func(j *Journal) { j.Lines[2].Credit = "0.31" }, "negative": func(j *Journal) { j.Lines[0].Debit = "-0.1" }, "both sides": func(j *Journal) { j.Lines[0].Credit = "0.1" }, "precision": func(j *Journal) { j.Lines[0].Debit = "0.105" }, "missing account": func(j *Journal) { j.Lines[0].AccountCode = "missing" }, "outside year": func(j *Journal) { j.Date = "2025-12-31" }, "invalid date": func(j *Journal) { j.Date = "2026-02-30" }, "currency": func(j *Journal) { j.Currency = "USD" }}
+	cases := map[string]func(*Journal){"unbalanced": func(j *Journal) { j.Lines[2].Credit = "0.31" }, "negative": func(j *Journal) { j.Lines[0].Debit = "-0.1" }, "both sides": func(j *Journal) { j.Lines[0].Credit = "0.1" }, "precision": func(j *Journal) { j.Lines[0].Debit = "0.105" }, "missing account": func(j *Journal) { j.Lines[0].AccountCode = "missing" }, "outside year": func(j *Journal) { j.Date = "2025-12-31" }, "invalid date": func(j *Journal) { j.Date = "2026-02-30" }}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
 			j := journal

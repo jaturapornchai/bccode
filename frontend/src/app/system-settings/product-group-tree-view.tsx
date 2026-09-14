@@ -1,5 +1,6 @@
 "use client";
 
+import { useBackendText } from "@/components/backend-text-provider";
 import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -182,6 +183,7 @@ export function ProductGroupTreeView({
   loading,
   readOnly = false,
 }: ProductGroupTreeViewProps) {
+  const tr = useBackendText();
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTarget, setDropTarget] = useState<{ guid: string; position: DropPosition } | null>(null);
@@ -586,13 +588,13 @@ export function ProductGroupTreeView({
     const seen = new Set<string>();
     for (const item of items) {
       if (!item.guidfixed.trim()) {
-        throw new Error(language === "th" ? "ข้อมูลลำดับไม่ครบ: guidfixed ว่าง" : "Invalid order payload: empty guidfixed");
+        throw new Error(tr("st_order_incomplete_guidfixed_empty", "ข้อมูลลำดับไม่ครบ: guidfixed ว่าง"));
       }
       if (seen.has(item.guidfixed)) {
-        throw new Error(language === "th" ? "ข้อมูลลำดับซ้ำ: guidfixed ซ้ำ" : "Invalid order payload: duplicated guidfixed");
+        throw new Error(tr("st_order_duplicate_guidfixed", "ข้อมูลลำดับซ้ำ: guidfixed ซ้ำ"));
       }
       if (!Number.isFinite(item.xorder) || item.xorder < 1) {
-        throw new Error(language === "th" ? "ข้อมูลลำดับไม่ถูกต้อง: xorder ต้องมากกว่า 0" : "Invalid order payload: xorder must be greater than 0");
+        throw new Error(tr("st_order_invalid_xorder_gt_zero", "ข้อมูลลำดับไม่ถูกต้อง: xorder ต้องมากกว่า 0"));
       }
       seen.add(item.guidfixed);
     }
@@ -673,10 +675,8 @@ export function ProductGroupTreeView({
     }));
   };
 
-  const groupErrorText = (prefixTh: string, prefixEn: string, err: unknown): string =>
-    language === "th"
-      ? `${prefixTh}: ${err instanceof Error ? err.message : "unknown error"}`
-      : `${prefixEn}: ${err instanceof Error ? err.message : "unknown error"}`;
+  const groupErrorText = (prefix: string, err: unknown): string =>
+    `${prefix}: ${err instanceof Error ? err.message : "unknown error"}`;
 
   const recordWithOptimisticOverrides = (record: SettingRecord): SettingRecord => {
     const guid = recordGuid(record);
@@ -718,9 +718,7 @@ export function ProductGroupTreeView({
     const movingAcrossParents = oldParentGuid !== targetParentGuid;
     if (targetParentGuid && (targetParentGuid === draggedGuid || isWithinSubtreeOf(targetParentGuid, draggedGuid))) {
       setReorderError(
-        language === "th"
-          ? "ย้ายไม่ได้: ไม่สามารถย้ายกลุ่มไปไว้ใต้กลุ่มย่อยของตัวเอง"
-          : "Move failed: group cannot be moved inside its own child branch."
+        tr("st_cannot_move_under_own_subcategory", "ย้ายไม่ได้: ไม่สามารถย้ายกลุ่มไปไว้ใต้กลุ่มย่อยของตัวเอง")
       );
       return;
     }
@@ -789,7 +787,7 @@ export function ProductGroupTreeView({
       markGroupArrived(draggedGuid);
       pushMoveRecord(moveRecord);
     } catch (err) {
-      setReorderError(groupErrorText("ย้ายหรือบันทึกลำดับไม่สำเร็จ", "Move or reorder failed", err));
+      setReorderError(groupErrorText(tr("st_move_save_order_fail", "ย้ายหรือบันทึกลำดับไม่สำเร็จ"), err));
       onRefresh?.();
     } finally {
       setIsMoveInFlight(false);
@@ -808,9 +806,7 @@ export function ProductGroupTreeView({
 
     if (isWithinSubtreeOf(targetGuid, draggedGuid)) {
       setReorderError(
-        language === "th"
-          ? "ย้ายไม่ได้: ไม่สามารถย้ายกลุ่มไปไว้ใต้กลุ่มย่อยของตัวเอง"
-          : "Move failed: group cannot be moved under its own child."
+        tr("st_cannot_move_under_own_subcategory", "ย้ายไม่ได้: ไม่สามารถย้ายกลุ่มไปไว้ใต้กลุ่มย่อยของตัวเอง")
       );
       return;
     }
@@ -861,7 +857,7 @@ export function ProductGroupTreeView({
       markGroupArrived(draggedGuid);
       pushMoveRecord(moveRecord);
     } catch (err) {
-      setReorderError(groupErrorText("ย้ายกลุ่มสินค้าไม่สำเร็จ", "Move group failed", err));
+      setReorderError(groupErrorText(tr("st_move_product_group_fail", "ย้ายกลุ่มสินค้าไม่สำเร็จ"), err));
       onRefresh?.();
     } finally {
       setIsMoveInFlight(false);
@@ -922,7 +918,7 @@ export function ProductGroupTreeView({
       markGroupArrived(draggedGuid);
       pushMoveRecord(moveRecord);
     } catch (err) {
-      setReorderError(groupErrorText("ย้ายกลุ่มสินค้าเป็นกลุ่มหลักไม่สำเร็จ", "Move group to root failed", err));
+      setReorderError(groupErrorText(tr("st_move_group_to_main_fail", "ย้ายกลุ่มสินค้าเป็นกลุ่มหลักไม่สำเร็จ"), err));
       onRefresh?.();
     } finally {
       setIsMoveInFlight(false);
@@ -970,7 +966,7 @@ export function ProductGroupTreeView({
       markGroupArrived(guid);
       return true;
     } catch (err) {
-      setReorderError(groupErrorText("เลิกทำ/ทำซ้ำไม่สำเร็จ", "Undo/redo failed", err));
+      setReorderError(groupErrorText(tr("st_undo_redo_fail", "เลิกทำ/ทำซ้ำไม่สำเร็จ"), err));
       onRefresh?.();
       return false;
     } finally {
@@ -1357,13 +1353,11 @@ export function ProductGroupTreeView({
           </span>
           {childCount > 0 ? (
             <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-5 text-primary">
-              {language === "th"
-                ? `กลุ่มย่อย ${childCount}`
-                : `${childCount} ${childCount === 1 ? "child" : "children"}`}
+              {tr("st_subcategory_0", "กลุ่มย่อย {0}").replace("{0}", String(childCount))}
             </span>
           ) : null}
           <span className="shrink-0 rounded-full bg-primary/90 px-2 py-0.5 text-[11px] font-semibold leading-5 text-primary-foreground">
-            {language === "th" ? "กำลังย้าย" : "Moving"}
+            {tr("status_migration", "กำลังย้าย")}
           </span>
         </div>
       </div>
@@ -1432,7 +1426,7 @@ export function ProductGroupTreeView({
                   <span className="pointer-events-none absolute left-2 right-2 top-0 z-30 flex -translate-y-1/2 items-center">
                     <span className="h-1 flex-1 rounded-full bg-primary shadow-[0_0_0_2px_rgba(255,255,255,0.65)]" />
                     <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold leading-5 text-white shadow-sm">
-                      {language === "th" ? "วางก่อน" : "Drop before"}
+                      {tr("st_place_before", "วางก่อน")}
                     </span>
                   </span>
                 ) : null}
@@ -1440,14 +1434,14 @@ export function ProductGroupTreeView({
                   <span className="pointer-events-none absolute bottom-0 left-2 right-2 z-30 flex translate-y-1/2 items-center">
                     <span className="h-1 flex-1 rounded-full bg-primary shadow-[0_0_0_2px_rgba(255,255,255,0.65)]" />
                     <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold leading-5 text-white shadow-sm">
-                      {language === "th" ? "วางหลัง" : "Drop after"}
+                      {tr("st_place_after", "วางหลัง")}
                     </span>
                   </span>
                 ) : null}
                 {activeDropTarget === "inside" ? (
                   <span className="pointer-events-none absolute inset-x-2 top-1/2 z-30 flex -translate-y-1/2 items-center justify-center">
                     <span className="rounded-full border border-emerald-700 bg-emerald-600 px-3 py-1 text-[11px] font-semibold leading-5 text-white shadow-md">
-                      {language === "th" ? "วางเข้าเป็นกลุ่มย่อยของกลุ่มนี้" : "Drop inside this group"}
+                      {tr("st_place_as_subgroup_of_this_group", "วางเข้าเป็นกลุ่มย่อยของกลุ่มนี้")}
                     </span>
                   </span>
                 ) : null}
@@ -1481,20 +1475,14 @@ export function ProductGroupTreeView({
                       type="button"
                       className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-5 text-primary transition-colors hover:border-primary/40 hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       aria-label={
-                        language === "th"
-                          ? `${isExpanded ? "ซ่อน" : "แสดง"}กลุ่มย่อย ${childCount} รายการ`
-                          : `${isExpanded ? "Hide" : "Show"} ${childCount} child ${childCount === 1 ? "group" : "groups"}`
+                        tr("st_subgroups_items_count", "{0}กลุ่มย่อย {1} รายการ").replace("{0}", isExpanded ? tr("st_hide", "ซ่อน") : tr("st_show", "แสดง")).replace("{1}", String(childCount))
                       }
                       title={
-                        language === "th"
-                          ? `${isExpanded ? "ซ่อน" : "แสดง"}กลุ่มย่อย`
-                          : `${isExpanded ? "Hide" : "Show"} children`
+                        tr("st_subgroups_count", "{0}กลุ่มย่อย").replace("{0}", isExpanded ? tr("st_hide", "ซ่อน") : tr("st_show", "แสดง"))
                       }
                       onClick={(e) => toggleExpand(node.detail.guidfixed, e)}
                     >
-                      {language === "th"
-                        ? `กลุ่มย่อย ${childCount}`
-                        : `${childCount} ${childCount === 1 ? "child" : "children"}`}
+                      {tr("st_subcategory_0", "กลุ่มย่อย {0}").replace("{0}", String(childCount))}
                     </button>
                   ) : null}
                   {isArrivalHighlighted ? (
@@ -1502,7 +1490,7 @@ export function ProductGroupTreeView({
                       key={arrivalHighlight?.nonce ?? node.detail.guidfixed}
                       className="shrink-0 animate-pulse rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold leading-5 text-white shadow-sm"
                     >
-                      {language === "th" ? "ย้ายมาแล้ว" : "Moved here"}
+                      {tr("st_moved", "ย้ายมาแล้ว")}
                     </span>
                   ) : null}
                   {canAcceptChildDrop ? (
@@ -1512,10 +1500,10 @@ export function ProductGroupTreeView({
                         activeDropTarget === "inside" &&
                           "scale-110 border-emerald-700 bg-emerald-600 text-white shadow-md dark:bg-emerald-500 dark:text-white"
                       )}
-                      aria-label={language === "th" ? "วางเป็นกลุ่มย่อย" : "Drop as child group"}
+                      aria-label={tr("st_place_as_subgroup", "วางเป็นกลุ่มย่อย")}
                       data-group-inside-drop-guid={node.detail.guidfixed}
                     >
-                      {language === "th" ? "วางเป็นลูก" : "Drop child"}
+                      {tr("st_place_as_child", "วางเป็นลูก")}
                     </span>
                   ) : null}
                 </div>
@@ -1528,7 +1516,7 @@ export function ProductGroupTreeView({
                       variant="ghost"
                       size="icon"
                       className="size-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
-                      aria-label={language === "th" ? "ย้ายขึ้น" : "Move up"}
+                      aria-label={tr("st_move_up", "ย้ายขึ้น")}
                       disabled={index === 0 || !canDragRows || isMoveInFlight}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1543,7 +1531,7 @@ export function ProductGroupTreeView({
                       variant="ghost"
                       size="icon"
                       className="size-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
-                      aria-label={language === "th" ? "ย้ายลง" : "Move down"}
+                      aria-label={tr("st_move_down", "ย้ายลง")}
                       disabled={index === nodes.length - 1 || !canDragRows || isMoveInFlight}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1558,7 +1546,7 @@ export function ProductGroupTreeView({
                       variant="ghost"
                       size="icon"
                       className="size-7 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                      aria-label={language === "th" ? "เพิ่มกลุ่มย่อย" : "Add subgroup"}
+                      aria-label={tr("st_add_subgroup", "เพิ่มกลุ่มย่อย")}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedGuid(node.detail.guidfixed);
@@ -1572,7 +1560,7 @@ export function ProductGroupTreeView({
                       variant="ghost"
                       size="icon"
                       className="size-7 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                      aria-label={language === "th" ? "แก้ไข" : "Edit"}
+                      aria-label={tr("edit", "แก้ไข")}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedGuid(node.detail.guidfixed);
@@ -1589,7 +1577,7 @@ export function ProductGroupTreeView({
                       variant="ghost"
                       size="icon"
                       className="size-7 rounded-full text-destructive hover:bg-destructive/10"
-                      aria-label={language === "th" ? "ลบ" : "Delete"}
+                      aria-label={tr("delete", "ลบ")}
                       onClick={(e) => {
                         e.stopPropagation();
                         const orig = records.find(
@@ -1633,7 +1621,7 @@ export function ProductGroupTreeView({
                 onClick={() => void undoMove()}
               >
                 <Undo2 className="size-3.5" />
-                {language === "th" ? "เลิกทำ" : "Undo"}
+                {tr("fd_undo", "เลิกทำ")}
               </Button>
               <Button
                 type="button"
@@ -1644,24 +1632,22 @@ export function ProductGroupTreeView({
                 onClick={() => void redoMove()}
               >
                 <Redo2 className="size-3.5" />
-                {language === "th" ? "ทำซ้ำ" : "Redo"}
+                {tr("fd_redo", "ทำซ้ำ")}
               </Button>
             </div>
           ) : null}
           {loading ? (
             <div className="flex h-full min-h-24 items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
               <Loader2 className="animate-spin size-5" />
-              {language === "th" ? "กำลังโหลดข้อมูล..." : "Loading..."}
+              {tr("loading", "กำลังโหลดข้อมูล...")}
             </div>
           ) : treeRoots.length === 0 ? (
             <div className="flex h-full min-h-24 flex-col items-center justify-center gap-1.5 p-4 text-center text-sm text-muted-foreground">
               <span className="font-medium">
-                {language === "th" ? "ไม่พบข้อมูลกลุ่มสินค้า" : "No product groups found"}
+                {tr("st_no_product_group_data", "ไม่พบข้อมูลกลุ่มสินค้า")}
               </span>
               <span className="text-xs text-muted-foreground max-w-xs">
-                {language === "th"
-                  ? "คุณสามารถกดปุ่ม 'เพิ่มกลุ่มหลัก' ด้านบนเพื่อสร้างข้อมูลใหม่ได้"
-                  : "You can click 'Add Root' above to start adding groups."}
+                {tr("st_press_add_main_group_above", "คุณสามารถกดปุ่ม 'เพิ่มกลุ่มหลัก' ด้านบนเพื่อสร้างข้อมูลใหม่ได้")}
               </span>
             </div>
           ) : (
@@ -1673,25 +1659,23 @@ export function ProductGroupTreeView({
               ) : null}
               {searchQuery.trim() ? (
                 <div className="border-b border-border/40 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                  {language === "th"
-                    ? "ปิดการลากวางระหว่างค้นหา เพื่อป้องกันการจัดลำดับผิดชุดข้อมูล"
-                    : "Drag sorting is disabled while searching to avoid reordering a filtered list."}
+                  {tr("st_disable_drag_drop_during_search", "ปิดการลากวางระหว่างค้นหา เพื่อป้องกันการจัดลำดับผิดชุดข้อมูล")}
                 </div>
               ) : null}
               {renderTreeNodes(treeRoots)}
               {dragState ? (
                 <div
-                  aria-label={language === "th" ? "ย้ายเป็นกลุ่มหลัก" : "Move to root group"}
+                  aria-label={tr("st_move_to_main_group", "ย้ายเป็นกลุ่มหลัก")}
                   className={cn(
                     "mt-auto flex h-10 w-full items-center justify-center gap-2 border-t border-emerald-600 bg-emerald-500 text-sm font-semibold text-white transition-[background-color,box-shadow,transform] duration-150",
                     rootDropActive && "scale-[0.995] bg-emerald-600 shadow-inner",
                   )}
                   data-group-root-drop="true"
-                  title={language === "th" ? "ย้ายเป็นกลุ่มหลัก" : "Move to root group"}
+                  title={tr("st_move_to_main_group", "ย้ายเป็นกลุ่มหลัก")}
                 >
                   <Home className="size-6" />
                   <span>
-                    {language === "th" ? "วางเป็นกลุ่มหลัก" : "Drop as root"}
+                    {tr("st_set_as_main_group", "วางเป็นกลุ่มหลัก")}
                   </span>
                 </div>
               ) : null}

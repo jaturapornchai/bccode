@@ -105,7 +105,7 @@ func (r reportContext) summary(ctx context.Context, name string) (Report, error)
 	}
 	err = r.setTotals(ctx, &result, r.base()+` SELECT COALESCE(SUM(debit-credit) FILTER(WHERE is_cash),0)::text,COALESCE(SUM(debit-credit) FILTER(WHERE account_type='asset'),0)::text,COALESCE(SUM(credit-debit) FILTER(WHERE account_type='liability'),0)::text,COALESCE(SUM(credit-debit) FILTER(WHERE account_type IN ('equity','income','expense')),0)::text,COALESCE(SUM(debit-credit),0)::text FROM filtered`, "cash", "assets", "liabilities", "equity", "difference")
 	if err == nil && name == "executivesummary" {
-		result.Warnings = append(result.Warnings, fmt.Sprintf("ข้อมูลจากรายการผ่านบัญชี ปี %s สกุลเงิน %s ไม่รวมเอกสารร่างหรือการวิเคราะห์จากข้อมูลภายนอก", r.fiscal.Code, r.fiscal.Currency))
+		result.Warnings = append(result.Warnings, fmt.Sprintf("ข้อมูลจากรายการผ่านบัญชี ปี %s ไม่รวมเอกสารร่างหรือการวิเคราะห์จากข้อมูลภายนอก", r.fiscal.Code))
 	}
 	return result, err
 }

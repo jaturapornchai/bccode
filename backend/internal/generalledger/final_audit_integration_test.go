@@ -70,8 +70,8 @@ func TestLedgerMongoPostgresFinancialMasterYearGuards(t *testing.T) {
 				run(cmd)
 			}
 			var oldYear Result
-			yearSpec := FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Currency: "THB", Scale: 2, IsActive: true}
-			for _, year := range []FiscalYear{yearSpec, {Code: "2027", StartDate: "2027-01-01", EndDate: "2027-12-31", Currency: "THB", Scale: 2, IsActive: true}} {
+			yearSpec := FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Scale: 2, IsActive: true}
+			for _, year := range []FiscalYear{yearSpec, {Code: "2027", StartDate: "2027-01-01", EndDate: "2027-12-31", Scale: 2, IsActive: true}} {
 				cmd := command("fiscal-years", "create", "", 0)
 				cmd.FiscalYear = &year
 				result := run(cmd)
@@ -99,26 +99,22 @@ func TestLedgerMongoPostgresFinancialMasterYearGuards(t *testing.T) {
 			}
 			checkPlan()
 			if count, err := db.Collection("gl_journals").CountDocuments(ctx, scopeFilter(scope)); err != nil || count != 0 {
-				t.Fatalf("currency/scale fixture must have no journals: %d %v", count, err)
+				t.Fatalf("scale fixture must have no journals: %d %v", count, err)
 			}
 			before, err := p.Version(ctx, scope)
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, change := range []string{"currency", "scale"} {
+			for _, change := range []string{"scale"} {
 				next := yearSpec
-				if change == "currency" {
-					next.Currency = "USD"
-				} else {
-					next.Scale = 0
-				}
+				next.Scale = 0
 				cmd := command("fiscal-years", "update", oldYear.ID, oldYear.Version)
 				cmd.FiscalYear = &next
 				if _, err := store.Execute(ctx, scope, cmd); err == nil {
 					t.Fatalf("accepted %s change with persisted %s", change, kind)
 				}
 				var persisted FiscalYear
-				if err := db.Collection("fiscal_year").FindOne(ctx, scopedID(scope, oldYear.ID)).Decode(&persisted); err != nil || persisted.Currency != "THB" || persisted.Scale != 2 || persisted.Version != oldYear.Version {
+				if err := db.Collection("fiscal_year").FindOne(ctx, scopedID(scope, oldYear.ID)).Decode(&persisted); err != nil || persisted.Scale != 2 || persisted.Version != oldYear.Version {
 					t.Fatalf("rejected year update changed Mongo: %+v %v", persisted, err)
 				}
 				checkPlan()
@@ -129,7 +125,7 @@ func TestLedgerMongoPostgresFinancialMasterYearGuards(t *testing.T) {
 
 			// Close the year through the real process, with only balance-sheet balances.
 			createJournal := command("journals", "create", "", 0)
-			createJournal.Journal = &Journal{DocNo: "CAPITAL", Description: "ทดสอบเงินทุน", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Currency: "THB", Kind: "manual", BranchCode: "B1", Lines: []Line{{AccountCode: "101", Debit: "100"}, {AccountCode: "301", Credit: "100"}}}
+			createJournal.Journal = &Journal{DocNo: "CAPITAL", Description: "ทดสอบเงินทุน", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Kind: "manual", BranchCode: "B1", Lines: []Line{{AccountCode: "101", Debit: "100"}, {AccountCode: "301", Credit: "100"}}}
 			journal := run(createJournal)
 			run(command("journals", "post", journal.ID, journal.Version))
 			yearEnd := command("processes", "year-end", "2026", oldYear.Version)
@@ -189,13 +185,13 @@ func TestLedgerMongoPostgresJournalDeleteAuthorizationReplay(t *testing.T) {
 		run(cmd)
 	}
 	year := command("fiscal-years", "create", "", 0)
-	year.FiscalYear = &FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Currency: "THB", Scale: 2, IsActive: true}
+	year.FiscalYear = &FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Scale: 2, IsActive: true}
 	run(year)
 	period := command("periods", "create", "", 0)
 	period.Master = &Master{Code: "2026", Name: "งวดทดสอบ", FiscalYear: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true}
 	run(period)
 	create := command("journals", "create", "", 0)
-	create.Journal = &Journal{DocNo: "DELETE-REPLAY", Description: "ทดสอบลบซ้ำ", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Currency: "THB", Kind: "manual", BranchCode: "B1", Lines: []Line{{AccountCode: "101", Debit: "0.30"}, {AccountCode: "102", Credit: "0.30"}}}
+	create.Journal = &Journal{DocNo: "DELETE-REPLAY", Description: "ทดสอบลบซ้ำ", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Kind: "manual", BranchCode: "B1", Lines: []Line{{AccountCode: "101", Debit: "0.30"}, {AccountCode: "102", Credit: "0.30"}}}
 	journal := run(create)
 	if record, err := store.JournalForAuthorization(ctx, scope, journal.ID); err != nil || record.IsDeleted || record.BookCode != "JV" {
 		t.Fatalf("live authorization record: %+v %v", record, err)

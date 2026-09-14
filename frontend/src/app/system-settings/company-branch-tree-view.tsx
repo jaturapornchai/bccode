@@ -1,5 +1,7 @@
 "use client";
 
+import { useBackendText, type BackendTextFn } from "@/components/backend-text-provider";
+
 import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
@@ -109,7 +111,6 @@ interface BranchRecord {
   language?: string;
   dateformat?: string;
   yeartype?: string;
-  basecurrency?: string;
   branchtype?: string;
   isvatregistered?: boolean;
   companyregistrationno?: string;
@@ -139,31 +140,31 @@ interface OrganizationSaveResponse {
 }
 
 const MONTH_OPTIONS = [
-  { value: 1, label: "มกราคม" },
-  { value: 2, label: "กุมภาพันธ์" },
-  { value: 3, label: "มีนาคม" },
-  { value: 4, label: "เมษายน" },
-  { value: 5, label: "พฤษภาคม" },
-  { value: 6, label: "มิถุนายน" },
-  { value: 7, label: "กรกฎาคม" },
-  { value: 8, label: "สิงหาคม" },
-  { value: 9, label: "กันยายน" },
-  { value: 10, label: "ตุลาคม" },
-  { value: 11, label: "พฤศจิกายน" },
-  { value: 12, label: "ธันวาคม" },
-];
+  { value: 1, label: ["month_january", "มกราคม"] },
+  { value: 2, label: ["month_february", "กุมภาพันธ์"] },
+  { value: 3, label: ["month_march", "มีนาคม"] },
+  { value: 4, label: ["month_april", "เมษายน"] },
+  { value: 5, label: ["month_may", "พฤษภาคม"] },
+  { value: 6, label: ["month_june", "มิถุนายน"] },
+  { value: 7, label: ["month_july", "กรกฎาคม"] },
+  { value: 8, label: ["month_august", "สิงหาคม"] },
+  { value: 9, label: ["month_september", "กันยายน"] },
+  { value: 10, label: ["month_october", "ตุลาคม"] },
+  { value: 11, label: ["month_november", "พฤศจิกายน"] },
+  { value: 12, label: ["month_december", "ธันวาคม"] },
+] as const;
 
 // ภ.พ.20 branch registration type.
 const BRANCH_TYPE_OPTIONS = [
-  { value: "head", label: "สำนักงานใหญ่" },
-  { value: "permanent", label: "สาขาถาวร" },
-  { value: "temporary", label: "สาขาชั่วคราว" },
-];
+  { value: "head", label: ["head_of", "สำนักงานใหญ่"] },
+  { value: "permanent", label: ["st_permanent_branch", "สาขาถาวร"] },
+  { value: "temporary", label: ["st_temporary_branch", "สาขาชั่วคราว"] },
+] as const;
 
 const YEAR_TYPE_OPTIONS = [
-  { value: "buddhist", label: "พ.ศ. (Buddhist Era)" },
-  { value: "christian", label: "ค.ศ. (Christian Era)" },
-];
+  { value: "buddhist", label: ["st_buddhist_era", "พ.ศ. (Buddhist Era)"] },
+  { value: "christian", label: ["st_christian_era", "ค.ศ. (Christian Era)"] },
+] as const;
 
 // ตัวอย่างปีในรูปแบบวันที่เปลี่ยนตามประเภทปี: พ.ศ. -> 2568, ค.ศ. -> 2025
 function dateFormatOptionsFor(yearType: string) {
@@ -176,39 +177,24 @@ function dateFormatOptionsFor(yearType: string) {
   ];
 }
 
-// Common currencies for Thai/ASEAN businesses (default THB).
-const CURRENCY_OPTIONS = [
-  { value: "THB", label: "THB — บาท" },
-  { value: "USD", label: "USD — US Dollar" },
-  { value: "EUR", label: "EUR — Euro" },
-  { value: "GBP", label: "GBP — Pound" },
-  { value: "JPY", label: "JPY — Yen" },
-  { value: "CNY", label: "CNY — Renminbi" },
-  { value: "LAK", label: "LAK — Lao Kip" },
-  { value: "MMK", label: "MMK — Myanmar Kyat" },
-  { value: "KHR", label: "KHR — Cambodian Riel" },
-  { value: "VND", label: "VND — Vietnamese Dong" },
-  { value: "SGD", label: "SGD — Singapore Dollar" },
-  { value: "MYR", label: "MYR — Malaysian Ringgit" },
-];
 
 // ประเภทเอกสารหลักที่สาขากำหนดคำนำหน้าเลขที่เอกสารแยกได้ (subset จาก ~46 types ในระบบ).
 // code ตรงกับ MODULE_NAME ของ transaction module ใน backend (เก็บค่าอย่างเดียว — generator ยังไม่ใช้).
 const DOC_PREFIX_TYPES = [
-  { code: "SI", label: "ใบกำกับภาษี / ใบเสร็จ" },
-  { code: "ST", label: "ใบลดหนี้ (ขาย)" },
-  { code: "SA", label: "ใบเพิ่มหนี้ (ขาย)" },
-  { code: "SO", label: "ใบสั่งขาย" },
-  { code: "QT", label: "ใบเสนอราคา" },
-  { code: "PU", label: "ใบรับสินค้า (ซื้อ)" },
-  { code: "PO", label: "ใบสั่งซื้อ" },
-  { code: "PT", label: "ใบรับคืน (ซื้อ)" },
-  { code: "TF", label: "ใบโอนสินค้าระหว่างสาขา" },
-  { code: "AJ", label: "ใบปรับปรุงสต็อก" },
-  { code: "EE", label: "ใบสำคัญรับเงิน" },
-  { code: "DE", label: "ใบสำคัญจ่าย" },
-  { code: "PC", label: "เงินสดย่อย / มัดจำ" },
-];
+  { code: "SI", label: ["st_tax_invoice_receipt", "ใบกำกับภาษี / ใบเสร็จ"] },
+  { code: "ST", label: ["st_credit_note_sales", "ใบลดหนี้ (ขาย)"] },
+  { code: "SA", label: ["st_debit_note_sales", "ใบเพิ่มหนี้ (ขาย)"] },
+  { code: "SO", label: ["sale_order", "ใบสั่งขาย"] },
+  { code: "QT", label: ["quotation", "ใบเสนอราคา"] },
+  { code: "PU", label: ["st_goods_receipt_purchase", "ใบรับสินค้า (ซื้อ)"] },
+  { code: "PO", label: ["purchase_order", "ใบสั่งซื้อ"] },
+  { code: "PT", label: ["st_purchase_return", "ใบรับคืน (ซื้อ)"] },
+  { code: "TF", label: ["st_interbranch_stock_transfer", "ใบโอนสินค้าระหว่างสาขา"] },
+  { code: "AJ", label: ["st_stock_adjustment", "ใบปรับปรุงสต็อก"] },
+  { code: "EE", label: ["st_receipt_voucher", "ใบสำคัญรับเงิน"] },
+  { code: "DE", label: ["pdf_payment_voucher", "ใบสำคัญจ่าย"] },
+  { code: "PC", label: ["st_petty_cash_deposit", "เงินสดย่อย / มัดจำ"] },
+] as const;
 
 // รูปแบบเลขที่เอกสาร 1 รูปแบบ (แต่ละประเภทมีได้หลายรูปแบบ; generator จริงยังไม่ใช้ค่านี้).
 type DocFormat = {
@@ -228,19 +214,20 @@ type DocFormat = {
 };
 
 const DOC_YEAR_MODES = [
-  { value: "none", label: "ไม่ใช้" },
-  { value: "be2", label: "พ.ศ. 2 หลัก" },
-  { value: "be4", label: "พ.ศ. 4 หลัก" },
-  { value: "ce2", label: "ค.ศ. 2 หลัก" },
-  { value: "ce4", label: "ค.ศ. 4 หลัก" },
-];
+  { value: "none", label: ["st_not_use", "ไม่ใช้"] },
+  { value: "be2", label: ["st_be_2_digit", "พ.ศ. 2 หลัก"] },
+  { value: "be4", label: ["st_be_4_digit", "พ.ศ. 4 หลัก"] },
+  { value: "ce2", label: ["st_ce_2_digit", "ค.ศ. 2 หลัก"] },
+  { value: "ce4", label: ["st_ce_4_digit", "ค.ศ. 4 หลัก"] },
+] as const;
 const DOC_RESET_MODES = [
-  { value: "never", label: "ไม่รีเซ็ต" },
-  { value: "yearly", label: "รายปี" },
-  { value: "monthly", label: "รายเดือน" },
-  { value: "daily", label: "รายวัน" },
-];
-const TAX_DOC_TYPES = ["SI", "ST", "SA"]; // เอกสารภาษี — default รีเซ็ตรายปี (ตามแนวสรรพากร)
+  { value: "never", label: ["st_no_reset", "ไม่รีเซ็ต"] },
+  { value: "yearly", label: ["st_yearly", "รายปี"] },
+  { value: "monthly", label: ["alert_monthly", "รายเดือน"] },
+  { value: "daily", label: ["st_daily", "รายวัน"] },
+] as const;
+// เอกสารภาษี — default รีเซ็ตรายปี (ตามแนวสรรพากร)
+const TAX_DOC_TYPES = ["SI", "ST", "SA"];
 
 const normalizeDocPrefix = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
 
@@ -320,6 +307,7 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
   branchCode: string;
   disabled: boolean;
 }) {
+  const tr = useBackendText();
   const dups = duplicateDocPrefixes(formats);
   const update = (i: number, patch: Partial<DocFormat>) =>
     onChange(formats.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
@@ -332,12 +320,12 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
   return (
     <div className="space-y-2">
       <label className="text-sm font-semibold text-foreground">
-        รูปแบบเลขที่เอกสาร (แต่ละประเภทมีได้หลายรูปแบบ)
-        <span className="ml-1 font-normal text-xs text-muted-foreground">— ปรับคำนำหน้า/ปี/เดือน/วัน/รันนิ่ง เห็นตัวอย่างทันที</span>
+        {tr("st_doc_num_format_multiple", "รูปแบบเลขที่เอกสาร (แต่ละประเภทมีได้หลายรูปแบบ)")}
+        <span className="ml-1 font-normal text-xs text-muted-foreground">{tr("st_adjust_prefix_ymd_running_preview", "— ปรับคำนำหน้า/ปี/เดือน/วัน/รันนิ่ง เห็นตัวอย่างทันที")}</span>
       </label>
       {dups.size > 0 ? (
         <div className="rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-          คำนำหน้าซ้ำ: {[...dups].join(", ")} — ต้องแก้ให้ไม่ซ้ำก่อนบันทึก
+          {tr("st_duplicate_prefix_fix_before_save", "คำนำหน้าซ้ำ: {0} — ต้องแก้ให้ไม่ซ้ำก่อนบันทึก").replace("{0}", String([...dups].join(", ")))}
         </div>
       ) : null}
       <div className="space-y-3">
@@ -347,14 +335,14 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
             <div key={dt.code} className="rounded-xl border border-border bg-card p-3">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium">
-                  {dt.label} <span className="font-mono text-xs text-muted-foreground">({dt.code})</span>
+                  {tr(dt.label[0], dt.label[1])} <span className="font-mono text-xs text-muted-foreground">({dt.code})</span>
                 </span>
                 <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => addFormat(dt.code)}>
-                  <Plus className="h-3.5 w-3.5" /> เพิ่มรูปแบบ
+                  <Plus className="h-3.5 w-3.5" /> {tr("st_add_format", "เพิ่มรูปแบบ")}
                 </Button>
               </div>
               {rows.length === 0 ? (
-                <p className="text-xs text-muted-foreground">ยังไม่มีรูปแบบ — กด &ldquo;เพิ่มรูปแบบ&rdquo;</p>
+                <p className="text-xs text-muted-foreground">{tr("st_no_format_press_add_format", "ยังไม่มีรูปแบบ — กด &ldquo;เพิ่มรูปแบบ&rdquo;")}</p>
               ) : (
                 <div className="space-y-2">
                   {rows.map(({ f, i }) => {
@@ -363,32 +351,32 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
                     return (
                       <div key={i} className={cn("rounded-lg border p-2.5", f.isdefault ? "border-primary ring-1 ring-primary/30" : "border-border", !f.enabled && "opacity-60")}>
                         <div className="flex items-center gap-2">
-                          <input type="checkbox" checked={f.enabled} disabled={disabled} aria-label="เปิดใช้งานรูปแบบ" onChange={(e) => update(i, { enabled: e.target.checked })} className="h-4 w-4 shrink-0" />
-                          <Input value={f.name} placeholder="ชื่อรูปแบบ" disabled={disabled} onChange={(e) => update(i, { name: e.target.value })} className="h-8 flex-1 text-sm" />
+                          <input type="checkbox" checked={f.enabled} disabled={disabled} aria-label={tr("st_activate_format", "เปิดใช้งานรูปแบบ")} onChange={(e) => update(i, { enabled: e.target.checked })} className="h-4 w-4 shrink-0" />
+                          <Input value={f.name} placeholder={tr("pattern_name", "ชื่อรูปแบบ")} disabled={disabled} onChange={(e) => update(i, { name: e.target.value })} className="h-8 flex-1 text-sm" />
                           <Input value={f.prefix} placeholder={f.doctype} maxLength={10} disabled={disabled} onChange={(e) => update(i, { prefix: normalizeDocPrefix(e.target.value) })} className={cn("h-8 w-24 text-center text-sm uppercase", dup && "border-destructive text-destructive")} />
-                          <button type="button" aria-label="ตั้งเป็นค่าเริ่มต้น" title="ตั้งเป็นค่าเริ่มต้น" disabled={disabled} onClick={() => setDefault(i, f.doctype)} className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", f.isdefault ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted")}>
+                          <button type="button" aria-label={tr("st_set_as_default", "ตั้งเป็นค่าเริ่มต้น")} title={tr("st_set_as_default", "ตั้งเป็นค่าเริ่มต้น")} disabled={disabled} onClick={() => setDefault(i, f.doctype)} className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", f.isdefault ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted")}>
                             <Star className={cn("h-4 w-4", f.isdefault && "fill-primary")} />
                           </button>
                           <span className="rounded-md bg-primary/10 px-2.5 py-1 font-mono text-sm font-medium text-primary whitespace-nowrap">{buildDocExample(f, branchCode)}</span>
-                          <button type="button" aria-label="ลบรูปแบบ" disabled={disabled} onClick={() => removeFormat(i)} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive">
+                          <button type="button" aria-label={tr("st_delete_format", "ลบรูปแบบ")} disabled={disabled} onClick={() => removeFormat(i)} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                         {f.isdefault ? (
                           <span className="mt-1.5 inline-flex items-center gap-1 rounded bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
-                            <Star className="h-3 w-3 fill-primary" /> ค่าเริ่มต้น
+                            <Star className="h-3 w-3 fill-primary" /> {tr("menu_setup", "ค่าเริ่มต้น")}
                           </span>
                         ) : null}
                         <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 md:grid-cols-4">
-                          <DocSelect label="รหัสสาขา" value={f.usebranch ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usebranch: v === "1" })} options={[["0", "ไม่ใส่"], ["1", `ใส่ ${branchCode || "00000"}`]]} />
-                          <DocSelect label="ปี" value={f.yearmode} disabled={disabled} onChange={(v) => update(i, { yearmode: v })} options={DOC_YEAR_MODES.map((y) => [y.value, y.label])} />
-                          <DocSelect label="เดือน" value={f.usemonth ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usemonth: v === "1" })} options={[["1", "ใช้"], ["0", "ไม่ใช้"]]} />
-                          <DocSelect label="วัน" value={f.useday ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { useday: v === "1" })} options={[["1", "ใช้"], ["0", "ไม่ใช้"]]} />
-                          <DocSelect label="ตัวคั่น" value={f.separator ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { separator: v === "1" })} options={[["0", "ไม่มี"], ["1", "ขีดกลาง"]]} />
-                          <DocSelect label="รันนิ่ง" value={String(f.runlength)} disabled={disabled} onChange={(v) => update(i, { runlength: +v })} options={[["4", "4 หลัก"], ["5", "5 หลัก"], ["6", "6 หลัก"]]} />
-                          <DocSelect label="รีเซ็ต" value={f.resetmode} disabled={disabled} onChange={(v) => update(i, { resetmode: v })} options={DOC_RESET_MODES.map((r) => [r.value, r.label])} />
+                          <DocSelect label={tr("branchcode", "รหัสสาขา")} value={f.usebranch ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usebranch: v === "1" })} options={[["0", tr("st_exclude", "ไม่ใส่")], ["1", tr("st_include_value", "ใส่ {0}").replace("{0}", String(branchCode || "00000"))]]} />
+                          <DocSelect label={tr("year", "ปี")} value={f.yearmode} disabled={disabled} onChange={(v) => update(i, { yearmode: v })} options={DOC_YEAR_MODES.map((y) => [y.value, tr(y.label[0], y.label[1])])} />
+                          <DocSelect label={tr("st_month", "เดือน")} value={f.usemonth ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { usemonth: v === "1" })} options={[["1", tr("use", "ใช้")], ["0", tr("st_not_use", "ไม่ใช้")]]} />
+                          <DocSelect label={tr("day", "วัน")} value={f.useday ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { useday: v === "1" })} options={[["1", tr("use", "ใช้")], ["0", tr("st_not_use", "ไม่ใช้")]]} />
+                          <DocSelect label={tr("st_separator", "ตัวคั่น")} value={f.separator ? "1" : "0"} disabled={disabled} onChange={(v) => update(i, { separator: v === "1" })} options={[["0", tr("st_none", "ไม่มี")], ["1", tr("st_hyphen", "ขีดกลาง")]]} />
+                          <DocSelect label={tr("st_running", "รันนิ่ง")} value={String(f.runlength)} disabled={disabled} onChange={(v) => update(i, { runlength: +v })} options={[["4", tr("st_4_digits", "4 หลัก")], ["5", tr("st_5_digits", "5 หลัก")], ["6", tr("st_6_digits", "6 หลัก")]]} />
+                          <DocSelect label={tr("form_design_reset", "รีเซ็ต")} value={f.resetmode} disabled={disabled} onChange={(v) => update(i, { resetmode: v })} options={DOC_RESET_MODES.map((r) => [r.value, tr(r.label[0], r.label[1])])} />
                           <label className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
-                            เริ่มที่
+                            {tr("st_starts_at", "เริ่มที่")}
                             <Input type="number" min={1} value={f.startnumber} disabled={disabled} onChange={(e) => update(i, { startnumber: Math.max(1, Number(e.target.value) || 1) })} className="h-8 w-full text-sm" />
                           </label>
                         </div>
@@ -690,6 +678,7 @@ export function CompanyBranchTreeView({
   language,
   onRefresh,
 }: CompanyBranchTreeViewProps) {
+  const tr = useBackendText();
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
   const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -791,9 +780,9 @@ export function CompanyBranchTreeView({
     });
     const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
     if (!res.ok || json.success === false) {
-      throw new Error(json.message || "เลือกบริษัทสำหรับโหลดข้อมูลไม่สำเร็จ");
+      throw new Error(json.message || tr("st_select_company_load_failed", "เลือกบริษัทสำหรับโหลดข้อมูลไม่สำเร็จ"));
     }
-  }, [auth, workspace]);
+  }, [auth, workspace, tr]);
 
   // Active languages for multilingual names
   const editorLanguages = useMemo(() => {
@@ -840,7 +829,7 @@ export function CompanyBranchTreeView({
       });
       const jsonComp = await resComp.json();
       if (!resComp.ok || jsonComp.success === false) {
-        throw new Error(jsonComp.message || "โหลดข้อมูลบริษัทไม่สำเร็จ");
+        throw new Error(jsonComp.message || tr("st_load_company_data_failed", "โหลดข้อมูลบริษัทไม่สำเร็จ"));
       }
       if (jsonComp.success && Array.isArray(jsonComp.data)) {
         setCompanies(jsonComp.data.filter(isVisibleOrganizationRecord));
@@ -853,18 +842,18 @@ export function CompanyBranchTreeView({
       });
       const jsonBranch = await resBranch.json();
       if (!resBranch.ok || jsonBranch.success === false) {
-        throw new Error(jsonBranch.message || "โหลดข้อมูลสาขาไม่สำเร็จ");
+        throw new Error(jsonBranch.message || tr("st_load_branch_data_failed", "โหลดข้อมูลสาขาไม่สำเร็จ"));
       }
       if (jsonBranch.success && Array.isArray(jsonBranch.data)) {
         setBranches(jsonBranch.data.filter(isVisibleOrganizationRecord));
       }
     } catch (e) {
-      setLoadError(e instanceof Error && e.message ? e.message : "โหลดข้อมูลโครงสร้างองค์กรไม่สำเร็จ");
+      setLoadError(e instanceof Error && e.message ? e.message : tr("st_load_org_structure_failed", "โหลดข้อมูลโครงสร้างองค์กรไม่สำเร็จ"));
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [auth, ensureActiveWorkspaceHolding, mainApiUrl]);
+  }, [auth, ensureActiveWorkspaceHolding, mainApiUrl, tr]);
 
   useEffect(() => {
     void loadData();
@@ -881,7 +870,6 @@ export function CompanyBranchTreeView({
   const [formLanguage, setFormLanguage] = useState("th");
   const [formDateFormat, setFormDateFormat] = useState("dd/MM/yyyy");
   const [formYearType, setFormYearType] = useState("buddhist");
-  const [formCurrency, setFormCurrency] = useState("THB");
   const [formBranchType, setFormBranchType] = useState("permanent");
   const [formIsVatRegistered, setFormIsVatRegistered] = useState(false);
   const [formCompanyRegNo, setFormCompanyRegNo] = useState("");
@@ -908,12 +896,12 @@ export function CompanyBranchTreeView({
     ? ""
     : !formCode.trim()
       ? formType.includes("company")
-        ? "กรุณากรอกรหัสบริษัท"
-        : "กรุณากรอกรหัสสาขา"
+        ? tr("st_please_enter_company_code", "กรุณากรอกรหัสบริษัท")
+        : tr("st_enter_branch_code", "กรุณากรอกรหัสสาขา")
       : !hasRequiredName
-        ? `กรุณากรอก${formType.includes("company") ? "ชื่อบริษัท" : "ชื่อสาขา"}ในช่องภาษาแรก (${primaryLanguage.toUpperCase()}) — รหัสภาษาไม่ใช่ชื่อ`
+        ? tr("st_enter_first_lang_code", "กรุณากรอก{0}ในช่องภาษาแรก ({1}) — รหัสภาษาไม่ใช่ชื่อ").replace("{0}", String(formType.includes("company") ? tr("company_name", "ชื่อบริษัท") : tr("company_branch_name", "ชื่อสาขา"))).replace("{1}", String(primaryLanguage.toUpperCase()))
         : formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim())
-          ? "กรุณาเลือกเขตเวลาและภาษาของสาขา"
+          ? tr("st_select_branch_timezone_lang", "กรุณาเลือกเขตเวลาและภาษาของสาขา")
           : "";
 
   const showConfirmCodeDialog = () => {
@@ -972,7 +960,6 @@ export function CompanyBranchTreeView({
       setFormLanguage(branchData.language || workspaceDefaultLanguage);
       setFormDateFormat(branchData.dateformat || "dd/MM/yyyy");
       setFormYearType(branchData.yeartype || "buddhist");
-      setFormCurrency(branchData.basecurrency || "THB");
       setFormBranchType(
         branchData.branchtype || (isThaiHeadOfficeBranchCode(branchData.code) ? "head" : "permanent"),
       );
@@ -1005,7 +992,7 @@ export function CompanyBranchTreeView({
     // PNG-only for logos.
     const isPng = /\.png$/i.test(file.name) || file.type === "image/png";
     if (!isPng) {
-      setLogoError("โลโก้ต้องเป็นไฟล์ PNG เท่านั้น");
+      setLogoError(tr("st_logo_png_only", "โลโก้ต้องเป็นไฟล์ PNG เท่านั้น"));
       return;
     }
     setLogoUploading(true);
@@ -1033,7 +1020,7 @@ export function CompanyBranchTreeView({
       };
       if (!response.ok || payload.success === false) {
         throw new Error(
-          typeof payload.message === "string" ? payload.message : "อัปโหลดโลโก้ไม่สำเร็จ",
+          typeof payload.message === "string" ? payload.message : tr("st_logo_upload_failed", "อัปโหลดโลโก้ไม่สำเร็จ"),
         );
       }
       // Backend (image_r2.go) stores images as private R2 objects and only returns
@@ -1044,14 +1031,14 @@ export function CompanyBranchTreeView({
       const holding = (meta.holdingcode ?? "").trim();
       const category = (meta.category ?? "").trim();
       const filename = (meta.filename ?? "").trim();
-      if (!filename) throw new Error("อัปโหลดโลโก้ไม่สำเร็จ");
+      if (!filename) throw new Error(tr("st_logo_upload_failed", "อัปโหลดโลโก้ไม่สำเร็จ"));
       const pathSegments = [holding, category, filename]
         .filter((segment) => segment.length > 0)
         .map((segment) => segment.replace(/^\/+|\/+$/g, ""));
       const proxyUri = `/goapi/s3/file/${pathSegments.join("/")}`;
       setFormLogoUri(proxyUri);
     } catch (error) {
-      setLogoError(error instanceof Error && error.message ? error.message : "อัปโหลดโลโก้ไม่สำเร็จ");
+      setLogoError(error instanceof Error && error.message ? error.message : tr("st_logo_upload_failed", "อัปโหลดโลโก้ไม่สำเร็จ"));
     } finally {
       setLogoUploading(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
@@ -1062,7 +1049,7 @@ export function CompanyBranchTreeView({
   const handleSave = async () => {
     if (!auth || !selectedNode || !formType || formType.startsWith("view")) return;
     if (formType.startsWith("create") && !canCreateOrganization) {
-      setSaveError("เฉพาะ OWNER หรือ ADMIN ที่เชื่อมอีเมลแล้วเท่านั้นที่สร้างบริษัทหรือสาขาได้");
+      setSaveError(tr("st_only_owner_admin_email_can_create", "เฉพาะ OWNER หรือ ADMIN ที่เชื่อมอีเมลแล้วเท่านั้นที่สร้างบริษัทหรือสาขาได้"));
       return;
     }
     setSaving(true);
@@ -1081,18 +1068,18 @@ export function CompanyBranchTreeView({
 
       const isBranchForm = formType.includes("branch");
       if (!hasRequiredName) {
-        setSaveError(formType.includes("company") ? "กรุณากรอกชื่อบริษัทภาษาแรก" : "กรุณากรอกชื่อสาขาภาษาแรก");
+        setSaveError(formType.includes("company") ? tr("st_enter_company_name_first_lang", "กรุณากรอกชื่อบริษัทภาษาแรก") : tr("st_enter_branch_name_first_lang", "กรุณากรอกชื่อสาขาภาษาแรก"));
         setSaving(false);
         return;
       }
       const statusChanged = !formType.startsWith("create") && formIsActive !== (selectedNode.data.isactive !== false);
       if (statusChanged && !formStatusReason.trim()) {
-        setSaveError("กรุณาระบุเหตุผลที่เปลี่ยนสถานะ");
+        setSaveError(tr("st_specify_status_change_reason", "กรุณาระบุเหตุผลที่เปลี่ยนสถานะ"));
         setSaving(false);
         return;
       }
       if (isBranchForm && (!formTimezone.trim() || !formLanguage.trim())) {
-        setSaveError("กรุณาเลือกเขตเวลาและภาษาของสาขา");
+        setSaveError(tr("st_select_branch_timezone_lang", "กรุณาเลือกเขตเวลาและภาษาของสาขา"));
         setSaving(false);
         return;
       }
@@ -1100,7 +1087,7 @@ export function CompanyBranchTreeView({
       // คำนำหน้าห้ามซ้ำกันทั้งสาขา (ข้ามทุกประเภท) — กันบันทึกถ้าซ้ำ
       const dupPrefixes = duplicateDocPrefixes(formDocFormats);
       if (dupPrefixes.size > 0) {
-        setSaveError(`คำนำหน้าเลขที่เอกสารซ้ำ: ${[...dupPrefixes].join(", ")} — ต้องแก้ให้ไม่ซ้ำก่อนบันทึก`);
+        setSaveError(tr("st_document_prefix_duplicate", "คำนำหน้าเลขที่เอกสารซ้ำ: {0} — ต้องแก้ให้ไม่ซ้ำก่อนบันทึก").replace("{0}", String([...dupPrefixes].join(", "))));
         setSaving(false);
         return;
       }
@@ -1148,7 +1135,6 @@ export function CompanyBranchTreeView({
           language: formLanguage,
           dateformat: formDateFormat,
           yeartype: formYearType,
-          basecurrency: formCurrency,
           branchtype: formBranchType,
           isvatregistered: formIsVatRegistered,
           companyregistrationno: formCompanyRegNo,
@@ -1179,7 +1165,6 @@ export function CompanyBranchTreeView({
           language: formLanguage,
           dateformat: formDateFormat,
           yeartype: formYearType,
-          basecurrency: formCurrency,
           branchtype: formBranchType,
           isvatregistered: formIsVatRegistered,
           companyregistrationno: formCompanyRegNo,
@@ -1210,7 +1195,7 @@ export function CompanyBranchTreeView({
 
       const json = (await res.json().catch(() => ({}))) as OrganizationSaveResponse;
       if (!res.ok || json.success === false) {
-        setSaveError(saveErrorMessage(json.message, formType));
+        setSaveError(saveErrorMessage(json.message, formType, tr));
         return;
       }
       if (json.success) {
@@ -1230,7 +1215,7 @@ export function CompanyBranchTreeView({
           && (!createdData || !createdGuid || !hasSavedIdentity || createdData.isactive !== true || createdData.isdeleted === true)
         ) {
           await loadData();
-          setSaveError("บันทึกสำเร็จ แต่ Backend ไม่คืนข้อมูลที่บันทึกครบถ้วน กรุณารีเฟรชหน้าจอ");
+          setSaveError(tr("st_saved_but_backend_incomplete", "บันทึกสำเร็จ แต่ Backend ไม่คืนข้อมูลที่บันทึกครบถ้วน กรุณารีเฟรชหน้าจอ"));
           return;
         }
 
@@ -1279,7 +1264,6 @@ export function CompanyBranchTreeView({
                   language: formLanguage,
                   dateformat: formDateFormat,
                   yeartype: formYearType,
-                  basecurrency: formCurrency,
                   branchtype: formBranchType,
                   isvatregistered: formIsVatRegistered,
                   companyregistrationno: formCompanyRegNo,
@@ -1320,7 +1304,7 @@ export function CompanyBranchTreeView({
         }
       }
     } catch (e) {
-      setSaveError(e instanceof Error && e.message ? e.message : "บันทึกข้อมูลไม่สำเร็จ");
+      setSaveError(e instanceof Error && e.message ? e.message : tr("st_save_data_failed", "บันทึกข้อมูลไม่สำเร็จ"));
       console.error(e);
     } finally {
       setSaving(false);
@@ -1370,13 +1354,13 @@ export function CompanyBranchTreeView({
           <div className="flex items-center justify-between border-b pb-3 mb-4">
             <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Building2 className="w-5 h-5 text-primary" />
-              โครงสร้างองค์กร
+              {tr("st_organization_structure", "โครงสร้างองค์กร")}
             </h2>
             <Button
               size="sm"
               className="gap-1 font-semibold"
               disabled={!canCreateOrganization}
-              title={!canCreateOrganization ? "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน" : "เพิ่มบริษัท"}
+              title={!canCreateOrganization ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน") : tr("st_add_company", "เพิ่มบริษัท")}
               onClick={() => {
                 setFormType("createcompany");
                 setSelectedNode({
@@ -1386,7 +1370,7 @@ export function CompanyBranchTreeView({
               }}
             >
               <Plus className="w-4 h-4" />
-              เพิ่มบริษัท
+              {tr("st_add_company", "เพิ่มบริษัท")}
             </Button>
           </div>
           {loadError && (
@@ -1401,7 +1385,7 @@ export function CompanyBranchTreeView({
             </div>
           ) : sortedCompanies.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-8 text-center text-sm font-semibold text-muted-foreground">
-              ยังไม่มีข้อมูลบริษัทในกิจการนี้
+              {tr("st_no_company_data", "ยังไม่มีข้อมูลบริษัทในกิจการนี้")}
             </div>
           ) : (
             <div className="space-y-2">
@@ -1439,7 +1423,7 @@ export function CompanyBranchTreeView({
                       <div className="flex items-center gap-2 min-w-0">
                         <button
                           type="button"
-                          aria-label={language === "th" ? "ย่อ/ขยายสาขา" : "Toggle branches"}
+                          aria-label={tr("st_collapse_expand_branch", "ย่อ/ขยายสาขา")}
                           onClick={(e) => {
                             e.stopPropagation();
                             setCollapsedCompanies((prev) => ({
@@ -1478,7 +1462,7 @@ export function CompanyBranchTreeView({
                           size="icon"
                           variant="ghost"
                           className="w-7 h-7 text-primary hover:text-primary hover:bg-primary/10"
-                          title="แก้ไขบริษัท"
+                          title={tr("st_edit_company", "แก้ไขบริษัท")}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedNode({
@@ -1497,10 +1481,10 @@ export function CompanyBranchTreeView({
                           className="w-7 h-7 text-sky-500 hover:text-sky-600 hover:bg-sky-500/10"
                           title={
                             !canCreateOrganization
-                              ? "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน"
+                              ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน")
                               : !companyUID
-                                ? "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้"
-                                : "เพิ่มสาขา"
+                                ? tr("st_company_no_uid_cannot_add_branch", "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้")
+                                : tr("add_branch", "เพิ่มสาขา")
                           }
                           disabled={!canAddBranch}
                           onClick={(e) => {
@@ -1572,7 +1556,7 @@ export function CompanyBranchTreeView({
                                   size="icon"
                                   variant="ghost"
                                   className="w-7 h-7 text-primary hover:text-primary hover:bg-primary/10"
-                                  title="แก้ไขสาขา"
+                                  title={tr("st_edit_branch", "แก้ไขสาขา")}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedNode({
@@ -1607,9 +1591,7 @@ export function CompanyBranchTreeView({
         min={ORG_TREE_SIDEBAR_MIN_WIDTH}
         max={ORG_TREE_SIDEBAR_MAX_WIDTH}
         label={
-          language === "th"
-            ? "ปรับขนาดรายชื่อองค์กรและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-            : "Resize organization tree and detail panes (drag to resize, double-click to reset)"
+          tr("st_resize_org_list_details", "ปรับขนาดรายชื่อองค์กรและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
         }
         isResizing={isResizingSidebar}
         onPointerDown={handleSidebarResizeStart}
@@ -1630,19 +1612,19 @@ export function CompanyBranchTreeView({
                     ) : (
                       <GitBranch className="w-5.5 h-5.5 text-sky-500 shrink-0" />
                     )}
-                    {formType === "viewcompany" && "ข้อมูลบริษัท"}
-                    {formType === "viewbranch" && "ข้อมูลสาขา"}
-                    {formType === "createcompany" && "เพิ่มบริษัทใหม่"}
-                    {formType === "editcompany" && "แก้ไขข้อมูลบริษัท"}
-                    {formType === "createbranch" && "เพิ่มสาขาใหม่"}
-                    {formType === "editbranch" && "แก้ไขข้อมูลสาขา"}
+                    {formType === "viewcompany" && tr("company_profile", "ข้อมูลบริษัท")}
+                    {formType === "viewbranch" && tr("company_branch_data", "ข้อมูลสาขา")}
+                    {formType === "createcompany" && tr("st_add_new_company", "เพิ่มบริษัทใหม่")}
+                    {formType === "editcompany" && tr("st_edit_company_info", "แก้ไขข้อมูลบริษัท")}
+                    {formType === "createbranch" && tr("st_add_new_branch", "เพิ่มสาขาใหม่")}
+                    {formType === "editbranch" && tr("st_edit_branch_info", "แก้ไขข้อมูลสาขา")}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     {formType.startsWith("create")
-                      ? "ระบุข้อมูลรายละเอียดหลักเพื่อเพิ่มข้อมูลเข้าระบบ"
+                      ? tr("st_enter_main_details_add_data", "ระบุข้อมูลรายละเอียดหลักเพื่อเพิ่มข้อมูลเข้าระบบ")
                       : isReadOnlyMode
-                        ? "แสดงรายละเอียดข้อมูลจากรายการที่เลือก"
-                        : "แก้ไขรายละเอียดข้อมูลและบันทึกประวัติ"}
+                        ? tr("st_show_selected_item_details", "แสดงรายละเอียดข้อมูลจากรายการที่เลือก")
+                        : tr("st_edit_details_save_history", "แก้ไขรายละเอียดข้อมูลและบันทึกประวัติ")}
                   </p>
                 </div>
                 <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
@@ -1651,7 +1633,7 @@ export function CompanyBranchTreeView({
                       size="icon"
                       variant="outline"
                       className="size-9 border-primary/30 text-primary hover:bg-primary/10"
-                      title={selectedNode.type === "company" ? "แก้ไขบริษัท" : "แก้ไขสาขา"}
+                      title={selectedNode.type === "company" ? tr("st_edit_company", "แก้ไขบริษัท") : tr("st_edit_branch", "แก้ไขสาขา")}
                       onClick={() => setFormType(selectedNode.type === "company" ? "editcompany" : "editbranch")}
                     >
                       <Edit3 className="w-4 h-4" />
@@ -1665,10 +1647,10 @@ export function CompanyBranchTreeView({
                       disabled={!canCreateOrganization || !selectedCompanyUID}
                       title={
                         !canCreateOrganization
-                          ? "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน"
+                          ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน")
                           : !selectedCompanyUID
-                            ? "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้"
-                            : "เพิ่มสาขาในบริษัทนี้"
+                            ? tr("st_company_no_uid_cannot_add_branch", "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้")
+                            : tr("st_add_branch_to_company", "เพิ่มสาขาในบริษัทนี้")
                       }
                       onClick={() => {
                         if (!canCreateOrganization || !selectedCompanyUID) return;
@@ -1681,7 +1663,7 @@ export function CompanyBranchTreeView({
                       }}
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      เพิ่มสาขาในบริษัทนี้
+                      {tr("st_add_branch_to_company", "เพิ่มสาขาในบริษัทนี้")}
                     </Button>
                   )}
                   {!isReadOnlyMode ? (
@@ -1702,7 +1684,7 @@ export function CompanyBranchTreeView({
                       ) : (
                         <Save className="size-4" />
                       )}
-                      {saving ? "กำลังบันทึก..." : saveSuccess ? "บันทึกแล้ว" : "บันทึก"}
+                      {saving ? tr("saving", "กำลังบันทึก...") : saveSuccess ? tr("saved", "บันทึกแล้ว") : tr("fd_save", "บันทึก")}
                     </Button>
                   ) : null}
                 </div>
@@ -1722,13 +1704,13 @@ export function CompanyBranchTreeView({
                 {/* Logo */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-foreground">
-                    {formType.includes("company") ? "โลโก้บริษัท" : "โลโก้สาขา"}
+                    {formType.includes("company") ? tr("company_logo", "โลโก้บริษัท") : tr("st_branch_logo", "โลโก้สาขา")}
                   </label>
                   <div className="flex items-start gap-3">
                     <LogoAvatar
                       uri={formLogoUri}
                       auth={auth}
-                      alt={formType.includes("company") ? "โลโก้บริษัท" : "โลโก้สาขา"}
+                      alt={formType.includes("company") ? tr("company_logo", "โลโก้บริษัท") : tr("st_branch_logo", "โลโก้สาขา")}
                       sizeClass="size-20 rounded-2xl"
                       iconSize={32}
                       width={256}
@@ -1745,7 +1727,7 @@ export function CompanyBranchTreeView({
                             onClick={() => logoInputRef.current?.click()}
                           >
                             {logoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
-                            {logoUploading ? "กำลังอัปโหลด..." : formLogoUri ? "เปลี่ยนโลโก้" : "เลือกไฟล์ PNG"}
+                            {logoUploading ? tr("import_product_file_uploading", "กำลังอัปโหลด...") : formLogoUri ? tr("st_change_logo", "เปลี่ยนโลโก้") : tr("st_select_png_file", "เลือกไฟล์ PNG")}
                           </Button>
                           {formLogoUri && (
                             <Button
@@ -1759,15 +1741,15 @@ export function CompanyBranchTreeView({
                                 setLogoError("");
                               }}
                             >
-                              <X className="w-4 h-4" /> ลบ
+                              <X className="w-4 h-4" /> {tr("delete", "ลบ")}
                             </Button>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          รองรับเฉพาะไฟล์ PNG พื้นหลังโปร่งใสได้ ใช้สำหรับออกแบบฟอร์มและพิมพ์เอกสาร
+                          {tr("st_png_transparent_form_print", "รองรับเฉพาะไฟล์ PNG พื้นหลังโปร่งใสได้ ใช้สำหรับออกแบบฟอร์มและพิมพ์เอกสาร")}
                           {formType.includes("company")
-                            ? " โลโก้นี้บันทึกเฉพาะบริษัท"
-                            : " โลโก้นี้บันทึกเฉพาะสาขานี้ และแตกต่างจากสาขาอื่นได้"}
+                            ? " " + tr("st_logo_saved_company_only", "โลโก้นี้บันทึกเฉพาะบริษัท")
+                            : " " + tr("st_logo_saved_this_branch_only", "โลโก้นี้บันทึกเฉพาะสาขานี้ และแตกต่างจากสาขาอื่นได้")}
                         </p>
                         {logoError && (
                           <p className="text-xs font-semibold text-destructive">{logoError}</p>
@@ -1787,25 +1769,25 @@ export function CompanyBranchTreeView({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-foreground">
-                      {formType.includes("company") ? "รหัสบริษัท *" : "รหัสสาขา *"}
+                      {formType.includes("company") ? tr("st_company_code", "รหัสบริษัท *") : tr("st_branch_code", "รหัสสาขา *")}
                     </label>
                     <Input
                       value={formCode}
                       onChange={(e) => {
                         setFormCode(formType.includes("company") ? normalizeBusinessCode(e.target.value) : e.target.value);
                       }}
-                      placeholder={formType.includes("company") ? "ระบุรหัสบริษัท เช่น 00000" : "ระบุรหัสสาขา 5 หลัก เช่น 00001"}
+                      placeholder={formType.includes("company") ? tr("st_enter_company_code_00000", "ระบุรหัสบริษัท เช่น 00000") : tr("st_enter_branch_code_5_digits_00001", "ระบุรหัสสาขา 5 หลัก เช่น 00001")}
                       className="bg-accent/20"
                       disabled={isReadOnlyMode}
                     />
                   </div>
                   {formType.includes("company") && (
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">เลขประจำตัวผู้เสียภาษี (Tax ID)</label>
+                      <label className="text-sm font-semibold text-foreground">{tr("st_tax_id", "เลขประจำตัวผู้เสียภาษี (Tax ID)")}</label>
                       <Input
                         value={formTaxId}
                         onChange={(e) => setFormTaxId(e.target.value)}
-                        placeholder="เลขผู้เสียภาษี 13 หลัก"
+                        placeholder={tr("st_taxpayer_number_13_digits", "เลขผู้เสียภาษี 13 หลัก")}
                         className="bg-accent/20"
                         disabled={isReadOnlyMode}
                       />
@@ -1817,7 +1799,7 @@ export function CompanyBranchTreeView({
                 {formType.includes("branch") && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">เขตเวลา (Timezone) *</label>
+                      <label className="text-sm font-semibold text-foreground">{tr("st_timezone", "เขตเวลา (Timezone) *")}</label>
                       <select
                         value={formTimezone}
                         onChange={(e) => setFormTimezone(e.target.value)}
@@ -1832,7 +1814,7 @@ export function CompanyBranchTreeView({
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">ภาษาของสาขา *</label>
+                      <label className="text-sm font-semibold text-foreground">{tr("st_branch_language", "ภาษาของสาขา *")}</label>
                       <select
                         value={formLanguage}
                         onChange={(e) => setFormLanguage(e.target.value)}
@@ -1849,11 +1831,11 @@ export function CompanyBranchTreeView({
                   </div>
                 )}
 
-                {/* Branch date/currency settings (backend already carries these) */}
+                {/* Branch date settings (backend already carries these) */}
                 {formType.includes("branch") && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">ประเภทปี</label>
+                      <label className="text-sm font-semibold text-foreground">{tr("yeartype", "ประเภทปี")}</label>
                       <select
                         value={formYearType}
                         onChange={(e) => setFormYearType(e.target.value)}
@@ -1862,13 +1844,13 @@ export function CompanyBranchTreeView({
                       >
                         {YEAR_TYPE_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {tr(opt.label[0], opt.label[1])}
                           </option>
                         ))}
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">รูปแบบวันที่</label>
+                      <label className="text-sm font-semibold text-foreground">{tr("dateformat", "รูปแบบวันที่")}</label>
                       <select
                         value={formDateFormat}
                         onChange={(e) => setFormDateFormat(e.target.value)}
@@ -1882,31 +1864,16 @@ export function CompanyBranchTreeView({
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">สกุลเงินหลัก</label>
-                      <select
-                        value={formCurrency}
-                        onChange={(e) => setFormCurrency(e.target.value)}
-                        disabled={isReadOnlyMode}
-                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {CURRENCY_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
                 )}
 
                 {/* Branch tax / registration (ภ.พ.20) */}
                 {formType.includes("branch") && (
                   <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
-                    <p className="text-sm font-bold text-foreground">ข้อมูลภาษี / ทะเบียน (ภ.พ.20)</p>
+                    <p className="text-sm font-bold text-foreground">{tr("st_tax_registration_pp20", "ข้อมูลภาษี / ทะเบียน (ภ.พ.20)")}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">ประเภทสาขา (ภ.พ.20)</label>
+                        <label className="text-sm font-semibold text-foreground">{tr("st_branch_type_pp20", "ประเภทสาขา (ภ.พ.20)")}</label>
                         <select
                           value={formBranchType}
                           onChange={(e) => setFormBranchType(e.target.value)}
@@ -1915,17 +1882,17 @@ export function CompanyBranchTreeView({
                         >
                           {BRANCH_TYPE_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>
-                              {opt.label}
+                              {tr(opt.label[0], opt.label[1])}
                             </option>
                           ))}
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">เลขทะเบียนนิติบุคคล</label>
+                        <label className="text-sm font-semibold text-foreground">{tr("st_juristic_registration_number", "เลขทะเบียนนิติบุคคล")}</label>
                         <Input
                           value={formCompanyRegNo}
                           onChange={(e) => setFormCompanyRegNo(e.target.value)}
-                          placeholder="เลขทะเบียนนิติบุคคล 13 หลัก"
+                          placeholder={tr("st_juristic_registration_number_13", "เลขทะเบียนนิติบุคคล 13 หลัก")}
                           className="bg-accent/20"
                           disabled={isReadOnlyMode}
                         />
@@ -1933,22 +1900,22 @@ export function CompanyBranchTreeView({
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">ผู้จัดการสาขา</label>
+                        <label className="text-sm font-semibold text-foreground">{tr("st_branch_manager", "ผู้จัดการสาขา")}</label>
                         <Input
                           value={formManagerName}
                           onChange={(e) => setFormManagerName(e.target.value)}
-                          placeholder="ชื่อผู้จัดการสาขา"
+                          placeholder={tr("st_branch_manager_name", "ชื่อผู้จัดการสาขา")}
                           className="bg-accent/20"
                           disabled={isReadOnlyMode}
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">อีเมลสาขา</label>
+                        <label className="text-sm font-semibold text-foreground">{tr("st_branch_email", "อีเมลสาขา")}</label>
                         <Input
                           type="email"
                           value={formEmail}
                           onChange={(e) => setFormEmail(e.target.value)}
-                          placeholder="อีเมลสำหรับส่งเอกสาร"
+                          placeholder={tr("st_email_for_documents", "อีเมลสำหรับส่งเอกสาร")}
                           className="bg-accent/20"
                           disabled={isReadOnlyMode}
                         />
@@ -1964,7 +1931,7 @@ export function CompanyBranchTreeView({
                         className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                       />
                       <label htmlFor="isvatregistered" className="text-sm font-semibold text-foreground cursor-pointer select-none">
-                        จดทะเบียนภาษีมูลค่าเพิ่ม (VAT)
+                        {tr("st_vat_registration", "จดทะเบียนภาษีมูลค่าเพิ่ม (VAT)")}
                       </label>
                     </div>
                   </div>
@@ -1973,10 +1940,10 @@ export function CompanyBranchTreeView({
                 {/* Document / fiscal config — value-only (generator + e-Tax engine are separate, not active) */}
                 {formType.includes("branch") && (
                   <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
-                    <p className="text-sm font-bold text-foreground">รอบบัญชี / เอกสาร</p>
+                    <p className="text-sm font-bold text-foreground">{tr("st_accounting_doc_period", "รอบบัญชี / เอกสาร")}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-foreground">เดือนเริ่มรอบบัญชี</label>
+                        <label className="text-sm font-semibold text-foreground">{tr("st_accounting_period_start_month", "เดือนเริ่มรอบบัญชี")}</label>
                         <select
                           value={formFiscalStartMonth}
                           onChange={(e) => setFormFiscalStartMonth(Number(e.target.value))}
@@ -1985,7 +1952,7 @@ export function CompanyBranchTreeView({
                         >
                           {MONTH_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>
-                              {opt.label}
+                              {tr(opt.label[0], opt.label[1])}
                             </option>
                           ))}
                         </select>
@@ -2001,34 +1968,34 @@ export function CompanyBranchTreeView({
                             ?? formDocFormats.find((x) => x.doctype === dt.code);
                           return f ? { dt, ex: buildDocExample(f, formCode || "00000") } : null;
                         })
-                        .filter((x): x is { dt: { code: string; label: string }; ex: string } => x !== null);
+                        .filter((x): x is { dt: (typeof DOC_PREFIX_TYPES)[number]; ex: string } => x !== null);
                       return (
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <label className="text-sm font-semibold text-foreground">
-                              รูปแบบเลขที่เอกสาร
-                              <span className="ml-1 font-normal text-xs text-muted-foreground">— {formDocFormats.length} รูปแบบ ใน {new Set(formDocFormats.map((f) => f.doctype)).size} ประเภท</span>
+                              {tr("order_setting_doc_format", "รูปแบบเลขที่เอกสาร")}
+                              <span className="ml-1 font-normal text-xs text-muted-foreground">{tr("st_formats_in_document_types", "— {0} รูปแบบ ใน {1} ประเภท").replace("{0}", String(formDocFormats.length)).replace("{1}", String(new Set(formDocFormats.map((f) => f.doctype)).size))}</span>
                             </label>
                             <Button type="button" variant="outline" size="sm" onClick={() => setDocDrawerOpen(true)} disabled={isReadOnlyMode}>
-                              <FileText className="h-3.5 w-3.5" /> จัดการรูปแบบเลขที่เอกสาร
+                              <FileText className="h-3.5 w-3.5" /> {tr("st_manage_doc_number_formats", "จัดการรูปแบบเลขที่เอกสาร")}
                             </Button>
                           </div>
                           {dups.size > 0 ? (
                             <div className="rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-                              คำนำหน้าซ้ำ: {[...dups].join(", ")} — กดจัดการเพื่อแก้ก่อนบันทึก
+                              {tr("st_duplicate_prefix_manage", "คำนำหน้าซ้ำ: {0} — กดจัดการเพื่อแก้ก่อนบันทึก").replace("{0}", String([...dups].join(", ")))}
                             </div>
                           ) : null}
                           {summaries.length > 0 ? (
                             <div className="flex flex-wrap gap-1.5">
                               {summaries.map(({ dt, ex }) => (
                                 <span key={dt.code} className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs">
-                                  <span className="text-muted-foreground">{dt.label}</span>
+                                  <span className="text-muted-foreground">{tr(dt.label[0], dt.label[1])}</span>
                                   <span className="font-mono font-medium text-primary">{ex}</span>
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-muted-foreground">ยังไม่มีรูปแบบ — กด &ldquo;จัดการรูปแบบเลขที่เอกสาร&rdquo; เพื่อเพิ่ม</p>
+                            <p className="text-xs text-muted-foreground">{tr("st_no_format_add_manage", "ยังไม่มีรูปแบบ — กด &ldquo;จัดการรูปแบบเลขที่เอกสาร&rdquo; เพื่อเพิ่ม")}</p>
                           )}
                         </div>
                       );
@@ -2043,11 +2010,11 @@ export function CompanyBranchTreeView({
                         className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                       />
                       <label htmlFor="etaxenabled" className="text-sm font-semibold text-foreground cursor-pointer select-none">
-                        เปิดใช้ใบกำกับภาษีอิเล็กทรอนิกส์ (e-Tax)
+                        {tr("st_enable_e_tax", "เปิดใช้ใบกำกับภาษีอิเล็กทรอนิกส์ (e-Tax)")}
                       </label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      * การออกเลขที่เอกสารอัตโนมัติและการส่ง e-Tax เป็นระบบแยก ยังไม่เปิดใช้งาน — ค่านี้เก็บไว้ตั้งค่าล่วงหน้า
+                      {tr("st_auto_doc_number_note", "* การออกเลขที่เอกสารอัตโนมัติและการส่ง e-Tax เป็นระบบแยก ยังไม่เปิดใช้งาน — ค่านี้เก็บไว้ตั้งค่าล่วงหน้า")}
                     </p>
                   </div>
                 )}
@@ -2059,7 +2026,7 @@ export function CompanyBranchTreeView({
                     names={formNames}
                     onChange={setFormNames}
                     languages={editorLanguages}
-                    label={formType.includes("company") ? "ชื่อบริษัท" : "ชื่อสาขา"}
+                    label={formType.includes("company") ? tr("company_name", "ชื่อบริษัท") : tr("company_branch_name", "ชื่อสาขา")}
                     firstRequired
                     language={language}
                     disabled={isReadOnlyMode}
@@ -2070,7 +2037,7 @@ export function CompanyBranchTreeView({
                       addresses={formAddresses}
                       onChange={setFormAddresses}
                       languages={editorLanguages}
-                      label={language === "th" ? "ที่อยู่สาขา (สำหรับออกเอกสาร)" : "Branch address (for documents)"}
+                      label={tr("st_branch_address_documents", "ที่อยู่สาขา (สำหรับออกเอกสาร)")}
                       language={language}
                       disabled={isReadOnlyMode}
                     />
@@ -2111,19 +2078,19 @@ export function CompanyBranchTreeView({
                     className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                   />
                   <label htmlFor="isactive" className="text-sm font-semibold text-foreground cursor-pointer select-none">
-                    เปิดใช้งานในระบบ
+                    {tr("st_enable_in_system", "เปิดใช้งานในระบบ")}
                   </label>
                  </div>
                 {selectedNode && !formType.startsWith("create") && formIsActive !== (selectedNode.data.isactive !== false) && (
                   <label className="block space-y-1.5">
-                    <span className="text-sm font-semibold text-foreground">เหตุผลที่เปลี่ยนสถานะ</span>
+                    <span className="text-sm font-semibold text-foreground">{tr("st_reason_status_change", "เหตุผลที่เปลี่ยนสถานะ")}</span>
                     <textarea
                       value={formStatusReason}
                       onChange={(event) => setFormStatusReason(event.target.value)}
                       disabled={isReadOnlyMode}
                       rows={3}
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="ระบุเหตุผลเพื่อบันทึก Audit"
+                      placeholder={tr("st_reason_for_audit_log", "ระบุเหตุผลเพื่อบันทึก Audit")}
                     />
                   </label>
                 )}
@@ -2133,8 +2100,8 @@ export function CompanyBranchTreeView({
           ) : (
             <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
               <Building2 className="w-16 h-16 text-muted-foreground/30 mb-4" />
-              <p className="text-lg font-semibold">กรุณาเลือก บริษัท หรือ สาขา</p>
-              <p className="text-sm mt-1">คลิกเลือกรายการที่แถบเมนูด้านซ้ายเพื่อดูหรือแก้ไขข้อมูล</p>
+              <p className="text-lg font-semibold">{tr("st_select_company_or_branch", "กรุณาเลือก บริษัท หรือ สาขา")}</p>
+              <p className="text-sm mt-1">{tr("st_click_left_menu_view_edit_data", "คลิกเลือกรายการที่แถบเมนูด้านซ้ายเพื่อดูหรือแก้ไขข้อมูล")}</p>
             </div>
           )}
         </CardContent>
@@ -2145,16 +2112,16 @@ export function CompanyBranchTreeView({
             className="ml-auto flex h-full w-full max-w-4xl flex-col bg-card shadow-2xl animate-in slide-in-from-right duration-200"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
-            aria-label="จัดการรูปแบบเลขที่เอกสาร"
+            aria-label={tr("st_manage_doc_number_formats", "จัดการรูปแบบเลขที่เอกสาร")}
           >
             <div className="flex shrink-0 items-center justify-between border-b px-5 py-3">
               <h3 className="flex items-center gap-2 text-base font-bold text-foreground">
-                <FileText className="h-4 w-4 text-primary" /> จัดการรูปแบบเลขที่เอกสาร
+                <FileText className="h-4 w-4 text-primary" /> {tr("st_manage_doc_number_formats", "จัดการรูปแบบเลขที่เอกสาร")}
               </h3>
               <button
                 type="button"
                 onClick={() => setDocDrawerOpen(false)}
-                aria-label="ปิด"
+                aria-label={tr("bill_close", "ปิด")}
                 className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X className="h-4 w-4" />
@@ -2169,7 +2136,7 @@ export function CompanyBranchTreeView({
               />
             </div>
             <div className="flex shrink-0 justify-end border-t px-5 py-3">
-              <Button type="button" onClick={() => setDocDrawerOpen(false)}>เสร็จ</Button>
+              <Button type="button" onClick={() => setDocDrawerOpen(false)}>{tr("st_done", "เสร็จ")}</Button>
             </div>
           </div>
         </div>
@@ -2179,7 +2146,7 @@ export function CompanyBranchTreeView({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="ยืนยันการบันทึกข้อมูล"
+            aria-label={tr("st_confirm_data_save", "ยืนยันการบันทึกข้อมูล")}
             className="bg-card border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200"
           >
             <div className="text-center space-y-2">
@@ -2187,15 +2154,15 @@ export function CompanyBranchTreeView({
                 <KeyRound size={22} className="animate-pulse" />
               </div>
               <h3 className="text-lg font-bold text-foreground">
-                ยืนยันการบันทึกข้อมูล
+                {tr("st_confirm_data_save", "ยืนยันการบันทึกข้อมูล")}
               </h3>
               <p className="text-xs text-muted-foreground">
-                กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการบันทึกข้อมูลโครงสร้างองค์กร
+                {tr("st_enter_4_digit_code_org_save", "กรุณากรอกรหัสยืนยันตัวเลข 4 หลักเพื่อดำเนินการบันทึกข้อมูลโครงสร้างองค์กร")}
               </p>
             </div>
 
             <div className="bg-accent/40 rounded-xl p-3 border border-border/80 text-center">
-              <span className="text-xs font-semibold text-muted-foreground block mb-1">รหัสยืนยันของคุณคือ</span>
+              <span className="text-xs font-semibold text-muted-foreground block mb-1">{tr("st_verification_code_is", "รหัสยืนยันของคุณคือ")}</span>
               <span className="text-2xl font-black tracking-widest text-primary font-mono select-none">{randomCode}</span>
             </div>
 
@@ -2206,12 +2173,12 @@ export function CompanyBranchTreeView({
                   setInputCode(e.target.value);
                   if (codeError) setCodeError(false);
                 }}
-                placeholder="กรอกรหัส 4 หลักที่แสดงด้านบน"
+                placeholder={tr("st_enter_4_digit_code_above", "กรอกรหัส 4 หลักที่แสดงด้านบน")}
                 className={`bg-accent/20 h-11 text-center font-bold tracking-widest font-mono text-base ${codeError ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 maxLength={4}
               />
               {codeError && (
-                <p className="text-[10px] text-destructive font-semibold text-center">รหัสยืนยันไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</p>
+                <p className="text-[10px] text-destructive font-semibold text-center">{tr("st_invalid_verification_code_try_again", "รหัสยืนยันไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง")}</p>
               )}
             </div>
 
@@ -2221,14 +2188,14 @@ export function CompanyBranchTreeView({
                 className="flex-1 rounded-xl h-11 text-xs font-semibold"
                 onClick={closeConfirmCodeDialog}
               >
-                ยกเลิก
+                {tr("cancel", "ยกเลิก")}
               </Button>
               <Button
                 className="flex-1 rounded-xl h-11 text-xs font-semibold"
                 onClick={handleConfirmCodeSubmit}
                 disabled={inputCode.length !== 4}
               >
-                ยืนยันบันทึก
+                {tr("st_confirm_save", "ยืนยันบันทึก")}
               </Button>
             </div>
           </div>
@@ -2238,23 +2205,23 @@ export function CompanyBranchTreeView({
   );
 }
 
-function saveErrorMessage(message: string | undefined, formType: OrganizationFormType): string {
+function saveErrorMessage(message: string | undefined, formType: OrganizationFormType, tr: BackendTextFn): string {
   void formType;
   switch (message) {
     case "branch code is required":
-      return "กรุณากรอกรหัสสาขา";
+      return tr("st_enter_branch_code", "กรุณากรอกรหัสสาขา");
     case "branch code must be numeric and no more than 5 digits":
     case "branch code must be no more than 5 digits":
-      return "รหัสสาขาต้องเป็นตัวเลขไม่เกิน 5 หลัก";
+      return tr("st_branch_code_numeric_max_5", "รหัสสาขาต้องเป็นตัวเลขไม่เกิน 5 หลัก");
     case "companyuid is required":
     case "companyguid is required":
-      return "ไม่พบบริษัทของสาขาที่กำลังเพิ่ม กรุณากดเพิ่มสาขาจากบริษัทอีกครั้ง";
+      return tr("st_company_not_found_for_branch_add", "ไม่พบบริษัทของสาขาที่กำลังเพิ่ม กรุณากดเพิ่มสาขาจากบริษัทอีกครั้ง");
     case "company not found":
-      return "ไม่พบบริษัทในกิจการนี้ กรุณาโหลดข้อมูลใหม่แล้วลองอีกครั้ง";
+      return tr("st_no_company_in_business_reload", "ไม่พบบริษัทในกิจการนี้ กรุณาโหลดข้อมูลใหม่แล้วลองอีกครั้ง");
     case "branch code is exists":
-      return "รหัสสาขานี้มีอยู่แล้วในบริษัทนี้";
+      return tr("st_branch_code_exists_in_company", "รหัสสาขานี้มีอยู่แล้วในบริษัทนี้");
     default:
-      if (message?.includes("duplicate key")) return "รหัสนี้ซ้ำกับข้อมูลเดิม";
-      return message || "บันทึกข้อมูลไม่สำเร็จ";
+      if (message?.includes("duplicate key")) return tr("st_duplicate_code", "รหัสนี้ซ้ำกับข้อมูลเดิม");
+      return message || tr("st_save_data_failed", "บันทึกข้อมูลไม่สำเร็จ");
   }
 }

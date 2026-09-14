@@ -26,7 +26,7 @@ export function errorStatePatch(info: { message: string; field: string }, code =
 export function saveFailureTarget(resource: string) { return resource === "accounts" ? "accountcode" : "code"; }
 
 function recordCode(record: GLRecord) { return "accountcode" in record && "names" in record ? record.accountcode : "code" in record ? record.code : ""; }
-function recordName(record: GLRecord) { return "names" in record ? accountName(record) : "name" in record ? record.name : "currency" in record ? record.currency : ""; }
+function recordName(record: GLRecord) { return "names" in record ? accountName(record) : "name" in record ? record.name : ""; }
 
 export function GLMasters({ resource, route }: { resource: MasterResource; route: string }) {
   const tr = useGLText();
@@ -557,9 +557,8 @@ function AccountFields({ value, set, accounts }: { value: GLAccount; set: (patch
 }
 function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: (patch: object) => void; accounts: GLAccount[] }) {
   const tr = useGLText();
-  return <><Notice text={tr("gl_set_fy_currency_before_journal", "กำหนดปีบัญชีและสกุลเงินก่อนบันทึกรายวัน ระบบตรวจจำนวนทศนิยมตามปีบัญชีและไม่ปัดยอดให้อัตโนมัติ")} /><div className="grid gap-3 sm:grid-cols-2">
+  return <><Notice text={tr("gl_set_fy_currency_before_journal", "กำหนดปีบัญชีก่อนบันทึกรายวัน ระบบตรวจจำนวนทศนิยมตามปีบัญชีและไม่ปัดยอดให้อัตโนมัติ")} /><div className="grid gap-3 sm:grid-cols-2">
     <Field label={tr("gl_fiscal_year_code", "รหัสปีบัญชี")}><input className={control} required value={value.code} disabled={!!value.id} onChange={(e) => set({ code: e.target.value })} /></Field>
-    <Field label={tr("gl_currency_3_letter_code", "สกุลเงิน 3 ตัวอักษร")}><input className={control} required placeholder={tr("gl_example_thb", "เช่น THB")} pattern="[A-Z]{3}" maxLength={3} value={value.currency} onChange={(e) => set({ currency: e.target.value.toUpperCase() })} /></Field>
     <Field label={tr("gl_fiscal_year_start_date", "วันเริ่มต้นปีบัญชี")}><input className={control} required type="date" value={value.startdate} onChange={(e) => set({ startdate: e.target.value })} /></Field>
     <Field label={tr("gl_fiscal_year_end_date", "วันสิ้นสุดปีบัญชี")}><input className={control} required type="date" value={value.enddate} onChange={(e) => set({ enddate: e.target.value })} /></Field>
     <Field label={tr("gl_decimal_places", "จำนวนตำแหน่งทศนิยม")}><select className={control} value={value.scale} onChange={(e) => set({ scale: Number(e.target.value) })}>{Array.from({ length: 9 }, (_, scale) => <option key={scale} value={scale}>{tr("gl_positions_count", "{0} ตำแหน่ง").replace("{0}", String(scale))}</option>)}</select></Field>

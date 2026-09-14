@@ -13,7 +13,7 @@ func TestLedgerMongoPostgresZeroBalanceYearEnd(t *testing.T) {
 	scope := Scope{Holding: "H", Company: "C", Actor: "audit-zero-20260911"}
 	var oldYear Result
 	for _, code := range []string{"2026", "2027"} {
-		cmd := Command{Resource: "fiscal-years", Action: "create", RequestID: "audit-zero-year-" + code, FiscalYear: &FiscalYear{Code: code, StartDate: code + "-01-01", EndDate: code + "-12-31", Currency: "THB", Scale: 2, IsActive: true}}
+		cmd := Command{Resource: "fiscal-years", Action: "create", RequestID: "audit-zero-year-" + code, FiscalYear: &FiscalYear{Code: code, StartDate: code + "-01-01", EndDate: code + "-12-31", Scale: 2, IsActive: true}}
 		result, err := store.Execute(ctx, scope, cmd)
 		if err != nil || result.ProjectionPending {
 			t.Fatalf("create year %s: %+v %v", code, result, err)

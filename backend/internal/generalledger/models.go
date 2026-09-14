@@ -63,7 +63,6 @@ type FiscalYear struct {
 	StartDate               string `json:"startdate" bson:"startdate"`
 	EndDate                 string `json:"enddate" bson:"enddate"`
 	IsActive                bool   `json:"isactive" bson:"isactive"`
-	Currency                string `json:"currency" bson:"currency"`
 	Scale                   int    `json:"scale" bson:"scale"`
 	ProfitLossAccount       string `json:"profitlossaccount" bson:"profitlossaccount"`
 	RetainedEarningsAccount string `json:"retainedearningsaccount" bson:"retainedearningsaccount"`
@@ -169,7 +168,6 @@ type Journal struct {
 	Description string     `json:"description" bson:"description"`
 	Reference   string     `json:"reference" bson:"reference"`
 	BranchCode  string     `json:"branchcode" bson:"branchcode"`
-	Currency    string     `json:"currency" bson:"currency"`
 	Kind        string     `json:"kind" bson:"kind"`
 	Status      string     `json:"status" bson:"status"`
 	Lines       []Line     `json:"lines" bson:"lines"`
@@ -240,8 +238,8 @@ func (f FiscalYear) Validate() error {
 	if !validCode(f.Code) || !validDate(f.StartDate) || !validDate(f.EndDate) || f.StartDate > f.EndDate {
 		return fmt.Errorf("กรุณาระบุรหัสและช่วงปีบัญชีให้ถูกต้อง")
 	}
-	if !regexp.MustCompile(`^[A-Z]{3}$`).MatchString(f.Currency) || f.Scale < 0 || f.Scale > 8 {
-		return fmt.Errorf("กรุณากำหนดสกุลเงินและจำนวนทศนิยม 0–8 ตำแหน่ง")
+	if f.Scale < 0 || f.Scale > 8 {
+		return fmt.Errorf("กรุณากำหนดจำนวนทศนิยม 0–8 ตำแหน่ง")
 	}
 	return nil
 }
@@ -258,9 +256,6 @@ func (j Journal) Validate(f FiscalYear, accounts map[string]Account) error {
 	}
 	if j.FiscalYear != f.Code || j.Date < f.StartDate || j.Date > f.EndDate || f.Closed || !f.IsActive {
 		return fmt.Errorf("วันที่อยู่นอกปีบัญชีที่เปิดใช้งาน")
-	}
-	if j.Currency != f.Currency {
-		return fmt.Errorf("สกุลเงินต้องตรงกับปีบัญชี")
 	}
 	// Closing/opening journals are generated per branch from every non-zero
 	// (account, department, project) balance, so they follow the process limit.

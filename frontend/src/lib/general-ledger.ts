@@ -9,7 +9,7 @@ export type GLAccount = GLIdentity & {
   level?: number;
 };
 export type GLFiscalYear = GLIdentity & {
-  code: string; startdate: string; enddate: string; currency: string; scale: number;
+  code: string; startdate: string; enddate: string; scale: number;
   retainedearningsaccount: string; profitlossaccount: string; isactive: boolean; closed: boolean;
 };
 export type GLRule = { accountcode: string; side: string; source: string };
@@ -25,7 +25,7 @@ export type GLLine = {
 };
 export type GLJournal = GLIdentity & {
   docno: string; date: string; bookcode: string; fiscalyear: string; description: string;
-  reference: string; branchcode: string; currency: string; kind: string; status: string;
+  reference: string; branchcode: string; kind: string; status: string;
   lines: GLLine[]; reversalof?: string; reason?: string;
 };
 export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate;
@@ -169,11 +169,11 @@ export function sortAccountsHierarchically(accounts: GLAccount[]): (GLAccount & 
   return result;
 }
 
-export function emptyFiscalYear(): GLFiscalYear { return { code: "", startdate: "", enddate: "", currency: "", scale: 2, retainedearningsaccount: "", profitlossaccount: "", isactive: true, closed: false }; }
+export function emptyFiscalYear(): GLFiscalYear { return { code: "", startdate: "", enddate: "", scale: 2, retainedearningsaccount: "", profitlossaccount: "", isactive: true, closed: false }; }
 export function emptyMaster(): GLMaster { return { code: "", name: "", isactive: true, accountcode: "", fiscalyear: "", startdate: "", enddate: "", locked: false, amount: "0", branchcode: "", departmentcode: "", projectcode: "", direction: "in", bookcode: "JV", rules: [], itemaccount: "", costaccount: "", revenueaccount: "" }; }
 export function emptyLine(): GLLine { return { accountcode: "", description: "", debit: "0", credit: "0", departmentcode: "", projectcode: "", cashflow: "" }; }
 export function localDate() { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
-export function emptyJournal(bookcode = "JV", kind = "manual"): GLJournal { return { docno: "", date: localDate(), bookcode, fiscalyear: "", description: "", reference: "", branchcode: "", currency: "", kind, status: "draft", lines: [emptyLine(), emptyLine()] }; }
+export function emptyJournal(bookcode = "JV", kind = "manual"): GLJournal { return { docno: "", date: localDate(), bookcode, fiscalyear: "", description: "", reference: "", branchcode: "", kind, status: "draft", lines: [emptyLine(), emptyLine()] }; }
 
 const amountPattern = /^-?(0|[1-9]\d{0,25})(\.\d{1,8})?$/;
 const factor = 100000000n;
@@ -213,7 +213,6 @@ export function journalTotals(lines: GLLine[]) {
 export function validateJournal(journal: GLJournal, year: GLFiscalYear | undefined, accounts: GLAccount[], tr: GLTextFn = (_key, fallback) => fallback): string | null {
   if (!journal.docno.trim() || !journal.date || !journal.description.trim()) return tr("gl_required_no_date_description", "กรุณาระบุเลขที่ วันที่ และคำอธิบายรายการ");
   if (!year || !year.isactive || year.closed || journal.date < year.startdate || journal.date > year.enddate) return tr("gl_select_active_fiscal_year_date", "กรุณาเลือกปีบัญชีที่เปิดใช้งานและวันที่ภายในปีบัญชี");
-  if (journal.currency !== year.currency) return tr("gl_currency_match_fiscal_year", "สกุลเงินต้องตรงกับปีบัญชี");
   if (journal.lines.length < 2 || journal.lines.length > 500) return tr("gl_entries_2_500_lines", "รายการบัญชีต้องมี 2–500 บรรทัด");
   try {
     for (const [index, line] of journal.lines.entries()) {

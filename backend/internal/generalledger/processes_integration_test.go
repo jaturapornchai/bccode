@@ -138,7 +138,7 @@ func TestLedgerMongoPostgresProcessLifecycle(t *testing.T) {
 	years := map[string]Result{}
 	for _, code := range []string{"2026", "2027"} {
 		cmd := command("fiscal-years", "create", "", 0)
-		cmd.FiscalYear = &FiscalYear{Code: code, StartDate: code + "-01-01", EndDate: code + "-12-31", Currency: "THB", Scale: 2, IsActive: true, ProfitLossAccount: "301", RetainedEarningsAccount: "302"}
+		cmd.FiscalYear = &FiscalYear{Code: code, StartDate: code + "-01-01", EndDate: code + "-12-31", Scale: 2, IsActive: true, ProfitLossAccount: "301", RetainedEarningsAccount: "302"}
 		years[code] = run(cmd)
 		sourceIdentity("fiscal-years", years[code])
 		period := command("periods", "create", "", 0)
@@ -152,7 +152,7 @@ func TestLedgerMongoPostgresProcessLifecycle(t *testing.T) {
 		expense                                    bool
 	}{{"B1-IN", "B1", "D1", "P1", "100.30", false}, {"B1-OUT", "B1", "D1", "P1", "20.10", true}, {"B2-IN", "B2", "D2", "P2", "200.20", false}, {"B2-OUT", "B2", "D2", "P2", "30.20", true}} {
 		cmd := command("journals", "create", "", 0)
-		j := &Journal{DocNo: spec.docno, Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Description: "ทดสอบกระบวนการ " + spec.docno, BranchCode: spec.branch, Currency: "THB", Kind: "manual"}
+		j := &Journal{DocNo: spec.docno, Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Description: "ทดสอบกระบวนการ " + spec.docno, BranchCode: spec.branch, Kind: "manual"}
 		if spec.expense {
 			j.Lines = []Line{{AccountCode: "501", Debit: Amount(spec.amount), DepartmentCode: spec.department, ProjectCode: spec.project}, {AccountCode: "101", Credit: Amount(spec.amount), CashFlow: "operating"}}
 		} else {

@@ -38,7 +38,6 @@ import {
 import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
-import { CurrencyScreen } from "@/app/currency/currency-screen";
 
 type Step = "loading" | "shops" | "create" | "branches" | "access";
 type Notice = { type: "success" | "error" | "info"; text?: string; textKey?: WorkspaceTextKey } | null;
@@ -95,7 +94,6 @@ const STEP_TABS = {
   "/company": [
     { route: "/activelanguages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
     { route: "/company", label: { th: "บริษัทและสาขา", en: "Companies & Branches" } },
-    { route: "/currency", label: { th: "สกุลเงิน", en: "Currency" } },
     { route: "/businesstypescreen", label: { th: "ประเภทธุรกิจ", en: "Business Type" } },
   ],
   "/permissiongroup": [
@@ -1401,10 +1399,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <span className="text-xs text-muted-foreground ml-auto">{language === "th" ? "พนักงานที่ต้องเข้าระบบ: เพิ่มที่แท็บ บัญชีเข้าระบบ ด้วยอีเมลเดียวกัน" : "Employees who need to sign in: add them under Login Accounts with the same email"}</span>
                 </div>
               ) : null}
-              {effectiveAccessRoute === "/currency" ? (
-                // สกุลเงินเป็นจอแยก (currency-screen) ไม่ใช่ system-setting config
-                <CurrencyScreen embedded language={language} key={`currency:${tenantCodeForShop(selectedShopForAccess)}`} />
-              ) : (
               <SystemSettingsScreen
                 key={`${effectiveAccessRoute}:${tenantCodeForShop(selectedShopForAccess)}`}
                 route={effectiveAccessRoute ?? "/company"}
@@ -1414,7 +1408,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 language={language}
                 initialLanguage={language}
               />
-              )}
               {(() => {
                 const idx = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
                 const next = idx >= 0 ? accessSettingNavItems[idx + 1] : undefined;
@@ -1642,7 +1635,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   const isCreator = shop.iscreator === true
                     || Boolean(auth?.username && shop.createdby && shop.createdby.trim().toLowerCase() === auth.username.trim().toLowerCase());
                   const languageCodes = shopLanguageCodes(shop);
-                  const currencyLabel = shopCurrencyLabel(shop, language);
                   const companyLabel = companyBaseName(company);
                   const companyCode = (company.code ?? "").trim();
                   // If the display name is just the code (no real name in data),
@@ -1690,11 +1682,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                               {code}
                             </span>
                           ))}
-                          {currencyLabel && (
-                            <span className="px-1.5 py-0.5 text-[10px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
-                              {currencyLabel.split(" ")[0]}
-                            </span>
-                          )}
                         </div>
                       </div>
 
@@ -1801,11 +1788,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                           {isHQ ? (
                             <span className="px-2 py-0.5 text-[9px] font-bold rounded-full border uppercase bg-primary/15 text-primary border-primary/30">
                               {language === "th" ? "สำนักงานใหญ่" : "Headquarters"}
-                            </span>
-                          ) : null}
-                          {branch.basecurrency ? (
-                            <span className="px-1.5 py-0.5 text-[9px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase">
-                              {branch.basecurrency}
                             </span>
                           ) : null}
                           {branch.language ? (
@@ -2054,16 +2036,6 @@ function shopLanguageCodes(shop: ShopListItem): string[] {
   return normalizedCodeList(shop.activelanguages, ["th"]).map((code) => code.toUpperCase());
 }
 
-function shopCurrencyCodes(shop: ShopListItem): string[] {
-  return normalizedCodeList(shop.currencies, shop.basecurrency ? [shop.basecurrency] : ["THB"]).map((code) => code.toUpperCase());
-}
-
-function shopCurrencyLabel(shop: ShopListItem, language: LanguageCode): string {
-  const currencies = shopCurrencyCodes(shop);
-  const hasConfiguredCurrency = (Array.isArray(shop.currencies) && shop.currencies.length > 0) || Boolean(stringValue(shop.basecurrency));
-  const defaultMarker = hasConfiguredCurrency ? "" : language === "th" ? " ค่าเริ่มต้น" : " default";
-  return `${currencies.join(", ")}${defaultMarker}`;
-}
 
 function shopDateFormatLabel(shop: ShopListItem, language: LanguageCode): string {
   const hasConfiguredDateFormat = Boolean(stringValue(shop.dateformat));
@@ -2150,7 +2122,6 @@ function createDefaultBranch(shop?: ShopListItem, shopInfo?: Record<string, unkn
     couponusetype: 0,
     companyregistrationno: stringValue(settings?.companyregistrationno),
     isvatregistered: booleanValue(settings?.isvatregistered),
-    basecurrency: stringValue(settings?.basecurrency) || "THB",
     language: languageCodes[0] ?? "th",
     timezone: stringValue(settings?.timezone) || "Asia/Bangkok",
     timezoneoffset: stringValue(settings?.timezoneoffset) || "+07:00",
@@ -2255,7 +2226,6 @@ function createDefaultBranchListItem(guidFixed: unknown): BranchListItem {
     guidfixed: typeof guidFixed === "string" && guidFixed.trim() ? guidFixed.trim() : "00000",
     code: "00000",
     names: [{ code: "th", name: "สำนักงานใหญ่" }],
-    basecurrency: "THB",
     language: "th",
     timezone: "Asia/Bangkok",
     timezoneoffset: "+07:00",

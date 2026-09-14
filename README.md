@@ -8,6 +8,16 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ตั้งค่าระบบและทางลัด: ข้อความเปลี่ยนตามภาษา 12 ภาษาครบถ้วน + ตัดโมดูลสกุลเงินที่ไม่ใช้งาน
+
+- [Feature] ย้ายข้อความบนหน้าจอตั้งค่าระบบแบบ Tree View (ผังองค์กร/สาขา, หมวดหมู่สินค้า, กลุ่มสินค้า, สูตรการผลิต BOM, คลังสินค้า) และหน้าจัดการทางลัด (`manage-shortcuts-screen.tsx`) ให้เปลี่ยนตามภาษาที่เลือกครบทั้ง 12 ภาษา ผ่าน `BackendTextProvider` และ `useBackendText()` โดยโค้ดใช้ key ภาษาอังกฤษ `st_*`
+- [Feature] เพิ่มคำแปลภาษาทั้ง 12 ภาษาสำหรับคีย์ `st_*` (มากกว่า 319 รายการ) ลงใน `backend/assets/language/languages.tsv`
+- [Refactor] ตัดโมดูลสกุลเงิน (`backend/internal/currency/*`, `migrate_currency.go`, หน้าจอ `CurrencyScreen`, ฟิลด์สกุลเงินในสาขา/ผังบัญชี/สมุดรายวัน) ออกจากระบบ backend และ frontend ตามสถาปัตยกรรมที่ไม่ใช้ระบบหลายสกุลเงิน
+- [Test] เพิ่ม Unit Test `frontend/src/app/system-settings/settings-language-keys.test.ts` เพื่อคุ้มกันไม่ให้มีข้อความภาษาไทย hard-coded ตกค้าง และตรวจความสมบูรณ์ของคอลัมน์ภาษาใน `languages.tsv` ทั้ง 12 ภาษา
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `frontend/src/app/system-settings/*`, `frontend/src/app/menu/manage-shortcuts-screen.tsx`, `frontend/src/components/backend-text-provider.tsx`, `frontend/src/app/system-settings/settings-language-keys.test.ts`, `backend/assets/language/languages.tsv`, `backend/internal/currency/*`, `backend/main.go`, `docs/reference/CODE-MAP.md`
+- หลักฐาน: `tsc --noEmit` ผ่าน 0 error, vitest 476/476 ผ่าน 100%, Go build/vet/test ใน Docker ผ่าน 100%
+
 ### 2026-09-14 — เมนูหลัก: หัวข้อกลุ่มเมนูและข้อความบนจอเมนูเปลี่ยนตามภาษาครบ + กล่องเลือกภาษาไม่ถูกเมนูบนบัง
 
 - [Fix] หัวข้อหมวด/กลุ่มเมนู 37 รายการ (เช่น "เงินสดและธนาคาร", "บัญชีเงินฝากและสมุดบัญชี") เดิมมีแค่ไทย/อังกฤษ เลือกภาษาอื่นแล้วขึ้นอังกฤษ — เพิ่ม key `menu_*` และคำแปล 12 ภาษาใน `languages.tsv` ให้ `menuText` ดึงจาก backend ได้

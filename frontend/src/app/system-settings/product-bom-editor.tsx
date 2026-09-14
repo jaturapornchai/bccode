@@ -1,5 +1,6 @@
 "use client";
 
+import { useBackendText } from "@/components/backend-text-provider";
 import { authFetch } from "@/lib/client-auth-session";
 import {
   useState,
@@ -163,6 +164,7 @@ export function ProductBomEditor({
   setSelectedRecordId,
   setRecords,
 }: ProductBomEditorProps) {
+  const tr = useBackendText();
   const { confirm, confirmationDialog } = useConfirmDialog();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -181,7 +183,7 @@ export function ProductBomEditor({
   const [parentNames, setParentNames] = useState<LocalizedName[]>([]);
   const [parentUnitCode, setParentUnitCode] = useState("RECIPE");
   const [parentUnitNames, setParentUnitNames] = useState<LocalizedName[]>([
-    { code: "th", name: "สูตร" },
+    { code: "th", name: tr("formula", "สูตร") },
   ]);
   const [parentPrice, setParentPrice] = useState(0);
   const [outputQty, setOutputQty] = useState(1);
@@ -258,12 +260,10 @@ export function ProductBomEditor({
   const handleDeleteVersion = (index: number) => {
     if (bomVersions.length <= 1) {
       confirm({
-        title: language === "th" ? "ไม่สามารถลบได้" : "Cannot Delete",
+        title: tr("st_cannot_delete", "ไม่สามารถลบได้"),
         description:
-          language === "th"
-            ? "ต้องมีสูตรผลิตอย่างน้อย 1 เวอร์ชัน"
-            : "At least one recipe version is required.",
-        confirmLabel: language === "th" ? "ตกลง" : "OK",
+          tr("st_require_at_least_one_formula_version", "ต้องมีสูตรผลิตอย่างน้อย 1 เวอร์ชัน"),
+        confirmLabel: tr("ok", "ตกลง"),
         cancelLabel: "",
       });
       return;
@@ -271,15 +271,11 @@ export function ProductBomEditor({
 
     confirm({
       title:
-        language === "th"
-          ? "ยืนยันการลบสูตรเวอร์ชันนี้"
-          : "Confirm Delete Version",
+        tr("st_confirm_delete_formula_version", "ยืนยันการลบสูตรเวอร์ชันนี้"),
       description:
-        language === "th"
-          ? "คุณต้องการลบสูตรผลิตเวอร์ชันนี้ใช่หรือไม่?"
-          : "Are you sure you want to delete this recipe version?",
-      confirmLabel: language === "th" ? "ลบ" : "Delete",
-      cancelLabel: language === "th" ? "ยกเลิก" : "Cancel",
+        tr("st_confirm_delete_formula_version_q", "คุณต้องการลบสูตรผลิตเวอร์ชันนี้ใช่หรือไม่?"),
+      confirmLabel: tr("delete", "ลบ"),
+      cancelLabel: tr("cancel", "ยกเลิก"),
     }).then((confirmed) => {
       if (confirmed) {
         const updated = bomVersions.filter((_, i) => i !== index);
@@ -357,7 +353,7 @@ export function ProductBomEditor({
       setParentNames(record.names || []);
       setParentUnitCode(record.itemunitcode || "RECIPE");
       setParentUnitNames(
-        record.itemunitnames || [{ code: "th", name: "สูตร" }],
+        record.itemunitnames || [{ code: "th", name: tr("formula", "สูตร") }],
       );
       setParentPrice(record.price ?? record.prices?.[0]?.price ?? 0);
       // Recipe root's qty carries the batch output quantity (how many units one batch produces).
@@ -411,7 +407,7 @@ export function ProductBomEditor({
         loadFromRecord(selectedRecord, false);
       })
       .finally(() => setLoading(false));
-  }, [selectedRecord, auth, workspace]);
+  }, [selectedRecord, auth, workspace, tr]);
 
   // Handle Drag & Drop sorting
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -529,9 +525,9 @@ export function ProductBomEditor({
     return (
       pickName(parentNames, language) ||
       parentItemCode ||
-      (language === "th" ? "(สูตรใหม่)" : "(New Recipe)")
+      (tr("st_new_formula", "(สูตรใหม่)"))
     );
-  }, [selectedRecord, language, parentNames, parentItemCode]);
+  }, [selectedRecord, language, parentNames, parentItemCode, tr]);
 
   const saveDisabled = saving || loading || !unsavedChanges;
 
@@ -569,12 +565,10 @@ export function ProductBomEditor({
 
   const showInvalidRecipeComponentNotice = () => {
     confirm({
-      title: language === "th" ? "เลือกสินค้าไม่ได้" : "Invalid Ingredient",
+      title: tr("st_cannot_select_product", "เลือกสินค้าไม่ได้"),
       description:
-        language === "th"
-          ? "สูตรผลิตเลือกได้เฉพาะวัตถุดิบ กึ่งสำเร็จรูป และสินค้าเกษตร"
-          : "Recipes can only use Material, Semi-Finished, or Agricultural products as ingredients.",
-      confirmLabel: language === "th" ? "รับทราบ" : "OK",
+        tr("st_recipe_select_only_raw_semi_agri", "สูตรผลิตเลือกได้เฉพาะวัตถุดิบ กึ่งสำเร็จรูป และสินค้าเกษตร"),
+      confirmLabel: tr("st_acknowledge", "รับทราบ"),
       cancelLabel: "",
     });
   };
@@ -595,14 +589,10 @@ export function ProductBomEditor({
     ) {
       confirm({
         title:
-          language === "th"
-            ? "สินค้าอยู่ในสูตรแล้ว"
-            : "Item Already in Formula",
+          tr("st_product_in_formula", "สินค้าอยู่ในสูตรแล้ว"),
         description:
-          language === "th"
-            ? "ส่วนประกอบนี้อยู่ในรายการอยู่แล้ว ไม่จำเป็นต้องเพิ่มซ้ำ"
-            : "This ingredient is already in the list.",
-        confirmLabel: language === "th" ? "รับทราบ" : "OK",
+          tr("st_component_already_exists", "ส่วนประกอบนี้อยู่ในรายการอยู่แล้ว ไม่จำเป็นต้องเพิ่มซ้ำ"),
+        confirmLabel: tr("st_acknowledge", "รับทราบ"),
         cancelLabel: "",
       });
       return;
@@ -644,12 +634,10 @@ export function ProductBomEditor({
     if (recipeCode === parentItemCode.trim()) {
       confirm({
         title:
-          language === "th" ? "อ้างสูตรตัวเองไม่ได้" : "Invalid Sub-recipe",
+          tr("st_cannot_reference_self", "อ้างสูตรตัวเองไม่ได้"),
         description:
-          language === "th"
-            ? "สูตรผลิตไม่สามารถอ้างอิงตัวเองเป็นสูตรย่อยได้"
-            : "A recipe cannot reference itself.",
-        confirmLabel: language === "th" ? "รับทราบ" : "OK",
+          tr("st_formula_cannot_reference_self_as_sub", "สูตรผลิตไม่สามารถอ้างอิงตัวเองเป็นสูตรย่อยได้"),
+        confirmLabel: tr("st_acknowledge", "รับทราบ"),
         cancelLabel: "",
       });
       return;
@@ -661,14 +649,10 @@ export function ProductBomEditor({
     ) {
       confirm({
         title:
-          language === "th"
-            ? "สูตรย่อยอยู่ในรายการแล้ว"
-            : "Sub-recipe Already Added",
+          tr("st_sub_formula_already_in_list", "สูตรย่อยอยู่ในรายการแล้ว"),
         description:
-          language === "th"
-            ? "สูตรนี้อยู่ในรายการส่วนประกอบแล้ว"
-            : "This sub-recipe is already in the component list.",
-        confirmLabel: language === "th" ? "รับทราบ" : "OK",
+          tr("st_formula_in_component_list", "สูตรนี้อยู่ในรายการส่วนประกอบแล้ว"),
+        confirmLabel: tr("st_acknowledge", "รับทราบ"),
         cancelLabel: "",
       });
       return;
@@ -682,7 +666,7 @@ export function ProductBomEditor({
       reftype: "recipe",
       names: recipe.names || [],
       itemunitcode: recipe.itemunitcode || "RECIPE",
-      itemunitnames: recipe.itemunitnames || [{ code: "th", name: "สูตร" }],
+      itemunitnames: recipe.itemunitnames || [{ code: "th", name: tr("formula", "สูตร") }],
       qty: 1,
       yieldpercent: 100,
       averagecost: calculateTotalCost(recipe.bom || []) / subRecipeOutputQty,
@@ -720,12 +704,10 @@ export function ProductBomEditor({
         const unitOptions = toProductUnitOptions(productData);
         if (unitOptions.length === 0) {
           confirm({
-            title: language === "th" ? "ไม่พบหน่วยนับสินค้า" : "No Unit Found",
+            title: tr("st_product_unit_not_found", "ไม่พบหน่วยนับสินค้า"),
             description:
-              language === "th"
-                ? "สินค้านี้ยังไม่มี barcode/unit ให้เลือก จึงเพิ่มเข้าสูตรไม่ได้"
-                : "This product has no barcode/unit options and cannot be added to the recipe.",
-            confirmLabel: language === "th" ? "รับทราบ" : "OK",
+              tr("st_product_no_barcode_unit_cannot_add", "สินค้านี้ยังไม่มี barcode/unit ให้เลือก จึงเพิ่มเข้าสูตรไม่ได้"),
+            confirmLabel: tr("st_acknowledge", "รับทราบ"),
             cancelLabel: "",
           });
           return;
@@ -753,12 +735,10 @@ export function ProductBomEditor({
     if (!recipeCode) {
       confirm({
         title:
-          language === "th" ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information",
+          tr("st_incomplete_data", "ข้อมูลไม่ครบถ้วน"),
         description:
-          language === "th"
-            ? "กรุณากรอกรหัสสูตรผลิต"
-            : "Please enter the recipe code.",
-        confirmLabel: language === "th" ? "ตกลง" : "OK",
+          tr("st_please_enter_formula_code", "กรุณากรอกรหัสสูตรผลิต"),
+        confirmLabel: tr("ok", "ตกลง"),
         cancelLabel: "",
       });
       return;
@@ -766,12 +746,10 @@ export function ProductBomEditor({
     if (parentNames.length === 0 || !parentNames.some((n) => n.name?.trim())) {
       confirm({
         title:
-          language === "th" ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information",
+          tr("st_incomplete_data", "ข้อมูลไม่ครบถ้วน"),
         description:
-          language === "th"
-            ? "กรุณากรอกชื่อสูตรผลิตอย่างน้อย 1 ภาษา"
-            : "Please enter at least one recipe name.",
-        confirmLabel: language === "th" ? "ตกลง" : "OK",
+          tr("st_enter_formula_name_one_lang", "กรุณากรอกชื่อสูตรผลิตอย่างน้อย 1 ภาษา"),
+        confirmLabel: tr("ok", "ตกลง"),
         cancelLabel: "",
       });
       return;
@@ -877,12 +855,10 @@ export function ProductBomEditor({
       const savedId = String(saveData.id || "");
       setUnsavedChanges(false);
       confirm({
-        title: language === "th" ? "บันทึกสำเร็จ" : "Saved Successfully",
+        title: tr("save_success", "บันทึกสำเร็จ"),
         description:
-          language === "th"
-            ? "สูตรผลิตได้รับการบันทึกและคำนวณต้นทุนเรียบร้อยแล้ว"
-            : "The bill of materials has been successfully saved.",
-        confirmLabel: language === "th" ? "ตกลง" : "OK",
+          tr("st_formula_saved_cost_calculated", "สูตรผลิตได้รับการบันทึกและคำนวณต้นทุนเรียบร้อยแล้ว"),
+        confirmLabel: tr("ok", "ตกลง"),
         cancelLabel: "",
       });
 
@@ -890,9 +866,9 @@ export function ProductBomEditor({
       if (isCreate && savedId) setSelectedRecordId?.(savedId);
     } catch (error: any) {
       confirm({
-        title: language === "th" ? "เกิดข้อผิดพลาด" : "Error Occurred",
+        title: tr("error_occurred", "เกิดข้อผิดพลาด"),
         description: error.message || "Request failed",
-        confirmLabel: language === "th" ? "ปิด" : "Close",
+        confirmLabel: tr("bill_close", "ปิด"),
         cancelLabel: "",
       });
     } finally {
@@ -907,13 +883,11 @@ export function ProductBomEditor({
     const isVirtual = selectedRecord.guidfixed.startsWith("virtual-");
     const confirmed = await confirm({
       title:
-        language === "th" ? "ยืนยันการลบสูตรผลิต" : "Confirm Delete Recipe",
+        tr("st_confirm_delete_formula", "ยืนยันการลบสูตรผลิต"),
       description:
-        language === "th"
-          ? `ต้องการลบสูตร "${productName}" ทั้งสูตรใช่หรือไม่? สูตรอื่นที่อ้างสูตรนี้เป็นสูตรย่อยจะไม่ถูกแก้ให้อัตโนมัติ`
-          : `Delete the entire recipe "${productName}"? Other recipes referencing it as a sub-recipe are not updated automatically.`,
-      confirmLabel: language === "th" ? "ลบสูตร" : "Delete",
-      cancelLabel: language === "th" ? "ยกเลิก" : "Cancel",
+        tr("st_delete_formula_confirm_msg", "ต้องการลบสูตร \"{0}\" ทั้งสูตรใช่หรือไม่? สูตรอื่นที่อ้างสูตรนี้เป็นสูตรย่อยจะไม่ถูกแก้ให้อัตโนมัติ").replace("{0}", String(productName)),
+      confirmLabel: tr("st_delete_formula", "ลบสูตร"),
+      cancelLabel: tr("cancel", "ยกเลิก"),
     });
     if (!confirmed) return;
 
@@ -952,9 +926,9 @@ export function ProductBomEditor({
       onClose();
     } catch (error: unknown) {
       confirm({
-        title: language === "th" ? "เกิดข้อผิดพลาด" : "Error Occurred",
+        title: tr("error_occurred", "เกิดข้อผิดพลาด"),
         description: error instanceof Error ? error.message : "Request failed",
-        confirmLabel: language === "th" ? "ปิด" : "Close",
+        confirmLabel: tr("bill_close", "ปิด"),
         cancelLabel: "",
       });
     } finally {
@@ -1007,7 +981,7 @@ export function ProductBomEditor({
                   variant="outline"
                   className="text-[9px] h-3.5 bg-sky-50 text-sky-700 border-sky-200 shrink-0"
                 >
-                  {language === "th" ? "สูตรย่อย" : "Sub-recipe"}
+                  {tr("st_sub_formula", "สูตรย่อย")}
                 </Badge>
               )}
             </div>
@@ -1017,7 +991,7 @@ export function ProductBomEditor({
                 {subItem.qty} {unit}
               </span>
               <span className="text-muted-foreground w-20 text-right">
-                {language === "th" ? "ต้นทุน" : "Cost"}: ฿{cost.toFixed(2)}
+                {tr("cost", "ต้นทุน")}: ฿{cost.toFixed(2)}
               </span>
             </div>
           </div>
@@ -1070,7 +1044,7 @@ export function ProductBomEditor({
                     variant="outline"
                     className="text-[9px] h-3.5 px-1 bg-sky-50 text-sky-700 border-sky-200"
                   >
-                    {language === "th" ? "สูตรย่อย" : "Sub-recipe"}
+                    {tr("st_sub_formula", "สูตรย่อย")}
                   </Badge>
                 )}
                 {item.materialtype === 1 && (
@@ -1078,7 +1052,7 @@ export function ProductBomEditor({
                     variant="outline"
                     className="text-[9px] h-3.5 px-1 bg-green-50 text-green-700 border-green-200"
                   >
-                    {language === "th" ? "วัตถุดิบ" : "Material"}
+                    {tr("material_type_raw", "วัตถุดิบ")}
                   </Badge>
                 )}
               </span>
@@ -1092,7 +1066,7 @@ export function ProductBomEditor({
             <span className="text-muted-foreground w-28">
               {scaledQty.toFixed(4).replace(/\.?0+$/, "") || "0"} {unit}
               {yieldPct < 100 &&
-                ` (${language === "th" ? "สูญเสีย" : "Yield"} ${yieldPct}%)`}
+                ` (${tr("st_loss", "สูญเสีย")} ${yieldPct}%)`}
             </span>
             <span className="text-foreground w-24">฿{itemCost.toFixed(2)}</span>
             <span className="text-sky-700 w-24">฿{rowCost.toFixed(2)}</span>
@@ -1114,14 +1088,10 @@ export function ProductBomEditor({
         <div className="text-center space-y-2 max-w-sm">
           <AlertCircle className="mx-auto size-12 text-muted-foreground/60" />
           <h3 className="font-bold text-foreground">
-            {language === "th"
-              ? "เลือกสูตรผลิตเพื่อแก้ไข"
-              : "Select a Recipe to Edit"}
+            {tr("st_select_formula_to_edit", "เลือกสูตรผลิตเพื่อแก้ไข")}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {language === "th"
-              ? "เลือกสูตรผลิตจากรายการด้านซ้าย หรือเพิ่มรหัสสูตรผลิตใหม่"
-              : "Choose a recipe from the list on the left or create a new recipe code."}
+            {tr("st_select_formula_or_add_new", "เลือกสูตรผลิตจากรายการด้านซ้าย หรือเพิ่มรหัสสูตรผลิตใหม่")}
           </p>
         </div>
       </Card>
@@ -1136,30 +1106,28 @@ export function ProductBomEditor({
           <div className="min-w-0 space-y-1">
             <CardTitle className="text-lg font-bold flex items-center gap-2.5 flex-wrap">
               <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                {language === "th"
-                  ? "รายการวัตถุดิบและส่วนประกอบ"
-                  : "Ingredients List"}
+                {tr("st_raw_materials_components", "รายการวัตถุดิบและส่วนประกอบ")}
               </span>
               {unsavedChanges && (
                 <Badge
                   variant="outline"
                   className="animate-pulse bg-destructive/10 border-destructive/30 text-destructive text-[10px] h-5 rounded-full font-semibold px-2.5"
                 >
-                  {language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved Changes"}
+                  {tr("st_not_saved_yet", "ยังไม่ได้บันทึก")}
                 </Badge>
               )}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground/90 font-medium">
-              {language === "th" ? "สูตรผลิต" : "Recipe"}{" "}
+              {tr("product_bom", "สูตรผลิต")}{" "}
               <span className="text-foreground font-semibold">
                 {productName}
               </span>{" "}
               {selectedRecord.guidfixed.startsWith("virtual-")
                 ? parentItemCode
-                  ? `[รหัสสูตร: ${parentItemCode}]`
+                  ? tr("st_formula_code_placeholder", "[รหัสสูตร: {0}]").replace("{0}", String(parentItemCode))
                   : ""
                 : selectedRecord.itemcode || selectedRecord.barcode
-                  ? `[รหัสสูตร: ${selectedRecord.itemcode || selectedRecord.barcode}]`
+                  ? tr("st_formula_code_placeholder", "[รหัสสูตร: {0}]").replace("{0}", String(selectedRecord.itemcode || selectedRecord.barcode))
                   : ""}
             </CardDescription>
           </div>
@@ -1177,7 +1145,7 @@ export function ProductBomEditor({
               ) : (
                 <Trash2 className="size-3.5 mr-1.5" />
               )}
-              {language === "th" ? "ลบสูตร" : "Delete Recipe"}
+              {tr("st_delete_formula", "ลบสูตร")}
             </Button>
             <Button
               type="button"
@@ -1188,7 +1156,7 @@ export function ProductBomEditor({
               className="h-8.5 rounded-lg border-indigo-200 text-indigo-700 bg-indigo-50/10 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/30 text-xs transition-all"
             >
               <Network className="size-3.5 mr-1.5" />
-              {language === "th" ? "โครงสร้างสูตรละเอียด" : "Explode Tree"}
+              {tr("st_formula_detail_structure", "โครงสร้างสูตรละเอียด")}
             </Button>
             <Button
               type="button"
@@ -1207,7 +1175,7 @@ export function ProductBomEditor({
               ) : (
                 <Save className="size-3.5 mr-1.5" />
               )}
-              {language === "th" ? "บันทึกสูตร" : "Save BOM"}
+              {tr("st_save_formula", "บันทึกสูตร")}
             </Button>
           </div>
         </CardHeader>
@@ -1215,13 +1183,13 @@ export function ProductBomEditor({
         <CardContent className="p-0 flex-1 overflow-y-auto scrollbar-thin flex flex-col">
           <div className="p-5 border-b border-border bg-gradient-to-b from-muted/20 to-transparent space-y-4 shrink-0">
             <h4 className="text-xs font-bold text-foreground/80 uppercase tracking-wider select-none">
-              {language === "th" ? "ข้อมูลสูตรผลิต" : "Recipe Master"}
+              {tr("st_formula_info", "ข้อมูลสูตรผลิต")}
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 p-4 border border-sky-100 dark:border-sky-950/40 rounded-xl bg-sky-500/5 shadow-sm">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th" ? "รหัสสูตรผลิต *" : "Recipe Code *"}
+                  {tr("st_formula_code_req", "รหัสสูตรผลิต *")}
                 </label>
                 <Input
                   className="h-8.5 text-xs font-mono rounded-lg focus-visible:ring-sky-500 bg-background"
@@ -1237,7 +1205,7 @@ export function ProductBomEditor({
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th" ? "หน่วยสูตร" : "Recipe Unit"}
+                  {tr("st_formula_unit", "หน่วยสูตร")}
                 </label>
                 <Input
                   className="h-8.5 text-xs font-mono rounded-lg focus-visible:ring-sky-500 bg-background"
@@ -1246,7 +1214,7 @@ export function ProductBomEditor({
                     const next = e.target.value.trimStart().toUpperCase();
                     setParentUnitCode(next);
                     setParentUnitNames([
-                      { code: language, name: next || "สูตร" },
+                      { code: language, name: next || tr("formula", "สูตร") },
                     ]);
                     setUnsavedChanges(true);
                   }}
@@ -1255,9 +1223,7 @@ export function ProductBomEditor({
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th"
-                    ? "ราคาประเมินของสูตร"
-                    : "Estimated Recipe Price"}
+                  {tr("st_estimated_formula_price", "ราคาประเมินของสูตร")}
                 </label>
                 <Input
                   type="number"
@@ -1273,9 +1239,7 @@ export function ProductBomEditor({
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th"
-                    ? "ผลิตได้ต่อสูตร (หน่วย)"
-                    : "Output per Batch"}
+                  {tr("st_yield_per_formula_unit", "ผลิตได้ต่อสูตร (หน่วย)")}
                 </label>
                 <Input
                   type="number"
@@ -1290,17 +1254,13 @@ export function ProductBomEditor({
                   }}
                 />
                 <p className="text-[10px] text-muted-foreground leading-tight">
-                  {language === "th"
-                    ? "เช่น เค้ก 1 สูตรอบได้ 10 ชิ้น, น้ำซุป 1 หม้อตักได้ 50 ถ้วย"
-                    : "e.g. one cake batch yields 10 pieces, one pot yields 50 bowls"}
+                  {tr("st_example_recipe_yield_units", "เช่น เค้ก 1 สูตรอบได้ 10 ชิ้น, น้ำซุป 1 หม้อตักได้ 50 ถ้วย")}
                 </p>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th"
-                    ? "สินค้าสำเร็จรูปที่เกี่ยวข้อง"
-                    : "Finished Good"}
+                  {tr("st_related_finished_goods", "สินค้าสำเร็จรูปที่เกี่ยวข้อง")}
                 </label>
                 {finishedGoodBarcode ? (
                   <div className="flex items-center gap-1.5">
@@ -1329,21 +1289,17 @@ export function ProductBomEditor({
                     className="h-8.5 w-full text-xs rounded-lg justify-start font-normal text-muted-foreground"
                     onClick={() => setFinishedGoodPickerOpen(true)}
                   >
-                    {language === "th" ? "เลือกสินค้า…" : "Select product…"}
+                    {tr("st_select_product", "เลือกสินค้า…")}
                   </Button>
                 )}
                 <p className="text-[10px] text-muted-foreground leading-tight">
-                  {language === "th"
-                    ? "ไม่บังคับ — เชื่อมสูตรกับสินค้าที่ขายจริง"
-                    : "Optional — links this recipe to the actual sellable product"}
+                  {tr("st_optional_link_recipe_to_product", "ไม่บังคับ — เชื่อมสูตรกับสินค้าที่ขายจริง")}
                 </p>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th"
-                    ? "ค่าแรงงาน (ต่อสูตร)"
-                    : "Labor Cost (per batch)"}
+                  {tr("st_labor_cost_per_recipe", "ค่าแรงงาน (ต่อสูตร)")}
                 </label>
                 <Input
                   type="number"
@@ -1361,9 +1317,7 @@ export function ProductBomEditor({
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th"
-                    ? "ค่าโสหุ้ย (ต่อสูตร)"
-                    : "Overhead Cost (per batch)"}
+                  {tr("st_overhead_cost_per_recipe", "ค่าโสหุ้ย (ต่อสูตร)")}
                 </label>
                 <Input
                   type="number"
@@ -1383,7 +1337,7 @@ export function ProductBomEditor({
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase">
-                  {language === "th" ? "% ของเสีย (Scrap)" : "Scrap %"}
+                  {tr("st_scrap_percent", "% ของเสีย (Scrap)")}
                 </label>
                 <Input
                   type="number"
@@ -1404,15 +1358,13 @@ export function ProductBomEditor({
                   }}
                 />
                 <p className="text-[10px] text-muted-foreground leading-tight">
-                  {language === "th"
-                    ? "ยิ่งของเสียมาก ต้นทุนต่อหน่วยดียิ่งสูงขึ้น"
-                    : "Higher scrap increases cost per good unit"}
+                  {tr("st_more_scrap_higher_unit_cost", "ยิ่งของเสียมาก ต้นทุนต่อหน่วยดียิ่งสูงขึ้น")}
                 </p>
               </div>
 
               <div className="md:col-span-2 xl:col-span-4 border-t border-dashed border-sky-200/50 pt-3 space-y-2">
                 <label className="text-[11px] font-bold text-sky-800 dark:text-sky-400 uppercase block">
-                  {language === "th" ? "โหมดต้นทุน" : "Cost Mode"}
+                  {tr("st_cost_mode", "โหมดต้นทุน")}
                 </label>
                 <div className="flex flex-wrap items-start gap-3">
                   <label className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-background cursor-pointer hover:bg-muted/30 transition-colors">
@@ -1427,9 +1379,7 @@ export function ProductBomEditor({
                       className="size-3.5 mt-0.5 accent-primary"
                     />
                     <span className="text-xs font-semibold">
-                      {language === "th"
-                        ? "ต้นทุนปัจจุบัน (คำนวณสด)"
-                        : "Current cost (live-calculated)"}
+                      {tr("st_current_cost_live_calc", "ต้นทุนปัจจุบัน (คำนวณสด)")}
                     </span>
                   </label>
                   <label className="flex items-start gap-2 p-2.5 rounded-lg border border-border bg-background cursor-pointer hover:bg-muted/30 transition-colors">
@@ -1444,9 +1394,7 @@ export function ProductBomEditor({
                       className="size-3.5 mt-0.5 accent-primary"
                     />
                     <span className="text-xs font-semibold">
-                      {language === "th"
-                        ? "ต้นทุนมาตรฐาน (Standard Cost)"
-                        : "Standard Cost"}
+                      {tr("st_standard_cost", "ต้นทุนมาตรฐาน (Standard Cost)")}
                     </span>
                   </label>
                   {costMode === "standard" && (
@@ -1466,9 +1414,7 @@ export function ProductBomEditor({
                         }}
                       />
                       <p className="text-[10px] text-muted-foreground leading-tight max-w-[10rem]">
-                        {language === "th"
-                          ? "ราคาต้นทุนต่อหน่วยที่ตรึงไว้"
-                          : "Frozen cost per unit"}
+                        {tr("st_fixed_unit_cost_price", "ราคาต้นทุนต่อหน่วยที่ตรึงไว้")}
                       </p>
                     </div>
                   )}
@@ -1483,7 +1429,7 @@ export function ProductBomEditor({
                     setUnsavedChanges(true);
                   }}
                   languages={["th", "en"]}
-                  label={language === "th" ? "ชื่อสูตรผลิต" : "Recipe names"}
+                  label={tr("st_recipe_name", "ชื่อสูตรผลิต")}
                   firstRequired
                   language={language}
                 />
@@ -1495,9 +1441,7 @@ export function ProductBomEditor({
           <div className="bg-muted/20 border-b border-border p-4.5 space-y-4 shrink-0">
             <div className="flex items-center justify-between gap-4">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider select-none">
-                {language === "th"
-                  ? "ช่วงเวลาการใช้งานสูตรผลิต (Recipe Versions)"
-                  : "Recipe Versions"}
+                {tr("st_recipe_usage_period_versions", "ช่วงเวลาการใช้งานสูตรผลิต (Recipe Versions)")}
               </span>
               <Button
                 type="button"
@@ -1507,7 +1451,7 @@ export function ProductBomEditor({
                 onClick={handleAddVersion}
               >
                 <Plus className="size-3.5 mr-1" />
-                {language === "th" ? "เพิ่มเวอร์ชันสูตร" : "Add Version"}
+                {tr("st_add_recipe_version", "เพิ่มเวอร์ชันสูตร")}
               </Button>
             </div>
 
@@ -1524,9 +1468,7 @@ export function ProductBomEditor({
                   const nextVer = sorted[idx + 1];
                   const displayEndDate = nextVer
                     ? nextVer.startdate
-                    : language === "th"
-                      ? "ปัจจุบัน"
-                      : "Present";
+                    : tr("st_current", "ปัจจุบัน");
 
                   return (
                     <div
@@ -1548,9 +1490,7 @@ export function ProductBomEditor({
                           setBomItems(ver.bom || []);
                         }}
                       >
-                        {language === "th"
-                          ? `สูตรที่ ${idx + 1}`
-                          : `Recipe v${idx + 1}`}
+                        {tr("st_formula_no", "สูตรที่ {0}").replace("{0}", String(idx + 1))}
                         <span className="ml-1.5 text-[9px] opacity-75 font-mono">
                           ({ver.startdate} - {displayEndDate})
                         </span>
@@ -1576,9 +1516,7 @@ export function ProductBomEditor({
               <div className="grid grid-cols-1 gap-3 pt-3 border-t border-dashed border-border/80 max-w-xs">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase select-none">
-                    {language === "th"
-                      ? "วันที่เริ่มใช้งานสูตร"
-                      : "Effective Start Date"}
+                    {tr("st_formula_start_date", "วันที่เริ่มใช้งานสูตร")}
                   </label>
                   <Input
                     type="date"
@@ -1598,9 +1536,7 @@ export function ProductBomEditor({
               <div className="py-24 text-center text-muted-foreground space-y-3 bg-muted/5">
                 <RefreshCcw className="mx-auto size-9 text-muted-foreground/20" />
                 <p className="text-sm font-semibold text-foreground/60 select-none">
-                  {language === "th"
-                    ? "ยังไม่มีส่วนประกอบในสูตรนี้"
-                    : "No ingredients added yet."}
+                  {tr("st_no_components_yet", "ยังไม่มีส่วนประกอบในสูตรนี้")}
                 </p>
                 <Button
                   variant="link"
@@ -1608,9 +1544,7 @@ export function ProductBomEditor({
                   onClick={() => setPickerOpen(true)}
                   className="text-sky-600 dark:text-sky-400 font-semibold"
                 >
-                  {language === "th"
-                    ? "คลิกเพื่อเริ่มเพิ่มวัตถุดิบ"
-                    : "Click here to add first ingredient"}
+                  {tr("st_click_to_add_materials", "คลิกเพื่อเริ่มเพิ่มวัตถุดิบ")}
                 </Button>
               </div>
             ) : (
@@ -1619,24 +1553,22 @@ export function ProductBomEditor({
                   <tr>
                     <th className="w-8 py-3 px-3"></th>
                     <th className="py-3 px-2">
-                      {language === "th"
-                        ? "ส่วนประกอบ / รหัสอ้างอิง"
-                        : "Component / Reference Code"}
+                      {tr("st_component_ref_code", "ส่วนประกอบ / รหัสอ้างอิง")}
                     </th>
                     <th className="w-24 py-3 px-2 text-right">
-                      {language === "th" ? "จำนวน" : "Quantity"}
+                      {tr("enter_qty", "จำนวน")}
                     </th>
                     <th className="w-20 py-3 px-2">
-                      {language === "th" ? "หน่วย" : "Unit"}
+                      {tr("chatbot_product_unit", "หน่วย")}
                     </th>
                     <th className="w-24 py-3 px-2 text-right">
-                      {language === "th" ? "สูญเสีย (%)" : "Yield (%)"}
+                      {tr("st_loss_percent", "สูญเสีย (%)")}
                     </th>
                     <th className="w-24 py-3 px-2 text-right">
-                      {language === "th" ? "ต้นทุน/หน่วย" : "Cost/Unit"}
+                      {tr("st_cost_per_unit", "ต้นทุน/หน่วย")}
                     </th>
                     <th className="w-28 py-3 px-2 text-right">
-                      {language === "th" ? "ราคารวม" : "Total"}
+                      {tr("st_total_price", "ราคารวม")}
                     </th>
                     <th className="w-12 py-3 px-3"></th>
                   </tr>
@@ -1700,7 +1632,7 @@ export function ProductBomEditor({
                                   variant="outline"
                                   className="text-[9px] h-4 bg-emerald-50 text-emerald-700 border-emerald-200/50 shrink-0 rounded-full font-bold select-none"
                                 >
-                                  {language === "th" ? "วัตถุดิบ" : "Material"}
+                                  {tr("material_type_raw", "วัตถุดิบ")}
                                 </Badge>
                               )}
                             </div>
@@ -1713,9 +1645,7 @@ export function ProductBomEditor({
                                   variant="outline"
                                   className="text-[9px] h-4 bg-indigo-50 text-indigo-700 border-indigo-200/50 rounded-full font-bold select-none"
                                 >
-                                  {language === "th"
-                                    ? "สูตรย่อย"
-                                    : "Sub-recipe"}
+                                  {tr("st_sub_formula", "สูตรย่อย")}
                                 </Badge>
                               )}
                             </div>
@@ -1786,9 +1716,7 @@ export function ProductBomEditor({
                           {hasChildren ? (
                             <span
                               title={
-                                language === "th"
-                                  ? "คำนวณจากส่วนประกอบของสูตรย่อย"
-                                  : "Computed from sub-recipe components"
+                                tr("st_calc_from_subrecipe_components", "คำนวณจากส่วนประกอบของสูตรย่อย")
                               }
                             >
                               ฿{unitCost.toFixed(2)}
@@ -1855,7 +1783,7 @@ export function ProductBomEditor({
               className="h-8.5 rounded-lg border-sky-200 text-sky-700 bg-sky-50/10 hover:bg-sky-50 dark:border-sky-900/50 dark:text-sky-400 dark:hover:bg-sky-950/30 text-xs transition-all"
             >
               <Plus className="size-3.5 mr-1.5" />
-              {language === "th" ? "เพิ่มวัตถุดิบ" : "Add Material"}
+              {tr("st_add_raw_material", "เพิ่มวัตถุดิบ")}
             </Button>
             <Button
               type="button"
@@ -1866,7 +1794,7 @@ export function ProductBomEditor({
               className="h-8.5 rounded-lg border-violet-200 text-violet-700 bg-violet-50/10 hover:bg-violet-50 dark:border-violet-900/50 dark:text-violet-400 dark:hover:bg-violet-950/30 text-xs transition-all"
             >
               <Network className="size-3.5 mr-1.5" />
-              {language === "th" ? "เพิ่มสูตรย่อย" : "Add Sub-recipe"}
+              {tr("st_add_subrecipe", "เพิ่มสูตรย่อย")}
             </Button>
           </div>
         </CardContent>
@@ -1881,9 +1809,7 @@ export function ProductBomEditor({
           language={language}
           master="product"
           title={
-            language === "th"
-              ? "ค้นหาวัตถุดิบ / กึ่งสำเร็จรูป / สินค้าเกษตร"
-              : "Search Materials / Semi-Finished / Agricultural"
+            tr("st_search_raw_semi_agri", "ค้นหาวัตถุดิบ / กึ่งสำเร็จรูป / สินค้าเกษตร")
           }
           filters={{ materialtype: RECIPE_COMPONENT_MATERIALTYPE_QUERY }}
           onSelect={handleAddIngredient}
@@ -1899,7 +1825,7 @@ export function ProductBomEditor({
           language={language}
           master="product"
           title={
-            language === "th" ? "เลือกสินค้าสำเร็จรูป" : "Select Finished Good"
+            tr("st_select_finished_goods", "เลือกสินค้าสำเร็จรูป")
           }
           onSelect={(entry) => {
             setFinishedGoodBarcode(entry.code || "");
@@ -1921,13 +1847,11 @@ export function ProductBomEditor({
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Network className="size-5 text-violet-600" />
                   <span>
-                    {language === "th" ? "เลือกสูตรย่อย" : "Select Sub-recipe"}
+                    {tr("st_select_subrecipe", "เลือกสูตรย่อย")}
                   </span>
                 </CardTitle>
                 <CardDescription>
-                  {language === "th"
-                    ? "อ้างอิงสูตรผลิตอื่นเป็น subset ในสูตรนี้"
-                    : "Reference another recipe as a subset."}
+                  {tr("st_ref_other_formula_as_subset", "อ้างอิงสูตรผลิตอื่นเป็น subset ในสูตรนี้")}
                 </CardDescription>
               </div>
               <Button
@@ -1942,9 +1866,7 @@ export function ProductBomEditor({
             <CardContent className="p-3 overflow-y-auto space-y-2">
               {recipeOptions.length === 0 ? (
                 <div className="text-sm text-muted-foreground p-4 text-center">
-                  {language === "th"
-                    ? "ยังไม่มีสูตรอื่นให้เลือก"
-                    : "No other recipes are available."}
+                  {tr("st_no_other_formula_to_select", "ยังไม่มีสูตรอื่นให้เลือก")}
                 </div>
               ) : (
                 recipeOptions.map((recipe) => {
@@ -1971,7 +1893,7 @@ export function ProductBomEditor({
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">
                         {(recipe.bom || []).length}{" "}
-                        {language === "th" ? "รายการส่วนประกอบ" : "components"}
+                        {tr("st_component_list", "รายการส่วนประกอบ")}
                       </div>
                     </button>
                   );
@@ -1991,19 +1913,17 @@ export function ProductBomEditor({
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Network className="size-5 text-sky-600" />
                   <span>
-                    {language === "th"
-                      ? "โครงสร้างสูตรผลิตละเอียด (Exploded BOM)"
-                      : "Detailed BOM Structure"}
+                    {tr("st_exploded_bom_detail", "โครงสร้างสูตรผลิตละเอียด (Exploded BOM)")}
                   </span>
                 </CardTitle>
                 <CardDescription>
                   {productName}{" "}
                   {selectedRecord.guidfixed.startsWith("virtual-")
                     ? parentItemCode
-                      ? `(รหัสสูตร: ${parentItemCode})`
+                      ? tr("st_formula_code", "(รหัสสูตร: {0})").replace("{0}", String(parentItemCode))
                       : ""
                     : selectedRecord.itemcode || selectedRecord.barcode
-                      ? `(รหัสสูตร: ${selectedRecord.itemcode || selectedRecord.barcode})`
+                      ? tr("st_formula_code", "(รหัสสูตร: {0})").replace("{0}", String(selectedRecord.itemcode || selectedRecord.barcode))
                       : ""}
                 </CardDescription>
               </div>
@@ -2022,9 +1942,7 @@ export function ProductBomEditor({
               <div className="p-4 border-b border-border bg-emerald-500/5 flex flex-wrap items-end gap-4 shrink-0">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase">
-                    {language === "th"
-                      ? "จำนวนที่ต้องการขาย/ผลิต"
-                      : "Quantity to sell/produce"}
+                    {tr("st_qty_sell_produce", "จำนวนที่ต้องการขาย/ผลิต")}
                   </label>
                   <Input
                     type="number"
@@ -2039,9 +1957,7 @@ export function ProductBomEditor({
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-lg bg-card border border-border/40 text-sm">
                   <span className="text-muted-foreground">
-                    {language === "th"
-                      ? "ต้นทุนรวมสำหรับจำนวนนี้"
-                      : "Total cost for this quantity"}
+                    {tr("st_total_cost_this_qty", "ต้นทุนรวมสำหรับจำนวนนี้")}
                   </span>
                   <span className="font-bold text-emerald-600 font-mono">
                     ฿{(costPerOutputUnitEffective * saleQty).toFixed(2)}
@@ -2052,22 +1968,20 @@ export function ProductBomEditor({
               {/* Tree Table Header */}
               <div className="sticky top-0 z-10 flex items-center justify-between gap-4 py-2.5 px-4 bg-muted/80 backdrop-blur border-b border-border text-[11px] font-bold text-muted-foreground uppercase shrink-0">
                 <span>
-                  {language === "th"
-                    ? "โครงสร้างและรหัสอ้างอิง"
-                    : "Component Hierarchy & Reference"}
+                  {tr("st_structure_ref_code", "โครงสร้างและรหัสอ้างอิง")}
                 </span>
                 <div className="flex items-center gap-6 shrink-0 font-semibold text-right">
                   <span className="w-28">
-                    {language === "th" ? "จำนวนสุทธิ" : "Quantity"}
+                    {tr("st_net_quantity", "จำนวนสุทธิ")}
                   </span>
                   <span className="w-24">
-                    {language === "th" ? "ทุน/หน่วย" : "Cost/Unit"}
+                    {tr("st_cost_per_unit_2", "ทุน/หน่วย")}
                   </span>
                   <span className="w-24">
-                    {language === "th" ? "ราคารวม" : "Subtotal"}
+                    {tr("st_total_price", "ราคารวม")}
                   </span>
                   <span className="w-16">
-                    {language === "th" ? "สัดส่วน" : "Share"}
+                    {tr("st_proportion", "สัดส่วน")}
                   </span>
                 </div>
               </div>
@@ -2089,7 +2003,7 @@ export function ProductBomEditor({
               <div className="border-t border-border/60 bg-muted/15 p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0 text-sm">
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">
-                    {language === "th" ? "ราคาขายของสูตร" : "Selling Price"}
+                    {tr("st_formula_selling_price", "ราคาขายของสูตร")}
                   </span>
                   <span className="font-bold text-foreground font-mono">
                     ฿{salePrice.toFixed(2)}
@@ -2097,14 +2011,10 @@ export function ProductBomEditor({
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">
-                    {language === "th"
-                      ? "ต้นทุน Rollup รวม"
-                      : "Total Rollup Cost"}
+                    {tr("st_total_rollup_cost", "ต้นทุน Rollup รวม")}
                     {isStandardCostActive && (
                       <span className="block text-[9px] text-amber-600 font-semibold">
-                        {language === "th"
-                          ? "ราคาปัจจุบัน (อ้างอิง)"
-                          : "reference, not used for the total"}
+                        {tr("st_current_price_reference", "ราคาปัจจุบัน (อ้างอิง)")}
                       </span>
                     )}
                   </span>
@@ -2115,12 +2025,8 @@ export function ProductBomEditor({
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">
                     {isStandardCostActive
-                      ? language === "th"
-                        ? "ต้นทุนมาตรฐาน/หน่วย"
-                        : "Standard Cost/Unit"
-                      : language === "th"
-                        ? `ต้นทุน/หน่วยผลิต (÷${outputQty || 1})`
-                        : `Cost per Unit (÷${outputQty || 1})`}
+                      ? tr("st_standard_cost_per_unit", "ต้นทุนมาตรฐาน/หน่วย")
+                      : tr("st_cost_per_production_unit", "ต้นทุน/หน่วยผลิต (÷{0})").replace("{0}", String(outputQty || 1))}
                   </span>
                   <span className="font-bold text-indigo-600 font-mono">
                     ฿{costPerOutputUnitEffective.toFixed(2)}
@@ -2128,7 +2034,7 @@ export function ProductBomEditor({
                 </div>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/40">
                   <span className="text-muted-foreground">
-                    {language === "th" ? "อัตรากำไรขั้นต้น" : "Profit Margin"}
+                    {tr("st_gross_profit_margin", "อัตรากำไรขั้นต้น")}
                   </span>
                   <span
                     className={cn(
@@ -2157,9 +2063,7 @@ export function ProductBomEditor({
               <div>
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <span>
-                    {language === "th"
-                      ? "เลือกหน่วยวัตถุดิบ"
-                      : "Select Ingredient Unit"}
+                    {tr("st_select_raw_material_unit", "เลือกหน่วยวัตถุดิบ")}
                   </span>
                 </CardTitle>
                 <CardDescription>
@@ -2181,9 +2085,7 @@ export function ProductBomEditor({
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               <p className="text-xs text-muted-foreground">
-                {language === "th"
-                  ? "เนื่องจากวัตถุดิบมีหลายหน่วยนับ กรุณาเลือกหน่วยนับที่เหมาะสมเพื่อนำมาใช้ในสูตรผลิตนี้"
-                  : "This ingredient has multiple units. Please select the correct unit to use in this recipe."}
+                {tr("st_select_unit_multi_raw_material", "เนื่องจากวัตถุดิบมีหลายหน่วยนับ กรุณาเลือกหน่วยนับที่เหมาะสมเพื่อนำมาใช้ในสูตรผลิตนี้")}
               </p>
 
               <div className="flex flex-col gap-2">
@@ -2211,7 +2113,7 @@ export function ProductBomEditor({
                           {unitName} ({opt.itemunitcode})
                         </span>
                         <span className="text-[10px] font-mono text-muted-foreground">
-                          {language === "th" ? "บาร์โค้ดหน่วย: " : "Barcode: "}
+                          {tr("st_unit_barcode", "บาร์โค้ดหน่วย:")}{" "}
                           {opt.barcode}
                         </span>
                       </button>

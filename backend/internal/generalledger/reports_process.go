@@ -22,7 +22,6 @@ type ProcessBalance struct {
 type ProcessBalanceSnapshot struct {
 	Sequence   int64
 	FiscalYear string
-	Currency   string
 	AsOf       string
 	Scale      int
 	Rows       []ProcessBalance
@@ -59,7 +58,6 @@ func (p *Postgres) ProcessBalances(ctx context.Context, scope Scope, fiscalYear,
 		return result, err
 	}
 	result.FiscalYear = rc.fiscal.Code
-	result.Currency = rc.fiscal.Currency
 	result.Scale = rc.fiscal.Scale
 	result.AsOf = rc.query.To
 	rows, err := tx.QueryContext(ctx, `SELECT account_code,MAX(account_name),MAX(account_type),branch_code,department_code,project_code,SUM(debit-credit)::text

@@ -58,7 +58,7 @@ func (s *Store) masterDeleteReferences(ctx context.Context, scope Scope, master 
 }
 
 func (s *Store) yearMasterReferences(ctx context.Context, scope Scope, year FiscalYear, next *FiscalYear) error {
-	if next != nil && (next.Currency != year.Currency || next.Scale != year.Scale) {
+	if next != nil && next.Scale != year.Scale {
 		for _, kind := range []string{"budgets", "forecast"} {
 			f := scopeFilter(scope)
 			f["isdeleted"] = false

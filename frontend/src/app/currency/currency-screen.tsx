@@ -476,7 +476,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
   }, [externalLanguage, language]);
 
   const [baseCurrencyOverride, setBaseCurrencyOverride] = useState("");
-  const baseCurrency = (baseCurrencyOverride || workspace?.branch?.basecurrency || "").trim().toUpperCase();
+  const baseCurrency = (baseCurrencyOverride || (workspace?.branch as { basecurrency?: string } | undefined)?.basecurrency || "").trim().toUpperCase();
   const activeCount = currencies.filter((item) => !item.isdisabled).length;
   const disabledCount = currencies.length - activeCount;
   const visibleCurrencies = useMemo(() => {

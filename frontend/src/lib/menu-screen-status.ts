@@ -3,7 +3,7 @@ import { isGeneralLedgerRoute } from "./general-ledger";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
-  "/shortcuts", "/currency", "/line-oa", "/product",
+  "/shortcuts", "/line-oa", "/product",
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph",
 ] as const;

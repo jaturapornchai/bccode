@@ -30,7 +30,7 @@ import {
 import { MenuRouteIcon } from "./menu-icon";
 import { MenuPendingBadge } from "./menu-pending-badge";
 import type { FrequentMenuEntry } from "@/lib/menu-usage";
-import type { BackendLanguageDictionary } from "@/lib/backend-language";
+import { backendText, type BackendLanguageDictionary } from "@/lib/backend-language";
 import type { AuthSession } from "@/lib/workspace-models";
 import {
   addUserShortcut,
@@ -47,17 +47,16 @@ type CategoryFilter = "all" | MenuCategory;
 
 interface CategoryTab {
   id: CategoryFilter;
-  labelTh: string;
-  labelEn: string;
+  label: readonly [string, string];
 }
 
 const CATEGORY_TABS: CategoryTab[] = [
-  { id: "all", labelTh: "ทั้งหมด", labelEn: "All" },
-  { id: "transaction", labelTh: "งานประจำ (ซื้อ/ขาย/คลัง)", labelEn: "Operations" },
-  { id: "master", labelTh: "ข้อมูลหลัก (สินค้า/คู่ค้า)", labelEn: "Master Data" },
-  { id: "report", labelTh: "รายงาน", labelEn: "Reports" },
-  { id: "finance", labelTh: "การเงินและบัญชี", labelEn: "Finance & Accounting" },
-  { id: "settings", labelTh: "ตั้งค่าระบบ", labelEn: "Settings" },
+  { id: "all", label: ["all", "ทั้งหมด"] },
+  { id: "transaction", label: ["st_routine_tasks", "งานประจำ (ซื้อ/ขาย/คลัง)"] },
+  { id: "master", label: ["st_master_data", "ข้อมูลหลัก (สินค้า/คู่ค้า)"] },
+  { id: "report", label: ["menu_report", "รายงาน"] },
+  { id: "finance", label: ["st_finance_accounting", "การเงินและบัญชี"] },
+  { id: "settings", label: ["system_config", "ตั้งค่าระบบ"] },
 ];
 
 const SHORTCUTS_SPLIT_STORAGE_KEY = "bc_manage_shortcuts_split_left";
@@ -84,8 +83,7 @@ export function ManageShortcutsScreen({
   onOpenItem?: (item: MenuItem) => void;
   onBackToHome?: () => void;
 }) {
-  const isThai = language === "th";
-  const t = (th: string, en: string) => (isThai ? th : en);
+  const t = (key: string, th: string) => backendText(backendLanguage, key, th);
 
   const [splitLeftPercent, setSplitLeftPercent] = useState<number>(SHORTCUTS_SPLIT_DEFAULT_LEFT);
   const [resizingSplit, setResizingSplit] = useState(false);
@@ -286,15 +284,15 @@ export function ManageShortcutsScreen({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="truncate text-lg sm:text-xl font-bold text-foreground">
-                {t("จัดการทางลัดของฉัน", "Manage My Shortcuts")}
+                {t("st_manage_my_shortcuts", "จัดการทางลัดของฉัน")}
               </h1>
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {shortcuts.length} {t("รายการ", "items")}
+                {shortcuts.length} {t("import_productdetail.items", "รายการ")}
               </span>
             </div>
             <p className="truncate text-xs text-muted-foreground sm:text-sm">
               {t(
-                "เลือกเพิ่มหรือจัดลำดับเมนูที่คุณใช้งานบ่อย เพื่อเปิดทำงานได้รวดเร็วทันใจจากหน้าภาพรวม",
+                t("st_manage_shortcuts_desc", "เลือกเพิ่มหรือจัดลำดับเมนูที่คุณใช้งานบ่อย เพื่อเปิดทำงานได้รวดเร็วทันใจจากหน้าภาพรวม"),
                 "Customize and reorder your frequent menus for fast access from the overview dashboard",
               )}
             </p>
@@ -306,11 +304,11 @@ export function ManageShortcutsScreen({
           <button
             type="button"
             onClick={handleResetToDefault}
-            title={t("รีเซ็ตทางลัดทั้งหมดเป็นค่าเริ่มต้นของระบบ", "Reset all shortcuts to system recommendations")}
+            title={t("st_reset_all_shortcuts_to_default", "รีเซ็ตทางลัดทั้งหมดเป็นค่าเริ่มต้นของระบบ")}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
           >
             <RotateCcw className="size-3.5" aria-hidden="true" />
-            <span>{t("รีเซ็ตค่าเริ่มต้น", "Reset Default")}</span>
+            <span>{t("st_reset_default", "รีเซ็ตค่าเริ่มต้น")}</span>
           </button>
           {onBackToHome ? (
             <button
@@ -319,7 +317,7 @@ export function ManageShortcutsScreen({
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3.5 text-xs font-semibold text-primary shadow-xs transition-colors hover:bg-primary hover:text-primary-foreground active:scale-[0.98]"
             >
               <ArrowLeft className="size-4" aria-hidden="true" />
-              <span>{t("กลับหน้าภาพรวม", "Back to Overview")}</span>
+              <span>{t("st_back_to_overview", "กลับหน้าภาพรวม")}</span>
             </button>
           ) : null}
         </div>
@@ -330,17 +328,17 @@ export function ManageShortcutsScreen({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
           <div className="flex items-center gap-2 text-xs font-bold text-foreground">
             <Sparkles className="size-4 text-primary" aria-hidden="true" />
-            <span>{t("ตัวอย่างแถบทางลัดบนหน้าแรก (แสดงผลทันทีตามที่คุณปรับแต่ง)", "Live Preview on Dashboard")}</span>
+            <span>{t("st_shortcut_bar_preview_homepage", "ตัวอย่างแถบทางลัดบนหน้าแรก (แสดงผลทันทีตามที่คุณปรับแต่ง)")}</span>
           </div>
           <span className="text-[11px] text-muted-foreground">
-            {t("กดปุ่มลูกศรที่กล่องขวาเพื่อจัดเรียงตำแหน่ง", "Use arrows in the right panel to reorder")}
+            {t("st_click_arrow_buttons_to_arrange", "กดปุ่มลูกศรที่กล่องขวาเพื่อจัดเรียงตำแหน่ง")}
           </span>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {shortcuts.length === 0 ? (
             <p className="py-2 text-xs text-muted-foreground">
-              {t("ยังไม่มีทางลัด — ค้นหาและกด + เพิ่มจากคลังเมนูด้านล่างได้เลยครับ", "No shortcuts yet — search and add from the catalog below.")}
+              {t("st_no_shortcuts_search_add_below", "ยังไม่มีทางลัด — ค้นหาและกด + เพิ่มจากคลังเมนูด้านล่างได้เลยครับ")}
             </p>
           ) : (
             shortcuts.map((item) => (
@@ -348,7 +346,7 @@ export function ManageShortcutsScreen({
                 key={item.id}
                 type="button"
                 onClick={() => onOpenItem?.(item)}
-                title={t(`คลิกเพื่อเปิดหน้าจอ: ${menuText(item.label, language, backendLanguage)}`, `Click to open: ${menuText(item.label, language, backendLanguage)}`)}
+                title={t("st_click_to_open_screen", "คลิกเพื่อเปิดหน้าจอ: {0}").replace("{0}", String(menuText(item.label, language, backendLanguage)))}
                 className="group inline-flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/[0.04] hover:shadow-xs active:translate-y-0"
               >
                 <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -376,10 +374,10 @@ export function ManageShortcutsScreen({
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
                 <Layers className="size-4.5 text-primary" aria-hidden="true" />
-                {t("คลังเมนูทั้งหมดที่สามารถเพิ่มได้", "All Available Menus Catalog")}
+                {t("st_all_menus_available_to_add", "คลังเมนูทั้งหมดที่สามารถเพิ่มได้")}
               </h2>
               <span className="text-xs text-muted-foreground font-medium">
-                {t(`แสดง ${filteredItems.length} จาก ${allowedMenuIds.size} เมนู`, `Showing ${filteredItems.length} of ${allowedMenuIds.size}`)}
+                {t("st_showing_x_of_y_menus", "แสดง {0} จาก {1} เมนู").replace("{0}", String(filteredItems.length)).replace("{1}", String(allowedMenuIds.size))}
               </span>
             </div>
 
@@ -391,7 +389,7 @@ export function ManageShortcutsScreen({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t(
-                  "พิมพ์ค้นหาชื่อเมนู, รหัสจอ หรือประเภทงาน... (เช่น ขาย, ซื้อ, ใบสั่งซื้อ, สินค้า, บาร์โค้ด)",
+                  t("st_search_menu_placeholder", "พิมพ์ค้นหาชื่อเมนู, รหัสจอ หรือประเภทงาน... (เช่น ขาย, ซื้อ, ใบสั่งซื้อ, สินค้า, บาร์โค้ด)"),
                   "Search menus by title, route, or category... (e.g. Sale, Purchase, Product, Barcode)",
                 )}
                 className="h-10 w-full rounded-xl border border-border bg-background !pl-10 !pr-10 text-sm font-medium text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 [&::-webkit-search-cancel-button]:appearance-none"
@@ -400,7 +398,7 @@ export function ManageShortcutsScreen({
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  aria-label={t("ล้างการค้นหา", "Clear search")}
+                  aria-label={t("clear_search", "ล้างการค้นหา")}
                   className="absolute right-2.5 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-3.5" aria-hidden="true" />
@@ -425,7 +423,7 @@ export function ManageShortcutsScreen({
                         : "border border-border bg-muted/30 text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <span>{t(cat.labelTh, cat.labelEn)}</span>
+                    <span>{t(...cat.label)}</span>
                     <span
                       className={cn(
                         "grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 text-[10px] font-bold",
@@ -448,12 +446,12 @@ export function ManageShortcutsScreen({
                   onChange={(e) => setOnlyUnadded(e.target.checked)}
                   className="size-3.5 rounded border-border text-primary focus:ring-primary/20"
                 />
-                <span className="font-medium">{t("แสดงเฉพาะเมนูที่ยังไม่ได้เพิ่มเข้าทางลัด", "Show only unadded menus")}</span>
+                <span className="font-medium">{t("st_show_only_not_added_shortcuts", "แสดงเฉพาะเมนูที่ยังไม่ได้เพิ่มเข้าทางลัด")}</span>
               </label>
 
               <span className="text-[11px] text-muted-foreground">
                 {t(
-                  `อยู่ในทางลัดแล้ว ${activeShortcutIds.length} เมนู`,
+                  t("st_already_in_shortcuts_menu", "อยู่ในทางลัดแล้ว {0} เมนู").replace("{0}", String(activeShortcutIds.length)),
                   `Already in shortcuts: ${activeShortcutIds.length}`,
                 )}
               </span>
@@ -464,9 +462,9 @@ export function ManageShortcutsScreen({
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
               <Search className="size-8 stroke-[1.5] text-muted-foreground/50 mb-2" aria-hidden="true" />
-              <p className="text-sm font-medium">{t("ไม่พบเมนูที่ตรงกับเงื่อนไขการค้นหา", "No matching menus found")}</p>
+              <p className="text-sm font-medium">{t("st_no_menus_match_search_criteria", "ไม่พบเมนูที่ตรงกับเงื่อนไขการค้นหา")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {t("ลองเปลี่ยนคำค้นหา หรือคลิกเลือกหมวดหมู่ 'ทั้งหมด'", "Try adjusting your search query or select 'All' categories")}
+                {t("st_try_change_search_or_all_cat", "ลองเปลี่ยนคำค้นหา หรือคลิกเลือกหมวดหมู่ 'ทั้งหมด'")}
               </p>
               <button
                 type="button"
@@ -477,7 +475,7 @@ export function ManageShortcutsScreen({
                 }}
                 className="mt-3 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-muted"
               >
-                {t("ล้างตัวกรองทั้งหมด", "Reset all filters")}
+                {t("gl_clear_all_filters", "ล้างตัวกรองทั้งหมด")}
               </button>
             </div>
           ) : (
@@ -526,16 +524,16 @@ export function ManageShortcutsScreen({
                         <div className="flex items-center gap-1.5">
                           <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                             <Check className="size-3" aria-hidden="true" />
-                            {t("เพิ่มแล้ว", "Added")}
+                            {t("added", "เพิ่มแล้ว")}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleRemoveShortcut(item.id)}
-                            title={t("ลบออกจากทางลัด", "Remove from shortcuts")}
+                            title={t("st_remove_from_shortcuts", "ลบออกจากทางลัด")}
                             className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-[11px] font-medium text-destructive transition-colors hover:border-destructive/40 hover:bg-destructive/10"
                           >
                             <Trash2 className="size-3" aria-hidden="true" />
-                            <span>{t("ลบ", "Remove")}</span>
+                            <span>{t("delete", "ลบ")}</span>
                           </button>
                         </div>
                       ) : (
@@ -545,7 +543,7 @@ export function ManageShortcutsScreen({
                           className="inline-flex h-7.5 items-center gap-1 rounded-lg bg-primary/10 px-2.5 text-xs font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground active:scale-[0.97]"
                         >
                           <Plus className="size-3.5" aria-hidden="true" />
-                          <span>{t("เพิ่มเป็นทางลัด", "Add")}</span>
+                          <span>{t("st_add_as_shortcut", "เพิ่มเป็นทางลัด")}</span>
                         </button>
                       )}
                     </div>
@@ -561,9 +559,7 @@ export function ManageShortcutsScreen({
           min={SHORTCUTS_SPLIT_MIN_LEFT}
           max={SHORTCUTS_SPLIT_MAX_LEFT}
           label={
-            language === "th"
-              ? "ปรับขนาดคลังเมนูและทางลัด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-              : "Resize catalog and shortcuts panes (drag to resize, double-click to reset)"
+            t("st_resize_menu_shortcuts_panel", "ปรับขนาดคลังเมนูและทางลัด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
           }
           isResizing={resizingSplit}
           onPointerDown={startSplitResize}
@@ -578,14 +574,14 @@ export function ManageShortcutsScreen({
             <div>
               <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
                 <Star className="size-4 text-primary fill-primary/30" aria-hidden="true" />
-                {t("ทางลัดปัจจุบันของคุณ", "Your Shortcuts")}
+                {t("st_your_current_shortcuts", "ทางลัดปัจจุบันของคุณ")}
               </h2>
               <p className="text-[11px] text-muted-foreground">
-                {t("จัดลำดับตามความสะดวกด้วยปุ่ม ▲ / ▼", "Reorder with ▲ / ▼ buttons")}
+                {t("st_sort_by_arrows", "จัดลำดับตามความสะดวกด้วยปุ่ม ▲ / ▼")}
               </p>
             </div>
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
-              {shortcuts.length} {t("รายการ", "items")}
+              {shortcuts.length} {t("import_productdetail.items", "รายการ")}
             </span>
           </div>
 
@@ -593,7 +589,7 @@ export function ManageShortcutsScreen({
           <div className="flex-1 space-y-1.5 overflow-y-auto pr-0.5">
             {shortcuts.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-                {t("ยังไม่มีรายการทางลัด — เลือกกดปุ่ม '+ เพิ่มเป็นทางลัด' จากคลังด้านซ้ายได้เลยครับ", "No shortcuts yet — click '+ Add' from the left catalog.")}
+                {t("st_no_shortcuts_add_from_left", "ยังไม่มีรายการทางลัด — เลือกกดปุ่ม '+ เพิ่มเป็นทางลัด' จากคลังด้านซ้ายได้เลยครับ")}
               </div>
             ) : (
               shortcuts.map((item, index) => {
@@ -630,8 +626,8 @@ export function ManageShortcutsScreen({
                         type="button"
                         disabled={isFirst}
                         onClick={() => handleMoveShortcut(index, index - 1)}
-                        title={t("เลื่อนขึ้น", "Move up")}
-                        aria-label={t("เลื่อนขึ้น", "Move up")}
+                        title={t("move_up", "เลื่อนขึ้น")}
+                        aria-label={t("move_up", "เลื่อนขึ้น")}
                         className="grid size-7.5 place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-25"
                       >
                         <ArrowUp className="size-3.5" aria-hidden="true" />
@@ -640,8 +636,8 @@ export function ManageShortcutsScreen({
                         type="button"
                         disabled={isLast}
                         onClick={() => handleMoveShortcut(index, index + 1)}
-                        title={t("เลื่อนลง", "Move down")}
-                        aria-label={t("เลื่อนลง", "Move down")}
+                        title={t("move_down", "เลื่อนลง")}
+                        aria-label={t("move_down", "เลื่อนลง")}
                         className="grid size-7.5 place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-25"
                       >
                         <ArrowDown className="size-3.5" aria-hidden="true" />
@@ -649,8 +645,8 @@ export function ManageShortcutsScreen({
                       <button
                         type="button"
                         onClick={() => handleRemoveShortcut(item.id)}
-                        title={t("ลบออกจากทางลัด", "Remove from shortcuts")}
-                        aria-label={t("ลบออกจากทางลัด", "Remove from shortcuts")}
+                        title={t("st_remove_from_shortcuts", "ลบออกจากทางลัด")}
+                        aria-label={t("st_remove_from_shortcuts", "ลบออกจากทางลัด")}
                         className="grid size-7.5 place-items-center rounded-lg border border-border text-destructive transition-colors hover:border-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="size-3.5" aria-hidden="true" />
@@ -666,7 +662,7 @@ export function ManageShortcutsScreen({
           <div className="border-t border-border/70 pt-2.5 flex flex-col gap-2">
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
-              <span>{t("บันทึกการเปลี่ยนแปลงอัตโนมัติแล้ว", "Changes auto-saved to device")}</span>
+              <span>{t("st_autosaved_changes", "บันทึกการเปลี่ยนแปลงอัตโนมัติแล้ว")}</span>
             </div>
 
             {onBackToHome ? (
@@ -676,7 +672,7 @@ export function ManageShortcutsScreen({
                 className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-xs transition-opacity hover:opacity-90 active:scale-[0.98]"
               >
                 <ArrowLeft className="size-4" aria-hidden="true" />
-                <span>{t("เสร็จสิ้นและกลับหน้าภาพรวม", "Done and Back to Overview")}</span>
+                <span>{t("st_finish_return_overview", "เสร็จสิ้นและกลับหน้าภาพรวม")}</span>
               </button>
             ) : null}
           </div>

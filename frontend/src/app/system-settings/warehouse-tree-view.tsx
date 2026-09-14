@@ -1,5 +1,6 @@
 "use client";
 
+import { useBackendText } from "@/components/backend-text-provider";
 import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import {
@@ -125,6 +126,7 @@ const emptyWarehouseForm = (languages: string[]): WarehouseFormFields => {
 };
 
 export function WarehouseTreeView({ auth, workspace, language, onRefresh }: WarehouseTreeViewProps) {
+  const tr = useBackendText();
   const { confirm, confirmationDialog } = useConfirmDialog();
 
   const editorLanguages = useMemo(() => {
@@ -158,19 +160,19 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
       });
       const json = (await res.json()) as ApiResponse;
       if (!res.ok || json.success === false) {
-        throw new Error(json.message || "โหลดโครงสร้างคลังสินค้าไม่สำเร็จ");
+        throw new Error(json.message || tr("st_load_warehouse_structure_failed", "โหลดโครงสร้างคลังสินค้าไม่สำเร็จ"));
       }
       const data = Array.isArray(json.data) ? (json.data as WarehouseRecord[]) : [];
       setTree(data);
       return data;
     } catch (err) {
-      setLoadError(errorMessage(err, "โหลดโครงสร้างคลังสินค้าไม่สำเร็จ"));
+      setLoadError(errorMessage(err, tr("st_load_warehouse_structure_failed", "โหลดโครงสร้างคลังสินค้าไม่สำเร็จ")));
       setTree([]);
       return [];
     } finally {
       setLoading(false);
     }
-  }, [auth, mainApiUrl]);
+  }, [auth, mainApiUrl, tr]);
 
   useEffect(() => {
     void loadTree();
@@ -333,7 +335,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
 
     const code = warehouseForm.code.trim();
     if (!code) {
-      setWarehouseFormError(language === "th" ? "กรุณากรอกรหัสคลังสินค้า" : "Warehouse code is required");
+      setWarehouseFormError(tr("st_please_enter_warehouse_code", "กรุณากรอกรหัสคลังสินค้า"));
       return;
     }
     const namesArray = editorLanguages
@@ -341,7 +343,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
       .filter((item) => item.name !== "");
 
     if (namesArray.length === 0) {
-      setWarehouseFormError(language === "th" ? "กรุณากรอกชื่อคลังอย่างน้อยหนึ่งภาษา" : "Please fill in at least one language name");
+      setWarehouseFormError(tr("st_enter_warehouse_name_one_lang", "กรุณากรอกชื่อคลังอย่างน้อยหนึ่งภาษา"));
       return;
     }
 
@@ -384,12 +386,10 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
     const w = tree.find((x) => x.guidfixed === warehouseId);
     if (!w) return;
     const confirmed = await confirm({
-      title: language === "th" ? "ยืนยันการลบคลังสินค้า" : "Confirm Delete Warehouse",
+      title: tr("st_confirm_delete_warehouse", "ยืนยันการลบคลังสินค้า"),
       description:
-        language === "th"
-          ? `ต้องการลบคลังสินค้า "${w.code} - ${displayName(w.names, language)}" ใช่หรือไม่?`
-          : `Delete warehouse "${w.code} - ${displayName(w.names, language)}"?`,
-      confirmLabel: language === "th" ? "ลบ" : "Delete",
+        tr("st_confirm_delete_warehouse_2", "ต้องการลบคลังสินค้า \"{0} - {1}\" ใช่หรือไม่?").replace("{0}", String(w.code)).replace("{1}", String(displayName(w.names, language))),
+      confirmLabel: tr("delete", "ลบ"),
       tone: "danger",
     });
     if (!confirmed) return;
@@ -510,15 +510,13 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
       const code = r.code.trim();
       if (!code) {
         setTableError(
-          language === "th" ? `แถวที่ ${i + 1}: กรุณากรอกรหัสที่เก็บสินค้า` : `Row ${i + 1}: Code is required`
+          tr("st_row_enter_storage_loc_code", "แถวที่ {0}: กรุณากรอกรหัสที่เก็บสินค้า").replace("{0}", String(i + 1))
         );
         return;
       }
       if (codes.has(code.toLowerCase())) {
         setTableError(
-          language === "th"
-            ? `รหัสที่เก็บสินค้าซ้ำกันในตาราง: "${code}"`
-            : `Duplicate location code: "${code}"`
+          tr("st_duplicate_storage_loc_code", "รหัสที่เก็บสินค้าซ้ำกันในตาราง: \"{0}\"").replace("{0}", String(code))
         );
         return;
       }
@@ -527,9 +525,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
       const namesArray = namesToNameX(r.names);
       if (namesArray.length === 0) {
         setTableError(
-          language === "th"
-            ? `แถวที่ ${i + 1} (${code}): กรุณากรอกชื่อที่เก็บสินค้า`
-            : `Row ${i + 1} (${code}): Name is required`
+          tr("st_row_enter_storage_loc_name", "แถวที่ {0} ({1}): กรุณากรอกชื่อที่เก็บสินค้า").replace("{0}", String(i + 1)).replace("{1}", String(code))
         );
         return;
       }
@@ -574,7 +570,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
         });
         const json = (await res.json()) as ApiResponse;
         if (!res.ok || json.success === false) {
-          throw new Error(json.message || `ไม่สามารถสร้างที่เก็บ "${r.code}"`);
+          throw new Error(json.message || tr("st_cannot_create_storage", "ไม่สามารถสร้างที่เก็บ \"{0}\"").replace("{0}", String(r.code)));
         }
         setLocationRows((prev) =>
           prev.map((row) =>
@@ -603,18 +599,18 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
         });
         const json = (await res.json()) as ApiResponse;
         if (!res.ok || json.success === false) {
-          throw new Error(json.message || `ไม่สามารถแก้ไขที่เก็บ "${r.code}"`);
+          throw new Error(json.message || tr("st_cannot_edit_storage", "ไม่สามารถแก้ไขที่เก็บ \"{0}\"").replace("{0}", String(r.code)));
         }
         setLocationRows((prev) => prev.map((row) => (row.tempId === r.tempId ? { ...row, isModified: false } : row)));
       }
 
       await loadTree();
       setDeletedLocationGuids([]);
-      setSuccessMessage(language === "th" ? "บันทึกที่เก็บสินค้าทั้งหมดเรียบร้อยแล้ว" : "Saved successfully");
+      setSuccessMessage(tr("st_all_storage_loc_saved", "บันทึกที่เก็บสินค้าทั้งหมดเรียบร้อยแล้ว"));
       setTimeout(() => setSuccessMessage(""), 3000);
       if (onRefresh) onRefresh();
     } catch (err) {
-      setTableError(errorMessage(err, "เกิดข้อผิดพลาดในการบันทึกที่เก็บสินค้า"));
+      setTableError(errorMessage(err, tr("st_error_saving_storage", "เกิดข้อผิดพลาดในการบันทึกที่เก็บสินค้า")));
     } finally {
       setIsSavingLocations(false);
     }
@@ -667,7 +663,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
         <div className="flex items-center justify-between border-b border-border/40 p-2.5 bg-secondary/5 shrink-0">
           <div className="flex items-center gap-1.5 font-bold text-xs text-foreground uppercase tracking-wider">
             <Warehouse className="size-4 text-primary" />
-            <span>{language === "th" ? "คลังสินค้า" : "Warehouses"}</span>
+            <span>{tr("form_design_cat_inventory", "คลังสินค้า")}</span>
             <span className="rounded-full bg-primary/10 px-1.5 py-0.2 text-[10px] font-bold text-primary">
               {tree.length}
             </span>
@@ -680,7 +676,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
             disabled={loading}
           >
             <Plus className="size-3.5" />
-            {language === "th" ? "เพิ่มคลังสินค้า" : "Add Warehouse"}
+            {tr("st_add_warehouse", "เพิ่มคลังสินค้า")}
           </Button>
         </div>
 
@@ -690,7 +686,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
               <Input
                 value={warehouseSearchQuery}
                 onChange={(e) => setWarehouseSearchQuery(e.target.value)}
-                placeholder={language === "th" ? "ค้นหาคลัง..." : "Filter warehouse..."}
+                placeholder={tr("st_search_warehouse", "ค้นหาคลัง...")}
                 className="h-7 !pl-8 pr-2 text-xs rounded-md"
               />
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60">
@@ -704,20 +700,20 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
           {loading ? (
             <div className="flex h-full min-h-24 items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
               <Loader2 className="animate-spin size-5 text-primary" />
-              {language === "th" ? "กำลังโหลด..." : "Loading..."}
+              {tr("st_loading", "กำลังโหลด...")}
             </div>
           ) : loadError ? (
             <div className="flex h-full min-h-24 flex-col items-center justify-center gap-2 p-4 text-center text-sm">
               <AlertTriangle className="size-6 text-destructive" />
               <span className="font-medium text-destructive">{loadError}</span>
               <Button type="button" size="sm" variant="outline" onClick={() => void loadTree()}>
-                {language === "th" ? "ลองใหม่" : "Retry"}
+                {tr("export_report_retry", "ลองใหม่")}
               </Button>
             </div>
           ) : filteredWarehouses.length === 0 ? (
             <div className="flex h-full min-h-24 flex-col items-center justify-center gap-1.5 p-4 text-center text-xs text-muted-foreground">
               <span className="font-medium">
-                {language === "th" ? "ไม่พบข้อมูลคลังสินค้า" : "No warehouses found"}
+                {tr("st_no_warehouse_data_found", "ไม่พบข้อมูลคลังสินค้า")}
               </span>
             </div>
           ) : (
@@ -737,7 +733,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                     )}
                     onClick={async () => {
                       if (hasUnsavedChanges) {
-                        const proceed = await confirm({ title: "เตือน", description: "มีข้อมูลที่ยังไม่ได้บันทึก ต้องการเปลี่ยนคลังหรือไม่?" });
+                        const proceed = await confirm({ title: tr("st_warning", "เตือน"), description: tr("st_unsaved_data_change_warehouse", "มีข้อมูลที่ยังไม่ได้บันทึก ต้องการเปลี่ยนคลังหรือไม่?") });
                         if (!proceed) {
                           return;
                         }
@@ -760,7 +756,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                       </div>
                       <div className="flex items-center gap-2 pl-4 text-[11px] text-muted-foreground">
                         <span className="shrink-0 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.2 font-medium text-primary">
-                          {language === "th" ? `ลูก ${locCount}` : `${locCount} locations`}
+                          {tr("st_subcategory_placeholder", "ลูก {0}").replace("{0}", String(locCount))}
                         </span>
                       </div>
                     </div>
@@ -771,7 +767,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                         variant="ghost"
                         size="icon"
                         className="size-7 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                        title={language === "th" ? "เพิ่มที่เก็บสินค้า" : "Add Location"}
+                        title={tr("st_add_storage_location", "เพิ่มที่เก็บสินค้า")}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedWarehouseId(warehouseId);
@@ -785,7 +781,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                         variant="ghost"
                         size="icon"
                         className="size-7 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                        title={language === "th" ? "แก้ไขคลังสินค้า" : "Edit Warehouse"}
+                        title={tr("st_edit_warehouse", "แก้ไขคลังสินค้า")}
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditWarehouse(warehouseId);
@@ -798,7 +794,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                         variant="ghost"
                         size="icon"
                         className="size-7 rounded-full text-destructive hover:bg-destructive/10"
-                        title={language === "th" ? "ลบคลังสินค้า" : "Delete Warehouse"}
+                        title={tr("st_delete_warehouse", "ลบคลังสินค้า")}
                         onClick={(e) => handleDeleteWarehouse(warehouseId, e)}
                       >
                         <Trash2 className="size-3.5" />
@@ -818,9 +814,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
         min={WAREHOUSE_SIDEBAR_MIN_WIDTH}
         max={WAREHOUSE_SIDEBAR_MAX_WIDTH}
         label={
-          language === "th"
-            ? "ปรับขนาดความกว้างรายชื่อคลัง (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-            : "Resize warehouse list (drag to resize, double-click to reset)"
+          tr("st_adjust_warehouse_list_width", "ปรับขนาดความกว้างรายชื่อคลัง (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
         }
         isResizing={isResizingSidebar}
         onPointerDown={handleSidebarResizeStart}
@@ -840,17 +834,17 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 <h2 className="text-xs font-bold text-foreground truncate">
                   {activeWarehouse
                     ? `${activeWarehouse.code} - ${displayName(activeWarehouse.names, language)}`
-                    : language === "th" ? "ยังไม่ได้เลือกคลังสินค้า" : "No warehouse selected"}
+                    : tr("st_no_warehouse_selected", "ยังไม่ได้เลือกคลังสินค้า")}
                 </h2>
                 {activeWarehouse && (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                      {language === "th" ? `${locationRows.length} ที่เก็บสินค้า` : `${locationRows.length} locations`}
+                      {tr("st_storage_location_count", "{0} ที่เก็บสินค้า").replace("{0}", String(locationRows.length))}
                     </span>
                     {hasUnsavedChanges && (
                       <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1">
                         <AlertTriangle className="size-3" />
-                        {language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes"}
+                        {tr("st_not_saved_yet", "ยังไม่ได้บันทึก")}
                       </span>
                     )}
                   </div>
@@ -872,7 +866,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                   disabled={isSavingLocations}
                 >
                   <RotateCcw className="size-3.5" />
-                  {language === "th" ? "คืนค่าเดิม" : "Reset"}
+                  {tr("st_reset_to_default", "คืนค่าเดิม")}
                 </Button>
               )}
               <Button
@@ -880,12 +874,12 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 variant="outline"
                 size="sm"
                 className="h-8 gap-1 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/5"
-                title={language === "th" ? "เพิ่มที่เก็บสินค้า" : "Add Location"}
+                title={tr("st_add_storage_location", "เพิ่มที่เก็บสินค้า")}
                 onClick={handleAddRow}
                 disabled={isSavingLocations}
               >
                 <Plus className="size-3.5" />
-                {language === "th" ? "เพิ่มแถว" : "Add Row"}
+                {tr("bill_add_row", "เพิ่มแถว")}
               </Button>
               <Button
                 type="button"
@@ -895,7 +889,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 disabled={isSavingLocations || !hasUnsavedChanges}
               >
                 {isSavingLocations ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-                {language === "th" ? "บันทึกทั้งหมด" : "Save All"}
+                {tr("st_save_all", "บันทึกทั้งหมด")}
               </Button>
             </div>
           )}
@@ -909,9 +903,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 value={locationSearchQuery}
                 onChange={(e) => setLocationSearchQuery(e.target.value)}
                 placeholder={
-                  language === "th"
-                    ? "ค้นหาในตารางที่เก็บสินค้า..."
-                    : "Search location code or name..."
+                  tr("st_search_storage_location_table", "ค้นหาในตารางที่เก็บสินค้า...")
                 }
                 className="h-8 !pl-10 pr-8 text-xs rounded-lg"
               />
@@ -950,13 +942,13 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
           {!activeWarehouse ? (
             <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
               <Warehouse className="size-8 text-muted-foreground/40 animate-pulse" />
-              <span>{language === "th" ? "กรุณาเลือกหรือสร้างคลังสินค้าทางด้านซ้าย" : "Please select or create a warehouse on the left"}</span>
+              <span>{tr("st_select_or_create_warehouse_left", "กรุณาเลือกหรือสร้างคลังสินค้าทางด้านซ้าย")}</span>
             </div>
           ) : locationRows.length === 0 ? (
             <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 p-6 text-center text-xs text-muted-foreground">
               <Boxes className="size-8 text-muted-foreground/40" />
               <span className="font-semibold text-foreground">
-                {language === "th" ? "ยังไม่มีที่เก็บสินค้าในคลังนี้" : "No storage locations yet"}
+                {tr("st_no_storage_locations_in_warehouse", "ยังไม่มีที่เก็บสินค้าในคลังนี้")}
               </span>
               <Button
                 type="button"
@@ -965,7 +957,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 className="gap-1.5 h-8 text-xs font-semibold bg-primary text-primary-foreground"
               >
                 <Plus className="size-3.5" />
-                {language === "th" ? "เพิ่มแถวแรก" : "Add First Row"}
+                {tr("st_add_first_row", "เพิ่มแถวแรก")}
               </Button>
             </div>
           ) : (
@@ -975,18 +967,18 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                   <tr className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                     <th className="py-2.5 px-3 w-14 text-center shrink-0">#</th>
                     <th className="py-2.5 px-3 w-48 shrink-0">
-                      {language === "th" ? "รหัสที่เก็บสินค้า" : "Location Code"} <span className="text-destructive">*</span>
+                      {tr("location_code", "รหัสที่เก็บสินค้า")} <span className="text-destructive">*</span>
                     </th>
                     <th className="py-2.5 px-3 min-w-[200px]">
-                      {language === "th" ? "ชื่อที่เก็บสินค้า (ไทย)" : "Location Name (TH)"} <span className="text-destructive">*</span>
+                      {tr("st_storage_name_th", "ชื่อที่เก็บสินค้า (ไทย)")} <span className="text-destructive">*</span>
                     </th>
                     {editorLanguages.includes("en") && (
                       <th className="py-2.5 px-3 min-w-[200px]">
-                        {language === "th" ? "ชื่อที่เก็บสินค้า (EN)" : "Location Name (EN)"}
+                        {tr("st_storage_name_en", "ชื่อที่เก็บสินค้า (EN)")}
                       </th>
                     )}
                     <th className="py-2.5 px-3 w-24 text-center shrink-0">
-                      {language === "th" ? "จัดการ" : "Action"}
+                      {tr("manage", "จัดการ")}
                     </th>
                   </tr>
                 </thead>
@@ -1035,7 +1027,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                           <Input
                             value={row.names.th || ""}
                             onChange={(e) => handleUpdateRowName(row.tempId, "th", e.target.value)}
-                            placeholder="ชื่อที่เก็บสินค้า (ไทย)"
+                            placeholder={tr("st_storage_name_th", "ชื่อที่เก็บสินค้า (ไทย)")}
                             className="h-8 text-xs rounded-md border-border/70 bg-background/80 hover:border-border hover:bg-background focus:border-primary focus:bg-background"
                           />
                         </td>
@@ -1062,7 +1054,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                               variant="ghost"
                               size="icon"
                               className="size-7 rounded-full text-destructive hover:bg-destructive/10"
-                              title={language === "th" ? "ลบที่เก็บสินค้า" : "Delete Location"}
+                              title={tr("st_delete_storage_location", "ลบที่เก็บสินค้า")}
                               onClick={() => handleDeleteRow(row.tempId)}
                             >
                               <Trash2 className="size-3.5" />
@@ -1082,13 +1074,13 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
             <div className="shrink-0 border-t border-border/40 bg-secondary/5 px-3 py-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">
-                  {language === "th" ? `รวม ${locationRows.length} รายการ` : `Total: ${locationRows.length}`}
+                  {tr("st_total_items", "รวม {0} รายการ").replace("{0}", String(locationRows.length))}
                 </span>
                 {hasUnsavedChanges && (
                   <span className="text-amber-600 dark:text-amber-400 font-medium">
-                    ({locationRows.filter((r) => r.isNew).length > 0 && `${locationRows.filter((r) => r.isNew).length} ${language === "th" ? "แถวใหม่" : "new"}`}
+                    ({locationRows.filter((r) => r.isNew).length > 0 && `${locationRows.filter((r) => r.isNew).length} ${tr("st_new_row", "แถวใหม่")}`}
                     {locationRows.filter((r) => r.isNew).length > 0 && locationRows.filter((r) => r.isModified && !r.isNew).length > 0 && ", "}
-                    {locationRows.filter((r) => r.isModified && !r.isNew).length > 0 && `${locationRows.filter((r) => r.isModified && !r.isNew).length} ${language === "th" ? "แถวแก้ไข" : "modified"}`})
+                    {locationRows.filter((r) => r.isModified && !r.isNew).length > 0 && `${locationRows.filter((r) => r.isModified && !r.isNew).length} ${tr("st_edit_row", "แถวแก้ไข")}`})
                   </span>
                 )}
               </div>
@@ -1099,12 +1091,12 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                   variant="outline"
                   size="sm"
                   className="h-8 gap-1 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/5"
-                  title={language === "th" ? "เพิ่มที่เก็บสินค้า" : "Add Location"}
+                  title={tr("st_add_storage_location", "เพิ่มที่เก็บสินค้า")}
                   onClick={handleAddRow}
                   disabled={isSavingLocations}
                 >
                   <Plus className="size-3.5" />
-                  {language === "th" ? "เพิ่มแถว" : "Add Row"}
+                  {tr("bill_add_row", "เพิ่มแถว")}
                 </Button>
 
                 {hasUnsavedChanges && (
@@ -1116,7 +1108,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                     disabled={isSavingLocations}
                   >
                     {isSavingLocations ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-                    {language === "th" ? "บันทึกทั้งหมด" : "Save All"}
+                    {tr("st_save_all", "บันทึกทั้งหมด")}
                   </Button>
                 )}
               </div>
@@ -1133,8 +1125,8 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
               <div className="text-sm font-bold flex items-center gap-1.5">
                 <Warehouse className="size-4 text-primary" />
                 {editingWarehouseId
-                  ? language === "th" ? "แก้ไขคลังสินค้า" : "Edit Warehouse"
-                  : language === "th" ? "เพิ่มคลังสินค้า" : "Add Warehouse"}
+                  ? tr("st_edit_warehouse", "แก้ไขคลังสินค้า")
+                  : tr("st_add_warehouse", "เพิ่มคลังสินค้า")}
               </div>
               <Button
                 type="button"
@@ -1142,7 +1134,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 size="icon"
                 className="size-7"
                 onClick={() => setIsWarehouseDialogOpen(false)}
-                aria-label={language === "th" ? "ปิด" : "Close"}
+                aria-label={tr("bill_close", "ปิด")}
               >
                 <X className="size-4" />
               </Button>
@@ -1151,7 +1143,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
             <form id="warehouse-modal-form" onSubmit={handleSaveWarehouse} className="flex flex-col gap-3 mt-3">
               <div className="flex flex-col gap-1">
                 <label className="text-[11px] font-bold text-muted-foreground uppercase">
-                  {language === "th" ? "รหัสคลังสินค้า" : "Warehouse Code"} <span className="text-destructive">*</span>
+                  {tr("st_warehouse_code", "รหัสคลังสินค้า")} <span className="text-destructive">*</span>
                 </label>
                 <Input
                   value={warehouseForm.code}
@@ -1164,7 +1156,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase">
-                    {language === "th" ? "ละติจูด" : "Latitude"}
+                    {tr("company_latitude", "ละติจูด")}
                   </label>
                   <Input
                     type="number"
@@ -1177,7 +1169,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase">
-                    {language === "th" ? "ลองจิจูด" : "Longitude"}
+                    {tr("st_longitude", "ลองจิจูด")}
                   </label>
                   <Input
                     type="number"
@@ -1198,7 +1190,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                 className="h-8 gap-1 text-xs font-semibold text-primary border-primary/30"
               >
                 <MapPin className="size-3.5" />
-                {language === "th" ? "เลือกตำแหน่งจากแผนที่" : "Pick from Map"}
+                {tr("st_select_location_from_map", "เลือกตำแหน่งจากแผนที่")}
               </Button>
 
               <div className="border-t border-border/30 pt-2">
@@ -1211,7 +1203,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                     }))
                   }
                   languages={editorLanguages}
-                  label={language === "th" ? "ชื่อคลังสินค้าหลายภาษา" : "Multilingual Warehouse Names"}
+                  label={tr("st_warehouse_name_multilingual", "ชื่อคลังสินค้าหลายภาษา")}
                   firstRequired
                   language={language}
                 />
@@ -1230,7 +1222,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                   disabled={isSavingWarehouse}
                   className="h-8 text-xs font-semibold"
                 >
-                  {language === "th" ? "ยกเลิก" : "Cancel"}
+                  {tr("cancel", "ยกเลิก")}
                 </Button>
                 <Button
                   type="submit"
@@ -1239,7 +1231,7 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
                   className="h-8 gap-1 bg-primary text-xs font-semibold text-primary-foreground"
                 >
                   {isSavingWarehouse ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-                  {language === "th" ? "บันทึก" : "Save"}
+                  {tr("fd_save", "บันทึก")}
                 </Button>
               </div>
             </form>

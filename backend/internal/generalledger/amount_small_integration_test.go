@@ -33,7 +33,7 @@ func TestLedgerMongoPostgresEightDecimalAmounts(t *testing.T) {
 		run(cmd)
 	}
 	year := command("fiscal-years", "create", "", 0)
-	year.FiscalYear = &FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Currency: "THB", Scale: 8, IsActive: true}
+	year.FiscalYear = &FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Scale: 8, IsActive: true}
 	run(year)
 	period := command("periods", "create", "", 0)
 	period.Master = &Master{Code: "2026", Name: "งวดทดสอบ", FiscalYear: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true}
@@ -41,7 +41,7 @@ func TestLedgerMongoPostgresEightDecimalAmounts(t *testing.T) {
 	create := command("journals", "create", "", 0)
 	// Decode the same decimal-string JSON accepted at the API boundary.
 	var journal Journal
-	if err := json.Unmarshal([]byte(`{"docno":"SCALE8","date":"2026-09-11","bookcode":"JV","fiscalyear":"2026","description":"ทดสอบจำนวนเงินแปดตำแหน่ง","currency":"THB","kind":"manual","branchcode":"B1","lines":[{"accountcode":"101","debit":"0.00000001"},{"accountcode":"101","debit":"0.00000002"},{"accountcode":"102","credit":"0.00000003"}]}`), &journal); err != nil {
+	if err := json.Unmarshal([]byte(`{"docno":"SCALE8","date":"2026-09-11","bookcode":"JV","fiscalyear":"2026","description":"ทดสอบจำนวนเงินแปดตำแหน่ง","kind":"manual","branchcode":"B1","lines":[{"accountcode":"101","debit":"0.00000001"},{"accountcode":"101","debit":"0.00000002"},{"accountcode":"102","credit":"0.00000003"}]}`), &journal); err != nil {
 		t.Fatal(err)
 	}
 	create.Journal = &journal

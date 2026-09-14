@@ -425,14 +425,14 @@ func TestLedgerKafkaMongoPostgresFlow(t *testing.T) {
 	t.Cleanup(func() { stopRelay(); <-relayDone })
 	checkReady(2)
 	year := command("fiscal-years", "create", "", 0)
-	year.FiscalYear = &gl.FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Currency: "THB", Scale: 8, IsActive: true}
+	year.FiscalYear = &gl.FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Scale: 8, IsActive: true}
 	checkReady(execute(year).Sequence)
 	period := command("periods", "create", "", 0)
 	period.Master = &gl.Master{Code: "2026", Name: "งวด Kafka สมมติ", FiscalYear: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true}
 	checkReady(execute(period).Sequence)
 	journalCommand := func(docno, first, second, total string) gl.Command {
 		cmd := command("journals", "create", "", 0)
-		cmd.Journal = &gl.Journal{DocNo: docno, Date: "2026-09-11", Description: "ข้อมูล Kafka สมมติ", BookCode: "JV", FiscalYear: "2026", Currency: "THB", BranchCode: "B1", Kind: "manual", Lines: []gl.Line{{AccountCode: "101", Debit: gl.Amount(first)}, {AccountCode: "101", Debit: gl.Amount(second)}, {AccountCode: "401", Credit: gl.Amount(total)}}}
+		cmd.Journal = &gl.Journal{DocNo: docno, Date: "2026-09-11", Description: "ข้อมูล Kafka สมมติ", BookCode: "JV", FiscalYear: "2026", BranchCode: "B1", Kind: "manual", Lines: []gl.Line{{AccountCode: "101", Debit: gl.Amount(first)}, {AccountCode: "101", Debit: gl.Amount(second)}, {AccountCode: "401", Credit: gl.Amount(total)}}}
 		return cmd
 	}
 	checkJournal := func(result gl.Result, first string, status string) {

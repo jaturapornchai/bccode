@@ -240,7 +240,7 @@ func (s *Store) yearMutation(ctx context.Context, scope Scope, cmd Command, now 
 	if err := next.Validate(); err != nil {
 		return nil, err
 	}
-	if cmd.Action == "update" && (next.Code != old.Code || (used && (next.StartDate != old.StartDate || next.EndDate != old.EndDate || next.Scale != old.Scale || next.Currency != old.Currency || !next.IsActive))) {
+	if cmd.Action == "update" && (next.Code != old.Code || (used && (next.StartDate != old.StartDate || next.EndDate != old.EndDate || next.Scale != old.Scale || !next.IsActive))) {
 		return nil, fmt.Errorf("ปีบัญชีมีรายการแล้ว เปลี่ยนช่วงวัน สกุลเงิน หรือทศนิยมไม่ได้")
 	}
 	f := scopeFilter(scope)
@@ -541,7 +541,7 @@ func (s *Store) journalMutation(ctx context.Context, scope Scope, cmd Command, n
 		reversal.Reference = old.DocNo
 		reversal.Reason = cmd.Reason
 		reversal.Description = "กลับรายการ " + old.DocNo + ": " + cmd.Reason
-		// Reversal may be posted into a later open fiscal year of the same currency.
+		// Reversal may be posted into a later open fiscal year.
 		f := scopeFilter(scope)
 		f["startdate"] = bson.M{"$lte": cmd.Date}
 		f["enddate"] = bson.M{"$gte": cmd.Date}

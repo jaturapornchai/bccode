@@ -202,7 +202,6 @@ func TestLedgerMongoPostgresAccountLevelCRUD(t *testing.T) {
 		Code:                    "2026",
 		StartDate:               "2026-01-01",
 		EndDate:                 "2026-12-31",
-		Currency:                "THB",
 		Scale:                   2,
 		IsActive:                true,
 		ProfitLossAccount:       "3998",
@@ -252,7 +251,6 @@ func TestLedgerMongoPostgresAccountLevelCRUD(t *testing.T) {
 		FiscalYear:  "2026",
 		Description: "ทดสอบรายการอ้างอิงผังบัญชี",
 		BranchCode:  "B1",
-		Currency:    "THB",
 		Kind:        "manual",
 		Lines: []Line{
 			{AccountCode: "1200", Debit: "500", CashFlow: "operating"},

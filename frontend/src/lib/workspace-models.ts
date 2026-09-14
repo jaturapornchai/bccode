@@ -20,7 +20,6 @@ export type ShopListItem = {
   activelanguages?: string[];
   language?: string;
   languageconfigs?: Array<LocalizedName & { codetranslator?: string; isuse?: boolean; isdefault?: boolean }>;
-  basecurrency?: string;
   currencies?: string[];
   dateformat?: string;
   timezone?: string;
@@ -37,7 +36,6 @@ export type BranchListItem = {
   logouri?: string;
   names?: LocalizedName[];
   companynames?: LocalizedName[];
-  basecurrency?: string;
   language?: string;
   timezone?: string;
   timezoneoffset?: string;

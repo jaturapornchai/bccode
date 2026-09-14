@@ -78,7 +78,7 @@ func TestLedgerMongoPostgresLifecycle(t *testing.T) {
 		accounts[spec.code] = r
 	}
 	yearCmd := command("fiscal-years", "create", "", 0)
-	yearCmd.FiscalYear = &FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Currency: "THB", Scale: 2, IsActive: true, ProfitLossAccount: "301", RetainedEarningsAccount: "302"}
+	yearCmd.FiscalYear = &FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Scale: 2, IsActive: true, ProfitLossAccount: "301", RetainedEarningsAccount: "302"}
 	year := run(yearCmd)
 	checkSource("fiscal-years", year)
 	periodCmd := command("periods", "create", "", 0)
@@ -114,7 +114,7 @@ func TestLedgerMongoPostgresLifecycle(t *testing.T) {
 	}
 
 	journalCmd := command("journals", "create", "", 0)
-	journalCmd.Journal = &Journal{DocNo: "JV-UAT-001", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Description: "ทดสอบรับเงิน", BranchCode: "B1", Currency: "THB", Kind: "manual", Lines: []Line{{AccountCode: "101", Debit: "0.1", CashFlow: "operating"}, {AccountCode: "101", Debit: "0.2", CashFlow: "operating"}, {AccountCode: "401", Credit: "0.3"}}}
+	journalCmd.Journal = &Journal{DocNo: "JV-UAT-001", Date: "2026-09-11", BookCode: "JV", FiscalYear: "2026", Description: "ทดสอบรับเงิน", BranchCode: "B1", Kind: "manual", Lines: []Line{{AccountCode: "101", Debit: "0.1", CashFlow: "operating"}, {AccountCode: "101", Debit: "0.2", CashFlow: "operating"}, {AccountCode: "401", Credit: "0.3"}}}
 	journal := run(journalCmd)
 	checkSource("journals", journal)
 	var source bson.Raw

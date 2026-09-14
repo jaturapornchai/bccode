@@ -34,7 +34,7 @@ func TestPostgresProcessBalancesKeepDimensionsAndRecalculateAudit(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if snapshot.Sequence != 6 || snapshot.FiscalYear != "2026" || snapshot.Currency != "THB" || snapshot.Scale != 2 {
+	if snapshot.Sequence != 6 || snapshot.FiscalYear != "2026" || snapshot.Scale != 2 {
 		t.Fatalf("snapshot metadata %#v", snapshot)
 	}
 	balances := map[string]string{}

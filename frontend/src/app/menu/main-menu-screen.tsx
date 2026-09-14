@@ -115,7 +115,6 @@ import {
   type WorkspaceSession,
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
-import { CurrencyScreen } from "../currency/currency-screen";
 import { AppHeaderControls } from "../app-header-controls";
 import { LineOaLinkScreen } from "../line-oa/line-oa-link-screen";
 import { ManualLink } from "../manual-link";
@@ -2805,9 +2804,6 @@ function WorkTabPanel({
     );
   }
 
-  if (activeTab.route === "/currency") {
-    return <CurrencyScreen embedded language={language} />;
-  }
 
   if (activeTab.route === "/line-oa") {
     return <LineOaLinkScreen embedded language={language} />;

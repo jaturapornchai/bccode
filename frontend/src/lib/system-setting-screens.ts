@@ -1,4 +1,3 @@
-import { currencySymbolPresets } from "@/lib/currency-presets";
 import { LANGUAGES, type LanguageCode } from "@/lib/i18n";
 
 export type SystemSettingText = Partial<Record<LanguageCode, string>> & {
@@ -41,7 +40,7 @@ export type SystemSettingField = {
   required?: boolean;
   readOnly?: boolean;
   options?: SystemSettingOption[];
-  optionSource?: "countries" | "currency" | "timezones";
+  optionSource?: "countries" | "timezones";
   master?: "businesstype" | "creditorgroup" | "debtorgroup";
   placeholder?: string;
   helper?: SystemSettingText;
@@ -356,7 +355,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     title: { th: "สาขา", en: "Branch" },
     subtitle: {
       th: "จัดการสาขา สกุลเงิน ภาษา timezone และคุณสมบัติธุรกิจ",
-      en: "Manage branches, base currency, language, timezone, and business flags.",
+      en: "Manage branches, language, timezone, and business flags.",
     },
     fields: [
       languageListField("languages", "ภาษาที่ใช้งาน", "Active languages"),
@@ -402,14 +401,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         "companyregistrationno",
         "เลขทะเบียนบริษัท",
         "Company registration no.",
-      ),
-      comboField(
-        "basecurrency",
-        "สกุลเงินหลัก",
-        "Base currency",
-        currencyOptions(),
-        false,
-        "currency",
       ),
       comboField("timezone", "Timezone", "Timezone", [], false, "timezones"),
       selectField(
@@ -1937,7 +1928,7 @@ function comboField(
   en: string,
   options: SystemSettingOption[] = [],
   required = false,
-  optionSource?: "countries" | "currency" | "timezones",
+  optionSource?: "countries" | "timezones",
 ): SystemSettingField {
   return {
     key,
@@ -2040,12 +2031,6 @@ function couponUseTypeOptions(): SystemSettingOption[] {
   ];
 }
 
-function currencyOptions() {
-  return currencySymbolPresets.map((item) => ({
-    value: item.code,
-    label: `${item.code} - ${item.name}`,
-  }));
-}
 
 function countryOptions() {
   return [

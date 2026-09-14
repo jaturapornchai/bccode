@@ -351,7 +351,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}><input className={control} value={journal.description} readOnly /></Field>
                       <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference || "-"} readOnly /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode || "-"} readOnly /></Field>
-                      <Field label={tr("gl_currency", "สกุลเงิน")}><input className={control} value={journal.currency || "THB"} readOnly /></Field>
                     </div>
                     <div className="overflow-x-auto rounded-xl border border-border">
                       <table className="w-full min-w-[760px] text-left text-[0.95rem]">
@@ -493,12 +492,11 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} required value={journal.docno} maxLength={60} onChange={(e) => patch({ docno: e.target.value })} /></Field>
                       <Field label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} required type="date" value={journal.date} onChange={(e) => patch({ date: e.target.value })} /></Field>
-                      <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={journal.fiscalyear} onChange={(fiscalyear) => patch({ fiscalyear, currency: refs.years.find((item) => item.code === fiscalyear)?.currency ?? "" })} /></Field>
+                      <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={journal.fiscalyear} onChange={(fiscalyear) => patch({ fiscalyear })} /></Field>
                       <Field label={tr("gl_journal", "สมุดรายวัน")}><select className={control} disabled={!!book} value={journal.bookcode} onChange={(e) => patch({ bookcode: e.target.value })}>{Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</select></Field>
                       <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}><input className={control} required value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} /></Field>
                       <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} onChange={(e) => patch({ reference: e.target.value })} /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
-                      <Field label={tr("gl_currency", "สกุลเงิน")}><input className={control} readOnly value={journal.currency} /></Field>
                     </div>
                     <div className="overflow-x-auto rounded-xl border border-border">
                       <table className="w-full min-w-[760px] text-left text-[0.95rem]">

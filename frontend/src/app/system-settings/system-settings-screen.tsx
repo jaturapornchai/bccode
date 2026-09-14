@@ -62,6 +62,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { BackendTextProvider } from "@/components/backend-text-provider";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { Badge } from "@/components/ui/badge";
 import { LogoAvatar } from "@/components/logo-avatar";
@@ -386,7 +387,6 @@ const BRANCH_FIELD_TAB: Record<string, BranchTabId> = {
   code: "general",
   companynames: "general",
   names: "general",
-  basecurrency: "general",
   language: "general",
   timezone: "general",
   timezonelabel: "general",
@@ -650,7 +650,6 @@ const branchSetupDefaults: FormState = {
   "pos.headerreceiptpos": "",
   "pos.footerreceiptpos": "",
   "pos.isbom": false,
-  basecurrency: "THB",
   timezone: "Asia/Bangkok",
   dateformat: "dd/MM/yyyy",
   yeartype: "buddhist",
@@ -2767,21 +2766,23 @@ export function SystemSettingsScreen({
           className="flex flex-col xl:flex-row w-full min-w-0 items-stretch min-h-[calc(100dvh-12rem)]"
         >
           <div className="min-h-0 min-w-0 xl:w-[var(--tree-split-basis)] xl:shrink-0">
-            <ProductGroupTreeView
-              auth={auth}
-              workspace={workspace}
-              language={language}
-              records={records}
-              selectedGuid={categorySelectedGuid}
-              setSelectedGuid={setCategorySelectedGuid}
-              searchQuery={categorySearchQuery}
-              onOpenCreate={handleOpenGroupCreate}
-              onOpenEdit={openEdit}
-              onDeleteRecord={deleteRecord}
-              onRefresh={() => void loadRecords(auth, workspace, config)}
-              saving={saving}
-              loading={loading}
-            />
+            <BackendTextProvider dictionary={backendLanguage}>
+              <ProductGroupTreeView
+                auth={auth}
+                workspace={workspace}
+                language={language}
+                records={records}
+                selectedGuid={categorySelectedGuid}
+                setSelectedGuid={setCategorySelectedGuid}
+                searchQuery={categorySearchQuery}
+                onOpenCreate={handleOpenGroupCreate}
+                onOpenEdit={openEdit}
+                onDeleteRecord={deleteRecord}
+                onRefresh={() => void loadRecords(auth, workspace, config)}
+                saving={saving}
+                loading={loading}
+              />
+            </BackendTextProvider>
           </div>
 
           <ResizableSplitter
@@ -2906,19 +2907,23 @@ export function SystemSettingsScreen({
           </div>
         </div>
       ) : config.slug === "productwarehousescreen" && !hideChrome ? (
-        <WarehouseTreeView
-          auth={auth}
-          workspace={workspace}
-          language={language}
-          onRefresh={() => void loadRecords(auth, workspace, config)}
-        />
+        <BackendTextProvider dictionary={backendLanguage}>
+          <WarehouseTreeView
+            auth={auth}
+            workspace={workspace}
+            language={language}
+            onRefresh={() => void loadRecords(auth, workspace, config)}
+          />
+        </BackendTextProvider>
       ) : (config.slug === "company" || config.slug === "branch") ? (
-        <CompanyBranchTreeView
-          auth={auth}
-          workspace={workspace}
-          language={language}
-          onRefresh={() => void loadRecords(auth, workspace, config)}
-        />
+        <BackendTextProvider dictionary={backendLanguage}>
+          <CompanyBranchTreeView
+            auth={auth}
+            workspace={workspace}
+            language={language}
+            onRefresh={() => void loadRecords(auth, workspace, config)}
+          />
+        </BackendTextProvider>
       ) : config.slug === "productbom" && !hideChrome ? (
         <div
           ref={bomSplitContainerRef}
@@ -3064,17 +3069,19 @@ export function SystemSettingsScreen({
                 {language === "th" ? "กลับไปที่รายการ" : "Back to list"}
               </Button>
             )}
-            <ProductBomEditor
-              auth={auth}
-              workspace={workspace}
-              language={language}
-              selectedRecord={selectedRecord as any}
-              records={records as any}
-              onRefresh={() => void loadRecords(auth, workspace, config)}
-              onClose={() => setSelectedRecordId("")}
-              setSelectedRecordId={setSelectedRecordId}
-              setRecords={setRecords}
-            />
+            <BackendTextProvider dictionary={backendLanguage}>
+              <ProductBomEditor
+                auth={auth}
+                workspace={workspace}
+                language={language}
+                selectedRecord={selectedRecord as any}
+                records={records as any}
+                onRefresh={() => void loadRecords(auth, workspace, config)}
+                onClose={() => setSelectedRecordId("")}
+                setSelectedRecordId={setSelectedRecordId}
+                setRecords={setRecords}
+              />
+            </BackendTextProvider>
           </div>
 
         </div>
@@ -3091,25 +3098,27 @@ export function SystemSettingsScreen({
           <div
             className={cn("min-h-0 min-w-0", groupNumber !== null && "md:w-[var(--category-split-width)] md:shrink-0")}
           >
-            <ProductCategoryTreeView
-              auth={auth}
-              workspace={workspace}
-              language={language}
-              records={records}
-              groupNumber={groupNumber}
-              setGroupNumber={setGroupNumber}
-              selectedGuid={categorySelectedGuid}
-              setSelectedGuid={setCategorySelectedGuid}
-              searchQuery={categorySearchQuery}
-              onSelectRecord={handleSelectCategoryRecord}
-              onOpenCreate={handleOpenCategoryCreate}
-              onOpenEdit={openEdit}
-              onDeleteRecord={deleteRecord}
-              onRefresh={() => void loadRecords(auth, workspace, config)}
-              saving={saving}
-              loading={loading}
-              readOnly={false}
-            />
+            <BackendTextProvider dictionary={backendLanguage}>
+              <ProductCategoryTreeView
+                auth={auth}
+                workspace={workspace}
+                language={language}
+                records={records}
+                groupNumber={groupNumber}
+                setGroupNumber={setGroupNumber}
+                selectedGuid={categorySelectedGuid}
+                setSelectedGuid={setCategorySelectedGuid}
+                searchQuery={categorySearchQuery}
+                onSelectRecord={handleSelectCategoryRecord}
+                onOpenCreate={handleOpenCategoryCreate}
+                onOpenEdit={openEdit}
+                onDeleteRecord={deleteRecord}
+                onRefresh={() => void loadRecords(auth, workspace, config)}
+                saving={saving}
+                loading={loading}
+                readOnly={false}
+              />
+            </BackendTextProvider>
           </div>
           {groupNumber === null ? null : (
             <>
@@ -14709,7 +14718,6 @@ function branchRecordToListItem(record: SettingRecord): BranchListItem {
     companynames: Array.isArray(record.companynames)
       ? (record.companynames as BranchListItem["companynames"])
       : undefined,
-    basecurrency: stringValue(record.basecurrency) || undefined,
     language: stringValue(record.language) || undefined,
     timezone: stringValue(record.timezone) || undefined,
     timezoneoffset: stringValue(record.timezoneoffset) || undefined,
@@ -16150,7 +16158,6 @@ function applyCountryDefaultsToForm(
 ) {
   if (countryCode !== "TH") return;
   if (fieldKey.startsWith("contact.")) {
-    setFormValueIfEmpty(form, "basecurrency", "THB");
     setFormValueIfEmpty(form, "timezone", "Asia/Bangkok");
     setFormValueIfEmpty(form, "dateformat", "dd/MM/yyyy");
     setFormValueIfEmpty(form, "yeartype", "buddhist");

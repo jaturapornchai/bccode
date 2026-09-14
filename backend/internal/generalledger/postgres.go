@@ -208,7 +208,7 @@ func projectJournal(ctx context.Context, tx *sql.Tx, company string, journal Jou
 	if err := json.Unmarshal(fiscalData, &fiscal); err != nil {
 		return err
 	}
-	if journal.Currency != fiscal.Currency || !validDate(journal.Date) || journal.Date < fiscal.StartDate || journal.Date > fiscal.EndDate || len(journal.Lines) < 2 || len(journal.Lines) > 500 {
+	if !validDate(journal.Date) || journal.Date < fiscal.StartDate || journal.Date > fiscal.EndDate || len(journal.Lines) < 2 || len(journal.Lines) > 500 {
 		return fmt.Errorf("ขอบเขตปีและสกุลเงินบัญชีไม่ถูกต้อง")
 	}
 	accounts, err := loadLineAccounts(ctx, tx, company, journal.Lines)
@@ -241,7 +241,7 @@ func projectJournal(ctx context.Context, tx *sql.Tx, company string, journal Jou
 		if name == "" {
 			name = account.ThaiName()
 		}
-		projected = append(projected, projectedLine{Company: company, JournalID: journal.ID, LineNo: index + 1, DocNo: journal.DocNo, Date: journal.Date, FiscalYear: journal.FiscalYear, BookCode: journal.BookCode, BranchCode: journal.BranchCode, DepartmentCode: line.DepartmentCode, ProjectCode: line.ProjectCode, Kind: journal.Kind, Currency: journal.Currency, Scale: fiscal.Scale, AccountCode: line.AccountCode, AccountName: name, AccountType: account.AccountType, NormalBalance: account.NormalBalance, IsCash: account.IsCash, Description: line.Description, CashFlow: line.CashFlow, Debit: d.String(), Credit: c.String()})
+		projected = append(projected, projectedLine{Company: company, JournalID: journal.ID, LineNo: index + 1, DocNo: journal.DocNo, Date: journal.Date, FiscalYear: journal.FiscalYear, BookCode: journal.BookCode, BranchCode: journal.BranchCode, DepartmentCode: line.DepartmentCode, ProjectCode: line.ProjectCode, Kind: journal.Kind, Currency: projectionCurrency, Scale: fiscal.Scale, AccountCode: line.AccountCode, AccountName: name, AccountType: account.AccountType, NormalBalance: account.NormalBalance, IsCash: account.IsCash, Description: line.Description, CashFlow: line.CashFlow, Debit: d.String(), Credit: c.String()})
 	}
 	if !debit.Equal(credit) {
 		return fmt.Errorf("ยอดเดบิตและเครดิตไม่เท่ากัน")

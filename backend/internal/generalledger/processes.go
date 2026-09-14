@@ -96,7 +96,7 @@ func (s *Store) prepareProcess(ctx context.Context, scope Scope, cmd Command) (*
 			return nil, err
 		}
 		end, _ := time.Parse("2006-01-02", year.EndDate)
-		if target.StartDate != end.AddDate(0, 0, 1).Format("2006-01-02") || target.Closed || target.Currency != year.Currency || target.Scale != year.Scale || cmd.Date != target.StartDate {
+		if target.StartDate != end.AddDate(0, 0, 1).Format("2006-01-02") || target.Closed || target.Scale != year.Scale || cmd.Date != target.StartDate {
 			return nil, fmt.Errorf("ปีถัดไปต้องต่อเนื่องและใช้สกุลเงินกับทศนิยมเดียวกัน วันที่เอกสารต้องเป็นวันเริ่มปีถัดไป")
 		}
 		if exists, err := s.referenced(ctx, scope, bson.M{"fiscalyear": target.Code, "kind": "opening", "isdeleted": false}); err != nil {
@@ -182,7 +182,7 @@ func (s *Store) prepareProcess(ctx context.Context, scope Scope, cmd Command) (*
 		if len(branches) > 1 {
 			docno = fmt.Sprintf("%s-%03d", cmd.DocNo, i+1)
 		}
-		j := Journal{DocNo: docno, Date: cmd.Date, BookCode: "JV", FiscalYear: target.Code, Description: "ปิดงบบัญชี " + year.Code, Currency: year.Currency, Kind: "closing", Status: "draft", Reason: cmd.Reason, Reference: "CLOSE:" + year.Code + ":" + cmd.Date, BranchCode: branch, Lines: byBranch[branch]}
+		j := Journal{DocNo: docno, Date: cmd.Date, BookCode: "JV", FiscalYear: target.Code, Description: "ปิดงบบัญชี " + year.Code, Kind: "closing", Status: "draft", Reason: cmd.Reason, Reference: "CLOSE:" + year.Code + ":" + cmd.Date, BranchCode: branch, Lines: byBranch[branch]}
 		if prepared.CloseYear {
 			j.Kind = "opening"
 			j.Reference = "YEAR-END:" + year.Code

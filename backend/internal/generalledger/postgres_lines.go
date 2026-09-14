@@ -37,6 +37,10 @@ func loadLineAccounts(ctx context.Context, tx *sql.Tx, company string, lines []L
 	return accounts, rows.Err()
 }
 
+// projectionCurrency is the column value kept for gl_lines.currency (NOT NULL in schema.sql).
+// GL no longer carries a currency concept; the column is satisfied with the base currency code.
+const projectionCurrency = "THB"
+
 type projectedLine struct {
 	Company        string `json:"company"`
 	JournalID      string `json:"journal_id"`
@@ -85,7 +89,7 @@ func verifyProjectedJournal(ctx context.Context, tx *sql.Tx, company string, j J
       p.doc_no=$4 AND p.entry_date=$5::date AND p.fiscal_year=$6 AND p.book_code=$7 AND p.branch_code=$8 AND p.kind=$9 AND p.currency=$10
       AND p.account_code=i.value->>'accountcode' AND p.department_code=i.value->>'departmentcode' AND p.project_code=i.value->>'projectcode'
       AND p.description=i.value->>'description' AND p.cash_flow=i.value->>'cashflow' AND p.debit=(i.value->>'debit')::numeric AND p.credit=(i.value->>'credit')::numeric),false)
-      FROM gl_lines p JOIN incoming i USING(line_no) WHERE p.company=$1 AND p.journal_id=$2`, company, j.ID, string(payload), j.DocNo, j.Date, j.FiscalYear, j.BookCode, j.BranchCode, j.Kind, j.Currency).Scan(&matches)
+      FROM gl_lines p JOIN incoming i USING(line_no) WHERE p.company=$1 AND p.journal_id=$2`, company, j.ID, string(payload), j.DocNo, j.Date, j.FiscalYear, j.BookCode, j.BranchCode, j.Kind, projectionCurrency).Scan(&matches)
 	if err != nil {
 		return err
 	}

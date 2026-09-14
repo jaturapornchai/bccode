@@ -453,7 +453,7 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
 export function YearSelect({ value, onChange, years, label: labelProp, disabled = false }: { value: string; onChange: (value: string) => void; years: GLFiscalYear[]; label?: string; disabled?: boolean }) {
   const tr = useGLText();
   const label = labelProp ?? tr("gl_fiscal_year", "ปีบัญชี");
-  return <select aria-label={label} className={control} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}><option value="">{tr("gl_select_fiscal_year", "เลือกปีบัญชี")}</option>{years.map((year) => <option key={year.id ?? year.code} value={year.code}>{year.code} · {year.currency}{year.closed ? ` · ${tr("gl_closed", "ปิดแล้ว")}` : ""}</option>)}</select>;
+  return <select aria-label={label} className={control} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}><option value="">{tr("gl_select_fiscal_year", "เลือกปีบัญชี")}</option>{years.map((year) => <option key={year.id ?? year.code} value={year.code}>{year.code}{year.closed ? ` · ${tr("gl_closed", "ปิดแล้ว")}` : ""}</option>)}</select>;
 }
 export function useReferences(refresh = 0) {
   const [revision, setRevision] = useState(0);

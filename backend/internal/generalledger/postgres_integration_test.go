@@ -84,7 +84,7 @@ func glpgSeed(t *testing.T, p *Postgres, company string) {
 		a := Account{Identity: glpgIdentity("account-"+row.code, company, 1), AccountCode: row.code, Names: []Name{{Code: "th", Name: "บัญชี " + row.code}}, AccountType: row.kind, NormalBalance: row.normal, AllowPosting: true, IsActive: true, IsCash: row.cash}
 		changes = append(changes, glpgChange(t, "accounts", a.ID, a.AccountCode, a))
 	}
-	f := FiscalYear{Identity: glpgIdentity("year-2026", company, 1), Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true, Currency: "THB", Scale: 2, RetainedEarningsAccount: "3000"}
+	f := FiscalYear{Identity: glpgIdentity("year-2026", company, 1), Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true, Scale: 2, RetainedEarningsAccount: "3000"}
 	changes = append(changes, glpgChange(t, "fiscal-years", f.ID, f.Code, f))
 	if err := p.Project(context.Background(), glpgEvent(company, 1, changes...)); err != nil {
 		t.Fatal(err)
@@ -92,7 +92,7 @@ func glpgSeed(t *testing.T, p *Postgres, company string) {
 }
 
 func glpgJournal(company, id, date, kind, status, debitAccount, creditAccount, amount string) Journal {
-	return Journal{Identity: glpgIdentity(id, company, 1), DocNo: id, Date: date, BookCode: "JV", FiscalYear: "2026", Description: "รายการทดสอบ", Currency: "THB", BranchCode: "B1", Kind: kind, Status: status, Lines: []Line{{AccountCode: debitAccount, Debit: Amount(amount), Credit: "0", Description: "เดบิต", DepartmentCode: "D1", ProjectCode: "P1", CashFlow: "operating"}, {AccountCode: creditAccount, Debit: "0", Credit: Amount(amount), Description: "เครดิต", DepartmentCode: "D1", ProjectCode: "P1", CashFlow: "operating"}}}
+	return Journal{Identity: glpgIdentity(id, company, 1), DocNo: id, Date: date, BookCode: "JV", FiscalYear: "2026", Description: "รายการทดสอบ", BranchCode: "B1", Kind: kind, Status: status, Lines: []Line{{AccountCode: debitAccount, Debit: Amount(amount), Credit: "0", Description: "เดบิต", DepartmentCode: "D1", ProjectCode: "P1", CashFlow: "operating"}, {AccountCode: creditAccount, Debit: "0", Credit: Amount(amount), Description: "เครดิต", DepartmentCode: "D1", ProjectCode: "P1", CashFlow: "operating"}}}
 }
 func glpgSendJournal(t *testing.T, p *Postgres, sequence int64, j Journal) {
 	t.Helper()

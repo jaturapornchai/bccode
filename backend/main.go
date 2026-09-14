@@ -17,7 +17,6 @@ import (
 	coupon_database "smlcloudplatform/internal/coupon/database"
 	coupon_repositories "smlcloudplatform/internal/coupon/repositories"
 	coupon_services "smlcloudplatform/internal/coupon/services"
-	"smlcloudplatform/internal/currency"
 	"smlcloudplatform/internal/debtaccount/creditor"
 	"smlcloudplatform/internal/debtaccount/creditorgroup"
 	"smlcloudplatform/internal/debtaccount/customer"
@@ -523,7 +522,6 @@ func main() {
 			productimport.NewProductImportHttp(ms, cfg),
 
 			dimension.NewDimensionHttp(ms, cfg),
-			currency.NewCurrencyHttp(ms, cfg),
 
 			// master
 			masterexpense.NewMasterExpenseHttp(ms, cfg),
