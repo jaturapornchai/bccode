@@ -3,12 +3,18 @@ package generalledger
 import (
 	"context"
 	"fmt"
-	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
+
+type processReader interface {
+	ProcessBalances(context.Context, Scope, string, string) (ProcessBalanceSnapshot, error)
+	HasDraftJournals(context.Context, Scope, string, string) (bool, error)
+	HasOpeningJournal(context.Context, Scope, string) (bool, error)
+}
 
 type preparedProcess struct {
 	Sequence  int64
@@ -64,16 +70,14 @@ func (s *Store) prepareProcess(ctx context.Context, scope Scope, cmd Command) (*
 	if to < year.StartDate || to > year.EndDate {
 		return nil, fmt.Errorf("วันที่ประมวลผลต้องอยู่ในปีบัญชี")
 	}
-	if pending, err := s.referenced(ctx, scope, bson.M{"fiscalyear": year.Code, "isdeleted": false, "status": "draft", "date": bson.M{"$lte": to}}); err != nil {
+	reader, ok := s.projection.(processReader)
+	if !ok {
+		return nil, fmt.Errorf("ระบบรายงานยังไม่รองรับยอดประมวลผล")
+	}
+	if pending, err := reader.HasDraftJournals(ctx, scope, year.Code, to); err != nil {
 		return nil, err
 	} else if pending {
 		return nil, fmt.Errorf("ยังมีรายการร่าง กรุณาตรวจและผ่านรายการให้ครบก่อนประมวลผล")
-	}
-	reader, ok := s.projection.(interface {
-		ProcessBalances(context.Context, Scope, string, string) (ProcessBalanceSnapshot, error)
-	})
-	if !ok {
-		return nil, fmt.Errorf("ระบบรายงานยังไม่รองรับยอดประมวลผล")
 	}
 	snapshot, err := reader.ProcessBalances(ctx, scope, year.Code, to)
 	if err != nil {
@@ -99,7 +103,7 @@ func (s *Store) prepareProcess(ctx context.Context, scope Scope, cmd Command) (*
 		if target.StartDate != end.AddDate(0, 0, 1).Format("2006-01-02") || target.Closed || target.Scale != year.Scale || cmd.Date != target.StartDate {
 			return nil, fmt.Errorf("ปีถัดไปต้องต่อเนื่องและใช้สกุลเงินกับทศนิยมเดียวกัน วันที่เอกสารต้องเป็นวันเริ่มปีถัดไป")
 		}
-		if exists, err := s.referenced(ctx, scope, bson.M{"fiscalyear": target.Code, "kind": "opening", "isdeleted": false}); err != nil {
+		if exists, err := reader.HasOpeningJournal(ctx, scope, target.Code); err != nil {
 			return nil, err
 		} else if exists {
 			return nil, fmt.Errorf("ปีถัดไปมียอดยกมาแล้ว กรุณาตรวจสอบเพื่อไม่ให้ยกยอดซ้ำ")

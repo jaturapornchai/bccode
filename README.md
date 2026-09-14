@@ -8,6 +8,14 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ปิดรอบบัญชี/สิ้นปี: ย้ายการตรวจรายการร่างและยอดยกมาจาก Mongo ไปยัง PostgreSQL Projection
+
+- [Fix] แก้ไข `prepareProcess` ใน `backend/internal/generalledger/processes.go` ให้ตรวจสอบรายการร่าง (`status = 'draft'`) และยอดยกมาของปีถัดไป (`kind = 'opening'`) ผ่าน PostgreSQL projection ใน `gl_records` แทนการอ่านตรงจาก MongoDB (`s.referenced`) สอดคล้องกับกฎสถาปัตยกรรม 2-Tier (Zero Cross-DB Runtime Dependency)
+- [Feature] เพิ่มเมธอด `HasDraftJournals` และ `HasOpeningJournal` บน `*Postgres` ใน `reports_process.go` และสร้าง `processReader` interface ใน `processes.go` เพื่อแยกหน้าที่อย่างชัดเจน
+- [Test] เพิ่ม Integration Test ใน `postgres_process_integration_test.go` ตรวจสอบความถูกต้องของ `HasDraftJournals` และ `HasOpeningJournal` ทั้งกรณีตรงเงื่อนไขและไม่ตรงเงื่อนไข
+- ไฟล์: `backend/internal/generalledger/processes.go`, `backend/internal/generalledger/reports_process.go`, `backend/internal/generalledger/postgres_process_integration_test.go`
+- หลักฐาน: Go vet/test ใน Docker ผ่าน 100% (`smlcloudplatform/internal/generalledger`), Vitest 476/476 ผ่าน 100%
+
 ### 2026-09-14 — ตั้งค่าระบบและทางลัด: ข้อความเปลี่ยนตามภาษา 12 ภาษาครบถ้วน + ตัดโมดูลสกุลเงินที่ไม่ใช้งาน
 
 - [Feature] ย้ายข้อความบนหน้าจอตั้งค่าระบบแบบ Tree View (ผังองค์กร/สาขา, หมวดหมู่สินค้า, กลุ่มสินค้า, สูตรการผลิต BOM, คลังสินค้า) และหน้าจัดการทางลัด (`manage-shortcuts-screen.tsx`) ให้เปลี่ยนตามภาษาที่เลือกครบทั้ง 12 ภาษา ผ่าน `BackendTextProvider` และ `useBackendText()` โดยโค้ดใช้ key ภาษาอังกฤษ `st_*`

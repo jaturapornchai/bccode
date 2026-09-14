@@ -54,6 +54,22 @@ func TestPostgresProcessBalancesKeepDimensionsAndRecalculateAudit(t *testing.T) 
 	if _, err = p.ProcessBalances(ctx, scope, "2026", "2027-01-01"); err == nil {
 		t.Fatal("accepted balances beyond fiscal year")
 	}
+	hasDraft, err := p.HasDraftJournals(ctx, scope, "2026", "2026-12-31")
+	if err != nil || !hasDraft {
+		t.Fatalf("expected draft journals in 2026, got hasDraft=%v err=%v", hasDraft, err)
+	}
+	hasDraftEarly, err := p.HasDraftJournals(ctx, scope, "2026", "2026-01-04")
+	if err != nil || hasDraftEarly {
+		t.Fatalf("expected no draft journals up to 2026-01-04, got hasDraftEarly=%v err=%v", hasDraftEarly, err)
+	}
+	hasOpening, err := p.HasOpeningJournal(ctx, scope, "2026")
+	if err != nil || !hasOpening {
+		t.Fatalf("expected opening journal in 2026, got hasOpening=%v err=%v", hasOpening, err)
+	}
+	hasOpening2027, err := p.HasOpeningJournal(ctx, scope, "2027")
+	if err != nil || hasOpening2027 {
+		t.Fatalf("expected no opening journal in 2027, got hasOpening2027=%v err=%v", hasOpening2027, err)
+	}
 	bad := glpgEvent("A", 7)
 	bad.Action = "journals:post"
 	if err = p.Project(ctx, bad); err == nil {

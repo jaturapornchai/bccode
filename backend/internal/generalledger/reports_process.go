@@ -88,3 +88,42 @@ func (p *Postgres) ProcessBalances(ctx context.Context, scope Scope, fiscalYear,
 	}
 	return result, nil
 }
+
+// HasDraftJournals checks whether unposted draft journals exist up to the processing date.
+func (p *Postgres) HasDraftJournals(ctx context.Context, scope Scope, fiscalYear, to string) (bool, error) {
+	if fiscalYear == "" || !validDate(to) {
+		return false, fmt.Errorf("กรุณาระบุปีบัญชีและวันที่ประมวลผล")
+	}
+	db, err := p.database(ctx, scope.Holding)
+	if err != nil {
+		return false, err
+	}
+	var count int
+	query := `SELECT count(*) FROM gl_records
+		WHERE company = $1 AND kind = 'journals'
+		AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
+		AND payload->>'fiscalyear' = $2
+		AND payload->>'status' = 'draft'
+		AND (payload->>'date')::date <= $3::date`
+	err = db.QueryRowContext(ctx, query, scope.Company, fiscalYear, to).Scan(&count)
+	return count > 0, err
+}
+
+// HasOpeningJournal checks whether an active opening journal already exists for the fiscal year.
+func (p *Postgres) HasOpeningJournal(ctx context.Context, scope Scope, fiscalYear string) (bool, error) {
+	if fiscalYear == "" {
+		return false, fmt.Errorf("กรุณาระบุปีบัญชี")
+	}
+	db, err := p.database(ctx, scope.Holding)
+	if err != nil {
+		return false, err
+	}
+	var count int
+	query := `SELECT count(*) FROM gl_records
+		WHERE company = $1 AND kind = 'journals'
+		AND NOT COALESCE((payload->>'isdeleted')::boolean, false)
+		AND payload->>'fiscalyear' = $2
+		AND payload->>'kind' = 'opening'`
+	err = db.QueryRowContext(ctx, query, scope.Company, fiscalYear).Scan(&count)
+	return count > 0, err
+}
