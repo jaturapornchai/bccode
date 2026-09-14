@@ -13,6 +13,7 @@
 - [Feature] ทุกจอในโมดูลบัญชีแยกประเภท (ผังบัญชี, ปีบัญชี, สมุดรายวัน, ผ่านรายการ/กลับรายการ, ปิดงวด/สิ้นปี, รายงาน, ออกแบบงบการเงิน, ค้นหาผังบัญชี, ส่งออกข้อมูล) เปลี่ยนป้าย ปุ่ม คำอธิบาย และข้อความแจ้งเตือนตามภาษาที่ผู้ใช้เลือก (12 ภาษา) — เดิมเป็นภาษาไทยตายตัว กดเปลี่ยนภาษาแล้วไม่เปลี่ยน
 - [Refactor] โค้ด GL ใช้ key ภาษาอังกฤษ `gl_*` ผ่าน `tr(key, fallback)` จาก `GLLanguageProvider`/`useGLText` (`gl-common.tsx`); ป้ายระดับ module (สถานะ, ประเภทบัญชี, สมุดรายวัน, ปุ่ม process, ประเภทงบ/แถวงบ, ฟอนต์) เก็บเป็น `GLLabel` แล้วแปลด้วย `labelText` (`lib/general-ledger.ts`); `validateJournal` รับ `tr` เพิ่ม
 - [Feature] เพิ่มคำแปล 454 key × 12 ภาษาใน `backend/assets/language/languages.tsv` (DeepSeek ร่าง, Claude ตรวจสุ่ม + test ตรวจครบทุกช่อง)
+- [Refactor] ตัด hook `useGLLanguage` ที่ไม่มีผู้เรียกออกจาก `gl-common.tsx` (YAGNI)
 - [Test] เพิ่ม `frontend/src/app/gl/gl-language-keys.test.ts` กันถอยหลัง: key ที่ใช้ต้องมีครบ 12 ภาษา และไฟล์ GL ห้ามมีข้อความไทยนอก `tr()`/`GLLabel`
 - [Docs] `docs/skills/ui-scale-polish/SKILL.md` §8.25.1 (แบบแผน + กับดัก), `docs/handoff/HANDOFF-2026-09-14.md` §2D สถานะ
 - ไฟล์: `frontend/src/app/gl/*.tsx` (9 ไฟล์), `frontend/src/lib/general-ledger.ts`, `backend/assets/language/languages.tsv`, `frontend/src/app/gl/gl-language-keys.test.ts`

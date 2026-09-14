@@ -31,7 +31,6 @@ export function GLLanguageProvider({ language, children }: { language: LanguageC
   const value = useMemo(() => ({ language, dictionary }), [language, dictionary]);
   return <GLLanguageContext.Provider value={value}>{children}</GLLanguageContext.Provider>;
 }
-export function useGLLanguage(): LanguageCode { return useContext(GLLanguageContext).language; }
 export function useGLText(): GLTextFn {
   const { dictionary } = useContext(GLLanguageContext);
   return useCallback((key: string, fallback: string) => backendText(dictionary, key, fallback), [dictionary]);
