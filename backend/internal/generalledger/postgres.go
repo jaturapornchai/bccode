@@ -291,8 +291,8 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 	if err != nil {
 		return result, err
 	}
-	// Search is a literal substring, never an SQL wildcard or expression.
-	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || payload::text),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','budgets','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7)))`
+	// Search is a literal substring on code, names, description, and reference (never matching JSON keys or boolean flags).
+	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || COALESCE(payload->>'name', '') || ' ' || COALESCE(payload->>'description', '') || ' ' || COALESCE(payload->>'reference', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','budgets','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7)))`
 	if err = db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE `+where, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status).Scan(&result.Total); err != nil {
 		return result, err
 	}
