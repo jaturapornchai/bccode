@@ -541,68 +541,141 @@ export function WarehouseTreeView({ auth, workspace, language, onRefresh }: Ware
 
     setIsSavingLocations(true);
     try {
-      // 1. Process deletions
+      // 1. Process deletions in parallel
       // Each step commits on the server immediately, so local state is updated
       // per row: a failure mid-batch must not re-send work that already succeeded.
-      for (const guid of toDelete) {
-        const res = await authFetch(`${mainApiUrl}/warehouse/${whGuid}/location/${encodeURIComponent(guid)}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${auth.token}` },
-        });
-        const json = (await res.json()) as ApiResponse;
-        if (!res.ok || json.success === false) {
-          throw new Error(json.message || "Failed to delete location");
-        }
-        setDeletedLocationGuids((prev) => prev.filter((g) => g !== guid));
-      }
-
-      // 2. Process creations
-      for (const r of toCreate) {
-        const payload = {
-          code: r.code.trim(),
-          names: namesToNameX(r.names),
-          status: "active",
-        };
-        const res = await authFetch(`${mainApiUrl}/warehouse/${whGuid}/location`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
-          body: JSON.stringify(payload),
-        });
-        const json = (await res.json()) as ApiResponse;
-        if (!res.ok || json.success === false) {
-          throw new Error(json.message || tr("st_cannot_create_storage", "ไม่สามารถสร้างที่เก็บ \"{0}\"").replace("{0}", String(r.code)));
-        }
-        setLocationRows((prev) =>
-          prev.map((row) =>
-            row.tempId === r.tempId ? { ...row, guidfixed: json.id || row.guidfixed, isNew: false, isModified: false } : row
-          )
+      if (toDelete.length > 0) {
+        const deleteResults = await Promise.allSettled(
+          toDelete.map(async (guid) => {
+            const res = await authFetch(`${mainApiUrl}/warehouse/${whGuid}/location/${encodeURIComponent(guid)}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${auth.token}` },
+            });
+            const json = (await res.json()) as ApiResponse;
+            if (!res.ok || json.success === false) {
+              throw new Error(json.message || "Failed to delete location");
+            }
+            return guid;
+          })
         );
+
+        const successfulGuids = new Set<string>();
+        let firstDeleteError: Error | null = null;
+        for (const res of deleteResults) {
+          if (res.status === "fulfilled") {
+            successfulGuids.add(res.value);
+          } else if (!firstDeleteError) {
+            firstDeleteError = res.reason instanceof Error ? res.reason : new Error(String(res.reason));
+          }
+        }
+
+        if (successfulGuids.size > 0) {
+          setDeletedLocationGuids((prev) => prev.filter((g) => !successfulGuids.has(g)));
+        }
+
+        if (firstDeleteError) {
+          throw firstDeleteError;
+        }
       }
 
-      // 3. Process updates
-      for (const r of toUpdate) {
-        if (!r.guidfixed) continue;
-        // UpdateLocation replaces the embedded document, so fields this table
-        // cannot edit (companyguids, allow*/blocked*, sortcode) must be carried over.
-        const { guidfixed: _guid, ...existing } =
-          activeWarehouse?.locations?.find((l) => l.guidfixed === r.guidfixed) ?? {};
-        const payload = {
-          ...existing,
-          code: r.code.trim(),
-          names: namesToNameX(r.names),
-          status: "active",
-        };
-        const res = await authFetch(`${mainApiUrl}/warehouse/${whGuid}/location/${r.guidfixed}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
-          body: JSON.stringify(payload),
-        });
-        const json = (await res.json()) as ApiResponse;
-        if (!res.ok || json.success === false) {
-          throw new Error(json.message || tr("st_cannot_edit_storage", "ไม่สามารถแก้ไขที่เก็บ \"{0}\"").replace("{0}", String(r.code)));
+      // 2. Process creations in parallel
+      if (toCreate.length > 0) {
+        const createResults = await Promise.allSettled(
+          toCreate.map(async (r) => {
+            const payload = {
+              code: r.code.trim(),
+              names: namesToNameX(r.names),
+              status: "active",
+            };
+            const res = await authFetch(`${mainApiUrl}/warehouse/${whGuid}/location`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
+              body: JSON.stringify(payload),
+            });
+            const json = (await res.json()) as ApiResponse;
+            if (!res.ok || json.success === false) {
+              throw new Error(json.message || tr("st_cannot_create_storage", "ไม่สามารถสร้างที่เก็บ \"{0}\"").replace("{0}", String(r.code)));
+            }
+            return { tempId: r.tempId, guidfixed: json.id || r.guidfixed };
+          })
+        );
+
+        const successfulCreated = new Map<string, string | undefined>();
+        let firstCreateError: Error | null = null;
+        for (const res of createResults) {
+          if (res.status === "fulfilled") {
+            successfulCreated.set(res.value.tempId, res.value.guidfixed);
+          } else if (!firstCreateError) {
+            firstCreateError = res.reason instanceof Error ? res.reason : new Error(String(res.reason));
+          }
         }
-        setLocationRows((prev) => prev.map((row) => (row.tempId === r.tempId ? { ...row, isModified: false } : row)));
+
+        if (successfulCreated.size > 0) {
+          setLocationRows((prev) =>
+            prev.map((row) => {
+              if (successfulCreated.has(row.tempId)) {
+                const newGuid = successfulCreated.get(row.tempId);
+                return { ...row, guidfixed: newGuid || row.guidfixed, isNew: false, isModified: false };
+              }
+              return row;
+            })
+          );
+        }
+
+        if (firstCreateError) {
+          throw firstCreateError;
+        }
       }
+
+      // 3. Process updates in parallel
+      const validToUpdate = toUpdate.filter((r) => !!r.guidfixed);
+      if (validToUpdate.length > 0) {
+        const updateResults = await Promise.allSettled(
+          validToUpdate.map(async (r) => {
+            // UpdateLocation replaces the embedded document, so fields this table
+            // cannot edit (companyguids, allow*/blocked*, sortcode) must be carried over.
+            const { guidfixed: _guid, ...existing } =
+              activeWarehouse?.locations?.find((l) => l.guidfixed === r.guidfixed) ?? {};
+            const payload = {
+              ...existing,
+              code: r.code.trim(),
+              names: namesToNameX(r.names),
+              status: "active",
+            };
+            const res = await authFetch(`${mainApiUrl}/warehouse/${whGuid}/location/${r.guidfixed}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
+              body: JSON.stringify(payload),
+            });
+            const json = (await res.json()) as ApiResponse;
+            if (!res.ok || json.success === false) {
+              throw new Error(json.message || tr("st_cannot_edit_storage", "ไม่สามารถแก้ไขที่เก็บ \"{0}\"").replace("{0}", String(r.code)));
+            }
+            return r.tempId;
+          })
+        );
+
+        const successfulUpdatedTempIds = new Set<string>();
+        let firstUpdateError: Error | null = null;
+        for (const res of updateResults) {
+          if (res.status === "fulfilled") {
+            successfulUpdatedTempIds.add(res.value);
+          } else if (!firstUpdateError) {
+            firstUpdateError = res.reason instanceof Error ? res.reason : new Error(String(res.reason));
+          }
+        }
+
+        if (successfulUpdatedTempIds.size > 0) {
+          setLocationRows((prev) =>
+            prev.map((row) => (successfulUpdatedTempIds.has(row.tempId) ? { ...row, isModified: false } : row))
+          );
+        }
+
+        if (firstUpdateError) {
+          throw firstUpdateError;
+        }
+      }
+
 
       await loadTree();
       setDeletedLocationGuids([]);

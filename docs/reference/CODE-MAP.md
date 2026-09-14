@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-14 @ commit dc65c42f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-14 @ commit 4d70ed9e - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 46
 
@@ -1726,6 +1726,25 @@ Files indexed: 46
 | 1266 | function | `UnlinkLine` |
 | 1291 | function | `DisableUser` |
 
+## frontend/src/app/system-settings/warehouse-tree-view.tsx (1329 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 128 | function | `WarehouseTreeView` |
+| 199 | section | `Resizable Sidebar Width State` |
+| 236 | const-arrow | `onPointerMove` |
+| 245 | const-arrow | `onPointerUp` |
+| 306 | const-arrow | `openCreateWarehouse` |
+| 313 | const-arrow | `openEditWarehouse` |
+| 332 | const-arrow | `handleSaveWarehouse` |
+| 383 | const-arrow | `handleDeleteWarehouse` |
+| 452 | const-arrow | `handleAddRow` |
+| 465 | const-arrow | `handleUpdateRowCode` |
+| 471 | const-arrow | `handleUpdateRowName` |
+| 481 | const-arrow | `handleDeleteRow` |
+| 496 | const-arrow | `handleSaveAllLocations` |
+| 693 | const-arrow | `handleResetTable` |
+
 ## backend/internal/goapi/handlers/image_r2.go (1319 lines)
 
 | Line | Kind | Name |
@@ -1803,25 +1822,6 @@ Files indexed: 46
 | 1101 | function | `TestWarehouseConsumer` |
 | 1130 | function | `TestPurchaseReturnConsumer` |
 | 1164 | function | `GetConsumerStatus` |
-
-## frontend/src/app/system-settings/warehouse-tree-view.tsx (1256 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 128 | function | `WarehouseTreeView` |
-| 199 | section | `Resizable Sidebar Width State` |
-| 236 | const-arrow | `onPointerMove` |
-| 245 | const-arrow | `onPointerUp` |
-| 306 | const-arrow | `openCreateWarehouse` |
-| 313 | const-arrow | `openEditWarehouse` |
-| 332 | const-arrow | `handleSaveWarehouse` |
-| 383 | const-arrow | `handleDeleteWarehouse` |
-| 452 | const-arrow | `handleAddRow` |
-| 465 | const-arrow | `handleUpdateRowCode` |
-| 471 | const-arrow | `handleUpdateRowName` |
-| 481 | const-arrow | `handleDeleteRow` |
-| 496 | const-arrow | `handleSaveAllLocations` |
-| 620 | const-arrow | `handleResetTable` |
 
 ## backend/internal/stockprocess/stockcalculator_test.go (1244 lines)
 

@@ -8,7 +8,16 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ปรับปรุงประสิทธิภาพการบันทึกผังที่เก็บสินค้า: Parallel Batch ด้วย Promise.allSettled (Item 18)
+
+- [Perf] ปรับปรุงฟังก์ชัน `saveLocations` ใน `frontend/src/app/system-settings/warehouse-tree-view.tsx` ให้ยิงคำขอลบ, สร้าง, และแก้ไขที่เก็บสินค้าแบบคู่ขนาน (parallel) ด้วย `Promise.allSettled` ในแต่ละเฟส แทนการวนลูปยิงทีละแถวแบบ serial
+- [Fix] คงการอัปเดต state ต่อแถวอย่างปลอดภัย: แถวที่บันทึกสำเร็จจะอัปเดต state ทันที (`deletedLocationGuids` กรองรายการที่ลบสำเร็จออก, `locationRows` อัปเดต `guidfixed` และรีเซ็ต `isNew`/`isModified`) หากมีข้อผิดพลาดเกิดขึ้นในบางรายการ ผู้ใช้จะไม่ต้องส่งคำขอรายการที่สำเร็จแล้วซ้ำอีก
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `docs/reference/CODE-MAP.md`
+- หลักฐาน: Vitest 477/477 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — รวมฟังก์ชันจัดรูปแบบจำนวนเงิน: Consolidate formatAmountValue and formatAmount (Item 17)
+
 
 - [Refactor] รวมฟังก์ชัน `formatAmountValue` ใน `frontend/src/app/gl/gl-common.tsx` และ `formatAmount` ใน `frontend/src/lib/general-ledger.ts` เป็น implementation เดียวที่สมบูรณ์ใน `general-ledger.ts` พร้อม re-export `formatAmountValue` เพื่อความเข้ากันได้ย้อนหลัง 100%
 - [Feature] จัดการ edge case ครบถ้วน: ตัดจุลภาคเดิม, คงความละเอียดทศนิยมที่บันทึกไว้ (persisted precision ไม่ปัดทศนิยมที่มีนัยสำคัญทิ้ง), ป้องกันเครื่องหมายลบหน้าศูนย์ (`-0` / `-0.00` แสดงเป็น `0.00`), รองรับสเกลที่กำหนดเอง (0, 2, 3, 4) และคืนค่าสตริงว่างสำหรับค่าว่าง/ช่องว่าง
