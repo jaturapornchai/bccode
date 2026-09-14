@@ -1,0 +1,7 @@
+{
+  "BackendImage": "bcai-account-mainapi:r20260911-gl-v2-1",
+  "FrontendImage": "bcai-account-frontend:r20260911-gl-v2-1",
+  "ArchiveSHA256": "65a98f63dc4e21aeecfd8d3c060f2448d138d9277b4357567d8b79714ed7b5b3",
+  "SourceBase": "a04bfb570adbb35148568a0a181ce05c9a01c911",
+  "Source": "working tree including GL v2; test-only readiness changes after image build"
+}

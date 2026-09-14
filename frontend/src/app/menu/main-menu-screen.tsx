@@ -7,6 +7,7 @@ import {
   Archive,
   BarChart3,
   Bell,
+  BookOpen,
   Bot,
   BriefcaseBusiness,
   Building2,
@@ -72,6 +73,7 @@ import QRCode from "qrcode";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type ReactNode, type UIEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { LogoAvatar } from "@/components/logo-avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -98,6 +100,7 @@ import {
   type MenuSection,
 } from "@/lib/menu-data";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type FrequentMenuEntry, type MenuUsageMap } from "@/lib/menu-usage";
+import { MenuPendingBadge } from "./menu-pending-badge";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import { authFetch, clearAuthSession, getAuthSession, logoutAuthSession } from "@/lib/client-auth-session";
 import { pushNotice } from "@/lib/toast";
@@ -119,6 +122,9 @@ import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
 import { ZoomControl } from "../zoom-control";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
+import { isMenuScreenPending } from "@/lib/menu-screen-status";
+import { isGeneralLedgerRoute } from "@/lib/general-ledger";
+import { GeneralLedgerScreen } from "@/app/gl/general-ledger-screen";
 import { MenuDataTable } from "./menu-data-table";
 import { DashboardHome } from "./dashboard-home";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
@@ -128,10 +134,8 @@ import { MenuKpiChart } from "./menu-kpi-chart";
 import { MenuQueryProvider } from "./menu-query-provider";
 import { ProductBarcodeScreen } from "./product-barcode-screen";
 import { ProductScreen } from "./product-screen";
-import { ProductSetScreen } from "./product-set-screen";
 import { ProductBarcodeShelfScreen } from "./product-barcode-shelf-screen";
 import { ProductPriceHistoryScreen } from "./product-price-history-screen";
-import { MarketplaceMappingsScreen } from "./marketplace-screen";
 import { DataModelGraphScreen } from "./datamodel-graph-screen";
 
 type WorkTab = {
@@ -140,6 +144,7 @@ type WorkTab = {
   route: string;
   item?: MenuItem;
   closable: boolean;
+  dirty?: boolean;
   productFocusRequest?: { code: string; requestId: string };
 };
 
@@ -406,11 +411,14 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const [globalSearch, setGlobalSearch] = useState("");
   const [tabs, setTabs] = useState<WorkTab[]>([firstTab]);
   const [activeTabId, setActiveTabId] = useState(firstTab.id);
+  const dirtyLedgerRoutes = useRef(new Set<string>());
+  const { confirm: confirmDiscard, confirmationDialog: unsavedLedgerDialog } = useConfirmDialog();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [menuUsageKey, setMenuUsageKey] = useState("");
   const [menuUsage, setMenuUsage] = useState<MenuUsageMap>({});
-  const [menuLayout, setMenuLayout] = useState<MenuLayoutMode>("left");
+  const [menuLayout, setMenuLayout] = useState<MenuLayoutMode>("top");
+  const [menuLayoutLoaded, setMenuLayoutLoaded] = useState(false);
   const [sessionStats, setSessionStats] = useState<SessionStatsData | null>(null);
   const [sessionsDialogOpen, setSessionsDialogOpen] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
@@ -480,7 +488,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     const savedLanguage = normalizeLanguage(localStorage.getItem("user_language") ?? initialLanguage);
     setLanguage(savedLanguage);
     document.documentElement.lang = savedLanguage;
-    setMenuLayout(localStorage.getItem(menuLayoutStorageKey) === "top" ? "top" : "left");
+    setMenuLayout(localStorage.getItem(menuLayoutStorageKey) === "left" ? "left" : "top");
+    setMenuLayoutLoaded(true);
     const savedSidebarWidth = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
     if (savedSidebarWidth) {
       const parsed = Number(savedSidebarWidth);
@@ -518,9 +527,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   }, [language]);
 
   useEffect(() => {
+    if (!menuLayoutLoaded) return;
     localStorage.setItem(menuLayoutStorageKey, menuLayout);
-    if (menuLayout === "top") setSidebarHidden(true);
-  }, [menuLayout]);
+    setSidebarHidden(menuLayout === "top");
+  }, [menuLayout, menuLayoutLoaded]);
 
   useEffect(() => {
     if (!authToken || !authBackendUrl) return;
@@ -645,7 +655,34 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const rows = useMemo(() => menuQuery.data ?? [], [menuQuery.data]);
   const frequentMenuEntries = useMemo(() => getFrequentMenuEntries(allMenuItems, menuUsage, 20), [allMenuItems, menuUsage]);
   const activeWorkTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? firstTab, [activeTabId, tabs]);
-  const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/productextension" || activeWorkTab.route === "/productset" || activeWorkTab.route === "/datamodelgraph";
+  const activeTabNeedsFixedViewport = activeWorkTab.route === "/productbarcode" || activeWorkTab.route === "/product" || activeWorkTab.route === "/datamodelgraph" || isGeneralLedgerRoute(activeWorkTab.route);
+
+  useEffect(() => {
+    const listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ route?: unknown; dirty?: unknown }>).detail;
+      if (typeof detail?.route !== "string" || typeof detail.dirty !== "boolean" || !isGeneralLedgerRoute(detail.route)) return;
+      const route = detail.route, dirty = detail.dirty;
+      if (dirty) dirtyLedgerRoutes.current.add(route); else dirtyLedgerRoutes.current.delete(route);
+      setTabs((current) => current.map((tab) => tab.route === route && tab.dirty !== dirty ? { ...tab, dirty } : tab));
+    };
+    window.addEventListener("bc-gl-dirty", listener);
+    return () => window.removeEventListener("bc-gl-dirty", listener);
+  }, []);
+
+  async function confirmLeaveLedger(action: string, route?: string): Promise<boolean> {
+    const unsaved = tabs.filter((tab) => dirtyLedgerRoutes.current.has(tab.route) && (!route || tab.route === route));
+    if (!unsaved.length) return true;
+    return confirmDiscard({ title: `${action}ทั้งที่ยังไม่บันทึก?`, description: "ข้อมูลบัญชีที่ยังไม่บันทึกจะหายไป กรุณากลับไปบันทึก หรือยืนยันละทิ้งการแก้ไข", details: unsaved.map((tab) => tab.title).join(" · "), confirmLabel: "ยืนยันละทิ้งข้อมูล", cancelLabel: "กลับไปบันทึก", tone: "warning" });
+  }
+
+  function selectWorkTab(tabId: string) {
+    // All panels stay mounted; switching tabs preserves unfinished accounting forms.
+    setActiveTabId(tabId);
+  }
+
+  async function openWorkspace() {
+    if (await confirmLeaveLedger("เปลี่ยนบริษัท")) router.push("/workspace");
+  }
 
   function openMenuItem(
     item: MenuItem,
@@ -661,7 +698,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       setMenuUsage(recordMenuUsage(localStorage, menuUsageKey, item.id));
     }
 
-    if (!options.forceNew) {
+    // Ledger dirty events are scoped by route: reuse one editor per route.
+    if (!options.forceNew || isGeneralLedgerRoute(item.route)) {
       const existingTab = tabs.find((tab) => tab.route === item.route);
       if (existingTab) {
         if (productFocusRequest) {
@@ -737,7 +775,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     );
   }
 
-  function closeTab(tabId: string) {
+  async function closeTab(tabId: string) {
+    const closing = tabs.find((tab) => tab.id === tabId);
+    if (!closing?.closable || !await confirmLeaveLedger("ปิดแท็บ", closing.route)) return;
     setTabs((current) => {
       const nextTabs = current.filter((tab) => tab.id !== tabId);
       if (activeTabId === tabId) setActiveTabId(nextTabs[nextTabs.length - 1]?.id ?? firstTab.id);
@@ -896,6 +936,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       return;
     }
 
+    if (!await confirmLeaveLedger("เปลี่ยนรหัสผ่านและเข้าสู่ระบบใหม่")) return;
     setPasswordSaving(true);
     setPasswordNotice(null);
     try {
@@ -932,6 +973,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   }
 
   async function logout() {
+    if (!await confirmLeaveLedger("ออกจากระบบ")) return;
     await logoutAuthSession();
     localStorage.removeItem(workspaceStorageKeys.workspace);
     localStorage.removeItem(workspaceStorageKeys.shopInfo);
@@ -1159,6 +1201,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     size="sm"
                     className="h-8 gap-1 px-2"
                     aria-label={menuLayoutLeftText}
+                    aria-pressed={menuLayout === "left"}
                     title={menuLayoutLeftText}
                     onClick={() => {
                       setMenuLayout("left");
@@ -1174,6 +1217,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     size="sm"
                     className="h-8 gap-1 px-2"
                     aria-label={menuLayoutTopText}
+                    aria-pressed={menuLayout === "top"}
                     title={menuLayoutTopText}
                     onClick={() => setMenuLayout("top")}
                   >
@@ -1207,6 +1251,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                         <DropdownMenuItem key={item.id} className="gap-2" disabled={!canAccessMenuItem(item)} onClick={() => openMenuItem(item)}>
                           <MenuRouteIcon item={item} size={15} />
                           <span className="min-w-0 flex-1 truncate">{menuText(item.label, language, backendLanguage)}</span>
+                          <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
                           {canAccessMenuItem(item) ? null : <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
                           <Badge variant="secondary" className="shrink-0">{percent}%</Badge>
                         </DropdownMenuItem>
@@ -1268,7 +1313,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       {connectLineText}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push("/workspace")}>
+                    <DropdownMenuItem onClick={() => void openWorkspace()}>
                       <Store className="h-4 w-4" />
                       {backendText(backendLanguage, "change_company")}
                     </DropdownMenuItem>
@@ -1364,6 +1409,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       <p className="truncate text-sm font-bold text-foreground" title={menuText(item.label, language, backendLanguage)}>
                         {menuText(item.label, language, backendLanguage)}
                       </p>
+                      <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">
                         {sectionLabel} · {groupLabel}
                       </p>
@@ -1372,8 +1418,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 </div>
               )}
             </div>
-          ) : (
-          <>
+          ) : null}
+          <div hidden={!!topSearchResults} className={cn("min-h-0 flex-1 flex-col", topSearchResults ? "hidden" : "flex")} data-worktabs-preserved>
           {menuLayout === "top" ? (
             <TopMenuChrome
               activeSection={activeSection}
@@ -1392,7 +1438,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               className="menu-tabs-chrome min-w-0 overflow-hidden"
               data-hidden={topChromeHidden ? "true" : "false"}
             >
-              <OpenTabs tabs={tabs} activeTabId={activeTabId} backendLanguage={backendLanguage} language={language} onSelect={setActiveTabId} onClose={closeTab} onReorder={reorderTabs} />
+              <OpenTabs tabs={tabs} activeTabId={activeTabId} backendLanguage={backendLanguage} language={language} onSelect={selectWorkTab} onClose={closeTab} onReorder={reorderTabs} />
             </div>
 
             <div
@@ -1402,9 +1448,9 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               )}
               onScroll={handleContentScroll}
             >
-              {menuQuery.isLoading ? (
+              {menuQuery.isLoading && tabs.length === 1 ? (
                 <DashboardLoading backendLanguage={backendLanguage} />
-              ) : menuQuery.isError ? (
+              ) : menuQuery.isError && tabs.length === 1 ? (
                 <Card className="border-destructive/30">
                   <CardContent className="flex items-center gap-3 p-6 text-destructive">
                     <AlertTriangle className="h-5 w-5" />
@@ -1420,7 +1466,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   {tabs.map((tab) => (
                     <section
                       aria-hidden={tab.id !== activeTabId}
-                      className={cn("min-w-0", (tab.route === "/productbarcode" || tab.route === "/product" || tab.route === "/productextension" || tab.route === "/productset" || tab.route === "/datamodelgraph") && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
+                      className={cn("min-w-0", (tab.route === "/productbarcode" || tab.route === "/product" || tab.route === "/datamodelgraph" || isGeneralLedgerRoute(tab.route)) && "lg:h-full lg:min-h-0 lg:overflow-hidden")}
                       hidden={tab.id !== activeTabId}
                       key={tab.id}
                       role="tabpanel"
@@ -1452,9 +1498,24 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                           language={language}
                           onOpenRoute={(route, productCode) => {
                              const item = allMenuItems.find((candidate) => candidate.route === route);
-                             if (item) openMenuItem(item, { productCode });
+                             if (item) {
+                               openMenuItem(item, { productCode });
+                             } else if (route === "/productbarcodeshelf") {
+                               openMenuItem({
+                                 id: "label-print",
+                                 route: "/productbarcodeshelf",
+                                 label: { th: "พิมพ์ป้ายสินค้า", en: "Print Product Label" },
+                                 category: "master",
+                               }, { productCode });
+                             } else if (route === "/line-oa") {
+                               openMenuItem({
+                                 id: "line-official-account",
+                                 route: "/line-oa",
+                                 label: { th: "เชื่อมต่อ LINE", en: "LINE Official Account" },
+                                 category: "master",
+                               });
+                             }
                            }}
-                          tabCount={tabs.length}
                         />
                       )}
                     </section>
@@ -1463,8 +1524,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               )}
             </div>
           </div>
-          </>
-          )}
+          </div>
         </section>
       </div>
 
@@ -1641,6 +1701,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
           </section>
         </div>
       ) : null}
+      {unsavedLedgerDialog}
     </main>
   );
 }
@@ -1718,7 +1779,10 @@ function TopMenuChrome({
     const secondPanelWidth = 480;
     const gap = 4;
     const viewportPadding = 12;
-    setOpenSectionLeft(target.offsetLeft);
+    const containerWidth = menuRootRef.current?.clientWidth ?? window.innerWidth;
+    const maxLeft = Math.max(0, containerWidth - 300);
+    const clampedLeft = Math.min(Math.max(0, target.offsetLeft), maxLeft);
+    setOpenSectionLeft(clampedLeft);
     setFlyoutSide(rect.left + firstPanelWidth + gap + secondPanelWidth <= window.innerWidth - viewportPadding ? "right" : "left");
     setOpenSectionId(section.id);
     setActiveGroupId(getVisibleGroups(section, language, "", backendLanguage)[0]?.id ?? null);
@@ -1760,6 +1824,7 @@ function TopMenuChrome({
             <MenuRouteIcon item={item} size={15} />
           </span>
           <span className="line-clamp-2 min-w-0 flex-1 break-words font-medium leading-5">{label}</span>
+          <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
           {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
         </button>
         {locked ? null : (
@@ -1796,7 +1861,7 @@ function TopMenuChrome({
   return (
     <nav className="shrink-0 border-b border-border bg-card/95 px-2 py-1" aria-label={mt(backendLanguage, "navigation")}>
       <div className="relative" ref={menuRootRef}>
-      <div className="flex min-w-0 gap-1 overflow-x-auto">
+      <div className="flex flex-wrap items-center gap-1">
         <Button
           type="button"
           variant={activeSection === "all" ? "secondary" : "ghost"}
@@ -1835,7 +1900,10 @@ function TopMenuChrome({
                 const rect = event.currentTarget.getBoundingClientRect();
                 const firstPanelWidth = 434;
                 const secondPanelWidth = 480;
-                setOpenSectionLeft(event.currentTarget.offsetLeft);
+                const containerWidth = menuRootRef.current?.clientWidth ?? window.innerWidth;
+                const maxLeft = Math.max(0, containerWidth - 300);
+                const clampedLeft = Math.min(Math.max(0, event.currentTarget.offsetLeft), maxLeft);
+                setOpenSectionLeft(clampedLeft);
                 setFlyoutSide(rect.left + firstPanelWidth + 4 + secondPanelWidth <= window.innerWidth - 12 ? "right" : "left");
                 setOpenSectionId((current) => {
                   const next = current === section.id ? null : section.id;
@@ -2070,6 +2138,7 @@ function MenuSectionAccordion({
       <button
         type="button"
         onClick={onToggle}
+        aria-controls={`menu-tree-${section.id}`}
         aria-expanded={expanded}
         className={cn(
           "flex w-full min-w-0 items-center justify-between gap-2 rounded-xl border px-2 py-1.5 text-left text-xs font-semibold transition-colors",
@@ -2087,7 +2156,7 @@ function MenuSectionAccordion({
       </button>
 
       {expanded ? (
-        <div className="grid gap-1 rounded-2xl border border-border bg-background/70 p-1.5" role="group">
+        <div id={`menu-tree-${section.id}`} className="grid gap-1 rounded-2xl border border-border bg-background/70 p-1.5" role="group">
           {visibleGroups.length ? (
             section.groups.length === 1 ? (
               (() => {
@@ -2120,25 +2189,6 @@ function MenuSectionAccordion({
               visibleGroups.map((group) => {
                 const nodes = getMenuTreeNodes(group, language, search, backendLanguage);
                 if (!nodes.length) return null;
-
-                // ถ้าข้างในมี เมนูเดียว ไม่ต้องทำเป็น Group
-                if (group.items.length === 1 && nodes.length === 1 && nodes[0].type === "item") {
-                  const node = nodes[0];
-                  return (
-                    <div key={group.id} className="rounded-xl border border-border/70 bg-card/60 px-1 py-0.5 shadow-2xs">
-                      <MenuTreeItemButton
-                        backendLanguage={backendLanguage}
-                        isLocked={!canAccessMenuItem(node.item)}
-                        item={node.item}
-                        key={node.id}
-                        language={language}
-                        nested={false}
-                        onOpenNewItem={onOpenNewItem}
-                        onOpenItem={onOpenItem}
-                      />
-                    </div>
-                  );
-                }
 
                 const groupKey = `${section.id}:${group.id}`;
                 return (
@@ -2319,6 +2369,7 @@ function MenuTreeItemButton({
           <MenuRouteIcon item={item} size={14} />
         </span>
         <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
+        <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
         {isLocked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label={noPermissionText} /> : null}
       </button>
       {isLocked ? null : (
@@ -2410,7 +2461,28 @@ function getMenuTreeNodes(group: MenuGroup, language: LanguageCode, search: stri
 }
 
 const MENU_GROUP_ICONS: Record<string, LucideIcon> = {
+  "po-approvals": CheckCheck,
+  "po-costs": Calculator,
+  "bill-approvals": CheckCheck,
+  "bill-delivery": Truck,
+  "ap-adjustments": FileText,
+  "ap-utilities": Calculator,
+  "ar-adjustments": FileText,
+  "ar-utilities": Calculator,
+  "cheques-received": HandCoins,
+  "cheques-issued": CreditCard,
+  "card-settlement": CreditCard,
+  "bank-utilities": Calculator,
+  "ic-requests": FileText,
+  "ic-counting": CheckCheck,
+  "ic-sets": Package,
+  "ic-identifiers": Package,
+  "ic-pricing": Tag,
+  "ic-utilities": Calculator,
+  "fa-posting": FileText,
+  "gl-posting": CheckCheck,
   // ค่าเริ่มต้น (Defaults / Setup)
+  "product-setup": Package,
   "product-classification": FolderGit2,
   "product-descriptors": Tag,
   "product-sku-options": Palette,
@@ -2424,6 +2496,36 @@ const MENU_GROUP_ICONS: Record<string, LucideIcon> = {
   "sales-loyalty": Gift,
   "restaurant-setup": ChefHat,
   "marketplace-connectors": Globe,
+
+  // 9 ERP Modules groups (Champ alignment)
+  "po-procurement": ShoppingCart,
+  "po-transactions": Package,
+  "po-payment": CreditCard,
+  "po-reports": BarChart3,
+  "bill-transactions": ReceiptText,
+  "bill-adjustments": FileText,
+  "bill-payment": HandCoins,
+  "bill-reports": BarChart3,
+  "ap-master": UsersRound,
+  "ap-payment": CreditCard,
+  "ap-reports": BarChart3,
+  "ar-master": UsersRound,
+  "ar-transactions": ReceiptText,
+  "ar-payment": HandCoins,
+  "ar-reports": BarChart3,
+  "cash-bank-master": Landmark,
+  "cash-management": CircleDollarSign,
+  "bank-transactions": Landmark,
+  "ic-master": Package,
+  "ic-transactions": Warehouse,
+  "ic-reports": BarChart3,
+  "fa-transactions": Building2,
+  "fa-reports": BarChart3,
+  "vat-transactions": Calculator,
+  "vat-reports": ReceiptText,
+  "gl-master": Database,
+  "gl-journals": FileText,
+  "gl-reports": BarChart3,
 
   // ข้อมูลหลัก (Master data)
   "products": Package,
@@ -2466,6 +2568,15 @@ function MenuGroupIcon({ groupId, size = 14 }: { groupId: string; size?: number 
 }
 
 function SectionIcon({ sectionId }: { sectionId: string }) {
+  if (sectionId === "gl") return <BookOpen className="h-4 w-4" />;
+  if (sectionId === "ic") return <Package className="h-4 w-4" />;
+  if (sectionId === "po") return <ShoppingCart className="h-4 w-4" />;
+  if (sectionId === "ap") return <CreditCard className="h-4 w-4" />;
+  if (sectionId === "ar") return <HandCoins className="h-4 w-4" />;
+  if (sectionId === "bill") return <ReceiptText className="h-4 w-4" />;
+  if (sectionId === "cash-bank") return <Landmark className="h-4 w-4" />;
+  if (sectionId === "vat") return <Calculator className="h-4 w-4" />;
+  if (sectionId === "fa") return <Building2 className="h-4 w-4" />;
   if (sectionId === "transactions") return <BriefcaseBusiness className="h-4 w-4" />;
   if (sectionId === "reports") return <BarChart3 className="h-4 w-4" />;
   if (sectionId === "defaults") return <SlidersHorizontal className="h-4 w-4" />;
@@ -2650,7 +2761,7 @@ function OpenTabs({
               </span>
             </b>
             <small className={cn("truncate text-[10px] leading-3", tab.id === activeTabId ? "text-primary-foreground/80" : "text-muted-foreground")}>
-              {tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}
+              {tab.dirty ? "ยังไม่บันทึก" : tab.id === "home" ? mt(backendLanguage, "dashboardRoute") : tab.route}
             </small>
           </button>
           {tab.closable ? (
@@ -2687,7 +2798,6 @@ function WorkTabPanel({
   backendLanguage,
   language,
   onOpenRoute,
-  tabCount,
 }: {
   active: boolean;
   activeTab: WorkTab;
@@ -2700,7 +2810,6 @@ function WorkTabPanel({
   backendLanguage: BackendLanguageDictionary;
   language: LanguageCode;
   onOpenRoute: (route: string, productCode?: string) => void;
-  tabCount: number;
 }) {
   if (activeTab.route === "/shortcuts") {
     return (
@@ -2736,14 +2845,6 @@ function WorkTabPanel({
     );
   }
 
-  if (activeTab.route === "/productextension") {
-    return <ProductScreen active={active} embedded language={language} mode="extension" />;
-  }
-
-  if (activeTab.route === "/productset") {
-    return <ProductSetScreen active={active} embedded language={language} />;
-  }
-
   if (activeTab.route === "/productbarcode") {
     return (
       <ProductBarcodeScreen
@@ -2763,24 +2864,16 @@ function WorkTabPanel({
     return <ProductPriceHistoryScreen embedded language={language} />;
   }
 
-  if (activeTab.route === "/marketplace/shopee") {
-    return <MarketplaceMappingsScreen platform="shopee" embedded language={language} />;
-  }
-
-  if (activeTab.route === "/marketplace/lazada") {
-    return <MarketplaceMappingsScreen platform="lazada" embedded language={language} />;
-  }
-
-  if (activeTab.route === "/marketplace/tiktok") {
-    return <MarketplaceMappingsScreen platform="tiktok" embedded language={language} />;
-  }
-
   if (activeTab.route === "/datamodelgraph") {
     return <DataModelGraphScreen embedded language={language} />;
   }
 
+  if (isGeneralLedgerRoute(activeTab.route)) {
+    return <GeneralLedgerScreen embedded language={language} route={activeTab.route} />;
+  }
+
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);
-  if (systemSettingConfig) {
+  if (systemSettingConfig && !isMenuScreenPending(activeTab.route)) {
     return <SystemSettingsScreen embedded language={language} route={activeTab.route} />;
   }
 
@@ -2793,34 +2886,18 @@ function WorkTabPanel({
               {activeTab.item ? <MenuRouteIcon item={activeTab.item} size={28} /> : <HomeMenuIcon size={28} />}
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-muted-foreground">{backendText(backendLanguage, "old_flutter_route")}</p>
-              <h2 className="truncate text-2xl font-semibold">{activeTab.item ? menuText(activeTab.item.label, language, backendLanguage) : activeTab.title}</h2>
-              <code className="mt-1 block truncate rounded-xl bg-muted px-3 py-1 text-sm text-muted-foreground">{activeTab.route}</code>
+              <p className="text-sm font-medium text-muted-foreground">{menuText({ key: "menu_planned_workflow", th: "เมนูในแผนพัฒนา", en: "Planned Workflow" }, language, backendLanguage)}</p>
+              <h2 className="break-words text-2xl font-semibold leading-relaxed">{activeTab.item ? menuText(activeTab.item.label, language, backendLanguage) : activeTab.title}</h2>
             </div>
           </div>
-          <Badge variant="warning">{backendText(backendLanguage, "migrate_business_screen_pending")}</Badge>
+          <MenuPendingBadge route={activeTab.route} language={language} backendLanguage={backendLanguage} />
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-3">
-          <Metric label={backendText(backendLanguage, "open_tabs")} value={tabCount.toLocaleString("th-TH")} />
-          <Metric label={backendText(backendLanguage, "status")} value={backendText(backendLanguage, "placeholder")} />
-          <Metric label={backendText(backendLanguage, "target")} value={backendText(backendLanguage, "nextjs_screen")} />
-        </div>
-
-        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-sm leading-6 text-muted-foreground">
-          {backendText(backendLanguage, "migration_placeholder_description")}
+        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-base leading-relaxed text-muted-foreground">
+          {menuText({ key: "menu_planned_description", th: "หน้าจอนี้ยังอยู่ระหว่างเตรียมพัฒนา จึงยังบันทึกหรือประมวลผลข้อมูลไม่ได้ เลือกใช้งานเมนูอื่นจากแถบเมนูได้ตามปกติ", en: "This screen is planned and cannot save or process data yet. You can continue using other menus." }, language, backendLanguage)}
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-2.5 shadow-xs">
-      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-      <strong className="mt-0.5 block truncate text-base">{value}</strong>
-    </div>
   );
 }
 

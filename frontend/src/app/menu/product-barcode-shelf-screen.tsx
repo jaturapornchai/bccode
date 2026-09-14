@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { Ean13Barcode } from "@/components/product-barcode/ean13-barcode";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { encodeEan13 } from "@/lib/product-barcode/utils";
@@ -89,6 +90,11 @@ const text = {
   },
 } as const;
 
+const SHELF_SPLIT_STORAGE_KEY = "bc_barcode_shelf_split_left";
+const SHELF_SPLIT_DEFAULT_LEFT = 62;
+const SHELF_SPLIT_MIN_LEFT = 35;
+const SHELF_SPLIT_MAX_LEFT = 80;
+
 export function ProductBarcodeShelfScreen({
   embedded = false,
   language: externalLanguage,
@@ -104,6 +110,73 @@ export function ProductBarcodeShelfScreen({
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const setNotice = pushNotice;
+
+  const [splitLeftPercent, setSplitLeftPercent] = useState<number>(SHELF_SPLIT_DEFAULT_LEFT);
+  const [resizingSplit, setResizingSplit] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(SHELF_SPLIT_STORAGE_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (Number.isFinite(parsed)) {
+        setSplitLeftPercent(Math.min(SHELF_SPLIT_MAX_LEFT, Math.max(SHELF_SPLIT_MIN_LEFT, parsed)));
+      }
+    }
+  }, []);
+
+  const startSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const container = event.currentTarget.parentElement;
+    if (!container) return;
+    event.preventDefault();
+    setResizingSplit(true);
+    const rect = container.getBoundingClientRect();
+    const update = (clientX: number) => {
+      const next = ((clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(SHELF_SPLIT_MAX_LEFT, Math.max(SHELF_SPLIT_MIN_LEFT, next));
+      setSplitLeftPercent(clamped);
+      window.localStorage.setItem(SHELF_SPLIT_STORAGE_KEY, String(Math.round(clamped)));
+    };
+    update(event.clientX);
+    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setResizingSplit(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, []);
+
+  const adjustSplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setSplitLeftPercent((prev) => {
+        const next = Math.max(SHELF_SPLIT_MIN_LEFT, prev - 2);
+        window.localStorage.setItem(SHELF_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setSplitLeftPercent((prev) => {
+        const next = Math.min(SHELF_SPLIT_MAX_LEFT, prev + 2);
+        window.localStorage.setItem(SHELF_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setSplitLeftPercent(SHELF_SPLIT_MIN_LEFT);
+      window.localStorage.setItem(SHELF_SPLIT_STORAGE_KEY, String(SHELF_SPLIT_MIN_LEFT));
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setSplitLeftPercent(SHELF_SPLIT_MAX_LEFT);
+      window.localStorage.setItem(SHELF_SPLIT_STORAGE_KEY, String(SHELF_SPLIT_MAX_LEFT));
+    }
+  }, []);
 
   const loadProducts = useCallback(
     async (
@@ -314,8 +387,11 @@ export function ProductBarcodeShelfScreen({
         </CardContent>
       </Card>
 
-      <section className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <Card className="min-w-0">
+      <section
+        className="flex flex-col xl:flex-row min-w-0 gap-3 xl:gap-0 items-stretch"
+        style={{ ["--shelf-split-basis" as any]: `${splitLeftPercent}%` }}
+      >
+        <Card className="min-w-0 w-full xl:w-[var(--shelf-split-basis)] xl:shrink-0">
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-base">{dictionary.products}</CardTitle>
           </CardHeader>
@@ -369,7 +445,23 @@ export function ProductBarcodeShelfScreen({
           </CardContent>
         </Card>
 
-        <Card className="min-w-0">
+        <ResizableSplitter
+          value={Math.round(splitLeftPercent)}
+          min={SHELF_SPLIT_MIN_LEFT}
+          max={SHELF_SPLIT_MAX_LEFT}
+          label={
+            dictionary === text.th
+              ? "ปรับขนาดรายการสินค้าและป้ายที่เลือก (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+              : "Resize product catalog and selected labels panes (drag to resize, double-click to reset)"
+          }
+          isResizing={resizingSplit}
+          onPointerDown={startSplitResize}
+          onDoubleClick={() => setSplitLeftPercent(SHELF_SPLIT_DEFAULT_LEFT)}
+          onKeyDown={adjustSplitWithKeyboard}
+          breakpoint="xl"
+        />
+
+        <Card className="min-w-0 flex-1">
           <CardHeader className="flex flex-row items-center justify-between p-3 pb-1">
             <CardTitle className="text-base">{dictionary.selected}</CardTitle>
             <Button

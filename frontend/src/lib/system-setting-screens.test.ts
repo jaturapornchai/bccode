@@ -196,4 +196,32 @@ describe("system setting screen configs", () => {
       ]),
     );
   });
+
+  it("provides configuration for book bank master screen with main-crud API and redirects bank alias", () => {
+    const config = getSystemSettingConfig("bookbankscreen");
+    expect(config).toBeDefined();
+    expect(config?.route).toBe("/bookbankscreen");
+    expect(config?.kind).toBe("main-crud");
+    expect(config?.icon).toBe("bank");
+    expect(config?.basePath).toBe("/payment/bookbank");
+    expect(config?.listPath).toBe("/payment/bookbank/list");
+    expect(config?.idField).toBe("guidfixed");
+    expect(config?.title.th).toBe("สมุดบัญชี");
+    expect(config?.fields.map((f) => f.key)).toEqual([
+      "bookcode",
+      "names",
+      "passbook",
+      "bankbranch",
+      "accountname",
+      "bankcode",
+      "banknames",
+      "accountcode",
+      "logo",
+    ]);
+    expect(config?.fields[0]?.businessCode).toBe(true);
+    expect(config?.fields[8]?.type).toBe("image-upload");
+
+    const aliasConfig = getSystemSettingConfig("bank");
+    expect(aliasConfig?.slug).toBe("bookbankscreen");
+  });
 });

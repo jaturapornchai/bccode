@@ -13,6 +13,7 @@ import { authFetch } from "@/lib/client-auth-session";
 import type { LanguageCode } from "@/lib/i18n";
 import { menuText, type MenuItem } from "@/lib/menu-data";
 import { MenuRouteIcon } from "./menu-icon";
+import { MenuPendingBadge } from "./menu-pending-badge";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
 import type { FrequentMenuEntry } from "@/lib/menu-usage";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
@@ -227,6 +228,7 @@ export function DashboardHome({
                   className="group grid min-w-0 gap-0.5 rounded-xl border border-border bg-card p-2 text-left shadow-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
                 >
                   <span className="truncate text-xs text-muted-foreground">{menuText(item.label, language, backendLanguage) || t(w.th, w.en)}</span>
+                  <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
                   <span className="text-xl font-bold tabular-nums text-foreground">
                     {loading && !stat ? "…" : (stat?.total ?? 0).toLocaleString(isThai ? "th-TH" : "en-US")}
                   </span>
@@ -271,6 +273,7 @@ export function DashboardHome({
               <span className="truncate group-hover:text-primary transition-colors">
                 {menuText(item.label, language, backendLanguage)}
               </span>
+                <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
             </button>
           ))}
           <button

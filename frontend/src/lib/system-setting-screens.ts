@@ -597,7 +597,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/holding/employee",
     listPath: "/holding/employee/list",
     idField: "guidfixed",
-    title: { th: "พนักงาน", en: "Employee" },
+    title: { th: "ทะเบียนพนักงาน", en: "Employee" },
     subtitle: {
       th: "จัดการพนักงาน อีเมล สถานะ POS และ PIN",
       en: "Manage employees, email, POS access, and PIN.",
@@ -628,7 +628,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/holding/permission",
     listPath: "/holding/users",
     idField: "useruid",
-    title: { th: "ผู้ใช้งาน", en: "User" },
+    title: { th: "ผู้ใช้งานระบบ", en: "User" },
     subtitle: {
       th: "จัดการผู้ใช้งาน บทบาท แผนก LINE และสิทธิ์อนุมัติ",
       en: "Manage users, role, department, LINE profile, and approval permissions.",
@@ -856,7 +856,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     listPath: "/organization/role-permission",
     idField: "_id",
     deleteKey: "_id",
-    title: { th: "สิทธิ์การใช้งาน", en: "Permission sets" },
+    title: { th: "กลุ่มสิทธิ์การใช้งาน", en: "Permission sets" },
     subtitle: {
       th: "ตั้งชุดสิทธิ์การใช้งานสำเร็จรูป (เช่น บัญชี ขาย คลัง) แล้วให้คนในองค์กรเลือกได้หลายชุด · USER/ADMIN/OWNER คือชุดมาตรฐานตามระดับสิทธิ์ ข้ามขั้นนี้ได้ถ้าใช้แค่ชุดมาตรฐาน",
       en: "Define reusable permission sets (e.g. Accounting, Sales, Stock) that people can combine · USER/ADMIN/OWNER are the access-level defaults.",
@@ -960,7 +960,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/debtaccount/creditor-group",
     listPath: "/debtaccount/creditor-group/list",
     idField: "guidfixed",
-    title: { th: "กลุ่มผู้จำหน่าย", en: "Vendor Group" },
+    title: { th: "กลุ่มเจ้าหนี้", en: "Vendor Group" },
     subtitle: {
       th: "จัดการรหัสกลุ่มผู้จำหน่ายและชื่อตามภาษาที่เลือก",
       en: "Manage vendor group codes and names for the selected language.",
@@ -979,7 +979,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/debtaccount/debtor-group",
     listPath: "/debtaccount/debtor-group/list",
     idField: "guidfixed",
-    title: { th: "กลุ่มลูกค้า", en: "Customer Group" },
+    title: { th: "กลุ่มลูกหนี้", en: "Customer Group" },
     subtitle: {
       th: "จัดการรหัสกลุ่มลูกค้าและชื่อตามภาษาที่เลือก",
       en: "Manage customer group codes and names for the selected language.",
@@ -987,6 +987,38 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     fields: [
       businessCodeField("groupcode", "รหัสกลุ่มลูกค้า", "Customer group code", true),
       namesField("names", "ชื่อกลุ่มลูกค้า", "Customer group names"),
+    ],
+  },
+  {
+    slug: "bookbankscreen",
+    route: "/bookbankscreen",
+    manual: "bookbank",
+    kind: "main-crud",
+    icon: "bank",
+    basePath: "/payment/bookbank",
+    listPath: "/payment/bookbank/list",
+    idField: "guidfixed",
+    title: { th: "สมุดบัญชี", en: "Bank Accounts" },
+    subtitle: {
+      th: "จัดการสมุดบัญชีธนาคาร สาขา เลขที่บัญชี ชื่อบัญชี และผังบัญชีที่เชื่อมโยง",
+      en: "Manage bank accounts, branch, account number, and linked ledger accounts.",
+    },
+    fields: [
+      businessCodeField("bookcode", "รหัสสมุดบัญชี", "Book bank code", true),
+      namesField("names", "ชื่อสมุดบัญชี", "Book bank names"),
+      textField("passbook", "เลขที่บัญชี", "Account number", true),
+      textField("bankbranch", "สาขาธนาคาร", "Bank branch"),
+      textField("accountname", "ชื่อบัญชี", "Account name"),
+      textField("bankcode", "รหัสธนาคาร", "Bank code"),
+      namesField("banknames", "ชื่อธนาคาร", "Bank names"),
+      textField("accountcode", "รหัสผังบัญชี", "GL Account code"),
+      {
+        ...imageUploadField("logo", "โลโก้ธนาคาร / รูปสมุดบัญชี", "Bank logo / Passbook image"),
+        helper: {
+          th: "รองรับ PNG/JPG/WebP — เก็บไฟล์ในระบบจัดเก็บภาพ (S3)",
+          en: "PNG/JPG/WebP supported — stored in S3 object storage.",
+        },
+      },
     ],
   },
   {
@@ -998,7 +1030,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/debtaccount/creditor",
     listPath: "/debtaccount/creditor/list",
     idField: "guidfixed",
-    title: { th: "ผู้จำหน่าย (เจ้าหนี้)", en: "Vendor (Creditor)" },
+    title: { th: "เจ้าหนี้", en: "Vendor (Creditor)" },
     subtitle: {
       th: "จัดการข้อมูลผู้จำหน่าย ภาษี เงื่อนไขการค้า และที่อยู่",
       en: "Manage vendor master data, tax, trade terms, and addresses.",
@@ -1066,7 +1098,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/debtaccount/debtor",
     listPath: "/debtaccount/debtor/list",
     idField: "guidfixed",
-    title: { th: "ลูกค้า (ลูกหนี้)", en: "Customer (Debtor)" },
+    title: { th: "ลูกหนี้", en: "Customer (Debtor)" },
     subtitle: {
       th: "จัดการข้อมูลลูกค้า ระดับราคา เครดิต และสมาชิก",
       en: "Manage customer master data, price level, credit, and membership.",
@@ -1429,17 +1461,17 @@ function productMasterConfigs(): SystemSettingConfig[] {
       icon: "warehouse",
       basePath: "/warehouse",
       idField: "guidfixed",
-      title: { th: "คลังสินค้า → โซนเก็บสินค้า → ชั้นวาง", en: "Warehouse → Storage Zone → Shelf" },
+      title: { th: "คลัง", en: "Warehouse → Location" },
       subtitle: {
-        th: "จัดการคลังสินค้า โซนเก็บสินค้า และชั้นวางสินค้า",
-        en: "Manage warehouses, storage zones, and shelves.",
+        th: "จัดการคลังสินค้าและที่เก็บสินค้า",
+        en: "Manage warehouses and storage locations.",
       },
       fields: [
         businessCodeField("code", "รหัสคลังสินค้า", "Warehouse code", true),
         namesField("names", "ชื่อคลังสินค้า", "Warehouse names"),
         {
           key: "location",
-          label: { th: "โซนเก็บสินค้าและชั้นวาง", en: "Storage Zones & Shelves" },
+          label: { th: "ที่เก็บสินค้า", en: "Storage Locations" },
           type: "json",
         },
       ],
@@ -1677,7 +1709,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "/masterbrandscreen",
       "settings",
       "brand",
-      "ยี่ห้อ",
+      "ยี่ห้อสินค้า",
       "Brand",
     ),
     atlasMasterConfig(
@@ -1707,6 +1739,12 @@ export const SYSTEM_SETTING_SLUGS = SYSTEM_SETTING_CONFIGS.map(
 export function getSystemSettingConfig(
   routeOrSlug: string,
 ): SystemSettingConfig | undefined {
+  if (routeOrSlug === "bank" || routeOrSlug === "/bank") {
+    return (
+      SYSTEM_SETTING_CONFIGS.find((item) => item.slug === "bookbankscreen") ??
+      SYSTEM_SETTING_CONFIGS.find((item) => item.slug === "bank")
+    );
+  }
   const normalized = routeOrSlug.startsWith("/")
     ? routeOrSlug
     : `/${routeOrSlug}`;

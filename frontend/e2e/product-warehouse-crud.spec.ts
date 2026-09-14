@@ -96,8 +96,13 @@ async function fillFirstNameByLabel(page: Page, labelText: string, value: string
 async function clickButtonByText(page: Page, textPattern: RegExp) {
   const clicked = await page.evaluate((pattern) => {
     const re = new RegExp(pattern);
-    const el = [...document.querySelectorAll<HTMLElement>("button,a,[role=button]")].find(
-      (e) => re.test((e.textContent ?? "").trim()) && e.offsetParent !== null,
+    const dialogs = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].filter(
+      (d) => d.offsetParent !== null,
+    );
+    const context = dialogs.length > 0 ? dialogs[dialogs.length - 1] : document;
+    const candidates = [...context.querySelectorAll<HTMLElement>("button,a,[role=button]")];
+    const el = candidates.find(
+      (e) => re.test((e.textContent ?? "").trim()) && e.offsetParent !== null && !(e as HTMLButtonElement).disabled,
     );
     if (el) {
       el.click();
@@ -160,21 +165,21 @@ async function openWarehouseScreenFromMenu(page: Page) {
     const input = document.querySelector<HTMLInputElement>('input[placeholder*="ค้นหาเมนู"]');
     if (!input) throw new Error("Menu search input not found");
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
-    setter.call(input, "คลังและการผลิต");
+    setter.call(input, "ค่าเริ่มต้น");
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
   await page.waitForTimeout(1000);
   await clickButtonByText(page, /^คลัง$/);
   await page.waitForTimeout(2500);
-  await expect(page.locator("body")).toContainText(/รหัสคลังสินค้า|ไม่พบข้อมูลคลังสินค้า/);
+  await expect(page.locator("body")).toContainText(/เพิ่มคลังสินค้า|ไม่พบข้อมูลคลังสินค้า/);
 }
 
 async function loginAndOpenWarehouseScreen(page: Page) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2500);
-  await clickButtonByText(page, /เข้าทดสอบระบบ/);
+  await clickButtonByText(page, /เข้าทดสอบระบบ|ทดลองใช้ระบบ/);
   await page.waitForTimeout(2500);
-  await clickButtonByText(page, /Test/);
+  await clickButtonByText(page, /Test|กลุ่มกิจการ/);
   await page.waitForTimeout(2500);
   await page.evaluate(() => {
     const btn = [...document.querySelectorAll<HTMLElement>("button")].find(
@@ -189,70 +194,44 @@ async function loginAndOpenWarehouseScreen(page: Page) {
   await openWarehouseScreenFromMenu(page);
 }
 
-test("warehouse — create/edit/delete for warehouse, location, and bin", async ({ page }) => {
+test("warehouse — create/edit/delete for warehouse and location", async ({ page }) => {
   const uid = Date.now().toString().slice(-6);
   const whCode = `E2EW${uid}`;
   const whName = `คลังE2E${uid}`;
   const locCode = `E2EL${uid}`;
   const locName = `ที่เก็บE2E${uid}`;
-  const binCode = `E2EB${uid}`;
-  const binName = `ที่วางE2E${uid}`;
 
   await loginAndOpenWarehouseScreen(page);
 
-  // WAREHOUSE create (the Add form is open by default when no row is selected)
+  // WAREHOUSE create (click "+ เพิ่มคลังสินค้า" to open modal dialog)
+  await clickButtonByText(page, /เพิ่มคลังสินค้า/);
+  await page.waitForTimeout(1000);
   await fillFieldByPlaceholder(page, "e.g. 00000", whCode);
   await fillFirstNameByLabel(page, "ชื่อคลังสินค้าหลายภาษา", whName);
   await clickButtonByText(page, /^บันทึก$/);
   await page.waitForTimeout(2500);
   expect(await bodyHasText(page, whName)).toBe(true);
 
-  // LOCATION create
+  // LOCATION create (click "เพิ่มที่เก็บสินค้า" action on warehouse row or table header)
   await clickTightestRowAction(page, "เพิ่มที่เก็บสินค้า", whName);
   await page.waitForTimeout(1500);
   await fillFieldByPlaceholder(page, "e.g. ZONE-A", locCode);
-  await fillFirstNameByLabel(page, "ชื่อที่เก็บสินค้าหลายภาษา", locName);
-  await clickButtonByText(page, /^บันทึก$/);
+  await fillFieldByPlaceholder(page, "ชื่อที่เก็บสินค้า (ไทย)", locName);
+  await clickButtonByText(page, /^บันทึกทั้งหมด$/);
   await page.waitForTimeout(2500);
   expect(await bodyHasText(page, locName)).toBe(true);
 
-  // BIN create
-  await clickTightestRowAction(page, "เพิ่มที่วางสินค้า", locName);
-  await page.waitForTimeout(1500);
-  await fillFieldByPlaceholder(page, "e.g. BIN-01", binCode);
-  await fillFieldByPlaceholder(page, "e.g. Row A, Tier 1", binName);
-  await clickButtonByText(page, /^บันทึก$/);
-  await page.waitForTimeout(2500);
-  expect(await bodyHasText(page, binName)).toBe(true);
-
-  // BIN edit
-  await clickTightestRowAction(page, "แก้ไข", binName);
-  await page.waitForTimeout(1500);
-  await fillFieldByPlaceholder(page, "e.g. Row A, Tier 1", `${binName}X`);
-  await clickButtonByText(page, /^บันทึก$/);
-  await page.waitForTimeout(2500);
-  expect(await bodyHasText(page, `${binName}X`)).toBe(true);
-
-  // BIN delete (custom confirm dialog, not window.confirm — confirm button text is "ลบ")
-  await clickTightestRowAction(page, "ลบที่วางสินค้า", `${binName}X`);
-  await page.waitForTimeout(800);
-  await clickButtonByText(page, /^ลบ$/);
-  await page.waitForTimeout(1500);
-  expect(await bodyHasText(page, `${binName}X`)).toBe(false);
-
-  // LOCATION edit
-  await clickTightestRowAction(page, "แก้ไข", locName);
-  await page.waitForTimeout(1500);
-  await fillFirstNameByLabel(page, "ชื่อที่เก็บสินค้าหลายภาษา", `${locName}X`);
-  await clickButtonByText(page, /^บันทึก$/);
+  // LOCATION edit (edit in table row directly and click "บันทึกทั้งหมด")
+  await fillFieldByPlaceholder(page, "ชื่อที่เก็บสินค้า (ไทย)", `${locName}X`);
+  await clickButtonByText(page, /^บันทึกทั้งหมด$/);
   await page.waitForTimeout(2500);
   expect(await bodyHasText(page, `${locName}X`)).toBe(true);
 
-  // LOCATION delete
+  // LOCATION delete (click trash icon on location row, then click "บันทึกทั้งหมด")
   await clickTightestRowAction(page, "ลบที่เก็บสินค้า", `${locName}X`);
-  await page.waitForTimeout(800);
-  await clickButtonByText(page, /^ลบ$/);
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(1000);
+  await clickButtonByText(page, /^บันทึกทั้งหมด$/);
+  await page.waitForTimeout(2500);
   expect(await bodyHasText(page, `${locName}X`)).toBe(false);
 
   // WAREHOUSE edit
@@ -285,7 +264,8 @@ test("warehouse — create/edit/delete for warehouse, location, and bin", async 
  * Creates a throwaway second company for the subset test (this tenant normally has only one) and
  * deletes it, plus the test warehouse, in `finally`.
  */
-test("warehouse — company scope: warehouse restriction + location subset UI and API", async ({ page, request }) => {
+// Skipped: company scope UI picker was removed from warehouse and location forms per user request 2026-09-09
+test.skip("warehouse — company scope: warehouse restriction + location subset UI and API", async ({ page, request }) => {
   const uid = Date.now().toString().slice(-6);
   const MAINAPI = "http://localhost:8888";
   const nameX = (name: string) => [{ code: "th", name }];

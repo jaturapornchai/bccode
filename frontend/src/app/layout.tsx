@@ -6,6 +6,7 @@ import "./globals.css";
 import { colorThemeStorageKey, getThemesMap, normalizeColorTheme, themeStorageKey, type ThemeMode } from "@/lib/theme-data";
 import { fontStorageKey, getAppFont, normalizeAppFont } from "@/lib/font-data";
 import { ToastViewport } from "@/components/toast-viewport";
+import { DevDomInspector } from "@/components/dev-dom-inspector";
 import { AuthSessionBootstrap } from "./auth-session-bootstrap";
 
 const inter = Inter({
@@ -90,6 +91,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         <AuthSessionBootstrap>{children}</AuthSessionBootstrap>
         <ToastViewport />
+        <DevDomInspector />
       </body>
     </html>
   );

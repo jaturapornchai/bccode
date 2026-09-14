@@ -31,6 +31,7 @@ export function useScreenActions(
   const [actions, setActions] = useState<ScreenActions>(ALL_SCREEN_ACTIONS);
   const holdingcode = workspace?.shop?.holdingcode ?? "";
   const token = auth?.token ?? "";
+  const backendUrl = auth?.backendUrl ?? "";
 
   useEffect(() => {
     const screen = flattenMenuItems().find((item) => item.route === route)?.id;
@@ -43,7 +44,13 @@ export function useScreenActions(
       try {
         const response = await authFetch(
           `/api/system-settings/permissiongroup/me?holdingcode=${encodeURIComponent(holdingcode)}`,
-          { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...(backendUrl ? { "x-bc-backend-url": backendUrl } : {}),
+            },
+            cache: "no-store",
+          },
         );
         if (!response.ok) return;
         const record = firstRecord((await response.json()) as unknown);
@@ -59,7 +66,7 @@ export function useScreenActions(
     return () => {
       cancelled = true;
     };
-  }, [holdingcode, route, token]);
+  }, [backendUrl, holdingcode, route, token]);
 
   return actions;
 }

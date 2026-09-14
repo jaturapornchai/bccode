@@ -1,0 +1,83 @@
+{
+  "capturedat": "2026-09-11T10:14:48.635866+00:00",
+  "oldimages": {
+    "mainapi": "bcai-account-mainapi:r20260902-11",
+    "worker": "bcai-account-mainapi:r20260902-11",
+    "frontend": "bcai-account-frontend:r20260911-menu-top-1"
+  },
+  "mongo": {
+    "set": "rs0",
+    "primary": 1,
+    "members": [
+      "mongo:27017"
+    ],
+    "holdings": [
+      {
+        "holdingcode": "demo"
+      },
+      {
+        "holdingcode": "test"
+      }
+    ],
+    "gl": [
+      {
+        "collection": "chart_of_accounts",
+        "count": 0
+      },
+      {
+        "collection": "fiscal_year",
+        "count": 0
+      },
+      {
+        "collection": "gl_journals",
+        "count": 0
+      },
+      {
+        "collection": "gl_events",
+        "count": 0
+      }
+    ],
+    "companies": 3,
+    "branches": 4
+  },
+  "postgres_databases": [
+    "bcai_projection",
+    "demo",
+    "postgres"
+  ],
+  "postgres_role": {
+    "rolname": "bcai",
+    "rolsuper": true,
+    "rolcreatedb": true,
+    "rolcanlogin": true
+  },
+  "holding_ddl": [
+    {
+      "database": "demo",
+      "connect_usage_create": true
+    },
+    {
+      "database": "test",
+      "connect_usage_create": false,
+      "needs_provision": true
+    }
+  ],
+  "backups": [
+    {
+      "filename": "mongo.archive.gz",
+      "bytes": 33730,
+      "sha256": "6e0f1c4dad65c0de475e0a7cfca19e9fb7ce3e8cf4e4e04ce1e3afeb05008418"
+    },
+    {
+      "filename": "postgres-all.sql",
+      "bytes": 379014,
+      "sha256": "796ba680739bb66be8cf07f62f28d0ccb999c6be6e55f6b7116ef16b2741bd31"
+    },
+    {
+      "filename": "runtime-config.tar.gz",
+      "bytes": 7255,
+      "sha256": "299a27a4b48fab22cacaa4f39703e374e8c9452b35dd1c1d7dd09af5cc0c5867"
+    }
+  ],
+  "backup_scope": "Release safety copy on the same server; not an offsite backup or a completed restore drill."
+}

@@ -26,6 +26,7 @@ import {
   Globe,
   ImageIcon,
   KeyRound,
+  Landmark,
   Link2,
   Loader2,
   MapPin,
@@ -111,6 +112,7 @@ import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { BulkUserImport } from "./bulk-user-import";
 import { ProductBomEditor } from "./product-bom-editor";
+import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { useAuthenticatedImageDisplaySource } from "@/components/authenticated-image";
 import { normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 import {
@@ -131,6 +133,12 @@ import {
   type ThailandProvince,
   type ThailandSubdistrict,
 } from "@/lib/thailand-addresses";
+import {
+  filterThaiBankPresets,
+  findThaiBankPreset,
+  thaiBankPresets,
+  type ThaiBankPreset,
+} from "@/lib/thai-banks";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
 import { ALL_SCREEN_ACTIONS, isActionEntry, type ScreenActions } from "@/lib/permission-actions";
@@ -732,6 +740,7 @@ export function SystemSettingsScreen({
   const screenActions = useScreenActions(auth, workspace, route);
   const [records, setRecords] = useState<SettingRecord[]>([]);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [thaiBankDialogOpen, setThaiBankDialogOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -875,6 +884,153 @@ export function SystemSettingsScreen({
     event.preventDefault();
     setBomSplitLeftPercent((current) => Math.min(BOM_SPLIT_MAX_LEFT, Math.max(BOM_SPLIT_MIN_LEFT, current + direction)));
   }, []);
+
+  // Product Group & Subgroup Tree Resizable Split States
+  const TREE_SPLIT_DEFAULT_LEFT = 45;
+  const TREE_SPLIT_STORAGE_KEY = "bc_tree_split_left";
+  const TREE_SPLIT_MIN_LEFT = 20;
+  const TREE_SPLIT_MAX_LEFT = 75;
+
+  const [treeSplitPercent, setTreeSplitPercent] = useState(TREE_SPLIT_DEFAULT_LEFT);
+  const [resizingTreeSplit, setResizingTreeSplit] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(TREE_SPLIT_STORAGE_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (Number.isFinite(parsed)) {
+        setTreeSplitPercent(Math.min(TREE_SPLIT_MAX_LEFT, Math.max(TREE_SPLIT_MIN_LEFT, parsed)));
+      }
+    }
+  }, []);
+
+  const startTreeSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const container = event.currentTarget.parentElement;
+    if (!container) return;
+    event.preventDefault();
+    setResizingTreeSplit(true);
+    const rect = container.getBoundingClientRect();
+    const update = (clientX: number) => {
+      const next = ((clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(TREE_SPLIT_MAX_LEFT, Math.max(TREE_SPLIT_MIN_LEFT, next));
+      setTreeSplitPercent(clamped);
+      window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(Math.round(clamped)));
+    };
+    update(event.clientX);
+    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setResizingTreeSplit(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, []);
+
+  const adjustTreeSplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setTreeSplitPercent((prev) => {
+        const next = Math.max(TREE_SPLIT_MIN_LEFT, prev - 2);
+        window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setTreeSplitPercent((prev) => {
+        const next = Math.min(TREE_SPLIT_MAX_LEFT, prev + 2);
+        window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setTreeSplitPercent(TREE_SPLIT_MIN_LEFT);
+      window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(TREE_SPLIT_MIN_LEFT));
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setTreeSplitPercent(TREE_SPLIT_MAX_LEFT);
+      window.localStorage.setItem(TREE_SPLIT_STORAGE_KEY, String(TREE_SPLIT_MAX_LEFT));
+    }
+  }, []);
+
+  // Product Category Tree Resizable Split States
+  const CATEGORY_SPLIT_DEFAULT_LEFT = 42;
+  const CATEGORY_SPLIT_STORAGE_KEY = "bc_category_split_left";
+  const CATEGORY_SPLIT_MIN_LEFT = 20;
+  const CATEGORY_SPLIT_MAX_LEFT = 75;
+
+  const [categorySplitPercent, setCategorySplitPercent] = useState(CATEGORY_SPLIT_DEFAULT_LEFT);
+  const [resizingCategorySplit, setResizingCategorySplit] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(CATEGORY_SPLIT_STORAGE_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (Number.isFinite(parsed)) {
+        setCategorySplitPercent(Math.min(CATEGORY_SPLIT_MAX_LEFT, Math.max(CATEGORY_SPLIT_MIN_LEFT, parsed)));
+      }
+    }
+  }, []);
+
+  const startCategorySplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const container = event.currentTarget.parentElement;
+    if (!container) return;
+    event.preventDefault();
+    setResizingCategorySplit(true);
+    const rect = container.getBoundingClientRect();
+    const update = (clientX: number) => {
+      const next = ((clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(CATEGORY_SPLIT_MAX_LEFT, Math.max(CATEGORY_SPLIT_MIN_LEFT, next));
+      setCategorySplitPercent(clamped);
+      window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(Math.round(clamped)));
+    };
+    update(event.clientX);
+    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setResizingCategorySplit(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, []);
+
+  const adjustCategorySplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setCategorySplitPercent((prev) => {
+        const next = Math.max(CATEGORY_SPLIT_MIN_LEFT, prev - 2);
+        window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setCategorySplitPercent((prev) => {
+        const next = Math.min(CATEGORY_SPLIT_MAX_LEFT, prev + 2);
+        window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setCategorySplitPercent(CATEGORY_SPLIT_MIN_LEFT);
+      window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(CATEGORY_SPLIT_MIN_LEFT));
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setCategorySplitPercent(CATEGORY_SPLIT_MAX_LEFT);
+      window.localStorage.setItem(CATEGORY_SPLIT_STORAGE_KEY, String(CATEGORY_SPLIT_MAX_LEFT));
+    }
+  }, []);
+
   const backendLanguage = useBackendLanguage(
     language,
     activeBackendUrl,
@@ -2404,6 +2560,59 @@ export function SystemSettingsScreen({
     setStandardUnitDialog((current) => ({ ...current, selectedCodes: [] }));
   }
 
+  async function saveThaiBanks(selectedBanks: ThaiBankPreset[]) {
+    if (!auth || !workspace || selectedBanks.length === 0) return;
+    setSaving(true);
+    setNotice(null);
+    let successCount = 0;
+    const errors: string[] = [];
+
+    for (const bank of selectedBanks) {
+      try {
+        const payload = {
+          code: bank.code,
+          names: [
+            { code: "th", name: bank.nameTh },
+            { code: "en", name: bank.nameEn },
+          ],
+          logo: bank.logo,
+        };
+        const response = await authFetch("/api/system-settings/bank", {
+          method: "POST",
+          headers: requestHeaders(auth),
+          body: JSON.stringify(payload),
+        });
+        const resJson = (await response.json()) as unknown;
+        if (!response.ok || isFailed(resJson)) {
+          errors.push(`${bank.code}: ${extractMessage(resJson) ?? text("requestFailed")}`);
+        } else {
+          successCount++;
+        }
+      } catch (err) {
+        errors.push(`${bank.code}: ${errorText(err)}`);
+      }
+    }
+
+    setSaving(false);
+    if (successCount > 0) {
+      setNotice({
+        type: "success",
+        text:
+          language === "th"
+            ? `เพิ่มธนาคารไทยสำเร็จ ${successCount} รายการ`
+            : `Successfully added ${successCount} Thai banks`,
+      });
+      await loadRecords(auth, workspace, currentConfig);
+    }
+    if (errors.length > 0) {
+      setNotice({
+        type: successCount > 0 ? "warning" : "error",
+        text: errors.join(", "),
+      });
+    }
+    setThaiBankDialogOpen(false);
+  }
+
   const showProductCategoryHeaderControls =
     (config.slug === "productcategorygroupselectscreen" || config.slug === "productcategorylist") &&
     !hideChrome &&
@@ -2609,23 +2818,45 @@ export function SystemSettingsScreen({
           workDays={workDays}
         />
       ) : config.slug === "productgroup" && !hideChrome ? (
-        <div className="grid w-full min-w-0 items-stretch gap-3 min-h-[calc(100dvh-12rem)] xl:grid-cols-[minmax(320px,0.95fr)_minmax(420px,1.05fr)]">
-          <ProductGroupTreeView
-            auth={auth}
-            workspace={workspace}
-            language={language}
-            records={records}
-            selectedGuid={categorySelectedGuid}
-            setSelectedGuid={setCategorySelectedGuid}
-            searchQuery={categorySearchQuery}
-            onOpenCreate={handleOpenGroupCreate}
-            onOpenEdit={openEdit}
-            onDeleteRecord={deleteRecord}
-            onRefresh={() => void loadRecords(auth, workspace, config)}
-            saving={saving}
-            loading={loading}
+        <div
+          style={{ ["--tree-split-basis" as any]: `${treeSplitPercent}%` }}
+          className="flex flex-col xl:flex-row w-full min-w-0 items-stretch min-h-[calc(100dvh-12rem)]"
+        >
+          <div className="min-h-0 min-w-0 xl:w-[var(--tree-split-basis)] xl:shrink-0">
+            <ProductGroupTreeView
+              auth={auth}
+              workspace={workspace}
+              language={language}
+              records={records}
+              selectedGuid={categorySelectedGuid}
+              setSelectedGuid={setCategorySelectedGuid}
+              searchQuery={categorySearchQuery}
+              onOpenCreate={handleOpenGroupCreate}
+              onOpenEdit={openEdit}
+              onDeleteRecord={deleteRecord}
+              onRefresh={() => void loadRecords(auth, workspace, config)}
+              saving={saving}
+              loading={loading}
+            />
+          </div>
+
+          <ResizableSplitter
+            value={Math.round(treeSplitPercent)}
+            min={TREE_SPLIT_MIN_LEFT}
+            max={TREE_SPLIT_MAX_LEFT}
+            label={
+              language === "th"
+                ? "ปรับขนาดกลุ่มสินค้าและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+                : "Resize product group tree and form panes (drag to resize, double-click to reset)"
+            }
+            isResizing={resizingTreeSplit}
+            onPointerDown={startTreeSplitResize}
+            onDoubleClick={() => setTreeSplitPercent(TREE_SPLIT_DEFAULT_LEFT)}
+            onKeyDown={adjustTreeSplitWithKeyboard}
+            breakpoint="xl"
           />
-          <div className="min-h-0 h-full">
+
+          <div className="min-h-0 h-full flex-1 min-w-0">
             {formOpen ? (
               <SettingFormDialog
                 inline
@@ -2657,27 +2888,49 @@ export function SystemSettingsScreen({
           </div>
         </div>
       ) : config.slug === "productsubgroup" && !hideChrome ? (
-        <div className="grid w-full min-w-0 items-stretch gap-3 min-h-[calc(100dvh-12rem)] xl:grid-cols-[minmax(320px,0.95fr)_minmax(420px,1.05fr)]">
-          <ProductSubgroupTreeView
-            auth={auth}
-            workspace={workspace}
-            language={language}
-            records={records}
-            selectedGuid={categorySelectedGuid}
-            setSelectedGuid={setCategorySelectedGuid}
-            searchQuery={categorySearchQuery}
-            onOpenCreate={(parentCode) => {
-              setEditing(null);
-              setForm(parentCode ? { parentcode: parentCode } : {});
-              setFormOpen(true);
-            }}
-            onOpenEdit={openEdit}
-            onDeleteRecord={deleteRecord}
-            onRefresh={() => void loadRecords(auth, workspace, config)}
-            saving={saving}
-            loading={loading}
+        <div
+          style={{ ["--tree-split-basis" as any]: `${treeSplitPercent}%` }}
+          className="flex flex-col xl:flex-row w-full min-w-0 items-stretch min-h-[calc(100dvh-12rem)]"
+        >
+          <div className="min-h-0 min-w-0 xl:w-[var(--tree-split-basis)] xl:shrink-0">
+            <ProductSubgroupTreeView
+              auth={auth}
+              workspace={workspace}
+              language={language}
+              records={records}
+              selectedGuid={categorySelectedGuid}
+              setSelectedGuid={setCategorySelectedGuid}
+              searchQuery={categorySearchQuery}
+              onOpenCreate={(parentCode) => {
+                setEditing(null);
+                setForm(parentCode ? { parentcode: parentCode } : {});
+                setFormOpen(true);
+              }}
+              onOpenEdit={openEdit}
+              onDeleteRecord={deleteRecord}
+              onRefresh={() => void loadRecords(auth, workspace, config)}
+              saving={saving}
+              loading={loading}
+            />
+          </div>
+
+          <ResizableSplitter
+            value={Math.round(treeSplitPercent)}
+            min={TREE_SPLIT_MIN_LEFT}
+            max={TREE_SPLIT_MAX_LEFT}
+            label={
+              language === "th"
+                ? "ปรับขนาดกลุ่มสินค้าย่อยและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+                : "Resize product subgroup tree and form panes (drag to resize, double-click to reset)"
+            }
+            isResizing={resizingTreeSplit}
+            onPointerDown={startTreeSplitResize}
+            onDoubleClick={() => setTreeSplitPercent(TREE_SPLIT_DEFAULT_LEFT)}
+            onKeyDown={adjustTreeSplitWithKeyboard}
+            breakpoint="xl"
           />
-          <div className="min-h-0 h-full">
+
+          <div className="min-h-0 h-full flex-1 min-w-0">
             {formOpen ? (
               <SettingFormDialog
                 inline
@@ -2831,32 +3084,25 @@ export function SystemSettingsScreen({
           </Card>
 
           {/* Resizable split separator bar */}
-          <div
-            aria-label="Adjust layout split"
-            aria-orientation="vertical"
-            aria-valuemax={BOM_SPLIT_MAX_LEFT}
-            aria-valuemin={BOM_SPLIT_MIN_LEFT}
-            aria-valuenow={Math.round(bomSplitLeftPercent)}
-            className={cn(
-              "group hidden cursor-col-resize touch-none items-stretch justify-center rounded-md outline-none xl:flex",
-              resizingBomSplit && "cursor-col-resize",
-            )}
-            onKeyDown={adjustBomSplitWithKeyboard}
-            onMouseDown={startBomSplitMouseResize}
-            onPointerCancel={stopBomSplitResize}
+          <ResizableSplitter
+            value={Math.round(bomSplitLeftPercent)}
+            min={BOM_SPLIT_MIN_LEFT}
+            max={BOM_SPLIT_MAX_LEFT}
+            label={
+              language === "th"
+                ? "ปรับขนาดรายการสูตรการผลิตและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+                : "Adjust layout split (drag to resize, double-click to reset)"
+            }
+            isResizing={resizingBomSplit}
             onPointerDown={startBomSplitResize}
+            onMouseDown={startBomSplitMouseResize}
             onPointerMove={moveBomSplitResize}
             onPointerUp={stopBomSplitResize}
-            role="separator"
-            tabIndex={0}
-          >
-            <div
-              className={cn(
-                "my-1 w-1 rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary",
-                resizingBomSplit && "bg-primary",
-              )}
-            />
-          </div>
+            onPointerCancel={stopBomSplitResize}
+            onDoubleClick={() => setBomSplitLeftPercent(BOM_SPLIT_DEFAULT_LEFT)}
+            onKeyDown={adjustBomSplitWithKeyboard}
+            breakpoint="xl"
+          />
 
           {/* Right Column: Custom BOM Editor */}
           <div className={cn(
@@ -2890,34 +3136,55 @@ export function SystemSettingsScreen({
         </div>
       ) : (config.slug === "productcategorygroupselectscreen" || config.slug === "productcategorylist") && !hideChrome ? (
         <div
+          style={{ ["--category-split-width" as any]: `${categorySplitPercent}%` }}
           className={cn(
-            "grid w-full min-w-0 items-stretch gap-3",
+            "w-full min-w-0 items-stretch",
             groupNumber === null
-              ? "grid-cols-1"
-              : "min-h-[36rem] md:h-[calc(100dvh-10rem)] md:grid-cols-[minmax(280px,0.42fr)_minmax(0,1fr)]",
+              ? "grid grid-cols-1 gap-3"
+              : "flex flex-col md:flex-row min-h-[36rem] md:h-[calc(100dvh-10rem)]",
           )}
         >
-          <ProductCategoryTreeView
-            auth={auth}
-            workspace={workspace}
-            language={language}
-            records={records}
-            groupNumber={groupNumber}
-            setGroupNumber={setGroupNumber}
-            selectedGuid={categorySelectedGuid}
-            setSelectedGuid={setCategorySelectedGuid}
-            searchQuery={categorySearchQuery}
-            onSelectRecord={handleSelectCategoryRecord}
-            onOpenCreate={handleOpenCategoryCreate}
-            onOpenEdit={openEdit}
-            onDeleteRecord={deleteRecord}
-            onRefresh={() => void loadRecords(auth, workspace, config)}
-            saving={saving}
-            loading={loading}
-            readOnly={false}
-          />
+          <div
+            className={cn("min-h-0 min-w-0", groupNumber !== null && "md:w-[var(--category-split-width)] md:shrink-0")}
+          >
+            <ProductCategoryTreeView
+              auth={auth}
+              workspace={workspace}
+              language={language}
+              records={records}
+              groupNumber={groupNumber}
+              setGroupNumber={setGroupNumber}
+              selectedGuid={categorySelectedGuid}
+              setSelectedGuid={setCategorySelectedGuid}
+              searchQuery={categorySearchQuery}
+              onSelectRecord={handleSelectCategoryRecord}
+              onOpenCreate={handleOpenCategoryCreate}
+              onOpenEdit={openEdit}
+              onDeleteRecord={deleteRecord}
+              onRefresh={() => void loadRecords(auth, workspace, config)}
+              saving={saving}
+              loading={loading}
+              readOnly={false}
+            />
+          </div>
           {groupNumber === null ? null : (
-            <div className="h-full min-h-0 overflow-hidden" data-testid="product-category-detail-pane">
+            <>
+              <ResizableSplitter
+                breakpoint="md"
+                value={Math.round(categorySplitPercent)}
+                min={CATEGORY_SPLIT_MIN_LEFT}
+                max={CATEGORY_SPLIT_MAX_LEFT}
+                label={
+                  language === "th"
+                    ? "ปรับขนาดหมวดหมู่และรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+                    : "Resize category tree and detail panes (drag to resize, double-click to reset)"
+                }
+                isResizing={resizingCategorySplit}
+                onPointerDown={startCategorySplitResize}
+                onDoubleClick={() => setCategorySplitPercent(CATEGORY_SPLIT_DEFAULT_LEFT)}
+                onKeyDown={adjustCategorySplitWithKeyboard}
+              />
+              <div className="h-full min-h-0 flex-1 overflow-hidden" data-testid="product-category-detail-pane">
               {formOpen ? (
                 <SettingFormDialog
                   inline
@@ -3149,6 +3416,7 @@ export function SystemSettingsScreen({
                 );
               })()}
             </div>
+          </>
           )}
         </div>
       ) : config.slug === "branch" && !branchOverride ? (
@@ -3312,6 +3580,24 @@ export function SystemSettingsScreen({
                       <Plus />
                       {text("add")}
                     </Button>
+                    {currentConfig.slug === "bank" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0"
+                        onClick={() => setThaiBankDialogOpen(true)}
+                        disabled={!auth}
+                        title={
+                          language === "th"
+                            ? "เพิ่มธนาคารไทยจากแม่แบบพร้อมโลโก้"
+                            : "Add Thai banks from template"
+                        }
+                      >
+                        <Landmark />
+                        {language === "th" ? "เพิ่มธนาคารไทย" : "Add Thai Banks"}
+                      </Button>
+                    ) : null}
                     {currentConfig.slug === "user" ? (
                       <Button
                         type="button"
@@ -3401,10 +3687,25 @@ export function SystemSettingsScreen({
                     {canEdit ? text("emptyHint") : text("readOnlyEmptyHint")}
                   </p>
                   {canCreate && currentConfig.slug !== "permissionlink" ? (
-                    <Button type="button" onClick={openCreate} disabled={!auth}>
-                      <Plus />
-                      {text("addItem")}
-                    </Button>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <Button type="button" onClick={openCreate} disabled={!auth}>
+                        <Plus />
+                        {text("addItem")}
+                      </Button>
+                      {currentConfig.slug === "bank" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setThaiBankDialogOpen(true)}
+                          disabled={!auth}
+                        >
+                          <Landmark />
+                          {language === "th"
+                            ? "เพิ่มธนาคารไทยจากแม่แบบ"
+                            : "Add Thai Banks from Template"}
+                        </Button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
               </CardContent>
@@ -3418,6 +3719,17 @@ export function SystemSettingsScreen({
               holdingcode={workspace.shop.holdingcode}
               authToken={auth.token}
               onImported={() => void loadRecords(auth, workspace, config)}
+            />
+          ) : null}
+
+          {thaiBankDialogOpen ? (
+            <ThaiBankTemplateDialog
+              existingCodes={records.map((r) => String(r.code || "").toUpperCase())}
+              language={language}
+              onClose={() => setThaiBankDialogOpen(false)}
+              onSave={saveThaiBanks}
+              saving={saving}
+              text={text}
             />
           ) : null}
 
@@ -3596,11 +3908,14 @@ function SettingDataList({
     };
   }, [formOpen, records.length, selectedId]);
 
+  const [isResizingPane, setIsResizingPane] = useState(false);
+
   const startPaneResize = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const container = event.currentTarget.parentElement;
       if (!container) return;
       event.preventDefault();
+      setIsResizingPane(true);
       const rect = container.getBoundingClientRect();
       const update = (clientX: number) => {
         const next = ((clientX - rect.left) / rect.width) * 100;
@@ -3611,6 +3926,7 @@ function SettingDataList({
       const onUp = () => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
+        setIsResizingPane(false);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
       };
@@ -3622,11 +3938,31 @@ function SettingDataList({
     [],
   );
 
+  const handlePaneResizeReset = useCallback(() => {
+    setLeftPanePercent(30);
+  }, []);
+
+  const handlePaneKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setLeftPanePercent((prev) => Math.max(5, prev - 2));
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setLeftPanePercent((prev) => Math.min(95, prev + 2));
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setLeftPanePercent(5);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setLeftPanePercent(95);
+    }
+  }, []);
+
   return (
     <Card className="overflow-hidden shadow-sm">
       <CardContent className="flex min-h-[520px] lg:min-h-0 flex-col gap-0 p-0 lg:flex-row">
         <section
-          className="min-h-0 min-w-0 border-b border-border lg:border-b-0 lg:border-r"
+          className="min-h-0 min-w-0 border-b border-border lg:border-b-0 lg:border-r-0"
           style={
             mounted &&
             typeof window !== "undefined" &&
@@ -3817,16 +4153,20 @@ function SettingDataList({
           </div>
         </section>
 
-        <div
-          className="hidden w-1.5 shrink-0 cursor-col-resize bg-border/70 transition hover:bg-primary/50 lg:block"
-          onPointerDown={startPaneResize}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label={
+        <ResizableSplitter
+          value={Math.round(leftPanePercent)}
+          min={5}
+          max={95}
+          label={
             language === "th"
-              ? "ปรับความกว้างรายการและรายละเอียด"
-              : "Resize list and detail panes"
+              ? "ปรับความกว้างรายการและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+              : "Resize list and detail panes (drag to resize, double-click to reset)"
           }
+          isResizing={isResizingPane}
+          onPointerDown={startPaneResize}
+          onDoubleClick={handlePaneResizeReset}
+          onKeyDown={handlePaneKeyDown}
+          breakpoint="lg"
         />
 
         <section
@@ -4242,6 +4582,93 @@ function settingListColumns(
     ];
   }
 
+  if (config.slug === "bookbankscreen") {
+    return [
+      {
+        key: "names",
+        label: language === "th" ? "สมุดบัญชี" : "Book Bank",
+        className: "basis-48 grow-[2] min-w-[130px]",
+        render: (record, meta) => {
+          const bookCode = stringValue(record.bookcode ?? record.code ?? meta.id);
+          const name = recordTitle(record, config, language) || bookCode;
+          const logoUri =
+            stringValue(record.logo) ||
+            (Array.isArray(record.images) && record.images[0]?.uri
+              ? String(record.images[0].uri)
+              : "");
+          const bankName =
+            localizedValue(record.banknames, language) ||
+            stringValue(record.bankcode);
+          return (
+            <span className="flex min-w-0 items-center gap-2.5 w-full">
+              <LogoAvatar
+                uri={logoUri}
+                auth={auth}
+                alt={name}
+                sizeClass="size-8 rounded-lg shrink-0 border border-border/50 bg-background/50 p-0.5"
+                iconSize={16}
+                width={64}
+                fallbackIcon={Landmark}
+              />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <b className="min-w-0 break-words" title={name}>
+                  {name || "-"}
+                </b>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {bookCode ? (
+                    <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold w-fit max-w-full break-all">
+                      {bookCode}
+                    </span>
+                  ) : null}
+                  {bankName ? (
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[120px]" title={bankName}>
+                      {bankName}
+                    </span>
+                  ) : null}
+                </span>
+              </span>
+            </span>
+          );
+        },
+      },
+      {
+        key: "passbook",
+        label: language === "th" ? "เลขที่บัญชี" : "Account No.",
+        className: "basis-36 grow min-w-[100px]",
+        render: (record) => {
+          const passbook = stringValue(record.passbook);
+          return passbook ? (
+            <code className="rounded bg-secondary/30 px-1.5 py-0.5 font-mono text-xs font-semibold text-primary">
+              {passbook}
+            </code>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        key: "bankbranch",
+        label: language === "th" ? "สาขา" : "Branch",
+        className: "basis-28 grow min-w-[70px] hidden md:inline-flex",
+        render: (record) => (
+          <span className="block truncate text-xs" title={stringValue(record.bankbranch)}>
+            {stringValue(record.bankbranch) || "-"}
+          </span>
+        ),
+      },
+      {
+        key: "accountname",
+        label: language === "th" ? "ชื่อบัญชี" : "Account Name",
+        className: "basis-32 grow min-w-[80px] hidden lg:inline-flex",
+        render: (record) => (
+          <span className="block truncate text-xs" title={stringValue(record.accountname)}>
+            {stringValue(record.accountname) || "-"}
+          </span>
+        ),
+      },
+    ];
+  }
+
   const fields = config.fields
     .filter(
       (field) =>
@@ -4384,6 +4811,21 @@ function SettingDetailPanel({
                 iconSize={20}
                 width={96}
                 fallbackIcon={UsersRound}
+              />
+            ) : config.slug === "bank" || config.slug === "bookbankscreen" ? (
+              <LogoAvatar
+                uri={
+                  stringValue(record.logo) ||
+                  (Array.isArray(record.images) && record.images[0]?.uri
+                    ? String(record.images[0].uri)
+                    : "")
+                }
+                auth={auth}
+                alt={title || displayCode || "bank"}
+                sizeClass="size-10 rounded-xl shrink-0 mt-0.5 shadow-sm border border-border/50 bg-background/50 p-0.5"
+                iconSize={20}
+                width={96}
+                fallbackIcon={Landmark}
               />
             ) : (
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary mt-0.5 shadow-sm">
@@ -4743,6 +5185,238 @@ function SettingDetailPanel({
   );
 }
 
+function BookBankFormSection({
+  auth,
+  config,
+  dateTimeScope,
+  dictionary,
+  form,
+  language,
+  setForm,
+  workspace,
+}: {
+  auth: AuthSession | null;
+  config: SystemSettingConfig;
+  dateTimeScope: DateTimeScope;
+  dictionary: BackendLanguageDictionary;
+  form: FormState;
+  language: LanguageCode;
+  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
+  workspace: WorkspaceSession | null;
+}) {
+  const currentBankCode = stringValue(form.bankcode);
+  const matchedPreset = findThaiBankPreset(currentBankCode);
+  const [isCustomMode, setIsCustomMode] = useState(() =>
+    Boolean(currentBankCode && !matchedPreset),
+  );
+
+  const bankCodeField = config.fields.find((f) => f.key === "bankcode");
+  const bankNamesField = config.fields.find((f) => f.key === "banknames");
+  const logoField = config.fields.find((f) => f.key === "logo");
+
+  function handleSelectTemplate(code: string) {
+    if (!code) return;
+    const preset = findThaiBankPreset(code);
+    if (!preset) return;
+    setForm((prev) => {
+      const next = { ...prev };
+      next.bankcode = preset.code;
+      next.banknames = [
+        { code: "th", name: preset.nameTh },
+        { code: "en", name: preset.nameEn },
+      ];
+      next.logo = preset.logo;
+      const currentNames = Array.isArray(prev.names) ? prev.names : [];
+      const hasCustomName = currentNames.some(
+        (n: { name?: string }) => n?.name && n.name.trim(),
+      );
+      if (!hasCustomName) {
+        next.names = [
+          { code: "th", name: preset.nameTh },
+          { code: "en", name: preset.nameEn },
+        ];
+      }
+      return next;
+    });
+  }
+
+  return (
+    <div className="grid gap-2.5 rounded-2xl border border-primary/25 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent p-3.5 shadow-2xs">
+      {/* Header & Mode Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/15 pb-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+            <Landmark className="size-4.5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-foreground">
+              {language === "th" ? "สังกัดธนาคารและโลโก้" : "Bank & Logo"}
+            </div>
+            <div className="text-[11px] text-muted-foreground truncate">
+              {language === "th"
+                ? "เลือกจากแม่แบบธนาคารไทย หรือกำหนดรหัสและชื่อธนาคารเอง"
+                : "Select from Thai bank template or define a custom bank"}
+            </div>
+          </div>
+        </div>
+
+        {/* Mode Toggle Buttons */}
+        <div className="inline-flex rounded-xl border border-border/80 bg-background/80 p-0.5 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setIsCustomMode(false)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer",
+              !isCustomMode
+                ? "bg-primary text-primary-foreground shadow-2xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Landmark className="size-3.5" />
+            {language === "th" ? "เลือกจากแม่แบบ" : "Template"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsCustomMode(true)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all cursor-pointer",
+              isCustomMode
+                ? "bg-primary text-primary-foreground shadow-2xs"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Building2 className="size-3.5" />
+            {language === "th" ? "กำหนดธนาคารเอง" : "Custom Bank"}
+          </button>
+        </div>
+      </div>
+
+      {/* Template Mode View */}
+      {!isCustomMode ? (
+        <div className="grid gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs font-semibold text-foreground shrink-0">
+              {language === "th" ? "แม่แบบธนาคารไทย:" : "Thai Bank Template:"}
+            </label>
+            <select
+              className="h-9 min-w-[240px] grow rounded-xl border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-2xs focus:border-primary focus:ring-2 focus:ring-primary/20"
+              value={matchedPreset?.code ?? ""}
+              onChange={(e) => handleSelectTemplate(e.target.value)}
+            >
+              <option value="">
+                {language === "th" ? "-- เลือกธนาคารไทย --" : "-- Select Thai Bank --"}
+              </option>
+              {thaiBankPresets.map((b) => (
+                <option key={b.code} value={b.code}>
+                  {b.code} - {b.nameTh} ({b.nameEn})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {matchedPreset ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-background/90 p-3 shadow-2xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <LogoAvatar
+                  uri={matchedPreset.logo}
+                  auth={auth}
+                  alt={matchedPreset.nameTh}
+                  sizeClass="size-11 rounded-xl shadow-xs border border-border/60 bg-white dark:bg-card p-1 shrink-0"
+                  iconSize={22}
+                  width={64}
+                  fallbackIcon={Landmark}
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-foreground">
+                      {matchedPreset.nameTh}
+                    </span>
+                    <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 font-bold border-primary/30 text-primary">
+                      {matchedPreset.code}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      BOT: {matchedPreset.botCode}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {matchedPreset.nameEn}
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setIsCustomMode(true)}
+              >
+                <Edit3 className="size-3.5 mr-1" />
+                {language === "th" ? "ปรับแต่งข้อมูลธนาคาร..." : "Customize..."}
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-3 text-center text-xs text-muted-foreground">
+              {language === "th"
+                ? "กรุณาเลือกธนาคารจากรายการด้านบน หรือคลิก \"กำหนดธนาคารเอง\" เพื่อใส่ข้อมูลธนาคารใหม่"
+                : "Please select a bank from above or switch to \"Custom Bank\"."}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Custom Bank Mode View */
+        <div className="grid content-start gap-2 pt-1 md:grid-cols-2">
+          {bankCodeField ? (
+            <div className={fieldGridItemClass(bankCodeField, config)}>
+              <FieldEditor
+                auth={auth}
+                config={config}
+                dateTimeScope={dateTimeScope}
+                dictionary={dictionary}
+                field={bankCodeField}
+                form={form}
+                language={language}
+                setForm={setForm}
+                workspace={workspace}
+              />
+            </div>
+          ) : null}
+          {logoField ? (
+            <div className={fieldGridItemClass(logoField, config)}>
+              <FieldEditor
+                auth={auth}
+                config={config}
+                dateTimeScope={dateTimeScope}
+                dictionary={dictionary}
+                field={logoField}
+                form={form}
+                language={language}
+                setForm={setForm}
+                workspace={workspace}
+              />
+            </div>
+          ) : null}
+          {bankNamesField ? (
+            <div className={cn(fieldGridItemClass(bankNamesField, config), "md:col-span-2")}>
+              <FieldEditor
+                auth={auth}
+                config={config}
+                dateTimeScope={dateTimeScope}
+                dictionary={dictionary}
+                field={bankNamesField}
+                form={form}
+                language={language}
+                setForm={setForm}
+                workspace={workspace}
+              />
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SettingFormDialog({
   auth,
   config,
@@ -4780,12 +5454,19 @@ function SettingFormDialog({
   categoryItemCount?: number;
 }) {
   const isProductCategoryForm = config.slug === "productcategorygroupselectscreen";
+  const isBookBankForm = config.slug === "bookbankscreen";
   const categoryUsesColor = form.useimageorcolor === true || String(form.useimageorcolor).toLowerCase() === "true";
   const shouldRenderField = (field: SystemSettingField) => {
-    if (!isProductCategoryForm) return true;
-    if (field.key === "groupnumber" || field.key === "parentguid") return false;
-    if (field.key === "colorselecthex") return categoryUsesColor;
-    if (field.key === "imageuri" || field.key === "coveruri") return !categoryUsesColor;
+    if (isProductCategoryForm) {
+      if (field.key === "groupnumber" || field.key === "parentguid") return false;
+      if (field.key === "colorselecthex") return categoryUsesColor;
+      if (field.key === "imageuri" || field.key === "coveruri") return !categoryUsesColor;
+      return true;
+    }
+    if (isBookBankForm) {
+      if (field.key === "bankcode" || field.key === "banknames" || field.key === "logo") return false;
+      return true;
+    }
     return true;
   };
   const formElement = (
@@ -4888,6 +5569,64 @@ function SettingFormDialog({
               {language === "th" ? "เพิ่มบาร์โค้ด" : "Add Barcode"}
             </Button>
           </div>
+        ) : null}
+        {config.slug === "bank" ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Landmark className="size-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-foreground">
+                  {language === "th" ? "เลือกจากแม่แบบธนาคารไทย" : "Select from Thai Bank Template"}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {language === "th"
+                    ? "เลือกเพื่อเติมรหัส ชื่อ และโลโก้ธนาคารอัตโนมัติ"
+                    : "Auto-fill bank code, names, and logo from template"}
+                </div>
+              </div>
+            </div>
+            <select
+              className="h-8 rounded-lg border border-input bg-background px-2 text-xs font-semibold text-foreground shadow-2xs"
+              value=""
+              onChange={(e) => {
+                const preset = findThaiBankPreset(e.target.value);
+                if (preset) {
+                  setForm((prev) => ({
+                    ...prev,
+                    code: preset.code,
+                    names: [
+                      { code: "th", name: preset.nameTh },
+                      { code: "en", name: preset.nameEn },
+                    ],
+                    logo: preset.logo,
+                  }));
+                }
+              }}
+            >
+              <option value="">
+                {language === "th" ? "-- เลือกธนาคารไทย --" : "-- Select Thai Bank --"}
+              </option>
+              {thaiBankPresets.map((b) => (
+                <option key={b.code} value={b.code}>
+                  {b.code} - {b.nameTh} ({b.nameEn})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+        {config.slug === "bookbankscreen" ? (
+          <BookBankFormSection
+            auth={auth}
+            config={config}
+            dateTimeScope={dateTimeScope}
+            dictionary={dictionary}
+            form={form}
+            language={language}
+            setForm={setForm}
+            workspace={workspace}
+          />
         ) : null}
         {config.slug === "user" ? (
           <UserFormSections
@@ -5765,6 +6504,258 @@ export function postalAddressHint(
   return language === "th"
     ? `พบ ${matches.length} ตำบล/แขวงจากรหัสนี้ เลือกตำบล/แขวงเพื่อยืนยัน`
     : `${matches.length} subdistricts found for this postal code. Select one to confirm.`;
+}
+
+function ThaiBankTemplateDialog({
+  existingCodes,
+  language,
+  onClose,
+  onSave,
+  saving,
+  text,
+}: {
+  existingCodes: string[];
+  language: LanguageCode;
+  onClose: () => void;
+  onSave: (banks: ThaiBankPreset[]) => void;
+  saving: boolean;
+  text: (key: keyof typeof uiEn) => string;
+}) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+
+  const existingSet = useMemo(
+    () => new Set(existingCodes.map((c) => c.trim().toUpperCase())),
+    [existingCodes],
+  );
+
+  const filteredBanks = useMemo(
+    () => filterThaiBankPresets(searchQuery),
+    [searchQuery],
+  );
+
+  const availableUnaddedBanks = useMemo(
+    () => thaiBankPresets.filter((b) => !existingSet.has(b.code.toUpperCase())),
+    [existingSet],
+  );
+
+  useEffect(() => {
+    setSelectedCodes(availableUnaddedBanks.map((b) => b.code));
+  }, [availableUnaddedBanks]);
+
+  function toggleBank(code: string, checked: boolean) {
+    setSelectedCodes((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(code);
+      else next.delete(code);
+      return Array.from(next);
+    });
+  }
+
+  function handleSelectAllUnadded() {
+    setSelectedCodes(availableUnaddedBanks.map((b) => b.code));
+  }
+
+  function handleClearSelection() {
+    setSelectedCodes([]);
+  }
+
+  function handleSubmit() {
+    const toAdd = thaiBankPresets.filter((b) => selectedCodes.includes(b.code));
+    onSave(toAdd);
+  }
+
+  return (
+    <div className="dialog-backdrop" role="presentation">
+      <section
+        className="grid max-h-[calc(100dvh-24px)] w-[min(800px,calc(100vw-24px))] grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-2xl border border-border bg-card p-3.5 text-foreground shadow-xl sm:p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label={language === "th" ? "เพิ่มธนาคารไทยจากแม่แบบ" : "Add Thai Banks from Template"}
+      >
+        <header className="flex min-w-0 items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <Landmark className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-bold">
+                {language === "th" ? "เพิ่มธนาคารไทยจากแม่แบบ" : "Add Thai Banks from Template"}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {language === "th"
+                  ? "เลือกธนาคารในประเทศไทยที่ต้องการเพิ่มเข้าสู่ระบบ พร้อมโลโก้ความละเอียดสูง"
+                  : "Select Thai banks to add with official names and high-resolution logos"}
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={onClose}
+            disabled={saving}
+            aria-label={text("close")}
+          >
+            <X />
+          </Button>
+        </header>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="!pl-10 text-sm"
+            placeholder={
+              language === "th"
+                ? "ค้นหารหัสธนาคาร หรือชื่อธนาคาร (ไทย/อังกฤษ)..."
+                : "Search bank code or name..."
+            }
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={saving}
+          />
+        </div>
+
+        {/* Toolbar: Counter + Quick buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">
+              {language === "th"
+                ? `เลือก ${selectedCodes.length} จาก ${thaiBankPresets.length} ธนาคาร`
+                : `Selected ${selectedCodes.length} of ${thaiBankPresets.length}`}
+            </Badge>
+            {existingSet.size > 0 ? (
+              <Badge variant="secondary" className="text-xs">
+                {language === "th"
+                  ? `มีในระบบแล้ว ${existingSet.size} ธนาคาร`
+                  : `${existingSet.size} already in system`}
+              </Badge>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAllUnadded}
+              disabled={saving || availableUnaddedBanks.length === 0}
+            >
+              <Check className="size-3.5" />
+              {language === "th" ? "เลือกที่ยังไม่มี" : "Select Unadded"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleClearSelection}
+              disabled={saving || selectedCodes.length === 0}
+            >
+              {text("clearSelection")}
+            </Button>
+          </div>
+        </div>
+
+        {/* List of banks */}
+        <div className="grid min-h-0 gap-2 overflow-y-auto pr-1">
+          {filteredBanks.length === 0 ? (
+            <div className="grid min-h-36 place-items-center rounded-2xl border border-border bg-background p-4 text-center text-sm font-semibold text-muted-foreground">
+              {language === "th" ? "ไม่พบธนาคารที่ตรงกับคำค้นหา" : "No banks matching search"}
+            </div>
+          ) : (
+            filteredBanks.map((bank) => {
+              const isExisting = existingSet.has(bank.code.toUpperCase());
+              const isChecked = selectedCodes.includes(bank.code);
+              return (
+                <label
+                  key={bank.code}
+                  className={cn(
+                    "flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border p-2.5 transition-all text-sm select-none",
+                    isExisting
+                      ? "opacity-60 bg-muted/30 border-border/50 cursor-not-allowed"
+                      : isChecked
+                        ? "border-primary/50 bg-primary/5 shadow-2xs"
+                        : "border-border bg-card hover:bg-muted/40",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className="size-4 shrink-0 accent-primary"
+                    checked={isChecked}
+                    disabled={saving || isExisting}
+                    onChange={(e) => toggleBank(bank.code, e.target.checked)}
+                  />
+                  <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-white p-1 shadow-2xs grid place-items-center">
+                    <img
+                      src={bank.logo}
+                      alt={bank.code}
+                      className="size-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 grid gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <b className="text-sm font-bold text-foreground">
+                        {bank.code}
+                      </b>
+                      <span
+                        className="inline-block size-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: bank.color }}
+                        title={`สีประจำธนาคาร ${bank.color}`}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {bank.nameEn}
+                      </span>
+                    </div>
+                    <p className="truncate text-xs font-medium text-foreground/80">
+                      {bank.nameTh}
+                    </p>
+                  </div>
+                  {isExisting ? (
+                    <Badge variant="secondary" className="shrink-0 text-xs">
+                      {language === "th" ? "มีในระบบแล้ว" : "Already added"}
+                    </Badge>
+                  ) : null}
+                </label>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={saving}
+          >
+            {text("cancel")}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={saving || selectedCodes.length === 0}
+            className="min-w-36"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="animate-spin" />
+                {language === "th" ? "กำลังบันทึก..." : "Saving..."}
+              </>
+            ) : (
+              <>
+                <Plus />
+                {language === "th"
+                  ? `เพิ่มธนาคารที่เลือก (${selectedCodes.length})`
+                  : `Add Selected (${selectedCodes.length})`}
+              </>
+            )}
+          </Button>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
 function StandardUnitDialog({
@@ -16792,6 +17783,7 @@ function isActiveRecord(record: SettingRecord): boolean {
 
 function settingIcon(icon: string): ReactNode {
   const props = { size: 22 };
+  if (icon === "bank" || icon === "landmark") return <Landmark {...props} />;
   if (icon === "bot") return <Bot {...props} />;
   if (icon === "building") return <Building2 {...props} />;
   if (icon === "calendar") return <CalendarDays {...props} />;

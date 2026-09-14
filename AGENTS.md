@@ -9,11 +9,21 @@ For every task under `D:\bccode`:
 
 ไฟล์นี้เป็นทั้งจุดเข้าเส้นทาง (routing) และกฎบังคับของโปรเจ็กต์ — รายละเอียดว่าระบบทำงานอย่างไรอยู่ที่ `docs/kms/` (code = truth: ถ้า docs ขัดกับโค้ด ให้ยึดโค้ดแล้วแก้ docs ใน commit เดียวกัน)
 
+## กฎ: งานเสร็จแล้ว Deploy ขึ้น Production ได้ทันที พร้อมใช้วิธี Deploy ที่เร็วที่สุด (ตั้งโดยลุงจืด 2026-09-12)
+
+เมื่อทำงานใดๆ เสร็จสิ้นและผ่านการ Verify ครบถ้วน (Unit tests / TypeScript / Build ผ่าน 100%):
+1. **Deploy ได้เลยอัตโนมัติ (Auto-Deploy on Done)**: ไม่ต้องหยุดถามลุงจืดว่า "deploy ไหมครับ?" ให้รันขั้นตอนการ Deploy ขึ้น Production ([account.bcaicloud.com](https://account.bcaicloud.com/)) ได้เลยทันที เพื่อส่งมอบงานได้เร็วที่สุด
+2. **วิธี Deploy ที่เร็วที่สุด (Fast Streamed Zero-Disk Deployment)**:
+   - **Frontend Only**: หากแก้งานเฉพาะ frontend (UI, Style, Forms, Components) ไม่ต้อง rebuild หรือ upload `mainapi` ให้ tag จาก image เดิมบนเซิร์ฟเวอร์ทันที ประหยัดเวลาและ Bandwidth กว่า 50%
+   - **Streaming Pipe with SSH Compression**: สตรีม `docker save` ผ่าน `ssh -C root@159.223.43.229 "docker load"` ตรงเข้าสู่เซิร์ฟเวอร์แบบ In-memory Stream โดยไม่ต้องเขียนไฟล์ `images.tar` ขนาดใหญ่ลง SSD ทั้งสองฝั่ง (ลดเวลาจาก 2-3 นาที เหลือต่ำกว่า 45 วินาที)
+   - **Preflight Backups**: สำรอง config (`release.env.before`) และฐานข้อมูลก่อน switch เสมอเพื่อความปลอดภัย
+   - **Atomic Switch & Health Check**: สลับ `release.env` แบบ atomic และสั่ง `docker compose up -d --no-deps frontend` (หรือ mainapi หากเปลี่ยน) จากนั้นตรวจ HTTP Status (200 / 401 auth guard) และ Smoke test บน URL จริงทันที
+
 ## กฎ: ขอบเขตผลิตภัณฑ์ — ไม่ทำระบบเงินเดือน (ตั้งโดยลุงจืด 2026-09-08)
 
 BC **ไม่ทำระบบเงินเดือน (payroll)** และไม่ทำสิ่งที่เป็นผลจากเงินเดือน คือ **ภ.ง.ด.1 / ภ.ง.ด.1ก** และ **ไฟล์นำส่งเงินสมทบประกันสังคม (สปส. / กท.20 ก)** — ห้าม AI ตัวใดเพิ่มเมนู จอ สเปก หรือ API เหล่านี้กลับเข้ามาเอง แม้จะเห็นว่าโปรแกรมบัญชีอื่นในตลาดมีก็ตาม
 
-ยังอยู่ในขอบเขตตามปกติ: ภาษีหัก ณ ที่จ่ายของคู่ค้า — **ภ.ง.ด.2** (เงินได้ 40(3)/(4) ดอกเบี้ย/เงินปันผล/ค่าสิทธิ ต้นทางคือรายการจ่ายเงิน ไม่ใช่เงินเดือน; เมนู `vat-pnd2` → `/report/vatpnd2` ใน `frontend/src/lib/menu-data.ts` **ห้ามลบทิ้งเพราะเข้าใจผิดว่าเป็นเรื่องเงินเดือน**) + **ภ.ง.ด.3/53** + หนังสือรับรอง 50 ทวิ, เงินทดรองจ่ายพนักงาน (งานการเงิน), ทะเบียนพนักงาน (`/employee`) ซึ่งอยู่ **ทั้ง** ในหน้าตั้งค่า (`frontend/src/lib/system-setting-screens.ts` slug `employee`) **และ** ในเมนูหลัก ข้อมูลหลัก › บุคลากรและผู้ใช้งาน ตั้งแต่ 2026-09-08 (ส่วน `/line-oa` เป็นรายการเมนูหลักตั้งแต่ 2026-09-08 เช่นกัน แต่อยู่กลุ่ม ข้อมูลหลัก › ผู้ช่วย AI และคลังความรู้ และไม่ใช่จอในหน้าตั้งค่า)
+ยังอยู่ในขอบเขตตามปกติ: ภาษีหัก ณ ที่จ่ายของคู่ค้า — **ภ.ง.ด.2** (เงินได้ 40(3)/(4) ดอกเบี้ย/เงินปันผล/ค่าสิทธิ ต้นทางคือรายการจ่ายเงิน ไม่ใช่เงินเดือน; เมนู `vat-pnd2` → `/report/vatpnd2` ใน `frontend/src/lib/menu-data.ts` **ห้ามลบทิ้งเพราะเข้าใจผิดว่าเป็นเรื่องเงินเดือน**) + **ภ.ง.ด.3/53** + หนังสือรับรอง 50 ทวิ, เงินทดรองจ่ายพนักงาน (งานการเงิน), ทะเบียนพนักงาน (`/employee`) ซึ่งกำหนดสิทธิ์ที่ระดับ **Holding** ในหน้าตั้งค่า (`frontend/src/lib/system-setting-screens.ts` slug `employee` และ workspace wizard) — กลุ่ม "บุคลากรและผู้ใช้งาน" ในเมนูหลักถูกตัดออกแล้วตามคำสั่งลุงจืด 2026-09-10 เพราะซ้ำซ้อนกับระดับ Holding (ส่วน `/line-oa` เป็นรายการเมนูหลักตั้งแต่ 2026-09-08 อยู่กลุ่ม ข้อมูลหลัก › ผู้ช่วย AI และคลังความรู้)
 
 เหตุผลและรายละเอียดการเทียบเคียงผังเมนู: `docs/kms/19-menu-coverage-market-standard.md` + ADR `docs/kms/decisions/2026-09-08-menu-parity-market-standard.md` (รอบแรก: ตัดระบบเงินเดือนออก + เพิ่ม 15 เมนู เป็น 200) และ `docs/kms/decisions/2026-09-08-menu-parity-social-sweep.md` (รอบแหล่งข้อมูล Best Practices: เพิ่มอีก 6 เมนู 218 → 224 — ที่มาของ ภ.ง.ด.2 และกลุ่มเชื่อมข้อมูลตลาดออนไลน์ พร้อมข้อห้ามเขียนว่า "ครบ 100%")
 
@@ -24,11 +34,11 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 3. **บทเรียน/กับดัก/ความรู้ที่ต้องไม่ลืม → เขียนลง `docs/kms/`** (ไม่ใช่แค่ memory ส่วนตัวของ AI ตัวใดตัวหนึ่ง) เป็นไฟล์ Markdown หัวข้อละไฟล์ อ้าง `file:line` ของโค้ดจริง และเพิ่มบรรทัดใน `docs/kms/README.md`; docs ต้องตามโค้ด (code = truth) — ถ้าโค้ดเปลี่ยนให้แก้ docs ใน commit เดียวกัน
 4. commit ที่แก้ skill/kms ให้รวมไปกับ commit งานที่ทำให้เกิดการเปลี่ยนแปลงนั้น (เหมือนกฎ Mandatory Skill Upgrade ด้านล่าง)
 
-## กฎ: ผู้ช่วยคิด = Kimi K3 + GLM (ตั้งโดยลุงจืด 2026-09-02; DeepSeek ถอดออก 2026-09-03)
+## กฎ: ผู้ช่วยทำ = DeepSeek ตัวเดียว — "Fable คิด, DeepSeek ทำ" (ตั้งโดยลุงจืด 2026-09-14; ถอด Kimi K3 + GLM ออก)
 
-- ใช้ตาม Orchestration Rule ใน ~/.claude/CLAUDE.md: py ~/.claude/tools/kimi-ask.py หรือ glm-ask.py (ต้องใช้ py launcher + PYTHONIOENCODING=utf-8)
-- คำตอบผู้ช่วยเป็นความเห็นเท่านั้น Claude ต้อง verify กับ source/build/test ก่อนใช้; ห้ามส่ง secret/PII; R0/R1 ตัดสินโดย Claude + ลุงจืด
-- DeepSeek/ChatGPT/OpenRouter ยังไม่เปิดใช้ (ถามก่อน)
+- ใช้ตาม Orchestration Rule ใน ~/.claude/CLAUDE.md: `py ~/.claude/tools/deepseek-ask.py` (default deepseek-v4-pro; ต้องใช้ py launcher + PYTHONIOENCODING=utf-8; key จาก env DEEPSEEK_API_KEY หรือ ~/.claude/.deepseek-key)
+- Claude (Fable) = คิด/แบ่งงาน/ตัดสิน/verify; DeepSeek = ร่างโค้ด/เอกสาร/วิเคราะห์/review — คำตอบเป็นความเห็นเท่านั้น Claude ต้อง verify กับ source/build/test ก่อนใช้; ห้ามส่ง secret/PII; R0/R1 ตัดสินโดย Claude + ลุงจืด
+- Kimi/GLM/ChatGPT/OpenRouter ไม่ใช้แล้ว (ถามก่อนถ้าจะเปิดคืน)
 
 ## กฎ: UX/UI ยึด "คนไทย อายุ 40+" เป็นบุคลิกหลัก (ตั้งโดยลุงจืด 2026-08-30)
 

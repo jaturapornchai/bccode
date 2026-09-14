@@ -464,8 +464,21 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
     };
   }
 
-  if (config.kind === "copy-uat") {
-    return payload;
+  if (config.slug === "bookbankscreen" || config.slug === "bookbank") {
+    if (payload.logo && (!payload.images || !Array.isArray(payload.images) || payload.images.length === 0)) {
+      payload.images = [{ xorder: 0, uri: String(payload.logo) }];
+    }
+    if (!payload.bookcode && payload.code) {
+      payload.bookcode = payload.code;
+    }
+    if (!payload.banknames || (Array.isArray(payload.banknames) && payload.banknames.length === 0)) {
+      const bankcode = String(payload.bankcode ?? "").trim();
+      if (bankcode) {
+        payload.banknames = [{ code: "th", name: bankcode }, { code: "en", name: bankcode }];
+      } else if (payload.names && Array.isArray(payload.names) && payload.names.length > 0) {
+        payload.banknames = payload.names;
+      }
+    }
   }
 
   return payload;

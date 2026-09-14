@@ -63,6 +63,7 @@ export async function proxyMainApiJson(
   mainApiUrl: string,
   path: string,
   init: RequestInit,
+  options?: { userErrorStatusOk?: boolean },
 ): Promise<NextResponse> {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
@@ -83,7 +84,14 @@ export async function proxyMainApiJson(
       cache: "no-store",
     });
     const payload = await readJsonOrText(response);
-    if (isRecord(payload)) return NextResponse.json(payload, { status: response.status });
+    if (isRecord(payload)) {
+      // Expected user errors (4xx carrying a machine-readable `code` from the API) are relayed as
+      // HTTP 200 + `success:false`: the browser must not log a console error for a form the user is
+      // still fixing, and the screen already treats `success === false` as a failure and shows the
+      // Thai `message` inline. 401/403/5xx keep their real status.
+      const userError = options?.userErrorStatusOk && response.status >= 400 && response.status < 500 && response.status !== 401 && response.status !== 403 && typeof payload.code === "string" && payload.code.length > 0;
+      return NextResponse.json(userError ? { ...payload, success: false } : payload, { status: userError ? 200 : response.status });
+    }
     return NextResponse.json({ success: response.ok, message: String(payload ?? "") }, { status: response.status });
   } catch (error) {
     const message =

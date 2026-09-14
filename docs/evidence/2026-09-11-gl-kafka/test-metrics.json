@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-11",
+  "status": "PASS",
+  "command": "go test -json -tags=integration ./internal/generalledger/... -count=1 -timeout=240s",
+  "testEnvironment": "Linux golang:1.26; isolated local MongoDB replica set, PostgreSQL 17, Apache Kafka 4.3.1",
+  "packages": [
+    {
+      "package": "smlcloudplatform/internal/generalledger/httpapi",
+      "elapsedSeconds": 0.027
+    },
+    {
+      "package": "smlcloudplatform/internal/generalledger",
+      "elapsedSeconds": 9.097
+    },
+    {
+      "package": "smlcloudplatform/internal/generalledger/kafkatransport",
+      "elapsedSeconds": 19.195
+    }
+  ],
+  "topLevelTests": 24,
+  "subtests": 63,
+  "skipped": 0,
+  "failures": 0,
+  "realKafkaFlow": {
+    "status": "PASS",
+    "topLevelTests": 2,
+    "subtests": 3,
+    "debit": "0.30000003",
+    "credit": "0.30000003",
+    "difference": "0.00000000",
+    "ledgerLines": 6,
+    "immutableEvents": 8
+  },
+  "productionAccess": false,
+  "cleanup": "Unique Mongo databases, PG schemas, Kafka topics deleted through exact captured names; test containers retained for parent",
+  "log": "tmp/gl-kafka-20260911/gl-regression-final.jsonl"
+}

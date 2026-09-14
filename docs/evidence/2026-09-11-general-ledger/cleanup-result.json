@@ -1,0 +1,37 @@
+{
+  "completedat": "2026-09-11T09:50:56.8529015Z",
+  "mongotarget": "gl_browser_uat_20260911",
+  "mongoabsent": true,
+  "mongodatabasesafter": [
+    "admin",
+    "config",
+    "local"
+  ],
+  "pgtarget": "glbrowser20260911",
+  "pgabsent": true,
+  "pgotherdatabasesunchanged": true,
+  "pgdatabasesafter": [
+    "postgres",
+    "template0",
+    "template1"
+  ],
+  "preflight": "cleanup-preflight.json",
+  "evidence": "production-reconciliation-r5.json",
+  "runtime": {
+    "frontend3011stopped": true,
+    "frontendprocessids": [
+      39156,
+      16520,
+      43876,
+      55448,
+      22436
+    ],
+    "stoppedcontainers": [
+      "bc-gl-api-uat-20260911",
+      "bc-gl-redis-uat-20260911",
+      "bc-gl-mongo-browser-20260911"
+    ],
+    "existingpgcontainerpreserved": "bc-gl-pg-test-20260911-slot3",
+    "completedat": "2026-09-11T09:52:00.9729580Z"
+  }
+}

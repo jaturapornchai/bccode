@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { ProductBarcodeFormDialog } from "@/components/product-barcode/barcode-form";
 import { BusinessImageGallery } from "@/components/product-barcode/business-image-editor";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
@@ -1148,32 +1149,25 @@ export function ProductBarcodeScreen({
           </CardContent>
         </Card>
 
-        <div
-          aria-label={text.resizeAriaLabel}
-          aria-orientation="vertical"
-          aria-valuemax={PRODUCT_SPLIT_MAX_LEFT}
-          aria-valuemin={PRODUCT_SPLIT_MIN_LEFT}
-          aria-valuenow={Math.round(splitLeftPercent)}
-          className={cn(
-            "group hidden cursor-col-resize touch-none items-stretch justify-center rounded-md outline-none xl:flex",
-            resizingSplit && "cursor-col-resize",
-          )}
-          onKeyDown={adjustSplitWithKeyboard}
-          onMouseDown={startSplitMouseResize}
-          onPointerCancel={stopSplitResize}
+        <ResizableSplitter
+          value={Math.round(splitLeftPercent)}
+          min={PRODUCT_SPLIT_MIN_LEFT}
+          max={PRODUCT_SPLIT_MAX_LEFT}
+          label={
+            language === "th"
+              ? "ปรับขนาดรายการบาร์โค้ดและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+              : (text.resizeAriaLabel || "Resize list and detail panes (drag to resize, double-click to reset)")
+          }
+          isResizing={resizingSplit}
           onPointerDown={startSplitResize}
+          onMouseDown={startSplitMouseResize}
           onPointerMove={moveSplitResize}
           onPointerUp={stopSplitResize}
-          role="separator"
-          tabIndex={0}
-        >
-          <div
-            className={cn(
-              "my-1 w-1 rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary",
-              resizingSplit && "bg-primary",
-            )}
-          />
-        </div>
+          onPointerCancel={stopSplitResize}
+          onDoubleClick={() => setSplitLeftPercent(PRODUCT_SPLIT_DEFAULT_LEFT)}
+          onKeyDown={adjustSplitWithKeyboard}
+          breakpoint="xl"
+        />
 
         {editorOpen ? (
           <ProductBarcodeFormDialog

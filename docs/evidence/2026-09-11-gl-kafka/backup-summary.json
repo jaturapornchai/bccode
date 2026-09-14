@@ -1,0 +1,28 @@
+{
+  "capturedAt": "2026-09-11T11:03:42.563534+00:00",
+  "previousImages": {
+    "mainapi": "bcai-account-mainapi:r20260911-gl-v2-1",
+    "worker": "bcai-account-mainapi:r20260911-gl-v2-1",
+    "frontend": "bcai-account-frontend:r20260911-gl-v2-1"
+  },
+  "releaseDirectory": "/opt/bcai-account/releases/r20260911-gl-kafka-1",
+  "backups": [
+    {
+      "filename": "mongo.archive.gz",
+      "bytes": 34885,
+      "sha256": "d8a9b4d3cc749266b3a0fad8c7e5e32665946b197c537022075ae7f7d0391d63"
+    },
+    {
+      "filename": "postgres-all.sql",
+      "bytes": 386563,
+      "sha256": "76cf4e809add074f7f6500039b391c60718250f014810a7a78285846f37d5196"
+    },
+    {
+      "filename": "runtime-config.tar.gz",
+      "bytes": 7263,
+      "sha256": "1e7ca3a3856bee6ec4d64b72209f08cd6354a24337274134955a3e9a231c1c9d"
+    }
+  ],
+  "scope": "Release safety copy on the same server; not an offsite backup or a completed restore drill.",
+  "restoreDrillForThisArchive": "not performed"
+}

@@ -7,10 +7,10 @@ describe("menu icon mapping", () => {
     const items = flattenMenuItems();
     const missing = items.filter((item) => !hasExplicitMenuIcon(item.route)).map((item) => item.route);
 
-    expect(items).toHaveLength(206);
+    expect(items).toHaveLength(224);
     expect(missing).toEqual([]);
     expect(menuIconKeyForRoute("/product", "master")).toBe("package");
-    expect(menuIconKeyForRoute("/productset", "master")).toBe("boxes");
+    expect(menuIconKeyForRoute("/productbarcode", "master")).toBe("qr");
     expect(menuIconKeyForRoute("/masterbrandscreen", "master")).toBe("badge");
     expect(menuIconKeyForRoute("/transaction/stocktransfer", "transaction")).toBe("truck");
     expect(menuIconKeyForRoute("/cashinginthedrawer", "finance")).toBe("money");

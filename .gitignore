@@ -82,3 +82,6 @@ test-results/
 playwright-report/
 blob-report/
 .auth/
+
+# jeadclaws agent sessions
+.jeadclaws/

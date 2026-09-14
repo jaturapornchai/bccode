@@ -1,0 +1,199 @@
+{
+  "scope": "GL runtime source and tests plus main wiring; no credentials included",
+  "files": [
+    {
+      "path": "backend/internal/generalledger/account_group_integration_test.go",
+      "sha256": "7221fbf5838594837fe191c110f34e16268cddce5aaaa5786246ca3e5c7c4805"
+    },
+    {
+      "path": "backend/internal/generalledger/amount.go",
+      "sha256": "8639b26739cdbf83bcf45cd3ac4cd1635caa175662804925f81bc940645358cf"
+    },
+    {
+      "path": "backend/internal/generalledger/amount_precision_audit_test.go",
+      "sha256": "e5dc4ced761cd7dce95006c91df9f9a88edb07c142b25d560f9a965967769c36"
+    },
+    {
+      "path": "backend/internal/generalledger/amount_small_integration_test.go",
+      "sha256": "b8c7f9996263602cde50ab78872834d2869a0d1933e04cb2dcdba0a52bcc5539"
+    },
+    {
+      "path": "backend/internal/generalledger/amount_test.go",
+      "sha256": "99b4e22a3076b28b64528456c9146d30436aa57ed01bc4fb235ba3fba5478072"
+    },
+    {
+      "path": "backend/internal/generalledger/authorization.go",
+      "sha256": "184e1e1949fa0692db745f888a2b5810b0019a40d0f756adc85b9d02ee58ace4"
+    },
+    {
+      "path": "backend/internal/generalledger/contracts.go",
+      "sha256": "08d57b8a2b63d127a5835ed736171a92a0d061de8e095ead2615c50cc18def6c"
+    },
+    {
+      "path": "backend/internal/generalledger/event_reference.go",
+      "sha256": "8cf033947321d2fee0ff48fa8f9478a8b74c06ceddb0044b893bf3d1bc499abc"
+    },
+    {
+      "path": "backend/internal/generalledger/final_audit_integration_test.go",
+      "sha256": "58fa9b39cf60e00ea707aaa7e9f878b2883ab138c2c9c8b3992b93d06ffaef7f"
+    },
+    {
+      "path": "backend/internal/generalledger/httpapi/http.go",
+      "sha256": "fca9a08b1bad48c5a7390aea97cb4df94541660031cd15df0a897644efd39f4f"
+    },
+    {
+      "path": "backend/internal/generalledger/httpapi/permissions.go",
+      "sha256": "a297a594c904583d65a1cbcafc7be913f3277e8b6b790eaa318fc572226f0f49"
+    },
+    {
+      "path": "backend/internal/generalledger/httpapi/permissions_test.go",
+      "sha256": "83415d170ddcfab6ad94d637a542b58db59436ead21c20c1cacf224951c1b73a"
+    },
+    {
+      "path": "backend/internal/generalledger/kafkatransport/kafka_flow_integration_test.go",
+      "sha256": "e358c4089da500e8ae95fa6909f3380c84c9e3b87e86705da9e9696c20007ad4"
+    },
+    {
+      "path": "backend/internal/generalledger/kafkatransport/transport.go",
+      "sha256": "6c7508ccc29db7259d22c134a24af16f39da136adbd92ae1fdf05e5f38bf3d8a"
+    },
+    {
+      "path": "backend/internal/generalledger/kafkatransport/transport_test.go",
+      "sha256": "f98ef98697533cb2199e706285bb3e319c3a4ce01b2efbd90cf9b3b518d70425"
+    },
+    {
+      "path": "backend/internal/generalledger/models.go",
+      "sha256": "214cd6020944d737574aad1cd4fa67defa1ba6fc3b6ddb59786414c33287375a"
+    },
+    {
+      "path": "backend/internal/generalledger/mutations.go",
+      "sha256": "ac6680a5b242659693754b6ac378303ff3b267b9b8ceed440e265ea0d2a3e8c3"
+    },
+    {
+      "path": "backend/internal/generalledger/outbox_rebuild_integration_test.go",
+      "sha256": "f06aa2f3b1c5a6ea61cd99c416748ffafb091ae953e2ff780f4842d2f91a5bc3"
+    },
+    {
+      "path": "backend/internal/generalledger/postgres.go",
+      "sha256": "f0abff696805c127fbd569662fc6b38253fd8ea5d0a1a17d9da5795d47eb556c"
+    },
+    {
+      "path": "backend/internal/generalledger/postgres_integration_test.go",
+      "sha256": "12d3f008c16d4337f6cc6374f9b9cd63a186fa4af77112b9e0e9afaa4eca3e0f"
+    },
+    {
+      "path": "backend/internal/generalledger/postgres_lines.go",
+      "sha256": "02d3c4fa47cb4ccdeb7a5cd3003dd7e3c36f0def730784861fe4b17d294cf5d3"
+    },
+    {
+      "path": "backend/internal/generalledger/postgres_precision_integration_test.go",
+      "sha256": "774be995997db5600ae40048790ef496285531c1501d765a4012bea7a16b4a4c"
+    },
+    {
+      "path": "backend/internal/generalledger/postgres_process_integration_test.go",
+      "sha256": "e3e61d4007e0b608d5b2c71073f59335b13c004914edef16399902b129da9ca0"
+    },
+    {
+      "path": "backend/internal/generalledger/processes.go",
+      "sha256": "c9ca37d1c68035a066be683b32aa6819ff26f8b14ecd055be914c77c1bdde5e9"
+    },
+    {
+      "path": "backend/internal/generalledger/processes_integration_test.go",
+      "sha256": "45b2a7bf8097b2591ef438324165979bf7f0366365f980fead39a05fe06c8524"
+    },
+    {
+      "path": "backend/internal/generalledger/publisher_test_helpers_test.go",
+      "sha256": "eb82a4dc26c09a0a440fc12a9d289785d5e26d8445fa0361fb17e13df610719f"
+    },
+    {
+      "path": "backend/internal/generalledger/references.go",
+      "sha256": "3feae238ddc9b3c8c2197af44a23bb766bd36668c0d73d22f95083335854490a"
+    },
+    {
+      "path": "backend/internal/generalledger/reports.go",
+      "sha256": "276cb8d5eef9ffaf3b7fce8478dc88c55dcaf486ed4f47288c1337515e0db30e"
+    },
+    {
+      "path": "backend/internal/generalledger/reports_operations.go",
+      "sha256": "7b896c71f9e26069899136fc24eb829f90c33c36b7ee3e07ad5adcee677c4767"
+    },
+    {
+      "path": "backend/internal/generalledger/reports_process.go",
+      "sha256": "0c690217a83471a5efce32cdae0a239a151b5f681d37681ccd334851f896487f"
+    },
+    {
+      "path": "backend/internal/generalledger/schema.sql",
+      "sha256": "688485fb33920a799e3b75454264f80fc884742a5bedc5e91b145b89ea32d57a"
+    },
+    {
+      "path": "backend/internal/generalledger/store.go",
+      "sha256": "5c9c803011f7cbe81d9c3793fc2d9e276987d4edaa7521356386f679e5fb5221"
+    },
+    {
+      "path": "backend/internal/generalledger/store_integration_test.go",
+      "sha256": "5bfbdd967c6671ca1ae7026f981516b50b0c84cc6985c89d841519a2262882ea"
+    },
+    {
+      "path": "backend/internal/generalledger/zero_year_integration_test.go",
+      "sha256": "7fa8c38b33dd4ff782468134f64f866e5603c96d8f4e981befda5ee11fb8f47a"
+    },
+    {
+      "path": "backend/main.go",
+      "sha256": "8ada7e7a64ad58592c31150c7620ae4c8fb714fdc329a0177a2db1aa2760f9e3"
+    },
+    {
+      "path": "frontend/src/app/api/gl/[...glPath]/route.test.ts",
+      "sha256": "a438cc9625b232c717b927faf6b5a2995ba492a4828ef4b51ed8e1178eb0c814"
+    },
+    {
+      "path": "frontend/src/app/api/gl/[...glPath]/route.ts",
+      "sha256": "e638700d1fee0fdf1220776bbc5d9f0cd473d1e247ea385e4ac0e955f39f2e34"
+    },
+    {
+      "path": "frontend/src/app/gl/[...glPath]/page.tsx",
+      "sha256": "6de9b76e233df214781fbc5cf51be7ccfc0e0af46ada0c12b0181da6dd986380"
+    },
+    {
+      "path": "frontend/src/app/gl/general-ledger-screen.tsx",
+      "sha256": "1b8811c63c3b73f4737f092da1e642fab813b6ea0ecdc7ddcd15f73108951ae2"
+    },
+    {
+      "path": "frontend/src/app/gl/gl-common.tsx",
+      "sha256": "c7bf5cd524669a0f28323cba1b63a43e17e35b6dd32f6a1f5ee90887d1622af3"
+    },
+    {
+      "path": "frontend/src/app/gl/gl-export.tsx",
+      "sha256": "d65556b1ab593edb9ef86039a306d5922ce66d96f85653c3e0131ecdf7f131cd"
+    },
+    {
+      "path": "frontend/src/app/gl/gl-journals.tsx",
+      "sha256": "ed95ec3b1d48630a59b8a0ec07133c7ce73e537aac2d1a73c346dc9484b6e7ee"
+    },
+    {
+      "path": "frontend/src/app/gl/gl-masters.tsx",
+      "sha256": "973881b320dc94e04da60c8117af8d170631d6deefd0601590e42e01729f7ebf"
+    },
+    {
+      "path": "frontend/src/app/gl/gl-processes.tsx",
+      "sha256": "267f69f0a970a87e52cee715d680499884d018a946d442469a71fc84fbb5ba63"
+    },
+    {
+      "path": "frontend/src/app/gl/gl-reports.tsx",
+      "sha256": "694881e07b9f991d160e4a59ddad3696701ce86538e0575450a09f56292f881b"
+    },
+    {
+      "path": "frontend/src/lib/general-ledger-api.ts",
+      "sha256": "a394b2171dc84ce34efd93bcd4a9be94aba95eb88eba3b70fad4c91ca95b82bb"
+    },
+    {
+      "path": "frontend/src/app/gl/gl-reports.test.ts",
+      "sha256": "dbbcbd7c258444776582b712c39600fde230beb408645f29dc932f203c75e2aa"
+    }
+  ],
+  "secretPatternMatches": 0,
+  "release": {
+    "backend": "r20260911-gl-kafka-1",
+    "frontend": "r20260911-gl-demo-thai-1"
+  },
+  "backendSourceUnchangedSinceKafkaRelease": true
+}

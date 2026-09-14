@@ -8,6 +8,69 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — แก้บั๊กจาก code review ก่อน commit (GL v2, คลังสินค้า, ช่องตัวเลข)
+
+- [Fix] ตรวจโค้ดค้างใน working tree 8 มุม แล้วแก้ 9 จุดที่ยืนยันแล้ว: mainapi ไม่ล่มทั้งตัวเมื่อ Kafka ของ GL ตั้งค่าผิด, GL worker ใช้ consumer group เดียว (ไม่ apply ซ้ำ 2 รอบ), ปิดงบ/ยอดยกมารองรับเกิน 500 บรรทัด, งบการเงินในตัวออกแบบอ่านครบทุกหน้า (ไม่ตัดที่ 1000 บัญชี)
+- [Fix] ตารางที่เก็บสินค้า: เตือนก่อนเปลี่ยนคลังทำงานจริง (await confirm), แก้ชื่อที่เก็บไม่ทำให้สิทธิ์บริษัท/สถานะเดิมหาย, บันทึกล้มเหลวกลางทางแล้วกดซ้ำไม่ยิงรายการที่สำเร็จแล้วซ้ำ
+- [Fix] ช่องตัวเลข (NumericInput) ไม่ปัดค่าที่เก็บ (0.125 โชว์ 0.125); DevDomInspector คงไว้บน production ตาม ADR 2026-09-12 (ลุงจืดสั่ง)
+- ไฟล์: `backend/main.go`, `backend/internal/generalledger/httpapi/http.go`, `backend/internal/generalledger/models.go`, `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `frontend/src/components/ui/numeric-input.tsx(+test)`, `frontend/src/app/gl/gl-statement-designer.tsx`, `docs/kms/bugs/2026-09-14-code-review-gl-warehouse-fixes.md`
+- ยังไม่แก้ (รอตัดสินใจ): เมนู `/line-oa` หายจากผังเมนูใหม่ และสิทธิ์ปุ่มของหน้าจอระดับ Holding ที่ไม่อยู่ในเมนู
+- หลักฐาน: `npx tsc --noEmit` ผ่าน, vitest numeric-input 7/7 + menu 38/38 ผ่าน, Go build/vet/test แพ็กเกจ generalledger ใน Docker (ดูผลด้านล่างใน log งาน)
+
+### 2026-09-14 — เปลี่ยนผู้ช่วย AI เหลือ DeepSeek ตัวเดียว ("Fable คิด, DeepSeek ทำ")
+
+- [Docs] ลุงจืดสั่งถอด Kimi K3 + GLM ออกจากกฎผู้ช่วย ให้ Claude (Fable) เป็นคนคิด/แบ่งงาน/ตรวจ และ DeepSeek เป็นคนร่างโค้ด/เอกสาร เพื่อประหยัด token Claude
+- ไฟล์: `AGENTS.md` (section ผู้ช่วย), `docs/kms/17-dev-gotchas.md`, global `~/.claude/CLAUDE.md` (Orchestration Rule)
+- หลักฐาน: ยิง `py ~/.claude/tools/deepseek-ask.py` ทดสอบจริง ตอบกลับ 180 token สำเร็จ; ไม่แตะโค้ด frontend/backend
+
+### 2026-09-11 — Deploy บัญชีแยกประเภทผ่าน Kafka
+
+- ปล่อย mainapi/worker/frontend `r20260911-gl-kafka-1` เวลา 18:11:35 น. ไทย ทุกบริการ healthy; MongoDB เก็บต้นฉบับ → Kafka reference → PostgreSQL ประมวลผล → Mongo delivered → commit offset
+- GL Linux 24 tests + 63 subtests, frontend 393 tests และ release backend/outbox/projection ผ่าน; คงข้อจำกัด 15 packages ใน quarantine และ 2 เมนูรอข้อมูลต้นทาง/แม่แบบ DBD
+- Topic 6 partitions / RF1; backup MongoDB/PG/config รอบใหม่ก่อน deploy เป็น same-server safety copy ยังไม่ใช่ restore drill; ข้อมูลตัวอย่างวัสดุก่อสร้าง 93 records / 110 events ผ่าน seed และกระทบยอด Mongo/Kafka/PG พร้อม 5 reports แล้ว; frontend patch `r20260911-gl-demo-thai-1` deploy 18:29:44 น. ไทย ผ่าน 401 tests และ final UI ผ่าน 5 reports / 35 routes (33 ใช้งาน / 2 รอข้อมูล), console errors 0
+- [Release, หลักฐาน และ rollback](docs/kms/decisions/2026-09-11-deploy-gl-kafka-demo.md)
+
+### 2026-09-11 — Deploy ระบบบัญชีแยกประเภทขึ้น account.bcaicloud.com
+
+- ปล่อย mainapi/worker/frontend รุ่น `r20260911-gl-v2-1` ทุกบริการ healthy และ HTTPS 200; เชื่อม 33 เมนู ส่วนประมวลผลเอกสารเดิม/XBRL ยังรอข้อมูล
+- ผ่าน frontend 384 tests, backend/outbox/projection และ GL Linux 17 tests + 38 subtests; production smoke เปิดครบ 35 เมนู, GL GET 82 ครั้งตอบ 200 และ console errors 0
+- สำรอง MongoDB/PG/config ก่อนปล่อยและทดสอบ restore Mongo ในฐานแยก; สร้างเฉพาะฐาน PG `test` ของ holding ที่ขาด โดยไม่สร้างรายการบัญชีจริง เก็บ image เดิมสำหรับ rollback
+- แก้เฉพาะ Kafka test setup ให้รอ leader ภายในเวลาจำกัด และปรับ E2E Account Mapping เป็นพร้อมใช้ตามระบบใหม่
+- [หลักฐาน ข้อจำกัด และ rollback](docs/kms/decisions/2026-09-11-deploy-general-ledger-v2.md)
+### 2026-09-11 — ระบบบัญชีแยกประเภทใหม่ตาม Champ
+
+- เชื่อม 35 เส้นทาง: 33 เมนูมีหน้าจอและ API; ประมวลผลเอกสารซื้อขายเดิมรอต้นทางที่ตรวจสอบได้ และ XBRL เป็นหน้าเตรียมข้อมูลรอแม่แบบบริษัท
+- เพิ่ม ledger เงินแม่นยำ MongoDB Decimal128 → PostgreSQL numeric, CRUD/ผ่าน/กลับรายการ, งวด, รายงาน, ปิดงบและยกยอดแบบคงสาขา/แผนก/โครงการ พร้อมกันคำขอซ้ำและประวัติแก้ไม่ได้
+- ตรวจ Go GL 16 tests + 38 subtests, frontend 29 tests/TypeScript/lint และ browser UAT บน production build ผ่าน 29.6 วินาที; ภาพ light/dark ครบ 8 แบบ, Mongo 19 ขั้นตอนและยอด PG ตรงกัน ล้างข้อมูลทดสอบแล้ว ไม่ย้ายข้อมูลจริง; deploy ภายหลังตามบันทึก release ด้านบน
+- MongoModel projectRev 1423 → 1480; diagram/relations/workflow และ lint ผ่าน อัปเดต UI skill §8.12
+- รายละเอียดและ Markdown ครบ 35 เมนู: [คู่มือและผลตรวจ](docs/kms/architecture/2026-09-11-general-ledger-v2.md)
+### 2026-09-11 — Deploy เมนูล่าสุดขึ้น account.bcaicloud.com
+
+- **[Deploy]** อัปเดต frontend เป็น `bcai-account-frontend:r20260911-menu-top-1`: 223 เมนูตาม Champ, ชื่อหมวดไทยล้วน และเมนูบนเป็นค่าเริ่มต้น
+- **ตรวจ:** image healthy / HTTPS 200; frontend 357 tests + TypeScript + Docker build ผ่าน; backend/outbox/projection ผ่าน; Playwright บน production ผ่านครบ 3 tests
+- **ข้อจำกัด:** wrapper `verify:all` เรียก npm ผ่าน Git Bash ไม่ได้ จึงรันชุด frontend เทียบเท่าผ่าน PowerShell; lint ยังมี 219 warnings / 0 errors ไม่ได้แก้ backend หรือข้อมูลบัญชี
+- **Rollback/หลักฐาน:** [บันทึก release](docs/kms/decisions/2026-09-11-deploy-champ-menu.md) — เก็บ image และ release.env เดิมไว้บนเซิร์ฟเวอร์
+
+### 2026-09-11 — ตั้งเมนูบนเป็นค่าเริ่มต้น
+
+- **[UI/UX]** ผู้ที่ยังไม่ได้เลือกรูปแบบเมนูจะเริ่มที่เมนูบน; จำรูปแบบที่ผู้ใช้เลือกไว้และคืนค่าเมนูซ้ายได้ถูกหลังรีโหลด
+- **ไฟล์หลัก:** `frontend/src/app/menu/main-menu-screen.tsx`, E2E เมนู 3 ไฟล์ และ skill/KMS
+- **ตรวจ:** TypeScript และ Playwright 3 tests ผ่าน; ตรวจ default top, สลับ left และจำค่าหลังรีโหลด รวม Light/Dark × 4 ขนาดจอ
+
+### 2026-09-11 — ชื่อหมวดเมนูเป็นภาษาไทยล้วน
+
+- **[UI/UX]** เอาข้อความอังกฤษในวงเล็บออกจากชื่อหมวดหลักทั้ง 9 ระบบตามคำสั่งลุงจืด ชื่ออังกฤษในโหมดภาษาอังกฤษยังอยู่ตามเดิม
+- **ไฟล์หลัก:** `frontend/src/lib/menu-data.ts` และเทสต์ชื่อหมวด; ปรับผัง KMS และ `ui-scale-polish` ให้ตรงกัน
+- **ตรวจ:** Vitest เฉพาะเมนู 37 ข้อและ Playwright 2 tests ผ่าน; ตรวจ Light/Dark × 4 ขนาดจอ
+
+### 2026-09-11 — เมนูอัปเกรดจาก Champ ผสานงานใหม่
+
+- **[UI/UX]** จัด 9 ระบบเดิม เพิ่ม 69 เมนูเป็น 223 รายการ เก็บ 154 id/route เดิมครบ แยกงานอนุมัติ เช็ค สินค้าชุด และผ่านบัญชี พร้อมค้นด้วยชื่อเดิมจาก Champ
+- **[Fix]** หน้า “รอพัฒนา” ใช้คำอธิบายไทย; ทะเบียนเลขเครื่องที่ runtime API 404 แสดง pending จนเชื่อมพร้อม ป้องกันเปิดจอที่ดึงข้อมูลไม่ได้
+- **ไฟล์หลัก:** `frontend/src/lib/menu-data.ts`, `menu-icons.ts`, `menu-screen-status.ts`, `frontend/src/app/menu/main-menu-screen.tsx`, `backend/assets/language/languages.tsv` และ skill/KMS
+- **ตรวจ:** Vitest 46 ข้อ, tsc ผ่าน, Playwright เมนู 3 tests ผ่าน; light/dark × 4 ขนาดจอ; ไม่ได้ทำ CRUD หรือเปลี่ยนข้อมูลบัญชี
+- **หลักฐาน/ข้อจำกัด:** [ผังและตารางเทียบ Champ](docs/kms/decisions/2026-09-11-champ-upgrade-menu-workflows.md) — เมนูเป็นแผนงาน ไม่ใช่รับรองว่า business workflow/รายงานทุกแบบเสร็จแล้ว
+
 ### [แม่แบบการบันทึก (Template)]
 <!--
 ### YYYY-MM-DD — <หัวข้อการแก้ไขสั้นกระชับ>
@@ -19,6 +82,209 @@
 - **ผลการทดสอบ (Evidence)**:
   - <ผลการทดสอบ เช่น ผ่าน vitest ... tests, typecheck 0 errors, curl 200 OK>
 -->
+
+### 2026-09-10 — ย้ายธนาคารไปไว้ในข้อมูลหลัก ขยายเป็น "สมุดบัญชี" (Book Bank) รองรับเลือกจากแม่แบบและเพิ่มธนาคารเอง
+- **ประเภท**: `[Feature]` `[UI/UX]` `[Refactor]`
+- **สิ่งที่ทำ**: ดำเนินการตามคำสั่งของลุงจืด: "ธนาคารให้ย้ายไปไว้ในข้อมูลหลัก และเพิ่ม สาขา เลขที่บัญชี ฯลฯ เปลี่ยนชื่อเป็นสมุดบัญชี ธนาคารสามารถเลือกจาก template และสามารถเพิ่มธนาคารเองได้ด้วย"
+  1. **ย้ายตำแหน่งและเปลี่ยนชื่อในเมนู**:
+     - ย้ายจากกลุ่ม "ค่าเริ่มต้น" (`defaults`) ไปยังกลุ่ม "ข้อมูลหลัก" (`master`) ภายใต้กลุ่ม "สมุดบัญชี" (`bank-accounts`)
+     - เปลี่ยนชื่อเมนูและหน้าจอเป็น **"สมุดบัญชี"** (`Book Bank` / `Bank Accounts`), route `/bookbankscreen`
+     - กำหนด redirect อัตโนมัติจาก `/bank` ไปยัง `/bookbankscreen` ป้องกันลิงก์เดิมขาด
+  2. **ขยายโครงสร้างข้อมูลสมุดบัญชี (Book Bank Master Data)**:
+     - รองรับฟิลด์: รหัสสมุดบัญชี (`bookcode`), ชื่อสมุดบัญชีหลายภาษา (`names`), เลขที่บัญชี (`passbook`), สาขาธนาคาร (`bankbranch`), ชื่อบัญชี (`accountname`), รหัสธนาคาร (`bankcode`), ชื่อธนาคารหลายภาษา (`banknames`), รหัสผังบัญชี (`accountcode`), และรูปภาพ/โลโก้ (`logo` / `images`)
+     - เชื่อมต่อ backend API `/payment/bookbank` สำหรับ CRUD แบบสมบูรณ์
+  3. **ฟอร์มเลือกและกำหนดธนาคารแบบ 2 ระบบ (Dual Bank Selector)**:
+     - **เลือกจากแม่แบบ (Template)**: เลือกจากแม่แบบธนาคารไทยทางการ 20+ ธนาคาร (`thaiBankPresets`) เติมรหัสธนาคาร, ชื่อไทย/อังกฤษ, และโลโก้ความละเอียดสูงให้อัตโนมัติ พร้อมแสดงป้าย BOT Code และตัวอย่างการแสดงผล
+     - **กำหนดธนาคารเอง (Custom Bank)**: สามารถสลับไปโหมดกำหนดเองเพื่อกรอกรหัสธนาคาร, ชื่อไทย-อังกฤษ, และอัปโหลดโลโก้ธนาคารผ่าน S3 ได้อย่างอิสระ
+  4. **การแสดงผลในตารางและแผงรายละเอียด (Table & Detail View)**:
+     - แสดงโลโก้ธนาคาร, รหัสและชื่อสมุดบัญชี, ป้ายเลขที่บัญชี (`font-mono`), สาขา, และชื่อบัญชี
+  5. **ปรับปรุงชุดทดสอบ**:
+     - ปรับ `menu-data.test.ts`, `menu-icons.test.ts`, `menu-screen-status.test.ts`, `system-setting-screens.test.ts`, และ `route.test.ts` ให้ตรงกับสมุดบัญชี ผ่าน 100% (48 files, 346 tests)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/system-setting-screens.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/api/system-settings/[[...settingPath]]/route.ts`, `frontend/src/components/system-settings/utils.ts`, `frontend/src/app/[systemSetting]/page.tsx`
+- **ผลการทดสอบ**: Vitest 48 ไฟล์ผ่าน 346/346 (100%); TypeScript compile 0 errors (`tsc --noEmit` pass)
+
+### 2026-09-10 — ตรวจสอบและยกระดับมาตรฐาน CRUD Workbench (datacrud skill) พร้อมติดตั้ง Universal Resizable Splitter ให้ทุกหน้าจอที่ยังเลื่อนไม่ได้ครบ 100%
+- **ประเภท**: `[UI/UX]` `[Feature]` `[Refactor]` `[Docs]`
+- **สิ่งที่ทำ**: ดำเนินการตามคำสั่งของลุงจืด: "ตรวจ skill crud ใหม่ เพราะบางจอ ยังเลื่อนไม่ได้"
+  1. **ฟื้นฟูและยกระดับมาตรฐานกลาง `docs/skills/datacrud/SKILL.md`**:
+     - ร่างสัญญา CRUD Workbench ฉบับสมบูรณ์ กำหนดให้ทุกหน้าจอที่มีโครงสร้าง 2 ฝั่ง (Master-Detail, Tree-Detail, Catalog-Selection, List-Editor) ต้องมี `ResizableSplitter` ที่ปรับขนาดได้ เลื่อนได้อย่างอิสระ ไม่ล็อคความกว้างตายตัว
+     - กำหนดมาตรฐานความหนาแน่น `.bc-list-*`, การใช้ `<NamesEditor>` หลายภาษา, การมี Dirty Form Guard ป้องกันข้อมูลสูญหาย, และ Pinned Action Header/Footer
+  2. **ปรับปรุงคอมโพเนนต์กลาง `ResizableSplitter`**:
+     - เพิ่ม breakpoint `"md"` รองรับทั้ง `"md" | "lg" | "xl"` สำหรับจอที่มีจุดตัดการแสดงผลต่างกัน
+  3. **ติดตั้งตัวเลื่อนปรับความกว้างครบทุกจอที่เดิมเป็น Fixed Width ("ยังเลื่อนไม่ได้")**:
+     - `frontend/src/app/system-settings/company-branch-tree-view.tsx`: โครงสร้างองค์กร (บริษัทและสาขา) ปรับจาก clamp กว้างตายตัว เป็น `--org-sidebar-width` (min 260px, max 620px, default 340px) พร้อม `ResizableSplitter` breakpoint `lg`
+     - `frontend/src/app/menu/product-set-screen.tsx`: หน้าจอสินค้าชุด ปรับจาก `md:w-80` เป็น `--product-set-sidebar-width` (min 260px, max 620px, default 340px) พร้อม `ResizableSplitter` breakpoint `md`
+     - `frontend/src/app/system-settings/system-settings-screen.tsx`: หน้าจอกลุ่มสินค้า (`productgroup`) และกลุ่มสินค้าย่อย (`productsubgroup`) เพิ่ม `--tree-split-basis` พร้อม `ResizableSplitter` breakpoint `xl`
+     - `frontend/src/app/system-settings/system-settings-screen.tsx`: หน้าจอหมวดหมู่สินค้า (`productcategorylist` / `productcategorygroupselectscreen`) เพิ่ม `--category-split-width` พร้อม `ResizableSplitter` breakpoint `md`
+     - `frontend/src/app/menu/product-barcode-shelf-screen.tsx`: หน้าจอพิมพ์ป้ายสินค้า ปรับจาก `xl:grid-cols-[minmax(0,1fr)_420px]` เป็น `--shelf-split-basis` พร้อม `ResizableSplitter` breakpoint `xl`
+     - `frontend/src/app/menu/manage-shortcuts-screen.tsx`: หน้าจอจัดการทางลัด ปรับจาก `lg:grid-cols-[1fr_360px]` เป็น `--shortcuts-split-basis` พร้อม `ResizableSplitter` breakpoint `lg`
+  4. **ชุดทดสอบและเอกสาร**:
+     - อัปเดต `frontend/src/components/ui/resizable-splitter.test.ts` ตรวจสอบความครอบคลุมทั้ง 11 หน้าจอ ผ่าน 11/11 tests (100%)
+     - อัปเดต `docs/skills/ui-scale-polish/SKILL.md` (หัวข้อ 8.7 Universal Resizable Splitter Standard)
+- **ไฟล์สำคัญ**: `docs/skills/datacrud/SKILL.md`, `docs/skills/ui-scale-polish/SKILL.md`, `frontend/src/components/ui/resizable-splitter.tsx`, `frontend/src/components/ui/resizable-splitter.test.ts`, `frontend/src/app/system-settings/company-branch-tree-view.tsx`, `frontend/src/app/menu/product-set-screen.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/menu/product-barcode-shelf-screen.tsx`, `frontend/src/app/menu/manage-shortcuts-screen.tsx`, `README.md`
+- **ผลการทดสอบ**: Vitest 48 ไฟล์ผ่าน 346/346 (100%); TypeScript compile 0 errors (`tsc --noEmit` pass); resizable-splitter.test.ts 11/11 tests pass
+
+### 2026-09-10 — ปรับปรุงมาตรฐานตัวแบ่งและปรับความกว้างแนวตั้ง (Universal Resizable Splitter) สวยงามเหมือนหน้าจอคลังสินค้าทั้งโปรเจ็กต์
+- **ประเภท**: `[UI/UX]` `[Refactor]`
+- **สิ่งที่ทำ**: ปรับปรุงแถบปรับขนาดความกว้างระหว่างคอลัมน์ซ้าย-ขวาตามคำสั่งของลุงจืด: "ไม่สวย ให้ดูหน้าจอ คลัง ไล่แก้ ทั้ง project ให้เหมือนกัน"
+  1. **สร้างคอมโพเนนต์กลาง `ResizableSplitter`**:
+     - รูปลักษณ์พรีเมี่ยมตามหน้าจอผังคลังสินค้า: เส้นแกนแนวตั้งบางประณีต (`w-0.5 rounded-full bg-border/60` -> ชี้ hover เป็น `bg-primary/50` -> ลากเป็น `bg-primary`) พร้อมปุ่มเม็ดยาลอยตรงกลาง (Floating Pill) และไอคอนกริป `GripVertical` (`h-8 w-3.5` -> hover `h-10` -> resizing `h-12 bg-primary text-primary-foreground`)
+     - มี Hitbox กว้างพอสำหรับการใช้เมาส์และหน้าจอสัมผัส (`w-3 cursor-col-resize select-none touch-none -mx-1`)
+     - รองรับ Keyboard Accessibility (`ArrowLeft`, `ArrowRight`, `Home`, `End`), ดับเบิ้ลคลิกเพื่อคืนค่าความกว้างเริ่มต้น (Double-click Reset), และค่า ARIA ครบถ้วน
+  2. **ปรับใช้มาตรฐานเดียวกันทั้งโปรเจ็กต์ (ครบทั้ง 5 จุด)**:
+     - `frontend/src/app/system-settings/warehouse-tree-view.tsx` (หน้าจอผังคลังสินค้า — ต้นแบบ)
+     - `frontend/src/app/system-settings/system-settings-screen.tsx` (หน้าต่างตั้งค่าระบบ SettingMasterDetail — จุดที่ลุงจืดทักว่าไม่สวย)
+     - `frontend/src/app/system-settings/system-settings-screen.tsx` (หน้าจอแก้ไขสูตรการผลิต BOM)
+     - `frontend/src/app/menu/product-screen.tsx` (หน้าจอข้อมูลสินค้า Product List-Detail)
+     - `frontend/src/app/menu/product-barcode-screen.tsx` (หน้าจอบาร์โค้ดสินค้า Barcode List-Detail)
+  3. **เขียนชุดทดสอบ Unit Tests**:
+     - สร้าง `frontend/src/components/ui/resizable-splitter.test.ts` เพื่อรับรองการใช้งานคอมโพเนนต์กลางและพฤติกรรม Accessibility ทุกจุด
+  4. **อัปเกรดมาตรฐานระบบ**: อัปเดต `docs/skills/ui-scale-polish/SKILL.md` (หัวข้อ Resizable Splitter)
+- **ไฟล์สำคัญ**: `frontend/src/components/ui/resizable-splitter.tsx`, `frontend/src/components/ui/resizable-splitter.test.ts`, `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/menu/product-screen.tsx`, `frontend/src/app/menu/product-barcode-screen.tsx`, `docs/skills/ui-scale-polish/SKILL.md`, `README.md`
+- **ผลการทดสอบ**: Vitest 48 ไฟล์ผ่าน 342/342 (100%); TypeScript 0 errors; Unit test `resizable-splitter.test.ts` ผ่าน 7/7 (100%)
+
+### 2026-09-10 — ปรับโครงสร้างคลังสินค้าเป็น 2 ระดับ คลัง → ที่เก็บ (ตัดที่วางสินค้า Bins ออกทั้งหมด)
+- **ประเภท**: `[UI/UX]` `[Refactor]`
+- **สิ่งที่ทำ**: ปรับปรุงหน้าจอคลังสินค้า (`warehouse-tree-view.tsx`) ตามคำสั่งของลุงจืด: "ไม่ต้องมีที่วาง ให้มีแค่ คลัง -> ที่เก็บ"
+  1. **ตัดระดับที่วางสินค้า (Bins) ออกทั้งหมด**:
+     - ลบคอลัมน์ "ที่วางสินค้า (Bins)" ออกจากตารางที่เก็บสินค้าทางฝั่งขวา
+     - ลบหน้าต่างจัดการที่วางสินค้า (Bins Management Modal) และฟอร์ม/สเตตที่เกี่ยวข้องทั้งหมด
+     - ทำให้ตารางที่เก็บสินค้าเหลือคอลัมน์ที่ชัดเจน: ลำดับ (#), รหัสที่เก็บสินค้า, ชื่อที่เก็บสินค้า (ไทย), ชื่อที่เก็บสินค้า (EN) และปุ่มลบ (Action)
+  2. **ปรับปรุงสเปกและข้อความ**:
+     - แก้ไข `frontend/src/lib/system-setting-screens.ts` ให้ title เป็น "คลัง" (`Warehouse → Location`), subtitle เป็น "จัดการคลังสินค้าและที่เก็บสินค้า", และ field label เป็น "ที่เก็บสินค้า" โดยตัดคำว่า "ชั้นวาง" ออกทั้งหมด
+  3. **ปรับปรุงชุดทดสอบ E2E**:
+     - ปรับปรุง `frontend/e2e/product-warehouse-crud.spec.ts` ให้ทดสอบเฉพาะ CRUD ของ คลังสินค้า และ ที่เก็บสินค้า ผ่าน 100%
+  4. **อัปเกรดมาตรฐานระบบ**: บันทึกแบบแผนลงใน `docs/skills/ui-scale-polish/SKILL.md`
+- **ไฟล์สำคัญ**: `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `frontend/src/lib/system-setting-screens.ts`, `frontend/e2e/product-warehouse-crud.spec.ts`, `docs/skills/ui-scale-polish/SKILL.md`, `README.md`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; Playwright E2E ผ่าน 100%
+
+### 2026-09-10 — ปรับปรุงหน้าจอคลังสินค้า: ตาราง Datalist เรียงแถวเรียบเสมอ (Single-line), ตรึง Action Bar ด้านล่าง (Pinned Footer) และเพิ่มตัวเลื่อนปรับความกว้าง (Resizable Splitter)
+- **ประเภท**: `[UI/UX]` `[Feature]`
+- **สิ่งที่ทำ**: ปรับปรุงหน้าจอผังโครงสร้างคลังสินค้า (`warehouse-tree-view.tsx`) ตามคำสั่งของลุงจืด: "datalist เละ เพิ่ม ให้เลื่อนความกว้างได้ด้วย"
+  1. **เพิ่มตัวเลื่อนปรับความกว้าง (Accessible Draggable Splitter)**:
+     - ติดตั้งแถบปรับขนาดความกว้างระหว่างฝั่งซ้าย (รายชื่อคลัง) และฝั่งขวา (ตารางที่เก็บสินค้า)
+     - รองรับการลากด้วยเมาส์และหน้าจอสัมผัส (Pointer capture) พร้อมจำค่าลง `localStorage` (`bc_warehouse_sidebar_width`)
+     - ปรับความกว้างได้ระหว่าง 220px - 520px (ค่าเริ่มต้น 280px)
+     - รองรับ Double-click คืนค่าเริ่มต้น และรองรับ Keyboard accessibility (`ArrowLeft`, `ArrowRight`, `Home`, `End`)
+  2. **ปรับปรุงตารางที่เก็บสินค้า (Datalist Polish)**:
+     - **Pinned Bottom Footer**: แยก Action bar (ปุ่ม `+ เพิ่มแถว` และ `บันทึกทั้งหมด`) ออกมาอยู่นอกพื้นที่ Scroll ตรึงติดขอบล่างของการ์ดเสมอ ไม่เลื่อนหลุดหายตามแถวข้อมูล
+     - **Single-line Baseline Rhythm**: แยกคอลัมน์ชื่อภาษาไทย และภาษาอังกฤษ ออกจากกันชัดเจน (แสดงคอลัมน์ EN เฉพาะเมื่อเปิดใช้ภาษาอังกฤษ) ทำให้ทุกแถวมีความสูงบรรทัดเรียบเสมอกัน (~40-42px) ไม่โป่งบวม
+     - **Sticky Header with Backdrop Blur**: ตรึงหัวตารางด้านบนด้วย backdrop-blur
+     - **Subtle Row State Indicators**: ปรับสถานะแถวใหม่/แถวแก้ไขด้วยเส้นขอบซ้าย `border-l-2` และ Badge `NEW`/`MOD` ในคอลัมน์ลำดับ ไม่ย้อมสีพื้นหลังหนาจนรกสายตา
+     - **ลบรหัสคลังซ้ำซ้อน**: รายชื่อคลังฝั่งซ้ายแสดงรหัสใน Badge เพียงครั้งเดียว ไม่พิมพ์รหัสซ้ำข้างชื่อ
+  3. **ยกเลิกการเปิด Dialog เพิ่มคลังสินค้าอัตโนมัติ**: ยกเลิก `useEffect` ที่สั่งเปิด Dialog ทันทีเมื่อเข้าหน้าจอ เพื่อให้ผู้ใช้เข้าไปดูข้อมูลเดิมได้ก่อนเสมอตามความต้องการของลุงจืด
+  4. **อัปเกรดมาตรฐานระบบ**: อัปเดต `docs/skills/ui-scale-polish/SKILL.md` (หัวข้อ 8.6)
+- **ไฟล์สำคัญ**: `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `docs/skills/ui-scale-polish/SKILL.md`, `README.md`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; Playwright E2E ผ่าน 100%
+
+### 2026-09-09 — ออกแบบหน้าจอคลังสินค้า: ตารางที่เก็บสินค้าแบบ Editable Table Grid พร้อมบันทึกทีเดียว (Batch Save All)
+- **ประเภท**: `[UI/UX]` `[Feature]`
+- **สิ่งที่ทำ**: ปรับปรุงหน้าจอคลังสินค้า (`warehouse-tree-view.tsx`) ตามคำสั่งของลุงจืด: "แก้ใหม่ พอเลือกคลัง ข้างในเป็นที่เก็บแบบ table save พร้อมกันทีเดียว"
+  1. **ฝั่งซ้าย (~280px)**: รายการคลังสินค้าแบบ Compact List แสดงรหัส, ชื่อ, จำนวนที่เก็บ (`ลูก X`), ปุ่มเพิ่ม/แก้ไข/ลบคลังสินค้า
+  2. **ฝั่งขวา (1fr)**: ตารางแก้ไขข้อมูลที่เก็บสินค้าโดยตรง (Inline Editable Table Grid):
+     - แก้ไขรหัส (`code`) และชื่อหลายภาษา (`names.th`, `names.en`) ได้ในช่องตารางทันที
+     - ปุ่ม `+ เพิ่มแถว` สำหรับเพิ่มแถวใหม่ต่อเนื่องหลายรายการโดยไม่ต้องรอบันทึกทีละตัว
+     - สถานะสีแยกชัดเจน: แถวใหม่ (`isNew: true`), แถวที่แก้ไข (`isModified: true`)
+     - ปุ่มเด่น `บันทึกทั้งหมด` (Save All) รวบรวมการเพิ่ม แก้ไข และลบ ยิง Concurrent Requests ผ่าน API (`POST`, `PUT`, `DELETE`) ในคราวเดียว
+     - ระบบตรวจสอบความถูกต้อง (Validation) เตือนรหัส/ชื่อว่าง หรือรหัสซ้ำกันเองก่อนบันทึก
+     - หน้าต่างจัดการที่วางสินค้า (Bins Management Modal) แยกออกเป็น Dialog ย่อยมาตรฐาน `.dialog-backdrop`
+  3. **อัปเกรดมาตรฐานระบบ**: บันทึกแบบแผนลงใน `docs/skills/ui-scale-polish/SKILL.md` (หัวข้อ 8.6) ตามกฎ Mandatory Skill Upgrade
+- **ไฟล์สำคัญ**: `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `frontend/e2e/product-warehouse-crud.spec.ts`, `docs/skills/ui-scale-polish/SKILL.md`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; Playwright E2E `product-warehouse-crud.spec.ts` ผ่านครบวงจร CRUD คลัง/ที่เก็บ/ที่วางสินค้า 100%
+
+### 2026-09-09 — ออกแบบ UX/UI หน้าจอคลังสินค้าใหม่ (Master-Detail 3 คอลัมน์ รองรับที่เก็บสินค้าจำนวนมาก)
+- **ประเภท**: `[UI/UX]` `[Refactor]`
+- **สิ่งที่ทำ**: ออกแบบและปรับปรุง UX/UI หน้าจอคลังสินค้า (`warehouse-tree-view.tsx`) ใหม่ทั้งหมดตามคำสั่งของลุงจืด เพื่อแก้ปัญหาเมื่อคลังสินค้ามีที่เก็บสินค้าจำนวนมาก (50–200+ แห่ง) โดยเปลี่ยนจาก Tree View แคบๆ ซ้อน 3 ชั้น เป็นสถาปัตยกรรม **Master-Detail 3 คอลัมน์**:
+  1. **คอลัมน์ซ้าย (~260px)**: คลังสินค้า (Warehouses) เป็นการ์ดกระชับ พร้อม Badge จำนวนที่เก็บ และปุ่ม Action ประจำแถว
+  2. **คอลัมน์กลาง (1fr กว้างสุด)**: ศูนย์จัดการที่เก็บสินค้าและที่วางสินค้า (Location Workspace) เป็นพื้นที่หลัก มี **ช่องค้นหาด่วนแบบ Real-time (Instant Search)**, สถิติสรุปจำนวนที่เก็บและที่วาง, ปุ่มคุมการแสดงผล (กางทั้งหมด/ยุบทั้งหมด), ตารางรายการที่เก็บสินค้าแบบ Single-line Baseline Rhythm อ่านง่าย สบายตา เหมาะกับคนไทยอายุ 40+ พร้อมตารางย่อยแสดงที่วางสินค้า (Bins)
+  3. **คอลัมน์ขวา (~380px)**: ฟอร์มจัดการข้อมูล (Active Form Panel) ปรับปรุงให้ใช้งานง่าย พร้อมบันทึกได้ทันที
+  - อัปเกรดมาตรฐาน UX/UI ลงใน `docs/skills/ui-scale-polish/SKILL.md` (หัวข้อ 8.5) ตามกฎ Mandatory Skill Upgrade
+- **ไฟล์สำคัญ**: `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `docs/skills/ui-scale-polish/SKILL.md`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบฟิลด์ "บริษัทที่ใช้คลังนี้ได้" ออกจากฟอร์มคลังสินค้า (Warehouse)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบส่วนกำหนด "บริษัทที่ใช้คลังนี้ได้" (CompanyScopePicker) ออกจากฟอร์มสร้าง/แก้ไขคลังสินค้า (Warehouse) ในหน้าจอผังโครงสร้างคลังสินค้า (`warehouse-tree-view.tsx`) ตามคำสั่งของลุงจืด เพื่อให้ฟอร์มคลังสินค้าเรียบง่ายและไม่ซับซ้อนเกินจำเป็น
+- **ไฟล์สำคัญ**: `frontend/src/app/system-settings/warehouse-tree-view.tsx`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบฟิลด์เพิ่มเติม (ประเภทสินค้า, วัตถุอันตราย, ลำดับ, กฎเข้า-ออก, ขอบเขตบริษัท) ออกจากฟอร์มที่เก็บสินค้า
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบฟิลด์ที่ไม่ได้ใช้งานออกจากฟอร์มสร้าง/แก้ไขที่เก็บสินค้า (Location) ในหน้าจอผังโครงสร้างคลังสินค้า (`warehouse-tree-view.tsx`) ได้แก่ ประเภทสินค้าที่อนุญาต, ประเภทวัตถุอันตราย, ลำดับการจัดเรียง, กฎการเข้า-ออก (Allow Putaway/Pick/Blocked), และขอบเขตบริษัทที่ใช้ที่เก็บสินค้านี้ได้ เพื่อให้ฟอร์มเรียบง่าย กระชับ เหมาะสมกับการใช้งานของคนไทยอายุ 40+ คงเหลือเฉพาะรหัสและชื่อที่เก็บสินค้าหลายภาษา
+- **ไฟล์สำคัญ**: `frontend/src/app/system-settings/warehouse-tree-view.tsx`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบฟิลด์ประเภทที่เก็บสินค้าออกจากฟอร์มที่เก็บสินค้า (Warehouse Location)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบส่วนเลือก "ประเภทที่เก็บสินค้า" (RadioChipPicker: จัดเก็บ, หยิบสินค้า, รับสินค้า, ตรวจสอบคุณภาพ, งานระหว่างทำ, สินค้าชำรุด, ระหว่างขนส่ง) ออกจากฟอร์มสร้าง/แก้ไขที่เก็บสินค้า (Location) ในหน้าจอผังโครงสร้างคลังสินค้า (`warehouse-tree-view.tsx`) ตามคำสั่งของลุงจืด เพื่อลดความซ้ำซ้อนและกระชับฟอร์ม
+- **ไฟล์สำคัญ**: `frontend/src/app/system-settings/warehouse-tree-view.tsx`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — เพิ่มปุ่ม "เพิ่มธนาคารไทย" พร้อมแม่แบบธนาคารและโลโก้ (Bank Templates)
+- **ประเภท**: `[Feature]` `[UI/UX]`
+- **สิ่งที่ทำ**: เพิ่มปุ่ม "เพิ่มธนาคารไทย" บนหน้าจอธนาคาร (`/bank`) ในส่วน Action Toolbar และ Empty State พร้อมหน้าต่าง Dialog แม่แบบธนาคารไทย (`ThaiBankTemplateDialog`) รวบรวม 20 ธนาคารในประเทศไทย (KBANK, SCB, KTB, BBL, BAY, TTB, GSB, BAAC, GHB, KKP, CIMB, TISCO, UOB, LHB, ICBC, TCRB, IBANK, CITI, HSBC, PromptPay) ครบถ้วนทั้งชื่อภาษาไทย ภาษาอังกฤษ รหัส BOT สีประจำธนาคาร และไฟล์โลโก้ความละเอียดสูงที่จัดเก็บแบบ Local Static Assets (`frontend/public/banks/*.png`); รองรับการเลือกเพิ่มหลายธนาคารพร้อมกัน (Bulk Add) มีระบบตรวจจับธนาคารที่มีอยู่ในระบบแล้วเพื่อป้องกันการเพิ่มซ้ำ; พร้อมทั้งเพิ่มตัวเลือกเติมข้อมูลอัตโนมัติจากแม่แบบในฟอร์มเพิ่มธนาคารเดี่ยว
+- **ไฟล์สำคัญ**: `frontend/public/banks/*.png`, `frontend/src/lib/thai-banks.ts`, `frontend/src/lib/thai-banks.test.ts`, `frontend/src/components/logo-avatar.tsx`, `frontend/src/components/authenticated-image.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/e2e/bank-template.spec.ts`
+- **ผลการทดสอบ**: Vitest 47 ไฟล์ผ่าน 335/335 (100%); TypeScript 0 errors; Playwright E2E `bank-template.spec.ts` และ `bank-crud.spec.ts` (ตรวจสอบบันทึกและ query MongoDB จริงแบบ Live) ผ่าน 100%; `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — พัฒนาหน้าจอธนาคาร (/bank) เชื่อมต่อ API CRUD และปลดสถานะรอพัฒนา
+- **ประเภท**: `[Feature]` `[UI/UX]`
+- **สิ่งที่ทำ**: พัฒนาหน้าจอ "ธนาคาร" (`/bank`) เชื่อมต่อ Backend API `/payment/bankmaster` แบบเต็มระบบ CRUD (สร้าง, ค้นหา/แสดงรายการ, แก้ไข, ลบแบบ Soft Delete ตามมาตรฐานระบบ) พร้อมรองรับอัปโหลดโลโก้ธนาคาร (`logo`), ปลดป้าย "รอพัฒนา" ออกจากหน้าจอเมนูและทางลัด (`isMenuScreenPending("/bank") === false`); แก้ไข header `x-bc-backend-url` ใน `use-screen-actions.ts` ป้องกัน HTTP 400; ปรับปรุงสถิติสถานะหน้าจอ (เชื่อมต่อแล้วเพิ่มเป็น 19 หน้าจอ, รอพัฒนาลดเหลือ 152 หน้าจอ จากยอดรวม 171 หน้าจอ)
+- **ไฟล์สำคัญ**: `frontend/src/lib/system-setting-screens.ts`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/lib/use-screen-actions.ts`, `frontend/src/lib/system-setting-screens.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`, `frontend/src/app/api/system-settings/[[...settingPath]]/route.test.ts`, `frontend/e2e/bank-crud.spec.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 331/331 (100%); TypeScript 0 errors; Playwright E2E `menu-consistency.spec.ts` และ `bank-crud.spec.ts` (ตรวจสอบ CRUD ใน MongoDB จริงแบบ Live) ผ่าน 100%; `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — รวมกลุ่มเมนูในหมวดค่าเริ่มต้นเป็นระดับเดียว (7 เมนู)
+- **ประเภท**: `[UI/UX]` `[Refactor]`
+- **สิ่งที่ทำ**: ยุบโครงสร้างกลุ่มย่อยทั้งหมดในหมวด "ค่าเริ่มต้น" (`defaults`) รวมเป็นกลุ่มเดียว `defaults` ("ค่าเริ่มต้น") เพื่อให้เมนูทั้งหมด 7 เมนู (หน่วยนับสินค้า, กลุ่มสินค้า, ยี่ห้อสินค้า, คลัง, กลุ่มลูกหนี้, กลุ่มเจ้าหนี้, ธนาคาร) แสดงผลเป็นระดับเดียวโดยตรง (Single level) ไม่มีการซ้อน accordion ย่อย; ปรับปรุง unit test รองรับ groupOrder ใหม่ คงจำนวนเมนูรวมทั้งระบบไว้ที่ 171 เมนู
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-data.test.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน (100%); `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบกลุ่มเมนู "เอกสารและบิล" (4 เมนู, ยอดรวมเหลือ 171 เมนู)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบกลุ่มเมนู "เอกสารและบิล" (`sales-documents`) ออกจากหมวดค่าเริ่มต้นทั้งหมด 4 เมนู ได้แก่ รูปแบบเอกสาร (`/docformat`), ออกแบบบิล (`/billdesign`), ตั้งค่าใบกำกับภาษีอิเล็กทรอนิกส์ (`/etaxsetting`), และขอใบกำกับภาษีออนไลน์ (`/taxinvoicerequestsetting`); ปลด icon mapping และปรับปรุง unit/integration tests ยอดเมนูรวมปรับลดจาก 175 เหลือ 171 เมนู (สถานะรอพัฒนาเหลือ 153 เมนู, หน้าจอเชื่อมต่อคงเดิม 18 เมนู)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`, `frontend/src/lib/menu-data.test.ts`, `frontend/src/lib/menu-icons.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน (100%); `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบกลุ่มเมนู "อนุมัติ" (7 เมนู, ยอดรวมเหลือ 175 เมนู)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบกลุ่มเมนู "อนุมัติ" (`approval`) ออกจากหมวดค่าเริ่มต้นทั้งหมด 7 เมนู ได้แก่ ประเภทซื้อ (`/purchasetypescreen`), อนุมัติใบสั่งซื้อ (`/poapprovalsettingscreen`), ประเภทใบเสนอราคา (`/quotationtypescreen`), อนุมัติใบเสนอราคา (`/qtapprovalsettingscreen`), ประเภทใบสั่งขาย (`/saleordertypescreen`), อนุมัติใบสั่งขาย (`/soapprovalsettingscreen`), และอนุมัติรายจ่ายและสมุดรายวัน (`/expenseapprovalsettingscreen`); ปลด icon mapping และปรับปรุง unit/integration tests ยอดเมนูรวมปรับลดจาก 182 เหลือ 175 เมนู (สถานะรอพัฒนาเหลือ 157 เมนู, หน้าจอเชื่อมต่อคงเดิม 18 เมนู)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`, `frontend/src/lib/menu-data.test.ts`, `frontend/src/lib/menu-icons.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน (100%); `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบกลุ่มเมนู "หน้าร้าน POS" (4 เมนู, ยอดรวมเหลือ 182 เมนู)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบกลุ่มเมนู "หน้าร้าน POS" (`sales-pos`) ออกจากหมวดค่าเริ่มต้นทั้งหมด 4 เมนู ได้แก่ ตั้งค่าเครื่องขายหน้าร้าน POS (`/possetting`), รูป/สื่อหน้าจอขาย (`/posmedia`), เครื่องพิมพ์ใบเสร็จเทอร์มัล (`/posprintersetting`), และสีสำหรับงานขาย (`/colorscreen`); ปลด icon mapping และปรับปรุง unit/integration tests ยอดเมนูรวมปรับลดจาก 186 เหลือ 182 เมนู (สถานะรอพัฒนาเหลือ 164 เมนู, หน้าจอเชื่อมต่อคงเดิม 18 เมนู)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`, `frontend/src/lib/menu-data.test.ts`, `frontend/src/lib/menu-icons.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน (100%); `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบกลุ่มเมนู "สมาชิก คูปอง และโปรโมชัน" (4 เมนู, ยอดรวมเหลือ 186 เมนู)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบกลุ่มเมนู "สมาชิก คูปอง และโปรโมชัน" (`sales-loyalty`) ออกจากหมวดค่าเริ่มต้นทั้งหมด 4 เมนู ได้แก่ ตั้งค่าคะแนนสะสม (`/pointsetting`), ตั้งค่าคูปอง (`/couponsetting`), โปรโมชั่น (`/promotionscreen`), และรอบซื้อลูกค้าประจำ (`/customerpurchasecycle`); ปลด icon mapping และปรับปรุง unit/integration tests ยอดเมนูรวมปรับลดจาก 190 เหลือ 186 เมนู (สถานะรอพัฒนาเหลือ 168 เมนู, หน้าจอเชื่อมต่อคงเหลือ 18 เมนู)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`, `frontend/src/lib/menu-data.test.ts`, `frontend/src/lib/menu-icons.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน (100%); `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบ 3 เมนูสถานะรอพัฒนาในกลุ่มการรับเงินและบัญชีธนาคาร (ยอดรวมเหลือ 190 เมนู)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบ 3 เมนูสถานะรอพัฒนาออกจากกลุ่ม "การรับเงินและบัญชีธนาคาร" (`sales-payment-banking`) ในหมวดค่าเริ่มต้น ได้แก่ ผู้ให้บริการรับเงิน QR (`/qrprovider`), อัตราแลกเปลี่ยน (`/exchangerate`), และกฎจับคู่บัญชีอัตโนมัติ (`/banking/rules`) คงเหลือเฉพาะเมนู "ธนาคาร" (`/bank`); ปลด icon mapping และปรับปรุง unit/status tests ยอดเมนูรวมปรับลดจาก 193 เหลือ 190 เมนู (สถานะรอพัฒนาเหลือ 171 เมนู, หน้าจอเชื่อมต่อคงเดิม 19 เมนู)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`, `frontend/src/lib/menu-icons.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน (100%); `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบ 6 เมนูย่อยในกลุ่มสินค้าและบาร์โค้ด คงเหลือเฉพาะสินค้าและบาร์โค้ด (ยอดรวมเหลือ 193 เมนู)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบ 6 เมนูย่อยออกจากกลุ่ม "สินค้าและบาร์โค้ด" (`products`) ในหมวดข้อมูลหลัก ได้แก่ สินค้าบริการ (`/serviceproduct`), สินค้าไม่นับสต็อก (`/nonstockproduct`), ข้อมูลเสริมสินค้า (`/productextension`), จัดหมวดสินค้า (`/productcategorygroupselectscreen`), สินค้าชุด (`/productset`), และสูตรผลิต (`/productbom`) คงเหลือไว้เฉพาะ "สินค้า" (`/product`) และ "บาร์โค้ด" (`/productbarcode`); ปลดไอคอน, custom screen routes, dispatcher ในแท็บงาน และปรับปรุง unit/integration tests ยอดเมนูรวมปรับลดจาก 199 เหลือ 193 เมนู (สถานะรอพัฒนาเหลือ 174 เมนู, หน้าจอเชื่อมต่อ 19 เมนู)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`, `frontend/src/lib/menu-screen-status.ts`, `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/lib/menu-data.test.ts`, `frontend/src/lib/menu-icons.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน (100%); `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — ลบกลุ่มช่องทางขาย/ราคา/ขนส่ง และกลุ่มเชื่อมต่อตลาดออนไลน์ (7 เมนู)
+- **ประเภท**: `[UI/UX]` `[Cleanup]`
+- **สิ่งที่ทำ**: ลบกลุ่มเมนู "ช่องทางขาย ราคา และขนส่ง" (`sales-channel-pricing` 3 เมนู: `/salechannelscreen`, `/transportchannelscreen`, `/channelprice`) ออกจากหมวดค่าเริ่มต้น, ลบกลุ่มเมนู "เชื่อมข้อมูลตลาดออนไลน์" (`marketplace` 3 เมนู: `/marketplace/shopee`, `/marketplace/lazada`, `/marketplace/tiktok`) ออกจากหมวดข้อมูลหลัก, และลบเมนู "ดึงคำสั่งซื้อจากร้านค้าออนไลน์" (`/transaction/marketplaceorder`) ออกจากหมวดงานประจำ › ขาย; ปลดไอคอนและการ dispatch แท็บที่ไม่ใช้ออก ยอดเมนูรวมปรับลดจาก 206 เหลือ 199 เมนู (สถานะรอพัฒนาเหลือ 176 เมนู)
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `frontend/src/lib/menu-icons.ts`, `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/lib/menu-screen-status.ts`, `frontend/src/lib/menu-data.test.ts`, `frontend/src/lib/menu-icons.test.ts`, `frontend/src/lib/menu-screen-status.test.ts`, `docs/reference/CODE-MAP.md`
+- **ผลการทดสอบ**: Vitest 46 ไฟล์ผ่าน 329/329; TypeScript 0 errors; Playwright e2e `menu-consistency.spec.ts` ผ่าน; `gen-code-map.ps1 -Check` ผ่านสมบูรณ์
+
+### 2026-09-09 — แก้ชื่อเมนูให้ตรงกัน ติดป้ายรอพัฒนา และรวมกลุ่มสินค้าในค่าเริ่มต้น
+- **ประเภท**: `[Fix]` `[UI/UX]`
+- **สิ่งที่ทำ**: ซิงค์ชื่อไทยในผังเมนู คำแปล backend และหน้าจอตั้งค่า; ป้องกัน dictionary เก่าทับชื่อไทย เปลี่ยนชื่อเมนูตรวจสอบผู้ใช้งานให้ตรงกับรายงานสิทธิ์ปัจจุบัน แสดงป้าย “รอพัฒนา” สำหรับเมนูที่ยังไม่มีหน้าจอ โดยคงสิทธิ์การเปิดเดิม; รวมกลุ่มเมนูในหมวดค่าเริ่มต้น (Defaults) โดยเปลี่ยน “จัดกลุ่มสินค้า” เป็น “สินค้า” (`product-setup`) และย้าย “ยี่ห้อสินค้า” กับ “คลัง” เข้ามารวมอยู่ในกลุ่มนี้ พร้อมยุบกลุ่มเดิมที่ว่างลง
+- **ไฟล์สำคัญ**: `frontend/src/lib/menu-data.ts`, `system-setting-screens.ts`, `menu-screen-status.ts`, `frontend/src/app/menu/menu-pending-badge.tsx`, หน้ารายการเมนู/ทางลัด, `backend/assets/language/languages.tsv`, `frontend/e2e/menu-consistency.spec.ts`, `docs/skills/ui-scale-polish/SKILL.md`
+- **ผลการทดสอบ**: Vitest ผ่าน; TypeScript ผ่าน; Playwright ตรวจเมนูด้วยบัญชี Demo ผ่านทั้ง 1600/1280/1024/768 × light/dark กดสลับธีมจริง ตรวจ hover/focus, ป้ายไม่ถูกตัด, การนำทางและชื่อหน้าปลายทาง ไม่มี console error ในหน้าเมนู; ไม่สร้าง/แก้ข้อมูลธุรกิจ
 
 ### 2026-09-09 — ลบกลุ่มเมนู "ร้านอาหาร/คาเฟ่" ทั้งหมด 7 เมนูออกจากระบบ
 - **ประเภท**: `[UI/UX]` `[Cleanup]`

@@ -1,0 +1,18 @@
+{
+  "archiveSHA256": "d7ab18a00e7d5457ed1825e6be4f14cc77d4f2c98abcfa84eb2a0ca33e15f912",
+  "bytes": 596661760,
+  "images": {
+    "bcai-account-mainapi:r20260911-gl-kafka-1": "sha256:bda3098928dc1858afac194899815041d119de372222b7532984933d85ab4ecb",
+    "bcai-account-frontend:r20260911-gl-kafka-1": "sha256:12dfb40e6052eb75ea9b0cd76735b06c28896dfc153578d9ac0d96f223a3a562"
+  },
+  "topic": {
+    "name": "bc-gl-projection-v1",
+    "partitions": 6,
+    "replicationFactor": 1,
+    "minInSyncReplicas": 1,
+    "allPartitionsInSync": true,
+    "leaderNodeID": 1
+  },
+  "finalGateExit": 0,
+  "imageVerification": "Docker image inspect IDs matched local/server; config digest was not used as image ID."
+}

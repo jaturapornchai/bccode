@@ -1,0 +1,31 @@
+{
+  "deployedat": "2026-09-11T11:11:35.189032+00:00",
+  "services": {
+    "mainapi": {
+      "image": "bcai-account-mainapi:r20260911-gl-kafka-1",
+      "imageid": "sha256:bda3098928dc1858afac194899815041d119de372222b7532984933d85ab4ecb",
+      "health": "healthy",
+      "startedat": "2026-09-11T11:11:19.762751316Z"
+    },
+    "worker": {
+      "image": "bcai-account-mainapi:r20260911-gl-kafka-1",
+      "imageid": "sha256:bda3098928dc1858afac194899815041d119de372222b7532984933d85ab4ecb",
+      "health": "healthy",
+      "startedat": "2026-09-11T11:11:19.766302968Z"
+    },
+    "frontend": {
+      "image": "bcai-account-frontend:r20260911-gl-kafka-1",
+      "imageid": "sha256:12dfb40e6052eb75ea9b0cd76735b06c28896dfc153578d9ac0d96f223a3a562",
+      "health": "healthy",
+      "startedat": "2026-09-11T11:11:28.266439831Z"
+    }
+  },
+  "http": {
+    "https://account.bcaicloud.com/": 200,
+    "https://account.bcaicloud.com/api/gl/accounts": 401,
+    "http://127.0.0.1:8888/healthz": 200
+  },
+  "createddatabases": [],
+  "rollback": "restore release.env.before and recreate mainapi/worker/frontend; preserve database and audit history",
+  "sampleDataStatus": "PASS seed, independent Mongo/Kafka/PostgreSQL verification and final UI on frontend r20260911-gl-demo-thai-1"
+}

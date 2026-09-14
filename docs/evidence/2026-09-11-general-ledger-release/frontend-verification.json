@@ -1,0 +1,45 @@
+{
+  "verifiedAt": "2026-09-11T10:18:06.964Z",
+  "frontend": {
+    "lint": {
+      "exit": 0,
+      "errors": 0,
+      "warnings": 219
+    },
+    "typecheck": {
+      "exit": 0
+    },
+    "tests": {
+      "exit": 0,
+      "files": 53,
+      "passed": 384
+    },
+    "build": {
+      "exit": 0,
+      "command": "npm run build",
+      "engine": "Next.js 16.3.0 Turbopack",
+      "isolated": true
+    }
+  },
+  "sourceVsUat": {
+    "checked": 321,
+    "changes": [],
+    "uatBuild": "eikUmz6VbY1pwLz8ThIGu"
+  },
+  "afterUnitRun": {
+    "testOnlyChange": "frontend/e2e/menu-champ-upgrade.spec.ts: Account Mapping now expected connected",
+    "typecheck": "passed",
+    "targetedLint": "passed",
+    "runtimeSourceChanged": false
+  },
+  "productionSmoke": {
+    "status": "prepared-awaiting-deploy-signal",
+    "script": "production-readonly-smoke.cjs",
+    "expected": {
+      "total": 35,
+      "connected": 33,
+      "pending": 2
+    },
+    "allowedWrites": "existing demo login/refresh/logout/select-holding sessions only; business writes blocked"
+  }
+}

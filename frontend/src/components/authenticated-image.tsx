@@ -122,6 +122,7 @@ function imageDisplayUrl(value: unknown, backendUrl: unknown): string {
     return typeof window === "undefined" ? raw : `${window.location.protocol}${raw}`;
   }
   if (raw.startsWith("/api/")) return raw;
+  if (raw.startsWith("/banks/") || raw.startsWith("/flags/")) return raw;
 
   const base = mainApiDisplayBase(backendUrl);
   if (!base) return raw;

@@ -1,0 +1,52 @@
+{
+  "capturedat": "2026-09-11T09:49:58.6526644Z",
+  "mongoidentity": "/bc-gl-mongo-browser-20260911|mongo:7|{\"27017/tcp\":[{\"HostIp\":\"127.0.0.1\",\"HostPort\":\"15445\"}]}",
+  "postgresidentity": "/bc-gl-pg-test-20260911-slot3|postgres:17-alpine|{\"5432/tcp\":[{\"HostIp\":\"127.0.0.1\",\"HostPort\":\"15443\"}]}",
+  "mongo": {
+    "database": "gl_browser_uat_20260911",
+    "holdings": [
+      {
+        "holdingcode": "glbrowser20260911"
+      }
+    ],
+    "collections": [
+      "gl_cash_forecast",
+      "organizationaudits",
+      "organizationcompanies",
+      "products",
+      "googleidentities",
+      "fiscal_year",
+      "productbarcodes",
+      "gl_controls",
+      "organizationbranches",
+      "gl_periods",
+      "gl_account_mappings",
+      "gl_events",
+      "shops",
+      "shopusers",
+      "organizationcodeclaims",
+      "gl_product_account_groups",
+      "warehousebin",
+      "shopuseraccesslogs",
+      "couponreservations",
+      "warehouse",
+      "warehouselocation",
+      "gl_journals",
+      "users",
+      "chart_of_accounts",
+      "outboxevents",
+      "gl_account_groups",
+      "authaudits",
+      "gl_budgets"
+    ]
+  },
+  "pgdatabasesbefore": [
+    "glbrowser20260911",
+    "postgres",
+    "template0",
+    "template1"
+  ],
+  "targetmongodatabase": "gl_browser_uat_20260911",
+  "targetpgdatabase": "glbrowser20260911",
+  "evidence": "production-reconciliation-r5.json"
+}

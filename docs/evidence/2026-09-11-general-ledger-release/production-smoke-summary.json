@@ -1,0 +1,15 @@
+{
+  "Url": "https://account.bcaicloud.com/",
+  "Passed": true,
+  "StartedAt": "2026-09-11T10:28:09.342Z",
+  "FinishedAt": "2026-09-11T10:28:24.079Z",
+  "ReadOnly": true,
+  "Routes": 35,
+  "Connected": 33,
+  "Pending": 2,
+  "GLGetRequests": 82,
+  "GLResponses200": 82,
+  "ConsoleErrors": 0,
+  "BlockedBusinessWrites": 0,
+  "BusinessWritesPerformed": 0
+}

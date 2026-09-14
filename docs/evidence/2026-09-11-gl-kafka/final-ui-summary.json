@@ -1,0 +1,204 @@
+{
+  "status": "PASS",
+  "frontendRelease": "r20260911-gl-demo-thai-1",
+  "backendRelease": "r20260911-gl-kafka-1",
+  "scope": {
+    "holdingcode": "demo",
+    "businesscode": "C01",
+    "branchcode": "00000",
+    "fiscalyear": "DEMO2569"
+  },
+  "reportReview": {
+    "readOnly": true,
+    "startedAt": "2026-09-11T11:30:44.725Z",
+    "finishedAt": "2026-09-11T11:31:04.905Z",
+    "reports": [
+      {
+        "name": "trialbalance",
+        "rows": 31,
+        "sequence": 110,
+        "expectedTotalsMatched": true,
+        "warnings": 0
+      },
+      {
+        "name": "pnl",
+        "rows": 12,
+        "sequence": 110,
+        "expectedTotalsMatched": true,
+        "warnings": 0
+      },
+      {
+        "name": "balancesheet",
+        "rows": 20,
+        "sequence": 110,
+        "expectedTotalsMatched": true,
+        "warnings": 0
+      },
+      {
+        "name": "cashflow",
+        "rows": 3,
+        "sequence": 110,
+        "expectedTotalsMatched": true,
+        "warnings": 0
+      },
+      {
+        "name": "cashflowforecast",
+        "rows": 5,
+        "sequence": 110,
+        "expectedTotalsMatched": true,
+        "warnings": 1
+      }
+    ],
+    "glGetRequests": 23,
+    "allGLGetStatus": 200,
+    "consoleErrors": 0,
+    "blockedWrites": 0,
+    "reportScreenshotCount": 16,
+    "fiscalYearScreenshotCount": 1,
+    "reportScreenshotMatrix": [
+      {
+        "report": "trialbalance",
+        "width": 1600,
+        "theme": "light"
+      },
+      {
+        "report": "trialbalance",
+        "width": 1600,
+        "theme": "dark"
+      },
+      {
+        "report": "trialbalance",
+        "width": 1280,
+        "theme": "light"
+      },
+      {
+        "report": "trialbalance",
+        "width": 1280,
+        "theme": "dark"
+      },
+      {
+        "report": "trialbalance",
+        "width": 1024,
+        "theme": "light"
+      },
+      {
+        "report": "trialbalance",
+        "width": 1024,
+        "theme": "dark"
+      },
+      {
+        "report": "trialbalance",
+        "width": 768,
+        "theme": "light"
+      },
+      {
+        "report": "trialbalance",
+        "width": 768,
+        "theme": "dark"
+      },
+      {
+        "report": "pnl",
+        "width": 1600,
+        "theme": "light"
+      },
+      {
+        "report": "pnl",
+        "width": 1600,
+        "theme": "dark"
+      },
+      {
+        "report": "balancesheet",
+        "width": 1600,
+        "theme": "light"
+      },
+      {
+        "report": "balancesheet",
+        "width": 1600,
+        "theme": "dark"
+      },
+      {
+        "report": "cashflow",
+        "width": 1600,
+        "theme": "light"
+      },
+      {
+        "report": "cashflow",
+        "width": 1600,
+        "theme": "dark"
+      },
+      {
+        "report": "cashflowforecast",
+        "width": 1600,
+        "theme": "light"
+      },
+      {
+        "report": "cashflowforecast",
+        "width": 1600,
+        "theme": "dark"
+      }
+    ]
+  },
+  "menuSmoke": {
+    "readOnly": true,
+    "startedAt": "2026-09-11T11:32:04.489Z",
+    "finishedAt": "2026-09-11T11:32:20.029Z",
+    "openedRoutes": 35,
+    "activeRoutes": 33,
+    "pendingRoutes": [
+      {
+        "route": "/gl/reprocess",
+        "label": "ประมวลผลข้อมูลบัญชีใหม่"
+      },
+      {
+        "route": "/report/xbrl",
+        "label": "ส่งออกงบการเงิน XBRL (ยื่น DBD)"
+      }
+    ],
+    "glGetRequests": 82,
+    "allGLGetStatus": 200,
+    "consoleErrors": 0,
+    "blockedWrites": 0
+  },
+  "reviewerConfirmation": {
+    "source": "Parent release reviewer confirmed screenshot inspection and both sessions logged out",
+    "visualChecks": [
+      "Thai report enums",
+      "Current earnings 52000 displayed with Thai label",
+      "Synthetic current-earnings account code displayed as dash",
+      "Light/dark and 768px trial-balance review"
+    ],
+    "sessionsLoggedOut": 2
+  },
+  "sourceFiles": [
+    {
+      "path": "tmp/gl-demo-20260911/browser-readonly-final/summary.json",
+      "sha256": "dc572fc66e0281ab7df8925a56e30fcd2a662f407db258b05693134022eb7ba6"
+    },
+    {
+      "path": "tmp/gl-demo-20260911/sample-menu-smoke-final/result.json",
+      "sha256": "4d4ca6b2c92229d4af42fe0820a81d90cd84904bc0247f205dffaac8ae0925d6"
+    },
+    {
+      "path": "tmp/gl-demo-20260911/final-visual-review-summary.json",
+      "sha256": "a3a0d905ccc0da38151b2c89725271ea862baf3fa9e8399022a6fb4b5126b6f2"
+    }
+  ],
+  "pngCopiedToEvidence": false,
+  "limits": [
+    "33 active routes and 2 pending menus; not all business workflows complete",
+    "15 quarantined backend packages compiled only",
+    "Sample dataset only; not DBD filing certification"
+  ],
+  "visualReview": {
+    "reviewedAt": "2026-09-11T11:36:11.685Z",
+    "reviewedReportImageCount": 16,
+    "reviewedFiscalYearImageCount": 1,
+    "actualThemeToggle": true,
+    "thaiEnumsVisible": true,
+    "currentEarningsThaiLabelVisible": true,
+    "syntheticCodeDisplayedAsDash": true,
+    "unclassifiedCountDisplayedAsItems": true,
+    "documentOverflowAssertionsPassed": true,
+    "businessWritesPerformed": false
+  }
+}

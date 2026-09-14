@@ -17,7 +17,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import type { LanguageCode } from "@/lib/i18n";
 import {
   MENU_SECTIONS,
@@ -27,6 +28,7 @@ import {
   type MenuItem,
 } from "@/lib/menu-data";
 import { MenuRouteIcon } from "./menu-icon";
+import { MenuPendingBadge } from "./menu-pending-badge";
 import type { FrequentMenuEntry } from "@/lib/menu-usage";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { AuthSession } from "@/lib/workspace-models";
@@ -58,6 +60,11 @@ const CATEGORY_TABS: CategoryTab[] = [
   { id: "settings", labelTh: "ตั้งค่าระบบ", labelEn: "Settings" },
 ];
 
+const SHORTCUTS_SPLIT_STORAGE_KEY = "bc_manage_shortcuts_split_left";
+const SHORTCUTS_SPLIT_DEFAULT_LEFT = 68;
+const SHORTCUTS_SPLIT_MIN_LEFT = 40;
+const SHORTCUTS_SPLIT_MAX_LEFT = 82;
+
 export function ManageShortcutsScreen({
   auth,
   language,
@@ -79,6 +86,73 @@ export function ManageShortcutsScreen({
 }) {
   const isThai = language === "th";
   const t = (th: string, en: string) => (isThai ? th : en);
+
+  const [splitLeftPercent, setSplitLeftPercent] = useState<number>(SHORTCUTS_SPLIT_DEFAULT_LEFT);
+  const [resizingSplit, setResizingSplit] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(SHORTCUTS_SPLIT_STORAGE_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (Number.isFinite(parsed)) {
+        setSplitLeftPercent(Math.min(SHORTCUTS_SPLIT_MAX_LEFT, Math.max(SHORTCUTS_SPLIT_MIN_LEFT, parsed)));
+      }
+    }
+  }, []);
+
+  const startSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const container = event.currentTarget.parentElement;
+    if (!container) return;
+    event.preventDefault();
+    setResizingSplit(true);
+    const rect = container.getBoundingClientRect();
+    const update = (clientX: number) => {
+      const next = ((clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(SHORTCUTS_SPLIT_MAX_LEFT, Math.max(SHORTCUTS_SPLIT_MIN_LEFT, next));
+      setSplitLeftPercent(clamped);
+      window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(Math.round(clamped)));
+    };
+    update(event.clientX);
+    const onMove = (moveEvent: PointerEvent) => update(moveEvent.clientX);
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setResizingSplit(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, []);
+
+  const adjustSplitWithKeyboard = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setSplitLeftPercent((prev) => {
+        const next = Math.max(SHORTCUTS_SPLIT_MIN_LEFT, prev - 2);
+        window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setSplitLeftPercent((prev) => {
+        const next = Math.min(SHORTCUTS_SPLIT_MAX_LEFT, prev + 2);
+        window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(Math.round(next)));
+        return next;
+      });
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setSplitLeftPercent(SHORTCUTS_SPLIT_MIN_LEFT);
+      window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(SHORTCUTS_SPLIT_MIN_LEFT));
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setSplitLeftPercent(SHORTCUTS_SPLIT_MAX_LEFT);
+      window.localStorage.setItem(SHORTCUTS_SPLIT_STORAGE_KEY, String(SHORTCUTS_SPLIT_MAX_LEFT));
+    }
+  }, []);
 
   const itemById = useMemo(() => new Map(allMenuItems.map((item) => [item.id, item])), [allMenuItems]);
 
@@ -283,6 +357,7 @@ export function ManageShortcutsScreen({
                 <span className="truncate group-hover:text-primary transition-colors">
                   {menuText(item.label, language, backendLanguage)}
                 </span>
+                <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
               </button>
             ))
           )}
@@ -290,9 +365,12 @@ export function ManageShortcutsScreen({
       </section>
 
       {/* 3. Main Workspace: Split View (Catalog Grid on Left, Current Shortcuts on Right) */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
+      <div
+        className="flex flex-col lg:flex-row min-w-0 gap-4 lg:gap-0 items-stretch"
+        style={{ ["--shortcuts-split-basis" as any]: `${splitLeftPercent}%` }}
+      >
         {/* ===================== LEFT COLUMN: ALL MENUS CATALOG ===================== */}
-        <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-xs" aria-label="menu-catalog">
+        <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-xs w-full lg:w-[var(--shortcuts-split-basis)] lg:shrink-0 min-w-0" aria-label="menu-catalog">
           {/* Catalog Title & Search Bar */}
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
@@ -431,6 +509,7 @@ export function ManageShortcutsScreen({
                         <h3 className="truncate text-sm font-bold text-foreground" title={title}>
                           {title}
                         </h3>
+                        <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
                         <p className="truncate text-[11px] font-mono text-muted-foreground" title={item.route}>
                           {item.route}
                         </p>
@@ -477,8 +556,24 @@ export function ManageShortcutsScreen({
           )}
         </section>
 
+        <ResizableSplitter
+          value={Math.round(splitLeftPercent)}
+          min={SHORTCUTS_SPLIT_MIN_LEFT}
+          max={SHORTCUTS_SPLIT_MAX_LEFT}
+          label={
+            language === "th"
+              ? "ปรับขนาดคลังเมนูและทางลัด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+              : "Resize catalog and shortcuts panes (drag to resize, double-click to reset)"
+          }
+          isResizing={resizingSplit}
+          onPointerDown={startSplitResize}
+          onDoubleClick={() => setSplitLeftPercent(SHORTCUTS_SPLIT_DEFAULT_LEFT)}
+          onKeyDown={adjustSplitWithKeyboard}
+          breakpoint="lg"
+        />
+
         {/* ===================== RIGHT COLUMN: CURRENT SHORTCUTS (STICKY) ===================== */}
-        <aside className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-xs lg:sticky lg:top-3 lg:max-h-[calc(100vh-6rem)] lg:overflow-hidden" aria-label="current-shortcuts">
+        <aside className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-xs flex-1 min-w-0 lg:sticky lg:top-3 lg:max-h-[calc(100vh-6rem)] lg:overflow-hidden" aria-label="current-shortcuts">
           <div className="flex items-center justify-between border-b border-border/70 pb-2.5">
             <div>
               <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
@@ -522,6 +617,7 @@ export function ManageShortcutsScreen({
                         <span className="block truncate text-xs font-bold text-foreground" title={title}>
                           {title}
                         </span>
+                        <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
                         <span className="block truncate text-[10px] font-mono text-muted-foreground" title={item.route}>
                           {item.route}
                         </span>

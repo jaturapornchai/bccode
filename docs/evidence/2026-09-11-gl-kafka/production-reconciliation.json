@@ -1,0 +1,564 @@
+{
+  "mongo": {
+    "counts": {
+      "chart_of_accounts": {
+        "demo": 38,
+        "other": 0
+      },
+      "fiscal_year": {
+        "demo": 1,
+        "other": 0
+      },
+      "gl_journals": {
+        "demo": 18,
+        "other": 0
+      },
+      "gl_account_groups": {
+        "demo": 5,
+        "other": 0
+      },
+      "gl_product_account_groups": {
+        "demo": 3,
+        "other": 0
+      },
+      "gl_periods": {
+        "demo": 12,
+        "other": 0
+      },
+      "gl_budgets": {
+        "demo": 11,
+        "other": 0
+      },
+      "gl_cash_forecast": {
+        "demo": 5,
+        "other": 0
+      },
+      "gl_account_mappings": {
+        "demo": 0,
+        "other": 0
+      },
+      "gl_events": {
+        "demo": 110,
+        "other": 0
+      },
+      "gl_controls": {
+        "demo": 1,
+        "other": 0
+      }
+    },
+    "statuses": {
+      "posted": 17,
+      "draft": 1
+    },
+    "books": {
+      "RV": 2,
+      "SV": 4,
+      "JV": 5,
+      "UV": 3,
+      "PV": 4
+    },
+    "amounttypes": {
+      "gl_account_groups": 0,
+      "gl_product_account_groups": 0,
+      "gl_periods": 0,
+      "gl_budgets": 0,
+      "gl_cash_forecast": 0,
+      "gl_account_mappings": 0
+    },
+    "pending": 0,
+    "deleted": 0,
+    "wrongjournalmetadata": 0,
+    "badjournaldecimals": 0,
+    "unbalancedjournals": 0,
+    "eventsequence": {
+      "min": "1",
+      "max": "110",
+      "distinct": 110
+    },
+    "sequence": "110",
+    "ledger": [
+      {
+        "code": "BM69-110101",
+        "debit": "45680",
+        "credit": "0",
+        "lines": 2
+      },
+      {
+        "code": "BM69-110102",
+        "debit": "480000",
+        "credit": "189285",
+        "lines": 9
+      },
+      {
+        "code": "BM69-110103",
+        "debit": "5000",
+        "credit": "0",
+        "lines": 1
+      },
+      {
+        "code": "BM69-110201",
+        "debit": "269885",
+        "credit": "133210",
+        "lines": 5
+      },
+      {
+        "code": "BM69-110301",
+        "debit": "152000",
+        "credit": "60000",
+        "lines": 4
+      },
+      {
+        "code": "BM69-110302",
+        "debit": "150000",
+        "credit": "75000",
+        "lines": 4
+      },
+      {
+        "code": "BM69-110303",
+        "debit": "60000",
+        "credit": "30000",
+        "lines": 5
+      },
+      {
+        "code": "BM69-110401",
+        "debit": "10185",
+        "credit": "140",
+        "lines": 6
+      },
+      {
+        "code": "BM69-110501",
+        "debit": "12000",
+        "credit": "1000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-120101",
+        "debit": "80000",
+        "credit": "0",
+        "lines": 2
+      },
+      {
+        "code": "BM69-120102",
+        "debit": "400000",
+        "credit": "0",
+        "lines": 1
+      },
+      {
+        "code": "BM69-129101",
+        "debit": "0",
+        "credit": "13000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-129102",
+        "debit": "0",
+        "credit": "84000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-210101",
+        "debit": "100640",
+        "credit": "159900",
+        "lines": 5
+      },
+      {
+        "code": "BM69-210201",
+        "debit": "210",
+        "credit": "16065",
+        "lines": 4
+      },
+      {
+        "code": "BM69-210301",
+        "debit": "0",
+        "credit": "10000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-220101",
+        "debit": "8000",
+        "credit": "300000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-310101",
+        "debit": "0",
+        "credit": "550000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-310201",
+        "debit": "0",
+        "credit": "100000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-410101",
+        "debit": "0",
+        "credit": "90000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-410102",
+        "debit": "0",
+        "credit": "97500",
+        "lines": 2
+      },
+      {
+        "code": "BM69-410103",
+        "debit": "0",
+        "credit": "42000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-419101",
+        "debit": "3000",
+        "credit": "0",
+        "lines": 1
+      },
+      {
+        "code": "BM69-510101",
+        "debit": "60000",
+        "credit": "2000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-510102",
+        "debit": "75000",
+        "credit": "0",
+        "lines": 2
+      },
+      {
+        "code": "BM69-510103",
+        "debit": "28000",
+        "credit": "0",
+        "lines": 2
+      },
+      {
+        "code": "BM69-520101",
+        "debit": "3000",
+        "credit": "0",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520102",
+        "debit": "2500",
+        "credit": "0",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520103",
+        "debit": "5000",
+        "credit": "0",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520104",
+        "debit": "1000",
+        "credit": "0",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520105",
+        "debit": "2000",
+        "credit": "0",
+        "lines": 1
+      }
+    ]
+  },
+  "postgres": {
+    "records": 93,
+    "recordkinds": {
+      "forecast": 5,
+      "product-account-groups": 3,
+      "journals": 18,
+      "account-groups": 5,
+      "fiscal-years": 1,
+      "accounts": 38,
+      "periods": 12,
+      "budgets": 11
+    },
+    "events": 110,
+    "sequence": "110",
+    "eventsequence": {
+      "min": "1",
+      "max": "110",
+      "distinct": 110
+    },
+    "statuses": {
+      "draft": 1,
+      "posted": 17
+    },
+    "books": {
+      "JV": 5,
+      "PV": 4,
+      "RV": 2,
+      "SV": 4,
+      "UV": 3
+    },
+    "lines": 77,
+    "wronglinemetadata": 0,
+    "unbalancedjournals": 0,
+    "debit": "1953100.00000000",
+    "credit": "1953100.00000000",
+    "columns": [
+      {
+        "column": "credit",
+        "type": "numeric",
+        "precision": 38,
+        "scale": 8
+      },
+      {
+        "column": "debit",
+        "type": "numeric",
+        "precision": 38,
+        "scale": 8
+      }
+    ],
+    "ledger": [
+      {
+        "code": "BM69-110101",
+        "debit": "45680.00000000",
+        "credit": "0.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-110102",
+        "debit": "480000.00000000",
+        "credit": "189285.00000000",
+        "lines": 9
+      },
+      {
+        "code": "BM69-110103",
+        "debit": "5000.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-110201",
+        "debit": "269885.00000000",
+        "credit": "133210.00000000",
+        "lines": 5
+      },
+      {
+        "code": "BM69-110301",
+        "debit": "152000.00000000",
+        "credit": "60000.00000000",
+        "lines": 4
+      },
+      {
+        "code": "BM69-110302",
+        "debit": "150000.00000000",
+        "credit": "75000.00000000",
+        "lines": 4
+      },
+      {
+        "code": "BM69-110303",
+        "debit": "60000.00000000",
+        "credit": "30000.00000000",
+        "lines": 5
+      },
+      {
+        "code": "BM69-110401",
+        "debit": "10185.00000000",
+        "credit": "140.00000000",
+        "lines": 6
+      },
+      {
+        "code": "BM69-110501",
+        "debit": "12000.00000000",
+        "credit": "1000.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-120101",
+        "debit": "80000.00000000",
+        "credit": "0.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-120102",
+        "debit": "400000.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-129101",
+        "debit": "0.00000000",
+        "credit": "13000.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-129102",
+        "debit": "0.00000000",
+        "credit": "84000.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-210101",
+        "debit": "100640.00000000",
+        "credit": "159900.00000000",
+        "lines": 5
+      },
+      {
+        "code": "BM69-210201",
+        "debit": "210.00000000",
+        "credit": "16065.00000000",
+        "lines": 4
+      },
+      {
+        "code": "BM69-210301",
+        "debit": "0.00000000",
+        "credit": "10000.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-220101",
+        "debit": "8000.00000000",
+        "credit": "300000.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-310101",
+        "debit": "0.00000000",
+        "credit": "550000.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-310201",
+        "debit": "0.00000000",
+        "credit": "100000.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-410101",
+        "debit": "0.00000000",
+        "credit": "90000.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-410102",
+        "debit": "0.00000000",
+        "credit": "97500.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-410103",
+        "debit": "0.00000000",
+        "credit": "42000.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-419101",
+        "debit": "3000.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-510101",
+        "debit": "60000.00000000",
+        "credit": "2000.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-510102",
+        "debit": "75000.00000000",
+        "credit": "0.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-510103",
+        "debit": "28000.00000000",
+        "credit": "0.00000000",
+        "lines": 2
+      },
+      {
+        "code": "BM69-520101",
+        "debit": "3000.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520102",
+        "debit": "2500.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520103",
+        "debit": "5000.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520104",
+        "debit": "1000.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      },
+      {
+        "code": "BM69-520105",
+        "debit": "2000.00000000",
+        "credit": "0.00000000",
+        "lines": 1
+      }
+    ]
+  },
+  "kafka": {
+    "group": "bcai-account-01-gl-v2",
+    "topic": "bc-gl-projection-v1",
+    "partitions": [
+      {
+        "partition": 0,
+        "current": 111,
+        "end": 111,
+        "lag": 0,
+        "emptyUncommitted": false
+      },
+      {
+        "partition": 1,
+        "current": null,
+        "end": 0,
+        "lag": 0,
+        "emptyUncommitted": true
+      },
+      {
+        "partition": 2,
+        "current": null,
+        "end": 0,
+        "lag": 0,
+        "emptyUncommitted": true
+      },
+      {
+        "partition": 3,
+        "current": null,
+        "end": 0,
+        "lag": 0,
+        "emptyUncommitted": true
+      },
+      {
+        "partition": 4,
+        "current": null,
+        "end": 0,
+        "lag": 0,
+        "emptyUncommitted": true
+      },
+      {
+        "partition": 5,
+        "current": null,
+        "end": 0,
+        "lag": 0,
+        "emptyUncommitted": true
+      }
+    ]
+  },
+  "passed": true,
+  "verifiedat": "2026-09-11T11:25:59.010008+00:00",
+  "scope": {
+    "holdingcode": "demo",
+    "businesscode": "C01",
+    "branchcode": "00000"
+  },
+  "readOnly": true,
+  "otherScopeCountsUnchanged": true,
+  "fixture": "gl-thai-construction-2026.json"
+}

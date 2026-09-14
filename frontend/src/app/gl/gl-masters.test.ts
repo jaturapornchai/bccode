@@ -1,0 +1,239 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+import type { GLAccount, GLMaster } from "@/lib/general-ledger";
+import * as glCommon from "./gl-common";
+import { FormErrorAlert, GLMasters, editorAlert, errorStatePatch, pageErrorText, paneErrorText } from "./gl-masters";
+
+vi.mock("./gl-common", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./gl-common")>();
+  return {
+    ...actual,
+    useGLList: vi.fn(),
+    useReferences: vi.fn().mockReturnValue({ accounts: [], years: [], error: "", reload: vi.fn() }),
+    useGLCommand: vi.fn().mockReturnValue({ busy: false, execute: vi.fn() }),
+    useDirtyGuard: vi.fn(),
+  };
+});
+
+describe("GLMasters CRUD table presentation", () => {
+  it("renders table headers with code, name, status, and action column (จัดการ)", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: "m-1",
+            code: "P01",
+            name: "งวด 1",
+            isactive: true,
+            version: 1,
+          } as GLMaster,
+        ],
+        total: 1,
+        page: 1,
+        limit: 30,
+        sequence: 0,
+      },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "periods", route: "/gl/periodlock" }));
+    expect(html).toContain("รหัส");
+    expect(html).toContain("ชื่อ / รายละเอียด");
+    expect(html).toContain("สถานะ");
+    expect(html).toContain("จัดการ");
+    expect(html).toContain("P01");
+    expect(html).toContain("งวด 1");
+    expect(html).toContain("ใช้งาน");
+    expect(html).toContain("title=\"แก้ไข (Edit)\"");
+    expect(html).toContain("title=\"ลบ (Delete)\"");
+  });
+
+  it("renders amount column for budgets with formatted number and right alignment", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: "b-1",
+            code: "DEMO-BM69-BUD-410101",
+            name: "งบกันยายน - รายได้ขายปูนซีเมนต์",
+            amount: "100000.00",
+            isactive: true,
+            version: 1,
+          } as unknown as GLMaster,
+        ],
+        total: 1,
+        page: 1,
+        limit: 30,
+        sequence: 0,
+      },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "budgets", route: "/gl/budget" }));
+    expect(html).toContain("จำนวนเงิน");
+    expect(html).toContain("100,000.00");
+    expect(html).toContain("DEMO-BM69-BUD-410101");
+    expect(html).toContain("งบกันยายน - รายได้ขายปูนซีเมนต์");
+  });
+
+  it("renders account level badge when resource is accounts", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: "a-1",
+            accountcode: "110101",
+            names: [{ code: "th", name: "เงินสดหน้าร้าน" }],
+            level: 2,
+            isactive: true,
+            version: 1,
+          } as unknown as GLAccount,
+        ],
+        total: 1,
+        page: 1,
+        limit: 30,
+        sequence: 0,
+      },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "accounts", route: "/gl/chartofaccounts" }));
+    expect(html).toContain("ระดับ");
+    expect(html).toContain("ระดับ 2");
+    expect(html).toContain("110101");
+    expect(html).toContain("เงินสดหน้าร้าน");
+  });
+
+  it("renders status badge variants: locked and inactive", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: "m-locked",
+            code: "LOCKED-01",
+            name: "งวดที่ถูกล็อก",
+            locked: true,
+            isactive: true,
+            version: 1,
+          } as unknown as GLMaster,
+          {
+            id: "m-inactive",
+            code: "INACTIVE-01",
+            name: "รายการปิดใช้งาน",
+            isactive: false,
+            version: 1,
+          } as unknown as GLMaster,
+        ],
+        total: 2,
+        page: 1,
+        limit: 30,
+        sequence: 0,
+      },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "periods", route: "/gl/periodlock" }));
+    expect(html).toContain("ล็อกแล้ว");
+    expect(html).toContain("ปิดใช้งาน");
+  });
+
+  it("renders empty workbench placeholder prompting row selection and no save button initially", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: {
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 30,
+        sequence: 0,
+      },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "accounts", route: "/gl/chartofaccounts" }));
+    expect(html).toContain("เลือกรายการเพื่อแสดงข้อมูล");
+    expect(html).toContain("คลิกที่แถวในตารางเพื่อแสดงข้อมูล");
+    expect(html).not.toContain("บันทึกข้อมูล");
+  });
+});
+
+describe("ผังบัญชี: failed save shows one Thai alert in the editor pane", () => {
+  const duplicateThai = "รหัสบัญชีถูกใช้แล้ว กรุณาใช้รหัสอื่น";
+
+  it("renders exactly one role=alert with the Thai message the server sent", () => {
+    const html = renderToStaticMarkup(createElement(FormErrorAlert, { text: duplicateThai }));
+    expect((html.match(/role="alert"/g) ?? []).length).toBe(1);
+    expect(html).toContain(duplicateThai);
+    expect(html).toContain("text-[0.95rem]");
+  });
+
+  it("renders no alert at all while there is no error", () => {
+    expect(renderToStaticMarkup(createElement(FormErrorAlert, { text: "" }))).toBe("");
+  });
+
+  it("never shows the page notice and the pane notice together", () => {
+    for (const error of ["", duplicateThai]) {
+      for (const hasRecord of [true, false]) {
+        const visible = [pageErrorText(error, hasRecord), paneErrorText(error, hasRecord)].filter(Boolean);
+        expect(visible.length).toBe(error ? 1 : 0);
+      }
+    }
+  });
+
+  it("shows exactly ONE alert when a failed save also has list/reference errors (the 2-alert regression)", () => {
+    const listError = "โหลดรายการไม่สำเร็จ กรุณากดโหลดใหม่";
+    const refsError = "โหลดข้อมูลอ้างอิงไม่สำเร็จ กรุณากดโหลดใหม่";
+    for (const hasRecord of [true, false]) {
+      for (const list of ["", listError]) {
+        for (const refs of ["", refsError]) {
+          const result = editorAlert({ error: duplicateThai, listError: list, refsError: refs, hasRecord });
+          expect(result.count, `alerts=${result.count} hasRecord=${hasRecord}`).toBe(1);
+          expect(result.pane || result.page).toContain(duplicateThai);
+          if (hasRecord) {
+            expect(result.pane).toBe(duplicateThai);
+            expect(result.page).toBe("");
+          }
+        }
+      }
+    }
+  });
+
+  it("keeps the page notice alive for a list failure while no record is open", () => {
+    const listError = "โหลดรายการไม่สำเร็จ กรุณากดโหลดใหม่";
+    const result = editorAlert({ error: "", listError, refsError: "", hasRecord: false });
+    expect(result).toEqual({ pane: "", page: listError, count: 1 });
+    expect(editorAlert({ error: "", hasRecord: false }).count).toBe(0);
+  });
+
+  it("touches only the error state, so the values the user typed survive a failure", () => {
+    const patch = errorStatePatch({ message: duplicateThai, field: "" }, "duplicate_code");
+    expect(Object.keys(patch).sort()).toEqual(["error", "errorField"]);
+    expect(patch).toEqual({ error: duplicateThai, errorField: "accountcode" });
+  });
+
+  it("falls back to a Thai sentence (never provider/English text) when the API sends none", () => {
+    const patch = errorStatePatch({ message: "ทำรายการไม่สำเร็จ กรุณาลองใหม่ หากยังไม่ได้ให้ติดต่อผู้ดูแลระบบ", field: "" }, "unavailable");
+    expect(/[ก-๛]/.test(patch.error)).toBe(true);
+    expect(patch.error).not.toContain("E11000");
+  });
+});

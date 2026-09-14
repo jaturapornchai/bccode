@@ -98,6 +98,7 @@ import (
 	"smlcloudplatform/internal/systemadmin"
 	"smlcloudplatform/internal/task"
 
+	glhttp "smlcloudplatform/internal/generalledger/httpapi"
 	"smlcloudplatform/internal/transaction/accrualreceive"
 	"smlcloudplatform/internal/transaction/advancepayment"
 	"smlcloudplatform/internal/transaction/advancepaymentrefund"
@@ -387,6 +388,7 @@ func main() {
 			device.NewDeviceHttp(ms, cfg),
 			staff.NewStaffHttp(ms, cfg),
 
+			glhttp.NewHttp(ms, cfg),
 			chartofaccount.NewChartOfAccountHttp(ms, cfg),
 			journal.NewJournalHttp(ms, cfg),
 			journal.NewJournalWs(ms, cfg),
@@ -660,6 +662,12 @@ func main() {
 		consumerGroupName := os.Getenv("CONSUMER_GROUP_NAME")
 		if consumerGroupName == "" {
 			consumerGroupName = "03"
+		}
+
+		// A GL Kafka misconfiguration must not take the whole API process down
+		// (prod mainapi runs this block too); log like the other consumers.
+		if err := glhttp.RegisterProjectionWorker(ms, cfg); err != nil {
+			logger.GetLogger().Errorf("GL projection worker not started: %v", err)
 		}
 
 		ms.RegisterConsumer(journal.InitJournalTransactionConsumer(ms, cfg))

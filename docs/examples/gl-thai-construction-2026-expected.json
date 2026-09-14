@@ -1,0 +1,582 @@
+{
+  "reportquery": {
+    "fiscalyear": "DEMO2569",
+    "from": "2026-09-01",
+    "to": "2026-09-11",
+    "branchcode": "00000"
+  },
+  "counts": {
+    "accountgroups": 5,
+    "accounts": 38,
+    "periods": 12,
+    "productaccountgroups": 3,
+    "budgets": 11,
+    "forecast": 5,
+    "postedjournals": 17,
+    "draftjournals": 1
+  },
+  "pnl": {
+    "revenue": "226500.00",
+    "expense": "174500.00",
+    "profit": "52000.00",
+    "cogs": "161000.00",
+    "grossprofit": "65500.00"
+  },
+  "balancesheet": {
+    "assets": "1079115.00",
+    "liabilities": "377115.00",
+    "equity": "702000.00",
+    "currentearnings": "52000.00",
+    "difference": "0.00"
+  },
+  "trialbalance": {
+    "totals": {
+      "openingdebit": "1087000.00",
+      "openingcredit": "1087000.00",
+      "debit": "866100.00",
+      "credit": "866100.00",
+      "endingdebit": "1353615.00",
+      "endingcredit": "1353615.00",
+      "balance": "0.00",
+      "difference": "0.00"
+    },
+    "rows": [
+      {
+        "accountcode": "BM69-110101",
+        "accounttype": "asset",
+        "openingdebit": "20000.00",
+        "openingcredit": "0.00",
+        "debit": "25680.00",
+        "credit": "0.00",
+        "endingdebit": "45680.00",
+        "endingcredit": "0.00",
+        "balance": "45680.00"
+      },
+      {
+        "accountcode": "BM69-110102",
+        "accounttype": "asset",
+        "openingdebit": "300000.00",
+        "openingcredit": "0.00",
+        "debit": "180000.00",
+        "credit": "189285.00",
+        "endingdebit": "290715.00",
+        "endingcredit": "0.00",
+        "balance": "290715.00"
+      },
+      {
+        "accountcode": "BM69-110103",
+        "accounttype": "asset",
+        "openingdebit": "5000.00",
+        "openingcredit": "0.00",
+        "debit": "0.00",
+        "credit": "0.00",
+        "endingdebit": "5000.00",
+        "endingcredit": "0.00",
+        "balance": "5000.00"
+      },
+      {
+        "accountcode": "BM69-110201",
+        "accounttype": "asset",
+        "openingdebit": "50000.00",
+        "openingcredit": "0.00",
+        "debit": "219885.00",
+        "credit": "133210.00",
+        "endingdebit": "136675.00",
+        "endingcredit": "0.00",
+        "balance": "136675.00"
+      },
+      {
+        "accountcode": "BM69-110301",
+        "accounttype": "asset",
+        "openingdebit": "100000.00",
+        "openingcredit": "0.00",
+        "debit": "52000.00",
+        "credit": "60000.00",
+        "endingdebit": "92000.00",
+        "endingcredit": "0.00",
+        "balance": "92000.00"
+      },
+      {
+        "accountcode": "BM69-110302",
+        "accounttype": "asset",
+        "openingdebit": "100000.00",
+        "openingcredit": "0.00",
+        "debit": "50000.00",
+        "credit": "75000.00",
+        "endingdebit": "75000.00",
+        "endingcredit": "0.00",
+        "balance": "75000.00"
+      },
+      {
+        "accountcode": "BM69-110303",
+        "accounttype": "asset",
+        "openingdebit": "40000.00",
+        "openingcredit": "0.00",
+        "debit": "20000.00",
+        "credit": "30000.00",
+        "endingdebit": "30000.00",
+        "endingcredit": "0.00",
+        "balance": "30000.00"
+      },
+      {
+        "accountcode": "BM69-110401",
+        "accounttype": "asset",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "10185.00",
+        "credit": "140.00",
+        "endingdebit": "10045.00",
+        "endingcredit": "0.00",
+        "balance": "10045.00"
+      },
+      {
+        "accountcode": "BM69-110501",
+        "accounttype": "asset",
+        "openingdebit": "12000.00",
+        "openingcredit": "0.00",
+        "debit": "0.00",
+        "credit": "1000.00",
+        "endingdebit": "11000.00",
+        "endingcredit": "0.00",
+        "balance": "11000.00"
+      },
+      {
+        "accountcode": "BM69-120101",
+        "accounttype": "asset",
+        "openingdebit": "60000.00",
+        "openingcredit": "0.00",
+        "debit": "20000.00",
+        "credit": "0.00",
+        "endingdebit": "80000.00",
+        "endingcredit": "0.00",
+        "balance": "80000.00"
+      },
+      {
+        "accountcode": "BM69-120102",
+        "accounttype": "asset",
+        "openingdebit": "400000.00",
+        "openingcredit": "0.00",
+        "debit": "0.00",
+        "credit": "0.00",
+        "endingdebit": "400000.00",
+        "endingcredit": "0.00",
+        "balance": "400000.00"
+      },
+      {
+        "accountcode": "BM69-129101",
+        "accounttype": "asset",
+        "openingdebit": "0.00",
+        "openingcredit": "12000.00",
+        "debit": "0.00",
+        "credit": "1000.00",
+        "endingdebit": "0.00",
+        "endingcredit": "13000.00",
+        "balance": "-13000.00"
+      },
+      {
+        "accountcode": "BM69-129102",
+        "accounttype": "asset",
+        "openingdebit": "0.00",
+        "openingcredit": "80000.00",
+        "debit": "0.00",
+        "credit": "4000.00",
+        "endingdebit": "0.00",
+        "endingcredit": "84000.00",
+        "balance": "-84000.00"
+      },
+      {
+        "accountcode": "BM69-210101",
+        "accounttype": "liability",
+        "openingdebit": "0.00",
+        "openingcredit": "85000.00",
+        "debit": "100640.00",
+        "credit": "74900.00",
+        "endingdebit": "0.00",
+        "endingcredit": "59260.00",
+        "balance": "-59260.00"
+      },
+      {
+        "accountcode": "BM69-210201",
+        "accounttype": "liability",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "210.00",
+        "credit": "16065.00",
+        "endingdebit": "0.00",
+        "endingcredit": "15855.00",
+        "balance": "-15855.00"
+      },
+      {
+        "accountcode": "BM69-210301",
+        "accounttype": "liability",
+        "openingdebit": "0.00",
+        "openingcredit": "10000.00",
+        "debit": "0.00",
+        "credit": "0.00",
+        "endingdebit": "0.00",
+        "endingcredit": "10000.00",
+        "balance": "-10000.00"
+      },
+      {
+        "accountcode": "BM69-220101",
+        "accounttype": "liability",
+        "openingdebit": "0.00",
+        "openingcredit": "300000.00",
+        "debit": "8000.00",
+        "credit": "0.00",
+        "endingdebit": "0.00",
+        "endingcredit": "292000.00",
+        "balance": "-292000.00"
+      },
+      {
+        "accountcode": "BM69-310101",
+        "accounttype": "equity",
+        "openingdebit": "0.00",
+        "openingcredit": "500000.00",
+        "debit": "0.00",
+        "credit": "50000.00",
+        "endingdebit": "0.00",
+        "endingcredit": "550000.00",
+        "balance": "-550000.00"
+      },
+      {
+        "accountcode": "BM69-310201",
+        "accounttype": "equity",
+        "openingdebit": "0.00",
+        "openingcredit": "100000.00",
+        "debit": "0.00",
+        "credit": "0.00",
+        "endingdebit": "0.00",
+        "endingcredit": "100000.00",
+        "balance": "-100000.00"
+      },
+      {
+        "accountcode": "BM69-410101",
+        "accounttype": "income",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "0.00",
+        "credit": "90000.00",
+        "endingdebit": "0.00",
+        "endingcredit": "90000.00",
+        "balance": "-90000.00"
+      },
+      {
+        "accountcode": "BM69-410102",
+        "accounttype": "income",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "0.00",
+        "credit": "97500.00",
+        "endingdebit": "0.00",
+        "endingcredit": "97500.00",
+        "balance": "-97500.00"
+      },
+      {
+        "accountcode": "BM69-410103",
+        "accounttype": "income",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "0.00",
+        "credit": "42000.00",
+        "endingdebit": "0.00",
+        "endingcredit": "42000.00",
+        "balance": "-42000.00"
+      },
+      {
+        "accountcode": "BM69-419101",
+        "accounttype": "income",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "3000.00",
+        "credit": "0.00",
+        "endingdebit": "3000.00",
+        "endingcredit": "0.00",
+        "balance": "3000.00"
+      },
+      {
+        "accountcode": "BM69-510101",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "60000.00",
+        "credit": "2000.00",
+        "endingdebit": "58000.00",
+        "endingcredit": "0.00",
+        "balance": "58000.00"
+      },
+      {
+        "accountcode": "BM69-510102",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "75000.00",
+        "credit": "0.00",
+        "endingdebit": "75000.00",
+        "endingcredit": "0.00",
+        "balance": "75000.00"
+      },
+      {
+        "accountcode": "BM69-510103",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "28000.00",
+        "credit": "0.00",
+        "endingdebit": "28000.00",
+        "endingcredit": "0.00",
+        "balance": "28000.00"
+      },
+      {
+        "accountcode": "BM69-520101",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "3000.00",
+        "credit": "0.00",
+        "endingdebit": "3000.00",
+        "endingcredit": "0.00",
+        "balance": "3000.00"
+      },
+      {
+        "accountcode": "BM69-520102",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "2500.00",
+        "credit": "0.00",
+        "endingdebit": "2500.00",
+        "endingcredit": "0.00",
+        "balance": "2500.00"
+      },
+      {
+        "accountcode": "BM69-520103",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "5000.00",
+        "credit": "0.00",
+        "endingdebit": "5000.00",
+        "endingcredit": "0.00",
+        "balance": "5000.00"
+      },
+      {
+        "accountcode": "BM69-520104",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "1000.00",
+        "credit": "0.00",
+        "endingdebit": "1000.00",
+        "endingcredit": "0.00",
+        "balance": "1000.00"
+      },
+      {
+        "accountcode": "BM69-520105",
+        "accounttype": "expense",
+        "openingdebit": "0.00",
+        "openingcredit": "0.00",
+        "debit": "2000.00",
+        "credit": "0.00",
+        "endingdebit": "2000.00",
+        "endingcredit": "0.00",
+        "balance": "2000.00"
+      }
+    ]
+  },
+  "controlbalances": {
+    "inventory": "197000.00",
+    "ar": "136675.00",
+    "ap": "59260.00",
+    "cashandbanks": "341395.00",
+    "cash": "45680.00",
+    "bank": "290715.00",
+    "pettycash": "5000.00",
+    "inputvat": "10045.00",
+    "outputvat": "15855.00",
+    "netvatinformationalonly": "5810.00"
+  },
+  "cashflow": {
+    "opening": "325000.00",
+    "closing": "341395.00",
+    "net": "16395.00",
+    "unclassifiedlines": "0",
+    "categories": {
+      "operating": {
+        "receipts": "155680.00",
+        "payments": "159885.00",
+        "net": "-4205.00"
+      },
+      "financing": {
+        "receipts": "50000.00",
+        "payments": "8000.00",
+        "net": "42000.00"
+      },
+      "investing": {
+        "receipts": "0.00",
+        "payments": "21400.00",
+        "net": "-21400.00"
+      }
+    }
+  },
+  "cashflowforecast": {
+    "query": {
+      "fiscalyear": "DEMO2569",
+      "from": "2026-09-15",
+      "to": "2026-09-30",
+      "branchcode": "00000"
+    },
+    "opening": "341395.00",
+    "receipts": "122800.00",
+    "payments": "78600.00",
+    "net": "44200.00",
+    "closing": "385595.00"
+  },
+  "inventoryschedule": [
+    {
+      "sku": "BM69-CEMENT",
+      "name": "ปูนซีเมนต์สมมติ 50 กก.",
+      "unit": "ถุง",
+      "openingquantity": "1000.00",
+      "closingquantity": "920.00",
+      "unitcost": "100.00",
+      "openingvalue": "100000.00",
+      "closingvalue": "92000.00"
+    },
+    {
+      "sku": "BM69-STEEL",
+      "name": "เหล็กเส้นสมมติ",
+      "unit": "เส้น",
+      "openingquantity": "200.00",
+      "closingquantity": "150.00",
+      "unitcost": "500.00",
+      "openingvalue": "100000.00",
+      "closingvalue": "75000.00"
+    },
+    {
+      "sku": "BM69-PAINT",
+      "name": "สีทาอาคารสมมติ",
+      "unit": "ถัง",
+      "openingquantity": "100.00",
+      "closingquantity": "75.00",
+      "unitcost": "400.00",
+      "openingvalue": "40000.00",
+      "closingvalue": "30000.00"
+    }
+  ],
+  "arallocations": [
+    {
+      "source": "DEMO-BM69-OPEN-001",
+      "remaining": "20000.00"
+    },
+    {
+      "source": "DEMO-BM69-UV-001",
+      "remaining": "48730.00"
+    },
+    {
+      "source": "DEMO-BM69-UV-002",
+      "remaining": "67945.00"
+    }
+  ],
+  "apallocations": [
+    {
+      "source": "DEMO-BM69-OPEN-001",
+      "remaining": "40000.00"
+    },
+    {
+      "source": "DEMO-BM69-SV-001",
+      "remaining": "0.00"
+    },
+    {
+      "source": "DEMO-BM69-SV-003",
+      "remaining": "19260.00"
+    }
+  ],
+  "journalchecks": [
+    {
+      "docno": "DEMO-BM69-OPEN-001",
+      "debit": "1087000.00",
+      "credit": "1087000.00"
+    },
+    {
+      "docno": "DEMO-BM69-SV-001",
+      "debit": "53500.00",
+      "credit": "53500.00"
+    },
+    {
+      "docno": "DEMO-BM69-SV-002",
+      "debit": "53500.00",
+      "credit": "53500.00"
+    },
+    {
+      "docno": "DEMO-BM69-SV-003",
+      "debit": "21400.00",
+      "credit": "21400.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-001",
+      "debit": "251940.00",
+      "credit": "251940.00"
+    },
+    {
+      "docno": "DEMO-BM69-RV-001",
+      "debit": "41680.00",
+      "credit": "41680.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-002",
+      "debit": "114945.00",
+      "credit": "114945.00"
+    },
+    {
+      "docno": "DEMO-BM69-RV-002",
+      "debit": "130000.00",
+      "credit": "130000.00"
+    },
+    {
+      "docno": "DEMO-BM69-PV-001",
+      "debit": "98500.00",
+      "credit": "98500.00"
+    },
+    {
+      "docno": "DEMO-BM69-PV-002",
+      "debit": "5885.00",
+      "credit": "5885.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-003",
+      "debit": "5210.00",
+      "credit": "5210.00"
+    },
+    {
+      "docno": "DEMO-BM69-SV-004",
+      "debit": "2140.00",
+      "credit": "2140.00"
+    },
+    {
+      "docno": "DEMO-BM69-JV-001",
+      "debit": "50000.00",
+      "credit": "50000.00"
+    },
+    {
+      "docno": "DEMO-BM69-PV-003",
+      "debit": "10000.00",
+      "credit": "10000.00"
+    },
+    {
+      "docno": "DEMO-BM69-JV-002",
+      "debit": "5000.00",
+      "credit": "5000.00"
+    },
+    {
+      "docno": "DEMO-BM69-JV-003",
+      "debit": "1000.00",
+      "credit": "1000.00"
+    },
+    {
+      "docno": "DEMO-BM69-PV-004",
+      "debit": "21400.00",
+      "credit": "21400.00"
+    }
+  ]
+}

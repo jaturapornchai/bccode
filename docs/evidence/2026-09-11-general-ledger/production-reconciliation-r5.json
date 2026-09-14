@@ -1,0 +1,1261 @@
+{
+  "capturedat": "2026-09-11T09:48:02.3825014Z",
+  "buildid": "eikUmz6VbY1pwLz8ThIGu",
+  "scope": {
+    "holding": "glbrowser20260911",
+    "seed": "2026091101",
+    "attempt": "5",
+    "company": "GLUAT",
+    "prefix": "GU2026091101R5"
+  },
+  "browsertest": {
+    "status": "passed",
+    "durationms": 29105,
+    "starttime": "2026-09-11T09:45:30.493Z"
+  },
+  "postgresql": {
+    "engine": "PostgreSQL",
+    "database": "glbrowser20260911",
+    "company": "GLUAT",
+    "journals": [
+      {
+        "docno": "GU2026091101R5JV",
+        "journalid": "50f2070be79397bbcb6aac96bd4422c3",
+        "linecount": 3,
+        "debit": "0.30000000",
+        "credit": "0.30000000",
+        "balanced": true
+      },
+      {
+        "docno": "GU2026091101R5REV",
+        "journalid": "620ea5e3d81e0b4d01194b635ad0ad72",
+        "linecount": 3,
+        "debit": "0.30000000",
+        "credit": "0.30000000",
+        "balanced": true
+      }
+    ],
+    "netbyaccount": [
+      {
+        "accountcode": "GU2026091101CA",
+        "debit": "0.30000000",
+        "credit": "0.30000000",
+        "net": "0.00000000",
+        "netzero": true
+      },
+      {
+        "accountcode": "GU2026091101EQ",
+        "debit": "0.30000000",
+        "credit": "0.30000000",
+        "net": "0.00000000",
+        "netzero": true
+      }
+    ],
+    "recordversions": [
+      {
+        "code": "GU2026091101R5JV",
+        "id": "50f2070be79397bbcb6aac96bd4422c3",
+        "version": 4
+      },
+      {
+        "code": "GU2026091101R5REV",
+        "id": "620ea5e3d81e0b4d01194b635ad0ad72",
+        "version": 1
+      }
+    ]
+  },
+  "mongocurrent": [
+    {
+      "_id": "50f2070be79397bbcb6aac96bd4422c3",
+      "docno": "GU2026091101R5JV",
+      "status": "reversed",
+      "lines": [
+        {
+          "accountcode": "GU2026091101CA",
+          "accountname": "บัญชีทดสอบ cash",
+          "description": "",
+          "debit": {
+            "$numberDecimal": "0.1"
+          },
+          "credit": {
+            "$numberDecimal": "0"
+          },
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "GU2026091101CA",
+          "accountname": "บัญชีทดสอบ cash",
+          "description": "",
+          "debit": {
+            "$numberDecimal": "0.2"
+          },
+          "credit": {
+            "$numberDecimal": "0"
+          },
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "GU2026091101EQ",
+          "accountname": "บัญชีทดสอบ equity",
+          "description": "",
+          "debit": {
+            "$numberDecimal": "0"
+          },
+          "credit": {
+            "$numberDecimal": "0.3"
+          },
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ],
+      "debit": {
+        "$numberDecimal": "0.3"
+      },
+      "credit": {
+        "$numberDecimal": "0.3"
+      }
+    },
+    {
+      "_id": "620ea5e3d81e0b4d01194b635ad0ad72",
+      "docno": "GU2026091101R5REV",
+      "status": "posted",
+      "lines": [
+        {
+          "accountcode": "GU2026091101CA",
+          "accountname": "บัญชีทดสอบ cash",
+          "description": "",
+          "debit": {
+            "$numberDecimal": "0"
+          },
+          "credit": {
+            "$numberDecimal": "0.1"
+          },
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "GU2026091101CA",
+          "accountname": "บัญชีทดสอบ cash",
+          "description": "",
+          "debit": {
+            "$numberDecimal": "0"
+          },
+          "credit": {
+            "$numberDecimal": "0.2"
+          },
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "GU2026091101EQ",
+          "accountname": "บัญชีทดสอบ equity",
+          "description": "",
+          "debit": {
+            "$numberDecimal": "0.3"
+          },
+          "credit": {
+            "$numberDecimal": "0"
+          },
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ],
+      "reversalof": "50f2070be79397bbcb6aac96bd4422c3",
+      "debit": {
+        "$numberDecimal": "0.3"
+      },
+      "credit": {
+        "$numberDecimal": "0.3"
+      }
+    }
+  ],
+  "mongoimmediateproofs": [
+    {
+      "name": "mongo-account-ui-created",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "chart_of_accounts",
+        "filter": {
+          "_id": "ac0f8e55255299925c6a1b2341c2e73c"
+        },
+        "doc": {
+          "_id": "ac0f8e55255299925c6a1b2341c2e73c",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "1"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119942634"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119942634"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "accountcode": "GU2026091101R5CRUD",
+          "names": [
+            {
+              "code": "th",
+              "name": "ทดสอบสร้างบัญชี อักขระ & ' ไทย"
+            }
+          ],
+          "accounttype": "asset",
+          "parentaccountcode": "",
+          "normalbalance": "debit",
+          "allowposting": true,
+          "isactive": true,
+          "accountgroup": "",
+          "iscash": false
+        }
+      }
+    },
+    {
+      "name": "mongo-account-ui-updated",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "chart_of_accounts",
+        "filter": {
+          "_id": "ac0f8e55255299925c6a1b2341c2e73c"
+        },
+        "doc": {
+          "_id": "ac0f8e55255299925c6a1b2341c2e73c",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "2"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119942634"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119943207"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "accountcode": "GU2026091101R5CRUD",
+          "names": [
+            {
+              "code": "th",
+              "name": "แก้ไขบัญชีทดสอบแล้ว"
+            }
+          ],
+          "accounttype": "asset",
+          "parentaccountcode": "",
+          "normalbalance": "debit",
+          "allowposting": true,
+          "isactive": true,
+          "accountgroup": "",
+          "iscash": false
+        }
+      }
+    },
+    {
+      "name": "mongo-account-ui-deleted",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "chart_of_accounts",
+        "filter": {
+          "_id": "ac0f8e55255299925c6a1b2341c2e73c"
+        },
+        "doc": {
+          "_id": "ac0f8e55255299925c6a1b2341c2e73c",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "3"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119942634"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119943773"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": true,
+          "accountcode": "GU2026091101R5CRUD",
+          "names": [
+            {
+              "code": "th",
+              "name": "แก้ไขบัญชีทดสอบแล้ว"
+            }
+          ],
+          "accounttype": "asset",
+          "parentaccountcode": "",
+          "normalbalance": "debit",
+          "allowposting": true,
+          "isactive": true,
+          "accountgroup": "",
+          "iscash": false
+        }
+      }
+    },
+    {
+      "name": "mongo-period-created",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_periods",
+        "filter": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62"
+        },
+        "doc": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "1"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119944432"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119944432"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "code": "GU2026091101R5PER",
+          "name": "งวดทดสอบกันยายน",
+          "isactive": true,
+          "fiscalyear": "GU2026091101FY",
+          "startdate": "2026-12-01",
+          "enddate": "2026-12-31",
+          "locked": false,
+          "amount": {
+            "$numberDecimal": "0"
+          },
+          "direction": "in",
+          "bookcode": "JV"
+        }
+      }
+    },
+    {
+      "name": "mongo-period-updated",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_periods",
+        "filter": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62"
+        },
+        "doc": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "2"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119944432"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119944989"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "code": "GU2026091101R5PER",
+          "name": "งวดทดสอบแก้ไขแล้ว",
+          "isactive": true,
+          "fiscalyear": "GU2026091101FY",
+          "startdate": "2026-12-01",
+          "enddate": "2026-12-31",
+          "locked": false,
+          "amount": {
+            "$numberDecimal": "0"
+          },
+          "direction": "in",
+          "bookcode": "JV"
+        }
+      }
+    },
+    {
+      "name": "mongo-period-locked",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_periods",
+        "filter": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62"
+        },
+        "doc": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "3"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119944432"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119945554"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "code": "GU2026091101R5PER",
+          "name": "งวดทดสอบแก้ไขแล้ว",
+          "isactive": true,
+          "fiscalyear": "GU2026091101FY",
+          "startdate": "2026-12-01",
+          "enddate": "2026-12-31",
+          "locked": true,
+          "amount": {
+            "$numberDecimal": "0"
+          },
+          "direction": "in",
+          "bookcode": "JV"
+        }
+      }
+    },
+    {
+      "name": "mongo-period-unlocked",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_periods",
+        "filter": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62"
+        },
+        "doc": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "4"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119944432"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119946136"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "code": "GU2026091101R5PER",
+          "name": "งวดทดสอบแก้ไขแล้ว",
+          "isactive": true,
+          "fiscalyear": "GU2026091101FY",
+          "startdate": "2026-12-01",
+          "enddate": "2026-12-31",
+          "locked": false,
+          "amount": {
+            "$numberDecimal": "0"
+          },
+          "direction": "in",
+          "bookcode": "JV"
+        }
+      }
+    },
+    {
+      "name": "mongo-period-deleted",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_periods",
+        "filter": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62"
+        },
+        "doc": {
+          "_id": "5a47a9b26d245e5fc1f74834ea087c62",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "5"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119944432"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119946718"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": true,
+          "code": "GU2026091101R5PER",
+          "name": "งวดทดสอบแก้ไขแล้ว",
+          "isactive": true,
+          "fiscalyear": "GU2026091101FY",
+          "startdate": "2026-12-01",
+          "enddate": "2026-12-31",
+          "locked": false,
+          "amount": {
+            "$numberDecimal": "0"
+          },
+          "direction": "in",
+          "bookcode": "JV"
+        }
+      }
+    },
+    {
+      "name": "mongo-lookup-created",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "chart_of_accounts",
+        "filter": {
+          "_id": "d584a81e3f8d2ebffdf0fa65050461eb"
+        },
+        "doc": {
+          "_id": "d584a81e3f8d2ebffdf0fa65050461eb",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "1"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119948497"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119948497"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "accountcode": "GU2026091101R5LOOK",
+          "names": [
+            {
+              "code": "th",
+              "name": "บัญชีทดสอบโหลด lookup ใหม่"
+            }
+          ],
+          "accounttype": "asset",
+          "parentaccountcode": "",
+          "normalbalance": "debit",
+          "allowposting": true,
+          "isactive": true,
+          "accountgroup": "",
+          "iscash": false
+        }
+      }
+    },
+    {
+      "name": "mongo-lookup-deleted",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "chart_of_accounts",
+        "filter": {
+          "_id": "d584a81e3f8d2ebffdf0fa65050461eb"
+        },
+        "doc": {
+          "_id": "d584a81e3f8d2ebffdf0fa65050461eb",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "2"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119948497"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119949057"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": true,
+          "accountcode": "GU2026091101R5LOOK",
+          "names": [
+            {
+              "code": "th",
+              "name": "บัญชีทดสอบโหลด lookup ใหม่"
+            }
+          ],
+          "accounttype": "asset",
+          "parentaccountcode": "",
+          "normalbalance": "debit",
+          "allowposting": true,
+          "isactive": true,
+          "accountgroup": "",
+          "iscash": false
+        }
+      }
+    },
+    {
+      "name": "mongo-journal-created",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_journals",
+        "filter": {
+          "_id": "50f2070be79397bbcb6aac96bd4422c3"
+        },
+        "doc": {
+          "_id": "50f2070be79397bbcb6aac96bd4422c3",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "1"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119954334"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119954334"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "docno": "GU2026091101R5JV",
+          "date": "2026-09-11",
+          "bookcode": "JV",
+          "fiscalyear": "GU2026091101FY",
+          "description": "ทดสอบยอด 0.1 + 0.2 = 0.3",
+          "reference": "",
+          "branchcode": "",
+          "currency": "THB",
+          "kind": "manual",
+          "status": "draft",
+          "lines": [
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0.1"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0.2"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101EQ",
+              "accountname": "บัญชีทดสอบ equity",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0"
+              },
+              "credit": {
+                "$numberDecimal": "0.3"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "mongo-journal-updated",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_journals",
+        "filter": {
+          "_id": "50f2070be79397bbcb6aac96bd4422c3"
+        },
+        "doc": {
+          "_id": "50f2070be79397bbcb6aac96bd4422c3",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "2"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119954334"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119954952"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "docno": "GU2026091101R5JV",
+          "date": "2026-09-11",
+          "bookcode": "JV",
+          "fiscalyear": "GU2026091101FY",
+          "description": "แก้ไขคำอธิบายทดสอบก่อนผ่านบัญชี",
+          "reference": "",
+          "branchcode": "",
+          "currency": "THB",
+          "kind": "manual",
+          "status": "draft",
+          "lines": [
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0.1"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0.2"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101EQ",
+              "accountname": "บัญชีทดสอบ equity",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0"
+              },
+              "credit": {
+                "$numberDecimal": "0.3"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "mongo-journal-posted",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_journals",
+        "filter": {
+          "_id": "50f2070be79397bbcb6aac96bd4422c3"
+        },
+        "doc": {
+          "_id": "50f2070be79397bbcb6aac96bd4422c3",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "3"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119954334"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119955514"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "docno": "GU2026091101R5JV",
+          "date": "2026-09-11",
+          "bookcode": "JV",
+          "fiscalyear": "GU2026091101FY",
+          "description": "แก้ไขคำอธิบายทดสอบก่อนผ่านบัญชี",
+          "reference": "",
+          "branchcode": "",
+          "currency": "THB",
+          "kind": "manual",
+          "status": "posted",
+          "lines": [
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0.1"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0.2"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101EQ",
+              "accountname": "บัญชีทดสอบ equity",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0"
+              },
+              "credit": {
+                "$numberDecimal": "0.3"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            }
+          ],
+          "postedat": {
+            "$date": {
+              "$numberLong": "1789119955514"
+            }
+          },
+          "postedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q"
+        }
+      }
+    },
+    {
+      "name": "mongo-journal-reversed",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_journals",
+        "filter": {
+          "holdingcode": "glbrowser20260911",
+          "reversalof": "50f2070be79397bbcb6aac96bd4422c3"
+        },
+        "doc": {
+          "_id": "620ea5e3d81e0b4d01194b635ad0ad72",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "1"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119956168"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119956168"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "docno": "GU2026091101R5REV",
+          "date": "2026-09-12",
+          "bookcode": "JV",
+          "fiscalyear": "GU2026091101FY",
+          "description": "กลับรายการ GU2026091101R5JV: ทดสอบกลับรายการบัญชี",
+          "reference": "GU2026091101R5JV",
+          "branchcode": "",
+          "currency": "THB",
+          "kind": "reversal",
+          "status": "posted",
+          "lines": [
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0"
+              },
+              "credit": {
+                "$numberDecimal": "0.1"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0"
+              },
+              "credit": {
+                "$numberDecimal": "0.2"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101EQ",
+              "accountname": "บัญชีทดสอบ equity",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0.3"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            }
+          ],
+          "reversalof": "50f2070be79397bbcb6aac96bd4422c3",
+          "postedat": {
+            "$date": {
+              "$numberLong": "1789119956168"
+            }
+          },
+          "postedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "reason": "ทดสอบกลับรายการบัญชี"
+        }
+      }
+    },
+    {
+      "name": "mongo-draft-created",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_journals",
+        "filter": {
+          "_id": "e790534e5a2d3c280a19ca9909e5c78f"
+        },
+        "doc": {
+          "_id": "e790534e5a2d3c280a19ca9909e5c78f",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "1"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119956669"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119956669"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "docno": "GU2026091101R5DEL",
+          "date": "2026-09-11",
+          "bookcode": "JV",
+          "fiscalyear": "GU2026091101FY",
+          "description": "ฉบับร่างทดสอบลบ",
+          "reference": "",
+          "branchcode": "",
+          "currency": "THB",
+          "kind": "manual",
+          "status": "draft",
+          "lines": [
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "1"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101EQ",
+              "accountname": "บัญชีทดสอบ equity",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0"
+              },
+              "credit": {
+                "$numberDecimal": "1"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "mongo-draft-deleted",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "gl_journals",
+        "filter": {
+          "_id": "e790534e5a2d3c280a19ca9909e5c78f"
+        },
+        "doc": {
+          "_id": "e790534e5a2d3c280a19ca9909e5c78f",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "2"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119956669"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119957130"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": true,
+          "docno": "GU2026091101R5DEL",
+          "date": "2026-09-11",
+          "bookcode": "JV",
+          "fiscalyear": "GU2026091101FY",
+          "description": "ฉบับร่างทดสอบลบ",
+          "reference": "",
+          "branchcode": "",
+          "currency": "THB",
+          "kind": "manual",
+          "status": "void",
+          "lines": [
+            {
+              "accountcode": "GU2026091101CA",
+              "accountname": "บัญชีทดสอบ cash",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "1"
+              },
+              "credit": {
+                "$numberDecimal": "0"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            },
+            {
+              "accountcode": "GU2026091101EQ",
+              "accountname": "บัญชีทดสอบ equity",
+              "description": "",
+              "debit": {
+                "$numberDecimal": "0"
+              },
+              "credit": {
+                "$numberDecimal": "1"
+              },
+              "departmentcode": "",
+              "projectcode": "",
+              "cashflow": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "mongo-temporary-year-created",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "fiscal_year",
+        "filter": {
+          "_id": "11b50b12ead2d1c4c0709c19bc4d6cc8"
+        },
+        "doc": {
+          "_id": "11b50b12ead2d1c4c0709c19bc4d6cc8",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "1"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119958057"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119958057"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "code": "GU2026091101R5TEMP",
+          "startdate": "2030-01-01",
+          "enddate": "2030-12-31",
+          "isactive": true,
+          "currency": "THB",
+          "scale": {
+            "$numberInt": "2"
+          },
+          "profitlossaccount": "GU2026091101PL",
+          "retainedearningsaccount": "GU2026091101RE",
+          "closed": false
+        }
+      }
+    },
+    {
+      "name": "mongo-temporary-year-updated",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "fiscal_year",
+        "filter": {
+          "_id": "11b50b12ead2d1c4c0709c19bc4d6cc8"
+        },
+        "doc": {
+          "_id": "11b50b12ead2d1c4c0709c19bc4d6cc8",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "2"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119958057"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119958555"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": false,
+          "code": "GU2026091101R5TEMP",
+          "startdate": "2030-01-01",
+          "enddate": "2030-11-30",
+          "isactive": true,
+          "currency": "THB",
+          "scale": {
+            "$numberInt": "2"
+          },
+          "profitlossaccount": "GU2026091101PL",
+          "retainedearningsaccount": "GU2026091101RE",
+          "closed": false
+        }
+      }
+    },
+    {
+      "name": "mongo-temporary-year-deleted",
+      "evidence": {
+        "seed": "2026091101",
+        "collection": "fiscal_year",
+        "filter": {
+          "_id": "11b50b12ead2d1c4c0709c19bc4d6cc8"
+        },
+        "doc": {
+          "_id": "11b50b12ead2d1c4c0709c19bc4d6cc8",
+          "holdingcode": "glbrowser20260911",
+          "businesscode": "GLUAT",
+          "__v": {
+            "$numberLong": "3"
+          },
+          "createdat": {
+            "$date": {
+              "$numberLong": "1789119958057"
+            }
+          },
+          "createdby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "updatedat": {
+            "$date": {
+              "$numberLong": "1789119959038"
+            }
+          },
+          "updatedby": "3JAxd2rlXjqPGVhuH1ruq2DmN0Q",
+          "isdeleted": true,
+          "code": "GU2026091101R5TEMP",
+          "startdate": "2030-01-01",
+          "enddate": "2030-11-30",
+          "isactive": true,
+          "currency": "THB",
+          "scale": {
+            "$numberInt": "2"
+          },
+          "profitlossaccount": "GU2026091101PL",
+          "retainedearningsaccount": "GU2026091101RE",
+          "closed": false
+        }
+      }
+    }
+  ],
+  "crossenginechecks": [
+    {
+      "docno": "GU2026091101R5JV",
+      "mongostatus": "reversed",
+      "mongodebit": "0.3",
+      "mongocredit": "0.3",
+      "exacttotalsmatch": true
+    },
+    {
+      "docno": "GU2026091101R5REV",
+      "mongostatus": "posted",
+      "mongodebit": "0.3",
+      "mongocredit": "0.3",
+      "exacttotalsmatch": true
+    }
+  ]
+}

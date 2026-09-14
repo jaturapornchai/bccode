@@ -67,22 +67,41 @@ func TestProjectionRebalanceIntegration(t *testing.T) {
 		}
 		control.Close()
 	})
+	seedCtx, cancelSeed := context.WithTimeout(ctx, 10*time.Second)
+	defer cancelSeed()
+	seedDeadline, _ := seedCtx.Deadline()
 	for partition := 0; partition < 2; partition++ {
-		leader, err := kafka.DialLeader(ctx, "tcp", broker, topic, partition)
-		if err != nil {
-			t.Fatal(err)
-		}
-		leader.SetWriteDeadline(time.Now().Add(10 * time.Second))
 		messages := []kafka.Message{}
 		for i := 0; i < 6; i++ {
 			messages = append(messages, kafka.Message{Value: []byte(fmt.Sprintf("%d:%d", partition, i))})
 		}
-		_, err = leader.WriteMessages(messages...)
-		leader.Close()
-		if err != nil {
-			t.Fatal(err)
+		for {
+			// Topic creation can precede broker leadership readiness. DialLeader
+			// refreshes metadata; only explicit leadership rejections are safe
+			// to retry. Transport/time-out errors may have accepted the batch.
+			leader, err := kafka.DialLeader(seedCtx, "tcp", broker, topic, partition)
+			if err == nil {
+				err = leader.SetDeadline(seedDeadline)
+				if err == nil {
+					_, err = leader.WriteMessages(messages...)
+				}
+				leader.Close()
+			}
+			if err == nil {
+				break
+			}
+			if !errors.Is(err, kafka.NotLeaderForPartition) && !errors.Is(err, kafka.LeaderNotAvailable) {
+				t.Fatalf("seed partition %d: %v", partition, err)
+			}
+			t.Logf("seed partition %d waiting for leader: %v", partition, err)
+			select {
+			case <-seedCtx.Done():
+				t.Fatalf("seed partition %d leader did not become ready: %v; last error: %v", partition, seedCtx.Err(), err)
+			case <-time.After(100 * time.Millisecond):
+			}
 		}
 	}
+	cancelSeed()
 	newReader := func() *kafka.Reader {
 		return kafka.NewReader(kafka.ReaderConfig{
 			Brokers: []string{broker}, Topic: topic, GroupID: topic + "-group",

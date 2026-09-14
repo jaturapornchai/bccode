@@ -1,7 +1,7 @@
 "use client";
 
 import { authFetch } from "@/lib/client-auth-session";
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   Building2,
   GitBranch,
@@ -22,6 +22,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { LogoAvatar } from "@/components/logo-avatar";
 import { type LanguageCode, LANGUAGES } from "@/lib/i18n";
 import { DEFAULT_TIME_ZONE, timezoneMeta, timezoneSelectOptions } from "@/lib/date-time";
@@ -678,6 +679,11 @@ const companyTreeKey = (company: CompanyRecord): string =>
 const branchParentTreeKey = (branch: BranchRecord): string =>
   branch.companyuid?.trim() || branch.companyguid?.trim() || "";
 
+const ORG_TREE_SIDEBAR_MIN_WIDTH = 260;
+const ORG_TREE_SIDEBAR_MAX_WIDTH = 620;
+const ORG_TREE_SIDEBAR_DEFAULT_WIDTH = 340;
+const ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY = "bc_org_tree_sidebar_width";
+
 export function CompanyBranchTreeView({
   auth,
   workspace,
@@ -691,6 +697,75 @@ export function CompanyBranchTreeView({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [loadError, setLoadError] = useState("");
+
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return ORG_TREE_SIDEBAR_DEFAULT_WIDTH;
+    const saved = localStorage.getItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY);
+    if (!saved) return ORG_TREE_SIDEBAR_DEFAULT_WIDTH;
+    const parsed = Number(saved);
+    return Number.isFinite(parsed) && parsed >= ORG_TREE_SIDEBAR_MIN_WIDTH && parsed <= ORG_TREE_SIDEBAR_MAX_WIDTH
+      ? parsed
+      : ORG_TREE_SIDEBAR_DEFAULT_WIDTH;
+  });
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleSidebarResizeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsResizingSidebar(true);
+    const container = containerRef.current;
+    const update = (clientX: number) => {
+      const containerLeft = container?.getBoundingClientRect().left ?? 0;
+      const nextWidth = Math.round(clientX - containerLeft);
+      const clamped = Math.min(ORG_TREE_SIDEBAR_MAX_WIDTH, Math.max(ORG_TREE_SIDEBAR_MIN_WIDTH, nextWidth));
+      setSidebarWidth(clamped);
+      localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
+    };
+    update(event.clientX);
+    const onPointerMove = (e: PointerEvent) => update(e.clientX);
+    const onPointerUp = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      setIsResizingSidebar(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  }, []);
+
+  const handleSidebarResizeReset = useCallback(() => {
+    setSidebarWidth(ORG_TREE_SIDEBAR_DEFAULT_WIDTH);
+    localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(ORG_TREE_SIDEBAR_DEFAULT_WIDTH));
+  }, []);
+
+  const handleSidebarKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setSidebarWidth((prev) => {
+        const next = Math.max(ORG_TREE_SIDEBAR_MIN_WIDTH, prev - 16);
+        localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
+        return next;
+      });
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setSidebarWidth((prev) => {
+        const next = Math.min(ORG_TREE_SIDEBAR_MAX_WIDTH, prev + 16);
+        localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
+        return next;
+      });
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setSidebarWidth(ORG_TREE_SIDEBAR_MIN_WIDTH);
+      localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(ORG_TREE_SIDEBAR_MIN_WIDTH));
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setSidebarWidth(ORG_TREE_SIDEBAR_MAX_WIDTH);
+      localStorage.setItem(ORG_TREE_SIDEBAR_WIDTH_STORAGE_KEY, String(ORG_TREE_SIDEBAR_MAX_WIDTH));
+    }
+  }, []);
 
   const mainApiUrl = useMemo(() => {
     if (!auth?.backendUrl) return "";
@@ -1284,7 +1359,11 @@ export function CompanyBranchTreeView({
     : "";
 
   return (
-    <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[clamp(300px,26vw,380px)_minmax(0,1fr)]">
+    <div
+      ref={containerRef}
+      style={{ ["--org-sidebar-width" as any]: `${sidebarWidth}px` }}
+      className="relative grid w-full min-w-0 items-stretch gap-2 min-h-[calc(100dvh-12rem)] grid-cols-1 lg:grid-cols-[var(--org-sidebar-width)_auto_minmax(0,1fr)]"
+    >
       {/* Left panel: Company -> Branch list */}
       <Card className="min-h-[calc(100vh-12rem)] shadow-lg border-primary/10">
         <CardContent className="p-4">
@@ -1521,6 +1600,22 @@ export function CompanyBranchTreeView({
           )}
         </CardContent>
       </Card>
+
+      <ResizableSplitter
+        breakpoint="lg"
+        value={sidebarWidth}
+        min={ORG_TREE_SIDEBAR_MIN_WIDTH}
+        max={ORG_TREE_SIDEBAR_MAX_WIDTH}
+        label={
+          language === "th"
+            ? "ปรับขนาดรายชื่อองค์กรและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+            : "Resize organization tree and detail panes (drag to resize, double-click to reset)"
+        }
+        isResizing={isResizingSidebar}
+        onPointerDown={handleSidebarResizeStart}
+        onDoubleClick={handleSidebarResizeReset}
+        onKeyDown={handleSidebarKeyDown}
+      />
 
       {/* Right panel: Detail / Edit Form */}
       <Card className="shadow-lg border-primary/10">

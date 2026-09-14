@@ -1,0 +1,2199 @@
+{
+  "scenario": {
+    "name": "ข้อมูลตัวอย่างร้านวัสดุก่อสร้างในไทย",
+    "documentprefix": "DEMO-BM69-",
+    "currency": "THB",
+    "scale": 2,
+    "vatfraction": "0.07",
+    "vatrounding": "ROUND_HALF_UP at document VAT; all chosen VAT results are exact to two decimals, so no rounding occurs",
+    "vatsource": "https://www.rd.go.th/fileadmin/user_upload/news/2568thai/news34_2568.pdf",
+    "synthetic": true,
+    "scopebinding": "No holding/company/actor/record identity is included. The authenticated importer supplies its permitted scope.",
+    "stockpolicy": "Perpetual inventory. Constant unit costs per fictional SKU; purchases, sales costs and both returns reconcile exactly. The draft damage journal is excluded.",
+    "limitations": [
+      "เป็นข้อมูลสมมติ ไม่มีเลขประจำตัวผู้เสียภาษีหรือบุคคลจริง",
+      "ทะเบียนสินค้าและลูกหนี้เจ้าหนี้ในไฟล์นี้เป็นตารางประกอบตรวจยอด GL ไม่ใช่การสร้างเอกสารในโมดูลซื้อขายเดิม",
+      "ไม่สร้างเงินเดือน ไม่ปิดปี ไม่โอนกำไร และไม่บันทึกชำระภาษี",
+      "ค่าเสื่อมและเบี้ยประกันใช้ตารางสมมติสำหรับเดือนกันยายน ไม่ใช่คำแนะนำคำนวณภาษี",
+      "แผน cash forecast ไม่ผ่านบัญชีและไม่รวมในยอดจริง"
+    ]
+  },
+  "accountgroups": [
+    {
+      "code": "BM69-A",
+      "name": "ข้อมูลตัวอย่าง - สินทรัพย์",
+      "isactive": true,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-L",
+      "name": "ข้อมูลตัวอย่าง - หนี้สิน",
+      "isactive": true,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-E",
+      "name": "ข้อมูลตัวอย่าง - ส่วนทุน",
+      "isactive": true,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-R",
+      "name": "ข้อมูลตัวอย่าง - รายได้",
+      "isactive": true,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-X",
+      "name": "ข้อมูลตัวอย่าง - ค่าใช้จ่าย",
+      "isactive": true,
+      "amount": "0.00"
+    }
+  ],
+  "accounts": [
+    {
+      "accountcode": "BM69-1000",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - สินทรัพย์"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "",
+      "normalbalance": "debit",
+      "allowposting": false,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-2000",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - หนี้สิน"
+        }
+      ],
+      "accounttype": "liability",
+      "parentaccountcode": "",
+      "normalbalance": "credit",
+      "allowposting": false,
+      "isactive": true,
+      "accountgroup": "BM69-L",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-3000",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ส่วนทุน"
+        }
+      ],
+      "accounttype": "equity",
+      "parentaccountcode": "",
+      "normalbalance": "credit",
+      "allowposting": false,
+      "isactive": true,
+      "accountgroup": "BM69-E",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-4000",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - รายได้"
+        }
+      ],
+      "accounttype": "income",
+      "parentaccountcode": "",
+      "normalbalance": "credit",
+      "allowposting": false,
+      "isactive": true,
+      "accountgroup": "BM69-R",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-5000",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าใช้จ่าย"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "",
+      "normalbalance": "debit",
+      "allowposting": false,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-110101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - เงินสดหน้าร้าน"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": true
+    },
+    {
+      "accountcode": "BM69-110102",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - เงินฝากธนาคาร"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": true
+    },
+    {
+      "accountcode": "BM69-110103",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - เงินสดย่อย"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": true
+    },
+    {
+      "accountcode": "BM69-110201",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ลูกหนี้การค้า"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-110301",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - สินค้าคงเหลือ - ปูนซีเมนต์"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-110302",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - สินค้าคงเหลือ - เหล็กเส้น"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-110303",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - สินค้าคงเหลือ - สีทาอาคาร"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-110401",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ภาษีซื้อ"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-110501",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - เบี้ยประกันภัยจ่ายล่วงหน้า"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-120101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - อุปกรณ์ร้านและคลังสินค้า"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-120102",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - รถขนส่งสินค้า"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-129101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าเสื่อมราคาสะสม - อุปกรณ์"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-129102",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าเสื่อมราคาสะสม - รถขนส่ง"
+        }
+      ],
+      "accounttype": "asset",
+      "parentaccountcode": "BM69-1000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-A",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-210101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - เจ้าหนี้การค้า"
+        }
+      ],
+      "accounttype": "liability",
+      "parentaccountcode": "BM69-2000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-L",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-210201",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ภาษีขาย"
+        }
+      ],
+      "accounttype": "liability",
+      "parentaccountcode": "BM69-2000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-L",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-210301",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าใช้จ่ายค้างจ่าย"
+        }
+      ],
+      "accounttype": "liability",
+      "parentaccountcode": "BM69-2000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-L",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-220101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - เงินกู้ระยะยาว"
+        }
+      ],
+      "accounttype": "liability",
+      "parentaccountcode": "BM69-2000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-L",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-310101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ทุนเจ้าของ"
+        }
+      ],
+      "accounttype": "equity",
+      "parentaccountcode": "BM69-3000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-E",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-310201",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - กำไรสะสม"
+        }
+      ],
+      "accounttype": "equity",
+      "parentaccountcode": "BM69-3000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-E",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-310301",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - กำไรขาดทุนรอจัดสรร"
+        }
+      ],
+      "accounttype": "equity",
+      "parentaccountcode": "BM69-3000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-E",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-410101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - รายได้ขายปูนซีเมนต์"
+        }
+      ],
+      "accounttype": "income",
+      "parentaccountcode": "BM69-4000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-R",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-410102",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - รายได้ขายเหล็กเส้น"
+        }
+      ],
+      "accounttype": "income",
+      "parentaccountcode": "BM69-4000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-R",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-410103",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - รายได้ขายสีทาอาคาร"
+        }
+      ],
+      "accounttype": "income",
+      "parentaccountcode": "BM69-4000",
+      "normalbalance": "credit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-R",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-419101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - รับคืนสินค้า"
+        }
+      ],
+      "accounttype": "income",
+      "parentaccountcode": "BM69-4000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-R",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-510101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ต้นทุนขายปูนซีเมนต์"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-510102",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ต้นทุนขายเหล็กเส้น"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-510103",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ต้นทุนขายสีทาอาคาร"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-520101",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าไฟฟ้า"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-520102",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าน้ำมันรถขนส่ง"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-520103",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าเสื่อมราคา"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-520104",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ค่าเบี้ยประกันภัย"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-520105",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - ดอกเบี้ยจ่าย"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    },
+    {
+      "accountcode": "BM69-520106",
+      "names": [
+        {
+          "code": "th",
+          "name": "ข้อมูลตัวอย่าง - สินค้าชำรุดเสียหาย"
+        }
+      ],
+      "accounttype": "expense",
+      "parentaccountcode": "BM69-5000",
+      "normalbalance": "debit",
+      "allowposting": true,
+      "isactive": true,
+      "accountgroup": "BM69-X",
+      "iscash": false
+    }
+  ],
+  "fiscalyear": {
+    "code": "DEMO2569",
+    "startdate": "2026-01-01",
+    "enddate": "2026-12-31",
+    "currency": "THB",
+    "scale": 2,
+    "isactive": true,
+    "closed": false,
+    "profitlossaccount": "BM69-310301",
+    "retainedearningsaccount": "BM69-310201"
+  },
+  "periods": [
+    {
+      "code": "BM69-P01",
+      "name": "ข้อมูลตัวอย่าง - งวด 01/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-01-01",
+      "enddate": "2026-01-31",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P02",
+      "name": "ข้อมูลตัวอย่าง - งวด 02/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-02-01",
+      "enddate": "2026-02-28",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P03",
+      "name": "ข้อมูลตัวอย่าง - งวด 03/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-03-01",
+      "enddate": "2026-03-31",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P04",
+      "name": "ข้อมูลตัวอย่าง - งวด 04/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-04-01",
+      "enddate": "2026-04-30",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P05",
+      "name": "ข้อมูลตัวอย่าง - งวด 05/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-05-01",
+      "enddate": "2026-05-31",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P06",
+      "name": "ข้อมูลตัวอย่าง - งวด 06/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-06-01",
+      "enddate": "2026-06-30",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P07",
+      "name": "ข้อมูลตัวอย่าง - งวด 07/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-07-01",
+      "enddate": "2026-07-31",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P08",
+      "name": "ข้อมูลตัวอย่าง - งวด 08/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-08-01",
+      "enddate": "2026-08-31",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P09",
+      "name": "ข้อมูลตัวอย่าง - งวด 09/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P10",
+      "name": "ข้อมูลตัวอย่าง - งวด 10/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-10-01",
+      "enddate": "2026-10-31",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P11",
+      "name": "ข้อมูลตัวอย่าง - งวด 11/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-11-01",
+      "enddate": "2026-11-30",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    },
+    {
+      "code": "BM69-P12",
+      "name": "ข้อมูลตัวอย่าง - งวด 12/2569",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-12-01",
+      "enddate": "2026-12-31",
+      "isactive": true,
+      "locked": false,
+      "amount": "0.00"
+    }
+  ],
+  "productaccountgroups": [
+    {
+      "code": "BM69-CEMENT",
+      "name": "ข้อมูลตัวอย่าง - ปูนซีเมนต์สมมติ 50 กก.",
+      "isactive": true,
+      "amount": "0.00",
+      "itemaccount": "BM69-110301",
+      "costaccount": "BM69-510101",
+      "revenueaccount": "BM69-410101"
+    },
+    {
+      "code": "BM69-STEEL",
+      "name": "ข้อมูลตัวอย่าง - เหล็กเส้นสมมติ",
+      "isactive": true,
+      "amount": "0.00",
+      "itemaccount": "BM69-110302",
+      "costaccount": "BM69-510102",
+      "revenueaccount": "BM69-410102"
+    },
+    {
+      "code": "BM69-PAINT",
+      "name": "ข้อมูลตัวอย่าง - สีทาอาคารสมมติ",
+      "isactive": true,
+      "amount": "0.00",
+      "itemaccount": "BM69-110303",
+      "costaccount": "BM69-510103",
+      "revenueaccount": "BM69-410103"
+    }
+  ],
+  "budgets": [
+    {
+      "code": "DEMO-BM69-BUD-410101",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - รายได้ขายปูนซีเมนต์",
+      "isactive": true,
+      "accountcode": "BM69-410101",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "100000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-410102",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - รายได้ขายเหล็กเส้น",
+      "isactive": true,
+      "accountcode": "BM69-410102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "100000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-410103",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - รายได้ขายสีทาอาคาร",
+      "isactive": true,
+      "accountcode": "BM69-410103",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "50000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-510101",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ต้นทุนขายปูนซีเมนต์",
+      "isactive": true,
+      "accountcode": "BM69-510101",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "70000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-510102",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ต้นทุนขายเหล็กเส้น",
+      "isactive": true,
+      "accountcode": "BM69-510102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "80000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-510103",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ต้นทุนขายสีทาอาคาร",
+      "isactive": true,
+      "accountcode": "BM69-510103",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "30000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-520101",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ค่าไฟฟ้า",
+      "isactive": true,
+      "accountcode": "BM69-520101",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "4000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-520102",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ค่าน้ำมันรถขนส่ง",
+      "isactive": true,
+      "accountcode": "BM69-520102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "3000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-520103",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ค่าเสื่อมราคา",
+      "isactive": true,
+      "accountcode": "BM69-520103",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "5000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-520104",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ค่าเบี้ยประกันภัย",
+      "isactive": true,
+      "accountcode": "BM69-520104",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "1000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-BUD-520105",
+      "name": "ข้อมูลตัวอย่าง - งบกันยายน ข้อมูลตัวอย่าง - ดอกเบี้ยจ่าย",
+      "isactive": true,
+      "accountcode": "BM69-520105",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-01",
+      "enddate": "2026-09-30",
+      "amount": "2500.00",
+      "branchcode": "00000"
+    }
+  ],
+  "forecast": [
+    {
+      "code": "DEMO-BM69-CF-001",
+      "name": "ข้อมูลตัวอย่าง - คาดเก็บลูกหนี้",
+      "isactive": true,
+      "accountcode": "BM69-110102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-15",
+      "enddate": "2026-09-15",
+      "direction": "in",
+      "amount": "80000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-CF-002",
+      "name": "ข้อมูลตัวอย่าง - คาดชำระเจ้าหนี้",
+      "isactive": true,
+      "accountcode": "BM69-110102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-17",
+      "enddate": "2026-09-17",
+      "direction": "out",
+      "amount": "40000.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-CF-003",
+      "name": "ข้อมูลตัวอย่าง - คาดรับขายหน้าร้านรวมภาษี",
+      "isactive": true,
+      "accountcode": "BM69-110102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-20",
+      "enddate": "2026-09-20",
+      "direction": "in",
+      "amount": "42800.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-CF-004",
+      "name": "ข้อมูลตัวอย่าง - คาดซื้อสินค้าเพิ่มรวมภาษี",
+      "isactive": true,
+      "accountcode": "BM69-110102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-24",
+      "enddate": "2026-09-24",
+      "direction": "out",
+      "amount": "32100.00",
+      "branchcode": "00000"
+    },
+    {
+      "code": "DEMO-BM69-CF-005",
+      "name": "ข้อมูลตัวอย่าง - คาดจ่ายค่าใช้จ่ายร้าน",
+      "isactive": true,
+      "accountcode": "BM69-110102",
+      "fiscalyear": "DEMO2569",
+      "startdate": "2026-09-28",
+      "enddate": "2026-09-28",
+      "direction": "out",
+      "amount": "6500.00",
+      "branchcode": "00000"
+    }
+  ],
+  "journals": [
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-OPEN-001",
+        "date": "2026-01-01",
+        "bookcode": "JV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ยอดยกมาร้านวัสดุก่อสร้างสมมติ",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "opening",
+        "lines": [
+          {
+            "accountcode": "BM69-110101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "20000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "300000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110103",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "5000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "50000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110301",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "100000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110302",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "100000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110303",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "40000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110501",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "12000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-120101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "60000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-120102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "400000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-129101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "12000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-129102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "80000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-210101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "85000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-210301",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "10000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-220101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "300000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-310101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "500000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-310201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "100000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {},
+      "expecteddebit": "1087000.00",
+      "expectedcredit": "1087000.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-SV-001",
+        "date": "2026-09-01",
+        "bookcode": "SV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ซื้อปูนซีเมนต์สมมติ 50 กก. 500 ถุง เป็นเงินเชื่อ",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110301",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "50000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110401",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "3500.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-210101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "53500.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "50000.00",
+        "vat": "3500.00",
+        "gross": "53500.00",
+        "vatfraction": "0.07",
+        "fictionalsupplier": "ผู้จำหน่ายตัวอย่าง CEMENT"
+      },
+      "expecteddebit": "53500.00",
+      "expectedcredit": "53500.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-SV-002",
+        "date": "2026-09-01",
+        "bookcode": "SV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ซื้อเหล็กเส้นสมมติ 100 เส้น จ่ายผ่านธนาคาร",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110302",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "50000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110401",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "3500.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "53500.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "operating"
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "50000.00",
+        "vat": "3500.00",
+        "gross": "53500.00",
+        "vatfraction": "0.07",
+        "fictionalsupplier": "ผู้จำหน่ายตัวอย่าง STEEL"
+      },
+      "expecteddebit": "53500.00",
+      "expectedcredit": "53500.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-SV-003",
+        "date": "2026-09-02",
+        "bookcode": "SV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ซื้อสีทาอาคารสมมติ 50 ถัง เป็นเงินเชื่อ",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110303",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "20000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110401",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "1400.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-210101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "21400.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "20000.00",
+        "vat": "1400.00",
+        "gross": "21400.00",
+        "vatfraction": "0.07",
+        "fictionalsupplier": "ผู้จำหน่ายตัวอย่าง PAINT"
+      },
+      "expecteddebit": "21400.00",
+      "expectedcredit": "21400.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-UV-001",
+        "date": "2026-09-03",
+        "bookcode": "UV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ขายวัสดุก่อสร้าง ให้ลูกค้าโครงการสมมติ BM69-SITE-A",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "151940.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-210201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "9940.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-410101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "90000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-510101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "60000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110301",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "60000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-410102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "52000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-510102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "40000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110302",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "40000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "142000.00",
+        "vat": "9940.00",
+        "gross": "151940.00",
+        "vatfraction": "0.07",
+        "fictionalcustomer": "BM69-SITE-A"
+      },
+      "expecteddebit": "251940.00",
+      "expectedcredit": "251940.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-RV-001",
+        "date": "2026-09-03",
+        "bookcode": "RV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ขายวัสดุก่อสร้าง รับเงินสดหน้าร้าน",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "25680.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-RETAIL",
+            "cashflow": "operating"
+          },
+          {
+            "accountcode": "BM69-210201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "1680.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-RETAIL",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-410103",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "24000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-RETAIL",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-510103",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "16000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-RETAIL",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110303",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "16000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-RETAIL",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "24000.00",
+        "vat": "1680.00",
+        "gross": "25680.00",
+        "vatfraction": "0.07",
+        "fictionalcustomer": "BM69-RETAIL"
+      },
+      "expecteddebit": "41680.00",
+      "expectedcredit": "41680.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-UV-002",
+        "date": "2026-09-04",
+        "bookcode": "UV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ขายวัสดุก่อสร้าง ให้ลูกค้าโครงการสมมติ BM69-SITE-B",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "67945.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-210201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "4445.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-410102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "45500.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-510102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "35000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110302",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "35000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-410103",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "18000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-510103",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "12000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110303",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "12000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-B",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "63500.00",
+        "vat": "4445.00",
+        "gross": "67945.00",
+        "vatfraction": "0.07",
+        "fictionalcustomer": "BM69-SITE-B"
+      },
+      "expecteddebit": "114945.00",
+      "expectedcredit": "114945.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-RV-002",
+        "date": "2026-09-05",
+        "bookcode": "RV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - เก็บลูกหนี้ยกมา 30,000 และลูกหนี้ UV-001 อีก 100,000",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "130000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "operating"
+          },
+          {
+            "accountcode": "BM69-110201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "130000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {},
+      "expecteddebit": "130000.00",
+      "expectedcredit": "130000.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-PV-001",
+        "date": "2026-09-05",
+        "bookcode": "PV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - จ่ายเจ้าหนี้ยกมา 45,000 และเจ้าหนี้ SV-001 ครบ 53,500",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-210101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "98500.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "98500.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "operating"
+          }
+        ]
+      },
+      "businessfacts": {},
+      "expecteddebit": "98500.00",
+      "expectedcredit": "98500.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-PV-002",
+        "date": "2026-09-06",
+        "bookcode": "PV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ชำระค่าไฟฟ้า 3,000 และน้ำมันรถ 2,500 พร้อมภาษีซื้อสมมติ",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-520101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "3000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-520102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "2500.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110401",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "385.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "5885.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "operating"
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "5500.00",
+        "vat": "385.00",
+        "gross": "5885.00",
+        "vatfraction": "0.07"
+      },
+      "expecteddebit": "5885.00",
+      "expectedcredit": "5885.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-UV-003",
+        "date": "2026-09-07",
+        "bookcode": "UV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - รับคืนปูน 20 ถุงจาก UV-001 คืนเข้าสต็อกและลดลูกหนี้",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-419101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "3000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-210201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "210.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110201",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "3210.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110301",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "2000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-510101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "2000.00",
+            "departmentcode": "BM69-SALES",
+            "projectcode": "BM69-SITE-A",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "originaldoc": "DEMO-BM69-UV-001",
+        "net": "3000.00",
+        "vat": "210.00",
+        "gross": "3210.00",
+        "vatfraction": "0.07",
+        "return": true
+      },
+      "expecteddebit": "5210.00",
+      "expectedcredit": "5210.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-SV-004",
+        "date": "2026-09-07",
+        "bookcode": "SV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - คืนสี 5 ถังจาก SV-003 ลดเจ้าหนี้และภาษีซื้อ",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-210101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "2140.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110303",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "2000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110401",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "140.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "originaldoc": "DEMO-BM69-SV-003",
+        "net": "2000.00",
+        "vat": "140.00",
+        "gross": "2140.00",
+        "vatfraction": "0.07",
+        "return": true
+      },
+      "expecteddebit": "2140.00",
+      "expectedcredit": "2140.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-JV-001",
+        "date": "2026-09-08",
+        "bookcode": "JV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - เจ้าของสมมตินำเงินทุนเพิ่มเข้าธนาคาร",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "50000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "financing"
+          },
+          {
+            "accountcode": "BM69-310101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "50000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {},
+      "expecteddebit": "50000.00",
+      "expectedcredit": "50000.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-PV-003",
+        "date": "2026-09-09",
+        "bookcode": "PV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ผ่อนเงินกู้ เงินต้น 8,000 และดอกเบี้ย 2,000 แยกกิจกรรมกระแสเงินสด",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-220101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "8000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-520105",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "2000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "8000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "financing"
+          },
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "2000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "operating"
+          }
+        ]
+      },
+      "businessfacts": {},
+      "expecteddebit": "10000.00",
+      "expectedcredit": "10000.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-JV-002",
+        "date": "2026-09-10",
+        "bookcode": "JV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ค่าเสื่อมสินทรัพย์เดิมเดือนกันยายน อุปกรณ์ 1,000 และรถ 4,000 ตามตารางสมมติ",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-520103",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "5000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-129101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "1000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-129102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "4000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {},
+      "expecteddebit": "5000.00",
+      "expectedcredit": "5000.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-JV-003",
+        "date": "2026-09-10",
+        "bookcode": "JV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ตัดเบี้ยประกันจ่ายล่วงหน้าเดือนกันยายนตามตารางสมมติ",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-520104",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "1000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110501",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "1000.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {},
+      "expecteddebit": "1000.00",
+      "expectedcredit": "1000.00"
+    },
+    {
+      "post": true,
+      "journal": {
+        "docno": "DEMO-BM69-PV-004",
+        "date": "2026-09-10",
+        "bookcode": "PV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ซื้ออุปกรณ์คลังสมมติ 20,000 พร้อมภาษีซื้อ บันทึกสินทรัพย์ใหม่ ยังไม่คิดค่าเสื่อมในชุดนี้",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-120101",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "20000.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110401",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "1400.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110102",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "21400.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": "investing"
+          }
+        ]
+      },
+      "businessfacts": {
+        "net": "20000.00",
+        "vat": "1400.00",
+        "gross": "21400.00",
+        "vatfraction": "0.07"
+      },
+      "expecteddebit": "21400.00",
+      "expectedcredit": "21400.00"
+    },
+    {
+      "post": false,
+      "journal": {
+        "docno": "DEMO-BM69-JV-DRAFT-001",
+        "date": "2026-09-11",
+        "bookcode": "JV",
+        "fiscalyear": "DEMO2569",
+        "description": "ข้อมูลตัวอย่าง - ร่างตรวจสอบปูนเสียหาย 3 ถุง ยังไม่ผ่านบัญชีและยังไม่ลดสต็อก",
+        "reference": "DEMO-BM69-SCENARIO",
+        "branchcode": "00000",
+        "currency": "THB",
+        "kind": "manual",
+        "lines": [
+          {
+            "accountcode": "BM69-520106",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "300.00",
+            "credit": "0.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          },
+          {
+            "accountcode": "BM69-110301",
+            "description": "ข้อมูลตัวอย่าง",
+            "debit": "0.00",
+            "credit": "300.00",
+            "departmentcode": "BM69-ADMIN",
+            "projectcode": "",
+            "cashflow": ""
+          }
+        ]
+      },
+      "businessfacts": {
+        "excludedfromexpectedactuals": true
+      },
+      "expecteddebit": "300.00",
+      "expectedcredit": "300.00"
+    }
+  ],
+  "stockmovements": [
+    {
+      "docno": "DEMO-BM69-SV-001",
+      "sku": "BM69-CEMENT",
+      "quantitychange": "500.00",
+      "unitcost": "100.00",
+      "valuechange": "50000.00"
+    },
+    {
+      "docno": "DEMO-BM69-SV-002",
+      "sku": "BM69-STEEL",
+      "quantitychange": "100.00",
+      "unitcost": "500.00",
+      "valuechange": "50000.00"
+    },
+    {
+      "docno": "DEMO-BM69-SV-003",
+      "sku": "BM69-PAINT",
+      "quantitychange": "50.00",
+      "unitcost": "400.00",
+      "valuechange": "20000.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-001",
+      "sku": "BM69-CEMENT",
+      "quantitychange": "-600.00",
+      "unitcost": "100.00",
+      "valuechange": "-60000.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-001",
+      "sku": "BM69-STEEL",
+      "quantitychange": "-80.00",
+      "unitcost": "500.00",
+      "valuechange": "-40000.00"
+    },
+    {
+      "docno": "DEMO-BM69-RV-001",
+      "sku": "BM69-PAINT",
+      "quantitychange": "-40.00",
+      "unitcost": "400.00",
+      "valuechange": "-16000.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-002",
+      "sku": "BM69-STEEL",
+      "quantitychange": "-70.00",
+      "unitcost": "500.00",
+      "valuechange": "-35000.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-002",
+      "sku": "BM69-PAINT",
+      "quantitychange": "-30.00",
+      "unitcost": "400.00",
+      "valuechange": "-12000.00"
+    },
+    {
+      "docno": "DEMO-BM69-UV-003",
+      "sku": "BM69-CEMENT",
+      "quantitychange": "20.00",
+      "unitcost": "100.00",
+      "valuechange": "2000.00"
+    },
+    {
+      "docno": "DEMO-BM69-SV-004",
+      "sku": "BM69-PAINT",
+      "quantitychange": "-5.00",
+      "unitcost": "400.00",
+      "valuechange": "-2000.00"
+    }
+  ]
+}

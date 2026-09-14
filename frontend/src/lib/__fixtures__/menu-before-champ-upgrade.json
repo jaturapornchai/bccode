@@ -1,0 +1,618 @@
+[
+  {
+    "id": "procurement-dashboard",
+    "route": "/procurement/dashboard"
+  },
+  {
+    "id": "purchase-requisition",
+    "route": "/transaction/purchaserequisition"
+  },
+  {
+    "id": "rfq",
+    "route": "/transaction/rfq"
+  },
+  {
+    "id": "purchase-order",
+    "route": "/transaction/purchaseorder"
+  },
+  {
+    "id": "import-documents",
+    "route": "/importdocuments"
+  },
+  {
+    "id": "purchase",
+    "route": "/transaction/purchase"
+  },
+  {
+    "id": "expense-record",
+    "route": "/transaction/expense"
+  },
+  {
+    "id": "recurring-expense",
+    "route": "/transaction/recurringexpense"
+  },
+  {
+    "id": "purchase-partial",
+    "route": "/transaction/purchasepartial"
+  },
+  {
+    "id": "accrual-receive",
+    "route": "/transaction/accrualreceive"
+  },
+  {
+    "id": "purchase-credit-note",
+    "route": "/transaction/purchasecreditnote"
+  },
+  {
+    "id": "purchase-debit-note",
+    "route": "/transaction/purchasedebitnote"
+  },
+  {
+    "id": "purchase-return",
+    "route": "/transaction/purchasereturn"
+  },
+  {
+    "id": "document-vault",
+    "route": "/transaction/documentvault"
+  },
+  {
+    "id": "inter-company-inbox",
+    "route": "/transaction/documentinbox"
+  },
+  {
+    "id": "advance-payment",
+    "route": "/transaction/advancepayment"
+  },
+  {
+    "id": "advance-payment-refund",
+    "route": "/transaction/advancepaymentrefund"
+  },
+  {
+    "id": "deposit",
+    "route": "/transaction/deposit"
+  },
+  {
+    "id": "deposit-refund",
+    "route": "/transaction/depositrefund"
+  },
+  {
+    "id": "purchase-report",
+    "route": "/report/reportdedebipurchase"
+  },
+  {
+    "id": "purchase-by-product",
+    "route": "/report/purchasebyproduct"
+  },
+  {
+    "id": "gradual-receipt",
+    "route": "/report/reportdedebipurchasepartial"
+  },
+  {
+    "id": "expense-summary-report",
+    "route": "/report/expensesummary"
+  },
+  {
+    "id": "quotation",
+    "route": "/transaction/quotation"
+  },
+  {
+    "id": "sale-order",
+    "route": "/transaction/saleorder"
+  },
+  {
+    "id": "sale",
+    "route": "/transaction/sale"
+  },
+  {
+    "id": "recurring-invoice",
+    "route": "/transaction/recurringinvoice"
+  },
+  {
+    "id": "tax-invoice",
+    "route": "/transaction/taxinvoice"
+  },
+  {
+    "id": "sale-return",
+    "route": "/transaction/salereturn"
+  },
+  {
+    "id": "etax-invoice",
+    "route": "/transaction/etax"
+  },
+  {
+    "id": "combined-receipt",
+    "route": "/transaction/combinedreceipt"
+  },
+  {
+    "id": "credit-note",
+    "route": "/transaction/creditnote"
+  },
+  {
+    "id": "debit-note",
+    "route": "/transaction/debitnote"
+  },
+  {
+    "id": "receive-advance",
+    "route": "/transaction/paidadvance"
+  },
+  {
+    "id": "return-advance",
+    "route": "/transaction/paidadvancerefund"
+  },
+  {
+    "id": "receive-deposit",
+    "route": "/transaction/receivedeposit"
+  },
+  {
+    "id": "return-deposit",
+    "route": "/transaction/receivedepositrefund"
+  },
+  {
+    "id": "sales",
+    "route": "/report/reportdedebisales"
+  },
+  {
+    "id": "sales-daily",
+    "route": "/report/reportdedebisalesdaily"
+  },
+  {
+    "id": "sales-by-seller",
+    "route": "/report/salesbyseller"
+  },
+  {
+    "id": "sales-by-document",
+    "route": "/report/salesreportbydocument"
+  },
+  {
+    "id": "gross-profit-by-document",
+    "route": "/report/reportgrossprofitbydocument"
+  },
+  {
+    "id": "gross-profit-by-product",
+    "route": "/report/reportgrossprofitbyproduct"
+  },
+  {
+    "id": "sale-return-report",
+    "route": "/report/reportdedebisalereturn"
+  },
+  {
+    "id": "sales-by-customer",
+    "route": "/report/salesbycustomer"
+  },
+  {
+    "id": "sales-by-channel",
+    "route": "/report/salesbychannel"
+  },
+  {
+    "id": "creditor",
+    "route": "/creditor"
+  },
+  {
+    "id": "creditor-group",
+    "route": "/creditorgroup"
+  },
+  {
+    "id": "creditor-beginning-balance",
+    "route": "/creditorbeginningbalance"
+  },
+  {
+    "id": "import-partner",
+    "route": "/importpartner"
+  },
+  {
+    "id": "payment-voucher",
+    "route": "/transaction/paymentvoucher"
+  },
+  {
+    "id": "combined-payment",
+    "route": "/transaction/combinedpayment"
+  },
+  {
+    "id": "pay",
+    "route": "/transaction/pay"
+  },
+  {
+    "id": "ap-aging",
+    "route": "/report/apaging"
+  },
+  {
+    "id": "debtor",
+    "route": "/debtor"
+  },
+  {
+    "id": "debtor-group",
+    "route": "/debtorgroup"
+  },
+  {
+    "id": "debtor-beginning-balance",
+    "route": "/debtorbeginningbalance"
+  },
+  {
+    "id": "billing-note",
+    "route": "/transaction/billingnote"
+  },
+  {
+    "id": "sale-invoice",
+    "route": "/transaction/saleinvoice"
+  },
+  {
+    "id": "paid",
+    "route": "/transaction/paid"
+  },
+  {
+    "id": "ar-aging",
+    "route": "/report/araging"
+  },
+  {
+    "id": "payment-daily",
+    "route": "/report/reportdedebipaymentdaily"
+  },
+  {
+    "id": "book-bank",
+    "route": "/bookbankscreen"
+  },
+  {
+    "id": "petty-cash",
+    "route": "/pettycashscreen"
+  },
+  {
+    "id": "director-advance",
+    "route": "/transaction/directoradvance"
+  },
+  {
+    "id": "employee-advance",
+    "route": "/transaction/employeeadvance"
+  },
+  {
+    "id": "credit-card-expense",
+    "route": "/transaction/creditcardexpense"
+  },
+  {
+    "id": "cash-drawer",
+    "route": "/cashinginthedrawer"
+  },
+  {
+    "id": "other-income-receipt",
+    "route": "/transaction/otherincomereceipt"
+  },
+  {
+    "id": "account-transfer",
+    "route": "/transaction/accounttransfer"
+  },
+  {
+    "id": "cheque-received",
+    "route": "/transaction/chequereceived"
+  },
+  {
+    "id": "cheque-issued",
+    "route": "/transaction/chequeissued"
+  },
+  {
+    "id": "bank-payment-file",
+    "route": "/transaction/bankpaymentfile"
+  },
+  {
+    "id": "slip-in",
+    "route": "/slipmoneyin"
+  },
+  {
+    "id": "slip-out",
+    "route": "/slipmoneyout"
+  },
+  {
+    "id": "bank-statement",
+    "route": "/banking/statements"
+  },
+  {
+    "id": "bank-reconcile",
+    "route": "/banking/reconciliation"
+  },
+  {
+    "id": "product",
+    "route": "/product"
+  },
+  {
+    "id": "barcode",
+    "route": "/productbarcode"
+  },
+  {
+    "id": "product-unit",
+    "route": "/productunit"
+  },
+  {
+    "id": "product-group",
+    "route": "/productgroup"
+  },
+  {
+    "id": "brand",
+    "route": "/masterbrandscreen"
+  },
+  {
+    "id": "warehouse",
+    "route": "/productwarehousescreen"
+  },
+  {
+    "id": "import-product",
+    "route": "/importproduct"
+  },
+  {
+    "id": "import-product-file",
+    "route": "/importproductfromfile"
+  },
+  {
+    "id": "import-product-image",
+    "route": "/importproductimage"
+  },
+  {
+    "id": "stock-balance",
+    "route": "/transaction/stockbalance"
+  },
+  {
+    "id": "stock-receive",
+    "route": "/transaction/stockreceiveproduct"
+  },
+  {
+    "id": "stock-pickup",
+    "route": "/transaction/stockpickupproduct"
+  },
+  {
+    "id": "stock-return",
+    "route": "/transaction/stockreturnproduct"
+  },
+  {
+    "id": "stock-transfer",
+    "route": "/transaction/stocktransfer"
+  },
+  {
+    "id": "stock-adjust",
+    "route": "/transaction/adjust"
+  },
+  {
+    "id": "cost-adjustment",
+    "route": "/transaction/costadjustment"
+  },
+  {
+    "id": "stock-count",
+    "route": "/transaction/stockcount"
+  },
+  {
+    "id": "fifo-cost-layers",
+    "route": "/inventory/cost-layers"
+  },
+  {
+    "id": "stock-lot",
+    "route": "/inventory/lotexpiry"
+  },
+  {
+    "id": "stock-balance-item",
+    "route": "/report/stockbalanceitem"
+  },
+  {
+    "id": "stock-balance-warehouse",
+    "route": "/report/stockbalancewarehouse"
+  },
+  {
+    "id": "stock-balance-location",
+    "route": "/report/stockbalancelocation"
+  },
+  {
+    "id": "inventory",
+    "route": "/report/reportdedebistockbalance"
+  },
+  {
+    "id": "low-stock-alert",
+    "route": "/report/lowstock"
+  },
+  {
+    "id": "expiring-stock-alert",
+    "route": "/report/expiringstock"
+  },
+  {
+    "id": "stock-movement-cost",
+    "route": "/report/stockmovementcost"
+  },
+  {
+    "id": "product-movement",
+    "route": "/report/reportstockmovement"
+  },
+  {
+    "id": "stock-lot-movement",
+    "route": "/report/stocklotmovement"
+  },
+  {
+    "id": "reprocess",
+    "route": "/rebuildstockscreen"
+  },
+  {
+    "id": "audit-data",
+    "route": "/auditscreen"
+  },
+  {
+    "id": "rebuild-products",
+    "route": "/rebuildproductsscreen"
+  },
+  {
+    "id": "rebuild-product-balance",
+    "route": "/rebuildproductbalancescreen"
+  },
+  {
+    "id": "asset-registry",
+    "route": "/asset/registry"
+  },
+  {
+    "id": "asset-depreciation",
+    "route": "/asset/depreciation"
+  },
+  {
+    "id": "asset-purchase",
+    "route": "/asset/purchase"
+  },
+  {
+    "id": "asset-construction-in-progress",
+    "route": "/asset/cip"
+  },
+  {
+    "id": "asset-disposal",
+    "route": "/asset/disposal"
+  },
+  {
+    "id": "fixed-asset-schedule",
+    "route": "/report/assetschedule"
+  },
+  {
+    "id": "purchase-tax-invoice-register",
+    "route": "/transaction/purchasetaxinvoice"
+  },
+  {
+    "id": "withholding-tax-deduction",
+    "route": "/transaction/withholdingtax"
+  },
+  {
+    "id": "vat-sale",
+    "route": "/report/reportvatsale"
+  },
+  {
+    "id": "vat-buy",
+    "route": "/report/reportvatbuy"
+  },
+  {
+    "id": "unreceived-tax-invoice",
+    "route": "/report/unreceivedtaxinvoice"
+  },
+  {
+    "id": "vat-pp30",
+    "route": "/report/vatpp30"
+  },
+  {
+    "id": "vat-pp36",
+    "route": "/report/vatpp36"
+  },
+  {
+    "id": "vat-pnd2",
+    "route": "/report/vatpnd2"
+  },
+  {
+    "id": "vat-pnd3",
+    "route": "/report/vatpnd3"
+  },
+  {
+    "id": "vat-pnd53",
+    "route": "/report/vatpnd53"
+  },
+  {
+    "id": "wht-certificate",
+    "route": "/report/whtcertificate"
+  },
+  {
+    "id": "withholding-tax-received",
+    "route": "/report/whtreceived"
+  },
+  {
+    "id": "withholding-tax-report",
+    "route": "/report/wht-reports"
+  },
+  {
+    "id": "deferred-tax",
+    "route": "/report/deferredtax"
+  },
+  {
+    "id": "chart-of-accounts",
+    "route": "/gl/chartofaccounts"
+  },
+  {
+    "id": "gl-opening-balance",
+    "route": "/gl/openingbalance"
+  },
+  {
+    "id": "uv-journal",
+    "route": "/gl/journal/uv"
+  },
+  {
+    "id": "sv-journal",
+    "route": "/gl/journal/sv"
+  },
+  {
+    "id": "rv-journal",
+    "route": "/gl/journal/rv"
+  },
+  {
+    "id": "pv-journal",
+    "route": "/gl/journal/pv"
+  },
+  {
+    "id": "jv-journal",
+    "route": "/gl/journal/jv"
+  },
+  {
+    "id": "working-paper",
+    "route": "/gl/workingpaper"
+  },
+  {
+    "id": "period-lock",
+    "route": "/gl/periodlock"
+  },
+  {
+    "id": "financial-close",
+    "route": "/gl/financialclose"
+  },
+  {
+    "id": "daily-info",
+    "route": "/checkdaily/dailyinfoscreen"
+  },
+  {
+    "id": "general-ledger",
+    "route": "/report/ledger"
+  },
+  {
+    "id": "trial-balance",
+    "route": "/report/trialbalance"
+  },
+  {
+    "id": "profit-loss",
+    "route": "/report/pnl"
+  },
+  {
+    "id": "balance-sheet",
+    "route": "/report/balancesheet"
+  },
+  {
+    "id": "cash-flow",
+    "route": "/report/cashflow"
+  },
+  {
+    "id": "cash-flow-forecast",
+    "route": "/report/cashflowforecast"
+  },
+  {
+    "id": "financial-graphs",
+    "route": "/report/financialgraphs"
+  },
+  {
+    "id": "project-pnl",
+    "route": "/report/project-pnl"
+  },
+  {
+    "id": "dimension-pnl",
+    "route": "/report/dimensionpnl"
+  },
+  {
+    "id": "project-summary-report",
+    "route": "/report/projectsummary"
+  },
+  {
+    "id": "business-dashboard",
+    "route": "/report/dashboard"
+  },
+  {
+    "id": "executive-summary",
+    "route": "/report/executivesummary"
+  },
+  {
+    "id": "xbrl-export",
+    "route": "/report/xbrl"
+  },
+  {
+    "id": "data-backup-export",
+    "route": "/tools/databackup"
+  }
+]

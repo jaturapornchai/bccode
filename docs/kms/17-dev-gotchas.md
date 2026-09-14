@@ -55,6 +55,6 @@
 
 ## ผู้ช่วย AI / เครื่องมือ
 
-- Kimi K3 / GLM (`py ~/.claude/tools/kimi-ask.py|glm-ask.py`, ต้องใช้ `py` launcher + `PYTHONIOENCODING=utf-8`) — เหมาะกับงานสั้น; ร่างยาว 400+ บรรทัดจะ timeout
+- DeepSeek (`py ~/.claude/tools/deepseek-ask.py`, ต้องใช้ `py` launcher + `PYTHONIOENCODING=utf-8`; Kimi/GLM ถอดออก 2026-09-14) — เหมาะกับงานสั้น; ร่างยาว 400+ บรรทัดจะ timeout/หมด reasoning budget
 - สร้างรูป = Codex CLI `gpt-image-2` เท่านั้น (ห้าม SVG) — รายละเอียดใน `~/.claude/refs/image-gen-codex.md` ของเครื่องลุงจืด
 - Magnitude (browser agent) ประเมินแล้ว 2026-07-01 **ไม่ใช้** (ต้องการ vision LLM ที่ไม่มี) — อย่าประเมินซ้ำถ้าไม่มีข้อมูลใหม่

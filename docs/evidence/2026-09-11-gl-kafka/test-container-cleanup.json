@@ -1,0 +1,110 @@
+{
+  "checkedAtUtc": "2026-09-11T11:32:06.2214849Z",
+  "action": "stop only",
+  "productionAccess": false,
+  "preservedImages": true,
+  "preservedVolumes": true,
+  "otherContainersTouched": false,
+  "fixtureChecks": {
+    "postgresDatabases": [
+      "postgres"
+    ],
+    "postgresUserSchemas": [],
+    "mongoDatabases": [
+      "admin",
+      "config",
+      "gl_browser_uat_20260911",
+      "local"
+    ],
+    "kafkaTopics": [
+      "__consumer_offsets"
+    ],
+    "remainingGeneralLedgerKafkaFixtures": 0,
+    "remainingBrowserUatDatabase": "gl_browser_uat_20260911",
+    "browserUatDatabaseAction": "Preserved without reading business records or deleting; reported to parent"
+  },
+  "containers": [
+    {
+      "name": "bc-gl-pg-test-20260911-slot3",
+      "id": "ed9e8767b9eb853b7564dac10f2710f6f6d29f446fa1b2bdfc6841df4981f27e",
+      "image": "postgres:17-alpine",
+      "imageId": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+      "hostIp": "127.0.0.1",
+      "hostPort": "15443",
+      "containerPort": "5432/tcp",
+      "labels": {},
+      "beforeRunning": true,
+      "volumes": [
+        {
+          "name": "096dade90c2af5a26e9cd3c56ab301052f7a23b7da4d38d2f42c1ff8dee1228d",
+          "destination": "/var/lib/postgresql/data"
+        }
+      ],
+      "afterRunning": false,
+      "status": "exited",
+      "finishedAt": "2026-09-11T11:32:06.317253525Z"
+    },
+    {
+      "name": "bc-gl-mongo-test-20260911",
+      "id": "9c24c806148b7aa85134221a55b9f31e174a1f43ce5e4d9bde5cdc284b627a06",
+      "image": "mongo:7",
+      "imageId": "sha256:8ecb514b00bdcc0bde67ef4e6c330385377a9dc68e24ee94e28c07c891647348",
+      "hostIp": "127.0.0.1",
+      "hostPort": "15444",
+      "containerPort": "27017/tcp",
+      "labels": {
+        "org.opencontainers.image.version": "22.04"
+      },
+      "beforeRunning": true,
+      "volumes": [
+        {
+          "name": "fdcff150f71feaa5a717826691b2c6646c54c5265aec14e3da0035cb866f7ced",
+          "destination": "/data/configdb"
+        },
+        {
+          "name": "e93951155ac33af6a922842ad075fe640d91f1fd4bca23c9b1cfc4017396537e",
+          "destination": "/data/db"
+        }
+      ],
+      "afterRunning": false,
+      "status": "exited",
+      "finishedAt": "2026-09-11T11:32:06.856462817Z"
+    },
+    {
+      "name": "bc-gl-kafka-test-20260911",
+      "id": "b04d9bffe013d7263379cdb73e59b9445ed9f674047e79c0701f2bebf119ffd9",
+      "image": "apache/kafka:4.3.1",
+      "imageId": "sha256:77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837",
+      "hostIp": "127.0.0.1",
+      "hostPort": "15446",
+      "containerPort": "9092/tcp",
+      "labels": {
+        "org.label-schema.build-date": "2026-06-17",
+        "org.label-schema.description": "Apache Kafka",
+        "org.label-schema.name": "kafka",
+        "org.label-schema.vcs-url": "https://github.com/apache/kafka",
+        "org.opencontainers.image.authors": "Apache Kafka"
+      },
+      "beforeRunning": true,
+      "volumes": [
+        {
+          "name": "6bbb5211181b8f966874699cbed5eeab40419f95cfae0cf513081d495a754486",
+          "destination": "/etc/kafka/secrets"
+        },
+        {
+          "name": "877181c60d0d64fcd7041c56bdaf5c8ab2c081434e2432107467e168c12767f4",
+          "destination": "/mnt/shared/config"
+        },
+        {
+          "name": "8aa07b505a66a454e7f7f0f960ccafead19cf9db7803b693f669261f2a0775c7",
+          "destination": "/var/lib/kafka/data"
+        }
+      ],
+      "afterRunning": false,
+      "status": "exited",
+      "finishedAt": "2026-09-11T11:32:06.988233311Z"
+    }
+  ],
+  "completed": true,
+  "stoppedAtUtc": "2026-09-11T11:32:09.7724261Z"
+}

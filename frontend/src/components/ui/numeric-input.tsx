@@ -23,6 +23,7 @@ export type NumericInputProps = {
   className?: string;
   placeholder?: string;
   ariaLabel?: string;
+  decimals?: number;
 };
 
 const POPUP_WIDTH = 248;
@@ -77,6 +78,7 @@ export function NumericInput({
   className,
   placeholder,
   ariaLabel,
+  decimals = 2,
 }: NumericInputProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -94,7 +96,14 @@ export function NumericInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const safeValue = Number.isFinite(value) ? value : 0;
-  const shownText = focused && text !== null ? text : String(safeValue);
+  // Pad to `decimals` but never round: a unit ratio of 0.125 must not display
+  // as 0.13 while the stored value stays 0.125 (callers rarely pass decimals).
+  const storedFractionDigits = (String(safeValue).split(".")[1] ?? "").length;
+  const formattedDisplay = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: Math.min(20, Math.max(decimals, storedFractionDigits)),
+  }).format(safeValue);
+  const shownText = focused && text !== null ? text : formattedDisplay;
 
   // Per-field undo/redo history: every distinct value the field emits (typed,
   // blur-committed, or calculator-applied) becomes an undo step; focus always
@@ -292,18 +301,21 @@ export function NumericInput({
         inputMode="decimal"
         value={shownText}
         disabled={disabled}
-        placeholder={placeholder}
+        placeholder={placeholder ?? (decimals > 0 ? `0.${"0".repeat(decimals)}` : "0")}
         aria-label={ariaLabel}
         onFocus={(event) => {
           setFocused(true);
           // A zero value focuses as EMPTY (per Jead: typing into a 0 field must
           // start fresh, no pre-filled "0"); non-zero selects all for replace.
-          setText(safeValue === 0 ? "" : String(safeValue));
-          // select-all synchronously so the first typed digit replaces the whole
-          // value. The matching onMouseUp preventDefault keeps the browser's
-          // caret placement from clearing it.
-          event.target.select();
+          const isZero = safeValue === 0;
+          setText(isZero ? "" : String(safeValue));
           suppressMouseUpRef.current = true;
+          const target = event.currentTarget;
+          requestAnimationFrame(() => {
+            if (!isZero) {
+              target.select();
+            }
+          });
         }}
         onMouseUp={(event) => {
           if (suppressMouseUpRef.current) {
@@ -314,7 +326,9 @@ export function NumericInput({
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           const raw = event.target.value;
           // digits, one dot, leading minus — drop everything else as typed
-          const cleaned = raw.replace(/[^0-9.\-]/g, "").replace(/(\..*)\./g, "$1");
+          let cleaned = raw.replace(/[^0-9.\-]/g, "").replace(/(\..*)\./g, "$1");
+          // Normalize leading zeros: e.g. typing "1" when "0" is present: "01" -> "1", "-01" -> "-1"
+          cleaned = cleaned.replace(/^(-?)0+([1-9])/, "$1$2");
           setText(cleaned);
           if (cleaned === "" || cleaned === "-" || cleaned === ".") return; // still typing
           const n = Number(cleaned);
@@ -340,7 +354,7 @@ export function NumericInput({
             redo();
           }
         }}
-        className="text-right"
+        className="text-right tabular-nums"
         style={{ paddingRight: `${10 + 26 * (1 + (undoStack.length > 0 ? 1 : 0) + (redoStack.length > 0 ? 1 : 0))}px` }}
       />
       <div className="absolute inset-y-0 right-0 flex items-center">
@@ -372,8 +386,8 @@ export function NumericInput({
         ) : null}
         <button
           type="button"
-          aria-label="เปิดเครื่องคิดเลย"
-          title="เครื่องคิดเลย"
+          aria-label="เปิดเครื่องคิดเลข"
+          title="เครื่องคิดเลข (Calculator)"
           disabled={disabled}
           onClick={() => setOpen((current) => !current)}
           className="grid h-full w-8 place-items-center rounded-r-lg text-muted-foreground transition hover:text-primary disabled:opacity-50"

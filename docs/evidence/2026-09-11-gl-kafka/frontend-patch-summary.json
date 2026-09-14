@@ -1,0 +1,51 @@
+{
+  "release": "r20260911-gl-demo-thai-1",
+  "artifact": {
+    "imageid": "sha256:5466cc156475bd4bef76e967f0f26410faff966de4895709a13a90cb1df578d9",
+    "image": "bcai-account-frontend:r20260911-gl-demo-thai-1",
+    "bytes": 295362048,
+    "sha256": "c85858d0b5e8616894c26840ff08b0aa0fbdf0bbc593d288b19fcb9528447e88"
+  },
+  "deployment": {
+    "deployedat": "2026-09-11T11:29:44.192615+00:00",
+    "services": {
+      "mainapi": {
+        "image": "bcai-account-mainapi:r20260911-gl-kafka-1",
+        "imageid": "sha256:bda3098928dc1858afac194899815041d119de372222b7532984933d85ab4ecb",
+        "health": "healthy",
+        "startedat": "2026-09-11T11:11:19.762751316Z"
+      },
+      "worker": {
+        "image": "bcai-account-mainapi:r20260911-gl-kafka-1",
+        "imageid": "sha256:bda3098928dc1858afac194899815041d119de372222b7532984933d85ab4ecb",
+        "health": "healthy",
+        "startedat": "2026-09-11T11:11:19.766302968Z"
+      },
+      "frontend": {
+        "image": "bcai-account-frontend:r20260911-gl-demo-thai-1",
+        "imageid": "sha256:5466cc156475bd4bef76e967f0f26410faff966de4895709a13a90cb1df578d9",
+        "health": "healthy",
+        "startedat": "2026-09-11T11:29:37.181407944Z"
+      }
+    },
+    "http": {
+      "https://account.bcaicloud.com/": 200,
+      "https://account.bcaicloud.com/api/gl/accounts": 401,
+      "http://127.0.0.1:8888/healthz": 200
+    },
+    "createddatabases": [],
+    "rollback": "restore release.env.before and recreate frontend only; preserve database and audit history"
+  },
+  "verification": {
+    "frontendExit": 0,
+    "dockerBuildExit": 0,
+    "deployExit": 0,
+    "testFiles": 54,
+    "tests": 401,
+    "newReportRenderCases": 8,
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "codeMap": "PASS (45 files)",
+    "finalUI": "PASS: final-ui-summary.json"
+  }
+}

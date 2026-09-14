@@ -45,6 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { listBarcodes, type MasterEntry } from "@/lib/product-barcode/api";
@@ -239,6 +240,11 @@ function BarcodePickerModal({
   );
 }
 
+const PRODUCT_SET_SIDEBAR_MIN_WIDTH = 260;
+const PRODUCT_SET_SIDEBAR_MAX_WIDTH = 620;
+const PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH = 340;
+const PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY = "bc_product_set_sidebar_width";
+
 export function ProductSetScreen({ active = true, embedded = false, language = "th" }: ProductSetScreenProps) {
   const lang = normalizeLanguage(language);
   const text = getBarcodeText(lang);
@@ -251,6 +257,75 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
   const [selectedGuid, setSelectedGuid] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH;
+    const saved = localStorage.getItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY);
+    if (!saved) return PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH;
+    const parsed = Number(saved);
+    return Number.isFinite(parsed) && parsed >= PRODUCT_SET_SIDEBAR_MIN_WIDTH && parsed <= PRODUCT_SET_SIDEBAR_MAX_WIDTH
+      ? parsed
+      : PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH;
+  });
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleSidebarResizeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsResizingSidebar(true);
+    const container = containerRef.current;
+    const update = (clientX: number) => {
+      const containerLeft = container?.getBoundingClientRect().left ?? 0;
+      const nextWidth = Math.round(clientX - containerLeft);
+      const clamped = Math.min(PRODUCT_SET_SIDEBAR_MAX_WIDTH, Math.max(PRODUCT_SET_SIDEBAR_MIN_WIDTH, nextWidth));
+      setSidebarWidth(clamped);
+      localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
+    };
+    update(event.clientX);
+    const onPointerMove = (e: PointerEvent) => update(e.clientX);
+    const onPointerUp = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      setIsResizingSidebar(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  }, []);
+
+  const handleSidebarResizeReset = useCallback(() => {
+    setSidebarWidth(PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH);
+    localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(PRODUCT_SET_SIDEBAR_DEFAULT_WIDTH));
+  }, []);
+
+  const handleSidebarKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setSidebarWidth((prev) => {
+        const next = Math.max(PRODUCT_SET_SIDEBAR_MIN_WIDTH, prev - 16);
+        localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
+        return next;
+      });
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setSidebarWidth((prev) => {
+        const next = Math.min(PRODUCT_SET_SIDEBAR_MAX_WIDTH, prev + 16);
+        localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(next));
+        return next;
+      });
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setSidebarWidth(PRODUCT_SET_SIDEBAR_MIN_WIDTH);
+      localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(PRODUCT_SET_SIDEBAR_MIN_WIDTH));
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setSidebarWidth(PRODUCT_SET_SIDEBAR_MAX_WIDTH);
+      localStorage.setItem(PRODUCT_SET_SIDEBAR_WIDTH_STORAGE_KEY, String(PRODUCT_SET_SIDEBAR_MAX_WIDTH));
+    }
+  }, []);
   const setNotice = pushNotice;
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -905,9 +980,13 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
       </div>
 
       {/* Main Split Layout */}
-      <div className="flex flex-col md:flex-row flex-1 min-h-0">
+      <div
+        ref={containerRef}
+        style={{ ["--product-set-sidebar-width" as any]: `${sidebarWidth}px` }}
+        className="flex flex-col md:flex-row flex-1 min-h-0 w-full"
+      >
         {/* Left Side: Product Set List */}
-        <div className={cn("w-full md:w-80 shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/5 flex flex-col min-h-0", selectedGuid && !editorOpen ? "hidden md:flex" : "flex")}>
+        <div className={cn("w-full md:w-[var(--product-set-sidebar-width)] shrink-0 border-b md:border-b-0 md:border-r-0 border-border bg-muted/5 flex flex-col min-h-0", selectedGuid && !editorOpen ? "hidden md:flex" : "flex")}>
 
           {/* Quick stats badges */}
           <div className="p-3 border-b border-border/60 grid grid-cols-3 gap-1.5 text-center bg-card">
@@ -1000,6 +1079,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
             ) : (
               visibleSets.map((item, index) => {
                 const active = item.guidfixed === selectedGuid;
+                const isEditing = active && editorOpen && editorMode === "edit";
                 const rowKey = productSetRowKey(item, index);
                 const optionCount = item.options?.length || 0;
                 const isCompStock = item.isusesubbarcodes ?? false;
@@ -1011,9 +1091,11 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                       data-testid="product-set-row"
                       className={cn(
                         "bc-list-row is-compact w-full text-left px-2 py-1 rounded-lg border transition-all flex items-center gap-2 hover:bg-muted/80 min-h-[30px]",
-                        active
-                          ? "bg-primary/10 border-primary/40 text-foreground shadow-sm shadow-primary/5"
-                          : "border-transparent text-foreground hover:border-border/40"
+                        isEditing
+                          ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50 shadow-sm shadow-amber-500/5"
+                          : active
+                            ? "bg-primary/10 border-primary/40 text-foreground shadow-sm shadow-primary/5"
+                            : "border-transparent text-foreground hover:border-border/40"
                       )}
                       onClick={() => {
                         if (selectMode) {
@@ -1034,9 +1116,9 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                           {checkedSetKeys.includes(rowKey) ? <CheckSquare className="h-3 w-3" /> : null}
                         </span>
                       ) : (
-                        <Layers className={cn("h-3.5 w-3.5 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                        <Layers className={cn("h-3.5 w-3.5 shrink-0", isEditing ? "text-amber-600 dark:text-amber-400" : active ? "text-primary" : "text-muted-foreground")} />
                       )}
-                      <span className="font-bold bc-cell-text text-xs text-foreground shrink-0 max-w-[90px]" title={item.code}>
+                      <span className={cn("font-bold bc-cell-text text-xs shrink-0 max-w-[90px]", isEditing ? "text-amber-950 dark:text-amber-100" : "text-foreground")} title={item.code}>
                         {item.code}
                       </span>
                       <span className="bc-cell-text text-xs text-muted-foreground flex-1 min-w-0" title={pickName(item.names, lang)}>
@@ -1066,9 +1148,11 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                     data-testid="product-set-row"
                     className={cn(
                       "w-full text-left p-3 rounded-xl border transition-all duration-200 flex items-start gap-3 hover:bg-muted/80",
-                      active
-                        ? "bg-primary/5 border-primary/40 text-foreground shadow-sm shadow-primary/5 translate-x-1"
-                        : "border-transparent text-foreground"
+                      isEditing
+                        ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 border-amber-200/50 shadow-sm shadow-amber-500/5 translate-x-1"
+                        : active
+                          ? "bg-primary/5 border-primary/40 text-foreground shadow-sm shadow-primary/5 translate-x-1"
+                          : "border-transparent text-foreground"
                     )}
                     onClick={() => {
                       if (selectMode) {
@@ -1081,7 +1165,9 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                   >
                     <div className={cn(
                       "p-2 rounded-lg shrink-0 mt-0.5",
-                      active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      isEditing
+                        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        : active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                     )}>
                       {selectMode ? (
                         checkedSetKeys.includes(rowKey) ? <CheckSquare className="h-4 w-4" /> : null
@@ -1090,7 +1176,7 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-bold truncate text-sm text-foreground">{item.code}</div>
+                      <div className={cn("font-bold truncate text-sm", isEditing ? "text-amber-950 dark:text-amber-100" : "text-foreground")}>{item.code}</div>
                       <div className="text-xs text-muted-foreground truncate">{pickName(item.names, lang)}</div>
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         <Badge variant="secondary" className="text-[9px] py-0 px-1.5 font-medium bg-muted/60">
@@ -1115,6 +1201,22 @@ export function ProductSetScreen({ active = true, embedded = false, language = "
             )}
           </div>
         </div>
+
+        <ResizableSplitter
+          breakpoint="md"
+          value={sidebarWidth}
+          min={PRODUCT_SET_SIDEBAR_MIN_WIDTH}
+          max={PRODUCT_SET_SIDEBAR_MAX_WIDTH}
+          label={
+            lang === "th"
+              ? "ปรับขนาดรายการสินค้าชุดและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
+              : "Resize product set list and detail panes (drag to resize, double-click to reset)"
+          }
+          isResizing={isResizingSidebar}
+          onPointerDown={handleSidebarResizeStart}
+          onDoubleClick={handleSidebarResizeReset}
+          onKeyDown={handleSidebarKeyDown}
+        />
 
         {/* Right Side: Detail or Editor */}
         <div className="flex-1 overflow-hidden bg-background min-h-0 flex flex-col lg:flex-row">

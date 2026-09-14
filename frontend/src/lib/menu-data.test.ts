@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MENU_SECTIONS, flattenMenuItems, menuSearchHaystack, menuSearchMatches, menuText, normalizeMenuSearchText } from "./menu-data";
+import { getSystemSettingConfig } from "./system-setting-screens";
 import type { BackendLanguageDictionary } from "./backend-language";
 
 function readyDictionary(values: BackendLanguageDictionary): BackendLanguageDictionary {
@@ -69,6 +70,68 @@ function collectMenuLanguageKeys(): string[] {
 }
 
 describe("menu language labels", () => {
+  it("preserves all 154 pre-upgrade permission IDs and routes without duplicate destinations", () => {
+    const baseline = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/__fixtures__/menu-before-champ-upgrade.json"), "utf8")) as { id: string; route: string }[];
+    const items = flattenMenuItems();
+    expect(baseline).toHaveLength(154);
+    expect(items).toHaveLength(224);
+    for (const previous of baseline) {
+      expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(previous.route);
+    }
+    expect(new Set(items.map((item) => item.route)).size).toBe(items.length);
+  });
+
+  it("keeps Champ cheque workflows separate from corporate card expenses", () => {
+    const cash = MENU_SECTIONS.find((section) => section.id === "cash-bank")!;
+    expect(cash.groups.find((group) => group.id === "cheques-received")?.items.map((item) => item.id)).toEqual([
+      "cheque-received", "cheque-deposit", "cheque-received-clear", "cheque-received-return",
+      "cheque-redeposit", "cheque-received-cancel", "cheque-discount",
+    ]);
+    expect(cash.groups.find((group) => group.id === "cheques-issued")?.items.map((item) => item.id)).toEqual([
+      "cheque-issued", "cheque-issued-clear", "cheque-issued-cancel",
+    ]);
+    expect(cash.groups.find((group) => group.id === "cash-management")?.items.some((item) => item.id === "credit-card-expense")).toBe(true);
+    expect(cash.groups.find((group) => group.id === "card-settlement")?.items.some((item) => item.id === "credit-card-receipts")).toBe(true);
+  });
+
+  it("excludes payroll while retaining partner withholding taxes and employee advances", () => {
+    const items = flattenMenuItems();
+    const forbidden = /payroll|salary|pnd1(?:\D|$)|เงินเดือน|ภ\.?\s*ง\.?\s*ด\.?\s*1(?:\D|$)|ประกันสังคม|กท\.?\s*20/i;
+    expect(items.filter((item) => forbidden.test(`${item.id} ${item.route} ${item.label.th}`))).toEqual([]);
+    for (const id of ["vat-pnd2", "vat-pnd3", "vat-pnd53", "wht-certificate", "employee-advance"]) {
+      expect(items.some((item) => item.id === id), id).toBe(true);
+    }
+  });
+  it("keeps every Thai menu label unchanged after the backend dictionary loads", () => {
+    const rows = backendLanguageRows();
+    const dictionary = readyDictionary(Object.fromEntries([...rows].map(([key, row]) => [key, row.th])));
+    for (const item of flattenMenuItems()) {
+      expect(rows.get(item.label.key ?? "")?.th, item.id).toBe(item.label.th);
+      expect(menuText(item.label, "th", dictionary), item.id).toBe(item.label.th);
+    }
+  });
+
+  it("does not let a stale Thai dictionary rename a business action", () => {
+    const item = flattenMenuItems().find((item) => item.id === "sale-order")!;
+    expect(menuText(item.label, "th", readyDictionary({ sale_order: "ใบเสนอราคา/ใบแจ้งหนี้" }))).toBe("ใบสั่งขาย");
+    expect(menuText(item.label, "en", readyDictionary({ sale_order: "Sales Order" }))).toBe("Sales Order");
+  });
+
+  it("provides the pending status in every supported dictionary language", () => {
+    const row = backendLanguageRows().get("menu_pending_development");
+    for (const language of ["th", "en", "cn", "ja", "km", "ko", "lo", "my", "vi", "ms", "id", "fil"]) {
+      expect(row?.[language], language).toBeTruthy();
+    }
+    expect(row?.th).toBe("รอพัฒนา");
+  });
+
+  it("uses the same Thai title in menus and connected setting screens", () => {
+    for (const item of flattenMenuItems()) {
+      const config = getSystemSettingConfig(item.route);
+      if (config) expect(config.title.th, item.id).toBe(item.label.th);
+    }
+  });
+
   it("uses backend language dictionary by language key", () => {
     expect(
       menuText(
@@ -93,6 +156,20 @@ describe("menu language labels", () => {
 
   it("has no settings section in the main menu (settings live in the workspace wizard, 2026-09-02)", () => {
     expect(MENU_SECTIONS.find((section) => section.id === "settings")).toBeUndefined();
+  });
+
+  it("has no organization-people, dimensions, product-tools, or product-assistant groups in any menu section (2026-09-10)", () => {
+    const allGroupIds = MENU_SECTIONS.flatMap((section) => section.groups.map((group) => group.id));
+    expect(allGroupIds).not.toContain("organization-people");
+    expect(allGroupIds).not.toContain("dimensions");
+    expect(allGroupIds).not.toContain("product-tools");
+    expect(allGroupIds).not.toContain("product-assistant");
+
+    const allRoutes = flattenMenuItems().map((item) => item.route);
+    expect(allRoutes).not.toContain("/employee");
+    expect(allRoutes).not.toContain("/user");
+    expect(allRoutes).not.toContain("/permissiongroup");
+    expect(allRoutes).not.toContain("/useraccessaudit");
   });
 
   it("hides sub-screens that were merged into the branch screen", () => {
@@ -121,9 +198,9 @@ describe("menu language labels", () => {
   });
 
   it("orders procurement as overview, request, price inquiry, then purchase order", () => {
-    const procurementGroup = MENU_SECTIONS.find((section) => section.id === "transactions")?.groups.find((group) => group.id === "procurement");
+    const procurementGroup = MENU_SECTIONS.find((section) => section.id === "po")?.groups.find((group) => group.id === "po-procurement");
 
-    expect(procurementGroup?.items.map((item) => item.id)).toEqual([
+    expect(procurementGroup?.items.map((item) => item.id).slice(0, 4)).toEqual([
       "procurement-dashboard",
       "purchase-requisition",
       "rfq",
@@ -132,90 +209,65 @@ describe("menu language labels", () => {
     expect(procurementGroup?.items.find((item) => item.id === "rfq")?.label.th).toBe("สืบราคาและเจรจา");
   });
 
-  it("keeps product operations in product tools instead of the core product group", () => {
-    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
-    const productGroup = masterSection?.groups.find((group) => group.id === "products");
-    const productToolsGroup = masterSection?.groups.find((group) => group.id === "product-tools");
+  it("keeps core product group clean without auxiliary tool items", () => {
+    const icSection = MENU_SECTIONS.find((section) => section.id === "ic");
+    const productGroup = icSection?.groups.find((group) => group.id === "ic-master");
     const productIds = productGroup?.items.map((item) => item.id) ?? [];
-    const toolIds = productToolsGroup?.items.map((item) => item.id) ?? [];
 
     expect(productIds).not.toContain("price-history");
     expect(productIds).not.toContain("label-print");
     expect(productIds).not.toContain("add-product-branch");
     expect(productIds).not.toContain("add-product-department");
-    expect(productToolsGroup?.title.th).toBe("เครื่องมือสินค้า");
-    expect(toolIds).toEqual(["product-serial-registry", "price-history", "label-print", "add-product-kitchen"]);
+    expect(productIds).not.toContain("add-product-kitchen");
   });
 
-  it("splits defaults and master data into dependency-ordered groups", () => {
-    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
-    const masterSection = MENU_SECTIONS.find((section) => section.id === "master");
-    const defaultGroupsById = new Map(defaultsSection?.groups.map((group) => [group.id, group]) ?? []);
-    const masterGroupsById = new Map(masterSection?.groups.map((group) => [group.id, group]) ?? []);
-
-    // Master Data holds core business records
-    expect(masterGroupsById.get("products")?.title.th).toBe("สินค้าและบาร์โค้ด");
-    expect(masterGroupsById.get("products")?.items.map((item) => item.id)).toEqual([
-      "product",
-      "service-product",
-      "non-stock-product",
-      "product-extension",
-      "barcode",
-      "product-category",
-      "productset",
-      "bom",
-    ]);
-    expect(masterGroupsById.get("partners")?.items.map((item) => item.id)).toEqual([
-      "debtor",
-      "creditor",
-      "debtor-beginning-balance",
-      "creditor-beginning-balance",
-    ]);
-    expect(masterGroupsById.get("bank-accounts")?.items.map((item) => item.id)).toEqual([
-      "book-bank",
+  it("structures menus into the 9 standard ERP accounting modules aligned with Champ (2026-09-11)", () => {
+    const sectionIds = MENU_SECTIONS.map((s) => s.id);
+    expect(sectionIds).toEqual([
+      "po",
+      "bill",
+      "ap",
+      "ar",
+      "cash-bank",
+      "ic",
+      "fa",
+      "vat",
+      "gl",
     ]);
 
-    // Defaults holds baseline definitions in dependency order
-    expect(defaultGroupsById.get("product-classification")?.title.th).toBe("จัดกลุ่มสินค้า");
-    expect(defaultGroupsById.get("product-classification")?.items.map((item) => item.id)).toEqual([
-      "product-unit",
-      "product-group",
-    ]);
-    expect(defaultGroupsById.get("product-descriptors")?.title.th).toBe("รายละเอียดประกอบสินค้า");
-    expect(defaultGroupsById.get("warehouse-setup")?.items.map((item) => item.id)).toEqual([
-      "warehouse",
-    ]);
-    expect(defaultGroupsById.get("partner-groups")?.items.map((item) => item.id)).toEqual([
-      "debtor-group",
-      "creditor-group",
-    ]);
-    expect(defaultGroupsById.get("sales-channel-pricing")?.items.map((item) => item.id)).toContain("channel-price");
-    expect(defaultGroupsById.get("sales-loyalty")?.items.map((item) => item.id)).toContain("promotion");
-  });
+    const glSection = MENU_SECTIONS.find((s) => s.id === "gl");
+    expect(glSection?.title.th).toBe("บัญชีแยกประเภท");
 
-  it("orders the defaults section according to business dependency workflow", () => {
-    const defaultsSection = MENU_SECTIONS.find((section) => section.id === "defaults");
-    const groupOrder = defaultsSection?.groups.map((group) => group.id) ?? [];
+    const icSection = MENU_SECTIONS.find((s) => s.id === "ic");
+    expect(icSection?.title.th).toBe("สินค้าคงคลัง");
 
-    expect(groupOrder).toEqual([
-      "product-classification",
-      "product-descriptors",
-      "warehouse-setup",
-      "partner-groups",
-      "sales-payment-banking",
-      "sales-channel-pricing",
-      "sales-documents",
-      "approval",
-      "sales-pos",
-      "sales-loyalty",
-    ]);
+    const poSection = MENU_SECTIONS.find((s) => s.id === "po");
+    expect(poSection?.title.th).toBe("ซื้อ/สั่งซื้อสินค้า");
+
+    const apSection = MENU_SECTIONS.find((s) => s.id === "ap");
+    expect(apSection?.title.th).toBe("เจ้าหนี้");
+
+    const arSection = MENU_SECTIONS.find((s) => s.id === "ar");
+    expect(arSection?.title.th).toBe("ลูกหนี้");
+
+    const billSection = MENU_SECTIONS.find((s) => s.id === "bill");
+    expect(billSection?.title.th).toBe("ใบสั่งของ/ใบกำกับสินค้า");
+
+    const cashBankSection = MENU_SECTIONS.find((s) => s.id === "cash-bank");
+    expect(cashBankSection?.title.th).toBe("เงินสดและธนาคาร");
+
+    const vatSection = MENU_SECTIONS.find((s) => s.id === "vat");
+    expect(vatSection?.title.th).toBe("ภาษีมูลค่าเพิ่ม");
+
+    const faSection = MENU_SECTIONS.find((s) => s.id === "fa");
+    expect(faSection?.title.th).toBe("สินทรัพย์และค่าเสื่อมราคา");
   });
 
   it("uses plain business label for category structure", () => {
     const allItems = flattenMenuItems();
     const labelsById = new Map(allItems.map((item) => [item.id, item.label.th]));
 
-    expect(labelsById.get("product-category")).toBe("จัดหมวดสินค้า");
+    expect(labelsById.get("product-group")).toBe("กลุ่มสินค้า");
     expect(allItems.filter((item) => item.label.th === "หมวดสินค้า")).toHaveLength(0);
   });
 
@@ -284,6 +336,17 @@ describe("menu language labels", () => {
 
 describe("menu full-text search (all languages)", () => {
   const first = flattenMenuItems()[0];
+
+  it.each([
+    ["purchase-requisition", "บันทึกใบเสนอซื้อสินค้า"],
+    ["sale-order", "ใบสั่งจอง"],
+    ["purchase-landed-cost", "Weight cost"],
+    ["product-serial-registry", "Serial Number"],
+    ["gl-account-mapping", "Account Mapping"],
+  ])("finds %s by familiar Champ wording %s", (id, query) => {
+    const item = flattenMenuItems().find((item) => item.id === id)!;
+    expect(menuSearchMatches(item.label, query)).toBe(true);
+  });
 
   it("English query finds a Thai-labeled item (all-language haystack)", () => {
     expect(first).toBeTruthy();

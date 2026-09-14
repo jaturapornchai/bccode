@@ -1,0 +1,48 @@
+[
+  {
+    "Log": "gl-linux-integration.jsonl",
+    "TopLevelPassed": 17,
+    "SubtestsPassed": 38,
+    "Skipped": 0,
+    "FailedTests": []
+  },
+  {
+    "Log": "outbox-test-results.json",
+    "TopLevelPassed": 2,
+    "SubtestsPassed": 6,
+    "Skipped": 0,
+    "FailedTests": []
+  },
+  {
+    "Log": "barcode-test-results.json",
+    "TopLevelPassed": 1,
+    "SubtestsPassed": 0,
+    "Skipped": 0,
+    "FailedTests": []
+  },
+  {
+    "Log": "projection-first-failed.jsonl",
+    "TopLevelPassed": 4,
+    "SubtestsPassed": 4,
+    "Skipped": 0,
+    "FailedTests": [
+      "TestProjectionRebalanceIntegration"
+    ]
+  },
+  {
+    "Log": "projection-retry.jsonl",
+    "TopLevelPassed": 4,
+    "SubtestsPassed": 4,
+    "Skipped": 0,
+    "FailedTests": [
+      "TestProjectionRebalanceIntegration"
+    ]
+  },
+  {
+    "Log": "projection-after-fix.jsonl",
+    "TopLevelPassed": 5,
+    "SubtestsPassed": 4,
+    "Skipped": 0,
+    "FailedTests": []
+  }
+]

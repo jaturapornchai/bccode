@@ -100,6 +100,7 @@ function resolveDisplayUrl(value: string, backendUrl: string): string {
   if (raw.startsWith("//")) {
     return typeof window === "undefined" ? raw : `${window.location.protocol}${raw}`;
   }
+  if (raw.startsWith("/banks/") || raw.startsWith("/flags/")) return raw;
   // Authenticated GoAPI/S3 proxy paths must be resolved against the backend host,
   // not the frontend origin. Otherwise authFetch() hits localhost:3000 and 404s.
   if (raw.startsWith("/api/") || raw.startsWith("/goapi/")) {

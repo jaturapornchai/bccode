@@ -1,0 +1,32 @@
+{
+  "deployedat": "2026-09-11T17:25:14.732138+07:00",
+  "services": {
+    "mainapi": {
+      "image": "bcai-account-mainapi:r20260911-gl-v2-1",
+      "imageid": "sha256:519dde57b408115eec5160af7949f20e48f9d9b508f9a3d520d585f59e48ce91",
+      "health": "healthy",
+      "startedat": "2026-09-11T10:24:58.89309019Z"
+    },
+    "worker": {
+      "image": "bcai-account-mainapi:r20260911-gl-v2-1",
+      "imageid": "sha256:519dde57b408115eec5160af7949f20e48f9d9b508f9a3d520d585f59e48ce91",
+      "health": "healthy",
+      "startedat": "2026-09-11T10:24:58.892202333Z"
+    },
+    "frontend": {
+      "image": "bcai-account-frontend:r20260911-gl-v2-1",
+      "imageid": "sha256:9211304d9890dcc8cd5dd4e15a4b7e19ee6644d23c678ec68f65c7aceca41960",
+      "health": "healthy",
+      "startedat": "2026-09-11T10:25:07.714548388Z"
+    }
+  },
+  "http": {
+    "https://account.bcaicloud.com/": 200,
+    "https://account.bcaicloud.com/api/gl/accounts": 401,
+    "http://127.0.0.1:8888/healthz": 200
+  },
+  "createddatabases": [
+    "test"
+  ],
+  "rollback": "restore release.env.before and recreate mainapi/worker/frontend; preserve database and audit history"
+}

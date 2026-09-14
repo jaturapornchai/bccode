@@ -1,0 +1,46 @@
+{
+  "capturedAt": "2026-09-11T11:24:40.927891+00:00",
+  "releaseDirectory": "/opt/bcai-account/releases/r20260911-gl-demo-thai-1",
+  "previousImages": {
+    "mainapi": "bcai-account-mainapi:r20260911-gl-kafka-1",
+    "worker": "bcai-account-mainapi:r20260911-gl-kafka-1",
+    "frontend": "bcai-account-frontend:r20260911-gl-kafka-1"
+  },
+  "glCountsAtBackup": [
+    {
+      "collection": "chart_of_accounts",
+      "count": 38
+    },
+    {
+      "collection": "fiscal_year",
+      "count": 1
+    },
+    {
+      "collection": "gl_journals",
+      "count": 18
+    },
+    {
+      "collection": "gl_events",
+      "count": 110
+    }
+  ],
+  "backups": [
+    {
+      "filename": "mongo.archive.gz",
+      "bytes": 68866,
+      "sha256": "e0da4e32b55f6a860fb0603b8b62c2e9364ae10badbc28492b1c65a099fd2627"
+    },
+    {
+      "filename": "postgres-all.sql",
+      "bytes": 716213,
+      "sha256": "fed7ad0292fef4a3e9bbee0a1eebf93573fd78c07f2c4f277980b4c7f6f07a0a"
+    },
+    {
+      "filename": "runtime-config.tar.gz",
+      "bytes": 7262,
+      "sha256": "ea5252cd9030e8cbab780892208fccf3da76ff52fa2bc3ff599c15e9108e0b6f"
+    }
+  ],
+  "scope": "Release safety copy on the same server; not an offsite backup or a completed restore drill.",
+  "restoreDrillForThisArchive": "not performed"
+}

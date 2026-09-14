@@ -48,12 +48,14 @@
 
 ## เอกสารสถาปัตยกรรม/สัญญา (ย้ายจาก `backend/architecture/` 2026-09-07)
 
+- [บัญชีแยกประเภทใหม่ตาม Champ — 35 เมนู](architecture/2026-09-11-general-ledger-v2.md): decimal exact, Mongo→Kafka→PG deploy แล้ว, ผ่าน/กลับรายการ, ปิดงบ/สิ้นปี, ผลทดสอบและข้อจำกัด XBRL/เอกสารต้นทาง
+
 - [architecture/admin-access-control.md](architecture/admin-access-control.md)
 - [architecture/high-scale-multitenant-bi.md](architecture/high-scale-multitenant-bi.md)
 - [architecture/product-listing-api-v2-handoff.md](architecture/product-listing-api-v2-handoff.md)
 - [architecture/product-listing-api-v2.md](architecture/product-listing-api-v2.md)
 
-## การตัดสินใจ (ADR) — 22 ไฟล์ใน `decisions/`
+## การตัดสินใจ (ADR) — 24 ไฟล์ใน `decisions/`
 
 - [decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md](decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md)
 - [decisions/2026-06-11-productlanguage-join-table.md](decisions/2026-06-11-productlanguage-join-table.md)
@@ -77,6 +79,30 @@
 - [decisions/2026-09-08-menu-parity-market-standard.md](decisions/2026-09-08-menu-parity-market-standard.md)
 - [decisions/2026-09-08-menu-parity-social-sweep.md](decisions/2026-09-08-menu-parity-social-sweep.md)
 - [decisions/2026-09-09-github-storage-only.md](decisions/2026-09-09-github-storage-only.md)
+- [decisions/2026-09-10-holding-scope-menu-deduplication.md](decisions/2026-09-10-holding-scope-menu-deduplication.md)
+- [decisions/2026-09-10-master-menu-streamlining.md](decisions/2026-09-10-master-menu-streamlining.md)
+- [decisions/2026-09-11-erp-nine-modules-menu-restructure.md](decisions/2026-09-11-erp-nine-modules-menu-restructure.md)
+- [decisions/2026-09-11-champ-menu-structure-alignment.md](decisions/2026-09-11-champ-menu-structure-alignment.md)
+- [decisions/2026-09-11-deploy-gl-kafka-demo.md](decisions/2026-09-11-deploy-gl-kafka-demo.md) — GL Kafka deploy r20260911-gl-kafka-1, commit ordering/replay, sanitized evidence, backup/rollback; ข้อมูลตัวอย่างผ่าน seed/กระทบยอดฐานข้อมูลแล้ว; frontend gl-demo-thai-1 deploy และ final UI ผ่าน 5 reports / 35 routes
+- [decisions/2026-09-11-deploy-general-ledger-v2.md](decisions/2026-09-11-deploy-general-ledger-v2.md) — Main API/worker/frontend GL v2, สำรองและ restore แยก, ตรวจ HTTPS 35 เมนูและ rollback
+- [decisions/2026-09-11-deploy-chart-of-accounts-level-and-delete-guard.md](decisions/2026-09-11-deploy-chart-of-accounts-level-and-delete-guard.md) — Deploy ผังบัญชีรองรับระดับ 1–12, ป้องกันการลบเมื่อมีข้อมูลอ้างอิงจากสมุดรายวันเด็ดขาด (r20260911-gl-level-1)
+- [decisions/2026-09-11-champ-upgrade-menu-workflows.md](decisions/2026-09-11-champ-upgrade-menu-workflows.md) — ผังอัปเกรด Champ 223 เมนู, baseline 154, 69 คำสั่งเพิ่มและสถานะจอจริง
+- [decisions/2026-09-11-financial-statement-designer.md](decisions/2026-09-11-financial-statement-designer.md) — ออกแบบงบการเงิน (Financial Statement Designer), รองรับหลายประเภทงบ, ปรับแต่งฟอนต์อิสระ, สูตรคำนวณสด และสร้างได้ไม่จำกัด
+- [decisions/2026-09-11-deploy-financial-statement-designer.md](decisions/2026-09-11-deploy-financial-statement-designer.md) — Deploy ระบบออกแบบงบการเงิน สู่ Production (r20260911-gl-statement-1) พร้อมผลการตรวจ Live CRUD และ Healthcheck 100%
+- [decisions/2026-09-12-fullscreen-account-search-dialog.md](decisions/2026-09-12-fullscreen-account-search-dialog.md) — ระบบค้นหาผังบัญชีแบบเต็มจอ (Full-Screen Chart of Accounts Search Dialog) พร้อมตัวกรอง 5 หมวดและคีย์ลัดสำหรับผู้ใช้ 40+
+- [decisions/2026-09-12-enable-dom-inspector-on-production.md](decisions/2026-09-12-enable-dom-inspector-on-production.md) — เปิดใช้งานวิดเจ็ต Copy DOM (DevDomInspector) บน Production (account.bcaicloud.com)
+- [decisions/2026-09-12-deploy-search-and-copy-dom.md](decisions/2026-09-12-deploy-search-and-copy-dom.md) — Deploy ระบบค้นหาผังบัญชีแบบเต็มจอและ Copy DOM สู่ Production (r20260912-search-dom-1)
+- [decisions/2026-09-12-baseline-search-debounce-and-clean-icon.md](decisions/2026-09-12-baseline-search-debounce-and-clean-icon.md) — ระบบค้นหาหลัก Baseline Toolbar ค้นหาอัตโนมัติ (Auto 2s debounce) และปุ่ม Clean (✕) ล้างคำค้น
+- [decisions/2026-09-12-deploy-baseline-search-auto-and-clean.md](decisions/2026-09-12-deploy-baseline-search-auto-and-clean.md) — Deploy แถบค้นหาหลัก Baseline Toolbar (Auto Search 2s & Clean Icon) สู่ Production (r20260912-search-auto-1)
+- [decisions/2026-09-12-formatted-numeric-input.md](decisions/2026-09-12-formatted-numeric-input.md) — มาตรฐานช่องกรอกตัวเลขและการแสดงผลจำนวนเงิน (Formatted Numeric Input Standard — Comma, Decimal, Right-Aligned & Clean Edit Mode)
+- [decisions/2026-09-12-gl-masters-crud-standard.md](decisions/2026-09-12-gl-masters-crud-standard.md) — สถาปัตยกรรมตารางข้อมูลหลักระบบบัญชีมาตรฐาน CRUD (GL Masters CRUD Table Parity — Actions Column, Amount Column, Status Badges & Quick Delete)
+- [decisions/2026-09-12-fast-deploy-standard.md](decisions/2026-09-12-fast-deploy-standard.md) — มาตรฐานการ Deploy แบบเร็วที่สุด (Fast Streamed Zero-Disk Deploy) และกฎเสร็จแล้ว Deploy ทันที
+- [decisions/2026-09-13-crud-view-edit-separation.md](decisions/2026-09-13-crud-view-edit-separation.md) — มาตรฐานการแยกโหมดแสดงข้อมูลและโหมดแก้ไขใน CRUD Table (Row Click View Mode, No Save Button in View, Explicit Edit Mode)
+- [decisions/2026-09-14-shorten-nine-module-menu-titles.md](decisions/2026-09-14-shorten-nine-module-menu-titles.md) — ตัดคำว่า "ระบบ" และ "ระบบบัญชี" ออกจากชื่อเมนูหลัก 9 ระบบ ERP เพื่อแก้ปัญหาเมนูล้นจอแนวนอน (Shorten 9 Module Menu Titles)
+- [decisions/2026-09-14-menu-bar-flex-wrap.md](decisions/2026-09-14-menu-bar-flex-wrap.md) — ปรับแถบเมนูนำทางด้านบนให้ตัดขึ้นบรรทัดใหม่ (Flex Wrap) แทนการมีแถบเลื่อนแนวนอน (No Horizontal Scroll)
+- [decisions/2026-09-14-input-addon-icons-no-overlap.md](decisions/2026-09-14-input-addon-icons-no-overlap.md) — แก้ไขปัญหาไอคอนในช่องเลือกผังบัญชีซ้อนทับกัน (Fix AccountSelect Addon Icons Overlap)
+
+
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 16 ไฟล์ใน `bugs/`
 
@@ -96,6 +122,9 @@
 - [bugs/2026-09-02-login-blank-background-tab.md](bugs/2026-09-02-login-blank-background-tab.md)
 - [bugs/2026-09-04-refresh-logs-out-non-https.md](bugs/2026-09-04-refresh-logs-out-non-https.md)
 - [bugs/2026-09-05-projection-consumer-head-of-line-block.md](bugs/2026-09-05-projection-consumer-head-of-line-block.md)
+
+- [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ
+- [บทเรียน code review 2026-09-14](bugs/2026-09-14-code-review-gl-warehouse-fixes.md) — confirm() เป็น Promise, PUT location ต้อง spread doc เดิม, GL consumer group คงที่, ห้าม panic ตอน register consumer, เพดานบรรทัด journal ปิดงบ, report วนหน้า, NumericInput ไม่ปัดค่า
 
 ## Snippets (รูปแบบการเขียนดูที่ `snippets/README.md`)
 

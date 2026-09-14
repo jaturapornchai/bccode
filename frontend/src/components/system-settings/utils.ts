@@ -375,6 +375,8 @@ export const fieldValueAliases: Record<string, string[]> = {
   "productcategorygroupselectscreen.parentguid": ["parentguid"],
   "productcategorylist.groupnumber": ["groupnumber"],
   "productcategorylist.parentguid": ["parentguid"],
+  "bookbankscreen.logo": ["images.0.uri", "logo"],
+  "bookbankscreen.bookcode": ["bookcode", "code"],
 };
 
 // ─── Record Identity Functions ───────────────────────────────────────────────
@@ -720,6 +722,12 @@ export function recordValueForField(
   ) {
     const satang = Number(getByPath(record, "creditlimitsatang") ?? 0);
     return Number.isFinite(satang) && satang !== 0 ? satang / 100 : undefined;
+  }
+  if (config.slug === "bookbankscreen" && field.key === "logo") {
+    if (record.logo) return record.logo;
+    if (Array.isArray(record.images) && record.images.length > 0 && record.images[0]?.uri) {
+      return record.images[0].uri;
+    }
   }
   const value = getByPath(record, field.key);
   if (value !== undefined) return value;

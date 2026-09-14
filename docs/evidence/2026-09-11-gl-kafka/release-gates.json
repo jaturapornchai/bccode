@@ -1,0 +1,81 @@
+{
+  "command": "tools/verify.sh backend outbox projection",
+  "exit": 0,
+  "targets": [
+    "backend",
+    "outbox",
+    "projection"
+  ],
+  "backend": {
+    "packagesWithTestsCompiled": 107,
+    "packagesWithTestsExecuted": 85
+  },
+  "quarantinedPackages": [
+    "smlcloudplatform/internal/transaction/paymentdetail/usecase",
+    "smlcloudplatform/internal/transaction/transactionconsumer/appurchasereceive",
+    "smlcloudplatform/internal/transaction/transactionconsumer/purchase",
+    "smlcloudplatform/internal/transaction/transactionconsumer/purchaseorder",
+    "smlcloudplatform/internal/transaction/transactionconsumer/purchasereceive",
+    "smlcloudplatform/internal/transaction/transactionconsumer/purchasereturn",
+    "smlcloudplatform/internal/transaction/transactionconsumer/saleinvoice",
+    "smlcloudplatform/internal/transaction/transactionconsumer/saleinvoicereturn",
+    "smlcloudplatform/internal/transaction/transactionconsumer/stockadjustment",
+    "smlcloudplatform/internal/transaction/transactionconsumer/stockpickupproduct",
+    "smlcloudplatform/internal/transaction/transactionconsumer/stockreceiveproduct",
+    "smlcloudplatform/internal/transaction/transactionconsumer/stockreturnproduct",
+    "smlcloudplatform/internal/transaction/transactionconsumer/stocktransfer",
+    "smlcloudplatform/internal/vfgl/accountperiodmaster/services",
+    "smlcloudplatform/internal/vfgl/journal/services"
+  ],
+  "integration": {
+    "outbox": {
+      "passedTestsAndSubtests": 8,
+      "topLevelPassed": [
+        "TestProductOutboxIntegration",
+        "TestProductServiceOutboxIntegration"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    "barcode": {
+      "passedTestsAndSubtests": 1,
+      "topLevelPassed": [
+        "TestBarcodeBatchIntegration"
+      ],
+      "failed": [],
+      "skipped": []
+    },
+    "projection": {
+      "passedTestsAndSubtests": 9,
+      "topLevelPassed": [
+        "TestLegacyBarcodeReconcileIntegration",
+        "TestBarcodeServiceOutboxIntegration",
+        "TestLegacyBarcodePrimarySourceIntegration",
+        "TestProjectionRebalanceIntegration",
+        "TestProjectionKafkaIntegration"
+      ],
+      "failed": [],
+      "skipped": []
+    }
+  },
+  "cleanup": {
+    "releaseTestContainersRemaining": [],
+    "dedicatedGLIntegrationPortsUnaffected": [
+      15443,
+      15444,
+      15446
+    ]
+  },
+  "frontend": {
+    "exit": 0,
+    "testFiles": 53,
+    "tests": 393,
+    "lint": "PASS",
+    "typecheck": "PASS"
+  },
+  "productionBuilds": {
+    "backendExit": 0,
+    "frontendExit": 0
+  },
+  "codeMap": "CODE-MAP is in sync (45 files indexed)."
+}

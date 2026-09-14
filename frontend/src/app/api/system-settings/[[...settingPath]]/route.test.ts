@@ -466,6 +466,82 @@ describe("system settings API route security", () => {
     expect(postResponse.status).toBe(405);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("proxies book bank master CRUD operations to the payment/bookbank backend endpoints", async () => {
+    const fetchMock = vi.fn(async () => Response.json({ success: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+      "x-bc-backend-url": "http://localhost:8888",
+    };
+
+    // List
+    const listRes = await GET(
+      new Request("http://localhost/api/system-settings/bookbankscreen?offset=0&limit=100", { headers }),
+      { params: Promise.resolve({ settingPath: ["bookbankscreen"] }) },
+    );
+    const calls = fetchMock.mock.calls as unknown as [string | URL | Request, RequestInit | undefined][];
+    expect(listRes.status).toBe(200);
+    expect(String(calls[0][0])).toBe("http://localhost:8888/payment/bookbank/list?offset=0&limit=100");
+
+    // Create
+    const createRes = await POST(
+      new Request("http://localhost/api/system-settings/bookbankscreen", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          backendUrl: "http://localhost:8888",
+          bookcode: "kbank-01",
+          passbook: "123-4-56789-0",
+          bankbranch: "Siam",
+          accountname: "BC Corp",
+          bankcode: "kbank",
+          names: [{ code: "th", name: "กสิกรไทย สยาม" }],
+          logo: "https://example.com/kbank.png",
+        }),
+      }),
+      { params: Promise.resolve({ settingPath: ["bookbankscreen"] }) },
+    );
+    expect(createRes.status).toBe(200);
+    expect(String(calls[1][0])).toBe("http://localhost:8888/payment/bookbank");
+    const createBody = JSON.parse(String(calls[1][1]?.body));
+    expect(createBody.bookcode).toBe("KBANK-01"); // Normalized uppercase businessCode
+    expect(createBody.passbook).toBe("123-4-56789-0");
+    expect(createBody.images).toEqual([{ xorder: 0, uri: "https://example.com/kbank.png" }]);
+
+    // Update
+    const updateRes = await PUT(
+      new Request("http://localhost/api/system-settings/bookbankscreen/BANK-GUID", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          backendUrl: "http://localhost:8888",
+          bookcode: "kbank-01",
+          passbook: "123-4-56789-0",
+          names: [{ code: "th", name: "กสิกรไทย สยาม (แก้ไข)" }],
+        }),
+      }),
+      { params: Promise.resolve({ settingPath: ["bookbankscreen", "BANK-GUID"] }) },
+    );
+    expect(updateRes.status).toBe(200);
+    expect(String(calls[2][0])).toBe("http://localhost:8888/payment/bookbank/BANK-GUID");
+
+    // Delete
+    const deleteRes = await DELETE(
+      new Request("http://localhost/api/system-settings/bookbankscreen/BANK-GUID", {
+        method: "DELETE",
+        headers,
+        body: JSON.stringify({
+          backendUrl: "http://localhost:8888",
+        }),
+      }),
+      { params: Promise.resolve({ settingPath: ["bookbankscreen", "BANK-GUID"] }) },
+    );
+    expect(deleteRes.status).toBe(200);
+    expect(String(calls[3][0])).toBe("http://localhost:8888/payment/bookbank/BANK-GUID");
+    expect(calls[3][1]?.method).toBe("DELETE");
+  });
 });
 
 function signJwt(payload: Record<string, unknown>): string {
