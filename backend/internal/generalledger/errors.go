@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"smlcloudplatform/pkg/apperr"
 )
 
 // Stable machine-readable error codes for POST /gl/v2/command.
@@ -48,6 +49,15 @@ func (e *UserError) HTTPStatus() int {
 		return http.StatusConflict
 	}
 	return e.Status
+}
+
+func (e *UserError) ToAppError() *apperr.AppError {
+	return &apperr.AppError{
+		Code:       e.Code,
+		Message:    e.Message,
+		ThaiMsg:    e.Message,
+		HTTPStatus: e.HTTPStatus(),
+	}
 }
 
 // AsUserError finds a user-caused failure inside err (also through wrapped errors).

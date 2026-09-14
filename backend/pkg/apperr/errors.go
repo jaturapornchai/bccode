@@ -118,6 +118,7 @@ func (e *AppError) Is(target error) bool {
 type Response struct {
 	Success    bool   `json:"success"`
 	ErrorCode  string `json:"errorcode"`
+	Code       string `json:"code,omitempty"`
 	Message    string `json:"message"`
 	MessageTH  string `json:"message_th,omitempty"`
 	Field      string `json:"field,omitempty"`
@@ -129,10 +130,11 @@ func (e *AppError) ToResponse() Response {
 	return Response{
 		Success:    false,
 		ErrorCode:  e.Code,
+		Code:       e.Code,
 		Message:    e.Message,
 		MessageTH:  e.ThaiMsg,
 		Field:      e.Field,
-		StatusCode: e.HTTPStatus,
+		StatusCode: e.StatusCode(),
 	}
 }
 

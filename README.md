@@ -8,6 +8,15 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — รวมโครงสร้าง Error Envelope ของ GL เข้ากับ apperr.AppError และ ToResponse (Item 14)
+
+- [Refactor] ย้ายโครงสร้าง error envelope ของ GL ใน `backend/internal/generalledger/errors.go` และ `httpapi/http.go` ให้ใช้มาตรฐานกลาง `backend/pkg/apperr` (`apperr.AppError` และ `ToResponse()`) ร่วมกับทั้งระบบ
+- [Feature] เพิ่มฟิลด์ `Code` บน `apperr.Response` เพื่อคงความเข้ากันได้ย้อนหลัง (backward-compatible) ทั้งฟิลด์ `errorcode` และ `code`
+- [Refactor] ปรับปรุง `commandErrorInfo` ใน `frontend/src/lib/general-ledger-api.ts` ให้ใช้ฟังก์ชันสกัดข้อความกลาง `extractMessage` จาก `workspace-api.ts` และอ่าน code จาก `errorcode`/`code` อย่างเป็นระเบียบ
+- [Test] ปรับปรุง `error_contract_test.go` ให้ตรวจสอบความถูกต้องของ `apperr.Response` envelope ครอบคลุมทั้งสถานะ, errorcode, code, message, และ statuscode
+- ไฟล์: `backend/internal/generalledger/errors.go`, `backend/internal/generalledger/httpapi/http.go`, `backend/internal/generalledger/httpapi/error_contract_test.go`, `backend/pkg/apperr/errors.go`, `frontend/src/lib/general-ledger-api.ts`
+- หลักฐาน: Go vet/test ใน Docker ผ่าน 100% (`smlcloudplatform/internal/generalledger/...`), Vitest 476/476 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — เพิ่มประสิทธิภาพรายงาน GL: รวม CTE Query เป็น Single Statement ด้วย Window Functions (Item 13)
 
 - [Perf] ปรับปรุงฟังก์ชัน `run` และ `runWithTotals` ใน `backend/internal/generalledger/reports.go` รวมการคำนวณจำนวนแถวทั้งหมด (count(*) OVER()), ผลรวมค่ายอดรวมทั้งหมด (SUM(...) OVER()), และการแบ่งหน้า (LIMIT / OFFSET) ให้อยู่ใน SQL statement เดียวผ่าน Window Functions แทนการรัน CTE ซ้ำ 2 รอบต่อหน้า

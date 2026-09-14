@@ -1,5 +1,6 @@
 import { authFetch, getAuthSession, restoreAuthSession } from "./client-auth-session";
 import type { GLCommand, GLPage, GLRecord, GLResource } from "./general-ledger";
+import { extractMessage, getString, isRecord } from "./workspace-api";
 
 const projectionWaitMs = 15_000;
 const projectionBackoffMs = [100, 250, 500, 1000];
@@ -71,13 +72,13 @@ export function commandFailure(cause: unknown, fallback = genericCommandMessage,
 }
 
 export function commandErrorInfo(payload: unknown, status: number): { code: string; message: string; field: string } {
-  const body = (payload && typeof payload === "object" ? payload : {}) as Record<string, unknown>;
-  const nested = (body.error && typeof body.error === "object" ? body.error : {}) as Record<string, unknown>;
-  const code = typeof body.code === "string" ? body.code : typeof body.errorcode === "string" ? body.errorcode : "";
-  const raw = typeof body.message === "string" ? body.message : typeof nested.message === "string" ? nested.message : "";
+  const body = isRecord(payload) ? payload : {};
+  const code = (getString(body, "code") ?? getString(body, "errorcode") ?? "").trim();
+  const raw = extractMessage(payload) ?? "";
   const serverThai = raw.trim() && thaiText.test(raw) ? raw.trim() : "";
   const message = serverThai || commandCodeMessages[code] || (status === 409 ? "ข้อมูลถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดใหม่" : genericCommandMessage);
-  return { code, message, field: commandCodeFields[code] ?? "" };
+  const field = getString(body, "field") ?? commandCodeFields[code] ?? "";
+  return { code, message, field };
 }
 
 function waitForProjection(delay: number, signal: AbortSignal) {

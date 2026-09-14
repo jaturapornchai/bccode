@@ -28,6 +28,7 @@ import (
 	access "smlcloudplatform/internal/organization/access"
 	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	rolemodels "smlcloudplatform/internal/organization/rolepermission/models"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
 
@@ -260,14 +261,9 @@ func response(request microservice.IContext, data interface{}) error {
 	return nil
 }
 
-// errorPayload is the gl/v2 error contract. Every failure carries a stable
-// machine code in `code` and the Thai text the UI shows in `message`.
-type errorPayload struct {
-	Success   bool   `json:"success"`
-	Code      string `json:"code"`
-	Message   string `json:"message"`
-	ErrorCode string `json:"errorcode,omitempty"`
-}
+// errorPayload is an alias to apperr.Response to align GL error responses
+// with the standard application error envelope across all microservices.
+type errorPayload = apperr.Response
 
 // errorPayloadFor maps a command error to (HTTP status, error contract body).
 // User-caused failures (guards, duplicate codes, validation) are reported as
@@ -275,26 +271,46 @@ type errorPayload struct {
 // server problem (503) and is logged by failure().
 func errorPayloadFor(err error) (int, errorPayload) {
 	if errors.Is(err, gl.ErrProjectionPending) {
-		return http.StatusConflict, errorPayload{
-			Code:      "projection_pending",
-			Message:   err.Error(),
-			ErrorCode: "GL_PROJECTION_PENDING",
+		appErr := &apperr.AppError{
+			Code:       "projection_pending",
+			Message:    err.Error(),
+			ThaiMsg:    err.Error(),
+			HTTPStatus: http.StatusConflict,
 		}
+		res := appErr.ToResponse()
+		res.ErrorCode = "GL_PROJECTION_PENDING"
+		return http.StatusConflict, res
 	}
 	if user, ok := gl.AsUserError(err); ok {
-		return user.HTTPStatus(), errorPayload{Code: user.Code, Message: user.Error()}
+		appErr := user.ToAppError()
+		return appErr.StatusCode(), appErr.ToResponse()
 	}
 	if errors.Is(err, gl.ErrNotFound) {
-		return http.StatusNotFound, errorPayload{Code: "not_found", Message: "ไม่พบรายการบัญชีในบริษัทหรือสาขานี้"}
+		appErr := &apperr.AppError{
+			Code:       "not_found",
+			Message:    "ไม่พบรายการบัญชีในบริษัทหรือสาขานี้",
+			ThaiMsg:    "ไม่พบรายการบัญชีในบริษัทหรือสาขานี้",
+			HTTPStatus: http.StatusNotFound,
+		}
+		return http.StatusNotFound, appErr.ToResponse()
 	}
 	message := err.Error()
 	if strings.ContainsAny(message, "กขคงจฉชซญดตถทธนบปผฝพพฟภมยรลวศษสหอฮ") && !strings.Contains(message, "SQLSTATE") && len(message) < 1500 {
-		return http.StatusConflict, errorPayload{Code: "invalid_request", Message: message}
+		appErr := &apperr.AppError{
+			Code:       "invalid_request",
+			Message:    message,
+			ThaiMsg:    message,
+			HTTPStatus: http.StatusConflict,
+		}
+		return http.StatusConflict, appErr.ToResponse()
 	}
-	return http.StatusServiceUnavailable, errorPayload{
-		Code:    "unavailable",
-		Message: "ระบบบัญชียังไม่พร้อม กรุณาลองใหม่ หากยังไม่สำเร็จให้ผู้ดูแลตรวจการเชื่อมต่อฐานข้อมูล",
+	appErr := &apperr.AppError{
+		Code:       "unavailable",
+		Message:    "ระบบบัญชียังไม่พร้อม กรุณาลองใหม่ หากยังไม่สำเร็จให้ผู้ดูแลตรวจการเชื่อมต่อฐานข้อมูล",
+		ThaiMsg:    "ระบบบัญชียังไม่พร้อม กรุณาลองใหม่ หากยังไม่สำเร็จให้ผู้ดูแลตรวจการเชื่อมต่อฐานข้อมูล",
+		HTTPStatus: http.StatusServiceUnavailable,
 	}
+	return http.StatusServiceUnavailable, appErr.ToResponse()
 }
 
 // fallbackCode keeps every local fail() response machine-readable too.
@@ -324,7 +340,14 @@ var errMultipleCommands = errors.New("ส่งข้อมูลบัญชี
 // 400 with the stable invalid_payload code and a Thai message (the raw English
 // decoder text is logged, never shown).
 func decodeFailure(err error) errorPayload {
-	return errorPayload{Code: "invalid_payload", Message: decodeErrorMessage(err)}
+	msg := decodeErrorMessage(err)
+	appErr := &apperr.AppError{
+		Code:       "invalid_payload",
+		Message:    msg,
+		ThaiMsg:    msg,
+		HTTPStatus: http.StatusBadRequest,
+	}
+	return appErr.ToResponse()
 }
 
 // decodeErrorMessage explains a JSON decode failure in Thai without leaking the
@@ -380,7 +403,13 @@ func decodeCommand(reader io.Reader) (gl.Command, error) {
 }
 
 func fail(request microservice.IContext, status int, message string) error {
-	request.Response(status, errorPayload{Code: fallbackCode(status), Message: message})
+	appErr := &apperr.AppError{
+		Code:       fallbackCode(status),
+		Message:    message,
+		ThaiMsg:    message,
+		HTTPStatus: status,
+	}
+	request.Response(status, appErr.ToResponse())
 	return nil
 }
 
