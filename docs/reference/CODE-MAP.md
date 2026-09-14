@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-14 @ commit 806ce9a4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-14 @ commit fd0c47f8 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 46
 
@@ -2048,6 +2048,24 @@ Files indexed: 46
 | 1028 | function | `newXOrderDocumentImageGroup` |
 | 1045 | function | `UpdateDocNoInReferences` |
 
+## frontend/src/app/gl/gl-statement-designer.tsx (1034 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 70 | function | `ensureFontLoaded` |
+| 83 | function | `GLStatementDesigner` |
+| 133 | function | `open` |
+| 156 | function | `applyStarterTemplate` |
+| 169 | function | `save` |
+| 202 | function | `cloneTemplate` |
+| 216 | function | `remove` |
+| 243 | function | `addRow` |
+| 262 | function | `updateRow` |
+| 268 | function | `deleteRow` |
+| 273 | function | `moveRow` |
+| 284 | function | `runCalculation` |
+| 310 | const-arrow | `updateGlobalStyle` |
+
 ## backend/internal/goapi/dataimport/xlsx_product.go (1033 lines)
 
 | Line | Kind | Name |
@@ -2066,24 +2084,6 @@ Files indexed: 46
 | 975 | function | `downloadFileFromURL` |
 | 1009 | function | `ClearProductPrepareSession` |
 | 1024 | function | `GetProductPrepareSessionsJSON` |
-
-## frontend/src/app/gl/gl-statement-designer.tsx (1030 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 67 | function | `ensureFontLoaded` |
-| 80 | function | `GLStatementDesigner` |
-| 129 | function | `open` |
-| 152 | function | `applyStarterTemplate` |
-| 165 | function | `save` |
-| 198 | function | `cloneTemplate` |
-| 212 | function | `remove` |
-| 239 | function | `addRow` |
-| 258 | function | `updateRow` |
-| 264 | function | `deleteRow` |
-| 269 | function | `moveRow` |
-| 280 | function | `runCalculation` |
-| 306 | const-arrow | `updateGlobalStyle` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/base_pdf.go (1019 lines)
 

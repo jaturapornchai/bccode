@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Search, X } from "lucide-react";
+import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
+import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
+import type { LanguageCode } from "@/lib/i18n";
+import type { GLTextFn } from "@/lib/general-ledger";
 import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { Button } from "@/components/ui/button";
 import { glAllRecords, glCommand, glRequest } from "@/lib/general-ledger-api";
@@ -9,6 +13,29 @@ import { accountName, sortAccountsHierarchically, type GLAccount, type GLCommand
 import { AccountSearchDialog } from "./account-search-dialog";
 
 export { AccountSearchDialog } from "./account-search-dialog";
+
+// Screen text follows the selected language (AGENTS.md rule 2026-09-14): every
+// user-visible string is an English key resolved from backend languages.tsv, with
+// the Thai source text as fallback while the dictionary loads.
+export type { GLTextFn };
+const GLLanguageContext = createContext<{ language: LanguageCode; dictionary: BackendLanguageDictionary }>({ language: "th", dictionary: {} });
+export function GLLanguageProvider({ language, children }: { language: LanguageCode; children: ReactNode }) {
+  const [backendUrl, setBackendUrl] = useState(() => getAuthSession()?.backendUrl ?? "");
+  useEffect(() => {
+    if (backendUrl) return;
+    let active = true;
+    void restoreAuthSession().then((session) => { if (active && session) setBackendUrl(session.backendUrl); });
+    return () => { active = false; };
+  }, [backendUrl]);
+  const dictionary = useBackendLanguage(language, backendUrl || undefined);
+  const value = useMemo(() => ({ language, dictionary }), [language, dictionary]);
+  return <GLLanguageContext.Provider value={value}>{children}</GLLanguageContext.Provider>;
+}
+export function useGLLanguage(): LanguageCode { return useContext(GLLanguageContext).language; }
+export function useGLText(): GLTextFn {
+  const { dictionary } = useContext(GLLanguageContext);
+  return useCallback((key: string, fallback: string) => backendText(dictionary, key, fallback), [dictionary]);
+}
 
 export const control = "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60";
 export const panel = "min-w-0 rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-sm";
@@ -87,8 +114,8 @@ export function SearchInput({
   onChange,
   onClear,
   onSearch,
-  placeholder = "ค้นหารหัสหรือชื่อ",
-  ariaLabel = "ค้นหารหัสหรือชื่อ",
+  placeholder: placeholderProp,
+  ariaLabel: ariaLabelProp,
   className = "min-w-28 flex-1",
   disabled = false,
   autoFocus = false,
@@ -105,6 +132,9 @@ export function SearchInput({
   autoFocus?: boolean;
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
+  const tr = useGLText();
+  const placeholder = placeholderProp ?? tr("gl_search_code_name", "ค้นหารหัสหรือชื่อ");
+  const ariaLabel = ariaLabelProp ?? tr("gl_search_code_name", "ค้นหารหัสหรือชื่อ");
   const localRef = useRef<HTMLInputElement>(null);
   const inputRef = externalRef ?? localRef;
 
@@ -143,8 +173,8 @@ export function SearchInput({
           tabIndex={-1}
           className="absolute right-2 top-1/2 -translate-y-1/2 z-10 inline-flex !size-7 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           onClick={handleClear}
-          title="ล้างข้อความค้นหา (Clean)"
-          aria-label="ล้างข้อความค้นหา"
+          title={tr("gl_clear_search_text_clean", "ล้างข้อความค้นหา (Clean)")}
+          aria-label={tr("gl_clear_search_text", "ล้างข้อความค้นหา")}
         >
           <X className="size-4" />
         </button>
@@ -339,7 +369,9 @@ export function AmountInput({
   );
 }
 
-export function AccountSelect({ value, onChange, accounts, label = "บัญชี", all = false, disabled = false, allowEmpty = true, field }: { value: string; onChange: (value: string) => void; accounts: GLAccount[]; label?: string; all?: boolean; disabled?: boolean; allowEmpty?: boolean; field?: string }) {
+export function AccountSelect({ value, onChange, accounts, label: labelProp, all = false, disabled = false, allowEmpty = true, field }: { value: string; onChange: (value: string) => void; accounts: GLAccount[]; label?: string; all?: boolean; disabled?: boolean; allowEmpty?: boolean; field?: string }) {
+  const tr = useGLText();
+  const label = labelProp ?? tr("gl_account", "บัญชี");
   const [dialogOpen, setDialogOpen] = useState(false);
   const sortedAccounts = useMemo(() => sortAccountsHierarchically(accounts), [accounts]);
   return (
@@ -362,9 +394,9 @@ export function AccountSelect({ value, onChange, accounts, label = "บัญช
             }
           }}
           disabled={disabled}
-          title={`${label} (คลิกหรือกด F2 เพื่อค้นหาผังบัญชีแบบเต็มจอ)`}
+          title={tr("gl_f2_full_coa_search", "{0} (คลิกหรือกด F2 เพื่อค้นหาผังบัญชีแบบเต็มจอ)").replace("{0}", String(label))}
         >
-          {allowEmpty && <option value="">เลือกบัญชี (กดค้นหาเพื่อเปิดจอใหญ่)</option>}
+          {allowEmpty && <option value="">{tr("gl_select_acct_search_full", "เลือกบัญชี (กดค้นหาเพื่อเปิดจอใหญ่)")}</option>}
           {sortedAccounts.filter((account) => all || account.allowposting && account.isactive).map((account) => {
             const level = account.effectiveLevel ?? account.level ?? 1;
             const indent = level > 1 ? `${"\u00A0\u00A0".repeat(level - 1)}└─ ` : "";
@@ -382,8 +414,8 @@ export function AccountSelect({ value, onChange, accounts, label = "บัญช
                 onChange("");
               }}
               className="inline-flex !size-6 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted hover:text-foreground transition-colors cursor-pointer shrink-0"
-              title="ล้างค่าที่เลือก"
-              aria-label="ล้างค่าที่เลือก"
+              title={tr("gl_clear_selected_values", "ล้างค่าที่เลือก")}
+              aria-label={tr("gl_clear_selected_values", "ล้างค่าที่เลือก")}
             >
               <X className="size-3.5" />
             </button>
@@ -398,8 +430,8 @@ export function AccountSelect({ value, onChange, accounts, label = "บัญช
               setDialogOpen(true);
             }}
             className="inline-flex !size-7 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-[8px] border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50 cursor-pointer shadow-2xs shrink-0"
-            title="เปิดระบบค้นหาผังบัญชีแบบเต็มจอ (F2)"
-            aria-label="ค้นหาผังบัญชี"
+            title={tr("gl_open_fullscreen_coa_search_f2", "เปิดระบบค้นหาผังบัญชีแบบเต็มจอ (F2)")}
+            aria-label={tr("gl_search_coa", "ค้นหาผังบัญชี")}
           >
             <Search className="size-3.5" />
           </button>
@@ -413,14 +445,16 @@ export function AccountSelect({ value, onChange, accounts, label = "บัญช
         accounts={accounts}
         selectedCode={value}
         all={all}
-        title={`ค้นหาและเลือก${label}`}
+        title={tr("gl_search_and_select", "ค้นหาและเลือก{0}").replace("{0}", String(label))}
         allowEmpty={allowEmpty}
       />
     </>
   );
 }
-export function YearSelect({ value, onChange, years, label = "ปีบัญชี", disabled = false }: { value: string; onChange: (value: string) => void; years: GLFiscalYear[]; label?: string; disabled?: boolean }) {
-  return <select aria-label={label} className={control} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}><option value="">เลือกปีบัญชี</option>{years.map((year) => <option key={year.id ?? year.code} value={year.code}>{year.code} · {year.currency}{year.closed ? " · ปิดแล้ว" : ""}</option>)}</select>;
+export function YearSelect({ value, onChange, years, label: labelProp, disabled = false }: { value: string; onChange: (value: string) => void; years: GLFiscalYear[]; label?: string; disabled?: boolean }) {
+  const tr = useGLText();
+  const label = labelProp ?? tr("gl_fiscal_year", "ปีบัญชี");
+  return <select aria-label={label} className={control} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}><option value="">{tr("gl_select_fiscal_year", "เลือกปีบัญชี")}</option>{years.map((year) => <option key={year.id ?? year.code} value={year.code}>{year.code} · {year.currency}{year.closed ? ` · ${tr("gl_closed", "ปิดแล้ว")}` : ""}</option>)}</select>;
 }
 export function useReferences(refresh = 0) {
   const [revision, setRevision] = useState(0);
@@ -447,19 +481,21 @@ export function useGLList<T extends GLRecord>(resource: GLResource, query = "", 
   return { data, loading, error, page, setPage, reload };
 }
 export function Pager({ page, total, onPage, loading, limit = 30 }: { page: number; total: number; onPage: (page: number) => void; loading: boolean; limit?: number }) {
-  return <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2 text-[0.95rem]"><span>{total.toLocaleString("th-TH")} รายการ · หน้า {page}</span><div className="flex gap-2"><Button className={actionClass} variant="outline" disabled={loading || page <= 1} onClick={() => onPage(page - 1)}>ก่อนหน้า</Button><Button className={actionClass} variant="outline" disabled={loading || page * limit >= total} onClick={() => onPage(page + 1)}>ถัดไป</Button></div></div>;
+  const tr = useGLText();
+  return <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2 text-[0.95rem]"><span>{tr("gl_items_page", "{0} รายการ · หน้า {1}").replace("{0}", String(total.toLocaleString("th-TH"))).replace("{1}", String(page))}</span><div className="flex gap-2"><Button className={actionClass} variant="outline" disabled={loading || page <= 1} onClick={() => onPage(page - 1)}>{tr("gl_prev", "ก่อนหน้า")}</Button><Button className={actionClass} variant="outline" disabled={loading || page * limit >= total} onClick={() => onPage(page + 1)}>{tr("gl_next", "ถัดไป")}</Button></div></div>;
 }
 export function useGLCommand() {
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false), retry = useRef({ body: "", id: "" });
+  const tr = useGLText();
   const execute = useCallback(async (command: Omit<GLCommand, "requestid">) => {
-    if (inFlight.current) throw new Error("กำลังบันทึก กรุณารอสักครู่");
+    if (inFlight.current) throw new Error(tr("gl_saving_please_wait", "กำลังบันทึก กรุณารอสักครู่"));
     inFlight.current = true; setBusy(true);
     const body = JSON.stringify(command);
     if (retry.current.body !== body) retry.current = { body, id: crypto.randomUUID() };
     try { const result = await glCommand(command, retry.current.id); retry.current = { body: "", id: "" }; return result; }
     finally { inFlight.current = false; setBusy(false); }
-  }, []);
+  }, [tr]);
   return { busy, execute };
 }
 export function useDirtyGuard(route: string, dirty: boolean) {
@@ -471,13 +507,14 @@ export function useDirtyGuard(route: string, dirty: boolean) {
   }, [route, dirty]);
 }
 export function SplitWorkbench({ list, editor, className }: { list: ReactNode; editor: ReactNode; className?: string }) {
+  const tr = useGLText();
   const [width, setWidth] = useState(38), container = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   useEffect(() => { const saved = localStorage.getItem("bc_gl_split_percent"); if (saved && /^\d+$/.test(saved)) setWidth(Math.min(65, Math.max(25, Number(saved)))); }, []);
   const update = (value: number) => { const next = Math.round(Math.min(65, Math.max(25, value))); setWidth(next); localStorage.setItem("bc_gl_split_percent", String(next)); };
   return <div ref={container} className={`flex min-w-0 flex-1 flex-col gap-2 xl:flex-row xl:h-full xl:min-h-0 ${className ?? ""}`} style={{ "--gl-list-width": `${width}%` } as CSSProperties}>
     <div data-gl-pane="list" className={`${panel} flex flex-col min-h-0 w-full xl:w-[var(--gl-list-width)] xl:shrink-0`}>{list}</div>
-    <ResizableSplitter breakpoint="xl" value={width} min={25} max={65} label="ปรับความกว้างรายการบัญชี" onDoubleClick={() => update(38)} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) { event.preventDefault(); update(event.key === "Home" ? 25 : event.key === "End" ? 65 : width + (event.key === "ArrowLeft" ? -2 : 2)); } }}
+    <ResizableSplitter breakpoint="xl" value={width} min={25} max={65} label={tr("gl_adjust_acct_list_width", "ปรับความกว้างรายการบัญชี")} onDoubleClick={() => update(38)} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) { event.preventDefault(); update(event.key === "Home" ? 25 : event.key === "End" ? 65 : width + (event.key === "ArrowLeft" ? -2 : 2)); } }}
       onPointerDown={(event) => { dragging.current = true; event.currentTarget.setPointerCapture(event.pointerId); }} onPointerUp={() => { dragging.current = false; }} onPointerCancel={() => { dragging.current = false; }} onPointerMove={(event) => { if (dragging.current && container.current) { const rect = container.current.getBoundingClientRect(); update((event.clientX - rect.left) / rect.width * 100); } }} />
     <div data-gl-pane="editor" className={`${panel} flex flex-col min-h-0 flex-1`}>{editor}</div>
   </div>;

@@ -45,8 +45,19 @@ export type GLCommand = {
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "cashflow", "cashflowforecast", "financialgraphs", "project-pnl", "dimensionpnl", "projectsummary", "dashboard", "executivesummary", "workingpaper", "daily-check", "annual-balances"] as const;
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items);
 export function isGeneralLedgerRoute(route: string) { return GL_MENU_ITEMS.some((item) => item.route === route.split("?")[0]); }
-export const accountTypes = { asset: "สินทรัพย์", liability: "หนี้สิน", equity: "ส่วนของเจ้าของ", income: "รายได้", expense: "ค่าใช้จ่าย" };
-export const books = { JV: "รายวันทั่วไป", UV: "รายวันขาย", SV: "รายวันซื้อ", RV: "รายวันรับเงิน", PV: "รายวันจ่ายเงิน" };
+/** Screen text follows the selected language (AGENTS.md 2026-09-14): [languages.tsv key, Thai fallback]. */
+export type GLLabel = readonly [key: string, thai: string];
+export type GLTextFn = (key: string, fallback: string) => string;
+export function labelText(labels: Record<string, GLLabel>, value: string, tr: GLTextFn, fallback = value) {
+  const label = labels[value]; return label ? tr(label[0], label[1]) : fallback;
+}
+export function thaiLabels<K extends string>(labels: Record<K, GLLabel>): Record<K, string> {
+  return Object.fromEntries(Object.entries<GLLabel>(labels).map(([code, label]) => [code, label[1]])) as Record<K, string>;
+}
+export const accountTypeLabels: Record<GLAccount["accounttype"], GLLabel> = { asset: ["gl_asset", "สินทรัพย์"], liability: ["gl_liability", "หนี้สิน"], equity: ["gl_equity", "ส่วนของเจ้าของ"], income: ["gl_revenue", "รายได้"], expense: ["gl_expense", "ค่าใช้จ่าย"] };
+export const bookLabels: Record<string, GLLabel> = { JV: ["gl_general_journal", "รายวันทั่วไป"], UV: ["gl_sales_journal", "รายวันขาย"], SV: ["gl_purchase_journal", "รายวันซื้อ"], RV: ["gl_cash_receipts_journal", "รายวันรับเงิน"], PV: ["gl_cash_payments_journal", "รายวันจ่ายเงิน"] };
+export const accountTypes = thaiLabels(accountTypeLabels);
+export const books = thaiLabels(bookLabels);
 export function accountName(account: GLAccount) { return account.names?.find((name) => name.code === "th")?.name ?? account.accountcode; }
 export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: "", normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1 }; }
 
@@ -199,22 +210,22 @@ export function journalTotals(lines: GLLine[]) {
   const credit = lines.reduce((sum, line) => sum + amountUnits(line.credit), 0n);
   return { debit, credit, difference: debit - credit };
 }
-export function validateJournal(journal: GLJournal, year: GLFiscalYear | undefined, accounts: GLAccount[]): string | null {
-  if (!journal.docno.trim() || !journal.date || !journal.description.trim()) return "กรุณาระบุเลขที่ วันที่ และคำอธิบายรายการ";
-  if (!year || !year.isactive || year.closed || journal.date < year.startdate || journal.date > year.enddate) return "กรุณาเลือกปีบัญชีที่เปิดใช้งานและวันที่ภายในปีบัญชี";
-  if (journal.currency !== year.currency) return "สกุลเงินต้องตรงกับปีบัญชี";
-  if (journal.lines.length < 2 || journal.lines.length > 500) return "รายการบัญชีต้องมี 2–500 บรรทัด";
+export function validateJournal(journal: GLJournal, year: GLFiscalYear | undefined, accounts: GLAccount[], tr: GLTextFn = (_key, fallback) => fallback): string | null {
+  if (!journal.docno.trim() || !journal.date || !journal.description.trim()) return tr("gl_required_no_date_description", "กรุณาระบุเลขที่ วันที่ และคำอธิบายรายการ");
+  if (!year || !year.isactive || year.closed || journal.date < year.startdate || journal.date > year.enddate) return tr("gl_select_active_fiscal_year_date", "กรุณาเลือกปีบัญชีที่เปิดใช้งานและวันที่ภายในปีบัญชี");
+  if (journal.currency !== year.currency) return tr("gl_currency_match_fiscal_year", "สกุลเงินต้องตรงกับปีบัญชี");
+  if (journal.lines.length < 2 || journal.lines.length > 500) return tr("gl_entries_2_500_lines", "รายการบัญชีต้องมี 2–500 บรรทัด");
   try {
     for (const [index, line] of journal.lines.entries()) {
       const account = accounts.find((item) => item.accountcode === line.accountcode);
-      if (!account?.isactive || !account.allowposting || account.isdeleted) return `บรรทัด ${index + 1}: เลือกบัญชีที่เปิดใช้งานและลงรายการได้`;
+      if (!account?.isactive || !account.allowposting || account.isdeleted) return tr("gl_line_select_active_account", "บรรทัด {0}: เลือกบัญชีที่เปิดใช้งานและลงรายการได้").replace("{0}", String(index + 1));
       const debit = amountUnits(line.debit), credit = amountUnits(line.credit);
-      if (debit < 0n || credit < 0n || (debit === 0n) === (credit === 0n)) return `บรรทัด ${index + 1}: ใส่ยอดมากกว่าศูนย์เพียงด้านเดียว`;
+      if (debit < 0n || credit < 0n || (debit === 0n) === (credit === 0n)) return tr("gl_line_enter_amount_one_side_only", "บรรทัด {0}: ใส่ยอดมากกว่าศูนย์เพียงด้านเดียว").replace("{0}", String(index + 1));
       const precision = 10n ** BigInt(8 - year.scale);
-      if (debit % precision !== 0n || credit % precision !== 0n) return `บรรทัด ${index + 1}: จำนวนเงินเกิน ${year.scale} ตำแหน่งทศนิยม`;
+      if (debit % precision !== 0n || credit % precision !== 0n) return tr("gl_line_amount_exceeds_decimal_places", "บรรทัด {0}: จำนวนเงินเกิน {1} ตำแหน่งทศนิยม").replace("{0}", String(index + 1)).replace("{1}", String(year.scale));
     }
-    if (journalTotals(journal.lines).difference !== 0n) return "ยอดเดบิตและเครดิตต้องเท่ากันก่อนบันทึก";
-  } catch (error) { return error instanceof Error ? error.message : "กรุณาตรวจสอบจำนวนเงิน"; }
+    if (journalTotals(journal.lines).difference !== 0n) return tr("gl_dr_cr_equal_before_save", "ยอดเดบิตและเครดิตต้องเท่ากันก่อนบันทึก");
+  } catch (error) { return error instanceof Error ? error.message : tr("gl_please_check_amount", "กรุณาตรวจสอบจำนวนเงิน"); }
   return null;
 }
 
@@ -275,21 +286,21 @@ export type GLStatementTemplate = GLIdentity & {
   rows: StatementRow[];
 };
 
-export const statementTypeLabels: Record<StatementType, string> = {
-  balance_sheet: "งบแสดงฐานะการเงิน (งบดุล)",
-  pnl: "งบกำไรขาดทุน",
-  production_cost: "งบต้นทุนผลิตและต้นทุนขาย",
-  cash_flow: "งบกระแสเงินสด",
-  custom: "งบการเงินกำหนดเอง",
+export const statementTypeLabels: Record<StatementType, GLLabel> = {
+  balance_sheet: ["gl_stmt_fin_position_bs", "งบแสดงฐานะการเงิน (งบดุล)"],
+  pnl: ["gl_income_statement", "งบกำไรขาดทุน"],
+  production_cost: ["gl_cost_prod_cogs_stmt", "งบต้นทุนผลิตและต้นทุนขาย"],
+  cash_flow: ["gl_cash_flow_stmt", "งบกระแสเงินสด"],
+  custom: ["gl_custom_fin_stmt", "งบการเงินกำหนดเอง"],
 };
 
-export const statementRowTypeLabels: Record<StatementRowType, string> = {
-  header: "หัวข้อ",
-  account: "ยอดบัญชี",
-  formula: "สูตรคำนวณ",
-  subtotal: "รวมยอด",
-  blank: "บรรทัดว่าง",
-  divider: "เส้นคั่น",
+export const statementRowTypeLabels: Record<StatementRowType, GLLabel> = {
+  header: ["gl_heading", "หัวข้อ"],
+  account: ["gl_account_balance", "ยอดบัญชี"],
+  formula: ["gl_calculation_formula", "สูตรคำนวณ"],
+  subtotal: ["gl_total_amount", "รวมยอด"],
+  blank: ["gl_blank_line_2", "บรรทัดว่าง"],
+  divider: ["gl_separator_line", "เส้นคั่น"],
 };
 
 export function emptyStatementTemplate(): GLStatementTemplate {

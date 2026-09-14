@@ -1229,3 +1229,29 @@ gl_post_journal	ผ่านรายการ	Post journal	过账	仕訳を転�
 **เหตุผลทางเทคนิค (Root Cause & Rationale)** — ไม่มี React context ของภาษา: แต่ละ page ถือ `language` state เอง (`main-menu-screen.tsx:488`) แล้วส่งให้จอลูกทาง prop (`:2816-2877`); dictionary ถูก cache ใน memory + localStorage และ re-fetch เมื่อภาษาเปลี่ยน (`backend-language.ts:109-172`) ดังนั้นจอที่ไม่เรียก `backendText` จะไม่ re-render ข้อความแม้ dictionary ใหม่มาแล้ว; `menuText()` ทำให้ชื่อแท็บเปลี่ยนแต่เนื้อในแท็บไม่เปลี่ยน ผู้ใช้จึงเห็นจอครึ่งไทยครึ่งอังกฤษ
 
 **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)** — `frontend/src/components/system-settings/utils.ts:599-613` (`fieldLabel` + map `fieldBackendKeys` 72 รายการ), เรียกจาก `system-settings-screen.tsx:4606,4872,5073`; `frontend/src/lib/menu-data.ts:641` (`menuText`); กฎบังคับใน `AGENTS.md` หัวข้อ "ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก"; งานย้ายจอเก่า: `docs/handoff/HANDOFF-2026-09-14.md` §2D
+
+### 8.25.1 แบบแผนที่ใช้จริงในโมดูล GL (ย้ายครบทั้งโมดูลแล้ว 2026-09-14 — ใช้เป็นต้นแบบกับโมดูลอื่น)
+
+**แบบแผน (Reference Implementation)**
+
+```tsx
+// 1) จอราก: ห่อด้วย provider ครั้งเดียว (frontend/src/app/gl/general-ledger-screen.tsx)
+<GLLanguageProvider language={language}><GeneralLedgerWorkbench route={route} embedded={embedded} /></GLLanguageProvider>
+// 2) ทุก component/hook ในโมดูล: ขอ tr จาก context (frontend/src/app/gl/gl-common.tsx: GLLanguageProvider / useGLText)
+const tr = useGLText();
+<Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ")}>
+setMessage(tr("gl_delete_draft_keep_history", "ลบฉบับร่าง {0} พร้อมเก็บประวัติ").replace("{0}", String(item.docno)));
+// 3) map ระดับ module (สถานะ/ประเภทบัญชี/สมุด/ปุ่ม process): เก็บเป็น GLLabel = [key, ไทย] แล้วแปลตอน render
+const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"] };
+{labelText(statusLabel, item.status, tr)}            // lib/general-ledger.ts: labelText / thaiLabels / accountTypeLabels / bookLabels
+// 4) ฟังก์ชัน validate ใน lib รับ tr เป็น parameter ท้าย (default = คืน fallback ไทย) → test เดิมไม่ต้องแก้
+validateJournal(journal, year, refs.accounts, tr)
+// 5) default ของ prop ห้ามเรียก tr ใน signature (hook ยังไม่ถูกเรียก) → รับเป็น labelProp แล้ว resolve ในตัว
+export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); const label = labelProp ?? tr("gl_fiscal_year", "ปีบัญชี"); ... }
+```
+
+**ตัวกันถอยหลัง** — `frontend/src/app/gl/gl-language-keys.test.ts`: (ก) ทุก `"gl_*"` ที่ปรากฏใน `app/gl/*.tsx` + `lib/general-ledger.ts` ต้องมีแถวใน `languages.tsv` ครบ 12 ภาษา (ข) ไฟล์ `app/gl/*.tsx` ห้ามมีอักษรไทยนอก `tr("gl_x", "ไทย")` หรือ tuple `["gl_x", "ไทย"]` — เพิ่ม key ใหม่ต้องเพิ่มแถว tsv ใน commit เดียวกัน ไม่งั้น test แดง
+
+**กับดักที่เจอตอนย้าย** — (1) เครื่องมือแทนที่อัตโนมัติห้ามแตะบรรทัด signature ของ component (default param) และห้ามห่อ `tr()` ซ้อนกัน (2) template literal ที่มี `${...}` ให้แปลงเป็นข้อความ placeholder `{0} {1}` แล้ว `.replace` ทีละตัว — ห้ามต่อสตริงแปลเป็นชิ้น ๆ เพราะลำดับคำต่างกันในแต่ละภาษา (3) JSX ที่มีข้อความคั่นด้วย element เช่น `พบ <strong>{n}</strong> จาก {m} บัญชี` ให้ `tr(...).split("{0}")` แล้วประกอบ element กลับ (4) ข้อความที่ผู้ใช้แก้ได้ (ชื่อแถวในแม่แบบงบสำเร็จรูป `lib/general-ledger.ts` starter templates) เป็นข้อมูล ไม่ใช่ป้าย — ไม่ต้องย้าย (5) dictionary ใน container local โหลดครั้งเดียว: แก้ tsv แล้วต้อง `docker cp` + `docker restart mainapi` ก่อนดูผลบนจอ (6) DeepSeek แปลชุดใหญ่ (45 ข้อความ × 12 ภาษา) จะเกิน budget แล้ว JSON ขาด — ส่งชุดละ ≤ 15 แล้วตรวจจำนวนแถว/ช่องว่างก่อนใช้
+
+**วิธีตรวจ** — เปิดจอ GL → กดเลือกภาษา th → en → ja แล้ว `find` ป้ายเดียวกัน (เช่น ชื่อบัญชีภาษาอังกฤษ → Account Name (English) → 勘定科目名（英語）) + `npx vitest run src/app/gl` เขียว

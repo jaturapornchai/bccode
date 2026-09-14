@@ -1,5 +1,6 @@
 "use client";
 
+import { useGLText } from "./gl-common";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Search,
@@ -17,7 +18,10 @@ import { Button } from "@/components/ui/button";
 import {
   type GLAccount,
   accountName,
+  accountTypeLabels,
   accountTypes,
+  labelText,
+  type GLLabel,
   sortAccountsHierarchically,
 } from "@/lib/general-ledger";
 
@@ -36,13 +40,13 @@ export interface AccountSearchDialogProps {
   allowEmpty?: boolean;
 }
 
-const CATEGORY_TABS: { key: string; label: string; type?: GLAccount["accounttype"] }[] = [
-  { key: "all", label: "ทั้งหมด" },
-  { key: "asset", label: "1. สินทรัพย์", type: "asset" },
-  { key: "liability", label: "2. หนี้สิน", type: "liability" },
-  { key: "equity", label: "3. ส่วนของเจ้าของ", type: "equity" },
-  { key: "income", label: "4. รายได้", type: "income" },
-  { key: "expense", label: "5. ค่าใช้จ่าย", type: "expense" },
+const CATEGORY_TABS: { key: string; label: GLLabel; type?: GLAccount["accounttype"] }[] = [
+  { key: "all", label: ["gl_all", "ทั้งหมด"] },
+  { key: "asset", label: ["gl_1_assets", "1. สินทรัพย์"], type: "asset" },
+  { key: "liability", label: ["gl_2_liabilities", "2. หนี้สิน"], type: "liability" },
+  { key: "equity", label: ["gl_3_equity", "3. ส่วนของเจ้าของ"], type: "equity" },
+  { key: "income", label: ["gl_4_revenue", "4. รายได้"], type: "income" },
+  { key: "expense", label: ["gl_5_expenses", "5. ค่าใช้จ่าย"], type: "expense" },
 ];
 
 export function AccountSearchDialog({
@@ -55,9 +59,11 @@ export function AccountSearchDialog({
   selectedCodes = [],
   multiSelect = false,
   all = false,
-  title = "ค้นหาและเลือกผังบัญชี (Chart of Accounts)",
+  title: titleProp,
   allowEmpty = true,
 }: AccountSearchDialogProps) {
+  const tr = useGLText();
+  const title = titleProp ?? tr("gl_search_select_coa", "ค้นหาและเลือกผังบัญชี (Chart of Accounts)");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [onlyPosting, setOnlyPosting] = useState<boolean>(false);
@@ -285,17 +291,16 @@ export function AccountSearchDialog({
               </h2>
               <p className="text-xs text-muted-foreground flex items-center gap-2">
                 <span>
-                  พบ <strong className="text-primary font-semibold">{filteredAccounts.length}</strong> จาก{" "}
-                  {accounts.length} บัญชี
+                  {(() => { const [before, after = ""] = tr("gl_found_x_of_y_accounts", "พบ {0} จาก {1} บัญชี").split("{0}"); return <>{before}<strong className="text-primary font-semibold">{filteredAccounts.length}</strong>{after.replace("{1}", String(accounts.length))}</>; })()}
                 </span>
                 {multiSelect && (
                   <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                    เลือกอยู่ {multiChecked.size} บัญชี
+                    {tr("gl_selected_accounts_2", "เลือกอยู่ {0} บัญชี").replace("{0}", String(multiChecked.size))}
                   </span>
                 )}
                 {onlyPosting && (
                   <span className="hidden sm:inline-block rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                    เฉพาะบัญชีลงรายการ
+                    {tr("gl_postable_accounts_only", "เฉพาะบัญชีลงรายการ")}
                   </span>
                 )}
               </p>
@@ -309,7 +314,7 @@ export function AccountSearchDialog({
               size="icon"
               className="size-9 rounded-xl hover:bg-muted"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              title={isFullscreen ? "ย่อหน้าต่างลง" : "ขยายเต็มจอ"}
+              title={isFullscreen ? tr("gl_minimize_window", "ย่อหน้าต่างลง") : tr("gl_maximize_fullscreen", "ขยายเต็มจอ")}
             >
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>
@@ -319,7 +324,7 @@ export function AccountSearchDialog({
               size="icon"
               className="size-9 rounded-xl hover:bg-destructive/10 hover:text-destructive"
               onClick={onClose}
-              title="ปิดหน้าต่าง (Esc)"
+              title={tr("gl_close_window", "ปิดหน้าต่าง (Esc)")}
             >
               <X className="size-5" />
             </Button>
@@ -334,7 +339,7 @@ export function AccountSearchDialog({
               ref={searchInputRef}
               type="text"
               className="w-full rounded-xl border border-input bg-card py-2.5 !pl-11 !pr-10 text-base sm:text-lg text-foreground placeholder:text-muted-foreground/80 focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/25 transition-all"
-              placeholder="พิมพ์ค้นหารหัสบัญชี เช่น 1101, ชื่อบัญชี เช่น เงินสด, เงินฝาก, ลูกหนี้... (↑ ↓ เลื่อน, Enter เลือก)"
+              placeholder={tr("gl_search_account_hint", "พิมพ์ค้นหารหัสบัญชี เช่น 1101, ชื่อบัญชี เช่น เงินสด, เงินฝาก, ลูกหนี้... (↑ ↓ เลื่อน, Enter เลือก)")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -347,7 +352,7 @@ export function AccountSearchDialog({
                   setSearch("");
                   searchInputRef.current?.focus();
                 }}
-                title="ล้างคำค้นหา"
+                title={tr("gl_clear_search", "ล้างคำค้นหา")}
               >
                 <X className="size-4" />
               </button>
@@ -372,7 +377,7 @@ export function AccountSearchDialog({
                         : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
-                    <span>{tab.label}</span>
+                    <span>{tr(...tab.label)}</span>
                     <span
                       className={`rounded-full px-1.5 py-0.2 text-[11px] ${
                         active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background/80 text-muted-foreground"
@@ -394,7 +399,7 @@ export function AccountSearchDialog({
                   onChange={(e) => setOnlyPosting(e.target.checked)}
                   className="size-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
                 />
-                <span>เฉพาะบัญชีลงรายการ</span>
+                <span>{tr("gl_postable_accounts_only", "เฉพาะบัญชีลงรายการ")}</span>
               </label>
 
               <select
@@ -402,12 +407,12 @@ export function AccountSearchDialog({
                 onChange={(e) => setLevelFilter(e.target.value)}
                 className="rounded-lg border border-border bg-background px-2 py-1 text-xs sm:text-sm text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary/30"
               >
-                <option value="all">ทุกระดับบัญชี</option>
-                <option value="level-1">ระดับ 1 (บัญชีคุมหลัก)</option>
-                <option value="level-sub">ระดับ 2 ขึ้นไป (บัญชีย่อย)</option>
-                <option value="lvl-2">เฉพาะระดับ 2</option>
-                <option value="lvl-3">เฉพาะระดับ 3</option>
-                <option value="lvl-4">เฉพาะระดับ 4</option>
+                <option value="all">{tr("gl_all_account_levels", "ทุกระดับบัญชี")}</option>
+                <option value="level-1">{tr("gl_level1_control_account", "ระดับ 1 (บัญชีคุมหลัก)")}</option>
+                <option value="level-sub">{tr("gl_level2_up_sub_account", "ระดับ 2 ขึ้นไป (บัญชีย่อย)")}</option>
+                <option value="lvl-2">{tr("gl_only_level2", "เฉพาะระดับ 2")}</option>
+                <option value="lvl-3">{tr("gl_only_level3", "เฉพาะระดับ 3")}</option>
+                <option value="lvl-4">{tr("gl_only_level4", "เฉพาะระดับ 4")}</option>
               </select>
             </div>
           </div>
@@ -420,9 +425,9 @@ export function AccountSearchDialog({
               <span className="grid size-12 place-items-center rounded-2xl bg-muted text-muted-foreground mb-3">
                 <Search className="size-6" />
               </span>
-              <p className="text-base font-semibold text-foreground">ไม่พบผังบัญชีที่ตรงกับเงื่อนไข</p>
+              <p className="text-base font-semibold text-foreground">{tr("gl_no_coa_match_criteria", "ไม่พบผังบัญชีที่ตรงกับเงื่อนไข")}</p>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                ลองตรวจสอบตัวสะกด หรือเปลี่ยนหมวดบัญชี หรือปิดตัวเลือก &quot;เฉพาะบัญชีลงรายการ&quot;
+                {tr("gl_try_spelling_category_posting_only", "ลองตรวจสอบตัวสะกด หรือเปลี่ยนหมวดบัญชี หรือปิดตัวเลือก \"เฉพาะบัญชีลงรายการ\"")}
               </p>
               {(search || category !== "all" || !onlyPosting || levelFilter !== "all") && (
                 <Button
@@ -437,7 +442,7 @@ export function AccountSearchDialog({
                     setLevelFilter("all");
                   }}
                 >
-                  ล้างตัวกรองทั้งหมด
+                  {tr("gl_clear_all_filters", "ล้างตัวกรองทั้งหมด")}
                 </Button>
               )}
             </div>
@@ -446,14 +451,14 @@ export function AccountSearchDialog({
               <table className="w-full border-collapse text-left text-sm leading-normal">
                 <thead>
                   <tr className="border-b border-border bg-muted/60 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {multiSelect && <th className="py-2.5 px-3 w-12 text-center">เลือก</th>}
-                    <th className="py-2.5 px-3 w-36">รหัสบัญชี</th>
-                    <th className="py-2.5 px-3 min-w-[240px]">ชื่อบัญชี</th>
-                    <th className="py-2.5 px-3 w-32">หมวดบัญชี</th>
-                    <th className="py-2.5 px-3 w-24 text-center">ระดับ</th>
-                    <th className="py-2.5 px-3 w-24 text-center">ด้านปกติ</th>
-                    <th className="py-2.5 px-3 w-28 text-center">สิทธิ์ลงรายการ</th>
-                    <th className="py-2.5 px-3 w-28 text-right">ดำเนินการ</th>
+                    {multiSelect && <th className="py-2.5 px-3 w-12 text-center">{tr("gl_select", "เลือก")}</th>}
+                    <th className="py-2.5 px-3 w-36">{tr("gl_account_code", "รหัสบัญชี")}</th>
+                    <th className="py-2.5 px-3 min-w-[240px]">{tr("gl_account_name", "ชื่อบัญชี")}</th>
+                    <th className="py-2.5 px-3 w-32">{tr("gl_account_category", "หมวดบัญชี")}</th>
+                    <th className="py-2.5 px-3 w-24 text-center">{tr("gl_level", "ระดับ")}</th>
+                    <th className="py-2.5 px-3 w-24 text-center">{tr("gl_normal_side", "ด้านปกติ")}</th>
+                    <th className="py-2.5 px-3 w-28 text-center">{tr("gl_posting_rights", "สิทธิ์ลงรายการ")}</th>
+                    <th className="py-2.5 px-3 w-28 text-right">{tr("gl_process_2", "ดำเนินการ")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -550,23 +555,23 @@ export function AccountSearchDialog({
                               typeBadgeColors[acc.accounttype] ?? "bg-muted text-muted-foreground border-border"
                             }`}
                           >
-                            {accountTypes[acc.accounttype] ?? acc.accounttype}
+                            {labelText(accountTypeLabels, acc.accounttype, tr)}
                           </span>
                         </td>
 
                         {/* Level */}
                         <td className="py-2.5 px-3 text-center whitespace-nowrap">
                           <span className="inline-flex items-center justify-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                            ระดับ {level}
+                            {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(level))}
                           </span>
                         </td>
 
                         {/* Normal Balance */}
                         <td className="py-2.5 px-3 text-center whitespace-nowrap text-xs text-muted-foreground">
                           {acc.normalbalance === "debit" ? (
-                            <span className="text-blue-600 dark:text-blue-400 font-medium">เดบิต</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-medium">{tr("gl_debit", "เดบิต")}</span>
                           ) : (
-                            <span className="text-purple-600 dark:text-purple-400 font-medium">เครดิต</span>
+                            <span className="text-purple-600 dark:text-purple-400 font-medium">{tr("gl_credit", "เครดิต")}</span>
                           )}
                         </td>
 
@@ -575,12 +580,12 @@ export function AccountSearchDialog({
                           {acc.allowposting ? (
                             <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                               <ShieldCheck className="size-3.5" />
-                              ลงรายการ
+                              {tr("gl_post_entry", "ลงรายการ")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                               <FolderOpen className="size-3.5" />
-                              บัญชีคุม
+                              {tr("gl_control_account", "บัญชีคุม")}
                             </span>
                           )}
                         </td>
@@ -600,15 +605,15 @@ export function AccountSearchDialog({
                             >
                               {isChecked ? (
                                 <span className="flex items-center gap-1">
-                                  <Check className="size-3.5" /> เลือกแล้ว
+                                  <Check className="size-3.5" /> {tr("gl_selected", "เลือกแล้ว")}
                                 </span>
                               ) : (
-                                "เลือก"
+                                tr("gl_select", "เลือก")
                               )}
                             </Button>
                           ) : !all && !acc.allowposting ? (
                             <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground select-none">
-                              <FolderOpen className="size-3" /> บัญชีคุม
+                              <FolderOpen className="size-3" /> {tr("gl_control_account", "บัญชีคุม")}
                             </span>
                           ) : (
                             <Button
@@ -623,10 +628,10 @@ export function AccountSearchDialog({
                             >
                               {isSelected ? (
                                 <span className="flex items-center gap-1">
-                                  <Check className="size-3.5" /> บัญชีนี้
+                                  <Check className="size-3.5" /> {tr("gl_this_account", "บัญชีนี้")}
                                 </span>
                               ) : (
-                                "เลือก"
+                                tr("gl_select", "เลือก")
                               )}
                             </Button>
                           )}
@@ -650,21 +655,21 @@ export function AccountSearchDialog({
               <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground">
                 ↓
               </kbd>
-              <span>เลื่อนแถว</span>
+              <span>{tr("gl_move_row", "เลื่อนแถว")}</span>
             </span>
             <span className="flex items-center gap-1">
               <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground">
                 Enter
               </kbd>
-              <span>{multiSelect ? "สลับเลือก" : "เลือกบัญชี"}</span>
+              <span>{multiSelect ? tr("gl_toggle_selection", "สลับเลือก") : tr("gl_select_account", "เลือกบัญชี")}</span>
             </span>
             <span className="flex items-center gap-1">
               <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground">
                 Esc
               </kbd>
-              <span>ปิดหน้าต่าง</span>
+              <span>{tr("gl_close_window_2", "ปิดหน้าต่าง")}</span>
             </span>
-            <span className="hidden sm:inline-block">| ดับเบิ้ลคลิกเพื่อเลือก</span>
+            <span className="hidden sm:inline-block">{tr("gl_double_click_to_select", "| ดับเบิ้ลคลิกเพื่อเลือก")}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -679,7 +684,7 @@ export function AccountSearchDialog({
                   onClose();
                 }}
               >
-                ล้างค่าที่เลือก
+                {tr("gl_clear_selected_values", "ล้างค่าที่เลือก")}
               </Button>
             )}
             <Button
@@ -689,7 +694,7 @@ export function AccountSearchDialog({
               className="rounded-xl"
               onClick={onClose}
             >
-              ยกเลิก (Esc)
+              {tr("gl_cancel_esc", "ยกเลิก (Esc)")}
             </Button>
             {multiSelect ? (
               <Button
@@ -699,7 +704,7 @@ export function AccountSearchDialog({
                 className="rounded-xl"
                 onClick={confirmMultiSelect}
               >
-                ตกลงเลือก ({multiChecked.size} บัญชี)
+                {tr("gl_ok_select_accounts", "ตกลงเลือก ({0} บัญชี)").replace("{0}", String(multiChecked.size))}
               </Button>
             ) : (
               <Button
@@ -712,7 +717,7 @@ export function AccountSearchDialog({
                   if (currentHighlighted) selectSingleAccount(currentHighlighted);
                 }}
               >
-                เลือกบัญชีนี้ (Enter)
+                {tr("gl_select_this_account_enter", "เลือกบัญชีนี้ (Enter)")}
               </Button>
             )}
           </div>
