@@ -28,6 +28,7 @@ import (
 	access "smlcloudplatform/internal/organization/access"
 	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	rolemodels "smlcloudplatform/internal/organization/rolepermission/models"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -261,19 +262,38 @@ func response(request microservice.IContext, data interface{}) error {
 	return nil
 }
 
+func getRequestLanguage(ctx microservice.IContext) string {
+	if lang := ctx.QueryParam("lang"); lang != "" {
+		return lang
+	}
+	if lang := ctx.Header("Accept-Language"); lang != "" {
+		return lang
+	}
+	return "th"
+}
+
 // errorPayload is an alias to apperr.Response to align GL error responses
 // with the standard application error envelope across all microservices.
 type errorPayload = apperr.Response
 
 // errorPayloadFor maps a command error to (HTTP status, error contract body).
 // User-caused failures (guards, duplicate codes, validation) are reported as
-// 409 (or 404 for missing records) with a Thai message; anything else stays a
-// server problem (503) and is logged by failure().
-func errorPayloadFor(err error) (int, errorPayload) {
+// 409 (or 404 for missing records) with translated message via language.Text(key, lang);
+// anything else stays a server problem (503) and is logged by failure().
+func errorPayloadFor(err error, lang ...string) (int, errorPayload) {
+	reqLang := "th"
+	if len(lang) > 0 && lang[0] != "" {
+		reqLang = lang[0]
+	}
+
 	if errors.Is(err, gl.ErrProjectionPending) {
+		msg := language.Text("gl_err_projection_pending", reqLang)
+		if msg == "gl_err_projection_pending" {
+			msg = err.Error()
+		}
 		appErr := &apperr.AppError{
 			Code:       "projection_pending",
-			Message:    err.Error(),
+			Message:    msg,
 			ThaiMsg:    err.Error(),
 			HTTPStatus: http.StatusConflict,
 		}
@@ -282,14 +302,32 @@ func errorPayloadFor(err error) (int, errorPayload) {
 		return http.StatusConflict, res
 	}
 	if user, ok := gl.AsUserError(err); ok {
-		appErr := user.ToAppError()
+		msg := user.Message
+		if reqLang != "th" {
+			key := "gl_err_" + user.Code
+			translated := language.Text(key, reqLang)
+			if translated != "" && translated != key {
+				msg = translated
+			}
+		}
+		appErr := &apperr.AppError{
+			Code:       user.Code,
+			Message:    msg,
+			ThaiMsg:    user.Message,
+			HTTPStatus: user.HTTPStatus(),
+		}
 		return appErr.StatusCode(), appErr.ToResponse()
 	}
 	if errors.Is(err, gl.ErrNotFound) {
+		fallbackMsg := "ไม่พบรายการบัญชีในบริษัทหรือสาขานี้"
+		msg := language.Text("gl_err_not_found", reqLang)
+		if msg == "gl_err_not_found" {
+			msg = fallbackMsg
+		}
 		appErr := &apperr.AppError{
 			Code:       "not_found",
-			Message:    "ไม่พบรายการบัญชีในบริษัทหรือสาขานี้",
-			ThaiMsg:    "ไม่พบรายการบัญชีในบริษัทหรือสาขานี้",
+			Message:    msg,
+			ThaiMsg:    fallbackMsg,
 			HTTPStatus: http.StatusNotFound,
 		}
 		return http.StatusNotFound, appErr.ToResponse()
@@ -304,10 +342,15 @@ func errorPayloadFor(err error) (int, errorPayload) {
 		}
 		return http.StatusConflict, appErr.ToResponse()
 	}
+	fallbackUnavailable := "ระบบบัญชียังไม่พร้อม กรุณาลองใหม่ หากยังไม่สำเร็จให้ผู้ดูแลตรวจการเชื่อมต่อฐานข้อมูล"
+	unavailMsg := language.Text("gl_err_unavailable", reqLang)
+	if unavailMsg == "gl_err_unavailable" {
+		unavailMsg = fallbackUnavailable
+	}
 	appErr := &apperr.AppError{
 		Code:       "unavailable",
-		Message:    "ระบบบัญชียังไม่พร้อม กรุณาลองใหม่ หากยังไม่สำเร็จให้ผู้ดูแลตรวจการเชื่อมต่อฐานข้อมูล",
-		ThaiMsg:    "ระบบบัญชียังไม่พร้อม กรุณาลองใหม่ หากยังไม่สำเร็จให้ผู้ดูแลตรวจการเชื่อมต่อฐานข้อมูล",
+		Message:    unavailMsg,
+		ThaiMsg:    fallbackUnavailable,
 		HTTPStatus: http.StatusServiceUnavailable,
 	}
 	return http.StatusServiceUnavailable, appErr.ToResponse()
@@ -337,49 +380,78 @@ func fallbackCode(status int) string {
 var errMultipleCommands = errors.New("ส่งข้อมูลบัญชีได้ครั้งละหนึ่งคำสั่ง")
 
 // decodeFailure is the response for a body the ledger cannot read: a user-caused
-// 400 with the stable invalid_payload code and a Thai message (the raw English
+// 400 with the stable invalid_payload code and a translated message (the raw English
 // decoder text is logged, never shown).
-func decodeFailure(err error) errorPayload {
-	msg := decodeErrorMessage(err)
+func decodeFailure(err error, lang ...string) errorPayload {
+	reqLang := "th"
+	if len(lang) > 0 && lang[0] != "" {
+		reqLang = lang[0]
+	}
+	msg := decodeErrorMessage(err, reqLang)
 	appErr := &apperr.AppError{
 		Code:       "invalid_payload",
 		Message:    msg,
-		ThaiMsg:    msg,
+		ThaiMsg:    decodeErrorMessage(err, "th"),
 		HTTPStatus: http.StatusBadRequest,
 	}
 	return appErr.ToResponse()
 }
 
-// decodeErrorMessage explains a JSON decode failure in Thai without leaking the
+// decodeErrorMessage explains a JSON decode failure with language fallback without leaking the
 // decoder's English text, its struct names or field types.
-func decodeErrorMessage(err error) string {
+func decodeErrorMessage(err error, lang ...string) string {
+	reqLang := "th"
+	if len(lang) > 0 && lang[0] != "" {
+		reqLang = lang[0]
+	}
+	fallbackInvalid := "รูปแบบข้อมูลบัญชีไม่ถูกต้อง"
+	invalidMsg := language.Text("gl_err_invalid_payload", reqLang)
+	if invalidMsg == "gl_err_invalid_payload" {
+		invalidMsg = fallbackInvalid
+	}
+
 	if err == nil {
-		return "รูปแบบข้อมูลบัญชีไม่ถูกต้อง"
+		return invalidMsg
 	}
 	var typeErr *json.UnmarshalTypeError
 	if errors.As(err, &typeErr) {
 		if typeErr.Field != "" {
 			if isAmountField(typeErr.Field) {
-				return amountFieldMessage
+				return getAmountFieldMessage(reqLang)
 			}
-			return fmt.Sprintf("รูปแบบข้อมูลบัญชีไม่ถูกต้อง: ชนิดข้อมูลของฟิลด์ %s ไม่ถูกต้อง", typeErr.Field)
+			if reqLang == "th" {
+				return fmt.Sprintf("รูปแบบข้อมูลบัญชีไม่ถูกต้อง: ชนิดข้อมูลของฟิลด์ %s ไม่ถูกต้อง", typeErr.Field)
+			}
+			return fmt.Sprintf("%s: %s", invalidMsg, typeErr.Field)
 		}
-		return "รูปแบบข้อมูลบัญชีไม่ถูกต้อง: ชนิดข้อมูลไม่ถูกต้อง"
+		if reqLang == "th" {
+			return "รูปแบบข้อมูลบัญชีไม่ถูกต้อง: ชนิดข้อมูลไม่ถูกต้อง"
+		}
+		return invalidMsg
 	}
 	message := err.Error()
 	if _, after, ok := strings.Cut(message, "unknown field "); ok {
-		// The field itself is not accepted, so always name it; the amount wording
-		// must not be used here or the UI blames the value format instead.
 		field := strings.Trim(strings.TrimSpace(after), `"`)
-		return fmt.Sprintf("รูปแบบข้อมูลบัญชีไม่ถูกต้อง: ไม่รองรับฟิลด์ %s", field)
+		if reqLang == "th" {
+			return fmt.Sprintf("รูปแบบข้อมูลบัญชีไม่ถูกต้อง: ไม่รองรับฟิลด์ %s", field)
+		}
+		return fmt.Sprintf("%s: %s", invalidMsg, field)
 	}
 	if isAmountField(message) {
-		return amountFieldMessage
+		return getAmountFieldMessage(reqLang)
 	}
-	return "รูปแบบข้อมูลบัญชีไม่ถูกต้อง"
+	return invalidMsg
 }
 
 const amountFieldMessage = "รูปแบบข้อมูลบัญชีไม่ถูกต้อง จำนวนเงินต้องส่งเป็นข้อความทศนิยม"
+
+func getAmountFieldMessage(lang string) string {
+	msg := language.Text("gl_err_amount_decimal", lang)
+	if msg == "gl_err_amount_decimal" {
+		return amountFieldMessage
+	}
+	return msg
+}
 
 func isAmountField(text string) bool {
 	lower := strings.ToLower(text)
@@ -403,9 +475,41 @@ func decodeCommand(reader io.Reader) (gl.Command, error) {
 }
 
 func fail(request microservice.IContext, status int, message string) error {
+	lang := getRequestLanguage(request)
+	translated := message
+	switch message {
+	case "กรุณาเลือกบริษัทก่อนใช้งานบัญชี":
+		translated = language.Text("gl_err_select_company", lang)
+	case "ไม่มีสิทธิ์เข้าใช้บริษัทนี้":
+		translated = language.Text("gl_err_company_forbidden", lang)
+	case "ไม่มีสิทธิ์เข้าใช้สาขานี้":
+		translated = language.Text("gl_err_branch_forbidden", lang)
+	case "ไม่มีสิทธิ์อ่านข้อมูลบัญชีนี้":
+		translated = language.Text("gl_err_read_forbidden", lang)
+	case "ไม่มีสิทธิ์อ่านรายการบัญชีนี้":
+		translated = language.Text("gl_err_read_forbidden", lang)
+	case "ไม่มีสิทธิ์อ่านรายงานบัญชีนี้":
+		translated = language.Text("gl_err_report_forbidden", lang)
+	case "ไม่มีสิทธิ์ทำรายการบัญชีนี้":
+		translated = language.Text("gl_err_action_forbidden", lang)
+	case "เปลี่ยนสมุดรายวันหรือประเภทรายการเดิมไม่ได้":
+		translated = language.Text("gl_err_journal_book_immutable", lang)
+	case "ส่งข้อมูลบัญชีได้ครั้งละหนึ่งคำสั่ง":
+		translated = language.Text("gl_err_multiple_commands", lang)
+	case "รหัสกลุ่มบริษัทไม่ถูกต้อง":
+		translated = language.Text("gl_err_holding_invalid", lang)
+	default:
+		if strings.HasPrefix(message, "gl_err_") {
+			translated = language.Text(message, lang)
+		}
+	}
+	if translated == "" || strings.HasPrefix(translated, "gl_err_") {
+		translated = message
+	}
+
 	appErr := &apperr.AppError{
 		Code:       fallbackCode(status),
-		Message:    message,
+		Message:    translated,
 		ThaiMsg:    message,
 		HTTPStatus: status,
 	}
@@ -414,7 +518,8 @@ func fail(request microservice.IContext, status int, message string) error {
 }
 
 func failure(request microservice.IContext, err error) error {
-	status, payload := errorPayloadFor(err)
+	lang := getRequestLanguage(request)
+	status, payload := errorPayloadFor(err, lang)
 	if status >= 500 {
 		log.Printf("[gl/v2] ledger failure: %v", err)
 	}
@@ -572,7 +677,7 @@ func (h *Http) command(request microservice.IContext) error {
 	}
 	if err != nil {
 		log.Printf("[gl/v2] command body decode failed: %v", err)
-		request.Response(http.StatusBadRequest, decodeFailure(err))
+		request.Response(http.StatusBadRequest, decodeFailure(err, getRequestLanguage(request)))
 		return nil
 	}
 	screen := resourceScreens[cmd.Resource]

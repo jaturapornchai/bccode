@@ -8,6 +8,15 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — Backend GL Error i18n ผ่าน language.Text และ languages.tsv (Item 25)
+
+- [i18n] เพิ่มคีย์ข้อผิดพลาดของโมดูล GL 33 รายการ (`gl_err_duplicate_code`, `gl_err_duplicate_request`, `gl_err_validation_failed`, `gl_err_stale_version`, `gl_err_parent_not_found`, `gl_err_parent_invalid`, `gl_err_account_tree_invalid`, `gl_err_level_out_of_range`, `gl_err_level_not_deeper_than_parent`, `gl_err_account_has_children`, `gl_err_account_referenced`, `gl_err_account_referenced_master`, `gl_err_account_posted_immutable`, `gl_err_code_immutable`, `gl_err_account_group_not_found`, `gl_err_account_payload_required`, `gl_err_unsupported_command`, `gl_err_not_found`, `gl_err_projection_pending`, `gl_err_unavailable`, `gl_err_invalid_payload`, `gl_err_multiple_commands`, `gl_err_amount_decimal`, `gl_err_select_company`, `gl_err_company_forbidden`, `gl_err_branch_forbidden`, `gl_err_read_forbidden`, `gl_err_action_forbidden`, `gl_err_report_forbidden`, `gl_err_journal_book_immutable`, `gl_err_concurrent_export`, `gl_err_concurrent_read`, `gl_err_holding_invalid`) ลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษาตามมาตรฐาน
+- [Backend] ปรับปรุง `backend/internal/generalledger/httpapi/http.go`: นำเข้า `smlcloudplatform/internal/goapi/language`, เพิ่ม `getRequestLanguage(ctx)` ดึงภาษาจาก query param `?lang=` หรือ header `Accept-Language` (ตามรูปแบบ purchaseorder), ปรับ `errorPayloadFor(err, lang...)`, `fail()`, `failure()`, และ `decodeFailure()` ให้แปลข้อความตามภาษาที่ร้องขอ และส่งคืนข้อความภาษาไทยเดิมไว้ใน `message_th` / `ThaiMsg`
+- [Test] เพิ่ม Unit Test `TestGLCommandErrorContractMultiLanguage` ใน `error_contract_test.go` ตรวจสอบทั้งภาษาอังกฤษและภาษาไทย
+- [Docs] อัปเดต `README.md` Activity Log
+- ไฟล์: `backend/assets/language/languages.tsv`, `backend/internal/generalledger/httpapi/http.go`, `backend/internal/generalledger/httpapi/error_contract_test.go`, `README.md`
+- หลักฐาน: Vitest 479/479 ผ่าน 100%, Go test (`generalledger/...`) ใน Docker ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — ปรับปรุง product-screen ให้ใช้ useSplitPercent ร่วมกับ ResizableSplitter (Item 16 ส่วนขยาย)
 
 - [Refactor] ปรับปรุง `frontend/src/app/menu/product-screen.tsx`: เปลี่ยนการจัดการสถานะและอีเวนต์ยืดหดแถบแยกหน้าจอ (Resizable Splitter) ที่เขียนซ้ำกว่า 100 บรรทัด ให้เรียกใช้ hook ส่วนกลาง `useSplitPercent` แทน (รองรับการลากด้วย pointer, ควบคุมด้วยคีย์บอร์ด ซ้าย/ขวา/Home/End, ดับเบิ้ลคลิกเพื่อรีเซ็ต, และจดจำค่าเปอร์เซ็นต์ลงใน `localStorage` อัตโนมัติ)

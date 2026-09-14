@@ -103,3 +103,28 @@ func TestLocalFailResponsesCarryCode(t *testing.T) {
 		t.Errorf("409 code = %q", got)
 	}
 }
+
+func TestGLCommandErrorContractMultiLanguage(t *testing.T) {
+	err := &gl.UserError{Code: gl.CodeDuplicateCode, Message: "รหัสบัญชีนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น"}
+	statusEn, payloadEn := errorPayloadFor(err, "en")
+	if statusEn != 409 {
+		t.Errorf("status = %d, want 409", statusEn)
+	}
+	if payloadEn.Code != "duplicate_code" {
+		t.Errorf("code = %q, want duplicate_code", payloadEn.Code)
+	}
+	if payloadEn.Message != "Account code or document number already exists. Please use another code." {
+		t.Errorf("en message = %q", payloadEn.Message)
+	}
+	if payloadEn.MessageTH != "รหัสบัญชีนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น" {
+		t.Errorf("thai message = %q", payloadEn.MessageTH)
+	}
+
+	statusTh, payloadTh := errorPayloadFor(err, "th")
+	if statusTh != 409 {
+		t.Errorf("status = %d, want 409", statusTh)
+	}
+	if payloadTh.Message != "รหัสบัญชีนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น" {
+		t.Errorf("th message = %q", payloadTh.Message)
+	}
+}
