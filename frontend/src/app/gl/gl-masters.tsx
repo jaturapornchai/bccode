@@ -251,7 +251,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                   key={item.id}
                   className={`group cursor-pointer transition-colors ${
                     isRowEditing
-                      ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 ring-1 ring-inset ring-amber-500/50 font-medium"
+                      ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
                       : isSelected
                         ? "bg-primary/10 ring-1 ring-inset ring-primary/40 font-medium"
                         : index % 2 === 0
@@ -261,7 +261,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                   onClick={() => void openView(item)}
                 >
                   <td className="p-2 whitespace-nowrap">
-                    <span className={`font-mono font-bold ${isRowEditing ? "text-amber-900 dark:text-amber-300" : "text-primary"}`}>{recordCode(item)}</span>
+                    <span className="font-mono font-bold text-primary">{recordCode(item)}</span>
                   </td>
                   <td className="max-w-72 truncate p-2" title={recordName(item)}>
                     {isAcc && accLevel > 1 ? (
@@ -287,7 +287,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                   )}
                   <td className="whitespace-nowrap p-2 text-center">
                     {isLocked ? (
-                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
                         {tr("gl_locked", "ล็อกแล้ว")}
                       </span>
                     ) : isClosed ? (
@@ -299,7 +299,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                         {tr("gl_disable", "ปิดใช้งาน")}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                         {tr("gl_enable", "ใช้งาน")}
                       </span>
                     )}
@@ -456,7 +456,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               </div>
               <div>
                 <h2 className="text-base font-semibold">{record.id ? tr("gl_edit_2", "แก้ไข {0}").replace("{0}", String(recordCode(record))) : tr("gl_add_new_item", "เพิ่มรายการใหม่")}</h2>
-                {dirty && <span className="text-xs text-amber-600 dark:text-amber-400">{tr("gl_unsaved_changes", "● มีการเปลี่ยนแปลงที่ยังไม่บันทึก")}</span>}
+                {dirty && <span className="text-xs text-primary font-medium">{tr("gl_unsaved_changes", "● มีการเปลี่ยนแปลงที่ยังไม่บันทึก")}</span>}
               </div>
             </div>
             <Button

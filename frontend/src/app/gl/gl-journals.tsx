@@ -200,7 +200,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         key={item.id}
                         className={`group cursor-pointer transition-colors ${
                           isRowEditing
-                            ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 ring-1 ring-inset ring-amber-500/50 font-medium"
+                            ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
                             : isSelected
                               ? "bg-primary/10 ring-1 ring-inset ring-primary/40 font-medium"
                               : index % 2 === 0
@@ -211,15 +211,15 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       >
                         <td className="whitespace-nowrap p-2">
                           <div className="text-[0.85rem] text-muted-foreground">{item.date}</div>
-                          <span className={`font-mono font-bold ${isRowEditing ? "text-amber-900 dark:text-amber-300" : "text-primary"}`}>{item.docno}</span>
+                          <span className="font-mono font-bold text-primary">{item.docno}</span>
                         </td>
                         <td className="max-w-60 truncate p-2" title={item.description}>{item.description}</td>
                         <td className="whitespace-nowrap p-2 text-center">
                           <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
                             isDraft
-                              ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                              ? "bg-muted text-muted-foreground border border-border"
                               : item.status === "posted"
-                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                                ? "bg-primary/10 text-primary border border-primary/20"
                                 : "bg-muted text-muted-foreground border border-border"
                           }`}>
                             {labelText(statusLabel, item.status, tr, tr("gl_check_status", "ตรวจสอบสถานะ"))}
@@ -247,7 +247,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                   type="button"
                                   size="icon"
                                   variant="outline"
-                                  className="size-7 rounded-md bg-background text-red-600 border-red-200/70 hover:bg-red-50 hover:border-red-300 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/40 shadow-none transition-colors shrink-0"
+                                  className="size-7 rounded-md bg-background text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 shadow-none transition-colors shrink-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     void deleteDraftDirect(item);
@@ -455,7 +455,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     <Button
                       type="button"
                       variant="outline"
-                      className={`${actionClass} text-red-600 border-red-200/70 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/40`}
+                      className={`${actionClass} text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50`}
                       disabled={busy}
                       onClick={() => void act("delete")}
                     >
@@ -473,7 +473,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                     <div>
                       <h2 className="text-base font-semibold">{journal.id ? tr("gl_edit_draft", "แก้ไขฉบับร่าง {0}").replace("{0}", String(journal.docno)) : tr("gl_save_new_journal", "บันทึกรายวันใหม่")}</h2>
-                      {dirty && <span className="text-xs text-amber-600 dark:text-amber-400">{tr("gl_unsaved_changes", "● มีการเปลี่ยนแปลงที่ยังไม่บันทึก")}</span>}
+                      {dirty && <span className="text-xs text-primary font-medium">{tr("gl_unsaved_changes", "● มีการเปลี่ยนแปลงที่ยังไม่บันทึก")}</span>}
                     </div>
                   </div>
                   <Button
@@ -578,7 +578,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     <Button
                       type="button"
                       variant="outline"
-                      className={`${actionClass} text-red-600 border-red-200/70 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/40`}
+                      className={`${actionClass} text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50`}
                       disabled={busy}
                       onClick={() => void act("delete")}
                     >

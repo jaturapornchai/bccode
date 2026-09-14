@@ -372,7 +372,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                         key={item.id}
                         className={`group cursor-pointer transition-colors ${
                           isRowEditing
-                            ? "bg-amber-100/70 hover:bg-amber-100/90 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100 ring-1 ring-inset ring-amber-500/50 font-medium"
+                            ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
                             : isSelected
                               ? "bg-primary/10 ring-1 ring-inset ring-primary/40 font-medium"
                               : index % 2 === 0
@@ -382,7 +382,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                         onClick={() => void open(item, "preview")}
                       >
                         <td className="p-2 whitespace-nowrap">
-                          <span className={`font-mono font-bold ${isRowEditing ? "text-amber-900 dark:text-amber-300" : "text-primary"}`}>{item.code}</span>
+                          <span className="font-mono font-bold text-primary">{item.code}</span>
                         </td>
                       <td className="max-w-48 truncate p-2" title={item.name}>
                         {item.name}
@@ -462,7 +462,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     className={actionClass}
                     onClick={() => setStarterModalOpen(true)}
                   >
-                    <Sparkles className="mr-1.5 h-4 w-4 text-amber-500" /> {tr("gl_use_standard_template", "ใช้แม่แบบมาตรฐาน...")}
+                    <Sparkles className="mr-1.5 h-4 w-4 text-primary" /> {tr("gl_use_standard_template", "ใช้แม่แบบมาตรฐาน...")}
                   </Button>
                 </div>
 
@@ -960,7 +960,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     setStarterModalOpen(true);
                   }}
                 >
-                  <Sparkles className="mr-1.5 h-4 w-4 text-amber-500" /> {tr("gl_use_standard_template_2", "ใช้แม่แบบมาตรฐาน")}
+                  <Sparkles className="mr-1.5 h-4 w-4 text-primary" /> {tr("gl_use_standard_template_2", "ใช้แม่แบบมาตรฐาน")}
                 </Button>
               </div>
             </div>

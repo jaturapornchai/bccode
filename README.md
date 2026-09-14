@@ -8,6 +8,14 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ปรับปรุง UI สมุดรายวันและบัญชี: ใช้ Semantic Theme Tokens แทนสี Hard-code
+
+- [Fix] เปลี่ยนสี hard-code (`text-red-600`, `bg-amber-100`, `bg-emerald-500/10`, `text-amber-950`, `border-red-200`) ในจอ GL (`gl-journals.tsx`, `gl-masters.tsx`, `gl-statement-designer.tsx`, `account-search-dialog.tsx`) เป็น Semantic Theme Tokens (`text-destructive`, `border-destructive/30`, `hover:bg-destructive/10`, `bg-primary/10`, `text-primary`, `bg-primary/15`, `bg-muted`) เพื่อให้สอดคล้องกับระบบ 10 Palette และรองรับ Dark Mode อย่างสมบูรณ์
+- [Docs] อัปเดต `docs/skills/ui-scale-polish/SKILL.md` หัวข้อ §8.27 บันทึกมาตรฐาน Semantic Theme Tokens สำหรับตาราง/Badge/Action buttons
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-statement-designer.tsx`, `frontend/src/app/gl/account-search-dialog.tsx`, `docs/skills/ui-scale-polish/SKILL.md`, `docs/reference/CODE-MAP.md`
+- หลักฐาน: `tsc --noEmit` ผ่าน 0 error, vitest 476/476 ผ่าน 100%
+
 ### 2026-09-14 — ปิดรอบบัญชี/สิ้นปี: ย้ายการตรวจรายการร่างและยอดยกมาจาก Mongo ไปยัง PostgreSQL Projection
 
 - [Fix] แก้ไข `prepareProcess` ใน `backend/internal/generalledger/processes.go` ให้ตรวจสอบรายการร่าง (`status = 'draft'`) และยอดยกมาของปีถัดไป (`kind = 'opening'`) ผ่าน PostgreSQL projection ใน `gl_records` แทนการอ่านตรงจาก MongoDB (`s.referenced`) สอดคล้องกับกฎสถาปัตยกรรม 2-Tier (Zero Cross-DB Runtime Dependency)

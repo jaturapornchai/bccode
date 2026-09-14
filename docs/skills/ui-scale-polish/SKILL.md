@@ -1265,3 +1265,17 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 **แบบแผน** — `frontend/src/app/language-dialog.tsx`: `const [mounted, setMounted] = useState(false); useEffect(() => setMounted(true), [])` แล้ว `open && mounted ? createPortal(<div className="dialog-backdrop">…</div>, document.body) : null` — ตัวอย่างเดิมในระบบ: `components/product-barcode/master-picker.tsx`
 
 **กับดัก** — ห้ามแก้ด้วยการเพิ่ม z-index ให้ backdrop (ไม่มีผลข้ามบริบท) หรือถอด `z-30` ออกจาก header (เมนูจะทะลุ); ตรวจโดยเปิดโหมดเมนูบน → hover ให้ mega menu โผล่ → กดเลือกภาษา → screenshot ต้องเห็น dialog ทับเมนู
+
+## 8.27 ห้ามใช้สี Hard-code ในคอมโพเนนต์/ตาราง/Badge — ต้องใช้ Semantic Theme Tokens (2026-09-14)
+
+**อาการ** — การใช้ utility classes แบบระบุสีตายตัว (เช่น `text-red-600`, `bg-red-50`, `bg-amber-100`, `text-amber-950`, `bg-emerald-500/10`, `text-emerald-700`) ขัดต่อกฎ Premium Theme พาเลต 10 สี และพังในโหมด Dark Mode
+
+**แบบแผนที่ถูกต้อง** —
+* **ลบ / ทำลาย / Danger**: ใช้ `text-destructive`, `border-destructive/30`, `hover:bg-destructive/10`, `hover:border-destructive/50`
+* **สถานะปกติ / เปิดใช้งาน / ไฮไลต์**: ใช้ `bg-primary/10`, `text-primary`, `border-primary/20`
+* **แถวที่กำลังแก้ไข (Row Editing) / ถูกเลือก**: ใช้ `bg-primary/15`, `hover:bg-primary/20`, `text-foreground`, `ring-1 ring-inset ring-primary/50`
+* **สถานะร่าง / ปิดใช้งาน / ล็อก (Neutral/Muted)**: ใช้ `bg-muted`, `text-muted-foreground`, `border border-border`
+* **ไอคอนประดับ / Sparkles**: ใช้ `text-primary`
+* **ข้อความเตือน Unsaved Changes**: ใช้ `text-primary font-medium`
+
+**ตัวอย่างอ้างอิง** — `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-statement-designer.tsx`, `frontend/src/app/gl/account-search-dialog.tsx`
