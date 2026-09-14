@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-14 @ commit bce6ab4f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-14 @ commit 03cbbf18 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 46
 
@@ -447,49 +447,49 @@ Files indexed: 46
 | 3270 | function | `ApplyChangesWithProgress` |
 | 3678 | function | `max` |
 
-## frontend/src/app/menu/product-screen.tsx (3023 lines)
+## frontend/src/app/menu/product-screen.tsx (3213 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 96 | function | `readAuthSession` |
-| 100 | function | `readWorkspaceSession` |
-| 110 | function | `ensureActiveProductHolding` |
-| 154 | const-arrow | `CORE_PRODUCT_TABS` |
-| 160 | const-arrow | `EXTENSION_PRODUCT_TABS` |
-| 176 | function | `clampProductSplitLeft` |
-| 184 | function | `ProductScreen` |
-| 264 | const-arrow | `onPointerMove` |
-| 267 | const-arrow | `onPointerUp` |
-| 441 | const-arrow | `handleWorkspaceChange` |
-| 805 | const-arrow | `handleCreateOpen` |
-| 812 | const-arrow | `handleCreateCopyOpen` |
-| 826 | const-arrow | `handleSelectBarcode` |
-| 910 | const-arrow | `handleEditOpen` |
-| 916 | const-arrow | `handleDelete` |
-| 953 | const-arrow | `toggleCheckedProduct` |
-| 961 | const-arrow | `handleDeleteSelectedProducts` |
-| 1003 | const-arrow | `handleSave` |
-| 1162 | const-arrow | `openPicker` |
-| 1173 | const-arrow | `handlePickerSelect` |
-| 2738 | function | `setNameXEntry` |
-| 2753 | function | `productRowKey` |
-| 2757 | function | `productUnitRows` |
-| 2761 | function | `formatProductUnitType` |
-| 2772 | function | `formatYesNo` |
-| 2776 | function | `formatNamedList` |
-| 2789 | function | `formatUnitConversionList` |
-| 2804 | function | `formatRefBarcodeList` |
-| 2844 | function | `formatBomList` |
-| 2861 | function | `formatOptionList` |
-| 2883 | function | `formatDimensionList` |
-| 2895 | function | `formatMarketplaceProductList` |
-| 2913 | function | `formatTimeForSaleList` |
-| 2925 | function | `isEmptyDetailValue` |
-| 2938 | function | `DetailSummary` |
-| 2968 | function | `DetailSection` |
-| 3009 | function | `DetailField` |
+| 101 | function | `readAuthSession` |
+| 105 | function | `readWorkspaceSession` |
+| 115 | function | `ensureActiveProductHolding` |
+| 159 | const-arrow | `CORE_PRODUCT_TABS` |
+| 165 | const-arrow | `EXTENSION_PRODUCT_TABS` |
+| 181 | function | `clampProductSplitLeft` |
+| 189 | function | `ProductScreen` |
+| 279 | const-arrow | `onPointerMove` |
+| 282 | const-arrow | `onPointerUp` |
+| 456 | const-arrow | `handleWorkspaceChange` |
+| 824 | const-arrow | `handleCreateOpen` |
+| 831 | const-arrow | `handleCreateCopyOpen` |
+| 845 | const-arrow | `handleSelectBarcode` |
+| 929 | const-arrow | `handleEditOpen` |
+| 935 | const-arrow | `handleDelete` |
+| 972 | const-arrow | `toggleCheckedProduct` |
+| 980 | const-arrow | `handleDeleteSelectedProducts` |
+| 1022 | const-arrow | `handleSave` |
+| 1181 | const-arrow | `openPicker` |
+| 1192 | const-arrow | `handlePickerSelect` |
+| 2895 | function | `setNameXEntry` |
+| 2910 | function | `productRowKey` |
+| 2914 | function | `productUnitRows` |
+| 2918 | function | `formatProductUnitType` |
+| 2934 | function | `formatYesNo` |
+| 2943 | function | `formatNamedList` |
+| 2956 | function | `formatUnitConversionList` |
+| 2971 | function | `formatRefBarcodeList` |
+| 3012 | function | `formatBomList` |
+| 3029 | function | `formatOptionList` |
+| 3061 | function | `formatDimensionList` |
+| 3077 | function | `formatMarketplaceProductList` |
+| 3100 | function | `formatTimeForSaleList` |
+| 3112 | function | `isEmptyDetailValue` |
+| 3126 | function | `DetailSummary` |
+| 3156 | function | `DetailSection` |
+| 3199 | function | `DetailField` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2895 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2896 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -552,7 +552,7 @@ Files indexed: 46
 | 2635 | function | `clearDragState` |
 | 2642 | function | `reorderFromPointer` |
 | 2767 | function | `WorkTabPanel` |
-| 2880 | function | `DashboardLoading` |
+| 2881 | function | `DashboardLoading` |
 
 ## backend/internal/product/productbarcode/services/productbarcode_http_service.go (2793 lines)
 

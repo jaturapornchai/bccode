@@ -40,6 +40,7 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
+import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
 import { listBarcodes, type MasterEntry } from "@/lib/product-barcode/api";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
@@ -70,8 +71,12 @@ import {
   pickName,
   rawToProduct,
 } from "@/lib/product-barcode/utils";
-import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
 import { getBarcodeText } from "@/lib/product-barcode/language";
+import {
+  backendText,
+  useBackendLanguage,
+  type BackendLanguageDictionary,
+} from "@/lib/backend-language";
 
 import { TabProductUnits } from "./tab-product-units";
 import { TabProductMedia } from "./tab-product-media";
@@ -131,7 +136,7 @@ async function ensureActiveProductHolding(
     message?: string;
   } | null;
   if (!response.ok || data?.success === false) {
-    throw new Error(data?.message || "ไม่สามารถเลือกบริษัทใน token ได้");
+    throw new Error(data?.message || "Failed to switch holding in token");
   }
 }
 
@@ -157,11 +162,11 @@ const CORE_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>): Partial<Rec
   stock: text.tabStock,
 });
 
-const EXTENSION_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>): Partial<Record<ProductTabKey, string>> => ({
+const EXTENSION_PRODUCT_TABS = (text: ReturnType<typeof getBarcodeText>, tr?: (k: string, fb: string) => string): Partial<Record<ProductTabKey, string>> => ({
   classification: text.tabClassification,
   bom: text.tabBomShort,
   media: text.tabMedia,
-  logistics: "การจัดส่ง / โลจิสติกส์",
+  logistics: tr ? tr("product_tab_logistics", "การจัดส่ง / โลจิสติกส์") : ((text as unknown as Record<string, string>).tabLogistics ?? "การจัดส่ง / โลจิสติกส์"),
   restaurant: text.tabRestaurant,
   timeforsales: text.tabTimeForSales,
   business: text.tabBusinessBranchShort,
@@ -183,12 +188,14 @@ function clampProductSplitLeft(value: number) {
 
 export function ProductScreen({
   active = true,
+  backendLanguage: propBackendLanguage,
   embedded = false,
   focusRequest,
   language = "th",
   mode = "core",
 }: {
   active?: boolean;
+  backendLanguage?: BackendLanguageDictionary;
   embedded?: boolean;
   focusRequest?: { code: string; requestId: string };
   language?: LanguageCode;
@@ -196,10 +203,18 @@ export function ProductScreen({
 }) {
   const isExtensionMode = mode === "extension";
   const lang = normalizeLanguage(language);
-  const text = getBarcodeText(lang);
-  const { confirm, confirmationDialog } = useConfirmDialog();
-
   const [auth, setAuth] = useState<AuthSession | null>(null);
+  const fetchedBackendLanguage = useBackendLanguage(lang, auth?.backendUrl);
+  const backendLanguage = propBackendLanguage ?? fetchedBackendLanguage;
+  const tr = useCallback(
+    (key: string, fallback: string) => backendText(backendLanguage, key, fallback),
+    [backendLanguage],
+  );
+  const text = useMemo(() => getBarcodeText(lang, backendLanguage), [lang, backendLanguage]);
+  const { confirm, confirmationDialog } = useConfirmDialog({
+    defaultConfirmLabel: tr("common_confirm", "ยืนยัน"),
+    defaultCancelLabel: tr("common_cancel", "ยกเลิก"),
+  });
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [items, setItems] = useState<Product[]>([]);
   const [selectedCode, setSelectedCode] = useState("");
@@ -566,7 +581,7 @@ export function ProductScreen({
           normalized.holdingcode &&
           normalized.holdingcode !== activeHoldingCode
         ) {
-          throw new Error("ข้อมูลสินค้าไม่ตรงกับกลุ่มกิจการที่เลือก");
+          throw new Error(tr("err_product_holding_mismatch", "ข้อมูลสินค้าไม่ตรงกับกลุ่มกิจการที่เลือก"));
         }
         const rawBusinessCode = normalizeBusinessCode(
           typeof (rawDetail as { businesscode?: unknown }).businesscode ===
@@ -575,7 +590,7 @@ export function ProductScreen({
             : "",
         );
         if (rawBusinessCode && rawBusinessCode !== activeBusinessCode) {
-          throw new Error("ข้อมูลสินค้าไม่ตรงกับบริษัทที่เลือก");
+          throw new Error(tr("err_product_company_mismatch", "ข้อมูลสินค้าไม่ตรงกับบริษัทที่เลือก"));
         }
         const detail = {
           ...listProduct,
@@ -638,11 +653,13 @@ export function ProductScreen({
     async (code: string): Promise<boolean> => {
       if (isFormDirty) {
         const ok = await confirm({
-          title: "ข้อมูลมีการเปลี่ยนแปลง",
-          description:
+          title: tr("common_unsaved_changes_title", "ข้อมูลมีการเปลี่ยนแปลง"),
+          description: tr(
+            "product_unsaved_discard_confirm",
             "คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการละทิ้งการเปลี่ยนแปลงแล้วเปลี่ยนสินค้าหรือไม่?",
-          confirmLabel: "เปลี่ยนสินค้า",
-          cancelLabel: "ยกเลิก",
+          ),
+          confirmLabel: tr("product_switch_item", "เปลี่ยนสินค้า"),
+          cancelLabel: tr("common_cancel", "ยกเลิก"),
         });
         if (!ok) return false;
       }
@@ -651,7 +668,7 @@ export function ProductScreen({
       setEditorOpen(false);
       return true;
     },
-    [isFormDirty, confirm],
+    [isFormDirty, confirm, tr],
   );
 
   const handleSelectProduct = useCallback(
@@ -664,11 +681,13 @@ export function ProductScreen({
   const handleCancelEdit = useCallback(() => {
     if (isFormDirty) {
       void confirm({
-        title: "ข้อมูลมีการเปลี่ยนแปลง",
-        description:
+        title: tr("common_unsaved_changes_title", "ข้อมูลมีการเปลี่ยนแปลง"),
+        description: tr(
+          "product_unsaved_cancel_confirm",
           "คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการยกเลิกการแก้ไขใช่หรือไม่?",
-        confirmLabel: "ใช่, ยกเลิก",
-        cancelLabel: "กลับไปแก้ไข",
+        ),
+        confirmLabel: tr("common_yes_cancel", "ใช่, ยกเลิก"),
+        cancelLabel: tr("common_back_to_edit", "กลับไปแก้ไข"),
       }).then((ok) => {
         if (ok) {
           setEditorOpen(false);
@@ -967,7 +986,7 @@ export function ProductScreen({
     if (codes.length === 0) return;
     const ok = await confirm({
       title: text.deleteConfirm,
-      description: `เลือกไว้ ${codes.length.toLocaleString("th-TH")} รายการ`,
+      description: `${tr("common_selected", "เลือกไว้")} ${codes.length.toLocaleString(lang === "th" ? "th-TH" : "en-US")} ${tr("common_items", "รายการ")}`,
       tone: "danger",
       confirmLabel: text.delete,
       cancelLabel: text.cancel,
@@ -1363,11 +1382,11 @@ export function ProductScreen({
       ) ||
       selectedProduct.unitcode ||
       selectedProduct.itemunitcode ||
-      "ยังไม่กำหนด"
+      tr("common_not_specified", "ยังไม่กำหนด")
     : "-";
   const selectedGroupLabel = selectedProduct?.groupcode
     ? `${selectedProduct.groupcode} — ${pickName(selectedProduct.groupnames, lang)}`
-    : "ยังไม่จัดกลุ่ม";
+    : tr("product_ungrouped", "ยังไม่จัดกลุ่ม");
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
@@ -1377,12 +1396,14 @@ export function ProductScreen({
           <h2 className="text-lg font-bold">{isExtensionMode ? text.productExtensionMenuName : text.productMenuName}</h2>
           <p className="text-xs text-muted-foreground">
             {isExtensionMode
-              ? lang === "th"
-                ? "ข้อมูลเสริมของสินค้า — หมวดหมู่ ส่วนประกอบ รูปภาพ การจัดส่ง ร้านอาหาร/POS เวลาขาย และสาขา (เพิ่มสินค้าใหม่ที่เมนู \"สินค้า\")"
-                : "Extended product data — classification, BOM, media, logistics, restaurant/POS, sale hours and branches (create products in the \"Products\" menu)"
-              : lang === "th"
-                ? "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด"
-                : "Manage products and related data"}
+              ? tr(
+                  "product_extension_subtitle",
+                  "ข้อมูลเสริมของสินค้า — หมวดหมู่ ส่วนประกอบ รูปภาพ การจัดส่ง ร้านอาหาร/POS เวลาขาย และสาขา (เพิ่มสินค้าใหม่ที่เมนู \"สินค้า\")",
+                )
+              : tr(
+                  "product_core_subtitle",
+                  "จัดการสินค้าและข้อมูลที่เกี่ยวข้องทั้งหมด",
+                )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -1399,7 +1420,7 @@ export function ProductScreen({
             )}
             {text.refresh}
           </Button>
-          {/* ส่วนขยายแก้ได้เฉพาะสินค้าที่มีอยู่ — สร้างจากที่นี่จะได้สินค้าที่ไม่มีชื่อ/หน่วยนับ */}
+          {/* Extension mode only edits existing products — creating here would yield products without names/units */}
           {!isExtensionMode && (
             <>
               <Button
@@ -1414,7 +1435,7 @@ export function ProductScreen({
                 }
               >
                 <Copy className="h-4 w-4" />
-                คัดลอก
+                {text.copy}
               </Button>
               <Button
                 variant="default"
@@ -1466,7 +1487,7 @@ export function ProductScreen({
                 onClick={() => setFilterOpen((current) => !current)}
               >
                 <Filter className="h-4 w-4" />
-                ตัวกรอง
+                {text.filter}
               </Button>
               <Button
                 variant="outline"
@@ -1479,7 +1500,7 @@ export function ProductScreen({
                 ) : (
                   <ImageIcon className="h-4 w-4" />
                 )}
-                รูป
+                {text.image}
               </Button>
               <Button
                 variant={compactRows ? "secondary" : "outline"}
@@ -1499,8 +1520,8 @@ export function ProductScreen({
                 }}
                 title={
                   compactRows
-                    ? "คลิกเพื่อขยายบรรทัด (ดูรายละเอียดประเภทสินค้า)"
-                    : "คลิกเพื่อย่อบรรทัด (แสดงรายการได้มากขึ้น)"
+                    ? tr("common_click_to_expand_rows", "คลิกเพื่อขยายบรรทัด (ดูรายละเอียดประเภทสินค้า)")
+                    : tr("common_click_to_collapse_rows", "คลิกเพื่อย่อบรรทัด (แสดงรายการได้มากขึ้น)")
                 }
               >
                 {compactRows ? (
@@ -1508,7 +1529,7 @@ export function ProductScreen({
                 ) : (
                   <UnfoldVertical className="h-4 w-4" />
                 )}
-                ย่อบรรทัด
+                {compactRows ? tr("common_collapse_rows", "ย่อบรรทัด") : tr("common_expand_rows", "ขยายบรรทัด")}
               </Button>
               <Button
                 variant={selectMode ? "secondary" : "outline"}
@@ -1524,7 +1545,7 @@ export function ProductScreen({
                 ) : (
                   <CheckSquare className="h-4 w-4" />
                 )}
-                {selectMode ? "ยกเลิกเลือก" : "เลือกเพื่อลบ"}
+                {selectMode ? tr("common_cancel_select", "ยกเลิกเลือก") : tr("common_select_delete", "เลือกเพื่อลบ")}
               </Button>
               {selectMode ? (
                 <Button
@@ -1535,7 +1556,7 @@ export function ProductScreen({
                   disabled={checkedProductKeys.length === 0}
                 >
                   <Trash2 className="h-4 w-4" />
-                  ลบ {checkedProductKeys.length} รายการ
+                  {text.delete} {checkedProductKeys.length} {tr("common_items", "รายการ")}
                 </Button>
               ) : null}
             </div>
@@ -1549,7 +1570,7 @@ export function ProductScreen({
                   type="button"
                   onClick={() => setListItemTypeFilter("all")}
                 >
-                  ทั้งหมด
+                  {text.total ?? tr("common_total", "ทั้งหมด")}
                 </Button>
                 {itemTypes.map((itemType) => (
                   <Button
@@ -1572,17 +1593,17 @@ export function ProductScreen({
             ) : null}
           </div>
           <div className="bc-list-toolbar shrink-0">
-            <span>สินค้าทั้งหมด</span>
+            <span>{tr("product_all_items", "สินค้าทั้งหมด")}</span>
             <span>
-              {visibleItems.length} / {items.length} รายการ
+              {visibleItems.length} / {items.length} {tr("common_items", "รายการ")}
             </span>
           </div>
 
           {/* Table Header inside list on Desktop */}
           <div className="bc-list-header grid grid-cols-[minmax(72px,0.85fr)_minmax(0,2fr)_minmax(65px,0.75fr)] gap-x-2 shrink-0">
-            <span>{text.itemCode ?? "รหัสสินค้า"}</span>
-            <span>{text.productName ?? "ชื่อสินค้า"}</span>
-            <span className="text-right">ยอดคงเหลือ</span>
+            <span>{text.itemCode ?? tr("itemcode", "รหัสสินค้า")}</span>
+            <span>{text.productName ?? tr("productname", "ชื่อสินค้า")}</span>
+            <span className="text-right">{text.balance ?? tr("balanceqty", "ยอดคงเหลือ")}</span>
           </div>
 
           <div
@@ -1596,7 +1617,7 @@ export function ProductScreen({
               </div>
             ) : visibleItems.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">
-                ไม่พบข้อมูลสินค้า
+                {text.noData ?? tr("no_data", "ไม่พบข้อมูล")}
               </div>
             ) : (
               visibleItems.map((item, index) => {
@@ -1729,7 +1750,7 @@ export function ProductScreen({
                               ? "bc-cell-text text-xs sm:text-sm"
                               : "break-words",
                           )}
-                          title={`${pickName(item.names, lang) || "-"} (${typeLabel} · ${formatProductUnitType(item)})`}
+                          title={`${pickName(item.names, lang) || "-"} (${typeLabel} · ${formatProductUnitType(item, tr)})`}
                         >
                           {pickName(item.names, lang) || "-"}
                         </div>
@@ -1741,7 +1762,7 @@ export function ProductScreen({
                                 "text-amber-900/60 dark:text-amber-200/60",
                             )}
                           >
-                            {typeLabel} · {formatProductUnitType(item)}
+                            {typeLabel} · {formatProductUnitType(item, tr)}
                           </div>
                         ) : null}
                       </div>
@@ -1775,11 +1796,10 @@ export function ProductScreen({
           value={Math.round(splitLeftPercent)}
           min={PRODUCT_SPLIT_MIN_LEFT}
           max={PRODUCT_SPLIT_MAX_LEFT}
-          label={
-            language === "th"
-              ? "ปรับขนาดรายการสินค้าและรายละเอียดสินค้า (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-              : "Resize product list and detail panes (drag to resize, double-click to reset)"
-          }
+          label={tr(
+            "product_splitter_hint",
+            "ปรับขนาดรายการสินค้าและรายละเอียดสินค้า (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)",
+          )}
           isResizing={resizingSplit}
           onPointerDown={startSplitResize}
           onMouseDown={startSplitMouseResize}
@@ -1885,7 +1905,7 @@ export function ProductScreen({
               {/* Product Form Tab bar — flex-wrap so every tab stays visible (no hidden overflow) */}
               <div className="mt-2 flex shrink-0 flex-wrap gap-1 border-b border-border bg-muted/30 px-1 py-1.5">
                 {(
-                  Object.entries((isExtensionMode ? EXTENSION_PRODUCT_TABS : CORE_PRODUCT_TABS)(text)) as [ProductTabKey, string][]
+                  Object.entries((isExtensionMode ? EXTENSION_PRODUCT_TABS : CORE_PRODUCT_TABS)(text, tr)) as [ProductTabKey, string][]
                 ).map(([k, label]) => {
                   const isActive = productTab === k;
                   return (
@@ -2063,7 +2083,10 @@ export function ProductScreen({
                       </h3>
                       <p className="mt-0.5 break-words text-xl font-bold leading-tight text-foreground">
                         {pickName(selectedProduct.names, lang) ||
-                          "ยังไม่ได้ระบุชื่อสินค้า"}
+                          tr(
+                            "product_name_not_specified",
+                            "ยังไม่ได้ระบุชื่อสินค้า",
+                          )}
                       </p>
                     </div>
                   </div>
@@ -2101,17 +2124,20 @@ export function ProductScreen({
 
                 <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
                   <DetailSummary
-                    label="ยอดคงเหลือ"
+                    label={tr("balanceqty", "ยอดคงเหลือ")}
                     value={formatProductBalance(selectedProduct, lang)}
                     emphasize={(selectedProduct.qty ?? 0) <= 0}
                   />
-                  <DetailSummary label="หน่วยหลัก" value={selectedUnitLabel} />
                   <DetailSummary
-                    label="กลุ่มสินค้า"
+                    label={tr("product_primary_unit_name", "หน่วยหลัก")}
+                    value={selectedUnitLabel}
+                  />
+                  <DetailSummary
+                    label={tr("product_group", "กลุ่มสินค้า")}
                     value={selectedGroupLabel}
                   />
                   <DetailSummary
-                    label="ภาษีมูลค่าเพิ่ม"
+                    label={tr("common_vat", "ภาษีมูลค่าเพิ่ม")}
                     value={selectedVatLabel}
                   />
                 </div>
@@ -2126,8 +2152,10 @@ export function ProductScreen({
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-foreground">
-                        โหลดข้อมูลฉบับเต็มไม่สำเร็จ —
-                        ยังคงแสดงข้อมูลล่าสุดที่โหลดสำเร็จ
+                        {tr(
+                          "product_full_detail_load_failed",
+                          "โหลดข้อมูลฉบับเต็มไม่สำเร็จ — ยังคงแสดงข้อมูลล่าสุดที่โหลดสำเร็จ",
+                        )}
                       </p>
                       <p className="mt-0.5 break-words text-muted-foreground">
                         {detailError}
@@ -2142,7 +2170,7 @@ export function ProductScreen({
                       }
                     >
                       <RefreshCcw className="h-3.5 w-3.5" />
-                      ลองใหม่
+                      {tr("common_retry", "ลองใหม่")}
                     </Button>
                   </div>
                 ) : null}
@@ -2158,7 +2186,9 @@ export function ProductScreen({
                     ) : (
                       <Eye className="h-3.5 w-3.5" />
                     )}
-                    {showEmptyDetails ? "ซ่อนข้อมูลว่าง" : "แสดงข้อมูลทั้งหมด"}
+                    {showEmptyDetails
+                      ? tr("common_hide_empty_data", "ซ่อนข้อมูลว่าง")
+                      : tr("common_show_all_data", "แสดงข้อมูลทั้งหมด")}
                   </Button>
                 </div>
 
@@ -2180,30 +2210,36 @@ export function ProductScreen({
                           videos: selectedProduct.videos,
                         },
                       ]}
-                      title={lang === "th" ? "สื่อสินค้า" : "Product media"}
+                      title={tr("product_media_title", "สื่อสินค้า")}
                     />
                     <BusinessImageGallery
                       auth={auth}
                       sources={(selectedProduct.barcodes ?? []).map(
                         (barcode) => ({
                           key: barcode.guidfixed || barcode.barcode,
-                          label: `${lang === "th" ? "บาร์โค้ด" : "Barcode"} ${barcode.barcode}${barcode.itemunitcode ? ` · ${barcode.itemunitcode}` : ""}`,
+                          label: `${tr("barcode_label", "บาร์โค้ด")} ${barcode.barcode}${barcode.itemunitcode ? ` · ${barcode.itemunitcode}` : ""}`,
                           imageuri: barcode.imageuri,
                           images: barcode.images,
                           videos: barcode.videos,
                         }),
                       )}
-                      title={
-                        lang === "th"
-                          ? "สื่อจากบาร์โค้ด"
-                          : "Media from barcodes"
-                      }
+                      title={tr(
+                        "product_media_from_barcodes",
+                        "สื่อจากบาร์โค้ด",
+                      )}
                     />
                   </div>
                   <div className="grid gap-2.5 lg:grid-cols-2">
                     <DetailSection
-                      title={text.basicInfoCard ?? "ข้อมูลพื้นฐานสินค้า"}
+                      title={
+                        text.basicInfoCard ??
+                        tr("tab_basic_info", "ข้อมูลพื้นฐานสินค้า")
+                      }
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         { label: text.itemType, value: selectedTypeLabel },
                         {
@@ -2211,11 +2247,11 @@ export function ProductScreen({
                           value: selectedMaterialLabel,
                         },
                         {
-                          label: "สถานะภาษีมูลค่าเพิ่ม",
+                          label: tr("product_vat_status", "สถานะภาษีมูลค่าเพิ่ม"),
                           value: selectedVatLabel,
                         },
                         {
-                          label: "รหัสประเภทภาษี",
+                          label: tr("product_tax_type_code", "รหัสประเภทภาษี"),
                           value: String(
                             selectedProduct.taxtype ??
                               selectedProduct.vattype ??
@@ -2223,14 +2259,14 @@ export function ProductScreen({
                           ),
                         },
                         {
-                          label: "รหัสหน่วยหลัก",
+                          label: tr("product_primary_unit_code", "รหัสหน่วยหลัก"),
                           value:
                             selectedProduct.unitcode ||
                             selectedProduct.itemunitcode ||
                             "-",
                         },
                         {
-                          label: "ชื่อหน่วยหลัก",
+                          label: tr("product_primary_unit_name", "ชื่อหน่วยหลัก"),
                           value:
                             pickName(
                               selectedProduct.unitnames ||
@@ -2239,27 +2275,38 @@ export function ProductScreen({
                             ) || "-",
                         },
                         {
-                          label: "มิติสินค้า",
+                          label: tr("product_dimension", "มิติสินค้า"),
                           value: formatDimensionList(
                             selectedProduct.dimensions,
                             lang,
+                            tr,
                           ),
                         },
                         {
-                          label: "ประเภทสินค้า (ระบบ)",
+                          label: tr(
+                            "product_system_type",
+                            "ประเภทสินค้า (ระบบ)",
+                          ),
                           value: selectedProduct.producttype?.code
                             ? `${selectedProduct.producttype.code} — ${pickName(selectedProduct.producttype.names, lang)}`
                             : "-",
                         },
                         {
-                          label: "วิธีคำนวณ VAT",
+                          label: tr("product_vat_calc_method", "วิธีคำนวณ VAT"),
                           value: String(selectedProduct.vatcal ?? 0),
                         },
                       ]}
                     />
                     <DetailSection
-                      title="คู่ค้าและรายละเอียด"
+                      title={tr(
+                        "product_partners_and_details",
+                        "คู่ค้าและรายละเอียด",
+                      )}
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
                           label: text.manufacturers,
@@ -2276,19 +2323,26 @@ export function ProductScreen({
                           ),
                         },
                         {
-                          label: "รายละเอียดสินค้า",
+                          label: tr("product_detail", "รายละเอียดสินค้า"),
                           value: selectedProduct.description || "-",
                         },
                         {
-                          label: "คำเตือน",
+                          label: tr("common_warning", "คำเตือน"),
                           value: selectedProduct.alertdescription || "-",
                         },
                       ]}
                     />
 
                     <DetailSection
-                      title={text.groupingCard ?? "ข้อมูลการจัดกลุ่ม"}
+                      title={
+                        text.groupingCard ??
+                        tr("tab_classification", "ข้อมูลการจัดกลุ่ม")
+                      }
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
                           label: text.group,
@@ -2318,8 +2372,15 @@ export function ProductScreen({
                     />
 
                     <DetailSection
-                      title={text.tabStock ?? "การควบคุมคลังสินค้า"}
+                      title={
+                        text.tabStock ??
+                        tr("tab_stock", "การควบคุมคลังสินค้า")
+                      }
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
                           label: text.qty,
@@ -2345,7 +2406,7 @@ export function ProductScreen({
                           value: selectedProduct.stockbarcode || "-",
                         },
                         {
-                          label: "ต้นทุนคงที่",
+                          label: tr("product_fixed_cost", "ต้นทุนคงที่"),
                           value:
                             selectedProduct.fixedcost != null
                               ? String(selectedProduct.fixedcost)
@@ -2354,11 +2415,21 @@ export function ProductScreen({
                       ]}
                     />
                     <DetailSection
-                      title={text.tabUnitsBarcode ?? "หน่วยนับและบาร์โค้ด"}
+                      title={
+                        text.tabUnitsBarcode ??
+                        tr("tab_units", "หน่วยนับและบาร์โค้ด")
+                      }
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
-                          label: "หน่วยนับมาตรฐาน",
+                          label: tr(
+                            "product_standard_unit",
+                            "หน่วยนับมาตรฐาน",
+                          ),
                           value: [
                             selectedProduct.unitcode,
                             pickName(selectedProduct.unitnames, lang),
@@ -2368,99 +2439,143 @@ export function ProductScreen({
                             .join(" — "),
                         },
                         {
-                          label: "หน่วยนับเพิ่มเติม",
+                          label: tr(
+                            "product_additional_units",
+                            "หน่วยนับเพิ่มเติม",
+                          ),
                           value: formatUnitConversionList(
                             selectedProduct.unitconversions,
                             lang,
                           ),
                         },
                         {
-                          label: "บาร์โค้ดสินค้า",
+                          label: tr("product_barcodes", "บาร์โค้ดสินค้า"),
                           value: formatRefBarcodeList(
                             selectedProduct.barcodes,
                             lang,
+                            tr,
                           ),
                         },
                         {
-                          label: "ส่วนประกอบ BOM",
+                          label: tr(
+                            "product_bom_components",
+                            "ส่วนประกอบ BOM",
+                          ),
                           value: formatBomList(selectedProduct.bom, lang),
                         },
                       ]}
                     />
                     <DetailSection
-                      title="ขนาดและน้ำหนักพัสดุ"
+                      title={tr(
+                        "product_package_dimensions_title",
+                        "ขนาดและน้ำหนักพัสดุ",
+                      )}
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
-                          label: "น้ำหนักรวมพัสดุ",
+                          label: tr(
+                            "product_total_package_weight",
+                            "น้ำหนักรวมพัสดุ",
+                          ),
                           value: `${selectedProduct.packageweight ?? 0} kg`,
                         },
                         {
-                          label: "มิติตัวกล่อง (ก × ย × ส)",
+                          label: tr(
+                            "product_box_dimension",
+                            "มิติตัวกล่อง (ก × ย × ส)",
+                          ),
                           value: `${selectedProduct.packagewidth ?? 0} × ${selectedProduct.packagelength ?? 0} × ${selectedProduct.packageheight ?? 0} cm`,
                         },
                         {
-                          label: "น้ำหนักปริมาตร (ประเมิน)",
+                          label: tr(
+                            "product_volumetric_weight",
+                            "น้ำหนักปริมาตร (ประเมิน)",
+                          ),
                           value: `${(((selectedProduct.packagewidth ?? 0) * (selectedProduct.packagelength ?? 0) * (selectedProduct.packageheight ?? 0)) / 5000).toFixed(3)} kg`,
                         },
                         {
-                          label: "คุณลักษณะพิเศษ",
-                          value: selectedProduct.isalert ? "ระวังแตก" : "-",
+                          label: tr(
+                            "product_special_attributes",
+                            "คุณลักษณะพิเศษ",
+                          ),
+                          value: selectedProduct.isalert
+                            ? tr("product_fragile", "ระวังแตก")
+                            : "-",
                         },
                       ]}
                     />
 
                     <DetailSection
-                      title={text.tabRestaurant ?? "ร้านอาหาร/POS"}
+                      title={
+                        text.tabRestaurant ??
+                        tr("tab_restaurant", "ร้านอาหาร/POS")
+                      }
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
                           label: text.isForRestaurant,
                           value: formatYesNo(
                             selectedProduct.restaurant?.isforrestaurant,
+                            tr,
                           ),
                         },
                         {
                           label: text.isForTakeaway,
                           value: formatYesNo(
                             selectedProduct.restaurant?.isfortakeaway,
+                            tr,
                           ),
                         },
                         {
                           label: text.isForDelivery,
                           value: formatYesNo(
                             selectedProduct.restaurant?.isfordelivery,
+                            tr,
                           ),
                         },
                         {
                           label: text.isForCustomer,
                           value: formatYesNo(
                             selectedProduct.restaurant?.isforcustomer,
+                            tr,
                           ),
                         },
                         {
                           label: text.isForCustomerPreOrder,
                           value: formatYesNo(
                             selectedProduct.restaurant?.isforcustomerpreorder,
+                            tr,
                           ),
                         },
                         {
                           label: text.isALaCarte,
-                          value: formatYesNo(selectedProduct.isalacarte),
+                          value: formatYesNo(selectedProduct.isalacarte, tr),
                         },
                         {
                           label: text.isStockForRestaurant,
                           value: formatYesNo(
                             selectedProduct.isstockforrestaurant,
+                            tr,
                           ),
                         },
                         {
                           label: text.isSplitUnitPrint,
-                          value: formatYesNo(selectedProduct.issplitunitprint),
+                          value: formatYesNo(
+                            selectedProduct.issplitunitprint,
+                            tr,
+                          ),
                         },
                         {
                           label: text.isOnlyStaff,
-                          value: formatYesNo(selectedProduct.isonlystaff),
+                          value: formatYesNo(selectedProduct.isonlystaff, tr),
                         },
                         {
                           label: text.foodType,
@@ -2473,46 +2588,61 @@ export function ProductScreen({
                             : "-",
                         },
                         {
-                          label: "บริการสั่งอาหาร",
+                          label: tr(
+                            "product_food_order_service",
+                            "บริการสั่งอาหาร",
+                          ),
                           value: formatNamedList(
                             selectedProduct.ordertypes,
                             lang,
                           ),
                         },
                         {
-                          label: "ชุดตัวเลือกสินค้า",
+                          label: tr(
+                            "product_option_sets",
+                            "ชุดตัวเลือกสินค้า",
+                          ),
                           value: formatOptionList(
                             selectedProduct.options,
                             lang,
+                            tr,
                           ),
                         },
                         {
-                          label: "สะสมแต้ม",
-                          value: formatYesNo(selectedProduct.issumpoint),
+                          label: tr("product_point_accumulation", "สะสมแต้ม"),
+                          value: formatYesNo(selectedProduct.issumpoint, tr),
                         },
                         {
-                          label: "ส่วนลดสูงสุด",
+                          label: tr("product_max_discount", "ส่วนลดสูงสุด"),
                           value: selectedProduct.maxdiscount || "-",
                         },
                         {
-                          label: "ส่วนลด",
+                          label: tr("product_discount", "ส่วนลด"),
                           value: selectedProduct.discount || "-",
                         },
                         {
-                          label: "หักส่วนลด ณ จุดขาย",
+                          label: tr(
+                            "product_discount_at_pos",
+                            "หักส่วนลด ณ จุดขาย",
+                          ),
                           value: formatYesNo(
                             selectedProduct.isdiscountpointofpurchase,
+                            tr,
                           ),
                         },
                         {
-                          label: "เงินปันผล",
-                          value: formatYesNo(selectedProduct.isdividend),
+                          label: tr("product_dividend", "เงินปันผล"),
+                          value: formatYesNo(selectedProduct.isdividend, tr),
                         },
                       ]}
                     />
                     <DetailSection
                       title={`${text.tabTimeForSales} / ${text.tabBusinessBranchShort}`}
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
                           label: text.tabTimeForSales,
@@ -2521,14 +2651,18 @@ export function ProductScreen({
                           ),
                         },
                         {
-                          label: text.businessTypes ?? "ประเภทธุรกิจ",
+                          label:
+                            text.businessTypes ??
+                            tr("product_business_types", "ประเภทธุรกิจ"),
                           value: formatNamedList(
                             selectedProduct.businesstypes,
                             lang,
                           ),
                         },
                         {
-                          label: text.ignoreBranches ?? "สาขาที่ยกเว้น",
+                          label:
+                            text.ignoreBranches ??
+                            tr("product_ignore_branches", "สาขาที่ยกเว้น"),
                           value: formatNamedList(
                             selectedProduct.ignorebranches,
                             lang,
@@ -2540,63 +2674,86 @@ export function ProductScreen({
                     <DetailSection
                       title={`${text.tabMedia} / Marketplace`}
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
-                          label: "ใช้รูปหรือสี",
-                          value: formatYesNo(selectedProduct.useimageorcolor),
+                          label: tr(
+                            "product_use_image_or_color",
+                            "ใช้รูปหรือสี",
+                          ),
+                          value: formatYesNo(
+                            selectedProduct.useimageorcolor,
+                            tr,
+                          ),
                         },
                         {
-                          label: "สี",
+                          label: tr("common_color", "สี"),
                           value:
                             selectedProduct.colorselect ||
                             selectedProduct.colorselecthex ||
                             "-",
                         },
                         {
-                          label: "รูปหลัก",
-                          value: selectedProduct.imageuri ? "มีรูปหลัก" : "-",
+                          label: tr("product_main_image", "รูปหลัก"),
+                          value: selectedProduct.imageuri
+                            ? tr("product_has_main_image", "มีรูปหลัก")
+                            : "-",
                         },
                         {
-                          label: "รูปทั้งหมด",
+                          label: tr("product_all_images", "รูปทั้งหมด"),
                           value: selectedProduct.images?.length
-                            ? `${selectedProduct.images.length} รูป`
+                            ? `${selectedProduct.images.length} ${tr("common_images_count", "รูป")}`
                             : "-",
                         },
                         {
                           label: "Marketplace",
                           value: formatMarketplaceProductList(
                             selectedProduct.marketplaceproducts,
+                            tr,
                           ),
                         },
                         {
-                          label: "คำเตือน",
+                          label: tr("common_warning", "คำเตือน"),
                           value: selectedProduct.alertdescription || "-",
                         },
                         {
-                          label: "รายละเอียด",
+                          label: tr("common_description", "รายละเอียด"),
                           value: selectedProduct.description || "-",
                         },
                       ]}
                     />
                     <DetailSection
-                      title="ข้อมูลระบบ"
+                      title={tr("common_system_info", "ข้อมูลระบบ")}
                       showEmptyFields={showEmptyDetails}
+                      emptyText={tr(
+                        "common_no_data_in_section",
+                        "ยังไม่มีข้อมูลในส่วนนี้",
+                      )}
                       fields={[
                         {
-                          label: "รหัสภายในสินค้า",
+                          label: tr(
+                            "product_internal_guid",
+                            "รหัสภายในสินค้า",
+                          ),
                           value: selectedProduct.guidfixed || "-",
                         },
                         {
-                          label: "รหัสกลุ่มกิจการ",
+                          label: tr(
+                            "product_holding_code",
+                            "รหัสกลุ่มกิจการ",
+                          ),
                           value: selectedProduct.holdingcode || "-",
                         },
                         {
-                          label: "GUID หน่วยนับ",
+                          label: tr("product_unit_guid", "GUID หน่วยนับ"),
                           value: selectedProduct.unitguid || "-",
                         },
                         {
-                          label: "เปิดคำเตือน",
-                          value: formatYesNo(selectedProduct.isalert),
+                          label: tr("product_enable_alert", "เปิดคำเตือน"),
+                          value: formatYesNo(selectedProduct.isalert, tr),
                         },
                       ]}
                     />
@@ -2622,7 +2779,7 @@ export function ProductScreen({
         master={pickerType as any}
         title={
           pickerType
-            ? `ค้นหา ${text[pickerType as keyof typeof text] || pickerType}`
+            ? `${tr("common_search", "ค้นหา")} ${text[pickerType as keyof typeof text] || pickerType}`
             : ""
         }
         onSelect={handlePickerSelect}
@@ -2758,8 +2915,13 @@ function productUnitRows(item: Product): ProductUnitConversion[] {
   return item.unitconversions ?? [];
 }
 
-function formatProductUnitType(item: Product): string {
-  return productUnitRows(item).length > 0 ? "หลายหน่วยนับ" : "หน่วยนับเดียว";
+function formatProductUnitType(
+  item: Product,
+  tr?: (key: string, fallback: string) => string,
+): string {
+  return productUnitRows(item).length > 0
+    ? (tr ? tr("product_multiple_units", "หลายหน่วยนับ") : "หลายหน่วยนับ")
+    : (tr ? tr("product_single_unit", "หน่วยนับเดียว") : "หน่วยนับเดียว");
 }
 
 // ─── Tab Components ───────────────────────────────────────────────────────
@@ -2769,8 +2931,13 @@ type DetailFieldItem = {
   value: string;
 };
 
-function formatYesNo(value?: boolean) {
-  return value ? "ใช่" : "ไม่ใช่";
+function formatYesNo(
+  value?: boolean,
+  tr?: (key: string, fallback: string) => string,
+) {
+  return value
+    ? (tr ? tr("common_yes", "ใช่") : "ใช่")
+    : (tr ? tr("common_no", "ไม่ใช่") : "ไม่ใช่");
 }
 
 function formatNamedList(
@@ -2804,6 +2971,7 @@ function formatUnitConversionList(
 function formatRefBarcodeList(
   items: RefProductBarcode[] | undefined,
   language: string,
+  tr?: (key: string, fallback: string) => string,
 ) {
   if (!items || items.length === 0) return "-";
   return items
@@ -2820,7 +2988,7 @@ function formatRefBarcodeList(
           const stockText = (mapping.marketplacedimensionstocks || [])
             .map(
               (stock) =>
-                `${stock.dimensionname || stock.dimensionkey}: พร้อมขาย ${stock.availableqty}`,
+                `${stock.dimensionname || stock.dimensionkey}: ${tr ? tr("product_available_to_sell", "พร้อมขาย") : "พร้อมขาย"} ${stock.availableqty}`,
             )
             .join("; ");
           return [
@@ -2861,17 +3029,27 @@ function formatBomList(
 function formatOptionList(
   items: ProductOption[] | undefined,
   language: string,
+  tr?: (key: string, fallback: string) => string,
 ) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) => {
-      const name = pickName(item.names, language) || "ชุดตัวเลือก";
+      const name =
+        pickName(item.names, language) ||
+        (tr ? tr("product_option_set", "ชุดตัวเลือก") : "ชุดตัวเลือก");
       const choiceText = (item.choices || [])
         .map((choice) => {
           const choiceName =
-            pickName(choice.names, language) || choice.refbarcode || "ตัวเลือก";
-          const price = choice.price ? `ราคา ${choice.price}` : "";
-          const qty = choice.qty == null ? "" : `จำนวน ${choice.qty}`;
+            pickName(choice.names, language) ||
+            choice.refbarcode ||
+            (tr ? tr("product_choice", "ตัวเลือก") : "ตัวเลือก");
+          const price = choice.price
+            ? `${tr ? tr("common_price", "ราคา") : "ราคา"} ${choice.price}`
+            : "";
+          const qty =
+            choice.qty == null
+              ? ""
+              : `${tr ? tr("common_qty", "จำนวน") : "จำนวน"} ${choice.qty}`;
           return [choiceName, price, qty].filter(Boolean).join(" ");
         })
         .join("; ");
@@ -2880,19 +3058,26 @@ function formatOptionList(
     .join(", ");
 }
 
-function formatDimensionList(items: Product["dimensions"], language: string) {
+function formatDimensionList(
+  items: Product["dimensions"],
+  language: string,
+  tr?: (key: string, fallback: string) => string,
+) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) => {
       const dimensionName = pickName(item.names, language) || item.guidfixed;
       const choiceName =
         pickName(item.item?.names, language) || item.item?.guidfixed || "-";
-      return `${dimensionName}: ${choiceName}${item.isdisabled || item.item?.isdisabled ? " (ปิดใช้)" : ""}`;
+      return `${dimensionName}: ${choiceName}${item.isdisabled || item.item?.isdisabled ? ` (${tr ? tr("common_disabled", "ปิดใช้") : "ปิดใช้"})` : ""}`;
     })
     .join(", ");
 }
 
-function formatMarketplaceProductList(items: Product["marketplaceproducts"]) {
+function formatMarketplaceProductList(
+  items: Product["marketplaceproducts"],
+  tr?: (key: string, fallback: string) => string,
+) {
   if (!items || items.length === 0) return "-";
   return items
     .map((item) =>
@@ -2902,7 +3087,9 @@ function formatMarketplaceProductList(items: Product["marketplaceproducts"]) {
         item.marketitemid,
         item.sellersku || item.shopsku,
         item.status,
-        item.syncenabled ? "sync" : "ไม่ sync",
+        item.syncenabled
+          ? "sync"
+          : (tr ? tr("product_not_sync", "ไม่ sync") : "ไม่ sync"),
       ]
         .filter(Boolean)
         .join(" / "),
@@ -2929,6 +3116,7 @@ function isEmptyDetailValue(value: string) {
     normalized === "-" ||
     normalized === "—" ||
     normalized === "ไม่ใช่" ||
+    normalized === "no" ||
     normalized === "0 kg" ||
     normalized === "0.000 kg" ||
     /^0\s*[×x]\s*0\s*[×x]\s*0\s*cm$/.test(normalized)
@@ -2966,10 +3154,12 @@ function DetailSummary({
 }
 
 function DetailSection({
+  emptyText,
   fields,
   showEmptyFields = false,
   title,
 }: {
+  emptyText?: string;
   fields: DetailFieldItem[];
   showEmptyFields?: boolean;
   title: string;
@@ -2999,7 +3189,7 @@ function DetailSection({
         </dl>
       ) : (
         <p className="px-3 py-2 text-center text-xs text-muted-foreground">
-          ยังไม่มีข้อมูลในส่วนนี้
+          {emptyText || "ยังไม่มีข้อมูลในส่วนนี้"}
         </p>
       )}
     </section>

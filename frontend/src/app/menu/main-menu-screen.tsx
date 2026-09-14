@@ -2813,6 +2813,7 @@ function WorkTabPanel({
     return (
       <ProductScreen
         active={active}
+        backendLanguage={backendLanguage}
         embedded
         focusRequest={activeTab.productFocusRequest}
         language={language}

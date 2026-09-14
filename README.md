@@ -8,6 +8,15 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — รองรับภาษาหลากหลายและกำจัดข้อความ Hardcode ในหน้าจอจัดการสินค้า (Item 24 - ตอนที่ 2)
+
+- [i18n] เพิ่มคีย์ภาษาสำหรับหน้าจอสินค้าและข้อมูลรายละเอียด 82 รายการลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษาตามมาตรฐาน (ครอบคลุมแท็บ, รายละเอียดสินค้า, ข้อมูลภาษี, หน่วยนับ, ข้อมูลคลัง, มิติ/น้ำหนักพัสดุ, ร้านอาหาร/POS, ข้อมูลระบบ, ข้อความเตือน และไดอะล็อก)
+- [i18n] ปรับปรุง `frontend/src/app/menu/product-screen.tsx`: รับ `backendLanguage` prop, ปรับใช้ `tr()` แปลข้อความทุกส่วนบนหน้าจอ (แถบเครื่องมือ, ตัวกรอง, ตารางรายการ, Detail Summary, DetailSection, ไดอะล็อกยืนยัน, และ Master Picker) พร้อมส่งพารามิเตอร์ `tr` ไปยังฟังก์ชันช่วยแปลงรูปแบบ (`formatProductUnitType`, `formatYesNo`, `formatRefBarcodeList`, `formatOptionList`, `formatDimensionList`, `formatMarketplaceProductList`) แทนข้อความ Hardcode ภาษาไทยเดิมทั้งหมด
+- [i18n] ปรับปรุง `frontend/src/app/menu/main-menu-screen.tsx`: ส่งต่อ `backendLanguage={backendLanguage}` ไปยังคอมโพเนนต์ `<ProductScreen />`
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `backend/assets/language/languages.tsv`, `frontend/src/app/menu/product-screen.tsx`, `frontend/src/app/menu/main-menu-screen.tsx`, `docs/reference/CODE-MAP.md`
+- หลักฐาน: Vitest 477/477 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — รองรับภาษาหลากหลายและกำจัดข้อความ Hardcode ในหน้าจอจัดการบาร์โค้ดสินค้า (Item 24 - ตอนที่ 1)
 
 - [i18n] เพิ่มคีย์ภาษาสำหรับบาร์โค้ดและส่วนกลาง 17 รายการ (`barcode_select_company_required`, `barcode_load_detail_failed`, `barcode_company_changed_warning`, `common_click_to_expand_rows`, `common_click_to_collapse_rows`, `common_collapse_rows`, `common_expand_rows`, `common_items`, `common_of`, `common_prev_page`, `common_page`, `common_next_page`, `barcode_splitter_hint`, `barcode_print_labels`, `barcode_complete_product_details`, `barcode_media_and_package_title`, `barcode_description_label`) ลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษา
