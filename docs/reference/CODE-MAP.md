@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-14 @ commit 65e73979 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-14 @ commit bce6ab4f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 46
 
@@ -489,7 +489,7 @@ Files indexed: 46
 | 2968 | function | `DetailSection` |
 | 3009 | function | `DetailField` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2894 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2895 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -552,7 +552,7 @@ Files indexed: 46
 | 2635 | function | `clearDragState` |
 | 2642 | function | `reorderFromPointer` |
 | 2767 | function | `WorkTabPanel` |
-| 2879 | function | `DashboardLoading` |
+| 2880 | function | `DashboardLoading` |
 
 ## backend/internal/product/productbarcode/services/productbarcode_http_service.go (2793 lines)
 
@@ -1204,6 +1204,58 @@ Files indexed: 46
 | 1412 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ZeroValues` |
 | 1601 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType` |
 
+## frontend/src/app/menu/product-barcode-screen.tsx (1714 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 106 | function | `clampProductSplitLeft` |
+| 123 | function | `ProductBarcodeScreen` |
+| 192 | const-arrow | `handleWorkspaceChange` |
+| 267 | function | `moveWithMouse` |
+| 271 | function | `stopMouseResize` |
+| 487 | function | `toggleChecked` |
+| 495 | function | `submitSearch` |
+| 500 | function | `canDiscardEditor` |
+| 514 | function | `goToPage` |
+| 522 | function | `closeEditor` |
+| 530 | function | `handleEditorChange` |
+| 539 | function | `selectListItem` |
+| 546 | function | `selectRowByIndex` |
+| 552 | function | `handleListKeyDown` |
+| 564 | function | `hasCompanyScope` |
+| 573 | function | `openCreateEditor` |
+| 587 | function | `openEditEditor` |
+| 612 | function | `openCopyEditor` |
+| 639 | function | `copyCurrentEditorValue` |
+| 653 | function | `saveEditor` |
+| 725 | function | `deleteSelected` |
+| 781 | function | `deleteCurrentItem` |
+| 1248 | function | `BarcodeRow` |
+| 1271 | function | `handleRowKeyDown` |
+| 1355 | function | `barcodeIdentity` |
+| 1359 | function | `barcodeRowKey` |
+| 1363 | function | `ProductBarcodeDetail` |
+| 1492 | function | `DetailSection` |
+| 1518 | function | `DetailField` |
+| 1527 | function | `readAuthSession` |
+| 1531 | function | `readWorkspaceSession` |
+| 1544 | function | `normalizeBarcodeList` |
+| 1551 | function | `normalizeBarcodeRecord` |
+| 1589 | function | `getProductImages` |
+| 1600 | function | `getProductVideos` |
+| 1612 | function | `getSellingPrice` |
+| 1620 | function | `extractBarcodeRecordPayload` |
+| 1630 | function | `detailKey` |
+| 1634 | function | `getFirstString` |
+| 1645 | function | `getFirstNumber` |
+| 1656 | function | `localizedNameFromKeys` |
+| 1671 | function | `getNames` |
+| 1684 | function | `getString` |
+| 1689 | function | `getNumber` |
+| 1699 | function | `isRecord` |
+| 1707 | function | `formatNumber` |
+| 1711 | function | `formatCodeName` |
+
 ## backend/internal/product/productbarcode/productbarcode_http.go (1699 lines)
 
 | Line | Kind | Name |
@@ -1235,58 +1287,6 @@ Files indexed: 46
 | 1059 | function | `searchFilter` |
 | 1598 | function | `Import` |
 | 1641 | function | `ImportRefBarcodeUpdate` |
-
-## frontend/src/app/menu/product-barcode-screen.tsx (1697 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 100 | function | `clampProductSplitLeft` |
-| 117 | function | `ProductBarcodeScreen` |
-| 177 | const-arrow | `handleWorkspaceChange` |
-| 252 | function | `moveWithMouse` |
-| 256 | function | `stopMouseResize` |
-| 472 | function | `toggleChecked` |
-| 480 | function | `submitSearch` |
-| 485 | function | `canDiscardEditor` |
-| 499 | function | `goToPage` |
-| 507 | function | `closeEditor` |
-| 515 | function | `handleEditorChange` |
-| 524 | function | `selectListItem` |
-| 531 | function | `selectRowByIndex` |
-| 537 | function | `handleListKeyDown` |
-| 549 | function | `hasCompanyScope` |
-| 558 | function | `openCreateEditor` |
-| 572 | function | `openEditEditor` |
-| 597 | function | `openCopyEditor` |
-| 624 | function | `copyCurrentEditorValue` |
-| 638 | function | `saveEditor` |
-| 710 | function | `deleteSelected` |
-| 766 | function | `deleteCurrentItem` |
-| 1233 | function | `BarcodeRow` |
-| 1256 | function | `handleRowKeyDown` |
-| 1340 | function | `barcodeIdentity` |
-| 1344 | function | `barcodeRowKey` |
-| 1348 | function | `ProductBarcodeDetail` |
-| 1475 | function | `DetailSection` |
-| 1501 | function | `DetailField` |
-| 1510 | function | `readAuthSession` |
-| 1514 | function | `readWorkspaceSession` |
-| 1527 | function | `normalizeBarcodeList` |
-| 1534 | function | `normalizeBarcodeRecord` |
-| 1572 | function | `getProductImages` |
-| 1583 | function | `getProductVideos` |
-| 1595 | function | `getSellingPrice` |
-| 1603 | function | `extractBarcodeRecordPayload` |
-| 1613 | function | `detailKey` |
-| 1617 | function | `getFirstString` |
-| 1628 | function | `getFirstNumber` |
-| 1639 | function | `localizedNameFromKeys` |
-| 1654 | function | `getNames` |
-| 1667 | function | `getString` |
-| 1672 | function | `getNumber` |
-| 1682 | function | `isRecord` |
-| 1690 | function | `formatNumber` |
-| 1694 | function | `formatCodeName` |
 
 ## frontend/src/app/system-settings/product-group-tree-view.tsx (1689 lines)
 
@@ -1995,11 +1995,11 @@ Files indexed: 46
 | 1069 | function | `ImageGalleryReadOnlyDetail` |
 | 1107 | function | `GalleryReadOnlyItem` |
 
-## frontend/src/lib/product-barcode/language.ts (1118 lines)
+## frontend/src/lib/product-barcode/language.ts (1139 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 1114 | function | `getBarcodeText` |
+| 1115 | function | `getBarcodeText` |
 
 ## backend/internal/documentwarehouse/documentimage/services/documentimagegroup_service.go (1114 lines)
 

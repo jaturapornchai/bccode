@@ -2823,6 +2823,7 @@ function WorkTabPanel({
   if (activeTab.route === "/productbarcode") {
     return (
       <ProductBarcodeScreen
+        backendLanguage={backendLanguage}
         embedded
         language={language}
         onOpenLabelPrint={() => onOpenRoute("/productbarcodeshelf")}

@@ -10,6 +10,7 @@
  */
 
 import { type LanguageCode, normalizeLanguage } from "@/lib/i18n";
+import { type BackendLanguageDictionary } from "@/lib/backend-language";
 
 export type BarcodeText = typeof barcodeTextTh;
 
@@ -1113,6 +1114,26 @@ const dict: Record<LanguageCode, BarcodeText> = {
 
 export function getBarcodeText(
   language: LanguageCode | string | undefined,
+  backendLanguage?: BackendLanguageDictionary,
 ): BarcodeText {
-  return dict[normalizeLanguage(language)] ?? barcodeTextTh;
+  const normalized = normalizeLanguage(language);
+  const fallbackDict = dict[normalized] ?? barcodeTextTh;
+  if (!backendLanguage || Object.keys(backendLanguage).length === 0) {
+    return fallbackDict;
+  }
+
+  return new Proxy(fallbackDict, {
+    get(target, prop: string) {
+      if (typeof prop !== "string" || !(prop in target)) {
+        return (target as Record<string, unknown>)[prop];
+      }
+      const fallback = (target as Record<string, string>)[prop];
+      const snakeProp = prop.replace(/([A-Z])/g, "_$1").toLowerCase();
+      const barcodeKey = `barcode_${snakeProp}`;
+      if (backendLanguage[barcodeKey]) return backendLanguage[barcodeKey];
+      if (backendLanguage[snakeProp]) return backendLanguage[snakeProp];
+      if (backendLanguage[prop]) return backendLanguage[prop];
+      return fallback;
+    },
+  });
 }

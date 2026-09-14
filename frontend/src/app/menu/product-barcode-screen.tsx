@@ -67,10 +67,16 @@ import {
   type BarcodeText,
 } from "@/lib/product-barcode/language";
 import { pushNotice } from "@/lib/toast";
+import {
+  backendText,
+  useBackendLanguage,
+  type BackendLanguageDictionary,
+} from "@/lib/backend-language";
 
 type ProductBarcodeScreenProps = {
   embedded?: boolean;
   language?: LanguageCode;
+  backendLanguage?: BackendLanguageDictionary;
   onOpenLabelPrint?: () => void;
   onOpenProduct?: (itemCode: string) => void;
 };
@@ -117,14 +123,23 @@ const pageSize = 80;
 export function ProductBarcodeScreen({
   embedded = false,
   language = "th",
+  backendLanguage: propBackendLanguage,
   onOpenLabelPrint,
   onOpenProduct,
 }: ProductBarcodeScreenProps) {
   const lang = normalizeLanguage(language);
-  const text = getBarcodeText(lang);
-  const { confirm, confirmationDialog } = useConfirmDialog();
-
   const [auth, setAuth] = useState<AuthSession | null>(null);
+  const fetchedBackendLanguage = useBackendLanguage(lang, auth?.backendUrl);
+  const backendLanguage = propBackendLanguage ?? fetchedBackendLanguage;
+  const tr = useCallback(
+    (key: string, fallback: string) => backendText(backendLanguage, key, fallback),
+    [backendLanguage],
+  );
+  const text = useMemo(() => getBarcodeText(lang, backendLanguage), [lang, backendLanguage]);
+  const { confirm, confirmationDialog } = useConfirmDialog({
+    defaultConfirmLabel: tr("common_confirm", "ยืนยัน"),
+    defaultCancelLabel: tr("common_cancel", "ยกเลิก"),
+  });
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [items, setItems] = useState<ProductBarcodeRecord[]>([]);
   const [detailItems, setDetailItems] = useState<
@@ -203,10 +218,10 @@ export function ProductBarcodeScreen({
   const activeBusinessCode = normalizeBusinessCode(workspace?.company?.code);
   const companyScopeKey = `${activeHoldingCode}\u0000${activeBusinessCode}`;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const companyRequiredMessage =
-    lang === "th"
-      ? "กรุณาเลือกบริษัทก่อนจัดการบาร์โค้ด"
-      : "Select a company before managing barcodes.";
+  const companyRequiredMessage = tr(
+    "barcode_select_company_required",
+    "กรุณาเลือกบริษัทก่อนจัดการบาร์โค้ด",
+  );
   const shopLanguages = useMemo(
     () => languageCodesFromWorkspace(workspace),
     [workspace],
@@ -578,7 +593,7 @@ export function ProductBarcodeScreen({
     if (!detail) {
       setNotice({
         type: "error",
-        text: lang === "th" ? "โหลดรายละเอียดบาร์โค้ดไม่สำเร็จ" : "Unable to load barcode details.",
+        text: tr("barcode_load_detail_failed", "โหลดรายละเอียดบาร์โค้ดไม่สำเร็จ"),
       });
       return;
     }
@@ -602,7 +617,7 @@ export function ProductBarcodeScreen({
     if (!detail) {
       setNotice({
         type: "error",
-        text: lang === "th" ? "โหลดรายละเอียดบาร์โค้ดไม่สำเร็จ" : "Unable to load barcode details.",
+        text: tr("barcode_load_detail_failed", "โหลดรายละเอียดบาร์โค้ดไม่สำเร็จ"),
       });
       return;
     }
@@ -647,10 +662,10 @@ export function ProductBarcodeScreen({
     if (editorScopeKey !== companyScopeKey) {
       setNotice({
         type: "error",
-        text:
-          lang === "th"
-            ? "บริษัทถูกเปลี่ยนระหว่างแก้ไข ข้อมูลที่กรอกยังอยู่ กรุณากลับไปเลือกบริษัทเดิมหรือปิดฟอร์มแล้วเริ่มใหม่"
-            : "The company changed while editing. Your draft is preserved; return to the original company or close and start again.",
+        text: tr(
+          "barcode_company_changed_warning",
+          "บริษัทถูกเปลี่ยนระหว่างแก้ไข ข้อมูลที่กรอกยังอยู่ กรุณากลับไปเลือกบริษัทเดิมหรือปิดฟอร์มแล้วเริ่มใหม่",
+        ),
       });
       return;
     }
@@ -882,7 +897,7 @@ export function ProductBarcodeScreen({
                 disabled={!selected}
               >
                 <Copy size={16} />
-                คัดลอก
+                {text.copy}
               </Button>
               <Button
                 variant={compactRows ? "secondary" : "outline"}
@@ -898,9 +913,9 @@ export function ProductBarcodeScreen({
                   });
                 }}
                 className="h-9 text-xs"
-                title={compactRows ? "คลิกเพื่อขยายบรรทัด" : "คลิกเพื่อย่อบรรทัด"}
+                title={compactRows ? tr("common_click_to_expand_rows", "คลิกเพื่อขยายบรรทัด") : tr("common_click_to_collapse_rows", "คลิกเพื่อย่อบรรทัด")}
               >
-                {compactRows ? "ย่อบรรทัด" : "ขยายบรรทัด"}
+                {compactRows ? tr("common_collapse_rows", "ย่อบรรทัด") : tr("common_expand_rows", "ขยายบรรทัด")}
               </Button>
               <Button size="sm" onClick={() => void openCreateEditor()}>
                 <Plus size={16} />
@@ -957,9 +972,9 @@ export function ProductBarcodeScreen({
                 });
               }}
               className="h-9 text-xs"
-              title={compactRows ? "คลิกเพื่อขยายบรรทัด" : "คลิกเพื่อย่อบรรทัด"}
+              title={compactRows ? tr("common_click_to_expand_rows", "คลิกเพื่อขยายบรรทัด") : tr("common_click_to_collapse_rows", "คลิกเพื่อย่อบรรทัด")}
             >
-              {compactRows ? "ย่อบรรทัด" : "ขยายบรรทัด"}
+              {compactRows ? tr("common_collapse_rows", "ย่อบรรทัด") : tr("common_expand_rows", "ขยายบรรทัด")}
             </Button>
             <Button
               size="sm"
@@ -968,7 +983,7 @@ export function ProductBarcodeScreen({
               disabled={!selected}
             >
               <Copy size={16} />
-              คัดลอก
+              {text.copy}
             </Button>
             <Button
               size="sm"
@@ -1113,13 +1128,13 @@ export function ProductBarcodeScreen({
                 data-testid="barcode-pagination"
               >
                 <span>
-                  {lang === "th" ? "รายการ" : "Items"} {pageIndex * pageSize + 1}
-                  –{Math.min(pageIndex * pageSize + items.length, total)} {lang === "th" ? "จาก" : "of"}{" "}
+                  {tr("common_items", "รายการ")} {pageIndex * pageSize + 1}
+                  –{Math.min(pageIndex * pageSize + items.length, total)} {tr("common_of", "จาก")}{" "}
                   {total.toLocaleString(lang === "th" ? "th-TH" : "en-US")}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
-                    aria-label={lang === "th" ? "หน้าก่อนหน้า" : "Previous page"}
+                    aria-label={tr("common_prev_page", "หน้าก่อนหน้า")}
                     data-testid="barcode-page-prev"
                     disabled={loading || pageIndex === 0}
                     onClick={() => void goToPage(pageIndex - 1)}
@@ -1130,10 +1145,10 @@ export function ProductBarcodeScreen({
                     <ChevronLeft size={15} />
                   </Button>
                   <span className="min-w-20 text-center font-medium text-foreground">
-                    {lang === "th" ? "หน้า" : "Page"} {pageIndex + 1} / {pageCount}
+                    {tr("common_page", "หน้า")} {pageIndex + 1} / {pageCount}
                   </span>
                   <Button
-                    aria-label={lang === "th" ? "หน้าถัดไป" : "Next page"}
+                    aria-label={tr("common_next_page", "หน้าถัดไป")}
                     data-testid="barcode-page-next"
                     disabled={loading || pageIndex + 1 >= pageCount}
                     onClick={() => void goToPage(pageIndex + 1)}
@@ -1153,11 +1168,10 @@ export function ProductBarcodeScreen({
           value={Math.round(splitLeftPercent)}
           min={PRODUCT_SPLIT_MIN_LEFT}
           max={PRODUCT_SPLIT_MAX_LEFT}
-          label={
-            language === "th"
-              ? "ปรับขนาดรายการบาร์โค้ดและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-              : (text.resizeAriaLabel || "Resize list and detail panes (drag to resize, double-click to reset)")
-          }
+          label={tr(
+            "barcode_splitter_hint",
+            "ปรับขนาดรายการบาร์โค้ดและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)",
+          )}
           isResizing={resizingSplit}
           onPointerDown={startSplitResize}
           onMouseDown={startSplitMouseResize}
@@ -1219,6 +1233,7 @@ export function ProductBarcodeScreen({
             onOpenLabelPrint={onOpenLabelPrint}
             onOpenProduct={onOpenProduct}
             text={text}
+            tr={tr}
           />
         )}
       </div>
@@ -1354,6 +1369,7 @@ function ProductBarcodeDetail({
   onOpenLabelPrint,
   onOpenProduct,
   text,
+  tr,
 }: {
   auth: AuthSession | null;
   item: ProductBarcodeRecord | null;
@@ -1363,6 +1379,7 @@ function ProductBarcodeDetail({
   onOpenLabelPrint?: () => void;
   onOpenProduct?: (itemCode: string) => void;
   text: BarcodeText;
+  tr: (key: string, fallback: string) => string;
 }) {
   const fields = item
     ? [
@@ -1394,7 +1411,7 @@ function ProductBarcodeDetail({
               variant="secondary"
             >
               <Printer size={16} />
-              {language === "th" ? "พิมพ์ฉลาก" : "Print labels"}
+              {tr("barcode_print_labels", "พิมพ์ฉลาก")}
             </Button>
             <Button
               disabled={!item?.itemCode || !onOpenProduct}
@@ -1405,7 +1422,7 @@ function ProductBarcodeDetail({
               variant="secondary"
             >
               <Package size={16} />
-              {language === "th" ? "ไปเติมรายละเอียดสินค้า" : "Complete product details"}
+              {tr("barcode_complete_product_details", "ไปเติมรายละเอียดสินค้า")}
             </Button>
             <Button disabled={!item} onClick={onEdit} size="sm" variant="outline">
               <Pencil size={16} />
@@ -1451,11 +1468,11 @@ function ProductBarcodeDetail({
                   videos: item.videos,
                 },
               ]}
-              title={language === "th" ? "สื่อบาร์โค้ดและบรรจุภัณฑ์" : "Barcode and package media"}
+              title={tr("barcode_media_and_package_title", "สื่อบาร์โค้ดและบรรจุภัณฑ์")}
             />
             <section className="rounded-2xl border border-border p-3">
               <h3 className="mb-2 text-sm font-semibold">
-                {language === "th" ? "รายละเอียดบาร์โค้ด" : "Barcode description"}
+                {tr("barcode_description_label", "รายละเอียดบาร์โค้ด")}
               </h3>
               <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
                 {item.description || "—"}
