@@ -370,20 +370,13 @@ function sessionRelativeText(ms: number, nowMs: number): string {
   return `${Math.floor(hours / 24)} วันที่แล้ว`;
 }
 
-function sessionStatsTooltip(stats: SessionStatsData, language: LanguageCode): string {
-  const lines = language === "th"
-    ? [
-        `กำลังใช้งาน (30 นาทีหลัง): ${stats.activesessions} เซสชัน`,
-        `เซสชันที่ยังไม่หมดอายุ (8 ชม.): ${stats.totalsessions} เซสชัน`,
-      ]
-    : [
-        `Active sessions (last 30 min): ${stats.activesessions}`,
-        `Sessions not yet expired (8h): ${stats.totalsessions}`,
-      ];
+function sessionStatsTooltip(stats: SessionStatsData, backendLanguage: BackendLanguageDictionary): string {
+  const lines = [
+    backendText(backendLanguage, "menu_active_sessions_last_30_min", "กำลังใช้งาน (30 นาทีหลัง): {0} เซสชัน").replace("{0}", String(stats.activesessions)),
+    backendText(backendLanguage, "menu_sessions_not_yet_expired_8h", "เซสชันที่ยังไม่หมดอายุ (8 ชม.): {0} เซสชัน").replace("{0}", String(stats.totalsessions)),
+  ];
   for (const holding of stats.holdings.slice(0, 12)) {
-    lines.push(language === "th"
-      ? `${holding.holdingcode || "-"}: กำลังใช้ ${holding.active} / ทั้งหมด ${holding.sessions} เซสชัน`
-      : `${holding.holdingcode || "-"}: ${holding.active} active / ${holding.sessions} total`);
+    lines.push(backendText(backendLanguage, "menu_active_total_sessions", "{0}: กำลังใช้ {1} / ทั้งหมด {2} เซสชัน").replace("{0}", String(holding.holdingcode || "-")).replace("{1}", String(holding.active)).replace("{2}", String(holding.sessions)));
   }
   return lines.join("\n");
 }
@@ -446,10 +439,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const lineLinkDescription = backendText(backendLanguage, "scan_qr_with_line", t(language, "lineLoginDescription"));
   const lineLinkSuccessText = backendText(backendLanguage, "link_line_success", t(language, "loginSuccess"));
   const lineLinkWaitingText = backendText(backendLanguage, "waiting_for_link", t(language, "lineLoginWaiting"));
-  const requestFailedText = backendText(backendLanguage, "request_failed", language === "th" ? "เรียกข้อมูลไม่สำเร็จ" : "Request failed");
-  const changePasswordText = backendText(backendLanguage, "change_password", language === "th" ? "เปลี่ยนรหัสผ่าน" : "Change password");
+  const requestFailedText = backendText(backendLanguage, "request_failed", "เรียกข้อมูลไม่สำเร็จ");
+  const changePasswordText = backendText(backendLanguage, "change_password", "เปลี่ยนรหัสผ่าน");
   const loginIdentity = auth?.profile?.email?.trim() || auth?.username?.trim() || "-";
-  const loginText = backendText(backendLanguage, "login", language === "th" ? "เข้าสู่ระบบ" : "Login");
+  const loginText = backendText(backendLanguage, "login", "เข้าสู่ระบบ");
   const canAccessMenuItem = useCallback((item: MenuItem) => allowedMenuIds.has(item.id), [allowedMenuIds]);
   const allMenuItems = useMemo(() => flattenMenuItems(), []);
   const mainApiUrl = useMemo(() => {
@@ -574,9 +567,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
         // 40+ rule: never silently lock the menu — say WHY in Thai, then leave.
         pushNotice({
           type: "error",
-          text: language === "th"
-            ? "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่"
-            : "Your session has expired. Please sign in again.",
+          text: backendText(backendLanguage, "menu_session_expired_sign_in_again", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่"),
         });
         clearAuthSession();
         localStorage.removeItem(workspaceStorageKeys.workspace);
@@ -588,26 +579,20 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       if (result.failure === "network-error") {
         pushNotice({
           type: "warning",
-          text: language === "th"
-            ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ โหลดสิทธิ์เมนูไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วกลับมาที่หน้านี้เพื่อลองใหม่"
-            : "Cannot reach the server — menu permissions failed to load. Check your connection and return to this page to retry.",
+          text: backendText(backendLanguage, "menu_cannot_reach_server_perm_load_fail", "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ โหลดสิทธิ์เมนูไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วกลับมาที่หน้านี้เพื่อลองใหม่"),
         });
         return;
       }
       if (result.failure === "no-permission-record") {
         pushNotice({
           type: "warning",
-          text: language === "th"
-            ? "ไม่พบสิทธิ์การใช้งานเมนูสำหรับคุณในบริษัทนี้ กรุณาติดต่อผู้ดูแลระบบ"
-            : "No menu permissions found for you in this company. Please contact your administrator.",
+          text: backendText(backendLanguage, "menu_no_permissions_found_contact_admin", "ไม่พบสิทธิ์การใช้งานเมนูสำหรับคุณในบริษัทนี้ กรุณาติดต่อผู้ดูแลระบบ"),
         });
         return;
       }
       pushNotice({
         type: "warning",
-        text: language === "th"
-          ? `โหลดสิทธิ์เมนูไม่สำเร็จ (รหัส ${result.status ?? "-"}) กรุณาลองใหม่อีกครั้ง`
-          : `Failed to load menu permissions (code ${result.status ?? "-"}). Please try again.`,
+        text: backendText(backendLanguage, "menu_failed_load_menu_permissions", "โหลดสิทธิ์เมนูไม่สำเร็จ (รหัส {0}) กรุณาลองใหม่อีกครั้ง").replace("{0}", String(result.status ?? "-")),
       });
     }
 
@@ -746,7 +731,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       ...current,
       {
         id: tabId,
-        title: language === "th" ? "จัดการทางลัด" : "Manage Shortcuts",
+        title: backendText(backendLanguage, "menu_manage_shortcuts_2", "จัดการทางลัด"),
         route: "/shortcuts",
         closable: true,
       },
@@ -924,7 +909,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     event.preventDefault();
     if (!auth) return;
     if (!currentPassword || !newPassword) {
-      setPasswordNotice({ type: "error", text: backendText(backendLanguage, "please_enter_password", language === "th" ? "กรุณาใส่รหัสผ่าน" : "Please enter password") });
+      setPasswordNotice({ type: "error", text: backendText(backendLanguage, "please_enter_password", "กรุณาใส่รหัสผ่าน") });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -932,7 +917,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       return;
     }
     if (newPassword.length < 15 || newPassword.length > 64) {
-      setPasswordNotice({ type: "error", text: language === "th" ? "รหัสผ่านใหม่ต้องยาว 15–64 ตัวอักษร" : "The new password must be 15–64 characters." });
+      setPasswordNotice({ type: "error", text: backendText(backendLanguage, "menu_new_password_15_64_chars", "รหัสผ่านใหม่ต้องยาว 15–64 ตัวอักษร") });
       return;
     }
 
@@ -1067,8 +1052,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   }, []);
 
   const showLeftMenu = menuLayout === "left" && !sidebarHidden;
-  const menuLayoutLeftText = backendText(backendLanguage, "menu_layout_left", language === "th" ? "เมนูซ้าย" : "Left menu");
-  const menuLayoutTopText = backendText(backendLanguage, "menu_layout_top", language === "th" ? "เมนูบน" : "Top menu");
+  const menuLayoutLeftText = backendText(backendLanguage, "menu_layout_left", "เมนูซ้าย");
+  const menuLayoutTopText = backendText(backendLanguage, "menu_layout_top", "เมนูบน");
 
   return (
     <main className={cn("min-h-dvh overflow-x-hidden bg-background text-foreground lg:h-dvh lg:min-h-0 lg:max-h-dvh lg:overflow-hidden", isResizingSidebar && "select-none")}>
@@ -1138,8 +1123,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               aria-valuenow={sidebarWidth}
               aria-valuemin={SIDEBAR_MIN_WIDTH}
               aria-valuemax={SIDEBAR_MAX_WIDTH}
-              aria-label={language === "th" ? "ปรับขนาดความกว้างเมนู (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)" : "Resize menu sidebar (drag to resize, double click to reset)"}
-              title={language === "th" ? "ปรับขนาดความกว้างเมนู (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)" : "Resize menu sidebar (drag to resize, double click to reset)"}
+              aria-label={backendText(backendLanguage, "menu_resize_menu_sidebar_drag_reset", "ปรับขนาดความกว้างเมนู (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")}
+              title={backendText(backendLanguage, "menu_resize_menu_sidebar_drag_reset", "ปรับขนาดความกว้างเมนู (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")}
               tabIndex={0}
               onPointerDown={handleSidebarResizeStart}
               onDoubleClick={handleSidebarResizeReset}
@@ -1329,7 +1314,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
           </header>
           {workspace ? (
             <nav
-              aria-label={language === "th" ? "บริบทพื้นที่ทำงาน" : "Workspace context"}
+              aria-label={backendText(backendLanguage, "menu_workspace_context", "บริบทพื้นที่ทำงาน")}
               className="menu-breadcrumb flex min-w-0 shrink-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 border-b border-border bg-background/70 px-3 py-1 backdrop-blur"
             >
               {[
@@ -1347,8 +1332,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                 <button
                   type="button"
                   className="ml-auto flex min-w-0 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-xs font-semibold leading-5 text-foreground hover:bg-primary/5 hover:text-primary transition-colors"
-                  title={sessionStatsTooltip(sessionStats, language)}
-                  aria-label={language === "th" ? "ดูรายชื่อผู้ใช้ที่กำลังใช้งาน" : "View online users"}
+                  title={sessionStatsTooltip(sessionStats, backendLanguage)}
+                  aria-label={backendText(backendLanguage, "menu_view_online_users", "ดูรายชื่อผู้ใช้ที่กำลังใช้งาน")}
                   onClick={() => {
                     setSessionsDialogOpen(true);
                     if (!auth) return;
@@ -1358,19 +1343,17 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   }}
                 >
                   <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
-                  {language === "th"
-                    ? `ผู้ใช้งานออนไลน์: ${sessionStats.activesessions} เซสชัน`
-                    : `Online sessions: ${sessionStats.activesessions}`}
+                  {backendText(backendLanguage, "menu_online_sessions", "ผู้ใช้งานออนไลน์: {0} เซสชัน").replace("{0}", String(sessionStats.activesessions))}
                 </button>
               ) : null}
             </nav>
           ) : null}
           {topSearchResults ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-3" role="search" aria-label={language === "th" ? "ผลการค้นหาเมนู" : "Menu search results"}>
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-3" role="search" aria-label={backendText(backendLanguage, "menu_menu_search_results", "ผลการค้นหาเมนู")}>
               <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
                 <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <p className="min-w-0 truncate text-sm font-bold">
-                  {language === "th" ? "ผลการค้นหา" : "Search results"}: <span className="text-primary">{globalSearch.trim()}</span>
+                  {backendText(backendLanguage, "menu_search_results", "ผลการค้นหา")}: <span className="text-primary">{globalSearch.trim()}</span>
                 </p>
                 <span className="rounded-full border border-border bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground">{topSearchResults.length}</span>
                 <Button
@@ -1381,17 +1364,15 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                   onClick={() => setGlobalSearch("")}
                 >
                   <X className="h-3.5 w-3.5" aria-hidden="true" />
-                  {language === "th" ? "ล้างการค้นหา" : "Clear search"}
+                  {backendText(backendLanguage, "menu_clear_search", "ล้างการค้นหา")}
                 </Button>
               </div>
               {topSearchResults.length === 0 ? (
                 <div className="grid place-items-center gap-2 rounded-xl border border-dashed border-border bg-card/50 p-10 text-center">
                   <SearchX className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
-                  <p className="text-sm font-bold">{language === "th" ? "ไม่พบเมนูที่ตรงกับการค้นหา" : "No matching menu"}</p>
+                  <p className="text-sm font-bold">{backendText(backendLanguage, "menu_no_matching_menu", "ไม่พบเมนูที่ตรงกับการค้นหา")}</p>
                   <p className="max-w-md text-xs text-muted-foreground">
-                    {language === "th"
-                      ? "ลองคำอื่น — ค้นหาได้ทั้งชื่อไทย อังกฤษ และชื่อหน้าจอ (route) ไม่สนอักษรใหญ่-เล็กและวรรณยุกต์"
-                      : "Try another word — search matches every language, route, case-insensitive and tone-insensitive."}
+                    {backendText(backendLanguage, "menu_try_another_word_search_all", "ลองคำอื่น — ค้นหาได้ทั้งชื่อไทย อังกฤษ และชื่อหน้าจอ (route) ไม่สนอักษรใหญ่-เล็กและวรรณยุกต์")}
                   </p>
                 </div>
               ) : (
@@ -1530,29 +1511,27 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
       {sessionsDialogOpen && sessionStats ? (
         <div className="dialog-backdrop" role="presentation">
-          <section className="line-login-dialog" aria-label={language === "th" ? "รายชื่อผู้ใช้ที่กำลังใช้งาน" : "Online users"} role="dialog" aria-modal="true">
+          <section className="line-login-dialog" aria-label={backendText(backendLanguage, "menu_online_users", "รายชื่อผู้ใช้ที่กำลังใช้งาน")} role="dialog" aria-modal="true">
             <div className="dialog-header">
               <div>
-                <p className="eyebrow">{language === "th" ? "ระบบ" : "System"}</p>
-                <h2>{language === "th" ? "ผู้ใช้งานที่กำลังใช้ระบบ" : "Active users"}</h2>
+                <p className="eyebrow">{backendText(backendLanguage, "menu_system", "ระบบ")}</p>
+                <h2>{backendText(backendLanguage, "menu_active_users", "ผู้ใช้งานที่กำลังใช้ระบบ")}</h2>
               </div>
               <button className="icon-button dialog-close" type="button" onClick={() => setSessionsDialogOpen(false)} aria-label={t(language, "lineLoginClose")}>
                 ×
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {language === "th"
-                ? `กำลังใช้งาน (30 นาทีหลัง) ${sessionStats.activesessions} เซสชัน · ยังไม่หมดอายุ (8 ชม.) ${sessionStats.totalsessions} เซสชัน`
-                : `${sessionStats.activesessions} active (30 min) · ${sessionStats.totalsessions} unexpired (8h)`}
+              {backendText(backendLanguage, "menu_active_unexpired", "กำลังใช้งาน (30 นาทีหลัง) {0} เซสชัน · ยังไม่หมดอายุ (8 ชม.) {1} เซสชัน").replace("{0}", String(sessionStats.activesessions)).replace("{1}", String(sessionStats.totalsessions))}
             </p>
             <div className="grid gap-2 overflow-y-auto scrollbar-thin mt-2 max-h-[60vh] pr-1">
               {sessionStats.entries.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-                  {language === "th" ? "ไม่มีเซสชันที่ยังไม่หมดอายุ" : "No active sessions."}
+                  {backendText(backendLanguage, "menu_no_active_sessions", "ไม่มีเซสชันที่ยังไม่หมดอายุ")}
                 </p>
               ) : (
                 sessionStats.entries.map((entry, index) => {
-                  const who = entry.name || entry.username || (language === "th" ? "ไม่ทราบชื่อ (เซสชันเก่า)" : "Unknown (old session)");
+                  const who = entry.name || entry.username || (backendText(backendLanguage, "menu_unknown_old_session", "ไม่ทราบชื่อ (เซสชันเก่า)"));
                   return (
                     <div
                       className={cn(
@@ -1566,7 +1545,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                         <span className="min-w-0 truncate font-semibold text-foreground" title={who}>{who}</span>
                         {entry.sessions > 1 ? (
                           <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                            {language === "th" ? `${entry.sessions} เซสชัน` : `${entry.sessions} sessions`}
+                            {backendText(backendLanguage, "menu_sessions", "{0} เซสชัน").replace("{0}", String(entry.sessions))}
                           </span>
                         ) : null}
                         <span className="ml-auto shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-semibold text-muted-foreground">
@@ -1574,10 +1553,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                         </span>
                       </div>
                       <p className="pl-4 text-xs text-muted-foreground">
-                        {language === "th" ? "เข้าใช้ล่าสุด" : "Signed in"}: {sessionTimeText(entry.createdat)}
+                        {backendText(backendLanguage, "menu_signed_in", "เข้าใช้ล่าสุด")}: {sessionTimeText(entry.createdat)}
                         {" · "}
-                        {language === "th" ? "ใช้งานล่าสุด" : "Last seen"}: {sessionRelativeText(entry.lastseenat, Date.now())}
-                        {entry.active ? (language === "th" ? " (กำลังใช้งาน)" : " (active)") : ""}
+                        {backendText(backendLanguage, "menu_last_seen", "ใช้งานล่าสุด")}: {sessionRelativeText(entry.lastseenat, Date.now())}
+                        {entry.active ? (backendText(backendLanguage, "menu_active", " (กำลังใช้งาน)")) : ""}
                       </p>
                     </div>
                   );
@@ -1606,11 +1585,11 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
               </button>
             </div>
             <label className="grid gap-1 text-sm font-medium">
-              <span>{backendText(backendLanguage, "current_password", language === "th" ? "รหัสผ่านปัจจุบัน" : "Current password")}</span>
+              <span>{backendText(backendLanguage, "current_password", "รหัสผ่านปัจจุบัน")}</span>
               <Input value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} type="password" autoComplete="current-password" />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              <span>{backendText(backendLanguage, "new_password", language === "th" ? "รหัสผ่านใหม่" : "New password")}</span>
+              <span>{backendText(backendLanguage, "new_password", "รหัสผ่านใหม่")}</span>
               <Input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" />
             </label>
             <label className="grid gap-1 text-sm font-medium">
@@ -1800,7 +1779,7 @@ function TopMenuChrome({
   function topMenuItemRow(item: MenuItem, key: string, onMouseEnter?: () => void) {
     const locked = !canAccessMenuItem(item);
     const label = menuText(item.label, language, backendLanguage);
-    const newTabLabel = language === "th" ? `เปิดแท็บใหม่ ${label}` : `Open new tab ${label}`;
+    const newTabLabel = backendText(backendLanguage, "menu_open_new_tab", "เปิดแท็บใหม่ {0}").replace("{0}", String(label));
 
     return (
       <div
@@ -2343,7 +2322,7 @@ function MenuTreeItemButton({
 }) {
   const noPermissionText = backendText(backendLanguage, "no_permission", "No permission");
   const label = menuText(item.label, language, backendLanguage);
-  const newTabLabel = language === "th" ? `เปิดแท็บใหม่ ${label}` : `Open new tab ${label}`;
+  const newTabLabel = backendText(backendLanguage, "menu_open_new_tab", "เปิดแท็บใหม่ {0}").replace("{0}", String(label));
 
   return (
     <div
@@ -2756,7 +2735,7 @@ function OpenTabs({
                 {tab.item
                   ? menuText(tab.item.label, language, backendLanguage)
                   : tab.route === "/shortcuts"
-                  ? (language === "th" ? "จัดการทางลัด" : "Manage Shortcuts")
+                  ? (backendText(backendLanguage, "menu_manage_shortcuts_2", "จัดการทางลัด"))
                   : mt(backendLanguage, "overviewErp")}
               </span>
             </b>

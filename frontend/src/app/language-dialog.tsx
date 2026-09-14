@@ -3,6 +3,7 @@
 import { Check, Languages, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { LANGUAGES, t, type LanguageCode } from "@/lib/i18n";
 
 type LanguageDialogProps = {
@@ -13,6 +14,10 @@ type LanguageDialogProps = {
 
 export function LanguageDialog({ language, onLanguageChange, activeLanguageCodes }: LanguageDialogProps) {
   const [open, setOpen] = useState(false);
+  // Portal to <body>: the header is its own stacking context (sticky z-30), so an inline
+  // backdrop would sit under the top-menu popovers (z-40/50) that are siblings of the header.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const selectedLanguage = useMemo(
     () => LANGUAGES.find((item) => item.code === language) ?? LANGUAGES[0],
     [language],
@@ -67,7 +72,7 @@ export function LanguageDialog({ language, onLanguageChange, activeLanguageCodes
         <span>{selectedLanguage.name}</span>
       </button>
 
-      {open ? (
+      {open && mounted ? createPortal(
         <div className="dialog-backdrop" onClick={() => setOpen(false)}>
           <section
             aria-label={t(language, "selectLanguage")}
@@ -107,7 +112,7 @@ export function LanguageDialog({ language, onLanguageChange, activeLanguageCodes
             </div>
           </section>
         </div>
-      ) : null}
+      , document.body) : null}
     </>
   );
 }

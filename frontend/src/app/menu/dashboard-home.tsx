@@ -16,7 +16,7 @@ import { MenuRouteIcon } from "./menu-icon";
 import { MenuPendingBadge } from "./menu-pending-badge";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
 import type { FrequentMenuEntry } from "@/lib/menu-usage";
-import type { BackendLanguageDictionary } from "@/lib/backend-language";
+import { backendText, type BackendLanguageDictionary } from "@/lib/backend-language";
 import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
 import {
   readUserShortcuts,
@@ -203,7 +203,7 @@ export function DashboardHome({
     );
   }
 
-  const t = (th: string, en: string) => (isThai ? th : en);
+  const t = (key: string, th: string) => backendText(backendLanguage, key, th);
 
   return (
     <div className="grid min-w-0 gap-2" aria-label="overview">
@@ -211,7 +211,7 @@ export function DashboardHome({
         <section className="grid gap-1.5">
           <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
             <ClipboardList className="size-4 text-primary" aria-hidden="true" />
-            {t("เอกสารที่ดูแล", "Your documents")}
+            {t("menu_your_documents", "เอกสารที่ดูแล")}
             <span className="text-xs font-normal text-muted-foreground">
               {workspace?.branch ? `· ${localizedName(workspace.branch.names, language) || workspace.branch.code}` : ""}
             </span>
@@ -233,7 +233,7 @@ export function DashboardHome({
                     {loading && !stat ? "…" : (stat?.total ?? 0).toLocaleString(isThai ? "th-TH" : "en-US")}
                   </span>
                   <span className="flex items-center gap-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                    {t("เปิดจอ", "Open")} <ArrowRight className="size-3" aria-hidden="true" />
+                    {t("menu_open", "เปิดจอ")} <ArrowRight className="size-3" aria-hidden="true" />
                   </span>
                 </button>
               );
@@ -246,7 +246,7 @@ export function DashboardHome({
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
             <Star className="size-4 text-primary" aria-hidden="true" />
-            {t("ทางลัดของฉัน", "My shortcuts")}
+            {t("menu_my_shortcuts", "ทางลัดของฉัน")}
             <span className="text-xs font-normal text-muted-foreground">({shortcuts.length})</span>
           </h2>
           <button
@@ -255,7 +255,7 @@ export function DashboardHome({
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <Settings2 className="size-3.5" aria-hidden="true" />
-            {t("จัดการทางลัด", "Manage shortcuts")}
+            {t("menu_manage_shortcuts_2", "จัดการทางลัด")}
           </button>
         </div>
 
@@ -280,12 +280,12 @@ export function DashboardHome({
             type="button"
             onClick={handleOpenManage}
             className="group inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border/90 bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.05] hover:text-primary hover:shadow-xs active:translate-y-0"
-            title={t("เพิ่มหรือปรับแต่งทางลัด", "Add or customize shortcuts")}
+            title={t("menu_add_or_customize_shortcuts", "เพิ่มหรือปรับแต่งทางลัด")}
           >
             <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
               <Plus className="size-3.5" aria-hidden="true" />
             </span>
-            <span>{t("เพิ่มทางลัด", "Add shortcut")}</span>
+            <span>{t("menu_add_shortcut", "เพิ่มทางลัด")}</span>
           </button>
         </div>
       </section>
@@ -294,11 +294,11 @@ export function DashboardHome({
         <section className="grid gap-1.5">
           <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
             <Clock3 className="size-4 text-primary" aria-hidden="true" />
-            {t("ความเคลื่อนไหวล่าสุด", "Recent activity")}
+            {t("menu_recent_activity", "ความเคลื่อนไหวล่าสุด")}
           </h2>
           {recent.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border bg-card p-3 text-sm text-muted-foreground">
-              {loading ? t("กำลังโหลด…", "Loading…") : t("ยังไม่มีเอกสาร — เริ่มจากทางลัดด้านบนได้เลย", "No documents yet — start from a shortcut above.")}
+              {loading ? t("menu_loading", "กำลังโหลด…") : t("menu_no_documents_yet_start_shortcut", "ยังไม่มีเอกสาร — เริ่มจากทางลัดด้านบนได้เลย")}
             </p>
           ) : (
             <ul className="grid gap-1 rounded-xl border border-border bg-card p-1.5 shadow-sm">
@@ -330,7 +330,7 @@ export function DashboardHome({
 
       {widgets.length === 0 && shortcuts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
-          {t("ยังไม่มีสิทธิ์เข้าจอใด — ติดต่อผู้ดูแลเพื่อรับสิทธิ์การใช้งาน", "No screens available yet — ask your administrator for permissions.")}
+          {t("menu_no_screens_available_yet_ask_admin", "ยังไม่มีสิทธิ์เข้าจอใด — ติดต่อผู้ดูแลเพื่อรับสิทธิ์การใช้งาน")}
         </p>
       ) : null}
     </div>

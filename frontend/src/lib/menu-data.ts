@@ -73,11 +73,11 @@ const tx = (
 export const MENU_SECTIONS: MenuSection[] = [
   {
     id: "po",
-    title: { th: "ซื้อ/สั่งซื้อสินค้า", en: "Purchase Order (PO)" },
+    title: { key: "menu_purchase_order_po", th: "ซื้อ/สั่งซื้อสินค้า", en: "Purchase Order (PO)" },
     groups: [
       {
         id: "po-procurement",
-        title: { th: "งานจัดซื้อจัดหา", en: "Procurement Operations" },
+        title: { key: "menu_procurement_operations", th: "งานจัดซื้อจัดหา", en: "Procurement Operations" },
         items: [
           tx("procurement-dashboard", "ภาพรวมจัดซื้อ", "Purchase Overview", "/procurement/dashboard"),
           tx("purchase-requisition", "ใบขอซื้อ", "Purchase Requisition", "/transaction/purchaserequisition"),
@@ -98,7 +98,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "po-transactions",
-        title: { th: "บันทึกซื้อและค่าใช้จ่าย", en: "Purchase & Expense Transactions" },
+        title: { key: "menu_purchase_expense_transactions", th: "บันทึกซื้อและค่าใช้จ่าย", en: "Purchase & Expense Transactions" },
         items: [
           tx("purchase", "ซื้อสินค้า", "Purchase", "/transaction/purchase"),
           tx("expense-record", "บันทึกค่าใช้จ่าย", "Expense Record", "/transaction/expense"),
@@ -122,7 +122,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "po-payment",
-        title: { th: "เงินมัดจำและจ่ายล่วงหน้า", en: "Advances & Deposits" },
+        title: { key: "menu_advances_deposits", th: "เงินมัดจำและจ่ายล่วงหน้า", en: "Advances & Deposits" },
         items: [
           tx("advance-payment", "จ่ายเงินล่วงหน้า", "Advance Payment", "/transaction/advancepayment", "finance"),
           tx("advance-payment-refund", "รับคืนเงินล่วงหน้า", "Advance Refund", "/transaction/advancepaymentrefund", "finance"),
@@ -132,7 +132,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "po-reports",
-        title: { th: "รายงานจัดซื้อ", en: "Purchase Reports" },
+        title: { key: "menu_purchase_reports", th: "รายงานจัดซื้อ", en: "Purchase Reports" },
         items: [
           tx("purchase-report", "รายงานซื้อ", "Purchase Report", "/report/reportdedebipurchase", "report"),
           tx("purchase-by-product", "รายงานซื้อตามสินค้า", "Purchase by Product", "/report/purchasebyproduct", "report"),
@@ -144,11 +144,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "bill",
-    title: { th: "ใบสั่งของ/ใบกำกับสินค้า", en: "Order Entry & Billing (BILL/OE)" },
+    title: { key: "menu_order_entry_billing", th: "ใบสั่งของ/ใบกำกับสินค้า", en: "Order Entry & Billing (BILL/OE)" },
     groups: [
       {
         id: "bill-transactions",
-        title: { th: "งานขายและออกบิล", en: "Sales & Billing Operations" },
+        title: { key: "menu_sales_billing_operations", th: "งานขายและออกบิล", en: "Sales & Billing Operations" },
         items: [
           tx("quotation", "ใบเสนอราคา", "Quotation", "/transaction/quotation"),
           tx("sale-order", "ใบสั่งขาย", "Sale Order", "/transaction/saleorder"),
@@ -181,7 +181,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "bill-adjustments",
-        title: { th: "ใบลดหนี้และเพิ่มหนี้", en: "Credit & Debit Notes" },
+        title: { key: "menu_credit_debit_notes", th: "ใบลดหนี้และเพิ่มหนี้", en: "Credit & Debit Notes" },
         items: [
           tx("credit-note", "ใบลดหนี้", "Credit Note", "/transaction/creditnote"),
           tx("debit-note", "ใบเพิ่มหนี้", "Debit Note", "/transaction/debitnote"),
@@ -189,7 +189,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "bill-payment",
-        title: { th: "เงินมัดจำและรับล่วงหน้า", en: "Advances & Deposits Received" },
+        title: { key: "menu_advances_deposits_received", th: "เงินมัดจำและรับล่วงหน้า", en: "Advances & Deposits Received" },
         items: [
           tx("receive-advance", "รับเงินล่วงหน้า", "Receive Advance", "/transaction/paidadvance", "finance"),
           tx("return-advance", "คืนเงินล่วงหน้า", "Return Advance", "/transaction/paidadvancerefund", "finance"),
@@ -199,7 +199,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "bill-reports",
-        title: { th: "รายงานขายและวิเคราะห์การขาย", en: "Sales Reports & Analytics" },
+        title: { key: "menu_sales_reports_analytics", th: "รายงานขายและวิเคราะห์การขาย", en: "Sales Reports & Analytics" },
         items: [
           tx("sales", "รายงานขาย", "Sales Report", "/report/reportdedebisales", "report"),
           tx("sales-daily", "รายงานขายรายวัน", "Daily Sales", "/report/reportdedebisalesdaily", "report"),
@@ -216,11 +216,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "ap",
-    title: { th: "เจ้าหนี้", en: "Account Payable (AP)" },
+    title: { key: "menu_account_payable_ap", th: "เจ้าหนี้", en: "Account Payable (AP)" },
     groups: [
       {
         id: "ap-master",
-        title: { th: "ข้อมูลหลักเจ้าหนี้", en: "Creditor Master Data" },
+        title: { key: "menu_creditor_master_data", th: "ข้อมูลหลักเจ้าหนี้", en: "Creditor Master Data" },
         items: [
           tx("creditor", "เจ้าหนี้", "Creditor", "/creditor", "master"),
           tx("creditor-group", "กลุ่มเจ้าหนี้", "Creditor Group", "/creditorgroup", "master"),
@@ -239,7 +239,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "ap-payment",
-        title: { th: "การเงินและการจ่ายชำระหนี้", en: "Payment & Settlements" },
+        title: { key: "menu_payment_settlements", th: "การเงินและการจ่ายชำระหนี้", en: "Payment & Settlements" },
         items: [
           tx("payment-voucher", "ใบสำคัญจ่าย", "Payment Voucher", "/transaction/paymentvoucher", "finance"),
           tx("combined-payment", "ใบรวมจ่าย", "Combined Payment", "/transaction/combinedpayment", "finance", "combined_payment"),
@@ -248,7 +248,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "ap-reports",
-        title: { th: "รายงานเจ้าหนี้", en: "AP Reports" },
+        title: { key: "menu_ap_reports", th: "รายงานเจ้าหนี้", en: "AP Reports" },
         items: [
           tx("ap-aging", "รายงานอายุเจ้าหนี้", "AP Aging Report", "/report/apaging", "report"),
         ],
@@ -265,11 +265,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "ar",
-    title: { th: "ลูกหนี้", en: "Account Receivable (AR)" },
+    title: { key: "menu_account_receivable_ar", th: "ลูกหนี้", en: "Account Receivable (AR)" },
     groups: [
       {
         id: "ar-master",
-        title: { th: "ข้อมูลหลักลูกหนี้", en: "Debtor Master Data" },
+        title: { key: "menu_debtor_master_data", th: "ข้อมูลหลักลูกหนี้", en: "Debtor Master Data" },
         items: [
           tx("debtor", "ลูกหนี้", "Debtor", "/debtor", "master"),
           tx("debtor-group", "กลุ่มลูกหนี้", "Debtor Group", "/debtorgroup", "master"),
@@ -286,7 +286,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "ar-transactions",
-        title: { th: "งานวางบิลและแจ้งหนี้", en: "Billing & Invoicing" },
+        title: { key: "menu_billing_invoicing", th: "งานวางบิลและแจ้งหนี้", en: "Billing & Invoicing" },
         items: [
           tx("billing-note", "ใบวางบิล", "Billing Note", "/transaction/billingnote"),
           tx("sale-invoice", "ใบแจ้งหนี้", "Sale Invoice", "/transaction/saleinvoice"),
@@ -294,7 +294,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "ar-payment",
-        title: { th: "การเงินและการรับชำระหนี้", en: "Receipts & Collections" },
+        title: { key: "menu_receipts_collections", th: "การเงินและการรับชำระหนี้", en: "Receipts & Collections" },
         items: [
           tx("paid", "รับชำระ", "Receive Payment", "/transaction/paid", "finance"),
           tx("temporary-receipt", "ใบเสร็จชั่วคราว", "Temporary Receipt", "/transaction/temporaryreceipt", "finance"),
@@ -302,7 +302,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "ar-reports",
-        title: { th: "รายงานลูกหนี้", en: "AR Reports" },
+        title: { key: "menu_ar_reports", th: "รายงานลูกหนี้", en: "AR Reports" },
         items: [
           tx("ar-aging", "รายงานอายุลูกหนี้", "AR Aging Report", "/report/araging", "report"),
           tx("payment-daily", "รายงานรับชำระรายวัน", "Daily Payment", "/report/reportdedebipaymentdaily", "report"),
@@ -320,11 +320,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "cash-bank",
-    title: { th: "เงินสดและธนาคาร", en: "Cash & Cheque" },
+    title: { key: "menu_cash_cheque", th: "เงินสดและธนาคาร", en: "Cash & Cheque" },
     groups: [
       {
         id: "cash-bank-master",
-        title: { th: "บัญชีเงินฝากและสมุดบัญชี", en: "Bank Accounts" },
+        title: { key: "menu_bank_accounts", th: "บัญชีเงินฝากและสมุดบัญชี", en: "Bank Accounts" },
         items: [
           tx("book-bank", "สมุดบัญชี", "Bank Book", "/bookbankscreen", "master", "bank_book"),
           tx("bank-contact", "ผู้ติดต่อธนาคาร", "Bank Contacts", "/banking/contacts", "master"),
@@ -332,7 +332,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "cash-management",
-        title: { th: "การจัดการเงินสดและทดรอง", en: "Cash & Advances" },
+        title: { key: "menu_cash_advances", th: "การจัดการเงินสดและทดรอง", en: "Cash & Advances" },
         items: [
           tx("petty-cash", "เงินสดย่อย", "Petty Cash", "/pettycashscreen", "finance"),
           tx("director-advance", "เงินทดรองจ่ายกรรมการ", "Director Advance", "/transaction/directoradvance", "finance", "director_advance"),
@@ -345,7 +345,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "bank-transactions",
-        title: { th: "ธุรกรรมธนาคาร", en: "Banking Transactions" },
+        title: { key: "menu_banking_transactions", th: "ธุรกรรมธนาคาร", en: "Banking Transactions" },
         items: [
           tx("account-transfer", "โอนเงินระหว่างบัญชี", "Account Transfer", "/transaction/accounttransfer", "finance"),
           tx("bank-payment-file", "ไฟล์โอนเงินจ่ายผ่านธนาคาร", "Bank Payment File", "/transaction/bankpaymentfile", "finance"),
@@ -402,11 +402,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "ic",
-    title: { th: "สินค้าคงคลัง", en: "Inventory Control (IC)" },
+    title: { key: "menu_inventory_control_ic", th: "สินค้าคงคลัง", en: "Inventory Control (IC)" },
     groups: [
       {
         id: "ic-master",
-        title: { th: "ข้อมูลหลักสินค้า", en: "Product Catalog & Setup" },
+        title: { key: "menu_product_catalog_setup", th: "ข้อมูลหลักสินค้า", en: "Product Catalog & Setup" },
         items: [
           tx("product", "สินค้า", "Product", "/product", "master"),
           { ...tx("barcode", "บาร์โค้ด", "Barcode", "/productbarcode", "master"), label: ml("barcode", "บาร์โค้ด", "Barcode") },
@@ -430,7 +430,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "ic-transactions",
-        title: { th: "งานประจำสินค้าและคลัง", en: "Stock Operations" },
+        title: { key: "menu_stock_operations", th: "งานประจำสินค้าและคลัง", en: "Stock Operations" },
         items: [
           tx("stock-balance", "ยอดยกมาสินค้า", "Stock Balance", "/transaction/stockbalance"),
           tx("stock-receive", "รับสินค้า", "Stock Receive", "/transaction/stockreceiveproduct"),
@@ -479,7 +479,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "ic-reports",
-        title: { th: "รายงานสินค้า", en: "Inventory Reports" },
+        title: { key: "menu_inventory_reports", th: "รายงานสินค้า", en: "Inventory Reports" },
         items: [
           tx("stock-balance-item", "คงเหลือตามสินค้า", "Stock by Item", "/report/stockbalanceitem", "report"),
           tx("stock-balance-warehouse", "คงเหลือตามคลัง", "Stock by Warehouse", "/report/stockbalancewarehouse", "report"),
@@ -507,11 +507,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "fa",
-    title: { th: "สินทรัพย์และค่าเสื่อมราคา", en: "Fixed Assets (FA)" },
+    title: { key: "menu_fixed_assets_fa", th: "สินทรัพย์และค่าเสื่อมราคา", en: "Fixed Assets (FA)" },
     groups: [
       {
         id: "fa-transactions",
-        title: { th: "งานสินทรัพย์ถาวร", en: "Fixed Asset Operations" },
+        title: { key: "menu_fixed_asset_operations", th: "งานสินทรัพย์ถาวร", en: "Fixed Asset Operations" },
         items: [
           tx("asset-registry", "ทะเบียนสินทรัพย์ถาวร", "Fixed Asset Registry", "/asset/registry", "master"),
           tx("asset-depreciation", "คำนวณค่าเสื่อมราคา", "Asset Depreciation", "/asset/depreciation", "master"),
@@ -531,7 +531,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "fa-reports",
-        title: { th: "รายงานสินทรัพย์", en: "Fixed Asset Reports" },
+        title: { key: "menu_fixed_asset_reports", th: "รายงานสินทรัพย์", en: "Fixed Asset Reports" },
         items: [
           tx("fixed-asset-schedule", "ตารางค่าเสื่อมและสินทรัพย์", "Fixed Asset Schedule", "/report/assetschedule", "report", "fixed_asset_schedule"),
         ],
@@ -540,11 +540,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "vat",
-    title: { th: "ภาษีมูลค่าเพิ่ม", en: "VAT & Taxes" },
+    title: { key: "menu_vat_taxes", th: "ภาษีมูลค่าเพิ่ม", en: "VAT & Taxes" },
     groups: [
       {
         id: "vat-transactions",
-        title: { th: "บันทึกภาษีและทะเบียนภาษี", en: "Tax Registers" },
+        title: { key: "menu_tax_registers", th: "บันทึกภาษีและทะเบียนภาษี", en: "Tax Registers" },
         items: [
           tx("purchase-tax-invoice-register", "ทะเบียนใบกำกับภาษีซื้อ", "Purchase Tax Invoice Register", "/transaction/purchasetaxinvoice"),
           tx("withholding-tax-deduction", "ภาษีหัก ณ ที่จ่าย", "Withholding Tax", "/transaction/withholdingtax", "finance"),
@@ -553,7 +553,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "vat-reports",
-        title: { th: "รายงานภาษีและแบบยื่น", en: "Tax Reports & Returns" },
+        title: { key: "menu_tax_reports_returns", th: "รายงานภาษีและแบบยื่น", en: "Tax Reports & Returns" },
         items: [
           tx("vat-sale", "รายงานภาษีขาย", "VAT Sale", "/report/reportvatsale", "report"),
           tx("vat-buy", "รายงานภาษีซื้อ", "VAT Purchase", "/report/reportvatbuy", "report"),
@@ -573,11 +573,11 @@ export const MENU_SECTIONS: MenuSection[] = [
   },
   {
     id: "gl",
-    title: { th: "บัญชีแยกประเภท", en: "General Ledger (GL)" },
+    title: { key: "menu_general_ledger_gl", th: "บัญชีแยกประเภท", en: "General Ledger (GL)" },
     groups: [
       {
         id: "gl-master",
-        title: { th: "ข้อมูลหลักและยอดยกมา", en: "Master & Balances" },
+        title: { key: "menu_master_balances", th: "ข้อมูลหลักและยอดยกมา", en: "Master & Balances" },
         items: [
           tx("chart-of-accounts", "ผังบัญชี", "Chart of Accounts", "/gl/chartofaccounts", "finance"),
           tx("gl-opening-balance", "ยอดยกมาทางบัญชี", "GL Opening Balances", "/gl/openingbalance", "finance"),
@@ -590,7 +590,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "gl-journals",
-        title: { th: "สมุดรายวันและงานประจำ", en: "Journals & Operations" },
+        title: { key: "menu_journals_operations", th: "สมุดรายวันและงานประจำ", en: "Journals & Operations" },
         items: [
           tx("uv-journal", "สมุดรายวันขาย", "Sales Journal (UV)", "/gl/journal/uv", "finance"),
           tx("sv-journal", "สมุดรายวันซื้อ", "Purchase Journal (SV)", "/gl/journal/sv", "finance"),
@@ -616,7 +616,7 @@ export const MENU_SECTIONS: MenuSection[] = [
       },
       {
         id: "gl-reports",
-        title: { th: "รายงานการเงินและงบบัญชี", en: "Financial Statements & Reports" },
+        title: { key: "menu_financial_statements_reports", th: "รายงานการเงินและงบบัญชี", en: "Financial Statements & Reports" },
         items: [
           tx("general-ledger", "บัญชีแยกประเภท", "General Ledger", "/report/ledger", "report", "ledger"),
           tx("trial-balance", "งบทดลอง", "Trial Balance", "/report/trialbalance", "report"),

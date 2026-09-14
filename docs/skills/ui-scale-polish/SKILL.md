@@ -1255,3 +1255,13 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 **กับดักที่เจอตอนย้าย** — (1) เครื่องมือแทนที่อัตโนมัติห้ามแตะบรรทัด signature ของ component (default param) และห้ามห่อ `tr()` ซ้อนกัน (2) template literal ที่มี `${...}` ให้แปลงเป็นข้อความ placeholder `{0} {1}` แล้ว `.replace` ทีละตัว — ห้ามต่อสตริงแปลเป็นชิ้น ๆ เพราะลำดับคำต่างกันในแต่ละภาษา (3) JSX ที่มีข้อความคั่นด้วย element เช่น `พบ <strong>{n}</strong> จาก {m} บัญชี` ให้ `tr(...).split("{0}")` แล้วประกอบ element กลับ (4) ข้อความที่ผู้ใช้แก้ได้ (ชื่อแถวในแม่แบบงบสำเร็จรูป `lib/general-ledger.ts` starter templates) เป็นข้อมูล ไม่ใช่ป้าย — ไม่ต้องย้าย (5) dictionary ใน container local โหลดครั้งเดียว: แก้ tsv แล้วต้อง `docker cp` + `docker restart mainapi` ก่อนดูผลบนจอ (6) DeepSeek แปลชุดใหญ่ (45 ข้อความ × 12 ภาษา) จะเกิน budget แล้ว JSON ขาด — ส่งชุดละ ≤ 15 แล้วตรวจจำนวนแถว/ช่องว่างก่อนใช้
 
 **วิธีตรวจ** — เปิดจอ GL → กดเลือกภาษา th → en → ja แล้ว `find` ป้ายเดียวกัน (เช่น ชื่อบัญชีภาษาอังกฤษ → Account Name (English) → 勘定科目名（英語）) + `npx vitest run src/app/gl` เขียว
+
+## 8.26 Dialog/Popover ที่อยู่ใน header ต้อง render ผ่าน portal ไป `<body>` (2026-09-14)
+
+**อาการ** — กล่อง "เลือกภาษา" (และ picker อื่นใน `app-header-controls.tsx`) ถูก mega menu ของโหมด "เมนูบน" ซ้อนทับ ทั้งที่ `.dialog-backdrop` เป็น `position: fixed; z-index: 60`
+
+**Root cause** — header ของเมนูหลักเป็น `sticky top-0 z-30` = stacking context ของตัวเอง; ทุกอย่างข้างในแข่ง z-index ได้แค่ในกล่องนี้ ส่วน popover ของเมนูบน (`z-40`/`z-50`) เป็น sibling นอก header จึงชนะ z-30 ทั้งก้อน แม้ backdrop ข้างในจะเป็น 60 ก็ตาม
+
+**แบบแผน** — `frontend/src/app/language-dialog.tsx`: `const [mounted, setMounted] = useState(false); useEffect(() => setMounted(true), [])` แล้ว `open && mounted ? createPortal(<div className="dialog-backdrop">…</div>, document.body) : null` — ตัวอย่างเดิมในระบบ: `components/product-barcode/master-picker.tsx`
+
+**กับดัก** — ห้ามแก้ด้วยการเพิ่ม z-index ให้ backdrop (ไม่มีผลข้ามบริบท) หรือถอด `z-30` ออกจาก header (เมนูจะทะลุ); ตรวจโดยเปิดโหมดเมนูบน → hover ให้ mega menu โผล่ → กดเลือกภาษา → screenshot ต้องเห็น dialog ทับเมนู
