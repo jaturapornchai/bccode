@@ -8,6 +8,12 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — เพิ่มประสิทธิภาพ GL HTTP API: ย้าย regexp.MustCompile เป็น package-level variable
+
+- [Perf] ย้าย `regexp.MustCompile` ตรวจสอบชื่อกลุ่มบริษัท (holding code) ใน `backend/internal/generalledger/httpapi/http.go` จากใน closure ออกมาเป็นตัวแปรระดับแพ็กเกจ `validHoldingRegex` เพื่อไม่ให้คอมไพล์ regex ซ้ำทุกครั้งที่มีการเรียกใช้งาน
+- ไฟล์: `backend/internal/generalledger/httpapi/http.go`
+- หลักฐาน: Go vet/test ใน Docker ผ่าน 100% (`smlcloudplatform/internal/generalledger/httpapi`)
+
 ### 2026-09-14 — ปรับปรุงการเข้าถึง (Accessibility): เพิ่ม aria-label ให้ปุ่ม Icon-only ในโมดูล GL
 
 - [Fix] เพิ่ม `aria-label` ภาษาไทยกำกับปุ่มที่แสดงเฉพาะไอคอน (ปุ่มย่อ/ขยายหน้าต่าง, ปุ่มปิดหน้าต่างค้นหาผังบัญชี, ปุ่มปิดหน้าต่างดูข้อมูลและแก้ไขสมุดรายวัน/ข้อมูลหลัก GL) ใน `account-search-dialog.tsx`, `gl-journals.tsx`, `gl-masters.tsx` ตามกฎ Accessibility สำหรับคนไทย 40+ และ Screen Reader

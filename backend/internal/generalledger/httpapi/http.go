@@ -32,6 +32,8 @@ import (
 	"smlcloudplatform/pkg/microservice"
 )
 
+var validHoldingRegex = regexp.MustCompile(`^[A-Za-z0-9_]{1,63}$`)
+
 type Http struct {
 	ms             *microservice.Microservice
 	pst            microservice.IPersisterMongo
@@ -98,7 +100,7 @@ func newRuntime(ms *microservice.Microservice, cfg config.IConfig) *Http {
 	pools := map[string]*sql.DB{}
 	pgcfg := cfg.PersisterConfig()
 	projection := gl.NewPostgres(func(holding string) (*sql.DB, error) {
-		if !regexp.MustCompile(`^[A-Za-z0-9_]{1,63}$`).MatchString(holding) {
+		if !validHoldingRegex.MatchString(holding) {
 			return nil, fmt.Errorf("รหัสกลุ่มบริษัทไม่ถูกต้อง")
 		}
 		poolMu.Lock()
