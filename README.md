@@ -8,7 +8,16 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — รวมฟังก์ชันจัดรูปแบบจำนวนเงิน: Consolidate formatAmountValue and formatAmount (Item 17)
+
+- [Refactor] รวมฟังก์ชัน `formatAmountValue` ใน `frontend/src/app/gl/gl-common.tsx` และ `formatAmount` ใน `frontend/src/lib/general-ledger.ts` เป็น implementation เดียวที่สมบูรณ์ใน `general-ledger.ts` พร้อม re-export `formatAmountValue` เพื่อความเข้ากันได้ย้อนหลัง 100%
+- [Feature] จัดการ edge case ครบถ้วน: ตัดจุลภาคเดิม, คงความละเอียดทศนิยมที่บันทึกไว้ (persisted precision ไม่ปัดทศนิยมที่มีนัยสำคัญทิ้ง), ป้องกันเครื่องหมายลบหน้าศูนย์ (`-0` / `-0.00` แสดงเป็น `0.00`), รองรับสเกลที่กำหนดเอง (0, 2, 3, 4) และคืนค่าสตริงว่างสำหรับค่าว่าง/ช่องว่าง
+- [Test] ผ่าน Unit Tests ครบทั้ง `amount-input.test.ts` (17/17) และ `general-ledger.test.ts` (18/18) รวม 35/35 เทสต์
+- ไฟล์: `frontend/src/lib/general-ledger.ts`, `frontend/src/app/gl/gl-common.tsx`
+- หลักฐาน: Vitest 477/477 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — รวมศูนย์การปรับความกว้าง Splitter ด้วย useSplitPercent Hook กลาง (Item 16)
+
 
 - [Refactor] สร้าง Hook กลาง `useSplitPercent` (`frontend/src/components/ui/use-split-percent.ts`) รวมศูนย์การจัดการ state ทั้งหมดของตัวแบ่งความกว้าง: pointer drag, keyboard navigation (`ArrowLeft`, `ArrowRight`, `Home`, `End`), double-click reset, และ localStorage persistence
 - [Refactor] ปรับปรุงหน้าจอที่ใช้งานตัวแบ่งความกว้าง (`manage-shortcuts-screen.tsx`, `product-barcode-shelf-screen.tsx`, `product-set-screen.tsx`, `company-branch-tree-view.tsx`, `system-settings-screen.tsx`) ให้เรียกใช้ `useSplitPercent` ลด boilerplate โค้ด pointermove/pointerup ซ้ำซ้อน

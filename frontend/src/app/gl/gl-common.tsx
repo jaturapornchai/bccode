@@ -9,7 +9,7 @@ import type { GLTextFn } from "@/lib/general-ledger";
 import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { Button } from "@/components/ui/button";
 import { glAllRecords, glCommand, glRequest } from "@/lib/general-ledger-api";
-import { accountName, sortAccountsHierarchically, type GLAccount, type GLCommand, type GLFiscalYear, type GLPage, type GLRecord, type GLResource } from "@/lib/general-ledger";
+import { accountName, formatAmount, sortAccountsHierarchically, type GLAccount, type GLCommand, type GLFiscalYear, type GLPage, type GLRecord, type GLResource } from "@/lib/general-ledger";
 import { AccountSearchDialog } from "./account-search-dialog";
 
 export { AccountSearchDialog } from "./account-search-dialog";
@@ -182,26 +182,11 @@ export function SearchInput({
   );
 }
 
-/** Formats a numeric string with thousands commas and fixed scale decimals */
-export function formatAmountValue(value: string, scale = 2): string {
-  if (!value || !value.trim()) return "";
-  const clean = value.replace(/,/g, "").trim();
-  const isNegative = clean.startsWith("-");
-  const unsigned = isNegative ? clean.slice(1) : clean;
-  if (!unsigned || unsigned === ".") return "";
-  const parts = unsigned.split(".");
-  const whole = parts[0] || "0";
-  const fraction = parts[1] ?? "";
+/** Formats a numeric string with thousands commas and fixed scale decimals (unified with formatAmount) */
+export const formatAmountValue = formatAmount;
+export { formatAmount };
 
-  const isZero = (whole === "0" || whole === "") && fraction.padEnd(scale, "0").slice(0, scale).replace(/0/g, "") === "";
-  const sign = isNegative && !isZero ? "-" : "";
-  const wholeFormatted = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  if (scale <= 0) {
-    return `${sign}${wholeFormatted}`;
-  }
-  const fracFormatted = fraction.padEnd(scale, "0").slice(0, scale);
-  return `${sign}${wholeFormatted}.${fracFormatted}`;
-}
+
 
 /** Strips commas and cleans numeric string */
 export function cleanAmountValue(value: string, allowNegative = false): string {

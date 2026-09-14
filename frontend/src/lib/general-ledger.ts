@@ -201,10 +201,28 @@ export function amountString(units: bigint, scale = 8): string {
   const effectiveScale = Math.max(scale, tail.replace(/0+$/, "").length);
   return `${units < 0n ? "-" : ""}${abs / factor}${effectiveScale ? `.${tail.slice(0, effectiveScale)}` : ""}`;
 }
-export function formatAmount(value: string, scale = 2) {
-  try { const [whole, fraction] = amountString(displayAmountUnits(value), scale).split("."); return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (fraction ? `.${fraction}` : ""); }
-  catch { return "จำนวนเงินไม่ถูกต้อง"; }
+/** Formats a numeric string with thousands commas, respecting scale and preserving persisted precision */
+export function formatAmount(value: string, scale = 2): string {
+  if (!value || !value.trim()) return "";
+  const clean = value.replace(/,/g, "").trim();
+  const isNegative = clean.startsWith("-");
+  const unsigned = isNegative ? clean.slice(1) : clean;
+  if (!unsigned || unsigned === ".") return "";
+  const parts = unsigned.split(".");
+  if (parts.length > 2) return "จำนวนเงินไม่ถูกต้อง";
+  const whole = parts[0] || "0";
+  const fraction = parts[1] ?? "";
+  if (!/^\d+$/.test(whole) || (fraction && !/^\d+$/.test(fraction))) return "จำนวนเงินไม่ถูกต้อง";
+
+  const isZero = (whole === "0" || whole === "") && fraction.padEnd(scale, "0").slice(0, Math.max(scale, fraction.length)).replace(/0/g, "") === "";
+  const sign = isNegative && !isZero ? "-" : "";
+  const wholeFormatted = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const effectiveScale = Math.max(scale, fraction.replace(/0+$/, "").length);
+  if (effectiveScale <= 0) return `${sign}${wholeFormatted}`;
+  const fracFormatted = fraction.padEnd(effectiveScale, "0").slice(0, effectiveScale);
+  return `${sign}${wholeFormatted}.${fracFormatted}`;
 }
+
 export function journalTotals(lines: GLLine[]) {
   const debit = lines.reduce((sum, line) => sum + amountUnits(line.debit), 0n);
   const credit = lines.reduce((sum, line) => sum + amountUnits(line.credit), 0n);
