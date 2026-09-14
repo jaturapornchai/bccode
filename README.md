@@ -52,7 +52,7 @@
 - ไฟล์: `frontend/src/app/system-settings/*`, `frontend/src/app/menu/manage-shortcuts-screen.tsx`, `frontend/src/components/backend-text-provider.tsx`, `frontend/src/app/system-settings/settings-language-keys.test.ts`, `backend/assets/language/languages.tsv`, `backend/internal/currency/*`, `backend/main.go`, `docs/reference/CODE-MAP.md`
 - หลักฐาน: `tsc --noEmit` ผ่าน 0 error, vitest 476/476 ผ่าน 100%, Go build/vet/test ใน Docker ผ่าน 100%
 
-### 2026-09-14 — ตั้งค่าระบบ (คลังสินค้า/สาขา/หมวด-กลุ่มสินค้า/สูตรผลิต) + จัดการทางลัด: ข้อความบนจอเปลี่ยนตามภาษาที่เลือก
+### 2026-09-14 — ตั้งค่าระบบ (คลังสินค้า/สาขา/หมวด-กลุ่มสินค้า/สูตรผลิต) + จัดการทางลัด: ข้อความบนจอเปลี่ยนตามภาษาที่เลือก — รอบตรวจรับและแก้ท้าย (เสริมรายการด้านล่างที่ commit โดย session อื่นระหว่างทำ)
 
 - [Feature] จอตั้งค่าคลังสินค้า-ที่เก็บ, บริษัท-สาขา (รวมรูปแบบเลขที่เอกสาร), หมวดสินค้า, กลุ่มสินค้า, สูตรผลิต (BOM) และจอ "จัดการทางลัด" ของเมนูหลัก เปลี่ยนป้าย ปุ่ม placeholder ข้อความยืนยัน/ผิดพลาด ตามภาษาที่ผู้ใช้เลือก (12 ภาษา) — เดิมมีแค่ไทย/อังกฤษ (`language === "th" ? … : …`) หรือไทยตายตัว
 - [Refactor] เพิ่ม `BackendTextProvider`/`useBackendText` (`frontend/src/components/backend-text-provider.tsx`) — จอ `system-settings-screen.tsx` ที่ถือ dictionary อยู่แล้วห่อ tree view ทั้ง 5 จอครั้งเดียว component ลูกเรียก `const tr = useBackendText()` โดยไม่ต้องส่ง prop ต่อ ๆ กัน; ตารางตัวเลือกระดับไฟล์ (เดือน, ประเภทสาขา, ประเภทปี, ประเภทเอกสาร, โหมดปี/รีเซ็ต) เก็บเป็น `[key, ไทย]` แล้วแปลตอน render; `manage-shortcuts-screen.tsx` เลิกใช้ helper `t(th, en)` → `t(key, ไทย)` ผ่าน `backendText`

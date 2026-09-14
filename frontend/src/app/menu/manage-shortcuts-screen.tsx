@@ -291,10 +291,7 @@ export function ManageShortcutsScreen({
               </span>
             </div>
             <p className="truncate text-xs text-muted-foreground sm:text-sm">
-              {t(
-                t("st_manage_shortcuts_desc", "เลือกเพิ่มหรือจัดลำดับเมนูที่คุณใช้งานบ่อย เพื่อเปิดทำงานได้รวดเร็วทันใจจากหน้าภาพรวม"),
-                "Customize and reorder your frequent menus for fast access from the overview dashboard",
-              )}
+              {t("st_manage_shortcuts_desc", "เลือกเพิ่มหรือจัดลำดับเมนูที่คุณใช้งานบ่อย เพื่อเปิดทำงานได้รวดเร็วทันใจจากหน้าภาพรวม")}
             </p>
           </div>
         </div>
@@ -388,10 +385,7 @@ export function ManageShortcutsScreen({
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t(
-                  t("st_search_menu_placeholder", "พิมพ์ค้นหาชื่อเมนู, รหัสจอ หรือประเภทงาน... (เช่น ขาย, ซื้อ, ใบสั่งซื้อ, สินค้า, บาร์โค้ด)"),
-                  "Search menus by title, route, or category... (e.g. Sale, Purchase, Product, Barcode)",
-                )}
+                placeholder={t("st_search_menu_placeholder", "พิมพ์ค้นหาชื่อเมนู, รหัสจอ หรือประเภทงาน... (เช่น ขาย, ซื้อ, ใบสั่งซื้อ, สินค้า, บาร์โค้ด)")}
                 className="h-10 w-full rounded-xl border border-border bg-background !pl-10 !pr-10 text-sm font-medium text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 [&::-webkit-search-cancel-button]:appearance-none"
               />
               {searchQuery ? (
@@ -450,10 +444,7 @@ export function ManageShortcutsScreen({
               </label>
 
               <span className="text-[11px] text-muted-foreground">
-                {t(
-                  t("st_already_in_shortcuts_menu", "อยู่ในทางลัดแล้ว {0} เมนู").replace("{0}", String(activeShortcutIds.length)),
-                  `Already in shortcuts: ${activeShortcutIds.length}`,
-                )}
+                {t("st_already_in_shortcuts_menu", "อยู่ในทางลัดแล้ว {0} เมนู").replace("{0}", String(activeShortcutIds.length))}
               </span>
             </div>
           </div>
