@@ -61,6 +61,13 @@
 - [Fix] ชั้น BFF: ข้อผิดพลาดที่ผู้ใช้แก้เองได้ (4xx ที่มีรหัส code เช่น duplicate_code) ส่งกลับเป็น HTTP 200 + success:false เพื่อไม่ให้ console ของเบราว์เซอร์ขึ้น error ซ้ำซ้อน ส่วน 401/403/5xx ยังคงสถานะเดิมไว้ตามจริง
 - ไฟล์: `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-common.tsx`, `frontend/src/lib/general-ledger-api.ts`, `frontend/src/lib/workspace-api.ts`, `frontend/src/app/api/gl/[...glPath]/route.ts`, `backend/internal/generalledger/httpapi/http.go`, `backend/internal/generalledger/errors.go`
 - หลักฐาน: `npx tsc --noEmit` ผ่าน, eslint 0 error (226 warning ที่มีอยู่เดิม), vitest โฟลเดอร์ `src/app/gl` + `src/lib` ผ่าน 273/273; Playwright `frontend/e2e/gl-chart-of-accounts-error.spec.ts` ผ่าน 1/1 — พบ role="alert" ภาษาไทย 1 อัน ข้อความ “รหัสบัญชีนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น”, console error ของการบันทึกที่ล้มเหลว 0 รายการ, จำนวนบัญชีในลิสต์ 38 → 38 รายการ (ไม่มีข้อมูลทดสอบตกค้าง) ภาพหน้าจอ 11 ภาพอยู่ที่ `frontend/test-results/gl-chart-of-accounts-error-71f9b-ept-zero-new-console-errors/` (light/dark × 1600/1280/1024/768 + hover/focus/disabled)
+### 2026-09-14 — ตั้งกฎ: ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก (key อังกฤษในโค้ด ข้อความใน backend)
+
+- [Docs] ลุงจืดสั่งหลังกดเปลี่ยนภาษาแล้วหลายจอไม่เปลี่ยนตาม: ตั้งกฎใน `AGENTS.md` ว่าโค้ดห้าม hard-code ข้อความไทย ต้องใช้ key ภาษาอังกฤษ + `backendText` และข้อความทุกภาษาอยู่ที่ `backend/assets/language/languages.tsv` (ระบบ dictionary ทำไว้แล้ว 4,824 key × 12 ภาษา)
+- ผลตรวจ: จอที่ทำถูกแล้ว = เมนูหลัก, ตั้งค่าระบบ (`fieldLabel`), currency, LINE OA; จอที่ยังไม่เปลี่ยนภาษา = โมดูลบัญชีแยกประเภททั้งชุด, ตารางคลัง/สาขา, จอสินค้า, กล่องยืนยัน (137 ไฟล์ / ~4,500 บรรทัดไทย) และ error ฝั่ง backend 294 จุด
+- ไฟล์: `AGENTS.md` (กฎใหม่), `docs/skills/ui-scale-polish/SKILL.md` §8.25, `docs/handoff/HANDOFF-2026-09-14.md` §2D (แผนย้ายทีละจอสำหรับ Gemini)
+- หลักฐาน: audit ด้วยการอ่านโค้ดจริง (`backend-language.ts:109-188`, `main-menu-screen.tsx:488,2816-2877`, `utils.ts:599-613`) ยังไม่ได้แก้โค้ดจอในรอบนี้
+
 ### 2026-09-14 — แก้บั๊กจาก code review ก่อน commit (GL v2, คลังสินค้า, ช่องตัวเลข)
 
 - [Fix] ตรวจโค้ดค้างใน working tree 8 มุม แล้วแก้ 9 จุดที่ยืนยันแล้ว: mainapi ไม่ล่มทั้งตัวเมื่อ Kafka ของ GL ตั้งค่าผิด, GL worker ใช้ consumer group เดียว (ไม่ apply ซ้ำ 2 รอบ), ปิดงบ/ยอดยกมารองรับเกิน 500 บรรทัด, งบการเงินในตัวออกแบบอ่านครบทุกหน้า (ไม่ตัดที่ 1000 บัญชี)

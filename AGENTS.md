@@ -40,6 +40,19 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 - Claude (Fable) = คิด/แบ่งงาน/ตัดสิน/verify; DeepSeek = ร่างโค้ด/เอกสาร/วิเคราะห์/review — คำตอบเป็นความเห็นเท่านั้น Claude ต้อง verify กับ source/build/test ก่อนใช้; ห้ามส่ง secret/PII; R0/R1 ตัดสินโดย Claude + ลุงจืด
 - Kimi/GLM/ChatGPT/OpenRouter ไม่ใช้แล้ว (ถามก่อนถ้าจะเปิดคืน)
 
+## กฎ: ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก — โค้ดใช้ key ภาษาอังกฤษ ข้อความอยู่ใน backend (ตั้งโดยลุงจืด 2026-09-14)
+
+ผู้ใช้กด "เลือกภาษา" (12 ภาษา) แล้ว **ทุกข้อความบนจอต้องเปลี่ยนตาม** — ป้าย ปุ่ม หัวคอลัมน์ placeholder ข้อความยืนยัน ข้อความสำเร็จ/ผิดพลาด ชื่อประเภท/สถานะ
+
+1. **ในโค้ดห้าม hard-code ข้อความไทย (หรือภาษาใดๆ) ที่ผู้ใช้เห็น** — ใช้ **key ภาษาอังกฤษ** (snake_case เช่น `gl_post_journal`, `warehouse_location_code`) แล้วดึงข้อความจริงด้วย `backendText(dictionary, key, fallback)` จาก `frontend/src/lib/backend-language.ts`; ข้อความทุกภาษาอยู่ที่ **`backend/assets/language/languages.tsv`** (13 คอลัมน์ `key th en cn ja km ko lo my vi ms id fil` — ระบบนี้ทำไว้แล้ว เสิร์ฟผ่าน `/api/language/{lang}`)
+2. **ทุกจอต้องรับ `language` + dictionary จริง** — จอลูกใต้ `main-menu-screen.tsx` รับ `language` เป็น prop และเรียก `useBackendLanguage(language, backendUrl)` (หรือรับ `backendLanguage` จาก parent) ห้ามอ่าน `localStorage` เองแล้วเมินค่า prop; component กลาง (`confirm-dialog`, `numeric-input`, dialog/ตาราง) ต้องรับป้ายเป็น prop จากผู้เรียก ไม่ฝังไทยไว้ข้างใน
+3. **เพิ่มข้อความใหม่ = เพิ่ม 1 แถวใน `languages.tsv` ครบ 13 คอลัมน์** ในคอมมิตเดียวกับโค้ด (แถวไม่ครบจะถูกข้ามและ `Text()` คืน key ดิบ — ดู `docs/kms/17-dev-gotchas.md`); ภาษาไทยเป็นต้นฉบับ ภาษาอื่นแปลตามหรือใส่ไทยเป็น placeholder แล้วแจ้งลุงจืด ห้ามปล่อยว่าง
+4. **Backend คืนข้อความให้ผู้ใช้ผ่าน key เช่นกัน** — error/message ที่จะแสดงบนจอต้องเป็น key + `language.Text(key, lang)` (`backend/internal/goapi/language/language.go`) ตาม `Accept-Language`/query `lang` ไม่ใช่ `fmt.Errorf("ข้อความไทย")` ตรง ๆ; frontend แปลง code → key ได้ถ้า backend ยังคืน code
+5. **Reference implementation:** `fieldLabel()` ใน `frontend/src/components/system-settings/utils.ts` (map `fieldBackendKeys` → `backendText` → fallback) และ `menuText()` ใน `frontend/src/lib/menu-data.ts`; ห้ามใช้ helper `t(th, en)` สองภาษาแบบ `manage-shortcuts-screen.tsx` เป็นแบบอย่าง (รองรับแค่ 2 ใน 12 ภาษา)
+6. **ตรวจรับ:** สลับภาษาจริงจาก dialog เลือกภาษา (อย่างน้อย th → en → ja) แล้ว screenshot จอที่แก้ ทุกข้อความต้องเปลี่ยน; ข้อความที่ยังเป็นไทยขณะเลือกภาษาอื่น = bug
+
+สถานะตอนตั้งกฎ (audit 2026-09-14): 137 ไฟล์ / ~4,500 บรรทัดใน `frontend/src` ยัง hard-code ไทย; โมดูล GL ทั้งชุด (`frontend/src/app/gl/*`), tree-view คลัง/สาขา, จอสินค้า, `confirm-dialog` ไม่รับ language เลย; backend มี `fmt.Errorf` ภาษาไทย 294 จุดใน 48 ไฟล์ — แผนย้ายอยู่ใน `docs/handoff/HANDOFF-2026-09-14.md` §2D
+
 ## กฎ: UX/UI ยึด "คนไทย อายุ 40+" เป็นบุคลิกหลัก (ตั้งโดยลุงจืด 2026-08-30)
 
 ผู้ใช้หลักของระบบคือคนไทยอายุเกิน 40 ปี (พนักงานบัญชี/เจ้าของกิจการ) — ทุกงาน UX/UI (ทั้งปรับของเดิมและสร้างใหม่) ต้องออกแบบให้กลุ่มนี้อ่านออก ใช้ได้ ไม่กลัวกดผิด ก่อนความสวย/ทันสมัยเสมอ:

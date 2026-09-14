@@ -1199,3 +1199,33 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
   - ชั้น API: `frontend/src/lib/general-ledger-api.ts` (`commandErrorInfo` `:73`, `commandFailure` `:67-71`), `frontend/src/lib/workspace-api.ts:61-91`, `frontend/src/app/api/gl/[...glPath]/route.ts:19`
   - ฝั่งเซิร์ฟเวอร์ (สัญญาข้อผิดพลาด): `backend/internal/generalledger/errors.go` (`duplicate_code` = 409 + `message` ไทย), `backend/internal/generalledger/httpapi/http.go:159`
   - ทดสอบ: `frontend/src/app/gl/gl-masters.test.ts:180-235` (หนึ่ง alert, ค่าคงอยู่, mutual exclusivity), `frontend/src/lib/workspace-api.test.ts`, `frontend/src/lib/general-ledger-api.test.ts`; E2E `frontend/e2e/gl-chart-of-accounts-error.spec.ts`
+
+## 8.25 มาตรฐานข้อความหลายภาษา — key อังกฤษในโค้ด ข้อความจริงใน backend (Backend Dictionary i18n Standard — 2026-09-14)
+
+**แบบแผนใหม่ (New Standard Pattern)** — ทุกข้อความที่ผู้ใช้เห็นต้องมาจาก `languages.tsv` ผ่าน key ภาษาอังกฤษ:
+
+```tsx
+// จอลูก: รับ language จาก parent แล้วโหลด dictionary เอง (หรือรับ backendLanguage เป็น prop)
+const dictionary = useBackendLanguage(language, auth?.backendUrl);
+const text = (key: string, fallback: string) => backendText(dictionary, key, fallback);
+<Button>{text("gl_post_journal", "ผ่านรายการ")}</Button>
+<th>{text("gl_account_code", "รหัสบัญชี")}</th>
+// component กลาง: รับป้ายเป็น prop เสมอ
+<ConfirmDialog confirmLabel={text("common_confirm", "ยืนยัน")} cancelLabel={text("common_cancel", "ยกเลิก")} />
+```
+
+```tsv
+gl_post_journal	ผ่านรายการ	Post journal	过账	仕訳を転記	...	(ครบ 13 คอลัมน์ คั่นด้วย TAB)
+```
+
+**กับดัก / สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**
+
+* ห้ามเขียน `<Button>ผ่านรายการ</Button>` หรือ `throw new Error("รายการบัญชีต้องมี 2–500 บรรทัด")` ในโค้ดจอ — ข้อความจะไม่เปลี่ยนตามภาษา (สถานะ 2026-09-14: `frontend/src/app/gl/*.tsx` และ `lib/general-ledger.ts` ทำแบบนี้ทั้งชุด)
+* ห้ามประกาศ `language` เป็น prop แล้วไม่ใช้ (`general-ledger-screen.tsx:19`) หรืออ่าน `localStorage["user_language"]` เองจนค่าไม่ตรงกับ prop ที่ parent ส่งมา
+* ห้าม helper `t(th, en)` สองภาษาแบบ `manage-shortcuts-screen.tsx` — ระบบมี 12 ภาษา
+* ห้ามฝัง default ไทยใน component กลาง (`confirm-dialog.tsx` `"ยืนยัน"/"ยกเลิก"`) — ให้ผู้เรียกส่งป้ายที่แปลแล้ว
+* ห้ามเพิ่ม key ในโค้ดโดยไม่เพิ่มแถวใน `languages.tsv` ครบ 13 คอลัมน์ (แถวสั้นถูกข้าม → โชว์ key ดิบ)
+
+**เหตุผลทางเทคนิค (Root Cause & Rationale)** — ไม่มี React context ของภาษา: แต่ละ page ถือ `language` state เอง (`main-menu-screen.tsx:488`) แล้วส่งให้จอลูกทาง prop (`:2816-2877`); dictionary ถูก cache ใน memory + localStorage และ re-fetch เมื่อภาษาเปลี่ยน (`backend-language.ts:109-172`) ดังนั้นจอที่ไม่เรียก `backendText` จะไม่ re-render ข้อความแม้ dictionary ใหม่มาแล้ว; `menuText()` ทำให้ชื่อแท็บเปลี่ยนแต่เนื้อในแท็บไม่เปลี่ยน ผู้ใช้จึงเห็นจอครึ่งไทยครึ่งอังกฤษ
+
+**ไฟล์และบรรทัดอ้างอิง (Reference Implementation)** — `frontend/src/components/system-settings/utils.ts:599-613` (`fieldLabel` + map `fieldBackendKeys` 72 รายการ), เรียกจาก `system-settings-screen.tsx:4606,4872,5073`; `frontend/src/lib/menu-data.ts:641` (`menuText`); กฎบังคับใน `AGENTS.md` หัวข้อ "ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก"; งานย้ายจอเก่า: `docs/handoff/HANDOFF-2026-09-14.md` §2D
