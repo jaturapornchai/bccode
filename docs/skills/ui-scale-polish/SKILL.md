@@ -1256,6 +1256,14 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 
 **วิธีตรวจ** — เปิดจอ GL → กดเลือกภาษา th → en → ja แล้ว `find` ป้ายเดียวกัน (เช่น ชื่อบัญชีภาษาอังกฤษ → Account Name (English) → 勘定科目名（英語）) + `npx vitest run src/app/gl` เขียว
 
+### 8.25.2 โมดูลที่รับ dictionary จาก parent อยู่แล้ว: ใช้ `BackendTextProvider` กลาง (system-settings tree views + จัดการทางลัด, 2026-09-14)
+
+**แบบแผน** — `frontend/src/components/backend-text-provider.tsx` (`BackendTextProvider({ dictionary })` + `useBackendText()` คืน `(key, fallback) => string`) ใช้เมื่อจอแม่ถือ `backendLanguage` อยู่แล้ว (ต่างจาก GL ที่ provider fetch เอง) — `system-settings-screen.tsx` ห่อ `<WarehouseTreeView>` `<CompanyBranchTreeView>` `<ProductCategoryTreeView>` `<ProductGroupTreeView>` `<ProductBomEditor>` ด้วย `<BackendTextProvider dictionary={backendLanguage}>` ทีละจุด mount; component ลูก/หลานทุกตัว `const tr = useBackendText();` ตารางตัวเลือกระดับไฟล์ เช่น `MONTH_OPTIONS`/`DOC_PREFIX_TYPES` ใน `company-branch-tree-view.tsx` เป็น `{ value, label: ["st_january", "มกราคม"] } as const` แล้ว render `tr(...opt.label)`; helper ระดับไฟล์ที่คืนข้อความ (`saveErrorMessage(message, formType, tr: BackendTextFn)`) รับ `tr` เป็นพารามิเตอร์ท้าย; จอที่มี `backendLanguage` เป็น prop อยู่แล้ว (`manage-shortcuts-screen.tsx`) ไม่ต้องใช้ provider — เปลี่ยน helper เป็น `const t = (key, th) => backendText(backendLanguage, key, th)`
+
+**กับดักรอบนี้** — (1) `language === "th" ? "ไทย" : "English"` ที่คร่อมหลายบรรทัดต้อง regex ทั้งไฟล์ (ไม่ใช่ทีละบรรทัด) และข้อความในสาขาไทยต้อง `strip()` ก่อนค้น registry (`"บาร์โค้ดหน่วย: "` มีช่องว่างท้าย → หา key ไม่เจอ) (2) ternary ซ้อนใน template `${isExpanded ? "ซ่อน" : "แสดง"}หมวดย่อย` — ตัวสคริปต์เห็นแค่ `{0}หมวดย่อย` จึงลืมแปล "ซ่อน/แสดง"; ตรวจ MISSING ของสคริปต์ทุกครั้ง (3) เครื่องมือแทนที่ต้อง mask `tr("k", "…")` ที่เพิ่งสร้างก่อนรอบถัดไป ไม่งั้นได้ `tr("k", tr("k", "…"))` (4) tuple `["0", "ไม่ใส่"]` ของ `<DocSelect options>` หน้าตาเหมือน `[key, ไทย]` — ทั้งสคริปต์และ test ต้องแยกด้วย "สมาชิกตัวที่สองมีอักษรไทย" (5) หลังใส่ `tr` ในตัว component ต้องเติม `tr` ใน deps ของ `useCallback/useMemo/useEffect` ที่เรียกมัน (eslint `react-hooks/exhaustive-deps`) (6) `฿` (U+0E3F) อยู่ในบล็อกอักษรไทย — regex ตรวจไทยใน test ต้องเว้นไว้ (7) DeepSeek แบบ thinking กับ 13 ข้อความ × 12 ภาษา ชน `max_tokens` 8192 → ใช้ชุดละ 8 + `--max-tokens 16384` ขนานกัน 4 งาน
+
+**วิธีตรวจ** — `npx vitest run src/app/system-settings/settings-language-keys.test.ts` เขียว + เปิดตั้งค่า → คลังสินค้า/สาขา แล้วสลับภาษา th → ja: ปุ่ม "เพิ่มคลังสินค้า" ต้องกลายเป็นญี่ปุ่นทั้งจอ (ตัวเลข/รหัสคงเดิม)
+
 ## 8.26 Dialog/Popover ที่อยู่ใน header ต้อง render ผ่าน portal ไป `<body>` (2026-09-14)
 
 **อาการ** — กล่อง "เลือกภาษา" (และ picker อื่นใน `app-header-controls.tsx`) ถูก mega menu ของโหมด "เมนูบน" ซ้อนทับ ทั้งที่ `.dialog-backdrop` เป็น `position: fixed; z-index: 60`
