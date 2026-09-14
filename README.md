@@ -8,6 +8,14 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — เพิ่มประสิทธิภาพรายงาน GL: รวม CTE Query เป็น Single Statement ด้วย Window Functions (Item 13)
+
+- [Perf] ปรับปรุงฟังก์ชัน `run` และ `runWithTotals` ใน `backend/internal/generalledger/reports.go` รวมการคำนวณจำนวนแถวทั้งหมด (count(*) OVER()), ผลรวมค่ายอดรวมทั้งหมด (SUM(...) OVER()), และการแบ่งหน้า (LIMIT / OFFSET) ให้อยู่ใน SQL statement เดียวผ่าน Window Functions แทนการรัน CTE ซ้ำ 2 รอบต่อหน้า
+- [Perf] ปรับรายงานงบกำไรขาดทุน (`profitLoss`) และงบแสดงฐานะการเงิน (`balanceSheet`) ให้คำนวณค่ายอดรวมพิเศษ (revenue, expense, profit, assets, liabilities, equity, currentearnings, difference) โดยตรงผ่าน Window Functions ใน statement เดียว จึงไม่ต้องเรียก `setTotals` รัน CTE ซ้ำเป็นรอบที่ 3 อีกต่อไป
+- [Refactor] รองรับ fallback case เมื่อผลลัพธ์ว่างหรือระบุ offset เกินจำนวนข้อมูลด้วย `UNION ALL ... WHERE NOT EXISTS (SELECT 1 FROM page)` อย่างถูกต้องและปลอดภัย
+- ไฟล์: `backend/internal/generalledger/reports.go`
+- หลักฐาน: Go vet/test ใน Docker ผ่าน 100% (`smlcloudplatform/internal/generalledger`, `httpapi`, `kafkatransport`), vitest 476/476 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — ปรับปรุงสถาปัตยกรรม Database Connection: รวม Connection Resolver ของ GL เข้ากับ mypg.PgSqlFastConnect
 
 - [Refactor] ปรับ `newRuntime` ใน `backend/internal/generalledger/httpapi/http.go` ให้ส่ง `mypg.PgSqlFastConnect` เป็น resolver ของ `gl.NewPostgres` แทนการสร้าง Connection Pool ซ้ำซ้อนของตัวเอง ช่วยลดจำนวน database connections ต่อ tenant ลงครึ่งหนึ่ง และใช้ระบบ Unified Connection Pool ร่วมกับทั้งระบบ

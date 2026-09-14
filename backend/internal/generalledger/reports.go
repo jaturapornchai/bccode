@@ -136,49 +136,102 @@ func amountColumn(key, label string) ReportColumn {
 	return ReportColumn{Key: key, Label: label, Amount: true}
 }
 
+type reportTotal struct {
+	key  string
+	expr string
+}
+
+func (r reportContext) run(ctx context.Context, cte, order string, columns []ReportColumn, totalKeys []string) (Report, error) {
+	totals := make([]reportTotal, len(totalKeys))
+	for i, key := range totalKeys {
+		totals[i] = reportTotal{key: key, expr: key + "::numeric"}
+	}
+	return r.runWithTotals(ctx, cte, order, columns, totals)
+}
+
 // The rows CTE must expose only text columns and, where needed, private sort
 // columns. PostgreSQL performs all accounting arithmetic before ::text scanning.
-func (r reportContext) run(ctx context.Context, cte, order string, columns []ReportColumn, totalKeys []string) (Report, error) {
+// Consolidates total count, window totals, and paginated rows into a single statement.
+func (r reportContext) runWithTotals(ctx context.Context, cte, order string, columns []ReportColumn, totals []reportTotal) (Report, error) {
 	result := Report{Columns: columns, Rows: []map[string]string{}, Totals: map[string]string{}, Warnings: []string{}}
-	aggregate := []string{"count(*)"}
-	for _, key := range totalKeys {
-		aggregate = append(aggregate, `COALESCE(SUM(`+key+`::numeric),0)::text`)
+	for _, t := range totals {
+		result.Totals[t.key] = "0"
 	}
-	values := make([]string, len(totalKeys))
-	targets := []any{&result.TotalRows}
-	for i := range values {
-		targets = append(targets, &values[i])
+	selected := make([]string, len(columns))
+	nullCols := make([]string, len(columns))
+	for i, column := range columns {
+		selected[i] = column.Key
+		nullCols[i] = "NULL::text"
 	}
-	if err := r.tx.QueryRowContext(ctx, cte+` SELECT `+strings.Join(aggregate, ",")+` FROM result`, r.args...).Scan(targets...); err != nil {
-		return result, err
+	windowSums := ""
+	fallbackSums := ""
+	for _, t := range totals {
+		expr := t.expr
+		if expr == "" {
+			expr = t.key + "::numeric"
+		}
+		windowSums += ", COALESCE(SUM(" + expr + ") OVER(), 0)::text AS __sum_" + t.key
+		fallbackSums += ", COALESCE(SUM(" + expr + "), 0)::text"
 	}
-	for i, key := range totalKeys {
-		result.Totals[key] = values[i]
+	limitArg := fmt.Sprintf("$%d", len(r.args)+1)
+	offsetArg := fmt.Sprintf("$%d", len(r.args)+2)
+	nullColsStr := ""
+	if len(nullCols) > 0 {
+		nullColsStr = ", " + strings.Join(nullCols, ", ")
 	}
-	selected := []string{}
-	for _, column := range columns {
-		selected = append(selected, column.Key)
-	}
+
+	query := cte + `, numbered AS (
+		SELECT count(*) OVER() AS __total_rows` + windowSums + `, ` + strings.Join(selected, ", ") + ` FROM result
+	),
+	page AS (
+		SELECT * FROM numbered ORDER BY ` + order + ` LIMIT ` + limitArg + ` OFFSET ` + offsetArg + `
+	)
+	SELECT 0 AS __is_fallback, * FROM page
+	UNION ALL
+	SELECT 1 AS __is_fallback, count(*)` + fallbackSums + nullColsStr + ` FROM result WHERE NOT EXISTS (SELECT 1 FROM page)`
+
 	args := append(append([]any{}, r.args...), r.query.Limit, (r.query.Page-1)*r.query.Limit)
-	rows, err := r.tx.QueryContext(ctx, cte+` SELECT `+strings.Join(selected, ",")+` FROM result ORDER BY `+order+` LIMIT $10 OFFSET $11`, args...)
+	rows, err := r.tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return result, err
 	}
 	defer rows.Close()
+
+	hasReadTotals := false
 	for rows.Next() {
-		values := make([]string, len(columns))
-		targets := make([]any, len(columns))
-		for i := range values {
-			targets[i] = &values[i]
+		var isFallback int
+		var totalRows int64
+		sumVals := make([]string, len(totals))
+		colVals := make([]sql.NullString, len(columns))
+
+		targets := make([]any, 0, 2+len(totals)+len(columns))
+		targets = append(targets, &isFallback, &totalRows)
+		for i := range sumVals {
+			targets = append(targets, &sumVals[i])
 		}
+		for i := range colVals {
+			targets = append(targets, &colVals[i])
+		}
+
 		if err = rows.Scan(targets...); err != nil {
 			return result, err
 		}
-		record := map[string]string{}
-		for i, column := range columns {
-			record[column.Key] = values[i]
+
+		if !hasReadTotals {
+			result.TotalRows = totalRows
+			for i, t := range totals {
+				result.Totals[t.key] = sumVals[i]
+			}
+			hasReadTotals = true
 		}
-		result.Rows = append(result.Rows, record)
+
+		if isFallback == 0 {
+			record := make(map[string]string, len(columns))
+			for i, col := range columns {
+				record[col.Key] = colVals[i].String
+			}
+			result.Rows = append(result.Rows, record)
+		}
 	}
 	return result, rows.Err()
 }
@@ -244,12 +297,15 @@ func (r reportContext) pnlCTE() string {
 }
 func (r reportContext) profitLoss(ctx context.Context) (Report, error) {
 	cte := r.pnlCTE() + `, result AS (SELECT account_code AS accountcode,account_name AS accountname,account_type AS accounttype,debit::text,credit::text,balance::text,(CASE WHEN account_type='income' THEN -balance ELSE balance END)::text AS amount FROM pnl)`
-	result, err := r.run(ctx, cte, "accounttype,accountcode", []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("accounttype", "หมวดบัญชี"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "สุทธิเดบิตลบเครดิต"), amountColumn("amount", "จำนวนเงิน")}, []string{"debit", "credit"})
-	if err != nil {
-		return result, err
+	totals := []reportTotal{
+		{key: "debit", expr: "debit::numeric"},
+		{key: "credit", expr: "credit::numeric"},
+		{key: "revenue", expr: "(-balance::numeric) FILTER(WHERE accounttype='income')"},
+		{key: "expense", expr: "balance::numeric FILTER(WHERE accounttype='expense')"},
+		{key: "profit", expr: "-balance::numeric"},
 	}
-	err = r.setTotals(ctx, &result, r.pnlCTE()+` SELECT COALESCE(SUM(-balance) FILTER(WHERE account_type='income'),0)::text,COALESCE(SUM(balance) FILTER(WHERE account_type='expense'),0)::text,COALESCE(SUM(-balance),0)::text FROM pnl`, "revenue", "expense", "profit")
-	return result, err
+	columns := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("accounttype", "หมวดบัญชี"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "สุทธิเดบิตลบเครดิต"), amountColumn("amount", "จำนวนเงิน")}
+	return r.runWithTotals(ctx, cte, "accounttype,accountcode", columns, totals)
 }
 
 func (r reportContext) balanceSheet(ctx context.Context) (Report, error) {
@@ -257,12 +313,15 @@ func (r reportContext) balanceSheet(ctx context.Context) (Report, error) {
       SELECT account_code AS accountcode,account_name AS accountname,account_type AS accounttype,CASE WHEN account_type='asset' THEN balance ELSE -balance END AS amount FROM balances WHERE account_type IN ('asset','liability','equity')
       UNION ALL SELECT '__current_earnings__','กำไรขาดทุนที่ยังไม่ปิดเข้ากำไรสะสม','equity',COALESCE(SUM(-balance),0) FROM balances WHERE account_type IN ('income','expense')
     ), result AS (SELECT accountcode,accountname,accounttype,amount::text FROM statements)`
-	result, err := r.run(ctx, cte, "accounttype,accountcode", []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("accounttype", "หมวดบัญชี"), amountColumn("amount", "ยอดคงเหลือ")}, nil)
-	if err != nil {
-		return result, err
+	totals := []reportTotal{
+		{key: "assets", expr: "amount::numeric FILTER(WHERE accounttype='asset')"},
+		{key: "liabilities", expr: "amount::numeric FILTER(WHERE accounttype='liability')"},
+		{key: "equity", expr: "amount::numeric FILTER(WHERE accounttype='equity')"},
+		{key: "currentearnings", expr: "amount::numeric FILTER(WHERE accountcode='__current_earnings__')"},
+		{key: "difference", expr: "CASE WHEN accounttype='asset' THEN amount::numeric ELSE -amount::numeric END"},
 	}
-	err = r.setTotals(ctx, &result, cte+` SELECT COALESCE(SUM(amount::numeric) FILTER(WHERE accounttype='asset'),0)::text,COALESCE(SUM(amount::numeric) FILTER(WHERE accounttype='liability'),0)::text,COALESCE(SUM(amount::numeric) FILTER(WHERE accounttype='equity'),0)::text,COALESCE(SUM(amount::numeric) FILTER(WHERE accountcode='__current_earnings__'),0)::text,COALESCE(SUM(CASE WHEN accounttype='asset' THEN amount::numeric ELSE -amount::numeric END),0)::text FROM result`, "assets", "liabilities", "equity", "currentearnings", "difference")
-	return result, err
+	columns := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("accounttype", "หมวดบัญชี"), amountColumn("amount", "ยอดคงเหลือ")}
+	return r.runWithTotals(ctx, cte, "accounttype,accountcode", columns, totals)
 }
 
 func (r reportContext) annualBalances(ctx context.Context) (Report, error) {
