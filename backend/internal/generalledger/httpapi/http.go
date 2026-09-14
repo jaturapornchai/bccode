@@ -10,9 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,6 +24,7 @@ import (
 	"smlcloudplatform/internal/config"
 	gl "smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/generalledger/kafkatransport"
+	"smlcloudplatform/internal/goapi/mypg"
 	access "smlcloudplatform/internal/organization/access"
 	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	rolemodels "smlcloudplatform/internal/organization/rolepermission/models"
@@ -96,30 +95,11 @@ func RegisterProjectionWorker(ms *microservice.Microservice, cfg config.IConfig)
 
 func newRuntime(ms *microservice.Microservice, cfg config.IConfig) *Http {
 	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-	var poolMu sync.Mutex
-	pools := map[string]*sql.DB{}
-	pgcfg := cfg.PersisterConfig()
 	projection := gl.NewPostgres(func(holding string) (*sql.DB, error) {
 		if !validHoldingRegex.MatchString(holding) {
 			return nil, fmt.Errorf("รหัสกลุ่มบริษัทไม่ถูกต้อง")
 		}
-		poolMu.Lock()
-		defer poolMu.Unlock()
-		if db, ok := pools[holding]; ok {
-			return db, nil
-		}
-		address := url.URL{Scheme: "postgres", Host: net.JoinHostPort(pgcfg.Host(), pgcfg.Port()), Path: "/" + strings.ToLower(holding), User: url.UserPassword(pgcfg.Username(), pgcfg.Password())}
-		query := url.Values{"sslmode": {pgcfg.SSLMode()}, "TimeZone": {"UTC"}}
-		address.RawQuery = query.Encode()
-		db, err := sql.Open("postgres", address.String())
-		if err != nil {
-			return nil, err
-		}
-		db.SetMaxOpenConns(8)
-		db.SetMaxIdleConns(2)
-		db.SetConnMaxIdleTime(5 * time.Minute)
-		pools[holding] = db
-		return db, nil
+		return mypg.PgSqlFastConnect(holding)
 	})
 	// Fixed group: mainapi and worker both run the consumer block in production,
 	// so a per-container CONSUMER_GROUP_NAME would apply every event twice.
@@ -128,11 +108,6 @@ func newRuntime(ms *microservice.Microservice, cfg config.IConfig) *Http {
 	h.closeResources = func() {
 		if bus != nil {
 			_ = bus.Close()
-		}
-		poolMu.Lock()
-		defer poolMu.Unlock()
-		for _, db := range pools {
-			_ = db.Close()
 		}
 	}
 	return h

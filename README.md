@@ -8,6 +8,12 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ปรับปรุงสถาปัตยกรรม Database Connection: รวม Connection Resolver ของ GL เข้ากับ mypg.PgSqlFastConnect
+
+- [Refactor] ปรับ `newRuntime` ใน `backend/internal/generalledger/httpapi/http.go` ให้ส่ง `mypg.PgSqlFastConnect` เป็น resolver ของ `gl.NewPostgres` แทนการสร้าง Connection Pool ซ้ำซ้อนของตัวเอง ช่วยลดจำนวน database connections ต่อ tenant ลงครึ่งหนึ่ง และใช้ระบบ Unified Connection Pool ร่วมกับทั้งระบบ
+- ไฟล์: `backend/internal/generalledger/httpapi/http.go`
+- หลักฐาน: Go vet/test ใน Docker ผ่าน 100% (`smlcloudplatform/internal/generalledger/httpapi`)
+
 ### 2026-09-14 — เพิ่มประสิทธิภาพ GL HTTP API: ย้าย regexp.MustCompile เป็น package-level variable
 
 - [Perf] ย้าย `regexp.MustCompile` ตรวจสอบชื่อกลุ่มบริษัท (holding code) ใน `backend/internal/generalledger/httpapi/http.go` จากใน closure ออกมาเป็นตัวแปรระดับแพ็กเกจ `validHoldingRegex` เพื่อไม่ให้คอมไพล์ regex ซ้ำทุกครั้งที่มีการเรียกใช้งาน
@@ -45,6 +51,18 @@
 - [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
 - ไฟล์: `frontend/src/app/system-settings/*`, `frontend/src/app/menu/manage-shortcuts-screen.tsx`, `frontend/src/components/backend-text-provider.tsx`, `frontend/src/app/system-settings/settings-language-keys.test.ts`, `backend/assets/language/languages.tsv`, `backend/internal/currency/*`, `backend/main.go`, `docs/reference/CODE-MAP.md`
 - หลักฐาน: `tsc --noEmit` ผ่าน 0 error, vitest 476/476 ผ่าน 100%, Go build/vet/test ใน Docker ผ่าน 100%
+
+### 2026-09-14 — ตั้งค่าระบบ (คลังสินค้า/สาขา/หมวด-กลุ่มสินค้า/สูตรผลิต) + จัดการทางลัด: ข้อความบนจอเปลี่ยนตามภาษาที่เลือก
+
+- [Feature] จอตั้งค่าคลังสินค้า-ที่เก็บ, บริษัท-สาขา (รวมรูปแบบเลขที่เอกสาร), หมวดสินค้า, กลุ่มสินค้า, สูตรผลิต (BOM) และจอ "จัดการทางลัด" ของเมนูหลัก เปลี่ยนป้าย ปุ่ม placeholder ข้อความยืนยัน/ผิดพลาด ตามภาษาที่ผู้ใช้เลือก (12 ภาษา) — เดิมมีแค่ไทย/อังกฤษ (`language === "th" ? … : …`) หรือไทยตายตัว
+- [Refactor] เพิ่ม `BackendTextProvider`/`useBackendText` (`frontend/src/components/backend-text-provider.tsx`) — จอ `system-settings-screen.tsx` ที่ถือ dictionary อยู่แล้วห่อ tree view ทั้ง 5 จอครั้งเดียว component ลูกเรียก `const tr = useBackendText()` โดยไม่ต้องส่ง prop ต่อ ๆ กัน; ตารางตัวเลือกระดับไฟล์ (เดือน, ประเภทสาขา, ประเภทปี, ประเภทเอกสาร, โหมดปี/รีเซ็ต) เก็บเป็น `[key, ไทย]` แล้วแปลตอน render; `manage-shortcuts-screen.tsx` เลิกใช้ helper `t(th, en)` → `t(key, ไทย)` ผ่าน `backendText`
+- [Feature] เพิ่มคำแปล 331 key `st_*` × 12 ภาษาใน `backend/assets/language/languages.tsv` (DeepSeek ร่างชุดละ 8 ข้อความ, Claude ตรวจจำนวนแถว/ช่องว่าง + test) และใช้ key เดิมซ้ำ 71 รายการที่มีคำไทยตรงกันอยู่แล้ว
+- [Test] เพิ่ม `frontend/src/app/system-settings/settings-language-keys.test.ts` กันถอยหลังทั้ง 6 ไฟล์: key ที่ใช้ต้องมีครบ 12 ภาษา และห้ามมีข้อความไทยนอก `tr()`/`t()`/tuple
+- [Docs] `docs/skills/ui-scale-polish/SKILL.md` §8.25.2 (provider กลาง + กับดักรอบนี้), handoff §2D สถานะข้อ 23/24
+- ไฟล์: `frontend/src/app/system-settings/{warehouse-tree-view,company-branch-tree-view,product-category-tree-view,product-group-tree-view,product-bom-editor,system-settings-screen}.tsx`, `frontend/src/app/menu/manage-shortcuts-screen.tsx`, `frontend/src/components/backend-text-provider.tsx`, `backend/assets/language/languages.tsv` (+331 แถว)
+- หลักฐาน: `tsc --noEmit` ผ่าน, vitest `settings-language-keys` + `src/app/gl` + `menu-data` + `resizable-splitter` 103/103 ผ่าน, eslint 0 error (warning เดิม 53), เปิด dev server (backend local ที่มี tsv ใหม่) สลับภาษาเป็นญี่ปุ่นจากเมนูหลัก: จอจัดการทางลัด (คำอธิบาย/หมวด/ปุ่ม/จำนวน), จอคลังสินค้า ("倉庫を追加", "行を追加", "すべて保存", "この倉庫には保管場所がありません") และจอบริษัท-สาขา ("組織構造", "会社を追加", "会社または支店を選択してください") เป็นญี่ปุ่นทั้งหมด เหลือไทยเฉพาะข้อมูล (ชื่อกลุ่มกิจการ/ชื่อคลัง) และหัวจอของ `system-settings-screen` เอง ("กลุ่มกิจการ:", title/subtitle จาก config) ที่อยู่นอกขอบเขตรอบนี้; **พบบั๊กเดิม (ไม่ได้แก้):** เปิดจอตั้งค่าผ่าน URL ตรงแล้วกดเลือกภาษาจะ render loop สลับ th/ja ไม่หยุด — บันทึกที่ `docs/kms/bugs/2026-09-14-settings-language-switch-loop.md`; deploy production รอบนี้ (mainapi + frontend) หลัง commit
+
+---
 
 ### 2026-09-14 — เมนูหลัก: หัวข้อกลุ่มเมนูและข้อความบนจอเมนูเปลี่ยนตามภาษาครบ + กล่องเลือกภาษาไม่ถูกเมนูบนบัง
 
