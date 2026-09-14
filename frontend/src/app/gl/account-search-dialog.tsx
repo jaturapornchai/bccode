@@ -314,6 +314,7 @@ export function AccountSearchDialog({
               size="icon"
               className="size-9 rounded-xl hover:bg-muted"
               onClick={() => setIsFullscreen(!isFullscreen)}
+              aria-label={isFullscreen ? tr("gl_minimize_window", "ย่อหน้าต่างลง") : tr("gl_maximize_fullscreen", "ขยายเต็มจอ")}
               title={isFullscreen ? tr("gl_minimize_window", "ย่อหน้าต่างลง") : tr("gl_maximize_fullscreen", "ขยายเต็มจอ")}
             >
               {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
@@ -324,6 +325,7 @@ export function AccountSearchDialog({
               size="icon"
               className="size-9 rounded-xl hover:bg-destructive/10 hover:text-destructive"
               onClick={onClose}
+              aria-label={tr("gl_close_window", "ปิดหน้าต่าง (Esc)")}
               title={tr("gl_close_window", "ปิดหน้าต่าง (Esc)")}
             >
               <X className="size-5" />

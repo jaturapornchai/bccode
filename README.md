@@ -8,6 +8,12 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ปรับปรุงการเข้าถึง (Accessibility): เพิ่ม aria-label ให้ปุ่ม Icon-only ในโมดูล GL
+
+- [Fix] เพิ่ม `aria-label` ภาษาไทยกำกับปุ่มที่แสดงเฉพาะไอคอน (ปุ่มย่อ/ขยายหน้าต่าง, ปุ่มปิดหน้าต่างค้นหาผังบัญชี, ปุ่มปิดหน้าต่างดูข้อมูลและแก้ไขสมุดรายวัน/ข้อมูลหลัก GL) ใน `account-search-dialog.tsx`, `gl-journals.tsx`, `gl-masters.tsx` ตามกฎ Accessibility สำหรับคนไทย 40+ และ Screen Reader
+- ไฟล์: `frontend/src/app/gl/account-search-dialog.tsx`, `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/app/gl/gl-masters.tsx`
+- หลักฐาน: `tsc --noEmit` ผ่าน 0 error, vitest 476/476 ผ่าน 100%
+
 ### 2026-09-14 — ปรับปรุง UI สมุดรายวันและบัญชี: ใช้ Semantic Theme Tokens แทนสี Hard-code
 
 - [Fix] เปลี่ยนสี hard-code (`text-red-600`, `bg-amber-100`, `bg-emerald-500/10`, `text-amber-950`, `border-red-200`) ในจอ GL (`gl-journals.tsx`, `gl-masters.tsx`, `gl-statement-designer.tsx`, `account-search-dialog.tsx`) เป็น Semantic Theme Tokens (`text-destructive`, `border-destructive/30`, `hover:bg-destructive/10`, `bg-primary/10`, `text-primary`, `bg-primary/15`, `bg-muted`) เพื่อให้สอดคล้องกับระบบ 10 Palette และรองรับ Dark Mode อย่างสมบูรณ์

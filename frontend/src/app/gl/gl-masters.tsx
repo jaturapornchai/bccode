@@ -384,6 +384,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                 size="icon"
                 className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
                 onClick={() => { setRecord(null); setOriginal(""); setIsEditing(false); }}
+                aria-label={tr("gl_close_view_dialog", "ปิดหน้าต่างแสดงข้อมูล")}
                 title={tr("gl_close_view_dialog", "ปิดหน้าต่างแสดงข้อมูล")}
               >
                 <X className="size-4" />
@@ -465,6 +466,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               size="icon"
               className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
               onClick={() => void cancelEdit()}
+              aria-label={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
               title={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
             >
               <X className="size-4" />
