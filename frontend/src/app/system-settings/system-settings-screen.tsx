@@ -134,10 +134,8 @@ import {
   type ThailandSubdistrict,
 } from "@/lib/thailand-addresses";
 import {
-  filterThaiBankPresets,
   findThaiBankPreset,
   thaiBankPresets,
-  type ThaiBankPreset,
 } from "@/lib/thai-banks";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
@@ -740,7 +738,6 @@ export function SystemSettingsScreen({
   const screenActions = useScreenActions(auth, workspace, route);
   const [records, setRecords] = useState<SettingRecord[]>([]);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
-  const [thaiBankDialogOpen, setThaiBankDialogOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -2560,59 +2557,6 @@ export function SystemSettingsScreen({
     setStandardUnitDialog((current) => ({ ...current, selectedCodes: [] }));
   }
 
-  async function saveThaiBanks(selectedBanks: ThaiBankPreset[]) {
-    if (!auth || !workspace || selectedBanks.length === 0) return;
-    setSaving(true);
-    setNotice(null);
-    let successCount = 0;
-    const errors: string[] = [];
-
-    for (const bank of selectedBanks) {
-      try {
-        const payload = {
-          code: bank.code,
-          names: [
-            { code: "th", name: bank.nameTh },
-            { code: "en", name: bank.nameEn },
-          ],
-          logo: bank.logo,
-        };
-        const response = await authFetch("/api/system-settings/bank", {
-          method: "POST",
-          headers: requestHeaders(auth),
-          body: JSON.stringify(payload),
-        });
-        const resJson = (await response.json()) as unknown;
-        if (!response.ok || isFailed(resJson)) {
-          errors.push(`${bank.code}: ${extractMessage(resJson) ?? text("requestFailed")}`);
-        } else {
-          successCount++;
-        }
-      } catch (err) {
-        errors.push(`${bank.code}: ${errorText(err)}`);
-      }
-    }
-
-    setSaving(false);
-    if (successCount > 0) {
-      setNotice({
-        type: "success",
-        text:
-          language === "th"
-            ? `เพิ่มธนาคารไทยสำเร็จ ${successCount} รายการ`
-            : `Successfully added ${successCount} Thai banks`,
-      });
-      await loadRecords(auth, workspace, currentConfig);
-    }
-    if (errors.length > 0) {
-      setNotice({
-        type: successCount > 0 ? "warning" : "error",
-        text: errors.join(", "),
-      });
-    }
-    setThaiBankDialogOpen(false);
-  }
-
   const showProductCategoryHeaderControls =
     (config.slug === "productcategorygroupselectscreen" || config.slug === "productcategorylist") &&
     !hideChrome &&
@@ -3580,24 +3524,6 @@ export function SystemSettingsScreen({
                       <Plus />
                       {text("add")}
                     </Button>
-                    {currentConfig.slug === "bank" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="shrink-0"
-                        onClick={() => setThaiBankDialogOpen(true)}
-                        disabled={!auth}
-                        title={
-                          language === "th"
-                            ? "เพิ่มธนาคารไทยจากแม่แบบพร้อมโลโก้"
-                            : "Add Thai banks from template"
-                        }
-                      >
-                        <Landmark />
-                        {language === "th" ? "เพิ่มธนาคารไทย" : "Add Thai Banks"}
-                      </Button>
-                    ) : null}
                     {currentConfig.slug === "user" ? (
                       <Button
                         type="button"
@@ -3692,19 +3618,6 @@ export function SystemSettingsScreen({
                         <Plus />
                         {text("addItem")}
                       </Button>
-                      {currentConfig.slug === "bank" ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setThaiBankDialogOpen(true)}
-                          disabled={!auth}
-                        >
-                          <Landmark />
-                          {language === "th"
-                            ? "เพิ่มธนาคารไทยจากแม่แบบ"
-                            : "Add Thai Banks from Template"}
-                        </Button>
-                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -3719,17 +3632,6 @@ export function SystemSettingsScreen({
               holdingcode={workspace.shop.holdingcode}
               authToken={auth.token}
               onImported={() => void loadRecords(auth, workspace, config)}
-            />
-          ) : null}
-
-          {thaiBankDialogOpen ? (
-            <ThaiBankTemplateDialog
-              existingCodes={records.map((r) => String(r.code || "").toUpperCase())}
-              language={language}
-              onClose={() => setThaiBankDialogOpen(false)}
-              onSave={saveThaiBanks}
-              saving={saving}
-              text={text}
             />
           ) : null}
 
@@ -5570,52 +5472,6 @@ function SettingFormDialog({
             </Button>
           </div>
         ) : null}
-        {config.slug === "bank" ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Landmark className="size-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-foreground">
-                  {language === "th" ? "เลือกจากแม่แบบธนาคารไทย" : "Select from Thai Bank Template"}
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {language === "th"
-                    ? "เลือกเพื่อเติมรหัส ชื่อ และโลโก้ธนาคารอัตโนมัติ"
-                    : "Auto-fill bank code, names, and logo from template"}
-                </div>
-              </div>
-            </div>
-            <select
-              className="h-8 rounded-lg border border-input bg-background px-2 text-xs font-semibold text-foreground shadow-2xs"
-              value=""
-              onChange={(e) => {
-                const preset = findThaiBankPreset(e.target.value);
-                if (preset) {
-                  setForm((prev) => ({
-                    ...prev,
-                    code: preset.code,
-                    names: [
-                      { code: "th", name: preset.nameTh },
-                      { code: "en", name: preset.nameEn },
-                    ],
-                    logo: preset.logo,
-                  }));
-                }
-              }}
-            >
-              <option value="">
-                {language === "th" ? "-- เลือกธนาคารไทย --" : "-- Select Thai Bank --"}
-              </option>
-              {thaiBankPresets.map((b) => (
-                <option key={b.code} value={b.code}>
-                  {b.code} - {b.nameTh} ({b.nameEn})
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
         {config.slug === "bookbankscreen" ? (
           <BookBankFormSection
             auth={auth}
@@ -6504,258 +6360,6 @@ export function postalAddressHint(
   return language === "th"
     ? `พบ ${matches.length} ตำบล/แขวงจากรหัสนี้ เลือกตำบล/แขวงเพื่อยืนยัน`
     : `${matches.length} subdistricts found for this postal code. Select one to confirm.`;
-}
-
-function ThaiBankTemplateDialog({
-  existingCodes,
-  language,
-  onClose,
-  onSave,
-  saving,
-  text,
-}: {
-  existingCodes: string[];
-  language: LanguageCode;
-  onClose: () => void;
-  onSave: (banks: ThaiBankPreset[]) => void;
-  saving: boolean;
-  text: (key: keyof typeof uiEn) => string;
-}) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-
-  const existingSet = useMemo(
-    () => new Set(existingCodes.map((c) => c.trim().toUpperCase())),
-    [existingCodes],
-  );
-
-  const filteredBanks = useMemo(
-    () => filterThaiBankPresets(searchQuery),
-    [searchQuery],
-  );
-
-  const availableUnaddedBanks = useMemo(
-    () => thaiBankPresets.filter((b) => !existingSet.has(b.code.toUpperCase())),
-    [existingSet],
-  );
-
-  useEffect(() => {
-    setSelectedCodes(availableUnaddedBanks.map((b) => b.code));
-  }, [availableUnaddedBanks]);
-
-  function toggleBank(code: string, checked: boolean) {
-    setSelectedCodes((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(code);
-      else next.delete(code);
-      return Array.from(next);
-    });
-  }
-
-  function handleSelectAllUnadded() {
-    setSelectedCodes(availableUnaddedBanks.map((b) => b.code));
-  }
-
-  function handleClearSelection() {
-    setSelectedCodes([]);
-  }
-
-  function handleSubmit() {
-    const toAdd = thaiBankPresets.filter((b) => selectedCodes.includes(b.code));
-    onSave(toAdd);
-  }
-
-  return (
-    <div className="dialog-backdrop" role="presentation">
-      <section
-        className="grid max-h-[calc(100dvh-24px)] w-[min(800px,calc(100vw-24px))] grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-2xl border border-border bg-card p-3.5 text-foreground shadow-xl sm:p-4"
-        role="dialog"
-        aria-modal="true"
-        aria-label={language === "th" ? "เพิ่มธนาคารไทยจากแม่แบบ" : "Add Thai Banks from Template"}
-      >
-        <header className="flex min-w-0 items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
-              <Landmark className="size-5" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="truncate text-lg font-bold">
-                {language === "th" ? "เพิ่มธนาคารไทยจากแม่แบบ" : "Add Thai Banks from Template"}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {language === "th"
-                  ? "เลือกธนาคารในประเทศไทยที่ต้องการเพิ่มเข้าสู่ระบบ พร้อมโลโก้ความละเอียดสูง"
-                  : "Select Thai banks to add with official names and high-resolution logos"}
-              </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onClose}
-            disabled={saving}
-            aria-label={text("close")}
-          >
-            <X />
-          </Button>
-        </header>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="!pl-10 text-sm"
-            placeholder={
-              language === "th"
-                ? "ค้นหารหัสธนาคาร หรือชื่อธนาคาร (ไทย/อังกฤษ)..."
-                : "Search bank code or name..."
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            disabled={saving}
-          />
-        </div>
-
-        {/* Toolbar: Counter + Quick buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline">
-              {language === "th"
-                ? `เลือก ${selectedCodes.length} จาก ${thaiBankPresets.length} ธนาคาร`
-                : `Selected ${selectedCodes.length} of ${thaiBankPresets.length}`}
-            </Badge>
-            {existingSet.size > 0 ? (
-              <Badge variant="secondary" className="text-xs">
-                {language === "th"
-                  ? `มีในระบบแล้ว ${existingSet.size} ธนาคาร`
-                  : `${existingSet.size} already in system`}
-              </Badge>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleSelectAllUnadded}
-              disabled={saving || availableUnaddedBanks.length === 0}
-            >
-              <Check className="size-3.5" />
-              {language === "th" ? "เลือกที่ยังไม่มี" : "Select Unadded"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleClearSelection}
-              disabled={saving || selectedCodes.length === 0}
-            >
-              {text("clearSelection")}
-            </Button>
-          </div>
-        </div>
-
-        {/* List of banks */}
-        <div className="grid min-h-0 gap-2 overflow-y-auto pr-1">
-          {filteredBanks.length === 0 ? (
-            <div className="grid min-h-36 place-items-center rounded-2xl border border-border bg-background p-4 text-center text-sm font-semibold text-muted-foreground">
-              {language === "th" ? "ไม่พบธนาคารที่ตรงกับคำค้นหา" : "No banks matching search"}
-            </div>
-          ) : (
-            filteredBanks.map((bank) => {
-              const isExisting = existingSet.has(bank.code.toUpperCase());
-              const isChecked = selectedCodes.includes(bank.code);
-              return (
-                <label
-                  key={bank.code}
-                  className={cn(
-                    "flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border p-2.5 transition-all text-sm select-none",
-                    isExisting
-                      ? "opacity-60 bg-muted/30 border-border/50 cursor-not-allowed"
-                      : isChecked
-                        ? "border-primary/50 bg-primary/5 shadow-2xs"
-                        : "border-border bg-card hover:bg-muted/40",
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    className="size-4 shrink-0 accent-primary"
-                    checked={isChecked}
-                    disabled={saving || isExisting}
-                    onChange={(e) => toggleBank(bank.code, e.target.checked)}
-                  />
-                  <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-white p-1 shadow-2xs grid place-items-center">
-                    <img
-                      src={bank.logo}
-                      alt={bank.code}
-                      className="size-full object-contain"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1 grid gap-0.5">
-                    <div className="flex items-center gap-2">
-                      <b className="text-sm font-bold text-foreground">
-                        {bank.code}
-                      </b>
-                      <span
-                        className="inline-block size-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: bank.color }}
-                        title={`สีประจำธนาคาร ${bank.color}`}
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        {bank.nameEn}
-                      </span>
-                    </div>
-                    <p className="truncate text-xs font-medium text-foreground/80">
-                      {bank.nameTh}
-                    </p>
-                  </div>
-                  {isExisting ? (
-                    <Badge variant="secondary" className="shrink-0 text-xs">
-                      {language === "th" ? "มีในระบบแล้ว" : "Already added"}
-                    </Badge>
-                  ) : null}
-                </label>
-              );
-            })
-          )}
-        </div>
-
-        {/* Footer */}
-        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={saving}
-          >
-            {text("cancel")}
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving || selectedCodes.length === 0}
-            className="min-w-36"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="animate-spin" />
-                {language === "th" ? "กำลังบันทึก..." : "Saving..."}
-              </>
-            ) : (
-              <>
-                <Plus />
-                {language === "th"
-                  ? `เพิ่มธนาคารที่เลือก (${selectedCodes.length})`
-                  : `Add Selected (${selectedCodes.length})`}
-              </>
-            )}
-          </Button>
-        </footer>
-      </section>
-    </div>
-  );
 }
 
 function StandardUnitDialog({

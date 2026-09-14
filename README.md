@@ -8,6 +8,14 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ลบ Dead Code แม่แบบธนาคารไทยและ alias เก่าในหน้าตั้งค่าระบบ
+
+- [Refactor] ลบ `ThaiBankTemplateDialog`, `saveThaiBanks`, `thaiBankDialogOpen`, และการตรวจ `slug === "bank"` ออกจาก `frontend/src/app/system-settings/system-settings-screen.tsx` เนื่องจากระบบรวมการจัดการธนาคารเข้าสู่หน้าสมุดบัญชีเงินฝาก (`bookbankscreen`) ซึ่งมีระบบค้นหาและเติมข้อมูลธนาคารไทยอัตโนมัติ (`BookBankFieldEditor`) อยู่แล้ว
+- [Refactor] ลบ alias คอนฟิกธนาคารเก่าที่ไม่ได้ใช้งานใน `frontend/src/lib/system-setting-screens.ts`
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/lib/system-setting-screens.ts`, `docs/reference/CODE-MAP.md`
+- หลักฐาน: `tsc --noEmit` ผ่าน, vitest 472/472 ผ่าน
+
 ### 2026-09-14 — ผังบัญชี (Chart of Accounts): ปรับปรุงการแจ้งเตือนข้อผิดพลาดและย้ายโฟกัสไปยังช่องที่ผิด
 
 - [Fix] ปรับ `errorStatePatch` ให้รับ `fallbackField` และเพิ่ม `saveFailureTarget` เพื่อชี้เป้าหมายช่องที่ผิดพลาด (เช่น `accountcode`) เสมอ แม้ API จะไม่ได้ระบุฟิลด์

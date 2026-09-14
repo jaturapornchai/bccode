@@ -1740,10 +1740,7 @@ export function getSystemSettingConfig(
   routeOrSlug: string,
 ): SystemSettingConfig | undefined {
   if (routeOrSlug === "bank" || routeOrSlug === "/bank") {
-    return (
-      SYSTEM_SETTING_CONFIGS.find((item) => item.slug === "bookbankscreen") ??
-      SYSTEM_SETTING_CONFIGS.find((item) => item.slug === "bank")
-    );
+    return SYSTEM_SETTING_CONFIGS.find((item) => item.slug === "bookbankscreen");
   }
   const normalized = routeOrSlug.startsWith("/")
     ? routeOrSlug
