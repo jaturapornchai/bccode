@@ -52,6 +52,9 @@ export async function POST(request: Request, context: SystemSettingsProxyContext
   const unsupportedResponse = rejectUnsupportedProxy(resolved.config, "POST");
   if (unsupportedResponse) return unsupportedResponse;
 
+  const validationError = validateSystemSettingWrite(resolved.config, body);
+  if (validationError) return validationError;
+
   const tenantResponse = await validateTenantAccess(request, resolved.config, Array.isArray(body) ? undefined : body);
   if (tenantResponse) return tenantResponse;
 
@@ -76,6 +79,9 @@ export async function PUT(request: Request, context: SystemSettingsProxyContext)
   if (resolved instanceof NextResponse) return resolved;
   const unsupportedResponse = rejectUnsupportedProxy(resolved.config, "PUT");
   if (unsupportedResponse) return unsupportedResponse;
+
+  const validationError = validateSystemSettingWrite(resolved.config, body);
+  if (validationError) return validationError;
 
   const tenantResponse = await validateTenantAccess(request, resolved.config, Array.isArray(body) ? undefined : body);
   if (tenantResponse) return tenantResponse;
@@ -472,16 +478,25 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
       payload.bookcode = payload.code;
     }
     if (!payload.banknames || (Array.isArray(payload.banknames) && payload.banknames.length === 0)) {
-      const bankcode = String(payload.bankcode ?? "").trim();
-      if (bankcode) {
-        payload.banknames = [{ code: "th", name: bankcode }, { code: "en", name: bankcode }];
-      } else if (payload.names && Array.isArray(payload.names) && payload.names.length > 0) {
+      if (payload.names && Array.isArray(payload.names) && payload.names.length > 0) {
         payload.banknames = payload.names;
       }
     }
   }
 
   return payload;
+}
+
+function validateSystemSettingWrite(config: SystemSettingConfig, body: unknown): NextResponse | null {
+  if (!isRecord(body)) return null;
+  if (config.slug === "bookbankscreen" || config.slug === "bookbank") {
+    const hasBanknames = Array.isArray(body.banknames) && body.banknames.some((item) => isRecord(item) && typeof item.name === "string" && item.name.trim() !== "");
+    const hasNames = Array.isArray(body.names) && body.names.some((item) => isRecord(item) && typeof item.name === "string" && item.name.trim() !== "");
+    if (!hasBanknames && !hasNames) {
+      return NextResponse.json({ success: false, message: "กรุณาระบุชื่อธนาคาร" }, { status: 400 });
+    }
+  }
+  return null;
 }
 
 function normalizeAccessScopePayload(slug: string, payload: Record<string, unknown>) {

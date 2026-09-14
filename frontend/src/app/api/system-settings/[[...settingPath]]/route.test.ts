@@ -542,6 +542,34 @@ describe("system settings API route security", () => {
     expect(String(calls[3][0])).toBe("http://localhost:8888/payment/bookbank/BANK-GUID");
     expect(calls[3][1]?.method).toBe("DELETE");
   });
+
+  it("rejects book bank creation with 400 when bank name is missing instead of fabricating banknames from bankcode", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+      "x-bc-backend-url": "http://localhost:8888",
+    };
+
+    const res = await POST(
+      new Request("http://localhost/api/system-settings/bookbankscreen", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          backendUrl: "http://localhost:8888",
+          bookcode: "kbank-01",
+          bankcode: "KBANK",
+        }),
+      }),
+      { params: Promise.resolve({ settingPath: ["bookbankscreen"] }) },
+    );
+
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data).toEqual({ success: false, message: "กรุณาระบุชื่อธนาคาร" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 function signJwt(payload: Record<string, unknown>): string {
