@@ -8,6 +8,16 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — รองรับภาษาหลากหลายและกำจัดข้อความ Hardcode ในหน้าจอสินค้าชุด (Item 24 - ตอนที่ 3 ครบถ้วน)
+
+- [i18n] เพิ่มคีย์ภาษาสำหรับหน้าจอสินค้าชุด (Product Bundles) และส่วนประกอบ 61 รายการลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษาตามมาตรฐาน (ครอบคลุมหัวข้อ, แถบเครื่องมือ, ตัวกรอง, การตัดสต๊อก, การเลือกบาร์โค้ด, ไดอะล็อกยืนยันลบ, แท็บข้อมูลทั่วไป, กลุ่มตัวเลือกสินค้า, นโยบายตัดสต๊อก/คิดราคา, ขนาดพัสดุจัดส่ง, และระบบจำลองการขาย Customer Simulator พร้อมวิเคราะห์กำไรขั้นต้น)
+- [i18n] ปรับปรุง `frontend/src/app/menu/product-set-screen.tsx`: รับ `backendLanguage` prop, แทนที่ข้อความ Hardcode ภาษาไทยทั้งหมด 149 จุดด้วย `tr()` และคีย์ภาษาตามกฎ AGENTS.md, รองรับการแปลใน `BarcodePickerModal`, เมนูตัวกรอง, และส่วนจำลองการขาย
+- [Routing] เชื่อมต่อหน้าจอ `ProductSetScreen` ใน `frontend/src/app/menu/main-menu-screen.tsx` เข้ากับเส้นทาง `/inventory/product-sets` และ `/productset` พร้อมส่งผ่าน `backendLanguage` และ `language`
+- [Menu] เพิ่ม `/inventory/product-sets` และ `/productset` ใน `CUSTOM_MENU_SCREEN_ROUTES` ของ `frontend/src/lib/menu-screen-status.ts`
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `backend/assets/language/languages.tsv`, `frontend/src/app/menu/product-set-screen.tsx`, `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/lib/menu-screen-status.ts`, `docs/reference/CODE-MAP.md`, `README.md`
+- หลักฐาน: Vitest 477/477 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — รองรับภาษาหลากหลายและกำจัดข้อความ Hardcode ในหน้าจอจัดการสินค้า (Item 24 - ตอนที่ 2)
 
 - [i18n] เพิ่มคีย์ภาษาสำหรับหน้าจอสินค้าและข้อมูลรายละเอียด 82 รายการลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษาตามมาตรฐาน (ครอบคลุมแท็บ, รายละเอียดสินค้า, ข้อมูลภาษี, หน่วยนับ, ข้อมูลคลัง, มิติ/น้ำหนักพัสดุ, ร้านอาหาร/POS, ข้อมูลระบบ, ข้อความเตือน และไดอะล็อก)

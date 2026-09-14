@@ -133,6 +133,7 @@ import { MenuKpiChart } from "./menu-kpi-chart";
 import { MenuQueryProvider } from "./menu-query-provider";
 import { ProductBarcodeScreen } from "./product-barcode-screen";
 import { ProductScreen } from "./product-screen";
+import { ProductSetScreen } from "./product-set-screen";
 import { ProductBarcodeShelfScreen } from "./product-barcode-shelf-screen";
 import { ProductPriceHistoryScreen } from "./product-price-history-screen";
 import { DataModelGraphScreen } from "./datamodel-graph-screen";
@@ -2829,6 +2830,17 @@ function WorkTabPanel({
         language={language}
         onOpenLabelPrint={() => onOpenRoute("/productbarcodeshelf")}
         onOpenProduct={(itemCode) => onOpenRoute("/product", itemCode)}
+      />
+    );
+  }
+
+  if (activeTab.route === "/inventory/product-sets" || activeTab.route === "/productset") {
+    return (
+      <ProductSetScreen
+        active={active}
+        backendLanguage={backendLanguage}
+        embedded
+        language={language}
       />
     );
   }

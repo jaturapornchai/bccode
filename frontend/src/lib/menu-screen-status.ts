@@ -5,7 +5,7 @@ import { isGeneralLedgerRoute } from "./general-ledger";
 export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/shortcuts", "/line-oa", "/product",
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
-  "/datamodelgraph",
+  "/datamodelgraph", "/inventory/product-sets", "/productset",
 ] as const;
 
 const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
