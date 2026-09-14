@@ -127,7 +127,10 @@ const emptyWarehouseForm = (languages: string[]): WarehouseFormFields => {
 
 export function WarehouseTreeView({ auth, workspace, language, onRefresh }: WarehouseTreeViewProps) {
   const tr = useBackendText();
-  const { confirm, confirmationDialog } = useConfirmDialog();
+  const { confirm, confirmationDialog } = useConfirmDialog({
+    defaultConfirmLabel: tr("common_confirm", "ยืนยัน"),
+    defaultCancelLabel: tr("common_cancel", "ยกเลิก"),
+  });
 
   const editorLanguages = useMemo(() => {
     if (!workspace) return ["th"];

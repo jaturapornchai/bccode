@@ -23,8 +23,9 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   const tr = useGLText();
   const cleanRoute = route.split("?")[0], item = GL_MENU_ITEMS.find((entry) => entry.route === cleanRoute);
   const [tab, setTab] = useState("main"), [dirty, setDirty] = useState(false);
-  const { confirm, confirmationDialog } = useConfirmDialog();
+  const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   useEffect(() => {
+
     const listener = (event: Event) => { const detail = (event as CustomEvent<{ route: string; dirty: boolean }>).detail; if (detail?.route === cleanRoute) setDirty(detail.dirty); };
     window.addEventListener("bc-gl-dirty", listener);
     return () => window.removeEventListener("bc-gl-dirty", listener);

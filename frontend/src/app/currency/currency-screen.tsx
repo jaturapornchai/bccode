@@ -413,9 +413,12 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
   const [editing, setEditing] = useState<CurrencyRecord | null>(null);
   const [form, setForm] = useState<CurrencyForm>(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
-  const { confirm, confirmationDialog } = useConfirmDialog();
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
   const backendLanguage = useBackendLanguage(language, activeBackendUrl, language === initialLanguage ? initialBackendLanguage : undefined);
+  const { confirm, confirmationDialog } = useConfirmDialog({
+    defaultConfirmLabel: backendText(backendLanguage, "common_confirm", "ยืนยัน"),
+    defaultCancelLabel: backendText(backendLanguage, "common_cancel", "ยกเลิก"),
+  });
 
   const text = useCallback(
     (key: CurrencyTextKey) => {

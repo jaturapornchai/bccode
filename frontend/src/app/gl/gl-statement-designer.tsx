@@ -108,9 +108,10 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   const [previewError, setPreviewError] = useState("");
 
   const { busy, execute } = useGLCommand();
-  const { confirm, confirmationDialog } = useConfirmDialog();
+  const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
 
   const dirty = template !== null && JSON.stringify(template) !== original;
+
   useDirtyGuard(route, dirty);
 
   // Ensure current font is loaded

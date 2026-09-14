@@ -27,8 +27,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(""), [error, setError] = useState("");
   const [reason, setReason] = useState(""), [reverseDate, setReverseDate] = useState(localDate()), [reverseDocno, setReverseDocno] = useState("");
-  const { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog();
+  const { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const dirty = isEditing && journal !== null && JSON.stringify(journal) !== original;
+
   useDirtyGuard(route, dirty);
   const year = refs.years.find((item) => item.code === journal?.fiscalyear);
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);

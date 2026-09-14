@@ -37,7 +37,12 @@ const toneClass: Record<ConfirmDialogTone, { icon: string; panel: string; button
   },
 };
 
-export function useConfirmDialog() {
+export type UseConfirmDialogOptions = {
+  defaultConfirmLabel?: string;
+  defaultCancelLabel?: string;
+};
+
+export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
   const [pending, setPending] = useState<PendingConfirm | null>(null);
 
@@ -55,12 +60,13 @@ export function useConfirmDialog() {
         title: options.title,
         description: options.description,
         details: options.details,
-        confirmLabel: options.confirmLabel ?? "ยืนยัน",
-        cancelLabel: options.cancelLabel ?? "ยกเลิก",
+        confirmLabel: options.confirmLabel ?? defaults?.defaultConfirmLabel ?? "ยืนยัน",
+        cancelLabel: options.cancelLabel ?? defaults?.defaultCancelLabel ?? "ยกเลิก",
         tone: options.tone ?? "warning",
       });
     });
-  }, []);
+  }, [defaults?.defaultConfirmLabel, defaults?.defaultCancelLabel]);
+
 
   useEffect(() => {
     if (!pending) return;

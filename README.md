@@ -8,6 +8,16 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — รองรับภาษาหลากหลายบน Confirm Dialog ด้วย common_confirm และ common_cancel (Item 20)
+
+- [i18n] เพิ่มคีย์ภาษา `common_confirm` ("ยืนยัน", "Confirm", "确认", "確認", ...) และ `common_cancel` ("ยกเลิก", "Cancel", "取消", "キャンセル", ...) ลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษาตามมาตรฐาน
+- [Refactor] ขยาย Hook `useConfirmDialog` ใน `frontend/src/components/ui/confirm-dialog.tsx` ให้รับอ็อพชัน `defaults?: UseConfirmDialogOptions` (`defaultConfirmLabel`, `defaultCancelLabel`) เพื่อให้หน้าจอต่างๆ กำหนดข้อความปุ่มเริ่มต้นตามภาษาที่ผู้ใช้เลือกได้อัตโนมัติ โดยยังคง fallback เป็น "ยืนยัน" / "ยกเลิก" เมื่อไม่ได้ระบุ
+- [i18n] ปรับปรุงหน้าจอต่างๆ ที่เรียกใช้ `useConfirmDialog` (`gl-journals.tsx`, `gl-masters.tsx`, `gl-processes.tsx`, `gl-statement-designer.tsx`, `general-ledger-screen.tsx`, `warehouse-tree-view.tsx`, `product-bom-editor.tsx`, `currency-screen.tsx`, `system-settings-screen.tsx`) ให้ส่งผ่านป้ายกำกับปุ่มที่แปลตามพจนานุกรมภาษา
+- [Test] ปรับปรุง `gl-language-keys.test.ts` ให้ครอบคลุมการตรวจสอบคีย์ `common_*` ทั้ง 13 ภาษา และรองรับ `common_*` ในการเรียก `tr()` ของหน้าจอ GL
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `backend/assets/language/languages.tsv`, `frontend/src/components/ui/confirm-dialog.tsx`, `frontend/src/app/gl/general-ledger-screen.tsx`, `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-processes.tsx`, `frontend/src/app/gl/gl-statement-designer.tsx`, `frontend/src/app/gl/gl-language-keys.test.ts`, `frontend/src/app/system-settings/warehouse-tree-view.tsx`, `frontend/src/app/system-settings/product-bom-editor.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/currency/currency-screen.tsx`, `docs/reference/CODE-MAP.md`
+- หลักฐาน: Vitest 477/477 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — ปรับปรุงประสิทธิภาพการบันทึกผังที่เก็บสินค้า: Parallel Batch ด้วย Promise.allSettled (Item 18)
 
 - [Perf] ปรับปรุงฟังก์ชัน `saveLocations` ใน `frontend/src/app/system-settings/warehouse-tree-view.tsx` ให้ยิงคำขอลบ, สร้าง, และแก้ไขที่เก็บสินค้าแบบคู่ขนาน (parallel) ด้วย `Promise.allSettled` ในแต่ละเฟส แทนการวนลูปยิงทีละแถวแบบ serial

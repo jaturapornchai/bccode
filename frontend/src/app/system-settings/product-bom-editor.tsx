@@ -165,7 +165,10 @@ export function ProductBomEditor({
   setRecords,
 }: ProductBomEditorProps) {
   const tr = useBackendText();
-  const { confirm, confirmationDialog } = useConfirmDialog();
+  const { confirm, confirmationDialog } = useConfirmDialog({
+    defaultConfirmLabel: tr("common_confirm", "ยืนยัน"),
+    defaultCancelLabel: tr("common_cancel", "ยกเลิก"),
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [bomVersions, setBomVersions] = useState<BOMVersion[]>([]);

@@ -776,7 +776,6 @@ export function SystemSettingsScreen({
   const [copyPreview, setCopyPreview] = useState<unknown>(null);
   const [standardUnitDialog, setStandardUnitDialog] =
     useState<StandardUnitDialogState>(emptyStandardUnitDialog);
-  const { confirm, confirmationDialog } = useConfirmDialog();
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
 
   // BOM Resizable Split States
@@ -925,6 +924,10 @@ export function SystemSettingsScreen({
     activeBackendUrl,
     language === initialLanguage ? initialBackendLanguage : undefined,
   );
+  const { confirm, confirmationDialog } = useConfirmDialog({
+    defaultConfirmLabel: backendText(backendLanguage, "common_confirm", "ยืนยัน"),
+    defaultCancelLabel: backendText(backendLanguage, "common_cancel", "ยกเลิก"),
+  });
 
   const text = useCallback(
     (key: keyof typeof uiEn) => {

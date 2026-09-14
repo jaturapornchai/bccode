@@ -15,8 +15,9 @@ const processText: Record<string, { button: GLLabel; text: GLLabel }> = {
 };
 export function GLProcesses({ route, action }: { route: string; action: "close" | "year-end" | "recalculate" | "reprocess" }) {
   const tr = useGLText();
-  const refs = useReferences(), { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog();
+  const refs = useReferences(), { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const [yearCode, setYear] = useState(""), [date, setDate] = useState(localDate()), [docno, setDocno] = useState(""), [reason, setReason] = useState("");
+
   const [targetYear, setTargetYear] = useState(""), [previewPage, setPreviewPage] = useState(1);
   const [preview, setPreview] = useState<GLReport | null>(null), [previewFor, setPreviewFor] = useState("");
   const [loading, setLoading] = useState(false), [message, setMessage] = useState(""), [error, setError] = useState("");

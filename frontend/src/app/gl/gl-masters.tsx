@@ -46,8 +46,9 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   const [message, setMessage] = useState(""), [error, setError] = useState(""), [reason, setReason] = useState("");
   const [errorField, setErrorField] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
-  const { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog();
+  const { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const dirty = isEditing && record !== null && JSON.stringify(record) !== original;
+
   useDirtyGuard(route, dirty);
   const set = (patch: object) => setRecord((current) => current ? { ...current, ...patch } as GLRecord : current);
 
