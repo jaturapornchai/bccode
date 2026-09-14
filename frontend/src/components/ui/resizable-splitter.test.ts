@@ -142,6 +142,7 @@ describe("ResizableSplitter component & usage", () => {
     expect(productSetSource).toContain("useSplitPercent");
     expect(companyBranchSource).toContain("useSplitPercent");
     expect(settingSource).toContain("useSplitPercent");
+    expect(productSource).toContain("useSplitPercent");
   });
 });
 

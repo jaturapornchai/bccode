@@ -8,6 +8,14 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-14 — ปรับปรุง product-screen ให้ใช้ useSplitPercent ร่วมกับ ResizableSplitter (Item 16 ส่วนขยาย)
+
+- [Refactor] ปรับปรุง `frontend/src/app/menu/product-screen.tsx`: เปลี่ยนการจัดการสถานะและอีเวนต์ยืดหดแถบแยกหน้าจอ (Resizable Splitter) ที่เขียนซ้ำกว่า 100 บรรทัด ให้เรียกใช้ hook ส่วนกลาง `useSplitPercent` แทน (รองรับการลากด้วย pointer, ควบคุมด้วยคีย์บอร์ด ซ้าย/ขวา/Home/End, ดับเบิ้ลคลิกเพื่อรีเซ็ต, และจดจำค่าเปอร์เซ็นต์ลงใน `localStorage` อัตโนมัติ)
+- [Test] ปรับปรุง `frontend/src/components/ui/resizable-splitter.test.ts`: เพิ่ม assertion ตรวจสอบว่า `product-screen.tsx` นำ `useSplitPercent` ไปใช้งานเรียบร้อย
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` สำหรับไฟล์ขนาดใหญ่ `>= 950` บรรทัดด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `frontend/src/app/menu/product-screen.tsx`, `frontend/src/components/ui/resizable-splitter.test.ts`, `docs/reference/CODE-MAP.md`, `README.md`
+- หลักฐาน: Vitest 479/479 ผ่าน 100%, `tsc --noEmit` 0 error
+
 ### 2026-09-14 — เพิ่ม Regression Guard Test สำหรับคีย์ภาษาในกลุ่มหน้าจอสินค้า (Item 26)
 
 - [Test] เพิ่มชุดการทดสอบการถดถอย (Regression Guard) ใน `frontend/src/app/menu/product-language-keys.test.ts` ครอบคลุมหน้าจอสินค้า 3 หน้าจอหลัก (`product-screen.tsx`, `product-barcode-screen.tsx`, `product-set-screen.tsx`):

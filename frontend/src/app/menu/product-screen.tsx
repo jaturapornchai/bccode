@@ -38,7 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { ResizableSplitter } from "@/components/ui/resizable-splitter";
+import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { languageCodesFromWorkspace } from "@/components/product-barcode/names-editor";
 import { listBarcodes, type MasterEntry } from "@/lib/product-barcode/api";
@@ -178,13 +178,6 @@ const PRODUCT_SPLIT_STORAGE_KEY = "bc_product_split_left_v3";
 const PRODUCT_SPLIT_MIN_LEFT = 24;
 const PRODUCT_SPLIT_MAX_LEFT = 50;
 
-function clampProductSplitLeft(value: number) {
-  if (!Number.isFinite(value)) return PRODUCT_SPLIT_DEFAULT_LEFT;
-  return Math.min(
-    PRODUCT_SPLIT_MAX_LEFT,
-    Math.max(PRODUCT_SPLIT_MIN_LEFT, value),
-  );
-}
 
 export function ProductScreen({
   active = true,
@@ -229,26 +222,30 @@ export function ProductScreen({
   const [checkedProductKeys, setCheckedProductKeys] = useState<string[]>([]);
   const [compactRows, setCompactRows] = useState(true);
 
-  // Resizable split states
-  const [splitLeftPercent, setSplitLeftPercent] = useState(
-    PRODUCT_SPLIT_DEFAULT_LEFT,
-  );
-  const [resizingSplit, setResizingSplit] = useState(false);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const {
+    splitPercent: splitLeftPercent,
+    isResizing: resizingSplit,
+    startResize: startSplitResize,
+    adjustWithKeyboard: adjustSplitWithKeyboard,
+    resetSplit,
+  } = useSplitPercent({
+    storageKey: PRODUCT_SPLIT_STORAGE_KEY,
+    defaultLeft: PRODUCT_SPLIT_DEFAULT_LEFT,
+    min: PRODUCT_SPLIT_MIN_LEFT,
+    max: PRODUCT_SPLIT_MAX_LEFT,
+    containerRef: splitContainerRef,
+  });
+
   const selectedShopTokenRef = useRef("");
   const productListRequestRef = useRef(0);
   const handledFocusRequestRef = useRef("");
   const productDetailRequestRef = useRef(0);
   const productDetailRef = useRef<Product | null>(null);
 
-  // Restore split settings and row density preference
+  // Restore row density preference
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(PRODUCT_SPLIT_STORAGE_KEY);
-    if (saved) {
-      const next = clampProductSplitLeft(Number(saved));
-      setSplitLeftPercent(next);
-    }
     const savedCompact = window.localStorage.getItem("bc_product_list_compact");
     if (savedCompact !== null) {
       setCompactRows(savedCompact === "true");
@@ -262,88 +259,6 @@ export function ProductScreen({
         "--product-detail-fr": `${100 - splitLeftPercent}fr`,
       }) as React.CSSProperties,
     [splitLeftPercent],
-  );
-
-  const updateSplitFromClientX = useCallback((clientX: number) => {
-    const container = splitContainerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const offset = clientX - rect.left;
-    const next = (offset / rect.width) * 100;
-    setSplitLeftPercent(clampProductSplitLeft(next));
-  }, []);
-
-  useEffect(() => {
-    if (!resizingSplit) return;
-    const onPointerMove = (event: PointerEvent) => {
-      updateSplitFromClientX(event.clientX);
-    };
-    const onPointerUp = () => {
-      setResizingSplit(false);
-    };
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-    };
-  }, [resizingSplit, updateSplitFromClientX]);
-
-  const startSplitResize = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      setResizingSplit(true);
-      updateSplitFromClientX(event.clientX);
-    },
-    [updateSplitFromClientX],
-  );
-
-  const startSplitMouseResize = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      setResizingSplit(true);
-      updateSplitFromClientX(event.clientX);
-    },
-    [updateSplitFromClientX],
-  );
-
-  const moveSplitResize = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!resizingSplit) return;
-      updateSplitFromClientX(event.clientX);
-    },
-    [resizingSplit, updateSplitFromClientX],
-  );
-
-  const stopSplitResize = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      setResizingSplit(false);
-      setSplitLeftPercent((current) => {
-        const next = clampProductSplitLeft(current);
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(
-            PRODUCT_SPLIT_STORAGE_KEY,
-            String(Math.round(next)),
-          );
-        }
-        return next;
-      });
-    },
-    [],
-  );
-
-  const adjustSplitWithKeyboard = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      let direction = 0;
-      if (event.key === "ArrowLeft") direction = -2;
-      else if (event.key === "ArrowRight") direction = 2;
-      if (direction === 0) return;
-      event.preventDefault();
-      setSplitLeftPercent((current) =>
-        clampProductSplitLeft(current + direction),
-      );
-    },
-    [],
   );
 
   useEffect(() => {
@@ -1802,11 +1717,7 @@ export function ProductScreen({
           )}
           isResizing={resizingSplit}
           onPointerDown={startSplitResize}
-          onMouseDown={startSplitMouseResize}
-          onPointerMove={moveSplitResize}
-          onPointerUp={stopSplitResize}
-          onPointerCancel={stopSplitResize}
-          onDoubleClick={() => setSplitLeftPercent(PRODUCT_SPLIT_DEFAULT_LEFT)}
+          onDoubleClick={resetSplit}
           onKeyDown={adjustSplitWithKeyboard}
           breakpoint="xl"
         />

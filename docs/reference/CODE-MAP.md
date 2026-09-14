@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-14 @ commit c5a08338 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-14 @ commit abd02cd0 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 46
 
@@ -447,7 +447,7 @@ Files indexed: 46
 | 3270 | function | `ApplyChangesWithProgress` |
 | 3678 | function | `max` |
 
-## frontend/src/app/menu/product-screen.tsx (3219 lines)
+## frontend/src/app/menu/product-screen.tsx (3130 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -456,38 +456,35 @@ Files indexed: 46
 | 115 | function | `ensureActiveProductHolding` |
 | 159 | const-arrow | `CORE_PRODUCT_TABS` |
 | 165 | const-arrow | `EXTENSION_PRODUCT_TABS` |
-| 181 | function | `clampProductSplitLeft` |
-| 189 | function | `ProductScreen` |
-| 279 | const-arrow | `onPointerMove` |
-| 282 | const-arrow | `onPointerUp` |
-| 456 | const-arrow | `handleWorkspaceChange` |
-| 824 | const-arrow | `handleCreateOpen` |
-| 831 | const-arrow | `handleCreateCopyOpen` |
-| 845 | const-arrow | `handleSelectBarcode` |
-| 929 | const-arrow | `handleEditOpen` |
-| 935 | const-arrow | `handleDelete` |
-| 972 | const-arrow | `toggleCheckedProduct` |
-| 980 | const-arrow | `handleDeleteSelectedProducts` |
-| 1022 | const-arrow | `handleSave` |
-| 1181 | const-arrow | `openPicker` |
-| 1192 | const-arrow | `handlePickerSelect` |
-| 2895 | function | `setNameXEntry` |
-| 2910 | function | `productRowKey` |
-| 2914 | function | `productUnitRows` |
-| 2918 | function | `formatProductUnitType` |
-| 2935 | function | `formatYesNo` |
-| 2945 | function | `formatNamedList` |
-| 2958 | function | `formatUnitConversionList` |
-| 2973 | function | `formatRefBarcodeList` |
-| 3015 | function | `formatBomList` |
-| 3032 | function | `formatOptionList` |
-| 3065 | function | `formatDimensionList` |
-| 3082 | function | `formatMarketplaceProductList` |
-| 3106 | function | `formatTimeForSaleList` |
-| 3118 | function | `isEmptyDetailValue` |
-| 3132 | function | `DetailSummary` |
-| 3162 | function | `DetailSection` |
-| 3205 | function | `DetailField` |
+| 182 | function | `ProductScreen` |
+| 371 | const-arrow | `handleWorkspaceChange` |
+| 739 | const-arrow | `handleCreateOpen` |
+| 746 | const-arrow | `handleCreateCopyOpen` |
+| 760 | const-arrow | `handleSelectBarcode` |
+| 844 | const-arrow | `handleEditOpen` |
+| 850 | const-arrow | `handleDelete` |
+| 887 | const-arrow | `toggleCheckedProduct` |
+| 895 | const-arrow | `handleDeleteSelectedProducts` |
+| 937 | const-arrow | `handleSave` |
+| 1096 | const-arrow | `openPicker` |
+| 1107 | const-arrow | `handlePickerSelect` |
+| 2806 | function | `setNameXEntry` |
+| 2821 | function | `productRowKey` |
+| 2825 | function | `productUnitRows` |
+| 2829 | function | `formatProductUnitType` |
+| 2846 | function | `formatYesNo` |
+| 2856 | function | `formatNamedList` |
+| 2869 | function | `formatUnitConversionList` |
+| 2884 | function | `formatRefBarcodeList` |
+| 2926 | function | `formatBomList` |
+| 2943 | function | `formatOptionList` |
+| 2976 | function | `formatDimensionList` |
+| 2993 | function | `formatMarketplaceProductList` |
+| 3017 | function | `formatTimeForSaleList` |
+| 3029 | function | `isEmptyDetailValue` |
+| 3043 | function | `DetailSummary` |
+| 3073 | function | `DetailSection` |
+| 3116 | function | `DetailField` |
 
 ## frontend/src/app/menu/main-menu-screen.tsx (2908 lines)
 
