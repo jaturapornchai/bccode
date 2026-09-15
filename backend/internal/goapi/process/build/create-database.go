@@ -293,6 +293,7 @@ func TableDocDetailCreate(db *sql.DB) error {
 			transflag INT,
 			calcflag INT,
 			calcseq INT,
+			behindindex INT NOT NULL DEFAULT 0,
 			iscancel BOOLEAN DEFAULT FALSE,
 			itemcode TEXT,
 			barcodemain TEXT,
@@ -315,7 +316,8 @@ func TableDocDetailCreate(db *sql.DB) error {
 			sumamountexcludevat_doc NUMERIC(18,2) DEFAULT 0,
 			totalvaluevat_doc NUMERIC(18,2) DEFAULT 0
 		);
-		ALTER TABLE docdetail ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
+		ALTER TABLE docdetail ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT '';
+		ALTER TABLE docdetail ADD COLUMN IF NOT EXISTS behindindex INT NOT NULL DEFAULT 0`
 
 	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
 		return fmt.Errorf("create docdetail table: %w", err)
@@ -362,6 +364,10 @@ func TableDocDetailCreate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_docdetail_isupdated ON docdetail (isupdated);
 		CREATE INDEX IF NOT EXISTS idx_docdetail_company_item ON docdetail (businesscode, itemcode);
 		CREATE INDEX IF NOT EXISTS idx_docdetail_company_doc ON docdetail (businesscode, transflag, docno);
+
+		-- คีย์เรียงลำดับการคิดต้นทุน: ต้อง unique เพื่อให้ผลลัพธ์เหมือนเดิมทุกครั้งที่คิดใหม่
+		COMMENT ON COLUMN docdetail.behindindex IS 'ลำดับเอกสารภายในวันเดียวกัน (ผู้ใช้กำหนดได้) มีผลต่อการคิดต้นทุน';
+		CREATE INDEX IF NOT EXISTS idx_docdetail_calcorder ON docdetail (businesscode, itemcode, docdatetime, behindindex, docno, linenumber);
 		`
 
 	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
@@ -1933,6 +1939,9 @@ func DatabaseRebuildAll(holdingCode string) {
 		{"docwaitprocess", TableDocWaitProcessCreate},
 		{"processstockcost", TableProcessStockCostCreate},
 		{"processstocklot", TableProcessStockLotCreate},
+		{"stock_ledger", TableStockLedgerCreate},
+		{"stock_period_balance", TableStockPeriodBalanceCreate},
+		{"stock_dirty", TableStockDirtyCreate},
 		{"docref", TableDocRefCreate},
 		{"docpayment", TableDocPaymentCreate},
 	}

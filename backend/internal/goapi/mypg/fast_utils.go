@@ -129,6 +129,28 @@ func createNewConnectionWithRetry(databaseName string) (*sql.DB, error) {
 	return nil, fmt.Errorf("failed to connect after %d attempts, last error: %w", maxRetries, err)
 }
 
+// ListenerDSN คืน connection string สำหรับการรอสัญญาณจากฐานข้อมูล (LISTEN/NOTIFY)
+//
+// ต้องเป็นการเชื่อมต่อแยกจาก pool ปกติ เพราะการรอสัญญาณต้องถือ connection ค้างไว้ตลอดเวลา
+func ListenerDSN(databaseName string) string {
+	svcConfig := serviceConfig.NewServiceConfig()
+
+	sslMode := svcConfig.PostgresSSLMode()
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC application_name=goapi-listener",
+		svcConfig.PostgresHost(),
+		svcConfig.PostgresPort(),
+		svcConfig.PostgresUser(),
+		svcConfig.PostgresPassword(),
+		databaseName,
+		sslMode,
+	)
+}
+
 // ConnectOptimized - version ที่ optimize แล้ว
 func ConnectOptimized(databaseName string) (*sql.DB, error) {
 	if databaseName == "" {

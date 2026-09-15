@@ -27,6 +27,7 @@ import (
 	"smlcloudplatform/internal/goapi/myglobal"
 	myPg "smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/goapi/mypostgres"
+	"smlcloudplatform/internal/goapi/process/stockengine"
 	"smlcloudplatform/internal/goapi/workers"
 
 	appConfig "smlcloudplatform/internal/config"
@@ -153,7 +154,12 @@ func (s *GoAPIServer) Init() error {
 		}
 	}()
 
-	// 10. Kafka consumers
+	// 10. Stock engine workers (คิดต้นทุนจากคิวแทนการคิดคาสด ๆ ในตัว consumer)
+	if stockengine.WorkerEnabledFromEnv() {
+		stockengine.StartWorkers(context.Background(), myglobal.TransFlagsToProcess)
+	}
+
+	// 11. Kafka consumers
 	enableKafka := os.Getenv("ENABLE_KAFKA")
 	if enableKafka == "true" {
 		logger.Info("GoAPI: 🚀 เริ่มต้น Kafka consumers...")
@@ -413,6 +419,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, authorization
 	authGroup.POST("/api/search/aliases", handlers.SearchAliasCreateHandler)
 	authGroup.DELETE("/api/search/aliases/:id", handlers.SearchAliasDeleteHandler)
 	authGroup.POST("/api/process/product-balance", handlers.ProductBalanceUpdateHandler)
+	authGroup.POST("/api/process/queue-status", handlers.StockQueueStatusHandler)
 	authGroup.GET("/api/product/cache/stats", handlers.ProductCacheStatsHandler)
 	authGroup.POST("/api/product/cache/clear", handlers.ProductCacheClearHandler)
 	authGroup.POST("/api/product/search/unified", handlers.UnifiedProductSearchHandler)

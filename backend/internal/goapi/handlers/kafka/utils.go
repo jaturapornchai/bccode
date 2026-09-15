@@ -206,6 +206,15 @@ func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, 
 		return nil
 	}
 
+	// เส้นทางปกติ: ฝากงานไว้ให้ worker คำนวณ consumer จึงไม่ต้องรอการคิดต้นทุนของสินค้าทุกตัว
+	if UseStockEngineV2() {
+		if err := EnqueueStockRecalculation(context.Background(), db, holdingCode, docDetailStructs); err != nil {
+			return fmt.Errorf("queue stock recalculation: %w", err)
+		}
+		logger.Success("Step %d completed: queued %d item(s) for the stock engine", stepNumber, len(itemCodeMap))
+		return nil
+	}
+
 	// ใช้ค่าทศนิยมจาก global config
 	pointQty := myglobal.ConfigSystem.StockQtyPoint       // ทศนิยมจำนวน
 	pointAmount := myglobal.ConfigSystem.StockAmountPoint // ทศนิยมมูลค่า
