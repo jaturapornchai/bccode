@@ -36,6 +36,11 @@ func TableStockLedgerCreate(db *sql.DB) error {
 			docref        TEXT NOT NULL DEFAULT '',
 			transflag     INT NOT NULL,
 			direction     SMALLINT NOT NULL,
+			docqty        NUMERIC(18,8) NOT NULL DEFAULT 0,
+			unitstand     NUMERIC(18,8) NOT NULL DEFAULT 1,
+			unitdivide    NUMERIC(18,8) NOT NULL DEFAULT 1,
+			price         NUMERIC(18,8) NOT NULL DEFAULT 0,
+			docvalue      NUMERIC(18,8) NOT NULL DEFAULT 0,
 			qty           NUMERIC(18,8) NOT NULL,
 			unitcost      NUMERIC(18,8) NOT NULL,
 			amount        NUMERIC(18,8) NOT NULL,
@@ -56,12 +61,16 @@ func TableStockLedgerCreate(db *sql.DB) error {
 		COMMENT ON COLUMN stock_ledger.behindindex IS 'ลำดับเอกสารภายในวันเดียวกัน ส่วนหนึ่งของคีย์เรียงลำดับการคิดต้นทุน';
 		COMMENT ON COLUMN stock_ledger.periodkey IS 'งวดบัญชีรูปแบบ YYYY-MM ตัดตามเขตเวลาธุรกิจ คำนวณโดย stockengine.PeriodKeyOf';
 		COMMENT ON COLUMN stock_ledger.direction IS 'ทิศทาง: 1 = รับเข้า, -1 = จ่ายออก';
+		COMMENT ON COLUMN stock_ledger.docqty IS 'จำนวนตามหน่วยนับในเอกสาร (qty คือจำนวนหน่วยฐานที่ใช้คิดต้นทุน)';
+		COMMENT ON COLUMN stock_ledger.price IS 'ราคาต่อหน่วยตามเอกสาร';
+		COMMENT ON COLUMN stock_ledger.docvalue IS 'มูลค่าตามเอกสารของบรรทัดนี้ (ยอดขายสำหรับขาออก ยอดซื้อสำหรับขาเข้า)';
 		COMMENT ON COLUMN stock_ledger.balanceqty IS 'ยอดคงเหลือสะสมหลังรายการนี้';
 		COMMENT ON COLUMN stock_ledger.avgcost IS 'ต้นทุนถัวเฉลี่ยถ่วงน้ำหนักหลังรายการนี้';
 
 		CREATE INDEX IF NOT EXISTS idx_stock_ledger_period ON stock_ledger (businesscode, periodkey, itemcode, whcode);
 		CREATE INDEX IF NOT EXISTS idx_stock_ledger_item ON stock_ledger (businesscode, itemcode, docdatetime);
 		CREATE INDEX IF NOT EXISTS idx_stock_ledger_docno ON stock_ledger (businesscode, docno);
+		CREATE INDEX IF NOT EXISTS idx_stock_ledger_transflag ON stock_ledger (businesscode, transflag, docdatetime);
 		`
 
 	return execInTx(db, "stock_ledger", createTableQuery, commentsAndIndexes)
@@ -112,6 +121,7 @@ func TableStockDirtyCreate(db *sql.DB) error {
 			fromdate     TIMESTAMPTZ NOT NULL,
 			reason       TEXT NOT NULL DEFAULT 'doc',
 			enqueuedat   TIMESTAMPTZ NOT NULL DEFAULT now(),
+			markedat     TIMESTAMPTZ NOT NULL DEFAULT now(),
 			attempts     INT NOT NULL DEFAULT 0,
 			lasterror    TEXT NOT NULL DEFAULT '',
 			leaseowner   TEXT,
@@ -122,12 +132,40 @@ func TableStockDirtyCreate(db *sql.DB) error {
 	const commentsAndIndexes = `
 		COMMENT ON TABLE stock_dirty IS 'รายการสินค้าที่รอคำนวณต้นทุนใหม่ (แทนการวน timer ของระบบเดิม)';
 		COMMENT ON COLUMN stock_dirty.fromdate IS 'วันเวลาที่เก่าสุดที่ถูกกระทบ คิดใหม่ตั้งแต่จุดนี้เท่านั้น';
+		COMMENT ON COLUMN stock_dirty.enqueuedat IS 'เวลาที่เข้าคิวครั้งแรก ใช้เรียงลำดับก่อนหลัง ไม่เลื่อนตามการแตะครั้งหลัง';
+		COMMENT ON COLUMN stock_dirty.markedat IS 'เวลาที่ถูกแตะล่าสุด ใช้ดูว่ามีเอกสารเข้ามาใหม่ระหว่างกำลังคำนวณหรือไม่';
 		COMMENT ON COLUMN stock_dirty.leaseuntil IS 'เวลาหมดอายุการจองงาน หมดอายุแล้วให้ตัวอื่นหยิบไปทำต่อได้';
 
 		CREATE INDEX IF NOT EXISTS idx_stock_dirty_ready ON stock_dirty (enqueuedat) WHERE leaseuntil IS NULL;
 		`
 
 	return execInTx(db, "stock_dirty", createTableQuery, commentsAndIndexes)
+}
+
+// TableStockDeadLetterCreate สร้างตาราง stock_dead_letter — งานคิดต้นทุนที่ล้มเหลวจนเลิกลองแล้ว
+// แยกจากคิวงานเสียของเอกสาร เพราะงานที่นี่เป็นระดับสินค้า ไม่มีเลขที่เอกสารกำกับ
+func TableStockDeadLetterCreate(db *sql.DB) error {
+	logger.Info("Creating stock_dead_letter table")
+
+	const createTableQuery = `
+		CREATE TABLE IF NOT EXISTS stock_dead_letter (
+			id           BIGSERIAL PRIMARY KEY,
+			businesscode TEXT NOT NULL,
+			itemcode     TEXT NOT NULL,
+			fromdate     TIMESTAMPTZ NOT NULL,
+			attempts     INT NOT NULL DEFAULT 0,
+			lasterror    TEXT NOT NULL DEFAULT '',
+			failedat     TIMESTAMPTZ NOT NULL DEFAULT now()
+		)`
+
+	const commentsAndIndexes = `
+		COMMENT ON TABLE stock_dead_letter IS 'งานคิดต้นทุนสินค้าที่ล้มเหลวครบจำนวนครั้งแล้ว รอคนตรวจสอบ';
+		COMMENT ON COLUMN stock_dead_letter.fromdate IS 'วันเวลาที่ต้องคิดใหม่ตั้งแต่ ใช้ตอนสั่งคิดซ้ำหลังแก้ต้นเหตุ';
+
+		CREATE INDEX IF NOT EXISTS idx_stock_dead_letter_item ON stock_dead_letter (businesscode, itemcode);
+		`
+
+	return execInTx(db, "stock_dead_letter", createTableQuery, commentsAndIndexes)
 }
 
 // execInTx รัน DDL สองก้อน (สร้างตาราง แล้วตามด้วย comment/index) ในทรานแซกชันเดียว

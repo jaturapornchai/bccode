@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/labstack/echo/v4"
@@ -120,9 +121,24 @@ func TaxVatRegisterHandler(c echo.Context) error {
 			&row.VatAmount,
 			&row.TotalAmount,
 		); err != nil {
-			continue
+			// รายงานภาษีต้องครบทุกใบ แถวที่อ่านไม่ได้ต้องแจ้งให้รู้ ไม่ใช่ข้ามเงียบ ๆ
+			// ทะเบียนภาษีที่ขาดใบกำกับไปเฉย ๆ คือรายงานที่ผิดโดยไม่มีใครเห็น
+			logger.Error("TaxVatRegister: scan row: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]any{
+				"success": false,
+				"code":    "SCAN_ERROR",
+				"message": "Query execution failed",
+			})
 		}
 		data = append(data, row)
+	}
+	if err := rows.Err(); err != nil {
+		logger.Error("TaxVatRegister: read rows: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"success": false,
+			"code":    "QUERY_ERROR",
+			"message": "Query execution failed",
+		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{

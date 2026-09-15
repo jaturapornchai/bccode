@@ -14,12 +14,12 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func ProcessProductBalanceByLocationAndItem(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
+func ProcessProductBalanceByLocationAndItem(holdingCode, businessCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
 	// Default to Thailand timezone for backward compatibility
-	return ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
+	return ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode, businessCode, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
 }
 
-func ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
+func ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode, businessCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
 	logger.Info("ProcessProductBalanceByLocationCodeBarcode with Timezone: %s", timezoneCode)
 	// whereHouseList
 	logger.Info("warehouseList: %+v", warehouseList)
@@ -90,7 +90,9 @@ func ProcessProductBalanceByLocationAndItemWithTimezone(holdingCode string, fina
 	allArgs = append(allArgs, itemCodeArgs...)
 	allArgs = append(allArgs, warehouseArgs...)
 
-	transFlagList := myglobal.GetTransFlagsForQuery()
+	// บริษัทต้องอยู่ในเงื่อนไขเสมอ ไม่เช่นนั้นยอดของอีกบริษัทในกลุ่มเดียวกันจะปนเข้ามา
+	allArgs = append(allArgs, businessCode)
+	businessArg := fmt.Sprintf("$%d", len(allArgs))
 
 	query := `
 WITH itemnames AS (
@@ -131,32 +133,22 @@ SELECT
     n.itemname AS itemname,
 	pb2.unitcode AS unitcode,
     pb2.unitname AS unitname,
-    sb.totalbalance AS balanceqty,
+    lc.balanceqty AS balanceqty,
     COALESCE(ap.countpacking, 0) AS countpacking,
     b.barcodelist AS barcodelist
 FROM
 (
+    -- ยอดคงเหลือแยกตามที่เก็บ รวมทิศทางเข้า-ออกจากสมุดสต็อก
+    -- ต้นทุนถัวเฉลี่ยคิดที่ระดับคลัง ที่เก็บจึงมีเฉพาะจำนวน
     SELECT
         itemcode,
         whcode,
         locationcode,
-        ROW_NUMBER() OVER (PARTITION BY itemcode, whcode, locationcode ORDER BY docdatetime DESC) AS rn
-    FROM processstockcost
-    WHERE ` + dateCondition + `
-) AS lc
-JOIN (
-    SELECT
-        itemcode,
-        whcode,
-        locationcode,
-        SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS totalbalance
-    FROM docdetail
-    WHERE ` + dateCondition + `
-		AND transflag IN (` + transFlagList + `)
+        SUM(direction * qty) AS balanceqty
+    FROM stock_ledger
+    WHERE businesscode = ` + businessArg + ` AND ` + dateCondition + `
     GROUP BY itemcode, whcode, locationcode
-) AS sb ON lc.itemcode = sb.itemcode
-       AND lc.whcode = sb.whcode
-       AND lc.locationcode = sb.locationcode
+) AS lc
 LEFT JOIN itemnames n ON lc.itemcode = n.itemcode
 LEFT JOIN barcodelist b ON lc.itemcode = b.itemcode
 LEFT JOIN autopacking ap ON lc.itemcode = ap.itemcode
@@ -170,7 +162,7 @@ LEFT JOIN (
 	  AND barcoderefunitdivide = 1
 	GROUP BY itemcode
 ) pb2 ON lc.itemcode = pb2.itemcode
-WHERE lc.rn = 1` + wareHouseCodeWhere + itemCodeListWhere + `
+WHERE TRUE` + wareHouseCodeWhere + itemCodeListWhere + `
 ORDER BY lc.whcode, lc.locationcode, lc.itemcode
 `
 

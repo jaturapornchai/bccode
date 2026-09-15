@@ -2,7 +2,6 @@ package process
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"smlcloudplatform/internal/goapi/logger"
 
@@ -60,70 +59,6 @@ func TruncateDocTables(holdingCode string) error {
 	}
 
 	return nil
-}
-
-// BulkInsertProcessStockCost ฟังก์ชันเฉพาะสำหรับ insert processstockcost
-func BulkInsertProcessStockCost(ctx context.Context, db *sql.DB, data any) error {
-	// Type assertion to get the actual data
-	switch v := data.(type) {
-	case []map[string]any:
-		if len(v) == 0 {
-			return nil
-		}
-
-		columns := []string{
-			"docdatetime", "docno", "linenumber", "transflag", "itemcode",
-			"unitcode", "whcode", "locationcode", "totalqty", "price", "unitstand",
-			"unitdivide", "averagecost", "calcamount", "balanceamount", "balanceqty",
-			"guid", "unitcost", "docref",
-		}
-
-		rows := make([][]any, len(v))
-		for i, item := range v {
-			rows[i] = []any{
-				item["docdatetime"], item["docno"], item["linenumber"], item["transflag"],
-				item["itemcode"], item["unitcode"], item["whcode"], item["locationcode"],
-				item["totalqty"], item["price"], item["unitstand"], item["unitdivide"],
-				item["averagecost"], item["calcamount"], item["balanceamount"],
-				item["balanceqty"], item["guid"], item["unitcost"], item["docref"],
-			}
-		}
-
-		return mypg.BulkInsertWithCopy(ctx, db, "processstockcost", columns, rows)
-	default:
-		return fmt.Errorf("unsupported data type for BulkInsertProcessStockCost")
-	}
-}
-
-// BulkInsertProcessStockLot ฟังก์ชันเฉพาะสำหรับ insert processstocklot
-func BulkInsertProcessStockLot(ctx context.Context, db *sql.DB, data any) error {
-	// Type assertion to get the actual data
-	switch v := data.(type) {
-	case []map[string]any:
-		if len(v) == 0 {
-			return nil
-		}
-
-		columns := []string{
-			"docdatetime", "lotnumber", "docno", "transflag", "itemcode",
-			"unitcode", "whcode", "locationcode", "qty", "price", "unitstand",
-			"unitdivide", "cost", "balanceamount", "balanceqty", "guidref",
-		}
-
-		rows := make([][]any, len(v))
-		for i, item := range v {
-			rows[i] = []any{
-				item["docdatetime"], item["lotnumber"], item["docno"], item["transflag"],
-				item["itemcode"], item["unitcode"], item["whcode"], item["locationcode"],
-				item["qty"], item["price"], item["unitstand"], item["unitdivide"],
-				item["cost"], item["balanceamount"], item["balanceqty"], item["guidref"],
-			}
-		}
-
-		return mypg.BulkInsertWithCopy(ctx, db, "processstocklot", columns, rows)
-	default:
-		return fmt.Errorf("unsupported data type for BulkInsertProcessStockLot")
-	}
 }
 
 // GetTransactionMultiplier is now in myglobal package

@@ -298,9 +298,10 @@ func GetConsumerStatus(c echo.Context) error {
 				TOPIC_PURCHASE_CREATE,
 				TOPIC_PURCHASE_UPDATE,
 				TOPIC_PURCHASE_DELETE,
-				TOPIC_PURCHASE_RECEIVE_CREATE,
-				TOPIC_PURCHASE_RECEIVE_UPDATE,
-				TOPIC_PURCHASE_RECEIVE_DELETE,
+				// การรับสินค้าเดินผ่านหัวข้อรับสินค้าบางส่วน (purchase partial) ไม่มีหัวข้อแยกของตัวเอง
+				TOPIC_PURCHASE_PARTIAL_CREATE,
+				TOPIC_PURCHASE_PARTIAL_UPDATE,
+				TOPIC_PURCHASE_PARTIAL_DELETE,
 			},
 		},
 	}

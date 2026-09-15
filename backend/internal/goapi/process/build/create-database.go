@@ -13,6 +13,7 @@ import (
 	"smlcloudplatform/internal/goapi/inventory"
 	processdoc "smlcloudplatform/internal/goapi/process/process-doc"
 	processstock "smlcloudplatform/internal/goapi/process/process-stock"
+	"smlcloudplatform/internal/goapi/process/stockengine"
 
 	"smlcloudplatform/internal/goapi/myclickhouse"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -691,185 +692,6 @@ func TableDocWaitProcessCreate(db *sql.DB) error {
 	}
 
 	logger.Success("created docwaitprocess table with all indexes and comments")
-	return nil
-}
-
-func TableProcessStockCostCreate(db *sql.DB) error {
-	logger.Info("Creating processstockcost table")
-
-	// สร้างทุกอย่างใน transaction เดียว เพื่อความเร็วสูงสุด
-	tx, err := db.BeginTx(context.Background(), &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-	})
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	// 1. สร้าง table ก่อน
-	createTableQuery := `
-		CREATE TABLE IF NOT EXISTS processstockcost (
-			id SERIAL PRIMARY KEY,
-			businesscode TEXT NOT NULL DEFAULT '',
-			docdatetime TIMESTAMPTZ,
-			docno TEXT,
-			docref TEXT,
-			linenumber INT,
-			transflag INT,
-			itemcode TEXT,
-			barcode TEXT,
-			unitcode TEXT,
-			whcode TEXT,
-			locationcode TEXT,
-			totalqty NUMERIC(18,8),
-			unitstand NUMERIC(18,8),
-			unitdivide NUMERIC(18,8),
-			price NUMERIC(18,2),
-			averagecost NUMERIC(18,2),
-			calcamount NUMERIC(18,2),
-			balanceqty NUMERIC(18,8),
-			balanceamount NUMERIC(18,2),
-			unitcost NUMERIC(18,2),			
-			guid TEXT
-		);
-		ALTER TABLE processstockcost ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
-
-	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
-		return fmt.Errorf("create processstockcost table: %w", err)
-	}
-
-	// 2. สร้าง comments และ indexes ใน query เดียว
-	commentsAndIndexesQuery := `
-		-- สร้าง table comment
-		COMMENT ON TABLE processstockcost IS 'ตารางเก็บข้อมูลการประมวลผลต้นทุนสต็อก';
-
-		-- สร้าง column comments
-		COMMENT ON COLUMN processstockcost.id IS 'รหัสอัตโนมัติ';
-		COMMENT ON COLUMN processstockcost.docdatetime IS 'วันที่และเวลาของเอกสาร';
-		COMMENT ON COLUMN processstockcost.docno IS 'เลขที่เอกสาร';
-		COMMENT ON COLUMN processstockcost.docref IS 'เลขที่อ้างอิงเอกสาร';
-		COMMENT ON COLUMN processstockcost.linenumber IS 'เลขที่บรรทัด';
-		COMMENT ON COLUMN processstockcost.transflag IS 'ประเภทเอกสาร';
-		COMMENT ON COLUMN processstockcost.itemcode IS 'รหัสสินค้าหลัก';
-		COMMENT ON COLUMN processstockcost.barcode IS 'บาร์โค้ดของสินค้า';
-		COMMENT ON COLUMN processstockcost.unitcode IS 'รหัสหน่วยนับมาตรฐาน';
-		COMMENT ON COLUMN processstockcost.whcode IS 'รหัสคลังสินค้า';
-		COMMENT ON COLUMN processstockcost.locationcode IS 'รหัสที่เก็บสินค้า';
-		COMMENT ON COLUMN processstockcost.totalqty IS 'จำนวนสินค้าทั้งหมด';
-		COMMENT ON COLUMN processstockcost.unitstand IS 'ค่ามาตรฐานของหน่วยนับ';
-		COMMENT ON COLUMN processstockcost.unitdivide IS 'ค่าหารของหน่วยนับ';
-		COMMENT ON COLUMN processstockcost.price IS 'ราคาขาย';
-		COMMENT ON COLUMN processstockcost.averagecost IS 'ต้นทุนเฉลี่ย';
-		COMMENT ON COLUMN processstockcost.calcamount IS 'จำนวนเงินที่คำนวณ';
-		COMMENT ON COLUMN processstockcost.balanceqty IS 'จำนวนคงเหลือ';
-		COMMENT ON COLUMN processstockcost.balanceamount IS 'มูลค่าคงเหลือ';
-		COMMENT ON COLUMN processstockcost.unitcost IS 'ต้นทุนต่อหน่วย';
-		COMMENT ON COLUMN processstockcost.guid IS 'รหัส GUID สำหรับอ้างอิง';
-
-		-- สร้าง indexes
-		CREATE INDEX IF NOT EXISTS idx_processstockcost_itemcode ON processstockcost (itemcode);
-		CREATE INDEX IF NOT EXISTS idx_processstockcost_itemcode_guid ON processstockcost (itemcode, guid);
-		CREATE INDEX IF NOT EXISTS idx_processstockcost_docno ON processstockcost (docno);
-		CREATE INDEX IF NOT EXISTS idx_processstockcost_docdatetime ON processstockcost (docdatetime);
-		CREATE INDEX IF NOT EXISTS idx_processstockcost_guid ON processstockcost (guid);
-		CREATE INDEX IF NOT EXISTS idx_processstockcost_company_item ON processstockcost (businesscode, itemcode)`
-
-	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
-		return fmt.Errorf("create processstockcost comments and indexes: %w", err)
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
-	}
-
-	logger.Success("created processstockcost table with all indexes and comments")
-	return nil
-}
-
-func TableProcessStockLotCreate(db *sql.DB) error {
-	logger.Info("Creating processstocklot table")
-
-	// สร้างทุกอย่างใน transaction เดียว เพื่อความเร็วสูงสุด
-	tx, err := db.BeginTx(context.Background(), &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-	})
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	// 1. สร้าง table ก่อน
-	createTableQuery := `
-		CREATE TABLE IF NOT EXISTS processstocklot (
-			id SERIAL PRIMARY KEY,
-			businesscode TEXT NOT NULL DEFAULT '',
-			docdatetime TIMESTAMPTZ,
-			lotnumber TEXT,
-			docno TEXT,
-			transflag INT,
-			itemcode TEXT,
-			unitcode TEXT,
-			whcode TEXT,
-			locationcode TEXT,
-			qty NUMERIC(18,8),
-			price NUMERIC(18,2),
-			unitstand NUMERIC(18,8),
-			unitdivide NUMERIC(18,8),
-			cost NUMERIC(18,2),
-			balanceqty NUMERIC(18,8),
-			balanceamount NUMERIC(18,2),
-			guidref TEXT
-		);
-		ALTER TABLE processstocklot ADD COLUMN IF NOT EXISTS businesscode TEXT NOT NULL DEFAULT ''`
-
-	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
-		return fmt.Errorf("create processstocklot table: %w", err)
-	}
-
-	// 2. สร้าง comments และ indexes ใน query เดียว
-	commentsAndIndexesQuery := `
-		-- สร้าง table comment
-		COMMENT ON TABLE processstocklot IS 'ตารางเก็บข้อมูลการประมวลผลสต็อกแบบ Lot';
-
-		-- สร้าง column comments
-		COMMENT ON COLUMN processstocklot.id IS 'รหัสอัตโนมัติ';
-		COMMENT ON COLUMN processstocklot.docdatetime IS 'วันที่และเวลาของเอกสาร';
-		COMMENT ON COLUMN processstocklot.lotnumber IS 'หมายเลข Lot';
-		COMMENT ON COLUMN processstocklot.docno IS 'เลขที่เอกสาร';
-		COMMENT ON COLUMN processstocklot.transflag IS 'ประเภทเอกสาร';
-		COMMENT ON COLUMN processstocklot.itemcode IS 'รหัสสินค้าหลัก';
-		COMMENT ON COLUMN processstocklot.unitcode IS 'รหัสหน่วยนับ';
-		COMMENT ON COLUMN processstocklot.whcode IS 'รหัสคลังสินค้า';
-		COMMENT ON COLUMN processstocklot.locationcode IS 'รหัสที่เก็บสินค้า';
-		COMMENT ON COLUMN processstocklot.qty IS 'จำนวนสินค้า';
-		COMMENT ON COLUMN processstocklot.price IS 'ราคาขาย';
-		COMMENT ON COLUMN processstocklot.unitstand IS 'ค่ามาตรฐานของหน่วยนับ';
-		COMMENT ON COLUMN processstocklot.unitdivide IS 'ค่าหารของหน่วยนับ';
-		COMMENT ON COLUMN processstocklot.cost IS 'ต้นทุน';
-		COMMENT ON COLUMN processstocklot.balanceqty IS 'จำนวนคงเหลือ';
-		COMMENT ON COLUMN processstocklot.balanceamount IS 'มูลค่าคงเหลือ';
-		COMMENT ON COLUMN processstocklot.guidref IS 'รหัส GUID อ้างอิง';
-
-		-- สร้าง indexes
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_itemcode ON processstocklot (itemcode);
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_itemcode_guidref ON processstocklot (itemcode, guidref);
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_lotnumber ON processstocklot (lotnumber);
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_docno ON processstocklot (docno);
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_docdatetime ON processstocklot (docdatetime);
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_guidref ON processstocklot (guidref);
-		CREATE INDEX IF NOT EXISTS idx_processstocklot_company_item ON processstocklot (businesscode, itemcode)`
-
-	if _, err := tx.ExecContext(context.Background(), commentsAndIndexesQuery); err != nil {
-		return fmt.Errorf("create processstocklot comments and indexes: %w", err)
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
-	}
-
-	logger.Success("created processstocklot table with all indexes and comments")
 	return nil
 }
 
@@ -1763,60 +1585,6 @@ func TableDeadLetterQueueCreate(db *sql.DB) error {
 	return nil
 }
 
-func TableDistributedLocksCreate(db *sql.DB) error {
-	logger.Info("Creating distributed_locks table")
-
-	tx, err := db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelReadCommitted})
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	createTableQuery := `
-		CREATE TABLE IF NOT EXISTS distributed_locks (
-			lock_key VARCHAR(500) PRIMARY KEY,
-			owner VARCHAR(100) NOT NULL,
-			acquired_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			expires_at TIMESTAMPTZ NOT NULL
-		)`
-
-	if _, err := tx.ExecContext(context.Background(), createTableQuery); err != nil {
-		return fmt.Errorf("create distributed_locks table: %w", err)
-	}
-
-	indexesQuery := `
-		CREATE INDEX IF NOT EXISTS idx_distributed_locks_expires_at ON distributed_locks (expires_at);
-	`
-
-	if _, err := tx.ExecContext(context.Background(), indexesQuery); err != nil {
-		return fmt.Errorf("create distributed_locks indexes: %w", err)
-	}
-
-	cleanupFunc := `
-		CREATE OR REPLACE FUNCTION cleanup_expired_locks()
-		RETURNS INTEGER AS $$
-		DECLARE
-			deleted_count INTEGER;
-		BEGIN
-			DELETE FROM distributed_locks WHERE expires_at < NOW();
-			GET DIAGNOSTICS deleted_count = ROW_COUNT;
-			RETURN deleted_count;
-		END;
-		$$ LANGUAGE plpgsql;
-	`
-
-	if _, err := tx.ExecContext(context.Background(), cleanupFunc); err != nil {
-		return fmt.Errorf("create cleanup_expired_locks function: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit distributed_locks creation: %w", err)
-	}
-
-	logger.Success("created distributed_locks table with cleanup function")
-	return nil
-}
-
 func TableSearchAliasesCreate(db *sql.DB) error {
 	logger.Info("Creating search_aliases table")
 
@@ -1917,7 +1685,6 @@ func DatabaseRebuildAll(holdingCode string) {
 	independentTables := []tableTask{
 		{"queues", TableQueuesCreate},
 		{"dead_letter_queue", TableDeadLetterQueueCreate},
-		{"distributed_locks", TableDistributedLocksCreate},
 		{"product", TableProductCreate},
 		{"productbarcode", TableProductBarcodeCreate},
 		{"result", TableResultCreate},
@@ -1937,11 +1704,10 @@ func DatabaseRebuildAll(holdingCode string) {
 		{"docdetail", TableDocDetailCreate},
 		{"stockwaitprocess", TableStockWaitProcessCreate},
 		{"docwaitprocess", TableDocWaitProcessCreate},
-		{"processstockcost", TableProcessStockCostCreate},
-		{"processstocklot", TableProcessStockLotCreate},
 		{"stock_ledger", TableStockLedgerCreate},
 		{"stock_period_balance", TableStockPeriodBalanceCreate},
 		{"stock_dirty", TableStockDirtyCreate},
+		{"stock_dead_letter", TableStockDeadLetterCreate},
 		{"docref", TableDocRefCreate},
 		{"docpayment", TableDocPaymentCreate},
 	}
@@ -2071,7 +1837,7 @@ func DatabaseRebuild(holdingCode string) {
 		DocDetailTransFlag54RebuildFromMongo(mongoClient, postgresDB, holdingCode)
 	}
 
-	go processstock.ProcessStockCostAll(holdingCode)
+	go recalculateStockCostAll(holdingCode, nil)
 
 	// ประมวลผลสถานะเอกสารหลัง rebuild เสร็จ (ใช้ BATCH MODE - เร็วกว่า!)
 	logger.Info("Processing document status after rebuild for shop %s (BATCH MODE)", holdingCode)
@@ -2376,7 +2142,7 @@ func CalcStockCostAll(holdingCode string) {
 
 	// 1. คำนวณต้นทุนสต็อกทั้งหมด
 	logger.Info("Step 1: Processing stock cost for all items...")
-	processstock.ProcessStockCostAll(holdingCode)
+	recalculateStockCostAll(holdingCode, nil)
 
 	// 2. ประมวลผลสถานะเอกสาร
 	logger.Info("Step 2: Processing document status...")
@@ -2385,31 +2151,91 @@ func CalcStockCostAll(holdingCode string) {
 	logger.Success("=== CalcStockCostAll completed for shop %s ===", holdingCode)
 }
 
-// CalcStockCostForItems - คำนวณ stock cost เฉพาะ item codes ที่ระบุ
-func CalcStockCostForItems(holdingCode string, itemCodes []string) {
-	logger.Info("=== Starting CalcStockCostForItems for shop %s (%d items) ===", holdingCode, len(itemCodes))
+// stockEngineOptions คืนตัวเลือกการคำนวณตามค่าทศนิยมที่ตั้งไว้ในระบบ
+func stockEngineOptions() stockengine.Options {
+	options := stockengine.DefaultOptions()
+	options.PointQty = myglobal.ConfigSystem.StockQtyPoint
+	options.PointAmount = myglobal.ConfigSystem.StockAmountPoint
+	options.PointCost = myglobal.ConfigSystem.StockCostPoint
+	return options
+}
 
+// recalculateStockCostAll คำนวณต้นทุนสต็อกใหม่ทั้งฐาน แล้วอัปเดตยอดคงเหลือในตารางสินค้าให้ตรงกัน
+//
+// ใช้ตอนสร้างฐานใหม่จากต้นทาง จึงคำนวณตรงไม่ผ่านคิว ผู้ใช้ที่กดสั่งต้องเห็นว่าเสร็จจริงเมื่อไร
+func recalculateStockCostAll(holdingCode string, progress func(processed, total int)) {
 	db, err := mypg.PgSqlFastConnect(holdingCode)
 	if err != nil {
 		logger.Error("Failed to connect to PostgreSQL: %v", err)
 		return
 	}
 
-	pointQty := myglobal.ConfigSystem.StockQtyPoint
-	pointAmount := myglobal.ConfigSystem.StockAmountPoint
-	pointCost := myglobal.ConfigSystem.StockCostPoint
-
-	// คำนวณต้นทุนทีละ item
-	for i, itemCode := range itemCodes {
-		logger.Info("Processing item %d/%d: %s", i+1, len(itemCodes), itemCode)
-		processstock.ProductCalcCost(db, holdingCode, itemCode, pointQty, pointAmount, pointCost, true)
+	summary, err := stockengine.RecalculateAll(context.Background(), db, myglobal.TransFlagsToProcess, stockEngineOptions(), progress)
+	if err != nil {
+		logger.Error("Recalculate all stock cost for %s: %v", holdingCode, err)
+		return
 	}
+	logger.Success("Recalculated stock cost for %s: %d item(s), %d failed", holdingCode, summary.Items, summary.Failed)
+
+	// ยอดคงเหลือในตารางสินค้าต้องตามสมุดสต็อกที่เพิ่งคำนวณใหม่ อัปเดตรวดเดียวต่อบริษัท
+	for _, businessCode := range summary.BusinessCodes {
+		if err := processstock.ProcessProductBalanceUpdate(holdingCode, businessCode); err != nil {
+			logger.Error("Update product balance for %s/%s: %v", holdingCode, businessCode, err)
+		}
+	}
+}
+
+// CalcStockCostForItems - คำนวณ stock cost เฉพาะ item codes ที่ระบุ
+func CalcStockCostForItems(holdingCode string, itemCodes []string) {
+	logger.Info("=== Starting CalcStockCostForItems for shop %s (%d items) ===", holdingCode, len(itemCodes))
+
+	recalculateStockCostForItems(holdingCode, itemCodes, nil)
 
 	// ประมวลผลสถานะเอกสาร
 	logger.Info("Processing document status for shop %s", holdingCode)
 	processdoc.ProcessDocumentStatusByShopBatch(holdingCode)
 
 	logger.Success("=== CalcStockCostForItems completed for shop %s (%d items) ===", holdingCode, len(itemCodes))
+}
+
+// recalculateStockCostForItems คำนวณต้นทุนใหม่เฉพาะสินค้าที่ระบุ ทุกบริษัทที่มีสินค้านั้น
+func recalculateStockCostForItems(holdingCode string, itemCodes []string, onItem func(index int, itemCode string)) {
+	db, err := mypg.PgSqlFastConnect(holdingCode)
+	if err != nil {
+		logger.Error("Failed to connect to PostgreSQL: %v", err)
+		return
+	}
+
+	ctx := context.Background()
+	options := stockEngineOptions()
+	businessCodes := map[string]bool{}
+
+	for index, itemCode := range itemCodes {
+		if onItem != nil {
+			onItem(index, itemCode)
+		}
+		logger.Info("Processing item %d/%d: %s", index+1, len(itemCodes), itemCode)
+
+		// สินค้ารหัสเดียวกันอยู่ได้หลายบริษัทในฐานเดียวกัน ต้องคำนวณแยกทุกบริษัท
+		scopes, err := stockengine.ScopesForItem(ctx, db, itemCode, myglobal.TransFlagsToProcess)
+		if err != nil {
+			logger.Error("Find companies for item %s: %v", itemCode, err)
+			continue
+		}
+		for _, scope := range scopes {
+			if _, err := stockengine.Recalculate(ctx, db, scope, myglobal.TransFlagsToProcess, options); err != nil {
+				logger.Error("Recalculate %s/%s: %v", scope.BusinessCode, scope.ItemCode, err)
+				continue
+			}
+			businessCodes[scope.BusinessCode] = true
+		}
+	}
+
+	for businessCode := range businessCodes {
+		if err := processstock.ProcessProductBalanceUpdateByItems(db, holdingCode, businessCode, itemCodes); err != nil {
+			logger.Error("Update product balance for %s/%s: %v", holdingCode, businessCode, err)
+		}
+	}
 }
 
 // =====================================================================
@@ -2529,7 +2355,7 @@ func DatabaseRebuildWithProgress(holdingCode string, job *RebuildJob, stepOffset
 
 	// Step: คำนวณต้นทุนสต็อก (พร้อม sub-progress แสดงจำนวนรายการ)
 	job.SendProgress(stepOffset+12, totalSteps, "คำนวณต้นทุนสต็อก", "running")
-	processstock.ProcessStockCostAllWithCallback(holdingCode, func(processed, total int) {
+	recalculateStockCostAll(holdingCode, func(processed, total int) {
 		detail := fmt.Sprintf("%d/%d รายการ", processed, total)
 		job.SendProgressDetail(stepOffset+12, totalSteps, "คำนวณต้นทุนสต็อก", detail)
 	})
@@ -2552,7 +2378,7 @@ func CalcStockCostAllWithProgress(holdingCode string, job *RebuildJob) {
 	totalSteps := 2
 
 	job.SendProgress(1, totalSteps, "คำนวณต้นทุนสต็อกทั้งหมด", "running")
-	processstock.ProcessStockCostAllWithCallback(holdingCode, func(processed, total int) {
+	recalculateStockCostAll(holdingCode, func(processed, total int) {
 		detail := fmt.Sprintf("%d/%d รายการ", processed, total)
 		job.SendProgressDetail(1, totalSteps, "คำนวณต้นทุนสต็อกทั้งหมด", detail)
 	})
@@ -2567,22 +2393,10 @@ func CalcStockCostAllWithProgress(holdingCode string, job *RebuildJob) {
 func CalcStockCostForItemsWithProgress(holdingCode string, itemCodes []string, job *RebuildJob) {
 	totalSteps := len(itemCodes) + 1 // items + document status
 
-	db, err := mypg.PgSqlFastConnect(holdingCode)
-	if err != nil {
-		logger.Error("Failed to connect to PostgreSQL: %v", err)
-		job.SendError(1, totalSteps, "เชื่อมต่อฐานข้อมูล", err)
-		return
-	}
-
-	pointQty := myglobal.ConfigSystem.StockQtyPoint
-	pointAmount := myglobal.ConfigSystem.StockAmountPoint
-	pointCost := myglobal.ConfigSystem.StockCostPoint
-
-	for i, itemCode := range itemCodes {
-		stepName := fmt.Sprintf("คำนวณสินค้า %s (%d/%d)", itemCode, i+1, len(itemCodes))
-		job.SendProgress(i+1, totalSteps, stepName, "running")
-		processstock.ProductCalcCost(db, holdingCode, itemCode, pointQty, pointAmount, pointCost, true)
-	}
+	recalculateStockCostForItems(holdingCode, itemCodes, func(index int, itemCode string) {
+		stepName := fmt.Sprintf("คำนวณสินค้า %s (%d/%d)", itemCode, index+1, len(itemCodes))
+		job.SendProgress(index+1, totalSteps, stepName, "running")
+	})
 
 	job.SendProgress(totalSteps, totalSteps, "ประมวลผลสถานะเอกสาร", "running")
 	processdoc.ProcessDocumentStatusByShopBatch(holdingCode)

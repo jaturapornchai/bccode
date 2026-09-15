@@ -27,6 +27,7 @@ import (
 	"smlcloudplatform/internal/goapi/myglobal"
 	myPg "smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/goapi/mypostgres"
+	processstock "smlcloudplatform/internal/goapi/process/process-stock"
 	"smlcloudplatform/internal/goapi/process/stockengine"
 	"smlcloudplatform/internal/goapi/workers"
 
@@ -155,6 +156,14 @@ func (s *GoAPIServer) Init() error {
 	}()
 
 	// 10. Stock engine workers (คิดต้นทุนจากคิวแทนการคิดคาสด ๆ ในตัว consumer)
+	//
+	// ยอดคงเหลือในตารางสินค้าต้องอัปเดตหลังคำนวณเสร็จเท่านั้น ไม่ใช่ตอนรับเอกสาร
+	// เพราะตอนรับเอกสารสมุดสต็อกยังไม่ถูกเขียน จอสินค้าจะเห็นยอดของรอบก่อน
+	stockengine.AfterRecalculate = func(db *sql.DB, holdingCode, businessCode, itemCode string) {
+		if err := processstock.ProcessProductBalanceUpdateByItems(db, holdingCode, businessCode, []string{itemCode}); err != nil {
+			logger.Error("update product balance for %s/%s: %v", businessCode, itemCode, err)
+		}
+	}
 	if stockengine.WorkerEnabledFromEnv() {
 		stockengine.StartWorkers(context.Background(), myglobal.TransFlagsToProcess)
 	}

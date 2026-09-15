@@ -34,32 +34,6 @@ type ProcessStockMovementDetailStruct struct {
 	DocRef        string    `json:"docref" bson:"docref"`
 }
 
-type ProcessStockCostDetailStruct struct {
-	HoldingCode     string
-	DocDateTime     time.Time
-	DocNo           string
-	LineNumber      int
-	TransFlag       int
-	ItemCode        string
-	Barcode         string
-	UnitCode        string
-	WhCode          string
-	LocationCode    string
-	Qty             float64
-	Price           float64
-	PriceExcludeVat float64
-	UnitStand       float64
-	UnitDivide      float64
-	UnitCost        float64
-	AverageCost     float64
-	SumAmount       float64
-	CalcAmount      float64
-	BalanceAmount   float64
-	BalanceQty      float64
-	Guid            string
-	DocRef          string
-}
-
 type ProcessStockLotStruct struct {
 	DocDateTime   time.Time
 	LotNumber     string

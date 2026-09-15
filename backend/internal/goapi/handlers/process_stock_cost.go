@@ -86,6 +86,11 @@ func ProcessStockCostHandler(c echo.Context) error {
 		req.Offset = 0
 	}
 
+	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
+	if scopeErr != nil {
+		return scopeErr.respond(c)
+	}
+
 	// Connect to database
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
@@ -99,7 +104,7 @@ func ProcessStockCostHandler(c echo.Context) error {
 	defer cancel()
 
 	// Build parameterized query
-	query, args := buildProcessStockCostQuery(fromDate, toDate, req.BranchCodes, req.ProductCodes, req.Limit, req.Offset)
+	query, args := buildProcessStockCostQuery(fromDate, toDate, businessCode, req.BranchCodes, req.ProductCodes, req.Limit, req.Offset)
 
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -196,6 +201,11 @@ func ProcessStockCostSummaryHandler(c echo.Context) error {
 
 	toDate = toDate.AddDate(0, 0, 1)
 
+	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
+	if scopeErr != nil {
+		return scopeErr.respond(c)
+	}
+
 	// Connect to database
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
@@ -209,7 +219,7 @@ func ProcessStockCostSummaryHandler(c echo.Context) error {
 	defer cancel()
 
 	// Build parameterized summary query
-	query, args := buildProcessStockCostSummaryQuery(fromDate, toDate, req.BranchCodes, req.ProductCodes)
+	query, args := buildProcessStockCostSummaryQuery(fromDate, toDate, businessCode, req.BranchCodes, req.ProductCodes)
 
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -295,6 +305,11 @@ func ProcessStockCostCheckHandler(c echo.Context) error {
 
 	toDate = toDate.AddDate(0, 0, 1)
 
+	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
+	if scopeErr != nil {
+		return scopeErr.respond(c)
+	}
+
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -313,14 +328,14 @@ func ProcessStockCostCheckHandler(c echo.Context) error {
 			COUNT(DISTINCT itemcode) as total_products,
 			MIN(docdatetime) as earliest_date,
 			MAX(docdatetime) as latest_date
-		FROM public.processstockcost
-		WHERE docdatetime >= $1 AND docdatetime < $2
+		FROM public.stock_ledger
+		WHERE businesscode = $3 AND docdatetime >= $1 AND docdatetime < $2
 	`
 
 	var totalRows, totalDocs, totalProducts int64
 	var earliestDate, latestDate *time.Time
 
-	err = db.QueryRowContext(ctx, query, fromDate, toDate).Scan(
+	err = db.QueryRowContext(ctx, query, fromDate, toDate, businessCode).Scan(
 		&totalRows, &totalDocs, &totalProducts, &earliestDate, &latestDate,
 	)
 	if err != nil {
@@ -341,22 +356,22 @@ func ProcessStockCostCheckHandler(c echo.Context) error {
 }
 
 // buildProcessStockCostQuery - builds parameterized query for process stock cost
-func buildProcessStockCostQuery(fromDate, toDate time.Time, branchCodes, productCodes []string, limit, offset int) (string, []any) {
+func buildProcessStockCostQuery(fromDate, toDate time.Time, businessCode string, branchCodes, productCodes []string, limit, offset int) (string, []any) {
 	args := make([]any, 0)
 	argIndex := 1
 
 	query := `
 		SELECT
-			id, docdatetime, docno, docref, linenumber, transflag,
-			itemcode, itemname, barcode, unitcode, whcode, locationcode,
-			debtorcode, debtorname, totalqty, unitstand, unitdivide,
-			price, averagecost, calcamount, balanceqty, balanceamount,
-			unitcost, guid
-		FROM public.processstockcost
-		WHERE docdatetime >= $1 AND docdatetime < $2
+			docdatetime, docno, docref, linenumber, transflag,
+			itemcode, barcode, unitcode, whcode, locationcode,
+			docqty AS totalqty, unitstand, unitdivide,
+			price, avgcost AS averagecost, amount AS calcamount,
+			balanceqty, balanceamount, unitcost
+		FROM public.stock_ledger
+		WHERE businesscode = $3 AND docdatetime >= $1 AND docdatetime < $2
 	`
-	args = append(args, fromDate, toDate)
-	argIndex = 3
+	args = append(args, fromDate, toDate, businessCode)
+	argIndex = 4
 
 	// Add branch filter
 	if len(branchCodes) > 0 {
@@ -372,7 +387,7 @@ func buildProcessStockCostQuery(fromDate, toDate time.Time, branchCodes, product
 		argIndex++
 	}
 
-	query += " ORDER BY docdatetime DESC, docno, linenumber"
+	query += " ORDER BY docdatetime DESC, behindindex DESC, docno, linenumber"
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
 	args = append(args, limit, offset)
 
@@ -380,22 +395,23 @@ func buildProcessStockCostQuery(fromDate, toDate time.Time, branchCodes, product
 }
 
 // buildProcessStockCostSummaryQuery - builds parameterized summary query
-func buildProcessStockCostSummaryQuery(fromDate, toDate time.Time, branchCodes, productCodes []string) (string, []any) {
+func buildProcessStockCostSummaryQuery(fromDate, toDate time.Time, businessCode string, branchCodes, productCodes []string) (string, []any) {
 	args := make([]any, 0)
 	argIndex := 1
 
+	// จำนวนรวมต้องคิดทิศทาง ไม่งั้นของที่รับเข้าแล้วจ่ายออกหมดจะกลายเป็นยอดสองเท่าแทนที่จะเป็นศูนย์
 	query := `
 		SELECT
 			itemcode,
-			SUM(totalqty) as total_quantity,
-			SUM(calcamount) as totalamount,
-			AVG(averagecost) as avg_cost,
+			SUM(direction * qty) as total_quantity,
+			SUM(direction * amount) as totalamount,
+			AVG(avgcost) as avg_cost,
 			COUNT(*) as transaction_count
-		FROM public.processstockcost
-		WHERE docdatetime >= $1 AND docdatetime < $2
+		FROM public.stock_ledger
+		WHERE businesscode = $3 AND docdatetime >= $1 AND docdatetime < $2
 	`
-	args = append(args, fromDate, toDate)
-	argIndex = 3
+	args = append(args, fromDate, toDate, businessCode)
+	argIndex = 4
 
 	// Add branch filter
 	if len(branchCodes) > 0 {

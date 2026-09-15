@@ -84,7 +84,7 @@ func StockReportBarcodesHandler(c echo.Context) error {
 	})
 }
 
-// StockReportWarehousesHandler - ดึง warehouses + locations จาก processstockcost ตาม barcodes
+// StockReportWarehousesHandler - ดึง warehouses + locations จากสมุดสต็อกตาม barcodes
 // POST /api/stock-report/warehouses
 func StockReportWarehousesHandler(c echo.Context) error {
 	var req StockReportWarehousesRequest
@@ -102,6 +102,11 @@ func StockReportWarehousesHandler(c echo.Context) error {
 		})
 	}
 
+	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
+	if scopeErr != nil {
+		return scopeErr.respond(c)
+	}
+
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -114,14 +119,12 @@ func StockReportWarehousesHandler(c echo.Context) error {
 	defer cancel()
 
 	// Query warehouses and locations
-	var query string
-	var args []any
+	query := `SELECT DISTINCT whcode, locationcode FROM stock_ledger WHERE businesscode = $1 ORDER BY whcode, locationcode`
+	args := []any{businessCode}
 
 	if len(req.Barcodes) > 0 {
-		query = `SELECT DISTINCT whcode, locationcode FROM processstockcost WHERE barcode = ANY($1) ORDER BY whcode, locationcode`
-		args = []any{pq.Array(req.Barcodes)}
-	} else {
-		query = `SELECT DISTINCT whcode, locationcode FROM processstockcost ORDER BY whcode, locationcode`
+		query = `SELECT DISTINCT whcode, locationcode FROM stock_ledger WHERE businesscode = $1 AND barcode = ANY($2) ORDER BY whcode, locationcode`
+		args = append(args, pq.Array(req.Barcodes))
 	}
 
 	rows, err := db.QueryContext(ctx, query, args...)

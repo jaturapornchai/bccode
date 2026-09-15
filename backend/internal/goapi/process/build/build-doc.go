@@ -407,22 +407,8 @@ func DocRebuildAllFromMongoWithCallback(holdingCode string, rebuild bool, callba
 	logger.Debug("PostgreSQL connection established successfully")
 
 	if rebuild {
-		// ลบข้อมูลเก่าใน clickhouse และ postgresql ทั้งหมด
-		logger.Info("Deleting all old documents and docdetails from PostgreSQL and ClickHouse for holdingCode %s", holdingCode)
-
-		clickhouseConn, err := myclickhouse.ClickHouseFastConnect()
-		if err != nil {
-			logger.Error("Failed to connect to ClickHouse: %v", err)
-			return
-		}
-
-		clickHouseQuery := fmt.Sprintf("ALTER TABLE %s DELETE WHERE holding_code = '%s'", myclickhouse.TableName("processstockcost"), holdingCode)
-		err = myclickhouse.ExecuteCommand(context.Background(), clickhouseConn, clickHouseQuery)
-		if err != nil {
-			logger.Error("Failed to delete processstockcost from ClickHouse: %v", err)
-		} else {
-			logger.Debug("Deleted processstockcost records from ClickHouse (mutation will complete asynchronously)")
-		}
+		// ลบข้อมูลเก่าใน postgresql ทั้งหมด
+		logger.Info("Deleting all old documents and docdetails from PostgreSQL for holdingCode %s", holdingCode)
 
 		// นับจำนวน transaction types ที่ต้องประมวลผล (ยกเว้น TransFlag 54)
 		transactionList := myglobal.StockTransactionList()

@@ -1,14 +1,15 @@
 # ธุรกรรมสต็อกและเครื่องคำนวณต้นทุน (Stock transactions & cost engines)
-> ตรวจล่าสุด: 2026-09-07 (commit d93a210d) — ผู้เขียน: AI reader; ทุกข้อเท็จจริงอ้าง path:line · ตรวจซ้ำโดย fact-checker
+> ตรวจล่าสุด: 2026-09-15 — §1, §5, §9 เขียนใหม่หลังเปลี่ยนมาใช้ `stockengine` + `stock_ledger` และลบเครื่องคิดต้นทุนเดิมทิ้ง
+> (เดิมตรวจ 2026-09-07 commit d93a210d) — ทุกข้อเท็จจริงอ้าง path:line
 
 ## 1. สรุปสั้น (TL;DR)
 
 - เอกสารสต็อก 7 ชนิด (โอน/รับ/คืน/เบิก/ปรับปรุง/ยอดยกมา/รายละเอียดยอดยกมา) เขียนลง MongoDB ผ่าน HTTP module ใต้ `/transaction/stock-*` (`backend/main.go:432-440`) แล้ว publish Kafka topic `when-<module>-created|updated|deleted` (เช่น `backend/internal/transaction/stockadjustment/config/stockadjustment_messagequeue_config.go:4-9`)
-- มี **เครื่องคำนวณต้นทุน 3 ชุด** ในโค้ด แต่ที่ทำงานจริงตอนนี้มีชุดเดียว:
-  1. **goapi `process-stock` (LIVE)** — ต้นทุนถัวเฉลี่ยถ่วงน้ำหนักบน PostgreSQL ต่อ holding เขียนตาราง `processstockcost` (`backend/internal/goapi/process/process-stock/process-stock-calc-cost.go:392-456`) ถูกเรียกอัตโนมัติจาก goapi Kafka consumer ทุกครั้งที่มีเอกสาร (`backend/internal/goapi/handlers/kafka/stock_adjustment.go:148`)
-  2. **legacy `internal/stockprocess` + `pkg/stockcalculator` (DEAD)** — ทำงานเฉพาะ `DEV_API_MODE` = "" หรือ "1" (`backend/main.go:654,673`) และ SQL อ้างตาราง `stock_transaction` ที่ไม่มีอยู่จริง (ดู §4)
-  3. **goapi `inventory/costing` (DORMANT)** — engine movingaverage/fifo/lifo/fefo/standard เขียนตาราง `inventorycostlayers` ฯลฯ ผ่าน `/goapi/api/inventory/*` เท่านั้น ไม่มี consumer/frontend เรียก (ดู §6)
-- คิว `stockwaitprocess` ถูก insert ทุกเอกสารแต่ **ไม่มีใคร drain** — ตัว drain (`ProcessStockCostAll`) เรียกได้จาก rebuild ที่ handler ไม่ได้ลงทะเบียน (ดู §5.3); runtime local DB `test` ค้าง 8 แถว
+- มี **เครื่องคำนวณต้นทุน 2 ชุด** ในโค้ด ทำงานจริงชุดเดียว:
+  1. **goapi `stockengine` (LIVE)** — ต้นทุนถัวเฉลี่ยถ่วงน้ำหนักแยกตามคลัง เขียนตาราง `stock_ledger` + `stock_period_balance` (`backend/internal/goapi/process/stockengine/calc.go`, `store.go`) ทำงานเบื้องหลังผ่านคิว `stock_dirty` ไม่คิดสดในตัวรับเอกสาร (ดู §5 และ ADR `docs/kms/decisions/2026-09-15-stock-cost-engine-v2.md`)
+  2. **goapi `inventory/costing` (DORMANT)** — engine movingaverage/fifo/lifo/fefo/standard เขียนตาราง `inventorycostlayers` ฯลฯ ผ่าน `/goapi/api/inventory/*` เท่านั้น ไม่มี consumer/frontend เรียก (ดู §6)
+  - เครื่องคิดต้นทุนเดิม (`process-stock-calc-cost.go`, `processstockcost`, `processstocklot`, `stockcalculationstate*`, `distributedlocks`, สำเนาบน ClickHouse) **ถูกลบออกจากรีโปแล้ว 2026-09-15** ส่วน legacy `internal/stockprocess` + `pkg/stockcalculator` ยังอยู่ในรีโปแต่ตายอยู่ (ดู §4)
+- คิว `stockwaitprocess`/`docwaitprocess` ยังถูก insert อยู่แต่ **ไม่มีใครใช้แล้ว** — คิวจริงของการคิดต้นทุนคือ `stock_dirty` (ดู §5.4)
 
 ## 2. โหมดรันและจุดลงทะเบียน (backend/main.go)
 
@@ -54,7 +55,7 @@
 
 สูตรใน `pkg/stockcalculator` (ใช้ได้ทั่วไป ทดสอบใน `backend/pkg/stockcalculator/stockcaculator_test.go`): `ApplyStock` เพิ่ม qty/amount แล้ว average = amount/qty (`backend/pkg/stockcalculator/stockcalculator.go:51-72`); `ReduceStock` ตัดด้วย average ปัจจุบัน และล้าง balanceAmount เป็น 0 เมื่อ qty เหลือ 0 (`:98-117`); `ApplyCost`/`ReduceCost` ปรับเฉพาะมูลค่า (transflag 866/868 — `backend/internal/stockprocess/stockcalculator.go:76-78,115-117`); `AverageCostCalc` ใช้ค่าสัมบูรณ์ทั้งเศษและส่วน (`stockcalculator.go:160-178`)
 
-## 5. เส้นทาง B — goapi Kafka consumer → `docdetail` → `processstockcost` (LIVE)
+## 5. เส้นทาง B — goapi Kafka consumer → `docdetail` → คิว `stock_dirty` → `stock_ledger` (LIVE)
 
 ### 5.1 การเปิดใช้และหลักฐานว่ารันอยู่
 - goapi เริ่ม consumer เมื่อ `ENABLE_KAFKA == "true"` (`backend/internal/goapi/bootstrap.go:157-160`); ค่านี้ map จากคีย์ `service.enablekafka` ใน bootstrap.json (`backend/internal/goapi/setupconfig/loader.go:78`) ไม่ใช่ env ของ container (docker inspect ไม่มี `ENABLE_KAFKA`)
@@ -62,31 +63,32 @@
 - topic ที่ฟัง: `when-stocktransfer-*` (:599-623), `when-stockreceiveproduct-*` (:637-661), `when-stockpickupproduct-*` (:675-699), `when-stockreturnproduct-*` (:713-737), `when-stockadjustment-*` (:751-775), `when-stockbalance-*` (:789-813), `when-warehouse-*` (:230-255) — ทั้งหมดใน `backend/internal/goapi/handlers/kafka.go`; bridge อยู่ `backend/internal/goapi/handlers/kafka_bridge.go:412-475`
 
 ### 5.2 ขั้นตอนต่อเอกสาร (ตัวอย่าง `ProcessStockAdjustmentDocument`)
-1. ลบเอกสารเดิมด้วย `mypg.DeleteDocPgSql` แล้ว insert `doc`/`docdetail` (ClickHouse step เป็น no-op: `backend/internal/goapi/handlers/kafka/utils.go:375-378`) — `backend/internal/goapi/handlers/kafka/stock_adjustment.go:112,131-146`, transfer: `stock_transfer.go:72-101`
-2. `ProcessDocumentStockCalculation` → incremental=true, minimalLog=true (`kafka/utils.go:161-164`) → ต่อ itemcode เรียก `processstock.ProductCalcCostIncrementalCompany` ด้วยทศนิยมจาก `myglobal.ConfigSystem.Stock{Qty,Amount,Cost}Point` (`kafka/utils.go:209-212,227-242`); error ถูก log แล้วเดินต่อ (`stock_adjustment.go:148-152`)
-3. หลังคำนวณ → `ProcessProductBalanceUpdateByItemsAsync` อัปเดตยอดคงเหลือ/ค้างรับ/ค้างส่งในตาราง product แบบ async (`kafka/utils.go:266-271`, `backend/internal/goapi/process/process-stock/process-product-balance-update.go:171`)
-4. `mypg.AddToDocWaitProcessQueues` insert `docwaitprocess` + `stockwaitprocess` (`stock_adjustment.go:156`, `backend/internal/goapi/mypg/doc.go:47-70`; ผู้เรียก 16 จุดรวมซื้อ/ขาย เช่น `kafka/purchase.go:134`, `kafka/sale_invoice.go:127`)
-transflag ต่อชนิด: 72 โอน, 60 รับ, 56 เบิก, 58 คืน, 66/68 ปรับเพิ่ม/ลด, 54 ยอดยกมา (`backend/internal/goapi/handlers/kafka/constants.go:117-123`)
+1. ลบเอกสารเดิมด้วย `mypg.DeleteDocPgSql` แล้ว insert `doc`/`docdetail` (ClickHouse step เป็น no-op) — `backend/internal/goapi/handlers/kafka/stock_adjustment.go`, transfer: `stock_transfer.go`
+   `DeleteDocPgSql` สั่งคิดต้นทุนใหม่ด้วย **วันที่เดิม** ของเอกสารก่อนลบเสมอ (`backend/internal/goapi/mypg/doc.go`, `stockengine.MarkDocumentDirty`) เอกสารที่แก้แล้วย้ายวันข้ามงวดจึงไม่ทิ้งยอดค้างในงวดเก่า
+2. `ProcessDocumentStockCalculation` → `EnqueueStockRecalculation` ฝากงานเข้าคิว `stock_dirty` หนึ่งแถวต่อสินค้าหนึ่งตัว พร้อมวันที่เก่าสุดที่ถูกกระทบ แล้วส่งสัญญาณ `pg_notify('stock_dirty', …)` ปลุก worker (`backend/internal/goapi/handlers/kafka/utils.go`, `stock_engine_hook.go`, `stockengine/dirty.go`) — บรรทัดที่ไม่กระทบสต็อกถูกข้าม ไม่ทำให้ทั้งใบล้มเหลว
+3. worker ของ holding นั้นจอง งานแล้วคำนวณ (`stockengine/worker.go` → `Recalculate`) เสร็จแล้วเรียก `AfterRecalculate` เพื่ออัปเดตยอดคงเหลือในตาราง product (`backend/internal/goapi/bootstrap.go` ผูกไว้ตอนเริ่มระบบ) — ยอดบนจอสินค้าจึงมาจากสมุดสต็อกชุดเดียวกับรายงาน
+4. เอกสารที่ถูกลบ (`DeleteDocumentFromDatabases` ตั้ง `doc.isdelete = true`) ก็สั่งคิดใหม่เช่นกัน และ `LoadMovements` กรอง `iscancel`/`isdelete` ออก
+transflag ต่อชนิด: 72 โอน, 60 รับ, 56 เบิก, 58 คืน, 66/68 ปรับเพิ่ม/ลด, 54 ยอดยกมา (`backend/internal/goapi/handlers/kafka/constants.go`)
 
-### 5.3 ตัวคำนวณ `productCalcCostWithOptions` (`process-stock-calc-cost.go`)
-- lock ต่อ `stock:calc:<holding>:<business>:<item>` ผ่าน PG distributed lock 5 นาที (`:86-100`); incremental ใช้ checksum จาก `docdetail` เก็บใน `stockcalculationstate_company` (`incremental.go:38-60,302-304`); ถ้าไม่เปลี่ยนข้าม (`process-stock-calc-cost.go:105-119`)
-- ลบ `processstockcost`/`processstocklot` ของ item ก่อนเสมอ (delete-then-insert = idempotency; UPSERT ที่ minimalLog สัญญาไว้ไม่เคยทำ — comment `:41-46,123-141`)
-- อ่าน `docdetail` เฉพาะ `transflag IN myglobal.TransFlagsToProcess` = {54,12,310,48,60,58,66,44,16,56,68,72} (`backend/internal/goapi/myglobal/global.go:32`, `process-stock-calc-cost.go:143-148,323-328`) เรียงตาม `docdatetime, linenumber, calcflag DESC, docno`
-- **สูตร = ต้นทุนถัวเฉลี่ยถ่วงน้ำหนักแบบต่อเนื่อง**: ออก (44,56,72,20,21,62) ตัดด้วย average ปัจจุบัน; เข้า (12,310,60,61,54,66,48) ใช้ `sumamount` (fallback qty×priceexcludevat); 16 รับคืนใช้ sumamount ไม่งั้น average; 866/868 ปรับเฉพาะมูลค่า; เมื่อ balanceQty ≈ 0 บังคับ balanceAmount = 0; average ใหม่ = balanceAmount/balanceQty เฉพาะเมื่อ balanceQty > 0 (`:376-456`); **58 (คืนเข้าคลัง) และ 68 (ปรับลด) ไม่มี case เฉพาะ** → ตกไป `default` ใช้ `calcAmount = sumamount` และ qty ตามเครื่องหมายใน `docdetail.totalqty` ตรง ๆ (`:424-427`, qty มาจาก `:373-379` ไม่ได้คูณ calcflag)
-- **FIFO/lot ไม่ทำงาน**: บล็อก `addLotFunc`/`processLotFunc` (มี `calcType == 1` FIFO) ถูก comment ทั้งก้อน `:163-219` → slice `lots` ว่างเสมอ, ตาราง `processstocklot` จึงไม่มีข้อมูล (local `test`: `processstocklot` = 0 ขณะ `processstockcost` = 9)
-- ผลลัพธ์เขียน `processstockcost` ด้วย COPY (`:292`; คอลัมน์ `businesscode, docdatetime, docno, ..., averagecost, calcamount, balanceqty, balanceamount, unitcost, guid` — `backend/internal/goapi/process/build/create-database.go:705-731`); ส่วน ClickHouse ยิงเป็น goroutine แล้ว fail เงียบเพราะ `ClickHouseFastConnect` คืน `clickhouse is disabled` (`process-stock-calc-cost.go:574-586`, `backend/internal/goapi/myclickhouse/utils.go:234-236`)
+### 5.3 ตัวคำนวณ `stockengine` (`process/stockengine/`)
+- **ลำดับการคิดคงที่เสมอ**: `docdatetime, behindindex, docno, linenumber` ทั้งใน SQL และในหน่วยความจำ (`store.go` `calcOrderBy`, `calc.go` `SortMovements`) คิดซ้ำกี่ครั้งก็ได้ผลเดิม
+- **ขอบเขตงาน**: คิดใหม่ตั้งแต่ต้นงวดของวันที่ที่ถูกกระทบ โดยอ่านยอดยกมาจาก `stock_period_balance` งวดล่าสุดที่ `periodkey <` งวดปัจจุบัน (`LoadOpening`); ถ้าไม่มียอดยกมาเลยแต่สินค้ามีประวัติเก่ากว่านั้น จะถอยไปคิดตั้งแต่เอกสารใบแรก (`earliestMovement`)
+- **ทิศทาง**: `transFlagDirection` กำหนดทิศทางต่อประเภทเอกสาร ยกเว้นใบโอนคลัง (72) ที่อ่านจาก `calcflag` ของบรรทัด เพราะใบเดียวมีสองขา ขาเข้าปลายทางรับของด้วยต้นทุนของขาออก (`DirectionOfMovement`, `transferValue`)
+- **สูตร = ถัวเฉลี่ยถ่วงน้ำหนักต่อคลัง**: ขาออกตัดด้วย average ปัจจุบันของคลังนั้น ขาเข้าใช้ `sumamount` (fallback = จำนวนตามหน่วยนับในเอกสาร × ราคา) — ราคาในเอกสารเป็นราคาต่อหน่วยนับในเอกสาร ไม่ใช่ต่อหน่วยฐาน; ยอดที่เกือบศูนย์ถูกบังคับเป็นศูนย์; นโยบายสต็อกติดลบ 4 แบบอยู่ที่ `applyPolicy`
+- **เขียนผลในทรานแซกชันเดียว** พร้อมจอง `pg_try_advisory_xact_lock` ต่อ (บริษัท, สินค้า): ลบ ledger และยอดปลายงวดตั้งแต่จุดที่คิดใหม่ → COPY แถวใหม่ → upsert ยอดปลายงวด → ลบงานในคิวเฉพาะที่ `markedat` เก่ากว่าเวลาที่อ่านข้อมูล (`Persist`) เอกสารที่เข้ามาระหว่างคำนวณจึงยังค้างคิวไว้คิดรอบหน้า
+- **งานล้มเหลว**: ปล่อยกลับเข้าคิวพร้อมเวลาพักตามจำนวนครั้ง (30 วิ × attempts) ครบ 5 ครั้งย้ายเข้า `stock_dead_letter` (`dirty.go`)
 
-### 5.4 คิว `stockwaitprocess` — ใครเติม / ใคร drain
-- เติม: ทุกเอกสารผ่าน `AddToDocWaitProcessQueues` (§5.2 ข้อ 4), rebuild (`backend/internal/goapi/process/build/build-doc.go:480-490`), `TruncateProcessTables` (`backend/internal/goapi/process/utils.go:19-35`)
-- drain: **เฉพาะ** `ProcessStockCostAllWithCallback` — `SELECT DISTINCT itemcode FROM stockwaitprocess` แล้วลบทีละ batch (`product-calc-cost.go:67,280-300`) — ผู้เรียกมีแค่ `build.DatabaseRebuild` (`create-database.go:2065`) และ `CalcStockCostAll` (:2370) ผ่าน wrapper `ProcessStockCostAll` (`product-calc-cost.go:49-51`), `DatabaseRebuildWithProgress` (:2523), `CalcStockCostAllWithProgress` (:2546) และ comment ใน `handlers/process_consumer.go:107`
-- ฟังก์ชัน build เหล่านั้นถูกเรียกจาก `ReportPostHandler` command `rebuild` (`backend/internal/goapi/handlers/commands.go:154,197-226`) ซึ่ง **ไม่ได้ลงทะเบียน route ใน `bootstrap.go`** (rg `ReportPostHandler` เจอเฉพาะนิยาม) → ไม่มีทาง HTTP/consumer ใด drain คิวนี้ (ตรงกับ `docs/handoff/HANDOFF-2026-09-06.md:62`)
-- runtime local `test`: `stockwaitprocess` 8 แถว, `docwaitprocess` 8, `docdetail` 9 → คิวโตไปเรื่อยโดยไม่มีผลต่อความถูกต้องของ `processstockcost` (เพราะ consumer คำนวณทันทีอยู่แล้ว) แต่เป็นขยะสะสม
+### 5.4 คิวงานคิดต้นทุน `stock_dirty` (และคิวเก่าที่ยังเหลือ)
+- **คิวจริง** = `stock_dirty` (PK `businesscode, itemcode`) เอกสารหลายใบที่แตะสินค้าเดียวกันถูกยุบเป็นแถวเดียว โดย `fromdate` เก็บวันที่เก่าสุดที่กระทบ (`LEAST`), `enqueuedat` = เวลาที่เข้าคิวครั้งแรก (ใช้เรียงคิว จึงไม่มีสินค้าที่ถูกดันท้ายคิวไม่รู้จบ), `markedat` = เวลาที่ถูกแตะล่าสุด
+- worker หนึ่งตัวต่อหนึ่ง holding เปิดอัตโนมัติเมื่อมีงานเข้ามาครั้งแรก (`stockengine/manager.go` `EnsureWorker`) ปิดทั้งหมดได้ด้วย `BCAI_STOCK_WORKER=0`
+- `stockwaitprocess`/`docwaitprocess` ยังถูก insert อยู่ (`AddToDocWaitProcessQueues`) แต่ไม่มีใครอ่านแล้ว — เป็นขยะสะสมที่ยังไม่ได้ถอด (ค้างอยู่ในรายการงานที่ต้องตัดสินใจ)
 
-### 5.5 route goapi ที่เกี่ยวกับต้นทุน (ทั้งหมด LIVE แต่ไม่มี frontend เรียก — rg `frontend/src` 2026-09-07 ไม่พบ)
+### 5.5 route goapi ที่เกี่ยวกับต้นทุน
 | route | หน้าที่ | อ้างอิง |
 |---|---|---|
-| `POST /goapi/processstockcalccost` | คำนวณต้นทุนรายการที่ระบุ (holdingcode จาก body, incremental เลือกได้) | `backend/internal/goapi/bootstrap.go:389`, `handlers/process_stock_calc_cost.go:43-119,195-230` |
-| `POST /goapi/api/stockcost/query|summary|check` | อ่าน `public.processstockcost` | `bootstrap.go:390-392`, `handlers/process_stock_cost.go:37,156,264,316,355,394` |
+| `POST /goapi/processstockcalccost` | สั่งคิดต้นทุนของสินค้าที่ระบุใหม่ทันที (รอผล) | `backend/internal/goapi/bootstrap.go`, `handlers/process_stock_calc_cost.go` |
+| `POST /goapi/api/process/queue-status` | จำนวนงานค้างจริงของบริษัทที่ล็อกอินอยู่ | `handlers/stock_queue_status.go` |
+| `POST /goapi/api/stockcost/query|summary|check` | อ่าน `public.stock_ledger` (กรองด้วย businesscode จาก JWT) | `handlers/process_stock_cost.go` |
 | `POST /goapi/api/process/product-balance` | `ProcessProductBalanceUpdate` ทั้ง holding | `bootstrap.go:411`, `handlers/product_balance_update.go:29,40` |
 | `POST /goapi/api/health/queue[/:holdingcode]` | สถานะคิว worker pool | `bootstrap.go:379-380` |
 worker pool ที่ busy-poll ตาราง `queues` ทุก 100 ms (`backend/internal/goapi/workers/doc_processor.go:232-245`, สร้างที่ `bootstrap.go:136`) **ไม่ได้** เกี่ยวกับ `stockwaitprocess` (คนละคิว — worker เรียก `QueueManager.GetActiveShops` ที่ query ตาราง `queues` `backend/internal/goapi/mypostgres/init_schema.go:110,133`; runtime local: `queues` มี 0 แถวใน bc001/bctest01/demo/postgres/test และไม่มีตารางนี้ใน appdb/qa23995213/uat260810a)
@@ -96,7 +98,7 @@ worker pool ที่ busy-poll ตาราง `queues` ทุก 100 ms (`back
 - routes ใต้ `/goapi/api`: `GET|PUT /products/:itemcode/costing-config`, `GET /products/:itemcode/cost-layers`, `POST /inventory/receipt|issue|transfer|adjustment|sales-return|purchase-return`, `GET /reports/inventory-valuation`, `GET /reports/stock-card/:itemcode` (`backend/internal/goapi/inventory/handler.go:15-34`, mount ที่ `bootstrap.go:384-386`); holdingcode รับจาก query param (`handler.go:49,68,206`) ต่อ DB ด้วย `PgSqlFastConnect(holdingCode)` (`handler.go:39`)
 - engine เลือกตาม `productcostingconfig.costingmethod` default `movingaverage` (`backend/internal/goapi/inventory/service.go:352-366`); ที่ implement: `MovingAverageEngine` (สูตร new_avg = (old_qty×old_avg + qty×cost)/(old_qty+qty) — `costing/moving_average.go:11-33`), `FIFOEngine`, `LIFOEngine`, `FEFOEngine`, `StandardEngine` (`costing/engine.go:37-53`); ค่าคงที่ `periodicaverage`/`lot` มีชื่อแต่ไม่มี engine (`inventory/models/models.go:10-15` เทียบ `engine.go:37-53`)
 - ตาราง: `productcostingconfig`, `inventorycostlayers`, `inventorystockbalances`, `marketplacestockbalances`, `marketplacedimensionprices`, `inventorycosttransactions`, `inventoryvariances`, `inventorylandedcosts`, `inventorylandedcostallocations`, `inventoryaccountingperiods` (`backend/internal/goapi/inventory/database.go:52-236`) สร้างโดย `CreateInventoryCostingTables` ซึ่งถูกเรียกจาก `process/build/create-database.go` (import :13) และ handler `create-tables` ที่ **ไม่ได้ผูก route** (`CreateTablesHandler` `handler.go:277-288` ไม่มีใน `RegisterRoutes`; ตั้งใจถอด — `TestGoAPIRouteSurfaceExcludesOperationalEndpoints` ใส่ `POST /goapi/api/inventory/create-tables` ในรายการ forbidden และ fail ถ้ายัง register `bootstrap_test.go:83,101-103`)
-- ไม่มีใครเรียกจาก Kafka consumer/`process-stock` (rg `goapi/inventory` เจอเฉพาะ `bootstrap.go:23` และ `build/create-database.go:13`); runtime local: `inventorycostlayers`/`inventorystockbalances`/`productcostingconfig` = 0 แถวใน bc001, demo, test → ระบบต้นทุนคู่ขนานที่ยังไม่ถูกใช้ และ **ไม่ sync** กับ `processstockcost`
+- ไม่มีใครเรียกจาก Kafka consumer/`stockengine` (rg `goapi/inventory` เจอเฉพาะ `bootstrap.go:23` และ `build/create-database.go:13`); runtime local: `inventorycostlayers`/`inventorystockbalances`/`productcostingconfig` = 0 แถวใน bc001, demo, test → ระบบต้นทุนคู่ขนานที่ยังไม่ถูกใช้ และ **ไม่ sync** กับ `stock_ledger`
 
 ## 7. Warehouse projection (สองทางเขียน PG คนละตาราง)
 
@@ -114,9 +116,9 @@ worker pool ที่ busy-poll ตาราง `queues` ทุก 100 ms (`back
 | ส่วน | สถานะ | เหตุผลหลัก |
 |---|---|---|
 | HTTP `/transaction/stock-*` + Mongo | LIVE แต่ไม่มีข้อมูล/ไม่มีจอ | route ลงทะเบียน `main.go:432-440`; Mongo 0 doc; frontend ยิงแค่ list |
-| goapi Kafka consumer + `processstockcost` | LIVE | consumer group `-v1` มีจริง; `test.processstockcost` = 9 |
-| `stockwaitprocess` | LIVE-เติม / DEAD-drain | drainer เข้าถึงได้เฉพาะ `ReportPostHandler` ที่ไม่ได้ register |
-| FIFO lot (`processstocklot`) | DEAD (comment out) | `process-stock-calc-cost.go:163-219` |
+| goapi Kafka consumer + `stockengine`/`stock_ledger` | LIVE | ตัวรับเอกสารเปิดครบ 17 group; รายงานทุกตัวอ่าน `stock_ledger` |
+| `stockwaitprocess`/`docwaitprocess` | LIVE-เติม / ไม่มีผู้อ่าน | คิวจริงคือ `stock_dirty`; ยังไม่ได้ถอดการ insert ออก |
+| FIFO lot | ไม่มีในระบบ | โค้ดและตาราง `processstocklot` ถูกลบ 2026-09-15 (ถ้าต้องการ FIFO ต้องออกแบบใหม่บน `stock_ledger`) |
 | legacy `stockprocess` + `pkg/stockcalculator` | DEAD | โหมด 1 ไม่รัน local; ชื่อตาราง SQL ไม่ตรง AutoMigrate |
 | goapi `inventory/costing` | DORMANT | route มี ไม่มีผู้เรียก ตาราง 0 แถว |
 | ClickHouse ในเส้นทางสต็อก | STUBBED | `myclickhouse/utils.go:234-236`, `kafka/utils.go:375-378` |
@@ -124,11 +126,10 @@ worker pool ที่ busy-poll ตาราง `queues` ทุก 100 ms (`back
 
 ## ช่องว่าง / สิ่งที่ยังไม่ตรวจ
 
-1. **ยังไม่ทดสอบ end-to-end บนเครื่องนี้**: POST เอกสารสต็อกจริง → ดู `processstockcost` เปลี่ยน (Mongo ว่างทั้ง 7 collection; แถว 9 ใน `test.docdetail` = transflag 12 ×5 + 44 ×4 คือซื้อ/ขายล้วน (`constants.go:108,111`) — `processstockcost` 9 แถวบนเครื่องนี้จึง**ยังไม่เคย**ผ่านเอกสารสต็อกเลย)
+1. **ยังไม่ทดสอบ end-to-end บนเครื่องนี้**: POST เอกสารสต็อกจริง → ดู `stock_ledger` เปลี่ยน (Mongo ว่างทั้ง 7 collection) — ที่พิสูจน์แล้วคือเทสต์ที่รันกับ PostgreSQL 18 จริง (`go test -tags integration ./internal/goapi/process/stockengine/`)
 2. prod (`worker` โหมด 1 ตาม `deploy/account/compose.yml:272-276`) จะเจอ error `relation "stock_transaction" does not exist` จาก `stockprocess` จริงหรือไม่ — ยังไม่เห็น log prod
 3. `systemadmin/productadmin` ที่ publish `when-stock-process-created` (`productadmin_service.go:31`) ถูกลงทะเบียน route ไหม ใครใช้ — ยังไม่ตรวจ
-4. transflag 20/21/61/62/310/866/868 ในสูตร §5.3 มาจากเอกสารชนิดใดในระบบนี้ (มีเฉพาะ 12/44/54/56/58/60/66/68/72 ใน `TransFlagsToProcess` ที่ทับซ้อน) — ไม่พบนิยามใน `constants.go:117-123`; ต้องถามลุงจืด
-5. ทศนิยม `StockQtyPoint/StockAmountPoint/StockCostPoint` ค่าจริงต่อ holding และผลต่อ NUMERIC(18,2) ของ `averagecost` — ยังไม่ตรวจ
-6. `report-stock` package (`backend/internal/goapi/process/report-stock/*`) และคำสั่ง `reportproductstockmovement` ฯลฯ ใน `commands.go:333-473` เข้าถึงได้จาก route ไหน (ถ้าอิง `ReportPostHandler` ก็ตายไปด้วย) — ยังไม่ตรวจ
-7. (ปิดแล้ว — `bootstrap_test.go:83,101-103` ยืนยันว่า `create-tables` ต้อง**ไม่**ถูก register; ดู §6)
-8. คำถามถึงลุงจืด: (ก) จะเก็บ engine ไหนเป็นทางการ — `process-stock` (average) หรือ `inventory/costing` (เลือกวิธีได้)? (ข) ต้องการ FIFO จริงไหม ถ้าไม่ ควรลบ `processstocklot` + โค้ด lot ที่ comment ไว้; (ค) legacy `stockprocess` + `pkg/stockcalculator` + consumer โหมด 1 ฝั่งสต็อก ลบได้หรือไม่; (ง) `stockwaitprocess`/`docwaitprocess` จะเลิก insert หรือทำ drainer จริง
+4. ทศนิยม `StockQtyPoint/StockAmountPoint/StockCostPoint` ค่าจริงต่อ holding — ยังไม่ตรวจ (`stock_ledger` เก็บเป็น NUMERIC(18,8) จึงไม่ตัดทศนิยมทิ้งเหมือนของเดิม)
+5. `report-stock` package (`backend/internal/goapi/process/report-stock/*`) และคำสั่ง `reportproductstockmovement` ฯลฯ ใน `commands.go` เข้าถึงได้จาก route ไหน (ถ้าอิง `ReportPostHandler` ก็ตายไปด้วย) — ยังไม่ตรวจ
+6. (ปิดแล้ว — `bootstrap_test.go:83,101-103` ยืนยันว่า `create-tables` ต้อง**ไม่**ถูก register; ดู §6)
+7. คำถามถึงลุงจืด: (ก) `inventory/costing` ที่เลือกวิธีคิดต้นทุนได้ จะเก็บไว้หรือลบทิ้ง (ตอนนี้ไม่มีใครเรียกและไม่ sync กับ `stock_ledger`); (ข) ต้องการ FIFO จริงไหม ถ้าต้องการต้องออกแบบใหม่บนสมุดสต็อก; (ค) legacy `stockprocess` + `pkg/stockcalculator` + consumer โหมด 1 ฝั่งสต็อก ลบได้หรือไม่; (ง) `stockwaitprocess`/`docwaitprocess` จะเลิก insert เลยไหม

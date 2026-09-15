@@ -48,9 +48,39 @@ var transFlagDirection = map[int]int{
 }
 
 // DirectionOf คืนทิศทางของประเภทเอกสาร และบอกว่ารู้จักประเภทนี้หรือไม่
+// ใช้ได้กับการคัดกรองระดับเอกสาร ส่วนการคิดต้นทุนรายบรรทัดให้ใช้ DirectionOfMovement
 func DirectionOf(transFlag int) (int, bool) {
 	dir, ok := transFlagDirection[transFlag]
 	return dir, ok
+}
+
+// KnownTransFlags คืนประเภทเอกสารทั้งหมดที่เครื่องคิดต้นทุนรู้จักทิศทาง
+// ใช้ตรวจว่ารายชื่อประเภทเอกสารที่ระบบนำมาคิด ครอบคลุมครบตามที่เครื่องคิดต้นทุนรู้จัก
+func KnownTransFlags() []int {
+	flags := make([]int, 0, len(transFlagDirection))
+	for flag := range transFlagDirection {
+		flags = append(flags, flag)
+	}
+	sort.Ints(flags)
+	return flags
+}
+
+// TransFlagStockTransfer คือประเภทเอกสารโอนย้ายสินค้าระหว่างคลัง
+const TransFlagStockTransfer = 72
+
+// DirectionOfMovement คืนทิศทางของรายการหนึ่งบรรทัด
+//
+// เอกสารโอนคลังหนึ่งใบมีสองขาเสมอ ขาออกจากคลังต้นทางกับขาเข้าคลังปลายทาง
+// ทิศทางของบรรทัดจึงอ่านจาก calcflag ไม่ใช่จากประเภทเอกสาร
+// ถ้าดูแต่ประเภทเอกสาร ขาเข้าจะถูกคิดเป็นขาออกด้วย แล้วของจะหายจากบริษัททุกครั้งที่โอนคลัง
+func DirectionOfMovement(mv Movement) (int, bool) {
+	if mv.TransFlag == TransFlagStockTransfer {
+		if mv.CalcFlag < 0 {
+			return DirectionOut, true
+		}
+		return DirectionIn, true
+	}
+	return DirectionOf(mv.TransFlag)
 }
 
 // Movement คือรายการเคลื่อนไหวหนึ่งบรรทัดที่อ่านมาจาก docdetail
@@ -65,6 +95,7 @@ type Movement struct {
 	DocNo           string
 	LineNumber      int
 	TransFlag       int
+	CalcFlag        int     // ทิศทางที่เอกสารกำหนดให้บรรทัดนี้ ใช้กับเอกสารที่มีสองขาในใบเดียว (โอนคลัง)
 	Qty             float64 // จำนวนตามหน่วยนับในเอกสาร
 	UnitStand       float64
 	UnitDivide      float64
@@ -74,6 +105,10 @@ type Movement struct {
 }
 
 // LedgerRow คือผลลัพธ์หนึ่งบรรทัดที่จะเขียนลง stock_ledger
+//
+// เก็บทั้งข้อเท็จจริงตามเอกสาร (DocQty, UnitStand, UnitDivide, Price, DocValue)
+// และผลการคิดต้นทุน (Qty, UnitCost, Amount, Balance*) ไว้ในแถวเดียว
+// เพื่อให้รายงานอ่านตารางเดียวจบ ไม่ต้องย้อนไป join docdetail อีก
 type LedgerRow struct {
 	WhCode        string
 	LocationCode  string
@@ -86,7 +121,12 @@ type LedgerRow struct {
 	LineNumber    int
 	TransFlag     int
 	Direction     int
-	Qty           float64
+	DocQty        float64 // จำนวนตามหน่วยนับในเอกสาร ใช้แสดงคู่กับ UnitCode
+	UnitStand     float64
+	UnitDivide    float64
+	Price         float64 // ราคาต่อหน่วยตามเอกสาร
+	DocValue      float64 // มูลค่าตามเอกสาร (ยอดขาย/ยอดซื้อของบรรทัดนี้)
+	Qty           float64 // จำนวนหน่วยฐานที่ใช้คิดต้นทุน
 	UnitCost      float64
 	Amount        float64
 	BalanceQty    float64
@@ -188,18 +228,26 @@ func Calculate(opening map[string]Balance, movements []Movement, opt Options) Re
 	rows := make([]LedgerRow, 0, len(movements))
 	closing := make(map[string]Balance, len(state)+4)
 
+	// ต้นทุนของขาออกในเอกสารโอนคลัง เก็บไว้ให้ขาเข้าของใบเดียวกันใช้ต่อ
+	// การโอนของภายในบริษัทต้องไม่ทำให้มูลค่าสต็อกรวมเปลี่ยน ปลายทางจึงรับของด้วยต้นทุนของต้นทาง
+	transferCost := map[string]float64{}
+
 	// งวดของยอดตั้งต้น ใช้เป็นฐานให้คลังที่ไม่มีรายการในรอบนี้
 	for _, mv := range movements {
 		bal := state[mv.WhCode]
 
 		qty := normalizeQty(mv, opt.PointQty)
-		direction, known := DirectionOf(mv.TransFlag)
+		docQty := documentQty(mv, opt.PointQty)
+		direction, known := DirectionOfMovement(mv)
 		if !known {
 			// ประเภทเอกสารที่ไม่รู้จักทิศทาง ไม่นำมาคิดสต็อก ปลอดภัยกว่าการเดา
 			continue
 		}
 
-		unitCost, amount := valueOf(mv, qty, direction, bal, opt)
+		unitCost, amount := valueOf(mv, qty, docQty, direction, bal, opt)
+		if mv.TransFlag == TransFlagStockTransfer {
+			unitCost, amount = transferValue(mv, qty, direction, unitCost, amount, transferCost, opt)
+		}
 
 		signedQty := qty
 		if direction == DirectionOut {
@@ -235,6 +283,11 @@ func Calculate(opening map[string]Balance, movements []Movement, opt Options) Re
 			LineNumber:    mv.LineNumber,
 			TransFlag:     mv.TransFlag,
 			Direction:     direction,
+			DocQty:        docQty,
+			UnitStand:     mv.UnitStand,
+			UnitDivide:    mv.UnitDivide,
+			Price:         math.Abs(mv.Price),
+			DocValue:      documentValue(mv, docQty, opt),
 			Qty:           qty,
 			UnitCost:      unitCost,
 			Amount:        amount,
@@ -259,9 +312,26 @@ func normalizeQty(mv Movement, pointQty int) float64 {
 	return math.Abs(myRound(mv.Qty*factor, pointQty))
 }
 
+// documentQty คืนจำนวนตามหน่วยนับในเอกสาร เป็นค่าบวกเสมอ
+func documentQty(mv Movement, pointQty int) float64 {
+	return math.Abs(myRound(mv.Qty, pointQty))
+}
+
+// documentValue คืนมูลค่าตามเอกสารของบรรทัดนี้ (ยอดขายสำหรับขาออก ยอดซื้อสำหรับขาเข้า)
+//
+// ราคาต่อหน่วยในเอกสารเป็นราคาต่อ "หน่วยนับในเอกสาร" จึงต้องคูณกับจำนวนตามเอกสาร
+// ไม่ใช่จำนวนหน่วยฐาน มิฉะนั้นสินค้าที่ขายเป็นลัง (1 ลัง = 12 ชิ้น) จะได้มูลค่าเกินจริง 12 เท่า
+func documentValue(mv Movement, docQty float64, opt Options) float64 {
+	value := math.Abs(mv.SumAmount)
+	if value == 0 && mv.Price != 0 {
+		value = docQty * math.Abs(mv.Price)
+	}
+	return myRound(value, opt.PointAmount)
+}
+
 // valueOf คืนต้นทุนต่อหน่วยและมูลค่ารวมของรายการหนึ่ง
 // ขาเข้าใช้มูลค่าจากเอกสาร ขาออกใช้ต้นทุนถัวเฉลี่ยขณะนั้น
-func valueOf(mv Movement, qty float64, direction int, bal Balance, opt Options) (unitCost, amount float64) {
+func valueOf(mv Movement, qty, docQty float64, direction int, bal Balance, opt Options) (unitCost, amount float64) {
 	if direction == DirectionOut {
 		unitCost = bal.AvgCost
 		if bal.Qty <= 0 && opt.Policy == PolicyStandardCost {
@@ -274,10 +344,10 @@ func valueOf(mv Movement, qty float64, direction int, bal Balance, opt Options) 
 
 	amount = math.Abs(mv.SumAmount)
 	if amount == 0 && mv.PriceExcludeVat != 0 {
-		amount = myRound(qty*math.Abs(mv.PriceExcludeVat), opt.PointAmount)
+		amount = myRound(docQty*math.Abs(mv.PriceExcludeVat), opt.PointAmount)
 	}
 	if amount == 0 && mv.Price != 0 {
-		amount = myRound(qty*math.Abs(mv.Price), opt.PointAmount)
+		amount = myRound(docQty*math.Abs(mv.Price), opt.PointAmount)
 	}
 	amount = myRound(amount, opt.PointAmount)
 
@@ -285,6 +355,24 @@ func valueOf(mv Movement, qty float64, direction int, bal Balance, opt Options) 
 		unitCost = myRound(amount/qty, opt.PointCost)
 	}
 	return unitCost, amount
+}
+
+// transferValue ตีมูลค่าของบรรทัดในเอกสารโอนคลัง
+//
+// ขาออกบันทึกต้นทุนที่ใช้ไว้ให้ขาเข้าของใบเดียวกันหยิบไปใช้ ขาเข้าจึงรับของด้วยต้นทุนเดิม
+// ไม่ใช่ราคาในเอกสาร (ใบโอนมักไม่มีราคา ถ้าใช้ราคาในเอกสารของจะกลายเป็นต้นทุนศูนย์)
+// ขาเข้าที่หาขาออกคู่กันไม่เจอ ให้ใช้มูลค่าที่ตีไว้ตามปกติ ดีกว่าปล่อยเป็นศูนย์เงียบ ๆ
+func transferValue(mv Movement, qty float64, direction int, unitCost, amount float64, transferCost map[string]float64, opt Options) (float64, float64) {
+	key := mv.DocNo + "|" + mv.Barcode
+	if direction == DirectionOut {
+		transferCost[key] = unitCost
+		return unitCost, amount
+	}
+	sourceCost, ok := transferCost[key]
+	if !ok {
+		return unitCost, amount
+	}
+	return sourceCost, myRound(qty*sourceCost, opt.PointAmount)
 }
 
 // applyPolicy ปรับยอดตามนโยบายสต็อกติดลบ

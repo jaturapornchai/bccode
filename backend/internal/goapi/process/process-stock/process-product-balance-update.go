@@ -182,22 +182,24 @@ func ProcessProductBalanceUpdateByItemsAsync(db *sql.DB, holdingCode, businessCo
 
 // ==================== Query: ยอดคงเหลือ ====================
 
+// ยอดคงเหลือในตารางสินค้าต้องมาจากสมุดสต็อกที่เดียวกับรายงาน
+//
+// เดิมบวกเองจาก docdetail โดยใช้ calcflag เป็นตัวบอกทิศทาง ซึ่งเป็นทิศทางคนละชุดกับที่เครื่องคิดต้นทุนใช้
+// เมื่อสองที่ไม่ตรงกัน ยอดบนจอสินค้ากับยอดในรายงานจะต่างกันโดยไม่มีใครรู้ว่าอันไหนถูก
 func queryBalanceAll(db *sql.DB, businessCode string) (map[string]float64, error) {
-	transFlagList := myglobal.GetTransFlagsForQuery()
-	query := fmt.Sprintf(`
-		SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance
-		FROM docdetail WHERE businesscode = $1 AND transflag IN (%s) GROUP BY itemcode
-	`, transFlagList)
+	query := `
+		SELECT itemcode, SUM(direction * qty) as balance
+		FROM stock_ledger WHERE businesscode = $1 GROUP BY itemcode
+	`
 	return queryItemQtyMapWithArgs(db, query, []interface{}{businessCode})
 }
 
 func queryBalanceByItems(db *sql.DB, businessCode string, itemCodes []string) (map[string]float64, error) {
-	transFlagList := myglobal.GetTransFlagsForQuery()
 	ph, itemArgs := buildPlaceholdersOffset(itemCodes, 1)
 	query := fmt.Sprintf(`
-		SELECT itemcode, SUM((totalqty * calcflag) * unitstand / NULLIF(unitdivide, 0)) as balance
-		FROM docdetail WHERE businesscode = $1 AND transflag IN (%s) AND itemcode IN (%s) GROUP BY itemcode
-	`, transFlagList, ph)
+		SELECT itemcode, SUM(direction * qty) as balance
+		FROM stock_ledger WHERE businesscode = $1 AND itemcode IN (%s) GROUP BY itemcode
+	`, ph)
 	args := append([]interface{}{businessCode}, itemArgs...)
 	return queryItemQtyMapWithArgs(db, query, args)
 }

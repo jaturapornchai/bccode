@@ -40,18 +40,6 @@ CREATE TABLE IF NOT EXISTS deadletterqueue (
     INDEX idxdlqfailedat (failedat)
 );
 
--- Table: distributedlocks
--- แทนที่ Redis String (stock:calc:{holdingCode}:{itemCode})
-CREATE TABLE IF NOT EXISTS distributedlocks (
-    lockkey VARCHAR(500) PRIMARY KEY,
-    owner VARCHAR(100) NOT NULL,
-    acquiredat TIMESTAMP NOT NULL DEFAULT NOW(),
-    expiresat TIMESTAMP NOT NULL,
-
-    -- Index สำหรับ cleanup expired locks
-    INDEX idxlocksexpiresat (expiresat)
-);
-
 -- ========================================
 -- Functions & Triggers
 -- ========================================
@@ -69,20 +57,6 @@ CREATE TRIGGER updatequeuesupdatedat
     BEFORE UPDATE ON queues
     FOR EACH ROW
     EXECUTE FUNCTION updateupdatedatcolumn();
-
--- Function: ทำความสะอาด expired locks
-CREATE OR REPLACE FUNCTION cleanupexpiredlocks()
-RETURNS INTEGER AS $$
-DECLARE
-    deletedcount INTEGER;
-BEGIN
-    DELETE FROM distributedlocks
-    WHERE expiresat < NOW();
-
-    GET DIAGNOSTICS deletedcount = ROW_COUNT;
-    RETURN deletedcount;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Function: ดึงงานจาก queue (Pop with status update)
 CREATE OR REPLACE FUNCTION popfromqueue(pholdingcode VARCHAR)

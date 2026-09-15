@@ -78,6 +78,11 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 		req.Offset = 0
 	}
 
+	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
+	if scopeErr != nil {
+		return scopeErr.respond(c)
+	}
+
 	// Connect to database
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
@@ -95,9 +100,9 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 
 	// Build appropriate query based on report type
 	if req.ReportType == "detail" {
-		query, args = buildSalesReportDetailQuery(fromDate, toDate, req.BranchCodes, req.ProductCodes, req.SortAscending, req.Limit, req.Offset)
+		query, args = buildSalesReportDetailQuery(fromDate, toDate, businessCode, req.BranchCodes, req.ProductCodes, req.SortAscending, req.Limit, req.Offset)
 	} else {
-		query, args = buildSalesReportHeaderQuery(fromDate, toDate, req.BranchCodes, req.ProductCodes, req.SortAscending, req.Limit, req.Offset)
+		query, args = buildSalesReportHeaderQuery(fromDate, toDate, businessCode, req.BranchCodes, req.ProductCodes, req.SortAscending, req.Limit, req.Offset)
 	}
 
 	rows, err := db.QueryContext(ctx, query, args...)
@@ -153,10 +158,12 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 }
 
 // buildSalesReportHeaderQuery - สร้าง query สำหรับรายงานขายแบบสรุป (ป้องกัน SQL injection)
-func buildSalesReportHeaderQuery(fromDate, toDate time.Time, branchCodes, productCodes []string, sortAscending bool, limit, offset int) (string, []any) {
+func buildSalesReportHeaderQuery(fromDate, toDate time.Time, businessCode string, branchCodes, productCodes []string, sortAscending bool, limit, offset int) (string, []any) {
 	args := make([]any, 0)
 	argIndex := 1
 
+	// จำนวนและมูลค่าในสมุดสต็อกเป็นบวกเสมอ ทิศทางอยู่ที่คอลัมน์ direction
+	// รายงานขายจึงไม่ต้องคูณ -1 เหมือนตารางเดิมที่เก็บยอดขายเป็นค่าลบ
 	query := `
 SELECT
   CAST(MAX(p.docdatetime) + INTERVAL '7 hour' AS DATE) as docdate,
@@ -166,19 +173,20 @@ SELECT
   COALESCE(doc.custcode, '') as debtorcode,
   COALESCE(d.name0, '') as debtorname,
   COALESCE(MAX(doc.totalamount), 0) as totalqty,
-  (SUM(p.totalqty * p.price) * -1) as totalamount,
+  SUM(p.docvalue) as totalamount,
   AVG(p.price) as price,
-  AVG(p.averagecost) as averagecost,
-  (SUM(p.calcamount) * -1) as calcamount,
-  ((SUM(p.totalqty * p.price) * -1) - (SUM(p.calcamount) * -1)) as grossprofit
-FROM public.processstockcost p
-LEFT JOIN public.doc doc ON p.docno = doc.docno
+  AVG(p.unitcost) as averagecost,
+  SUM(p.amount) as calcamount,
+  (SUM(p.docvalue) - SUM(p.amount)) as grossprofit
+FROM public.stock_ledger p
+LEFT JOIN public.doc doc ON doc.businesscode = p.businesscode AND doc.docno = p.docno
 LEFT JOIN public.debtor d ON doc.custcode = d.code
 WHERE p.transflag = 44
+  AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2`
 
-	args = append(args, fromDate, toDate)
-	argIndex = 3
+	args = append(args, fromDate, toDate, businessCode)
+	argIndex = 4
 
 	// Add branch filter (parameterized)
 	if len(branchCodes) > 0 {
@@ -192,8 +200,9 @@ WHERE p.transflag = 44
 		query += fmt.Sprintf(`
   AND p.docno IN (
     SELECT DISTINCT sub.docno
-    FROM public.processstockcost sub
+    FROM public.stock_ledger sub
     WHERE sub.transflag = 44
+      AND sub.businesscode = $3
       AND sub.docdatetime >= $1 AND sub.docdatetime < $2
       AND sub.itemcode = ANY($%d)`, argIndex)
 		args = append(args, pq.Array(productCodes))
@@ -221,7 +230,7 @@ WHERE p.transflag = 44
 }
 
 // buildSalesReportDetailQuery - สร้าง query สำหรับรายงานขายแบบรายละเอียด (ป้องกัน SQL injection)
-func buildSalesReportDetailQuery(fromDate, toDate time.Time, branchCodes, productCodes []string, sortAscending bool, limit, offset int) (string, []any) {
+func buildSalesReportDetailQuery(fromDate, toDate time.Time, businessCode string, branchCodes, productCodes []string, sortAscending bool, limit, offset int) (string, []any) {
 	args := make([]any, 0)
 	argIndex := 1
 
@@ -236,13 +245,13 @@ SELECT
   COALESCE(item_lookup.itemname, '') as itemname,
   p.barcode,
   COALESCE(unit_lookup.unitname, '') as unitname,
-  (p.totalqty * -1) as totalqty,
-  (p.totalqty * p.price * -1) as totalamount,
-  (p.calcamount * -1) as calcamount,
+  p.docqty as totalqty,
+  p.docvalue as totalamount,
+  p.amount as calcamount,
   p.price,
-  p.averagecost,
-  ((p.totalqty * p.price * -1) - (p.calcamount * -1)) as grossprofit
-FROM public.processstockcost p
+  p.unitcost as averagecost,
+  (p.docvalue - p.amount) as grossprofit
+FROM public.stock_ledger p
 LEFT JOIN LATERAL (
   SELECT STRING_AGG(DISTINCT pb.name0, ', ') AS itemname
   FROM public.productbarcode pb
@@ -256,10 +265,11 @@ LEFT JOIN LATERAL (
   WHERE pb.barcode = p.barcode
 ) unit_lookup ON TRUE
 WHERE p.transflag = 44
+  AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2`
 
-	args = append(args, fromDate, toDate)
-	argIndex = 3
+	args = append(args, fromDate, toDate, businessCode)
+	argIndex = 4
 
 	// Add branch filter (parameterized)
 	if len(branchCodes) > 0 {
@@ -273,8 +283,9 @@ WHERE p.transflag = 44
 		query += fmt.Sprintf(`
   AND p.docno IN (
     SELECT DISTINCT sub.docno
-    FROM public.processstockcost sub
+    FROM public.stock_ledger sub
     WHERE sub.transflag = 44
+      AND sub.businesscode = $3
       AND sub.docdatetime >= $1 AND sub.docdatetime < $2
       AND sub.itemcode = ANY($%d)`, argIndex)
 		args = append(args, pq.Array(productCodes))
@@ -333,6 +344,11 @@ func SalesReportSummaryHandler(c echo.Context) error {
 	}
 	toDate = toDate.AddDate(0, 0, 1)
 
+	businessCode, scopeErr := reportCompanyScope(c, req.HoldingCode)
+	if scopeErr != nil {
+		return scopeErr.respond(c)
+	}
+
 	db, err := mypg.PgSqlFastConnect(req.HoldingCode)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -344,7 +360,7 @@ func SalesReportSummaryHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	query, args := buildSalesReportSummaryQuery(fromDate, toDate, req.BranchCodes, req.ProductCodes)
+	query, args := buildSalesReportSummaryQuery(fromDate, toDate, businessCode, req.BranchCodes, req.ProductCodes)
 
 	var totalDocuments int64
 	var totalAmount, totalCost, totalProfit float64
@@ -372,22 +388,23 @@ func SalesReportSummaryHandler(c echo.Context) error {
 }
 
 // buildSalesReportSummaryQuery - สร้าง query สำหรับสรุปยอดขาย
-func buildSalesReportSummaryQuery(fromDate, toDate time.Time, branchCodes, productCodes []string) (string, []any) {
+func buildSalesReportSummaryQuery(fromDate, toDate time.Time, businessCode string, branchCodes, productCodes []string) (string, []any) {
 	args := make([]any, 0)
 	argIndex := 1
 
 	query := `
 SELECT
   COUNT(DISTINCT p.docno) as total_documents,
-  COALESCE(SUM(p.totalqty * p.price) * -1, 0) as totalamount,
-  COALESCE(SUM(p.calcamount) * -1, 0) as totalcost,
-  COALESCE((SUM(p.totalqty * p.price) * -1) - (SUM(p.calcamount) * -1), 0) as total_profit
-FROM public.processstockcost p
+  COALESCE(SUM(p.docvalue), 0) as totalamount,
+  COALESCE(SUM(p.amount), 0) as totalcost,
+  COALESCE(SUM(p.docvalue) - SUM(p.amount), 0) as total_profit
+FROM public.stock_ledger p
 WHERE p.transflag = 44
+  AND p.businesscode = $3
   AND p.docdatetime >= $1 AND p.docdatetime < $2`
 
-	args = append(args, fromDate, toDate)
-	argIndex = 3
+	args = append(args, fromDate, toDate, businessCode)
+	argIndex = 4
 
 	if len(branchCodes) > 0 {
 		query += fmt.Sprintf(" AND p.whcode = ANY($%d)", argIndex)

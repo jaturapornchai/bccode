@@ -18,7 +18,7 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/goapi/myretry"
 	processdoc "smlcloudplatform/internal/goapi/process/process-doc"
-	processstock "smlcloudplatform/internal/goapi/process/process-stock"
+	"smlcloudplatform/internal/goapi/process/stockengine"
 )
 
 // MessageConsumer interface for message consumers
@@ -150,17 +150,44 @@ func LogMessageInfo(consumerName string, msg string) {
 // Common Document Processing Functions
 // ============================================================================
 
-// ProcessDocumentStockCalculation - คำนวณต้นทุนสินค้าสำหรับเอกสาร (ใช้ร่วมกันได้ทุก document type)
+// ProcessDocumentStockCalculation - ฝากงานคิดต้นทุนของเอกสารเข้าคิว (ใช้ร่วมกันได้ทุก document type)
+//
+// ไม่คำนวณในตัว consumer เพราะเอกสารหนึ่งใบกระทบสินค้าได้หลายสิบตัว
+// และเอกสารหลายใบมักแตะสินค้าตัวเดียวกัน คิวจะยุบงานซ้ำให้เหลือครั้งเดียวต่อสินค้า
+// ยอดคงเหลือในตารางสินค้าถูกอัปเดตต่อโดยตัวประมวลผลหลังคำนวณเสร็จ (stockengine.AfterRecalculate)
+//
 // Parameters:
 //   - db: database connection (*sql.DB)
 //   - holdingCode: holding Code
 //   - docDetailStructs: รายการสินค้าในเอกสาร ([]models.DocDetailStruct)
-//   - stepNumber: เลข step สำหรับ log (เช่น 11, 12)
+//   - stepNumber: เลข step สำหรับ log (เช่น 9, 10)
 //
 // Returns: error
 func ProcessDocumentStockCalculation(db *sql.DB, holdingCode string, docDetailStructs []models.DocDetailStruct, stepNumber int) error {
-	// Use incremental mode by default for Kafka consumer
-	return ProcessDocumentStockCalculationWithOptions(db, holdingCode, docDetailStructs, stepNumber, true, true)
+	itemCodes := make(map[string]bool, len(docDetailStructs))
+	for _, detail := range docDetailStructs {
+		if _, ok := stockengine.DirectionOf(detail.TransFlag); !ok {
+			continue // เอกสารที่ไม่กระทบสต็อก นับเป็นไม่มีงานต้องคิด
+		}
+		businessCode := strings.ToUpper(strings.TrimSpace(detail.BusinessCode))
+		itemCode := strings.ToUpper(strings.TrimSpace(detail.ItemCode))
+		if businessCode == "" || itemCode == "" {
+			return fmt.Errorf("stock calculation requires businesscode and itemcode")
+		}
+		itemCodes[itemCode] = true
+	}
+
+	if len(itemCodes) == 0 {
+		logger.Warn("Step %d skipped: No items to calculate cost", stepNumber)
+		return nil
+	}
+
+	if err := EnqueueStockRecalculation(context.Background(), db, holdingCode, docDetailStructs); err != nil {
+		return fmt.Errorf("queue stock recalculation: %w", err)
+	}
+
+	logger.Success("Step %d completed: queued %d item(s) for the stock engine", stepNumber, len(itemCodes))
+	return nil
 }
 
 func setDocumentCompany(doc *models.DocStruct, details []models.DocDetailStruct, businessCode string) {
@@ -169,117 +196,6 @@ func setDocumentCompany(doc *models.DocStruct, details []models.DocDetailStruct,
 	for i := range details {
 		details[i].BusinessCode = businessCode
 	}
-}
-
-// ProcessDocumentStockCalculationWithOptions - คำนวณต้นทุนสินค้าพร้อม options
-// Parameters:
-//   - db: database connection (*sql.DB)
-//   - holdingCode: holding Code
-//   - docDetailStructs: รายการสินค้าในเอกสาร ([]models.DocDetailStruct)
-//   - stepNumber: เลข step สำหรับ log (เช่น 11, 12)
-//   - incremental: ถ้า true จะตรวจสอบ checksum ก่อน และข้ามถ้าไม่มีการเปลี่ยนแปลง
-//   - minimalLog: ถ้า true จะใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL log
-//
-// Returns: error
-func ProcessDocumentStockCalculationWithOptions(db *sql.DB, holdingCode string, docDetailStructs []models.DocDetailStruct, stepNumber int, incremental, minimalLog bool) error {
-	logger.Debug("Step %d: Starting stock calculation (incremental=%v, minimalLog=%v)...", stepNumber, incremental, minimalLog)
-
-	// รวบรวม unique itemcodes จาก docdetails
-	itemCodeMap := make(map[string]bool)
-	businessCode := ""
-
-	for _, detail := range docDetailStructs {
-		detailBusinessCode := strings.ToUpper(strings.TrimSpace(detail.BusinessCode))
-		itemCode := strings.ToUpper(strings.TrimSpace(detail.ItemCode))
-		if detailBusinessCode == "" || itemCode == "" {
-			return fmt.Errorf("stock calculation requires businesscode and itemcode")
-		}
-		if businessCode != "" && detailBusinessCode != businessCode {
-			return fmt.Errorf("stock calculation cannot mix businesscodes")
-		}
-		businessCode = detailBusinessCode
-		itemCodeMap[itemCode] = true
-	}
-
-	if len(itemCodeMap) == 0 {
-		logger.Warn("Step %d skipped: No items to calculate cost", stepNumber)
-		return nil
-	}
-
-	// เส้นทางปกติ: ฝากงานไว้ให้ worker คำนวณ consumer จึงไม่ต้องรอการคิดต้นทุนของสินค้าทุกตัว
-	if UseStockEngineV2() {
-		if err := EnqueueStockRecalculation(context.Background(), db, holdingCode, docDetailStructs); err != nil {
-			return fmt.Errorf("queue stock recalculation: %w", err)
-		}
-		logger.Success("Step %d completed: queued %d item(s) for the stock engine", stepNumber, len(itemCodeMap))
-		return nil
-	}
-
-	// ใช้ค่าทศนิยมจาก global config
-	pointQty := myglobal.ConfigSystem.StockQtyPoint       // ทศนิยมจำนวน
-	pointAmount := myglobal.ConfigSystem.StockAmountPoint // ทศนิยมมูลค่า
-	pointCost := myglobal.ConfigSystem.StockCostPoint     // ทศนิยมต้นทุน
-
-	logger.Info("Using decimal points: Qty=%d, Amount=%d, Cost=%d", pointQty, pointAmount, pointCost)
-
-	// Track stats for incremental mode
-	totalItems := len(itemCodeMap)
-	skippedItems := 0
-	processedItems := 0
-
-	// คำนวณต้นทุนทีละ itemcode
-	itemCount := 0
-	for itemCode := range itemCodeMap {
-		itemCount++
-		logger.Info("Calculating cost for item %d/%d: %s", itemCount, totalItems, itemCode)
-
-		if incremental {
-			// Use incremental mode with checksum checking
-			processstock.ProductCalcCostIncrementalCompany(
-				db,          // database connection
-				holdingCode, // holdingCode
-				businessCode,
-				itemCode,    // itemCodeForProcess
-				pointQty,    // pointQty (จาก global config)
-				pointAmount, // pointAmount (จาก global config)
-				pointCost,   // pointCost (จาก global config)
-				true,        // incremental
-				minimalLog,  // minimalLog
-			)
-		} else {
-			// Legacy mode: delete first then insert
-			processstock.ProductCalcCostCompany(
-				db,          // database connection
-				holdingCode, // holdingCode
-				businessCode,
-				itemCode,    // itemCodeForProcess
-				pointQty,    // pointQty (จาก global config)
-				pointAmount, // pointAmount (จาก global config)
-				pointCost,   // pointCost (จาก global config)
-				true,        // deleteFrist (ลบข้อมูลเก่าก่อน)
-			)
-		}
-
-		processedItems++
-		logger.Success("Completed cost calculation for item: %s", itemCode)
-	}
-
-	// Log stats
-	if incremental {
-		logger.Info("Incremental calculation stats | shop=%s total=%d skipped=%d processed=%d",
-			holdingCode, totalItems, skippedItems, processedItems)
-	}
-
-	logger.Success("Step %d completed: Calculated cost for %d items", stepNumber, totalItems)
-
-	// Update product balance + ค้างรับ + ค้างส่ง (async — ไม่ block Kafka consumer)
-	itemCodeList := make([]string, 0, len(itemCodeMap))
-	for code := range itemCodeMap {
-		itemCodeList = append(itemCodeList, code)
-	}
-	processstock.ProcessProductBalanceUpdateByItemsAsync(db, holdingCode, businessCode, itemCodeList)
-
-	return nil
 }
 
 // InsertDocumentToPostgreSQL - Insert เอกสารไปยัง PostgreSQL (ใช้ร่วมกัน)
@@ -486,6 +402,13 @@ func DeleteDocumentFromDatabases(ctx context.Context, holdingCode, businessCode,
 		return fmt.Errorf("failed to soft delete from PostgreSQL: %w", err)
 	}
 	logger.Info("[SoftDelete] PostgreSQL: docno=%s, transflag=%d — isdelete=true", docNo, transFlag)
+
+	// เอกสารที่ถูกลบต้องคิดต้นทุนใหม่ ไม่งั้นของที่ลบไปแล้วยังกินสต็อกอยู่ในสมุดสต็อกตลอดไป
+	// บรรทัดเอกสารยังอยู่ครบ (ลบแค่หัวเอกสารด้วยการทำเครื่องหมาย) จึงยังอ่านวันที่เดิมได้
+	if err := stockengine.MarkDocumentDirty(ctx, db, businessCode, docNo, transFlag, "docdelete"); err != nil {
+		logger.Error("ตั้งงานคิดต้นทุนใหม่หลังลบเอกสาร %s ล้มเหลว: %v", docNo, err)
+	}
+	stockengine.EnsureWorker(holdingCode, db, mypg.ListenerDSN(holdingCode))
 
 	// Soft delete ใน ClickHouse
 	SoftDeleteDocClickHouse(ctx, holdingCode, docNo)

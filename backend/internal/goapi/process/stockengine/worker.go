@@ -18,10 +18,18 @@ import (
 // รอบตรวจเองจึงเป็นเพียงตาข่ายกันพลาด ไม่ใช่กลไกหลัก
 const fallbackInterval = 15 * time.Second
 
+// AfterRecalculate ถูกเรียกหลังคำนวณต้นทุนสินค้าหนึ่งตัวเสร็จ
+//
+// มีไว้ให้ส่วนอื่นที่เก็บยอดสรุปไว้ใช้งาน (เช่นยอดคงเหลือในตารางสินค้า) อัปเดตตามทันที
+// ต้องเรียกหลังการคำนวณเสร็จเท่านั้น ไม่ใช่ตอนรับเอกสาร เพราะตอนนั้นสมุดสต็อกยังไม่ถูกเขียน
+// กำหนดค่าครั้งเดียวตอนระบบเริ่มทำงาน (bootstrap) เพื่อไม่ให้เกิดการอ้างอิงวนระหว่างแพ็กเกจ
+var AfterRecalculate func(db *sql.DB, holdingCode, businessCode, itemCode string)
+
 // Worker คำนวณต้นทุนสินค้าที่ค้างอยู่ในคิวของฐานข้อมูลหนึ่งฐาน
 type Worker struct {
 	DB           *sql.DB
 	DSN          string
+	HoldingCode  string
 	Owner        string
 	BatchSize    int
 	TransFlags   []int
@@ -109,6 +117,9 @@ func (w *Worker) process(ctx context.Context, item DirtyItem) {
 	rows, err := Recalculate(ctx, w.DB, scope, w.TransFlags, w.Options)
 	if err == nil {
 		logger.Debug("stock engine recalculated %s/%s: %d rows", item.BusinessCode, item.ItemCode, rows)
+		if AfterRecalculate != nil {
+			AfterRecalculate(w.DB, w.HoldingCode, item.BusinessCode, item.ItemCode)
+		}
 		return
 	}
 

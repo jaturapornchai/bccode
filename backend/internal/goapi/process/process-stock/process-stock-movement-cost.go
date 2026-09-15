@@ -14,7 +14,7 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func ProcessProductMovement(holdingCode string, fromDate string, endDate string, movementOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) models.ResultModel {
+func ProcessProductMovement(holdingCode, businessCode string, fromDate string, endDate string, movementOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) models.ResultModel {
 
 	ctx := context.Background()
 
@@ -35,20 +35,22 @@ func ProcessProductMovement(holdingCode string, fromDate string, endDate string,
 		var query string
 		var args []any
 
+		args = []any{fromDate, endDate, businessCode}
+		itemCodeFilter := ""
 		if len(itemCodeList) > 0 {
-			// Build parameterized query for item code list
 			placeholders := make([]string, len(itemCodeList))
 			for i, itemCode := range itemCodeList {
-				placeholders[i] = fmt.Sprintf("$%d", i+3)
+				placeholders[i] = fmt.Sprintf("$%d", i+4)
 				args = append(args, itemCode)
 			}
-			query = "SELECT DISTINCT itemcode FROM processstockcost WHERE itemcode IN (" + strings.Join(placeholders, ",") + ") AND docdatetime::date >= $1::date AND docdatetime::date <= $2::date ORDER BY itemcode"
-			// Prepend fromDate and endDate to args
-			args = append([]any{fromDate, endDate}, args...)
-		} else {
-			query = "SELECT DISTINCT itemcode FROM processstockcost WHERE docdatetime::date >= $1::date AND docdatetime::date <= $2::date ORDER BY itemcode"
-			args = []any{fromDate, endDate}
+			itemCodeFilter = " AND itemcode IN (" + strings.Join(placeholders, ",") + ")"
 		}
+		query = `SELECT DISTINCT itemcode
+			FROM stock_ledger
+			WHERE businesscode = $3
+			  AND docdatetime::date >= $1::date
+			  AND docdatetime::date <= $2::date` + itemCodeFilter + `
+			ORDER BY itemcode`
 
 		logger.Info("query: %s", query)
 
@@ -125,7 +127,7 @@ func ProcessProductMovement(holdingCode string, fromDate string, endDate string,
 		}
 	}
 	{
-		// ดึงยอดคงเหลือจาก processstockcost ทั้งหมดในครั้งเดียว (ปรับปรุงแล้ว)
+		// ดึงยอดคงเหลือจากสมุดสต็อกทั้งหมดในครั้งเดียว
 		if len(itemCodeDataList) > 0 {
 			// สร้าง list ของ itemcodes
 			var itemCodes []string
@@ -138,15 +140,16 @@ func ProcessProductMovement(holdingCode string, fromDate string, endDate string,
 
 			// สร้าง placeholders สำหรับ IN clause
 			placeholders := make([]string, len(itemCodes))
-			args := make([]interface{}, 0, len(itemCodes)+2)
-			args = append(args, fromDate, endDate)
+			args := make([]interface{}, 0, len(itemCodes)+3)
+			args = append(args, fromDate, endDate, businessCode)
 
 			for i, itemCode := range itemCodes {
-				placeholders[i] = fmt.Sprintf("$%d", i+3)
+				placeholders[i] = fmt.Sprintf("$%d", i+4)
 				args = append(args, itemCode)
 			}
 
 			// Query เดียวสำหรับทุก itemcode
+			// เรียงตามคีย์ลำดับต้นทุน รายงานจึงแสดงรายการเรียงเหมือนที่เครื่องคิดต้นทุนเดินจริง
 			queryAllStockMovement := fmt.Sprintf(`SELECT
 				docdatetime,
 				barcode,
@@ -156,22 +159,23 @@ func ProcessProductMovement(holdingCode string, fromDate string, endDate string,
 				unitcode,
 				whcode,
 				locationcode,
-				totalqty,
+				docqty AS totalqty,
 				unitstand,
 				unitdivide,
 				price,
-				averagecost,
+				avgcost AS averagecost,
 				balanceqty,
-				calcamount,
+				amount AS calcamount,
 				balanceamount,
 				unitcost,
 				docref
-			FROM processstockcost
+			FROM stock_ledger
 			WHERE
-				docdatetime::date >= $1::date
+				businesscode = $3
+				AND docdatetime::date >= $1::date
 				AND docdatetime::date <= $2::date
 				AND itemcode IN (%s)
-			ORDER BY itemcode, docdatetime, linenumber, totalqty`,
+			ORDER BY itemcode, docdatetime, behindindex, docno, linenumber`,
 				strings.Join(placeholders, ","))
 
 			logger.Info("Querying stock movement for %d items from %s to %s...", len(itemCodes), fromDate, endDate)

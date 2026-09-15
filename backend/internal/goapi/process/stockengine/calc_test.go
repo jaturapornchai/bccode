@@ -279,6 +279,41 @@ func TestInboundFallsBackToUnitPrice(t *testing.T) {
 	approx(t, res.Rows[0].AvgCost, 25, "average cost")
 }
 
+// ราคาต่อหน่วยในเอกสารเป็นราคาต่อหน่วยที่ซื้อขายจริง (เช่นต่อลัง) ไม่ใช่ต่อหน่วยฐาน
+// ถ้าเอาไปคูณกับจำนวนหน่วยฐาน มูลค่าจะบานตามตัวคูณของหน่วยนับ
+func TestPriceFallbackUsesDocumentUnitNotBaseUnit(t *testing.T) {
+	m := mv("PU001", 1, 12, 2, 0, day(1)) // ซื้อ 2 ลัง ไม่ส่งมูลค่ารวมมา
+	m.UnitStand = 12                      // 1 ลัง = 12 ชิ้น
+	m.UnitDivide = 1
+	m.PriceExcludeVat = 600 // 600 บาทต่อลัง
+
+	res := Calculate(nil, []Movement{m}, DefaultOptions())
+	approx(t, res.Rows[0].Qty, 24, "base quantity")
+	approx(t, res.Rows[0].Amount, 1200, "value is 2 boxes x 600, not 24 pieces x 600")
+	approx(t, res.Rows[0].AvgCost, 50, "cost per piece")
+}
+
+// รายงานขายต้องอ่านจำนวนและมูลค่าตามเอกสารได้จากสมุดสต็อกโดยตรง
+func TestLedgerKeepsDocumentFacts(t *testing.T) {
+	buy := mv("PU001", 1, 12, 2, 2400, day(1))
+	buy.UnitStand = 12
+	buy.UnitDivide = 1
+	buy.Price = 1200
+
+	sell := mv("SA001", 1, 44, 3, 750, day(2)) // ขาย 3 ชิ้น มูลค่า 750
+	sell.Price = 250
+
+	res := Calculate(nil, []Movement{buy, sell}, DefaultOptions())
+
+	approx(t, res.Rows[0].DocQty, 2, "document quantity stays in document units")
+	approx(t, res.Rows[0].Price, 1200, "document price")
+	approx(t, res.Rows[0].DocValue, 2400, "purchase value")
+
+	approx(t, res.Rows[1].Qty, 3, "sold base quantity")
+	approx(t, res.Rows[1].DocValue, 750, "sale value comes from the document")
+	approx(t, res.Rows[1].Amount, 300, "cost of sale uses average cost, not sale value")
+}
+
 func TestClosingBalancePerPeriod(t *testing.T) {
 	res := Calculate(nil, []Movement{
 		mv("PU001", 1, 12, 10, 1000, time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)),
@@ -330,4 +365,56 @@ func TestPeriodKeyUsesBusinessTimezone(t *testing.T) {
 	if got := PeriodKeyOf(lateFebruary); got != "2026-02" {
 		t.Errorf("period of 28 February 23:30 ICT = %s, want 2026-02", got)
 	}
+}
+
+// โอนคลังต้องมีสองขาในใบเดียว ของออกจากคลังต้นทางแล้วเข้าคลังปลายทางด้วยต้นทุนเดิม
+// ยอดรวมทั้งบริษัททั้งจำนวนและมูลค่าต้องเท่าเดิมหลังโอน
+func TestWarehouseTransferKeepsTotalStockAndValue(t *testing.T) {
+	buy := mv("PU001", 1, 12, 10, 1000, day(1)) // ซื้อเข้า WH01 10 ชิ้น @100
+
+	transferOut := mv("TF001", 1, TransFlagStockTransfer, -4, 0, day(2))
+	transferOut.CalcFlag = -1
+
+	transferIn := mv("TF001", 2, TransFlagStockTransfer, 4, 0, day(2))
+	transferIn.CalcFlag = 1
+	transferIn.WhCode = "WH02"
+
+	res := Calculate(nil, []Movement{buy, transferOut, transferIn}, DefaultOptions())
+	if len(res.Rows) != 3 {
+		t.Fatalf("rows = %d, want 3", len(res.Rows))
+	}
+
+	out, in := res.Rows[1], res.Rows[2]
+	if out.Direction != DirectionOut {
+		t.Errorf("transfer out direction = %d, want %d", out.Direction, DirectionOut)
+	}
+	if in.Direction != DirectionIn {
+		t.Errorf("transfer in direction = %d, want %d (destination must receive the goods)", in.Direction, DirectionIn)
+	}
+	approx(t, in.UnitCost, 100, "destination unit cost follows the source cost")
+	approx(t, in.Amount, 400, "destination value")
+	approx(t, out.BalanceQty, 6, "source balance quantity")
+	approx(t, in.BalanceQty, 4, "destination balance quantity")
+
+	totalQty := out.BalanceQty + in.BalanceQty
+	totalAmount := out.BalanceAmount + in.BalanceAmount
+	approx(t, totalQty, 10, "total quantity across warehouses is unchanged")
+	approx(t, totalAmount, 1000, "total value across warehouses is unchanged")
+}
+
+// ใบโอนไม่มีราคาในเอกสาร ถ้าตีมูลค่าขาเข้าด้วยราคาเอกสารของจะกลายเป็นต้นทุนศูนย์
+func TestWarehouseTransferInDoesNotUseDocumentPrice(t *testing.T) {
+	buy := mv("PU001", 1, 12, 10, 2500, day(1)) // ต้นทุน 250 ต่อชิ้น
+
+	transferOut := mv("TF001", 1, TransFlagStockTransfer, -2, 0, day(2))
+	transferOut.CalcFlag = -1
+	transferIn := mv("TF001", 2, TransFlagStockTransfer, 2, 0, day(2))
+	transferIn.CalcFlag = 1
+	transferIn.WhCode = "WH02"
+	transferIn.Price = 999 // ราคาขายที่ติดมากับเอกสาร ต้องไม่ถูกใช้เป็นต้นทุน
+
+	res := Calculate(nil, []Movement{buy, transferOut, transferIn}, DefaultOptions())
+	in := res.Rows[2]
+	approx(t, in.UnitCost, 250, "destination cost is the source average cost")
+	approx(t, in.BalanceAmount, 500, "destination value")
 }

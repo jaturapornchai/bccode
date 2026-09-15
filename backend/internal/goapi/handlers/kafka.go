@@ -1224,9 +1224,6 @@ func GetConsumerStatus(c echo.Context) error {
 				"when-purchasereturn-created",
 				"when-purchasereturn-updated",
 				"when-purchasereturn-deleted",
-				"when-purchasereceive-created",
-				"when-purchasereceive-updated",
-				"when-purchasereceive-deleted",
 			},
 			"stock_transfer": []string{
 				"when-stocktransfer-created",

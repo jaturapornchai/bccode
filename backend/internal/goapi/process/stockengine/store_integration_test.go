@@ -55,11 +55,13 @@ func createSchema(t *testing.T, db *sql.DB) {
 	t.Helper()
 	statements := []string{
 		`CREATE TABLE doc (
-			businesscode TEXT NOT NULL DEFAULT '', docno TEXT, iscancel BOOLEAN DEFAULT FALSE)`,
+			businesscode TEXT NOT NULL DEFAULT '', docno TEXT,
+			iscancel BOOLEAN DEFAULT FALSE, isdelete BOOLEAN DEFAULT FALSE)`,
 		`CREATE TABLE docdetail (
 			id SERIAL PRIMARY KEY, businesscode TEXT NOT NULL DEFAULT '',
 			docdatetime TIMESTAMPTZ, docno TEXT, docref TEXT, linenumber INT,
-			transflag INT, behindindex INT NOT NULL DEFAULT 0, itemcode TEXT,
+			transflag INT, calcflag INT NOT NULL DEFAULT 0,
+			behindindex INT NOT NULL DEFAULT 0, itemcode TEXT,
 			barcode TEXT, unitcode TEXT, whcode TEXT, locationcode TEXT,
 			totalqty NUMERIC(18,8), unitstand NUMERIC(18,8), unitdivide NUMERIC(18,8),
 			price NUMERIC(18,2), priceexcludevat NUMERIC(18,2), sumamount NUMERIC(18,2))`,
@@ -71,6 +73,9 @@ func createSchema(t *testing.T, db *sql.DB) {
 			locationcode TEXT NOT NULL DEFAULT '', barcode TEXT NOT NULL DEFAULT '',
 			unitcode TEXT NOT NULL DEFAULT '', docref TEXT NOT NULL DEFAULT '',
 			transflag INT NOT NULL, direction SMALLINT NOT NULL,
+			docqty NUMERIC(18,8) NOT NULL DEFAULT 0, unitstand NUMERIC(18,8) NOT NULL DEFAULT 1,
+			unitdivide NUMERIC(18,8) NOT NULL DEFAULT 1, price NUMERIC(18,8) NOT NULL DEFAULT 0,
+			docvalue NUMERIC(18,8) NOT NULL DEFAULT 0,
 			qty NUMERIC(18,8) NOT NULL, unitcost NUMERIC(18,8) NOT NULL, amount NUMERIC(18,8) NOT NULL,
 			balanceqty NUMERIC(18,8) NOT NULL, balanceamount NUMERIC(18,8) NOT NULL,
 			avgcost NUMERIC(18,8) NOT NULL, calculatedat TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -90,9 +95,14 @@ func createSchema(t *testing.T, db *sql.DB) {
 		`CREATE TABLE stock_dirty (
 			businesscode TEXT NOT NULL, itemcode TEXT NOT NULL, fromdate TIMESTAMPTZ NOT NULL,
 			reason TEXT NOT NULL DEFAULT 'doc', enqueuedat TIMESTAMPTZ NOT NULL DEFAULT now(),
+			markedat TIMESTAMPTZ NOT NULL DEFAULT now(),
 			attempts INT NOT NULL DEFAULT 0, lasterror TEXT NOT NULL DEFAULT '',
 			leaseowner TEXT, leaseuntil TIMESTAMPTZ,
 			CONSTRAINT stock_dirty_pk PRIMARY KEY (businesscode, itemcode))`,
+		`CREATE TABLE stock_dead_letter (
+			id BIGSERIAL PRIMARY KEY, businesscode TEXT NOT NULL, itemcode TEXT NOT NULL,
+			fromdate TIMESTAMPTZ NOT NULL, attempts INT NOT NULL DEFAULT 0,
+			lasterror TEXT NOT NULL DEFAULT '', failedat TIMESTAMPTZ NOT NULL DEFAULT now())`,
 		`CREATE TABLE deadletterqueue (
 			id BIGSERIAL PRIMARY KEY, holdingcode VARCHAR(100) NOT NULL, docno VARCHAR(100) NOT NULL,
 			transflag VARCHAR(10) NOT NULL, retrycount INTEGER NOT NULL DEFAULT 0,
@@ -110,12 +120,14 @@ type docLine struct {
 	docNo       string
 	line        int
 	transFlag   int
+	calcFlag    int
 	qty         float64
 	sumAmount   float64
 	when        time.Time
 	behindIndex int
 	whCode      string
 	cancelled   bool
+	deleted     bool
 }
 
 func insertDoc(t *testing.T, db *sql.DB, business, item string, lines ...docLine) {
@@ -127,17 +139,17 @@ func insertDoc(t *testing.T, db *sql.DB, business, item string, lines ...docLine
 			wh = "WH01"
 		}
 		if !seen[l.docNo] {
-			if _, err := db.Exec(`INSERT INTO doc (businesscode, docno, iscancel) VALUES ($1,$2,$3)`,
-				business, l.docNo, l.cancelled); err != nil {
+			if _, err := db.Exec(`INSERT INTO doc (businesscode, docno, iscancel, isdelete) VALUES ($1,$2,$3,$4)`,
+				business, l.docNo, l.cancelled, l.deleted); err != nil {
 				t.Fatalf("insert doc: %v", err)
 			}
 			seen[l.docNo] = true
 		}
 		if _, err := db.Exec(`
-			INSERT INTO docdetail (businesscode, docdatetime, docno, linenumber, transflag, behindindex,
+			INSERT INTO docdetail (businesscode, docdatetime, docno, linenumber, transflag, calcflag, behindindex,
 				itemcode, whcode, unitcode, totalqty, unitstand, unitdivide, price, priceexcludevat, sumamount)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'EA',$9,1,1,0,0,$10)`,
-			business, l.when, l.docNo, l.line, l.transFlag, l.behindIndex,
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'EA',$10,1,1,0,0,$11)`,
+			business, l.when, l.docNo, l.line, l.transFlag, l.calcFlag, l.behindIndex,
 			item, wh, l.qty, l.sumAmount); err != nil {
 			t.Fatalf("insert docdetail: %v", err)
 		}
@@ -402,8 +414,9 @@ func TestClaimDirtyLeasesExclusively(t *testing.T) {
 	}
 }
 
-// งานที่ล้มเหลวต้องกลับเข้าคิว ไม่หายเงียบ
-func TestReleaseReturnsWorkToQueue(t *testing.T) {
+// งานที่ล้มเหลวต้องกลับเข้าคิว ไม่หายเงียบ แต่ต้องพักก่อนไม่ถูกหยิบมาลองซ้ำทันที
+// ฐานข้อมูลสะดุดหนึ่งวินาที ถ้าลองซ้ำรัวจะครบห้าครั้งในไม่กี่มิลลิวินาทีแล้วตกไปคิวงานเสียทั้งที่ไม่ได้พังจริง
+func TestReleaseReturnsWorkToQueueAfterBackoff(t *testing.T) {
 	db := engineTestDB(t)
 	ctx := context.Background()
 
@@ -418,12 +431,24 @@ func TestReleaseReturnsWorkToQueue(t *testing.T) {
 		t.Fatalf("release: %v", err)
 	}
 
-	again, err := ClaimDirty(ctx, db, "worker-b", 1)
+	tooSoon, err := ClaimDirty(ctx, db, "worker-b", 1)
 	if err != nil {
 		t.Fatalf("second claim: %v", err)
 	}
+	if len(tooSoon) != 0 {
+		t.Fatalf("failed work was reclaimed immediately (got %d items), retry backoff is not applied", len(tooSoon))
+	}
+
+	// เร่งเวลาพักให้หมดอายุ แล้วงานต้องกลับมาให้หยิบได้ตามปกติ
+	if _, err := db.Exec(`UPDATE stock_dirty SET leaseuntil = now() - interval '1 second'`); err != nil {
+		t.Fatalf("expire backoff: %v", err)
+	}
+	again, err := ClaimDirty(ctx, db, "worker-b", 1)
+	if err != nil {
+		t.Fatalf("third claim: %v", err)
+	}
 	if len(again) != 1 {
-		t.Fatalf("released work was not reclaimable (got %d items)", len(again))
+		t.Fatalf("released work was not reclaimable after the backoff (got %d items)", len(again))
 	}
 	if again[0].Attempts != 2 {
 		t.Errorf("attempts = %d, want 2", again[0].Attempts)
@@ -442,14 +467,29 @@ func TestMoveToDeadLetterRemovesFromQueue(t *testing.T) {
 		t.Fatalf("dead letter: %v", err)
 	}
 
-	var pending, dead int
+	var pending int
 	db.QueryRow(`SELECT COUNT(*) FROM stock_dirty`).Scan(&pending)
-	db.QueryRow(`SELECT COUNT(*) FROM deadletterqueue`).Scan(&dead)
 	if pending != 0 {
 		t.Errorf("stock_dirty rows = %d, want 0", pending)
 	}
-	if dead != 1 {
-		t.Errorf("deadletterqueue rows = %d, want 1", dead)
+
+	// ต้องบันทึกครบว่าเป็นสินค้าตัวไหน ของบริษัทไหน และคิดใหม่ตั้งแต่วันไหน
+	var business, item, message string
+	var attempts int
+	var from time.Time
+	if err := db.QueryRow(`
+		SELECT businesscode, itemcode, fromdate, attempts, lasterror FROM stock_dead_letter`).
+		Scan(&business, &item, &from, &attempts, &message); err != nil {
+		t.Fatalf("read dead letter: %v", err)
+	}
+	if business != "BC01" || item != "ITEM01" {
+		t.Errorf("dead letter row = %s/%s, want BC01/ITEM01", business, item)
+	}
+	if !from.Equal(at(1)) {
+		t.Errorf("dead letter fromdate = %v, want %v", from, at(1))
+	}
+	if message == "" {
+		t.Error("dead letter row has no error message")
 	}
 }
 
@@ -482,7 +522,7 @@ func TestConcurrentRecalculationIsSerialised(t *testing.T) {
 		t.Fatal("could not acquire lock for the test holder")
 	}
 
-	err = Persist(ctx, db, scope, result)
+	err = Persist(ctx, db, scope, result, time.Now())
 	if err == nil {
 		holder.Rollback()
 		t.Fatal("second writer succeeded while the item was locked")
@@ -496,7 +536,7 @@ func TestConcurrentRecalculationIsSerialised(t *testing.T) {
 	if err := holder.Rollback(); err != nil {
 		t.Fatal(err)
 	}
-	if err := Persist(ctx, db, scope, result); err != nil {
+	if err := Persist(ctx, db, scope, result, time.Now()); err != nil {
 		t.Fatalf("persist after lock released: %v", err)
 	}
 	if rows := ledgerSnapshot(t, db, "BC01", "ITEM01"); len(rows) != 1 {
@@ -637,7 +677,12 @@ func TestQueueStatusReportsPendingWork(t *testing.T) {
 		t.Fatalf("claim: %v", err)
 	}
 
-	status, err := LoadQueueStatus(ctx, db)
+	// งานของบริษัทอื่นในฐานเดียวกันต้องไม่ถูกนับรวม
+	if err := MarkDirty(ctx, db, "BC02", "ITEM09", at(1), "doc"); err != nil {
+		t.Fatalf("mark dirty for the other company: %v", err)
+	}
+
+	status, err := LoadQueueStatus(ctx, db, "BC01")
 	if err != nil {
 		t.Fatalf("queue status: %v", err)
 	}
@@ -646,5 +691,209 @@ func TestQueueStatusReportsPendingWork(t *testing.T) {
 	}
 	if status.Processing != 1 {
 		t.Errorf("processing = %d, want 1", status.Processing)
+	}
+	if status.OldestWait.IsZero() {
+		t.Error("oldest wait is empty even though work is pending")
+	}
+}
+
+// เอกสารที่เข้ามาระหว่างกำลังคำนวณต้องไม่ถูกลบออกจากคิวพร้อมงานที่คิดเสร็จ
+//
+// เคยเป็นบั๊ก: worker อ่านรายการไปแล้ว เอกสารใบใหม่เข้ามาและทำเครื่องหมายไว้
+// พอ worker เขียนผลเสร็จก็ลบงานค้างทั้งแถวทิ้ง เอกสารใบนั้นจึงไม่เคยถูกคิดเลยจนกว่าจะมีใบอื่นมาแตะสินค้าเดิม
+func TestDocumentArrivingDuringCalculationStaysQueued(t *testing.T) {
+	db := engineTestDB(t)
+	ctx := context.Background()
+
+	insertDoc(t, db, "BC01", "ITEM01",
+		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)})
+	if err := MarkDirty(ctx, db, "BC01", "ITEM01", at(1), "doc"); err != nil {
+		t.Fatalf("mark dirty: %v", err)
+	}
+
+	scope := Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)}
+	var snapshot time.Time
+	if err := db.QueryRowContext(ctx, `SELECT now()`).Scan(&snapshot); err != nil {
+		t.Fatalf("read database time: %v", err)
+	}
+	movements, err := LoadMovements(ctx, db, scope, testTransFlags)
+	if err != nil {
+		t.Fatalf("load movements: %v", err)
+	}
+
+	// เอกสารใบที่สองเข้ามาหลังอ่านข้อมูลไปแล้ว
+	insertDoc(t, db, "BC01", "ITEM01",
+		docLine{docNo: "PU002", line: 1, transFlag: 12, qty: 5, sumAmount: 600, when: at(2)})
+	if err := MarkDirty(ctx, db, "BC01", "ITEM01", at(2), "doc"); err != nil {
+		t.Fatalf("mark dirty for the late document: %v", err)
+	}
+
+	if err := Persist(ctx, db, scope, Calculate(nil, movements, DefaultOptions()), snapshot); err != nil {
+		t.Fatalf("persist: %v", err)
+	}
+
+	var pending int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM stock_dirty WHERE businesscode='BC01' AND itemcode='ITEM01'`).
+		Scan(&pending); err != nil {
+		t.Fatalf("read queue: %v", err)
+	}
+	if pending != 1 {
+		t.Fatal("the document that arrived during calculation was dropped from the queue and would never be costed")
+	}
+}
+
+// เอกสารที่ถูกลบต้องไม่คิดสต็อกอีก และต้องมีงานคิดใหม่ตั้งขึ้นให้อัตโนมัติ
+func TestDeletedDocumentLeavesTheLedger(t *testing.T) {
+	db := engineTestDB(t)
+	ctx := context.Background()
+
+	insertDoc(t, db, "BC01", "ITEM01",
+		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)},
+		docLine{docNo: "PU002", line: 1, transFlag: 12, qty: 4, sumAmount: 600, when: at(2)},
+	)
+
+	scope := Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)}
+	if _, err := Recalculate(ctx, db, scope, testTransFlags, DefaultOptions()); err != nil {
+		t.Fatalf("first recalculate: %v", err)
+	}
+	if rows := ledgerSnapshot(t, db, "BC01", "ITEM01"); len(rows) != 2 {
+		t.Fatalf("ledger rows = %d, want 2", len(rows))
+	}
+
+	// ลบเอกสารใบที่สอง (ทำเครื่องหมายที่หัวเอกสาร บรรทัดยังอยู่ครบ)
+	if err := MarkDocumentDirty(ctx, db, "BC01", "PU002", 12, "docdelete"); err != nil {
+		t.Fatalf("mark document dirty: %v", err)
+	}
+	if _, err := db.Exec(`UPDATE doc SET isdelete = TRUE WHERE businesscode='BC01' AND docno='PU002'`); err != nil {
+		t.Fatalf("soft delete: %v", err)
+	}
+
+	claimed, err := ClaimDirty(ctx, db, "worker-a", 5)
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	if len(claimed) != 1 || claimed[0].ItemCode != "ITEM01" {
+		t.Fatalf("deleting a document did not queue a recalculation (got %d items)", len(claimed))
+	}
+	if !claimed[0].FromDate.Equal(at(2)) {
+		t.Errorf("recalculate from %v, want %v (the date of the deleted document)", claimed[0].FromDate, at(2))
+	}
+
+	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: claimed[0].FromDate},
+		testTransFlags, DefaultOptions()); err != nil {
+		t.Fatalf("second recalculate: %v", err)
+	}
+
+	ledger := ledgerSnapshot(t, db, "BC01", "ITEM01")
+	if len(ledger) != 1 {
+		t.Fatalf("ledger rows after delete = %d, want 1", len(ledger))
+	}
+	if ledger[0].BalanceQty != 10 {
+		t.Errorf("balance after delete = %v, want 10", ledger[0].BalanceQty)
+	}
+}
+
+// ยอดยกมาต้องมาจากงวดล่าสุดที่มีอยู่จริง ไม่ใช่งวดก่อนหน้าหนึ่งเดือนเสมอไป
+//
+// สินค้าที่ไม่มีการเคลื่อนไหวมาหลายเดือนจะไม่มียอดปลายงวดของเดือนก่อนหน้า
+// ถ้าอ่านเฉพาะเดือนก่อนหน้าแล้วไม่เจอ จะกลายเป็นเริ่มจากศูนย์และยอดผิดทันที
+func TestOpeningBalanceComesFromTheLatestClosedPeriod(t *testing.T) {
+	db := engineTestDB(t)
+	ctx := context.Background()
+
+	january := time.Date(2026, 1, 5, 9, 0, 0, 0, time.UTC)
+	insertDoc(t, db, "BC01", "ITEM01",
+		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: january})
+	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: january},
+		testTransFlags, DefaultOptions()); err != nil {
+		t.Fatalf("january recalculate: %v", err)
+	}
+
+	// ขายในเดือนมีนาคม เดือนกุมภาพันธ์ไม่มีรายการเลยจึงไม่มียอดปลายงวด
+	insertDoc(t, db, "BC01", "ITEM01",
+		docLine{docNo: "SA001", line: 1, transFlag: 44, qty: 4, when: at(3)})
+	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(3)},
+		testTransFlags, DefaultOptions()); err != nil {
+		t.Fatalf("march recalculate: %v", err)
+	}
+
+	var qty, avg float64
+	if err := db.QueryRow(`
+		SELECT balanceqty, unitcost FROM stock_ledger
+		WHERE businesscode='BC01' AND itemcode='ITEM01' AND docno='SA001'`).Scan(&qty, &avg); err != nil {
+		t.Fatalf("read sale row: %v", err)
+	}
+	if qty != 6 {
+		t.Errorf("balance after the sale = %v, want 6 (january stock must carry forward)", qty)
+	}
+	if avg != 100 {
+		t.Errorf("sale unit cost = %v, want 100 (january average cost)", avg)
+	}
+}
+
+// เปิดใช้ระบบครั้งแรก: ยังไม่มียอดปลายงวดสักงวด แต่สินค้ามีประวัติมาก่อนแล้ว
+// ต้องถอยไปคิดตั้งแต่เอกสารใบแรก ไม่ใช่เริ่มนับจากศูนย์กลางทาง
+func TestRecalculationReachesBackWhenNoOpeningExists(t *testing.T) {
+	db := engineTestDB(t)
+	ctx := context.Background()
+
+	january := time.Date(2026, 1, 5, 9, 0, 0, 0, time.UTC)
+	insertDoc(t, db, "BC01", "ITEM01",
+		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: january},
+		docLine{docNo: "SA001", line: 1, transFlag: 44, qty: 4, when: at(3)},
+	)
+
+	// งานเข้าคิวด้วยวันที่ของเอกสารใบใหม่เท่านั้น เหมือนตอนรับเอกสารจริง
+	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(3)},
+		testTransFlags, DefaultOptions()); err != nil {
+		t.Fatalf("recalculate: %v", err)
+	}
+
+	ledger := ledgerSnapshot(t, db, "BC01", "ITEM01")
+	if len(ledger) != 2 {
+		t.Fatalf("ledger rows = %d, want 2 (the purchase before the period must be included)", len(ledger))
+	}
+	if ledger[1].BalanceQty != 6 {
+		t.Errorf("balance after the sale = %v, want 6", ledger[1].BalanceQty)
+	}
+}
+
+// โอนคลังต้องไม่ทำให้ของหายจากบริษัท ยอดรวมทุกคลังต้องเท่าเดิม
+func TestWarehouseTransferMovesStockBetweenWarehouses(t *testing.T) {
+	db := engineTestDB(t)
+	ctx := context.Background()
+
+	insertDoc(t, db, "BC01", "ITEM01",
+		docLine{docNo: "PU001", line: 1, transFlag: 12, qty: 10, sumAmount: 1000, when: at(1)},
+		docLine{docNo: "TF001", line: 1, transFlag: 72, calcFlag: -1, qty: -4, when: at(2)},
+		docLine{docNo: "TF001", line: 2, transFlag: 72, calcFlag: 1, qty: 4, when: at(2), whCode: "WH02"},
+	)
+
+	if _, err := Recalculate(ctx, db, Scope{BusinessCode: "BC01", ItemCode: "ITEM01", From: at(1)},
+		testTransFlags, DefaultOptions()); err != nil {
+		t.Fatalf("recalculate: %v", err)
+	}
+
+	var qty, amount float64
+	if err := db.QueryRow(`
+		SELECT SUM(direction * qty), SUM(direction * amount)
+		FROM stock_ledger WHERE businesscode='BC01' AND itemcode='ITEM01'`).Scan(&qty, &amount); err != nil {
+		t.Fatalf("read totals: %v", err)
+	}
+	if qty != 10 {
+		t.Errorf("total quantity = %v, want 10 (a transfer must not consume stock)", qty)
+	}
+	if amount != 1000 {
+		t.Errorf("total value = %v, want 1000 (a transfer must not change the stock value)", amount)
+	}
+
+	var destination float64
+	if err := db.QueryRow(`
+		SELECT balanceqty FROM stock_ledger
+		WHERE businesscode='BC01' AND itemcode='ITEM01' AND whcode='WH02'`).Scan(&destination); err != nil {
+		t.Fatalf("read destination warehouse: %v", err)
+	}
+	if destination != 4 {
+		t.Errorf("destination balance = %v, want 4", destination)
 	}
 }

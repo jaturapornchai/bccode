@@ -1,6 +1,6 @@
-# PostgreSQL Queue & Lock System
+# PostgreSQL Queue System
 
-แทนที่ระบบ Redis ด้วย PostgreSQL สำหรับ Queue Management และ Distributed Locking
+แทนที่ระบบ Redis ด้วย PostgreSQL สำหรับ Queue Management
 
 ## คุณสมบัติ
 
@@ -9,11 +9,6 @@
 - **Dead Letter Queue**: เก็บงานที่ล้มเหลวเกิน 3 ครั้ง
 - **Retry Mechanism**: retry อัตโนม้าติ สูงสุด 3 ครั้ง
 - **Status Tracking**: tracking สถานะงาน (pending, processing, completed, failed)
-
-### 2. Distributed Locking
-- **PostgreSQL Advisory Locks**: ป้องกัน race condition
-- **Auto-expiry**: ล็อคหมดอายุอัตโนมัติ
-- **Retry with backoff**: พยายามขอ lock อีกครั้งถ้าไม่ได้
 
 ## โครงสร้างตาราง
 
@@ -50,18 +45,6 @@ CREATE TABLE deadletterqueue (
 
     INDEX idxdlqholdingcode (holdingcode),
     INDEX idxdlqfailedat (failedat)
-);
-```
-
-### Table: distributedlocks
-```sql
-CREATE TABLE distributedlocks (
-    lockkey VARCHAR(500) PRIMARY KEY,
-    owner VARCHAR(100) NOT NULL,
-    acquiredat TIMESTAMP DEFAULT NOW(),
-    expiresat TIMESTAMP NOT NULL,
-
-    INDEX idxlocksexpiresat (expiresat)
 );
 ```
 
@@ -132,25 +115,6 @@ stats, err := qm.GetQueueStats(ctx, "SHOP001")
 summary, err := qm.GetQueueSummary(ctx)
 ```
 
-### Distributed Locking
-
-```go
-import "goapi/mypostgres"
-
-// สร้าง lock
-lock := mypostgres.NewDistributedLock(db, "stock:calc:SHOP001:ITEM001", 5*time.Minute)
-
-// ขอ lock พร้อม retry
-err := lock.AcquireWithRetry(ctx, 10, 500*time.Millisecond)
-if err != nil {
-    return err
-}
-defer lock.Release(ctx)
-
-// ทำงานที่ต้อง critical section
-// ...
-```
-
 ## ข้อดีของ PostgreSQL เทียบกับ Redis
 
 ### 1. Durability
@@ -189,12 +153,6 @@ defer lock.Release(ctx)
 DELETE FROM queues
 WHERE status = 'completed'
   AND updatedat < NOW() - INTERVAL '7 days';
-```
-
-- ทำความสะอาด expired locks:
-```sql
-DELETE FROM distributedlocks
-WHERE expiresat < NOW();
 ```
 
 ## Migration จาก Redis
@@ -247,16 +205,6 @@ ORDER BY failedat DESC
 LIMIT 20;
 ```
 
-### Query Active Locks
-```sql
--- Locks ที่กำลัง active
-SELECT lockkey, owner, acquiredat, expiresat,
-       EXTRACT(EPOCH FROM (expiresat - NOW())) as ttl_seconds
-FROM distributedlocks
-WHERE expiresat > NOW()
-ORDER BY acquiredat DESC;
-```
-
 ## Troubleshooting
 
 ### ปัญหา: งาน stuck ใน processing
@@ -275,17 +223,6 @@ WHERE status = 'processing'
   AND processedat < NOW() - INTERVAL '1 hour';
 ```
 
-### ปัญหา: Lock ไม่ถูกปล่อย
-```sql
--- ลบ locks ที่หมดอายุ
-DELETE FROM distributedlocks
-WHERE expiresat < NOW();
-
--- Force release lock (ใช้เฉพาะกรณีฉุกเฉิน)
-DELETE FROM distributedlocks
-WHERE lockkey = 'stock:calc:SHOP001:ITEM001';
-```
-
 ## API Reference
 
 ### QueueManager Methods
@@ -300,20 +237,3 @@ WHERE lockkey = 'stock:calc:SHOP001:ITEM001';
 - `GetQueueSummary(ctx)` - ดึงสรุปข้อมูล queue ทั้งหมด
 - `MarkAsCompleted(ctx, itemId)` - ทำเครื่องหมายงานเสร็จ
 - `CleanupOldCompletedItems(ctx, duration)` - ทำความสะอาดงานเก่า
-
-### DistributedLock Methods
-
-- `Acquire(ctx)` - ขอ lock (non-blocking)
-- `AcquireWithRetry(ctx, maxRetries, delay)` - ขอ lock พร้อม retry
-- `Release(ctx)` - ปล่อย lock
-- `Extend(ctx, duration)` - ขยายระยะเวลา lock
-- `IsAcquired()` - ตรวจสอบว่า lock ถูกขอแล้วหรือยัง
-
-### LockManager Methods
-
-- `CleanupExpiredLocks(ctx)` - ทำความสะอาด expired locks
-- `GetActiveLocks(ctx)` - ดึงรายการ lock ที่ active
-- `GetLockCount(ctx)` - ดึงจำนวน lock
-- `ForceReleaseLock(ctx, lockKey)` - บังคับปล่อย lock
-- `GetLockInfo(ctx, lockKey)` - ดึงข้อมูล lock
-- `StartCleanupRoutine(ctx, interval)` - เริ่ม cleanup routine

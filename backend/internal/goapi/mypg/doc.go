@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"smlcloudplatform/internal/goapi/logger"
+	"smlcloudplatform/internal/goapi/process/stockengine"
 )
 
 type execContext interface {
@@ -25,6 +26,13 @@ func deleteDocPgSqlExec(ctx context.Context, exec execContext, businessCode, doc
 	if businessCode == "" {
 		return fmt.Errorf("businesscode is required")
 	}
+
+	// ต้องตั้งงานคิดต้นทุนใหม่ "ก่อน" ลบ เพราะหลังลบแล้วจะไม่เหลือวันที่เดิมให้อ้างอิง
+	// เอกสารที่แก้แล้วย้ายวันข้ามงวด ถ้าคิดใหม่แค่งวดใหม่ รายการเดิมในงวดเก่าจะค้างและทำให้ยอดเบิ้ล
+	if err := stockengine.MarkDocumentDirty(ctx, exec, businessCode, docNo, transFlag, "docchange"); err != nil {
+		logger.Warn("ตั้งงานคิดต้นทุนใหม่ก่อนลบเอกสาร %s ล้มเหลว: %v", docNo, err)
+	}
+
 	queries := []string{
 		"DELETE FROM doc WHERE businesscode = $1 AND docno = $2 AND transflag = $3",
 		"DELETE FROM docdetail WHERE businesscode = $1 AND docno = $2 AND transflag = $3",

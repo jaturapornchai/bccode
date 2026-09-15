@@ -42,21 +42,12 @@ CREATE TABLE IF NOT EXISTS deadletterqueue (
     errormessage TEXT NOT NULL
 );
 
--- Table: distributedlocks
-CREATE TABLE IF NOT EXISTS distributedlocks (
-    lockkey VARCHAR(500) PRIMARY KEY,
-    owner VARCHAR(100) NOT NULL,
-    acquiredat TIMESTAMP NOT NULL DEFAULT NOW(),
-    expiresat TIMESTAMP NOT NULL
-);
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idxqueuesshopstatus ON queues(holdingcode, status);
 CREATE INDEX IF NOT EXISTS idxqueuescreatedat ON queues(createdat);
 CREATE INDEX IF NOT EXISTS idxqueuesstatus ON queues(status);
 CREATE INDEX IF NOT EXISTS idxdlqholdingcode ON deadletterqueue(holdingcode);
 CREATE INDEX IF NOT EXISTS idxdlqfailedat ON deadletterqueue(failedat);
-CREATE INDEX IF NOT EXISTS idxlocksexpiresat ON distributedlocks(expiresat);
 CREATE INDEX IF NOT EXISTS idxqueuespop ON queues(holdingcode, createdat) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS idxqueuesactiveshops ON queues(holdingcode) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS idxqueuesprocessing ON queues(holdingcode, processedat) WHERE status = 'processing';
@@ -76,19 +67,6 @@ CREATE TRIGGER updatequeuesupdatedat
     BEFORE UPDATE ON queues
     FOR EACH ROW
     EXECUTE FUNCTION updateupdatedatcolumn();
-
--- Function: ทำความสะอาด expired locks
-CREATE OR REPLACE FUNCTION cleanupexpiredlocks()
-RETURNS INTEGER AS $$
-DECLARE
-    deletedcount INTEGER;
-BEGIN
-    DELETE FROM distributedlocks
-    WHERE expiresat < NOW();
-    GET DIAGNOSTICS deletedcount = ROW_COUNT;
-    RETURN deletedcount;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Function: ดึงงานจาก queue
 CREATE OR REPLACE FUNCTION popfromqueue(pholdingcode VARCHAR)

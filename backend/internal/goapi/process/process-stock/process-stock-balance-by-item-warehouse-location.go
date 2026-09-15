@@ -12,27 +12,50 @@ import (
 
 	"smlcloudplatform/internal/goapi/myglobal"
 	"smlcloudplatform/internal/goapi/mypg"
+	"smlcloudplatform/internal/goapi/process/stockengine"
 )
 
-func ProcessProductBalanceByItemAndWareHouseAndLocation(holdingCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
-	// Default to Thailand timezone for backward compatibility
-	return ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode, condition, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
-}
-
-// Deprecated: ใช้ ProcessProductBalanceByBarcodeWhCodeLocationCodeWithTimezone แทน
-func ProcessProductBalanceByItemAndWareHouseAndLocationWithCountry(holdingCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, countryCode string) (result models.ResultModel) {
-	// Convert country code to timezone code for backward compatibility
-	timezoneCode := countryCode
-	switch countryCode {
-	case "TH":
-		timezoneCode = "TH"
-	case "US":
-		timezoneCode = "US_EST" // Default to Eastern Time
+// isWarehouseSelected บอกว่าคลังนี้ถูกเลือกไว้หรือไม่ — ไม่ระบุคลังใดเลยหมายถึงเอาทั้งหมด
+func isWarehouseSelected(warehouses []models.WarehouseListItemStruct, whCode string) bool {
+	if len(warehouses) == 0 {
+		return true
 	}
-	return ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode, condition, finalDate, balanceOnly, itemCodeList, warehouseList, timezoneCode)
+	for _, wh := range warehouses {
+		if wh.Code == whCode && wh.IsSelected {
+			return true
+		}
+	}
+	return false
 }
 
-func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
+// isLocationSelected บอกว่าที่เก็บนี้ถูกเลือกไว้หรือไม่ — คลังที่ไม่ได้ระบุที่เก็บหมายถึงเอาทุกที่เก็บในคลังนั้น
+func isLocationSelected(warehouses []models.WarehouseListItemStruct, whCode, locationCode string) bool {
+	if len(warehouses) == 0 {
+		return true
+	}
+	for _, wh := range warehouses {
+		if wh.Code != whCode {
+			continue
+		}
+		if len(wh.Locations) == 0 {
+			return true
+		}
+		for _, location := range wh.Locations {
+			if location.Code == locationCode && location.IsSelected {
+				return true
+			}
+		}
+		return false
+	}
+	return false
+}
+
+func ProcessProductBalanceByItemAndWareHouseAndLocation(holdingCode, businessCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
+	// Default to Thailand timezone for backward compatibility
+	return ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode, businessCode, condition, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
+}
+
+func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode, businessCode string, condition int, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
 	overallStart := time.Now()
 
 	ctx := context.Background()
@@ -167,82 +190,30 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 				return
 			}
 
-			transFlagList := myglobal.GetTransFlagsForQuery()
-
-			query := `SELECT
-						lc.itemcode,
-						lc.whcode,
-						lc.averagecost,
-						sb.totalbalance AS balanceqty,
-						sb.totalbalance * lc.averagecost as balanceamount
-					FROM
-						(
-							SELECT
-								itemcode,
-								whcode,
-								averagecost,
-								balanceamount,
-								ROW_NUMBER() OVER (PARTITION BY itemcode, whcode ORDER BY docdatetime DESC) AS rn
-							FROM processstockcost
-							WHERE
-								` + dateCondition + `
-						) AS lc
-					INNER JOIN
-						(
-							SELECT
-								itemcode,
-								whcode,
-								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS totalbalance
-							FROM docdetail
-							WHERE
-								` + dateCondition + `
-								AND transflag IN (` + transFlagList + `)
-							GROUP BY itemcode, whcode
-						) AS sb
-					ON lc.itemcode = sb.itemcode AND lc.whcode = sb.whcode
-					WHERE lc.rn = 1`
-
-			logger.Info("WareHouse Query: %s", query)
-			logger.Debug("WareHouse Query preview: %s", mypg.ReplaceQueryParams(query, conditionArgs...))
 			wareHouseQueryStart := time.Now()
-			rows, err := mypg.QuerySelectAll(db, query, conditionArgs...)
+			balances, err := stockengine.LoadWarehouseBalances(ctx, db, stockengine.BalanceFilter{
+				BusinessCode:  businessCode,
+				DateCondition: dateCondition,
+				DateArg:       conditionArgs[0],
+				ItemCodes:     itemCodeList,
+			})
 			if err != nil {
-				logger.Error("querying PostgreSQL: %v", err)
+				logger.Error("reading warehouse balances: %v", err)
 				return
 			}
-			logger.Info("Warehouse cost rows=%d (elapsed=%s)", len(rows), time.Since(wareHouseQueryStart))
+			logger.Info("Warehouse balance rows=%d (elapsed=%s)", len(balances), time.Since(wareHouseQueryStart))
 
-			for _, row := range rows {
-				itemCode := mypg.GetStringValue(row, "itemcode")
-				whcode := mypg.GetStringValue(row, "whcode")
-				averagecost := mypg.GetFloat64Value(row, "averagecost")
-				balanceqty := mypg.GetFloat64Value(row, "balanceqty")
-				balanceamount := mypg.GetFloat64Value(row, "balanceamount")
-
-				found := false
-				if len(warehouseList) > 0 {
-					for _, wh := range warehouseList {
-						if wh.Code == whcode && wh.IsSelected {
-							found = true
-							break
-						}
-					}
-					if !found {
-						continue
-					}
-				} else {
-					// ถ้าไม่มีคลังสินค้าให้ดึงทั้งหมด
-					found = true
+			for _, balance := range balances {
+				if !isWarehouseSelected(warehouseList, balance.WhCode) {
+					continue
 				}
-				if found {
-					wareHouseDataList = append(wareHouseDataList, models.ProductBalanceByCodeWareHouseGetStruct{
-						ItemCode:      itemCode,
-						WareHouseCode: whcode,
-						BalanceQty:    balanceqty,
-						AverageCost:   averagecost,
-						BalanceAmount: balanceamount,
-					})
-				}
+				wareHouseDataList = append(wareHouseDataList, models.ProductBalanceByCodeWareHouseGetStruct{
+					ItemCode:      balance.ItemCode,
+					WareHouseCode: balance.WhCode,
+					BalanceQty:    balance.Qty,
+					AverageCost:   balance.AvgCost,
+					BalanceAmount: balance.Amount,
+				})
 			}
 		}
 		if condition == 3 {
@@ -253,146 +224,64 @@ func ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(holdingCode 
 				return
 			}
 
-			transFlagList := myglobal.GetTransFlagsForQuery()
-
-			query := `SELECT
-						lc.itemcode,
-						lc.whcode,
-						lc.locationcode,
-						sb.totalbalance AS balanceqty
-					FROM
-						(
-							SELECT
-								itemcode,
-								whcode,
-								locationcode,
-								ROW_NUMBER() OVER (PARTITION BY itemcode, whcode, locationcode ORDER BY docdatetime DESC) AS rn
-							FROM processstockcost
-							WHERE
-								` + dateCondition2 + `
-						) AS lc
-					INNER JOIN
-						(
-							SELECT
-								itemcode,
-								whcode,
-								locationcode,
-								SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS totalbalance
-							FROM docdetail
-							WHERE
-								` + dateCondition2 + `
-								AND transflag IN (` + transFlagList + `)
-							GROUP BY itemcode, whcode, locationcode
-						) AS sb
-					ON lc.itemcode = sb.itemcode AND lc.whcode = sb.whcode AND lc.locationcode = sb.locationcode
-					WHERE lc.rn = 1`
-
-			logger.Info("Query: %s", query)
-			logger.Debug("Warehouse+location query preview: %s", mypg.ReplaceQueryParams(query, conditionArgs2...))
 			locationQueryStart := time.Now()
-			rows, err := mypg.QuerySelectAll(db, query, conditionArgs2...)
+			balances, err := stockengine.LoadLocationBalances(ctx, db, stockengine.BalanceFilter{
+				BusinessCode:  businessCode,
+				DateCondition: dateCondition2,
+				DateArg:       conditionArgs2[0],
+				ItemCodes:     itemCodeList,
+			})
 			if err != nil {
-				logger.Error("querying PostgreSQL: %v", err)
+				logger.Error("reading location balances: %v", err)
 				return
 			}
-			logger.Info("Warehouse+location rows=%d (elapsed=%s)", len(rows), time.Since(locationQueryStart))
+			logger.Info("Warehouse+location rows=%d (elapsed=%s)", len(balances), time.Since(locationQueryStart))
 
-			for _, row := range rows {
-				itemcode := mypg.GetStringValue(row, "itemcode")
-				whcode := mypg.GetStringValue(row, "whcode")
-				locationcode := mypg.GetStringValue(row, "locationcode")
-				balanceqty := mypg.GetFloat64Value(row, "balanceqty")
-
-				// ค้นหาคลังสินค้า + location
-				found := false
-				if len(warehouseList) > 0 {
-					for _, wh := range warehouseList {
-						if wh.Code == whcode {
-							// ค้นหา location
-							if len(wh.Locations) > 0 {
-								for _, loc := range wh.Locations {
-									if loc.Code == locationcode && loc.IsSelected {
-										found = true
-										break
-									}
-								}
-							} else {
-								found = true
-							}
-							break
-						}
-					}
-					if !found {
-						continue
-					}
-				} else {
-					// ถ้าไม่มีคลังสินค้าให้ดึงทั้งหมด
-					found = true
+			for _, balance := range balances {
+				if !isLocationSelected(warehouseList, balance.WhCode, balance.LocationCode) {
+					continue
 				}
-				if found {
-					locationDataList = append(locationDataList, models.ProductBalanceByCodeLocationGetStruct{
-						ItemCode:      itemcode,
-						WareHouseCode: whcode,
-						LocationCode:  locationcode,
-						BalanceQty:    balanceqty,
-					})
-				}
+				locationDataList = append(locationDataList, models.ProductBalanceByCodeLocationGetStruct{
+					ItemCode:      balance.ItemCode,
+					WareHouseCode: balance.WhCode,
+					LocationCode:  balance.LocationCode,
+					BalanceQty:    balance.Qty,
+				})
 			}
 		}
-		// ดึงยอดคงเหลือจาก processstockcost
-		logger.Info("ดึงยอดคงเหลือจาก processstockcost")
+		// ยอดคงเหลือรวมทุกคลังของแต่ละสินค้า อ่านจากสมุดสต็อกโดยตรง
 		dateCondition3, conditionArgs3, err := mypg.BuildDateConditionSQLWithTimeZone("docdatetime", finalDate, timezoneCode)
 		if err != nil {
 			logger.Error("building date condition for timezone %s: %v", timezoneCode, err)
 			return
 		}
 
-		queryProduct := `SELECT
-						itemcode,
-						averagecost,
-						balanceqty,
-						balanceamount
-					FROM
-						(
-							SELECT
-								itemcode,
-								averagecost,
-								balanceqty,
-								balanceamount,
-								ROW_NUMBER() OVER (PARTITION BY itemcode ORDER BY docdatetime DESC) AS rn
-							FROM processstockcost
-							WHERE
-								` + dateCondition3 + `
-						) AS lc
-					WHERE lc.rn = 1`
-
-		logger.Debug("Final balance query preview: %s", mypg.ReplaceQueryParams(queryProduct, conditionArgs3...))
 		finalBalanceStart := time.Now()
-		rows, err := mypg.QuerySelectAll(db, queryProduct, conditionArgs3...)
+		itemBalances, err := stockengine.LoadItemBalances(ctx, db, stockengine.BalanceFilter{
+			BusinessCode:  businessCode,
+			DateCondition: dateCondition3,
+			DateArg:       conditionArgs3[0],
+			ItemCodes:     itemCodeList,
+		})
 		if err != nil {
-			logger.Error("querying PostgreSQL: %v", err)
+			logger.Error("reading item balances: %v", err)
 			return
 		}
-		logger.Info("Final balance rows=%d (elapsed=%s)", len(rows), time.Since(finalBalanceStart))
+		logger.Info("Final balance rows=%d (elapsed=%s)", len(itemBalances), time.Since(finalBalanceStart))
 
-		for _, row := range rows {
-			itemCode := mypg.GetStringValue(row, "itemcode")
-			averagecost := mypg.GetFloat64Value(row, "averagecost")
-			balanceqty := mypg.GetFloat64Value(row, "balanceqty")
-			balanceamount := mypg.GetFloat64Value(row, "balanceamount")
+		indexOfItem := make(map[string]int, len(itemCodeMainList))
+		for i, item := range itemCodeMainList {
+			indexOfItem[item.ItemCode] = i
+		}
 
-			index := -1
-			for i, datax := range itemCodeMainList {
-				if datax.ItemCode == itemCode {
-					index = i
-					break
-				}
+		for _, balance := range itemBalances {
+			index, found := indexOfItem[balance.ItemCode]
+			if !found {
+				continue
 			}
-			if index != -1 {
-				itemCodeMainList[index].AverageCost = averagecost
-				itemCodeMainList[index].BalanceQty = balanceqty
-				itemCodeMainList[index].BalanceAmount = balanceamount
-			}
+			itemCodeMainList[index].AverageCost = balance.AvgCost
+			itemCodeMainList[index].BalanceQty = balance.Qty
+			itemCodeMainList[index].BalanceAmount = balance.Amount
 		}
 		if condition == 2 || condition == 3 {
 			// 2=ดึงรายการคลังสินค้า

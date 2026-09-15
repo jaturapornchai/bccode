@@ -16,13 +16,21 @@ import (
 // และไม่ต้องเปิดค้างไว้สำหรับกลุ่มกิจการที่ยังไม่มีการเคลื่อนไหว
 type manager struct {
 	mu      sync.Mutex
-	running map[string]context.CancelFunc
+	running map[string]workerHandle
 	ctx     context.Context
 	cancel  context.CancelFunc
 	flags   []int
+	// generation เพิ่มขึ้นทุกครั้งที่ปิดระบบ worker ที่เกิดในรุ่นก่อนจึงลบทะเบียนของรุ่นใหม่ไม่ได้
+	generation uint64
 }
 
-var defaultManager = &manager{running: map[string]context.CancelFunc{}}
+// workerHandle คือทะเบียนของ worker หนึ่งตัวพร้อมรุ่นที่มันเกิด
+type workerHandle struct {
+	cancel     context.CancelFunc
+	generation uint64
+}
+
+var defaultManager = &manager{running: map[string]workerHandle{}}
 
 // StartWorkers เปิดระบบ worker ทั้งหมด เรียกครั้งเดียวตอนระบบเริ่มทำงาน
 func StartWorkers(parent context.Context, transFlags []int) {
@@ -47,7 +55,8 @@ func StopWorkers() {
 	}
 	defaultManager.ctx = nil
 	defaultManager.cancel = nil
-	defaultManager.running = map[string]context.CancelFunc{}
+	defaultManager.generation++
+	defaultManager.running = map[string]workerHandle{}
 }
 
 // Enabled บอกว่าระบบ worker ถูกเปิดไว้หรือไม่
@@ -82,15 +91,20 @@ func EnsureWorker(holdingCode string, db *sql.DB, dsn string) {
 	}
 
 	ctx, cancel := context.WithCancel(defaultManager.ctx)
-	defaultManager.running[holdingCode] = cancel
+	generation := defaultManager.generation
+	defaultManager.running[holdingCode] = workerHandle{cancel: cancel, generation: generation}
 
 	worker := NewWorker(db, dsn, defaultManager.flags)
+	worker.HoldingCode = holdingCode
 	worker.Owner = worker.Owner + ":" + holdingCode
 
 	go func() {
 		defer func() {
 			defaultManager.mu.Lock()
-			delete(defaultManager.running, holdingCode)
+			// ลบทะเบียนเฉพาะเมื่อยังเป็นของรุ่นตัวเอง ไม่ไปลบทะเบียนของ worker ที่เพิ่งเปิดใหม่
+			if handle, ok := defaultManager.running[holdingCode]; ok && handle.generation == generation {
+				delete(defaultManager.running, holdingCode)
+			}
 			defaultManager.mu.Unlock()
 		}()
 

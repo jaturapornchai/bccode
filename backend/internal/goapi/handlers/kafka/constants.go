@@ -40,12 +40,7 @@ const (
 	TOPIC_PURCHASE_UPDATE = "when-purchase-updated"
 	TOPIC_PURCHASE_DELETE = "when-purchase-deleted"
 
-	// Purchase Receive topics
-	TOPIC_PURCHASE_RECEIVE_CREATE = "when-purchasereceive-created"
-	TOPIC_PURCHASE_RECEIVE_UPDATE = "when-purchasereceive-updated"
-	TOPIC_PURCHASE_RECEIVE_DELETE = "when-purchasereceive-deleted"
-
-	// Purchase Partial topics
+	// Purchase Partial topics (เอกสารรับสินค้าใช้ชุดนี้ ไม่มีหัวข้อ purchasereceive แยกในระบบ)
 	TOPIC_PURCHASE_PARTIAL_CREATE = "when-purchasepartial-created"
 	TOPIC_PURCHASE_PARTIAL_UPDATE = "when-purchasepartial-updated"
 	TOPIC_PURCHASE_PARTIAL_DELETE = "when-purchasepartial-deleted"

@@ -88,3 +88,20 @@ func TestStockEngineKnowsEveryProcessedTransFlag(t *testing.T) {
 		}
 	}
 }
+
+// รายชื่อประเภทเอกสารสองชุดต้องเท่ากันเสมอ
+//
+// การคิดใหม่ลบสมุดสต็อกของสินค้าตั้งแต่ต้นงวดทุกประเภทเอกสาร แล้วเขียนกลับเฉพาะประเภทที่อยู่ในรายชื่อที่ส่งมา
+// ถ้าเครื่องคิดต้นทุนรู้จักประเภทที่ไม่อยู่ในรายชื่อ ประวัติของประเภทนั้นจะหายไปเงียบ ๆ ทุกครั้งที่คิดใหม่
+func TestProcessedTransFlagsCoverEveryDirectionTheEngineKnows(t *testing.T) {
+	processed := map[int]bool{}
+	for _, flag := range myglobal.TransFlagsToProcess {
+		processed[flag] = true
+	}
+
+	for _, flag := range stockengine.KnownTransFlags() {
+		if !processed[flag] {
+			t.Errorf("the cost engine knows transflag %d but it is not in TransFlagsToProcess; its ledger rows would be deleted and never rewritten", flag)
+		}
+	}
+}

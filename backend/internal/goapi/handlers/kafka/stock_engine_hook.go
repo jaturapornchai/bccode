@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -13,15 +12,6 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/goapi/process/stockengine"
 )
-
-// UseStockEngineV2 บอกว่าจะให้ consumer เข้าคิวให้ worker คำนวณ (ค่าเริ่มต้น)
-// หรือย้อนกลับไปคำนวณทันทีในตัว consumer แบบเดิมด้วย BCAI_STOCK_ENGINE=v1
-//
-// การคำนวณทันทีทำให้ consumer ค้างรอไปกับสินค้าทุกตัวในเอกสาร และคิดซ้ำทุกครั้งที่เอกสารเข้ามา
-// แม้จะเป็นสินค้าตัวเดิม การเข้าคิวรวมงานให้เหลือชิ้นเดียวต่อสินค้าจึงเร็วกว่าและกู้คืนได้เมื่อพัง
-func UseStockEngineV2() bool {
-	return !strings.EqualFold(strings.TrimSpace(os.Getenv("BCAI_STOCK_ENGINE")), "v1")
-}
 
 // EnqueueStockRecalculation บันทึกว่าสินค้าในเอกสารนี้ต้องคำนวณต้นทุนใหม่
 //
@@ -35,13 +25,16 @@ func EnqueueStockRecalculation(ctx context.Context, db *sql.DB, holdingCode stri
 
 	earliest := make(map[target]time.Time, len(docDetails))
 	for _, detail := range docDetails {
+		if _, ok := stockengine.DirectionOf(detail.TransFlag); !ok {
+			continue // เอกสารที่ไม่กระทบสต็อก เช่น ใบสั่งซื้อ ใบสั่งขาย
+		}
+
+		// ตรวจความครบถ้วนเฉพาะบรรทัดที่กระทบสต็อกจริง
+		// ใบสั่งซื้อ/ใบสั่งขายมีบรรทัดที่ไม่ได้ระบุรหัสสินค้าได้ และไม่ควรทำให้ทั้งใบล้มเหลว
 		businessCode := strings.ToUpper(strings.TrimSpace(detail.BusinessCode))
 		itemCode := strings.ToUpper(strings.TrimSpace(detail.ItemCode))
 		if businessCode == "" || itemCode == "" {
 			return fmt.Errorf("stock recalculation requires businesscode and itemcode")
-		}
-		if _, ok := stockengine.DirectionOf(detail.TransFlag); !ok {
-			continue // เอกสารที่ไม่กระทบสต็อก เช่น ใบสั่งซื้อ ใบสั่งขาย
 		}
 
 		key := target{businessCode: businessCode, itemCode: itemCode}

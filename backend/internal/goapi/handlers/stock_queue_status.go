@@ -28,7 +28,7 @@ func StockQueueStatusHandler(c echo.Context) error {
 		})
 	}
 
-	holdingCode, _, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
 	if scopeErr != nil {
 		return c.JSON(scopeErr.Status, map[string]any{
 			"success": false,
@@ -46,7 +46,8 @@ func StockQueueStatusHandler(c echo.Context) error {
 		})
 	}
 
-	status, err := stockengine.LoadQueueStatus(c.Request().Context(), db)
+	// นับเฉพาะงานของบริษัทที่ผู้ใช้กำลังทำงานอยู่ ฐานข้อมูลหนึ่งฐานเก็บงานของหลายบริษัทรวมกัน
+	status, err := stockengine.LoadQueueStatus(c.Request().Context(), db, businessCode)
 	if err != nil {
 		logger.Error("StockQueueStatusHandler: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]any{

@@ -14,25 +14,12 @@ import (
 	"smlcloudplatform/internal/goapi/mypg"
 )
 
-func ProcessProductBalanceByWareHouseAndItem(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
+func ProcessProductBalanceByWareHouseAndItem(holdingCode, businessCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct) (result models.ResultModel) {
 	// Default to Thailand timezone for backward compatibility
-	return ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
+	return ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode, businessCode, finalDate, balanceOnly, itemCodeList, warehouseList, "TH")
 }
 
-// Deprecated: ใช้ ProcessProductBalanceByWhCodeBarcodeWithTimezone แทน
-func ProcessProductBalanceByWareHouseAndItemWithCountry(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, countryCode string) (result models.ResultModel) {
-	// Convert country code to timezone code for backward compatibility
-	timezoneCode := countryCode
-	switch countryCode {
-	case "TH":
-		timezoneCode = "TH"
-	case "US":
-		timezoneCode = "US_EST" // Default to Eastern Time
-	}
-	return ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode, finalDate, balanceOnly, itemCodeList, warehouseList, timezoneCode)
-}
-
-func ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
+func ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode, businessCode string, finalDate string, balanceOnly bool, itemCodeList []string, warehouseList []models.WarehouseListItemStruct, timezoneCode string) (result models.ResultModel) {
 	logger.Info("ProcessProductBalanceByWhCodeBarcode with Timezone: %s", timezoneCode)
 	startTime := time.Now()
 
@@ -100,7 +87,9 @@ func ProcessProductBalanceByWareHouseAndItemWithTimezone(holdingCode string, fin
 	allArgs = append(allArgs, itemCodeArgs...)
 	allArgs = append(allArgs, warehouseArgs...)
 
-	transFlagList := myglobal.GetTransFlagsForQuery()
+	// บริษัทต้องอยู่ในเงื่อนไขเสมอ ไม่เช่นนั้นยอดของอีกบริษัทในกลุ่มเดียวกันจะปนเข้ามา
+	allArgs = append(allArgs, businessCode)
+	businessArg := fmt.Sprintf("$%d", len(allArgs))
 
 	query := `
 WITH itemnames AS (
@@ -141,38 +130,24 @@ SELECT
     pb2.unitname AS unitname,
     b.barcodelist AS barcodelist
 FROM (
-    SELECT DISTINCT
+    SELECT
         lc.whcode AS whcode,
         lc.itemcode AS itemcode,
-        sb.totalbalance AS balanceqty,
+        lc.balanceqty AS balanceqty,
         COALESCE(ap.countpacking, 0) AS countpacking
     FROM (
-        -- Latest stock cost records by itemcode and warehouse
-        SELECT
+        -- ยอดคงเหลือล่าสุดของแต่ละ (สินค้า, คลัง) จากสมุดสต็อก
+        SELECT DISTINCT ON (itemcode, whcode)
             itemcode,
             whcode,
-            ROW_NUMBER() OVER (
-                PARTITION BY itemcode, whcode
-                ORDER BY docdatetime DESC
-            ) AS rn
-        FROM processstockcost
-        WHERE ` + dateCondition + `
+            balanceqty
+        FROM stock_ledger
+        WHERE businesscode = ` + businessArg + ` AND ` + dateCondition + `
+        ORDER BY itemcode, whcode, docdatetime DESC, behindindex DESC, docno DESC, linenumber DESC
     ) AS lc
-    JOIN (
-        -- Total balance by itemcode and warehouse
-        SELECT
-            itemcode,
-            whcode,
-            SUM(totalqty * (unitstand / NULLIF(unitdivide, 0))) AS totalbalance
-        FROM docdetail
-        WHERE ` + dateCondition + `
-			AND transflag IN (` + transFlagList + `)
-        GROUP BY itemcode, whcode
-    ) AS sb ON lc.itemcode = sb.itemcode
-           AND lc.whcode = sb.whcode
-	LEFT JOIN autopacking ap ON lc.itemcode = ap.itemcode
-	WHERE lc.rn = 1` + wareHouseCodeWhere + itemCodeListWhere + `
-	ORDER BY lc.whcode, lc.itemcode
+    LEFT JOIN autopacking ap ON lc.itemcode = ap.itemcode
+    WHERE TRUE` + wareHouseCodeWhere + itemCodeListWhere + `
+    ORDER BY lc.whcode, lc.itemcode
 ) AS main
 LEFT JOIN itemnames n ON main.itemcode = n.itemcode
 LEFT JOIN barcodelist b ON main.itemcode = b.itemcode

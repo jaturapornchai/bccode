@@ -369,6 +369,11 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	if disposal.DisposalDate == "" {
 		disposal.DisposalDate = now.Format("2006-01-02")
 	}
+	// ต้องตรวจรูปแบบวันที่ก่อนใช้งาน เพราะปีงบประมาณถูกตัดมาจากสี่ตัวอักษรแรกของสตริงนี้
+	// วันที่สั้นกว่าที่ควรจะทำให้โปรแกรมหยุดทำงานทั้งตัว
+	if _, err := time.Parse("2006-01-02", disposal.DisposalDate); err != nil {
+		return nil, nil, fmt.Errorf("รูปแบบวันที่จำหน่ายไม่ถูกต้อง ต้องเป็น ปปปป-ดด-วว: %s", disposal.DisposalDate)
+	}
 	if disposal.DocNo == "" {
 		disposal.DocNo = fmt.Sprintf("DISP-%s", disposal.AssetCode)
 	}
@@ -587,7 +592,11 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 			"updatedby": scope.Actor,
 		},
 	}
-	_, _ = p.db.Collection("fixed_assets").UpdateOne(ctx, f, uAsset)
+	// ขายสินทรัพย์แล้วสถานะต้องเปลี่ยนจริง ถ้าอัปเดตไม่สำเร็จแล้วเงียบไว้
+	// สินทรัพย์ที่ขายไปแล้วจะยังคิดค่าเสื่อมราคาต่อและถูกขายซ้ำได้
+	if _, err := p.db.Collection("fixed_assets").UpdateOne(ctx, f, uAsset); err != nil {
+		return nil, nil, fmt.Errorf("บันทึกการจำหน่ายสำเร็จแต่ไม่สามารถเปลี่ยนสถานะสินทรัพย์เป็นจำหน่ายแล้ว: %w", err)
+	}
 
 	return &disposal, journal, nil
 }

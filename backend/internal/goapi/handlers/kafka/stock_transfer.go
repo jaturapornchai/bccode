@@ -145,6 +145,8 @@ func ConvertStockTransferMongoDocToProcessModel(stockTransfer models.StockTransf
 				LineNumber:      detail.LineNumber,
 				WhCode:          detail.WhCode,
 				LocationCode:    detail.LocationCode,
+				ToWhCode:        detail.ToWhCode,
+				ToLocationCode:  detail.ToLocationCode,
 				Qty:             detail.Qty,
 				Price:           detail.Price,
 				PriceExcludeVat: detail.PriceExcludeVat,
@@ -208,30 +210,23 @@ func ConvertStockTransferMongoDocToProcessModel(stockTransfer models.StockTransf
 }
 
 // MapStockTransferToDocDetailStructs - converts stock transfer to document detail structs
+//
+// ใบโอนหนึ่งบรรทัดต้องกลายเป็นสองบรรทัดเสมอ: จ่ายออกจากคลังต้นทาง และรับเข้าคลังปลายทาง
+// ถ้าสร้างแค่ขาออก ของจะหายจากบริษัททุกครั้งที่โอนคลัง
+// ทิศทางของแต่ละบรรทัดอยู่ที่ CalcFlag (-1 จ่ายออก, 1 รับเข้า) ให้ตรงกับเส้นทางสร้างฐานข้อมูลใหม่
 func MapStockTransferToDocDetailStructs(processData models.ProcessMongoTransModel, holdingCode string) []models.DocDetailStruct {
 	var docDetailStructs []models.DocDetailStruct
 
-	for i, detail := range processData.Details {
-		// For stock transfer, we need to create two entries:
-		// 1. Negative entry for source warehouse (reduce stock)
-		// 2. Positive entry for destination warehouse (increase stock)
-
-		// Note: Stock transfer logic will be handled by the existing detail processing
-		// For now, create a single entry and let the stock calculation handle the transfer
-		docDetailStruct := models.DocDetailStruct{
+	lineNumber := 0
+	for _, detail := range processData.Details {
+		line := models.DocDetailStruct{
 			DocDateTime:     processData.DocDateTime,
 			DocNo:           processData.DocNo,
-			LineNumber:      i + 1,
 			TransFlag:       TRANS_FLAG_STOCK_TRANSFER,
-			CalcFlag:        1, // Will be processed by stock calculation
-			CalcSeq:         1,
 			ItemCode:        detail.ItemCode,
 			Description:     detail.ItemCode, // Use ItemCode as description if no name available
 			Barcode:         detail.Barcode,
 			UnitCode:        detail.UnitCode,
-			WhCode:          detail.WhCode,
-			LocationCode:    detail.LocationCode,
-			TotalQty:        detail.Qty,
 			Price:           detail.Price,
 			PriceExcludeVat: detail.PriceExcludeVat,
 			UnitStand:       1.0,
@@ -239,7 +234,26 @@ func MapStockTransferToDocDetailStructs(processData models.ProcessMongoTransMode
 			DocRef:          detail.DocRef,
 			SumAmount:       detail.SumAmount,
 		}
-		docDetailStructs = append(docDetailStructs, docDetailStruct)
+
+		lineNumber++
+		outLine := line
+		outLine.LineNumber = lineNumber
+		outLine.CalcFlag = -1
+		outLine.CalcSeq = 1
+		outLine.WhCode = detail.WhCode
+		outLine.LocationCode = detail.LocationCode
+		outLine.TotalQty = detail.Qty * -1
+		docDetailStructs = append(docDetailStructs, outLine)
+
+		lineNumber++
+		inLine := line
+		inLine.LineNumber = lineNumber
+		inLine.CalcFlag = 1
+		inLine.CalcSeq = 2
+		inLine.WhCode = detail.ToWhCode
+		inLine.LocationCode = detail.ToLocationCode
+		inLine.TotalQty = detail.Qty
+		docDetailStructs = append(docDetailStructs, inLine)
 	}
 
 	return docDetailStructs

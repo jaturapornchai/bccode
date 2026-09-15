@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/myglobal"
 	mypg "smlcloudplatform/internal/goapi/mypg"
-	processstock "smlcloudplatform/internal/goapi/process/process-stock"
+	"smlcloudplatform/internal/goapi/process/stockengine"
 
 	"github.com/labstack/echo/v4"
 )
@@ -24,19 +25,18 @@ type processStockCalcCostRequest struct {
 	BusinessCode string          `json:"businesscode"`
 	CommandID    string          `json:"commandid"`
 	ItemCodeList json.RawMessage `json:"itemcodelist"`
-	DeleteFirst  *bool           `json:"deletefirst"`
 	PointQty     *int            `json:"pointqty"`
 	PointAmount  *int            `json:"pointamount"`
 	PointCost    *int            `json:"pointcost"`
-	Incremental  *bool           `json:"incremental"` // ใช้ incremental calculation (ตรวจ checksum ก่อน)
-	MinimalLog   *bool           `json:"minimallog"`  // ใช้ UPSERT แทน DELETE+INSERT เพื่อลด WAL
 }
 
 // processStockCalcCostItemResult holds per-item execution metadata for API responses.
 type processStockCalcCostItemResult struct {
 	ItemCode   string `json:"itemcode"`
 	Status     string `json:"status"`
+	Rows       int    `json:"rows"`
 	DurationMs int64  `json:"durationms"`
+	Error      string `json:"error,omitempty"`
 }
 
 // ProcessStockCalcCostHandler executes ProductCalcCost for a list of item codes.
@@ -90,24 +90,7 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 	pointAmount := resolvePoint(payload.PointAmount, myglobal.ConfigSystem.StockAmountPoint)
 	pointCost := resolvePoint(payload.PointCost, myglobal.ConfigSystem.StockCostPoint)
 
-	deleteFirst := true
-	if payload.DeleteFirst != nil {
-		deleteFirst = *payload.DeleteFirst
-	}
-
-	// Incremental mode (default: false for API to maintain backward compatibility)
-	incremental := false
-	if payload.Incremental != nil {
-		incremental = *payload.Incremental
-	}
-
-	// MinimalLog mode (default: false for API to maintain backward compatibility)
-	minimalLog := false
-	if payload.MinimalLog != nil {
-		minimalLog = *payload.MinimalLog
-	}
-
-	results, err := runProcessStockCalcCost(payload.HoldingCode, payload.BusinessCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, incremental, minimalLog)
+	results, err := runProcessStockCalcCost(payload.HoldingCode, payload.BusinessCode, itemCodes, pointQty, pointAmount, pointCost)
 	if err != nil {
 		logger.Error("ProcessStockCalcCostHandler failed: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]any{
@@ -126,9 +109,6 @@ func ProcessStockCalcCostHandler(c echo.Context) error {
 		"commandid":      payload.CommandID,
 		"processeditems": len(results),
 		"durationms":     time.Since(start).Milliseconds(),
-		"deletefirst":    deleteFirst,
-		"incremental":    incremental,
-		"minimallog":     minimalLog,
 		"pointqty":       pointQty,
 		"pointamount":    pointAmount,
 		"pointcost":      pointCost,
@@ -192,7 +172,11 @@ func parseItemCodesFromJSON(raw json.RawMessage) ([]string, error) {
 	return nil, fmt.Errorf("item_code_list must be array or string, got: %s", string(raw))
 }
 
-func runProcessStockCalcCost(holdingCode, businessCode string, itemCodes []string, pointQty, pointAmount, pointCost int, deleteFirst, incremental, minimalLog bool) ([]processStockCalcCostItemResult, error) {
+// runProcessStockCalcCost คำนวณต้นทุนใหม่ทั้งชีวิตของสินค้าที่ระบุ แล้วรอจนเสร็จ
+//
+// ใช้ตอนผู้ใช้สั่งประมวลผลเองจากจอเครื่องมือ จึงคำนวณทันทีไม่ผ่านคิว
+// เอกสารที่บันทึกตามปกติจะเข้าคิวให้ตัวประมวลผลเบื้องหลังแทน (stockengine.MarkDirty)
+func runProcessStockCalcCost(holdingCode, businessCode string, itemCodes []string, pointQty, pointAmount, pointCost int) ([]processStockCalcCostItemResult, error) {
 	if len(itemCodes) == 0 {
 		return nil, errors.New("itemcodelist must contain at least one item")
 	}
@@ -202,25 +186,36 @@ func runProcessStockCalcCost(holdingCode, businessCode string, itemCodes []strin
 		return nil, fmt.Errorf("database connection error: %w", err)
 	}
 
+	options := stockengine.DefaultOptions()
+	options.PointQty = pointQty
+	options.PointAmount = pointAmount
+	options.PointCost = pointCost
+
+	ctx := context.Background()
 	results := make([]processStockCalcCostItemResult, 0, len(itemCodes))
+
 	for idx, itemCode := range itemCodes {
-		logger.Info("ProcessStockCalcCost processing %s (%d/%d) for shop %s (incremental=%v, minimalLog=%v)",
-			itemCode, idx+1, len(itemCodes), holdingCode, incremental, minimalLog)
+		logger.Info("ProcessStockCalcCost processing %s (%d/%d) for holding %s company %s",
+			itemCode, idx+1, len(itemCodes), holdingCode, businessCode)
 		itemStart := time.Now()
 
-		if incremental {
-			// Use incremental mode with checksum checking
-			processstock.ProductCalcCostIncrementalCompany(db, holdingCode, businessCode, itemCode, pointQty, pointAmount, pointCost, incremental, minimalLog)
-		} else {
-			// Legacy mode
-			processstock.ProductCalcCostCompany(db, holdingCode, businessCode, itemCode, pointQty, pointAmount, pointCost, deleteFirst)
-		}
+		rows, err := stockengine.Recalculate(ctx, db,
+			stockengine.Scope{BusinessCode: businessCode, ItemCode: itemCode},
+			myglobal.TransFlagsToProcess, options)
 
-		results = append(results, processStockCalcCostItemResult{
+		item := processStockCalcCostItemResult{
 			ItemCode:   itemCode,
 			Status:     "completed",
+			Rows:       rows,
 			DurationMs: time.Since(itemStart).Milliseconds(),
-		})
+		}
+		if err != nil {
+			// สินค้าตัวที่พังต้องไม่ฉุดตัวอื่น ผู้ใช้เห็นรายตัวว่าอันไหนไม่ผ่าน
+			logger.Error("ProcessStockCalcCost %s: %v", itemCode, err)
+			item.Status = "failed"
+			item.Error = err.Error()
+		}
+		results = append(results, item)
 	}
 
 	return results, nil

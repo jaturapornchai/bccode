@@ -302,12 +302,8 @@ func ReportPostHandler(c echo.Context) error {
 		pointQty := resolvePoint(payLoad.PointQty, myglobal.ConfigSystem.StockQtyPoint)
 		pointAmount := resolvePoint(payLoad.PointAmount, myglobal.ConfigSystem.StockAmountPoint)
 		pointCost := resolvePoint(payLoad.PointCost, myglobal.ConfigSystem.StockCostPoint)
-		deleteFirst := true
-		if payLoad.DeleteFirst != nil {
-			deleteFirst = *payLoad.DeleteFirst
-		}
 
-		results, err := runProcessStockCalcCost(holdingCode, businessCode, itemCodes, pointQty, pointAmount, pointCost, deleteFirst, false, false)
+		results, err := runProcessStockCalcCost(holdingCode, businessCode, itemCodes, pointQty, pointAmount, pointCost)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]any{
 				"error": err.Error(),
@@ -325,7 +321,6 @@ func ReportPostHandler(c echo.Context) error {
 			"pointqty":       pointQty,
 			"pointamount":    pointAmount,
 			"pointcost":      pointCost,
-			"deletefirst":    deleteFirst,
 			"items":          results,
 		})
 	}
@@ -472,6 +467,11 @@ func ReportPostHandler(c echo.Context) error {
 
 	if payLoad.CommandID == "stockbalancebyproductandwarehouseandlocationprocess" {
 		// ประมวลผล รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
+		businessCode, scopeErr := reportCompanyScope(c, payLoad.HoldingCode)
+		if scopeErr != nil {
+			return scopeErr.respond(c)
+		}
+
 		condition, _ := strconv.Atoi(fmt.Sprintf("%v", payLoad.Condition))
 		balanceOnly, _ := strconv.ParseBool(fmt.Sprintf("%v", payLoad.BalanceOnly))
 		barcodeListArray := strings.Split(fmt.Sprintf("%v", payLoad.BarcodeList), ",")
@@ -504,7 +504,7 @@ func ReportPostHandler(c echo.Context) error {
 
 		// สร้าง Report
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
-		prepareReport := processstock.ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(payLoad.HoldingCode, condition, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList, timezoneCode)
+		prepareReport := processstock.ProcessProductBalanceByItemAndWareHouseAndLocationWithTimezone(payLoad.HoldingCode, businessCode, condition, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList, timezoneCode)
 		logger.Info("PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -516,6 +516,11 @@ func ReportPostHandler(c echo.Context) error {
 
 	if payLoad.CommandID == "stockbalancebywarehouseandproductprocess" {
 		// ประมวลผล รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
+		businessCode, scopeErr := reportCompanyScope(c, payLoad.HoldingCode)
+		if scopeErr != nil {
+			return scopeErr.respond(c)
+		}
+
 		balanceOnly, _ := strconv.ParseBool(fmt.Sprintf("%v", payLoad.BalanceOnly))
 		barcodeListArray := strings.Split(fmt.Sprintf("%v", payLoad.BarcodeList), ",")
 		barcodeList := make([]string, 0)
@@ -529,7 +534,7 @@ func ReportPostHandler(c echo.Context) error {
 		logger.Info("Barcode List: %v", barcodeList)
 
 		finalDate := fmt.Sprintf("%v", payLoad.FinalDate)
-		prepareReport := processstock.ProcessProductBalanceByWareHouseAndItem(payLoad.HoldingCode, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
+		prepareReport := processstock.ProcessProductBalanceByWareHouseAndItem(payLoad.HoldingCode, businessCode, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
 		logger.Info("PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -541,6 +546,11 @@ func ReportPostHandler(c echo.Context) error {
 
 	if payLoad.CommandID == "stockbalancebylocationandproductprocess" {
 		// ดำเนินการตามคำสั่งที่ต้องการ
+		businessCode, scopeErr := reportCompanyScope(c, payLoad.HoldingCode)
+		if scopeErr != nil {
+			return scopeErr.respond(c)
+		}
+
 		condition, _ := strconv.Atoi(fmt.Sprintf("%v", payLoad.Condition))
 		balanceOnly, _ := strconv.ParseBool(fmt.Sprintf("%v", payLoad.BalanceOnly))
 		barcodeListArray := strings.Split(fmt.Sprintf("%v", payLoad.BarcodeList), ",")
@@ -558,7 +568,7 @@ func ReportPostHandler(c echo.Context) error {
 		logger.Info("Condition: %d, Final Date: %s", condition, finalDate)
 		// สร้าง Report
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
-		prepareReport := processstock.ProcessProductBalanceByLocationAndItem(payLoad.HoldingCode, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
+		prepareReport := processstock.ProcessProductBalanceByLocationAndItem(payLoad.HoldingCode, businessCode, finalDate, balanceOnly, barcodeList, payLoad.WarehouseList)
 		logger.Info("ProcessProductBalanceByLocationCodeBarcode PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
@@ -569,6 +579,11 @@ func ReportPostHandler(c echo.Context) error {
 	}
 
 	if payLoad.CommandID == "stock_product_movement_and_cost_process" {
+		businessCode, scopeErr := reportCompanyScope(c, payLoad.HoldingCode)
+		if scopeErr != nil {
+			return scopeErr.respond(c)
+		}
+
 		// เคลื่อนไหวสินค้า/ต้นทุน
 		condition, _ := strconv.Atoi(fmt.Sprintf("%v", payLoad.Condition))
 		movementOnly, _ := strconv.ParseBool(fmt.Sprintf("%v", payLoad.MovementOnly))
@@ -587,7 +602,7 @@ func ReportPostHandler(c echo.Context) error {
 		logger.Info("Condition: %d, Final Date: %s", condition, finalDate)
 		// สร้าง Report
 		// รายงานสินค้าคงเหลือ ตามบาร์โค้ด คลังสินค้า ที่เก็บสินค้า
-		prepareReport := processstock.ProcessProductMovement(payLoad.HoldingCode, fromDate, finalDate, movementOnly, itemCodeList, payLoad.WarehouseList)
+		prepareReport := processstock.ProcessProductMovement(payLoad.HoldingCode, businessCode, fromDate, finalDate, movementOnly, itemCodeList, payLoad.WarehouseList)
 		logger.Info("PrepareReport: %+v", prepareReport)
 		return c.JSON(http.StatusOK, map[string]any{
 			"message": "Report",
