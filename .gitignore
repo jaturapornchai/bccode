@@ -44,6 +44,7 @@ node_modules/
 .serena/
 .codex/
 .playwright-mcp/
+.warroom/
 __pycache__/
 *.pyc
 generated-images/

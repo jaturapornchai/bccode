@@ -1,0 +1,967 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { type LanguageCode } from "@/lib/i18n";
+import { useBackendLanguage, backendText } from "@/lib/backend-language";
+import {
+  type FixedAsset,
+  type AssetType,
+  type DepreciationScheduleItem,
+  type AssetScheduleReport,
+  getFixedAssets,
+  getFixedAsset,
+  getAssetSchedule,
+  getAssetTypes,
+  getFixedAssetScheduleReport,
+  getTaxReconciliationReport,
+  sendFixedAssetCommand,
+  assetName,
+  FA_LABELS,
+} from "@/lib/fixed-assets";
+
+interface FixedAssetsScreenProps {
+  route: string;
+  embedded?: boolean;
+  language?: LanguageCode;
+}
+
+export function FixedAssetsScreen({ route, embedded = false, language = "th" }: FixedAssetsScreenProps) {
+  const dictionary = useBackendLanguage(language, "");
+  const [activeTab, setActiveTab] = useState<string>("registry");
+  const [assets, setAssets] = useState<FixedAsset[]>([]);
+  const [types, setTypes] = useState<AssetType[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAsset, setSelectedAsset] = useState<FixedAsset | null>(null);
+  const [scheduleItems, setScheduleItems] = useState<DepreciationScheduleItem[]>([]);
+  const [reportData, setReportData] = useState<AssetScheduleReport | null>(null);
+  const [taxReportData, setTaxReportData] = useState<AssetScheduleReport | null>(null);
+  const [postFiscalYear, setPostFiscalYear] = useState<string>("2026");
+  const [postPeriod, setPostPeriod] = useState<number>(1);
+  const [postStatusMsg, setPostStatusMsg] = useState<string>("");
+
+  // Form State for New/Edit Asset
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<FixedAsset>>({
+    assetcode: "",
+    names: [{ code: "th", name: "" }],
+    assettypecode: "EQUIPMENT",
+    cost: "0.00",
+    scrapvalue: "1.00",
+    usefullifeyears: 5,
+    deprecpercent: "20.00",
+    purchasedate: "2026-01-01",
+    startcalcdate: "2026-01-01",
+    firstyearpercent: "0.00",
+    assetaccountcode: "120101",
+    accumdeprecaccountcode: "129101",
+    deprecexpenseaccountcode: "520103",
+    status: "active",
+  });
+
+  // Disposal Form State
+  const [disposalForm, setDisposalForm] = useState({
+    assetcode: "",
+    disposaldate: "2026-06-30",
+    disposaltype: "sale" as "sale" | "write_off" | "scrap",
+    saleprice: "0.00",
+    vatamount: "0.00",
+    settlementaccountcode: "110101",
+    gainlossaccountcode: "420101",
+    reason: "จำหน่ายตามมติคณะกรรมการ",
+  });
+
+  const { confirm, confirmationDialog } = useConfirmDialog({
+    defaultConfirmLabel: "ยืนยัน",
+    defaultCancelLabel: "ยกเลิก",
+  });
+
+  // Sync activeTab with initial route
+  useEffect(() => {
+    const cleanRoute = route.split("?")[0];
+    if (cleanRoute === "/asset/registry") setActiveTab("registry");
+    else if (cleanRoute === "/asset/depreciation") setActiveTab("depreciation");
+    else if (cleanRoute === "/asset/post-gl") setActiveTab("post-gl");
+    else if (cleanRoute === "/asset/disposal") setActiveTab("disposal");
+    else if (cleanRoute === "/report/assetschedule") setActiveTab("schedule");
+    else if (cleanRoute === "/asset/types") setActiveTab("types");
+  }, [route]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [resAssets, resTypes] = await Promise.all([
+        getFixedAssets({ q: searchQuery }),
+        getAssetTypes(),
+      ]);
+      if (resAssets?.items) setAssets(resAssets.items);
+      if (resTypes?.items) setTypes(resTypes.items);
+    } catch (err) {
+      console.error("Failed to load FA data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [searchQuery]);
+
+  const loadSchedule = async (assetCode: string) => {
+    try {
+      const res = await getAssetSchedule(assetCode);
+      if (res?.items) setScheduleItems(res.items);
+    } catch (err) {
+      console.error("Failed to load schedule", err);
+    }
+  };
+
+  const loadScheduleReport = async () => {
+    setLoading(true);
+    try {
+      const res = await getFixedAssetScheduleReport(postFiscalYear, postPeriod);
+      if (res?.report) setReportData(res.report);
+    } catch (err) {
+      console.error("Failed to load schedule report", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTaxReport = async () => {
+    setLoading(true);
+    try {
+      const res = await getTaxReconciliationReport(postFiscalYear);
+      if (res?.report) setTaxReportData(res.report);
+    } catch (err) {
+      console.error("Failed to load tax report", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "schedule") loadScheduleReport();
+    if (activeTab === "tax") loadTaxReport();
+  }, [activeTab, postFiscalYear, postPeriod]);
+
+  // Actions
+  const handleSaveAsset = async () => {
+    if (!editForm.assetcode?.trim()) {
+      alert("กรุณาระบุรหัสสินทรัพย์");
+      return;
+    }
+    const isNew = !editForm.id;
+    const res = await sendFixedAssetCommand({
+      resource: "assets",
+      action: isNew ? "create" : "update",
+      requestid: crypto.randomUUID(),
+      id: editForm.id,
+      version: editForm.version,
+      asset: editForm,
+    });
+
+    if (res?.success) {
+      alert(isNew ? "บันทึกสินทรัพย์เรียบร้อยแล้ว" : "แก้ไขสินทรัพย์เรียบร้อยแล้ว");
+      setIsEditing(false);
+      loadData();
+    } else {
+      alert(res?.message || "เกิดข้อผิดพลาดในการบันทึก");
+    }
+  };
+
+  const handleDeleteAsset = async (ast: FixedAsset) => {
+    const ok = await confirm({
+      title: `ยืนยันการลบสินทรัพย์ ${ast.assetcode}?`,
+      description: "รายการที่ยังไม่ได้ผ่านรายการเข้า GL จะถูกลบถาวร",
+      confirmLabel: "ยืนยันลบ",
+    });
+    if (!ok) return;
+
+    const res = await sendFixedAssetCommand({
+      resource: "assets",
+      action: "delete",
+      requestid: crypto.randomUUID(),
+      id: ast.id,
+      version: ast.version,
+    });
+
+    if (res?.success) {
+      alert("ลบสินทรัพย์เรียบร้อยแล้ว");
+      loadData();
+    } else {
+      alert(res?.message || "เกิดข้อผิดพลาดในการลบ");
+    }
+  };
+
+  const handlePostGL = async () => {
+    const ok = await confirm({
+      title: `ยืนยันการผ่านรายการค่าเสื่อมราคาเข้า GL?`,
+      description: `ปีบัญชี ${postFiscalYear} งวดที่ ${postPeriod} (Dr. ค่าเสื่อมราคา / Cr. ค่าเสื่อมราคาสะสม)`,
+      confirmLabel: "ผ่านรายการ (Post)",
+    });
+    if (!ok) return;
+
+    setLoading(true);
+    setPostStatusMsg("กำลังประมวลผลผ่านรายการ...");
+    const res = await sendFixedAssetCommand({
+      resource: "depreciations",
+      action: "post-gl",
+      requestid: crypto.randomUUID(),
+      fiscalyear: postFiscalYear,
+      period: postPeriod,
+    });
+    setLoading(false);
+
+    if (res?.success) {
+      setPostStatusMsg(`ผ่านรายการสำเร็จ! เลขที่ใบสำคัญสมุดรายวัน: ${res?.journal?.docno || "JV"}`);
+      alert(`ผ่านรายการสำเร็จ! เลขที่ใบสำคัญ: ${res?.journal?.docno}`);
+      loadData();
+    } else {
+      setPostStatusMsg(`ล้มเหลว: ${res?.message}`);
+      alert(res?.message || "เกิดข้อผิดพลาดในการผ่านรายการ");
+    }
+  };
+
+  const handleDisposeAsset = async () => {
+    if (!disposalForm.assetcode) {
+      alert("กรุณาเลือกรหัสสินทรัพย์ที่ต้องการจำหน่าย");
+      return;
+    }
+    const ok = await confirm({
+      title: `ยืนยันการจำหน่ายสินทรัพย์ ${disposalForm.assetcode}?`,
+      description: `ระบบจะคำนวณมูลค่าคงเหลือ กำไร/ขาดทุน และลงบัญชี GL อัตโนมัติ`,
+      confirmLabel: "ยืนยันจำหน่าย",
+    });
+    if (!ok) return;
+
+    setLoading(true);
+    const res = await sendFixedAssetCommand({
+      resource: "disposals",
+      action: "dispose",
+      requestid: crypto.randomUUID(),
+      disposal: disposalForm,
+    });
+    setLoading(false);
+
+    if (res?.success) {
+      alert(`บันทึกจำหน่ายสำเร็จ! ใบสำคัญ GL: ${res?.journal?.docno}`);
+      loadData();
+    } else {
+      alert(res?.message || "เกิดข้อผิดพลาดในการจำหน่าย");
+    }
+  };
+
+  const containerClass = embedded
+    ? "p-3 h-full min-h-0 flex flex-col overflow-hidden text-[0.95rem]"
+    : "mx-auto max-w-[1800px] p-4 min-h-[calc(100dvh-2rem)] flex flex-col text-[0.95rem]";
+
+  return (
+    <main className={containerClass} data-fa-tab={activeTab}>
+      {/* Top Header Navigation Tabs */}
+      <header className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+            FA
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-foreground leading-tight">
+              {backendText(dictionary, "menu_fixed_assets_fa", "ระบบสินทรัพย์และค่าเสื่อมราคา")}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Fixed Assets & Depreciation Management (มาตรฐานสำนักงานบัญชีไทย)
+            </p>
+          </div>
+        </div>
+
+        {/* Tab Buttons */}
+        <nav aria-label="Fixed Assets Navigation" className="flex flex-wrap items-center gap-2">
+          <Button
+            variant={activeTab === "registry" ? "default" : "outline"}
+            className="h-10 text-sm font-medium"
+            onClick={() => setActiveTab("registry")}
+          >
+            {FA_LABELS.assetRegistry[language === "en" ? "en" : "th"]}
+          </Button>
+          <Button
+            variant={activeTab === "depreciation" ? "default" : "outline"}
+            className="h-10 text-sm font-medium"
+            onClick={() => setActiveTab("depreciation")}
+          >
+            {FA_LABELS.depreciationCalc[language === "en" ? "en" : "th"]}
+          </Button>
+          <Button
+            variant={activeTab === "post-gl" ? "default" : "outline"}
+            className="h-10 text-sm font-medium"
+            onClick={() => setActiveTab("post-gl")}
+          >
+            {FA_LABELS.postGL[language === "en" ? "en" : "th"]}
+          </Button>
+          <Button
+            variant={activeTab === "disposal" ? "default" : "outline"}
+            className="h-10 text-sm font-medium"
+            onClick={() => setActiveTab("disposal")}
+          >
+            {FA_LABELS.assetDisposal[language === "en" ? "en" : "th"]}
+          </Button>
+          <Button
+            variant={activeTab === "schedule" ? "default" : "outline"}
+            className="h-10 text-sm font-medium"
+            onClick={() => setActiveTab("schedule")}
+          >
+            {FA_LABELS.assetSchedule[language === "en" ? "en" : "th"]}
+          </Button>
+          <Button
+            variant={activeTab === "tax" ? "default" : "outline"}
+            className="h-10 text-sm font-medium"
+            onClick={() => setActiveTab("tax")}
+          >
+            {FA_LABELS.taxReconciliation[language === "en" ? "en" : "th"]}
+          </Button>
+        </nav>
+      </header>
+
+      {/* Tab Content Area */}
+      <div className="flex-1 min-h-0 pt-3 flex flex-col">
+        {/* 1. ASSET REGISTRY TAB */}
+        {activeTab === "registry" && (
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            {/* Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-card/60 p-3 rounded-xl border border-border/40">
+              <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md">
+                <input
+                  type="text"
+                  placeholder="ค้นหารหัส ชื่อ หรือ Serial..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                    setEditForm({
+                      assetcode: `FA-${new Date().getFullYear()}-${String(assets.length + 1).padStart(3, "0")}`,
+                      names: [{ code: "th", name: "" }],
+                      assettypecode: "EQUIPMENT",
+                      cost: "10000.00",
+                      scrapvalue: "1.00",
+                      usefullifeyears: 5,
+                      deprecpercent: "20.00",
+                      purchasedate: new Date().toISOString().split("T")[0],
+                      startcalcdate: new Date().toISOString().split("T")[0],
+                      firstyearpercent: "0.00",
+                      assetaccountcode: "120101",
+                      accumdeprecaccountcode: "129101",
+                      deprecexpenseaccountcode: "520103",
+                      status: "active",
+                    });
+                    setIsEditing(true);
+                  }}
+                  className="h-10 bg-primary text-primary-foreground text-sm font-medium"
+                >
+                  + {FA_LABELS.createAsset[language === "en" ? "en" : "th"]}
+                </Button>
+              </div>
+            </div>
+
+            {/* Asset Table */}
+            <div className="flex-1 min-h-0 overflow-auto border border-border/60 rounded-xl bg-card">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10 border-b border-border text-xs uppercase tracking-wider font-semibold">
+                  <tr>
+                    <th className="p-3">รหัสสินทรัพย์</th>
+                    <th className="p-3">ชื่อสินทรัพย์</th>
+                    <th className="p-3">ประเภท</th>
+                    <th className="p-3 text-right">ราคาทุน</th>
+                    <th className="p-3 text-right">อายุ (ปี)</th>
+                    <th className="p-3 text-right">อัตรา (%)</th>
+                    <th className="p-3">วันที่เริ่มคิด</th>
+                    <th className="p-3 text-center">สถานะ</th>
+                    <th className="p-3 text-center">การจัดการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {assets.map((ast) => (
+                    <tr key={ast.assetcode} className="hover:bg-muted/40 transition-colors">
+                      <td className="p-3 font-semibold text-primary">{ast.assetcode}</td>
+                      <td className="p-3 font-medium">{assetName(ast, language)}</td>
+                      <td className="p-3 text-muted-foreground">{ast.assettypecode}</td>
+                      <td className="p-3 text-right font-mono font-medium">
+                        {Number(ast.cost).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-right font-mono">{ast.usefullifeyears}</td>
+                      <td className="p-3 text-right font-mono">{ast.deprecpercent}%</td>
+                      <td className="p-3 font-mono text-xs">{ast.startcalcdate}</td>
+                      <td className="p-3 text-center">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                            ast.status === "active"
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                              : "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                          }`}
+                        >
+                          {ast.status === "active" ? "ใช้งานปกติ" : "จำหน่ายแล้ว"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => {
+                              setSelectedAsset(ast);
+                              loadSchedule(ast.assetcode);
+                              setActiveTab("depreciation");
+                            }}
+                          >
+                            ตารางงวด
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => {
+                              setEditForm(ast);
+                              setIsEditing(true);
+                            }}
+                          >
+                            แก้ไข
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteAsset(ast)}
+                          >
+                            ลบ
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {assets.length === 0 && !loading && (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                        ไม่พบข้อมูลสินทรัพย์ถาวร
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Dialog for Edit / Create */}
+            {isEditing && (
+              <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-card border border-border rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-foreground border-b border-border/60 pb-3">
+                    {editForm.id ? "แก้ไขข้อมูลสินทรัพย์" : "เพิ่มสินทรัพย์ถาวรใหม่"}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4 text-sm max-h-[60vh] overflow-y-auto pr-1">
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสสินทรัพย์</label>
+                      <input
+                        type="text"
+                        value={editForm.assetcode || ""}
+                        disabled={Boolean(editForm.id)}
+                        onChange={(e) => setEditForm({ ...editForm, assetcode: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background disabled:opacity-60"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ชื่อสินทรัพย์ (ไทย)</label>
+                      <input
+                        type="text"
+                        value={editForm.names?.[0]?.name || ""}
+                        onChange={(e) => setEditForm({ ...editForm, names: [{ code: "th", name: e.target.value }] })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ประเภทสินทรัพย์</label>
+                      <input
+                        type="text"
+                        value={editForm.assettypecode || "EQUIPMENT"}
+                        onChange={(e) => setEditForm({ ...editForm, assettypecode: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ราคาทุน (Cost)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.cost || "0.00"}
+                        onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ราคาซาก (Scrap Value)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.scrapvalue || "1.00"}
+                        onChange={(e) => setEditForm({ ...editForm, scrapvalue: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">อายุการใช้งาน (ปี)</label>
+                      <input
+                        type="number"
+                        value={editForm.usefullifeyears || 5}
+                        onChange={(e) => {
+                          const years = Number(e.target.value);
+                          setEditForm({
+                            ...editForm,
+                            usefullifeyears: years,
+                            deprecpercent: years > 0 ? (100 / years).toFixed(2) : "0.00",
+                          });
+                        }}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">อัตราค่าเสื่อม (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.deprecpercent || "20.00"}
+                        onChange={(e) => setEditForm({ ...editForm, deprecpercent: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">วันที่ซื้อ</label>
+                      <input
+                        type="date"
+                        value={editForm.purchasedate || ""}
+                        onChange={(e) => setEditForm({ ...editForm, purchasedate: e.target.value, startcalcdate: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">สิทธิพิเศษปีแรก (%) เช่น 40% คอมพิวเตอร์</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editForm.firstyearpercent || "0.00"}
+                        onChange={(e) => setEditForm({ ...editForm, firstyearpercent: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสบัญชีสินทรัพย์ (GL)</label>
+                      <input
+                        type="text"
+                        value={editForm.assetaccountcode || "120101"}
+                        onChange={(e) => setEditForm({ ...editForm, assetaccountcode: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสบัญชีค่าเสื่อมสะสม (GL)</label>
+                      <input
+                        type="text"
+                        value={editForm.accumdeprecaccountcode || "129101"}
+                        onChange={(e) => setEditForm({ ...editForm, accumdeprecaccountcode: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสบัญชีค่าใช้จ่ายค่าเสื่อม (GL)</label>
+                      <input
+                        type="text"
+                        value={editForm.deprecexpenseaccountcode || "520103"}
+                        onChange={(e) => setEditForm({ ...editForm, deprecexpenseaccountcode: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      ยกเลิก
+                    </Button>
+                    <Button onClick={handleSaveAsset}>บันทึกข้อมูล</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 2. DEPRECIATION SCHEDULE PREVIEW TAB */}
+        {activeTab === "depreciation" && (
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">เลือกสินทรัพย์:</span>
+                <select
+                  value={selectedAsset?.assetcode || ""}
+                  onChange={(e) => {
+                    const found = assets.find((x) => x.assetcode === e.target.value);
+                    setSelectedAsset(found || null);
+                    if (found) loadSchedule(found.assetcode);
+                  }}
+                  className="h-10 px-3 rounded-lg border border-input bg-background text-sm font-medium"
+                >
+                  <option value="">-- กรุณาเลือกสินทรัพย์ --</option>
+                  {assets.map((a) => (
+                    <option key={a.assetcode} value={a.assetcode}>
+                      {a.assetcode} : {assetName(a, language)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedAsset && (
+                <div className="text-xs text-muted-foreground font-mono">
+                  ราคาทุน: {Number(selectedAsset.cost).toLocaleString()} | ซาก: {Number(selectedAsset.scrapvalue).toLocaleString()} | อัตรา: {selectedAsset.deprecpercent}%
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-auto border border-border/60 rounded-xl bg-card">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10 border-b border-border text-xs uppercase tracking-wider font-semibold">
+                  <tr>
+                    <th className="p-3">ปีบัญชี</th>
+                    <th className="p-3 text-center">งวด</th>
+                    <th className="p-3">วันที่เริ่มต้น</th>
+                    <th className="p-3">วันที่สิ้นสุด</th>
+                    <th className="p-3 text-right">จำนวนวัน</th>
+                    <th className="p-3 text-right">ค่าเสื่อมราคางวดนี้</th>
+                    <th className="p-3 text-right">ค่าเสื่อมราคาสะสม</th>
+                    <th className="p-3 text-right">มูลค่าคงเหลือสุทธิ (NBV)</th>
+                    <th className="p-3 text-center">สถานะ GL</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {scheduleItems.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-muted/40 transition-colors">
+                      <td className="p-3 font-semibold">{item.fiscalyear}</td>
+                      <td className="p-3 text-center font-mono">{item.period}</td>
+                      <td className="p-3 font-mono text-xs">{item.startdate}</td>
+                      <td className="p-3 font-mono text-xs">{item.stopdate}</td>
+                      <td className="p-3 text-right font-mono">{item.days}</td>
+                      <td className="p-3 text-right font-mono font-medium text-amber-600 dark:text-amber-400">
+                        {Number(item.perioddeprec).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-right font-mono">
+                        {Number(item.accumdeprec).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                        {Number(item.netbookvalue).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-center">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                            item.isposted
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {item.isposted ? `ผ่านแล้ว (${item.journaldocno})` : "ยังไม่ผ่าน"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {scheduleItems.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                        กรุณาเลือกสินทรัพย์เพื่อดูตารางคำนวณค่าเสื่อมราคา
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 3. POST TO GL TAB */}
+        {activeTab === "post-gl" && (
+          <div className="flex-1 min-h-0 flex flex-col max-w-xl mx-auto w-full gap-4 pt-6">
+            <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-md flex flex-col gap-4">
+              <h2 className="text-lg font-bold text-foreground border-b border-border/40 pb-2">
+                โอนค่าเสื่อมราคาเข้าบัญชีแยกประเภท (GL Journal Posting)
+              </h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                ระบบจะรวบรวมค่าเสื่อมราคาของสินทรัพย์ทุกตัวในงวดที่เลือก นำมาบันทึกสมุดรายวันทั่วไป (JV)
+                โดยเดบิตบัญชีค่าใช้จ่ายค่าเสื่อมราคา และเครดิตบัญชีค่าเสื่อมราคาสะสม
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">ปีบัญชี</label>
+                  <input
+                    type="text"
+                    value={postFiscalYear}
+                    onChange={(e) => setPostFiscalYear(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">งวดที่ (1-12)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={postPeriod}
+                    onChange={(e) => setPostPeriod(Number(e.target.value))}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                  />
+                </div>
+              </div>
+
+              {postStatusMsg && (
+                <div className="p-3 rounded-xl bg-muted/60 text-xs font-mono border border-border/40">
+                  {postStatusMsg}
+                </div>
+              )}
+
+              <Button
+                onClick={handlePostGL}
+                disabled={loading}
+                className="w-full h-11 bg-primary text-primary-foreground font-semibold text-sm mt-2"
+              >
+                {loading ? "กำลังประมวลผล..." : `ผ่านรายการประจำงวด ${postPeriod}/${postFiscalYear} เข้า GL`}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* 4. DISPOSAL TAB */}
+        {activeTab === "disposal" && (
+          <div className="flex-1 min-h-0 flex flex-col max-w-xl mx-auto w-full gap-4 pt-6">
+            <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-md flex flex-col gap-4">
+              <h2 className="text-lg font-bold text-foreground border-b border-border/40 pb-2">
+                จำหน่ายและตัดจำหน่ายสินทรัพย์ (Asset Disposal & Write-off)
+              </h2>
+
+              <div className="flex flex-col gap-3 text-sm">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">เลือกสินทรัพย์ที่ต้องการจำหน่าย</label>
+                  <select
+                    value={disposalForm.assetcode}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, assetcode: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm font-medium"
+                  >
+                    <option value="">-- กรุณาเลือกสินทรัพย์ --</option>
+                    {assets.filter((x) => x.status === "active").map((a) => (
+                      <option key={a.assetcode} value={a.assetcode}>
+                        {a.assetcode} : {assetName(a, language)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">วันที่จำหน่าย</label>
+                    <input
+                      type="date"
+                      value={disposalForm.disposaldate}
+                      onChange={(e) => setDisposalForm({ ...disposalForm, disposaldate: e.target.value })}
+                      className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">ประเภทการจำหน่าย</label>
+                    <select
+                      value={disposalForm.disposaltype}
+                      onChange={(e) => setDisposalForm({ ...disposalForm, disposaltype: e.target.value as any })}
+                      className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                    >
+                      <option value="sale">ขาย (Sale)</option>
+                      <option value="write_off">ตัดจำหน่ายชำรุด (Write-off)</option>
+                      <option value="scrap">ขายเป็นเศษซาก (Scrap)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">ราคาขาย (ก่อน VAT)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={disposalForm.saleprice}
+                      onChange={(e) => setDisposalForm({ ...disposalForm, saleprice: e.target.value })}
+                      className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">ภาษีขาย VAT 7% (ถ้ามี)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={disposalForm.vatamount}
+                      onChange={(e) => setDisposalForm({ ...disposalForm, vatamount: e.target.value })}
+                      className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">เหตุผลในการจำหน่าย</label>
+                  <input
+                    type="text"
+                    value={disposalForm.reason}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, reason: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={handleDisposeAsset}
+                disabled={loading}
+                className="w-full h-11 bg-primary text-primary-foreground font-semibold text-sm mt-2"
+              >
+                {loading ? "กำลังประมวลผล..." : "บันทึกจำหน่ายและลงบัญชีกำไร/ขาดทุน"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* 5. ASSET SCHEDULE REPORT TAB */}
+        {activeTab === "schedule" && (
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">ปีบัญชี:</span>
+                <input
+                  type="text"
+                  value={postFiscalYear}
+                  onChange={(e) => setPostFiscalYear(e.target.value)}
+                  className="h-10 w-24 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                />
+                <Button size="sm" onClick={loadScheduleReport} className="h-10">
+                  ดึงรายงาน
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                รายงานตารางค่าเสื่อมราคาและสินทรัพย์ถาวร (Fixed Asset Schedule)
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-auto border border-border/60 rounded-xl bg-card">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10 border-b border-border text-xs uppercase tracking-wider font-semibold">
+                  <tr>
+                    {reportData?.columns.map((col) => (
+                      <th key={col.key} className={`p-3 ${col.amount ? "text-right" : ""}`}>
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {reportData?.rows.map((r, i) => (
+                    <tr key={i} className="hover:bg-muted/40 transition-colors">
+                      {reportData.columns.map((col) => (
+                        <td key={col.key} className={`p-3 font-mono text-xs ${col.amount ? "text-right" : ""}`}>
+                          {r[col.key]}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {reportData?.totals && (
+                    <tr className="bg-muted/60 font-bold border-t-2 border-border text-xs font-mono">
+                      {reportData.columns.map((col) => (
+                        <td key={col.key} className={`p-3 ${col.amount ? "text-right" : ""}`}>
+                          {reportData.totals[col.key] || ""}
+                        </td>
+                      ))}
+                    </tr>
+                  )}
+                  {(!reportData || reportData.rows.length === 0) && !loading && (
+                    <tr>
+                      <td colSpan={13} className="p-8 text-center text-muted-foreground">
+                        ไม่พบข้อมูลรายงานสำหรับปีนี้
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 6. TAX RECONCILIATION TAB (PND 50) */}
+        {activeTab === "tax" && (
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">ปีภาษี:</span>
+                <input
+                  type="text"
+                  value={postFiscalYear}
+                  onChange={(e) => setPostFiscalYear(e.target.value)}
+                  className="h-10 w-24 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                />
+                <Button size="sm" onClick={loadTaxReport} className="h-10">
+                  ดึงรายงาน
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                รายงานกระทบยอดค่าเสื่อมราคาทางบัญชี vs ทางภาษีอากร สำหรับแบบ ภ.ง.ด.50
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-auto border border-border/60 rounded-xl bg-card">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10 border-b border-border text-xs uppercase tracking-wider font-semibold">
+                  <tr>
+                    {taxReportData?.columns.map((col) => (
+                      <th key={col.key} className={`p-3 ${col.amount ? "text-right" : ""}`}>
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {taxReportData?.rows.map((r, i) => (
+                    <tr key={i} className="hover:bg-muted/40 transition-colors">
+                      {taxReportData.columns.map((col) => (
+                        <td key={col.key} className={`p-3 font-mono text-xs ${col.amount ? "text-right" : ""}`}>
+                          {r[col.key]}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {taxReportData?.totals && (
+                    <tr className="bg-muted/60 font-bold border-t-2 border-border text-xs font-mono">
+                      {taxReportData.columns.map((col) => (
+                        <td key={col.key} className={`p-3 ${col.amount ? "text-right" : ""}`}>
+                          {taxReportData.totals[col.key] || ""}
+                        </td>
+                      ))}
+                    </tr>
+                  )}
+                  {(!taxReportData || taxReportData.rows.length === 0) && !loading && (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                        ไม่พบข้อมูลสำหรับปีภาษีนี้
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {confirmationDialog}
+    </main>
+  );
+}

@@ -121,9 +121,10 @@ import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
 import { ZoomControl } from "../zoom-control";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
-import { isMenuScreenPending } from "@/lib/menu-screen-status";
+import { isMenuScreenPending, isFixedAssetRoute } from "@/lib/menu-screen-status";
 import { isGeneralLedgerRoute } from "@/lib/general-ledger";
 import { GeneralLedgerScreen } from "@/app/gl/general-ledger-screen";
+import { FixedAssetsScreen } from "@/app/asset/fixed-assets-screen";
 import { MenuDataTable } from "./menu-data-table";
 import { DashboardHome } from "./dashboard-home";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
@@ -2859,6 +2860,10 @@ function WorkTabPanel({
 
   if (isGeneralLedgerRoute(activeTab.route)) {
     return <GeneralLedgerScreen embedded language={language} route={activeTab.route} />;
+  }
+
+  if (isFixedAssetRoute(activeTab.route)) {
+    return <FixedAssetsScreen embedded language={language} route={activeTab.route} />;
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);

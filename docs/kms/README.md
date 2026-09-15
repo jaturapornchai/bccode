@@ -102,6 +102,7 @@
 - [decisions/2026-09-14-menu-bar-flex-wrap.md](decisions/2026-09-14-menu-bar-flex-wrap.md) — ปรับแถบเมนูนำทางด้านบนให้ตัดขึ้นบรรทัดใหม่ (Flex Wrap) แทนการมีแถบเลื่อนแนวนอน (No Horizontal Scroll)
 - [decisions/2026-09-14-input-addon-icons-no-overlap.md](decisions/2026-09-14-input-addon-icons-no-overlap.md) — แก้ไขปัญหาไอคอนในช่องเลือกผังบัญชีซ้อนทับกัน (Fix AccountSelect Addon Icons Overlap)
 - [decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md](decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md) — Deploy ระบบบัญชีแยกประเภท วงจรบัญชีมาตรฐานไทย และแก้ไขระบบรายงาน สู่ Production (r20260915-1)
+- [decisions/2026-09-15-fixed-assets-and-depreciation-engine.md](decisions/2026-09-15-fixed-assets-and-depreciation-engine.md) — ระบบบริหารสินทรัพย์ถาวรและการคำนวณค่าเสื่อมราคา (Fixed Assets & Depreciation Engine) ตามต้นแบบ Champ, 2-Tier DB, GL Posting, สิทธิประโยชน์ภาษี และ MCP Tools สู่ Production (r20260915-fa-1)
 
 
 

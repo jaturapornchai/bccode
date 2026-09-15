@@ -8,6 +8,17 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/datamodelgraph", "/inventory/product-sets", "/productset",
 ] as const;
 
+export const FIXED_ASSET_ROUTES = [
+  "/asset/registry", "/asset/depreciation", "/asset/purchase",
+  "/asset/cip", "/asset/disposal", "/asset/maintenance",
+  "/asset/types", "/asset/post-gl", "/report/assetschedule",
+] as const;
+
+export function isFixedAssetRoute(route: string): boolean {
+  const clean = route.split("?")[0];
+  return clean.startsWith("/asset/") || clean === "/report/assetschedule";
+}
+
 const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
 
 // The serial registry has a UI config, but its backing endpoint returns 404
@@ -16,5 +27,5 @@ const pendingRoutes = new Set(["/productserialregistry", "/gl/reprocess", "/repo
 
 /** A connected screen is not a guarantee that its business workflow is complete. */
 export function isMenuScreenPending(route: string): boolean {
-  return pendingRoutes.has(route) || (!customRoutes.has(route) && !isGeneralLedgerRoute(route) && !getSystemSettingConfig(route));
+  return pendingRoutes.has(route) || (!customRoutes.has(route) && !isGeneralLedgerRoute(route) && !isFixedAssetRoute(route) && !getSystemSettingConfig(route));
 }

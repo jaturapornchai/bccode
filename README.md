@@ -7,7 +7,33 @@
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
+### 2026-09-15 — พัฒนาระบบบริหารสินทรัพย์ถาวรและการคำนวณค่าเสื่อมราคา (Fixed Assets & Depreciation Engine) ครบวงจรตามต้นแบบ Champ พร้อม Auto-Deploy สู่ Production
+
+- [Feature & Blueprint] พัฒนาระบบสินทรัพย์ถาวรและค่าเสื่อมราคาครบวงจรตามต้นแบบ `D:\project-champ` (`CDepreciation`, `BCAssetsMaster`, `BCAssetsOfYear`, `BCAssetsOfPeriod`):
+  1. เครื่องคำนวณค่าเสื่อมราคา (`Calculator`): คำนวณวิธีเส้นตรง (Straight-Line) ตามจำนวนวันจริงของแต่ละเดือน (`daysInMonth`/`daysInYear`), รองรับปีอธิกสุรทิน (Leap Year 366 วัน), รองรับสิทธิประโยชน์ทางภาษีหักปีแรก (First-Year Initial Allowance) เช่น คอมพิวเตอร์ 40% ในเดือนแรก, ล็อกเพดานมูลค่าซาก (Scrap Value Cap) ไม่ให้คิดเกินราคาทุนหักซาก
+  2. สถาปัตยกรรม 2-Tier Database (MongoDB + PostgreSQL):
+     - MongoDB (`appdb`): บันทึก `fixed_assets`, `asset_types`, `asset_depreciations`, `asset_disposals` และ `gl_journals` (JV) พร้อม Optimistic Concurrency Control (`__v`)
+     - PostgreSQL (`gl_lines`): ฉาย (project) รายการผ่านบัญชีรายบรรทัดเข้าสู่ `gl_lines` ใน Holding ทันที เพื่อรองรับการออกงบทดลองและงบการเงินแบบ Real-time
+  3. ผ่านรายการเข้าบัญชีแยกประเภท GL อัตโนมัติ (`GLPoster`):
+     - บันทึกค่าเสื่อมราคารายงวด: `Dr. ค่าใช้จ่ายค่าเสื่อมราคา` (520103) และ `Cr. ค่าเสื่อมราคาสะสม` (129101) สมดุล 100% พร้อมรองรับการกลับรายการ (Reverse Depreciation)
+     - บันทึกการจำหน่ายสินทรัพย์: ตัดราคาทุนและค่าเสื่อมราคาสะสม, บันทึกเงินรับ/ลูกหนี้, ภาษีขาย (VAT), คำนวณกำไร/ขาดทุนจากการจำหน่ายอัตโนมัติ
+  4. รายงานสำหรับนักบัญชีและผู้สอบบัญชีไทย (`Reporter`):
+     - รายงานตารางสินทรัพย์และค่าเสื่อมราคา (Fixed Asset Schedule Report): ทุนยกมา + เพิ่ม - จำหน่าย = ทุนยกไป, ค่าเสื่อมยกมา + งวดนี้ - จำหน่าย = สะสมยกไป, มูลค่าตามบัญชี (Net Book Value)
+     - รายงานกระทบยอดทางภาษี (ภ.ง.ด.50): ตรวจจับยานพาหนะนั่งไม่เกิน 10 ที่นั่ง (PASSENGER_CAR) จำกัดทุนภาษีไม่เกิน 1,000,000 บาท ตาม พ.ร.ฎ. 315 และสิทธิหักปีแรกพิเศษ
+  5. เครื่องมือ AI ผ่าน Model Context Protocol (`mcp/mcp_tools.go`): 6 เครื่องมือ (`fa_list_assets`, `fa_create_asset`, `fa_get_schedule`, `fa_post_depreciation_to_gl`, `fa_dispose_asset`, `fa_get_schedule_report`) ที่เอนด์พอยต์ `/fa/v2/mcp`
+  6. หน้าจอ Workbench ครบวงจร (`frontend/src/app/asset/fixed-assets-screen.tsx`): 6 แท็บงาน รองรับมาตรฐานคนไทย 40+ และระบบ 12 ภาษา
+- [Backend & Quality Gate]:
+  - สร้างโมดูล `backend/internal/fixedasset/` พร้อม exact decimal type `Amount` รองรับ BSON Decimal128, Double, String
+  - Go Unit & Integration Tests (`TestCalculator_*`, `TestFixedAssets_CPACycle` 4 ขั้นตอน): PASS 100%
+  - Go Backend Build (`go build ./...`): PASS 100%
+  - Frontend Vitest: 68 test files passed / 507 tests passed (100%)
+  - TypeScript `tsc --noEmit`: 0 errors, ESLint: 0 errors
+  - Next.js 16 Production Build (Turbopack): สำเร็จ 100%
+- [Deploy]: Auto-Deploy ขึ้น Production Server `159.223.43.229` ([account.bcaicloud.com](https://account.bcaicloud.com/)) สำเร็จด้วย Fast Streamed Zero-Disk Deploy (Release `r20260915-fa-1`)
+- ไฟล์: `backend/internal/fixedasset/*`, `backend/main.go`, `frontend/src/app/asset/fixed-assets-screen.tsx`, `frontend/src/lib/fixed-assets.ts`, `frontend/src/lib/fixed-assets.test.ts`, `frontend/src/app/api/fa/[...faPath]/route.ts`, `frontend/src/lib/menu-screen-status.ts`, `frontend/src/app/menu/main-menu-screen.tsx`, `docs/kms/decisions/2026-09-15-fixed-assets-and-depreciation-engine.md`, `README.md`
+
 ### 2026-09-15 — ทดสอบวงจรบัญชีครบวงจรแบบสำนักงานบัญชีไทย ตรวจสอบฐานข้อมูล MongoDB/PostgreSQL และเทียบเคียงต้นแบบ D:\project-champ
+
 
 - [Test] เพิ่มชุดการทดสอบวงจรบัญชีครบวงจรแบบสำนักงานบัญชีไทย (Thai CPA / Accounting Firm Full Cycle E2E Test) ใน `frontend/src/lib/thai-accounting-firm-cycle.test.ts` ครอบคลุม 7 ขั้นตอนหลัก (ผ่านการตรวจรับ ESLint 0 error และ Vitest 100%):
   1. Phase 1: กำหนดรอบปีบัญชี (Fiscal Year 2569)

@@ -97,6 +97,7 @@ import (
 	"smlcloudplatform/internal/systemadmin"
 	"smlcloudplatform/internal/task"
 
+	fahttp "smlcloudplatform/internal/fixedasset/httpapi"
 	glhttp "smlcloudplatform/internal/generalledger/httpapi"
 	"smlcloudplatform/internal/transaction/accrualreceive"
 	"smlcloudplatform/internal/transaction/advancepayment"
@@ -387,6 +388,7 @@ func main() {
 			device.NewDeviceHttp(ms, cfg),
 			staff.NewStaffHttp(ms, cfg),
 
+			fahttp.NewHttp(ms, cfg),
 			glhttp.NewHttp(ms, cfg),
 			chartofaccount.NewChartOfAccountHttp(ms, cfg),
 			journal.NewJournalHttp(ms, cfg),
