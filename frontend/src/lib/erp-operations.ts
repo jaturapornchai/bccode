@@ -1,5 +1,7 @@
 // SME Operations, Approvals, BOM Kits, Serial Registry & Data Import Engine
 
+import { authFetch } from "@/lib/client-auth-session";
+
 export type OperationsCategory =
   | "approval"
   | "reservation"
@@ -266,4 +268,120 @@ export function isOperationsRoute(route: string): boolean {
 export function getOperationsConfig(route: string): OperationsConfig | undefined {
   const clean = route.split("?")[0];
   return operationsRouteMap.get(clean);
+}
+
+// --- การอนุมัติเอกสารจริงผ่าน backend (ไม่มีข้อมูลจำลอง) ---
+
+export interface PendingApprovalDoc {
+  docno: string;
+  docdate: string;
+  requestorname: string;
+  counterpartyname: string;
+  totalamount: number;
+  requiredlevelname: string;
+}
+
+// จอที่ backend มี endpoint อนุมัติจริงรองรับแล้วเท่านั้น
+// (จอยกเลิกเอกสาร/ใบเสนอราคา/ใบสั่งขาย ยังไม่มี API จึงไม่ผูกไว้ ห้ามเดาว่าใช้ชุดเดียวกัน)
+const APPROVAL_KINDS: Record<string, string> = {
+  pr_approval: "pr",
+};
+
+export function isApprovalApiReady(code: string): boolean {
+  return code in APPROVAL_KINDS;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function toText(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function errorKeyFor(status: number): string {
+  return status === 401 || status === 403 ? "unauthorized" : "load_failed";
+}
+
+export async function fetchPendingApprovals(params: {
+  code: string;
+  holdingcode: string;
+}): Promise<{ docs: PendingApprovalDoc[]; error?: string }> {
+  const kind = APPROVAL_KINDS[params.code];
+  if (!kind) return { docs: [], error: "approval_not_available" };
+  if (!params.holdingcode) return { docs: [], error: "holding_required" };
+
+  try {
+    const res = await authFetch(`/api/goapi/api/approval/${kind}-status/pending`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ holdingcode: params.holdingcode }),
+    });
+    if (!res.ok) return { docs: [], error: errorKeyFor(res.status) };
+    const payload: unknown = await res.json();
+    if (!isRecord(payload) || !Array.isArray(payload.data)) return { docs: [], error: "load_failed" };
+    const docs = payload.data.filter(isRecord).map((item) => ({
+      docno: toText(item.docno),
+      docdate: toText(item.docdatetime) || toText(item.createdat),
+      requestorname: toText(item.createdbyname) || toText(item.createdby),
+      counterpartyname: toText(item.custname) || toText(item.custcode),
+      totalamount: toNumber(item.totalamount),
+      requiredlevelname: toText(item.requiredlevelname),
+    }));
+    return { docs };
+  } catch {
+    return { docs: [], error: "connection_error" };
+  }
+}
+
+export async function submitApprovalAction(params: {
+  code: string;
+  holdingcode: string;
+  docno: string;
+  action: "approve" | "reject";
+  actionby: string;
+  comment?: string;
+}): Promise<{ success: boolean; messageKey: string }> {
+  const kind = APPROVAL_KINDS[params.code];
+  if (!kind) return { success: false, messageKey: "approval_not_available" };
+  if (!params.holdingcode) return { success: false, messageKey: "holding_required" };
+  if (!params.docno) return { success: false, messageKey: "docno_required" };
+  if (!params.actionby) return { success: false, messageKey: "unauthorized" };
+
+  try {
+    const res = await authFetch(`/api/goapi/api/approval/${kind}-status/${params.action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        holdingcode: params.holdingcode,
+        docno: params.docno,
+        actionby: params.actionby,
+        actionbyname: params.actionby,
+        comment: params.comment ?? "",
+        source: "app",
+      }),
+    });
+    if (!res.ok) {
+      return {
+        success: false,
+        messageKey: res.status === 401 || res.status === 403 ? "unauthorized" : "action_failed",
+      };
+    }
+    const payload: unknown = await res.json();
+    if (!isRecord(payload) || payload.success === false) {
+      return { success: false, messageKey: "action_failed" };
+    }
+    return { success: true, messageKey: params.action === "approve" ? "approve_success" : "reject_success" };
+  } catch {
+    return { success: false, messageKey: "connection_error" };
+  }
 }

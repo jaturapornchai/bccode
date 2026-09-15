@@ -2,7 +2,6 @@ package fixedasset
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -10,47 +9,98 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	gl "smlcloudplatform/internal/generalledger"
 )
 
+// LedgerPoster is the subset of *generalledger.Store used to post fixed-asset
+// journals. Every write goes through the shared GL engine so validation, the
+// closed-period guard, the Mongo outbox and PostgreSQL projection all run
+// exactly once, in the one place that already implements them correctly.
+type LedgerPoster interface {
+	Execute(ctx context.Context, scope gl.Scope, cmd gl.Command) (gl.Result, error)
+}
+
 type GLPoster struct {
-	db *mongo.Database
-	pg *sql.DB
+	db     *mongo.Database
+	ledger LedgerPoster
 }
 
-func NewGLPoster(db *mongo.Database, pg *sql.DB) *GLPoster {
-	return &GLPoster{db: db, pg: pg}
+func NewGLPoster(db *mongo.Database, ledger LedgerPoster) *GLPoster {
+	return &GLPoster{db: db, ledger: ledger}
 }
 
+// GLLineDoc / GLJournalDoc are the response shape returned to the HTTP and MCP
+// callers. They are no longer persisted directly: the actual journal is
+// written by generalledger.Store.Execute (Mongo gl_journals + PostgreSQL
+// projection); these structs just describe what was posted.
 type GLLineDoc struct {
-	AccountCode string          `json:"accountcode" bson:"accountcode"`
-	Description string          `json:"description" bson:"description"`
-	Debit       decimal.Decimal `json:"debit" bson:"debit"`
-	Credit      decimal.Decimal `json:"credit" bson:"credit"`
-	BranchCode  string          `json:"branchcode" bson:"branchcode"`
+	AccountCode string          `json:"accountcode"`
+	Description string          `json:"description"`
+	Debit       decimal.Decimal `json:"debit"`
+	Credit      decimal.Decimal `json:"credit"`
+	BranchCode  string          `json:"branchcode"`
 }
 
 type GLJournalDoc struct {
-	ID           string      `json:"id" bson:"_id"`
-	HoldingCode  string      `json:"holdingcode" bson:"holdingcode"`
-	BusinessCode string      `json:"businesscode" bson:"businesscode"`
-	Version      int64       `json:"version" bson:"__v"`
-	DocNo        string      `json:"docno" bson:"docno"`
-	Date         string      `json:"date" bson:"date"`
-	BookCode     string      `json:"bookcode" bson:"bookcode"`
-	FiscalYear   string      `json:"fiscalyear" bson:"fiscalyear"`
-	Description  string      `json:"description" bson:"description"`
-	Reference    string      `json:"reference" bson:"reference"`
-	BranchCode   string      `json:"branchcode" bson:"branchcode"`
-	Kind         string      `json:"kind" bson:"kind"`
-	Status       string      `json:"status" bson:"status"`
-	Lines        []GLLineDoc `json:"lines" bson:"lines"`
-	CreatedAt    time.Time   `json:"createdat" bson:"createdat"`
-	CreatedBy    string      `json:"createdby" bson:"createdby"`
-	UpdatedAt    time.Time   `json:"updatedat" bson:"updatedat"`
-	UpdatedBy    string      `json:"updatedby" bson:"updatedby"`
-	PostedAt     *time.Time  `json:"postedat,omitempty" bson:"postedat,omitempty"`
-	PostedBy     string      `json:"postedby,omitempty" bson:"postedby,omitempty"`
-	IsDeleted    bool        `json:"isdeleted" bson:"isdeleted"`
+	ID           string      `json:"id"`
+	HoldingCode  string      `json:"holdingcode"`
+	BusinessCode string      `json:"businesscode"`
+	Version      int64       `json:"version"`
+	DocNo        string      `json:"docno"`
+	Date         string      `json:"date"`
+	BookCode     string      `json:"bookcode"`
+	FiscalYear   string      `json:"fiscalyear"`
+	Description  string      `json:"description"`
+	Reference    string      `json:"reference"`
+	BranchCode   string      `json:"branchcode"`
+	Kind         string      `json:"kind"`
+	Status       string      `json:"status"`
+	Lines        []GLLineDoc `json:"lines"`
+	CreatedAt    time.Time   `json:"createdat"`
+	CreatedBy    string      `json:"createdby"`
+	UpdatedAt    time.Time   `json:"updatedat"`
+	UpdatedBy    string      `json:"updatedby"`
+	PostedAt     *time.Time  `json:"postedat,omitempty"`
+	PostedBy     string      `json:"postedby,omitempty"`
+	IsDeleted    bool        `json:"isdeleted"`
+}
+
+func glScope(s Scope) gl.Scope {
+	return gl.Scope{Holding: s.Holding, Company: s.Company, Branch: s.Branch, Actor: s.Actor}
+}
+
+func glAmount(d decimal.Decimal) gl.Amount { return gl.Amount(d.String()) }
+
+// postJournal creates a draft journal through the GL engine, then posts it, in
+// two idempotent Execute calls keyed off the (deterministic) docNo. A retry
+// with the same docNo and the same lines replays the cached GL event instead
+// of creating a duplicate journal; a retry with different lines under the same
+// docNo is rejected by generalledger.Store.Execute, never silently applied.
+func (p *GLPoster) postJournal(ctx context.Context, scope Scope, j *gl.Journal) (gl.Result, gl.Result, error) {
+	sc := glScope(scope)
+	createReq := digest([]byte("fa-gl-create:" + scope.Holding + ":" + scope.Company + ":" + j.DocNo))
+	created, err := p.ledger.Execute(ctx, sc, gl.Command{
+		Resource:  "journals",
+		Action:    "create",
+		RequestID: createReq,
+		Journal:   j,
+	})
+	if err != nil {
+		return gl.Result{}, gl.Result{}, fmt.Errorf("ไม่สามารถบันทึกสมุดรายวัน GL: %w", err)
+	}
+	postReq := digest([]byte("fa-gl-post:" + scope.Holding + ":" + scope.Company + ":" + j.DocNo))
+	posted, err := p.ledger.Execute(ctx, sc, gl.Command{
+		Resource:  "journals",
+		Action:    "post",
+		ID:        created.ID,
+		Version:   created.Version,
+		RequestID: postReq,
+	})
+	if err != nil {
+		return gl.Result{}, gl.Result{}, fmt.Errorf("ไม่สามารถผ่านรายการสมุดรายวัน GL: %w", err)
+	}
+	return created, posted, nil
 }
 
 // PostDepreciation posts monthly depreciation for a specific year and period into GL Journal.
@@ -112,11 +162,12 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		assetMap[a.AssetCode] = a
 	}
 
-	// 3. Group depreciation amounts by Expense Account and Accumulated Depreciation Account
+	// 3. Group depreciation amounts by Expense Account and Accumulated Depreciation Account.
+	// Branch is not a GL journal-line dimension, so every line here shares the
+	// journal's own branch (the acting user's scope); see gl_poster.go P0-1/P0-2 fix notes.
 	type accGroup struct {
 		expenseAcc string
 		accumAcc   string
-		branch     string
 	}
 	grouped := make(map[accGroup]decimal.Decimal)
 
@@ -133,12 +184,8 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		if accAcc == "" {
 			accAcc = "129101" // Default Accum Depreciation
 		}
-		br := ast.BranchCode
-		if br == "" {
-			br = scope.Branch
-		}
 
-		key := accGroup{expenseAcc: expAcc, accumAcc: accAcc, branch: br}
+		key := accGroup{expenseAcc: expAcc, accumAcc: accAcc}
 		grouped[key] = grouped[key].Add(it.PeriodDeprec.Decimal())
 	}
 
@@ -157,7 +204,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 			Description: fmt.Sprintf("ค่าเสื่อมราคาประจำงวด %d/%s", period, fiscalYear),
 			Debit:       amount,
 			Credit:      decimal.Zero,
-			BranchCode:  k.branch,
+			BranchCode:  scope.Branch,
 		})
 		totalDebit = totalDebit.Add(amount)
 
@@ -167,7 +214,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 			Description: fmt.Sprintf("ค่าเสื่อมราคาสะสมประจำงวด %d/%s", period, fiscalYear),
 			Debit:       decimal.Zero,
 			Credit:      amount,
-			BranchCode:  k.branch,
+			BranchCode:  scope.Branch,
 		})
 		totalCredit = totalCredit.Add(amount)
 	}
@@ -179,21 +226,48 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		return nil, fmt.Errorf("ยอดรวมค่าเสื่อมราคาเป็น 0")
 	}
 
-	// 5. Create GL Journal document
-	journalID := entityID(scope, "journals", docNo)
-	journal := GLJournalDoc{
-		ID:           journalID,
+	// 5. Post through the general ledger engine (Mongo write + closed-period
+	// guard + outbox + PostgreSQL projection all happen inside Execute).
+	glLines := make([]gl.Line, 0, len(lines))
+	for _, l := range lines {
+		glLines = append(glLines, gl.Line{
+			AccountCode: l.AccountCode,
+			Description: l.Description,
+			Debit:       glAmount(l.Debit),
+			Credit:      glAmount(l.Credit),
+		})
+	}
+	description := fmt.Sprintf("บันทึกค่าเสื่อมราคาสินทรัพย์ประจำงวด %d/%s", period, fiscalYear)
+	reference := fmt.Sprintf("FA-%s-%02d", fiscalYear, period)
+	journalInput := &gl.Journal{
+		DocNo:       docNo,
+		Date:        date,
+		BookCode:    "JV",
+		FiscalYear:  fiscalYear,
+		Description: description,
+		Reference:   reference,
+		BranchCode:  scope.Branch,
+		Kind:        "manual",
+		Lines:       glLines,
+	}
+	created, posted, err := p.postJournal(ctx, scope, journalInput)
+	if err != nil {
+		return nil, err
+	}
+
+	journal := &GLJournalDoc{
+		ID:           created.ID,
 		HoldingCode:  scope.Holding,
 		BusinessCode: scope.Company,
-		Version:      1,
+		Version:      posted.Version,
 		DocNo:        docNo,
 		Date:         date,
 		BookCode:     "JV",
 		FiscalYear:   fiscalYear,
-		Description:  fmt.Sprintf("บันทึกค่าเสื่อมราคาสินทรัพย์ประจำงวด %d/%s", period, fiscalYear),
-		Reference:    fmt.Sprintf("FA-%s-%02d", fiscalYear, period),
+		Description:  description,
+		Reference:    reference,
 		BranchCode:   scope.Branch,
-		Kind:         "depreciation",
+		Kind:         "manual",
 		Status:       "posted",
 		Lines:        lines,
 		CreatedAt:    now,
@@ -205,17 +279,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		IsDeleted:    false,
 	}
 
-	_, err = p.db.Collection("gl_journals").InsertOne(ctx, journal)
-	if err != nil {
-		return nil, fmt.Errorf("ไม่สามารถบันทึกสมุดรายวัน GL: %w", err)
-	}
-
-	// 6. Project lines to PostgreSQL if pg is available
-	if p.pg != nil {
-		_ = p.syncJournalToPostgres(ctx, journal)
-	}
-
-	// 7. Update depreciation items to mark as posted
+	// 6. Update depreciation items to mark as posted
 	itemIDs := make([]string, len(items))
 	for i, it := range items {
 		itemIDs[i] = it.ID
@@ -237,7 +301,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		return nil, fmt.Errorf("ผ่านรายการสำเร็จแต่ไม่สามารถอัปเดตสถานะค่าเสื่อมราคา: %w", err)
 	}
 
-	return &journal, nil
+	return journal, nil
 }
 
 // ReverseDepreciation cancels a posted depreciation journal and resets asset depreciation flags.
@@ -246,7 +310,7 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 	fJ["docno"] = docNo
 	fJ["isdeleted"] = false
 
-	var journal GLJournalDoc
+	var journal gl.Journal
 	err := p.db.Collection("gl_journals").FindOne(ctx, fJ).Decode(&journal)
 	if err != nil {
 		return fmt.Errorf("ไม่พบใบสำคัญสมุดรายวัน %s: %w", docNo, err)
@@ -255,25 +319,32 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 		return fmt.Errorf("ใบสำคัญ %s ไม่ได้อยู่ในสถานะผ่านรายการ", docNo)
 	}
 
-	// 1. Mark journal as reversed
-	uJ := bson.M{
-		"$set": bson.M{
-			"status":    "reversed",
-			"updatedat": now,
-			"updatedby": scope.Actor,
-		},
+	// 1. Reverse through the general ledger engine: it flips debit/credit,
+	// keeps the original journal for audit, and re-projects PostgreSQL.
+	reversalDocNo := "REV-" + docNo
+	if len(reversalDocNo) > 60 {
+		reversalDocNo = reversalDocNo[:60]
 	}
-	_, err = p.db.Collection("gl_journals").UpdateOne(ctx, fJ, uJ)
+	reverseDate := now.Format("2006-01-02")
+	if reverseDate < journal.Date {
+		reverseDate = journal.Date
+	}
+	requestID := digest([]byte("fa-gl-reverse:" + scope.Holding + ":" + scope.Company + ":" + docNo))
+	_, err = p.ledger.Execute(ctx, glScope(scope), gl.Command{
+		Resource:  "journals",
+		Action:    "reverse",
+		ID:        journal.ID,
+		Version:   journal.Version,
+		DocNo:     reversalDocNo,
+		Date:      reverseDate,
+		Reason:    reason,
+		RequestID: requestID,
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("ไม่สามารถกลับรายการสมุดรายวัน GL: %w", err)
 	}
 
-	// 2. Remove PostgreSQL lines if pg is available
-	if p.pg != nil {
-		_, _ = p.pg.ExecContext(ctx, "DELETE FROM gl_lines WHERE holding = $1 AND company = $2 AND docno = $3", scope.Holding, scope.Company, docNo)
-	}
-
-	// 3. Reset asset depreciation items
+	// 2. Reset asset depreciation items
 	fDep := scopeFilter(scope)
 	fDep["journaldocno"] = docNo
 
@@ -450,20 +521,46 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	journalDocNo := fmt.Sprintf("JV-DISP-%s", asset.AssetCode)
 	disposal.JournalDocNo = journalDocNo
 
-	journalID := entityID(scope, "journals", journalDocNo)
-	journal := GLJournalDoc{
-		ID:           journalID,
+	// 4. Post through the general ledger engine
+	glLines := make([]gl.Line, 0, len(lines))
+	for _, l := range lines {
+		glLines = append(glLines, gl.Line{
+			AccountCode: l.AccountCode,
+			Description: l.Description,
+			Debit:       glAmount(l.Debit),
+			Credit:      glAmount(l.Credit),
+		})
+	}
+	description := fmt.Sprintf("บันทึกจำหน่ายสินทรัพย์ %s (%s)", asset.AssetCode, asset.ThaiName())
+	journalInput := &gl.Journal{
+		DocNo:       journalDocNo,
+		Date:        disposal.DisposalDate,
+		BookCode:    "JV",
+		FiscalYear:  disposal.DisposalDate[:4],
+		Description: description,
+		Reference:   disposal.DocNo,
+		BranchCode:  asset.BranchCode,
+		Kind:        "manual",
+		Lines:       glLines,
+	}
+	created, posted, err := p.postJournal(ctx, scope, journalInput)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	journal := &GLJournalDoc{
+		ID:           created.ID,
 		HoldingCode:  scope.Holding,
 		BusinessCode: scope.Company,
-		Version:      1,
+		Version:      posted.Version,
 		DocNo:        journalDocNo,
 		Date:         disposal.DisposalDate,
 		BookCode:     "JV",
 		FiscalYear:   disposal.DisposalDate[:4],
-		Description:  fmt.Sprintf("บันทึกจำหน่ายสินทรัพย์ %s (%s)", asset.AssetCode, asset.ThaiName()),
+		Description:  description,
 		Reference:    disposal.DocNo,
 		BranchCode:   asset.BranchCode,
-		Kind:         "disposal",
+		Kind:         "manual",
 		Status:       "posted",
 		Lines:        lines,
 		CreatedAt:    now,
@@ -473,16 +570,6 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		PostedAt:     &now,
 		PostedBy:     scope.Actor,
 		IsDeleted:    false,
-	}
-
-	// 4. Save Journal
-	_, err = p.db.Collection("gl_journals").InsertOne(ctx, journal)
-	if err != nil {
-		return nil, nil, fmt.Errorf("ไม่สามารถบันทึก GL Journal จำหน่ายสินทรัพย์: %w", err)
-	}
-
-	if p.pg != nil {
-		_ = p.syncJournalToPostgres(ctx, journal)
 	}
 
 	// 5. Save Disposal Record
@@ -502,30 +589,5 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	}
 	_, _ = p.db.Collection("fixed_assets").UpdateOne(ctx, f, uAsset)
 
-	return &disposal, &journal, nil
-}
-
-func (p *GLPoster) syncJournalToPostgres(ctx context.Context, j GLJournalDoc) error {
-	if p.pg == nil {
-		return nil
-	}
-	// Delete existing lines if any
-	_, _ = p.pg.ExecContext(ctx, "DELETE FROM gl_lines WHERE holding = $1 AND company = $2 AND docno = $3", j.HoldingCode, j.BusinessCode, j.DocNo)
-
-	stmt, err := p.pg.PrepareContext(ctx, `
-		INSERT INTO gl_lines (holding, company, docno, docdate, bookcode, fiscalyear, accountcode, description, debit, credit, branchcode, status, kind)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-	`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for _, l := range j.Lines {
-		_, err = stmt.ExecContext(ctx, j.HoldingCode, j.BusinessCode, j.DocNo, j.Date, j.BookCode, j.FiscalYear, l.AccountCode, l.Description, l.Debit.InexactFloat64(), l.Credit.InexactFloat64(), l.BranchCode, j.Status, j.Kind)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return &disposal, journal, nil
 }

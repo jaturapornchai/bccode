@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getErpToolConfig } from "@/lib/erp-tools";
+import { getErpToolConfig, isErpToolApiReady, runErpTool, type ErpToolStockCheckStats } from "@/lib/erp-tools";
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import {
   Play,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   RotateCw,
   Terminal,
   ShieldCheck,
@@ -20,12 +21,49 @@ interface ErpToolsScreenProps {
   route: string;
   embedded?: boolean;
   language?: LanguageCode;
+  holdingcode?: string;
+  businesscode?: string;
+}
+
+const RESULT_MESSAGES: Record<string, { th: string; en: string }> = {
+  process_success: {
+    th: "ระบบประมวลผลเสร็จเรียบร้อยแล้ว",
+    en: "Processing completed successfully",
+  },
+  process_failed: {
+    th: "ประมวลผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+    en: "Processing failed, please try again",
+  },
+  tool_not_available: {
+    th: "เครื่องมือนี้ยังไม่เชื่อมกับระบบประมวลผลจริง — อยู่ระหว่างเปิดใช้งาน API",
+    en: "This tool is not connected to the processing API yet",
+  },
+  holding_required: {
+    th: "ยังไม่ได้เลือกกิจการ",
+    en: "No business selected",
+  },
+  unauthorized: {
+    th: "ไม่มีสิทธิ์สั่งประมวลผลรายการนี้",
+    en: "You do not have permission to run this process",
+  },
+  connection_error: {
+    th: "เชื่อมต่อระบบไม่ได้",
+    en: "Unable to connect to the system",
+  },
+};
+
+function resultText(key: string, language: LanguageCode): string {
+  const message = RESULT_MESSAGES[key];
+  if (!message) return key;
+  return language === "th" ? message.th : message.en;
 }
 
 export function ErpToolsScreen({
   route,
   embedded: _embedded = false,
   language = "th",
+  holdingcode = "",
+  businesscode = "",
 }: ErpToolsScreenProps) {
   const config = getErpToolConfig(route) || {
     route,
@@ -40,37 +78,45 @@ export function ErpToolsScreen({
     ],
   };
 
+  const currentYear = new Date().getFullYear();
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [progress, setProgress] = useState<number>(0);
-  const [completed, setCompleted] = useState<boolean>(false);
+  const [resultKey, setResultKey] = useState<string | null>(null);
+  const [succeeded, setSucceeded] = useState<boolean>(false);
+  const [stats, setStats] = useState<ErpToolStockCheckStats | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>("ALL");
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+
+  const apiReady = isErpToolApiReady(config.code);
+  const canRun = apiReady && !isRunning && holdingcode !== "";
 
   async function handleRunProcess() {
     setIsRunning(true);
-    setProgress(0);
-    setCompleted(false);
-    setLogs([`[${new Date().toLocaleTimeString()}] เริ่มการทำงาน: ${config.title.th}`]);
+    setResultKey(null);
+    setStats(null);
+    setSucceeded(false);
+    const title = language === "th" ? config.title.th : config.title.en;
+    setLogs([`[${new Date().toLocaleTimeString()}] ${language === "th" ? "ส่งคำสั่งไปยังระบบ" : "Sending command"}: ${title}`]);
 
-    const stepDelay = 400;
-    for (let i = 0; i < config.steps.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, stepDelay));
-      const pct = Math.round(((i + 1) / config.steps.length) * 100);
-      setProgress(pct);
-      setLogs((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] ขั้นตอนที่ ${i + 1}/${config.steps.length}: ${config.steps[i].th} ... สำเร็จ`,
-      ]);
+    const result = await runErpTool({
+      code: config.code,
+      holdingcode,
+      businesscode,
+      year: selectedYear,
+    });
+
+    const nextLogs: string[] = [
+      `[${new Date().toLocaleTimeString()}] ${language === "th" ? "ระบบตอบกลับ" : "Response"}: ${resultText(result.messageKey, language)}`,
+    ];
+    if (result.stats) {
+      nextLogs.push(
+        `[${new Date().toLocaleTimeString()}] ${language === "th" ? "รายการต้นทุนที่ตรวจพบ" : "Cost rows found"}: ${result.stats.totalrows.toLocaleString("th-TH")}`,
+      );
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setLogs((prev) => [
-      ...prev,
-      `[${new Date().toLocaleTimeString()}] ✅ การประมวลผลเสร็จสมบูรณ์ 100% ข้อมูลมีความถูกต้องและสอดคล้องกัน`,
-    ]);
+    setLogs((prev) => [...prev, ...nextLogs]);
+    setStats(result.stats ?? null);
+    setResultKey(result.messageKey);
+    setSucceeded(result.success);
     setIsRunning(false);
-    setCompleted(true);
   }
 
   return (
@@ -99,8 +145,15 @@ export function ErpToolsScreen({
         <Button
           size="lg"
           onClick={handleRunProcess}
-          disabled={isRunning}
+          disabled={!canRun}
           className="gap-2 font-semibold shadow-md min-h-[44px]"
+          title={
+            apiReady
+              ? undefined
+              : language === "th"
+                ? "เครื่องมือนี้ยังไม่เชื่อมกับระบบประมวลผลจริง"
+                : "This tool is not connected to the processing API yet"
+          }
         >
           {isRunning ? (
             <>
@@ -116,6 +169,20 @@ export function ErpToolsScreen({
         </Button>
       </div>
 
+      {/* Availability Notice */}
+      {!apiReady && (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground" role="status">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{resultText("tool_not_available", language)}</span>
+        </div>
+      )}
+      {apiReady && holdingcode === "" && (
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{resultText("holding_required", language)}</span>
+        </div>
+      )}
+
       {/* Scope and Parameters Card */}
       <Card>
         <CardContent className="p-5 space-y-4">
@@ -126,31 +193,32 @@ export function ErpToolsScreen({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                {language === "th" ? "สาขาที่ต้องการประมวลผล:" : "Target Branch:"}
+                {language === "th" ? "กิจการที่ประมวลผล:" : "Target Business:"}
               </label>
-              <select
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                disabled={isRunning}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:outline-none"
-              >
-                <option value="ALL">ทุกสาขาในกิจการ (All Branches)</option>
-                <option value="00000">สำนักงานใหญ่ (00000)</option>
-                <option value="00001">สาขา 1 - กทม. (00001)</option>
-              </select>
+              <div className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground">
+                {holdingcode
+                  ? `${holdingcode}${businesscode ? ` / ${businesscode}` : ""}`
+                  : language === "th"
+                    ? "ยังไม่ได้เลือกกิจการ"
+                    : "No business selected"}
+              </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5" htmlFor="tool-fiscal-year">
                 {language === "th" ? "รอบปีบัญชี:" : "Fiscal Year:"}
               </label>
               <select
+                id="tool-fiscal-year"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 disabled={isRunning}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:outline-none"
               >
-                <option value={2026}>ปี 2569 (2026) - รอบปัจจุบัน</option>
-                <option value={2025}>ปี 2568 (2025)</option>
+                {[currentYear, currentYear - 1, currentYear - 2].map((year) => (
+                  <option key={year} value={year}>
+                    {language === "th" ? `ปี ${year + 543} (${year})` : `Year ${year}`}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -162,64 +230,67 @@ export function ErpToolsScreen({
         <CardContent className="p-5 space-y-3">
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-primary" />
-            {language === "th" ? "ลำดับขั้นตอนการตรวจสอบและคำนวณ:" : "Audit & Processing Sequence:"}
+            {language === "th" ? "ขั้นตอนที่ระบบจะทำเมื่อสั่งประมวลผล:" : "What this process will do:"}
           </h2>
           <div className="space-y-2">
-            {config.steps.map((step, idx) => {
-              const isStepDone = progress >= Math.round(((idx + 1) / config.steps.length) * 100);
-              return (
-                <div
-                  key={idx}
-                  className={`flex items-center gap-3 rounded-xl border p-3 text-sm transition-colors ${
-                    isStepDone
-                      ? "border-emerald-500/30 bg-emerald-500/5 text-foreground"
-                      : "border-border bg-muted/20 text-muted-foreground"
-                  }`}
-                >
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                      isStepDone
-                        ? "bg-emerald-500 text-white"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {isStepDone ? "✓" : idx + 1}
-                  </div>
-                  <span className="font-medium">
-                    {language === "th" ? step.th : step.en}
-                  </span>
+            {config.steps.map((step, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 p-3 text-sm text-foreground"
+              >
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                  {idx + 1}
                 </div>
-              );
-            })}
+                <span className="font-medium">{language === "th" ? step.th : step.en}</span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Progress & Live Console Logs Card */}
+      {/* Result & Console Logs Card */}
       {(isRunning || logs.length > 0) && (
         <Card className="border-2 border-primary/20">
           <CardContent className="p-5 space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-sm font-semibold">
-                <span>{language === "th" ? "ความคืบหน้า" : "Progress"}</span>
-                <span className="font-mono">{progress}%</span>
-              </div>
-              <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300 rounded-full"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            {completed && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-400 font-semibold text-sm">
-                <CheckCircle2 className="h-5 w-5" />
+            {isRunning && (
+              <div className="flex items-center gap-2.5 rounded-xl border border-border bg-muted/50 p-3 text-sm text-muted-foreground" role="status">
+                <RotateCw className="h-5 w-5 animate-spin" />
                 <span>
                   {language === "th"
-                    ? "การประมวลผลเสร็จสมบูรณ์เรียบร้อย ข้อมูลทุกส่วนได้รับการตรวจสอบและคำนวณถูกต้องตรงกันแล้ว"
-                    : "Processing finished successfully. All data integrity constraints verified."}
+                    ? "กำลังรอผลจากระบบ กรุณาอย่าปิดหน้าจอนี้"
+                    : "Waiting for the server, please keep this screen open"}
                 </span>
+              </div>
+            )}
+
+            {!isRunning && resultKey && succeeded && (
+              <div className="flex items-center gap-2.5 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-semibold text-primary" role="status">
+                <CheckCircle2 className="h-5 w-5" />
+                <span>{resultText(resultKey, language)}</span>
+              </div>
+            )}
+
+            {!isRunning && resultKey && !succeeded && (
+              <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive" role="alert">
+                <AlertCircle className="h-5 w-5" />
+                <span>{resultText(resultKey, language)}</span>
+              </div>
+            )}
+
+            {stats && (
+              <div className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-muted/30 p-3 text-sm text-foreground sm:grid-cols-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">{language === "th" ? "จำนวนรายการต้นทุน" : "Cost rows"}</div>
+                  <div className="font-mono font-semibold">{stats.totalrows.toLocaleString("th-TH")}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">{language === "th" ? "จำนวนเอกสาร" : "Documents"}</div>
+                  <div className="font-mono font-semibold">{stats.totaldocuments.toLocaleString("th-TH")}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">{language === "th" ? "จำนวนสินค้า" : "Products"}</div>
+                  <div className="font-mono font-semibold">{stats.totalproducts.toLocaleString("th-TH")}</div>
+                </div>
               </div>
             )}
 
@@ -245,8 +316,8 @@ export function ErpToolsScreen({
         <div>
           <span className="font-semibold">{language === "th" ? "ข้อแนะนำความปลอดภัย:" : "Safety Notice:"} </span>
           {language === "th"
-            ? "ระบบคำนวณด้วยอัลกอริทึม Transaction-safe แบบแยกเธรด ไม่กระทบต่อการทำงานของผู้ใช้อื่นในระบบ และสามารถเรียกประมวลผลซ้ำได้ตลอดเวลาโดยไม่ทำให้ข้อมูลซ้ำซ้อน"
-            : "The calculation runs with idempotent, transaction-safe algorithms. It will not disrupt other active users."}
+            ? "การประมวลผลใหม่จะเขียนทับยอดที่คำนวณไว้เดิม และอาจใช้เวลานานเมื่อข้อมูลมีจำนวนมาก แนะนำให้สั่งประมวลผลนอกเวลาทำการ"
+            : "Reprocessing overwrites previously calculated balances and may take a long time on large datasets. Run it outside business hours."}
         </div>
       </div>
     </div>

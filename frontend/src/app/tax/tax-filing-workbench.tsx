@@ -1,38 +1,36 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   getThaiTaxConfig,
-  calculatePp30Summary,
-  getSampleTaxRecords,
+  fetchVatRegister,
+  fetchPp30Summary,
   type ThaiTaxRecord,
+  type Pp30Summary,
 } from "@/lib/thai-tax";
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  FileText,
-  Printer,
-  Download,
-  Calculator,
-  Building2,
-  Calendar,
-  CheckCircle2,
-  Receipt,
-  Search,
+  FileText, Printer, Download, Calculator, Building2, Calendar, CheckCircle2, Receipt, Search,
+  AlertCircle, Loader2,
 } from "lucide-react";
 
 interface TaxFilingWorkbenchProps {
   route: string;
   embedded?: boolean;
   language?: LanguageCode;
+  holdingcode?: string;
+  businesscode?: string;
 }
 
 export function TaxFilingWorkbench({
   route,
   embedded: _embedded = false,
   language = "th",
+  holdingcode = "",
+  businesscode = "",
 }: TaxFilingWorkbenchProps) {
   const config = getThaiTaxConfig(route) || {
     route,
@@ -43,14 +41,81 @@ export function TaxFilingWorkbench({
     revenueDepartmentFormCode: "สรรพากร",
   };
 
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [selectedMonth, setSelectedMonth] = useState<number>(9);
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"table" | "pp30" | "50twi">("table");
   const [selectedRecord, setSelectedRecord] = useState<ThaiTaxRecord | null>(null);
 
-  const initialRecords = useMemo(() => getSampleTaxRecords(config.formType), [config.formType]);
-  const [records] = useState<ThaiTaxRecord[]>(initialRecords);
+  const [records, setRecords] = useState<ThaiTaxRecord[]>([]);
+  const [pp30, setPp30] = useState<Pp30Summary | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
+
+  // จอนี้ดึงข้อมูลจริงจาก backend ได้เฉพาะรายงานภาษีมูลค่าเพิ่ม
+  const supported =
+    config.formType === "vat_sale" ||
+    config.formType === "vat_buy" ||
+    config.formType === "pp30";
+
+  const loadData = useCallback(async () => {
+    if (!supported) {
+      setRecords([]);
+      setPp30(null);
+      setErrorKey(null);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const registerType: "sale" | "purchase" =
+        config.formType === "vat_buy" ? "purchase" : "sale";
+
+      if (config.formType === "pp30") {
+        const [registerResult, summaryResult] = await Promise.all([
+          fetchVatRegister({
+            holdingcode,
+            businesscode,
+            year: selectedYear,
+            month: selectedMonth,
+            type: registerType,
+          }),
+          fetchPp30Summary({
+            holdingcode,
+            businesscode,
+            year: selectedYear,
+            month: selectedMonth,
+          }),
+        ]);
+
+        setRecords(registerResult.records);
+        setPp30(summaryResult.summary);
+        setErrorKey(registerResult.error ?? summaryResult.error ?? null);
+      } else {
+        const registerResult = await fetchVatRegister({
+          holdingcode,
+          businesscode,
+          year: selectedYear,
+          month: selectedMonth,
+          type: registerType,
+        });
+
+        setRecords(registerResult.records);
+        setPp30(null);
+        setErrorKey(registerResult.error ?? null);
+      }
+    } catch {
+      setRecords([]);
+      setPp30(null);
+      setErrorKey("connection_error");
+    } finally {
+      setLoading(false);
+    }
+  }, [supported, config.formType, holdingcode, businesscode, selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const filteredRecords = useMemo(() => {
     if (!searchTerm.trim()) return records;
@@ -63,7 +128,7 @@ export function TaxFilingWorkbench({
     );
   }, [records, searchTerm]);
 
-  // Aggregate totals
+  // ยอดรวมท้ายตาราง = ผลรวมของรายการที่แสดงอยู่ (ไม่ใช่การคำนวณภาษี)
   const totals = useMemo(() => {
     let beforeVat = 0;
     let vat = 0;
@@ -78,16 +143,7 @@ export function TaxFilingWorkbench({
     return { beforeVat, vat, wht, total };
   }, [filteredRecords]);
 
-  // PP.30 Summary Calculation
-  const pp30 = useMemo(() => {
-    return calculatePp30Summary(
-      selectedYear,
-      selectedMonth,
-      { taxable: totals.beforeVat, zeroRated: 0, exempt: 0 },
-      { claimable: Math.round(totals.beforeVat * 0.6), exempt: 0 },
-      0,
-    );
-  }, [selectedYear, selectedMonth, totals.beforeVat]);
+  const canExport = supported && !loading && !errorKey && filteredRecords.length > 0;
 
   const monthNamesTh = [
     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -131,6 +187,7 @@ export function TaxFilingWorkbench({
 
           <Button
             variant="outline"
+            disabled={!canExport}
             onClick={() => {
               const csv = [
                 "ลำดับ,วันที่,เลขที่เอกสาร,ชื่อคู่ค้า,เลขประจำตัวผู้เสียภาษี,สาขา,มูลค่าก่อนภาษี,ภาษี,ยอดรวม",
@@ -156,6 +213,7 @@ export function TaxFilingWorkbench({
 
           <Button
             variant="default"
+            disabled={!canExport}
             onClick={() => window.print()}
             className="gap-2"
           >
@@ -251,6 +309,52 @@ export function TaxFilingWorkbench({
         </Card>
       </div>
 
+      {!supported ? (
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>รายงานนี้ยังไม่เปิดให้ใช้งาน เนื่องจากระบบยังไม่ได้จัดเก็บข้อมูลภาษีหัก ณ ที่จ่าย</span>
+        </div>
+      ) : loading ? (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          <span>กำลังโหลดข้อมูล...</span>
+        </div>
+      ) : errorKey ? (
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {errorKey === "company_required"
+                ? "กรุณาเลือกบริษัทก่อน"
+                : errorKey === "unauthorized"
+                  ? "ไม่มีสิทธิ์เข้าถึงข้อมูล"
+                  : errorKey === "connection_error"
+                    ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต"
+                    : "โหลดข้อมูลไม่สำเร็จ"}
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => {
+              void loadData();
+            }}
+          >
+            ลองใหม่อีกครั้ง
+          </Button>
+        </div>
+      ) : records.length === 0 ? (
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>ไม่พบข้อมูลในงวดที่เลือก</span>
+        </div>
+      ) : null}
+
       {/* Main Content Area: PP.30 Form View or Standard Tax Table */}
       {config.formType === "pp30" && activeTab === "pp30" ? (
         <Card className="overflow-hidden border-2 border-primary/20">
@@ -262,42 +366,54 @@ export function TaxFilingWorkbench({
               งวดเดือน {monthNamesTh[selectedMonth - 1]} พ.ศ. {selectedYear + 543}
             </p>
           </div>
-          <div className="divide-y divide-border p-4 text-sm">
-            <div className="flex items-center justify-between py-2">
-              <span className="font-medium text-foreground">1. ยอดขายเดือนนี้ (ตามมาตรา 79)</span>
-              <span className="font-mono text-base font-semibold">{pp30.totalsales.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+          {pp30 === null ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              ยังไม่มีข้อมูลสรุป ภ.พ.30 สำหรับงวดที่เลือก
             </div>
-            <div className="flex items-center justify-between py-2 pl-4 text-muted-foreground">
-              <span>2. ยอดขายที่เสียภาษีอัตราร้อยละ 0</span>
-              <span className="font-mono">{pp30.zeroratedsales.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+          ) : (
+            <div className="divide-y divide-border p-4 text-sm">
+              <div className="flex items-center justify-between py-2">
+                <span className="font-medium text-foreground">1. ยอดขายเดือนนี้ (ตามมาตรา 79)</span>
+                <span className="font-mono text-base font-semibold">
+                  {(pp30.salestaxable + pp30.saleszerorated + pp30.salesexempt).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2 pl-4 text-muted-foreground">
+                <span>2. ยอดขายที่เสียภาษีอัตราร้อยละ 0</span>
+                <span className="font-mono">{pp30.saleszerorated.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 pl-4 text-muted-foreground">
+                <span>3. ยอดขายที่ได้รับการยกเว้นภาษี</span>
+                <span className="font-mono">{pp30.salesexempt.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 bg-muted/20 px-2 font-medium">
+                <span>4. ยอดขายที่ต้องเสียภาษี (ข้อ 1 - ข้อ 2 - ข้อ 3)</span>
+                <span className="font-mono text-base font-semibold text-primary">{pp30.salestaxable.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 bg-primary/5 px-2 font-semibold text-primary">
+                <span>5. ภาษีขาย (ตามใบกำกับภาษีขาย)</span>
+                <span className="font-mono text-lg">{pp30.outputvat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="font-medium text-foreground">6. ยอดซื้อที่มีสิทธินำภาษีซื้อมาหัก</span>
+                <span className="font-mono font-semibold">{pp30.purchasetaxable.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 bg-primary/5 px-2 font-semibold text-primary">
+                <span>7. ภาษีซื้อ (ตามใบกำกับภาษีซื้อ)</span>
+                <span className="font-mono text-lg">{pp30.inputvat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div
+                className={`flex items-center justify-between py-3 px-3 font-bold ${
+                  pp30.netvat >= 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                }`}
+              >
+                <span className="text-base">
+                  {pp30.netvat >= 0 ? "8. ภาษีมูลค่าเพิ่มที่ต้องชำระเดือนนี้ (ข้อ 5 - ข้อ 7)" : "8. ภาษีชำระเกิน (ข้อ 7 - ข้อ 5)"}
+                </span>
+                <span className="font-mono text-xl">{Math.abs(pp30.netvat).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between py-2 pl-4 text-muted-foreground">
-              <span>3. ยอดขายที่ได้รับการยกเว้นภาษี</span>
-              <span className="font-mono">{pp30.exemptsales.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 bg-muted/20 px-2 font-medium">
-              <span>4. ยอดขายที่ต้องเสียภาษี (ข้อ 1 - ข้อ 2 - ข้อ 3)</span>
-              <span className="font-mono text-base font-semibold text-primary">{pp30.taxablesales.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 bg-primary/5 px-2 font-semibold text-primary">
-              <span>5. ภาษีขาย (ร้อยละ 7 ของข้อ 4)</span>
-              <span className="font-mono text-lg">{pp30.outputvat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="font-medium text-foreground">6. ยอดซื้อที่มีสิทธินำภาษีซื้อมาหัก</span>
-              <span className="font-mono font-semibold">{pp30.claimablepurchases.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 bg-primary/5 px-2 font-semibold text-primary">
-              <span>7. ภาษีซื้อ (ร้อยละ 7 ของข้อ 6)</span>
-              <span className="font-mono text-lg">{pp30.inputvat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex items-center justify-between py-3 bg-emerald-500/10 px-3 font-bold text-emerald-700 dark:text-emerald-400">
-              <span className="text-base">
-                {pp30.nettaxpayable >= 0 ? "8. ภาษีมูลค่าเพิ่มที่ต้องชำระเดือนนี้ (ข้อ 5 - ข้อ 7)" : "8. ภาษีชำระเกิน (ข้อ 7 - ข้อ 5)"}
-              </span>
-              <span className="font-mono text-xl">{Math.abs(pp30.nettaxpayable).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
-            </div>
-          </div>
+          )}
         </Card>
       ) : (
         <Card className="overflow-hidden">

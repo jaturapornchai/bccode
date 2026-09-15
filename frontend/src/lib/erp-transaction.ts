@@ -1002,75 +1002,10 @@ export function getErpModuleConfig(route: string): ErpModuleConfig | undefined {
   return routeMap.get(clean);
 }
 
-// In-memory demo data cache to ensure offline/mock fallback resilience
-const mockStore = new Map<string, ErpTransactionDoc[]>();
-
-function getOrCreateMockDocs(apiPath: string, prefix: string): ErpTransactionDoc[] {
-  if (mockStore.has(apiPath)) return mockStore.get(apiPath)!;
-
-  const today = new Date().toISOString().split("T")[0];
-  const initial: ErpTransactionDoc[] = [
-    {
-      id: `${prefix}-001`,
-      docno: `${prefix}-202609-0001`,
-      docdatetime: `${today}T09:00:00Z`,
-      custcode: "CUST-001",
-      custname: "บริษัท สยามพาณิชย์ จำกัด",
-      description: "รายการประจำงวดกันยายน 2026",
-      totalamount: 10700,
-      totalbeforevat: 10000,
-      totalvatvalue: 700,
-      vattype: 1,
-      vatrate: 7,
-      status: 1,
-      details: [
-        {
-          linenumber: 1,
-          itemcode: "P-001",
-          itemname: "สินค้ามาตรฐานชนิด A",
-          unitcode: "PCS",
-          unitname: "ชิ้น",
-          qty: 10,
-          price: 1000,
-          sumamount: 10000,
-        },
-      ],
-    },
-    {
-      id: `${prefix}-002`,
-      docno: `${prefix}-202609-0002`,
-      docdatetime: `${today}T11:30:00Z`,
-      custcode: "CUST-002",
-      custname: "ห้างหุ้นส่วนจำกัด ทวีโชคทรานสปอร์ต",
-      description: "เอกสารรอบพิเศษ",
-      totalamount: 21400,
-      totalbeforevat: 20000,
-      totalvatvalue: 1400,
-      vattype: 1,
-      vatrate: 7,
-      status: 0,
-      details: [
-        {
-          linenumber: 1,
-          itemcode: "P-002",
-          itemname: "อะไหล่และอุปกรณ์เสริมชนิด B",
-          unitcode: "SET",
-          unitname: "ชุด",
-          qty: 4,
-          price: 5000,
-          sumamount: 20000,
-        },
-      ],
-    },
-  ];
-  mockStore.set(apiPath, initial);
-  return initial;
-}
-
 export async function fetchErpTransactions(
   config: ErpModuleConfig,
   params: { q?: string; offset?: number; limit?: number } = {},
-): Promise<{ items: ErpTransactionDoc[]; total: number }> {
+): Promise<{ items: ErpTransactionDoc[]; total: number; error?: string }> {
   const query = new URLSearchParams();
   if (params.q) query.set("q", params.q);
   if (params.offset !== undefined) query.set("offset", String(params.offset));
@@ -1078,33 +1013,21 @@ export async function fetchErpTransactions(
 
   try {
     const res = await authFetch(`/api/erp-transaction/${config.apiPath}/list?${query.toString()}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data?.data)) {
-        return { items: data.data, total: data.pagination?.total ?? data.data.length };
-      }
-      if (Array.isArray(data)) {
-        return { items: data, total: data.length };
-      }
+    if (!res.ok) {
+      const error = res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed";
+      return { items: [], total: 0, error };
     }
+    const data = await res.json();
+    if (Array.isArray(data?.data)) {
+      return { items: data.data, total: data.pagination?.total ?? data.data.length };
+    }
+    if (Array.isArray(data)) {
+      return { items: data, total: data.length };
+    }
+    return { items: [], total: 0, error: "load_failed" };
   } catch {
-    // Network or server unreachable: fallback to structured local store
+    return { items: [], total: 0, error: "connection_error" };
   }
-
-  // Fallback resilience
-  const docs = getOrCreateMockDocs(config.apiPath, config.defaultDocPrefix);
-  let filtered = docs;
-  if (params.q?.trim()) {
-    const q = params.q.toLowerCase();
-    filtered = docs.filter(
-      (d) =>
-        d.docno.toLowerCase().includes(q) ||
-        (d.custcode && d.custcode.toLowerCase().includes(q)) ||
-        (d.custname && d.custname.toLowerCase().includes(q)) ||
-        (d.description && d.description.toLowerCase().includes(q)),
-    );
-  }
-  return { items: filtered, total: filtered.length };
 }
 
 export async function saveErpTransaction(
@@ -1120,37 +1043,18 @@ export async function saveErpTransaction(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(doc),
     });
-    if (res.ok) {
-      const data = await res.json();
-      return { success: true, data: data.data || doc, message: "บันทึกข้อมูลเรียบร้อยแล้ว" };
+    if (!res.ok) {
+      return { success: false, message: "save_failed" };
     }
+    const data = await res.json();
+    return {
+      success: true,
+      data: data?.data ?? (doc as ErpTransactionDoc),
+      message: "save_success",
+    };
   } catch {
-    // Fallback store update
+    return { success: false, message: "connection_error" };
   }
-
-  // Local store update
-  const docs = getOrCreateMockDocs(config.apiPath, config.defaultDocPrefix);
-  if (isEdit && doc.id) {
-    const idx = docs.findIndex((x) => x.id === doc.id);
-    if (idx >= 0) {
-      docs[idx] = { ...docs[idx], ...doc } as ErpTransactionDoc;
-      return { success: true, data: docs[idx] };
-    }
-  } else {
-    const newDoc: ErpTransactionDoc = {
-      ...doc,
-      id: `${config.defaultDocPrefix}-${Date.now()}`,
-      docno: doc.docno || `${config.defaultDocPrefix}-${Date.now().toString().slice(-6)}`,
-      docdatetime: doc.docdatetime || new Date().toISOString(),
-      status: doc.status ?? 0,
-      totalamount: doc.totalamount ?? 0,
-      details: doc.details ?? [],
-    } as ErpTransactionDoc;
-    docs.unshift(newDoc);
-    return { success: true, data: newDoc };
-  }
-
-  return { success: true, data: doc as ErpTransactionDoc };
 }
 
 export async function deleteErpTransaction(
@@ -1161,17 +1065,11 @@ export async function deleteErpTransaction(
     const res = await authFetch(`/api/erp-transaction/${config.apiPath}/${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
-    if (res.ok) {
-      return { success: true, message: "ลบเอกสารเรียบร้อยแล้ว" };
+    if (!res.ok) {
+      return { success: false, message: "delete_failed" };
     }
+    return { success: true, message: "delete_success" };
   } catch {
-    // Fallback
+    return { success: false, message: "connection_error" };
   }
-
-  const docs = getOrCreateMockDocs(config.apiPath, config.defaultDocPrefix);
-  const idx = docs.findIndex((x) => x.id === id);
-  if (idx >= 0) {
-    docs.splice(idx, 1);
-  }
-  return { success: true, message: "ลบเอกสารเรียบร้อยแล้ว" };
 }

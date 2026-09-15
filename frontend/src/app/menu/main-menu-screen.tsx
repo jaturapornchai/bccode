@@ -1481,6 +1481,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                           active={tab.id === activeTabId}
                           activeTab={tab}
                           auth={auth}
+                          workspace={workspace}
                           allowedMenuIds={allowedMenuIds}
                           allMenuItems={allMenuItems}
                           frequentMenuEntries={frequentMenuEntries}
@@ -2788,6 +2789,7 @@ function WorkTabPanel({
   backendLanguage,
   language,
   onOpenRoute,
+  workspace,
 }: {
   active: boolean;
   activeTab: WorkTab;
@@ -2800,6 +2802,7 @@ function WorkTabPanel({
   backendLanguage: BackendLanguageDictionary;
   language: LanguageCode;
   onOpenRoute: (route: string, productCode?: string) => void;
+  workspace?: WorkspaceSession | null;
 }) {
   if (activeTab.route === "/shortcuts") {
     return (
@@ -2881,19 +2884,19 @@ function WorkTabPanel({
   }
 
   if (isThaiTaxRoute(activeTab.route)) {
-    return <TaxFilingWorkbench embedded language={language} route={activeTab.route} />;
+    return <TaxFilingWorkbench embedded language={language} route={activeTab.route} holdingcode={workspace?.shop.holdingcode ?? ""} businesscode={workspace?.company?.code ?? ""} />;
   }
 
   if (isErpReportRoute(activeTab.route)) {
-    return <ErpReportViewer embedded language={language} route={activeTab.route} />;
+    return <ErpReportViewer embedded language={language} route={activeTab.route} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   if (isErpToolsRoute(activeTab.route)) {
-    return <ErpToolsScreen embedded language={language} route={activeTab.route} />;
+    return <ErpToolsScreen embedded language={language} route={activeTab.route} holdingcode={workspace?.shop.holdingcode ?? ""} businesscode={workspace?.company?.code ?? ""} />;
   }
 
   if (isOperationsRoute(activeTab.route)) {
-    return <OperationsWorkbench embedded language={language} route={activeTab.route} />;
+    return <OperationsWorkbench embedded language={language} route={activeTab.route} holdingcode={workspace?.shop.holdingcode ?? ""} />;
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);

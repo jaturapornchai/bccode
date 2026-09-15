@@ -1,63 +1,207 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   THAI_TAX_CONFIGS,
-  isThaiTaxRoute,
+  fetchPp30Summary,
+  fetchVatRegister,
   getThaiTaxConfig,
-  calculatePp30Summary,
-  getSampleTaxRecords,
+  isThaiTaxRoute,
 } from "./thai-tax";
 
-describe("Thai Tax Engine (PP.30, PP.36, VAT, WHT, 50 Twi)", () => {
-  it("registers all 12 Thai Tax routes", () => {
-    expect(THAI_TAX_CONFIGS.length).toBe(12);
+function jsonResponse(status: number, body: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+  } as unknown as Response;
+}
 
-    expect(isThaiTaxRoute("/report/reportvatsale")).toBe(true);
-    expect(isThaiTaxRoute("/report/reportvatbuy")).toBe(true);
-    expect(isThaiTaxRoute("/report/vatpp30")).toBe(true);
-    expect(isThaiTaxRoute("/report/vatpp36")).toBe(true);
-    expect(isThaiTaxRoute("/report/vatpnd2")).toBe(true);
-    expect(isThaiTaxRoute("/report/vatpnd3")).toBe(true);
-    expect(isThaiTaxRoute("/report/vatpnd53")).toBe(true);
-    expect(isThaiTaxRoute("/report/whtcertificate")).toBe(true);
-    expect(isThaiTaxRoute("/report/whtreceived")).toBe(true);
-    expect(isThaiTaxRoute("/report/wht-reports")).toBe(true);
-    expect(isThaiTaxRoute("/report/deferredtax")).toBe(true);
-    expect(isThaiTaxRoute("/report/unreceivedtaxinvoice")).toBe(true);
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+describe("thai tax configs", () => {
+  it("ให้ config ครบ 12 รายการ และ resolve ได้จาก route", () => {
+    expect(THAI_TAX_CONFIGS).toHaveLength(12);
+    THAI_TAX_CONFIGS.forEach((config) => {
+      expect(isThaiTaxRoute(config.route)).toBe(true);
+      expect(getThaiTaxConfig(config.route)).toEqual(config);
+    });
   });
+});
 
-  it("calculates PP.30 summary correctly according to Revenue Department formula", () => {
-    const summary = calculatePp30Summary(
-      2026,
-      9,
-      { taxable: 100000, zeroRated: 10000, exempt: 5000 },
-      { claimable: 60000, exempt: 0 },
-      500,
+describe("fetchVatRegister", () => {
+  it("200 → map ข้อมูลจาก API เป็น ThaiTaxRecord", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, {
+        status: "success",
+        data: [
+          {
+            docdate: "2026-09-01",
+            taxinvoiceno: "INV-001",
+            counterpartyname: "บริษัท ตัวอย่าง จำกัด",
+            taxid: "1101700000000",
+            branchno: "00000",
+            amountbeforevat: 10000,
+            vatamount: 700,
+            totalamount: 10700,
+          },
+        ],
+        count: 1,
+        limit: 200,
+        offset: 0,
+      }),
     );
+    vi.stubGlobal("fetch", fetchMock);
 
-    expect(summary.taxyear).toBe(2026);
-    expect(summary.taxmonth).toBe(9);
-    expect(summary.totalsales).toBe(115000);
-    expect(summary.taxablesales).toBe(100000);
-    expect(summary.outputvat).toBe(7000); // 7% of 100,000
-    expect(summary.claimablepurchases).toBe(60000);
-    expect(summary.inputvat).toBe(4200); // 7% of 60,000
-    expect(summary.nettaxpayable).toBe(2800); // 7,000 - 4,200
-    expect(summary.previousoverpayment).toBe(500);
-    expect(summary.finaltaxpayable).toBe(2300); // 2,800 - 500
+    const result = await fetchVatRegister({
+      holdingcode: "H001",
+      businesscode: "B001",
+      year: 2026,
+      month: 9,
+      type: "sale",
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.records).toHaveLength(1);
+    expect(result.total).toBe(1);
+    expect(result.records[0]?.vatamount).toBe(700);
+    expect(result.records[0]?.amountbeforevat).toBe(10000);
+    expect(result.records[0]?.taxinvoiceno).toBe("INV-001");
+    expect(result.records[0]?.status).toBe("active");
+    expect(result.records[0]?.isheadoffice).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/goapi/api/report/tax/vat-register",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 
-  it("provides sample tax records for sales, purchases, and withholding tax", () => {
-    const sales = getSampleTaxRecords("vat_sale");
-    expect(sales.length).toBeGreaterThan(0);
-    expect(sales[0].vatamount).toBe(Math.round(sales[0].amountbeforevat * 0.07));
+  it("401 → unauthorized และ records ว่าง", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(401, { status: "error" }));
+    vi.stubGlobal("fetch", fetchMock);
 
-    const buys = getSampleTaxRecords("vat_buy");
-    expect(buys.length).toBeGreaterThan(0);
+    const result = await fetchVatRegister({
+      holdingcode: "H001",
+      businesscode: "B001",
+      year: 2026,
+      month: 9,
+      type: "sale",
+    });
 
-    const wht = getSampleTaxRecords("pnd53");
-    expect(wht.length).toBeGreaterThan(0);
-    expect(wht[0].incometype).toBeDefined();
-    expect(wht[0].taxrate).toBe(3);
-    expect(wht[0].whtamount).toBe(1500);
+    expect(result.error).toBe("unauthorized");
+    expect(result.records).toEqual([]);
+  });
+
+  it("500 → load_failed และ records ว่าง", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(500, { status: "error" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchVatRegister({
+      holdingcode: "H001",
+      businesscode: "B001",
+      year: 2026,
+      month: 9,
+      type: "purchase",
+    });
+
+    expect(result.error).toBe("load_failed");
+    expect(result.records).toEqual([]);
+  });
+
+  it("fetch throw → connection_error", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("network down"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchVatRegister({
+      holdingcode: "H001",
+      businesscode: "B001",
+      year: 2026,
+      month: 9,
+      type: "sale",
+    });
+
+    expect(result.error).toBe("connection_error");
+    expect(result.records).toEqual([]);
+  });
+
+  it("ไม่มี businesscode → company_required และไม่ยิง fetch", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchVatRegister({
+      holdingcode: "H001",
+      businesscode: "",
+      year: 2026,
+      month: 9,
+      type: "sale",
+    });
+
+    expect(result.error).toBe("company_required");
+    expect(result.records).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetchPp30Summary", () => {
+  it("200 → คืนค่าตามที่ API ส่งมาทุกฟิลด์ ไม่คำนวณ VAT ใหม่จากฐาน", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, {
+        status: "success",
+        data: {
+          year: 2026,
+          month: 9,
+          salestaxable: 100000,
+          saleszerorated: 5000,
+          salesexempt: 2000,
+          outputvat: 6999.37,
+          purchasetaxable: 40000,
+          inputvat: 2800.12,
+          netvat: 4199.25,
+          payable: 4199.25,
+          creditable: 0,
+        },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchPp30Summary({
+      holdingcode: "H001",
+      businesscode: "B001",
+      year: 2026,
+      month: 9,
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.summary).toEqual({
+      year: 2026,
+      month: 9,
+      salestaxable: 100000,
+      saleszerorated: 5000,
+      salesexempt: 2000,
+      outputvat: 6999.37,
+      purchasetaxable: 40000,
+      inputvat: 2800.12,
+      netvat: 4199.25,
+      payable: 4199.25,
+      creditable: 0,
+    });
+    // 100000 × 0.07 = 7000 จึงยืนยันว่าไม่ได้คำนวณซ้ำบน browser
+    expect(result.summary?.outputvat).toBe(6999.37);
+    expect(result.summary?.outputvat).not.toBe(7000);
+  });
+
+  it("500 → summary เป็น null และมี error key", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(500, { status: "error" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchPp30Summary({
+      holdingcode: "H001",
+      businesscode: "B001",
+      year: 2026,
+      month: 9,
+    });
+
+    expect(result.summary).toBeNull();
+    expect(result.error).toBe("load_failed");
   });
 });

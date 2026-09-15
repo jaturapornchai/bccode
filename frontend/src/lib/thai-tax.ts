@@ -1,6 +1,8 @@
 // Thai Tax & Compliance Engine for Thai SMEs & Thai Accounting
 // Covers VAT (ภ.พ. 30, ภ.พ. 36, รายงานภาษีขาย/ซื้อ) and WHT (ภ.ง.ด. 2, ภ.ง.ด. 3, ภ.ง.ด. 53, 50 ทวิ)
 
+import { authFetch } from "@/lib/client-auth-session";
+
 export interface ThaiTaxRecord {
   id: string;
   docdate: string;
@@ -19,21 +21,6 @@ export interface ThaiTaxRecord {
   status: "active" | "cancelled" | "excluded";
 }
 
-export interface Pp30Summary {
-  taxyear: number;
-  taxmonth: number;
-  totalsales: number;
-  zeroratedsales: number;
-  exemptsales: number;
-  taxablesales: number;
-  outputvat: number; // ภาษีขาย
-  totalpurchases: number;
-  claimablepurchases: number;
-  inputvat: number; // ภาษีซื้อ
-  nettaxpayable: number; // outputvat - inputvat (บวกคือต้องชำระ, ลบคือชำระเกิน)
-  previousoverpayment: number; // ภาษีชำระเกินยกมา
-  finaltaxpayable: number; // ภาษีที่ต้องชำระสุทธิ (หรือขอคืน)
-}
 
 export interface ThaiTaxConfig {
   route: string;
@@ -157,160 +144,149 @@ export function getThaiTaxConfig(route: string): ThaiTaxConfig | undefined {
   return taxRouteMap.get(clean);
 }
 
-export function calculatePp30Summary(
-  taxYear: number,
-  taxMonth: number,
-  sales: { taxable: number; zeroRated: number; exempt: number },
-  purchases: { claimable: number; exempt: number },
-  previousOverpayment: number = 0,
-): Pp30Summary {
-  const outputvat = Math.round(sales.taxable * 0.07 * 100) / 100;
-  const inputvat = Math.round(purchases.claimable * 0.07 * 100) / 100;
-  const nettaxpayable = Math.round((outputvat - inputvat) * 100) / 100;
-  const finaltaxpayable = Math.round((nettaxpayable - previousOverpayment) * 100) / 100;
+export interface Pp30Summary {
+  year: number;
+  month: number;
+  salestaxable: number;
+  saleszerorated: number;
+  salesexempt: number;
+  outputvat: number;
+  purchasetaxable: number;
+  inputvat: number;
+  netvat: number;
+  payable: number;
+  creditable: number;
+}
+
+const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
+const PP30_SUMMARY_PATH = "/api/goapi/api/report/tax/pp30-summary";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function toText(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord {
+  const taxinvoiceno = toText(row.taxinvoiceno);
+  const branchno = toText(row.branchno);
 
   return {
-    taxyear: taxYear,
-    taxmonth: taxMonth,
-    totalsales: sales.taxable + sales.zeroRated + sales.exempt,
-    zeroratedsales: sales.zeroRated,
-    exemptsales: sales.exempt,
-    taxablesales: sales.taxable,
-    outputvat,
-    totalpurchases: purchases.claimable + purchases.exempt,
-    claimablepurchases: purchases.claimable,
-    inputvat,
-    nettaxpayable,
-    previousoverpayment: previousOverpayment,
-    finaltaxpayable,
+    id: `${taxinvoiceno}#${index}`,
+    docdate: toText(row.docdate),
+    taxinvoiceno,
+    counterpartyname: toText(row.counterpartyname),
+    taxid: toText(row.taxid),
+    branchno,
+    isheadoffice: branchno === "" || branchno === "00000",
+    amountbeforevat: toNumber(row.amountbeforevat),
+    vatamount: toNumber(row.vatamount),
+    totalamount: toNumber(row.totalamount),
+    // backend กรองเอกสารที่ยกเลิก/ตัดออกแล้ว จึงแสดงเป็น active ได้
+    status: "active",
   };
 }
 
-export function getSampleTaxRecords(formType: ThaiTaxConfig["formType"]): ThaiTaxRecord[] {
-  if (formType === "vat_sale") {
-    return [
-      {
-        id: "tx-s-01",
-        docdate: "2026-09-02",
-        taxinvoiceno: "INV-202609-001",
-        counterpartyname: "บริษัท สยามการค้าปลีก จำกัด (มหาชน)",
-        taxid: "0107536000123",
-        branchno: "00000",
-        isheadoffice: true,
-        amountbeforevat: 50000,
-        vatamount: 3500,
-        totalamount: 53500,
-        status: "active",
-      },
-      {
-        id: "tx-s-02",
-        docdate: "2026-09-05",
-        taxinvoiceno: "INV-202609-002",
-        counterpartyname: "ห้างหุ้นส่วนจำกัด ไทยเจริญการช่าง",
-        taxid: "0103554009876",
-        branchno: "00001",
-        isheadoffice: false,
-        amountbeforevat: 28000,
-        vatamount: 1960,
-        totalamount: 29960,
-        status: "active",
-      },
-      {
-        id: "tx-s-03",
-        docdate: "2026-09-10",
-        taxinvoiceno: "INV-202609-003",
-        counterpartyname: "บริษัท กรุงเทพพรีเมียม ซัพพลาย จำกัด",
-        taxid: "0105558004567",
-        branchno: "00000",
-        isheadoffice: true,
-        amountbeforevat: 125000,
-        vatamount: 8750,
-        totalamount: 133750,
-        status: "active",
-      },
-    ];
+type PostResult = { ok: true; payload: unknown } | { ok: false; error: string };
+
+async function postApi(path: string, body: unknown): Promise<PostResult> {
+  const res = await authFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => null);
+
+  if (res === null) return { ok: false, error: "connection_error" };
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed",
+    };
   }
 
-  if (formType === "vat_buy") {
-    return [
-      {
-        id: "tx-b-01",
-        docdate: "2026-09-03",
-        taxinvoiceno: "TI-889012",
-        counterpartyname: "บริษัท นภาอุตสาหกรรม จำกัด",
-        taxid: "0105551007890",
-        branchno: "00000",
-        isheadoffice: true,
-        amountbeforevat: 40000,
-        vatamount: 2800,
-        totalamount: 42800,
-        status: "active",
-      },
-      {
-        id: "tx-b-02",
-        docdate: "2026-09-08",
-        taxinvoiceno: "TAX-54129",
-        counterpartyname: "บริษัท แอดวานซ์ ดิจิทัล เซอร์วิส จำกัด",
-        taxid: "0105556012345",
-        branchno: "00002",
-        isheadoffice: false,
-        amountbeforevat: 15000,
-        vatamount: 1050,
-        totalamount: 16050,
-        status: "active",
-      },
-    ];
+  try {
+    return { ok: true, payload: await res.json() };
+  } catch {
+    return { ok: false, error: "load_failed" };
+  }
+}
+
+export async function fetchVatRegister(params: {
+  holdingcode: string;
+  businesscode: string;
+  year: number;
+  month: number;
+  type: "sale" | "purchase";
+  limit?: number;
+  offset?: number;
+}): Promise<{ records: ThaiTaxRecord[]; total: number; error?: string }> {
+  if (!params.holdingcode || !params.businesscode) {
+    return { records: [], total: 0, error: "company_required" };
   }
 
-  // WHT Forms (PND 53, PND 3, 50 Twi)
-  return [
-    {
-      id: "tx-wht-01",
-      docdate: "2026-09-04",
-      taxinvoiceno: "50TWI-202609-01",
-      counterpartyname: "บริษัท โปรคอนซัลแตนท์ แอนด์ เซอร์วิส จำกัด",
-      taxid: "0105559011223",
-      branchno: "00000",
-      isheadoffice: true,
-      amountbeforevat: 50000,
-      vatamount: 3500,
-      totalamount: 53500,
-      incometype: "ค่าบริการ (มาตรา 40(8))",
-      taxrate: 3,
-      whtamount: 1500,
-      status: "active",
+  const result = await postApi(VAT_REGISTER_PATH, params);
+  if (!result.ok) {
+    return { records: [], total: 0, error: result.error };
+  }
+
+  const payload = result.payload;
+  if (!isRecord(payload) || !Array.isArray(payload.data)) {
+    return { records: [], total: 0, error: "load_failed" };
+  }
+
+  const records = payload.data.filter(isRecord).map(toTaxRecord);
+  const total = payload.count === undefined ? records.length : toNumber(payload.count);
+
+  return { records, total };
+}
+
+export async function fetchPp30Summary(params: {
+  holdingcode: string;
+  businesscode: string;
+  year: number;
+  month: number;
+}): Promise<{ summary: Pp30Summary | null; error?: string }> {
+  if (!params.holdingcode || !params.businesscode) {
+    return { summary: null, error: "company_required" };
+  }
+
+  const result = await postApi(PP30_SUMMARY_PATH, params);
+  if (!result.ok) {
+    return { summary: null, error: result.error };
+  }
+
+  const payload = result.payload;
+  if (!isRecord(payload) || !isRecord(payload.data)) {
+    return { summary: null, error: "load_failed" };
+  }
+
+  const data = payload.data;
+
+  return {
+    summary: {
+      year: toNumber(data.year),
+      month: toNumber(data.month),
+      salestaxable: toNumber(data.salestaxable),
+      saleszerorated: toNumber(data.saleszerorated),
+      salesexempt: toNumber(data.salesexempt),
+      outputvat: toNumber(data.outputvat),
+      purchasetaxable: toNumber(data.purchasetaxable),
+      inputvat: toNumber(data.inputvat),
+      netvat: toNumber(data.netvat),
+      payable: toNumber(data.payable),
+      creditable: toNumber(data.creditable),
     },
-    {
-      id: "tx-wht-02",
-      docdate: "2026-09-07",
-      taxinvoiceno: "50TWI-202609-02",
-      counterpartyname: "นายสมชาย ใจดี",
-      taxid: "3100600123456",
-      branchno: "00000",
-      isheadoffice: true,
-      amountbeforevat: 20000,
-      vatamount: 0,
-      totalamount: 20000,
-      incometype: "ค่าเช่าอาคาร (มาตรา 40(5))",
-      taxrate: 5,
-      whtamount: 1000,
-      status: "active",
-    },
-    {
-      id: "tx-wht-03",
-      docdate: "2026-09-12",
-      taxinvoiceno: "50TWI-202609-03",
-      counterpartyname: "บริษัท เอ็กซ์เพรส ทรานสปอร์ต จำกัด",
-      taxid: "0105557008899",
-      branchno: "00000",
-      isheadoffice: true,
-      amountbeforevat: 35000,
-      vatamount: 0,
-      totalamount: 35000,
-      incometype: "ค่าขนส่ง (มาตรา 40(8))",
-      taxrate: 1,
-      whtamount: 350,
-      status: "active",
-    },
-  ];
+  };
 }

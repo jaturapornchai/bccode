@@ -1,6 +1,8 @@
 // ERP Tools & Integrity Recalculate Engine for Thai SMEs & Thai Accounting
 // Covers GL Reprocess, Stock Rebuild, AR/AP Recalculate, Bank & Cheque Balance Recalculation
 
+import { authFetch } from "@/lib/client-auth-session";
+
 export interface ErpToolConfig {
   route: string;
   code: string;
@@ -179,4 +181,97 @@ export function isErpToolsRoute(route: string): boolean {
 export function getErpToolConfig(route: string): ErpToolConfig | undefined {
   const clean = route.split("?")[0];
   return toolRouteMap.get(clean);
+}
+
+// --- การประมวลผลจริงผ่าน backend (ไม่มีข้อมูลจำลอง) ---
+
+export interface ErpToolStockCheckStats {
+  totalrows: number;
+  totaldocuments: number;
+  totalproducts: number;
+  earliestdate: string;
+  latestdate: string;
+}
+
+export interface ErpToolRunResult {
+  success: boolean;
+  messageKey: string;
+  stats?: ErpToolStockCheckStats;
+}
+
+// เครื่องมือที่มี API จริงรองรับแล้วเท่านั้น (ตัวอื่นยังไม่มี endpoint ห้ามแสร้งว่าทำงานสำเร็จ)
+const TOOL_ENDPOINTS: Record<string, string> = {
+  rebuild_product_balance: "/api/goapi/api/process/product-balance",
+  audit_data: "/api/goapi/api/stockcost/check",
+};
+
+export function isErpToolApiReady(code: string): boolean {
+  return code in TOOL_ENDPOINTS;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function toText(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+export async function runErpTool(params: {
+  code: string;
+  holdingcode: string;
+  businesscode: string;
+  year: number;
+}): Promise<ErpToolRunResult> {
+  const { code, holdingcode, businesscode, year } = params;
+  const endpoint = TOOL_ENDPOINTS[code];
+  if (!endpoint) return { success: false, messageKey: "tool_not_available" };
+  if (!holdingcode) return { success: false, messageKey: "holding_required" };
+
+  const body: Record<string, unknown> =
+    code === "audit_data"
+      ? { holdingcode, businesscode, fromdate: `${year}-01-01`, todate: `${year}-12-31` }
+      : { holdingcode, businesscode };
+
+  try {
+    const res = await authFetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      return {
+        success: false,
+        messageKey: res.status === 401 || res.status === 403 ? "unauthorized" : "process_failed",
+      };
+    }
+    const payload: unknown = await res.json();
+    if (!isRecord(payload)) return { success: false, messageKey: "process_failed" };
+    if (payload.success === false || payload.status === "error") {
+      return { success: false, messageKey: "process_failed" };
+    }
+    if (code !== "audit_data") return { success: true, messageKey: "process_success" };
+    return {
+      success: true,
+      messageKey: "process_success",
+      stats: {
+        totalrows: toNumber(payload.total_rows),
+        totaldocuments: toNumber(payload.total_documents),
+        totalproducts: toNumber(payload.total_products),
+        earliestdate: toText(payload.earliest_date),
+        latestdate: toText(payload.latest_date),
+      },
+    };
+  } catch {
+    return { success: false, messageKey: "connection_error" };
+  }
 }

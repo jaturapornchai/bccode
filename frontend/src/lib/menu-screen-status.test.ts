@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { flattenMenuItems } from "./menu-data";
 import { GL_MENU_ITEMS } from "./general-ledger";
-import { CUSTOM_MENU_SCREEN_ROUTES, isMenuScreenPending } from "./menu-screen-status";
+import { CUSTOM_MENU_SCREEN_ROUTES, isMenuScreenPending, isMenuDataPending } from "./menu-screen-status";
 
 describe("menu screen availability", () => {
   it("tracks the actual custom screen dispatcher, including newly connected screens", () => {
@@ -34,5 +34,31 @@ describe("menu screen availability", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
     expect(pending).toEqual([]);
     expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(37);
+  });
+});
+
+describe("Menu data readiness", () => {
+  it("flags screens that render but have no live API behind them", () => {
+    // รายงาน: มี API จริง 4 ตัว
+    expect(isMenuDataPending("/report/salesreportbydocument")).toBe(false);
+    expect(isMenuDataPending("/report/stockbalanceitem")).toBe(false);
+    expect(isMenuDataPending("/report/araging")).toBe(true);
+    expect(isMenuDataPending("/report/xbrl")).toBe(true);
+
+    // เครื่องมือ: มี API จริง 2 ตัว
+    expect(isMenuDataPending("/rebuildproductbalancescreen")).toBe(false);
+    expect(isMenuDataPending("/auditscreen")).toBe(false);
+    expect(isMenuDataPending("/gl/reprocess")).toBe(true);
+
+    // งานอนุมัติ: มีเฉพาะใบขอซื้อ
+    expect(isMenuDataPending("/procurement/requisition-approval")).toBe(false);
+    expect(isMenuDataPending("/sales/quotation-approval")).toBe(true);
+
+    // ภาษี: ภาษีขาย/ซื้อ/ภ.พ.30 ต่อ API แล้ว ส่วน ภ.ง.ด. ยังไม่มีข้อมูลต้นทาง
+    expect(isMenuDataPending("/report/vatsale")).toBe(false);
+    expect(isMenuDataPending("/report/vatpnd3")).toBe(true);
+
+    // จอที่ไม่ได้อยู่ในกลุ่มเหล่านี้ ไม่ถือว่ารอข้อมูล
+    expect(isMenuDataPending("/product")).toBe(false);
   });
 });

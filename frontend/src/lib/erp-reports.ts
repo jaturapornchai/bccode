@@ -1,6 +1,8 @@
 // Unified ERP Reporting Engine for Thai SMEs & Thai Accounting
 // Covers Inventory, Sales, Purchase, AR/AP Aging, Gross Profit, and DBD XBRL Export
 
+import { authFetch } from "@/lib/client-auth-session";
+
 export type ReportCategory = "inventory" | "sales" | "purchase" | "ar" | "ap" | "xbrl";
 
 export interface ReportColumn {
@@ -455,94 +457,207 @@ export function getErpReportConfig(route: string): ErpReportConfig | undefined {
   return reportRouteMap.get(clean);
 }
 
-export function getSampleReportData(code: string): Record<string, unknown>[] {
-  if (code.includes("stock_balance")) {
-    return [
-      { itemcode: "P-001", itemname: "ปากกาลูกลื่น 0.5 มม.", unitname: "ด้าม", qty: 1500, avgcost: 12.5, totalcost: 18750, warehouse: "คลังหลัก (WH-01)", location: "A-01-01", reservedqty: 200, availableqty: 1300 },
-      { itemcode: "P-002", itemname: "สมุดบันทึกริมลวด A5", unitname: "เล่ม", qty: 820, avgcost: 45.0, totalcost: 36900, warehouse: "คลังหลัก (WH-01)", location: "A-02-04", reservedqty: 50, availableqty: 770 },
-      { itemcode: "P-003", itemname: "กระดาษถ่ายเอกสาร A4 80 แกรม", unitname: "รีม", qty: 350, avgcost: 110.0, totalcost: 38500, warehouse: "คลังสาขา 1 (WH-02)", location: "B-01-02", reservedqty: 100, availableqty: 250 },
-      { itemcode: "P-004", itemname: "แฟ้มห่วง 2 นิ้ว ตราช้าง", unitname: "เล่ม", qty: 450, avgcost: 65.0, totalcost: 29250, warehouse: "คลังหลัก (WH-01)", location: "B-03-01", reservedqty: 0, availableqty: 450 },
-    ];
+export type ErpReportRow = Record<string, unknown>;
+
+const API_READY_REPORTS: ReadonlySet<string> = new Set<string>([
+  "sales_by_document",
+  "gross_profit_document",
+  "stock_balance_item",
+  "stock_balance_warehouse",
+]);
+
+export function isErpReportApiReady(code: string): boolean {
+  return API_READY_REPORTS.has(code);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toNumber(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+function toText(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
+}
+
+type RowMapper = (source: Record<string, unknown>) => ErpReportRow;
+
+function mapSalesByDocument(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const custcode = toText(source.debtorcode);
+  if (custcode !== undefined) row.custcode = custcode;
+  const custname = toText(source.debtorname);
+  if (custname !== undefined) row.custname = custname;
+  const totalamount = toNumber(source.totalamount);
+  if (totalamount !== undefined) row.totalamount = totalamount;
+  return row;
+}
+
+function mapGrossProfitDocument(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const custname = toText(source.debtorname);
+  if (custname !== undefined) row.custname = custname;
+
+  const totalamount = toNumber(source.totalamount);
+  const calcamount = toNumber(source.calcamount);
+  const grossprofit = toNumber(source.grossprofit);
+
+  if (totalamount !== undefined) row.salesrevenue = totalamount;
+  if (calcamount !== undefined) row.costofgoods = calcamount;
+  if (grossprofit !== undefined) row.grossprofit = grossprofit;
+
+  if (grossprofit !== undefined && totalamount !== undefined) {
+    const marginpercent =
+      totalamount === 0
+        ? 0
+        : Math.round((grossprofit / totalamount) * 100 * 100) / 100;
+    row.marginpercent = marginpercent;
+  }
+  return row;
+}
+
+function mapStockBalanceItem(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const itemcode = toText(source.itemcode);
+  if (itemcode !== undefined) row.itemcode = itemcode;
+  const itemname = toText(source.itemname);
+  if (itemname !== undefined) row.itemname = itemname;
+  const qty = toNumber(source.qty);
+  if (qty !== undefined) row.qty = qty;
+  const unitname = toText(source.unitcode);
+  if (unitname !== undefined) row.unitname = unitname;
+  const avgcost = toNumber(source.averagecost);
+  if (avgcost !== undefined) row.avgcost = avgcost;
+  const totalcost = toNumber(source.totalvalue);
+  if (totalcost !== undefined) row.totalcost = totalcost;
+  return row;
+}
+
+function mapStockBalanceWarehouse(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const warehouse = toText(source.whcode);
+  if (warehouse !== undefined) row.warehouse = warehouse;
+  const itemcode = toText(source.itemcode);
+  if (itemcode !== undefined) row.itemcode = itemcode;
+  const itemname = toText(source.itemname);
+  if (itemname !== undefined) row.itemname = itemname;
+  const qty = toNumber(source.qty);
+  if (qty !== undefined) row.qty = qty;
+  const unitname = toText(source.unitcode);
+  if (unitname !== undefined) row.unitname = unitname;
+  const totalcost = toNumber(source.totalvalue);
+  if (totalcost !== undefined) row.totalcost = totalcost;
+  return row;
+}
+
+const ROW_MAPPERS: Record<string, RowMapper> = {
+  sales_by_document: mapSalesByDocument,
+  gross_profit_document: mapGrossProfitDocument,
+  stock_balance_item: mapStockBalanceItem,
+  stock_balance_warehouse: mapStockBalanceWarehouse,
+};
+
+function extractRows(
+  payload: unknown,
+  key: "data" | "items",
+): Record<string, unknown>[] | null {
+  if (!isRecord(payload)) return null;
+  const arr = payload[key];
+  if (!Array.isArray(arr)) return null;
+  const rows: Record<string, unknown>[] = [];
+  for (const item of arr) {
+    if (isRecord(item)) rows.push(item);
+  }
+  return rows;
+}
+
+export async function fetchErpReportData(params: {
+  code: string;
+  holdingcode: string;
+  fromdate: string; // "YYYY-MM-DD"
+  todate: string;   // "YYYY-MM-DD"
+}): Promise<{ rows: ErpReportRow[]; error?: string }> {
+  const { code, holdingcode, fromdate, todate } = params;
+
+  if (!holdingcode) {
+    return { rows: [], error: "holding_required" };
   }
 
-  if (code === "low_stock_report") {
-    return [
-      { itemcode: "P-003", itemname: "กระดาษถ่ายเอกสาร A4 80 แกรม", minqty: 500, qty: 350, shortage: 150, reorderqty: 300 },
-      { itemcode: "P-005", itemname: "หมึกพิมพ์เลเซอร์ HP LaserJet", minqty: 50, qty: 12, shortage: 38, reorderqty: 50 },
-      { itemcode: "P-008", itemname: "เทปใสปิดกล่อง 2 นิ้ว", minqty: 200, qty: 45, shortage: 155, reorderqty: 200 },
-    ];
+  if (!isErpReportApiReady(code)) {
+    return { rows: [], error: "report_not_available" };
   }
 
-  if (code === "expiring_stock_report") {
-    return [
-      { itemcode: "MED-01", itemname: "น้ำยาทำความสะอาดฆ่าเชื้อ 5 ลิตร", lotno: "LOT-202512-01", expirydate: "2026-10-15", daysremaining: 30, qty: 45 },
-      { itemcode: "FOOD-09", itemname: "กาแฟคั่วบดดอยช้าง 500g", lotno: "LOT-202601-88", expirydate: "2026-11-20", daysremaining: 66, qty: 120 },
-    ];
+  const mapper = ROW_MAPPERS[code];
+  if (!mapper) {
+    return { rows: [], error: "report_not_available" };
   }
 
-  if (code.includes("sales") || code.includes("gross_profit")) {
-    return [
-      {
-        docdate: "2026-09-02", docno: "INV-202609-001", custcode: "C-001", custname: "บริษัท สยามการค้าปลีก จำกัด (มหาชน)",
-        subtotal: 50000, vatamount: 3500, totalamount: 53500, salesdate: "2026-09-02", doccount: 12, cashsales: 15000, transfersales: 25000, creditsales: 13500,
-        sellername: "สมเกียรติ มั่นคง", target: 500000, actual: 580000, achievedpercent: 116, commission: 17400,
-        salesrevenue: 50000, costofgoods: 32000, grossprofit: 18000, marginpercent: 36.0, itemcode: "P-001", itemname: "ปากกาลูกลื่น 0.5 มม.", soldqty: 4000,
-        channel: "ขายหน้าร้าน (Store POS)", billcount: 120, sharepercent: 45.5,
-      },
-      {
-        docdate: "2026-09-05", docno: "INV-202609-002", custcode: "C-002", custname: "ห้างหุ้นส่วนจำกัด ไทยเจริญการช่าง",
-        subtotal: 28000, vatamount: 1960, totalamount: 29960, salesdate: "2026-09-05", doccount: 8, cashsales: 8000, transfersales: 21960, creditsales: 0,
-        sellername: "นภาลัย สดใส", target: 400000, actual: 420000, achievedpercent: 105, commission: 12600,
-        salesrevenue: 28000, costofgoods: 16500, grossprofit: 11500, marginpercent: 41.1, itemcode: "P-002", itemname: "สมุดบันทึกริมลวด A5", soldqty: 620,
-        channel: "Shopee Mall", billcount: 85, sharepercent: 32.2,
-      },
-    ];
-  }
+  const isDocumentReport =
+    code === "sales_by_document" || code === "gross_profit_document";
 
-  if (code.includes("purchase") || code.includes("expense")) {
-    return [
-      {
-        docdate: "2026-09-03", docno: "PUR-202609-01", vendorcode: "V-001", vendorname: "บริษัท สเตชั่นเนอรี่ ซัพพลาย จำกัด",
-        subtotal: 45000, vatamount: 3150, totalamount: 48150, pono: "PO-202608-099", orderqty: 500, receivedqty: 350, pendingqty: 150,
-        itemcode: "P-003", itemname: "กระดาษถ่ายเอกสาร A4 80 แกรม", purchasedqty: 350, avgprice: 110.0,
-        accountcode: "510101", accountname: "ค่าเครื่องเขียนและวัสดุสำนักงาน", deptname: "ฝ่ายบริหารทั่วไป",
-      },
-      {
-        docdate: "2026-09-07", docno: "PUR-202609-02", vendorcode: "V-002", vendorname: "บริษัท โลจิสติกส์ พลัส จำกัด",
-        subtotal: 12000, vatamount: 840, totalamount: 12840, pono: "PO-202609-012", orderqty: 1, receivedqty: 1, pendingqty: 0,
-        itemcode: "SRV-01", itemname: "ค่าขนส่งสินค้าเข้าคลัง", purchasedqty: 1, avgprice: 12000.0,
-        accountcode: "510204", accountname: "ค่าระวางและขนส่งเข้า", deptname: "ฝ่ายคลังสินค้า",
-      },
-    ];
-  }
+  try {
+    let payload: unknown;
 
-  if (code === "ar_aging") {
-    return [
-      { custcode: "AR-001", custname: "บริษัท ซุปเปอร์ริช เทรดดิ้ง จำกัด", currentdue: 150000, days1_30: 45000, days31_60: 0, days61_90: 0, over90: 0, totaldue: 195000 },
-      { custcode: "AR-002", custname: "ห้างหุ้นส่วนจำกัด โชคชัยวิศวกรรม", currentdue: 80000, days1_30: 30000, days31_60: 25000, days61_90: 0, over90: 0, totaldue: 135000 },
-      { custcode: "AR-003", custname: "บริษัท สยามโมเดิร์น เฟอร์นิเจอร์ จำกัด", currentdue: 0, days1_30: 0, days31_60: 45000, days61_90: 18000, over90: 12000, totaldue: 75000 },
-    ];
-  }
+    if (isDocumentReport) {
+      const res = await authFetch("/api/goapi/api/report/sales/by-document", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          holdingcode,
+          fromdate,
+          todate,
+          reporttype: "header",
+          sortascending: true,
+          limit: 1000,
+          offset: 0,
+        }),
+      });
+      if (!res.ok) {
+        return {
+          rows: [],
+          error: res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed",
+        };
+      }
+      payload = await res.json();
+      const rawRows = extractRows(payload, "data");
+      if (rawRows === null) {
+        return { rows: [], error: "load_failed" };
+      }
+      return { rows: rawRows.map(mapper) };
+    }
 
-  if (code === "ap_aging") {
-    return [
-      { vendorcode: "AP-001", vendorname: "บริษัท ปิโตรเคมีคอล กรุ๊ป จำกัด", currentdue: 320000, days1_30: 0, days31_60: 0, days61_90: 0, over90: 0, totaldue: 320000 },
-      { vendorcode: "AP-002", vendorname: "บริษัท บางกอกเปเปอร์มิลล์ จำกัด", currentdue: 110000, days1_30: 45000, days31_60: 0, days61_90: 0, over90: 0, totaldue: 155000 },
-      { vendorcode: "AP-003", vendorname: "ห้างหุ้นส่วนจำกัด นครหลวงขนส่ง", currentdue: 25000, days1_30: 12000, days31_60: 0, days61_90: 0, over90: 0, totaldue: 37000 },
-    ];
+    const url = `/api/goapi/api/reports/inventory-valuation?holdingcode=${encodeURIComponent(holdingcode)}`;
+    const res = await authFetch(url);
+    if (!res.ok) {
+      return {
+        rows: [],
+        error: res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed",
+      };
+    }
+    payload = await res.json();
+    const rawRows = extractRows(payload, "items");
+    if (rawRows === null) {
+      return { rows: [], error: "load_failed" };
+    }
+    return { rows: rawRows.map(mapper) };
+  } catch {
+    return { rows: [], error: "connection_error" };
   }
-
-  if (code === "dbd_xbrl_export") {
-    return [
-      { accountcode: "111101", xbrltag: "th-gaap-ci:CashAndCashEquivalents", description: "เงินสดและรายการเทียบเท่าเงินสด", amount: 1450280.50, prevamount: 1120450.00 },
-      { accountcode: "111201", xbrltag: "th-gaap-ci:TradeAndOtherCurrentReceivables", description: "ลูกหนี้การค้าและลูกหนี้หมุนเวียนอื่น", amount: 890400.00, prevamount: 760000.00 },
-      { accountcode: "111301", xbrltag: "th-gaap-ci:Inventories", description: "สินค้าคงเหลือ", amount: 1280500.00, prevamount: 950000.00 },
-      { accountcode: "121101", xbrltag: "th-gaap-ci:PropertyPlantAndEquipment", description: "ที่ดิน อาคารและอุปกรณ์ (สุทธิ)", amount: 3500000.00, prevamount: 3800000.00 },
-      { accountcode: "211101", xbrltag: "th-gaap-ci:TradeAndOtherCurrentPayables", description: "เจ้าหนี้การค้าและเจ้าหนี้หมุนเวียนอื่น", amount: 512000.00, prevamount: 480000.00 },
-      { accountcode: "311101", xbrltag: "th-gaap-ci:AuthorizedShareCapital", description: "ทุนจดทะเบียนชำระแล้ว", amount: 5000000.00, prevamount: 5000000.00 },
-      { accountcode: "311201", xbrltag: "th-gaap-ci:RetainedEarningsUnappropriated", description: "กำไรสะสมยังไม่ได้จัดสรร", amount: 1609180.50, prevamount: 1150450.00 },
-    ];
-  }
-
-  return [];
 }

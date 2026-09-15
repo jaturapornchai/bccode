@@ -401,6 +401,10 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, authorization
 	authGroup.POST("/api/report/sales/by-document", handlers.SalesReportByDocumentHandler)
 	authGroup.POST("/api/report/sales/summary", handlers.SalesReportSummaryHandler)
 
+	// Tax Report (VAT register + ภ.พ.30 summary) — อ่านจาก PostgreSQL จริง ไม่ mock
+	authGroup.POST("/api/report/tax/vat-register", handlers.TaxVatRegisterHandler)
+	authGroup.POST("/api/report/tax/pp30-summary", handlers.PP30SummaryHandler)
+
 	// Product Cache
 	authGroup.POST("/api/product/search", handlers.ProductSearchHandler)
 	authGroup.POST("/api/product/barcode", handlers.ProductBarcodeSearchHandler)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ERP_MODULE_CONFIGS,
   isErpTransactionRoute,
@@ -79,62 +79,161 @@ describe("ERP Transaction domain configs and operations", () => {
     expect(poConfig?.defaultDocPrefix).toBe("PO");
   });
 
-  it("executes full CRUD cycle on transactions", async () => {
-    const config = getErpModuleConfig("/transaction/quotation")!;
-    expect(config).toBeDefined();
+  const config = getErpModuleConfig("/transaction/quotation")!;
 
-    // 1. Initial list
-    const initial = await fetchErpTransactions(config);
-    expect(initial.items.length).toBeGreaterThan(0);
-    const initialCount = initial.items.length;
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
-    // 2. Create
-    const newDoc: Partial<ErpTransactionDoc> = {
-      docno: "QT-TEST-9999",
-      docdatetime: "2026-09-15T10:00:00Z",
-      custcode: "CUST-TEST",
-      custname: "บริษัท ทดสอบความถูกต้อง จำกัด",
-      totalamount: 10700,
-      totalbeforevat: 10000,
-      totalvatvalue: 700,
-      status: 0,
-      details: [
-        {
-          linenumber: 1,
-          itemcode: "P-TEST",
-          itemname: "สินค้าทดสอบ",
-          unitcode: "PCS",
-          qty: 5,
-          price: 2000,
-          sumamount: 10000,
-        },
-      ],
-    };
-    const created = await saveErpTransaction(config, newDoc, false);
-    expect(created.success).toBe(true);
-    expect(created.data?.docno).toBe("QT-TEST-9999");
-    const createdId = created.data?.id ?? "";
+  const mockResponse = (ok: boolean, status: number, body: unknown): Response =>
+    ({ ok, status, json: async () => body }) as unknown as Response;
 
-    // Verify presence in list
-    const afterCreate = await fetchErpTransactions(config);
-    expect(afterCreate.items.length).toBe(initialCount + 1);
-    expect(afterCreate.items.some((x) => x.id === createdId)).toBe(true);
+  const makeDoc = (id: string): ErpTransactionDoc =>
+    ({ id } as unknown as ErpTransactionDoc);
 
-    // 3. Update
-    const updated = await saveErpTransaction(
-      config,
-      { id: createdId, docno: "QT-TEST-9999", totalamount: 12000, status: 1 },
-      true,
+  it("fetchErpTransactions returns items and total on 200", async () => {
+    const doc = makeDoc("DOC1");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        mockResponse(true, 200, { data: [doc], pagination: { total: 1 } }),
+      ),
     );
-    expect(updated.success).toBe(true);
-    expect(updated.data?.totalamount).toBe(12000);
-    expect(updated.data?.status).toBe(1);
 
-    // 4. Delete
-    const deleted = await deleteErpTransaction(config, createdId);
-    expect(deleted.success).toBe(true);
+    const result = await fetchErpTransactions(config);
 
-    const afterDelete = await fetchErpTransactions(config);
-    expect(afterDelete.items.some((x) => x.id === createdId)).toBe(false);
+    expect(result.items).toHaveLength(1);
+    expect(result.total).toBe(1);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("fetchErpTransactions returns unauthorized on 401", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(false, 401, {})),
+    );
+
+    const result = await fetchErpTransactions(config);
+
+    expect(result.error).toBe("unauthorized");
+    expect(result.items).toEqual([]);
+  });
+
+  it("fetchErpTransactions returns load_failed on 500", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(false, 500, {})),
+    );
+
+    const result = await fetchErpTransactions(config);
+
+    expect(result.error).toBe("load_failed");
+    expect(result.items).toEqual([]);
+  });
+
+  it("fetchErpTransactions returns connection_error when fetch throws", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("network down");
+      }),
+    );
+
+    const result = await fetchErpTransactions(config);
+
+    expect(result.error).toBe("connection_error");
+  });
+
+  it("saveErpTransaction returns save_success on 200", async () => {
+    const doc = makeDoc("DOC1");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(true, 200, { data: doc })),
+    );
+
+    const result = await saveErpTransaction(config, doc, false);
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("save_success");
+  });
+
+  it("saveErpTransaction returns save_failed on 500 (no fake success)", async () => {
+    const doc = makeDoc("DOC1");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(false, 500, {})),
+    );
+
+    const result = await saveErpTransaction(config, doc, false);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("save_failed");
+  });
+
+  it("saveErpTransaction returns connection_error when fetch throws", async () => {
+    const doc = makeDoc("DOC1");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("network down");
+      }),
+    );
+
+    const result = await saveErpTransaction(config, doc, false);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("connection_error");
+  });
+
+  it("deleteErpTransaction returns delete_success on 200", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(true, 200, {})),
+    );
+
+    const result = await deleteErpTransaction(config, "DOC1");
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe("delete_success");
+  });
+
+  it("deleteErpTransaction returns delete_failed on 500", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => mockResponse(false, 500, {})),
+    );
+
+    const result = await deleteErpTransaction(config, "DOC1");
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("delete_failed");
+  });
+
+  it("saveErpTransaction uses POST for create and PUT with id for edit", async () => {
+    const fetchMock = vi.fn(async () =>
+      mockResponse(true, 200, { data: makeDoc("NEW") }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await saveErpTransaction(config, makeDoc(""), false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [createUrl, createInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(createInit.method).toBe("POST");
+    expect(createUrl.endsWith(config.apiPath)).toBe(true);
+
+    fetchMock.mockClear();
+
+    await saveErpTransaction(config, makeDoc("ABC"), true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [editUrl, editInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(editInit.method).toBe("PUT");
+    expect(editUrl.endsWith("ABC")).toBe(true);
   });
 });

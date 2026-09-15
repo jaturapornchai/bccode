@@ -19,6 +19,7 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { type LanguageCode } from "@/lib/i18n";
 import { useBackendLanguage, backendText } from "@/lib/backend-language";
+import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
 import {
   type ErpTransactionDoc,
   type ErpDetailItem,
@@ -35,7 +36,19 @@ interface ErpCrudWorkbenchProps {
 }
 
 export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: ErpCrudWorkbenchProps) {
-  const dictionary = useBackendLanguage(language, "");
+  const [backendUrl, setBackendUrl] = useState(() => getAuthSession()?.backendUrl ?? "");
+  useEffect(() => {
+    if (backendUrl) return;
+    let active = true;
+    void restoreAuthSession().then((session) => {
+      if (active && session) setBackendUrl(session.backendUrl);
+    });
+    return () => {
+      active = false;
+    };
+  }, [backendUrl]);
+  const dictionary = useBackendLanguage(language, backendUrl || undefined);
+  const [alertKey, setAlertKey] = useState<string | null>(null);
   const config = useMemo(() => getErpModuleConfig(route), [route]);
 
   const [items, setItems] = useState<ErpTransactionDoc[]>([]);
@@ -74,7 +87,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
     setLoading(true);
     try {
       const res = await fetchErpTransactions(config, { q: searchQuery });
+      if (res.error) {
+        setAlertKey(res.error);
+        setItems([]);
+        return;
+      }
       setItems(res.items);
+      setAlertKey(null);
       if (res.items.length > 0 && !selectedDoc && !isEditing) {
         setSelectedDoc(res.items[0]);
       }
@@ -194,12 +213,18 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
     if (!ok) return;
 
     setLoading(true);
-    await deleteErpTransaction(config, doc.id);
+    const res = await deleteErpTransaction(config, doc.id);
+    if (!res.success) {
+      setAlertKey(res.message ?? "delete_failed");
+      setLoading(false);
+      return;
+    }
     if (selectedDoc?.id === doc.id) {
       setSelectedDoc(null);
       setIsEditing(false);
       setIsDirty(false);
     }
+    setAlertKey(null);
     await loadData();
   };
 
@@ -269,7 +294,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   const handleSaveDoc = async () => {
     if (!config) return;
     if (!formDoc.docno?.trim()) {
-      alert(language === "en" ? "Document number is required." : "กรุณาระบุเลขที่เอกสาร");
+      setAlertKey("docno_required");
       return;
     }
 
@@ -277,12 +302,18 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
     const res = await saveErpTransaction(config, formDoc, Boolean(formDoc.id));
     setLoading(false);
 
-    if (res.success && res.data) {
-      setSelectedDoc(res.data);
-      setIsEditing(false);
-      setIsDirty(false);
-      await loadData();
+    if (!res.success) {
+      setAlertKey(res.message ?? "save_failed");
+      return;
     }
+
+    if (res.data) {
+      setSelectedDoc(res.data);
+    }
+    setIsEditing(false);
+    setIsDirty(false);
+    setAlertKey(null);
+    await loadData();
   };
 
   // Filtered list
@@ -348,6 +379,43 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
           </Button>
         </div>
       </header>
+
+      {alertKey ? (
+        <div
+          role="alert"
+          className="mb-3 shrink-0 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 size-5 shrink-0" />
+          <p className="flex-1">
+            {backendText(
+              dictionary,
+              alertKey,
+              alertKey === "save_failed"
+                ? "บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
+                : alertKey === "delete_failed"
+                  ? "ลบเอกสารไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
+                  : alertKey === "load_failed"
+                    ? "โหลดข้อมูลไม่สำเร็จ"
+                    : alertKey === "connection_error"
+                      ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต"
+                      : alertKey === "unauthorized"
+                        ? "ไม่มีสิทธิ์เข้าถึงข้อมูล"
+                        : alertKey === "docno_required"
+                          ? "กรุณาระบุเลขที่เอกสาร"
+                          : "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+            )}
+          </p>
+          <button
+            type="button"
+            aria-label="ปิดข้อความแจ้งเตือน"
+            title="ปิดข้อความแจ้งเตือน"
+            onClick={() => setAlertKey(null)}
+            className="rounded-md p-1 text-destructive hover:opacity-70 focus:outline-none"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      ) : null}
 
       {/* Master-Detail Split Pane */}
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden border border-border/60 rounded-xl bg-background shadow-xs">

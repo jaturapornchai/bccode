@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-15 @ commit 19d289d2 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-15 @ commit a66c5a53 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 47
 
@@ -486,7 +486,7 @@ Files indexed: 47
 | 3073 | function | `DetailSection` |
 | 3116 | function | `DetailField` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2943 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2946 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -526,30 +526,30 @@ Files indexed: 47
 | 980 | function | `handleContentScroll` |
 | 1008 | const-arrow | `onPointerMove` |
 | 1014 | const-arrow | `onPointerUp` |
-| 1699 | function | `TopMenuChrome` |
-| 1741 | function | `closeOnOutsidePointer` |
-| 1750 | function | `closeOnEscape` |
-| 1766 | function | `positionOpenSection` |
-| 1783 | function | `closeTopMenu` |
-| 1790 | function | `topMenuItemRow` |
-| 2059 | function | `SidebarButton` |
-| 2092 | function | `MenuSectionAccordion` |
-| 2211 | function | `MenuTreeGroup` |
-| 2265 | function | `MenuTreeFolder` |
-| 2317 | function | `MenuTreeItemButton` |
-| 2383 | function | `countSectionItems` |
-| 2387 | function | `getVisibleGroups` |
-| 2396 | function | `getVisibleItems` |
-| 2405 | function | `getMenuTreeNodes` |
-| 2551 | function | `MenuGroupIcon` |
-| 2560 | function | `SectionIcon` |
-| 2577 | function | `OpenTabs` |
-| 2631 | function | `captureTabRects` |
-| 2642 | function | `getInsertSide` |
-| 2647 | function | `clearDragState` |
-| 2654 | function | `reorderFromPointer` |
-| 2779 | function | `WorkTabPanel` |
-| 2928 | function | `DashboardLoading` |
+| 1700 | function | `TopMenuChrome` |
+| 1742 | function | `closeOnOutsidePointer` |
+| 1751 | function | `closeOnEscape` |
+| 1767 | function | `positionOpenSection` |
+| 1784 | function | `closeTopMenu` |
+| 1791 | function | `topMenuItemRow` |
+| 2060 | function | `SidebarButton` |
+| 2093 | function | `MenuSectionAccordion` |
+| 2212 | function | `MenuTreeGroup` |
+| 2266 | function | `MenuTreeFolder` |
+| 2318 | function | `MenuTreeItemButton` |
+| 2384 | function | `countSectionItems` |
+| 2388 | function | `getVisibleGroups` |
+| 2397 | function | `getVisibleItems` |
+| 2406 | function | `getMenuTreeNodes` |
+| 2552 | function | `MenuGroupIcon` |
+| 2561 | function | `SectionIcon` |
+| 2578 | function | `OpenTabs` |
+| 2632 | function | `captureTabRects` |
+| 2643 | function | `getInsertSide` |
+| 2648 | function | `clearDragState` |
+| 2655 | function | `reorderFromPointer` |
+| 2780 | function | `WorkTabPanel` |
+| 2931 | function | `DashboardLoading` |
 
 ## backend/internal/product/productbarcode/services/productbarcode_http_service.go (2793 lines)
 
@@ -1903,17 +1903,6 @@ Files indexed: 47
 | 1149 | function | `DeleteDocumentImageGroups` |
 | 1187 | function | `UpdateXSort` |
 
-## frontend/src/lib/erp-transaction.ts (1177 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 995 | function | `isErpTransactionRoute` |
-| 1000 | function | `getErpModuleConfig` |
-| 1008 | function | `getOrCreateMockDocs` |
-| 1070 | function | `fetchErpTransactions` |
-| 1110 | function | `saveErpTransaction` |
-| 1156 | function | `deleteErpTransaction` |
-
 ## backend/pkg/microservice/auth.go (1152 lines)
 
 | Line | Kind | Name |
@@ -2040,6 +2029,16 @@ Files indexed: 47
 | 971 | function | `messageQueueReCountDocumentImageGroup` |
 | 1028 | function | `newXOrderDocumentImageGroup` |
 | 1045 | function | `UpdateDocNoInReferences` |
+
+## frontend/src/lib/erp-transaction.ts (1075 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 995 | function | `isErpTransactionRoute` |
+| 1000 | function | `getErpModuleConfig` |
+| 1005 | function | `fetchErpTransactions` |
+| 1033 | function | `saveErpTransaction` |
+| 1060 | function | `deleteErpTransaction` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1035 lines)
 
