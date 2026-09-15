@@ -835,6 +835,27 @@
   - Pre-push hook & Code map check: ผ่าน
   - Production Health Check: `https://account.bcaicloud.com/` ตอบ 200 OK, Google Sign-in ใช้งานได้ปกติ
 
+### 2026-09-15 — Master-Detail DataCRUD Workbench (สินค้า, ซื้อ, ขาย, AR, AP, การเงิน) & Deploy Production
+- **ประเภท**: `[Feature]` `[UI/UX]` `[BFF]` `[Deploy]`
+- **สิ่งที่ทำ**:
+  1. **สร้างระบบ Master-Detail DataCRUD Workbench**: พัฒนา `ErpCrudWorkbench` ตามมาตรฐาน `docs/skills/datacrud/SKILL.md` ครอบคลุมระบบสินค้าคงคลัง, ซื้อ, ขาย, ลูกหนี้, เจ้าหนี้ และเงินสดธนาคาร รวม 25+ หน้าจอ
+  2. **Resizable Splitter & UX**: รายการเอกสารด้านซ้าย + Resizable Splitter ปรับขนาดได้และจำค่าลง `localStorage` + หน้าจอ Detail/ฟอร์มด้านขวา พร้อม Sticky actions และ Dirty form guard ป้องกันข้อมูลสูญหาย
+  3. **BFF Proxy Layer & Core Library**: สร้าง API proxy `frontend/src/app/api/erp-transaction/[...erpPath]/route.ts` และ `frontend/src/lib/erp-transaction.ts` รองรับ CRUD operations และเชื่อมโยง Go Microservices
+  4. **Deploy ขึ้น Cloud Production**: Fast streamed deployment ไปยัง Cloud Server (`account.bcaicloud.com`) สำเร็จ สมบูรณ์ 100% พร้อมทดสอบ Health check
+- **ไฟล์สำคัญ**:
+  - `frontend/src/app/crud/erp-crud-workbench.tsx`
+  - `frontend/src/lib/erp-transaction.ts`
+  - `frontend/src/lib/erp-transaction.test.ts`
+  - `frontend/src/app/api/erp-transaction/[...erpPath]/route.ts`
+  - `docs/kms/decisions/2026-09-15-erp-datacrud-workbench-standard.md`
+  - `docs/skills/datacrud/SKILL.md`
+- **ผลการทดสอบ (Evidence)**:
+  - Vitest: 70 test files / 518 tests passed (100%)
+  - TypeScript: `pnpm exec tsc --noEmit` 0 errors
+  - ESLint: 0 errors
+  - Next.js Turbopack build: ผ่านสมบูรณ์ (37 static + dynamic pages)
+  - Production Health Check: `https://account.bcaicloud.com/` ตอบ 200 OK
+
 ---
 
 ## 📚 แผนที่เอกสารและการเรียนรู้ระบบ

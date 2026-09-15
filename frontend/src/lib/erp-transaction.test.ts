@@ -113,7 +113,7 @@ describe("ERP Transaction domain configs and operations", () => {
     const created = await saveErpTransaction(config, newDoc, false);
     expect(created.success).toBe(true);
     expect(created.data?.docno).toBe("QT-TEST-9999");
-    const createdId = created.data?.id!;
+    const createdId = created.data?.id ?? "";
 
     // Verify presence in list
     const afterCreate = await fetchErpTransactions(config);
