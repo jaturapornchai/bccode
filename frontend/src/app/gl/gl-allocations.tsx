@@ -21,7 +21,7 @@ function allocationFrom(value: GLRecord): GLMaster {
 
 /** Percentage total of the rules as an exact string for display; the server is the
  *  authority (it rejects any total other than 100), this only guides the user. */
-function rateTotal(rules: GLAllocationRule[]): string {
+export function rateTotal(rules: GLAllocationRule[]): string {
   let units = 0n;
   for (const rule of rules) {
     const text = (rule.rate || "0").replace(/,/g, "").trim() || "0";

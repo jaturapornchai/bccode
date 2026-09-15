@@ -7,6 +7,18 @@
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
+### 2026-09-15 — ทดสอบระบบบัญชีและปันส่วนต้นทุนตามมาตรฐานนักบัญชีและสำนักงานบัญชี
+
+- [Test] เพิ่มชุดการทดสอบการตรวจสอบบัญชี (Audit & Accountant Test Suite) สำหรับโมดูลปันส่วนต้นทุน (`gl-allocations`):
+  1. ตรวจสอบความถูกต้องทางคณิตศาสตร์: กฎการดุล 100% (Balanced 100% Principle) ทั้ง 2 ฝ่าย (50/50), 3 ฝ่าย (33.33/33.33/33.34), 4 ฝ่าย (25% x 4) และทศนิยมละเอียด 8 ตำแหน่ง
+  2. ตรวจสอบการปฏิเสธยอดที่ไม่ดุล: ดักจับ Under-allocation (<100%), Over-allocation (>100%), ค่าติดลบ, และค่าผิดรูปแบบ
+  3. ตรวจสอบมิติและการกระจายต้นทุน: แผนก (Department), โครงการ (Project), และสาขา (Branch)
+  4. ตรวจสอบผังบัญชี (Chart of Accounts Guard): บัญชีต้นทางต้องเป็นบัญชีย่อยที่อนุญาตให้ลงรายการ (`allowposting: true`) ไม่อนุญาตให้ใช้บัญชีคุม (Parent/Control Account)
+  5. ทดสอบการจำลองคำนวณบน Backend Processing Engine: กระจายยอดต้นทุน 125,450.00 บาท ได้ผลรวมเศษสตางค์ดุลสมบูรณ์
+- [Backend] เพิ่ม Unit Test `allocation_test.go` ใน Go และเพิ่ม import `github.com/shopspring/decimal` ใน `mutations.go`
+- [Frontend] ส่งออก `rateTotal` ใน `gl-allocations.tsx` เพื่อให้ชุดทดสอบเข้าถึงได้
+- ไฟล์: `frontend/src/app/gl/gl-allocations.test.ts`, `frontend/src/app/gl/gl-allocations.tsx`, `backend/internal/generalledger/allocation_test.go`, `backend/internal/generalledger/mutations.go`, `README.md`
+- ผลการทดสอบ: Frontend Vitest GL ผ่าน 69/69 (100%), Backend Go test ใน Docker ผ่าน 100%, `tsc --noEmit` 0 error
 
 ### 2026-09-15 — บันทึกกฎหลัก: ประมวลผลที่ Backend เป็นหลัก พร้อมเปิด API และ MCP Server รองรับ AI ภายนอก
 
