@@ -79,6 +79,16 @@ const (
 	TOPIC_STOCK_BALANCE_CREATE = "when-stockbalance-created"
 	TOPIC_STOCK_BALANCE_UPDATE = "when-stockbalance-updated"
 	TOPIC_STOCK_BALANCE_DELETE = "when-stockbalance-deleted"
+
+	// Purchase Requisition topics — ต้องตรงกับ internal/transaction/purchaserequisition/config
+	TOPIC_PURCHASE_REQUISITION_CREATE = "when-purchaserequisition-created"
+	TOPIC_PURCHASE_REQUISITION_UPDATE = "when-purchaserequisition-updated"
+	TOPIC_PURCHASE_REQUISITION_DELETE = "when-purchaserequisition-deleted"
+
+	// RFQ topics — ต้องตรงกับ internal/transaction/rfq/config
+	TOPIC_RFQ_CREATE = "when-rfq-created"
+	TOPIC_RFQ_UPDATE = "when-rfq-updated"
+	TOPIC_RFQ_DELETE = "when-rfq-deleted"
 )
 
 // Consumer group constants

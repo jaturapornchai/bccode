@@ -1,11 +1,121 @@
 package kafka
 
 import (
-	"smlcloudplatform/internal/goapi/logger"
 	"time"
+
+	"smlcloudplatform/internal/goapi/logger"
 
 	"smlcloudplatform/internal/goapi/mykafkaconsumer"
 )
+
+// consumerGroup ผูกหัวข้อข่าวสารเข้ากับตัวจัดการของมัน
+//
+// เขียนเป็นตารางเพื่อให้เห็นครบในที่เดียวว่าเอกสารประเภทใดถูกรับฟังอยู่บ้าง
+// ก่อนหน้านี้การสมัครรับกระจายอยู่ในฟังก์ชันแยก ทำให้เอกสารเคลื่อนไหวสต็อกทั้งหมด
+// (โอนคลัง ปรับสต็อก รับ-เบิก-คืนสินค้า ยอดยกมา ซื้อรับ ซื้อคืน) ถูกลืมไปโดยไม่มีใครสังเกต
+// ทั้งที่ตัวจัดการเขียนไว้ครบแล้ว เอกสารเหล่านั้นจึงไม่เคยไหลเข้าตาราง docdetail เลย
+type consumerGroup struct {
+	name             string
+	group            string
+	createTopic      string
+	updateTopic      string
+	deleteTopic      string
+	onCreateOrUpdate func(string) error
+	onDelete         func(string) error
+	// movesStock บอกว่าเอกสารประเภทนี้กระทบยอดสต็อกและต้นทุนหรือไม่
+	movesStock bool
+}
+
+// consumerGroups คือรายการที่ระบบรับฟังทั้งหมด
+func consumerGroups() []consumerGroup {
+	return []consumerGroup{
+		{
+			name: "Sale Invoice", group: CONSUMER_GROUP_SALE_INVOICE, movesStock: true,
+			createTopic: TOPIC_SALE_INVOICE_CREATE, updateTopic: TOPIC_SALE_INVOICE_UPDATE, deleteTopic: TOPIC_SALE_INVOICE_DELETE,
+			onCreateOrUpdate: OnConsumeMessageSaleInvoiceCreateOrUpdate, onDelete: OnConsumeMessageSaleInvoiceDelete,
+		},
+		{
+			name: "Sale Return", group: CONSUMER_GROUP_SALE_RETURN, movesStock: true,
+			createTopic: TOPIC_SALE_INVOICE_RETURN_CREATE, updateTopic: TOPIC_SALE_INVOICE_RETURN_UPDATE, deleteTopic: TOPIC_SALE_INVOICE_RETURN_DELETE,
+			onCreateOrUpdate: OnConsumeMessageSaleInvoiceReturnCreateOrUpdate, onDelete: OnConsumeMessageSaleInvoiceReturnDelete,
+		},
+		{
+			name: "Sale Order", group: CONSUMER_GROUP_SALE_ORDER,
+			createTopic: TOPIC_SALE_ORDER_CREATE, updateTopic: TOPIC_SALE_ORDER_UPDATE, deleteTopic: TOPIC_SALE_ORDER_DELETE,
+			onCreateOrUpdate: OnConsumeMessageSaleOrderCreateOrUpdate, onDelete: OnConsumeMessageSaleOrderDelete,
+		},
+		{
+			name: "Purchase", group: CONSUMER_GROUP_PURCHASE, movesStock: true,
+			createTopic: TOPIC_PURCHASE_CREATE, updateTopic: TOPIC_PURCHASE_UPDATE, deleteTopic: TOPIC_PURCHASE_DELETE,
+			onCreateOrUpdate: OnConsumeMessagePurchaseCreateOrUpdate, onDelete: OnConsumeMessagePurchaseDelete,
+		},
+		{
+			name: "Purchase Order", group: CONSUMER_GROUP_PURCHASE_ORDER,
+			createTopic: TOPIC_PURCHASE_ORDER_CREATE, updateTopic: TOPIC_PURCHASE_ORDER_UPDATE, deleteTopic: TOPIC_PURCHASE_ORDER_DELETE,
+			onCreateOrUpdate: OnConsumeMessagePurchaseOrderCreateOrUpdate, onDelete: OnConsumeMessagePurchaseOrderDelete,
+		},
+		{
+			name: "Purchase Partial", group: CONSUMER_GROUP_PURCHASE_PARTIAL, movesStock: true,
+			createTopic: TOPIC_PURCHASE_PARTIAL_CREATE, updateTopic: TOPIC_PURCHASE_PARTIAL_UPDATE, deleteTopic: TOPIC_PURCHASE_PARTIAL_DELETE,
+			onCreateOrUpdate: OnConsumeMessagePurchasePartialCreateOrUpdate, onDelete: OnConsumeMessagePurchasePartialDelete,
+		},
+		{
+			name: "Purchase Return", group: CONSUMER_GROUP_PURCHASE_RETURN, movesStock: true,
+			createTopic: TOPIC_PURCHASE_RETURN_CREATE, updateTopic: TOPIC_PURCHASE_RETURN_UPDATE, deleteTopic: TOPIC_PURCHASE_RETURN_DELETE,
+			onCreateOrUpdate: OnConsumeMessagePurchaseReturnCreateOrUpdate, onDelete: OnConsumeMessagePurchaseReturnDelete,
+		},
+		{
+			name: "Purchase Requisition", group: CONSUMER_GROUP_PURCHASE_REQUISITION,
+			createTopic: TOPIC_PURCHASE_REQUISITION_CREATE, updateTopic: TOPIC_PURCHASE_REQUISITION_UPDATE, deleteTopic: TOPIC_PURCHASE_REQUISITION_DELETE,
+			onCreateOrUpdate: OnConsumeMessagePurchaseRequisitionCreateOrUpdate, onDelete: OnConsumeMessagePurchaseRequisitionDelete,
+		},
+		{
+			name: "RFQ", group: CONSUMER_GROUP_RFQ,
+			createTopic: TOPIC_RFQ_CREATE, updateTopic: TOPIC_RFQ_UPDATE, deleteTopic: TOPIC_RFQ_DELETE,
+			onCreateOrUpdate: OnConsumeMessageRFQCreateOrUpdate, onDelete: OnConsumeMessageRFQDelete,
+		},
+		{
+			name: "Stock Transfer", group: CONSUMER_GROUP_STOCK_TRANSFER, movesStock: true,
+			createTopic: TOPIC_STOCK_TRANSFER_CREATE, updateTopic: TOPIC_STOCK_TRANSFER_UPDATE, deleteTopic: TOPIC_STOCK_TRANSFER_DELETE,
+			onCreateOrUpdate: OnConsumeMessageStockTransferCreateOrUpdate, onDelete: OnConsumeMessageStockTransferDelete,
+		},
+		{
+			name: "Stock Receive Product", group: CONSUMER_GROUP_STOCK_RECEIVE_PRODUCT, movesStock: true,
+			createTopic: TOPIC_STOCK_RECEIVE_PRODUCT_CREATE, updateTopic: TOPIC_STOCK_RECEIVE_PRODUCT_UPDATE, deleteTopic: TOPIC_STOCK_RECEIVE_PRODUCT_DELETE,
+			onCreateOrUpdate: OnConsumeMessageStockReceiveProductCreateOrUpdate, onDelete: OnConsumeMessageStockReceiveProductDelete,
+		},
+		{
+			name: "Stock Pickup Product", group: CONSUMER_GROUP_STOCK_PICKUP_PRODUCT, movesStock: true,
+			createTopic: TOPIC_STOCK_PICKUP_PRODUCT_CREATE, updateTopic: TOPIC_STOCK_PICKUP_PRODUCT_UPDATE, deleteTopic: TOPIC_STOCK_PICKUP_PRODUCT_DELETE,
+			onCreateOrUpdate: OnConsumeMessageStockPickupProductCreateOrUpdate, onDelete: OnConsumeMessageStockPickupProductDelete,
+		},
+		{
+			name: "Stock Return Product", group: CONSUMER_GROUP_STOCK_RETURN_PRODUCT, movesStock: true,
+			createTopic: TOPIC_STOCK_RETURN_PRODUCT_CREATE, updateTopic: TOPIC_STOCK_RETURN_PRODUCT_UPDATE, deleteTopic: TOPIC_STOCK_RETURN_PRODUCT_DELETE,
+			onCreateOrUpdate: OnConsumeMessageStockReturnProductCreateOrUpdate, onDelete: OnConsumeMessageStockReturnProductDelete,
+		},
+		{
+			name: "Stock Adjustment", group: CONSUMER_GROUP_STOCK_ADJUSTMENT, movesStock: true,
+			createTopic: TOPIC_STOCK_ADJUSTMENT_CREATE, updateTopic: TOPIC_STOCK_ADJUSTMENT_UPDATE, deleteTopic: TOPIC_STOCK_ADJUSTMENT_DELETE,
+			onCreateOrUpdate: OnConsumeMessageStockAdjustmentCreateOrUpdate, onDelete: OnConsumeMessageStockAdjustmentDelete,
+		},
+		{
+			name: "Stock Balance", group: CONSUMER_GROUP_STOCK_BALANCE, movesStock: true,
+			createTopic: TOPIC_STOCK_BALANCE_CREATE, updateTopic: TOPIC_STOCK_BALANCE_UPDATE, deleteTopic: TOPIC_STOCK_BALANCE_DELETE,
+			onCreateOrUpdate: OnConsumeMessageStockBalanceCreateOrUpdate, onDelete: OnConsumeMessageStockBalanceDelete,
+		},
+		{
+			name: "Warehouse", group: CONSUMER_GROUP_WAREHOUSE,
+			createTopic: TOPIC_WAREHOUSE_CREATE, updateTopic: TOPIC_WAREHOUSE_UPDATE, deleteTopic: TOPIC_WAREHOUSE_DELETE,
+			onCreateOrUpdate: OnConsumeMessageWarehouseCreateOrUpdate, onDelete: OnConsumeMessageWarehouseDelete,
+		},
+		{
+			name: "Inventory", group: CONSUMER_GROUP_INVENTORY,
+			createTopic: TOPIC_INVENTORY_CREATE, updateTopic: TOPIC_INVENTORY_UPDATE, deleteTopic: TOPIC_INVENTORY_DELETE,
+			onCreateOrUpdate: OnConsumeMessageInventoryCreateOrUpdate, onDelete: OnConsumeMessageInventoryDelete,
+		},
+	}
+}
 
 func StartConsumers() {
 	config := NewKafkaConfig()
@@ -17,96 +127,32 @@ func StartConsumers() {
 	logger.Info("🔌 Attempting to connect to Kafka broker: %s", config.ServerURL)
 	logger.Info("📡 Starting Kafka consumers (เริ่มทีละ group เพื่อความเสถียร)...")
 
-	consumers := mykafkaconsumer.NewKafkaConsumer()
+	consumers := mykafkaconsumer.NewKafkaConsumer().(*mykafkaconsumer.KafkaConsumer)
 
-	// Start all consumer groups ทีละตัวพร้อม delay เล็กน้อย เพื่อความเสถียร
-	logger.Info("📊 เริ่ม Sale Invoice consumers...")
-	startSaleInvoiceConsumers(consumers.(*mykafkaconsumer.KafkaConsumer), config.ServerURL)
-	time.Sleep(500 * time.Millisecond) // Delay ระหว่าง groups
+	groups := consumerGroups()
+	for _, group := range groups {
+		logger.Info("📊 เริ่ม %s consumers...", group.name)
+		startGroup(consumers, config.ServerURL, group)
+		time.Sleep(500 * time.Millisecond) // เว้นจังหวะระหว่าง group เพื่อความเสถียรตอนเริ่มระบบ
+	}
 
-	logger.Info("📊 เริ่ม Sale Return consumers...")
-	startSaleReturnConsumers(consumers.(*mykafkaconsumer.KafkaConsumer), config.ServerURL)
-	time.Sleep(500 * time.Millisecond)
-
-	logger.Info("📊 เริ่ม Sale Order consumers...")
-	startSaleOrderConsumers(consumers.(*mykafkaconsumer.KafkaConsumer), config.ServerURL)
-	time.Sleep(500 * time.Millisecond)
-
-	logger.Info("📊 เริ่ม Inventory consumers...")
-	startInventoryConsumers(consumers.(*mykafkaconsumer.KafkaConsumer), config.ServerURL)
-	time.Sleep(500 * time.Millisecond)
-
-	logger.Info("📊 เริ่ม Warehouse consumers...")
-	startWarehouseConsumers(consumers.(*mykafkaconsumer.KafkaConsumer), config.ServerURL)
-	time.Sleep(500 * time.Millisecond)
-
-	logger.Info("📊 เริ่ม Purchase consumers...")
-	startPurchaseConsumers(consumers.(*mykafkaconsumer.KafkaConsumer), config.ServerURL)
+	// สินค้าแบบเป็นชุดใช้กลุ่มแยก เพราะข้อความหนึ่งครอบคลุมหลายรายการและใช้เวลาต่างกันมาก
+	//
+	// หัวข้อบาร์โค้ดถูกรับฟังโดยกลุ่มสินค้าเท่านั้น เคยมีสำเนาซ้ำในกลุ่มคลังสินค้า
+	// ซึ่งทำให้เขียนซ้ำทุกครั้ง และเมื่อบาร์โค้ดตัวหน้าติดขัด ผู้อ่านคลังสินค้าที่ไม่เกี่ยวกันก็ถูกกระทบไปด้วย
+	logger.Info("📊 เริ่ม Inventory (bulk) consumers...")
+	go consumers.ConsumeMessage(config.ServerURL, MQ_TOPIC_BULK_CREATED, CONSUMER_GROUP_INVENTORY_BULK, 0, OnConsumeMessageInventoryBulkCreateOrUpdate)
+	time.Sleep(200 * time.Millisecond)
+	go consumers.ConsumeMessage(config.ServerURL, MQ_TOPIC_BULK_UPDATED, CONSUMER_GROUP_INVENTORY_BULK, 0, OnConsumeMessageInventoryBulkCreateOrUpdate)
 
 	logger.Info("✅ All Kafka consumers started successfully")
-	logger.Info("📊 Total consumer groups: 6 (sale-invoice, sale-return, sale-order, inventory, warehouse, purchase)")
+	logger.Info("📊 Total consumer groups: %d", len(groups)+1)
 }
 
-// startSaleInvoiceConsumers - starts sale invoice consumers
-func startSaleInvoiceConsumers(consumers *mykafkaconsumer.KafkaConsumer, kafkaServer string) {
-	logger.Info("Starting Sale Invoice consumers...")
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_INVOICE_CREATE, CONSUMER_GROUP_SALE_INVOICE, 0, OnConsumeMessageSaleInvoiceCreateOrUpdate)
-	time.Sleep(200 * time.Millisecond) // Delay ระหว่าง topics ใน group เดียวกัน
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_INVOICE_UPDATE, CONSUMER_GROUP_SALE_INVOICE, 0, OnConsumeMessageSaleInvoiceCreateOrUpdate)
+func startGroup(consumers *mykafkaconsumer.KafkaConsumer, server string, group consumerGroup) {
+	go consumers.ConsumeMessage(server, group.createTopic, group.group, 0, group.onCreateOrUpdate)
+	time.Sleep(200 * time.Millisecond) // เว้นจังหวะระหว่างหัวข้อใน group เดียวกัน
+	go consumers.ConsumeMessage(server, group.updateTopic, group.group, 0, group.onCreateOrUpdate)
 	time.Sleep(200 * time.Millisecond)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_INVOICE_DELETE, CONSUMER_GROUP_SALE_INVOICE, 0, OnConsumeMessageSaleInvoiceDelete)
-}
-
-// startSaleReturnConsumers - starts sale return consumers
-func startSaleReturnConsumers(consumers *mykafkaconsumer.KafkaConsumer, kafkaServer string) {
-	logger.Info("Starting Sale Return consumers...")
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_INVOICE_RETURN_CREATE, CONSUMER_GROUP_SALE_RETURN, 0, OnConsumeMessageSaleInvoiceReturnCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_INVOICE_RETURN_UPDATE, CONSUMER_GROUP_SALE_RETURN, 0, OnConsumeMessageSaleInvoiceReturnCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_INVOICE_RETURN_DELETE, CONSUMER_GROUP_SALE_RETURN, 0, OnConsumeMessageSaleInvoiceReturnDelete)
-}
-
-// startSaleOrderConsumers - starts sale order consumers
-func startSaleOrderConsumers(consumers *mykafkaconsumer.KafkaConsumer, kafkaServer string) {
-	logger.Info("Starting Sale Order consumers...")
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_ORDER_CREATE, CONSUMER_GROUP_SALE_ORDER, 0, OnConsumeMessageSaleOrderCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_ORDER_UPDATE, CONSUMER_GROUP_SALE_ORDER, 0, OnConsumeMessageSaleOrderCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_SALE_ORDER_DELETE, CONSUMER_GROUP_SALE_ORDER, 0, OnConsumeMessageSaleOrderDelete)
-}
-
-// startInventoryConsumers - starts inventory consumers
-func startInventoryConsumers(consumers *mykafkaconsumer.KafkaConsumer, kafkaServer string) {
-	logger.Info("Starting Inventory consumers...")
-
-	// Regular inventory consumers
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_INVENTORY_CREATE, CONSUMER_GROUP_INVENTORY, 0, OnConsumeMessageInventoryCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_INVENTORY_UPDATE, CONSUMER_GROUP_INVENTORY, 0, OnConsumeMessageInventoryCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_INVENTORY_DELETE, CONSUMER_GROUP_INVENTORY, 0, OnConsumeMessageInventoryDelete)
-
-	// Bulk inventory consumers
-	go consumers.ConsumeMessage(kafkaServer, MQ_TOPIC_BULK_CREATED, CONSUMER_GROUP_INVENTORY_BULK, 0, OnConsumeMessageInventoryBulkCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, MQ_TOPIC_BULK_UPDATED, CONSUMER_GROUP_INVENTORY_BULK, 0, OnConsumeMessageInventoryBulkCreateOrUpdate)
-	// Note: Bulk delete is commented out in original code
-	// go consumers.ConsumeMessage(kafkaServer, MQ_TOPIC_BULK_DELETED, CONSUMER_GROUP_INVENTORY_BULK, 0, OnConsumeMessageInventoryBulkDelete)
-
-	// Barcode topics are reconciled once, by CONSUMER_GROUP_INVENTORY only. A second
-	// copy in CONSUMER_GROUP_WAREHOUSE duplicated every write and let a blocked
-	// barcode head rebalance the unrelated warehouse readers on each retry.
-}
-
-// startWarehouseConsumers - starts warehouse consumers
-func startWarehouseConsumers(consumers *mykafkaconsumer.KafkaConsumer, kafkaServer string) {
-	logger.Info("Starting Warehouse consumers...")
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_WAREHOUSE_CREATE, CONSUMER_GROUP_WAREHOUSE, 0, OnConsumeMessageWarehouseCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_WAREHOUSE_UPDATE, CONSUMER_GROUP_WAREHOUSE, 0, OnConsumeMessageWarehouseCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_WAREHOUSE_DELETE, CONSUMER_GROUP_WAREHOUSE, 0, OnConsumeMessageWarehouseDelete)
-}
-
-// startPurchaseConsumers - starts purchase-related consumers
-func startPurchaseConsumers(consumers *mykafkaconsumer.KafkaConsumer, kafkaServer string) {
-	logger.Info("Starting Purchase consumers...")
-
-	// Purchase consumers
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_PURCHASE_CREATE, CONSUMER_GROUP_PURCHASE, 0, OnConsumeMessagePurchaseCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_PURCHASE_UPDATE, CONSUMER_GROUP_PURCHASE, 0, OnConsumeMessagePurchaseCreateOrUpdate)
-	go consumers.ConsumeMessage(kafkaServer, TOPIC_PURCHASE_DELETE, CONSUMER_GROUP_PURCHASE, 0, OnConsumeMessagePurchaseDelete)
+	go consumers.ConsumeMessage(server, group.deleteTopic, group.group, 0, group.onDelete)
 }
