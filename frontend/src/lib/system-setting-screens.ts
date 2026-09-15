@@ -953,12 +953,12 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     idField: "guidfixed",
     title: { th: "กลุ่มเจ้าหนี้", en: "Vendor Group" },
     subtitle: {
-      th: "จัดการรหัสกลุ่มผู้จำหน่ายและชื่อตามภาษาที่เลือก",
+      th: "จัดการรหัสกลุ่มเจ้าหนี้และชื่อตามภาษาที่เลือก",
       en: "Manage vendor group codes and names for the selected language.",
     },
     fields: [
-      businessCodeField("groupcode", "รหัสกลุ่มผู้จำหน่าย", "Vendor group code", true),
-      namesField("names", "ชื่อกลุ่มผู้จำหน่าย", "Vendor group names"),
+      businessCodeField("groupcode", "รหัสกลุ่มเจ้าหนี้", "Vendor group code", true),
+      namesField("names", "ชื่อกลุ่มเจ้าหนี้", "Vendor group names"),
     ],
   },
   {
@@ -1023,12 +1023,12 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     idField: "guidfixed",
     title: { th: "รายละเอียดเจ้าหนี้", en: "Vendor (Creditor)" },
     subtitle: {
-      th: "จัดการข้อมูลผู้จำหน่าย ภาษี เงื่อนไขการค้า และที่อยู่",
+      th: "จัดการข้อมูลเจ้าหนี้ ภาษี เงื่อนไขการค้า และที่อยู่",
       en: "Manage vendor master data, tax, trade terms, and addresses.",
     },
     fields: [
-      businessCodeField("code", "รหัสผู้จำหน่าย", "Vendor code", true),
-      namesField("names", "ชื่อผู้จำหน่าย", "Vendor name"),
+      businessCodeField("code", "รหัสเจ้าหนี้", "Vendor code", true),
+      namesField("names", "ชื่อเจ้าหนี้", "Vendor name"),
       radioField(
         "personaltype",
         "ประเภทบุคคล",
@@ -1040,7 +1040,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         false,
         "number",
       ),
-      masterMultiPickerField("groups", "กลุ่มผู้จำหน่าย", "Vendor groups", "creditorgroup"),
+      masterMultiPickerField("groups", "กลุ่มเจ้าหนี้", "Vendor groups", "creditorgroup"),
       checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
       {
         ...textField("taxid", "เลขประจำตัวผู้เสียภาษี", "Tax ID"),
@@ -1614,7 +1614,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
         textField("unitcode", "หน่วยนับ", "Unit code"),
         textField("warehousecode", "คลัง", "Warehouse"),
         textField("locationcode", "โซน/ชั้นวาง", "Location / shelf"),
-        textField("suppliercode", "ผู้จำหน่าย", "Supplier"),
+        textField("suppliercode", "ซื้อจาก (เจ้าหนี้)", "Supplier"),
         textField("customercode", "ลูกค้า", "Customer"),
         textField("purchasedocno", "เอกสารซื้อ", "Purchase document"),
         textField("saledocno", "เอกสารขาย", "Sale document"),

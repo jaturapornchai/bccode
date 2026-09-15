@@ -59,7 +59,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     code: "ap_recalculate",
     domain: "ap",
     title: { th: "คำนวณยอดเจ้าหนี้ใหม่", en: "Recalculate Creditor Balances" },
-    description: { th: "คำนวณยอดหนี้คงค้างของผู้จำหน่ายจากใบรับสินค้า ใบซื้อ ใบสำคัญจ่าย และใบลดหนี้", en: "Recalculate outstanding vendor payables from purchases, vouchers, and debit notes" },
+    description: { th: "คำนวณยอดหนี้คงค้างของเจ้าหนี้จากใบรับสินค้า ใบซื้อ ใบสำคัญจ่าย และใบลดหนี้", en: "Recalculate outstanding vendor payables from purchases, vouchers, and debit notes" },
     actionLabel: { th: "คำนวณยอดหนี้เจ้าหนี้ใหม่", en: "Recalculate AP Balances" },
     steps: [
       { th: "รวบรวมใบรับสินค้าและตั้งหนี้ค้างจ่าย", en: "Aggregate purchase invoices and accrued payables" },

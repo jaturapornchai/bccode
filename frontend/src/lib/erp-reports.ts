@@ -316,7 +316,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     code: "purchase_summary",
     category: "purchase",
     title: { th: "รายงานการซื้อสินค้า", en: "Purchase Summary Report" },
-    description: { th: "สรุปยอดการสั่งซื้อสินค้าและบริการแยกตามผู้จำหน่าย", en: "Summary of vendor purchases and expenses" },
+    description: { th: "สรุปยอดการสั่งซื้อสินค้าและบริการแยกตามเจ้าหนี้", en: "Summary of vendor purchases and expenses" },
     defaultSortKey: "docdate",
     columns: [
       { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },
