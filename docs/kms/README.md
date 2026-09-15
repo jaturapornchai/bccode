@@ -56,7 +56,7 @@
 - [architecture/product-listing-api-v2-handoff.md](architecture/product-listing-api-v2-handoff.md)
 - [architecture/product-listing-api-v2.md](architecture/product-listing-api-v2.md)
 
-## การตัดสินใจ (ADR) — 24 ไฟล์ใน `decisions/`
+## การตัดสินใจ (ADR) — 25 ไฟล์ใน `decisions/`
 
 - [decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md](decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md)
 - [decisions/2026-06-11-productlanguage-join-table.md](decisions/2026-06-11-productlanguage-join-table.md)
@@ -104,6 +104,7 @@
 - [decisions/2026-09-14-input-addon-icons-no-overlap.md](decisions/2026-09-14-input-addon-icons-no-overlap.md) — แก้ไขปัญหาไอคอนในช่องเลือกผังบัญชีซ้อนทับกัน (Fix AccountSelect Addon Icons Overlap)
 - [decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md](decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md) — Deploy ระบบบัญชีแยกประเภท วงจรบัญชีมาตรฐานไทย และแก้ไขระบบรายงาน สู่ Production (r20260915-1)
 - [decisions/2026-09-15-fixed-assets-and-depreciation-engine.md](decisions/2026-09-15-fixed-assets-and-depreciation-engine.md) — ระบบบริหารสินทรัพย์ถาวรและการคำนวณค่าเสื่อมราคา (Fixed Assets & Depreciation Engine) ตามต้นแบบ Champ, 2-Tier DB, GL Posting, สิทธิประโยชน์ภาษี และ MCP Tools สู่ Production (r20260915-fa-1)
+- [decisions/2026-09-15-background-process-engine.md](decisions/2026-09-15-background-process-engine.md) — เครื่องยนต์ประมวลผลหลังบ้าน: แทน timer ของ BCProcess ด้วย Kafka (ขนส่งเหตุการณ์) + ตาราง dirty-set ที่ยุบงานซ้ำ + worker ตื่นด้วย LISTEN/NOTIFY (ข้อเสนอ รออนุมัติ)
 - [decisions/2026-09-15-erp-datacrud-workbench-standard.md](decisions/2026-09-15-erp-datacrud-workbench-standard.md) — ระบบธุรกรรม ERP แบบ Master-Detail DataCRUD (สินค้า, ขาย, ซื้อ, ลูกหนี้, เจ้าหนี้, เงินสดธนาคาร) ตามมาตรฐาน datacrud skill สู่ Production (r20260915-datacrud-1)
 - [decisions/2026-09-15-complete-menu-coverage-standard.md](decisions/2026-09-15-complete-menu-coverage-standard.md) — ระบบรองรับหน้าจอที่รอพัฒนาครบ 100% สำหรับบัญชีและ SME ไทย (ภาษี, รายงาน, เครื่องมือประมวลผล, ปฏิบัติการ SME) สู่ Production (r20260915-all-screens-1)
 
