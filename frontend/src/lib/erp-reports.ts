@@ -321,7 +321,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     columns: [
       { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },
       { key: "docno", label: { th: "เลขที่ใบซื้อ", en: "PO/Bill No." } },
-      { key: "vendorname", label: { th: "ผู้จำหน่าย", en: "Vendor" } },
+      { key: "vendorname", label: { th: "เจ้าหนี้", en: "Vendor" } },
       { key: "subtotal", label: { th: "มูลค่าก่อนภาษี", en: "Subtotal" }, align: "right", isCurrency: true },
       { key: "vatamount", label: { th: "ภาษีซื้อ 7%", en: "VAT 7%" }, align: "right", isCurrency: true },
       { key: "totalamount", label: { th: "ยอดรวมสุทธิ", en: "Total" }, align: "right", isCurrency: true },
@@ -351,7 +351,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     defaultSortKey: "pono",
     columns: [
       { key: "pono", label: { th: "เลขที่ PO", en: "PO No." } },
-      { key: "vendorname", label: { th: "ผู้จำหน่าย", en: "Vendor" } },
+      { key: "vendorname", label: { th: "เจ้าหนี้", en: "Vendor" } },
       { key: "orderqty", label: { th: "จำนวนสั่งซื้อ", en: "Order Qty" }, align: "right", isNumeric: true },
       { key: "receivedqty", label: { th: "รับเข้าแล้ว", en: "Received" }, align: "right", isNumeric: true },
       { key: "pendingqty", label: { th: "ค้างส่งมอบ", en: "Pending" }, align: "right", isNumeric: true },
@@ -415,7 +415,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     defaultSortKey: "totaldue",
     columns: [
       { key: "vendorcode", label: { th: "รหัสเจ้าหนี้", en: "Code" } },
-      { key: "vendorname", label: { th: "ชื่อเจ้าหนี้ / ผู้จำหน่าย", en: "Vendor / Creditor" } },
+      { key: "vendorname", label: { th: "ชื่อเจ้าหนี้", en: "Vendor / Creditor" } },
       { key: "currentdue", label: { th: "ยังไม่ถึงกำหนด", en: "Current" }, align: "right", isCurrency: true },
       { key: "days1_30", label: { th: "1-30 วัน", en: "1-30 Days" }, align: "right", isCurrency: true },
       { key: "days31_60", label: { th: "31-60 วัน", en: "31-60 Days" }, align: "right", isCurrency: true },

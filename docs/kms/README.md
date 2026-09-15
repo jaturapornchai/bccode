@@ -108,6 +108,7 @@
 - [decisions/2026-09-15-stock-cost-engine-v2.md](decisions/2026-09-15-stock-cost-engine-v2.md) — ออกแบบเครื่องยนต์สต็อก/ต้นทุนใหม่ทั้งชุด: PK ทางธุรกิจ, total order key ที่ deterministic, checkpoint ต่องวด, เขียนผลใน transaction เดียว, advisory lock, dirty-set (แทน ADR worker ฉบับก่อน)
 - [decisions/2026-09-15-erp-datacrud-workbench-standard.md](decisions/2026-09-15-erp-datacrud-workbench-standard.md) — ระบบธุรกรรม ERP แบบ Master-Detail DataCRUD (สินค้า, ขาย, ซื้อ, ลูกหนี้, เจ้าหนี้, เงินสดธนาคาร) ตามมาตรฐาน datacrud skill สู่ Production (r20260915-datacrud-1)
 - [decisions/2026-09-15-complete-menu-coverage-standard.md](decisions/2026-09-15-complete-menu-coverage-standard.md) — ระบบรองรับหน้าจอที่รอพัฒนาครบ 100% สำหรับบัญชีและ SME ไทย (ภาษี, รายงาน, เครื่องมือประมวลผล, ปฏิบัติการ SME) สู่ Production (r20260915-all-screens-1)
+- [decisions/2026-09-16-menu-labels-follow-champ-wording.md](decisions/2026-09-16-menu-labels-follow-champ-wording.md) — ป้ายเมนูและชื่อฟิลด์ใช้ถ้อยคำเดียวกับระบบเดิม Champ (เปลี่ยนป้าย 103 เมนู, ชื่อเดิมกลายเป็นคำค้น, ห้ามแตะ id/route/language key)
 
 
 

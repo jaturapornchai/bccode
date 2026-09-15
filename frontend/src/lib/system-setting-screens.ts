@@ -989,7 +989,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/payment/bookbank",
     listPath: "/payment/bookbank/list",
     idField: "guidfixed",
-    title: { th: "สมุดบัญชี", en: "Bank Accounts" },
+    title: { th: "บันทึกสมุดเงินฝากธนาคาร", en: "Bank Accounts" },
     subtitle: {
       th: "จัดการสมุดบัญชีธนาคาร สาขา เลขที่บัญชี ชื่อบัญชี และผังบัญชีที่เชื่อมโยง",
       en: "Manage bank accounts, branch, account number, and linked ledger accounts.",
@@ -1021,7 +1021,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/debtaccount/creditor",
     listPath: "/debtaccount/creditor/list",
     idField: "guidfixed",
-    title: { th: "เจ้าหนี้", en: "Vendor (Creditor)" },
+    title: { th: "รายละเอียดเจ้าหนี้", en: "Vendor (Creditor)" },
     subtitle: {
       th: "จัดการข้อมูลผู้จำหน่าย ภาษี เงื่อนไขการค้า และที่อยู่",
       en: "Manage vendor master data, tax, trade terms, and addresses.",
@@ -1043,7 +1043,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       masterMultiPickerField("groups", "กลุ่มผู้จำหน่าย", "Vendor groups", "creditorgroup"),
       checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
       {
-        ...textField("taxid", "เลขผู้เสียภาษี", "Tax ID"),
+        ...textField("taxid", "เลขประจำตัวผู้เสียภาษี", "Tax ID"),
         placeholder: "1234567890123",
       },
       {
@@ -1089,7 +1089,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     basePath: "/debtaccount/debtor",
     listPath: "/debtaccount/debtor/list",
     idField: "guidfixed",
-    title: { th: "ลูกหนี้", en: "Customer (Debtor)" },
+    title: { th: "รายละเอียดลูกหนี้", en: "Customer (Debtor)" },
     subtitle: {
       th: "จัดการข้อมูลลูกค้า ระดับราคา เครดิต และสมาชิก",
       en: "Manage customer master data, price level, credit, and membership.",
@@ -1110,7 +1110,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       ),
       masterMultiPickerField("groups", "กลุ่มลูกค้า", "Customer groups", "debtorgroup"),
       checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
-      textField("taxid", "เลขผู้เสียภาษี", "Tax ID"),
+      textField("taxid", "เลขประจำตัวผู้เสียภาษี", "Tax ID"),
       {
         ...textField("branchnumber", "รหัสสาขาภาษี", "Tax branch number"),
         placeholder: "00000",
@@ -1600,7 +1600,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "/productserialregistry",
       "qr",
       "productserialregistries",
-      "ทะเบียนเลขเครื่อง",
+      "บันทึก Serial Number",
       "Serial Registry",
       "จัดการ Serial No., IMEI, ICCID, MAC address และสถานะเครื่องต่อสินค้า",
       "Manage Serial No., IMEI, ICCID, MAC address, and item status per product.",
@@ -1688,7 +1688,7 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "gift",
       "/product/promotion",
       "/product/promotion/list",
-      "โปรโมชั่น",
+      "กำหนดราคาขาย/โปรโมชั่นสินค้า",
       "Promotion",
       "รหัสโปรโมชั่น",
       "Promotion code",

@@ -75,7 +75,7 @@ describe("ERP Transaction domain configs and operations", () => {
     expect(poConfig).toBeDefined();
     expect(poConfig?.domain).toBe("purchase");
     expect(poConfig?.title.th).toContain("ใบสั่งซื้อ");
-    expect(poConfig?.counterpartyLabel.th).toBe("ผู้จำหน่าย");
+    expect(poConfig?.counterpartyLabel.th).toBe("เจ้าหนี้");
     expect(poConfig?.defaultDocPrefix).toBe("PO");
   });
 

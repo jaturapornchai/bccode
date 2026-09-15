@@ -206,7 +206,7 @@ describe("system setting screen configs", () => {
     expect(config?.basePath).toBe("/payment/bookbank");
     expect(config?.listPath).toBe("/payment/bookbank/list");
     expect(config?.idField).toBe("guidfixed");
-    expect(config?.title.th).toBe("สมุดบัญชี");
+    expect(config?.title.th).toBe("บันทึกสมุดเงินฝากธนาคาร");
     expect(config?.fields.map((f) => f.key)).toEqual([
       "bookcode",
       "names",

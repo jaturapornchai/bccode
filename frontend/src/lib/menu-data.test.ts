@@ -113,7 +113,7 @@ describe("menu language labels", () => {
 
   it("does not let a stale Thai dictionary rename a business action", () => {
     const item = flattenMenuItems().find((item) => item.id === "sale-order")!;
-    expect(menuText(item.label, "th", readyDictionary({ sale_order: "ใบเสนอราคา/ใบแจ้งหนี้" }))).toBe("ใบสั่งขาย");
+    expect(menuText(item.label, "th", readyDictionary({ sale_order: "ใบเสนอราคา/ใบแจ้งหนี้" }))).toBe("บันทึกใบสั่งขาย/สั่งจองสินค้า");
     expect(menuText(item.label, "en", readyDictionary({ sale_order: "Sales Order" }))).toBe("Sales Order");
   });
 
@@ -206,7 +206,7 @@ describe("menu language labels", () => {
       "rfq",
       "purchase-order",
     ]);
-    expect(procurementGroup?.items.find((item) => item.id === "rfq")?.label.th).toBe("สืบราคาและเจรจา");
+    expect(procurementGroup?.items.find((item) => item.id === "rfq")?.label.th).toBe("บันทึกใบสืบราคาสินค้ารวม");
   });
 
   it("keeps core product group clean without auxiliary tool items", () => {
