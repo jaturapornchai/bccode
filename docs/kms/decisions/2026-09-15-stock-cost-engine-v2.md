@@ -1,6 +1,6 @@
 # ADR 2026-09-15 — Stock & Cost Engine v2: ออกแบบใหม่ให้ "ถูกต้อง" ก่อน "เร็ว"
 
-สถานะ: **ข้อเสนอ (รอลุงจืดอนุมัติ)** · แทนที่ [2026-09-15-background-process-engine.md](2026-09-15-background-process-engine.md) ซึ่งเสนอแค่ worker บนโครงเดิม
+สถานะ: **ลงมือแล้ว** (ขั้น 0-3 เสร็จ, ขั้น 4-5 บางส่วน, ขั้น 6 ยังไม่ทำ — ดู §7) · แทนที่ [2026-09-15-background-process-engine.md](2026-09-15-background-process-engine.md) ซึ่งเสนอแค่ worker บนโครงเดิม
 เกี่ยวข้อง: [20-champ-parity-gap.md](../20-champ-parity-gap.md) §4 · สั่งโดยลุงจืด: "ออกแบบใหม่เลย ให้ทำงานถูกต้อง และเร็ว"
 
 ## 1. ทำไมต้องออกแบบใหม่ ไม่ใช่แค่เติม worker
@@ -68,7 +68,7 @@ CREATE TABLE stock_ledger (
     behindindex   int  NOT NULL,
     docno         text NOT NULL,
     linenumber    int  NOT NULL,
-    periodkey     char(7) GENERATED ALWAYS AS (to_char(docdatetime,'YYYY-MM')) STORED,
+    periodkey     char(7) NOT NULL CHECK (periodkey ~ '^[0-9]{4}-[0-9]{2}$'),
     transflag     int  NOT NULL,
     direction     smallint NOT NULL CHECK (direction IN (-1,1)),
     qty           numeric(18,8) NOT NULL CHECK (qty >= 0),
@@ -83,6 +83,13 @@ CREATE INDEX stock_ledger_period ON stock_ledger (businesscode, periodkey, itemc
 ```
 
 **PK = ลำดับการคิดเอง** → ข้อมูลซ้ำเป็นไปไม่ได้, MERGE ได้, และ `businesscode` อยู่ในคีย์ตั้งแต่ต้น (C3 หมดไปโดยโครงสร้าง)
+
+> **บทเรียนตอนลงมือ:** ตอนแรกออกแบบให้ `periodkey` เป็นคอลัมน์ที่ฐานข้อมูลสร้างเองจาก `to_char(docdatetime,'YYYY-MM')`
+> PostgreSQL ปฏิเสธด้วย `generation expression is not immutable` เพราะผลของ `to_char` กับ `AT TIME ZONE`
+> ขึ้นกับฐานข้อมูลเขตเวลาที่แก้ไขได้ (ลองกับ `Asia/Bangkok` ก็ไม่ผ่านเช่นกัน)
+> จึงย้ายมาคำนวณในโปรแกรมที่ `stockengine.PeriodKeyOf` ซึ่งตัดงวดตามเขตเวลาธุรกิจอย่างชัดเจน
+> และให้ฐานข้อมูลตรวจแค่รูปแบบ — **ผลพลอยได้คือกฎการตัดงวดอยู่ที่เดียวและทดสอบได้**
+> (เอกสารเวลา 1 มีนาคม 00:30 น. ตามเวลาไทย ต้องอยู่งวดมีนาคม ไม่ใช่กุมภาพันธ์ตามเวลาสากล)
 
 ### 3.3 checkpoint ต่องวด `stock_period_balance` (แก้ P1)
 
@@ -109,8 +116,9 @@ CREATE TABLE stock_period_balance (
 CREATE TABLE stock_dirty (
     businesscode text NOT NULL,
     itemcode     text NOT NULL,
-    fromdate     date NOT NULL,
-    reason       text NOT NULL,
+    fromdate     timestamptz NOT NULL,
+    reason       text NOT NULL DEFAULT 'doc',
+    lasterror    text NOT NULL DEFAULT '',
     enqueuedat   timestamptz NOT NULL DEFAULT now(),
     attempts     int NOT NULL DEFAULT 0,
     leaseowner   text,
@@ -178,17 +186,45 @@ SELECT pg_notify('stock_dirty', $1||'|'||$2);
 `docdetail` เขียนโดย goapi เท่านั้น (`handlers/kafka/utils.go:344`) แต่ `manager.go:10-112` subscribe แค่ 14 จาก 50 handler
 → โอนคลัง, ปรับสต็อกเพิ่ม/ลด, รับ-เบิก-คืนสินค้า, **ยอดยกมา (transflag 54)**, ซื้อรับ/ซื้อคืน/ซื้อบางส่วน, ใบขอซื้อ, RFQ **ไม่เคยไหลเข้า `docdetail` ผ่าน Kafka**
 
-## 7. ลำดับการทำ
+## 7. ลำดับการทำ และสถานะจริง (อัปเดต 2026-09-15 หลังลงมือแล้ว)
 
-| ขั้น | งาน | ผลที่ได้ |
+| ขั้น | งาน | สถานะ |
 |---|---|---|
-| 0 | subscribe handler ให้ครบใน `manager.go` | มีข้อมูลป้อน engine |
-| 1 | `behindindex` + UNIQUE `(businesscode,docno,linenumber)` + partial index + แก้ ORDER BY | ต้นทุน deterministic (C4,C5,C11) |
-| 2 | `stock_ledger` + `stock_period_balance` + เขียนใน transaction เดียว | C1,C3,C7,P1 |
-| 3 | `stock_dirty` + worker + advisory lock + streaming cursor | C2,C8,C9,P2 + เลิกใช้ `stockcalculationstate` |
-| 4 | นโยบายสต็อกติดลบ 4 แบบ + แตกบรรทัดข้ามศูนย์ | parity ต้นแบบ |
-| 5 | `GET /goapi/api/process/queue-status` + ต่อจอเครื่องมือ | ผู้ใช้เห็นคิวจริง |
-| 6 | เลิกใช้ `processstockcost`/`processstocklot`/`distributedlocks`/`stockcalculationstate*` + ย้ายรายงานมาอ่าน `stock_ledger` | ลบของตาย (Rule 16) |
+| 0 | subscribe handler ให้ครบใน `manager.go` | **เสร็จ** — เปิดครบ 17 group (เดิม 6) เขียนเป็นตารางเดียว + เทสต์กันลืม (`manager_test.go`) |
+| 1 | `behindindex` + ดัชนีลำดับการคิด + แก้ ORDER BY | **เสร็จ** — `create-database.go` เพิ่มคอลัมน์ + `idx_docdetail_calcorder`; ลำดับใหม่คือ `docdatetime, behindindex, docno, linenumber` |
+| 2 | `stock_ledger` + `stock_period_balance` + เขียนใน transaction เดียว | **เสร็จ** — `create-stock-engine.go`, `stockengine/store.go` (`Persist`) |
+| 3 | `stock_dirty` + worker + advisory lock + streaming | **เสร็จ** — `stockengine/dirty.go`, `worker.go`, `manager.go`; ใช้ `pg_try_advisory_xact_lock` |
+| 4 | นโยบายสต็อกติดลบ 4 แบบ | **เสร็จเฉพาะการตีมูลค่า** (`calc.go` `applyPolicy`) — **ยังไม่ทำการแตกบรรทัดตรงจุดที่ยอดข้ามศูนย์** ตามต้นแบบ |
+| 5 | `POST /goapi/api/process/queue-status` + ต่อจอเครื่องมือ | **เสร็จครึ่งเดียว** — API พร้อมแล้ว (`handlers/stock_queue_status.go`) แต่ **จอเครื่องมือยังไม่เรียกใช้** |
+| 6 | เลิกใช้ `processstockcost`/`processstocklot`/`distributedlocks`/`stockcalculationstate*` + ย้ายรายงานมาอ่าน `stock_ledger` | **ยังไม่ทำ** — ของเดิมยังอยู่ครบและยังเป็นเส้นทางที่รายงานใช้ เพราะเปิดไว้เป็นทางถอย `BCAI_STOCK_ENGINE=v1` |
+
+### สิ่งที่ยังไม่ได้ทำ และเหตุผล
+
+1. **รายงานยังอ่าน `processstockcost` อยู่** — `process-stock-balance-*.go` 3 ไฟล์ และเส้นทาง ClickHouse ยังไม่ถูกย้าย
+   ผลคือตอนนี้ `stock_ledger` ถูกเขียนจริงแต่ยังไม่มีใครอ่าน ต้องย้ายรายงานก่อนจึงจะเลิกใช้ของเดิมได้
+2. **`behindindex` ยังไม่มีจอให้ผู้ใช้แก้** — ทุกแถวเป็น 0 การเรียงจึงตกไปที่ `docno` ซึ่งยังคงที่และคิดซ้ำได้ผลเดิม
+   แต่ผู้ใช้ยังกำหนดลำดับเอกสารในวันเดียวกันเองไม่ได้แบบต้นแบบ
+3. **การแตกบรรทัดตอนยอดข้ามศูนย์** — ต้นแบบแตกรายการเดียวเป็นสองบรรทัดตรงจุดที่ยอดเปลี่ยนจากบวกเป็นลบ
+   ที่นี่ยังคิดเป็นบรรทัดเดียว ตัวเลขยอดคงเหลือถูกต้อง แต่รายงานที่ต้องการเห็นจุดข้ามศูนย์จะยังไม่ตรงต้นแบบ
+4. **ยังไม่ทดสอบกับข้อมูลจริงขนาดใหญ่** — ตัวเลขความเร็วที่ดีขึ้นเป็นผลเชิงโครงสร้าง (ขอบเขตงานเล็กลง) ยังไม่ได้วัดจริง
+
+### หลักฐานการทดสอบ
+
+- 16 เทสต์ตรรกะการคำนวณ (`calc_test.go`) — ครอบคลุมถัวเฉลี่ยถ่วงน้ำหนัก ทิศทางเอกสารทั้ง 12 ประเภท
+  การเรียงที่ต้องได้ผลเดิมแม้สลับลำดับข้อมูลเข้า การเริ่มจากยอดยกมา นโยบายติดลบทั้ง 4 แบบ และการตัดงวดตามเขตเวลาไทย
+- 12 เทสต์ที่รันจริงกับ PostgreSQL 18 (`store_integration_test.go`, build tag `integration`) — คิดซ้ำได้ผลเดิม
+  ไม่ลบข้ามบริษัท เอกสารยกเลิกไม่ถูกคิด คิดเฉพาะช่วงท้ายได้ผลเท่าคิดใหม่ทั้งหมด งานซ้ำถูกยุบ การจองงานไม่ซ้อนกัน
+  งานล้มเหลวกลับเข้าคิว คิดพร้อมกันถูกกันด้วยล็อก สินค้าคนละตัวไม่บล็อกกัน ฐานข้อมูลปฏิเสธค่าที่เป็นไปไม่ได้
+  และ worker ถูกปลุกด้วยสัญญาณจริง
+- 3 เทสต์กันการลืมเปิดตัวรับข้อมูล (`manager_test.go`)
+
+วิธีรันเทสต์ที่ต้องใช้ฐานข้อมูลจริง:
+
+```
+docker run -d --name bc-stockengine-test -e POSTGRES_HOST_AUTH_METHOD=trust -p 55433:5432 postgres:18-alpine
+BC_STOCK_TEST_POSTGRES_DSN="postgres://postgres@localhost:55433/postgres?sslmode=disable" \
+  go test -tags integration ./internal/goapi/process/stockengine/
+```
 
 ## 8. ผลที่ตามมา
 
