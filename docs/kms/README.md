@@ -101,6 +101,7 @@
 - [decisions/2026-09-14-shorten-nine-module-menu-titles.md](decisions/2026-09-14-shorten-nine-module-menu-titles.md) — ตัดคำว่า "ระบบ" และ "ระบบบัญชี" ออกจากชื่อเมนูหลัก 9 ระบบ ERP เพื่อแก้ปัญหาเมนูล้นจอแนวนอน (Shorten 9 Module Menu Titles)
 - [decisions/2026-09-14-menu-bar-flex-wrap.md](decisions/2026-09-14-menu-bar-flex-wrap.md) — ปรับแถบเมนูนำทางด้านบนให้ตัดขึ้นบรรทัดใหม่ (Flex Wrap) แทนการมีแถบเลื่อนแนวนอน (No Horizontal Scroll)
 - [decisions/2026-09-14-input-addon-icons-no-overlap.md](decisions/2026-09-14-input-addon-icons-no-overlap.md) — แก้ไขปัญหาไอคอนในช่องเลือกผังบัญชีซ้อนทับกัน (Fix AccountSelect Addon Icons Overlap)
+- [decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md](decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md) — Deploy ระบบบัญชีแยกประเภท วงจรบัญชีมาตรฐานไทย และแก้ไขระบบรายงาน สู่ Production (r20260915-1)
 
 
 
