@@ -1,6 +1,10 @@
 import { getSystemSettingConfig } from "./system-setting-screens";
 import { isGeneralLedgerRoute } from "./general-ledger";
 import { isErpTransactionRoute } from "./erp-transaction";
+import { isThaiTaxRoute } from "./thai-tax";
+import { isErpReportRoute } from "./erp-reports";
+import { isErpToolsRoute } from "./erp-tools";
+import { isOperationsRoute } from "./erp-operations";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
@@ -22,9 +26,8 @@ export function isFixedAssetRoute(route: string): boolean {
 
 const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
 
-// The serial registry has a UI config, but its backing endpoint returns 404
-// (verified 2026-09-11). Keep navigation pending until that workflow is connected.
-const pendingRoutes = new Set(["/productserialregistry", "/gl/reprocess", "/report/xbrl"]);
+// Explicitly blocked routes (if any)
+const pendingRoutes = new Set<string>([]);
 
 /** A connected screen is not a guarantee that its business workflow is complete. */
 export function isMenuScreenPending(route: string): boolean {
@@ -34,6 +37,11 @@ export function isMenuScreenPending(route: string): boolean {
       !isGeneralLedgerRoute(route) &&
       !isFixedAssetRoute(route) &&
       !isErpTransactionRoute(route) &&
+      !isThaiTaxRoute(route) &&
+      !isErpReportRoute(route) &&
+      !isErpToolsRoute(route) &&
+      !isOperationsRoute(route) &&
       !getSystemSettingConfig(route))
   );
 }
+

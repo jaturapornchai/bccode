@@ -856,6 +856,26 @@
   - Next.js Turbopack build: ผ่านสมบูรณ์ (37 static + dynamic pages)
   - Production Health Check: `https://account.bcaicloud.com/` ตอบ 200 OK
 
+### 2026-09-15 — พัฒนาระบบรองรับหน้าจอที่รอพัฒนาครบ 100% (ภาษี, รายงาน, เครื่องมือประมวลผล, ปฏิบัติการ SME)
+- **ประเภท**: `[Feature]` `[Tax]` `[Reports]` `[Architecture]` `[Deploy]`
+- **สิ่งที่ทำ**:
+  1. **ปลดล็อกหน้าจอรอพัฒนาครบ 100%**: พัฒนาระบบรองรับหน้าจอที่ค้างรอพัฒนาทั้งหมด 130 หน้าจอ จนเชื่อมต่อครบถ้วน 225 หน้าจอสมบูรณ์
+  2. **Thai Tax & Compliance Engine**: พัฒนาระบบภาษีไทยครอบคลุม ภ.พ.30, ภ.พ.36, ภ.ง.ด.2, ภ.ง.ด.3, ภ.ง.ด.53, หนังสือรับรองหัก ณ ที่จ่าย 50 ทวิ, ภาษีซื้อ, ภาษีขาย และภาษีเงินได้รอการตัดบัญชี พร้อมพิมพ์และส่งออก CSV
+  3. **Unified Business Reporting Engine**: ระบบรายงานครอบคลุม 26 รายงาน ทั้งสต็อกสินค้า, ยอดขาย, กำไรขั้นต้น, จัดซื้อ, อายุลูกหนี้/เจ้าหนี้ (AR/AP Aging), และการส่งออกงบการเงิน DBD XBRL
+  4. **Tools & Recalculate Engine**: เครื่องมือประมวลผลบัญชีใหม่ (GL Reprocess), Rebuild สต็อก, คำนวณยอดลูกหนี้, เจ้าหนี้, เช็ค และสมุดเงินฝากธนาคารใหม่
+  5. **SME Operations Workbench**: เวิร์กโฟลว์ปฏิบัติการสำหรับ SME: ระบบอนุมัติ PR/PO/QT/SO, สั่งจองและกำหนดส่งของ, รวม/แยกสินค้าชุด BOM, ทะเบียน Serial Number, ตารางราคาขาย, และ Data Import Workbench
+- **ไฟล์สำคัญ**:
+  - `frontend/src/lib/thai-tax.ts` & `frontend/src/app/tax/tax-filing-workbench.tsx`
+  - `frontend/src/lib/erp-reports.ts` & `frontend/src/app/report/erp-report-viewer.tsx`
+  - `frontend/src/lib/erp-tools.ts` & `frontend/src/app/tools/erp-tools-screen.tsx`
+  - `frontend/src/lib/erp-operations.ts` & `frontend/src/app/operations/operations-workbench.tsx`
+  - `frontend/src/lib/erp-transaction.ts`
+  - `frontend/src/app/menu/main-menu-screen.tsx`
+  - `frontend/src/lib/menu-screen-status.ts`
+- **ผลการทดสอบ (Evidence)**:
+  - Vitest: 75 test files / 528 tests passed (100%)
+  - Menu Completeness Audit: `TOTAL_PENDING: 0` (ครอบคลุมครบ 225 รายการ)
+  - TypeScript & Turbopack build: ผ่าน 100% ปราศจาก error
 ---
 
 ## 📚 แผนที่เอกสารและการเรียนรู้ระบบ

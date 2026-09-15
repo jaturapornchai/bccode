@@ -127,6 +127,14 @@ import { GeneralLedgerScreen } from "@/app/gl/general-ledger-screen";
 import { FixedAssetsScreen } from "@/app/asset/fixed-assets-screen";
 import { isErpTransactionRoute } from "@/lib/erp-transaction";
 import { ErpCrudWorkbench } from "@/app/crud/erp-crud-workbench";
+import { isThaiTaxRoute } from "@/lib/thai-tax";
+import { TaxFilingWorkbench } from "@/app/tax/tax-filing-workbench";
+import { isErpReportRoute } from "@/lib/erp-reports";
+import { ErpReportViewer } from "@/app/report/erp-report-viewer";
+import { isErpToolsRoute } from "@/lib/erp-tools";
+import { ErpToolsScreen } from "@/app/tools/erp-tools-screen";
+import { isOperationsRoute } from "@/lib/erp-operations";
+import { OperationsWorkbench } from "@/app/operations/operations-workbench";
 import { MenuDataTable } from "./menu-data-table";
 import { DashboardHome } from "./dashboard-home";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
@@ -2870,6 +2878,22 @@ function WorkTabPanel({
 
   if (isErpTransactionRoute(activeTab.route)) {
     return <ErpCrudWorkbench embedded language={language} route={activeTab.route} />;
+  }
+
+  if (isThaiTaxRoute(activeTab.route)) {
+    return <TaxFilingWorkbench embedded language={language} route={activeTab.route} />;
+  }
+
+  if (isErpReportRoute(activeTab.route)) {
+    return <ErpReportViewer embedded language={language} route={activeTab.route} />;
+  }
+
+  if (isErpToolsRoute(activeTab.route)) {
+    return <ErpToolsScreen embedded language={language} route={activeTab.route} />;
+  }
+
+  if (isOperationsRoute(activeTab.route)) {
+    return <OperationsWorkbench embedded language={language} route={activeTab.route} />;
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);

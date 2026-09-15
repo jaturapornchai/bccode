@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-15 @ commit 90cb5643 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-15 @ commit 19d289d2 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 46
+Files indexed: 47
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (17308 lines)
 
@@ -486,70 +486,70 @@ Files indexed: 46
 | 3073 | function | `DetailSection` |
 | 3116 | function | `DetailField` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2919 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2943 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 226 | function | `mt` |
-| 231 | function | `isRecord` |
-| 235 | function | `stringValue` |
-| 239 | function | `stringArray` |
-| 252 | function | `normalizeSettingRecords` |
-| 272 | function | `fetchAllowedMenuIds` |
-| 308 | function | `fetchSessionStats` |
-| 355 | function | `sessionTimeText` |
-| 366 | function | `sessionRelativeText` |
-| 376 | function | `sessionStatsTooltip` |
-| 393 | function | `MainMenuScreen` |
-| 401 | function | `MainMenuDashboard` |
-| 535 | function | `loadProfile` |
-| 563 | function | `loadMenuPermissions` |
-| 660 | function | `confirmLeaveLedger` |
-| 666 | function | `selectWorkTab` |
-| 671 | function | `openWorkspace` |
-| 675 | function | `openMenuItem` |
-| 722 | function | `openMenuItemInNewTab` |
-| 726 | function | `openManageShortcuts` |
-| 745 | function | `openOverview` |
-| 753 | function | `toggleSection` |
-| 760 | function | `toggleGroup` |
-| 766 | function | `closeTab` |
-| 776 | function | `reorderTabs` |
-| 792 | function | `stopLinePolling` |
-| 799 | function | `handleLineLink` |
-| 847 | function | `startLinePolling` |
-| 861 | function | `pollLineLink` |
-| 895 | function | `closeLineDialog` |
-| 901 | function | `copyLineLoginUrl` |
-| 911 | function | `handleChangePassword` |
-| 963 | function | `logout` |
-| 972 | function | `handleContentScroll` |
-| 1000 | const-arrow | `onPointerMove` |
-| 1006 | const-arrow | `onPointerUp` |
-| 1691 | function | `TopMenuChrome` |
-| 1733 | function | `closeOnOutsidePointer` |
-| 1742 | function | `closeOnEscape` |
-| 1758 | function | `positionOpenSection` |
-| 1775 | function | `closeTopMenu` |
-| 1782 | function | `topMenuItemRow` |
-| 2051 | function | `SidebarButton` |
-| 2084 | function | `MenuSectionAccordion` |
-| 2203 | function | `MenuTreeGroup` |
-| 2257 | function | `MenuTreeFolder` |
-| 2309 | function | `MenuTreeItemButton` |
-| 2375 | function | `countSectionItems` |
-| 2379 | function | `getVisibleGroups` |
-| 2388 | function | `getVisibleItems` |
-| 2397 | function | `getMenuTreeNodes` |
-| 2543 | function | `MenuGroupIcon` |
-| 2552 | function | `SectionIcon` |
-| 2569 | function | `OpenTabs` |
-| 2623 | function | `captureTabRects` |
-| 2634 | function | `getInsertSide` |
-| 2639 | function | `clearDragState` |
-| 2646 | function | `reorderFromPointer` |
-| 2771 | function | `WorkTabPanel` |
-| 2904 | function | `DashboardLoading` |
+| 234 | function | `mt` |
+| 239 | function | `isRecord` |
+| 243 | function | `stringValue` |
+| 247 | function | `stringArray` |
+| 260 | function | `normalizeSettingRecords` |
+| 280 | function | `fetchAllowedMenuIds` |
+| 316 | function | `fetchSessionStats` |
+| 363 | function | `sessionTimeText` |
+| 374 | function | `sessionRelativeText` |
+| 384 | function | `sessionStatsTooltip` |
+| 401 | function | `MainMenuScreen` |
+| 409 | function | `MainMenuDashboard` |
+| 543 | function | `loadProfile` |
+| 571 | function | `loadMenuPermissions` |
+| 668 | function | `confirmLeaveLedger` |
+| 674 | function | `selectWorkTab` |
+| 679 | function | `openWorkspace` |
+| 683 | function | `openMenuItem` |
+| 730 | function | `openMenuItemInNewTab` |
+| 734 | function | `openManageShortcuts` |
+| 753 | function | `openOverview` |
+| 761 | function | `toggleSection` |
+| 768 | function | `toggleGroup` |
+| 774 | function | `closeTab` |
+| 784 | function | `reorderTabs` |
+| 800 | function | `stopLinePolling` |
+| 807 | function | `handleLineLink` |
+| 855 | function | `startLinePolling` |
+| 869 | function | `pollLineLink` |
+| 903 | function | `closeLineDialog` |
+| 909 | function | `copyLineLoginUrl` |
+| 919 | function | `handleChangePassword` |
+| 971 | function | `logout` |
+| 980 | function | `handleContentScroll` |
+| 1008 | const-arrow | `onPointerMove` |
+| 1014 | const-arrow | `onPointerUp` |
+| 1699 | function | `TopMenuChrome` |
+| 1741 | function | `closeOnOutsidePointer` |
+| 1750 | function | `closeOnEscape` |
+| 1766 | function | `positionOpenSection` |
+| 1783 | function | `closeTopMenu` |
+| 1790 | function | `topMenuItemRow` |
+| 2059 | function | `SidebarButton` |
+| 2092 | function | `MenuSectionAccordion` |
+| 2211 | function | `MenuTreeGroup` |
+| 2265 | function | `MenuTreeFolder` |
+| 2317 | function | `MenuTreeItemButton` |
+| 2383 | function | `countSectionItems` |
+| 2387 | function | `getVisibleGroups` |
+| 2396 | function | `getVisibleItems` |
+| 2405 | function | `getMenuTreeNodes` |
+| 2551 | function | `MenuGroupIcon` |
+| 2560 | function | `SectionIcon` |
+| 2577 | function | `OpenTabs` |
+| 2631 | function | `captureTabRects` |
+| 2642 | function | `getInsertSide` |
+| 2647 | function | `clearDragState` |
+| 2654 | function | `reorderFromPointer` |
+| 2779 | function | `WorkTabPanel` |
+| 2928 | function | `DashboardLoading` |
 
 ## backend/internal/product/productbarcode/services/productbarcode_http_service.go (2793 lines)
 
@@ -1902,6 +1902,17 @@ Files indexed: 46
 | 1118 | function | `DeleteDocumentImageGroup` |
 | 1149 | function | `DeleteDocumentImageGroups` |
 | 1187 | function | `UpdateXSort` |
+
+## frontend/src/lib/erp-transaction.ts (1177 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 995 | function | `isErpTransactionRoute` |
+| 1000 | function | `getErpModuleConfig` |
+| 1008 | function | `getOrCreateMockDocs` |
+| 1070 | function | `fetchErpTransactions` |
+| 1110 | function | `saveErpTransaction` |
+| 1156 | function | `deleteErpTransaction` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 

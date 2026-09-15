@@ -104,6 +104,7 @@
 - [decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md](decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md) — Deploy ระบบบัญชีแยกประเภท วงจรบัญชีมาตรฐานไทย และแก้ไขระบบรายงาน สู่ Production (r20260915-1)
 - [decisions/2026-09-15-fixed-assets-and-depreciation-engine.md](decisions/2026-09-15-fixed-assets-and-depreciation-engine.md) — ระบบบริหารสินทรัพย์ถาวรและการคำนวณค่าเสื่อมราคา (Fixed Assets & Depreciation Engine) ตามต้นแบบ Champ, 2-Tier DB, GL Posting, สิทธิประโยชน์ภาษี และ MCP Tools สู่ Production (r20260915-fa-1)
 - [decisions/2026-09-15-erp-datacrud-workbench-standard.md](decisions/2026-09-15-erp-datacrud-workbench-standard.md) — ระบบธุรกรรม ERP แบบ Master-Detail DataCRUD (สินค้า, ขาย, ซื้อ, ลูกหนี้, เจ้าหนี้, เงินสดธนาคาร) ตามมาตรฐาน datacrud skill สู่ Production (r20260915-datacrud-1)
+- [decisions/2026-09-15-complete-menu-coverage-standard.md](decisions/2026-09-15-complete-menu-coverage-standard.md) — ระบบรองรับหน้าจอที่รอพัฒนาครบ 100% สำหรับบัญชีและ SME ไทย (ภาษี, รายงาน, เครื่องมือประมวลผล, ปฏิบัติการ SME) สู่ Production (r20260915-all-screens-1)
 
 
 

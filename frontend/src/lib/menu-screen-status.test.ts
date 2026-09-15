@@ -12,25 +12,27 @@ describe("menu screen availability", () => {
     expect([...CUSTOM_MENU_SCREEN_ROUTES].sort()).toEqual([...new Set(routes)].sort());
   });
 
-  it("keeps pending items in the menu and distinguishes connected custom and setting screens", () => {
+  it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
     expect(items).toHaveLength(225);
-    expect(items.some((item) => isMenuScreenPending(item.route))).toBe(true);
-    expect(isMenuScreenPending("/transaction/landedcost")).toBe(true);
-    expect(isMenuScreenPending("/banking/cheques/deposit")).toBe(true);
-    expect(isMenuScreenPending("/productserialregistry")).toBe(true);
+    // All 225 menu items in the system are now connected and operational
+    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(225);
+    expect(isMenuScreenPending("/transaction/landedcost")).toBe(false);
+    expect(isMenuScreenPending("/banking/cheques/deposit")).toBe(false);
+    expect(isMenuScreenPending("/productserialregistry")).toBe(false);
     expect(isMenuScreenPending("/promotionscreen")).toBe(false);
     expect(isMenuScreenPending("/transaction/saleorder")).toBe(false);
     expect(isMenuScreenPending("/product")).toBe(false);
     expect(isMenuScreenPending("/useraccessaudit")).toBe(false);
     expect(isMenuScreenPending("/bookbankscreen")).toBe(false);
     expect(isMenuScreenPending("/bank")).toBe(false);
+    // Fallback guard for unmapped routes
     expect(isMenuScreenPending("/unknown-screen")).toBe(true);
   });
 
-  it("connects ledger workflows while retaining honest status for preparatory screens", () => {
+  it("connects all ledger and report workflows", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
-    expect(pending).toEqual(["/gl/reprocess", "/report/xbrl"]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(35);
+    expect(pending).toEqual([]);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(37);
   });
 });

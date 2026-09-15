@@ -1,0 +1,182 @@
+// ERP Tools & Integrity Recalculate Engine for Thai SMEs & Thai Accounting
+// Covers GL Reprocess, Stock Rebuild, AR/AP Recalculate, Bank & Cheque Balance Recalculation
+
+export interface ErpToolConfig {
+  route: string;
+  code: string;
+  domain: "gl" | "inventory" | "ar" | "ap" | "bank";
+  title: { th: string; en: string };
+  description: { th: string; en: string };
+  actionLabel: { th: string; en: string };
+  steps: { th: string; en: string }[];
+  warningMessage?: { th: string; en: string };
+}
+
+export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
+  {
+    route: "/gl/reprocess",
+    code: "gl_reprocess",
+    domain: "gl",
+    title: { th: "ประมวลผลข้อมูลบัญชีใหม่ (Reprocess GL)", en: "Reprocess Accounting Data" },
+    description: { th: "ประมวลผลการลงสมุดรายวัน ยอดแยกประเภท และงบทดลองใหม่ทั้งหมดจากการบันทึกธุรกรรม", en: "Reprocess general ledger journals, ledger postings and trial balance from source documents" },
+    actionLabel: { th: "เริ่มประมวลผลบัญชีใหม่", en: "Start GL Reprocessing" },
+    steps: [
+      { th: "ตรวจสอบความสมดุลเดบิต-เครดิตในสมุดรายวัน", en: "Audit Debit-Credit balance in journals" },
+      { th: "ล้างยอดสรุปแยกประเภทชั่วคราว", en: "Clear temporary ledger summary projections" },
+      { th: "คำนวณยอดสะสมยกมาและยอดเคลื่อนไหวตามงวด", en: "Recalculate period balances and cumulative totals" },
+      { th: "ปรับปรุงงบทดลองและงบการเงินให้เป็นปัจจุบัน", en: "Update trial balance and financial statements" },
+    ],
+  },
+  {
+    route: "/tools/ar-recalculate",
+    code: "ar_recalculate",
+    domain: "ar",
+    title: { th: "คำนวณยอดลูกหนี้ใหม่", en: "Recalculate Debtor Balances" },
+    description: { th: "คำนวณยอดหนี้คงค้างของลูกหนี้ทุกรายจากเอกสารขาย ใบวางบิล ใบลดหนี้ และใบเสร็จรับเงิน", en: "Recalculate outstanding debtor balances from sales, billings, credit notes, and receipts" },
+    actionLabel: { th: "คำนวณยอดหนี้ลูกหนี้ใหม่", en: "Recalculate AR Balances" },
+    steps: [
+      { th: "รวบรวมบิลขายและใบแจ้งหนี้ที่ยังค้างชำระ", en: "Aggregate unpaid sales invoices" },
+      { th: "กระทบยอดการรับชำระเงินและใบลดหนี้", en: "Match payments and credit note applications" },
+      { th: "ปรับปรุงยอดหนี้สุทธิและวงเงินสินเชื่อของลูกหนี้", en: "Update net balance and customer credit limits" },
+    ],
+  },
+  {
+    route: "/tools/ar-bill-balances",
+    code: "ar_bill_balances",
+    domain: "ar",
+    title: { th: "คำนวณยอดคงเหลือบิลลูกหนี้ใหม่", en: "Recalculate AR Invoice Balances" },
+    description: { th: "ปรับยอดคงเหลือรายบิล (Bill-by-Bill Balance) เพื่อความถูกต้องในการตัดรับชำระ", en: "Reconcile individual invoice outstanding amounts for accurate receipt allocation" },
+    actionLabel: { th: "คำนวณยอดบิลลูกหนี้ใหม่", en: "Recompute Bill Balances" },
+    steps: [
+      { th: "ตรวจนับยอดตัดจ่ายรายบิล", en: "Verify itemized bill allocations" },
+      { th: "ปรับปรุงยอดค้างรับของแต่ละบิล", en: "Update outstanding balance per bill" },
+    ],
+  },
+  {
+    route: "/tools/ap-recalculate",
+    code: "ap_recalculate",
+    domain: "ap",
+    title: { th: "คำนวณยอดเจ้าหนี้ใหม่", en: "Recalculate Creditor Balances" },
+    description: { th: "คำนวณยอดหนี้คงค้างของผู้จำหน่ายจากใบรับสินค้า ใบซื้อ ใบสำคัญจ่าย และใบลดหนี้", en: "Recalculate outstanding vendor payables from purchases, vouchers, and debit notes" },
+    actionLabel: { th: "คำนวณยอดหนี้เจ้าหนี้ใหม่", en: "Recalculate AP Balances" },
+    steps: [
+      { th: "รวบรวมใบรับสินค้าและตั้งหนี้ค้างจ่าย", en: "Aggregate purchase invoices and accrued payables" },
+      { th: "กระทบยอดใบสำคัญจ่ายและการชำระเงิน", en: "Reconcile payment vouchers and settlements" },
+      { th: "ปรับปรุงยอดหนี้คงค้างสุทธิของเจ้าหนี้แต่ละราย", en: "Update net vendor balance" },
+    ],
+  },
+  {
+    route: "/tools/ap-bill-balances",
+    code: "ap_bill_balances",
+    domain: "ap",
+    title: { th: "คำนวณยอดคงเหลือบิลเจ้าหนี้ใหม่", en: "Recalculate AP Bill Balances" },
+    description: { th: "คำนวณยอดค้างจ่ายรายใบกำกับภาษีซื้อ เพื่อการจ่ายชำระที่แม่นยำ", en: "Recompute outstanding balance for each vendor invoice" },
+    actionLabel: { th: "คำนวณยอดบิลเจ้าหนี้ใหม่", en: "Recompute Vendor Bill Balances" },
+    steps: [
+      { th: "ตรวจสอบประวัติการจ่ายชำระรายบิลซื้อ", en: "Inspect payment history per purchase invoice" },
+      { th: "ปรับปรุงยอดค้างจ่ายสุทธิรายเอกสาร", en: "Update remaining payable amount per document" },
+    ],
+  },
+  {
+    route: "/tools/cheque-balances",
+    code: "cheque_balances",
+    domain: "bank",
+    title: { th: "คำนวณยอดคงเหลือเช็คใหม่", en: "Recalculate Cheque Balances" },
+    description: { th: "ปรับสถานะเช็ครับและเช็คจ่ายในมือ เช็คผ่าน เช็คคืน และเช็คยกเลิก", en: "Synchronize on-hand, cleared, returned, and voided cheque balances" },
+    actionLabel: { th: "คำนวณยอดเช็คใหม่", en: "Recalculate Cheques" },
+    steps: [
+      { th: "ตรวจสอบสถานะทะเบียนเช็ครับและเช็คจ่าย", en: "Verify status of received and issued cheques" },
+      { th: "ปรับปรุงยอดเช็คในมือที่ยังไม่นำฝาก/ยังไม่ตัดบัญชี", en: "Update pending cheque totals" },
+    ],
+  },
+  {
+    route: "/tools/bank-balances",
+    code: "bank_balances",
+    domain: "bank",
+    title: { th: "คำนวณยอดสมุดบัญชีธนาคารใหม่", en: "Recalculate Bank Book Balances" },
+    description: { th: "คำนวณยอดคงเหลือในสมุดบัญชีเงินฝากธนาคารทุกบัญชีจากการโอน ฝาก ถอน", en: "Recalculate ledger balances for all bank accounts from deposits, withdrawals and transfers" },
+    actionLabel: { th: "คำนวณยอดสมุดบัญชีใหม่", en: "Recalculate Bank Books" },
+    steps: [
+      { th: "เรียงลำดับรายการเดินบัญชีตามวันที่และเวลา", en: "Sort transactions chronologically" },
+      { th: "คำนวณยอดคงเหลือสะสมทีละรายการ", en: "Compute rolling balance for each account" },
+      { th: "เทียบยอดกับสมุดบัญชีเงินฝากและ Statement", en: "Reconcile with passbook and bank statements" },
+    ],
+  },
+  {
+    route: "/rebuildstockscreen",
+    code: "rebuild_stock",
+    domain: "inventory",
+    title: { th: "คำนวณข้อมูลสต็อกใหม่ (Rebuild Stock)", en: "Rebuild Stock Data" },
+    description: { th: "คำนวณยอดสินค้าคงเหลือและต้นทุนเฉลี่ยใหม่ทั้งหมดจากประวัติเอกสารเข้า-ออก", en: "Reconstruct physical inventory on-hand balances and moving average costs from scratch" },
+    actionLabel: { th: "เริ่มคำนวณสต็อกใหม่ทั้งหมด", en: "Start Full Stock Rebuild" },
+    steps: [
+      { th: "ตรวจสอบความต่อเนื่องของเอกสารคลังสินค้า", en: "Audit warehouse document sequence" },
+      { th: "คำนวณยอดรับเข้า-จ่ายออกตามลำดับวันที่", en: "Recompute in-out movements chronologically" },
+      { th: "คำนวณต้นทุนต่อหน่วยและมูลค่าคงเหลือใหม่", en: "Recompute unit costs and inventory valuation" },
+      { th: "ปรับปรุงตารางยอดคงเหลือในฐานข้อมูล", en: "Update balance summary tables" },
+    ],
+  },
+  {
+    route: "/auditscreen",
+    code: "audit_data",
+    domain: "inventory",
+    title: { th: "ตรวจสอบความถูกต้องของข้อมูล (Data Audit)", en: "Data Integrity Audit" },
+    description: { th: "ตรวจสอบข้อผิดพลาด ยอดติดลบ เอกสารค้าง และความไม่สอดคล้องในระบบ", en: "Scan for anomalies, negative stocks, orphaned documents, and data inconsistencies" },
+    actionLabel: { th: "เริ่มตรวจความสมบูรณ์ของระบบ", en: "Run Integrity Audit" },
+    steps: [
+      { th: "สแกนหาสินค้าที่ยอดคงเหลือติดลบ", en: "Scan for negative inventory balances" },
+      { th: "ตรวจสอบเอกสารที่ไม่มีรายการย่อย", en: "Check for empty line item documents" },
+      { th: "ตรวจสอบความถูกต้องของรหัสสาขาและคลัง", en: "Validate branch and warehouse codes" },
+    ],
+  },
+  {
+    route: "/rebuildproductsscreen",
+    code: "rebuild_products",
+    domain: "inventory",
+    title: { th: "สร้างดัชนีรายการสินค้าใหม่", en: "Rebuild Product Indexes" },
+    description: { th: "สร้างดัชนีการค้นหา บาร์โค้ด และหน่วยนับของสินค้าใหม่เพื่อความรวดเร็ว", en: "Rebuild search index, barcode catalogs, and packaging units" },
+    actionLabel: { th: "สร้างดัชนีสินค้าใหม่", en: "Rebuild Product Index" },
+    steps: [
+      { th: "รวบรวมรายการสินค้าและบาร์โค้ดทั้งหมด", en: "Collect all items and barcodes" },
+      { th: "สร้าง Full-text search index ภาษาไทยและอังกฤษ", en: "Generate multilingual full-text search index" },
+    ],
+  },
+  {
+    route: "/rebuildproductbalancescreen",
+    code: "rebuild_product_balance",
+    domain: "inventory",
+    title: { th: "สร้างยอดคงเหลือสินค้าใหม่", en: "Rebuild Product Balances" },
+    description: { th: "อัปเดตยอดคงเหลือระดับสินค้าและระดับคลังให้ตรงกับฐานข้อมูลจริง", en: "Synchronize item-level and warehouse-level stock balance snapshots" },
+    actionLabel: { th: "สร้างยอดคงเหลือใหม่", en: "Rebuild Balance Snapshots" },
+    steps: [
+      { th: "สแกนยอดคงเหลือในทุกคลังสินค้า", en: "Scan on-hand quantities across all warehouses" },
+      { th: "ปรับปรุงตารางแคชยอดคงเหลือ (Balance Snapshot)", en: "Update balance snapshot cache" },
+    ],
+  },
+  {
+    route: "/inventory/daily-sequence",
+    code: "inventory_daily_sequence",
+    domain: "inventory",
+    title: { th: "กำหนดลำดับรายวันสินค้า", en: "Inventory Daily Sequence" },
+    description: { th: "จัดลำดับเวลาการเกิดเอกสารรับ-จ่ายในแต่ละวัน เพื่อคำนวณต้นทุน FIFO ให้ถูกต้อง", en: "Order daily receipts and issues chronologically for precise FIFO costing" },
+    actionLabel: { th: "จัดลำดับเอกสารรายวัน", en: "Sort Daily Transactions" },
+    steps: [
+      { th: "จัดคิวเอกสารรับเข้าก่อนเอกสารจ่ายออกในวันเดียวกัน", en: "Sequence receipts before issues within the same day" },
+      { th: "ปรับปรุงลำดับการตัดสต็อก FIFO", en: "Update FIFO allocation sequence" },
+    ],
+  },
+];
+
+const toolRouteMap = new Map<string, ErpToolConfig>(
+  ERP_TOOL_CONFIGS.map((config) => [config.route, config]),
+);
+
+export function isErpToolsRoute(route: string): boolean {
+  const clean = route.split("?")[0];
+  return toolRouteMap.has(clean);
+}
+
+export function getErpToolConfig(route: string): ErpToolConfig | undefined {
+  const clean = route.split("?")[0];
+  return toolRouteMap.get(clean);
+}
