@@ -8,6 +8,13 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-15 — บันทึกกฎหลัก: ยึด D:\project-champ เป็นต้นแบบระบบทั้งหมดเพื่อพัฒนาต่อยอด
+
+- [Docs] เพิ่มกฎหลักใน `AGENTS.md` (และอัปเดตกฎสากลใน `~/.gemini/GEMINI.md`, `~/.codex/AGENTS.md`): กำหนดให้ `D:\project-champ` เป็นต้นแบบระบบทั้งหมดของ BC Ai Account
+- [Rule] คุณสมบัติและกระบวนการทำงาน (Workflows/Business Logic/Menu/Reports) ต้องเทียบเท่าและครบถ้วนเหมือน `D:\project-champ` พร้อมทั้งต่อยอดเพิ่มฟังก์ชันและความสามารถใหม่ (Modern Cloud ERP, 12 ภาษา, Zero Cross-DB Engine, UI พรีเมี่ยมสำหรับคนไทย 40+, AI & Online Marketplace Integrations)
+- [Docs] อัปเดต `docs/reference/CODE-MAP.md` ด้วย `tools/gen-code-map.ps1`
+- ไฟล์: `AGENTS.md`, `README.md`, `docs/reference/CODE-MAP.md`
+
 ### 2026-09-14 — Backend GL Error i18n ผ่าน language.Text และ languages.tsv (Item 25)
 
 - [i18n] เพิ่มคีย์ข้อผิดพลาดของโมดูล GL 33 รายการ (`gl_err_duplicate_code`, `gl_err_duplicate_request`, `gl_err_validation_failed`, `gl_err_stale_version`, `gl_err_parent_not_found`, `gl_err_parent_invalid`, `gl_err_account_tree_invalid`, `gl_err_level_out_of_range`, `gl_err_level_not_deeper_than_parent`, `gl_err_account_has_children`, `gl_err_account_referenced`, `gl_err_account_referenced_master`, `gl_err_account_posted_immutable`, `gl_err_code_immutable`, `gl_err_account_group_not_found`, `gl_err_account_payload_required`, `gl_err_unsupported_command`, `gl_err_not_found`, `gl_err_projection_pending`, `gl_err_unavailable`, `gl_err_invalid_payload`, `gl_err_multiple_commands`, `gl_err_amount_decimal`, `gl_err_select_company`, `gl_err_company_forbidden`, `gl_err_branch_forbidden`, `gl_err_read_forbidden`, `gl_err_action_forbidden`, `gl_err_report_forbidden`, `gl_err_journal_book_immutable`, `gl_err_concurrent_export`, `gl_err_concurrent_read`, `gl_err_holding_invalid`) ลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 ภาษาตามมาตรฐาน
