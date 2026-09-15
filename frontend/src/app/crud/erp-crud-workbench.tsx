@@ -800,7 +800,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-sm font-bold border-t border-border pt-1 text-primary">
-                      <span>{language === "en" ? "Net Amount:" : "ยอดรวมสุทธิ:"}</span>
+                      <span>{language === "en" ? "Net Amount:" : "รวมทั้งสิ้น:"}</span>
                       <span className="font-mono">
                         {Number(formDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
                       </span>
@@ -884,7 +884,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                 </div>
                 <div>
                   <span className="block text-xs text-muted-foreground">
-                    {language === "en" ? "Total Net Amount" : "ยอดรวมสุทธิ"}
+                    {language === "en" ? "Total Net Amount" : "รวมทั้งสิ้น"}
                   </span>
                   <span className="font-bold text-primary font-mono text-base">
                     {Number(selectedDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
@@ -947,7 +947,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-sm font-bold border-t border-border pt-1 text-primary">
-                      <span>{language === "en" ? "Net Amount:" : "ยอดรวมสุทธิ:"}</span>
+                      <span>{language === "en" ? "Net Amount:" : "รวมทั้งสิ้น:"}</span>
                       <span className="font-mono">
                         {Number(selectedDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
                       </span>

@@ -404,7 +404,7 @@ export function ThailandAddressFieldEditor({
               className="h-7 text-xs"
               onClick={copyFromBilling}
             >
-              {language === "th" ? "คัดลอกจากที่อยู่ออกใบกำกับภาษี" : "Copy from billing address"}
+              {language === "th" ? "คัดลอกจากที่อยู่ออกบิล" : "Copy from billing address"}
             </Button>
           ) : null}
           <span className="text-xs font-medium text-muted-foreground">
