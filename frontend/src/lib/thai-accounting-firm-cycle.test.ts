@@ -54,7 +54,7 @@ describe("Thai Accounting Firm - Full Cycle Accounting Test (E2E)", () => {
   // ==========================================
   // PHASE 2: Thai Standard Chart of Accounts (5 Categories)
   // ==========================================
-  let coa: GLAccount[] = [
+  const coa: GLAccount[] = [
     // หมวด 1: สินทรัพย์ (Assets)
     { ...emptyAccount(), accountcode: "1000", names: [{ code: "th", name: "สินทรัพย์" }, { code: "en", name: "Assets" }], accounttype: "asset", normalbalance: "debit", allowposting: false, level: 1 },
     { ...emptyAccount(), accountcode: "1100", parentaccountcode: "1000", names: [{ code: "th", name: "สินทรัพย์หมุนเวียน" }], accounttype: "asset", normalbalance: "debit", allowposting: false, level: 2 },
@@ -279,7 +279,7 @@ describe("Thai Accounting Firm - Full Cycle Accounting Test (E2E)", () => {
     let totalDebit = 0n;
     let totalCredit = 0n;
 
-    for (const [code, bal] of balances.entries()) {
+    for (const bal of balances.values()) {
       totalDebit += bal.debit;
       totalCredit += bal.credit;
     }

@@ -9,7 +9,7 @@
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 ### 2026-09-15 — ทดสอบวงจรบัญชีครบวงจรแบบสำนักงานบัญชีไทย ตรวจสอบฐานข้อมูล MongoDB/PostgreSQL และเทียบเคียงต้นแบบ D:\project-champ
 
-- [Test] เพิ่มชุดการทดสอบวงจรบัญชีครบวงจรแบบสำนักงานบัญชีไทย (Thai CPA / Accounting Firm Full Cycle E2E Test) ใน `frontend/src/lib/thai-accounting-firm-cycle.test.ts` ครอบคลุม 7 ขั้นตอนหลัก:
+- [Test] เพิ่มชุดการทดสอบวงจรบัญชีครบวงจรแบบสำนักงานบัญชีไทย (Thai CPA / Accounting Firm Full Cycle E2E Test) ใน `frontend/src/lib/thai-accounting-firm-cycle.test.ts` ครอบคลุม 7 ขั้นตอนหลัก (ผ่านการตรวจรับ ESLint 0 error และ Vitest 100%):
   1. Phase 1: กำหนดรอบปีบัญชี (Fiscal Year 2569)
   2. Phase 2: ผังบัญชีมาตรฐานไทย 5 หมวด (Assets, Liabilities, Equity, Revenue, Expenses) รองรับ CRUD, Tree View, Parent-Child และ AllowPosting Guard
   3. Phase 3: บันทึกยอดยกมาต้นงวด (Opening Balance) เดบิต = เครดิต 1,000,000.00 บาท ดุลสมบูรณ์
