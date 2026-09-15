@@ -1,4 +1,4 @@
-import { MENU_SECTIONS } from "./menu-data";
+﻿import { MENU_SECTIONS } from "./menu-data";
 
 export type GLIdentity = { id?: string; version?: number; isdeleted?: boolean };
 export type GLAccount = GLIdentity & {
@@ -13,11 +13,13 @@ export type GLFiscalYear = GLIdentity & {
   retainedearningsaccount: string; profitlossaccount: string; isactive: boolean; closed: boolean;
 };
 export type GLRule = { accountcode: string; side: string; source: string };
+export type GLAllocationRule = { branchcode: string; departmentcode: string; projectcode: string; accountcode: string; rate: string };
 export type GLMaster = GLIdentity & {
   code: string; name: string; isactive: boolean; accountcode: string; fiscalyear: string;
   startdate: string; enddate: string; locked: boolean; amount: string;
   branchcode: string; departmentcode: string; projectcode: string; direction: string;
   bookcode: string; rules: GLRule[]; itemaccount: string; costaccount: string; revenueaccount: string;
+  allocatemode: string; allocaterules: GLAllocationRule[];
 };
 export type GLLine = {
   accountcode: string; accountname?: string; description: string; debit: string; credit: string;
@@ -35,7 +37,7 @@ export type GLReport = {
   rows: Record<string, string>[]; totals: Record<string, string>;
   totalrows: number; warnings: string[]; asof: string; sequence: number;
 };
-export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "journals", "statement-templates"] as const;
+export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
@@ -170,7 +172,8 @@ export function sortAccountsHierarchically(accounts: GLAccount[]): (GLAccount & 
 }
 
 export function emptyFiscalYear(): GLFiscalYear { return { code: "", startdate: "", enddate: "", scale: 2, retainedearningsaccount: "", profitlossaccount: "", isactive: true, closed: false }; }
-export function emptyMaster(): GLMaster { return { code: "", name: "", isactive: true, accountcode: "", fiscalyear: "", startdate: "", enddate: "", locked: false, amount: "0", branchcode: "", departmentcode: "", projectcode: "", direction: "in", bookcode: "JV", rules: [], itemaccount: "", costaccount: "", revenueaccount: "" }; }
+export function emptyAllocationRule(): GLAllocationRule { return { branchcode: "", departmentcode: "", projectcode: "", accountcode: "", rate: "0" }; }
+export function emptyMaster(): GLMaster { return { code: "", name: "", isactive: true, accountcode: "", fiscalyear: "", startdate: "", enddate: "", locked: false, amount: "0", branchcode: "", departmentcode: "", projectcode: "", direction: "in", bookcode: "JV", rules: [], itemaccount: "", costaccount: "", revenueaccount: "", allocatemode: "percent", allocaterules: [] }; }
 export function emptyLine(): GLLine { return { accountcode: "", description: "", debit: "0", credit: "0", departmentcode: "", projectcode: "", cashflow: "" }; }
 export function localDate() { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
 export function emptyJournal(bookcode = "JV", kind = "manual"): GLJournal { return { docno: "", date: localDate(), bookcode, fiscalyear: "", description: "", reference: "", branchcode: "", kind, status: "draft", lines: [emptyLine(), emptyLine()] }; }

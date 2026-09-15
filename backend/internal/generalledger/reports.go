@@ -45,6 +45,8 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		report, err = rc.balanceSheet(ctx)
 	case "annual-balances":
 		report, err = rc.annualBalances(ctx)
+	case "allocate":
+		report, err = rc.allocation(ctx)
 	case "daily-check":
 		report, err = rc.dailyCheck(ctx)
 	case "cashflow":
@@ -329,4 +331,52 @@ func (r reportContext) annualBalances(ctx context.Context) (Report, error) {
       SELECT account_code AS accountcode,account_name AS accountname,to_char(month,'YYYY-MM') AS month,opening::text,debit::text,credit::text,(opening+debit-credit)::text AS movement,(SUM(opening+debit-credit) OVER(PARTITION BY account_code ORDER BY month ROWS UNBOUNDED PRECEDING))::text AS balance FROM monthly)
     `
 	return r.run(ctx, cte, "accountcode,month", []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("month", "เดือน"), amountColumn("opening", "ยอดยกมา"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("movement", "เคลื่อนไหวสุทธิ"), amountColumn("balance", "ยอดสะสม")}, []string{"opening", "debit", "credit", "movement"})
+}
+
+// allocation reports the cost-allocation setup (gl_allocations) together with
+// the amount of the source account that falls into this period, so the operator
+// can verify each rule splits exactly 100 percent before posting. The setup
+// lives in gl_records (provisioned by the Kafka projection) and the movement
+// comes from gl_lines, which is the only place accounting arithmetic may run.
+func (r reportContext) allocation(ctx context.Context) (Report, error) {
+	columns := []ReportColumn{
+		textColumn("alloccode", "รหัสการปันส่วน"),
+		textColumn("allocname", "ชื่อ/รายละเอียด"),
+		textColumn("accountcode", "บัญชีต้นทุน"),
+		textColumn("accountname", "ชื่อบัญชี"),
+		textColumn("target", "ปลายทางที่ปันส่วน"),
+		textColumn("departmentcode", "แผนก"),
+		textColumn("projectcode", "โครงการ"),
+		amountColumn("rate", "อัตรา %"),
+		amountColumn("sourceamount", "ยอดต้นทุนที่ปันส่วน"),
+		amountColumn("allocatedamount", "ยอดปันส่วน"),
+	}
+	cte := r.base() + `, source AS (
+      SELECT account_code, SUM(debit-credit) AS amount FROM filtered GROUP BY account_code
+    ), alloc AS (
+      SELECT rec.code AS alloccode, rec.payload->>'name' AS allocname, rec.payload->>'accountcode' AS accountcode,
+        rule.value->>'branchcode' AS branchcode, rule.value->>'departmentcode' AS departmentcode,
+        rule.value->>'projectcode' AS projectcode, rule.value->>'accountcode' AS targetaccount,
+        COALESCE((rule.value->>'rate')::numeric, 0) AS rate
+      FROM gl_records rec CROSS JOIN LATERAL jsonb_array_elements(COALESCE(rec.payload->'allocaterules','[]'::jsonb)) rule
+      WHERE rec.company=$1 AND rec.kind='allocations' AND NOT COALESCE((rec.payload->>'isdeleted')::boolean,false)
+        AND COALESCE((rec.payload->>'isactive')::boolean,true)
+    ), result AS (
+      SELECT a.alloccode, a.allocname, a.accountcode, COALESCE(acc.account_name,'') AS accountname,
+        TRIM(BOTH ' /' FROM CONCAT_WS(' / ',
+          NULLIF(a.targetaccount,''), NULLIF(a.branchcode,''))) AS target,
+        a.departmentcode, a.projectcode,
+        a.rate::text AS rate,
+        COALESCE(src.amount,0)::text AS sourceamount,
+        (a.rate/100 * COALESCE(src.amount,0))::text AS allocatedamount
+      FROM alloc a
+      LEFT JOIN source src ON src.account_code = a.accountcode
+      LEFT JOIN LATERAL (SELECT MAX(account_name) AS account_name FROM filtered WHERE account_code = a.accountcode) acc ON TRUE
+    )`
+	result, err := r.runWithTotals(ctx, cte, "alloccode,departmentcode,projectcode,target", columns, []reportTotal{
+		{key: "rate", expr: "rate::numeric"},
+		{key: "sourceamount", expr: "sourceamount::numeric"},
+		{key: "allocatedamount", expr: "allocatedamount::numeric"},
+	})
+	return result, err
 }

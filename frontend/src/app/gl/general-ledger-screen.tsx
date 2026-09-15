@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { GLReports } from "./gl-reports";
 import { GLProcesses } from "./gl-processes";
 import { GLExport, GLXbrlPreparation } from "./gl-export";
 import { GLStatementDesigner } from "./gl-statement-designer";
+import { GLAllocations } from "./gl-allocations";
 import { GLLanguageProvider, actionClass, panel, useGLText } from "./gl-common";
 
 const masterRoutes: Record<string, GLResource> = { "/gl/chartofaccounts": "accounts", "/gl/budget": "budgets", "/gl/account-groups": "account-groups", "/gl/account-mapping": "mappings", "/gl/product-account-groups": "product-account-groups", "/gl/periodlock": "periods" };
@@ -38,6 +39,7 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   let content;
   if (cleanRoute === "/gl/chartofaccounts") content = <GLMasters key={tab} resource={tab === "year" ? "fiscal-years" : "accounts"} route={cleanRoute} />;
   else if (cleanRoute === "/gl/statement-designer") content = <GLStatementDesigner route={cleanRoute} />;
+  else if (cleanRoute === "/gl/allocations") content = <GLAllocations route={cleanRoute} />;
   else if (masterRoutes[cleanRoute]) content = <GLMasters key={cleanRoute} resource={masterRoutes[cleanRoute] as Exclude<GLResource, "journals">} route={cleanRoute} />;
   else if (cleanRoute === "/gl/openingbalance") content = <GLJournals route={cleanRoute} kind="opening" />;
   else if (cleanRoute.startsWith("/gl/journal/")) content = <GLJournals key={cleanRoute} route={cleanRoute} book={cleanRoute.split("/").at(-1)!.toUpperCase()} />;

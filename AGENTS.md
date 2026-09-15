@@ -231,3 +231,21 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
    - เพิ่มความสามารถใหม่ เช่น การเชื่อมต่อตลาดออนไลน์ (Shopee/Lazada/TikTok), ระบบ AI ผู้ช่วย, เชื่อมต่อ LINE OA, e-Tax Invoice, Dashboard วิเคราะห์สำหรับผู้บริหาร ฯลฯ
 3. **การค้นหาและอ้างอิงต้นทาง (Inspect Champ Source First)**:
    - เมื่องานเกี่ยวข้องกับหน้าจอ ธุรกรรม หรือรายงานใดๆ ให้ค้นหาและตรวจสอบ Implementation เดิมใน `D:\project-champ` ก่อนเสมอเพื่อดู Business Rule, Schema, และพฤติกรรมการทำงานที่ถูกต้องของระบบเดิม
+
+## กฎ: ประมวลผลที่ Backend เป็นหลัก พร้อมเปิด API และ MCP Server รองรับ AI ภายนอก (ตั้งโดยลุงจืด 2026-09-15)
+
+ลุงจืดกำหนดสถาปัตยกรรมการประมวลผลและการเชื่อมโยงระบบ (Vibe Coding / Agentic Architecture) ไว้อย่างชัดเจน ดังนี้:
+
+1. **ประมวลผลที่ Backend มากที่สุด (Backend-First Processing)**:
+   - การประมวลผลทางธุรกิจ (Business Logic), การคำนวณตัวเลขทางบัญชีและภาษี, การรวมยอด (Aggregations), การปิดงวดบัญชี (Period Close), การประมวลผลสิ้นปี (Year-End), การคำนวณยอดสะสมประจำปี, การปันส่วนต้นทุน (Cost Allocation), การออกงบการเงินและรายงานทั้งหมด **ต้องเกิดขึ้นและประมวลผลที่ Backend (Go + PostgreSQL Processing Engine) 100%**
+   - Frontend (Web / Flutter) มีบทบาทเฉพาะการนำเสนอ (Presentation), การรับข้อมูลและโต้ตอบกับผู้ใช้ (User Interaction), การตรวจสอบความถูกต้องเบื้องต้นของฟอร์ม (Form Validation), และการแสดงผลลัพธ์เท่านั้น — **ห้ามเขียน business logic หรือ heavy calculation บนฝั่ง Frontend/Browser โดยเด็ดขาด**
+2. **Backend ต้องมี REST API ครบถ้วน (Full API Coverage)**:
+   - ทุกธุรกรรม ฟังก์ชันการทำงาน และการสืบค้นข้อมูลในระบบ ต้องมี REST / HTTP API endpoints รองรับอย่างเป็นทางการ มี Request/Response Schema และ Error Contract ที่ชัดเจน
+   - รองรับการเชื่อมต่อตรงจาก Frontend, ระบบภายนอก (Third-party Integration) หรือ Client อื่นๆ โดยไม่ต้องพึ่งพาหน้าจอ
+3. **Backend ต้องมี MCP Server สำหรับ Vibe Coding และ AI Agent (Model Context Protocol Integration)**:
+   - Backend ต้องจัดเตรียม **MCP Server (Model Context Protocol)** เพื่อให้ AI Coding Agent, ผู้ช่วยอัจฉริยะ และเครื่องมือแนว Vibe Coding (เช่น Cursor, Windsurf, Claude Code, Copilot, Antigravity ฯลฯ) สามารถเชื่อมต่อเข้ามาทำงานกับระบบ BC Ai Account ได้อย่างมีประสิทธิภาพและปลอดภัย
+   - ขอบเขตของ MCP Tools ต้องครอบคลุม:
+     - **Inspect / Read Tools**: ดึงผังบัญชี (Chart of Accounts), ยอดคงเหลือ, รายการสมุดรายวัน, ค้นหาเอกสาร, ตรวจสอบงวดบัญชี และเรียกดูรายงานการเงิน
+     - **Action / Write Tools**: สร้าง/แก้ไขรายการรายวัน (Journals), บันทึกสมุดรายวัน, ผ่านรายการ (Post/Unpost), จัดการงวดบัญชี และสั่งประมวลผล
+     - **Knowledge & Schema Tools**: ให้ Agent เข้าใจโครงสร้างข้อมูล ฟิลด์ กฎทางบัญชี และตรรกะระบบได้อย่างแม่นยำ
+   - AI ตัวอื่นและ Vibe Code ต่างๆ จึงสามารถเลือกเชื่อมต่อได้ทั้งผ่าน **MCP Protocol** หรือเชื่อมตรงผ่าน **REST API** ได้อย่างยืดหยุ่น

@@ -14,7 +14,7 @@ describe("menu screen availability", () => {
 
   it("keeps pending items in the menu and distinguishes connected custom and setting screens", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(224);
+    expect(items).toHaveLength(225);
     expect(items.some((item) => isMenuScreenPending(item.route))).toBe(true);
     expect(isMenuScreenPending("/transaction/landedcost")).toBe(true);
     expect(isMenuScreenPending("/banking/cheques/deposit")).toBe(true);
@@ -31,6 +31,6 @@ describe("menu screen availability", () => {
   it("connects ledger workflows while retaining honest status for preparatory screens", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
     expect(pending).toEqual(["/gl/reprocess", "/report/xbrl"]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(34);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(35);
   });
 });

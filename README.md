@@ -8,6 +8,16 @@
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
 
+### 2026-09-15 — บันทึกกฎหลัก: ประมวลผลที่ Backend เป็นหลัก พร้อมเปิด API และ MCP Server รองรับ AI ภายนอก
+
+- [Rule] เพิ่มกฎใน `AGENTS.md` (และอัปเดตใน `~/.gemini/GEMINI.md`, `~/.codex/AGENTS.md`):
+  1. การประมวลผลทางธุรกิจ ตัวเลข บัญชี ภาษี รายงาน และการคำนวณทั้งหมดต้องทำที่ Backend (Go + PostgreSQL Processing Engine) 100% ห้ามรัน business logic หรือ heavy calculation บน frontend
+  2. Backend ต้องเปิดให้บริการ REST API ครบถ้วนทุกฟังก์ชัน รองรับการเรียกตรงจาก Client และระบบภายนอก
+  3. Backend ต้องจัดเตรียม MCP Server (Model Context Protocol) เพื่อให้เครื่องมือสาย Vibe Coding และ AI Agent (Cursor, Windsurf, Claude Code, Antigravity ฯลฯ) สามารถเชื่อมต่อเข้ามาทำงานกับระบบผ่าน MCP Tools หรือเชื่อมตรงผ่าน API ได้อย่างปลอดภัย
+- [Fix] แก้ไขการเข้ารหัสข้อความภาษาไทยในโมดูลปันส่วนต้นทุน (Cost Allocation) ทั้งใน frontend (`menu-data.ts`, `gl-allocations.tsx`) และ backend (`mutations.go`, `reports.go`) ให้เป็น UTF-8 ถูกต้อง และผ่านการทดสอบ vitest 100%
+- ไฟล์: `AGENTS.md`, `README.md`, `frontend/src/lib/menu-data.ts`, `frontend/src/app/gl/gl-allocations.tsx`, `backend/internal/generalledger/mutations.go`, `backend/internal/generalledger/reports.go`
+- ผลการทดสอบ: Vitest GL ทั้งหมดผ่าน 100%, `gen-code-map.ps1 -Check` in sync
+
 ### 2026-09-15 — บันทึกกฎหลัก: ยึด D:\project-champ เป็นต้นแบบระบบทั้งหมดเพื่อพัฒนาต่อยอด
 
 - [Docs] เพิ่มกฎหลักใน `AGENTS.md` (และอัปเดตกฎสากลใน `~/.gemini/GEMINI.md`, `~/.codex/AGENTS.md`): กำหนดให้ `D:\project-champ` เป็นต้นแบบระบบทั้งหมดของ BC Ai Account

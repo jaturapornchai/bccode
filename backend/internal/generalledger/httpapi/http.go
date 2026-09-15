@@ -24,11 +24,11 @@ import (
 	"smlcloudplatform/internal/config"
 	gl "smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/generalledger/kafkatransport"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/mypg"
 	access "smlcloudplatform/internal/organization/access"
 	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	rolemodels "smlcloudplatform/internal/organization/rolepermission/models"
-	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -196,8 +196,8 @@ func (h *Http) scope(ctx context.Context, request microservice.IContext) (reques
 	return result, nil
 }
 
-var resourceScreens = map[string]string{"accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "statement-templates": "financial-statement-designer"}
-var reportScreens = map[string]string{"ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated"}
+var resourceScreens = map[string]string{"accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer"}
+var reportScreens = map[string]string{"ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation"}
 
 func allowed(p map[string]bool, screen, action string) bool {
 	if p["*"] {

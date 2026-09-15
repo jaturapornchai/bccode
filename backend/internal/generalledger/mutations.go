@@ -447,6 +447,53 @@ func (s *Store) masterMutation(ctx context.Context, scope Scope, cmd Command, no
 			codes = append(codes, rule.AccountCode)
 		}
 	}
+	if next.Kind == "allocations" {
+		if next.AccountCode == "" {
+			return nil, fmt.Errorf("กรุณาเลือกบัญชีต้นทุนที่ต้องการปันส่วน")
+		}
+		codes = append(codes, next.AccountCode)
+		if next.AllocateMode == "" {
+			next.AllocateMode = "percent"
+		}
+		if !contains([]string{"percent"}, next.AllocateMode) {
+			return nil, fmt.Errorf("รูปแบบการปันส่วนต้องเป็นเปอร์เซ็นต์")
+		}
+		if len(next.AllocateRules) < 1 || len(next.AllocateRules) > 100 {
+			return nil, fmt.Errorf("กรุณากำหนดรายการปันส่วนอย่างน้อย 1 รายการ (ไม่เกิน 100)")
+		}
+		total := decimal.Zero
+		for _, rule := range next.AllocateRules {
+			if rule.Rate == "" {
+				return nil, fmt.Errorf("กรุณาระบุอัตราการปันส่วนทุกรายการ")
+			}
+			rate := rule.Rate.Decimal()
+			if rate.IsNegative() || rate.GreaterThan(decimal.NewFromInt(100)) {
+				return nil, fmt.Errorf("อัตราการปันส่วนต้องอยู่ระหว่าง 0 ถึง 100")
+			}
+			total = total.Add(rate)
+			if rule.AccountCode != "" {
+				codes = append(codes, rule.AccountCode)
+			}
+			if rule.DepartmentCode != "" {
+				if err := s.checkAllocationDepartment(ctx, scope, rule.DepartmentCode); err != nil {
+					return nil, err
+				}
+			}
+			if rule.ProjectCode != "" {
+				if err := s.checkAllocationProject(ctx, scope, rule.ProjectCode); err != nil {
+					return nil, err
+				}
+			}
+			if rule.BranchCode != "" {
+				if err := s.checkAllocationBranch(ctx, scope, rule.BranchCode); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if !total.Equal(decimal.NewFromInt(100)) {
+			return nil, fmt.Errorf("อัตราการปันส่วนรวมต้องเท่ากับ 100 เปอร์เซ็นต์")
+		}
+	}
 	if next.Kind == "statement-templates" {
 		if next.StatementType == "" {
 			next.StatementType = "custom"
@@ -466,6 +513,29 @@ func (s *Store) masterMutation(ctx context.Context, scope Scope, cmd Command, no
 	return single(s.save(ctx, scope, cmd.Resource, next.ID, next.Code, next, cmd.Version))
 }
 
+// Department, project and branch codes are free-form dimensions on journal
+// lines (there is no GL master for them), so allocation rules validate the
+// code shape instead of a foreign key that does not exist.
+func (s *Store) checkAllocationDepartment(_ context.Context, _ Scope, code string) error {
+	if !validCode(code) {
+		return fmt.Errorf("รหัสแผนกในรายการปันส่วนไม่ถูกต้อง")
+	}
+	return nil
+}
+
+func (s *Store) checkAllocationProject(_ context.Context, _ Scope, code string) error {
+	if !validCode(code) {
+		return fmt.Errorf("รหัสโครงการในรายการปันส่วนไม่ถูกต้อง")
+	}
+	return nil
+}
+
+func (s *Store) checkAllocationBranch(_ context.Context, _ Scope, code string) error {
+	if !validCode(code) {
+		return fmt.Errorf("รหัสสาขาในรายการปันส่วนไม่ถูกต้อง")
+	}
+	return nil
+}
 func (s *Store) checkJournal(ctx context.Context, scope Scope, j *Journal) error {
 	if scope.Branch != "" && j.BranchCode != scope.Branch {
 		return fmt.Errorf("รายการบัญชีอยู่นอกสาขาที่เลือก")

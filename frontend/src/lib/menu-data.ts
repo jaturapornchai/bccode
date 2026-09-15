@@ -581,6 +581,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("chart-of-accounts", "ผังบัญชี", "Chart of Accounts", "/gl/chartofaccounts", "finance"),
           tx("gl-opening-balance", "ยอดยกมาทางบัญชี", "GL Opening Balances", "/gl/openingbalance", "finance"),
+          tx("gl-allocation", "ปันส่วนค่าใช้จ่าย", "Cost Allocation", "/gl/allocations", "finance"),
           tx("gl-budget", "กำหนดงบประมาณประจำปี", "Annual Budget", "/gl/budget", "finance"),
           tx("gl-account-groups", "กลุ่มผังบัญชี", "Chart of Account Groups", "/gl/account-groups", "finance"),
           tx("gl-account-mapping", "รูปแบบการเชื่อมโยงบัญชีอัตโนมัติ", "Automatic Account Mapping", "/gl/account-mapping", "finance"),

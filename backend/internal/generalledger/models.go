@@ -71,29 +71,42 @@ type FiscalYear struct {
 
 func (FiscalYear) CollectionName() string { return "fiscal_year" }
 
+// AllocationRule splits one cost allocation code across target branches,
+// departments, projects and accounts by a fixed percentage. Rates are exact
+// decimals (percentage, 0–100) and must total exactly 100 within a code.
+type AllocationRule struct {
+	BranchCode     string `json:"branchcode,omitempty" bson:"branchcode,omitempty"`
+	DepartmentCode string `json:"departmentcode,omitempty" bson:"departmentcode,omitempty"`
+	ProjectCode    string `json:"projectcode,omitempty" bson:"projectcode,omitempty"`
+	AccountCode    string `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
+	Rate           Amount `json:"rate" bson:"rate"`
+}
+
 // Auxiliary masters have separate collections. Kind is an API discriminator,
 // never a client-supplied collection or table name.
 type Master struct {
 	Identity       `bson:",inline"`
-	Kind           string        `json:"kind" bson:"-"`
-	Code           string        `json:"code" bson:"code"`
-	Name           string        `json:"name" bson:"name"`
-	IsActive       bool          `json:"isactive" bson:"isactive"`
-	AccountCode    string        `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
-	FiscalYear     string        `json:"fiscalyear,omitempty" bson:"fiscalyear,omitempty"`
-	StartDate      string        `json:"startdate,omitempty" bson:"startdate,omitempty"`
-	EndDate        string        `json:"enddate,omitempty" bson:"enddate,omitempty"`
-	Locked         bool          `json:"locked" bson:"locked"`
-	Amount         Amount        `json:"amount" bson:"amount"`
-	BranchCode     string        `json:"branchcode,omitempty" bson:"branchcode,omitempty"`
-	DepartmentCode string        `json:"departmentcode,omitempty" bson:"departmentcode,omitempty"`
-	ProjectCode    string        `json:"projectcode,omitempty" bson:"projectcode,omitempty"`
-	Direction      string        `json:"direction,omitempty" bson:"direction,omitempty"`
-	BookCode       string        `json:"bookcode,omitempty" bson:"bookcode,omitempty"`
-	ItemAccount    string        `json:"itemaccount,omitempty" bson:"itemaccount,omitempty"`
-	CostAccount    string        `json:"costaccount,omitempty" bson:"costaccount,omitempty"`
+	Kind           string                `json:"kind" bson:"-"`
+	Code           string                `json:"code" bson:"code"`
+	Name           string                `json:"name" bson:"name"`
+	IsActive       bool                  `json:"isactive" bson:"isactive"`
+	AccountCode    string                `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
+	FiscalYear     string                `json:"fiscalyear,omitempty" bson:"fiscalyear,omitempty"`
+	StartDate      string                `json:"startdate,omitempty" bson:"startdate,omitempty"`
+	EndDate        string                `json:"enddate,omitempty" bson:"enddate,omitempty"`
+	Locked         bool                  `json:"locked" bson:"locked"`
+	Amount         Amount                `json:"amount" bson:"amount"`
+	BranchCode     string                `json:"branchcode,omitempty" bson:"branchcode,omitempty"`
+	DepartmentCode string                `json:"departmentcode,omitempty" bson:"departmentcode,omitempty"`
+	ProjectCode    string                `json:"projectcode,omitempty" bson:"projectcode,omitempty"`
+	Direction      string                `json:"direction,omitempty" bson:"direction,omitempty"`
+	BookCode       string                `json:"bookcode,omitempty" bson:"bookcode,omitempty"`
+	ItemAccount    string                `json:"itemaccount,omitempty" bson:"itemaccount,omitempty"`
+	CostAccount    string                `json:"costaccount,omitempty" bson:"costaccount,omitempty"`
 	RevenueAccount string                `json:"revenueaccount,omitempty" bson:"revenueaccount,omitempty"`
 	Rules          []MappingRule         `json:"rules,omitempty" bson:"rules,omitempty"`
+	AllocateMode   string                `json:"allocatemode,omitempty" bson:"allocatemode,omitempty"`
+	AllocateRules  []AllocationRule      `json:"allocaterules,omitempty" bson:"allocaterules,omitempty"`
 	StatementType  string                `json:"statementtype,omitempty" bson:"statementtype,omitempty"`
 	GlobalStyle    *StatementGlobalStyle `json:"globalstyle,omitempty" bson:"globalstyle,omitempty"`
 	Rows           []StatementRow        `json:"rows,omitempty" bson:"rows,omitempty"`
@@ -137,6 +150,7 @@ type StatementGlobalStyle struct {
 var MasterCollections = map[string]string{
 	"account-groups": "gl_account_groups", "product-account-groups": "gl_product_account_groups",
 	"mappings": "gl_account_mappings", "budgets": "gl_budgets", "periods": "gl_periods", "forecast": "gl_cash_forecast",
+	"allocations":         "gl_allocations",
 	"statement-templates": "gl_statement_templates",
 }
 
