@@ -4393,7 +4393,7 @@ function settingListColumns(
     return [
       {
         key: "names",
-        label: language === "th" ? "สมุดบัญชี" : "Book Bank",
+        label: language === "th" ? "สมุดเงินฝากธนาคาร" : "Book Bank",
         className: "basis-48 grow-[2] min-w-[130px]",
         render: (record, meta) => {
           const bookCode = stringValue(record.bookcode ?? record.code ?? meta.id);

@@ -29,7 +29,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/stockbalanceitem",
     code: "stock_balance_item",
     category: "inventory",
-    title: { th: "รายงานสินค้าคงเหลือตามสินค้า", en: "Stock Balance by Item" },
+    title: { th: "รายงานยอดคงเหลือสินค้า-ตามสินค้า", en: "Stock Balance by Item" },
     description: { th: "รายงานสรุปยอดสินค้าคงเหลือและมูลค่าสต็อก แยกรายรหัสสินค้า", en: "Inventory on-hand balance and valuation by item" },
     defaultSortKey: "itemcode",
     columns: [
@@ -45,7 +45,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/stockbalancewarehouse",
     code: "stock_balance_warehouse",
     category: "inventory",
-    title: { th: "รายงานสินค้าคงเหลือตามคลัง", en: "Stock Balance by Warehouse" },
+    title: { th: "รายงานยอดคงเหลือสินค้า-ตามคลัง,สินค้า", en: "Stock Balance by Warehouse" },
     description: { th: "แสดงยอดสินค้าคงเหลือแยกตามคลังสินค้าและสาขา", en: "Inventory on-hand balance grouped by warehouse and branch" },
     defaultSortKey: "warehouse",
     columns: [
@@ -61,7 +61,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/stockbalancelocation",
     code: "stock_balance_location",
     category: "inventory",
-    title: { th: "รายงานสินค้าคงเหลือตามที่เก็บ", en: "Stock Balance by Location/Bin" },
+    title: { th: "คงเหลือตามที่เก็บสินค้า", en: "Stock Balance by Location/Bin" },
     description: { th: "แสดงตำแหน่งจัดเก็บ แถว ชั้น ช่อง (Bin Location) ของสินค้า", en: "Stock balance pinpointed by location, aisle and bin" },
     defaultSortKey: "location",
     columns: [
@@ -75,7 +75,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportdedebistockbalance",
     code: "general_stock_balance",
     category: "inventory",
-    title: { th: "รายงานสินค้าคงเหลือรวม", en: "Comprehensive Stock Balance" },
+    title: { th: "รายงานสินค้าคงเหลือ", en: "Comprehensive Stock Balance" },
     description: { th: "รายงานสินค้าคงเหลือภาพรวมทั้งบริษัทพร้อมยอดจองและยอดพร้อมขาย", en: "Company-wide stock balance with reservations and available to sell" },
     defaultSortKey: "itemcode",
     columns: [
@@ -91,7 +91,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/lowstock",
     code: "low_stock_report",
     category: "inventory",
-    title: { th: "รายงานสินค้าใกล้หมดขั้นต่ำ (Reorder Point)", en: "Low Stock Alert" },
+    title: { th: "รายงานยอดคงเหลือสินค้าที่ถึงจุดสั่งซื้อ", en: "Low Stock Alert" },
     description: { th: "เตือนรายการสินค้าที่ยอดคงเหลือต่ำกว่าจุดสั่งซื้อซ้ำ เพื่อความต่อเนื่องของธุรกิจ", en: "Items below minimum stock level and safety threshold" },
     defaultSortKey: "shortage",
     columns: [
@@ -107,7 +107,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/expiringstock",
     code: "expiring_stock_report",
     category: "inventory",
-    title: { th: "รายงานสินค้าใกล้หมดอายุ", en: "Expiring Stock Report" },
+    title: { th: "สินค้าใกล้หมดอายุ", en: "Expiring Stock Report" },
     description: { th: "ติดตามวันหมดอายุของสินค้าตามล็อต (FEFO Management)", en: "Stock expiration tracking by batch and lot number" },
     defaultSortKey: "expirydate",
     columns: [
@@ -123,7 +123,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/stockmovementcost",
     code: "stock_movement_cost",
     category: "inventory",
-    title: { th: "รายงานความเคลื่อนไหวสินค้าพร้อมต้นทุน (Stock Card)", en: "Stock Card with Cost Movement" },
+    title: { th: "รายงานบัญชีคุมพิเศษสินค้า", en: "Stock Card with Cost Movement" },
     description: { th: "บัตรคุมสต็อกแสดงการรับ-จ่าย-คงเหลือ พร้อมต้นทุน FIFO และถัวเฉลี่ยถ่วงน้ำหนัก", en: "Stock card ledger with in-out-balance quantities and moving costs" },
     defaultSortKey: "docdate",
     columns: [
@@ -141,7 +141,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportstockmovement",
     code: "stock_movement_simple",
     category: "inventory",
-    title: { th: "รายงานความเคลื่อนไหวสินค้า", en: "Stock Movement Report" },
+    title: { th: "รายงานเคลื่อนไหวสินค้า", en: "Stock Movement Report" },
     description: { th: "สรุปการเคลื่อนไหวสต็อกเข้า-ออกตามช่วงเวลา", en: "Periodical in-out stock movement log" },
     defaultSortKey: "docdate",
     columns: [
@@ -157,7 +157,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/stocklotmovement",
     code: "stock_lot_movement",
     category: "inventory",
-    title: { th: "รายงานความเคลื่อนไหวล็อตสินค้า", en: "Lot Tracking Movement" },
+    title: { th: "ความเคลื่อนไหวล็อตสินค้า", en: "Lot Tracking Movement" },
     description: { th: "ตรวจสอบการรับเข้าและจ่ายออกของสินค้าแยกรายล็อตการผลิต", en: "Traceability ledger of batch/lot receipts and shipments" },
     defaultSortKey: "lotno",
     columns: [
@@ -174,7 +174,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportdedebisales",
     code: "sales_summary",
     category: "sales",
-    title: { th: "รายงานสรุปยอดขายสินค้า", en: "Sales Summary Report" },
+    title: { th: "รายงานขาย", en: "Sales Summary Report" },
     description: { th: "สรุปยอดขายแยกตามหมวดหมู่ ยอดขายก่อนภาษี ภาษี และยอดสุทธิ", en: "Summary of gross sales, discounts, VAT and net sales" },
     defaultSortKey: "docdate",
     columns: [
@@ -190,7 +190,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportdedebisalesdaily",
     code: "sales_daily",
     category: "sales",
-    title: { th: "รายงานยอดขายรายวัน", en: "Daily Sales Report" },
+    title: { th: "รายงานรายวันขายสินค้าและบริการ", en: "Daily Sales Report" },
     description: { th: "สรุปยอดขายประจำวันเพื่อตรวจสอบเงินสด ธนาคาร และลูกหนี้", en: "Daily sales audit report by payment method" },
     defaultSortKey: "salesdate",
     columns: [
@@ -206,7 +206,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/salesbyseller",
     code: "sales_by_seller",
     category: "sales",
-    title: { th: "รายงานยอดขายตามพนักงานขาย", en: "Sales by Salesperson" },
+    title: { th: "รายงานยอดขายสุทธิ-เรียงตามพนักงานขาย", en: "Sales by Salesperson" },
     description: { th: "วิเคราะห์ผลงานพนักงานขายและคำนวณค่าคอมมิชชั่น", en: "Sales performance ranking and commission basis by seller" },
     defaultSortKey: "totalamount",
     columns: [
@@ -236,7 +236,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportgrossprofitbydocument",
     code: "gross_profit_document",
     category: "sales",
-    title: { th: "รายงานกำไรขั้นต้นตามเอกสาร", en: "Gross Profit by Document" },
+    title: { th: "กำไรขั้นต้นตามเอกสาร", en: "Gross Profit by Document" },
     description: { th: "วิเคราะห์ต้นทุนขาย กำไรขั้นต้น และมาร์จิ้น (% GP) ในแต่ละบิล", en: "Gross profit margin analysis per individual invoice" },
     defaultSortKey: "docno",
     columns: [
@@ -252,7 +252,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportgrossprofitbyproduct",
     code: "gross_profit_product",
     category: "sales",
-    title: { th: "รายงานกำไรขั้นต้นตามสินค้า", en: "Gross Profit by Product" },
+    title: { th: "กำไรขั้นต้นตามสินค้า", en: "Gross Profit by Product" },
     description: { th: "วิเคราะห์สินค้าขายดีและสินค้าที่สร้างกำไรสูงสุดให้ธุรกิจ", en: "Profitability matrix per product item" },
     defaultSortKey: "grossprofit",
     columns: [
@@ -269,7 +269,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportdedebisalereturn",
     code: "sales_return_report",
     category: "sales",
-    title: { th: "รายงานการรับคืนสินค้าจากการขาย", en: "Sales Return Report" },
+    title: { th: "รายงานคืนขาย", en: "Sales Return Report" },
     description: { th: "วิเคราะห์สาเหตุการคืนสินค้าและลดหนี้ให้ลูกค้า", en: "Customer returns and credit note issue log" },
     defaultSortKey: "docdate",
     columns: [
@@ -285,7 +285,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/salesbycustomer",
     code: "sales_by_customer",
     category: "sales",
-    title: { th: "รายงานยอดขายตามลูกค้า", en: "Sales by Customer" },
+    title: { th: "ยอดขายตามลูกค้า", en: "Sales by Customer" },
     description: { th: "จัดอันดับลูกค้าชั้นดี (Top Customers) ตามปริมาณยอดซื้อ", en: "Customer revenue breakdown and VIP tier ranking" },
     defaultSortKey: "totalamount",
     columns: [
@@ -299,7 +299,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/salesbychannel",
     code: "sales_by_channel",
     category: "sales",
-    title: { th: "รายงานยอดขายตามช่องทางจำหน่าย", en: "Sales by Channel" },
+    title: { th: "ยอดขายตามช่องทางขาย", en: "Sales by Channel" },
     description: { th: "เปรียบเทียบยอดขายหน้าร้าน, Shopee, Lazada, TikTok, และตัวแทนจำหน่าย", en: "Omnichannel sales distribution analysis" },
     defaultSortKey: "totalamount",
     columns: [
@@ -315,7 +315,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportdedebipurchase",
     code: "purchase_summary",
     category: "purchase",
-    title: { th: "รายงานการซื้อสินค้า", en: "Purchase Summary Report" },
+    title: { th: "รายงานซื้อ", en: "Purchase Summary Report" },
     description: { th: "สรุปยอดการสั่งซื้อสินค้าและบริการแยกตามเจ้าหนี้", en: "Summary of vendor purchases and expenses" },
     defaultSortKey: "docdate",
     columns: [
@@ -346,7 +346,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportdedebipurchasepartial",
     code: "purchase_partial_report",
     category: "purchase",
-    title: { th: "รายงานการทยอยรับสินค้าตามใบสั่งซื้อ", en: "Partial Delivery Tracking" },
+    title: { th: "รายงานทยอยรับ", en: "Partial Delivery Tracking" },
     description: { th: "ติดตามสินค้าค้างรับจากผู้ขายตามใบสั่งซื้อ (PO Backlog)", en: "Outstanding purchase orders and partial shipments status" },
     defaultSortKey: "pono",
     columns: [
@@ -361,7 +361,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/expensesummary",
     code: "expense_summary",
     category: "purchase",
-    title: { th: "รายงานสรุปค่าใช้จ่ายตามหมวดหมู่", en: "Expense Summary Report" },
+    title: { th: "รายงานสรุปรายจ่าย", en: "Expense Summary Report" },
     description: { th: "สรุปค่าใช้จ่ายในการดำเนินงาน (OPEX) จัดกลุ่มตามผังบัญชีและแผนก", en: "Operating expense breakdown by chart of account and department" },
     defaultSortKey: "totalamount",
     columns: [
@@ -377,7 +377,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/araging",
     code: "ar_aging",
     category: "ar",
-    title: { th: "รายงานวิเคราะห์อายุลูกหนี้ (AR Aging)", en: "Accounts Receivable Aging Report" },
+    title: { th: "รายงานอายุลูกหนี้", en: "Accounts Receivable Aging Report" },
     description: { th: "วิเคราะห์หนี้ค้างชำระแบ่งตามช่วงเวลา (ไม่เกินกำหนด, 1-30 วัน, 31-60 วัน, 61-90 วัน, เกิน 90 วัน)", en: "Debtor aging schedule with standard Thai accounting aging buckets" },
     defaultSortKey: "totaldue",
     columns: [
@@ -395,7 +395,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/reportdedebipaymentdaily",
     code: "ar_payment_daily",
     category: "ar",
-    title: { th: "รายงานรับชำระเงินรายวันจากลูกหนี้", en: "Daily Debt Collection Register" },
+    title: { th: "รายงานการรับชำระหนี้ประจำวัน", en: "Daily Debt Collection Register" },
     description: { th: "ทะเบียนใบเสร็จรับเงินและการตัดหนี้ลูกหนี้ประจำวัน", en: "Daily debtor settlement receipts and clearance log" },
     defaultSortKey: "docdate",
     columns: [
@@ -410,7 +410,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/apaging",
     code: "ap_aging",
     category: "ap",
-    title: { th: "รายงานวิเคราะห์อายุเจ้าหนี้ (AP Aging)", en: "Accounts Payable Aging Report" },
+    title: { th: "รายงานอายุเจ้าหนี้", en: "Accounts Payable Aging Report" },
     description: { th: "วิเคราะห์หนี้ที่ต้องจ่ายให้เจ้าหนี้ตามระยะเวลาครบกำหนดชำระเพื่อบริหารสภาพคล่อง", en: "Creditor aging schedule to manage vendor payments and liquidity" },
     defaultSortKey: "totaldue",
     columns: [
@@ -430,7 +430,7 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     route: "/report/xbrl",
     code: "dbd_xbrl_export",
     category: "xbrl",
-    title: { th: "ส่งออกงบการเงินรูปแบบ XBRL (ยื่น DBD e-Filing)", en: "DBD XBRL Financial Statement Export" },
+    title: { th: "ส่งออกงบการเงิน XBRL (ยื่น DBD)", en: "DBD XBRL Financial Statement Export" },
     description: { th: "ส่งออกไฟล์ข้อมูลทางการเงินตาม Taxonomy ของกรมพัฒนาธุรกิจการค้า กระทรวงพาณิชย์ สำหรับยื่นงบการเงินประจำปี", en: "Export statutory financial statements compliant with Thai DBD XBRL taxonomy" },
     defaultSortKey: "accountcode",
     columns: [

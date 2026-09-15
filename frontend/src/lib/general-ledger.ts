@@ -600,7 +600,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       rows: [
         { id: "pnl-1", rowno: 10, rowtype: "header", title: "รายได้", style: { fontweight: "bold", indent: 0 } },
         { id: "pnl-2", rowno: 20, rowtype: "account", title: "รายได้จากการขายและบริการ", noteno: "15", accountcodes: ["4111-01", "4111-02"], normalbalance: "credit", style: { indent: 1 } },
-        { id: "pnl-3", rowno: 30, rowtype: "account", title: "รายได้อื่น", noteno: "16", accountcodes: ["4211-01"], normalbalance: "credit", style: { indent: 1 } },
+        { id: "pnl-3", rowno: 30, rowtype: "account", title: "รายได้อื่นๆ", noteno: "16", accountcodes: ["4211-01"], normalbalance: "credit", style: { indent: 1 } },
         { id: "pnl-4", rowno: 40, rowtype: "subtotal", title: "รวมรายได้", formula: "R20 + R30", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "pnl-5", rowno: 50, rowtype: "blank", title: "" },
         { id: "pnl-6", rowno: 60, rowtype: "header", title: "ค่าใช้จ่าย", style: { fontweight: "bold", indent: 0 } },

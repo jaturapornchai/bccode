@@ -19,7 +19,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/gl/reprocess",
     code: "gl_reprocess",
     domain: "gl",
-    title: { th: "ประมวลผลข้อมูลบัญชีใหม่ (Reprocess GL)", en: "Reprocess Accounting Data" },
+    title: { th: "ประมวลผลข้อมูลบัญชีใหม่", en: "Reprocess Accounting Data" },
     description: { th: "ประมวลผลการลงสมุดรายวัน ยอดแยกประเภท และงบทดลองใหม่ทั้งหมดจากการบันทึกธุรกรรม", en: "Reprocess general ledger journals, ledger postings and trial balance from source documents" },
     actionLabel: { th: "เริ่มประมวลผลบัญชีใหม่", en: "Start GL Reprocessing" },
     steps: [
@@ -46,7 +46,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/tools/ar-bill-balances",
     code: "ar_bill_balances",
     domain: "ar",
-    title: { th: "คำนวณยอดคงเหลือบิลลูกหนี้ใหม่", en: "Recalculate AR Invoice Balances" },
+    title: { th: "คำนวณยอดคงเหลือของบิลใหม่", en: "Recalculate AR Invoice Balances" },
     description: { th: "ปรับยอดคงเหลือรายบิล (Bill-by-Bill Balance) เพื่อความถูกต้องในการตัดรับชำระ", en: "Reconcile individual invoice outstanding amounts for accurate receipt allocation" },
     actionLabel: { th: "คำนวณยอดบิลลูกหนี้ใหม่", en: "Recompute Bill Balances" },
     steps: [
@@ -71,7 +71,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/tools/ap-bill-balances",
     code: "ap_bill_balances",
     domain: "ap",
-    title: { th: "คำนวณยอดคงเหลือบิลเจ้าหนี้ใหม่", en: "Recalculate AP Bill Balances" },
+    title: { th: "คำนวณยอดคงเหลือของบิลใหม่", en: "Recalculate AP Bill Balances" },
     description: { th: "คำนวณยอดค้างจ่ายรายใบกำกับภาษีซื้อ เพื่อการจ่ายชำระที่แม่นยำ", en: "Recompute outstanding balance for each vendor invoice" },
     actionLabel: { th: "คำนวณยอดบิลเจ้าหนี้ใหม่", en: "Recompute Vendor Bill Balances" },
     steps: [
@@ -83,7 +83,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/tools/cheque-balances",
     code: "cheque_balances",
     domain: "bank",
-    title: { th: "คำนวณยอดคงเหลือเช็คใหม่", en: "Recalculate Cheque Balances" },
+    title: { th: "คำนวณยอดคงเหลือของเช็คใหม่", en: "Recalculate Cheque Balances" },
     description: { th: "ปรับสถานะเช็ครับและเช็คจ่ายในมือ เช็คผ่าน เช็คคืน และเช็คยกเลิก", en: "Synchronize on-hand, cleared, returned, and voided cheque balances" },
     actionLabel: { th: "คำนวณยอดเช็คใหม่", en: "Recalculate Cheques" },
     steps: [
@@ -95,7 +95,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/tools/bank-balances",
     code: "bank_balances",
     domain: "bank",
-    title: { th: "คำนวณยอดสมุดบัญชีธนาคารใหม่", en: "Recalculate Bank Book Balances" },
+    title: { th: "คำนวณยอดคงเหลือของสมุดบัญชีใหม่", en: "Recalculate Bank Book Balances" },
     description: { th: "คำนวณยอดคงเหลือในสมุดบัญชีเงินฝากธนาคารทุกบัญชีจากการโอน ฝาก ถอน", en: "Recalculate ledger balances for all bank accounts from deposits, withdrawals and transfers" },
     actionLabel: { th: "คำนวณยอดสมุดบัญชีใหม่", en: "Recalculate Bank Books" },
     steps: [
@@ -108,7 +108,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/rebuildstockscreen",
     code: "rebuild_stock",
     domain: "inventory",
-    title: { th: "คำนวณข้อมูลสต็อกใหม่ (Rebuild Stock)", en: "Rebuild Stock Data" },
+    title: { th: "คำนวณยอดสินค้าใหม่", en: "Rebuild Stock Data" },
     description: { th: "คำนวณยอดสินค้าคงเหลือและต้นทุนเฉลี่ยใหม่ทั้งหมดจากประวัติเอกสารเข้า-ออก", en: "Reconstruct physical inventory on-hand balances and moving average costs from scratch" },
     actionLabel: { th: "เริ่มคำนวณสต็อกใหม่ทั้งหมด", en: "Start Full Stock Rebuild" },
     steps: [
@@ -122,7 +122,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/auditscreen",
     code: "audit_data",
     domain: "inventory",
-    title: { th: "ตรวจสอบความถูกต้องของข้อมูล (Data Audit)", en: "Data Integrity Audit" },
+    title: { th: "ตรวจข้อมูล", en: "Data Integrity Audit" },
     description: { th: "ตรวจสอบข้อผิดพลาด ยอดติดลบ เอกสารค้าง และความไม่สอดคล้องในระบบ", en: "Scan for anomalies, negative stocks, orphaned documents, and data inconsistencies" },
     actionLabel: { th: "เริ่มตรวจความสมบูรณ์ของระบบ", en: "Run Integrity Audit" },
     steps: [
@@ -135,7 +135,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/rebuildproductsscreen",
     code: "rebuild_products",
     domain: "inventory",
-    title: { th: "สร้างดัชนีรายการสินค้าใหม่", en: "Rebuild Product Indexes" },
+    title: { th: "สร้างรายการสินค้าใหม่", en: "Rebuild Product Indexes" },
     description: { th: "สร้างดัชนีการค้นหา บาร์โค้ด และหน่วยนับของสินค้าใหม่เพื่อความรวดเร็ว", en: "Rebuild search index, barcode catalogs, and packaging units" },
     actionLabel: { th: "สร้างดัชนีสินค้าใหม่", en: "Rebuild Product Index" },
     steps: [
@@ -147,7 +147,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/rebuildproductbalancescreen",
     code: "rebuild_product_balance",
     domain: "inventory",
-    title: { th: "สร้างยอดคงเหลือสินค้าใหม่", en: "Rebuild Product Balances" },
+    title: { th: "สร้างยอดคงเหลือใหม่", en: "Rebuild Product Balances" },
     description: { th: "อัปเดตยอดคงเหลือระดับสินค้าและระดับคลังให้ตรงกับฐานข้อมูลจริง", en: "Synchronize item-level and warehouse-level stock balance snapshots" },
     actionLabel: { th: "สร้างยอดคงเหลือใหม่", en: "Rebuild Balance Snapshots" },
     steps: [
@@ -159,7 +159,7 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     route: "/inventory/daily-sequence",
     code: "inventory_daily_sequence",
     domain: "inventory",
-    title: { th: "กำหนดลำดับรายวันสินค้า", en: "Inventory Daily Sequence" },
+    title: { th: "กำหนดลำดับรายวัน", en: "Inventory Daily Sequence" },
     description: { th: "จัดลำดับเวลาการเกิดเอกสารรับ-จ่ายในแต่ละวัน เพื่อคำนวณต้นทุน FIFO ให้ถูกต้อง", en: "Order daily receipts and issues chronologically for precise FIFO costing" },
     actionLabel: { th: "จัดลำดับเอกสารรายวัน", en: "Sort Daily Transactions" },
     steps: [

@@ -184,10 +184,10 @@ const DOC_PREFIX_TYPES = [
   { code: "SI", label: ["st_tax_invoice_receipt", "ใบกำกับภาษี / ใบเสร็จ"] },
   { code: "ST", label: ["st_credit_note_sales", "ใบลดหนี้ (ขาย)"] },
   { code: "SA", label: ["st_debit_note_sales", "ใบเพิ่มหนี้ (ขาย)"] },
-  { code: "SO", label: ["sale_order", "ใบสั่งขาย"] },
-  { code: "QT", label: ["quotation", "ใบเสนอราคา"] },
+  { code: "SO", label: ["transaction_sale_order", "ใบสั่งขาย/สั่งจองสินค้า"] },
+  { code: "QT", label: ["transaction_quotation", "ใบเสนอราคา"] },
   { code: "PU", label: ["st_goods_receipt_purchase", "ใบรับสินค้า (ซื้อ)"] },
-  { code: "PO", label: ["purchase_order", "ใบสั่งซื้อ"] },
+  { code: "PO", label: ["transaction_purchase_order", "ใบสั่งซื้อสินค้า"] },
   { code: "PT", label: ["st_purchase_return", "ใบรับคืน (ซื้อ)"] },
   { code: "TF", label: ["st_interbranch_stock_transfer", "ใบโอนสินค้าระหว่างสาขา"] },
   { code: "AJ", label: ["st_stock_adjustment", "ใบปรับปรุงสต็อก"] },
@@ -1784,7 +1784,7 @@ export function CompanyBranchTreeView({
                 {formType.includes("branch") && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-foreground">{tr("yeartype", "ประเภทปี")}</label>
+                      <label className="text-sm font-semibold text-foreground">{tr("yeartype", "ปีศักราชที่ใช้")}</label>
                       <select
                         value={formYearType}
                         onChange={(e) => setFormYearType(e.target.value)}

@@ -51,7 +51,7 @@ export const THAI_TAX_CONFIGS: ThaiTaxConfig[] = [
   {
     route: "/report/unreceivedtaxinvoice",
     code: "unreceived_tax_invoice",
-    title: { th: "ค่าใช้จ่ายยังไม่ได้รับใบกำกับภาษี", en: "Unreceived Tax Invoices" },
+    title: { th: "ค่าใช้จ่ายยังไม่ได้รับใบกำกับ", en: "Unreceived Tax Invoices" },
     formType: "vat_buy",
     description: { th: "ทะเบียนติดตามใบกำกับภาษีซื้อที่ยังค้างรับจากคู่ค้า", en: "Pending vendor tax invoices registry" },
     revenueDepartmentFormCode: "TAX-PENDING",
@@ -107,7 +107,7 @@ export const THAI_TAX_CONFIGS: ThaiTaxConfig[] = [
   {
     route: "/report/whtreceived",
     code: "wht_received",
-    title: { th: "ทะเบียนถูกหัก ณ ที่จ่าย", en: "Tax Withheld from Us Register" },
+    title: { th: "รายงานภาษีถูกหัก ณ ที่จ่าย", en: "Tax Withheld from Us Register" },
     formType: "wht_received",
     description: { th: "ทะเบียนเอกสารภาษีที่กิจการถูกลูกค้าหัก ณ ที่จ่ายไว้", en: "Register of withholding tax deducted by customers" },
     revenueDepartmentFormCode: "WHT-RCV",

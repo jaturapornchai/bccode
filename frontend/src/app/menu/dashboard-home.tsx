@@ -33,12 +33,12 @@ import {
 const DOC_WIDGETS: { menuId: string; path: string; th: string; en: string; party: "custnames" | "creditornames" | null }[] = [
   { menuId: "quotation", path: "/transaction/quotation/list", th: "ใบเสนอราคา", en: "Quotations", party: "custnames" },
   { menuId: "sale-order", path: "/transaction/sale-order/list", th: "ใบสั่งขาย", en: "Sale orders", party: "custnames" },
-  { menuId: "sale", path: "/transaction/sale-invoice/list", th: "ขายสินค้า", en: "Sale invoices", party: "custnames" },
-  { menuId: "purchase-requisition", path: "/transaction/purchase-requisition/list", th: "ใบขอซื้อ", en: "Purchase requisitions", party: null },
-  { menuId: "purchase-order", path: "/transaction/purchase-order/list", th: "ใบสั่งซื้อ", en: "Purchase orders", party: "creditornames" },
+  { menuId: "sale", path: "/transaction/sale-invoice/list", th: "ใบขายสินค้า", en: "Sale invoices", party: "custnames" },
+  { menuId: "purchase-requisition", path: "/transaction/purchase-requisition/list", th: "ใบเสนอซื้อ", en: "Purchase requisitions", party: null },
+  { menuId: "purchase-order", path: "/transaction/purchase-order/list", th: "ใบสั่งซื้อสินค้า", en: "Purchase orders", party: "creditornames" },
   { menuId: "purchase", path: "/transaction/purchase/list", th: "ซื้อสินค้า", en: "Purchases", party: "creditornames" },
   { menuId: "stock-transfer", path: "/transaction/stock-transfer/list", th: "โอนสินค้า", en: "Stock transfers", party: null },
-  { menuId: "stock-adjust", path: "/transaction/stock-adjustment/list", th: "ปรับปรุงสต็อก", en: "Stock adjustments", party: null },
+  { menuId: "stock-adjust", path: "/transaction/stock-adjustment/list", th: "ปรับปรุงสินค้า", en: "Stock adjustments", party: null },
 ];
 
 type DocRecord = Record<string, unknown>;

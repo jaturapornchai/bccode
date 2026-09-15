@@ -116,7 +116,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     if (action === "post") { const problem = validateJournal(journal, year, refs.accounts, tr); if (problem) { setError(problem); return; } }
     if (action !== "post" && !reason.trim()) { setError(tr("gl_enter_reason_before_posting", "กรุณาระบุเหตุผลก่อนทำรายการ")); return; }
     if (action === "reverse" && (!reverseDate || !reverseDocno.trim())) { setError(tr("gl_enter_date_and_reversal_doc_no", "กรุณาระบุวันที่และเลขที่ใบกลับรายการ")); return; }
-    const label = action === "post" ? tr("gl_post_accounting_entry", "ผ่านรายการบัญชี") : action === "reverse" ? tr("gl_create_reversing_entry", "สร้างรายการกลับบัญชี") : tr("gl_delete_draft", "ลบฉบับร่าง");
+    const label = action === "post" ? tr("gl_post_accounting_entry", "ผ่านรายการ") : action === "reverse" ? tr("gl_create_reversing_entry", "สร้างรายการกลับบัญชี") : tr("gl_delete_draft", "ลบฉบับร่าง");
     if (!await confirm({ title: `${label}?`, description: action === "post" ? tr("gl_after_posting_edit_requires_reversal", "หลังผ่านรายการจะไม่สามารถแก้ไขหรือลบได้ การแก้ไขต้องสร้างรายการกลับบัญชีพร้อมเหตุผล") : action === "reverse" ? tr("gl_create_reversal_doc", "สร้างเอกสาร {0} วันที่ {1} กลับเดบิตและเครดิตของ {2} โดยเก็บรายการเดิมไว้").replace("{0}", String(reverseDocno)).replace("{1}", String(reverseDate)).replace("{2}", String(journal.docno)) : tr("gl_delete_draft_keep_history", "ลบฉบับร่าง {0} พร้อมเก็บประวัติ").replace("{0}", String(journal.docno)), details: tr("gl_debit_credit", "เดบิต {0} · เครดิต {1}").replace("{0}", String(totals ? formatAmount(amountString(totals.debit), year?.scale) : "—")).replace("{1}", String(totals ? formatAmount(amountString(totals.credit), year?.scale) : "—")), confirmLabel: label, tone: action === "delete" ? "danger" : "warning" })) return;
     try {
       await execute({ resource: "journals", action, id: journal.id, version: journal.version, reason, ...(action === "reverse" ? { date: reverseDate, docno: reverseDocno } : {}) });
@@ -391,7 +391,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                   </fieldset>
                   <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3" aria-live="polite">
-                    {([ [tr("gl_total_debit", "เดบิตรวม"), totals?.debit], [tr("gl_total_credit", "เครดิตรวม"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
+                    {([ [tr("gl_total_debit", "รวมเดบิต"), totals?.debit], [tr("gl_total_credit", "รวมเครดิต"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
                       <div key={label}>
                         <div className="text-[0.9rem] text-muted-foreground">{label}</div>
                         <strong className="text-lg tabular-nums">{units === undefined ? tr("gl_verify_amount", "ตรวจจำนวนเงิน") : formatAmount(amountString(units), year?.scale)}</strong>
@@ -431,7 +431,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         disabled={busy}
                         onClick={() => void act("post")}
                       >
-                        {tr("gl_post_accounting_entry", "ผ่านรายการบัญชี")}
+                        {tr("gl_post_accounting_entry", "ผ่านรายการ")}
                       </Button>
                     )}
                     {journal.status === "posted" && (
@@ -557,7 +557,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </Button>
                   </fieldset>
                   <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3" aria-live="polite">
-                    {([ [tr("gl_total_debit", "เดบิตรวม"), totals?.debit], [tr("gl_total_credit", "เครดิตรวม"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
+                    {([ [tr("gl_total_debit", "รวมเดบิต"), totals?.debit], [tr("gl_total_credit", "รวมเครดิต"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
                       <div key={label}>
                         <div className="text-[0.9rem] text-muted-foreground">{label}</div>
                         <strong className="text-lg tabular-nums">{units === undefined ? tr("gl_verify_amount", "ตรวจจำนวนเงิน") : formatAmount(amountString(units), year?.scale)}</strong>

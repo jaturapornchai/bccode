@@ -717,10 +717,10 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                           <th className="p-2 w-10 text-center">#</th>
                           <th className="p-2 min-w-[140px]">{language === "en" ? "Item Code / Barcode" : "รหัสสินค้า / บาร์โค้ด"}</th>
                           <th className="p-2 min-w-[200px]">{language === "en" ? "Item Name" : "ชื่อสินค้า"}</th>
-                          <th className="p-2 w-20 text-center">{language === "en" ? "Unit" : "หน่วย"}</th>
+                          <th className="p-2 w-20 text-center">{language === "en" ? "Unit" : "หน่วยนับ"}</th>
                           <th className="p-2 w-24 text-right">{language === "en" ? "Qty" : "จำนวน"}</th>
                           <th className="p-2 w-28 text-right">{language === "en" ? "Price" : "ราคา"}</th>
-                          <th className="p-2 w-28 text-right">{language === "en" ? "Total" : "รวมเงิน"}</th>
+                          <th className="p-2 w-28 text-right">{language === "en" ? "Total" : "จำนวนเงิน"}</th>
                           <th className="p-2 w-12 text-center"></th>
                         </tr>
                       </thead>
@@ -906,10 +906,10 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                           <th className="p-2 w-10 text-center">#</th>
                           <th className="p-2">{language === "en" ? "Item Code" : "รหัสสินค้า"}</th>
                           <th className="p-2">{language === "en" ? "Name" : "ชื่อสินค้า"}</th>
-                          <th className="p-2 w-20 text-center">{language === "en" ? "Unit" : "หน่วย"}</th>
+                          <th className="p-2 w-20 text-center">{language === "en" ? "Unit" : "หน่วยนับ"}</th>
                           <th className="p-2 w-24 text-right">{language === "en" ? "Qty" : "จำนวน"}</th>
                           <th className="p-2 w-28 text-right">{language === "en" ? "Price" : "ราคา"}</th>
-                          <th className="p-2 w-28 text-right">{language === "en" ? "Total" : "รวมเงิน"}</th>
+                          <th className="p-2 w-28 text-right">{language === "en" ? "Total" : "จำนวนเงิน"}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/40">
