@@ -45,7 +45,7 @@ func (r reportContext) forecastCTE() string {
 
 func (r reportContext) cashFlowForecast(ctx context.Context) (Report, error) {
 	cte := r.forecastCTE() + `, result AS (SELECT id,code,name,date::text,direction,(CASE WHEN direction='in' THEN amount ELSE 0 END)::text AS receipts,(CASE WHEN direction='out' THEN amount ELSE 0 END)::text AS payments,(CASE WHEN direction='in' THEN amount ELSE -amount END)::text AS net,((SELECT amount FROM opening)+SUM(CASE WHEN direction='in' THEN amount ELSE -amount END) OVER(ORDER BY date,code,id ROWS UNBOUNDED PRECEDING))::text AS balance FROM plans)`
-	result, err := r.run(ctx, cte, "date,code,id", []ReportColumn{textColumn("date", "วันที่คาดการณ์"), textColumn("code", "รหัสแผน"), textColumn("name", "รายการ"), textColumn("direction", "ทิศทาง"), amountColumn("receipts", "คาดว่าจะรับ"), amountColumn("payments", "คาดว่าจะจ่าย"), amountColumn("net", "สุทธิ"), amountColumn("balance", "เงินสดคาดการณ์")}, []string{"receipts", "payments", "net"})
+	result, err := r.run(ctx, cte, "date,code", []ReportColumn{textColumn("date", "วันที่คาดการณ์"), textColumn("code", "รหัสแผน"), textColumn("name", "รายการ"), textColumn("direction", "ทิศทาง"), amountColumn("receipts", "คาดว่าจะรับ"), amountColumn("payments", "คาดว่าจะจ่าย"), amountColumn("net", "สุทธิ"), amountColumn("balance", "เงินสดคาดการณ์")}, []string{"receipts", "payments", "net"})
 	if err != nil {
 		return result, err
 	}

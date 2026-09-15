@@ -7,6 +7,30 @@
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
+### 2026-09-15 — ทดสอบวงจรบัญชีครบวงจรแบบสำนักงานบัญชีไทย ตรวจสอบฐานข้อมูล MongoDB/PostgreSQL และเทียบเคียงต้นแบบ D:\project-champ
+
+- [Test] เพิ่มชุดการทดสอบวงจรบัญชีครบวงจรแบบสำนักงานบัญชีไทย (Thai CPA / Accounting Firm Full Cycle E2E Test) ใน `frontend/src/lib/thai-accounting-firm-cycle.test.ts` ครอบคลุม 7 ขั้นตอนหลัก:
+  1. Phase 1: กำหนดรอบปีบัญชี (Fiscal Year 2569)
+  2. Phase 2: ผังบัญชีมาตรฐานไทย 5 หมวด (Assets, Liabilities, Equity, Revenue, Expenses) รองรับ CRUD, Tree View, Parent-Child และ AllowPosting Guard
+  3. Phase 3: บันทึกยอดยกมาต้นงวด (Opening Balance) เดบิต = เครดิต 1,000,000.00 บาท ดุลสมบูรณ์
+  4. Phase 4: บันทึกสมุดรายวันเฉพาะ 5 เล่มตามมาตรฐานไทย (SV ซื้อเชื่อ + ภาษีซื้อ 7%, UV ขายเชื่อ + ภาษีขาย 7%, PV จ่ายชำระเจ้าหนี้ + ค่าเช่าหัก ณ ที่จ่าย 3%, RV รับชำระหนี้จากลูกหนี้การค้า, JV ตัดต้นทุนขาย COGS แบบ Perpetual)
+  5. Phase 5: ประมวลผลงบทดลอง (Trial Balance) ผลรวมเดบิต 1,849,000.00 = เครดิต 1,849,000.00 บาท (ผลต่าง 0.00 บาท)
+  6. Phase 6: ประมวลผลงบกำไรขาดทุน (P&L) รายได้ 250,000 - ต้นทุน 80,000 = กำไรขั้นต้น 170,000 - ค่าเช่า 20,000 = กำไรสุทธิ 150,000.00 บาท
+  7. Phase 7: พิสูจน์สมการบัญชีในงบแสดงฐานะการเงิน (Balance Sheet Equation Proof): สินทรัพย์ 1,168,100.00 = หนี้สิน 18,100.00 + ทุนและกำไรสะสม 1,150,000.00 บาท (ดุล 100% ผลต่าง 0.00 บาท)
+- [Database Audit] ตรวจสอบฐานข้อมูลจริง (MongoDB `appdb` + PostgreSQL `demo`):
+  1. MongoDB: ตรวจสอบ `chart_of_accounts` ครบ 5 หมวด (41 รายการ), `gl_journals` ครบ 5 สมุดรายวัน (JV 5, SV 4, UV 3, RV 2, PV 4 รวม 18 ฉบับ), `gl_events` Outbox Event Sourcing
+  2. PostgreSQL: ตรวจสอบ `gl_records` (95 แถว ครบ 8 kinds), `gl_lines` (77 รายการ รวมเดบิต 1,953,100.00 = เครดิต 1,953,100.00 ผลต่าง 0.00000000 ดุลสมบูรณ์), `gl_projection_state` (sequence 115 ตรงกับ events)
+- [Backend Fix] แก้ไขรายงานทางการเงินใน `reports.go` และ `reports_operations.go`:
+  1. ปรับ ORDER BY ใน `ledger` และ `cashflowforecast` ให้เรียงตามคอลัมน์ที่แสดงในรายงานจริง
+  2. แปลง SQL `SUM(x FILTER(WHERE y))` ใน `profitLoss` และ `balanceSheet` เป็นมาตรฐาน `SUM(CASE WHEN y THEN x ELSE 0 END)` ขจัดปัญหา syntax error
+  3. Integration Test ทั้งหมดของ `generalledger` (15 รายงาน, Account CRUD, 8 Decimal, Lifecycle, Year-End, Outbox) ผ่าน 100%
+- [Blueprint Study] วิเคราะห์เปรียบเทียบสเต็ปการทำงาน, การประมวลผล, คิวรี และรายงานจากต้นแบบ `D:\project-champ`:
+  1. การประมวลผล GL (`gltlsprocess.cpp`, `glautoprocess.cpp`): ศึกษาไปป์ไลน์การโอนรายการจากเอกสารซื้อ/ขาย/การเงิน/เช็คลงสมุดรายวัน, การจำลองการลงบัญชี (Simulate Mode vs Real Mode), การปัดเศษ (Rounding Adjustment)
+  2. รายงานทางการเงิน (`GLRepTrialBalanceView.cpp`, `GLRepWorkingPaperView.cpp`): ศึกษาสูตรคิวรีงบทดลอง มิติข้อมูล (Allocate, Branch, Depart, Job, Part, Project, Side) และกระดาษทำการ 8 ช่อง
+  3. การปิดงวดบัญชี (`glfrmcloseperiod.cpp`): ตรวจสอบการโอนปิดหมวด 4-5 เข้าบัญชีกำไรขาดทุนและกำไรสะสม (หมวด 3) พร้อมบันทึกประวัติการปิดงวด (Audit History)
+- ไฟล์: `frontend/src/lib/thai-accounting-firm-cycle.test.ts`, `backend/internal/generalledger/reports.go`, `backend/internal/generalledger/reports_operations.go`, `README.md`
+- ผลการทดสอบ: Vitest GL ทั้งหมด 80/80 ผ่าน 100%, Backend Go Integration Test ผ่าน 100%, Backend Go build ผ่าน 100%
+
 ### 2026-09-15 — ทดสอบระบบบัญชีและปันส่วนต้นทุนตามมาตรฐานนักบัญชีและสำนักงานบัญชี
 
 - [Test] เพิ่มชุดการทดสอบการตรวจสอบบัญชี (Audit & Accountant Test Suite) สำหรับโมดูลปันส่วนต้นทุน (`gl-allocations`):

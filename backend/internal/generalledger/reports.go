@@ -286,7 +286,7 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
       SELECT m.account_code AS accountcode,m.account_name AS accountname,m.entry_date::text AS date,m.doc_no AS docno,m.book_code AS bookcode,m.branch_code AS branchcode,m.department_code AS departmentcode,m.project_code AS projectcode,m.description,
       m.debit::text,m.credit::text,COALESCE(o.opening,0)::text AS opening,(COALESCE(o.opening,0)+SUM(m.debit-m.credit) OVER(PARTITION BY m.account_code ORDER BY m.entry_date,m.doc_no,m.journal_id,m.line_no ROWS UNBOUNDED PRECEDING))::text AS balance,m.journal_id,m.line_no FROM movements m LEFT JOIN openings o USING(account_code))`
 	cols := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("date", "วันที่"), textColumn("docno", "เลขที่เอกสาร"), textColumn("bookcode", "สมุดรายวัน"), textColumn("branchcode", "สาขา"), textColumn("departmentcode", "แผนก"), textColumn("projectcode", "โครงการ"), textColumn("description", "รายละเอียด"), amountColumn("opening", "ยอดยกมา"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "ยอดคงเหลือ")}
-	result, err := r.run(ctx, cte, "accountcode,date,docno,journal_id,line_no", cols, []string{"debit", "credit"})
+	result, err := r.run(ctx, cte, "accountcode,date,docno", cols, []string{"debit", "credit"})
 	if err != nil {
 		return result, err
 	}
@@ -302,8 +302,8 @@ func (r reportContext) profitLoss(ctx context.Context) (Report, error) {
 	totals := []reportTotal{
 		{key: "debit", expr: "debit::numeric"},
 		{key: "credit", expr: "credit::numeric"},
-		{key: "revenue", expr: "(-balance::numeric) FILTER(WHERE accounttype='income')"},
-		{key: "expense", expr: "balance::numeric FILTER(WHERE accounttype='expense')"},
+		{key: "revenue", expr: "CASE WHEN accounttype='income' THEN -balance::numeric ELSE 0 END"},
+		{key: "expense", expr: "CASE WHEN accounttype='expense' THEN balance::numeric ELSE 0 END"},
 		{key: "profit", expr: "-balance::numeric"},
 	}
 	columns := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("accounttype", "หมวดบัญชี"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "สุทธิเดบิตลบเครดิต"), amountColumn("amount", "จำนวนเงิน")}
@@ -316,10 +316,10 @@ func (r reportContext) balanceSheet(ctx context.Context) (Report, error) {
       UNION ALL SELECT '__current_earnings__','กำไรขาดทุนที่ยังไม่ปิดเข้ากำไรสะสม','equity',COALESCE(SUM(-balance),0) FROM balances WHERE account_type IN ('income','expense')
     ), result AS (SELECT accountcode,accountname,accounttype,amount::text FROM statements)`
 	totals := []reportTotal{
-		{key: "assets", expr: "amount::numeric FILTER(WHERE accounttype='asset')"},
-		{key: "liabilities", expr: "amount::numeric FILTER(WHERE accounttype='liability')"},
-		{key: "equity", expr: "amount::numeric FILTER(WHERE accounttype='equity')"},
-		{key: "currentearnings", expr: "amount::numeric FILTER(WHERE accountcode='__current_earnings__')"},
+		{key: "assets", expr: "CASE WHEN accounttype='asset' THEN amount::numeric ELSE 0 END"},
+		{key: "liabilities", expr: "CASE WHEN accounttype='liability' THEN amount::numeric ELSE 0 END"},
+		{key: "equity", expr: "CASE WHEN accounttype='equity' THEN amount::numeric ELSE 0 END"},
+		{key: "currentearnings", expr: "CASE WHEN accountcode='__current_earnings__' THEN amount::numeric ELSE 0 END"},
 		{key: "difference", expr: "CASE WHEN accounttype='asset' THEN amount::numeric ELSE -amount::numeric END"},
 	}
 	columns := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("accounttype", "หมวดบัญชี"), amountColumn("amount", "ยอดคงเหลือ")}
