@@ -20,7 +20,7 @@ describe("menu screen availability", () => {
     expect(isMenuScreenPending("/banking/cheques/deposit")).toBe(true);
     expect(isMenuScreenPending("/productserialregistry")).toBe(true);
     expect(isMenuScreenPending("/promotionscreen")).toBe(false);
-    expect(isMenuScreenPending("/transaction/saleorder")).toBe(true);
+    expect(isMenuScreenPending("/transaction/saleorder")).toBe(false);
     expect(isMenuScreenPending("/product")).toBe(false);
     expect(isMenuScreenPending("/useraccessaudit")).toBe(false);
     expect(isMenuScreenPending("/bookbankscreen")).toBe(false);

@@ -1,5 +1,6 @@
 import { getSystemSettingConfig } from "./system-setting-screens";
 import { isGeneralLedgerRoute } from "./general-ledger";
+import { isErpTransactionRoute } from "./erp-transaction";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
@@ -27,5 +28,12 @@ const pendingRoutes = new Set(["/productserialregistry", "/gl/reprocess", "/repo
 
 /** A connected screen is not a guarantee that its business workflow is complete. */
 export function isMenuScreenPending(route: string): boolean {
-  return pendingRoutes.has(route) || (!customRoutes.has(route) && !isGeneralLedgerRoute(route) && !isFixedAssetRoute(route) && !getSystemSettingConfig(route));
+  return (
+    pendingRoutes.has(route) ||
+    (!customRoutes.has(route) &&
+      !isGeneralLedgerRoute(route) &&
+      !isFixedAssetRoute(route) &&
+      !isErpTransactionRoute(route) &&
+      !getSystemSettingConfig(route))
+  );
 }

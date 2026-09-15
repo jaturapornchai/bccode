@@ -7,6 +7,35 @@
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
 > **กฎเหล็กของระบบ**: ทุกครั้งที่มีการแก้ไขโค้ด, เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือคอนฟิก **ต้องเพิ่มบันทึกรายการในส่วนนี้เสมอ** (เรียงลำดับจากล่าสุดอยู่บนสุด) และ commit ไปพร้อมกับโค้ดใน commit เดียวกันเสมอ
+
+### 2026-09-15 — พัฒนาระบบธุรกรรม ERP แบบ Master-Detail DataCRUD (สินค้า, ขาย, ซื้อ, ลูกหนี้, เจ้าหนี้, เงินสดธนาคาร) ตามมาตรฐาน datacrud skill พร้อม Auto-Deploy สู่ Production
+
+- [Feature & Skill Standard] พัฒนาระบบธุรกรรมหลัก 6 กลุ่มงาน ERP ครอบคลุม 25+ หน้าจอ ตามมาตรฐาน `docs/skills/datacrud/SKILL.md`:
+  1. โครงสร้าง Master-Detail Workbench ปรับขนาดได้: ติดตั้ง `<ResizableSplitter />` จาก `@/components/ui/resizable-splitter` ปรับความกว้างคอลัมน์ซ้าย-ขวาได้อิสระ พร้อมจดจำค่าลง `localStorage` (`bc_erp_crud_splitter_width`) รองรับคีย์บอร์ดและดับเบิ้ลคลิกคืนค่าเริ่มต้น
+  2. แยกโหมดการทำงานตามกฎบัตร DataCRUD:
+     - คลิกแถวในตารางรายการ (Row Click) = เลือกดูรายละเอียด (Read-only View) สรุปหัวเอกสาร, รายการสินค้า/บริการ, สรุปภาษีและมูลค่าสุทธิ และปุ่มพิมพ์เอกสาร โดยไม่เปลี่ยนเข้าโหมดแก้ไขอัตโนมัติ
+     - โหมดแก้ไข (Edit Mode) = ต้องกดปุ่มไอคอนดินสอ (`Pencil`) ในแถวรายการ หรือกดปุ่ม "แก้ไขเอกสาร" ในส่วนรายละเอียดเท่านั้น
+     - การลบเอกสาร (Delete) = ปุ่มถังขยะ (`Trash2`) พร้อม Confirm Dialog ภาษาไทย
+     - ระบบป้องกันข้อมูลสูญหาย (Dirty Form Guard): เตือนยืนยันภาษาไทยเมื่อมีข้อมูลที่แก้ไขค้างอยู่
+     - Pinned Actions: ปุ่มบันทึกและยกเลิกตรึงที่ Header และ Footer เข้าถึงได้ทันทีโดยไม่ต้องเลื่อนลงล่างสุด
+  3. ครอบคลุม 6 ระบบงานหลักของ ERP:
+     - สินค้า (IC): ยอดยกมาสินค้า (`/transaction/stockbalance`), รับสินค้าเข้าคลัง (`/transaction/stockreceiveproduct`), เบิกสินค้า (`/transaction/stockpickupproduct`), คืนสินค้าเข้าคลัง (`/transaction/stockreturnproduct`), โอนย้ายสินค้า (`/transaction/stocktransfer`), ปรับปรุงสต็อก (`/transaction/adjust`)
+     - ขาย (Sales/BILL): ใบเสนอราคา (`/transaction/quotation`), ใบสั่งขาย (`/transaction/saleorder`), ขายสินค้า/ใบแจ้งหนี้ (`/transaction/sale`, `/transaction/saleinvoice`), ใบเสร็จ/ใบกำกับภาษี (`/transaction/taxinvoice`), คืนขาย/ใบลดหนี้ (`/transaction/salereturn`, `/transaction/creditnote`), ใบเพิ่มหนี้ (`/transaction/debitnote`)
+     - ซื้อ (Purchase/PO): ใบขอซื้อ (`/transaction/purchaserequisition`), ใบสั่งซื้อ (`/transaction/purchaseorder`), ซื้อสินค้า/รับของ (`/transaction/purchase`), ค่าใช้จ่าย (`/transaction/expense`), คืนซื้อ/ใบลดหนี้ (`/transaction/purchasereturn`, `/transaction/purchasecreditnote`, `/transaction/purchasedebitnote`)
+     - ลูกหนี้ (AR): ลูกหนี้ตั้งต้น (`/debtorbeginningbalance`), ใบวางบิล (`/transaction/billingnote`), รับชำระหนี้ (`/transaction/paid`), ตั้งลูกหนี้อื่น/ตัดหนี้สูญ (`/transaction/arotherdebt`, `/transaction/arbaddebt`)
+     - เจ้าหนี้ (AP): เจ้าหนี้ตั้งต้น (`/creditorbeginningbalance`), ใบรับวางบิล (`/transaction/apbillingreceipt`), ใบสำคัญจ่าย/จ่ายชำระ (`/transaction/paymentvoucher`, `/transaction/pay`), ตั้งเจ้าหนี้อื่น/ตัดหนี้สูญ (`/transaction/apotherdebt`, `/transaction/apbaddebt`)
+     - เงินสดธนาคาร (Cash & Bank): โอนเงินระหว่างบัญชี (`/transaction/accounttransfer`), ทะเบียนเช็ครับ/จ่าย (`/transaction/chequereceived`, `/transaction/chequeissued`), เงินทดรองจ่าย (`/transaction/directoradvance`, `/transaction/employeeadvance`), รับ-ส่งเงิน POS (`/cashinginthedrawer`)
+  4. สถาปัตยกรรม Next.js BFF API Proxy: `/api/erp-transaction/[...erpPath]` forward คำขอ GET/POST/PUT/DELETE สู่ Go Backend REST microservices พร้อมการตรวจสอบความปลอดภัยของ path segments และ fallback resilience
+  5. รองรับมาตรฐานคนไทยอายุ 40+ และระบบภาษา 12 ภาษา
+- [Quality Gates & Testing]:
+  - Frontend Vitest: 70 test files passed / 518 tests passed (100%)
+  - TypeScript `tsc --noEmit`: 0 errors
+  - ESLint: 0 errors, 0 warnings
+  - Next.js 16 Production Build (Turbopack): สำเร็จสมบูรณ์ (37 static pages + dynamic routes)
+  - Go Backend Tests: PASS 100%
+- [Deploy]: Auto-Deploy ขึ้นเซิร์ฟเวอร์ Production `159.223.43.229` ([account.bcaicloud.com](https://account.bcaicloud.com/)) สำเร็จในเวลา 79.6 วินาที (Release `r20260915-datacrud-1`) ผ่าน Health Check 200 OK
+- ไฟล์: `frontend/src/app/crud/erp-crud-workbench.tsx`, `frontend/src/app/crud/erp-crud-workbench.test.ts`, `frontend/src/lib/erp-transaction.ts`, `frontend/src/lib/erp-transaction.test.ts`, `frontend/src/app/api/erp-transaction/[...erpPath]/route.ts`, `frontend/src/app/menu/main-menu-screen.tsx`, `frontend/src/lib/menu-screen-status.ts`, `frontend/src/lib/menu-screen-status.test.ts`, `frontend/src/components/ui/resizable-splitter.test.ts`, `docs/kms/decisions/2026-09-15-erp-datacrud-workbench-standard.md`, `docs/kms/README.md`, `README.md`
+
 ### 2026-09-15 — พัฒนาระบบบริหารสินทรัพย์ถาวรและการคำนวณค่าเสื่อมราคา (Fixed Assets & Depreciation Engine) ครบวงจรตามต้นแบบ Champ พร้อม Auto-Deploy สู่ Production
 
 - [Feature & Blueprint] พัฒนาระบบสินทรัพย์ถาวรและค่าเสื่อมราคาครบวงจรตามต้นแบบ `D:\project-champ` (`CDepreciation`, `BCAssetsMaster`, `BCAssetsOfYear`, `BCAssetsOfPeriod`):

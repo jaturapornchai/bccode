@@ -125,6 +125,8 @@ import { isMenuScreenPending, isFixedAssetRoute } from "@/lib/menu-screen-status
 import { isGeneralLedgerRoute } from "@/lib/general-ledger";
 import { GeneralLedgerScreen } from "@/app/gl/general-ledger-screen";
 import { FixedAssetsScreen } from "@/app/asset/fixed-assets-screen";
+import { isErpTransactionRoute } from "@/lib/erp-transaction";
+import { ErpCrudWorkbench } from "@/app/crud/erp-crud-workbench";
 import { MenuDataTable } from "./menu-data-table";
 import { DashboardHome } from "./dashboard-home";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
@@ -2864,6 +2866,10 @@ function WorkTabPanel({
 
   if (isFixedAssetRoute(activeTab.route)) {
     return <FixedAssetsScreen embedded language={language} route={activeTab.route} />;
+  }
+
+  if (isErpTransactionRoute(activeTab.route)) {
+    return <ErpCrudWorkbench embedded language={language} route={activeTab.route} />;
   }
 
   const systemSettingConfig = getSystemSettingConfig(activeTab.route);

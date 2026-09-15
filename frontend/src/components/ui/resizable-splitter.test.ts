@@ -47,6 +47,11 @@ const shortcutsSource = readFileSync(
   "utf8",
 );
 
+const erpCrudSource = readFileSync(
+  fileURLToPath(new URL("../../app/crud/erp-crud-workbench.tsx", import.meta.url)),
+  "utf8",
+);
+
 describe("ResizableSplitter component & usage", () => {
   it("defines the standard floating pill with GripVertical icon and responsive breakpoints", () => {
     expect(splitterSource).toContain("GripVertical");
@@ -135,6 +140,11 @@ describe("ResizableSplitter component & usage", () => {
     expect(shortcutsSource).toContain("adjustSplitWithKeyboard");
   });
 
+  it("is adopted by erp-crud-workbench", () => {
+    expect(erpCrudSource).toContain("<ResizableSplitter");
+    expect(erpCrudSource).toContain("bc_erp_crud_splitter_width");
+  });
+
   it("exports useSplitPercent and is adopted across screens", () => {
     expect(splitterSource).toContain("useSplitPercent");
     expect(shortcutsSource).toContain("useSplitPercent");
@@ -143,6 +153,7 @@ describe("ResizableSplitter component & usage", () => {
     expect(companyBranchSource).toContain("useSplitPercent");
     expect(settingSource).toContain("useSplitPercent");
     expect(productSource).toContain("useSplitPercent");
+    expect(erpCrudSource).toContain("useSplitPercent");
   });
 });
 
