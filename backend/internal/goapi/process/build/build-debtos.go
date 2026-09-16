@@ -27,18 +27,18 @@ func processInsertDebtorList(db *sql.DB, data *[]models.ProcessMongoDebtorModel)
 
 	columns := []string{
 		"holding_code",
-		"guid_fixed",
+		"guidfixed",
 		"code",
 		"names",
-		"tax_id",
-		"personal_type",
-		"customer_type",
-		"branch_number",
-		"fund_code",
+		"taxid",
+		"personaltype",
+		"customertype",
+		"branchnumber",
+		"fundcode",
 		"creditday",
 		"email",
-		"phone_primary",
-		"phone_secondary",
+		"phoneprimary",
+		"phonesecondary",
 		"addressforbilling",
 	}
 
@@ -66,10 +66,12 @@ func processInsertDebtorList(db *sql.DB, data *[]models.ProcessMongoDebtorModel)
 			if b, err := json.Marshal(item.AddressBilling); err == nil {
 				addrJSON = string(b)
 			}
-			if v, ok := item.AddressBilling["phone_primary"].(string); ok {
+			// Mongo stores the phones as phoneprimary/phonesecondary (see debtor models);
+			// the old phone_primary lookup never matched, so the rebuild dropped every phone.
+			if v, ok := item.AddressBilling["phoneprimary"].(string); ok {
 				phonePrimary = v
 			}
-			if v, ok := item.AddressBilling["phone_secondary"].(string); ok {
+			if v, ok := item.AddressBilling["phonesecondary"].(string); ok {
 				phoneSecondary = v
 			}
 		}
@@ -258,10 +260,10 @@ func RebuildClickHouseDebtor(holdingCode string, debtors *[]models.ProcessMongoD
 
 		phonePrimary, phoneSecondary, address := "", "", ""
 		if item.AddressBilling != nil {
-			if v, ok := item.AddressBilling["phone_primary"].(string); ok {
+			if v, ok := item.AddressBilling["phoneprimary"].(string); ok {
 				phonePrimary = v
 			}
-			if v, ok := item.AddressBilling["phone_secondary"].(string); ok {
+			if v, ok := item.AddressBilling["phonesecondary"].(string); ok {
 				phoneSecondary = v
 			}
 			if addrList, ok := item.AddressBilling["address"].([]interface{}); ok && len(addrList) > 0 {

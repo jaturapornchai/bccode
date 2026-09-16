@@ -38,7 +38,7 @@ accounts_payable	เจ้าหนี้การค้า	Accounts Payable	应
 accounts_receivable	ลูกหนี้การค้า	Accounts Receivable	应收账款	売掛金	គណនីត្រូវទទួល	매출채권	ລູກໜີ້ການຄ້າ	ရရန်ရှိသောစာရင်း	Phải thu khách hàng	Akaun Belum Terima	Piutang Usaha	Mga Tatanggaping Utang
 accrual_receive	บันทึกตั้งหนี้จากการซื้อ	Accrual Receive	应收款项	未収金受取	ការទទួលបង្គរ	미수금 수령	ການຮັບສະສົມ	စုဆောင်းငွေလက်ခံ	Nhận dồn tích	Terimaan Akruan	Terima Akrual	Natanggap na Akrual
 acctive_ac	ผังบัญชีที่ี่ไม่เคลื่อนไหว	Inactive Chart of Accounts	非活动会计科目表	非アクティブな勘定科目表	តារាងគណនីអសកម្ម	비활성 계정 차트	ຜັງບັນຊີທີ່ບໍ່ເຄື່ອນໄຫວ	မလှုပ်ရှားသော အကောင့်ဇယား	Hệ thống tài khoản không hoạt động	Inactive Chart of Accounts	Inactive Chart of Accounts	Inactive Chart of Accounts
-action	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton
+action	การดำเนินการ	Action	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton	Acton
 action_code	รหัสหน้าจอ	Screen Code	屏幕代码	画面コード	កូដអេក្រង់	화면 코드	ລະຫັດໜ້າຈໍ	မျက်နှာပြင်ကုဒ်	Mã màn hình	Screen Code	Screen Code	Screen Code
 action_history	ประวัติการดำเนินการ	Action History	操作历史	アクション履歴	ប្រវត្តិសកម្មភាព	작업 이력	ປະຫວັດການດຳເນີນການ	လုပ်ဆောင်ချက်မှတ်တမ်း	Lịch sử hành động	Action History	Action History	Action History
 activate	เปิดใช้งาน	Activate	启用	有効化	បើក	활성화	ເປີດໃຊ້	ဖွင့်ပါ	Kích hoạt	Activate	Activate	Activate
@@ -51,7 +51,6 @@ active_pin	ยีนยัน	Confirm	确认	確認	បញ្ជាក់	확인
 active_pin_success	ยีนยันสำเร็จ	Confirm Success	确认成功	確認成功	ការបញ្ជាក់ជោគជ័យ	확인 성공	ຢືນຢັນສຳເລັດ	အတည်ပြုမှု အောင်မြင်သည်	Xác nhận thành công	Confirm Success	Confirm Success	Confirm Success
 active_status	สถานะใช้งาน	Active Status	启用状态	有効ステータス	ស្ថានភាពសកម្ម	활성 상태	ສະຖານະໃຊ້ງານ	အသုံးပြုနေသော အခြေအနေ	Trạng thái hoạt động	Status Aktif	Status Aktif	Aktibong Katayuan
 add	เพิ่ม	Add	添加	追加	បន្ថែម	추가	ເພີ່ມ	ထည့်	Thêm	Tambah	Tambah	Idagdag
-add 	เพิ่ม	Add	添加	追加	បន្ថែម	추가	ເພີ່ມ	ထည့်	Thêm	Add	Add	Add
 add_addon_option	เพิ่มตัวเลือกเสริม	Add Add-on Option	添加附加选项	追加オプションを追加	បន្ថែមជម្រើសបន្ថែម	추가 옵션 추가	ເພີ່ມຕົວເລືອກເສີມ	ထပ်တိုးရွေးချယ်မှုထည့်ပါ	Thêm tùy chọn bổ sung	Add Add-on Option	Add Add-on Option	Add Add-on Option
 add_address_shipping	เพิ่มที่อยู่ส่งสินค้า	Add Shipping Address	添加送货地址	配送先住所を追加	បន្ថែមអាសយដ្ឋានដឹកជញ្ជូន	배송 주소 추가	ເພີ່ມທີ່ຢູ່ຈັດສົ່ງ	ပို့ဆောင်ရန်လိပ်စာထည့်ပါ	Thêm địa chỉ giao hàng	Add Shipping Address	Add Shipping Address	Add Shipping Address
 add_all	เพิ่มทั้งหมด	Add All	添加全部	すべて追加	បន្ថែមទាំងអស់	모두 추가	ເພີ່ມທັງໝົດ	အားလုံးထည့်ရန်	Thêm tất cả	Tambah Semua	Tambah Semua	Idagdag Lahat
@@ -2008,10 +2007,10 @@ itemcode_colon	รหัสสินค้า:	Item Code:	物料代码：	商品
 itemcode_not_found	ไม่พบรหัสสินค้า	Item Code Not Found	未找到物料代码	商品コードが見つかりません	រកមិនឃើញលេខកូដផលិតផល	상품 코드를 찾을 수 없음	ບໍ່ພົບລະຫັດສິນຄ້າ	ပစ္စည်းကုဒ်ကို ရှာမတွေ့ပါ	Không tìm thấy mã sản phẩm	Item Code Not Found	Item Code Not Found	Item Code Not Found
 item_count	จำนวนรายการ	Item Count	项目数量	項目数	ចំនួនធាតុ	항목 수	ຈໍານວນລາຍການ	ပစ္စည်းအရေအတွက်	Số lượng mục	Item Count	Item Count	Item Count
 item_details	รายละเอียดสินค้า	Item Details	商品详情	商品詳細	ព័ត៌មានលម្អិតទំនិញ	품목 상세정보	ລາຍລະອຽດສິນຄ້າ	ကုန်ပစ္စည်းအသေးစိတ်	Chi tiết mặt hàng	Butiran Item	Detail Barang	Mga Detalye ng Item
-item_display_all		Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all
-item_display_barcode		Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode
-item_display_price		Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price
-item_display_sku		Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku
+item_display_all	แสดงสินค้าทั้งหมด	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all	Item display all
+item_display_barcode	แสดงบาร์โค้ด	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode	Item display barcode
+item_display_price	แสดงราคา	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price	Item display price
+item_display_sku	แสดงรหัสสินค้า (SKU)	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku	Item display sku
 itemname	ชื่อสินค้า	Product Name	产品名称	商品名	ឈ្មោះផលិតផល	상품명	ຊື່ສິນຄ້າ	ကုန်ပစ္စည်းအမည်	Tên sản phẩm	Product Name	Product Name	Product Name
 item_no_multiple_units_or_not_found	ไม่มีหลายหน่วยนับ หรือไม่พบข้อมูล	No Multiple Units or Data Not Found	没有多个单位或未找到数据	複数単位なし、またはデータが見つかりません	គ្មានច្រើនឯកតាឬរកមិនឃើញទិន្នន័យ	여러 단위 없음 또는 데이터를 찾을 수 없음	ບໍ່ມີຫຼາຍຫົວໜ່ວຍນັບ ຫຼືບໍ່ພົບຂໍ້ມູນ	ယူနစ်အများအပြားမရှိပါ သို့မဟုတ် ဒေတာမတွေ့ပါ	Không có nhiều đơn vị hoặc không tìm thấy dữ liệu	No Multiple Units or Data Not Found	No Multiple Units or Data Not Found	No Multiple Units or Data Not Found
 item_not_found	ไม่พบสินค้า	Product Not Found	未找到产品	商品が見つかりません	រកមិនឃើញផលិតផល	상품을 찾을 수 없음	ບໍ່ພົບສິນຄ້າ	ကုန်ပစ္စည်းမတွေ့ပါ	Không tìm thấy sản phẩm	Product Not Found	Product Not Found	Product Not Found
@@ -2086,8 +2085,8 @@ kitchen_groupnumber	ลำดับห้องครัว	Kitchen Order	厨房
 kitchen_list	รายการห้องครัว	Kitchen List	厨房列表	キッチンリスト	បញ្ជីផ្ទះបាយ	주방 목록	ລາຍການເຮືອນຄົວ	မီးဖိုချောင်စာရင်း	Danh sách nhà bếp	Kitchen List	Kitchen List	Kitchen List
 kitchen_name	ชื่อครัว	Kitchen Name	厨房名称	キッチン名	ឈ្មោះផ្ទះបាយ	주방 이름	ຊື່ເຮືອນຄົວ	မီးဖိုချောင်အမည်	Tên nhà bếp	Kitchen Name	Kitchen Name	Kitchen Name
 kitchen_printer	เครื่องพิมพ์ห้องครัว	Kitchen Printer	厨房打印机	キッチンプリンター	ម៉ាស៊ីនបោះពុម្ពផ្ទះបាយ	주방 프린터	ເຄື່ອງພິມເຮືອນຄົວ	မီးဖိုချောင်ပရင်တာ	Máy in nhà bếp	Kitchen Printer	Kitchen Printer	Kitchen Printer
-kitchen_secondary		Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary
-kitchenprinter		Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer
+kitchen_secondary	เครื่องพิมพ์ครัวสำรอง	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary	Kitchen secondary
+kitchenprinter	เครื่องพิมพ์ครัว	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer	Kitchen printer
 label_format_regular_desc	รูปแบบดั้งเดิม สำหรับพิมพ์ติดสินค้า	Original format for product labels	用于产品标签的原始格式	商品ラベル用の元の形式	ទម្រង់ដើមសម្រាប់ស្លាកផលិតផល	제품 라벨용 원본 형식	ຮູບແບບເດີມ ສຳລັບພິມຕິດສິນຄ້າ	ကုန်ပစ္စည်းတံဆိပ်အတွက် မူရင်းပုံစံ	Định dạng gốc cho nhãn sản phẩm	Original format for product labels	Original format for product labels	Original format for product labels
 label_general_description	เหมาะสำหรับการพิมพ์ทั่วไป	Suitable for general printing	适用于一般打印	一般的な印刷に適しています	ស័ក្តិសមសម្រាប់ការបោះពុម្ពទូទៅ	일반 인쇄에 적합	ເໝາະສຳລັບການພິມທົ່ວໄປ	အထွေထွေပုံနှိပ်ခြင်းအတွက် သင့်လျော်သည်	Phù hợp cho in ấn thông thường	Sesuai untuk percetakan umum	Cocok untuk pencetakan umum	Angkop para sa pangkalahatang pag-print
 label_special_price_description	เหมาะสำหรับการเน้นราคาพิเศษ	Suitable for highlighting special prices	适合突出显示特价	特別価格を強調するのに適しています	ស័ក្តិសមសម្រាប់ការបន្លិចតម្លៃពិសេស	특별 가격을 강조하는 데 적합합니다	ເໝາະສຳລັບການເນັ້ນລາຄາພິເສດ	အထူးစျေးနှုန်းများကို မီးမောင်းထိုးပြရန် သင့်လျော်သည်	Phù hợp để làm nổi bật giá đặc biệt	Sesuai untuk menyerlahkan harga istimewa	Cocok untuk menyorot harga khusus	Angkop para sa pag-highlight ng mga espesyal na presyo
@@ -2875,7 +2874,6 @@ privacy_policy	นโยบายความเป็นส่วนตัว	P
 proceed_import	ดำเนินการนำเข้า	Proceed Import	继续导入	インポートを続行	បន្តការនាំចូល	가져오기 계속	ດຳເນີນການນຳເຂົ້າ	သွင်းကုန်ဆက်လုပ်ဆောင်ပါ	Tiếp tục nhập	Teruskan Import	Lanjutkan Impor	Ipagpatuloy ang Pag-import
 procurement_list	จัดซื้อ	Procurement	采购管理	調達	ការលទ្ធកម្ម	조달	ການຈັດຊື້	ဝယ်ယူရေး	Mua sắm	Procurement	Procurement	Procurement
 process	ประมวลผล	Process	处理	Process	Process	Process	ປະມວນຜົນ	Process	Process	Process	Process	Process
-process 	ประมวลผล	Process	Process	Process	Process	Process	Process	Process	Process	Process	Process	Process
 process_gl	ประมวลผลบัญชี	Process Account	处理账户	アカウント処理	ដំណើរការគណនី	계정 처리	ປະມວນຜົນບັນຊີ	အကောင့်လုပ်ဆောင်ပါ	Xử lý tài khoản	Process Account	Process Account	Process Account
 process_report	ประมวลผลรายงาน	Process Report	处理报告	レポート処理	របាយការណ៍ដំណើរការ	보고서 처리	ລາຍງານການປະມວນຜົນ	အစီရင်ခံစာ လုပ်ဆောင်ခြင်း	Xử lý báo cáo	Proses Laporan	Proses Laporan	Proseso ng Ulat
 process_success	ประมวลผลสำเร็จ	Process Success	处理成功	処理成功	ដំណើរការជោគជ័យ	처리 성공	ປະມວນຜົນສຳເລັດ	လုပ်ဆောင်မှုအောင်မြင်သည်	Xử lý thành công	Proses Berjaya	Proses Berhasil	Matagumpay na Pagproseso
@@ -3808,7 +3806,7 @@ sort_by_datetime	เรียงลำดับตามวันที่-เ�
 sort_descending	มากไปหาน้อย	Descending	降序	降順	តម្រៀបពីធំទៅតូច	내림차순	ຫຼາຍໄປຫາໜ້ອຍ	ကြီးစဉ်ငယ်လိုက်	Giảm dần	Menurun	Menurun	Pababa
 source	แหล่งข้อมูล	Source	来源	ソース	ប្រភព	출처	ແຫຼ່ງຂໍ້ມູນ	ရင်းမြစ်	Nguồn	Source	Source	Source
 source_production	ต้นทาง (Production)	Source (Production)	来源（生产环境）	ソース（本番環境）	ប្រភព (Production)	소스 (프로덕션)	ແຫຼ່ງທີ່ມາ (Production)	ရင်းမြစ် (Production)	Nguồn (Production)	Source (Production)	Source (Production)	Source (Production)
-spare		Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name
+spare	ชื่อครัว	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name	Kitchen name
 special_promotion	โปรโมชั่นพิเศษ	Special Promotion	特别促销	特別プロモーション	ការផ្សព្វផ្សាយពិសេស	특별 프로모션	ໂປຣໂມຊັ່ນພິເສດ	အထူးပရိုမိုးရှင်း	Khuyến mãi đặc biệt	Special Promotion	Special Promotion	Special Promotion
 special_rules	กฎพิเศษ	Special Rules	特殊规则	特別ルール	ច្បាប់ពិសេស	특별 규칙	ກົດພິເສດ	အထူးစည်းမျဉ်းများ	Quy tắc đặc biệt	Special Rules	Special Rules	Special Rules
 special_rules_for_promotion	กฎพิเศษสำหรับโปรโมชั่น	Special rules for promotion	促销特殊规则	プロモーション用特別ルール	ច្បាប់ពិសេorg សម្រាប់ការផ្សព្វផ្សាយ	프로모션 특별 규칙	ກົດພິເສດສຳລັບໂປຣໂມຊັ່ນ	ပရိုမိုးရှင်းအတွက်အထူးစည်းမျဉ်းများ	Quy tắc đặc biệt cho khuyến mãi	Special rules for promotion	Special rules for promotion	Special rules for promotion
@@ -3820,7 +3818,7 @@ split_table	แยกโต๊ะ	Split Table	分桌	テーブル分割	បំ�
 staff	พนักงาน	Staff	员工	従業員	បុគ្គលិក	직원	ພະນັກງານ	ဝန်ထမ်း	Nhân viên	Kakitangan	Staf	Kawani
 staff_code	รหัสพนักงาน	Staff Code	员工代码	スタッフコード	កូដបុគ្គលិក	직원 코드	ລະຫັດພະນັກງານ	ဝန်ထမ်းကုဒ်	Mã nhân viên	Staff Code	Staff Code	Staff Code
 staff_name	ชื่อ พนักงาน	Staff Name	员工姓名	スタッフ名	ឈ្មោះបុគ្គលិក	직원 이름	ຊື່ພະນັກງານ	ဝန်ထမ်းအမည်	Tên nhân viên	Staff Name	Staff Name	Staff Name
-stand		Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand
+stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand
 standard_cost	ต้นทุนมาตรฐาน	Standard Cost	标准成本	標準原価	ថ្លៃដើមស្តង់ដារ	표준 원가	ຕົ້ນທຶນມາດຕະຖານ	စံကုန်ကျစရိတ်	Chi phí tiêu chuẩn	Standard Cost	Standard Cost	Standard Cost
 standard_cost_per_unit	ต้นทุนมาตรฐานต่อหน่วย	Standard Cost Per Unit	单位标准成本	単位あたり標準原価	ថ្លៃដើមស្តង់ដារក្នុងមួយឯកតា	단위당 표준 원가	ຕົ້ນທຶນມາດຕະຖານຕໍ່ໜ່ວຍ	ယူနစ်တစ်ခုချင်းစံကုန်ကျစရိတ်	Chi phí tiêu chuẩn mỗi đơn vị	Standard Cost Per Unit	Standard Cost Per Unit	Standard Cost Per Unit
 start_by_adding_first_shelf	เริ่มต้นด้วยการเพิ่มชั้นวางแรก	Start by adding your first shelf	从添加第一个货架开始	最初の棚を追加して始めましょう	ចាប់ផ្តើមដោយបន្ថែមធ្នើដំបូង	첫 번째 선반을 추가하여 시작하세요	ເລີ່ມຕົ້ນດ້ວຍການເພີ່ມຊັ້ນວາງທຳອິດ	ပထမဆုံး စင် ထည့်ခြင်းဖြင့် စတင်ပါ	Bắt đầu bằng cách thêm kệ đầu tiên	Start by adding your first shelf	Start by adding your first shelf	Start by adding your first shelf
@@ -4364,8 +4362,8 @@ wrong_date	วันที่ผิด	Wrong date	日期错误	日付が間違�
 wrong_name_address	ชื่อ/ที่อยู่ ผิด	Wrong name/address	名称/地址错误	名前/住所が間違っています	ឈ្មោះ/អាស័យដ្ឋាន ខុស	이름/주소 오류	ຊື່/ທີ່ຢູ່ ຜິດ	အမည်/လိပ်စာ မှား	Tên/địa chỉ sai	Wrong name/address	Wrong name/address	Wrong name/address
 wrong_product	สินค้าผิด	Wrong product	产品错误	商品が間違っています	ផលិតផលខុស	제품 오류	ສິນຄ້າຜິດ	ကုန်ပစ္စည်းမှား	Sản phẩm sai	Wrong product	Wrong product	Wrong product
 wrong_quantity_value	จำนวน/มูลค่าผิด	Wrong quantity/value	数量/价值错误	数量/金額が間違っています	បរិមាណ/តម្លៃខុស	수량/가치 오류	ຈຳນວນ/ມູນຄ່າຜິດ	အရေအတွက်/တန်ဖိုးမှား	Số lượng/giá trị sai	Wrong quantity/value	Wrong quantity/value	Wrong quantity/value
-xqty		X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty
-xunit		X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit
+xqty	จำนวน X	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty
+xunit	หน่วย X	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit
 year	ปี	Year	年	年	ឆ្នាំ	연도	ປີ	နှစ်	Năm	Tahun	Tahun	Taon
 yes	ใช่	Yes	是的	はい	បាទ/ចាស	예	ແມ່ນແລ້ວ	ဟုတ်	Có	Yes	Yes	Yes
 you_have_accepted	คุณได้ยอมรับ	You Have Accepted	您已接受	同意されました	អ្នកបានទទួលយក	동의하셨습니다	ທ່ານໄດ້ຍອມຮັບ	သင်လက်ခံပြီးပါပြီ	Bạn đã chấp nhận	You Have Accepted	You Have Accepted	You Have Accepted

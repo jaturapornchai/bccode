@@ -166,6 +166,10 @@ func buildSalesReportHeaderQuery(fromDate, toDate time.Time, businessCode string
 
 	// จำนวนและมูลค่าในสมุดสต็อกเป็นบวกเสมอ ทิศทางอยู่ที่คอลัมน์ direction
 	// รายงานขายจึงไม่ต้องคูณ -1 เหมือนตารางเดิมที่เก็บยอดขายเป็นค่าลบ
+	//
+	// ลบเอกสาร = soft delete (doc.isdelete) แล้ว stock engine ค่อยถอนบรรทัดออกจาก
+	// stock_ledger ทีหลัง ระหว่างรอ worker ยอดจึงยังค้างใน ledger — กรองด้วย doc.isdelete
+	// อีกชั้นเพื่อไม่ให้รายงานนับใบที่ลบไปแล้ว (ใช้กับทั้งสาม query ในไฟล์นี้)
 	query := `
 SELECT
   CAST(MAX(p.docdatetime) + INTERVAL '7 hour' AS DATE) as docdate,
@@ -185,7 +189,12 @@ LEFT JOIN public.doc doc ON doc.businesscode = p.businesscode AND doc.docno = p.
 LEFT JOIN public.debtor d ON doc.custcode = d.code
 WHERE p.transflag = 44
   AND p.businesscode = $3
-  AND p.docdatetime >= $1 AND p.docdatetime < $2`
+  AND p.docdatetime >= $1 AND p.docdatetime < $2
+  AND NOT EXISTS (
+    SELECT 1 FROM public.doc dd
+    WHERE dd.businesscode = p.businesscode AND dd.docno = p.docno
+      AND dd.transflag = p.transflag AND dd.isdelete
+  )`
 
 	args = append(args, fromDate, toDate, businessCode)
 	argIndex = 4
@@ -268,7 +277,12 @@ LEFT JOIN LATERAL (
 ) unit_lookup ON TRUE
 WHERE p.transflag = 44
   AND p.businesscode = $3
-  AND p.docdatetime >= $1 AND p.docdatetime < $2`
+  AND p.docdatetime >= $1 AND p.docdatetime < $2
+  AND NOT EXISTS (
+    SELECT 1 FROM public.doc dd
+    WHERE dd.businesscode = p.businesscode AND dd.docno = p.docno
+      AND dd.transflag = p.transflag AND dd.isdelete
+  )`
 
 	args = append(args, fromDate, toDate, businessCode)
 	argIndex = 4
@@ -404,7 +418,12 @@ SELECT
 FROM public.stock_ledger p
 WHERE p.transflag = 44
   AND p.businesscode = $3
-  AND p.docdatetime >= $1 AND p.docdatetime < $2`
+  AND p.docdatetime >= $1 AND p.docdatetime < $2
+  AND NOT EXISTS (
+    SELECT 1 FROM public.doc dd
+    WHERE dd.businesscode = p.businesscode AND dd.docno = p.docno
+      AND dd.transflag = p.transflag AND dd.isdelete
+  )`
 
 	args = append(args, fromDate, toDate, businessCode)
 	argIndex = 4

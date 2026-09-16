@@ -8,6 +8,7 @@ import (
 	"smlcloudplatform/internal/debtaccount/debtor/repositories"
 	"smlcloudplatform/internal/debtaccount/debtor/services"
 	groupRepositories "smlcloudplatform/internal/debtaccount/debtorgroup/repositories"
+	build "smlcloudplatform/internal/goapi/process/build"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
@@ -51,8 +52,24 @@ func NewDebtorHttp(ms *microservice.Microservice, cfg config.IConfig) DebtorHttp
 	}
 }
 
+// ResyncDebtor rebuilds the tenant's PostgreSQL debtor table from MongoDB.
+// Same idea as POST /product/resync: the read model is derived data, so when
+// the projection has fallen behind (every debtor event before 2026-09-16 was
+// dead-lettered on a column mismatch) this refills it without touching anything
+// else. Truncates and reloads only the debtor table of the caller's holding.
+func (h DebtorHttp) ResyncDebtor(ctx microservice.IContext) error {
+	holdingCode := ctx.UserInfo().HoldingCode
+	rebuilt := build.ProcessDebtorRebuildAll(holdingCode)
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    map[string]int{"rebuilt": rebuilt},
+	})
+	return nil
+}
+
 func (h DebtorHttp) RegisterHttp() {
 
+	h.ms.POST("/debtaccount/debtor/resync", h.ResyncDebtor)
 	h.ms.POST("/debtaccount/debtor/bulk", h.SaveBulk)
 
 	h.ms.POST("/debtaccount/debtor/auth", h.AuthDebtor)

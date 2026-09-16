@@ -16,5 +16,8 @@ type ProcessMongoDebtorModel struct {
 }
 
 type ProcessMongoDebtorNameModel struct {
+	// Language code ("th", "en", ...). Reports pick the Thai name out of the
+	// names jsonb by this code, so dropping it here made every name unfindable.
+	Code string `json:"code" bson:"code"`
 	Name string `json:"name" bson:"name"`
 }

@@ -16,7 +16,10 @@ type StockBalanceHeader struct {
 type StockBalance struct {
 	models.PartitionIdentity `bson:"inline"`
 	StockBalanceHeader       `bson:"inline"`
-	// Details                  *[]StockBalanceDetail `json:"details" bson:"details"`
+	// Lines live in transactionstockbalancedetails (stockbalancedetail package), so
+	// the header document never stores them; the field only carries them through
+	// the HTTP request, the Kafka message and the info response.
+	Details *[]trans_models.Detail `json:"details" bson:"-"`
 }
 
 type StockBalanceMessage struct {
@@ -24,7 +27,6 @@ type StockBalanceMessage struct {
 	StockBalance
 	models.HoldingCodeentity
 	models.Activity
-	Details *[]trans_models.Detail `json:"details" bson:"details"`
 }
 
 type StockBalanceInfo struct {

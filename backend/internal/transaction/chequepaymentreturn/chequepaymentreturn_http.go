@@ -83,6 +83,9 @@ func (h ChequePaymentReturnHttp) CreateChequePaymentReturn(ctx microservice.ICon
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateChequePaymentReturn(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h ChequePaymentReturnHttp) UpdateChequePaymentReturn(ctx microservice.ICon
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateChequePaymentReturn(holdingCode, id, authUsername, *docReq)
 

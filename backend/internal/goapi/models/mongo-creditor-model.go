@@ -16,5 +16,8 @@ type ProcessMongoCreditorModel struct {
 }
 
 type ProcessMongoCreditorNameModel struct {
+	// Language code ("th", "en", ...) — kept so the names jsonb stays queryable
+	// by language, same as the debtor model.
+	Code string `json:"code" bson:"code"`
 	Name string `json:"name" bson:"name"`
 }

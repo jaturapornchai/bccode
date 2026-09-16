@@ -26,6 +26,7 @@ type IStockBalanceDetailService interface {
 	DeleteStockBalanceDetail(holdingCode string, guid string, authUsername string) error
 	DeleteStockBalanceDetailByGUIDs(holdingCode string, authUsername string, GUIDs []string) error
 	DeleteStockBalanceDetailByDocNo(holdingCode string, authUsername string, docNo string) error
+	ListStockBalanceDetailByDocNo(holdingCode string, docNo string) ([]trans_models.Detail, error)
 	InfoStockBalanceDetail(holdingCode string, guid string) (models.StockBalanceDetailInfo, error)
 	InfoStockBalanceDetailByCode(holdingCode string, code string) (models.StockBalanceDetailInfo, error)
 	SearchStockBalanceDetail(holdingCode string, filters map[string]interface{}, pageable micromodels.Pageable) ([]models.StockBalanceDetailInfo, mongopagination.PaginationData, error)
@@ -261,6 +262,24 @@ func (svc StockBalanceDetailService) DeleteStockBalanceDetailByDocNo(holdingCode
 	}()
 
 	return nil
+}
+
+// ListStockBalanceDetailByDocNo returns the lines of one document in the shape
+// the header module puts into its Kafka message and info response.
+func (svc StockBalanceDetailService) ListStockBalanceDetailByDocNo(holdingCode string, docNo string) ([]trans_models.Detail, error) {
+	ctx, ctxCancel := svc.getContextTimeout()
+	defer ctxCancel()
+
+	docs, err := svc.repo.FindByDocIndentityGuids(ctx, holdingCode, "docno", docNo)
+	if err != nil {
+		return nil, err
+	}
+
+	details := make([]trans_models.Detail, 0, len(docs))
+	for _, doc := range docs {
+		details = append(details, doc.Detail)
+	}
+	return details, nil
 }
 
 func (svc StockBalanceDetailService) InfoStockBalanceDetail(holdingCode string, guid string) (models.StockBalanceDetailInfo, error) {

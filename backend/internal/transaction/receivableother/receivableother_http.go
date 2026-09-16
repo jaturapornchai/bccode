@@ -82,6 +82,9 @@ func (h ReceivableOtherHttp) CreateReceivableOther(ctx microservice.IContext) er
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateReceivableOther(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -127,6 +130,9 @@ func (h ReceivableOtherHttp) UpdateReceivableOther(ctx microservice.IContext) er
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateReceivableOther(holdingCode, id, authUsername, *docReq)
 

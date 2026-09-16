@@ -181,6 +181,21 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-16 — ลูกหนี้/เจ้าหนี้เข้าฐานประมวลผลได้แล้ว, ใบสินค้ายกมาถึง PostgreSQL ครบวงจร, เอกสารกลุ่ม B ประทับรหัสบริษัท, ซ่อมพจนานุกรม
+
+**ประเภทงาน:** `[Fix]`
+
+**สิ่งที่ทำ:**
+- **ลูกหนี้/เจ้าหนี้ไม่เคยไปถึง PostgreSQL** — ตัวรับข้อมูลจาก Kafka (`kafka/debtor.go`, `kafka/creditor.go`) เขียนลงคอลัมน์ที่ตารางไม่มี (`name0`, `createdat`) ทุกข้อความจึงตกคิวข้อความเสีย (DLQ) ตารางว่างเปล่า และรายงานขายโชว์ชื่อลูกค้าว่าง → เขียนใหม่ให้ตรงคอลัมน์จริงตาม DDL (`names` เป็น jsonb, upsert ด้วยคีย์ `guidfixed+code`); ตัวสร้างข้อมูลทั้งก้อน (`build-debtos.go`, `build-creditors.go`) ก็ใช้ชื่อคอลัมน์แบบขีดล่างและอ่านเบอร์โทรผิด key (`phone_primary` → `phoneprimary`) แก้ให้ตรงเช่นกัน; เพิ่ม `POST /debtaccount/debtor/resync` และ `POST /debtaccount/creditor/resync` สำหรับดึงข้อมูลเดิมทั้งหมดจาก MongoDB มาสร้างใหม่ (แบบเดียวกับ `/product/resync`)
+- **ใบสินค้ายกมา (stock balance) บันทึกจากหน้าจอแล้วรายการสินค้าหาย + ไม่ถึง PostgreSQL** — หน้าจอส่ง `details` มาแต่ backend ทิ้ง (ฟิลด์ถูกคอมเมนต์ไว้), การ publish ไป Kafka ตอนสร้างถูกคอมเมนต์ทิ้ง และข้อความ update/delete ไม่มี `docno` ทำให้ตัวรับข้ามทิ้ง → header รับ `details` (ไม่เก็บซ้ำใน MongoDB — ยังอยู่ collection รายละเอียดเดิม) สร้าง/แทนที่รายละเอียดแล้ว publish ทั้งใบผ่าน `newMessage()`/`replaceDetails()` ใน `stockbalance_service.go`, หน้า info คืนรายละเอียดด้วย
+- **รายงานขายนับเอกสารที่ลบแล้ว** — การลบเป็น soft delete (`doc.isdelete=true`) แต่ `sales_report.go` ไม่กรอง → เพิ่มเงื่อนไข `NOT EXISTS (... isdelete)` ทั้ง 3 query
+- **ประทับรหัสบริษัท (`businesscode`) เอกสารกลุ่ม B** — เพิ่มฟิลด์ใน `TransactionMoneyHeader` (เช็ค/ฝาก-ถอน/โอน/บัตรเครดิต/ใบเพิ่มหนี้ 16 โมดูล) และใน model ของ `paid`, `pay`, `receivableother` (3 โมดูลนี้เป็น struct ของตัวเอง ไม่ใช่ header ร่วม) แล้วประทับจาก shop ที่เลือกใน 20 handler / 40 จุด — ต่อจากกลุ่ม A เมื่อเช้า ครบทุกโมดูลที่มี `ctx.Validate`
+- **พจนานุกรม `languages.tsv`** — เติมภาษาไทยให้ 10 คีย์ที่ช่อง th ว่าง (แถวว่างถูกข้ามและคืนคีย์ดิบ), ลบแถวซ้ำ `add `/`process ` (มีช่องว่างท้ายคีย์), แก้ `action` ที่สะกดผิด "Acton" → "การดำเนินการ"/"Action" (`stand` ยังไม่มีคำไทยที่มั่นใจ ใส่ "Stand" ไว้ก่อน)
+
+**ไฟล์สำคัญ:** `backend/internal/goapi/handlers/kafka/{debtor,creditor}.go`, `backend/internal/goapi/process/build/{build-debtos,build-creditors}.go`, `backend/internal/goapi/models/mongo-{debtor,creditor}-model.go`, `backend/internal/debtaccount/{debtor/debtor_http,creditor/creditor_http}.go`, `backend/internal/goapi/handlers/sales_report.go`, `backend/internal/transaction/stockbalance/{models/stockbalance.go,services/stockbalance_service.go}`, `backend/internal/transaction/stockbalancedetail/services/stockbalancedetail_service.go`, `backend/internal/transaction/models/transaction.go`, `backend/internal/transaction/{paid,pay,receivableother}/models/*.go` + 20 ไฟล์ `*_http.go`, `backend/assets/language/languages.tsv`, `docs/kms/17-dev-gotchas.md`
+
+**ผลการทดสอบ (Evidence):** `go build ./... && go vet` ผ่านใน container `golang:1.26`; local mainapi rebuild แล้ว UAT ตามกฎ CRUD+Mongo ทีละขั้น — ลูกหนี้ `ZZTEST-02`/เจ้าหนี้ `ZZTEST-AP-02` สร้างผ่าน API → PostgreSQL มีแถว `names=[{"code":"th",...}]`, resync คืน 26 ลูกหนี้ / 19 เจ้าหนี้, รายงานขายโชว์ชื่อ `AR3-004 นางสาวมาลี ใจดี (ร้านของชำมาลี)`, ลบแล้วรายงานไม่นับ (0 แถว); ใบสินค้ายกมา `IB2026091600001` สร้าง 1 รายการ → Mongo header 1 + detail 1 → PG `doc` (transflag 54, businesscode C01) + `docdetail qty=5` → GET info คืน `details` 1 แถว → PUT qty 7 → PG `qty=7` → DELETE → Mongo `deletedat` ทั้ง header/detail, PG `isdelete=true`; ล้างข้อมูลทดสอบด้วย docno แล้ว; `languages.tsv` ตรวจแล้ว 0 แถว th ว่าง, เทสต์ `gl-language-keys` + `product-language-keys` ผ่าน 4/4; ผล `verify:all` + deploy อยู่ในรายการถัดไป
+
 ### 2026-09-16 — ขึ้นระบบจริง 2 รอบ (`r20260916-1` และ `r20260916-2`) พร้อมตรวจรับบนเว็บจริง
 
 **ประเภทงาน:** `[Deploy]`

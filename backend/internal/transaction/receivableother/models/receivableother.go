@@ -12,23 +12,26 @@ const collectionName = "transactionreceivableothers"
 
 type ReceivableOther struct {
 	models.PartitionIdentity `bson:"inline"`
-	DocNo                    string                    `json:"docno" bson:"docno"`
-	DocDatetime              time.Time                 `json:"docdatetime" bson:"docdatetime"`
-	DocType                  int8                      `json:"doctype" bson:"doctype"`
-	TransFlag                int8                      `json:"transflag" bson:"transflag"`
-	CustCode                 string                    `json:"custcode" bson:"custcode"`
-	CustNames                *[]models.NameX           `json:"custnames" bson:"custnames"`
-	SaleCode                 string                    `json:"salecode" bson:"salecode"`
-	SaleName                 string                    `json:"salename" bson:"salename"`
-	TotalPaymentAmount       float64                   `json:"totalpaymentamount" bson:"totalpaymentamount"`
-	TotalAmount              float64                   `json:"totalamount" bson:"totalamount"`
-	TotalBalance             float64                   `json:"totalbalance" bson:"totalbalance"`
-	TotalValue               float64                   `json:"totalvalue" bson:"totalvalue"`
-	Details                  *[]ReceivableOtherDetail  `json:"details" bson:"details"`
-	PaymentDetail            transmodels.PaymentDetail `json:"paymentdetail" bson:"paymentdetail"`
-	PaymentDetailRaw         string                    `json:"paymentdetailraw" bson:"paymentdetailraw"`
-	RefDocNo                 string                    `json:"refdocno" bson:"refdocno"`     // เลขที่เอกสารอ้างอิง
-	RefDocDate               time.Time                 `json:"refdocdate" bson:"refdocdate"` // วันที่เอกสารอ้างอิง
+	// Which company inside the holding the document belongs to; the projection
+	// consumer dead-letters a document without one. Stamped from the shop.
+	BusinessCode       string                    `json:"businesscode" bson:"businesscode"`
+	DocNo              string                    `json:"docno" bson:"docno"`
+	DocDatetime        time.Time                 `json:"docdatetime" bson:"docdatetime"`
+	DocType            int8                      `json:"doctype" bson:"doctype"`
+	TransFlag          int8                      `json:"transflag" bson:"transflag"`
+	CustCode           string                    `json:"custcode" bson:"custcode"`
+	CustNames          *[]models.NameX           `json:"custnames" bson:"custnames"`
+	SaleCode           string                    `json:"salecode" bson:"salecode"`
+	SaleName           string                    `json:"salename" bson:"salename"`
+	TotalPaymentAmount float64                   `json:"totalpaymentamount" bson:"totalpaymentamount"`
+	TotalAmount        float64                   `json:"totalamount" bson:"totalamount"`
+	TotalBalance       float64                   `json:"totalbalance" bson:"totalbalance"`
+	TotalValue         float64                   `json:"totalvalue" bson:"totalvalue"`
+	Details            *[]ReceivableOtherDetail  `json:"details" bson:"details"`
+	PaymentDetail      transmodels.PaymentDetail `json:"paymentdetail" bson:"paymentdetail"`
+	PaymentDetailRaw   string                    `json:"paymentdetailraw" bson:"paymentdetailraw"`
+	RefDocNo           string                    `json:"refdocno" bson:"refdocno"`     // เลขที่เอกสารอ้างอิง
+	RefDocDate         time.Time                 `json:"refdocdate" bson:"refdocdate"` // วันที่เอกสารอ้างอิง
 
 	PayCashAmount    float64 `json:"paycashamount" bson:"paycashamount"`
 	SumQrCode        float64 `json:"sumqrcode" bson:"sumqrcode"`               // ชำระเงินโดย QR Code

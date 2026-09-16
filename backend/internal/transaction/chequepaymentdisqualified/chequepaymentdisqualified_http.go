@@ -83,6 +83,9 @@ func (h ChequePaymentDisqualifiedHttp) CreateChequePaymentDisqualified(ctx micro
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateChequePaymentDisqualified(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h ChequePaymentDisqualifiedHttp) UpdateChequePaymentDisqualified(ctx micro
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateChequePaymentDisqualified(holdingCode, id, authUsername, *docReq)
 

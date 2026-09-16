@@ -104,24 +104,46 @@ func ProcessCreditorMasterData(msg string) error {
 
 // insertOrUpdateCreditor - inserts or updates creditor in PostgreSQL
 func insertOrUpdateCreditor(ctx context.Context, db *sql.DB, creditor models.ProcessMongoCreditorModel) error {
-	// Extract first name from names array
-	name0 := getCreditorName(creditor.Names)
+	// Columns follow the DDL in process/build/create-database.go (table creditor,
+	// primary key guidfixed+code). The previous version wrote name0, which that
+	// table never had, so every creditor event went to the DLQ.
+	namesJSON, err := json.Marshal(creditor.Names)
+	if err != nil {
+		return fmt.Errorf("marshal creditor names: %w", err)
+	}
+	addrJSON := []byte("null")
+	if creditor.AddressBilling != nil {
+		if addrJSON, err = json.Marshal(creditor.AddressBilling); err != nil {
+			return fmt.Errorf("marshal creditor address: %w", err)
+		}
+	}
 
 	query := `
-        INSERT INTO creditor (code, name0, taxid)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (code) DO UPDATE SET
-            name0 = EXCLUDED.name0,
-            taxid = EXCLUDED.taxid
+        INSERT INTO creditor (holding_code, guidfixed, code, names, taxid, personaltype,
+                              customertype, branchnumber, fundcode, creditday, email, addressforbilling)
+        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
+        ON CONFLICT (guidfixed, code) DO UPDATE SET
+            names = EXCLUDED.names,
+            taxid = EXCLUDED.taxid,
+            personaltype = EXCLUDED.personaltype,
+            customertype = EXCLUDED.customertype,
+            branchnumber = EXCLUDED.branchnumber,
+            fundcode = EXCLUDED.fundcode,
+            creditday = EXCLUDED.creditday,
+            email = EXCLUDED.email,
+            addressforbilling = EXCLUDED.addressforbilling
     `
 
-	_, err := db.ExecContext(ctx, query, creditor.Code, name0, creditor.TaxID)
+	_, err = db.ExecContext(ctx, query,
+		creditor.HoldingCode, creditor.GuidFixed, creditor.Code, string(namesJSON), creditor.TaxID,
+		creditor.PersonalType, creditor.CustomerType, creditor.BranchNumber, creditor.FundCode,
+		creditor.CreditDay, creditor.Email, string(addrJSON))
 	if err != nil {
 		logger.Error("ไม่สามารถ insert creditor: %v", err)
 		return err
 	}
 
-	logger.Info("Insert/Update creditor สำเร็จ: Code=%s, Name=%s", creditor.Code, name0)
+	logger.Info("Insert/Update creditor สำเร็จ: Code=%s", creditor.Code)
 	return nil
 }
 
@@ -238,14 +260,4 @@ func OnConsumeMessageCreditorBulkDelete(msg string) error {
 		logger.Info("--- ProcessCreditorBulkDelete COMPLETED: %d items ---", len(rawArray))
 		return nil
 	})(msg)
-}
-
-// getCreditorName - helper function to get creditor name from language models
-func getCreditorName(names []models.ProcessMongoCreditorNameModel) string {
-	if len(names) == 0 {
-		return ""
-	}
-
-	// Return first available name
-	return names[0].Name
 }

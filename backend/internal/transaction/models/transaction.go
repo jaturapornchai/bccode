@@ -174,10 +174,14 @@ type TransactionHeader struct {
 }
 
 type TransactionMoneyHeader struct {
-	DocNo       string    `json:"docno" bson:"docno"`
-	DocDatetime time.Time `json:"docdatetime" bson:"docdatetime"`
-	GuidRef     string    `json:"guidref" bson:"guidref"`
-	ShiftDocNo  string    `json:"shiftdocno" bson:"shiftdocno"`
+	// Same reason as TransactionHeader.BusinessCode above: without it the
+	// projection consumer dead-letters the document and no report ever sees it.
+	// This header covers the cheque, deposit/withdrawal and debit-note modules.
+	BusinessCode string    `json:"businesscode" bson:"businesscode"`
+	DocNo        string    `json:"docno" bson:"docno"`
+	DocDatetime  time.Time `json:"docdatetime" bson:"docdatetime"`
+	GuidRef      string    `json:"guidref" bson:"guidref"`
+	ShiftDocNo   string    `json:"shiftdocno" bson:"shiftdocno"`
 
 	TransFlag             int                 `json:"transflag" bson:"transflag"`
 	DocRefType            int8                `json:"docreftype" bson:"docreftype"`

@@ -83,6 +83,9 @@ func (h CreditCardWithdrawalHttp) CreateCreditCardWithdrawal(ctx microservice.IC
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateCreditCardWithdrawal(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h CreditCardWithdrawalHttp) UpdateCreditCardWithdrawal(ctx microservice.IC
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateCreditCardWithdrawal(holdingCode, id, authUsername, *docReq)
 

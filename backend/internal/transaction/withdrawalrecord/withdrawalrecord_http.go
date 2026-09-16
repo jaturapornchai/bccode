@@ -83,6 +83,9 @@ func (h WithdrawalRecordHttp) CreateWithdrawalRecord(ctx microservice.IContext) 
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateWithdrawalRecord(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h WithdrawalRecordHttp) UpdateWithdrawalRecord(ctx microservice.IContext) 
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateWithdrawalRecord(holdingCode, id, authUsername, *docReq)
 

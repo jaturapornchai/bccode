@@ -8,6 +8,7 @@ import (
 	"smlcloudplatform/internal/debtaccount/creditor/repositories"
 	"smlcloudplatform/internal/debtaccount/creditor/services"
 	repositoriesGroup "smlcloudplatform/internal/debtaccount/creditorgroup/repositories"
+	build "smlcloudplatform/internal/goapi/process/build"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
@@ -42,8 +43,21 @@ func NewCreditorHttp(ms *microservice.Microservice, cfg config.IConfig) Creditor
 	}
 }
 
+// ResyncCreditor rebuilds the tenant's PostgreSQL creditor table from MongoDB —
+// the creditor counterpart of POST /debtaccount/debtor/resync (see there for why).
+func (h CreditorHttp) ResyncCreditor(ctx microservice.IContext) error {
+	holdingCode := ctx.UserInfo().HoldingCode
+	rebuilt := build.ProcessCreditorRebuildAll(holdingCode)
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    map[string]int{"rebuilt": rebuilt},
+	})
+	return nil
+}
+
 func (h CreditorHttp) RegisterHttp() {
 
+	h.ms.POST("/debtaccount/creditor/resync", h.ResyncCreditor)
 	h.ms.POST("/debtaccount/creditor/bulk", h.SaveBulk)
 
 	h.ms.GET("/debtaccount/creditor", h.SearchCreditorPage)

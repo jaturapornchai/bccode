@@ -104,24 +104,47 @@ func ProcessDebtorMasterData(msg string) error {
 
 // insertOrUpdateDebtor - inserts or updates debtor in PostgreSQL
 func insertOrUpdateDebtor(ctx context.Context, db *sql.DB, debtor models.ProcessMongoDebtorModel) error {
-	name0 := getDebtorName(debtor.Names)
+	// Columns follow the DDL in process/build/create-database.go (table debtor,
+	// primary key guidfixed+code). The previous version wrote name0/createdat,
+	// which that table never had, so every debtor event went to the DLQ and the
+	// table stayed empty — which is why reports showed a blank customer name.
+	namesJSON, err := json.Marshal(debtor.Names)
+	if err != nil {
+		return fmt.Errorf("marshal debtor names: %w", err)
+	}
+	addrJSON := []byte("null")
+	if debtor.AddressBilling != nil {
+		if addrJSON, err = json.Marshal(debtor.AddressBilling); err != nil {
+			return fmt.Errorf("marshal debtor address: %w", err)
+		}
+	}
 
 	query := `
-        INSERT INTO debtor (code, name0, taxid, createdat, updatedat)
-        VALUES ($1, $2, $3, NOW(), NOW())
-        ON CONFLICT (code) DO UPDATE SET
-            name0 = EXCLUDED.name0,
+        INSERT INTO debtor (holding_code, guidfixed, code, names, taxid, personaltype,
+                            customertype, branchnumber, fundcode, creditday, email, addressforbilling)
+        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
+        ON CONFLICT (guidfixed, code) DO UPDATE SET
+            names = EXCLUDED.names,
             taxid = EXCLUDED.taxid,
-            updatedat = NOW()
+            personaltype = EXCLUDED.personaltype,
+            customertype = EXCLUDED.customertype,
+            branchnumber = EXCLUDED.branchnumber,
+            fundcode = EXCLUDED.fundcode,
+            creditday = EXCLUDED.creditday,
+            email = EXCLUDED.email,
+            addressforbilling = EXCLUDED.addressforbilling
     `
 
-	_, err := db.ExecContext(ctx, query, debtor.Code, name0, debtor.TaxID)
+	_, err = db.ExecContext(ctx, query,
+		debtor.HoldingCode, debtor.GuidFixed, debtor.Code, string(namesJSON), debtor.TaxID,
+		debtor.PersonalType, debtor.CustomerType, debtor.BranchNumber, debtor.FundCode,
+		debtor.CreditDay, debtor.Email, string(addrJSON))
 	if err != nil {
 		logger.Error("ไม่สามารถ insert/update debtor: %v", err)
 		return err
 	}
 
-	logger.Info("Insert/Update debtor สำเร็จ: Code=%s, Name=%s", debtor.Code, name0)
+	logger.Info("Insert/Update debtor สำเร็จ: Code=%s", debtor.Code)
 	return nil
 }
 
@@ -235,14 +258,4 @@ func OnConsumeMessageDebtorBulkDelete(msg string) error {
 		logger.Info("--- ProcessDebtorBulkDelete COMPLETED: %d items ---", len(rawArray))
 		return nil
 	})(msg)
-}
-
-// getDebtorName - helper function to get debtor name from language models
-func getDebtorName(names []models.ProcessMongoDebtorNameModel) string {
-	if len(names) == 0 {
-		return ""
-	}
-
-	// Return first available name
-	return names[0].Name
 }

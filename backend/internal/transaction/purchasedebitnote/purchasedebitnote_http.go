@@ -83,6 +83,9 @@ func (h PurchaseDebitNoteHttp) CreatePurchaseDebitNote(ctx microservice.IContext
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreatePurchaseDebitNote(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h PurchaseDebitNoteHttp) UpdatePurchaseDebitNote(ctx microservice.IContext
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdatePurchaseDebitNote(holdingCode, id, authUsername, *docReq)
 

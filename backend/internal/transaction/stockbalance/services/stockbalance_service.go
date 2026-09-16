@@ -12,6 +12,7 @@ import (
 	trancache "smlcloudplatform/internal/transaction/repositories"
 	"smlcloudplatform/internal/transaction/stockbalance/models"
 	"smlcloudplatform/internal/transaction/stockbalance/repositories"
+	stockbalancedetail_models "smlcloudplatform/internal/transaction/stockbalancedetail/models"
 	stockbalancedetail_services "smlcloudplatform/internal/transaction/stockbalancedetail/services"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/internal/utils/importdata"
@@ -160,14 +161,15 @@ func (svc StockBalanceHttpService) CreateStockBalance(holdingCode string, authUs
 		return nil, "", "", err
 	}
 
-	// go func() {
-	// 	stockBalanceDocMessage := models.StockBalanceMessage{}
-	// 	stockBalanceDocMessage.StockBalance = doc
-	// 	svc.repoMq.Create(stockBalanceDocMessage)
+	details, err := svc.replaceDetails(holdingCode, authUsername, newDocNo, doc.Details)
+	if err != nil {
+		// A header without its lines is useless to every report, so undo it.
+		_ = svc.repo.DeleteByGuidfixed(ctx, holdingCode, newGuidFixed, authUsername)
+		return nil, "", "", err
+	}
 
-	// 	svc.repoCache.Save(holdingCode, prefixDocNo, newDocNumber, svc.cacheExpireDocNo)
-	// 	svc.saveMasterSync(holdingCode)
-	// }()
+	svc.repoMq.Create(svc.newMessage(docData, details))
+	svc.saveMasterSync(holdingCode)
 
 	return &docData, newGuidFixed, newDocNo, nil
 }
@@ -200,12 +202,13 @@ func (svc StockBalanceHttpService) UpdateStockBalance(holdingCode string, guid s
 		return err
 	}
 
-	func() {
-		stockBalanceDocMessage := models.StockBalanceMessage{}
-		stockBalanceDocMessage.StockBalance = findDoc.StockBalance
-		svc.repoMq.Update(stockBalanceDocMessage)
-		svc.saveMasterSync(holdingCode)
-	}()
+	details, err := svc.replaceDetails(holdingCode, authUsername, findDoc.DocNo, doc.Details)
+	if err != nil {
+		return err
+	}
+
+	svc.repoMq.Update(svc.newMessage(docData, details))
+	svc.saveMasterSync(holdingCode)
 
 	return nil
 }
@@ -245,9 +248,7 @@ func (svc StockBalanceHttpService) DeleteStockBalance(holdingCode string, guid s
 	}
 
 	func() {
-		stockBalanceDocMessage := models.StockBalanceMessage{}
-		stockBalanceDocMessage.StockBalance = findDoc.StockBalance
-		svc.repoMq.Delete(stockBalanceDocMessage)
+		svc.repoMq.Delete(svc.newMessage(findDoc, nil))
 		svc.saveMasterSync(holdingCode)
 	}()
 
@@ -288,9 +289,7 @@ func (svc StockBalanceHttpService) DeleteStockBalanceByGUIDs(holdingCode string,
 		stockBalanceDocMessages := []models.StockBalanceMessage{}
 
 		for _, doc := range docs {
-			stockBalanceDocMessage := models.StockBalanceMessage{}
-			stockBalanceDocMessage.StockBalance = doc.StockBalance
-			stockBalanceDocMessages = append(stockBalanceDocMessages, stockBalanceDocMessage)
+			stockBalanceDocMessages = append(stockBalanceDocMessages, svc.newMessage(doc, nil))
 		}
 
 		svc.repoMq.DeleteInBatch(stockBalanceDocMessages)
@@ -315,6 +314,12 @@ func (svc StockBalanceHttpService) InfoStockBalance(holdingCode string, guid str
 		return models.StockBalanceInfo{}, errors.New("document not found")
 	}
 
+	details, err := svc.svcStockBalanceDetail.ListStockBalanceDetailByDocNo(holdingCode, findDoc.DocNo)
+	if err != nil {
+		return models.StockBalanceInfo{}, err
+	}
+	findDoc.Details = &details
+
 	return findDoc.StockBalanceInfo, nil
 }
 
@@ -332,6 +337,12 @@ func (svc StockBalanceHttpService) InfoStockBalanceByCode(holdingCode string, co
 	if len(findDoc.GuidFixed) < 1 {
 		return models.StockBalanceInfo{}, errors.New("document not found")
 	}
+
+	details, err := svc.svcStockBalanceDetail.ListStockBalanceDetailByDocNo(holdingCode, findDoc.DocNo)
+	if err != nil {
+		return models.StockBalanceInfo{}, err
+	}
+	findDoc.Details = &details
 
 	return findDoc.StockBalanceInfo, nil
 }
@@ -497,6 +508,43 @@ func (svc StockBalanceHttpService) saveMasterSync(holdingCode string) {
 			fmt.Printf("save %s cache error :: %s", svc.GetModuleName(), err.Error())
 		}
 	}
+}
+
+// replaceDetails swaps the lines of one document for the ones sent with the
+// request (nil = leave them alone) and returns the stored, barcode-enriched
+// lines so the Kafka message carries what PostgreSQL needs.
+func (svc StockBalanceHttpService) replaceDetails(holdingCode string, authUsername string, docNo string, details *[]trans_models.Detail) ([]trans_models.Detail, error) {
+	if details != nil {
+		if err := svc.svcStockBalanceDetail.DeleteStockBalanceDetailByDocNo(holdingCode, authUsername, docNo); err != nil {
+			return nil, err
+		}
+		docs := make([]stockbalancedetail_models.StockBalanceDetail, 0, len(*details))
+		for _, detail := range *details {
+			docs = append(docs, stockbalancedetail_models.StockBalanceDetail{DocNo: docNo, Detail: detail})
+		}
+		if len(docs) > 0 {
+			if err := svc.svcStockBalanceDetail.CreateStockBalanceDetail(holdingCode, authUsername, docs); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return svc.svcStockBalanceDetail.ListStockBalanceDetailByDocNo(holdingCode, docNo)
+}
+
+// newMessage carries holdingcode + docno, which the projection consumer keys
+// on. The old messages set only StockBalance, so the consumer dropped them as
+// "empty document" and no stock balance ever reached PostgreSQL.
+func (svc StockBalanceHttpService) newMessage(doc models.StockBalanceDoc, details []trans_models.Detail) models.StockBalanceMessage {
+	msg := models.StockBalanceMessage{}
+	msg.DocIdentity = doc.DocIdentity
+	msg.HoldingCodeentity = doc.HoldingCodeentity
+	msg.StockBalance = doc.StockBalance
+	msg.CreatedBy = doc.CreatedBy
+	msg.CreatedAt = doc.CreatedAt
+	msg.UpdatedBy = doc.UpdatedBy
+	msg.UpdatedAt = doc.UpdatedAt
+	msg.Details = &details
+	return msg
 }
 
 func (svc StockBalanceHttpService) GetModuleName() string {
