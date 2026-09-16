@@ -169,6 +169,18 @@ const workspaceTextEn = {
 type WorkspaceTextKey = keyof typeof workspaceTextEn;
 
 const workspaceBackendKeys: Partial<Record<WorkspaceTextKey, string>> = {
+  backToCompanies: "back_to_companies",
+  companyNamePlaceholder: "company_name_placeholder",
+  companyNameRequired: "company_name_required",
+  createShopFailed: "create_shop_failed",
+  createShopSuccess: "create_shop_success",
+  loadShopsFailed: "load_shops_failed",
+  loadingCompanies: "loading_companies",
+  noCompanies: "no_companies",
+  signedInAs: "signed_in_as",
+  availableCompanies: "available_companies",
+  availableBranches: "available_branches",
+  selectShopFailed: "select_shop_failed",
   changeCompany: "change_company",
   companyName: "company_name",
   createCompany: "createcompany",
@@ -633,16 +645,16 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       const holdingCode = tenantCodeForShop(shop);
       if (!holdingCode || seen.has(holdingCode)) return;
       seen.add(holdingCode);
-      options.push({ shop, label: holdingAccessDisplayName(shop, language) });
+      options.push({ shop, label: holdingAccessDisplayName(shop, backendLanguage) });
     });
 
     return options.sort((a, b) => a.label.localeCompare(b.label, language === "th" ? "th" : "en", { sensitivity: "base" }));
   }, [language, shops]);
 
   const selectedAccessShopLabel = useMemo(() => {
-    if (!selectedShopForAccess) return language === "th" ? "เลือกกลุ่มกิจการ" : "Select business group";
+    if (!selectedShopForAccess) return backendText(backendLanguage, "workspace_select_business_group", "เลือกกลุ่มกิจการ");
     return accessShopOptions.find((option) => tenantCodeForShop(option.shop) === tenantCodeForShop(selectedShopForAccess))?.label
-      ?? holdingAccessDisplayName(selectedShopForAccess, language);
+      ?? holdingAccessDisplayName(selectedShopForAccess, backendLanguage);
   }, [accessShopOptions, language, selectedShopForAccess]);
   const activeHoldingContext = useMemo(() => {
     const activeHoldingCode = auth ? activeHoldingCodeFromAuth(auth) : "";
@@ -935,7 +947,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     if (!auth) return;
     const representativeShop = accessShopOptions[0]?.shop;
     if (!representativeShop) {
-      setNotice({ type: "error", text: language === "th" ? "ไม่พบกลุ่มกิจการสำหรับกำหนดสิทธิ์" : "No business group found for access control." });
+      setNotice({ type: "error", text: backendText(backendLanguage, "workspace_no_business_group_found_for", "ไม่พบกลุ่มกิจการสำหรับกำหนดสิทธิ์") });
       return;
     }
     setBusy(true);
@@ -957,7 +969,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       setActiveAccessRoute(route);
       setStep("access");
     } catch (error) {
-      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: language === "th" ? "เตรียมระบบกำหนดสิทธิ์ล้มเหลว" : "Failed to initialize access control." });
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: backendText(backendLanguage, "workspace_failed_to_initialize_access_control", "เตรียมระบบกำหนดสิทธิ์ล้มเหลว") });
     } finally {
       setBusy(false);
     }
@@ -995,7 +1007,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
 
       notifyWorkspaceChanged();
     } catch (error) {
-      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: language === "th" ? "เปลี่ยนบริษัทสำหรับกำหนดสิทธิ์ล้มเหลว" : "Failed to switch company." });
+      setNotice(error instanceof Error && error.message ? { type: "error", text: error.message } : { type: "error", text: backendText(backendLanguage, "workspace_failed_to_switch_company", "เปลี่ยนบริษัทสำหรับกำหนดสิทธิ์ล้มเหลว") });
     } finally {
       setBusy(false);
     }
@@ -1155,14 +1167,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 onClick={() => void returnToShopSelection()}
               >
                 <ArrowLeft size={16} className="text-muted-foreground" />
-                <span className="hidden sm:inline font-bold">{language === "th" ? "ย้อนกลับ" : "Back"}</span>
+                <span className="hidden sm:inline font-bold">{backendText(backendLanguage, "go_back", "ย้อนกลับ")}</span>
               </button>
               <div className="hidden sm:block min-w-0">
                 <p className="eyebrow text-xs font-bold uppercase tracking-wider text-primary leading-none mb-1">
-                  {language === "th" ? "การตั้งค่าระบบ" : "SYSTEM CONFIGURATION"}
+                  {backendText(backendLanguage, "system_settings", "การตั้งค่าระบบ")}
                 </p>
                 <h2 className="text-base font-extrabold leading-tight sm:text-xl text-foreground tracking-tight">
-                  {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access Control"}
+                  {backendText(backendLanguage, "workspace_settings_access_control", "ตั้งค่าระบบและการเข้าถึง")}
                 </h2>
               </div>
             </div>
@@ -1227,8 +1239,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     {accessSidebarCollapsed
                       ? activeNav
                         ? language === "th" ? activeNav.label.th : activeNav.label.en
-                        : language === "th" ? "เมนูตั้งค่า" : "Settings menu"
-                      : language === "th" ? "ปิดเมนู" : "Hide menu"}
+                        : backendText(backendLanguage, "workspace_settings_menu", "เมนูตั้งค่า")
+                      : backendText(backendLanguage, "workspace_hide_menu", "ปิดเมนู")}
                   </span>
                 </span>
                 {accessSidebarCollapsed ? <PanelLeftOpen className="size-4 shrink-0" /> : <PanelLeftClose className="size-4 shrink-0" />}
@@ -1236,13 +1248,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               <div className="col-span-2 sm:col-span-3 hidden md:flex items-center justify-between mb-2 min-w-0">
                 {!accessSidebarCollapsed ? (
                   <p className="px-2 truncate text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {language === "th" ? "ตั้งค่าระบบและการเข้าถึง" : "Settings & Access"}
+                    {backendText(backendLanguage, "workspace_settings_access_control", "ตั้งค่าระบบและการเข้าถึง")}
                   </p>
                 ) : null}
                 <button
                   type="button"
                   onClick={toggleAccessSidebar}
-                  title={accessSidebarCollapsed ? (language === "th" ? "ขยายเมนู" : "Expand menu") : (language === "th" ? "ย่อเมนู" : "Collapse menu")}
+                  title={accessSidebarCollapsed ? (backendText(backendLanguage, "workspace_expand_menu", "ขยายเมนู")) : (backendText(backendLanguage, "workspace_collapse_menu", "ย่อเมนู"))}
                   aria-label={accessSidebarCollapsed ? "Expand menu" : "Collapse menu"}
                   className={`grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground ${accessSidebarCollapsed ? "mx-auto" : ""}`}
                 >
@@ -1354,9 +1366,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               !hasExplicitLanguageSettings(selectedShopForAccess) ? (
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 text-sm text-foreground">
                   <span className="min-w-0 text-xs font-semibold text-muted-foreground">
-                    {language === "th"
-                      ? "ยังไม่ได้ยืนยันภาษาที่ใช้งาน ระบบใช้ภาษาไทยเป็นค่าเริ่มต้น ควรกำหนดภาษาก่อนกรอกชื่อหลายภาษา"
-                      : "Active languages are not confirmed yet. The system uses Thai by default; set languages before entering multilingual names."}
+                    {backendText(backendLanguage, "workspace_active_languages_are_not_confirmed", "ยังไม่ได้ยืนยันภาษาที่ใช้งาน ระบบใช้ภาษาไทยเป็นค่าเริ่มต้น ควรกำหนดภาษาก่อนกรอกชื่อหลายภาษา")}
                   </span>
                   <button
                     className="secondary-button inline-flex items-center gap-1.5 px-2.5 py-1 text-xs"
@@ -1367,12 +1377,12 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     }}
                   >
                     <Languages size={14} />
-                    <span>{language === "th" ? "ไปตั้งภาษา" : "Set languages"}</span>
+                    <span>{backendText(backendLanguage, "workspace_set_languages", "ไปตั้งภาษา")}</span>
                   </button>
                 </div>
               ) : null}
               {activeStepTabs ? (
-                <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label={language === "th" ? "หมวดในขั้นนี้" : "Sections in this step"}>
+                <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label={backendText(backendLanguage, "workspace_sections_in_this_step", "หมวดในขั้นนี้")}>
                   {activeStepTabs.map((tab) => (
                     <button
                       aria-selected={effectiveAccessRoute === tab.route}
@@ -1393,10 +1403,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
               ) : null}
               {activeAccessRoute === "/people" && peopleSummary ? (
                 <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm shadow-xs">
-                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.employees}</strong> {language === "th" ? "พนักงาน" : "employees"}</span>
-                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.accounts}</strong> {language === "th" ? "บัญชีเข้าระบบ" : "login accounts"}</span>
-                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.linked}</strong> {language === "th" ? "คนที่มีทั้งสองอย่าง (จับคู่ด้วยอีเมล)" : "with both (matched by email)"}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">{language === "th" ? "พนักงานที่ต้องเข้าระบบ: เพิ่มที่แท็บ บัญชีเข้าระบบ ด้วยอีเมลเดียวกัน" : "Employees who need to sign in: add them under Login Accounts with the same email"}</span>
+                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.employees}</strong> {backendText(backendLanguage, "employee", "พนักงาน")}</span>
+                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.accounts}</strong> {backendText(backendLanguage, "workspace_login_accounts", "บัญชีเข้าระบบ")}</span>
+                  <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.linked}</strong> {backendText(backendLanguage, "workspace_with_both_matched_by_email", "คนที่มีทั้งสองอย่าง (จับคู่ด้วยอีเมล)")}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{backendText(backendLanguage, "workspace_employees_who_need_to_sign", "พนักงานที่ต้องเข้าระบบ: เพิ่มที่แท็บ บัญชีเข้าระบบ ด้วยอีเมลเดียวกัน")}</span>
                 </div>
               ) : null}
               <SystemSettingsScreen
@@ -1456,7 +1466,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 className="workspace-holding-context"
                 title={`${activeHoldingContext.name} (${activeHoldingContext.code})`}
               >
-                <span>{language === "th" ? "กลุ่มกิจการที่ใช้งาน" : "Active business group"}</span>
+                <span>{backendText(backendLanguage, "workspace_active_business_group", "กลุ่มกิจการที่ใช้งาน")}</span>
                 <code>{activeHoldingContext.code}</code>
                 <strong>{activeHoldingContext.name}</strong>
               </div>
@@ -1503,12 +1513,12 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 )}
                 <span className="workspace-setup-button-label">
                   {accessShopOptions.length === 0
-                    ? language === "th" ? "เลือกกลุ่มกิจการ" : "Business group"
-                    : language === "th" ? "ตั้งค่าระบบ" : "Settings"}
+                    ? backendText(backendLanguage, "workspace_select_business_group", "เลือกกลุ่มกิจการ")
+                    : backendText(backendLanguage, "system_config", "ตั้งค่าระบบ")}
                 </span>
                 {flatCompanies.length === 0 ? (
                   <span className="workspace-setup-badge">
-                    {language === "th" ? "เริ่มที่นี่" : "Start here"}
+                    {backendText(backendLanguage, "workspace_start_here", "เริ่มที่นี่")}
                   </span>
                 ) : null}
               </button>
@@ -1529,10 +1539,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           <span className="pending">{text("stepMenu")}</span>
           <p className="step-strip-description">
             {step === "shops"
-              ? language === "th" ? "กดเลือกบริษัทที่ต้องการทำงานด้านล่าง" : "Pick the company you want to work in below"
+              ? backendText(backendLanguage, "workspace_pick_the_company_you_want", "กดเลือกบริษัทที่ต้องการทำงานด้านล่าง")
               : step === "branches"
-              ? language === "th" ? "เลือกสาขาของบริษัทที่จะเข้าทำงาน" : "Choose the branch of this company to enter"
-              : language === "th" ? "กำลังตั้งค่าระบบ..." : "Loading system settings..."}
+              ? backendText(backendLanguage, "workspace_choose_the_branch_of_this", "เลือกสาขาของบริษัทที่จะเข้าทำงาน")
+              : backendText(backendLanguage, "workspace_loading_system_settings", "กำลังตั้งค่าระบบ...")}
           </p>
         </div>
 
@@ -1554,21 +1564,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 </div>
                 <strong className="text-xl sm:text-2xl text-foreground font-bold mb-2.5 tracking-tight">
                   {accessShopOptions.length === 0
-                    ? language === "th"
-                      ? "ยังไม่มีกลุ่มกิจการสำหรับบัญชีนี้"
-                      : "No business group for this account yet"
-                    : language === "th"
-                      ? "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ"
-                      : "No active companies found in your system"}
+                    ? backendText(backendLanguage, "workspace_no_business_group_for_this", "ยังไม่มีกลุ่มกิจการสำหรับบัญชีนี้")
+                    : backendText(backendLanguage, "workspace_no_active_companies_found_in", "ยังไม่มีบริษัทเปิดใช้งานในระบบของคุณ")}
                 </strong>
                 <p className="text-sm text-muted-foreground mb-7 max-w-sm leading-relaxed">
                   {accessShopOptions.length === 0
-                    ? language === "th"
-                      ? "เริ่มจากสร้างหรือเลือกกลุ่มกิจการก่อน แล้วจึงตั้งค่าภาษา บริษัท และสาขา"
-                      : "Create or pick a business group first, then set up languages, company, and branches."
-                    : language === "th"
-                      ? "เริ่มจากกำหนดภาษาที่ใช้งานก่อน แล้วค่อยสร้างบริษัทและสาขา"
-                      : "Start with active languages, then create the company and branches."}
+                    ? backendText(backendLanguage, "workspace_create_or_pick_a_business", "เริ่มจากสร้างหรือเลือกกลุ่มกิจการก่อน แล้วจึงตั้งค่าภาษา บริษัท และสาขา")
+                    : backendText(backendLanguage, "workspace_start_with_active_languages_then", "เริ่มจากกำหนดภาษาที่ใช้งานก่อน แล้วค่อยสร้างบริษัทและสาขา")}
                 </p>
 
                 <button
@@ -1584,14 +1586,14 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   )}
                   <span className="workspace-setup-button-label">
                     {accessShopOptions.length === 0
-                      ? language === "th" ? "เลือกหรือสร้างกลุ่มกิจการ" : "Pick or create a business group"
-                      : language === "th" ? "เริ่มตั้งค่าระบบ" : "Start system setup"}
+                      ? backendText(backendLanguage, "workspace_pick_or_create_a_business", "เลือกหรือสร้างกลุ่มกิจการ")
+                      : backendText(backendLanguage, "workspace_start_system_setup", "เริ่มตั้งค่าระบบ")}
                   </span>
                 </button>
 
                 <div className="w-full rounded-xl border border-border/70 bg-card/70 p-5">
                   <h4 className="mb-4 text-left text-sm font-bold text-foreground">
-                    {language === "th" ? "เริ่มใช้งานใน 3 ขั้นตอน" : "Get started in 3 steps"}
+                    {backendText(backendLanguage, "workspace_get_started_in_3_steps", "เริ่มใช้งานใน 3 ขั้นตอน")}
                   </h4>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {[
@@ -1641,7 +1643,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   // show a friendly placeholder so the name row is not empty/duplicate.
                   const companyName = companyLabel && companyLabel !== companyCode
                     ? companyLabel
-                    : (language === "th" ? "บริษัท" : "Company");
+                    : (backendText(backendLanguage, "company", "บริษัท"));
 
                   return (
                     <motion.button
@@ -1665,7 +1667,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       <div className="min-w-0 flex-1">
                         <h3
                           className="font-bold text-foreground text-base tracking-tight break-words leading-snug group-hover/company:text-primary transition-colors duration-200"
-                          title={`${companyName}${companyCode ? ` · ${language === "th" ? "รหัส" : "Code"} ${companyCode}` : ""}`}
+                          title={`${companyName}${companyCode ? ` · ${backendText(backendLanguage, "code", "รหัส")} ${companyCode}` : ""}`}
                         >
                           {companyName}
                         </h3>
@@ -1675,7 +1677,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                               ? "bg-primary/15 text-primary border-primary/30"
                               : "bg-muted text-muted-foreground border-border/60"
                           }`}>
-                            {isCreator ? (language === "th" ? "เจ้าของ" : "OWNER") : "USER"}
+                            {isCreator ? (backendText(backendLanguage, "owner", "เจ้าของ")) : "USER"}
                           </span>
                           {languageCodes.map((code) => (
                             <span key={code} className="px-1.5 py-0.5 text-[10px] bg-muted border border-border/50 text-muted-foreground rounded font-semibold uppercase shrink-0">
@@ -1717,12 +1719,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 {branches.length === 0 ? (
                   <>
                     <strong className="text-base text-foreground font-bold mb-1.5">
-                      {language === "th" ? "ยังไม่มีสาขา" : "No branches yet"}
+                      {backendText(backendLanguage, "workspace_no_branches_yet", "ยังไม่มีสาขา")}
                     </strong>
                     <p className="text-xs text-muted-foreground mb-4">
-                      {language === "th"
-                        ? "ระบบจะสร้างสาขาสำนักงานใหญ่ (รหัส 00000) ให้อัตโนมัติเพื่อเริ่มใช้งาน"
-                        : "The system will auto-create the headquarter branch (code 00000) to get started."}
+                      {backendText(backendLanguage, "workspace_the_system_will_auto_create", "ระบบจะสร้างสาขาสำนักงานใหญ่ (รหัส 00000) ให้อัตโนมัติเพื่อเริ่มใช้งาน")}
                     </p>
                     <button
                       className="primary-button inline-flex items-center gap-1.5"
@@ -1731,13 +1731,13 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       disabled={busy}
                     >
                       {busy ? <Loader2 className="spin" size={16} /> : <Building2 size={16} />}
-                      <span>{language === "th" ? "สร้างสาขาสำนักงานใหญ่" : "Create headquarter branch"}</span>
+                      <span>{backendText(backendLanguage, "workspace_create_headquarter_branch", "สร้างสาขาสำนักงานใหญ่")}</span>
                     </button>
                   </>
                 ) : (
                   <>
                     <strong className="text-base text-foreground font-bold mb-1.5">
-                      {language === "th" ? "ไม่พบสาขาที่ค้นหา" : "No branches match your search"}
+                      {backendText(backendLanguage, "workspace_no_branches_match_your_search", "ไม่พบสาขาที่ค้นหา")}
                     </strong>
                     <button
                       className="secondary-button inline-flex items-center gap-1.5"
@@ -1745,7 +1745,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       onClick={() => setBranchQuery("")}
                     >
                       <Search size={16} />
-                      <span>{language === "th" ? "ล้างคำค้นหา" : "Clear search"}</span>
+                      <span>{backendText(backendLanguage, "clear_search", "ล้างคำค้นหา")}</span>
                     </button>
                   </>
                 )}
@@ -1787,7 +1787,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                           {isHQ ? (
                             <span className="px-2 py-0.5 text-[9px] font-bold rounded-full border uppercase bg-primary/15 text-primary border-primary/30">
-                              {language === "th" ? "สำนักงานใหญ่" : "Headquarters"}
+                              {backendText(backendLanguage, "head_of", "สำนักงานใหญ่")}
                             </span>
                           ) : null}
                           {branch.language ? (
@@ -2185,10 +2185,10 @@ function recordValue(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
-function holdingAccessDisplayName(shop: ShopListItem, language: LanguageCode): string {
+function holdingAccessDisplayName(shop: ShopListItem, dictionary: BackendLanguageDictionary): string {
   const holdingCode = tenantCodeForShop(shop);
   const holdingName = shopDisplayName(shop) || holdingCode;
-  const prefix = language === "th" ? "กลุ่มกิจการ" : "Business group";
+  const prefix = backendText(dictionary, "workspace_business_group", "กลุ่มกิจการ");
   if (!holdingCode || holdingName === holdingCode) return `${prefix}: ${holdingName}`;
   return `${prefix}: ${holdingName} (${holdingCode})`;
 }

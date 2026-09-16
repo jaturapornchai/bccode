@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit e553d868 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit 30b025d2 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 47
 
@@ -816,31 +816,31 @@ Files indexed: 47
 
 | Line | Kind | Name |
 |---:|---|---|
-| 287 | function | `wt` |
-| 297 | function | `WorkspaceScreen` |
-| 327 | const-arrow | `toggleAccessSidebar` |
-| 686 | function | `stopLinePolling` |
-| 693 | function | `handleLineLink` |
-| 740 | function | `startLinePolling` |
-| 754 | function | `pollLineLink` |
-| 782 | function | `closeLineDialog` |
-| 787 | function | `copyLineLoginUrl` |
-| 793 | function | `selectShopAndBranch` |
-| 818 | function | `selectShop` |
-| 859 | function | `selectCompany` |
-| 906 | function | `createHeadquarterBranch` |
-| 934 | function | `openAccessSettings` |
-| 969 | function | `handlePrimarySetup` |
-| 978 | function | `handleAccessShopChange` |
-| 1004 | function | `createShop` |
-| 1035 | function | `selectBranch` |
-| 1050 | function | `enterWorkspaceWithUnitCheck` |
-| 1092 | function | `confirmUnitSetup` |
-| 1112 | function | `skipUnitSetup` |
-| 1117 | function | `togglePendingUnit` |
-| 1127 | function | `selectAllPendingUnits` |
-| 1131 | function | `clearPendingUnits` |
-| 1135 | function | `logout` |
+| 299 | function | `wt` |
+| 309 | function | `WorkspaceScreen` |
+| 339 | const-arrow | `toggleAccessSidebar` |
+| 698 | function | `stopLinePolling` |
+| 705 | function | `handleLineLink` |
+| 752 | function | `startLinePolling` |
+| 766 | function | `pollLineLink` |
+| 794 | function | `closeLineDialog` |
+| 799 | function | `copyLineLoginUrl` |
+| 805 | function | `selectShopAndBranch` |
+| 830 | function | `selectShop` |
+| 871 | function | `selectCompany` |
+| 918 | function | `createHeadquarterBranch` |
+| 946 | function | `openAccessSettings` |
+| 981 | function | `handlePrimarySetup` |
+| 990 | function | `handleAccessShopChange` |
+| 1016 | function | `createShop` |
+| 1047 | function | `selectBranch` |
+| 1062 | function | `enterWorkspaceWithUnitCheck` |
+| 1104 | function | `confirmUnitSetup` |
+| 1124 | function | `skipUnitSetup` |
+| 1129 | function | `togglePendingUnit` |
+| 1139 | function | `selectAllPendingUnits` |
+| 1143 | function | `clearPendingUnits` |
+| 1147 | function | `logout` |
 | 1944 | function | `readAuth` |
 | 1948 | function | `canAuthCreateCompany` |
 | 1952 | function | `activeHoldingCodeFromAuth` |
