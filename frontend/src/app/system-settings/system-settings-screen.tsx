@@ -1034,9 +1034,7 @@ export function SystemSettingsScreen({
           setNotice({
             type: "error",
             text:
-              language === "th"
-                ? "ไม่มีสิทธิ์เข้าถึงข้อมูลกลุ่มกิจการนี้ กรุณาเลือกกลุ่มกิจการใหม่หรือเข้าสู่ระบบใหม่"
-                : "You do not have access to this business group. Select the business group again or sign in again.",
+              backendText(backendLanguage, "ss_you_do_not_have_access", "ไม่มีสิทธิ์เข้าถึงข้อมูลกลุ่มกิจการนี้ กรุณาเลือกกลุ่มกิจการใหม่หรือเข้าสู่ระบบใหม่"),
           });
           return;
         }
@@ -1113,9 +1111,7 @@ export function SystemSettingsScreen({
         throw new Error(text("requestFailed"));
       if (!id)
         throw new Error(
-          language === "th"
-            ? "ไม่พบรหัสข้อมูลสำหรับโหลดรายละเอียด"
-            : "Missing record ID for detail loading.",
+          backendText(backendLanguage, "ss_missing_record_id_for_detail", "ไม่พบรหัสข้อมูลสำหรับโหลดรายละเอียด"),
         );
       const params = workspaceTenantSearchParams(currentWorkspace);
       const response = await authFetch(
@@ -1131,9 +1127,7 @@ export function SystemSettingsScreen({
       const detail = normalizeRecords(payload, currentConfig)[0];
       if (!detail)
         throw new Error(
-          language === "th"
-            ? "ไม่พบรายละเอียดของรายการนี้"
-            : "Record detail was not found.",
+          backendText(backendLanguage, "ss_record_detail_was_not_found", "ไม่พบรายละเอียดของรายการนี้"),
         );
       return detail;
     },
@@ -1510,12 +1504,10 @@ export function SystemSettingsScreen({
   async function confirmDiscardIfDirty(): Promise<boolean> {
     if (!formOpen || !isFormDirty) return true;
     return confirm({
-      title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
-      description: language === "th"
-        ? "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"
-        : "You are editing or adding data. Switching now will discard your changes. Continue?",
-      confirmLabel: language === "th" ? "เปลี่ยนเลย" : "Switch anyway",
-      cancelLabel: language === "th" ? "อยู่ต่อแก้ไข" : "Keep editing",
+      title: backendText(backendLanguage, "st_not_saved_yet", "ยังไม่ได้บันทึก"),
+      description: backendText(backendLanguage, "ss_you_are_editing_or_adding", "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"),
+      confirmLabel: backendText(backendLanguage, "ss_switch_anyway", "เปลี่ยนเลย"),
+      cancelLabel: backendText(backendLanguage, "ss_keep_editing", "อยู่ต่อแก้ไข"),
       tone: "warning",
     });
   }
@@ -1576,12 +1568,10 @@ export function SystemSettingsScreen({
     }
     if (categoryUnsavedChanges && nextId !== categorySelectedGuid) {
       const confirmLeave = await confirm({
-        title: language === "th" ? "คุณมีข้อมูลที่ยังไม่ได้บันทึก" : "You have unsaved changes",
-        description: language === "th"
-          ? "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการเปลี่ยนหมวดหมู่โดยไม่บันทึกหรือไม่?"
-          : "You have unsaved changes in category products. Do you want to switch categories without saving?",
-        confirmLabel: language === "th" ? "เปลี่ยนหมวดหมู่โดยไม่บันทึก" : "Leave without saving",
-        cancelLabel: language === "th" ? "กลับไปแก้ไข" : "Cancel",
+        title: backendText(backendLanguage, "ss_you_have_unsaved_changes", "คุณมีข้อมูลที่ยังไม่ได้บันทึก"),
+        description: backendText(backendLanguage, "ss_you_have_unsaved_changes_in", "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการเปลี่ยนหมวดหมู่โดยไม่บันทึกหรือไม่?"),
+        confirmLabel: backendText(backendLanguage, "ss_leave_without_saving", "เปลี่ยนหมวดหมู่โดยไม่บันทึก"),
+        cancelLabel: backendText(backendLanguage, "common_back_to_edit", "กลับไปแก้ไข"),
         tone: "warning",
       });
       if (!confirmLeave) return;
@@ -1589,12 +1579,10 @@ export function SystemSettingsScreen({
     }
     if (formOpen && isFormDirty) {
       const confirmLeave = await confirm({
-        title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
-        description: language === "th"
-          ? "กำลังแก้ไขหรือเพิ่มหมวดสินค้าอยู่ หากเปลี่ยนรายการตอนนี้ ข้อมูลที่ยังไม่ได้บันทึกจะหายไป"
-          : "Switching categories now will discard your unsaved changes.",
-        confirmLabel: language === "th" ? "เปลี่ยนรายการ" : "Switch category",
-        cancelLabel: language === "th" ? "แก้ไขต่อ" : "Keep editing",
+        title: backendText(backendLanguage, "st_not_saved_yet", "ยังไม่ได้บันทึก"),
+        description: backendText(backendLanguage, "ss_switching_categories_now_will_discard", "กำลังแก้ไขหรือเพิ่มหมวดสินค้าอยู่ หากเปลี่ยนรายการตอนนี้ ข้อมูลที่ยังไม่ได้บันทึกจะหายไป"),
+        confirmLabel: backendText(backendLanguage, "ss_switch_category", "เปลี่ยนรายการ"),
+        cancelLabel: backendText(backendLanguage, "ss_continue_editing", "แก้ไขต่อ"),
         tone: "warning",
       });
       if (!confirmLeave) return;
@@ -1614,12 +1602,10 @@ export function SystemSettingsScreen({
     const oldId = editing ? recordId(editing, currentConfig) : "";
     if (categoryUnsavedChanges && newId !== oldId) {
       const confirmLeave = await confirm({
-        title: language === "th" ? "คุณมีข้อมูลที่ยังไม่ได้บันทึก" : "You have unsaved changes",
-        description: language === "th"
-          ? "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการเปลี่ยนหมวดหมู่โดยไม่บันทึกหรือไม่?"
-          : "You have unsaved changes. Do you want to leave without saving?",
-        confirmLabel: language === "th" ? "เปลี่ยนหมวดหมู่โดยไม่บันทึก" : "Leave without saving",
-        cancelLabel: language === "th" ? "กลับไปแก้ไข" : "Cancel",
+        title: backendText(backendLanguage, "ss_you_have_unsaved_changes", "คุณมีข้อมูลที่ยังไม่ได้บันทึก"),
+        description: backendText(backendLanguage, "ss_you_have_unsaved_changes_in", "คุณมีข้อมูลสินค้าที่ผูกในหมวดหมู่ที่ยังไม่ได้บันทึก ต้องการเปลี่ยนหมวดหมู่โดยไม่บันทึกหรือไม่?"),
+        confirmLabel: backendText(backendLanguage, "ss_leave_without_saving", "เปลี่ยนหมวดหมู่โดยไม่บันทึก"),
+        cancelLabel: backendText(backendLanguage, "common_back_to_edit", "กลับไปแก้ไข"),
         tone: "warning",
       });
       if (!confirmLeave) {
@@ -1631,12 +1617,10 @@ export function SystemSettingsScreen({
     // Warn when leaving an open form (add or edit) for another record's edit mode
     if (formOpen && isFormDirty && newId !== oldId) {
       const confirmLeave = await confirm({
-        title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
-        description: language === "th"
-          ? "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"
-          : "You are editing or adding data. Switching now will discard your changes. Continue?",
-        confirmLabel: language === "th" ? "เปลี่ยนเลย" : "Switch anyway",
-        cancelLabel: language === "th" ? "อยู่ต่อแก้ไข" : "Keep editing",
+        title: backendText(backendLanguage, "st_not_saved_yet", "ยังไม่ได้บันทึก"),
+        description: backendText(backendLanguage, "ss_you_are_editing_or_adding", "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"),
+        confirmLabel: backendText(backendLanguage, "ss_switch_anyway", "เปลี่ยนเลย"),
+        cancelLabel: backendText(backendLanguage, "ss_keep_editing", "อยู่ต่อแก้ไข"),
         tone: "warning",
       });
       if (!confirmLeave) return;
@@ -1872,9 +1856,7 @@ export function SystemSettingsScreen({
       setNotice({
         type: "error",
         text:
-          language === "th"
-            ? "บริษัท/สาขาที่เข้าใช้งานได้ยังไม่ครบ — เลือกสาขาให้ครบทุกบริษัทที่ระบุ หรือติ๊ก ใช้ได้ทั้งกลุ่มกิจการ"
-            : "Company/branch access is incomplete — pick branches for each listed company, or enable whole-group access.",
+          backendText(backendLanguage, "ss_company_branch_access_is_incomplete", "บริษัท/สาขาที่เข้าใช้งานได้ยังไม่ครบ — เลือกสาขาให้ครบทุกบริษัทที่ระบุ หรือติ๊ก ใช้ได้ทั้งกลุ่มกิจการ"),
       });
       return;
     }
@@ -1891,9 +1873,7 @@ export function SystemSettingsScreen({
         setNotice({
           type: "error",
           text:
-            language === "th"
-              ? "รหัสผู้ใช้งานซ้ำ"
-              : "User code already exists.",
+            backendText(backendLanguage, "ss_user_code_already_exists", "รหัสผู้ใช้งานซ้ำ"),
         });
         return;
       }
@@ -1912,7 +1892,7 @@ export function SystemSettingsScreen({
         ) {
           setNotice({
             type: "error",
-            text: language === "th" ? "รหัสนี้มีอยู่แล้ว" : "This code already exists.",
+            text: backendText(backendLanguage, "ss_this_code_already_exists", "รหัสนี้มีอยู่แล้ว"),
           });
           return;
         }
@@ -1931,7 +1911,7 @@ export function SystemSettingsScreen({
         ) {
           setNotice({
             type: "error",
-            text: language === "th" ? "รหัสนี้มีอยู่แล้ว" : "This code already exists.",
+            text: backendText(backendLanguage, "ss_this_code_already_exists", "รหัสนี้มีอยู่แล้ว"),
           });
           return;
         }
@@ -2093,7 +2073,7 @@ export function SystemSettingsScreen({
     ) {
       setNotice({
         type: "error",
-        text: language === "th" ? "ไม่พบเวอร์ชันข้อมูล กรุณารีเฟรชก่อนลบ" : "Record version is missing. Refresh before deleting.",
+        text: backendText(backendLanguage, "ss_record_version_is_missing_refresh", "ไม่พบเวอร์ชันข้อมูล กรุณารีเฟรชก่อนลบ"),
       });
       return;
     }
@@ -2101,7 +2081,7 @@ export function SystemSettingsScreen({
       title: text("deleteConfirm"),
       description: recordTitle(record, currentConfig, language),
       details: id
-        ? `${language === "th" ? "รหัสอ้างอิง" : "Reference ID"}: ${id}`
+        ? `${backendText(backendLanguage, "ss_reference_id", "รหัสอ้างอิง")}: ${id}`
         : undefined,
       confirmLabel: text("delete"),
       cancelLabel: text("cancel"),
@@ -2240,7 +2220,7 @@ export function SystemSettingsScreen({
     const confirmed = await confirm({
       title: text("resetPassword"),
       description: text("resetPasswordConfirm"),
-      details: `${language === "th" ? "ผู้ใช้" : "User"}: ${username}`,
+      details: `${backendText(backendLanguage, "user_label", "ผู้ใช้")}: ${username}`,
       confirmLabel: text("resetPassword"),
       cancelLabel: text("cancel"),
       tone: "warning",
@@ -2480,7 +2460,12 @@ export function SystemSettingsScreen({
                       variant="outline"
                       className="h-auto min-h-5 max-w-full whitespace-normal break-words border-secondary/40 bg-secondary/5 px-1.5 py-0.5 text-[9px] font-medium leading-snug"
                     >
-                      กลุ่มกิจการ: {holdingDisplayName(workspace)}
+                      {backendText(
+                        backendLanguage,
+                        "workspace_business_group",
+                        "กลุ่มกิจการ",
+                      )}
+                      : {holdingDisplayName(workspace)}
                     </Badge>
                     <Badge
                       variant="outline"
@@ -2510,7 +2495,7 @@ export function SystemSettingsScreen({
               <div className="flex min-w-0 flex-[1_1_28rem] flex-wrap items-center justify-end gap-1.5">
                 <Input
                   className="h-8 min-w-40 flex-[1_1_14rem] rounded-lg text-sm md:max-w-72"
-                  placeholder={language === "th" ? "ค้นหา..." : "Search..."}
+                  placeholder={backendText(backendLanguage, "ss_search", "ค้นหา...")}
                   value={categorySearchQuery}
                   onChange={(event) => setCategorySearchQuery(event.target.value)}
                 />
@@ -2522,7 +2507,7 @@ export function SystemSettingsScreen({
                   disabled={loading || saving}
                 >
                   <Plus className="size-4" />
-                  {language === "th" ? "เพิ่มกลุ่มหลัก" : "Add Root"}
+                  {backendText(backendLanguage, "ss_add_root", "เพิ่มกลุ่มหลัก")}
                 </Button>
                 <Button
                   type="button"
@@ -2533,7 +2518,7 @@ export function SystemSettingsScreen({
                   disabled={loading || saving || !categorySelectedGuid}
                 >
                   <FolderPlus className="size-4 text-emerald-600 dark:text-emerald-400" />
-                  {language === "th" ? "เพิ่มกลุ่มย่อย" : "Add Subgroup"}
+                  {backendText(backendLanguage, "st_add_subgroup", "เพิ่มกลุ่มย่อย")}
                 </Button>
               </div>
             ) : null}
@@ -2543,18 +2528,16 @@ export function SystemSettingsScreen({
                   type="button"
                   variant="outline"
                   size="icon"
-                  aria-label={language === "th" ? "กลับไปเลือกชุดหมวด" : "Back to category sets"}
-                  title={language === "th" ? "กลับไปเลือกชุดหมวด" : "Back to category sets"}
+                  aria-label={backendText(backendLanguage, "ss_back_to_category_sets", "กลับไปเลือกชุดหมวด")}
+                  title={backendText(backendLanguage, "ss_back_to_category_sets", "กลับไปเลือกชุดหมวด")}
                   className="size-8 shrink-0 rounded-lg"
                   onClick={async () => {
                     if (categoryUnsavedChanges || (formOpen && isFormDirty)) {
                       const confirmLeave = await confirm({
-                        title: language === "th" ? "คุณมีข้อมูลที่ยังไม่ได้บันทึก" : "You have unsaved changes",
-                        description: language === "th"
-                          ? "หากกลับไปเลือกชุดหมวดตอนนี้ ข้อมูลที่ยังไม่ได้บันทึกจะหายไป"
-                          : "You have unsaved changes. Do you want to leave without saving?",
-                        confirmLabel: language === "th" ? "กลับโดยไม่บันทึก" : "Leave without saving",
-                        cancelLabel: language === "th" ? "กลับไปแก้ไข" : "Cancel",
+                        title: backendText(backendLanguage, "ss_you_have_unsaved_changes", "คุณมีข้อมูลที่ยังไม่ได้บันทึก"),
+                        description: backendText(backendLanguage, "ss_you_have_unsaved_changes_do", "หากกลับไปเลือกชุดหมวดตอนนี้ ข้อมูลที่ยังไม่ได้บันทึกจะหายไป"),
+                        confirmLabel: backendText(backendLanguage, "ss_go_back_without_saving", "กลับโดยไม่บันทึก"),
+                        cancelLabel: backendText(backendLanguage, "common_back_to_edit", "กลับไปแก้ไข"),
                         tone: "warning",
                       });
                       if (!confirmLeave) return;
@@ -2580,7 +2563,7 @@ export function SystemSettingsScreen({
                 </Badge>
                 <Input
                   className="h-8 min-w-40 flex-[1_1_14rem] rounded-lg text-sm md:max-w-72"
-                  placeholder={language === "th" ? "ค้นหา..." : "Search..."}
+                  placeholder={backendText(backendLanguage, "ss_search", "ค้นหา...")}
                   value={categorySearchQuery}
                   onChange={(event) => setCategorySearchQuery(event.target.value)}
                 />
@@ -2593,7 +2576,7 @@ export function SystemSettingsScreen({
                     disabled={loading || saving}
                   >
                     <Plus className="size-4" />
-                    {language === "th" ? "เพิ่มหมวดสินค้า" : "Add Category"}
+                    {backendText(backendLanguage, "ss_add_category", "เพิ่มหมวดสินค้า")}
                   </Button>
                 )}
               </div>
@@ -2609,9 +2592,7 @@ export function SystemSettingsScreen({
               compact={!(showProductGroupHeaderControls || showProductCategoryHeaderControls)}
               label={
                 showProductGroupHeaderControls || showProductCategoryHeaderControls
-                  ? language === "th"
-                    ? "วิธีใช้"
-                    : "How to use"
+                  ? backendText(backendLanguage, "ss_how_to_use", "วิธีใช้")
                   : undefined
               }
               language={language}
@@ -2686,9 +2667,7 @@ export function SystemSettingsScreen({
             min={TREE_SPLIT_MIN_LEFT}
             max={TREE_SPLIT_MAX_LEFT}
             label={
-              language === "th"
-                ? "ปรับขนาดกลุ่มสินค้าและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-                : "Resize product group tree and form panes (drag to resize, double-click to reset)"
+              backendText(backendLanguage, "ss_resize_product_group_tree_and", "ปรับขนาดกลุ่มสินค้าและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
             }
             isResizing={resizingTreeSplit}
             onPointerDown={startTreeSplitResize}
@@ -2760,9 +2739,7 @@ export function SystemSettingsScreen({
             min={TREE_SPLIT_MIN_LEFT}
             max={TREE_SPLIT_MAX_LEFT}
             label={
-              language === "th"
-                ? "ปรับขนาดกลุ่มสินค้าย่อยและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-                : "Resize product subgroup tree and form panes (drag to resize, double-click to reset)"
+              backendText(backendLanguage, "ss_resize_product_subgroup_tree_and", "ปรับขนาดกลุ่มสินค้าย่อยและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
             }
             isResizing={resizingTreeSplit}
             onPointerDown={startTreeSplitResize}
@@ -2834,9 +2811,9 @@ export function SystemSettingsScreen({
             <CardHeader className="p-3 border-b border-border bg-muted/20 shrink-0">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-1.5">
-                  <span>{language === "th" ? "รายการสูตรผลิต" : "Recipes"}</span>
+                  <span>{backendText(backendLanguage, "ss_recipes", "รายการสูตรผลิต")}</span>
                   <Badge variant="secondary" className="text-[10px] font-semibold h-4 px-1.5">
-                    {visibleRecords.length} / {records.length} {language === "th" ? "รายการ" : "items"}
+                    {visibleRecords.length} / {records.length} {backendText(backendLanguage, "items", "รายการ")}
                   </Badge>
                 </CardTitle>
                 <Button
@@ -2853,7 +2830,7 @@ export function SystemSettingsScreen({
                       itemcode: "",
                       names: [{ code: language, name: "" }],
                       itemunitcode: "RECIPE",
-                      itemunitnames: [{ code: language, name: language === "th" ? "สูตร" : "Recipe" }],
+                      itemunitnames: [{ code: language, name: backendText(backendLanguage, "formula", "สูตร") }],
                       price: 0,
                       bom: [],
                       boms: [{ guidfixed: "", startdate: today, enddate: null, bom: [] }],
@@ -2873,7 +2850,7 @@ export function SystemSettingsScreen({
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="h-9 !pl-10"
-                  placeholder={language === "th" ? "ค้นหาสูตร..." : "Search recipe..."}
+                  placeholder={backendText(backendLanguage, "ss_search_recipe", "ค้นหาสูตร...")}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
@@ -2887,14 +2864,14 @@ export function SystemSettingsScreen({
                 </div>
               ) : visibleRecords.length === 0 ? (
                 <div className="text-center p-8 text-sm text-muted-foreground">
-                  {language === "th" ? "ไม่พบสูตรผลิต" : "No recipes found"}
+                  {backendText(backendLanguage, "ss_no_recipes_found", "ไม่พบสูตรผลิต")}
                 </div>
               ) : (
                 <div className="divide-y divide-border/60">
                   {visibleRecords.map((record: any, index: number) => {
                     const guid = recordId(record, config);
                     const isSelected = guid === selectedRecordId;
-                    const name = pickName(record.names, language) || record.barcode || (language === "th" ? "(สูตรใหม่)" : "(New Recipe)");
+                    const name = pickName(record.names, language) || record.barcode || (backendText(backendLanguage, "st_new_formula", "(สูตรใหม่)"));
                     return (
                       <button
                         key={guid}
@@ -2915,7 +2892,7 @@ export function SystemSettingsScreen({
                           {name}
                         </span>
                         <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
-                          <span className="font-mono">{record.barcode || (language === "th" ? "ยังไม่กำหนด" : "Not set")}</span>
+                          <span className="font-mono">{record.barcode || (backendText(backendLanguage, "common_not_specified", "ยังไม่กำหนด"))}</span>
                           <span className="bg-muted px-1.5 py-0.5 rounded font-semibold text-[10px]">
                             {record.itemunitcode || "RECIPE"}
                           </span>
@@ -2934,9 +2911,7 @@ export function SystemSettingsScreen({
             min={BOM_SPLIT_MIN_LEFT}
             max={BOM_SPLIT_MAX_LEFT}
             label={
-              language === "th"
-                ? "ปรับขนาดรายการสูตรการผลิตและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-                : "Adjust layout split (drag to resize, double-click to reset)"
+              backendText(backendLanguage, "ss_adjust_layout_split_drag_to", "ปรับขนาดรายการสูตรการผลิตและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
             }
             isResizing={resizingBomSplit}
             onPointerDown={startBomSplitResize}
@@ -2962,7 +2937,7 @@ export function SystemSettingsScreen({
                 onClick={() => setSelectedRecordId("")}
               >
                 <ArrowLeft className="h-4 w-4" />
-                {language === "th" ? "กลับไปที่รายการ" : "Back to list"}
+                {backendText(backendLanguage, "ss_back_to_list", "กลับไปที่รายการ")}
               </Button>
             )}
             <BackendTextProvider dictionary={backendLanguage}>
@@ -3024,9 +2999,7 @@ export function SystemSettingsScreen({
                 min={CATEGORY_SPLIT_MIN_LEFT}
                 max={CATEGORY_SPLIT_MAX_LEFT}
                 label={
-                  language === "th"
-                    ? "ปรับขนาดหมวดหมู่และรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-                    : "Resize category tree and detail panes (drag to resize, double-click to reset)"
+                  backendText(backendLanguage, "ss_resize_category_tree_and_detail", "ปรับขนาดหมวดหมู่และรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
                 }
                 isResizing={resizingCategorySplit}
                 onPointerDown={startCategorySplitResize}
@@ -3110,9 +3083,7 @@ export function SystemSettingsScreen({
                           >
                             <Barcode className="size-3.5" />
                             <span>
-                              {language === "th"
-                                ? "บาร์โค้ดในหมวด"
-                                : "Barcodes in Category"}
+                              {backendText(backendLanguage, "ss_barcodes_in_category", "บาร์โค้ดในหมวด")}
                             </span>
                             {categoryItemCount > 0 ? (
                               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[11px] font-bold text-primary">
@@ -3134,9 +3105,7 @@ export function SystemSettingsScreen({
                           >
                             <FileText className="size-3.5" />
                             <span>
-                              {language === "th"
-                                ? "ข้อมูลหมวดสินค้า"
-                                : "Category Details"}
+                              {backendText(backendLanguage, "ss_category_details", "ข้อมูลหมวดสินค้า")}
                             </span>
                           </button>
                         </div>
@@ -3186,9 +3155,7 @@ export function SystemSettingsScreen({
                                 }}
                               >
                                 <Plus className="size-3.5" />
-                                {language === "th"
-                                  ? "เพิ่มบาร์โค้ด"
-                                  : "Add Barcode"}
+                                {backendText(backendLanguage, "barcode_create_title", "เพิ่มบาร์โค้ด")}
                               </Button>
                             </div>
                             <SettingDetailPanel
@@ -3233,9 +3200,7 @@ export function SystemSettingsScreen({
                         <div className="grid gap-2">
                           <AlertCircle className="mx-auto size-8" />
                           <b>
-                            {language === "th"
-                              ? "โหลดรายละเอียดไม่สำเร็จ"
-                              : "Could not load details"}
+                            {backendText(backendLanguage, "ss_could_not_load_details", "โหลดรายละเอียดไม่สำเร็จ")}
                           </b>
                           <span className="break-words text-xs">
                             {detailError}
@@ -3252,14 +3217,10 @@ export function SystemSettingsScreen({
                       <FolderTree className="size-7" />
                     </div>
                     <p className="text-base font-medium text-foreground">
-                      {language === "th"
-                        ? "เลือกหมวดสินค้าเพื่อดูข้อมูลและจัดการบาร์โค้ด"
-                        : "Select a category to view details and manage barcodes"}
+                      {backendText(backendLanguage, "ss_select_a_category_to_view", "เลือกหมวดสินค้าเพื่อดูข้อมูลและจัดการบาร์โค้ด")}
                     </p>
                     <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-                      {language === "th"
-                        ? "เลือกหมวดหมู่จากแผนผังทางซ้ายเพื่อจัดการบาร์โค้ดในหมวด หรือคลิกแก้ไขข้อมูลหมวดหมู่"
-                        : "Select a category from the tree on the left to manage assigned barcodes or edit category details."}
+                      {backendText(backendLanguage, "ss_select_a_category_from_the", "เลือกหมวดหมู่จากแผนผังทางซ้ายเพื่อจัดการบาร์โค้ดในหมวด หรือคลิกแก้ไขข้อมูลหมวดหมู่")}
                     </p>
                   </Card>
                 );
@@ -3333,9 +3294,7 @@ export function SystemSettingsScreen({
                 <Loader2 className="mx-auto size-8 animate-spin text-muted-foreground" />
                 <h2 className="text-base font-semibold">{text("loading")}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {language === "th"
-                    ? "กำลังเตรียมข้อมูลบริษัทปัจจุบัน"
-                    : "Preparing current company settings."}
+                  {backendText(backendLanguage, "ss_preparing_current_company_settings", "กำลังเตรียมข้อมูลบริษัทปัจจุบัน")}
                 </p>
               </div>
             </CardContent>
@@ -3357,7 +3316,7 @@ export function SystemSettingsScreen({
                 </label>
                 <div className="flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2 text-xs tabular-nums shadow-sm">
                   <span className="font-medium text-muted-foreground">
-                    {language === "th" ? "ทั้งหมด" : "Total"}
+                    {backendText(backendLanguage, "all", "ทั้งหมด")}
                   </span>
                   <b className="inline-block min-w-[2.5ch] text-right text-foreground">
                     {totalAllRecords.toLocaleString(localeOf(language))}
@@ -3411,13 +3370,11 @@ export function SystemSettingsScreen({
                       onClick={openCreateCopy}
                       disabled={!auth || !selectedActionRecord}
                       title={
-                        language === "th"
-                          ? "คัดลอกจากรายการที่เลือก"
-                          : "Copy selected row"
+                        backendText(backendLanguage, "ss_copy_selected_row", "คัดลอกจากรายการที่เลือก")
                       }
                     >
                       <Copy />
-                      {language === "th" ? "คัดลอก" : "Copy"}
+                      {backendText(backendLanguage, "copy", "คัดลอก")}
                     </Button>
                     <Button
                       type="button"
@@ -3437,10 +3394,10 @@ export function SystemSettingsScreen({
                         className="shrink-0"
                         onClick={() => setBulkImportOpen(true)}
                         disabled={!auth}
-                        title={language === "th" ? "นำเข้าผู้ใช้จาก Excel/CSV" : "Import users from Excel/CSV"}
+                        title={backendText(backendLanguage, "ss_import_users_from_excel_csv", "นำเข้าผู้ใช้จาก Excel/CSV")}
                       >
                         <UploadCloud />
-                        {language === "th" ? "นำเข้า" : "Import"}
+                        {backendText(backendLanguage, "import", "นำเข้า")}
                       </Button>
                     ) : null}
                   </>
@@ -3478,12 +3435,10 @@ export function SystemSettingsScreen({
                 // Warn when leaving an open/edited form (add or edit) for another record
                 if (formOpen && isFormDirty && targetId !== selectedRecordId) {
                   const confirmLeave = await confirm({
-                    title: language === "th" ? "ยังไม่ได้บันทึก" : "Unsaved changes",
-                    description: language === "th"
-                      ? "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"
-                      : "You are editing or adding data. Switching now will discard your changes. Continue?",
-                    confirmLabel: language === "th" ? "เปลี่ยนเลย" : "Switch anyway",
-                    cancelLabel: language === "th" ? "อยู่ต่อแก้ไข" : "Keep editing",
+                    title: backendText(backendLanguage, "st_not_saved_yet", "ยังไม่ได้บันทึก"),
+                    description: backendText(backendLanguage, "ss_you_are_editing_or_adding", "กำลังแก้ไขหรือเพิ่มข้อมูลอยู่ ถ้าเปลี่ยนรายการตอนนี้ ข้อมูลที่แก้ครึ่งทางจะหายไป ต้องการเปลี่ยนเลยไหม?"),
+                    confirmLabel: backendText(backendLanguage, "ss_switch_anyway", "เปลี่ยนเลย"),
+                    cancelLabel: backendText(backendLanguage, "ss_keep_editing", "อยู่ต่อแก้ไข"),
                     tone: "warning",
                   });
                   if (!confirmLeave) return;
@@ -3807,7 +3762,7 @@ function SettingDataList({
                 </span>
               ))}
               <span className="bc-list-actions w-16 sm:w-20 shrink-0 text-right pr-1 select-none text-xs font-semibold">
-                {language === "th" ? "จัดการ" : "Actions"}
+                {backendText(dictionary, "manage", "จัดการ")}
               </span>
             </div>
             {records.map((record, index) => {
@@ -3965,9 +3920,7 @@ function SettingDataList({
           min={5}
           max={95}
           label={
-            language === "th"
-              ? "ปรับความกว้างรายการและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)"
-              : "Resize list and detail panes (drag to resize, double-click to reset)"
+            backendText(dictionary, "ss_resize_list_and_detail_panes", "ปรับความกว้างรายการและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
           }
           isResizing={isResizingPane}
           onPointerDown={startPaneResize}
@@ -4166,7 +4119,7 @@ function settingListColumns(
     return [
       {
         key: "username",
-        label: language === "th" ? "ชื่อ-นามสกุล" : "Full name",
+        label: backendText(dictionary, "ss_full_name", "ชื่อ-นามสกุล"),
         className: "basis-40 grow-[2] min-w-[110px]",
         render: (record, meta) => {
           const loginCode = stringValue(record.username ?? record.email ?? meta.id);
@@ -4223,7 +4176,7 @@ function settingListColumns(
       },
       {
         key: "role",
-        label: language === "th" ? "สิทธิ์" : "Role",
+        label: backendText(dictionary, "permission", "สิทธิ์"),
         className: "basis-24 grow min-w-[70px] hidden md:inline-flex",
         render: (record) => (
           <span
@@ -4242,7 +4195,7 @@ function settingListColumns(
       },
       {
         key: "status",
-        label: language === "th" ? "สถานะ" : "Status",
+        label: backendText(dictionary, "status", "สถานะ"),
         className: "basis-24 grow min-w-[70px] hidden lg:inline-flex",
         render: (_record, meta) => (
           <Badge
@@ -4262,7 +4215,7 @@ function settingListColumns(
     return [
       {
         key: "code",
-        label: language === "th" ? "รหัสพนักงาน" : "Employee code",
+        label: backendText(dictionary, "emp_code", "รหัสพนักงาน"),
         className: "basis-36 grow-[1.5] min-w-[90px]",
         render: (record, meta) => {
           const code = stringValue(record.code ?? meta.id);
@@ -4291,7 +4244,7 @@ function settingListColumns(
       },
       {
         key: "name",
-        label: language === "th" ? "ชื่อพนักงาน" : "Employee name",
+        label: backendText(dictionary, "employee_name", "ชื่อพนักงาน"),
         className: "basis-28 grow min-w-[80px]",
         render: (record) => (
           <span
@@ -4304,7 +4257,7 @@ function settingListColumns(
       },
       {
         key: "email",
-        label: language === "th" ? "อีเมล" : "Email",
+        label: backendText(dictionary, "email", "อีเมล"),
         className: "basis-28 grow min-w-[80px] hidden xl:inline-flex",
         render: (record) => (
           <span className="block truncate" title={stringValue(record.email)}>
@@ -4314,7 +4267,7 @@ function settingListColumns(
       },
       {
         key: "status",
-        label: language === "th" ? "สถานะ" : "Status",
+        label: backendText(dictionary, "status", "สถานะ"),
         className: "basis-24 grow min-w-[70px] hidden sm:inline-flex",
         render: (record) => (
           <Badge
@@ -4323,9 +4276,7 @@ function settingListColumns(
           >
             {isActiveRecord(record)
               ? text("active")
-              : language === "th"
-                ? "ปิดใช้งาน"
-                : "Inactive"}
+              : backendText(dictionary, "inactive", "ปิดใช้งาน")}
           </Badge>
         ),
       },
@@ -4336,7 +4287,7 @@ function settingListColumns(
     return [
       {
         key: "employeename",
-        label: language === "th" ? "ผู้ใช้งาน" : "User",
+        label: backendText(dictionary, "user", "ผู้ใช้งาน"),
         className: "basis-40 grow-[2] min-w-[110px]",
         render: (record, meta) => {
           const code = stringValue(
@@ -4375,7 +4326,7 @@ function settingListColumns(
       },
       {
         key: "groupcode",
-        label: language === "th" ? "กลุ่มสิทธิ์" : "Permission group",
+        label: backendText(dictionary, "ss_permission_group", "กลุ่มสิทธิ์"),
         className: "basis-28 grow min-w-[80px] hidden sm:inline-flex",
         render: (record) => (
           <span
@@ -4393,7 +4344,7 @@ function settingListColumns(
     return [
       {
         key: "names",
-        label: language === "th" ? "สมุดเงินฝากธนาคาร" : "Book Bank",
+        label: backendText(dictionary, "ss_book_bank", "สมุดเงินฝากธนาคาร"),
         className: "basis-48 grow-[2] min-w-[130px]",
         render: (record, meta) => {
           const bookCode = stringValue(record.bookcode ?? record.code ?? meta.id);
@@ -4440,7 +4391,7 @@ function settingListColumns(
       },
       {
         key: "passbook",
-        label: language === "th" ? "เลขที่บัญชี" : "Account No.",
+        label: backendText(dictionary, "account_number", "เลขที่บัญชี"),
         className: "basis-36 grow min-w-[100px]",
         render: (record) => {
           const passbook = stringValue(record.passbook);
@@ -4455,7 +4406,7 @@ function settingListColumns(
       },
       {
         key: "bankbranch",
-        label: language === "th" ? "สาขา" : "Branch",
+        label: backendText(dictionary, "branch", "สาขา"),
         className: "basis-28 grow min-w-[70px] hidden md:inline-flex",
         render: (record) => (
           <span className="block truncate text-xs" title={stringValue(record.bankbranch)}>
@@ -4465,7 +4416,7 @@ function settingListColumns(
       },
       {
         key: "accountname",
-        label: language === "th" ? "ชื่อบัญชี" : "Account Name",
+        label: backendText(dictionary, "account_name", "ชื่อบัญชี"),
         className: "basis-32 grow min-w-[80px] hidden lg:inline-flex",
         render: (record) => (
           <span className="block truncate text-xs" title={stringValue(record.accountname)}>
@@ -4661,13 +4612,13 @@ function SettingDetailPanel({
                 {isProductCategory ? (
                   <>
                     <Badge variant="outline">
-                      {language === "th" ? "ชุด " : "Set "}
+                      {backendText(dictionary, "ss_set", "ชุด ")}
                       {Number(record.groupnumber ?? 0) || "-"}
                     </Badge>
                     <Badge variant="secondary">
                       {productCategoryParentGuid(record)
-                        ? language === "th" ? "หมวดย่อย" : "Subcategory"
-                        : language === "th" ? "หมวดหลัก" : "Root category"}
+                        ? backendText(dictionary, "ss_subcategory", "หมวดย่อย")
+                        : backendText(dictionary, "ss_root_category", "หมวดหลัก")}
                     </Badge>
                   </>
                 ) : null}
@@ -4750,9 +4701,7 @@ function SettingDetailPanel({
                 disabled={isCreator || isSelf || hasCategoryChildren}
                 title={
                   hasCategoryChildren
-                    ? language === "th"
-                      ? "ย้ายหรือลบหมวดย่อยก่อน"
-                      : "Move or delete subcategories first"
+                    ? backendText(dictionary, "ss_move_or_delete_subcategories_first", "ย้ายหรือลบหมวดย่อยก่อน")
                     : undefined
                 }
                 className="h-8 hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30 transition-colors text-xs font-semibold"
@@ -5057,12 +5006,10 @@ function BookBankFormSection({
           </div>
           <div className="min-w-0">
             <div className="text-sm font-bold text-foreground">
-              {language === "th" ? "สังกัดธนาคารและโลโก้" : "Bank & Logo"}
+              {backendText(dictionary, "ss_bank_logo", "สังกัดธนาคารและโลโก้")}
             </div>
             <div className="text-[11px] text-muted-foreground truncate">
-              {language === "th"
-                ? "เลือกจากแม่แบบธนาคารไทย หรือกำหนดรหัสและชื่อธนาคารเอง"
-                : "Select from Thai bank template or define a custom bank"}
+              {backendText(dictionary, "ss_select_from_thai_bank_template", "เลือกจากแม่แบบธนาคารไทย หรือกำหนดรหัสและชื่อธนาคารเอง")}
             </div>
           </div>
         </div>
@@ -5080,7 +5027,7 @@ function BookBankFormSection({
             )}
           >
             <Landmark className="size-3.5" />
-            {language === "th" ? "เลือกจากแม่แบบ" : "Template"}
+            {backendText(dictionary, "ss_template", "เลือกจากแม่แบบ")}
           </button>
           <button
             type="button"
@@ -5093,7 +5040,7 @@ function BookBankFormSection({
             )}
           >
             <Building2 className="size-3.5" />
-            {language === "th" ? "กำหนดธนาคารเอง" : "Custom Bank"}
+            {backendText(dictionary, "ss_custom_bank", "กำหนดธนาคารเอง")}
           </button>
         </div>
       </div>
@@ -5103,7 +5050,7 @@ function BookBankFormSection({
         <div className="grid gap-3 pt-1">
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-xs font-semibold text-foreground shrink-0">
-              {language === "th" ? "แม่แบบธนาคารไทย:" : "Thai Bank Template:"}
+              {backendText(dictionary, "ss_thai_bank_template", "แม่แบบธนาคารไทย:")}
             </label>
             <select
               className="h-9 min-w-[240px] grow rounded-xl border border-input bg-background px-3 text-xs font-semibold text-foreground shadow-2xs focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -5111,7 +5058,7 @@ function BookBankFormSection({
               onChange={(e) => handleSelectTemplate(e.target.value)}
             >
               <option value="">
-                {language === "th" ? "-- เลือกธนาคารไทย --" : "-- Select Thai Bank --"}
+                {backendText(dictionary, "ss_select_thai_bank", "-- เลือกธนาคารไทย --")}
               </option>
               {thaiBankPresets.map((b) => (
                 <option key={b.code} value={b.code}>
@@ -5159,14 +5106,12 @@ function BookBankFormSection({
                 onClick={() => setIsCustomMode(true)}
               >
                 <Edit3 className="size-3.5 mr-1" />
-                {language === "th" ? "ปรับแต่งข้อมูลธนาคาร..." : "Customize..."}
+                {backendText(dictionary, "ss_customize", "ปรับแต่งข้อมูลธนาคาร...")}
               </Button>
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-3 text-center text-xs text-muted-foreground">
-              {language === "th"
-                ? "กรุณาเลือกธนาคารจากรายการด้านบน หรือคลิก \"กำหนดธนาคารเอง\" เพื่อใส่ข้อมูลธนาคารใหม่"
-                : "Please select a bank from above or switch to \"Custom Bank\"."}
+              {backendText(dictionary, "ss_please_select_a_bank_from", "กรุณาเลือกธนาคารจากรายการด้านบน หรือคลิก \"กำหนดธนาคารเอง\" เพื่อใส่ข้อมูลธนาคารใหม่")}
             </div>
           )}
         </div>
@@ -5298,11 +5243,11 @@ function SettingFormDialog({
           <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
             {isProductCategoryForm ? (
               <Badge variant="outline" className="text-[11px]">
-                {language === "th" ? "ชุด " : "Set "}
+                {backendText(dictionary, "ss_set", "ชุด ")}
                 {Number(form.groupnumber ?? 0) || "-"}
                 {form.parentguid
-                  ? language === "th" ? " · หมวดย่อย" : " · Subcategory"
-                  : language === "th" ? " · หมวดหลัก" : " · Root category"}
+                  ? backendText(dictionary, "ss_subcategory_suffix", " · หมวดย่อย")
+                  : backendText(dictionary, "ss_root_category_suffix", " · หมวดหลัก")}
               </Badge>
             ) : null}
             {config.slug === "department" ||
@@ -5357,7 +5302,7 @@ function SettingFormDialog({
               </div>
               <div>
                 <div className="text-xs font-bold text-foreground">
-                  {language === "th" ? "บาร์โค้ดในหมวดนี้" : "Barcodes in this Category"}
+                  {backendText(dictionary, "ss_barcodes_in_this_category", "บาร์โค้ดในหมวดนี้")}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   {language === "th"
@@ -5373,7 +5318,7 @@ function SettingFormDialog({
               onClick={onManageCategoryItems}
             >
               <Plus className="size-4" />
-              {language === "th" ? "เพิ่มบาร์โค้ด" : "Add Barcode"}
+              {backendText(dictionary, "barcode_create_title", "เพิ่มบาร์โค้ด")}
             </Button>
           </div>
         ) : null}
@@ -5475,53 +5420,39 @@ function UserFormSections({
 }) {
   const fieldsByKey = new Map(config.fields.map((field) => [field.key, field]));
   const loginHint = isEmailLike(form.username)
-    ? language === "th"
-      ? "รหัสผู้ใช้ตอนนี้เป็นอีเมลแล้ว ผู้ใช้งานจะใช้ค่านี้เข้าสู่ระบบได้ ส่วนช่องอีเมลที่ลงทะเบียนจะใช้อีเมลเดียวกัน"
-      : "The user code is already an email. This value is used for sign-in, and the registered email uses the same value."
-    : language === "th"
-      ? "ถ้าต้องการให้ผู้ใช้งานเข้าสู่ระบบด้วยอีเมล ให้กรอกอีเมลในช่องรหัสผู้ใช้ หรือ email ส่วนอีเมลที่ลงทะเบียนมีไว้สำหรับส่งอีเมลเท่านั้น"
-      : "To let the user sign in with email, enter the email in User code or email. The registered email is only for sending email.";
+    ? backendText(dictionary, "ss_the_user_code_is_already", "รหัสผู้ใช้ตอนนี้เป็นอีเมลแล้ว ผู้ใช้งานจะใช้ค่านี้เข้าสู่ระบบได้ ส่วนช่องอีเมลที่ลงทะเบียนจะใช้อีเมลเดียวกัน")
+    : backendText(dictionary, "ss_to_let_the_user_sign", "ถ้าต้องการให้ผู้ใช้งานเข้าสู่ระบบด้วยอีเมล ให้กรอกอีเมลในช่องรหัสผู้ใช้ หรือ email ส่วนอีเมลที่ลงทะเบียนมีไว้สำหรับส่งอีเมลเท่านั้น");
   const sections = [
     {
       keys: ["avatar", "uid", "username", "userprofilename", "email"],
-      title: language === "th" ? "บัญชีเข้าสู่ระบบ" : "Sign-in account",
+      title: backendText(dictionary, "ss_sign_in_account", "บัญชีเข้าสู่ระบบ"),
       description: loginHint,
     },
     {
       keys: ["role", "permissionsets"],
-      title: language === "th" ? "สิทธิ์ผู้ใช้งาน" : "User role",
+      title: backendText(dictionary, "user_role", "สิทธิ์ผู้ใช้งาน"),
       description:
-        language === "th"
-          ? "เลือกระดับสิทธิ์ แล้วเพิ่มสิทธิ์การใช้งานสำเร็จรูปได้หลายชุด (สร้างชุดที่ขั้น 2 สิทธิ์การใช้งาน)"
-          : "Pick the access level, then add any number of reusable permission sets (managed in step 2).",
+        backendText(dictionary, "ss_pick_the_access_level_then", "เลือกระดับสิทธิ์ แล้วเพิ่มสิทธิ์การใช้งานสำเร็จรูปได้หลายชุด (สร้างชุดที่ขั้น 2 สิทธิ์การใช้งาน)"),
     },
     {
       keys: ["isaccessdisabled"],
-      title: language === "th" ? "สถานะเข้าใช้งาน" : "Access status",
+      title: backendText(dictionary, "access_status", "สถานะเข้าใช้งาน"),
       description:
-        language === "th"
-          ? "เปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้ ปิดชั่วคราวได้โดยไม่ต้องลบ"
-          : "Enable or temporarily disable this user's access without deleting.",
+        backendText(dictionary, "ss_enable_or_temporarily_disable_this", "เปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้ ปิดชั่วคราวได้โดยไม่ต้องลบ"),
     },
     {
       keys: ["accessscopes"],
       title:
-        language === "th"
-          ? "บริษัทและสาขาที่เข้าได้"
-          : "Accessible companies and branches",
+        backendText(dictionary, "ss_accessible_companies_and_branches", "บริษัทและสาขาที่เข้าได้"),
       description:
-        language === "th"
-          ? "ต้องเลือกบริษัทก่อน แล้วเลือกว่าจะเข้าได้ทุกสาขาหรือเฉพาะสาขาที่กำหนด"
-          : "Select the company first, then choose all branches or specific branches.",
+        backendText(dictionary, "ss_select_the_company_first_then", "ต้องเลือกบริษัทก่อน แล้วเลือกว่าจะเข้าได้ทุกสาขาหรือเฉพาะสาขาที่กำหนด"),
     },
     {
       keys: ["position", "department", "lineuserid", "linedisplayname"],
       title:
-        language === "th" ? "ข้อมูลองค์กรและ LINE" : "Organization and LINE",
+        backendText(dictionary, "ss_organization_and_line", "ข้อมูลองค์กรและ LINE"),
       description:
-        language === "th"
-          ? "ใช้สำหรับอ้างอิงตำแหน่ง แผนก และข้อมูล LINE ที่ผูกกับผู้ใช้งาน"
-          : "Reference position, department, and LINE data linked to this user.",
+        backendText(dictionary, "ss_reference_position_department_and_line", "ใช้สำหรับอ้างอิงตำแหน่ง แผนก และข้อมูล LINE ที่ผูกกับผู้ใช้งาน"),
     },
   ];
 
@@ -6855,7 +6786,7 @@ function PermissionLinkUserSelector({
               {selectedName || selectedCode}
             </span>
             <span className="break-words text-xs">
-              {language === "th" ? "รหัสผู้ใช้" : "User code"}: {selectedCode}
+              {backendText(dictionary, "user_code", "รหัสผู้ใช้")}: {selectedCode}
             </span>
           </span>
         </div>
@@ -6915,7 +6846,7 @@ function PermissionLinkUserSelector({
                   </span>
                 </span>
                 <span className="break-words text-xs text-muted-foreground">
-                  {language === "th" ? "รหัสผู้ใช้" : "User code"}: {user.code}
+                  {backendText(dictionary, "user_code", "รหัสผู้ใช้")}: {user.code}
                 </span>
                 {user.subtitle ? (
                   <span className="truncate text-xs font-normal text-muted-foreground">
@@ -7114,7 +7045,7 @@ function PermissionLinkMultiSelectEditor({
                   </span>
                 </label>
                 <span className="truncate text-xs text-muted-foreground">
-                  {language === "th" ? "รหัสสิทธิ์" : "Permission code"}: {option.code}
+                  {backendText(dictionary, "permissioncode", "รหัสสิทธิ์")}: {option.code}
                 </span>
                 {option.description ? (
                   <span className="line-clamp-2 text-xs font-normal text-muted-foreground">
@@ -7158,9 +7089,7 @@ function PermissionMatrixEditor({
   const menus = isRecord(branchPermission.menus) ? branchPermission.menus : {};
   const branchLabel = dateTimeScope.branchcode || dateTimeScope.branchguid || branchKey;
   const scopeHint =
-    language === "th"
-      ? "ติ๊กใช้กับทุกสาขา = สิทธิ์เมนูนี้ใช้ได้ทุกสาขา; ไม่ติ๊ก = ใช้เฉพาะสาขาปัจจุบัน"
-      : "Checked all branches = this menu permission applies to every branch; unchecked = current branch only.";
+    backendText(dictionary, "ss_checked_all_branches_this_menu", "ติ๊กใช้กับทุกสาขา = สิทธิ์เมนูนี้ใช้ได้ทุกสาขา; ไม่ติ๊ก = ใช้เฉพาะสาขาปัจจุบัน");
 
   function updateMenuRule(menuId: string, patch: SettingRecord) {
     if (readOnly || !setForm) return;
@@ -7213,7 +7142,7 @@ function PermissionMatrixEditor({
               section.groups.flatMap((group) => group.items),
             ).length
           }{" "}
-          {language === "th" ? "เมนู" : "menus"}
+          {backendText(dictionary, "menu", "เมนู")}
         </Badge>
       </div>
 
@@ -7254,7 +7183,7 @@ function PermissionMatrixEditor({
                         </p>
                         <p className="break-words text-[10px] text-muted-foreground mt-0.5">
                           <span className="font-mono bg-secondary/35 px-1 py-0.5 rounded text-primary">
-                            {language === "th" ? "รหัสเมนู" : "Menu code"}: {item.id}
+                            {backendText(dictionary, "ss_menu_code", "รหัสเมนู")}: {item.id}
                           </span>
                         </p>
                       </div>
@@ -9551,9 +9480,7 @@ function FieldEditor({
                   <LanguageFlag code={code} />
                   <span className="truncate">
                     {index === 0
-                      ? language === "th"
-                        ? "ภาษาแรก"
-                        : "Primary"
+                      ? backendText(dictionary, "ss_primary", "ภาษาแรก")
                       : languageName(code, language)}
                   </span>
                   <span className="uppercase">{code}</span>
@@ -9770,6 +9697,7 @@ function FieldEditor({
     return (
       <BranchCoordinatePairEditor
         config={config}
+        dictionary={dictionary}
         form={form}
         language={language}
         setForm={setForm}
@@ -10770,7 +10698,7 @@ function PaymentRoundingTableEditor({
                       />
                     </td>
                     <td className="px-2 py-2 text-muted-foreground" colSpan={3}>
-                      {language === "th" ? "ปิดการปัดเศษ" : "Rounding disabled"}
+                      {backendText(dictionary, "ss_rounding_disabled", "ปิดการปัดเศษ")}
                     </td>
                     {!readOnly ? (
                       <td className="px-2 py-2 text-right">
@@ -10926,7 +10854,6 @@ function PointConfigTableEditor({
 
       <PointGeneralRulesTable
         dictionary={dictionary}
-        language={language}
         onAdd={() =>
           !readOnly
             ? onChange({
@@ -10976,7 +10903,6 @@ function PointConfigTableEditor({
 
 function PointGeneralRulesTable({
   dictionary,
-  language,
   onAdd,
   onRemove,
   onUpdate,
@@ -10984,7 +10910,6 @@ function PointGeneralRulesTable({
   rules,
 }: {
   dictionary: BackendLanguageDictionary;
-  language: LanguageCode;
   onAdd: () => void;
   onRemove: (index: number) => void;
   onUpdate: (index: number, patch: Partial<GeneralPointRule>) => void;
@@ -11022,7 +10947,7 @@ function PointGeneralRulesTable({
             {rules.length === 0 ? (
               <tr className="border-t border-border">
                 <td className="px-2 py-3 text-muted-foreground" colSpan={readOnly ? 5 : 6}>
-                  {language === "th" ? "ยังไม่มีกฎทั่วไป" : "No general rules"}
+                  {backendText(dictionary, "ss_no_general_rules", "ยังไม่มีกฎทั่วไป")}
                 </td>
               </tr>
             ) : (
@@ -14134,11 +14059,13 @@ function extractListRecords(payload: unknown): SettingRecord[] {
 
 function BranchCoordinatePairEditor({
   config,
+  dictionary,
   form,
   language,
   setForm,
 }: {
   config: SystemSettingConfig;
+  dictionary: BackendLanguageDictionary;
   form: FormState;
   language: LanguageCode;
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
@@ -14159,7 +14086,7 @@ function BranchCoordinatePairEditor({
   const latitudeRaw = stringValue(form["contact.latitude"]);
   const longitudeRaw = stringValue(form["contact.longitude"]);
   const pickLabel =
-    language === "th" ? "เลือกจากแผนที่" : "Pick on map";
+    backendText(dictionary, "ss_pick_on_map", "เลือกจากแผนที่");
 
   return (
     <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
@@ -14344,7 +14271,7 @@ function BranchUnifiedView({
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="h-8 !pl-10"
-            placeholder={`${text("search")} ${branchDisplayLabel(language)}`}
+            placeholder={`${text("search")} ${branchDisplayLabel(dictionary)}`}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -14389,7 +14316,7 @@ function BranchUnifiedView({
                   <span className="break-words font-semibold">{displayName}</span>
                   {code ? (
                     <span className="text-[11px] text-muted-foreground">
-                      {language === "th" ? "รหัส" : "Code"}: {code}
+                      {backendText(dictionary, "code", "รหัส")}: {code}
                     </span>
                   ) : null}
                 </button>
@@ -14411,9 +14338,7 @@ function BranchUnifiedView({
                   )}
                 />
                 <p className="text-sm text-muted-foreground">
-                  {language === "th"
-                    ? "เลือกสาขาทางซ้ายเพื่อแก้ไข หรือกดเพิ่มสาขาใหม่"
-                    : "Select a branch on the left, or add a new branch."}
+                  {backendText(dictionary, "ss_select_a_branch_on_the", "เลือกสาขาทางซ้ายเพื่อแก้ไข หรือกดเพิ่มสาขาใหม่")}
                 </p>
               </div>
             </CardContent>
@@ -14530,9 +14455,7 @@ function BranchUnifiedView({
 
             {isSubScreenTab && !activeBranchListItem ? (
               <div className="p-4 text-sm text-muted-foreground">
-                {language === "th"
-                  ? "เลือกสาขาก่อนเข้าใช้แท็บนี้"
-                  : "Select a branch before opening this tab."}
+                {backendText(dictionary, "ss_select_a_branch_before_opening", "เลือกสาขาก่อนเข้าใช้แท็บนี้")}
               </div>
             ) : null}
           </Card>
@@ -14541,7 +14464,7 @@ function BranchUnifiedView({
         {editing && !isSubScreenTab ? (
           <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-muted-foreground">
             <span>
-              {language === "th" ? "รหัส" : "Code"}: {stringValue(editing.code) || "-"} · {text("branch")}: {recordTitle(editing, config, language)}
+              {backendText(dictionary, "code", "รหัส")}: {stringValue(editing.code) || "-"} · {text("branch")}: {recordTitle(editing, config, language)}
             </span>
             <Button
               type="button"
@@ -14622,8 +14545,8 @@ function branchRecordToListItem(record: SettingRecord): BranchListItem {
   };
 }
 
-function branchDisplayLabel(language: LanguageCode): string {
-  return language === "th" ? "สาขา" : "branch";
+function branchDisplayLabel(dictionary: BackendLanguageDictionary): string {
+  return backendText(dictionary, "branch", "สาขา");
 }
 
 type BranchTabSectionProps = {
@@ -14702,7 +14625,7 @@ function BranchPosSections({
       {orphanFields.length > 0 ? (
         <section className="grid gap-2 rounded-xl border border-border bg-background/40 p-3">
           <header className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {language === "th" ? "อื่น ๆ" : "Other"}
+            {backendText(dictionary, "ss_other", "อื่น ๆ")}
           </header>
           <div className="grid gap-2 md:grid-cols-2">
             {orphanFields.map((field) => (
