@@ -18,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { Ean13Barcode } from "@/components/product-barcode/ean13-barcode";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { useBackendLanguage } from "@/lib/backend-language";
+import { resolveTextTable } from "@/lib/catalog-text";
 import { encodeEan13 } from "@/lib/product-barcode/utils";
 import { pushNotice } from "@/lib/toast";
 import { authFetch, getAuthSession } from "@/lib/client-auth-session";
@@ -90,6 +92,26 @@ const text = {
   },
 } as const;
 
+// 2026-09-16: the table above is only the fallback — these keys pull the
+// same words out of languages.tsv so all twelve languages work.
+const shelfTextKeys: Record<string, string> = {
+  "title": "label_print",
+  "subtitle": "shelf_select_real_products_set_label",
+  "search": "shelf_search_barcode_product_name_or",
+  "products": "shelf_products",
+  "selected": "shelf_selected_products",
+  "total": "import_productdetail.total",
+  "copies": "shelf_copies",
+  "addVisible": "shelf_add_visible",
+  "clear": "shelf_clear",
+  "print": "print",
+  "refresh": "database_master_info.refresh",
+  "noData": "shelf_no_product_data_found_in",
+  "noSelected": "shelf_no_product_selected",
+  "loading": "shelf_loading_products",
+  "apiRequired": "shelf_please_sign_in_and_select",
+};
+
 const SHELF_SPLIT_STORAGE_KEY = "bc_barcode_shelf_split_left";
 const SHELF_SPLIT_DEFAULT_LEFT = 62;
 const SHELF_SPLIT_MIN_LEFT = 35;
@@ -102,8 +124,12 @@ export function ProductBarcodeShelfScreen({
   const [language, setLanguage] = useState<LanguageCode>(
     externalLanguage ?? "th",
   );
-  const dictionary = language === "th" ? text.th : text.en;
   const [auth, setAuth] = useState<AuthSession | null>(null);
+  const backendLanguage = useBackendLanguage(language, auth?.backendUrl);
+  const dictionary = useMemo(
+    () => resolveTextTable(text, shelfTextKeys, language, backendLanguage),
+    [backendLanguage, language],
+  );
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [products, setProducts] = useState<ProductForLabel[]>([]);
   const [selected, setSelected] = useState<Record<string, SelectedLabel>>({});

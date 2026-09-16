@@ -13,6 +13,7 @@ import { normalizeBusinessCode } from "@/lib/business-code";
 import { SkeletonCardList } from "../shared/skeleton-card";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
+import { catalogText } from "@/lib/catalog-text";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import {
   branchDisplayName,
@@ -132,6 +133,41 @@ const accessSettingNavItems = [
     helper: { th: "ใครเข้าอะไรได้จริงตอนนี้", en: "Who can access what right now" },
     banner: "/settings/banner-audit.webp",
   },
+] as const;
+
+// 2026-09-16: the Thai/English literals above are the fallback — these keys
+// pull the same words out of languages.tsv for all twelve languages.
+const workspaceCatalogKeys: Record<string, string> = {
+  "steptab/company/activelanguages": "active_languages",
+  "steptab/company/company": "ws_companies_branches",
+  "steptab/company/businesstypescreen": "company_type",
+  "steptab/permissiongroup/permissiongroup": "ws_permission_sets",
+  "steptab/permissiongroup/permissiondefinition": "ws_all_screens",
+  "steptab/people/employee": "ws_employees",
+  "steptab/people/user": "ws_login_accounts",
+  "nav/company.label": "ws_my_business",
+  "nav/company.helper": "ws_languages_companies_branches_currency_business",
+  "nav/permissiongroup.label": "ws_permissions",
+  "nav/permissiongroup.helper": "ws_use_the_defaults_or_create",
+  "nav/people.label": "ws_people",
+  "nav/people.helper": "ws_add_employees_and_sign_in",
+  "nav/useraccessaudit.label": "ws_review",
+  "nav/useraccessaudit.helper": "ws_who_can_access_what_right",
+  "step1.title": "ws_set_languages",
+  "step1.desc": "ws_pick_thai_and_any_other",
+  "step2.title": "ws_add_company_branch",
+  "step2.desc": "ws_create_the_company_and_head",
+  "step3.title": "ws_add_users_permissions",
+  "step3.desc": "ws_add_users_and_assign_screen",
+  "manual": "ws_getting_started_guide",
+  "next": "ws_next_0",
+  "defaultMarker": "ws_default",
+};
+
+const GETTING_STARTED_STEPS = [
+  { id: "step1", th: ["ตั้งค่าภาษา", "เลือกภาษาไทยและภาษาอื่นที่ต้องใช้"], en: ["Set languages", "Pick Thai and any other languages you need"] },
+  { id: "step2", th: ["เพิ่มบริษัทและสาขา", "สร้างบริษัทและสำนักงานใหญ่"], en: ["Add company & branch", "Create the company and head office"] },
+  { id: "step3", th: ["เพิ่มผู้ใช้และสิทธิ์", "เพิ่มผู้ใช้งานและกำหนดสิทธิ์หน้าจอ"], en: ["Add users & permissions", "Add users and assign screen access"] },
 ] as const;
 
 const workspaceTextEn = {
@@ -366,6 +402,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     },
     [backendLanguage, language],
   );
+  const catalog = useCallback(
+    (id: string, bilingual: { th: string; en: string }) =>
+      catalogText(workspaceCatalogKeys, id, bilingual, language, backendLanguage),
+    [backendLanguage, language],
+  );
   // Route the legacy { type, text/textKey } notice shape into the global bottom-right toast.
   const setNotice = useCallback(
     (next: Notice) => {
@@ -378,19 +419,17 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const lineLinkDescription = backendText(backendLanguage, "scan_qr_with_line", t(language, "lineLoginDescription"));
   const lineLinkSuccessText = backendText(backendLanguage, "link_line_success", t(language, "loginSuccess"));
   const lineLinkWaitingText = backendText(backendLanguage, "waiting_for_link", t(language, "lineLoginWaiting"));
-  const unitSetupTitle = backendText(backendLanguage, "product_unit_setup_required", language === "th" ? "ยังไม่มีหน่วยนับสินค้า" : "Product units are missing");
+  const unitSetupTitle = backendText(backendLanguage, "product_unit_setup_required", "ยังไม่มีหน่วยนับสินค้า");
   const unitSetupDescription = backendText(
     backendLanguage,
     "product_unit_setup_description",
-    language === "th"
-      ? "บริษัทนี้ยังไม่มีหน่วยนับสินค้า ต้องการเพิ่มหน่วยนับเริ่มต้นอัตโนมัติหรือไม่"
-      : "This company has no product units. Add default product units automatically?",
+    "บริษัทนี้ยังไม่มีหน่วยนับสินค้า ต้องการเพิ่มหน่วยนับเริ่มต้นอัตโนมัติหรือไม่",
   );
-  const unitSetupConfirmText = backendText(backendLanguage, "product_unit_setup_confirm", language === "th" ? "เพิ่มอัตโนมัติ" : "Add automatically");
-  const unitSetupSkipText = backendText(backendLanguage, "product_unit_setup_skip", language === "th" ? "เข้าเมนูก่อน" : "Enter menu first");
-  const unitSetupSelectedText = backendText(backendLanguage, "selected", language === "th" ? "เลือกแล้ว" : "Selected");
-  const unitSetupSelectAllText = backendText(backendLanguage, "select_all", language === "th" ? "เลือกทั้งหมด" : "Select all");
-  const unitSetupClearText = backendText(backendLanguage, "clear_selection", language === "th" ? "ล้างการเลือก" : "Clear");
+  const unitSetupConfirmText = backendText(backendLanguage, "product_unit_setup_confirm", "เพิ่มอัตโนมัติ");
+  const unitSetupSkipText = backendText(backendLanguage, "product_unit_setup_skip", "เข้าเมนูก่อน");
+  const unitSetupSelectedText = backendText(backendLanguage, "selected", "เลือกแล้ว");
+  const unitSetupSelectAllText = backendText(backendLanguage, "select_all", "เลือกทั้งหมด");
+  const unitSetupClearText = backendText(backendLanguage, "clear_selection", "ล้างการเลือก");
   const canCreateCompany = canAuthCreateCompany(auth);
 
   const hasLoadedShopsRef = useRef(false);
@@ -417,9 +456,11 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       if (selectedHoldingCode && nextShops.length === 0) {
         setNotice({
           type: "error",
-          text: language === "th"
-            ? `ไม่พบกลุ่มกิจการ ${selectedHoldingCode} สำหรับบัญชีนี้`
-            : `Business group ${selectedHoldingCode} is not available for this account.`,
+          text: backendText(
+            backendLanguage,
+            "ws_business_group_not_available",
+            "ไม่พบกลุ่มกิจการ {0} สำหรับบัญชีนี้",
+          ).replace("{0}", selectedHoldingCode),
         });
       } else if (nextShops.length === 0 && !canAuthCreateCompany(currentAuth)) {
         setNotice({ type: "info", textKey: "createCompanyRequiresGoogle" });
@@ -1181,7 +1222,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
             <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:shrink-0">
               {activeManual ? (
                 <ManualLink
-                  label={language === "th" ? "คู่มือเบื้องต้น" : t(language, "manual")}
+                  label={backendText(backendLanguage, "ws_getting_started_guide", "คู่มือเบื้องต้น")}
                   language={language}
                   screen={activeManual}
                 />
@@ -1238,7 +1279,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   <span className="truncate">
                     {accessSidebarCollapsed
                       ? activeNav
-                        ? language === "th" ? activeNav.label.th : activeNav.label.en
+                        ? catalog(`nav${activeNav.route}.label`, activeNav.label)
                         : backendText(backendLanguage, "workspace_settings_menu", "เมนูตั้งค่า")
                       : backendText(backendLanguage, "workspace_hide_menu", "ปิดเมนู")}
                   </span>
@@ -1266,7 +1307,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 return (
                   <button
                     key={item.route}
-                    title={accessSidebarCollapsed ? `${index + 1}. ${language === "th" ? item.label.th : item.label.en}` : undefined}
+                    title={accessSidebarCollapsed ? `${index + 1}. ${catalog(`nav${item.route}.label`, item.label)}` : undefined}
                     className={`w-full text-left p-2.5 rounded-xl text-sm font-bold transition-all duration-200 border ${
                       accessSidebarCollapsed ? "hidden md:flex" : "flex"
                     } items-center md:items-start gap-3 ${
@@ -1296,7 +1337,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     </span>
                     <span className={`min-w-0 ${accessSidebarCollapsed ? "md:hidden" : ""}`}>
                       <span className="block font-bold leading-tight md:truncate text-sm">
-                        {language === "th" ? item.label.th : item.label.en}
+                        {catalog(`nav${item.route}.label`, item.label)}
                       </span>
                       <span
                         className={`hidden md:block truncate text-xs font-medium mt-0.5 leading-normal ${
@@ -1305,7 +1346,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                             : "text-muted-foreground"
                         }`}
                       >
-                        {language === "th" ? item.helper.th : item.helper.en}
+                        {catalog(`nav${item.route}.helper`, item.helper)}
                       </span>
                     </span>
                   </button>
@@ -1352,10 +1393,10 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       </span>
                       <div className="min-w-0">
                         <h3 className="text-xl font-black leading-tight text-primary-foreground [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_6px_rgba(0,0,0,0.55)] sm:text-2xl">
-                          {language === "th" ? bItem.label.th : bItem.label.en}
+                          {catalog(`nav${bItem.route}.label`, bItem.label)}
                         </h3>
                         <p className="text-xs font-semibold text-primary-foreground/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_5px_rgba(0,0,0,0.5)] sm:text-sm">
-                          {language === "th" ? bItem.helper.th : bItem.helper.en}
+                          {catalog(`nav${bItem.route}.helper`, bItem.helper)}
                         </p>
                       </div>
                     </div>
@@ -1396,7 +1437,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                       role="tab"
                       type="button"
                     >
-                      {language === "th" ? tab.label.th : tab.label.en}
+                      {catalog(`steptab${activeAccessRoute ?? ""}${tab.route}`, tab.label)}
                     </button>
                   ))}
                 </div>
@@ -1425,7 +1466,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 return (
                   <div className="mt-6 flex justify-end">
                     <button className="primary-button inline-flex items-center gap-2 px-5 py-2.5 text-base font-bold min-h-[2.6em]" type="button" onClick={() => setActiveAccessRoute(next.route)}>
-                      <span>{language === "th" ? `ถัดไป: ${next.label.th}` : `Next: ${next.label.en}`}</span>
+                      <span>{backendText(backendLanguage, "ws_next_0", "ถัดไป: {0}").replace("{0}", catalog(`nav${next.route}.label`, next.label))}</span>
                       <ArrowRight size={18} />
                     </button>
                   </div>
@@ -1596,29 +1637,16 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     {backendText(backendLanguage, "workspace_get_started_in_3_steps", "เริ่มใช้งานใน 3 ขั้นตอน")}
                   </h4>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      {
-                        th: ["ตั้งค่าภาษา", "เลือกภาษาไทยและภาษาอื่นที่ต้องใช้"],
-                        en: ["Set languages", "Pick Thai and any other languages you need"],
-                      },
-                      {
-                        th: ["เพิ่มบริษัทและสาขา", "สร้างบริษัทและสำนักงานใหญ่"],
-                        en: ["Add company & branch", "Create the company and head office"],
-                      },
-                      {
-                        th: ["เพิ่มผู้ใช้และสิทธิ์", "เพิ่มผู้ใช้งานและกำหนดสิทธิ์หน้าจอ"],
-                        en: ["Add users & permissions", "Add users and assign screen access"],
-                      },
-                    ].map((stepItem, stepIndex) => (
+                    {GETTING_STARTED_STEPS.map((stepItem, stepIndex) => (
                       <div key={stepIndex} className="rounded-lg border border-border/60 bg-card p-3.5 text-left">
                         <span className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary">
                           {stepIndex + 1}
                         </span>
                         <strong className="block text-sm font-bold text-foreground">
-                          {language === "th" ? stepItem.th[0] : stepItem.en[0]}
+                          {catalog(`${stepItem.id}.title`, { th: stepItem.th[0], en: stepItem.en[0] })}
                         </strong>
                         <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-                          {language === "th" ? stepItem.th[1] : stepItem.en[1]}
+                          {catalog(`${stepItem.id}.desc`, { th: stepItem.th[1], en: stepItem.en[1] })}
                         </span>
                       </div>
                     ))}
@@ -1919,7 +1947,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 );
               }) : (
                 <p className="rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold text-muted-foreground">
-                  {backendText(backendLanguage, "no_standard_product_unit", language === "th" ? "ไม่พบหน่วยนับมาตรฐานที่เพิ่มได้" : "No standard product units are available.")}
+                  {backendText(backendLanguage, "no_standard_product_unit", "ไม่พบหน่วยนับมาตรฐานที่เพิ่มได้")}
                 </p>
               )}
             </div>
@@ -2036,25 +2064,6 @@ function shopLanguageCodes(shop: ShopListItem): string[] {
   return normalizedCodeList(shop.activelanguages, ["th"]).map((code) => code.toUpperCase());
 }
 
-
-function shopDateFormatLabel(shop: ShopListItem, language: LanguageCode): string {
-  const hasConfiguredDateFormat = Boolean(stringValue(shop.dateformat));
-  const format = stringValue(shop.dateformat) || "dd/MM/yyyy";
-  const yearType = hasConfiguredDateFormat ? normalizedYearType(shop) : "buddhist";
-  const yearLabel = language === "th"
-    ? yearType === "buddhist" ? "พ.ศ." : "ค.ศ."
-    : yearType === "buddhist" ? "BE" : "CE";
-  const defaultMarker = hasConfiguredDateFormat ? "" : language === "th" ? " ค่าเริ่มต้น" : " default";
-  return `${format} ${yearLabel}${defaultMarker}`;
-}
-
-function normalizedYearType(shop: ShopListItem): "buddhist" | "christian" {
-  const yearType = stringValue(shop.yeartype).toLowerCase();
-  if (["buddhist", "be", "พ.ศ."].includes(yearType)) return "buddhist";
-  if (["christian", "ce", "ค.ศ."].includes(yearType)) return "christian";
-  if (typeof shop.usebuddhistcalendar === "boolean") return shop.usebuddhistcalendar ? "buddhist" : "christian";
-  return "buddhist";
-}
 
 function normalizedCodeList(value: unknown, fallback: string[]): string[] {
   const source: unknown[] = Array.isArray(value) && value.length > 0 ? value : fallback;

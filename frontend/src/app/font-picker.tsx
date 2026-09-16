@@ -2,6 +2,8 @@
 
 import { Check, ChevronDown, Type } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useBackendDictionary } from "@/components/backend-text-provider";
+import { catalogText } from "@/lib/catalog-text";
 import { type LanguageCode } from "@/lib/i18n";
 import {
   appFonts,
@@ -16,6 +18,7 @@ import {
 } from "@/lib/font-data";
 
 export function FontPicker({ language }: { language: LanguageCode }) {
+  const dictionary = useBackendDictionary();
   const [fontId, setFontId] = useState<FontId>(defaultFontId);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
@@ -56,7 +59,13 @@ export function FontPicker({ language }: { language: LanguageCode }) {
   }, [open]);
 
   const current = getAppFont(fontId);
-  const label = language === "th" ? "เลือกฟอนต์" : "Choose font";
+  const label = catalogText(
+    { chooseFont: "font_choose_font" },
+    "chooseFont",
+    { th: "เลือกฟอนต์", en: "Choose font" },
+    language,
+    dictionary,
+  );
 
   return (
     <div className="font-control-group" ref={groupRef}>

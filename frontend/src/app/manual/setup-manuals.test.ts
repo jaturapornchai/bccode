@@ -56,7 +56,9 @@ describe("setup basic manuals", () => {
     );
 
     expect(source).toContain('getSystemSettingConfig(effectiveAccessRoute ?? "")?.manual');
-    expect(source).toContain('label={language === "th" ? "คู่มือเบื้องต้น" : t(language, "manual")}');
+    expect(source).toContain(
+      'label={backendText(backendLanguage, "ws_getting_started_guide", "คู่มือเบื้องต้น")}',
+    );
   });
 
   it("routes screens without reviewed content to the available-guide index", () => {

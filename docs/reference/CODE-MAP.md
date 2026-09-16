@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit f9c69c09 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit 10050903 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 48
 
@@ -812,65 +812,63 @@ Files indexed: 48
 | 2393 | function | `CalcStockCostForItemsWithProgress` |
 | 2410 | function | `RebuildDocumentFlowWithProgress` |
 
-## frontend/src/app/workspace/workspace-screen.tsx (2285 lines)
+## frontend/src/app/workspace/workspace-screen.tsx (2294 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 299 | function | `wt` |
-| 309 | function | `WorkspaceScreen` |
-| 339 | const-arrow | `toggleAccessSidebar` |
-| 698 | function | `stopLinePolling` |
-| 705 | function | `handleLineLink` |
-| 752 | function | `startLinePolling` |
-| 766 | function | `pollLineLink` |
-| 794 | function | `closeLineDialog` |
-| 799 | function | `copyLineLoginUrl` |
-| 805 | function | `selectShopAndBranch` |
-| 830 | function | `selectShop` |
-| 871 | function | `selectCompany` |
-| 918 | function | `createHeadquarterBranch` |
-| 946 | function | `openAccessSettings` |
-| 981 | function | `handlePrimarySetup` |
-| 990 | function | `handleAccessShopChange` |
-| 1016 | function | `createShop` |
-| 1047 | function | `selectBranch` |
-| 1062 | function | `enterWorkspaceWithUnitCheck` |
-| 1104 | function | `confirmUnitSetup` |
-| 1124 | function | `skipUnitSetup` |
-| 1129 | function | `togglePendingUnit` |
-| 1139 | function | `selectAllPendingUnits` |
-| 1143 | function | `clearPendingUnits` |
-| 1147 | function | `logout` |
-| 1944 | function | `readAuth` |
-| 1948 | function | `canAuthCreateCompany` |
-| 1952 | function | `activeHoldingCodeFromAuth` |
-| 1959 | function | `activeBusinessCodeFromWorkspace` |
-| 1972 | function | `callWorkspaceApi` |
-| 1994 | function | `persistWorkspace` |
-| 2004 | function | `tenantCodeForShop` |
-| 2008 | function | `hasExplicitLanguageSettings` |
-| 2012 | function | `getApiTotal` |
-| 2017 | function | `getMainHoldingCode` |
-| 2023 | function | `unitDisplayName` |
-| 2031 | function | `localeOf` |
-| 2035 | function | `shopLanguageCodes` |
-| 2040 | function | `shopDateFormatLabel` |
-| 2051 | function | `normalizedYearType` |
-| 2059 | function | `normalizedCodeList` |
-| 2071 | function | `parseShopInfo` |
-| 2081 | function | `createDefaultBranch` |
-| 2158 | function | `activeLanguageCodes` |
-| 2167 | function | `defaultBranchNames` |
-| 2171 | function | `normalizedNames` |
-| 2184 | function | `recordValue` |
-| 2188 | function | `holdingAccessDisplayName` |
-| 2196 | function | `isVisibleOrganizationRecord` |
-| 2204 | function | `stringValue` |
-| 2208 | function | `numberValue` |
-| 2217 | function | `booleanValue` |
-| 2224 | function | `createDefaultBranchListItem` |
-| 2237 | function | `createDefaultPaymentRounding` |
-| 2257 | function | `createShopPayload` |
+| 335 | function | `wt` |
+| 345 | function | `WorkspaceScreen` |
+| 375 | const-arrow | `toggleAccessSidebar` |
+| 739 | function | `stopLinePolling` |
+| 746 | function | `handleLineLink` |
+| 793 | function | `startLinePolling` |
+| 807 | function | `pollLineLink` |
+| 835 | function | `closeLineDialog` |
+| 840 | function | `copyLineLoginUrl` |
+| 846 | function | `selectShopAndBranch` |
+| 871 | function | `selectShop` |
+| 912 | function | `selectCompany` |
+| 959 | function | `createHeadquarterBranch` |
+| 987 | function | `openAccessSettings` |
+| 1022 | function | `handlePrimarySetup` |
+| 1031 | function | `handleAccessShopChange` |
+| 1057 | function | `createShop` |
+| 1088 | function | `selectBranch` |
+| 1103 | function | `enterWorkspaceWithUnitCheck` |
+| 1145 | function | `confirmUnitSetup` |
+| 1165 | function | `skipUnitSetup` |
+| 1170 | function | `togglePendingUnit` |
+| 1180 | function | `selectAllPendingUnits` |
+| 1184 | function | `clearPendingUnits` |
+| 1188 | function | `logout` |
+| 1972 | function | `readAuth` |
+| 1976 | function | `canAuthCreateCompany` |
+| 1980 | function | `activeHoldingCodeFromAuth` |
+| 1987 | function | `activeBusinessCodeFromWorkspace` |
+| 2000 | function | `callWorkspaceApi` |
+| 2022 | function | `persistWorkspace` |
+| 2032 | function | `tenantCodeForShop` |
+| 2036 | function | `hasExplicitLanguageSettings` |
+| 2040 | function | `getApiTotal` |
+| 2045 | function | `getMainHoldingCode` |
+| 2051 | function | `unitDisplayName` |
+| 2059 | function | `localeOf` |
+| 2063 | function | `shopLanguageCodes` |
+| 2068 | function | `normalizedCodeList` |
+| 2080 | function | `parseShopInfo` |
+| 2090 | function | `createDefaultBranch` |
+| 2167 | function | `activeLanguageCodes` |
+| 2176 | function | `defaultBranchNames` |
+| 2180 | function | `normalizedNames` |
+| 2193 | function | `recordValue` |
+| 2197 | function | `holdingAccessDisplayName` |
+| 2205 | function | `isVisibleOrganizationRecord` |
+| 2213 | function | `stringValue` |
+| 2217 | function | `numberValue` |
+| 2226 | function | `booleanValue` |
+| 2233 | function | `createDefaultBranchListItem` |
+| 2246 | function | `createDefaultPaymentRounding` |
+| 2266 | function | `createShopPayload` |
 
 ## backend/internal/systemadmin/datamigration/migration_chart_of_account.go (2244 lines)
 
@@ -1417,6 +1415,53 @@ Files indexed: 48
 | 1642 | function | `LSet` |
 | 1664 | function | `LPos` |
 
+## frontend/src/app/settings/settings-screen.tsx (1638 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 68 | type | `LoadingAction` |
+| 130 | function | `SettingsScreen` |
+| 188 | function | `parseHostFromUrl` |
+| 246 | function | `handleAutoFillHost` |
+| 273 | const-arrow | `handleSetMongodbMode` |
+| 334 | function | `loadConfigUrl` |
+| 357 | function | `handleSaveBackendUrl` |
+| 370 | function | `handleBackendConnectionTest` |
+| 399 | function | `handleVerifySetup` |
+| 426 | function | `loadSetupConfig` |
+| 453 | function | `handleSaveConfig` |
+| 492 | function | `handleTestConnection` |
+| 520 | function | `handleTestAllConnections` |
+| 566 | function | `handleCreateClickHouseDatabase` |
+| 588 | function | `handleExportConfig` |
+| 597 | function | `handleImportConfig` |
+| 609 | function | `handleChangePassword` |
+| 634 | function | `handleCopyBackendUrl` |
+| 648 | function | `handleRemoveHistory` |
+| 654 | function | `handleClearHistory` |
+| 659 | function | `updateItem` |
+| 663 | function | `persistBackendUrl` |
+| 670 | function | `logoutSetup` |
+| 679 | function | `setStatus` |
+| 684 | function | `callSetup` |
+| 1055 | function | `renderConfigSection` |
+| 1134 | function | `splitAiOnlyItems` |
+| 1142 | function | `handleTestStorageConnection` |
+| 1218 | function | `renderStorageCard` |
+| 1268 | function | `renderIntegrationsSection` |
+| 1378 | function | `getDefaultValue` |
+| 1390 | function | `renderConfigField` |
+| 1449 | function | `renderCheckboxField` |
+| 1469 | function | `renderRadioField` |
+| 1499 | function | `renderImportDialog` |
+| 1532 | function | `renderChangePasswordDialog` |
+| 1574 | function | `readUrlHistory` |
+| 1587 | function | `responseToTestResult` |
+| 1598 | function | `formatTestMessage` |
+| 1602 | function | `categoryIcon` |
+| 1619 | function | `TestBadge` |
+| 1623 | function | `ModelChips` |
+
 ## backend/internal/goapi/handlers/gen-trans-pdf/common.go (1620 lines)
 
 | Line | Kind | Name |
@@ -1459,53 +1504,6 @@ Files indexed: 48
 | 1517 | function | `RegisterFonts` |
 | 1524 | function | `RegisterFontsWithPreferred` |
 | 1606 | function | `SavePDF` |
-
-## frontend/src/app/settings/settings-screen.tsx (1576 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 64 | type | `LoadingAction` |
-| 84 | function | `SettingsScreen` |
-| 130 | function | `parseHostFromUrl` |
-| 188 | function | `handleAutoFillHost` |
-| 215 | const-arrow | `handleSetMongodbMode` |
-| 276 | function | `loadConfigUrl` |
-| 299 | function | `handleSaveBackendUrl` |
-| 312 | function | `handleBackendConnectionTest` |
-| 341 | function | `handleVerifySetup` |
-| 368 | function | `loadSetupConfig` |
-| 395 | function | `handleSaveConfig` |
-| 434 | function | `handleTestConnection` |
-| 462 | function | `handleTestAllConnections` |
-| 508 | function | `handleCreateClickHouseDatabase` |
-| 530 | function | `handleExportConfig` |
-| 539 | function | `handleImportConfig` |
-| 551 | function | `handleChangePassword` |
-| 576 | function | `handleCopyBackendUrl` |
-| 590 | function | `handleRemoveHistory` |
-| 596 | function | `handleClearHistory` |
-| 601 | function | `updateItem` |
-| 605 | function | `persistBackendUrl` |
-| 612 | function | `logoutSetup` |
-| 621 | function | `setStatus` |
-| 626 | function | `callSetup` |
-| 995 | function | `renderConfigSection` |
-| 1074 | function | `splitAiOnlyItems` |
-| 1082 | function | `handleTestStorageConnection` |
-| 1157 | function | `renderStorageCard` |
-| 1206 | function | `renderIntegrationsSection` |
-| 1316 | function | `getDefaultValue` |
-| 1328 | function | `renderConfigField` |
-| 1387 | function | `renderCheckboxField` |
-| 1407 | function | `renderRadioField` |
-| 1437 | function | `renderImportDialog` |
-| 1470 | function | `renderChangePasswordDialog` |
-| 1512 | function | `readUrlHistory` |
-| 1525 | function | `responseToTestResult` |
-| 1536 | function | `formatTestMessage` |
-| 1540 | function | `categoryIcon` |
-| 1557 | function | `TestBadge` |
-| 1561 | function | `ModelChips` |
 
 ## frontend/src/app/holding/holding-screen.tsx (1559 lines)
 

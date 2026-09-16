@@ -21,3 +21,25 @@ export function catalogText(
   const value = backendText(dictionary, backendKey, fallback);
   return value === backendKey ? fallback : value;
 }
+
+// Some screens keep a whole `{ th: {...}, en: {...} }` table of their own. This
+// resolves every property in one pass so the screen keeps using `text.title`
+// exactly as before, but the words now come from languages.tsv.
+export function resolveTextTable<T extends Record<string, string>>(
+  tables: { th: T; en: Record<string, string> },
+  keys: Record<string, string>,
+  language: LanguageCode,
+  dictionary?: BackendLanguageDictionary,
+): Record<keyof T, string> {
+  const resolved: Record<string, string> = {};
+  for (const prop of Object.keys(tables.th)) {
+    resolved[prop] = catalogText(
+      keys,
+      prop,
+      { th: tables.th[prop] ?? "", en: tables.en[prop] ?? "" },
+      language,
+      dictionary,
+    );
+  }
+  return resolved as Record<keyof T, string>;
+}

@@ -1,10 +1,12 @@
 "use client";
 
 import { Brain, ExternalLink, Loader2, RefreshCcw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { type LanguageCode } from "@/lib/i18n";
+import { useBackendDictionary } from "@/components/backend-text-provider";
+import { resolveTextTable } from "@/lib/catalog-text";
 
 // 3D vault graph served by obsidian-jarvis-ui (D:/bccode/jarvisui — run start.bat)
 const JARVIS_URL = "http://localhost:5173";
@@ -35,8 +37,23 @@ const TEXT = {
   },
 };
 
+// 2026-09-16: the table above is the fallback; these keys read languages.tsv.
+const dmgTextKeys: Record<string, string> = {
+  "title": "dmg_data_model_graph_brain",
+  "subtitle": "dmg_3d_browser_for_mongodb_root",
+  "openTab": "dmg_open_full_screen",
+  "retry": "export_report_retry",
+  "checking": "dmg_connecting_to_jarvis_ui",
+  "down": "dmg_jarvis_ui_is_not_running",
+  "downHint": "dmg_double_click_d_bccode_jarvisui",
+};
+
 export function DataModelGraphScreen({ language = "th" }: DataModelGraphScreenProps) {
-  const text = TEXT[language === "th" ? "th" : "en"];
+  const backendLanguage = useBackendDictionary();
+  const text = useMemo(
+    () => resolveTextTable(TEXT, dmgTextKeys, language, backendLanguage),
+    [backendLanguage, language],
+  );
   const jarvisUrl = `${JARVIS_URL}?lang=${language === "th" ? "th" : "en"}`;
   const [status, setStatus] = useState<"checking" | "up" | "down">("checking");
 

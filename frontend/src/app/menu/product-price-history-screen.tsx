@@ -19,6 +19,8 @@ import {
   resolveWorkspaceDateTimeDisplayOptions,
 } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { useBackendLanguage } from "@/lib/backend-language";
+import { resolveTextTable } from "@/lib/catalog-text";
 import { pushNotice } from "@/lib/toast";
 import { authFetch, getAuthSession } from "@/lib/client-auth-session";
 import { cn } from "@/lib/utils";
@@ -100,6 +102,27 @@ const text = {
   },
 } as const;
 
+// 2026-09-16: the table above is only the fallback — these keys pull the
+// same words out of languages.tsv so all twelve languages work.
+const priceHistoryTextKeys: Record<string, string> = {
+  "title": "pricehist_price_edit_history",
+  "subtitle": "pricehist_select_a_real_product_to",
+  "search": "shelf_search_barcode_product_name_or",
+  "products": "barcode_product_menu_name",
+  "history": "barcode_price_history",
+  "oldPrice": "pricehist_old_price",
+  "newPrice": "pricehist_new_price",
+  "difference": "text_form_ref_total_diff",
+  "action": "pricehist_action",
+  "createdBy": "pricehist_created_by",
+  "createdAt": "date",
+  "refresh": "database_master_info.refresh",
+  "noProduct": "pricehist_no_product_data_found",
+  "noHistory": "pricehist_no_price_history_found_for",
+  "loading": "ss_loading_data",
+  "apiRequired": "shelf_please_sign_in_and_select",
+};
+
 export function ProductPriceHistoryScreen({
   embedded = false,
   language: externalLanguage,
@@ -107,8 +130,12 @@ export function ProductPriceHistoryScreen({
   const [language, setLanguage] = useState<LanguageCode>(
     externalLanguage ?? "th",
   );
-  const dictionary = language === "th" ? text.th : text.en;
   const [auth, setAuth] = useState<AuthSession | null>(null);
+  const backendLanguage = useBackendLanguage(language, auth?.backendUrl);
+  const dictionary = useMemo(
+    () => resolveTextTable(text, priceHistoryTextKeys, language, backendLanguage),
+    [backendLanguage, language],
+  );
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [selectedKey, setSelectedKey] = useState("");

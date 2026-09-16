@@ -698,7 +698,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
       title: text("deleteConfirm"),
       description: `${currency.code} ${currency.name}`.trim(),
       details: currency.duplicate_guidfixeds && currency.duplicate_guidfixeds.length > 1
-        ? `${language === "th" ? "จะลบรายการซ้ำทั้งหมด" : "All duplicate entries will be deleted"}: ${currency.duplicate_guidfixeds.length}`
+        ? `${backendText(backendLanguage, "cur_all_duplicate_entries_will_be", "จะลบรายการซ้ำทั้งหมด")}: ${currency.duplicate_guidfixeds.length}`
         : undefined,
       confirmLabel: text("delete"),
       cancelLabel: text("cancel"),

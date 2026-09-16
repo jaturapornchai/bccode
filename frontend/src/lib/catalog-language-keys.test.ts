@@ -11,6 +11,14 @@ const catalogs = [
   "src/lib/erp-tools.ts",
   "src/lib/erp-reports.ts",
   "src/lib/thai-tax.ts",
+  "src/lib/permission-actions.ts",
+  "src/app/menu/product-barcode-shelf-screen.tsx",
+  "src/app/menu/product-price-history-screen.tsx",
+  "src/app/menu/datamodel-graph-screen.tsx",
+  "src/app/workspace/workspace-screen.tsx",
+  "src/app/settings/settings-screen.tsx",
+  "src/app/login-screen.tsx",
+  "src/components/system-settings/field-editors/role-screen-matrix.tsx",
 ];
 const screens = [
   "src/app/operations/operations-workbench.tsx",
@@ -37,11 +45,16 @@ function read(file: string): string {
   return readFileSync(resolve(process.cwd(), file), "utf8");
 }
 
+// Every catalog names its map `catalogKeys` or `<something>Keys`; the block runs
+// from the declaration to the first `};`.
 function catalogKeysOf(source: string): string[] {
-  const start = source.indexOf("const catalogKeys");
-  if (start < 0) return [];
-  const block = source.slice(start, source.indexOf("};", start));
-  return [...block.matchAll(/:\s*"([a-z0-9_]+)",/g)].map((match) => match[1] ?? "");
+  const keys: string[] = [];
+  for (const match of source.matchAll(/const (?:catalogKeys|\w*(?:TextKeys|ACTION_KEYS|CatalogKeys))\b/g)) {
+    const start = match.index ?? 0;
+    const block = source.slice(start, source.indexOf("};", start));
+    keys.push(...[...block.matchAll(/:\s*"([a-z0-9_]+)",/g)].map((entry) => entry[1] ?? ""));
+  }
+  return keys;
 }
 
 describe("work-tab catalog language keys", () => {
@@ -86,6 +99,16 @@ describe("work-tab catalog language keys", () => {
       }
     }
     expect([...missing].sort()).toEqual([]);
+  });
+
+  it("no catalog file picks a language for the user any more", () => {
+    // A locale argument (`isThai ? "th-TH" : "en-US"`) is a number format, not a
+    // label, so only a quoted string that is itself rendered text is forbidden.
+    const bilingualText = /(?:\bisThai|language === "th"|lang === "th")\s*\?\s*(?:\r?\n\s*)?["`](?!th-TH|en-US|en-GB|th"|en")/;
+    for (const file of catalogs) {
+      const source = read(file);
+      expect(`${file}: ${bilingualText.test(source)}`).toBe(`${file}: false`);
+    }
   });
 
   it("the screens read the dictionary instead of choosing between Thai and English", () => {

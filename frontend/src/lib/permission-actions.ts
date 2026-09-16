@@ -16,6 +16,13 @@ export const PERMISSION_ACTION_LABELS: Record<PermissionAction, { th: string; en
   delete: { th: "ลบ", en: "Delete" },
 };
 
+// 2026-09-16: the labels above are the fallback — these keys read languages.tsv.
+export const PERMISSION_ACTION_KEYS: Record<PermissionAction, string> = {
+  create: "add",
+  update: "edit",
+  delete: "ss_delete",
+};
+
 export function actionEntry(screen: string, action: PermissionAction): string {
   return `${screen}:${action}`;
 }

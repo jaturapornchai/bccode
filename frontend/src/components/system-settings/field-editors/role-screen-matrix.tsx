@@ -1,12 +1,14 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useBackendText } from "@/components/backend-text-provider";
 import type { LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
 import {
   PERMISSION_ACTIONS,
+  PERMISSION_ACTION_KEYS,
   PERMISSION_ACTION_LABELS,
   actionEntry,
   isActionEntry,
@@ -38,6 +40,22 @@ const TEXT = {
   visibleHint: { th: "ติ๊กที่หัวตารางเพื่อเลือกทุกจอที่แสดงอยู่", en: "Header checkboxes apply to the screens shown" },
 };
 
+// 2026-09-16: the table above is the fallback; these keys read languages.tsv.
+const roleMatrixTextKeys: Record<string, string> = {
+  "search": "rsm_search_screen_code_or_route",
+  "all": "all",
+  "selected": "chosen",
+  "unselected": "rsm_not_selected",
+  "screen": "rsm_screen",
+  "enter": "rsm_enter",
+  "every": "all",
+  "noMatch": "rsm_no_screens_match",
+  "preset": "rsm_use_recommended",
+  "presetHint": "rsm_user_enter_create_edit_admin",
+  "other": "ss_other",
+  "visibleHint": "rsm_header_checkboxes_apply_to_the",
+};
+
 /**
  * ตารางสิทธิ์ต่อจอ: แถว = จอ (จัดกลุ่มตามเมนู) คอลัมน์ = เข้า/เพิ่ม/แก้ไข/ลบ/ทั้งหมด
  * ค้นหาได้ กรองได้ และหัวตารางติ๊กทีเดียวกับทุกจอที่แสดงอยู่
@@ -58,8 +76,11 @@ export function RoleScreenMatrix({
   role?: string;
   selected: string[];
 }) {
-  const lang = language === "th" ? "th" : "en";
-  const t = (key: keyof typeof TEXT) => TEXT[key][lang];
+  const tr = useBackendText();
+  const t = useCallback(
+    (key: keyof typeof TEXT) => tr(roleMatrixTextKeys[key] ?? key, TEXT[key].th),
+    [tr],
+  );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const selectedSet = useMemo(() => new Set(selected), [selected]);
@@ -87,13 +108,13 @@ export function RoleScreenMatrix({
     });
     const byTitle = new Map<string, RoleScreenOption[]>();
     for (const row of rows) {
-      const title = sectionByCode.get(row.code) ?? TEXT.other[lang];
+      const title = sectionByCode.get(row.code) ?? t("other");
       const list = byTitle.get(title);
       if (list) list.push(row);
       else byTitle.set(title, [row]);
     }
     return [...byTitle.entries()];
-  }, [filter, lang, options, query, sectionByCode, selectedSet]);
+  }, [filter, options, query, sectionByCode, selectedSet, t]);
 
   const visible = useMemo(() => groups.flatMap(([, rows]) => rows), [groups]);
   const selectedCount = selected.filter((entry) => !isActionEntry(entry)).length;
@@ -237,7 +258,7 @@ export function RoleScreenMatrix({
                       title={t("visibleHint")}
                       type="checkbox"
                     />
-                    {PERMISSION_ACTION_LABELS[action][lang]}
+                    {tr(PERMISSION_ACTION_KEYS[action], PERMISSION_ACTION_LABELS[action].th)}
                   </label>
                 </th>
               ))}

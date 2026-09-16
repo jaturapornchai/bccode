@@ -31,10 +31,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
-import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
+import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
+import { useBackendLanguage } from "@/lib/backend-language";
+import { catalogText } from "@/lib/catalog-text";
 import {
   AI_PROVIDERS,
   SETUP_CATEGORY_DEFS,
@@ -81,10 +83,37 @@ const storageKeys = {
   language: "user_language",
 };
 
+// 2026-09-16: the Thai/English literals below are the fallback — these keys
+// pull the same words out of languages.tsv for all twelve languages.
+const settingsTextKeys: Record<string, string> = {
+  "group.databases": "set_databases",
+  "testedSummary": "set_tested_0_1_passed",
+  "reachable": "set_reachable_0",
+  "group.storage": "set_image_file_storage",
+  "group.kafka": "set_kafka",
+  "storageShort": "set_storage",
+  "serverConnection": "set_server_connection",
+  "serverConnectionHint": "set_enter_a_single_host_and",
+  "autofillTitle": "set_fill_this_host_into_every",
+  "autofillAll": "set_auto_fill_all",
+  "storageHint": "set_configure_s3_compatible_storage_e",
+  "storageDescription": "set_s3_compatible_e_g_minio",
+  "s3EndpointRequired": "set_please_fill_s3_endpoint_first",
+  "testing": "testing",
+  "unreachable": "set_unreachable",
+  "fields": "set_fields",
+  "testStorage": "set_test_storage",
+};
 export function SettingsScreen() {
   const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND_URL);
   const [urlHistory, setUrlHistory] = useState<string[]>([]);
-  const [language, setLanguage] = useState<LanguageCode>("th");
+  const [language, setLanguage] = useState<LanguageCode>("th");
+  const backendLanguage = useBackendLanguage(language, backendUrl || undefined);
+  const st = useCallback(
+    (id: string, bilingual: { th: string; en: string }) =>
+      catalogText(settingsTextKeys, id, bilingual, language, backendLanguage),
+    [backendLanguage, language],
+  );
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [messageState, setMessageState] = useState<MessageState>("idle");
   const [message, setMessage] = useState("");
@@ -488,7 +517,7 @@ export function SettingsScreen() {
     if (storageResult) {
       const sLatency = storageResult.latencyMs != null ? ` ${storageResult.latencyMs}ms` : "";
       const sMark = storageResult.status === "success" ? "✓" : "✗";
-      summaryParts.push(`${language === "th" ? "ที่เก็บรูป" : "Storage"}${sLatency} ${sMark}`);
+      summaryParts.push(`${st("storageShort", { th: "ที่เก็บรูป", en: "Storage" })}${sLatency} ${sMark}`);
     }
 
     const dbSuccess = dbResults.filter(Boolean).length;
@@ -496,9 +525,9 @@ export function SettingsScreen() {
     const totalSuccess = dbSuccess + storageSuccess;
     const total = categories.length + (storageResult ? 1 : 0);
     const headline =
-      language === "th"
-        ? `ทดสอบแล้ว ${totalSuccess}/${total} สำเร็จ`
-        : `Tested ${totalSuccess}/${total} passed`;
+      st("testedSummary", { th: "ทดสอบแล้ว {0}/{1} สำเร็จ", en: "Tested {0}/{1} passed" })
+        .replace("{0}", String(totalSuccess))
+        .replace("{1}", String(total));
     const detailLine = summaryParts.join(" · ");
 
     setStatus(`${headline} — ${detailLine}`, totalSuccess === total ? "success" : "error");
@@ -876,13 +905,14 @@ export function SettingsScreen() {
               </section>
 
               {/* Server host + Auto-fill card — quick setup for single-server on-prem */}
-              <section className="settings-section-group" aria-label={language === "th" ? "การเชื่อมต่อเซิร์ฟเวอร์" : "Server connection"}>
+              <section className="settings-section-group" aria-label={st("serverConnection", { th: "การเชื่อมต่อเซิร์ฟเวอร์", en: "Server Connection" })}>
                 <header className="settings-section-heading">
-                  <h2>{language === "th" ? "การเชื่อมต่อเซิร์ฟเวอร์" : "Server Connection"}</h2>
+                  <h2>{st("serverConnection", { th: "การเชื่อมต่อเซิร์ฟเวอร์", en: "Server Connection" })}</h2>
                   <p>
-                    {language === "th"
-                      ? "ใส่ host เดียวแล้วกด Auto-fill เพื่อกรอก host ให้ทุกฐานข้อมูลและที่เก็บรูปอัตโนมัติ"
-                      : "Enter a single host and click Auto-fill to populate every database and storage endpoint automatically."}
+                    {st("serverConnectionHint", {
+                      th: "ใส่ host เดียวแล้วกด Auto-fill เพื่อกรอก host ให้ทุกฐานข้อมูลและที่เก็บรูปอัตโนมัติ",
+                      en: "Enter a single host and click Auto-fill to populate every database and storage endpoint automatically.",
+                    })}
                   </p>
                 </header>
                 <section className="settings-card server-host-card">
@@ -906,10 +936,10 @@ export function SettingsScreen() {
                       type="button"
                       onClick={handleAutoFillHost}
                       disabled={isBusy || !serverHost.trim()}
-                      title={language === "th" ? "กรอก host นี้ให้ทุกฐานข้อมูลและที่เก็บรูป" : "Fill this host into every database and storage endpoint"}
+                      title={st("autofillTitle", { th: "กรอก host นี้ให้ทุกฐานข้อมูลและที่เก็บรูป", en: "Fill this host into every database and storage endpoint" })}
                     >
                       <Zap aria-hidden="true" size={17} />
-                      <span>{language === "th" ? "Auto-fill ทุกฐานข้อมูล" : "Auto-fill all"}</span>
+                      <span>{st("autofillAll", { th: "Auto-fill ทุกฐานข้อมูล", en: "Auto-fill all" })}</span>
                     </button>
                   </div>
                 </section>
@@ -926,11 +956,12 @@ export function SettingsScreen() {
                   return (
                     <section className="settings-section-group" key={group.id} aria-label={group.titleTh}>
                       <header className="settings-section-heading">
-                        <h2>{language === "th" ? group.titleTh : group.titleEn}</h2>
+                        <h2>{st(`group.${group.id}`, { th: group.titleTh, en: group.titleEn })}</h2>
                         <p>
-                          {language === "th"
-                            ? "ตั้งค่าที่เก็บไฟล์แบบ S3 (เช่น MinIO) สำหรับเก็บรูปและไฟล์"
-                            : "Configure S3-compatible storage (e.g. MinIO) for images and files."}
+                          {st("storageHint", {
+                            th: "ตั้งค่าที่เก็บไฟล์แบบ S3 (เช่น MinIO) สำหรับเก็บรูปและไฟล์",
+                            en: "Configure S3-compatible storage (e.g. MinIO) for images and files.",
+                          })}
                         </p>
                       </header>
                       <div className="setup-config-sections">
@@ -948,7 +979,7 @@ export function SettingsScreen() {
                 return (
                   <section className="settings-section-group" key={group.id} aria-label={group.titleTh}>
                     <header className="settings-section-heading">
-                      <h2>{language === "th" ? group.titleTh : group.titleEn}</h2>
+                      <h2>{st(`group.${group.id}`, { th: group.titleTh, en: group.titleEn })}</h2>
                     </header>
                     {group.id === "ai" ? (
                       <div className="integrations-wrapper">
@@ -1094,7 +1125,7 @@ export function SettingsScreen() {
     if (!endpoint) {
       const failed: TestResult = {
         status: "failed",
-        message: language === "th" ? "กรุณากรอก S3 Endpoint ก่อน" : "Please fill S3 Endpoint first",
+        message: st("s3EndpointRequired", { th: "กรุณากรอก S3 Endpoint ก่อน", en: "Please fill S3 Endpoint first" }),
       };
       setTestResults((current) => ({ ...current, storage: failed }));
       return failed;
@@ -1102,7 +1133,7 @@ export function SettingsScreen() {
     setTestingCategory("storage");
     setTestResults((current) => ({
       ...current,
-      storage: { status: "testing", message: language === "th" ? "กำลังทดสอบ..." : "Testing..." },
+      storage: { status: "testing", message: st("testing", { th: "กำลังทดสอบ...", en: "Testing..." }) },
     }));
     const start = Date.now();
     try {
@@ -1125,9 +1156,10 @@ export function SettingsScreen() {
         const success: TestResult = {
           status: "success",
           message:
-            language === "th"
-              ? `เชื่อมต่อได้ (${latencyMs}ms${data.httpStatus ? `, HTTP ${data.httpStatus}` : ""})`
-              : `Reachable (${latencyMs}ms${data.httpStatus ? `, HTTP ${data.httpStatus}` : ""})`,
+            st("reachable", { th: "เชื่อมต่อได้ ({0})", en: "Reachable ({0})" }).replace(
+              "{0}",
+              `${latencyMs}ms${data.httpStatus ? `, HTTP ${data.httpStatus}` : ""}`,
+            ),
           latencyMs,
         };
         setTestResults((current) => ({ ...current, storage: success }));
@@ -1135,7 +1167,7 @@ export function SettingsScreen() {
       }
       const failed: TestResult = {
         status: "failed",
-        message: data.message ?? (language === "th" ? "เชื่อมต่อไม่ได้" : "Unreachable"),
+        message: data.message ?? st("unreachable", { th: "เชื่อมต่อไม่ได้", en: "Unreachable" }),
         latencyMs,
       };
       setTestResults((current) => ({ ...current, storage: failed }));
@@ -1145,7 +1177,7 @@ export function SettingsScreen() {
         status: "failed",
         message: error instanceof Error && error.message
           ? error.message
-          : (language === "th" ? "เชื่อมต่อไม่ได้" : "Unreachable"),
+          : st("unreachable", { th: "เชื่อมต่อไม่ได้", en: "Unreachable" }),
       };
       setTestResults((current) => ({ ...current, storage: failed }));
       return failed;
@@ -1168,16 +1200,17 @@ export function SettingsScreen() {
             </span>
             <div>
               <p className="eyebrow">storage</p>
-              <h2>{language === "th" ? "ที่เก็บรูปและไฟล์" : "Image & File Storage"}</h2>
+              <h2>{st("group.storage", { th: "ที่เก็บรูปและไฟล์", en: "Image & File Storage" })}</h2>
               <p className="config-description">
-                {language === "th"
-                  ? "S3-compatible (เช่น MinIO) — เก็บรูปและไฟล์ในเซิร์ฟเวอร์ของเรา (on-prem)"
-                  : "S3-compatible (e.g. MinIO) — store images and files on our own server (on-prem)"}
+                {st("storageDescription", {
+                  th: "S3-compatible (เช่น MinIO) — เก็บรูปและไฟล์ในเซิร์ฟเวอร์ของเรา (on-prem)",
+                  en: "S3-compatible (e.g. MinIO) — store images and files on our own server (on-prem)",
+                })}
               </p>
             </div>
           </div>
           <div className="config-card-meta">
-            <span className="field-count-pill">{displayItems.length} {language === "th" ? "ฟิลด์" : "fields"}</span>
+            <span className="field-count-pill">{displayItems.length} {st("fields", { th: "ฟิลด์", en: "fields" })}</span>
             {testResult ? <TestBadge result={testResult} /> : null}
           </div>
         </div>
@@ -1192,7 +1225,7 @@ export function SettingsScreen() {
             disabled={isBusy || isTesting}
           >
             {isTesting ? <Loader2 className="spin" size={17} /> : <Wifi aria-hidden="true" size={17} />}
-            <span>{language === "th" ? "ทดสอบที่เก็บรูป" : "Test storage"}</span>
+            <span>{st("testStorage", { th: "ทดสอบที่เก็บรูป", en: "Test storage" })}</span>
           </button>
           {testResult?.message ? (
             <span className={`test-message ${testResult.status}`}>{formatTestMessage(testResult)}</span>

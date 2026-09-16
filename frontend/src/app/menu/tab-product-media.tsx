@@ -1,6 +1,7 @@
 "use client";
 
 import { ImagePlus } from "lucide-react";
+import { useBackendText } from "@/components/backend-text-provider";
 import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import {
   BusinessImageEditor,
@@ -23,6 +24,7 @@ export function TabProductMedia({
   language?: string;
 }) {
   const textM = useBarcodeText(language);
+  const tr = useBackendText();
 
   return (
     <div className="space-y-4">
@@ -63,12 +65,12 @@ export function TabProductMedia({
         auth={auth}
         sources={(value.barcodes ?? []).map((barcode) => ({
           key: barcode.guidfixed || barcode.barcode,
-          label: `${language === "th" ? "บาร์โค้ด" : "Barcode"} ${barcode.barcode}`,
+          label: `${tr("barcode", "บาร์โค้ด")} ${barcode.barcode}`,
           imageuri: barcode.imageuri,
           images: barcode.images,
           videos: barcode.videos,
         }))}
-        title={language === "th" ? "สื่อจากบาร์โค้ด" : "Media from barcodes"}
+        title={tr("product_media_from_barcodes", "สื่อจากบาร์โค้ด")}
       />
 
       {!(value.useimageorcolor ?? true) ? (

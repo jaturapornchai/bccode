@@ -17,13 +17,15 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import { runtimeGoApiUrlForOrigin } from "@/lib/backend-url";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
 import { setAuthSession } from "@/lib/client-auth-session";
 import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
-import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
+import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
+import { useBackendLanguage } from "@/lib/backend-language";
+import { catalogText } from "@/lib/catalog-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppHeaderControls } from "./app-header-controls";
@@ -108,11 +110,26 @@ const storageKeys = {
   holdingCode: "saved_holdingcode",
 };
 
+// 2026-09-16: the Thai/English literals below are the fallback — these keys
+// pull the same words out of languages.tsv for all twelve languages.
+const loginTextKeys: Record<string, string> = {
+  "openSettingsAria": "login_open_settings_to_change_backend",
+  "cannotConnect": "login_cannot_connect_to_backend",
+  "cannotConnectHint": "login_make_sure_the_backend_url",
+  "openSettings": "login_open_settings",
+  "tryDemo": "login_try_the_demo",
+};
 export function LoginScreen() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
-  const [language, setLanguage] = useState<LanguageCode>("th");
+  const [language, setLanguage] = useState<LanguageCode>("th");
+  const backendLanguage = useBackendLanguage(language, backendUrl || undefined);
+  const lt = useCallback(
+    (id: string, bilingual: { th: string; en: string }) =>
+      catalogText(loginTextKeys, id, bilingual, language, backendLanguage),
+    [backendLanguage, language],
+  );
   const [holdingCode, setHoldingCode] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -571,17 +588,16 @@ export function LoginScreen() {
               <AlertCircle aria-hidden="true" size={20} />
               <div className="connection-error-content">
                 <strong>
-                  {language === "th"
-                    ? "เชื่อมต่อ Backend ไม่ได้"
-                    : "Cannot connect to Backend"}
+                  {lt("cannotConnect", { th: "เชื่อมต่อ Backend ไม่ได้", en: "Cannot connect to Backend" })}
                 </strong>
                 <span className="connection-error-detail">
                   {connectionMessage || t(language, "connectionFailed")}
                 </span>
                 <span className="connection-error-hint">
-                  {language === "th"
-                    ? "ตรวจสอบให้แน่ใจว่า Backend URL ถูกต้อง และ server กำลังทำงานอยู่"
-                    : "Make sure the Backend URL is correct and the server is running."}
+                  {lt("cannotConnectHint", {
+                    th: "ตรวจสอบให้แน่ใจว่า Backend URL ถูกต้อง และ server กำลังทำงานอยู่",
+                    en: "Make sure the Backend URL is correct and the server is running.",
+                  })}
                 </span>
                 <div className="connection-error-actions">
                   <code className="connection-error-url" title={backendUrl}>
@@ -590,9 +606,9 @@ export function LoginScreen() {
                   <Link
                     href="/settings"
                     className="connection-error-link"
-                    aria-label={language === "th" ? "ไปตั้งค่า Backend URL" : "Open settings to change Backend URL"}
+                    aria-label={lt("openSettingsAria", { th: "ไปตั้งค่า Backend URL", en: "Open settings to change Backend URL" })}
                   >
-                    {language === "th" ? "ไปตั้งค่า →" : "Open Settings →"}
+                    {lt("openSettings", { th: "ไปตั้งค่า →", en: "Open Settings →" })}
                   </Link>
                 </div>
               </div>
@@ -653,7 +669,7 @@ export function LoginScreen() {
                 disabled={loginState === "loading"}
               >
                 {loginState === "loading" ? <Loader2 className="spin" aria-hidden="true" size={18} /> : null}
-                <span>{language === "th" ? "ทดลองใช้ระบบ (Demo)" : "Try the demo"}</span>
+                <span>{lt("tryDemo", { th: "ทดลองใช้ระบบ (Demo)", en: "Try the demo" })}</span>
               </button>
             </div>
           </motion.section>
