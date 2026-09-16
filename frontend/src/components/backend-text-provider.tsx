@@ -19,3 +19,9 @@ export function useBackendText(): BackendTextFn {
   const dictionary = useContext(BackendTextContext);
   return useCallback((key: string, fallback: string) => backendText(dictionary, key, fallback), [dictionary]);
 }
+
+// For helpers that already take a dictionary (thailandAddressUi, postalAddressHint)
+// and are shared between the settings screen and the company/branch tree view.
+export function useBackendDictionary(): BackendLanguageDictionary {
+  return useContext(BackendTextContext);
+}

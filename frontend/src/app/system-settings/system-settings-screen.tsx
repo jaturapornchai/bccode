@@ -1468,8 +1468,16 @@ export function SystemSettingsScreen({
       : { ...defaultForm(currentConfig, language), parentguid: form.parentguid };
     if (workspace && auth) {
       try {
-        const current = buildPayload(form, editing, currentConfig, workspace, auth, language);
-        const pristine = buildPayload(baseline, editing, currentConfig, workspace, auth, language);
+        const current = buildPayload(form, editing, currentConfig, workspace, auth, language, backendLanguage);
+        const pristine = buildPayload(
+          baseline,
+          editing,
+          currentConfig,
+          workspace,
+          auth,
+          language,
+          backendLanguage,
+        );
         return JSON.stringify(current) !== JSON.stringify(pristine);
       } catch {
         // fall through to raw form comparison
@@ -1717,6 +1725,7 @@ export function SystemSettingsScreen({
         workspace,
         auth,
         language,
+        backendLanguage,
       );
     } catch (error) {
       setNotice({
@@ -2155,6 +2164,7 @@ export function SystemSettingsScreen({
         workspace,
         auth,
         language,
+        backendLanguage,
       );
     } catch (error) {
       setNotice({
@@ -2559,7 +2569,7 @@ export function SystemSettingsScreen({
                   variant="outline"
                   className="h-8 shrink-0 whitespace-nowrap px-2 text-xs font-semibold"
                 >
-                  {productCategoryGroupLabel(records, groupNumber, language)}
+                  {productCategoryGroupLabel(records, groupNumber, backendLanguage)}
                 </Badge>
                 <Input
                   className="h-8 min-w-40 flex-[1_1_14rem] rounded-lg text-sm md:max-w-72"
@@ -2606,6 +2616,7 @@ export function SystemSettingsScreen({
       {config.kind === "report" && config.slug === "useraccessaudit" ? (
         <UserAccessAuditReportPanel
           auth={auth}
+          dictionary={backendLanguage}
           language={language}
           workspace={workspace}
         />
@@ -3140,9 +3151,11 @@ export function SystemSettingsScreen({
                               <div className="flex items-center gap-2">
                                 <Barcode className="size-4 text-primary" />
                                 <span className="text-xs font-semibold text-foreground">
-                                  {language === "th"
-                                    ? `บาร์โค้ดในหมวดนี้ (${categoryItemCount} รายการ)`
-                                    : `Barcodes in Category (${categoryItemCount})`}
+                                  {backendText(
+                                    backendLanguage,
+                                    "ss_barcodes_in_category_count",
+                                    "บาร์โค้ดในหมวดนี้ ({0} รายการ)",
+                                  ).replace("{0}", String(categoryItemCount))}
                                 </span>
                               </div>
                               <Button
@@ -4044,10 +4057,12 @@ function settingListRowStyle({
 }
 
 function CompanyMultiSelectCell({
+  dictionary,
   value,
   language,
   auth,
 }: {
+  dictionary: BackendLanguageDictionary;
   value: unknown;
   language: LanguageCode;
   auth: AuthSession | null;
@@ -4090,7 +4105,7 @@ function CompanyMultiSelectCell({
   }, [auth, selectedGuids.length]);
 
   if (selectedGuids.length === 0)
-    return <span className="italic text-muted-foreground truncate block">{language === "th" ? "ทุกบริษัท" : "All companies"}</span>;
+    return <span className="italic text-muted-foreground truncate block">{backendText(dictionary, "ss_all_companies", "ทุกบริษัท")}</span>;
 
   const names = selectedGuids.map((guid) => {
     const match = options.find((opt) => opt.guidfixed === guid);
@@ -4183,12 +4198,12 @@ function settingListColumns(
             className="block truncate"
             title={
               roleField
-                ? String(fieldDisplayValue(roleField, record.role, language))
+                ? String(fieldDisplayValue(roleField, record.role, language, dictionary))
                 : String(shortValue(record.role, language))
             }
           >
             {roleField
-              ? fieldDisplayValue(roleField, record.role, language)
+              ? fieldDisplayValue(roleField, record.role, language, dictionary)
               : shortValue(record.role, language)}
           </span>
         ),
@@ -4466,13 +4481,14 @@ function settingListColumns(
         if (field.type === "company-multi-select") {
           return (
             <CompanyMultiSelectCell
+              dictionary={dictionary}
               value={val}
               language={language}
               auth={auth}
             />
           );
         }
-        const displayVal = fieldDisplayValue(field, val, language);
+        const displayVal = fieldDisplayValue(field, val, language, dictionary);
         return (
           <span className="block truncate" title={String(displayVal)}>
             {displayVal}
@@ -4720,6 +4736,7 @@ function SettingDetailPanel({
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <LanguageListEditor
+                  dictionary={dictionary}
                   field={field}
                   form={record}
                   language={language}
@@ -4734,6 +4751,7 @@ function SettingDetailPanel({
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <LocalizedNamesReadOnlyDetail
                   config={config}
+                  dictionary={dictionary}
                   field={field}
                   form={record}
                   language={language}
@@ -4786,6 +4804,7 @@ function SettingDetailPanel({
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <CompanyMultiSelectReadOnlyDetail
+                  dictionary={dictionary}
                   label={label}
                   language={language}
                   value={recordValueForField(record, config, field)}
@@ -4799,6 +4818,7 @@ function SettingDetailPanel({
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <ThailandAddressReadOnlyDetail
                   backendUrl={auth?.backendUrl}
+                  dictionary={dictionary}
                   form={record}
                   language={language}
                   prefix={field.key}
@@ -4810,9 +4830,9 @@ function SettingDetailPanel({
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <ProductVariantStructuredReadOnlyDetail
+                  dictionary={dictionary}
                   field={field}
                   label={fieldLabel(field, language, config, dictionary)}
-                  language={language}
                   value={recordValueForField(record, config, field)}
                 />
               </div>
@@ -4822,6 +4842,7 @@ function SettingDetailPanel({
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <TimeSaleListReadOnlyDetail
+                  dictionary={dictionary}
                   label={fieldLabel(field, language, config, dictionary)}
                   language={language}
                   value={recordValueForField(record, config, field)}
@@ -4833,8 +4854,8 @@ function SettingDetailPanel({
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
                 <BankAccountsReadOnlyDetail
+                  dictionary={dictionary}
                   label={fieldLabel(field, language, config, dictionary)}
-                  language={language}
                   value={recordValueForField(record, config, field)}
                 />
               </div>
@@ -4848,7 +4869,6 @@ function SettingDetailPanel({
                   field={field}
                   form={record}
                   label={fieldLabel(field, language, config, dictionary)}
-                  language={language}
                   readOnly
                 />
               </div>
@@ -4859,6 +4879,7 @@ function SettingDetailPanel({
               <div className="md:col-span-2" key={field.key}>
                 <HoldingScopeRulesEditor
                   auth={auth}
+                  dictionary={dictionary}
                   field={field}
                   form={record}
                   label={fieldLabel(field, language, config, dictionary)}
@@ -4931,6 +4952,7 @@ function SettingDetailPanel({
                   field,
                   recordValueForField(record, config, field),
                   language,
+                  dictionary,
                 )}
               </b>
             </div>
@@ -5305,9 +5327,14 @@ function SettingFormDialog({
                   {backendText(dictionary, "ss_barcodes_in_this_category", "บาร์โค้ดในหมวดนี้")}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
-                  {language === "th"
-                    ? `มีบาร์โค้ดผูกอยู่ ${categoryItemCount ?? (Array.isArray(editing?.codelist) ? editing.codelist.length : 0)} รายการ`
-                    : `${categoryItemCount ?? (Array.isArray(editing?.codelist) ? editing.codelist.length : 0)} barcodes assigned`}
+                  {backendText(
+                    dictionary,
+                    "ss_barcodes_assigned_count",
+                    "มีบาร์โค้ดผูกอยู่ {0} รายการ",
+                  ).replace(
+                    "{0}",
+                    String(categoryItemCount ?? (Array.isArray(editing?.codelist) ? editing.codelist.length : 0)),
+                  )}
                 </div>
               </div>
             </div>
@@ -5515,6 +5542,7 @@ function parseCoordinateValue(value: unknown): number | null {
 
 function LocalizedNamesReadOnlyDetail({
   config,
+  dictionary,
   field,
   form,
   label,
@@ -5522,6 +5550,7 @@ function LocalizedNamesReadOnlyDetail({
   workspace,
 }: {
   config: SystemSettingConfig;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: SettingRecord;
   label: string;
@@ -5548,9 +5577,7 @@ function LocalizedNamesReadOnlyDetail({
                 <LanguageFlag code={code} />
                 <span className="truncate">
                   {index === 0
-                    ? language === "th"
-                      ? "ภาษาแรก"
-                      : "Primary"
+                    ? backendText(dictionary, "ss_primary", "ภาษาแรก")
                     : languageName(code, language)}
                 </span>
                 <span className="uppercase">{code}</span>
@@ -5575,11 +5602,13 @@ function LocalizedNamesReadOnlyDetail({
 
 function ThailandAddressReadOnlyDetail({
   backendUrl,
+  dictionary,
   form,
   language,
   prefix,
 }: {
   backendUrl?: string;
+  dictionary: BackendLanguageDictionary;
   form: SettingRecord;
   language: LanguageCode;
   prefix: string;
@@ -5595,7 +5624,7 @@ function ThailandAddressReadOnlyDetail({
   const postalCode = normalizeThaiPostalCode(
     getPathOrFlatValue(form, `${prefix}.zipcode`),
   );
-  const labels = thailandAddressUi(language);
+  const labels = thailandAddressUi(dictionary);
 
   useEffect(() => {
     if (countryCode !== "TH") return;
@@ -5702,6 +5731,7 @@ function thailandAddressReadOnlyValue(code: string, label: string): string {
 function ThailandAddressFieldEditor({
   backendUrl,
   copyFromPrefix,
+  dictionary,
   form,
   language,
   prefix,
@@ -5709,6 +5739,7 @@ function ThailandAddressFieldEditor({
 }: {
   backendUrl?: string;
   copyFromPrefix?: string;
+  dictionary: BackendLanguageDictionary;
   form: FormState;
   language: LanguageCode;
   prefix: string;
@@ -5919,8 +5950,8 @@ function ThailandAddressFieldEditor({
   if (countryCode !== "TH") {
     return (
       <ThailandAddressFreeTextEditor
+        dictionary={dictionary}
         form={form}
-        language={language}
         prefix={prefix}
         setForm={setForm}
       />
@@ -5928,7 +5959,7 @@ function ThailandAddressFieldEditor({
   }
 
   const loading = !country && !loadError;
-  const labels = thailandAddressUi(language);
+  const labels = thailandAddressUi(dictionary);
 
   return (
     <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">
@@ -5943,7 +5974,7 @@ function ThailandAddressFieldEditor({
               className="h-7 text-xs"
               onClick={copyFromBilling}
             >
-              {language === "th" ? "คัดลอกจากที่อยู่ออกบิล" : "Copy from billing address"}
+              {backendText(dictionary, "ss_copy_from_billing_address", "คัดลอกจากที่อยู่ออกบิล")}
             </Button>
           ) : null}
           <span className="text-xs font-medium text-muted-foreground">
@@ -6006,6 +6037,7 @@ function ThailandAddressFieldEditor({
           postalMatches,
           selectedSubdistrict,
           language,
+          dictionary,
         )}
       </p>
     </section>
@@ -6013,17 +6045,17 @@ function ThailandAddressFieldEditor({
 }
 
 function ThailandAddressFreeTextEditor({
+  dictionary,
   form,
-  language,
   prefix,
   setForm,
 }: {
+  dictionary: BackendLanguageDictionary;
   form: FormState;
-  language: LanguageCode;
   prefix: string;
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
-  const labels = thailandAddressUi(language);
+  const labels = thailandAddressUi(dictionary);
   const fields = [
     [`${prefix}.provincecode`, labels.province],
     [`${prefix}.districtcode`, labels.district],
@@ -6084,34 +6116,19 @@ export function ThailandAddressSelect({
   );
 }
 
-export function thailandAddressUi(language: LanguageCode) {
-  if (language === "th") {
-    return {
-      title: "ที่อยู่ประเทศไทย",
-      loading: "กำลังโหลดข้อมูลที่อยู่",
-      loadError: "โหลดข้อมูลที่อยู่ไม่สำเร็จ",
-      provinces: "จังหวัด",
-      province: "จังหวัด",
-      district: "อำเภอ/เขต",
-      subdistrict: "ตำบล/แขวง",
-      postalCode: "รหัสไปรษณีย์",
-      selectProvince: "เลือกจังหวัด",
-      selectDistrict: "เลือกอำเภอ/เขต",
-      selectSubdistrict: "เลือกตำบล/แขวง",
-    };
-  }
+export function thailandAddressUi(dictionary: BackendLanguageDictionary) {
   return {
-    title: "Thailand address",
-    loading: "Loading address data",
-    loadError: "Address data failed to load",
-    provinces: "provinces",
-    province: "Province",
-    district: "District",
-    subdistrict: "Subdistrict",
-    postalCode: "Postal code",
-    selectProvince: "Select province",
-    selectDistrict: "Select district",
-    selectSubdistrict: "Select subdistrict",
+    title: backendText(dictionary, "ss_thailand_address", "ที่อยู่ประเทศไทย"),
+    loading: backendText(dictionary, "ss_loading_address_data", "กำลังโหลดข้อมูลที่อยู่"),
+    loadError: backendText(dictionary, "ss_address_data_failed_to_load", "โหลดข้อมูลที่อยู่ไม่สำเร็จ"),
+    provinces: backendText(dictionary, "ss_provinces", "จังหวัด"),
+    province: backendText(dictionary, "ss_province", "จังหวัด"),
+    district: backendText(dictionary, "ss_district", "อำเภอ/เขต"),
+    subdistrict: backendText(dictionary, "ss_subdistrict", "ตำบล/แขวง"),
+    postalCode: backendText(dictionary, "ss_postal_code", "รหัสไปรษณีย์"),
+    selectProvince: backendText(dictionary, "ss_select_province", "เลือกจังหวัด"),
+    selectDistrict: backendText(dictionary, "ss_select_district", "เลือกอำเภอ/เขต"),
+    selectSubdistrict: backendText(dictionary, "ss_select_subdistrict", "เลือกตำบล/แขวง"),
   };
 }
 
@@ -6177,25 +6194,28 @@ export function postalAddressHint(
   matches: ThailandAddressMatch[],
   selectedSubdistrict: ThailandSubdistrict | undefined,
   language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
 ): string {
   if (postalCode.length !== 5) {
-    return language === "th"
-      ? "เลือกจังหวัด > อำเภอ/เขต > ตำบล/แขวง แล้วระบบจะเติมรหัสไปรษณีย์ หรือกรอกรหัสไปรษณีย์ 5 หลักเพื่อกรองตัวเลือก"
-      : "Select province > district > subdistrict to fill the postal code, or enter a 5-digit postal code to filter choices.";
+    return backendText(
+      dictionary,
+      "ss_postal_code_hint",
+      "เลือกจังหวัด > อำเภอ/เขต > ตำบล/แขวง แล้วระบบจะเติมรหัสไปรษณีย์ หรือกรอกรหัสไปรษณีย์ 5 หลักเพื่อกรองตัวเลือก",
+    );
   }
   if (!matches.length) {
-    return language === "th"
-      ? "ไม่พบข้อมูลจากรหัสไปรษณีย์นี้"
-      : "No address found for this postal code.";
+    return backendText(dictionary, "ss_no_address_for_postal_code", "ไม่พบข้อมูลจากรหัสไปรษณีย์นี้");
   }
   if (selectedSubdistrict) {
-    return language === "th"
-      ? `เลือกแล้ว: ${selectedSubdistrict.name.th} ${postalCode}`
-      : `Selected: ${selectedSubdistrict.name.en || selectedSubdistrict.name.th} ${postalCode}`;
+    return backendText(dictionary, "ss_selected_subdistrict_postal", "เลือกแล้ว: {0} {1}")
+      .replace("{0}", thailandAddressLabel(selectedSubdistrict.name, language))
+      .replace("{1}", postalCode);
   }
-  return language === "th"
-    ? `พบ ${matches.length} ตำบล/แขวงจากรหัสนี้ เลือกตำบล/แขวงเพื่อยืนยัน`
-    : `${matches.length} subdistricts found for this postal code. Select one to confirm.`;
+  return backendText(
+    dictionary,
+    "ss_subdistricts_found_for_postal",
+    "พบ {0} ตำบล/แขวงจากรหัสนี้ เลือกตำบล/แขวงเพื่อยืนยัน",
+  ).replace("{0}", String(matches.length));
 }
 
 function StandardUnitDialog({
@@ -7382,10 +7402,12 @@ function selectedCompanyScopesFromRules(
 
 function UserAccessAuditReportPanel({
   auth,
+  dictionary,
   language,
   workspace,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   language: LanguageCode;
   workspace: WorkspaceSession | null;
 }) {
@@ -7428,7 +7450,8 @@ function UserAccessAuditReportPanel({
     [data.permissionLinks, selectedUser],
   );
   const auditSummary = useMemo(
-    () => buildUserAccessAuditSummary(selectedUser, selectedUserLinks, data, language),
+    () =>
+      buildUserAccessAuditSummary(selectedUser, selectedUserLinks, data, language, dictionary),
     [data, language, selectedUser, selectedUserLinks],
   );
 
@@ -7462,9 +7485,7 @@ function UserAccessAuditReportPanel({
         setError(
           loadError instanceof Error && loadError.message
             ? loadError.message
-            : language === "th"
-              ? "โหลดรายงานสิทธิ์ผู้ใช้งานไม่สำเร็จ"
-              : "Failed to load the user access report.",
+            : backendText(dictionary, "ss_failed_to_load_the_user", "โหลดรายงานสิทธิ์ผู้ใช้งานไม่สำเร็จ"),
         );
       })
       .finally(() => setLoading(false));
@@ -7489,11 +7510,9 @@ function UserAccessAuditReportPanel({
     setReportUserKeys([]);
   }
 
-  const title = language === "th" ? "ตรวจสอบสถานะผู้ใช้งาน" : "User Access Audit";
+  const title = backendText(dictionary, "ss_user_access_audit", "ตรวจสอบสถานะผู้ใช้งาน");
   const subtitle =
-    language === "th"
-      ? "เลือกผู้ใช้งานเพื่อดูว่าเข้ากลุ่มกิจการ/บริษัท/สาขาไหนได้ และมีสิทธิ์ทำอะไรได้บ้าง"
-      : "Select a user to review accessible business group/company/branch scope and allowed actions.";
+    backendText(dictionary, "ss_select_a_user_to_review", "เลือกผู้ใช้งานเพื่อดูว่าเข้ากลุ่มกิจการ/บริษัท/สาขาไหนได้ และมีสิทธิ์ทำอะไรได้บ้าง");
 
   return (
     <section className="grid gap-3">
@@ -7522,7 +7541,7 @@ function UserAccessAuditReportPanel({
               disabled={loading || !auth || !workspace}
             >
               {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCcw className="size-4" />}
-              {language === "th" ? "รีเฟรช" : "Refresh"}
+              {backendText(dictionary, "ss_refresh", "รีเฟรช")}
             </Button>
           </div>
         </div>
@@ -7533,7 +7552,7 @@ function UserAccessAuditReportPanel({
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-9 !pl-10 text-sm"
-                placeholder={language === "th" ? "ค้นหาผู้ใช้งาน" : "Search users"}
+                placeholder={backendText(dictionary, "ss_search_users", "ค้นหาผู้ใช้งาน")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
@@ -7541,27 +7560,29 @@ function UserAccessAuditReportPanel({
             <div className="flex flex-wrap items-center gap-1.5">
               <Button type="button" size="sm" variant="outline" onClick={selectAllReportUsers} disabled={filteredUsers.length === 0}>
                 <Check className="size-3.5" />
-                {language === "th" ? "เลือกทั้งหมด" : "Select all"}
+                {backendText(dictionary, "ss_select_all", "เลือกทั้งหมด")}
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={clearReportUsers} disabled={reportUserKeys.length === 0}>
                 <X className="size-3.5" />
-                {language === "th" ? "ล้างการเลือก" : "Clear"}
+                {backendText(dictionary, "ss_clear_selection", "ล้างการเลือก")}
               </Button>
               <Badge variant="outline">
-                {language === "th"
-                  ? `เลือก ${reportUsers.length} คน`
-                  : `${reportUsers.length} selected`}
+                {backendText(
+                  dictionary,
+                  "ss_selected_people_count",
+                  "เลือก {0} คน",
+                ).replace("{0}", String(reportUsers.length))}
               </Badge>
             </div>
             <div className="max-h-[52dvh] overflow-y-auto rounded-lg border border-border bg-background">
               {loading && data.users.length === 0 ? (
                 <p className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
                   <Loader2 className="size-3 animate-spin" />
-                  {language === "th" ? "กำลังโหลดข้อมูล" : "Loading data"}
+                  {backendText(dictionary, "ss_loading_data", "กำลังโหลดข้อมูล")}
                 </p>
               ) : filteredUsers.length === 0 ? (
                 <p className="p-3 text-xs text-muted-foreground">
-                  {language === "th" ? "ไม่พบผู้ใช้งาน" : "No users found"}
+                  {backendText(dictionary, "ss_no_users_found", "ไม่พบผู้ใช้งาน")}
                 </p>
               ) : (
                 filteredUsers.map((user) => {
@@ -7613,13 +7634,13 @@ function UserAccessAuditReportPanel({
           </div>
           <div className="grid gap-2 rounded-xl border border-border bg-muted/20 p-3 text-xs">
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <AuditMetric label={language === "th" ? "เลือกทำรายงาน" : "Report users"} value={`${reportUsers.length}/${data.users.length}`} />
-              <AuditMetric label={language === "th" ? "บทบาทสิทธิ์" : "Role permissions"} value={String(auditSummary.linkLines.length)} />
-              <AuditMetric label={language === "th" ? "สิทธิ์หน้าจอ" : "Permissions"} value={String(auditSummary.permissions.length)} />
-              <AuditMetric label={language === "th" ? "สิทธิ์อนุมัติ" : "Approvals"} value="-" />
+              <AuditMetric label={backendText(dictionary, "ss_report_users", "เลือกทำรายงาน")} value={`${reportUsers.length}/${data.users.length}`} />
+              <AuditMetric label={backendText(dictionary, "ss_role_permissions", "บทบาทสิทธิ์")} value={String(auditSummary.linkLines.length)} />
+              <AuditMetric label={backendText(dictionary, "ss_permissions", "สิทธิ์หน้าจอ")} value={String(auditSummary.permissions.length)} />
+              <AuditMetric label={backendText(dictionary, "ss_approvals", "สิทธิ์อนุมัติ")} value="-" />
             </div>
             <p className="text-muted-foreground">
-              {language === "th" ? "เวลาสร้างรายงาน" : "Report generated"}:{" "}
+              {backendText(dictionary, "ss_report_generated", "เวลาสร้างรายงาน")}:{" "}
               {data.loadedAt ? formatDefaultDateTime(data.loadedAt, resolveWorkspaceDateTimeDisplayOptions(workspace, language)) : "-"}
             </p>
           </div>
@@ -7631,6 +7652,7 @@ function UserAccessAuditReportPanel({
           reportUsers.map((user, index) => (
             <UserAccessAuditReportPage
               data={data}
+              dictionary={dictionary}
               generatedAt={data.loadedAt}
               index={index}
               key={auditUserKey(user)}
@@ -7642,7 +7664,7 @@ function UserAccessAuditReportPanel({
           ))
         ) : (
           <p className="rounded-xl border border-border bg-background p-4 text-sm text-muted-foreground">
-            {language === "th" ? "เลือกผู้ใช้งานเพื่อสร้างรายงาน" : "Select users to generate a report."}
+            {backendText(dictionary, "ss_select_users_to_generate_a", "เลือกผู้ใช้งานเพื่อสร้างรายงาน")}
           </p>
         )}
       </article>
@@ -7652,6 +7674,7 @@ function UserAccessAuditReportPanel({
 
 function UserAccessAuditReportPage({
   data,
+  dictionary,
   generatedAt,
   index,
   language,
@@ -7660,6 +7683,7 @@ function UserAccessAuditReportPage({
   workspace,
 }: {
   data: UserAccessAuditData;
+  dictionary: BackendLanguageDictionary;
   generatedAt: string;
   index: number;
   language: LanguageCode;
@@ -7668,14 +7692,14 @@ function UserAccessAuditReportPage({
   workspace: WorkspaceSession | null;
 }) {
   const links = auditPermissionLinksForUser(user, data.permissionLinks);
-  const summary = buildUserAccessAuditSummary(user, links, data, language);
+  const summary = buildUserAccessAuditSummary(user, links, data, language, dictionary);
   const generatedLabel = generatedAt
     ? formatDefaultDateTime(generatedAt, resolveWorkspaceDateTimeDisplayOptions(workspace, language))
     : "-";
   const holdingLabel = workspace
     ? `${shopDisplayName(workspace.shop)} (${workspaceHoldingCode(workspace) || "-"})`
     : "-";
-  const title = language === "th" ? "รายงานตรวจสอบสถานะผู้ใช้งาน" : "User Access Status Audit Report";
+  const title = backendText(dictionary, "ss_user_access_status_audit_report", "รายงานตรวจสอบสถานะผู้ใช้งาน");
 
   return (
     <section className="audit-report-page rounded-lg border border-slate-300 bg-white p-4 text-sm text-slate-950 shadow-sm print:rounded-none print:border-0 print:shadow-none">
@@ -7688,45 +7712,45 @@ function UserAccessAuditReportPage({
             <h2 className="text-xl font-bold leading-tight">{title}</h2>
           </div>
           <div className="grid gap-0.5 text-right text-xs text-slate-500">
-            <span>{language === "th" ? "วันที่พิมพ์" : "Printed"}: {generatedLabel}</span>
-            <span>{language === "th" ? "หน้า" : "Page"} {index + 1}/{total}</span>
+            <span>{backendText(dictionary, "ss_printed", "วันที่พิมพ์")}: {generatedLabel}</span>
+            <span>{backendText(dictionary, "ss_page", "หน้า")} {index + 1}/{total}</span>
           </div>
         </div>
         <div className="audit-report-meta grid gap-0 border border-slate-300 text-xs md:grid-cols-3">
-          <AuditLine label={language === "th" ? "กลุ่มกิจการ" : "Business group"} value={holdingLabel} />
-          <AuditLine label={language === "th" ? "ผู้ใช้งาน" : "User"} value={auditUserCode(user)} />
-          <AuditLine label={language === "th" ? "จำนวนบทบาทสิทธิ์" : "Role permissions"} value={String(summary.linkLines.length)} />
+          <AuditLine label={backendText(dictionary, "ss_business_group", "กลุ่มกิจการ")} value={holdingLabel} />
+          <AuditLine label={backendText(dictionary, "user", "ผู้ใช้งาน")} value={auditUserCode(user)} />
+          <AuditLine label={backendText(dictionary, "ss_role_permission_count", "จำนวนบทบาทสิทธิ์")} value={String(summary.linkLines.length)} />
         </div>
       </header>
       <div className="audit-report-body grid gap-2 pt-2">
         <section className="audit-report-section">
-          <h3>{language === "th" ? "ข้อมูลผู้ใช้งาน" : "User Information"}</h3>
+          <h3>{backendText(dictionary, "ss_user_information", "ข้อมูลผู้ใช้งาน")}</h3>
           <div className="audit-report-table grid gap-0 md:grid-cols-2">
-            <AuditLine label={language === "th" ? "รหัสผู้ใช้งาน" : "User code"} value={auditUserCode(user) || "-"} />
-            <AuditLine label={language === "th" ? "ชื่อผู้ใช้งาน" : "User name"} value={auditUserName(user) || "-"} />
-            <AuditLine label={language === "th" ? "อีเมล" : "Email"} value={stringValue(user.email) || "-"} />
+            <AuditLine label={backendText(dictionary, "ss_user_code", "รหัสผู้ใช้งาน")} value={auditUserCode(user) || "-"} />
+            <AuditLine label={backendText(dictionary, "ss_user_name", "ชื่อผู้ใช้งาน")} value={auditUserName(user) || "-"} />
+            <AuditLine label={backendText(dictionary, "email", "อีเมล")} value={stringValue(user.email) || "-"} />
             <AuditLine label="UID" value={auditUserUid(user) || "-"} />
-            <AuditLine label={language === "th" ? "สถานะ" : "Status"} value={auditUserStatusLabel(user, language)} />
-            <AuditLine label={language === "th" ? "ระดับผู้ใช้" : "Role"} value={auditRoleLabel(user.role, language)} />
+            <AuditLine label={backendText(dictionary, "status", "สถานะ")} value={auditUserStatusLabel(user, dictionary)} />
+            <AuditLine label={backendText(dictionary, "ss_role", "ระดับผู้ใช้")} value={auditRoleLabel(user.role, dictionary)} />
           </div>
         </section>
         <div className="audit-report-grid grid gap-2 md:grid-cols-2">
-          <AuditSection title={language === "th" ? "เข้าอะไรได้บ้าง" : "Accessible Scope"}>
+          <AuditSection title={backendText(dictionary, "ss_accessible_scope", "เข้าอะไรได้บ้าง")}>
             {summary.userScopes.length > 0 ? (
               summary.userScopes.map((line) => <AuditBullet key={line} text={line} />)
             ) : (
-              <AuditBullet text={language === "th" ? "ยังไม่ได้กำหนดขอบเขตการเข้าใช้งาน" : "No access scope configured."} />
+              <AuditBullet text={backendText(dictionary, "ss_no_access_scope_configured", "ยังไม่ได้กำหนดขอบเขตการเข้าใช้งาน")} />
             )}
           </AuditSection>
-          <AuditSection title={language === "th" ? "สิทธิ์ตามบทบาท" : "Role Permissions"}>
+          <AuditSection title={backendText(dictionary, "ss_permissions_by_role", "สิทธิ์ตามบทบาท")}>
             {summary.linkLines.length > 0 ? (
               summary.linkLines.map((line) => <AuditBullet key={line} text={line} />)
             ) : (
-              <AuditBullet text={language === "th" ? "ยังไม่ได้กำหนดสิทธิ์สำหรับบทบาทนี้" : "No permission is configured for this role."} />
+              <AuditBullet text={backendText(dictionary, "ss_no_permission_is_configured_for", "ยังไม่ได้กำหนดสิทธิ์สำหรับบทบาทนี้")} />
             )}
           </AuditSection>
         </div>
-        <AuditSection title={language === "th" ? "ทำอะไรได้บ้าง: สิทธิ์หน้าจอ" : "Allowed Actions: Screen Permissions"}>
+        <AuditSection title={backendText(dictionary, "ss_allowed_actions_screen_permissions", "ทำอะไรได้บ้าง: สิทธิ์หน้าจอ")}>
           {summary.permissions.length > 0 ? (
             <div className="grid gap-1">
               {summary.permissions.map((permission) => (
@@ -7737,10 +7761,10 @@ function UserAccessAuditReportPage({
               ))}
             </div>
           ) : (
-            <AuditBullet text={language === "th" ? "ยังไม่พบสิทธิ์หน้าจอที่ใช้งานได้" : "No screen permissions found."} />
+            <AuditBullet text={backendText(dictionary, "ss_no_screen_permissions_found", "ยังไม่พบสิทธิ์หน้าจอที่ใช้งานได้")} />
           )}
         </AuditSection>
-        <AuditSection title={language === "th" ? "สิทธิ์การอนุมัติ" : "Approval Permissions"}>
+        <AuditSection title={backendText(dictionary, "ss_approval_permissions", "สิทธิ์การอนุมัติ")}>
           {summary.approvals.length > 0 ? (
             <div className="grid gap-1">
               {summary.approvals.map((approval) => (
@@ -7753,18 +7777,14 @@ function UserAccessAuditReportPage({
           ) : (
             <AuditBullet
               text={
-                language === "th"
-                  ? "ยังไม่มีแหล่งข้อมูลสิทธิ์อนุมัติที่ยืนยันในระบบ"
-                  : "No confirmed approval-permission data source is configured."
+                backendText(dictionary, "ss_no_confirmed_approval_permission_data", "ยังไม่มีแหล่งข้อมูลสิทธิ์อนุมัติที่ยืนยันในระบบ")
               }
             />
           )}
         </AuditSection>
       </div>
       <footer className="audit-report-footer mt-2 border-t border-slate-300 pt-1.5 text-[10px] text-slate-500">
-        {language === "th"
-          ? "รายงานนี้สร้างจากข้อมูลบทบาทและสิทธิ์หน้าจอ ณ เวลาที่พิมพ์"
-          : "This report is generated from role and screen-permission data at print time."}
+        {backendText(dictionary, "ss_this_report_is_generated_from", "รายงานนี้สร้างจากข้อมูลบทบาทและสิทธิ์หน้าจอ ณ เวลาที่พิมพ์")}
       </footer>
     </section>
   );
@@ -7903,6 +7923,7 @@ function buildUserAccessAuditSummary(
   links: SettingRecord[],
   data: UserAccessAuditData,
   language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
 ) {
   const permissionCodes = new Set<string>();
   const approvalCodes = new Set<string>();
@@ -7950,6 +7971,7 @@ function buildUserAccessAuditSummary(
         normalizeHoldingScopeRules(user.accessscopes ?? user.scoperules, user.businesscodes ?? user.companyguids),
         data,
         language,
+        dictionary,
       )
     : [];
   const linkLines = links.flatMap((link) => {
@@ -7958,18 +7980,22 @@ function buildUserAccessAuditSummary(
       normalizeHoldingScopeRules(link.scoperules ?? link.accessscopes, link.businesscodes ?? link.companyguids),
       data,
       language,
+      dictionary,
     );
     return [
-      `${language === "th" ? "รายการ" : "Assignment"}: ${linkCode}`,
+      `${backendText(dictionary, "ss_assignment", "รายการ")}: ${linkCode}`,
       ...scopeLines.map((line) => `- ${line}`),
     ];
   });
   if (rolePermission) {
     const roleName = localizedValue(rolePermission.names, language) || roleCode;
-    const activeLabel = rolePermission.isactive === false
-      ? (language === "th" ? "ปิดใช้งาน" : "inactive")
-      : (language === "th" ? "เปิดใช้งาน" : "active");
-    linkLines.unshift(`${language === "th" ? "บทบาท" : "Role"}: ${roleCode} - ${roleName} (${activeLabel})`);
+    const activeLabel =
+      rolePermission.isactive === false
+        ? backendText(dictionary, "alert_disabled", "ปิดใช้งาน")
+        : backendText(dictionary, "alert_enabled", "เปิดใช้งาน");
+    linkLines.unshift(
+      `${backendText(dictionary, "ss_role_title", "บทบาท")}: ${roleCode} - ${roleName} (${activeLabel})`,
+    );
   }
   const permissions = Array.from(permissionCodes)
     .sort()
@@ -7980,8 +8006,14 @@ function buildUserAccessAuditSummary(
         name:
           stringValue(record?.permissionname ?? record?.permissionName ?? record?.name) ||
           localizedValue(record?.names, language) ||
-          (language === "th" ? "ไม่พบชื่อสิทธิ์" : "Permission name not found"),
-        scope: auditScopeLines(normalizeHoldingScopeRules(record?.scoperules ?? record?.accessscopes), data, language).join("; ") || "-",
+          backendText(dictionary, "ss_permission_name_not_found", "ไม่พบชื่อสิทธิ์"),
+        scope:
+          auditScopeLines(
+            normalizeHoldingScopeRules(record?.scoperules ?? record?.accessscopes),
+            data,
+            language,
+            dictionary,
+          ).join("; ") || "-",
       };
     });
   const approvals = Array.from(approvalCodes)
@@ -7993,8 +8025,14 @@ function buildUserAccessAuditSummary(
         name:
           stringValue(record?.approvalname ?? record?.approvalName ?? record?.name) ||
           localizedValue(record?.names, language) ||
-          (language === "th" ? "ไม่พบชื่อสิทธิ์อนุมัติ" : "Approval name not found"),
-        scope: auditScopeLines(normalizeHoldingScopeRules(record?.approvalrules ?? record?.scoperules), data, language).join("; ") || "-",
+          backendText(dictionary, "ss_approval_name_not_found", "ไม่พบชื่อสิทธิ์อนุมัติ"),
+        scope:
+          auditScopeLines(
+            normalizeHoldingScopeRules(record?.approvalrules ?? record?.scoperules),
+            data,
+            language,
+            dictionary,
+          ).join("; ") || "-",
       };
     });
 
@@ -8005,21 +8043,20 @@ function auditScopeLines(
   rules: HoldingScopeRule[],
   data: Pick<UserAccessAuditData, "branches" | "companies">,
   language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
 ): string[] {
   if (rules.length === 0) return [];
   if (rules.some((rule) => rule.scopetype === "holding")) {
-    return [language === "th" ? "ทั้งกลุ่มกิจการ" : "Whole business group"];
+    return [backendText(dictionary, "ss_whole_business_group", "ทั้งกลุ่มกิจการ")];
   }
   return selectedCompanyScopesFromRules(rules, data.companies, data.branches).flatMap((scope) => {
     const companyLabel = `${scope.company.businesscode} - ${scope.company.name}`;
     if (scope.allbranches) {
-      return [language === "th" ? `${companyLabel} / ทุกสาขา` : `${companyLabel} / all branches`];
+      return [`${companyLabel} / ${backendText(dictionary, "ss_all_branches", "ทุกสาขา")}`];
     }
     if (scope.branches.length === 0) {
       return [
-        language === "th"
-          ? `${companyLabel} / ยังไม่ได้กำหนดสาขา`
-          : `${companyLabel} / no branch selected`,
+        `${companyLabel} / ${backendText(dictionary, "ss_no_branch_selected", "ยังไม่ได้กำหนดสาขา")}`,
       ];
     }
     return scope.branches
@@ -8092,17 +8129,17 @@ function auditUserName(user: SettingRecord): string {
   return stringValue(user.userprofilename ?? user.userProfileName ?? user.name ?? user.name1 ?? user.display_name);
 }
 
-function auditUserStatusLabel(user: SettingRecord, language: LanguageCode): string {
+function auditUserStatusLabel(user: SettingRecord, dictionary: BackendLanguageDictionary): string {
   const disabled = booleanLikeValue(user.isaccessdisabled ?? user.isAccessDisabled ?? user.disabled);
-  if (disabled) return language === "th" ? "เข้าใช้งานไม่ได้ชั่วคราว" : "Temporarily disabled";
-  return language === "th" ? "เข้าใช้งานได้" : "Can access";
+  if (disabled) return backendText(dictionary, "ss_temporarily_disabled", "เข้าใช้งานไม่ได้ชั่วคราว");
+  return backendText(dictionary, "ss_can_access", "เข้าใช้งานได้");
 }
 
-function auditRoleLabel(value: unknown, language: LanguageCode): string {
+function auditRoleLabel(value: unknown, dictionary: BackendLanguageDictionary): string {
   const role = Number(value ?? 0);
-  if (role === 2) return language === "th" ? "ระดับเจ้าของร้าน" : "Owner";
-  if (role === 1) return language === "th" ? "ระดับแอดมิน" : "Admin";
-  return language === "th" ? "ระดับผู้ใช้งาน" : "User";
+  if (role === 2) return backendText(dictionary, "ss_owner_level", "ระดับเจ้าของร้าน");
+  if (role === 1) return backendText(dictionary, "ss_admin_level", "ระดับแอดมิน");
+  return backendText(dictionary, "ss_user_level", "ระดับผู้ใช้งาน");
 }
 
 function auditRoleCode(value: unknown): "USER" | "ADMIN" | "OWNER" {
@@ -8114,6 +8151,7 @@ function auditRoleCode(value: unknown): "USER" | "ADMIN" | "OWNER" {
 
 function HoldingScopeRulesEditor({
   auth,
+  dictionary,
   field,
   form,
   label,
@@ -8123,6 +8161,7 @@ function HoldingScopeRulesEditor({
   workspace,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -8221,9 +8260,7 @@ function HoldingScopeRulesEditor({
         setError(
           catchError instanceof Error && catchError.message
             ? catchError.message
-            : language === "th"
-              ? "โหลดบริษัท/สาขาไม่สำเร็จ"
-              : "Failed to load companies and branches",
+            : backendText(dictionary, "ss_failed_to_load_companies_and", "โหลดบริษัท/สาขาไม่สำเร็จ"),
         );
         setLoading(false);
       });
@@ -8377,17 +8414,17 @@ function HoldingScopeRulesEditor({
   }
 
   const hint =
-    language === "th"
-      ? "ติ๊กทั้งกลุ่มกิจการ หรือค้นหาบริษัทเพื่อเพิ่มเข้า list แล้วเลือกบริษัทเพื่อกำหนดสาขา"
-      : "Select the whole business group, or search and add companies, then pick a company to configure branches.";
+    backendText(dictionary, "ss_select_the_whole_business_group", "ติ๊กทั้งกลุ่มกิจการ หรือค้นหาบริษัทเพื่อเพิ่มเข้า list แล้วเลือกบริษัทเพื่อกำหนดสาขา");
   const summary =
     holdingSelected
-      ? language === "th"
-        ? "ทั้งกลุ่มกิจการ"
-        : "Whole business group"
-      : language === "th"
-        ? `เลือก ${selectedCompanyCount()} บริษัท / ${selectedBranchCount()} สาขา`
-        : `${selectedCompanyCount()} companies / ${selectedBranchCount()} branches selected`;
+      ? backendText(dictionary, "ss_whole_business_group", "ทั้งกลุ่มกิจการ")
+      : backendText(
+          dictionary,
+          "ss_selected_companies_branches",
+          "เลือก {0} บริษัท / {1} สาขา",
+        )
+          .replace("{0}", String(selectedCompanyCount()))
+          .replace("{1}", String(selectedBranchCount()));
 
   return (
     <section className="grid gap-3 rounded-2xl border border-border bg-background p-3 md:col-span-2">
@@ -8401,13 +8438,13 @@ function HoldingScopeRulesEditor({
       {loading ? (
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
-          {language === "th" ? "กำลังโหลดบริษัท/สาขา…" : "Loading companies and branches…"}
+          {backendText(dictionary, "ss_loading_companies_and_branches", "กำลังโหลดบริษัท/สาขา…")}
         </p>
       ) : null}
       {error ? <p className="text-xs font-semibold text-destructive">{error}</p> : null}
       {!loading && !error && companies.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          {language === "th" ? "ยังไม่มีบริษัทให้เลือก" : "No companies available."}
+          {backendText(dictionary, "ss_no_companies_available", "ยังไม่มีบริษัทให้เลือก")}
         </p>
       ) : null}
       <div className="grid gap-3 rounded-xl border border-border bg-muted/20 p-3">
@@ -8420,11 +8457,9 @@ function HoldingScopeRulesEditor({
             onChange={(event) => setHoldingScope(event.target.checked)}
           />
           <span className="grid gap-1">
-            <span>{language === "th" ? "ใช้ได้ทั้งกลุ่มกิจการ" : "Apply to whole business group"}</span>
+            <span>{backendText(dictionary, "ss_apply_to_whole_business_group", "ใช้ได้ทั้งกลุ่มกิจการ")}</span>
             <span className="text-xs font-normal text-muted-foreground">
-              {language === "th"
-                ? "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา"
-                : "When checked, this user or permission applies to every company and branch."}
+              {backendText(dictionary, "ss_when_checked_this_user_or", "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา")}
             </span>
           </span>
         </label>
@@ -8433,9 +8468,9 @@ function HoldingScopeRulesEditor({
               <div className="grid gap-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-bold">{language === "th" ? "บริษัทที่เลือก" : "Selected companies"}</p>
+                    <p className="text-sm font-bold">{backendText(dictionary, "ss_selected_companies", "บริษัทที่เลือก")}</p>
                     <p className="text-xs text-muted-foreground">
-                      {language === "th" ? "ค้นหาบริษัท แล้วกดเพิ่มเข้า list" : "Search a company, then add it to the list."}
+                      {backendText(dictionary, "ss_search_a_company_then_add", "ค้นหาบริษัท แล้วกดเพิ่มเข้า list")}
                     </p>
                   </div>
                   <Badge variant="outline">{selectedCompanyScopes.length}</Badge>
@@ -8453,7 +8488,7 @@ function HoldingScopeRulesEditor({
               </div>
               {selectedCompanyScopes.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                  {language === "th" ? "ยังไม่ได้เลือกบริษัท" : "No companies selected."}
+                  {backendText(dictionary, "ss_no_companies_selected", "ยังไม่ได้เลือกบริษัท")}
                 </p>
               ) : (
                 <div className="grid gap-2">
@@ -8461,12 +8496,12 @@ function HoldingScopeRulesEditor({
                     const active = scope.company.businesscode === activeCompanyScope?.company.businesscode;
                     const branchLabel =
                       scope.allbranches
-                        ? language === "th"
-                          ? "ทุกสาขา"
-                          : "All branches"
-                        : language === "th"
-                          ? `${scope.branches.length} สาขา`
-                          : `${scope.branches.length} branches`;
+                        ? backendText(dictionary, "ss_all_branches", "ทุกสาขา")
+                        : backendText(
+                            dictionary,
+                            "ss_branch_count",
+                            "{0} สาขา",
+                          ).replace("{0}", String(scope.branches.length));
                     return (
                       <button
                         className={cn(
@@ -8519,19 +8554,16 @@ function HoldingScopeRulesEditor({
                         {activeCompanyScope.company.businesscode} - {activeCompanyScope.company.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {language === "th"
-                          ? "เลือกทุกสาขา หรือค้นหาแล้วเพิ่มเฉพาะสาขาที่ใช้ได้"
-                          : "Select all branches, or search and add specific branches."}
+                        {backendText(dictionary, "ss_select_all_branches_or_search", "เลือกทุกสาขา หรือค้นหาแล้วเพิ่มเฉพาะสาขาที่ใช้ได้")}
                       </p>
                     </div>
                     <Badge variant={activeCompanyScope.allbranches ? "success" : "outline"}>
                       {activeCompanyScope.allbranches
-                        ? language === "th"
-                          ? "ทุกสาขา"
-                          : "All branches"
-                        : language === "th"
-                          ? `${activeCompanyScope.branches.length} สาขา`
-                          : `${activeCompanyScope.branches.length} branches`}
+                        ? backendText(dictionary, "ss_all_branches", "ทุกสาขา")
+                        : backendText(dictionary, "ss_branch_count", "{0} สาขา").replace(
+                            "{0}",
+                            String(activeCompanyScope.branches.length),
+                          )}
                     </Badge>
                   </div>
                   <label className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-bold">
@@ -8544,14 +8576,12 @@ function HoldingScopeRulesEditor({
                         setCompanyAllBranches(activeCompanyScope.company.businesscode, event.target.checked)
                       }
                     />
-                    {language === "th" ? "ใช้กับทุกสาขาในบริษัทนี้" : "Apply to all branches in this company"}
+                    {backendText(dictionary, "ss_apply_to_all_branches_in", "ใช้กับทุกสาขาในบริษัทนี้")}
                   </label>
                   <div className="grid gap-2">
                     {activeCompanyScope.allbranches ? (
                       <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
-                        {language === "th"
-                          ? "เลือกใช้ได้ทุกสาขาในบริษัทนี้แล้ว ไม่ต้องเลือกสาขาทีละสาขา"
-                          : "All branches in this company are enabled. No need to pick branches one by one."}
+                        {backendText(dictionary, "ss_all_branches_in_this_company", "เลือกใช้ได้ทุกสาขาในบริษัทนี้แล้ว ไม่ต้องเลือกสาขาทีละสาขา")}
                       </p>
                     ) : (
                       <>
@@ -8571,7 +8601,7 @@ function HoldingScopeRulesEditor({
                         ) : null}
                         {activeCompanyScope.branches.length === 0 ? (
                           <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                            {language === "th" ? "ยังไม่ได้เลือกสาขา" : "No branches selected."}
+                            {backendText(dictionary, "ss_no_branches_selected", "ยังไม่ได้เลือกสาขา")}
                           </p>
                         ) : (
                           <div className="grid gap-2">
@@ -8589,8 +8619,8 @@ function HoldingScopeRulesEditor({
                                     type="button"
                                     size="icon"
                                     variant="outline"
-                                    aria-label={language === "th" ? "เอาสาขาออก" : "Remove branch"}
-                                    title={language === "th" ? "เอาสาขาออก" : "Remove branch"}
+                                    aria-label={backendText(dictionary, "ss_remove_branch", "เอาสาขาออก")}
+                                    title={backendText(dictionary, "ss_remove_branch", "เอาสาขาออก")}
                                     className="size-8 shrink-0 text-destructive"
                                     onClick={() => removeBranchScope(activeCompanyScope.company.businesscode, branch.code)}
                                   >
@@ -8607,9 +8637,7 @@ function HoldingScopeRulesEditor({
                 </>
               ) : (
                 <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                  {language === "th"
-                    ? "เลือกบริษัทจาก list ด้านซ้ายก่อน แล้วระบบจะแสดงสาขาที่กำหนด"
-                    : "Pick a company from the list to configure its branches."}
+                  {backendText(dictionary, "ss_pick_a_company_from_the", "เลือกบริษัทจาก list ด้านซ้ายก่อน แล้วระบบจะแสดงสาขาที่กำหนด")}
                 </p>
               )}
             </div>
@@ -8701,64 +8729,66 @@ function workspaceBusinessCode(workspace: WorkspaceSession | null): string {
 
 type VariantColumn = {
   key: string;
+  labelKey: string;
   labelTh: string;
-  labelEn: string;
   kind?: "number" | "csv";
   placeholder?: string;
 };
 
 const variantFieldColumns: Record<string, VariantColumn[]> = {
   optiontiers: [
-    { key: "tierno", labelTh: "ลำดับ", labelEn: "Tier", kind: "number" },
-    { key: "optioncode", labelTh: "รหัสแกน", labelEn: "Option code", placeholder: "COLOR" },
-    { key: "name", labelTh: "ชื่อแกน", labelEn: "Option name", placeholder: "สี/Color" },
+    { key: "tierno", labelKey: "ss_col_tier", labelTh: "ลำดับ", kind: "number" },
+    { key: "optioncode", labelKey: "ss_col_option_code", labelTh: "รหัสแกน", placeholder: "COLOR" },
+    { key: "name", labelKey: "ss_col_option_name", labelTh: "ชื่อแกน", placeholder: "สี/Color" },
   ],
   skucombinations: [
-    { key: "sellersku", labelTh: "SKU", labelEn: "SKU" },
-    { key: "barcode", labelTh: "บาร์โค้ด", labelEn: "Barcode" },
-    { key: "gtin", labelTh: "GTIN", labelEn: "GTIN" },
-    { key: "optionvalues", labelTh: "ค่าตัวเลือก", labelEn: "Options", kind: "csv", placeholder: "BLACK, 128GB" },
-    { key: "saleprice", labelTh: "ราคาขาย", labelEn: "Price", kind: "number" },
-    { key: "cost", labelTh: "ต้นทุน", labelEn: "Cost", kind: "number" },
-    { key: "openingstock", labelTh: "สต๊อกต้น", labelEn: "Opening stock", kind: "number" },
+    { key: "sellersku", labelKey: "ss_col_sku", labelTh: "SKU" },
+    { key: "barcode", labelKey: "ss_col_barcode", labelTh: "บาร์โค้ด" },
+    { key: "gtin", labelKey: "ss_col_gtin", labelTh: "GTIN" },
+    { key: "optionvalues", labelKey: "ss_col_options", labelTh: "ค่าตัวเลือก", kind: "csv", placeholder: "BLACK, 128GB" },
+    { key: "saleprice", labelKey: "ss_col_price", labelTh: "ราคาขาย", kind: "number" },
+    { key: "cost", labelKey: "ss_col_cost", labelTh: "ต้นทุน", kind: "number" },
+    { key: "openingstock", labelKey: "ss_col_opening_stock", labelTh: "สต๊อกต้น", kind: "number" },
   ],
   mediaassets: [
-    { key: "kind", labelTh: "ชนิดสื่อ", labelEn: "Media type", placeholder: "main / gallery / sku / video" },
-    { key: "uri", labelTh: "ที่อยู่ไฟล์", labelEn: "File path" },
-    { key: "optioncode", labelTh: "รหัสแกน", labelEn: "Option code" },
-    { key: "optionvalue", labelTh: "ค่าตัวเลือก", labelEn: "Option value" },
-    { key: "sortorder", labelTh: "ลำดับ", labelEn: "Sort", kind: "number" },
+    { key: "kind", labelKey: "ss_col_media_type", labelTh: "ชนิดสื่อ", placeholder: "main / gallery / sku / video" },
+    { key: "uri", labelKey: "ss_col_file_path", labelTh: "ที่อยู่ไฟล์" },
+    { key: "optioncode", labelKey: "ss_col_option_code", labelTh: "รหัสแกน" },
+    { key: "optionvalue", labelKey: "ss_col_option_value", labelTh: "ค่าตัวเลือก" },
+    { key: "sortorder", labelKey: "ss_col_sort", labelTh: "ลำดับ", kind: "number" },
   ],
   specificationgroups: [
-    { key: "groupcode", labelTh: "รหัสกลุ่ม", labelEn: "Group code" },
-    { key: "groupname", labelTh: "ชื่อกลุ่ม", labelEn: "Group name" },
+    { key: "groupcode", labelKey: "ss_col_group_code", labelTh: "รหัสกลุ่ม" },
+    { key: "groupname", labelKey: "ss_col_group_name", labelTh: "ชื่อกลุ่ม" },
   ],
   importattributemaps: [
-    { key: "sourcename", labelTh: "ชื่อจากไฟล์นำเข้า", labelEn: "Imported name" },
-    { key: "targetoptioncode", labelTh: "รหัสแกนในระบบ", labelEn: "System option code" },
+    { key: "sourcename", labelKey: "ss_col_imported_name", labelTh: "ชื่อจากไฟล์นำเข้า" },
+    { key: "targetoptioncode", labelKey: "ss_col_system_option_code", labelTh: "รหัสแกนในระบบ" },
   ],
   integrationprofiles: [
-    { key: "channel", labelTh: "ช่องทาง", labelEn: "Channel", placeholder: "shopee / lazada / external" },
-    { key: "skufields", labelTh: "ช่อง SKU", labelEn: "SKU fields", kind: "csv", placeholder: "sellersku, barcode, price, stock" },
-    { key: "media_keys", labelTh: "ช่องรูป/วิดีโอ", labelEn: "Media keys", kind: "csv" },
-    { key: "price_keys", labelTh: "ช่องราคา", labelEn: "Price keys", kind: "csv" },
-    { key: "stock_keys", labelTh: "ช่องสต๊อก", labelEn: "Stock keys", kind: "csv" },
+    { key: "channel", labelKey: "ss_col_channel", labelTh: "ช่องทาง", placeholder: "shopee / lazada / external" },
+    { key: "skufields", labelKey: "ss_col_sku_fields", labelTh: "ช่อง SKU", kind: "csv", placeholder: "sellersku, barcode, price, stock" },
+    { key: "media_keys", labelKey: "ss_col_media_keys", labelTh: "ช่องรูป/วิดีโอ", kind: "csv" },
+    { key: "price_keys", labelKey: "ss_col_price_keys", labelTh: "ช่องราคา", kind: "csv" },
+    { key: "stock_keys", labelKey: "ss_col_stock_keys", labelTh: "ช่องสต๊อก", kind: "csv" },
   ],
   payloadexamples: [
-    { key: "direction", labelTh: "ทิศทาง", labelEn: "Direction", placeholder: "import / export" },
-    { key: "usecase", labelTh: "กรณีใช้งาน", labelEn: "Use case" },
-    { key: "channel", labelTh: "ช่องทาง", labelEn: "Channel" },
-    { key: "note", labelTh: "หมายเหตุ", labelEn: "Note" },
+    { key: "direction", labelKey: "ss_col_direction", labelTh: "ทิศทาง", placeholder: "import / export" },
+    { key: "usecase", labelKey: "ss_col_use_case", labelTh: "กรณีใช้งาน" },
+    { key: "channel", labelKey: "ss_col_channel", labelTh: "ช่องทาง" },
+    { key: "note", labelKey: "ss_col_note", labelTh: "หมายเหตุ" },
   ],
 };
 
 function ProductVariantStructuredFieldEditor({
+  dictionary,
   field,
   form,
   label,
   language,
   setForm,
 }: {
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -8767,11 +8797,9 @@ function ProductVariantStructuredFieldEditor({
 }) {
   const items = variantArrayValue(form[field.key]);
   const columns = variantFieldColumns[field.key] ?? [];
-  const addLabel = language === "th" ? "เพิ่มรายการ" : "Add item";
+  const addLabel = backendText(dictionary, "ss_add_item", "เพิ่มรายการ");
   const emptyText =
-    language === "th"
-      ? "ยังไม่มีรายการ กดเพิ่มรายการเพื่อเริ่มกรอก"
-      : "No items yet. Add an item to start.";
+    backendText(dictionary, "ss_no_items_yet_add_an", "ยังไม่มีรายการ กดเพิ่มรายการเพื่อเริ่มกรอก");
 
   const setItems = (nextItems: SettingRecord[]) => {
     setForm({ ...form, [field.key]: nextItems });
@@ -8840,19 +8868,17 @@ function ProductVariantStructuredFieldEditor({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="rounded-lg text-[11px]">
-                    {field.key === "optiontiers"
-                      ? language === "th"
-                        ? `ลำดับเลือก ${index + 1}`
-                        : `Choice order ${index + 1}`
-                      : language === "th"
-                        ? `รายการ ${index + 1}`
-                        : `Item ${index + 1}`}
+                    {backendText(
+                      dictionary,
+                      field.key === "optiontiers"
+                        ? "ss_choice_order_n"
+                        : "ss_item_n",
+                      field.key === "optiontiers" ? "ลำดับเลือก {0}" : "รายการ {0}",
+                    ).replace("{0}", String(index + 1))}
                   </Badge>
                   {field.key === "optiontiers" ? (
                     <span className="text-[11px] font-medium text-muted-foreground">
-                      {language === "th"
-                        ? "ผู้ใช้เลือกตามลำดับนี้ เช่น สีก่อนไซซ์ หรือไซซ์ก่อนสี"
-                        : "Users choose in this order, such as color before size or size before color."}
+                      {backendText(dictionary, "ss_users_choose_in_this_order", "ผู้ใช้เลือกตามลำดับนี้ เช่น สีก่อนไซซ์ หรือไซซ์ก่อนสี")}
                     </span>
                   ) : null}
                 </div>
@@ -8861,7 +8887,7 @@ function ProductVariantStructuredFieldEditor({
                     <>
                       <Button
                         aria-label={
-                          language === "th" ? "เลื่อนขึ้น" : "Move up"
+                          backendText(dictionary, "ss_move_up", "เลื่อนขึ้น")
                         }
                         className="size-8 rounded-xl p-0"
                         disabled={index === 0}
@@ -8873,7 +8899,7 @@ function ProductVariantStructuredFieldEditor({
                       </Button>
                       <Button
                         aria-label={
-                          language === "th" ? "เลื่อนลง" : "Move down"
+                          backendText(dictionary, "ss_move_down", "เลื่อนลง")
                         }
                         className="size-8 rounded-xl p-0"
                         disabled={index === items.length - 1}
@@ -8886,7 +8912,7 @@ function ProductVariantStructuredFieldEditor({
                     </>
                   ) : null}
                   <Button
-                    aria-label={language === "th" ? "ลบรายการ" : "Remove item"}
+                    aria-label={backendText(dictionary, "ss_remove_item", "ลบรายการ")}
                     className="size-8 rounded-xl p-0 text-destructive"
                     type="button"
                     variant="outline"
@@ -8902,8 +8928,8 @@ function ProductVariantStructuredFieldEditor({
                 {columns.map((column) => (
                   <VariantInput
                     column={column}
+                    dictionary={dictionary}
                     key={column.key}
-                    language={language}
                     value={item[column.key]}
                     onChange={(nextValue) => updateItem(index, column.key, nextValue)}
                   />
@@ -8912,26 +8938,26 @@ function ProductVariantStructuredFieldEditor({
               {field.key === "optiontiers" ? (
                 <VariantNestedRowsEditor
                   columns={[
-                    { key: "valuecode", labelTh: "รหัสค่า", labelEn: "Value code" },
-                    { key: "valuetext", labelTh: "ชื่อค่า", labelEn: "Value name" },
+                    { key: "valuecode", labelKey: "ss_col_value_code", labelTh: "รหัสค่า" },
+                    { key: "valuetext", labelKey: "ss_col_value_name", labelTh: "ชื่อค่า" },
                   ]}
+                  dictionary={dictionary}
                   items={variantArrayValue(item.values)}
-                  language={language}
-                  title={language === "th" ? "ค่าของแกนนี้" : "Option values"}
+                  title={backendText(dictionary, "ss_option_values", "ค่าของแกนนี้")}
                   onChange={(nextRows) => updateItem(index, "values", nextRows)}
                 />
               ) : null}
               {field.key === "specificationgroups" ? (
                 <VariantNestedRowsEditor
                   columns={[
-                    { key: "attributecode", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
-                    { key: "attributename", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
-                    { key: "inputtype", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
-                    { key: "scope", labelTh: "ระดับข้อมูล", labelEn: "Scope" },
+                    { key: "attributecode", labelKey: "ss_col_attribute_code", labelTh: "รหัสคุณสมบัติ" },
+                    { key: "attributename", labelKey: "ss_col_attribute_name", labelTh: "ชื่อคุณสมบัติ" },
+                    { key: "inputtype", labelKey: "ss_col_input_type", labelTh: "ชนิดช่องกรอก" },
+                    { key: "scope", labelKey: "ss_col_scope", labelTh: "ระดับข้อมูล" },
                   ]}
+                  dictionary={dictionary}
                   items={variantArrayValue(item.attributes)}
-                  language={language}
-                  title={language === "th" ? "คุณสมบัติในกลุ่มนี้" : "Attributes"}
+                  title={backendText(dictionary, "ss_attributes", "คุณสมบัติในกลุ่มนี้")}
                   onChange={(nextRows) => updateItem(index, "attributes", nextRows)}
                 />
               ) : null}
@@ -8945,14 +8971,14 @@ function ProductVariantStructuredFieldEditor({
 
 function VariantNestedRowsEditor({
   columns,
+  dictionary,
   items,
-  language,
   onChange,
   title,
 }: {
   columns: VariantColumn[];
+  dictionary: BackendLanguageDictionary;
   items: SettingRecord[];
-  language: LanguageCode;
   onChange: (items: SettingRecord[]) => void;
   title: string;
 }) {
@@ -8976,12 +9002,12 @@ function VariantNestedRowsEditor({
           onClick={() => onChange([...items, {}])}
         >
           <Plus className="size-3" />
-          {language === "th" ? "เพิ่ม" : "Add"}
+          {backendText(dictionary, "ss_add", "เพิ่ม")}
         </Button>
       </div>
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          {language === "th" ? "ยังไม่มีรายการย่อย" : "No rows yet."}
+          {backendText(dictionary, "ss_no_rows_yet", "ยังไม่มีรายการย่อย")}
         </p>
       ) : (
         <div className="grid gap-2">
@@ -8993,14 +9019,14 @@ function VariantNestedRowsEditor({
               {columns.map((column) => (
                 <VariantInput
                   column={column}
+                  dictionary={dictionary}
                   key={column.key}
-                  language={language}
                   value={item[column.key]}
                   onChange={(nextValue) => updateRow(index, column.key, nextValue)}
                 />
               ))}
               <Button
-                aria-label={language === "th" ? "ลบรายการย่อย" : "Remove row"}
+                aria-label={backendText(dictionary, "ss_remove_row", "ลบรายการย่อย")}
                 className="size-8 self-end rounded-xl p-0 text-destructive"
                 type="button"
                 variant="outline"
@@ -9018,16 +9044,16 @@ function VariantNestedRowsEditor({
 
 function VariantInput({
   column,
-  language,
+  dictionary,
   onChange,
   value,
 }: {
   column: VariantColumn;
-  language: LanguageCode;
+  dictionary: BackendLanguageDictionary;
   onChange: (value: unknown) => void;
   value: unknown;
 }) {
-  const label = language === "th" ? column.labelTh : column.labelEn;
+  const label = backendText(dictionary, column.labelKey, column.labelTh);
   const inputValue =
     column.kind === "csv" && Array.isArray(value)
       ? value.map((item) => stringValue(item)).join(", ")
@@ -9077,14 +9103,14 @@ function defaultVariantItem(key: string, index: number): SettingRecord {
 }
 
 function ProductVariantStructuredReadOnlyDetail({
+  dictionary,
   field,
   label,
-  language,
   value,
 }: {
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   label: string;
-  language: LanguageCode;
   value: unknown;
 }) {
   const items = variantArrayValue(value);
@@ -9096,7 +9122,7 @@ function ProductVariantStructuredReadOnlyDetail({
           {label}
         </span>
         <Badge variant="secondary" className="rounded-lg text-[11px]">
-          {items.length} {language === "th" ? "รายการ" : "items"}
+          {items.length} {backendText(dictionary, "items", "รายการ")}
         </Badge>
       </header>
       {items.length === 0 ? (
@@ -9110,19 +9136,15 @@ function ProductVariantStructuredReadOnlyDetail({
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="rounded-lg text-[11px]">
-                  {field.key === "optiontiers"
-                    ? language === "th"
-                      ? `ลำดับเลือก ${index + 1}`
-                      : `Choice order ${index + 1}`
-                    : language === "th"
-                      ? `รายการ ${index + 1}`
-                      : `Item ${index + 1}`}
+                  {backendText(
+                    dictionary,
+                    field.key === "optiontiers" ? "ss_choice_order_n" : "ss_item_n",
+                    field.key === "optiontiers" ? "ลำดับเลือก {0}" : "รายการ {0}",
+                  ).replace("{0}", String(index + 1))}
                 </Badge>
                 {field.key === "optiontiers" ? (
                   <span className="text-[11px] text-muted-foreground">
-                    {language === "th"
-                      ? "ใช้กำหนดว่าผู้ใช้เลือกสี/ไซซ์/ตัวเลือกใดก่อนหลัง"
-                      : "Controls which option tier users choose first."}
+                    {backendText(dictionary, "ss_controls_which_option_tier_users", "ใช้กำหนดว่าผู้ใช้เลือกสี/ไซซ์/ตัวเลือกใดก่อนหลัง")}
                   </span>
                 ) : null}
               </div>
@@ -9130,8 +9152,8 @@ function ProductVariantStructuredReadOnlyDetail({
                 {columns.map((column) => (
                   <VariantReadOnlyCell
                     column={column}
+                    dictionary={dictionary}
                     key={column.key}
-                    language={language}
                     value={item[column.key]}
                   />
                 ))}
@@ -9139,25 +9161,25 @@ function ProductVariantStructuredReadOnlyDetail({
               {field.key === "optiontiers" ? (
                 <VariantReadOnlyNestedRows
                   columns={[
-                    { key: "valuecode", labelTh: "รหัสค่า", labelEn: "Value code" },
-                    { key: "valuetext", labelTh: "ชื่อค่า", labelEn: "Value name" },
+                    { key: "valuecode", labelKey: "ss_col_value_code", labelTh: "รหัสค่า" },
+                    { key: "valuetext", labelKey: "ss_col_value_name", labelTh: "ชื่อค่า" },
                   ]}
+                  dictionary={dictionary}
                   items={variantArrayValue(item.values)}
-                  language={language}
-                  title={language === "th" ? "ค่าของแกนนี้" : "Option values"}
+                  title={backendText(dictionary, "ss_option_values", "ค่าของแกนนี้")}
                 />
               ) : null}
               {field.key === "specificationgroups" ? (
                 <VariantReadOnlyNestedRows
                   columns={[
-                    { key: "attributecode", labelTh: "รหัสคุณสมบัติ", labelEn: "Attribute code" },
-                    { key: "attributename", labelTh: "ชื่อคุณสมบัติ", labelEn: "Attribute name" },
-                    { key: "inputtype", labelTh: "ชนิดช่องกรอก", labelEn: "Input type" },
-                    { key: "scope", labelTh: "ระดับข้อมูล", labelEn: "Scope" },
+                    { key: "attributecode", labelKey: "ss_col_attribute_code", labelTh: "รหัสคุณสมบัติ" },
+                    { key: "attributename", labelKey: "ss_col_attribute_name", labelTh: "ชื่อคุณสมบัติ" },
+                    { key: "inputtype", labelKey: "ss_col_input_type", labelTh: "ชนิดช่องกรอก" },
+                    { key: "scope", labelKey: "ss_col_scope", labelTh: "ระดับข้อมูล" },
                   ]}
+                  dictionary={dictionary}
                   items={variantArrayValue(item.attributes)}
-                  language={language}
-                  title={language === "th" ? "คุณสมบัติในกลุ่มนี้" : "Attributes"}
+                  title={backendText(dictionary, "ss_attributes", "คุณสมบัติในกลุ่มนี้")}
                 />
               ) : null}
             </article>
@@ -9170,13 +9192,13 @@ function ProductVariantStructuredReadOnlyDetail({
 
 function VariantReadOnlyNestedRows({
   columns,
+  dictionary,
   items,
-  language,
   title,
 }: {
+  dictionary: BackendLanguageDictionary;
   columns: VariantColumn[];
   items: SettingRecord[];
-  language: LanguageCode;
   title: string;
 }) {
   if (items.length === 0) return null;
@@ -9194,8 +9216,8 @@ function VariantReadOnlyNestedRows({
             {columns.map((column) => (
               <VariantReadOnlyCell
                 column={column}
+                dictionary={dictionary}
                 key={column.key}
-                language={language}
                 value={item[column.key]}
               />
             ))}
@@ -9208,14 +9230,14 @@ function VariantReadOnlyNestedRows({
 
 function VariantReadOnlyCell({
   column,
-  language,
+  dictionary,
   value,
 }: {
   column: VariantColumn;
-  language: LanguageCode;
+  dictionary: BackendLanguageDictionary;
   value: unknown;
 }) {
-  const label = language === "th" ? column.labelTh : column.labelEn;
+  const label = backendText(dictionary, column.labelKey, column.labelTh);
   return (
     <div className="grid min-w-0 gap-0.5 rounded-md border border-border bg-background/80 px-2 py-1.5">
       <span className="text-[11px] font-semibold text-muted-foreground">
@@ -9266,6 +9288,7 @@ function FieldEditor({
   if (isProductVariantStructuredField(config, field)) {
     return (
       <ProductVariantStructuredFieldEditor
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9355,6 +9378,7 @@ function FieldEditor({
     return (
       <HoldingScopeRulesEditor
         auth={auth}
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9370,6 +9394,7 @@ function FieldEditor({
       <ThailandAddressFieldEditor
         backendUrl={auth?.backendUrl}
         copyFromPrefix={field.copyFromPrefix}
+        dictionary={dictionary}
         form={form}
         language={language}
         prefix={field.key}
@@ -9401,10 +9426,11 @@ function FieldEditor({
       Boolean(selectedValue) &&
       options.length > 0 &&
       !options.some((option) => option.value === selectedValue);
-    const unknownValueText =
-      language === "th"
-        ? `ค่าปัจจุบันไม่ตรงกับบทบาทที่ระบบรองรับ: ${selectedValue} กรุณาเลือกใหม่`
-        : `Current value is not a supported role: ${selectedValue}. Please choose a valid role.`;
+    const unknownValueText = backendText(
+      dictionary,
+      "ss_role_value_not_supported",
+      "ค่าปัจจุบันไม่ตรงกับบทบาทที่ระบบรองรับ: {0} กรุณาเลือกใหม่",
+    ).replace("{0}", selectedValue);
     return (
       <section className="grid gap-1 text-sm font-semibold">
         <span>
@@ -9518,6 +9544,7 @@ function FieldEditor({
   if (field.type === "language-configs") {
     return (
       <LanguageConfigsEditor
+        dictionary={dictionary}
         form={form}
         language={language}
         label={label}
@@ -9529,6 +9556,7 @@ function FieldEditor({
   if (field.type === "language-list") {
     return (
       <LanguageListEditor
+        dictionary={dictionary}
         form={form}
         field={field}
         language={language}
@@ -9545,7 +9573,6 @@ function FieldEditor({
         field={field}
         form={form}
         label={label}
-        language={language}
         setForm={setForm}
       />
     );
@@ -9555,6 +9582,7 @@ function FieldEditor({
     return (
       <TimeSaleListEditor
         dateTimeScope={dateTimeScope}
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9567,10 +9595,10 @@ function FieldEditor({
   if (field.type === "bank-accounts") {
     return (
       <BankAccountsEditor
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
-        language={language}
         setForm={setForm}
       />
     );
@@ -9579,6 +9607,7 @@ function FieldEditor({
   if (field.type === "string-list") {
     return (
       <StringListFieldEditor
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9610,6 +9639,7 @@ function FieldEditor({
   if (field.type === "combo") {
     return (
       <ComboFieldEditor
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9623,6 +9653,7 @@ function FieldEditor({
     return (
       <MasterPickerFieldEditor
         auth={auth}
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9636,6 +9667,7 @@ function FieldEditor({
     return (
       <MasterMultiPickerFieldEditor
         auth={auth}
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9649,6 +9681,7 @@ function FieldEditor({
     return (
       <ImageUploadFieldEditor
         auth={auth}
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9662,6 +9695,7 @@ function FieldEditor({
     return (
       <ImageGalleryFieldEditor
         auth={auth}
+        dictionary={dictionary}
         field={field}
         form={form}
         label={label}
@@ -9680,6 +9714,7 @@ function FieldEditor({
     return (
       <CompanyMultiSelectFieldEditor
         auth={auth}
+        dictionary={dictionary}
         field={field}
         form={form}
         language={language}
@@ -9821,8 +9856,8 @@ function FieldEditor({
         <TaxIdLinkBadge
           auth={auth}
           config={config}
+          dictionary={dictionary}
           form={form}
-          language={language}
           workspace={workspace}
         />
       ) : null}
@@ -9838,15 +9873,15 @@ function FieldEditor({
 function TaxIdLinkBadge({
   auth,
   config,
+  dictionary,
   form,
-  language,
   workspace,
 }: {
   actions?: ScreenActions;
   auth: AuthSession | null;
   config: SystemSettingConfig;
+  dictionary: BackendLanguageDictionary;
   form: FormState;
-  language: LanguageCode;
   workspace: WorkspaceSession | null;
 }) {
   const taxid = String(form.taxid ?? "").trim();
@@ -9887,7 +9922,7 @@ function TaxIdLinkBadge({
 
   if (!otherMatch && !duplicateMatch) return null;
 
-  const otherLabel = config.slug === "creditor" ? (language === "th" ? "ลูกหนี้" : "debtor") : (language === "th" ? "เจ้าหนี้" : "creditor");
+  const otherLabel = config.slug === "creditor" ? (backendText(dictionary, "ss_debtor", "ลูกหนี้")) : (backendText(dictionary, "ss_creditor", "เจ้าหนี้"));
   const combinedSatang =
     (otherMatch ? Number(otherMatch.creditlimitsatang ?? 0) : 0) +
     Number(form.creditlimitbaht ? Number(form.creditlimitbaht) * 100 : 0);
@@ -9896,19 +9931,25 @@ function TaxIdLinkBadge({
     <span className="grid gap-1">
       {otherMatch ? (
         <span className="rounded-lg border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-medium text-primary">
-          {language === "th"
-            ? `คู่ค้ารายเดียวกัน: มีข้อมูล${otherLabel} รหัส ${stringValue(otherMatch.code)} ใช้เลขผู้เสียภาษีนี้อยู่`
-            : `Same business partner: ${otherLabel} code ${stringValue(otherMatch.code)} uses this tax ID`}
+          {backendText(
+            dictionary,
+            "ss_same_partner_tax_id",
+            "คู่ค้ารายเดียวกัน: มีข้อมูล{0} รหัส {1} ใช้เลขผู้เสียภาษีนี้อยู่",
+          )
+            .replace("{0}", otherLabel)
+            .replace("{1}", stringValue(otherMatch.code))}
           {" · "}
-          {language === "th" ? "วงเงินรวม" : "Combined credit"}{" "}
-          {(combinedSatang / 100).toLocaleString("th-TH")} {language === "th" ? "บาท" : "THB"}
+          {backendText(dictionary, "ss_combined_credit", "วงเงินรวม")}{" "}
+          {(combinedSatang / 100).toLocaleString("th-TH")} {backendText(dictionary, "ss_thb", "บาท")}
         </span>
       ) : null}
       {duplicateMatch ? (
         <span className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-700">
-          {language === "th"
-            ? `เลขผู้เสียภาษี + รหัสสาขานี้ซ้ำกับรหัส ${stringValue(duplicateMatch.code)} ที่มีอยู่แล้ว`
-            : `This tax ID + branch number duplicates existing code ${stringValue(duplicateMatch.code)}`}
+          {backendText(
+            dictionary,
+            "ss_duplicate_tax_id_branch",
+            "เลขผู้เสียภาษี + รหัสสาขานี้ซ้ำกับรหัส {0} ที่มีอยู่แล้ว",
+          ).replace("{0}", stringValue(duplicateMatch.code))}
         </span>
       ) : null}
     </span>
@@ -9962,12 +10003,14 @@ async function fetchSettingRecordsByTaxId(
 }
 
 function StringListFieldEditor({
+  dictionary,
   field,
   form,
   label,
   language,
   setForm,
 }: {
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -9978,14 +10021,12 @@ function StringListFieldEditor({
   const [draft, setDraft] = useState("");
   const helper =
     field.helper?.[language] ?? field.helper?.en ?? field.helper?.th;
-  const addLabel = language === "th" ? "เพิ่ม" : "Add";
+  const addLabel = backendText(dictionary, "ss_add", "เพิ่ม");
   const emptyLabel =
-    language === "th" ? "ยังไม่มีชื่อเรียกอื่น" : "No aliases yet";
+    backendText(dictionary, "ss_no_aliases_yet", "ยังไม่มีชื่อเรียกอื่น");
   const inputPlaceholder =
     field.placeholder ??
-    (language === "th"
-      ? "พิมพ์แล้วกด Enter"
-      : "Type and press Enter");
+    (backendText(dictionary, "ss_type_and_press_enter", "พิมพ์แล้วกด Enter"));
 
   const commit = (nextValues: string[]) => {
     setForm({
@@ -10054,7 +10095,10 @@ function StringListFieldEditor({
                 type="button"
                 className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 aria-label={
-                  language === "th" ? `ลบ ${item}` : `Remove ${item}`
+                  backendText(dictionary, "ss_remove_item", "ลบ {0}").replace(
+                    "{0}",
+                    item,
+                  )
                 }
                 onClick={() =>
                   commit(values.filter((value) => value !== item))
@@ -10091,6 +10135,7 @@ type TimeSaleRow = {
 
 function TimeSaleListEditor({
   dateTimeScope,
+  dictionary,
   field,
   form,
   label,
@@ -10098,6 +10143,7 @@ function TimeSaleListEditor({
   setForm,
 }: {
   dateTimeScope: DateTimeScope;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -10149,7 +10195,7 @@ function TimeSaleListEditor({
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <b>
-                  {language === "th" ? "ช่วงเวลา" : "Time window"} {index + 1}
+                  {backendText(dictionary, "ss_time_window", "ช่วงเวลา")} {index + 1}
                 </b>
                 <Button
                   type="button"
@@ -10159,31 +10205,31 @@ function TimeSaleListEditor({
                   onClick={() => commit(rows.filter((_, rowIndex) => rowIndex !== index))}
                 >
                   <Trash2 className="size-3.5" />
-                  {language === "th" ? "ลบ" : "Delete"}
+                  {backendText(dictionary, "ss_delete", "ลบ")}
                 </Button>
               </div>
               <div className="grid gap-2 md:grid-cols-2">
                 <DateField
                   language={language}
                   yearType={dateTimeScope.calendarYearType}
-                  label={language === "th" ? "วันที่เริ่ม" : "From date"}
+                  label={backendText(dictionary, "ss_from_date", "วันที่เริ่ม")}
                   value={row.fromdate}
                   onChange={(event) => updateRow(index, { fromdate: event.target.value })}
                 />
                 <DateField
                   language={language}
                   yearType={dateTimeScope.calendarYearType}
-                  label={language === "th" ? "วันที่สิ้นสุด" : "To date"}
+                  label={backendText(dictionary, "ss_to_date", "วันที่สิ้นสุด")}
                   value={row.todate}
                   onChange={(event) => updateRow(index, { todate: event.target.value })}
                 />
                 <TimeField
-                  label={language === "th" ? "เวลาเริ่ม" : "From time"}
+                  label={backendText(dictionary, "ss_from_time", "เวลาเริ่ม")}
                   value={row.fromtime}
                   onChange={(event) => updateRow(index, { fromtime: normalizeTimeInput(event.target.value) })}
                 />
                 <TimeField
-                  label={language === "th" ? "เวลาสิ้นสุด" : "To time"}
+                  label={backendText(dictionary, "ss_to_time", "เวลาสิ้นสุด")}
                   value={row.totime}
                   onChange={(event) => updateRow(index, { totime: normalizeTimeInput(event.target.value) })}
                 />
@@ -10222,7 +10268,7 @@ function TimeSaleListEditor({
             onClick={() => commit([...rows, emptyTimeSaleRow()])}
           >
             <Plus className="size-4" />
-            {language === "th" ? "เพิ่มช่วงเวลา" : "Add time window"}
+            {backendText(dictionary, "ss_add_time_window", "เพิ่มช่วงเวลา")}
           </Button>
         </div>
       ) : null}
@@ -10231,10 +10277,12 @@ function TimeSaleListEditor({
 }
 
 function TimeSaleListReadOnlyDetail({
+  dictionary,
   label,
   language,
   value,
 }: {
+  dictionary: BackendLanguageDictionary;
   label: string;
   language: LanguageCode;
   value: unknown;
@@ -10252,7 +10300,7 @@ function TimeSaleListReadOnlyDetail({
           {rows.map((row, index) => (
             <div className="rounded-lg border border-border bg-background p-2" key={index}>
               <b>
-                {language === "th" ? "ช่วงเวลา" : "Time window"} {index + 1}
+                {backendText(dictionary, "ss_time_window", "ช่วงเวลา")} {index + 1}
               </b>
               <p className="text-xs font-medium text-muted-foreground">
                 {row.fromdate || "-"} {row.fromtime || "--:--"} - {row.todate || "-"} {row.totime || "--:--"}
@@ -10325,15 +10373,15 @@ function normalizeBankAccountPayload(value: unknown): BankAccountRow[] {
 }
 
 function BankAccountsEditor({
+  dictionary,
   field,
   form,
-  language,
   label,
   setForm,
 }: {
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
-  language: LanguageCode;
   label: string;
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
@@ -10361,7 +10409,7 @@ function BankAccountsEditor({
           >
             <label className="grid gap-1">
               <span className="text-xs font-medium text-muted-foreground">
-                {language === "th" ? "ธนาคาร" : "Bank"}
+                {backendText(dictionary, "ss_bank", "ธนาคาร")}
               </span>
               <Input
                 value={row.bankcode}
@@ -10370,7 +10418,7 @@ function BankAccountsEditor({
             </label>
             <label className="grid gap-1">
               <span className="text-xs font-medium text-muted-foreground">
-                {language === "th" ? "เลขที่บัญชี" : "Account number"}
+                {backendText(dictionary, "account_number", "เลขที่บัญชี")}
               </span>
               <Input
                 value={row.accountnumber}
@@ -10379,7 +10427,7 @@ function BankAccountsEditor({
             </label>
             <label className="grid gap-1">
               <span className="text-xs font-medium text-muted-foreground">
-                {language === "th" ? "ชื่อบัญชี" : "Account name"}
+                {backendText(dictionary, "account_name", "ชื่อบัญชี")}
               </span>
               <Input
                 value={row.accountname}
@@ -10394,7 +10442,7 @@ function BankAccountsEditor({
               onClick={() => commit(rows.filter((_, rowIndex) => rowIndex !== index))}
             >
               <Trash2 className="size-3.5" />
-              {language === "th" ? "ลบ" : "Delete"}
+              {backendText(dictionary, "ss_delete", "ลบ")}
             </Button>
           </div>
         ))}
@@ -10405,7 +10453,7 @@ function BankAccountsEditor({
           onClick={() => commit([...rows, emptyBankAccountRow()])}
         >
           <Plus className="size-4" />
-          {language === "th" ? "เพิ่มบัญชีธนาคาร" : "Add bank account"}
+          {backendText(dictionary, "ss_add_bank_account", "เพิ่มบัญชีธนาคาร")}
         </Button>
       </div>
     </section>
@@ -10413,12 +10461,12 @@ function BankAccountsEditor({
 }
 
 function BankAccountsReadOnlyDetail({
+  dictionary,
   label,
-  language,
   value,
 }: {
+  dictionary: BackendLanguageDictionary;
   label: string;
-  language: LanguageCode;
   value: unknown;
 }) {
   const rows = normalizeBankAccountFormList(value);
@@ -10437,7 +10485,7 @@ function BankAccountsReadOnlyDetail({
               </span>
               {index === 0 ? (
                 <span className="ml-1 text-xs font-medium text-muted-foreground">
-                  ({language === "th" ? "บัญชีหลัก" : "default"})
+                  ({backendText(dictionary, "ss_default", "บัญชีหลัก")})
                 </span>
               ) : null}
             </div>
@@ -10536,7 +10584,6 @@ function BranchStructuredSettingEditor({
   field,
   form,
   label,
-  language,
   readOnly = false,
   setForm,
 }: {
@@ -10544,7 +10591,6 @@ function BranchStructuredSettingEditor({
   field: SystemSettingField;
   form: FormState;
   label: string;
-  language: LanguageCode;
   readOnly?: boolean;
   setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
@@ -10560,7 +10606,6 @@ function BranchStructuredSettingEditor({
   dictionary={dictionary}
   isRecovered={parsed.isRecovered}
       label={label}
-      language={language}
       onChange={commit}
       readOnly={readOnly}
       value={parsed.value}
@@ -10574,7 +10619,6 @@ function BranchStructuredSettingEditor({
       dictionary={dictionary}
       isRecovered={parsed.isRecovered}
     label={label}
-    language={language}
     onChange={commit}
     readOnly={readOnly}
     value={parsed.value}
@@ -10586,7 +10630,6 @@ function PaymentRoundingTableEditor({
   dictionary,
   isRecovered,
   label,
-  language,
   onChange,
   readOnly = false,
   value,
@@ -10594,7 +10637,6 @@ function PaymentRoundingTableEditor({
   dictionary: BackendLanguageDictionary;
   isRecovered: boolean;
   label: string;
-  language: LanguageCode;
   onChange: (value: PaymentRoundingConfig) => void;
   readOnly?: boolean;
   value: PaymentRoundingConfig;
@@ -10655,10 +10697,10 @@ function PaymentRoundingTableEditor({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold">{label}</span>
-            {isRecovered ? <Badge variant="warning">{invalidConfigText(language)}</Badge> : null}
+            {isRecovered ? <Badge variant="warning">{invalidConfigText(dictionary)}</Badge> : null}
           </div>
           <p className="mt-1 text-xs font-medium text-muted-foreground">
-            {paymentRoundingSummary(value, language)}
+            {paymentRoundingSummary(value, dictionary)}
           </p>
         </div>
       </div>
@@ -10783,7 +10825,6 @@ function PointConfigTableEditor({
   dictionary,
   isRecovered,
   label,
-  language,
   onChange,
   readOnly = false,
   value,
@@ -10791,7 +10832,6 @@ function PointConfigTableEditor({
   dictionary: BackendLanguageDictionary;
   isRecovered: boolean;
   label: string;
-  language: LanguageCode;
   onChange: (value: PointConfig) => void;
   readOnly?: boolean;
   value: PointConfig;
@@ -10825,10 +10865,10 @@ function PointConfigTableEditor({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold">{label}</span>
-            {isRecovered ? <Badge variant="warning">{invalidConfigText(language)}</Badge> : null}
+            {isRecovered ? <Badge variant="warning">{invalidConfigText(dictionary)}</Badge> : null}
           </div>
           <p className="mt-1 text-xs font-medium text-muted-foreground">
-            {pointConfigSummary(value, language)}
+            {pointConfigSummary(value, dictionary)}
           </p>
         </div>
         <div className="flex flex-wrap gap-1">
@@ -11356,7 +11396,7 @@ function defaultSpecialPointRule(): SpecialPointRule {
 
 function paymentRoundingSummary(
   value: PaymentRoundingConfig,
-  language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
 ): string {
   const methods = paymentMethodKeys.map((method) => value[method]);
   const enabledCount = methods.filter((method) => Boolean(method.enabled)).length;
@@ -11364,15 +11404,25 @@ function paymentRoundingSummary(
     0,
     ...methods.map((method) => method.rules.length),
   );
-  return language === "th"
-    ? `เปิดใช้ ${enabledCount}/${methods.length} ช่องทาง, กฎสูงสุด ${maxRules} รายการ`
-    : `Enabled ${enabledCount}/${methods.length} methods, max ${maxRules} rules`;
+  return backendText(
+    dictionary,
+    "ss_payment_rounding_summary",
+    "เปิดใช้ {0}/{1} ช่องทาง, กฎสูงสุด {2} รายการ",
+  )
+    .replace("{0}", String(enabledCount))
+    .replace("{1}", String(methods.length))
+    .replace("{2}", String(maxRules));
 }
 
-function pointConfigSummary(value: PointConfig, language: LanguageCode): string {
-  return language === "th"
-    ? `กฎทั่วไป ${value.generalrules.length} รายการ, กฎพิเศษ ${value.specialrules.length} รายการ, ประเภทใช้แต้ม ${value.pointusagetype}`
-    : `${value.generalrules.length} general rules, ${value.specialrules.length} special rules, usage type ${value.pointusagetype}`;
+function pointConfigSummary(value: PointConfig, dictionary: BackendLanguageDictionary): string {
+  return backendText(
+    dictionary,
+    "ss_point_config_summary",
+    "กฎทั่วไป {0} รายการ, กฎพิเศษ {1} รายการ, ประเภทใช้แต้ม {2}",
+  )
+    .replace("{0}", String(value.generalrules.length))
+    .replace("{1}", String(value.specialrules.length))
+    .replace("{2}", String(value.pointusagetype));
 }
 
 function paymentMethodLabel(
@@ -11408,10 +11458,12 @@ function shortDayLabel(
   return backendText(dictionary, day, fallback[day]);
 }
 
-function invalidConfigText(language: LanguageCode): string {
-  return language === "th"
-    ? "ข้อมูลเดิมไม่ถูกต้อง ใช้ค่าเริ่มต้น"
-    : "Invalid saved config; default values are shown";
+function invalidConfigText(dictionary: BackendLanguageDictionary): string {
+  return backendText(
+    dictionary,
+    "ss_invalid_saved_config",
+    "ข้อมูลเดิมไม่ถูกต้อง ใช้ค่าเริ่มต้น",
+  );
 }
 
 function normalizeConfigNumber(value: unknown, fallback: number): number {
@@ -11447,11 +11499,13 @@ function dateInputToIso(value: string, endOfDay?: boolean): string {
 }
 
 function LanguageConfigsEditor({
+  dictionary,
   form,
   language,
   label,
   setForm,
 }: {
+  dictionary: BackendLanguageDictionary;
   form: FormState;
   language: LanguageCode;
   label: string;
@@ -11521,15 +11575,13 @@ function LanguageConfigsEditor({
     setDraggingCode("");
   }
 
-  const textPrimary = language === "th" ? "ภาษาแรก" : "Primary language";
-  const textAdd = language === "th" ? "เพิ่มภาษา" : "Add language";
-  const textRemove = language === "th" ? "เอาออก" : "Remove";
+  const textPrimary = backendText(dictionary, "ss_primary", "ภาษาแรก");
+  const textAdd = backendText(dictionary, "ss_add_language", "เพิ่มภาษา");
+  const textRemove = backendText(dictionary, "ss_remove", "เอาออก");
   const textNoMore =
-    language === "th"
-      ? "เพิ่มครบทุกภาษาที่รองรับแล้ว"
-      : "All supported languages are already added.";
+    backendText(dictionary, "ss_all_supported_languages_are_already", "เพิ่มครบทุกภาษาที่รองรับแล้ว");
   const textDrag =
-    language === "th" ? "ลากเพื่อจัดลำดับภาษา" : "Drag to reorder language";
+    backendText(dictionary, "ss_drag_to_reorder_language", "ลากเพื่อจัดลำดับภาษา");
 
   return (
     <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm md:col-span-2">
@@ -11537,9 +11589,7 @@ function LanguageConfigsEditor({
         <div className="min-w-0">
           <div className="font-semibold">{label}</div>
           <div className="text-xs text-muted-foreground">
-            {language === "th"
-              ? "ลำดับแรกคือภาษาแรกของบริษัท"
-              : "The first row is the company primary language."}
+            {backendText(dictionary, "ss_first_row_company_language", "ลำดับแรกคือภาษาแรกของบริษัท")}
           </div>
         </div>
         {availableLanguages.length > 0 ? (
@@ -11625,6 +11675,7 @@ function LanguageConfigsEditor({
       ) : null}
       <LanguageAddDialog
         activeCodes={rows.map((row) => row.code)}
+        dictionary={dictionary}
         language={language}
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
@@ -11643,6 +11694,7 @@ function LanguageConfigsEditor({
 }
 
 function LanguageListEditor({
+  dictionary,
   field,
   form,
   language,
@@ -11650,6 +11702,7 @@ function LanguageListEditor({
   readOnly = false,
   setForm,
 }: {
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
@@ -11664,15 +11717,13 @@ function LanguageListEditor({
   );
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [draggingCode, setDraggingCode] = useState("");
-  const textPrimary = language === "th" ? "ภาษาแรก" : "Primary";
-  const textAdd = language === "th" ? "เพิ่มภาษา" : "Add language";
-  const textRemove = language === "th" ? "เอาออก" : "Remove";
+  const textPrimary = backendText(dictionary, "ss_primary", "ภาษาแรก");
+  const textAdd = backendText(dictionary, "ss_add_language", "เพิ่มภาษา");
+  const textRemove = backendText(dictionary, "ss_remove", "เอาออก");
   const textNoMore =
-    language === "th"
-      ? "เพิ่มครบทุกภาษาที่รองรับแล้ว"
-      : "All supported languages are already added.";
+    backendText(dictionary, "ss_all_supported_languages_are_already", "เพิ่มครบทุกภาษาที่รองรับแล้ว");
   const textDrag =
-    language === "th" ? "ลากเพื่อจัดลำดับภาษา" : "Drag to reorder language";
+    backendText(dictionary, "ss_drag_to_reorder_language", "ลากเพื่อจัดลำดับภาษา");
 
   function commit(nextCodes: string[]) {
     if (readOnly || !setForm) return;
@@ -11734,9 +11785,7 @@ function LanguageListEditor({
         <div className="min-w-0">
           <div className="font-semibold">{label}</div>
           <div className="text-xs text-muted-foreground">
-            {language === "th"
-              ? "ลำดับแรกคือภาษาแรกของข้อมูลนี้"
-              : "The first row is the primary language for this record."}
+            {backendText(dictionary, "ss_first_row_record_language", "ลำดับแรกคือภาษาแรกของข้อมูลนี้")}
           </div>
         </div>
         {!readOnly && availableLanguages.length > 0 ? (
@@ -11823,6 +11872,7 @@ function LanguageListEditor({
       {!readOnly ? (
         <LanguageAddDialog
           activeCodes={rows}
+          dictionary={dictionary}
           language={language}
           open={addDialogOpen}
           onClose={() => setAddDialogOpen(false)}
@@ -11843,6 +11893,7 @@ function LanguageListEditor({
 
 function MasterPickerFieldEditor({
   auth,
+  dictionary,
   field,
   form,
   label,
@@ -11850,6 +11901,7 @@ function MasterPickerFieldEditor({
   setForm,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -11899,9 +11951,7 @@ function MasterPickerFieldEditor({
           >
             {code || displayName
               ? `${code}${code && displayName ? " - " : ""}${displayName}`
-              : language === "th"
-                ? "เลือกข้อมูล"
-                : "Select"}
+              : backendText(dictionary, "ss_select", "เลือกข้อมูล")}
           </span>
           <Search className="size-4 shrink-0 text-muted-foreground" />
         </button>
@@ -11911,7 +11961,7 @@ function MasterPickerFieldEditor({
             variant="outline"
             size="icon"
             onClick={() => setForm({ ...form, [field.key]: {} })}
-            aria-label={language === "th" ? "ล้างค่า" : "Clear"}
+            aria-label={backendText(dictionary, "ss_clear_value", "ล้างค่า")}
           >
             <X />
           </Button>
@@ -11953,6 +12003,7 @@ function normalizeMasterMultiPickerValue(value: unknown): SettingRecord[] {
 
 function MasterMultiPickerFieldEditor({
   auth,
+  dictionary,
   field,
   form,
   label,
@@ -11960,6 +12011,7 @@ function MasterMultiPickerFieldEditor({
   setForm,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -12008,12 +12060,12 @@ function MasterMultiPickerFieldEditor({
           onClick={() => setOpen(true)}
         >
           <Plus className="size-4" />
-          {language === "th" ? "เพิ่ม" : "Add"}
+          {backendText(dictionary, "ss_add", "เพิ่ม")}
         </Button>
       </div>
       {entries.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs font-medium text-muted-foreground">
-          {language === "th" ? "ยังไม่ได้เลือกกลุ่ม" : "No groups selected"}
+          {backendText(dictionary, "ss_no_groups_selected", "ยังไม่ได้เลือกกลุ่ม")}
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -12035,7 +12087,7 @@ function MasterMultiPickerFieldEditor({
                 <button
                   type="button"
                   className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  aria-label={language === "th" ? "ลบ" : "Remove"}
+                  aria-label={backendText(dictionary, "ss_delete", "ลบ")}
                   onClick={() => removeEntry(guid)}
                 >
                   <X className="size-3.5" />
@@ -12192,12 +12244,14 @@ function LanguageFlag({ code }: { code: string }) {
 
 function LanguageAddDialog({
   activeCodes,
+  dictionary,
   language,
   onClose,
   onToggle,
   open,
 }: {
   activeCodes: string[];
+  dictionary: BackendLanguageDictionary;
   language: LanguageCode;
   onClose: () => void;
   onToggle: (code: LanguageCode) => void;
@@ -12219,8 +12273,8 @@ function LanguageAddDialog({
 
   if (!open) return null;
 
-  const title = language === "th" ? "เลือกภาษา" : "Select Language";
-  const closeText = language === "th" ? "ปิด" : "Close";
+  const title = backendText(dictionary, "ss_select_language", "เลือกภาษา");
+  const closeText = backendText(dictionary, "ss_close", "ปิด");
 
   return (
     <div className="dialog-backdrop" onClick={onClose} role="presentation">
@@ -12233,7 +12287,7 @@ function LanguageAddDialog({
       >
         <div className="dialog-header">
           <div className="min-w-0">
-            <p className="eyebrow">{language === "th" ? "ภาษา" : "Language"}</p>
+            <p className="eyebrow">{backendText(dictionary, "ss_language", "ภาษา")}</p>
             <h2>{title}</h2>
           </div>
           <Button
@@ -12569,6 +12623,7 @@ const uploadText: Record<
 
 function ImageUploadFieldEditor({
   auth,
+  dictionary,
   field,
   form,
   label,
@@ -12576,6 +12631,7 @@ function ImageUploadFieldEditor({
   setForm,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -12693,13 +12749,13 @@ function ImageUploadFieldEditor({
     if (!allowedTypes.includes(file.type)) {
       const onlyPng = allowedTypes.length === 1 && allowedTypes[0] === "image/png";
       setError(
-        language === "th"
-          ? onlyPng
-            ? "รองรับเฉพาะไฟล์ PNG"
-            : "รองรับเฉพาะไฟล์ PNG และ JPG"
-          : onlyPng
-            ? "Only PNG files are supported."
-            : "Only PNG and JPG files are supported.",
+        onlyPng
+          ? backendText(dictionary, "ss_only_png_supported", "รองรับเฉพาะไฟล์ PNG")
+          : backendText(
+              dictionary,
+              "ss_only_png_jpg_supported",
+              "รองรับเฉพาะไฟล์ PNG และ JPG",
+            ),
       );
       return;
     }
@@ -12778,9 +12834,7 @@ function ImageUploadFieldEditor({
           </div>
           <p className="text-xs font-normal text-muted-foreground">
             {field.acceptTypes === "image/png"
-              ? language === "th"
-                ? "รองรับเฉพาะไฟล์ PNG พื้นหลังโปร่งใสได้ ใช้สำหรับออกแบบฟอร์มและพิมพ์เอกสาร"
-                : "PNG only. Transparent background supported. Used for form design and document printing."
+              ? backendText(dictionary, "ss_png_only_transparent_background_supported", "รองรับเฉพาะไฟล์ PNG พื้นหลังโปร่งใสได้ ใช้สำหรับออกแบบฟอร์มและพิมพ์เอกสาร")
               : uploadUiText(language, "imageUploadHint")}
           </p>
           {error ? (
@@ -12899,6 +12953,7 @@ function toUriArray(value: unknown): string[] {
 
 function ImageGalleryFieldEditor({
   auth,
+  dictionary,
   field,
   form,
   label,
@@ -12906,6 +12961,7 @@ function ImageGalleryFieldEditor({
   setForm,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -12925,9 +12981,9 @@ function ImageGalleryFieldEditor({
   );
 
   const addLabel =
-    language === "th" ? "เพิ่มรูป" : "Add image";
-  const editLabel = language === "th" ? "แก้ไข" : "Edit";
-  const removeLabel = language === "th" ? "ลบ" : "Remove";
+    backendText(dictionary, "ss_add_image", "เพิ่มรูป");
+  const editLabel = backendText(dictionary, "ss_edit", "แก้ไข");
+  const removeLabel = backendText(dictionary, "ss_delete", "ลบ");
 
   function updateValues(next: string[]) {
     setForm({ ...form, [field.key]: next });
@@ -12997,13 +13053,13 @@ function ImageGalleryFieldEditor({
     if (!allowedTypes.includes(file.type)) {
       const onlyPng = allowedTypes.length === 1 && allowedTypes[0] === "image/png";
       setError(
-        language === "th"
-          ? onlyPng
-            ? "รองรับเฉพาะไฟล์ PNG"
-            : "รองรับเฉพาะไฟล์ PNG และ JPG"
-          : onlyPng
-            ? "Only PNG files are supported."
-            : "Only PNG and JPG files are supported.",
+        onlyPng
+          ? backendText(dictionary, "ss_only_png_supported", "รองรับเฉพาะไฟล์ PNG")
+          : backendText(
+              dictionary,
+              "ss_only_png_jpg_supported",
+              "รองรับเฉพาะไฟล์ PNG และ JPG",
+            ),
       );
       return;
     }
@@ -13045,9 +13101,11 @@ function ImageGalleryFieldEditor({
       </div>
       {values.length === 0 ? (
         <div className="grid h-20 place-items-center rounded-xl border border-dashed border-input text-xs font-normal text-muted-foreground">
-          {language === "th"
-            ? "ยังไม่มีรูป — กด \"เพิ่มรูป\" เพื่ออัปโหลด"
-            : 'No images yet — click "Add image" to upload'}
+          {backendText(
+            dictionary,
+            "ss_no_images_yet",
+            'ยังไม่มีรูป — กด "เพิ่มรูป" เพื่ออัปโหลด',
+          )}
         </div>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -13337,6 +13395,7 @@ function branchKeyOf(option: { guidfixed?: string; code?: string; businesscode?:
 
 function BranchMultiSelectFieldEditor({
   auth,
+  dictionary,
   field,
   form,
   label,
@@ -13345,6 +13404,7 @@ function BranchMultiSelectFieldEditor({
   workspace,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -13449,9 +13509,7 @@ function BranchMultiSelectFieldEditor({
         setError(
           catchError instanceof Error && catchError.message
             ? catchError.message
-            : language === "th"
-              ? "โหลดสาขาไม่สำเร็จ"
-              : "Failed to load branches",
+            : backendText(dictionary, "ss_failed_to_load_branches", "โหลดสาขาไม่สำเร็จ"),
         );
         setLoading(false);
       });
@@ -13471,12 +13529,15 @@ function BranchMultiSelectFieldEditor({
     commitSelection(selected.filter((item) => branchKeyOf(item) !== key));
   }
 
-  const summary =
-    language === "th"
-      ? `เลือก ${selected.length} / ${options.length} สาขา`
-      : `${selected.length} / ${options.length} branches selected`;
+  const summary = backendText(
+    dictionary,
+    "ss_selected_branches_of_total",
+    "เลือก {0} / {1} สาขา",
+  )
+    .replace("{0}", String(selected.length))
+    .replace("{1}", String(options.length));
   const pickLabel =
-    language === "th" ? "เลือกสาขา" : "Pick branches";
+    backendText(dictionary, "ss_pick_branches", "เลือกสาขา");
 
   return (
     <section className="grid w-full gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold">
@@ -13505,7 +13566,7 @@ function BranchMultiSelectFieldEditor({
       {loading ? (
         <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
-          {language === "th" ? "กำลังโหลดสาขา…" : "Loading branches…"}
+          {backendText(dictionary, "ss_loading_branches", "กำลังโหลดสาขา…")}
         </div>
       ) : null}
       {error ? (
@@ -13513,9 +13574,11 @@ function BranchMultiSelectFieldEditor({
       ) : null}
       {options.length === 0 && !loading && !error ? (
         <p className="text-xs font-normal text-muted-foreground">
-          {language === "th"
-            ? "ยังไม่มีสาขาให้เลือก — เพิ่มสาขาในหน้า \"สาขา\" ก่อน"
-            : 'No branches to choose yet — add one on the "Branch" screen first.'}
+          {backendText(
+            dictionary,
+            "ss_no_branches_yet",
+            'ยังไม่มีสาขาให้เลือก — เพิ่มสาขาในหน้า "สาขา" ก่อน',
+          )}
         </p>
       ) : null}
       {selected.length > 0 ? (
@@ -13538,7 +13601,7 @@ function BranchMultiSelectFieldEditor({
                     className="ml-1 grid size-4 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                     onClick={() => removeBranch(option)}
                     aria-label={
-                      language === "th" ? "ลบสาขา" : "Remove branch"
+                      backendText(dictionary, "ss_delete_branch", "ลบสาขา")
                     }
                   >
                     <X className="size-3" />
@@ -13550,13 +13613,16 @@ function BranchMultiSelectFieldEditor({
         </ul>
       ) : !loading && !error && options.length > 0 ? (
         <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          {language === "th"
-            ? `ไม่ได้เลือก = ใช้ได้ทุกบริษัท (กด "${pickLabel}" เพื่อจำกัดเฉพาะที่เลือก)`
-            : `None selected = all companies (click "${pickLabel}" to limit).`}
+          {backendText(
+            dictionary,
+            "ss_none_selected_all_companies",
+            'ไม่ได้เลือก = ใช้ได้ทุกบริษัท (กด "{0}" เพื่อจำกัดเฉพาะที่เลือก)',
+          ).replace("{0}", pickLabel)}
         </p>
       ) : null}
       {dialogOpen ? (
         <BranchPickerDialog
+          dictionary={dictionary}
           initialSelected={selected}
           language={language}
           onCancel={() => setDialogOpen(false)}
@@ -13572,12 +13638,14 @@ function BranchMultiSelectFieldEditor({
 }
 
 function BranchPickerDialog({
+  dictionary,
   initialSelected,
   language,
   onCancel,
   onConfirm,
   options,
 }: {
+  dictionary: BackendLanguageDictionary;
   initialSelected: BranchOption[];
   language: LanguageCode;
   onCancel: () => void;
@@ -13632,31 +13700,23 @@ function BranchPickerDialog({
     setDraft(draft.filter((item) => !visibleKeys.has(branchKeyOf(item))));
   }
 
-  const title = language === "th" ? "เลือกสาขา" : "Pick branches";
+  const title = backendText(dictionary, "ss_pick_branches", "เลือกสาขา");
   const searchPlaceholder =
-    language === "th"
-      ? "ค้นหารหัสหรือชื่อสาขา"
-      : "Search branch code or name";
-  const summary =
-    language === "th"
-      ? `เลือก ${draft.length} / ${options.length} สาขา (กรอง ${filteredOptions.length})`
-      : `${draft.length} / ${options.length} selected (${filteredOptions.length} filtered)`;
-  const selectAllLabel =
-    language === "th"
-      ? query.trim()
-        ? "เลือกทั้งหมดที่กรอง"
-        : "เลือกทุกสาขา"
-      : query.trim()
-        ? "Select all filtered"
-        : "Select all";
-  const clearLabel =
-    language === "th"
-      ? query.trim()
-        ? "ล้างที่กรอง"
-        : "ล้างทั้งหมด"
-      : query.trim()
-        ? "Clear filtered"
-        : "Clear all";
+    backendText(dictionary, "ss_search_branch_code_or_name", "ค้นหารหัสหรือชื่อสาขา");
+  const summary = backendText(
+    dictionary,
+    "ss_selected_branches_filtered",
+    "เลือก {0} / {1} สาขา (กรอง {2})",
+  )
+    .replace("{0}", String(draft.length))
+    .replace("{1}", String(options.length))
+    .replace("{2}", String(filteredOptions.length));
+  const selectAllLabel = query.trim()
+    ? backendText(dictionary, "ss_select_all_filtered", "เลือกทั้งหมดที่กรอง")
+    : backendText(dictionary, "ss_select_all_branches", "เลือกทุกสาขา");
+  const clearLabel = query.trim()
+    ? backendText(dictionary, "ss_clear_filtered", "ล้างที่กรอง")
+    : backendText(dictionary, "ss_clear_all", "ล้างทั้งหมด");
 
   return (
     <div
@@ -13675,7 +13735,7 @@ function BranchPickerDialog({
           variant="ghost"
           size="sm"
           onClick={onCancel}
-          aria-label={language === "th" ? "ยกเลิก" : "Cancel"}
+          aria-label={backendText(dictionary, "ss_cancel", "ยกเลิก")}
         >
           <X />
         </Button>
@@ -13713,7 +13773,7 @@ function BranchPickerDialog({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
         {filteredOptions.length === 0 ? (
           <p className="grid h-full place-items-center text-sm text-muted-foreground">
-            {language === "th" ? "ไม่พบสาขา" : "No branches found"}
+            {backendText(dictionary, "ss_no_branches_found", "ไม่พบสาขา")}
           </p>
         ) : (
           <ul className="grid gap-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -13757,11 +13817,11 @@ function BranchPickerDialog({
         <span className="text-xs text-muted-foreground">{summary}</span>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
-            {language === "th" ? "ยกเลิก" : "Cancel"}
+            {backendText(dictionary, "ss_cancel", "ยกเลิก")}
           </Button>
           <Button type="button" onClick={() => onConfirm(draft)}>
             <BadgeCheck />
-            {language === "th" ? "ยืนยัน" : "Confirm"}
+            {backendText(dictionary, "ss_confirm", "ยืนยัน")}
           </Button>
         </div>
       </footer>
@@ -13826,6 +13886,7 @@ function companyOptionDisplayName(
 
 function CompanyMultiSelectFieldEditor({
   auth,
+  dictionary,
   field,
   form,
   language,
@@ -13833,6 +13894,7 @@ function CompanyMultiSelectFieldEditor({
   workspace,
 }: {
   auth: AuthSession | null;
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   language: LanguageCode;
@@ -13886,9 +13948,7 @@ function CompanyMultiSelectFieldEditor({
         setError(
           catchError instanceof Error && catchError.message
             ? catchError.message
-            : language === "th"
-              ? "โหลดข้อมูลบริษัทไม่สำเร็จ"
-              : "Failed to load companies",
+            : backendText(dictionary, "ss_failed_to_load_companies", "โหลดข้อมูลบริษัทไม่สำเร็จ"),
         );
         setLoading(false);
       });
@@ -13916,11 +13976,11 @@ function CompanyMultiSelectFieldEditor({
   return (
     <section className="grid w-full gap-3 rounded-2xl border border-border bg-background p-4 text-sm font-semibold shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-        <span>{language === "th" ? "สิทธิ์การเข้าถึงบริษัท" : "Company Access"}</span>
+        <span>{backendText(dictionary, "ss_company_access", "สิทธิ์การเข้าถึงบริษัท")}</span>
         {loading ? (
           <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground animate-pulse">
             <Loader2 className="size-3 animate-spin" />
-            {language === "th" ? "กำลังโหลดข้อมูลบริษัท…" : "Loading companies…"}
+            {backendText(dictionary, "ss_loading_companies", "กำลังโหลดข้อมูลบริษัท…")}
           </span>
         ) : null}
       </div>
@@ -13928,7 +13988,7 @@ function CompanyMultiSelectFieldEditor({
 
       {!loading && !error && shops.length === 0 ? (
         <p className="text-xs font-normal text-muted-foreground py-2">
-          {language === "th" ? "ไม่พบข้อมูลบริษัทในระบบ" : "No companies found."}
+          {backendText(dictionary, "ss_no_companies_found", "ไม่พบข้อมูลบริษัทในระบบ")}
         </p>
       ) : null}
 
@@ -13962,11 +14022,13 @@ function CompanyMultiSelectFieldEditor({
 }
 
 function CompanyMultiSelectReadOnlyDetail({
+  dictionary,
   label,
   language,
   value,
   auth,
 }: {
+  dictionary: BackendLanguageDictionary;
   label: string;
   language: LanguageCode;
   value: unknown;
@@ -14024,7 +14086,7 @@ function CompanyMultiSelectReadOnlyDetail({
       </span>
       {selectedGuids.length === 0 ? (
         <b className="font-medium text-emerald-600 dark:text-emerald-400">
-          {language === "th" ? "ใช้ได้ทุกบริษัท" : "All companies"}
+          {backendText(dictionary, "ss_all_companies_scope", "ใช้ได้ทุกบริษัท")}
         </b>
       ) : (
         <ul className="flex flex-wrap gap-1">
@@ -14686,12 +14748,14 @@ function BranchBusinessFlags({
 }
 
 function ComboFieldEditor({
+  dictionary,
   field,
   form,
   label,
   language,
   setForm,
 }: {
+  dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
   label: string;
@@ -14877,7 +14941,7 @@ function ComboFieldEditor({
             className="h-9 min-h-9 rounded-xl px-3 text-sm font-normal"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={language === "th" ? "ค้นหา" : "Search"}
+            placeholder={backendText(dictionary, "common_search", "ค้นหา")}
           />
           <div className="grid min-h-0 gap-1 overflow-y-auto">
             {visibleOptions.length ? (
@@ -14901,7 +14965,7 @@ function ComboFieldEditor({
               ))
             ) : (
               <div className="rounded-xl px-2 py-3 text-sm text-muted-foreground">
-                {language === "th" ? "ไม่พบข้อมูล" : "No options found"}
+                {backendText(dictionary, "ss_no_options_found", "ไม่พบข้อมูล")}
               </div>
             )}
           </div>
@@ -16033,6 +16097,7 @@ function buildPayload(
   workspace: WorkspaceSession,
   auth: AuthSession,
   language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
 ): SettingRecord {
   const payload: SettingRecord = { ...(editing ?? {}) };
   for (const field of config.fields) {
@@ -16188,9 +16253,11 @@ function buildPayload(
         setByPath(payload, "branchnumber", normalizeThaiTaxBranchCode(rawBranchNumber));
       } catch {
         throw new Error(
-          language === "th"
-            ? "รหัสสาขาภาษีไทยต้องเป็นเลขไม่เกิน 5 หลัก เช่น สำนักงานใหญ่ = 00000 และสาขาที่ 1 = 00001"
-            : "Thai tax branch code must be numeric and no more than 5 digits. Head office = 00000; branch 1 = 00001.",
+          backendText(
+            dictionary,
+            "ss_thai_tax_branch_code_rule",
+            "รหัสสาขาภาษีไทยต้องเป็นเลขไม่เกิน 5 หลัก เช่น สำนักงานใหญ่ = 00000 และสาขาที่ 1 = 00001",
+          ),
         );
       }
     }
@@ -16219,9 +16286,11 @@ function buildPayload(
     payload.holdingcode = workspace.shop.holdingcode;
     if (!payload.apikey && String(payload.providername) !== "ollama") {
       throw new Error(
-        language === "th"
-          ? "กรุณากรอก API Key เมื่อบันทึก AI Provider"
-          : "Please enter API Key when saving AI Provider.",
+        backendText(
+          dictionary,
+          "ss_api_key_required_for_ai",
+          "กรุณากรอก API Key เมื่อบันทึก AI Provider",
+        ),
       );
     }
   }
@@ -16246,9 +16315,11 @@ function buildPayload(
       );
     } catch {
       throw new Error(
-        language === "th"
-          ? "รหัสสาขาภาษีไทยต้องเป็นเลขไม่เกิน 5 หลัก เช่น สำนักงานใหญ่ = 00000 และสาขาที่ 1 = 00001"
-          : "Thai tax branch code must be numeric and no more than 5 digits. Head office = 00000; branch 1 = 00001.",
+        backendText(
+          dictionary,
+          "ss_thai_tax_branch_code_rule",
+          "รหัสสาขาภาษีไทยต้องเป็นเลขไม่เกิน 5 หลัก เช่น สำนักงานใหญ่ = 00000 และสาขาที่ 1 = 00001",
+        ),
       );
     }
     const languages = normalizeLanguageList(
@@ -16438,7 +16509,7 @@ function productCategoryCodelistCount(record: SettingRecord): number {
 function productCategoryGroupLabel(
   records: SettingRecord[],
   groupNumber: number | null,
-  language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
 ): string {
   if (groupNumber === null) return "";
   const groupRecords = records.filter(
@@ -16448,9 +16519,14 @@ function productCategoryGroupLabel(
     (total, record) => total + productCategoryCodelistCount(record),
     0,
   );
-  return language === "th"
-    ? `ชุด ${groupNumber} · ${groupRecords.length} หมวด · ${productCount} สินค้า`
-    : `Set ${groupNumber} · ${groupRecords.length} categories · ${productCount} products`;
+  return backendText(
+    dictionary,
+    "ss_category_set_summary",
+    "ชุด {0} · {1} หมวด · {2} สินค้า",
+  )
+    .replace("{0}", String(groupNumber))
+    .replace("{1}", String(groupRecords.length))
+    .replace("{2}", String(productCount));
 }
 
 function isEmailLike(value: unknown): boolean {
@@ -17138,6 +17214,7 @@ function fieldDisplayValue(
   field: SystemSettingField,
   value: unknown,
   language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
 ): string {
   if (field.type === "master-picker") {
     return masterPickerDisplayValue(value, language);
@@ -17156,17 +17233,19 @@ function fieldDisplayValue(
   if (field.type === "time-sale-list") {
     const count = normalizeTimeSaleFormList(value).length;
     return count > 0
-      ? language === "th"
-        ? `${count} ช่วงเวลา`
-        : `${count} time windows`
+      ? backendText(dictionary, "ss_time_window_count", "{0} ช่วงเวลา").replace(
+          "{0}",
+          String(count),
+        )
       : "-";
   }
   if (field.type === "bank-accounts") {
     const count = normalizeBankAccountFormList(value).length;
     return count > 0
-      ? language === "th"
-        ? `${count} บัญชี`
-        : `${count} accounts`
+      ? backendText(dictionary, "ss_account_count", "{0} บัญชี").replace(
+          "{0}",
+          String(count),
+        )
       : "-";
   }
   if (field.type === "string-list") {

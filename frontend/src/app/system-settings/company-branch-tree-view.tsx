@@ -1,6 +1,6 @@
 "use client";
 
-import { useBackendText, type BackendTextFn } from "@/components/backend-text-provider";
+import { useBackendDictionary, useBackendText, type BackendTextFn } from "@/components/backend-text-provider";
 
 import { authFetch } from "@/lib/client-auth-session";
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
@@ -592,7 +592,8 @@ function BranchGeoAddressPicker({
     onChange(next);
   }
 
-  const labels = thailandAddressUi(language);
+  const dictionary = useBackendDictionary();
+  const labels = thailandAddressUi(dictionary);
   const loading = !country && !loadError;
 
   return (
@@ -650,7 +651,7 @@ function BranchGeoAddressPicker({
         </label>
       </div>
       <p className="text-xs font-medium text-muted-foreground">
-        {postalAddressHint(postalCode, postalMatches, selectedSubdistrict, language)}
+        {postalAddressHint(postalCode, postalMatches, selectedSubdistrict, language, dictionary)}
       </p>
     </section>
   );
