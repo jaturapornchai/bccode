@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/labstack/echo/v4"
@@ -107,6 +108,7 @@ func SalesReportByDocumentHandler(c echo.Context) error {
 
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
+		logger.Error("SalesReport: query failed for %s/%s: %v", req.HoldingCode, businessCode, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Query execution failed",
 			"code":  "QUERY_ERROR",
@@ -171,7 +173,7 @@ SELECT
   MAX(p.docdatetime) + INTERVAL '7 hour' as docdatetime,
   p.docno,
   COALESCE(doc.custcode, '') as debtorcode,
-  COALESCE(d.name0, '') as debtorname,
+  COALESCE((SELECT nm->>'name' FROM jsonb_array_elements(d.names) nm WHERE nm->>'code' = 'th' LIMIT 1), '') as debtorname,
   COALESCE(MAX(doc.totalamount), 0) as totalqty,
   SUM(p.docvalue) as totalamount,
   AVG(p.price) as price,
@@ -215,7 +217,7 @@ WHERE p.transflag = 44
 		query += ")"
 	}
 
-	query += "\nGROUP BY p.docno, doc.custcode, d.name0"
+	query += "\nGROUP BY p.docno, doc.custcode, d.names"
 
 	if sortAscending {
 		query += "\nORDER BY MAX(p.docdatetime) ASC, p.docno"
@@ -369,6 +371,7 @@ func SalesReportSummaryHandler(c echo.Context) error {
 		&totalDocuments, &totalAmount, &totalCost, &totalProfit,
 	)
 	if err != nil {
+		logger.Error("SalesReport: query failed for %s/%s: %v", req.HoldingCode, businessCode, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Query execution failed",
 			"code":  "QUERY_ERROR",

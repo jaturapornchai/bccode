@@ -312,7 +312,11 @@ function toText(value: unknown): string {
 }
 
 function errorKeyFor(status: number): string {
-  return status === 401 || status === 403 ? "unauthorized" : "load_failed";
+  if (status === 401 || status === 403) return "unauthorized";
+  // 404 = this approval kind has no endpoint in the backend build, not a
+  // transient failure the user should retry.
+  if (status === 404) return "module_not_available";
+  return "load_failed";
 }
 
 export async function fetchPendingApprovals(params: {

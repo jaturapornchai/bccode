@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit c55869e4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit ba4a1783 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 48
+Files indexed: 49
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (17317 lines)
 
@@ -1947,15 +1947,16 @@ Files indexed: 48
 | 1203 | function | `normalizeHexColor` |
 | 1210 | function | `languageName` |
 
-## frontend/src/lib/erp-transaction.ts (1167 lines)
+## frontend/src/lib/erp-transaction.ts (1178 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 | 1087 | function | `isErpTransactionRoute` |
 | 1092 | function | `getErpModuleConfig` |
-| 1097 | function | `fetchErpTransactions` |
-| 1125 | function | `saveErpTransaction` |
-| 1152 | function | `deleteErpTransaction` |
+| 1103 | function | `statusErrorKey` |
+| 1109 | function | `fetchErpTransactions` |
+| 1136 | function | `saveErpTransaction` |
+| 1163 | function | `deleteErpTransaction` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 
@@ -2154,6 +2155,21 @@ Files indexed: 48
 | 860 | function | `renderSummaryItems` |
 | 922 | function | `setupFooter` |
 | 986 | function | `RenderSignatureSection` |
+
+## frontend/src/app/crud/erp-crud-workbench.tsx (1018 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 43 | function | `ErpCrudWorkbench` |
+| 116 | const-arrow | `handleSelectRow` |
+| 138 | const-arrow | `handleStartEdit` |
+| 146 | const-arrow | `handleStartCreate` |
+| 194 | const-arrow | `handleCancelEdit` |
+| 212 | const-arrow | `handleDeleteDoc` |
+| 245 | const-arrow | `updateLineItem` |
+| 307 | const-arrow | `handleSaveDoc` |
+| 632 | section | `EDIT MODE FORM` |
+| 860 | section | `READ-ONLY VIEW MODE` |
 
 ## backend/internal/debtaccount/debtor/services/debtor_http_service.go (1016 lines)
 

@@ -11,6 +11,7 @@ import {
   Printer,
   Search,
   AlertCircle,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   }, [backendUrl]);
   const dictionary = useBackendLanguage(language, backendUrl || undefined);
   const [alertKey, setAlertKey] = useState<string | null>(null);
+  const moduleUnavailable = alertKey === "module_not_available";
   const config = useMemo(() => getErpModuleConfig(route), [route]);
 
   const [items, setItems] = useState<ErpTransactionDoc[]>([]);
@@ -382,17 +384,37 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            onClick={handleStartCreate}
-            className="h-10 bg-primary text-primary-foreground font-semibold px-4 shadow-sm"
-          >
-            <Plus className="mr-1.5 size-4" />
-            {"+ " + backendText(dictionary, "create_new_document", "สร้างเอกสารใหม่")}
-          </Button>
+          {moduleUnavailable ? null : (
+            <Button
+              onClick={handleStartCreate}
+              className="h-10 bg-primary text-primary-foreground font-semibold px-4 shadow-sm"
+            >
+              <Plus className="mr-1.5 size-4" />
+              {"+ " + backendText(dictionary, "create_new_document", "สร้างเอกสารใหม่")}
+            </Button>
+          )}
         </div>
       </header>
 
-      {alertKey ? (
+      {moduleUnavailable ? (
+        // Not an error the user caused or can retry: this document type has no
+        // endpoint yet. A red "โหลดข้อมูลไม่สำเร็จ" would send them hunting.
+        <div
+          role="status"
+          className="mb-3 shrink-0 flex items-start gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
+        >
+          <Info className="mt-0.5 size-5 shrink-0" />
+          <p className="flex-1">
+            {backendText(
+              dictionary,
+              "module_not_available",
+              "จอนี้ยังไม่เปิดใช้งาน ระบบยังไม่รองรับเอกสารชนิดนี้ กรุณาติดต่อผู้ดูแลระบบ",
+            )}
+          </p>
+        </div>
+      ) : null}
+
+      {alertKey && !moduleUnavailable ? (
         <div
           role="alert"
           className="mb-3 shrink-0 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
@@ -974,11 +996,19 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
               <FileText className="size-12 mb-3 text-muted-foreground/40" />
               <p className="font-medium text-sm">
-                {backendText(dictionary, "select_document_hint", "เลือกรายการเอกสารจากตารางด้านซ้ายเพื่อดูรายละเอียด")}
+                {moduleUnavailable
+                  ? backendText(
+                      dictionary,
+                      "module_not_available",
+                      "จอนี้ยังไม่เปิดใช้งาน ระบบยังไม่รองรับเอกสารชนิดนี้ กรุณาติดต่อผู้ดูแลระบบ",
+                    )
+                  : backendText(dictionary, "select_document_hint", "เลือกรายการเอกสารจากตารางด้านซ้ายเพื่อดูรายละเอียด")}
               </p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                {backendText(dictionary, "create_document_hint", "หรือคลิก \"สร้างเอกสารใหม่\" เพื่อเริ่มบันทึก")}
-              </p>
+              {moduleUnavailable ? null : (
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  {backendText(dictionary, "create_document_hint", "หรือคลิก \"สร้างเอกสารใหม่\" เพื่อเริ่มบันทึก")}
+                </p>
+              )}
             </div>
           )}
         </section>

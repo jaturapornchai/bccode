@@ -1094,6 +1094,18 @@ export function getErpModuleConfig(route: string): ErpModuleConfig | undefined {
   return routeMap.get(clean);
 }
 
+/**
+ * A 404 here is not a failure the user can retry: the document type has no
+ * endpoint in this backend build, so the screen is a dead end today. Saying
+ * "โหลดข้อมูลไม่สำเร็จ" sends people looking for a problem that is not theirs —
+ * `node tools/probe-endpoints.mjs` lists which modules are in this state.
+ */
+function statusErrorKey(status: number, fallback: string): string {
+  if (status === 401 || status === 403) return "unauthorized";
+  if (status === 404) return "module_not_available";
+  return fallback;
+}
+
 export async function fetchErpTransactions(
   config: ErpModuleConfig,
   params: { q?: string; offset?: number; limit?: number } = {},
@@ -1106,8 +1118,7 @@ export async function fetchErpTransactions(
   try {
     const res = await apiFetch(`/api/erp-transaction/${config.apiPath}/list?${query.toString()}`);
     if (!res.ok) {
-      const error = res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed";
-      return { items: [], total: 0, error };
+      return { items: [], total: 0, error: statusErrorKey(res.status, "load_failed") };
     }
     const data = await res.json();
     if (Array.isArray(data?.data)) {
@@ -1136,7 +1147,7 @@ export async function saveErpTransaction(
       body: JSON.stringify(doc),
     });
     if (!res.ok) {
-      return { success: false, message: "save_failed" };
+      return { success: false, message: statusErrorKey(res.status, "save_failed") };
     }
     const data = await res.json();
     return {
@@ -1158,7 +1169,7 @@ export async function deleteErpTransaction(
       method: "DELETE",
     });
     if (!res.ok) {
-      return { success: false, message: "delete_failed" };
+      return { success: false, message: statusErrorKey(res.status, "delete_failed") };
     }
     return { success: true, message: "delete_success" };
   } catch {
