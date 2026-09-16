@@ -171,26 +171,3 @@ export function assetName(asset: FixedAsset, lang: LanguageCode = "th"): string 
   const n = asset.names?.find((x) => x.code === lang) || asset.names?.find((x) => x.code === "th");
   return n?.name || asset.assetcode;
 }
-
-export const FA_LABELS = {
-  assetRegistry: { th: "รายละเอียดสินทรัพย์", en: "Fixed Asset Registry" },
-  depreciationCalc: { th: "ประมวลผลสินทรัพย์", en: "Calculate Depreciation" },
-  postGL: { th: "โอนค่าเสื่อมเข้าบัญชีแยกประเภท", en: "Post Depreciation to GL" },
-  assetDisposal: { th: "จำหน่ายและตัดจำหน่ายสินทรัพย์", en: "Asset Disposal & Write-off" },
-  assetSchedule: { th: "ตารางค่าเสื่อมและสินทรัพย์", en: "Fixed Asset Schedule" },
-  taxReconciliation: { th: "กระทบยอดภาษี (ภ.ง.ด.50)", en: "Tax Reconciliation (PND 50)" },
-  assetTypes: { th: "กำหนดประเภทสินทรัพย์", en: "Asset Types" },
-  createAsset: { th: "เพิ่มสินทรัพย์ใหม่", en: "Add New Asset" },
-  editAsset: { th: "แก้ไขสินทรัพย์", en: "Edit Asset" },
-  deleteAsset: { th: "ลบสินทรัพย์", en: "Delete Asset" },
-  cost: { th: "ราคาทุน", en: "Cost" },
-  scrapValue: { th: "ราคาซาก", en: "Scrap Value" },
-  usefulLife: { th: "อายุการใช้งาน", en: "Useful Life (Years)" },
-  deprecRate: { th: "อัตราค่าเสื่อมราคา", en: "Depreciation Rate (%)" },
-  purchaseDate: { th: "วันที่ได้มา", en: "Purchase Date" },
-  netBookValue: { th: "มูลค่าสุทธิตามบัญชี", en: "Net Book Value" },
-  accumDeprec: { th: "ค่าเสื่อมราคาสะสม", en: "Accumulated Depreciation" },
-  disposalDate: { th: "วันที่จำหน่าย", en: "Disposal Date" },
-  salePrice: { th: "ราคาจำหน่าย", en: "Sale Price" },
-  gainLoss: { th: "กำไร (ขาดทุน) จากการจำหน่าย", en: "Gain (Loss) on Disposal" },
-} as const;

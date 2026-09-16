@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { type LanguageCode } from "@/lib/i18n";
-import { useBackendLanguage, backendText } from "@/lib/backend-language";
+import { useBackendText } from "@/components/backend-text-provider";
 import {
   type FixedAsset,
   type AssetType,
@@ -18,7 +18,6 @@ import {
   getTaxReconciliationReport,
   sendFixedAssetCommand,
   assetName,
-  FA_LABELS,
 } from "@/lib/fixed-assets";
 
 interface FixedAssetsScreenProps {
@@ -28,7 +27,7 @@ interface FixedAssetsScreenProps {
 }
 
 export function FixedAssetsScreen({ route, embedded = false, language = "th" }: FixedAssetsScreenProps) {
-  const dictionary = useBackendLanguage(language, "");
+  const tr = useBackendText();
   const [activeTab, setActiveTab] = useState<string>("registry");
   const [assets, setAssets] = useState<FixedAsset[]>([]);
   const [types, setTypes] = useState<AssetType[]>([]);
@@ -70,12 +69,12 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     vatamount: "0.00",
     settlementaccountcode: "110101",
     gainlossaccountcode: "420101",
-    reason: "จำหน่ายตามมติคณะกรรมการ",
+    reason: tr("fa_disposed_by_board_resolution", "จำหน่ายตามมติคณะกรรมการ"),
   });
 
   const { confirm, confirmationDialog } = useConfirmDialog({
-    defaultConfirmLabel: "ยืนยัน",
-    defaultCancelLabel: "ยกเลิก",
+    defaultConfirmLabel: tr("confirm", "ยืนยัน"),
+    defaultCancelLabel: tr("cancel", "ยกเลิก"),
   });
 
   // Sync activeTab with initial route
@@ -150,7 +149,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
   // Actions
   const handleSaveAsset = async () => {
     if (!editForm.assetcode?.trim()) {
-      alert("กรุณาระบุรหัสสินทรัพย์");
+      alert(tr("fa_please_specify_asset_code", "กรุณาระบุรหัสสินทรัพย์"));
       return;
     }
     const isNew = !editForm.id;
@@ -164,19 +163,19 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     });
 
     if (res?.success) {
-      alert(isNew ? "บันทึกสินทรัพย์เรียบร้อยแล้ว" : "แก้ไขสินทรัพย์เรียบร้อยแล้ว");
+      alert(isNew ? tr("fa_asset_saved_successfully", "บันทึกสินทรัพย์เรียบร้อยแล้ว") : tr("fa_asset_updated_successfully", "แก้ไขสินทรัพย์เรียบร้อยแล้ว"));
       setIsEditing(false);
       loadData();
     } else {
-      alert(res?.message || "เกิดข้อผิดพลาดในการบันทึก");
+      alert(res?.message || tr("error_saving", "เกิดข้อผิดพลาดในการบันทึก"));
     }
   };
 
   const handleDeleteAsset = async (ast: FixedAsset) => {
     const ok = await confirm({
-      title: `ยืนยันการลบสินทรัพย์ ${ast.assetcode}?`,
-      description: "รายการที่ยังไม่ได้ผ่านรายการเข้า GL จะถูกลบถาวร",
-      confirmLabel: "ยืนยันลบ",
+      title: tr("fa_confirm_delete_asset", "ยืนยันการลบสินทรัพย์ {0}?").replace("{0}", ast.assetcode),
+      description: tr("fa_unposted_gl_items_permanently_deleted", "รายการที่ยังไม่ได้ผ่านรายการเข้า GL จะถูกลบถาวร"),
+      confirmLabel: tr("fa_confirm_delete", "ยืนยันลบ"),
     });
     if (!ok) return;
 
@@ -189,23 +188,25 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     });
 
     if (res?.success) {
-      alert("ลบสินทรัพย์เรียบร้อยแล้ว");
+      alert(tr("fa_asset_deleted_successfully", "ลบสินทรัพย์เรียบร้อยแล้ว"));
       loadData();
     } else {
-      alert(res?.message || "เกิดข้อผิดพลาดในการลบ");
+      alert(res?.message || tr("error_deleting", "เกิดข้อผิดพลาดในการลบ"));
     }
   };
 
   const handlePostGL = async () => {
     const ok = await confirm({
-      title: `ยืนยันการผ่านรายการค่าเสื่อมราคาเข้า GL?`,
-      description: `ปีบัญชี ${postFiscalYear} งวดที่ ${postPeriod} (Dr. ค่าเสื่อมราคา / Cr. ค่าเสื่อมราคาสะสม)`,
-      confirmLabel: "ผ่านรายการ (Post)",
+      title: tr("fa_confirm_post_depreciation", "ยืนยันการผ่านรายการค่าเสื่อมราคาเข้า GL?"),
+      description: tr("fa_post_period_summary", "ปีบัญชี {0} งวดที่ {1} (Dr. ค่าเสื่อมราคา / Cr. ค่าเสื่อมราคาสะสม)")
+        .replace("{0}", postFiscalYear)
+        .replace("{1}", String(postPeriod)),
+      confirmLabel: tr("fa_post", "ผ่านรายการ (Post)"),
     });
     if (!ok) return;
 
     setLoading(true);
-    setPostStatusMsg("กำลังประมวลผลผ่านรายการ...");
+    setPostStatusMsg(tr("fa_posting_in_progress", "กำลังประมวลผลผ่านรายการ..."));
     const res = await sendFixedAssetCommand({
       resource: "depreciations",
       action: "post-gl",
@@ -216,24 +217,24 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     setLoading(false);
 
     if (res?.success) {
-      setPostStatusMsg(`ผ่านรายการสำเร็จ! เลขที่ใบสำคัญสมุดรายวัน: ${res?.journal?.docno || "JV"}`);
-      alert(`ผ่านรายการสำเร็จ! เลขที่ใบสำคัญ: ${res?.journal?.docno}`);
+      setPostStatusMsg(tr("fa_posted_journal_docno", "ผ่านรายการสำเร็จ! เลขที่ใบสำคัญสมุดรายวัน: {0}").replace("{0}", res?.journal?.docno || "JV"));
+      alert(tr("fa_posted_voucher_docno", "ผ่านรายการสำเร็จ! เลขที่ใบสำคัญ: {0}").replace("{0}", String(res?.journal?.docno ?? "")));
       loadData();
     } else {
-      setPostStatusMsg(`ล้มเหลว: ${res?.message}`);
-      alert(res?.message || "เกิดข้อผิดพลาดในการผ่านรายการ");
+      setPostStatusMsg(tr("fa_failed_reason", "ล้มเหลว: {0}").replace("{0}", String(res?.message ?? "")));
+      alert(res?.message || tr("fa_posting_error", "เกิดข้อผิดพลาดในการผ่านรายการ"));
     }
   };
 
   const handleDisposeAsset = async () => {
     if (!disposalForm.assetcode) {
-      alert("กรุณาเลือกรหัสสินทรัพย์ที่ต้องการจำหน่าย");
+      alert(tr("fa_select_asset_code_dispose", "กรุณาเลือกรหัสสินทรัพย์ที่ต้องการจำหน่าย"));
       return;
     }
     const ok = await confirm({
-      title: `ยืนยันการจำหน่ายสินทรัพย์ ${disposalForm.assetcode}?`,
-      description: `ระบบจะคำนวณมูลค่าคงเหลือ กำไร/ขาดทุน และลงบัญชี GL อัตโนมัติ`,
-      confirmLabel: "ยืนยันจำหน่าย",
+      title: tr("fa_confirm_dispose_asset", "ยืนยันการจำหน่ายสินทรัพย์ {0}?").replace("{0}", disposalForm.assetcode),
+      description: tr("fa_disposal_auto_gl_note", "ระบบจะคำนวณมูลค่าคงเหลือ กำไร/ขาดทุน และลงบัญชี GL อัตโนมัติ"),
+      confirmLabel: tr("fa_confirm_disposal", "ยืนยันจำหน่าย"),
     });
     if (!ok) return;
 
@@ -247,10 +248,10 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     setLoading(false);
 
     if (res?.success) {
-      alert(`บันทึกจำหน่ายสำเร็จ! ใบสำคัญ GL: ${res?.journal?.docno}`);
+      alert(tr("fa_disposal_saved_journal", "บันทึกจำหน่ายสำเร็จ! ใบสำคัญ GL: {0}").replace("{0}", String(res?.journal?.docno ?? "")));
       loadData();
     } else {
-      alert(res?.message || "เกิดข้อผิดพลาดในการจำหน่าย");
+      alert(res?.message || tr("fa_disposal_error", "เกิดข้อผิดพลาดในการจำหน่าย"));
     }
   };
 
@@ -268,10 +269,10 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground leading-tight">
-              {backendText(dictionary, "menu_fixed_assets_fa", "ระบบสินทรัพย์และค่าเสื่อมราคา")}
+              {tr("menu_fixed_assets_fa", "ระบบสินทรัพย์และค่าเสื่อมราคา")}
             </h1>
             <p className="text-xs text-muted-foreground">
-              Fixed Assets & Depreciation Management (มาตรฐานสำนักงานบัญชีไทย)
+              {tr("fa_fixed_assets_depreciation_management", "Fixed Assets & Depreciation Management (มาตรฐานสำนักงานบัญชีไทย)")}
             </p>
           </div>
         </div>
@@ -283,42 +284,42 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
             className="h-10 text-sm font-medium"
             onClick={() => setActiveTab("registry")}
           >
-            {FA_LABELS.assetRegistry[language === "en" ? "en" : "th"]}
+            {tr("asset_registry", "รายละเอียดสินทรัพย์")}
           </Button>
           <Button
             variant={activeTab === "depreciation" ? "default" : "outline"}
             className="h-10 text-sm font-medium"
             onClick={() => setActiveTab("depreciation")}
           >
-            {FA_LABELS.depreciationCalc[language === "en" ? "en" : "th"]}
+            {tr("asset_depreciation", "ประมวลผลสินทรัพย์")}
           </Button>
           <Button
             variant={activeTab === "post-gl" ? "default" : "outline"}
             className="h-10 text-sm font-medium"
             onClick={() => setActiveTab("post-gl")}
           >
-            {FA_LABELS.postGL[language === "en" ? "en" : "th"]}
+            {tr("fa_post_depreciation_to_gl", "โอนค่าเสื่อมเข้าบัญชีแยกประเภท")}
           </Button>
           <Button
             variant={activeTab === "disposal" ? "default" : "outline"}
             className="h-10 text-sm font-medium"
             onClick={() => setActiveTab("disposal")}
           >
-            {FA_LABELS.assetDisposal[language === "en" ? "en" : "th"]}
+            {tr("fa_asset_disposal_heading", "จำหน่ายและตัดจำหน่ายสินทรัพย์")}
           </Button>
           <Button
             variant={activeTab === "schedule" ? "default" : "outline"}
             className="h-10 text-sm font-medium"
             onClick={() => setActiveTab("schedule")}
           >
-            {FA_LABELS.assetSchedule[language === "en" ? "en" : "th"]}
+            {tr("fixed_asset_schedule", "ตารางค่าเสื่อมและสินทรัพย์")}
           </Button>
           <Button
             variant={activeTab === "tax" ? "default" : "outline"}
             className="h-10 text-sm font-medium"
             onClick={() => setActiveTab("tax")}
           >
-            {FA_LABELS.taxReconciliation[language === "en" ? "en" : "th"]}
+            {tr("fa_tax_reconciliation_pnd_50", "กระทบยอดภาษี (ภ.ง.ด.50)")}
           </Button>
         </nav>
       </header>
@@ -333,7 +334,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
               <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md">
                 <input
                   type="text"
-                  placeholder="ค้นหารหัส ชื่อ หรือ Serial..."
+                  placeholder={tr("fa_search_code_name_serial", "ค้นหารหัส ชื่อ หรือ Serial...")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -363,7 +364,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   }}
                   className="h-10 bg-primary text-primary-foreground text-sm font-medium"
                 >
-                  + {FA_LABELS.createAsset[language === "en" ? "en" : "th"]}
+                  + {tr("fa_add_new_asset", "เพิ่มสินทรัพย์ใหม่")}
                 </Button>
               </div>
             </div>
@@ -373,15 +374,15 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
               <table className="w-full text-left text-sm border-collapse">
                 <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10 border-b border-border text-xs uppercase tracking-wider font-semibold">
                   <tr>
-                    <th className="p-3">รหัสสินทรัพย์</th>
-                    <th className="p-3">ชื่อสินทรัพย์</th>
-                    <th className="p-3">ประเภท</th>
-                    <th className="p-3 text-right">ราคาทุน</th>
-                    <th className="p-3 text-right">อายุ (ปี)</th>
-                    <th className="p-3 text-right">อัตรา (%)</th>
-                    <th className="p-3">วันที่เริ่มคิด</th>
-                    <th className="p-3 text-center">สถานะ</th>
-                    <th className="p-3 text-center">การจัดการ</th>
+                    <th className="p-3">{tr("fa_asset_code", "รหัสสินทรัพย์")}</th>
+                    <th className="p-3">{tr("fa_asset_name", "ชื่อสินทรัพย์")}</th>
+                    <th className="p-3">{tr("cart_type_label", "ประเภท")}</th>
+                    <th className="p-3 text-right">{tr("fa_cost", "ราคาทุน")}</th>
+                    <th className="p-3 text-right">{tr("fa_useful_life_years", "อายุ (ปี)")}</th>
+                    <th className="p-3 text-right">{tr("fa_rate", "อัตรา (%)")}</th>
+                    <th className="p-3">{tr("fa_start_date", "วันที่เริ่มคิด")}</th>
+                    <th className="p-3 text-center">{tr("status", "สถานะ")}</th>
+                    <th className="p-3 text-center">{tr("barcode_actions", "การจัดการ")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
@@ -404,7 +405,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                               : "bg-rose-500/15 text-rose-600 dark:text-rose-400"
                           }`}
                         >
-                          {ast.status === "active" ? "ใช้งานปกติ" : "จำหน่ายแล้ว"}
+                          {ast.status === "active" ? tr("fa_normal_use", "ใช้งานปกติ") : tr("fa_disposed", "จำหน่ายแล้ว")}
                         </span>
                       </td>
                       <td className="p-3 text-center">
@@ -419,7 +420,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                               setActiveTab("depreciation");
                             }}
                           >
-                            ตารางงวด
+                            {tr("fa_schedule", "ตารางงวด")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -430,7 +431,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                               setIsEditing(true);
                             }}
                           >
-                            แก้ไข
+                            {tr("edit", "แก้ไข")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -438,7 +439,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                             className="h-8 px-2 text-xs text-destructive hover:text-destructive"
                             onClick={() => handleDeleteAsset(ast)}
                           >
-                            ลบ
+                            {tr("gl_delete", "ลบ")}
                           </Button>
                         </div>
                       </td>
@@ -447,7 +448,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   {assets.length === 0 && !loading && (
                     <tr>
                       <td colSpan={9} className="p-8 text-center text-muted-foreground">
-                        ไม่พบข้อมูลสินทรัพย์ถาวร
+                        {tr("fa_no_fixed_asset_data_found", "ไม่พบข้อมูลสินทรัพย์ถาวร")}
                       </td>
                     </tr>
                   )}
@@ -460,11 +461,11 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
               <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div className="bg-card border border-border rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4">
                   <h2 className="text-lg font-bold text-foreground border-b border-border/60 pb-3">
-                    {editForm.id ? "แก้ไขข้อมูลสินทรัพย์" : "เพิ่มสินทรัพย์ถาวรใหม่"}
+                    {editForm.id ? tr("fa_edit_asset_information", "แก้ไขข้อมูลสินทรัพย์") : tr("fa_add_new_fixed_asset", "เพิ่มสินทรัพย์ถาวรใหม่")}
                   </h2>
                   <div className="grid grid-cols-2 gap-4 text-sm max-h-[60vh] overflow-y-auto pr-1">
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสสินทรัพย์</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_asset_code", "รหัสสินทรัพย์")}</label>
                       <input
                         type="text"
                         value={editForm.assetcode || ""}
@@ -474,7 +475,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ชื่อสินทรัพย์ (ไทย)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_asset_name_thai", "ชื่อสินทรัพย์ (ไทย)")}</label>
                       <input
                         type="text"
                         value={editForm.names?.[0]?.name || ""}
@@ -483,7 +484,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ประเภทสินทรัพย์</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_asset_type", "ประเภทสินทรัพย์")}</label>
                       <input
                         type="text"
                         value={editForm.assettypecode || "EQUIPMENT"}
@@ -492,7 +493,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ราคาทุน (Cost)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_capital_cost", "ราคาทุน (Cost)")}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -502,7 +503,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">ราคาซาก (Scrap Value)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_salvage_value", "ราคาซาก (Scrap Value)")}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -512,7 +513,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">อายุการใช้งาน (ปี)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_useful_life", "อายุการใช้งาน (ปี)")}</label>
                       <input
                         type="number"
                         value={editForm.usefullifeyears || 5}
@@ -528,7 +529,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">อัตราค่าเสื่อม (%)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_depreciation_rate", "อัตราค่าเสื่อม (%)")}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -538,7 +539,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">วันที่ซื้อ</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_purchase_date", "วันที่ซื้อ")}</label>
                       <input
                         type="date"
                         value={editForm.purchasedate || ""}
@@ -547,7 +548,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">สิทธิพิเศษปีแรก (%) เช่น 40% คอมพิวเตอร์</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_first_year_special_allowance", "สิทธิพิเศษปีแรก (%) เช่น 40% คอมพิวเตอร์")}</label>
                       <input
                         type="number"
                         step="0.01"
@@ -557,7 +558,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสบัญชีสินทรัพย์ (GL)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_asset_account_code", "รหัสบัญชีสินทรัพย์ (GL)")}</label>
                       <input
                         type="text"
                         value={editForm.assetaccountcode || "120101"}
@@ -566,7 +567,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสบัญชีค่าเสื่อมสะสม (GL)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_accumulated_depreciation_account_code", "รหัสบัญชีค่าเสื่อมสะสม (GL)")}</label>
                       <input
                         type="text"
                         value={editForm.accumdeprecaccountcode || "129101"}
@@ -575,7 +576,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">รหัสบัญชีค่าใช้จ่ายค่าเสื่อม (GL)</label>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_depreciation_expense_account_code", "รหัสบัญชีค่าใช้จ่ายค่าเสื่อม (GL)")}</label>
                       <input
                         type="text"
                         value={editForm.deprecexpenseaccountcode || "520103"}
@@ -587,9 +588,9 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
 
                   <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
                     <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      ยกเลิก
+                      {tr("cancel", "ยกเลิก")}
                     </Button>
-                    <Button onClick={handleSaveAsset}>บันทึกข้อมูล</Button>
+                    <Button onClick={handleSaveAsset}>{tr("gl_save_data", "บันทึกข้อมูล")}</Button>
                   </div>
                 </div>
               </div>
@@ -602,7 +603,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">เลือกสินทรัพย์:</span>
+                <span className="text-sm font-semibold">{tr("fa_select_asset", "เลือกสินทรัพย์:")}</span>
                 <select
                   value={selectedAsset?.assetcode || ""}
                   onChange={(e) => {
@@ -612,7 +613,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   }}
                   className="h-10 px-3 rounded-lg border border-input bg-background text-sm font-medium"
                 >
-                  <option value="">-- กรุณาเลือกสินทรัพย์ --</option>
+                  <option value="">{tr("fa_please_select_asset", "-- กรุณาเลือกสินทรัพย์ --")}</option>
                   {assets.map((a) => (
                     <option key={a.assetcode} value={a.assetcode}>
                       {a.assetcode} : {assetName(a, language)}
@@ -632,15 +633,15 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
               <table className="w-full text-left text-sm border-collapse">
                 <thead className="sticky top-0 bg-muted/90 backdrop-blur z-10 border-b border-border text-xs uppercase tracking-wider font-semibold">
                   <tr>
-                    <th className="p-3">ปีบัญชี</th>
-                    <th className="p-3 text-center">งวด</th>
-                    <th className="p-3">วันที่เริ่มต้น</th>
-                    <th className="p-3">วันที่สิ้นสุด</th>
-                    <th className="p-3 text-right">จำนวนวัน</th>
-                    <th className="p-3 text-right">ค่าเสื่อมราคางวดนี้</th>
-                    <th className="p-3 text-right">ค่าเสื่อมราคาสะสม</th>
-                    <th className="p-3 text-right">มูลค่าคงเหลือสุทธิ (NBV)</th>
-                    <th className="p-3 text-center">สถานะ GL</th>
+                    <th className="p-3">{tr("gl_fiscal_year", "ปีบัญชี")}</th>
+                    <th className="p-3 text-center">{tr("fa_period_column", "งวด")}</th>
+                    <th className="p-3">{tr("report_condition_start_date", "วันที่เริ่มต้น")}</th>
+                    <th className="p-3">{tr("end_date", "วันที่สิ้นสุด")}</th>
+                    <th className="p-3 text-right">{tr("fa_number_of_days", "จำนวนวัน")}</th>
+                    <th className="p-3 text-right">{tr("fa_depreciation_this_period", "ค่าเสื่อมราคางวดนี้")}</th>
+                    <th className="p-3 text-right">{tr("fa_accumulated_depreciation", "ค่าเสื่อมราคาสะสม")}</th>
+                    <th className="p-3 text-right">{tr("fa_net_book_value", "มูลค่าคงเหลือสุทธิ (NBV)")}</th>
+                    <th className="p-3 text-center">{tr("fa_gl_status", "สถานะ GL")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
@@ -668,7 +669,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {item.isposted ? `ผ่านแล้ว (${item.journaldocno})` : "ยังไม่ผ่าน"}
+                          {item.isposted ? tr("fa_posted_with_docno", "ผ่านแล้ว ({0})").replace("{0}", String(item.journaldocno ?? "")) : tr("fa_not_posted", "ยังไม่ผ่าน")}
                         </span>
                       </td>
                     </tr>
@@ -676,7 +677,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   {scheduleItems.length === 0 && (
                     <tr>
                       <td colSpan={9} className="p-8 text-center text-muted-foreground">
-                        กรุณาเลือกสินทรัพย์เพื่อดูตารางคำนวณค่าเสื่อมราคา
+                        {tr("fa_select_asset_view_depreciation_table", "กรุณาเลือกสินทรัพย์เพื่อดูตารางคำนวณค่าเสื่อมราคา")}
                       </td>
                     </tr>
                   )}
@@ -691,16 +692,16 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           <div className="flex-1 min-h-0 flex flex-col max-w-xl mx-auto w-full gap-4 pt-6">
             <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-md flex flex-col gap-4">
               <h2 className="text-lg font-bold text-foreground border-b border-border/40 pb-2">
-                โอนค่าเสื่อมราคาเข้าบัญชีแยกประเภท (GL Journal Posting)
+                {tr("fa_transfer_depreciation_to_gl", "โอนค่าเสื่อมราคาเข้าบัญชีแยกประเภท (GL Journal Posting)")}
               </h2>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                ระบบจะรวบรวมค่าเสื่อมราคาของสินทรัพย์ทุกตัวในงวดที่เลือก นำมาบันทึกสมุดรายวันทั่วไป (JV)
-                โดยเดบิตบัญชีค่าใช้จ่ายค่าเสื่อมราคา และเครดิตบัญชีค่าเสื่อมราคาสะสม
+                {tr("fa_depreciation_journal_voucher", "ระบบจะรวบรวมค่าเสื่อมราคาของสินทรัพย์ทุกตัวในงวดที่เลือก นำมาบันทึกสมุดรายวันทั่วไป (JV)")}
+                {tr("fa_depreciation_account_entry", "โดยเดบิตบัญชีค่าใช้จ่ายค่าเสื่อมราคา และเครดิตบัญชีค่าเสื่อมราคาสะสม")}
               </p>
 
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">ปีบัญชี</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("gl_fiscal_year", "ปีบัญชี")}</label>
                   <input
                     type="text"
                     value={postFiscalYear}
@@ -709,7 +710,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">งวดที่ (1-12)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_period", "งวดที่ (1-12)")}</label>
                   <input
                     type="number"
                     min={1}
@@ -732,7 +733,9 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                 disabled={loading}
                 className="w-full h-11 bg-primary text-primary-foreground font-semibold text-sm mt-2"
               >
-                {loading ? "กำลังประมวลผล..." : `ผ่านรายการประจำงวด ${postPeriod}/${postFiscalYear} เข้า GL`}
+                {loading ? tr("ops_processing", "กำลังประมวลผล...") : tr("fa_post_period_to_gl", "ผ่านรายการประจำงวด {0}/{1} เข้า GL")
+                    .replace("{0}", String(postPeriod))
+                    .replace("{1}", postFiscalYear)}
               </Button>
             </div>
           </div>
@@ -743,18 +746,18 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           <div className="flex-1 min-h-0 flex flex-col max-w-xl mx-auto w-full gap-4 pt-6">
             <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-md flex flex-col gap-4">
               <h2 className="text-lg font-bold text-foreground border-b border-border/40 pb-2">
-                จำหน่ายและตัดจำหน่ายสินทรัพย์ (Asset Disposal & Write-off)
+                {tr("fa_asset_disposal_heading", "จำหน่ายและตัดจำหน่ายสินทรัพย์ (Asset Disposal & Write-off)")}
               </h2>
 
               <div className="flex flex-col gap-3 text-sm">
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">เลือกสินทรัพย์ที่ต้องการจำหน่าย</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_select_assets_dispose", "เลือกสินทรัพย์ที่ต้องการจำหน่าย")}</label>
                   <select
                     value={disposalForm.assetcode}
                     onChange={(e) => setDisposalForm({ ...disposalForm, assetcode: e.target.value })}
                     className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm font-medium"
                   >
-                    <option value="">-- กรุณาเลือกสินทรัพย์ --</option>
+                    <option value="">{tr("fa_please_select_asset", "-- กรุณาเลือกสินทรัพย์ --")}</option>
                     {assets.filter((x) => x.status === "active").map((a) => (
                       <option key={a.assetcode} value={a.assetcode}>
                         {a.assetcode} : {assetName(a, language)}
@@ -765,7 +768,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">วันที่จำหน่าย</label>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_date", "วันที่จำหน่าย")}</label>
                     <input
                       type="date"
                       value={disposalForm.disposaldate}
@@ -774,22 +777,22 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">ประเภทการจำหน่าย</label>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_type", "ประเภทการจำหน่าย")}</label>
                     <select
                       value={disposalForm.disposaltype}
                       onChange={(e) => setDisposalForm({ ...disposalForm, disposaltype: e.target.value as any })}
                       className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
                     >
-                      <option value="sale">ขาย (Sale)</option>
-                      <option value="write_off">ตัดจำหน่ายชำรุด (Write-off)</option>
-                      <option value="scrap">ขายเป็นเศษซาก (Scrap)</option>
+                      <option value="sale">{tr("fa_sale", "ขาย (Sale)")}</option>
+                      <option value="write_off">{tr("fa_write_off", "ตัดจำหน่ายชำรุด (Write-off)")}</option>
+                      <option value="scrap">{tr("fa_scrap", "ขายเป็นเศษซาก (Scrap)")}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">ราคาขาย (ก่อน VAT)</label>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_selling_price_before_vat", "ราคาขาย (ก่อน VAT)")}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -799,7 +802,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">ภาษีขาย VAT 7% (ถ้ามี)</label>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_output_vat_if_any", "ภาษีขาย VAT 7% (ถ้ามี)")}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -811,7 +814,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">เหตุผลในการจำหน่าย</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_reason_for_disposal", "เหตุผลในการจำหน่าย")}</label>
                   <input
                     type="text"
                     value={disposalForm.reason}
@@ -826,7 +829,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                 disabled={loading}
                 className="w-full h-11 bg-primary text-primary-foreground font-semibold text-sm mt-2"
               >
-                {loading ? "กำลังประมวลผล..." : "บันทึกจำหน่ายและลงบัญชีกำไร/ขาดทุน"}
+                {loading ? tr("ops_processing", "กำลังประมวลผล...") : tr("fa_record_disposal_gain_loss", "บันทึกจำหน่ายและลงบัญชีกำไร/ขาดทุน")}
               </Button>
             </div>
           </div>
@@ -837,7 +840,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">ปีบัญชี:</span>
+                <span className="text-sm font-semibold">{tr("fa_accounting_year", "ปีบัญชี:")}</span>
                 <input
                   type="text"
                   value={postFiscalYear}
@@ -845,11 +848,11 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   className="h-10 w-24 px-3 rounded-lg border border-input bg-background font-mono text-sm"
                 />
                 <Button size="sm" onClick={loadScheduleReport} className="h-10">
-                  ดึงรายงาน
+                  {tr("fa_pull_report", "ดึงรายงาน")}
                 </Button>
               </div>
               <div className="text-xs text-muted-foreground">
-                รายงานตารางค่าเสื่อมราคาและสินทรัพย์ถาวร (Fixed Asset Schedule)
+                {tr("fa_fixed_asset_depreciation_schedule_report", "รายงานตารางค่าเสื่อมราคาและสินทรัพย์ถาวร (Fixed Asset Schedule)")}
               </div>
             </div>
 
@@ -886,7 +889,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   {(!reportData || reportData.rows.length === 0) && !loading && (
                     <tr>
                       <td colSpan={13} className="p-8 text-center text-muted-foreground">
-                        ไม่พบข้อมูลรายงานสำหรับปีนี้
+                        {tr("fa_no_report_data_this_year", "ไม่พบข้อมูลรายงานสำหรับปีนี้")}
                       </td>
                     </tr>
                   )}
@@ -901,7 +904,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">ปีภาษี:</span>
+                <span className="text-sm font-semibold">{tr("fa_tax_year", "ปีภาษี:")}</span>
                 <input
                   type="text"
                   value={postFiscalYear}
@@ -909,11 +912,11 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   className="h-10 w-24 px-3 rounded-lg border border-input bg-background font-mono text-sm"
                 />
                 <Button size="sm" onClick={loadTaxReport} className="h-10">
-                  ดึงรายงาน
+                  {tr("fa_pull_report", "ดึงรายงาน")}
                 </Button>
               </div>
               <div className="text-xs text-muted-foreground">
-                รายงานกระทบยอดค่าเสื่อมราคาทางบัญชี vs ทางภาษีอากร สำหรับแบบ ภ.ง.ด.50
+                {tr("fa_accounting_tax_depreciation_reconciliation_report", "รายงานกระทบยอดค่าเสื่อมราคาทางบัญชี vs ทางภาษีอากร สำหรับแบบ ภ.ง.ด.50")}
               </div>
             </div>
 
@@ -950,7 +953,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   {(!taxReportData || taxReportData.rows.length === 0) && !loading && (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                        ไม่พบข้อมูลสำหรับปีภาษีนี้
+                        {tr("fa_no_data_for_tax_year", "ไม่พบข้อมูลสำหรับปีภาษีนี้")}
                       </td>
                     </tr>
                   )}
