@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useBackendText } from "@/components/backend-text-provider";
 import {
   getOperationsConfig,
   isApprovalApiReady,
@@ -62,6 +63,7 @@ export function OperationsWorkbench({
   language = "th",
   holdingcode = "",
 }: OperationsWorkbenchProps) {
+  const tr = useBackendText();
   const config = getOperationsConfig(route) || {
     route,
     code: "operations_workflow",
@@ -166,7 +168,7 @@ export function OperationsWorkbench({
             className="gap-2 min-h-[44px]"
           >
             <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            {language === "th" ? "โหลดรายการใหม่" : "Refresh"}
+            {tr("ops_refresh", "โหลดรายการใหม่")}
           </Button>
         )}
       </div>
@@ -197,10 +199,10 @@ export function OperationsWorkbench({
             type="button"
             onClick={() => setNoticeKey(null)}
             className="rounded-md px-2 py-1 text-xs underline"
-            aria-label={language === "th" ? "ปิดข้อความแจ้งเตือน" : "Dismiss message"}
-            title={language === "th" ? "ปิดข้อความแจ้งเตือน" : "Dismiss message"}
+            aria-label={tr("ops_dismiss_message", "ปิดข้อความแจ้งเตือน")}
+            title={tr("ops_dismiss_message", "ปิดข้อความแจ้งเตือน")}
           >
-            {language === "th" ? "ปิด" : "Close"}
+            {tr("close", "ปิด")}
           </button>
         </div>
       )}
@@ -228,7 +230,7 @@ export function OperationsWorkbench({
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={language === "th" ? "ค้นหาเอกสาร..." : "Search..."}
+                placeholder={tr("ops_search", "ค้นหาเอกสาร...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8 h-8 text-xs"
@@ -240,12 +242,12 @@ export function OperationsWorkbench({
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
-                  <th className="px-4 py-3">{language === "th" ? "เลขที่เอกสาร" : "Document No."}</th>
-                  <th className="px-4 py-3">{language === "th" ? "วันที่" : "Date"}</th>
-                  <th className="px-4 py-3">{language === "th" ? "ผู้ขออนุมัติ" : "Requested by"}</th>
-                  <th className="px-4 py-3">{language === "th" ? "คู่ค้า / ลูกค้า" : "Counterparty"}</th>
-                  <th className="px-4 py-3 text-right">{language === "th" ? "ยอดเงินรวม" : "Total"}</th>
-                  <th className="px-4 py-3 text-center">{language === "th" ? "จัดการ" : "Action"}</th>
+                  <th className="px-4 py-3">{tr("document_no", "เลขที่เอกสาร")}</th>
+                  <th className="px-4 py-3">{tr("date", "วันที่")}</th>
+                  <th className="px-4 py-3">{tr("ops_requested_by", "ผู้ขออนุมัติ")}</th>
+                  <th className="px-4 py-3">{tr("ops_counterparty", "คู่ค้า / ลูกค้า")}</th>
+                  <th className="px-4 py-3 text-right">{tr("ops_total", "ยอดเงินรวม")}</th>
+                  <th className="px-4 py-3 text-center">{tr("manage", "จัดการ")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -254,7 +256,7 @@ export function OperationsWorkbench({
                     <td colSpan={6} className="py-12 text-center text-muted-foreground">
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        {language === "th" ? "กำลังโหลดข้อมูลจากระบบ..." : "Loading data..."}
+                        {tr("ops_loading_data", "กำลังโหลดข้อมูลจากระบบ...")}
                       </span>
                     </td>
                   </tr>
@@ -263,9 +265,7 @@ export function OperationsWorkbench({
                     <td colSpan={6} className="py-12 text-center text-muted-foreground">
                       {errorKey
                         ? messageText(errorKey, language)
-                        : language === "th"
-                          ? "ไม่มีเอกสารค้างรอการอนุมัติ"
-                          : "No pending documents"}
+                        : tr("ops_no_pending_documents", "ไม่มีเอกสารค้างรอการอนุมัติ")}
                     </td>
                   </tr>
                 ) : (
@@ -277,7 +277,7 @@ export function OperationsWorkbench({
                       <td className="px-4 py-3">{doc.counterpartyname || "-"}</td>
                       <td className="px-4 py-3 text-right font-mono font-bold">
                         {doc.totalamount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
-                        {language === "th" ? " บาท" : " THB"}
+                        {tr("baht_suffix", " บาท")}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {pendingAction?.docno === doc.docno ? (
@@ -298,7 +298,7 @@ export function OperationsWorkbench({
                                 className="h-8 gap-1 text-xs"
                               >
                                 {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
-                                {language === "th" ? "ยืนยัน" : "Confirm"}
+                                {tr("confirm", "ยืนยัน")}
                               </Button>
                               <Button
                                 size="sm"
@@ -307,7 +307,7 @@ export function OperationsWorkbench({
                                 onClick={() => setPendingAction(null)}
                                 className="h-8 gap-1 text-xs"
                               >
-                                {language === "th" ? "ยกเลิก" : "Cancel"}
+                                {tr("cancel", "ยกเลิก")}
                               </Button>
                             </div>
                           </div>
@@ -320,7 +320,7 @@ export function OperationsWorkbench({
                               className="h-8 gap-1 text-xs"
                             >
                               <CheckCircle className="h-3.5 w-3.5" />
-                              {language === "th" ? "อนุมัติ" : "Approve"}
+                              {tr("approve", "อนุมัติ")}
                             </Button>
                             <Button
                               size="sm"
@@ -329,7 +329,7 @@ export function OperationsWorkbench({
                               className="h-8 gap-1 text-xs text-destructive"
                             >
                               <XCircle className="h-3.5 w-3.5" />
-                              {language === "th" ? "ไม่อนุมัติ" : "Reject"}
+                              {tr("reject", "ไม่อนุมัติ")}
                             </Button>
                           </div>
                         )}
@@ -352,12 +352,10 @@ export function OperationsWorkbench({
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">
-                {language === "th" ? "ระบบนำเข้าข้อมูลยังไม่เปิดใช้งาน" : "Data import is not enabled yet"}
+                {tr("ops_data_import_is_not_enabled", "ระบบนำเข้าข้อมูลยังไม่เปิดใช้งาน")}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {language === "th"
-                  ? "เมื่อเปิดใช้งานแล้วจะสามารถนำเข้าไฟล์ Excel หรือ CSV ผ่านระบบหลังบ้านได้จากจอนี้"
-                  : "Once enabled, Excel or CSV files will be imported through the backend from this screen."}
+                {tr("ops_once_enabled_excel_or_csv", "เมื่อเปิดใช้งานแล้วจะสามารถนำเข้าไฟล์ Excel หรือ CSV ผ่านระบบหลังบ้านได้จากจอนี้")}
               </p>
             </div>
           </div>

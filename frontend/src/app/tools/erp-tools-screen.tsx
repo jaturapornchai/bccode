@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useBackendText } from "@/components/backend-text-provider";
 import { getErpToolConfig, isErpToolApiReady, runErpTool, type ErpToolStockCheckStats } from "@/lib/erp-tools";
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ export function ErpToolsScreen({
   holdingcode = "",
   businesscode = "",
 }: ErpToolsScreenProps) {
+  const tr = useBackendText();
   const config = getErpToolConfig(route) || {
     route,
     code: "tool_utility",
@@ -95,7 +97,7 @@ export function ErpToolsScreen({
     setStats(null);
     setSucceeded(false);
     const title = language === "th" ? config.title.th : config.title.en;
-    setLogs([`[${new Date().toLocaleTimeString()}] ${language === "th" ? "ส่งคำสั่งไปยังระบบ" : "Sending command"}: ${title}`]);
+    setLogs([`[${new Date().toLocaleTimeString()}] ${tr("ops_sending_command", "ส่งคำสั่งไปยังระบบ")}: ${title}`]);
 
     const result = await runErpTool({
       code: config.code,
@@ -105,11 +107,11 @@ export function ErpToolsScreen({
     });
 
     const nextLogs: string[] = [
-      `[${new Date().toLocaleTimeString()}] ${language === "th" ? "ระบบตอบกลับ" : "Response"}: ${resultText(result.messageKey, language)}`,
+      `[${new Date().toLocaleTimeString()}] ${tr("ops_response", "ระบบตอบกลับ")}: ${resultText(result.messageKey, language)}`,
     ];
     if (result.stats) {
       nextLogs.push(
-        `[${new Date().toLocaleTimeString()}] ${language === "th" ? "รายการต้นทุนที่ตรวจพบ" : "Cost rows found"}: ${result.stats.totalrows.toLocaleString("th-TH")}`,
+        `[${new Date().toLocaleTimeString()}] ${tr("ops_cost_rows_found", "รายการต้นทุนที่ตรวจพบ")}: ${result.stats.totalrows.toLocaleString("th-TH")}`,
       );
     }
     setLogs((prev) => [...prev, ...nextLogs]);
@@ -150,15 +152,13 @@ export function ErpToolsScreen({
           title={
             apiReady
               ? undefined
-              : language === "th"
-                ? "เครื่องมือนี้ยังไม่เชื่อมกับระบบประมวลผลจริง"
-                : "This tool is not connected to the processing API yet"
+              : tr("ops_this_tool_is_not_connected", "เครื่องมือนี้ยังไม่เชื่อมกับระบบประมวลผลจริง")
           }
         >
           {isRunning ? (
             <>
               <RotateCw className="h-5 w-5 animate-spin" />
-              {language === "th" ? "กำลังประมวลผล..." : "Processing..."}
+              {tr("ops_processing", "กำลังประมวลผล...")}
             </>
           ) : (
             <>
@@ -188,24 +188,22 @@ export function ErpToolsScreen({
         <CardContent className="p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" />
-            {language === "th" ? "ขอบเขตการประมวลผล (Execution Scope)" : "Execution Scope"}
+            {tr("ops_execution_scope", "ขอบเขตการประมวลผล (Execution Scope)")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                {language === "th" ? "กิจการที่ประมวลผล:" : "Target Business:"}
+                {tr("ops_target_business", "กิจการที่ประมวลผล:")}
               </label>
               <div className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground">
                 {holdingcode
                   ? `${holdingcode}${businesscode ? ` / ${businesscode}` : ""}`
-                  : language === "th"
-                    ? "ยังไม่ได้เลือกกิจการ"
-                    : "No business selected"}
+                  : tr("holding_required", "ยังไม่ได้เลือกกิจการ")}
               </div>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1.5" htmlFor="tool-fiscal-year">
-                {language === "th" ? "รอบปีบัญชี:" : "Fiscal Year:"}
+                {tr("ops_fiscal_year", "รอบปีบัญชี:")}
               </label>
               <select
                 id="tool-fiscal-year"
@@ -230,7 +228,7 @@ export function ErpToolsScreen({
         <CardContent className="p-5 space-y-3">
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-primary" />
-            {language === "th" ? "ขั้นตอนที่ระบบจะทำเมื่อสั่งประมวลผล:" : "What this process will do:"}
+            {tr("ops_what_this_process_will_do", "ขั้นตอนที่ระบบจะทำเมื่อสั่งประมวลผล:")}
           </h2>
           <div className="space-y-2">
             {config.steps.map((step, idx) => (
@@ -256,9 +254,7 @@ export function ErpToolsScreen({
               <div className="flex items-center gap-2.5 rounded-xl border border-border bg-muted/50 p-3 text-sm text-muted-foreground" role="status">
                 <RotateCw className="h-5 w-5 animate-spin" />
                 <span>
-                  {language === "th"
-                    ? "กำลังรอผลจากระบบ กรุณาอย่าปิดหน้าจอนี้"
-                    : "Waiting for the server, please keep this screen open"}
+                  {tr("ops_waiting_for_the_server_please", "กำลังรอผลจากระบบ กรุณาอย่าปิดหน้าจอนี้")}
                 </span>
               </div>
             )}
@@ -280,15 +276,15 @@ export function ErpToolsScreen({
             {stats && (
               <div className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-muted/30 p-3 text-sm text-foreground sm:grid-cols-3">
                 <div>
-                  <div className="text-xs text-muted-foreground">{language === "th" ? "จำนวนรายการต้นทุน" : "Cost rows"}</div>
+                  <div className="text-xs text-muted-foreground">{tr("ops_cost_rows", "จำนวนรายการต้นทุน")}</div>
                   <div className="font-mono font-semibold">{stats.totalrows.toLocaleString("th-TH")}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">{language === "th" ? "จำนวนเอกสาร" : "Documents"}</div>
+                  <div className="text-xs text-muted-foreground">{tr("document_count", "จำนวนเอกสาร")}</div>
                   <div className="font-mono font-semibold">{stats.totaldocuments.toLocaleString("th-TH")}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">{language === "th" ? "จำนวนสินค้า" : "Products"}</div>
+                  <div className="text-xs text-muted-foreground">{tr("ops_products", "จำนวนสินค้า")}</div>
                   <div className="font-mono font-semibold">{stats.totalproducts.toLocaleString("th-TH")}</div>
                 </div>
               </div>
@@ -314,10 +310,8 @@ export function ErpToolsScreen({
       <div className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
         <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
         <div>
-          <span className="font-semibold">{language === "th" ? "ข้อแนะนำความปลอดภัย:" : "Safety Notice:"} </span>
-          {language === "th"
-            ? "การประมวลผลใหม่จะเขียนทับยอดที่คำนวณไว้เดิม และอาจใช้เวลานานเมื่อข้อมูลมีจำนวนมาก แนะนำให้สั่งประมวลผลนอกเวลาทำการ"
-            : "Reprocessing overwrites previously calculated balances and may take a long time on large datasets. Run it outside business hours."}
+          <span className="font-semibold">{tr("ops_safety_notice", "ข้อแนะนำความปลอดภัย:")} </span>
+          {tr("ops_reprocessing_overwrites_previously_calculated_balances", "การประมวลผลใหม่จะเขียนทับยอดที่คำนวณไว้เดิม และอาจใช้เวลานานเมื่อข้อมูลมีจำนวนมาก แนะนำให้สั่งประมวลผลนอกเวลาทำการ")}
         </div>
       </div>
     </div>

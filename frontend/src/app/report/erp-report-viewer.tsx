@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useBackendText } from "@/components/backend-text-provider";
 import {
   getErpReportConfig,
   isErpReportApiReady,
@@ -67,6 +68,7 @@ export function ErpReportViewer({
   language = "th",
   holdingcode = "",
 }: ErpReportViewerProps) {
+  const tr = useBackendText();
   const config = getErpReportConfig(route) || {
     route,
     code: "report_viewer",
@@ -209,24 +211,22 @@ export function ErpReportViewer({
               disabled
               className="gap-2"
               title={
-                language === "th"
-                  ? "ยังไม่เปิดใช้งาน — ต้องมีข้อมูลงบการเงินจริงและเลขประจำตัวผู้เสียภาษีของกิจการจากระบบก่อน"
-                  : "Not available yet — requires real financial statement data and the company tax ID from the system"
+                tr("ops_not_available_yet_requires_real", "ยังไม่เปิดใช้งาน — ต้องมีข้อมูลงบการเงินจริงและเลขประจำตัวผู้เสียภาษีของกิจการจากระบบก่อน")
               }
             >
               <FileCode className="h-4 w-4" />
-              {language === "th" ? "ส่งออก XBRL (ยื่น DBD)" : "Export DBD XBRL"}
+              {tr("ops_export_dbd_xbrl", "ส่งออก XBRL (ยื่น DBD)")}
             </Button>
           )}
 
           <Button variant="outline" onClick={handleExportCsv} disabled={!canExport} className="gap-2">
             <Download className="h-4 w-4" />
-            {language === "th" ? "ส่งออก CSV" : "Export CSV"}
+            {tr("gl_export_csv", "ส่งออก CSV")}
           </Button>
 
           <Button variant="outline" onClick={() => window.print()} disabled={!canExport} className="gap-2">
             <Printer className="h-4 w-4" />
-            {language === "th" ? "พิมพ์รายงาน" : "Print Report"}
+            {tr("print_report", "พิมพ์รายงาน")}
           </Button>
         </div>
       </div>
@@ -237,7 +237,7 @@ export function ErpReportViewer({
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2">
               <Calendar className="h-4 w-4 text-primary" />
-              <span>{language === "th" ? "ช่วงเวลา:" : "Period:"}</span>
+              <span>{tr("ops_period", "ช่วงเวลา:")}</span>
             </div>
             {(["today", "week", "month", "year"] as const).map((period) => (
               <Button
@@ -247,10 +247,10 @@ export function ErpReportViewer({
                 onClick={() => setDateRange(period)}
                 className="h-8 text-xs"
               >
-                {period === "today" && (language === "th" ? "วันนี้" : "Today")}
-                {period === "week" && (language === "th" ? "สัปดาห์นี้" : "This Week")}
-                {period === "month" && (language === "th" ? "เดือนนี้" : "This Month")}
-                {period === "year" && (language === "th" ? "ปีนี้" : "This Year")}
+                {period === "today" && (tr("alert_today", "วันนี้"))}
+                {period === "week" && (tr("alert_this_week", "สัปดาห์นี้"))}
+                {period === "month" && (tr("alert_this_month", "เดือนนี้"))}
+                {period === "year" && (tr("ops_this_year", "ปีนี้"))}
               </Button>
             ))}
 
@@ -263,7 +263,7 @@ export function ErpReportViewer({
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={language === "th" ? "ค้นหาในรายงาน..." : "Search in report..."}
+              placeholder={tr("ops_search_in_report", "ค้นหาในรายงาน...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 h-9"
@@ -276,7 +276,7 @@ export function ErpReportViewer({
       {loading && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground" role="status">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{language === "th" ? "กำลังโหลดข้อมูลจากระบบ..." : "Loading data..."}</span>
+          <span>{tr("ops_loading_data", "กำลังโหลดข้อมูลจากระบบ...")}</span>
         </div>
       )}
 
@@ -284,9 +284,7 @@ export function ErpReportViewer({
         <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground" role="status">
           <AlertCircle className="h-4 w-4" />
           <span>
-            {language === "th"
-              ? "รายงานนี้ยังไม่เชื่อมกับข้อมูลจริง — อยู่ระหว่างเปิดใช้งาน API"
-              : "This report is not connected to live data yet"}
+            {tr("ops_this_report_is_not_connected", "รายงานนี้ยังไม่เชื่อมกับข้อมูลจริง — อยู่ระหว่างเปิดใช้งาน API")}
           </span>
         </div>
       )}
@@ -306,7 +304,7 @@ export function ErpReportViewer({
 
       {!loading && !errorKey && rawData.length === 0 && (
         <div className="rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground" role="status">
-          {language === "th" ? "ไม่พบข้อมูลในช่วงเวลาที่เลือก" : "No data found for the selected period"}
+          {tr("ops_no_data_found_for_the", "ไม่พบข้อมูลในช่วงเวลาที่เลือก")}
         </div>
       )}
 
@@ -341,7 +339,7 @@ export function ErpReportViewer({
               {processedData.length === 0 ? (
                 <tr>
                   <td colSpan={config.columns.length + 1} className="py-12 text-center text-muted-foreground">
-                    {language === "th" ? "ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา" : "No matching records found"}
+                    {tr("ops_no_matching_records_found", "ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา")}
                   </td>
                 </tr>
               ) : (

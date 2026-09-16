@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { BackendTextProvider } from "@/components/backend-text-provider";
 import {
   AlertCircle,
   AlertTriangle,
@@ -1477,6 +1478,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                           onOpenManageShortcuts={openManageShortcuts}
                         />
                       ) : (
+                        <BackendTextProvider dictionary={backendLanguage}>
                         <WorkTabPanel
                           active={tab.id === activeTabId}
                           activeTab={tab}
@@ -1510,6 +1512,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                              }
                            }}
                         />
+                        </BackendTextProvider>
                       )}
                     </section>
                   ))}

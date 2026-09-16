@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useBackendText } from "@/components/backend-text-provider";
 import {
   getThaiTaxConfig,
   fetchVatRegister,
@@ -32,6 +33,7 @@ export function TaxFilingWorkbench({
   holdingcode = "",
   businesscode = "",
 }: TaxFilingWorkbenchProps) {
+  const tr = useBackendText();
   const config = getThaiTaxConfig(route) || {
     route,
     code: "tax_filing",
@@ -181,7 +183,7 @@ export function TaxFilingWorkbench({
               className="gap-2"
             >
               <Calculator className="h-4 w-4" />
-              {language === "th" ? "แบบฟอร์ม ภ.พ.30" : "PP.30 Form"}
+              {tr("ops_pp_30_form", "แบบฟอร์ม ภ.พ.30")}
             </Button>
           )}
 
@@ -208,7 +210,7 @@ export function TaxFilingWorkbench({
             className="gap-2"
           >
             <Download className="h-4 w-4" />
-            {language === "th" ? "ส่งออก CSV" : "Export CSV"}
+            {tr("gl_export_csv", "ส่งออก CSV")}
           </Button>
 
           <Button
@@ -218,7 +220,7 @@ export function TaxFilingWorkbench({
             className="gap-2"
           >
             <Printer className="h-4 w-4" />
-            {language === "th" ? "พิมพ์รายงาน" : "Print Report"}
+            {tr("print_report", "พิมพ์รายงาน")}
           </Button>
         </div>
       </div>
@@ -229,7 +231,7 @@ export function TaxFilingWorkbench({
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Calendar className="h-4 w-4 text-primary" />
-              <span>{language === "th" ? "งวดภาษี:" : "Tax Period:"}</span>
+              <span>{tr("ops_tax_period", "งวดภาษี:")}</span>
             </div>
             <select
               value={selectedMonth}
@@ -260,7 +262,7 @@ export function TaxFilingWorkbench({
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={language === "th" ? "ค้นหาเลขที่, ชื่อคู่ค้า, เลขประจำตัว..." : "Search..."}
+              placeholder={tr("ops_search_2", "ค้นหาเลขที่, ชื่อคู่ค้า, เลขประจำตัว...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -272,7 +274,7 @@ export function TaxFilingWorkbench({
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">{language === "th" ? "มูลค่าสินค้า/บริการก่อนภาษี" : "Base Amount Before VAT"}</p>
+          <p className="text-xs text-muted-foreground">{tr("ops_base_amount_before_vat", "มูลค่าสินค้า/บริการก่อนภาษี")}</p>
           <p className="mt-1 text-xl font-bold text-foreground">
             {totals.beforeVat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
           </p>
@@ -282,8 +284,8 @@ export function TaxFilingWorkbench({
         <Card className="p-4">
           <p className="text-xs text-muted-foreground">
             {config.formType.includes("wht") || config.formType.includes("pnd")
-              ? (language === "th" ? "ยอดภาษีหัก ณ ที่จ่ายรวม" : "Total Withholding Tax")
-              : (language === "th" ? "ยอดภาษีมูลค่าเพิ่ม 7%" : "Total VAT 7%")}
+              ? (tr("ops_total_withholding_tax", "ยอดภาษีหัก ณ ที่จ่ายรวม"))
+              : (tr("ops_total_vat_7", "ยอดภาษีมูลค่าเพิ่ม 7%"))}
           </p>
           <p className="mt-1 text-xl font-bold text-primary">
             {(config.formType.includes("wht") || config.formType.includes("pnd") ? totals.wht : totals.vat).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
@@ -292,7 +294,7 @@ export function TaxFilingWorkbench({
         </Card>
 
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">{language === "th" ? "จำนวนรายการเอกสาร" : "Total Documents"}</p>
+          <p className="text-xs text-muted-foreground">{tr("ops_total_documents", "จำนวนรายการเอกสาร")}</p>
           <p className="mt-1 text-xl font-bold text-foreground">
             {filteredRecords.length}
           </p>
@@ -300,10 +302,10 @@ export function TaxFilingWorkbench({
         </Card>
 
         <Card className="p-4">
-          <p className="text-xs text-muted-foreground">{language === "th" ? "สถานะการตรวจสอบ" : "Compliance Status"}</p>
+          <p className="text-xs text-muted-foreground">{tr("ops_compliance_status", "สถานะการตรวจสอบ")}</p>
           <div className="mt-1 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="h-5 w-5" />
-            <span className="text-base font-semibold">{language === "th" ? "ถูกต้อง พร้อมยื่นแบบ" : "Ready to File"}</span>
+            <span className="text-base font-semibold">{tr("ops_ready_to_file", "ถูกต้อง พร้อมยื่นแบบ")}</span>
           </div>
           <span className="text-xs text-muted-foreground">Tax ID ครบ 13 หลัก</span>
         </Card>
