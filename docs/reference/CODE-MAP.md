@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit d74d0bdf - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit b6f7364a - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -767,7 +767,7 @@ Files indexed: 49
 | 2384 | function | `UpdatePOApprovalStatusToCancelled` |
 | 2455 | function | `GetApprovalStatusMapByShop` |
 
-## backend/internal/goapi/process/build/create-database.go (2458 lines)
+## backend/internal/goapi/process/build/create-database.go (2459 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -795,21 +795,21 @@ Files indexed: 49
 | 1606 | function | `DatabaseRebuildAll` |
 | 1753 | function | `DatabaseNameIsExists` |
 | 1773 | function | `DatabaseChecker` |
-| 1794 | function | `DatabaseRebuild` |
-| 1830 | function | `SyncApprovalStatusToPostgreSQL` |
-| 1872 | function | `RebuildProductsOnly` |
-| 1979 | function | `RebuildClickHouseProductBarcode` |
-| 2073 | function | `PgSqlDropDatabaseAndReProcess` |
-| 2119 | function | `CalcStockCostAll` |
-| 2134 | function | `stockEngineOptions` |
-| 2145 | function | `recalculateStockCostAll` |
-| 2168 | function | `CalcStockCostForItems` |
-| 2181 | function | `recalculateStockCostForItems` |
-| 2225 | function | `PgSqlDropDatabaseAndReProcessWithProgress` |
-| 2275 | function | `DatabaseRebuildWithProgress` |
-| 2356 | function | `CalcStockCostAllWithProgress` |
-| 2372 | function | `CalcStockCostForItemsWithProgress` |
-| 2389 | function | `RebuildDocumentFlowWithProgress` |
+| 1795 | function | `DatabaseRebuild` |
+| 1831 | function | `SyncApprovalStatusToPostgreSQL` |
+| 1873 | function | `RebuildProductsOnly` |
+| 1980 | function | `RebuildClickHouseProductBarcode` |
+| 2074 | function | `PgSqlDropDatabaseAndReProcess` |
+| 2120 | function | `CalcStockCostAll` |
+| 2135 | function | `stockEngineOptions` |
+| 2146 | function | `recalculateStockCostAll` |
+| 2169 | function | `CalcStockCostForItems` |
+| 2182 | function | `recalculateStockCostForItems` |
+| 2226 | function | `PgSqlDropDatabaseAndReProcessWithProgress` |
+| 2276 | function | `DatabaseRebuildWithProgress` |
+| 2357 | function | `CalcStockCostAllWithProgress` |
+| 2373 | function | `CalcStockCostForItemsWithProgress` |
+| 2390 | function | `RebuildDocumentFlowWithProgress` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2294 lines)
 

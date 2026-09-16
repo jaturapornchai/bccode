@@ -1772,14 +1772,15 @@ func DatabaseNameIsExists(holdingCode string) bool {
 
 func DatabaseChecker(holdingCode string, recheckData bool) {
 	// เช็คแค่ครั้งแรกต่อ shop ต่อ process (DatabaseRebuildAll เอง idempotent อยู่แล้ว
-	// แต่ยังต้องเปิด admin connection + query table list ทุกครั้ง ไม่คุ้มทำซ้ำทุก Kafka message)
+	// แต่ยังต้องเปิด admin connection + ยิง DDL ทั้งชุดทุกครั้ง ไม่คุ้มทำซ้ำทุก Kafka message)
 	lockValue, _ := databaseCheckerLocks.LoadOrStore(holdingCode, &sync.Mutex{})
 	shopLock := lockValue.(*sync.Mutex)
 	shopLock.Lock()
 	if _, alreadyChecked := checkedShops.Load(holdingCode); !alreadyChecked {
 		logger.Info("* Starting DatabaseChecker for shop %s", holdingCode)
 		// DatabaseRebuildAll ครอบคลุมทั้ง "shop ใหม่ยังไม่มี database" และ
-		// "database มีอยู่แล้วแต่ตารางบางตัวยังไม่ถูกสร้าง" (skip ตารางที่มีอยู่แล้วเอง)
+		// "database มีอยู่แล้วแต่ตาราง/คอลัมน์ยังไม่ครบ" — ยิง DDL ทุกตารางเสมอ เพราะทุกคำสั่งเป็น
+		// IF NOT EXISTS อยู่แล้ว การ skip ตารางที่มีอยู่จะข้าม ADD COLUMN ไปด้วย (bug 2026-09-16)
 		DatabaseRebuildAll(holdingCode)
 		checkedShops.Store(holdingCode, true)
 	}
