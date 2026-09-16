@@ -3,10 +3,12 @@
  *
  * Source of truth note:
  * backend `assets/language/languages.tsv` is the canonical label registry.
- * The keys below should eventually be backed by language API; until those keys
- * land in TSV we keep a local Thai/English fallback so the screen ships.
- * Each key here SHOULD have a matching entry in TSV — see
- * `backend/prompts/language_requests/product-barcode-screen.md` for batch.
+ * Since 2026-09-16 every property here has its own `barcode_<snake_case>` row
+ * in the TSV (all 13 columns), so the screen speaks all twelve languages and the
+ * Proxy below resolves each string from its own row instead of falling through
+ * to a generic key — `title` used to land on the unrelated row "dede POS".
+ * The Thai/English packs stay as the offline fallback when the API is down.
+ * Adding a property here means adding its `barcode_*` row in the same commit.
  */
 
 import { type LanguageCode, normalizeLanguage } from "@/lib/i18n";

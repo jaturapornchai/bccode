@@ -179,6 +179,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 - คีย์ที่จอจริงใช้ = grep `backendText(dict, "key"` + `tr("key"` + `languageKey:` + `counterpartyKey:` ใน `frontend/src` (2026-09-16 ได้ 1,159 คีย์) — ตรวจเฉพาะชุดนี้ก่อน คุ้มกว่าไล่ทั้ง 6,041 แถว
 - คีย์ที่โค้ดเรียกแต่**ไม่มีแถวใน tsv** = `Text()` คืน key ดิบขึ้นจอ ต้องเติมแถวทันที (รอบนี้เจอ 6 คีย์จาก `workspace-screen.tsx`)
 - ตรวจ Thai leakage ด้วย regex `[฀-฾เ-๿]` **ไม่ใช่ `[฀-๿]`** — ช่วงเต็มกินสัญลักษณ์บาท `฿` (U+0E3F) ทำให้แถวที่ถูกต้องอย่าง `product_set_price_delta` ("加/减 (฿):") ถูกตีว่าเป็นไทยหลุด
+- **กับดักคีย์ชนกัน:** `getBarcodeText()` (`frontend/src/lib/product-barcode/language.ts:1115-1138`) ใช้ Proxy ไล่หา `barcode_<snake>` → `<snake>` → `<prop>` ตามลำดับ ถ้าไม่มีแถว `barcode_*` มันจะหยิบคีย์กลางที่ชื่อพ้องกันมาแทน — เดิม `text.title` จึงขึ้นว่า "dede POS" (แถว `title`) และ `text.filter` ขึ้น "ค้นหา" (แถว `filter`) แก้ด้วยการสร้างแถวเฉพาะของจอครบทั้ง 467 property (2026-09-16); helper ตัวใดที่ fallback เป็นชื่อคีย์กว้าง ๆ ต้องตรวจแบบเดียวกัน
 - ทดสอบจริง: `docker cp backend/assets/language/languages.tsv mainapi:/app/language/languages.tsv && docker restart mainapi` แล้ว `curl localhost:8888/goapi/api/language/ja` (ตัวโหลดอ่านไฟล์จาก disk ตอน runtime — `backend/internal/goapi/language/language.go:204`) จากนั้นรีเฟรชเบราว์เซอร์แล้วสลับภาษา
 
 ## ช่องว่าง / สิ่งที่ยังไม่ตรวจ

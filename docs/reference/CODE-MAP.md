@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit 4c430ece - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit e553d868 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 47
 
@@ -2002,11 +2002,11 @@ Files indexed: 47
 | 1069 | function | `ImageGalleryReadOnlyDetail` |
 | 1107 | function | `GalleryReadOnlyItem` |
 
-## frontend/src/lib/product-barcode/language.ts (1139 lines)
+## frontend/src/lib/product-barcode/language.ts (1141 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 1115 | function | `getBarcodeText` |
+| 1117 | function | `getBarcodeText` |
 
 ## backend/internal/documentwarehouse/documentimage/services/documentimagegroup_service.go (1114 lines)
 

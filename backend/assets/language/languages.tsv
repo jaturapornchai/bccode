@@ -6041,3 +6041,468 @@ product_unit_setup_confirm	เพิ่มอัตโนมัติ	Add automa
 product_unit_setup_skip	เข้าเมนูก่อน	Enter menu first	请先进入菜单	先にメニューに入ってください	សូមចូលម៉ឺនុយជាមុន	먼저 메뉴에 들어가세요	ກະລຸນາເຂົ້າເມນູກ່ອນ	ကျေးဇူးပြု၍ မီနူးကို အရင်ဝင်ပါ	Vui lòng vào menu trước	Sila masuk menu dahulu	Silakan masuk menu terlebih dahulu	Pumasok muna sa menu
 clear_selection	ล้างการเลือก	Clear selection	清除选择	選択をクリア	សម្អាតការជ្រើសរើស	선택 지우기	ລ້າງການເລືອກ	ရွေးချယ်မှုကို ရှင်းလင်းပါ	Xóa lựa chọn	Kosongkan pilihan	Hapus pilihan	I-clear ang pagpili
 no_standard_product_unit	ไม่พบหน่วยนับมาตรฐานที่เพิ่มได้	No standard product units are available	没有可用的标准产品单位	利用できる標準製品単位はありません	មិនមានឯកតាផលិតផលស្តង់ដារដែលអាចប្រើបានទេ	사용 가능한 표준 제품 단위가 없습니다	ບໍ່ມີຫົວໜ່ວຍຜະລິດຕະພັນມາດຕະຖານທີ່ໃຊ້ໄດ້	ရရှိနိုင်သော စံထုတ်ကုန်ယူနစ်များ မရှိပါ	Không có đơn vị sản phẩm tiêu chuẩn khả dụng	Tiada unit produk standard yang tersedia	Tidak ada unit produk standar yang tersedia	Walang magagamit na pamantayang yunit ng produkto
+barcode_title	บาร์โค้ด	Barcode	条形码	バーコード	បាកូដ	바코드	ບາໂຄດ	ဘားကုဒ်	Mã vạch	Kod bar	Kode batang	Barcode
+barcode_subtitle	จัดการบาร์โค้ด SKU หน่วยขาย ราคา และข้อมูลอ้างอิงสินค้า	จัดการบาร์โค้ด SKU หน่วยขาย ราคา และข้อมูลอ้างอิงสินค้า	管理条形码、SKU、销售单位、价格和商品参考信息	バーコード、SKU、販売単位、価格、商品参照情報を管理	គ្រប់គ្រងបាកូដ SKU ឯកតាលក់ តម្លៃ និងព័ត៌មានយោងទំនិញ	바코드, SKU, 판매 단위, 가격 및 상품 참조 정보 관리	ຈັດການບາໂຄດ, SKU, ໜ່ວຍຂາຍ, ລາຄາ ແລະ ຂໍ້ມູນອ້າງອີງສິນຄ້າ	ဘားကုဒ်၊ SKU၊ ရောင်းချမှုယူနစ်၊ ဈေးနှုန်းနှင့် ကုန်ပစ္စည်းကိုးကားချက်အချက်အလက်များကို စီမံပါ	Quản lý mã vạch, SKU, đơn vị bán, giá và thông tin tham chiếu sản phẩm	Urus kod bar, SKU, unit jualan, harga dan maklumat rujukan produk	Kelola kode batang, SKU, unit penjualan, harga, dan informasi referensi produk	Pamahalaan ang barcode, SKU, yunit ng benta, presyo at impormasyon ng sanggunian ng produkto
+barcode_tenant	บริษัท	Company	公司	会社	ក្រុមហ៊ុន	회사	ບໍລິສັດ	ကုမ္ပဏီ	Công ty	Syarikat	Perusahaan	Kumpanya
+barcode_branch	สาขา	Branch	分店	支店	សាខា	지점	ສາຂາ	ဌာနခွဲ	Chi nhánh	Cawangan	Cabang	Sangay
+barcode_refresh	รีเฟรช	Refresh	刷新	更新	ធ្វើឱ្យថ្មី	새로고침	ໂຫຼດຄືນ	ပြန်လည်ဆန်းသစ်ပါ	Làm mới	Muat semula	Segarkan	I-refresh
+barcode_export	ส่งออก	Export	导出	エクスポート	នាំចេញ	내보내기	ສົ່ງອອກ	ထုတ်ယူပါ	Xuất	Eksport	Ekspor	I-export
+barcode_import	นำเข้า	Import	导入	インポート	នាំចូល	가져오기	ນຳເຂົ້າ	သွင်းယူပါ	Nhập	Import	Impor	I-import
+barcode_select_delete	เลือกเพื่อลบ	Select to delete	选择以删除	選択して削除	ជ្រើសរើសដើម្បីលុប	삭제하려면 선택	ເລືອກເພື່ອລຶບ	ဖျက်ရန် ရွေးပါ	Chọn để xóa	Pilih untuk padam	Pilih untuk menghapus	Piliin upang tanggalin
+barcode_cancel_select	ยกเลิกเลือก	Cancel selection	取消选择	選択解除	បោះបង់ការជ្រើសរើស	선택 취소	ຍົກເລີກການເລືອກ	ရွေးချယ်မှုကို ပယ်ဖျက်ပါ	Hủy chọn	Batal pilihan	Batalkan pilihan	Kanselahin ang pagpili
+barcode_add	เพิ่ม	Add	添加	追加	បន្ថែម	추가	ເພີ່ມ	ထည့်ပါ	Thêm	Tambah	Tambah	Idagdag
+barcode_search	ค้นหา บาร์โค้ด ชื่อสินค้า หรือรหัสสินค้า	Search barcode, name, or item code	搜索条码、名称或商品代码	バーコード、名前、または商品コードを検索	ស្វែងរកបាកូដ ឈ្មោះ ឬលេខកូដទំនិញ	바코드, 이름 또는 품목 코드 검색	ຄົ້ນຫາບາໂຄດ, ຊື່ ຫຼື ລະຫັດສິນຄ້າ	ဘားကုဒ်၊ အမည် သို့မဟုတ် ကုန်ပစ္စည်းကုဒ်ကို ရှာပါ	Tìm mã vạch, tên hoặc mã mặt hàng	Cari kod bar, nama, atau kod item	Cari kode batang, nama, atau kode barang	Maghanap ng barcode, pangalan, o code ng item
+barcode_filter	ตัวกรอง	Filter	筛选	フィルター	តម្រង	필터	ຕົວກອງ	စစ်ထုတ်ပါ	Lọc	Penapis	Filter	I-filter
+barcode_sort_by	เรียงตาม	Sort by	排序方式	並び替え	តម្រៀបតាម	정렬 기준	ຈັດຮຽງຕາມ	စီရန်	Sắp xếp theo	Susun mengikut	Urutkan menurut	Pagbukud-bukurin ayon sa
+barcode_sort_order	ลำดับ	Order	顺序	順序	លំដាប់	순서	ລຳດັບ	အစဉ်	Thứ tự	Susunan	Urutan	Pagkakasunod-sunod
+barcode_sort_asc	น้อย → มาก	Ascending	升序	昇順	តិច → ច្រើន	오름차순	ໜ້ອຍ → ຫຼາຍ	နည်း → များ	Tăng dần	Menaik	Naik	Pataas
+barcode_sort_desc	มาก → น้อย	Descending	降序	降順	ច្រើន → តិច	내림차순	ຫຼາຍ → ໜ້ອຍ	များ → နည်း	Giảm dần	Menurun	Turun	Pababa
+barcode_show_image	แสดงรูป	Show image	显示图片	画像を表示	បង្ហាញរូបភាព	이미지 표시	ສະແດງຮູບ	ပုံပြပါ	Hiện ảnh	Papar imej	Tampilkan gambar	Ipakita ang larawan
+barcode_hide_image	ซ่อนรูป	Hide image	隐藏图片	画像を隠す	លាក់រូបភាព	이미지 숨기기	ເຊື່ອງຮູບ	ပုံဖျောက်ပါ	Ẩn ảnh	Sembunyikan imej	Sembunyikan gambar	Itago ang larawan
+barcode_group_code	กลุ่มสินค้า	Group	商品组	商品グループ	ក្រុមទំនិញ	상품 그룹	ກຸ່ມສິນຄ້າ	ကုန်ပစ္စည်းအုပ်စု	Nhóm hàng	Kumpulan barang	Grup barang	Grupo ng produkto
+barcode_brand_code	ยี่ห้อ	Brand	品牌	ブランド	ម៉ាក	브랜드	ຍີ່ຫໍ້	အမှတ်တံဆိပ်	Thương hiệu	Jenama	Merek	Tatak
+barcode_category_code	หมวดสินค้า	Category	商品分类	カテゴリ	ប្រភេទ	카테고리	ໝວດ	အမျိုးအစား	Danh mục	Kategori	Kategori	Kategorya
+barcode_class_code	Class	Class	类别	クラス	ថ្នាក់	클래스	ຊັ້ນ	အတန်း	Lớp	Kelas	Kelas	Klase
+barcode_design_code	Design	Design	设计	デザイン	ការរចនា	디자인	ການອອກແບບ	ဒီဇိုင်း	Thiết kế	Reka bentuk	Desain	Disenyo
+barcode_grade_code	Grade	Grade	等级	等級	កម្រិត	등급	ລະດັບ	အဆင့်	Hạng	Gred	Mutu	Baitang
+barcode_model_code	Model	Model	型号	モデル	ម៉ូដែល	모델	ຮຸ່ນ	မော်ဒယ်	Mẫu	Model	Model	Modelo
+barcode_pattern_code	Pattern	Pattern	款式	パターン	លំនាំ	패턴	ລວດລາຍ	ပုံစံ	Kiểu	Corak	Pola	Padron
+barcode_price_min	ราคาต่ำสุด	Min price	最低价	最低価格	តម្លៃអប្បបរមា	최저 가격	ລາຄາຕ່ຳສຸດ	အနိမ့်ဆုံးဈေး	Giá thấp nhất	Harga minimum	Harga minimum	Pinakamababang presyo
+barcode_price_max	ราคาสูงสุด	Max price	最高价	最高価格	តម្លៃអតិបរមា	최고 가격	ລາຄາສູງສຸດ	အမြင့်ဆုံးဈေး	Giá cao nhất	Harga maksimum	Harga maksimum	Pinakamataas na presyo
+barcode_clear_filter	ล้างตัวกรอง	Clear filter	清除筛选	フィルターをクリア	សម្អាតតម្រង	필터 지우기	ລ້າງຕົວກັ່ນຕອງ	စစ်ထုတ်မှုရှင်းရန်	Xóa bộ lọc	Kosongkan penapis	Hapus filter	I-clear ang filter
+barcode_apply_filter	ใช้ตัวกรอง	Apply filter	应用筛选	フィルターを適用	អនុវត្តតម្រង	필터 적용	ນຳໃຊ້ຕົວກັ່ນຕອງ	စစ်ထုတ်မှုကိုသုံးပါ	Áp dụng bộ lọc	Guna penapis	Terapkan filter	Ilapat ang filter
+barcode_total	ทั้งหมด	Total	总计	合計	សរុប	합계	ທັງໝົດ	စုစုပေါင်း	Tổng cộng	Jumlah	Total	Kabuuan
+barcode_selected	เลือกแล้ว	Selected	已选	選択中	បានជ្រើសរើស	선택됨	ເລືອກແລ້ວ	ရွေးထားသည်	Đã chọn	Dipilih	Terpilih	Napili
+barcode_barcode	บาร์โค้ด	Barcode	条形码	バーコード	បាកូដ	바코드	ບາໂຄດ	ဘားကုဒ်	Mã vạch	Kod bar	Kode batang	Barcode
+barcode_product_name	ชื่อสินค้า	Product	产品	商品	ផលិតផល	상품	ສິນຄ້າ	ကုန်ပစ္စည်း	Sản phẩm	Produk	Produk	Produkto
+barcode_unit	หน่วย	Unit	单位	単位	ឯកតា	단위	ໜ່ວຍ	ယူနစ်	Đơn vị	Unit	Satuan	Yunit
+barcode_item_code	รหัสสินค้า	Item code	商品代码	商品コード	កូដទំនិញ	품목 코드	ລະຫັດສິນຄ້າ	ကုန်ပစ္စည်းကုဒ်	Mã hàng	Kod item	Kode barang	Kodigo ng item
+barcode_balance	คงเหลือ	Balance	余额	残高	សមតុល្យ	잔여	ຍອດຄົງເຫຼືອ	လက်ကျန်	Số dư	Baki	Saldo	Balanse
+barcode_retail_price	ราคาขาย	Retail price	零售价	小売価格	តម្លៃរាយ	소매가	ລາຄາຂາຍຍ່ອຍ	လက်လီစျေး	Giá bán lẻ	Harga runcit	Harga eceran	Presyo sa tingi
+barcode_image	รูป	Image	图片	画像	រូបភាព	이미지	ຮູບພາບ	ပုံ	Hình ảnh	Imej	Gambar	Larawan
+barcode_actions	การจัดการ	Actions	操作	操作	សកម្មភាព	작업	ການດຳເນີນການ	လုပ်ဆောင်ချက်များ	Thao tác	Tindakan	Tindakan	Mga aksyon
+barcode_detail_title	รายละเอียดบาร์โค้ด	Barcode detail	条码详情	バーコード詳細	លម្អិតបាកូដ	바코드 상세	ລາຍລະອຽດບາໂຄດ	ဘားကုဒ်အသေးစိတ်	Chi tiết mã vạch	Butiran kod bar	Detail kode batang	Detalye ng barcode
+barcode_no_selection	เลือกรายการด้านซ้ายเพื่อดูรายละเอียด	Select a row to see details	选择左侧行查看详情	左の行を選択して詳細を表示	ជ្រើសរើសជួរដេកខាងឆ្វេងដើម្បីមើលលម្អិត	왼쪽 행을 선택하여 세부 정보 보기	ເລືອກແຖວດ້ານຊ້າຍເພື່ອເບິ່ງລາຍລະອຽດ	အသေးစိတ်ကြည့်ရန် ဘယ်ဘက်အတန်းကို ရွေးပါ	Chọn hàng bên trái để xem chi tiết	Pilih baris di kiri untuk lihat butiran	Pilih baris di kiri untuk melihat detail	Pumili ng row sa kaliwa para makita ang mga detalye
+barcode_loading	กำลังโหลดข้อมูลบาร์โค้ด	Loading barcodes	正在加载条码	バーコードを読み込み中	កំពុងផ្ទុកបាកូដ	바코드 로딩 중	ກຳລັງໂຫຼດບາໂຄດ	ဘားကုဒ်များ ဖွင့်နေသည်	Đang tải mã vạch	Memuatkan kod bar	Memuat kode batang	Naglo-load ng mga barcode
+barcode_no_data	ไม่พบข้อมูลบาร์โค้ด	No barcode data	无条码数据	バーコードデータがありません	គ្មានទិន្នន័យបាកូដ	바코드 데이터 없음	ບໍ່ພົບຂໍ້ມູນບາໂຄດ	ဘားကုဒ်ဒေတာမရှိပါ	Không có dữ liệu mã vạch	Tiada data kod bar	Tidak ada data kode batang	Walang data ng barcode
+barcode_api_required	กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนเปิดหน้าจอนี้	Please sign in and pick a company	请登录并选择公司	サインインして会社を選択してください	សូមចូលគណនីហើយជ្រើសរើសក្រុមហ៊ុន	로그인하고 회사를 선택하세요	ກະລຸນາເຂົ້າສູ່ລະບົບແລະເລືອກບໍລິສັດ	ဝင်ရောက်ပြီး ကုမ္ပဏီရွေးချယ်ပါ	Vui lòng đăng nhập và chọn công ty	Sila log masuk dan pilih syarikat	Silakan masuk dan pilih perusahaan	Mag-sign in at pumili ng kumpanya
+barcode_request_failed	โหลดข้อมูลไม่สำเร็จ	Failed to load data	加载数据失败	データの読み込みに失敗しました	ផ្ទុកទិន្នន័យមិនបានសម្រេច	데이터 로드 실패	ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ	ဒေတာဖွင့်ရန် မအောင်မြင်ပါ	Tải dữ liệu thất bại	Gagal memuat data	Gagal memuat data	Nabigong i-load ang data
+barcode_edit	แก้ไข	Edit	编辑	編集	កែសម្រួល	편집	ແກ້ໄຂ	ပြင်ဆင်ရန်	Sửa	Sunting	Ubah	I-edit
+barcode_save	บันทึก	Save	保存	保存	រក្សាទុក	저장	ບັນທຶກ	သိမ်းဆည်းရန်	Lưu	Simpan	Simpan	I-save
+barcode_saving	กำลังบันทึก…	Saving…	正在保存…	保存中…	កំពុងរក្សាទុក…	저장 중…	ກຳລັງບັນທຶກ…	သိမ်းဆည်းနေသည်…	Đang lưu…	Menyimpan…	Menyimpan…	Sine-save…
+barcode_close	ปิด	Close	关闭	閉じる	បិទ	닫기	ປິດ	ပိတ်မည်	Đóng	Tutup	Tutup	Isara
+barcode_cancel	ยกเลิก	Cancel	取消	キャンセル	បោះបង់	취소	ຍົກເລີກ	ပယ်ဖျက်မည်	Hủy	Batal	Batal	Kanselahin
+barcode_create_title	เพิ่มบาร์โค้ด	Add barcode	添加条形码	バーコードを追加	បន្ថែមបាកូដ	바코드 추가	ເພີ່ມບາໂຄດ	ဘားကုဒ်ထည့်ရန်	Thêm mã vạch	Tambah kod bar	Tambah kode batang	Magdagdag ng barcode
+barcode_edit_title	แก้ไขบาร์โค้ด	Edit barcode	编辑条形码	バーコードを編集	កែប្រែបាកូដ	바코드 편집	ແກ້ໄຂບາໂຄດ	ဘားကုဒ်ပြင်ရန်	Sửa mã vạch	Edit kod bar	Edit kode batang	I-edit ang barcode
+barcode_copy	คัดลอก	Copy	复制	コピー	ចម្លង	복사	ສຳເນົາ	ကူးယူမည်	Sao chép	Salin	Salin	Kopyahin
+barcode_delete	ลบ	Delete	删除	削除	លុប	삭제	ລຶບ	ဖျက်မည်	Xóa	Padam	Hapus	Tanggalin
+barcode_preview	ตัวอย่าง	Preview	预览	プレビュー	មើលជាមុន	미리보기	ເບິ່ງຕົວຢ່າງ	အစမ်းကြည့်ရန်	Xem trước	Pratonton	Pratinjau	Silipin
+barcode_save_success	บันทึกบาร์โค้ดแล้ว	Barcode saved	条码已保存	バーコードを保存しました	បានរក្សាទុកបាកូដ	바코드 저장됨	ບັນທຶກບາໂຄດແລ້ວ	ဘားကုဒ်ကို သိမ်းဆည်းပြီးပါပြီ	Đã lưu mã vạch	Kod bar disimpan	Kode batang disimpan	Nai-save ang barcode
+barcode_delete_confirm	ต้องการลบบาร์โค้ดที่เลือกจริงหรือไม่	Confirm delete selected barcodes?	确认删除所选条码吗？	選択したバーコードを削除しますか？	តើអ្នកចង់លុបបាកូដដែលបានជ្រើសរើសមែនទេ?	선택한 바코드를 삭제하시겠습니까?	ຢືນຢັນລຶບບາໂຄດທີ່ເລືອກບໍ?	ရွေးထားသော ဘားကုဒ်များကို ဖျက်ရန် အတည်ပြုမလား။	Xác nhận xóa các mã vạch đã chọn?	Sahkan padam kod bar terpilih?	Konfirmasi hapus kode batang terpilih?	Kumpirmahing tanggalin ang mga napiling barcode?
+barcode_delete_success	ลบบาร์โค้ดแล้ว	Barcodes deleted	条码已删除	バーコードを削除しました	បានលុបបាកូដ	바코드 삭제됨	ລຶບບາໂຄດແລ້ວ	ဘားကုဒ်များ ဖျက်ပြီးပါပြီ	Đã xóa mã vạch	Kod bar dipadam	Kode batang dihapus	Na-delete ang mga barcode
+barcode_missing_guid	รายการที่เลือกไม่มี GUID สำหรับลบ	No GUID to delete	所选项目没有可删除的 GUID	選択項目に削除するGUIDがありません	ធាតុដែលបានជ្រើសរើសមិនមាន GUID សម្រាប់លុបទេ	선택한 항목에 삭제할 GUID가 없습니다	ລາຍການທີ່ເລືອກບໍ່ມີ GUID ສຳລັບລຶບ	ဖျက်ရန် GUID မရှိပါ	Mục đã chọn không có GUID để xóa	Tiada GUID untuk dipadam	Tidak ada GUID untuk dihapus	Walang GUID na ide-delete
+barcode_export_success	ส่งออกข้อมูลที่แสดงอยู่แล้ว	Exported current rows	已导出当前行	現在の行をエクスポートしました	បាននាំចេញជួរដេកបច្ចុប្បន្ន	현재 행을 내보냈습니다	ສົ່ງອອກແຖວປັດຈຸບັນແລ້ວ	လက်ရှိအတန်းများကို ထုတ်ယူပြီးပါပြီ	Đã xuất các dòng hiện tại	Baris semasa dieksport	Baris saat ini diekspor	Na-export ang kasalukuyang mga row
+barcode_product_master_title	ข้อมูลสินค้าหลัก	Product Master	产品主数据	商品マスタ	មេផលិតផល	제품 마스터	ຂໍ້ມູນສິນຄ້າຫຼັກ	ကုန်ပစ္စည်းမာစတာ	Sản phẩm chính	Induk Produk	Master Produk	Master ng Produkto
+barcode_product_master_subtitle	จัดการสินค้าหลักและผูกความสัมพันธ์กับบาร์โค้ด	จัดการสินค้าหลักและผูกความสัมพันธ์กับบาร์โค้ด	管理产品主数据并关联条码关系	商品マスタを管理し、バーコードとの関連を紐付けます	គ្រប់គ្រងមេផលិតផល និងភ្ជាប់ទំនាក់ទំនងបាកូដ	제품 마스터를 관리하고 바코드 관계를 연결합니다	ຈັດການຂໍ້ມູນສິນຄ້າຫຼັກ ແລະເຊື່ອມໂຍງຄວາມສຳພັນບາໂຄດ	ကုန်ပစ္စည်းမာစတာကို စီမံပြီး ဘားကုဒ်ဆက်စပ်မှုများကို ချိတ်ဆက်ပါ	Quản lý sản phẩm chính và liên kết quan hệ mã vạch	Urus Induk Produk dan hubungkan hubungan kod bar	Kelola Master Produk dan tautkan relasi kode batang	Pamahalaan ang Master ng Produkto at i-link ang mga relasyon ng barcode
+barcode_product_master_search	ค้นหาชื่อ หรือรหัสสินค้า	Search name or item code	搜索名称或商品代码	名前または商品コードを検索	ស្វែងរកឈ្មោះ ឬលេខកូដទំនិញ	이름 또는 품목 코드 검색	ຄົ້ນຫາຊື່ ຫຼືລະຫັດສິນຄ້າ	အမည် သို့မဟုတ် ကုန်ပစ္စည်းကုဒ် ရှာဖွေပါ	Tìm kiếm tên hoặc mã mặt hàng	Cari nama atau kod item	Cari nama atau kode item	Maghanap ng pangalan o item code
+barcode_product_master_add	เพิ่มสินค้า	Add Product	添加产品	商品を追加	បន្ថែមផលិតផល	제품 추가	ເພີ່ມສິນຄ້າ	ကုန်ပစ္စည်းထည့်ရန်	Thêm sản phẩm	Tambah Produk	Tambah Produk	Magdagdag ng Produkto
+barcode_product_master_detail_title	รายละเอียดสินค้าหลัก	Product Detail	产品详情	商品詳細	ព័ត៌មានលម្អិតផលិតផល	제품 상세	ລາຍລະອຽດສິນຄ້າ	ကုန်ပစ္စည်းအသေးစိတ်	Chi tiết sản phẩm	Butiran Produk	Detail Produk	Detalye ng Produkto
+barcode_product_master_create_title	เพิ่มสินค้าใหม่	Create New Product	新建产品	新規商品作成	បង្កើតផលិតផលថ្មី	새 제품 생성	ສ້າງສິນຄ້າໃໝ່	ကုန်ပစ္စည်းအသစ်ဖန်တီးရန်	Tạo sản phẩm mới	Cipta Produk Baharu	Buat Produk Baru	Gumawa ng Bagong Produkto
+barcode_product_master_edit_title	แก้ไขสินค้า	Edit Product	编辑产品	商品編集	កែសម្រួលផលិតផល	제품 편집	ແກ້ໄຂສິນຄ້າ	ကုန်ပစ္စည်းပြင်ဆင်ရန်	Chỉnh sửa sản phẩm	Sunting Produk	Edit Produk	I-edit ang Produkto
+barcode_product_master_save_success	บันทึกสินค้าแล้ว	Product saved successfully	产品保存成功	商品を保存しました	បានរក្សាទុកផលិតផលដោយជោគជ័យ	제품이 저장되었습니다	ບັນທຶກສິນຄ້າສຳເລັດແລ້ວ	ကုန်ပစ္စည်းကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ	Đã lưu sản phẩm thành công	Produk berjaya disimpan	Produk berhasil disimpan	Matagumpay na na-save ang produkto
+barcode_product_master_delete_confirm	ต้องการลบสินค้านี้จริงหรือไม่?	Are you sure you want to delete this product?	确定要删除此产品吗?	この商品を削除してもよろしいですか?	តើអ្នកពិតជាចង់លុបផលិតផលនេះមែនទេ?	이 제품을 삭제하시겠습니까?	ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບສິນຄ້ານີ້?	ဤကုန်ပစ္စည်းကို ဖျက်လိုသည်မှာ သေချာပါသလား?	Bạn có chắc chắn muốn xóa sản phẩm này không?	Adakah anda pasti mahu memadamkan produk ini?	Apakah Anda yakin ingin menghapus produk ini?	Sigurado ka bang gusto mong tanggalin ang produktong ito?
+barcode_product_master_delete_success	ลบสินค้าสำเร็จ	Product deleted successfully	产品删除成功	商品を削除しました	បានលុបផលិតផលដោយជោគជ័យ	제품이 삭제되었습니다	ລຶບສິນຄ້າສຳເລັດແລ້ວ	ကုန်ပစ္စည်းကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ	Đã xóa sản phẩm thành công	Produk berjaya dipadamkan	Produk berhasil dihapus	Matagumpay na natanggal ang produkto
+barcode_product_master_code_required	กรุณากรอกรหัสสินค้า	Item code is required	商品代码为必填项	商品コードは必須です	ត្រូវការលេខកូដទំនិញ	품목 코드는 필수입니다	ຕ້ອງການລະຫັດສິນຄ້າ	ကုန်ပစ္စည်းကုဒ် လိုအပ်ပါသည်	Mã sản phẩm là bắt buộc	Kod item diperlukan	Kode item wajib diisi	Kinakailangan ang code ng item
+barcode_product_master_name_required	กรุณากรอกชื่อสินค้าอย่างน้อย 1 ภาษา	At least one product name is required	至少需要填写一个产品名称	商品名を1つ以上入力してください	ត្រូវបំពេញឈ្មោះផលិតផលយ៉ាងតិចមួយ	제품명을 하나 이상 입력해야 합니다	ກະລຸນາປ້ອນຊື່ສິນຄ້າຢ່າງໜ້ອຍໜຶ່ງພາສາ	အနည်းဆုံး ကုန်ပစ္စည်းအမည်တစ်ခု ဖြည့်ရန်လိုအပ်ပါသည်	Cần nhập ít nhất một tên sản phẩm	Sekurang-kurangnya satu nama produk diperlukan	Minimal satu nama produk wajib diisi	Kailangan ng hindi bababa sa isang pangalan ng produkto
+barcode_code_required	กรุณากรอกรหัสสินค้า	Item code is required	请填写商品代码	商品コードを入力してください	ត្រូវបំពេញលេខកូដទំនិញ	품목 코드를 입력해야 합니다	ກະລຸນາປ້ອນລະຫັດສິນຄ້າ	ပစ္စည်းကုဒ် ဖြည့်ရန်လိုအပ်ပါသည်	Cần nhập mã mặt hàng	Kod item diperlukan	Kode barang wajib diisi	Kinakailangan ang code ng item
+barcode_name_required	กรุณากรอกชื่อสินค้าอย่างน้อย 1 ภาษา	At least one product name is required	至少需要填写一个产品名称	商品名を1つ以上入力してください	ត្រូវបំពេញឈ្មោះផលិតផលយ៉ាងតិចមួយ	제품명을 하나 이상 입력해야 합니다	ກະລຸນາປ້ອນຊື່ສິນຄ້າຢ່າງໜ້ອຍໜຶ່ງພາສາ	အနည်းဆုံး ကုန်ပစ္စည်းအမည်တစ်ခု ဖြည့်ရန်လိုအပ်ပါသည်	Cần nhập ít nhất một tên sản phẩm	Sekurang-kurangnya satu nama produk diperlukan	Minimal satu nama produk wajib diisi	Kailangan ng hindi bababa sa isang pangalan ng produkto
+barcode_manufacturers	ผู้ผลิต (ได้หลายคน)	Manufacturers (Multiple)	制造商（可多个）	製造元（複数可）	ក្រុមហ៊ុនផលិត (ច្រើន)	제조업체(복수)	ຜູ້ຜະລິດ (ຫຼາຍ)	ထုတ်လုပ်သူများ (အများအပြား)	Nhà sản xuất (Nhiều)	Pengilang (Pelbagai)	Produsen (Beberapa)	Mga Manufacturer (Maramihan)
+barcode_add_manufacturer	เพิ่มผู้ผลิต	Add Manufacturer	添加制造商	製造元を追加	បន្ថែមក្រុមហ៊ុនផលិត	제조업체 추가	ເພີ່ມຜູ້ຜະລິດ	ထုတ်လုပ်သူထည့်ရန်	Thêm nhà sản xuất	Tambah Pengilang	Tambah Produsen	Magdagdag ng Manufacturer
+barcode_suppliers	ผู้จำหน่าย/ผู้ขาย (ได้หลายคน)	Suppliers/Creditors (Multiple)	供应商/债权人（可多个）	仕入先/債権者（複数可）	អ្នកផ្គត់ផ្គង់/ម្ចាស់បំណុល (ច្រើន)	공급업체/채권자(복수)	ຜູ້ສະໜອງ/ເຈົ້າໜີ້ (ຫຼາຍ)	ပေးသွင်းသူ/မြီရှင်များ (အများအပြား)	Nhà cung cấp/Chủ nợ (Nhiều)	Pembekal/Pemiutang (Pelbagai)	Pemasok/Kreditur (Beberapa)	Mga Supplier/Nagpapautang (Maramihan)
+barcode_add_supplier	เพิ่มผู้จำหน่าย	Add Supplier	添加供应商	仕入先を追加	បន្ថែមអ្នកផ្គត់ផ្គង់	공급업체 추가	ເພີ່ມຜູ້ສະໜອງ	ပေးသွင်းသူထည့်ရန်	Thêm nhà cung cấp	Tambah Pembekal	Tambah Pemasok	Magdagdag ng Supplier
+barcode_groupsubone	กลุ่มย่อย 1	Sub Group 1	子分组1	サブグループ1	ក្រុមរង 1	하위 그룹 1	ກຸ່ມຍ່ອຍ 1	အုပ်စုခွဲ 1	Nhóm phụ 1	Sub Kumpulan 1	Sub Grup 1	Sub Group 1
+barcode_groupsubtwo	กลุ่มย่อย 2	Sub Group 2	子组2	サブグループ2	ក្រុមរង ២	하위 그룹 2	ກຸ່ມຍ່ອຍ 2	အုပ်စုခွဲ ၂	Nhóm phụ 2	Sub Kumpulan 2	Sub Grup 2	Subgroup 2
+barcode_class	คลาสสินค้า	Product Class	产品类别	製品クラス	ថ្នាក់ផលិតផល	제품 분류	ປະເພດສິນຄ້າ	ကုန်ပစ္စည်းအမျိုးအစား	Lớp sản phẩm	Kelas Produk	Kelas Produk	Klase ng Produkto
+barcode_bom_view	ดูสูตรการผลิต	View BOM	查看BOM	BOM表示	មើល BOM	BOM 보기	ເບິ່ງ BOM	BOM ကြည့်ရန်	Xem BOM	Lihat BOM	Lihat BOM	Tingnan ang BOM
+barcode_price_history	ประวัติราคา	Price history	价格历史	価格履歴	ប្រវត្តិតម្លៃ	가격 이력	ປະຫວັດລາຄາ	ဈေးနှုန်းမှတ်တမ်း	Lịch sử giá	Sejarah Harga	Riwayat Harga	Kasaysayan ng Presyo
+barcode_label_print	พิมพ์ป้ายสินค้า	Print label	打印标签	ラベル印刷	បោះពុម្ពស្លាក	라벨 인쇄	ພິມປ້າຍ	အညွှန်းထုတ်ရန်	In nhãn	Cetak label	Cetak label	I-print ang label
+barcode_tab_basic	ข้อมูลหลัก	Basic	基本	基本	មូលដ្ឋាន	기본	ພື້ນຖານ	အခြေခံ	Cơ bản	Asas	Dasar	Batayan
+barcode_tab_classification	หมวดหมู่	Classification	分类	分類	ចំណាត់ថ្នាក់	분류	ການຈັດປະເພດ	အမျိုးအစားခွဲခြားမှု	Phân loại	Klasifikasi	Klasifikasi	Klasipikasyon
+barcode_tab_pricing	ราคา	Pricing	价格	価格	តម្លៃ	가격	ລາຄາ	ဈေးနှုန်း	Định giá	Harga	Harga	Pagpepresyo
+barcode_tab_stock	คงคลัง	Stock	库存	在庫	ស្តុក	재고	ສະຕັອກ	စတော့	Kho	Stok	Stok	Stock
+barcode_tab_units	หน่วยและการแปลง	Units & Conversion	单位与换算	単位と換算	ឯកតា និងការបម្លែង	단위 및 변환	ໜ່ວຍ ແລະ ການແປງ	ယူနစ်နှင့် ပြောင်းလဲခြင်း	Đơn vị & Chuyển đổi	Unit & Penukaran	Unit & Konversi	Yunit at Conversion
+barcode_tab_bom	สูตรการผลิต (BOM)	BOM	物料清单	部品表	BOM	BOM	BOM	BOM	BOM	BOM	BOM	BOM
+barcode_tab_media	ภาพและสี	Image & Color	图片与颜色	画像と色	រូបភាព និងពណ៌	이미지 및 색상	ຮູບພາບ ແລະ ສີ	ပုံများနှင့် အရောင်	Hình ảnh & Màu sắc	Imej & Warna	Gambar & Warna	Larawan at Kulay
+barcode_tab_restaurant	ร้านอาหาร/POS	Restaurant / POS	餐厅/POS	レストラン/POS	ភោជនីយដ្ឋាន/POS	레스토랑/POS	ຮ້ານອາຫານ/POS	စားသောက်ဆိုင်/POS	Nhà hàng/POS	Restoran/POS	Restoran/POS	Restaurant/POS
+barcode_tab_time_for_sales	เวลาขาย	Time for sales	销售时间	販売時間	ពេលវេលាលក់	판매 시간	ເວລາຂາຍ	အရောင်းအချိန်	Thời gian bán hàng	Masa jualan	Waktu penjualan	Oras ng pagbebenta
+barcode_tab_dimensions	ขนาด	Dimensions	尺寸	寸法	វិមាត្រ	치수	ຂະໜາດ	အတိုင်းအတာ	Kích thước	Dimensi	Dimensi	Mga Dimensyon
+barcode_tab_business_branch	ธุรกิจ/สาขา	Business / Branch	业务/分店	事業/支店	អាជីវកម្ម/សាខា	사업/지점	ທຸລະກິດ/ສາຂາ	လုပ်ငန်း/ဌာနခွဲ	Doanh nghiệp/Chi nhánh	Perniagaan/Cawangan	Bisnis/Cabang	Negosyo/Sangay
+barcode_tab_misc	อื่นๆ	Other	其他	その他	ផ្សេងៗ	기타	ອື່ນໆ	အခြား	Khác	Lain-lain	Lainnya	Iba pa
+barcode_tab_product_detail	ข้อมูลสินค้าหลัก	Main Product Info	主商品信息	主商品情報	ព័ត៌មានផលិតផលចម្បង	주요 상품 정보	ຂໍ້ມູນສິນຄ້າຫຼັກ	အဓိကကုန်ပစ္စည်းအချက်အလက်	Thông tin sản phẩm chính	Maklumat Produk Utama	Informasi Produk Utama	Pangunahing Impormasyon ng Produkto
+barcode_required	จำเป็น	Required	必填	必須	ចាំបាច់	필수	ຈຳເປັນ	လိုအပ်သည်	Bắt buộc	Wajib	Wajib	Kinakailangan
+barcode_optional	ไม่บังคับ	Optional	可选	任意	ជម្រើស	선택	ທາງເລືອກ	ရွေးချယ်ခွင့်	Tùy chọn	Pilihan	Opsional	Opsyonal
+barcode_names	ชื่อสินค้า	Names	名称	名前	ឈ្មោះ	이름	ຊື່	အမည်များ	Tên	Nama	Nama	Mga Pangalan
+barcode_product	สินค้าหลัก	Main Product	主商品	主商品	ផលិតផលចម្បង	주요 상품	ສິນຄ້າຫຼັກ	အဓိကကုန်ပစ္စည်း	Sản phẩm chính	Produk Utama	Produk Utama	Pangunahing Produkto
+barcode_add_language	เพิ่มภาษาอื่น	Add language	添加语言	言語を追加	បន្ថែមភាសា	언어 추가	ເພີ່ມພາສາ	ဘာသာစကားထည့်ရန်	Thêm ngôn ngữ	Tambah bahasa	Tambah bahasa	Magdagdag ng wika
+barcode_other_language	ภาษาอื่น	Other language	其他语言	その他の言語	ភាសាផ្សេងទៀត	기타 언어	ພາສາອື່ນ	အခြားဘာသာစကား	Ngôn ngữ khác	Bahasa lain	Bahasa lainnya	Ibang wika
+barcode_multi_unit	หลายหน่วย	Multi-unit	多单位	複数単位	ច្រើនឯកតា	복수 단위	ຫຼາຍໜ່ວຍ	ယူနစ်များစွာ	Nhiều đơn vị	Berbilang unit	Multi unit	Maramihang yunit
+barcode_item_unit	หน่วยนับ	Unit	单位	単位	ឯកតា	단위	ໜ່ວຍ	ယူနစ်	Đơn vị	Unit	Unit	Yunit
+barcode_item_unit_size	ขนาดต่อหน่วย	Unit size	单位大小	単位サイズ	ទំហំឯកតា	단위 크기	ຂະໜາດໜ່ວຍ	ယူနစ်အရွယ်အစား	Kích thước đơn vị	Saiz unit	Ukuran unit	Laki ng yunit
+barcode_item_type	ประเภทไอเทม	Item type	项目类型	アイテムタイプ	ប្រភេទទំនិញ	품목 유형	ປະເພດສິນຄ້າ	ပစ္စည်းအမျိုးအစား	Loại mặt hàng	Jenis item	Jenis item	Uri ng item
+barcode_item_type_stock	สินค้ามีสต๊อก	Stock item	库存商品	在庫品目	ទំនិញមានស្តុក	재고 품목	ສິນຄ້າມີສະຕັອກ	စတော့ပစ္စည်း	Hàng tồn kho	Item stok	Item stok	Item na may stock
+barcode_item_type_service	สินค้าบริการ	Service item	服务商品	サービス品目	ទំនិញសេវាកម្ម	서비스 품목	ສິນຄ້າບໍລິການ	ဝန်ဆောင်မှုပစ္စည်း	Hàng dịch vụ	Item perkhidmatan	Item jasa	Item ng serbisyo
+barcode_item_type_set	สินค้าชุด	Set item	套装商品	セット品目	ទំនិញឈុត	세트 품목	ສິນຄ້າຊຸດ	အစုံလိုက်ပစ္စည်း	Hàng bộ	Item set	Item set	Set na item
+barcode_item_type_not_stock	สินค้าไม่คุมสต๊อก	Non-stock	非库存商品	非在庫品目	ទំនិញមិនគ្រប់គ្រងស្តុក	비재고 품목	ສິນຄ້າບໍ່ຄຸມສະຕັອກ	စတော့မထိန်းသောပစ္စည်း	Hàng không tồn kho	Item bukan stok	Item non-stok	Item na hindi stock
+barcode_material_type	ประเภทสินค้า	Product Type	产品类型	商品タイプ	ប្រភេទផលិតផល	제품 유형	ປະເພດສິນຄ້າ	ကုန်ပစ္စည်းအမျိုးအစား	Loại sản phẩm	Jenis produk	Tipe produk	Uri ng produkto
+barcode_material_general	สินค้าทั่วไป	General	一般商品	一般商品	ទំនិញទូទៅ	일반 상품	ສິນຄ້າທົ່ວໄປ	အထွေထွေကုန်စည်	Hàng thông thường	Barang am	Barang umum	Pangkalahatang produkto
+barcode_material_material	วัตถุดิบ	Material	原材料	原材料	វត្ថុធាតុដើម	원재료	ວັດຖຸດິບ	ကုန်ကြမ်း	Nguyên vật liệu	Bahan mentah	Bahan baku	Materyales
+barcode_material_semi_finished	กึ่งสำเร็จรูป	Semi-finished	半成品	半製品	ផលិតផលពាក់កណ្តាលសម្រេច	반제품	ເຄິ່ງສຳເລັດຮູບ	တစ်ဝက်ပြီးကုန်	Bán thành phẩm	Produk separuh siap	Produk setengah jadi	Kalahating tapos
+barcode_material_set	สินค้าชุด	Set Product	套装商品	セット商品	ផលិតផលឈុត	세트 상품	ສິນຄ້າຊຸດ	ထုတ်ကုန်အစုံ	Sản phẩm bộ	Produk set	Produk paket	Set na produkto
+barcode_material_agricultural	สินค้าเกษตร	Agricultural Produce	农产品	農産物	ផលិតផលកសិកម្ម	농산물	ຜະລິດຕະພັນກະເສດ	စိုက်ပျိုးရေးထွက်ကုန်	Nông sản	Hasil pertanian	Hasil pertanian	Produktong agrikultural
+barcode_vat_type	ประเภทภาษี	Tax type	税种	税区分	ប្រភេទពន្ធ	세금 유형	ປະເພດພາສີ	အခွန်အမျိုးအစား	Loại thuế	Jenis cukai	Jenis pajak	Uri ng buwis
+barcode_vat_included	สินค้ามีภาษีมูลค่าเพิ่ม	VAT product	含增值税商品	税込商品	ផលិតផលមានអាករ	부가세 상품	ສິນຄ້າມີອາກອນ	တန်ဖိုးမြှင့်အခွန်ကုန်စည်	Sản phẩm có thuế GTGT	Produk VAT	Produk PPN	Produktong VAT
+barcode_vat_excluded	สินค้ายกเว้นภาษีมูลค่าเพิ่ม	VAT exempt product	增值税免税商品	消費税対象外商品	ផលិតផលលើកលែងអាករលើតម្លៃបន្ថែម	부가가치세 면세 상품	ສິນຄ້າຍົກເວັ້ນພາສີມູນຄ່າເພີ່ມ	တန်ဖိုးမြှင့်အခွန်ကင်းလွတ်ကုန်ပစ္စည်း	Sản phẩm miễn thuế GTGT	Produk dikecualikan cukai nilai tambah	Produk bebas PPN	Produktong hindi kasama sa VAT
+barcode_tax_type	ประเภทภาษี	Tax type	税种	税区分	ប្រភេទពន្ធ	세금 유형	ປະເພດພາສີ	အခွန်အမျိုးအစား	Loại thuế	Jenis cukai	Jenis pajak	Uri ng buwis
+barcode_vat_cal	วิธีคำนวณ VAT	VAT calc	增值税计算	消費税計算	ការគណនាអាករលើតម្លៃបន្ថែម	부가가치세 계산	ການຄິດໄລ່ພາສີມູນຄ່າເພີ່ມ	တန်ဖိုးမြှင့်အခွန် တွက်ချက်မှု	Cách tính thuế GTGT	Pengiraan cukai nilai tambah	Perhitungan PPN	Pagkalkula ng VAT
+barcode_is_stock	ตัดสต๊อก	Track stock	跟踪库存	在庫追跡	តាមដានស្តុក	재고 추적	ຕິດຕາມສະຕັອກ	စတော့ခြေရာခံ	Theo dõi tồn kho	Jejak stok	Lacak stok	Subaybayan ang stock
+barcode_group	กลุ่มสินค้า	Group	商品组	商品グループ	ក្រុមទំនិញ	상품 그룹	ກຸ່ມສິນຄ້າ	ကုန်စည်အုပ်စု	Nhóm hàng	Kumpulan barang	Kelompok barang	Grupo ng produkto
+barcode_group_sub_one	หมวดย่อย 1	Sub group 1	子分组1	サブグループ1	ក្រុមរង 1	하위 그룹 1	ກຸ່ມຍ່ອຍ 1	အုပ်စုခွဲ ၁	Nhóm con 1	Subkumpulan 1	Subgrup 1	Subgroup 1
+barcode_group_sub_two	หมวดย่อย 2	Sub group 2	子分组2	サブグループ2	ក្រុមរង 2	하위 그룹 2	ກຸ່ມຍ່ອຍ 2	အုပ်စုခွဲ ၂	Nhóm con 2	Subkumpulan 2	Subgrup 2	Subgroup 2
+barcode_brand	ยี่ห้อ	Brand	品牌	ブランド	ម៉ាក	브랜드	ຍີ່ຫໍ້	အမှတ်တံဆိပ်	Thương hiệu	Jenama	Merek	Tatak
+barcode_category	หมวดสินค้า	Category	类别	カテゴリ	ប្រភេទ	카테고리	ໝວດສິນຄ້າ	အမျိုးအစား	Danh mục	Kategori	Kategori	Kategorya
+barcode_classification	Class	Class	分类	クラス	ថ្នាក់	분류	ຊັ້ນ	အတန်းအစား	Hạng	Kelas	Kelas	Klase
+barcode_design	Design	Design	设计	デザイン	រចនា	디자인	ການອອກແບບ	ဒီဇိုင်း	Thiết kế	Reka bentuk	Desain	Disenyo
+barcode_grade	เกรด	Grade	等级	グレード	កម្រិត	등급	ລະດັບ	အဆင့်	Cấp	Gred	Grade	Grado
+barcode_model	Model	Model	型号	モデル	ម៉ូដែល	모델	ໂມເດວ	မော်ဒယ်	Mẫu	Model	Model	Modelo
+barcode_pattern	Pattern	Pattern	图案	パターン	លំនាំ	패턴	ລວດລາຍ	ပုံစံ	Họa tiết	Corak	Pola	Padron
+barcode_manufacturer	ผู้ผลิต	Manufacturer	制造商	製造元	ក្រុមហ៊ុនផលិត	제조업체	ຜູ້ຜະລິດ	ထုတ်လုပ်သူ	Nhà sản xuất	Pengilang	Produsen	Tagagawa
+barcode_product_type	ประเภทสินค้า (POS)	Product type	商品类型	商品タイプ	ប្រភេទផលិតផល	제품 유형	ປະເພດສິນຄ້າ	ကုန်ပစ္စည်းအမျိုးအစား	Loại sản phẩm	Jenis produk	Tipe produk	Uri ng produkto
+barcode_prices	ราคาขาย	Prices	价格	価格	តម្លៃ	가격	ລາຄາ	ဈေးနှုန်း	Giá	Harga	Harga	Presyo
+barcode_price_key	ระดับราคา	Price tier	价格层级	価格階層	កម្រិតតម្លៃ	가격 등급	ລະດັບລາຄາ	ဈေးနှုန်းအဆင့်	Bậc giá	Tingkat harga	Tingkat harga	Antas ng presyo
+barcode_price	ราคา	Price	价格	価格	តម្លៃ	가격	ລາຄາ	ဈေးနှုန်း	Giá	Harga	Harga	Presyo
+barcode_add_price	เพิ่มระดับราคา	Add price tier	添加价格层级	価格階層を追加	បន្ថែមកម្រិតតម្លៃ	가격 등급 추가	ເພີ່ມລະດັບລາຄາ	ဈေးနှုန်းအဆင့် ထည့်ရန်	Thêm bậc giá	Tambah tingkat harga	Tambah tingkat harga	Magdagdag ng antas ng presyo
+barcode_fixed_cost	ต้นทุนมาตรฐาน	Fixed cost	固定成本	固定費	ថ្លៃដើមថេរ	고정 비용	ຕົ້ນທຶນຄົງທີ່	ပုံသေကုန်ကျစရိတ်	Chi phí cố định	Kos tetap	Biaya tetap	Nakapirming gastos
+barcode_fixed_cost_date	วันที่มีผล	Effective date	生效日期	有効日	កាលបរិច្ឆេទមានប្រសិទ្ធភាព	적용일	ວັນທີມີຜົນ	အကျိုးသက်ရောက်သည့်ရက်	Ngày hiệu lực	Tarikh berkuat kuasa	Tanggal berlaku	Petsa ng bisa
+barcode_fixed_cost_amount	ต้นทุน	Cost	成本	コスト	ថ្លៃដើម	비용	ຕົ້ນທຶນ	ကုန်ကျစရိတ်	Chi phí	Kos	Biaya	Gastos
+barcode_add_fixed_cost	เพิ่มต้นทุน	Add cost	添加成本	コストを追加	បន្ថែមថ្លៃដើម	비용 추가	ເພີ່ມຕົ້ນທຶນ	ကုန်ကျစရိတ် ထည့်ရန်	Thêm chi phí	Tambah kos	Tambah biaya	Magdagdag ng gastos
+barcode_discount	ส่วนลด	Discount	折扣	割引	បញ្ចុះតម្លៃ	할인	ສ່ວນຫຼຸດ	လျှော့စျေး	Giảm giá	Diskaun	Diskon	Diskuwento
+barcode_max_discount	ส่วนลดสูงสุด	Max discount	最大折扣	最大割引	បញ្ចុះតម្លៃអតិបរមា	최대 할인	ສ່ວນຫຼຸດສູງສຸດ	အများဆုံးလျှော့စျေး	Giảm giá tối đa	Diskaun maksimum	Diskon maksimum	Pinakamataas na diskuwento
+barcode_is_dividend	ใช้สิทธิ์ปันผล	Dividend	分红	配当	ភាគលាភ	배당	ເງິນປັນຜົນ	အမြတ်ဝေစု	Cổ tức	Dividen	Dividen	Dividendo
+barcode_is_discount_point_of_purchase	ส่วนลด ณ จุดขาย	Point-of-purchase discount	购买点折扣	購買時点割引	បញ្ចុះតម្លៃនៅចំណុចទិញ	구매 시점 할인	ສ່ວນຫຼຸດຈຸດຊື້	ဝယ်ယူသည့်အချက်လျှော့စျေး	Giảm giá tại điểm mua	Diskaun titik pembelian	Diskon titik pembelian	Diskuwento sa punto ng pagbili
+barcode_order_point	Order Point	Order point	订货点	発注点	ចំណុចបញ្ជាទិញ	발주점	ຈຸດສັ່ງຊື້	မှာယူမှတ်	Điểm đặt hàng	Titik pesanan	Titik pemesanan	Punto ng pag-order
+barcode_min_point	Min	Min	最小	最小	អប្បបរមា	최소	ຕໍ່າສຸດ	အနည်းဆုံး	Tối thiểu	Min	Min	Pinakamababa
+barcode_max_point	Max	Max	最大	最大	អតិបរមា	최대	ສູງສຸດ	အများဆုံး	Tối đa	Maks	Maks	Pinakamataas
+barcode_qty	จำนวนคงเหลือ	Quantity	数量	数量	ចំនួន	수량	ຈຳນວນ	အရေအတွက်	Số lượng	Kuantiti	Kuantitas	Dami
+barcode_stock_barcode	Barcode อ้างอิงสต๊อก	Stock barcode ref	库存条码参考	在庫バーコード参照	បាកូដយោងស្តុក	재고 바코드 참조	ບາໂຄດອ້າງອີງສະຕັອກ	စတော့ဘားကုဒ်ရည်ညွှန်း	Mã vạch tham chiếu kho	Rujukan kod bar stok	Ref kode batang stok	Sanggunian ng stock barcode
+barcode_divide_value	จำนวนหน่วยขาย (เช่น 1 ลัง)	Selling units (e.g. 1 case)	销售单位(如 1 箱)	販売単位(例: 1ケース)	ឯកតាលក់ (ឧ. 1 កេស)	판매 단위(예: 1 케이스)	ຫົວໜ່ວຍຂາຍ (ເຊັ່ນ: 1 ກ່ອງ)	ရောင်းချသည့်ယူနစ် (ဥပမာ ၁ ဘူး)	Đơn vị bán (ví dụ: 1 thùng)	Unit jualan (cth. 1 kotak)	Unit penjualan (mis. 1 dus)	Yunit ng benta (hal. 1 karton)
+barcode_stand_value	เท่ากับหน่วยฐาน (เช่น 24 ชิ้น)	Equals base units (e.g. 24 pieces)	等于基本单位(如 24 件)	基本単位に等しい(例: 24個)	ស្មើនឹងឯកតាគោល (ឧ. 24 ដុំ)	기본 단위와 같음(예: 24개)	ເທົ່າກັບຫົວໜ່ວຍຖານ (ເຊັ່ນ: 24 ອັນ)	အခြေခံယူနစ်နှင့်ညီသည် (ဥပမာ ၂၄ ခု)	Bằng đơn vị cơ bản (ví dụ: 24 cái)	Sama dengan unit asas (cth. 24 unit)	Setara dengan unit dasar (mis. 24 buah)	Katumbas ng mga batayang yunit (hal. 24 piraso)
+barcode_condition	Condition	Condition	条件	条件	លក្ខខណ្ឌ	조건	ເງື່ອນໄຂ	အခြေအနေ	Điều kiện	Syarat	Kondisi	Kundisyon
+barcode_is_use_sub_barcodes	ใช้บาร์โค้ดอ้างอิง	Use reference barcode	使用参考条形码	参照バーコードを使用	ប្រើបាកូដយោង	참조 바코드 사용	ໃຊ້ບາໂຄດອ້າງອີງ	ရည်ညွှန်းဘားကုဒ်ကို သုံးပါ	Dùng mã vạch tham chiếu	Guna kod bar rujukan	Gunakan kode batang referensi	Gumamit ng reference barcode
+barcode_ref_barcodes	บาร์โค้ดอ้างอิง	Reference barcodes	参考条形码	参照バーコード	បាកូដយោង	참조 바코드	ບາໂຄດອ້າງອີງ	ရည်ညွှန်းဘားကုဒ်များ	Mã vạch tham chiếu	Kod bar rujukan	Kode batang referensi	Mga reference barcode
+barcode_ref_barcode_add	เพิ่มบาร์โค้ดอ้างอิง	Add reference barcode	添加参考条形码	参照バーコードを追加	បន្ថែមបាកូដយោង	참조 바코드 추가	ເພີ່ມບາໂຄດອ້າງອີງ	ရည်ညွှန်းဘားကုဒ်ထည့်ပါ	Thêm mã vạch tham chiếu	Tambah kod bar rujukan	Tambah kode batang referensi	Magdagdag ng reference barcode
+barcode_ref_barcode_qty	จำนวนต่อหน่วย	Qty per unit	每单位数量	単位あたり数量	ចំនួនក្នុងមួយឯកតា	단위당 수량	ຈຳນວນຕໍ່ຫົວໜ່ວຍ	တစ်ယူနစ်လျှင် အရေအတွက်	Số lượng mỗi đơn vị	Kuantiti per unit	Jumlah per unit	Dami bawat yunit
+barcode_ref_unit_names	หน่วยอ้างอิง	Ref unit names	参考单位名称	参照単位名	ឈ្មោះឯកតាយោង	참조 단위 이름	ຊື່ຫົວໜ່ວຍອ້າງອີງ	ရည်ညွှန်းယူနစ်အမည်များ	Tên đơn vị tham chiếu	Nama unit rujukan	Nama unit referensi	Mga pangalan ng reference unit
+barcode_bom	สูตรการผลิต (BOM)	Bill of Materials (BOM)	物料清单 (BOM)	部品表 (BOM)	បញ្ជីវត្ថុធាតុដើម (BOM)	자재 명세서 (BOM)	ບັນຊີວັດຖຸດິບ (BOM)	ကုန်ပစ္စည်းစာရင်း (BOM)	Định mức nguyên liệu (BOM)	Bil Bahan (BOM)	Daftar Material (BOM)	Bill of Materials (BOM)
+barcode_bom_add	เพิ่มรายการ	Add BOM item	添加BOM项目	BOM項目を追加	បន្ថែមធាតុ BOM	BOM 항목 추가	ເພີ່ມລາຍການ BOM	BOM ပစ္စည်းထည့်ရန်	Thêm mục BOM	Tambah item BOM	Tambah item BOM	Magdagdag ng BOM item
+barcode_bom_qty	จำนวน	Qty	数量	数量	ចំនួន	수량	ຈຳນວນ	အရေအတွက်	Số lượng	Kuantiti	Jumlah	Dami
+barcode_bom_barcode	บาร์โค้ดวัตถุดิบ	Material barcode	物料条码	原材料バーコード	បាកូដសម្ភារៈ	자재 바코드	ບາໂຄດວັດຖຸດິບ	ကုန်ကြမ်းဘားကုဒ်	Mã vạch nguyên liệu	Kod bar bahan	Barcode material	Barcode ng materyales
+barcode_bom_preview	ดูแผนภาพ	Show diagram	查看图表	ダイアグラムを表示	មើលដ្យាក្រាម	다이어그램 보기	ເບິ່ງແຜນພາບ	ပုံကြမ်းကြည့်ရန်	Xem sơ đồ	Lihat rajah	Lihat diagram	Tingnan ang diagram
+barcode_use_image_or_color	ใช้รูปภาพหรือสี	Image or color	使用图片或颜色	画像または色を使用	ប្រើរូបភាពឬពណ៌	이미지 또는 색상 사용	ໃຊ້ຮູບພາບຫຼືສີ	ပုံ သို့မဟုတ် အရောင်သုံးရန်	Dùng hình ảnh hoặc màu	Guna imej atau warna	Gunakan gambar atau warna	Gumamit ng larawan o kulay
+barcode_image_main	รูปหลัก	Main image	主图	メイン画像	រូបភាពចម្បង	대표 이미지	ຮູບພາບຫຼັກ	ပင်မပုံ	Ảnh chính	Imej utama	Gambar utama	Pangunahing larawan
+barcode_image_upload	อัปโหลดรูป	Upload	上传	アップロード	ផ្ទុកឡើង	업로드	ອັບໂຫຼດ	အပ်လုဒ်	Tải lên	Muat naik	Unggah	Mag-upload
+barcode_image_delete	ลบรูป	Delete image	删除图片	画像を削除	លុបរូបភាព	이미지 삭제	ລຶບຮູບ	ပုံဖျက်ရန်	Xóa ảnh	Padam imej	Hapus gambar	Tanggalin ang larawan
+barcode_image_gallery	รูปเพิ่มเติม	Gallery	图库	ギャラリー	វិចិត្រសាល	갤러리	ຄັງຮູບ	ပြခန်း	Thư viện ảnh	Galeri	Galeri	Gallery
+barcode_color_pick	เลือกสี	Pick color	选择颜色	色を選択	ជ្រើសរើសពណ៌	색상 선택	ເລືອກສີ	အရောင်ရွေးပါ	Chọn màu	Pilih warna	Pilih warna	Pumili ng kulay
+barcode_color_name	ชื่อสี	Color name	颜色名称	色名	ឈ្មោះពណ៌	색상 이름	ຊື່ສີ	အရောင်အမည်	Tên màu	Nama warna	Nama warna	Pangalan ng kulay
+barcode_color_hex	รหัสสี (HEX)	Color (HEX)	颜色（HEX）	カラー（HEX）	ពណ៌ (HEX)	색상(HEX)	ສີ (HEX)	အရောင် (HEX)	Màu (HEX)	Warna (HEX)	Warna (HEX)	Kulay (HEX)
+barcode_is_for_restaurant	ทานที่ร้าน	Dine-in	堂食	店内飲食	ទទួលទានក្នុងហាង	매장 식사	ຮັບປະທານທີ່ຮ້ານ	ဆိုင်တွင်စားသုံးရန်	Ăn tại chỗ	Makan di dalam	Makan di tempat	Kainan sa loob
+barcode_is_for_takeaway	สั่งกลับบ้าน	Take away	外带	持ち帰り	យកទៅ	포장	ສັ່ງກັບບ້ານ	ယူသွား	Mang đi	Bungkus	Bawa pulang	Para dalhin
+barcode_is_for_delivery	เดลิเวอรี่	Delivery	配送	デリバリー	ការដឹកជញ្ជូន	배달	ການຈັດສົ່ງ	ပို့ဆောင်မှု	Giao hàng	Penghantaran	Pengiriman	Paghahatid
+barcode_is_for_customer	ลูกค้าสั่งได้	Customer order	客户订单	顧客注文	ការបញ្ជាទិញរបស់អតិថិជន	고객 주문	ຄຳສັ່ງລູກຄ້າ	ဖောက်သည်မှာယူမှု	Đơn hàng khách	Pesanan pelanggan	Pesanan pelanggan	Order ng customer
+barcode_is_for_customer_pre_order	Pre-order	Pre-order	预订	予約注文	ការបញ្ជាទិញជាមុន	선주문	ສັ່ງລ່ວງໜ້າ	ကြိုတင်မှာယူမှု	Đặt trước	Pra-tempahan	Prapemesanan	Paunang order
+barcode_is_a_la_carte	à la carte	à la carte	单点	アラカルト	អាឡាកាត	단품	ອາລາຄາດ	အာလာကာ့	Gọi món	Ala carte	À la carte	A la carte
+barcode_is_stock_for_restaurant	ตัดสต๊อกสำหรับร้านอาหาร	Restaurant stock	餐厅库存	レストラン在庫	ស្តុកភោជនីយដ្ឋាន	레스토랑 재고	ສະຕັອກຮ້ານອາຫານ	စားသောက်ဆိုင်စတော့	Kho nhà hàng	Stok restoran	Stok restoran	Stock ng restaurant
+barcode_is_split_unit_print	แยกพิมพ์ตามหน่วย	Split-unit print	按单位拆分打印	単位別印刷	បោះពុម្ពបំបែកតាមឯកតា	단위별 인쇄	ພິມແຍກຕາມຫົວໜ່ວຍ	ယူနစ်ခွဲ၍ပုံနှိပ်	In tách theo đơn vị	Cetak pecahan unit	Cetak pisah unit	Pag-print nang hiwalay ayon sa unit
+barcode_is_only_staff	เฉพาะพนักงาน	Staff only	仅员工	スタッフのみ	សម្រាប់តែបុគ្គលិក	직원 전용	ສະເພາະພະນັກງານ	ဝန်ထမ်းများသာ	Chỉ nhân viên	Kakitangan sahaja	Hanya staf	Para sa staff lamang
+barcode_food_type	ประเภทอาหาร	Food type	食品类型	食品タイプ	ប្រភេទអាហារ	음식 종류	ປະເພດອາຫານ	အစားအစာ အမျိုးအစား	Loại món ăn	Jenis makanan	Jenis makanan	Uri ng pagkain
+barcode_food_type_food	อาหาร	Food	食物	食べ物	អាហារ	음식	ອາຫານ	အစားအစာ	Đồ ăn	Makanan	Makanan	Pagkain
+barcode_food_type_drink	เครื่องดื่ม	Drink	饮料	飲み物	ភេសជ្ជៈ	음료	ເຄື່ອງດື່ມ	သောက်စရာ	Đồ uống	Minuman	Minuman	Inumin
+barcode_food_type_alcohol	แอลกอฮอล์	Alcohol	酒类	アルコール	គ្រឿងស្រវឹង	주류	ເຫຼົ້າ	အရက်	Đồ uống có cồn	Alkohol	Alkohol	Alkohol
+barcode_food_type_other	อื่นๆ	Other	其他	その他	ផ្សេងៗ	기타	ອື່ນໆ	အခြား	Khác	Lain-lain	Lainnya	Iba pa
+barcode_order_types	ประเภทการสั่ง	Order types	订单类型	注文タイプ	ប្រភេទការបញ្ជាទិញ	주문 유형	ປະເພດການສັ່ງ	မှာယူမှုအမျိုးအစားများ	Loại đơn hàng	Jenis pesanan	Jenis pesanan	Mga uri ng order
+barcode_order_type_charge_price	ราคาเพิ่ม	Surcharge	附加费	追加料金	ថ្លៃបន្ថែម	추가 요금	ລາຄາເພີ່ມ	အပိုဆောင်းစရိတ်	Phụ phí	Caj tambahan	Biaya tambahan	Dagdag na bayad
+barcode_order_type_add	เพิ่มประเภทการสั่ง	Add order type	添加订单类型	注文タイプを追加	បន្ថែមប្រភេទការបញ្ជាទិញ	주문 유형 추가	ເພີ່ມປະເພດການສັ່ງ	မှာယူမှုအမျိုးအစားထည့်ရန်	Thêm loại đơn hàng	Tambah jenis pesanan	Tambah jenis pesanan	Magdagdag ng uri ng order
+barcode_options	ตัวเลือกเสริม	Options	选项	オプション	ជម្រើស	옵션	ຕົວເລືອກ	ရွေးချယ်စရာများ	Tùy chọn	Pilihan	Opsi	Mga opsyon
+barcode_option_add	เพิ่มตัวเลือก	Add option	添加选项	オプションを追加	បន្ថែមជម្រើស	옵션 추가	ເພີ່ມຕົວເລືອກ	ရွေးချယ်စရာ ထည့်ရန်	Thêm tùy chọn	Tambah pilihan	Tambah opsi	Magdagdag ng opsyon
+barcode_option_type	ชนิดตัวเลือก	Option type	选项类型	オプションタイプ	ប្រភេទជម្រើស	옵션 유형	ປະເພດຕົວເລືອກ	ရွေးချယ်စရာ အမျိုးအစား	Loại tùy chọn	Jenis pilihan	Jenis opsi	Uri ng opsyon
+barcode_option_type_multi	เลือกได้หลายอย่าง	Multi-select	多选	複数選択	ជ្រើសរើសច្រើន	다중 선택	ເລືອກຫຼາຍ	အများရွေးချယ်	Chọn nhiều	Pilih berbilang	Pilih banyak	Maramihang pagpili
+barcode_option_type_single	เลือกได้หนึ่งอย่าง	Single-select	单选	単一選択	ជ្រើសរើសតែមួយ	단일 선택	ເລືອກດ່ຽວ	တစ်ခုတည်းရွေးချယ်	Chọn một	Pilih satu	Pilih tunggal	Isahang pagpili
+barcode_option_min_select	เลือกอย่างน้อย	Min select	最少选择	最小選択数	ជ្រើសរើសអប្បបរមា	최소 선택	ເລືອກຢ່າງໜ້ອຍ	အနည်းဆုံး ရွေးချယ်မှု	Chọn tối thiểu	Pilih minimum	Pilih minimal	Minimum na pagpili
+barcode_option_max_select	เลือกได้สูงสุด	Max select	最多选择	最大選択数	ជ្រើសរើសអតិបរមា	최대 선택	ເລືອກສູງສຸດ	အများဆုံး ရွေးချယ်မှု	Chọn tối đa	Pilih maksimum	Pilih maksimal	Maximum na pagpili
+barcode_option_choices	ตัวเลือก	Choices	选项	選択肢	ជម្រើស	선택 항목	ຕົວເລືອກ	ရွေးချယ်စရာများ	Tùy chọn	Pilihan	Pilihan	Mga pagpipilian
+barcode_option_choice_add	เพิ่มตัวเลือก	Add choice	添加选项	選択肢を追加	បន្ថែមជម្រើស	선택 항목 추가	ເພີ່ມຕົວເລືອກ	ရွေးချယ်စရာ ထည့်ရန်	Thêm lựa chọn	Tambah pilihan	Tambah pilihan	Magdagdag ng pagpipilian
+barcode_option_choice_price	ราคาเพิ่ม	Add price	加价	価格追加	បន្ថែមតម្លៃ	가격 추가	ເພີ່ມລາຄາ	ဈေးနှုန်းထည့်ရန်	Thêm giá	Tambah harga	Tambah harga	Magdagdag ng presyo
+barcode_option_choice_is_stock	ตัดสต๊อก	Track stock	跟踪库存	在庫追跡	តាមដានស្តុក	재고 추적	ຕິດຕາມສະຕ໋ອກ	စတော့ခြေရာခံ	Theo dõi kho	Jejak stok	Lacak stok	Subaybayan ang stock
+barcode_option_choice_is_default	เลือกโดยปริยาย	Default	默认	デフォルト	លំនាំដើម	기본값	ຄ່າເລີ່ມຕົ້ນ	မူလ	Mặc định	Lalai	Bawaan	Default
+barcode_option_choice_ref_barcode	บาร์โค้ดอ้างอิง	Ref barcode	参考条码	参照バーコード	បាកូដយោង	참조 바코드	ບາໂຄດອ້າງອີງ	ကိုးကားဘားကုဒ်	Mã vạch tham chiếu	Kod bar rujukan	Kode batang referensi	Reference barcode
+barcode_option_choice_qty	จำนวนต่อหน่วย	Qty per unit	每单位数量	単位あたり数量	ចំនួនក្នុងមួយឯកតា	단위당 수량	ຈຳນວນຕໍ່ຫົວໜ່ວຍ	တစ်ယူနစ်လျှင် အရေအတွက်	Số lượng mỗi đơn vị	Kuantiti seunit	Jumlah per unit	Dami bawat unit
+barcode_time_for_sales	ช่วงเวลาที่ขายได้	Sales time slot	销售时段	販売時間枠	រយៈពេលលក់	판매 시간대	ຊ່ວງເວລາຂາຍ	အရောင်းအချိန်ကာလ	Khung giờ bán hàng	Slot masa jualan	Slot waktu penjualan	Time slot ng benta
+barcode_time_for_sales_add	เพิ่มช่วงเวลา	Add slot	添加时段	時間枠を追加	បន្ថែមរយៈពេល	시간대 추가	ເພີ່ມຊ່ວງເວລາ	အချိန်ကာလထည့်ရန်	Thêm khung giờ	Tambah slot	Tambah slot	Magdagdag ng slot
+barcode_from_date	ตั้งแต่วันที่	From date	从日期	開始日	ចាប់ពីកាលបរិច្ឆេទ	시작일	ຕັ້ງແຕ່ວັນທີ	ရက်စွဲမှ	Từ ngày	Dari tarikh	Dari tanggal	Mula sa petsa
+barcode_to_date	ถึงวันที่	To date	到日期	日付まで	ដល់ថ្ងៃទី	날짜까지	ຮອດວັນທີ	ရက်စွဲအထိ	Đến ngày	Hingga tarikh	Sampai tanggal	Hanggang petsa
+barcode_from_time	ตั้งแต่เวลา	From time	从时间	時刻から	ចាប់ពីម៉ោង	시간부터	ແຕ່ເວລາ	အချိန်မှ	Từ giờ	Dari masa	Dari waktu	Mula sa oras
+barcode_to_time	ถึงเวลา	To time	到时间	時刻まで	ដល់ម៉ោង	시간까지	ຮອດເວລາ	အချိန်အထိ	Đến giờ	Hingga masa	Sampai waktu	Hanggang oras
+barcode_days_of_week	วันในสัปดาห์	Days of week	星期	曜日	ថ្ងៃនៃសប្តាហ៍	요일	ວັນໃນອາທິດ	ရက်သတ္တပတ်ရက်များ	Các ngày trong tuần	Hari dalam minggu	Hari dalam seminggu	Mga araw ng linggo
+barcode_sun	อา	Sun	日	日	អា	일	ອາ	နွေ	CN	Ahd	Min	Lin
+barcode_mon	จ	Mon	一	月	ច	월	ຈ	လာ	T2	Isn	Sen	Lun
+barcode_tue	อ	Tue	二	火	អ	화	ອ	ဂါ	T3	Sel	Sel	Mar
+barcode_wed	พ	Wed	三	水	ព	수	ພ	ဟူး	T4	Rab	Rab	Miy
+barcode_thu	พฤ	Thu	周四	木	ព្រហ	목	ພະຫັດ	ကြာသပတေး	T5	Kha	Kam	Huw
+barcode_fri	ศ	Fri	周五	金	សុក្រ	금	ສຸກ	သောကြာ	T6	Jum	Jum	Biy
+barcode_sat	ส	Sat	周六	土	សៅរ៍	토	ເສົາ	စနေ	T7	Sab	Sab	Sab
+barcode_dimensions	ขนาด	Dimensions	尺寸	寸法	វិមាត្រ	치수	ຂະໜາດ	အတိုင်းအတာ	Kích thước	Dimensi	Dimensi	Mga sukat
+barcode_dimension_add	เพิ่มขนาด	Add dimension	添加尺寸	寸法を追加	បន្ថែមវិមាត្រ	치수 추가	ເພີ່ມຂະໜາດ	အတိုင်းအတာထည့်ရန်	Thêm kích thước	Tambah dimensi	Tambah dimensi	Magdagdag ng sukat
+barcode_dimension_group	หมวดขนาด	Group	尺寸组	寸法グループ	ក្រុមវិមាត្រ	치수 그룹	ກຸ່ມຂະໜາດ	အတိုင်းအတာအုပ်စု	Nhóm kích thước	Kumpulan dimensi	Grup dimensi	Pangkat ng dimensyon
+barcode_dimension_item	ค่า	Value	值	値	តម្លៃ	값	ຄ່າ	တန်ဖိုး	Giá trị	Nilai	Nilai	Halaga
+barcode_business_types	ประเภทธุรกิจ	Business types	业务类型	業種	ប្រភេទអាជីវកម្ម	업종	ປະເພດທຸລະກິດ	လုပ်ငန်းအမျိုးအစား	Loại hình kinh doanh	Jenis perniagaan	Jenis bisnis	Mga uri ng negosyo
+barcode_business_type_add	เพิ่มประเภทธุรกิจ	Add business type	添加业务类型	業種を追加	បន្ថែមប្រភេទអាជីវកម្ម	업종 추가	ເພີ່ມປະເພດທຸລະກິດ	လုပ်ငန်းအမျိုးအစား ထည့်ရန်	Thêm loại hình kinh doanh	Tambah jenis perniagaan	Tambah jenis bisnis	Magdagdag ng uri ng negosyo
+barcode_ignore_branches	สาขาที่ไม่ขาย	Excluded branches	排除分店	除外店舗	សាខាដែលបានដកចេញ	제외 지점	ສາຂາທີ່ຖືກຍົກເວັ້ນ	ဖယ်ထုတ်ထားသော ဆိုင်ခွဲများ	Chi nhánh bị loại trừ	Cawangan dikecualikan	Cabang dikecualikan	Mga sangay na hindi kasama
+barcode_ignore_branch_add	เพิ่มสาขา	Add branch	添加分店	店舗追加	បន្ថែមសាខា	지점 추가	ເພີ່ມສາຂາ	ဌာနခွဲထည့်ပါ	Thêm chi nhánh	Tambah cawangan	Tambah cabang	Magdagdag ng sangay
+barcode_branch_hint	สาขาที่ติ๊กจะไม่สามารถขายสินค้านี้ได้	Checked branches cannot sell this item	勾选的分店无法销售此商品	チェックした店舗ではこの商品を販売できません	សាខាដែលបានធីកមិនអាចលក់ទំនិញនេះបានទេ	선택한 지점에서는 이 상품을 판매할 수 없습니다	ສາຂາທີ່ກວດໝາຍບໍ່ສາມາດຂາຍສິນຄ້ານີ້ໄດ້	အမှန်ခြစ်ထားသော ဆိုင်ခွဲများသည် ဤကုန်ပစ္စည်းကို ရောင်းချနိုင်မည် မဟုတ်ပါ	Chi nhánh được chọn không thể bán mặt hàng này	Cawangan yang ditanda tidak boleh menjual item ini	Cabang yang dicentang tidak dapat menjual item ini	Ang mga sangay na may check ay hindi makakapagbenta ng item na ito
+barcode_is_sum_point	คะแนนสะสม	Reward points	积分	ポイント	ពិន្ទុសន្សំ	적립 포인트	ຄະແນນສະສົມ	ဆုလာဘ်အမှတ်များ	Điểm thưởng	Mata ganjaran	Poin reward	Mga reward points
+barcode_is_sum_point_yes	คิดคะแนนสะสม	Accumulate points	累计积分	ポイントを貯める	បង្គរពិន្ទុ	포인트 적립	ສະສົມຄະແນນ	အမှတ်များ စုဆောင်းပါ	Tích lũy điểm	Kumpul mata	Kumpulkan poin	Mag-ipon ng mga puntos
+barcode_is_sum_point_no	ไม่คิดคะแนนสะสม	Do not accumulate points	不累计积分	ポイントを貯めない	មិនបង្គរពិន្ទុ	포인트 적립 안 함	ບໍ່ສະສົມຄະແນນ	အမှတ်များ မစုဆောင်းပါ	Không tích lũy điểm	Tidak kumpul mata	Tidak mengumpulkan poin	Huwag mag-ipon ng mga puntos
+barcode_is_alert	แจ้งเตือน	Alert	提醒	アラート	ការជូនដំណឹង	알림	ການແຈ້ງເຕືອນ	သတိပေးချက်	Cảnh báo	Makluman	Peringatan	Alerto
+barcode_alert_description	ข้อความแจ้งเตือน	Alert message	警告消息	アラートメッセージ	សារជូនដំណឹង	알림 메시지	ຂໍ້ຄວາມແຈ້ງເຕືອນ	သတိပေးစာ	Tin nhắn cảnh báo	Mesej amaran	Pesan peringatan	Mensahe ng alerto
+barcode_description	หมายเหตุ / รายละเอียด	Description	描述	説明	ការពិពណ៌នា	설명	ລາຍລະອຽດ	ဖော်ပြချက်	Mô tả	Penerangan	Deskripsi	Paglalarawan
+barcode_xsorts	ลำดับการแสดงผล	Display order	显示顺序	表示順	លំដាប់បង្ហាញ	표시 순서	ລຳດັບການສະແດງຜົນ	ပြသမှုအစီအစဉ်	Thứ tự hiển thị	Urutan paparan	Urutan tampilan	Pagkakasunod-sunod ng display
+barcode_holding_code	บริษัท	Company	公司	会社	ក្រុមហ៊ុន	회사	ບໍລິສັດ	ကုမ္ပဏီ	Công ty	Syarikat	Perusahaan	Kumpanya
+barcode_guid	GUID	GUID	GUID	GUID	GUID	GUID	GUID	GUID	GUID	GUID	GUID	GUID
+barcode_ref_guid	GUID อ้างอิง	Ref GUID	引用GUID	参照GUID	GUID យោង	참조 GUID	GUID ອ້າງອີງ	ကိုးကား GUID	GUID tham chiếu	GUID rujukan	GUID referensi	GUID ng sanggunian
+barcode_item_guid	GUID สินค้า	Item GUID	商品GUID	商品GUID	GUID ទំនិញ	품목 GUID	GUID ສິນຄ້າ	ပစ္စည်း GUID	GUID mặt hàng	GUID item	GUID item	GUID ng item
+barcode_picker_search	ค้นหา	Search	搜索	検索	ស្វែងរក	검색	ຄົ້ນຫາ	ရှာဖွေရန်	Tìm kiếm	Cari	Cari	Maghanap
+barcode_picker_close	ปิด	Close	关闭	閉じる	បិទ	닫기	ປິດ	ပိတ်ပါ	Đóng	Tutup	Tutup	Isara
+barcode_picker_select	เลือก	Select	选择	選択	ជ្រើសរើស	선택	ເລືອກ	ရွေးချယ်ပါ	Chọn	Pilih	Pilih	Piliin
+barcode_picker_no_result	ไม่พบข้อมูล	No data	无数据	データなし	គ្មានទិន្នន័យ	데이터 없음	ບໍ່ມີຂໍ້ມູນ	ဒေတာမရှိပါ	Không có dữ liệu	Tiada data	Tidak ada data	Walang data
+barcode_picker_loading	กำลังโหลด…	Loading…	加载中…	読み込み中…	កំពុងផ្ទុក…	불러오는 중…	ກຳລັງໂຫລດ…	ဖွင့်နေသည်…	Đang tải…	Memuatkan…	Memuat…	Naglo-load…
+barcode_picker_clear	ล้างค่า	Clear	清除	クリア	សម្អាត	지우기	ລຶບ	ရှင်းလင်းပါ	Xóa	Kosongkan	Hapus	I-clear
+barcode_on	เปิด	On	开启	オン	បើក	켜기	ເປີດ	ဖွင့်	Bật	Hidup	Aktif	Naka-on
+barcode_off	ปิด	Off	关闭	オフ	បិទ	끄기	ປິດ	ပိတ်	Tắt	Mati	Nonaktif	Naka-off
+barcode_required_error	จำเป็นต้องระบุ	Required	必填	必須	ចាំបាច់	필수	ຈຳເປັນ	လိုအပ်သည်	Bắt buộc	Wajib	Wajib	Kinakailangan
+barcode_unsaved_changes	มีการแก้ไขที่ยังไม่บันทึก ต้องการออกหรือไม่?	Unsaved changes — leave anyway?	有未保存的更改——仍要离开吗？	未保存の変更があります——終了しますか？	មានការផ្លាស់ប្ដូរមិនបានរក្សាទុក——ចាកចេញឬ?	저장되지 않은 변경 사항이 있습니다——나가시겠습니까?	ມີການປ່ຽນແປງທີ່ບໍ່ໄດ້ບັນທຶກ——ອອກເລີຍບໍ?	မသိမ်းဆည်းရသေးသော ပြောင်းလဲမှုများ ရှိသည်——ထွက်မည်လား?	Có thay đổi chưa lưu——vẫn rời đi?	Ada perubahan belum disimpan——keluar juga?	Ada perubahan belum disimpan——tetap keluar?	May mga hindi na-save na pagbabago——umalis pa rin?
+barcode_basic_info	ข้อมูลหลัก	Basic info	基本信息	基本情報	ព័ត៌មានមូលដ្ឋាន	기본 정보	ຂໍ້ມູນພື້ນຖານ	အခြေခံအချက်အလက်	Thông tin cơ bản	Maklumat asas	Info dasar	Pangunahing impormasyon
+barcode_classification_section	กลุ่ม/หมวด/คุณสมบัติ	Classification	分类	分類	ចំណាត់ថ្នាក់	분류	ການຈັດປະເພດ	အမျိုးအစားခွဲခြင်း	Phân loại	Pengelasan	Klasifikasi	Klasipikasyon
+barcode_stock_and_unit	หน่วยนับ/สต็อก/ราคา	Unit, stock, and price	单位、库存与价格	単位・在庫・価格	ឯកតា ស្តុក និងតម្លៃ	단위, 재고, 가격	ຫົວໜ່ວຍ, ສະຕັອກ ແລະ ລາຄາ	ယူနစ်၊ စတော့နှင့် ဈေးနှုန်း	Đơn vị, tồn kho và giá	Unit, stok dan harga	Unit, stok, dan harga	Yunit, imbentaryo, at presyo
+barcode_tax_and_flags	ภาษีและสถานะ	Tax and status	税务与状态	税・ステータス	ពន្ធនិងស្ថានភាព	세금 및 상태	ພາສີ ແລະ ສະຖານະ	အခွန်နှင့် အခြေအနေ	Thuế và trạng thái	Cukai dan status	Pajak dan status	Buwis at status
+barcode_relations	ข้อมูลเชื่อมโยง	Linked data	关联数据	関連データ	ទិន្នន័យដែលបានភ្ជាប់	연결된 데이터	ຂໍ້ມູນທີ່ເຊື່ອມໂຍງ	ချိတ်ဆက်ထားသော ဒေတာ	Dữ liệu liên kết	Data berkait	Data tertaut	Naka-link na data
+barcode_raw_fields	ข้อมูลทั้งหมดจาก API	All API fields	所有 API 字段	すべてのAPIフィールド	គ្រប់វាល API ទាំងអស់	모든 API 필드	ຟິວທັງໝົດຈາກ API	API ကွက်လပ်အားလုံး	Tất cả trường API	Semua medan API	Semua field API	Lahat ng API field
+barcode_barcode_ref	บาร์โค้ดอ้างอิง	Barcode reference	条码参考	バーコード参照	ឯកសារយោងបាកូដ	바코드 참조	ອ້າງອີງບາໂຄດ	ဘားကုဒ်ကိုးကား	Tham chiếu mã vạch	Rujukan kod bar	Referensi barcode	Sanggunian ng barcode
+barcode_color	สี	Color	颜色	色	ពណ៌	색상	ສີ	အရောင်	Màu sắc	Warna	Warna	Kulay
+barcode_unit_count	จำนวนหน่วยนับ	Unit count	单位数量	単位数量	ចំនួនឯកតា	단위 수량	ຈຳນວນຫົວໜ່ວຍ	ယူနစ်အရေအတွက်	Số lượng đơn vị	Kiraan unit	Jumlah unit	Bilang ng unit
+barcode_is_main_item	สินค้าหลัก	Main item	主商品	メイン商品	ទំនិញចម្បង	주요 품목	ສິນຄ້າຫຼັກ	အဓိကပစ္စည်း	Mặt hàng chính	Item utama	Item utama	Pangunahing item
+barcode_sub_group1	กลุ่มย่อย 1	Sub group 1	子分组 1	サブグループ1	ក្រុមរង 1	하위 그룹 1	ກຸ່ມຍ່ອຍ 1	အုပ်စုခွဲ 1	Nhóm phụ 1	Subkumpulan 1	Subgrup 1	Subgrupo 1
+barcode_sub_group2	กลุ่มย่อย 2	Sub group 2	子分组 2	サブグループ2	ក្រុមរង 2	하위 그룹 2	ກຸ່ມຍ່ອຍ 2	အုပ်စုခွဲ 2	Nhóm phụ 2	Subkumpulan 2	Subgrup 2	Subgrupo 2
+barcode_sub_barcodes	บาร์โค้ดย่อย	Sub barcodes	子条码	サブバーコード	បាកូដរង	하위 바코드	ບາໂຄດຍ່ອຍ	ဘားကုဒ်ခွဲ	Mã vạch phụ	Sub barkod	Sub barcode	Sub barcode
+barcode_branches	สาขา	Branches	门店	店舗	សាខា	지점	ສາຂາ	ဆိုင်ခွဲများ	Chi nhánh	Cawangan	Cabang	Mga sangay
+barcode_categories	หมวดสินค้า	Categories	类别	カテゴリ	ប្រភេទទំនិញ	카테고리	ໝວດສິນຄ້າ	အမျိုးအစားများ	Danh mục	Kategori	Kategori	Mga kategorya
+barcode_is_disable	ปิดใช้งาน	Disabled	禁用	無効	បិទដំណើរការ	비활성	ປິດໃຊ້ງານ	ပိတ်ထားသည်	Vô hiệu hóa	Dilumpuhkan	Nonaktif	Naka-disable
+barcode_show_is_dividend	ข้อความปันผล	Dividend text	分红文本	配当テキスト	អត្ថបទភាគលាភ	배당 텍스트	ຂໍ້ຄວາມເງິນປັນຜົນ	အမြတ်ဝေစုစာသား	Văn bản cổ tức	Teks dividen	Teks dividen	Teksto ng dibidendo
+barcode_row_number	ลำดับแถว	Row number	行号	行番号	លេខជួរ	행 번호	ເລກແຖວ	အတန်းနံပါတ်	Số dòng	Nombor baris	Nomor baris	Bilang ng hilera
+barcode_item_guid_fixed	GUID สินค้าถาวร	Fixed item GUID	固定商品GUID	固定アイテムGUID	GUID ទំនិញថេរ	고정 항목 GUID	GUID ສິນຄ້າຄົງທີ່	ပုံသေပစ္စည်း GUID	GUID mặt hàng cố định	GUID item tetap	GUID item tetap	GUID ng nakapirming item
+barcode_parent_guid	GUID แม่	Parent GUID	父GUID	親GUID	GUID មេ	부모 GUID	GUID ແມ່	မိဘ GUID	GUID cha	GUID induk	GUID induk	GUID ng magulang
+barcode_checksum	Checksum	Checksum	校验和	チェックサム	ឆេកសាំ	체크섬	ເຊັກຊັມ	ချက်ဆမ်	Tổng kiểm tra	Jumlah semak	Checksum	Checksum
+barcode_json_payload	ข้อมูล JSON ครบทุก field	Full-field JSON payload	全字段JSON载荷	全フィールドJSONペイロード	ទិន្នន័យ JSON គ្រប់វាល	전체 필드 JSON 페이로드	ຂໍ້ມູນ JSON ຄົບທຸກຟິວ	နယ်ပယ်စုံ JSON ဒေတာ	Tải trọng JSON đầy đủ trường	Muatan JSON medan penuh	Muatan JSON semua field	JSON payload ng lahat ng field
+barcode_invalid_json	JSON ไม่ถูกต้อง	Invalid JSON	JSON无效	無効なJSON	JSON មិនត្រឹមត្រូវ	잘못된 JSON	JSON ບໍ່ຖືກຕ້ອງ	JSON မမှန်ကန်ပါ	JSON không hợp lệ	JSON tidak sah	JSON tidak valid	Invalid na JSON
+barcode_delete_current_confirm	ต้องการลบบาร์โค้ดจริงหรือไม่	Confirm delete this barcode?	确认删除此条形码？	このバーコードを削除しますか？	តើអ្នកពិតជាចង់លុបបាកូដនេះមែនទេ?	이 바코드를 삭제하시겠습니까?	ທ່ານແນ່ໃຈວ່າຕ້ອງການລຶບບາໂຄດນີ້ບໍ?	ဤဘားကုဒ်ကို ဖျက်ရန် သေချာပါသလား။	Bạn có chắc chắn muốn xóa mã vạch này không?	Pastikan untuk memadamkan kod bar ini?	Yakin ingin menghapus kode batang ini?	Siguradong gusto mong tanggalin ang barcode na ito?
+barcode_unsaved_confirm	มีข้อมูลที่ยังไม่ได้บันทึก ต้องการทิ้งการแก้ไขหรือไม่?	You have unsaved changes. Discard them?	有未保存的更改，是否放弃？	保存されていない変更があります。破棄しますか？	មានការផ្លាស់ប្តូរមិនបានរក្សាទុក។ តើចង់បោះបង់វាទេ?	저장하지 않은 변경 사항이 있습니다. 취소하시겠습니까?	ມີການປ່ຽນແປງທີ່ຍັງບໍ່ໄດ້ບັນທຶກ. ຕ້ອງການຖິ້ມການແກ້ໄຂນີ້ບໍ?	မသိမ်းဆည်းရသေးသော ပြောင်းလဲမှုများ ရှိသည်။ ယင်းတို့ကို ဖျက်ပစ်လိုပါသလား။	Bạn có thay đổi chưa lưu. Bỏ các thay đổi này?	Anda mempunyai perubahan belum disimpan. Buang perubahan ini?	Ada perubahan belum disimpan. Buang perubahan?	May mga hindi pa nai-save na pagbabago. Itapon ang mga ito?
+barcode_tab_units_barcode	หน่วยนับและบาร์โค้ด	Units & Barcode	单位与条形码	単位とバーコード	ឯកតា និងបាកូដ	단위 및 바코드	ຫົວໜ່ວຍ ແລະ ບາໂຄດ	ယူနစ်များနှင့် ဘားကုဒ်	Đơn vị và mã vạch	Unit & Kod Bar	Unit & Kode Batang	Mga Yunit at Barcode
+barcode_tab_bom_short	ส่วนประกอบ (BOM)	Components (BOM)	组件 (BOM)	部品構成 (BOM)	គ្រឿងផ្សំ (BOM)	구성품 (BOM)	ສ່ວນປະກອບ (BOM)	အစိတ်အပိုင်းများ (BOM)	Cấu kiện (BOM)	Komponen (BOM)	Komponen (BOM)	Mga Bahagi (BOM)
+barcode_tab_business_branch_short	สาขา/ธุรกิจ	Branch / Business	分店/业务	支店/事業	សាខា/អាជីវកម្ម	지점/사업	ສາຂາ/ທຸລະກິດ	ဘဏ်ခွဲ/လုပ်ငန်း	Chi nhánh/Doanh nghiệp	Cawangan/Perniagaan	Cabang/Bisnis	Sangay/Negosyo
+barcode_product_type_section	ประเภทสินค้าหลัก	Product Type	商品类型	商品タイプ	ប្រភេទផលិតផល	상품 유형	ປະເພດສິນຄ້າ	ကုန်ပစ္စည်းအမျိုးအစား	Loại sản phẩm	Jenis Produk	Tipe Produk	Uri ng Produkto
+barcode_item_type_label	ประเภทไอเทม	Item type	项目类型	アイテムタイプ	ប្រភេទធាតុ	항목 유형	ປະເພດລາຍການ	ပစ္စည်းအမျိုးအစား	Loại mặt hàng	Jenis Item	Jenis Item	Uri ng Item
+barcode_material_type_label	ประเภทสินค้า	Product Type	商品类型	商品タイプ	ប្រភេទផលិតផល	상품 유형	ປະເພດສິນຄ້າ	ကုန်ပစ္စည်းအမျိုးအစား	Loại sản phẩm	Jenis Produk	Tipe Produk	Uri ng Produkto
+barcode_groups_and_categories	ประเภทกลุ่ม & หมวดหมู่หลัก	Groups & Categories	组与类别	グループとカテゴリ	ក្រុម និងចំណាត់ថ្នាក់	그룹 및 카테고리	ກຸ່ມ ແລະ ໝວດໝູ່	အုပ်စုများနှင့် အမျိုးအစားများ	Nhóm & Danh mục	Kumpulan & Kategori	Grup & Kategori	Mga Grupo at Kategorya
+barcode_groups_and_categories_en	Groups & Categories	Groups & Categories	组与类别	グループとカテゴリ	ក្រុម និងចំណាត់ថ្នាក់	그룹 및 카테고리	ກຸ່ມ ແລະ ໝວດໝູ່	အုပ်စုများနှင့် အမျိုးအစားများ	Nhóm & Danh mục	Kumpulan & Kategori	Grup & Kategori	Mga Grupo at Kategorya
+barcode_basic_info_card	ข้อมูลเบื้องต้น	Basic Info	基本信息	基本情報	ព័ត៌មានមូលដ្ឋាន	기본 정보	ຂໍ້ມູນພື້ນຖານ	အခြေခံအချက်အလက်	Thông tin cơ bản	Maklumat Asas	Informasi Dasar	Pangunahing Impormasyon
+barcode_grouping_card	การจัดกลุ่ม	Grouping	分组	グループ化	ការដាក់ជាក្រុម	그룹화	ການຈັດກຸ່ມ	အုပ်စုဖွဲ့ခြင်း	Phân nhóm	Pengelompokan	Pengelompokan	Pagpapangkat
+barcode_no_manufacturer_data	ยังไม่มีรายชื่อผู้ผลิต	No manufacturer listed	未列出制造商	製造元の記載なし	មិនមានរាយឈ្មោះក្រុមហ៊ុនផលិត	제조업체 등록 없음	ບໍ່ມີລາຍຊື່ຜູ້ຜະລິດ	ထုတ်လုပ်သူ စာရင်းမရှိ	Chưa có nhà sản xuất	Tiada pengilang disenaraikan	Tidak ada produsen terdaftar	Walang nakalistang tagagawa
+barcode_no_supplier_data	ยังไม่มีรายชื่อผู้จำหน่าย	No supplier listed	未列出供应商	仕入先の記載なし	មិនមានរាយឈ្មោះអ្នកផ្គត់ផ្គង់	공급업체 등록 없음	ບໍ່ມີລາຍຊື່ຜູ້ສະໜອງ	ပေးသွင်းသူ စာရင်းမရှိ	Chưa có nhà cung cấp	Tiada pembekal disenaraikan	Tidak ada pemasok terdaftar	Walang nakalistang tagapagtustos
+barcode_no_manufacturer_info	ไม่มีข้อมูลผู้ผลิต	No manufacturer data	无制造商数据	製造元データなし	គ្មានទិន្នន័យក្រុមហ៊ុនផលិត	제조업체 데이터 없음	ບໍ່ມີຂໍ້ມູນຜູ້ຜະລິດ	ထုတ်လုပ်သူ ဒေတာမရှိ	Không có dữ liệu nhà sản xuất	Tiada data pengilang	Tidak ada data produsen	Walang data ng tagagawa
+barcode_no_supplier_info	ไม่มีข้อมูลผู้จำหน่าย	No supplier data	无供应商数据	仕入先データなし	គ្មានទិន្នន័យអ្នកផ្គត់ផ្គង់	공급업체 데이터 없음	ບໍ່ມີຂໍ້ມູນຜູ້ສະໜອງ	ပေးသွင်းသူ ဒေတာမရှိ	Không có dữ liệu nhà cung cấp	Tiada data pembekal	Tidak ada data pemasok	Walang data ng tagapagtustos
+barcode_back_to_list	กลับสู่รายการสินค้า	Back to product list	返回产品列表	商品リストに戻る	ត្រឡប់ទៅបញ្ជីផលិតផល	제품 목록으로 돌아가기	ກັບຄືນສູ່ລາຍການສິນຄ້າ	ထုတ်ကုန်စာရင်းသို့ ပြန်သွားပါ	Quay lại danh sách sản phẩm	Kembali ke senarai produk	Kembali ke daftar produk	Bumalik sa listahan ng produkto
+barcode_back_to_list_en	Back to list	Back to list	返回列表	リストに戻る	ត្រឡប់ទៅបញ្ជី	목록으로 돌아가기	ກັບຄືນສູ່ລາຍການ	စာရင်းသို့ ပြန်သွားပါ	Quay lại danh sách	Kembali ke senarai	Kembali ke daftar	Bumalik sa listahan
+barcode_pull_from_barcode	ดึงข้อมูลจากบาร์โค้ดขายด่วน	Pull from quick-sale barcode	从快捷销售条形码获取数据	クイックセールバーコードから取得	ទាញយកពីបាកូដលក់រហ័ស	빠른 판매 바코드에서 가져오기	ດຶງຂໍ້ມູນຈາກບາໂຄດຂາຍດ່ວນ	အမြန်ရောင်းချဘားကုဒ်မှ ဆွဲယူပါ	Lấy từ barcode bán nhanh	Tarik daripada kod bar jualan pantas	Tarik dari barcode penjualan cepat	Kunin mula sa quick-sale barcode
+barcode_select_unlinked_barcode	เลือกบาร์โค้ดขายด่วนที่ยังไม่ผูกสินค้าหลัก	Select unlinked quick-sale barcode	选择未关联主商品的快捷销售条形码	未連携のクイックセールバーコードを選択	ជ្រើសរើសបាកូដលក់រហ័សដែលមិនទាន់ភ្ជាប់ផលិតផលចម្បង	주요 상품에 연결되지 않은 빠른 판매 바코드 선택	ເລືອກບາໂຄດຂາຍດ່ວນທີ່ຍັງບໍ່ທັນເຊື່ອມຕໍ່ສິນຄ້າຫຼັກ	ပင်မထုတ်ကုန်နှင့် ချိတ်ဆက်မထားသော အမြန်ရောင်းချဘားကုဒ်ကို ရွေးပါ	Chọn barcode bán nhanh chưa liên kết sản phẩm chính	Pilih kod bar jualan pantas yang belum dipautkan dengan produk utama	Pilih barcode penjualan cepat yang belum tertaut produk utama	Piliin ang quick-sale barcode na hindi pa naka-link sa pangunahing produkto
+barcode_search_barcode_or_name	ค้นหาด้วยบาร์โค้ด หรือชื่อสินค้า...	Search by barcode or product name...	按条形码或产品名称搜索...	バーコードまたは商品名で検索...	ស្វែងរកតាមបាកូដ ឬឈ្មោះផលិតផល...	바코드 또는 제품명으로 검색...	ຄົ້ນຫາດ້ວຍບາໂຄດ ຫຼືຊື່ສິນຄ້າ...	ဘားကုဒ် သို့မဟုတ် ထုတ်ကုန်အမည်ဖြင့် ရှာဖွေပါ...	Tìm kiếm theo barcode hoặc tên sản phẩm...	Cari mengikut kod bar atau nama produk...	Cari berdasarkan barcode atau nama produk...	Maghanap ayon sa barcode o pangalan ng produkto...
+barcode_searching_barcode	กำลังค้นหาบาร์โค้ด...	Searching barcodes...	正在搜索条形码...	バーコードを検索中...	កំពុងស្វែងរកបាកូដ...	바코드 검색 중...	ກຳລັງຄົ້ນຫາບາໂຄດ...	ဘားကုဒ်များ ရှာဖွေနေသည်...	Đang tìm kiếm barcode...	Mencari kod bar...	Mencari barcode...	Naghahanap ng mga barcode...
+barcode_no_unlinked_barcode	ไม่พบข้อมูลบาร์โค้ดที่ยังไม่ผูกสินค้าหลัก	No unlinked barcodes found	未找到未关联的条形码	未連携のバーコードは見つかりませんでした	រកមិនឃើញបាកូដដែលមិនទាន់ភ្ជាប់	연결되지 않은 바코드를 찾을 수 없습니다	ບໍ່ພົບບາໂຄດທີ່ຍັງບໍ່ທັນເຊື່ອມຕໍ່	ချိတ်ဆက်မထားသော ဘားကုဒ်များ မတွေ့ပါ	Không tìm thấy barcode chưa liên kết	Tiada kod bar belum dipautkan dijumpai	Tidak ditemukan barcode yang belum tertaut	Walang nakitang hindi naka-link na barcode
+barcode_close_window	ปิดหน้าต่าง	Close window	关闭窗口	ウィンドウを閉じる	បិទបង្អួច	창 닫기	ປິດໜ້າຕ່າງ	ဝင်းဒိုးကို ပိတ်ပါ	Đóng cửa sổ	Tutup tetingkap	Tutup jendela	Isara ang window
+barcode_no_name	ไม่มีชื่อ	No name	无名称	名前なし	គ្មានឈ្មោះ	이름 없음	ບໍ່ມີຊື່	အမည်မရှိ	Không tên	Tiada nama	Tanpa nama	Walang pangalan
+barcode_unit_label	หน่วยนับ	Unit	单位	単位	ឯកតា	단위	ຫົວໜ່ວຍ	ယူနစ်	Đơn vị	Unit	Unit	Yunit
+barcode_barcode_fetch_fail	ไม่สามารถดึงข้อมูลรายละเอียดบาร์โค้ดได้	Failed to fetch barcode detail	获取条形码详情失败	バーコード詳細を取得できませんでした	មិនអាចទាញយកព័ត៌មានលម្អិតបាកូដបានទេ	바코드 상세 정보를 불러오지 못했습니다	ດຶງຂໍ້ມູນລາຍລະອຽດບາໂຄດບໍ່ສຳເລັດ	ဘားကုဒ်အသေးစိတ်ကို ရယူ၍မရပါ	Không thể tải chi tiết mã vạch	Gagal mendapatkan butiran kod bar	Gagal mengambil detail barcode	Nabigong kunin ang detalye ng barcode
+barcode_classification_section_title	กลุ่มสินค้า & หมวดหมู่ (Classifications)	Classifications	分类	分類	ចំណាត់ថ្នាក់	분류	ການຈັດປະເພດ	အမျိုးအစားခွဲခြားမှုများ	Phân loại	Pengelasan	Klasifikasi	Mga klasipikasyon
+barcode_creditors_section_title	ผู้ผลิต & ผู้จัดจำหน่าย (Creditors)	Manufacturers & Suppliers (Creditors)	制造商和供应商（债权人）	製造元・仕入先（債権者）	ក្រុមហ៊ុនផលិត និងអ្នកផ្គត់ផ្គង់ (ម្ចាស់បំណុល)	제조업체 및 공급업체(채권자)	ຜູ້ຜະລິດ ແລະ ຜູ້ສະໜອງ (ເຈົ້າໜີ້)	ထုတ်လုပ်သူများနှင့် ပေးသွင်းသူများ (မြီရှင်များ)	Nhà sản xuất & Nhà cung cấp (Chủ nợ)	Pengilang & Pembekal (Pemiutang)	Produsen & Pemasok (Kreditur)	Mga Manufacturer at Supplier (Mga Pinagkakautangan)
+barcode_media_section_title	ภาพและสีป้ายสินค้า (Media)	Image & Tag Color (Media)	图片和标签颜色（媒体）	画像・タグカラー（メディア）	រូបភាព និងពណ៌ស្លាក (មេឌៀ)	이미지 및 태그 색상(미디어)	ຮູບພາບ ແລະ ສີປ້າຍ (ສື່)	ပုံနှင့် တက်ဂ်အရောင် (မီဒီယာ)	Hình ảnh & Màu nhãn (Phương tiện)	Imej & Warna Tag (Media)	Gambar & Warna Tag (Media)	Larawan at Kulay ng Tag (Media)
+barcode_restaurant_section_title	การตั้งค่าสำหรับร้านอาหาร / POS	Restaurant / POS Settings	餐厅 / POS 设置	レストラン / POS設定	ការកំណត់ភោជនីយដ្ឋាន / POS	레스토랑 / POS 설정	ການຕັ້ງຄ່າຮ້ານອາຫານ / POS	စားသောက်ဆိုင် / POS ဆက်တင်များ	Cài đặt Nhà hàng / POS	Tetapan Restoran / POS	Pengaturan Restoran / POS	Mga Setting ng Restaurant / POS
+barcode_time_section_title	ช่วงเวลาที่ขายได้ & อื่นๆ	Sales Time & Other	销售时间及其他	販売時間・その他	ពេលវេលាលក់ និងផ្សេងៗ	판매 시간 및 기타	ເວລາຂາຍ ແລະ ອື່ນໆ	အရောင်းအချိန်နှင့် အခြား	Thời gian bán hàng & Khác	Masa Jualan & Lain-lain	Waktu Penjualan & Lainnya	Oras ng Pagbebenta at Iba pa
+barcode_manufacturers_label	ผู้ผลิต (Manufacturers)	Manufacturers	制造商	メーカー	ក្រុមហ៊ុនផលិត	제조업체	ຜູ້ຜະລິດ	ထုတ်လုပ်သူများ	Nhà sản xuất	Pengilang	Produsen	Mga Manufacturer
+barcode_suppliers_label	ผู้จัดจำหน่าย (Suppliers)	Suppliers	供应商	サプライヤー	អ្នកផ្គត់ផ្គង់	공급업체	ຜູ້ສະໜອງ	ပေးသွင်းသူများ	Nhà cung cấp	Pembekal	Pemasok	Mga Supplier
+barcode_gallery_label	แกลเลอรี่รูปภาพเพิ่มเติม	Image Gallery	图片库	画像ギャラリー	វិចិត្រសាលរូបភាព	이미지 갤러리	ຫ້ອງສະແດງຮູບພາບ	ပုံပြခန်း	Thư viện ảnh	Galeri imej	Galeri gambar	Gallery ng Larawan
+barcode_no_image	ไม่มีรูป	No image	无图片	画像なし	គ្មានរូបភាព	이미지 없음	ບໍ່ມີຮູບ	ပုံမရှိ	Không có ảnh	Tiada imej	Tidak ada gambar	Walang larawan
+barcode_display_mode	รูปแบบแสดงผล	Display mode	显示模式	表示モード	របៀបបង្ហាញ	표시 모드	ໂໝດສະແດງຜົນ	ပြသမှုမုဒ်	Chế độ hiển thị	Mod paparan	Mode tampilan	Mode ng pagpapakita
+barcode_display_mode_image	แสดงรูปภาพสินค้า	Show product image	显示产品图片	商品画像を表示	បង្ហាញរូបភាពផលិតផល	제품 이미지 표시	ສະແດງຮູບພາບສິນຄ້າ	ကုန်ပစ္စည်းပုံပြသရန်	Hiển thị ảnh sản phẩm	Tunjuk imej produk	Tampilkan gambar produk	Ipakita ang larawan ng produkto
+barcode_display_mode_color	แสดงสีป้ายสินค้า	Show tag color	显示标签颜色	タグ色を表示	បង្ហាញពណ៌ស្លាក	태그 색상 표시	ສະແດງສີປ້າຍ	တဂ်အရောင်ပြသရန်	Hiển thị màu thẻ	Tunjuk warna tag	Tampilkan warna tag	Ipakita ang kulay ng tag
+barcode_tag_color	สีป้ายสินค้า	Tag color	标签颜色	タグ色	ពណ៌ស្លាក	태그 색상	ສີປ້າຍ	တဂ်အရောင်	Màu thẻ	Warna tag	Warna tag	Kulay ng tag
+barcode_is_for_restaurant_label	ทานที่ร้าน	Dine-in	堂食	イートイン	ញ៉ាំក្នុងហាង	매장 식사	ກິນຢູ່ຮ້ານ	ဆိုင်တွင်စားသောက်	Ăn tại chỗ	Makan di premis	Makan di tempat	Kumain sa loob
+barcode_is_for_takeaway_label	สั่งกลับบ้าน	Take away	外带	持ち帰り	យកទៅ	포장	ເອົາກັບ	ယူသွား	Mang về	Bungkus	Bawa pulang	Take-out
+barcode_is_for_delivery_label	เดลิเวอรี่	Delivery	外卖	デリバリー	ដឹកជញ្ជូន	배달	ຈັດສົ່ງ	ပို့ဆောင်	Giao hàng	Penghantaran	Antar	Paghahatid
+barcode_is_for_customer_label	ลูกค้าสั่งเองได้	Customer self-order	顾客自助点单	顧客セルフオーダー	អតិថិជនបញ្ជាទិញដោយខ្លួនឯង	고객 직접 주문	ລູກຄ້າສັ່ງເອງ	ဖောက်သည်ကိုယ်တိုင်မှာယူ	Khách tự gọi món	Pelanggan pesan sendiri	Pelanggan pesan sendiri	Sariling-order ng customer
+barcode_is_for_customer_pre_order_label	Pre-order ลูกค้า	Customer pre-order	顾客预点	顧客事前注文	អតិថិជនបញ្ជាទិញជាមុន	고객 사전 주문	ລູກຄ້າສັ່ງລ່ວງໜ້າ	ဖောက်သည်ကြိုတင်မှာယူ	Khách đặt trước	Pra-pesanan pelanggan	Pesan awal pelanggan	Paunang-order ng customer
+barcode_is_stock_for_restaurant_label	ตัดสต๊อกร้านอาหาร	Restaurant stock deduct	餐厅扣减库存	レストラン在庫減算	កាត់ស្តុកភោជនីយដ្ឋាន	레스토랑 재고 차감	ຕັດສະຕັອກຮ້ານອາຫານ	စားသောက်ဆိုင်စတော့ဖြတ်	Trừ kho nhà hàng	Potongan stok restoran	Potong stok restoran	Bawas-stock ng restawran
+barcode_is_split_unit_print_label	แยกพิมพ์ตามหน่วย	Split print by unit	按单位分开打印	単位ごとに分けて印刷	បោះពុម្ពបំបែកតាមឯកតា	단위별 분리 인쇄	ພິມແຍກຕາມໜ່ວຍ	ယူနစ်အလိုက်ခွဲပြီးပရင့်	In tách theo đơn vị	Cetak berasingan mengikut unit	Cetak terpisah per unit	Hiwalay na pag-print ayon sa unit
+barcode_is_only_staff_label	เฉพาะพนักงานขาย (Staff Only)	Staff only	仅限员工	スタッフのみ	សម្រាប់តែបុគ្គលិក	직원 전용	ສະເພາະພະນັກງານ	ဝန်ထမ်းများသာ	Chỉ nhân viên	Kakitangan sahaja	Hanya staf	Para sa kawani lamang
+barcode_food_type_section_label	ประเภทอาหาร (Food Type)	Food type	食品类型	食品タイプ	ប្រភេទអាហារ	식품 유형	ປະເພດອາຫານ	အစားအစာ အမျိုးအစား	Loại món ăn	Jenis makanan	Jenis makanan	Uri ng pagkain
+barcode_options_section_label	ตัวเลือกเสริม (Options)	Options	选项	オプション	ជម្រើស	옵션	ທາງເລືອກ	ရွေးချယ်စရာများ	Tùy chọn	Pilihan	Opsi	Mga opsyon
+barcode_option_type_multi_label	เลือกได้หลายอย่าง	Multi-select	多选	複数選択	ជ្រើសរើសច្រើន	다중 선택	ເລືອກຫຼາຍອັນ	မျိုးစုံရွေးချယ်နိုင်	Chọn nhiều	Pilihan berbilang	Pilihan ganda	Maramihang pagpili
+barcode_option_type_single_label	เลือกได้อย่างเดียว	Single-select	单选	単一選択	ជ្រើសរើសតែមួយ	단일 선택	ເລືອກອັນດຽວ	တစ်ခုတည်းရွေးချယ်နိုင်	Chọn một	Pilihan tunggal	Pilihan tunggal	Isahang pagpili
+barcode_option_select_range	เลือกได้ %min-%max อย่าง	Select %min–%max items	选择 %min–%max 项	%min–%max 項目を選択	ជ្រើសរើស %min–%max ធាតុ	%min–%max개 선택	ເລືອກ %min–%max ລາຍການ	%min–%max ခုရွေးပါ	Chọn %min–%max mục	Pilih %min–%max item	Pilih %min–%max item	Pumili ng %min–%max item
+barcode_alert_toggle_label	เปิดใช้ข้อความแจ้งเตือนขณะขาย	Alert on scan	扫码提醒	スキャン時に警告	ដាស់តឿនពេលស្កេន	스캔 시 알림	ແຈ້ງເຕືອນເມື່ອສະແກນ	စကင်ဖတ်စဉ် သတိပေးချက်	Cảnh báo khi quét	Amaran semasa imbas	Peringatan saat pindai	Alerto sa pag-scan
+barcode_alert_message_label	ข้อความแจ้งเตือน	Alert message	提醒消息	警告メッセージ	សារដាស់តឿន	알림 메시지	ຂໍ້ຄວາມແຈ້ງເຕືອນ	သတိပေးစာ	Tin nhắn cảnh báo	Mesej amaran	Pesan peringatan	Mensahe ng alerto
+barcode_inherited_info_banner	ข้อมูลสืบทอดจากสินค้าหลัก:	Inherited from main product:	继承自主要商品:	親商品から継承:	បានទទួលមរតកពីផលិតផលចម្បង:	대표 상품에서 상속됨:	ຮັບສືບທອດຈາກສິນຄ້າຫຼັກ:	ပင်မကုန်ပစ္စည်းမှ အမွေရသည်:	Kế thừa từ sản phẩm chính:	Diwarisi daripada produk utama:	Diturunkan dari produk utama:	Namana mula sa pangunahing produkto:
+barcode_inherited_info_edit_hint	หากต้องการแก้ไขข้อมูลเหล่านี้ กรุณาไปที่เมนู	To edit these fields, go to menu	如需编辑这些字段，请前往菜单	これらの項目を編集するにはメニューへ移動してください	ដើម្បីកែសម្រួលវាលទាំងនេះ សូមចូលទៅកាន់ម៉ឺនុយ	이 필드를 편집하려면 메뉴로 이동하세요	ຖ້າຕ້ອງການແກ້ໄຂຂໍ້ມູນເຫຼົ່ານີ້ ກະລຸນາໄປທີ່ເມນູ	ဤအကွက်များကို ပြင်ဆင်ရန် မီနူးသို့ သွားပါ	Để chỉnh sửa các trường này, hãy vào menu	Untuk mengedit medan ini, pergi ke menu	Untuk mengedit kolom ini, buka menu	Upang i-edit ang mga field na ito, pumunta sa menu
+barcode_product_menu_name	สินค้า	Products	商品	商品	ផលិតផល	상품	ສິນຄ້າ	ကုန်ပစ္စည်းများ	Sản phẩm	Produk	Produk	Mga Produkto
+barcode_product_extension_menu_name	ข้อมูลเสริมสินค้า	Product Extended Data	商品扩展数据	商品拡張データ	ទិន្នន័យបន្ថែមផលិតផល	상품 확장 데이터	ຂໍ້ມູນເພີ່ມເຕີມສິນຄ້າ	ကုန်ပစ္စည်း အပိုဒေတာ	Dữ liệu mở rộng sản phẩm	Data Lanjutan Produk	Data Tambahan Produk	Karagdagang Data ng Produkto
+barcode_loading_product_detail	กำลังดึงข้อมูลรายละเอียดสินค้าหลัก...	Loading main product details...	正在加载主商品详情...	メイン商品詳細を読み込み中...	កំពុងផ្ទុកព័ត៌មានលម្អិតផលិតផលចម្បង...	주요 상품 세부정보 불러오는 중...	ກຳລັງໂຫຼດລາຍລະອຽດສິນຄ້າຫຼັກ...	ပင်မကုန်ပစ္စည်းအသေးစိတ်ကို ဖွင့်နေသည်...	Đang tải chi tiết sản phẩm chính...	Memuat butiran produk utama...	Memuat detail produk utama...	Naglo-load ng mga detalye ng pangunahing produkto...
+barcode_media_use_section	การใช้รูปภาพหรือสีป้ายสินค้า	Image or tag color	图片或标签颜色	画像またはタグ色	រូបភាព ឬពណ៌ស្លាក	이미지 또는 태그 색상	ຮູບພາບ ຫຼືສີປ້າຍ	ပုံ သို့မဟုတ် တက်ဂ်အရောင်	Hình ảnh hoặc màu thẻ	Imej atau warna tag	Gambar atau warna tag	Larawan o kulay ng tag
+barcode_media_main_section	รูปภาพหลักของสินค้า	Main product image	商品主图	メイン商品画像	រូបភាពផលិតផលចម្បង	대표 상품 이미지	ຮູບພາບສິນຄ້າຫຼັກ	ပင်မကုန်ပစ္စည်းပုံ	Ảnh sản phẩm chính	Imej produk utama	Gambar produk utama	Pangunahing larawan ng produkto
+barcode_media_gallery_section	แกลเลอรี่รูปภาพเพิ่มเติม	Image gallery	图片库	画像ギャラリー	វិចិត្រសាលរូបភាព	이미지 갤러리	ຄັງຮູບພາບ	ဓာတ်ပုံပြခန်း	Thư viện ảnh	Galeri imej	Galeri gambar	Gallery ng larawan
+barcode_media_add_gallery	เพิ่มรูปแกลเลอรี่	Add gallery image	添加图库图片	ギャラリー画像を追加	បន្ថែមរូបភាពទៅវិចិត្រសាល	갤러리 이미지 추가	ເພີ່ມຮູບໃສ່ຄັງຮູບພາບ	ဓာတ်ပုံပြခန်းသို့ ပုံထည့်ရန်	Thêm ảnh vào thư viện	Tambah imej galeri	Tambah gambar galeri	Magdagdag ng larawan sa gallery
+barcode_media_color_section	ระบุสีป้ายสินค้า	Tag color	标签颜色	タグの色	ពណ៌ស្លាក	태그 색상	ສີປ້າຍ	တဂ်အရောင်	Màu nhãn	Warna tag	Warna tag	Kulay ng tag
+barcode_media_uploading	กำลังอัปโหลด...	Uploading...	正在上传...	アップロード中...	កំពុងផ្ទុកឡើង...	업로드 중...	ກຳລັງອັບໂຫລດ...	တင်နေသည်...	Đang tải lên...	Memuat naik...	Mengunggah...	Nag-a-upload...
+barcode_media_upload_btn	อัปโหลดรูปภาพ	Upload image	上传图片	画像をアップロード	ផ្ទុកឡើងរូបភាព	이미지 업로드	ອັບໂຫລດຮູບພາບ	ပုံတင်ရန်	Tải ảnh lên	Muat naik imej	Unggah gambar	Mag-upload ng larawan
+barcode_media_delete_btn	ลบรูปภาพ	Delete image	删除图片	画像を削除	លុបរូបភាព	이미지 삭제	ລຶບຮູບພາບ	ပုံဖျက်ရန်	Xóa ảnh	Padam imej	Hapus gambar	Tanggalin ang larawan
+barcode_media_no_gallery	— ไม่มีรูปภาพในแกลเลอรี่ —	— No gallery images —	— 暂无画廊图片 —	— ギャラリー画像はありません —	— គ្មានរូបភាពក្នុងវិចិត្រសាលទេ —	— 갤러리 이미지 없음 —	— ບໍ່ມີຮູບພາບໃນຄັງຮູບ —	— ပြခန်းတွင် ပုံများမရှိပါ —	— Không có ảnh trong thư viện —	— Tiada imej galeri —	— Tidak ada gambar galeri —	— Walang larawan sa gallery —
+barcode_media_color_name	ชื่อสี	Color name	颜色名称	色名	ឈ្មោះពណ៌	색상 이름	ຊື່ສີ	အရောင်အမည်	Tên màu	Nama warna	Nama warna	Pangalan ng kulay
+barcode_media_color_hex	เลือกสีป้ายสินค้า (Hex)	Tag color (Hex)	标签颜色 (Hex)	タグの色 (Hex)	ពណ៌ស្លាក (Hex)	태그 색상 (Hex)	ສີປ້າຍ (Hex)	တဂ်အရောင် (Hex)	Màu nhãn (Hex)	Warna tag (Hex)	Warna tag (Hex)	Kulay ng tag (Hex)
+barcode_media_no_image	ไม่มีรูปภาพ	No image	无图片	画像なし	គ្មានរូបភាព	이미지 없음	ບໍ່ມີຮູບພາບ	ပုံမရှိပါ	Không có ảnh	Tiada imej	Tidak ada gambar	Walang larawan
+barcode_option_group_name	ชื่อกลุ่มตัวเลือกเสริม	Option group name	选项组名称	オプショングループ名	ឈ្មោះក្រុមជម្រើស	옵션 그룹 이름	ຊື່ກຸ່ມຕົວເລືອກ	ရွေးချယ်စရာအဖွဲ့အမည်	Tên nhóm tùy chọn	Nama kumpulan pilihan	Nama grup opsi	Pangalan ng pangkat ng opsyon
+barcode_option_choice_type	ประเภทการเลือก	Choice type	选择类型	選択タイプ	ប្រភេទជម្រើស	선택 유형	ປະເພດການເລືອກ	ရွေးချယ်မှုအမျိုးအစား	Loại lựa chọn	Jenis pilihan	Jenis pilihan	Uri ng pagpipilian
+barcode_option_choice_type_multi	เลือกได้หลายรายการ (Checkbox)	Multi-select (Checkbox)	多选（复选框）	複数選択（チェックボックス）	ជ្រើសរើសច្រើន (ប្រអប់ធីក)	다중 선택(체크박스)	ເລືອກຫຼາຍລາຍການ (ກ່ອງໝາຍ)	မျိုးစုံရွေးချယ်နိုင်သည် (အမှန်ခြစ်ကွက်)	Chọn nhiều (Hộp kiểm)	Pilihan berbilang (Kotak semak)	Pilihan ganda (Kotak centang)	Maramihang pagpili (Checkbox)
+barcode_option_choice_type_single	เลือกได้รายการเดียว (Radio)	Single-select (Radio)	单选（单选按钮）	単一選択（ラジオボタン）	ជ្រើសរើសតែមួយ (ប៊ូតុងមូល)	단일 선택(라디오)	ເລືອກລາຍການດຽວ (ປຸ່ມວິທະຍຸ)	တစ်ခုတည်းရွေးချယ်နိုင်သည် (ရေဒီယို)	Chọn một (Nút radio)	Pilihan tunggal (Butang radio)	Pilihan tunggal (Tombol radio)	Isahang pagpili (Radio)
+barcode_option_min_select_label	จำนวนเลือกขั้นต่ำ (Min Select)	Min select	最少选择	最小選択数	ជ្រើសរើសអប្បបរមា	최소 선택	ເລືອກຕ່ຳສຸດ	အနည်းဆုံးရွေးချယ်မှု	Chọn tối thiểu	Pilihan minimum	Pilih minimum	Minimum na pagpili
+barcode_option_max_select_label	จำนวนเลือกสูงสุด (Max Select)	Max select	最多选择	最大選択数	ជ្រើសរើសអតិបរមា	최대 선택	ເລືອກສູງສຸດ	အများဆုံးရွေးချယ်မှု	Chọn tối đa	Pilihan maksimum	Pilih maksimum	Maksimum na pagpili
+barcode_option_choice_name	ชื่อตัวเลือกย่อย	Choice name	选项名称	選択肢名	ឈ្មោះជម្រើស	선택지 이름	ຊື່ຕົວເລືອກ	ရွေးချယ်စရာအမည်	Tên lựa chọn	Nama pilihan	Nama pilihan	Pangalan ng pagpipilian
+barcode_option_choice_price_label	ราคาเพิ่มเติม	Add-on price	附加价格	追加価格	តម្លៃបន្ថែម	추가 가격	ລາຄາເພີ່ມເຕີມ	အပိုဆောင်းစျေး	Giá bổ sung	Harga tambahan	Harga tambahan	Karagdagang presyo
+barcode_option_choice_qty_label	จำนวน	Quantity	数量	数量	ចំនួន	수량	ຈຳນວນ	အရေအတွက်	Số lượng	Kuantiti	Jumlah	Dami
+barcode_option_choice_default_label	ตัวเลือกเริ่มต้น (Default)	Default choice	默认选项	デフォルト選択	ជម្រើសលំនាំដើម	기본 선택	ຕົວເລືອກຄ່າເລີ່ມຕົ້ນ	မူလရွေးချယ်မှု	Lựa chọn mặc định	Pilihan lalai	Pilihan bawaan	Default na pagpipilian
+barcode_option_choice_stock_label	หักสต็อกสินค้าเสริม	Deduct stock	扣减库存	在庫を減算	កាត់ស្តុក	재고 차감	ຫັກສະຕັອກ	စတော့ နုတ်ယူပါ	Trừ tồn kho	Tolak stok	Kurangi stok	Bawasan ang stock
+barcode_option_add_group	เพิ่มกลุ่มตัวเลือกเสริม	Add option group	添加选项组	オプショングループを追加	បន្ថែមក្រុមជម្រើស	옵션 그룹 추가	ເພີ່ມກຸ່ມຕົວເລືອກ	ရွေးချယ်စရာအုပ်စုထည့်ရန်	Thêm nhóm tùy chọn	Tambah kumpulan pilihan	Tambah grup opsi	Magdagdag ng pangkat ng opsyon
+barcode_option_add_choice	เพิ่มตัวเลือกย่อย	Add choice	添加选项	選択肢を追加	បន្ថែមជម្រើស	선택지 추가	ເພີ່ມຕົວເລືອກ	ရွေးချယ်စရာထည့်ရန်	Thêm lựa chọn	Tambah pilihan	Tambah pilihan	Magdagdag ng pagpipilian
+barcode_option_group_no	กลุ่มตัวเลือกที่ #	Option group #	选项组 #	オプショングループ #	ក្រុមជម្រើស #	옵션 그룹 #	ກຸ່ມຕົວເລືອກ #	ရွေးချယ်စရာအုပ်စု #	Nhóm tùy chọn #	Kumpulan pilihan #	Grup opsi #	Pangkat ng opsyon #
+barcode_option_choice_no	ตัวเลือกย่อย #	Choice #	选项 #	選択肢 #	ជម្រើស #	선택지 #	ຕົວເລືອກ #	ရွေးချယ်စရာ #	Lựa chọn #	Pilihan #	Pilihan #	Pagpipilian #
+barcode_option_choice_list	รายการตัวเลือกย่อย	Choices	选项	選択肢	ជម្រើស	선택지	ຕົວເລືອກ	ရွေးချယ်စရာများ	Các lựa chọn	Pilihan	Pilihan	Mga pagpipilian
+barcode_time_section	ช่วงเวลาขายสินค้า (Time For Sale Settings)	Sales time slot settings	销售时间段设置	販売時間帯設定	ការកំណត់ពេលវេលាលក់	판매 시간대 설정	ການຕັ້ງຄ່າຊ່ວງເວລາຂາຍ	အရောင်းအချိန်ကာလ ဆက်တင်များ	Cài đặt khung giờ bán hàng	Tetapan slot masa jualan	Pengaturan slot waktu penjualan	Mga setting ng slot ng oras ng benta
+barcode_time_add_btn	เพิ่มกำหนดเวลาขาย	Add time slot	添加时间段	時間帯を追加	បន្ថែមពេលវេលា	시간대 추가	ເພີ່ມຊ່ວງເວລາ	အချိန်ကာလ ထည့်ရန်	Thêm khung giờ	Tambah slot masa	Tambah slot waktu	Magdagdag ng slot ng oras
+barcode_time_no_limit	— สินค้าตัวนี้สามารถสแกนขายได้ตลอดเวลา —	— This product can be sold at any time —	— 此商品可随时扫码销售 —	— この商品はいつでもスキャンして販売できます —	— ផលិតផលនេះអាចស្កេនលក់បានគ្រប់ពេល —	— 이 제품은 언제든지 스캔하여 판매할 수 있습니다 —	— ສິນຄ້ານີ້ສາມາດສະແກນຂາຍໄດ້ຕະຫຼອດເວລາ —	— ဤကုန်ပစ္စည်းကို အချိန်မရွေး စကင်ဖတ်၍ ရောင်းချနိုင်သည် —	— Sản phẩm này có thể quét bán bất cứ lúc nào —	— Produk ini boleh diimbas untuk dijual pada bila-bila masa —	— Produk ini dapat dipindai untuk dijual kapan saja —	— Maaaring i-scan ang produktong ito para ibenta anumang oras —
+barcode_time_days_label	วันในสัปดาห์	Days of week	每周日期	曜日	ថ្ងៃនៃសប្តាហ៍	요일	ມື້ໃນອາທິດ	ရက်သတ္တပတ်၏ နေ့ရက်များ	Ngày trong tuần	Hari dalam minggu	Hari dalam seminggu	Mga araw ng linggo
+barcode_time_rule_no	ข้อกำหนดเวลาขายที่ #	Time rule #	时间段规则 #	時間ルール #	ច្បាប់ពេលវេលាទី #	시간 규칙 #	ກົດເວລາທີ #	အချိန်စည်းမျဉ်း #	Quy tắc thời gian #	Peraturan masa #	Aturan waktu #	Panuntunan sa oras #
+barcode_time_from_date	ตั้งแต่วันที่	From date	开始日期	開始日	ចាប់ពីថ្ងៃខែ	시작일	ຕັ້ງແຕ່ວັນທີ	ရက်စွဲမှစ၍	Từ ngày	Dari tarikh	Dari tanggal	Mula sa petsa
+barcode_time_to_date	ถึงวันที่	To date	结束日期	終了日	ដល់ថ្ងៃខែ	종료일	ເຖິງວັນທີ	ရက်စွဲအထိ	Đến ngày	Hingga tarikh	Sampai tanggal	Hanggang sa petsa
+barcode_time_from_time	ตั้งแต่เวลา	From time	开始时间	開始時間	ចាប់ពីម៉ោង	시작 시간	ຕັ້ງແຕ່ເວລາ	အချိန်မှစ၍	Từ giờ	Dari masa	Dari jam	Mula sa oras
+barcode_time_to_time	ถึงเวลา	To time	结束时间	終了時刻	ដល់ម៉ោង	종료 시간	ເຖິງເວລາ	အချိန်အထိ	Đến giờ	Hingga masa	Sampai waktu	Hanggang oras
+barcode_business_type_section	ยกเว้นการขายตามประเภทธุรกิจ	Excluded by business type	按业务类型排除	業種別除外	មិនរាប់បញ្ចូលតាមប្រភេទអាជីវកម្ម	업종별 제외	ຍົກເວັ້ນຕາມປະເພດທຸລະກິດ	လုပ်ငန်းအမျိုးအစားအလိုက် ဖယ်ထုတ်ထားသည်	Loại trừ theo loại hình kinh doanh	Dikecualikan mengikut jenis perniagaan	Dikecualikan berdasarkan jenis bisnis	Hindi kasama ayon sa uri ng negosyo
+barcode_business_type_add_btn	เพิ่มประเภทธุรกิจที่ยกเว้น	Add excluded business type	添加排除的业务类型	除外業種を追加	បន្ថែមប្រភេទអាជីវកម្មដែលមិនរាប់បញ្ចូល	제외 업종 추가	ເພີ່ມປະເພດທຸລະກິດທີ່ຍົກເວັ້ນ	ဖယ်ထုတ်ထားသော လုပ်ငန်းအမျိုးအစား ထည့်ရန်	Thêm loại hình kinh doanh bị loại trừ	Tambah jenis perniagaan yang dikecualikan	Tambah jenis bisnis yang dikecualikan	Magdagdag ng hindi kasamang uri ng negosyo
+barcode_business_type_no_data	— ไม่มีการยกเว้น ขายได้ทุกประเภทธุรกิจ —	— No exclusions — available for all business types —	— 无排除项 — 适用于所有业务类型 —	— 除外なし — すべての業種で利用可能 —	— គ្មានការមិនរាប់បញ្ចូល — អាចប្រើបានគ្រប់ប្រភេទអាជីវកម្ម —	— 제외 없음 — 모든 업종에서 판매 가능 —	— ບໍ່ມີການຍົກເວັ້ນ — ໃຊ້ໄດ້ທຸກປະເພດທຸລະກິດ —	— ဖယ်ထုတ်မှုမရှိ — လုပ်ငန်းအမျိုးအစားအားလုံးတွင် ရနိုင်သည် —	— Không có loại trừ — khả dụng cho mọi loại hình kinh doanh —	— Tiada pengecualian — tersedia untuk semua jenis perniagaan —	— Tanpa pengecualian — tersedia untuk semua jenis bisnis —	— Walang hindi kasama — magagamit sa lahat ng uri ng negosyo —
+barcode_branch_section	สาขาที่ยกเว้นการขายสินค้าตัวนี้	Branches excluded from selling this item	排除销售此商品的分店	この商品の販売除外店舗	សាខាដែលមិនរាប់បញ្ចូលការលក់ទំនិញនេះ	이 상품 판매 제외 지점	ສາຂາທີ່ຖືກຍົກເວັ້ນການຂາຍສິນຄ້ານີ້	ဤကုန်ပစ္စည်းရောင်းချခြင်းမှ ဖယ်ထုတ်ထားသော ဘဏ်ခွဲများ	Chi nhánh bị loại trừ bán mặt hàng này	Cawangan yang dikecualikan daripada menjual item ini	Cabang yang dikecualikan dari menjual item ini	Mga branch na hindi kasama sa pagbebenta ng item na ito
+barcode_branch_add_btn	เพิ่มสาขาที่ห้ามขาย	Add excluded branch	添加排除的分店	除外店舗を追加	បន្ថែមសាខាដែលមិនរាប់បញ្ចូល	제외 지점 추가	ເພີ່ມສາຂາທີ່ຫ້າມຂາຍ	ဖယ်ထုတ်ထားသော ဘဏ်ခွဲ ထည့်ရန်	Thêm chi nhánh bị loại trừ	Tambah cawangan yang dikecualikan	Tambah cabang yang dikecualikan	Magdagdag ng hindi kasamang branch
+barcode_branch_no_data	— ไม่มีสาขาที่ยกเว้น ขายได้ทุกสาขา —	— No excluded branches — available in all branches —	— 无排除分店 — 所有分店均可销售 —	— 除外店舗なし — すべての店舗で利用可能 —	— គ្មានសាខាដែលមិនរាប់បញ្ចូល — អាចប្រើបានគ្រប់សាខា —	— 제외 지점 없음 — 모든 지점에서 판매 가능 —	— ບໍ່ມີສາຂາທີ່ຍົກເວັ້ນ — ຂາຍໄດ້ທຸກສາຂາ —	— ဖယ်ထုတ်ထားသော ဘဏ်ခွဲမရှိ — ဘဏ်ခွဲအားလုံးတွင် ရနိုင်သည် —	— Không có chi nhánh bị loại trừ — khả dụng tại mọi chi nhánh —	— Tiada cawangan dikecualikan — tersedia di semua cawangan —	— Tidak ada cabang yang dikecualikan — tersedia di semua cabang —	— Walang hindi kasamang branch — magagamit sa lahat ng branch —
+barcode_picker_branch	สาขา	Branch	分店	店舗	សាខា	지점	ສາຂາ	ဆိုင်ခွဲ	Chi nhánh	Cawangan	Cabang	Branch
+barcode_picker_business_type	ประเภทธุรกิจ	Business type	业务类型	ビジネスタイプ	ប្រភេទអាជីវកម្ម	업종	ປະເພດທຸລະກິດ	လုပ်ငန်းအမျိုးအစား	Loại hình kinh doanh	Jenis perniagaan	Jenis bisnis	Uri ng negosyo
+barcode_misc_alert_section	ข้อความแจ้งเตือนป๊อปอัปหน้าร้าน	Pop-up alert on POS	POS弹窗提醒	POSのポップアップ通知	ការជូនដំណឹងផ្ទាំងលេចឡើងលើ POS	POS 팝업 알림	ການແຈ້ງເຕືອນປັອບອັບເທິງ POS	POS ပေါ်တွင် ပေါ့ပ်အပ်သတိပေးချက်	Cảnh báo bật lên trên POS	Amaran timbul pada POS	Peringatan pop-up di POS	Pop-up alert sa POS
+barcode_misc_alert_toggle	เปิดใช้งานข้อความแจ้งเตือนขณะสแกนขาย	Enable alert on scan	启用扫码提醒	スキャン時の通知を有効にする	បើកការជូនដំណឹងពេលស្កេន	스캔 시 알림 사용	ເປີດໃຊ້ການແຈ້ງເຕືອນເມື່ອສະແກນ	စကင်ဖတ်စဉ် သတိပေးချက်ကို ဖွင့်ပါ	Bật cảnh báo khi quét	Dayakan amaran semasa imbasan	Aktifkan peringatan saat memindai	Paganahin ang alerto sa pag-scan
+barcode_misc_alert_detail	รายละเอียดข้อความแจ้งเตือน	Alert message detail	提醒消息详情	通知メッセージ詳細	ព័ត៌មានលម្អិតសារជូនដំណឹង	알림 메시지 상세	ລາຍລະອຽດຂໍ້ຄວາມແຈ້ງເຕືອນ	သတိပေးစာတိုအသေးစိတ်	Chi tiết thông báo	Perincian mesej amaran	Detail pesan peringatan	Detalye ng mensahe ng alerto
+barcode_misc_desc_section	คำอธิบาย/รายละเอียดสินค้าเพิ่มเติม	Product description / additional details	商品描述/附加详情	商品説明 / 追加詳細	ការពិពណ៌នាផលិតផល / ព័ត៌មានបន្ថែម	상품 설명 / 추가 세부정보	ຄຳອະທິບາຍສິນຄ້າ / ລາຍລະອຽດເພີ່ມເຕີມ	ကုန်ပစ္စည်းဖော်ပြချက် / အပိုအသေးစိတ်	Mô tả sản phẩm / thông tin bổ sung	Penerangan produk / butiran tambahan	Deskripsi produk / detail tambahan	Paglalarawan ng produkto / karagdagang detalye
+barcode_misc_guid_section	ID / GUID ข้อมูลอ้างอิง	ID / GUID reference	ID / GUID 参考	ID / GUID 参照	ឯកសារយោង ID / GUID	ID / GUID 참조	ການອ້າງອີງ ID / GUID	ID / GUID ကိုးကား	Tham chiếu ID / GUID	Rujukan ID / GUID	Referensi ID / GUID	Sanggunian ng ID / GUID
+barcode_misc_guid_fixed	สินค้า GUID Fixed	Product GUID Fixed	商品 GUID 固定	商品 GUID 固定	GUID ផលិតផលថេរ	제품 GUID 고정	GUID ສິນຄ້າແບບຄົງທີ່	ကုန်ပစ္စည်း GUID ပုံသေ	GUID sản phẩm cố định	GUID Produk Tetap	GUID Produk Tetap	Fixed na GUID ng produkto
+barcode_misc_holding_code	รหัสร้านค้า (รหัสกลุ่มกิจการ)	Business group code	业务组代码	ビジネスグループコード	កូដក្រុមអាជីវកម្ម	비즈니스 그룹 코드	ລະຫັດກຸ່ມທຸລະກິດ	လုပ်ငန်းအုပ်စုကုဒ်	Mã nhóm doanh nghiệp	Kod kumpulan perniagaan	Kode grup bisnis	Code ng grupo ng negosyo
+barcode_misc_unit_guid	รหัสหน่วยนับพื้นฐาน GUID	Base unit GUID	基本单位 GUID	基本単位 GUID	GUID ឯកតាមូលដ្ឋាន	기본 단위 GUID	GUID ຫົວໜ່ວຍພື້ນຖານ	အခြေခံယူနစ် GUID	GUID đơn vị cơ bản	GUID unit asas	GUID unit dasar	GUID ng batayang yunit
+barcode_unit_section	หน่วยนับและอัตราส่วน (Unit conversion)	Unit & conversion ratio	单位与换算比例	単位と換算率	ឯកតា និងអត្រាបំប្លែង	단위 및 환산 비율	ຫົວໜ່ວຍ ແລະ ອັດຕາແປງ	ယူနစ်နှင့် ပြောင်းလဲမှုနှုန်း	Đơn vị và tỷ lệ chuyển đổi	Unit dan nisbah penukaran	Unit dan rasio konversi	Yunit at ratio ng conversion
+barcode_unit_base_unit	หน่วยนับหลัก (Base Unit)	Base unit	基本单位	基本単位	ឯកតាមូលដ្ឋាន	기본 단위	ຫົວໜ່ວຍພື້ນຖານ	အခြေခံယူနစ်	Đơn vị cơ bản	Unit asas	Unit dasar	Batayang yunit
+barcode_unit_base_placeholder	คลิกเลือกหน่วยนับหลัก...	Click to select base unit...	点击选择基本单位...	基本単位を選択するにはクリック...	ចុចដើម្បីជ្រើសរើសឯកតាមូលដ្ឋាន...	기본 단위를 선택하려면 클릭...	ຄລິກເພື່ອເລືອກຫົວໜ່ວຍພື້ນຖານ...	အခြေခံယူနစ်ကို ရွေးချယ်ရန် နှိပ်ပါ...	Nhấp để chọn đơn vị cơ bản...	Klik untuk memilih unit asas...	Klik untuk memilih unit dasar...	I-click para pumili ng batayang yunit...
+barcode_unit_divide	ตัวหาร (Divide Value)	Divide value	除数	除数	តម្លៃចែក	나누는 값	ຄ່າຕົວຫານ	စားသည့်တန်ဖိုး	Giá trị chia	Nilai bahagi	Nilai pembagi	Halaga ng paghahati
+barcode_unit_stand	ตัวคูณ (Stand Value)	Stand value	乘数	乗数	តម្លៃគុណ	곱하는 값	ຄ່າຕົວຄູນ	မြှောက်သည့်တန်ဖိုး	Giá trị nhân	Nilai pendarab	Nilai pengali	Halaga ng pagpaparami
+barcode_unit_condition	มีเงื่อนไขหน่วยนับ (Has Condition)	Has unit condition	有单位条件	単位条件あり	មានលក្ខខណ្ឌឯកតា	단위 조건 있음	ມີເງື່ອນໄຂຫົວໜ່ວຍ	ယူနစ်အခြေအနေ ရှိသည်	Có điều kiện đơn vị	Mempunyai syarat unit	Memiliki kondisi unit	May kundisyon ng unit
+barcode_unit_condition_enable	เปิดใช้งาน	Enable	启用	有効	បើកដំណើរការ	사용	ເປີດໃຊ້	ဖွင့်ပါ	Bật	Dayakan	Aktifkan	Paganahin
+barcode_unit_multi_section	หน่วยนับเพิ่มเติม (Additional units)	Additional units	附加单位	追加単位	ឯកតាបន្ថែម	추가 단위	ໜ່ວຍເພີ່ມເຕີມ	အပိုယူနစ်များ	Đơn vị bổ sung	Unit tambahan	Unit tambahan	Mga karagdagang unit
+barcode_unit_multi_toggle	กำหนดหน่วยนับเพิ่มเติม	Configure additional units	配置附加单位	追加単位を設定	កំណត់រចនាសម្ព័ន្ធឯកតាបន្ថែម	추가 단위 구성	ຕັ້ງຄ່າໜ່ວຍເພີ່ມເຕີມ	ထပ်ဆောင်းယူနစ်များ ပြင်ဆင်သတ်မှတ်ရန်	Định cấu hình đơn vị bổ sung	Konfigurasi unit tambahan	Konfigurasikan unit tambahan	I-configure ang mga karagdagang unit
+barcode_unit_ref_list_title	รายการหน่วยนับเพิ่มเติม	Additional units	附加单位	追加単位	ឯកតាបន្ថែម	추가 단위	ໜ່ວຍເພີ່ມເຕີມ	အပိုယူနစ်များ	Đơn vị bổ sung	Unit tambahan	Unit tambahan	Mga karagdagang unit
+barcode_unit_ref_add_btn	เพิ่มหน่วยนับ	Add unit	添加单位	単位を追加	បន្ថែមឯកតា	단위 추가	ເພີ່ມໜ່ວຍ	ယူနစ်ထည့်ရန်	Thêm đơn vị	Tambah unit	Tambah unit	Magdagdag ng unit
+barcode_unit_ref_no_data	ยังไม่มีหน่วยนับเพิ่มเติม	No additional units	暂无附加单位	追加単位はありません	មិនទាន់មានឯកតាបន្ថែម	추가 단위 없음	ຍັງບໍ່ມີໜ່ວຍເພີ່ມເຕີມ	ထပ်ဆောင်းယူနစ်များ မရှိသေးပါ	Chưa có đơn vị bổ sung	Tiada unit tambahan	Belum ada unit tambahan	Wala pang karagdagang unit
+barcode_unit_ref_barcode	บาร์โค้ดที่ตรงกับหน่วยนี้	Barcodes matching this unit	与此单位匹配的条形码	この単位に一致するバーコード	បាកូដដែលត្រូវនឹងឯកតានេះ	이 단위와 일치하는 바코드	ບາໂຄດທີ່ກົງກັບໜ່ວຍນີ້	ဤယူနစ်နှင့် ကိုက်ညီသော ဘားကုဒ်များ	Mã vạch khớp với đơn vị này	Kod bar yang sepadan dengan unit ini	Kode batang yang cocok dengan unit ini	Mga barcode na tumutugma sa unit na ito
+barcode_unit_ref_barcode_placeholder	ยังไม่มีบาร์โค้ดที่ใช้หน่วยนี้	No barcode uses this unit yet	暂无条形码使用此单位	この単位を使用するバーコードはまだありません	មិនទាន់មានបាកូដប្រើឯកតានេះទេ	이 단위를 사용하는 바코드 없음	ຍັງບໍ່ມີບາໂຄດໃຊ້ໜ່ວຍນີ້	ဤယူနစ်ကို သုံးသော ဘားကုဒ် မရှိသေးပါ	Chưa có mã vạch nào dùng đơn vị này	Belum ada kod bar menggunakan unit ini	Belum ada kode batang yang menggunakan unit ini	Wala pang barcode na gumagamit ng unit na ito
+barcode_unit_ref_unit_code	หน่วยนับ (Unit Code)	Unit code	单位代码	単位コード	កូដឯកតា	단위 코드	ລະຫັດໜ່ວຍ	ယူနစ်ကုဒ်	Mã đơn vị	Kod unit	Kode unit	Code ng unit
+barcode_unit_ref_unit_placeholder	เช่น PCS, BOX	e.g. PCS, BOX	例如 PCS、BOX	例：PCS、BOX	ឧទាហរណ៍ PCS, BOX	예: PCS, BOX	ຕົວຢ່າງ PCS, BOX	ဥပမာ PCS, BOX	Ví dụ: PCS, BOX	Cth: PCS, BOX	Contoh: PCS, BOX	Hal. PCS, BOX
+barcode_unit_ref_qty	จำนวนขายย่อย (Qty)	Sub-unit qty	子单位数量	サブ単位数量	ចំនួនឯកតារង	하위 단위 수량	ຈຳນວນຫົວໜ່ວຍຍ່ອຍ	ယူနစ်ခွဲ အရေအတွက်	Số lượng đơn vị con	Kuantiti subunit	Jumlah subunit	Dami ng sub-unit
+barcode_unit_ref_divide	ตัวหาร	Divide	除数	除数	តួចែក	제수	ຕົວຫານ	စားကိန်း	Số chia	Pembahagi	Pembagi	Pamahagi
+barcode_unit_ref_stand	ตัวคูณ	Stand	乘数	乗数	តួគុណ	승수	ຕົວຄູນ	မြှောက်ကိန်း	Số nhân	Pendarab	Pengali	Pamparami
+barcode_unit_conversion_required	กรุณาเลือกหน่วยนับเพิ่มเติมให้ครบทุกรายการ	Select a unit for every additional row	请为每个附加行选择单位	追加の各行に単位を選択してください	សូមជ្រើសរើសឯកតាសម្រាប់ជួរបន្ថែមនីមួយៗ	추가 행마다 단위를 선택하세요	ກະລຸນາເລືອກຫົວໜ່ວຍສຳລັບທຸກແຖວເພີ່ມ	ထပ်ဆောင်းအတန်းတိုင်းအတွက် ယူနစ်ရွေးပါ	Chọn đơn vị cho từng dòng bổ sung	Pilih unit untuk setiap baris tambahan	Pilih unit untuk setiap baris tambahan	Pumili ng unit para sa bawat karagdagang row
+barcode_unit_conversion_duplicate	รหัสหน่วยนับต้องไม่ซ้ำกัน	Unit codes must be unique	单位代码必须唯一	単位コードは一意である必要があります	លេខកូដឯកតាត្រូវតែមិនស្ទួន	단위 코드는 고유해야 합니다	ລະຫັດຫົວໜ່ວຍຕ້ອງບໍ່ຊ້ຳກັນ	ယူနစ်ကုဒ်များ ထပ်မနေရပါ	Mã đơn vị phải là duy nhất	Kod unit mesti unik	Kode unit harus unik	Dapat natatangi ang mga unit code
+barcode_unit_conversion_invalid_ratio	ตัวหารและตัวคูณต้องเป็นจำนวนเต็มมากกว่า 0	ตัวหารและตัวคูณต้องเป็นจำนวนเต็มมากกว่า 0	除数和乘数必须为大于 0 的整数	除数と乗数は0より大きい整数でなければなりません	តួចែក និងតួគុណត្រូវតែជាចំនួនគត់ធំជាង 0	제수와 승수는 0보다 큰 정수여야 합니다	ຕົວຫານ ແລະ ຕົວຄູນຕ້ອງເປັນຈຳນວນເຕັມທີ່ຫຼາຍກວ່າ 0	စားကိန်းနှင့် မြှောက်ကိန်းသည် 0 ထက်ကြီးသော ကိန်းပြည့်ဖြစ်ရမည်	Số chia và số nhân phải là số nguyên lớn hơn 0	Pembahagi dan pendarab mestilah integer lebih besar daripada 0	Pembagi dan pengali harus bilangan bulat lebih besar dari 0	Ang pamahagi at pamparami ay dapat na buumbilang na higit sa 0
+barcode_bom_section	สูตรการผลิตสินค้า (BOM - Bill of Materials)	Bill of Materials (BOM)	物料清单 (BOM)	部品表 (BOM)	បញ្ជីវត្ថុធាតុដើម (BOM)	자재 명세서 (BOM)	ບັນຊີລາຍການວັດສະດຸ (BOM)	ပစ္စည်းစာရင်း (BOM)	Định mức nguyên vật liệu (BOM)	Bil Bahan (BOM)	Daftar Material (BOM)	Listahan ng mga Materyales (BOM)
+barcode_bom_add_btn	เพิ่มรายการวัตถุดิบ	Add material	添加物料	材料を追加	បន្ថែមសម្ភារៈ	재료 추가	ເພີ່ມວັດສະດຸ	ပစ္စည်းထည့်ရန်	Thêm vật liệu	Tambah bahan	Tambah bahan	Magdagdag ng materyal
+barcode_bom_no_data	ไม่มีรายการวัตถุดิบในสูตร BOM	No materials in BOM	BOM中无物料	BOMに材料はありません	មិនមានសម្ភារៈក្នុង BOM	BOM에 재료 없음	ບໍ່ມີວັດສະດຸໃນ BOM	BOM တွင် ပစ္စည်းမရှိပါ	Không có vật liệu trong BOM	Tiada bahan dalam BOM	Tidak ada bahan di BOM	Walang materyal sa BOM
+barcode_bom_barcode_label	บาร์โค้ดวัตถุดิบ	Material barcode	物料条码	材料バーコード	បាកូដសម្ភារៈ	재료 바코드	ບາໂຄດວັດສະດຸ	ပစ္စည်းဘားကုဒ်	Mã vạch vật liệu	Kod bar bahan	Kode batang bahan	Barcode ng materyal
+barcode_bom_barcode_placeholder	สแกนหรือพิมพ์บาร์โค้ดวัตถุดิบ	Scan or type material barcode	扫描或输入物料条码	材料バーコードをスキャンまたは入力	ស្កេនឬវាយបាកូដសម្ភារៈ	재료 바코드를 스캔하거나 입력하세요	ສະແກນຫຼືພິມບາໂຄດວັດສະດຸ	ပစ္စည်းဘားကုဒ်ကို စကင်ဖတ်ပါ သို့မဟုတ် ရိုက်ထည့်ပါ	Quét hoặc nhập mã vạch vật liệu	Imbas atau taip kod bar bahan	Pindai atau ketik kode batang bahan	I-scan o i-type ang barcode ng materyal
+barcode_bom_unit_label	หน่วยนับวัตถุดิบ	Material unit	物料单位	材料単位	ឯកតាសម្ភារៈ	재료 단위	ໜ່ວຍວັດສະດຸ	ပစ္စည်းယူနစ်	Đơn vị vật liệu	Unit bahan	Satuan bahan	Yunit ng materyal
+barcode_bom_unit_placeholder	เช่น PCS, KG	e.g. PCS, KG	例如 PCS、KG	例：PCS、KG	ឧ. PCS, KG	예: PCS, KG	ຕົວຢ່າງ: PCS, KG	ဥပမာ PCS၊ KG	VD: PCS, KG	cth. PCS, KG	mis. PCS, KG	hal. PCS, KG
+barcode_bom_qty_label	ปริมาณที่ใช้ (Qty)	Qty used	使用数量	使用数量	បរិមាណប្រើប្រាស់	사용 수량	ຈຳນວນທີ່ໃຊ້	အသုံးပြုအရေအတွက်	Số lượng sử dụng	Kuantiti digunakan	Jumlah dipakai	Dami na ginamit
+barcode_misc_desc_placeholder	รายละเอียดสินค้าสำหรับระบบหลังบ้านหรือการจัดส่ง...	Product description for back-office or delivery...	用于后台或配送的产品描述...	バックオフィスまたは配送用の商品説明...	ការពិពណ៌នាផលិតផលសម្រាប់ការិយាល័យខាងក្នុង ឬការដឹកជញ្ជូន...	백오피스 또는 배송용 제품 설명...	ຄຳອະທິບາຍສິນຄ້າສຳລັບຫ້ອງການພາຍໃນ ຫຼືການຈັດສົ່ງ...	အတွင်းရုံး သို့မဟုတ် ပို့ဆောင်မှုအတွက် ကုန်ပစ္စည်းဖော်ပြချက်...	Mô tả sản phẩm cho văn phòng nội bộ hoặc giao hàng...	Penerangan produk untuk pejabat dalaman atau penghantaran...	Deskripsi produk untuk kantor internal atau pengiriman...	Paglalarawan ng produkto para sa panloob na opisina o paghahatid...
+barcode_discard_label	ทิ้งการแก้ไข	Discard changes	放弃更改	変更を破棄	បោះបង់ការផ្លាស់ប្តូរ	변경 사항 취소	ຍົກເລີກການປ່ຽນແປງ	ပြောင်းလဲမှုများကို စွန့်ပစ်ရန်	Hủy thay đổi	Buang perubahan	Buang perubahan	Iwaksi ang mga pagbabago
+barcode_resize_aria_label	ปรับขนาดรายการบาร์โค้ดและรายละเอียดบาร์โค้ด	Resize barcode list and barcode detail panels	调整条形码列表和条形码详情面板大小	バーコードリストとバーコード詳細パネルのサイズを変更	ផ្លាស់ប្តូរទំហំបញ្ជីបារកូដ និងផ្ទាំងព័ត៌មានលម្អិតបារកូដ	바코드 목록 및 바코드 상세 패널 크기 조정	ປັບຂະໜາດລາຍການບາໂຄດ ແລະ ແຜງລາຍລະອຽດບາໂຄດ	ဘားကုဒ်စာရင်းနှင့် ဘားကုဒ်အသေးစိတ်အကန့်များကို အရွယ်အစားပြောင်းရန်	Thay đổi kích thước danh sách mã vạch và bảng chi tiết mã vạch	Ubah saiz senarai kod bar dan panel butiran kod bar	Ubah ukuran daftar kode batang dan panel detail kode batang	Baguhin ang laki ng listahan ng barcode at mga panel ng detalye ng barcode
+barcode_generate_barcode	สร้างบาร์โค้ดอัตโนมัติ	Generate barcode	生成条形码	バーコードを生成	បង្កើតបារកូដ	바코드 생성	ສ້າງບາໂຄດ	ဘားကုဒ် ထုတ်လုပ်ရန်	Tạo mã vạch	Jana kod bar	Buat kode batang	Bumuo ng barcode
+barcode_save_and_new	บันทึก & เพิ่มใหม่	Save & add new	保存并新增	保存して新規追加	រក្សាទុក និងបន្ថែមថ្មី	저장 후 새로 추가	ບັນທຶກ ແລະ ເພີ່ມໃໝ່	သိမ်းဆည်းပြီး အသစ်ထပ်ထည့်ရန်	Lưu và thêm mới	Simpan & tambah baharu	Simpan & tambah baru	I-save at magdagdag ng bago
+barcode_tab_marketplace	Marketplace	Marketplace	商城	マーケットプレイス	ផ្សារ	마켓플레이스	ຕະຫຼາດ	ဈေး	Sàn	Pasaran	Lokapasar	Pamilihan
+barcode_tab_shopee	Shopee	Shopee	虾皮	ショッピー	សូភី	쇼피	ຊອບປີ	ရှော့ပီး	Shopee	Shopee	Shopee	Shopee
+barcode_tab_lazada	Lazada	Lazada	来赞达	ラザダ	ឡាហ្សាដា	라자다	ລາຊາດາ	လာဇာဒါ	Lazada	Lazada	Lazada	Lazada
+barcode_tab_aliexpress	AliExpress	AliExpress	全球速卖通	アリエクスプレス	អាលីអេកស្ព្រេស	알리익스프레스	ອາລີເອັກສເພຣສ	အလီးအိတ်စ်ပရက်စ်	AliExpress	AliExpress	AliExpress	AliExpress
+barcode_tab_tiktok	TikTok	TikTok	抖音	ティックトック	ធីកតុក	틱톡	ຕິກຕອກ	တစ်တော့	TikTok	TikTok	TikTok	TikTok
+barcode_mk_enable_on_platform	ขายสินค้านี้บน %s	Sell this item on %s	在%s上出售此商品	この商品を%sで販売	លក់ទំនិញនេះនៅលើ %s	%s에서 이 상품 판매	ຂາຍສິນຄ້ານີ້ຢູ່ %s	ဤပစ္စည်းကို %s တွင် ရောင်းပါ	Bán mặt hàng này trên %s	Jual item ini di %s	Jual item ini di %s	Ibenta ang item na ito sa %s
+barcode_mk_section_listing	ข้อมูลการลงขาย	Listing info	商品刊登信息	出品情報	ព័ត៌មានការចុះបញ្ជី	등록 정보	ຂໍ້ມູນການລົງຂາຍ	စာရင်းသွင်းချက်အချက်အလက်	Thông tin tin đăng	Maklumat penyenaraian	Info listing	Impormasyon ng listing
+barcode_mk_section_media_specs	รูปภาพและข้อมูลจำเพาะ	Images & specifications	图片和规格	画像と仕様	រូបភាព និងលក្ខណៈបច្ចេកទេស	이미지 및 사양	ຮູບພາບ ແລະຂໍ້ມູນຈຳເພາະ	ပုံများနှင့် သတ်မှတ်ချက်များ	Hình ảnh và thông số kỹ thuật	Imej & spesifikasi	Gambar & spesifikasi	Mga larawan at detalye
+barcode_mk_section_price_stock	ราคาและสต๊อก	Price & stock	价格与库存	価格と在庫	តម្លៃ និងស្តុក	가격 및 재고	ລາຄາ ແລະສະຕັອກ	ဈေးနှုန်းနှင့် စတော့	Giá và tồn kho	Harga & stok	Harga & stok	Presyo at stock
+barcode_mk_section_sync	การซิงค์ข้อมูล	Sync	同步	同期	ធ្វើសមកាលកម្ម	동기화	ຊິ້ງ	စင့်ခ်	Đồng bộ	Penyegerakan	Sinkronisasi	Pag-sync
+barcode_mk_account_id	บัญชี/ร้านบนแพลตฟอร์ม	Platform account/shop	平台账户/店铺	プラットフォームアカウント/ショップ	គណនី/ហាងលើវេទិកា	플랫폼 계정/샵	ບັນຊີ/ຮ້ານຄ້າເທິງແພລດຟອມ	ပလပ်ဖောင်း အကောင့်/ဆိုင်	Tài khoản/cửa hàng trên nền tảng	Akaun/kedai platform	Akun/toko platform	Account/tindahan sa platform
+barcode_mk_market_item_id	รหัสสินค้าบนแพลตฟอร์ม (Item ID)	Platform item ID	平台商品ID	プラットフォーム商品ID	លេខសម្គាល់ទំនិញលើវេទិកា	플랫폼 상품 ID	ID ສິນຄ້າເທິງແພລດຟອມ	ပလပ်ဖောင်း ပစ္စည်း ID	ID sản phẩm trên nền tảng	ID item platform	ID item platform	ID ng item sa platform
+barcode_mk_market_model_id	รหัสตัวเลือก/รุ่น (Model/SKU ID)	Variation/Model (SKU) ID	规格/型号 (SKU) ID	バリエーション/モデル (SKU) ID	បំរែបំរួល/ម៉ូដែល (SKU) ID	옵션/모델 (SKU) ID	ລະຫັດຕົວເລືອກ/ຮຸ່ນ (SKU) ID	အမျိုးအစား/မော်ဒယ် (SKU) ID	ID biến thể/mẫu (SKU)	ID Varian/Model (SKU)	ID Varian/Model (SKU)	ID ng Baryasyon/Modelo (SKU)
+barcode_mk_item_url	ลิงก์หน้าสินค้า	Listing URL	商品页链接	商品ページURL	តំណទំនិញ	상품 URL	ລິ້ງສິນຄ້າ	ကုန်ပစ္စည်းလင့်	URL tin đăng	URL penyenaraian	URL listing	URL ng listahan
+barcode_mk_seller_sku	Seller SKU (รหัสของเรา)	Seller SKU (ours)	卖家SKU（我们的）	セラーSKU（自社）	SKU អ្នកលក់ (របស់យើង)	판매자 SKU(당사)	SKU ຜູ້ຂາຍ (ຂອງເຮົາ)	ရောင်းသူ SKU (ကျွန်ုပ်တို့)	SKU người bán (của chúng tôi)	SKU penjual (milik kami)	SKU penjual (milik kami)	SKU ng nagbebenta (atin)
+barcode_mk_shop_sku	Shop SKU (แพลตฟอร์มสร้าง)	Shop SKU (platform-generated)	店铺SKU（平台生成）	ショップSKU（プラットフォーム生成）	SKU ហាង (បង្កើតដោយវេទិកា)	샵 SKU(플랫폼 생성)	SKU ຮ້ານ (ສ້າງໂດຍແພລດຟອມ)	ဆိုင် SKU (ပလပ်ဖောင်းထုတ်)	SKU shop (nền tảng tạo)	SKU kedai (dijana platform)	SKU toko (dibuat platform)	SKU ng shop (platform-generated)
+barcode_mk_gtin	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC	GTIN / EAN / UPC
+barcode_mk_category_id	รหัสหมวดหมู่แพลตฟอร์ม	Platform category ID	平台分类ID	プラットフォームカテゴリID	លេខសម្គាល់ប្រភេទវេទិកា	플랫폼 카테고리 ID	ລະຫັດໝວດໝູ່ແພລດຟອມ	ပလပ်ဖောင်းအမျိုးအစား ID	ID danh mục nền tảng	ID kategori platform	ID kategori platform	ID ng kategorya ng platform
+barcode_mk_category_name	ชื่อหมวดหมู่แพลตฟอร์ม	Platform category name	平台分类名称	プラットフォームカテゴリ名	ឈ្មោះប្រភេទវេទិកា	플랫폼 카테고리명	ຊື່ໝວດໝູ່ແພລດຟອມ	ပလပ်ဖောင်းအမျိုးအစားအမည်	Tên danh mục nền tảng	Nama kategori platform	Nama kategori platform	Pangalan ng kategorya ng platform
+barcode_mk_brand_id	รหัสยี่ห้อแพลตฟอร์ม	Platform brand ID	平台品牌ID	プラットフォームブランドID	លេខសម្គាល់ម៉ាកវេទិកា	플랫폼 브랜드 ID	ລະຫັດຍີ່ຫໍ້ແພລດຟອມ	ပလပ်ဖောင်းအမှတ်တံဆိပ် ID	ID thương hiệu nền tảng	ID jenama platform	ID merek platform	ID ng tatak ng platform
+barcode_mk_media_assets	รูปภาพ/วิดีโอ/รูปตามตัวเลือก	Images/videos/variation media	图片/视频/变体媒体	画像/動画/バリエーションメディア	រូបភាព/វីដេអូ/មេឌាបំរែបំរួល	이미지/동영상/변형 미디어	ຮູບພາບ/ວິດີໂອ/ສື່ແບບປ່ຽນແປງ	ပုံများ/ဗီဒီယိုများ/မူကွဲမီဒီယာ	Hình ảnh/video/phương tiện biến thể	Imej/video/media variasi	Gambar/video/media variasi	Mga larawan/video/media ng variation
+barcode_mk_specification_groups	กลุ่มข้อมูลจำเพาะ	Specification groups	规格组	仕様グループ	ក្រុមលក្ខណៈបច្ចេកទេស	사양 그룹	ກຸ່ມສະເພາະ	သတ်မှတ်ချက်အုပ်စုများ	Nhóm thông số kỹ thuật	Kumpulan spesifikasi	Grup spesifikasi	Mga pangkat ng espesipikasyon
+barcode_mk_raw_attributes	Attribute ดิบจากช่องทางขาย	Raw channel attributes	渠道原始属性	チャネル生属性	គុណលក្ខណៈឆៅរបស់ប៉ុស្តិ៍	채널 원시 속성	ຄຸນລັກສະນະດິບຂອງຊ່ອງທາງ	ချန်နယ်၏မူကြမ်းအရည်အချင်းများ	Thuộc tính thô của kênh	Atribut mentah saluran	Atribut mentah saluran	Mga hilaw na attribute ng channel
+barcode_mk_payload_examples	ตัวอย่าง payload สำหรับ import/sync	Import/sync payload examples	导入/同步 payload 示例	インポート/同期ペイロード例	ឧទាហរណ៍ payload សម្រាប់នាំចូល/ធ្វើសមកាលកម្ម	가져오기/동기화 페이로드 예시	ຕົວຢ່າງ payload ສຳລັບນຳເຂົ້າ/ຊິງຄ໌	ထည့်သွင်းခြင်း/စင့်ခ်လုပ်ခြင်းအတွက် payload နမူနာများ	Ví dụ payload nhập/đồng bộ	Contoh payload import/sync	Contoh payload impor/sinkronisasi	Mga halimbawa ng payload para sa import/sync
+barcode_mk_json_array_help	กรอกเป็น JSON array เพื่อให้ระบบนำเข้า/ซิงค์ได้	Use a JSON array so the system can import/sync it.	使用 JSON 数组，以便系统导入/同步。	システムがインポート/同期できるよう、JSON配列を使用してください。	ប្រើ JSON array ដើម្បីឱ្យប្រព័ន្ធអាចនាំចូល/ធ្វើសមកាលកម្មវាបាន។	시스템에서 가져오기/동기화할 수 있도록 JSON 배열을 사용하세요.	ໃຊ້ JSON array ເພື່ອໃຫ້ລະບົບສາມາດນຳເຂົ້າ/ຊິງຄ໌ໄດ້.	စနစ်က ၎င်းကို ထည့်သွင်း/စင့်ခ်လုပ်နိုင်ရန် JSON array ကို သုံးပါ။	Dùng mảng JSON để hệ thống có thể nhập/đồng bộ.	Guna tatasusunan JSON supaya sistem boleh import/sync.	Gunakan array JSON agar sistem dapat mengimpor/menyinkronkannya.	Gumamit ng JSON array para ma-import/mai-sync ito ng system.
+barcode_mk_json_invalid	JSON ไม่ถูกต้อง	Invalid JSON	JSON 无效	JSONが無効です	JSON មិនត្រឹមត្រូវ	잘못된 JSON	JSON ບໍ່ຖືກຕ້ອງ	JSON မမှန်ကန်ပါ	JSON không hợp lệ	JSON tidak sah	JSON tidak valid	Hindi wastong JSON
+barcode_mk_currency	สกุลเงิน	Currency	货币	通貨	រូបិយប័ណ្ណ	통화	ສະກຸນເງິນ	ငွေကြေး	Tiền tệ	Mata wang	Mata uang	Pera
+barcode_mk_custom_price	ราคาที่จะส่งขึ้นขาย	Price to publish	发布价格	出品価格	តម្លៃផ្សាយ	게시할 가격	ລາຄາສຳລັບເຜີຍແຜ່	ဖော်ပြမည့်စျေးနှုန်း	Giá đăng bán	Harga untuk disiarkan	Harga untuk dipublikasikan	Presyong ilalathala
+barcode_mk_platform_price	ราคาจริงบนแพลตฟอร์ม	Actual price on platform	平台实际价格	プラットフォーム実際価格	តម្លៃជាក់ស្តែងលើវេទិកា	플랫폼 실제 가격	ລາຄາຕົວຈິງເທິງແພລດຟອມ	ပလပ်ဖောင်းပေါ်ရှိ အမှန်တကယ်စျေးနှုန်း	Giá thực tế trên sàn	Harga sebenar di platform	Harga aktual di platform	Aktwal na presyo sa platform
+barcode_mk_platform_stock	สต๊อกจริงบนแพลตฟอร์ม	Actual stock on platform	平台实际库存	プラットフォーム実際在庫	ស្តុកជាក់ស្តែងលើវេទិកា	플랫폼 실제 재고	ສະຕັອກຕົວຈິງເທິງແພລດຟອມ	ပလပ်ဖောင်းပေါ်ရှိ အမှန်တကယ်စတော့	Tồn kho thực tế trên sàn	Stok sebenar di platform	Stok aktual di platform	Aktwal na stock sa platform
+barcode_mk_sync_stock	ซิงค์สต๊อกอัตโนมัติ	Auto-sync stock	自动同步库存	在庫を自動同期	ធ្វើសមកាលកម្មស្តុកដោយស្វ័យប្រវត្តិ	재고 자동 동기화	ຊິງຄ໌ສະຕັອກອັດຕະໂນມັດ	စတော့ကို အလိုအလျောက် စင့်ခ်လုပ်မည်	Đồng bộ tồn kho tự động	Segerak stok automatik	Sinkronisasi stok otomatis	Awtomatikong i-sync ang stock
+barcode_mk_sync_price	ซิงค์ราคาอัตโนมัติ	Auto-sync price	自动同步价格	価格を自動同期	ធ្វើសមកាលកម្មតម្លៃដោយស្វ័យប្រវត្តិ	가격 자동 동기화	ຊິງຄ໌ລາຄາອັດຕະໂນມັດ	စျေးနှုန်းကို အလိုအလျောက် စင့်ခ်လုပ်မည်	Đồng bộ giá tự động	Segerak harga automatik	Sinkronisasi harga otomatis	Awtomatikong i-sync ang presyo
+barcode_mk_sync_enabled	เปิดการซิงค์	Enable sync	启用同步	同期を有効にする	បើកការធ្វើសមកាលកម្ម	동기화 사용	ເປີດການຊິງຄ໌	စင့်ခ်လုပ်ခြင်းကို ဖွင့်ပါ	Bật đồng bộ	Dayakan segerak	Aktifkan sinkronisasi	Paganahin ang pag-sync
+barcode_mk_status	สถานะการลงขาย	Listing status	上架状态	出品ステータス	ស្ថានភាពការចុះបញ្ជី	등록 상태	ສະຖານະການລົງຂາຍ	စာရင်းသွင်းမှု အခြေအနေ	Trạng thái đăng bán	Status penyenaraian	Status daftar	Status ng listahan
+barcode_mk_reject_reason	เหตุผลที่ถูกปฏิเสธ/QC	Reject / QC reason	拒绝/质检原因	拒否/QC理由	ហេតុផលបដិសេធ/QC	거절/QC 사유	ເຫດຜົນທີ່ຖືກປະຕິເສດ/QC	ငြင်းပယ်/QC အကြောင်းရင်း	Lý do từ chối/QC	Sebab ditolak/QC	Alasan ditolak/QC	Dahilan ng pag-reject/QC
+barcode_mk_days_to_ship	วันจัดส่ง (Days to ship)	Days to ship	发货天数	出荷日数	ថ្ងៃដឹកជញ្ជូន	출고 소요일	ມື້ຈັດສົ່ງ	ပို့ဆောင်ရန် ရက်များ	Ngày giao hàng	Hari untuk dihantar	Hari pengiriman	Mga araw bago maipadala
+barcode_mk_is_pre_order	สินค้าพรีออเดอร์	Pre-order item	预购商品	予約商品	ទំនិញបញ្ជាទិញជាមុន	예약 주문 상품	ສິນຄ້າສັ່ງລ່ວງໜ້າ	ကြိုတင်မှာယူပစ္စည်း	Sản phẩm đặt trước	Item pra-pesanan	Produk pre-order	Pre-order na item
+barcode_mk_last_sync_at	ซิงค์ล่าสุดเมื่อ	Last synced at	上次同步时间	最終同期日時	ធ្វើសមកាលកម្មចុងក្រោយនៅ	마지막 동기화 시각	ຊິງຄ໌ຫຼ້າສຸດເມື່ອ	နောက်ဆုံးစင့်ခ်လုပ်ချိန်	Đồng bộ lần cuối lúc	Kali terakhir disegerakkan pada	Terakhir disinkronkan pada	Huling naka-sync noong
+barcode_mk_last_sync_error	ข้อผิดพลาดการซิงค์ล่าสุด	Last sync error	上次同步错误	最終同期エラー	កំហុសធ្វើសមកាលកម្មចុងក្រោយ	마지막 동기화 오류	ຂໍ້ຜິດພາດການຊິງຄ໌ຫຼ້າສຸດ	နောက်ဆုံးစင့်ခ်အမှား	Lỗi đồng bộ lần cuối	Ralat penyegerakan terakhir	Kesalahan sinkronisasi terakhir	Huling error sa pag-sync
+barcode_mk_status_none	— ยังไม่ระบุ —	— Not set —	— 未设置 —	— 未設定 —	— មិនបានកំណត់ —	— 설정 안 됨 —	— ບໍ່ໄດ້ຕັ້ງ —	— သတ်မှတ်မထားပါ —	— Chưa đặt —	— Tidak ditetapkan —	— Belum diatur —	— Hindi nakatakda —
+barcode_mk_status_live	กำลังขาย (Live)	Live	正在销售	販売中	កំពុងលក់	판매 중	ກຳລັງຂາຍ	ရောင်းချနေသည်	Đang bán	Sedang dijual	Sedang dijual	Naka-live
+barcode_mk_status_unlist	ปิดการขาย (Unlist)	Unlist	已下架	販売停止	បានដកចេញពីការលក់	판매 중지	ປິດການຂາຍ	ရောင်းချခြင်းရပ်ဆိုင်း	Ẩn khỏi danh sách	Nyahsenarai	Tidak ditayangkan	Hindi nakalista
+barcode_mk_status_reviewing	รอตรวจสอบ (Reviewing)	Reviewing	审核中	審査中	កំពុងពិនិត្យ	검토 중	ກຳລັງກວດສອບ	ပြန်လည်သုံးသပ်နေသည်	Đang xem xét	Sedang disemak	Sedang ditinjau	Sinusuri
+barcode_mk_status_rejected	ถูกปฏิเสธ (Rejected)	Rejected	已拒绝	拒否済み	ត្រូវបានបដិសេធ	거부됨	ຖືກປະຕິເສດ	ငြင်းပယ်ထားသည်	Bị từ chối	Ditolak	Ditolak	Tinanggihan
+barcode_mk_status_deleted	ถูกลบ (Deleted)	Deleted	已删除	削除済み	បានលុប	삭제됨	ຖືກລຶບແລ້ວ	ဖျက်ပြီး	Đã xóa	Dipadam	Dihapus	Na-delete
