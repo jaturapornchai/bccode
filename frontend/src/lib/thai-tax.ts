@@ -2,6 +2,9 @@
 // Covers VAT (ภ.พ. 30, ภ.พ. 36, รายงานภาษีขาย/ซื้อ) and WHT (ภ.ง.ด. 2, ภ.ง.ด. 3, ภ.ง.ด. 53, 50 ทวิ)
 
 import { authFetch } from "@/lib/client-auth-session";
+import { catalogText } from "@/lib/catalog-text";
+import type { BackendLanguageDictionary } from "@/lib/backend-language";
+import type { LanguageCode } from "@/lib/i18n";
 
 export interface ThaiTaxRecord {
   id: string;
@@ -289,4 +292,42 @@ export async function fetchPp30Summary(params: {
       creditable: toNumber(data.creditable),
     },
   };
+}
+
+// 2026-09-16: every user-visible string above also lives in languages.tsv,
+// keyed by `<code>.<part>`. The literals stay as the offline fallback.
+const catalogKeys: Record<string, string> = {
+  "vat_sale.title": "report_vat_sale",
+  "vat_sale.description": "tax_sales_vat_report_pursuant_to",
+  "vat_buy.title": "report_vat_buy",
+  "vat_buy.description": "tax_purchase_vat_report_pursuant_to",
+  "unreceived_tax_invoice.title": "unreceived_tax_invoice",
+  "unreceived_tax_invoice.description": "tax_pending_vendor_tax_invoices_registry",
+  "pp30.title": "vat_pp30",
+  "pp30.description": "tax_monthly_value_added_tax_return",
+  "pp36.title": "vat_pp36",
+  "pp36.description": "tax_cross_border_services_vat_remittance",
+  "pnd2.title": "vat_pnd2",
+  "pnd2.description": "tax_wht_return_for_section_40",
+  "pnd3.title": "vat_pnd3",
+  "pnd3.description": "tax_personal_withholding_tax_return_for",
+  "pnd53.title": "vat_pnd53",
+  "pnd53.description": "tax_corporate_withholding_tax_return",
+  "50twi.title": "wht_certificate",
+  "50twi.description": "tax_certificate_of_withholding_tax_deduction",
+  "wht_received.title": "withholding_tax_received",
+  "wht_received.description": "tax_register_of_withholding_tax_deducted",
+  "wht_summary.title": "withholding_tax_report",
+  "wht_summary.description": "tax_comprehensive_withholding_tax_summary_across",
+  "deferred_tax.title": "deferred_tax",
+  "deferred_tax.description": "tax_deferred_tax_assets_and_liabilities",
+};
+
+export function taxText(
+  config: ThaiTaxConfig,
+  part: "title" | "description",
+  language: LanguageCode,
+  dictionary?: BackendLanguageDictionary,
+): string {
+  return catalogText(catalogKeys, `${config.code}.${part}`, config[part], language, dictionary);
 }

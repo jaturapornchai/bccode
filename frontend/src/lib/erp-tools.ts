@@ -2,6 +2,9 @@
 // Covers GL Reprocess, Stock Rebuild, AR/AP Recalculate, Bank & Cheque Balance Recalculation
 
 import { authFetch } from "@/lib/client-auth-session";
+import { catalogText } from "@/lib/catalog-text";
+import type { BackendLanguageDictionary } from "@/lib/backend-language";
+import type { LanguageCode } from "@/lib/i18n";
 
 export interface ErpToolConfig {
   route: string;
@@ -274,4 +277,101 @@ export async function runErpTool(params: {
   } catch {
     return { success: false, messageKey: "connection_error" };
   }
+}
+
+// 2026-09-16: every user-visible string above also lives in languages.tsv,
+// keyed by `<code>.<part>`. The literals stay as the offline fallback.
+const catalogKeys: Record<string, string> = {
+  "gl_reprocess.title": "gl_reprocess",
+  "gl_reprocess.description": "tool_reprocess_general_ledger_journals_ledger",
+  "gl_reprocess.actionLabel": "tool_start_gl_reprocessing",
+  "gl_reprocess.step.0": "tool_audit_debit_credit_balance_in",
+  "gl_reprocess.step.1": "tool_clear_temporary_ledger_summary_projections",
+  "gl_reprocess.step.2": "tool_recalculate_period_balances_and_cumulative",
+  "gl_reprocess.step.3": "tool_update_trial_balance_and_financial",
+  "ar_recalculate.title": "ar_recalculate",
+  "ar_recalculate.description": "tool_recalculate_outstanding_debtor_balances_from",
+  "ar_recalculate.actionLabel": "tool_recalculate_ar_balances",
+  "ar_recalculate.step.0": "tool_aggregate_unpaid_sales_invoices",
+  "ar_recalculate.step.1": "tool_match_payments_and_credit_note",
+  "ar_recalculate.step.2": "tool_update_net_balance_and_customer",
+  "ar_bill_balances.title": "ap_bill_recalculate",
+  "ar_bill_balances.description": "tool_reconcile_individual_invoice_outstanding_amounts",
+  "ar_bill_balances.actionLabel": "tool_recompute_bill_balances",
+  "ar_bill_balances.step.0": "tool_verify_itemized_bill_allocations",
+  "ar_bill_balances.step.1": "tool_update_outstanding_balance_per_bill",
+  "ap_recalculate.title": "ap_recalculate",
+  "ap_recalculate.description": "tool_recalculate_outstanding_vendor_payables_from",
+  "ap_recalculate.actionLabel": "tool_recalculate_ap_balances",
+  "ap_recalculate.step.0": "tool_aggregate_purchase_invoices_and_accrued",
+  "ap_recalculate.step.1": "tool_reconcile_payment_vouchers_and_settlements",
+  "ap_recalculate.step.2": "tool_update_net_vendor_balance",
+  "ap_bill_balances.title": "ap_bill_recalculate",
+  "ap_bill_balances.description": "tool_recompute_outstanding_balance_for_each",
+  "ap_bill_balances.actionLabel": "tool_recompute_vendor_bill_balances",
+  "ap_bill_balances.step.0": "tool_inspect_payment_history_per_purchase",
+  "ap_bill_balances.step.1": "tool_update_remaining_payable_amount_per",
+  "cheque_balances.title": "cheque_recalculate",
+  "cheque_balances.description": "tool_synchronize_on_hand_cleared_returned",
+  "cheque_balances.actionLabel": "tool_recalculate_cheques",
+  "cheque_balances.step.0": "tool_verify_status_of_received_and",
+  "cheque_balances.step.1": "tool_update_pending_cheque_totals",
+  "bank_balances.title": "bank_recalculate",
+  "bank_balances.description": "tool_recalculate_ledger_balances_for_all",
+  "bank_balances.actionLabel": "tool_recalculate_bank_books",
+  "bank_balances.step.0": "tool_sort_transactions_chronologically",
+  "bank_balances.step.1": "tool_compute_rolling_balance_for_each",
+  "bank_balances.step.2": "tool_reconcile_with_passbook_and_bank",
+  "rebuild_stock.title": "reprocess",
+  "rebuild_stock.description": "tool_reconstruct_physical_inventory_on_hand",
+  "rebuild_stock.actionLabel": "tool_start_full_stock_rebuild",
+  "rebuild_stock.step.0": "tool_audit_warehouse_document_sequence",
+  "rebuild_stock.step.1": "tool_recompute_in_out_movements_chronologically",
+  "rebuild_stock.step.2": "tool_recompute_unit_costs_and_inventory",
+  "rebuild_stock.step.3": "tool_update_balance_summary_tables",
+  "audit_data.title": "audit_data",
+  "audit_data.description": "tool_scan_for_anomalies_negative_stocks",
+  "audit_data.actionLabel": "tool_run_integrity_audit",
+  "audit_data.step.0": "tool_scan_for_negative_inventory_balances",
+  "audit_data.step.1": "tool_check_for_empty_line_item",
+  "audit_data.step.2": "tool_validate_branch_and_warehouse_codes",
+  "rebuild_products.title": "rebuild_products",
+  "rebuild_products.description": "tool_rebuild_search_index_barcode_catalogs",
+  "rebuild_products.actionLabel": "tool_rebuild_product_index",
+  "rebuild_products.step.0": "tool_collect_all_items_and_barcodes",
+  "rebuild_products.step.1": "tool_generate_multilingual_full_text_search",
+  "rebuild_product_balance.title": "rebuild_product_balance",
+  "rebuild_product_balance.description": "tool_synchronize_item_level_and_warehouse",
+  "rebuild_product_balance.actionLabel": "rebuild_product_balance",
+  "rebuild_product_balance.step.0": "tool_scan_on_hand_quantities_across",
+  "rebuild_product_balance.step.1": "tool_update_balance_snapshot_cache",
+  "inventory_daily_sequence.title": "stock_daily_sequence",
+  "inventory_daily_sequence.description": "tool_order_daily_receipts_and_issues",
+  "inventory_daily_sequence.actionLabel": "tool_sort_daily_transactions",
+  "inventory_daily_sequence.step.0": "tool_sequence_receipts_before_issues_within",
+  "inventory_daily_sequence.step.1": "tool_update_fifo_allocation_sequence",
+};
+
+export function toolText(
+  config: ErpToolConfig,
+  part: "title" | "description" | "actionLabel" | "warningMessage",
+  language: LanguageCode,
+  dictionary?: BackendLanguageDictionary,
+): string {
+  return catalogText(catalogKeys, `${config.code}.${part}`, config[part], language, dictionary);
+}
+
+export function toolStepText(
+  config: ErpToolConfig,
+  index: number,
+  language: LanguageCode,
+  dictionary?: BackendLanguageDictionary,
+): string {
+  return catalogText(
+    catalogKeys,
+    `${config.code}.step.${index}`,
+    config.steps[index],
+    language,
+    dictionary,
+  );
 }

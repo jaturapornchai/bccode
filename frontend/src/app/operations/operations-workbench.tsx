@@ -1,9 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useBackendText } from "@/components/backend-text-provider";
+import {
+  useBackendDictionary,
+  useBackendText,
+  type BackendTextFn,
+} from "@/components/backend-text-provider";
 import {
   getOperationsConfig,
+  operationsText,
   isApprovalApiReady,
   fetchPendingApprovals,
   submitApprovalAction,
@@ -36,25 +41,25 @@ interface OperationsWorkbenchProps {
   holdingcode?: string;
 }
 
-const MESSAGES: Record<string, { th: string; en: string }> = {
+const MESSAGES: Record<string, { key: string; th: string }> = {
   approval_not_available: {
+    key: "ops_msg_this_screen_is_not_connected",
     th: "จอนี้ยังไม่เชื่อมกับระบบงานจริง — อยู่ระหว่างเปิดใช้งาน API",
-    en: "This screen is not connected to the live system yet",
   },
-  holding_required: { th: "ยังไม่ได้เลือกกิจการ", en: "No business selected" },
-  docno_required: { th: "ไม่พบเลขที่เอกสาร", en: "Document number is missing" },
-  unauthorized: { th: "ไม่มีสิทธิ์ดำเนินการรายการนี้", en: "You do not have permission for this action" },
-  load_failed: { th: "โหลดข้อมูลไม่สำเร็จ", en: "Failed to load data" },
-  connection_error: { th: "เชื่อมต่อระบบไม่ได้", en: "Unable to connect to the system" },
-  action_failed: { th: "ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", en: "Action failed, please try again" },
-  approve_success: { th: "อนุมัติเอกสารเรียบร้อยแล้ว", en: "Document approved" },
-  reject_success: { th: "บันทึกการไม่อนุมัติเรียบร้อยแล้ว", en: "Rejection recorded" },
+  holding_required: { key: "holding_required", th: "ยังไม่ได้เลือกกิจการ" },
+  docno_required: { key: "ops_msg_document_number_is_missing", th: "ไม่พบเลขที่เอกสาร" },
+  unauthorized: { key: "ops_msg_you_do_not_have_permission", th: "ไม่มีสิทธิ์ดำเนินการรายการนี้" },
+  load_failed: { key: "load_data_failed", th: "โหลดข้อมูลไม่สำเร็จ" },
+  connection_error: { key: "ops_msg_unable_to_connect_to_the", th: "เชื่อมต่อระบบไม่ได้" },
+  action_failed: { key: "ops_msg_action_failed_please_try_again", th: "ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" },
+  approve_success: { key: "approve_success", th: "อนุมัติเอกสารเรียบร้อยแล้ว" },
+  reject_success: { key: "reject_success", th: "บันทึกการไม่อนุมัติเรียบร้อยแล้ว" },
 };
 
-function messageText(key: string, language: LanguageCode): string {
+function messageText(key: string, tr: BackendTextFn): string {
   const message = MESSAGES[key];
   if (!message) return key;
-  return language === "th" ? message.th : message.en;
+  return tr(message.key, message.th);
 }
 
 export function OperationsWorkbench({
@@ -64,6 +69,7 @@ export function OperationsWorkbench({
   holdingcode = "",
 }: OperationsWorkbenchProps) {
   const tr = useBackendText();
+  const dictionary = useBackendDictionary();
   const config = getOperationsConfig(route) || {
     route,
     code: "operations_workflow",
@@ -148,14 +154,14 @@ export function OperationsWorkbench({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">
-                {language === "th" ? config.title.th : config.title.en}
+                {operationsText(config, "title", language, dictionary)}
               </h1>
               <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary uppercase">
                 {config.category}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {language === "th" ? config.description.th : config.description.en}
+              {operationsText(config, "description", language, dictionary)}
             </p>
           </div>
         </div>
@@ -177,7 +183,7 @@ export function OperationsWorkbench({
       {unavailable && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground" role="status">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{messageText("approval_not_available", language)}</span>
+          <span>{messageText("approval_not_available", tr)}</span>
         </div>
       )}
 
@@ -193,7 +199,7 @@ export function OperationsWorkbench({
         >
           <span className="flex items-center gap-2">
             {noticeOk ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-            {messageText(noticeKey, language)}
+            {messageText(noticeKey, tr)}
           </span>
           <button
             type="button"
@@ -211,7 +217,7 @@ export function OperationsWorkbench({
       {approvalReady && errorKey && (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{messageText(errorKey, language)}</span>
+          <span>{messageText(errorKey, tr)}</span>
         </div>
       )}
 
@@ -222,9 +228,10 @@ export function OperationsWorkbench({
             <div className="flex items-center gap-2 font-semibold text-sm">
               <Clock className="h-4 w-4 text-primary" />
               <span>
-                {language === "th"
-                  ? `รายการรอการอนุมัติ (${filteredDocs.length} รายการ)`
-                  : `Pending Approvals (${filteredDocs.length})`}
+                {tr("ops_pending_approvals_count", "รายการรอการอนุมัติ ({0} รายการ)").replace(
+                  "{0}",
+                  String(filteredDocs.length),
+                )}
               </span>
             </div>
             <div className="relative w-64">
@@ -264,7 +271,7 @@ export function OperationsWorkbench({
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-muted-foreground">
                       {errorKey
-                        ? messageText(errorKey, language)
+                        ? messageText(errorKey, tr)
                         : tr("ops_no_pending_documents", "ไม่มีเอกสารค้างรอการอนุมัติ")}
                     </td>
                   </tr>
@@ -283,11 +290,16 @@ export function OperationsWorkbench({
                         {pendingAction?.docno === doc.docno ? (
                           <div className="flex flex-col items-center gap-2">
                             <span className="text-xs font-semibold text-foreground">
-                              {language === "th"
-                                ? pendingAction.action === "approve"
-                                  ? `ยืนยันอนุมัติเอกสาร ${doc.docno} ใช่หรือไม่? เมื่ออนุมัติแล้วเอกสารจะถูกส่งต่อตามขั้นตอนทันที`
-                                  : `ยืนยันไม่อนุมัติเอกสาร ${doc.docno} ใช่หรือไม่? ผู้ขอจะต้องแก้ไขและส่งใหม่`
-                                : `Confirm ${pendingAction.action} for ${doc.docno}?`}
+                              {(pendingAction.action === "approve"
+                                ? tr(
+                                    "ops_confirm_approve_doc",
+                                    "ยืนยันอนุมัติเอกสาร {0} ใช่หรือไม่? เมื่ออนุมัติแล้วเอกสารจะถูกส่งต่อตามขั้นตอนทันที",
+                                  )
+                                : tr(
+                                    "ops_confirm_reject_doc",
+                                    "ยืนยันไม่อนุมัติเอกสาร {0} ใช่หรือไม่? ผู้ขอจะต้องแก้ไขและส่งใหม่",
+                                  )
+                              ).replace("{0}", doc.docno)}
                             </span>
                             <div className="flex items-center justify-center gap-2">
                               <Button

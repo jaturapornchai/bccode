@@ -1,6 +1,9 @@
 // SME Operations, Approvals, BOM Kits, Serial Registry & Data Import Engine
 
 import { authFetch } from "@/lib/client-auth-session";
+import { catalogText } from "@/lib/catalog-text";
+import type { BackendLanguageDictionary } from "@/lib/backend-language";
+import type { LanguageCode } from "@/lib/i18n";
 
 export type OperationsCategory =
   | "approval"
@@ -384,4 +387,72 @@ export async function submitApprovalAction(params: {
   } catch {
     return { success: false, messageKey: "connection_error" };
   }
+}
+
+// 2026-09-16: every user-visible string above also lives in languages.tsv,
+// keyed by `<code>.<part>`. The literals stay as the offline fallback.
+const catalogKeys: Record<string, string> = {
+  "pr_approval.title": "purchase_requisition_approve",
+  "pr_approval.description": "ops_review_and_approve_purchase_requisitions",
+  "po_cancellation.title": "purchase_order_cancel",
+  "po_cancellation.description": "ops_cancel_approved_purchase_orders_and",
+  "qt_approval.title": "quotation_approve",
+  "qt_approval.description": "ops_review_special_pricing_discount_overrides",
+  "qt_cancellation.title": "quotation_cancel",
+  "qt_cancellation.description": "ops_void_expired_or_rejected_client",
+  "so_approval.title": "sale_order_approve",
+  "so_approval.description": "ops_approve_sales_orders_verify_credit",
+  "so_cancellation.title": "sale_order_cancel",
+  "so_cancellation.description": "ops_cancel_sales_orders_and_release",
+  "sales_reservations.title": "sale_reservation_flow",
+  "sales_reservations.description": "ops_monitor_reserved_stock_per_sales",
+  "order_dates.title": "sale_order_date_check",
+  "order_dates.description": "ops_audit_order_delivery_deadlines_and",
+  "delivery_dates.title": "sale_delivery_date",
+  "delivery_dates.description": "ops_logistics_dispatch_scheduling_and_customer",
+  "procurement_dashboard.title": "procurement_dashboard",
+  "procurement_dashboard.description": "ops_key_procurement_kpis_spend_volume",
+  "price_comparison.title": "purchase_price_comparison",
+  "price_comparison.description": "ops_side_by_side_vendor_quotation",
+  "generate_orders.title": "purchase_order_generate",
+  "generate_orders.description": "ops_batch_generate_purchase_orders_from",
+  "document_vault.title": "document_vault",
+  "document_vault.description": "ops_digital_repository_with_ocr_receipt",
+  "document_inbox.title": "inter_company_inbox",
+  "document_inbox.description": "ops_electronic_invoice_and_document_exchange",
+  "set_assembly.title": "product_set_assemble",
+  "set_assembly.description": "ops_deduct_component_stocks_and_assemble",
+  "set_disassembly.title": "product_set_disassemble",
+  "set_disassembly.description": "ops_disassemble_finished_sets_back_to",
+  "set_components.title": "product_set_components",
+  "set_components.description": "ops_manage_multi_level_bill_of",
+  "serial_registry.title": "product_serial_registry",
+  "serial_registry.description": "ops_track_individual_equipment_serial_numbers",
+  "selling_prices.title": "product_sale_price",
+  "selling_prices.description": "ops_configure_wholesale_retail_price_tiers",
+  "price_adjustment.title": "product_price_adjust",
+  "price_adjustment.description": "ops_adjust_pricing_across_product_categories",
+  "cost_layers.title": "fifo_cost_layers",
+  "cost_layers.description": "ops_inspect_fifo_inventory_cost_layers",
+  "lot_expiry_mgmt.title": "stock_lot",
+  "lot_expiry_mgmt.description": "ops_manage_lot_shelf_life_and",
+  "import_documents.title": "import_documents",
+  "import_documents.description": "ops_bulk_import_sales_purchases_or",
+  "import_partner.title": "import_partner",
+  "import_partner.description": "ops_import_customers_suppliers_tax_ids",
+  "import_product.title": "import_product",
+  "import_product.description": "ops_bulk_import_item_master_catalog",
+  "import_product_file.title": "confirm_import_product_file_name",
+  "import_product_file.description": "ops_import_product_data_mapped_from",
+  "import_product_image.title": "import_product_image",
+  "import_product_image.description": "ops_match_and_attach_product_images",
+};
+
+export function operationsText(
+  config: OperationsConfig,
+  part: "title" | "description",
+  language: LanguageCode,
+  dictionary?: BackendLanguageDictionary,
+): string {
+  return catalogText(catalogKeys, `${config.code}.${part}`, config[part], language, dictionary);
 }

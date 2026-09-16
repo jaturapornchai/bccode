@@ -1,8 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useBackendText } from "@/components/backend-text-provider";
-import { getErpToolConfig, isErpToolApiReady, runErpTool, type ErpToolStockCheckStats } from "@/lib/erp-tools";
+import {
+  useBackendDictionary,
+  useBackendText,
+  type BackendTextFn,
+} from "@/components/backend-text-provider";
+import {
+  getErpToolConfig,
+  isErpToolApiReady,
+  runErpTool,
+  toolStepText,
+  toolText,
+  type ErpToolStockCheckStats,
+} from "@/lib/erp-tools";
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,37 +37,37 @@ interface ErpToolsScreenProps {
   businesscode?: string;
 }
 
-const RESULT_MESSAGES: Record<string, { th: string; en: string }> = {
+const RESULT_MESSAGES: Record<string, { key: string; th: string }> = {
   process_success: {
+    key: "tool_msg_processing_completed_successfully",
     th: "ระบบประมวลผลเสร็จเรียบร้อยแล้ว",
-    en: "Processing completed successfully",
   },
   process_failed: {
+    key: "tool_msg_processing_failed_please_try_again",
     th: "ประมวลผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
-    en: "Processing failed, please try again",
   },
   tool_not_available: {
+    key: "tool_msg_this_tool_is_not_connected",
     th: "เครื่องมือนี้ยังไม่เชื่อมกับระบบประมวลผลจริง — อยู่ระหว่างเปิดใช้งาน API",
-    en: "This tool is not connected to the processing API yet",
   },
   holding_required: {
+    key: "holding_required",
     th: "ยังไม่ได้เลือกกิจการ",
-    en: "No business selected",
   },
   unauthorized: {
+    key: "tool_msg_you_do_not_have_permission",
     th: "ไม่มีสิทธิ์สั่งประมวลผลรายการนี้",
-    en: "You do not have permission to run this process",
   },
   connection_error: {
+    key: "ops_msg_unable_to_connect_to_the",
     th: "เชื่อมต่อระบบไม่ได้",
-    en: "Unable to connect to the system",
   },
 };
 
-function resultText(key: string, language: LanguageCode): string {
+function resultText(key: string, tr: BackendTextFn): string {
   const message = RESULT_MESSAGES[key];
   if (!message) return key;
-  return language === "th" ? message.th : message.en;
+  return tr(message.key, message.th);
 }
 
 export function ErpToolsScreen({
@@ -67,6 +78,7 @@ export function ErpToolsScreen({
   businesscode = "",
 }: ErpToolsScreenProps) {
   const tr = useBackendText();
+  const dictionary = useBackendDictionary();
   const config = getErpToolConfig(route) || {
     route,
     code: "tool_utility",
@@ -96,7 +108,7 @@ export function ErpToolsScreen({
     setResultKey(null);
     setStats(null);
     setSucceeded(false);
-    const title = language === "th" ? config.title.th : config.title.en;
+    const title = toolText(config, "title", language, dictionary);
     setLogs([`[${new Date().toLocaleTimeString()}] ${tr("ops_sending_command", "ส่งคำสั่งไปยังระบบ")}: ${title}`]);
 
     const result = await runErpTool({
@@ -107,7 +119,7 @@ export function ErpToolsScreen({
     });
 
     const nextLogs: string[] = [
-      `[${new Date().toLocaleTimeString()}] ${tr("ops_response", "ระบบตอบกลับ")}: ${resultText(result.messageKey, language)}`,
+      `[${new Date().toLocaleTimeString()}] ${tr("ops_response", "ระบบตอบกลับ")}: ${resultText(result.messageKey, tr)}`,
     ];
     if (result.stats) {
       nextLogs.push(
@@ -132,14 +144,14 @@ export function ErpToolsScreen({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">
-                {language === "th" ? config.title.th : config.title.en}
+                {toolText(config, "title", language, dictionary)}
               </h1>
               <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary uppercase">
                 {config.domain}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {language === "th" ? config.description.th : config.description.en}
+              {toolText(config, "description", language, dictionary)}
             </p>
           </div>
         </div>
@@ -163,7 +175,7 @@ export function ErpToolsScreen({
           ) : (
             <>
               <Play className="h-5 w-5 fill-current" />
-              {language === "th" ? config.actionLabel.th : config.actionLabel.en}
+              {toolText(config, "actionLabel", language, dictionary)}
             </>
           )}
         </Button>
@@ -173,13 +185,13 @@ export function ErpToolsScreen({
       {!apiReady && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground" role="status">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{resultText("tool_not_available", language)}</span>
+          <span>{resultText("tool_not_available", tr)}</span>
         </div>
       )}
       {apiReady && holdingcode === "" && (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{resultText("holding_required", language)}</span>
+          <span>{resultText("holding_required", tr)}</span>
         </div>
       )}
 
@@ -214,7 +226,9 @@ export function ErpToolsScreen({
               >
                 {[currentYear, currentYear - 1, currentYear - 2].map((year) => (
                   <option key={year} value={year}>
-                    {language === "th" ? `ปี ${year + 543} (${year})` : `Year ${year}`}
+                    {tr("tool_fiscal_year_option", "ปี {0} ({1})")
+                      .replace("{0}", String(year + 543))
+                      .replace("{1}", String(year))}
                   </option>
                 ))}
               </select>
@@ -239,7 +253,7 @@ export function ErpToolsScreen({
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
                   {idx + 1}
                 </div>
-                <span className="font-medium">{language === "th" ? step.th : step.en}</span>
+                <span className="font-medium">{toolStepText(config, idx, language, dictionary)}</span>
               </div>
             ))}
           </div>
@@ -262,14 +276,14 @@ export function ErpToolsScreen({
             {!isRunning && resultKey && succeeded && (
               <div className="flex items-center gap-2.5 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-semibold text-primary" role="status">
                 <CheckCircle2 className="h-5 w-5" />
-                <span>{resultText(resultKey, language)}</span>
+                <span>{resultText(resultKey, tr)}</span>
               </div>
             )}
 
             {!isRunning && resultKey && !succeeded && (
               <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive" role="alert">
                 <AlertCircle className="h-5 w-5" />
-                <span>{resultText(resultKey, language)}</span>
+                <span>{resultText(resultKey, tr)}</span>
               </div>
             )}
 

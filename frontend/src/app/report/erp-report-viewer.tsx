@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useBackendText } from "@/components/backend-text-provider";
+import {
+  useBackendDictionary,
+  useBackendText,
+} from "@/components/backend-text-provider";
 import {
   getErpReportConfig,
   isErpReportApiReady,
+  reportColumnLabel,
+  reportText,
   fetchErpReportData,
   type ErpReportRow,
 } from "@/lib/erp-reports";
@@ -55,11 +60,11 @@ function computeDateRange(range: string): { fromdate: string; todate: string } {
   return { fromdate: formatDate(new Date(now.getFullYear(), now.getMonth(), 1)), todate };
 }
 
-const ERROR_MESSAGES: Record<string, { th: string; en: string }> = {
-  holding_required: { th: "ยังไม่ได้เลือกกิจการ", en: "No business selected" },
-  unauthorized: { th: "ไม่มีสิทธิ์เข้าถึงข้อมูลนี้", en: "You do not have permission to view this data" },
-  load_failed: { th: "โหลดข้อมูลไม่สำเร็จ", en: "Failed to load data" },
-  connection_error: { th: "เชื่อมต่อระบบไม่ได้", en: "Unable to connect to the system" },
+const ERROR_MESSAGES: Record<string, { key: string; th: string }> = {
+  holding_required: { key: "holding_required", th: "ยังไม่ได้เลือกกิจการ" },
+  unauthorized: { key: "rpt_msg_you_do_not_have_permission", th: "ไม่มีสิทธิ์เข้าถึงข้อมูลนี้" },
+  load_failed: { key: "load_data_failed", th: "โหลดข้อมูลไม่สำเร็จ" },
+  connection_error: { key: "ops_msg_unable_to_connect_to_the", th: "เชื่อมต่อระบบไม่ได้" },
 };
 
 export function ErpReportViewer({
@@ -69,6 +74,7 @@ export function ErpReportViewer({
   holdingcode = "",
 }: ErpReportViewerProps) {
   const tr = useBackendText();
+  const dictionary = useBackendDictionary();
   const config = getErpReportConfig(route) || {
     route,
     code: "report_viewer",
@@ -163,7 +169,7 @@ export function ErpReportViewer({
   }
 
   function handleExportCsv() {
-    const headers = config.columns.map((col) => (language === "th" ? col.label.th : col.label.en));
+    const headers = config.columns.map((col) => reportColumnLabel(config, col, language, dictionary));
     const rows = processedData.map((row) =>
       config.columns.map((col) => `"${row[col.key] ?? ""}"`).join(","),
     );
@@ -192,14 +198,14 @@ export function ErpReportViewer({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">
-                {language === "th" ? config.title.th : config.title.en}
+                {reportText(config, "title", language, dictionary)}
               </h1>
               <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary uppercase">
                 {config.category}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {language === "th" ? config.description.th : config.description.en}
+              {reportText(config, "description", language, dictionary)}
             </p>
           </div>
         </div>
@@ -256,7 +262,7 @@ export function ErpReportViewer({
 
             <div className="ml-3 flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1 text-xs text-muted-foreground">
               <Layers className="h-3.5 w-3.5" />
-              <span>ทุกสาขา (All Branches)</span>
+              <span>{tr("gl_all_branches", "ทุกสาขา")}</span>
             </div>
           </div>
 
@@ -294,9 +300,7 @@ export function ErpReportViewer({
           <AlertCircle className="h-4 w-4" />
           <span>
             {ERROR_MESSAGES[errorKey]
-              ? language === "th"
-                ? ERROR_MESSAGES[errorKey].th
-                : ERROR_MESSAGES[errorKey].en
+              ? tr(ERROR_MESSAGES[errorKey].key, ERROR_MESSAGES[errorKey].th)
               : errorKey}
           </span>
         </div>
@@ -314,7 +318,7 @@ export function ErpReportViewer({
           <table className="w-full text-left text-sm">
             <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
               <tr>
-                <th className="px-3 py-3 w-12 text-center">ลำดับ</th>
+                <th className="px-3 py-3 w-12 text-center">{tr("sequence", "ลำดับ")}</th>
                 {config.columns.map((col) => (
                   <th
                     key={col.key}
@@ -328,7 +332,7 @@ export function ErpReportViewer({
                     onClick={() => handleSort(col.key)}
                   >
                     <div className={`flex items-center gap-1.5 ${col.align === "right" ? "justify-end" : col.align === "center" ? "justify-center" : "justify-start"}`}>
-                      <span>{language === "th" ? col.label.th : col.label.en}</span>
+                      <span>{reportColumnLabel(config, col, language, dictionary)}</span>
                       <ArrowUpDown className="h-3 w-3 opacity-60" />
                     </div>
                   </th>

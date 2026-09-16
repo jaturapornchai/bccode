@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useBackendText } from "@/components/backend-text-provider";
+import {
+  useBackendDictionary,
+  useBackendText,
+} from "@/components/backend-text-provider";
 import {
   getThaiTaxConfig,
+  taxText,
   fetchVatRegister,
   fetchPp30Summary,
   type ThaiTaxRecord,
@@ -34,6 +38,7 @@ export function TaxFilingWorkbench({
   businesscode = "",
 }: TaxFilingWorkbenchProps) {
   const tr = useBackendText();
+  const dictionary = useBackendDictionary();
   const config = getThaiTaxConfig(route) || {
     route,
     code: "tax_filing",
@@ -163,14 +168,14 @@ export function TaxFilingWorkbench({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">
-                {language === "th" ? config.title.th : config.title.en}
+                {taxText(config, "title", language, dictionary)}
               </h1>
               <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                 {config.revenueDepartmentFormCode}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {language === "th" ? config.description.th : config.description.en}
+              {taxText(config, "description", language, dictionary)}
             </p>
           </div>
         </div>
