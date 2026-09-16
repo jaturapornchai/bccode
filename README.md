@@ -181,6 +181,16 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-16 — ขึ้นระบบจริงรอบ 3 (`r20260916-3`) + เติมข้อมูลลูกหนี้/เจ้าหนี้และตารางสต๊อกบนเครื่องจริง
+
+**ประเภทงาน:** `[Deploy]`
+
+**สิ่งที่ทำ:** ส่ง commit `38b2cf86` (ลูกหนี้/เจ้าหนี้ถึง PostgreSQL, ใบสินค้ายกมาครบวงจร, รายงานขายกรองเอกสารที่ลบ, businesscode กลุ่ม B, พจนานุกรม) ขึ้น [account.bcaicloud.com](https://account.bcaicloud.com/) ด้วย `py tools/fast-deploy.py --all --tag r20260916-3` แล้วยิง `POST /debtaccount/debtor/resync` + `/creditor/resync` บนเครื่องจริงเพื่อเติมตารางที่ว่างมาตลอด; พบว่าฐาน `demo` บนเครื่องจริงยังไม่มีตารางสต๊อก (`stock_ledger` ฯลฯ — เกิดจาก bug "ข้ามตารางที่มีอยู่" ที่แก้ไปเมื่อเช้า และ `DatabaseChecker` ทำงานเฉพาะตอนสร้าง shop หรือมีเอกสารวิ่งผ่าน Kafka เท่านั้น) รายงานขายจึงตอบ 500 → สร้าง+ลบใบสินค้ายกมา 1 ใบผ่าน API ให้ตัวตรวจฐานข้อมูลสร้างตารางที่ขาด แล้วล้างข้อมูลทดสอบด้วย docno
+
+**ไฟล์สำคัญ:** ไม่มีโค้ดเปลี่ยน — `README.md`, `docs/kms/17-dev-gotchas.md` (เพิ่มกับดัก schema ค้างบนเครื่องจริง)
+
+**ผลการทดสอบ (Evidence):** `npm run verify:all` ผ่านทุกชุด (รวม `TestProjectionKafkaIntegration` 4 กรณี PASS); deploy สำเร็จ — mainapi/frontend/worker ขึ้น tag `r20260916-3` healthy, live endpoint 200; บนเครื่องจริง: resync คืน 24 ลูกหนี้ / 18 เจ้าหนี้ → PG `debtor` 24 แถว มีชื่อไทย (`AR1-001 นายสมชาย ใจดี`), ใบสินค้ายกมา `IB2026091600001` สร้าง → PG `doc` มีแถว → ลบ → `isdelete=true`, ตาราง `stock_ledger/stock_dirty/stock_period_balance/stock_dead_letter` ถูกสร้าง, รายงานขาย `/goapi/api/report/sales/by-document` 500 → 200, log ไม่มี `DLQ MESSAGE`; ล้าง Mongo + PG ของใบทดสอบแล้ว
+
 ### 2026-09-16 — ลูกหนี้/เจ้าหนี้เข้าฐานประมวลผลได้แล้ว, ใบสินค้ายกมาถึง PostgreSQL ครบวงจร, เอกสารกลุ่ม B ประทับรหัสบริษัท, ซ่อมพจนานุกรม
 
 **ประเภทงาน:** `[Fix]`
