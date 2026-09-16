@@ -171,6 +171,16 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 - Prod compose: service `frontend` image `${FRONTEND_IMAGE}` + `env_file /etc/bcai-account/frontend.env` (`deploy/account/compose.yml:309-311`)
 - ~~ไฟล์ log ถูก track ใน git~~ **เลิก track แล้ว 2026-09-09** (`git rm --cached frontend/.next-dev.log frontend/.next-dev.err.log`) — root `.gitignore:53` (`*.log`) คุมอยู่แล้ว ส่วน `frontend/.gitignore:9-12` ยัง ignore เฉพาะ `npm-debug.log*`, `yarn-debug.log*`, `yarn-error.log*`, `pnpm-debug.log*` (`git ls-files frontend | grep .log`, `frontend/.gitignore:9-12`)
 
+## 13. ตรวจว่าแถวไหนใน `languages.tsv` "ยังไม่ได้แปล" (ตรวจ 2026-09-16)
+
+- อาการที่ผู้ใช้เห็น: เลือกภาษาญี่ปุ่นแล้วเมนูบางรายการยังเป็นอังกฤษ (เช่น "Cancel Purchase Order") ทั้งที่แถวนั้นมีครบ 13 คอลัมน์ — เพราะตอนสร้างแถวใส่ข้อความอังกฤษซ้ำลงคอลัมน์ภาษาอื่น ตัวตรวจ "13 คอลัมน์" จึงไม่จับ
+- **นิยามที่ใช้ตรวจ: คอลัมน์ภาษาใดก็ตามที่มีค่าเท่ากับคอลัมน์ `en` = ยังไม่ได้แปล** (ยกเว้นคำที่ภาษานั้นใช้คำอังกฤษจริง เช่น `status`/`unit`/`menu`/`total`/`ok` ใน ms-id-fil)
+- คีย์ของเมนูมาจาก 3 ที่ ต้องดึงให้ครบทั้งสาม ไม่งั้นนับพลาด: `ml("<group-id>", …)` (หัวข้อกลุ่มย่อย 21 รายการ), `tx("<id>", …, languageKey?)` (รายการเมนู) และ `key: "…"` (หมวดหลัก) — `frontend/src/lib/menu-data.ts:34,159`
+- คีย์ที่จอจริงใช้ = grep `backendText(dict, "key"` + `tr("key"` + `languageKey:` + `counterpartyKey:` ใน `frontend/src` (2026-09-16 ได้ 1,159 คีย์) — ตรวจเฉพาะชุดนี้ก่อน คุ้มกว่าไล่ทั้ง 6,041 แถว
+- คีย์ที่โค้ดเรียกแต่**ไม่มีแถวใน tsv** = `Text()` คืน key ดิบขึ้นจอ ต้องเติมแถวทันที (รอบนี้เจอ 6 คีย์จาก `workspace-screen.tsx`)
+- ตรวจ Thai leakage ด้วย regex `[฀-฾เ-๿]` **ไม่ใช่ `[฀-๿]`** — ช่วงเต็มกินสัญลักษณ์บาท `฿` (U+0E3F) ทำให้แถวที่ถูกต้องอย่าง `product_set_price_delta` ("加/减 (฿):") ถูกตีว่าเป็นไทยหลุด
+- ทดสอบจริง: `docker cp backend/assets/language/languages.tsv mainapi:/app/language/languages.tsv && docker restart mainapi` แล้ว `curl localhost:8888/goapi/api/language/ja` (ตัวโหลดอ่านไฟล์จาก disk ตอน runtime — `backend/internal/goapi/language/language.go:204`) จากนั้นรีเฟรชเบราว์เซอร์แล้วสลับภาษา
+
 ## ช่องว่าง / สิ่งที่ยังไม่ตรวจ
 
 - **ยังไม่ตรวจ** ว่า backend มี route ครบตามที่ BFF เรียกทุกตัว (เช่น `/holding/users/import`, `/product/resync`, `/sessions/active-count`, `/unit/bulk`, `/api/user/lineoa/*`) — ต้อง cross-check กับ `backend/main.go` exceptShopPath และ module routes (บทความ backend)
