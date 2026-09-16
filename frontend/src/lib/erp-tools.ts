@@ -1,7 +1,7 @@
 // ERP Tools & Integrity Recalculate Engine for Thai SMEs & Thai Accounting
 // Covers GL Reprocess, Stock Rebuild, AR/AP Recalculate, Bank & Cheque Balance Recalculation
 
-import { authFetch } from "@/lib/client-auth-session";
+import { apiFetch } from "./client-auth-session";
 import { catalogText } from "@/lib/catalog-text";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
@@ -246,7 +246,7 @@ export async function runErpTool(params: {
       : { holdingcode, businesscode };
 
   try {
-    const res = await authFetch(endpoint, {
+    const res = await apiFetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

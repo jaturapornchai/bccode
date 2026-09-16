@@ -192,6 +192,29 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
 }
 
 /**
+ * Call a protected browser API with the current session attached.
+ *
+ * `authFetch` above only *refreshes* an Authorization header that the caller
+ * already set — a call without one goes out anonymous, the BFF answers 401, and
+ * a screen that reads `res?.items` renders as "no data" or "no permission"
+ * instead of failing. Use this for every module client so the token and the
+ * backend URL cannot be forgotten; `tools/audit-auth-fetch.mjs` guards it.
+ */
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const session = getAuthSession() ?? (await restoreAuthSession());
+  if (!session?.token) throw new Error("กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนใช้งาน");
+  return authFetch(path, {
+    ...init,
+    cache: init?.cache ?? "no-store",
+    headers: {
+      Authorization: `Bearer ${session.token}`,
+      "x-bc-backend-url": session.backendUrl,
+      ...init?.headers,
+    },
+  });
+}
+
+/**
  * Revoke the server session if possible, then ALWAYS clear the local session.
  * Logging out must never strand the user on a protected screen: when the
  * tokens are already expired (or the backend is unreachable) the server-side

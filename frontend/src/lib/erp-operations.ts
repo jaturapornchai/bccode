@@ -1,6 +1,6 @@
 // SME Operations, Approvals, BOM Kits, Serial Registry & Data Import Engine
 
-import { authFetch } from "@/lib/client-auth-session";
+import { apiFetch } from "./client-auth-session";
 import { catalogText } from "@/lib/catalog-text";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
@@ -324,7 +324,7 @@ export async function fetchPendingApprovals(params: {
   if (!params.holdingcode) return { docs: [], error: "holding_required" };
 
   try {
-    const res = await authFetch(`/api/goapi/api/approval/${kind}-status/pending`, {
+    const res = await apiFetch(`/api/goapi/api/approval/${kind}-status/pending`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ holdingcode: params.holdingcode }),
@@ -361,7 +361,7 @@ export async function submitApprovalAction(params: {
   if (!params.actionby) return { success: false, messageKey: "unauthorized" };
 
   try {
-    const res = await authFetch(`/api/goapi/api/approval/${kind}-status/${params.action}`, {
+    const res = await apiFetch(`/api/goapi/api/approval/${kind}-status/${params.action}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -1,7 +1,7 @@
 // Unified ERP Reporting Engine for Thai SMEs & Thai Accounting
 // Covers Inventory, Sales, Purchase, AR/AP Aging, Gross Profit, and DBD XBRL Export
 
-import { authFetch } from "@/lib/client-auth-session";
+import { apiFetch } from "./client-auth-session";
 import { catalogText } from "@/lib/catalog-text";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
@@ -619,7 +619,7 @@ export async function fetchErpReportData(params: {
     let payload: unknown;
 
     if (isDocumentReport) {
-      const res = await authFetch("/api/goapi/api/report/sales/by-document", {
+      const res = await apiFetch("/api/goapi/api/report/sales/by-document", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -647,7 +647,7 @@ export async function fetchErpReportData(params: {
     }
 
     const url = `/api/goapi/api/reports/inventory-valuation?holdingcode=${encodeURIComponent(holdingcode)}`;
-    const res = await authFetch(url);
+    const res = await apiFetch(url);
     if (!res.ok) {
       return {
         rows: [],

@@ -7,6 +7,9 @@ import {
   fetchPendingApprovals,
   submitApprovalAction,
 } from "./erp-operations";
+import { setupTestAuthSession } from "./test-auth-session";
+
+setupTestAuthSession();
 
 describe("ERP Operations, Approvals, BOM & Import Workflows", () => {
   it("registers all 27 operations workflow routes across 6 categories", () => {

@@ -6,6 +6,9 @@ import {
   getThaiTaxConfig,
   isThaiTaxRoute,
 } from "./thai-tax";
+import { setupTestAuthSession } from "./test-auth-session";
+
+setupTestAuthSession();
 
 function jsonResponse(status: number, body: unknown): Response {
   return {

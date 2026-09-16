@@ -1,4 +1,4 @@
-import { authFetch } from "./client-auth-session";
+import { apiFetch } from "./client-auth-session";
 
 export interface ErpDetailItem {
   linenumber: number;
@@ -1104,7 +1104,7 @@ export async function fetchErpTransactions(
   if (params.limit !== undefined) query.set("limit", String(params.limit));
 
   try {
-    const res = await authFetch(`/api/erp-transaction/${config.apiPath}/list?${query.toString()}`);
+    const res = await apiFetch(`/api/erp-transaction/${config.apiPath}/list?${query.toString()}`);
     if (!res.ok) {
       const error = res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed";
       return { items: [], total: 0, error };
@@ -1130,7 +1130,7 @@ export async function saveErpTransaction(
   try {
     const method = isEdit ? "PUT" : "POST";
     const path = isEdit && doc.id ? `${config.apiPath}/${encodeURIComponent(doc.id)}` : config.apiPath;
-    const res = await authFetch(`/api/erp-transaction/${path}`, {
+    const res = await apiFetch(`/api/erp-transaction/${path}`, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(doc),
@@ -1154,7 +1154,7 @@ export async function deleteErpTransaction(
   id: string,
 ): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await authFetch(`/api/erp-transaction/${config.apiPath}/${encodeURIComponent(id)}`, {
+    const res = await apiFetch(`/api/erp-transaction/${config.apiPath}/${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
     if (!res.ok) {

@@ -6,6 +6,9 @@ import {
   isErpToolApiReady,
   runErpTool,
 } from "./erp-tools";
+import { signInTestSession, setupTestAuthSession } from "./test-auth-session";
+
+setupTestAuthSession();
 
 describe("ERP Tools & Integrity Recalculate Engine", () => {
   it("registers all 12 system recalculate and maintenance routes", () => {
@@ -132,6 +135,9 @@ describe("runErpTool", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 401, json: async () => ({}) })));
     expect((await runErpTool({ code: "audit_data", ...scope })).messageKey).toBe("unauthorized");
 
+    // A 401 makes authFetch try a refresh; the stub rejects it, so the session
+    // is logged out. Sign in again before the next scenario.
+    signInTestSession();
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })));
     expect((await runErpTool({ code: "audit_data", ...scope })).messageKey).toBe("process_failed");
 

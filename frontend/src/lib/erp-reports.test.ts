@@ -5,6 +5,9 @@ import {
   isErpReportApiReady,
   fetchErpReportData,
 } from "./erp-reports";
+import { setupTestAuthSession } from "./test-auth-session";
+
+setupTestAuthSession();
 
 describe("Unified ERP Reporting Engine", () => {
   it("registers all 26 ERP report routes across 6 categories", () => {

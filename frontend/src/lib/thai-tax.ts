@@ -1,7 +1,7 @@
 // Thai Tax & Compliance Engine for Thai SMEs & Thai Accounting
 // Covers VAT (ภ.พ. 30, ภ.พ. 36, รายงานภาษีขาย/ซื้อ) and WHT (ภ.ง.ด. 2, ภ.ง.ด. 3, ภ.ง.ด. 53, 50 ทวิ)
 
-import { authFetch } from "@/lib/client-auth-session";
+import { apiFetch } from "./client-auth-session";
 import { catalogText } from "@/lib/catalog-text";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
@@ -204,7 +204,7 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
 type PostResult = { ok: true; payload: unknown } | { ok: false; error: string };
 
 async function postApi(path: string, body: unknown): Promise<PostResult> {
-  const res = await authFetch(path, {
+  const res = await apiFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

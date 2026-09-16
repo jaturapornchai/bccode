@@ -8,6 +8,9 @@ import {
   deleteErpTransaction,
   type ErpTransactionDoc,
 } from "./erp-transaction";
+import { setupTestAuthSession } from "./test-auth-session";
+
+setupTestAuthSession();
 
 describe("ERP Transaction domain configs and operations", () => {
   it("provides comprehensive coverage across all 6 ERP core operational domains", () => {
