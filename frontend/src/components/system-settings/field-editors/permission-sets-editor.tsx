@@ -1,6 +1,7 @@
 "use client";
 
 import { authFetch } from "@/lib/client-auth-session";
+import { fieldLabel } from "../utils";
 import { useBackendText } from "@/components/backend-text-provider";
 import { Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -77,7 +78,7 @@ export function PermissionSetsEditor({
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const selected = stringArrayFromForm(form[field.key]).map((code) => code.toUpperCase());
-  const label = field.label[language] ?? field.label.en ?? field.label.th;
+  const label = fieldLabel(field, language, getSystemSettingConfig("user"), dictionary);
   const isThai = language === "th";
 
   useEffect(() => {

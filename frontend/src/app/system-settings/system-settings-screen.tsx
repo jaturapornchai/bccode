@@ -211,6 +211,8 @@ import {
   uiBackendKey,
   systemSettingTitle,
   fieldLabel,
+  fieldHelper,
+  systemSettingSubtitle,
   optionLabel,
   normalizeHexColor,
   languageName,
@@ -968,9 +970,7 @@ export function SystemSettingsScreen({
   const title = config
     ? systemSettingTitle(config, language, backendLanguage)
     : route;
-  const subtitle = config
-    ? (config.subtitle[language] ?? config.subtitle.en ?? config.subtitle.th)
-    : "";
+  const subtitle = config ? systemSettingSubtitle(config, language, backendLanguage) : "";
   const dateTimeScope = useMemo(
     () => resolveDateTimeScope(workspace),
     [workspace],
@@ -8784,6 +8784,7 @@ const variantFieldColumns: Record<string, VariantColumn[]> = {
 };
 
 function ProductVariantStructuredFieldEditor({
+  config,
   dictionary,
   field,
   form,
@@ -8791,6 +8792,7 @@ function ProductVariantStructuredFieldEditor({
   language,
   setForm,
 }: {
+  config: SystemSettingConfig;
   dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
@@ -8843,7 +8845,7 @@ function ProductVariantStructuredFieldEditor({
           </h3>
           {field.helper ? (
             <p className="text-xs leading-snug text-muted-foreground">
-              {field.helper[language] ?? field.helper.en ?? field.helper.th}
+              {fieldHelper(field, language, config, dictionary)}
             </p>
           ) : null}
         </div>
@@ -9284,13 +9286,13 @@ function FieldEditor({
   workspace: WorkspaceSession | null;
 }) {
   const label = fieldLabel(field, language, config, dictionary);
-  const helper =
-    field.helper?.[language] ?? field.helper?.en ?? field.helper?.th;
+  const helper = fieldHelper(field, language, config, dictionary);
   const value = form[field.key];
 
   if (isProductVariantStructuredField(config, field)) {
     return (
       <ProductVariantStructuredFieldEditor
+        config={config}
         dictionary={dictionary}
         field={field}
         form={form}
@@ -9610,6 +9612,7 @@ function FieldEditor({
   if (field.type === "string-list") {
     return (
       <StringListFieldEditor
+        config={config}
         dictionary={dictionary}
         field={field}
         form={form}
@@ -10006,6 +10009,7 @@ async function fetchSettingRecordsByTaxId(
 }
 
 function StringListFieldEditor({
+  config,
   dictionary,
   field,
   form,
@@ -10013,6 +10017,7 @@ function StringListFieldEditor({
   language,
   setForm,
 }: {
+  config: SystemSettingConfig;
   dictionary: BackendLanguageDictionary;
   field: SystemSettingField;
   form: FormState;
@@ -10022,8 +10027,7 @@ function StringListFieldEditor({
 }) {
   const values = normalizeStringListValue(form[field.key]);
   const [draft, setDraft] = useState("");
-  const helper =
-    field.helper?.[language] ?? field.helper?.en ?? field.helper?.th;
+  const helper = fieldHelper(field, language, config, dictionary);
   const addLabel = backendText(dictionary, "ss_add", "เพิ่ม");
   const emptyLabel =
     backendText(dictionary, "ss_no_aliases_yet", "ยังไม่มีชื่อเรียกอื่น");
