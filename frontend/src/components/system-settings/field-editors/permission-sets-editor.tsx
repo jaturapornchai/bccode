@@ -1,6 +1,7 @@
 "use client";
 
 import { authFetch } from "@/lib/client-auth-session";
+import { useBackendText } from "@/components/backend-text-provider";
 import { Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,7 @@ export function PermissionSetsEditor({
   setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
+  const tr = useBackendText();
   const sourceConfig = useMemo(() => getSystemSettingConfig("permissiongroup"), []);
   const [options, setOptions] = useState<PermissionSetOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -137,9 +139,7 @@ export function PermissionSetsEditor({
         <Badge variant="outline">{selected.length.toLocaleString(localeOf(language))}</Badge>
       </div>
       <p className="text-xs font-normal text-muted-foreground">
-        {isThai
-          ? "เลือกได้หลายชุด สิทธิ์ที่ได้ = รวมทุกชุดที่เลือก + ชุดมาตรฐานของระดับสิทธิ์ · สร้าง/แก้ชุดได้ที่ขั้น 2 สิทธิ์การใช้งาน"
-          : "Pick any number of sets. Effective rights = union of the chosen sets + the access-level default. Manage sets in step 2."}
+        {tr("ss_permission_sets_hint", "เลือกได้หลายชุด สิทธิ์ที่ได้ = รวมทุกชุดที่เลือก + ชุดมาตรฐานของระดับสิทธิ์ · สร้าง/แก้ชุดได้ที่ขั้น 2 สิทธิ์การใช้งาน")}
       </p>
       {options.length > 6 ? (
         <label className="relative block">
@@ -148,7 +148,7 @@ export function PermissionSetsEditor({
             className="pl-9"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder={isThai ? "ค้นหาสิทธิ์การใช้งาน (รหัส/ชื่อ)" : "Search permission sets"}
+            placeholder={tr("ss_search_permission_sets", "ค้นหาสิทธิ์การใช้งาน (รหัส/ชื่อ)")}
           />
         </label>
       ) : null}
@@ -186,11 +186,12 @@ export function PermissionSetsEditor({
                 <span className="truncate text-xs font-normal text-muted-foreground">
                   {option.code} ·{" "}
                   {option.allScreens
-                    ? isThai ? "ทุกจอ" : "All screens"
-                    : isThai
-                      ? `${option.permissionCount.toLocaleString("th-TH")} รายการสิทธิ์`
-                      : `${option.permissionCount.toLocaleString("en-US")} entries`}
-                  {!option.isActive ? (isThai ? " · ปิดใช้งาน" : " · inactive") : ""}
+                    ? tr("ss_all_screens", "ทุกจอ")
+                    : tr("ss_permission_entry_count", "{0} รายการสิทธิ์").replace(
+                        "{0}",
+                        option.permissionCount.toLocaleString(isThai ? "th-TH" : "en-US"),
+                      )}
+                  {!option.isActive ? ` · ${tr("inactive", "ปิดใช้งาน")}` : ""}
                 </span>
               </label>
             );
@@ -198,10 +199,8 @@ export function PermissionSetsEditor({
         ) : (
           <div className="rounded-xl border border-dashed border-border bg-card p-3 text-sm font-normal text-muted-foreground md:col-span-2 xl:col-span-3">
             {options.length
-              ? isThai ? "ไม่พบสิทธิ์การใช้งานที่ค้นหา" : "No matching permission set"
-              : isThai
-                ? "ยังไม่มีชุดสิทธิ์การใช้งานเพิ่มเติม — สร้างได้ที่ขั้น 2 สิทธิ์การใช้งาน (เช่น บัญชี, ขาย, คลัง)"
-                : "No custom permission sets yet — create them in step 2 (e.g. Accounting, Sales, Stock)."}
+              ? tr("ss_no_matching_permission_set", "ไม่พบสิทธิ์การใช้งานที่ค้นหา")
+              : tr("ss_no_custom_permission_sets", "ยังไม่มีชุดสิทธิ์การใช้งานเพิ่มเติม — สร้างได้ที่ขั้น 2 สิทธิ์การใช้งาน (เช่น บัญชี, ขาย, คลัง)")}
           </div>
         )}
       </div>

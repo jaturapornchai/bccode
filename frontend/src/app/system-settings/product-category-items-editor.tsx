@@ -1,6 +1,7 @@
 "use client";
 
 import { authFetch } from "@/lib/client-auth-session";
+import { useBackendText } from "@/components/backend-text-provider";
 import React, { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -136,6 +137,7 @@ export function ProductCategoryItemsEditor({
   className,
   triggerSearchNonce,
 }: ProductCategoryItemsEditorProps) {
+  const tr = useBackendText();
   const [localCodelist, setLocalCodelist] = useState<CategoryProduct[]>([]);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -258,11 +260,11 @@ export function ProductCategoryItemsEditor({
             .filter((item: BarcodeSearchResult | null): item is BarcodeSearchResult => item !== null);
           setSearchResults(barcodes);
         } else {
-          setSearchError(payload.message || (language === "th" ? "โหลดบาร์โค้ดไม่สำเร็จ" : "Failed to load barcodes"));
+          setSearchError(payload.message || (tr("ss_failed_to_load_barcodes", "โหลดบาร์โค้ดไม่สำเร็จ")));
         }
       } catch (err: any) {
         if (!active) return;
-        setSearchError(err.message || (language === "th" ? "เกิดข้อผิดพลาดในการเชื่อมต่อ" : "Network error"));
+        setSearchError(err.message || (tr("error_connecting", "เกิดข้อผิดพลาดในการเชื่อมต่อ")));
       } finally {
         if (active) setSearching(false);
       }
@@ -272,7 +274,7 @@ export function ProductCategoryItemsEditor({
     return () => {
       active = false;
     };
-  }, [debouncedQuery, searchDialogOpen, auth, workspace, language]);
+  }, [debouncedQuery, searchDialogOpen, auth, workspace, language, tr]);
 
   const categoryRecordGuid = String(
     categoryRecord?.guidfixed ?? categoryRecord?.guid ?? "",
@@ -286,7 +288,7 @@ export function ProductCategoryItemsEditor({
       <Card className={cn("flex h-full min-h-0 flex-col items-center justify-center border-border bg-card p-6 shadow-sm", className)}>
         <Loader2 className="size-6 animate-spin text-primary" />
         <span className="mt-2 text-xs text-muted-foreground">
-          {language === "th" ? "กำลังโหลดข้อมูลบาร์โค้ดในหมวด..." : "Loading barcodes in category..."}
+          {tr("ss_loading_barcodes_in_category", "กำลังโหลดข้อมูลบาร์โค้ดในหมวด...")}
         </span>
       </Card>
     );
@@ -394,7 +396,7 @@ export function ProductCategoryItemsEditor({
 
       setNotice({
         type: "success",
-        text: language === "th" ? "บันทึกข้อมูลเรียบร้อยแล้ว" : "Saved successfully",
+        text: tr("ss_saved_successfully", "บันทึกข้อมูลเรียบร้อยแล้ว"),
       });
 
       // Update parent state
@@ -404,7 +406,7 @@ export function ProductCategoryItemsEditor({
     } catch (err: any) {
       setNotice({
         type: "error",
-        text: err.message || (language === "th" ? "เกิดข้อผิดพลาดในการบันทึก" : "Save failed"),
+        text: err.message || (tr("error_saving", "เกิดข้อผิดพลาดในการบันทึก")),
       });
     } finally {
       setSaving(false);
@@ -423,7 +425,7 @@ export function ProductCategoryItemsEditor({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={language === "th" ? "ค้นหาและเพิ่มบาร์โค้ด" : "Search and add barcodes"}
+          aria-label={tr("ss_search_and_add_barcodes", "ค้นหาและเพิ่มบาร์โค้ด")}
           className="flex h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
@@ -431,7 +433,7 @@ export function ProductCategoryItemsEditor({
             <div className="flex items-center gap-2">
               <Barcode className="size-5 text-primary" />
               <span className="text-base font-bold">
-                {language === "th" ? "ค้นหาและเพิ่มบาร์โค้ด" : "Search and Add Barcodes"}
+                {tr("ss_search_and_add_barcodes", "ค้นหาและเพิ่มบาร์โค้ด")}
               </span>
             </div>
             <Button
@@ -450,9 +452,7 @@ export function ProductCategoryItemsEditor({
               <Input
                 autoFocus
                 placeholder={
-                  language === "th"
-                    ? "ค้นหาด้วยบาร์โค้ด, รหัสสินค้า, หรือชื่อสินค้า..."
-                    : "Search by barcode, product code, or name..."
+                  tr("ss_search_barcode_placeholder", "ค้นหาด้วยบาร์โค้ด, รหัสสินค้า, หรือชื่อสินค้า...")
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -465,7 +465,7 @@ export function ProductCategoryItemsEditor({
             {searching ? (
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
                 <Loader2 className="size-6 animate-spin text-primary" />
-                <span>{language === "th" ? "กำลังค้นหาบาร์โค้ด..." : "Searching barcodes..."}</span>
+                <span>{tr("barcode_searching_barcode", "กำลังค้นหาบาร์โค้ด...")}</span>
               </div>
             ) : searchError ? (
               <div className="p-4 text-center text-sm text-destructive font-medium">
@@ -473,7 +473,7 @@ export function ProductCategoryItemsEditor({
               </div>
             ) : searchResults.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                {language === "th" ? "ไม่พบบาร์โค้ดที่ตรงตามคำค้นหา" : "No barcodes found"}
+                {tr("ss_no_barcodes_found", "ไม่พบบาร์โค้ดที่ตรงตามคำค้นหา")}
               </div>
             ) : (
               <div className="divide-y divide-border/60">
@@ -498,14 +498,14 @@ export function ProductCategoryItemsEditor({
                         </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground font-medium">
                           {item.itemcode ? (
-                            <span>{language === "th" ? "รหัสสินค้า" : "Code"}: {item.itemcode}</span>
+                            <span>{tr("product_code", "รหัสสินค้า")}: {item.itemcode}</span>
                           ) : null}
                           {item.unitname ? (
-                            <span>{language === "th" ? "หน่วย" : "Unit"}: {item.unitname}</span>
+                            <span>{tr("barcode_unit", "หน่วย")}: {item.unitname}</span>
                           ) : null}
                           {item.price > 0 ? (
                             <span className="font-semibold text-primary">
-                              {language === "th" ? "ราคา" : "Price"}: {formatMoney(item.price)}
+                              {tr("price", "ราคา")}: {formatMoney(item.price)}
                             </span>
                           ) : null}
                         </div>
@@ -526,12 +526,12 @@ export function ProductCategoryItemsEditor({
                         {isAdded ? (
                           <>
                             <Check className="size-3.5 mr-1" />
-                            {language === "th" ? "เพิ่มแล้ว" : "Added"}
+                            {tr("added", "เพิ่มแล้ว")}
                           </>
                         ) : (
                           <>
                             <Plus className="size-3.5 mr-1" />
-                            {language === "th" ? "เพิ่ม" : "Add"}
+                            {tr("add", "เพิ่ม")}
                           </>
                         )}
                       </Button>
@@ -550,7 +550,7 @@ export function ProductCategoryItemsEditor({
               onClick={() => setSearchDialogOpen(false)}
               className="rounded-lg font-semibold"
             >
-              {language === "th" ? "ปิด" : "Close"}
+              {tr("close", "ปิด")}
             </Button>
           </footer>
         </div>
@@ -568,12 +568,12 @@ export function ProductCategoryItemsEditor({
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/20 px-4 py-3 shrink-0">
         <div className="grid gap-0.5">
           <CardTitle className="text-sm font-bold text-foreground">
-            {language === "th" ? "บาร์โค้ดในหมวด" : "Barcodes in Category"}
+            {tr("ss_barcodes_in_category", "บาร์โค้ดในหมวด")}
           </CardTitle>
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs font-semibold">
             <span className="text-primary">{categoryName}</span>
             <span className="text-muted-foreground">
-              {language === "th" ? `ทั้งหมด ${localCodelist.length} รายการ` : `Total ${localCodelist.length} items`}
+              {tr("ss_total_items", "ทั้งหมด {0} รายการ").replace("{0}", String(localCodelist.length))}
             </span>
           </div>
         </div>
@@ -587,7 +587,7 @@ export function ProductCategoryItemsEditor({
               onClick={onOpenEdit}
             >
               <Edit3 className="size-3.5" />
-              {language === "th" ? "แก้ไขข้อมูลหมวด" : "Edit Category"}
+              {tr("ss_edit_category", "แก้ไขข้อมูลหมวด")}
             </Button>
           ) : null}
           <Button
@@ -600,7 +600,7 @@ export function ProductCategoryItemsEditor({
             }}
           >
             <Plus className="size-4" />
-            {language === "th" ? "เพิ่มบาร์โค้ด" : "Add Barcode"}
+            {tr("ss_add_barcode", "เพิ่มบาร์โค้ด")}
           </Button>
           <Button
             type="button"
@@ -615,7 +615,7 @@ export function ProductCategoryItemsEditor({
             }}
             className="h-8 rounded-lg font-semibold"
           >
-            {language === "th" ? "ยกเลิก" : "Cancel"}
+            {tr("cancel", "ยกเลิก")}
           </Button>
           <Button
             type="button"
@@ -630,8 +630,8 @@ export function ProductCategoryItemsEditor({
               <Save className="size-4" />
             )}
             {saving
-              ? (language === "th" ? "กำลังบันทึก..." : "Saving...")
-              : (language === "th" ? "บันทึก" : "Save")}
+              ? (tr("saving", "กำลังบันทึก..."))
+              : (tr("save", "บันทึก"))}
           </Button>
         </div>
       </CardHeader>
@@ -642,12 +642,10 @@ export function ProductCategoryItemsEditor({
             <div className="flex h-60 flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
               <Info className="size-8 text-muted-foreground/60" />
               <span className="font-semibold text-foreground">
-                {language === "th" ? "ยังไม่มีบาร์โค้ดในหมวดนี้" : "No barcodes in this category"}
+                {tr("ss_no_barcodes_in_category", "ยังไม่มีบาร์โค้ดในหมวดนี้")}
               </span>
               <span className="text-xs text-muted-foreground max-w-xs leading-normal">
-                {language === "th"
-                  ? "กดปุ่มด้านล่างเพื่อค้นหาและเพิ่มบาร์โค้ดเข้าหมวดนี้"
-                  : "Click the button below to search and add barcodes to this category."}
+                {tr("ss_add_barcodes_hint", "กดปุ่มด้านล่างเพื่อค้นหาและเพิ่มบาร์โค้ดเข้าหมวดนี้")}
               </span>
               <Button
                 type="button"
@@ -659,7 +657,7 @@ export function ProductCategoryItemsEditor({
                 }}
               >
                 <Plus className="size-4" />
-                {language === "th" ? "เพิ่มบาร์โค้ด" : "Add Barcode"}
+                {tr("ss_add_barcode", "เพิ่มบาร์โค้ด")}
               </Button>
             </div>
           ) : (
@@ -668,11 +666,11 @@ export function ProductCategoryItemsEditor({
                 <thead>
                   <tr className="border-b border-border bg-muted/30 text-xs font-bold text-muted-foreground uppercase tracking-wider select-none">
                     <th className="w-8 px-2 py-2.5"></th>
-                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "บาร์โค้ด" : "Barcode"}</th>
-                    <th className="px-4 py-2.5 font-bold">{language === "th" ? "ชื่อสินค้า/บาร์โค้ด" : "Name"}</th>
-                    <th className="px-4 py-2.5 font-bold text-center w-24">{language === "th" ? "หน่วยนับ" : "Unit"}</th>
-                    <th className="px-4 py-2.5 font-bold text-right w-28">{language === "th" ? "ราคา" : "Price"}</th>
-                    <th className="px-4 py-2.5 text-center font-bold w-14">{language === "th" ? "จัดการ" : "Action"}</th>
+                    <th className="px-4 py-2.5 font-bold">{tr("barcode", "บาร์โค้ด")}</th>
+                    <th className="px-4 py-2.5 font-bold">{tr("ss_product_or_barcode_name", "ชื่อสินค้า/บาร์โค้ด")}</th>
+                    <th className="px-4 py-2.5 font-bold text-center w-24">{tr("unit", "หน่วยนับ")}</th>
+                    <th className="px-4 py-2.5 font-bold text-right w-28">{tr("price", "ราคา")}</th>
+                    <th className="px-4 py-2.5 text-center font-bold w-14">{tr("manage", "จัดการ")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -717,8 +715,8 @@ export function ProductCategoryItemsEditor({
                             size="icon"
                             className="size-7 rounded-full text-destructive hover:bg-destructive/10"
                             onClick={() => handleRemoveItem(item.code)}
-                            aria-label={language === "th" ? "ลบบาร์โค้ดออกจากหมวด" : "Remove barcode"}
-                            title={language === "th" ? "ลบบาร์โค้ดออกจากหมวด" : "Remove barcode"}
+                            aria-label={tr("ss_remove_barcode_from_category", "ลบบาร์โค้ดออกจากหมวด")}
+                            title={tr("ss_remove_barcode_from_category", "ลบบาร์โค้ดออกจากหมวด")}
                           >
                             <Trash2 className="size-3.5" />
                           </Button>

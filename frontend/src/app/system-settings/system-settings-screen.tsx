@@ -3124,6 +3124,7 @@ export function SystemSettingsScreen({
 
                       <div className="flex-1 min-h-0 overflow-hidden">
                         {categoryDetailTab === "items" ? (
+                          <BackendTextProvider dictionary={backendLanguage}>
                           <ProductCategoryItemsEditor
                             auth={auth}
                             workspace={workspace}
@@ -3142,6 +3143,7 @@ export function SystemSettingsScreen({
                             className="border-0 shadow-none rounded-none"
                             triggerSearchNonce={triggerProductSearchNonce}
                           />
+                          </BackendTextProvider>
                         ) : (
                           <CardContent
                             className="h-full min-h-0 overflow-y-auto overscroll-contain p-3"
@@ -3536,11 +3538,13 @@ export function SystemSettingsScreen({
     </div>
   );
 
+  const wrapped = <BackendTextProvider dictionary={backendLanguage}>{content}</BackendTextProvider>;
+
   if (embedded)
-    return <section className="grid w-full max-w-none min-w-0 gap-3">{content}</section>;
+    return <section className="grid w-full max-w-none min-w-0 gap-3">{wrapped}</section>;
   return (
     <main className="min-h-dvh w-full max-w-none bg-background p-2 text-foreground sm:p-3">
-      {content}
+      {wrapped}
     </main>
   );
 }
@@ -8480,7 +8484,6 @@ function HoldingScopeRulesEditor({
                     <CompanyScopeSearchPicker
                       companies={companies}
                       disabled={readOnly || loading || companies.length === 0}
-                      language={language}
                       onPick={(businessCode) => addCompanyScope(businessCode)}
                     />
                   </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { authFetch } from "@/lib/client-auth-session";
+import { useBackendText } from "@/components/backend-text-provider";
 import { Check, Loader2, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -81,16 +82,6 @@ const permissionActionDefs: {
   { key: "own_only", textKey: "selfOnly" },
 ];
 
-const permissionUiEn: Record<string, string> = {
-  readAccess: "Access",
-  writeAccess: "Add",
-  updateAccess: "Edit",
-  delete: "Delete",
-  selfOnly: "Own data only",
-  allBranches: "All branches",
-  branch: "Branch",
-};
-
 const permissionUiTh: Record<string, string> = {
   readAccess: "เข้าถึง",
   writeAccess: "เพิ่มได้",
@@ -106,9 +97,7 @@ function permissionActionText(
   language: LanguageCode,
   key: string,
 ): string {
-  const fallback = language === "th"
-    ? (permissionUiTh[key] ?? permissionUiEn[key] ?? key)
-    : (permissionUiEn[key] ?? key);
+  const fallback = permissionUiTh[key] ?? key;
   const backendKeyMap: Record<string, string> = {
     readAccess: "access",
     writeAccess: "can_add",
@@ -280,6 +269,7 @@ export function PermissionLinkUserSelector({
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
+  const tr = useBackendText();
   const userConfig = useMemo(() => getSystemSettingConfig("user"), []);
   const [users, setUsers] = useState<PermissionLinkUserOption[]>([]);
   const [query, setQuery] = useState("");
@@ -404,7 +394,7 @@ export function PermissionLinkUserSelector({
               {selectedName || selectedCode}
             </span>
             <span className="break-words text-xs">
-              {language === "th" ? "รหัสผู้ใช้" : "User code"}: {selectedCode}
+              {tr("user_code", "รหัสผู้ใช้")}: {selectedCode}
             </span>
           </span>
         </div>
@@ -464,7 +454,7 @@ export function PermissionLinkUserSelector({
                   </span>
                 </span>
                 <span className="break-words text-xs text-muted-foreground">
-                  {language === "th" ? "รหัสผู้ใช้" : "User code"}: {user.code}
+                  {tr("user_code", "รหัสผู้ใช้")}: {user.code}
                 </span>
                 {user.subtitle ? (
                   <span className="truncate text-xs font-normal text-muted-foreground">
@@ -511,6 +501,7 @@ export function PermissionLinkMultiSelectEditor({
   setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
+  const tr = useBackendText();
   const isApproval = isApprovalCodesField(field);
   const sourceConfig = useMemo(
     () =>
@@ -650,7 +641,7 @@ export function PermissionLinkMultiSelectEditor({
                   </span>
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {language === "th" ? "รหัสสิทธิ์" : "Permission code"}: {option.code}
+                  {tr("permission_code", "รหัสสิทธิ์")}: {option.code}
                 </span>
                 {option.description ? (
                   <span className="line-clamp-2 text-xs font-normal text-muted-foreground">
@@ -689,15 +680,14 @@ export function PermissionMatrixEditor({
   readOnly?: boolean;
   setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
+  const tr = useBackendText();
   const branchKey = dateTimeScope.key || "company";
   const branches = permissionBranchesFromForm(form.accessrules ?? form.branches);
   const branchPermission = permissionBranchValue(branches, branchKey);
   const menus = isRecord(branchPermission.menus) ? branchPermission.menus : {};
   const branchLabel = dateTimeScope.branchcode || dateTimeScope.branchguid || branchKey;
   const scopeHint =
-    language === "th"
-      ? "ติ๊กใช้กับทุกสาขา = สิทธิ์เมนูนี้ใช้ได้ทุกสาขา; ไม่ติ๊ก = ใช้เฉพาะสาขาปัจจุบัน"
-      : "Checked all branches = this menu permission applies to every branch; unchecked = current branch only.";
+    tr("ss_checked_all_branches_this_menu", "ติ๊กใช้กับทุกสาขา = สิทธิ์เมนูนี้ใช้ได้ทุกสาขา; ไม่ติ๊ก = ใช้เฉพาะสาขาปัจจุบัน");
 
   function updateMenuRule(menuId: string, patch: SettingRecord) {
     if (readOnly || !setForm) return;
@@ -728,12 +718,8 @@ export function PermissionMatrixEditor({
     updateMenuRule(menuId, { allbranches: checked });
   }
 
-  const allBranchesLabel = language === "th"
-    ? permissionUiTh.allBranches
-    : permissionUiEn.allBranches;
-  const branchWord = language === "th"
-    ? permissionUiTh.branch
-    : permissionUiEn.branch;
+  const allBranchesLabel = permissionActionText(dictionary, language, "allBranches");
+  const branchWord = permissionActionText(dictionary, language, "branch");
 
   return (
     <section className="grid gap-3 rounded-2xl border border-border bg-background p-3 md:col-span-2">
@@ -757,7 +743,7 @@ export function PermissionMatrixEditor({
               section.groups.flatMap((group) => group.items),
             ).length
           }{" "}
-          {language === "th" ? "เมนู" : "menus"}
+          {tr("menu", "เมนู")}
         </Badge>
       </div>
 
@@ -798,7 +784,7 @@ export function PermissionMatrixEditor({
                         </p>
                         <p className="break-words text-[10px] text-muted-foreground mt-0.5">
                           <span className="font-mono bg-secondary/35 px-1 py-0.5 rounded text-primary">
-                            {language === "th" ? "รหัสเมนู" : "Menu code"}: {item.id}
+                            {tr("ss_menu_code", "รหัสเมนู")}: {item.id}
                           </span>
                         </p>
                       </div>

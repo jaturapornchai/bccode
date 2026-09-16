@@ -1,6 +1,7 @@
 "use client";
 
 import { authFetch } from "@/lib/client-auth-session";
+import { useBackendText } from "@/components/backend-text-provider";
 import { BadgeCheck, Building2, GitBranch, Loader2, MapPin, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,7 @@ export function BranchMultiSelectFieldEditor({
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
+  const tr = useBackendText();
   const [options, setOptions] = useState<BranchOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -246,9 +248,7 @@ export function BranchMultiSelectFieldEditor({
         setError(
           catchError instanceof Error && catchError.message
             ? catchError.message
-            : language === "th"
-              ? "โหลดสาขาไม่สำเร็จ"
-              : "Failed to load branches",
+            : tr("ss_failed_to_load_branches", "โหลดสาขาไม่สำเร็จ"),
         );
         setLoading(false);
       });
@@ -257,7 +257,7 @@ export function BranchMultiSelectFieldEditor({
       cancelled = true;
       controller.abort();
     };
-  }, [auth, language, workspace, form.businesscodes, form.companyguids]);
+  }, [auth, language, tr, workspace, form.businesscodes, form.companyguids]);
 
   function commitSelection(next: BranchOption[]) {
     setForm((current) => ({ ...current, [field.key]: next }));
@@ -268,12 +268,11 @@ export function BranchMultiSelectFieldEditor({
     commitSelection(selected.filter((item) => branchKeyOf(item) !== key));
   }
 
-  const summary =
-    language === "th"
-      ? `เลือก ${selected.length} / ${options.length} สาขา`
-      : `${selected.length} / ${options.length} branches selected`;
+  const summary = tr("ss_selected_branch_ratio", "เลือก {0} / {1} สาขา")
+    .replace("{0}", String(selected.length))
+    .replace("{1}", String(options.length));
   const pickLabel =
-    language === "th" ? "เลือกสาขา" : "Pick branches";
+    tr("ss_pick_branches", "เลือกสาขา");
 
   return (
     <section className="grid w-full gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold">
@@ -302,7 +301,7 @@ export function BranchMultiSelectFieldEditor({
       {loading ? (
         <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
-          {language === "th" ? "กำลังโหลดสาขา…" : "Loading branches…"}
+          {tr("ss_loading_branches", "กำลังโหลดสาขา…")}
         </div>
       ) : null}
       {error ? (
@@ -310,9 +309,7 @@ export function BranchMultiSelectFieldEditor({
       ) : null}
       {options.length === 0 && !loading && !error ? (
         <p className="text-xs font-normal text-muted-foreground">
-          {language === "th"
-            ? "ยังไม่มีสาขาให้เลือก — เพิ่มสาขาในหน้า \"สาขา\" ก่อน"
-            : 'No branches to choose yet — add one on the "Branch" screen first.'}
+          {tr("ss_no_branches_to_choose", "ยังไม่มีสาขาให้เลือก — เพิ่มสาขาในหน้า \"สาขา\" ก่อน")}
         </p>
       ) : null}
       {selected.length > 0 ? (
@@ -335,7 +332,7 @@ export function BranchMultiSelectFieldEditor({
                     className="ml-1 grid size-4 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                     onClick={() => removeBranch(option)}
                     aria-label={
-                      language === "th" ? "ลบสาขา" : "Remove branch"
+                      tr("ss_delete_branch", "ลบสาขา")
                     }
                   >
                     <X className="size-3" />
@@ -347,9 +344,7 @@ export function BranchMultiSelectFieldEditor({
         </ul>
       ) : !loading && !error && options.length > 0 ? (
         <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          {language === "th"
-            ? `ไม่ได้เลือก = ใช้ได้ทุกบริษัท (กด "${pickLabel}" เพื่อจำกัดเฉพาะที่เลือก)`
-            : `None selected = all companies (click "${pickLabel}" to limit).`}
+          {tr("ss_none_selected_all_companies", "ไม่ได้เลือก = ใช้ได้ทุกบริษัท (กด \"{0}\" เพื่อจำกัดเฉพาะที่เลือก)").replace("{0}", pickLabel)}
         </p>
       ) : null}
       {dialogOpen ? (
@@ -385,6 +380,7 @@ export function BranchPickerDialog({
   onConfirm: (selected: BranchOption[]) => void;
   options: BranchOption[];
 }) {
+  const tr = useBackendText();
   const [draft, setDraft] = useState<BranchOption[]>(initialSelected);
   const [query, setQuery] = useState("");
   const draftKeys = useMemo(
@@ -433,31 +429,19 @@ export function BranchPickerDialog({
     setDraft(draft.filter((item) => !visibleKeys.has(branchKeyOf(item))));
   }
 
-  const title = language === "th" ? "เลือกสาขา" : "Pick branches";
+  const title = tr("ss_pick_branches", "เลือกสาขา");
   const searchPlaceholder =
-    language === "th"
-      ? "ค้นหารหัสหรือชื่อสาขา"
-      : "Search branch code or name";
-  const summary =
-    language === "th"
-      ? `เลือก ${draft.length} / ${options.length} สาขา (กรอง ${filteredOptions.length})`
-      : `${draft.length} / ${options.length} selected (${filteredOptions.length} filtered)`;
-  const selectAllLabel =
-    language === "th"
-      ? query.trim()
-        ? "เลือกทั้งหมดที่กรอง"
-        : "เลือกทุกสาขา"
-      : query.trim()
-        ? "Select all filtered"
-        : "Select all";
-  const clearLabel =
-    language === "th"
-      ? query.trim()
-        ? "ล้างที่กรอง"
-        : "ล้างทั้งหมด"
-      : query.trim()
-        ? "Clear filtered"
-        : "Clear all";
+    tr("ss_search_branch_code_or_name", "ค้นหารหัสหรือชื่อสาขา");
+  const summary = tr("ss_selected_branch_ratio_filtered", "เลือก {0} / {1} สาขา (กรอง {2})")
+    .replace("{0}", String(draft.length))
+    .replace("{1}", String(options.length))
+    .replace("{2}", String(filteredOptions.length));
+  const selectAllLabel = query.trim()
+    ? tr("ss_select_all_filtered", "เลือกทั้งหมดที่กรอง")
+    : tr("ss_select_all_branches", "เลือกทุกสาขา");
+  const clearLabel = query.trim()
+    ? tr("ss_clear_filtered", "ล้างที่กรอง")
+    : tr("ss_clear_all", "ล้างทั้งหมด");
 
   return (
     <div
@@ -476,7 +460,7 @@ export function BranchPickerDialog({
           variant="ghost"
           size="sm"
           onClick={onCancel}
-          aria-label={language === "th" ? "ยกเลิก" : "Cancel"}
+          aria-label={tr("ss_cancel", "ยกเลิก")}
         >
           <X />
         </Button>
@@ -514,7 +498,7 @@ export function BranchPickerDialog({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
         {filteredOptions.length === 0 ? (
           <p className="grid h-full place-items-center text-sm text-muted-foreground">
-            {language === "th" ? "ไม่พบสาขา" : "No branches found"}
+            {tr("ss_no_branches_found", "ไม่พบสาขา")}
           </p>
         ) : (
           <ul className="grid gap-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -558,11 +542,11 @@ export function BranchPickerDialog({
         <span className="text-xs text-muted-foreground">{summary}</span>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
-            {language === "th" ? "ยกเลิก" : "Cancel"}
+            {tr("ss_cancel", "ยกเลิก")}
           </Button>
           <Button type="button" onClick={() => onConfirm(draft)}>
             <BadgeCheck />
-            {language === "th" ? "ยืนยัน" : "Confirm"}
+            {tr("ss_confirm", "ยืนยัน")}
           </Button>
         </div>
       </footer>
@@ -634,6 +618,7 @@ export function CompanyMultiSelectFieldEditor({
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
+  const tr = useBackendText();
   const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -681,9 +666,7 @@ export function CompanyMultiSelectFieldEditor({
         setError(
           catchError instanceof Error && catchError.message
             ? catchError.message
-            : language === "th"
-              ? "โหลดข้อมูลบริษัทไม่สำเร็จ"
-              : "Failed to load companies",
+            : tr("ss_failed_to_load_companies", "โหลดข้อมูลบริษัทไม่สำเร็จ"),
         );
         setLoading(false);
       });
@@ -692,7 +675,7 @@ export function CompanyMultiSelectFieldEditor({
       cancelled = true;
       controller.abort();
     };
-  }, [auth, language, workspace]);
+  }, [auth, language, tr, workspace]);
 
   function handleToggleShop(holdingCode: string, checked: boolean) {
     let nextShops = [...selectedHoldingCodes];
@@ -711,11 +694,11 @@ export function CompanyMultiSelectFieldEditor({
   return (
     <section className="grid w-full gap-3 rounded-2xl border border-border bg-background p-4 text-sm font-semibold shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-        <span>{language === "th" ? "สิทธิ์การเข้าถึงบริษัท" : "Company Access"}</span>
+        <span>{tr("ss_company_access", "สิทธิ์การเข้าถึงบริษัท")}</span>
         {loading ? (
           <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground animate-pulse">
             <Loader2 className="size-3 animate-spin" />
-            {language === "th" ? "กำลังโหลดข้อมูลบริษัท…" : "Loading companies…"}
+            {tr("ss_loading_companies", "กำลังโหลดข้อมูลบริษัท…")}
           </span>
         ) : null}
       </div>
@@ -723,7 +706,7 @@ export function CompanyMultiSelectFieldEditor({
 
       {!loading && !error && shops.length === 0 ? (
         <p className="text-xs font-normal text-muted-foreground py-2">
-          {language === "th" ? "ไม่พบข้อมูลบริษัทในระบบ" : "No companies found."}
+          {tr("ss_no_companies_found", "ไม่พบข้อมูลบริษัทในระบบ")}
         </p>
       ) : null}
 
@@ -771,6 +754,7 @@ export function CompanyMultiSelectReadOnlyDetail({
   value: unknown;
   auth: AuthSession | null;
 }) {
+  const tr = useBackendText();
   const [options, setOptions] = useState<MasterEntry[]>([]);
   const selectedGuids = useMemo(() => {
     if (Array.isArray(value)) {
@@ -823,7 +807,7 @@ export function CompanyMultiSelectReadOnlyDetail({
       </span>
       {selectedGuids.length === 0 ? (
         <b className="font-medium text-emerald-600 dark:text-emerald-400">
-          {language === "th" ? "ใช้ได้ทุกบริษัท" : "All companies"}
+          {tr("ss_all_companies_scope", "ใช้ได้ทุกบริษัท")}
         </b>
       ) : (
         <ul className="flex flex-wrap gap-1">
@@ -863,6 +847,7 @@ export function BranchCoordinatePairEditor({
   language: LanguageCode;
   setForm: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
+  const tr = useBackendText();
   const [mapOpen, setMapOpen] = useState(false);
   const latitudeField = config.fields.find(
     (item) => item.key === "contact.latitude",
@@ -879,7 +864,7 @@ export function BranchCoordinatePairEditor({
   const latitudeRaw = stringValue(form["contact.latitude"]);
   const longitudeRaw = stringValue(form["contact.longitude"]);
   const pickLabel =
-    language === "th" ? "เลือกจากแผนที่" : "Pick on map";
+    tr("ss_pick_on_map", "เลือกจากแผนที่");
 
   return (
     <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm font-semibold md:col-span-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { authFetch } from "@/lib/client-auth-session";
+import { useBackendText } from "@/components/backend-text-provider";
 import { Building2, GitBranch, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -233,6 +234,7 @@ export function HoldingScopeRulesEditor({
   setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
   workspace: WorkspaceSession | null;
 }) {
+  const tr = useBackendText();
   const [companies, setCompanies] = useState<CompanyScopeOption[]>([]);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -319,9 +321,7 @@ export function HoldingScopeRulesEditor({
         setError(
           catchError instanceof Error && catchError.message
             ? catchError.message
-            : language === "th"
-              ? "โหลดบริษัท/สาขาไม่สำเร็จ"
-              : "Failed to load companies and branches",
+            : tr("ss_failed_to_load_companies_and", "โหลดบริษัท/สาขาไม่สำเร็จ"),
         );
         setLoading(false);
       });
@@ -330,7 +330,7 @@ export function HoldingScopeRulesEditor({
       cancelled = true;
       controller.abort();
     };
-  }, [auth, language, workspace]);
+  }, [auth, language, tr, workspace]);
 
   useEffect(() => {
     if (holdingSelected || selectedCompanyScopes.length === 0) {
@@ -472,17 +472,13 @@ export function HoldingScopeRulesEditor({
   }
 
   const hint =
-    language === "th"
-      ? "ติ๊กทั้งกลุ่มกิจการ หรือค้นหาบริษัทเพื่อเพิ่มเข้า list แล้วเลือกบริษัทเพื่อกำหนดสาขา"
-      : "Select the whole business group, or search and add companies, then pick a company to configure branches.";
+    tr("ss_select_the_whole_business_group", "ติ๊กทั้งกลุ่มกิจการ หรือค้นหาบริษัทเพื่อเพิ่มเข้า list แล้วเลือกบริษัทเพื่อกำหนดสาขา");
   const summary =
     holdingSelected
-      ? language === "th"
-        ? "ทั้งกลุ่มกิจการ"
-        : "Whole business group"
-      : language === "th"
-        ? `เลือก ${selectedCompanyCount()} บริษัท / ${selectedBranchCount()} สาขา`
-        : `${selectedCompanyCount()} companies / ${selectedBranchCount()} branches selected`;
+      ? tr("ss_whole_business_group", "ทั้งกลุ่มกิจการ")
+      : tr("ss_selected_companies_branches", "เลือก {0} บริษัท / {1} สาขา")
+          .replace("{0}", String(selectedCompanyCount()))
+          .replace("{1}", String(selectedBranchCount()));
 
   return (
     <section className="grid gap-3 rounded-2xl border border-border bg-background p-3 md:col-span-2">
@@ -496,13 +492,13 @@ export function HoldingScopeRulesEditor({
       {loading ? (
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
-          {language === "th" ? "กำลังโหลดบริษัท/สาขา…" : "Loading companies and branches…"}
+          {tr("ss_loading_companies_and_branches", "กำลังโหลดบริษัท/สาขา…")}
         </p>
       ) : null}
       {error ? <p className="text-xs font-semibold text-destructive">{error}</p> : null}
       {!loading && !error && companies.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          {language === "th" ? "ยังไม่มีบริษัทให้เลือก" : "No companies available."}
+          {tr("ss_no_companies_available", "ยังไม่มีบริษัทให้เลือก")}
         </p>
       ) : null}
       <div className="grid gap-3 rounded-xl border border-border bg-muted/20 p-3">
@@ -515,11 +511,9 @@ export function HoldingScopeRulesEditor({
             onChange={(event) => setHoldingScope(event.target.checked)}
           />
           <span className="grid gap-1">
-            <span>{language === "th" ? "ใช้ได้ทั้งกลุ่มกิจการ" : "Apply to whole business group"}</span>
+            <span>{tr("ss_apply_to_whole_business_group", "ใช้ได้ทั้งกลุ่มกิจการ")}</span>
             <span className="text-xs font-normal text-muted-foreground">
-              {language === "th"
-                ? "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา"
-                : "When checked, this user or permission applies to every company and branch."}
+              {tr("ss_when_checked_this_user_or", "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา")}
             </span>
           </span>
         </label>
@@ -528,9 +522,9 @@ export function HoldingScopeRulesEditor({
               <div className="grid gap-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-bold">{language === "th" ? "บริษัทที่เลือก" : "Selected companies"}</p>
+                    <p className="text-sm font-bold">{tr("ss_selected_companies", "บริษัทที่เลือก")}</p>
                     <p className="text-xs text-muted-foreground">
-                      {language === "th" ? "ค้นหาบริษัท แล้วกดเพิ่มเข้า list" : "Search a company, then add it to the list."}
+                      {tr("ss_search_a_company_then_add", "ค้นหาบริษัท แล้วกดเพิ่มเข้า list")}
                     </p>
                   </div>
                   <Badge variant="outline">{selectedCompanyScopes.length}</Badge>
@@ -540,7 +534,6 @@ export function HoldingScopeRulesEditor({
                     <CompanyScopeSearchPicker
                       companies={companies}
                       disabled={readOnly || loading || companies.length === 0}
-                      language={language}
                       onPick={(businessCode) => addCompanyScope(businessCode)}
                     />
                   </div>
@@ -548,7 +541,7 @@ export function HoldingScopeRulesEditor({
               </div>
               {selectedCompanyScopes.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                  {language === "th" ? "ยังไม่ได้เลือกบริษัท" : "No companies selected."}
+                  {tr("ss_no_companies_selected", "ยังไม่ได้เลือกบริษัท")}
                 </p>
               ) : (
                 <div className="grid gap-2">
@@ -556,12 +549,8 @@ export function HoldingScopeRulesEditor({
                     const active = scope.company.businesscode === activeCompanyScope?.company.businesscode;
                     const branchLabel =
                       scope.allbranches
-                        ? language === "th"
-                          ? "ทุกสาขา"
-                          : "All branches"
-                        : language === "th"
-                          ? `${scope.branches.length} สาขา`
-                          : `${scope.branches.length} branches`;
+                        ? tr("ss_all_branches", "ทุกสาขา")
+                        : tr("ss_branch_count", "{0} สาขา").replace("{0}", String(scope.branches.length));
                     return (
                       <button
                         className={cn(
@@ -614,19 +603,13 @@ export function HoldingScopeRulesEditor({
                         {activeCompanyScope.company.businesscode} - {activeCompanyScope.company.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {language === "th"
-                          ? "เลือกทุกสาขา หรือค้นหาแล้วเพิ่มเฉพาะสาขาที่ใช้ได้"
-                          : "Select all branches, or search and add specific branches."}
+                        {tr("ss_select_all_branches_or_search", "เลือกทุกสาขา หรือค้นหาแล้วเพิ่มเฉพาะสาขาที่ใช้ได้")}
                       </p>
                     </div>
                     <Badge variant={activeCompanyScope.allbranches ? "success" : "outline"}>
                       {activeCompanyScope.allbranches
-                        ? language === "th"
-                          ? "ทุกสาขา"
-                          : "All branches"
-                        : language === "th"
-                          ? `${activeCompanyScope.branches.length} สาขา`
-                          : `${activeCompanyScope.branches.length} branches`}
+                        ? tr("ss_all_branches", "ทุกสาขา")
+                        : tr("ss_branch_count", "{0} สาขา").replace("{0}", String(activeCompanyScope.branches.length))}
                     </Badge>
                   </div>
                   <label className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-bold">
@@ -639,14 +622,12 @@ export function HoldingScopeRulesEditor({
                         setCompanyAllBranches(activeCompanyScope.company.businesscode, event.target.checked)
                       }
                     />
-                    {language === "th" ? "ใช้กับทุกสาขาในบริษัทนี้" : "Apply to all branches in this company"}
+                    {tr("ss_apply_to_all_branches_in", "ใช้กับทุกสาขาในบริษัทนี้")}
                   </label>
                   <div className="grid gap-2">
                     {activeCompanyScope.allbranches ? (
                       <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
-                        {language === "th"
-                          ? "เลือกใช้ได้ทุกสาขาในบริษัทนี้แล้ว ไม่ต้องเลือกสาขาทีละสาขา"
-                          : "All branches in this company are enabled. No need to pick branches one by one."}
+                        {tr("ss_all_branches_in_this_company", "เลือกใช้ได้ทุกสาขาในบริษัทนี้แล้ว ไม่ต้องเลือกสาขาทีละสาขา")}
                       </p>
                     ) : (
                       <>
@@ -666,7 +647,7 @@ export function HoldingScopeRulesEditor({
                         ) : null}
                         {activeCompanyScope.branches.length === 0 ? (
                           <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                            {language === "th" ? "ยังไม่ได้เลือกสาขา" : "No branches selected."}
+                            {tr("ss_no_branches_selected", "ยังไม่ได้เลือกสาขา")}
                           </p>
                         ) : (
                           <div className="grid gap-2">
@@ -684,8 +665,8 @@ export function HoldingScopeRulesEditor({
                                     type="button"
                                     size="icon"
                                     variant="outline"
-                                    aria-label={language === "th" ? "เอาสาขาออก" : "Remove branch"}
-                                    title={language === "th" ? "เอาสาขาออก" : "Remove branch"}
+                                    aria-label={tr("ss_remove_branch", "เอาสาขาออก")}
+                                    title={tr("ss_remove_branch", "เอาสาขาออก")}
                                     className="size-8 shrink-0 text-destructive"
                                     onClick={() => removeBranchScope(activeCompanyScope.company.businesscode, branch.code)}
                                   >
@@ -702,9 +683,7 @@ export function HoldingScopeRulesEditor({
                 </>
               ) : (
                 <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                  {language === "th"
-                    ? "เลือกบริษัทจาก list ด้านซ้ายก่อน แล้วระบบจะแสดงสาขาที่กำหนด"
-                    : "Pick a company from the list to configure its branches."}
+                  {tr("ss_pick_a_company_from_the", "เลือกบริษัทจาก list ด้านซ้ายก่อน แล้วระบบจะแสดงสาขาที่กำหนด")}
                 </p>
               )}
             </div>
@@ -855,27 +834,26 @@ function ScopePickerPopup({
 export function CompanyScopeSearchPicker({
   companies,
   disabled,
-  language,
   onPick,
 }: {
   companies: CompanyScopeOption[];
   disabled?: boolean;
-  language: LanguageCode;
   onPick: (businessCode: string) => void;
 }) {
+  const tr = useBackendText();
   const [popupOpen, setPopupOpen] = useState(false);
 
   return (
     <div className="grid gap-1 text-xs font-semibold">
       <Button type="button" variant="outline" className="h-9 justify-start text-sm" disabled={disabled} onClick={() => setPopupOpen(true)}>
         <Plus />
-        {language === "th" ? "เพิ่มบริษัท" : "Add company"}
+        {tr("st_add_company", "เพิ่มบริษัท")}
       </Button>
       <ScopePickerPopup
-        closeLabel={language === "th" ? "ปิด" : "Close"}
-        noMatchLabel={language === "th" ? "ไม่พบบริษัท" : "No companies found"}
-        title={language === "th" ? "เลือกบริษัท" : "Choose a company"}
-        placeholder={language === "th" ? "ค้นหารหัสหรือชื่อบริษัท" : "Search company code or name"}
+        closeLabel={tr("ss_close", "ปิด")}
+        noMatchLabel={tr("ss_no_company_matched", "ไม่พบบริษัท")}
+        title={tr("select_shop", "เลือกบริษัท")}
+        placeholder={tr("ss_search_company_code_or_name", "ค้นหารหัสหรือชื่อบริษัท")}
         open={popupOpen}
         onClose={() => setPopupOpen(false)}
         onPick={(key) => onPick(key)}
@@ -903,19 +881,20 @@ export function BranchScopeSearchPicker({
   language: LanguageCode;
   onPick: (branchCode: string) => void;
 }) {
+  const tr = useBackendText();
   const [popupOpen, setPopupOpen] = useState(false);
 
   return (
     <div className="grid gap-1 text-xs font-semibold">
       <Button type="button" variant="outline" className="h-9 justify-start text-sm" disabled={disabled} onClick={() => setPopupOpen(true)}>
         <Plus />
-        {language === "th" ? "เพิ่มสาขา" : "Add branch"}
+        {tr("add_branch", "เพิ่มสาขา")}
       </Button>
       <ScopePickerPopup
-        closeLabel={language === "th" ? "ปิด" : "Close"}
-        noMatchLabel={language === "th" ? "ไม่พบสาขา" : "No branches found"}
-        title={language === "th" ? "เลือกสาขา" : "Choose a branch"}
-        placeholder={language === "th" ? "ค้นหารหัสหรือชื่อสาขา" : "Search branch code or name"}
+        closeLabel={tr("ss_close", "ปิด")}
+        noMatchLabel={tr("ss_no_branches_found", "ไม่พบสาขา")}
+        title={tr("ss_pick_branches", "เลือกสาขา")}
+        placeholder={tr("ss_search_branch_code_or_name", "ค้นหารหัสหรือชื่อสาขา")}
         open={popupOpen}
         onClose={() => setPopupOpen(false)}
         onPick={(key) => onPick(key)}
