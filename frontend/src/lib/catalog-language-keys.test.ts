@@ -26,6 +26,7 @@ const screens = [
   "src/app/report/erp-report-viewer.tsx",
   "src/app/tax/tax-filing-workbench.tsx",
   "src/app/asset/fixed-assets-screen.tsx",
+  "src/app/settings/settings-screen.tsx",
 ];
 const languageColumns = ["th", "en", "cn", "ja", "km", "ko", "lo", "my", "vi", "ms", "id", "fil"];
 
@@ -120,7 +121,7 @@ describe("work-tab catalog language keys", () => {
       const source = read(file);
       // Either shape is fine: the dictionary itself, or the memoised `tr` built
       // from it — what matters is that the string comes from the provider.
-      expect(`${file}: ${/useBackend(?:Dictionary|Text)\(/.test(source)}`).toBe(`${file}: true`);
+      expect(`${file}: ${/useBackend(?:Dictionary|Text|Language)\(/.test(source)}`).toBe(`${file}: true`);
       expect(`${file}: ${bilingualText.test(source)}`).toBe(`${file}: false`);
       expect(`${file}: ${/language === "th" \? config\./.test(source)}`).toBe(`${file}: false`);
     }

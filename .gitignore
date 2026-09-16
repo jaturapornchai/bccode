@@ -86,3 +86,6 @@ blob-report/
 
 # jeadclaws agent sessions
 .jeadclaws/
+
+# i18n sweep working files (tools/i18n-sweep.mjs)
+.i18n-sweep/

@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit 10050903 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit c55869e4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 48
 
@@ -1415,52 +1415,52 @@ Files indexed: 48
 | 1642 | function | `LSet` |
 | 1664 | function | `LPos` |
 
-## frontend/src/app/settings/settings-screen.tsx (1638 lines)
+## frontend/src/app/settings/settings-screen.tsx (1653 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 | 68 | type | `LoadingAction` |
 | 130 | function | `SettingsScreen` |
-| 188 | function | `parseHostFromUrl` |
-| 246 | function | `handleAutoFillHost` |
-| 273 | const-arrow | `handleSetMongodbMode` |
-| 334 | function | `loadConfigUrl` |
-| 357 | function | `handleSaveBackendUrl` |
-| 370 | function | `handleBackendConnectionTest` |
-| 399 | function | `handleVerifySetup` |
-| 426 | function | `loadSetupConfig` |
-| 453 | function | `handleSaveConfig` |
-| 492 | function | `handleTestConnection` |
-| 520 | function | `handleTestAllConnections` |
-| 566 | function | `handleCreateClickHouseDatabase` |
-| 588 | function | `handleExportConfig` |
-| 597 | function | `handleImportConfig` |
-| 609 | function | `handleChangePassword` |
-| 634 | function | `handleCopyBackendUrl` |
-| 648 | function | `handleRemoveHistory` |
-| 654 | function | `handleClearHistory` |
-| 659 | function | `updateItem` |
-| 663 | function | `persistBackendUrl` |
-| 670 | function | `logoutSetup` |
-| 679 | function | `setStatus` |
-| 684 | function | `callSetup` |
-| 1055 | function | `renderConfigSection` |
-| 1134 | function | `splitAiOnlyItems` |
-| 1142 | function | `handleTestStorageConnection` |
-| 1218 | function | `renderStorageCard` |
-| 1268 | function | `renderIntegrationsSection` |
-| 1378 | function | `getDefaultValue` |
-| 1390 | function | `renderConfigField` |
-| 1449 | function | `renderCheckboxField` |
-| 1469 | function | `renderRadioField` |
-| 1499 | function | `renderImportDialog` |
-| 1532 | function | `renderChangePasswordDialog` |
-| 1574 | function | `readUrlHistory` |
-| 1587 | function | `responseToTestResult` |
-| 1598 | function | `formatTestMessage` |
-| 1602 | function | `categoryIcon` |
-| 1619 | function | `TestBadge` |
-| 1623 | function | `ModelChips` |
+| 203 | function | `parseHostFromUrl` |
+| 261 | function | `handleAutoFillHost` |
+| 288 | const-arrow | `handleSetMongodbMode` |
+| 349 | function | `loadConfigUrl` |
+| 372 | function | `handleSaveBackendUrl` |
+| 385 | function | `handleBackendConnectionTest` |
+| 414 | function | `handleVerifySetup` |
+| 441 | function | `loadSetupConfig` |
+| 468 | function | `handleSaveConfig` |
+| 507 | function | `handleTestConnection` |
+| 535 | function | `handleTestAllConnections` |
+| 581 | function | `handleCreateClickHouseDatabase` |
+| 603 | function | `handleExportConfig` |
+| 612 | function | `handleImportConfig` |
+| 624 | function | `handleChangePassword` |
+| 649 | function | `handleCopyBackendUrl` |
+| 663 | function | `handleRemoveHistory` |
+| 669 | function | `handleClearHistory` |
+| 674 | function | `updateItem` |
+| 678 | function | `persistBackendUrl` |
+| 685 | function | `logoutSetup` |
+| 694 | function | `setStatus` |
+| 699 | function | `callSetup` |
+| 1070 | function | `renderConfigSection` |
+| 1149 | function | `splitAiOnlyItems` |
+| 1157 | function | `handleTestStorageConnection` |
+| 1233 | function | `renderStorageCard` |
+| 1283 | function | `renderIntegrationsSection` |
+| 1393 | function | `getDefaultValue` |
+| 1405 | function | `renderConfigField` |
+| 1464 | function | `renderCheckboxField` |
+| 1484 | function | `renderRadioField` |
+| 1514 | function | `renderImportDialog` |
+| 1547 | function | `renderChangePasswordDialog` |
+| 1589 | function | `readUrlHistory` |
+| 1602 | function | `responseToTestResult` |
+| 1613 | function | `formatTestMessage` |
+| 1617 | function | `categoryIcon` |
+| 1634 | function | `TestBadge` |
+| 1638 | function | `ModelChips` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/common.go (1620 lines)
 

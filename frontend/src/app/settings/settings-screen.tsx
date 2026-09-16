@@ -35,7 +35,7 @@ import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
 import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
-import { useBackendLanguage } from "@/lib/backend-language";
+import { backendText, useBackendLanguage } from "@/lib/backend-language";
 import { catalogText } from "@/lib/catalog-text";
 import {
   AI_PROVIDERS,
@@ -113,6 +113,21 @@ export function SettingsScreen() {
     (id: string, bilingual: { th: string; en: string }) =>
       catalogText(settingsTextKeys, id, bilingual, language, backendLanguage),
     [backendLanguage, language],
+  );
+  // Strings that never had an English twin: the key is the identity and the
+  // Thai is only the offline fallback.
+  const tr = useCallback(
+    (key: string, fallback: string) => backendText(backendLanguage, key, fallback),
+    [backendLanguage],
+  );
+  const testBadgeLabel = useCallback(
+    (result: TestResult) =>
+      result.status === "success"
+        ? tr("passed", "ผ่าน")
+        : result.status === "testing"
+          ? tr("set_testing", "กำลังทดสอบ")
+          : tr("set_not_passed", "ไม่ผ่าน"),
+    [tr],
   );
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [messageState, setMessageState] = useState<MessageState>("idle");
@@ -374,7 +389,7 @@ export function SettingsScreen() {
       return;
     }
     if (!setupPassword) {
-      setStatus("กรุณาระบุรหัสผ่าน Setup", "error");
+      setStatus(tr("set_enter_setup_password", "กรุณาระบุรหัสผ่าน Setup"), "error");
       return;
     }
 
@@ -384,11 +399,11 @@ export function SettingsScreen() {
       persistBackendUrl(normalized);
       setBackendUrl(normalized);
       setAuthenticated(true);
-      setStatus(data.message ?? "ยืนยันรหัสผ่านสำเร็จ", "success");
+      setStatus(data.message ?? tr("set_password_verified", "ยืนยันรหัสผ่านสำเร็จ"), "success");
       await loadSetupConfig(setupPassword, normalized);
     } catch (error) {
       setAuthenticated(false);
-      setStatus(error instanceof Error ? error.message : "เข้าสู่ระบบ Setup ไม่สำเร็จ", "error");
+      setStatus(error instanceof Error ? error.message : tr("set_setup_login_failed", "เข้าสู่ระบบ Setup ไม่สำเร็จ"), "error");
     } finally {
       setLoadingAction("idle");
     }
@@ -403,7 +418,7 @@ export function SettingsScreen() {
       const merged = mergeBackendConfig(data.data);
       setConfigMap(merged);
       setAuthenticated(true);
-      setStatus(`โหลด config สำเร็จ`, "success");
+      setStatus(tr("set_config_loaded", "โหลด config สำเร็จ"), "success");
 
       // ตรวจสอบว่าโหมดเริ่มต้นควรเป็นแบบกรอก URI หรือแบบแยกฟิลด์
       const mongoItems = merged["mongodb"] ?? [];
@@ -414,7 +429,7 @@ export function SettingsScreen() {
         setMongodbMode("uri");
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "โหลด config ล้มเหลว", "error");
+      setStatus(error instanceof Error ? error.message : tr("set_config_load_failed", "โหลด config ล้มเหลว"), "error");
     } finally {
       setLoadingAction("idle");
     }
@@ -424,16 +439,16 @@ export function SettingsScreen() {
   async function handleSaveConfig() {
     const errors = validateConfig(configMap);
     if (errors.length > 0) {
-      setStatus(`ตรวจสอบ config ไม่ผ่าน: ${errors.slice(0, 3).join(", ")}`, "error");
+      setStatus(tr("set_config_check_failed", "ตรวจสอบ config ไม่ผ่าน: {0}").replace("{0}", errors.slice(0, 3).join(", ")), "error");
       return;
     }
 
     const confirmed = await confirm({
-      title: "ยืนยันบันทึก Config",
-      description: "บันทึก config ไปที่ backend และเขียนทับ bootstrap.json",
-      details: "ตรวจสอบ Backend URL และค่าที่แก้ไขให้เรียบร้อยก่อนยืนยัน เพราะค่าเหล่านี้มีผลกับการเชื่อมต่อระบบ",
-      confirmLabel: "บันทึก Config",
-      cancelLabel: "ยกเลิก",
+      title: tr("set_confirm_save_config", "ยืนยันบันทึก Config"),
+      description: tr("set_save_config_overwrites_bootstrap", "บันทึก config ไปที่ backend และเขียนทับ bootstrap.json"),
+      details: tr("set_check_values_before_confirm", "ตรวจสอบ Backend URL และค่าที่แก้ไขให้เรียบร้อยก่อนยืนยัน เพราะค่าเหล่านี้มีผลกับการเชื่อมต่อระบบ"),
+      confirmLabel: tr("set_save_config", "บันทึก Config"),
+      cancelLabel: tr("cancel", "ยกเลิก"),
       tone: "warning",
     });
     if (!confirmed) {
@@ -446,14 +461,14 @@ export function SettingsScreen() {
         password: setupPassword,
         configs: serializeConfig(configMap),
       });
-      setStatus(data.message ?? "บันทึก config สำเร็จ", "success");
+      setStatus(data.message ?? tr("set_config_saved", "บันทึก config สำเร็จ"), "success");
       // Backend reloads + reconnects with the new config (async). Show a popup while it
       // settles, then send the user back to the login screen to re-enter with fresh config.
       setReloadingConfig(true);
       await new Promise((resolve) => setTimeout(resolve, 2200));
       router.push("/");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "บันทึก config ล้มเหลว", "error");
+      setStatus(error instanceof Error ? error.message : tr("set_config_save_failed", "บันทึก config ล้มเหลว"), "error");
       setReloadingConfig(false);
     } finally {
       setLoadingAction("idle");
@@ -471,7 +486,7 @@ export function SettingsScreen() {
     try {
       const payload = buildConnectionPayload(category, items, setupPassword);
       const data = await callSetup("test-connection", payload);
-      const result = responseToTestResult(data);
+      const result = responseToTestResult(data, { success: tr("success", "สำเร็จ"), failed: tr("failed", "ไม่สำเร็จ") });
       setTestResults((current) => ({ ...current, [category]: result }));
       return result.status === "success";
     } catch (error) {
@@ -479,7 +494,7 @@ export function SettingsScreen() {
         ...current,
         [category]: {
           status: "failed",
-          message: error instanceof Error ? error.message : "ทดสอบไม่สำเร็จ",
+          message: error instanceof Error ? error.message : tr("set_test_failed", "ทดสอบไม่สำเร็จ"),
         },
       }));
       return false;
@@ -547,10 +562,10 @@ export function SettingsScreen() {
         password2: payload.password2,
         database,
       });
-      setStatus(data.message ?? `สร้าง database ${database} สำเร็จ`, "success");
+      setStatus(data.message ?? tr("set_database_created", "สร้าง database {0} สำเร็จ").replace("{0}", database), "success");
       await handleTestConnection("clickhouse");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "สร้าง ClickHouse database ล้มเหลว", "error");
+      setStatus(error instanceof Error ? error.message : tr("set_create_clickhouse_failed", "สร้าง ClickHouse database ล้มเหลว"), "error");
     } finally {
       setTestingCategory("");
     }
@@ -559,7 +574,7 @@ export function SettingsScreen() {
   async function handleExportConfig() {
     try {
       await navigator.clipboard.writeText(configMapToExportJson(configMap));
-      setStatus("คัดลอก config JSON แล้ว", "success");
+      setStatus(tr("set_config_json_copied", "คัดลอก config JSON แล้ว"), "success");
     } catch {
       setStatus(t(language, "copyFailed"), "error");
     }
@@ -571,16 +586,16 @@ export function SettingsScreen() {
       setConfigMap((current) => importConfigJson(current, importText));
       setDialogMode(null);
       setImportText("");
-      setStatus("Import config แล้ว ยังไม่ได้บันทึกลง backend", "success");
+      setStatus(tr("set_config_imported_not_saved", "Import config แล้ว ยังไม่ได้บันทึกลง backend"), "success");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Import config ล้มเหลว", "error");
+      setStatus(error instanceof Error ? error.message : tr("set_config_import_failed", "Import config ล้มเหลว"), "error");
     }
   }
 
   async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!currentSetupPassword || !newSetupPassword) {
-      setStatus("กรุณาระบุรหัสผ่านเดิมและรหัสผ่านใหม่", "error");
+      setStatus(tr("set_enter_old_and_new_password", "กรุณาระบุรหัสผ่านเดิมและรหัสผ่านใหม่"), "error");
       return;
     }
 
@@ -594,9 +609,9 @@ export function SettingsScreen() {
       setDialogMode(null);
       setCurrentSetupPassword("");
       setNewSetupPassword("");
-      setStatus(data.message ?? "เปลี่ยนรหัสผ่านสำเร็จ", "success");
+      setStatus(data.message ?? tr("set_password_changed", "เปลี่ยนรหัสผ่านสำเร็จ"), "success");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "เปลี่ยนรหัสผ่านล้มเหลว", "error");
+      setStatus(error instanceof Error ? error.message : tr("set_password_change_failed", "เปลี่ยนรหัสผ่านล้มเหลว"), "error");
     } finally {
       setLoadingAction("idle");
     }
@@ -644,7 +659,7 @@ export function SettingsScreen() {
     setShowSetupPassword(false);
     setConfigMap(createDefaultConfigMap());
     setTestResults({});
-    setStatus("ออกจากระบบ Setup แล้ว", "success");
+    setStatus(tr("set_signed_out_of_setup", "ออกจากระบบ Setup แล้ว"), "success");
   }
 
   function setStatus(nextMessage: string, nextState: Exclude<MessageState, "idle">) {
@@ -663,7 +678,7 @@ export function SettingsScreen() {
     });
     const data = (await response.json().catch(() => ({}))) as SetupResponse;
     if (!response.ok || data.success === false) {
-      throw new Error(data.message ?? "Setup backend ตอบกลับผิดปกติ");
+      throw new Error(data.message ?? tr("set_setup_backend_bad_response", "Setup backend ตอบกลับผิดปกติ"));
     }
     return data;
   }
@@ -680,8 +695,8 @@ export function SettingsScreen() {
 
           <div className="settings-title-block">
             <p className="eyebrow">BC Ai Account</p>
-            <h1>ศูนย์ตั้งค่าระบบ</h1>
-            <p>จัดการ Backend URL, Setup Config, database connections, storage, AI providers, ธีม และภาษาในจอเดียว</p>
+            <h1>{tr("system_settings_center", "ศูนย์ตั้งค่าระบบ")}</h1>
+            <p>{tr("set_manage_everything_one_screen", "จัดการ Backend URL, Setup Config, database connections, storage, AI providers, ธีม และภาษาในจอเดียว")}</p>
           </div>
 
           <div className="header-actions settings-header-actions">
@@ -690,18 +705,18 @@ export function SettingsScreen() {
           </div>
         </header>
 
-        <section className="settings-overview" aria-label="สถานะระบบ">
+        <section className="settings-overview" aria-label={tr("set_system_status", "สถานะระบบ")}>
           <div className="overview-tile">
             <span>Backend</span>
-            <strong>{normalizeSetupBackendUrl(backendUrl) || "ยังไม่ได้ตั้งค่า"}</strong>
+            <strong>{normalizeSetupBackendUrl(backendUrl) || tr("not_configured", "ยังไม่ได้ตั้งค่า")}</strong>
           </div>
           <div className="overview-tile">
             <span>Setup</span>
-            <strong>{authenticated ? "ยืนยันแล้ว" : "ยังไม่เข้าสู่ Setup"}</strong>
+            <strong>{authenticated ? tr("set_verified", "ยืนยันแล้ว") : tr("set_not_signed_in_to_setup", "ยังไม่เข้าสู่ Setup")}</strong>
           </div>
           <div className="overview-tile">
             <span>Config Sections</span>
-            <strong>{authenticated ? `${orderedCategories.length} กลุ่ม` : "ล็อกไว้ก่อนยืนยันรหัส"}</strong>
+            <strong>{authenticated ? tr("set_group_count", "{0} กลุ่ม").replace("{0}", String(orderedCategories.length)) : tr("set_locked_until_password_verified", "ล็อกไว้ก่อนยืนยันรหัส")}</strong>
           </div>
         </section>
 
@@ -713,8 +728,8 @@ export function SettingsScreen() {
               </span>
               <div>
                 <p className="eyebrow">{t(language, "api")}</p>
-                <h2>เชื่อมต่อ Backend</h2>
-                <p className="config-description">เริ่มจากตรวจ URL แล้วค่อยยืนยันรหัส Setup เพื่อโหลด config จาก backend</p>
+                <h2>{tr("connect_backend", "เชื่อมต่อ Backend")}</h2>
+                <p className="config-description">{tr("set_check_url_then_verify", "เริ่มจากตรวจ URL แล้วค่อยยืนยันรหัส Setup เพื่อโหลด config จาก backend")}</p>
               </div>
             </div>
 
@@ -733,22 +748,22 @@ export function SettingsScreen() {
                     inputMode="url"
                   />
                   {backendUrlValid === true ? (
-                    <CheckCircle2 aria-label="URL ถูกต้อง" size={18} style={{ color: "var(--success, #16a34a)" }} />
+                    <CheckCircle2 aria-label={tr("set_url_valid", "URL ถูกต้อง")} size={18} style={{ color: "var(--success, #16a34a)" }} />
                   ) : backendUrlValid === false ? (
-                    <AlertCircle aria-label="รูปแบบ URL ไม่ถูกต้อง" size={18} style={{ color: "var(--destructive, #dc2626)" }} />
+                    <AlertCircle aria-label={tr("set_url_invalid", "รูปแบบ URL ไม่ถูกต้อง")} size={18} style={{ color: "var(--destructive, #dc2626)" }} />
                   ) : null}
                 </div>
               </label>
 
               <label className="field-group">
-                <span>รหัสผ่าน Setup</span>
+                <span>{tr("setup_password", "รหัสผ่าน Setup")}</span>
                 <div className="input-shell input-shell-large">
                   <LockKeyhole aria-hidden="true" size={18} />
                   <input
                     value={setupPassword}
                     disabled={authenticated}
                     onChange={(event) => setSetupPassword(event.target.value)}
-                    placeholder="กรอกรหัสตั้งค่า"
+                    placeholder={tr("set_enter_setup_code", "กรอกรหัสตั้งค่า")}
                     type={showSetupPassword ? "text" : "password"}
                   />
                   <button
@@ -779,12 +794,12 @@ export function SettingsScreen() {
               {!authenticated ? (
                 <button className="primary-button settings-primary" type="button" onClick={handleVerifySetup} disabled={isBusy || !backendUrlValid}>
                   {loadingAction === "verify" ? <Loader2 className="spin" size={17} /> : <LogIn aria-hidden="true" size={17} />}
-                  <span>เข้าสู่ระบบ Setup</span>
+                  <span>{tr("set_sign_in_to_setup", "เข้าสู่ระบบ Setup")}</span>
                 </button>
               ) : (
                 <button className="secondary-button" type="button" onClick={logoutSetup}>
                   <LogOut aria-hidden="true" size={17} />
-                  <span>ออกจาก Setup</span>
+                  <span>{tr("set_sign_out_of_setup", "ออกจาก Setup")}</span>
                 </button>
               )}
             </div>
@@ -812,7 +827,7 @@ export function SettingsScreen() {
                 </span>
                 <div>
                   <p className="eyebrow">{t(language, "displaySettings")}</p>
-                  <h2>ธีมและภาษา</h2>
+                  <h2>{tr("theme_and_language", "ธีมและภาษา")}</h2>
                 </div>
               </div>
               <div className="settings-control-stack">
@@ -844,7 +859,7 @@ export function SettingsScreen() {
                   </div>
                   <button className="secondary-button" type="button" onClick={handleClearHistory}>
                     <Trash2 aria-hidden="true" size={16} />
-                    <span>ล้างประวัติทั้งหมด</span>
+                    <span>{tr("set_clear_all_history", "ล้างประวัติทั้งหมด")}</span>
                   </button>
                 </>
               ) : (
@@ -873,17 +888,17 @@ export function SettingsScreen() {
               <section className="setup-action-bar" aria-label="Setup actions">
                 <div className="setup-action-copy">
                   <p className="eyebrow">Setup Config</p>
-                  <h2>จัดการค่าระบบ</h2>
-                  <p>โหลด ทดสอบ Import/Export และบันทึก config กลับ backend</p>
+                  <h2>{tr("set_manage_system_values", "จัดการค่าระบบ")}</h2>
+                  <p>{tr("set_load_test_import_save", "โหลด ทดสอบ Import/Export และบันทึก config กลับ backend")}</p>
                 </div>
                 <div className="setup-action-buttons">
                   <button className="secondary-button" type="button" onClick={() => loadSetupConfig()} disabled={isBusy}>
                     {loadingAction === "load" ? <Loader2 className="spin" size={17} /> : <RefreshCcw aria-hidden="true" size={17} />}
-                    <span>โหลดใหม่</span>
+                    <span>{tr("gl_reload", "โหลดใหม่")}</span>
                   </button>
                   <button className="secondary-button" type="button" onClick={handleTestAllConnections} disabled={isBusy}>
                     {loadingAction === "test-all" ? <Loader2 className="spin" size={17} /> : <Wifi aria-hidden="true" size={17} />}
-                    <span>ทดสอบทั้งหมด</span>
+                    <span>{tr("set_test_all", "ทดสอบทั้งหมด")}</span>
                   </button>
                   <button className="secondary-button" type="button" onClick={handleExportConfig} disabled={isBusy}>
                     <Upload aria-hidden="true" size={17} />
@@ -895,11 +910,11 @@ export function SettingsScreen() {
                   </button>
                   <button className="secondary-button" type="button" onClick={() => setDialogMode("change-password")} disabled={isBusy}>
                     <KeyRound aria-hidden="true" size={17} />
-                    <span>เปลี่ยนรหัส</span>
+                    <span>{tr("set_change_password_short", "เปลี่ยนรหัส")}</span>
                   </button>
                   <button className="primary-button settings-primary" type="button" onClick={handleSaveConfig} disabled={isBusy}>
                     {loadingAction === "save" ? <Loader2 className="spin" size={17} /> : <Save aria-hidden="true" size={17} />}
-                    <span>บันทึก Config</span>
+                    <span>{tr("set_save_config", "บันทึก Config")}</span>
                   </button>
                 </div>
               </section>
@@ -925,7 +940,7 @@ export function SettingsScreen() {
                           type="text"
                           value={serverHost}
                           onChange={(event) => setServerHost(event.target.value)}
-                          placeholder="เช่น 192.168.2.202 หรือ localhost"
+                          placeholder={tr("set_host_example", "เช่น 192.168.2.202 หรือ localhost")}
                           spellCheck={false}
                           autoComplete="off"
                         />
@@ -1013,9 +1028,9 @@ export function SettingsScreen() {
         >
           <div className="grid max-w-sm justify-items-center gap-3 rounded-2xl border border-border bg-card px-8 py-7 text-center shadow-2xl">
             <Loader2 className="spin" size={34} aria-hidden="true" />
-            <strong className="text-base text-foreground">กำลังโหลด config ใหม่…</strong>
+            <strong className="text-base text-foreground">{tr("set_reloading_config", "กำลังโหลด config ใหม่…")}</strong>
             <span className="text-sm text-muted-foreground">
-              บันทึกแล้ว — ระบบกำลัง reconnect ฐานข้อมูล แล้วจะกลับไปหน้าเข้าสู่ระบบ
+              {tr("set_saved_reconnecting_then_login", "บันทึกแล้ว — ระบบกำลัง reconnect ฐานข้อมูล แล้วจะกลับไปหน้าเข้าสู่ระบบ")}
             </span>
           </div>
         </div>
@@ -1055,7 +1070,7 @@ export function SettingsScreen() {
           </div>
           <div className="config-card-meta">
             <span className="field-count">{displayItems.length} fields</span>
-            {testResult ? <TestBadge result={testResult} /> : null}
+            {testResult ? <TestBadge result={testResult} label={testBadgeLabel(testResult)} /> : null}
           </div>
         </div>
 
@@ -1067,14 +1082,14 @@ export function SettingsScreen() {
                 type="button"
                 onClick={() => handleSetMongodbMode("uri")}
               >
-                กรอก URI โดยตรง
+                {tr("set_enter_uri_directly", "กรอก URI โดยตรง")}
               </button>
               <button
                 className={`mongodb-mode-button ${mongodbMode === "fields" ? "active" : ""}`}
                 type="button"
                 onClick={() => handleSetMongodbMode("fields")}
               >
-                ระบุรายละเอียดแยกฟิลด์
+                {tr("set_enter_fields_separately", "ระบุรายละเอียดแยกฟิลด์")}
               </button>
             </div>
           </div>
@@ -1211,7 +1226,7 @@ export function SettingsScreen() {
           </div>
           <div className="config-card-meta">
             <span className="field-count-pill">{displayItems.length} {st("fields", { th: "ฟิลด์", en: "fields" })}</span>
-            {testResult ? <TestBadge result={testResult} /> : null}
+            {testResult ? <TestBadge result={testResult} label={testBadgeLabel(testResult)} /> : null}
           </div>
         </div>
         <div className="config-field-grid">
@@ -1253,8 +1268,8 @@ export function SettingsScreen() {
             </span>
             <div>
               <p className="eyebrow">integrations</p>
-              <h2>AI Providers และ Integrations</h2>
-              <p className="config-description">อิงลำดับ provider fallback จาก Flutter: OpenRouter, Groq, DeepSeek, Gemini</p>
+              <h2>{tr("set_ai_providers_and_integrations", "AI Providers และ Integrations")}</h2>
+              <p className="config-description">{tr("set_provider_fallback_order", "อิงลำดับ provider fallback จาก Flutter: OpenRouter, Groq, DeepSeek, Gemini")}</p>
             </div>
           </div>
           <div className="config-card-meta">
@@ -1313,15 +1328,15 @@ export function SettingsScreen() {
                       aria-pressed={freeMode}
                     >
                       {freeMode ? <CheckCircle2 aria-hidden="true" size={15} /> : null}
-                      <span>ใช้โมเดลฟรีอัตโนมัติ</span>
+                      <span>{tr("set_use_free_models_automatically", "ใช้โมเดลฟรีอัตโนมัติ")}</span>
                     </button>
                     <ModelChips
-                      title="โมเดลฟรีตัวอย่าง"
+                      title={tr("set_free_model_examples", "โมเดลฟรีตัวอย่าง")}
                       models={provider.freeModels}
                       onSelect={(model) => updateItem("integrations", modelItem.key, model)}
                     />
                     <ModelChips
-                      title="โมเดลเสียเงิน"
+                      title={tr("set_paid_models", "โมเดลเสียเงิน")}
                       models={provider.paidModels}
                       onSelect={(model) => updateItem("integrations", modelItem.key, model)}
                     />
@@ -1388,7 +1403,7 @@ export function SettingsScreen() {
             autoComplete="off"
             value={item.value}
             onChange={(event) => updateItem(item.category, item.key, event.target.value)}
-            placeholder={isMongoUriReadOnly ? "ระบบประกอบ URI อัตโนมัติ..." : (item.description || item.key)}
+            placeholder={isMongoUriReadOnly ? tr("set_uri_built_automatically", "ระบบประกอบ URI อัตโนมัติ...") : (item.description || item.key)}
             type={item.isSecret ? "password" : "text"}
             readOnly={isMongoUriReadOnly}
             disabled={isMongoUriReadOnly}
@@ -1399,7 +1414,7 @@ export function SettingsScreen() {
               className="default-button-inline"
               type="button"
               onClick={() => updateItem(item.category, item.key, defaultValue)}
-              title={`ใช้ค่าเริ่มต้น: ${defaultValue}`}
+              title={tr("set_use_default_value", "ใช้ค่าเริ่มต้น: {0}").replace("{0}", String(defaultValue))}
             >
               Default
             </button>
@@ -1408,7 +1423,7 @@ export function SettingsScreen() {
         {item.description ? (
           <small>
             {isMongoUriReadOnly 
-              ? "URI (ประกอบให้อัตโนมัติจากการกรอก Host, Port, User, Pass, Database)" 
+              ? tr("set_uri_built_from_fields", "URI (ประกอบให้อัตโนมัติจากการกรอก Host, Port, User, Pass, Database)") 
               : item.description}
           </small>
         ) : null}
@@ -1430,7 +1445,7 @@ export function SettingsScreen() {
           onClick={() => updateItem(item.category, item.key, checked ? "false" : "true")}
         >
           <span className="checkbox-box">{checked ? <CheckCircle2 aria-hidden="true" size={16} /> : null}</span>
-          <span>{checked ? "เปิดใช้งาน" : "ปิดใช้งาน"}</span>
+          <span>{checked ? tr("alert_enabled", "เปิดใช้งาน") : tr("alert_disabled", "ปิดใช้งาน")}</span>
         </button>
         {item.description ? <small>{item.description}</small> : null}
       </div>
@@ -1489,7 +1504,7 @@ export function SettingsScreen() {
           />
           <div className="settings-button-row">
             <button className="secondary-button" type="button" onClick={() => setDialogMode(null)}>
-              ยกเลิก
+              {tr("cancel", "ยกเลิก")}
             </button>
             <button className="primary-button settings-primary" type="submit">
               Import
@@ -1507,21 +1522,21 @@ export function SettingsScreen() {
           <div className="dialog-header">
             <div>
               <p className="eyebrow">Setup Password</p>
-              <h2>เปลี่ยนรหัสผ่าน Setup</h2>
+              <h2>{tr("set_change_setup_password", "เปลี่ยนรหัสผ่าน Setup")}</h2>
             </div>
             <button className="icon-button dialog-close" type="button" onClick={() => setDialogMode(null)} aria-label={t(language, "close")}>
               <X aria-hidden="true" size={18} />
             </button>
           </div>
           <label className="field-group">
-            <span>รหัสผ่านเดิม</span>
+            <span>{tr("set_current_password", "รหัสผ่านเดิม")}</span>
             <div className="input-shell">
               <LockKeyhole aria-hidden="true" size={18} />
               <input value={currentSetupPassword} onChange={(event) => setCurrentSetupPassword(event.target.value)} type="password" />
             </div>
           </label>
           <label className="field-group">
-            <span>รหัสผ่านใหม่</span>
+            <span>{tr("new_password", "รหัสผ่านใหม่")}</span>
             <div className="input-shell">
               <KeyRound aria-hidden="true" size={18} />
               <input value={newSetupPassword} onChange={(event) => setNewSetupPassword(event.target.value)} type="password" />
@@ -1529,11 +1544,11 @@ export function SettingsScreen() {
           </label>
           <div className="settings-button-row">
             <button className="secondary-button" type="button" onClick={() => setDialogMode(null)}>
-              ยกเลิก
+              {tr("cancel", "ยกเลิก")}
             </button>
             <button className="primary-button settings-primary" type="submit" disabled={loadingAction === "change-password"}>
               {loadingAction === "change-password" ? <Loader2 className="spin" size={17} /> : <Save aria-hidden="true" size={17} />}
-              <span>บันทึก</span>
+              <span>{tr("save", "บันทึก")}</span>
             </button>
           </div>
         </form>
@@ -1555,11 +1570,11 @@ function readUrlHistory(): string[] {
   }
 }
 
-function responseToTestResult(data: SetupResponse): TestResult {
+function responseToTestResult(data: SetupResponse, labels: { success: string; failed: string }): TestResult {
   const success = data.success === true;
   return {
     status: success ? "success" : "failed",
-    message: data.message ?? (success ? "สำเร็จ" : "ไม่สำเร็จ"),
+    message: data.message ?? (success ? labels.success : labels.failed),
     latencyMs: typeof data.latencyms === "number" ? data.latencyms : undefined,
     errorCode: typeof data.errorcode === "string" ? data.errorcode : undefined,
     database: typeof data.database === "string" ? data.database : undefined,
@@ -1587,8 +1602,8 @@ function categoryIcon(category: string): ReactNode {
   }
 }
 
-function TestBadge({ result }: { result: TestResult }) {
-  return <span className={`test-badge ${result.status}`}>{result.status === "success" ? "ผ่าน" : result.status === "testing" ? "กำลังทดสอบ" : "ไม่ผ่าน"}</span>;
+function TestBadge({ result, label }: { result: TestResult; label: string }) {
+  return <span className={`test-badge ${result.status}`}>{label}</span>;
 }
 
 function ModelChips({ title, models, onSelect }: { title: string; models: string[]; onSelect: (model: string) => void }) {
