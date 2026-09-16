@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import {
   ShoppingBag,
   Store,
@@ -27,7 +28,6 @@ import { Badge } from "@/components/ui/badge";
 import { listBarcodes, updateBarcode } from "@/lib/product-barcode/api";
 import { formatDefaultDate, resolveWorkspaceDateTimeDisplayOptions } from "@/lib/date-time";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import {
   branchDisplayName,
   shopDisplayName,
@@ -67,7 +67,7 @@ type ShopConnection = {
 
 export function MarketplaceMappingsScreen({ platform, embedded = false, language = "th" }: MarketplaceScreenProps) {
   const lang = normalizeLanguage(language);
-  const textU = getBarcodeText(lang);
+  const textU = useBarcodeText(lang);
 
   const [activeTab, setActiveTab] = useState<"connections" | "mappings" | "logs">("connections");
   const [auth, setAuth] = useState<AuthSession | null>(null);

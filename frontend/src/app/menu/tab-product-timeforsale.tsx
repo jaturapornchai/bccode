@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { type Product, type ProductTimeForSale } from "@/lib/product-barcode/types";
 import { FieldRow, Section, type ProductStateAction } from "./product-tab-shared";
 
@@ -17,7 +17,7 @@ export function TabProductTimeForSale({
   onChange: ProductStateAction;
   language?: string;
 }) {
-  const textT = getBarcodeText(language);
+  const textT = useBarcodeText(language);
   const setRows = useCallback(
     (mutator: (rows: ProductTimeForSale[]) => ProductTimeForSale[]) =>
       onChange((c) => c ? ({ ...c, timeforsales: mutator(c.timeforsales || []) } as Product) : null),

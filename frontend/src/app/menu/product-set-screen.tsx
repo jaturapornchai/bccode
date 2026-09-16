@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback, type FormEvent } from "react";
+import { BackendTextProvider } from "@/components/backend-text-provider";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import {
   FolderOpen,
   CheckSquare,
@@ -55,7 +57,6 @@ import {
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { listBarcodes, type MasterEntry } from "@/lib/product-barcode/api";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import {
   type AuthSession,
   type WorkspaceSession,
@@ -126,7 +127,7 @@ function BarcodePickerModal({
   onSelect: (row: ProductBarcodeListRow) => void;
 }) {
   const tr = (key: string, fallback: string) => backendText(backendLanguage || {}, key, fallback);
-  const text = getBarcodeText(language);
+  const text = useBarcodeText(language);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<ProductBarcodeListRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -265,7 +266,7 @@ export function ProductSetScreen({
   const clientBackendLanguage = useBackendLanguage(language, auth?.backendUrl);
   const backendLanguage = initialBackendLanguage || clientBackendLanguage;
   const tr = useCallback((key: string, fallback: string) => backendText(backendLanguage, key, fallback), [backendLanguage]);
-  const text = getBarcodeText(lang);
+  const text = useBarcodeText(lang);
   const { confirm, confirmationDialog } = useConfirmDialog();
   const [workspace, setWorkspace] = useState<WorkspaceSession | null>(null);
   const selectedShopTokenRef = useRef("");
@@ -915,6 +916,7 @@ export function ProductSetScreen({
   }, [items]);
 
   return (
+    <BackendTextProvider dictionary={backendLanguage}>
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {/* Header Toolbar */}
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-6 py-4 shadow-sm">
@@ -2156,5 +2158,6 @@ export function ProductSetScreen({
 
       {confirmationDialog}
     </div>
+    </BackendTextProvider>
   );
 }

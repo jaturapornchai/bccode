@@ -1,12 +1,13 @@
 "use client";
 
 import { Film, ImagePlus, Plus, Trash2, Upload, X } from "lucide-react";
+import { useBackendText } from "@/components/backend-text-provider";
+import { useBarcodeText } from "./use-barcode-text";
 import { useCallback, useMemo, useState } from "react";
 import { AuthenticatedImg, AuthenticatedVideo } from "@/components/authenticated-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { uploadProductImage, uploadProductVideo } from "@/lib/product-barcode/api";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import {
   PRODUCT_VIDEO_MAX_BYTES,
   PRODUCT_VIDEO_MAX_MB,
@@ -41,7 +42,8 @@ export function BusinessImageEditor({
   onChange: (patch: BusinessImageValue) => void;
   value: BusinessImageValue;
 }) {
-  const text = getBarcodeText(language);
+  const text = useBarcodeText(language);
+  const tr = useBackendText();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [videoUploadError, setVideoUploadError] = useState("");
@@ -51,9 +53,7 @@ export function BusinessImageEditor({
       if (!file) return;
       if (file.type !== "image/png" && file.type !== "image/jpeg") {
         setUploadError(
-          language === "th"
-            ? "รองรับเฉพาะไฟล์ PNG และ JPG"
-            : "Only PNG and JPG files are supported.",
+          tr("barcode_only_png_and_jpg_files", "รองรับเฉพาะไฟล์ PNG และ JPG"),
         );
         return;
       }
@@ -83,11 +83,11 @@ export function BusinessImageEditor({
     async (file: File | null) => {
       if (!file) return;
       if (file.type !== "video/mp4" || !file.name.toLowerCase().endsWith(".mp4")) {
-        setVideoUploadError(language === "th" ? "รองรับเฉพาะไฟล์วิดีโอ MP4" : "Only MP4 videos are supported.");
+        setVideoUploadError(tr("barcode_only_mp4_videos_are_supported", "รองรับเฉพาะไฟล์วิดีโอ MP4"));
         return;
       }
       if (file.size > PRODUCT_VIDEO_MAX_BYTES) {
-        setVideoUploadError(language === "th" ? `วิดีโอต้องมีขนาดไม่เกิน ${PRODUCT_VIDEO_MAX_MB} MB` : `Video size must not exceed ${PRODUCT_VIDEO_MAX_MB} MB.`);
+        setVideoUploadError(tr("barcode_video_max_size", "วิดีโอต้องมีขนาดไม่เกิน {0} MB").replace("{0}", String(PRODUCT_VIDEO_MAX_MB)));
         return;
       }
 
@@ -119,9 +119,7 @@ export function BusinessImageEditor({
         });
       } catch {
         setVideoUploadError(
-          language === "th"
-            ? "สร้างภาพตัวอย่างจากวิดีโอไม่สำเร็จ กรุณาใช้ไฟล์ MP4 (H.264)"
-            : "Unable to create a video preview. Please use an MP4 (H.264) file.",
+          tr("barcode_unable_to_create_a_video", "สร้างภาพตัวอย่างจากวิดีโอไม่สำเร็จ กรุณาใช้ไฟล์ MP4 (H.264)"),
         );
       } finally {
         setUploading(false);
@@ -245,15 +243,15 @@ export function BusinessImageEditor({
           <div>
             <h3 className="flex items-center gap-2 text-sm font-semibold">
               <Film className="h-4 w-4" />
-              {language === "th" ? "วิดีโอ" : "Videos"}
+              {tr("barcode_videos", "วิดีโอ")}
             </h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              {language === "th" ? `MP4 สูงสุด ${PRODUCT_VIDEO_MAX_MB} MB แนะนำ H.264/AAC` : `MP4 up to ${PRODUCT_VIDEO_MAX_MB} MB; H.264/AAC recommended`}
+              {tr("barcode_video_format_hint", "MP4 สูงสุด {0} MB แนะนำ H.264/AAC").replace("{0}", String(PRODUCT_VIDEO_MAX_MB))}
             </p>
           </div>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs hover:bg-muted">
             <Plus className="h-3.5 w-3.5" />
-            {language === "th" ? "เพิ่มวิดีโอ" : "Add video"}
+            {tr("barcode_add_video", "เพิ่มวิดีโอ")}
             <input
               accept="video/mp4,.mp4"
               className="hidden"
@@ -269,7 +267,7 @@ export function BusinessImageEditor({
         </div>
         {!value.videos?.length ? (
           <p className="text-sm text-muted-foreground">
-            {language === "th" ? "— ยังไม่มีวิดีโอ —" : "— No videos —"}
+            {tr("barcode_no_videos", "— ยังไม่มีวิดีโอ —")}
           </p>
         ) : (
           <ul className="grid gap-3 md:grid-cols-2">
@@ -278,13 +276,13 @@ export function BusinessImageEditor({
                 <AuthenticatedVideo
                   auth={auth}
                   className="aspect-video w-full"
-                  failedLabel={language === "th" ? "เปิดวิดีโอไม่สำเร็จ" : "Unable to open video"}
-                  loadLabel={language === "th" ? "โหลดและเล่นวิดีโอ" : "Load and play video"}
+                  failedLabel={tr("barcode_unable_to_open_video", "เปิดวิดีโอไม่สำเร็จ")}
+                  loadLabel={tr("barcode_load_and_play_video", "โหลดและเล่นวิดีโอ")}
                   posterSrc={video.posteruri}
                   src={video.uri}
                 />
                 <Button
-                  aria-label={language === "th" ? "ลบวิดีโอ" : "Delete video"}
+                  aria-label={tr("barcode_delete_video", "ลบวิดีโอ")}
                   className="absolute right-1 top-1 size-7 bg-background/90"
                   onClick={() =>
                     onChange({

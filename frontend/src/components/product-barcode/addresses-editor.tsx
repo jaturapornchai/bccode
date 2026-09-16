@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { LANGUAGES } from "@/lib/i18n";
+import { useBackendText } from "@/components/backend-text-provider";
 import { LanguageFlag } from "@/components/product-barcode/names-editor";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ export function AddressesEditor({
   language?: string;
   disabled?: boolean;
 }) {
+  const tr = useBackendText();
   const allLanguages = useMemo(() => {
     const codes = new Set<string>();
     const primary = languages.find((code) => code.trim())?.trim() || "th";
@@ -54,9 +56,7 @@ export function AddressesEditor({
               <LanguageFlag code={code} />
               <span className="truncate">
                 {index === 0
-                  ? language === "th"
-                    ? "ภาษาแรก"
-                    : "Primary"
+                  ? tr("ss_primary", "ภาษาแรก")
                   : languageLabel(code, language)}
               </span>
               <span className="uppercase">{code}</span>
@@ -64,7 +64,7 @@ export function AddressesEditor({
             <Textarea
               value={addresses[code] ?? ""}
               onChange={(event) => onChange({ ...addresses, [code]: event.target.value })}
-              placeholder={language === "th" ? "ที่อยู่สำหรับออกเอกสาร" : "Address for documents"}
+              placeholder={tr("barcode_address_for_documents", "ที่อยู่สำหรับออกเอกสาร")}
               rows={4}
               disabled={disabled}
             />

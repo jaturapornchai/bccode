@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { pickName } from "@/lib/product-barcode/utils";
 import {
   type Product,
@@ -44,7 +44,7 @@ export function TabProductRestaurant({
   language: string;
   shopLanguages: string[];
 }) {
-  const text = getBarcodeText(language);
+  const text = useBarcodeText(language);
   const foodTypes = useMemo(() => [
     { value: 0, label: text.foodTypeFood },
     { value: 1, label: text.foodTypeDrink },
@@ -122,7 +122,7 @@ function ProductOrderTypesEditor({
     [onChange],
   );
 
-  const textOT = getBarcodeText(language);
+  const textOT = useBarcodeText(language);
   return (
     <Section
       title={textOT.orderTypes}
@@ -205,7 +205,7 @@ function ProductOptionsEditor({
   shopLanguages: string[];
   language: string;
 }) {
-  const textOpt = getBarcodeText(language);
+  const textOpt = useBarcodeText(language);
   const setOptions = useCallback(
     (mutator: (rows: ProductOption[]) => ProductOption[]) =>
       onChange((c) => c ? ({ ...c, options: mutator(c.options || []) } as Product) : null),

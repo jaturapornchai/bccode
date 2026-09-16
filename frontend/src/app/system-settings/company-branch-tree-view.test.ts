@@ -47,7 +47,7 @@ describe("CompanyBranchTreeView organization-management contract", () => {
     expect(source).toContain("normalizeLanguageConfigs(configs, defaultCode, { forcePrimaryFirst: true })");
     expect(source).toContain("languageSelect");
     expect(namesEditorSource).toContain("if (languageSelect)");
-    expect(namesEditorSource).toContain('aria-label={language === "th" ? "เลือกภาษาของชื่อ"');
+    expect(namesEditorSource).toContain('aria-label={tr("barcode_select_name_language", "เลือกภาษาของชื่อ")}');
     expect(namesEditorSource).toContain("selectableLanguages.map((code) =>");
   });
 

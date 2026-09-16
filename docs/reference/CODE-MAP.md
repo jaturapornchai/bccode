@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit 00d89b92 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit 85dce1ec - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 47
 
@@ -447,44 +447,44 @@ Files indexed: 47
 | 3270 | function | `ApplyChangesWithProgress` |
 | 3678 | function | `max` |
 
-## frontend/src/app/menu/product-screen.tsx (3130 lines)
+## frontend/src/app/menu/product-screen.tsx (3133 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 101 | function | `readAuthSession` |
-| 105 | function | `readWorkspaceSession` |
-| 115 | function | `ensureActiveProductHolding` |
-| 159 | const-arrow | `CORE_PRODUCT_TABS` |
-| 165 | const-arrow | `EXTENSION_PRODUCT_TABS` |
-| 182 | function | `ProductScreen` |
-| 371 | const-arrow | `handleWorkspaceChange` |
-| 739 | const-arrow | `handleCreateOpen` |
-| 746 | const-arrow | `handleCreateCopyOpen` |
-| 760 | const-arrow | `handleSelectBarcode` |
-| 844 | const-arrow | `handleEditOpen` |
-| 850 | const-arrow | `handleDelete` |
-| 887 | const-arrow | `toggleCheckedProduct` |
-| 895 | const-arrow | `handleDeleteSelectedProducts` |
-| 937 | const-arrow | `handleSave` |
-| 1096 | const-arrow | `openPicker` |
-| 1107 | const-arrow | `handlePickerSelect` |
-| 2806 | function | `setNameXEntry` |
-| 2821 | function | `productRowKey` |
-| 2825 | function | `productUnitRows` |
-| 2829 | function | `formatProductUnitType` |
-| 2846 | function | `formatYesNo` |
-| 2856 | function | `formatNamedList` |
-| 2869 | function | `formatUnitConversionList` |
-| 2884 | function | `formatRefBarcodeList` |
-| 2926 | function | `formatBomList` |
-| 2943 | function | `formatOptionList` |
-| 2976 | function | `formatDimensionList` |
-| 2993 | function | `formatMarketplaceProductList` |
-| 3017 | function | `formatTimeForSaleList` |
-| 3029 | function | `isEmptyDetailValue` |
-| 3043 | function | `DetailSummary` |
-| 3073 | function | `DetailSection` |
-| 3116 | function | `DetailField` |
+| 102 | function | `readAuthSession` |
+| 106 | function | `readWorkspaceSession` |
+| 116 | function | `ensureActiveProductHolding` |
+| 160 | const-arrow | `CORE_PRODUCT_TABS` |
+| 166 | const-arrow | `EXTENSION_PRODUCT_TABS` |
+| 183 | function | `ProductScreen` |
+| 372 | const-arrow | `handleWorkspaceChange` |
+| 740 | const-arrow | `handleCreateOpen` |
+| 747 | const-arrow | `handleCreateCopyOpen` |
+| 761 | const-arrow | `handleSelectBarcode` |
+| 845 | const-arrow | `handleEditOpen` |
+| 851 | const-arrow | `handleDelete` |
+| 888 | const-arrow | `toggleCheckedProduct` |
+| 896 | const-arrow | `handleDeleteSelectedProducts` |
+| 938 | const-arrow | `handleSave` |
+| 1097 | const-arrow | `openPicker` |
+| 1108 | const-arrow | `handlePickerSelect` |
+| 2809 | function | `setNameXEntry` |
+| 2824 | function | `productRowKey` |
+| 2828 | function | `productUnitRows` |
+| 2832 | function | `formatProductUnitType` |
+| 2849 | function | `formatYesNo` |
+| 2859 | function | `formatNamedList` |
+| 2872 | function | `formatUnitConversionList` |
+| 2887 | function | `formatRefBarcodeList` |
+| 2929 | function | `formatBomList` |
+| 2946 | function | `formatOptionList` |
+| 2979 | function | `formatDimensionList` |
+| 2996 | function | `formatMarketplaceProductList` |
+| 3020 | function | `formatTimeForSaleList` |
+| 3032 | function | `isEmptyDetailValue` |
+| 3046 | function | `DetailSummary` |
+| 3076 | function | `DetailSection` |
+| 3119 | function | `DetailField` |
 
 ## frontend/src/app/menu/main-menu-screen.tsx (2946 lines)
 
@@ -904,27 +904,27 @@ Files indexed: 47
 | 999 | const-arrow | `handleSave` |
 | 2158 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/product-set-screen.tsx (2160 lines)
+## frontend/src/app/menu/product-set-screen.tsx (2163 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 87 | function | `productSetRowKey` |
-| 91 | function | `ensureActiveProductSetHolding` |
-| 109 | function | `BarcodePickerModal` |
-| 136 | const-arrow | `fetchBarcodes` |
-| 257 | function | `ProductSetScreen` |
-| 590 | const-arrow | `handleCreateOpen` |
-| 597 | const-arrow | `handleCreateCopyOpen` |
-| 611 | const-arrow | `handleEditOpen` |
-| 618 | const-arrow | `handleDelete` |
-| 649 | const-arrow | `toggleCheckedSet` |
-| 655 | const-arrow | `handleDeleteSelectedSets` |
-| 692 | const-arrow | `handleSave` |
-| 774 | const-arrow | `updateOptionGroupFields` |
-| 854 | const-arrow | `updateChoiceFields` |
-| 877 | const-arrow | `openPickerForChoice` |
-| 882 | const-arrow | `handlePickerSelect` |
-| 895 | const-arrow | `handleSimulatorToggle` |
+| 88 | function | `productSetRowKey` |
+| 92 | function | `ensureActiveProductSetHolding` |
+| 110 | function | `BarcodePickerModal` |
+| 137 | const-arrow | `fetchBarcodes` |
+| 258 | function | `ProductSetScreen` |
+| 591 | const-arrow | `handleCreateOpen` |
+| 598 | const-arrow | `handleCreateCopyOpen` |
+| 612 | const-arrow | `handleEditOpen` |
+| 619 | const-arrow | `handleDelete` |
+| 650 | const-arrow | `toggleCheckedSet` |
+| 656 | const-arrow | `handleDeleteSelectedSets` |
+| 693 | const-arrow | `handleSave` |
+| 775 | const-arrow | `updateOptionGroupFields` |
+| 855 | const-arrow | `updateChoiceFields` |
+| 878 | const-arrow | `openPickerForChoice` |
+| 883 | const-arrow | `handlePickerSelect` |
+| 896 | const-arrow | `handleSimulatorToggle` |
 
 ## frontend/src/lib/system-setting-screens.ts (2145 lines)
 
@@ -1201,57 +1201,57 @@ Files indexed: 47
 | 1412 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ZeroValues` |
 | 1601 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType` |
 
-## frontend/src/app/menu/product-barcode-screen.tsx (1714 lines)
+## frontend/src/app/menu/product-barcode-screen.tsx (1716 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 106 | function | `clampProductSplitLeft` |
-| 123 | function | `ProductBarcodeScreen` |
-| 192 | const-arrow | `handleWorkspaceChange` |
-| 267 | function | `moveWithMouse` |
-| 271 | function | `stopMouseResize` |
-| 487 | function | `toggleChecked` |
-| 495 | function | `submitSearch` |
-| 500 | function | `canDiscardEditor` |
-| 514 | function | `goToPage` |
-| 522 | function | `closeEditor` |
-| 530 | function | `handleEditorChange` |
-| 539 | function | `selectListItem` |
-| 546 | function | `selectRowByIndex` |
-| 552 | function | `handleListKeyDown` |
-| 564 | function | `hasCompanyScope` |
-| 573 | function | `openCreateEditor` |
-| 587 | function | `openEditEditor` |
-| 612 | function | `openCopyEditor` |
-| 639 | function | `copyCurrentEditorValue` |
-| 653 | function | `saveEditor` |
-| 725 | function | `deleteSelected` |
-| 781 | function | `deleteCurrentItem` |
-| 1248 | function | `BarcodeRow` |
-| 1271 | function | `handleRowKeyDown` |
-| 1355 | function | `barcodeIdentity` |
-| 1359 | function | `barcodeRowKey` |
-| 1363 | function | `ProductBarcodeDetail` |
-| 1492 | function | `DetailSection` |
-| 1518 | function | `DetailField` |
-| 1527 | function | `readAuthSession` |
-| 1531 | function | `readWorkspaceSession` |
-| 1544 | function | `normalizeBarcodeList` |
-| 1551 | function | `normalizeBarcodeRecord` |
-| 1589 | function | `getProductImages` |
-| 1600 | function | `getProductVideos` |
-| 1612 | function | `getSellingPrice` |
-| 1620 | function | `extractBarcodeRecordPayload` |
-| 1630 | function | `detailKey` |
-| 1634 | function | `getFirstString` |
-| 1645 | function | `getFirstNumber` |
-| 1656 | function | `localizedNameFromKeys` |
-| 1671 | function | `getNames` |
-| 1684 | function | `getString` |
-| 1689 | function | `getNumber` |
-| 1699 | function | `isRecord` |
-| 1707 | function | `formatNumber` |
-| 1711 | function | `formatCodeName` |
+| 107 | function | `clampProductSplitLeft` |
+| 124 | function | `ProductBarcodeScreen` |
+| 193 | const-arrow | `handleWorkspaceChange` |
+| 268 | function | `moveWithMouse` |
+| 272 | function | `stopMouseResize` |
+| 488 | function | `toggleChecked` |
+| 496 | function | `submitSearch` |
+| 501 | function | `canDiscardEditor` |
+| 515 | function | `goToPage` |
+| 523 | function | `closeEditor` |
+| 531 | function | `handleEditorChange` |
+| 540 | function | `selectListItem` |
+| 547 | function | `selectRowByIndex` |
+| 553 | function | `handleListKeyDown` |
+| 565 | function | `hasCompanyScope` |
+| 574 | function | `openCreateEditor` |
+| 588 | function | `openEditEditor` |
+| 613 | function | `openCopyEditor` |
+| 640 | function | `copyCurrentEditorValue` |
+| 654 | function | `saveEditor` |
+| 726 | function | `deleteSelected` |
+| 782 | function | `deleteCurrentItem` |
+| 1250 | function | `BarcodeRow` |
+| 1273 | function | `handleRowKeyDown` |
+| 1357 | function | `barcodeIdentity` |
+| 1361 | function | `barcodeRowKey` |
+| 1365 | function | `ProductBarcodeDetail` |
+| 1494 | function | `DetailSection` |
+| 1520 | function | `DetailField` |
+| 1529 | function | `readAuthSession` |
+| 1533 | function | `readWorkspaceSession` |
+| 1546 | function | `normalizeBarcodeList` |
+| 1553 | function | `normalizeBarcodeRecord` |
+| 1591 | function | `getProductImages` |
+| 1602 | function | `getProductVideos` |
+| 1614 | function | `getSellingPrice` |
+| 1622 | function | `extractBarcodeRecordPayload` |
+| 1632 | function | `detailKey` |
+| 1636 | function | `getFirstString` |
+| 1647 | function | `getFirstNumber` |
+| 1658 | function | `localizedNameFromKeys` |
+| 1673 | function | `getNames` |
+| 1686 | function | `getString` |
+| 1691 | function | `getNumber` |
+| 1701 | function | `isRecord` |
+| 1709 | function | `formatNumber` |
+| 1713 | function | `formatCodeName` |
 
 ## backend/internal/product/productbarcode/productbarcode_http.go (1699 lines)
 

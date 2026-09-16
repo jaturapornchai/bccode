@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { pickName } from "@/lib/product-barcode/utils";
 import {
   type Product,
@@ -25,7 +25,7 @@ export function TabProductBusinessBranch({
   auth: AuthSession | null;
   language: string;
 }) {
-  const textBB = getBarcodeText(language);
+  const textBB = useBarcodeText(language);
   const [pickerType, setPickerType] = useState<"branch" | "businesstype" | null>(null);
 
   const setBusinessRows = useCallback(

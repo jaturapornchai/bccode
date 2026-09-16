@@ -1,12 +1,12 @@
 "use client";
 
 import { ImagePlus } from "lucide-react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import {
   BusinessImageEditor,
   BusinessImageGallery,
 } from "@/components/product-barcode/business-image-editor";
 import { Input } from "@/components/ui/input";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { type Product } from "@/lib/product-barcode/types";
 import type { AuthSession } from "@/lib/workspace-models";
 import { FieldRow, FieldGrid, Section, type ProductStateAction } from "./product-tab-shared";
@@ -22,7 +22,7 @@ export function TabProductMedia({
   auth: AuthSession | null;
   language?: string;
 }) {
-  const textM = getBarcodeText(language);
+  const textM = useBarcodeText(language);
 
   return (
     <div className="space-y-4">

@@ -1,12 +1,12 @@
 "use client";
 
 import { Loader2, Search, X } from "lucide-react";
+import { useBarcodeText } from "./use-barcode-text";
 import { type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { listMaster, type MasterEntry, type MasterName } from "@/lib/product-barcode/api";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { pickName } from "@/lib/product-barcode/utils";
 import { type LanguageCode } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ export function MasterPicker({
   companyGuid,
   filters,
 }: MasterPickerProps) {
-  const text = getBarcodeText(language);
+  const text = useBarcodeText(language);
   const [query, setQuery] = useState(initialQuery);
   const [debounced, setDebounced] = useState(initialQuery);
   const [items, setItems] = useState<MasterEntry[]>([]);

@@ -32,6 +32,7 @@ import {
   type FormEvent,
 } from "react";
 import { AuthenticatedImg } from "@/components/authenticated-image";
+import { BackendTextProvider } from "@/components/backend-text-provider";
 import { BusinessImageGallery } from "@/components/product-barcode/business-image-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1304,6 +1305,7 @@ export function ProductScreen({
     : tr("product_ungrouped", "ยังไม่จัดกลุ่ม");
 
   return (
+    <BackendTextProvider dictionary={backendLanguage}>
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {/* Header Toolbar */}
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-3">
@@ -2800,6 +2802,7 @@ export function ProductScreen({
 
       {confirmationDialog}
     </div>
+    </BackendTextProvider>
   );
 }
 

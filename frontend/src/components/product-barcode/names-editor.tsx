@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { useBackendText } from "@/components/backend-text-provider";
 import { type NameX } from "@/lib/product-barcode/types";
 import { isRecord, setNameXEntry } from "@/lib/product-barcode/utils";
 import { cn } from "@/lib/utils";
@@ -92,6 +93,7 @@ export function NamesEditor({
   /** Show one name at a time with a language combo sourced from `languages`. */
   languageSelect?: boolean;
 }) {
+  const tr = useBackendText();
   const allLanguages = useMemo(() => {
     const codes = new Set<string>();
     const primary = languages.find((code) => code.trim())?.trim() || "th";
@@ -129,11 +131,11 @@ export function NamesEditor({
         </div>
         <div className="grid gap-3 md:grid-cols-[minmax(180px,240px)_minmax(0,1fr)]">
           <label className="grid gap-1 text-sm font-semibold">
-            <span>{language === "th" ? "ภาษา" : "Language"}</span>
+            <span>{tr("ss_language", "ภาษา")}</span>
             <div className="flex h-10 items-center gap-2 rounded-md border border-input bg-background px-2">
               <LanguageFlag code={selectedCode} />
               <select
-                aria-label={language === "th" ? "เลือกภาษาของชื่อ" : "Select name language"}
+                aria-label={tr("barcode_select_name_language", "เลือกภาษาของชื่อ")}
                 className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={disabled}
                 value={selectedCode}
@@ -155,7 +157,7 @@ export function NamesEditor({
             <Input
               value={selectedEntry?.name ?? ""}
               onChange={(event) => onChange(setNameXEntry(names, selectedCode, event.target.value))}
-              placeholder={language === "th" ? `กรอก${label}` : `Enter ${label}`}
+              placeholder={tr("barcode_enter_value", "กรอก {0}").replace("{0}", label)}
               disabled={disabled}
               aria-invalid={selectedIsRequired && !selectedEntry?.name ? true : undefined}
             />
@@ -181,9 +183,7 @@ export function NamesEditor({
                 <LanguageFlag code={code} />
                 <span className="truncate">
                   {index === 0
-                    ? language === "th"
-                      ? "ภาษาแรก"
-                      : "Primary"
+                    ? tr("ss_primary", "ภาษาแรก")
                     : languageName(code, language)}
                 </span>
                 <span className="uppercase">{code}</span>
@@ -191,7 +191,9 @@ export function NamesEditor({
               <Input
                 value={entry?.name ?? ""}
                 onChange={(event) => onChange(setNameXEntry(names, code, event.target.value))}
-                placeholder={language === "th" ? `กรอก${label} (${code.toUpperCase()})` : `Enter ${label} (${code.toUpperCase()})`}
+                placeholder={tr("barcode_enter_value_for_language", "กรอก {0} ({1})")
+                  .replace("{0}", label)
+                  .replace("{1}", code.toUpperCase())}
                 disabled={disabled}
                 aria-invalid={firstRequired && code === primaryLanguage && !entry?.name ? true : undefined}
               />

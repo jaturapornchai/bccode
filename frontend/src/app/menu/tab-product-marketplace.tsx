@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useMemo, useState, useRef } from "react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { Plus, Trash2, X, AlertCircle, Upload, FileSpreadsheet, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { pickName } from "@/lib/product-barcode/utils";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { cn } from "@/lib/utils";
 import {
   type Product,
@@ -107,7 +107,7 @@ export function TabProductMarketplace({
   onChange: ProductStateAction;
   language: string;
 }) {
-  const textU = getBarcodeText(language);
+  const textU = useBarcodeText(language);
 
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");

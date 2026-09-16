@@ -29,6 +29,8 @@ import {
   useState,
 } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useBackendText } from "@/components/backend-text-provider";
+import { useBarcodeText } from "./use-barcode-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MasterPicker } from "@/components/product-barcode/master-picker";
@@ -37,7 +39,6 @@ import { BusinessImageEditor } from "@/components/product-barcode/business-image
 import { RadioOptionGroup } from "@/app/menu/product-tab-shared";
 import { Textarea } from "@/components/ui/textarea";
 import { listBarcodes, type MasterName, type MasterEntry } from "@/lib/product-barcode/api";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { type NameX, type ProductBarcode } from "@/lib/product-barcode/types";
 import { ean13CheckDigit, isValidBarcode, pickName } from "@/lib/product-barcode/utils";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
@@ -68,7 +69,7 @@ export interface ProductBarcodeFormDialogProps {
 
 export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
   const { open, mode, value, onChange, onSave, onSaveAndNew, onCancel, saving = false, language, auth, extraActions, embedded = false, companyGuid } = props;
-  const text = getBarcodeText(language);
+  const text = useBarcodeText(language);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const shopLanguages = useMemo(
     () => (props.shopLanguages && props.shopLanguages.length > 0 ? props.shopLanguages : ["th", "en"]),
@@ -199,7 +200,7 @@ export function ProductBarcodeFormDialog(props: ProductBarcodeFormDialogProps) {
 
 // ─── Shared field helpers ─────────────────────────────────────────────────
 
-type Text = ReturnType<typeof getBarcodeText>;
+type Text = ReturnType<typeof useBarcodeText>;
 
 function FieldRow({ label, hint, children, required }: { label: string; hint?: string; children: ReactNode; required?: boolean }) {
   return (
@@ -319,7 +320,7 @@ function QuickBarcodeFields({
   text: Text;
   value: ProductBarcode;
 }) {
-  const isThai = normalizeLanguage(language) === "th";
+  const tr = useBackendText();
   const [barcodePrefix, setBarcodePrefix] = useState<"200" | "885">("200");
   const [generatingBarcode, setGeneratingBarcode] = useState(false);
   const [generateError, setGenerateError] = useState("");
@@ -344,7 +345,7 @@ function QuickBarcodeFields({
   );
   const generateBarcode = useCallback(async () => {
     if (!auth || !value.holdingcode || !value.businesscode) {
-      setGenerateError(isThai ? "กรุณาเลือกบริษัทก่อนสร้างบาร์โค้ด" : "Select a company first.");
+      setGenerateError(tr("barcode_select_a_company_first", "กรุณาเลือกบริษัทก่อนสร้างบาร์โค้ด"));
       return;
     }
 
@@ -372,41 +373,37 @@ function QuickBarcodeFields({
           return;
         }
       }
-      setGenerateError(isThai ? "สร้างเลขไม่สำเร็จ กรุณาลองอีกครั้ง" : "Could not generate a unique barcode. Try again.");
+      setGenerateError(tr("barcode_could_not_generate_a_unique", "สร้างเลขไม่สำเร็จ กรุณาลองอีกครั้ง"));
     } catch (error) {
       setGenerateError(
         error instanceof Error && error.message
           ? error.message
-          : isThai
-            ? "ตรวจเลขซ้ำไม่สำเร็จ"
-            : "Duplicate check failed.",
+          : tr("barcode_duplicate_check_failed", "ตรวจเลขซ้ำไม่สำเร็จ"),
       );
     } finally {
       setGeneratingBarcode(false);
     }
-  }, [auth, barcodePrefix, isThai, updateBarcode, value.businesscode, value.holdingcode]);
+  }, [auth, barcodePrefix, tr, updateBarcode, value.businesscode, value.holdingcode]);
 
   return (
     <div className="space-y-3">
       <div className="flex items-start gap-3 rounded-lg border border-blue-200/60 bg-blue-50/70 p-3 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-100">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
         <p>
-          {isThai
-            ? "สร้างบาร์โค้ดให้ขาย รับสินค้า และเริ่มงานสต๊อกได้ก่อน บาร์โค้ดใส่รูปและรายละเอียดของตัวเองได้ ส่วนราคา ต้นทุน และยอดคงเหลือยังจัดการที่สินค้า"
-            : "Create the barcode first for sales, receiving, and stock operations. A barcode can keep its own images and description; price, cost, and balance remain on Product."}
+          {tr("barcode_create_the_barcode_first_for", "สร้างบาร์โค้ดให้ขาย รับสินค้า และเริ่มงานสต๊อกได้ก่อน บาร์โค้ดใส่รูปและรายละเอียดของตัวเองได้ ส่วนราคา ต้นทุน และยอดคงเหลือยังจัดการที่สินค้า")}
         </p>
       </div>
 
-      <Section title={isThai ? "ข้อมูลบาร์โค้ดที่จำเป็น" : "Required barcode data"}>
+      <Section title={tr("barcode_required_barcode_data", "ข้อมูลบาร์โค้ดที่จำเป็น")}>
         <div className="space-y-4">
           <FieldGrid>
             <FieldRow label={text.barcode} hint={text.barcodeHelp} required>
               {mode === "create" ? (
                 <RadioOptionGroup
-                  label={isThai ? "คำนำหน้าบาร์โค้ดที่ระบบสร้าง" : "Generated barcode prefix"}
+                  label={tr("barcode_generated_barcode_prefix", "คำนำหน้าบาร์โค้ดที่ระบบสร้าง")}
                   onChange={setBarcodePrefix}
                   options={[
-                    { value: "200", label: isThai ? "200 — ใช้ภายในร้าน" : "200 — Store internal" },
+                    { value: "200", label: tr("barcode_200_store_internal", "200 — ใช้ภายในร้าน") },
                     { value: "885", label: "885 — GS1 Thailand" },
                   ]}
                   value={barcodePrefix}
@@ -438,9 +435,7 @@ function QuickBarcodeFields({
               </div>
               {mode === "create" && barcodePrefix === "885" ? (
                 <p className="text-xs text-amber-700 dark:text-amber-300">
-                  {isThai
-                    ? "ใช้ 885 เฉพาะกิจการที่ได้รับเลขจาก GS1 Thailand"
-                    : "Use 885 only with a number allocated by GS1 Thailand."}
+                  {tr("barcode_use_885_only_with_a", "ใช้ 885 เฉพาะกิจการที่ได้รับเลขจาก GS1 Thailand")}
                 </p>
               ) : null}
               {generateError ? <p className="text-xs text-destructive">{generateError}</p> : null}
@@ -453,7 +448,7 @@ function QuickBarcodeFields({
 
             <FieldRow
               label={text.itemCode}
-              hint={isThai ? "รหัสสินค้าภายในบริษัทนี้" : "Product code within this company"}
+              hint={tr("barcode_product_code_within_this_company", "รหัสสินค้าภายในบริษัทนี้")}
               required
             >
               <Input
@@ -472,9 +467,7 @@ function QuickBarcodeFields({
               />
               {mode === "edit" ? (
                 <p className="text-xs text-muted-foreground">
-                  {isThai
-                    ? "รหัสสินค้าเป็นตัวตนของบาร์โค้ด จึงเปลี่ยนไม่ได้หลังบันทึก"
-                    : "Product code is part of the barcode identity and cannot be changed after saving."}
+                  {tr("barcode_product_code_is_part_of", "รหัสสินค้าเป็นตัวตนของบาร์โค้ด จึงเปลี่ยนไม่ได้หลังบันทึก")}
                 </p>
               ) : null}
               {errors.itemcode ? <p className="text-xs text-destructive">{errors.itemcode}</p> : null}
@@ -522,39 +515,35 @@ function QuickBarcodeFields({
         </div>
       </Section>
 
-      <Section title={isThai ? "รูป วิดีโอ และรายละเอียดบาร์โค้ด" : "Barcode images, videos, and description"}>
+      <Section title={tr("barcode_barcode_images_videos_and_description", "รูป วิดีโอ และรายละเอียดบาร์โค้ด")}>
         <div className="space-y-3">
           <BusinessImageEditor
             auth={auth}
-            galleryTitle={isThai ? "รูปเพิ่มเติมของบาร์โค้ด" : "Additional barcode images"}
+            galleryTitle={tr("barcode_additional_barcode_images", "รูปเพิ่มเติมของบาร์โค้ด")}
             language={language}
-            mainTitle={isThai ? "รูปหลักของบาร์โค้ด" : "Main barcode image"}
+            mainTitle={tr("barcode_main_barcode_image", "รูปหลักของบาร์โค้ด")}
             value={value}
             onChange={(patch) =>
               onChange((current) => ({ ...current, ...patch }))
             }
           />
           <FieldRow
-            label={isThai ? "รายละเอียดบาร์โค้ด" : "Barcode description"}
+            label={tr("barcode_barcode_description", "รายละเอียดบาร์โค้ด")}
             hint={
-              isThai
-                ? "เช่น ลักษณะบรรจุภัณฑ์ สี รุ่น หรือข้อมูลที่ต่างจากสินค้าหลัก"
-                : "For packaging, color, model, or details that differ from the product master."
+              tr("barcode_for_packaging_color_model_or", "เช่น ลักษณะบรรจุภัณฑ์ สี รุ่น หรือข้อมูลที่ต่างจากสินค้าหลัก")
             }
           >
             <Textarea
               maxLength={1500}
               onChange={(event) => upd("description", event.target.value)}
               placeholder={
-                isThai
-                  ? "รายละเอียดเฉพาะของบาร์โค้ดนี้..."
-                  : "Details specific to this barcode..."
+                tr("barcode_details_specific_to_this_barcode", "รายละเอียดเฉพาะของบาร์โค้ดนี้...")
               }
               rows={4}
               value={value.description}
             />
             <p className="text-right text-xs text-muted-foreground">
-              {value.description.length.toLocaleString(isThai ? "th-TH" : "en-US")} / 1,500
+              {value.description.length.toLocaleString(normalizeLanguage(language) === "th" ? "th-TH" : "en-US")} / 1,500
             </p>
           </FieldRow>
         </div>

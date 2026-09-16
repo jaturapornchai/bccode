@@ -29,6 +29,7 @@ import {
   type PointerEvent,
 } from "react";
 import { Badge } from "@/components/ui/badge";
+import { BackendTextProvider } from "@/components/backend-text-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -1241,8 +1242,9 @@ export function ProductBarcodeScreen({
     </div>
   );
 
-  if (embedded) return content;
-  return <main className="min-h-screen bg-background p-3">{content}</main>;
+  const wrapped = <BackendTextProvider dictionary={backendLanguage}>{content}</BackendTextProvider>;
+  if (embedded) return wrapped;
+  return <main className="min-h-screen bg-background p-3">{wrapped}</main>;
 }
 
 function BarcodeRow({

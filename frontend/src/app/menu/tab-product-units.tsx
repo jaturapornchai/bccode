@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback } from "react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { normalizeBusinessCode } from "@/lib/business-code";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import { pickName } from "@/lib/product-barcode/utils";
 import {
   type Product,
@@ -151,7 +151,7 @@ export function TabProductUnits({
     anchorEl?: HTMLElement | null,
   ) => void;
 }) {
-  const textU = getBarcodeText(lang);
+  const textU = useBarcodeText(lang);
   const setUnits = useCallback(
     (mutator: (rows: ProductUnitConversion[]) => ProductUnitConversion[]) =>
       onChange((c) =>

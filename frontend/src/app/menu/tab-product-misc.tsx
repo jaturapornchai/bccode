@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { getBarcodeText } from "@/lib/product-barcode/language";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { type Product } from "@/lib/product-barcode/types";
 import { FieldGrid, FieldRow, Section, Toggle, type ProductStateAction } from "./product-tab-shared";
 
@@ -14,7 +14,7 @@ export function TabProductMisc({
   onChange: ProductStateAction;
   language?: string;
 }) {
-  const textMisc = getBarcodeText(language);
+  const textMisc = useBarcodeText(language);
   return (
     <div className="space-y-4">
       <Section title={textMisc.miscAlertSection}>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
+import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getBarcodeText } from "@/lib/product-barcode/language";
 import {
   type BOMProductBarcode,
   type Product,
@@ -25,7 +25,7 @@ export function TabProductBom({
   onChange: ProductStateAction;
   lang: string;
 }) {
-  const textB = getBarcodeText(lang);
+  const textB = useBarcodeText(lang);
   const setBom = useCallback(
     (mutator: (rows: BOMProductBarcode[]) => BOMProductBarcode[]) =>
       onChange((c) =>
