@@ -72,7 +72,13 @@ t_frontend() {
     BCAI_LOCAL_BACKEND_URL=http://localhost:8888 npm run typecheck || exit 1
     BCAI_LOCAL_BACKEND_URL=http://localhost:8888 npm test -- --run || exit 1
   )
-  record frontend $?
+  local status=$?
+  # A client that forgets the token does not fail loudly — the screen just says
+  # "ไม่พบข้อมูล". Nothing else catches that, so it is checked on every verify.
+  if [ $status -eq 0 ]; then
+    node tools/audit-auth-fetch.mjs || status=1
+  fi
+  record frontend $status
 }
 
 t_frontend_build() {
