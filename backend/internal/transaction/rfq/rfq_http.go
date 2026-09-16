@@ -97,6 +97,9 @@ func (h RFQHttp) CreateRFQ(ctx microservice.IContext) error {
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, validationResult, err := h.svc.CreateRFQ(holdingCode, authUsername, *docReq)
 	if validationResult != nil && !validationResult.IsValid() {
 		ctx.Response(http.StatusBadRequest, validationResult.ToErrorResponse(lang))
@@ -129,6 +132,9 @@ func (h RFQHttp) UpdateRFQ(ctx microservice.IContext) error {
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	validationResult, err := h.svc.UpdateRFQ(holdingCode, id, authUsername, *docReq)
 	if validationResult != nil && !validationResult.IsValid() {

@@ -87,6 +87,9 @@ func (h PurchaseHttp) CreatePurchase(ctx microservice.IContext) error {
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreatePurchase(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -132,6 +135,9 @@ func (h PurchaseHttp) UpdatePurchase(ctx microservice.IContext) error {
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdatePurchase(holdingCode, id, authUsername, *docReq)
 

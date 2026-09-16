@@ -83,6 +83,9 @@ func (h ReceiveDepositRefundHttp) CreateReceiveDepositRefund(ctx microservice.IC
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateReceiveDepositRefund(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h ReceiveDepositRefundHttp) UpdateReceiveDepositRefund(ctx microservice.IC
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateReceiveDepositRefund(holdingCode, id, authUsername, *docReq)
 

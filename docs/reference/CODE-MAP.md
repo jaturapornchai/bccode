@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit b6f7364a - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit e833f24b - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -1025,42 +1025,42 @@ Files indexed: 49
 | 2034 | function | `GetUsageHistoryBySaleInvoice` |
 | 2075 | function | `GetUsageHistoryByTransactionID` |
 
-## backend/internal/transaction/pickandpack/pickandpack_http.go (1994 lines)
+## backend/internal/transaction/pickandpack/pickandpack_http.go (2000 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 | 39 | function | `NewPickandpackHttp` |
 | 84 | function | `RegisterHttp` |
 | 121 | function | `CreatePickandpack` |
-| 167 | function | `SearchAvailableSaleInvoice` |
-| 240 | function | `SearchPickandpackByWarehouse` |
-| 354 | function | `GetSaleInvoicePackingStatus` |
-| 538 | function | `getAllPickandpackByRefSaleInvoice` |
-| 572 | function | `updateSaleInvoicePackingStatus` |
-| 663 | function | `getExistingRefSaleInvoices` |
-| 706 | function | `ApprovePickandpack` |
-| 884 | function | `CloseSaleInvoiceJob` |
-| 938 | function | `CancelPickandpackBySaleInvoice` |
-| 1054 | function | `calculateTotalValue` |
-| 1062 | function | `calculateTotalAmount` |
-| 1070 | function | `calculateTotalQty` |
-| 1088 | function | `UpdatePickandpackStatus` |
-| 1161 | function | `UpdatePickandpackDetails` |
-| 1221 | function | `getStatusText` |
-| 1246 | function | `UpdatePickandpack` |
-| 1291 | function | `DeletePickandpack` |
-| 1322 | function | `DeletePickandpackByGUIDs` |
-| 1360 | function | `InfoPickandpack` |
-| 1391 | function | `InfoPickandpackByCode` |
-| 1426 | function | `SearchPickandpackPage` |
-| 1492 | function | `SearchPickandpackStep` |
-| 1541 | function | `SaveBulk` |
-| 1588 | function | `GetPickandpackHistory` |
-| 1675 | function | `GetPickandpackDashboard` |
-| 1847 | function | `GetWarehouseDashboard` |
-| 1903 | function | `UpdatePrint` |
-| 1937 | function | `ConfirmPickandpack` |
-| 1971 | function | `CancelPickandpack` |
+| 170 | function | `SearchAvailableSaleInvoice` |
+| 243 | function | `SearchPickandpackByWarehouse` |
+| 357 | function | `GetSaleInvoicePackingStatus` |
+| 541 | function | `getAllPickandpackByRefSaleInvoice` |
+| 575 | function | `updateSaleInvoicePackingStatus` |
+| 666 | function | `getExistingRefSaleInvoices` |
+| 709 | function | `ApprovePickandpack` |
+| 887 | function | `CloseSaleInvoiceJob` |
+| 941 | function | `CancelPickandpackBySaleInvoice` |
+| 1057 | function | `calculateTotalValue` |
+| 1065 | function | `calculateTotalAmount` |
+| 1073 | function | `calculateTotalQty` |
+| 1091 | function | `UpdatePickandpackStatus` |
+| 1164 | function | `UpdatePickandpackDetails` |
+| 1224 | function | `getStatusText` |
+| 1249 | function | `UpdatePickandpack` |
+| 1297 | function | `DeletePickandpack` |
+| 1328 | function | `DeletePickandpackByGUIDs` |
+| 1366 | function | `InfoPickandpack` |
+| 1397 | function | `InfoPickandpackByCode` |
+| 1432 | function | `SearchPickandpackPage` |
+| 1498 | function | `SearchPickandpackStep` |
+| 1547 | function | `SaveBulk` |
+| 1594 | function | `GetPickandpackHistory` |
+| 1681 | function | `GetPickandpackDashboard` |
+| 1853 | function | `GetWarehouseDashboard` |
+| 1909 | function | `UpdatePrint` |
+| 1943 | function | `ConfirmPickandpack` |
+| 1977 | function | `CancelPickandpack` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1949 lines)
 

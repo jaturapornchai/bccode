@@ -83,6 +83,9 @@ func (h PaidAdvanceRefundHttp) CreatePaidAdvanceRefund(ctx microservice.IContext
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreatePaidAdvanceRefund(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h PaidAdvanceRefundHttp) UpdatePaidAdvanceRefund(ctx microservice.IContext
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdatePaidAdvanceRefund(holdingCode, id, authUsername, *docReq)
 

@@ -86,6 +86,9 @@ func (h StockAdjustmentHttp) CreateStockAdjustment(ctx microservice.IContext) er
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateStockAdjustment(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -131,6 +134,9 @@ func (h StockAdjustmentHttp) UpdateStockAdjustment(ctx microservice.IContext) er
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateStockAdjustment(holdingCode, id, authUsername, *docReq)
 

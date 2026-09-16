@@ -96,6 +96,9 @@ func (h PurchaseRequisitionHttp) CreatePurchaseRequisition(ctx microservice.ICon
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, validationResult, err := h.svc.CreatePurchaseRequisition(holdingCode, authUsername, *docReq)
 	if validationResult != nil && !validationResult.IsValid() {
 		ctx.Response(http.StatusBadRequest, validationResult.ToErrorResponse(lang))
@@ -128,6 +131,9 @@ func (h PurchaseRequisitionHttp) UpdatePurchaseRequisition(ctx microservice.ICon
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	validationResult, err := h.svc.UpdatePurchaseRequisition(holdingCode, id, authUsername, *docReq)
 	if validationResult != nil && !validationResult.IsValid() {

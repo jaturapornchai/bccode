@@ -83,6 +83,9 @@ func (h SaleOrderHttp) CreateSaleOrder(ctx microservice.IContext) error {
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateSaleOrder(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h SaleOrderHttp) UpdateSaleOrder(ctx microservice.IContext) error {
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateSaleOrder(holdingCode, id, authUsername, *docReq)
 

@@ -83,6 +83,9 @@ func (h StockReceiveProductHttp) CreateStockReceiveProduct(ctx microservice.ICon
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateStockReceiveProduct(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h StockReceiveProductHttp) UpdateStockReceiveProduct(ctx microservice.ICon
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateStockReceiveProduct(holdingCode, id, authUsername, *docReq)
 

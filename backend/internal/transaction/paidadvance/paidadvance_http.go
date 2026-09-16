@@ -83,6 +83,9 @@ func (h PaidAdvanceHttp) CreatePaidAdvance(ctx microservice.IContext) error {
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreatePaidAdvance(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h PaidAdvanceHttp) UpdatePaidAdvance(ctx microservice.IContext) error {
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdatePaidAdvance(holdingCode, id, authUsername, *docReq)
 

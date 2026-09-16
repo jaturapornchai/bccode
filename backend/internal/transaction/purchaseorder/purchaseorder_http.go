@@ -126,6 +126,9 @@ func (h PurchaseOrderHttp) CreatePurchaseOrder(ctx microservice.IContext) error 
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, validationResult, err := h.svc.CreatePurchaseOrder(holdingCode, authUsername, *docReq)
 
 	// ตรวจสอบ validation errors — return รายละเอียดทุก field ที่ผิดพลาด
@@ -177,6 +180,9 @@ func (h PurchaseOrderHttp) UpdatePurchaseOrder(ctx microservice.IContext) error 
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	validationResult, err := h.svc.UpdatePurchaseOrder(holdingCode, id, authUsername, *docReq)
 

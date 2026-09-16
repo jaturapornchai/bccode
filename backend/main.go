@@ -131,6 +131,7 @@ import (
 	"smlcloudplatform/internal/transaction/purchaserequisition"
 	"smlcloudplatform/internal/transaction/purchasereturn"
 	"smlcloudplatform/internal/transaction/quotation"
+	"smlcloudplatform/internal/transaction/receivableother"
 	"smlcloudplatform/internal/transaction/receivedeposit"
 	"smlcloudplatform/internal/transaction/receivedepositrefund"
 	"smlcloudplatform/internal/transaction/rfq"
@@ -456,6 +457,9 @@ func main() {
 			depositrefund.NewDepositRefundHttp(ms, cfg),
 			paidadvance.NewPaidAdvanceHttp(ms, cfg),
 			paidadvancerefund.NewPaidAdvanceRefundHttp(ms, cfg),
+			// Written long ago but never listed here, so /transaction/receivableother
+			// answered 404 and the "ลูกหนี้อื่น" screen looked like it had no data.
+			receivableother.NewReceivableOtherHttp(ms, cfg),
 			receivedeposit.NewReceiveDepositHttp(ms, cfg),
 			receivedepositrefund.NewReceiveDepositRefundHttp(ms, cfg),
 			depositrecord.NewDepositRecordHttp(ms, cfg),

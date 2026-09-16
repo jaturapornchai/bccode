@@ -93,6 +93,9 @@ func (h SaleInvoiceReturnHttp) CreateSaleInvoiceReturn(ctx microservice.IContext
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateSaleInvoiceReturn(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -138,6 +141,9 @@ func (h SaleInvoiceReturnHttp) UpdateSaleInvoiceReturn(ctx microservice.IContext
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateSaleInvoiceReturn(holdingCode, id, authUsername, *docReq)
 

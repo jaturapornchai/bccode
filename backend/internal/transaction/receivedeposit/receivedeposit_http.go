@@ -83,6 +83,9 @@ func (h ReceiveDepositHttp) CreateReceiveDeposit(ctx microservice.IContext) erro
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateReceiveDeposit(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -128,6 +131,9 @@ func (h ReceiveDepositHttp) UpdateReceiveDeposit(ctx microservice.IContext) erro
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateReceiveDeposit(holdingCode, id, authUsername, *docReq)
 
