@@ -1,4 +1,4 @@
-import { authFetch } from "./client-auth-session";
+import { authFetch, getAuthSession, restoreAuthSession } from "./client-auth-session";
 import { type LanguageCode } from "./i18n";
 
 export type FAIdentity = {
@@ -113,6 +113,23 @@ export type FACommand = {
   disposal?: Partial<AssetDisposal>;
 };
 
+
+// authFetch only refreshes a token that is already on the request, so every
+// call has to attach the session itself or the backend answers 401.
+async function faFetch(path: string, init?: RequestInit): Promise<Response> {
+  const auth = getAuthSession() ?? (await restoreAuthSession());
+  if (!auth?.token) throw new Error("กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนใช้งานสินทรัพย์ถาวร");
+  return authFetch(path, {
+    ...init,
+    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      "x-bc-backend-url": auth.backendUrl,
+      "Content-Type": "application/json",
+      ...init?.headers,
+    },
+  });
+}
 // API Helpers
 export async function getFixedAssets(params: { q?: string; type?: string; status?: string; page?: number; limit?: number } = {}) {
   const query = new URLSearchParams();
@@ -122,22 +139,22 @@ export async function getFixedAssets(params: { q?: string; type?: string; status
   if (params.page) query.set("page", String(params.page));
   if (params.limit) query.set("limit", String(params.limit));
 
-  const res = await authFetch(`/api/fa/assets?${query.toString()}`);
+  const res = await faFetch(`/api/fa/assets?${query.toString()}`);
   return res.json();
 }
 
 export async function getFixedAsset(id: string) {
-  const res = await authFetch(`/api/fa/assets/${encodeURIComponent(id)}`);
+  const res = await faFetch(`/api/fa/assets/${encodeURIComponent(id)}`);
   return res.json();
 }
 
 export async function getAssetSchedule(id: string) {
-  const res = await authFetch(`/api/fa/assets/${encodeURIComponent(id)}/schedule`);
+  const res = await faFetch(`/api/fa/assets/${encodeURIComponent(id)}/schedule`);
   return res.json();
 }
 
 export async function getAssetTypes() {
-  const res = await authFetch(`/api/fa/types`);
+  const res = await faFetch(`/api/fa/types`);
   return res.json();
 }
 
@@ -146,18 +163,18 @@ export async function getFixedAssetScheduleReport(fiscalYear: string, period?: n
   if (period) query.set("period", String(period));
   if (typeCode) query.set("type", typeCode);
 
-  const res = await authFetch(`/api/fa/reports/schedule?${query.toString()}`);
+  const res = await faFetch(`/api/fa/reports/schedule?${query.toString()}`);
   return res.json();
 }
 
 export async function getTaxReconciliationReport(fiscalYear: string) {
   const query = new URLSearchParams({ fiscalyear: fiscalYear });
-  const res = await authFetch(`/api/fa/reports/tax-reconciliation?${query.toString()}`);
+  const res = await faFetch(`/api/fa/reports/tax-reconciliation?${query.toString()}`);
   return res.json();
 }
 
 export async function sendFixedAssetCommand(command: FACommand) {
-  const res = await authFetch("/api/fa/command", {
+  const res = await faFetch("/api/fa/command", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
