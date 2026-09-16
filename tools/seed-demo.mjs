@@ -234,8 +234,139 @@ async function wipeFixedAssets() {
   console.log(`  assets removed: ${removed}`);
 }
 
+// ---------------------------------------------------------------- sale
+
+// Five invoices spread across the year so date-ranged reports have something to
+// group. Products, customers and the warehouse are read from the tenant rather
+// than invented: an invoice with an itemcode nobody stocks teaches us nothing.
+const SALE_MARK = "ข้อมูลตัวอย่างจาก tools/seed-demo.mjs";
+const SALE_TRANSFLAG = 44; // what the sales report filters on
+const SALE_DATES = ["2026-02-11", "2026-04-23", "2026-06-07", "2026-08-19", "2026-09-05"];
+
+async function saleReferences() {
+  const barcodes = await call("/product/barcode/list?limit=5");
+  const items = (barcodes?.data ?? []).filter((item) => item?.barcode && item?.itemcode);
+  if (items.length < 2) throw new Error("demo tenant has no product barcodes to sell");
+
+  const debtors = await call("/debtaccount/debtor/list?limit=5");
+  const customers = (debtors?.data ?? []).filter((d) => d?.code);
+  if (customers.length === 0) throw new Error("demo tenant has no debtors to invoice");
+
+  const warehouses = await call("/warehouse?limit=5");
+  const warehouse = (warehouses?.data ?? []).find((w) => w?.code)?.code ?? "";
+
+  return { items, customers, warehouse };
+}
+
+function saleLine(item, lineNumber, qty, warehouse, docdatetime) {
+  const price = Number(item?.prices?.[0]?.price ?? 0) || 10;
+  const sum = Number((price * qty).toFixed(2));
+  // VAT-inclusive pricing, the Thai retail default (vattype 1 = รวมภาษี).
+  const excludeVat = Number((sum / 1.07).toFixed(2));
+  return {
+    linenumber: lineNumber,
+    docdatetime,
+    calcflag: 1,
+    barcode: item.barcode,
+    itemcode: item.itemcode,
+    itemnames: item.names ?? [],
+    unitcode: item.itemunitcode ?? "",
+    unitnames: item.itemunitnames ?? [],
+    qty,
+    totalqty: qty,
+    price,
+    discount: "",
+    discountamount: 0,
+    priceexcludevat: Number((price / 1.07).toFixed(2)),
+    sumamount: sum,
+    sumamountexcludevat: excludeVat,
+    vattype: 1,
+    vatcal: 1,
+    whcode: warehouse,
+    shelfcode: "",
+    locationcode: "",
+  };
+}
+
+function saleInvoice(index, refs) {
+  const docdatetime = SALE_DATES[index] + "T03:00:00.000Z";
+  const customer = refs.customers[index % refs.customers.length];
+  const first = refs.items[index % refs.items.length];
+  const second = refs.items[(index + 1) % refs.items.length];
+  const details = [
+    saleLine(first, 1, 2 + index, refs.warehouse, docdatetime),
+    saleLine(second, 2, 1 + index, refs.warehouse, docdatetime),
+  ];
+  const total = Number(details.reduce((sum, line) => sum + line.sumamount, 0).toFixed(2));
+  const beforeVat = Number((total / 1.07).toFixed(2));
+  return {
+    docdatetime,
+    transflag: SALE_TRANSFLAG,
+    doctype: 0,
+    vattype: 1,
+    vatrate: 7,
+    custcode: customer.code,
+    custnames: customer.names ?? [],
+    description: SALE_MARK,
+    totaldiscount: 0,
+    totalvalue: total,
+    totalbeforevat: beforeVat,
+    totalvatvalue: Number((total - beforeVat).toFixed(2)),
+    totalaftervat: total,
+    totalexceptvat: 0,
+    totalamount: total,
+    paycashamount: total,
+    status: 1,
+    details,
+  };
+}
+
+async function existingSaleDocs() {
+  const list = await call("/transaction/sale-invoice/list?limit=500");
+  const dates = new Set(SALE_DATES);
+  return (list?.data ?? []).filter(
+    (doc) => doc?.description === SALE_MARK && dates.has(String(doc?.docdatetime ?? "").slice(0, 10)),
+  );
+}
+
+async function seedSales() {
+  const refs = await saleReferences();
+  console.log("  using " + refs.items.length + " products, customer " + refs.customers[0].code + ", warehouse " + (refs.warehouse || "(none)"));
+  const present = new Set((await existingSaleDocs()).map((doc) => String(doc.docdatetime).slice(0, 10)));
+
+  let created = 0;
+  for (let index = 0; index < SALE_DATES.length; index += 1) {
+    const date = SALE_DATES[index];
+    if (present.has(date)) {
+      console.log("  " + date + " already there");
+      continue;
+    }
+    const doc = saleInvoice(index, refs);
+    const result = await call("/transaction/sale-invoice", { method: "POST", body: JSON.stringify(doc) });
+    if (result?.success !== true) throw new Error(date + ": " + (result?.message ?? "create failed"));
+    created += 1;
+    console.log("  " + date + "  " + doc.totalamount.toFixed(2) + " บาท (" + doc.details.length + " รายการ)");
+  }
+  console.log("  invoices created: " + created);
+}
+
+async function wipeSales() {
+  let removed = 0;
+  // Only the docnos this tool creates (UAT rule 4: never a broad match).
+  for (const doc of await existingSaleDocs()) {
+    const id = doc.guidfixed ?? doc.id;
+    if (!id) continue;
+    const result = await call("/transaction/sale-invoice/" + encodeURIComponent(id), { method: "DELETE" });
+    if (result?.success !== true) throw new Error("delete " + doc.docno + ": " + (result?.message ?? "failed"));
+    console.log("  removed " + doc.docno);
+    removed += 1;
+  }
+  console.log("  invoices removed: " + removed);
+}
+
 const MODULES = {
   fa: { title: "สินทรัพย์ถาวรและค่าเสื่อมราคา", seed: seedFixedAssets, wipe: wipeFixedAssets },
+  sale: { title: "เอกสารขาย (สำหรับรายงานขายและต้นทุนสต็อก)", seed: seedSales, wipe: wipeSales },
 };
 
 const wanted = modules.length ? modules : Object.keys(MODULES);

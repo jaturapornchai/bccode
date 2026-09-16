@@ -9,8 +9,13 @@ import (
 )
 
 type TransactionHeader struct {
-	DocNo       string    `json:"docno" bson:"docno"`
-	DocDatetime time.Time `json:"docdatetime" bson:"docdatetime"`
+	// Which company inside the holding the document belongs to. The projection
+	// consumer needs it to write the PostgreSQL read model; a document without
+	// one is dead-lettered ("missing businesscode for document ...") and never
+	// reaches any report. Stamped from the authenticated shop, not the client.
+	BusinessCode string    `json:"businesscode" bson:"businesscode"`
+	DocNo        string    `json:"docno" bson:"docno"`
+	DocDatetime  time.Time `json:"docdatetime" bson:"docdatetime"`
 	// Timezone fields - ใช้สำหรับสร้าง docno ตาม local timezone ของ frontend
 	DocDateLocal                    string                  `json:"docdatelocal,omitempty" bson:"docdatelocal,omitempty"` // วันที่ local เช่น "20260107"
 	DocTimeLocal                    string                  `json:"doctimelocal,omitempty" bson:"doctimelocal,omitempty"` // เวลา local เช่น "08:30:00"

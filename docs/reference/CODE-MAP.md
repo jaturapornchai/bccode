@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit ba4a1783 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit d74d0bdf - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -767,50 +767,49 @@ Files indexed: 49
 | 2384 | function | `UpdatePOApprovalStatusToCancelled` |
 | 2455 | function | `GetApprovalStatusMapByShop` |
 
-## backend/internal/goapi/process/build/create-database.go (2479 lines)
+## backend/internal/goapi/process/build/create-database.go (2458 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 29 | function | `TableProductCreate` |
-| 128 | function | `TableProductBarcodeCreate` |
-| 272 | function | `TableDocDetailCreate` |
-| 387 | function | `TableDocCreate` |
-| 538 | function | `TableResultCreate` |
-| 600 | function | `TableStockWaitProcessCreate` |
-| 648 | function | `TableDocWaitProcessCreate` |
-| 698 | function | `TableOrderCartCreate` |
-| 776 | function | `TableOrderItemCreate` |
-| 867 | function | `TableIcWarehouseCreate` |
-| 956 | function | `TableIcShelfCreate` |
-| 1041 | function | `TableErpUserCreate` |
-| 1094 | function | `TableDocRefCreate` |
-| 1152 | function | `TableCustomerCreate` |
-| 1220 | function | `TableDebtorCreate` |
-| 1292 | function | `TableCreditorCreate` |
-| 1364 | function | `TableDocPaymentCreate` |
-| 1438 | function | `getTableNames` |
-| 1464 | function | `containsTable` |
-| 1468 | function | `TableQueuesCreate` |
-| 1546 | function | `TableDeadLetterQueueCreate` |
-| 1588 | function | `TableSearchAliasesCreate` |
-| 1611 | function | `DatabaseRebuildAll` |
-| 1774 | function | `DatabaseNameIsExists` |
-| 1794 | function | `DatabaseChecker` |
-| 1815 | function | `DatabaseRebuild` |
-| 1851 | function | `SyncApprovalStatusToPostgreSQL` |
-| 1893 | function | `RebuildProductsOnly` |
-| 2000 | function | `RebuildClickHouseProductBarcode` |
-| 2094 | function | `PgSqlDropDatabaseAndReProcess` |
-| 2140 | function | `CalcStockCostAll` |
-| 2155 | function | `stockEngineOptions` |
-| 2166 | function | `recalculateStockCostAll` |
-| 2189 | function | `CalcStockCostForItems` |
-| 2202 | function | `recalculateStockCostForItems` |
-| 2246 | function | `PgSqlDropDatabaseAndReProcessWithProgress` |
-| 2296 | function | `DatabaseRebuildWithProgress` |
-| 2377 | function | `CalcStockCostAllWithProgress` |
-| 2393 | function | `CalcStockCostForItemsWithProgress` |
-| 2410 | function | `RebuildDocumentFlowWithProgress` |
+| 28 | function | `TableProductCreate` |
+| 127 | function | `TableProductBarcodeCreate` |
+| 271 | function | `TableDocDetailCreate` |
+| 386 | function | `TableDocCreate` |
+| 537 | function | `TableResultCreate` |
+| 599 | function | `TableStockWaitProcessCreate` |
+| 647 | function | `TableDocWaitProcessCreate` |
+| 697 | function | `TableOrderCartCreate` |
+| 775 | function | `TableOrderItemCreate` |
+| 866 | function | `TableIcWarehouseCreate` |
+| 955 | function | `TableIcShelfCreate` |
+| 1040 | function | `TableErpUserCreate` |
+| 1093 | function | `TableDocRefCreate` |
+| 1151 | function | `TableCustomerCreate` |
+| 1219 | function | `TableDebtorCreate` |
+| 1291 | function | `TableCreditorCreate` |
+| 1363 | function | `TableDocPaymentCreate` |
+| 1437 | function | `getTableNames` |
+| 1463 | function | `TableQueuesCreate` |
+| 1541 | function | `TableDeadLetterQueueCreate` |
+| 1583 | function | `TableSearchAliasesCreate` |
+| 1606 | function | `DatabaseRebuildAll` |
+| 1753 | function | `DatabaseNameIsExists` |
+| 1773 | function | `DatabaseChecker` |
+| 1794 | function | `DatabaseRebuild` |
+| 1830 | function | `SyncApprovalStatusToPostgreSQL` |
+| 1872 | function | `RebuildProductsOnly` |
+| 1979 | function | `RebuildClickHouseProductBarcode` |
+| 2073 | function | `PgSqlDropDatabaseAndReProcess` |
+| 2119 | function | `CalcStockCostAll` |
+| 2134 | function | `stockEngineOptions` |
+| 2145 | function | `recalculateStockCostAll` |
+| 2168 | function | `CalcStockCostForItems` |
+| 2181 | function | `recalculateStockCostForItems` |
+| 2225 | function | `PgSqlDropDatabaseAndReProcessWithProgress` |
+| 2275 | function | `DatabaseRebuildWithProgress` |
+| 2356 | function | `CalcStockCostAllWithProgress` |
+| 2372 | function | `CalcStockCostForItemsWithProgress` |
+| 2389 | function | `RebuildDocumentFlowWithProgress` |
 
 ## frontend/src/app/workspace/workspace-screen.tsx (2294 lines)
 

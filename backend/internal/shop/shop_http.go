@@ -19,6 +19,7 @@ import (
 	businesstype_repositories "smlcloudplatform/internal/organization/businesstype/repositories"
 	businesstype_services "smlcloudplatform/internal/organization/businesstype/services"
 	company_model "smlcloudplatform/internal/organization/company/models"
+	"smlcloudplatform/internal/goapi/process/build"
 	deparment_repositories "smlcloudplatform/internal/organization/department/repositories"
 	"smlcloudplatform/internal/shop/models"
 	"smlcloudplatform/internal/utils"
@@ -151,6 +152,13 @@ func (h ShopHttp) CreateShop(ctx microservice.IContext) error {
 	shopTemp := shopPayload.Shop
 
 	holdingUID, err := h.service.CreateShop(userInfo.UID, authUsername, shopTemp)
+
+	// Build the tenant's PostgreSQL read model now rather than waiting for the
+	// first Kafka document event to trigger it. Idempotent, and slow enough that
+	// the caller should not wait for it.
+	if holdingCode, codeErr := utils.NormalizeHoldingCode(shopTemp.HoldingCode); codeErr == nil && holdingCode != "" {
+		go build.DatabaseChecker(holdingCode, false)
+	}
 
 	if err != nil {
 		return apperr.RespondErr(ctx, err)

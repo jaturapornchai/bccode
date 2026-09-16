@@ -225,6 +225,9 @@ func ConvertSaleInvoiceMongoDocToProcessModel(mongoDoc models.MongoDocModel) mod
 		BranchId:         mongoDoc.BranchId,
 		GuidFixed:        mongoDoc.GuidFixed,
 		DocNo:            mongoDoc.DocNo,
+		// Without this the doc read model has no customer, so every report that
+		// joins debtor on doc.custcode comes back with a blank customer column.
+		CustCode:         mongoDoc.CustCode,
 		DocDateTime:      mongoDoc.DocDateTime,
 		TotalAmount:      mongoDoc.TotalAmount,
 		RoundAmount:      mongoDoc.RoundAmount,

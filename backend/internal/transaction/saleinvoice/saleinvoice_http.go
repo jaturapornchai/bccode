@@ -122,6 +122,9 @@ func (h SaleInvoiceHttp) CreateSaleInvoice(ctx microservice.IContext) error {
 		return err
 	}
 
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
+
 	idx, docNo, err := h.svc.CreateSaleInvoice(holdingCode, authUsername, *docReq)
 
 	if err != nil {
@@ -163,6 +166,9 @@ func (h SaleInvoiceHttp) CreateSaleInvoiceWithAutoCoupon(ctx microservice.IConte
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	idx, docNo, err := h.svc.CreateSaleInvoiceWithAutoCoupon(holdingCode, authUsername, *docReq)
 
@@ -243,6 +249,9 @@ func (h SaleInvoiceHttp) UpdateSaleInvoice(ctx microservice.IContext) error {
 		ctx.ResponseError(400, err.Error())
 		return err
 	}
+
+	// The company comes from the selected shop, never from the request body.
+	docReq.BusinessCode = ctx.UserInfo().BusinessCode
 
 	err = h.svc.UpdateSaleInvoice(holdingCode, id, authUsername, *docReq)
 

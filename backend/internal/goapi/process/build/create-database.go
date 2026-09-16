@@ -7,7 +7,6 @@ import (
 	"smlcloudplatform/internal/goapi/handlers/approval"
 	"smlcloudplatform/internal/goapi/logger"
 
-	"slices"
 	"sync"
 
 	"smlcloudplatform/internal/goapi/inventory"
@@ -1461,10 +1460,6 @@ func getTableNames(db *sql.DB) ([]string, error) {
 	return tables, nil
 }
 
-func containsTable(tables []string, name string) bool {
-	return slices.Contains(tables, name)
-}
-
 func TableQueuesCreate(db *sql.DB) error {
 	logger.Info("Creating queues table")
 
@@ -1650,13 +1645,6 @@ func DatabaseRebuildAll(holdingCode string) {
 		_ = targetDB.Close()
 	}()
 
-	// ดึงชื่อ table
-	tables, err := getTableNames(targetDB)
-	if err != nil {
-		logger.Info("Failed to get table names: %v", err)
-		return
-	}
-
 	// ⭐ สร้าง extensions ทั้งหมดล่วงหน้า (เพื่อป้องกัน race condition จาก concurrent table creation)
 	extensionsQuery := `
 		CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -1720,11 +1708,6 @@ func DatabaseRebuildAll(holdingCode string) {
 	resultChan := make(chan taskResult, len(independentTables))
 
 	for _, task := range independentTables {
-		if containsTable(tables, task.name) && task.name != "productbarcode" {
-			logger.Info("%s table already exists", task.name)
-			resultChan <- taskResult{task.name, nil}
-			continue
-		}
 
 		// สร้างแบบ concurrent
 		go func(t tableTask) {
@@ -1751,10 +1734,6 @@ func DatabaseRebuildAll(holdingCode string) {
 
 	// สร้าง dependent tables แบบ sequential (เพราะมี dependencies)
 	for _, task := range dependentTables {
-		if containsTable(tables, task.name) {
-			logger.Info("%s table already exists", task.name)
-			continue
-		}
 
 		if err := task.creator(targetDB); err != nil {
 			logger.Info("Failed to create %s table: %v", task.name, err)
