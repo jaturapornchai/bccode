@@ -268,7 +268,7 @@ export const systemSettingBackendKeys: Record<string, string> = {
 
 export const fieldBackendKeys: Record<string, string> = {
   "branch.basecurrency": "basecurrency",
-  "branch.code": "branchcode",
+  "branch.code": "tax_branch_code",
   "branch.companyregistrationno": "companyregistrationno",
   "branch.dateformat": "dateformat",
   "branch.decimaldocument": "decimaldocument",
@@ -281,7 +281,7 @@ export const fieldBackendKeys: Record<string, string> = {
   "branch.pointconfig": "point_config",
   "branch.timezone": "timezone",
   "branch.yeartype": "yeartype",
-  "branch.languages": "select_data_language",
+  "branch.languages": "activelanguages",
   "branch.businesstype": "business_type",
   "branch.pos.taxid": "company_taxid",
   "branch.pos.vatrate": "vat_rate",

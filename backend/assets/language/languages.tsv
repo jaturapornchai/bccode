@@ -752,7 +752,7 @@ close_shift	ปิดกะ	Close Shift	Close Shift	Close Shift	Close Shift	Clos
 close_table	สรุปบิล/ปิดโต๊ะ	Bill Summary/Close Table	账单摘要/关闭桌子	請求書概要/テーブルを閉じる	សង្ខេបវិក័យប័ត្រ/បិទតុ	청구서 요약/테이블 닫기	ສະຫຼຸບບິນ/ປິດໂຕະ	ဘေလ်အကျဉ်းချုပ်/စားပွဲပိတ်	Tóm tắt hóa đơn/Đóng bàn	Bill Summary/Close Table	Bill Summary/Close Table	Bill Summary/Close Table
 closed	ปิดแล้ว	Closed	已关闭	クローズ	បានបិទ	마감	ປິດແລ້ວ	ပိတ်ပြီး	Đã đóng	Closed	Closed	Closed
 closing_entry	รวมรายการปิดบัญชีสิ้นปี	Year-end Closing Entry	年终结账分录	決算仕訳	ធាតុបិទបញ្ជីចុងឆ្នាំ	연말 결산 항목	ລວມລາຍການປິດບັນຊີທ້າຍປີ	နှစ်ကုန်စာရင်းပိတ်ခြင်း	Bút toán khóa sổ cuối năm	Year-end Closing Entry	Year-end Closing Entry	Year-end Closing Entry
-code	code	Code	代码	コード	កូដ	코드	ລະຫັດ	ကုဒ်	Mã	Code	Code	Code
+code	รหัส	Code	代码	コード	កូដ	코드	ລະຫັດ	ကုဒ်	Mã	Code	Code	Code
 code_expired	รหัสหมดอายุ	Code expired	Code expired	Code expired	Code expired	Code expired	Code expired	Code expired	Code expired	Code expired	Code expired	Code expired
 code_expires_in_30_min	รหัสหมดอายุใน 30 นาที	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes	Code expires in 30 minutes
 code_expires_in_5_min	รหัสหมดอายุใน 5 นาที	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes	Code expires in 5 minutes
@@ -1091,7 +1091,7 @@ customergroupmodel_code	รหัสกลุ่มลูกค้า	Customer G
 customergroupmodel_name	ชื่อกลุ่มลูกค้า	Customer Group Name	客户组名称	顧客グループ名	ឈ្មោះក្រុមអតិថិជន	고객 그룹 이름	ຊື່ກຸ່ມລູກຄ້າ	ဖောက်သည်အုပ်စုအမည်	Tên nhóm khách hàng	Customer Group Name	Customer Group Name	Customer Group Name
 customers_and_sellers	ลูกค้าและผู้ขาย	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers	Customers & Sellers
 customize_report_display	กำหนดรูปแบบการแสดงผลรายงานตามต้องการ	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings	Customize report display settings
-cut_stock_by_bom	ตัดสต๊อกตามสูตรผลิด (BOM)	Cut stock by BOM	按 BOM 扣除库存	BOMによる在庫削減	កាត់ស្តុកតាម BOM	BOM에 의한 재고 차감	ຕັດສະຕັອກຕາມ BOM	BOM ဖြင့် စတော့ဖြတ်ပါ	Cắt kho theo BOM	Cut stock by BOM	Cut stock by BOM	Cut stock by BOM
+cut_stock_by_bom	ตัดสต็อกตามสูตรผลิต (BOM)	Cut stock by BOM	按 BOM 扣除库存	BOMによる在庫削減	កាត់ស្តុកតាម BOM	BOM에 의한 재고 차감	ຕັດສະຕັອກຕາມ BOM	BOM ဖြင့် စတော့ဖြတ်ပါ	Cắt kho theo BOM	Cut stock by BOM	Cut stock by BOM	Cut stock by BOM
 daily_data	ข้อมูลรายวัน	Daily Data	每日数据	日次データ	ទិន្នន័យប្រចាំថ្ងៃ	일일 데이터	ຂໍ້ມູນລາຍວັນ	နေ့စဉ်အချက်အလက်	Dữ liệu hàng ngày	Daily Data	Daily Data	Daily Data
 daily_info	ตรวจสอบประจำวัน	Daily Info	每日信息	日次情報	ព័ត៌មានប្រចាំថ្ងៃ	일일 정보	ຂໍ້ມູນປະຈຳວັນ	နေ့စဉ်အချက်အလက်	Thông tin hàng ngày	Maklumat Harian	Info Harian	Impormasyong Araw-araw
 daily_sales_report	รายงานยอดขายประจำวัน	Daily Sales Report	每日销售报告	日次売上レポート	របាយការណ៍លក់ប្រចាំថ្ងៃ	일일 판매 보고서	ລາຍງານຍອດຂາຍປະຈຳວັນ	နေ့စဉ်ရောင်းချမှုအစီရင်ခံစာ	Báo cáo bán hàng hàng ngày	Daily Sales Report	Daily Sales Report	Daily Sales Report
@@ -3958,7 +3958,7 @@ tax_doc	ใบกำกับภาษี	Tax Invoice	税务发票	税金請求�
 tax_doc_date	วันที่ใบกำกับภาษี	Tax Invoice Date	税务发票日期	税金請求書日付	កាលបរិច្ឆេទវិក្កយបត្រពន្ធ	세금 계산서 날짜	ວັນທີໃບກຳກັບພາສີ	အခွန်ပြေစာရက်စွဲ	Ngày hóa đơn thuế	Tax Invoice Date	Tax Invoice Date	Tax Invoice Date
 tax_docno	เลขที่ใบกำกับภาษี	Tax Invoice No.	税务发票号码	税金請求書番号	លេខវិក្កយបត្រពន្ធ	세금 계산서 번호	ເລກທີໃບກຳກັບພາສີ	အခွန်ပြေစာနံပါတ်	Số hóa đơn thuế	Tax Invoice No.	Tax Invoice No.	Tax Invoice No.
 tax_exempt	ยกเว้นภาษี	Tax Exempt	免税	免税	លើកលែងពន្ធ	면세	ຍົກເວັ້ນພາສີ	အခွန်ကင်းလွတ်ခွင့်	Miễn thuế	Tax Exempt	Tax Exempt	Tax Exempt
-taxid	เลขประจำตัวผู้เสียภาษี	Tax ID	Tax ID	Tax ID	Tax ID	Tax ID	Tax ID	Tax ID	Tax ID	Tax ID	Tax ID	Tax ID
+taxid	เลขประจำตัวผู้เสียภาษี	Tax ID	税号	納税者番号	លេខសម្គាល់ពន្ធ	납세자번호	ເລກປະຈຳຕົວຜູ້ເສຍພາສີ	အခွန်မှတ်ပုံတင်နံပါတ်	Mã số thuế	Nombor Cukai	NPWP	TIN
 taxid_number	เลขประจำตัวผู้เสียภาษี	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number	Tax ID Number
 tax_included	ภาษีรวม	Tax Included	含税	税込	រួមបញ្ចូលពន្ធ	세금 포함	ລວມພາສີ	အခွန်ပါဝင်ပြီး	Đã bao gồm thuế	Tax Included	Tax Included	Tax Included
 tax_invoice_date	วันที่ใบกำกับภาษี	Tax Invoice Date	税务发票日期	税務請求書日付	កាលបរិច្ឆេទវិក្កយបត្រពន្ធ	세금 계산서 날짜	ວັນທີໃບກຳກັບພາສີ	အခွန်ပြေစာ ရက်စွဲ	Ngày hóa đơn thuế	Tax Invoice Date	Tax Invoice Date	Tax Invoice Date
@@ -4470,7 +4470,7 @@ company_logo	โลโก้บริษัท	Company logo	公司标志	会社�
 company_registration_no	เลขทะเบียนบริษัท	Company registration number	公司注册号	会社登録番号	លេខចុះបញ្ជីក្រុមហ៊ុន	회사 등록 번호	ເລກທະບຽນບໍລິສັດ	ကုမ္ပဏီမှတ်ပုံတင်နံပါတ်	Số đăng ký công ty	Nombor pendaftaran syarikat	Nomor registrasi perusahaan	Numero ng rehistro ng kumpanya
 use_branch_system	ใช้ระบบสาขา	Use branch system	使用分支机构系统	支店システムを使用	ប្រើប្រព័ន្ធសាខា	지점 시스템 사용	ໃຊ້ລະບົບສາຂາ	ဌာနခွဲစနစ်အသုံးပြုရန်	Sử dụng hệ thống chi nhánh	Guna sistem cawangan	Gunakan sistem cabang	Gamitin ang branch system
 use_department_system	ใช้ระบบแผนก	Use department system	使用部门系统	部門システムを使用	ប្រើប្រព័ន្ធនាយកដ្ឋាន	부서 시스템 사용	ໃຊ້ລະບົບພະແນກ	ဌာနစနစ်အသုံးပြုရန်	Sử dụng hệ thống phòng ban	Guna sistem jabatan	Gunakan sistem departemen	Gamitin ang department system
-vat_status	สถานะ VAT	VAT status	增值税状态	VATステータス	ស្ថានភាព VAT	VAT 상태	ສະຖານະ VAT	VAT အခြေအနေ	Trạng thái VAT	Status VAT	Status VAT	Status VAT
+vat_status	การจดทะเบียนภาษี	VAT status	增值税状态	VATステータス	ស្ថានភាព VAT	VAT 상태	ສະຖານະ VAT	VAT အခြေအနေ	Trạng thái VAT	Status VAT	Status VAT	Status VAT
 yeartype	ปีศักราชที่ใช้	Year format	年份格式	年形式	ទម្រង់ឆ្នាំ	연도 형식	ຮູບແບບປີ	နှစ်ပုံစံ	Định dạng năm	Format tahun	Format tahun	Format ng taon
 ai_provider	ผู้ให้บริการ AI	AI Service Provider	AI 服务提供商	AIサービス提供元	អ្នកផ្តល់សេវា AI	AI 서비스 제공자	ຜູ້ໃຫ້ບໍລິການ AI	AI ဝန်ဆောင်မှုပေးသူ	Nhà cung cấp dịch vụ AI	AI Service Provider	AI Service Provider	AI Service Provider
 copy_uat_dev	คัดลอกข้อมูลทดสอบ	Copy Test Data	复制测试数据	テストデータをコピー	ចម្លងទិន្នន័យសាកល្បង	테스트 데이터 복사	ຄັດລອກຂໍ້ມູນທົດສອບ	စမ်းသပ်ဒေတာကူးယူပါ	Sao chép dữ liệu thử nghiệm	Copy Test Data	Copy Test Data	Copy Test Data
@@ -6506,3 +6506,24 @@ barcode_mk_status_unlist	ปิดการขาย (Unlist)	Unlist	已下架	�
 barcode_mk_status_reviewing	รอตรวจสอบ (Reviewing)	Reviewing	审核中	審査中	កំពុងពិនិត្យ	검토 중	ກຳລັງກວດສອບ	ပြန်လည်သုံးသပ်နေသည်	Đang xem xét	Sedang disemak	Sedang ditinjau	Sinusuri
 barcode_mk_status_rejected	ถูกปฏิเสธ (Rejected)	Rejected	已拒绝	拒否済み	ត្រូវបានបដិសេធ	거부됨	ຖືກປະຕິເສດ	ငြင်းပယ်ထားသည်	Bị từ chối	Ditolak	Ditolak	Tinanggihan
 barcode_mk_status_deleted	ถูกลบ (Deleted)	Deleted	已删除	削除済み	បានលុប	삭제됨	ຖືກລຶບແລ້ວ	ဖျက်ပြီး	Đã xóa	Dipadam	Dihapus	Na-delete
+companyregistrationno	เลขทะเบียนบริษัท	Company registration no.	公司注册号	会社登録番号	លេខចុះបញ្ជីក្រុមហ៊ុន	회사 등록 번호	ເລກທະບຽນບໍລິສັດ	ကုမ္ပဏီမှတ်ပုံတင်နံပါတ်	Số đăng ký công ty	No. pendaftaran syarikat	No. registrasi perusahaan	Numero ng rehistro ng kumpanya
+decimaldocument	ทศนิยมของมูลค่า	Document decimals	单据小数位数	文書小数桁	ខ្ទង់ទសភាគឯកសារ	문서 소수점	ຈຳນວນທົດສະນິຍົມເອກະສານ	စာရွက်စာတမ်းဒဿမများ	Số thập phân chứng từ	Perpuluhan dokumen	Desimal dokumen	Desimal ng dokumento
+decimalprice	ทศนิยมของราคา/ต้นทุน	Price decimals	价格小数位数	価格小数桁	ខ្ទង់ទសភាគតម្លៃ	가격 소수점	ຈຳນວນທົດສະນິຍົມລາຄາ	ဈေးနှုန်းဒဿမများ	Số thập phân giá	Perpuluhan harga	Desimal harga	Desimal ng presyo
+decimalquantity	ทศนิยมของปริมาณ	Quantity decimals	数量小数位数	数量小数桁	ខ្ទង់ទសភាគបរិមាណ	수량 소수점	ຈຳນວນທົດສະນິຍົມປະລິມານ	အရေအတွက်ဒဿမများ	Số thập phân số lượng	Perpuluhan kuantiti	Desimal kuantitas	Desimal ng dami
+machine_type	ประเภทเครื่อง	Machine type	机器类型	マシンタイプ	ប្រភេទម៉ាស៊ីន	기기 유형	ປະເພດເຄື່ອງ	စက်အမျိုးအစား	Loại máy	Jenis mesin	Jenis mesin	Uri ng makina
+point_config	ตั้งค่าแต้ม	Point config	积分设置	ポイント設定	ការកំណត់ពិន្ទុ	포인트 설정	ຕັ້ງຄ່າຄະແນນ	ပွိုင့်ဆက်တင်	Cấu hình điểm	Konfigurasi mata	Konfigurasi poin	Config ng puntos
+accessscopes	บริษัทและสาขาที่เข้าถึงได้	Companies and branches this user can enter	可访问的公司和分支机构	アクセス可能な会社・支店	ក្រុមហ៊ុននិងសាខាដែលអាចចូលបាន	접근 가능한 회사 및 지점	ບໍລິສັດ ແລະ ສາຂາທີ່ເຂົ້າເຖິງໄດ້	ဤအသုံးပြုသူ ဝင်ရောက်နိုင်သော ကုမ္ပဏီများနှင့် ဌာနခွဲများ	Công ty và chi nhánh người dùng này có thể truy cập	Syarikat dan cawangan yang boleh diakses oleh pengguna ini	Perusahaan dan cabang yang dapat diakses pengguna ini	Mga kumpanya at sangay na maaaring pasukin ng user na ito
+lineuserid	LINE User ID	LINE User ID	LINE用户ID	LINEユーザーID	លេខសម្គាល់អ្នកប្រើប្រាស់ LINE	LINE 사용자 ID	ລະຫັດຜູ້ໃຊ້ LINE	LINE အသုံးပြုသူ ID	ID người dùng LINE	ID Pengguna LINE	ID Pengguna LINE	ID ng user sa LINE
+linedisplayname	ชื่อ LINE	LINE display name	LINE显示名称	LINE表示名	ឈ្មោះបង្ហាញ LINE	LINE 표시 이름	ຊື່ສະແດງ LINE	LINE ပြသအမည်	Tên hiển thị LINE	Nama paparan LINE	Nama tampilan LINE	Pangalang ipinapakita sa LINE
+permissioncode	รหัสสิทธิ์	Permission code	权限代码	権限コード	កូដសិទ្ធិ	권한 코드	ລະຫັດສິດ	ခွင့်ပြုချက်ကုဒ်	Mã quyền	Kod kebenaran	Kode izin	Kodigo ng pahintulot
+permissionname	ชื่อสิทธิ์	Permission name	权限名称	権限名	ឈ្មោះសិទ្ធិ	권한 이름	ຊື່ສິດ	ခွင့်ပြုချက်အမည်	Tên quyền	Nama kebenaran	Nama izin	Pangalan ng pahintulot
+approvalcode	รหัส	Code	代码	コード	កូដ	코드	ລະຫັດ	ကုဒ်	Mã	Kod	Kode	Kodigo
+approvalname	ชื่อ	Name	名称	名前	ឈ្មោះ	이름	ຊື່	အမည်	Tên	Nama	Nama	Pangalan
+approvalrules	ขอบเขตที่ใช้สิทธิ์อนุมัติ	Approval scope	审批范围	承認範囲	វិសាលភាពអនុម័ត	승인 범위	ຂອບເຂດການອະນຸມັດ	အတည်ပြုမှုနယ်ပယ်	Phạm vi phê duyệt	Skop kelulusan	Cakupan persetujuan	Saklaw ng pag-apruba
+user_employeecode	รหัสผู้ใช้/พนักงาน	User/employee code	用户/员工代码	ユーザー/従業員コード	កូដអ្នកប្រើ/បុគ្គលិក	사용자/직원 코드	ລະຫັດຜູ້ໃຊ້/ພະນັກງານ	အသုံးပြုသူ/ဝန်ထမ်းကုဒ်	Mã người dùng/nhân viên	Kod pengguna/pekerja	Kode pengguna/karyawan	Code ng user/empleyado
+scoperules	ขอบเขตที่ผู้ใช้นี้ใช้สิทธิ์ได้	User permission scope	用户权限范围	ユーザー権限範囲	វិសាលភាពសិទ្ធិអ្នកប្រើ	사용자 권한 범위	ຂອບເຂດສິດຜູ້ໃຊ້	အသုံးပြုသူခွင့်ပြုချက်နယ်ပယ်	Phạm vi quyền người dùng	Skop kebenaran pengguna	Cakupan izin pengguna	Saklaw ng pahintulot ng user
+permissioncodes	สิทธิ์	Permissions	权限	権限	សិទ្ធិ	권한	ສິດ	ခွင့်ပြုချက်များ	Quyền	Kebenaran	Izin	Mga pahintulot
+approvalcodes	สิทธิ์การอนุมัติ	Approval permissions	审批权限	承認権限	សិទ្ធិអនុម័ត	승인 권한	ສິດອະນຸມັດ	အတည်ပြုခွင့်ပြုချက်များ	Quyền phê duyệt	Kebenaran kelulusan	Izin persetujuan	Mga pahintulot sa pag-apruba
+activelanguages	ภาษาที่ใช้งาน	Active languages	使用中的语言	使用言語	ភាសាដែលសកម្ម	사용 언어	ພາສາທີ່ໃຊ້ງານ	အသုံးပြုနေသောဘာသာစကားများ	Ngôn ngữ đang hoạt động	Bahasa aktif	Bahasa aktif	Mga aktibong wika
+tax_branch_code	รหัสสาขาภาษี	Tax branch code	税务分支机构代码	税務支店コード	កូដសាខាពន្ធ	세무 지점 코드	ລະຫັດສາຂາພາສີ	အခွန်ဌာနခွဲကုဒ်	Mã chi nhánh thuế	Kod cawangan cukai	Kode cabang pajak	Code ng sangay ng buwis
+branch_name	ชื่อสาขา	Branch names	分支名称	支店名	ឈ្មោះសាខា	지점명	ຊື່ສາຂາ	ဌာနခွဲအမည်	Tên chi nhánh	Nama cawangan	Nama cabang	Pangalan ng sangay

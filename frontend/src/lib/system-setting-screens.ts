@@ -402,7 +402,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         "เลขทะเบียนบริษัท",
         "Company registration no.",
       ),
-      comboField("timezone", "Timezone", "Timezone", [], false, "timezones"),
+      comboField("timezone", "เขตเวลา", "Timezone", [], false, "timezones"),
       selectField(
         "dateformat",
         "รูปแบบวันที่",
