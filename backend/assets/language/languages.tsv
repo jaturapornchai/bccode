@@ -318,7 +318,6 @@ and	และ	and	和	と	និង	그리고	ແລະ	နှင့်	Và	and	
 and_more	และอื่นๆ อีก	and more	以及更多	その他	និងផ្សេងទៀត	그 외	ແລະອື່ນໆ	နှင့်အခြား	và thêm nữa	and more	and more	and more
 anno_domini	คริสศักราช	Anno Domini	公元	西暦	គ្រិស្តសករាជ	서기	ຄ.ສ.	ခရစ်နှစ်	Công nguyên	Anno Domini	Anno Domini	Anno Domini
 another_login	เข้าสุ่ระบบด้วยวิธีอื่น	Sign in with another method	使用其他方式登录	別の方法でサインイン	ចូលដោយវិធីផ្សេង	다른 방법으로 로그인	ເຂົ້າສູ່ລະບົບດ້ວຍວິທີອື່ນ	အခြားနည်းလမ်းဖြင့် ဝင်ရောက်ပါ	Đăng nhập bằng phương thức khác	Sign in with another method	Sign in with another method	Sign in with another method
-apikey	Api Key	API Key	API 密钥	APIキー	API Key	API 키	API Key	API သော့	Khóa API	API Key	API Key	API Key
 apikey_activated	เปิดใช้งาน API Key แล้ว	API Key activated	API 密钥已激活	API キーが有効化されました	បានបើកសោ API	API 키가 활성화되었습니다	ເປີດໃຊ້ກະແຈ API ແລ້ວ	API သော့ဖွင့်ပြီးပါပြီ	Đã kích hoạt khóa API	API Key activated	API Key activated	API Key activated
 apikey_created	สร้าง API Key สำเร็จ	API Key Created	API 密钥已创建	API キーが作成されました	បានបង្កើតសោ API	API 키가 생성되었습니다	ສ້າງກະແຈ API ແລ້ວ	API သော့ဖန်တီးပြီးပါပြီ	Đã tạo khóa API	API Key Created	API Key Created	API Key Created
 apikey_deactivated	ปิดใช้งาน API Key แล้ว	API Key deactivated	API 密钥已停用	API キーが無効化されました	បានបិទសោ API	API 키가 비활성화되었습니다	ປິດໃຊ້ກະແຈ API ແລ້ວ	API သော့ပိတ်ပြီးပါပြီ	Đã vô hiệu hóa khóa API	API Key deactivated	API Key deactivated	API Key deactivated
@@ -417,7 +416,6 @@ bank_transfer	การโอนเงิน	Bank Transfer	银行转账	銀行�
 bankcode	รหัสธนาคาร	Bank Code	银行代码	銀行コード	លេខកូដធនាគារ	은행 코드	ລະຫັດທະນາຄານ	ဘဏ်ကုဒ်	Mã ngân hàng	Bank Code	Bank Code	Bank Code
 barcode	บาร์โค้ด	Barcode	条形码	バーコード	បាកូដ	바코드	ບາໂຄດ	ဘားကုဒ်	Mã vạch	Barcode	Barcode	Barcode
 barcode_already_exists	บาร์โค้ดนี้มีอยู่แล้ว!	This barcode already exists!	此条形码已存在！	このバーコードは既に存在します！	បាកូដនេះមានរួចហើយ!	이 바코드는 이미 존재합니다!	ບາໂຄດນີ້ມີຢູ່ແລ້ວ!	ဤဘားကုဒ်သည် ရှိပြီးဖြစ်သည်!	Mã vạch này đã tồn tại!	This barcode already exists!	This barcode already exists!	This barcode already exists!
-barcode_label	บาร์โค้ด:	Barcode:	Barcode:	Barcode:	Barcode:	Barcode:	Barcode:	Barcode:	Barcode:	Barcode:	Barcode:	Barcode:
 barcode_shelf	บาร์โค้ดชั้นวาง	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode	Shelf Barcode
 barcodes	บาร์โค้ด	Barcodes	条码	バーコード	បាកូដ	바코드	ບາໂຄ້ດ	ဘားကုဒ်များ	Mã vạch	Barcodes	Barcodes	Barcodes
 basecurrency	สกุลเงินหลัก	Base Currency	基础货币	基軸通貨	រូបិយប័ណ្ណមូលដ្ឋាន	기준 통화	ສະກຸນເງິນພື້ນຖານ	အခြေခံငွေကြေး	Tiền tệ cơ sở	Base Currency	Base Currency	Base Currency
@@ -461,7 +459,6 @@ biller_code	BILLER CODE	BILLER CODE	BILLER CODE	BILLER CODE	BILLER CODE	BILLER C
 biller_id	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID	BILLER ID
 black_and_white	ขาวดำ	Black & White	黑白	白黒	សខ្មៅ	흑백	ຂາວດຳ	အဖြူအမည်း	Đen trắng	Black & White	Black & White	Black & White
 blank	ว่าง	Blank	空白	空白	ទទេ	비어 있음	ຫວ່າງ	ကွက်လပ်	Trống	Blank	Blank	Blank
-book_bank	บันทึกสมุดเงินฝากธนาคาร	Bank Book	银行存折	通帳	សៀវភៅធនាគារ	통장	ປຶ້ມບັນຊີທະນາຄານ	ဘဏ်စာအုပ်	Sổ ngân hàng	Bank Book	Bank Book	Bank Book
 book_bank_code	รหัสสมุดบัญชี	Bank Book Code	银行存折代码	通帳コード	លេខកូដសៀវភៅធនាគារ	통장 코드	ລະຫັດປຶ້ມບັນຊີ	ဘဏ်စာအုပ်ကုဒ်	Mã sổ ngân hàng	Bank Book Code	Bank Book Code	Bank Book Code
 book_bank_image	รูปสมุดบัญชี	Bank Book Image	银行存折图片	通帳画像	រូបភាពសៀវភៅធនាគារ	통장 이미지	ຮູບປຶ້ມບັນຊີ	ဘဏ်စာအုပ်ပုံ	Hình ảnh sổ ngân hàng	Bank Book Image	Bank Book Image	Bank Book Image
 book_bank_name	ชื่อสมุดบัญชี	Bank Book Name	银行存折名称	通帳名	ឈ្មោះសៀវភៅធនាគារ	통장 이름	ຊື່ປຶ້ມບັນຊີ	ဘဏ်စာအုပ်အမည်	Tên sổ ngân hàng	Bank Book Name	Bank Book Name	Bank Book Name
@@ -890,7 +887,7 @@ creator_access_cannot_be_disabled	ไม่สามารถปิดสิท�
 creator_always_enabled	ผู้สร้างเข้าใช้งานได้ตลอด	Creator can always access	创建者始终可以访问	作成者は常にアクセスできます	អ្នកបង្កើតអាចចូលប្រើបានជានិច្ច	작성자는 항상 접속할 수 있습니다	ຜູ້ສ້າງເຂົ້າໃຊ້ງານໄດ້ຕະຫຼອດ	ဖန်တီးသူသည် အမြဲဝင်ရောက်နိုင်သည်	Người tạo luôn có thể truy cập	Pencipta sentiasa boleh akses	Pembuat selalu dapat mengakses	Palaging maaaring maka-access ang gumawa
 creator_cannot_delete	ผู้สร้างไม่สามารถลบได้	Creator cannot be deleted	创建者不能被删除	作成者は削除できません	មិនអាចលុបអ្នកបង្កើតបានទេ	작성자는 삭제할 수 없습니다	ບໍ່ສາມາດລົບຜູ້ສ້າງໄດ້	ဖန်တီးသူကို ဖျက်၍မရပါ	Không thể xóa người tạo	Pencipta tidak boleh dipadam	Pembuat tidak dapat dihapus	Hindi maaaring burahin ang gumawa
 cost	ต้นทุน	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost	Cost
-cost_calculation_test_result	ผลการทดสอบคำนวณต้นทุน
+cost_calculation_test_result	ผลการทดสอบคำนวณต้นทุน	Cost Calculation Test Result	成本计算测试结果	原価計算テスト結果	លទ្ធផលតេស្តគណនាថ្លៃដើម	원가 계산 테스트 결과	ຜົນການທົດສອບການຄຳນວນຕົ້ນທຶນ	ကုန်ကျစရိတ်တွက်ချက်မှုစမ်းသပ်မှုရလဒ်	Kết quả kiểm tra tính toán chi phí	Keputusan Ujian Pengiraan Kos	Hasil Tes Perhitungan Biaya	Resulta ng Pagsubok sa Pagkukuwenta ng Gastos
 cost_of_sales	ต้นทุนขาย	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales	Cost of Sales
 cost_standard	ต้นทุนมาตรฐาน	Standard Cost	标准成本	標準原価	ថ្លៃដើមស្តង់ដារ	표준원가	ຕົ້ນທຶນມາດຕະຖານ	စံနှုန်းကုန်ကျစရိတ်	Giá vốn chuẩn	Standard Cost	Standard Cost	Standard Cost
 costing_method	วิธีคิดต้นทุน	Costing Method	成本核算方法	原価計算方法	វិធីគណនាថ្លៃដើម	원가 계산 방법	ວິທີຄິດຕົ້ນທຶນ	ကုန်ကျစရိတ်တွက်ချက်နည်း	Phương pháp tính giá thành	Costing Method	Costing Method	Costing Method
@@ -1303,7 +1300,6 @@ doc_format	รูปแบบเอกสาร	Set Document Format	设置文档
 doc_format_code	รหัสเอกสาร	Document Code	文档代码	文書コード	កូដឯកសារ	문서 코드	ລະຫັດເອກະສານ	စာရွက်စာတမ်းကုဒ်	Mã tài liệu	Document Code	Document Code	Document Code
 doc_format_type	รูปแบบเอกสาร	Document Format	文档格式	文書形式	ទម្រង់ឯកសារ	문서 형식	ຮູບແບບເອກະສານ	စာရွက်စာတမ်းပုံစံ	Định dạng tài liệu	Document Format	Document Format	Document Format
 doc_header	เอกสาร	Document	文档	文書	ឯកសារ	문서	ເອກະສານ	စာရွက်စာတမ်း	Tài liệu	Document	Document	Document
-docno	เลขที่	Number	编号	番号	លេខ	번호	ເລກທີ	နံပါတ်	Số	Number	Number	Number
 docno_cannot_be_empty	เลขที่เอกสารไม่สามารถเป็นค่าว่างได้	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty	Document number cannot be empty
 docno_label	เลขที่:	Doc No:	Doc No:	Doc No:	Doc No:	Doc No:	Doc No:	Doc No:	Doc No:	Doc No:	Doc No:	Doc No:
 doc_number	เอกสารเลขที่	Document Number	文档编号	文書番号	លេខឯកសារ	문서 번호	ເລກທີເອກະສານ	စာရွက်စာတမ်းနံပါတ်	Số tài liệu	Document Number	Document Number	Document Number
@@ -2008,7 +2004,6 @@ issued_date	วันที่ออก	Issued Date	发行日期	発行日	ក�
 issumpoint	คะแนนสะสม	Accumulated Points	累积积分	累積ポイント	ពិន្ទុសន្សំ	누적 포인트	ຄະແນນສະສົມ	စုဆောင်းထားသောအမှတ်များ	Điểm tích lũy	Accumulated Points	Accumulated Points	Accumulated Points
 isusecreadit	ขายเงินเชื่อได้	Can sell on credit	可赊销	掛け売り可能	អាចលក់ជំពាក់បាន	외상 판매 가능	ຂາຍເງິນເຊື່ອໄດ້	အကြွေးရောင်းနိုင်သည်	Có thể bán chịu	Can sell on credit	Can sell on credit	Can sell on credit
 item_at	รายการที่	Item	项目	項目	ធាតុទី	항목	ລາຍການທີ່	အရာ	Mục	Item	Item	Item
-itemcode	รหัสสินค้า	Product Code	产品代码	商品コード	លេខកូដផលិតផល	상품 코드	ລະຫັດສິນຄ້າ	ကုန်ပစ္စည်းကုဒ်	Mã sản phẩm	Product Code	Product Code	Product Code
 itemcode_colon	รหัสสินค้า:	Item Code:	物料代码：	商品コード：	លេខកូដផលិតផល៖	상품 코드:	ລະຫັດສິນຄ້າ:	ပစ္စည်းကုဒ်:	Mã sản phẩm:	Item Code:	Item Code:	Item Code:
 itemcode_not_found	ไม่พบรหัสสินค้า	Item Code Not Found	未找到物料代码	商品コードが見つかりません	រកមិនឃើញលេខកូដផលិតផល	상품 코드를 찾을 수 없음	ບໍ່ພົບລະຫັດສິນຄ້າ	ပစ္စည်းကုဒ်ကို ရှာမတွေ့ပါ	Không tìm thấy mã sản phẩm	Item Code Not Found	Item Code Not Found	Item Code Not Found
 item_count	จำนวนรายการ	Item Count	项目数量	項目数	ចំនួនធាតុ	항목 수	ຈໍານວນລາຍການ	ပစ္စည်းအရေအတွက်	Số lượng mục	Item Count	Item Count	Item Count
@@ -2022,7 +2017,6 @@ item_no_multiple_units_or_not_found	ไม่มีหลายหน่วย�
 item_not_found	ไม่พบสินค้า	Product Not Found	未找到产品	商品が見つかりません	រកមិនឃើញផលិតផល	상품을 찾을 수 없음	ບໍ່ພົບສິນຄ້າ	ကုန်ပစ္စည်းမတွေ့ပါ	Không tìm thấy sản phẩm	Product Not Found	Product Not Found	Product Not Found
 item_order	ลำดับ	Order	序号	順序	លំដាប់	순서	ລຳດັບ	အစဉ်	Thứ tự	Order	Order	Order
 item_reference_code	รหัสสินค้าอ้างอิง	Item Reference Code	物品参考代码	商品参照コード	លេខកូដផលិតផលយោង	품목 참조 코드	ລະຫັດສິນຄ້າອ້າງອິງ	ပစ္စည်းရည်ညွှန်းကုဒ်	Mã tham chiếu sản phẩm	Item Reference Code	Item Reference Code	Item Reference Code
-itemtype
 itemcode	รหัสสินค้า	Product Code	产品代码	商品コード	លេខកូដផលិតផល	상품 코드	ລະຫັດສິນຄ້າ	ကုန်ပစ္စည်းကုဒ်	Mã sản phẩm	Product Code	Product Code	Product Code
 items	รายการ	items	项目	項目	ធាតុ	항목	ລາຍການ	အရာများ	mục	items	items	items
 items_count	จำนวนรายการ	Items Count	项目数	アイテム数	ចំនួនមុខទំនិញ	항목 수	ຈຳນວນລາຍການ	ပစ္စည်းအရေအတွက်	Số lượng mục	Items Count	Items Count	Items Count
@@ -2125,7 +2119,7 @@ line_notify	แจ้งเตือนผ่าน LINE	LINE Notification	LINE�
 line_notify_menu	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify	Line Notify
 linenumber	ลำดับ	Line number	序号	番号	ល.រ	순번	ລຳດັບ	စဥ်	STT	Line number	Line number	Line number
 line_oa_menu	Line OA	Line OA	Line OA	Line OA	Line OA	Line OA	Line OA	Line OA	Line OA	Line OA	Line OA	Line OA
-line_oa_qrcode	QR สำหรับ LINE OA	LINE OA QR Code	LINE OA 二维码	LINE OA QRコード	LINE OA QR 코드	QR ສຳລັບ LINE OA	LINE OA QR ကုဒ်	QR LINE OA	Kod QR LINE OA	Kode QR LINE OA	QR para sa LINE OA
+line_oa_qrcode	QR สำหรับ LINE OA	LINE OA QR Code	LINE OA 二维码	LINE OA QRコード	កូដ QR LINE OA	LINE OA QR 코드	QR ສຳລັບ LINE OA	LINE OA QR ကုဒ်	QR LINE OA	Kod QR LINE OA	Kode QR LINE OA	QR para sa LINE OA
 line_spacing_detail	ระยะห่างบรรทัดรายละเอียด	Line Spacing (Detail)	行距（明细）	行間（明細）	គម្លាតបន្ទាត់ (លម្អិត)	줄 간격 (상세)	ໄລຍະຫ່າງແຖວລາຍລະອຽດ	စာကြောင်းအကွာအဝေး (အသေးစိတ်)	Khoảng cách dòng (chi tiết)	Line Spacing (Detail)	Line Spacing (Detail)	Line Spacing (Detail)
 line_user_id	รหัสผู้ใช้ LINE	LINE user ID	LINE 用户 ID	LINEユーザーID	លេខសម្គាល់អ្នកប្រើ LINE	LINE 사용자 ID	ລະຫັດຜູ້ໃຊ້ LINE	LINE အသုံးပြုသူ ID	ID người dùng LINE	ID pengguna LINE	ID pengguna LINE	User ID sa LINE
 lineoa_config_title	ตั้งค่า LINE OA	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings	LINE OA Settings
@@ -2271,7 +2265,6 @@ model_codes	รหัสโมเดล	Model Code	型号代码	モデルコー�
 model_name	ชื่อรุ่น	Model Name	型号名称	モデル名	ឈ្មោះម៉ូដែល	모델명	ຊື່ຮຸ່ນ	မော်ဒယ်အမည်	Tên mẫu	Model Name	Model Name	Model Name
 mom_comparison	เปรียบเทียบเดือนต่อเดือน	Month-over-Month Comparison	月度对比	月次比較	ប្រៀបធៀបខែចេញខែ	월간 비교	ປຽບທຽບເດືອນຕໍ່ເດືອນ	လအလိုက်နှိုင်းယှဉ်မှု	So sánh tháng	Month-over-Month Comparison	Month-over-Month Comparison	Month-over-Month Comparison
 monday	วันจันทร์	Monday	星期一	月曜日	ថ្ងៃច័ន្ទ	월요일	ວັນຈັນ	တနင်္လာနေ့	Thứ Hai	Monday	Monday	Monday
-money
 money_change	เงินทอน	Change	找零	お釣り	ប្រាក់អាប់	거스름돈	ເງິນທອນ	အမ်ပြန်	Tiền thối	Change	Change	Change
 money_end_day	เงินเข้าสิ้นวัน	End of Day Settlement	日终入账	日末入金	ប្រាក់ចូលចុងថ្ងៃ	당일 마감 입금	ເງິນເຂົ້າສິ້ນວັນ	နေ့ကုန်ငွေဝင်	Tiền vào cuối ngày	End of Day Settlement	End of Day Settlement	End of Day Settlement
 money_next_day	เงินเข้าวันถัดไป	Next Day Payment	次日入账	翌日入金	ប្រាក់ចូលថ្ងៃបន្ទាប់	익일 입금	ເງິນເຂົ້າວັນຖັດໄປ	နောက်နေ့ငွေဝင်	Tiền vào ngày hôm sau	Next Day Payment	Next Day Payment	Next Day Payment
@@ -2548,8 +2541,6 @@ partially_received	ยังรับไม่ครบ	Partially Received	Parti
 parent_project	โครงการหลัก	Parent Project	主项目	親プロジェクト	គម្រោងមេ	상위 프로젝트	ໂຄງການຫຼັກ	မူဘောင်စီမံကိန်း	Dự án cha	Parent Project	Parent Project	Parent Project
 pass_book	เลขที่บัญชี	Account Number	帐号	口座番号	លេខគណនី	계좌 번호	ເລກບັນຊີ	အကောင့်နံပါတ်	Số tài khoản	Account Number	Account Number	Account Number
 pass_book_branch	สาขาธนาคาร	Bank Branch	银行分行	銀行支店	សាខាធនាគារ	은행 지점	ສາຂາທະນາຄານ	ဘဏ်ခွဲ	Chi nhánh ngân hàng	Bank Branch	Bank Branch	Bank Branch
-passbook
-passbook_code
 passed	ผ่าน	Passed	通过	合格	ជាប់	통과	ຜ່ານ	အောင်	Đạt	Passed	Passed	Passed
 password	รหัสผ่าน	Password	密码	パスワード	ពាក្យសម្ងាត់	비밀번호	ລະຫັດຜ່ານ	စကားဝှက်	Mật khẩu	Password	Password	Password
 pattern	รูปแบบสินค้า	Product Pattern	产品款式	製品パターン	គំរូផលិតផល	제품 패턴	ຮູບແບບສິນຄ້າ	ကုန်ပစ္စည်းပုံစံ	Mẫu sản phẩm	Product Pattern	Product Pattern	Product Pattern
@@ -2934,9 +2925,7 @@ productdetails_price_baht	ราคา (บาท)	Price (Baht)	价格（泰铢�
 productdetails_price_history	ประวัติการเปลี่ยนแปลงราคา	Price History	价格变更历史	価格変更履歴	ប្រវត្តិការផ្លាស់ប្តូរតម្លៃ	가격 변경 이력	ປະຫວັດການປ່ຽນແປງລາຄາ	စျေးနှုန်းပြောင်းလဲမှုမှတ်တမ်း	Lịch sử thay đổi giá	Price History	Price History	Price History
 productdetails_pricelevel	ระดับราคา	Price Level	价格等级	価格レベル	កម្រិតតម្លៃ	가격 레벨	ລະດັບລາຄາ	စျေးနှုန်းအဆင့်	Cấp giá	Price Level	Price Level	Price Level
 productdetails_select_product	กรุณาเลือกสินค้า	Please select a product	请选择产品	商品を選択してください	សូមជ្រើសរើសផលិតផល	상품을 선택하세요	ກະລຸນາເລືອກສິນຄ້າ	ကုန်ပစ္စည်းရွေးချယ်ပါ	Vui lòng chọn sản phẩm	Please select a product	Please select a product	Please select a product
-product_dimension	ขนาด/มิติสินค้า	Product Dimensions	商品尺寸	商品の寸法	ទំហំ/វិមាត្រផលិតផល	상품 치수	ຂະໜາດ/ມິຕິສິນຄ້າ	ကုန်ပစ္စည်းအတိုင်းအတာ	Kích thước hàng hóa	Product Dimensions	Product Dimensions	Product Dimensions
 product_dimension_name	ชื่อมิติสินค้า	Product Dimension Name	产品尺寸名称	製品寸法名	ឈ្មោះវិមាត្រផលិតផល	제품 치수 이름	ຊື່ມິຕິສິນຄ້າ	ထုတ်ကုန်အတိုင်းအတာအမည်	Tên kích thước sản phẩm	Product Dimension Name	Product Dimension Name	Product Dimension Name
-product_discount	ส่วนลด	Product discount	折扣	割引	បញ្ចុះតម្លៃ	할인	ສ່ວນຫຼຸດ	လျှော့စျေး	Giảm giá	Product discount	Product discount	Product discount
 product_duplicate	สินค้าซ้ำในไฟล์นำเข้า	Duplicate Product in Import File	导入文件中的产品重复	インポートファイルの製品が重複しています	ផលិតផលស្ទួននៅក្នុងឯកសារនាំចូល	가져오기 파일에 중복된 제품이 있습니다	ສິນຄ້າຊ້ຳກັນໃນໄຟລ໌ນຳເຂົ້າ	တင်သွင်းဖိုင်တွင် ထုတ်ကုန်ထပ်နေသည်	Sản phẩm trùng lặp trong tệp nhập	Duplicate Product in Import File	Duplicate Product in Import File	Duplicate Product in Import File
 product_edit	แก้ไขสินค้า	Edit Product	编辑产品	商品編集	កែសម្រួលផលិតផល	상품 수정	ແກ້ໄຂສິນຄ້າ	ကုန်ပစ္စည်းပြင်ဆင်	Sửa sản phẩm	Edit Product	Edit Product	Edit Product
 product_employee	พนักงานดูแลสินค้า	Product Employee	产品员工	製品担当者	បុគ្គលិកផលិតផល	제품 담당자	ພະນັກງານສິນຄ້າ	ထုတ်ကုန်ဝန်ထမ်း	Nhân viên sản phẩm	Product Employee	Product Employee	Product Employee
@@ -2988,7 +2977,6 @@ product_name	ชื่อสินค้า	Product name	产品名称	Product na
 product_name_3	ชื่อสินค้า 3	Product Name 3	产品名称 3	製品名 3	ឈ្មោះផលិតផល 3	제품명 3	ຊື່ສິນຄ້າ 3	ထုတ်ကုန်အမည် 3	Tên sản phẩm 3	Product Name 3	Product Name 3	Product Name 3
 product_name_4	ชื่อสินค้า 4	Product Name 4	产品名称 4	製品名 4	ឈ្មោះផលិតផល 4	제품명 4	ຊື່ສິນຄ້າ 4	ထုတ်ကုန်အမည် 4	Tên sản phẩm 4	Product Name 4	Product Name 4	Product Name 4
 product_name_5	ชื่อสินค้า 5	Product Name 5	产品名称 5	製品名 5	ឈ្មោះផលិតផល 5	제품명 5	ຊື່ສິນຄ້າ 5	ထုတ်ကုန်အမည် 5	Tên sản phẩm 5	Product Name 5	Product Name 5	Product Name 5
-product_name_not_specified	ไม่ระบุชื่อสินค้า	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified	Product Name Not Specified
 product_new	สินค้าใหม่	New Product	新产品	新製品	ផលិតផលថ្មី	신제품	ສິນຄ້າໃໝ່	ကုန်ပစ္စည်းအသစ်	Sản phẩm mới	New Product	New Product	New Product
 product_option	ตัวเลือกสินค้า	Product option	Product option	Product option	Product option	Product option	Product option	Product option	Product option	Product option	Product option	Product option
 product_option_choice_type_multi	เลือกได้หลายเงื่อนไข	Select Multiple Conditions	选择多个条件	複数の条件を選択	ជ្រើសរើសលក្ខខណ្ឌច្រើន	여러 조건 선택	ເລືອກໄດ້ຫຼາຍເງື່ອນໄຂ	အခြေအနေများစွာရွေးချယ်ပါ	Chọn nhiều điều kiện	Select Multiple Conditions	Select Multiple Conditions	Select Multiple Conditions
@@ -3005,7 +2993,6 @@ product_save_success	บันทึกข้อมูลสินค้าส�
 product_semi_finished	สินค้ากึ่งสำเร็จรูป	Semi-Finished Product	半成品	半製品	ផលិតផលពាក់កណ្តាលសម្រេច	반제품	ສິນຄ້າເຄິ່ງສຳເລັດຮູບ	တစ်ပိုင်းပြီးစီးသောကုန်ပစ္စည်း	Sản phẩm bán thành phẩm	Semi-Finished Product	Semi-Finished Product	Semi-Finished Product
 product_settings	ตั้งค่าสินค้า	Product Settings	产品设置	商品設定	ការកំណត់ផលិតផល	제품 설정	ຕັ້ງຄ່າສິນຄ້າ	ကုန်ပစ္စည်းဆက်တင်များ	Cài đặt sản phẩm	Product Settings	Product Settings	Product Settings
 product_shelf	ชั้นวางสินค้า	Product shelf	Product shelf	Product shelf	Product shelf	Product shelf	Product shelf	Product shelf	Product shelf	Product shelf	Product shelf	Product shelf
-product_single_unit	หน่วยนับเดี่ยว	Single Unit	单一单位	単一ユニット	ឯកតាតែមួយ	단일 단위	ຫົວໜ່ວຍດຽວ	ယူနစ်တစ်ခု	Đơn vị đơn	Single Unit	Single Unit	Single Unit
 product_to_location	ที่เก็บ	Product to location	Product to location	Product to location	Product to location	Product to location	Product to location	Product to location	Product to location	Product to location	Product to location	Product to location
 product_to_ware_house	ไปที่คลัง	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse	Product to warehouse
 product_total	รวม	Product total	总计	合計	សរុប	합계	ລວມ	စုစုပေါင်း	Tổng	Product total	Product total	Product total
@@ -3128,7 +3115,6 @@ qrcode_code	รหัส	Code	代码	コード	កូដ	코드	ລະຫັດ	
 qrcode_list	รายการคิวอาร์โค้ด	QR Code List	二维码列表	QRコードリスト	បញ្ជីកូដ QR	QR 코드 목록	ລາຍການ QR Code	QR ကုដစာရင်း	Danh sách mã QR	QR Code List	QR Code List	QR Code List
 qrcode_order_food	QR Code สั่งอาหาร	QR Code Order Food	QR码点餐	QRコード注文	QR Code បញ្ជាម្ហូប	QR코드 음식 주문	QR Code ສັ່ງອາຫານ	QR Code အစားအစာ မှာယူ	QR Code đặt món	QR Code Order Food	QR Code Order Food	QR Code Order Food
 qty	จำนวน	quantity	数量	数量	ចំនួន	수량	ຈຳນວນ	အရေအတွက်	Số lượng	quantity	quantity	quantity
-qty1
 qty_free	จำนวนแถม	Free Quantity	赠送数量	無料数量	ចំនួនថែម	무료 수량	ຈຳນວນແຖມ	လက်ဆောင်အရေအတွက်	Số lượng tặng	Free Quantity	Free Quantity	Free Quantity
 qty_limit	จำนวนที่ต้องซื้อ	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase	Quantity to purchase
 qty_minimum	จำนวนขั้นต่ำ	Minimum Quantity	最低数量	最小数量	ចំនួនអប្បបរមា	최소 수량	ຈຳນວນຂັ້ນຕ່ຳ	အနည်းဆုံးအရေအတွက်	Số lượng tối thiểu	Minimum Quantity	Minimum Quantity	Minimum Quantity
@@ -3197,7 +3183,6 @@ receivelist_total_value	รวมมูลค่า	Total Value	总金额	合計
 receivelist_transaction_type	ประเภทรายการ	Transaction Type	交易类型	取引種類	ប្រភេទប្រតិបត្តិការ	거래 유형	ປະເພດລາຍການ	ငွေစာရင်းအမျိုးအစား	Loại giao dịch	Transaction Type	Transaction Type	Transaction Type
 receivelist_type	ประเภท	Type	类型	種類	ប្រភេទ	유형	ປະເພດ	အမျိုးအစား	Loại	Type	Type	Type
 receivelist_value	มูลค่า	Value	金额	金額	តម្លៃ	금액	ມູນຄ່າ	တန်ဖိုး	Giá trị	Value	Value	Value
-receivemoney
 receiver	ผู้รับ	Receiver	接收方	受信者	អ្នកទទួល	수신자	ຜູ້ຮັບ	လက်ခံသူ	Người nhận	Receiver	Receiver	Receiver
 receiver_bank	ธนาคารผู้รับ	Receiver Bank	接收方银行	受取銀行	ធនាគារអ្នកទទួល	수신 은행	ທະນາຄານຜູ້ຮັບ	လက်ခံသူဘဏ်	Ngân hàng người nhận	Receiver Bank	Receiver Bank	Receiver Bank
 recent_purchases	ซื้อล่าสุด	Recent Purchases	最近采购	最近の購入	ការទិញថ្មីៗ	최근 구매	ຊື້ລ່າສຸດ	မကြာသေးမီဝယ်ယူမှုများ	Mua gần đây	Recent Purchases	Recent Purchases	Recent Purchases
@@ -3541,7 +3526,6 @@ search_shop	ค้นหาร้าน...	Search shop...	搜索商店...	店舗
 search_shop_placeholder	ค้นหาร้าน...	Search shop...	搜索商店...	店舗を検索...	ស្វែងរកហាង...	매장 검색...	ຄົ້ນຫາຮ້ານ...	ဆိုင်ရှာဖွေရန်...	Tìm kiếm cửa hàng...	Search shop...	Search shop...	Search shop...
 search_text	ค้นหาข้อความ	Search Text	Search Text	Search Text	Search Text	Search Text	Search Text	Search Text	Search Text	Search Text	Search Text	Search Text
 search_text_in_document	ค้นหาข้อความในเอกสาร	Search text in document	Search text in document	Search text in document	Search text in document	Search text in document	Search text in document	Search text in document	Search text in document	Search text in document	Search text in document	Search text in document
-search_user_hint	ค้นหาผู้ใช้งาน...	Search user...	Search user...	Search user...	Search user...	Search user...	Search user...	Search user...	Search user...	Search user...	Search user...	Search user...
 search_warehouse	ค้นหาคลัง	Search warehouse	搜索仓库	倉庫を検索	ស្វែងរកឃ្លាំង	창고 검색	ຄົ້ນຫາສາງ	ဂိုဒေါင်ရှာပါ	Tìm kho	Search warehouse	Search warehouse	Search warehouse
 searching	กำลังค้นหา...	Searching...	搜索中...	検索中...	កំពុងស្វែងរក...	검색 중...	ກຳລັງຄົ້ນຫາ...	ရှာဖွေနေသည်...	Đang tìm kiếm...	Searching...	Searching...	Searching...
 searching_document	กำลังค้นหาเอกสาร...	Searching document...	正在搜索文档...	ドキュメントを検索中...	កំពុងស្វែងរកឯកសារ...	문서 검색 중...	ກຳລັງຊອກຫາເອກະສານ...	စာရွက်စာတမ်းရှာနေသည်...	Đang tìm kiếm tài liệu...	Searching document...	Searching document...	Searching document...
@@ -3839,7 +3823,6 @@ staff_name	ชื่อ พนักงาน	Staff Name	员工姓名	スタッ�
 stand		Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand	Stand
 standard_cost	ต้นทุนมาตรฐาน	Standard Cost	标准成本	標準原価	ថ្លៃដើមស្តង់ដារ	표준 원가	ຕົ້ນທຶນມາດຕະຖານ	စံကုန်ကျစရိတ်	Chi phí tiêu chuẩn	Standard Cost	Standard Cost	Standard Cost
 standard_cost_per_unit	ต้นทุนมาตรฐานต่อหน่วย	Standard Cost Per Unit	单位标准成本	単位あたり標準原価	ថ្លៃដើមស្តង់ដារក្នុងមួយឯកតា	단위당 표준 원가	ຕົ້ນທຶນມາດຕະຖານຕໍ່ໜ່ວຍ	ယူနစ်တစ်ခုချင်းစံကုန်ကျစရိတ်	Chi phí tiêu chuẩn mỗi đơn vị	Standard Cost Per Unit	Standard Cost Per Unit	Standard Cost Per Unit
-standvalue
 start_by_adding_first_shelf	เริ่มต้นด้วยการเพิ่มชั้นวางแรก	Start by adding your first shelf	从添加第一个货架开始	最初の棚を追加して始めましょう	ចាប់ផ្តើមដោយបន្ថែមធ្នើដំបូង	첫 번째 선반을 추가하여 시작하세요	ເລີ່ມຕົ້ນດ້ວຍການເພີ່ມຊັ້ນວາງທຳອິດ	ပထမဆုံး စင် ထည့်ခြင်းဖြင့် စတင်ပါ	Bắt đầu bằng cách thêm kệ đầu tiên	Start by adding your first shelf	Start by adding your first shelf	Start by adding your first shelf
 start_calculate	เริ่มคำนวณ	Start Calculate	开始计算	計算開始	ចាប់ផ្តើមគណនា	계산 시작	ເລີ່ມຄຳນວນ	တွက်ချက်ခြင်း စတင်ပါ	Bắt đầu tính	Start Calculate	Start Calculate	Start Calculate
 start_date	วันที่เริ่มต้น	Start Date	开始日期	開始日	កាលបរិច្ឆេទចាប់ផ្តើម	시작일	ວັນທີເລີ່ມຕົ້ນ	စတင်ရက်	Ngày bắt đầu	Start Date	Start Date	Start Date
@@ -3906,7 +3889,6 @@ stock_pickup	บันทึกเบิกใช้สินค้า,วัต
 stock_receive	บันทึกรับสินค้าสำเร็จรูป	Stock Receive	入库	入庫	ទទួលស្តុក	입고	ຮັບເຂົ້າສະຕ໊ອກ	ကုန်ပစ္စည်းလက်ခံ	Nhập kho	Stock Receive	Stock Receive	Stock Receive
 stock_report_usage_guide	วิธีการใช้งานรายงานสินค้าคงเหลือ	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide	Stock Report Usage Guide
 stock_return	บันทึกรับคืนสินค้า,วัตถุดิบ	Stock Return	退库	在庫返品	បញ្ជូនស្តុកត្រឡប់	재고 반품	ສົ່ງຄືນສະຕ໊ອກ	ကုန်ပစ္စည်းပြန်ပို့	Trả hàng kho	Stock Return	Stock Return	Stock Return
-stock_transfer	บันทึกโอนสินค้าระหว่างคลัง	Stock Transfer	调拨	在庫移動	ផ្ទេរស្តុក	재고 이동	ໂອນສະຕ໊ອກ	ကုန်ပစ္စည်းလွှဲပြောင်း	Chuyển kho	Stock Transfer	Stock Transfer	Stock Transfer
 storage_area	พื้นที่เก็บ	Storage Area	存储区	保管エリア	តំបន់ផ្ទុក	저장 영역	ພື້ນທີ່ເກັບ	သိုလှောင်ရာနေရာ	Khu vực lưu trữ	Storage Area	Storage Area	Storage Area
 store_id	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID	STORE ID
 sub_group_1	กลุ่มย่อย 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1	Sub Group 1
@@ -4015,7 +3997,6 @@ text_form_ref_invoice_number	เลขที่อ้างอิง	Reference N
 text_form_ref_total_correct	มูลค่าที่ถูกต้อง	Correct Value	正确价值	正しい価値	តម្លៃត្រឹមត្រូវ	정확한 가치	ມູນຄ່າທີ່ຖືກຕ້ອງ	မှန်ကန်သောတန်ဖိုး	Giá trị chính xác	Correct Value	Correct Value	Correct Value
 text_form_ref_total_diff	ผลต่าง	Difference	差额	差額	ភាពខុសគ្នា	차이	ຜົນຕ່າງ	ကွာခြားချက်	Chênh lệch	Difference	Difference	Difference
 text_form_ref_total_original	มูลค่าตามใบกำกับภาษีเดิม	Original Tax Invoice Value	原税务发票价值	元の税金請求書の価値	តម្លៃវិក្កយបត្រពន្ធដើម	원래 세금 계산서 가치	ມູນຄ່າຕາມໃບກຳກັບພາສີເດີມ	မူရင်းအခွန်ပြေစာတန်ဖိုး	Giá trị theo hóa đơn thuế gốc	Original Tax Invoice Value	Original Tax Invoice Value	Original Tax Invoice Value
-text_form_taxid	เลขประจำตัวผู้เสียภาษีอากร	Taxpayer Identification Number	纳税人识别号	納税者番号	លេខអត្តសញ្ញាណអ្នកបង់ពន្ធ	납세자 식별 번호	ເລກປະຈຳຕົວຜູ້ເສຍພາສີອາກອນ	အခွန်ထမ်းမှတ်ပုံတင်နံပါတ်	Mã số thuế	Taxpayer Identification Number	Taxpayer Identification Number	Taxpayer Identification Number
 text_form_tax_invoice	ใบกำกับภาษี	Tax Invoice	税务发票	税金請求書	វិក្កយបត្រពន្ធ	세금 계산서	ໃບກຳກັບພາສີ	အခွန်ပြေစာ	Hóa đơn thuế	Tax Invoice	Tax Invoice	Tax Invoice
 text_form_tax_invoice_date	วันที่ใบกำกับภาษี	Tax Invoice Date	税务发票日期	税金請求書日付	កាលបរិច្ឆេទវិក្កយបត្រពន្ធ	세금 계산서 날짜	ວັນທີໃບກຳກັບພາສີ	အခွန်ပြေစာရက်စွဲ	Ngày hóa đơn thuế	Tax Invoice Date	Tax Invoice Date	Tax Invoice Date
 text_form_tax_invoice_number	เลขที่ใบกำกับภาษี	Tax Invoice Number	税务发票号码	税金請求書番号	លេខវិក្កយបត្រពន្ធ	세금 계산서 번호	ເລກທີໃບກຳກັບພາສີ	အခွန်ပြေစာနံပါတ်	Số hóa đơn thuế	Tax Invoice Number	Tax Invoice Number	Tax Invoice Number
@@ -4162,7 +4143,6 @@ transaction_product_value	มูลค่าสินค้า	Product Value	商
 transaction_purchase	ซื้อสินค้า	Purchase Transaction	采购交易	購入取引	ប្រតិបត្តិការទិញ	구매 거래	ທຸລະກຳການຊື້	ဝယ်ယူမှု အရောင်းအဝယ်	Giao dịch mua hàng	Purchase Transaction	Purchase Transaction	Purchase Transaction
 transaction_purchase_order	ใบสั่งซื้อสินค้า	Purchase Order	采购单	発注書	បញ្ជាទិញ	발주서	ໃບສັ່ງຊື້	ဝယ်ယူမှာစာ	Đơn đặt hàng	Purchase Order	Purchase Order	Purchase Order
 transaction_purchase_partial	รับสินค้าแบบทยอย	Partial Receive	分批收货	分納受領	ការទទួលដោយផ្នែក	부분 입고	ຮັບສິນຄ້າບາງສ່ວນ	တစ်စိတ်တစ်ပိုင်း လက်ခံရရှိခြင်း	Nhận hàng từng phần	Partial Receive	Partial Receive	Partial Receive
-transaction_purchasereturn	ส่งคืนสินค้า	Purchase Return	采购退货	仕入返品	ការສົ່ງຄືນការទិញ	구매 반품	ສົ່ງຄືນການຊື້	ဝယ်ယူမှု ပြန်အမ်းခြင်း	Trả hàng mua	Purchase Return	Purchase Return	Purchase Return
 transaction_purchasereturn	ส่งคืนสินค้า	Purchase Return	采购退货	仕入返品	ការສົ່ງຄືນការទិញ	구매 반품	ສົ່ງຄືນການຊື້	ဝယ်ယူမှု ပြန်အမ်းခြင်း	Trả hàng mua	Purchase Return	Purchase Return	Purchase Return
 transaction_quantity	จำนวน	Quantity	数量	数量	បរិមាណ	수량	ຈຳນວນ	အရေအတွက်	Số lượng	Quantity	Quantity	Quantity
 transaction_quotation	ใบเสนอราคา	Quotation	报价单	見積書	សម្រង់តម្លៃ	견적서	ໃບສະເໜີລາຄາ	စျေးနှုန်းတင်သွင်း	Báo giá	Quotation	Quotation	Quotation
@@ -4379,7 +4359,6 @@ withdrawing	กำลังถอน	Withdrawing	正在提取	引き出し中	�
 work_data_lost	ข้อมูลที่กำลังทำงานอยู่จะหายหมด	Working data will be lost	工作中的数据将丢失	作業中のデータは失われます	ទិន្នន័យដែលកំពុងធ្វើការនឹងបាត់បង់	작업 중인 데이터가 손실됩니다	ຂໍ້ມູນທີ່ກຳລັງເຮັດວຽກຈະສູນຫາຍ	လုပ်ဆောင်နေသော ဒေတာများ ဆုံးရှုံးပါမည်	Dữ liệu đang làm việc sẽ bị mất	Working data will be lost	Working data will be lost	Working data will be lost
 work_day	วันทำงาน	Work Day	Work Day	Work Day	Work Day	Work Day	Work Day	Work Day	Work Day	Work Day	Work Day	Work Day
 work_page	หน้างาน	Work Page	工作页	作業ページ	ទំព័រការងារ	작업 페이지	ໜ້າວຽກ	အလုပ်စာမျက်နှာ	Trang Làm Việc	Work Page	Work Page	Work Page
-workday	วันทำงาน	Work Day	工作日	営業日	ថ្ងៃធ្វើការ	근무일	ວັນເຮັດວຽກ	အလုပ်လုပ်ရက်	Ngày làm việc	Work Day	Work Day	Work Day
 workspace	หน้างาน	Workspace	Workspace	Workspace	Workspace	Workspace	Workspace	Workspace	Workspace	Workspace	Workspace	Workspace
 wrong_date	วันที่ผิด	Wrong date	日期错误	日付が間違っています	កាលបរិច្ឆេទខុស	날짜 오류	ວັນທີ່ຜິດ	ရက်စွဲမှား	Ngày sai	Wrong date	Wrong date	Wrong date
 wrong_name_address	ชื่อ/ที่อยู่ ผิด	Wrong name/address	名称/地址错误	名前/住所が間違っています	ឈ្មោះ/អាស័យដ្ឋាន ខុស	이름/주소 오류	ຊື່/ທີ່ຢູ່ ຜິດ	အမည်/လိပ်စာ မှား	Tên/địa chỉ sai	Wrong name/address	Wrong name/address	Wrong name/address
@@ -4387,9 +4366,7 @@ wrong_product	สินค้าผิด	Wrong product	产品错误	商品が�
 wrong_quantity_value	จำนวน/มูลค่าผิด	Wrong quantity/value	数量/价值错误	数量/金額が間違っています	បរិមាណ/តម្លៃខុស	수량/가치 오류	ຈຳນວນ/ມູນຄ່າຜິດ	အရေအတွက်/တန်ဖိုးမှား	Số lượng/giá trị sai	Wrong quantity/value	Wrong quantity/value	Wrong quantity/value
 xqty		X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty	X qty
 xunit		X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit	X unit
-xxx
 year	ปี	Year	年	年	ឆ្នាំ	연도	ປີ	နှစ်	Năm	Year	Year	Year
-yeartype	ปีศักราชที่ใช้	Year Type	年份类型	年タイプ	ប្រភេទឆ្នាំ	연도 유형	ປະເພດປີ	ခုနှစ်အမျိုးအစား	Loại năm	Year Type	Year Type	Year Type
 yes	ใช่	Yes	是的	はい	បាទ/ចាស	예	ແມ່ນແລ້ວ	ဟုတ်	Có	Yes	Yes	Yes
 you_have_accepted	คุณได้ยอมรับ	You Have Accepted	您已接受	同意されました	អ្នកបានទទួលយក	동의하셨습니다	ທ່ານໄດ້ຍອມຮັບ	သင်လက်ခံပြီးပါပြီ	Bạn đã chấp nhận	You Have Accepted	You Have Accepted	You Have Accepted
 yoy_comparison	เปรียบเทียบปีต่อปี	Year-over-Year Comparison	年度对比	年次比較	ប្រៀបធៀបឆ្នាំចេញឆ្នាំ	연간 비교	ປຽບທຽບປີຕໍ່ປີ	နှစ်စဉ်နှိုင်းယှဉ်မှု	So sánh năm	Year-over-Year Comparison	Year-over-Year Comparison	Year-over-Year Comparison
@@ -4406,7 +4383,6 @@ zoom_out	ซูมออก	Zoom Out	缩小	縮小	បង្រួម	축소	ຊ
 คืนเงินล่วงหน้า	คืนเงินล่วงหน้า	Advance Refund	退还预付款	前払い返金	សងប្រាក់ជាមុនវិញ	선불금 환불	ຄືນເງິນລ່ວງໜ້າ	ကြိုတင်ငွေ ပြန်အမ်းငွေ	Hoàn trả tiền ứng trước	Advance Refund	Advance Refund	Advance Refund
 จ่ายเงินมัดจำ	จ่ายเงินมัดจำ	Pay Deposit	支付押金	保証金支払い	បង់ប្រាក់កក់	보증금 지불	ຈ່າຍເງິນມັດຈຳ	စရန်ငွေ ပေးချေရန်	Thanh toán tiền cọc	Pay Deposit	Pay Deposit	Pay Deposit
 ทดสอบประมวลผลใหม่	ทดสอบประมวลผลใหม่	Retest Processing	重新测试处理	再テスト処理	ធ្វើតេស្តដំណើរការឡើងវិញ	재처리 테스트	ທົດສອບປະມວນຜົນໃໝ່	ပြန်လည်စမ်းသပ်လုပ်ဆောင်	Kiểm tra xử lý lại	Retest Processing	Retest Processing	Retest Processing
-บาร์โค้ดอ้างอิง/หน่วยนับ
 รับคืนเงินมัดจำ	รับคืนเงินมัดจำ	Receive Deposit Refund	收到押金退还	保証金返金受領	ទទួលការសងប្រាក់កក់វិញ	보증금 환불 수령	ຮັບຄືນເງິນມັດຈຳ	စရန်ငွေ ပြန်အမ်းငွေ လက်ခံရန်	Nhận hoàn trả tiền cọc	Receive Deposit Refund	Receive Deposit Refund	Receive Deposit Refund
 รับคืนเงินล่วงหน้า	รับคืนเงินล่วงหน้า	Receive Advance Refund	收到预付款退还	前払い返金受領	ទទួលការសងប្រាក់ជាមុនវិញ	선불금 환불 수령	ຮັບຄືນເງິນລ່ວງໜ້າ	ကြိုတင်ငွေ ပြန်အမ်းငွေ လက်ခံရန်	Nhận hoàn trả tiền ứng trước	Receive Advance Refund	Receive Advance Refund	Receive Advance Refund
 รับเงินมัดจำ	รับเงินมัดจำ	Receive Deposit	收取押金	保証金受領	ទទួលប្រាក់កក់	보증금 수령	ຮັບເງິນມັດຈຳ	စရန်ငွေ လက်ခံရန်	Nhận tiền cọc	Receive Deposit	Receive Deposit	Receive Deposit
@@ -4503,7 +4479,6 @@ advance_payment_refund	บันทึกรับคืนเงินจ่า
 deposit_refund	รับคืนเงินมัดจำ	Deposit Refund	押金退款	保証金返金	ទទួលคืนប្រាក់កក់	보증금 환불	ຮັບຄືນເງິນມັດຈຳ	အပ်ငွေ ပြန်လက်ခံ	Nhận hoàn tiền đặt cọc	Terima bayaran balik deposit	Terima pengembalian deposit	Tumanggap ng refund ng deposito
 return_advance	บันทึกคืนเงินรับล่วงหน้า	Return Advance	退还预付款	前払いを返金	คืนប្រាក់បង់មុន	선급금 반환	ຄືນເງິນລ່ວງໜ້າ	ကြိုတင်ငွေ ပြန်ပေး	Hoàn tiền ứng trước	Pulangkan pendahuluan	Kembalikan uang muka	Ibalik ang paunang bayad
 sale	บันทึกขายสินค้า,บริการ	Sale	销售商品	販売	លក់ទំនិញ	판매	ຂາຍສິນຄ້າ	ရောင်းချခြင်း	Bán hàng	Jualan	Penjualan	Benta
-stock_transfer	บันทึกโอนสินค้าระหว่างคลัง	Stock Transfer	库存调拨	在庫移動	ផ្ទេរស្តុក	재고 이동	ໂອນສິນຄ້າ	ကုန်ပစ္စည်းလွှဲပြောင်း	Chuyển kho	Pindahan stok	Transfer stok	Paglipat ng stock
 slip_in	รูปสลิปเงินเข้า	Money In Slip	收款凭证图片	入金スリップ画像	រូបស្លីបប្រាក់ចូល	입금 전표 이미지	ຮູບສະລິບເງິນເຂົ້າ	ငွေဝင်စလစ်ပုံ	Hình phiếu tiền vào	Imej slip wang masuk	Gambar slip uang masuk	Larawan ng money in slip
 slip_out	รูปสลิปเงินออก	Money Out Slip	付款凭证图片	出金スリップ画像	រូបស្លីបប្រាក់ចេញ	출금 전표 이미지	ຮູບສະລິບເງິນອອກ	ငွေထွက်စလစ်ပုံ	Hình phiếu tiền ra	Imej slip wang keluar	Gambar slip uang keluar	Larawan ng money out slip
 cash_drawer	รับ-ส่งเงิน POS	POS Cash Drawer	POS 现金抽屉	POSキャッシュドロワー	ថតសាច់ប្រាក់ POS	POS 현금 서랍	ລິ້ນຊັກເງິນ POS	POS ငွေသားအံဆွဲ	Ngăn kéo tiền POS	Laci tunai POS	Laci kas POS	POS cash drawer
@@ -5982,3 +5957,81 @@ approve_success	อนุมัติเอกสารเรียบร้อ�
 reject_success	บันทึกการไม่อนุมัติเรียบร้อยแล้ว	Rejection saved successfully	已成功保存拒绝记录	拒否を保存しました	បានរក្សាទុកការបដិសេធដោយជោគជ័យ	거부가 성공적으로 저장되었습니다	ບັນທຶກການບໍ່ອະນຸມັດສຳເລັດແລ້ວ	အတည်မပြုမှုကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။	Đã lưu từ chối thành công	Penolakan berjaya disimpan	Penolakan berhasil disimpan	Matagumpay na na-save ang pagtanggi
 action_failed	ดำเนินการไม่สำเร็จ	Action failed	操作失败	操作に失敗しました	ប្រតិបត្តិការបរាជ័យ	작업 실패	ດຳເນີນການບໍ່ສຳເລັດ	လုပ်ဆောင်ချက် မအောင်မြင်ပါ။	Thao tác không thành công	Tindakan gagal	Tindakan gagal	Nabigo ang aksyon
 menu_data_pending	รอเชื่อมข้อมูล	Pending Data Connection	等待数据连接	データ接続待ち	រង់ចាំភ្ជាប់ទិន្នន័យ	데이터 연결 대기	ລໍຖ້າເຊື່ອມຕໍ່ຂໍ້ມູນ	ဒေတာချိတ်ဆက်ရန် စောင့်ဆိုင်းနေသည်	Chờ kết nối dữ liệu	Menunggu Sambungan Data	Menunggu Koneksi Data	Naghihintay ng Koneksyon ng Data
+unsaved_changes	มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก	Unsaved changes	未保存的更改	未保存の変更	ការផ្លាស់ប្តូរមិនបានរក្សាទុក	저장되지 않은 변경 사항	ການປ່ຽນແປງທີ່ບໍ່ໄດ້ບັນທຶກ	မသိမ်းဆည်းရသေးသော အပြောင်းအလဲများ	Thay đổi chưa lưu	Perubahan belum disimpan	Perubahan belum disimpan	Mga hindi na-save na pagbabago
+discard_and_switch	ละทิ้งและเปลี่ยนรายการ	Discard and switch	放弃并切换	破棄して切り替え	បោះបង់ហើយប្តូរ	버리고 전환	ຍົກເລີກແລະປ່ຽນ	စွန့်ပစ်ပြီးပြောင်းပါ	Hủy và chuyển	Buang dan tukar	Buang dan beralih	I-discard at lumipat
+create_new	สร้างใหม่	Create new	新建	新規作成	បង្កើតថ្មី	새로 만들기	ສ້າງໃໝ່	အသစ်ဖန်တီးပါ	Tạo mới	Cipta baharu	Buat baru	Gumawa ng bago
+discard_changes_question	ยกเลิกการแก้ไข?	Discard changes?	放弃更改？	変更を破棄しますか？	បោះបង់ការផ្លាស់ប្តូរ?	변경 사항을 버리시겠습니까?	ຍົກເລີກການປ່ຽນແປງ?	အပြောင်းအလဲများကို စွန့်ပစ်မလား?	Hủy thay đổi?	Buang perubahan?	Buang perubahan?	I-discard ang mga pagbabago?
+confirm_discard	ยืนยันยกเลิก	Confirm discard	确认放弃	破棄を確認	បញ្ជាក់ការបោះបង់	버리기 확인	ຢືນຢັນການຍົກເລີກ	စွန့်ပစ်ရန် အတည်ပြုပါ	Xác nhận hủy	Sahkan buang	Konfirmasi buang	Kumpirmahin ang pag-discard
+delete_document	ลบเอกสาร	Delete document	删除文档	文書を削除	លុបឯកសារ	문서 삭제	ລຶບເອກະສານ	စာရွက်စာတမ်းကိုဖျက်ပါ	Xóa tài liệu	Padam dokumen	Hapus dokumen	Tanggalin ang dokumento
+create_new_document	สร้างเอกสารใหม่	Create new document	新建文档	新規文書作成	បង្កើតឯកសារថ្មី	새 문서 만들기	ສ້າງເອກະສານໃໝ່	စာရွက်စာတမ်းအသစ်ဖန်တီးပါ	Tạo tài liệu mới	Cipta dokumen baharu	Buat dokumen baru	Gumawa ng bagong dokumento
+document_list	รายการเอกสาร	Document list	文档列表	文書一覧	បញ្ជីឯកសារ	문서 목록	ລາຍການເອກະສານ	စာရွက်စာတမ်းစာရင်း	Danh sách tài liệu	Senarai dokumen	Daftar dokumen	Listahan ng dokumento
+all_records	รายการทั้งหมด	All records	全部记录	全レコード	កំណត់ត្រាទាំងអស់	전체 기록	ບັນທຶກທັງໝົດ	မှတ်တမ်းအားလုံး	Tất cả bản ghi	Semua rekod	Semua catatan	Lahat ng talaan
+search_document_placeholder	ค้นหาเลขที่, คู่ค้า, รายละเอียด...	Search doc no, party, description...	搜索单据号、往来方、描述...	伝票番号、取引先、説明を検索...	ស្វែងរកលេខឯកសារ ដៃគូ ការពិពណ៌នា...	문서번호, 거래처, 설명 검색...	ຄົ້ນຫາເລກເອກະສານ, ຄູ່ຄ້າ, ລາຍລະອຽດ...	စာရွက်စာတမ်းနံပါတ်၊ မိတ်ဖက်၊ ဖော်ပြချက် ရှာဖွေပါ...	Tìm số chứng từ, đối tác, mô tả...	Cari no dokumen, pihak, keterangan...	Cari no dokumen, pihak, deskripsi...	Maghanap ng doc no, party, paglalarawan...
+doc_no_column	เลขที่	Doc no	单据号	伝票番号	លេខឯកសារ	문서번호	ເລກເອກະສານ	စာရွက်စာတမ်းနံပါတ်	Số chứng từ	No dokumen	No dokumen	Blg. ng Dokumento
+no_documents_found	ไม่พบรายการเอกสาร	No documents found	未找到文档	文書が見つかりません	រកមិនឃើញឯកសារ	문서를 찾을 수 없음	ບໍ່ພົບເອກະສານ	စာရွက်စာတမ်းများ မတွေ့ပါ	Không tìm thấy chứng từ	Tiada dokumen dijumpai	Tidak ada dokumen ditemukan	Walang nakitang dokumento
+document_detail_and_form	รายละเอียดและฟอร์มเอกสาร	Document detail and form	单据详情和表单	伝票詳細とフォーム	ព័ត៌មានលម្អិត និងទម្រង់ឯកសារ	문서 상세 및 양식	ລາຍລະອຽດເອກະສານ ແລະ ແບບຟອມ	စာရွက်စာတမ်းအသေးစိတ်နှင့် ပုံစံ	Chi tiết và biểu mẫu chứng từ	Butiran dan borang dokumen	Detail dan formulir dokumen	Detalye at form ng dokumento
+editing_now	กำลังแก้ไข	Editing	正在编辑	編集中	កំពុងកែសម្រួល	편집 중	ກຳລັງແກ້ໄຂ	တည်းဖြတ်နေသည်	Đang chỉnh sửa	Sedang mengedit	Sedang mengedit	Kasalukuyang ini-edit
+save_document	บันทึกเอกสาร	Save document	保存文档	文書を保存	រក្សាទុកឯកសារ	문서 저장	ບັນທຶກເອກະສານ	စာရွက်စာတမ်းကို သိမ်းဆည်းပါ	Lưu chứng từ	Simpan dokumen	Simpan dokumen	I-save ang dokumento
+party_name_placeholder	ระบุชื่อคู่ค้า / ผู้ติดต่อ	Enter party or contact name	输入往来方或联系人名称	取引先または連絡先名を入力	បញ្ចូលឈ្មោះដៃគូ ឬអ្នកទំនាក់ទំនង	거래처 또는 연락처 이름 입력	ປ້ອນຊື່ຄູ່ຄ້າ ຫຼື ຜູ້ຕິດຕໍ່	မိတ်ဖက် သို့မဟုတ် အဆက်အသွယ်အမည် ထည့်ပါ	Nhập tên đối tác hoặc người liên hệ	Masukkan nama pihak atau kenalan	Masukkan nama pihak atau kontak	Ilagay ang pangalan ng party o contact
+description_or_remarks	คำอธิบาย / หมายเหตุ	Description / remarks	描述/备注	説明/備考	ការពិពណ៌នា/កំណត់ចំណាំ	설명/비고	ຄຳອະທິບາຍ/ໝາຍເຫດ	ဖော်ပြချက်/မှတ်ချက်	Mô tả/Ghi chú	Penerangan/Catatan	Deskripsi/Catatan	Paglalarawan/Puna
+extra_notes_placeholder	บันทึกข้อความเพิ่มเติม	Additional notes	附加备注	追加メモ	កំណត់ចំណាំបន្ថែម	추가 메모	ບັນທຶກເພີ່ມເຕີມ	ထပ်ဆောင်းမှတ်ချက်	Ghi chú bổ sung	Nota tambahan	Catatan tambahan	Karagdagang tala
+line_items_title	รายการสินค้า / บริการ	Goods / services lines	商品/服务行	商品/サービス行	បន្ទាត់ទំនិញ/សេវាកម្ម	상품/서비스 행	ແຖວສິນຄ້າ/ບໍລິການ	ကုန်စည်/ဝန်ဆောင်မှုလိုင်းများ	Dòng hàng hóa/dịch vụ	Baris barangan/perkhidmatan	Baris barang/jasa	Mga linya ng produkto/serbisyo
+add_item	เพิ่มรายการ	Add item	添加项目	項目追加	បន្ថែមធាតុ	항목 추가	ເພີ່ມລາຍການ	ပစ္စည်းထည့်ရန်	Thêm mục	Tambah item	Tambah item	Magdagdag ng item
+item_code_or_barcode	รหัสสินค้า / บาร์โค้ด	Item code / barcode	商品代码/条码	商品コード/バーコード	កូដទំនិញ/បាកូដ	품목 코드/바코드	ລະຫັດສິນຄ້າ/ບາໂຄດ	ကုန်ပစ္စည်းကုဒ်/ဘားကုဒ်	Mã hàng/mã vạch	Kod item/kod bar	Kode barang/barcode	Code ng item/barcode
+line_amount	จำนวนเงิน	Amount	金额	金額	ចំនួនទឹកប្រាក់	금액	ຈຳນວນເງິນ	ပမာဏ	Số tiền	Amaun	Jumlah	Halaga
+goods_subtotal	รวมมูลค่าสินค้า	Goods subtotal	商品小计	商品小計	សរុបរងទំនិញ	상품 소계	ຍອດລວມຍ່ອຍສິນຄ້າ	ကုန်စည်စုစုပေါင်းခွဲ	Tổng phụ hàng hóa	Subjumlah barangan	Subtotal barang	Subtotal ng produkto
+vat_7_percent	ภาษีมูลค่าเพิ่ม (7%)	VAT (7%)	增值税 (7%)	付加価値税 (7%)	អាករលើតម្លៃបន្ថែម (7%)	부가가치세 (7%)	ພາສີມູນຄ່າເພີ່ມ (7%)	တန်ဖိုးမြှင့်အခွန် (7%)	Thuế GTGT (7%)	VAT (7%)	PPN (7%)	VAT (7%)
+net_total	รวมทั้งสิ้น	Net total	净合计	純合計	សរុបសុទ្ធ	순 합계	ຍອດສຸດທິ	အသားတင် စုစုပေါင်း	Tổng ròng	Jumlah bersih	Total bersih	Kabuuang neto
+approved_status	อนุมัติเรียบร้อย	Approved	已批准	承認済み	បានអនុម័ត	승인됨	ອະນຸມັດແລ້ວ	အတည်ပြုပြီး	Đã duyệt	Diluluskan	Disetujui	Aprubado
+document_items_and_details	รายการสินค้า / รายละเอียดเอกสาร	Items and document details	项目及单据详情	明細と書類詳細	ធាតុ និង ព័ត៌មានលម្អិតឯកសារ	항목 및 문서 상세	ລາຍການ ແລະ ລາຍລະອຽດເອກະສານ	ပစ္စည်းများနှင့် စာရွက်စာတမ်းအသေးစိတ်	Mục và chi tiết chứng từ	Item dan butiran dokumen	Item dan rincian dokumen	Mga item at detalye ng dokumento
+select_document_hint	เลือกรายการเอกสารจากตารางด้านซ้ายเพื่อดูรายละเอียด	Select a document on the left to see its details	选择左侧单据查看详情	左の書類を選択して詳細を表示	ជ្រើសរើសឯកសារនៅខាងឆ្វេងដើម្បីមើលលម្អិត	왼쪽에서 문서를 선택하여 상세 보기	ເລືອກເອກະສານທາງຊ້າຍເພື່ອເບິ່ງລາຍລະອຽດ	အသေးစိတ်ကြည့်ရန် ဘယ်ဘက်ရှိ စာရွက်စာတမ်းကို ရွေးပါ	Chọn chứng từ bên trái để xem chi tiết	Pilih dokumen di kiri untuk lihat butiran	Pilih dokumen di kiri untuk melihat rincian	Pumili ng dokumento sa kaliwa upang makita ang detalye
+create_document_hint	หรือคลิก "สร้างเอกสารใหม่" เพื่อเริ่มบันทึก	Or click "Create new document" to start	或点击“新建单据”开始	または「新しい書類を作成」をクリックして開始	ឬចុច "បង្កើតឯកសារថ្មី" ដើម្បីចាប់ផ្តើម	또는 "새 문서 만들기"를 클릭하여 시작	ຫຼືກົດ "ສ້າງເອກະສານໃໝ່" ເພື່ອເລີ່ມຕົ້ນ	သို့မဟုတ် စတင်ရန် "စာရွက်စာတမ်းအသစ်ဖန်တီးရန်" ကိုနှိပ်ပါ	Hoặc nhấp "Tạo chứng từ mới" để bắt đầu	Atau klik "Cipta dokumen baharu" untuk mula	Atau klik "Buat dokumen baru" untuk mulai	O i-click ang "Gumawa ng bagong dokumento" upang magsimula
+unsaved_switch_warning	ท่านมีการแก้ไขข้อมูลค้างอยู่ การเปลี่ยนรายการจะละทิ้งการเปลี่ยนแปลง ต้องการดำเนินการต่อหรือไม่?	You have unsaved changes. Switching will discard them. Continue?	有未保存的更改，切换将放弃这些更改。继续吗？	未保存の変更があります。切り替えると破棄されます。続行しますか？	មានការផ្លាស់ប្ដូរមិនបានរក្សាទុក។ ការប្ដូរនឹងបោះបង់វា។ បន្តឬ?	저장되지 않은 변경 사항이 있습니다. 전환하면 변경 사항이 삭제됩니다. 계속할까요?	ມີການປ່ຽນແປງທີ່ບໍ່ໄດ້ບັນທຶກ. ການປ່ຽນຈະຖິ້ມພວກມັນ. ສືບຕໍ່ບໍ?	မသိမ်းဆည်းရသေးသော ပြောင်းလဲမှုများ ရှိသည်။ ပြောင်းလဲပါက ၎င်းတို့ ပျက်သွားမည်။ ဆက်လုပ်မလား။	Bạn có thay đổi chưa lưu. Chuyển sẽ hủy các thay đổi. Tiếp tục?	Anda mempunyai perubahan belum disimpan. Menukar akan membuang perubahan. Teruskan?	Ada perubahan belum disimpan. Beralih akan membuang perubahan. Lanjutkan?	Mayroon kang hindi na-save na mga pagbabago. Ang pagpapalit ay magtatanggal ng mga ito. Magpatuloy?
+discard_and_create_new_question	ละทิ้งการเปลี่ยนแปลงปัจจุบัน และสร้างเอกสารใหม่?	Discard current changes and create a new document?	放弃当前更改并创建新文档？	現在の変更を破棄して新規文書を作成しますか？	បោះបង់ការផ្លាស់ប្ដូរបច្ចុប្បន្ន និងបង្កើតឯកសារថ្មី?	현재 변경 사항을 삭제하고 새 문서를 만들까요?	ຖິ້ມການປ່ຽນແປງປັດຈຸບັນ ແລະສ້າງເອກະສານໃໝ່?	လက်ရှိပြောင်းလဲမှုများကို ပယ်ဖျက်ပြီး စာရွက်စာတမ်းအသစ် ဖန်တီးမလား။	Hủy các thay đổi hiện tại và tạo tài liệu mới?	Buang perubahan semasa dan cipta dokumen baharu?	Buang perubahan saat ini dan buat dokumen baru?	Itapon ang kasalukuyang mga pagbabago at gumawa ng bagong dokumento?
+discard_edits_confirm	ข้อมูลที่ท่านแก้ไขจะถูกละทิ้ง ยืนยันการยกเลิก?	All unsaved changes will be lost. Discard them?	所有未保存的更改将丢失。放弃吗？	未保存の変更はすべて失われます。破棄しますか？	រាល់ការផ្លាស់ប្ដូរមិនបានរក្សាទុកនឹងបាត់បង់។ បោះបង់ឬ?	저장되지 않은 변경 사항이 모두 손실됩니다. 삭제할까요?	ການປ່ຽນແປງທີ່ບໍ່ໄດ້ບັນທຶກທັງໝົດຈະຫາຍໄປ. ຖິ້ມພວກມັນບໍ?	မသိမ်းဆည်းရသေးသော ပြောင်းလဲမှုအားလုံး ပျက်သွားမည်။ ပယ်ဖျက်မလား။	Tất cả thay đổi chưa lưu sẽ bị mất. Hủy chúng?	Semua perubahan belum disimpan akan hilang. Buangkannya?	Semua perubahan belum disimpan akan hilang. Buang?	Lahat ng hindi na-save na pagbabago ay mawawala. Itapon ang mga ito?
+delete_cannot_undo_confirm	การลบรายการนี้จะไม่สามารถกู้คืนได้ ยืนยันที่จะลบข้อมูลหรือไม่?	This action cannot be undone. Delete anyway?	此操作无法撤销。仍要删除吗？	この操作は元に戻せません。それでも削除しますか？	សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។ លុបយ៉ាងណាក៏ដោយ?	이 작업은 되돌릴 수 없습니다. 그래도 삭제할까요?	ການກະທຳນີ້ບໍ່ສາມາດຍ້ອນກັບໄດ້. ຍັງຈະລຶບຢູ່ບໍ?	ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်မရနိုင်ပါ။ ဒါပေမဲ့ ဖျက်မလား။	Hành động này không thể hoàn tác. Vẫn xóa?	Tindakan ini tidak boleh dibuat asal. Padam juga?	Tindakan ini tidak dapat dibatalkan. Tetap hapus?	Ang pagkilos na ito ay hindi na mababawi. Ide-delete pa rin ba?
+resize_panes_hint	ปรับความกว้างรายการและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อคืนค่า)	Resize list and detail panes (drag to resize, double-click to reset)	调整列表和详情窗格大小（拖动调整，双击重置）	一覧と詳細ペインのサイズを調整（ドラッグで調整、ダブルクリックでリセット）	កែទំហំបញ្ជី និងផ្ទាំងព័ត៌មានលម្អិត (អូសដើម្បីកែ ចុចពីរដងដើម្បីកំណត់ឡើងវិញ)	목록 및 상세 창 크기 조정 (드래그하여 조정, 두 번 클릭하여 초기화)	ປັບຂະໜາດແຖວລາຍການ ແລະລາຍລະອຽດ (ລາກເພື່ອປັບ, ຄລິກສອງເທື່ອເພື່ອຣີເຊັດ)	စာရင်းနှင့် အသေးစိတ်အကန့်များ အရွယ်အစားပြောင်းပါ (ဆွဲ၍ ပြောင်း၊ နှစ်ချက်နှိပ်၍ ပြန်သတ်မှတ်ပါ)	Thay đổi kích thước ngăn danh sách và chi tiết (kéo để đổi, nhấp đúp để đặt lại)	Ubah saiz anak tetingkap senarai dan butiran (seret untuk ubah, klik dua kali untuk set semula)	Ubah ukuran panel daftar dan detail (seret untuk ubah, klik dua kali untuk atur ulang)	Baguhin ang laki ng list at detail pane (i-drag para baguhin, i-double click para i-reset)
+delete_document_confirm_title	ยืนยันการลบเอกสาร {0}?	Delete document {0}?	删除文档 {0}？	文書 {0} を削除しますか？	លុបឯកសារ {0}?	문서 {0}을(를) 삭제할까요?	ລຶບເອກະສານ {0}?	စာရွက်စာတမ်း {0} ကို ဖျက်မလား?	Xóa tài liệu {0}?	Padam dokumen {0}?	Hapus dokumen {0}?	I-delete ang dokumento {0}?
+cp_warehouse_dept	คลัง / แผนก	Warehouse / Dept	仓库 / 部门	倉庫 / 部署	ឃ្លាំង / ផ្នែក	창고 / 부서	ຄັງ / ພະແນກ	ဂိုဒေါင် / ဌာန	Kho / Phòng ban	Gudang / Jabatan	Gudang / Departemen	Bodega / Departamento
+cp_destination_warehouse	คลังปลายทาง	Destination warehouse	目的仓库	宛先倉庫	ឃ្លាំងគោលដៅ	목적지 창고	ຄັງປາຍທາງ	ဦးတည်ရာဂိုဒေါင်	Kho đích	Gudang destinasi	Gudang tujuan	Bodega ng patutunguhan
+cp_requesting_dept	แผนกผู้ขอเบิก	Requesting department	申请部门	申請部門	ផ្នែកស្នើសុំ	신청 부서	ພະແນກຮ້ອງຂໍ	တောင်းဆိုသောဌာန	Phòng yêu cầu	Jabatan pemohon	Departemen peminta	Departamento ng humihiling
+cp_receiving_warehouse	คลังรับคืน	Receiving warehouse	收货仓库	受入倉庫	ឃ្លាំងទទួល	입고 창고	ຄັງຮັບ	လက်ခံဂိုဒေါင်	Kho nhận	Gudang penerimaan	Gudang penerimaan	Bodega ng pagtanggap
+cp_count_warehouse	คลังที่ตรวจนับ	Count warehouse	盘点仓库	棚卸倉庫	ឃ្លាំងរាប់	실사 창고	ຄັງນັບ	ရေတွက်ဂိုဒေါင်	Kho kiểm kê	Gudang pengiraan	Gudang penghitungan	Bodega ng pagbilang
+cp_proposed_vendor	เจ้าหนี้ที่เสนอราคา	Quoting vendor	报价供应商	見積仕入先	អ្នកផ្គត់ផ្គង់សម្រង់	견적 공급업체	ຜູ້ສະໜອງສະເໜີລາຄາ	ဈေးနှုန်းတင်သွင်းသူ	Nhà cung cấp báo giá	Vendor sebut harga	Vendor penawaran	Vendor na nag-quote
+cp_vendor	เจ้าหนี้	Vendor	供应商	仕入先	អ្នកផ្គត់ផ្គង់	공급업체	ຜູ້ສະໜອງ	ရောင်းချသူ	Nhà cung cấp	Vendor	Vendor	Vendor
+cp_debtor	ลูกหนี้	Debtor	债务人	債務者	កូនបំណុល	채무자	ລູກໜີ້	မြီစား	Bên nợ	Penghutang	Debitur	May utang
+cp_payee_vendor	ผู้รับเงิน / เจ้าหนี้	Payee / vendor	收款人 / 供应商	受取人 / 仕入先	អ្នកទទួលប្រាក់ / អ្នកលក់	수취인 / 공급업체	ຜູ້ຮັບເງິນ / ຜູ້ຂາຍ	ငွေလက်ခံသူ / ရောင်းချသူ	Người nhận tiền / Nhà cung cấp	Penerima / Pembekal	Penerima / Pemasok	Tagatanggap / Bendor
+cp_destination_account	บัญชีปลายทาง	Destination account	对方账户	振込先口座	គណនីគោលដៅ	입금 계좌	ບັນຊີປາຍທາງ	ဦးတည်ရာအကောင့်	Tài khoản đích	Akaun destinasi	Rekening tujuan	Account ng patutunguhan
+cp_drawer_debtor	ลูกหนี้ / ผู้ออกเช็ค	Debtor / drawer	债务人 / 出票人	債務者 / 振出人	កូនបំណុល / អ្នកចេញសែក	채무자 / 발행인	ລູກໜີ້ / ຜູ້ອອກແຊັກ	မြီစား / ချက်လက်မှတ်ထုတ်သူ	Bên nợ / Người ký phát	Penghutang / Pengeluar cek	Debitur / Penarik	May utang / Tagapag-isyu ng tseke
+cp_payee	เจ้าหนี้ / ผู้รับเงิน	Vendor / payee	供应商 / 收款人	仕入先 / 受取人	អ្នកលក់ / អ្នកទទួលប្រាក់	공급업체 / 수취인	ຜູ້ຂາຍ / ຜູ້ຮັບເງິນ	ရောင်းချသူ / ငွေလက်ခံသူ	Nhà cung cấp / Người nhận tiền	Pembekal / Penerima	Pemasok / Penerima	Bendor / Tagatanggap
+cp_director	กรรมการผู้ทดรอง	Director holding the advance	预支董事	前渡し取締役	នាយកទទួលបុរេប្រទាន	선급금 보유 이사	ກຳມະການຜູ້ຖືເງິນລ່ວງໜ້າ	ဒါရိုက်တာ ကြိုတင်ငွေကိုင်	Giám đốc giữ tạm ứng	Pengarah pemegang pendahuluan	Direktur pemegang uang muka	Direktor na may hawak ng advance
+cp_employee	พนักงานผู้ทดรอง	Employee holding the advance	预支员工	前渡し従業員	បុគ្គលិកទទួលបុរេប្រទាន	선급금 보유 직원	ພະນັກງານຜູ້ຖືເງິນລ່ວງໜ້າ	ဝန်ထမ်း ကြိုတင်ငွေကိုင်	Nhân viên giữ tạm ứng	Pekerja pemegang pendahuluan	Karyawan pemegang uang muka	Empleyado na may hawak ng advance
+cp_pos_cashier	จุดขาย / แคชเชียร์	POS / cashier	POS / 收银员	POS / レジ	POS / អ្នកគិតលុយ	POS / 계산원	POS / ຜູ້ເກັບເງິນ	POS / ငွေကိုင်	POS / thu ngân	POS / juruwang	POS / kasir	POS / kahero
+cp_goods_receipt_vendor	ใบรับสินค้า / เจ้าหนี้	Goods receipt / vendor	收货 / 供应商	入庫 / 仕入先	ទទួលទំនិញ / អ្នកផ្គត់ផ្គង់	입고 / 공급업체	ຮັບສິນຄ້າ / ຜູ້ສະໜອງ	ကုန်လက်ခံ / ပေးသွင်းသူ	Nhận hàng / nhà cung cấp	Penerimaan barang / pembekal	Penerimaan barang / pemasok	Pagtanggap ng kalakal / vendor
+cp_warehouse_product_group	คลัง / กลุ่มสินค้า	Warehouse / product group	仓库 / 产品组	倉庫 / 商品グループ	ឃ្លាំង / ក្រុមផលិតផល	창고 / 제품 그룹	ຄັງສິນຄ້າ / ກຸ່ມສິນຄ້າ	ဂိုဒေါင် / ထုတ်ကုန်အုပ်စု	Kho / nhóm sản phẩm	Gudang / kumpulan produk	Gudang / kelompok produk	Bodega / pangkat ng produkto
+cp_vendor_carrier	เจ้าหนี้ / ผู้ส่งมอบ	Vendor / carrier	供应商 / 承运商	仕入先 / 運送業者	អ្នកផ្គត់ផ្គង់ / អ្នកដឹកជញ្ជូន	공급업체 / 운송업체	ຜູ້ສະໜອງ / ຜູ້ຂົນສົ່ງ	ပေးသွင်းသူ / သယ်ယူသူ	Nhà cung cấp / đơn vị vận chuyển	Pembekal / pengangkut	Pemasok / pengangkut	Vendor / tagapagdala
+cp_warehouse_location	คลัง / ที่เก็บ	Warehouse / location	仓库 / 库位	倉庫 / 保管場所	ឃ្លាំង / ទីតាំង	창고 / 위치	ຄັງສິນຄ້າ / ສະຖານທີ່	ဂိုဒေါင် / တည်နေရာ	Kho / vị trí	Gudang / lokasi	Gudang / lokasi	Bodega / lokasyon
+cp_petty_cash_custodian	ผู้ถือเงินสดย่อย	Petty cash custodian	备用金保管人	小口現金管理者	អ្នកគ្រប់គ្រងសាច់ប្រាក់រាយ	소액현금 관리자	ຜູ້ເບິ່ງແຍງເງິນສົດຍ່ອຍ	အသေးသုံးငွေ ထိန်းသိမ်းသူ	Người giữ quỹ tạp chi	Penjaga tunai kecil	Pemegang kas kecil	Tagapag-ingat ng maliit na pondo
+cp_card_merchant	บัตร / ร้านค้า	Card / merchant	卡 / 商户	カード / 加盟店	កាត / អាជីវករ	카드 / 가맹점	ບັດ / ຮ້ານຄ້າ	ကတ် / ကုန်သည်	Thẻ / người bán	Kad / peniaga	Kartu / pedagang	Kard / mangangalakal
+cp_payer	ผู้ชำระเงิน	Payer	付款人	支払人	អ្នកបង់ប្រាក់	지급인	ຜູ້ຈ່າຍເງິນ	ငွေပေးသူ	Người trả tiền	Pembayar	Pembayar	Tagabayad
+cp_petty_cash_fund	กองเงินสดย่อย	Petty cash fund	零用金	小口現金	មូលនិធិសាច់ប្រាក់តូច	소액현금	ກອງທຶນເງິນສົດຍ່ອຍ	အသေးစားငွေသားရန်ပုံငွေ	Quỹ tiền mặt lẻ	Dana tunai runcit	Dana kas kecil	Pondo ng maliit na salapi
+cp_partner_bank	ธนาคารคู่ค้า	Partner bank	对方银行	相手銀行	ធនាគារដៃគូ	상대방 은행	ທະນາຄານຄູ່ຄ້າ	လုပ်ဖော်ကိုင်ဖက်ဘဏ်	Ngân hàng đối tác	Bank rakan kongsi	Bank mitra	Bangko ng kasosyo
+cp_transferor	ผู้โอนเงิน	Transferor	汇款人	送金人	អ្នកផ្ទេរប្រាក់	송금인	ຜູ້ໂອນເງິນ	လွှဲပေးသူ	Người chuyển tiền	Pemindah	Pengirim	Tagapaglipat
+cp_transferee	ผู้รับเงิน	Transferee	收款人	受取人	អ្នកទទួលប្រាក់	수취인	ຜູ້ຮັບເງິນ	လွှဲလက်ခံသူ	Người nhận tiền	Penerima pindahan	Penerima	Tagatanggap
+cp_bank_account_no	ธนาคาร / เลขที่บัญชี	Bank / account no	银行 / 账号	銀行 / 口座番号	ធនាគារ / លេខគណនី	은행 / 계좌번호	ທະນາຄານ / ເລກບັນຊີ	ဘဏ် / အကောင့်နံပါတ်	Ngân hàng / Số tài khoản	Bank / No. akaun	Bank / No. rekening	Bangko / Blg. ng account
+cp_bank_account	บัญชีธนาคาร	Bank account	银行账户	銀行口座	គណនីធនាគារ	은행 계좌	ບັນຊີທະນາຄານ	ဘဏ်အကောင့်	Tài khoản ngân hàng	Akaun bank	Rekening bank	Account sa bangko
+cp_bank_slash_account	ธนาคาร / บัญชี	Bank / account	银行 / 账户	銀行 / 口座	ធនាគារ / គណនី	은행 / 계좌	ທະນາຄານ / ບັນຊີ	ဘဏ် / အကောင့်	Ngân hàng / Tài khoản	Bank / Akaun	Bank / Rekening	Bangko / Account
+cp_target_bank_account	บัญชีธนาคารปลายทาง	Target bank account	目标银行账户	送金先銀行口座	គណនីធនាគារគោលដៅ	대상 은행 계좌	ບັນຊີທະນາຄານເປົ້າໝາຍ	ပစ်မှတ်ဘဏ်အကောင့်	Tài khoản ngân hàng đích	Akaun bank sasaran	Rekening bank tujuan	Target na bank account
+cp_source_bank_account	บัญชีธนาคารถอน	Source bank account	来源银行账户	送金元銀行口座	គណនីធនាគារប្រភព	출금 은행 계좌	ບັນຊີທະນາຄານຕົ້ນທາງ	အရင်းအမြစ်ဘဏ်အကောင့်	Tài khoản ngân hàng nguồn	Akaun bank sumber	Rekening bank sumber	Source na bank account
+cp_deposit_bank	ธนาคารที่นำฝาก	Deposit bank	存款银行	預入銀行	ធនាគារដាក់ប្រាក់	입금 은행	ທະນາຄານຝາກເງິນ	အပ်နှံဘဏ်	Ngân hàng nhận tiền gửi	Bank deposit	Bank setoran	Bangko ng deposito
+cp_debtor_bank	ลูกหนี้ / ธนาคาร	Debtor / bank	债务人 / 银行	債務者 / 銀行	កូនបំណុល / ធនាគារ	채무자 / 은행	ລູກໜີ້ / ທະນາຄານ	မြီစား / ဘဏ်	Con nợ / Ngân hàng	Penghutang / Bank	Debitur / Bank	May utang / Bangko
+cp_drawer	ผู้ออกเช็ค	Cheque drawer	出票人	振出人	អ្នកចេញសែក	수표 발행인	ຜູ້ອອກເຊັກ	ချက်လက်မှတ်ထုတ်သူ	Người phát hành séc	Pengeluar cek	Penarik cek	Tagapag-isyu ng tseke
+cp_financial_institution	สถาบันการเงิน / ธนาคาร	Financial institution / bank	金融机构 / 银行	金融機関 / 銀行	ស្ថាប័នហិរញ្ញវត្ថុ / ធនាគារ	금융기관 / 은행	ສະຖາບັນການເງິນ / ທະນາຄານ	ငွေရေးကြေးရေးအဖွဲ့အစည်း / ဘဏ်	Tổ chức tài chính / Ngân hàng	Institusi kewangan / Bank	Lembaga keuangan / Bank	Institusyong pampinansyal / Bangko
+cp_drawn_bank	ธนาคารตัดบัญชี	Drawn-on bank	付款银行	支払銀行	ធនាគារទូទាត់	지급은행	ທະນາຄານຈ່າຍ	ငွေပေးဘဏ်	Ngân hàng thanh toán	Bank pembayar	Bank pembayar	Bangko ng pagbabayad
+cp_edc_terminal_card	เครื่อง EDC / บัตร	EDC terminal / card	EDC终端 / 卡	EDC端末 / カード	ស្ថានីយ EDC / កាត	EDC 단말기 / 카드	ເຄື່ອງ EDC / ບັດ	EDC စက် / ကတ်	Máy EDC / thẻ	Terminal EDC / kad	Terminal EDC / kartu	Terminal ng EDC / card
+cp_acquirer_bank	ธนาคารรับชำระ	Acquirer bank	收单银行	アクワイアラ銀行	ធនាគារទទួលទូទាត់	매입은행	ທະນາຄານຮັບຊຳລະ	လက်ခံဘဏ်	Ngân hàng chấp nhận thẻ	Bank pemeroleh	Bank pengakuisisi	Bangko ng pagtanggap
+cp_customer_card	ลูกค้า / บัตร	Customer / card	客户 / 卡	顧客 / カード	អតិថិជន / កាត	고객 / 카드	ລູກຄ້າ / ບັດ	ဖောက်သည် / ကတ်	Khách hàng / thẻ	Pelanggan / kad	Pelanggan / kartu	Customer / card
+cp_branch_officer	สาขาธนาคาร / เจ้าหน้าที่	Bank branch / officer	银行分行 / 专员	銀行支店 / 担当者	សាខាធនាគារ / មន្ត្រី	은행 지점 / 담당자	ສາຂາທະນາຄານ / ເຈົ້າໜ້າທີ່	ဘဏ်ခွဲ / အရာရှိ	Chi nhánh ngân hàng / nhân viên	Cawangan bank / pegawai	Cabang bank / petugas	Sangay ng bangko / opisyal
+cp_vendor_tax_issuer	เจ้าหนี้ / ผู้ออกใบกำกับ	Vendor / tax invoice issuer	供应商 / 发票开具人	仕入先 / インボイス発行者	អ្នកផ្គត់ផ្គង់ / អ្នកចេញវិក្កយបត្រពន្ធ	공급업체 / 세금계산서 발행자	ຜູ້ຂາຍ / ຜູ້ອອກໃບກຳກັບພາສີ	ရောင်းချသူ / အခွန်ပြေစာထုတ်ပေးသူ	Nhà cung cấp / người xuất hóa đơn thuế	Pembekal / pengeluar invois cukai	Pemasok / penerbit faktur pajak	Vendor / tagapag-isyu ng invoice ng buwis
+cp_withholding_payee	ผู้ถูกหักภาษี	Withholding payee	被扣税方	源泉徴収対象者	អ្នកត្រូវបានកាត់ពន្ធ	원천징수 대상자	ຜູ້ຖືກຫັກພາສີ	ခွန်နုတ်ခံရသူ	Người bị khấu trừ thuế	Penerima potongan cukai	Penerima pemotongan pajak	Tagatanggap ng pinigilang buwis
+system_standard	ระบบมาตรฐานการบัญชี ERP	ERP Accounting Standard System	ERP会计标准系统	ERP会計標準システム	ប្រព័ន្ធស្តង់ដារគណនេយ្យ ERP	ERP 회계 표준 시스템	ລະບົບມາດຕະຖານບັນຊີ ERP	ERP စာရင်းကိုင်စံစနစ်	Hệ thống chuẩn kế toán ERP	Sistem Piawaian Perakaunan ERP	Sistem Standar Akuntansi ERP	Sistema ng Pamantayang Accounting ng ERP

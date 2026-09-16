@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-15 @ commit 7b099bd5 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit 4c430ece - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 47
 
@@ -1903,6 +1903,16 @@ Files indexed: 47
 | 1149 | function | `DeleteDocumentImageGroups` |
 | 1187 | function | `UpdateXSort` |
 
+## frontend/src/lib/erp-transaction.ts (1167 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 1087 | function | `isErpTransactionRoute` |
+| 1092 | function | `getErpModuleConfig` |
+| 1097 | function | `fetchErpTransactions` |
+| 1125 | function | `saveErpTransaction` |
+| 1152 | function | `deleteErpTransaction` |
+
 ## backend/pkg/microservice/auth.go (1152 lines)
 
 | Line | Kind | Name |
@@ -2029,16 +2039,6 @@ Files indexed: 47
 | 971 | function | `messageQueueReCountDocumentImageGroup` |
 | 1028 | function | `newXOrderDocumentImageGroup` |
 | 1045 | function | `UpdateDocNoInReferences` |
-
-## frontend/src/lib/erp-transaction.ts (1075 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 995 | function | `isErpTransactionRoute` |
-| 1000 | function | `getErpModuleConfig` |
-| 1005 | function | `fetchErpTransactions` |
-| 1033 | function | `saveErpTransaction` |
-| 1060 | function | `deleteErpTransaction` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1035 lines)
 

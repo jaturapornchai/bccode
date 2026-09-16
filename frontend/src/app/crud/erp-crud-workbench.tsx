@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { type LanguageCode } from "@/lib/i18n";
+import { flattenMenuItems, menuText } from "@/lib/menu-data";
 import { useBackendLanguage, backendText } from "@/lib/backend-language";
 import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
 import {
@@ -28,6 +29,9 @@ import {
   saveErpTransaction,
   deleteErpTransaction,
 } from "@/lib/erp-transaction";
+
+// The screen title is the menu label the user clicked, so it follows every language the menu does.
+const MENU_LABEL_BY_ROUTE = new Map(flattenMenuItems().map((item) => [item.route, item.label]));
 
 interface ErpCrudWorkbenchProps {
   route: string;
@@ -63,8 +67,8 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   const [formDoc, setFormDoc] = useState<Partial<ErpTransactionDoc>>({});
 
   const { confirm, confirmationDialog } = useConfirmDialog({
-    defaultConfirmLabel: language === "en" ? "Confirm" : "ยืนยัน",
-    defaultCancelLabel: language === "en" ? "Cancel" : "ยกเลิก",
+    defaultConfirmLabel: backendText(dictionary, "confirm", "ยืนยัน"),
+    defaultCancelLabel: backendText(dictionary, "cancel", "ยกเลิก"),
   });
 
   // Splitter state persistence (localStorage)
@@ -112,12 +116,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
 
     if (isDirty) {
       const ok = await confirm({
-        title: language === "en" ? "Unsaved Changes" : "มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
-        description:
-          language === "en"
-            ? "You have unsaved changes in this document. Switching will discard them. Continue?"
-            : "ท่านมีการแก้ไขข้อมูลค้างอยู่ การเปลี่ยนรายการจะละทิ้งการเปลี่ยนแปลง ต้องการดำเนินการต่อหรือไม่?",
-        confirmLabel: language === "en" ? "Discard & Switch" : "ละทิ้งและเปลี่ยนรายการ",
+        title: backendText(dictionary, "unsaved_changes", "มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก"),
+        description: backendText(
+          dictionary,
+          "unsaved_switch_warning",
+          "ท่านมีการแก้ไขข้อมูลค้างอยู่ การเปลี่ยนรายการจะละทิ้งการเปลี่ยนแปลง ต้องการดำเนินการต่อหรือไม่?",
+        ),
+        confirmLabel: backendText(dictionary, "discard_and_switch", "ละทิ้งและเปลี่ยนรายการ"),
       });
       if (!ok) return;
     }
@@ -139,12 +144,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   const handleStartCreate = async () => {
     if (isDirty) {
       const ok = await confirm({
-        title: language === "en" ? "Unsaved Changes" : "มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
-        description:
-          language === "en"
-            ? "Discard current changes and create a new document?"
-            : "ละทิ้งการเปลี่ยนแปลงปัจจุบัน และสร้างเอกสารใหม่?",
-        confirmLabel: language === "en" ? "Create New" : "สร้างใหม่",
+        title: backendText(dictionary, "unsaved_changes", "มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก"),
+        description: backendText(
+          dictionary,
+          "discard_and_create_new_question",
+          "ละทิ้งการเปลี่ยนแปลงปัจจุบัน และสร้างเอกสารใหม่?",
+        ),
+        confirmLabel: backendText(dictionary, "create_new", "สร้างใหม่"),
       });
       if (!ok) return;
     }
@@ -186,12 +192,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   const handleCancelEdit = async () => {
     if (isDirty) {
       const ok = await confirm({
-        title: language === "en" ? "Discard Changes?" : "ยกเลิกการแก้ไข?",
-        description:
-          language === "en"
-            ? "All unsaved modifications will be lost."
-            : "ข้อมูลที่ท่านแก้ไขจะถูกละทิ้ง ยืนยันการยกเลิก?",
-        confirmLabel: language === "en" ? "Discard" : "ยืนยันยกเลิก",
+        title: backendText(dictionary, "discard_changes_question", "ยกเลิกการแก้ไข?"),
+        description: backendText(
+          dictionary,
+          "discard_edits_confirm",
+          "ข้อมูลที่ท่านแก้ไขจะถูกละทิ้ง ยืนยันการยกเลิก?",
+        ),
+        confirmLabel: backendText(dictionary, "confirm_discard", "ยืนยันยกเลิก"),
       });
       if (!ok) return;
     }
@@ -203,12 +210,16 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   const handleDeleteDoc = async (doc: ErpTransactionDoc) => {
     if (!config || !doc.id) return;
     const ok = await confirm({
-      title: language === "en" ? `Delete Document ${doc.docno}?` : `ยืนยันการลบเอกสาร ${doc.docno}?`,
-      description:
-        language === "en"
-          ? "This action cannot be undone."
-          : "การลบรายการนี้จะไม่สามารถกู้คืนได้ ยืนยันที่จะลบข้อมูลหรือไม่?",
-      confirmLabel: language === "en" ? "Delete" : "ลบเอกสาร",
+      title: backendText(dictionary, "delete_document_confirm_title", "ยืนยันการลบเอกสาร {0}?").replace(
+        "{0}",
+        doc.docno ?? "",
+      ),
+      description: backendText(
+        dictionary,
+        "delete_cannot_undo_confirm",
+        "การลบรายการนี้จะไม่สามารถกู้คืนได้ ยืนยันที่จะลบข้อมูลหรือไม่?",
+      ),
+      confirmLabel: backendText(dictionary, "delete_document", "ลบเอกสาร"),
     });
     if (!ok) return;
 
@@ -341,9 +352,10 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
     );
   }
 
-  const titleTh = config.title.th;
   const titleEn = config.title.en;
-  const cpLabel = config.counterpartyLabel[language === "en" ? "en" : "th"];
+  const menuLabel = MENU_LABEL_BY_ROUTE.get(route);
+  const title = menuLabel ? menuText(menuLabel, language, dictionary) : config.title[language === "en" ? "en" : "th"];
+  const cpLabel = backendText(dictionary, config.counterpartyKey, config.counterpartyLabel.th);
 
   const containerClass = embedded
     ? "h-full min-h-0 flex flex-col overflow-hidden text-[0.95rem]"
@@ -361,7 +373,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground leading-tight">
-              {language === "en" ? titleEn : titleTh}
+              {title}
             </h1>
             <p className="text-xs text-muted-foreground">
               {titleEn} &bull; {backendText(dictionary, "system_standard", "ระบบมาตรฐานการบัญชี ERP")}
@@ -375,7 +387,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
             className="h-10 bg-primary text-primary-foreground font-semibold px-4 shadow-sm"
           >
             <Plus className="mr-1.5 size-4" />
-            {language === "en" ? "New Document" : "+ สร้างเอกสารใหม่"}
+            {"+ " + backendText(dictionary, "create_new_document", "สร้างเอกสารใหม่")}
           </Button>
         </div>
       </header>
@@ -423,13 +435,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
         <section
           style={{ width: `${splitterWidth}%` }}
           className="min-h-0 flex flex-col overflow-hidden border-b lg:border-b-0 lg:border-r border-border/60 bg-card"
-          aria-label={language === "en" ? "Document List" : "รายการเอกสาร"}
+          aria-label={backendText(dictionary, "document_list", "รายการเอกสาร")}
         >
           {/* .bc-list-toolbar */}
           <div className="bc-list-toolbar shrink-0 p-2.5 border-b border-border/60 bg-muted/20 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-foreground">
-                {language === "en" ? "Records" : "รายการทั้งหมด"}:{" "}
+                {backendText(dictionary, "all_records", "รายการทั้งหมด")}:{" "}
                 <strong className="text-primary">{filteredItems.length}</strong>
               </span>
               <div className="flex items-center gap-1">
@@ -442,7 +454,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  {language === "en" ? "All" : "ทั้งหมด"}
+                  {backendText(dictionary, "all", "ทั้งหมด")}
                 </button>
                 <button
                   type="button"
@@ -453,7 +465,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  {language === "en" ? "Approved" : "อนุมัติ"}
+                  {backendText(dictionary, "approve", "อนุมัติ")}
                 </button>
                 <button
                   type="button"
@@ -464,7 +476,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  {language === "en" ? "Draft" : "ร่าง"}
+                  {backendText(dictionary, "draft", "ฉบับร่าง")}
                 </button>
               </div>
             </div>
@@ -474,7 +486,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={language === "en" ? "Search doc no, party..." : "ค้นหาเลขที่, คู่ค้า, รายละเอียด..."}
+                placeholder={backendText(dictionary, "search_document_placeholder", "ค้นหาเลขที่, คู่ค้า, รายละเอียด...")}
                 className="h-8 pl-8 text-xs bg-background"
               />
             </div>
@@ -486,12 +498,12 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
               {/* .bc-list-header */}
               <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="py-2 px-2.5">{language === "en" ? "Doc No" : "เลขที่"}</th>
-                  <th className="py-2 px-2">{language === "en" ? "Date" : "วันที่"}</th>
+                  <th className="py-2 px-2.5">{backendText(dictionary, "doc_no_column", "เลขที่")}</th>
+                  <th className="py-2 px-2">{backendText(dictionary, "date", "วันที่")}</th>
                   <th className="py-2 px-2">{cpLabel}</th>
-                  <th className="py-2 px-2 text-right">{language === "en" ? "Total" : "ยอดรวม"}</th>
-                  <th className="py-2 px-2 text-center">{language === "en" ? "Status" : "สถานะ"}</th>
-                  <th className="py-2 px-2 text-center">{language === "en" ? "Actions" : "จัดการ"}</th>
+                  <th className="py-2 px-2 text-right">{backendText(dictionary, "amount", "ยอดรวม")}</th>
+                  <th className="py-2 px-2 text-center">{backendText(dictionary, "status", "สถานะ")}</th>
+                  <th className="py-2 px-2 text-center">{backendText(dictionary, "manage", "จัดการ")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
@@ -526,14 +538,14 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                               : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
                           }`}
                         >
-                          {item.status === 1 ? (language === "en" ? "Active" : "อนุมัติ") : (language === "en" ? "Draft" : "ร่าง")}
+                          {item.status === 1 ? (backendText(dictionary, "approve", "อนุมัติ")) : (backendText(dictionary, "draft", "ฉบับร่าง"))}
                         </span>
                       </td>
                       <td className="py-2 px-2 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
-                            title={language === "en" ? "Edit document" : "แก้ไขเอกสาร"}
+                            title={backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStartEdit(item);
@@ -544,7 +556,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                           </button>
                           <button
                             type="button"
-                            title={language === "en" ? "Delete document" : "ลบเอกสาร"}
+                            title={backendText(dictionary, "delete_document", "ลบเอกสาร")}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteDoc(item);
@@ -561,7 +573,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                 {filteredItems.length === 0 && !loading && (
                   <tr>
                     <td colSpan={6} className="py-10 text-center text-muted-foreground text-xs">
-                      {language === "en" ? "No documents found." : "ไม่พบรายการเอกสาร"}
+                      {backendText(dictionary, "no_documents_found", "ไม่พบรายการเอกสาร")}
                     </td>
                   </tr>
                 )}
@@ -580,9 +592,11 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
           onDoubleClick={resetSplit}
           onKeyDown={adjustWithKeyboard}
           label={
-            language === "en"
-              ? "Resize list and detail panes (drag to resize, double-click to reset)"
-              : "ปรับความกว้างรายการและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อคืนค่า)"
+            backendText(
+              dictionary,
+              "resize_panes_hint",
+              "ปรับความกว้างรายการและรายละเอียด (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อคืนค่า)",
+            )
           }
           breakpoint="lg"
         />
@@ -590,7 +604,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
         {/* Right Detail / Edit Form Pane */}
         <section
           className="min-h-0 flex-1 flex flex-col overflow-y-auto scrollbar-thin bg-background p-4"
-          aria-label={language === "en" ? "Document Detail and Form" : "รายละเอียดและฟอร์มเอกสาร"}
+          aria-label={backendText(dictionary, "document_detail_and_form", "รายละเอียดและฟอร์มเอกสาร")}
         >
           {isEditing ? (
             /* ================= EDIT MODE FORM ================= */
@@ -600,12 +614,12 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-foreground text-base">
                     {formDoc.id
-                      ? (language === "en" ? `Edit: ${formDoc.docno}` : `แก้ไขเอกสาร: ${formDoc.docno}`)
-                      : (language === "en" ? "Create New Document" : "สร้างเอกสารใหม่")}
+                      ? `${backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}: ${formDoc.docno}`
+                      : (backendText(dictionary, "create_new_document", "สร้างเอกสารใหม่"))}
                   </span>
                   {isDirty && (
                     <Badge variant="outline" className="text-amber-600 border-amber-400 text-xs">
-                      {language === "en" ? "Unsaved edits" : "กำลังแก้ไข"}
+                      {backendText(dictionary, "editing_now", "กำลังแก้ไข")}
                     </Badge>
                   )}
                 </div>
@@ -616,14 +630,14 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                     className="h-9 text-sm"
                   >
                     <X className="mr-1 size-4" />
-                    {language === "en" ? "Cancel" : "ยกเลิก"}
+                    {backendText(dictionary, "cancel", "ยกเลิก")}
                   </Button>
                   <Button
                     onClick={handleSaveDoc}
                     className="h-9 bg-primary text-primary-foreground font-semibold px-4"
                   >
                     <Save className="mr-1 size-4" />
-                    {language === "en" ? "Save Document" : "บันทึกเอกสาร"}
+                    {backendText(dictionary, "save_document", "บันทึกเอกสาร")}
                   </Button>
                 </div>
               </div>
@@ -632,7 +646,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-border/60 rounded-xl p-4 bg-card">
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                    {language === "en" ? "Document No *" : "เลขที่เอกสาร *"}
+                    {backendText(dictionary, "document_no", "เลขที่เอกสาร") + " *"}
                   </label>
                   <Input
                     value={formDoc.docno || ""}
@@ -647,7 +661,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
 
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                    {language === "en" ? "Document Date" : "วันที่เอกสาร"}
+                    {backendText(dictionary, "document_date", "วันที่เอกสาร")}
                   </label>
                   <Input
                     type="date"
@@ -671,13 +685,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       setIsDirty(true);
                     }}
                     className="h-9 text-sm"
-                    placeholder={language === "en" ? "Enter party name..." : "ระบุชื่อคู่ค้า / ผู้ติดต่อ"}
+                    placeholder={backendText(dictionary, "party_name_placeholder", "ระบุชื่อคู่ค้า / ผู้ติดต่อ")}
                   />
                 </div>
 
                 <div className="md:col-span-2 lg:col-span-3">
                   <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                    {language === "en" ? "Description / Remarks" : "คำอธิบาย / หมายเหตุ"}
+                    {backendText(dictionary, "description_or_remarks", "คำอธิบาย / หมายเหตุ")}
                   </label>
                   <Input
                     value={formDoc.description || ""}
@@ -686,7 +700,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       setIsDirty(true);
                     }}
                     className="h-9 text-sm"
-                    placeholder={language === "en" ? "Notes..." : "บันทึกข้อความเพิ่มเติม"}
+                    placeholder={backendText(dictionary, "extra_notes_placeholder", "บันทึกข้อความเพิ่มเติม")}
                   />
                 </div>
               </div>
@@ -696,7 +710,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                 <div className="border border-border/60 rounded-xl p-4 bg-card flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm text-foreground">
-                      {language === "en" ? "Line Items" : "รายการสินค้า / บริการ"}
+                      {backendText(dictionary, "line_items_title", "รายการสินค้า / บริการ")}
                     </span>
                     <Button
                       type="button"
@@ -706,7 +720,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       className="h-8 text-xs"
                     >
                       <Plus className="mr-1 size-3.5" />
-                      {language === "en" ? "Add Item" : "+ เพิ่มรายการ"}
+                      {"+ " + backendText(dictionary, "add_item", "เพิ่มรายการ")}
                     </Button>
                   </div>
 
@@ -715,12 +729,12 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       <thead className="bg-muted/80 text-muted-foreground font-semibold border-b border-border">
                         <tr>
                           <th className="p-2 w-10 text-center">#</th>
-                          <th className="p-2 min-w-[140px]">{language === "en" ? "Item Code / Barcode" : "รหัสสินค้า / บาร์โค้ด"}</th>
-                          <th className="p-2 min-w-[200px]">{language === "en" ? "Item Name" : "ชื่อสินค้า"}</th>
-                          <th className="p-2 w-20 text-center">{language === "en" ? "Unit" : "หน่วยนับ"}</th>
-                          <th className="p-2 w-24 text-right">{language === "en" ? "Qty" : "จำนวน"}</th>
-                          <th className="p-2 w-28 text-right">{language === "en" ? "Price" : "ราคา"}</th>
-                          <th className="p-2 w-28 text-right">{language === "en" ? "Total" : "จำนวนเงิน"}</th>
+                          <th className="p-2 min-w-[140px]">{backendText(dictionary, "item_code_or_barcode", "รหัสสินค้า / บาร์โค้ด")}</th>
+                          <th className="p-2 min-w-[200px]">{backendText(dictionary, "product_name", "ชื่อสินค้า")}</th>
+                          <th className="p-2 w-20 text-center">{backendText(dictionary, "unit", "หน่วยนับ")}</th>
+                          <th className="p-2 w-24 text-right">{backendText(dictionary, "qty", "จำนวน")}</th>
+                          <th className="p-2 w-28 text-right">{backendText(dictionary, "price", "ราคา")}</th>
+                          <th className="p-2 w-28 text-right">{backendText(dictionary, "line_amount", "จำนวนเงิน")}</th>
                           <th className="p-2 w-12 text-center"></th>
                         </tr>
                       </thead>
@@ -741,7 +755,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                                 value={item.itemname || ""}
                                 onChange={(e) => updateLineItem(idx, { itemname: e.target.value })}
                                 className="h-7 text-xs"
-                                placeholder={language === "en" ? "Product name" : "ชื่อสินค้า"}
+                                placeholder={backendText(dictionary, "product_name", "ชื่อสินค้า")}
                               />
                             </td>
                             <td className="p-1.5">
@@ -788,19 +802,19 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                   {/* Summary Footer */}
                   <div className="flex flex-col items-end gap-1.5 border-t border-border/80 pt-3 text-xs">
                     <div className="flex justify-between w-64 text-muted-foreground">
-                      <span>{language === "en" ? "Subtotal:" : "รวมมูลค่าสินค้า:"}</span>
+                      <span>{backendText(dictionary, "goods_subtotal", "รวมมูลค่าสินค้า") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
                         {Number(formDoc.totalbeforevat || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-muted-foreground">
-                      <span>{language === "en" ? "VAT (7%):" : "ภาษีมูลค่าเพิ่ม (7%):"}</span>
+                      <span>{backendText(dictionary, "vat_7_percent", "ภาษีมูลค่าเพิ่ม (7%)") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
                         {Number(formDoc.totalvatvalue || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-sm font-bold border-t border-border pt-1 text-primary">
-                      <span>{language === "en" ? "Net Amount:" : "รวมทั้งสิ้น:"}</span>
+                      <span>{backendText(dictionary, "net_total", "รวมทั้งสิ้น") + ":"}</span>
                       <span className="font-mono">
                         {Number(formDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
                       </span>
@@ -812,11 +826,11 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
               {/* Pinned Bottom Actions */}
               <div className="sticky bottom-0 z-20 flex justify-end gap-2 bg-background/95 backdrop-blur py-3 border-t border-border/80">
                 <Button variant="outline" onClick={handleCancelEdit} className="h-10 text-sm px-4">
-                  {language === "en" ? "Cancel" : "ยกเลิก"}
+                  {backendText(dictionary, "cancel", "ยกเลิก")}
                 </Button>
                 <Button onClick={handleSaveDoc} className="h-10 bg-primary text-primary-foreground font-semibold px-5">
                   <Save className="mr-1.5 size-4" />
-                  {language === "en" ? "Save Document" : "บันทึกเอกสาร"}
+                  {backendText(dictionary, "save_document", "บันทึกเอกสาร")}
                 </Button>
               </div>
             </div>
@@ -836,11 +850,11 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                             : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
                         }`}
                       >
-                        {selectedDoc.status === 1 ? (language === "en" ? "Approved" : "อนุมัติเรียบร้อย") : (language === "en" ? "Draft" : "ฉบับร่าง")}
+                        {selectedDoc.status === 1 ? (backendText(dictionary, "approved_status", "อนุมัติเรียบร้อย")) : (backendText(dictionary, "draft", "ฉบับร่าง"))}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {language === "en" ? "Doc Date" : "วันที่เอกสาร"}:{" "}
+                      {backendText(dictionary, "document_date", "วันที่เอกสาร")}:{" "}
                       <span className="font-mono">{selectedDoc.docdatetime?.split("T")[0] || "-"}</span>
                     </p>
                   </div>
@@ -854,7 +868,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                     onClick={() => window.print()}
                   >
                     <Printer className="mr-1.5 size-3.5" />
-                    {language === "en" ? "Print" : "พิมพ์เอกสาร"}
+                    {backendText(dictionary, "print_document", "พิมพ์เอกสาร")}
                   </Button>
                   <Button
                     variant="default"
@@ -863,7 +877,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                     onClick={() => handleStartEdit(selectedDoc)}
                   >
                     <Pencil className="mr-1.5 size-3.5" />
-                    {language === "en" ? "Edit" : "แก้ไขเอกสาร"}
+                    {backendText(dictionary, "edit_document", "แก้ไขเอกสาร")}
                   </Button>
                 </div>
               </div>
@@ -878,13 +892,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                 </div>
                 <div>
                   <span className="block text-xs text-muted-foreground">
-                    {language === "en" ? "Description" : "รายละเอียด"}
+                    {backendText(dictionary, "description", "รายละเอียด")}
                   </span>
                   <span className="text-foreground text-sm">{selectedDoc.description || "-"}</span>
                 </div>
                 <div>
                   <span className="block text-xs text-muted-foreground">
-                    {language === "en" ? "Total Net Amount" : "รวมทั้งสิ้น"}
+                    {backendText(dictionary, "net_total", "รวมทั้งสิ้น")}
                   </span>
                   <span className="font-bold text-primary font-mono text-base">
                     {Number(selectedDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
@@ -896,7 +910,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
               {config.hasLineItems && (
                 <div className="border border-border/60 rounded-xl p-4 bg-card flex flex-col gap-3">
                   <span className="font-semibold text-sm text-foreground">
-                    {language === "en" ? "Document Details" : "รายการสินค้า / รายละเอียดเอกสาร"}
+                    {backendText(dictionary, "document_items_and_details", "รายการสินค้า / รายละเอียดเอกสาร")}
                   </span>
 
                   <div className="overflow-x-auto">
@@ -904,12 +918,12 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                       <thead className="bg-muted/80 text-muted-foreground font-semibold border-b border-border">
                         <tr>
                           <th className="p-2 w-10 text-center">#</th>
-                          <th className="p-2">{language === "en" ? "Item Code" : "รหัสสินค้า"}</th>
-                          <th className="p-2">{language === "en" ? "Name" : "ชื่อสินค้า"}</th>
-                          <th className="p-2 w-20 text-center">{language === "en" ? "Unit" : "หน่วยนับ"}</th>
-                          <th className="p-2 w-24 text-right">{language === "en" ? "Qty" : "จำนวน"}</th>
-                          <th className="p-2 w-28 text-right">{language === "en" ? "Price" : "ราคา"}</th>
-                          <th className="p-2 w-28 text-right">{language === "en" ? "Total" : "จำนวนเงิน"}</th>
+                          <th className="p-2">{backendText(dictionary, "product_code", "รหัสสินค้า")}</th>
+                          <th className="p-2">{backendText(dictionary, "product_name", "ชื่อสินค้า")}</th>
+                          <th className="p-2 w-20 text-center">{backendText(dictionary, "unit", "หน่วยนับ")}</th>
+                          <th className="p-2 w-24 text-right">{backendText(dictionary, "qty", "จำนวน")}</th>
+                          <th className="p-2 w-28 text-right">{backendText(dictionary, "price", "ราคา")}</th>
+                          <th className="p-2 w-28 text-right">{backendText(dictionary, "line_amount", "จำนวนเงิน")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/40">
@@ -935,19 +949,19 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                   {/* Summary Footer */}
                   <div className="flex flex-col items-end gap-1.5 border-t border-border/80 pt-3 text-xs">
                     <div className="flex justify-between w-64 text-muted-foreground">
-                      <span>{language === "en" ? "Subtotal:" : "รวมมูลค่าสินค้า:"}</span>
+                      <span>{backendText(dictionary, "goods_subtotal", "รวมมูลค่าสินค้า") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
                         {Number(selectedDoc.totalbeforevat || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-muted-foreground">
-                      <span>{language === "en" ? "VAT (7%):" : "ภาษีมูลค่าเพิ่ม (7%):"}</span>
+                      <span>{backendText(dictionary, "vat_7_percent", "ภาษีมูลค่าเพิ่ม (7%)") + ":"}</span>
                       <span className="font-mono font-medium text-foreground">
                         {Number(selectedDoc.totalvatvalue || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="flex justify-between w-64 text-sm font-bold border-t border-border pt-1 text-primary">
-                      <span>{language === "en" ? "Net Amount:" : "รวมทั้งสิ้น:"}</span>
+                      <span>{backendText(dictionary, "net_total", "รวมทั้งสิ้น") + ":"}</span>
                       <span className="font-mono">
                         {Number(selectedDoc.totalamount || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })} ฿
                       </span>
@@ -960,10 +974,10 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
               <FileText className="size-12 mb-3 text-muted-foreground/40" />
               <p className="font-medium text-sm">
-                {language === "en" ? "Select a document to view details" : "เลือกรายการเอกสารจากตารางด้านซ้ายเพื่อดูรายละเอียด"}
+                {backendText(dictionary, "select_document_hint", "เลือกรายการเอกสารจากตารางด้านซ้ายเพื่อดูรายละเอียด")}
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                {language === "en" ? "Or click '+ New Document' to create one" : "หรือคลิก '+ สร้างเอกสารใหม่' เพื่อเริ่มบันทึก"}
+                {backendText(dictionary, "create_document_hint", "หรือคลิก \"สร้างเอกสารใหม่\" เพื่อเริ่มบันทึก")}
               </p>
             </div>
           )}
