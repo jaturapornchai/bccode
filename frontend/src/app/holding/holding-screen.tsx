@@ -26,6 +26,7 @@ import { isValidHoldingCode, normalizeHoldingCode } from "@/lib/holding-code";
 import { pushNotice } from "@/lib/toast";
 import { authFetch, getAuthSession, logoutAuthSession, setAuthSession } from "@/lib/client-auth-session";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import {
   notifyWorkspaceChanged,
   shopDisplayName,
@@ -584,11 +585,24 @@ const holdingText: Record<LanguageCode, Record<HoldingTextKey, string>> = {
   },
 };
 
-export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCode }) {
+export function HoldingScreen({
+  initialLanguage,
+  initialBackendLanguage,
+  initialBackendUrl,
+}: {
+  initialLanguage: LanguageCode;
+  initialBackendLanguage?: BackendLanguageDictionary;
+  initialBackendUrl?: string;
+}) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [language, setLanguage] = useState<LanguageCode>(initialLanguage);
   const [auth, setAuth] = useState<AuthSession | null>(null);
+  const backendLanguage = useBackendLanguage(
+    language,
+    auth?.backendUrl ?? initialBackendUrl ?? "",
+    language === initialLanguage ? initialBackendLanguage : undefined,
+  );
   const [holdings, setHoldings] = useState<HoldingListItem[]>([]);
   const [canCreateHolding, setCanCreateHolding] = useState(false);
   const [query, setQuery] = useState("");
@@ -828,7 +842,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     if (!auth || !adminHolding) return;
     const email = adminEmail.trim().toLowerCase();
     if (!email || !email.includes("@")) {
-      setNotice({ type: "error", text: language === "th" ? "กรุณากรอกอีเมลให้ถูกต้อง" : "Please enter a valid email." });
+      setNotice({ type: "error", text: backendText(backendLanguage, "holding_please_enter_a_valid_email", "กรุณากรอกอีเมลให้ถูกต้อง") });
       return;
     }
     setAdminBusy(true);
@@ -837,11 +851,11 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
       await callHoldingMemberApi(auth, "POST", { holdingcode: adminHolding.holdingcode, email });
       setAdminEmail("");
       await loadMembers(auth, adminHolding.holdingcode);
-      setNotice({ type: "success", text: language === "th" ? "เพิ่มผู้ดูแลแล้ว" : "Admin added." });
+      setNotice({ type: "success", text: backendText(backendLanguage, "holding_admin_added", "เพิ่มผู้ดูแลแล้ว") });
     } catch (error) {
       setNotice({
         type: "error",
-        text: error instanceof Error && error.message ? error.message : (language === "th" ? "เพิ่มผู้ดูแลไม่สำเร็จ" : "Could not add admin."),
+        text: error instanceof Error && error.message ? error.message : (backendText(backendLanguage, "holding_could_not_add_admin", "เพิ่มผู้ดูแลไม่สำเร็จ")),
       });
     } finally {
       setAdminBusy(false);
@@ -855,11 +869,11 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
     try {
       await callHoldingMemberApi(auth, "DELETE", { holdingcode: adminHolding.holdingcode, email });
       await loadMembers(auth, adminHolding.holdingcode);
-      setNotice({ type: "success", text: language === "th" ? "ถอดผู้ดูแลแล้ว" : "Member removed." });
+      setNotice({ type: "success", text: backendText(backendLanguage, "holding_member_removed", "ถอดผู้ดูแลแล้ว") });
     } catch (error) {
       setNotice({
         type: "error",
-        text: error instanceof Error && error.message ? error.message : (language === "th" ? "ถอดผู้ดูแลไม่สำเร็จ" : "Could not remove member."),
+        text: error instanceof Error && error.message ? error.message : (backendText(backendLanguage, "holding_could_not_remove_member", "ถอดผู้ดูแลไม่สำเร็จ")),
       });
     } finally {
       setAdminBusy(false);
@@ -1075,7 +1089,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                   />
                 </div>
                 <small className="field-help">
-                  {language === "th" ? "พิมพ์เลข 4 หลักด้านบนเพื่อยืนยันว่าต้องการสร้างจริง" : "Type the 4-digit code above to confirm creation."}
+                  {backendText(backendLanguage, "holding_type_the_4_digit_code", "พิมพ์เลข 4 หลักด้านบนเพื่อยืนยันว่าต้องการสร้างจริง")}
                 </small>
               </label>
 
@@ -1140,11 +1154,9 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
             <div className="holding-modal-panel" onClick={(e) => e.stopPropagation()}>
               <div className="holding-create-head">
                 <div>
-                  <strong>{language === "th" ? "ผู้ดูแล" : "Admins"}: {adminHolding.name}</strong>
+                  <strong>{backendText(backendLanguage, "holding_admins", "ผู้ดูแล")}: {adminHolding.name}</strong>
                   <span>
-                    {language === "th"
-                      ? "เพิ่มผู้ดูแลด้วยอีเมล (เพิ่มได้ไม่จำกัด) — เจ้าของถอดไม่ได้"
-                      : "Add admins by email (unlimited). The owner cannot be removed."}
+                    {backendText(backendLanguage, "holding_add_admins_by_email_unlimited", "เพิ่มผู้ดูแลด้วยอีเมล (เพิ่มได้ไม่จำกัด) — เจ้าของถอดไม่ได้")}
                   </span>
                 </div>
                 <button className="icon-button" type="button" onClick={closeAdminHolding} aria-label={ht(language, "cancel")} title={ht(language, "cancel")}>
@@ -1160,13 +1172,13 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                     autoComplete="off"
                     value={adminEmail}
                     onChange={(event) => setAdminEmail(event.target.value)}
-                    placeholder={language === "th" ? "อีเมลผู้ดูแล เช่น name@gmail.com" : "Admin email e.g. name@gmail.com"}
+                    placeholder={backendText(backendLanguage, "holding_admin_email_e_g_name", "อีเมลผู้ดูแล เช่น name@gmail.com")}
                     disabled={adminBusy}
                   />
                 </div>
                 <button className="primary-button" type="submit" disabled={adminBusy || !adminEmail.trim()}>
                   {adminBusy ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <UserPlus aria-hidden="true" size={18} />}
-                  <span>{language === "th" ? "เพิ่ม" : "Add"}</span>
+                  <span>{backendText(backendLanguage, "add", "เพิ่ม")}</span>
                 </button>
               </form>
 
@@ -1177,7 +1189,7 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                     <span>{ht(language, "loading")}</span>
                   </div>
                 ) : members.length === 0 ? (
-                  <div className="text-sm text-muted-foreground p-2">{language === "th" ? "ยังไม่มีผู้ดูแล" : "No members yet."}</div>
+                  <div className="text-sm text-muted-foreground p-2">{backendText(backendLanguage, "holding_no_members_yet", "ยังไม่มีผู้ดูแล")}</div>
                 ) : (
                   members.map((member) => {
                     const email = memberEmail(member);
@@ -1195,10 +1207,10 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                             <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${owner ? "bg-primary/15 text-primary border border-primary/30" : "bg-primary/5 text-primary border border-primary/10"}`}>
                               <ShieldCheck size={10} />
                               {owner
-                                ? (language === "th" ? "เจ้าของ" : "Owner")
+                                ? (backendText(backendLanguage, "owner", "เจ้าของ"))
                                 : role === 1
-                                  ? (language === "th" ? "ผู้ดูแล" : "Admin")
-                                  : (language === "th" ? "ผู้ใช้" : "User")}
+                                  ? (backendText(backendLanguage, "holding_admins", "ผู้ดูแล"))
+                                  : (backendText(backendLanguage, "user_label", "ผู้ใช้"))}
                             </span>
                           </div>
                         </div>
@@ -1208,8 +1220,8 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                             type="button"
                             disabled={adminBusy}
                             onClick={() => void removeMember(email)}
-                            aria-label={`${language === "th" ? "ถอด" : "Remove"} ${email}`}
-                            title={language === "th" ? "ถอดผู้ดูแล" : "Remove"}
+                            aria-label={`${backendText(backendLanguage, "holding_remove", "ถอด")} ${email}`}
+                            title={backendText(backendLanguage, "holding_remove_admin", "ถอดผู้ดูแล")}
                           >
                             <Trash2 aria-hidden="true" size={15} />
                           </button>
@@ -1305,19 +1317,19 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                           {isOwner ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/30">
                               <ShieldCheck size={10} />
-                              <span>{language === "th" ? "เจ้าของ" : "Owner"}</span>
+                              <span>{backendText(backendLanguage, "owner", "เจ้าของ")}</span>
                             </span>
                           ) : null}
                           {companyCount > 0 ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/5 text-primary border border-primary/10">
                               <Building2 size={10} />
-                              <span>{companyCount} {language === "th" ? "บริษัท" : "Companies"}</span>
+                              <span>{companyCount} {backendText(backendLanguage, "company", "บริษัท")}</span>
                             </span>
                           ) : null}
                           {branchCount > 0 ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/5 text-primary border border-primary/10">
                               <GitBranch size={10} />
-                              <span>{branchCount} {language === "th" ? "สาขา" : "Branches"}</span>
+                              <span>{branchCount} {backendText(backendLanguage, "branch", "สาขา")}</span>
                             </span>
                           ) : null}
                         </div>
@@ -1333,8 +1345,8 @@ export function HoldingScreen({ initialLanguage }: { initialLanguage: LanguageCo
                             disabled={Boolean(busyHoldingCode || savingHoldingCode)}
                             onClick={() => openAdminHolding(shop)}
                             type="button"
-                            aria-label={`${language === "th" ? "จัดการผู้ดูแล" : "Manage admins"} ${shopDisplayName(shop)}`}
-                            title={language === "th" ? "จัดการผู้ดูแล" : "Manage admins"}
+                            aria-label={`${backendText(backendLanguage, "holding_manage_admins", "จัดการผู้ดูแล")} ${shopDisplayName(shop)}`}
+                            title={backendText(backendLanguage, "holding_manage_admins", "จัดการผู้ดูแล")}
                           >
                             <Users aria-hidden="true" size={14} />
                           </button>

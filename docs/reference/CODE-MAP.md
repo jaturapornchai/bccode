@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit 30b025d2 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-16 @ commit 5682b9b9 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 47
 
@@ -1507,42 +1507,42 @@ Files indexed: 47
 | 1557 | function | `TestBadge` |
 | 1561 | function | `ModelChips` |
 
-## frontend/src/app/holding/holding-screen.tsx (1547 lines)
+## frontend/src/app/holding/holding-screen.tsx (1559 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 44 | type | `CreateHoldingForm` |
-| 587 | function | `HoldingScreen` |
-| 656 | function | `loadHoldings` |
-| 678 | function | `openCreateHolding` |
-| 689 | function | `closeCreateHolding` |
-| 694 | function | `createHolding` |
-| 741 | function | `startEditHolding` |
-| 753 | function | `closeEditHolding` |
-| 758 | function | `updateHolding` |
-| 793 | function | `openAdminHolding` |
-| 805 | function | `closeAdminHolding` |
-| 812 | function | `loadMembers` |
-| 826 | function | `addAdmin` |
-| 851 | function | `removeMember` |
-| 869 | function | `selectHolding` |
-| 891 | function | `activateHolding` |
-| 909 | function | `logout` |
-| 1379 | function | `ht` |
-| 1383 | function | `normalizeDisplayName` |
-| 1391 | function | `generateConfirmationCode` |
-| 1400 | function | `readAuth` |
-| 1404 | function | `activeHoldingCode` |
-| 1408 | function | `callWorkspaceApi` |
-| 1430 | function | `dedupeHoldings` |
-| 1442 | function | `tenantCodeForShop` |
-| 1446 | function | `displayNameForEdit` |
-| 1452 | function | `canEditHolding` |
-| 1473 | function | `canManageAdmins` |
-| 1478 | function | `memberEmail` |
-| 1482 | function | `sortMembers` |
-| 1492 | function | `callHoldingMemberApi` |
-| 1518 | function | `createHoldingPayload` |
+| 45 | type | `CreateHoldingForm` |
+| 588 | function | `HoldingScreen` |
+| 670 | function | `loadHoldings` |
+| 692 | function | `openCreateHolding` |
+| 703 | function | `closeCreateHolding` |
+| 708 | function | `createHolding` |
+| 755 | function | `startEditHolding` |
+| 767 | function | `closeEditHolding` |
+| 772 | function | `updateHolding` |
+| 807 | function | `openAdminHolding` |
+| 819 | function | `closeAdminHolding` |
+| 826 | function | `loadMembers` |
+| 840 | function | `addAdmin` |
+| 865 | function | `removeMember` |
+| 883 | function | `selectHolding` |
+| 905 | function | `activateHolding` |
+| 923 | function | `logout` |
+| 1391 | function | `ht` |
+| 1395 | function | `normalizeDisplayName` |
+| 1403 | function | `generateConfirmationCode` |
+| 1412 | function | `readAuth` |
+| 1416 | function | `activeHoldingCode` |
+| 1420 | function | `callWorkspaceApi` |
+| 1442 | function | `dedupeHoldings` |
+| 1454 | function | `tenantCodeForShop` |
+| 1458 | function | `displayNameForEdit` |
+| 1464 | function | `canEditHolding` |
+| 1485 | function | `canManageAdmins` |
+| 1490 | function | `memberEmail` |
+| 1494 | function | `sortMembers` |
+| 1504 | function | `callHoldingMemberApi` |
+| 1530 | function | `createHoldingPayload` |
 
 ## backend/internal/transaction/saleinvoice/services/saleinvoice_service.go (1537 lines)
 

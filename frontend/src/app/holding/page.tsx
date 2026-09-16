@@ -7,6 +7,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HoldingPage() {
-  const initialLanguage = await getInitialBackendLanguage();
-  return <HoldingScreen initialLanguage={initialLanguage.initialLanguage} />;
+  const initial = await getInitialBackendLanguage();
+  return (
+    <HoldingScreen
+      initialLanguage={initial.initialLanguage}
+      initialBackendLanguage={initial.initialBackendLanguage}
+      initialBackendUrl={initial.initialBackendUrl}
+    />
+  );
 }
