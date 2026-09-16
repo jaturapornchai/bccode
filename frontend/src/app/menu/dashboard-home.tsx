@@ -30,15 +30,15 @@ import {
  */
 
 // เอกสารที่มี list endpoint (mainapi root) — key = menu id ที่ใช้ตรวจสิทธิ์
-const DOC_WIDGETS: { menuId: string; path: string; th: string; en: string; party: "custnames" | "creditornames" | null }[] = [
-  { menuId: "quotation", path: "/transaction/quotation/list", th: "ใบเสนอราคา", en: "Quotations", party: "custnames" },
-  { menuId: "sale-order", path: "/transaction/sale-order/list", th: "ใบสั่งขาย", en: "Sale orders", party: "custnames" },
-  { menuId: "sale", path: "/transaction/sale-invoice/list", th: "ใบขายสินค้า", en: "Sale invoices", party: "custnames" },
-  { menuId: "purchase-requisition", path: "/transaction/purchase-requisition/list", th: "ใบเสนอซื้อ", en: "Purchase requisitions", party: null },
-  { menuId: "purchase-order", path: "/transaction/purchase-order/list", th: "ใบสั่งซื้อสินค้า", en: "Purchase orders", party: "creditornames" },
-  { menuId: "purchase", path: "/transaction/purchase/list", th: "ซื้อสินค้า", en: "Purchases", party: "creditornames" },
-  { menuId: "stock-transfer", path: "/transaction/stock-transfer/list", th: "โอนสินค้า", en: "Stock transfers", party: null },
-  { menuId: "stock-adjust", path: "/transaction/stock-adjustment/list", th: "ปรับปรุงสินค้า", en: "Stock adjustments", party: null },
+const DOC_WIDGETS: { menuId: string; path: string; party: "custnames" | "creditornames" | null }[] = [
+  { menuId: "quotation", path: "/transaction/quotation/list", party: "custnames" },
+  { menuId: "sale-order", path: "/transaction/sale-order/list", party: "custnames" },
+  { menuId: "sale", path: "/transaction/sale-invoice/list", party: "custnames" },
+  { menuId: "purchase-requisition", path: "/transaction/purchase-requisition/list", party: null },
+  { menuId: "purchase-order", path: "/transaction/purchase-order/list", party: "creditornames" },
+  { menuId: "purchase", path: "/transaction/purchase/list", party: "creditornames" },
+  { menuId: "stock-transfer", path: "/transaction/stock-transfer/list", party: null },
+  { menuId: "stock-adjust", path: "/transaction/stock-adjustment/list", party: null },
 ];
 
 type DocRecord = Record<string, unknown>;
@@ -227,7 +227,7 @@ export function DashboardHome({
                   onClick={() => onOpenItem(item)}
                   className="group grid min-w-0 gap-0.5 rounded-xl border border-border bg-card p-2 text-left shadow-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
                 >
-                  <span className="truncate text-xs text-muted-foreground">{menuText(item.label, language, backendLanguage) || t(w.th, w.en)}</span>
+                  <span className="truncate text-xs text-muted-foreground">{menuText(item.label, language, backendLanguage)}</span>
                   <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
                   <span className="text-xl font-bold tabular-nums text-foreground">
                     {loading && !stat ? "…" : (stat?.total ?? 0).toLocaleString(isThai ? "th-TH" : "en-US")}
@@ -314,7 +314,7 @@ export function DashboardHome({
                     >
                       <span className="w-12 shrink-0 text-xs text-muted-foreground">{dateText(doc.docdatetime, language)}</span>
                       <span className="min-w-0 truncate">
-                        <b className="font-semibold">{t(widget.th, widget.en)}</b>
+                        <b className="font-semibold">{menuText(item.label, language, backendLanguage)}</b>
                         {doc.docno ? <span className="text-muted-foreground"> · {String(doc.docno)}</span> : null}
                         {party ? <span className="text-muted-foreground"> · {party}</span> : null}
                       </span>

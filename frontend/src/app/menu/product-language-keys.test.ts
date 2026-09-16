@@ -8,6 +8,11 @@ const sources = [
   "src/app/menu/product-screen.tsx",
   "src/app/menu/product-barcode-screen.tsx",
   "src/app/menu/product-set-screen.tsx",
+  "src/app/menu/dashboard-home.tsx",
+  "src/components/product-barcode/barcode-form.tsx",
+  "src/components/product-barcode/business-image-editor.tsx",
+  "src/components/product-barcode/names-editor.tsx",
+  "src/components/product-barcode/addresses-editor.tsx",
 ].map((file) => resolve(process.cwd(), file));
 const languageColumns = ["th", "en", "cn", "ja", "km", "ko", "lo", "my", "vi", "ms", "id", "fil"];
 // Thai letters/vowels/tone marks/digits — the baht sign ฿ (U+0E3F) is a currency symbol, not text.

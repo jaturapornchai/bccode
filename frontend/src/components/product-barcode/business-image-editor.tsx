@@ -76,7 +76,7 @@ export function BusinessImageEditor({
       }
       setUploading(false);
     },
-    [auth, language, onChange, value.images],
+    [auth, onChange, tr, value.images],
   );
 
   const handleVideoUpload = useCallback(
@@ -125,7 +125,7 @@ export function BusinessImageEditor({
         setUploading(false);
       }
     },
-    [auth, language, onChange, value.videos],
+    [auth, onChange, tr, value.videos],
   );
 
   return (
@@ -140,7 +140,7 @@ export function BusinessImageEditor({
           />
           <div className="min-w-0 flex-1 space-y-2">
             <Input
-              placeholder="https://… หรือ อัปโหลดไฟล์"
+              placeholder={tr("barcode_image_url_or_upload", "https://… หรือ อัปโหลดไฟล์")}
               value={value.imageuri ?? ""}
               onChange={(event) => onChange({ imageuri: event.target.value })}
             />
@@ -318,6 +318,7 @@ export function BusinessImageGallery({
   sources: BusinessImageSource[];
   title: string;
 }) {
+  const tr = useBackendText();
   const visibleSources = useMemo(
     () =>
       sources
@@ -367,8 +368,8 @@ export function BusinessImageGallery({
                       <AuthenticatedVideo
                         auth={auth}
                         className="aspect-video w-full"
-                        failedLabel="เปิดวิดีโอไม่สำเร็จ / Unable to open video"
-                        loadLabel="โหลดและเล่นวิดีโอ / Load and play"
+                        failedLabel={tr("barcode_unable_to_open_video", "เปิดวิดีโอไม่สำเร็จ")}
+                        loadLabel={tr("barcode_load_and_play_video", "โหลดและเล่นวิดีโอ")}
                         posterSrc={item.posteruri}
                         src={item.uri}
                       />
