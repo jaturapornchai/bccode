@@ -115,14 +115,18 @@ export function GLAllocations({ route }: { route: string }) {
   return <div className="flex flex-col flex-1 min-h-0 gap-2">
     <div className="shrink-0 flex flex-col gap-2"><Notice error text={record ? "" : [error, list.error, refs.error].filter(Boolean).join(" ")} /><Notice text={message} /></div>
     <SplitWorkbench list={<div className="flex flex-col flex-1 min-h-0 gap-2">
-      <form className="flex flex-wrap items-center gap-2 shrink-0" onSubmit={(event) => { event.preventDefault(); searchDebounce.searchNow(); }}>
-        <SearchInput className="min-w-40 flex-1" value={searchDebounce.query} onChange={searchDebounce.setQuery} onClear={searchDebounce.clear} onSearch={searchDebounce.searchNow} placeholder={tr("gl_search_code_name", "ค้นหารหัสหรือชื่อ")} />
-        <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
-        <Button type="button" variant="outline" className={actionClass} onClick={() => list.reload()} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
-        <Button type="button" className={actionClass} onClick={() => void open(null, true)} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
-      </form>
-      <div className="text-xs text-muted-foreground shrink-0 px-1">{tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}</div>
-      <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border" aria-busy={list.loading}>
+      <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
+        <form className="flex flex-wrap items-center gap-2 w-full" onSubmit={(event) => { event.preventDefault(); searchDebounce.searchNow(); }}>
+          <SearchInput className="min-w-44 flex-1" value={searchDebounce.query} onChange={searchDebounce.setQuery} onClear={searchDebounce.clear} onSearch={searchDebounce.searchNow} placeholder={tr("gl_search_code_name", "ค้นหารหัสหรือชื่อ")} />
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
+            <Button type="button" variant="outline" className={actionClass} onClick={() => list.reload()} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
+            <Button type="button" className={actionClass} onClick={() => void open(null, true)} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
+          </div>
+        </form>
+        <div className="text-xs text-muted-foreground px-1 font-medium text-foreground/80">{tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}</div>
+      </div>
+      <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs" aria-busy={list.loading}>
         <table className="w-full text-left text-[0.95rem] leading-normal">
           <thead className="sticky top-0 bg-muted z-10"><tr>
             <th className="p-2.5">{tr("gl_code", "รหัส")}</th>
@@ -179,7 +183,7 @@ export function GLAllocations({ route }: { route: string }) {
               <h3 className="font-medium">{tr("gl_alloc_rules", "รายการปันส่วนตามสัดส่วน")}</h3>
               <Button type="button" variant="outline" className={actionClass} disabled={!isEditing || busy || record.allocaterules.length >= 100} onClick={() => set({ allocaterules: [...record.allocaterules, emptyAllocationRule()] })}><Plus className="size-4 mr-1.5" />{tr("gl_alloc_add_rule", "เพิ่มรายการปันส่วน")}</Button>
             </div>
-            <div className="overflow-auto rounded-xl border border-border">
+            <div className="overflow-auto rounded-xl border border-border shadow-xs">
               <table className="w-full text-left text-[0.95rem]">
                 <thead className="bg-muted"><tr>
                   <th className="p-2 w-14 text-center">{tr("gl_sequence", "ลำดับ")}</th>

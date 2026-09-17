@@ -37,9 +37,9 @@ export function useGLText(): GLTextFn {
   return useCallback((key: string, fallback: string) => backendText(dictionary, key, fallback), [dictionary]);
 }
 
-export const control = "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground transition-colors focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60";
+export const control = "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-xs transition-[border-color,box-shadow] hover:border-primary/50 focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-sm disabled:opacity-60 disabled:shadow-none";
 export const panel = "min-w-0 rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-sm";
-export const actionClass = "min-h-[2.6em] text-[0.95rem]";
+export const actionClass = "h-10 !min-h-10 rounded-xl px-3.5 text-[0.95rem] font-medium leading-normal shrink-0 inline-flex items-center justify-center";
 export function useRowDensity() {
   const [compact, setCompact] = useState(true);
   useEffect(() => { setCompact(localStorage.getItem("bc_gl_compact_rows") !== "false"); }, []);
@@ -57,14 +57,14 @@ export function Check({ label, checked, onChange, disabled, className }: { label
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="size-4.5 shrink-0 rounded border-input text-primary accent-primary focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed"
+        className="size-4.5 shrink-0 rounded border-input text-primary accent-primary shadow-2xs focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed"
       />
       <span className="whitespace-nowrap">{label}</span>
     </label>
   );
 }
 export function Notice({ text, error = false }: { text: string; error?: boolean }) {
-  return text ? <div role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed ${error ? "border-destructive/40 bg-destructive/5 text-foreground" : "border-primary/25 bg-primary/5 text-foreground"}`}>{text}</div> : null;
+  return text ? <div role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed shadow-xs ${error ? "border-destructive/40 bg-destructive/5 text-foreground" : "border-primary/25 bg-primary/5 text-foreground"}`}>{text}</div> : null;
 }
 export function UnsavedBadge({ dirty, className }: { dirty: boolean; className?: string }) {
   const tr = useGLText();
@@ -173,12 +173,12 @@ export function SearchInput({
   };
 
   return (
-    <div className={`relative flex items-center ${className}`}>
+    <div className={`relative flex items-center h-10 ${className}`}>
       <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" aria-hidden="true" />
       <input
         ref={inputRef}
         type="text"
-        className={`${control} !pl-9.5 ${value ? "!pr-9" : ""} w-full`}
+        className={`${control} !h-10 !min-h-10 !pl-9.5 ${value ? "!pr-9" : ""} w-full`}
         aria-label={ariaLabel}
         placeholder={placeholder}
         value={value}
@@ -442,7 +442,7 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
               e.stopPropagation();
               setDialogOpen(true);
             }}
-            className="inline-flex !size-7 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-[8px] border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50 cursor-pointer shadow-2xs shrink-0"
+            className="inline-flex !size-7 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-[8px] border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50 cursor-pointer shadow-xs hover:shadow-sm shrink-0"
             title={tr("gl_open_fullscreen_coa_search_f2", "เปิดระบบค้นหาผังบัญชีแบบเต็มจอ (F2)")}
             aria-label={tr("gl_search_coa", "ค้นหาผังบัญชี")}
           >

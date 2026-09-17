@@ -270,6 +270,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/gl/journal/pv": "payment",
   "/gl/journal/jv": "fileChart",
   "/gl/chartofaccounts": "list",
+  "/gl/fiscal-years": "calendarCheck",
   "/gl/periodlock": "key",
   "/report/pnl": "barChart",
   "/report/balancesheet": "fileChart",

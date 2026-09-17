@@ -162,26 +162,30 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
       <SplitWorkbench
         list={
           <div className="flex flex-col flex-1 min-h-0 gap-2">
-            <form className="flex flex-wrap gap-2 shrink-0" onSubmit={(event) => { event.preventDefault(); searchDebounce.searchNow(); }}>
-              <SearchInput
-                className="min-w-28 flex-1"
-                ariaLabel={tr("gl_search_number_or_desc", "ค้นหาเลขที่หรือคำอธิบาย")}
-                placeholder={tr("gl_number_or_desc", "เลขที่หรือคำอธิบาย")}
-                value={searchDebounce.query}
-                onChange={searchDebounce.setQuery}
-                onClear={searchDebounce.clear}
-                onSearch={searchDebounce.searchNow}
-              />
-              <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
-              <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
-              {mode === "edit" && <Button type="button" className={actionClass} disabled={busy} onClick={() => void openCreate()}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>}
-              <Button type="button" variant="outline" className={actionClass} aria-pressed={density.compact} onClick={density.toggle}>{density.compact ? tr("gl_expand_row", "ขยายบรรทัด") : tr("gl_collapse_row", "ย่อบรรทัด")}</Button>
-            </form>
-            <div className="flex items-center justify-between px-1 text-xs text-muted-foreground shrink-0">
-              <span>{tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}</span>
-              {density.compact && <span className="text-[11px]">{tr("gl_collapse_row_mode", "โหมดย่อบรรทัด")}</span>}
+            <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
+              <form className="flex flex-wrap items-center gap-2 w-full" onSubmit={(event) => { event.preventDefault(); searchDebounce.searchNow(); }}>
+                <SearchInput
+                  className="min-w-44 flex-1"
+                  ariaLabel={tr("gl_search_number_or_desc", "ค้นหาเลขที่หรือคำอธิบาย")}
+                  placeholder={tr("gl_number_or_desc", "เลขที่หรือคำอธิบาย")}
+                  value={searchDebounce.query}
+                  onChange={searchDebounce.setQuery}
+                  onClear={searchDebounce.clear}
+                  onSearch={searchDebounce.searchNow}
+                />
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
+                  <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
+                  {mode === "edit" && <Button type="button" className={actionClass} disabled={busy} onClick={() => void openCreate()}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>}
+                  <Button type="button" variant="outline" className={actionClass} aria-pressed={density.compact} onClick={density.toggle}>{density.compact ? tr("gl_expand_row", "ขยายบรรทัด") : tr("gl_collapse_row", "ย่อบรรทัด")}</Button>
+                </div>
+              </form>
+              <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground/80">{tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}</span>
+                {density.compact && <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{tr("gl_collapse_row_mode", "โหมดย่อบรรทัด")}</span>}
+              </div>
             </div>
-            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border" aria-busy={list.loading}>
+            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs" aria-busy={list.loading}>
               <table className={`w-full text-left text-[0.95rem] leading-normal ${density.tableClass}`}>
                 <thead className="sticky top-0 bg-muted z-10">
                   <tr>

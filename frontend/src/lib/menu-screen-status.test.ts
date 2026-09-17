@@ -14,9 +14,10 @@ describe("menu screen availability", () => {
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(225);
-    // All 225 menu items in the system are now connected and operational
-    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(225);
+    expect(items).toHaveLength(226);
+    // All 226 menu items in the system are now connected and operational
+    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(226);
+    expect(isMenuScreenPending("/gl/fiscal-years")).toBe(false);
     expect(isMenuScreenPending("/transaction/landedcost")).toBe(false);
     expect(isMenuScreenPending("/banking/cheques/deposit")).toBe(false);
     expect(isMenuScreenPending("/productserialregistry")).toBe(false);
@@ -33,7 +34,7 @@ describe("menu screen availability", () => {
   it("connects all ledger and report workflows", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
     expect(pending).toEqual([]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(37);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(38);
   });
 });
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,15 @@ import { GLStatementDesigner } from "./gl-statement-designer";
 import { GLAllocations } from "./gl-allocations";
 import { GLLanguageProvider, actionClass, panel, useGLText } from "./gl-common";
 
-const masterRoutes: Record<string, GLResource> = { "/gl/chartofaccounts": "accounts", "/gl/budget": "budgets", "/gl/account-groups": "account-groups", "/gl/account-mapping": "mappings", "/gl/product-account-groups": "product-account-groups", "/gl/periodlock": "periods" };
+const masterRoutes: Record<string, GLResource> = {
+  "/gl/chartofaccounts": "accounts",
+  "/gl/fiscal-years": "fiscal-years",
+  "/gl/budget": "budgets",
+  "/gl/account-groups": "account-groups",
+  "/gl/account-mapping": "mappings",
+  "/gl/product-account-groups": "product-account-groups",
+  "/gl/periodlock": "periods",
+};
 const reportRoutes: Record<string, string> = { "/gl/annual-balances": "annual-balances", "/gl/workingpaper": "workingpaper", "/checkdaily/dailyinfoscreen": "daily-check" };
 const processRoutes = { "/gl/financialclose": "close", "/gl/year-end": "year-end", "/gl/recalculate-posted": "recalculate", "/gl/reprocess": "reprocess" } as const;
 export function GeneralLedgerScreen({ route, embedded = false, language = "th" }: { route: string; embedded?: boolean; language?: LanguageCode }) {
@@ -26,7 +34,6 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   const [tab, setTab] = useState("main"), [dirty, setDirty] = useState(false);
   const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   useEffect(() => {
-
     const listener = (event: Event) => { const detail = (event as CustomEvent<{ route: string; dirty: boolean }>).detail; if (detail?.route === cleanRoute) setDirty(detail.dirty); };
     window.addEventListener("bc-gl-dirty", listener);
     return () => window.removeEventListener("bc-gl-dirty", listener);
@@ -37,8 +44,7 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
     setTab(next);
   }
   let content;
-  if (cleanRoute === "/gl/chartofaccounts") content = <GLMasters key={tab} resource={tab === "year" ? "fiscal-years" : "accounts"} route={cleanRoute} />;
-  else if (cleanRoute === "/gl/statement-designer") content = <GLStatementDesigner route={cleanRoute} />;
+  if (cleanRoute === "/gl/statement-designer") content = <GLStatementDesigner route={cleanRoute} />;
   else if (cleanRoute === "/gl/allocations") content = <GLAllocations route={cleanRoute} />;
   else if (masterRoutes[cleanRoute]) content = <GLMasters key={cleanRoute} resource={masterRoutes[cleanRoute] as Exclude<GLResource, "journals">} route={cleanRoute} />;
   else if (cleanRoute === "/gl/openingbalance") content = <GLJournals route={cleanRoute} kind="opening" />;
@@ -51,7 +57,6 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   else content = <GLReports key={cleanRoute} name={reportRoutes[cleanRoute] ?? cleanRoute.split("/").at(-1) ?? "trialbalance"} />;
   if (!item) return <div className={panel}>{tr("gl_account_page_not_found", "ไม่พบหน้าบัญชีที่ต้องการ")}</div>;
   return <main className={`gl-workbench flex min-w-0 flex-1 flex-col gap-2 text-[0.95rem] leading-relaxed ${embedded ? "p-2 h-full min-h-0 overflow-hidden" : "mx-auto max-w-[1800px] p-3 min-h-[calc(100dvh-2rem)]"}`} data-gl-route={cleanRoute}>
-    {cleanRoute === "/gl/chartofaccounts" && <nav aria-label={tr("gl_chart_of_accounts_data", "ข้อมูลผังบัญชี")} className="shrink-0 flex flex-wrap gap-2"><Button className={actionClass} variant={tab === "main" ? "default" : "outline"} aria-pressed={tab === "main"} onClick={() => void changeTab("main")}>{tr("gl_chart_of_accounts", "ผังบัญชี")}</Button><Button className={actionClass} variant={tab === "year" ? "default" : "outline"} aria-pressed={tab === "year"} onClick={() => void changeTab("year")}>{tr("gl_fiscal_year_closing_acct", "ปีบัญชีและบัญชีปิดปี")}</Button></nav>}
     {cleanRoute === "/report/cashflowforecast" && <nav aria-label={tr("gl_cash_flow_projection", "ประมาณการกระแสเงินสด")} className="shrink-0 flex flex-wrap gap-2"><Button className={actionClass} variant={tab === "main" ? "default" : "outline"} aria-pressed={tab === "main"} onClick={() => void changeTab("main")}>{tr("gl_projection_report", "รายงานประมาณการ")}</Button><Button className={actionClass} variant={tab === "forecast" ? "default" : "outline"} aria-pressed={tab === "forecast"} onClick={() => void changeTab("forecast")}>{tr("gl_record_cash_flow_est", "บันทึกประมาณการเงินเข้าออก")}</Button></nav>}
     <div className="flex-1 min-h-0 flex flex-col">{content}</div>{confirmationDialog}
   </main>;

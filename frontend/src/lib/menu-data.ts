@@ -680,6 +680,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: { key: "menu_master_balances", th: "ข้อมูลหลักและยอดยกมา", en: "Master & Balances" },
         items: [
           tx("chart-of-accounts", "รายละเอียดผังบัญชี", "Chart of Accounts", "/gl/chartofaccounts", "finance"),
+          tx("gl-fiscal-years", "ปีบัญชีและบัญชีปิดปี", "Fiscal Year and Closing Accounts", "/gl/fiscal-years", "finance", "gl_fiscal_year_closing_acct"),
           tx("gl-opening-balance", "ยอดยกมาทางบัญชี", "GL Opening Balances", "/gl/openingbalance", "finance"),
           tx("gl-allocation", "ปันส่วนค่าใช้จ่าย", "Cost Allocation", "/gl/allocations", "finance"),
           tx("gl-budget", "กำหนดงบประมาณ", "Annual Budget", "/gl/budget", "finance"),

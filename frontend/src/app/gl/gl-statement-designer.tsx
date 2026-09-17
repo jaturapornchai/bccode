@@ -335,26 +335,31 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
               </Button>
             </div>
 
-            <form className="flex flex-wrap gap-2 shrink-0" onSubmit={(e) => { e.preventDefault(); searchDebounce.searchNow(); }}>
-              <SearchInput
-                className="min-w-28 flex-1"
-                ariaLabel={tr("gl_search_code_or_template_name", "ค้นหารหัสหรือชื่อแม่แบบ")}
-                placeholder={tr("gl_search_code_or_template_name_dots", "ค้นหารหัสหรือชื่อแม่แบบ...")}
-                value={searchDebounce.query}
-                onChange={searchDebounce.setQuery}
-                onClear={searchDebounce.clear}
-                onSearch={searchDebounce.searchNow}
-              />
-              <Button type="submit" variant="outline" className={actionClass}>
-                <Search className="h-4 w-4 mr-1.5" />
-                {tr("gl_search", "ค้นหา")}
-              </Button>
-              <Button type="button" variant="outline" className={actionClass} onClick={() => list.reload()} disabled={list.loading}>
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            </form>
+            <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
+              <form className="flex flex-wrap items-center gap-2 w-full" onSubmit={(e) => { e.preventDefault(); searchDebounce.searchNow(); }}>
+                <SearchInput
+                  className="min-w-44 flex-1"
+                  ariaLabel={tr("gl_search_code_or_template_name", "ค้นหารหัสหรือชื่อแม่แบบ")}
+                  placeholder={tr("gl_search_code_or_template_name_dots", "ค้นหารหัสหรือชื่อแม่แบบ...")}
+                  value={searchDebounce.query}
+                  onChange={searchDebounce.setQuery}
+                  onClear={searchDebounce.clear}
+                  onSearch={searchDebounce.searchNow}
+                />
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <Button type="submit" variant="outline" className={actionClass}>
+                    <Search className="h-4 w-4 mr-1.5" />
+                    {tr("gl_search", "ค้นหา")}
+                  </Button>
+                  <Button type="button" variant="outline" className={actionClass} onClick={() => list.reload()} disabled={list.loading}>
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    {tr("gl_reload", "โหลดใหม่")}
+                  </Button>
+                </div>
+              </form>
+            </div>
 
-            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border" aria-busy={list.loading}>
+            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs" aria-busy={list.loading}>
               <table className={`w-full text-left text-[0.95rem] leading-normal ${density.tableClass}`}>
                 <thead className="sticky top-0 bg-muted z-10">
                   <tr>
@@ -597,7 +602,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   </div>
 
                   {/* Rows Table */}
-                  <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border">
+                  <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs">
                     <table className="w-full text-left text-sm">
                       <thead className="sticky top-0 bg-muted font-semibold">
                         <tr>

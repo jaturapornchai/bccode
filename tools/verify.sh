@@ -49,19 +49,22 @@ need_docker() {
 }
 
 # --- codemap: mirrors job code-map-check ------------------------------------
-t_codemap() {
+run_codemap() {
   hr "codemap — docs/reference/CODE-MAP.md ตรงกับซอร์ส"
   if ! command -v pwsh >/dev/null 2>&1; then
     echo "ไม่พบ pwsh — ตรวจไม่ได้ ถือว่าไม่ผ่าน (ติดตั้ง PowerShell 7)" >&2
-    record codemap 1
-    return
+    return 1
   fi
   pwsh -NoProfile -File tools/gen-code-map.ps1 -Check
+}
+
+t_codemap() {
+  run_codemap
   record codemap $?
 }
 
 # --- frontend: mirrors job frontend-test (build split out, it is the slow half) ---
-t_frontend() {
+run_frontend() {
   hr "frontend — lint / typecheck / vitest"
   ( cd frontend || exit 1
     if [ ! -d node_modules ]; then
@@ -78,7 +81,39 @@ t_frontend() {
   if [ $status -eq 0 ]; then
     node tools/audit-auth-fetch.mjs || status=1
   fi
-  record frontend $status
+  return $status
+}
+
+t_frontend() {
+  run_frontend
+  record frontend $?
+}
+
+# --- fast: run codemap + frontend concurrently -----------------------------
+t_fast() {
+  local codemap_log frontend_log codemap_pid frontend_pid codemap_rc frontend_rc
+  codemap_log=$(mktemp)
+  frontend_log=$(mktemp)
+
+  ( run_codemap > "$codemap_log" 2>&1 ) &
+  codemap_pid=$!
+
+  ( run_frontend > "$frontend_log" 2>&1 ) &
+  frontend_pid=$!
+
+  wait "$codemap_pid"
+  codemap_rc=$?
+
+  wait "$frontend_pid"
+  frontend_rc=$?
+
+  cat "$codemap_log"
+  record codemap "$codemap_rc"
+  rm -f "$codemap_log"
+
+  cat "$frontend_log"
+  record frontend "$frontend_rc"
+  rm -f "$frontend_log"
 }
 
 t_frontend_build() {
@@ -209,7 +244,7 @@ esac
 started=$(date '+%H:%M:%S')
 for t in $targets; do
   case "$t" in
-    fast)           t_codemap; t_frontend ;;
+    fast)           t_fast ;;
     all)            t_codemap; t_frontend; t_frontend_build; t_backend; t_outbox; t_projection ;;
     codemap)        t_codemap ;;
     frontend)       t_frontend ;;
