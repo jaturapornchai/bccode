@@ -48,7 +48,7 @@ export function useRowDensity() {
   return { compact, toggle, tableClass: compact ? "[&_td]:py-1 [&_td_button]:min-h-8" : "[&_td]:py-2" };
 }
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
-  return <label className="grid min-w-0 gap-1 text-[0.95rem] leading-normal"><span className="font-medium">{label}</span>{children}{hint && <span className="text-[0.9rem] text-muted-foreground">{hint}</span>}</label>;
+  return <div className="grid min-w-0 gap-1 text-[0.95rem] leading-normal"><span className="font-medium text-foreground">{label}</span>{children}{hint && <span className="text-[0.9rem] text-muted-foreground">{hint}</span>}</div>;
 }
 export function Check({ label, checked, onChange, disabled, className }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string }) {
   return (

@@ -967,6 +967,7 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 2. **Universal API & Drop-in Replacement** — รองรับทั้งแบบ `options={[...]}` และการใส่ `<option>` เป็น `children` เหมือน native `<select>` พร้อมระบบค้นหากรองตัวเลือกอัตโนมัติ (Search filter) เมื่อตัวเลือกมากกว่า 6 รายการ และรองรับ keyboard navigation (ArrowDown/Up, Enter, Esc, Tab, Home, End) ตามมาตรฐาน WAI-ARIA combobox 1.2
 3. **ผสานเข้ากับระบบส่วนกลาง** — Re-export ผ่าน `components/ui/select.tsx` และ `gl-common.tsx`, ปรับปรุง `ChoiceSelect` ให้ใช้ `Combobox` แทน native `<select>` เมื่อตัวเลือก > 3 รายการ, และนำไปใช้แทนที่ native `<select>` ในหน้าจอผังบัญชี (`gl-masters.tsx`) ทั้งระดับบัญชี (1–12), หมวดบัญชี, จำนวนทศนิยม, และสมุดรายวัน
 4. **เพิ่มชุดทดสอบ Unit Test (`combobox.test.ts`)** — ทดสอบการเรนเดอร์, options prop, children `<option>`, placeholder, depth shadow, disabled state, accessibility ARIA, และ hidden input ครบถ้วน 100%
+5. **แก้ปัญหา Dropdown เมนูโดนทับและไม่เปิด (Portal & Event Isolation)** — ย้ายการเรนเดอร์เมนูป๊อปอัปของ `Combobox` ไปยัง `createPortal` สู่ `document.body` พร้อมคำนวณพิกัด `fixed` และ `z-index: 99999` หลุดพ้นจากการถูกครอบตัด (clipping) ของ container ที่มี `overflow-y-auto`, `opacity-95`, หรือ grid siblings ในการ์ด พร้อมทั้งเปลี่ยนคอนเทนเนอร์ของ `Field` ใน `gl-common.tsx` จาก `<label>` เป็น `<div>` เพื่อป้องกันปัญหา synthetic click bubbling ที่ทำให้เมนูปิดทันทีหลังคลิก
 
 **ไฟล์สำคัญ:**
 - `frontend/src/components/ui/combobox.tsx` (ใหม่)
