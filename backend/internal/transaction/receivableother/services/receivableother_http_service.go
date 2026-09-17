@@ -135,6 +135,9 @@ func (svc ReceivableOtherHttpService) CreateReceivableOther(holdingCode string, 
 	docData.ReceivableOther = doc
 
 	docData.DocNo = newDocNo
+	if docData.TransFlag == 0 {
+		docData.TransFlag = 99
+	}
 	docData.CreatedBy = authUsername
 	docData.CreatedAt = time.Now()
 

@@ -114,6 +114,21 @@ func consumerGroups() []consumerGroup {
 			createTopic: TOPIC_INVENTORY_CREATE, updateTopic: TOPIC_INVENTORY_UPDATE, deleteTopic: TOPIC_INVENTORY_DELETE,
 			onCreateOrUpdate: OnConsumeMessageInventoryCreateOrUpdate, onDelete: OnConsumeMessageInventoryDelete,
 		},
+		{
+			name: "Debtor Payment", group: CONSUMER_GROUP_DEBTOR_PAYMENT,
+			createTopic: TOPIC_DEBTOR_PAYMENT_CREATE, updateTopic: TOPIC_DEBTOR_PAYMENT_UPDATE, deleteTopic: TOPIC_DEBTOR_PAYMENT_DELETE,
+			onCreateOrUpdate: OnConsumeMessagePaidCreateOrUpdate, onDelete: OnConsumeMessagePaidDelete,
+		},
+		{
+			name: "Creditor Payment", group: CONSUMER_GROUP_CREDITOR_PAYMENT,
+			createTopic: TOPIC_CREDITOR_PAYMENT_CREATE, updateTopic: TOPIC_CREDITOR_PAYMENT_UPDATE, deleteTopic: TOPIC_CREDITOR_PAYMENT_DELETE,
+			onCreateOrUpdate: OnConsumeMessagePayCreateOrUpdate, onDelete: OnConsumeMessagePayDelete,
+		},
+		{
+			name: "Receivable Other", group: CONSUMER_GROUP_RECEIVABLE_OTHER,
+			createTopic: TOPIC_RECEIVABLE_OTHER_CREATE, updateTopic: TOPIC_RECEIVABLE_OTHER_UPDATE, deleteTopic: TOPIC_RECEIVABLE_OTHER_DELETE,
+			onCreateOrUpdate: OnConsumeMessageReceivableOtherCreateOrUpdate, onDelete: OnConsumeMessageReceivableOtherDelete,
+		},
 	}
 }
 

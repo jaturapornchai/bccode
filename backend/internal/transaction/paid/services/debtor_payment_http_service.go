@@ -134,6 +134,9 @@ func (svc PaidHttpService) CreatePaid(holdingCode string, authUsername string, d
 	docData.Paid = doc
 
 	docData.DocNo = newDocNo
+	if docData.TransFlag == 0 {
+		docData.TransFlag = 50
+	}
 	docData.CreatedBy = authUsername
 	docData.CreatedAt = time.Now()
 

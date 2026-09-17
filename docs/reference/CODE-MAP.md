@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-16 @ commit c362decc - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-17 @ commit e64dc6ed - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -1677,6 +1677,19 @@ Files indexed: 49
 | 1452 | function | `MockRandomString` |
 | 1456 | function | `MockRandomNumber` |
 
+## backend/internal/goapi/handlers/kafka.go (1360 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 19 | function | `getVersionedGroupID` |
+| 26 | function | `StartConsumers` |
+| 1119 | function | `TestSaleInvoiceConsumer` |
+| 1148 | function | `TestSaleReturnConsumer` |
+| 1177 | function | `TestInventoryConsumer` |
+| 1206 | function | `TestWarehouseConsumer` |
+| 1235 | function | `TestPurchaseReturnConsumer` |
+| 1269 | function | `GetConsumerStatus` |
+
 ## frontend/src/app/system-settings/warehouse-tree-view.tsx (1332 lines)
 
 | Line | Kind | Name |
@@ -1804,19 +1817,6 @@ Files indexed: 49
 | 1252 | function | `DisableUser` |
 | 1278 | function | `DeleteUser` |
 
-## backend/internal/goapi/handlers/kafka.go (1255 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 19 | function | `getVersionedGroupID` |
-| 26 | function | `StartConsumers` |
-| 1014 | function | `TestSaleInvoiceConsumer` |
-| 1043 | function | `TestSaleReturnConsumer` |
-| 1072 | function | `TestInventoryConsumer` |
-| 1101 | function | `TestWarehouseConsumer` |
-| 1130 | function | `TestPurchaseReturnConsumer` |
-| 1164 | function | `GetConsumerStatus` |
-
 ## backend/internal/stockprocess/stockcalculator_test.go (1244 lines)
 
 | Line | Kind | Name |
@@ -1836,35 +1836,6 @@ Files indexed: 49
 | 814 | function | `TestProcessStockBalanceAmountInfinity` |
 | 1074 | function | `TestCalcStockSaleAndReturnMustBeNotNAN` |
 | 1175 | function | `TestDebugStockNotCalc` |
-
-## frontend/src/app/currency/currency-screen.tsx (1227 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 403 | function | `CurrencyScreen` |
-| 493 | function | `openCreate` |
-| 500 | function | `openEdit` |
-| 513 | function | `isLastActive` |
-| 517 | function | `isBaseCurrency` |
-| 522 | function | `setBaseCurrency` |
-| 581 | function | `quickAdd` |
-| 611 | function | `saveCurrency` |
-| 681 | function | `deleteCurrency` |
-| 866 | function | `StatCard` |
-| 879 | function | `CurrencyCard` |
-| 984 | function | `CurrencyFormPanel` |
-| 1114 | function | `readAuth` |
-| 1118 | function | `readWorkspace` |
-| 1129 | function | `normalizeCurrencies` |
-| 1148 | function | `normalizeCurrency` |
-| 1164 | function | `uniqueStrings` |
-| 1168 | function | `toStringValue` |
-| 1172 | function | `normalizeForm` |
-| 1183 | function | `latestRateVsBase` |
-| 1192 | function | `upsertRateEntry` |
-| 1198 | function | `validateForm` |
-| 1207 | function | `getLocalCurrencyText` |
-| 1211 | function | `formatCount` |
 
 ## backend/internal/documentwarehouse/documentimage/documentimage_http.go (1220 lines)
 
@@ -2120,6 +2091,34 @@ Files indexed: 49
 | 975 | function | `downloadFileFromURL` |
 | 1009 | function | `ClearProductPrepareSession` |
 | 1024 | function | `GetProductPrepareSessionsJSON` |
+
+## frontend/src/app/currency/currency-screen.tsx (1033 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 213 | function | `CurrencyScreen` |
+| 303 | function | `openCreate` |
+| 310 | function | `openEdit` |
+| 323 | function | `isLastActive` |
+| 327 | function | `isBaseCurrency` |
+| 332 | function | `setBaseCurrency` |
+| 391 | function | `quickAdd` |
+| 421 | function | `saveCurrency` |
+| 491 | function | `deleteCurrency` |
+| 676 | function | `StatCard` |
+| 689 | function | `CurrencyCard` |
+| 794 | function | `CurrencyFormPanel` |
+| 924 | function | `readAuth` |
+| 928 | function | `readWorkspace` |
+| 939 | function | `normalizeCurrencies` |
+| 958 | function | `normalizeCurrency` |
+| 974 | function | `uniqueStrings` |
+| 978 | function | `toStringValue` |
+| 982 | function | `normalizeForm` |
+| 993 | function | `latestRateVsBase` |
+| 1002 | function | `upsertRateEntry` |
+| 1008 | function | `validateForm` |
+| 1017 | function | `formatCount` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/base_pdf.go (1019 lines)
 

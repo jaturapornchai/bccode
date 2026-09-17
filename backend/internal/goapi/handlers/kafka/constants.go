@@ -84,6 +84,21 @@ const (
 	TOPIC_RFQ_CREATE = "when-rfq-created"
 	TOPIC_RFQ_UPDATE = "when-rfq-updated"
 	TOPIC_RFQ_DELETE = "when-rfq-deleted"
+
+	// Debtor Payment (Paid) topics
+	TOPIC_DEBTOR_PAYMENT_CREATE = "when-debtor-payment-created"
+	TOPIC_DEBTOR_PAYMENT_UPDATE = "when-debtor-payment-updated"
+	TOPIC_DEBTOR_PAYMENT_DELETE = "when-debtor-payment-deleted"
+
+	// Creditor Payment (Pay) topics
+	TOPIC_CREDITOR_PAYMENT_CREATE = "when-creditor-payment-created"
+	TOPIC_CREDITOR_PAYMENT_UPDATE = "when-creditor-payment-updated"
+	TOPIC_CREDITOR_PAYMENT_DELETE = "when-creditor-payment-deleted"
+
+	// Receivable Other topics
+	TOPIC_RECEIVABLE_OTHER_CREATE = "when-debtor-receivableother-created"
+	TOPIC_RECEIVABLE_OTHER_UPDATE = "when-debtor-receivableother-updated"
+	TOPIC_RECEIVABLE_OTHER_DELETE = "when-debtor-receivableother-deleted"
 )
 
 // Consumer group constants
@@ -106,6 +121,9 @@ const (
 	CONSUMER_GROUP_STOCK_RETURN_PRODUCT  = "goapi-stockreturnproduct-consumer"
 	CONSUMER_GROUP_STOCK_ADJUSTMENT      = "goapi-stockadjustment-consumer"
 	CONSUMER_GROUP_STOCK_BALANCE         = "goapi-stockbalance-consumer"
+	CONSUMER_GROUP_DEBTOR_PAYMENT        = "goapi-debtorpayment-consumer"
+	CONSUMER_GROUP_CREDITOR_PAYMENT      = "goapi-creditorpayment-consumer"
+	CONSUMER_GROUP_RECEIVABLE_OTHER      = "goapi-receivableother-consumer"
 )
 
 // Transaction flags
@@ -123,9 +141,12 @@ const (
 	TRANS_FLAG_STOCK_RECEIVE_PRODUCT     = 60
 	TRANS_FLAG_STOCK_PICKUP_PRODUCT      = 56
 	TRANS_FLAG_STOCK_RETURN_PRODUCT      = 58
-	TRANS_FLAG_STOCK_ADJUSTMENT_INCREASE = 66 // ปรับสต็อก (เพิ่ม)
-	TRANS_FLAG_STOCK_ADJUSTMENT_DECREASE = 68 // ปรับสต็อก (ลด)
-	TRANS_FLAG_STOCK_BALANCE             = 54 // ยอดยกมา
+	TRANS_FLAG_STOCK_ADJUSTMENT_INCREASE = 66  // ปรับสต็อก (เพิ่ม)
+	TRANS_FLAG_STOCK_ADJUSTMENT_DECREASE = 68  // ปรับสต็อก (ลด)
+	TRANS_FLAG_STOCK_BALANCE             = 54  // ยอดยกมา
+	TRANS_FLAG_DEBTOR_PAYMENT            = 50  // รับชำระหนี้ (ลูกหนี้ 239->50)
+	TRANS_FLAG_CREDITOR_PAYMENT          = 19  // จ่ายชำระหนี้ (เจ้าหนี้)
+	TRANS_FLAG_RECEIVABLE_OTHER          = 99  // ตั้งหนี้อื่น (ลูกหนี้)
 )
 
 // Other constants

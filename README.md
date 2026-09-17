@@ -748,6 +748,35 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ผลการทดสอบ (Evidence):** `npm run verify` ผ่าน (codemap + frontend lint 0 error + typecheck + เทสต์ 566 ตัว) · ทดสอบบนจอจริง (กลุ่มกิจการสาธิต, จอ 1024×768): ค้นชื่อเดิม "บันทึกค่าใช้จ่าย" เจอเมนูใหม่ "บันทึกจ่ายเงินอื่นๆ" และจอทะเบียนเจ้าหนี้แสดง "เครดิต(วัน)", "วงเงินเครดิต", "ที่อยู่ออกบิล", "อัตราภาษี ณ ที่จ่าย", "เลขประจำตัวผู้เสียภาษี" ครบตามที่แก้ · **หมายเหตุ:** ป้ายในจอตั้งค่าสาขาที่ดึงข้อความจาก backend (ปีศักราชที่ใช้ / อัตราภาษีมูลค่าเพิ่ม / ประเภทการซื้อ-การขาย) จะเปลี่ยนเมื่อ backend อ่าน `languages.tsv` ใหม่ตอน deploy — เครื่องทดสอบยังเสิร์ฟข้อความเก่าอยู่ · ยังไม่ deploy (รอรวมกับงานที่ค้างตามที่ลุงจืดสั่ง)
 
 
+### 2026-09-17 — เชื่อมต่อ Kafka Consumer การเงิน 3 รายการลง PostgreSQL และขจัด Hardcode ภาษาบนหน้าจอ
+
+**ประเภทงาน:** `[Feature]` `[Integration]` `[i18n]`
+
+**สิ่งที่ทำ:** ดำเนินการต่อตามข้อกำหนดในแผนงาน §2.3 และ §2.4:
+
+1. **สร้าง GoAPI Kafka Consumer สำหรับธุรกรรมการเงินหลัก 3 รายการ** — รับและประมวลผลข้อมูลเข้าสู่ตาราง `doc` ใน PostgreSQL รองรับสถาปัตยกรรม 2-Tier ครบวงจร:
+   - `paid` (Debtor Payment / ใบเสร็จรับเงินลูกหนี้) — TransFlag 50 (`when-debtor-payment-*`)
+   - `pay` (Creditor Payment / ใบสำคัญจ่ายชำระหนี้) — TransFlag 19 (`when-creditor-payment-*`)
+   - `receivableother` (Receivable Other / ตั้งหนี้อื่น) — TransFlag 99 (`when-debtor-receivableother-*`)
+2. **กำหนด TransFlag อัตโนมัติใน HTTP Service** — ป้องกันกรณี client ส่งค่า transflag เป็น 0 หรือไม่ได้ส่งมา ให้ stamp ค่าเริ่มต้นที่ถูกต้องตามประเภทเอกสารเสมอ
+3. **i18n ขจัด Hard-coded ภาษาไทยในหน้าจอตามมาตรฐานระบบ** — ปลด dictionary ท้องถิ่นใน `line-oa-link-screen.tsx` และ `currency-screen.tsx` หันมาดึงข้อความผ่าน `backendText()` และเพิ่มแถวข้อความใหม่ 36 แถวลงใน `backend/assets/language/languages.tsv` ครบ 13 คอลัมน์
+4. **ปรับปรุงดัชนีซอร์สโค้ด `CODE-MAP.md`** ให้ตรงกับโครงสร้างไฟล์ปัจจุบัน 49 รายการ
+
+**ไฟล์สำคัญ:**
+- `backend/internal/goapi/handlers/kafka/paid.go` (ใหม่), `pay.go` (ใหม่), `receivable_other.go` (ใหม่)
+- `backend/internal/goapi/handlers/kafka/constants.go`, `manager.go`, `kafka.go`, `kafka_bridge.go`
+- `backend/internal/transaction/paid/services/debtor_payment_http_service.go`
+- `backend/internal/transaction/pay/services/creditor_payment_http_service.go`
+- `backend/internal/transaction/receivableother/services/receivableother_http_service.go`
+- `backend/assets/language/languages.tsv` (เพิ่ม 36 แถวใหม่ครบ 13 คอลัมน์)
+- `frontend/src/app/line-oa/line-oa-link-screen.tsx`, `frontend/src/app/currency/currency-screen.tsx`
+- `docs/reference/CODE-MAP.md`
+
+**ผลการทดสอบ (Evidence):**
+- ทดสอบการยิงเอกสารจริง (UAT) เข้า MongoDB -> Kafka -> GoAPI Consumer -> PostgreSQL ตาราง `doc` สำเร็จครบทั้ง 3 รายการ และทำความสะอาดลบข้อมูลทดสอบเรียบร้อย
+- `tools/verify.sh` ผ่านทั้งหมด: `codemap` (sync 49 files) และ `frontend` (lint 0 errors, tsc pass, vitest 78 ไฟล์ / 574 เทสต์ผ่าน 100%)
+- `tools/verify.sh backend` ผ่านทั้งหมด (Go build + unit tests ทุกแพ็กเกจ)
+
 ### 2026-09-16 — เปลี่ยนชื่อเมนูและชื่อฟิลด์ให้ตรงกับโปรแกรมเดิม (Champ) เพื่อให้ลูกค้าที่ย้ายระบบไม่สับสน
 
 **ประเภทงาน:** `[UI/UX]` `[Docs]`

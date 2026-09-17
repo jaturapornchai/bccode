@@ -574,6 +574,42 @@ func CallDebtorBulkDeleteConsumer(msg string) error {
 	return kafka.OnConsumeMessageDebtorBulkDelete(msg)
 }
 
+// CallPaidConsumer - ประมวลผลรับชำระหนี้ (สร้าง/แก้ไข)
+// รับ JSON message จาก Kafka topic: when-debtor-payment-created, when-debtor-payment-updated
+func CallPaidConsumer(msg string) error {
+	return kafka.OnConsumeMessagePaidCreateOrUpdate(msg)
+}
+
+// CallPaidDeleteConsumer - ประมวลผลการลบรับชำระหนี้
+// รับ JSON message จาก Kafka topic: when-debtor-payment-deleted
+func CallPaidDeleteConsumer(msg string) error {
+	return kafka.OnConsumeMessagePaidDelete(msg)
+}
+
+// CallPayConsumer - ประมวลผลจ่ายชำระหนี้ (สร้าง/แก้ไข)
+// รับ JSON message จาก Kafka topic: when-creditor-payment-created, when-creditor-payment-updated
+func CallPayConsumer(msg string) error {
+	return kafka.OnConsumeMessagePayCreateOrUpdate(msg)
+}
+
+// CallPayDeleteConsumer - ประมวลผลการลบจ่ายชำระหนี้
+// รับ JSON message จาก Kafka topic: when-creditor-payment-deleted
+func CallPayDeleteConsumer(msg string) error {
+	return kafka.OnConsumeMessagePayDelete(msg)
+}
+
+// CallReceivableOtherConsumer - ประมวลผลตั้งหนี้อื่น (สร้าง/แก้ไข)
+// รับ JSON message จาก Kafka topic: when-debtor-receivableother-created, when-debtor-receivableother-updated
+func CallReceivableOtherConsumer(msg string) error {
+	return kafka.OnConsumeMessageReceivableOtherCreateOrUpdate(msg)
+}
+
+// CallReceivableOtherDeleteConsumer - ประมวลผลการลบตั้งหนี้อื่น
+// รับ JSON message จาก Kafka topic: when-debtor-receivableother-deleted
+func CallReceivableOtherDeleteConsumer(msg string) error {
+	return kafka.OnConsumeMessageReceivableOtherDelete(msg)
+}
+
 // ============================================================================
 // Startup Function
 // ============================================================================

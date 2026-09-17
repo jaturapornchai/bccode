@@ -129,43 +129,6 @@ const lineOaBackendKeys: Record<LineOaTextKey, string> = {
   none: "none",
 };
 
-const lineOaText: Partial<Record<LanguageCode, Partial<Record<LineOaTextKey, string>>>> = {
-  th: {
-    title: "เชื่อมต่อ LINE OA",
-    subtitle: "ผูกผู้ใช้ของบริษัทที่เลือกกับ LINE OA สำหรับแจ้งเตือนและอนุมัติเอกสาร",
-    currentUser: "ผู้ใช้ปัจจุบัน",
-    selectedCompany: "บริษัทที่เลือก",
-    selectedBranch: "สาขาที่เลือก",
-    status: "สถานะ",
-    linked: "เชื่อมแล้ว",
-    notLinked: "ยังไม่เชื่อม",
-    lineUserId: "LINE User ID",
-    lineDisplayName: "ชื่อ LINE",
-    linkedAt: "เชื่อมเมื่อ",
-    noLineProfile: "ยังไม่พบโปรไฟล์ LINE OA ของผู้ใช้นี้",
-    createLink: "สร้างลิงก์เชื่อมต่อ",
-    creatingLink: "กำลังสร้างลิงก์",
-    refreshStatus: "โหลดสถานะใหม่",
-    qrTitle: "QR สำหรับ LINE OA",
-    scanQr: "สแกน QR ด้วย LINE หรือเปิดลิงก์บนมือถือ",
-    openLine: "เปิด LINE",
-    copyLink: "คัดลอกลิงก์",
-    copied: "คัดลอกแล้ว",
-    linkReady: "สร้างลิงก์แล้ว ให้ยืนยันต่อใน LINE",
-    linkedSuccess: "เชื่อมต่อ LINE OA สำเร็จ",
-    loadFailed: "โหลดโปรไฟล์ LINE OA ไม่สำเร็จ",
-    requestFailed: "เรียกข้อมูลไม่สำเร็จ",
-    loginRequired: "กรุณาเข้าสู่ระบบและเลือกบริษัทก่อนเปิดหน้าจอนี้",
-    setupRequired: "บริษัทนี้ยังไม่ได้ตั้งค่า LINE OA หรือ LIFF ID",
-    secureNote: "ผูกระดับ user เฉพาะบริษัทที่ใช้งานอยู่",
-    stepCompany: "บริษัท",
-    stepGenerate: "ลิงก์",
-    stepConfirm: "ยืนยัน",
-    none: "ไม่มี",
-  },
-  en: lineOaTextEn,
-};
-
 const emptyProfile: LineOaUserProfile = {
   linked: false,
   lineUserId: "",
@@ -201,10 +164,10 @@ export function LineOaLinkScreen({
 
   const text = useCallback(
     (key: LineOaTextKey) => {
-      const fallback = lineOaText[language]?.[key] ?? lineOaTextEn[key] ?? key;
+      const fallback = lineOaTextEn[key] ?? key;
       return backendText(backendLanguage, lineOaBackendKeys[key], fallback);
     },
-    [backendLanguage, language],
+    [backendLanguage],
   );
 
   const loadProfile = useCallback(async (currentAuth: AuthSession | null, currentWorkspace: WorkspaceSession | null, silent = false) => {
@@ -244,7 +207,7 @@ export function LineOaLinkScreen({
     const nextAuth = readAuth();
     const nextWorkspace = readWorkspace();
     if (!nextAuth || !nextWorkspace) {
-      setNotice({ type: "error", text: getLocalText(savedLanguage, "loginRequired") });
+      setNotice({ type: "error", text: text("loginRequired") });
       if (!embedded) router.replace("/");
       return;
     }
@@ -252,7 +215,7 @@ export function LineOaLinkScreen({
     setAuth(nextAuth);
     setWorkspace(nextWorkspace);
     void loadProfile(nextAuth, nextWorkspace);
-  }, [embedded, externalLanguage, initialLanguage, loadProfile, router]);
+  }, [embedded, externalLanguage, initialLanguage, loadProfile, router, text]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -499,10 +462,6 @@ function readStorage<T>(key: string): T | null {
   } catch {
     return null;
   }
-}
-
-function getLocalText(language: LanguageCode, key: LineOaTextKey): string {
-  return lineOaText[language]?.[key] ?? lineOaTextEn[key] ?? key;
 }
 
 function getString(payload: Record<string, unknown>, key: string): string {

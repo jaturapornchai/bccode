@@ -135,6 +135,9 @@ func (svc PayHttpService) CreatePay(holdingCode string, authUsername string, doc
 	docData.Pay = doc
 
 	docData.DocNo = newDocNo
+	if docData.TransFlag == 0 {
+		docData.TransFlag = 19
+	}
 	docData.CreatedBy = authUsername
 	docData.CreatedAt = time.Now()
 

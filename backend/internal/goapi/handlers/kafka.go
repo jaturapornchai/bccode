@@ -1005,6 +1005,111 @@ func StartConsumers() {
 		})
 	}()
 
+	// Start Debtor Payment (Paid) consumers
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Debtor Payment consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-debtor-payment-created", getVersionedGroupID("goapi-debtorpayment-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล create debtor payment: %s", msg)
+			return CallPaidConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Debtor Payment consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-debtor-payment-updated", getVersionedGroupID("goapi-debtorpayment-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล update debtor payment: %s", msg)
+			return CallPaidConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Debtor Payment consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-debtor-payment-deleted", getVersionedGroupID("goapi-debtorpayment-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล delete debtor payment: %s", msg)
+			return CallPaidDeleteConsumer(msg)
+		})
+	}()
+
+	// Start Creditor Payment (Pay) consumers
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Creditor Payment consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-creditor-payment-created", getVersionedGroupID("goapi-creditorpayment-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล create creditor payment: %s", msg)
+			return CallPayConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Creditor Payment consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-creditor-payment-updated", getVersionedGroupID("goapi-creditorpayment-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล update creditor payment: %s", msg)
+			return CallPayConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Creditor Payment consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-creditor-payment-deleted", getVersionedGroupID("goapi-creditorpayment-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล delete creditor payment: %s", msg)
+			return CallPayDeleteConsumer(msg)
+		})
+	}()
+
+	// Start Receivable Other consumers
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Receivable Other consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-debtor-receivableother-created", getVersionedGroupID("goapi-receivableother-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล create receivable other: %s", msg)
+			return CallReceivableOtherConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Receivable Other consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-debtor-receivableother-updated", getVersionedGroupID("goapi-receivableother-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล update receivable other: %s", msg)
+			return CallReceivableOtherConsumer(msg)
+		})
+	}()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Info("Panic in Receivable Other consumer: %v", r)
+			}
+		}()
+		consumers.ConsumeMessage(kafkaServer, "when-debtor-receivableother-deleted", getVersionedGroupID("goapi-receivableother-consumer"), 0, func(msg string) error {
+			logger.Info("กำลังประมวลผล delete receivable other: %s", msg)
+			return CallReceivableOtherDeleteConsumer(msg)
+		})
+	}()
+
 	logger.Info("เริ่มต้น Kafka consumers เรียบร้อย")
 }
 
