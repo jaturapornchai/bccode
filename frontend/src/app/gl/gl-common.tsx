@@ -49,8 +49,19 @@ export function useRowDensity() {
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return <label className="grid min-w-0 gap-1 text-[0.95rem] leading-normal"><span className="font-medium">{label}</span>{children}{hint && <span className="text-[0.9rem] text-muted-foreground">{hint}</span>}</label>;
 }
-export function Check({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
-  return <label className="flex min-h-[2.6em] w-auto items-center gap-2 text-[0.95rem]"><input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} />{label}</label>;
+export function Check({ label, checked, onChange, disabled, className }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string }) {
+  return (
+    <label className={cn("inline-flex items-center gap-2 py-1 text-[0.95rem] leading-normal cursor-pointer select-none text-foreground transition-colors hover:text-primary", disabled && "cursor-not-allowed opacity-60 pointer-events-none", className)}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        className="size-4.5 rounded border-input text-primary accent-primary focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed"
+      />
+      <span>{label}</span>
+    </label>
+  );
 }
 export function Notice({ text, error = false }: { text: string; error?: boolean }) {
   return text ? <div role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed ${error ? "border-destructive/40 bg-destructive/5 text-foreground" : "border-primary/25 bg-primary/5 text-foreground"}`}>{text}</div> : null;

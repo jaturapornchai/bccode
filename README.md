@@ -772,6 +772,27 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ผลการทดสอบ (Evidence):** `npm run verify` ผ่าน (codemap + frontend lint 0 error + typecheck + เทสต์ 566 ตัว) · ทดสอบบนจอจริง (กลุ่มกิจการสาธิต, จอ 1024×768): ค้นชื่อเดิม "บันทึกค่าใช้จ่าย" เจอเมนูใหม่ "บันทึกจ่ายเงินอื่นๆ" และจอทะเบียนเจ้าหนี้แสดง "เครดิต(วัน)", "วงเงินเครดิต", "ที่อยู่ออกบิล", "อัตราภาษี ณ ที่จ่าย", "เลขประจำตัวผู้เสียภาษี" ครบตามที่แก้ · **หมายเหตุ:** ป้ายในจอตั้งค่าสาขาที่ดึงข้อความจาก backend (ปีศักราชที่ใช้ / อัตราภาษีมูลค่าเพิ่ม / ประเภทการซื้อ-การขาย) จะเปลี่ยนเมื่อ backend อ่าน `languages.tsv` ใหม่ตอน deploy — เครื่องทดสอบยังเสิร์ฟข้อความเก่าอยู่ · ยังไม่ deploy (รอรวมกับงานที่ค้างตามที่ลุงจืดสั่ง)
 
 
+### 2026-09-17 — ปรับปรุงการจัดวาง Checkbox เป็นแบบกระชับ เรียงแนวนอนไปทางขวา และ wrap ลงมาเมื่อเกิน (Zero-Waste Layout)
+
+**ประเภทงาน:** `[UI/UX]` `[Polish]`
+
+**สิ่งที่ทำ:**
+1. **ลดความสูงและช่องไฟของคอมโพเนนต์ Checkbox (`Check`)**:
+   - เดิมที `<Check>` มีความสูงตายตัว `min-h-[2.6em]` (~42px) ทำให้กินพื้นที่แนวตั้งมากเกินไป และเมื่อมีหลายตัวเลือกในหน้าจอหรือจอแคบจะบวมหนาและดันปุ่มด้านล่าง
+   - ปรับเป็น `inline-flex items-center gap-2 py-1` พอดีกับความสูงบรรทัด (~24px) พร้อมปรับแต่งกล่อง checkbox input ให้มี `size-4.5 rounded border-input text-primary accent-primary` และ interactive hover/focus ที่ชัดเจน
+2. **ปรับการจัดวางในฟอร์มของโมดูล GL ให้เรียงแนวนอนไปทางขวาและ wrap ลงมาเมื่อเกิน**:
+   - ปรับใน `AccountFields` (ผังบัญชี), `FiscalYearFields` (ปีบัญชี) และ `MasterFields` (ข้อมูลหลักทั้งหมด) ใน `gl-masters.tsx`
+   - รวมกลุ่ม Checkbox เข้าไปใน Grid ของฟอร์ม (`sm:col-span-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1`) เรียงต่อกันไปทางขวาอย่างเป็นระเบียบ และหากความกว้างหน้าจอไม่พอ (ถ้าเกิน) ก็จะ wrap ลงมาด้านล่างอย่างนุ่มนวล โดยไม่เปลืองพื้นที่แนวตั้ง
+
+**ไฟล์สำคัญ:**
+- `frontend/src/app/gl/gl-common.tsx` (ปรับปรุงคอมโพเนนต์ `Check`)
+- `frontend/src/app/gl/gl-masters.tsx` (ปรับปรุง Layout ใน `AccountFields`, `FiscalYearFields`, `MasterFields`)
+
+**ผลการทดสอบ (Evidence):**
+- `npm run typecheck --prefix frontend` ผ่าน 0 errors
+- `npm test --prefix frontend` ทั้ง 78 ไฟล์ / 576 เทสต์ผ่าน 100%
+- `tools/verify.sh fast` ผ่านทั้งหมด
+
 ### 2026-09-17 — แก้ไขปัญหาจอขยับ (Layout Shift) จากการแสดงสถานะ "ยังไม่บันทึก" เป็น Zero Layout Shift
 
 **ประเภทงาน:** `[UI/UX]` `[Fix]` `[i18n]`
