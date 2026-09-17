@@ -1000,3 +1000,22 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ไฟล์สำคัญ:**
 - `AGENTS.md`
 
+### 2026-09-18 — ปรับปรุงสคริปต์ Fast-Deploy เพิ่มการคืนพื้นที่ดิสก์อัตโนมัติ, แก้ไขการกู้คืน Stale Bundle, และยกระดับการควบคุมโฟกัส Combobox Portal
+
+**ประเภทงาน:** `[DevOps]` `[UI/UX]` `[Bugfix]`
+
+**สิ่งที่ทำ:**
+1. **เพิ่ม Post-Deploy Automated Retention Cleanup ใน `tools/fast-deploy.py`** — สั่ง prune docker images เก่าเกิน 72 ชั่วโมง และ prune build cache อัตโนมัติหลัง deploy สำเร็จ ช่วยรักษาพื้นที่ว่างบนเซิร์ฟเวอร์ให้อยู่ในระดับปลอดภัยอย่างยั่งยืน ป้องกันปัญหาดิสก์สะสมขยะ image เก่าจนเต็ม (ลดพื้นที่ใช้จริงจาก 55GB เหลือ 38GB พื้นที่ว่าง 117GB)
+2. **แก้ปัญหา Stale Client Bundle (ChunkLoadError Recovery) ใน Next.js (`layout.tsx`)** — เพิ่ม script ดักจับข้อผิดพลาด `ChunkLoadError` หรือ failed to fetch dynamically imported module เมื่อมีการปล่อย release ใหม่ เพื่อสั่ง auto-reload หน้าเว็บอัตโนมัติ 1 ครั้ง พร้อม session throttle guard ป้องกัน reload loop ป้องกันผู้ใช้ที่เปิดหน้าจอทิ้งไว้เจอปัญหาหน้าจอค้างหรือจอขาว
+3. **ยกระดับ Focus Flow และ WAI-ARIA ใน Combobox Portal (`combobox.tsx`)** — รองรับคีย์บอร์ด `Tab` และ `Shift+Tab` ให้กระโดดไปยัง element ถัดไปหรือก่อนหน้าได้อย่างถูกต้องไร้รอยต่อ แม้ dropdown menu จะถูก render นอก container เข้าสู่ Portal (`document.body`) พร้อมทั้งเพิ่มสไตล์ `readOnly` และ `aria-readonly`
+4. **ป้องกัน React Uncontrolled Component ใน `gl-allocations.tsx`** — เพิ่ม nullish coalescing default fallback (`?? ""`) ในฟิลด์ของแบบฟอร์มปันส่วนต้นทุนและตารางอัตราส่วนทุกฟิลด์ ป้องกัน warning และ runtime crash เมื่อข้อมูลจาก backend เป็น null
+5. **เพิ่ม Unit Test ครอบคลุมฟังก์ชันใหม่** — เพิ่มกรณีทดสอบ WAI-ARIA และ `readOnly` ใน `combobox.test.ts` ผ่านการทดสอบ 100% (79 files / 586 tests)
+
+**ไฟล์สำคัญ:**
+- `tools/fast-deploy.py`
+- `frontend/src/app/layout.tsx`
+- `frontend/src/components/ui/combobox.tsx`
+- `frontend/src/components/ui/combobox.test.ts`
+- `frontend/src/app/gl/gl-allocations.tsx`
+- `README.md`
+

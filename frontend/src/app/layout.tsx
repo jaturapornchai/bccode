@@ -87,6 +87,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         ].map((href) => (
           <link key={href} rel="stylesheet" href={href} />
         ))}
+        {/* Automatic ChunkLoadError / Stale Bundle Recovery */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){function r(m){if(!m||typeof m!=="string")return;if(/Loading chunk [0-9]+ failed|Failed to fetch dynamically imported module|Importing a module script failed/i.test(m)){var k="bc_chunk_reload_"+(window.location.pathname||""),n=Date.now(),l=parseInt(sessionStorage.getItem(k)||"0",10);if(n-l>15000){sessionStorage.setItem(k,String(n));window.location.reload();}}}window.addEventListener("error",function(e){r(e&&(e.message||(e.error&&e.error.message)));},true);window.addEventListener("unhandledrejection",function(e){r(e&&e.reason&&(e.reason.message||String(e.reason)));});})();`,
+          }}
+        />
       </head>
       <body>
         <AuthSessionBootstrap>{children}</AuthSessionBootstrap>

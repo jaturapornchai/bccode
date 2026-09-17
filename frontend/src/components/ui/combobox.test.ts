@@ -85,4 +85,28 @@ describe("Combobox Component", () => {
     expect(html).toContain('name="account_level"');
     expect(html).toContain('value="5"');
   });
+
+  it("renders proper WAI-ARIA attributes for closed state by default", () => {
+    const html = renderToStaticMarkup(
+      createElement(Combobox, {
+        value: "1",
+        options: [{ value: "1", label: "ระดับ 1" }],
+      })
+    );
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('aria-haspopup="listbox"');
+    expect(html).toContain('aria-controls=');
+  });
+
+  it("handles readOnly prop preventing interaction styles", () => {
+    const html = renderToStaticMarkup(
+      createElement(Combobox, {
+        value: "1",
+        readOnly: true,
+        options: [{ value: "1", label: "ระดับ 1" }],
+      })
+    );
+    expect(html).toContain("cursor-default");
+    expect(html).toContain("opacity-80");
+  });
 });

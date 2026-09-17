@@ -339,6 +339,24 @@ function ComboboxInner<T extends string | number = string | number>(
       case "Tab": {
         setIsOpen(false);
         setSearchQuery("");
+        if (event.shiftKey) {
+          event.preventDefault();
+          internalTriggerRef.current?.focus();
+        } else {
+          const trigger = internalTriggerRef.current;
+          if (trigger && typeof document !== "undefined") {
+            const focusables = Array.from(
+              document.querySelectorAll<HTMLElement>(
+                'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+              )
+            ).filter((el) => el.offsetParent !== null || el === trigger);
+            const currentIndex = focusables.indexOf(trigger);
+            if (currentIndex >= 0 && currentIndex < focusables.length - 1) {
+              event.preventDefault();
+              focusables[currentIndex + 1].focus();
+            }
+          }
+        }
         break;
       }
       case "Home": {
@@ -388,8 +406,9 @@ function ComboboxInner<T extends string | number = string | number>(
         aria-controls={listboxId}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
+        aria-readonly={readOnly || undefined}
         disabled={disabled}
-        tabIndex={tabIndex ?? 0}
+        tabIndex={readOnly ? -1 : (tabIndex ?? 0)}
         onMouseDown={(e) => {
           // Prevent parent label focus propagation
           e.stopPropagation();
@@ -411,6 +430,9 @@ function ComboboxInner<T extends string | number = string | number>(
           "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[0_4px_16px_rgba(0,0,0,0.2)]",
           // Open state
           isOpen && "border-primary ring-2 ring-ring/80 shadow-[0_4px_16px_rgba(0,0,0,0.2)]",
+          // ReadOnly state
+          readOnly &&
+            "cursor-default bg-muted/10 border-border text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.05)] hover:border-border hover:shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.05)] pointer-events-none opacity-80",
           // Disabled state - preserve depth shadow for Thai 40+ read-only clarity
           disabled &&
             "cursor-default bg-muted/20 border-border text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.07)] hover:border-border hover:shadow-[0_2px_8px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.07)] pointer-events-none opacity-90",

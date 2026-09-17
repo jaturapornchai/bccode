@@ -169,11 +169,11 @@ export function GLAllocations({ route }: { route: string }) {
         <div className="flex-1 min-h-0 overflow-auto grid gap-3 content-start">
           <fieldset disabled={!isEditing || busy} className="grid gap-3">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={tr("gl_code", "รหัส")}><input data-field="code" className={control} value={record.code} onChange={(event) => set({ code: event.target.value })} maxLength={60} /></Field>
-              <Field label={tr("gl_name_description", "ชื่อ / รายละเอียด")}><input data-field="name" className={control} value={record.name} onChange={(event) => set({ name: event.target.value })} maxLength={300} /></Field>
+              <Field label={tr("gl_code", "รหัส")}><input data-field="code" className={control} value={record.code ?? ""} onChange={(event) => set({ code: event.target.value })} maxLength={60} /></Field>
+              <Field label={tr("gl_name_description", "ชื่อ / รายละเอียด")}><input data-field="name" className={control} value={record.name ?? ""} onChange={(event) => set({ name: event.target.value })} maxLength={300} /></Field>
             </div>
-            <Field label={tr("gl_alloc_cost_account", "บัญชีต้นทุนที่ต้องการปันส่วน")}><AccountSelect value={record.accountcode} onChange={(value) => set({ accountcode: value })} accounts={refs.accounts} field="accountcode" /></Field>
-            <div className="flex flex-wrap items-center gap-3"><Check label={tr("gl_enable", "ใช้งาน")} checked={record.isactive} onChange={(checked) => set({ isactive: checked })} />
+            <Field label={tr("gl_alloc_cost_account", "บัญชีต้นทุนที่ต้องการปันส่วน")}><AccountSelect value={record.accountcode ?? ""} onChange={(value) => set({ accountcode: value })} accounts={refs.accounts} field="accountcode" /></Field>
+            <div className="flex flex-wrap items-center gap-3"><Check label={tr("gl_enable", "ใช้งาน")} checked={!!record.isactive} onChange={(checked) => set({ isactive: checked })} />
               <span className={`text-[0.95rem] ${balanced ? "text-muted-foreground" : "text-destructive font-medium"}`}>{tr("gl_alloc_rate_total", "อัตรารวม {0}%").replace("{0}", total)}{balanced ? "" : ` · ${tr("gl_alloc_rate_total_100", "อัตราการปันส่วนรวมต้องเท่ากับ 100 เปอร์เซ็นต์")}`}</span>
             </div>
           </fieldset>
@@ -198,11 +198,11 @@ export function GLAllocations({ route }: { route: string }) {
                   {record.allocaterules.map((rule, index) => (
                     <tr key={index}>
                       <td className="p-2 text-center text-muted-foreground">{index + 1}</td>
-                      <td className="p-2"><AccountSelect value={rule.accountcode} onChange={(value) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, accountcode: value } : entry) })} accounts={refs.accounts} allowEmpty label={tr("gl_alloc_target_account", "บัญชีปลายทาง")} /></td>
-                      <td className="p-2"><input className="min-h-[2.4em] w-full rounded-lg border border-input bg-background px-2 py-1" value={rule.branchcode} onChange={(event) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, branchcode: event.target.value } : entry) })} maxLength={60} /></td>
-                      <td className="p-2"><input className="min-h-[2.4em] w-full rounded-lg border border-input bg-background px-2 py-1" value={rule.departmentcode} onChange={(event) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, departmentcode: event.target.value } : entry) })} maxLength={60} /></td>
-                      <td className="p-2"><input className="min-h-[2.4em] w-full rounded-lg border border-input bg-background px-2 py-1" value={rule.projectcode} onChange={(event) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, projectcode: event.target.value } : entry) })} maxLength={60} /></td>
-                      <td className="p-2"><AmountInput value={rule.rate} onChange={(value) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, rate: value } : entry) })} scale={2} ariaLabel={tr("gl_alloc_rate", "อัตรา %")} /></td>
+                      <td className="p-2"><AccountSelect value={rule.accountcode ?? ""} onChange={(value) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, accountcode: value } : entry) })} accounts={refs.accounts} allowEmpty label={tr("gl_alloc_target_account", "บัญชีปลายทาง")} /></td>
+                      <td className="p-2"><input className="min-h-[2.4em] w-full rounded-lg border border-input bg-background px-2 py-1" value={rule.branchcode ?? ""} onChange={(event) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, branchcode: event.target.value } : entry) })} maxLength={60} /></td>
+                      <td className="p-2"><input className="min-h-[2.4em] w-full rounded-lg border border-input bg-background px-2 py-1" value={rule.departmentcode ?? ""} onChange={(event) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, departmentcode: event.target.value } : entry) })} maxLength={60} /></td>
+                      <td className="p-2"><input className="min-h-[2.4em] w-full rounded-lg border border-input bg-background px-2 py-1" value={rule.projectcode ?? ""} onChange={(event) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, projectcode: event.target.value } : entry) })} maxLength={60} /></td>
+                      <td className="p-2"><AmountInput value={rule.rate ?? 0} onChange={(value) => set({ allocaterules: record.allocaterules.map((entry, i) => i === index ? { ...entry, rate: value } : entry) })} scale={2} ariaLabel={tr("gl_alloc_rate", "อัตรา %")} /></td>
                       <td className="p-2 text-center"><Button type="button" variant="ghost" className="!min-h-0 !p-1.5" disabled={!isEditing || busy} aria-label={tr("gl_delete_item", "ลบรายการ")} onClick={() => set({ allocaterules: record.allocaterules.filter((_, i) => i !== index) })}><Trash2 className="size-4 text-destructive" /></Button></td>
                     </tr>
                   ))}

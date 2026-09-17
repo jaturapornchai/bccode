@@ -86,7 +86,7 @@ def main():
         docker_base = ["docker", "--host", f"ssh://{SERVER_HOST}"]
 
     # 3. Build frontend image
-    log("🔨 [Step 1/6] Building frontend docker image...")
+    log("🔨 [Step 1/7] Building frontend docker image...")
     t0 = time.time()
     frontend_img = f"bcai-account-frontend:{tag}"
     build_frontend_cmd = docker_base + [
@@ -108,7 +108,7 @@ def main():
         log(f"✅ Backend image built in {time.time() - t0:.1f}s")
 
     # 4. Preflight backup on remote server
-    log("🔒 [Step 2/6] Running remote preflight backup (Mongo + Postgres + Runtime Config)...")
+    log("🔒 [Step 2/7] Running remote preflight backup (Mongo + Postgres + Runtime Config)...")
     t0 = time.time()
     preflight_script = f"""
 import datetime, hashlib, json, os, pathlib, subprocess
@@ -165,11 +165,11 @@ print(json.dumps(proof))
 
     # 5. Handle mainapi tag or upload
     if not deploy_backend:
-        log(f"🏷️ [Step 3/6] Re-tagging remote mainapi to {mainapi_img} (Zero-copy instant tag)...")
+        log(f"🏷️ [Step 3/7] Re-tagging remote mainapi to {mainapi_img} (Zero-copy instant tag)...")
         run_ssh(f"docker tag {current_mainapi_image} {mainapi_img}")
     else:
         if not use_remote_docker:
-            log(f"📦 [Step 3/6] Streaming backend image {mainapi_img} over compressed SSH pipe...")
+            log(f"📦 [Step 3/7] Streaming backend image {mainapi_img} over compressed SSH pipe...")
             t0 = time.time()
             p1 = subprocess.Popen(["docker", "save", mainapi_img], stdout=subprocess.PIPE)
             p2 = subprocess.Popen(SSH_BASE + ["-C", "docker", "load"], stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -179,11 +179,11 @@ print(json.dumps(proof))
                 raise RuntimeError(f"Failed to stream mainapi image: {err.decode()}")
             log(f"✅ Mainapi image loaded on remote server in {time.time() - t0:.1f}s: {out.decode().strip()}")
         else:
-            log(f"⚡ [Step 3/6] Backend image {mainapi_img} built directly on remote daemon -> Zero transfer time!")
+            log(f"⚡ [Step 3/7] Backend image {mainapi_img} built directly on remote daemon -> Zero transfer time!")
 
     # 6. Stream frontend image directly through compressed SSH pipe (if built locally)
     if not use_remote_docker:
-        log(f"📦 [Step 4/6] Streaming frontend image {frontend_img} directly over compressed SSH pipe...")
+        log(f"📦 [Step 4/7] Streaming frontend image {frontend_img} directly over compressed SSH pipe...")
         t0 = time.time()
         p1 = subprocess.Popen(["docker", "save", frontend_img], stdout=subprocess.PIPE)
         p2 = subprocess.Popen(SSH_BASE + ["-C", "docker", "load"], stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -193,10 +193,10 @@ print(json.dumps(proof))
             raise RuntimeError(f"Failed to stream frontend image: {err.decode()}")
         log(f"✅ Frontend image loaded on remote server in {time.time() - t0:.1f}s: {out.decode().strip()}")
     else:
-        log(f"⚡ [Step 4/6] Frontend image {frontend_img} built directly on remote daemon -> Zero transfer time!")
+        log(f"⚡ [Step 4/7] Frontend image {frontend_img} built directly on remote daemon -> Zero transfer time!")
 
     # 7. Remote atomic switch and container restart
-    log("🔄 [Step 5/6] Performing atomic release.env switch and container deployment...")
+    log("🔄 [Step 5/7] Performing atomic release.env switch and container deployment...")
     t0 = time.time()
     deploy_script = f"""
 import datetime, json, os, pathlib, re, subprocess, time, urllib.request, urllib.error
@@ -270,7 +270,7 @@ print("DEPLOY_OK")
     log(f"✅ Services healthy and running in {time.time() - t0:.1f}s")
 
     # 7. Live verification
-    log("🌐 [Step 6/6] Verifying live endpoints on https://account.bcaicloud.com/...")
+    log("🌐 [Step 6/7] Verifying live endpoints on https://account.bcaicloud.com/...")
     t0 = time.time()
     req = urllib.request.Request("https://account.bcaicloud.com/", headers={"User-Agent": "bcai-deploy-check"})
     with urllib.request.urlopen(req, timeout=15) as r:
@@ -285,6 +285,20 @@ print("DEPLOY_OK")
         assert e.code == 401, f"Expected 401 from /api/gl/accounts, got {e.code}"
 
     log(f"✅ Live endpoints verified in {time.time() - t0:.1f}s")
+
+    # 8. Post-deploy Automated Retention Cleanup (Inquisitive DevOps)
+    log("🧹 [Step 7/7] Running remote retention cleanup (pruning images > 72h & build cache)...")
+    t0 = time.time()
+    try:
+        cleanup_cmd = (
+            "docker image prune -a --filter 'until=72h' -f >/dev/null 2>&1 && "
+            "docker builder prune -f --keep-storage 2GB >/dev/null 2>&1 || true"
+        )
+        run_ssh(cleanup_cmd)
+        log(f"✅ Remote retention cleanup complete in {time.time() - t0:.1f}s (disk space maintained).")
+    except Exception as e:
+        log(f"⚠️ Warning: Remote retention cleanup encountered an issue: {e}")
+
     total_elapsed = time.time() - start_total
     log(f"🎉 DEPLOY FINISHED SUCCESSFULLY in {total_elapsed:.1f}s! Release: {tag}")
 
