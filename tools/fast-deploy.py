@@ -71,12 +71,26 @@ def main():
         except Exception as e:
             log(f"Git check notice: {e}, sticking to frontend-only default.")
 
-    # 2. Build local frontend image
-    log("🔨 [Step 1/6] Building frontend docker image locally...")
+    # 2. Check local vs remote Docker daemon readiness
+    use_remote_docker = False
+    try:
+        check_local = subprocess.run(["docker", "info"], capture_output=True, timeout=4)
+        if check_local.returncode != 0:
+            use_remote_docker = True
+    except Exception:
+        use_remote_docker = True
+
+    docker_base = ["docker"]
+    if use_remote_docker:
+        log("🌐 Local Docker Desktop unavailable -> Auto-switching to direct build via remote Docker daemon over SSH...")
+        docker_base = ["docker", "--host", f"ssh://{SERVER_HOST}"]
+
+    # 3. Build frontend image
+    log("🔨 [Step 1/6] Building frontend docker image...")
     t0 = time.time()
     frontend_img = f"bcai-account-frontend:{tag}"
-    build_frontend_cmd = [
-        "docker", "build",
+    build_frontend_cmd = docker_base + [
+        "build",
         "--build-arg", "BCAI_LOCAL_BACKEND_URL=http://mainapi:8888",
         "--build-arg", "NEXT_PUBLIC_GOOGLE_CLIENT_ID=212036599086-c7aqvm005jiv2kqi4duju8spd9b3jb94.apps.googleusercontent.com",
         "-t", frontend_img,
@@ -87,13 +101,13 @@ def main():
 
     mainapi_img = f"bcai-account-mainapi:{tag}"
     if deploy_backend:
-        log("🔨 Building backend docker image locally...")
+        log("🔨 Building backend docker image...")
         t0 = time.time()
-        build_backend_cmd = ["docker", "build", "-t", mainapi_img, backend_dir]
+        build_backend_cmd = docker_base + ["build", "-t", mainapi_img, backend_dir]
         subprocess.check_call(build_backend_cmd)
         log(f"✅ Backend image built in {time.time() - t0:.1f}s")
 
-    # 3. Preflight backup on remote server
+    # 4. Preflight backup on remote server
     log("🔒 [Step 2/6] Running remote preflight backup (Mongo + Postgres + Runtime Config)...")
     t0 = time.time()
     preflight_script = f"""
@@ -149,33 +163,39 @@ print(json.dumps(proof))
     current_mainapi_image = proof["oldimages"]["mainapi"]
     log(f"✅ Preflight backup complete in {time.time() - t0:.1f}s (Current mainapi: {current_mainapi_image})")
 
-    # 4. Handle mainapi tag or upload
+    # 5. Handle mainapi tag or upload
     if not deploy_backend:
         log(f"🏷️ [Step 3/6] Re-tagging remote mainapi to {mainapi_img} (Zero-copy instant tag)...")
         run_ssh(f"docker tag {current_mainapi_image} {mainapi_img}")
     else:
-        log(f"📦 [Step 3/6] Streaming backend image {mainapi_img} over compressed SSH pipe...")
+        if not use_remote_docker:
+            log(f"📦 [Step 3/6] Streaming backend image {mainapi_img} over compressed SSH pipe...")
+            t0 = time.time()
+            p1 = subprocess.Popen(["docker", "save", mainapi_img], stdout=subprocess.PIPE)
+            p2 = subprocess.Popen(SSH_BASE + ["-C", "docker", "load"], stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p1.stdout.close()
+            out, err = p2.communicate()
+            if p2.returncode != 0:
+                raise RuntimeError(f"Failed to stream mainapi image: {err.decode()}")
+            log(f"✅ Mainapi image loaded on remote server in {time.time() - t0:.1f}s: {out.decode().strip()}")
+        else:
+            log(f"⚡ [Step 3/6] Backend image {mainapi_img} built directly on remote daemon -> Zero transfer time!")
+
+    # 6. Stream frontend image directly through compressed SSH pipe (if built locally)
+    if not use_remote_docker:
+        log(f"📦 [Step 4/6] Streaming frontend image {frontend_img} directly over compressed SSH pipe...")
         t0 = time.time()
-        p1 = subprocess.Popen(["docker", "save", mainapi_img], stdout=subprocess.PIPE)
+        p1 = subprocess.Popen(["docker", "save", frontend_img], stdout=subprocess.PIPE)
         p2 = subprocess.Popen(SSH_BASE + ["-C", "docker", "load"], stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p1.stdout.close()
         out, err = p2.communicate()
         if p2.returncode != 0:
-            raise RuntimeError(f"Failed to stream mainapi image: {err.decode()}")
-        log(f"✅ Mainapi image loaded on remote server in {time.time() - t0:.1f}s: {out.decode().strip()}")
+            raise RuntimeError(f"Failed to stream frontend image: {err.decode()}")
+        log(f"✅ Frontend image loaded on remote server in {time.time() - t0:.1f}s: {out.decode().strip()}")
+    else:
+        log(f"⚡ [Step 4/6] Frontend image {frontend_img} built directly on remote daemon -> Zero transfer time!")
 
-    # 5. Stream frontend image directly through compressed SSH pipe
-    log(f"📦 [Step 4/6] Streaming frontend image {frontend_img} directly over compressed SSH pipe...")
-    t0 = time.time()
-    p1 = subprocess.Popen(["docker", "save", frontend_img], stdout=subprocess.PIPE)
-    p2 = subprocess.Popen(SSH_BASE + ["-C", "docker", "load"], stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p1.stdout.close()
-    out, err = p2.communicate()
-    if p2.returncode != 0:
-        raise RuntimeError(f"Failed to stream frontend image: {err.decode()}")
-    log(f"✅ Frontend image loaded on remote server in {time.time() - t0:.1f}s: {out.decode().strip()}")
-
-    # 6. Remote atomic switch and container restart
+    # 7. Remote atomic switch and container restart
     log("🔄 [Step 5/6] Performing atomic release.env switch and container deployment...")
     t0 = time.time()
     deploy_script = f"""
