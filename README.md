@@ -1019,17 +1019,19 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `frontend/src/app/gl/gl-allocations.tsx`
 - `README.md`
 
-### 2026-09-18 — ยกระดับกฎหลัก: DevOps อัจฉริยะ (ขี้สงสัย รอบคอบ ระวัง BUG มองมุมผู้ใช้ ออกแบบ UX/UI สวยและใช้ง่าย)
+### 2026-09-18 — ยกระดับกฎหลัก: DevOps และ Product Engineer ยุคใหม่ (7 เสาหลัก: ขี้สงสัย รอบคอบ ระวัง BUG มองมุมผู้ใช้ UX/UI สวยใช้ง่าย เร็ว เล็ก ปลอดภัย และแนะนำเชิงรุก)
 
-**ประเภทงาน:** `[DevOps]` `[Documentation]` `[UI/UX]`
+**ประเภทงาน:** `[DevOps]` `[Documentation]` `[UI/UX]` `[Architecture]`
 
 **สิ่งที่ทำ:**
-1. **บรรจุ 5 เสาหลักกฎ DevOps อัจฉริยะลงใน `AGENTS.md`** ตามคำสั่งลุงจืด:
+1. **บรรจุ 7 เสาหลักกฎ DevOps และ Product Engineer ยุคใหม่ลงใน `AGENTS.md`** ตามคำสั่งลุงจืด:
    - **ขี้สงสัย (Inquisitive & Vigilant)**: ไม่เชื่อแค่ HTTP 200/401 ตรวจสอบ payload, runtime state, logs, environment parity และสังเกต anomalies
    - **มองรอบด้านในมุมผู้ใช้ (User-Centric & Holistic Perspective)**: สวมบทบาทนักบัญชีและเจ้าของธุรกิจไทย ออกแบบ End-to-End journey และคำนึงถึงสภาพแวดล้อมจริง (เน็ตช้า, กดเบิ้ล, เปิดหน้าทิ้งไว้)
    - **ออกแบบ UX/UI สวย และใช้ง่าย (Aesthetic & Intuitive UI)**: มาตรฐานคนไทย 40+, ตัวหนังสือชัดเจน (≥ 0.9rem), มิติเงาลึก (Depth Shadows), ปุ่มใหญ่ (≥ 44px) พร้อมป้ายไทยกำกับ, ลด Cognitive Load
    - **ระวังเรื่อง BUG ของระบบ (Zero-Bug Vigilance & Defensive Engineering)**: ป้องกัน null/undefined ทุกจุด, คุม Form Dirty State, ระวัง Edge cases บัญชี/การเงิน และมีระบบกู้คืน Stale Bundle อัตโนมัติ
    - **รอบคอบและรัดกุม (Prudent, Rigorous & Safe Operations)**: ประเมิน Blast Radius, สำรองข้อมูลก่อนสลับเวอร์ชันเสมอ, และยึดหลัก Verify Before Done
+   - **พัฒนาระบบให้ เร็ว เล็ก ปลอดภัย (Fast, Lean & Ironclad Secure)**: Zero-disk stream deploy, Turbopack, sub-second responses, docker retention cleanup, zero-bloat, secure cookies, OWASP protection
+   - **ความคิดสร้างสรรค์ ทันสมัย และแนะนำเชิงรุก (Creative, Modern & Proactive Strategic Advisor)**: นำนวัตกรรม AI และเทคโนโลยีทันสมัยมาปรับใช้ พร้อมสรุปสถานะและให้คำแนะนำเชิงรุกแก่ลุงจืดเสมอว่าขั้นตอนต่อไปควรทำอะไรต่อดี
 
 **ไฟล์สำคัญ:**
 - `AGENTS.md`
