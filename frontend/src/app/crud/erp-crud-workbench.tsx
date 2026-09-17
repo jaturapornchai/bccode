@@ -22,6 +22,7 @@ import { type LanguageCode } from "@/lib/i18n";
 import { flattenMenuItems, menuText } from "@/lib/menu-data";
 import { useBackendLanguage, backendText } from "@/lib/backend-language";
 import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
+import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import {
   type ErpTransactionDoc,
   type ErpDetailItem,
@@ -329,6 +330,15 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
     await loadData();
   };
 
+  // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
+  useFormShortcuts({
+    onSave: handleSaveDoc,
+    onNew: handleStartCreate,
+    onCancel: isEditing ? handleCancelEdit : undefined,
+    canSave: isEditing && !loading,
+    disabled: loading || moduleUnavailable,
+  });
+
   // Filtered list
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -387,10 +397,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
           {moduleUnavailable ? null : (
             <Button
               onClick={handleStartCreate}
-              className="h-10 bg-primary text-primary-foreground font-semibold px-4 shadow-sm"
+              className="h-10 bg-primary text-primary-foreground font-semibold px-4 shadow-sm gap-1.5"
             >
-              <Plus className="mr-1.5 size-4" />
-              {"+ " + backendText(dictionary, "create_new_document", "สร้างเอกสารใหม่")}
+              <Plus className="size-4" />
+              <span>{"+ " + backendText(dictionary, "create_new_document", "สร้างเอกสารใหม่")}</span>
+              <kbd className="ml-1 hidden sm:inline-block rounded border border-primary-foreground/30 bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-mono text-primary-foreground">
+                Alt+N
+              </kbd>
             </Button>
           )}
         </div>
@@ -847,12 +860,18 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
 
               {/* Pinned Bottom Actions */}
               <div className="sticky bottom-0 z-20 flex justify-end gap-2 bg-background/95 backdrop-blur py-3 border-t border-border/80">
-                <Button variant="outline" onClick={handleCancelEdit} className="h-10 text-sm px-4">
-                  {backendText(dictionary, "cancel", "ยกเลิก")}
+                <Button variant="outline" onClick={handleCancelEdit} className="h-10 text-sm px-4 gap-1.5">
+                  <span>{backendText(dictionary, "cancel", "ยกเลิก")}</span>
+                  <kbd className="hidden sm:inline-block rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                    Esc
+                  </kbd>
                 </Button>
-                <Button onClick={handleSaveDoc} className="h-10 bg-primary text-primary-foreground font-semibold px-5">
-                  <Save className="mr-1.5 size-4" />
-                  {backendText(dictionary, "save_document", "บันทึกเอกสาร")}
+                <Button onClick={handleSaveDoc} className="h-10 bg-primary text-primary-foreground font-semibold px-5 gap-1.5">
+                  <Save className="size-4" />
+                  <span>{backendText(dictionary, "save_document", "บันทึกเอกสาร")}</span>
+                  <kbd className="hidden sm:inline-block rounded border border-primary-foreground/30 bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-mono text-primary-foreground">
+                    Ctrl+S
+                  </kbd>
                 </Button>
               </div>
             </div>

@@ -7,6 +7,7 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { amountString, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -113,6 +114,15 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     } catch (e) { setError((e as Error).message); }
   }
 
+  // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
+  useFormShortcuts({
+    onSave: () => void save(),
+    onNew: mode === "edit" ? () => void openCreate() : undefined,
+    onCancel: isEditing ? () => void cancelEdit() : undefined,
+    canSave: isEditing && dirty && !busy,
+    disabled: busy,
+  });
+
   async function act(action: "post" | "reverse" | "delete") {
     if (!journal?.id || busy || dirty) return;
     if (action === "post") { const problem = validateJournal(journal, year, refs.accounts, tr); if (problem) { setError(problem); return; } }
@@ -178,7 +188,15 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
                   <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
-                  {mode === "edit" && <Button type="button" className={actionClass} disabled={busy} onClick={() => void openCreate()}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>}
+                  {mode === "edit" && (
+                    <Button type="button" className={actionClass} disabled={busy} onClick={() => void openCreate()}>
+                      <Plus className="size-4 mr-1.5" />
+                      <span>{tr("gl_add_row", "เพิ่มรายการ")}</span>
+                      <kbd className="ml-1.5 hidden sm:inline-block rounded border border-primary-foreground/30 bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-mono text-primary-foreground">
+                        Alt+N
+                      </kbd>
+                    </Button>
+                  )}
                   <Button type="button" variant="outline" className={actionClass} aria-pressed={density.compact} onClick={density.toggle}>{density.compact ? tr("gl_expand_row", "ขยายบรรทัด") : tr("gl_collapse_row", "ย่อบรรทัด")}</Button>
                 </div>
               </form>
@@ -593,10 +611,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
                   <div className="flex flex-wrap gap-2">
                     <Button type="submit" className={actionClass} disabled={busy || !dirty}>
-                      <Save className="size-4 mr-1.5" />{busy ? tr("gl_saving", "กำลังบันทึก…") : tr("gl_save_draft", "บันทึกฉบับร่าง")}
+                      <Save className="size-4 mr-1.5" />
+                      <span>{busy ? tr("gl_saving", "กำลังบันทึก…") : tr("gl_save_draft", "บันทึกฉบับร่าง")}</span>
+                      <kbd className="ml-1.5 hidden sm:inline-block rounded border border-primary-foreground/30 bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-mono text-primary-foreground">
+                        Ctrl+S
+                      </kbd>
                     </Button>
                     <Button type="button" variant="outline" className={actionClass} onClick={() => void cancelEdit()}>
-                      {tr("gl_cancel", "ยกเลิก")}
+                      <span>{tr("gl_cancel", "ยกเลิก")}</span>
+                      <kbd className="ml-1.5 hidden sm:inline-block rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                        Esc
+                      </kbd>
                     </Button>
                   </div>
                   {journal.id && (

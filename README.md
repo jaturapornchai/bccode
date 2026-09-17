@@ -1064,4 +1064,41 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `frontend/src/app/gl/gl-statement-designer.tsx`
 - `README.md`
 
+### 2026-09-18 — ยกระดับ UX นักบัญชี 3 มิติ: Global Shortcuts (Ctrl+S, Alt+N, Esc), ประวัติหน้าที่เข้าล่าสุดใน Command Palette, และแถบปรับขนาดตัวอักษร/คอนทราสต์สูงในรายงาน
+
+**ประเภทงาน:** `[Feature]` `[UI/UX]` `[Accessibility]`
+
+**สิ่งที่ทำ:**
+1. **Global Keyboard Shortcuts สำหรับฟอร์มเอกสาร (`useFormShortcuts`)**:
+   - เพิ่ม `useFormShortcuts` hook ดักจับ `Ctrl+S` / `Cmd+S` (สั่งบันทึกและบล็อก default browser save), `Alt+N` (สร้างเอกสารใหม่), และ `Esc` (ยกเลิกการแก้ไข)
+   - ติดตั้งใน `erp-crud-workbench.tsx` (ฟอร์มเอกสาร ERP หลักทั้งหมด) และ `gl-journals.tsx` (บันทึกสมุดรายวันทั่วไป/ปรับปรุง)
+   - เพิ่มป้ายคีย์ลัด `<kbd>` บนปุ่มบันทึก (`Ctrl+S`), ปุ่มสร้างใหม่ (`Alt+N`), และปุ่มยกเลิก (`Esc`) ให้ผู้ใช้ทราบทันที
+2. **Recent Screens & History ใน Command Palette (`Ctrl+K`)**:
+   - ติดตามเส้นทางหน้าจออัตโนมัติผ่าน `usePathname()` บันทึกลงใน `localStorage` (`bc_recent_screens`) สูงสุด 8 รายการล่าสุด
+   - เมื่อกด `Ctrl+K` ช่องค้นหาว่าง จะแสดงหมวด **"หน้าที่เข้าชมล่าสุด"** พร้อมไอคอนนาฬิกา `Clock` และปุ่มล้างประวัติ ให้กด `Enter` กระโดดกลับไปทำงานต่อได้ทันที
+   - แสดงป้ายกำกับ `🕒 ล่าสุด` ในผลการค้นหาเมื่อตรงกับประวัติการเข้าชม
+3. **High-Contrast & Font Size Adjuster สำหรับหน้ารายงานและงบการเงิน (`useReportPreferences`)**:
+   - พัฒนา `ReportDisplayToolbar` และ `useReportPreferences` จัดเก็บค่าลง `localStorage` (`bc_report_pref`)
+   - ปุ่มปรับขนาดตัวอักษร 3 ระดับ: `A` (ปกติ 0.95rem), `A+` (ปานกลาง 1.05rem), `A++` (ใหญ่ 1.2rem)
+   - ปุ่มสลับโหมดคอนทราสต์สูง `[🌓 คอนทราสต์สูง]` แสดงเส้นตารางคมชัดเด่นชัด สลับสีแถวชัดเจน ตัวเลขการเงินตัวหนา คอนทราสต์สูง 100% สบายตานักบัญชีวัย 40+
+   - ติดตั้งในหน้ารายงาน GL (`gl-reports.tsx`) และหน้ารายงาน ERP (`erp-report-viewer.tsx`)
+4. **เพิ่มชุดทดสอบ Unit Tests**:
+   - `use-form-shortcuts.test.ts`, `use-report-preferences.test.ts`, และอัปเกรด `command-palette.test.ts` (ผ่าน 100% รวม 82 test files / 599 tests)
+
+**ไฟล์สำคัญ:**
+- `frontend/src/hooks/use-form-shortcuts.ts` (ใหม่)
+- `frontend/src/hooks/use-form-shortcuts.test.ts` (ใหม่)
+- `frontend/src/hooks/use-report-preferences.ts` (ใหม่)
+- `frontend/src/hooks/use-report-preferences.test.ts` (ใหม่)
+- `frontend/src/components/report-display-toolbar.tsx` (ใหม่)
+- `frontend/src/components/command-palette.tsx`
+- `frontend/src/components/command-palette.test.ts`
+- `frontend/src/app/crud/erp-crud-workbench.tsx`
+- `frontend/src/app/gl/gl-journals.tsx`
+- `frontend/src/app/gl/gl-reports.tsx`
+- `frontend/src/app/report/erp-report-viewer.tsx`
+- `docs/reference/CODE-MAP.md`
+- `README.md`
+
+
 

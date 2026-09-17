@@ -2,28 +2,54 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
-import { Search, X, CornerDownLeft, Sparkles, FileText } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Search, X, CornerDownLeft, Sparkles, FileText, Clock } from "lucide-react";
 import { MENU_SECTIONS, type MenuItem, menuText, normalizeMenuSearchText } from "@/lib/menu-data";
 import { cn } from "@/lib/utils";
 
-interface CommandItem extends MenuItem {
+export interface CommandItem extends MenuItem {
   sectionTitle: string;
   groupTitle: string;
+  isRecent?: boolean;
+}
+
+export const RECENT_STORAGE_KEY = "bc_recent_screens";
+export const MAX_RECENT_ITEMS = 8;
+
+export function getStoredRecentRoutes(): string[] {
+  if (typeof localStorage === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredRecentRoutes(routes: string[]) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(routes.slice(0, MAX_RECENT_ITEMS)));
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 export function CommandPalette() {
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [recentRoutes, setRecentRoutes] = React.useState<string[]>([]);
 
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLUListElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
+    setRecentRoutes(getStoredRecentRoutes());
   }, []);
 
   // Prepare all searchable menu items with their parent sections
@@ -45,13 +71,44 @@ export function CommandPalette() {
     return items;
   }, []);
 
+  // Track currently active page route and record into recent screens
+  React.useEffect(() => {
+    if (!pathname || pathname === "/" || allItems.length === 0) return;
+    const isKnownMenu = allItems.some((item) => item.route === pathname);
+    if (!isKnownMenu) return;
+
+    setRecentRoutes((prev) => {
+      const next = [pathname, ...prev.filter((r) => r !== pathname)].slice(0, MAX_RECENT_ITEMS);
+      saveStoredRecentRoutes(next);
+      return next;
+    });
+  }, [pathname, allItems]);
+
+  // Map recent routes to command items
+  const recentItems = React.useMemo(() => {
+    return recentRoutes
+      .map((route) => allItems.find((item) => item.route === route))
+      .filter((item): item is CommandItem => Boolean(item))
+      .map((item) => ({ ...item, isRecent: true }));
+  }, [allItems, recentRoutes]);
+
   // Filter items based on query
   const filteredItems = React.useMemo(() => {
     if (!query.trim()) {
-      // When empty, show top 15 frequently accessed menus
+      if (recentItems.length > 0) {
+        const recentRouteSet = new Set(recentRoutes);
+        const popularRemaining = allItems
+          .filter((item) => !recentRouteSet.has(item.route))
+          .slice(0, 10);
+        return [...recentItems, ...popularRemaining];
+      }
+      // When empty and no history, show top 15 frequently accessed menus
       return allItems.slice(0, 15);
     }
+
     const needle = normalizeMenuSearchText(query);
+    const recentRouteSet = new Set(recentRoutes);
+
     return allItems
       .filter((item) => {
         const haystack = normalizeMenuSearchText(
@@ -66,8 +123,12 @@ export function CommandPalette() {
         );
         return haystack.includes(needle);
       })
+      .map((item) => ({
+        ...item,
+        isRecent: recentRouteSet.has(item.route),
+      }))
       .slice(0, 30);
-  }, [allItems, query]);
+  }, [allItems, query, recentItems, recentRoutes]);
 
   // Reset selected index when results change
   React.useEffect(() => {
@@ -90,6 +151,7 @@ export function CommandPalette() {
   // Auto focus input when opened
   React.useEffect(() => {
     if (isOpen) {
+      setRecentRoutes(getStoredRecentRoutes());
       const timer = setTimeout(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
@@ -112,11 +174,22 @@ export function CommandPalette() {
 
   const handleSelect = React.useCallback(
     (item: CommandItem) => {
+      setRecentRoutes((prev) => {
+        const next = [item.route, ...prev.filter((r) => r !== item.route)].slice(0, MAX_RECENT_ITEMS);
+        saveStoredRecentRoutes(next);
+        return next;
+      });
       setIsOpen(false);
       router.push(item.route);
     },
     [router]
   );
+
+  const handleClearHistory = React.useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRecentRoutes([]);
+    saveStoredRecentRoutes([]);
+  }, []);
 
   // Keyboard navigation within the palette
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -148,6 +221,8 @@ export function CommandPalette() {
   };
 
   if (!mounted) return null;
+
+  const showRecentHeader = !query.trim() && recentItems.length > 0;
 
   return (
     <>
@@ -212,6 +287,23 @@ export function CommandPalette() {
                 )}
               </div>
 
+              {/* Section Header for Recent Screens */}
+              {showRecentHeader && (
+                <div className="flex items-center justify-between border-b border-border/50 bg-muted/30 px-4 py-1.5 text-xs font-semibold text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="size-3.5 text-primary" />
+                    <span>หน้าที่เข้าชมล่าสุด</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearHistory}
+                    className="text-[11px] text-muted-foreground hover:text-destructive underline decoration-dotted transition-colors"
+                  >
+                    ล้างประวัติ
+                  </button>
+                </div>
+              )}
+
               {/* Items List */}
               <ul
                 ref={listRef}
@@ -229,51 +321,78 @@ export function CommandPalette() {
                   filteredItems.map((item, index) => {
                     const isSelected = index === selectedIndex;
                     const title = menuText(item.label, "th");
+                    const isFirstSuggested = showRecentHeader && index === recentItems.length;
 
                     return (
-                      <li
-                        key={`${item.id}-${index}`}
-                        role="option"
-                        aria-selected={isSelected}
-                        onClick={() => handleSelect(item)}
-                        onMouseEnter={() => setSelectedIndex(index)}
-                        className={cn(
-                          "group relative flex min-h-[3.2em] cursor-pointer items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-[0.95rem] transition-colors select-none",
-                          isSelected
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "hover:bg-muted/60 text-foreground"
+                      <React.Fragment key={`${item.id}-${index}`}>
+                        {isFirstSuggested && (
+                          <li className="px-3 pt-3 pb-1 text-xs font-semibold text-muted-foreground select-none list-none border-t border-border/50">
+                            เมนูแนะนำ / ยอดนิยม
+                          </li>
                         )}
-                      >
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                          <span
-                            className={cn(
-                              "grid size-8 shrink-0 place-items-center rounded-lg border text-xs",
-                              isSelected
-                                ? "border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground"
-                                : "border-border bg-muted/40 text-muted-foreground group-hover:border-primary/40 group-hover:text-primary"
-                            )}
-                          >
-                            <FileText className="size-4" />
-                          </span>
+                        <li
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => handleSelect(item)}
+                          onMouseEnter={() => setSelectedIndex(index)}
+                          className={cn(
+                            "group relative flex min-h-[3.2em] cursor-pointer items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-[0.95rem] transition-colors select-none",
+                            isSelected
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "hover:bg-muted/60 text-foreground"
+                          )}
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <span
+                              className={cn(
+                                "grid size-8 shrink-0 place-items-center rounded-lg border text-xs",
+                                isSelected
+                                  ? "border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground"
+                                  : item.isRecent
+                                    ? "border-primary/40 bg-primary/10 text-primary"
+                                    : "border-border bg-muted/40 text-muted-foreground group-hover:border-primary/40 group-hover:text-primary"
+                              )}
+                            >
+                              {item.isRecent ? (
+                                <Clock className="size-4" />
+                              ) : (
+                                <FileText className="size-4" />
+                              )}
+                            </span>
 
-                          <div className="flex flex-col min-w-0 flex-1">
-                            <span className="truncate font-medium leading-snug">{title}</span>
-                            <div className="flex items-center gap-1.5 text-xs opacity-80 truncate">
-                              <span>{item.sectionTitle}</span>
-                              <span>›</span>
-                              <span>{item.groupTitle}</span>
-                              <span className="font-mono opacity-60 ml-1">({item.route})</span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate font-medium leading-snug">{title}</span>
+                                {item.isRecent && (
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center rounded px-1.5 py-0.2 font-mono text-[10px]",
+                                      isSelected
+                                        ? "bg-primary-foreground/20 text-primary-foreground"
+                                        : "bg-primary/10 text-primary"
+                                    )}
+                                  >
+                                    ล่าสุด
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs opacity-80 truncate">
+                                <span>{item.sectionTitle}</span>
+                                <span>›</span>
+                                <span>{item.groupTitle}</span>
+                                <span className="font-mono opacity-60 ml-1">({item.route})</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {isSelected && (
-                          <div className="flex items-center gap-1 shrink-0 text-xs font-medium opacity-90">
-                            <span>เปิด</span>
-                            <CornerDownLeft className="size-3.5" />
-                          </div>
-                        )}
-                      </li>
+                          {isSelected && (
+                            <div className="flex items-center gap-1 shrink-0 text-xs font-medium opacity-90">
+                              <span>เปิด</span>
+                              <CornerDownLeft className="size-3.5" />
+                            </div>
+                          )}
+                        </li>
+                      </React.Fragment>
                     );
                   })
                 )}

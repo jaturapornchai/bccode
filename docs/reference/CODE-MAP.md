@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-18 @ commit 0b9c3499 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-18 @ commit 52a37089 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -2073,6 +2073,21 @@ Files indexed: 49
 | 286 | function | `runCalculation` |
 | 312 | const-arrow | `updateGlobalStyle` |
 
+## frontend/src/app/crud/erp-crud-workbench.tsx (1037 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 44 | function | `ErpCrudWorkbench` |
+| 117 | const-arrow | `handleSelectRow` |
+| 139 | const-arrow | `handleStartEdit` |
+| 147 | const-arrow | `handleStartCreate` |
+| 195 | const-arrow | `handleCancelEdit` |
+| 213 | const-arrow | `handleDeleteDoc` |
+| 246 | const-arrow | `updateLineItem` |
+| 308 | const-arrow | `handleSaveDoc` |
+| 645 | section | `EDIT MODE FORM` |
+| 879 | section | `READ-ONLY VIEW MODE` |
+
 ## backend/internal/goapi/dataimport/xlsx_product.go (1033 lines)
 
 | Line | Kind | Name |
@@ -2153,21 +2168,6 @@ Files indexed: 49
 | 860 | function | `renderSummaryItems` |
 | 922 | function | `setupFooter` |
 | 986 | function | `RenderSignatureSection` |
-
-## frontend/src/app/crud/erp-crud-workbench.tsx (1018 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 43 | function | `ErpCrudWorkbench` |
-| 116 | const-arrow | `handleSelectRow` |
-| 138 | const-arrow | `handleStartEdit` |
-| 146 | const-arrow | `handleStartCreate` |
-| 194 | const-arrow | `handleCancelEdit` |
-| 212 | const-arrow | `handleDeleteDoc` |
-| 245 | const-arrow | `updateLineItem` |
-| 307 | const-arrow | `handleSaveDoc` |
-| 632 | section | `EDIT MODE FORM` |
-| 860 | section | `READ-ONLY VIEW MODE` |
 
 ## backend/internal/debtaccount/debtor/services/debtor_http_service.go (1016 lines)
 

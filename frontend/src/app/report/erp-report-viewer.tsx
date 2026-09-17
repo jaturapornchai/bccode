@@ -14,6 +14,8 @@ import {
   type ErpReportRow,
 } from "@/lib/erp-reports";
 import type { LanguageCode } from "@/lib/i18n";
+import { useReportPreferences } from "@/hooks/use-report-preferences";
+import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -89,6 +91,7 @@ export function ErpReportViewer({
   const [sortKey, setSortKey] = useState<string>(config.defaultSortKey);
   const [sortAsc, setSortAsc] = useState<boolean>(true);
   const [dateRange, setDateRange] = useState<string>("month");
+  const reportPref = useReportPreferences();
 
   const [rawData, setRawData] = useState<ErpReportRow[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -266,14 +269,23 @@ export function ErpReportViewer({
             </div>
           </div>
 
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={tr("ops_search_in_report", "ค้นหาในรายงาน...")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9"
+          <div className="flex flex-wrap items-center gap-3">
+            <ReportDisplayToolbar
+              fontSize={reportPref.fontSize}
+              onFontSizeChange={reportPref.setFontSize}
+              highContrast={reportPref.highContrast}
+              onToggleHighContrast={reportPref.toggleHighContrast}
             />
+
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={tr("ops_search_in_report", "ค้นหาในรายงาน...")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -313,9 +325,9 @@ export function ErpReportViewer({
       )}
 
       {/* Report Data Table */}
-      <Card className="overflow-hidden">
+      <Card className={`overflow-hidden ${reportPref.contrastClass}`}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className={`w-full text-left leading-normal ${reportPref.fontSizeClass}`}>
             <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
               <tr>
                 <th className="px-3 py-3 w-12 text-center">{tr("sequence", "ลำดับ")}</th>
