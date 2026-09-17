@@ -55,7 +55,9 @@ const TRANSACTION_MODULES = [
   "paid", "pay", "stock-balance", "stock-receive-product", "stock-prickup-product",
   "stock-return-product", "stock-transfer", "stock-adjustment", "receivableother",
   "billingnote", "deposit", "depositrefund", "paidadvance", "paidadvancerefund",
-  "receivedeposit", "receivedepositrefund", "bank", "chequereceive", "chequepayment",
+  "receivedeposit", "receivedepositrefund",
+  "bank/saledebitnote", "bank/purchasedebitnote", "bank/banktransferrecord",
+  "bank/depositrecord", "chequereceive/chequedeposit", "chequepayment/chequepaymentdeposit",
 ];
 
 const GROUPS = {

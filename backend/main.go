@@ -103,6 +103,7 @@ import (
 	"smlcloudplatform/internal/transaction/advancepayment"
 	"smlcloudplatform/internal/transaction/advancepaymentrefund"
 	"smlcloudplatform/internal/transaction/banktransferrecord"
+	"smlcloudplatform/internal/transaction/billingnote"
 	"smlcloudplatform/internal/transaction/chequechange"
 	"smlcloudplatform/internal/transaction/chequedeposit"
 	"smlcloudplatform/internal/transaction/chequedisqualified"
@@ -128,6 +129,7 @@ import (
 	"smlcloudplatform/internal/transaction/purchase"
 	"smlcloudplatform/internal/transaction/purchaseorder"
 	"smlcloudplatform/internal/transaction/purchasepartial"
+	"smlcloudplatform/internal/transaction/purchasedebitnote"
 	"smlcloudplatform/internal/transaction/purchaserequisition"
 	"smlcloudplatform/internal/transaction/purchasereturn"
 	"smlcloudplatform/internal/transaction/quotation"
@@ -135,6 +137,7 @@ import (
 	"smlcloudplatform/internal/transaction/receivedeposit"
 	"smlcloudplatform/internal/transaction/receivedepositrefund"
 	"smlcloudplatform/internal/transaction/rfq"
+	"smlcloudplatform/internal/transaction/saledebitnote"
 	"smlcloudplatform/internal/transaction/saleinvoice"
 	"smlcloudplatform/internal/transaction/saleinvoicebomprice"
 	"smlcloudplatform/internal/transaction/saleinvoicereturn"
@@ -430,7 +433,9 @@ func main() {
 
 			//transaction
 			purchase.NewPurchaseHttp(ms, cfg),
+			purchasedebitnote.NewPurchaseDebitNoteHttp(ms, cfg),
 			purchasereturn.NewPurchaseReturnHttp(ms, cfg),
+			saledebitnote.NewSaleDebitNoteHttp(ms, cfg),
 			saleinvoice.NewSaleInvoiceHttp(ms, cfg),
 			saleinvoicereturn.NewSaleInvoiceReturnHttp(ms, cfg),
 			stocktransfer.NewStockTransferHttp(ms, cfg),
@@ -460,6 +465,7 @@ func main() {
 			// Written long ago but never listed here, so /transaction/receivableother
 			// answered 404 and the "ลูกหนี้อื่น" screen looked like it had no data.
 			receivableother.NewReceivableOtherHttp(ms, cfg),
+			billingnote.NewBillingNoteHttp(ms, cfg),
 			receivedeposit.NewReceiveDepositHttp(ms, cfg),
 			receivedepositrefund.NewReceiveDepositRefundHttp(ms, cfg),
 			depositrecord.NewDepositRecordHttp(ms, cfg),

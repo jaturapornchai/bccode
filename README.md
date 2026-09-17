@@ -181,6 +181,26 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-17 — ปิดกับดัก Schema ค้างบนเครื่องจริง, สร้างโมดูลใบวางบิล (Billing Note) และเชื่อม Route ธุรกรรมครบ 100%
+
+**ประเภทงาน:** `[Fix]` / `[Feature]`
+
+**สิ่งที่ทำ:**
+- **ปิดกับดัก Schema ค้างบนเครื่องจริงถาวร (ข้อ 2.1)**: เพิ่มการเรียก `build.DatabaseChecker(holdingCode, false)` ที่จุดเริ่มต้นของ `ResyncDebtor` (`debtor_http.go`), `ResyncCreditor` (`creditor_http.go`), และ `ResyncProduct` (`product_http.go`) เพื่อให้การยิง Resync ตรวจและสร้างตาราง PostgreSQL ที่ขาดหายโดยอัตโนมัติ ทดสอบ Drop ตาราง `stock_dirty` ใน PostgreSQL `demo` แล้วยิง Resync พบตารางถูกสร้างคืนสมบูรณ์ทั้ง 3 จุด
+- **เชื่อม Route ธุรกรรม ERP ที่ 404 (ข้อ 2.2)**: 
+  - ลงทะเบียน HTTP Handler ของ `saledebitnote` (ใบเพิ่มหนี้/เพิ่มสินค้าลูกหนี้) และ `purchasedebitnote` (ใบลดหนี้/ส่งคืนสินค้าเจ้าหนี้) ใน `backend/main.go` ทำให้เส้นทาง `/transaction/bank/saledebitnote` และ `/transaction/bank/purchasedebitnote` ตอบ 200 OK
+  - สร้างโมดูลใหม่ **`billingnote` (ใบวางบิล)** ครบถ้วนตามมาตรฐาน Champ/SML: `models/billingnote.go`, `config/billingnote_messagequeue_config.go`, `repositories/billingnote_mongo_repository.go`, `repositories/billingnote_message_queue_repository.go`, `services/billingnote_http_service.go`, และ `billingnote_http.go` พร้อมลงทะเบียนใน `backend/main.go`
+  - ปรับปรุง `tools/probe-endpoints.mjs` ให้ระบุ path ย่อยที่แท้จริงของธนาคารและเช็ค ผลตรวจรับ 30 รายการตอบ 200 ใช้งานได้ 100% ปลอด 404
+  - UAT CRUD ทดสอบครบวงจร (Create -> Read Info/ByCode -> Update -> Delete) พร้อมตรวจรับใน MongoDB จริง และล้างข้อมูลทดสอบเรียบร้อย
+
+**ไฟล์สำคัญ:** `backend/internal/debtaccount/debtor/debtor_http.go`, `backend/internal/debtaccount/creditor/creditor_http.go`, `backend/internal/product/product/product_http.go`, `backend/internal/transaction/billingnote/*`, `backend/main.go`, `tools/probe-endpoints.mjs`
+
+**ผลการทดสอบ (Evidence):**
+- Schema Auto-Recreation: Drop `stock_dirty` -> Call Resync -> `public|stock_dirty|table|postgres` คืนมาทั้ง 3 endpoints
+- Probe Endpoints: ทุก transaction endpoint 30 รายการตอบ 200 OK ปลอด 404
+- UAT CRUD: Create ID `3JR7IBJszOjoA7qybw6ftXOaSeO` (BN202609170001) -> Read 200 -> Update 200 -> Delete 200 -> MongoDB soft-delete `deletedat` ประทับถูกต้อง -> ล้างข้อมูลทดสอบ
+- Verification: `tools/verify.sh fast` ผ่านทั้ง codemap และ frontend (78 test files / 574 tests PASS); Docker `golang:1.26` go build & go vet บน `billingnote` ผ่าน exit code 0
+
 ### 2026-09-17 — เอกสารส่งมอบงานให้ Gemini ทำต่อ
 
 **ประเภทงาน:** `[Docs]`

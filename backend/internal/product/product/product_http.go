@@ -337,6 +337,7 @@ func (h ProductHttp) DeleteProduct(ctx microservice.IContext) error {
 func (h ProductHttp) ResyncProduct(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+	build.DatabaseChecker(holdingCode, false)
 	businessCode, err := requireProductBusinessCode(ctx)
 	if err != nil {
 		return err

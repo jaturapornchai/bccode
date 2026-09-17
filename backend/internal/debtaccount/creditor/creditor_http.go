@@ -47,6 +47,7 @@ func NewCreditorHttp(ms *microservice.Microservice, cfg config.IConfig) Creditor
 // the creditor counterpart of POST /debtaccount/debtor/resync (see there for why).
 func (h CreditorHttp) ResyncCreditor(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	build.DatabaseChecker(holdingCode, false)
 	rebuilt := build.ProcessCreditorRebuildAll(holdingCode)
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,

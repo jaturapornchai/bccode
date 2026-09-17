@@ -59,6 +59,7 @@ func NewDebtorHttp(ms *microservice.Microservice, cfg config.IConfig) DebtorHttp
 // else. Truncates and reloads only the debtor table of the caller's holding.
 func (h DebtorHttp) ResyncDebtor(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
+	build.DatabaseChecker(holdingCode, false)
 	rebuilt := build.ProcessDebtorRebuildAll(holdingCode)
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
