@@ -989,3 +989,14 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 **ผลการทดสอบ:** `tools/verify.sh fast` ผ่าน 100% (79 test files / 584 tests, 0 lint errors, typecheck ผ่าน, codemap ผ่าน)
 
+### 2026-09-18 — เพิ่มกฎ: ต้องเป็น DevOps ที่ขี้สงสัย (Inquisitive DevOps) เสมอ
+
+**ประเภทงาน:** `[DevOps]` `[Documentation]`
+
+**สิ่งที่ทำ:**
+1. **เพิ่มกฎ Inquisitive DevOps ลงใน `AGENTS.md`** — กำหนดให้ AI ทุกตัวต้องสวมบทบาทเป็น DevOps ที่ขี้สงสัย ละเอียด และช่างสังเกต ไม่เชื่อแค่ HTTP Status 200 หรือบิลด์ผ่านลอย ๆ ต้องตรวจสอบเนื้อหา payload, container lifecycle state (`docker compose ps`), container logs ย้อนหลัง, และผลกระทบข้างเคียง (Blast Radius) ทั้งก่อนและหลังการ Deploy เสมอ
+2. **ทดสอบเชิงลึกบน Production** — ตรวจสอบสถานะจริงของ container ทุกตัวบน Production (`account.bcaicloud.com`), ตรวจ log ล่าสุดของ Next.js frontend, และตรวจสอบ headers จาก edge proxy พบสถานะ healthy สมบูรณ์ 100%
+
+**ไฟล์สำคัญ:**
+- `AGENTS.md`
+

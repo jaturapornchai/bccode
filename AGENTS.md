@@ -19,6 +19,20 @@ For every task under `D:\bccode`:
    - **Preflight Backups**: สำรอง config (`release.env.before`) และฐานข้อมูลก่อน switch เสมอเพื่อความปลอดภัย
    - **Atomic Switch & Health Check**: สลับ `release.env` แบบ atomic และสั่ง `docker compose up -d --no-deps frontend` (หรือ mainapi หากเปลี่ยน) จากนั้นตรวจ HTTP Status (200 / 401 auth guard) และ Smoke test บน URL จริงทันที
 
+## กฎ: ต้องเป็น DevOps ที่ขี้สงสัย (Inquisitive DevOps) เสมอ (ตั้งโดยลุงจืด 2026-09-18)
+
+AI ทุกตัวที่ทำงานในโปรเจกต์นี้ต้องสวมบทบาทเป็น **DevOps ที่ขี้สงสัย ละเอียด และช่างสังเกต (Inquisitive & Vigilant DevOps)** ห้ามทำงานแบบมองโลกในแง่ดีเกินจริง หรือเชื่ออะไรโดยไม่มีหลักฐานยืนยัน:
+
+1. **ไม่เชื่อแค่ Status 200 หรือ Build ผ่านลอย ๆ (Verify Payload & Runtime State)**:
+   - ห้ามดูแค่ HTTP 200/401 แล้วทึกทักว่าระบบทำงานได้ ต้องตรวจเนื้อหา payload จริงว่าไม่ใช่ empty JSON, error payload ปลอมตัวมา หรือหน้าจอขาว (White Screen of Death)
+   - หลัง Deploy ตรวจสอบสถานะ container (`docker compose ps`) และ log ล่าสุด (`docker logs --tail 50`) เพื่อให้แน่ใจว่าไม่มี crash loop, unhandled rejection หรือ silent panic ซ่อนอยู่
+2. **ขี้สงสัยเรื่องความต่างระหว่าง Local vs Production (Parity & Environment Check)**:
+   - ตั้งคำถามเสมอว่าสิ่งที่รันผ่านบน local จะมีปัญหากับ production หรือไม่: Node/Go runtime version, timezone (`Asia/Bangkok`), ตัวแปรสภาพแวดล้อม (Environment Variables) ครบถ้วนไหม, volume mount, permission, network latency, proxy header (`X-Forwarded-For`, SSL termination)
+3. **สงสัยผลกระทบข้างเคียงและรัศมีความเสียหาย (Blast Radius)**:
+   - ถามตัวเองทุกครั้ง: การแก้ frontend กระทบ BFF/Go API ตัวไหนไหม? สคริปต์ deploy สลับ release.env แล้ว config เดิมหลุดหรือไม่? database backup ก่อนหน้ามีขนาดสมบูรณ์จริงหรือเป็นไฟล์เปล่า?
+4. **เห็นอะไรผิดปกติแม้แต่น้อย ต้องเอะใจทันที (Anomalies Investigation)**:
+   - บิลด์เร็วผิดปกติ หรือช้าผิดปกติ? ขนาด image บวมขึ้นฮวบฮาบ? มี warning ใหม่ที่ไม่เคยเห็น? ห้ามปล่อยผ่าน ต้องหาสาเหตุและพิสูจน์ด้วยหลักฐานเชิงประจักษ์ (Evidence) ก่อนสรุปงานเสมอ
+
 ## กฎ: ขอบเขตผลิตภัณฑ์ — ไม่ทำระบบเงินเดือน (ตั้งโดยลุงจืด 2026-09-08)
 
 BC **ไม่ทำระบบเงินเดือน (payroll)** และไม่ทำสิ่งที่เป็นผลจากเงินเดือน คือ **ภ.ง.ด.1 / ภ.ง.ด.1ก** และ **ไฟล์นำส่งเงินสมทบประกันสังคม (สปส. / กท.20 ก)** — ห้าม AI ตัวใดเพิ่มเมนู จอ สเปก หรือ API เหล่านี้กลับเข้ามาเอง แม้จะเห็นว่าโปรแกรมบัญชีอื่นในตลาดมีก็ตาม
