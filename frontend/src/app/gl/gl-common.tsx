@@ -51,15 +51,15 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 export function Check({ label, checked, onChange, disabled, className }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string }) {
   return (
-    <label className={cn("inline-flex items-center gap-2 py-1 text-[0.95rem] leading-normal cursor-pointer select-none text-foreground transition-colors hover:text-primary", disabled && "cursor-not-allowed opacity-60 pointer-events-none", className)}>
+    <label className={cn("inline-flex !w-auto !max-w-none shrink-0 items-center gap-2 py-1 text-[0.95rem] leading-normal cursor-pointer select-none text-foreground transition-colors hover:text-primary whitespace-nowrap", disabled && "cursor-not-allowed opacity-60 pointer-events-none", className)}>
       <input
         type="checkbox"
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="size-4.5 rounded border-input text-primary accent-primary focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed"
+        className="size-4.5 shrink-0 rounded border-input text-primary accent-primary focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed"
       />
-      <span>{label}</span>
+      <span className="whitespace-nowrap">{label}</span>
     </label>
   );
 }

@@ -559,7 +559,7 @@ function AccountFields({ value, set, accounts }: { value: GLAccount; set: (patch
     <Field label={tr("gl_parent_account", "บัญชีแม่")}><AccountSelect field="parentaccountcode" value={value.parentaccountcode} onChange={onParentChange} accounts={accounts.filter((item) => item.accountcode !== value.accountcode)} all label={tr("gl_parent_account", "บัญชีแม่")} /></Field>
     <Field label={tr("gl_account_level_range", "ระดับบัญชี (1–12)")}><select className={control} data-field="level" aria-label={tr("gl_account_level", "ระดับบัญชี")} value={value.level ?? 1} onChange={(e) => set({ level: Number(e.target.value) })}>{Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => <option key={lvl} value={lvl}>{tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))}</option>)}</select></Field>
     <Field label={tr("gl_coa_group_code", "รหัสกลุ่มผังบัญชี")}><input className={control} value={value.accountgroup} onChange={(e) => set({ accountgroup: e.target.value })} /></Field>
-    <div className="sm:col-span-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1">
+    <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
       <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive} onChange={(isactive) => set({ isactive })} />
       <Check label={tr("gl_allow_posting", "อนุญาตให้ลงรายการ")} checked={value.allowposting} onChange={(allowposting) => set({ allowposting })} />
       <Check label={tr("gl_cash_and_cash_equivalents", "บัญชีเงินสดและรายการเทียบเท่าเงินสด")} checked={value.iscash} onChange={(iscash) => set({ iscash })} />
@@ -575,7 +575,7 @@ function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: 
     <Field label={tr("gl_decimal_places", "จำนวนตำแหน่งทศนิยม")}><select className={control} value={value.scale} onChange={(e) => set({ scale: Number(e.target.value) })}>{Array.from({ length: 9 }, (_, scale) => <option key={scale} value={scale}>{tr("gl_positions_count", "{0} ตำแหน่ง").replace("{0}", String(scale))}</option>)}</select></Field>
     <Field label={tr("gl_profit_loss_account", "บัญชีกำไรขาดทุน")}><AccountSelect label={tr("gl_profit_loss_account", "บัญชีกำไรขาดทุน")} value={value.profitlossaccount ?? ""} onChange={(profitlossaccount) => set({ profitlossaccount })} accounts={accounts} /></Field>
     <Field label={tr("gl_retained_earnings_account", "บัญชีกำไรสะสม")}><AccountSelect label={tr("gl_retained_earnings_account", "บัญชีกำไรสะสม")} value={value.retainedearningsaccount} onChange={(retainedearningsaccount) => set({ retainedearningsaccount })} accounts={accounts} /></Field>
-    <div className="sm:col-span-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1">
+    <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
       <Check label={tr("gl_activate_fiscal_year", "เปิดใช้งานปีบัญชี")} checked={value.isactive} onChange={(isactive) => set({ isactive })} />
     </div>
   </div>{value.closed && <Notice text={tr("gl_fiscal_year_closed", "ปีบัญชีนี้ปิดแล้ว")} />}</>;
@@ -591,7 +591,7 @@ function MasterFields({ resource, value, set, accounts, years }: { resource: Mas
     {resource === "forecast" && <Field label={tr("gl_money_direction", "ทิศทางเงิน")}><ChoiceSelect value={value.direction} onChange={(direction) => set({ direction })}><option value="in">{tr("gl_money_in", "เงินเข้า")}</option><option value="out">{tr("gl_money_out", "เงินออก")}</option></ChoiceSelect></Field>}
     {resource === "product-account-groups" && <>{([ ["itemaccount", tr("gl_inventory_account", "บัญชีสินค้า")], ["costaccount", tr("gl_cogs_account", "บัญชีต้นทุนขาย")], ["revenueaccount", tr("gl_sales_revenue_account", "บัญชีรายได้จากการขาย")] ] as const).map(([key, label]) => <Field key={key} label={label}><AccountSelect label={label} value={value[key] ?? ""} onChange={(accountcode) => set({ [key]: accountcode })} accounts={accounts} /></Field>)}</>}
     {resource === "mappings" && <Field label={tr("gl_journal", "สมุดรายวัน")}><select className={control} value={value.bookcode} onChange={(e) => set({ bookcode: e.target.value })}>{Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</select></Field>}
-    <div className="sm:col-span-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1">
+    <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
       <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive} onChange={(isactive) => set({ isactive })} />
     </div>
   </div>

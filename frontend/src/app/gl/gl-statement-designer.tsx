@@ -547,24 +547,24 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   </select>
                 </Field>
 
-                <div className="flex flex-wrap items-end gap-3 xl:col-span-2">
-                  <label className="flex items-center gap-2 text-sm font-medium">
+                <div className="flex flex-wrap items-center gap-4 xl:col-span-2 pt-1">
+                  <label className="inline-flex w-auto shrink-0 items-center gap-2 text-sm font-medium cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={template.globalstyle?.shownotecolumn ?? true}
                       onChange={(e) => updateGlobalStyle({ shownotecolumn: e.target.checked })}
-                      className="size-4 rounded"
+                      className="size-4 shrink-0 rounded border-input text-primary accent-primary"
                     />
-                    {tr("gl_show_notes_column", "แสดงคอลัมน์หมายเหตุประกอบงบ")}
+                    <span className="whitespace-nowrap">{tr("gl_show_notes_column", "แสดงคอลัมน์หมายเหตุประกอบงบ")}</span>
                   </label>
-                  <label className="flex items-center gap-2 text-sm font-medium">
+                  <label className="inline-flex w-auto shrink-0 items-center gap-2 text-sm font-medium cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={template.isactive}
                       onChange={(e) => setTemplate({ ...template, isactive: e.target.checked })}
-                      className="size-4 rounded"
+                      className="size-4 shrink-0 rounded border-input text-primary accent-primary"
                     />
-                    {tr("gl_activate_template", "เปิดใช้งานแม่แบบนี้")}
+                    <span className="whitespace-nowrap">{tr("gl_activate_template", "เปิดใช้งานแม่แบบนี้")}</span>
                   </label>
                 </div>
               </div>

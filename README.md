@@ -774,24 +774,29 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ### 2026-09-17 — ปรับปรุงการจัดวาง Checkbox เป็นแบบกระชับ เรียงแนวนอนไปทางขวา และ wrap ลงมาเมื่อเกิน (Zero-Waste Layout)
 
-**ประเภทงาน:** `[UI/UX]` `[Polish]`
+**ประเภทงาน:** `[UI/UX]` `[Polish]` `[Bug]`
 
 **สิ่งที่ทำ:**
-1. **ลดความสูงและช่องไฟของคอมโพเนนต์ Checkbox (`Check`)**:
-   - เดิมที `<Check>` มีความสูงตายตัว `min-h-[2.6em]` (~42px) ทำให้กินพื้นที่แนวตั้งมากเกินไป และเมื่อมีหลายตัวเลือกในหน้าจอหรือจอแคบจะบวมหนาและดันปุ่มด้านล่าง
-   - ปรับเป็น `inline-flex items-center gap-2 py-1` พอดีกับความสูงบรรทัด (~24px) พร้อมปรับแต่งกล่อง checkbox input ให้มี `size-4.5 rounded border-input text-primary accent-primary` และ interactive hover/focus ที่ชัดเจน
-2. **ปรับการจัดวางในฟอร์มของโมดูล GL ให้เรียงแนวนอนไปทางขวาและ wrap ลงมาเมื่อเกิน**:
-   - ปรับใน `AccountFields` (ผังบัญชี), `FiscalYearFields` (ปีบัญชี) และ `MasterFields` (ข้อมูลหลักทั้งหมด) ใน `gl-masters.tsx`
-   - รวมกลุ่ม Checkbox เข้าไปใน Grid ของฟอร์ม (`sm:col-span-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1`) เรียงต่อกันไปทางขวาอย่างเป็นระเบียบ และหากความกว้างหน้าจอไม่พอ (ถ้าเกิน) ก็จะ wrap ลงมาด้านล่างอย่างนุ่มนวล โดยไม่เปลืองพื้นที่แนวตั้ง
+1. **แก้ปัญหา Checkbox ไม่เรียงแนวนอนไปทางขวา (เกิดจาก CSS Reset `label { width: 100% }`)**:
+   - ตรวจพบว่าใน `frontend/src/app/globals.css` มีกฎ Reset บังคับ `label { width: 100%; max-width: 100%; }` ทำให้ `<label>` ทุกตัวรวมถึง Checkbox และ Radio ขยายกว้างเต็ม 100% ของคอนเทนเนอร์เสมอ แม้จะมี `flex flex-wrap` แต่ละตัวจึงกินเต็ม 1 บรรทัดและดันตัวถัดไปตกบรรทัดใหม่ กลายเป็น 3 แถวแนวตั้ง
+   - แก้ไข `globals.css` ยกเว้น `label:not(.inline-flex):not(.w-auto):not(:has(input[type="checkbox"])):not(:has(input[type="radio"]))` จากการถูกตั้ง `width: 100%` และกำหนดให้ `label.inline-flex`, `label.w-auto`, `label:has(input[type="checkbox"])`, `label:has(input[type="radio"])` มี `width: auto !important; max-width: none !important;`
+2. **ลดความสูงและปรับแต่งคอมโพเนนต์ Checkbox (`Check`)**:
+   - เดิมที `<Check>` มีความสูง `min-h-[2.6em]` (~42px) ปรับเป็น `inline-flex !w-auto !max-w-none shrink-0 items-center gap-2 py-1` พอดีกับความสูงบรรทัด (~24px) พร้อม `whitespace-nowrap` ป้องกันข้อความตัดกลางคำ
+   - กล่อง checkbox input ใช้ `size-4.5 shrink-0 rounded border-input text-primary accent-primary` และ interactive hover/focus ที่ชัดเจน
+3. **ปรับการจัดวางในฟอร์มของโมดูล GL ให้เรียงแนวนอนไปทางขวาและ wrap ลงมาเมื่อเกิน**:
+   - ปรับใน `AccountFields` (ผังบัญชี), `FiscalYearFields` (ปีบัญชี), `MasterFields` (ข้อมูลหลักทั้งหมด) ใน `gl-masters.tsx` และ `GLStatementDesigner` (เครื่องมือออกแบบงบการเงิน) ใน `gl-statement-designer.tsx`
+   - รวมกลุ่ม Checkbox เข้าไปใน Grid ของฟอร์ม (`sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1`) เรียงต่อกันไปทางขวาอย่างเป็นระเบียบ และหากความกว้างหน้าจอไม่พอ (ถ้าเกิน) ก็จะ wrap ลงมาด้านล่างอย่างนุ่มนวล โดยไม่เปลืองพื้นที่แนวตั้ง
 
 **ไฟล์สำคัญ:**
-- `frontend/src/app/gl/gl-common.tsx` (ปรับปรุงคอมโพเนนต์ `Check`)
+- `frontend/src/app/globals.css` (ปลดล็อก `label { width: 100% }` ให้ Checkbox/Radio/Inline)
+- `frontend/src/app/gl/gl-common.tsx` (ปรับปรุงคอมโพเนนต์ `Check` ให้มี `!w-auto !max-w-none shrink-0 whitespace-nowrap`)
 - `frontend/src/app/gl/gl-masters.tsx` (ปรับปรุง Layout ใน `AccountFields`, `FiscalYearFields`, `MasterFields`)
+- `frontend/src/app/gl/gl-statement-designer.tsx` (ปรับปรุง Checkbox ในเครื่องมือออกแบบงบ)
 
 **ผลการทดสอบ (Evidence):**
 - `npm run typecheck --prefix frontend` ผ่าน 0 errors
 - `npm test --prefix frontend` ทั้ง 78 ไฟล์ / 576 เทสต์ผ่าน 100%
-- `tools/verify.sh fast` ผ่านทั้งหมด
+- `tools/verify.sh fast` ผ่านทั้งหมด (codemap + frontend lint/typecheck/vitest)
 
 ### 2026-09-17 — แก้ไขปัญหาจอขยับ (Layout Shift) จากการแสดงสถานะ "ยังไม่บันทึก" เป็น Zero Layout Shift
 

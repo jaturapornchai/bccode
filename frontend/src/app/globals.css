@@ -384,10 +384,18 @@ main,
 section,
 form,
 fieldset,
-label,
+label:not(.inline-flex):not(.w-auto):not(:has(input[type="checkbox"])):not(:has(input[type="radio"])),
 textarea {
   width: 100%;
   max-width: 100%;
+}
+
+label.inline-flex,
+label.w-auto,
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]) {
+  width: auto !important;
+  max-width: none !important;
 }
 
 a {
