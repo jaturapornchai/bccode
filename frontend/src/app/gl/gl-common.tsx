@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { AccountSearchDialog } from "./account-search-dialog";
 
 export { AccountSearchDialog } from "./account-search-dialog";
+export { Combobox } from "@/components/ui/combobox";
 
 // Screen text follows the selected language (AGENTS.md rule 2026-09-14): every
 // user-visible string is an English key resolved from backend languages.tsv, with

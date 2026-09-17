@@ -958,3 +958,21 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 **ผลการทดสอบ:** `tools/verify.sh fast` ผ่าน 100% (78 test files / 576 tests, 0 lint errors, typecheck ผ่าน, codemap sync สมบูรณ์) ใช้เวลาเพียง 7.6 วินาที
 
+### 2026-09-18 — ออกแบบ Global Combobox Component ใหม่ระดับทั้งระบบ (Thai 40+ Premium UI)
+
+**ประเภทงาน:** `[UI/UX]` `[Feature]` `[Refactor]`
+
+**สิ่งที่ทำ:**
+1. **สร้างคอมโพเนนต์ Global Combobox (`frontend/src/components/ui/combobox.tsx`)** — ดีไซน์สวยงามระดับพรีเมี่ยมตามมาตรฐานคนไทย 40+ (ความสูง `min-h-[2.6em]`, ตัวหนังสือ `text-[0.95rem]`, เงา depth elevation เด่นชัดไม่จมกับพื้นหลัง, ลูกศร `ChevronDown` หมุนนุ่มนวล, ไอคอน `Check` กำกับตัวเลือกที่เลือก, เมนูลอยเด่น `rounded-xl` พร้อมเงาลึก `shadow-[0_12px_36px_...]`)
+2. **Universal API & Drop-in Replacement** — รองรับทั้งแบบ `options={[...]}` และการใส่ `<option>` เป็น `children` เหมือน native `<select>` พร้อมระบบค้นหากรองตัวเลือกอัตโนมัติ (Search filter) เมื่อตัวเลือกมากกว่า 6 รายการ และรองรับ keyboard navigation (ArrowDown/Up, Enter, Esc, Tab, Home, End) ตามมาตรฐาน WAI-ARIA combobox 1.2
+3. **ผสานเข้ากับระบบส่วนกลาง** — Re-export ผ่าน `components/ui/select.tsx` และ `gl-common.tsx`, ปรับปรุง `ChoiceSelect` ให้ใช้ `Combobox` แทน native `<select>` เมื่อตัวเลือก > 3 รายการ, และนำไปใช้แทนที่ native `<select>` ในหน้าจอผังบัญชี (`gl-masters.tsx`) ทั้งระดับบัญชี (1–12), หมวดบัญชี, จำนวนทศนิยม, และสมุดรายวัน
+4. **เพิ่มชุดทดสอบ Unit Test (`combobox.test.ts`)** — ทดสอบการเรนเดอร์, options prop, children `<option>`, placeholder, depth shadow, disabled state, accessibility ARIA, และ hidden input ครบถ้วน 100%
+
+**ไฟล์สำคัญ:**
+- `frontend/src/components/ui/combobox.tsx` (ใหม่)
+- `frontend/src/components/ui/combobox.test.ts` (ใหม่)
+- `frontend/src/components/ui/select.tsx`, `frontend/src/components/ui/choice-select.tsx`
+- `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-common.tsx`
+
+**ผลการทดสอบ:** `tools/verify.sh fast` ผ่าน 100% (79 test files / 582 tests, 0 lint errors, typecheck ผ่าน, codemap ผ่าน)
+

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { Combobox } from "./combobox";
 
 export interface ChoiceOption<T = string | number> {
   value: T;
@@ -141,37 +142,19 @@ export function ChoiceSelect<T extends string | number = string>({
     );
   }
 
-  // Fallback to select dropdown when options > 3
+  // Fallback to Combobox dropdown when options > 3
   return (
-    <select
+    <Combobox
       id={id}
       name={name}
       aria-label={ariaLabel}
       disabled={disabled}
-      value={String(value ?? "")}
-      onChange={(event) => {
-        const selectedVal = event.target.value;
-        const matchingOpt = options.find((opt) => String(opt.value) === selectedVal);
-        if (matchingOpt) {
-          onChange(matchingOpt.value);
-        } else {
-          onChange(selectedVal as unknown as T);
-        }
-      }}
-      className={cn(
-        "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)] transition-[border-color,box-shadow] hover:border-primary/80 hover:shadow-[0_4px_16px_rgba(0,0,0,0.18),0_1px_4px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[0_4px_16px_rgba(0,0,0,0.2)] disabled:cursor-default disabled:bg-muted/20 disabled:border-border disabled:shadow-[0_2px_8px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.07)] disabled:text-foreground",
-        className
-      )}
+      value={value}
+      onChange={(val) => onChange(val as T)}
+      options={options}
+      className={className}
     >
-      {options.length > 0 ? (
-        options.map((option) => (
-          <option key={String(option.value)} value={String(option.value)} disabled={option.disabled}>
-            {typeof option.label === "string" ? option.label : String(option.value)}
-          </option>
-        ))
-      ) : (
-        children
-      )}
-    </select>
+      {children}
+    </Combobox>
   );
 }
