@@ -104,9 +104,9 @@ export function ChoiceSelect<T extends string | number = string>({
               className={cn(
                 "group relative flex min-h-[2.6em] w-full cursor-pointer items-center justify-start gap-2.5 rounded-xl border px-3 py-1.5 text-[0.95rem] transition-all select-none",
                 isChecked
-                  ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/30 shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
-                  : "border-input bg-background text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] hover:bg-muted/60 hover:border-primary/60 hover:shadow-[0_3px_8px_rgba(0,0,0,0.12)]",
-                isOptionDisabled && "cursor-not-allowed opacity-60 pointer-events-none disabled:shadow-none",
+                  ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/30 shadow-[0_3px_12px_rgba(0,0,0,0.16)]"
+                  : "border-input bg-background text-foreground shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)] hover:bg-muted/60 hover:border-primary/80 hover:shadow-[0_4px_16px_rgba(0,0,0,0.18)]",
+                isOptionDisabled && "cursor-default text-foreground/90 pointer-events-none",
                 radioClassName
               )}
             >
@@ -159,7 +159,7 @@ export function ChoiceSelect<T extends string | number = string>({
         }
       }}
       className={cn(
-        "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] transition-[border-color,box-shadow] hover:border-primary/60 hover:shadow-[0_3px_8px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.08)] focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[0_2px_8px_rgba(0,0,0,0.12)] disabled:opacity-60 disabled:shadow-none",
+        "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)] transition-[border-color,box-shadow] hover:border-primary/80 hover:shadow-[0_4px_16px_rgba(0,0,0,0.18),0_1px_4px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[0_4px_16px_rgba(0,0,0,0.2)] disabled:cursor-default disabled:bg-muted/20 disabled:border-border disabled:shadow-[0_2px_8px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.07)] disabled:text-foreground",
         className
       )}
     >
