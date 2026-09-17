@@ -941,3 +941,20 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `backend/assets/language/languages.tsv` (เพิ่มข้อความใหม่ครบ 13 ภาษา)
 
 **ผลการทดสอบ:** `bash tools/verify.sh frontend` ผ่านทั้งหมด — ตรวจไวยากรณ์ 0 ข้อผิดพลาด, ตรวจชนิดข้อมูล TypeScript 0 ข้อผิดพลาด, ชุดทดสอบ 566 รายการใน 75 ไฟล์ผ่านทั้งหมด (เพิ่มจาก 528 รายการก่อนเริ่มงาน) และ `bash tools/verify.sh backend` ผ่าน (build + vet + unit test)
+
+### 2026-09-17 — ยกระดับมิติเงาของคอนโทรล (Soft Depth Shadows) และแยกเมนูปีบัญชี
+
+**ประเภทงาน:** `[UI/UX]` `[Performance]` `[Feature]`
+
+**สิ่งที่ทำ:**
+1. **ยกระดับมิติเงาของ Textbox, Select, และ Controls (Soft Depth Shadows)** — ปรับจาก `shadow-xs` ที่บางเบาจนกลืนกับพื้นหลัง เป็นเลเยอร์เงาซ้อนมิติลึก `shadow-[0_2px_6px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)]` (และ `dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)]` ในโหมดกลางคืน) พร้อมเอฟเฟกต์ hover/focus ที่โดดเด่น คมชัด แก้ปัญหาฟิลด์กรอกข้อมูลจมและกลมกลืนไปกับพื้นหลังสีขาวของ Card ในหน้าจอ GL และฟอร์มระบบทั้งหมด
+2. **ปรับปรุงความเร็วสคริปต์ `tools/verify.sh fast`** — เปิดใช้งาน ESLint `--cache` และปรับการทำงานของ `codemap` กับ `frontend` ให้รันคู่ขนาน (Parallel execution) ลดเวลาตรวจสอบระบบจาก 25-35 วินาที เหลือเพียง 6.9 วินาที
+3. **แยกเมนู "ปีบัญชีและบัญชีปิดปี" (`/gl/fiscal-years`)** — ถอดแท็บสลับออกจากหน้ารายละเอียดผังบัญชี (`/gl/chartofaccounts`) แยกเป็นเมนูเอกเทศในระบบบัญชีแยกประเภท พร้อมปรับยอดเมนูรวมเป็น 226 หน้าจอ
+
+**ไฟล์สำคัญ:**
+- `frontend/src/app/gl/gl-common.tsx`, `frontend/src/components/ui/input.tsx`, `frontend/src/components/ui/choice-select.tsx`
+- `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-allocations.tsx`, `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/app/gl/gl-reports.tsx`, `frontend/src/app/gl/gl-statement-designer.tsx`, `frontend/src/app/gl/account-search-dialog.tsx`
+- `frontend/package.json`, `tools/verify.sh`, `.gitignore`, `frontend/.gitignore`
+
+**ผลการทดสอบ:** `tools/verify.sh fast` ผ่าน 100% (78 test files / 576 tests, 0 lint errors, typecheck ผ่าน, codemap sync สมบูรณ์) ใช้เวลาเพียง 7.6 วินาที
+

@@ -375,7 +375,7 @@ export function AccountSearchDialog({
                     onClick={() => setCategory(tab.key)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                       active
-                        ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                        ? "bg-primary text-primary-foreground shadow-sm font-semibold"
                         : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >

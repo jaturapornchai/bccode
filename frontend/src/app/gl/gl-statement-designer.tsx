@@ -359,7 +359,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
               </form>
             </div>
 
-            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs" aria-busy={list.loading}>
+            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm" aria-busy={list.loading}>
               <table className={`w-full text-left text-[0.95rem] leading-normal ${density.tableClass}`}>
                 <thead className="sticky top-0 bg-muted z-10">
                   <tr>
@@ -602,7 +602,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   </div>
 
                   {/* Rows Table */}
-                  <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs">
+                  <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm">
                     <table className="w-full text-left text-sm">
                       <thead className="sticky top-0 bg-muted font-semibold">
                         <tr>

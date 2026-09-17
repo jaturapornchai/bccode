@@ -185,7 +185,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 {density.compact && <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{tr("gl_collapse_row_mode", "โหมดย่อบรรทัด")}</span>}
               </div>
             </div>
-            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs" aria-busy={list.loading}>
+            <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm" aria-busy={list.loading}>
               <table className={`w-full text-left text-[0.95rem] leading-normal ${density.tableClass}`}>
                 <thead className="sticky top-0 bg-muted z-10">
                   <tr>

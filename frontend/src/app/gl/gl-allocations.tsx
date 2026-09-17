@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { emptyAllocationRule, emptyMaster, type GLAllocationRule, type GLMaster, type GLRecord, type GLResource } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, actionClass, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useGLText } from "./gl-common";
+import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useGLText } from "./gl-common";
 
 type AllocationResource = Extract<GLResource, "allocations">;
 const RESOURCE: AllocationResource = "allocations";
@@ -126,7 +126,7 @@ export function GLAllocations({ route }: { route: string }) {
         </form>
         <div className="text-xs text-muted-foreground px-1 font-medium text-foreground/80">{tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}</div>
       </div>
-      <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-xs" aria-busy={list.loading}>
+      <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm" aria-busy={list.loading}>
         <table className="w-full text-left text-[0.95rem] leading-normal">
           <thead className="sticky top-0 bg-muted z-10"><tr>
             <th className="p-2.5">{tr("gl_code", "รหัส")}</th>
@@ -169,8 +169,8 @@ export function GLAllocations({ route }: { route: string }) {
         <div className="flex-1 min-h-0 overflow-auto grid gap-3 content-start">
           <fieldset disabled={!isEditing || busy} className="grid gap-3">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={tr("gl_code", "รหัส")}><input data-field="code" className="min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5" value={record.code} onChange={(event) => set({ code: event.target.value })} maxLength={60} /></Field>
-              <Field label={tr("gl_name_description", "ชื่อ / รายละเอียด")}><input data-field="name" className="min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5" value={record.name} onChange={(event) => set({ name: event.target.value })} maxLength={300} /></Field>
+              <Field label={tr("gl_code", "รหัส")}><input data-field="code" className={control} value={record.code} onChange={(event) => set({ code: event.target.value })} maxLength={60} /></Field>
+              <Field label={tr("gl_name_description", "ชื่อ / รายละเอียด")}><input data-field="name" className={control} value={record.name} onChange={(event) => set({ name: event.target.value })} maxLength={300} /></Field>
             </div>
             <Field label={tr("gl_alloc_cost_account", "บัญชีต้นทุนที่ต้องการปันส่วน")}><AccountSelect value={record.accountcode} onChange={(value) => set({ accountcode: value })} accounts={refs.accounts} field="accountcode" /></Field>
             <div className="flex flex-wrap items-center gap-3"><Check label={tr("gl_enable", "ใช้งาน")} checked={record.isactive} onChange={(checked) => set({ isactive: checked })} />
@@ -178,12 +178,12 @@ export function GLAllocations({ route }: { route: string }) {
             </div>
           </fieldset>
 
-          <section className="grid gap-2 rounded-xl border border-border p-3">
+          <section className="grid gap-2 rounded-xl border border-border p-3 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-medium">{tr("gl_alloc_rules", "รายการปันส่วนตามสัดส่วน")}</h3>
               <Button type="button" variant="outline" className={actionClass} disabled={!isEditing || busy || record.allocaterules.length >= 100} onClick={() => set({ allocaterules: [...record.allocaterules, emptyAllocationRule()] })}><Plus className="size-4 mr-1.5" />{tr("gl_alloc_add_rule", "เพิ่มรายการปันส่วน")}</Button>
             </div>
-            <div className="overflow-auto rounded-xl border border-border shadow-xs">
+            <div className="overflow-auto rounded-xl border border-border shadow-sm">
               <table className="w-full text-left text-[0.95rem]">
                 <thead className="bg-muted"><tr>
                   <th className="p-2 w-14 text-center">{tr("gl_sequence", "ลำดับ")}</th>

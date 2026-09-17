@@ -104,8 +104,8 @@ export function ChoiceSelect<T extends string | number = string>({
               className={cn(
                 "group relative flex min-h-[2.6em] w-full cursor-pointer items-center justify-start gap-2.5 rounded-xl border px-3 py-1.5 text-[0.95rem] transition-all select-none",
                 isChecked
-                  ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/30 shadow-sm"
-                  : "border-input bg-background text-foreground shadow-xs hover:bg-muted/60 hover:border-primary/50 hover:shadow-sm",
+                  ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/30 shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+                  : "border-input bg-background text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] hover:bg-muted/60 hover:border-primary/60 hover:shadow-[0_3px_8px_rgba(0,0,0,0.12)]",
                 isOptionDisabled && "cursor-not-allowed opacity-60 pointer-events-none disabled:shadow-none",
                 radioClassName
               )}
@@ -159,7 +159,7 @@ export function ChoiceSelect<T extends string | number = string>({
         }
       }}
       className={cn(
-        "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-xs transition-[border-color,box-shadow] hover:border-primary/50 focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-sm disabled:opacity-60 disabled:shadow-none",
+        "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] transition-[border-color,box-shadow] hover:border-primary/60 hover:shadow-[0_3px_8px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.08)] focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[0_2px_8px_rgba(0,0,0,0.12)] disabled:opacity-60 disabled:shadow-none",
         className
       )}
     >

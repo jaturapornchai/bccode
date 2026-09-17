@@ -37,7 +37,7 @@ export function useGLText(): GLTextFn {
   return useCallback((key: string, fallback: string) => backendText(dictionary, key, fallback), [dictionary]);
 }
 
-export const control = "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-xs transition-[border-color,box-shadow] hover:border-primary/50 focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-sm disabled:opacity-60 disabled:shadow-none";
+export const control = "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-[0_2px_6px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.45)] transition-[border-color,box-shadow] hover:border-primary/60 hover:shadow-[0_3px_8px_rgba(0,0,0,0.12),0_1px_3px_rgba(0,0,0,0.08)] focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[0_2px_8px_rgba(0,0,0,0.12)] disabled:opacity-60 disabled:shadow-none";
 export const panel = "min-w-0 rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-sm";
 export const actionClass = "h-10 !min-h-10 rounded-xl px-3.5 text-[0.95rem] font-medium leading-normal shrink-0 inline-flex items-center justify-center";
 export function useRowDensity() {
@@ -57,14 +57,14 @@ export function Check({ label, checked, onChange, disabled, className }: { label
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="size-4.5 shrink-0 rounded border-input text-primary accent-primary shadow-2xs focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed"
+        className="size-4.5 shrink-0 rounded border-input text-primary accent-primary shadow-[0_1px_3px_rgba(0,0,0,0.1)] focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-not-allowed"
       />
       <span className="whitespace-nowrap">{label}</span>
     </label>
   );
 }
 export function Notice({ text, error = false }: { text: string; error?: boolean }) {
-  return text ? <div role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed shadow-xs ${error ? "border-destructive/40 bg-destructive/5 text-foreground" : "border-primary/25 bg-primary/5 text-foreground"}`}>{text}</div> : null;
+  return text ? <div role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed shadow-[0_2px_6px_rgba(0,0,0,0.06)] ${error ? "border-destructive/40 bg-destructive/5 text-foreground" : "border-primary/25 bg-primary/5 text-foreground"}`}>{text}</div> : null;
 }
 export function UnsavedBadge({ dirty, className }: { dirty: boolean; className?: string }) {
   const tr = useGLText();
@@ -442,7 +442,7 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
               e.stopPropagation();
               setDialogOpen(true);
             }}
-            className="inline-flex !size-7 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-[8px] border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50 cursor-pointer shadow-xs hover:shadow-sm shrink-0"
+            className="inline-flex !size-7 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-[8px] border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50 cursor-pointer shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)] shrink-0"
             title={tr("gl_open_fullscreen_coa_search_f2", "เปิดระบบค้นหาผังบัญชีแบบเต็มจอ (F2)")}
             aria-label={tr("gl_search_coa", "ค้นหาผังบัญชี")}
           >
