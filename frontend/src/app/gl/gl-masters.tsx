@@ -11,6 +11,27 @@ import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, S
 
 type MasterResource = Exclude<GLResource, "journals">;
 function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : emptyMaster(); }
+export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
+  const base = { ...newRecord(resource), ...raw };
+  if (resource === "accounts") {
+    const acc = base as GLAccount;
+    if (!Array.isArray(acc.names) || acc.names.length === 0) {
+      acc.names = [{ code: "th", name: "" }];
+    } else if (!acc.names.some((n) => n.code === "th")) {
+      acc.names = [{ code: "th", name: "" }, ...acc.names];
+    }
+    acc.accountcode = acc.accountcode || "";
+    acc.parentaccountcode = acc.parentaccountcode || "";
+    acc.accountgroup = acc.accountgroup || "";
+    acc.accounttype = acc.accounttype || "asset";
+    acc.normalbalance = acc.normalbalance || "debit";
+    acc.level = typeof acc.level === "number" ? acc.level : 1;
+    acc.isactive = acc.isactive ?? true;
+    acc.allowposting = acc.allowposting ?? true;
+    acc.iscash = acc.iscash ?? false;
+  }
+  return base as GLRecord;
+}
 /** Exactly one alert is visible: the page-level notice for list failures, the pane notice for
  *  an open record. Errors are additive - the editor keeps the values the user already typed. */
 export function editorAlert({ error, listError, refsError, hasRecord }: { error: string; listError?: string; refsError?: string; hasRecord: boolean }) {
@@ -48,7 +69,9 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   const [errorField, setErrorField] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
-  const dirty = isEditing && record !== null && JSON.stringify(record) !== original;
+  const isRecordDirty = record !== null && JSON.stringify(record) !== original;
+  const isReasonDirty = reason.trim() !== "";
+  const dirty = isEditing && record !== null && (isRecordDirty || isReasonDirty);
 
   useDirtyGuard(route, dirty);
   const set = (patch: object) => setRecord((current) => current ? { ...current, ...patch } as GLRecord : current);
@@ -81,7 +104,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
       const value = item?.id ? await glRequest<GLRecord>(`${resource}/${encodeURIComponent(item.id)}`) : newRecord(resource);
-      const normalized = { ...newRecord(resource), ...value } as GLRecord;
+      const normalized = normalizeRecord(resource, value);
       setRecord(normalized);
       setOriginal(JSON.stringify(normalized));
       setIsEditing(false);
@@ -97,7 +120,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
       const value = item?.id ? await glRequest<GLRecord>(`${resource}/${encodeURIComponent(item.id)}`) : newRecord(resource);
-      const normalized = { ...newRecord(resource), ...value } as GLRecord;
+      const normalized = normalizeRecord(resource, value);
       setRecord(normalized);
       setOriginal(JSON.stringify(normalized));
       setIsEditing(true);
@@ -111,7 +134,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
 
   async function openCreate() {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
-    const fresh = newRecord(resource);
+    const fresh = normalizeRecord(resource, newRecord(resource));
     setRecord(fresh);
     setOriginal(JSON.stringify(fresh));
     setIsEditing(true);
@@ -142,10 +165,11 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       setError("");
       const field = resource === "accounts" ? { account: record as GLAccount } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : { master: record as GLMaster };
       const result = await execute({ resource, action: record.id ? "update" : "create", id: record.id, version: record.version, reason: reason.trim() || (record.id ? tr("gl_edit_data", "แก้ไขข้อมูล") : tr("gl_create_new", "สร้างข้อมูลใหม่")), ...field });
-      const saved = { ...record, id: result.id, version: result.version };
+      const saved = normalizeRecord(resource, { ...record, id: result.id, version: result.version });
       setRecord(saved);
       setOriginal(JSON.stringify(saved));
       setIsEditing(false);
+      setReason("");
       list.reload();
       setRevision((value) => value + 1);
       setMessage(result.projectionpending ? tr("gl_saved_updating_reload", "บันทึกแล้ว กำลังปรับปรุงข้อมูลสำหรับรายงาน กดโหลดใหม่เพื่อตรวจสอบ") : tr("gl_saved_successfully", "บันทึกเรียบร้อยแล้ว"));
@@ -552,33 +576,42 @@ function AccountFields({ value, set, accounts }: { value: GLAccount; set: (patch
     const suggestedLevel = parent ? (parent.level || 1) + 1 : 1;
     set({ parentaccountcode, level: Math.min(12, Math.max(1, suggestedLevel)) });
   };
+  const thName = (value.names || []).find((name) => name.code === "th")?.name ?? "";
+  const enName = (value.names || []).find((name) => name.code === "en")?.name ?? "";
+
   return <>{value.id && <Notice text={tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน")} />}<div className="grid gap-3 sm:grid-cols-2">
-    <Field label={tr("gl_account_code", "รหัสบัญชี")}><input className={control} data-field="accountcode" required disabled={!!value.id} value={value.accountcode} onChange={(e) => set({ accountcode: e.target.value })} maxLength={60} /></Field>
-    <Field label={tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย")}><input className={control} data-field="accountnameth" required value={accountName(value)} onChange={(e) => set({ names: [...value.names.filter((name) => name.code !== "th"), { code: "th", name: e.target.value }] })} maxLength={300} /></Field>
-    <Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ")}><input className={control} data-field="accountnameen" value={value.names.find((name) => name.code === "en")?.name ?? ""} onChange={(e) => set({ names: [...value.names.filter((name) => name.code !== "en"), { code: "en", name: e.target.value }] })} maxLength={300} placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")} /></Field>
-    <Field label={tr("gl_account_category", "หมวดบัญชี")}><Combobox value={value.accounttype} onChange={(accounttype) => set({ accounttype })}>{Object.entries(accountTypeLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</Combobox></Field>
-    <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}><ChoiceSelect value={value.normalbalance} onChange={(normalbalance) => set({ normalbalance })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field>
-    <Field label={tr("gl_parent_account", "บัญชีแม่")}><AccountSelect field="parentaccountcode" value={value.parentaccountcode} onChange={onParentChange} accounts={accounts.filter((item) => item.accountcode !== value.accountcode)} all label={tr("gl_parent_account", "บัญชีแม่")} /></Field>
+    <Field label={tr("gl_account_code", "รหัสบัญชี")}><input className={control} data-field="accountcode" required disabled={!!value.id} value={value.accountcode || ""} onChange={(e) => set({ accountcode: e.target.value })} maxLength={60} /></Field>
+    <Field label={tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย")}><input className={control} data-field="accountnameth" required value={thName} onChange={(e) => {
+      const currentNames = (value.names || []).filter((name) => name.code !== "th");
+      set({ names: [...currentNames, { code: "th", name: e.target.value }] });
+    }} maxLength={300} /></Field>
+    <Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ")}><input className={control} data-field="accountnameen" value={enName} onChange={(e) => {
+      const currentNames = (value.names || []).filter((name) => name.code !== "en");
+      set({ names: [...currentNames, { code: "en", name: e.target.value }] });
+    }} maxLength={300} placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")} /></Field>
+    <Field label={tr("gl_account_category", "หมวดบัญชี")}><Combobox value={value.accounttype || "asset"} onChange={(accounttype) => set({ accounttype })}>{Object.entries(accountTypeLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</Combobox></Field>
+    <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}><ChoiceSelect value={value.normalbalance || "debit"} onChange={(normalbalance) => set({ normalbalance })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field>
+    <Field label={tr("gl_parent_account", "บัญชีแม่")}><AccountSelect field="parentaccountcode" value={value.parentaccountcode || ""} onChange={onParentChange} accounts={accounts.filter((item) => item.accountcode !== value.accountcode)} all label={tr("gl_parent_account", "บัญชีแม่")} /></Field>
     <Field label={tr("gl_account_level_range", "ระดับบัญชี (1–12)")}><Combobox data-field="level" aria-label={tr("gl_account_level", "ระดับบัญชี")} value={value.level ?? 1} onChange={(level) => set({ level: Number(level) })}>{Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => <option key={lvl} value={lvl}>{tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))}</option>)}</Combobox></Field>
-    <Field label={tr("gl_coa_group_code", "รหัสกลุ่มผังบัญชี")}><input className={control} value={value.accountgroup} onChange={(e) => set({ accountgroup: e.target.value })} /></Field>
+    <Field label={tr("gl_coa_group_code", "รหัสกลุ่มผังบัญชี")}><input className={control} value={value.accountgroup || ""} onChange={(e) => set({ accountgroup: e.target.value })} /></Field>
     <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
-      <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive} onChange={(isactive) => set({ isactive })} />
-      <Check label={tr("gl_allow_posting", "อนุญาตให้ลงรายการ")} checked={value.allowposting} onChange={(allowposting) => set({ allowposting })} />
-      <Check label={tr("gl_cash_and_cash_equivalents", "บัญชีเงินสดและรายการเทียบเท่าเงินสด")} checked={value.iscash} onChange={(iscash) => set({ iscash })} />
+      <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
+      <Check label={tr("gl_allow_posting", "อนุญาตให้ลงรายการ")} checked={value.allowposting ?? true} onChange={(allowposting) => set({ allowposting })} />
+      <Check label={tr("gl_cash_and_cash_equivalents", "บัญชีเงินสดและรายการเทียบเท่าเงินสด")} checked={value.iscash ?? false} onChange={(iscash) => set({ iscash })} />
     </div>
   </div></>;
 }
 function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: (patch: object) => void; accounts: GLAccount[] }) {
   const tr = useGLText();
   return <><Notice text={tr("gl_set_fy_currency_before_journal", "กำหนดปีบัญชีก่อนบันทึกรายวัน ระบบตรวจจำนวนทศนิยมตามปีบัญชีและไม่ปัดยอดให้อัตโนมัติ")} /><div className="grid gap-3 sm:grid-cols-2">
-    <Field label={tr("gl_fiscal_year_code", "รหัสปีบัญชี")}><input className={control} required value={value.code} disabled={!!value.id} onChange={(e) => set({ code: e.target.value })} /></Field>
-    <Field label={tr("gl_fiscal_year_start_date", "วันเริ่มต้นปีบัญชี")}><input className={control} required type="date" value={value.startdate} onChange={(e) => set({ startdate: e.target.value })} /></Field>
-    <Field label={tr("gl_fiscal_year_end_date", "วันสิ้นสุดปีบัญชี")}><input className={control} required type="date" value={value.enddate} onChange={(e) => set({ enddate: e.target.value })} /></Field>
-    <Field label={tr("gl_decimal_places", "จำนวนตำแหน่งทศนิยม")}><Combobox value={value.scale} onChange={(scale) => set({ scale: Number(scale) })}>{Array.from({ length: 9 }, (_, scale) => <option key={scale} value={scale}>{tr("gl_positions_count", "{0} ตำแหน่ง").replace("{0}", String(scale))}</option>)}</Combobox></Field>
-    <Field label={tr("gl_profit_loss_account", "บัญชีกำไรขาดทุน")}><AccountSelect label={tr("gl_profit_loss_account", "บัญชีกำไรขาดทุน")} value={value.profitlossaccount ?? ""} onChange={(profitlossaccount) => set({ profitlossaccount })} accounts={accounts} /></Field>
-    <Field label={tr("gl_retained_earnings_account", "บัญชีกำไรสะสม")}><AccountSelect label={tr("gl_retained_earnings_account", "บัญชีกำไรสะสม")} value={value.retainedearningsaccount} onChange={(retainedearningsaccount) => set({ retainedearningsaccount })} accounts={accounts} /></Field>
+    <Field label={tr("gl_fiscal_year_code", "รหัสปีบัญชี")}><input className={control} required value={value.code || ""} disabled={!!value.id} onChange={(e) => set({ code: e.target.value })} /></Field>
+    <Field label={tr("gl_fiscal_year_start_date", "วันเริ่มต้นปีบัญชี")}><input className={control} required type="date" value={value.startdate || ""} onChange={(e) => set({ startdate: e.target.value })} /></Field>
+    <Field label={tr("gl_fiscal_year_end_date", "วันสิ้นสุดปีบัญชี")}><input className={control} required type="date" value={value.enddate || ""} onChange={(e) => set({ enddate: e.target.value })} /></Field>
+    <Field label={tr("gl_decimal_places", "จำนวนตำแหน่งทศนิยม")}><Combobox value={value.scale ?? 2} onChange={(scale) => set({ scale: Number(scale) })}>{Array.from({ length: 9 }, (_, scale) => <option key={scale} value={scale}>{tr("gl_positions_count", "{0} ตำแหน่ง").replace("{0}", String(scale))}</option>)}</Combobox></Field>
+    <Field label={tr("gl_profit_loss_account", "บัญชีกำไรขาดทุน")}><AccountSelect label={tr("gl_profit_loss_account", "บัญชีกำไรขาดทุน")} value={value.profitlossaccount || ""} onChange={(profitlossaccount) => set({ profitlossaccount })} accounts={accounts} /></Field>
+    <Field label={tr("gl_retained_earnings_account", "บัญชีกำไรสะสม")}><AccountSelect label={tr("gl_retained_earnings_account", "บัญชีกำไรสะสม")} value={value.retainedearningsaccount || ""} onChange={(retainedearningsaccount) => set({ retainedearningsaccount })} accounts={accounts} /></Field>
     <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
-      <Check label={tr("gl_activate_fiscal_year", "เปิดใช้งานปีบัญชี")} checked={value.isactive} onChange={(isactive) => set({ isactive })} />
+      <Check label={tr("gl_activate_fiscal_year", "เปิดใช้งานปีบัญชี")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
     </div>
   </div>{value.closed && <Notice text={tr("gl_fiscal_year_closed", "ปีบัญชีนี้ปิดแล้ว")} />}</>;
 }
@@ -586,17 +619,17 @@ function MasterFields({ resource, value, set, accounts, years }: { resource: Mas
   const tr = useGLText();
   const dateFields = ["budgets", "periods", "forecast"].includes(resource);
   return <><div className="grid gap-3 sm:grid-cols-2">
-    <Field label={tr("gl_code", "รหัส")}><input className={control} data-field="code" required disabled={!!value.id} value={value.code} onChange={(e) => set({ code: e.target.value })} /></Field>
-    <Field label={tr("gl_name", "ชื่อ")}><input className={control} data-field="name" required value={value.name} onChange={(e) => set({ name: e.target.value })} /></Field>
-    {dateFields && <><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect value={value.fiscalyear} onChange={(fiscalyear) => set({ fiscalyear })} years={years} /></Field><Field label={tr("gl_start_date", "วันเริ่มต้น")}><input className={control} type="date" required value={value.startdate} onChange={(e) => set({ startdate: e.target.value })} /></Field><Field label={tr("gl_end_date", "วันสิ้นสุด")}><input className={control} type="date" required value={value.enddate} onChange={(e) => set({ enddate: e.target.value })} /></Field></>}
-    {["budgets", "forecast"].includes(resource) && <><Field label={tr("gl_account", "บัญชี")}><AccountSelect value={value.accountcode} onChange={(accountcode) => set({ accountcode })} accounts={accounts} /></Field><Field label={tr("gl_amount", "จำนวนเงิน")}><AmountInput required value={value.amount} onChange={(amount) => set({ amount })} /></Field><Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={value.branchcode} onChange={(e) => set({ branchcode: e.target.value })} /></Field><Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={value.departmentcode} onChange={(e) => set({ departmentcode: e.target.value })} /></Field><Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={value.projectcode} onChange={(e) => set({ projectcode: e.target.value })} /></Field></>}
-    {resource === "forecast" && <Field label={tr("gl_money_direction", "ทิศทางเงิน")}><ChoiceSelect value={value.direction} onChange={(direction) => set({ direction })}><option value="in">{tr("gl_money_in", "เงินเข้า")}</option><option value="out">{tr("gl_money_out", "เงินออก")}</option></ChoiceSelect></Field>}
+    <Field label={tr("gl_code", "รหัส")}><input className={control} data-field="code" required disabled={!!value.id} value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
+    <Field label={tr("gl_name", "ชื่อ")}><input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} /></Field>
+    {dateFields && <><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect value={value.fiscalyear || ""} onChange={(fiscalyear) => set({ fiscalyear })} years={years} /></Field><Field label={tr("gl_start_date", "วันเริ่มต้น")}><input className={control} type="date" required value={value.startdate || ""} onChange={(e) => set({ startdate: e.target.value })} /></Field><Field label={tr("gl_end_date", "วันสิ้นสุด")}><input className={control} type="date" required value={value.enddate || ""} onChange={(e) => set({ enddate: e.target.value })} /></Field></>}
+    {["budgets", "forecast"].includes(resource) && <><Field label={tr("gl_account", "บัญชี")}><AccountSelect value={value.accountcode || ""} onChange={(accountcode) => set({ accountcode })} accounts={accounts} /></Field><Field label={tr("gl_amount", "จำนวนเงิน")}><AmountInput required value={value.amount || ""} onChange={(amount) => set({ amount })} /></Field><Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={value.branchcode || ""} onChange={(e) => set({ branchcode: e.target.value })} /></Field><Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={value.departmentcode || ""} onChange={(e) => set({ departmentcode: e.target.value })} /></Field><Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={value.projectcode || ""} onChange={(e) => set({ projectcode: e.target.value })} /></Field></>}
+    {resource === "forecast" && <Field label={tr("gl_money_direction", "ทิศทางเงิน")}><ChoiceSelect value={value.direction || "in"} onChange={(direction) => set({ direction })}><option value="in">{tr("gl_money_in", "เงินเข้า")}</option><option value="out">{tr("gl_money_out", "เงินออก")}</option></ChoiceSelect></Field>}
     {resource === "product-account-groups" && <>{([ ["itemaccount", tr("gl_inventory_account", "บัญชีสินค้า")], ["costaccount", tr("gl_cogs_account", "บัญชีต้นทุนขาย")], ["revenueaccount", tr("gl_sales_revenue_account", "บัญชีรายได้จากการขาย")] ] as const).map(([key, label]) => <Field key={key} label={label}><AccountSelect label={label} value={value[key] ?? ""} onChange={(accountcode) => set({ [key]: accountcode })} accounts={accounts} /></Field>)}</>}
-    {resource === "mappings" && <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={value.bookcode} onChange={(bookcode) => set({ bookcode })}>{Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</Combobox></Field>}
+    {resource === "mappings" && <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={value.bookcode || ""} onChange={(bookcode) => set({ bookcode })}>{Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</Combobox></Field>}
     <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
-      <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive} onChange={(isactive) => set({ isactive })} />
+      <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
     </div>
   </div>
-    {resource === "mappings" && <div className="grid gap-2"><h3 className="font-semibold">{tr("gl_account_mapping_rules", "กฎการเชื่อมบัญชี")}</h3>{(value.rules ?? []).map((rule, index) => <div key={index} className="grid gap-2 rounded-xl border border-border p-2 sm:grid-cols-2 shadow-sm bg-muted/20"><AccountSelect label={tr("gl_accounts_in_rule", "บัญชีในกฎ {0}").replace("{0}", String(index + 1))} value={rule.accountcode} accounts={accounts} onChange={(accountcode) => set({ rules: value.rules.map((item, i) => i === index ? { ...item, accountcode } : item) })} /><Field label={tr("gl_accounting_side_rule", "ด้านบัญชีกฎ {0}").replace("{0}", String(index + 1))}><ChoiceSelect value={rule.side} onChange={(side) => set({ rules: value.rules.map((item, i) => i === index ? { ...item, side } : item) })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field><Field label={tr("gl_amount_source_rule", "แหล่งจำนวนเงินกฎ {0}").replace("{0}", String(index + 1))}><input className={control} value={rule.source} placeholder={tr("gl_select_supported_source_doc", "เลือกตามเอกสารต้นทางที่ระบบรองรับ")} onChange={(e) => set({ rules: value.rules.map((item, i) => i === index ? { ...item, source: e.target.value } : item) })} /></Field><Button type="button" className={actionClass} variant="outline" onClick={() => set({ rules: value.rules.filter((_, i) => i !== index) })}>{tr("gl_remove_rule", "นำกฎ {0} ออก").replace("{0}", String(index + 1))}</Button></div>)}<Button type="button" variant="outline" className={actionClass} onClick={() => set({ rules: [...(value.rules ?? []), { accountcode: "", side: "debit", source: "" }] })}>{tr("gl_add_account_mapping_rule", "เพิ่มกฎการเชื่อมบัญชี")}</Button></div>}
+    {resource === "mappings" && <div className="grid gap-2"><h3 className="font-semibold">{tr("gl_account_mapping_rules", "กฎการเชื่อมบัญชี")}</h3>{(value.rules ?? []).map((rule, index) => <div key={index} className="grid gap-2 rounded-xl border border-border p-2 sm:grid-cols-2 shadow-sm bg-muted/20"><AccountSelect label={tr("gl_accounts_in_rule", "บัญชีในกฎ {0}").replace("{0}", String(index + 1))} value={rule.accountcode || ""} accounts={accounts} onChange={(accountcode) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, accountcode } : item) })} /><Field label={tr("gl_accounting_side_rule", "ด้านบัญชีกฎ {0}").replace("{0}", String(index + 1))}><ChoiceSelect value={rule.side || "debit"} onChange={(side) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, side } : item) })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field><Field label={tr("gl_amount_source_rule", "แหล่งจำนวนเงินกฎ {0}").replace("{0}", String(index + 1))}><input className={control} value={rule.source || ""} placeholder={tr("gl_select_supported_source_doc", "เลือกตามเอกสารต้นทางที่ระบบรองรับ")} onChange={(e) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, source: e.target.value } : item) })} /></Field><Button type="button" className={actionClass} variant="outline" onClick={() => set({ rules: (value.rules ?? []).filter((_, i) => i !== index) })}>{tr("gl_remove_rule", "นำกฎ {0} ออก").replace("{0}", String(index + 1))}</Button></div>)}<Button type="button" variant="outline" className={actionClass} onClick={() => set({ rules: [...(value.rules ?? []), { accountcode: "", side: "debit", source: "" }] })}>{tr("gl_add_account_mapping_rule", "เพิ่มกฎการเชื่อมบัญชี")}</Button></div>}
   </>;
 }

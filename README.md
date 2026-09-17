@@ -972,8 +972,20 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ไฟล์สำคัญ:**
 - `frontend/src/components/ui/combobox.tsx` (ใหม่)
 - `frontend/src/components/ui/combobox.test.ts` (ใหม่)
-- `frontend/src/components/ui/select.tsx`, `frontend/src/components/ui/choice-select.tsx`
-- `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-common.tsx`
+### 2026-09-18 — แก้ไขสถานะการแก้ไข (Dirty State) ของช่องเหตุผลและป้องกัน Field Crash ในฟอร์ม GL
 
-**ผลการทดสอบ:** `tools/verify.sh fast` ผ่าน 100% (79 test files / 582 tests, 0 lint errors, typecheck ผ่าน, codemap ผ่าน)
+**ประเภทงาน:** `[Bugfix]` `[UI/UX]`
+
+**สิ่งที่ทำ:**
+1. **เพิ่มช่องเหตุผลการแก้ไข (`reason`) เข้าสู่การคำนวณสถานะ `dirty`** — แก้ปัญหาผู้ใช้พิมพ์ระบุเหตุผลการแก้ไข (`placeholder="ระบุเหตุผลการแก้ไข (ถ้ามี)"`) แล้วปุ่ม "บันทึกข้อมูล" ยังคง disabled อยู่ โดยปรับเงื่อนไข `dirty` ใน `gl-masters.tsx` และ `gl-journals.tsx` ให้ตรวจจับทั้งการเปลี่ยนแปลงของระเบียน (`record` / `journal`) และข้อความในช่องเหตุผล (`reason.trim() !== ""`) ทำให้ปุ่มบันทึกเปิดใช้งาน (enabled) ได้อย่างถูกต้อง
+2. **สร้างฟังก์ชัน `normalizeRecord` และป้องกัน Null Reference ใน `AccountFields`** — แก้ไขปัญหาข้อมูลบัญชีที่มี `names` เป็น `null` หรือ `undefined` จากฐานข้อมูล ซึ่งทำให้เมธอด `.filter()` และ `.find()` ขัดข้องจนฟิลด์ชื่อภาษาไทย/ภาษาอังกฤษไม่รับ event แก้ไข โดยเพิ่มระบบ Fallback ที่ปลอดภัย (`(value.names || [])...`) และเติมค่าเริ่มต้นให้กับทุกฟิลด์ในแบบฟอร์ม
+3. **ปรับปรุงความปลอดภัยในทุกฟิลด์ของแบบฟอร์มข้อมูลหลัก (GL Masters)** — ใส่ fallback ค่าว่างและค่าเริ่มต้นให้กับฟิลด์ทั้งหมดใน `FiscalYearFields` และ `MasterFields` (เช่น `accountgroup`, `parentaccountcode`, `rules`, `scale`, `isactive`, `allowposting`, `iscash`) ป้องกัน React Uncontrolled Input Warning และ Error
+4. **เพิ่มชุดทดสอบ Unit Test** — เพิ่มกรณีทดสอบใน `gl-masters.test.ts` เพื่อรับรองความปลอดภัยของ `normalizeRecord` เมื่อข้อมูล `names` เป็น `null` หรือมีเฉพาะภาษาอังกฤษ ครอบคลุม 100%
+
+**ไฟล์สำคัญ:**
+- `frontend/src/app/gl/gl-masters.tsx`
+- `frontend/src/app/gl/gl-journals.tsx`
+- `frontend/src/app/gl/gl-masters.test.ts`
+
+**ผลการทดสอบ:** `tools/verify.sh fast` ผ่าน 100% (79 test files / 584 tests, 0 lint errors, typecheck ผ่าน, codemap ผ่าน)
 

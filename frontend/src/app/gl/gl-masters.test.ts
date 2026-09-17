@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, editorAlert, errorStatePatch, pageErrorText, paneErrorText, saveFailureTarget } from "./gl-masters";
+import { FormErrorAlert, GLMasters, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, saveFailureTarget } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -253,5 +253,39 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
     const html = renderToStaticMarkup(createElement(glCommon.UnsavedBadge, { dirty: true }));
     expect(html).toContain("ยังไม่บันทึก");
     expect(html).toContain("role=\"status\"");
+  });
+
+  it("normalizeRecord provides safe fallbacks when account record has null or missing names", () => {
+    const raw = {
+      id: "a-null-names",
+      accountcode: "110101",
+      names: null as unknown as { code: string; name: string }[],
+      version: 1,
+    } as unknown as GLAccount;
+
+    const normalized = normalizeRecord("accounts", raw) as GLAccount;
+    expect(Array.isArray(normalized.names)).toBe(true);
+    expect(normalized.names.length).toBeGreaterThan(0);
+    expect(normalized.names[0].code).toBe("th");
+    expect(normalized.accountcode).toBe("110101");
+    expect(normalized.accounttype).toBe("asset");
+    expect(normalized.normalbalance).toBe("debit");
+    expect(normalized.level).toBe(1);
+    expect(normalized.isactive).toBe(true);
+    expect(normalized.allowposting).toBe(true);
+    expect(normalized.iscash).toBe(false);
+  });
+
+  it("normalizeRecord guarantees Thai name exists in names array", () => {
+    const raw = {
+      id: "a-en-only",
+      accountcode: "110102",
+      names: [{ code: "en", name: "Cash on hand" }],
+      version: 1,
+    } as unknown as GLAccount;
+
+    const normalized = normalizeRecord("accounts", raw) as GLAccount;
+    expect(normalized.names.some((n) => n.code === "th")).toBe(true);
+    expect(normalized.names.find((n) => n.code === "en")?.name).toBe("Cash on hand");
   });
 });
