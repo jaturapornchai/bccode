@@ -12,9 +12,9 @@ import { glAllRecords, glCommand, glRequest } from "@/lib/general-ledger-api";
 import { accountName, formatAmount, sortAccountsHierarchically, type GLAccount, type GLCommand, type GLFiscalYear, type GLPage, type GLRecord, type GLResource } from "@/lib/general-ledger";
 import { cn } from "@/lib/utils";
 import { AccountSearchDialog } from "./account-search-dialog";
+import { Combobox } from "@/components/ui/combobox";
 
-export { AccountSearchDialog } from "./account-search-dialog";
-export { Combobox } from "@/components/ui/combobox";
+export { AccountSearchDialog, Combobox };
 
 // Screen text follows the selected language (AGENTS.md rule 2026-09-14): every
 // user-visible string is an English key resolved from backend languages.tsv, with
@@ -468,7 +468,22 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
 export function YearSelect({ value, onChange, years, label: labelProp, disabled = false }: { value: string; onChange: (value: string) => void; years: GLFiscalYear[]; label?: string; disabled?: boolean }) {
   const tr = useGLText();
   const label = labelProp ?? tr("gl_fiscal_year", "ปีบัญชี");
-  return <select aria-label={label} className={control} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}><option value="">{tr("gl_select_fiscal_year", "เลือกปีบัญชี")}</option>{years.map((year) => <option key={year.id ?? year.code} value={year.code}>{year.code}{year.closed ? ` · ${tr("gl_closed", "ปิดแล้ว")}` : ""}</option>)}</select>;
+  return (
+    <Combobox
+      aria-label={label}
+      value={value}
+      onChange={(val: string | number) => onChange(String(val))}
+      disabled={disabled}
+      placeholder={tr("gl_select_fiscal_year", "เลือกปีบัญชี")}
+    >
+      <option value="">{tr("gl_select_fiscal_year", "เลือกปีบัญชี")}</option>
+      {years.map((year) => (
+        <option key={year.id ?? year.code} value={year.code}>
+          {year.code}{year.closed ? ` · ${tr("gl_closed", "ปิดแล้ว")}` : ""}
+        </option>
+      ))}
+    </Combobox>
+  );
 }
 interface ReferencesCache {
   accounts: GLAccount[];

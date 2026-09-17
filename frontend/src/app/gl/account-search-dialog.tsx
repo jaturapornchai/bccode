@@ -15,6 +15,7 @@ import {
   Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import {
   type GLAccount,
   accountName,
@@ -404,10 +405,12 @@ export function AccountSearchDialog({
                 <span>{tr("gl_postable_accounts_only", "เฉพาะบัญชีลงรายการ")}</span>
               </label>
 
-              <select
+              <Combobox
                 value={levelFilter}
-                onChange={(e) => setLevelFilter(e.target.value)}
-                className="rounded-lg border border-border bg-background px-2 py-1 text-xs sm:text-sm text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary/30"
+                onChange={(val) => setLevelFilter(String(val))}
+                aria-label={tr("gl_all_account_levels", "ทุกระดับบัญชี")}
+                className="w-48 text-xs sm:text-sm"
+                buttonClassName="min-h-[2.2em] py-1 text-xs sm:text-sm"
               >
                 <option value="all">{tr("gl_all_account_levels", "ทุกระดับบัญชี")}</option>
                 <option value="level-1">{tr("gl_level1_control_account", "ระดับ 1 (บัญชีคุมหลัก)")}</option>
@@ -415,7 +418,7 @@ export function AccountSearchDialog({
                 <option value="lvl-2">{tr("gl_only_level2", "เฉพาะระดับ 2")}</option>
                 <option value="lvl-3">{tr("gl_only_level3", "เฉพาะระดับ 3")}</option>
                 <option value="lvl-4">{tr("gl_only_level4", "เฉพาะระดับ 4")}</option>
-              </select>
+              </Combobox>
             </div>
           </div>
         </div>

@@ -1037,3 +1037,31 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `AGENTS.md`
 - `README.md`
 
+### 2026-09-18 — เพิ่ม Quick Command Palette (Ctrl+K) ค้นหา 226 หน้าจอ และยกระดับ Global Combobox ในหน้าจอ GL ทั้งระบบ
+
+**ประเภทงาน:** `[Feature]` `[UI/UX]` `[Accessibility]`
+
+**สิ่งที่ทำ:**
+1. **พัฒนา Global Quick Command Palette (`frontend/src/components/command-palette.tsx`)** — เพิ่มระบบค้นหาเมนูด่วนแบบ Spotlight ด้วยคีย์ลัดยอดนิยมระดับสากล `Ctrl+K` หรือ `⌘+K` สามารถเข้าถึงทุกหน้าจอและรายงานในระบบทั้ง 226 หน้าจอได้ภายใน 1 วินาที:
+   - กรองผลลัพธ์แบบ Full-text Realtime ทั้งภาษาไทย ภาษาอังกฤษ และคำพ้องความหมาย (Aliases)
+   - นำทางด้วยคีย์บอร์ด `↑` `↓` `Enter` `Esc` ได้ลื่นไหล
+   - มีปุ่มลัดลอยมุมจอ `[🔍 เมนูลัด Ctrl K]` อำนวยความสะดวกสำหรับผู้ใช้เมาส์และทัชสกรีน
+   - ดีไซน์สวยงามตามมาตรฐานคนไทย 40+ พร้อมบอกหมวดหมู่และเส้นทางเมนูชัดเจน
+2. **ขยาย `Combobox` พอร์ทัลไปสู่ระบบบัญชีแยกประเภท (GL UI Polish)**:
+   - หน้าสมุดรายวัน (`gl-journals.tsx`): แทนที่ native select สำหรับสมุดรายวัน (`bookcode`) และกระแสเงินสด (`cashflow`) ด้วย `Combobox` พอร์ทัล
+   - คอมโพเนนต์ปีบัญชี (`gl-common.tsx`): ปรับปรุง `YearSelect` ให้ใช้ `Combobox` ลอยเด่นด้วยเงาลึก
+   - ไดอะล็อกค้นหาผังบัญชี (`account-search-dialog.tsx`): ปรับตัวกรองระดับบัญชีให้เป็น `Combobox`
+   - ตัวออกแบบงบการเงิน (`gl-statement-designer.tsx`): ปรับปรุงประเภทงบ, แบบตัวอักษร, และขนาดตัวอักษรให้เป็น `Combobox` สวยงามสอดคล้องกันทั้งระบบ
+3. **เพิ่มชุดทดสอบ Unit Test (`command-palette.test.ts`)** — ทดสอบการทำงานของ Command Palette ผ่าน 100% (รวม 80 test files / 587 tests)
+
+**ไฟล์สำคัญ:**
+- `frontend/src/components/command-palette.tsx` (ใหม่)
+- `frontend/src/components/command-palette.test.ts` (ใหม่)
+- `frontend/src/app/layout.tsx`
+- `frontend/src/app/gl/gl-journals.tsx`
+- `frontend/src/app/gl/gl-common.tsx`
+- `frontend/src/app/gl/account-search-dialog.tsx`
+- `frontend/src/app/gl/gl-statement-designer.tsx`
+- `README.md`
+
+

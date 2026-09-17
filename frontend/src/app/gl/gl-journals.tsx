@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { amountString, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, AmountInput, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -504,7 +504,16 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} required value={journal.docno} maxLength={60} onChange={(e) => patch({ docno: e.target.value })} /></Field>
                       <Field label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} required type="date" value={journal.date} onChange={(e) => patch({ date: e.target.value })} /></Field>
                       <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={journal.fiscalyear} onChange={(fiscalyear) => patch({ fiscalyear })} /></Field>
-                      <Field label={tr("gl_journal", "สมุดรายวัน")}><select className={control} disabled={!!book} value={journal.bookcode} onChange={(e) => patch({ bookcode: e.target.value })}>{Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</select></Field>
+                      <Field label={tr("gl_journal", "สมุดรายวัน")}>
+                        <Combobox
+                          disabled={!!book}
+                          value={journal.bookcode}
+                          onChange={(val) => patch({ bookcode: String(val) })}
+                          placeholder={tr("gl_journal", "สมุดรายวัน")}
+                        >
+                          {Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}
+                        </Combobox>
+                      </Field>
                       <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}><input className={control} required value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} /></Field>
                       <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} onChange={(e) => patch({ reference: e.target.value })} /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
@@ -543,12 +552,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                 </div>
                               </td>
                               <td className="min-w-36 p-2">
-                                <select className={control} aria-label={tr("gl_cash_flow_line", "กระแสเงินสดบรรทัด {0}").replace("{0}", String(index + 1))} value={line.cashflow} onChange={(e) => patchLine(index, { cashflow: e.target.value })}>
+                                <Combobox
+                                  aria-label={tr("gl_cash_flow_line", "กระแสเงินสดบรรทัด {0}").replace("{0}", String(index + 1))}
+                                  value={line.cashflow}
+                                  onChange={(val) => patchLine(index, { cashflow: String(val) })}
+                                  placeholder={tr("gl_not_specified_2", "ไม่ระบุ")}
+                                >
                                   <option value="">{tr("gl_not_specified_2", "ไม่ระบุ")}</option>
                                   <option value="operating">{tr("gl_operating", "ดำเนินงาน")}</option>
                                   <option value="investing">{tr("gl_investing", "ลงทุน")}</option>
                                   <option value="financing">{tr("gl_raise_funds", "จัดหาเงิน")}</option>
-                                </select>
+                                </Combobox>
                               </td>
                               <td className="p-2">
                                 <Button type="button" variant="outline" className={actionClass} disabled={busy || journal.lines.length <= 2} onClick={() => patch({ lines: journal.lines.filter((_, i) => i !== index) })}>

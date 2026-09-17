@@ -38,6 +38,7 @@ import {
 } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import {
+  Combobox,
   Field,
   Notice,
   Pager,
@@ -514,42 +515,42 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   />
                 </Field>
                 <Field label={tr("gl_fin_stmt_type", "ประเภทงบ")}>
-                  <select
-                    className={control}
+                  <Combobox
                     value={template.statementtype}
-                    onChange={(e) => setTemplate({ ...template, statementtype: e.target.value as StatementType })}
+                    onChange={(val) => setTemplate({ ...template, statementtype: String(val) as StatementType })}
+                    placeholder={tr("gl_fin_stmt_type", "ประเภทงบ")}
                   >
                     {Object.entries(statementTypeLabels).map(([key, label]) => (
                       <option key={key} value={key}>{tr(...label)}</option>
                     ))}
-                  </select>
+                  </Combobox>
                 </Field>
 
                 {/* Font Customizer */}
                 <Field label={tr("gl_font_family", "แบบตัวอักษร (Font Family)")}>
-                  <select
-                    className={control}
+                  <Combobox
                     value={template.globalstyle?.fontfamily ?? "sarabun"}
-                    onChange={(e) => updateGlobalStyle({ fontfamily: e.target.value })}
+                    onChange={(val) => updateGlobalStyle({ fontfamily: String(val) })}
+                    placeholder={tr("gl_font_family", "แบบตัวอักษร")}
                   >
                     {FONT_OPTIONS.map((font) => (
                       <option key={font.id} value={font.id}>{tr(...font.name)}</option>
                     ))}
-                  </select>
+                  </Combobox>
                 </Field>
 
                 <Field label={tr("gl_base_font_size", "ขนาดตัวอักษรพื้นฐาน")}>
-                  <select
-                    className={control}
+                  <Combobox
                     value={template.globalstyle?.fontsize ?? "15px"}
-                    onChange={(e) => updateGlobalStyle({ fontsize: e.target.value })}
+                    onChange={(val) => updateGlobalStyle({ fontsize: String(val) })}
+                    placeholder={tr("gl_base_font_size", "ขนาดตัวอักษร")}
                   >
                     <option value="13px">{tr("gl_font_size_13_compact", "13px - กะทัดรัด")}</option>
                     <option value="14px">{tr("gl_font_size_14_normal", "14px - ปกติ")}</option>
                     <option value="15px">{tr("gl_font_size_15_comfort", "15px - สบายตา (แนะนำ 40+)")}</option>
                     <option value="16px">{tr("gl_font_size_16_large", "16px - ตัวใหญ่")}</option>
                     <option value="18px">{tr("gl_font_size_18_extra", "18px - พิเศษ")}</option>
-                  </select>
+                  </Combobox>
                 </Field>
 
                 <div className="flex flex-wrap items-center gap-4 xl:col-span-2 pt-1">

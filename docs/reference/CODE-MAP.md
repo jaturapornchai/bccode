@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-17 @ commit c37755a5 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-18 @ commit 0b9c3499 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -2055,23 +2055,23 @@ Files indexed: 49
 | 1028 | function | `newXOrderDocumentImageGroup` |
 | 1045 | function | `UpdateDocNoInReferences` |
 
-## frontend/src/app/gl/gl-statement-designer.tsx (1040 lines)
+## frontend/src/app/gl/gl-statement-designer.tsx (1041 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 70 | function | `ensureFontLoaded` |
-| 83 | function | `GLStatementDesigner` |
-| 134 | function | `open` |
-| 157 | function | `applyStarterTemplate` |
-| 170 | function | `save` |
-| 203 | function | `cloneTemplate` |
-| 217 | function | `remove` |
-| 244 | function | `addRow` |
-| 263 | function | `updateRow` |
-| 269 | function | `deleteRow` |
-| 274 | function | `moveRow` |
-| 285 | function | `runCalculation` |
-| 311 | const-arrow | `updateGlobalStyle` |
+| 71 | function | `ensureFontLoaded` |
+| 84 | function | `GLStatementDesigner` |
+| 135 | function | `open` |
+| 158 | function | `applyStarterTemplate` |
+| 171 | function | `save` |
+| 204 | function | `cloneTemplate` |
+| 218 | function | `remove` |
+| 245 | function | `addRow` |
+| 264 | function | `updateRow` |
+| 270 | function | `deleteRow` |
+| 275 | function | `moveRow` |
+| 286 | function | `runCalculation` |
+| 312 | const-arrow | `updateGlobalStyle` |
 
 ## backend/internal/goapi/dataimport/xlsx_product.go (1033 lines)
 
