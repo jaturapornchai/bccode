@@ -77,6 +77,7 @@ import {
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField, TimeField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
+import { ChoiceSelect } from "@/components/ui/select";
 import {
   backendText,
   useBackendLanguage,
@@ -9760,6 +9761,54 @@ function FieldEditor({
       }
       setForm(nextForm);
     };
+    const options = field.options ?? [];
+    if (options.length > 0 && options.length <= 3) {
+      const selectedValue = String(value ?? "");
+      return (
+        <section className="grid gap-1 text-sm font-semibold">
+          <span>
+            {label}
+            {field.required ? " *" : ""}
+          </span>
+          <div
+            className="grid w-full auto-rows-fr gap-2"
+            style={{
+              gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+            }}
+            role="radiogroup"
+            aria-label={label}
+          >
+            {options.map((item) => {
+              const checked = selectedValue === String(item.value);
+              return (
+                <label
+                  className={cn(
+                    "flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-2xl border px-3 transition-colors select-none",
+                    checked
+                      ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/30"
+                      : "border-border bg-background text-foreground hover:bg-muted/60",
+                  )}
+                  key={item.value}
+                >
+                  <input
+                    className="size-4 accent-primary"
+                    name={field.key}
+                    type="radio"
+                    value={item.value}
+                    checked={checked}
+                    onChange={() => onSelectChange(item.value)}
+                  />
+                  <span className="min-w-0 text-center leading-tight">
+                    {optionLabel(item, language)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+      );
+    }
+
     return (
       <label className="grid gap-1 text-sm font-semibold">
         <span>
@@ -15350,23 +15399,21 @@ function CopyUatPanel({
     <Card>
       <CardContent className="grid gap-3 p-3">
         <div className="grid gap-2 lg:grid-cols-[minmax(180px,220px)_minmax(0,1fr)_auto_auto]">
-          <label className="grid gap-1 text-sm font-semibold">
+          <div className="grid gap-1 text-sm font-semibold">
             <span>{text("sourceEnvironment")}</span>
-            <select
-              className="min-h-10 w-full rounded-2xl border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              disabled={loading || saving}
-              onChange={(event) => {
-                setSelected("");
-                setSourceEnvironment(
-                  event.target.value === "pro" ? "pro" : "uat",
-                );
-              }}
+            <ChoiceSelect
               value={sourceEnvironment}
-            >
-              <option value="uat">{text("sourceUat")}</option>
-              <option value="pro">{text("sourcePro")}</option>
-            </select>
-          </label>
+              disabled={loading || saving}
+              onChange={(val) => {
+                setSelected("");
+                setSourceEnvironment(val === "pro" ? "pro" : "uat");
+              }}
+              options={[
+                { value: "uat", label: text("sourceUat") },
+                { value: "pro", label: text("sourcePro") },
+              ]}
+            />
+          </div>
           <label className="grid gap-1 text-sm font-semibold">
             <span>{text("sourceShop")}</span>
             <select

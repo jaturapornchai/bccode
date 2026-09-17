@@ -11,6 +11,7 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import { ChoiceSelect } from "@/components/ui/select";
 import {
   type SettingRecord,
 } from "@/components/system-settings/types";
@@ -49,23 +50,21 @@ export function CopyUatPanel({
     <Card>
       <CardContent className="grid gap-3 p-3">
         <div className="grid gap-2 lg:grid-cols-[minmax(180px,220px)_minmax(0,1fr)_auto_auto]">
-          <label className="grid gap-1 text-sm font-semibold">
+          <div className="grid gap-1 text-sm font-semibold">
             <span>{text("sourceEnvironment")}</span>
-            <select
-              className="min-h-10 w-full rounded-2xl border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              disabled={loading || saving}
-              onChange={(event) => {
-                setSelected("");
-                setSourceEnvironment(
-                  event.target.value === "pro" ? "pro" : "uat",
-                );
-              }}
+            <ChoiceSelect
               value={sourceEnvironment}
-            >
-              <option value="uat">{text("sourceUat")}</option>
-              <option value="pro">{text("sourcePro")}</option>
-            </select>
-          </label>
+              disabled={loading || saving}
+              onChange={(val) => {
+                setSelected("");
+                setSourceEnvironment(val === "pro" ? "pro" : "uat");
+              }}
+              options={[
+                { value: "uat", label: text("sourceUat") },
+                { value: "pro", label: text("sourcePro") },
+              ]}
+            />
+          </div>
           <label className="grid gap-1 text-sm font-semibold">
             <span>{text("sourceShop")}</span>
             <select

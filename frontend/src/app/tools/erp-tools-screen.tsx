@@ -16,6 +16,7 @@ import {
 } from "@/lib/erp-tools";
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { ChoiceSelect } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Wrench,
@@ -217,21 +218,18 @@ export function ErpToolsScreen({
               <label className="text-xs font-medium text-muted-foreground block mb-1.5" htmlFor="tool-fiscal-year">
                 {tr("ops_fiscal_year", "รอบปีบัญชี:")}
               </label>
-              <select
+              <ChoiceSelect
                 id="tool-fiscal-year"
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                onChange={(val) => setSelectedYear(Number(val))}
                 disabled={isRunning}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground focus:border-primary focus:outline-none"
-              >
-                {[currentYear, currentYear - 1, currentYear - 2].map((year) => (
-                  <option key={year} value={year}>
-                    {tr("tool_fiscal_year_option", "ปี {0} ({1})")
-                      .replace("{0}", String(year + 543))
-                      .replace("{1}", String(year))}
-                  </option>
-                ))}
-              </select>
+                options={[currentYear, currentYear - 1, currentYear - 2].map((year) => ({
+                  value: year,
+                  label: tr("tool_fiscal_year_option", "ปี {0} ({1})")
+                    .replace("{0}", String(year + 543))
+                    .replace("{1}", String(year)),
+                }))}
+              />
             </div>
           </div>
         </CardContent>

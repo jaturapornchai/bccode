@@ -571,6 +571,54 @@ export function FieldEditor({
       }
       setForm(nextForm);
     };
+    const options = field.options ?? [];
+    if (options.length > 0 && options.length <= 3) {
+      const selectedValue = String(value ?? "");
+      return (
+        <section className="grid gap-1 text-sm font-semibold">
+          <span>
+            {label}
+            {field.required ? " *" : ""}
+          </span>
+          <div
+            className="grid w-full auto-rows-fr gap-2"
+            style={{
+              gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+            }}
+            role="radiogroup"
+            aria-label={label}
+          >
+            {options.map((item) => {
+              const checked = selectedValue === String(item.value);
+              return (
+                <label
+                  className={cn(
+                    "flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-2xl border px-3 transition-colors select-none",
+                    checked
+                      ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/30"
+                      : "border-border bg-background text-foreground hover:bg-muted/60",
+                  )}
+                  key={item.value}
+                >
+                  <input
+                    className="size-4 accent-primary"
+                    name={field.key}
+                    type="radio"
+                    value={item.value}
+                    checked={checked}
+                    onChange={() => onSelectChange(item.value)}
+                  />
+                  <span className="min-w-0 text-center leading-tight">
+                    {optionLabel(item, language)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+      );
+    }
+
     return (
       <label className="grid gap-1 text-sm font-semibold">
         <span>

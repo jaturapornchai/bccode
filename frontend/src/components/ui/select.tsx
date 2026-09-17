@@ -65,3 +65,5 @@ export const CustomSelect = React.forwardRef<HTMLButtonElement, CustomSelectProp
 );
 
 CustomSelect.displayName = "CustomSelect";
+
+export { ChoiceSelect, type ChoiceOption, type ChoiceSelectProps } from "./choice-select";

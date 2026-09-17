@@ -181,6 +181,30 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-17 — UX/UI คนไทย 40+: ตัวเลือกไม่เกิน 3 choice เปลี่ยนเป็น Radio Cards ทั้งระบบ ไม่เอา Combobox
+
+**ประเภทงาน:** `[Feature]` / `[UI/UX]`
+
+**สิ่งที่ทำ:**
+- **สร้าง Universal Choice Component (`ChoiceSelect`)**: ออกแบบตามแนวคิด UX/UI คนไทย 40+ เพื่อให้ผู้ใช้ไม่ต้องคลิกเปิด dropdown/combobox แล้วเล็งบรรทัดสำหรับตัวเลือกสั้น ๆ:
+  - หากตัวเลือก **≤ 3 choice** → เรนเดอร์เป็น **Radio Cards / Radio Group** อัตโนมัติ (ปุ่มกดขนาดใหญ่ `min-h-[2.6em]` ≈ 44px, ตัวหนังสือชัดเจน `text-[0.95rem]`, ไฮไลต์เด่นชัดด้วย `border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary/30`, มี Radio indicator แสดงสถานะชัดเจนตามหลัก WCAG AA ไม่พึ่งสีเพียงอย่างเดียว)
+  - หากตัวเลือก **> 3 choice** → เรนเดอร์เป็น Select dropdown ปกติ
+  - รองรับทั้งการส่งแบบ `options` array และ `children` (`<option>`) ทำให้เป็น drop-in replacement ได้ทันที
+- **Dynamic Field Editor ในหน้าตั้งค่าระบบ (`field-editor.tsx` และ `system-settings-screen.tsx`)**:
+  - เมื่อฟิลด์ชนิด `select` มีตัวเลือก `options.length <= 3` ระบบจะสลับไปเรนเดอร์เป็น Radio Group อัตโนมัติ ครอบคลุมทุกฟอร์มตั้งค่าทั่วทั้งระบบ
+- **ปรับปรุงหน้าจอหลักต่าง ๆ ที่มี ≤ 3 choices**:
+  - `frontend/src/app/gl/gl-masters.tsx`: ยอดคงเหลือปกติ (`normalbalance`: เดบิต/เครดิต), ทิศทางเงิน (`direction`: เงินเข้า/เงินออก), ด้านบัญชีกฎการเชื่อมบัญชี (`rule.side`: เดบิต/เครดิต)
+  - `frontend/src/app/asset/fixed-assets-screen.tsx`: ประเภทการจำหน่ายสินทรัพย์ (`disposaltype`: ขาย / ตัดจำหน่ายชำรุด / ขายเป็นเศษซาก)
+  - `frontend/src/app/system-settings/company-branch-tree-view.tsx`: ปีศักราชที่ใช้ (`formYearType`: พ.ศ. / ค.ศ.), ประเภทสาขา ภ.พ.20 (`formBranchType`: สาขาถาวร / สาขาชั่วคราว)
+  - `frontend/src/app/tools/erp-tools-screen.tsx`: รอบปีบัญชีเครื่องมือปิดงวด (`selectedYear`: 3 ปี)
+  - `frontend/src/app/tax/tax-filing-workbench.tsx`: ปีงวดภาษี (`selectedYear`: 2569 / 2568)
+  - `frontend/src/components/system-settings/copy-uat-panel.tsx`: สิ่งแวดล้อมต้นทาง (`sourceEnvironment`: UAT / PRO)
+
+**ไฟล์สำคัญ:** `frontend/src/components/ui/choice-select.tsx` (ใหม่), `frontend/src/components/ui/select.tsx`, `frontend/src/components/system-settings/field-editor.tsx`, `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/asset/fixed-assets-screen.tsx`, `frontend/src/app/system-settings/company-branch-tree-view.tsx`, `frontend/src/app/system-settings/system-settings-screen.tsx`, `frontend/src/app/tools/erp-tools-screen.tsx`, `frontend/src/app/tax/tax-filing-workbench.tsx`, `frontend/src/components/system-settings/copy-uat-panel.tsx`, `docs/reference/CODE-MAP.md`
+
+**ผลการทดสอบ (Evidence):**
+- `tools/verify.sh fast`: ผ่านทั้งหมด 100% (codemap ซิงก์ตรงกับซอร์ส 49 ไฟล์, frontend lint 0 errors, TypeScript typecheck ผ่าน 0 errors, Vitest 78 test files / 574 tests PASS)
+
 ### 2026-09-17 — ปิดกับดัก Schema ค้างบนเครื่องจริง, สร้างโมดูลใบวางบิล (Billing Note) และเชื่อม Route ธุรกรรมครบ 100%
 
 **ประเภทงาน:** `[Fix]` / `[Feature]`

@@ -16,6 +16,7 @@ import {
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ChoiceSelect } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText, Printer, Download, Calculator, Building2, Calendar, CheckCircle2, Receipt, Search,
@@ -249,14 +250,17 @@ export function TaxFilingWorkbench({
                 </option>
               ))}
             </select>
-            <select
+            <ChoiceSelect
               value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value={2026}>พ.ศ. 2569 (2026)</option>
-              <option value={2025}>พ.ศ. 2568 (2025)</option>
-            </select>
+              onChange={(val) => setSelectedYear(Number(val))}
+              layout="flex"
+              className="w-auto"
+              radioClassName="w-auto px-3 min-h-[2.2em] text-xs font-semibold"
+              options={[
+                { value: 2026, label: "พ.ศ. 2569 (2026)" },
+                { value: 2025, label: "พ.ศ. 2568 (2025)" },
+              ]}
+            />
 
             <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs text-muted-foreground">
               <Building2 className="h-3.5 w-3.5" />

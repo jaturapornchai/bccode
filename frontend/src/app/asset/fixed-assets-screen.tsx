@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ChoiceSelect } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { type LanguageCode } from "@/lib/i18n";
 import { useBackendText } from "@/components/backend-text-provider";
@@ -766,28 +767,27 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_date", "วันที่จำหน่าย")}</label>
-                    <input
-                      type="date"
-                      value={disposalForm.disposaldate}
-                      onChange={(e) => setDisposalForm({ ...disposalForm, disposaldate: e.target.value })}
-                      className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_type", "ประเภทการจำหน่าย")}</label>
-                    <select
-                      value={disposalForm.disposaltype}
-                      onChange={(e) => setDisposalForm({ ...disposalForm, disposaltype: e.target.value as any })}
-                      className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                    >
-                      <option value="sale">{tr("fa_sale", "ขาย (Sale)")}</option>
-                      <option value="write_off">{tr("fa_write_off", "ตัดจำหน่ายชำรุด (Write-off)")}</option>
-                      <option value="scrap">{tr("fa_scrap", "ขายเป็นเศษซาก (Scrap)")}</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_date", "วันที่จำหน่าย")}</label>
+                  <input
+                    type="date"
+                    value={disposalForm.disposaldate}
+                    onChange={(e) => setDisposalForm({ ...disposalForm, disposaldate: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_type", "ประเภทการจำหน่าย")}</label>
+                  <ChoiceSelect
+                    value={disposalForm.disposaltype}
+                    onChange={(val) => setDisposalForm({ ...disposalForm, disposaltype: val as any })}
+                    options={[
+                      { value: "sale", label: tr("fa_sale", "ขาย (Sale)") },
+                      { value: "write_off", label: tr("fa_write_off", "ตัดจำหน่ายชำรุด (Write-off)") },
+                      { value: "scrap", label: tr("fa_scrap", "ขายเป็นเศษซาก (Scrap)") },
+                    ]}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

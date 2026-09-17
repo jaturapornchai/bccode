@@ -24,7 +24,9 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ChoiceSelect } from "@/components/ui/select";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
+
 import { LogoAvatar } from "@/components/logo-avatar";
 import { type LanguageCode, LANGUAGES } from "@/lib/i18n";
 import { DEFAULT_TIME_ZONE, timezoneMeta, timezoneSelectOptions } from "@/lib/date-time";
@@ -1786,18 +1788,15 @@ export function CompanyBranchTreeView({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-foreground">{tr("yeartype", "ปีศักราชที่ใช้")}</label>
-                      <select
+                      <ChoiceSelect
                         value={formYearType}
-                        onChange={(e) => setFormYearType(e.target.value)}
+                        onChange={(val) => setFormYearType(String(val))}
                         disabled={isReadOnlyMode}
-                        className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {YEAR_TYPE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {tr(opt.label[0], opt.label[1])}
-                          </option>
-                        ))}
-                      </select>
+                        options={YEAR_TYPE_OPTIONS.map((opt) => ({
+                          value: opt.value,
+                          label: tr(opt.label[0], opt.label[1]),
+                        }))}
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-foreground">{tr("dateformat", "รูปแบบวันที่")}</label>
@@ -1824,18 +1823,15 @@ export function CompanyBranchTreeView({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-foreground">{tr("st_branch_type_pp20", "ประเภทสาขา (ภ.พ.20)")}</label>
-                        <select
+                        <ChoiceSelect
                           value={formBranchType}
-                          onChange={(e) => setFormBranchType(e.target.value)}
+                          onChange={(val) => setFormBranchType(String(val))}
                           disabled={isReadOnlyMode}
-                          className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {BRANCH_TYPE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {tr(opt.label[0], opt.label[1])}
-                            </option>
-                          ))}
-                        </select>
+                          options={BRANCH_TYPE_OPTIONS.map((opt) => ({
+                            value: opt.value,
+                            label: tr(opt.label[0], opt.label[1]),
+                          }))}
+                        />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-foreground">{tr("st_juristic_registration_number", "เลขทะเบียนนิติบุคคล")}</label>
