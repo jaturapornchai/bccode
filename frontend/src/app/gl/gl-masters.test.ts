@@ -243,4 +243,15 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
     expect(/[ก-๛]/.test(patch.error)).toBe(true);
     expect(patch.error).not.toContain("E11000");
   });
+
+  it("UnsavedBadge renders null when dirty is false to avoid layout space", () => {
+    const html = renderToStaticMarkup(createElement(glCommon.UnsavedBadge, { dirty: false }));
+    expect(html).toBe("");
+  });
+
+  it("UnsavedBadge renders status badge with Thai indicator when dirty is true", () => {
+    const html = renderToStaticMarkup(createElement(glCommon.UnsavedBadge, { dirty: true }));
+    expect(html).toContain("ยังไม่บันทึก");
+    expect(html).toContain("role=\"status\"");
+  });
 });

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { amountString, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, AmountInput, Field, Notice, Pager, SearchInput, SplitWorkbench, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { AccountSelect, AmountInput, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -468,27 +468,29 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
               </div>
             ) : (
               <form className="flex flex-col h-full min-h-0 gap-3" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-                <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <div className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                <header className="flex items-center justify-between gap-2 border-b border-border pb-3 shrink-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                       {journal.id ? <Pencil className="size-4" /> : <Plus className="size-4" />}
                     </div>
-                    <div>
-                      <h2 className="text-base font-semibold">{journal.id ? tr("gl_edit_draft", "แก้ไขฉบับร่าง {0}").replace("{0}", String(journal.docno)) : tr("gl_save_new_journal", "บันทึกรายวันใหม่")}</h2>
-                      {dirty && <span className="text-xs text-primary font-medium">{tr("gl_unsaved_changes", "● มีการเปลี่ยนแปลงที่ยังไม่บันทึก")}</span>}
-                    </div>
+                    <h2 className="truncate text-base font-semibold">
+                      {journal.id ? tr("gl_edit_draft", "แก้ไขฉบับร่าง {0}").replace("{0}", String(journal.docno)) : tr("gl_save_new_journal", "บันทึกรายวันใหม่")}
+                    </h2>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
-                    onClick={() => void cancelEdit()}
-                    aria-label={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
-                    title={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
-                  >
-                    <X className="size-4" />
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <UnsavedBadge dirty={dirty} />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+                      onClick={() => void cancelEdit()}
+                      aria-label={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
+                      title={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
                 </header>
                 <div className="overflow-y-auto p-1 grid min-w-0 gap-3 content-start">
                   <fieldset disabled={busy} className="grid min-w-0 gap-3">

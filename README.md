@@ -772,6 +772,33 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ผลการทดสอบ (Evidence):** `npm run verify` ผ่าน (codemap + frontend lint 0 error + typecheck + เทสต์ 566 ตัว) · ทดสอบบนจอจริง (กลุ่มกิจการสาธิต, จอ 1024×768): ค้นชื่อเดิม "บันทึกค่าใช้จ่าย" เจอเมนูใหม่ "บันทึกจ่ายเงินอื่นๆ" และจอทะเบียนเจ้าหนี้แสดง "เครดิต(วัน)", "วงเงินเครดิต", "ที่อยู่ออกบิล", "อัตราภาษี ณ ที่จ่าย", "เลขประจำตัวผู้เสียภาษี" ครบตามที่แก้ · **หมายเหตุ:** ป้ายในจอตั้งค่าสาขาที่ดึงข้อความจาก backend (ปีศักราชที่ใช้ / อัตราภาษีมูลค่าเพิ่ม / ประเภทการซื้อ-การขาย) จะเปลี่ยนเมื่อ backend อ่าน `languages.tsv` ใหม่ตอน deploy — เครื่องทดสอบยังเสิร์ฟข้อความเก่าอยู่ · ยังไม่ deploy (รอรวมกับงานที่ค้างตามที่ลุงจืดสั่ง)
 
 
+### 2026-09-17 — แก้ไขปัญหาจอขยับ (Layout Shift) จากการแสดงสถานะ "ยังไม่บันทึก" เป็น Zero Layout Shift
+
+**ประเภทงาน:** `[UI/UX]` `[Fix]` `[i18n]`
+
+**สิ่งที่ทำ:**
+1. **แก้ปัญหาจอขยับ/กระตุกขณะพิมพ์ข้อมูล (Zero Layout Shift)**:
+   - เดิมทีในฟอร์มของโมดูล GL (`gl-masters.tsx` และ `gl-journals.tsx`) มีการแสดงข้อความ `● มีการเปลี่ยนแปลงที่ยังไม่บันทึก` แทรกเป็นบรรทัดที่สองใต้หัวข้อ `<h2>` เมื่อผู้ใช้เริ่มพิมพ์ ทำให้ Header ขยายความสูงขึ้น ~20px และดันแบบฟอร์มด้านล่างทั้งหมดเลื่อนลง (Layout Shift) และเมื่อกดบันทึกหรือยกเลิก Header หดตัวลงทำให้จอกระตุกเลื่อนขึ้น
+   - ออกแบบและสร้างคอมโพเนนต์ `UnsavedBadge` ใน `frontend/src/app/gl/gl-common.tsx` เป็น Pill Badge แบบพรีเมี่ยมตามมาตรฐานพาเลตต์ของระบบ (`border-primary/30 bg-primary/10 text-primary`) พร้อมไฟสถานะกะพริบนุ่มนวล (`animate-pulse`)
+   - ย้ายสถานะ "ยังไม่บันทึก" ไปอยู่ที่ Header Action Bar แนวนอนเคียงข้างปุ่มปิด [ X ] ฝั่งขวา โดยมีความสูงเตี้ยกว่าปุ่มปิด ทำให้ความสูงของ Header คงที่ 100% ตลอดเวลา ไม่มีการขยายหรือหดตัวแม้แต่ 1 พิกเซล
+   - ส่วนหัวข้อ `<h2>` ฝั่งซ้ายคงที่บรรทัดเดียวเสมอพร้อม `truncate` ป้องกันการ Wrap บรรทัดเมื่อจอแคบ
+2. **รองรับระบบหลายภาษา (i18n)**:
+   - เพิ่ม key `gl_unsaved_changes` ลงใน `backend/assets/language/languages.tsv` ครบทั้ง 13 คอลัมน์ตามกฎระบบ
+3. **เพิ่มการทดสอบ Unit Tests**:
+   - เพิ่ม Unit Tests ใน `gl-masters.test.ts` เพื่อรับประกันว่า `UnsavedBadge` คืนค่า null (ไม่กินพื้นที่ layout) เมื่อไม่ dirty และแสดงผลถูกต้องเมื่อ dirty
+
+**ไฟล์สำคัญ:**
+- `frontend/src/app/gl/gl-common.tsx` (สร้าง `UnsavedBadge`)
+- `frontend/src/app/gl/gl-masters.tsx` (ปรับ Header สู่ Zero Layout Shift)
+- `frontend/src/app/gl/gl-journals.tsx` (ปรับ Header สู่ Zero Layout Shift)
+- `frontend/src/app/gl/gl-masters.test.ts` (เพิ่ม Unit Tests)
+- `backend/assets/language/languages.tsv` (เพิ่มแถว `gl_unsaved_changes` ครบ 13 คอลัมน์)
+
+**ผลการทดสอบ (Evidence):**
+- `npm run typecheck --prefix frontend` ผ่าน 0 errors
+- `npm test --prefix frontend` ทั้ง 78 ไฟล์ / 576 เทสต์ผ่าน 100%
+- `tools/verify.sh fast` ผ่านทั้งหมด
+
 ### 2026-09-17 — เชื่อมต่อ Kafka Consumer การเงิน 3 รายการลง PostgreSQL และขจัด Hardcode ภาษาบนหน้าจอ
 
 **ประเภทงาน:** `[Feature]` `[Integration]` `[i18n]`

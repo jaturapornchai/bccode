@@ -7,7 +7,7 @@ import { ChoiceSelect } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { accountName, accountTypeLabels, bookLabels, emptyAccount, emptyFiscalYear, emptyMaster, formatAmount, type GLAccount, type GLFiscalYear, type GLMaster, type GLRecord, type GLResource } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
 
 type MasterResource = Exclude<GLResource, "journals">;
 function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : emptyMaster(); }
@@ -452,27 +452,29 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
         </div>
       ) : (
         <form ref={formRef} className="flex flex-col h-full min-h-0 gap-3" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <header className="flex items-center justify-between gap-2 border-b border-border pb-3 shrink-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                 {record.id ? <Pencil className="size-4" /> : <Plus className="size-4" />}
               </div>
-              <div>
-                <h2 className="text-base font-semibold">{record.id ? tr("gl_edit_2", "แก้ไข {0}").replace("{0}", String(recordCode(record))) : tr("gl_add_new_item", "เพิ่มรายการใหม่")}</h2>
-                {dirty && <span className="text-xs text-primary font-medium">{tr("gl_unsaved_changes", "● มีการเปลี่ยนแปลงที่ยังไม่บันทึก")}</span>}
-              </div>
+              <h2 className="truncate text-base font-semibold">
+                {record.id ? tr("gl_edit_2", "แก้ไข {0}").replace("{0}", String(recordCode(record))) : tr("gl_add_new_item", "เพิ่มรายการใหม่")}
+              </h2>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
-              onClick={() => void cancelEdit()}
-              aria-label={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
-              title={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
-            >
-              <X className="size-4" />
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <UnsavedBadge dirty={dirty} />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+                onClick={() => void cancelEdit()}
+                aria-label={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
+                title={tr("gl_close_edit_dialog", "ปิดหน้าต่างแก้ไข")}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
           </header>
           {alerts.pane && <FormErrorAlert text={alerts.pane} />}
           <fieldset disabled={busy} className="grid gap-3 opacity-95 content-start overflow-y-auto p-1">

@@ -10,6 +10,7 @@ import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { Button } from "@/components/ui/button";
 import { glAllRecords, glCommand, glRequest } from "@/lib/general-ledger-api";
 import { accountName, formatAmount, sortAccountsHierarchically, type GLAccount, type GLCommand, type GLFiscalYear, type GLPage, type GLRecord, type GLResource } from "@/lib/general-ledger";
+import { cn } from "@/lib/utils";
 import { AccountSearchDialog } from "./account-search-dialog";
 
 export { AccountSearchDialog } from "./account-search-dialog";
@@ -53,6 +54,23 @@ export function Check({ label, checked, onChange, disabled }: { label: string; c
 }
 export function Notice({ text, error = false }: { text: string; error?: boolean }) {
   return text ? <div role={error ? "alert" : "status"} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed ${error ? "border-destructive/40 bg-destructive/5 text-foreground" : "border-primary/25 bg-primary/5 text-foreground"}`}>{text}</div> : null;
+}
+export function UnsavedBadge({ dirty, className }: { dirty: boolean; className?: string }) {
+  const tr = useGLText();
+  if (!dirty) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary",
+        className,
+      )}
+      role="status"
+      aria-live="polite"
+    >
+      <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+      {tr("gl_unsaved_changes", "ยังไม่บันทึก")}
+    </span>
+  );
 }
 
 export function useDebouncedSearch({
