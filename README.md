@@ -205,6 +205,35 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ผลการทดสอบ (Evidence):**
 - `tools/verify.sh fast`: ผ่านทั้งหมด 100% (codemap ซิงก์ตรงกับซอร์ส 49 ไฟล์, frontend lint 0 errors, TypeScript typecheck ผ่าน 0 errors, Vitest 78 test files / 574 tests PASS)
 
+### 2026-09-18 — นวัตกรรม UX บัญชียุคใหม่: ปรับปรุง Checkbox สวยงามมีมิติ, Excel Clipboard Smart Paste ใน GL, Enter Key Navigation, และ Smart Breadcrumb Bar ครบทุกหน้าจอ
+
+**ประเภทงาน:** `[Feature]` / `[UX/UI]`
+
+**สิ่งที่ทำ:**
+- **ออกแบบ Checkbox Component ใหม่ (ตามข้อคิดเห็นลุงจืด: เพิ่ม padding, ออกแบบใหม่, ไม่เป็นแท่งตรงๆ)**:
+  - แก้ปัญหา Native Checkbox เดิมที่บราวเซอร์แสดงผลเป็นแท่งตรงๆ แบนราบ ไร้ padding และแข็งกระด้าง
+  - พัฒนาเป็น Interactive Pill Card มี padding สบายตา (`px-3.5 py-2`), ขอบมน `rounded-xl`, มิติเงา Soft Depth Elevation `shadow-[0_2px_8px_rgba(0,0,0,0.06)]`
+  - สร้าง Custom Indicator Box ขนาด `size-5` (20x20px) ขอบมน `rounded-md` เมื่อเลือก (checked) แสดงพื้นหลังสี Primary พร้อมไอคอน `CheckIcon` สีขาวคมชัด สวยงาม นุ่มนวล มีชีวิตชีวา
+  - รองรับการเข้าถึงสมบูรณ์ (Accessibility: Hidden input `sr-only`, Spacebar toggle, Focus ring ชัดเจน)
+- **Excel / Google Sheets Smart Paste ในตารางลงบัญชี GL (`gl-journals.tsx`)**:
+  - รองรับการคัดลอกตารางจาก Excel หรือ Google Sheets แล้วกด `Ctrl+V` หรือคลิกปุ่ม `Excel Paste` เพื่อนำเข้าเดบิต/เครดิตเข้าสู่ตาราง GL Journal ได้ทันที
+  - สร้างโมดูล `clipboard-journal-parser.ts` อัจฉริยะ: ตรวจจับ header, ล้างคอมม่าและสัญลักษณ์สกุลเงิน, รองรับ 3-4-5 คอลัมน์, ข้ามบรรทัดว่าง/ยอดรวม
+- **Keyboard Tabular Focus Flow & Numpad Auto-Tab (`use-tabular-enter-nav.ts`)**:
+  - กด `Enter` บนแป้น Numpad หรือช่องกรอกตัวเลขเพื่อเลื่อนโฟกัสไปยังช่องถัดไปอย่างต่อเนื่องในตาราง
+  - เมื่อกด `Enter` ที่ช่องสุดท้ายของบรรทัด ระบบจะเพิ่มบรรทัดใหม่อัตโนมัติ (Auto-add row) สะดวกต่อนักบัญชีที่คีย์ข้อมูลเร็ว
+- **Smart Breadcrumb Bar พร้อมปุ่มคัดลอกลิงก์ด่วน (`smart-breadcrumb.tsx`)**:
+  - แสดงลำดับเมนูอัตโนมัติ `หน้าแรก › [หมวด] › [กลุ่ม] › [ชื่อหน้าจอ]` เชื่อมโยง 226 เมนู
+  - ปุ่ม Copy Link ด่วนด้านขวา คัดลอก URL หน้าจอส่งต่อให้เพื่อนร่วมงานได้ใน 1 คลิก พร้อมไอคอนและเอฟเฟกต์นุ่มนวล
+  - ติดตั้งในหน้าหลัก: General Ledger Workbench, ERP Master-Detail CRUD Workbench, และ ERP Report Viewer
+
+**ไฟล์สำคัญ:** `frontend/src/app/gl/gl-common.tsx`, `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/lib/clipboard-journal-parser.ts`, `frontend/src/hooks/use-tabular-enter-nav.ts`, `frontend/src/components/smart-breadcrumb.tsx`, `frontend/src/app/gl/general-ledger-screen.tsx`, `frontend/src/app/crud/erp-crud-workbench.tsx`, `frontend/src/app/report/erp-report-viewer.tsx`, `docs/reference/CODE-MAP.md`
+
+**ผลการทดสอบ (Evidence):**
+- TypeScript typecheck: ผ่าน 100% 0 errors (`tsc --noEmit`)
+- Frontend ESLint: ผ่าน 100% 0 errors
+- Unit tests: ผ่าน 85 test files / 614 tests ผ่านครบ 100% (รวม `gl-language-keys.test.ts`, `clipboard-journal-parser.test.ts`, `use-tabular-enter-nav.test.ts`, `smart-breadcrumb.test.ts`)
+- Scope Control: Zero-Backend touch ไม่แตะ Backend / Database ใดๆ
+
 ### 2026-09-17 — ปิดกับดัก Schema ค้างบนเครื่องจริง, สร้างโมดูลใบวางบิล (Billing Note) และเชื่อม Route ธุรกรรมครบ 100%
 
 **ประเภทงาน:** `[Fix]` / `[Feature]`

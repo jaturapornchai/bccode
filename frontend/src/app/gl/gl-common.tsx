@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Search, X } from "lucide-react";
+import { Check as CheckIcon, Search, X } from "lucide-react";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
 import type { LanguageCode } from "@/lib/i18n";
@@ -52,14 +52,36 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 export function Check({ label, checked, onChange, disabled, className }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string }) {
   return (
-    <label className={cn("inline-flex !w-auto !max-w-none shrink-0 items-center gap-2 py-1 text-[0.95rem] leading-normal cursor-pointer select-none text-foreground transition-colors hover:text-primary whitespace-nowrap", disabled && "cursor-default text-foreground/90 pointer-events-none", className)}>
+    <label
+      className={cn(
+        "group inline-flex !w-auto !max-w-none shrink-0 items-center gap-2.5 rounded-xl border px-3.5 py-2 text-[0.95rem] font-medium leading-normal cursor-pointer select-none transition-all duration-150",
+        "shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_3px_12px_rgba(0,0,0,0.1)]",
+        "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1 focus-within:outline-none",
+        checked
+          ? "border-primary/50 bg-primary/10 text-foreground hover:border-primary/70 hover:bg-primary/[0.14]"
+          : "border-input/90 bg-background text-foreground/90 hover:border-border hover:bg-muted/40",
+        disabled && "cursor-default opacity-60 pointer-events-none shadow-none bg-muted/20 border-border text-muted-foreground",
+        className
+      )}
+    >
       <input
         type="checkbox"
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="size-4.5 shrink-0 rounded border-input/90 text-primary accent-primary shadow-[0_2px_5px_rgba(0,0,0,0.16)] focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:cursor-default"
+        className="sr-only"
       />
+      <span
+        aria-hidden="true"
+        className={cn(
+          "flex size-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-150",
+          checked
+            ? "border-primary bg-primary text-primary-foreground shadow-[0_1px_3px_rgba(0,0,0,0.15)]"
+            : "border-muted-foreground/40 bg-background group-hover:border-primary/60 shadow-inner"
+        )}
+      >
+        {checked && <CheckIcon className="size-3.5 stroke-[3.2]" />}
+      </span>
       <span className="whitespace-nowrap">{label}</span>
     </label>
   );

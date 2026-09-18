@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
+import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { amountString, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
+import { parseClipboardJournalLines } from "@/lib/clipboard-journal-parser";
+import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -38,6 +40,43 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);
   const patch = (value: Partial<GLJournal>) => setJournal((current) => current ? { ...current, ...value } : current);
   const patchLine = (index: number, value: Partial<GLLine>) => patch({ lines: journal!.lines.map((line, i) => i === index ? { ...line, ...value } : line) });
+
+  const tabularEnterNav = useTabularEnterNav({
+    onAddNewRow: () => {
+      if (journal && journal.lines.length < 500) {
+        patch({ lines: [...journal.lines, emptyLine()] });
+      }
+    },
+  });
+
+  const applyPastedLines = (clipboardText: string) => {
+    if (!journal || !clipboardText.trim()) return;
+    const parsed = parseClipboardJournalLines(clipboardText);
+    if (parsed.length === 0) return;
+
+    const isEmptyJournal = journal.lines.every(
+      (l) => !l.accountcode && !l.description && (!l.debit || l.debit === "0") && (!l.credit || l.credit === "0")
+    );
+    const combined = isEmptyJournal ? parsed : [...journal.lines, ...parsed];
+    const finalLines = combined.slice(0, 500);
+    patch({ lines: finalLines });
+    setMessage(`Pasted ${parsed.length} row(s)`);
+  };
+
+  const handlePasteClick = async () => {
+    try {
+      if (!navigator?.clipboard?.readText) {
+        setError("Clipboard API not supported in this browser");
+        return;
+      }
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        applyPastedLines(text);
+      }
+    } catch {
+      setError("Clipboard read permission denied");
+    }
+  };
 
   async function openView(item: GLJournal) {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
@@ -536,7 +575,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} onChange={(e) => patch({ reference: e.target.value })} /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
                     </div>
-                    <div className="overflow-x-auto rounded-xl border border-border">
+                    <div
+                      className="overflow-x-auto rounded-xl border border-border"
+                      onKeyDown={tabularEnterNav.onKeyDown}
+                      onPaste={(e) => {
+                        const text = e.clipboardData.getData("text");
+                        if (text && (text.includes("\t") || text.includes("\n"))) {
+                          e.preventDefault();
+                          applyPastedLines(text);
+                        }
+                      }}
+                    >
                       <table className="w-full min-w-[760px] text-left text-[0.95rem]">
                         <thead className="bg-muted">
                           <tr>
@@ -592,9 +641,15 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         </tbody>
                       </table>
                     </div>
-                    <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => patch({ lines: [...journal.lines, emptyLine()] })}>
-                      <Plus className="size-4 mr-1.5" />{tr("gl_add_line", "เพิ่มบรรทัด")}
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => patch({ lines: [...journal.lines, emptyLine()] })}>
+                        <Plus className="size-4 mr-1.5" />{tr("gl_add_line", "เพิ่มบรรทัด")}
+                      </Button>
+                      <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => void handlePasteClick()} title="Paste rows from Excel or Google Sheets (Ctrl+V)">
+                        <ClipboardPaste className="size-4 mr-1.5" />
+                        <span>Excel Paste</span>
+                      </Button>
+                    </div>
                   </fieldset>
                   <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3" aria-live="polite">
                     {([ [tr("gl_total_debit", "รวมเดบิต"), totals?.debit], [tr("gl_total_credit", "รวมเครดิต"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (

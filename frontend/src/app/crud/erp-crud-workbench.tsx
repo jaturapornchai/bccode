@@ -23,6 +23,7 @@ import { flattenMenuItems, menuText } from "@/lib/menu-data";
 import { useBackendLanguage, backendText } from "@/lib/backend-language";
 import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
+import { SmartBreadcrumb } from "@/components/smart-breadcrumb";
 import {
   type ErpTransactionDoc,
   type ErpDetailItem,
@@ -376,6 +377,8 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   return (
     <main className={containerClass} data-erp-module={config.moduleKey}>
       {confirmationDialog}
+
+      {!embedded && <SmartBreadcrumb currentTitle={title} className="mb-3" />}
 
       {/* Top Header Toolbar */}
       <header className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3 mb-2">

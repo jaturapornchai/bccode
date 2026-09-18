@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-18 @ commit 52a37089 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-18 @ commit 121de243 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -2073,20 +2073,20 @@ Files indexed: 49
 | 286 | function | `runCalculation` |
 | 312 | const-arrow | `updateGlobalStyle` |
 
-## frontend/src/app/crud/erp-crud-workbench.tsx (1037 lines)
+## frontend/src/app/crud/erp-crud-workbench.tsx (1040 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 44 | function | `ErpCrudWorkbench` |
-| 117 | const-arrow | `handleSelectRow` |
-| 139 | const-arrow | `handleStartEdit` |
-| 147 | const-arrow | `handleStartCreate` |
-| 195 | const-arrow | `handleCancelEdit` |
-| 213 | const-arrow | `handleDeleteDoc` |
-| 246 | const-arrow | `updateLineItem` |
-| 308 | const-arrow | `handleSaveDoc` |
-| 645 | section | `EDIT MODE FORM` |
-| 879 | section | `READ-ONLY VIEW MODE` |
+| 45 | function | `ErpCrudWorkbench` |
+| 118 | const-arrow | `handleSelectRow` |
+| 140 | const-arrow | `handleStartEdit` |
+| 148 | const-arrow | `handleStartCreate` |
+| 196 | const-arrow | `handleCancelEdit` |
+| 214 | const-arrow | `handleDeleteDoc` |
+| 247 | const-arrow | `updateLineItem` |
+| 309 | const-arrow | `handleSaveDoc` |
+| 648 | section | `EDIT MODE FORM` |
+| 882 | section | `READ-ONLY VIEW MODE` |
 
 ## backend/internal/goapi/dataimport/xlsx_product.go (1033 lines)
 

@@ -19,6 +19,7 @@ import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { SmartBreadcrumb } from "@/components/smart-breadcrumb";
 import {
   BarChart3,
   Download,
@@ -192,6 +193,8 @@ export function ErpReportViewer({
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:p-6">
+      {!_embedded && <SmartBreadcrumb currentTitle={reportText(config, "title", language, dictionary)} />}
+
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-3">
