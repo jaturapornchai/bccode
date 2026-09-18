@@ -162,7 +162,7 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ผลการทดสอบ (Evidence):**
 - `tsc --noEmit` 0 errors · Vitest **92 files / 661 tests ผ่าน 100%** (ลดจาก 104/726 เพราะลบเทสต์ของระบบที่ถอดออก) · eslint 0 errors · `next build` ผ่าน 37 routes
 - ตรวจจริงบน localhost:3000 (demo login → C01 → สำนักงานใหญ่): เมนูรวม 194 (23/23/13/15/34/39/11/13/23), ปุ่มเลือกภาษาเหลือ ไทย/English, GL แสดงกลุ่มผังบัญชี/ยอดสะสมประจำปี/กำหนดสมุดรายวัน (ป้าย "รอพัฒนา" + จอ "เมนูในแผนพัฒนา"), รายงานบัญชีแยกประเภทและแบบยื่น ภ.พ.30 เปิดได้ปกติ, สลับ English แล้วป้ายเมนูเปลี่ยนครบ; console ไม่มี error ใหม่ (401 refresh ก่อน login และ 500 จาก API ภาษี backend local เป็นของเดิม)
-- Deploy: ดูบรรทัด Deploy ด้านล่างของรายการนี้
+- Deploy production: `py tools/fast-deploy.py --all --tag r20260919-champ-parity-2` สำเร็จ 70s (preflight backup → stream image → atomic switch); `docker ps` บน 159.223.43.229: frontend-1 / mainapi-1 / worker-1 = `r20260919-champ-parity-2` Up (healthy), log ไม่มี error/panic; https://account.bcaicloud.com/ HTTP 200 (0.2s); `/backend/goapi/api/language/th` คืน `gl_journal_books` = กำหนดสมุดรายวัน, `gl_opening_balance` = บันทึกยอดสะสมประจำปี และคีย์ engine ที่ลบ (เช่น `gl_cfo_dashboard_title`) หายแล้ว
 
 ### 2026-09-17 — UX/UI คนไทย 40+: ตัวเลือกไม่เกิน 3 choice เปลี่ยนเป็น Radio Cards ทั้งระบบ ไม่เอา Combobox
 
