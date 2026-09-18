@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, ShieldCheck, TrendingUp, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accountTypeLabels, bookLabels, displayAmountUnits, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLText } from "./gl-common";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
+import { GLHealthAuditModal } from "./gl-health-audit-modal";
+import { ComparativeReportView, MonthlyTrendMatrixView } from "./gl-comparative-view";
+import { buildComparativeReport, pivotAnnualBalances, type ComparativeReportResult } from "@/lib/gl-comparative-report";
 
 export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string };
 export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "" };
@@ -351,7 +354,68 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const [filters, setFilters] = useState<ReportFilters>({ ...emptyReportFilters }), [applied, setApplied] = useState<ReportFilters | null>(null);
   const [report, setReport] = useState<GLReport | null>(null), [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
+  const [healthAuditOpen, setHealthAuditOpen] = useState(false);
+  const [comparativeMode, setComparativeMode] = useState(false);
+  const [comparativeData, setComparativeData] = useState<ComparativeReportResult | null>(null);
+  const [annualPivotMode, setAnnualPivotMode] = useState(false);
   const set = (key: keyof ReportFilters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
+
+  const monthlyPivot = useMemo(() => {
+    if (activeReportName !== "annual-balances" || !report?.rows) return null;
+    return pivotAnnualBalances(report.rows);
+  }, [activeReportName, report?.rows]);
+
+  async function handleToggleComparative() {
+    if (comparativeMode) {
+      setComparativeMode(false);
+      setComparativeData(null);
+      return;
+    }
+
+    if (!report || !applied?.fiscalyear) return;
+
+    const currentIndex = refs.years.findIndex((y) => y.code === applied.fiscalyear);
+    let priorYear: (typeof refs.years)[number] | undefined = refs.years[currentIndex + 1];
+    if (!priorYear && refs.years.length > 1) {
+      priorYear = refs.years.find((y) => y.code !== applied.fiscalyear);
+    }
+
+    if (!priorYear) {
+      setError(tr("gl_no_prior_year_found", "ไม่พบปีบัญชีก่อนหน้าสำหรับเปรียบเทียบ"));
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+    try {
+      const priorResult = await fetchReport(
+        activeReportName,
+        {
+          ...applied,
+          fiscalyear: priorYear.code,
+          from: priorYear.startdate,
+          to: priorYear.enddate,
+        },
+        1,
+        500
+      );
+
+      const comp = buildComparativeReport({
+        period1Label: `${tr("gl_fiscal_year", "ปี")} ${applied.fiscalyear}`,
+        period1Rows: report.rows ?? [],
+        period2Label: `${tr("gl_fiscal_year", "ปี")} ${priorYear.code}`,
+        period2Rows: priorResult.rows ?? [],
+        accounts: refs.accounts,
+      });
+
+      setComparativeData(comp);
+      setComparativeMode(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function load(nextPage = 1, selected = filters, targetReport = activeReportName) {
     if (!selected.fiscalyear || busy) return;
@@ -443,20 +507,80 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
         <Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={filters.departmentcode} onChange={(e) => set("departmentcode", e.target.value)} placeholder={tr("gl_all_departments", "ทุกแผนก")} /></Field>
         <Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={filters.projectcode} onChange={(e) => set("projectcode", e.target.value)} placeholder={tr("gl_all_projects", "ทุกโครงการ")} /></Field>
-        <div className="flex flex-wrap items-end gap-2"><Button type="submit" className={actionClass} disabled={busy || !filters.fiscalyear}><RefreshCw />{busy ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_show_report", "แสดงรายงาน")}</Button><Button type="button" variant="outline" className={actionClass} disabled={busy || !report} onClick={() => void exportCsv()}><Download />{tr("gl_export_table", "ส่งออกตาราง")}</Button></div>
+        <div className="flex flex-wrap items-end gap-2">
+          <Button type="submit" className={actionClass} disabled={busy || !filters.fiscalyear}>
+            <RefreshCw />
+            {busy ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_show_report", "แสดงรายงาน")}
+          </Button>
+          <Button type="button" variant="outline" className={actionClass} disabled={busy || !report} onClick={() => void exportCsv()}>
+            <Download />
+            {tr("gl_export_table", "ส่งออกตาราง")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={`${actionClass} border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 shadow-sm`}
+            disabled={busy || !report}
+            onClick={() => setHealthAuditOpen(true)}
+            title={tr("gl_health_audit_btn_hint", "ตรวจสอบความผิดปกติและสมดุลผังบัญชี")}
+          >
+            <ShieldCheck className="size-4 mr-1 text-emerald-600 dark:text-emerald-400" />
+            {tr("gl_audit_health", "ตรวจสุขภาพบัญชี")}
+          </Button>
+          {refs.years.length > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              className={`${actionClass} ${comparativeMode ? "bg-primary/15 text-primary border-primary font-semibold" : ""}`}
+              disabled={busy || !report}
+              onClick={() => void handleToggleComparative()}
+              title={tr("gl_compare_prior_year_hint", "เปรียบเทียบตัวเลขกับปีก่อนหน้า")}
+            >
+              <TrendingUp className="size-4 mr-1 text-primary" />
+              {comparativeMode ? tr("gl_normal_mode", "มุมมองปกติ") : tr("gl_compare_prior_year", "เปรียบเทียบปีก่อนหน้า")}
+            </Button>
+          )}
+          {activeReportName === "annual-balances" && (
+            <Button
+              type="button"
+              variant="outline"
+              className={`${actionClass} ${annualPivotMode ? "bg-primary/15 text-primary border-primary font-semibold" : ""}`}
+              disabled={busy || !report}
+              onClick={() => setAnnualPivotMode(!annualPivotMode)}
+              title={tr("gl_monthly_pivot_hint", "แสดงตารางเปรียบเทียบ 12 เดือน")}
+            >
+              <Calendar className="size-4 mr-1 text-primary" />
+              {annualPivotMode ? tr("gl_list_mode", "ตารางปกติ") : tr("gl_monthly_pivot", "แนวโน้ม 12 เดือน")}
+            </Button>
+          )}
+        </div>
       </div>
     </form>
     {report ? (
       <>
-        <ReportGrid
-          report={report}
-          graphs={["financialgraphs", "dashboard", "executivesummary"].includes(activeReportName)}
-          onDrillDocNo={(docno) => setDrillDocNo(docno)}
-          onDrillAccount={handleDrillAccount}
-        />
-        <div className="shrink-0">
-          <Pager page={page} total={report.totalrows} onPage={(next) => void load(next, applied!)} loading={busy} limit={50} />
-        </div>
+        {comparativeMode && comparativeData ? (
+          <ComparativeReportView
+            data={comparativeData}
+            onDrillAccount={handleDrillAccount}
+          />
+        ) : annualPivotMode && monthlyPivot ? (
+          <MonthlyTrendMatrixView
+            matrix={monthlyPivot}
+            onDrillAccount={handleDrillAccount}
+          />
+        ) : (
+          <>
+            <ReportGrid
+              report={report}
+              graphs={["financialgraphs", "dashboard", "executivesummary"].includes(activeReportName)}
+              onDrillDocNo={(docno) => setDrillDocNo(docno)}
+              onDrillAccount={handleDrillAccount}
+            />
+            <div className="shrink-0">
+              <Pager page={page} total={report.totalrows} onPage={(next) => void load(next, applied!)} loading={busy} limit={50} />
+            </div>
+          </>
+        )}
       </>
     ) : (
       <div className="rounded-xl border border-dashed border-border p-6 text-center text-muted-foreground">
@@ -469,6 +593,15 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       docno={drillDocNo}
       open={drillDocNo !== null}
       onClose={() => setDrillDocNo(null)}
+    />
+
+    {/* GL Health Audit Modal */}
+    <GLHealthAuditModal
+      open={healthAuditOpen}
+      onClose={() => setHealthAuditOpen(false)}
+      report={report}
+      accounts={refs.accounts}
+      onDrillAccount={handleDrillAccount}
     />
   </section>;
 }

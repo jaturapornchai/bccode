@@ -602,6 +602,105 @@ export function calculateWhtSatang(baseSatang: bigint, whtPercent: number): bigi
 }
 
 /**
+ * Calculates balanced journal lines for a pattern based on base amount and tax formulas
+ */
+export function calculatePatternJournalLines(
+  pattern: ThaiJournalPatternTemplate,
+  baseAmount: number,
+  vatRate = 7
+): Array<{
+  accountCode: string;
+  accountNameTh: string;
+  side: "debit" | "credit";
+  amount: number;
+  descriptionTh: string;
+}> {
+  const baseSatang = BigInt(Math.max(0, Math.round(baseAmount * 100)));
+  const vatSatang = calculateVatSatang(baseSatang, vatRate);
+  const wht1Satang = calculateWhtSatang(baseSatang, 1);
+  const wht2Satang = calculateWhtSatang(baseSatang, 2);
+  const wht3Satang = calculateWhtSatang(baseSatang, 3);
+  const wht5Satang = calculateWhtSatang(baseSatang, 5);
+
+  // Identify if there is a balancing line (custom, net_payable, net_receivable)
+  let balancingLineIndex = -1;
+  for (let i = pattern.lines.length - 1; i >= 0; i--) {
+    const f = pattern.lines[i].formula;
+    if (f === "custom" || f === "net_payable" || f === "net_receivable") {
+      balancingLineIndex = i;
+      break;
+    }
+  }
+
+  const lines: Array<{
+    accountCode: string;
+    accountNameTh: string;
+    side: "debit" | "credit";
+    amount: number;
+    descriptionTh: string;
+  }> = [];
+  let totalDebitSatang = 0n;
+  let totalCreditSatang = 0n;
+
+  // Pass 1: compute non-balancing lines
+  for (let i = 0; i < pattern.lines.length; i++) {
+    const l = pattern.lines[i];
+    if (i === balancingLineIndex) {
+      // placeholder, will be computed in Pass 2
+      lines.push({
+        accountCode: l.accountCode,
+        accountNameTh: l.accountNameTh,
+        side: l.side,
+        amount: 0,
+        descriptionTh: l.descriptionTh,
+      });
+      continue;
+    }
+
+    let satang = baseSatang;
+    if (l.formula === "vat7") {
+      satang = vatSatang;
+    } else if (l.formula === "wht1") {
+      satang = wht1Satang;
+    } else if (l.formula === "wht2") {
+      satang = wht2Satang;
+    } else if (l.formula === "wht3") {
+      satang = wht3Satang;
+    } else if (l.formula === "wht5") {
+      satang = wht5Satang;
+    }
+
+    if (l.side === "debit") {
+      totalDebitSatang += satang;
+    } else {
+      totalCreditSatang += satang;
+    }
+
+    lines.push({
+      accountCode: l.accountCode,
+      accountNameTh: l.accountNameTh,
+      side: l.side,
+      amount: Number(satang) / 100,
+      descriptionTh: l.descriptionTh,
+    });
+  }
+
+  // Pass 2: calculate balancing line
+  if (balancingLineIndex >= 0) {
+    const bLine = pattern.lines[balancingLineIndex];
+    let balancingSatang = 0n;
+    if (bLine.side === "debit") {
+      balancingSatang = totalCreditSatang > totalDebitSatang ? totalCreditSatang - totalDebitSatang : 0n;
+    } else {
+      balancingSatang = totalDebitSatang > totalCreditSatang ? totalDebitSatang - totalCreditSatang : 0n;
+    }
+    lines[balancingLineIndex].amount = Number(balancingSatang) / 100;
+  }
+
+  return lines;
+}
+
+/**
  * Smart Journal Suggestion: ค้นหาและแนะนำรูปแบบการลงบัญชีที่ตรงกับคำอธิบายรายการ
  */
 export function suggestJournalPatterns(
@@ -640,39 +739,7 @@ export function suggestJournalPatterns(
     }
 
     if (score > 0) {
-      // คำนวณยอดเงินตามสูตรถ้ามีระบุ baseAmount
-      const baseSatang = BigInt(Math.round(baseAmount * 100));
-      const vatSatang = calculateVatSatang(baseSatang, 7);
-      const wht1Satang = calculateWhtSatang(baseSatang, 1);
-      const wht2Satang = calculateWhtSatang(baseSatang, 2);
-      const wht3Satang = calculateWhtSatang(baseSatang, 3);
-      const wht5Satang = calculateWhtSatang(baseSatang, 5);
-
-      const calculatedLines = pattern.lines.map((line) => {
-        let amount = baseAmount;
-        if (line.formula === "vat7") {
-          amount = Number(vatSatang) / 100;
-        } else if (line.formula === "wht1") {
-          amount = Number(wht1Satang) / 100;
-        } else if (line.formula === "wht2") {
-          amount = Number(wht2Satang) / 100;
-        } else if (line.formula === "wht3") {
-          amount = Number(wht3Satang) / 100;
-        } else if (line.formula === "wht5") {
-          amount = Number(wht5Satang) / 100;
-        } else if (line.formula === "net_payable") {
-          amount = Number(baseSatang + vatSatang) / 100;
-        } else if (line.formula === "net_receivable") {
-          amount = Number(baseSatang + vatSatang) / 100;
-        }
-        return {
-          accountCode: line.accountCode,
-          accountNameTh: line.accountNameTh,
-          side: line.side,
-          amount,
-          descriptionTh: line.descriptionTh,
-        };
-      });
+      const calculatedLines = calculatePatternJournalLines(pattern, baseAmount);
 
       results.push({
         pattern,
@@ -686,3 +753,4 @@ export function suggestJournalPatterns(
   // เรียงลำดับจากคะแนนสูงสุดลงมา
   return results.sort((a, b) => b.matchScore - a.matchScore);
 }
+

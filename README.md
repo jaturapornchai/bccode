@@ -205,6 +205,31 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 **ผลการทดสอบ (Evidence):**
 - `tools/verify.sh fast`: ผ่านทั้งหมด 100% (codemap ซิงก์ตรงกับซอร์ส 49 ไฟล์, frontend lint 0 errors, TypeScript typecheck ผ่าน 0 errors, Vitest 78 test files / 574 tests PASS)
 
+### 2026-09-18 — ยกระดับระบบบัญชีแยกประเภท (GL): ระบบตรวจสุขภาพบัญชีอัตโนมัติ (Health Audit), งบการเงินเปรียบเทียบหลายงวด (Comparative Reports & 12-Month Trends), และแม่แบบบันทึกบัญชีด่วน 8 กลุ่มธุรกิจไทย (Fast Journal Templates)
+
+**ประเภทงาน:** `[Feature]` / `[Accounting Innovation]`
+
+**สิ่งที่ทำ:**
+- **ระบบตรวจสุขภาพและกระทบยอดบัญชีแยกประเภทอัตโนมัติ (GL Health Audit)**:
+  - สร้างโมดูล `gl-health-check.ts` และ `<GLHealthAuditModal />`: ตรวจจับยอดผิดฝั่งตามธรรมชาติผังบัญชี (Normal Balance), ตรวจจับเงินสดในมือติดลบ/เครดิต (เป็นไปไม่ได้ในทางปฏิบัติ), ตรวจจับเงินเบิกเกินบัญชีธนาคาร (O/D), ตรวจจับผลต่างงบทดลองเดบิต-เครดิตไม่สมดุล, ตรวจจับบัญชีปิดการใช้งานแต่มียอดคงค้าง, และบัญชีพักรอเคลียร์
+  - คำนวณคะแนนสุขภาพบัญชี (Health Score 0-100%) พร้อมคำแนะนำวิธีแก้ไขเชิงลึกจากผู้เชี่ยวชาญภาษีและบัญชีไทย TFRS และปุ่มเจาะลึกดูสมุดแยกประเภท (Drill to Ledger) ได้ทันที
+- **ระบบงบการเงินเปรียบเทียบหลายงวดและแนวโน้ม 12 เดือน (Multi-Period Comparative & 12-Month Trends)**:
+  - สร้างโมดูล `gl-comparative-report.ts`, `<ComparativeReportView />`, และ `<MonthlyTrendMatrixView />`: เปรียบเทียบงบการเงินข้ามปี/ข้ามงวด (YoY) คำนวณผลต่าง (Variance) และอัตราการเปลี่ยนแปลง (% Growth) พร้อมระบบป้องกัน Division by zero
+  - ระบบ Pivot ตารางยอดคงเหลือรายปี (`annual-balances`) เป็นตารางแนวโน้ม 12 เดือน (ม.ค. - ธ.ค.) ให้ผู้บริหารและนักบัญชีเห็นความเคลื่อนไหวตลอดปีในหน้าจอเดียว
+- **แม่แบบบันทึกบัญชีด่วนตาม 8 กลุ่มธุรกิจไทย (Thai Accounting Fast Journal Templates)**:
+  - สร้าง `<JournalFastTemplatesDialog />` เชื่อมโยงกับ `thai-accounting-business-patterns.ts` ครอบคลุม 8 กลุ่มธุรกิจไทย (ซื้อมาขายไป, บริการ, โรงงาน, ร้านอาหาร, ก่อสร้าง, ออนไลน์, อสังหาริมทรัพย์, ขนส่ง)
+  - ระบบคำนวณภาษีมูลค่าเพิ่ม (VAT 7%) และภาษีหัก ณ ที่จ่าย (WHT 1%, 2%, 3%, 5%) อัตโนมัติ พร้อม Balancing Line Engine รับประกันเดบิต = เครดิตสมดุล 100% ถึงระดับสตางค์ และคลิกเดียวเติมลงในใบสำคัญรายวันทันที
+- **รองรับพจนานุกรม 12 ภาษาครบ 100% (`languages.tsv`)**:
+  - เพิ่ม 57 คีย์ภาษาใน `backend/assets/language/languages.tsv` ครบทั้ง 12 ภาษา (ไทย, อังกฤษ, จีน, ญี่ปุ่น, เกาหลี, เขมร, ลาว, พม่า, เวียดนาม, มาเลย์, อินโดนีเซีย, ฟิลิปปินส์)
+
+**ไฟล์สำคัญ:** `frontend/src/lib/gl-health-check.ts`, `frontend/src/lib/gl-comparative-report.ts`, `frontend/src/lib/thai-accounting-business-patterns.ts`, `frontend/src/app/gl/gl-health-audit-modal.tsx`, `frontend/src/app/gl/gl-comparative-view.tsx`, `frontend/src/app/gl/journal-fast-templates-dialog.tsx`, `frontend/src/app/gl/gl-reports.tsx`, `frontend/src/app/gl/gl-journals.tsx`, `backend/assets/language/languages.tsv`, `docs/reference/CODE-MAP.md`
+
+**ผลการทดสอบ (Evidence):**
+- TypeScript typecheck: ผ่าน 100% 0 errors (`tsc --noEmit`)
+- Next.js Turbopack production build: ผ่าน 100% 0 errors (คอมไพล์สำเร็จใน 2.2 วินาที)
+- Unit tests: ผ่าน 96 test files / 682 tests ผ่านครบ 100% (รวม `gl-health-check.test.ts`, `gl-comparative-report.test.ts`, `thai-accounting-business-patterns.test.ts`, `gl-language-keys.test.ts`, `gl-reports.test.ts`, `gl-journals.test.ts`)
+- Scope Control: Zero-Backend touch ไม่แตะ Backend Go หรือ Database schema ใดๆ
+
 ### 2026-09-18 — นวัตกรรม UX บัญชียุคใหม่: ปรับปรุง Checkbox สวยงามมีมิติ, Excel Clipboard Smart Paste ใน GL, Enter Key Navigation, และ Smart Breadcrumb Bar ครบทุกหน้าจอ
 
 **ประเภทงาน:** `[Feature]` / `[UX/UI]`
