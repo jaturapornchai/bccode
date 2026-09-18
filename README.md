@@ -1167,8 +1167,38 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `frontend/src/app/gl/gl-statement-designer.tsx`
 - `frontend/src/app/menu/manage-shortcuts-screen.tsx`
 - `backend/assets/language/languages.tsv`
+### 2026-09-18 — เพิ่มผังบัญชีและรูปแบบการบันทึกรายการบัญชีไทย 8 กลุ่มธุรกิจ พร้อมระบบกระทบยอด GL และแบบฟอร์ม ภ.พ.30 ฉบับทางการสรรพากร
+
+**ประเภทงาน:** `[Feature]` `[Accounting & Tax]` `[Compliance]` `[UI/UX]`
+
+**สิ่งที่ทำ:**
+1. **คลังผังบัญชีและแม่แบบสมุดรายวันมาตรฐาน 8 กลุ่มธุรกิจไทย (`frontend/src/lib/thai-accounting-business-patterns.ts`)**:
+   - รวบรวมผังบัญชีและรายการค้าตามมาตรฐาน TFRS for NPAEs และประมวลรัษฎากร ครอบคลุม 8 ธุรกิจหลักของไทย:
+     1. **Trading (ซื้อมาขายไป / ค้าปลีก-ส่ง)**: ซื้อสินค้า, ขายสินค้า, ส่งคืน, รับคืน, ส่วนลดรับ/จ่าย
+     2. **Service & Consulting (ธุรกิจบริการ / ที่ปรึกษา / ฟรีแลนซ์)**: ค่าบริการรับ (หัก WHT 3%), ค่าเช่า (หัก WHT 5%), ค่าจ้างทำของ (หัก WHT 3%), ค่าโฆษณา (หัก WHT 2%)
+     3. **Manufacturing (โรงงานอุตสาหกรรม / ผลิตสินค้า)**: ซื้อวัตถุดิบ, เบิกเข้า WIP, ค่าแรงทางตรง, โสหุ้ยการผลิต, โอนปิดงานเสร็จเข้า FG, ต้นทุนขาย
+     4. **Restaurant & Cafe / F&B (ร้านอาหาร / คาเฟ่ / เบเกอรี่)**: ของสดไม่มี VAT, เครื่องดื่มมี VAT, ขายหน้าร้านเงินสด/QR, ขายผ่านเดลิเวอรี Grab/Lineman หัก GP 30% + VAT และ WHT
+     5. **Construction & Contractor (รับเหมาก่อสร้าง / ตกแต่ง / งานระบบ)**: ต้นทุนค่าวัสดุ, ออกบิลค่างวดงาน (Progress Billing), หักเงินประกันผลงาน (Retention 5-10%), หัก WHT 3%
+     6. **E-Commerce & Online (ร้านค้าออนไลน์ / มาร์เก็ตเพลส)**: ขายผ่าน Shopee/Lazada/TikTok, บันทึกเงินโอน Settlement, ค่าธรรมเนียมแพลตฟอร์ม, ค่ายิงแอดนำส่ง ภ.พ.36
+     7. **Real Estate Rental (อสังหาริมทรัพย์และให้เช่าพื้นที่)**: ค่าเช่ายกเว้น VAT ม.81(1)(ต) หัก WHT 5%, ค่าบริการส่วนกลางมี VAT 7% หัก WHT 3%, เงินประกันการเช่า/มัดจำ
+     8. **Transportation & Logistics (ขนส่งและโลจิสติกส์)**: บริการขนส่งสินค้าในประเทศยกเว้น VAT ม.81(1)(ณ) หัก WHT 1%, บริการคลังสินค้ามี VAT 7%, ค่าน้ำมันเชื้อเพลิง, ค่าทางด่วน Easy Pass
+   - ระบบ Smart Journal Suggestion: ค้นหาและแนะนำผังบัญชีอัตโนมัติจากคำอธิบายรายการ (Description) พร้อมคำนวณฐานภาษี VAT 7% และ WHT (1%, 2%, 3%, 5%) แบบ Satang แม่นยำ 100%
+2. **ระบบกระทบยอด GL กับภาษีมูลค่าเพิ่ม และแบบฟอร์ม ภ.พ. 30 ฉบับทางการสรรพากร (`frontend/src/lib/thai-vat-reconciliation.ts`, `tax-filing-workbench.tsx`)**:
+   - **GL VAT Reconciliation Panel**: ตรวจสอบเปรียบเทียบยอดระหว่างบัญชี GL (1151 ภาษีซื้อ, 2141 ภาษีขาย) กับรายงานภาษี แสดงสถานะดุล 100% หรือรายงานผลต่าง พร้อมคำแนะนำเชิงรุกของ AI นักบัญชี (Proactive Advisory)
+   - **แบบฟอร์ม ภ.พ. 30 สรรพากร (Official RD Form View)**: แสดงโครงสร้างแบบฟอร์มทางการ ข้อ 1 ถึง ข้อ 10 ครบถ้วนตามประมวลรัษฎากร มาตรา 79, 81, 82 พร้อมระบบคำนวณเงินเพิ่ม/เบี้ยปรับ และช่องลงนามผู้มีอำนาจและผู้ทำบัญชี จัดสไตล์สำหรับพิมพ์หรือ Export PDF หน้า A4 คมชัด
+   - **ใบแนบรายงานภาษีขายและภาษีซื้อ (VAT Annex Schedules)**: แสดงตารางรายงานภาษีตามมาตรา 87(1) และ 87(2) พร้อมปุ่มพิมพ์ใบแนบและส่งออก CSV แยกส่วน
+3. **เชื่อมโยง Smart Suggestion ในหน้าสมุดรายวัน GL (`gl-journals.tsx`)**:
+   - แสดง Badge ข้อเสนอแนะผังบัญชีอัจฉริยะใต้ช่องคำอธิบายรายการ คลิกเดียวเติมบรรทัดบัญชี Dr. / Cr. พร้อมคำอธิบายบรรทัดให้อัตโนมัติ
+4. **ชุดทดสอบ Unit Tests ครบถ้วน 100%**:
+   - เพิ่ม `thai-accounting-business-patterns.test.ts` (13 tests) และ `thai-vat-reconciliation.test.ts` (6 tests)
+   - รวมการทดสอบทั้งระบบ 89 test files / 652 unit tests ผ่าน 100%
+
+**ไฟล์สำคัญ:**
+- `frontend/src/lib/thai-accounting-business-patterns.ts` (ใหม่)
+- `frontend/src/lib/thai-accounting-business-patterns.test.ts` (ใหม่)
+- `frontend/src/lib/thai-vat-reconciliation.ts` (ใหม่)
+- `frontend/src/lib/thai-vat-reconciliation.test.ts` (ใหม่)
+- `frontend/src/app/tax/tax-filing-workbench.tsx`
+- `frontend/src/app/gl/gl-journals.tsx`
+- `backend/assets/language/languages.tsv`
 - `README.md`
-
-
-
-

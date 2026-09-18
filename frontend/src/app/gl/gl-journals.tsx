@@ -11,6 +11,7 @@ import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { parseClipboardJournalLines } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
 import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine, appendVatLine } from "@/lib/gl-smart-guard";
+import { suggestJournalPatterns, type JournalSuggestionResult } from "@/lib/thai-accounting-business-patterns";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -48,6 +49,25 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   }, [journal, refs.accounts, year?.scale]);
   const patch = (value: Partial<GLJournal>) => setJournal((current) => current ? { ...current, ...value } : current);
   const patchLine = (index: number, value: Partial<GLLine>) => patch({ lines: journal!.lines.map((line, i) => i === index ? { ...line, ...value } : line) });
+
+  const patternSuggestions = useMemo(() => {
+    if (!journal?.description || journal.description.trim().length < 2) return [];
+    return suggestJournalPatterns(journal.description, undefined, 0).slice(0, 3);
+  }, [journal?.description]);
+
+  const applyPatternSuggestion = (sug: JournalSuggestionResult) => {
+    if (!journal) return;
+    const newLines = sug.pattern.lines.map((l) => ({
+      accountcode: l.accountCode,
+      description: l.descriptionTh,
+      debit: "",
+      credit: "",
+      departmentcode: "",
+      projectcode: "",
+      cashflow: "" as const,
+    }));
+    patch({ lines: newLines });
+  };
 
   const tabularEnterNav = useTabularEnterNav({
     onAddNewRow: () => {
@@ -579,7 +599,28 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           {Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}
                         </Combobox>
                       </Field>
-                      <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}><input className={control} required value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} /></Field>
+                      <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}>
+                        <input className={control} required value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
+                        {patternSuggestions.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                            <span className="text-muted-foreground flex items-center gap-1 font-medium">
+                              <Sparkles className="size-3.5 text-amber-500 shrink-0" />
+                              {tr("gl_suggested_patterns", "แนะนำรูปแบบผังบัญชี:")}
+                            </span>
+                            {patternSuggestions.map((sug) => (
+                              <button
+                                key={sug.pattern.id}
+                                type="button"
+                                onClick={() => applyPatternSuggestion(sug)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1 text-primary hover:bg-primary/20 transition-all cursor-pointer font-medium shadow-sm active:scale-95"
+                                title={sug.pattern.taxNotesTh}
+                              >
+                                <span>{sug.pattern.titleTh}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </Field>
                       <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} onChange={(e) => patch({ reference: e.target.value })} /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
                     </div>
