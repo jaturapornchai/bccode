@@ -1,18 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, ShieldCheck, ShieldAlert, TrendingUp, Calendar } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accountTypeLabels, bookLabels, displayAmountUnits, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLText } from "./gl-common";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
-import { GLHealthAuditModal } from "./gl-health-audit-modal";
-import { AIAuditGuardModal } from "./ai-audit-guard-modal";
-import { ComparativeReportView, MonthlyTrendMatrixView } from "./gl-comparative-view";
-import { CFODashboardView } from "./cfo-dashboard-view";
-import { buildComparativeReport, pivotAnnualBalances, type ComparativeReportResult } from "@/lib/gl-comparative-report";
 
 export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string };
 export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "" };
@@ -356,70 +351,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const [filters, setFilters] = useState<ReportFilters>({ ...emptyReportFilters }), [applied, setApplied] = useState<ReportFilters | null>(null);
   const [report, setReport] = useState<GLReport | null>(null), [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
-  const [healthAuditOpen, setHealthAuditOpen] = useState(false);
-  const [aiAuditOpen, setAiAuditOpen] = useState(false);
-  const [comparativeMode, setComparativeMode] = useState(false);
-  const [comparativeData, setComparativeData] = useState<ComparativeReportResult | null>(null);
-  const [annualPivotMode, setAnnualPivotMode] = useState(false);
-  const [cfoDashboardMode, setCfoDashboardMode] = useState(false);
   const set = (key: keyof ReportFilters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
-
-  const monthlyPivot = useMemo(() => {
-    if (activeReportName !== "annual-balances" || !report?.rows) return null;
-    return pivotAnnualBalances(report.rows);
-  }, [activeReportName, report?.rows]);
-
-  async function handleToggleComparative() {
-    if (comparativeMode) {
-      setComparativeMode(false);
-      setComparativeData(null);
-      return;
-    }
-
-    if (!report || !applied?.fiscalyear) return;
-
-    const currentIndex = refs.years.findIndex((y) => y.code === applied.fiscalyear);
-    let priorYear: (typeof refs.years)[number] | undefined = refs.years[currentIndex + 1];
-    if (!priorYear && refs.years.length > 1) {
-      priorYear = refs.years.find((y) => y.code !== applied.fiscalyear);
-    }
-
-    if (!priorYear) {
-      setError(tr("gl_no_prior_year_found", "ไม่พบปีบัญชีก่อนหน้าสำหรับเปรียบเทียบ"));
-      return;
-    }
-
-    setBusy(true);
-    setError("");
-    try {
-      const priorResult = await fetchReport(
-        activeReportName,
-        {
-          ...applied,
-          fiscalyear: priorYear.code,
-          from: priorYear.startdate,
-          to: priorYear.enddate,
-        },
-        1,
-        500
-      );
-
-      const comp = buildComparativeReport({
-        period1Label: `${tr("gl_fiscal_year", "ปี")} ${applied.fiscalyear}`,
-        period1Rows: report.rows ?? [],
-        period2Label: `${tr("gl_fiscal_year", "ปี")} ${priorYear.code}`,
-        period2Rows: priorResult.rows ?? [],
-        accounts: refs.accounts,
-      });
-
-      setComparativeData(comp);
-      setComparativeMode(true);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function load(nextPage = 1, selected = filters, targetReport = activeReportName) {
     if (!selected.fiscalyear || busy) return;
@@ -520,100 +452,20 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
             <Download />
             {tr("gl_export_table", "ส่งออกตาราง")}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className={`${actionClass} border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 shadow-sm`}
-            disabled={busy || !report}
-            onClick={() => setHealthAuditOpen(true)}
-            title={tr("gl_health_audit_btn_hint", "ตรวจสอบความผิดปกติและสมดุลผังบัญชี")}
-          >
-            <ShieldCheck className="size-4 mr-1 text-emerald-600 dark:text-emerald-400" />
-            {tr("gl_audit_health", "ตรวจสุขภาพบัญชี")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className={`${actionClass} border-primary/30 text-primary bg-primary/10 hover:bg-primary/20 shadow-sm`}
-            onClick={() => setAiAuditOpen(true)}
-            title={tr("gl_ai_audit_guard_btn_hint", "AI ตรวจจับบิลซ้ำ เงินรั่วไหล และเช็คลิสต์ 12 ข้อก่อนปิดงบ")}
-          >
-            <ShieldAlert className="size-4 mr-1 text-primary" />
-            {tr("gl_ai_audit_guard_btn", "AI Audit Copilot")}
-          </Button>
-          {refs.years.length > 1 && (
-            <Button
-              type="button"
-              variant="outline"
-              className={`${actionClass} ${comparativeMode ? "bg-primary/15 text-primary border-primary font-semibold" : ""}`}
-              disabled={busy || !report}
-              onClick={() => void handleToggleComparative()}
-              title={tr("gl_compare_prior_year_hint", "เปรียบเทียบตัวเลขกับปีก่อนหน้า")}
-            >
-              <TrendingUp className="size-4 mr-1 text-primary" />
-              {comparativeMode ? tr("gl_normal_mode", "มุมมองปกติ") : tr("gl_compare_prior_year", "เปรียบเทียบปีก่อนหน้า")}
-            </Button>
-          )}
-          {activeReportName === "annual-balances" && (
-            <Button
-              type="button"
-              variant="outline"
-              className={`${actionClass} ${annualPivotMode ? "bg-primary/15 text-primary border-primary font-semibold" : ""}`}
-              disabled={busy || !report}
-              onClick={() => setAnnualPivotMode(!annualPivotMode)}
-              title={tr("gl_monthly_pivot_hint", "แสดงตารางเปรียบเทียบ 12 เดือน")}
-            >
-              <Calendar className="size-4 mr-1 text-primary" />
-              {annualPivotMode ? tr("gl_list_mode", "ตารางปกติ") : tr("gl_monthly_pivot", "แนวโน้ม 12 เดือน")}
-            </Button>
-          )}
-
-          <Button
-            type="button"
-            variant={cfoDashboardMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              setCfoDashboardMode(!cfoDashboardMode);
-              if (!cfoDashboardMode) {
-                setComparativeMode(false);
-                setAnnualPivotMode(false);
-              }
-            }}
-            title={tr("gl_cfo_dashboard_btn_hint", "แดชบอร์ดสุขภาพการเงิน CFO และกระแสเงินสด")}
-          >
-            <TrendingUp className="size-4 mr-1 text-emerald-600" />
-            {cfoDashboardMode ? tr("gl_list_mode", "ตารางปกติ") : tr("gl_cfo_dashboard_btn", "สุขภาพการเงิน CFO")}
-          </Button>
         </div>
       </div>
     </form>
-    {cfoDashboardMode ? (
-      <CFODashboardView />
-    ) : report ? (
+    {report ? (
       <>
-        {comparativeMode && comparativeData ? (
-          <ComparativeReportView
-            data={comparativeData}
-            onDrillAccount={handleDrillAccount}
-          />
-        ) : annualPivotMode && monthlyPivot ? (
-          <MonthlyTrendMatrixView
-            matrix={monthlyPivot}
-            onDrillAccount={handleDrillAccount}
-          />
-        ) : (
-          <>
-            <ReportGrid
-              report={report}
-              graphs={["financialgraphs", "dashboard", "executivesummary"].includes(activeReportName)}
-              onDrillDocNo={(docno) => setDrillDocNo(docno)}
-              onDrillAccount={handleDrillAccount}
-            />
-            <div className="shrink-0">
-              <Pager page={page} total={report.totalrows} onPage={(next) => void load(next, applied!)} loading={busy} limit={50} />
-            </div>
-          </>
-        )}
+        <ReportGrid
+          report={report}
+          graphs={["financialgraphs", "dashboard", "executivesummary"].includes(activeReportName)}
+          onDrillDocNo={(docno) => setDrillDocNo(docno)}
+          onDrillAccount={handleDrillAccount}
+        />
+        <div className="shrink-0">
+          <Pager page={page} total={report.totalrows} onPage={(next) => void load(next, applied!)} loading={busy} limit={50} />
+        </div>
       </>
     ) : (
       <div className="rounded-xl border border-dashed border-border p-6 text-center text-muted-foreground">
@@ -626,21 +478,6 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       docno={drillDocNo}
       open={drillDocNo !== null}
       onClose={() => setDrillDocNo(null)}
-    />
-
-    {/* GL Health Audit Modal */}
-    <GLHealthAuditModal
-      open={healthAuditOpen}
-      onClose={() => setHealthAuditOpen(false)}
-      report={report}
-      accounts={refs.accounts}
-      onDrillAccount={handleDrillAccount}
-    />
-
-    {/* AI Audit Copilot & Pre-Closing Checklist Modal */}
-    <AIAuditGuardModal
-      open={aiAuditOpen}
-      onClose={() => setAiAuditOpen(false)}
     />
   </section>;
 }

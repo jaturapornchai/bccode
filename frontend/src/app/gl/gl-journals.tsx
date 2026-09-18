@@ -11,8 +11,6 @@ import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { parseClipboardJournalLines } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
 import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine, appendVatLine } from "@/lib/gl-smart-guard";
-import { suggestJournalPatterns, type JournalSuggestionResult } from "@/lib/thai-accounting-business-patterns";
-import { JournalFastTemplatesDialog, type FastTemplateApplyData } from "./journal-fast-templates-dialog";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -106,37 +104,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
         input?.focus?.();
       }
     });
-  };
-
-  const patternSuggestions = useMemo(() => {
-    if (!journal?.description || journal.description.trim().length < 2) return [];
-    return suggestJournalPatterns(journal.description, undefined, 0).slice(0, 3);
-  }, [journal?.description]);
-
-  const applyPatternSuggestion = (sug: JournalSuggestionResult) => {
-    if (!journal) return;
-    const newLines = sug.pattern.lines.map((l) => ({
-      accountcode: l.accountCode,
-      description: l.descriptionTh,
-      debit: "",
-      credit: "",
-      departmentcode: "",
-      projectcode: "",
-      cashflow: "" as const,
-    }));
-    patch({ lines: newLines });
-  };
-
-  const [fastTemplatesOpen, setFastTemplatesOpen] = useState(false);
-
-  const handleApplyFastTemplate = (data: FastTemplateApplyData) => {
-    if (!journal) return;
-    const newDesc = journal.description.trim() ? journal.description : data.description;
-    patch({
-      lines: data.lines,
-      description: newDesc,
-    });
-    setMessage(tr("gl_fast_template_applied", "นำแม่แบบมาลงรายการเรียบร้อยแล้ว"));
   };
 
   const tabularEnterNav = useTabularEnterNav({
@@ -721,17 +688,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </h2>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20 shadow-sm font-semibold flex items-center gap-1.5 h-8 px-2.5"
-                      onClick={() => setFastTemplatesOpen(true)}
-                      title={tr("gl_fast_templates_hint", "เปิดแม่แบบบันทึกบัญชีด่วน 8 กลุ่มธุรกิจไทย")}
-                    >
-                      <Sparkles className="size-3.5 text-amber-500 shrink-0" />
-                      <span className="text-xs">{tr("gl_fast_templates_btn", "แม่แบบบันทึกด่วน")}</span>
-                    </Button>
                     <UnsavedBadge dirty={dirty} />
                     <Button
                       type="button"
@@ -776,25 +732,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       </Field>
                       <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}>
                         <input className={control} required value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
-                        {patternSuggestions.length > 0 && (
-                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
-                            <span className="text-muted-foreground flex items-center gap-1 font-medium">
-                              <Sparkles className="size-3.5 text-amber-500 shrink-0" />
-                              {tr("gl_suggested_patterns", "แนะนำรูปแบบผังบัญชี:")}
-                            </span>
-                            {patternSuggestions.map((sug) => (
-                              <button
-                                key={sug.pattern.id}
-                                type="button"
-                                onClick={() => applyPatternSuggestion(sug)}
-                                className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1 text-primary hover:bg-primary/20 transition-all cursor-pointer font-medium shadow-sm active:scale-95"
-                                title={sug.pattern.taxNotesTh}
-                              >
-                                <span>{sug.pattern.titleTh}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </Field>
                       <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} onChange={(e) => patch({ reference: e.target.value })} /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
@@ -852,16 +789,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       </table>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={`${actionClass} border-amber-500/40 text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 shadow-sm font-semibold`}
-                        onClick={() => setFastTemplatesOpen(true)}
-                        title={tr("gl_fast_templates_hint", "เปิดแม่แบบบันทึกบัญชีด่วน 8 กลุ่มธุรกิจไทย")}
-                      >
-                        <Sparkles className="size-4 mr-1.5 text-amber-600 dark:text-amber-400" />
-                        <span>{tr("gl_fast_templates_btn", "แม่แบบบันทึกด่วน")}</span>
-                      </Button>
                       <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => addNewLine()}>
                         <Plus className="size-4 mr-1.5" />{tr("gl_add_line", "เพิ่มบรรทัด")}
                       </Button>
@@ -1043,11 +970,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
         }
       />
       {confirmationDialog}
-      <JournalFastTemplatesDialog
-        open={fastTemplatesOpen}
-        onClose={() => setFastTemplatesOpen(false)}
-        onApply={handleApplyFastTemplate}
-      />
     </div>
   );
 }

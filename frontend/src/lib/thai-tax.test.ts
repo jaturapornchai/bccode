@@ -25,7 +25,7 @@ afterEach(() => {
 
 describe("thai tax configs", () => {
   it("ให้ config ครบ 12 รายการ และ resolve ได้จาก route", () => {
-    expect(THAI_TAX_CONFIGS).toHaveLength(12);
+    expect(THAI_TAX_CONFIGS).toHaveLength(10);
     THAI_TAX_CONFIGS.forEach((config) => {
       expect(isThaiTaxRoute(config.route)).toBe(true);
       expect(getThaiTaxConfig(config.route)).toEqual(config);

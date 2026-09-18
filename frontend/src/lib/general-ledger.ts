@@ -44,7 +44,7 @@ export type GLCommand = {
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
   account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster; journal?: GLJournal; statementtemplate?: GLStatementTemplate;
 };
-export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "cashflow", "cashflowforecast", "financialgraphs", "project-pnl", "dimensionpnl", "projectsummary", "dashboard", "executivesummary", "workingpaper", "daily-check", "annual-balances"] as const;
+export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper"] as const;
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items);
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
 /** Screen text follows the selected language (AGENTS.md 2026-09-14): [languages.tsv key, Thai fallback]. */

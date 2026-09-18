@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChoiceSelect } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { type LanguageCode } from "@/lib/i18n";
 import { useBackendText } from "@/components/backend-text-provider";
@@ -20,7 +19,17 @@ import {
   sendFixedAssetCommand,
   assetName,
 } from "@/lib/fixed-assets";
-import { THAI_ASSET_CATEGORIES } from "@/lib/fixed-assets-engine";
+
+/** แม่แบบอัตราค่าเสื่อมตามประมวลรัษฎากร ม.65 ทวิ (2) — ใช้เติมค่าเริ่มต้นในฟอร์มเท่านั้น ตัวเลขจริงคำนวณที่ backend */
+const THAI_ASSET_CATEGORIES: { categoryCode: string; nameTh: string; standardUsefulLifeYears: number; standardDeprecPercent: number }[] = [
+  { categoryCode: "BUILDING_PERM", nameTh: "อาคารถาวร", standardUsefulLifeYears: 20, standardDeprecPercent: 5.0 },
+  { categoryCode: "BUILDING_TEMP", nameTh: "อาคารชั่วคราว", standardUsefulLifeYears: 1, standardDeprecPercent: 100.0 },
+  { categoryCode: "VEHICLE_PASSENGER", nameTh: "ยานพาหนะ - รถยนต์นั่งไม่เกิน 10 ที่นั่ง (จำกัดภาษี 1 ลบ.)", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
+  { categoryCode: "VEHICLE_COMMERCIAL", nameTh: "ยานพาหนะ - รถบรรทุก/เชิงพาณิชย์", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
+  { categoryCode: "MACHINERY", nameTh: "เครื่องจักรและอุปกรณ์การผลิต", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
+  { categoryCode: "OFFICE_EQUIPMENT", nameTh: "เครื่องใช้และอุปกรณ์สำนักงาน", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
+  { categoryCode: "COMPUTER", nameTh: "คอมพิวเตอร์และอุปกรณ์อิเล็กทรอนิกส์ (3 ปี)", standardUsefulLifeYears: 3, standardDeprecPercent: 33.33 },
+];
 
 interface FixedAssetsScreenProps {
   route: string;
@@ -62,18 +71,6 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     status: "active",
   });
 
-  // Disposal Form State
-  const [disposalForm, setDisposalForm] = useState({
-    assetcode: "",
-    disposaldate: "2026-06-30",
-    disposaltype: "sale" as "sale" | "write_off" | "scrap",
-    saleprice: "0.00",
-    vatamount: "0.00",
-    settlementaccountcode: "110101",
-    gainlossaccountcode: "420101",
-    reason: tr("fa_disposed_by_board_resolution", "จำหน่ายตามมติคณะกรรมการ"),
-  });
-
   const { confirm, confirmationDialog } = useConfirmDialog({
     defaultConfirmLabel: tr("confirm", "ยืนยัน"),
     defaultCancelLabel: tr("cancel", "ยกเลิก"),
@@ -85,7 +82,6 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     if (cleanRoute === "/asset/registry") setActiveTab("registry");
     else if (cleanRoute === "/asset/depreciation") setActiveTab("depreciation");
     else if (cleanRoute === "/asset/post-gl") setActiveTab("post-gl");
-    else if (cleanRoute === "/asset/disposal") setActiveTab("disposal");
     else if (cleanRoute === "/report/assetschedule") setActiveTab("schedule");
     else if (cleanRoute === "/asset/types") setActiveTab("types");
   }, [route]);
@@ -228,35 +224,6 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     }
   };
 
-  const handleDisposeAsset = async () => {
-    if (!disposalForm.assetcode) {
-      alert(tr("fa_select_asset_code_dispose", "กรุณาเลือกรหัสสินทรัพย์ที่ต้องการจำหน่าย"));
-      return;
-    }
-    const ok = await confirm({
-      title: tr("fa_confirm_dispose_asset", "ยืนยันการจำหน่ายสินทรัพย์ {0}?").replace("{0}", disposalForm.assetcode),
-      description: tr("fa_disposal_auto_gl_note", "ระบบจะคำนวณมูลค่าคงเหลือ กำไร/ขาดทุน และลงบัญชี GL อัตโนมัติ"),
-      confirmLabel: tr("fa_confirm_disposal", "ยืนยันจำหน่าย"),
-    });
-    if (!ok) return;
-
-    setLoading(true);
-    const res = await sendFixedAssetCommand({
-      resource: "disposals",
-      action: "dispose",
-      requestid: crypto.randomUUID(),
-      disposal: disposalForm,
-    });
-    setLoading(false);
-
-    if (res?.success) {
-      alert(tr("fa_disposal_saved_journal", "บันทึกจำหน่ายสำเร็จ! ใบสำคัญ GL: {0}").replace("{0}", String(res?.journal?.docno ?? "")));
-      loadData();
-    } else {
-      alert(res?.message || tr("fa_disposal_error", "เกิดข้อผิดพลาดในการจำหน่าย"));
-    }
-  };
-
   const containerClass = embedded
     ? "p-3 h-full min-h-0 flex flex-col overflow-hidden text-[0.95rem]"
     : "mx-auto max-w-[1800px] p-4 min-h-[calc(100dvh-2rem)] flex flex-col text-[0.95rem]";
@@ -301,13 +268,6 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
             onClick={() => setActiveTab("post-gl")}
           >
             {tr("fa_post_depreciation_to_gl", "โอนค่าเสื่อมเข้าบัญชีแยกประเภท")}
-          </Button>
-          <Button
-            variant={activeTab === "disposal" ? "default" : "outline"}
-            className="h-10 text-sm font-medium"
-            onClick={() => setActiveTab("disposal")}
-          >
-            {tr("fa_asset_disposal_heading", "จำหน่ายและตัดจำหน่ายสินทรัพย์")}
           </Button>
           <Button
             variant={activeTab === "schedule" ? "default" : "outline"}
@@ -769,100 +729,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           </div>
         )}
 
-        {/* 4. DISPOSAL TAB */}
-        {activeTab === "disposal" && (
-          <div className="flex-1 min-h-0 flex flex-col max-w-xl mx-auto w-full gap-4 pt-6">
-            <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-md flex flex-col gap-4">
-              <h2 className="text-lg font-bold text-foreground border-b border-border/40 pb-2">
-                {tr("fa_asset_disposal_heading", "จำหน่ายและตัดจำหน่ายสินทรัพย์ (Asset Disposal & Write-off)")}
-              </h2>
-
-              <div className="flex flex-col gap-3 text-sm">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_select_assets_dispose", "เลือกสินทรัพย์ที่ต้องการจำหน่าย")}</label>
-                  <select
-                    value={disposalForm.assetcode}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, assetcode: e.target.value })}
-                    className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm font-medium"
-                  >
-                    <option value="">{tr("fa_please_select_asset", "-- กรุณาเลือกสินทรัพย์ --")}</option>
-                    {assets.filter((x) => x.status === "active").map((a) => (
-                      <option key={a.assetcode} value={a.assetcode}>
-                        {a.assetcode} : {assetName(a, language)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_date", "วันที่จำหน่าย")}</label>
-                  <input
-                    type="date"
-                    value={disposalForm.disposaldate}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, disposaldate: e.target.value })}
-                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_disposal_type", "ประเภทการจำหน่าย")}</label>
-                  <ChoiceSelect
-                    value={disposalForm.disposaltype}
-                    onChange={(val) => setDisposalForm({ ...disposalForm, disposaltype: val as any })}
-                    options={[
-                      { value: "sale", label: tr("fa_sale", "ขาย (Sale)") },
-                      { value: "write_off", label: tr("fa_write_off", "ตัดจำหน่ายชำรุด (Write-off)") },
-                      { value: "scrap", label: tr("fa_scrap", "ขายเป็นเศษซาก (Scrap)") },
-                    ]}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_selling_price_before_vat", "ราคาขาย (ก่อน VAT)")}</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={disposalForm.saleprice}
-                      onChange={(e) => setDisposalForm({ ...disposalForm, saleprice: e.target.value })}
-                      className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_output_vat_if_any", "ภาษีขาย VAT 7% (ถ้ามี)")}</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={disposalForm.vatamount}
-                      onChange={(e) => setDisposalForm({ ...disposalForm, vatamount: e.target.value })}
-                      className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_reason_for_disposal", "เหตุผลในการจำหน่าย")}</label>
-                  <input
-                    type="text"
-                    value={disposalForm.reason}
-                    onChange={(e) => setDisposalForm({ ...disposalForm, reason: e.target.value })}
-                    className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm"
-                  />
-                </div>
-              </div>
-
-              <Button
-                onClick={handleDisposeAsset}
-                disabled={loading}
-                className="w-full h-11 bg-primary text-primary-foreground font-semibold text-sm mt-2"
-              >
-                {loading ? tr("ops_processing", "กำลังประมวลผล...") : tr("fa_record_disposal_gain_loss", "บันทึกจำหน่ายและลงบัญชีกำไร/ขาดทุน")}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* 5. ASSET SCHEDULE REPORT TAB */}
+        {/* 4. ASSET SCHEDULE REPORT TAB */}
         {activeTab === "schedule" && (
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">
@@ -926,7 +793,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           </div>
         )}
 
-        {/* 6. TAX RECONCILIATION TAB (PND 50) */}
+        {/* 5. TAX RECONCILIATION TAB (PND 50) */}
         {activeTab === "tax" && (
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/40">

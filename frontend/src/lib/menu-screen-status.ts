@@ -9,15 +9,14 @@ import { getThaiTaxConfig } from "./thai-tax";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
-  "/banking/reconciliation", "/banking/statements",
   "/shortcuts", "/line-oa", "/product",
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph", "/inventory/product-sets", "/productset",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [
-  "/asset/registry", "/asset/depreciation", "/asset/purchase",
-  "/asset/cip", "/asset/disposal", "/asset/maintenance",
+  "/asset/registry", "/asset/depreciation",
+  "/asset/cip", "/asset/maintenance",
   "/asset/types", "/asset/post-gl", "/report/assetschedule",
 ] as const;
 
@@ -28,8 +27,8 @@ export function isFixedAssetRoute(route: string): boolean {
 
 const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
 
-// Explicitly blocked routes (if any)
-const pendingRoutes = new Set<string>([]);
+// GL menu items (Champ parity 2026-09-19) that general-ledger-screen has no view for yet.
+const pendingRoutes = new Set<string>(["/gl/journal-books", "/report/gljournal", "/report/budgetcomparison"]);
 
 /** A connected screen is not a guarantee that its business workflow is complete. */
 export function isMenuScreenPending(route: string): boolean {

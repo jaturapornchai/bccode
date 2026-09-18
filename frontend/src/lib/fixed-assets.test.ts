@@ -44,7 +44,6 @@ describe("Fixed Assets Client Library", () => {
     expect(isFixedAssetRoute("/asset/registry")).toBe(true);
     expect(isFixedAssetRoute("/asset/depreciation")).toBe(true);
     expect(isFixedAssetRoute("/asset/post-gl")).toBe(true);
-    expect(isFixedAssetRoute("/asset/disposal")).toBe(true);
     expect(isFixedAssetRoute("/report/assetschedule")).toBe(true);
     expect(isFixedAssetRoute("/gl/chartofaccounts")).toBe(false);
     expect(isFixedAssetRoute("/product")).toBe(false);
@@ -54,7 +53,6 @@ describe("Fixed Assets Client Library", () => {
     expect(isMenuScreenPending("/asset/registry")).toBe(false);
     expect(isMenuScreenPending("/asset/depreciation")).toBe(false);
     expect(isMenuScreenPending("/asset/post-gl")).toBe(false);
-    expect(isMenuScreenPending("/asset/disposal")).toBe(false);
     expect(isMenuScreenPending("/report/assetschedule")).toBe(false);
   });
 });

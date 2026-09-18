@@ -11,18 +11,15 @@ setupTestAuthSession();
 
 describe("Unified ERP Reporting Engine", () => {
   it("registers all 26 ERP report routes across 6 categories", () => {
-    expect(ERP_REPORT_CONFIGS.length).toBe(26);
+    expect(ERP_REPORT_CONFIGS.length).toBe(21);
 
     // Inventory
     expect(isErpReportRoute("/report/stockbalanceitem")).toBe(true);
     expect(isErpReportRoute("/report/stockbalancewarehouse")).toBe(true);
-    expect(isErpReportRoute("/report/stockbalancelocation")).toBe(true);
     expect(isErpReportRoute("/report/reportdedebistockbalance")).toBe(true);
     expect(isErpReportRoute("/report/lowstock")).toBe(true);
-    expect(isErpReportRoute("/report/expiringstock")).toBe(true);
     expect(isErpReportRoute("/report/stockmovementcost")).toBe(true);
     expect(isErpReportRoute("/report/reportstockmovement")).toBe(true);
-    expect(isErpReportRoute("/report/stocklotmovement")).toBe(true);
 
     // Sales
     expect(isErpReportRoute("/report/reportdedebisales")).toBe(true);
@@ -32,8 +29,6 @@ describe("Unified ERP Reporting Engine", () => {
     expect(isErpReportRoute("/report/reportgrossprofitbydocument")).toBe(true);
     expect(isErpReportRoute("/report/reportgrossprofitbyproduct")).toBe(true);
     expect(isErpReportRoute("/report/reportdedebisalereturn")).toBe(true);
-    expect(isErpReportRoute("/report/salesbycustomer")).toBe(true);
-    expect(isErpReportRoute("/report/salesbychannel")).toBe(true);
 
     // Purchase
     expect(isErpReportRoute("/report/reportdedebipurchase")).toBe(true);

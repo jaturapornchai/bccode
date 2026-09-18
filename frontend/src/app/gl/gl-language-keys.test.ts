@@ -34,7 +34,7 @@ describe("general ledger language keys", () => {
     const missing = new Set<string>();
     for (const file of glSources) {
       const source = stripComments(readFileSync(file, "utf8"));
-      for (const match of source.matchAll(/["'`](gl_[a-z0-9_]+|common_[a-z0-9_]+)["'`]/g)) {
+      for (const match of source.matchAll(/["'`](gl_[a-z0-9_]+|common_[a-z0-9_]+|menu_[a-z0-9_]+)["'`]/g)) {
         const key = match[1];
         const row = rows.get(key);
         if (!row) { missing.add(`${key}:row`); continue; }
@@ -50,8 +50,9 @@ describe("general ledger language keys", () => {
     const leftovers: string[] = [];
     for (const file of screens) {
       // Allowed carriers of Thai fallback text: tr("gl_key", "ไทย") calls and ["gl_key", "ไทย"] GLLabel tuples.
+      // menu_* keys are the shared main-menu texts (planned-workflow card reused by GLPendingPanel, 2026-09-19).
       const source = stripComments(readFileSync(file, "utf8"))
-        .replace(/\btr\(\s*"(?:gl|common)_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\)/g, "")
+        .replace(/\btr\(\s*"(?:gl|common|menu)_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\)/g, "")
         .replace(/\[\s*"gl_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\]/g, "");
       source.split(/\r?\n/).forEach((line, index) => {
         if (/[฀-๿]/.test(line)) leftovers.push(`${file.split(/[\\/]/).pop()}:${index + 1}`);

@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-19 @ commit 45462fae - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-19 @ commit 326c872a - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 52
+Files indexed: 50
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (17364 lines)
 
@@ -486,70 +486,70 @@ Files indexed: 52
 | 3076 | function | `DetailSection` |
 | 3119 | function | `DetailField` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2954 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2950 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 236 | function | `mt` |
-| 241 | function | `isRecord` |
-| 245 | function | `stringValue` |
-| 249 | function | `stringArray` |
-| 262 | function | `normalizeSettingRecords` |
-| 282 | function | `fetchAllowedMenuIds` |
-| 318 | function | `fetchSessionStats` |
-| 365 | function | `sessionTimeText` |
-| 376 | function | `sessionRelativeText` |
-| 386 | function | `sessionStatsTooltip` |
-| 403 | function | `MainMenuScreen` |
-| 411 | function | `MainMenuDashboard` |
-| 545 | function | `loadProfile` |
-| 573 | function | `loadMenuPermissions` |
-| 670 | function | `confirmLeaveLedger` |
-| 676 | function | `selectWorkTab` |
-| 681 | function | `openWorkspace` |
-| 685 | function | `openMenuItem` |
-| 732 | function | `openMenuItemInNewTab` |
-| 736 | function | `openManageShortcuts` |
-| 755 | function | `openOverview` |
-| 763 | function | `toggleSection` |
-| 770 | function | `toggleGroup` |
-| 776 | function | `closeTab` |
-| 786 | function | `reorderTabs` |
-| 802 | function | `stopLinePolling` |
-| 809 | function | `handleLineLink` |
-| 857 | function | `startLinePolling` |
-| 871 | function | `pollLineLink` |
-| 905 | function | `closeLineDialog` |
-| 911 | function | `copyLineLoginUrl` |
-| 921 | function | `handleChangePassword` |
-| 973 | function | `logout` |
-| 982 | function | `handleContentScroll` |
-| 1010 | const-arrow | `onPointerMove` |
-| 1016 | const-arrow | `onPointerUp` |
-| 1704 | function | `TopMenuChrome` |
-| 1746 | function | `closeOnOutsidePointer` |
-| 1755 | function | `closeOnEscape` |
-| 1771 | function | `positionOpenSection` |
-| 1788 | function | `closeTopMenu` |
-| 1795 | function | `topMenuItemRow` |
-| 2064 | function | `SidebarButton` |
-| 2097 | function | `MenuSectionAccordion` |
-| 2216 | function | `MenuTreeGroup` |
-| 2270 | function | `MenuTreeFolder` |
-| 2322 | function | `MenuTreeItemButton` |
-| 2388 | function | `countSectionItems` |
-| 2392 | function | `getVisibleGroups` |
-| 2401 | function | `getVisibleItems` |
-| 2410 | function | `getMenuTreeNodes` |
-| 2556 | function | `MenuGroupIcon` |
-| 2565 | function | `SectionIcon` |
-| 2582 | function | `OpenTabs` |
-| 2636 | function | `captureTabRects` |
-| 2647 | function | `getInsertSide` |
-| 2652 | function | `clearDragState` |
-| 2659 | function | `reorderFromPointer` |
-| 2784 | function | `WorkTabPanel` |
-| 2939 | function | `DashboardLoading` |
+| 235 | function | `mt` |
+| 240 | function | `isRecord` |
+| 244 | function | `stringValue` |
+| 248 | function | `stringArray` |
+| 261 | function | `normalizeSettingRecords` |
+| 281 | function | `fetchAllowedMenuIds` |
+| 317 | function | `fetchSessionStats` |
+| 364 | function | `sessionTimeText` |
+| 375 | function | `sessionRelativeText` |
+| 385 | function | `sessionStatsTooltip` |
+| 402 | function | `MainMenuScreen` |
+| 410 | function | `MainMenuDashboard` |
+| 544 | function | `loadProfile` |
+| 572 | function | `loadMenuPermissions` |
+| 669 | function | `confirmLeaveLedger` |
+| 675 | function | `selectWorkTab` |
+| 680 | function | `openWorkspace` |
+| 684 | function | `openMenuItem` |
+| 731 | function | `openMenuItemInNewTab` |
+| 735 | function | `openManageShortcuts` |
+| 754 | function | `openOverview` |
+| 762 | function | `toggleSection` |
+| 769 | function | `toggleGroup` |
+| 775 | function | `closeTab` |
+| 785 | function | `reorderTabs` |
+| 801 | function | `stopLinePolling` |
+| 808 | function | `handleLineLink` |
+| 856 | function | `startLinePolling` |
+| 870 | function | `pollLineLink` |
+| 904 | function | `closeLineDialog` |
+| 910 | function | `copyLineLoginUrl` |
+| 920 | function | `handleChangePassword` |
+| 972 | function | `logout` |
+| 981 | function | `handleContentScroll` |
+| 1009 | const-arrow | `onPointerMove` |
+| 1015 | const-arrow | `onPointerUp` |
+| 1703 | function | `TopMenuChrome` |
+| 1745 | function | `closeOnOutsidePointer` |
+| 1754 | function | `closeOnEscape` |
+| 1770 | function | `positionOpenSection` |
+| 1787 | function | `closeTopMenu` |
+| 1794 | function | `topMenuItemRow` |
+| 2063 | function | `SidebarButton` |
+| 2096 | function | `MenuSectionAccordion` |
+| 2215 | function | `MenuTreeGroup` |
+| 2269 | function | `MenuTreeFolder` |
+| 2321 | function | `MenuTreeItemButton` |
+| 2387 | function | `countSectionItems` |
+| 2391 | function | `getVisibleGroups` |
+| 2400 | function | `getVisibleItems` |
+| 2409 | function | `getMenuTreeNodes` |
+| 2555 | function | `MenuGroupIcon` |
+| 2564 | function | `SectionIcon` |
+| 2581 | function | `OpenTabs` |
+| 2635 | function | `captureTabRects` |
+| 2646 | function | `getInsertSide` |
+| 2651 | function | `clearDragState` |
+| 2658 | function | `reorderFromPointer` |
+| 2783 | function | `WorkTabPanel` |
+| 2935 | function | `DashboardLoading` |
 
 ## backend/internal/product/productbarcode/services/productbarcode_http_service.go (2793 lines)
 
@@ -1024,15 +1024,6 @@ Files indexed: 52
 | 2015 | function | `GetUsageHistoryByCustomer` |
 | 2034 | function | `GetUsageHistoryBySaleInvoice` |
 | 2075 | function | `GetUsageHistoryByTransactionID` |
-
-## frontend/src/app/tax/tax-filing-workbench.tsx (2080 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 70 | function | `TaxFilingWorkbench` |
-| 366 | const-arrow | `handleOpenVatClosing` |
-| 476 | const-arrow | `handleDownloadRdExport` |
-| 490 | const-arrow | `handleDownloadEtaxXml` |
 
 ## backend/internal/transaction/pickandpack/pickandpack_http.go (2000 lines)
 
@@ -1826,6 +1817,13 @@ Files indexed: 52
 | 1252 | function | `DisableUser` |
 | 1278 | function | `DeleteUser` |
 
+## frontend/src/app/tax/tax-filing-workbench.tsx (1252 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 49 | function | `TaxFilingWorkbench` |
+| 324 | const-arrow | `handleOpenVatClosing` |
+
 ## backend/internal/stockprocess/stockcalculator_test.go (1244 lines)
 
 | Line | Kind | Name |
@@ -1925,17 +1923,6 @@ Files indexed: 52
 | 1192 | function | `optionValueToFormValue` |
 | 1203 | function | `normalizeHexColor` |
 | 1210 | function | `languageName` |
-
-## frontend/src/lib/erp-transaction.ts (1178 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 1087 | function | `isErpTransactionRoute` |
-| 1092 | function | `getErpModuleConfig` |
-| 1103 | function | `statusErrorKey` |
-| 1109 | function | `fetchErpTransactions` |
-| 1136 | function | `saveErpTransaction` |
-| 1163 | function | `deleteErpTransaction` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 
@@ -2078,22 +2065,6 @@ Files indexed: 52
 | 318 | const-arrow | `handleSaveDoc` |
 | 664 | section | `EDIT MODE FORM` |
 | 898 | section | `READ-ONLY VIEW MODE` |
-
-## frontend/src/app/gl/gl-journals.tsx (1053 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 33 | function | `createSmartNextLine` |
-| 54 | function | `GLJournals` |
-| 132 | const-arrow | `handleApplyFastTemplate` |
-| 162 | const-arrow | `handlePasteClick` |
-| 177 | function | `openView` |
-| 193 | function | `openEdit` |
-| 209 | function | `openCreate` |
-| 222 | function | `cancelEdit` |
-| 236 | function | `save` |
-| 262 | function | `act` |
-| 280 | function | `deleteDraftDirect` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
 

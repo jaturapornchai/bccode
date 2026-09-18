@@ -36,7 +36,6 @@ describe("ERP Transaction domain configs and operations", () => {
     expect(isErpTransactionRoute("/transaction/quotation")).toBe(true);
     expect(isErpTransactionRoute("/transaction/saleorder")).toBe(true);
     expect(isErpTransactionRoute("/transaction/sale")).toBe(true);
-    expect(isErpTransactionRoute("/transaction/taxinvoice")).toBe(true);
     expect(isErpTransactionRoute("/transaction/salereturn")).toBe(true);
 
     // Purchase
@@ -52,14 +51,12 @@ describe("ERP Transaction domain configs and operations", () => {
 
     // AP
     expect(isErpTransactionRoute("/creditorbeginningbalance")).toBe(true);
-    expect(isErpTransactionRoute("/transaction/paymentvoucher")).toBe(true);
     expect(isErpTransactionRoute("/transaction/pay")).toBe(true);
 
     // Cash & Bank
     expect(isErpTransactionRoute("/transaction/accounttransfer")).toBe(true);
     expect(isErpTransactionRoute("/transaction/chequereceived")).toBe(true);
     expect(isErpTransactionRoute("/transaction/chequeissued")).toBe(true);
-    expect(isErpTransactionRoute("/transaction/directoradvance")).toBe(true);
 
     // Non-transaction route
     expect(isErpTransactionRoute("/product")).toBe(false);

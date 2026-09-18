@@ -4,7 +4,7 @@ import { Check, Languages, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { LANGUAGES, t, type LanguageCode } from "@/lib/i18n";
+import { ACTIVE_LANGUAGE_CODES, LANGUAGES, t, type LanguageCode } from "@/lib/i18n";
 
 type LanguageDialogProps = {
   language: LanguageCode;
@@ -24,12 +24,9 @@ export function LanguageDialog({ language, onLanguageChange, activeLanguageCodes
   );
 
   const filteredLanguages = useMemo(() => {
-    if (!activeLanguageCodes || activeLanguageCodes.length === 0) {
-      return LANGUAGES;
-    }
-    return LANGUAGES.filter(
-      (item) => activeLanguageCodes.includes(item.code) || item.code === language
-    );
+    // Default = ACTIVE_LANGUAGE_CODES (2 ภาษาระหว่าง dev, ลุงจืด 2026-09-19); a holding may narrow it further.
+    const codes = activeLanguageCodes && activeLanguageCodes.length > 0 ? activeLanguageCodes : ACTIVE_LANGUAGE_CODES;
+    return LANGUAGES.filter((item) => (codes as readonly string[]).includes(item.code) || item.code === language);
   }, [activeLanguageCodes, language]);
 
   useEffect(() => {

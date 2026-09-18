@@ -12,11 +12,25 @@ describe("menu screen availability", () => {
     expect([...CUSTOM_MENU_SCREEN_ROUTES].sort()).toEqual([...new Set(routes)].sort());
   });
 
+  // Champ parity 2026-09-19: routes added from Champ menuconfig.xml that have no screen or backend yet.
+  const CHAMP_PENDING_ROUTES = [
+    "/transaction/purchasereducedebt", "/transaction/rfqpricetable",
+    "/report/apmovement", "/report/apstatus", "/report/apoutstanding", "/report/apdailypayment",
+    "/report/armovement", "/report/arstatus", "/report/aroutstanding", "/report/arcreditlimit",
+    "/report/chequereceived", "/report/chequeissued", "/report/creditcard", "/report/bankstatement",
+    "/report/cashmovement", "/report/pettycashmovement", "/report/monthlypaymentbook",
+    "/report/maxstock", "/report/nomovementstock", "/report/stockcountvariance",
+    "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
+    "/report/depreciationmonthly", "/report/depreciationyearly", "/report/depreciationpnd50", "/report/assetdisposal",
+    "/report/vatsummary",
+    "/gl/journal-books", "/report/gljournal", "/report/budgetcomparison",
+  ];
+
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(208);
-    // All 208 menu items in the system are now connected and operational
-    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(208);
+    expect(items).toHaveLength(194);
+    expect(items.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route).sort()).toEqual([...CHAMP_PENDING_ROUTES].sort());
+    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(194 - CHAMP_PENDING_ROUTES.length);
     expect(isMenuScreenPending("/gl/fiscal-years")).toBe(false);
     expect(isMenuScreenPending("/transaction/landedcost")).toBe(false);
     expect(isMenuScreenPending("/banking/cheques/deposit")).toBe(false);
@@ -31,10 +45,12 @@ describe("menu screen availability", () => {
     expect(isMenuScreenPending("/unknown-screen")).toBe(true);
   });
 
-  it("connects all ledger and report workflows", () => {
+  it("connects every ledger workflow except the three Champ items without a GL view yet", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
-    expect(pending).toEqual([]);
+    expect(pending).toEqual(["/gl/journal-books", "/report/gljournal", "/report/budgetcomparison"]);
     expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(20);
+    expect(isMenuScreenPending("/gl/account-groups")).toBe(false);
+    expect(isMenuScreenPending("/gl/reprocess")).toBe(false);
   });
 });
 
@@ -46,10 +62,9 @@ describe("Menu data readiness", () => {
     expect(isMenuDataPending("/report/araging")).toBe(true);
     expect(isMenuDataPending("/report/xbrl")).toBe(true);
 
-    // เครื่องมือ: มี API จริง 2 ตัว
-    expect(isMenuDataPending("/rebuildproductbalancescreen")).toBe(false);
-    expect(isMenuDataPending("/auditscreen")).toBe(false);
-    expect(isMenuDataPending("/gl/reprocess")).toBe(true);
+    // เครื่องมือ: ยังไม่มีเครื่องมือใดต่อ API (เครื่องมือตรวจ/สร้างยอดสินค้าใหม่ถูกตัดตาม Champ 2026-09-19)
+    expect(isMenuDataPending("/tools/ar-recalculate")).toBe(true);
+    expect(isMenuDataPending("/gl/reprocess")).toBe(false);
 
     // งานอนุมัติ: มีเฉพาะใบขอซื้อ
     expect(isMenuDataPending("/procurement/requisition-approval")).toBe(false);

@@ -73,8 +73,8 @@ describe("menu language labels", () => {
   it("preserves all pre-upgrade permission IDs and routes without duplicate destinations", () => {
     const baseline = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/__fixtures__/menu-before-champ-upgrade.json"), "utf8")) as { id: string; route: string }[];
     const items = flattenMenuItems();
-    expect(baseline).toHaveLength(141);
-    expect(items).toHaveLength(208);
+    expect(baseline).toHaveLength(194);
+    expect(items).toHaveLength(194);
     for (const previous of baseline) {
       expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(previous.route);
     }
@@ -90,7 +90,6 @@ describe("menu language labels", () => {
     expect(cash.groups.find((group) => group.id === "cheques-issued")?.items.map((item) => item.id)).toEqual([
       "cheque-issued", "cheque-issued-clear", "cheque-issued-cancel",
     ]);
-    expect(cash.groups.find((group) => group.id === "cash-management")?.items.some((item) => item.id === "credit-card-expense")).toBe(true);
     expect(cash.groups.find((group) => group.id === "card-settlement")?.items.some((item) => item.id === "credit-card-receipts")).toBe(true);
   });
 
@@ -197,16 +196,51 @@ describe("menu language labels", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("orders procurement as overview, request, price inquiry, then purchase order", () => {
-    const procurementGroup = MENU_SECTIONS.find((section) => section.id === "po")?.groups.find((group) => group.id === "po-procurement");
+  it("orders purchasing like Champ: transactions first, then requisition and price inquiry (2026-09-19)", () => {
+    const poSection = MENU_SECTIONS.find((section) => section.id === "po");
+    const transactions = poSection?.groups.find((group) => group.id === "po-transactions");
+    const procurement = poSection?.groups.find((group) => group.id === "po-procurement");
 
-    expect(procurementGroup?.items.map((item) => item.id).slice(0, 4)).toEqual([
-      "procurement-dashboard",
-      "purchase-requisition",
-      "rfq",
+    expect(transactions?.items.map((item) => item.id).slice(0, 4)).toEqual([
       "purchase-order",
+      "purchase-order-cancel",
+      "purchase-partial",
+      "accrual-receive",
     ]);
-    expect(procurementGroup?.items.find((item) => item.id === "rfq")?.label.th).toBe("บันทึกใบสืบราคาสินค้ารวม");
+    expect(procurement?.items.map((item) => item.id)).toEqual([
+      "purchase-requisition",
+      "purchase-requisition-approve",
+      "rfq",
+      "rfq-price-table",
+      "purchase-order-generate",
+    ]);
+    expect(procurement?.items.find((item) => item.id === "rfq")?.label.th).toBe("บันทึกใบสืบราคาสินค้ารวม");
+  });
+
+  it("drops the non-Champ items and carries every Champ item after the 2026-09-19 parity cut", () => {
+    const ids = new Set(flattenMenuItems().map((item) => item.id));
+    const removed = [
+      "procurement-dashboard", "import-documents", "recurring-expense", "document-vault", "inter-company-inbox", "deposit-refund",
+      "recurring-invoice", "tax-invoice", "combined-receipt", "credit-note", "return-deposit", "sales-by-customer", "sales-by-channel",
+      "creditor-group", "import-partner", "payment-voucher", "combined-payment", "debtor-group", "sale-invoice", "petty-cash",
+      "director-advance", "credit-card-expense", "cash-drawer", "bank-payment-file", "slip-in", "slip-out", "bank-statement", "bank-reconcile",
+      "import-product", "import-product-file", "import-product-image", "fifo-cost-layers", "stock-lot", "cost-adjustment",
+      "stock-balance-location", "expiring-stock-alert", "stock-lot-movement", "audit-data", "rebuild-products", "rebuild-product-balance",
+      "asset-purchase", "asset-disposal", "purchase-tax-invoice-register", "unreceived-tax-invoice", "deferred-tax", "cash-flow", "project-pnl",
+    ];
+    const added = [
+      "purchase-reduce-debt", "rfq-price-table", "ap-movement", "ap-status", "ap-outstanding", "ap-daily-payment", "ar-movement", "ar-status",
+      "ar-outstanding", "ar-credit-limit", "cheque-received-report", "cheque-issued-report", "credit-card-report", "bank-statement-report",
+      "cash-movement-report", "petty-cash-movement-report", "monthly-payment-book-report", "max-stock-report", "no-movement-stock-report",
+      "stock-count-variance-report", "pending-receive-report", "pending-delivery-report", "serial-movement-report", "depreciation-monthly-report",
+      "depreciation-yearly-report", "depreciation-pnd50-report", "asset-disposal-report", "vat-summary-report", "gl-account-groups",
+      "gl-journal-books", "gl-reprocess", "gl-daily-report", "budget-comparison-report",
+    ];
+    expect(removed).toHaveLength(47);
+    expect(added).toHaveLength(33);
+    expect(removed.filter((id) => ids.has(id))).toEqual([]);
+    expect(added.filter((id) => !ids.has(id))).toEqual([]);
+    expect(flattenMenuItems().find((item) => item.id === "gl-opening-balance")?.label.th).toBe("บันทึกยอดสะสมประจำปี");
   });
 
   it("keeps core product group clean without auxiliary tool items", () => {

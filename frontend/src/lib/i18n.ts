@@ -33,6 +33,10 @@ export const LANGUAGES = [
 
 export type LanguageCode = (typeof LANGUAGES)[number]["code"];
 
+// ลุงจืด 2026-09-19: ระหว่างพัฒนาเปิดใช้แค่ 2 ภาษา (ไทย/อังกฤษ) — ภาษาอื่นซ่อนจาก picker
+// จนกว่าจะสั่งเปิด; โครง 12 ภาษา (locales, languages.tsv) คงไว้ตามเดิม
+export const ACTIVE_LANGUAGE_CODES: readonly LanguageCode[] = ["th", "en"];
+
 // TranslationKey is derived from the Thai dictionary (source of truth) so there is no
 // hand-maintained union to drift out of sync. Adding a key to th.json makes it available
 // to t() across all languages; the drift test in i18n.test.ts catches missing keys.

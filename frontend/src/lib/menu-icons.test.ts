@@ -7,13 +7,13 @@ describe("menu icon mapping", () => {
     const items = flattenMenuItems();
     const missing = items.filter((item) => !hasExplicitMenuIcon(item.route)).map((item) => item.route);
 
-    expect(items).toHaveLength(208);
+    expect(items).toHaveLength(194);
     expect(missing).toEqual([]);
     expect(menuIconKeyForRoute("/product", "master")).toBe("package");
     expect(menuIconKeyForRoute("/productbarcode", "master")).toBe("qr");
     expect(menuIconKeyForRoute("/masterbrandscreen", "master")).toBe("badge");
     expect(menuIconKeyForRoute("/transaction/stocktransfer", "transaction")).toBe("truck");
-    expect(menuIconKeyForRoute("/cashinginthedrawer", "finance")).toBe("money");
+    expect(menuIconKeyForRoute("/report/chequereceived", "report")).toBe("receipt");
   });
 
   it("falls back to a category icon for unknown routes", () => {

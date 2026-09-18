@@ -19,20 +19,6 @@ export interface ErpToolConfig {
 
 export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
   {
-    route: "/gl/reprocess",
-    code: "gl_reprocess",
-    domain: "gl",
-    title: { th: "ประมวลผลข้อมูลบัญชีใหม่", en: "Reprocess Accounting Data" },
-    description: { th: "ประมวลผลการลงสมุดรายวัน ยอดแยกประเภท และงบทดลองใหม่ทั้งหมดจากการบันทึกธุรกรรม", en: "Reprocess general ledger journals, ledger postings and trial balance from source documents" },
-    actionLabel: { th: "เริ่มประมวลผลบัญชีใหม่", en: "Start GL Reprocessing" },
-    steps: [
-      { th: "ตรวจสอบความสมดุลเดบิต-เครดิตในสมุดรายวัน", en: "Audit Debit-Credit balance in journals" },
-      { th: "ล้างยอดสรุปแยกประเภทชั่วคราว", en: "Clear temporary ledger summary projections" },
-      { th: "คำนวณยอดสะสมยกมาและยอดเคลื่อนไหวตามงวด", en: "Recalculate period balances and cumulative totals" },
-      { th: "ปรับปรุงงบทดลองและงบการเงินให้เป็นปัจจุบัน", en: "Update trial balance and financial statements" },
-    ],
-  },
-  {
     route: "/tools/ar-recalculate",
     code: "ar_recalculate",
     domain: "ar",
@@ -122,43 +108,6 @@ export const ERP_TOOL_CONFIGS: ErpToolConfig[] = [
     ],
   },
   {
-    route: "/auditscreen",
-    code: "audit_data",
-    domain: "inventory",
-    title: { th: "ตรวจข้อมูล", en: "Data Integrity Audit" },
-    description: { th: "ตรวจสอบข้อผิดพลาด ยอดติดลบ เอกสารค้าง และความไม่สอดคล้องในระบบ", en: "Scan for anomalies, negative stocks, orphaned documents, and data inconsistencies" },
-    actionLabel: { th: "เริ่มตรวจความสมบูรณ์ของระบบ", en: "Run Integrity Audit" },
-    steps: [
-      { th: "สแกนหาสินค้าที่ยอดคงเหลือติดลบ", en: "Scan for negative inventory balances" },
-      { th: "ตรวจสอบเอกสารที่ไม่มีรายการย่อย", en: "Check for empty line item documents" },
-      { th: "ตรวจสอบความถูกต้องของรหัสสาขาและคลัง", en: "Validate branch and warehouse codes" },
-    ],
-  },
-  {
-    route: "/rebuildproductsscreen",
-    code: "rebuild_products",
-    domain: "inventory",
-    title: { th: "สร้างรายการสินค้าใหม่", en: "Rebuild Product Indexes" },
-    description: { th: "สร้างดัชนีการค้นหา บาร์โค้ด และหน่วยนับของสินค้าใหม่เพื่อความรวดเร็ว", en: "Rebuild search index, barcode catalogs, and packaging units" },
-    actionLabel: { th: "สร้างดัชนีสินค้าใหม่", en: "Rebuild Product Index" },
-    steps: [
-      { th: "รวบรวมรายการสินค้าและบาร์โค้ดทั้งหมด", en: "Collect all items and barcodes" },
-      { th: "สร้าง Full-text search index ภาษาไทยและอังกฤษ", en: "Generate multilingual full-text search index" },
-    ],
-  },
-  {
-    route: "/rebuildproductbalancescreen",
-    code: "rebuild_product_balance",
-    domain: "inventory",
-    title: { th: "สร้างยอดคงเหลือใหม่", en: "Rebuild Product Balances" },
-    description: { th: "อัปเดตยอดคงเหลือระดับสินค้าและระดับคลังให้ตรงกับฐานข้อมูลจริง", en: "Synchronize item-level and warehouse-level stock balance snapshots" },
-    actionLabel: { th: "สร้างยอดคงเหลือใหม่", en: "Rebuild Balance Snapshots" },
-    steps: [
-      { th: "สแกนยอดคงเหลือในทุกคลังสินค้า", en: "Scan on-hand quantities across all warehouses" },
-      { th: "ปรับปรุงตารางแคชยอดคงเหลือ (Balance Snapshot)", en: "Update balance snapshot cache" },
-    ],
-  },
-  {
     route: "/inventory/daily-sequence",
     code: "inventory_daily_sequence",
     domain: "inventory",
@@ -188,25 +137,14 @@ export function getErpToolConfig(route: string): ErpToolConfig | undefined {
 
 // --- การประมวลผลจริงผ่าน backend (ไม่มีข้อมูลจำลอง) ---
 
-export interface ErpToolStockCheckStats {
-  totalrows: number;
-  totaldocuments: number;
-  totalproducts: number;
-  earliestdate: string;
-  latestdate: string;
-}
-
 export interface ErpToolRunResult {
   success: boolean;
   messageKey: string;
-  stats?: ErpToolStockCheckStats;
 }
 
 // เครื่องมือที่มี API จริงรองรับแล้วเท่านั้น (ตัวอื่นยังไม่มี endpoint ห้ามแสร้งว่าทำงานสำเร็จ)
-const TOOL_ENDPOINTS: Record<string, string> = {
-  rebuild_product_balance: "/api/goapi/api/process/product-balance",
-  audit_data: "/api/goapi/api/stockcost/check",
-};
+// 2026-09-19: ว่างหลังตัดเครื่องมือตรวจ/สร้างยอดสินค้าใหม่ออกตาม Champ — เพิ่มเมื่อ backend เปิด endpoint ให้เครื่องมือที่เหลือ
+const TOOL_ENDPOINTS: Record<string, string> = {};
 
 export function isErpToolApiReady(code: string): boolean {
   return code in TOOL_ENDPOINTS;
@@ -214,19 +152,6 @@ export function isErpToolApiReady(code: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return 0;
-}
-
-function toText(value: unknown): string {
-  return typeof value === "string" ? value : "";
 }
 
 export async function runErpTool(params: {
@@ -240,10 +165,7 @@ export async function runErpTool(params: {
   if (!endpoint) return { success: false, messageKey: "tool_not_available" };
   if (!holdingcode) return { success: false, messageKey: "holding_required" };
 
-  const body: Record<string, unknown> =
-    code === "audit_data"
-      ? { holdingcode, businesscode, fromdate: `${year}-01-01`, todate: `${year}-12-31` }
-      : { holdingcode, businesscode };
+  const body: Record<string, unknown> = { holdingcode, businesscode, fromdate: `${year}-01-01`, todate: `${year}-12-31` };
 
   try {
     const res = await apiFetch(endpoint, {
@@ -262,18 +184,7 @@ export async function runErpTool(params: {
     if (payload.success === false || payload.status === "error") {
       return { success: false, messageKey: "process_failed" };
     }
-    if (code !== "audit_data") return { success: true, messageKey: "process_success" };
-    return {
-      success: true,
-      messageKey: "process_success",
-      stats: {
-        totalrows: toNumber(payload.total_rows),
-        totaldocuments: toNumber(payload.total_documents),
-        totalproducts: toNumber(payload.total_products),
-        earliestdate: toText(payload.earliest_date),
-        latestdate: toText(payload.latest_date),
-      },
-    };
+    return { success: true, messageKey: "process_success" };
   } catch {
     return { success: false, messageKey: "connection_error" };
   }
@@ -282,13 +193,6 @@ export async function runErpTool(params: {
 // 2026-09-16: every user-visible string above also lives in languages.tsv,
 // keyed by `<code>.<part>`. The literals stay as the offline fallback.
 const catalogKeys: Record<string, string> = {
-  "gl_reprocess.title": "gl_reprocess",
-  "gl_reprocess.description": "tool_reprocess_general_ledger_journals_ledger",
-  "gl_reprocess.actionLabel": "tool_start_gl_reprocessing",
-  "gl_reprocess.step.0": "tool_audit_debit_credit_balance_in",
-  "gl_reprocess.step.1": "tool_clear_temporary_ledger_summary_projections",
-  "gl_reprocess.step.2": "tool_recalculate_period_balances_and_cumulative",
-  "gl_reprocess.step.3": "tool_update_trial_balance_and_financial",
   "ar_recalculate.title": "ar_recalculate",
   "ar_recalculate.description": "tool_recalculate_outstanding_debtor_balances_from",
   "ar_recalculate.actionLabel": "tool_recalculate_ar_balances",
@@ -329,22 +233,6 @@ const catalogKeys: Record<string, string> = {
   "rebuild_stock.step.1": "tool_recompute_in_out_movements_chronologically",
   "rebuild_stock.step.2": "tool_recompute_unit_costs_and_inventory",
   "rebuild_stock.step.3": "tool_update_balance_summary_tables",
-  "audit_data.title": "audit_data",
-  "audit_data.description": "tool_scan_for_anomalies_negative_stocks",
-  "audit_data.actionLabel": "tool_run_integrity_audit",
-  "audit_data.step.0": "tool_scan_for_negative_inventory_balances",
-  "audit_data.step.1": "tool_check_for_empty_line_item",
-  "audit_data.step.2": "tool_validate_branch_and_warehouse_codes",
-  "rebuild_products.title": "rebuild_products",
-  "rebuild_products.description": "tool_rebuild_search_index_barcode_catalogs",
-  "rebuild_products.actionLabel": "tool_rebuild_product_index",
-  "rebuild_products.step.0": "tool_collect_all_items_and_barcodes",
-  "rebuild_products.step.1": "tool_generate_multilingual_full_text_search",
-  "rebuild_product_balance.title": "rebuild_product_balance",
-  "rebuild_product_balance.description": "tool_synchronize_item_level_and_warehouse",
-  "rebuild_product_balance.actionLabel": "rebuild_product_balance",
-  "rebuild_product_balance.step.0": "tool_scan_on_hand_quantities_across",
-  "rebuild_product_balance.step.1": "tool_update_balance_snapshot_cache",
   "inventory_daily_sequence.title": "stock_daily_sequence",
   "inventory_daily_sequence.description": "tool_order_daily_receipts_and_issues",
   "inventory_daily_sequence.actionLabel": "tool_sort_daily_transactions",

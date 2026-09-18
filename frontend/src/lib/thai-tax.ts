@@ -29,7 +29,7 @@ export interface ThaiTaxConfig {
   route: string;
   code: string;
   title: { th: string; en: string };
-  formType: "vat_sale" | "vat_buy" | "pp30" | "pp36" | "pnd2" | "pnd3" | "pnd53" | "50twi" | "wht_received" | "wht_summary" | "deferred_tax";
+  formType: "vat_sale" | "vat_buy" | "pp30" | "pp36" | "pnd2" | "pnd3" | "pnd53" | "50twi" | "wht_received" | "wht_summary";
   description: { th: string; en: string };
   revenueDepartmentFormCode: string;
 }
@@ -50,14 +50,6 @@ export const THAI_TAX_CONFIGS: ThaiTaxConfig[] = [
     formType: "vat_buy",
     description: { th: "รายงานภาษีซื้อตามมาตรา 87(2) แห่งประมวลรัษฎากร", en: "Purchase VAT report pursuant to Section 87(2)" },
     revenueDepartmentFormCode: "ภ.พ. 87(2)",
-  },
-  {
-    route: "/report/unreceivedtaxinvoice",
-    code: "unreceived_tax_invoice",
-    title: { th: "ค่าใช้จ่ายยังไม่ได้รับใบกำกับ", en: "Unreceived Tax Invoices" },
-    formType: "vat_buy",
-    description: { th: "ทะเบียนติดตามใบกำกับภาษีซื้อที่ยังค้างรับจากคู่ค้า", en: "Pending vendor tax invoices registry" },
-    revenueDepartmentFormCode: "TAX-PENDING",
   },
   {
     route: "/report/vatpp30",
@@ -122,14 +114,6 @@ export const THAI_TAX_CONFIGS: ThaiTaxConfig[] = [
     formType: "wht_summary",
     description: { th: "สรุปภาพรวมภาษีหัก ณ ที่จ่าย ทุกประเภทพร้อมนำส่ง", en: "Comprehensive withholding tax summary across all filing types" },
     revenueDepartmentFormCode: "WHT-ALL",
-  },
-  {
-    route: "/report/deferredtax",
-    code: "deferred_tax",
-    title: { th: "ภาษีเงินได้รอการตัดบัญชี", en: "Deferred Income Tax" },
-    formType: "deferred_tax",
-    description: { th: "การคำนวณและกระทบยอดสินทรัพย์และหนี้สินภาษีเงินได้รอการตัดบัญชี (TAS 12)", en: "Deferred tax assets and liabilities calculation under TAS 12" },
-    revenueDepartmentFormCode: "TAS-12",
   },
 ];
 
@@ -301,8 +285,6 @@ const catalogKeys: Record<string, string> = {
   "vat_sale.description": "tax_sales_vat_report_pursuant_to",
   "vat_buy.title": "report_vat_buy",
   "vat_buy.description": "tax_purchase_vat_report_pursuant_to",
-  "unreceived_tax_invoice.title": "unreceived_tax_invoice",
-  "unreceived_tax_invoice.description": "tax_pending_vendor_tax_invoices_registry",
   "pp30.title": "vat_pp30",
   "pp30.description": "tax_monthly_value_added_tax_return",
   "pp36.title": "vat_pp36",
@@ -319,8 +301,6 @@ const catalogKeys: Record<string, string> = {
   "wht_received.description": "tax_register_of_withholding_tax_deducted",
   "wht_summary.title": "withholding_tax_report",
   "wht_summary.description": "tax_comprehensive_withholding_tax_summary_across",
-  "deferred_tax.title": "deferred_tax",
-  "deferred_tax.description": "tax_deferred_tax_assets_and_liabilities",
 };
 
 export function taxText(

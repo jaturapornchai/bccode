@@ -23,8 +23,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  FileSpreadsheet,
-  Upload,
   Search,
   Package,
   Boxes,
@@ -145,8 +143,6 @@ export function OperationsWorkbench({
               <ShieldCheck className="h-6 w-6" />
             ) : config.category === "bom" ? (
               <Boxes className="h-6 w-6" />
-            ) : config.category === "import" ? (
-              <FileSpreadsheet className="h-6 w-6" />
             ) : (
               <Package className="h-6 w-6" />
             )}
@@ -355,24 +351,6 @@ export function OperationsWorkbench({
         </Card>
       )}
 
-      {/* Import screens: upload is not wired to the backend yet */}
-      {config.category === "import" && (
-        <Card className="border-2 border-dashed border-border p-8 text-center bg-muted/10 rounded-2xl">
-          <div className="flex flex-col items-center justify-center gap-3">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <Upload className="h-8 w-8" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-foreground">
-                {tr("ops_data_import_is_not_enabled", "ระบบนำเข้าข้อมูลยังไม่เปิดใช้งาน")}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {tr("ops_once_enabled_excel_or_csv", "เมื่อเปิดใช้งานแล้วจะสามารถนำเข้าไฟล์ Excel หรือ CSV ผ่านระบบหลังบ้านได้จากจอนี้")}
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

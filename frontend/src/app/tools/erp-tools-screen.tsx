@@ -12,7 +12,6 @@ import {
   runErpTool,
   toolStepText,
   toolText,
-  type ErpToolStockCheckStats,
 } from "@/lib/erp-tools";
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -97,7 +96,6 @@ export function ErpToolsScreen({
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [resultKey, setResultKey] = useState<string | null>(null);
   const [succeeded, setSucceeded] = useState<boolean>(false);
-  const [stats, setStats] = useState<ErpToolStockCheckStats | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
@@ -107,7 +105,6 @@ export function ErpToolsScreen({
   async function handleRunProcess() {
     setIsRunning(true);
     setResultKey(null);
-    setStats(null);
     setSucceeded(false);
     const title = toolText(config, "title", language, dictionary);
     setLogs([`[${new Date().toLocaleTimeString()}] ${tr("ops_sending_command", "ส่งคำสั่งไปยังระบบ")}: ${title}`]);
@@ -122,13 +119,7 @@ export function ErpToolsScreen({
     const nextLogs: string[] = [
       `[${new Date().toLocaleTimeString()}] ${tr("ops_response", "ระบบตอบกลับ")}: ${resultText(result.messageKey, tr)}`,
     ];
-    if (result.stats) {
-      nextLogs.push(
-        `[${new Date().toLocaleTimeString()}] ${tr("ops_cost_rows_found", "รายการต้นทุนที่ตรวจพบ")}: ${result.stats.totalrows.toLocaleString("th-TH")}`,
-      );
-    }
     setLogs((prev) => [...prev, ...nextLogs]);
-    setStats(result.stats ?? null);
     setResultKey(result.messageKey);
     setSucceeded(result.success);
     setIsRunning(false);
@@ -282,23 +273,6 @@ export function ErpToolsScreen({
               <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive" role="alert">
                 <AlertCircle className="h-5 w-5" />
                 <span>{resultText(resultKey, tr)}</span>
-              </div>
-            )}
-
-            {stats && (
-              <div className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-muted/30 p-3 text-sm text-foreground sm:grid-cols-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">{tr("ops_cost_rows", "จำนวนรายการต้นทุน")}</div>
-                  <div className="font-mono font-semibold">{stats.totalrows.toLocaleString("th-TH")}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">{tr("document_count", "จำนวนเอกสาร")}</div>
-                  <div className="font-mono font-semibold">{stats.totaldocuments.toLocaleString("th-TH")}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">{tr("ops_products", "จำนวนสินค้า")}</div>
-                  <div className="font-mono font-semibold">{stats.totalproducts.toLocaleString("th-TH")}</div>
-                </div>
               </div>
             )}
 

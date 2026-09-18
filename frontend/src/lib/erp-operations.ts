@@ -10,8 +10,7 @@ export type OperationsCategory =
   | "reservation"
   | "procurement"
   | "bom"
-  | "pricing"
-  | "import";
+  | "pricing";
 
 export interface OperationsConfig {
   route: string;
@@ -108,14 +107,6 @@ export const OPERATIONS_CONFIGS: OperationsConfig[] = [
 
   // --- 3. ภาพรวมและจัดการจัดซื้อ (Procurement Intelligence) ---
   {
-    route: "/procurement/dashboard",
-    code: "procurement_dashboard",
-    category: "procurement",
-    title: { th: "ภาพรวมจัดซื้อ", en: "Procurement Dashboard" },
-    description: { th: "สรุปดัชนีชี้วัดงานจัดซื้อ: ยอดสั่งซื้อ, ระยะเวลาส่งมอบ (Lead Time), และประสิทธิภาพผู้จำหน่าย", en: "Key procurement KPIs: Spend volume, vendor lead times, and supplier performance" },
-    primaryActionLabel: { th: "รีเฟรชข้อมูลจัดซื้อ", en: "Refresh Dashboard" },
-  },
-  {
     route: "/procurement/price-comparison",
     code: "price_comparison",
     category: "procurement",
@@ -130,22 +121,6 @@ export const OPERATIONS_CONFIGS: OperationsConfig[] = [
     title: { th: "ประมวลผลใบสั่งซื้อสินค้าอัตโนมัติ", en: "Auto PO Generation" },
     description: { th: "สร้างใบสั่งซื้อ (PO) รวมอัตโนมัติจากใบขอซื้อที่ผ่านอนุมัติ หรือจากจุดสั่งซื้อซ้ำ", en: "Batch generate purchase orders from approved PRs and reorder point alerts" },
     primaryActionLabel: { th: "สร้างใบสั่งซื้อทันที", en: "Generate POs Now" },
-  },
-  {
-    route: "/transaction/documentvault",
-    code: "document_vault",
-    category: "procurement",
-    title: { th: "คลังเอกสารและสแกนบิล", en: "Document Vault & OCR" },
-    description: { th: "จัดเก็บและอ่านข้อมูลใบเสร็จ/ใบกำกับภาษีด้วย OCR เพื่อสร้างธุรกรรมอัตโนมัติ", en: "Digital repository with OCR receipt scanning for instant transaction entry" },
-    primaryActionLabel: { th: "อัปโหลดเอกสารเข้าคลัง", en: "Upload Document" },
-  },
-  {
-    route: "/transaction/documentinbox",
-    code: "document_inbox",
-    category: "procurement",
-    title: { th: "กล่องรับเอกสารระหว่างกิจการ", en: "Inter-company Document Inbox" },
-    description: { th: "รับบิลอิเล็กทรอนิกส์และเอกสารส่งตรงจากคู่ค้าหรือสาขาในเครือ", en: "Electronic invoice and document exchange between business affiliates" },
-    primaryActionLabel: { th: "นำเข้าเอกสารสู่ระบบ", en: "Import Inbound Document" },
   },
 
   // --- 4. สินค้าชุด ส่วนประกอบ และทะเบียนเลขเครื่อง (BOM, Sets & Serial) ---
@@ -199,64 +174,8 @@ export const OPERATIONS_CONFIGS: OperationsConfig[] = [
     description: { th: "ปรับราคาขายตามเปอร์เซ็นต์หรือจำนวนเงินพร้อมกันทั้งหมวดหมู่", en: "Adjust pricing across product categories by percentage or fixed amount" },
     primaryActionLabel: { th: "นำการปรับราคาไปใช้", en: "Apply Price Adjustment" },
   },
-  {
-    route: "/inventory/cost-layers",
-    code: "cost_layers",
-    category: "pricing",
-    title: { th: "ชั้นต้นทุนสต็อกเข้าก่อนออกก่อน", en: "FIFO Cost Layers" },
-    description: { th: "แสดงประวัติและมูลค่าของสต็อกแต่ละล็อตที่รับเข้าตามมาตรฐานบัญชี FIFO", en: "Inspect FIFO inventory cost layers and remaining valuations" },
-    primaryActionLabel: { th: "ตรวจสอบชั้นต้นทุน", en: "Audit Layers" },
-  },
-  {
-    route: "/inventory/lotexpiry",
-    code: "lot_expiry_mgmt",
-    category: "pricing",
-    title: { th: "จัดการล็อตและวันหมดอายุ", en: "Lot & Expiration Control" },
-    description: { th: "ควบคุมการเบิกจ่ายตามวันหมดอายุ (FEFO) เพื่อลดสินค้าสูญเสีย", en: "Manage lot shelf-life and First-Expired-First-Out dispatching" },
-    primaryActionLabel: { th: "บันทึกการปรับล็อต", en: "Update Lot Status" },
-  },
 
   // --- 6. ระบบนำเข้าข้อมูล (Data Import Workbench) ---
-  {
-    route: "/importdocuments",
-    code: "import_documents",
-    category: "import",
-    title: { th: "นำเข้าเอกสารจากไฟล์", en: "Import Documents from File" },
-    description: { th: "นำเข้าบิลขาย บิลซื้อ หรือใบกำกับภาษีจากไฟล์ Excel/CSV เข้าสู่ระบบโดยตรง", en: "Bulk import sales, purchases, or invoices from Excel/CSV" },
-    primaryActionLabel: { th: "เลือกไฟล์เพื่อนำเข้า", en: "Upload File" },
-  },
-  {
-    route: "/importpartner",
-    code: "import_partner",
-    category: "import",
-    title: { th: "นำเข้ารายชื่อคู่ค้า", en: "Import Business Partners" },
-    description: { th: "นำเข้ารายชื่อลูกค้า ผู้จำหน่าย เลขประจำตัวผู้เสียภาษี และที่อยู่", en: "Import customers, suppliers, tax IDs and branches from spreadsheet" },
-    primaryActionLabel: { th: "นำเข้าคู่ค้า", en: "Upload Contacts" },
-  },
-  {
-    route: "/importproduct",
-    code: "import_product",
-    category: "import",
-    title: { th: "นำเข้ารายการสินค้า", en: "Import Products Catalog" },
-    description: { th: "นำเข้ารหัสสินค้า ชื่อ หมวดหมู่ หน่วยนับ และราคาจากไฟล์", en: "Bulk import item master catalog from spreadsheet" },
-    primaryActionLabel: { th: "นำเข้ารายการสินค้า", en: "Upload Products" },
-  },
-  {
-    route: "/importproductfromfile",
-    code: "import_product_file",
-    category: "import",
-    title: { th: "นำเข้าสินค้าจากไฟล์", en: "Custom File Product Import" },
-    description: { th: "รองรับไฟล์นำเข้าจากระบบ ERP อื่น, Shopee, Lazada หรือ POS", en: "Import product data mapped from external ERP or marketplace formats" },
-    primaryActionLabel: { th: "เลือกไฟล์พิเศษ", en: "Select Custom File" },
-  },
-  {
-    route: "/importproductimage",
-    code: "import_product_image",
-    category: "import",
-    title: { th: "นำเข้ารูปสินค้า", en: "Bulk Product Images Upload" },
-    description: { th: "จับคู่รูปภาพสินค้ากับรหัสสินค้าโดยอัตโนมัติตามชื่อไฟล์", en: "Match and attach product images automatically by item code filename" },
-    primaryActionLabel: { th: "เลือกรูปภาพเพื่อนำเข้า", en: "Upload Images" },
-  },
 ];
 
 const operationsRouteMap = new Map<string, OperationsConfig>(
@@ -414,16 +333,10 @@ const catalogKeys: Record<string, string> = {
   "order_dates.description": "ops_audit_order_delivery_deadlines_and",
   "delivery_dates.title": "sale_delivery_date",
   "delivery_dates.description": "ops_logistics_dispatch_scheduling_and_customer",
-  "procurement_dashboard.title": "procurement_dashboard",
-  "procurement_dashboard.description": "ops_key_procurement_kpis_spend_volume",
   "price_comparison.title": "purchase_price_comparison",
   "price_comparison.description": "ops_side_by_side_vendor_quotation",
   "generate_orders.title": "purchase_order_generate",
   "generate_orders.description": "ops_batch_generate_purchase_orders_from",
-  "document_vault.title": "document_vault",
-  "document_vault.description": "ops_digital_repository_with_ocr_receipt",
-  "document_inbox.title": "inter_company_inbox",
-  "document_inbox.description": "ops_electronic_invoice_and_document_exchange",
   "set_assembly.title": "product_set_assemble",
   "set_assembly.description": "ops_deduct_component_stocks_and_assemble",
   "set_disassembly.title": "product_set_disassemble",
@@ -436,20 +349,6 @@ const catalogKeys: Record<string, string> = {
   "selling_prices.description": "ops_configure_wholesale_retail_price_tiers",
   "price_adjustment.title": "product_price_adjust",
   "price_adjustment.description": "ops_adjust_pricing_across_product_categories",
-  "cost_layers.title": "fifo_cost_layers",
-  "cost_layers.description": "ops_inspect_fifo_inventory_cost_layers",
-  "lot_expiry_mgmt.title": "stock_lot",
-  "lot_expiry_mgmt.description": "ops_manage_lot_shelf_life_and",
-  "import_documents.title": "import_documents",
-  "import_documents.description": "ops_bulk_import_sales_purchases_or",
-  "import_partner.title": "import_partner",
-  "import_partner.description": "ops_import_customers_suppliers_tax_ids",
-  "import_product.title": "import_product",
-  "import_product.description": "ops_bulk_import_item_master_catalog",
-  "import_product_file.title": "confirm_import_product_file_name",
-  "import_product_file.description": "ops_import_product_data_mapped_from",
-  "import_product_image.title": "import_product_image",
-  "import_product_image.description": "ops_match_and_attach_product_images",
 };
 
 export function operationsText(
