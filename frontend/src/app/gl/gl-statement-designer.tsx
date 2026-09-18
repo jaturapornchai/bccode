@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   formatAmount,
   emptyStatementTemplate,
@@ -554,21 +555,17 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                 </Field>
 
                 <div className="flex flex-wrap items-center gap-4 xl:col-span-2 pt-1">
-                  <label className="inline-flex w-auto shrink-0 items-center gap-2 text-sm font-medium cursor-pointer select-none">
-                    <input
-                      type="checkbox"
+                  <label className="inline-flex w-auto shrink-0 items-center gap-2.5 text-sm font-medium cursor-pointer select-none">
+                    <Checkbox
                       checked={template.globalstyle?.shownotecolumn ?? true}
-                      onChange={(e) => updateGlobalStyle({ shownotecolumn: e.target.checked })}
-                      className="size-4 shrink-0 rounded border-input text-primary accent-primary"
+                      onCheckedChange={(checked) => updateGlobalStyle({ shownotecolumn: checked })}
                     />
                     <span className="whitespace-nowrap">{tr("gl_show_notes_column", "แสดงคอลัมน์หมายเหตุประกอบงบ")}</span>
                   </label>
-                  <label className="inline-flex w-auto shrink-0 items-center gap-2 text-sm font-medium cursor-pointer select-none">
-                    <input
-                      type="checkbox"
+                  <label className="inline-flex w-auto shrink-0 items-center gap-2.5 text-sm font-medium cursor-pointer select-none">
+                    <Checkbox
                       checked={template.isactive}
-                      onChange={(e) => setTemplate({ ...template, isactive: e.target.checked })}
-                      className="size-4 shrink-0 rounded border-input text-primary accent-primary"
+                      onCheckedChange={(checked) => setTemplate({ ...template, isactive: checked })}
                     />
                     <span className="whitespace-nowrap">{tr("gl_activate_template", "เปิดใช้งานแม่แบบนี้")}</span>
                   </label>
@@ -694,11 +691,10 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                     <option value="net">{tr("gl_net", "สุทธิ")}</option>
                                   </select>
 
-                                  <label className="flex items-center gap-1 text-xs text-muted-foreground" title={tr("gl_reverse_sign", "กลับเครื่องหมายบวกลบ")}>
-                                    <input
-                                      type="checkbox"
+                                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none" title={tr("gl_reverse_sign", "กลับเครื่องหมายบวกลบ")}>
+                                    <Checkbox
                                       checked={row.reversesign ?? false}
-                                      onChange={(e) => updateRow(row.id, { reversesign: e.target.checked })}
+                                      onCheckedChange={(checked) => updateRow(row.id, { reversesign: checked })}
                                     />
                                     +/-
                                   </label>

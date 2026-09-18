@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { pickName } from "@/lib/product-barcode/utils";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   type Product,
   type MarketplaceProductMap,
@@ -63,13 +64,18 @@ function Toggle({
   disabled?: boolean;
 }) {
   return (
-    <label className={cn("flex cursor-pointer items-center gap-2 text-sm", disabled && "cursor-not-allowed opacity-60")}>
-      <input
-        type="checkbox"
+    <label
+      className={cn(
+        "inline-flex min-h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-input/80 bg-background/90 px-3 py-1.5 text-sm font-medium text-foreground",
+        "shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-primary/50 hover:bg-accent/40 transition-all select-none",
+        checked && "border-primary/40 bg-primary/5",
+        disabled && "cursor-not-allowed opacity-60 pointer-events-none"
+      )}
+    >
+      <Checkbox
         checked={checked}
         disabled={disabled}
-        onChange={(event) => onCheckedChange(event.target.checked)}
-        className="size-4 rounded border-input"
+        onCheckedChange={onCheckedChange}
       />
       <span>{label}</span>
     </label>

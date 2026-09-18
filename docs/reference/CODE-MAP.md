@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-18 @ commit a3e84c5c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-18 @ commit 42abc387 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -901,27 +901,27 @@ Files indexed: 49
 | 1002 | const-arrow | `handleSave` |
 | 2146 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/product-set-screen.tsx (2163 lines)
+## frontend/src/app/menu/product-set-screen.tsx (2162 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 88 | function | `productSetRowKey` |
-| 92 | function | `ensureActiveProductSetHolding` |
-| 110 | function | `BarcodePickerModal` |
-| 137 | const-arrow | `fetchBarcodes` |
-| 258 | function | `ProductSetScreen` |
-| 591 | const-arrow | `handleCreateOpen` |
-| 598 | const-arrow | `handleCreateCopyOpen` |
-| 612 | const-arrow | `handleEditOpen` |
-| 619 | const-arrow | `handleDelete` |
-| 650 | const-arrow | `toggleCheckedSet` |
-| 656 | const-arrow | `handleDeleteSelectedSets` |
-| 693 | const-arrow | `handleSave` |
-| 775 | const-arrow | `updateOptionGroupFields` |
-| 855 | const-arrow | `updateChoiceFields` |
-| 878 | const-arrow | `openPickerForChoice` |
-| 883 | const-arrow | `handlePickerSelect` |
-| 896 | const-arrow | `handleSimulatorToggle` |
+| 89 | function | `productSetRowKey` |
+| 93 | function | `ensureActiveProductSetHolding` |
+| 111 | function | `BarcodePickerModal` |
+| 138 | const-arrow | `fetchBarcodes` |
+| 259 | function | `ProductSetScreen` |
+| 592 | const-arrow | `handleCreateOpen` |
+| 599 | const-arrow | `handleCreateCopyOpen` |
+| 613 | const-arrow | `handleEditOpen` |
+| 620 | const-arrow | `handleDelete` |
+| 651 | const-arrow | `toggleCheckedSet` |
+| 657 | const-arrow | `handleDeleteSelectedSets` |
+| 694 | const-arrow | `handleSave` |
+| 776 | const-arrow | `updateOptionGroupFields` |
+| 856 | const-arrow | `updateChoiceFields` |
+| 879 | const-arrow | `openPickerForChoice` |
+| 884 | const-arrow | `handlePickerSelect` |
+| 897 | const-arrow | `handleSimulatorToggle` |
 
 ## frontend/src/lib/system-setting-screens.ts (2145 lines)
 
@@ -2055,24 +2055,6 @@ Files indexed: 49
 | 1028 | function | `newXOrderDocumentImageGroup` |
 | 1045 | function | `UpdateDocNoInReferences` |
 
-## frontend/src/app/gl/gl-statement-designer.tsx (1041 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 71 | function | `ensureFontLoaded` |
-| 84 | function | `GLStatementDesigner` |
-| 135 | function | `open` |
-| 158 | function | `applyStarterTemplate` |
-| 171 | function | `save` |
-| 204 | function | `cloneTemplate` |
-| 218 | function | `remove` |
-| 245 | function | `addRow` |
-| 264 | function | `updateRow` |
-| 270 | function | `deleteRow` |
-| 275 | function | `moveRow` |
-| 286 | function | `runCalculation` |
-| 312 | const-arrow | `updateGlobalStyle` |
-
 ## frontend/src/app/crud/erp-crud-workbench.tsx (1040 lines)
 
 | Line | Kind | Name |
@@ -2087,6 +2069,24 @@ Files indexed: 49
 | 309 | const-arrow | `handleSaveDoc` |
 | 648 | section | `EDIT MODE FORM` |
 | 882 | section | `READ-ONLY VIEW MODE` |
+
+## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 72 | function | `ensureFontLoaded` |
+| 85 | function | `GLStatementDesigner` |
+| 136 | function | `open` |
+| 159 | function | `applyStarterTemplate` |
+| 172 | function | `save` |
+| 205 | function | `cloneTemplate` |
+| 219 | function | `remove` |
+| 246 | function | `addRow` |
+| 265 | function | `updateRow` |
+| 271 | function | `deleteRow` |
+| 276 | function | `moveRow` |
+| 287 | function | `runCalculation` |
+| 313 | const-arrow | `updateGlobalStyle` |
 
 ## backend/internal/goapi/dataimport/xlsx_product.go (1033 lines)
 

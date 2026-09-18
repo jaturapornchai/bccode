@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { CheckboxCard } from "@/components/ui/checkbox";
 import { type Product } from "@/lib/product-barcode/types";
 
 export function TabProductLogistics({
@@ -69,19 +70,14 @@ export function TabProductLogistics({
 
         <div className="p-3 bg-muted/20 border border-border rounded-lg space-y-3">
           <p className="text-xs font-semibold text-muted-foreground">คุณลักษณะการจัดส่งและพิมพ์ฉลาก (Shipping Badges):</p>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={value.isalert ?? false}
-                onChange={(e) => onChange({ ...value, isalert: e.target.checked })}
-                className="rounded accent-primary size-4"
-              />
-              <div>
-                <span className="font-semibold block">สินค้าแตกหักง่าย / ระวังแตก (Fragile)</span>
-                <span className="text-[10px] text-muted-foreground">ติดป้ายเตือนและพิมพ์สติ๊กเกอร์เตือนพิเศษ</span>
-              </div>
-            </label>
+          <div className="grid sm:grid-cols-2 gap-3 text-xs">
+            <CheckboxCard
+              checked={value.isalert ?? false}
+              onCheckedChange={(checked) => onChange({ ...value, isalert: checked })}
+              label="สินค้าแตกหักง่าย / ระวังแตก (Fragile)"
+              hint="ติดป้ายเตือนและพิมพ์สติ๊กเกอร์เตือนพิเศษ"
+              cardClassName="w-full text-xs"
+            />
           </div>
           {value.isalert && (
             <div className="space-y-1">

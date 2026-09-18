@@ -10,6 +10,7 @@ import { type ChangeEvent, type Dispatch, type ReactNode, type SetStateAction } 
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Product } from "@/lib/product-barcode/types";
 
 export type ProductStateAction = Dispatch<SetStateAction<Product | null>>;
@@ -24,6 +25,26 @@ export function FieldRow({ label, hint, children, required }: { label: string; h
       {children}
       {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
     </label>
+  );
+}
+
+export function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-border bg-card text-card-foreground">
+      <header className="border-b border-border/60 p-3">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+      </header>
+      <div className="p-3">{children}</div>
+    </section>
   );
 }
 
@@ -55,13 +76,18 @@ export function Toggle({
   disabled?: boolean;
 }) {
   return (
-    <label className={cn("flex w-auto cursor-pointer items-center gap-2 text-sm", disabled && "cursor-not-allowed opacity-60")}>
-      <input
-        type="checkbox"
+    <label
+      className={cn(
+        "inline-flex min-h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-input/80 bg-background/90 px-3 py-1.5 text-sm font-medium text-foreground",
+        "shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-primary/50 hover:bg-accent/40 transition-all select-none",
+        checked && "border-primary/40 bg-primary/5",
+        disabled && "cursor-not-allowed opacity-60 pointer-events-none"
+      )}
+    >
+      <Checkbox
         checked={checked}
         disabled={disabled}
-        onChange={(event) => onCheckedChange(event.target.checked)}
-        className="size-4 rounded border-input"
+        onCheckedChange={onCheckedChange}
       />
       <span>{label}</span>
     </label>

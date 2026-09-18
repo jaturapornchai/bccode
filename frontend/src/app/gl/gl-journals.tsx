@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, ClipboardPaste } from "lucide-react";
+import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { amountString, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
@@ -10,6 +10,7 @@ import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { parseClipboardJournalLines } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
+import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine, appendVatLine } from "@/lib/gl-smart-guard";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -38,6 +39,13 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   useDirtyGuard(route, dirty);
   const year = refs.years.find((item) => item.code === journal?.fiscalyear);
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);
+  const smartGuard = useMemo(() => {
+    try {
+      return journal ? analyzeGLTaxAndBalance(journal.lines, refs.accounts, year?.scale ?? 2) : null;
+    } catch {
+      return null;
+    }
+  }, [journal, refs.accounts, year?.scale]);
   const patch = (value: Partial<GLJournal>) => setJournal((current) => current ? { ...current, ...value } : current);
   const patchLine = (index: number, value: Partial<GLLine>) => patch({ lines: journal!.lines.map((line, i) => i === index ? { ...line, ...value } : line) });
 
@@ -641,7 +649,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         </tbody>
                       </table>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => patch({ lines: [...journal.lines, emptyLine()] })}>
                         <Plus className="size-4 mr-1.5" />{tr("gl_add_line", "เพิ่มบรรทัด")}
                       </Button>
@@ -649,16 +657,127 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         <ClipboardPaste className="size-4 mr-1.5" />
                         <span>Excel Paste</span>
                       </Button>
+                      {smartGuard && !smartGuard.isBalanced && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={`${actionClass} border-amber-500/40 text-amber-700 bg-amber-50/80 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-700/50 shadow-sm`}
+                          onClick={() => patch({ lines: autoBalanceJournalLines(journal.lines, year?.scale ?? 2) })}
+                          title={tr("gl_auto_balance_hint", "ปรับยอดให้เดบิตและเครดิตสมดุลกันอัตโนมัติ")}
+                        >
+                          <Scale className="size-4 mr-1.5 text-amber-600 dark:text-amber-400" />
+                          <span>{tr("gl_auto_balance", "ปรับยอดให้ดุล (Auto-Balance)")}</span>
+                        </Button>
+                      )}
+                      {smartGuard && !smartGuard.vat.hasVatLine && smartGuard.vat.suggestedVatUnits > 0n && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={`${actionClass} border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 shadow-sm`}
+                          onClick={() => patch({ lines: appendVatLine(journal.lines, refs.accounts, smartGuard.vat.suggestedVatType!, smartGuard.vat.suggestedVatUnits, year?.scale ?? 2) })}
+                          title={tr("gl_add_vat_line_hint", "คำนวณและเพิ่มบรรทัดภาษีมูลค่าเพิ่ม 7% จากฐาน")}
+                        >
+                          <Sparkles className="size-4 mr-1.5 text-primary" />
+                          <span>{tr("gl_add_vat_7", "+ ภาษี 7% ({0})").replace("{0}", smartGuard.vat.suggestedVatFormatted)}</span>
+                        </Button>
+                      )}
                     </div>
                   </fieldset>
-                  <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3" aria-live="polite">
-                    {([ [tr("gl_total_debit", "รวมเดบิต"), totals?.debit], [tr("gl_total_credit", "รวมเครดิต"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
-                      <div key={label}>
-                        <div className="text-[0.9rem] text-muted-foreground">{label}</div>
-                        <strong className="text-lg tabular-nums">{units === undefined ? tr("gl_verify_amount", "ตรวจจำนวนเงิน") : formatAmount(amountString(units), year?.scale)}</strong>
+
+                  {/* Totals & Balance Guard Card */}
+                  <div
+                    className={`grid gap-2 rounded-xl border p-3 sm:grid-cols-3 transition-colors ${
+                      smartGuard?.isBalanced
+                        ? "border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/10"
+                        : "border-destructive/30 bg-destructive/5"
+                    }`}
+                    aria-live="polite"
+                  >
+                    <div>
+                      <div className="text-[0.9rem] text-muted-foreground">{tr("gl_total_debit", "รวมเดบิต")}</div>
+                      <strong className="text-lg tabular-nums">
+                        {totals?.debit === undefined ? tr("gl_verify_amount", "ตรวจจำนวนเงิน") : formatAmount(amountString(totals.debit), year?.scale)}
+                      </strong>
+                    </div>
+                    <div>
+                      <div className="text-[0.9rem] text-muted-foreground">{tr("gl_total_credit", "รวมเครดิต")}</div>
+                      <strong className="text-lg tabular-nums">
+                        {totals?.credit === undefined ? tr("gl_verify_amount", "ตรวจจำนวนเงิน") : formatAmount(amountString(totals.credit), year?.scale)}
+                      </strong>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[0.9rem] text-muted-foreground">{tr("gl_difference", "ผลต่าง")}</span>
+                        {smartGuard?.isBalanced ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 className="size-3" />
+                            {tr("gl_balanced_100", "สมดุล 100%")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                            <AlertTriangle className="size-3" />
+                            {smartGuard?.balanceStatus === "debit_surplus"
+                              ? tr("gl_short_credit", "ขาดเครดิต")
+                              : tr("gl_short_debit", "ขาดเดบิต")}
+                          </span>
+                        )}
                       </div>
-                    ))}
+                      <strong className={`text-lg tabular-nums ${smartGuard?.isBalanced ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
+                        {totals?.difference === undefined ? tr("gl_verify_amount", "ตรวจจำนวนเงิน") : formatAmount(amountString(totals.difference), year?.scale)}
+                      </strong>
+                      {!smartGuard?.isBalanced && smartGuard && (
+                        <div className="text-[11px] text-destructive/90 mt-0.5 font-medium">
+                          {smartGuard.balanceStatus === "debit_surplus"
+                            ? tr("gl_debit_over_credit", "เดบิตมากกว่าเครดิต {0}").replace("{0}", smartGuard.balanceDifferenceFormatted)
+                            : tr("gl_credit_over_debit", "เครดิตมากกว่าเดบิต {0}").replace("{0}", smartGuard.balanceDifferenceFormatted)}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* VAT 7% Smart Checker Card */}
+                  {smartGuard?.vat.hasVatLine && (
+                    <div
+                      className={`flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border text-xs ${
+                        smartGuard.vat.isExactVat
+                          ? "bg-emerald-50/50 border-emerald-500/20 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-300"
+                          : smartGuard.vat.isCloseVat
+                          ? "bg-amber-50/50 border-amber-500/30 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300"
+                          : "bg-rose-50/50 border-rose-500/30 text-rose-800 dark:bg-rose-950/20 dark:text-rose-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {smartGuard.vat.isExactVat ? (
+                          <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        )}
+                        <span>
+                          {smartGuard.vat.isExactVat
+                            ? tr("gl_vat_verified_exact", "ตรวจสอบภาษีมูลค่าเพิ่ม 7%: ยอด {0} ตรงตามฐานคำนวณเป๊ะ").replace("{0}", smartGuard.vat.actualVatFormatted)
+                            : smartGuard.vat.isCloseVat
+                            ? tr("gl_vat_close_satang", "ภาษีมูลค่าเพิ่มในเอกสาร {0} (ต่างจาก 7% คำนวณปกติ {1} อยู่ {2} สตางค์ — สรรพากรยอมรับได้ตามใบกำกับภาษีจริง)")
+                                .replace("{0}", smartGuard.vat.actualVatFormatted)
+                                .replace("{1}", smartGuard.vat.expectedVatFormatted)
+                                .replace("{2}", formatAmount(amountString(smartGuard.vat.varianceUnits < 0n ? -smartGuard.vat.varianceUnits : smartGuard.vat.varianceUnits), 2))
+                            : tr("gl_vat_mismatch", "ภาษีมูลค่าเพิ่มในเอกสาร {0} ต่างจาก 7% ของฐานภาษี ({1}) โปรดตรวจสอบ")
+                                .replace("{0}", smartGuard.vat.actualVatFormatted)
+                                .replace("{1}", smartGuard.vat.expectedVatFormatted)}
+                        </span>
+                      </div>
+                      {!smartGuard.vat.isExactVat && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2.5 text-[11px] font-medium bg-background border-border hover:bg-muted"
+                          onClick={() => patch({ lines: setExactVatLine(journal.lines, smartGuard.vat.vatLineIndex, smartGuard.vat.expectedVatUnits, year?.scale ?? 2) })}
+                        >
+                          {tr("gl_adjust_exact_vat", "ปรับเป็น 7% พอดี ({0})").replace("{0}", smartGuard.vat.expectedVatFormatted)}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   {journal.id && (
                     <Field label={tr("gl_reason", "เหตุผล")}><input className={control} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder={tr("gl_edit_reason_hint", "ระบุเหตุผลการแก้ไข (ถ้ามี)")} /></Field>
                   )}

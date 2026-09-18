@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { LanguageCode } from "@/lib/i18n";
 import {
   MENU_SECTIONS,
@@ -381,11 +382,9 @@ export function ManageShortcutsScreen({
             {/* Filter Options & Stats sub-bar */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2 text-xs">
               <label className="flex cursor-pointer items-center gap-2 text-muted-foreground hover:text-foreground select-none">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={onlyUnadded}
-                  onChange={(e) => setOnlyUnadded(e.target.checked)}
-                  className="size-3.5 rounded border-border text-primary focus:ring-primary/20"
+                  onCheckedChange={(checked) => setOnlyUnadded(checked)}
                 />
                 <span className="font-medium">{t("st_show_only_not_added_shortcuts", "แสดงเฉพาะเมนูที่ยังไม่ได้เพิ่มเข้าทางลัด")}</span>
               </label>

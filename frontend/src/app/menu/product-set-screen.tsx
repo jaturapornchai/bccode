@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import {
   backendText,
@@ -1512,14 +1513,12 @@ export function ProductSetScreen({
                                           </div>
 
                                           {group.choicetype === 1 && (
-                                            <label className="flex items-center gap-1.5 cursor-pointer">
-                                              <input
-                                                type="checkbox"
+                                            <label className="flex items-center gap-1.5 cursor-pointer text-xs select-none">
+                                              <Checkbox
                                                 checked={choice.isdefault || false}
-                                                onChange={(e) => updateChoiceFields(groupIdx, choiceIdx, { isdefault: e.target.checked })}
-                                                className="rounded border-border size-3.5 accent-primary cursor-pointer"
+                                                onCheckedChange={(checked) => updateChoiceFields(groupIdx, choiceIdx, { isdefault: checked })}
                                               />
-                                              <span className="text-[10px] text-muted-foreground">{tr("product_set_default_choice", "ค่าเริ่มต้น")}</span>
+                                              <span className="text-[11px] text-muted-foreground font-medium">{tr("product_set_default_choice", "ค่าเริ่มต้น")}</span>
                                             </label>
                                           )}
 

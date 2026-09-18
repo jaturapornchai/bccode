@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   type GLAccount,
   accountName,
@@ -395,12 +396,10 @@ export function AccountSearchDialog({
 
             {/* Sub Filter Toggles */}
             <div className="flex items-center gap-2 shrink-0">
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs sm:text-sm text-muted-foreground hover:text-foreground select-none">
-                <input
-                  type="checkbox"
+              <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-muted-foreground hover:text-foreground select-none">
+                <Checkbox
                   checked={onlyPosting}
-                  onChange={(e) => setOnlyPosting(e.target.checked)}
-                  className="size-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+                  onCheckedChange={(checked) => setOnlyPosting(checked)}
                 />
                 <span>{tr("gl_postable_accounts_only", "เฉพาะบัญชีลงรายการ")}</span>
               </label>
@@ -511,15 +510,10 @@ export function AccountSearchDialog({
                       >
                         {/* Multi-select checkbox */}
                         {multiSelect && (
-                          <td className="py-2.5 px-3 text-center">
-                            <input
-                              type="checkbox"
+                          <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
                               checked={isChecked}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                toggleMultiCheck(acc.accountcode);
-                              }}
-                              className="size-4.5 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+                              onCheckedChange={() => toggleMultiCheck(acc.accountcode)}
                             />
                           </td>
                         )}

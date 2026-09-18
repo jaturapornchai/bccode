@@ -5,6 +5,8 @@ import { useBarcodeText } from "@/components/product-barcode/use-barcode-text";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import { type Product, type ProductTimeForSale } from "@/lib/product-barcode/types";
 import { FieldRow, Section, type ProductStateAction } from "./product-tab-shared";
 
@@ -72,13 +74,20 @@ export function TabProductTimeForSale({
                   {DAYS.map((dayLabel, dayIdx) => {
                     const checked = (entry.daysofweek || []).includes(dayIdx as any);
                     return (
-                      <label key={dayIdx} className="flex items-center gap-1 text-xs cursor-pointer bg-background p-1.5 rounded border border-border hover:bg-muted/40">
-                        <input
-                          type="checkbox"
+                      <label
+                        key={dayIdx}
+                        className={cn(
+                          "flex items-center gap-2 text-xs font-medium cursor-pointer px-2.5 py-1.5 rounded-lg border transition-all select-none shadow-[0_1px_3px_rgba(0,0,0,0.04)]",
+                          checked
+                            ? "bg-primary/10 border-primary/40 text-foreground"
+                            : "bg-background border-border hover:bg-muted/40 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Checkbox
                           checked={checked}
-                          onChange={(e) => {
+                          onCheckedChange={(isNextChecked) => {
                             const activeDays = entry.daysofweek || [];
-                            const nextDays = e.target.checked
+                            const nextDays = isNextChecked
                               ? [...activeDays, dayIdx as any]
                               : activeDays.filter((d) => d !== dayIdx);
                             setRows((rows) =>
@@ -87,7 +96,6 @@ export function TabProductTimeForSale({
                               ),
                             );
                           }}
-                          className="size-3"
                         />
                         <span>{dayLabel}</span>
                       </label>

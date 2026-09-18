@@ -1132,5 +1132,43 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `docs/reference/CODE-MAP.md`
 - `README.md`
 
+### 2026-09-18 — เพิ่มระบบตรวจสอบภาษีมูลค่าเพิ่ม 7% และปรับเศษสตางค์ให้ดุลใน GL (Smart Tax & Balance Guard) และขยาย CheckboxCard สไตล์ใหม่ทั่วทั้งระบบ
+
+**ประเภทงาน:** `[Feature]` `[Accounting & Tax]` `[UI/UX]`
+
+**สิ่งที่ทำ:**
+1. **ระบบ Smart Tax & Balance Guard ในหน้าสมุดรายวัน GL (`frontend/src/lib/gl-smart-guard.ts`, `gl-journals.tsx`)**:
+   - ตรวจสอบความสมดุลเดบิต-เครดิตแบบ Real-time: แสดงป้ายสถานะ `✓ เดบิต = เครดิต สมดุล 100%` เมื่อสมดุล หรือแจ้งเตือนระบุข้างที่ขาดเงิน (ขาดเดบิต / ขาดเครดิต) พร้อมผลต่างชัดเจน
+   - เพิ่มปุ่มคลิกเดียวปรับเศษสตางค์ให้ดุล `[⚡ ปรับยอดให้ดุลทันที (Auto-Balance)]` ปรับยอดเศษสตางค์บรรทัดสุดท้ายให้อัตโนมัติ ป้องกันข้อผิดพลาดทางบัญชี
+   - ระบบตรวจทานภาษีมูลค่าเพิ่ม 7% (Thai VAT 7% Guard): วิเคราะห์ฐานภาษีและตรวจสอบยอดภาษีซื้อ/ภาษีขาย หากมีผลต่างเศษสตางค์จากใบกำกับภาษี (±1-5 สตางค์) จะแจ้งเตือนพร้อมปุ่มปรับเป็น 7% พอดี
+   - เพิ่มปุ่มลัดอัจฉริยะ `[✨ + ภาษี 7% (XX.XX)]` คำนวณภาษีมูลค่าเพิ่ม 7% จากฐานและเพิ่มบรรทัดภาษีซื้อ/ขายให้อัตโนมัติในคลิกเดียว
+2. **ขยายการใช้งาน `CheckboxCard` และ `Checkbox` สไตล์ใหม่ (มิติเงา Soft Depth, Touch Target ≥ 44px)**:
+   - อัปเกรด `Toggle` ส่วนกลางของสินค้าและคลัง (`product-tab-shared.tsx`)
+   - อัปเกรดสวิตช์สินค้าแตกหักง่าย (Fragile Shipping Badge) ใน `tab-product-logistics.tsx`
+   - อัปเกรด `Toggle` ของระบบเชื่อมต่อ Marketplace (`tab-product-marketplace.tsx`)
+   - อัปเกรดตัวเลือกกำหนดวันขายประจำสัปดาห์ (`tab-product-timeforsale.tsx`)
+   - อัปเกรดตัวเลือกค่าเริ่มต้นในชุดสินค้า/BOM (`product-set-screen.tsx`)
+   - อัปเกรดตัวกรองและตารางเลือกหลายบัญชีในไดอะล็อกค้นหาผังบัญชี (`account-search-dialog.tsx`)
+   - อัปเกรดตัวเลือกคอลัมน์หมายเหตุและเปิดใช้งานแม่แบบในตัวออกแบบงบการเงิน (`gl-statement-designer.tsx`)
+   - อัปเกรดตัวกรองแสดงเฉพาะเมนูที่ยังไม่ได้เพิ่มในหน้าจัดการเมนูลัด (`manage-shortcuts-screen.tsx`)
+3. **เพิ่มชุดทดสอบ Unit Tests (`gl-smart-guard.test.ts`)**:
+   - 15/15 tests ผ่าน 100% รวม 87 test files / 633 tests ทั่วทั้งระบบ
+
+**ไฟล์สำคัญ:**
+- `frontend/src/lib/gl-smart-guard.ts` (ใหม่)
+- `frontend/src/lib/gl-smart-guard.test.ts` (ใหม่)
+- `frontend/src/app/gl/gl-journals.tsx`
+- `frontend/src/app/menu/product-tab-shared.tsx`
+- `frontend/src/app/menu/tab-product-logistics.tsx`
+- `frontend/src/app/menu/tab-product-marketplace.tsx`
+- `frontend/src/app/menu/tab-product-timeforsale.tsx`
+- `frontend/src/app/menu/product-set-screen.tsx`
+- `frontend/src/app/gl/account-search-dialog.tsx`
+- `frontend/src/app/gl/gl-statement-designer.tsx`
+- `frontend/src/app/menu/manage-shortcuts-screen.tsx`
+- `backend/assets/language/languages.tsv`
+- `README.md`
+
+
 
 
