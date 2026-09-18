@@ -167,7 +167,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 5. **Reference implementation:** `fieldLabel()` ใน `frontend/src/components/system-settings/utils.ts` (map `fieldBackendKeys` → `backendText` → fallback) และ `menuText()` ใน `frontend/src/lib/menu-data.ts`; ห้ามใช้ helper `t(th, en)` สองภาษาแบบ `manage-shortcuts-screen.tsx` เป็นแบบอย่าง (รองรับแค่ 2 ใน 12 ภาษา)
 6. **ตรวจรับ:** สลับภาษาจริงจาก dialog เลือกภาษา (อย่างน้อย th → en → ja) แล้ว screenshot จอที่แก้ ทุกข้อความต้องเปลี่ยน; ข้อความที่ยังเป็นไทยขณะเลือกภาษาอื่น = bug
 
-สถานะตอนตั้งกฎ (audit 2026-09-14): 137 ไฟล์ / ~4,500 บรรทัดใน `frontend/src` ยัง hard-code ไทย; โมดูล GL ทั้งชุด (`frontend/src/app/gl/*`), tree-view คลัง/สาขา, จอสินค้า, `confirm-dialog` ไม่รับ language เลย; backend มี `fmt.Errorf` ภาษาไทย 294 จุดใน 48 ไฟล์ — แผนย้ายอยู่ใน `docs/handoff/HANDOFF-2026-09-14.md` §2D
+สถานะตอนตั้งกฎ (audit 2026-09-14): 137 ไฟล์ / ~4,500 บรรทัดใน `frontend/src` ยัง hard-code ไทย; โมดูล GL ทั้งชุด (`frontend/src/app/gl/*`), tree-view คลัง/สาขา, จอสินค้า, `confirm-dialog` ไม่รับ language เลย; backend มี `fmt.Errorf` ภาษาไทย 294 จุดใน 48 ไฟล์ — แผนย้ายเดิมอยู่ใน handoff 2026-09-14 §2D (ลบแล้ว — `git show 1660b335:docs/handoff/HANDOFF-2026-09-14.md`); งานค้างปัจจุบันดู `docs/handoff/HANDOFF-2026-09-19.md` §3 [5]
 
 ## กฎ: ระหว่างช่วง dev ทำภาษาไทยอย่างเดียว — ห้ามแปลภาษาอื่นจนกว่าจะสั่ง (ตั้งโดยลุงจืด 2026-09-16)
 

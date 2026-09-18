@@ -144,6 +144,16 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-19 — ล้าง handoff เดิมทั้งหมด สร้าง handoff ฉบับเดียวสำหรับ Gemini ทำต่อ
+
+**ประเภทงาน:** `[Docs]`
+
+**สิ่งที่ทำ:** ลบ `docs/handoff/*.md` เดิม 10 ไฟล์ (2026-09-05 → 09-19 รอบเช้า, รวม CODE-REVIEW และ RISKS) ตามคำสั่งลุงจืด แล้วเขียน `docs/handoff/HANDOFF-2026-09-19.md` ฉบับใหม่ฉบับเดียว: สถานะ production/verify, กฎใหม่ (Champ parity, 2 ภาษา, Backend-First), สิ่งที่ทำวันนี้, งานค้าง 5 ข้อแบบเลือกตัวเลข, คำสั่งประจำ, กับดัก, แผนที่ไฟล์; ปรับลิงก์ใน `docs/README.md`, `docs/kms/README.md`, `AGENTS.md` ให้ชี้ฉบับใหม่ และระบุวิธีดูของเก่าผ่าน `git show 1660b335:docs/handoff/<file>` (บทความ kms ยังอ้าง handoff เก่าเป็นหลักฐานประวัติ)
+
+**ไฟล์สำคัญ:** `docs/handoff/HANDOFF-2026-09-19.md`, `docs/README.md`, `docs/kms/README.md`, `AGENTS.md`
+
+**ผลการทดสอบ (Evidence):** เอกสารอย่างเดียว ไม่แตะโค้ด — `ls docs/handoff` เหลือ 1 ไฟล์; `grep` ลิงก์ handoff ที่คลิกได้ทั้งหมดชี้ไฟล์ที่มีอยู่จริง
+
 ### 2026-09-19 — ยึด Champ เป็นต้นแบบ: ตัดเมนู/ระบบเกิน Champ, เติมของที่ Champ มี, เรียงเมนูตาม Champ, เปิดใช้ 2 ภาษา (ไทย/อังกฤษ)
 
 **ประเภทงาน:** `[Refactor]` / `[Docs]` / `[Deploy]`
