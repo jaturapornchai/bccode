@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-18 @ commit 1fcd9419 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-19 @ commit 45462fae - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 50
+Files indexed: 52
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (17364 lines)
 
@@ -2064,20 +2064,36 @@ Files indexed: 50
 | 1028 | function | `newXOrderDocumentImageGroup` |
 | 1045 | function | `UpdateDocNoInReferences` |
 
-## frontend/src/app/crud/erp-crud-workbench.tsx (1040 lines)
+## frontend/src/app/crud/erp-crud-workbench.tsx (1056 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 45 | function | `ErpCrudWorkbench` |
-| 118 | const-arrow | `handleSelectRow` |
-| 140 | const-arrow | `handleStartEdit` |
-| 148 | const-arrow | `handleStartCreate` |
-| 196 | const-arrow | `handleCancelEdit` |
-| 214 | const-arrow | `handleDeleteDoc` |
-| 247 | const-arrow | `updateLineItem` |
-| 309 | const-arrow | `handleSaveDoc` |
-| 648 | section | `EDIT MODE FORM` |
-| 882 | section | `READ-ONLY VIEW MODE` |
+| 46 | function | `ErpCrudWorkbench` |
+| 127 | const-arrow | `handleSelectRow` |
+| 149 | const-arrow | `handleStartEdit` |
+| 157 | const-arrow | `handleStartCreate` |
+| 205 | const-arrow | `handleCancelEdit` |
+| 223 | const-arrow | `handleDeleteDoc` |
+| 256 | const-arrow | `updateLineItem` |
+| 318 | const-arrow | `handleSaveDoc` |
+| 664 | section | `EDIT MODE FORM` |
+| 898 | section | `READ-ONLY VIEW MODE` |
+
+## frontend/src/app/gl/gl-journals.tsx (1053 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 33 | function | `createSmartNextLine` |
+| 54 | function | `GLJournals` |
+| 132 | const-arrow | `handleApplyFastTemplate` |
+| 162 | const-arrow | `handlePasteClick` |
+| 177 | function | `openView` |
+| 193 | function | `openEdit` |
+| 209 | function | `openCreate` |
+| 222 | function | `cancelEdit` |
+| 236 | function | `save` |
+| 262 | function | `act` |
+| 280 | function | `deleteDraftDirect` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
 
@@ -2143,6 +2159,37 @@ Files indexed: 50
 | 1002 | function | `upsertRateEntry` |
 | 1008 | function | `validateForm` |
 | 1017 | function | `formatCount` |
+
+## frontend/src/app/gl/gl-masters.tsx (1022 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 14 | function | `newRecord` |
+| 15 | function | `normalizeRecord` |
+| 38 | function | `editorAlert` |
+| 43 | function | `pageErrorText` |
+| 44 | function | `paneErrorText` |
+| 45 | function | `FormErrorAlert` |
+| 47 | function | `errorStatePatch` |
+| 49 | function | `saveFailureTarget` |
+| 51 | function | `recordCode` |
+| 52 | function | `recordName` |
+| 54 | function | `TreeNodeRow` |
+| 196 | function | `GLMasters` |
+| 225 | function | `showFormError` |
+| 247 | function | `openView` |
+| 263 | function | `openEdit` |
+| 279 | function | `openCreate` |
+| 290 | function | `cancelEdit` |
+| 304 | function | `save` |
+| 323 | function | `deleteItem` |
+| 349 | function | `runAction` |
+| 385 | const-arrow | `toggleCategory` |
+| 389 | const-arrow | `toggleNode` |
+| 880 | function | `AccountFields` |
+| 885 | const-arrow | `handleTypeChange` |
+| 991 | function | `FiscalYearFields` |
+| 1005 | function | `MasterFields` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/base_pdf.go (1019 lines)
 

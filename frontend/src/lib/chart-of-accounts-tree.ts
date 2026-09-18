@@ -169,6 +169,7 @@ export function buildChartOfAccountsTree(accounts: GLAccount[]): CategoryTreeGro
     }
 
     const rootNodes: AccountTreeNode[] = [];
+    const stack: AccountTreeNode[] = [];
 
     for (const acc of catAccounts) {
       const node = nodeMap.get(acc.accountcode)!;
@@ -181,7 +182,19 @@ export function buildChartOfAccountsTree(accounts: GLAccount[]): CategoryTreeGro
         // ปรับ level ให้ลึกกว่า parent
         node.level = Math.max(node.level, parentNode.level + 1);
       } else {
-        rootNodes.push(node);
+        // Stack-based hierarchical nesting using level (1..12) as in Champ / Thai ERP standards
+        const nodeLevel = node.level || 1;
+        while (stack.length > 0 && stack[stack.length - 1].level >= nodeLevel) {
+          stack.pop();
+        }
+        if (stack.length > 0) {
+          const parentNode = stack[stack.length - 1];
+          parentNode.children.push(node);
+          parentNode.hasChildren = true;
+        } else {
+          rootNodes.push(node);
+        }
+        stack.push(node);
       }
     }
 

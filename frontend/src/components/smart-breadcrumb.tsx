@@ -16,11 +16,12 @@ export interface SmartBreadcrumbProps {
 
 export function getBreadcrumbTrail(pathname: string, language: LanguageCode = "th") {
   if (!pathname || pathname === "/") return null;
+  const targetPath = pathname.startsWith("/gl/journal") ? "/gl/journals" : pathname;
 
   for (const section of MENU_SECTIONS) {
     for (const group of section.groups) {
       for (const item of group.items) {
-        if (item.route === pathname || (item.route.length > 1 && pathname.startsWith(item.route))) {
+        if (item.route === targetPath || (item.route.length > 1 && targetPath.startsWith(item.route))) {
           return {
             section: menuText(section.title, language),
             group: menuText(group.title, language),

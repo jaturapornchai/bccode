@@ -576,16 +576,17 @@ export function useReferences(refresh = 0) {
 
   return { accounts, years, error, reload };
 }
-export function useGLList<T extends GLRecord>(resource: GLResource, query = "", extra = "") {
+export function useGLList<T extends GLRecord>(resource: GLResource, query = "", extra = "", defaultLimit?: number) {
+  const limit = defaultLimit ?? (resource === "accounts" ? 1000 : 30);
   const [page, setPage] = useState(1), [revision, setRevision] = useState(0);
-  const [data, setData] = useState<GLPage<T>>({ items: [], total: 0, page: 1, limit: 30, sequence: 0 });
+  const [data, setData] = useState<GLPage<T>>({ items: [], total: 0, page: 1, limit, sequence: 0 });
   const [loading, setLoading] = useState(false), [error, setError] = useState("");
   useEffect(() => { let active = true; setLoading(true);
-    glRequest<GLPage<T>>(`${resource}?${new URLSearchParams({ q: query, page: String(page), limit: "30" })}${extra ? `&${extra}` : ""}`)
+    glRequest<GLPage<T>>(`${resource}?${new URLSearchParams({ q: query, page: String(page), limit: String(limit) })}${extra ? `&${extra}` : ""}`)
       .then((result) => { if (active) { setData({ ...result, items: result.items ?? [] }); setError(""); } })
       .catch((e: Error) => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [resource, query, page, revision, extra]);
+  }, [resource, query, page, revision, extra, limit]);
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   return { data, loading, error, page, setPage, reload };
 }

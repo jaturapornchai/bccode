@@ -22,6 +22,8 @@ import {
   FileText,
   Printer,
   ChevronRight,
+  CreditCard,
+  Wallet,
 } from "lucide-react";
 import {
   parseThaiBankStatement,
@@ -32,6 +34,8 @@ import {
   type BookTransaction,
   type BankReconciliationSummary,
 } from "@/lib/bank-reconciliation";
+import { ChequeManagementView } from "./cheque-management-view";
+import { PettyCashView } from "./petty-cash-view";
 
 interface BankingWorkbenchProps {
   route?: string;
@@ -47,6 +51,14 @@ export function BankingWorkbench({
   language: _language = "th",
 }: BankingWorkbenchProps) {
   const tr = useBackendText();
+
+  // Module Navigation Tab
+  const defaultTab = _route.includes("cheque")
+    ? "cheque"
+    : _route.includes("petty")
+      ? "petty"
+      : "recon";
+  const [activeTab, setActiveTab] = useState<"recon" | "cheque" | "petty">(defaultTab);
 
   // Selected Bank Account
   const [selectedBank, setSelectedBank] = useState<string>("111201");
@@ -181,8 +193,52 @@ export function BankingWorkbench({
 
   return (
     <div className="flex flex-col gap-5 p-2">
-      {/* Top Header Card */}
-      <Card className="border-border/60 shadow-sm">
+      {/* Module Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab("recon")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all shadow-xs ${
+            activeTab === "recon"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+              : "bg-background hover:bg-muted/70 text-muted-foreground border border-border/60"
+          }`}
+        >
+          <Building2 className="size-4" />
+          <span>กระทบยอดเงินฝากธนาคาร (Bank Feeds & Reconciliation)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("cheque")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all shadow-xs ${
+            activeTab === "cheque"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+              : "bg-background hover:bg-muted/70 text-muted-foreground border border-border/60"
+          }`}
+        >
+          <CreditCard className="size-4" />
+          <span>ทะเบียนเช็ครับ-จ่าย (Cheque Flow)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("petty")}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all shadow-xs ${
+            activeTab === "petty"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+              : "bg-background hover:bg-muted/70 text-muted-foreground border border-border/60"
+          }`}
+        >
+          <Wallet className="size-4" />
+          <span>เงินสดย่อย (Petty Cash Imprest)</span>
+        </button>
+      </div>
+
+      {activeTab === "recon" && (
+        <>
+          {/* Top Header Card */}
+          <Card className="border-border/60 shadow-sm">
         <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -637,6 +693,12 @@ export function BankingWorkbench({
           </Card>
         </div>
       )}
+        </>
+      )}
+
+      {activeTab === "cheque" && <ChequeManagementView />}
+
+      {activeTab === "petty" && <PettyCashView />}
     </div>
   );
 }

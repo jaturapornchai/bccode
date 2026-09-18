@@ -24,6 +24,7 @@ import { useBackendLanguage, backendText } from "@/lib/backend-language";
 import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { SmartBreadcrumb } from "@/components/smart-breadcrumb";
+import { ThaiDocumentPrintModal, type ThaiDocPrintType } from "@/components/thai-document-print-modal";
 import {
   type ErpTransactionDoc,
   type ErpDetailItem,
@@ -69,6 +70,14 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
 
   // Form State
   const [formDoc, setFormDoc] = useState<Partial<ErpTransactionDoc>>({});
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  const docPrintType: ThaiDocPrintType = useMemo(() => {
+    if (route.includes("purchase") || route.includes("rfq")) return "purchase_order";
+    if (route.includes("pay") || route.includes("expense")) return "payment_voucher";
+    if (route.includes("delivery") || route.includes("saleorder")) return "delivery_order";
+    return "tax_invoice";
+  }, [route]);
 
   const { confirm, confirmationDialog } = useConfirmDialog({
     defaultConfirmLabel: backendText(dictionary, "confirm", "ยืนยัน"),
@@ -377,6 +386,13 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
   return (
     <main className={containerClass} data-erp-module={config.moduleKey}>
       {confirmationDialog}
+
+      <ThaiDocumentPrintModal
+        open={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        doc={selectedDoc}
+        docType={docPrintType}
+      />
 
       {!embedded && <SmartBreadcrumb currentTitle={title} className="mb-3" />}
 
@@ -909,7 +925,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                     variant="outline"
                     size="sm"
                     className="h-9 text-xs"
-                    onClick={() => window.print()}
+                    onClick={() => setShowPrintModal(true)}
                   >
                     <Printer className="mr-1.5 size-3.5" />
                     {backendText(dictionary, "print_document", "พิมพ์เอกสาร")}

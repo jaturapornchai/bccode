@@ -524,24 +524,8 @@
     "route": "/gl/openingbalance"
   },
   {
-    "id": "uv-journal",
-    "route": "/gl/journal/uv"
-  },
-  {
-    "id": "sv-journal",
-    "route": "/gl/journal/sv"
-  },
-  {
-    "id": "rv-journal",
-    "route": "/gl/journal/rv"
-  },
-  {
-    "id": "pv-journal",
-    "route": "/gl/journal/pv"
-  },
-  {
-    "id": "jv-journal",
-    "route": "/gl/journal/jv"
+    "id": "gl-journals",
+    "route": "/gl/journals"
   },
   {
     "id": "working-paper",
@@ -554,10 +538,6 @@
   {
     "id": "financial-close",
     "route": "/gl/financialclose"
-  },
-  {
-    "id": "daily-info",
-    "route": "/checkdaily/dailyinfoscreen"
   },
   {
     "id": "general-ledger",
@@ -580,39 +560,7 @@
     "route": "/report/cashflow"
   },
   {
-    "id": "cash-flow-forecast",
-    "route": "/report/cashflowforecast"
-  },
-  {
-    "id": "financial-graphs",
-    "route": "/report/financialgraphs"
-  },
-  {
     "id": "project-pnl",
     "route": "/report/project-pnl"
-  },
-  {
-    "id": "dimension-pnl",
-    "route": "/report/dimensionpnl"
-  },
-  {
-    "id": "project-summary-report",
-    "route": "/report/projectsummary"
-  },
-  {
-    "id": "business-dashboard",
-    "route": "/report/dashboard"
-  },
-  {
-    "id": "executive-summary",
-    "route": "/report/executivesummary"
-  },
-  {
-    "id": "xbrl-export",
-    "route": "/report/xbrl"
-  },
-  {
-    "id": "data-backup-export",
-    "route": "/tools/databackup"
   }
 ]

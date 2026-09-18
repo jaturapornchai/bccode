@@ -355,6 +355,56 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
     expect(postHtml).toContain("เงินสดในมือ");
     expect(postHtml).toContain("บัญชีย่อย");
     expect(postHtml).toContain("L2");
+    expect(ctrlHtml).toContain("shrink-0");
+    expect(postHtml).toContain("shrink-0");
+  });
+
+  it("renders tree view with shrink-0 and overflow-y-auto to prevent vertical card overlap", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: "acc-1",
+            accountcode: "110101",
+            names: [{ code: "th", name: "เงินสดหน้าร้าน" }],
+            accounttype: "asset",
+            allowposting: true,
+            isactive: true,
+            version: 1,
+          } as unknown as GLAccount,
+        ],
+        total: 1,
+        page: 1,
+        limit: 1000,
+        sequence: 0,
+      },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+
+    vi.mocked(glCommon.useReferences).mockReturnValue({
+      accounts: [
+        {
+          id: "acc-1",
+          accountcode: "110101",
+          names: [{ code: "th", name: "เงินสดหน้าร้าน" }],
+          accounttype: "asset",
+          allowposting: true,
+          isactive: true,
+          version: 1,
+        } as GLAccount,
+      ],
+      years: [],
+      error: "",
+      reload: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "accounts", route: "/gl/accounts" }));
+    // Initially list view button exists with title 'มุมมองผังต้นไม้'
+    expect(html).toContain("title=\"มุมมองผังต้นไม้\"");
   });
 });
 

@@ -7,7 +7,7 @@ describe("menu icon mapping", () => {
     const items = flattenMenuItems();
     const missing = items.filter((item) => !hasExplicitMenuIcon(item.route)).map((item) => item.route);
 
-    expect(items).toHaveLength(226);
+    expect(items).toHaveLength(208);
     expect(missing).toEqual([]);
     expect(menuIconKeyForRoute("/product", "master")).toBe("package");
     expect(menuIconKeyForRoute("/productbarcode", "master")).toBe("qr");

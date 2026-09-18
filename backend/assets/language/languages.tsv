@@ -4608,7 +4608,7 @@ purchase_debit_note	บันทึกส่งคืนสินค้า/ล�
 expense_record	บันทึกจ่ายเงินอื่นๆ	Expense Record	费用记录	経費記録	កំណត់ត្រាចំណាយ	경비 기록	ບັນທຶກຄ່າໃຊ້ຈ່າຍ	အသုံးစရိတ်မှတ်တမ်း	Ghi nhận chi phí	Rekod Perbelanjaan	Catatan Pengeluaran	Talaan ng Gastos
 withholding_tax_deduction	ภาษีหัก ณ ที่จ่าย	Withholding Tax	代扣代缴税	源泉徴収税	ពន្ធកាត់ទុក	원천징수세	ອາກອນຫັກ ณ ບ່ອນຈ່າຍ	နုတ်ယူအခွန်	Thuế khấu trừ tại nguồn	Cukai Pegangan	Pajak Penghasilan Pasal 23	Buwis na Pinipigil
 fifo_cost_layers	ชั้นต้นทุนสต็อกเข้าก่อนออกก่อน	FIFO Cost Layers	先进先出成本层	FIFOコストレイヤー	ស្រទាប់ថ្លៃដើម FIFO	FIFO 원가 레이어	ຊັ້ນຕົ້ນທຶນ FIFO	FIFO ကုန်ကျစရိတ်အလွှာများ	Các lớp chi phí FIFO	Lapisan Kos FIFO	Lapisan Biaya FIFO	Mga Antas ng Gastos ng FIFO
-bank_statement	รายการเดินบัญชีธนาคาร	Bank Statement	银行对账单	銀行取引明細書	របាយការណ៍ធនាគារ	은행 거래 내역서	ລາຍການເຄື່ອນໄຫວບັນຊີທະນາຄານ	ဘဏ်ရှင်းတမ်း	Sao kê ngân hàng	Penyata Bank	Rekening Koran	Pahayag ng Bangko
+bank_statement	รายการเดินบัญชีธนาคาร	Bank Statement	银行对账单	銀行取引明細書	របាយการណ៍ធនាគារ	은행 거래 내역서	ລາຍການເຄື່ອນໄຫວບັນຊີທະນາຄານ	ဘဏ်ရှင်းတမ်း	Sao kê ngân hàng	Penyata Bank	Rekening Koran	Pahayag ng Bangko
 bank_reconcile	กระทบยอดเงินฝากธนาคาร	Bank Reconciliation	银行对账	銀行勘定調整	ការផ្ទៀងផ្ទាត់ធនាគារ	은행 계정 조정	ກວດສອບຍອດເງິນຝາກທະນາຄານ	ဘဏ်စာရင်းညှိနှိုင်းမှု	Đối chiếu ngân hàng	Penyesuaian Bank	Rekonsiliasi Bank	Rekonsilyasyon ng Bangko
 bank_rules	กฎจับคู่บัญชีอัตโนมัติ	Bank Matching Rules	银行对账规则	銀行照合ルール	ច្បាប់ផ្គូផ្គងធនាគារ	은행 매칭 규칙	ກົດຈັບຄູ່ບັນຊີອັດຕະໂນມັດ	ဘဏ်ကိုက်ညီမှုစည်းမျဉ်းများ	Quy tắc khớp ngân hàng	Peraturan Pemadanan Bank	Aturan Pencocokan Bank	Bank Matching Rules
 uv_journal	สมุดรายวันขาย	Sales Journal (UV)	销售日记账	売上仕訳帳	សៀវភៅកំណត់ហេតុលក់	매출 분개장	ປຶ້ມລາຍວັນຂາຍ	အရောင်းဂျာနယ်	Sổ nhật ký bán hàng	Jurnal Jualan	Jurnal Penjualan	Sales Journal
@@ -4616,6 +4616,7 @@ sv_journal	สมุดรายวันซื้อ	Purchase Journal (SV)	采�
 rv_journal	สมุดรายวันรับเงิน	Receipt Voucher Journal (RV)	收款日记账	入金仕訳帳	សៀវភៅកំណត់ហេតុទទួលប្រាក់	수금 분개장	ປຶ້ມລາຍວັນຮັບເງິນ	ငွေလက်ခံဂျာနယ်	Sổ nhật ký thu tiền	Jurnal Penerimaan	Jurnal Penerimaan Kas	Cash Receipts Journal
 pv_journal	สมุดรายวันจ่ายเงิน	Payment Voucher Journal (PV)	付款日记账	出金仕訳帳	សៀវភៅកំណត់ហេតុចំណាយប្រាក់	지급 분개장	ປຶ້ມລາຍວັນຈ່າຍເງິນ	ငွေပေးချေမှုဂျာနယ်	Sổ nhật ký chi tiền	Jurnal Pembayaran	Jurnal Pengeluaran Kas	Cash Disbursements Journal
 jv_journal	สมุดรายวันทั่วไป	General Journal (JV)	普通日记账	一般仕訳帳	សៀវភៅកំណត់ហេតុទូទៅ	일반 분개장	ປຶ້ມລາຍວັນທົ່ວໄປ	အထွေထွေဂျာနယ်	Sổ nhật ký chung	Jurnal Am	Jurnal Umum	General Journal
+gl_journals	สมุดรายวัน	Journals	日记账	仕訳帳	សៀវភៅកំណត់ហេតុ	분개장	ປຶ້ມລາຍວັນ	ဂျာနယ်များ	Sổ nhật ký	Jurnal	Jurnal	Journals
 chart_of_accounts	รายละเอียดผังบัญชี	Chart of Accounts	会计科目表	勘定科目一覧	តារាងគណនី	계정과목표	ຜັງບັນຊີ	စာရင်းဇယား	Hệ thống tài khoản kế toán	Carta Akaun	Bagan Akun	Talaan ng mga Account
 period_lock	กำหนดงวดบัญชี	Period Lock	会计期间锁定	会計期間ロック	ការចាក់សោរយៈពេលគណនេយ្យ	회계 기간 마감 잠금	ລັອກງວດບັນຊີ	ကာလပိတ်ဆို့ခြင်း	Khóa kỳ kế toán	Kunci Tempoh Perakaunan	Kunci Periode Akuntansi	Pagkandado ng Panahon
 fixed_assets	สินทรัพย์ถาวร	Fixed Assets	固定资产	固定資産	ទ្រព្យសកម្មថេរ	고정 자산	ຊັບສິນຄົງທີ່	ပုံသေပိုင်ဆိုင်မှုများ	Tài sản cố định	Aset Tetap	Aset Tetap	Fixed Assets
@@ -7745,3 +7746,7 @@ gl_cfo_cf_summary_title	สรุปการเปลี่ยนแปลง�
 gl_cfo_cf_beg_cash	เงินสดต้นงวด	Beginning Cash	期初现金	期首現金残高	សាច់ប្រាក់ដើមគ្រា	기초 현금	ເງິນສົດຕົ້ນງວດ	ကာလအစငွေသား	Tiền đầu kỳ	Tunai Awal	Kas Awal	Panimulang Pondo
 gl_cfo_cf_end_cash	เงินสดปลายงวด	Ending Cash	期末现金	期末現金残高	សាច់ប្រាក់ចុងគ្រា	기말 현금	ເງິນສົດປາຍງວດ	ကာလအဆုံးငွေသား	Tiền cuối kỳ	Tunai Akhir	Kas Akhir	Pangwakas na Pondo
 gl_cfo_cf_net_change	เงินสดเพิ่มขึ้นสุทธิ (Net Change)	Net Increase (Decrease) in Cash	现金净增加额 (Net Change)	現金の純増減額 (Net Change)	សាច់ប្រាក់កើនឡើងសុទ្ធ (Net Change)	현금의 순증감 (Net Change)	ເງິນສົດເພີ່ມຂຶ້ນສຸດທິ (Net Change)	အသားတင်ငွေသား တိုးတက်မှု (Net Change)	Tiền tăng (giảm) thuần (Net Change)	Peningkatan Bersih Tunai (Net Change)	Kenaikan Bersih Kas (Net Change)	Netong Pagtaas ng Pondo (Net Change)
+gl_auto_by_category	กำหนดตามหมวดบัญชี	Determined by Category	按科目类别确定	科目区分により決定	កំណត់តាមប្រភេទគណនី	계정 범주에 따름	ກຳນົດຕາມໝວດບັນຊີ	အမျိုးအစားအလိုက်သတ်မှတ်	Xác định theo loại tài khoản	Ditentukan mengikut kategori	Ditentukan berdasarkan kategori	Tinutukoy ayon sa kategorya
+gl_post_and_reverse	ผ่านรายการและยกเลิก	Posting & Reversal	过账与冲销	転記と取消	ការចុះបញ្ជី និងការលុបចោល	전기 및 취소	ຜ່ານລາຍການ ແລະ ຍົກເລີກ	စာရင်းသွင်းခြင်းနှင့် ပယ်ဖျက်ခြင်း	Ghi sổ và hủy	Posting & Pembalikan	Posting & Pembalikan	Pag-post at Pagbabaligtad
+gl_draft_to_post	รอผ่านรายการ (ฉบับร่าง)	Pending Posting (Draft)	待过账 (草稿)	転記待ち (下書き)	រង់ចាំការចុះបញ្ជី (សេចក្តីព្រាង)	전기 대기 (초안)	ລໍຖ້າຜ່ານລາຍການ (ສະບັບຮ່າງ)	စာရင်းသွင်းရန် စောင့်ဆိုင်းနေသည် (မူကြမ်း)	Chờ ghi sổ (Bản thảo)	Menunggu Posting (Draf)	Menunggu Posting (Draf)	Nakabinbin na Pag-post (Draft)
+gl_posted_to_reverse	ผ่านรายการแล้ว (ขอยกเลิก)	Posted (Reversal)	已过账 (冲销)	転記済み (取消)	បានចុះបញ្ជីរួច (ការលុបចោល)	전기 완료 (취소)	ຜ່ານລາຍການແລ້ວ (ຍົກເລີກ)	စာရင်းသွင်းပြီး (ပယ်ဖျက်)	Đã ghi sổ (Hủy/Đảo)	Telah Dipos (Pembalikan)	Sudah Diposting (Pembalikan)	Na-post Na (Pagbabaligtad)

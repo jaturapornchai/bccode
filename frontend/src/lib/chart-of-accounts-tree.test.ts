@@ -122,4 +122,72 @@ describe("chart-of-accounts-tree", () => {
     const liabilityGroup = filtered.find((g) => g.category === "liability")!;
     expect(liabilityGroup.totalAccounts).toBe(0);
   });
+
+  it("should automatically nest accounts by level when parentaccountcode is empty (Champ standard)", () => {
+    const champAccounts: GLAccount[] = [
+      {
+        accountcode: "1000",
+        names: [{ code: "th", name: "สินทรัพย์" }],
+        accounttype: "asset",
+        parentaccountcode: "",
+        normalbalance: "debit",
+        allowposting: false,
+        isactive: true,
+        accountgroup: "",
+        iscash: false,
+        level: 1,
+      },
+      {
+        accountcode: "1100",
+        names: [{ code: "th", name: "สินทรัพย์หมุนเวียน" }],
+        accounttype: "asset",
+        parentaccountcode: "",
+        normalbalance: "debit",
+        allowposting: false,
+        isactive: true,
+        accountgroup: "",
+        iscash: false,
+        level: 2,
+      },
+      {
+        accountcode: "1111",
+        names: [{ code: "th", name: "เงินสดในมือ" }],
+        accounttype: "asset",
+        parentaccountcode: "",
+        normalbalance: "debit",
+        allowposting: true,
+        isactive: true,
+        accountgroup: "",
+        iscash: false,
+        level: 3,
+      },
+      {
+        accountcode: "1112",
+        names: [{ code: "th", name: "เงินฝากธนาคาร" }],
+        accounttype: "asset",
+        parentaccountcode: "",
+        normalbalance: "debit",
+        allowposting: true,
+        isactive: true,
+        accountgroup: "",
+        iscash: false,
+        level: 3,
+      },
+    ];
+
+    const groups = buildChartOfAccountsTree(champAccounts);
+    const assetGroup = groups.find((g) => g.category === "asset")!;
+    expect(assetGroup.rootNodes.length).toBe(1); // 1000 is the root
+
+    const root1000 = assetGroup.rootNodes[0];
+    expect(root1000.account.accountcode).toBe("1000");
+    expect(root1000.children.length).toBe(1); // 1100
+
+    const child1100 = root1000.children[0];
+    expect(child1100.account.accountcode).toBe("1100");
+    expect(child1100.children.length).toBe(2); // 1111 and 1112
+    expect(child1100.children[0].account.accountcode).toBe("1111");
+    expect(child1100.children[1].account.accountcode).toBe("1112");
+  });
 });
+

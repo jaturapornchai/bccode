@@ -49,6 +49,7 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   else if (cleanRoute === "/gl/allocations") content = <GLAllocations route={cleanRoute} />;
   else if (masterRoutes[cleanRoute]) content = <GLMasters key={cleanRoute} resource={masterRoutes[cleanRoute] as Exclude<GLResource, "journals">} route={cleanRoute} />;
   else if (cleanRoute === "/gl/openingbalance") content = <GLJournals route={cleanRoute} kind="opening" />;
+  else if (cleanRoute === "/gl/journals" || cleanRoute === "/gl/journal") content = <GLJournals key="all" route={cleanRoute} book="" />;
   else if (cleanRoute.startsWith("/gl/journal/")) content = <GLJournals key={cleanRoute} route={cleanRoute} book={cleanRoute.split("/").at(-1)!.toUpperCase()} />;
   else if (cleanRoute === "/gl/posting" || cleanRoute === "/gl/unposting") content = <GLJournals key={cleanRoute} route={cleanRoute} mode={cleanRoute === "/gl/posting" ? "post" : "reverse"} />;
   else if (cleanRoute in processRoutes) content = <GLProcesses key={cleanRoute} route={cleanRoute} action={processRoutes[cleanRoute as keyof typeof processRoutes]} />;

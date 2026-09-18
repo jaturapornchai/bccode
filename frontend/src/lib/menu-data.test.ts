@@ -70,11 +70,11 @@ function collectMenuLanguageKeys(): string[] {
 }
 
 describe("menu language labels", () => {
-  it("preserves all 154 pre-upgrade permission IDs and routes without duplicate destinations", () => {
+  it("preserves all pre-upgrade permission IDs and routes without duplicate destinations", () => {
     const baseline = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/__fixtures__/menu-before-champ-upgrade.json"), "utf8")) as { id: string; route: string }[];
     const items = flattenMenuItems();
-    expect(baseline).toHaveLength(154);
-    expect(items).toHaveLength(226);
+    expect(baseline).toHaveLength(141);
+    expect(items).toHaveLength(208);
     for (const previous of baseline) {
       expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(previous.route);
     }

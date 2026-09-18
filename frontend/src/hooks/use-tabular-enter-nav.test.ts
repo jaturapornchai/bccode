@@ -77,6 +77,67 @@ describe("handleTabularEnterKey", () => {
     expect(handled).toBe(false);
   });
 
+  it("lets normal Tab move between inputs without preventDefault", () => {
+    const input1 = {
+      tagName: "INPUT",
+      hasAttribute: () => false,
+    } as unknown as HTMLElement;
+
+    const input2 = {
+      tagName: "INPUT",
+      hasAttribute: () => false,
+    } as unknown as HTMLElement;
+
+    const container = {
+      querySelectorAll: () => [input1, input2],
+    } as unknown as HTMLElement;
+
+    const preventDefault = vi.fn();
+    const onAddNewRow = vi.fn();
+
+    const handled = handleTabularEnterKey(
+      {
+        key: "Tab",
+        target: input1,
+        currentTarget: container,
+        preventDefault,
+      },
+      { onAddNewRow }
+    );
+
+    expect(handled).toBe(false);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(onAddNewRow).not.toHaveBeenCalled();
+  });
+
+  it("calls onAddNewRow when pressing Tab on the last input", () => {
+    const input1 = {
+      tagName: "INPUT",
+      hasAttribute: () => false,
+    } as unknown as HTMLElement;
+
+    const container = {
+      querySelectorAll: () => [input1],
+    } as unknown as HTMLElement;
+
+    const preventDefault = vi.fn();
+    const onAddNewRow = vi.fn();
+
+    const handled = handleTabularEnterKey(
+      {
+        key: "Tab",
+        target: input1,
+        currentTarget: container,
+        preventDefault,
+      },
+      { onAddNewRow }
+    );
+
+    expect(handled).toBe(true);
+    expect(preventDefault).toHaveBeenCalled();
+    expect(onAddNewRow).toHaveBeenCalled();
+  });
+
   it("exports useTabularEnterNav without error", () => {
     expect(typeof useTabularEnterNav).toBe("function");
   });

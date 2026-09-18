@@ -33,7 +33,9 @@ export function handleTabularEnterKey(
   options: TabularEnterNavOptions = {}
 ): boolean {
   if (options.enabled === false) return false;
-  if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) {
+  const isEnter = e.key === "Enter";
+  const isTab = e.key === "Tab";
+  if ((!isEnter && !isTab) || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) {
     return false;
   }
 
@@ -62,6 +64,17 @@ export function handleTabularEnterKey(
   const currentIndex = elements.indexOf(target);
   if (currentIndex === -1) return false;
 
+  // On Tab: let browser handle normal tab movement until the last element
+  if (isTab) {
+    if (currentIndex === elements.length - 1 && options.onAddNewRow) {
+      e.preventDefault?.();
+      options.onAddNewRow();
+      return true;
+    }
+    return false;
+  }
+
+  // On Enter: always advance focus or add new row
   e.preventDefault?.();
 
   if (currentIndex < elements.length - 1) {

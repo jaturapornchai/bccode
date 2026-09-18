@@ -8,22 +8,22 @@ describe("smart-breadcrumb", () => {
   });
 
   it("finds GL journal screen in breadcrumb hierarchy", () => {
-    const trail = getBreadcrumbTrail("/gl/journal/jv", "th");
+    const trail = getBreadcrumbTrail("/gl/journals", "th");
     expect(trail).not.toBeNull();
-    expect(trail?.item).toBe("สมุดรายวันทั่วไป");
-    expect(trail?.route).toBe("/gl/journal/jv");
+    expect(trail?.item).toBe("สมุดรายวัน");
+    expect(trail?.route).toBe("/gl/journals");
     expect(trail?.group).toBe("สมุดรายวันและงานประจำ");
   });
 
   it("finds english labels when language is en", () => {
-    const trail = getBreadcrumbTrail("/gl/journal/jv", "en");
+    const trail = getBreadcrumbTrail("/gl/journals", "en");
     expect(trail).not.toBeNull();
-    expect(trail?.item).toBe("General Journal (JV)");
+    expect(trail?.item).toBe("Journals");
   });
 
   it("matches prefix routes for dynamic subpaths", () => {
-    const trail = getBreadcrumbTrail("/gl/journal/jv/edit/123", "th");
+    const trail = getBreadcrumbTrail("/gl/journals/edit/123", "th");
     expect(trail).not.toBeNull();
-    expect(trail?.item).toBe("สมุดรายวันทั่วไป");
+    expect(trail?.item).toBe("สมุดรายวัน");
   });
 });

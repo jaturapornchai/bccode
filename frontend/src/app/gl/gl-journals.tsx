@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { amountString, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
+import { amountString, amountUnits, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
@@ -16,10 +16,51 @@ import { JournalFastTemplatesDialog, type FastTemplateApplyData } from "./journa
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
+export const JOURNAL_BOOK_TABS: readonly { code: string; label: GLLabel; badgeClass: string }[] = [
+  { code: "", label: ["gl_all", "ทั้งหมด"], badgeClass: "bg-muted text-muted-foreground border-border" },
+  { code: "UV", label: ["gl_sales_journal", "สมุดรายวันขาย"], badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
+  { code: "SV", label: ["gl_purchase_journal", "สมุดรายวันซื้อ"], badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" },
+  { code: "RV", label: ["gl_cash_receipts_journal", "สมุดรายวันรับเงิน"], badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
+  { code: "PV", label: ["gl_cash_payments_journal", "สมุดรายวันจ่ายเงิน"], badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
+  { code: "JV", label: ["gl_general_journal", "สมุดรายวันทั่วไป"], badgeClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" },
+] as const;
+
+/**
+ * Intelligent helper to create the next journal row with automatic debit/credit balance.
+ * If debit > credit, pre-fills remaining credit.
+ * If credit > debit, pre-fills remaining debit.
+ */
+export function createSmartNextLine(lines: GLLine[], scale = 2): GLLine {
+  let totalDebit = 0n;
+  let totalCredit = 0n;
+  for (const line of lines) {
+    try {
+      if (line.debit && line.debit !== "0") totalDebit += amountUnits(line.debit);
+    } catch {}
+    try {
+      if (line.credit && line.credit !== "0") totalCredit += amountUnits(line.credit);
+    } catch {}
+  }
+  const diff = totalDebit - totalCredit;
+  const line = emptyLine();
+  if (diff > 0n) {
+    line.credit = amountString(diff, scale);
+  } else if (diff < 0n) {
+    line.debit = amountString(-diff, scale);
+  }
+  return line;
+}
+
 export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { route: string; book?: string; kind?: string; mode?: "edit" | "post" | "reverse" }) {
   const tr = useGLText();
+  const [selectedBook, setSelectedBook] = useState(book || "");
+  const activeBook = selectedBook || "";
+  const isPostingRoute = mode === "post" || mode === "reverse";
+  const [postingSubTab, setPostingSubTab] = useState<"draft" | "posted">(mode === "reverse" ? "posted" : "draft");
+  const effectiveMode = isPostingRoute ? (postingSubTab === "posted" ? "reverse" : "post") : mode;
   const [search, setSearch] = useState("");
-  const filters = new URLSearchParams({ ...(book ? { bookcode: book } : {}), ...(kind ? { kind } : {}), ...(mode === "post" ? { status: "draft" } : mode === "reverse" ? { status: "posted" } : {}) }).toString();
+  const activeStatus = effectiveMode === "post" ? "draft" : effectiveMode === "reverse" ? "posted" : "";
+  const filters = new URLSearchParams({ ...(activeBook ? { bookcode: activeBook } : {}), ...(kind ? { kind } : {}), ...(activeStatus ? { status: activeStatus } : {}) }).toString();
   const list = useGLList<GLJournal>("journals", search, filters), refs = useReferences();
   const searchDebounce = useDebouncedSearch({
     onSearch: (val) => {
@@ -50,6 +91,22 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   }, [journal, refs.accounts, year?.scale]);
   const patch = (value: Partial<GLJournal>) => setJournal((current) => current ? { ...current, ...value } : current);
   const patchLine = (index: number, value: Partial<GLLine>) => patch({ lines: journal!.lines.map((line, i) => i === index ? { ...line, ...value } : line) });
+
+  const addNewLine = () => {
+    if (!journal || journal.lines.length >= 500) return;
+    const nextLine = createSmartNextLine(journal.lines, year?.scale ?? 2);
+    patch({ lines: [...journal.lines, nextLine] });
+    requestAnimationFrame(() => {
+      const table = document.querySelector(".gl-workbench table");
+      if (!table) return;
+      const rows = table.querySelectorAll("tbody tr");
+      const lastRow = rows[rows.length - 1];
+      if (lastRow) {
+        const input = lastRow.querySelector<HTMLElement>("input:not([disabled]):not([readonly]), button:not([disabled])");
+        input?.focus?.();
+      }
+    });
+  };
 
   const patternSuggestions = useMemo(() => {
     if (!journal?.description || journal.description.trim().length < 2) return [];
@@ -84,9 +141,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
   const tabularEnterNav = useTabularEnterNav({
     onAddNewRow: () => {
-      if (journal && journal.lines.length < 500) {
-        patch({ lines: [...journal.lines, emptyLine()] });
-      }
+      addNewLine();
     },
   });
 
@@ -153,7 +208,8 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
   async function openCreate() {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
-    const value = emptyJournal(book || "JV", kind || "manual");
+    const initialBook = activeBook || "JV";
+    const value = emptyJournal(initialBook, kind || "manual");
     setJournal(value);
     setOriginal(JSON.stringify(value));
     setIsEditing(true);
@@ -197,7 +253,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
   useFormShortcuts({
     onSave: () => void save(),
-    onNew: mode === "edit" ? () => void openCreate() : undefined,
+    onNew: effectiveMode === "edit" ? () => void openCreate() : undefined,
     onCancel: isEditing ? () => void cancelEdit() : undefined,
     canSave: isEditing && dirty && !busy,
     disabled: busy,
@@ -268,7 +324,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
                   <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
-                  {mode === "edit" && (
+                  {effectiveMode === "edit" && (
                     <Button type="button" className={actionClass} disabled={busy} onClick={() => void openCreate()}>
                       <Plus className="size-4 mr-1.5" />
                       <span>{tr("gl_add_row", "เพิ่มรายการ")}</span>
@@ -280,6 +336,81 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   <Button type="button" variant="outline" className={actionClass} aria-pressed={density.compact} onClick={density.toggle}>{density.compact ? tr("gl_expand_row", "ขยายบรรทัด") : tr("gl_collapse_row", "ย่อบรรทัด")}</Button>
                 </div>
               </form>
+
+              {/* Posting & Reversal Dual-Tabs (รวมหน้าผ่านรายการและยกเลิกเข้าด้วยกันตามต้นแบบ Champ) */}
+              {isPostingRoute && (
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border shrink-0" role="tablist" aria-label={tr("gl_post_and_reverse", "ผ่านรายการและยกเลิก")}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={postingSubTab === "draft"}
+                    onClick={() => {
+                      setPostingSubTab("draft");
+                      setJournal(null);
+                      setOriginal("");
+                      list.setPage(1);
+                    }}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      postingSubTab === "draft"
+                        ? "bg-primary text-primary-foreground shadow-sm font-bold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <FileText className="size-3.5" />
+                    <span>{tr("gl_draft_to_post", "รอผ่านรายการ (ฉบับร่าง)")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={postingSubTab === "posted"}
+                    onClick={() => {
+                      setPostingSubTab("posted");
+                      setJournal(null);
+                      setOriginal("");
+                      list.setPage(1);
+                    }}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      postingSubTab === "posted"
+                        ? "bg-primary text-primary-foreground shadow-sm font-bold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <CheckCircle2 className="size-3.5" />
+                    <span>{tr("gl_posted_to_reverse", "ผ่านรายการแล้ว (ขอยกเลิก)")}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Journal Book Category Tabs (แยกกันข้างในตามคำสั่งลุงจืด) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" role="tablist" aria-label={tr("gl_journal", "สมุดรายวัน")}>
+                {JOURNAL_BOOK_TABS.map((tab) => {
+                  const isActive = activeBook === tab.code;
+                  return (
+                    <button
+                      key={tab.code || "ALL"}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => {
+                        setSelectedBook(tab.code);
+                        list.setPage(1);
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border shadow-2xs ${
+                        isActive
+                          ? "bg-primary text-primary-foreground border-primary shadow-xs font-bold"
+                          : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/80 border-border/70"
+                      }`}
+                    >
+                      <span>{tr(...tab.label)}</span>
+                      {tab.code && (
+                        <span className={`rounded px-1.5 py-0.2 text-[10px] font-mono font-bold ${isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground border border-border/60"}`}>
+                          {tab.code}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground/80">{tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}</span>
                 {density.compact && <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{tr("gl_collapse_row_mode", "โหมดย่อบรรทัด")}</span>}
@@ -316,7 +447,19 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       >
                         <td className="whitespace-nowrap p-2">
                           <div className="text-[0.85rem] text-muted-foreground">{item.date}</div>
-                          <span className="font-mono font-bold text-primary">{item.docno}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-primary">{item.docno}</span>
+                            {item.bookcode && (
+                              <span
+                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-mono font-bold border ${
+                                  JOURNAL_BOOK_TABS.find((t) => t.code === item.bookcode)?.badgeClass ?? "bg-muted text-muted-foreground border-border"
+                                }`}
+                                title={labelText(bookLabels, item.bookcode, tr)}
+                              >
+                                {item.bookcode}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="max-w-60 truncate p-2" title={item.description}>{item.description}</td>
                         <td className="whitespace-nowrap p-2 text-center">
@@ -332,7 +475,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         </td>
                         <td className="p-2 text-right whitespace-nowrap pr-2" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
-                            {isDraft && mode === "edit" ? (
+                            {isDraft && effectiveMode === "edit" ? (
                               <>
                                 <Button
                                   type="button"
@@ -417,7 +560,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {journal.status === "draft" && mode === "edit" && (
+                    {journal.status === "draft" && effectiveMode === "edit" && (
                       <Button
                         type="button"
                         className={actionClass}
@@ -466,7 +609,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             <th className="p-2 text-right">{tr("gl_debit", "เดบิต")}</th>
                             <th className="p-2 text-right">{tr("gl_credit", "เครดิต")}</th>
                             <th className="p-2">{tr("gl_department_project", "แผนก / โครงการ")}</th>
-                            <th className="p-2">{tr("gl_cash_flow", "กระแสเงินสด")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -484,9 +626,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                               </td>
                               <td className="min-w-32 p-2">
                                 <span className="text-sm">{line.departmentcode || line.projectcode ? `${line.departmentcode || "-"}${line.projectcode ? ` / ${line.projectcode}` : ""}` : "—"}</span>
-                              </td>
-                              <td className="min-w-36 p-2">
-                                <span className="text-xs text-muted-foreground">{line.cashflow || tr("gl_not_specified_2", "ไม่ระบุ")}</span>
                               </td>
                             </tr>
                           ))}
@@ -517,7 +656,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 </div>
                 <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
                   <div className="flex flex-wrap gap-2">
-                    {journal.status === "draft" && mode === "edit" && (
+                    {journal.status === "draft" && effectiveMode === "edit" && (
                       <Button
                         type="button"
                         className={actionClass}
@@ -611,11 +750,23 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   <fieldset disabled={busy} className="grid min-w-0 gap-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} required value={journal.docno} maxLength={60} onChange={(e) => patch({ docno: e.target.value })} /></Field>
-                      <Field label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} required type="date" value={journal.date} onChange={(e) => patch({ date: e.target.value })} /></Field>
+                      <Field label={tr("gl_document_date", "วันที่เอกสาร")}>
+                        <input
+                          className={control}
+                          required
+                          type="date"
+                          value={journal.date}
+                          onChange={(e) => {
+                            const newDate = e.target.value;
+                            const matched = refs.years.find((y) => newDate >= y.startdate && newDate <= y.enddate)?.code;
+                            patch({ date: newDate, ...(matched ? { fiscalyear: matched } : {}) });
+                          }}
+                        />
+                      </Field>
                       <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={journal.fiscalyear} onChange={(fiscalyear) => patch({ fiscalyear })} /></Field>
                       <Field label={tr("gl_journal", "สมุดรายวัน")}>
                         <Combobox
-                          disabled={!!book}
+                          disabled={!isEditing || busy}
                           value={journal.bookcode}
                           onChange={(val) => patch({ bookcode: String(val) })}
                           placeholder={tr("gl_journal", "สมุดรายวัน")}
@@ -666,7 +817,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             <th className="p-2">{tr("gl_debit", "เดบิต")}</th>
                             <th className="p-2">{tr("gl_credit", "เครดิต")}</th>
                             <th className="p-2">{tr("gl_department_project", "แผนก / โครงการ")}</th>
-                            <th className="p-2">{tr("gl_cash_flow", "กระแสเงินสด")}</th>
                             <th className="p-2">{tr("gl_manage", "จัดการ")}</th>
                           </tr>
                         </thead>
@@ -691,19 +841,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                   <input className={control} aria-label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} placeholder={tr("gl_project", "โครงการ")} value={line.projectcode} onChange={(e) => patchLine(index, { projectcode: e.target.value })} />
                                 </div>
                               </td>
-                              <td className="min-w-36 p-2">
-                                <Combobox
-                                  aria-label={tr("gl_cash_flow_line", "กระแสเงินสดบรรทัด {0}").replace("{0}", String(index + 1))}
-                                  value={line.cashflow}
-                                  onChange={(val) => patchLine(index, { cashflow: String(val) })}
-                                  placeholder={tr("gl_not_specified_2", "ไม่ระบุ")}
-                                >
-                                  <option value="">{tr("gl_not_specified_2", "ไม่ระบุ")}</option>
-                                  <option value="operating">{tr("gl_operating", "ดำเนินงาน")}</option>
-                                  <option value="investing">{tr("gl_investing", "ลงทุน")}</option>
-                                  <option value="financing">{tr("gl_raise_funds", "จัดหาเงิน")}</option>
-                                </Combobox>
-                              </td>
                               <td className="p-2">
                                 <Button type="button" variant="outline" className={actionClass} disabled={busy || journal.lines.length <= 2} onClick={() => patch({ lines: journal.lines.filter((_, i) => i !== index) })}>
                                   {tr("gl_remove", "นำออก")}
@@ -725,7 +862,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         <Sparkles className="size-4 mr-1.5 text-amber-600 dark:text-amber-400" />
                         <span>{tr("gl_fast_templates_btn", "แม่แบบบันทึกด่วน")}</span>
                       </Button>
-                      <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => patch({ lines: [...journal.lines, emptyLine()] })}>
+                      <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => addNewLine()}>
                         <Plus className="size-4 mr-1.5" />{tr("gl_add_line", "เพิ่มบรรทัด")}
                       </Button>
                       <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => void handlePasteClick()} title="Paste rows from Excel or Google Sheets (Ctrl+V)">
@@ -894,7 +1031,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
               </div>
               <h2 className="text-base font-semibold">{tr("gl_select_item_show_acct", "เลือกรายการเพื่อแสดงข้อมูลบัญชี")}</h2>
               <p className="text-sm text-muted-foreground">{tr("gl_click_row_or_add_journal", "คลิกที่แถวในตารางเพื่อแสดงข้อมูล หรือกดปุ่ม &ldquo;+ เพิ่มรายการ&rdquo; เพื่อบันทึกรายวันใหม่")}</p>
-              {mode === "edit" && (
+              {effectiveMode === "edit" && (
                 <div className="pt-2">
                   <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}>
                     <Plus className="size-4 mr-1.5" />{tr("gl_save_new_journal", "บันทึกรายวันใหม่")}

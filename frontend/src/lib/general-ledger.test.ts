@@ -44,11 +44,14 @@ describe("general ledger exact accounting helpers", () => {
     const childAcc = { ...defaultAcc, accountcode: "1101", parentaccountcode: "1100", level: 2 };
     expect(childAcc.level).toBe(2);
   });
-  it("covers the exact 38 existing GL menu routes", () => {
-    expect(GL_MENU_ITEMS).toHaveLength(38);
-    expect(new Set(GL_MENU_ITEMS.map((item) => item.route)).size).toBe(38);
+  it("covers the exact 20 existing GL menu routes", () => {
+    expect(GL_MENU_ITEMS).toHaveLength(20);
+    expect(new Set(GL_MENU_ITEMS.map((item) => item.route)).size).toBe(20);
     expect(GL_MENU_ITEMS.every((item) => isGeneralLedgerRoute(item.route))).toBe(true);
     expect(isGeneralLedgerRoute("/report/ledger?accountcode=A")).toBe(true);
+    expect(isGeneralLedgerRoute("/gl/journals")).toBe(true);
+    expect(isGeneralLedgerRoute("/gl/unposting")).toBe(true);
+    expect(isGeneralLedgerRoute("/gl/journal/jv")).toBe(true);
     expect(isGeneralLedgerRoute("/employee")).toBe(false);
   });
 

@@ -1,4 +1,4 @@
-﻿import { MENU_SECTIONS } from "./menu-data";
+import { MENU_SECTIONS } from "./menu-data";
 
 export type GLIdentity = { id?: string; version?: number; isdeleted?: boolean };
 export type GLAccount = GLIdentity & {
@@ -46,7 +46,7 @@ export type GLCommand = {
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "cashflow", "cashflowforecast", "financialgraphs", "project-pnl", "dimensionpnl", "projectsummary", "dashboard", "executivesummary", "workingpaper", "daily-check", "annual-balances"] as const;
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items);
-export function isGeneralLedgerRoute(route: string) { return GL_MENU_ITEMS.some((item) => item.route === route.split("?")[0]); }
+export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
 /** Screen text follows the selected language (AGENTS.md 2026-09-14): [languages.tsv key, Thai fallback]. */
 export type GLLabel = readonly [key: string, thai: string];
 export type GLTextFn = (key: string, fallback: string) => string;

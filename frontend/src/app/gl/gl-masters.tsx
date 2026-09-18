@@ -82,9 +82,9 @@ export function TreeNodeRow({
   const isExpanded = expandedNodes[acc.accountcode] ?? (depth < 2);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col shrink-0">
       <div
-        className={`group flex items-center justify-between gap-2 px-3 py-1.5 cursor-pointer transition-colors text-[0.95rem] border-b border-border/40 ${
+        className={`group flex items-center justify-between gap-2 px-3 py-1.5 min-h-[38px] cursor-pointer transition-colors text-[0.95rem] border-b border-border/40 shrink-0 ${
           isRowEditing
             ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
             : isSelected
@@ -495,15 +495,15 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
         </div>
       </div>
       {isAcc && viewMode === "tree" ? (
-        <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm p-2 flex flex-col gap-2.5 bg-card" aria-busy={list.loading}>
+        <div className="flex-1 min-h-[300px] overflow-y-auto rounded-xl border border-border shadow-sm p-2 flex flex-col gap-2.5 bg-card" aria-busy={list.loading}>
           {treeGroups.map((group) => {
             const isCatExpanded = expandedCategories[group.category] ?? true;
             return (
-              <div key={group.category} className="rounded-xl border border-border/70 overflow-hidden bg-background shadow-xs">
+              <div key={group.category} className="shrink-0 rounded-xl border border-border/70 overflow-hidden bg-background shadow-xs">
                 {/* Category Header */}
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between p-2.5 bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer text-left select-none"
+                  className="w-full flex items-center justify-between p-2.5 bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer text-left select-none shrink-0"
                   onClick={() => toggleCategory(group.category)}
                 >
                   <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
 
                 {/* Root Nodes */}
                 {isCatExpanded && (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col shrink-0">
                     {group.rootNodes.map((node) => (
                       <TreeNodeRow
                         key={node.account.accountcode}
@@ -678,8 +678,12 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
           </table>
         </div>
       )}
-      {(!isAcc || viewMode === "list") && (
+      {!isAcc ? (
         <Pager page={list.page} total={list.data.total} onPage={list.setPage} loading={list.loading} />
+      ) : (
+        <div className="flex items-center justify-between border-t border-border pt-2 text-[0.95rem] text-muted-foreground">
+          <span>{tr("gl_x_items", "{0} รายการ").replace("{0}", list.data.total.toLocaleString("th-TH"))} ({tr("gl_all_types", "ทั้งหมด")})</span>
+        </div>
       )}
     </div>} editor={record ? (
 
@@ -873,37 +877,116 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   </div>;
 }
 
-function AccountFields({ value, set, accounts }: { value: GLAccount; set: (patch: object) => void; accounts: GLAccount[] }) {
+function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) => void; accounts?: GLAccount[] }) {
   const tr = useGLText();
-  const onParentChange = (parentaccountcode: string) => {
-    const parent = accounts.find((a) => a.accountcode === parentaccountcode);
-    const suggestedLevel = parent ? (parent.level || 1) + 1 : 1;
-    set({ parentaccountcode, level: Math.min(12, Math.max(1, suggestedLevel)) });
-  };
   const thName = (value.names || []).find((name) => name.code === "th")?.name ?? "";
   const enName = (value.names || []).find((name) => name.code === "en")?.name ?? "";
 
-  return <>{value.id && <Notice text={tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน")} />}<div className="grid gap-3 sm:grid-cols-2">
-    <Field label={tr("gl_account_code", "รหัสบัญชี")}><input className={control} data-field="accountcode" required disabled={!!value.id} value={value.accountcode || ""} onChange={(e) => set({ accountcode: e.target.value })} maxLength={60} /></Field>
-    <Field label={tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย")}><input className={control} data-field="accountnameth" required value={thName} onChange={(e) => {
-      const currentNames = (value.names || []).filter((name) => name.code !== "th");
-      set({ names: [...currentNames, { code: "th", name: e.target.value }] });
-    }} maxLength={300} /></Field>
-    <Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ")}><input className={control} data-field="accountnameen" value={enName} onChange={(e) => {
-      const currentNames = (value.names || []).filter((name) => name.code !== "en");
-      set({ names: [...currentNames, { code: "en", name: e.target.value }] });
-    }} maxLength={300} placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")} /></Field>
-    <Field label={tr("gl_account_category", "หมวดบัญชี")}><Combobox value={value.accounttype || "asset"} onChange={(accounttype) => set({ accounttype })}>{Object.entries(accountTypeLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</Combobox></Field>
-    <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}><ChoiceSelect value={value.normalbalance || "debit"} onChange={(normalbalance) => set({ normalbalance })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field>
-    <Field label={tr("gl_parent_account", "บัญชีแม่")}><AccountSelect field="parentaccountcode" value={value.parentaccountcode || ""} onChange={onParentChange} accounts={accounts.filter((item) => item.accountcode !== value.accountcode)} all label={tr("gl_parent_account", "บัญชีแม่")} /></Field>
-    <Field label={tr("gl_account_level_range", "ระดับบัญชี (1–12)")}><Combobox data-field="level" aria-label={tr("gl_account_level", "ระดับบัญชี")} value={value.level ?? 1} onChange={(level) => set({ level: Number(level) })}>{Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => <option key={lvl} value={lvl}>{tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))}</option>)}</Combobox></Field>
-    <Field label={tr("gl_coa_group_code", "รหัสกลุ่มผังบัญชี")}><input className={control} value={value.accountgroup || ""} onChange={(e) => set({ accountgroup: e.target.value })} /></Field>
-    <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
-      <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
-      <Check label={tr("gl_allow_posting", "อนุญาตให้ลงรายการ")} checked={value.allowposting ?? true} onChange={(allowposting) => set({ allowposting })} />
-      <Check label={tr("gl_cash_and_cash_equivalents", "บัญชีเงินสดและรายการเทียบเท่าเงินสด")} checked={value.iscash ?? false} onChange={(iscash) => set({ iscash })} />
-    </div>
-  </div></>;
+  const handleTypeChange = (accounttype: string) => {
+    const normalbalance = accounttype === "asset" || accounttype === "expense" ? "debit" : "credit";
+    set({ accounttype, normalbalance });
+  };
+
+  return (
+    <>
+      {value.id && (
+        <Notice
+          text={tr(
+            "gl_coa_referenced_no_delete",
+            "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน"
+          )}
+        />
+      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={tr("gl_account_code", "รหัสบัญชี")}>
+          <input
+            className={control}
+            data-field="accountcode"
+            required
+            disabled={!!value.id}
+            value={value.accountcode || ""}
+            onChange={(e) => set({ accountcode: e.target.value })}
+            maxLength={20}
+          />
+        </Field>
+        <Field label={tr("gl_account_level_range", "ระดับบัญชี (1–12)")}>
+          <Combobox
+            data-field="level"
+            aria-label={tr("gl_account_level", "ระดับบัญชี")}
+            value={value.level ?? 1}
+            onChange={(level) => set({ level: Number(level) })}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => (
+              <option key={lvl} value={lvl}>
+                {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))}
+              </option>
+            ))}
+          </Combobox>
+        </Field>
+        <Field label={tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย")}>
+          <input
+            className={control}
+            data-field="accountnameth"
+            required
+            value={thName}
+            onChange={(e) => {
+              const currentNames = (value.names || []).filter((name) => name.code !== "th");
+              set({ names: [...currentNames, { code: "th", name: e.target.value }] });
+            }}
+            maxLength={100}
+          />
+        </Field>
+        <Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ")}>
+          <input
+            className={control}
+            data-field="accountnameen"
+            value={enName}
+            onChange={(e) => {
+              const currentNames = (value.names || []).filter((name) => name.code !== "en");
+              set({ names: [...currentNames, { code: "en", name: e.target.value }] });
+            }}
+            maxLength={100}
+            placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")}
+          />
+        </Field>
+        <Field label={tr("gl_account_category", "หมวดบัญชี")}>
+          <Combobox
+            value={value.accounttype || "asset"}
+            onChange={handleTypeChange}
+          >
+            {Object.entries(accountTypeLabels).map(([code, name]) => (
+              <option key={code} value={code}>
+                {tr(...name)}
+              </option>
+            ))}
+          </Combobox>
+        </Field>
+        <div className="flex flex-col justify-center">
+          <div className="text-xs text-muted-foreground mb-1 font-medium">{tr("gl_normal_balance", "ยอดคงเหลือปกติ")}</div>
+          <div className="flex items-center gap-2 h-9 px-3 rounded-lg bg-muted/40 border border-border/60 text-sm font-semibold text-foreground">
+            {value.accounttype === "asset" || value.accounttype === "expense" ? (
+              <span className="text-blue-600 dark:text-blue-400">{tr("gl_debit", "เดบิต")} (Dr.)</span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400">{tr("gl_credit", "เครดิต")} (Cr.)</span>
+            )}
+            <span className="text-xs text-muted-foreground font-normal">({tr("gl_auto_by_category", "กำหนดตามหมวดบัญชี")})</span>
+          </div>
+        </div>
+        <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 border-t border-border/50">
+          <Check
+            label={tr("gl_enabled", "เปิดใช้งาน")}
+            checked={value.isactive ?? true}
+            onChange={(isactive) => set({ isactive })}
+          />
+          <Check
+            label={tr("gl_allow_posting", "บันทึกบัญชีได้ (IsGLAccess)")}
+            checked={value.allowposting ?? true}
+            onChange={(allowposting) => set({ allowposting })}
+          />
+        </div>
+      </div>
+    </>
+  );
 }
 function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: (patch: object) => void; accounts: GLAccount[] }) {
   const tr = useGLText();
