@@ -20,6 +20,7 @@ import {
   sendFixedAssetCommand,
   assetName,
 } from "@/lib/fixed-assets";
+import { THAI_ASSET_CATEGORIES } from "@/lib/fixed-assets-engine";
 
 interface FixedAssetsScreenProps {
   route: string;
@@ -464,6 +465,32 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                   <h2 className="text-lg font-bold text-foreground border-b border-border/60 pb-3">
                     {editForm.id ? tr("fa_edit_asset_information", "แก้ไขข้อมูลสินทรัพย์") : tr("fa_add_new_fixed_asset", "เพิ่มสินทรัพย์ถาวรใหม่")}
                   </h2>
+                  <div className="flex flex-wrap items-center gap-1.5 py-2">
+                    <span className="text-xs font-semibold text-muted-foreground mr-1">
+                      {tr("fa_preset_label", "แม่แบบภาษี ม.65 ทวิ (2):")}
+                    </span>
+                    {THAI_ASSET_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.categoryCode}
+                        type="button"
+                        onClick={() => {
+                          setEditForm((prev) => ({
+                            ...prev,
+                            assettypecode: cat.categoryCode,
+                            usefullifeyears: cat.standardUsefulLifeYears,
+                            deprecpercent: cat.standardDeprecPercent.toFixed(2),
+                          }));
+                        }}
+                        className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                          editForm.assettypecode === cat.categoryCode
+                            ? "bg-primary text-primary-foreground border-primary font-semibold shadow-xs"
+                            : "bg-muted/50 hover:bg-muted text-foreground border-border/60"
+                        }`}
+                      >
+                        {cat.nameTh} ({cat.standardDeprecPercent}%)
+                      </button>
+                    ))}
+                  </div>
                   <div className="grid grid-cols-2 gap-4 text-sm max-h-[60vh] overflow-y-auto pr-1">
                     <div>
                       <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_asset_code", "รหัสสินทรัพย์")}</label>

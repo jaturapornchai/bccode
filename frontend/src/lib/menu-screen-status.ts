@@ -9,6 +9,7 @@ import { getThaiTaxConfig } from "./thai-tax";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
+  "/banking/reconciliation", "/banking/statements",
   "/shortcuts", "/line-oa", "/product",
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph", "/inventory/product-sets", "/productset",

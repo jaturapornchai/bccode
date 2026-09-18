@@ -196,7 +196,6 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
   - `frontend/src/app/gl/gl-masters.tsx`: ยอดคงเหลือปกติ (`normalbalance`: เดบิต/เครดิต), ทิศทางเงิน (`direction`: เงินเข้า/เงินออก), ด้านบัญชีกฎการเชื่อมบัญชี (`rule.side`: เดบิต/เครดิต)
   - `frontend/src/app/asset/fixed-assets-screen.tsx`: ประเภทการจำหน่ายสินทรัพย์ (`disposaltype`: ขาย / ตัดจำหน่ายชำรุด / ขายเป็นเศษซาก)
   - `frontend/src/app/system-settings/company-branch-tree-view.tsx`: ปีศักราชที่ใช้ (`formYearType`: พ.ศ. / ค.ศ.), ประเภทสาขา ภ.พ.20 (`formBranchType`: สาขาถาวร / สาขาชั่วคราว)
-  - `frontend/src/app/tools/erp-tools-screen.tsx`: รอบปีบัญชีเครื่องมือปิดงวด (`selectedYear`: 3 ปี)
   - `frontend/src/app/tax/tax-filing-workbench.tsx`: ปีงวดภาษี (`selectedYear`: 2569 / 2568)
   - `frontend/src/components/system-settings/copy-uat-panel.tsx`: สิ่งแวดล้อมต้นทาง (`sourceEnvironment`: UAT / PRO)
 
@@ -204,6 +203,69 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 **ผลการทดสอบ (Evidence):**
 - `tools/verify.sh fast`: ผ่านทั้งหมด 100% (codemap ซิงก์ตรงกับซอร์ส 49 ไฟล์, frontend lint 0 errors, TypeScript typecheck ผ่าน 0 errors, Vitest 78 test files / 574 tests PASS)
+
+### 2026-09-18 — นวัตกรรม All-in-One ครบ 6 กลุ่มยุทธศาสตร์องค์กร: Bank Reconciliation 2 ทาง, ค่าเสื่อมราคาสินทรัพย์ ม.65 ทวิ, e-Tax Invoice XML มาตรฐาน ETDA v2.0, คำนวณต้นทุนสินค้าคงคลัง Moving Average/FIFO, แดชบอร์ดสุขภาพการเงิน CFO & งบกระแสเงินสดทางอ้อม, และ AI Audit Copilot ตรวจจับเงินรั่วไหล
+
+**ประเภทงาน:** `[Feature]` / `[Enterprise Architecture]` / `[Accounting Innovation]`
+
+**สิ่งที่ทำ:**
+- **กลุ่ม A: ระบบกระทบยอดเงินฝากธนาคารอัจฉริยะ 2 ทาง (Smart 2-Way Bank Reconciliation & Banking Workbench)**:
+  - พัฒนาโมดูล `bank-reconciliation.ts` และ `<BankingWorkbench />` (เส้นทาง `/banking/reconciliation` และ `/banking/statements`):
+  - รองรับการ Import สเตทเมนต์ธนาคาร (CSV/TXT) จาก 4 ธนาคารหลัก (KBANK, SCB, BBL, KTB) พร้อมระบุรหัสธนาคารและประเภทรายการ
+  - Matching Engine อัตโนมัติ: ตรวจจับคู่รายการตรงกันสมบูรณ์ (Exact Match: วันที่ + ยอดเงิน + ด้านบัญชี), ตรวจจับรายการใกล้เคียง (Probable Match ±3 วัน), รายการค้างในสเตทเมนต์ (Outstanding Deposits), และรายการค้างในบัญชี (Unpresented Cheques)
+  - ออกแบบงบพิสูจน์ยอดเงินฝากธนาคาร (Bank Reconciliation Statement) ตามมาตรฐาน TFRS และระบบสร้างใบสำคัญปรับปรุงด่วน (One-Click Clearing Journal)
+- **กลุ่ม B: ระบบสินทรัพย์ถาวรและค่าเสื่อมราคาตามประมวลรัษฎากร (Fixed Assets Engine & Tax Depreciation)**:
+  - พัฒนาโมดูล `fixed-assets-engine.ts` และแถบแม่แบบสินทรัพย์สำเร็จรูปใน `<FixedAssetsScreen />`:
+  - คำนวณค่าเสื่อมราคาวิธีเส้นตรงเฉลี่ยตามจำนวนวันจริง (Pro-rata Daily Straight-Line) ตรงตามประมวลรัษฎากร มาตรา 65 ทวิ (2) และพระราชกฤษฎีกา ฉบับที่ 145
+  - บรรจุ 6 หมวดสินทรัพย์มาตรฐานพร้อมอายุการใช้งานและอัตราสูงสุดตามกฎหมายสรรพากร (อาคารถาวร 20 ปี 5%, อาคารชั่วคราว 1 ปี 100%, ยานพาหนะ 5 ปี 20%, อุปกรณ์สำนักงาน 5 ปี 20%, คอมพิวเตอร์/ซอฟต์แวร์ 3 ปี 33.33%, เครื่องจักร 5 ปี 20%)
+  - ระบบสร้างใบสำคัญรายวันค่าเสื่อมราคาประจำงวดอัตโนมัติ (Balanced Periodic Depreciation Journal) และระบบคำนวณกำไร/ขาดทุนจากการจำหน่ายสินทรัพย์ (Gain/Loss on Disposal)
+- **กลุ่ม C: ศูนย์ภาษีและใบกำกับภาษีอิเล็กทรอนิกส์ (e-Tax Invoice XML by ETDA v2.0)**:
+  - พัฒนาโมดูล `thai-etax.ts` และแท็บ e-Tax Invoice ใน `<TaxFilingWorkbench />`:
+  - สร้างไฟล์ XML ตามมาตรฐานสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ (ETDA) และกรมสรรพากร: `TaxInvoice_CrossIndustryInvoice:2`
+  - ตรวจสอบความถูกต้องของเลขประจำตัวผู้เสียภาษี 13 หลักด้วย Mod 11 Checksum Algorithm และรหัสสาขาสรรพากร 5 หลัก
+  - รองรับการพรีวิวโครงสร้าง XML และดาวน์โหลดไฟล์ `.xml` ไปประทับรับรองดิจิทัลหรือนำส่งกรมสรรพากรได้ทันที
+- **กลุ่ม D: ระบบคำนวณต้นทุนสินค้าคงคลังและปิดบัญชีสต็อก (Inventory Costing & Stock Closing Engine)**:
+  - พัฒนาโมดูล `inventory-costing.ts`:
+  - คำนวณต้นทุนสินค้าคงคลังทั้งแบบต้นทุนเฉลี่ยเคลื่อนที่ (Moving Average Cost) และต้นทุนเข้าก่อน-ออกก่อน (FIFO Layers Tracking)
+  - ระบบปันส่วนต้นทุนแฝง (Landed Cost Allocation Engine) ปันส่วนค่าขนส่ง ภาษีนำเข้า ค่าธรรมเนียมตามมูลค่าสินค้าหรือตามจำนวนสินค้า
+  - ระบบกระทบยอดผลต่างตรวจนับสต็อกจริงกับบัญชี (Physical Stock Count Variance) และสร้างใบสำคัญปรับปรุงกำไร/ขาดทุนจากสินค้าขาดเกิน
+  - สูตรคำนวณปิดบัญชีสินค้าแบบ Periodic: ต้นทุนขาย = สินค้าต้นงวด + ซื้อสุทธิ + ค่าขนส่งเข้า - สินค้าปลายงวด พร้อมสร้างใบสำคัญปิดบัญชีต้นทุนขายอัตโนมัติ
+- **กลุ่ม E: แดชบอร์ดสุขภาพการเงินผู้บริหาร CFO และงบกระแสเงินสดทางอ้อม (CFO Financial Health & Cash Flow Statement)**:
+  - พัฒนาโมดูล `cfo-financial-health.ts` และ `<CFODashboardView />` ในหน้ารายงานบัญชีแยกประเภท:
+  - คำนวณคะแนนสุขภาพการเงินผู้บริหาร (0-100) และ 6 อัตราส่วนทางการเงิน TFRS สำคัญ: สภาพคล่องทั่วไป (Current Ratio), สภาพคล่องหมุนเร็ว (Quick Ratio), หหนี้สินต่อทุน (D/E), ความสามารถชำระดอกเบี้ย (ICR), อัตรากำไรขั้นต้น (GP%), และอัตรากำไรสุทธิ (NP%)
+  - วิเคราะห์ระยะเวลาความอยู่รอดของเงินสดสำรอง (Cash Runway) เป็นจำนวนเดือนสำหรับเจ้าของกิจการ
+  - จัดทำงบกระแสเงินสดวิธีทางอ้อม (Statement of Cash Flows - Indirect Method) ครบทั้ง 3 กิจกรรม (ดำเนินงาน, ลงทุน, จัดหาเงิน) ตรงตามมาตรฐาน TFRS for NPAEs
+- **กลุ่ม F: ผู้ช่วยตรวจสอบบัญชีอัจฉริยะ AI Audit Copilot และเช็คลิสต์ก่อนปิดงบ (AI Audit Copilot & Pre-Closing Guard)**:
+  - พัฒนาโมดูล `ai-audit-guard.ts` และ `<AIAuditGuardModal />` ในหน้ารายงานบัญชีแยกประเภท:
+  - ระบบตรวจจับบิลซ้ำและการจ่ายเงินซ้ำซ้อน (Duplicate Invoice & Double Payment Detector) วิเคราะห์ทั้งคู่ใบแจ้งหนี้ตรงกัน และยอดเงินซ้ำในผู้จำหน่ายรายเดียวกัน
+  - ระบบตรวจจับค่าใช้จ่ายกระโดดผิดปกติทางสถิติ (Statistical Anomaly Spike Detector: 3σ / 300% of standard deviation)
+  - ระบบ AI OCR ถอดรหัสสลิปธนาคาร (PromptPay / Mobile Banking Slip Parser) แปลงข้อความสลิปเป็นร่างใบสำคัญรับ/จ่ายเงินสดทันที
+  - เช็คลิสต์ 12 ข้อตามมาตรฐานการสอบบัญชีไทยก่อนปิดงวด (Pre-Closing Audit Checklist Meter) ประเมินความพร้อมและแจ้งเตือนข้อผิดพลาดก่อนปิดงบ
+- **พจนานุกรม 12 ภาษาครบถ้วน (`languages.tsv`)**:
+  - เพิ่ม 57 คีย์ภาษาใหม่ใน `backend/assets/language/languages.tsv` ครบทั้ง 12 ภาษาตามมาตรฐานระบบ
+
+**ไฟล์สำคัญ:**
+- `frontend/src/lib/bank-reconciliation.ts` & `.test.ts`
+- `frontend/src/lib/fixed-assets-engine.ts` & `.test.ts`
+- `frontend/src/lib/thai-etax.ts` & `.test.ts`
+- `frontend/src/lib/inventory-costing.ts` & `.test.ts`
+- `frontend/src/lib/cfo-financial-health.ts` & `.test.ts`
+- `frontend/src/lib/ai-audit-guard.ts` & `.test.ts`
+- `frontend/src/app/banking/banking-workbench.tsx`
+- `frontend/src/app/asset/fixed-assets-screen.tsx`
+- `frontend/src/app/tax/tax-filing-workbench.tsx`
+- `frontend/src/app/gl/cfo-dashboard-view.tsx`
+- `frontend/src/app/gl/ai-audit-guard-modal.tsx`
+- `frontend/src/app/gl/gl-reports.tsx`
+- `frontend/src/app/menu/main-menu-screen.tsx`
+- `frontend/src/lib/menu-screen-status.ts`
+- `backend/assets/language/languages.tsv`
+
+**ผลการทดสอบ (Evidence):**
+- TypeScript typecheck: ผ่าน 100% 0 errors (`tsc --noEmit`)
+- Next.js Turbopack production build: ผ่าน 100% 0 errors
+- Unit tests: ผ่าน 102 test files / 710 tests ครบ 100% (Vitest 0 failures)
+- Go backend language tests: ผ่าน 100% (`go test ./internal/goapi/language/...`)
 
 ### 2026-09-18 — ยกระดับระบบบัญชีแยกประเภท (GL): ระบบตรวจสุขภาพบัญชีอัตโนมัติ (Health Audit), งบการเงินเปรียบเทียบหลายงวด (Comparative Reports & 12-Month Trends), และแม่แบบบันทึกบัญชีด่วน 8 กลุ่มธุรกิจไทย (Fast Journal Templates)
 

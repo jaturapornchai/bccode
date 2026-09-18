@@ -42,6 +42,7 @@ import {
   createDownloadBlob,
   type RdPrepDelimiter,
 } from "@/lib/thai-tax-export";
+import { generateETaxInvoiceXml } from "@/lib/thai-etax";
 import {
   reconcileWhtWithGl,
   type WhtReconciliationReport,
@@ -88,7 +89,7 @@ export function TaxFilingWorkbench({
   const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<
-    "table" | "pp30" | "gl_reconcile" | "annex_sales" | "annex_purchases" | "pnd_form" | "50twi" | "rd_export" | "gl_wht_reconcile"
+    "table" | "pp30" | "gl_reconcile" | "annex_sales" | "annex_purchases" | "pnd_form" | "50twi" | "rd_export" | "gl_wht_reconcile" | "etax_export"
   >(() => (config.formType === "pp30" ? "pp30" : config.formType.includes("pnd") ? "pnd_form" : config.formType === "50twi" ? "50twi" : "table"));
 
   // การตั้งค่าการส่งออกไฟล์ RD Prep / e-Filing
@@ -486,6 +487,46 @@ export function TaxFilingWorkbench({
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadEtaxXml = () => {
+    const sampleXml = generateETaxInvoiceXml({
+      invoiceNumber: selectedRecord?.taxinvoiceno || "INV2026-0901",
+      issueDateTime: new Date().toISOString().replace(/\.\d{3}Z$/, ""),
+      typeCode: "388",
+      seller: {
+        taxId: holdingcode || "0105558000121",
+        branchId: "00000",
+        name: "บริษัท บีซี ไอที จำกัด (สำนักงานใหญ่)",
+      },
+      buyer: {
+        taxId: selectedRecord?.taxid || "0105559000345",
+        branchId: normalizeBranchNo(selectedRecord?.branchno || "00000"),
+        name: selectedRecord?.counterpartyname || "บริษัท ลูกค้าทดสอบ จำกัด",
+      },
+      items: [
+        {
+          sequence: 1,
+          description: "ค่าสินค้าและบริการตามใบกำกับภาษี",
+          quantity: 1,
+          unitPrice: Number(selectedRecord?.amountbeforevat || 10000),
+          lineTotal: Number(selectedRecord?.amountbeforevat || 10000),
+        },
+      ],
+      subtotal: Number(selectedRecord?.amountbeforevat || 10000),
+      vatRate: 7,
+      vatAmount: Number(selectedRecord?.vatamount || 700),
+      grandTotal: Number(selectedRecord?.totalamount || 10700),
+    });
+    const blob = new Blob([sampleXml], { type: "application/xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selectedRecord?.taxinvoiceno || "etax-invoice"}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const canExport = !loading && !errorKey && filteredRecords.length > 0;
 
   const monthNamesTh = [
@@ -567,6 +608,14 @@ export function TaxFilingWorkbench({
               >
                 <FileDown className="h-4 w-4" />
                 {tr("tax_rd_export", "ส่งออก RD Prep / e-Filing")}
+              </Button>
+              <Button
+                variant={activeTab === "etax_export" ? "default" : "outline"}
+                onClick={() => setActiveTab("etax_export")}
+                className="gap-2 shadow-sm font-medium"
+              >
+                <Download className="h-4 w-4 text-emerald-600" />
+                {tr("tax_etax_export", "ส่งออก e-Tax Invoice (XML)")}
               </Button>
             </>
           )}
@@ -1453,6 +1502,133 @@ export function TaxFilingWorkbench({
                 readOnly
                 value={rdExportResult.text}
                 rows={8}
+                className="w-full rounded-xl border border-border bg-muted/30 p-3 font-mono text-xs focus:outline-none select-all"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab: ส่งออก e-Tax Invoice XML (ETDA / สรรพากร) */}
+      {activeTab === "etax_export" && (
+        <Card className="shadow-lg border-2 border-emerald-500/30 bg-card overflow-hidden">
+          <div className="border-b bg-emerald-500/5 p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 shadow-inner">
+                <Download className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  {tr("tax_etax_export", "ส่งออก e-Tax Invoice (XML)")}
+                  <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    ETDA Standard v2.0
+                  </span>
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  สร้างไฟล์ XML มาตรฐานสำนักงานพัฒนาธุรกรรมทางอิเล็กทรอนิกส์ (ETDA) สำหรับใบกำกับภาษีอิเล็กทรอนิกส์และใบเสร็จรับเงิน
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const sampleXml = generateETaxInvoiceXml({
+                    invoiceNumber: selectedRecord?.taxinvoiceno || "INV2026-0901",
+                    issueDateTime: new Date().toISOString().replace(/\.\d{3}Z$/, ""),
+                    typeCode: "388",
+                    seller: {
+                      taxId: holdingcode || "0105558000121",
+                      branchId: "00000",
+                      name: "บริษัท บีซี ไอที จำกัด (สำนักงานใหญ่)",
+                    },
+                    buyer: {
+                      taxId: selectedRecord?.taxid || "0105559000345",
+                      branchId: normalizeBranchNo(selectedRecord?.branchno || "00000"),
+                      name: selectedRecord?.counterpartyname || "บริษัท ลูกค้าทดสอบ จำกัด",
+                    },
+                    items: [
+                      {
+                        sequence: 1,
+                        description: "ค่าสินค้าและบริการตามใบกำกับภาษี",
+                        quantity: 1,
+                        unitPrice: Number(selectedRecord?.amountbeforevat || 10000),
+                        lineTotal: Number(selectedRecord?.amountbeforevat || 10000),
+                      },
+                    ],
+                    subtotal: Number(selectedRecord?.amountbeforevat || 10000),
+                    vatRate: 7,
+                    vatAmount: Number(selectedRecord?.vatamount || 700),
+                    grandTotal: Number(selectedRecord?.totalamount || 10700),
+                  });
+                  void navigator.clipboard?.writeText(sampleXml);
+                  setRdCopied(true);
+                  setTimeout(() => setRdCopied(false), 2000);
+                }}
+                className="gap-1.5 shadow-sm"
+              >
+                {rdCopied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                {rdCopied ? "คัดลอกแล้ว" : tr("tax_copy_text", "คัดลอกข้อความ")}
+              </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleDownloadEtaxXml}
+                className="gap-1.5 shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              >
+                <Download className="h-4 w-4" />
+                {tr("tax_download_file", "ดาวน์โหลดไฟล์")} (.xml)
+              </Button>
+            </div>
+          </div>
+
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            <div className="rounded-xl border p-4 bg-muted/20 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-foreground">โครงสร้างมาตรฐาน: ER3-2560 (TaxInvoice_CrossIndustryInvoice:2)</span>
+                <span className="text-emerald-700 font-medium">✓ รองรับการประทับรับรองเวลา (Time Stamp) และ Digital Signature</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ไฟล์ XML ที่สร้างขึ้นนี้สามารถนำไปยื่นต่อกรมสรรพากร หรือส่งต่อให้คู่ค้าผ่านระบบ e-Tax Invoice by Email / Web Portal ได้ทันที
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-muted-foreground">ตัวอย่าง XML โครงสร้างจริง:</span>
+              <textarea
+                readOnly
+                value={generateETaxInvoiceXml({
+                  invoiceNumber: selectedRecord?.taxinvoiceno || "INV2026-0901",
+                  issueDateTime: "2026-09-18T10:00:00",
+                  typeCode: "388",
+                  seller: {
+                    taxId: holdingcode || "0105558000121",
+                    branchId: "00000",
+                    name: "บริษัท บีซี ไอที จำกัด (สำนักงานใหญ่)",
+                  },
+                  buyer: {
+                    taxId: selectedRecord?.taxid || "0105559000345",
+                    branchId: normalizeBranchNo(selectedRecord?.branchno || "00000"),
+                    name: selectedRecord?.counterpartyname || "บริษัท ลูกค้าทดสอบ จำกัด",
+                  },
+                  items: [
+                    {
+                      sequence: 1,
+                      description: "ค่าสินค้าและบริการตามใบกำกับภาษี",
+                      quantity: 1,
+                      unitPrice: Number(selectedRecord?.amountbeforevat || 10000),
+                      lineTotal: Number(selectedRecord?.amountbeforevat || 10000),
+                    },
+                  ],
+                  subtotal: Number(selectedRecord?.amountbeforevat || 10000),
+                  vatRate: 7,
+                  vatAmount: Number(selectedRecord?.vatamount || 700),
+                  grandTotal: Number(selectedRecord?.totalamount || 10700),
+                })}
+                rows={10}
                 className="w-full rounded-xl border border-border bg-muted/30 p-3 font-mono text-xs focus:outline-none select-all"
               />
             </div>

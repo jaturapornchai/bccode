@@ -130,6 +130,7 @@ import { isErpTransactionRoute } from "@/lib/erp-transaction";
 import { ErpCrudWorkbench } from "@/app/crud/erp-crud-workbench";
 import { isThaiTaxRoute } from "@/lib/thai-tax";
 import { TaxFilingWorkbench } from "@/app/tax/tax-filing-workbench";
+import { BankingWorkbench } from "@/app/banking/banking-workbench";
 import { isErpReportRoute } from "@/lib/erp-reports";
 import { ErpReportViewer } from "@/app/report/erp-report-viewer";
 import { isErpToolsRoute } from "@/lib/erp-tools";
@@ -2880,6 +2881,10 @@ function WorkTabPanel({
 
   if (isFixedAssetRoute(activeTab.route)) {
     return <FixedAssetsScreen embedded language={language} route={activeTab.route} />;
+  }
+
+  if (activeTab.route === "/banking/reconciliation" || activeTab.route === "/banking/statements") {
+    return <BankingWorkbench embedded language={language} route={activeTab.route} holdingcode={workspace?.shop.holdingcode ?? ""} businesscode={workspace?.company?.code ?? ""} />;
   }
 
   if (isErpTransactionRoute(activeTab.route)) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, ShieldCheck, TrendingUp, Calendar } from "lucide-react";
+import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, ShieldCheck, ShieldAlert, TrendingUp, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accountTypeLabels, bookLabels, displayAmountUnits, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
@@ -9,7 +9,9 @@ import { AccountSelect, Field, Notice, Pager, YearSelect, actionClass, control, 
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { GLHealthAuditModal } from "./gl-health-audit-modal";
+import { AIAuditGuardModal } from "./ai-audit-guard-modal";
 import { ComparativeReportView, MonthlyTrendMatrixView } from "./gl-comparative-view";
+import { CFODashboardView } from "./cfo-dashboard-view";
 import { buildComparativeReport, pivotAnnualBalances, type ComparativeReportResult } from "@/lib/gl-comparative-report";
 
 export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string };
@@ -355,9 +357,11 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const [report, setReport] = useState<GLReport | null>(null), [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [healthAuditOpen, setHealthAuditOpen] = useState(false);
+  const [aiAuditOpen, setAiAuditOpen] = useState(false);
   const [comparativeMode, setComparativeMode] = useState(false);
   const [comparativeData, setComparativeData] = useState<ComparativeReportResult | null>(null);
   const [annualPivotMode, setAnnualPivotMode] = useState(false);
+  const [cfoDashboardMode, setCfoDashboardMode] = useState(false);
   const set = (key: keyof ReportFilters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
 
   const monthlyPivot = useMemo(() => {
@@ -527,6 +531,16 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
             <ShieldCheck className="size-4 mr-1 text-emerald-600 dark:text-emerald-400" />
             {tr("gl_audit_health", "ตรวจสุขภาพบัญชี")}
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={`${actionClass} border-primary/30 text-primary bg-primary/10 hover:bg-primary/20 shadow-sm`}
+            onClick={() => setAiAuditOpen(true)}
+            title={tr("gl_ai_audit_guard_btn_hint", "AI ตรวจจับบิลซ้ำ เงินรั่วไหล และเช็คลิสต์ 12 ข้อก่อนปิดงบ")}
+          >
+            <ShieldAlert className="size-4 mr-1 text-primary" />
+            {tr("gl_ai_audit_guard_btn", "AI Audit Copilot")}
+          </Button>
           {refs.years.length > 1 && (
             <Button
               type="button"
@@ -553,10 +567,29 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
               {annualPivotMode ? tr("gl_list_mode", "ตารางปกติ") : tr("gl_monthly_pivot", "แนวโน้ม 12 เดือน")}
             </Button>
           )}
+
+          <Button
+            type="button"
+            variant={cfoDashboardMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setCfoDashboardMode(!cfoDashboardMode);
+              if (!cfoDashboardMode) {
+                setComparativeMode(false);
+                setAnnualPivotMode(false);
+              }
+            }}
+            title={tr("gl_cfo_dashboard_btn_hint", "แดชบอร์ดสุขภาพการเงิน CFO และกระแสเงินสด")}
+          >
+            <TrendingUp className="size-4 mr-1 text-emerald-600" />
+            {cfoDashboardMode ? tr("gl_list_mode", "ตารางปกติ") : tr("gl_cfo_dashboard_btn", "สุขภาพการเงิน CFO")}
+          </Button>
         </div>
       </div>
     </form>
-    {report ? (
+    {cfoDashboardMode ? (
+      <CFODashboardView />
+    ) : report ? (
       <>
         {comparativeMode && comparativeData ? (
           <ComparativeReportView
@@ -602,6 +635,12 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       report={report}
       accounts={refs.accounts}
       onDrillAccount={handleDrillAccount}
+    />
+
+    {/* AI Audit Copilot & Pre-Closing Checklist Modal */}
+    <AIAuditGuardModal
+      open={aiAuditOpen}
+      onClose={() => setAiAuditOpen(false)}
     />
   </section>;
 }
