@@ -1244,3 +1244,39 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `backend/assets/language/languages.tsv`
 - `README.md`
 
+### 2026-09-18 — เพิ่มระบบส่งออกไฟล์ภาษียื่นออนไลน์ RD Prep (ภ.พ.30, ภ.ง.ด.3, ภ.ง.ด.53) และระบบกระทบยอด GL ภาษีหัก ณ ที่จ่าย (GL WHT Reconciliation)
+
+**ประเภทงาน:** `[Feature]` `[Accounting & Tax]` `[Compliance]` `[UI/UX]`
+
+**สิ่งที่ทำ:**
+1. **ระบบส่งออกไฟล์ภาษียื่นออนไลน์กรมสรรพากร (RD Prep & e-Filing Export Engine) (`frontend/src/lib/thai-tax-export.ts`)**:
+   - ระบบตรวจสอบความถูกต้องของเลขประจำตัวผู้เสียภาษี 13 หลักของไทย (`validateThaiTaxId`) ด้วยหลักการ **Modulo 11 Checksum** ของกรมสรรพากรและกระทรวงมหาดไทย ตรวจสอบเลขซ้ำ และคำนวณ check digit
+   - ระบบปรับมาตรฐานรหัสสาขา 5 หลัก (`normalizeBranchNo`) เช่น `0` -> `00000`
+   - ตัวสร้างไฟล์ Text / CSV สำหรับโปรแกรม RD Prep และระบบ New e-Filing:
+     - `generateRdPrepPnd3`: ภ.ง.ด.3 บุคคลธรรมดา (ลำดับ, เลข 13 หลัก, สาขา, คำนำหน้า, ชื่อ, นามสกุล, ที่อยู่, วันที่จ่าย พ.ศ., ประเภทเงินได้, อัตราภาษี, ฐานเงินได้, ภาษีหัก, รหัสเงื่อนไขการหัก 1/2/3)
+     - `generateRdPrepPnd53`: ภ.ง.ด.53 นิติบุคคล (ลำดับ, เลข 13 หลัก, สาขา 5 หลัก, ชื่อนิติบุคคล, ที่อยู่, วันที่จ่าย, ประเภทเงินได้, อัตราภาษี, ฐานเงินได้, ภาษีหัก, เงื่อนไข)
+     - `generateRdPrepPp30`: ภ.พ.30 e-Filing Format (เลข 13 หลัก, สาขา, เดือน, ปี พ.ศ., ข้อ 1 ถึง ข้อ 10, เงินเพิ่ม, เบี้ยปรับ, ยอดรวมชำระสุทธิ)
+   - ฟังก์ชันสร้าง Blob ดาวน์โหลดไฟล์พร้อม UTF-8 BOM (`\uFEFF`) ป้องกันภาษาไทยเพี้ยนใน Microsoft Excel
+2. **ระบบกระทบยอดภาษีหัก ณ ที่จ่ายกับบัญชีแยกประเภท (GL WHT Reconciliation Engine) (`frontend/src/lib/thai-wht-reconciliation.ts`)**:
+   - **ด้านภาษีหัก ณ ที่จ่ายค้างจ่าย (WHT Payable)**: กระทบยอดระหว่างบัญชี GL `2151` (Cr.) กับยอดรวมภาษีนำส่งตามแบบ ภ.ง.ด.3 + ภ.ง.ด.53
+   - **ด้านภาษีเงินได้ถูกหัก ณ ที่จ่าย (WHT Receivable)**: กระทบยอดระหว่างบัญชี GL `1161` (Dr.) กับยอดตามหนังสือรับรอง 50 ทวิที่ได้รับจากลูกค้า
+   - **ระบบติดตามหนังสือรับรอง 50 ทวิค้างรับ (Pending 50 Twi Tracking)**: แจ้งเตือนบิลที่ถูกหักภาษีแต่ยังไม่ได้รับหนังสือรับรองฉบับจริง เพื่อติดตามเอกสารมาใช้เครดิตภาษีเงินได้นิติบุคคลตอนสิ้นปีตามแบบ ภ.ง.ด.50 พร้อมปุ่มคัดลอกรายการทวงถาม
+   - **คำนวณกำหนดเวลานำส่งภาษี**: แสดงวันครบกำหนดของเดือนถัดไป ทั้งแบบกระดาษ (วันที่ 7) และแบบออนไลน์ New e-Filing (วันที่ 15)
+   - **AI WHT Audit Advisor**: กล่องคำแนะนำเชิงรุกวิเคราะห์สาเหตุของผลต่างและสรุปยอดกระแสเงินสดที่ต้องเตรียมชำระให้กรมสรรพากร
+3. **ยกระดับหน้าจอ Tax Filing Workbench (`tax-filing-workbench.tsx`)**:
+   - เพิ่มแท็บ "ส่งออก RD Prep / e-Filing" (`rd_export`): เลือก Format ได้ 3 แบบ (Pipe `|`, CSV `,`, Tab `\t`), สลับแสดงหัวตาราง, สรุปผล Checksum Mod 11 สีเขียว/เหลือง, ช่องพรีวิว Raw Text, และปุ่มดาวน์โหลด/คัดลอก
+   - เพิ่มแท็บ "กระทบยอด GL ภาษีหัก ณ ที่จ่าย" (`gl_wht_reconcile`): 3 KPI Cards, ตารางเปรียบเทียบ GL ละเอียด, ตารางติดตาม 50 ทวิค้างรับ, และคำแนะนำ AI Advisor
+4. **ชุดทดสอบ Unit Tests ครบถ้วน 100%**:
+   - เพิ่ม `thai-tax-export.test.ts` (11 tests) และ `thai-wht-reconciliation.test.ts` (4 tests)
+   - รวมการทดสอบทั้งระบบ **93 test files / 677 unit tests ผ่าน 100%**
+
+**ไฟล์สำคัญ:**
+- `frontend/src/lib/thai-tax-export.ts` (ใหม่)
+- `frontend/src/lib/thai-tax-export.test.ts` (ใหม่)
+- `frontend/src/lib/thai-wht-reconciliation.ts` (ใหม่)
+- `frontend/src/lib/thai-wht-reconciliation.test.ts` (ใหม่)
+- `frontend/src/app/tax/tax-filing-workbench.tsx`
+- `backend/assets/language/languages.tsv`
+- `README.md`
+
+

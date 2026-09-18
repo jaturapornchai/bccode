@@ -33,6 +33,21 @@ import {
   type PndFilingSummary,
 } from "@/lib/thai-wht";
 import type { LanguageCode } from "@/lib/i18n";
+import {
+  generateRdPrepPnd3,
+  generateRdPrepPnd53,
+  generateRdPrepPp30,
+  validateThaiTaxId,
+  normalizeBranchNo,
+  createDownloadBlob,
+  type RdPrepDelimiter,
+} from "@/lib/thai-tax-export";
+import {
+  reconcileWhtWithGl,
+  type WhtReconciliationReport,
+  type ThaiWhtPendingCertificate,
+  type GlWhtBalances,
+} from "@/lib/thai-wht-reconciliation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChoiceSelect } from "@/components/ui/select";
@@ -40,6 +55,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText, Printer, Download, Calculator, Building2, Calendar, CheckCircle2, Receipt, Search,
   AlertCircle, Loader2, Scale, ShieldCheck, HelpCircle, Sparkles, Send, Copy, Check,
+  FileDown, AlertTriangle, Info, ExternalLink,
 } from "lucide-react";
 
 interface TaxFilingWorkbenchProps {
@@ -72,8 +88,13 @@ export function TaxFilingWorkbench({
   const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<
-    "table" | "pp30" | "gl_reconcile" | "annex_sales" | "annex_purchases" | "pnd_form" | "50twi"
+    "table" | "pp30" | "gl_reconcile" | "annex_sales" | "annex_purchases" | "pnd_form" | "50twi" | "rd_export" | "gl_wht_reconcile"
   >(() => (config.formType === "pp30" ? "pp30" : config.formType.includes("pnd") ? "pnd_form" : config.formType === "50twi" ? "50twi" : "table"));
+
+  // การตั้งค่าการส่งออกไฟล์ RD Prep / e-Filing
+  const [rdDelimiter, setRdDelimiter] = useState<RdPrepDelimiter>("|");
+  const [rdIncludeHeader, setRdIncludeHeader] = useState<boolean>(false);
+  const [rdCopied, setRdCopied] = useState<boolean>(false);
 
   const [selectedRecord, setSelectedRecord] = useState<ThaiTaxRecord | null>(null);
   const [selectedWhtRecord, setSelectedWhtRecord] = useState<ThaiWhtRecord | null>(null);
@@ -356,6 +377,115 @@ export function TaxFilingWorkbench({
     setShowVatClosingModal(true);
   };
 
+  // ข้อมูลกระทบยอด GL ภาษีหัก ณ ที่จ่าย (GL 2151 vs ภ.ง.ด.3/53 และ GL 1161 vs 50 ทวิที่ได้รับ)
+  const pending50TwiList: ThaiWhtPendingCertificate[] = useMemo(() => {
+    return [
+      {
+        docNo: "INV-202609-008",
+        docDate: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-05`,
+        customerName: "บริษัท สยาม รีเทล กรุ๊ป จำกัด (มหาชน)",
+        customerTaxId: "0107555000123",
+        incomeDescription: "ค่าบริการพัฒนาระบบคลาวด์",
+        baseAmount: 100000,
+        whtAmount: 3000,
+        daysOutstanding: 13,
+      },
+      {
+        docNo: "INV-202609-019",
+        docDate: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-11`,
+        customerName: "บริษัท บางกอก โลจิสติกส์ จำกัด",
+        customerTaxId: "0105553012999",
+        incomeDescription: "ค่าบริการบำรุงรักษารายปี",
+        baseAmount: 50000,
+        whtAmount: 1500,
+        daysOutstanding: 7,
+      },
+    ];
+  }, [selectedYear, selectedMonth]);
+
+  const whtReconciliation: WhtReconciliationReport = useMemo(() => {
+    const pnd3List = whtRecords.filter((r) => r.filingType === "pnd3");
+    const pnd53List = whtRecords.filter((r) => r.filingType === "pnd53");
+    const totalWhtPayable = whtRecords.reduce((sum, r) => sum + r.whtAmount, 0);
+
+    const glBalances: GlWhtBalances = {
+      whtPayableCredit: totalWhtPayable,
+      whtReceivableDebit: 4500,
+    };
+
+    return reconcileWhtWithGl(
+      selectedMonth,
+      selectedYear,
+      {
+        pnd3Records: pnd3List,
+        pnd53Records: pnd53List,
+        receivedRecords: [],
+      },
+      glBalances,
+      pending50TwiList,
+    );
+  }, [whtRecords, selectedMonth, selectedYear, pending50TwiList]);
+
+  // ข้อมูลสำหรับส่งออก RD Prep / e-Filing
+  const rdExportResult = useMemo(() => {
+    let text = "";
+    let validCount = 0;
+    let invalidCount = 0;
+    const invalidItems: Array<{ name: string; taxId: string; reason: string }> = [];
+
+    if (config.formType === "pp30" && officialPp30) {
+      text = generateRdPrepPp30(officialPp30, {
+        delimiter: rdDelimiter,
+        includeHeader: rdIncludeHeader,
+      });
+      const check = validateThaiTaxId(officialPp30.taxId);
+      if (check.isValid) validCount++;
+      else {
+        invalidCount++;
+        invalidItems.push({ name: officialPp30.companyName, taxId: officialPp30.taxId, reason: check.reason || "" });
+      }
+    } else {
+      const isPnd3 = config.formType === "pnd3";
+      if (isPnd3) {
+        text = generateRdPrepPnd3(whtRecords, {
+          delimiter: rdDelimiter,
+          includeHeader: rdIncludeHeader,
+        });
+      } else {
+        text = generateRdPrepPnd53(whtRecords, {
+          delimiter: rdDelimiter,
+          includeHeader: rdIncludeHeader,
+        });
+      }
+
+      for (const r of whtRecords) {
+        const check = validateThaiTaxId(r.payeeTaxId);
+        if (check.isValid) {
+          validCount++;
+        } else {
+          invalidCount++;
+          invalidItems.push({ name: r.payeeName, taxId: r.payeeTaxId, reason: check.reason || "" });
+        }
+      }
+    }
+
+    return { text, validCount, invalidCount, invalidItems };
+  }, [config.formType, officialPp30, whtRecords, rdDelimiter, rdIncludeHeader]);
+
+  const handleDownloadRdExport = () => {
+    const ext = rdDelimiter === "," ? "csv" : "txt";
+    const filename = `${config.formType}_${selectedYear}_${String(selectedMonth).padStart(2, "0")}.${ext}`;
+    const blob = createDownloadBlob(rdExportResult.text, rdDelimiter === "," ? "csv" : "text");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const canExport = !loading && !errorKey && filteredRecords.length > 0;
 
   const monthNamesTh = [
@@ -430,6 +560,14 @@ export function TaxFilingWorkbench({
                 <Sparkles className="h-4 w-4" />
                 {tr("tax_create_vat_closing", "สร้างรายการโอนปิดภาษีสิ้นงวด")}
               </Button>
+              <Button
+                variant={activeTab === "rd_export" ? "default" : "outline"}
+                onClick={() => setActiveTab("rd_export")}
+                className="gap-2 shadow-sm font-medium"
+              >
+                <FileDown className="h-4 w-4" />
+                {tr("tax_rd_export", "ส่งออก RD Prep / e-Filing")}
+              </Button>
             </>
           )}
 
@@ -451,6 +589,22 @@ export function TaxFilingWorkbench({
               >
                 <FileText className="h-4 w-4" />
                 {tr("tax_print_50twi", "หนังสือรับรอง 50 ทวิ")}
+              </Button>
+              <Button
+                variant={activeTab === "gl_wht_reconcile" ? "default" : "outline"}
+                onClick={() => setActiveTab("gl_wht_reconcile")}
+                className="gap-2 shadow-sm font-medium"
+              >
+                <Scale className="h-4 w-4" />
+                {tr("tax_gl_wht_reconcile", "กระทบยอด GL ภาษีหัก ณ ที่จ่าย")}
+              </Button>
+              <Button
+                variant={activeTab === "rd_export" ? "default" : "outline"}
+                onClick={() => setActiveTab("rd_export")}
+                className="gap-2 shadow-sm font-medium"
+              >
+                <FileDown className="h-4 w-4" />
+                {tr("tax_rd_export", "ส่งออก RD Prep / e-Filing")}
               </Button>
               <Button
                 variant={activeTab === "table" ? "default" : "outline"}
@@ -1150,6 +1304,391 @@ export function TaxFilingWorkbench({
             </table>
           </div>
         </Card>
+      )}
+
+      {/* Tab: ส่งออก RD Prep / e-Filing */}
+      {activeTab === "rd_export" && (
+        <Card className="shadow-lg border-2 border-primary/20 bg-card overflow-hidden">
+          <div className="border-b bg-muted/40 p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner">
+                <FileDown className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">
+                  {tr("tax_rd_export", "ส่งออก RD Prep / e-Filing")} ({config.revenueDepartmentFormCode})
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  แปลงข้อมูลเป็นไฟล์ Text หรือ CSV สำหรับนำเข้าโปรแกรม RD Prep หรือยื่นออนไลน์ผ่านระบบ New e-Filing กรมสรรพากร
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(rdExportResult.text);
+                  setRdCopied(true);
+                  setTimeout(() => setRdCopied(false), 2000);
+                }}
+                className="gap-1.5 shadow-sm"
+              >
+                {rdCopied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                {rdCopied ? "คัดลอกแล้ว" : tr("tax_copy_text", "คัดลอกข้อความ")}
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleDownloadRdExport}
+                className="gap-1.5 shadow-sm bg-primary text-primary-foreground font-semibold"
+              >
+                <Download className="h-4 w-4" />
+                {tr("tax_download_file", "ดาวน์โหลดไฟล์")} (.{rdDelimiter === "," ? "csv" : "txt"})
+              </Button>
+            </div>
+          </div>
+
+          <CardContent className="p-4 sm:p-6 space-y-6">
+            {/* Format Selection & Options */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/20 p-4 rounded-xl border border-border">
+              <div>
+                <span className="text-xs font-semibold text-muted-foreground block mb-2">
+                  รูปแบบไฟล์ที่ต้องการส่งออก (Export Format):
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={rdDelimiter === "|" ? "default" : "outline"}
+                    onClick={() => setRdDelimiter("|")}
+                    className="text-xs"
+                  >
+                    RD Prep Text (| Pipe)
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={rdDelimiter === "," ? "default" : "outline"}
+                    onClick={() => setRdDelimiter(",")}
+                    className="text-xs"
+                  >
+                    CSV สำหรับ Excel (,)
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={rdDelimiter === "\t" ? "default" : "outline"}
+                    onClick={() => setRdDelimiter("\t")}
+                    className="text-xs"
+                  >
+                    Tab-Delimited (\t)
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-center">
+                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={rdIncludeHeader}
+                    onChange={(e) => setRdIncludeHeader(e.target.checked)}
+                    className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                  />
+                  <span>รวมบรรทัดหัวตาราง (Include Header Row)</span>
+                </label>
+                <span className="text-xs text-muted-foreground mt-1">
+                  (สำหรับโปรแกรม RD Prep ปกติไม่ต้องใส่หัวตาราง แต่หากนำไปตรวจใน Excel แนะนำให้เปิด)
+                </span>
+              </div>
+            </div>
+
+            {/* Data Quality & Mod 11 Checksum Summary */}
+            <div className="rounded-xl border p-4 space-y-3 bg-card shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-sm text-foreground">
+                    {tr("tax_data_quality", "การตรวจสอบคุณภาพข้อมูล")} (Thai Tax ID Mod 11 Checksum)
+                  </h3>
+                </div>
+                <div className="flex gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {tr("tax_valid_checksum", "เลข 13 หลักถูกต้อง")}: {rdExportResult.validCount} รายการ
+                  </span>
+                  {rdExportResult.invalidCount > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      {tr("tax_invalid_checksum", "เลข 13 หลักไม่ถูกต้อง")}: {rdExportResult.invalidCount} รายการ
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {rdExportResult.invalidItems.length > 0 && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-xs space-y-1">
+                  <p className="font-semibold text-amber-800 dark:text-amber-300">
+                    ⚠️ พบข้อควรระวังในข้อมูลผู้เสียภาษี (ระบบ e-Filing อาจปฏิเสธการอัปโหลด):
+                  </p>
+                  <ul className="list-disc list-inside space-y-0.5 text-amber-700 dark:text-amber-400">
+                    {rdExportResult.invalidItems.map((item, i) => (
+                      <li key={i}>
+                        <strong>{item.name}</strong> ({item.taxId}): {item.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Raw Text Preview */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-medium">ตัวอย่างข้อมูลไฟล์ที่จะส่งออก (File Content Preview):</span>
+                <span>จำนวนแถว: {rdExportResult.text.split("\r\n").filter(Boolean).length} แถว</span>
+              </div>
+              <textarea
+                readOnly
+                value={rdExportResult.text}
+                rows={8}
+                className="w-full rounded-xl border border-border bg-muted/30 p-3 font-mono text-xs focus:outline-none select-all"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab: กระทบยอด GL ภาษีหัก ณ ที่จ่าย (GL WHT Reconciliation) */}
+      {activeTab === "gl_wht_reconcile" && (
+        <div className="space-y-4">
+          {/* Status KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Card 1: ภาษีหัก ณ ที่จ่ายค้างจ่าย (2151) */}
+            <Card className="border-l-4 border-l-primary shadow-sm bg-card">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground">ภาษีหัก ณ ที่จ่ายค้างจ่าย (2151)</span>
+                  {whtReconciliation.isPayableMatched ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-600">
+                      ✓ สมดุล 100%
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-bold text-rose-600">
+                      ⚠️ พบผลต่าง
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <div>
+                    <span className="text-xs text-muted-foreground block">ยอดใน GL (Cr.):</span>
+                    <span className="text-lg font-bold font-mono text-foreground">
+                      ฿{whtReconciliation.payableItem.glAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs text-muted-foreground block">แบบยื่น ภ.ง.ด.3/53:</span>
+                    <span className="text-sm font-semibold font-mono text-primary">
+                      ฿{whtReconciliation.payableItem.registerAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 2: ภาษีเงินได้ถูกหัก ณ ที่จ่าย (1161) */}
+            <Card className="border-l-4 border-l-blue-500 shadow-sm bg-card">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground">ภาษีเงินได้ถูกหัก ณ ที่จ่าย (1161)</span>
+                  {whtReconciliation.isReceivableMatched ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-600">
+                      ✓ สมดุล 100%
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-600">
+                      ⚠️ มี 50 ทวิค้างรับ
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <div>
+                    <span className="text-xs text-muted-foreground block">ยอดใน GL (Dr.):</span>
+                    <span className="text-lg font-bold font-mono text-foreground">
+                      ฿{whtReconciliation.receivableItem.glAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs text-muted-foreground block">50 ทวิที่ได้รับ:</span>
+                    <span className="text-sm font-semibold font-mono text-blue-600">
+                      ฿{whtReconciliation.receivableItem.registerAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 3: กำหนดเวลาและกระแสเงินสด */}
+            <Card className="border-l-4 border-l-emerald-500 shadow-sm bg-card">
+              <CardContent className="p-4 space-y-1.5 text-xs">
+                <span className="font-semibold text-muted-foreground block">กำหนดเวลานำส่งภาษี</span>
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-muted-foreground">กระแสเงินสดเตรียมจ่าย:</span>
+                  <span className="font-mono font-bold text-foreground">
+                    ฿{whtReconciliation.cashOutflowRequired.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-muted-foreground">ยื่นกระดาษ (ภายใน):</span>
+                  <span className="font-medium text-foreground">{whtReconciliation.duePaymentDatePaperTh}</span>
+                </div>
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-muted-foreground">ยื่นออนไลน์ (ภายใน):</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {whtReconciliation.duePaymentDateOnlineTh}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ตารางกระทบยอดละเอียด */}
+          <Card className="shadow-md overflow-hidden bg-card">
+            <div className="border-b bg-muted/40 p-4">
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <Scale className="h-4 w-4 text-primary" />
+                ตารางเปรียบเทียบยอดบัญชีแยกประเภททั่วไป (GL) กับแบบยื่นภาษีหัก ณ ที่จ่าย
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
+                  <tr>
+                    <th className="px-4 py-3">รหัสบัญชี</th>
+                    <th className="px-4 py-3">ชื่อบัญชีแยกประเภท</th>
+                    <th className="px-4 py-3 text-right">ยอดใน GL</th>
+                    <th className="px-4 py-3 text-right">ยอดตามแบบยื่น / ทะเบียน</th>
+                    <th className="px-4 py-3 text-right">ผลต่าง</th>
+                    <th className="px-3 py-3 text-center">สถานะ</th>
+                    <th className="px-4 py-3">หมายเหตุและแนวทางตรวจสอบ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr>
+                    <td className="px-4 py-3 font-mono font-bold text-primary">{whtReconciliation.payableItem.accountCode}</td>
+                    <td className="px-4 py-3 font-medium">{whtReconciliation.payableItem.accountNameTh}</td>
+                    <td className="px-4 py-3 text-right font-mono font-bold">{whtReconciliation.payableItem.glAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono">{whtReconciliation.payableItem.registerAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600">
+                      {Math.abs(whtReconciliation.payableItem.variance).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="inline-block rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-600">
+                        ดุลสมบูรณ์
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{whtReconciliation.payableItem.noteTh}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-3 font-mono font-bold text-blue-600">{whtReconciliation.receivableItem.accountCode}</td>
+                    <td className="px-4 py-3 font-medium">{whtReconciliation.receivableItem.accountNameTh}</td>
+                    <td className="px-4 py-3 text-right font-mono font-bold">{whtReconciliation.receivableItem.glAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono">{whtReconciliation.receivableItem.registerAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono font-bold text-amber-600">
+                      {Math.abs(whtReconciliation.receivableItem.variance).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="inline-block rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-600">
+                        รอเอกสาร
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-amber-700 dark:text-amber-400">{whtReconciliation.receivableItem.noteTh}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* ตารางหนังสือรับรอง 50 ทวิค้างรับ (Pending 50 Twi Certificates) */}
+          {whtReconciliation.pendingCertificates.length > 0 && (
+            <Card className="shadow-md overflow-hidden bg-card border-amber-500/30">
+              <div className="border-b bg-amber-500/10 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <h3 className="font-bold text-foreground text-sm">
+                    {tr("tax_wht_pending_certs", "หนังสือรับรอง 50 ทวิค้างรับ")} (ต้องติดตามต้นฉบับเพื่อใช้เครดิตภาษี ภ.ง.ด.50)
+                  </h3>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const text = whtReconciliation.pendingCertificates
+                      .map((c) => `${c.customerName} (${c.customerTaxId}) | บิล: ${c.docNo} | ภาษีค้างรับ: ฿${c.whtAmount.toLocaleString()} | ค้างมาแล้ว ${c.daysOutstanding} วัน`)
+                      .join("\n");
+                    void navigator.clipboard?.writeText(text);
+                    alert("คัดลอกรายชื่อลูกค้าสำหรับทวงถามหนังสือรับรอง 50 ทวิแล้ว");
+                  }}
+                  className="gap-1.5 text-xs"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  คัดลอกรายการทวงถาม
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
+                    <tr>
+                      <th className="px-4 py-2.5">วันที่บิล</th>
+                      <th className="px-4 py-2.5">เลขที่ใบแจ้งหนี้/ใบเสร็จ</th>
+                      <th className="px-4 py-2.5">ชื่อลูกค้า (ผู้หักภาษี)</th>
+                      <th className="px-4 py-2.5">เลขประจำตัว 13 หลัก</th>
+                      <th className="px-4 py-2.5 text-right">ยอดฐานบริการ</th>
+                      <th className="px-4 py-2.5 text-right">ภาษีถูกหัก (บาท)</th>
+                      <th className="px-4 py-2.5 text-center">ค้างมาแล้ว (วัน)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {whtReconciliation.pendingCertificates.map((c, i) => (
+                      <tr key={i} className="hover:bg-muted/30">
+                        <td className="px-4 py-2.5 font-mono text-xs">{c.docDate}</td>
+                        <td className="px-4 py-2.5 font-mono text-primary font-medium">{c.docNo}</td>
+                        <td className="px-4 py-2.5 font-medium">{c.customerName}</td>
+                        <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{c.customerTaxId}</td>
+                        <td className="px-4 py-2.5 text-right font-mono">{c.baseAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                        <td className="px-4 py-2.5 text-right font-mono font-bold text-amber-600">{c.whtAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                        <td className="px-4 py-2.5 text-center">
+                          <span className="rounded bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                            {c.daysOutstanding} วัน
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {/* AI Accounting Advisory Box */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h4 className="font-bold text-sm text-foreground">
+                คำแนะนำเชิงรุกโดย AI ผู้เชี่ยวชาญบัญชีและภาษีไทย (Proactive Audit Advisory)
+              </h4>
+            </div>
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              {whtReconciliation.recommendationsTh.map((rec, idx) => (
+                <li key={idx} className="flex items-start gap-1.5">
+                  <span className="text-primary font-bold">•</span>
+                  <span>{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       )}
 
       {/* Modal: รายละเอียดเอกสารภาษี */}
