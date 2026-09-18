@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-18 @ commit 121de243 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-18 @ commit a3e84c5c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 49
 
@@ -878,28 +878,28 @@ Files indexed: 49
 | 69 | function | `InitialChartOfAccountCenter` |
 | 76 | function | `CenterChartOfAccount` |
 
-## frontend/src/app/system-settings/company-branch-tree-view.tsx (2173 lines)
+## frontend/src/app/system-settings/company-branch-tree-view.tsx (2165 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 172 | function | `dateFormatOptionsFor` |
-| 236 | function | `defaultDocFormat` |
-| 255 | function | `buildDocExample` |
-| 275 | function | `duplicateDocPrefixes` |
-| 284 | function | `DocSelect` |
-| 306 | function | `DocFormatBuilder` |
-| 314 | const-arrow | `update` |
-| 431 | function | `BranchGeoAddressPicker` |
-| 508 | function | `chooseProvince` |
-| 533 | function | `chooseDistrict` |
-| 556 | function | `chooseSubdistrict` |
-| 569 | function | `applyPostalCode` |
-| 678 | function | `CompanyBranchTreeView` |
-| 869 | const-arrow | `closeConfirmCodeDialog` |
-| 873 | const-arrow | `handleConfirmCodeSubmit` |
-| 942 | const-arrow | `handleLogoUpload` |
-| 1001 | const-arrow | `handleSave` |
-| 2154 | function | `saveErrorMessage` |
+| 173 | function | `dateFormatOptionsFor` |
+| 237 | function | `defaultDocFormat` |
+| 256 | function | `buildDocExample` |
+| 276 | function | `duplicateDocPrefixes` |
+| 285 | function | `DocSelect` |
+| 307 | function | `DocFormatBuilder` |
+| 315 | const-arrow | `update` |
+| 432 | function | `BranchGeoAddressPicker` |
+| 509 | function | `chooseProvince` |
+| 534 | function | `chooseDistrict` |
+| 557 | function | `chooseSubdistrict` |
+| 570 | function | `applyPostalCode` |
+| 679 | function | `CompanyBranchTreeView` |
+| 870 | const-arrow | `closeConfirmCodeDialog` |
+| 874 | const-arrow | `handleConfirmCodeSubmit` |
+| 943 | const-arrow | `handleLogoUpload` |
+| 1002 | const-arrow | `handleSave` |
+| 2146 | function | `saveErrorMessage` |
 
 ## frontend/src/app/menu/product-set-screen.tsx (2163 lines)
 

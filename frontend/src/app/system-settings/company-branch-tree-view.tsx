@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChoiceSelect } from "@/components/ui/select";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
+import { Checkbox, CheckboxCard } from "@/components/ui/checkbox";
 
 import { LogoAvatar } from "@/components/logo-avatar";
 import { type LanguageCode, LANGUAGES } from "@/lib/i18n";
@@ -353,7 +354,7 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
                     return (
                       <div key={i} className={cn("rounded-lg border p-2.5", f.isdefault ? "border-primary ring-1 ring-primary/30" : "border-border", !f.enabled && "opacity-60")}>
                         <div className="flex items-center gap-2">
-                          <input type="checkbox" checked={f.enabled} disabled={disabled} aria-label={tr("st_activate_format", "เปิดใช้งานรูปแบบ")} onChange={(e) => update(i, { enabled: e.target.checked })} className="h-4 w-4 shrink-0" />
+                          <Checkbox checked={f.enabled} disabled={disabled} aria-label={tr("st_activate_format", "เปิดใช้งานรูปแบบ")} onCheckedChange={(checked) => update(i, { enabled: checked })} />
                           <Input value={f.name} placeholder={tr("pattern_name", "ชื่อรูปแบบ")} disabled={disabled} onChange={(e) => update(i, { name: e.target.value })} className="h-8 flex-1 text-sm" />
                           <Input value={f.prefix} placeholder={f.doctype} maxLength={10} disabled={disabled} onChange={(e) => update(i, { prefix: normalizeDocPrefix(e.target.value) })} className={cn("h-8 w-24 text-center text-sm uppercase", dup && "border-destructive text-destructive")} />
                           <button type="button" aria-label={tr("st_set_as_default", "ตั้งเป็นค่าเริ่มต้น")} title={tr("st_set_as_default", "ตั้งเป็นค่าเริ่มต้น")} disabled={disabled} onClick={() => setDefault(i, f.doctype)} className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-md", f.isdefault ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted")}>
@@ -1867,18 +1868,15 @@ export function CompanyBranchTreeView({
                         />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
+                    <div className="pt-1">
+                      <CheckboxCard
                         id="isvatregistered"
+                        label={tr("st_vat_registration", "จดทะเบียนภาษีมูลค่าเพิ่ม (VAT)")}
                         checked={formIsVatRegistered}
-                        onChange={(e) => setFormIsVatRegistered(e.target.checked)}
                         disabled={isReadOnlyMode}
-                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                        onCheckedChange={setFormIsVatRegistered}
+                        cardClassName="w-full"
                       />
-                      <label htmlFor="isvatregistered" className="text-sm font-semibold text-foreground cursor-pointer select-none">
-                        {tr("st_vat_registration", "จดทะเบียนภาษีมูลค่าเพิ่ม (VAT)")}
-                      </label>
                     </div>
                   </div>
                 )}
@@ -1946,18 +1944,15 @@ export function CompanyBranchTreeView({
                         </div>
                       );
                     })()}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
+                    <div className="pt-1">
+                      <CheckboxCard
                         id="etaxenabled"
+                        label={tr("st_enable_e_tax", "เปิดใช้ใบกำกับภาษีอิเล็กทรอนิกส์ (e-Tax)")}
                         checked={formETaxEnabled}
-                        onChange={(e) => setFormETaxEnabled(e.target.checked)}
                         disabled={isReadOnlyMode}
-                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                        onCheckedChange={setFormETaxEnabled}
+                        cardClassName="w-full"
                       />
-                      <label htmlFor="etaxenabled" className="text-sm font-semibold text-foreground cursor-pointer select-none">
-                        {tr("st_enable_e_tax", "เปิดใช้ใบกำกับภาษีอิเล็กทรอนิกส์ (e-Tax)")}
-                      </label>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {tr("st_auto_doc_number_note", "* การออกเลขที่เอกสารอัตโนมัติและการส่ง e-Tax เป็นระบบแยก ยังไม่เปิดใช้งาน — ค่านี้เก็บไว้ตั้งค่าล่วงหน้า")}
@@ -2014,19 +2009,16 @@ export function CompanyBranchTreeView({
                   </div>
                 )}
 
-                 <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="isactive"
-                    checked={formType.startsWith("create") || formIsActive}
-                    onChange={(e) => setFormIsActive(e.target.checked)}
-                    disabled={isReadOnlyMode || formType.startsWith("create")}
-                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                  />
-                  <label htmlFor="isactive" className="text-sm font-semibold text-foreground cursor-pointer select-none">
-                    {tr("st_enable_in_system", "เปิดใช้งานในระบบ")}
-                  </label>
-                 </div>
+                  <div className="pt-2">
+                    <CheckboxCard
+                      id="isactive"
+                      label={tr("st_enable_in_system", "เปิดใช้งานในระบบ")}
+                      checked={formType.startsWith("create") || formIsActive}
+                      disabled={isReadOnlyMode || formType.startsWith("create")}
+                      onCheckedChange={setFormIsActive}
+                      cardClassName="w-full"
+                    />
+                  </div>
                 {selectedNode && !formType.startsWith("create") && formIsActive !== (selectedNode.data.isactive !== false) && (
                   <label className="block space-y-1.5">
                     <span className="text-sm font-semibold text-foreground">{tr("st_reason_status_change", "เหตุผลที่เปลี่ยนสถานะ")}</span>

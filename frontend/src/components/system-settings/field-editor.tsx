@@ -14,6 +14,7 @@ import type {
 } from "@/lib/system-setting-screens";
 import { DateField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
+import { CheckboxCard } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
   type SettingRecord,
@@ -231,17 +232,15 @@ export function FieldEditor({
 
   if (field.type === "checkbox") {
     return (
-      <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-border bg-background p-3 text-sm font-semibold">
-        <input
-          className="size-4 accent-primary"
-          type="checkbox"
-          checked={Boolean(value)}
-          onChange={(event) =>
-            setForm({ ...form, [field.key]: event.target.checked })
-          }
-        />
-        <span>{label}</span>
-      </label>
+      <CheckboxCard
+        label={label}
+        hint={helper}
+        checked={Boolean(value)}
+        onCheckedChange={(checked) =>
+          setForm({ ...form, [field.key]: checked })
+        }
+        cardClassName="w-full"
+      />
     );
   }
 

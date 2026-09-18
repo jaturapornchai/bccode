@@ -214,7 +214,10 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
   - แก้ปัญหา Native Checkbox เดิมที่บราวเซอร์แสดงผลเป็นแท่งตรงๆ แบนราบ ไร้ padding และแข็งกระด้าง
   - พัฒนาเป็น Interactive Pill Card มี padding สบายตา (`px-3.5 py-2`), ขอบมน `rounded-xl`, มิติเงา Soft Depth Elevation `shadow-[0_2px_8px_rgba(0,0,0,0.06)]`
   - สร้าง Custom Indicator Box ขนาด `size-5` (20x20px) ขอบมน `rounded-md` เมื่อเลือก (checked) แสดงพื้นหลังสี Primary พร้อมไอคอน `CheckIcon` สีขาวคมชัด สวยงาม นุ่มนวล มีชีวิตชีวา
-  - รองรับการเข้าถึงสมบูรณ์ (Accessibility: Hidden input `sr-only`, Spacebar toggle, Focus ring ชัดเจน)
+- **ขยาย Checkbox Component สากลสู่ System Settings & Tree View (`@/components/ui/checkbox.tsx`)**:
+  - สร้าง Shared UI Component `Checkbox` และ `CheckboxCard` สากลของระบบ
+  - นำไปแทนที่ Native Checkbox ใน `frontend/src/components/system-settings/field-editor.tsx` เพื่อให้ทุกฟิลด์การตั้งค่าระบบที่เป็น checkbox ได้รับดีไซน์ Pill Card มี padding, ขอบมน, และ indicator สวยงาม
+  - นำไปปรับปรุงใน `frontend/src/app/system-settings/company-branch-tree-view.tsx` ครบทุกจุด ทั้งตารางรูปแบบเอกสาร (`f.enabled`), สวิตช์จดทะเบียนภาษีมูลค่าเพิ่ม (`isvatregistered`), ใบกำกับภาษีอิเล็กทรอนิกส์ (`etaxenabled`), และเปิดใช้งานสาขา (`isactive`)
 - **Excel / Google Sheets Smart Paste ในตารางลงบัญชี GL (`gl-journals.tsx`)**:
   - รองรับการคัดลอกตารางจาก Excel หรือ Google Sheets แล้วกด `Ctrl+V` หรือคลิกปุ่ม `Excel Paste` เพื่อนำเข้าเดบิต/เครดิตเข้าสู่ตาราง GL Journal ได้ทันที
   - สร้างโมดูล `clipboard-journal-parser.ts` อัจฉริยะ: ตรวจจับ header, ล้างคอมม่าและสัญลักษณ์สกุลเงิน, รองรับ 3-4-5 คอลัมน์, ข้ามบรรทัดว่าง/ยอดรวม
@@ -226,12 +229,12 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
   - ปุ่ม Copy Link ด่วนด้านขวา คัดลอก URL หน้าจอส่งต่อให้เพื่อนร่วมงานได้ใน 1 คลิก พร้อมไอคอนและเอฟเฟกต์นุ่มนวล
   - ติดตั้งในหน้าหลัก: General Ledger Workbench, ERP Master-Detail CRUD Workbench, และ ERP Report Viewer
 
-**ไฟล์สำคัญ:** `frontend/src/app/gl/gl-common.tsx`, `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/lib/clipboard-journal-parser.ts`, `frontend/src/hooks/use-tabular-enter-nav.ts`, `frontend/src/components/smart-breadcrumb.tsx`, `frontend/src/app/gl/general-ledger-screen.tsx`, `frontend/src/app/crud/erp-crud-workbench.tsx`, `frontend/src/app/report/erp-report-viewer.tsx`, `docs/reference/CODE-MAP.md`
+**ไฟล์สำคัญ:** `frontend/src/components/ui/checkbox.tsx`, `frontend/src/components/system-settings/field-editor.tsx`, `frontend/src/app/system-settings/company-branch-tree-view.tsx`, `frontend/src/app/gl/gl-common.tsx`, `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/lib/clipboard-journal-parser.ts`, `frontend/src/hooks/use-tabular-enter-nav.ts`, `frontend/src/components/smart-breadcrumb.tsx`, `frontend/src/app/gl/general-ledger-screen.tsx`, `frontend/src/app/crud/erp-crud-workbench.tsx`, `frontend/src/app/report/erp-report-viewer.tsx`, `docs/reference/CODE-MAP.md`
 
 **ผลการทดสอบ (Evidence):**
 - TypeScript typecheck: ผ่าน 100% 0 errors (`tsc --noEmit`)
 - Frontend ESLint: ผ่าน 100% 0 errors
-- Unit tests: ผ่าน 85 test files / 614 tests ผ่านครบ 100% (รวม `gl-language-keys.test.ts`, `clipboard-journal-parser.test.ts`, `use-tabular-enter-nav.test.ts`, `smart-breadcrumb.test.ts`)
+- Unit tests: ผ่าน 86 test files / 618 tests ผ่านครบ 100% (รวม `checkbox.test.ts`, `gl-language-keys.test.ts`, `clipboard-journal-parser.test.ts`, `use-tabular-enter-nav.test.ts`, `smart-breadcrumb.test.ts`)
 - Scope Control: Zero-Backend touch ไม่แตะ Backend / Database ใดๆ
 
 ### 2026-09-17 — ปิดกับดัก Schema ค้างบนเครื่องจริง, สร้างโมดูลใบวางบิล (Billing Note) และเชื่อม Route ธุรกรรมครบ 100%
