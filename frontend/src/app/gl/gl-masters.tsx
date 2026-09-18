@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { accountName, accountTypeLabels, bookLabels, emptyAccount, emptyFiscalYear, emptyMaster, formatAmount, type GLAccount, type GLFiscalYear, type GLMaster, type GLRecord, type GLResource } from "@/lib/general-ledger";
+import { accountName, accountTypeLabels, bookLabels, emptyAccount, emptyFiscalYear, emptyMaster, formatAmount, type GLAccount, type GLFiscalYear, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
 
 type MasterResource = Exclude<GLResource, "journals">;
 function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : emptyMaster(); }
@@ -50,6 +51,148 @@ export function saveFailureTarget(resource: string) { return resource === "accou
 function recordCode(record: GLRecord) { return "accountcode" in record && "names" in record ? record.accountcode : "code" in record ? record.code : ""; }
 function recordName(record: GLRecord) { return "names" in record ? accountName(record) : "name" in record ? record.name : ""; }
 
+export function TreeNodeRow({
+  node,
+  depth,
+  selectedId,
+  isEditing,
+  expandedNodes,
+  onToggleNode,
+  onSelect,
+  onEdit,
+  onDelete,
+  tr,
+}: {
+  node: AccountTreeNode;
+  depth: number;
+  selectedId?: string;
+  isEditing: boolean;
+  expandedNodes: Record<string, boolean>;
+  onToggleNode: (code: string) => void;
+  onSelect: (acc: GLAccount) => void;
+  onEdit: (acc: GLAccount) => void;
+  onDelete: (acc: GLAccount) => void;
+  tr: GLTextFn;
+}) {
+  const acc = node.account;
+  const isSelected = selectedId === acc.id;
+  const isRowEditing = isSelected && isEditing;
+  const isControl = !acc.allowposting;
+  const isActive = acc.isactive ?? true;
+  const isExpanded = expandedNodes[acc.accountcode] ?? (depth < 2);
+
+  return (
+    <div className="flex flex-col">
+      <div
+        className={`group flex items-center justify-between gap-2 px-3 py-1.5 cursor-pointer transition-colors text-[0.95rem] border-b border-border/40 ${
+          isRowEditing
+            ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
+            : isSelected
+              ? "bg-primary/10 ring-1 ring-inset ring-primary/40 font-medium"
+              : "hover:bg-accent/60"
+        }`}
+        style={{ paddingLeft: `${8 + depth * 20}px` }}
+        onClick={() => onSelect(acc)}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {node.hasChildren ? (
+            <button
+              type="button"
+              className="p-0.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted shrink-0 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleNode(acc.accountcode);
+              }}
+              aria-label={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+            </button>
+          ) : (
+            <span className="w-4 shrink-0 text-muted-foreground/40 text-center font-mono select-none text-xs">
+              {depth > 0 ? "└" : ""}
+            </span>
+          )}
+
+          <span className="font-mono font-bold text-primary shrink-0 min-w-24">
+            {acc.accountcode}
+          </span>
+
+          <span className="truncate text-foreground font-medium max-w-72" title={accountName(acc)}>
+            {accountName(acc)}
+          </span>
+
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto mr-2">
+            <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
+              L{node.level}
+            </span>
+
+            {isControl ? (
+              <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground border border-border">
+                {tr("gl_control_account", "บัญชีคุม")}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                {tr("gl_posting_account", "บัญชีย่อย")}
+              </span>
+            )}
+
+            {!isActive && (
+              <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                {tr("gl_disable", "ปิดใช้งาน")}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            className="size-7 rounded-md bg-background text-primary border-primary/30 hover:bg-primary/15 shadow-none shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(acc);
+            }}
+            title={tr("gl_edit_label", "แก้ไข (Edit)")}
+          >
+            <Pencil className="size-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            className="size-7 rounded-md bg-background text-destructive border-border hover:bg-destructive/10 shadow-none shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(acc);
+            }}
+            title={tr("gl_delete", "ลบ")}
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {isExpanded && node.children.map((child) => (
+        <TreeNodeRow
+          key={child.account.accountcode}
+          node={child}
+          depth={depth + 1}
+          selectedId={selectedId}
+          isEditing={isEditing}
+          expandedNodes={expandedNodes}
+          onToggleNode={onToggleNode}
+          onSelect={onSelect}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          tr={tr}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function GLMasters({ resource, route }: { resource: MasterResource; route: string }) {
   const tr = useGLText();
   const [search, setSearch] = useState("");
@@ -61,6 +204,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     },
     debounceMs: 2000,
   });
+
   const density = useRowDensity();
   const [revision, setRevision] = useState(0), refs = useReferences(revision);
   const [record, setRecord] = useState<GLRecord | null>(null), [original, setOriginal] = useState("");
@@ -228,6 +372,49 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   const alerts = editorAlert({ error, listError: list.error, refsError: refs.error, hasRecord: !!record });
   const colSpan = 4 + (hasAmount ? 1 : 0) + (isAcc ? 1 : 0);
 
+  const [viewMode, setViewMode] = useState<"list" | "tree">("list");
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    asset: true,
+    liability: true,
+    equity: true,
+    income: true,
+    expense: true,
+  });
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
+  const toggleNode = (code: string) => {
+    setExpandedNodes((prev) => ({ ...prev, [code]: !(prev[code] ?? true) }));
+  };
+
+  const treeAccounts = useMemo(() => {
+    return refs.accounts.length > 0 ? refs.accounts : (list.data.items as GLAccount[]);
+  }, [refs.accounts, list.data.items]);
+
+  const expandAll = () => {
+    setExpandedCategories({ asset: true, liability: true, equity: true, income: true, expense: true });
+    const allNodes: Record<string, boolean> = {};
+    for (const a of treeAccounts) {
+      allNodes[a.accountcode] = true;
+    }
+    setExpandedNodes(allNodes);
+  };
+
+  const collapseAll = () => {
+    setExpandedCategories({ asset: false, liability: false, equity: false, income: false, expense: false });
+    setExpandedNodes({});
+  };
+
+  const treeGroups = useMemo(() => {
+    if (!isAcc) return [];
+    const base = buildChartOfAccountsTree(treeAccounts);
+    if (!searchDebounce.query.trim()) return base;
+    return filterAccountTree(base, searchDebounce.query);
+  }, [isAcc, treeAccounts, searchDebounce.query]);
+
   return <div className="flex flex-col flex-1 min-h-0 gap-2">
     <div className="shrink-0 flex flex-col gap-2"><Notice error text={alerts.page} /><Notice text={message} /></div>
     <SplitWorkbench list={<div className="flex flex-col flex-1 min-h-0 gap-2">
@@ -247,138 +434,255 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
             <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
             <Button type="button" variant="outline" className={actionClass} aria-pressed={density.compact} onClick={density.toggle}>{density.compact ? tr("gl_expand_row", "ขยายบรรทัด") : tr("gl_collapse_row", "ย่อบรรทัด")}</Button>
+            {isAcc && (
+              <Button
+                type="button"
+                variant={viewMode === "tree" ? "default" : "outline"}
+                className={actionClass}
+                onClick={() => setViewMode((m) => m === "tree" ? "list" : "tree")}
+                title={viewMode === "tree" ? tr("gl_view_list", "มุมมองตาราง") : tr("gl_view_tree", "มุมมองผังต้นไม้")}
+              >
+                {viewMode === "tree" ? (
+                  <>
+                    <List className="size-4 mr-1.5" />
+                    {tr("gl_view_list", "มุมมองตาราง")}
+                  </>
+                ) : (
+                  <>
+                    <FolderTree className="size-4 mr-1.5" />
+                    {tr("gl_view_tree", "มุมมองผังต้นไม้")}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </form>
         <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/80">{tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}</span>
-          {density.compact && <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{tr("gl_collapse_row_mode", "โหมดย่อบรรทัด")}</span>}
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground/80">
+              {isAcc && viewMode === "tree"
+                ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(treeAccounts.length.toLocaleString("th-TH")))
+                : tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}
+            </span>
+            {isAcc && viewMode === "tree" && (
+              <span className="inline-flex items-center rounded-md bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-medium border border-primary/20">
+                {tr("gl_view_tree", "มุมมองผังต้นไม้")}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {isAcc && viewMode === "tree" && (
+              <>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline cursor-pointer"
+                  onClick={expandAll}
+                >
+                  {tr("gl_expand_all", "ขยายทั้งหมด")}
+                </button>
+                <span className="text-border select-none">·</span>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline cursor-pointer"
+                  onClick={collapseAll}
+                >
+                  {tr("gl_collapse_all", "ยุบทั้งหมด")}
+                </button>
+              </>
+            )}
+            {density.compact && <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{tr("gl_collapse_row_mode", "โหมดย่อบรรทัด")}</span>}
+          </div>
         </div>
       </div>
-      <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm" aria-busy={list.loading}>
-        <table className={`w-full text-left text-[0.95rem] leading-normal ${density.tableClass}`}>
-          <thead className="sticky top-0 bg-muted z-10">
-            <tr>
-              <th className="p-2.5">{tr("gl_code", "รหัส")}</th>
-              <th className="p-2.5 min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
-              {hasAmount && <th className="p-2.5 text-right w-36">{tr("gl_amount", "จำนวนเงิน")}</th>}
-              {isAcc && <th className="p-2.5 text-center w-24">{tr("gl_level", "ระดับ")}</th>}
-              <th className="p-2.5 text-center w-28">{tr("gl_status", "สถานะ")}</th>
-              <th className="p-2.5 text-right pr-3 w-24">{tr("gl_manage", "จัดการ")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {list.data.items.map((item, index) => {
-              const accLevel = isAcc && "level" in item && typeof item.level === "number" ? item.level : 1;
-              const isSelected = record?.id === item.id;
-              const isRowEditing = isSelected && isEditing;
-              const isLocked = "locked" in item && item.locked;
-              const isClosed = "closed" in item && item.closed;
-              const isActive = !("isactive" in item) || item.isactive;
-              return (
-                <tr
-                  key={item.id}
-                  className={`group cursor-pointer transition-colors ${
-                    isRowEditing
-                      ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
-                      : isSelected
-                        ? "bg-primary/10 ring-1 ring-inset ring-primary/40 font-medium"
-                        : index % 2 === 0
-                          ? "bg-background hover:bg-accent/60"
-                          : "bg-muted/20 hover:bg-accent/60"
-                  }`}
-                  onClick={() => void openView(item)}
+      {isAcc && viewMode === "tree" ? (
+        <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm p-2 flex flex-col gap-2.5 bg-card" aria-busy={list.loading}>
+          {treeGroups.map((group) => {
+            const isCatExpanded = expandedCategories[group.category] ?? true;
+            return (
+              <div key={group.category} className="rounded-xl border border-border/70 overflow-hidden bg-background shadow-xs">
+                {/* Category Header */}
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between p-2.5 bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer text-left select-none"
+                  onClick={() => toggleCategory(group.category)}
                 >
-                  <td className="p-2 whitespace-nowrap">
-                    <span className="font-mono font-bold text-primary">{recordCode(item)}</span>
-                  </td>
-                  <td className="max-w-72 truncate p-2" title={recordName(item)}>
-                    {isAcc && accLevel > 1 ? (
-                      <span style={{ paddingLeft: `${(accLevel - 1) * 16}px` }} className="inline-flex items-center gap-1.5">
-                        <span className="text-muted-foreground select-none font-mono">└─</span>
-                        <span>{recordName(item)}</span>
-                      </span>
-                    ) : (
-                      recordName(item)
+                  <div className="flex items-center gap-2">
+                    <span className="p-0.5 rounded-md text-muted-foreground">
+                      {isCatExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold border ${group.colorClass.badge}`}>
+                      {group.categoryNumber}. {group.nameTh} ({group.nameEn})
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium px-2 py-0.5 rounded-full bg-muted">
+                    {tr("gl_x_items", "{0} รายการ").replace("{0}", String(group.totalAccounts))}
+                  </span>
+                </button>
+
+                {/* Root Nodes */}
+                {isCatExpanded && (
+                  <div className="flex flex-col">
+                    {group.rootNodes.map((node) => (
+                      <TreeNodeRow
+                        key={node.account.accountcode}
+                        node={node}
+                        depth={0}
+                        selectedId={record?.id}
+                        isEditing={isEditing}
+                        expandedNodes={expandedNodes}
+                        onToggleNode={toggleNode}
+                        onSelect={(acc) => void openView(acc)}
+                        onEdit={(acc) => void openEdit(acc)}
+                        onDelete={(acc) => void deleteItem(acc)}
+                        tr={tr}
+                      />
+                    ))}
+                    {group.rootNodes.length === 0 && (
+                      <div className="p-3 text-xs text-muted-foreground text-center">
+                        {tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}
+                      </div>
                     )}
-                  </td>
-                  {hasAmount && (
-                    <td className="p-2 text-right font-mono font-semibold tabular-nums whitespace-nowrap">
-                      {"amount" in item ? formatAmount(item.amount) : "-"}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {treeGroups.every((g) => g.totalAccounts === 0) && (
+            <div className="p-8 text-center text-muted-foreground">
+              {tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm" aria-busy={list.loading}>
+          <table className={`w-full text-left text-[0.95rem] leading-normal ${density.tableClass}`}>
+            <thead className="sticky top-0 bg-muted z-10">
+              <tr>
+                <th className="p-2.5">{tr("gl_code", "รหัส")}</th>
+                <th className="p-2.5 min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
+                {hasAmount && <th className="p-2.5 text-right w-36">{tr("gl_amount", "จำนวนเงิน")}</th>}
+                {isAcc && <th className="p-2.5 text-center w-24">{tr("gl_level", "ระดับ")}</th>}
+                <th className="p-2.5 text-center w-28">{tr("gl_status", "สถานะ")}</th>
+                <th className="p-2.5 text-right pr-3 w-24">{tr("gl_manage", "จัดการ")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {list.data.items.map((item, index) => {
+                const accLevel = isAcc && "level" in item && typeof item.level === "number" ? item.level : 1;
+                const isSelected = record?.id === item.id;
+                const isRowEditing = isSelected && isEditing;
+                const isLocked = "locked" in item && item.locked;
+                const isClosed = "closed" in item && item.closed;
+                const isActive = !("isactive" in item) || item.isactive;
+                return (
+                  <tr
+                    key={item.id}
+                    className={`group cursor-pointer transition-colors ${
+                      isRowEditing
+                        ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
+                        : isSelected
+                          ? "bg-primary/10 ring-1 ring-inset ring-primary/40 font-medium"
+                          : index % 2 === 0
+                            ? "bg-background hover:bg-accent/60"
+                            : "bg-muted/20 hover:bg-accent/60"
+                    }`}
+                    onClick={() => void openView(item)}
+                  >
+                    <td className="p-2 whitespace-nowrap">
+                      <span className="font-mono font-bold text-primary">{recordCode(item)}</span>
                     </td>
-                  )}
-                  {isAcc && (
+                    <td className="max-w-72 truncate p-2" title={recordName(item)}>
+                      {isAcc && accLevel > 1 ? (
+                        <span style={{ paddingLeft: `${(accLevel - 1) * 16}px` }} className="inline-flex items-center gap-1.5">
+                          <span className="text-muted-foreground select-none font-mono">└─</span>
+                          <span>{recordName(item)}</span>
+                        </span>
+                      ) : (
+                        recordName(item)
+                      )}
+                    </td>
+                    {hasAmount && (
+                      <td className="p-2 text-right font-mono font-semibold tabular-nums whitespace-nowrap">
+                        {"amount" in item ? formatAmount(item.amount) : "-"}
+                      </td>
+                    )}
+                    {isAcc && (
+                      <td className="whitespace-nowrap p-2 text-center">
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                          {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(accLevel))}
+                        </span>
+                      </td>
+                    )}
                     <td className="whitespace-nowrap p-2 text-center">
-                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                        {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(accLevel))}
-                      </span>
+                      {isLocked ? (
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
+                          {tr("gl_locked", "ล็อกแล้ว")}
+                        </span>
+                      ) : isClosed ? (
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
+                          {tr("gl_year_closed", "ปิดปีแล้ว")}
+                        </span>
+                      ) : !isActive ? (
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
+                          {tr("gl_disable", "ปิดใช้งาน")}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                          {tr("gl_enable", "ใช้งาน")}
+                        </span>
+                      )}
                     </td>
-                  )}
-                  <td className="whitespace-nowrap p-2 text-center">
-                    {isLocked ? (
-                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
-                        {tr("gl_locked", "ล็อกแล้ว")}
-                      </span>
-                    ) : isClosed ? (
-                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
-                        {tr("gl_year_closed", "ปิดปีแล้ว")}
-                      </span>
-                    ) : !isActive ? (
-                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
-                        {tr("gl_disable", "ปิดใช้งาน")}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                        {tr("gl_enable", "ใช้งาน")}
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-2 text-right whitespace-nowrap pr-2" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="size-7 rounded-md bg-background text-primary border-primary/30 hover:bg-primary/15 hover:border-primary/50 shadow-none transition-colors shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void openEdit(item);
-                        }}
-                        aria-label={tr("gl_edit", "แก้ไข")}
-                        title={tr("gl_edit_label", "แก้ไข (Edit)")}
-                      >
-                        <Pencil className="size-3.5 shrink-0" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="size-7 rounded-md bg-background text-destructive border-border hover:bg-destructive/10 hover:border-destructive/40 focus-visible:border-destructive/50 focus-visible:ring-destructive/30 shadow-none transition-colors shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void deleteItem(item);
-                        }}
-                        aria-label={tr("gl_delete", "ลบ")}
-                        title={tr("gl_delete_label", "ลบ (Delete)")}
-                      >
-                        <Trash2 className="size-3.5 shrink-0" />
-                      </Button>
-                    </div>
+                    <td className="p-2 text-right whitespace-nowrap pr-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          className="size-7 rounded-md bg-background text-primary border-primary/30 hover:bg-primary/15 hover:border-primary/50 shadow-none transition-colors shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void openEdit(item);
+                          }}
+                          aria-label={tr("gl_edit", "แก้ไข")}
+                          title={tr("gl_edit_label", "แก้ไข (Edit)")}
+                        >
+                          <Pencil className="size-3.5 shrink-0" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          className="size-7 rounded-md bg-background text-destructive border-border hover:bg-destructive/10 hover:border-destructive/40 focus-visible:border-destructive/50 focus-visible:ring-destructive/30 shadow-none transition-colors shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void deleteItem(item);
+                          }}
+                          aria-label={tr("gl_delete", "ลบ")}
+                          title={tr("gl_delete_label", "ลบ (Delete)")}
+                        >
+                          <Trash2 className="size-3.5 shrink-0" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!list.data.items.length && (
+                <tr>
+                  <td colSpan={colSpan} className="p-6 text-center text-muted-foreground">
+                    {list.loading ? tr("gl_loading_data", "กำลังโหลดข้อมูล…") : tr("gl_no_entries_add", "ยังไม่มีรายการ กดเพิ่มรายการเพื่อเริ่มต้น")}
                   </td>
                 </tr>
-              );
-            })}
-            {!list.data.items.length && (
-              <tr>
-                <td colSpan={colSpan} className="p-6 text-center text-muted-foreground">
-                  {list.loading ? tr("gl_loading_data", "กำลังโหลดข้อมูล…") : tr("gl_no_entries_add", "ยังไม่มีรายการ กดเพิ่มรายการเพื่อเริ่มต้น")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      <Pager page={list.page} total={list.data.total} onPage={list.setPage} loading={list.loading} />
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(!isAcc || viewMode === "list") && (
+        <Pager page={list.page} total={list.data.total} onPage={list.setPage} loading={list.loading} />
+      )}
     </div>} editor={record ? (
+
       !isEditing ? (
         <div className="flex flex-col h-full min-h-0 gap-3">
           <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 shrink-0">

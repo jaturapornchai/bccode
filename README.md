@@ -1279,4 +1279,36 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `backend/assets/language/languages.tsv`
 - `README.md`
 
+### 2026-09-18 — เพิ่มระบบ Interactive Drill-Down ในรายงาน GL และผังบัญชีแบบต้นไม้ 5 หมวดหมู่ (Hierarchical Chart of Accounts Tree View)
+
+**ประเภทงาน:** `[Feature]` `[Accounting & General Ledger]` `[UX/UI]` `[TFRS Compliance]`
+
+**สิ่งที่ทำ:**
+1. **ระบบ Interactive Drill-Down ในรายงานแยกประเภทและงบทดลอง (`frontend/src/app/gl/gl-reports.tsx`)**:
+   - **เจาะลึกดูใบสำคัญรายวันต้นทาง (Voucher Drill-Down Modal)**: คลิกที่เลขที่เอกสาร (`docno`, `documentno`, `reference`) บนรายงาน GL ใดๆ เพื่อเปิดหน้าต่างดูรายละเอียดใบสำคัญรายวันฉบับเต็ม (`JournalDrillDownModal`) ทันที พร้อมแสดงวันที่, สมุดรายวัน, สถานะ (ฉบับร่าง/ผ่านรายการแล้ว/กลับรายการแล้ว), คำอธิบายรายการ, บรรทัดเดบิต-เครดิตครบทุกคู่บัญชี และการตรวจสอบเดบิต=เครดิตสมดุล 100%
+   - **เจาะลึกข้ามรายงานสู่แยกประเภท (Drill to Ledger)**: ในรายงานงบทดลอง (Trial Balance) และงบการเงิน คลิกที่รหัสบัญชีเพื่อเจาะลึกเข้าไปดูรายงานแยกประเภท (General Ledger) ของบัญชีนั้นได้ทันทีโดยไม่ต้องไปตั้งค่าตัวกรองใหม่ พร้อมปุ่มย้อนกลับสู่รายงานก่อนหน้าอย่างลื่นไหล
+2. **ผังบัญชีแบบต้นไม้ 5 หมวดหมู่มาตรฐาน TFRS (Chart of Accounts Tree View) (`frontend/src/lib/chart-of-accounts-tree.ts`, `gl-masters.tsx`)**:
+   - แยกโครงสร้างผังบัญชีตามมาตรฐานการบัญชีไทยเป็น 5 หมวดหมู่หลัก: 1. สินทรัพย์ (Assets), 2. หนี้สิน (Liabilities), 3. ส่วนของเจ้าของ (Equity), 4. รายได้ (Income), และ 5. ค่าใช้จ่าย (Expenses)
+   - ป้ายกำกับสีแยกหมวดหมู่ชัดเจน, นับจำนวนบัญชีในแต่ละหมวด, ปุ่มพับ/ขยายสาขา (`ChevronDown` / `ChevronRight`) และปุ่ม "ขยายทั้งหมด" / "ยุบทั้งหมด"
+   - แยกประเภทบัญชีด้วย Badge: "บัญชีคุม" (Control Account) และ "บัญชีย่อย (บันทึกรายการ)" (Posting Account) พร้อมระบุระดับบัญชี (L1, L2, L3...)
+   - ปุ่มสลับมุมมองระหว่าง "มุมมองผังต้นไม้" (Tree View) และ "มุมมองตาราง" (Table View) บนแถบเครื่องมือ
+   - ระบบค้นหาอัจฉริยะแบบรักษาเส้นทางสาขา (Root-to-Leaf Path Preservation) ค้นหารหัสหรือชื่อบัญชีแล้วคงโครงสร้างต้นไม้ไว้
+3. **การแปลภาษาและสอดคล้อง 100% กับระบบหลายภาษา (`languages.tsv`)**:
+   - เพิ่มคำแปลครบทั้ง 13 ภาษาสำหรับคีย์: `gl_view_tree`, `gl_view_list`, `gl_expand_all`, `gl_collapse_all`, `gl_voucher_detail`, `gl_drill_to_ledger`, `gl_control_account`, `gl_posting_account`, `gl_back_to_report`, `gl_ledger_drill_account`, `gl_accounting_check`, `gl_date`, `gl_debit_equals_credit`, `gl_debit_not_equals_credit`, `gl_head_office`, `gl_reference`
+4. **การทดสอบความถูกต้องและการยืนยันผล 100%**:
+   - Unit tests ใน `gl-reports.test.ts`, `gl-masters.test.ts`, `chart-of-accounts-tree.test.ts`, `gl-language-keys.test.ts` ผ่าน 100%
+   - TypeScript `tsc --noEmit` ผ่าน 0 errors
+   - Next.js Turbopack production build ผ่าน 100%
+
+**ไฟล์สำคัญ:**
+- `frontend/src/lib/chart-of-accounts-tree.ts` (ใหม่)
+- `frontend/src/lib/chart-of-accounts-tree.test.ts` (ใหม่)
+- `frontend/src/app/gl/gl-reports.tsx`
+- `frontend/src/app/gl/gl-reports.test.ts`
+- `frontend/src/app/gl/gl-masters.tsx`
+- `frontend/src/app/gl/gl-masters.test.ts`
+- `backend/assets/language/languages.tsv`
+- `docs/reference/CODE-MAP.md`
+- `README.md`
+
 

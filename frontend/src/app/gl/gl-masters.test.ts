@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, saveFailureTarget } from "./gl-masters";
+import { FormErrorAlert, GLMasters, TreeNodeRow, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, saveFailureTarget } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -288,4 +288,73 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
     expect(normalized.names.some((n) => n.code === "th")).toBe(true);
     expect(normalized.names.find((n) => n.code === "en")?.name).toBe("Cash on hand");
   });
+
+  it("TreeNodeRow renders control account badge for header accounts and posting badge for sub accounts", () => {
+    const controlNode = {
+      account: {
+        id: "acc-ctrl",
+        accountcode: "1100-00",
+        names: [{ code: "th", name: "สินทรัพย์หมุนเวียน" }],
+        accounttype: "asset",
+        allowposting: false,
+        isactive: true,
+        level: 1,
+      } as GLAccount,
+      children: [],
+      level: 1,
+      hasChildren: true,
+      category: "asset" as const,
+    };
+
+    const postingNode = {
+      account: {
+        id: "acc-post",
+        accountcode: "1111-01",
+        names: [{ code: "th", name: "เงินสดในมือ" }],
+        accounttype: "asset",
+        allowposting: true,
+        isactive: true,
+        level: 2,
+      } as GLAccount,
+      children: [],
+      level: 2,
+      hasChildren: false,
+      category: "asset" as const,
+    };
+
+    const ctrlHtml = renderToStaticMarkup(createElement(TreeNodeRow, {
+      node: controlNode,
+      depth: 0,
+      isEditing: false,
+      expandedNodes: {},
+      onToggleNode: () => {},
+      onSelect: () => {},
+      onEdit: () => {},
+      onDelete: () => {},
+      tr: (key: string, fallback: string) => fallback,
+    }));
+
+    const postHtml = renderToStaticMarkup(createElement(TreeNodeRow, {
+      node: postingNode,
+      depth: 1,
+      isEditing: false,
+      expandedNodes: {},
+      onToggleNode: () => {},
+      onSelect: () => {},
+      onEdit: () => {},
+      onDelete: () => {},
+      tr: (key: string, fallback: string) => fallback,
+    }));
+
+    expect(ctrlHtml).toContain("1100-00");
+    expect(ctrlHtml).toContain("สินทรัพย์หมุนเวียน");
+    expect(ctrlHtml).toContain("บัญชีคุม");
+    expect(ctrlHtml).toContain("L1");
+
+    expect(postHtml).toContain("1111-01");
+    expect(postHtml).toContain("เงินสดในมือ");
+    expect(postHtml).toContain("บัญชีย่อย");
+    expect(postHtml).toContain("L2");
+  });
 });
+

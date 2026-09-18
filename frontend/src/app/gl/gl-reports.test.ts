@@ -56,4 +56,33 @@ describe("Thai general ledger report presentation", () => {
     expect(html).toContain(">in</td>");
     expect(html).toContain(">future-status</td>");
   });
+
+  it("renders interactive drill-down buttons when callbacks are provided", () => {
+    const report: GLReport = {
+      sequence: 1,
+      columns: [
+        { key: "accountcode", label: "รหัสบัญชี", amount: false },
+        { key: "docno", label: "เลขที่เอกสาร", amount: false },
+      ],
+      rows: [
+        { accountcode: "1111-01", docno: "JV202609001" },
+      ],
+      totals: {},
+      totalrows: 1,
+      warnings: [],
+      asof: "2026-09-18",
+    };
+
+    const html = renderToStaticMarkup(createElement(ReportGrid, {
+      report,
+      onDrillAccount: () => {},
+      onDrillDocNo: () => {},
+    }));
+
+    expect(html).toContain("JV202609001");
+    expect(html).toContain("1111-01");
+    expect(html).toContain("ดูรายงานแยกประเภท");
+    expect(html).toContain("รายละเอียดใบสำคัญรายวัน");
+  });
 });
+
