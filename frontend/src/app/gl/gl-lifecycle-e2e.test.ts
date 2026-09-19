@@ -594,7 +594,6 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       expect(html).toContain("เพิ่มรายการ");
       expect(html).toContain("ค้นหา");
       expect(html).toContain("โหลดใหม่");
-      expect(html).toContain("ย่อบรรทัด");
       expect(html).toContain("มุมมองผังต้นไม้");
       expect(html).toContain("เงินสดในมือ");
     });

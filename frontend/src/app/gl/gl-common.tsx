@@ -623,10 +623,10 @@ export function SplitWorkbench({ list, editor, className }: { list: ReactNode; e
   useEffect(() => { const saved = localStorage.getItem("bc_gl_split_percent"); if (saved && /^\d+$/.test(saved)) setWidth(Math.min(65, Math.max(25, Number(saved)))); }, []);
   const update = (value: number) => { const next = Math.round(Math.min(65, Math.max(25, value))); setWidth(next); localStorage.setItem("bc_gl_split_percent", String(next)); };
   return <div ref={container} className={`flex min-w-0 flex-1 flex-col gap-2 xl:flex-row xl:h-full xl:min-h-0 ${className ?? ""}`} style={{ "--gl-list-width": `${width}%` } as CSSProperties}>
-    <div data-gl-pane="list" className={`${panel} flex flex-col min-h-0 w-full xl:w-[var(--gl-list-width)] xl:shrink-0`}>{list}</div>
+    <div data-gl-pane="list" className={`${panel} flex flex-col min-h-0 min-w-0 w-full xl:w-[var(--gl-list-width)] xl:shrink-0`}>{list}</div>
     <ResizableSplitter breakpoint="xl" value={width} min={25} max={65} label={tr("gl_adjust_acct_list_width", "ปรับความกว้างรายการบัญชี")} onDoubleClick={() => update(38)} onKeyDown={(event) => { if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) { event.preventDefault(); update(event.key === "Home" ? 25 : event.key === "End" ? 65 : width + (event.key === "ArrowLeft" ? -2 : 2)); } }}
       onPointerDown={(event) => { dragging.current = true; event.currentTarget.setPointerCapture(event.pointerId); }} onPointerUp={() => { dragging.current = false; }} onPointerCancel={() => { dragging.current = false; }} onPointerMove={(event) => { if (dragging.current && container.current) { const rect = container.current.getBoundingClientRect(); update((event.clientX - rect.left) / rect.width * 100); } }} />
-    <div data-gl-pane="editor" className={`${panel} flex flex-col min-h-0 flex-1`}>{editor}</div>
+    <div data-gl-pane="editor" className={`${panel} flex flex-col min-h-0 min-w-0 flex-1`}>{editor}</div>
   </div>;
 }
 export function downloadText(filename: string, text: string, type: string) { const url = URL.createObjectURL(new Blob([text], { type })); const link = document.createElement("a"); link.href = url; link.download = filename; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }

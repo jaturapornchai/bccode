@@ -9,25 +9,18 @@ export interface ReportDisplayToolbarProps {
   onFontSizeChange: (size: ReportFontSize) => void;
   highContrast: boolean;
   onToggleHighContrast: () => void;
-  compact?: boolean;
-  onToggleCompact?: () => void;
-  compactLabel?: { compact: string; expand: string };
 }
 
 /**
  * Reusable Display Controls for Financial Reports and Ledger Tables:
  * - Font Size toggles: A (Normal), A+ (Medium), A++ (Large)
  * - High Contrast mode toggle: dark/light high contrast with clear borders and bold tabular numbers
- * - Row density toggle: Compact / Expanded rows
  */
 export function ReportDisplayToolbar({
   fontSize,
   onFontSizeChange,
   highContrast,
   onToggleHighContrast,
-  compact,
-  onToggleCompact,
-  compactLabel = { compact: "ย่อบรรทัด", expand: "ขยายบรรทัด" },
 }: ReportDisplayToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -91,20 +84,6 @@ export function ReportDisplayToolbar({
         <Contrast className="size-3.5" />
         <span>{highContrast ? "คอนทราสต์สูง: เปิด" : "คอนทราสต์สูง"}</span>
       </Button>
-
-      {/* Optional Compact / Row Density Toggle */}
-      {onToggleCompact && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onToggleCompact}
-          className="h-7 px-2.5 text-xs rounded-lg text-muted-foreground hover:text-foreground"
-          aria-pressed={compact}
-        >
-          {compact ? compactLabel.expand : compactLabel.compact}
-        </Button>
-      )}
     </div>
   );
 }

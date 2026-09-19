@@ -340,7 +340,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
             <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
               <form className="flex flex-wrap items-center gap-2 w-full" onSubmit={(e) => { e.preventDefault(); searchDebounce.searchNow(); }}>
                 <SearchInput
-                  className="min-w-44 flex-1"
+                  className="min-w-36 flex-1 basis-44"
                   ariaLabel={tr("gl_search_code_or_template_name", "ค้นหารหัสหรือชื่อแม่แบบ")}
                   placeholder={tr("gl_search_code_or_template_name_dots", "ค้นหารหัสหรือชื่อแม่แบบ...")}
                   value={searchDebounce.query}
@@ -348,7 +348,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   onClear={searchDebounce.clear}
                   onSearch={searchDebounce.searchNow}
                 />
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <Button type="submit" variant="outline" className={actionClass}>
                     <Search className="h-4 w-4 mr-1.5" />
                     {tr("gl_search", "ค้นหา")}

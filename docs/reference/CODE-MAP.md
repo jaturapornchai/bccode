@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-19 @ commit e91dffcb - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-19 @ commit 2ee1fef4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 53
 
@@ -443,7 +443,7 @@ Files indexed: 53
 | 3270 | function | `ApplyChangesWithProgress` |
 | 3678 | function | `max` |
 
-## frontend/src/app/menu/product-screen.tsx (3133 lines)
+## frontend/src/app/menu/product-screen.tsx (3104 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -464,23 +464,23 @@ Files indexed: 53
 | 938 | const-arrow | `handleSave` |
 | 1097 | const-arrow | `openPicker` |
 | 1108 | const-arrow | `handlePickerSelect` |
-| 2809 | function | `setNameXEntry` |
-| 2824 | function | `productRowKey` |
-| 2828 | function | `productUnitRows` |
-| 2832 | function | `formatProductUnitType` |
-| 2849 | function | `formatYesNo` |
-| 2859 | function | `formatNamedList` |
-| 2872 | function | `formatUnitConversionList` |
-| 2887 | function | `formatRefBarcodeList` |
-| 2929 | function | `formatBomList` |
-| 2946 | function | `formatOptionList` |
-| 2979 | function | `formatDimensionList` |
-| 2996 | function | `formatMarketplaceProductList` |
-| 3020 | function | `formatTimeForSaleList` |
-| 3032 | function | `isEmptyDetailValue` |
-| 3046 | function | `DetailSummary` |
-| 3076 | function | `DetailSection` |
-| 3119 | function | `DetailField` |
+| 2780 | function | `setNameXEntry` |
+| 2795 | function | `productRowKey` |
+| 2799 | function | `productUnitRows` |
+| 2803 | function | `formatProductUnitType` |
+| 2820 | function | `formatYesNo` |
+| 2830 | function | `formatNamedList` |
+| 2843 | function | `formatUnitConversionList` |
+| 2858 | function | `formatRefBarcodeList` |
+| 2900 | function | `formatBomList` |
+| 2917 | function | `formatOptionList` |
+| 2950 | function | `formatDimensionList` |
+| 2967 | function | `formatMarketplaceProductList` |
+| 2991 | function | `formatTimeForSaleList` |
+| 3003 | function | `isEmptyDetailValue` |
+| 3017 | function | `DetailSummary` |
+| 3047 | function | `DetailSection` |
+| 3090 | function | `DetailField` |
 
 ## frontend/src/app/menu/main-menu-screen.tsx (2950 lines)
 
@@ -897,28 +897,6 @@ Files indexed: 53
 | 1002 | const-arrow | `handleSave` |
 | 2146 | function | `saveErrorMessage` |
 
-## frontend/src/app/menu/product-set-screen.tsx (2162 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 89 | function | `productSetRowKey` |
-| 93 | function | `ensureActiveProductSetHolding` |
-| 111 | function | `BarcodePickerModal` |
-| 138 | const-arrow | `fetchBarcodes` |
-| 259 | function | `ProductSetScreen` |
-| 592 | const-arrow | `handleCreateOpen` |
-| 599 | const-arrow | `handleCreateCopyOpen` |
-| 613 | const-arrow | `handleEditOpen` |
-| 620 | const-arrow | `handleDelete` |
-| 651 | const-arrow | `toggleCheckedSet` |
-| 657 | const-arrow | `handleDeleteSelectedSets` |
-| 694 | const-arrow | `handleSave` |
-| 776 | const-arrow | `updateOptionGroupFields` |
-| 856 | const-arrow | `updateChoiceFields` |
-| 879 | const-arrow | `openPickerForChoice` |
-| 884 | const-arrow | `handlePickerSelect` |
-| 897 | const-arrow | `handleSimulatorToggle` |
-
 ## frontend/src/lib/system-setting-screens.ts (2145 lines)
 
 | Line | Kind | Name |
@@ -960,6 +938,28 @@ Files indexed: 53
 | 2103 | function | `datePartsForLanguage` |
 | 2116 | function | `datePart` |
 | 2129 | function | `localeOf` |
+
+## frontend/src/app/menu/product-set-screen.tsx (2144 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 89 | function | `productSetRowKey` |
+| 93 | function | `ensureActiveProductSetHolding` |
+| 111 | function | `BarcodePickerModal` |
+| 138 | const-arrow | `fetchBarcodes` |
+| 259 | function | `ProductSetScreen` |
+| 592 | const-arrow | `handleCreateOpen` |
+| 599 | const-arrow | `handleCreateCopyOpen` |
+| 613 | const-arrow | `handleEditOpen` |
+| 620 | const-arrow | `handleDelete` |
+| 651 | const-arrow | `toggleCheckedSet` |
+| 657 | const-arrow | `handleDeleteSelectedSets` |
+| 694 | const-arrow | `handleSave` |
+| 776 | const-arrow | `updateOptionGroupFields` |
+| 856 | const-arrow | `updateChoiceFields` |
+| 879 | const-arrow | `openPickerForChoice` |
+| 884 | const-arrow | `handlePickerSelect` |
+| 897 | const-arrow | `handleSimulatorToggle` |
 
 ## frontend/src/app/system-settings/product-bom-editor.tsx (2135 lines)
 
@@ -1194,58 +1194,6 @@ Files indexed: 53
 | 1412 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ZeroValues` |
 | 1601 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType` |
 
-## frontend/src/app/menu/product-barcode-screen.tsx (1716 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 107 | function | `clampProductSplitLeft` |
-| 124 | function | `ProductBarcodeScreen` |
-| 193 | const-arrow | `handleWorkspaceChange` |
-| 268 | function | `moveWithMouse` |
-| 272 | function | `stopMouseResize` |
-| 488 | function | `toggleChecked` |
-| 496 | function | `submitSearch` |
-| 501 | function | `canDiscardEditor` |
-| 515 | function | `goToPage` |
-| 523 | function | `closeEditor` |
-| 531 | function | `handleEditorChange` |
-| 540 | function | `selectListItem` |
-| 547 | function | `selectRowByIndex` |
-| 553 | function | `handleListKeyDown` |
-| 565 | function | `hasCompanyScope` |
-| 574 | function | `openCreateEditor` |
-| 588 | function | `openEditEditor` |
-| 613 | function | `openCopyEditor` |
-| 640 | function | `copyCurrentEditorValue` |
-| 654 | function | `saveEditor` |
-| 726 | function | `deleteSelected` |
-| 782 | function | `deleteCurrentItem` |
-| 1250 | function | `BarcodeRow` |
-| 1273 | function | `handleRowKeyDown` |
-| 1357 | function | `barcodeIdentity` |
-| 1361 | function | `barcodeRowKey` |
-| 1365 | function | `ProductBarcodeDetail` |
-| 1494 | function | `DetailSection` |
-| 1520 | function | `DetailField` |
-| 1529 | function | `readAuthSession` |
-| 1533 | function | `readWorkspaceSession` |
-| 1546 | function | `normalizeBarcodeList` |
-| 1553 | function | `normalizeBarcodeRecord` |
-| 1591 | function | `getProductImages` |
-| 1602 | function | `getProductVideos` |
-| 1614 | function | `getSellingPrice` |
-| 1622 | function | `extractBarcodeRecordPayload` |
-| 1632 | function | `detailKey` |
-| 1636 | function | `getFirstString` |
-| 1647 | function | `getFirstNumber` |
-| 1658 | function | `localizedNameFromKeys` |
-| 1673 | function | `getNames` |
-| 1686 | function | `getString` |
-| 1691 | function | `getNumber` |
-| 1701 | function | `isRecord` |
-| 1709 | function | `formatNumber` |
-| 1713 | function | `formatCodeName` |
-
 ## backend/internal/product/productbarcode/productbarcode_http.go (1702 lines)
 
 | Line | Kind | Name |
@@ -1409,6 +1357,58 @@ Files indexed: 53
 | 1634 | function | `LLen` |
 | 1642 | function | `LSet` |
 | 1664 | function | `LPos` |
+
+## frontend/src/app/menu/product-barcode-screen.tsx (1680 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 107 | function | `clampProductSplitLeft` |
+| 124 | function | `ProductBarcodeScreen` |
+| 193 | const-arrow | `handleWorkspaceChange` |
+| 268 | function | `moveWithMouse` |
+| 272 | function | `stopMouseResize` |
+| 488 | function | `toggleChecked` |
+| 496 | function | `submitSearch` |
+| 501 | function | `canDiscardEditor` |
+| 515 | function | `goToPage` |
+| 523 | function | `closeEditor` |
+| 531 | function | `handleEditorChange` |
+| 540 | function | `selectListItem` |
+| 547 | function | `selectRowByIndex` |
+| 553 | function | `handleListKeyDown` |
+| 565 | function | `hasCompanyScope` |
+| 574 | function | `openCreateEditor` |
+| 588 | function | `openEditEditor` |
+| 613 | function | `openCopyEditor` |
+| 640 | function | `copyCurrentEditorValue` |
+| 654 | function | `saveEditor` |
+| 726 | function | `deleteSelected` |
+| 782 | function | `deleteCurrentItem` |
+| 1214 | function | `BarcodeRow` |
+| 1237 | function | `handleRowKeyDown` |
+| 1321 | function | `barcodeIdentity` |
+| 1325 | function | `barcodeRowKey` |
+| 1329 | function | `ProductBarcodeDetail` |
+| 1458 | function | `DetailSection` |
+| 1484 | function | `DetailField` |
+| 1493 | function | `readAuthSession` |
+| 1497 | function | `readWorkspaceSession` |
+| 1510 | function | `normalizeBarcodeList` |
+| 1517 | function | `normalizeBarcodeRecord` |
+| 1555 | function | `getProductImages` |
+| 1566 | function | `getProductVideos` |
+| 1578 | function | `getSellingPrice` |
+| 1586 | function | `extractBarcodeRecordPayload` |
+| 1596 | function | `detailKey` |
+| 1600 | function | `getFirstString` |
+| 1611 | function | `getFirstNumber` |
+| 1622 | function | `localizedNameFromKeys` |
+| 1637 | function | `getNames` |
+| 1650 | function | `getString` |
+| 1655 | function | `getNumber` |
+| 1665 | function | `isRecord` |
+| 1673 | function | `formatNumber` |
+| 1677 | function | `formatCodeName` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/common.go (1620 lines)
 
@@ -2204,7 +2204,7 @@ Files indexed: 53
 | 1008 | function | `validateForm` |
 | 1017 | function | `formatCount` |
 
-## frontend/src/app/gl/gl-masters.tsx (1023 lines)
+## frontend/src/app/gl/gl-masters.tsx (1021 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -2230,10 +2230,10 @@ Files indexed: 53
 | 349 | function | `runAction` |
 | 385 | const-arrow | `toggleCategory` |
 | 389 | const-arrow | `toggleNode` |
-| 880 | function | `AccountFields` |
-| 885 | const-arrow | `handleTypeChange` |
-| 992 | function | `FiscalYearFields` |
-| 1006 | function | `MasterFields` |
+| 878 | function | `AccountFields` |
+| 883 | const-arrow | `handleTypeChange` |
+| 990 | function | `FiscalYearFields` |
+| 1004 | function | `MasterFields` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/base_pdf.go (1019 lines)
 

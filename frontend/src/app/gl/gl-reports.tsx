@@ -274,9 +274,6 @@ export function ReportGrid({
         onFontSizeChange={reportPref.setFontSize}
         highContrast={reportPref.highContrast}
         onToggleHighContrast={reportPref.toggleHighContrast}
-        compact={density.compact}
-        onToggleCompact={density.toggle}
-        compactLabel={{ compact: tr("gl_collapse_row", "ย่อบรรทัด"), expand: tr("gl_expand_row", "ขยายบรรทัด") }}
       />
     </div>
     <div className={`flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm ${reportPref.contrastClass}`}>

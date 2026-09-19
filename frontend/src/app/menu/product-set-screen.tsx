@@ -974,7 +974,7 @@ export function ProductSetScreen({
 
           <div className="p-3 border-b border-border bg-card">
             <div className="flex flex-wrap gap-2">
-              <div className="relative min-w-[220px] flex-1">
+              <div className="relative min-w-36 basis-44 flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
@@ -1003,24 +1003,6 @@ export function ProductSetScreen({
               <Button variant="outline" size="sm" type="button" onClick={() => void handleDeleteSelectedSets()} disabled={!selectMode || checkedSetKeys.length === 0}>
                 <Trash2 className="h-4 w-4" />
                 {checkedSetKeys.length || ""}
-              </Button>
-              <Button
-                variant={compactRows ? "secondary" : "outline"}
-                size="sm"
-                type="button"
-                onClick={() => {
-                  setCompactRows((prev) => {
-                    const next = !prev;
-                    if (typeof window !== "undefined") {
-                      window.localStorage.setItem("bcproductsetcompact", String(next));
-                    }
-                    return next;
-                  });
-                }}
-                className="h-9 text-xs"
-                title={compactRows ? tr("common_click_to_expand_rows", "คลิกเพื่อขยายบรรทัด") : tr("common_click_to_collapse_rows", "คลิกเพื่อย่อบรรทัด")}
-              >
-                {compactRows ? tr("common_collapse_rows", "ย่อบรรทัด") : tr("common_expand_rows", "ขยายบรรทัด")}
               </Button>
             </div>
             {filterOpen ? (
@@ -1728,7 +1710,7 @@ export function ProductSetScreen({
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0 self-end md:self-center">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0 self-end md:self-center">
                       <Button
                         type="button"
                         variant="outline"

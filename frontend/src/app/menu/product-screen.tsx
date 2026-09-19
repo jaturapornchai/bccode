@@ -1387,7 +1387,7 @@ export function ProductScreen({
         >
           <div className="p-3 border-b border-border">
             <div className="flex flex-wrap gap-2">
-              <div className="relative min-w-[240px] flex-1">
+              <div className="relative min-w-36 basis-44 flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
@@ -1418,35 +1418,6 @@ export function ProductScreen({
                   <ImageIcon className="h-4 w-4" />
                 )}
                 {text.image}
-              </Button>
-              <Button
-                variant={compactRows ? "secondary" : "outline"}
-                size="sm"
-                type="button"
-                onClick={() => {
-                  setCompactRows((current) => {
-                    const next = !current;
-                    try {
-                      window.localStorage.setItem(
-                        "bc_product_list_compact",
-                        String(next),
-                      );
-                    } catch {}
-                    return next;
-                  });
-                }}
-                title={
-                  compactRows
-                    ? tr("common_click_to_expand_rows", "คลิกเพื่อขยายบรรทัด (ดูรายละเอียดประเภทสินค้า)")
-                    : tr("common_click_to_collapse_rows", "คลิกเพื่อย่อบรรทัด (แสดงรายการได้มากขึ้น)")
-                }
-              >
-                {compactRows ? (
-                  <FoldVertical className="h-4 w-4" />
-                ) : (
-                  <UnfoldVertical className="h-4 w-4" />
-                )}
-                {compactRows ? tr("common_collapse_rows", "ย่อบรรทัด") : tr("common_expand_rows", "ขยายบรรทัด")}
               </Button>
               <Button
                 variant={selectMode ? "secondary" : "outline"}

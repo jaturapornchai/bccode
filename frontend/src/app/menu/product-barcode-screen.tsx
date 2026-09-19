@@ -900,24 +900,6 @@ export function ProductBarcodeScreen({
                 <Copy size={16} />
                 {text.copy}
               </Button>
-              <Button
-                variant={compactRows ? "secondary" : "outline"}
-                size="sm"
-                type="button"
-                onClick={() => {
-                  setCompactRows((prev) => {
-                    const next = !prev;
-                    if (typeof window !== "undefined") {
-                      window.localStorage.setItem("bcproductbarcodecompact", String(next));
-                    }
-                    return next;
-                  });
-                }}
-                className="h-9 text-xs"
-                title={compactRows ? tr("common_click_to_expand_rows", "คลิกเพื่อขยายบรรทัด") : tr("common_click_to_collapse_rows", "คลิกเพื่อย่อบรรทัด")}
-              >
-                {compactRows ? tr("common_collapse_rows", "ย่อบรรทัด") : tr("common_expand_rows", "ขยายบรรทัด")}
-              </Button>
               <Button size="sm" onClick={() => void openCreateEditor()}>
                 <Plus size={16} />
                 {text.add}
@@ -958,24 +940,6 @@ export function ProductBarcodeScreen({
                 <RefreshCcw size={16} />
               )}
               {text.refresh}
-            </Button>
-            <Button
-              variant={compactRows ? "secondary" : "outline"}
-              size="sm"
-              type="button"
-              onClick={() => {
-                setCompactRows((prev) => {
-                  const next = !prev;
-                  if (typeof window !== "undefined") {
-                    window.localStorage.setItem("bcproductbarcodecompact", String(next));
-                  }
-                  return next;
-                });
-              }}
-              className="h-9 text-xs"
-              title={compactRows ? tr("common_click_to_expand_rows", "คลิกเพื่อขยายบรรทัด") : tr("common_click_to_collapse_rows", "คลิกเพื่อย่อบรรทัด")}
-            >
-              {compactRows ? tr("common_collapse_rows", "ย่อบรรทัด") : tr("common_expand_rows", "ขยายบรรทัด")}
             </Button>
             <Button
               size="sm"

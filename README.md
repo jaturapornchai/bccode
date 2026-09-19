@@ -144,6 +144,38 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-19 — ปลดปุ่มย่อบรรทัดออกทุกจอ และแก้ปัญหา Toolbar ล้นขวาด้วย flex-wrap และ min-w-0
+
+**ประเภทงาน:** `[Refactor]` / `[UI/UX]` / `[Deploy]`
+
+**สิ่งที่ทำ:**
+- **นำปุ่ม "ย่อบรรทัด" ออกให้หมดทุกหน้าจอ (ตามคำสั่งลุงจืด)**:
+  - ถอดปุ่ม `ย่อบรรทัด` / `ขยายบรรทัด` และ Badge `โหมดย่อบรรทัด` ออกจาก `gl-masters.tsx` (ผังบัญชี/ข้อมูลหลัก GL) และ `gl-journals.tsx` (บันทึกรายวัน) โดยตารางจะคงความกะทัดรัดอ่านง่ายเป็นมาตรฐาน
+  - ถอดปุ่ม `ย่อบรรทัด` ออกจาก `ReportDisplayToolbar` ใน `components/report-display-toolbar.tsx` และรายงาน `gl-reports.tsx`
+  - ถอดปุ่ม `ย่อบรรทัด` ออกจากระบบสินค้า: `product-screen.tsx`, `product-set-screen.tsx`, และ `product-barcode-screen.tsx`
+- **แก้ไขปัญหาแถบปุ่มคำสั่งล้นขวา (Toolbar Overflow Fix) ทุกหน้าจอ**:
+  - เปลี่ยนจาก `shrink-0` เป็น `flex-wrap min-w-0` ในกลุ่มปุ่มคำสั่ง ค้นหา/โหลดใหม่/เพิ่มรายการ/มุมมองผังต้นไม้ (`gl-masters.tsx`, `gl-journals.tsx`, `gl-statement-designer.tsx`, `account-search-dialog.tsx`, `product-set-screen.tsx`)
+  - ปรับความกว้างของช่องค้นหา SearchInput ให้ยืดหยุ่นด้วย `min-w-36 flex-1 basis-44` เพื่อให้แถบเครื่องมือตัดบรรทัด (wrap) ได้อย่างนุ่มนวลเมื่อหน้าจอแคบหรืออยู่ในบานหน้าต่าง SplitWorkbench
+  - เพิ่ม `min-w-0` ให้กับ `data-gl-pane="list"` และ `data-gl-pane="editor"` ใน `SplitWorkbench` ป้องกัน flex container ขยายล้นขอบจอ
+
+**ไฟล์สำคัญ:**
+- `frontend/src/app/gl/gl-masters.tsx`
+- `frontend/src/app/gl/gl-journals.tsx`
+- `frontend/src/app/gl/gl-statement-designer.tsx`
+- `frontend/src/app/gl/gl-common.tsx`
+- `frontend/src/app/gl/account-search-dialog.tsx`
+- `frontend/src/components/report-display-toolbar.tsx`
+- `frontend/src/app/gl/gl-reports.tsx`
+- `frontend/src/app/menu/product-screen.tsx`
+- `frontend/src/app/menu/product-set-screen.tsx`
+- `frontend/src/app/menu/product-barcode-screen.tsx`
+- `frontend/src/app/gl/gl-lifecycle-e2e.test.ts`
+
+**ผลการทดสอบ (Evidence):**
+- Frontend Typecheck: `npm run typecheck` ➔ 0 errors ผ่าน 100%
+- Frontend Unit Tests: Vitest 92 test files / 681 tests ผ่าน 100%
+- Production Build: `npm run build` ➔ 37 routes ผ่าน 100%
+
 ### 2026-09-19 — แก้ไขปัญหาเลือกสาขาแล้วค้าง (Instant Sub-Second Branch Navigation) และปรับปรุงระบบ Pure PostgreSQL Live Authorization
 
 **ประเภทงาน:** `[Fix]` / `[Performance]` / `[Deploy]`
