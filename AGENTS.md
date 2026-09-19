@@ -3,7 +3,7 @@
 For every task under `D:\bccode`:
 
 1. ฐานความรู้ระบบ **สร้างเสร็จและใช้งานได้แล้ว** ที่ `docs/kms/` (บทความ `00`–`19` รวม 20 ไฟล์ + `README.md` เป็นดัชนี + `decisions/` (ADR) + `bugs/` + `architecture/` + `snippets/`) — แต่ docs อธิบายว่า **โค้ดทำอะไร** ไม่ใช่ข้อกำหนดทางธุรกิจ: requirement/business rule ที่ไม่ชัด = ห้ามเดา ต้องถามลุงจืด.
-2. **On-Demand Context Rule**: ฐานความรู้อยู่ที่ `docs/kms/` และ skill ส่วนตัวอยู่ที่ `docs/skills/` — **เปิดอ่านเฉพาะไฟล์ที่จำเป็นกับงานนั้นเท่านั้น (ดูผังเลือกอ่านใน `docs/README.md`)** ห้ามกวาดอ่านทั้งโฟลเดอร์ หรือเปิด handoff ล่วงหน้าโดยไม่จำเป็น เพื่อประหยัด Context Window ของ AI.
+2. **On-Demand Context Rule**: ฐานความรู้อยู่ที่ `docs/kms/` และ skill ส่วนตัวอยู่ที่ `.agents/skills/` — **เปิดอ่านเฉพาะไฟล์ที่จำเป็นกับงานนั้นเท่านั้น (ดูผังเลือกอ่านใน `docs/README.md`)** ห้ามกวาดอ่านทั้งโฟลเดอร์ หรือเปิด handoff ล่วงหน้าโดยไม่จำเป็น เพื่อประหยัด Context Window ของ AI.
 3. Use `D:\bccode\docs\kms\00-source-router.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
 5. **กฎโฟลเดอร์ `mydocs/` (ข้อกำหนดและกฎจากลุงจืด - Human-Only Specification)**:
@@ -11,6 +11,24 @@ For every task under `D:\bccode`:
    - **ห้าม AI แก้ไข ลบ เพิ่ม ใน folder นี้โดยเด็ดขาด (Strict Read-Only for AI)**: AI ทุกตัว (Claude, Codex, Gemini/Antigravity ฯลฯ) ห้ามเขียนไฟล์ใหม่, ห้ามแก้ไข, และห้ามลบไฟล์ใดๆ ภายใน `mydocs/` เด็ดขาด สิทธิ์การจัดการในโฟลเดอร์นี้เป็นของลุงจืดเพียงผู้เดียว AI มีสิทธิ์อ่านอย่างเดียวเท่านั้น (Strict Read-Only)
 
 ไฟล์นี้เป็นทั้งจุดเข้าเส้นทาง (routing) และกฎบังคับของโปรเจ็กต์ — รายละเอียดว่าระบบทำงานอย่างไรอยู่ที่ `docs/kms/` (code = truth: ถ้า docs ขัดกับโค้ด ให้ยึดโค้ดแล้วแก้ docs ใน commit เดียวกัน)
+
+## กฎ: กฎและ skill ของ AI ทุกตัวอยู่ที่เดียว — `AGENTS.md` + `.agents/skills/` (ตั้งโดยลุงจืด 2026-09-20)
+
+ลุงจืดใช้ AI หลายตัวใน repo นี้ (Claude Code/Desktop, Codex, Gemini CLI, Antigravity, ZCode) — ทุกตัวต้องอ่านกฎและ skill จาก **จุดเดียว** เพื่อให้ตรวจง่าย แก้ที่เดียวจบ ห้ามมีสำเนา:
+
+| สิ่งที่ | ตัวจริง (แก้ที่นี่ที่เดียว) | AI แต่ละตัวมาอ่านอย่างไร |
+|---|---|---|
+| **กฎโปรเจ็กต์** | `AGENTS.md` (ไฟล์นี้) | Codex / ZCode / Antigravity อ่านตรง · Claude ผ่าน `CLAUDE.md` (`@AGENTS.md`) · Gemini CLI ผ่าน `.gemini/settings.json` (`context.fileName`) |
+| **Skill** | `.agents/skills/<name>/SKILL.md` (มาตรฐาน Agent Skills ที่ Codex, Gemini CLI, Antigravity, ZCode ค้นหาเอง) | Claude Code ต้องมี `.claude/skills` → junction ไป `.agents/skills` ด้วย `npm run ai:link` (ครั้งเดียวต่อ clone เหมือน `npm run hooks:install`) |
+| **ฐานความรู้ (ทำไม/อย่างไร)** | `docs/kms/` | ทุกตัวเปิดอ่านเฉพาะบทความที่ตรงงาน (ผังใน `docs/README.md`) |
+| **ข้อกำหนดของลุงจืด** | `mydocs/` | อ่านอย่างเดียว ห้ามแก้ (กฎข้อ 5 ด้านบน) |
+
+1. **ห้ามสร้างไฟล์กฎแยกต่อเครื่องมือ** (`GEMINI.md`, `.agents/rules/*`, `.cursorrules`, `.codex/AGENTS.md`, กฎซ้ำใน `CLAUDE.md` ฯลฯ) — ถ้าเครื่องมือใหม่ต้องการไฟล์ของตัวเอง ให้ทำเป็น **pointer/import มาที่ `AGENTS.md`** เท่านั้น ห้ามคัดลอกเนื้อหา
+2. **ห้ามคัดลอก skill ไปที่อื่น** (`.claude/skills/` จริง, `.gemini/skills/`, `docs/skills/`, `~/.agents/skills/`) — ที่เดียวคือ `.agents/skills/`; Claude ใช้ junction จาก `npm run ai:link` (`.claude/` ถูก gitignore จึงต้องรันเองต่อ clone)
+3. **เพิ่ม/แก้ skill = แก้ที่ `.agents/skills/` แล้ว commit พร้อมงาน** (กฎ Mandatory Skill Upgrade ด้านล่างยังบังคับใช้) — ทุก AI ต้องอ่าน SKILL.md ล่าสุดจาก disk ห้ามใช้ที่จำได้/cache เพราะลุงจืดแก้ด้วยมือ
+4. **กฎระดับเครื่อง (global) แยกอยู่ที่ `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`** — เป็นเรื่องนอก repo นี้ กฎของโปรเจ็กต์นี้ต้องอยู่ใน `AGENTS.md` เท่านั้น ห้ามเอากฎโปรเจ็กต์ไปฝังใน global
+
+ที่มา/ทางเลือกที่พิจารณา: ADR `docs/kms/decisions/2026-09-20-single-source-ai-rules-skills.md` (แทน ADR 2026-09-07 ที่เคยเลือก `docs/skills/`)
 
 ## กฎ: โฟลเดอร์ `mydocs/` เป็นพื้นที่ข้อกำหนดของลุงจืดเท่านั้น — AI อ่านใหม่เสมอเมื่อมีการเปลี่ยนแปลง และห้าม AI แก้ไข/ลบ/เพิ่ม โดยเด็ดขาด (ตั้งโดยลุงจืด 2026-09-20)
 
@@ -231,10 +249,10 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 เหตุผลและรายละเอียดการเทียบเคียงผังเมนู: `docs/kms/19-menu-coverage-market-standard.md` + ADR `docs/kms/decisions/2026-09-08-menu-parity-market-standard.md` (รอบแรก: ตัดระบบเงินเดือนออก + เพิ่ม 15 เมนู เป็น 200) และ `docs/kms/decisions/2026-09-08-menu-parity-social-sweep.md` (รอบแหล่งข้อมูล Best Practices: เพิ่มอีก 6 เมนู 218 → 224 — ที่มาของ ภ.ง.ด.2 และกลุ่มเชื่อมข้อมูลตลาดออนไลน์ พร้อมข้อห้ามเขียนว่า "ครบ 100%")
 
-## กฎ: skill ส่วนตัวอยู่ที่ `docs/skills/` และฐานความรู้อยู่ที่ `docs/kms/` (ตั้งโดยลุงจืด 2026-09-07)
+## กฎ: skill ส่วนตัวอยู่ที่ `.agents/skills/` และฐานความรู้อยู่ที่ `docs/kms/` (ตั้งโดยลุงจืด 2026-09-07)
 
-1. **skill ส่วนตัวของลุงจืดทุกตัวเก็บใน `docs/skills/<name>/SKILL.md`** (ย้ายจาก `.agents/skills/` แล้ว 2026-09-07) — ห้ามสร้าง/คัดลอกไปที่ `.agents/skills/`, `.claude/skills/` หรือที่อื่น เพื่อให้ตรวจง่ายที่เดียว
-2. **ต้องใช้ skill จากที่นี่จริง ๆ** — ก่อนทำงานที่ skill ครอบคลุม (เช่น UI → `docs/skills/ui-scale-polish/SKILL.md`, MongoModel → `docs/skills/audit-mongomodel-sync/SKILL.md`) ให้เปิดอ่านไฟล์ล่าสุดจาก disk ทุกครั้ง **ห้ามใช้เวอร์ชันที่จำได้/cache** เพราะลุงจืดอาจแก้ด้วยมือ; ถ้า AI ตัวใดโหลด skill ผ่านกลไกอัตโนมัติจากที่อื่นได้ ก็ยังต้องยึดไฟล์ใน `docs/skills/` เป็นตัวจริง
+1. **skill ส่วนตัวของลุงจืดทุกตัวเก็บใน `.agents/skills/<name>/SKILL.md`** (2026-09-07 เคยย้ายไป `docs/skills/`; 2026-09-20 ย้ายกลับมาที่ `.agents/skills/` เพราะกลายเป็นมาตรฐานที่ Codex/Gemini CLI/Antigravity/ZCode ค้นหาเองได้ — ดูกฎ "กฎและ skill ของ AI ทุกตัวอยู่ที่เดียว" ด้านบน) — ห้ามสร้าง/คัดลอกไปที่ `docs/skills/`, `.claude/skills/` (ใช้ junction) หรือที่อื่น เพื่อให้ตรวจง่ายที่เดียว
+2. **ต้องใช้ skill จากที่นี่จริง ๆ** — ก่อนทำงานที่ skill ครอบคลุม (เช่น UI → `.agents/skills/ui-scale-polish/SKILL.md`, MongoModel → `.agents/skills/audit-mongomodel-sync/SKILL.md`) ให้เปิดอ่านไฟล์ล่าสุดจาก disk ทุกครั้ง **ห้ามใช้เวอร์ชันที่จำได้/cache** เพราะลุงจืดอาจแก้ด้วยมือ; ถ้า AI ตัวใดโหลด skill ผ่านกลไกอัตโนมัติจากที่อื่นได้ ก็ยังต้องยึดไฟล์ใน `.agents/skills/` เป็นตัวจริง
 3. **บทเรียน/กับดัก/ความรู้ที่ต้องไม่ลืม → เขียนลง `docs/kms/`** (ไม่ใช่แค่ memory ส่วนตัวของ AI ตัวใดตัวหนึ่ง) เป็นไฟล์ Markdown หัวข้อละไฟล์ อ้าง `file:line` ของโค้ดจริง และเพิ่มบรรทัดใน `docs/kms/README.md`; docs ต้องตามโค้ด (code = truth) — ถ้าโค้ดเปลี่ยนให้แก้ docs ใน commit เดียวกัน
 4. commit ที่แก้ skill/kms ให้รวมไปกับ commit งานที่ทำให้เกิดการเปลี่ยนแปลงนั้น (เหมือนกฎ Mandatory Skill Upgrade ด้านล่าง)
 
@@ -309,7 +327,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 7. **Popover/Dialog ห้ามโดนตัด** — อย่าใส่ `overflow: hidden` บน panel ที่มี popover ลูก (font/palette picker, dropdown); ถ้าต้อง clip effect ให้ clip ที่ shell ชั้นนอกสุด และเปิด popover ทุกตัวทดสอบหลังแก้ CSS ทุกครั้ง
 8. **ตรวจรับพรีเมี่ยมด้วย screenshot จริง** — ก่อนบอกเสร็จ: light+dark × 1600 / 1280 / 1024 / 768-portrait (iPad ขึ้นไปตาม [[viewport-target-ipad-up]]) + hover/focus/disabled/error state + ไม่มี console error; "น่าจะสวย" ไม่นับ
 9. **CSS แบบไม่ทำลายของเดิม** — skin pass ใหม่ = block เดียวต่อท้าย `globals.css` มี comment วันที่+เหตุผล, selector prefix `.login-shell`/`.workspace-page` ฯลฯ ให้ชนะ cascade, ไม่แตะ layout/type scale ที่ approve แล้ว, ค่าใช้ตัวแปรล้วน; แก้ไฟล์นี้ด้วย Node byte-preserving (EOL ผสม) ไม่ใช้ Edit tool
-10. **อัปเดต skill ทุกครั้ง (ตั้งโดยลุงจืด 2026-09-02)** — จบงาน UX/UI ใด ๆ (ใหม่/แก้/บทเรียน/กับดัก) ต้อง**สะท้อนกลับเข้า `docs/skills/ui-scale-polish/SKILL.md`** เป็นหัวข้อใหม่ (แบบแผน + เหตุผล + วิธีตรวจ + ไฟล์/บรรทัด) และ **commit skill พร้อมงาน** — เพื่อให้ AI ตัวอื่น/เครื่องอื่นทำต่อแล้วได้ผลลัพธ์เหมือนกัน; ก่อนแตะ UI ต้องโหลด skill นี้ก่อนเสมอ ถ้ากฎใน AGENTS.md กับ skill ขัดกัน ให้ AGENTS.md ชนะแล้วแก้ skill ให้ตรง
+10. **อัปเดต skill ทุกครั้ง (ตั้งโดยลุงจืด 2026-09-02)** — จบงาน UX/UI ใด ๆ (ใหม่/แก้/บทเรียน/กับดัก) ต้อง**สะท้อนกลับเข้า `.agents/skills/ui-scale-polish/SKILL.md`** เป็นหัวข้อใหม่ (แบบแผน + เหตุผล + วิธีตรวจ + ไฟล์/บรรทัด) และ **commit skill พร้อมงาน** — เพื่อให้ AI ตัวอื่น/เครื่องอื่นทำต่อแล้วได้ผลลัพธ์เหมือนกัน; ก่อนแตะ UI ต้องโหลด skill นี้ก่อนเสมอ ถ้ากฎใน AGENTS.md กับ skill ขัดกัน ให้ AGENTS.md ชนะแล้วแก้ skill ให้ตรง
 
 ตัวอย่างที่ผ่านมาตรฐาน: หน้า login + holding หลัง pass 2026-09-02 (block "Login premium pass 3" ท้าย `frontend/src/app/globals.css`)
 
@@ -319,7 +337,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 ทุกการแก้ไขหรือสร้าง UX/UI ที่เป็นมาตรฐานกลางหรือใช้ทั้งระบบ (เช่น Icon ประจำปุ่ม, สไตล์ทางลัด, การหลบ Icon ใน Input ด้วย `!pl-10`, ความสูงปุ่ม, สี Palette, Density, การจัดวาง ฯลฯ):
 
 1. **ต้อง Upgrade Skill ทันที (Mandatory Skill Upgrade)**:
-   - ต้องสะท้อนการเปลี่ยนแปลงเข้าสู่ `docs/skills/ui-scale-polish/SKILL.md` ทันทีเสมอ
+   - ต้องสะท้อนการเปลี่ยนแปลงเข้าสู่ `.agents/skills/ui-scale-polish/SKILL.md` ทันทีเสมอ
    - ต้องระบุชัดเจนทั้ง 4 ส่วน:
      1) **แบบแผนใหม่ (New Standard Pattern)**: โค้ดตัวอย่าง คลาส CSS และคุณสมบัติที่ถูกต้อง
      2) **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern / Deprecated)**: รูปแบบเดิมที่ผิดพลาดหรือทำให้เกิดปัญหา

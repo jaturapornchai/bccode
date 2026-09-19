@@ -17,7 +17,7 @@ const statusSource = readFileSync(
   "utf8",
 );
 
-describe("ErpCrudWorkbench Master-Detail Contract (docs/skills/datacrud/SKILL.md)", () => {
+describe("ErpCrudWorkbench Master-Detail Contract (.agents/skills/datacrud/SKILL.md)", () => {
   it("enforces ResizableSplitter and persistent localStorage width", () => {
     expect(workbenchSource).toContain("<ResizableSplitter");
     expect(workbenchSource).toContain("useSplitPercent");

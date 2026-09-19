@@ -74,4 +74,4 @@
   - `npx tsc --noEmit` ผ่าน 0 errors
   - `npm run build` Next.js 16 (Turbopack) ผ่านครบทุก 37 routes
 - **Skill Upgrade:**
-  - อัปเกรดเข้าสู่ `docs/skills/ui-scale-polish/SKILL.md` ในหัวข้อ 8.20 ตามกฎ Mandatory Skill Upgrade
+  - อัปเกรดเข้าสู่ `.agents/skills/ui-scale-polish/SKILL.md` ในหัวข้อ 8.20 ตามกฎ Mandatory Skill Upgrade

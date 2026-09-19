@@ -29,7 +29,7 @@
    - ปรับ Fieldset / Lines ให้อยู่ในคอนเทนเนอร์เลื่อนแนวตั้งเฉพาะส่วน `flex-1 min-h-0 overflow-y-auto pr-1`
    - ปรับ Empty State ให้จัดกึ่งกลางพื้นที่พาเนลแนวตั้งด้วย `flex flex-col flex-1 h-full min-h-64 items-center justify-center`
 6. **อัปเกรด Skill**:
-   - บันทึกแบบแผนลงใน `docs/skills/ui-scale-polish/SKILL.md` หัวข้อ 8.23 ตามกฎ Mandatory Skill Upgrade
+   - บันทึกแบบแผนลงใน `.agents/skills/ui-scale-polish/SKILL.md` หัวข้อ 8.23 ตามกฎ Mandatory Skill Upgrade
 
 ## Files Changed
 - `frontend/src/app/menu/main-menu-screen.tsx`
@@ -39,4 +39,4 @@
 - `frontend/src/app/gl/gl-journals.tsx`
 - `frontend/src/app/gl/gl-statement-designer.tsx`
 - `frontend/src/app/gl/gl-reports.tsx`
-- `docs/skills/ui-scale-polish/SKILL.md`
+- `.agents/skills/ui-scale-polish/SKILL.md`

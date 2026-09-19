@@ -6,8 +6,8 @@
 1. `AGENTS.md` (กฎบังคับหลัก)
 2. **โหลดเฉพาะเรื่องที่ต้องใช้จริง (On-Demand Loading เพื่อไม่เปลือง Context Window)**:
    - งานทั่วไป / เล็กน้อย / แก้บั๊ก: ตรวจและแก้ที่โค้ดจริงโดยตรง (`code = truth`) ไม่ต้องเปิดอ่าน docs
-   - งาน UX/UI: อ่านเฉพาะ `docs/skills/ui-scale-polish/SKILL.md`
-   - งาน Schema / MongoModel: อ่านเฉพาะ `docs/skills/audit-mongomodel-sync/SKILL.md`
+   - งาน UX/UI: อ่านเฉพาะ `.agents/skills/ui-scale-polish/SKILL.md`
+   - งาน Schema / MongoModel: อ่านเฉพาะ `.agents/skills/audit-mongomodel-sync/SKILL.md`
    - งานสถาปัตยกรรม / โดเมนเฉพาะ: เปิดสารบัญ `docs/kms/README.md` แล้วเลือกอ่านเฉพาะ **1 บทความที่ตรงกับเรื่อง**
    - สถานะงานค้าง / Handoff: เปิด `docs/handoff/HANDOFF-*.md` เฉพาะเมื่อลุงจืดสั่งหรือถามความเสี่ยง
    - แผนที่ไฟล์ใหญ่: ดู `docs/reference/CODE-MAP.md` เฉพาะเมื่อต้องแตะไฟล์ขนาดยักษ์ (>1,000 บรรทัด)
@@ -35,7 +35,8 @@
 | 2026-09-03 | ลบ `docs/` เดิมทั้งหมดเพื่อออกแบบใหม่ → ไม่มี business-rule SoT จนกว่าจะเขียนใหม่; **requirement ไม่ชัด = ถาม ห้ามเดา** | ของเก่าอยู่ใน git history |
 | 2026-09-05 | Product/Barcode/Unit ใช้ **transactional outbox** (`outboxevents`) + consumer แบบ ack-after-success + fences ใน PG; **ห้าม purge history ของ outbox** | แก้ Mongo/PG divergence จาก fire-and-forget |
 | 2026-09-06 | **พัก ClickHouse บนเครื่อง dev**; ถอดถาวรรอตัดสิน | ไม่มีบทบาทจริง กิน RAM 5 GB (ADR `decisions/2026-09-06-pause-clickhouse-local.md`) |
-| 2026-09-07 | **skill ส่วนตัวอยู่ที่ `docs/skills/`, ฐานความรู้อยู่ที่ `docs/kms/`, ทุกอย่างรวมใน `docs/`** เพื่อให้ AI หลายตัวเข้าใจตรงกัน | ลุงจืดใช้ AI หลายตัว; memory ส่วนตัวของ AI ตัวเดียวคนอื่นมองไม่เห็น |
+| 2026-09-07 | **skill ส่วนตัวอยู่ที่ `.agents/skills/`, ฐานความรู้อยู่ที่ `docs/kms/`, ทุกอย่างรวมใน `docs/`** เพื่อให้ AI หลายตัวเข้าใจตรงกัน | ลุงจืดใช้ AI หลายตัว; memory ส่วนตัวของ AI ตัวเดียวคนอื่นมองไม่เห็น |
+| 2026-09-20 | **กฎและ skill ของ AI ทุกตัวอยู่ที่เดียว: `AGENTS.md` + `.agents/skills/`** (ย้าย skill กลับจาก `docs/skills/`; Gemini CLI อ่าน AGENTS.md ผ่าน `.gemini/settings.json`; Claude Code ใช้ junction `npm run ai:link`) | `.agents/skills/` กลายเป็นมาตรฐานที่ Codex/Gemini CLI/Antigravity/ZCode ค้นหาเอง — `docs/skills/` ไม่มีตัวไหน auto-load (ADR `decisions/2026-09-20-single-source-ai-rules-skills.md`, แทน ADR 2026-09-07 ส่วน skill) |
 | 2026-09-07 | **ปรับการอ่าน docs เป็น On-Demand (Lazy Loading) ไม่เปลือง context** | ห้ามโหลดเอกสารทั้งโฟลเดอร์หรือ handoff ล่วงหน้า; เปิดอ่านเฉพาะไฟล์ที่ตรงกับงานจริงเพื่อประหยัด Context Window |
 | 2026-09-07 | **บังคับใช้กฎความเร็วสูงสุดและสุขอนามัย Context (Surgical Read/Patch/Terminal/Subagent)** | อ่านและแก้เฉพาะบรรทัด, ห้ามรัน full test suite โดยไม่จำเป็น, คุม output terminal, ใช้ subagent กัก context บวม, รักษา prompt cache |
 | 2026-09-07 | **สถาปัตยกรรม 2-Tier: MongoDB เก็บย่อ (Storage) + PostgreSQL ประมวลผลเร็วแบบครบจบ (Processing Engine)** | ข้อมูลใน Mongo ต้องโคลนไปสร้างใน PG ทั้งหมด; Mongo เก็บแบบประหยัดขนาด; PG มีรายละเอียดครบถ้วนเพื่อประมวลผลจบในตัว ไม่ต้องต่อกลับมา Mongo อีก; ตอบคำถามค้างเดิมเรื่อง "PostgreSQL มีไว้เพื่ออะไร" (ถอดออกจากรายการแล้ว — **ไม่ใช่ข้อ 6 ในรายการปัจจุบัน**) (ADR `decisions/2026-09-07-mongodb-storage-postgres-processing-clone.md`) |

@@ -1,6 +1,6 @@
 # jeadclaws team config for D:\bccode (BC Ai Account) — loaded instead of ~/.jeadclaws/config.toml
 # Team = DevOps that works on behalf of ลุงจืด: lead → legacy-analyst (CHAMP reference) → backend/frontend → qa (+dba) → devops (checkpoint + deploy) → "## สรุป"
-# Teammate sessions are per command (team-<role>-<root session>); long-term memory = the repo itself (README log, docs/skills, docs/kms).
+# Teammate sessions are per command (team-<role>-<root session>); long-term memory = the repo itself (README log, .agents/skills, docs/kms).
 default_model = "deepseek/deepseek-flash"      # = DeepSeek-V4.1-Flash
 permissions = "ask"                             # `jeadclaws serve` / --yolo = auto (all tool calls approved)
 max_tokens = 16000
@@ -112,8 +112,8 @@ ask = ["legacy-analyst", "dba"]
 deny = ["ssh ", "scp ", "fast-deploy", "159.223.43.229", "bcaicloud.com"]
 prompt = """
 Frontend = frontend/ Next.js 16.3 App Router (React 19, TypeScript, Tailwind 4). Browser calls Next route handlers under frontend/src/app/api/** which call mainapi via BCAI_LOCAL_BACKEND_URL (http://localhost:8888 locally). Menu = frontend/src/lib/menu-data.ts (existing ids/routes must stay; 9 CHAMP modules order PO→Bill→AP→AR→Cash&Cheque→IC→FA→VAT→GL).
-Before writing code: this is NOT the Next.js you know — read the relevant page in frontend/node_modules/next/dist/docs/ (frontend/AGENTS.md). For any UI/CRUD work read docs/skills/ui-scale-polish/SKILL.md and docs/skills/datacrud/SKILL.md first; CRUD screens: row click = view mode, editing needs an explicit แก้ไข button. Thai-first UI, no hard-coded colors (theme tokens), keep CHAMP wording/aliases searchable.
-After ANY UX/UI work (new/fix/lesson/trap): (a) add a section to docs/skills/ui-scale-polish/SKILL.md (pattern, rationale, how to verify, file:line; anti-pattern too if it changes a system-wide convention) and list it under files changed; (b) you have no browser — add or extend a Playwright spec for the touched screen using the block in frontend/e2e/menu-consistency.spec.ts:14,24-40 (console-error listener, widths [1600,1280,1024,768], click the real button.theme-toggle per theme, hover/focus, overflow check, page.screenshot per combo — never emulate by setting data-theme), run it (cd frontend && npx playwright test e2e/<spec>.spec.ts, timeout_secs 600) and report the spec path + screenshot paths.
+Before writing code: this is NOT the Next.js you know — read the relevant page in frontend/node_modules/next/dist/docs/ (frontend/AGENTS.md). For any UI/CRUD work read .agents/skills/ui-scale-polish/SKILL.md and .agents/skills/datacrud/SKILL.md first; CRUD screens: row click = view mode, editing needs an explicit แก้ไข button. Thai-first UI, no hard-coded colors (theme tokens), keep CHAMP wording/aliases searchable.
+After ANY UX/UI work (new/fix/lesson/trap): (a) add a section to .agents/skills/ui-scale-polish/SKILL.md (pattern, rationale, how to verify, file:line; anti-pattern too if it changes a system-wide convention) and list it under files changed; (b) you have no browser — add or extend a Playwright spec for the touched screen using the block in frontend/e2e/menu-consistency.spec.ts:14,24-40 (console-error listener, widths [1600,1280,1024,768], click the real button.theme-toggle per theme, hover/focus, overflow check, page.screenshot per combo — never emulate by setting data-theme), run it (cd frontend && npx playwright test e2e/<spec>.spec.ts, timeout_secs 600) and report the spec path + screenshot paths.
 Verify from D:/bccode, timeout_secs 600: npm run verify   (codemap + eslint + tsc + vitest, 2-4 min). Single test: cd frontend && BCAI_LOCAL_BACKEND_URL=http://localhost:8888 npm test -- --run <path>.test.ts . Build only when asked: BCAI_LOCAL_BACKEND_URL=http://localhost:8888 npm run build (then git checkout -- frontend/next-env.d.ts).
 Never git commit/push, never deploy (devops does, when lead says so). Report <=10 lines: files changed (path:line), how to see it (URL), commands + result, anything skipped. No code listings."""
 
@@ -139,7 +139,7 @@ Local dev only (never production): MongoDB container `mongodb` (mongo:7, replica
   docker exec mongodb mongosh --quiet appdb --eval "<js>"     e.g. db.getCollectionNames(), db.<coll>.findOne({...}), db.<coll>.countDocuments({...})
 PostgreSQL container `postgres` (18): global DB postgres (queues) + one DB per holding named <holdingcode>, fed by Mongo→Kafka→PG projections:
   docker exec postgres psql -U postgres -d <holdingcode> -c "<sql>"
-Schema design source = MongoModel (docs/skills/audit-mongomodel-sync/SKILL.md) and backend/internal/<module> models. Known issues live in docs/kms/15-known-issues.md (KI-01..03 debtor/creditor/erp_user projections broken, KI-12 PG demo drift, KI-19 float money) — cite the row when relevant.
+Schema design source = MongoModel (.agents/skills/audit-mongomodel-sync/SKILL.md) and backend/internal/<module> models. Known issues live in docs/kms/15-known-issues.md (KI-01..03 debtor/creditor/erp_user projections broken, KI-12 PG demo drift, KI-19 float money) — cite the row when relevant.
 Read-only by default; write/delete only when the task explicitly asks, by id/code only; never DROP/TRUNCATE, never regex-wide deletes, no migrations/backfills/hand DDL (needs ลุงจืด). Always show the query and its result. <=15 lines."""
 
 [agents.devops]

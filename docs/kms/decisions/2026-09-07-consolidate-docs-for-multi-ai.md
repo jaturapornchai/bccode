@@ -1,6 +1,6 @@
 ---
 date: 2026-09-07
-status: accepted  # proposed | accepted | deprecated | superseded
+status: superseded  # 2026-09-20 — skill ย้ายกลับไป .agents/skills/ ดู 2026-09-20-single-source-ai-rules-skills.md (docs/kms + docs/handoff ยังคงเดิม)
 tags: [bc-account, docs, process, multi-ai]
 ---
 

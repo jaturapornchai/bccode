@@ -61,7 +61,7 @@
 
 ## วิธีทำซ้ำ (ถ้าจะเทียบรอบหน้า)
 
-ต้องแก้ครบ 4 จุดเสมอ ไม่งั้นเทสต์ไม่ผ่าน — รายละเอียดใน `docs/skills/ui-scale-polish/SKILL.md` §8 "เพิ่มเมนูใหม่":
+ต้องแก้ครบ 4 จุดเสมอ ไม่งั้นเทสต์ไม่ผ่าน — รายละเอียดใน `.agents/skills/ui-scale-polish/SKILL.md` §8 "เพิ่มเมนูใหม่":
 `frontend/src/lib/menu-data.ts` → `backend/assets/language/languages.tsv` (13 คอลัมน์) → `frontend/src/lib/menu-icons.ts` → จำนวนใน `frontend/src/lib/menu-icons.test.ts`
 
 ## บทเรียน: จอกำพร้า (screen ที่ไม่มีเมนูชี้)

@@ -1,15 +1,15 @@
 # docs/kms — ฐานความรู้ BC Ai Account (Knowledge Management)
 
 ที่เก็บความรู้ที่ "ต้องไม่ลืม" ของโปรเจ็กต์ — ใช้ร่วมกันโดยลุงจืดและ AI ทุกตัว (Claude / Codex / Gemini) เพื่อให้เข้าใจตรงกัน
-ตั้งโดยลุงจืด 2026-09-07 · กฎบังคับอยู่ใน `AGENTS.md` (ไฟล์นั้นชนะเสมอ) · skill ส่วนตัวอยู่ที่ `docs/skills/` · handoff ล่าสุดอยู่ที่ `docs/handoff/`
+ตั้งโดยลุงจืด 2026-09-07 · กฎบังคับอยู่ใน `AGENTS.md` (ไฟล์นั้นชนะเสมอ) · skill ส่วนตัวอยู่ที่ `.agents/skills/` · handoff ล่าสุดอยู่ที่ `docs/handoff/`
 
 ## ลำดับการอ่าน (On-Demand: โหลดเฉพาะเมื่อจำเป็น ไม่เปลือง Context)
 
 > [!IMPORTANT]
 > **ห้ามอ่านเอกสารทั้งหมดพร้อมกันเด็ดขาด**: อ่านเฉพาะไฟล์ที่ตรงกับงานเพื่อประหยัด Context Window ของ AI
 > 1. **งานเล็ก / แก้บั๊ก 1 บรรทัด / คำถามทั่วไป** → ดูโค้ดจริงโดยตรง (`code = truth`) ไม่ต้องเปิด docs
-> 2. **งาน UX/UI** → อ่านเฉพาะ `docs/skills/ui-scale-polish/SKILL.md`
-> 3. **งาน Schema / MongoModel** → อ่านเฉพาะ `docs/skills/audit-mongomodel-sync/SKILL.md`
+> 2. **งาน UX/UI** → อ่านเฉพาะ `.agents/skills/ui-scale-polish/SKILL.md`
+> 3. **งาน Schema / MongoModel** → อ่านเฉพาะ `.agents/skills/audit-mongomodel-sync/SKILL.md`
 > 4. **งานสถาปัตยกรรม / โดเมนเฉพาะเรื่อง** → ดูตารางสรุป 1 บรรทัดด้านล่าง แล้วเลือกเปิดเฉพาะ **1 บทความที่เกี่ยวข้อง**
 > 5. **Handoff (`docs/handoff/` — เก็บฉบับล่าสุดฉบับเดียว; การอ้าง `HANDOFF-2026-09-06.md` / `HANDOFF-RISKS-2026-09-05.md` ในบทความ kms เป็นหลักฐานประวัติ ดูได้ด้วย `git show 1660b335:docs/handoff/<file>`)** → อ่านเฉพาะเมื่อลุงจืดถามสถานะงานค้าง/ความเสี่ยง หรือเริ่มงานสถาปัตยกรรมใหญ่ข้ามระบบ
 
@@ -110,6 +110,7 @@
 - [decisions/2026-09-15-erp-datacrud-workbench-standard.md](decisions/2026-09-15-erp-datacrud-workbench-standard.md) — ระบบธุรกรรม ERP แบบ Master-Detail DataCRUD (สินค้า, ขาย, ซื้อ, ลูกหนี้, เจ้าหนี้, เงินสดธนาคาร) ตามมาตรฐาน datacrud skill สู่ Production (r20260915-datacrud-1)
 - [decisions/2026-09-15-complete-menu-coverage-standard.md](decisions/2026-09-15-complete-menu-coverage-standard.md) — ระบบรองรับหน้าจอที่รอพัฒนาครบ 100% สำหรับบัญชีและ SME ไทย (ภาษี, รายงาน, เครื่องมือประมวลผล, ปฏิบัติการ SME) สู่ Production (r20260915-all-screens-1)
 - [decisions/2026-09-16-menu-labels-follow-champ-wording.md](decisions/2026-09-16-menu-labels-follow-champ-wording.md) — ป้ายเมนูและชื่อฟิลด์ใช้ถ้อยคำเดียวกับระบบเดิม Champ (เปลี่ยนป้าย 103 เมนู, ชื่อเดิมกลายเป็นคำค้น, ห้ามแตะ id/route/language key)
+- [decisions/2026-09-20-single-source-ai-rules-skills.md](decisions/2026-09-20-single-source-ai-rules-skills.md) — กฎ+skill ของ AI ทุกตัวอยู่ที่เดียว: `AGENTS.md` + `.agents/skills/` (ย้ายจาก `docs/skills/`), Gemini CLI ผ่าน `.gemini/settings.json`, Claude ผ่าน junction `npm run ai:link`
 - [decisions/2026-09-19-champ-parity-no-bloat-rule.md](decisions/2026-09-19-champ-parity-no-bloat-rule.md) — กฎยึด D:\project-champ เป็นต้นแบบหลัก ไม่เพิ่มฟังก์ชันหรือเมนูมากเกินไป เพื่อมุ่งเน้นการ Upgrade จาก Windows สู่ Web ที่รวดเร็ว ปลอดภัย และไม่ทำให้ลูกค้าสับสน
 
 
@@ -146,7 +147,7 @@
 - `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-08.md` เมนูความครอบคลุม + ขอบเขตที่ตัดออก, `HANDOFF-2026-09-06.md` วิธีรัน/งานค้าง backend, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store)
 - `docs/runbooks/RECOVERY-READINESS.md` — runbook กู้คืน prod (รอข้อมูล backup/RPO/RTO จากลุงจืด)
 - `docs/reference/CODE-MAP.md` — ดัชนีไฟล์ใหญ่ที่สร้างอัตโนมัติด้วย `tools/gen-code-map.ps1`
-- `docs/skills/` — skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
+- `.agents/skills/` — skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
 
 ## README ที่ยังอยู่ข้างโค้ด (เอกสารเฉพาะ package — อ่านคู่กับบทความด้านบน)
 

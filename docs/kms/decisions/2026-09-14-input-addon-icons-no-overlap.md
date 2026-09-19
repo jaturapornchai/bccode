@@ -74,7 +74,7 @@ tags: [bc-account, ui, general-ledger, textbox, account-select, appearance-none,
    - `npm test` $\to$ 61 test suites, 449 unit tests ผ่าน 100%
    - `npm run build` $\to$ ผ่านสมบูรณ์ทั้ง 37 routes
    - Auto-deploy สู่ Production ([account.bcaicloud.com](https://account.bcaicloud.com/)) ด้วย Fast Streamed Zero-Disk Deployment (Release: `r20260914-center-icon-1`)
-   - อัปเกรด Skill ส่วนที่ 8.22 ใน `docs/skills/ui-scale-polish/SKILL.md`
+   - อัปเกรด Skill ส่วนที่ 8.22 ใน `.agents/skills/ui-scale-polish/SKILL.md`
 
 ## Consequences
 

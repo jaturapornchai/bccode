@@ -17,11 +17,11 @@
 5. **เจ้าหนี้ (Account Payable / AP)**: เจ้าหนี้ตั้งต้นรายเอกสาร, ใบรับวางบิลเจ้าหนี้, ใบสำคัญจ่าย, จ่ายชำระหนี้เจ้าหนี้, ตั้งเจ้าหนี้อื่น, ตัดหนี้สูญ
 6. **เงินสดและธนาคาร (Cash & Bank)**: โอนเงินระหว่างบัญชี, ทะเบียนเช็ครับ, ทะเบียนเช็คจ่าย, เงินทดรองจ่ายกรรมการ/พนักงาน, รับ-ส่งเงิน POS
 
-โดยระบุข้อกำหนดสำคัญว่า **ต้องปฏิบัติตามมาตรฐาน `docs/skills/datacrud/SKILL.md` (Master-Detail Workbench ที่มีรายการซ้าย + รายละเอียด/ฟอร์มขวา + ResizableSplitter ปรับความกว้างได้)**
+โดยระบุข้อกำหนดสำคัญว่า **ต้องปฏิบัติตามมาตรฐาน `.agents/skills/datacrud/SKILL.md` (Master-Detail Workbench ที่มีรายการซ้าย + รายละเอียด/ฟอร์มขวา + ResizableSplitter ปรับความกว้างได้)**
 
 ---
 
-## 2. การปฏิบัติตามกฎบัตร DataCRUD (`docs/skills/datacrud/SKILL.md`)
+## 2. การปฏิบัติตามกฎบัตร DataCRUD (`.agents/skills/datacrud/SKILL.md`)
 
 1. **โครงสร้าง Master-Detail ปรับขนาดได้ (Mandatory Universal Resizability)**:
    - ติดตั้ง `<ResizableSplitter />` จาก `@/components/ui/resizable-splitter` ร่วมกับ `useSplitPercent`

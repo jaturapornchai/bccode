@@ -116,7 +116,7 @@ Stack prod (`deploy/account/compose.yml`): mongo 7.0 (`:10`), postgres 18 (`:47`
 | `tests/` | Playwright spec ระดับ repo (`uat-crud.spec.ts`, employee/login/currency) + `playwright.config.ts` ที่ root | 15 |
 | `tools/` | สคริปต์ช่วยงาน (รวม `verify.sh` ที่แทน CI และ `install-hooks.mjs`) | 15 |
 | `deploy/` | `deploy/account/*`: compose prod, Caddyfile, provision/rotate scripts, mongo-init, docs/runbooks/RECOVERY-READINESS.md | 9 |
-| `docs/` | `docs/kms/` (ชุดนี้) + `docs/skills/{ui-scale-polish,audit-mongomodel-sync}` | 6 |
+| `docs/` | `docs/kms/` (ชุดนี้) + `.agents/skills/{ui-scale-polish,audit-mongomodel-sync}` | 6 |
 | `scripts/` | สคริปต์ระดับ repo | 5 |
 | `.github/` | **ไม่มีแล้ว** — ลบ `workflows/ci.yml` (5 jobs) ทิ้งทั้งโฟลเดอร์ 2026-09-09 ตามมติ "GitHub เก็บ code อย่างเดียว"; การตรวจย้ายไป `tools/verify.sh` ทั้งหมด กู้ของเดิมได้ด้วย `git show 1799b069:.github/workflows/ci.yml` | 0 |
 | root | `AGENTS.md`, `CLAUDE.md`, `docs/kms/00-source-router.md`, `docs/reference/CODE-MAP.md`, `docs/handoff/HANDOFF-*.md` ×2, `package.json`, `package-lock.json`, `playwright.config.ts`, `.mcp.json`, `.gitignore`, `.ignore` (exclude `**/build/`), `.mongo_all_cols.txt`, `.mongo_audit_out.txt` | 14 |

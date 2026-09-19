@@ -21,7 +21,7 @@ Do not recreate or rely on `D:\bccode\datamodel` or `D:\bccode\datamodelwikillm`
 Prefer the registered `mongomodel` MCP tools. If the current Codex session has not loaded that dependency but the loopback service is running, use the read-only fallback:
 
 ```powershell
-& "docs/skills/audit-mongomodel-sync/scripts/invoke-mongomodel-read.ps1" `
+& ".agents/skills/audit-mongomodel-sync/scripts/invoke-mongomodel-read.ps1" `
   -Tool list_projects `
   -ArgumentsJson '{}'
 ```

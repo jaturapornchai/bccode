@@ -135,14 +135,32 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 - **[คู่มือการเลือกอ่านเอกสาร (`docs/README.md`)](docs/README.md)**: แผนที่ On-Demand Context สำหรับเลือกอ่านเอกสารเฉพาะที่ตรงกับงาน
 - **[คลังความรู้ระบบ (`docs/kms/README.md`)](docs/kms/README.md)**: รวบรวมสถาปัตยกรรมระบบ 20 บทความ (`00`–`19`), บันทึกการตัดสินใจทางเทคนิค (ADR 50+ ฉบับ), และประวัติการแก้บั๊ก
-- **[มาตรฐานหน้าจอ CRUD และ Master-Detail (`docs/skills/datacrud/SKILL.md`)](docs/skills/datacrud/SKILL.md)**: กฎบัตร Master-Detail Workbench (รายการซ้าย + ResizableSplitter + รายละเอียด/ฟอร์มขวา + Dirty Form Guard)
-- **[ทักษะและมาตรฐาน UI/UX สำหรับคนไทย (`docs/skills/ui-scale-polish/SKILL.md`)](docs/skills/ui-scale-polish/SKILL.md)**: มาตรฐานการออกแบบสำหรับผู้ใช้คนไทยอายุ 40+, โทนสี Palette และแบบแผน UI พรีเมี่ยม
-- **[มาตรฐานการเชื่อมประสานฐานข้อมูล (`docs/skills/audit-mongomodel-sync/SKILL.md`)](docs/skills/audit-mongomodel-sync/SKILL.md)**: กฎการเชื่อมต่อระหว่าง MongoModel และ PostgreSQL
+- **[มาตรฐานหน้าจอ CRUD และ Master-Detail (`.agents/skills/datacrud/SKILL.md`)](.agents/skills/datacrud/SKILL.md)**: กฎบัตร Master-Detail Workbench (รายการซ้าย + ResizableSplitter + รายละเอียด/ฟอร์มขวา + Dirty Form Guard)
+- **[ทักษะและมาตรฐาน UI/UX สำหรับคนไทย (`.agents/skills/ui-scale-polish/SKILL.md`)](.agents/skills/ui-scale-polish/SKILL.md)**: มาตรฐานการออกแบบสำหรับผู้ใช้คนไทยอายุ 40+, โทนสี Palette และแบบแผน UI พรีเมี่ยม
+- **[มาตรฐานการเชื่อมประสานฐานข้อมูล (`.agents/skills/audit-mongomodel-sync/SKILL.md`)](.agents/skills/audit-mongomodel-sync/SKILL.md)**: กฎการเชื่อมต่อระหว่าง MongoModel และ PostgreSQL
 - **[แผนที่ระบุบรรทัดซอร์สโค้ดขนาดใหญ่ (`docs/reference/CODE-MAP.md`)](docs/reference/CODE-MAP.md)**: ดัชนีโครงสร้างไฟล์ขนาดใหญ่เพื่อการค้นหาที่แม่นยำ
 
 ---
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
+
+### 2026-09-20 — รวมกฎและ skill ของ AI ทุกตัว (Claude / Codex / Gemini / Antigravity / ZCode) ไว้ที่เดียว
+
+**ประเภทงาน:** `[Rule]` / `[Refactor]` / `[Docs]`
+
+**สิ่งที่ทำ:**
+- **กฎโปรเจ็กต์ = `AGENTS.md` ไฟล์เดียว**: เพิ่มกฎ "กฎและ skill ของ AI ทุกตัวอยู่ที่เดียว" พร้อมตารางว่า AI แต่ละตัวมาอ่านทางไหน — Codex / ZCode / Antigravity อ่านตรง, Claude ผ่าน `CLAUDE.md` (`@AGENTS.md`), Gemini CLI ผ่านไฟล์ใหม่ `.gemini/settings.json` (`context.fileName`) ห้ามสร้างไฟล์กฎแยกต่อเครื่องมืออีก
+- **Skill ย้ายจาก `docs/skills/` ไป `.agents/skills/`** (3 skill: `ui-scale-polish`, `datacrud`, `audit-mongomodel-sync` ด้วย `git mv`) เพราะเป็นโฟลเดอร์มาตรฐานที่ Codex, Gemini CLI, Antigravity และ ZCode ค้นหา skill เองได้ — ที่เดิมไม่มี AI ตัวไหนโหลดอัตโนมัติ
+- **Claude Code ใช้ junction**: สคริปต์ใหม่ `tools/ai-link.mjs` (`npm run ai:link`) สร้าง `.claude/skills` → `.agents/skills` (รันครั้งเดียวต่อ clone เหมือน `hooks:install`) ไม่มีสำเนาซ้ำ
+- แก้ path อ้างอิง `docs/skills/` → `.agents/skills/` ในเอกสาร/เทสต์ทั้งหมด; ADR 2026-09-07 (เลือก `docs/skills/`) ตั้งสถานะ superseded และเขียน ADR ใหม่
+
+**ไฟล์สำคัญ:**
+- `AGENTS.md`, `.gemini/settings.json`, `.agents/skills/**`, `tools/ai-link.mjs`, `package.json`
+- `docs/kms/decisions/2026-09-20-single-source-ai-rules-skills.md`, `docs/README.md`, `docs/kms/README.md`, `docs/kms/18-decisions-and-agreements.md`
+
+**ผลการทดสอบ (Evidence):**
+- `npm run ai:link` สร้าง junction สำเร็จ, `ls .claude/skills` เห็น 3 skill; `git grep docs/skills` เหลือเฉพาะ ADR เก่า
+- `gemini skills list` ยังไม่เห็น skill ของโปรเจ็กต์เพราะ Gemini CLI ยังไม่ trust โฟลเดอร์ `D:ccode` (ข้อความ "Skipping project agents due to untrusted folder") — ต้องให้ลุงจืดสั่ง `/trust` ใน gemini เอง; Codex/ZCode/Antigravity ยังไม่ได้เปิดทดสอบในรอบนี้ (อ้างอิงเอกสารทางการเรื่อง path `.agents/skills/` ใน ADR)
 
 ### 2026-09-20 — ตั้งกฎโฟลเดอร์ mydocs/ เป็นข้อกำหนดของลุงจืดเท่านั้น (AI อ่านใหม่เสมอเมื่อเปลี่ยน และห้าม AI แก้ไข/ลบ/เพิ่ม โดยเด็ดขาด)
 
@@ -1691,7 +1709,7 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - ปรับปุ่ม Action ให้เป็นปุ่มไอคอนกะทัดรัด (`p-1 rounded text-primary hover:bg-primary/20` / `text-destructive hover:bg-destructive/20`) แทนปุ่มเต็มของ shadcn Button
    - ถอดปุ่ม "ย่อบรรทัด" ออกทั้งหมดตามคำสั่งลุงจืด
 2. **บัญญัติกฎเหล็กเรื่องตัวอย่างผังบัญชีต้องมีหลายระดับ (`AGENTS.md`, `ui-scale-polish/SKILL.md`)**:
-   - เพิ่มข้อกำหนดใน `AGENTS.md` และ `docs/skills/ui-scale-polish/SKILL.md` (หัวข้อ 8.13): การสร้างตัวอย่างผังบัญชี (Chart of Accounts) ต้องมีโครงสร้างลำดับชั้นหลายระดับ (Multi-level Hierarchy) แบบมาตรฐานบัญชีประเทศไทย (TFRS / DBD) เสมอ (Level 1 หมวด, Level 2 กลุ่ม, Level 3 บัญชีคุม, Level 4 บัญชีย่อย) และต้องมีฟิลด์ `level` และ `parentaccountcode` ที่ถูกต้อง
+   - เพิ่มข้อกำหนดใน `AGENTS.md` และ `.agents/skills/ui-scale-polish/SKILL.md` (หัวข้อ 8.13): การสร้างตัวอย่างผังบัญชี (Chart of Accounts) ต้องมีโครงสร้างลำดับชั้นหลายระดับ (Multi-level Hierarchy) แบบมาตรฐานบัญชีประเทศไทย (TFRS / DBD) เสมอ (Level 1 หมวด, Level 2 กลุ่ม, Level 3 บัญชีคุม, Level 4 บัญชีย่อย) และต้องมีฟิลด์ `level` และ `parentaccountcode` ที่ถูกต้อง
 3. **ปรับปรุงข้อมูลตัวอย่างผังบัญชีในฐานข้อมูล (`deploy_fresh_database.sql`)**:
    - เพิ่มผังบัญชี Level 1 (หมวด 10000, 20000, 30000, 40000, 50000), Level 2 (กลุ่มบัญชี), Level 3 (บัญชีคุม) และเชื่อมโยงกับ Level 4 (บัญชีย่อย) เดิมอย่างสมบูรณ์
 4. **เพิ่มคีย์ภาษาในพจนานุกรมส่วนกลาง (`backend/assets/language/languages.tsv`)**:

@@ -31,7 +31,7 @@ Main API, worker และ frontend healthy; หน้าเว็บและ A
 - Archive 295,362,048 bytes; SHA-256 `c85858d0b5e8616894c26840ff08b0aa0fbdf0bbc593d288b19fcb9528447e88` ตรวจ artifact ก่อนปล่อยผ่าน
 - ข้อมูลตัวอย่างทำให้พบ enum และรหัสแถวคำนวณภายในบนรายงาน จึงแปล `accounttype/bookcode/status/direction/category` เฉพาะตอน render, เติมชื่อยอดกำไรขาดทุนที่ยังไม่ปิด/เงินสด/จำนวนบรรทัด และซ่อน `__current_earnings__` จากคอลัมน์รหัสบัญชี โดยคง payload/จำนวนเงิน/API/CSV เดิม (`frontend/src/app/gl/gl-reports.tsx:16`)
 - เพิ่ม render tests 8 cases ตรวจภาษาไทย, unknown values, business codes และ decimal/CSV เดิม (`frontend/src/app/gl/gl-reports.test.ts:12`); frontend รวม 54 files / 401 tests, lint, TypeScript, CODE-MAP 45 files และ Docker production build ผ่าน
-- สะท้อนแบบแผน/ข้อห้าม/เหตุผล/วิธีตรวจใน skill `docs/skills/ui-scale-polish/SKILL.md:649` แล้ว
+- สะท้อนแบบแผน/ข้อห้าม/เหตุผล/วิธีตรวจใน skill `.agents/skills/ui-scale-polish/SKILL.md:649` แล้ว
 - สำรองหลัง seed ก่อน patch เวลา 18:24:40 น. ไทย: GL 38 บัญชี / 1 ปี / 18 สมุดรายวัน / 110 events เก็บ Mongo/PG/config เฉพาะบน server release นี้ ยังไม่ใช่ restore drill ([backup หลัง seed](../../evidence/2026-09-11-gl-kafka/frontend-patch-backup-summary.json))
 - Rollback patch นี้: คืน `release.env.before` แล้ว recreate **frontend เท่านั้น** คง API/worker/ข้อมูล/audit ไว้; final UI หลัง patch ผ่านตามหลักฐานด้านล่าง
 
