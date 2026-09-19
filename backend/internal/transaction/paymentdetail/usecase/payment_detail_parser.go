@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"encoding/json"
-	"regexp"
+	"strings"
 	transmodels "smlcloudplatform/internal/transaction/models"
 	"smlcloudplatform/internal/transaction/paymentdetail/models"
 )
@@ -10,16 +10,28 @@ import (
 func ParseTransactionToPaymentDetail(other transmodels.TransactionMessageQueue) ([]models.TransactionPaymentDetail, error) {
 
 	tempDetails := []models.TransactionPaymentDetail{}
-	rawDetail := other.PaymentDetailRaw
+	rawDetail := strings.TrimSpace(other.PaymentDetailRaw)
 
 	if rawDetail == "" || rawDetail == "[]" || rawDetail == "{}" || rawDetail == "null" {
 		return []models.TransactionPaymentDetail{}, nil
 	}
 
-	r := regexp.MustCompile(`\[\s*{.*?}\s*\]`)
-	matches := r.FindStringSubmatch(rawDetail)
+	if strings.HasPrefix(rawDetail, "[") {
+		err := json.Unmarshal([]byte(rawDetail), &tempDetails)
 
-	if len(matches) == 0 {
+		if err != nil {
+			return []models.TransactionPaymentDetail{}, err
+		}
+
+		for i := range tempDetails {
+			tempDetails[i].HoldingCode = other.HoldingCode
+			tempDetails[i].DocNo = other.DocNo
+
+			// switch field
+			tempDetails[i].PaymentType = tempDetails[i].TransFlag
+			tempDetails[i].TransFlag = other.TransFlag
+		}
+	} else {
 		tempDetail := models.TransactionPaymentDetail{}
 		err := json.Unmarshal([]byte(rawDetail), &tempDetail)
 
@@ -35,21 +47,6 @@ func ParseTransactionToPaymentDetail(other transmodels.TransactionMessageQueue) 
 		tempDetail.TransFlag = other.TransFlag
 
 		tempDetails = append(tempDetails, tempDetail)
-	} else {
-		err := json.Unmarshal([]byte(rawDetail), &tempDetails)
-
-		if err != nil {
-			return []models.TransactionPaymentDetail{}, err
-		}
-
-		for i := range tempDetails {
-			tempDetails[i].HoldingCode = other.HoldingCode
-			tempDetails[i].DocNo = other.DocNo
-
-			// switch field
-			tempDetails[i].PaymentType = tempDetails[i].TransFlag
-			tempDetails[i].TransFlag = other.TransFlag
-		}
 	}
 
 	return tempDetails, nil

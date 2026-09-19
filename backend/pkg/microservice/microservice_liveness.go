@@ -1,37 +1,28 @@
 package microservice
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
 func (ms *Microservice) isCacherAlive() bool {
-
 	for _, cacher := range ms.cachers {
-
-		// ms.Logger.Debug("Perform healthcheck on Cacher")
 		err := cacher.Healthcheck()
 		if err != nil {
 			return false
 		}
 	}
-
 	return true
 }
 
-func (ms *Microservice) isMongoDBAlive() bool {
-
-	for _, pst := range ms.mongoPersisters {
-
-		// ms.Logger.Debug("Perform healthcheck on MongoDB")
-		err := pst.Healthcheck(context.Background())
+func (ms *Microservice) isPostgreSQLAlive() bool {
+	for _, pst := range ms.persisters {
+		err := pst.TestConnect()
 		if err != nil {
 			return false
 		}
 	}
-
 	return true
 }
 
@@ -41,10 +32,9 @@ func (ms *Microservice) isAlive() (bool, string) {
 		return false, "Cacher healthcheck failed"
 	}
 
-	isAlive = ms.isMongoDBAlive()
-
+	isAlive = ms.isPostgreSQLAlive()
 	if !isAlive {
-		return false, "MongoDB healthcheck failed"
+		return false, "PostgreSQL healthcheck failed"
 	}
 
 	return true, ""

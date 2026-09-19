@@ -27,9 +27,8 @@ func init() {
 // mock Persister
 
 func TestFindUser(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if testing.Short() || os.Getenv("SERVERLESS") == "serverless" || os.Getenv("MONGO_PERSISTER_HOST") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 	password, _ := utils.HashPassword("test")
 

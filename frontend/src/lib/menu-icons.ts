@@ -144,7 +144,6 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/gl/budget": "calculator",
   "/gl/account-groups": "group",
   "/gl/account-mapping": "link",
-  "/gl/allocations": "calculator",
   "/gl/product-account-groups": "package",
   "/gl/annual-balances": "fileChart",
   "/gl/posting": "check",

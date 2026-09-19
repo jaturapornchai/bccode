@@ -57,6 +57,10 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		report, err = rc.dimensionProfit(ctx, name)
 	case "dashboard", "executivesummary", "financialgraphs":
 		report, err = rc.summary(ctx, name)
+	case "gljournal":
+		report, err = rc.glJournal(ctx)
+	case "budgetcomparison":
+		report, err = rc.budgetComparison(ctx)
 	default:
 		return empty, fmt.Errorf("รายงานนี้ยังไม่มีรูปแบบที่ยืนยันแล้ว")
 	}
@@ -379,4 +383,102 @@ func (r reportContext) allocation(ctx context.Context) (Report, error) {
 		{key: "allocatedamount", expr: "allocatedamount::numeric"},
 	})
 	return result, err
+}
+
+func (r reportContext) glJournal(ctx context.Context) (Report, error) {
+	cte := r.base() + `, movements AS (
+		SELECT * FROM filtered WHERE entry_date >= $3::date AND entry_date <= $4::date AND kind <> 'opening'
+	), result AS (
+		SELECT entry_date::text AS date, doc_no AS docno, book_code AS bookcode,
+		       account_code AS accountcode, account_name AS accountname,
+		       description, debit::text, credit::text,
+		       branch_code AS branchcode, department_code AS departmentcode,
+		       project_code AS projectcode, line_no
+		FROM movements
+	)`
+	cols := []ReportColumn{
+		textColumn("date", "วันที่"),
+		textColumn("docno", "เลขที่เอกสาร"),
+		textColumn("bookcode", "สมุดรายวัน"),
+		textColumn("accountcode", "รหัสบัญชี"),
+		textColumn("accountname", "ชื่อบัญชี"),
+		textColumn("description", "คำอธิบาย"),
+		amountColumn("debit", "เดบิต"),
+		amountColumn("credit", "เครดิต"),
+		textColumn("branchcode", "สาขา"),
+		textColumn("departmentcode", "แผนก"),
+		textColumn("projectcode", "โครงการ"),
+	}
+	return r.run(ctx, cte, "date,docno,line_no", cols, []string{"debit", "credit"})
+}
+
+func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
+	cte := r.base() + `, budgets AS (
+		SELECT 
+			rec.code AS budgetcode,
+			rec.payload->>'name' AS budgetname,
+			rec.payload->>'accountcode' AS accountcode,
+			COALESCE((rec.payload->>'amount')::numeric, 0) AS budgetamount
+		FROM gl_records rec
+		WHERE rec.company=$1 AND rec.kind='budgets'
+			AND NOT COALESCE((rec.payload->>'isdeleted')::boolean, false)
+			AND COALESCE((rec.payload->>'isactive')::boolean, true)
+			AND rec.payload->>'fiscalyear'=$2
+			AND ($5='' OR rec.payload->>'accountcode'=$5)
+			AND ($6='' OR rec.payload->>'branchcode'=$6)
+			AND ($7='' OR rec.payload->>'departmentcode'=$7)
+			AND ($8='' OR rec.payload->>'projectcode'=$8)
+	), budget_grouped AS (
+		SELECT 
+			b.accountcode,
+			MAX(b.budgetname) AS budgetname,
+			SUM(b.budgetamount) AS budgetamount
+		FROM budgets b
+		GROUP BY b.accountcode
+	), actuals AS (
+		SELECT 
+			account_code AS accountcode,
+			MAX(account_name) AS accountname,
+			MAX(account_type) AS accounttype,
+			SUM(CASE WHEN account_type='income' THEN credit - debit ELSE debit - credit END) AS actualamount
+		FROM filtered
+		WHERE entry_date >= $3::date AND entry_date <= $4::date AND kind NOT IN ('opening', 'closing')
+		GROUP BY account_code
+	), accounts_combined AS (
+		SELECT accountcode FROM budget_grouped
+		UNION
+		SELECT accountcode FROM actuals
+	), result AS (
+		SELECT 
+			ac.accountcode,
+			COALESCE(NULLIF(act.accountname, ''), bg.budgetname, acc.payload->>'name', acc.payload->'names'->0->>'name', '') AS accountname,
+			COALESCE(act.accounttype, acc.payload->>'accounttype', '') AS accounttype,
+			COALESCE(bg.budgetamount, 0)::text AS budgetamount,
+			COALESCE(act.actualamount, 0)::text AS actualamount,
+			(COALESCE(bg.budgetamount, 0) - COALESCE(act.actualamount, 0))::text AS variance,
+			(CASE 
+				WHEN COALESCE(bg.budgetamount, 0) > 0 
+				THEN ROUND((COALESCE(act.actualamount, 0) / bg.budgetamount) * 100, 2)::text 
+				ELSE '0.00' 
+			END) AS percentused
+		FROM accounts_combined ac
+		LEFT JOIN budget_grouped bg ON bg.accountcode = ac.accountcode
+		LEFT JOIN actuals act ON act.accountcode = ac.accountcode
+		LEFT JOIN gl_records acc ON acc.company = $1 AND acc.kind = 'accounts' AND acc.code = ac.accountcode AND NOT COALESCE((acc.payload->>'isdeleted')::boolean, false)
+	)`
+	cols := []ReportColumn{
+		textColumn("accountcode", "รหัสบัญชี"),
+		textColumn("accountname", "ชื่อบัญชี"),
+		textColumn("accounttype", "หมวดบัญชี"),
+		amountColumn("budgetamount", "งบประมาณ"),
+		amountColumn("actualamount", "ใช้จริง"),
+		amountColumn("variance", "ผลต่างคงเหลือ"),
+		amountColumn("percentused", "ร้อยละที่ใช้ (%)"),
+	}
+	totals := []reportTotal{
+		{key: "budgetamount", expr: "budgetamount::numeric"},
+		{key: "actualamount", expr: "actualamount::numeric"},
+		{key: "variance", expr: "variance::numeric"},
+	}
+	return r.runWithTotals(ctx, cte, "accountcode", cols, totals)
 }

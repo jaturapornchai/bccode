@@ -123,7 +123,12 @@ def inspect(name): return json.loads(run(['docker', 'inspect', name]))[0]
 
 main = inspect('bcai-account-mainapi-1')
 frontend = inspect('bcai-account-frontend-1')
-worker = inspect('bcai-account-worker-1')
+worker_img = ''
+try:
+    worker = inspect('bcai-account-worker-1')
+    worker_img = worker['Config']['Image']
+except Exception:
+    pass
 pg = inspect('bcai-account-postgres-1')
 pg_env = dict(item.split('=', 1) for item in pg['Config']['Env'] if '=' in item)
 
@@ -137,16 +142,21 @@ def save_cmd(filename, cmd):
     return {{'filename': filename, 'bytes': target.stat().st_size, 'sha256': digest}}
 
 artifacts = [
-    save_cmd('mongo.archive.gz', ['docker', 'exec', 'bcai-account-mongo-1', 'mongodump', '--archive', '--gzip', '--oplog']),
     save_cmd('postgres-all.sql', ['docker', 'exec', 'bcai-account-postgres-1', 'pg_dumpall', '-U', pg_env['POSTGRES_USER']]),
     save_cmd('runtime-config.tar.gz', ['tar', '-czf', '-', '/etc/bcai-account', '/var/lib/bcai-account/config', '/opt/bcai-account/deploy'])
 ]
+try:
+    subprocess.check_call(['docker', 'inspect', 'bcai-account-mongo-1'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    artifacts.append(save_cmd('mongo.archive.gz', ['docker', 'exec', 'bcai-account-mongo-1', 'mongodump', '--archive', '--gzip', '--oplog']))
+except Exception:
+    pass
+
 subprocess.run(['cp', '-p', '/etc/bcai-account/release.env', str(release / 'release.env.before')], check=True)
 os.chmod(release / 'release.env.before', 0o600)
 
 proof = {{
     'capturedat': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    'oldimages': {{'mainapi': main['Config']['Image'], 'worker': worker['Config']['Image'], 'frontend': frontend['Config']['Image']}},
+    'oldimages': {{'mainapi': main['Config']['Image'], 'worker': worker_img, 'frontend': frontend['Config']['Image']}},
     'backups': artifacts
 }}
 (release / 'preflight-backup.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2))
@@ -244,13 +254,13 @@ atomic_env(target.encode())
 
 services_to_restart = ['frontend']
 if {'True' if deploy_backend else 'False'}:
-    services_to_restart = ['mainapi', 'worker', 'frontend']
+    services_to_restart = ['mainapi', 'frontend']
 
 compose_up(services_to_restart)
 
 res = {{}}
 for s in services_to_restart:
-    res[s] = health(s, new_main if s in ['mainapi', 'worker'] else new_front)
+    res[s] = health(s, new_main if s == 'mainapi' else new_front)
 
 (release / 'deploy-result.json').write_text(json.dumps({{
     'deployedat': datetime.datetime.now(datetime.timezone.utc).isoformat(),

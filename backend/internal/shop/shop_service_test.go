@@ -79,12 +79,12 @@ func TestShop_Create(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "reject underscore holdingcode",
+			name: "reject invalid character holdingcode",
 			args: args{
 				userUID:  "USERUID001",
 				username: "user_create",
 				shop: models.Shop{
-					HoldingCode: "shop_test",
+					HoldingCode: "shop@test",
 					Name1:       "shop_name",
 					Names:       validHoldingNames(),
 					Telephone:   "0000000000",

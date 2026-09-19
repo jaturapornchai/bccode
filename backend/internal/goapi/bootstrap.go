@@ -63,22 +63,26 @@ func (s *GoAPIServer) Init() error {
 	config := serviceConfig.NewServiceConfig()
 	_ = config.MongodbDatabaseName()
 
-	// 2. MongoDB connection
-	_ = myglobal.SafeMongoConnectFast()
-
-	// 3. MongoDB (separate connection)
-	if err := handlers.InitMongoAtlas(); err != nil {
-		logger.Warn("GoAPI: Failed to initialize MongoDB: %v", err)
-	}
-
-	// 4. LINE OA + Approval init
-	atlasClient, atlasDB := handlers.GetAtlasConnection()
-	if atlasClient != nil && atlasDB != nil {
-		lineoa.Init(atlasClient, atlasDB)
-		logger.Success("GoAPI: ✅ Line OA handlers initialized")
-		approval.Init(atlasClient, atlasDB)
-		logger.Success("GoAPI: ✅ Approval handlers initialized")
-	}
+	// 2. MongoDB connection (Pure PostgreSQL mode: non-blocking background initialization)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Warn("GoAPI: MongoDB background init recovered: %v", r)
+			}
+		}()
+		_ = myglobal.SafeMongoConnectFast()
+		if err := handlers.InitMongoAtlas(); err != nil {
+			logger.Warn("GoAPI: MongoDB unavailable (%v) - operating in Pure PostgreSQL mode", err)
+			return
+		}
+		atlasClient, atlasDB := handlers.GetAtlasConnection()
+		if atlasClient != nil && atlasDB != nil {
+			lineoa.Init(atlasClient, atlasDB)
+			logger.Success("GoAPI: ✅ Line OA handlers initialized")
+			approval.Init(atlasClient, atlasDB)
+			logger.Success("GoAPI: ✅ Approval handlers initialized")
+		}
+	}()
 
 	// 5. S3/R2 Client
 	if err := handlers.InitR2Client(); err != nil {
@@ -168,13 +172,8 @@ func (s *GoAPIServer) Init() error {
 		stockengine.StartWorkers(context.Background(), myglobal.TransFlagsToProcess)
 	}
 
-	// 11. Kafka consumers
-	enableKafka := os.Getenv("ENABLE_KAFKA")
-	if enableKafka == "true" {
-		logger.Info("GoAPI: 🚀 เริ่มต้น Kafka consumers...")
-		handlers.StartConsumers()
-		logger.Info("GoAPI: ✅ Kafka consumers initialized")
-	}
+	// 11. Kafka consumers (Decommissioned in Pure PostgreSQL architecture)
+	// No Kafka brokers or consumers are used; all operations are synchronous SQL.
 
 	logger.Success("GoAPI: ✅ Initialization เสร็จสมบูรณ์")
 	return nil
@@ -419,6 +418,9 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, authorization
 	// Tax Report (VAT register + ภ.พ.30 summary) — อ่านจาก PostgreSQL จริง ไม่ mock
 	authGroup.POST("/api/report/tax/vat-register", handlers.TaxVatRegisterHandler)
 	authGroup.POST("/api/report/tax/pp30-summary", handlers.PP30SummaryHandler)
+
+	// Debt Report (AP / AR reports) — อ่านจาก PostgreSQL จริงตาม Champ
+	authGroup.POST("/api/report/debt/query", handlers.DebtReportHandler)
 
 	// Product Cache
 	authGroup.POST("/api/product/search", handlers.ProductSearchHandler)

@@ -7,6 +7,7 @@ import { colorThemeStorageKey, getThemesMap, normalizeColorTheme, themeStorageKe
 import { fontStorageKey, getAppFont, normalizeAppFont } from "@/lib/font-data";
 import { ToastViewport } from "@/components/toast-viewport";
 import { DevDomInspector } from "@/components/dev-dom-inspector";
+import { KmsChatbot } from "@/components/kms-chatbot";
 import { AuthSessionBootstrap } from "./auth-session-bootstrap";
 
 const inter = Inter({
@@ -98,6 +99,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <AuthSessionBootstrap>{children}</AuthSessionBootstrap>
         <ToastViewport />
         <DevDomInspector />
+        <KmsChatbot />
       </body>
     </html>
   );

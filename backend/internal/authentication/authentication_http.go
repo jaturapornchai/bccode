@@ -20,6 +20,7 @@ import (
 	common "smlcloudplatform/internal/models"
 	orgaccess "smlcloudplatform/internal/organization"
 	companyModels "smlcloudplatform/internal/organization/company/models"
+	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/apperr"
@@ -64,17 +65,32 @@ func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IA
 	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
 	cache := ms.Cacher(cfg.CacherConfig())
 
-	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour, pst)
+	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)
 
-	shopRepo := shop.NewShopRepository(pst)
-	shopUserRepo := shop.NewShopUserRepository(pst)
-	shopUserAccessLogRepo := shop.NewShopUserAccessLogRepository(pst)
-	// authRepo := NewAuthenticationRepository(pst)
-	authRepo := repositories.NewAuthenticationMongoCacheRepository(pst, cache)
-	indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancelIndexes()
-	if err := authRepo.EnsureGoogleIdentityIndexes(indexContext); err != nil {
-		logger.GetLogger().Errorf("ensure authentication identity indexes: %v", err)
+	var shopRepo shop.IShopRepository = shop.NewShopRepository(pst)
+	var shopUserRepo shop.IShopUserRepository = shop.NewShopUserRepository(pst)
+	var authRepo repositories.IAuthenticationMongoCacheRepository = repositories.NewAuthenticationMongoCacheRepository(pst, cache)
+	var shopUserAccessLogRepo shop.IShopUserAccessLogRepository = shop.NewShopUserAccessLogRepository(pst)
+
+	db, err := mypg.PgSqlFastConnect("bcai_projection")
+	if err == nil && db != nil {
+		logger.GetLogger().Info("Authentication HTTP: using Pure PostgreSQL repositories")
+		authRepo = repositories.NewAuthenticationPostgresRepository(db)
+		shopRepo = shop.NewShopPostgresRepository(db)
+		shopUserRepo = shop.NewShopUserPostgresRepository(db)
+		shopUserAccessLogRepo = shop.NewShopUserAccessLogPostgresRepository(db)
+	}
+
+	if err == nil && db != nil {
+		// In PostgreSQL mode, indexes are managed by SQL migrations
+	} else {
+		indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancelIndexes()
+		if mongoRepo, ok := authRepo.(*repositories.AuthenticationMongoCacheRepository); ok {
+			if err := mongoRepo.EnsureGoogleIdentityIndexes(indexContext); err != nil {
+				logger.GetLogger().Errorf("ensure authentication identity indexes: %v", err)
+			}
+		}
 	}
 	smsRepo := repositories.NewAuthenticationSMSRepository(cache)
 	firebaseAdapter := firebase.NewFirebaseAdapter()
@@ -248,11 +264,13 @@ func (h AuthenticationHttp) LoginWithPhoneNumber(ctx microservice.IContext) erro
 func (h AuthenticationHttp) Login(ctx microservice.IContext) error {
 
 	input := ctx.ReadInput()
+	logger.GetLogger().Infof("[DEBUG_LOGIN] raw input len=%d: '%s'", len(input), input)
 
 	userReq := &models.UserLoginRequest{}
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
+		logger.GetLogger().Errorf("[DEBUG_LOGIN] unmarshal failed: %v", err)
 		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
@@ -1108,17 +1126,27 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 	shopSelectReq.BusinessCode = companyModels.NormalizeCompanyCode(shopSelectReq.BusinessCode)
 	shopSelectReq.BranchUID = strings.TrimSpace(shopSelectReq.BranchUID)
 	if shopSelectReq.BusinessCode != "" {
-		companyCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		company := companyModels.CompanyDoc{}
-		if err := h.pst.FindOne(companyCtx, companyModels.CompanyDoc{}, selectableCompanyFilter(
-			shopSelectReq.HoldingCode,
-			shopSelectReq.BusinessCode,
-		), &company); err != nil {
-			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
-		}
-		if company.GuidFixed == "" {
-			return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company not found in Holding").WithThaiMessage("ไม่พบบริษัทนี้ใน Holding ที่เลือก"))
+		db, err := mypg.PgSqlFastConnect("bcai_projection")
+		if err == nil && db != nil {
+			var exists bool
+			query := `SELECT true FROM companies WHERE LOWER(holding_code) = LOWER($1) AND (LOWER(code) = LOWER($2) OR LOWER(name) = LOWER($2)) AND is_active = true LIMIT 1`
+			_ = db.QueryRowContext(context.Background(), query, shopSelectReq.HoldingCode, shopSelectReq.BusinessCode).Scan(&exists)
+			if !exists {
+				return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company not found in Holding").WithThaiMessage("ไม่พบบริษัทนี้ใน Holding ที่เลือก"))
+			}
+		} else {
+			companyCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			company := companyModels.CompanyDoc{}
+			if err := h.pst.FindOne(companyCtx, companyModels.CompanyDoc{}, selectableCompanyFilter(
+				shopSelectReq.HoldingCode,
+				shopSelectReq.BusinessCode,
+			), &company); err != nil {
+				return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+			}
+			if company.GuidFixed == "" {
+				return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company not found in Holding").WithThaiMessage("ไม่พบบริษัทนี้ใน Holding ที่เลือก"))
+			}
 		}
 	}
 

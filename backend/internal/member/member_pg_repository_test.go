@@ -17,8 +17,8 @@ func newPgRepo() member.MemberPGRepository {
 }
 
 func TestCreate(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 	repo := newPgRepo()
 
@@ -34,9 +34,8 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 	repo := newPgRepo()
 
@@ -50,9 +49,8 @@ func TestCount(t *testing.T) {
 }
 
 func TestFindByGuid(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 	repo := newPgRepo()
 	inv, err := repo.FindByGuid("holdingcodex001", "fixguid")
@@ -65,9 +63,8 @@ func TestFindByGuid(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 	repo := newPgRepo()
 

@@ -23,6 +23,7 @@ import { flattenMenuItems, menuText } from "@/lib/menu-data";
 import { useBackendLanguage, backendText } from "@/lib/backend-language";
 import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
+import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
 import { SmartBreadcrumb } from "@/components/smart-breadcrumb";
 import { ThaiDocumentPrintModal, type ThaiDocPrintType } from "@/components/thai-document-print-modal";
 import {
@@ -278,6 +279,12 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
     setIsDirty(true);
   };
 
+  const tabularEnterNav = useTabularEnterNav({
+    onAddNewRow: () => {
+      addLineItem();
+    },
+  });
+
   const addLineItem = () => {
     const details = formDoc.details || [];
     const newItem: ErpDetailItem = {
@@ -289,8 +296,19 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
       price: 0,
       sumamount: 0,
     };
-    setFormDoc({ ...formDoc, details: [...details, newItem] });
+    setFormDoc((prev) => ({ ...prev, details: [...(prev.details || []), newItem] }));
     setIsDirty(true);
+    requestAnimationFrame(() => {
+      const container = document.querySelector(".erp-detail-table-container");
+      if (!container) return;
+      const rows = container.querySelectorAll("tbody tr");
+      const lastRow = rows[rows.length - 1];
+      if (lastRow) {
+        const firstInput = lastRow.querySelector<HTMLInputElement>("input:not([disabled]):not([readonly])");
+        firstInput?.focus?.();
+        firstInput?.select?.();
+      }
+    });
   };
 
   const removeLineItem = (index: number) => {
@@ -778,7 +796,7 @@ export function ErpCrudWorkbench({ route, embedded = false, language = "th" }: E
                     </Button>
                   </div>
 
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto erp-detail-table-container" onKeyDown={tabularEnterNav.onKeyDown}>
                     <table className="w-full text-left text-xs border-collapse">
                       <thead className="bg-muted/80 text-muted-foreground font-semibold border-b border-border">
                         <tr>

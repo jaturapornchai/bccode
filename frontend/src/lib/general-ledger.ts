@@ -37,14 +37,14 @@ export type GLReport = {
   rows: Record<string, string>[]; totals: Record<string, string>;
   totalrows: number; warnings: string[]; asof: string; sequence: number;
 };
-export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates"] as const;
+export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "journal-books"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
   account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster; journal?: GLJournal; statementtemplate?: GLStatementTemplate;
 };
-export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper"] as const;
+export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison"] as const;
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items);
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
 /** Screen text follows the selected language (AGENTS.md 2026-09-14): [languages.tsv key, Thai fallback]. */

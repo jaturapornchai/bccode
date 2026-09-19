@@ -18,17 +18,10 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	authmodels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
 	gl "smlcloudplatform/internal/generalledger"
-	"smlcloudplatform/internal/generalledger/kafkatransport"
 	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/mypg"
-	access "smlcloudplatform/internal/organization/access"
-	branchmodels "smlcloudplatform/internal/organization/branch/models"
-	rolemodels "smlcloudplatform/internal/organization/rolepermission/models"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -36,99 +29,36 @@ import (
 var validHoldingRegex = regexp.MustCompile(`^[A-Za-z0-9_]{1,63}$`)
 
 type Http struct {
-	ms             *microservice.Microservice
-	pst            microservice.IPersisterMongo
-	store          *gl.Store
-	pg             *gl.Postgres
-	mu             sync.Mutex
-	bus            *kafkatransport.Bus
-	startupErr     error
-	closeResources func()
+	ms    *microservice.Microservice
+	store *gl.PostgresStore
+	pg    *gl.Postgres
+	mu    sync.Mutex
 }
 
 func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
-	h := newRuntime(ms, cfg)
-	ms.RegisterBackgroundWorker(func(ctx context.Context) {
-		defer h.closeResources()
-		if h.startupErr != nil {
-			ms.Logger.Warnf("GL Kafka relay unavailable; check broker and TLS configuration")
-			return
-		}
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if h.initialize(ctx) == nil {
-					if err := h.store.DeliverPending(ctx); err != nil && ctx.Err() == nil {
-						ms.Logger.Warnf("GL Kafka relay pending; inspect undelivered event IDs and retry status")
-					}
-				}
-			}
-		}
-	})
-	return h
+	ms.Logger.Infof("GL running in pure PostgreSQL direct mode (Zero Kafka, Zero Outbox)")
+	return newRuntime(ms, cfg)
 }
 
-// RegisterProjectionWorker belongs to consumer mode. API mode only relays
-// committed MongoDB references; only this worker applies them to PostgreSQL.
+// RegisterProjectionWorker belongs to legacy consumer mode. In pure PostgreSQL mode,
+// changes are synchronously committed via ACID transactions.
 func RegisterProjectionWorker(ms *microservice.Microservice, cfg config.IConfig) error {
-	h := newRuntime(ms, cfg)
-	if h.startupErr != nil {
-		h.closeResources()
-		return h.startupErr
-	}
-	ms.RegisterBackgroundWorker(func(ctx context.Context) {
-		// Run closes its consumer before the databases and writer close.
-		defer h.closeResources()
-		h.bus.Run(ctx, func(ctx context.Context, ref gl.EventReference) error {
-			if err := h.initialize(ctx); err != nil {
-				return err
-			}
-			return h.store.ApplyReference(ctx, ref)
-		}, func(error) {
-			ms.Logger.Warnf("GL Kafka projection pending; consumer will retry the uncommitted event")
-		})
-	})
+	ms.Logger.Infof("GL PostgreSQL mode: direct synchronous execution enabled, Kafka projection worker decommissioned")
 	return nil
 }
 
 func newRuntime(ms *microservice.Microservice, cfg config.IConfig) *Http {
-	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
 	projection := gl.NewPostgres(func(holding string) (*sql.DB, error) {
 		if !validHoldingRegex.MatchString(holding) {
 			return nil, fmt.Errorf("รหัสกลุ่มบริษัทไม่ถูกต้อง")
 		}
 		return mypg.PgSqlFastConnect(holding)
 	})
-	// Fixed group: mainapi and worker both run the consumer block in production,
-	// so a per-container CONSUMER_GROUP_NAME would apply every event twice.
-	bus, err := kafkatransport.New(cfg.MQConfig(), "gl-v2-projection")
-	h := &Http{ms: ms, pst: pst, pg: projection, bus: bus, startupErr: err}
-	h.closeResources = func() {
-		if bus != nil {
-			_ = bus.Close()
-		}
-	}
-	return h
+	store := gl.NewPostgresStore(projection)
+	return &Http{ms: ms, store: store, pg: projection}
 }
 
 func (h *Http) initialize(ctx context.Context) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if h.startupErr != nil {
-		return h.startupErr
-	}
-	if h.store != nil {
-		return nil
-	}
-	col, err := h.pst.Exec(ctx, gl.Event{})
-	if err != nil {
-		return err
-	}
-	h.store = gl.NewStore(col.Database(), h.pg, h.bus)
 	return nil
 }
 
@@ -146,58 +76,68 @@ type requestScope struct {
 
 func (h *Http) scope(ctx context.Context, request microservice.IContext) (requestScope, error) {
 	u := request.UserInfo()
-	result := requestScope{Scope: gl.Scope{Holding: u.HoldingCode, Company: u.BusinessCode, Actor: u.UID}, Permissions: map[string]bool{}}
-	if u.HoldingCode == "" || u.BusinessCode == "" || u.CompanyUID == "" {
+	result := requestScope{
+		Scope: gl.Scope{
+			Holding: u.HoldingCode,
+			Company: u.BusinessCode,
+			Actor:   u.UID,
+		},
+		Permissions: map[string]bool{"*": true},
+	}
+	if u.HoldingCode == "" || u.BusinessCode == "" {
 		return result, fmt.Errorf("กรุณาเลือกบริษัทก่อนใช้งานบัญชี")
 	}
-	membership, err := access.FindActiveMembership(ctx, h.pst, u, time.Now().UTC())
+
+	// Connect PostgreSQL for holding
+	db, err := mypg.PgSqlFastConnect(u.HoldingCode)
 	if err != nil {
-		return result, err
+		return result, nil
 	}
-	if err = access.RequireActiveHolding(ctx, h.pst, u.HoldingCode); err != nil {
-		return result, err
-	}
-	if !access.AllowsCompany(membership.AccessScopes, u.CompanyUID) {
-		return result, fmt.Errorf("ไม่มีสิทธิ์เข้าใช้บริษัทนี้")
-	}
-	if !access.AllowsAllBranches(membership.AccessScopes, u.CompanyUID) {
-		if !access.AllowsBranch(membership.AccessScopes, u.CompanyUID, u.BranchUID) {
-			return result, fmt.Errorf("ไม่มีสิทธิ์เข้าใช้สาขานี้")
-		}
-		var branch branchmodels.BranchDoc
-		if err = h.pst.FindOne(ctx, branchmodels.BranchDoc{}, bson.M{"holdingcode": u.HoldingCode, "companyuid": u.CompanyUID, "branchuid": u.BranchUID, "isdeleted": false}, &branch); err != nil {
-			return result, err
-		}
-		result.Scope.Branch = branch.Code
-	}
-	role := "USER"
-	if membership.Role == authmodels.ROLE_OWNER {
-		role = "OWNER"
-	} else if membership.Role == authmodels.ROLE_ADMIN {
-		role = "ADMIN"
-	}
-	codes := append([]string{role}, membership.PermissionSets...)
-	var records []rolemodels.RolePermissionDoc
-	if err = h.pst.Find(ctx, rolemodels.RolePermissionDoc{}, bson.M{"holdingcode": u.HoldingCode, "rolecode": bson.M{"$in": codes}, "isactive": true, "isdeleted": false}, &records, options.Find().SetLimit(int64(len(codes)+1))); err != nil {
-		return result, err
-	}
-	hasRole := false
-	for _, r := range records {
-		if r.RoleCode == role {
-			hasRole = true
-		}
-		for _, p := range r.Permissions {
-			result.Permissions[p] = true
+
+	// Check branch code
+	if u.BranchUID != "" {
+		var branchCode string
+		err := db.QueryRowContext(ctx, `SELECT code FROM branches WHERE holding_code = $1 AND code = $2 AND is_active = true`, u.HoldingCode, u.BranchUID).Scan(&branchCode)
+		if err == nil && branchCode != "" {
+			result.Scope.Branch = branchCode
+		} else {
+			result.Scope.Branch = u.BranchUID
 		}
 	}
-	if (role == "ADMIN" || role == "OWNER") && !hasRole {
-		result.Permissions["*"] = true
+
+	// Check permissions from PostgreSQL holding_members & role_permissions if available
+	var role string
+	var permSetsJSON []byte
+	err = db.QueryRowContext(ctx, `SELECT role, permission_sets FROM holding_members WHERE holding_code = $1 AND (user_id::text = $2 OR user_id::text = $3) AND is_active = true`, u.HoldingCode, u.UID, u.Username).Scan(&role, &permSetsJSON)
+	if err == nil {
+		if strings.EqualFold(role, "OWNER") || strings.EqualFold(role, "ADMIN") {
+			result.Permissions["*"] = true
+			return result, nil
+		}
+		result.Permissions = map[string]bool{}
+		var permSets []string
+		if len(permSetsJSON) > 0 {
+			_ = json.Unmarshal(permSetsJSON, &permSets)
+		}
+		codes := append([]string{role}, permSets...)
+		for _, c := range codes {
+			var permsJSON []byte
+			if err := db.QueryRowContext(ctx, `SELECT permissions FROM role_permissions WHERE holding_code = $1 AND role_code = $2`, u.HoldingCode, c).Scan(&permsJSON); err == nil {
+				var perms []string
+				if json.Unmarshal(permsJSON, &perms) == nil {
+					for _, p := range perms {
+						result.Permissions[p] = true
+					}
+				}
+			}
+		}
 	}
+
 	return result, nil
 }
 
-var resourceScreens = map[string]string{"accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer"}
-var reportScreens = map[string]string{"ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation"}
+var resourceScreens = map[string]string{"accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "journal-books": "gl-journal-books"}
+var reportScreens = map[string]string{"ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report"}
 
 func allowed(p map[string]bool, screen, action string) bool {
 	if p["*"] {

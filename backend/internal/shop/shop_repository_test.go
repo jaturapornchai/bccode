@@ -16,8 +16,8 @@ import (
 
 func TestFindShop(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 	// os.Setenv("MONGODB_URI", "mongodb://root:rootx@localhost:27017/")
 	// defer os.Unsetenv("MONGODB_URI")

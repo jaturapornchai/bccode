@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"log"
+	"time"
 	"smlcloudplatform/internal/coupon/models"
 	"smlcloudplatform/pkg/microservice"
 
@@ -41,7 +42,13 @@ func dropIndexIfExists(pst microservice.IPersisterMongo, model interface{}, inde
 
 // CreateCouponReservationIndexes สร้าง indexes สำหรับ collection coupon_reservations
 func CreateCouponReservationIndexes(pst microservice.IPersisterMongo) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// In Pure PostgreSQL mode, skip gracefully if MongoDB is unavailable
+	if err := pst.TestConnect(ctx); err != nil {
+		return nil
+	}
 
 	// สร้างแบบจำลองเพื่อให้ได้ collection name
 	model := &models.CouponReservation{}

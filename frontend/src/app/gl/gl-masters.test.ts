@@ -406,5 +406,35 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
     // Initially list view button exists with title 'มุมมองผังต้นไม้'
     expect(html).toContain("title=\"มุมมองผังต้นไม้\"");
   });
+
+  it("renders journal-books master table correctly", () => {
+    vi.mocked(glCommon.useGLList).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: "jb-1",
+            code: "JV",
+            name: "สมุดรายวันทั่วไป",
+            isactive: true,
+            version: 1,
+          } as GLMaster,
+        ],
+        total: 1,
+        page: 1,
+        limit: 30,
+        sequence: 0,
+      },
+      page: 1,
+      loading: false,
+      error: "",
+      reload: vi.fn(),
+      setPage: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "journal-books", route: "/gl/journal-books" }));
+    expect(html).toContain("JV");
+    expect(html).toContain("สมุดรายวันทั่วไป");
+    expect(html).toContain("ใช้งาน");
+  });
 });
 

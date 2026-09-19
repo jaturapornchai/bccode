@@ -865,7 +865,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
           <FileText className="size-6" />
         </div>
         <h2 className="text-base font-semibold">{tr("gl_select_entry_to_view", "เลือกรายการเพื่อแสดงข้อมูล")}</h2>
-        <p className="text-sm text-muted-foreground">{tr("gl_click_row_to_view_or_add", "คลิกที่แถวในตารางเพื่อแสดงข้อมูล หรือกดปุ่ม &ldquo;+ เพิ่มรายการ&rdquo; เพื่อสร้างข้อมูลใหม่")}</p>
+        <p className="text-sm text-muted-foreground">{tr("gl_click_row_to_view_or_add", "คลิกที่แถวในตารางเพื่อแสดงข้อมูล หรือกดปุ่ม “+ เพิ่มรายการ” เพื่อสร้างข้อมูลใหม่")}</p>
         <div className="pt-2">
           <Button type="button" className={actionClass} onClick={() => void openCreate()}>
             <Plus className="size-4 mr-1.5" />{tr("gl_add_new_item", "เพิ่มรายการใหม่")}
@@ -961,17 +961,18 @@ function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) 
             ))}
           </Combobox>
         </Field>
-        <div className="flex flex-col justify-center">
-          <div className="text-xs text-muted-foreground mb-1 font-medium">{tr("gl_normal_balance", "ยอดคงเหลือปกติ")}</div>
-          <div className="flex items-center gap-2 h-9 px-3 rounded-lg bg-muted/40 border border-border/60 text-sm font-semibold text-foreground">
-            {value.accounttype === "asset" || value.accounttype === "expense" ? (
-              <span className="text-blue-600 dark:text-blue-400">{tr("gl_debit", "เดบิต")} (Dr.)</span>
-            ) : (
-              <span className="text-emerald-600 dark:text-emerald-400">{tr("gl_credit", "เครดิต")} (Cr.)</span>
-            )}
+        <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}>
+          <div className="flex min-h-[2.6em] w-full items-center justify-between gap-2 rounded-xl border border-input bg-muted/20 px-3 py-1.5 text-[0.95rem] leading-normal text-foreground select-none shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center gap-2 font-semibold">
+              {value.accounttype === "asset" || value.accounttype === "expense" ? (
+                <span className="text-blue-600 dark:text-blue-400">{tr("gl_debit", "เดบิต")} (Dr.)</span>
+              ) : (
+                <span className="text-emerald-600 dark:text-emerald-400">{tr("gl_credit", "เครดิต")} (Cr.)</span>
+              )}
+            </div>
             <span className="text-xs text-muted-foreground font-normal">({tr("gl_auto_by_category", "กำหนดตามหมวดบัญชี")})</span>
           </div>
-        </div>
+        </Field>
         <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 border-t border-border/50">
           <Check
             label={tr("gl_enabled", "เปิดใช้งาน")}

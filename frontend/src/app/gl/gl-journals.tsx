@@ -957,7 +957,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 <FileText className="size-6" />
               </div>
               <h2 className="text-base font-semibold">{tr("gl_select_item_show_acct", "เลือกรายการเพื่อแสดงข้อมูลบัญชี")}</h2>
-              <p className="text-sm text-muted-foreground">{tr("gl_click_row_or_add_journal", "คลิกที่แถวในตารางเพื่อแสดงข้อมูล หรือกดปุ่ม &ldquo;+ เพิ่มรายการ&rdquo; เพื่อบันทึกรายวันใหม่")}</p>
+              <p className="text-sm text-muted-foreground">{tr("gl_click_row_or_add_journal", "คลิกที่แถวในตารางเพื่อแสดงข้อมูล หรือกดปุ่ม “+ เพิ่มรายการ” เพื่อบันทึกรายวันใหม่")}</p>
               {effectiveMode === "edit" && (
                 <div className="pt-2">
                   <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}>

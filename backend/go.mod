@@ -6,7 +6,6 @@ require (
 	firebase.google.com/go/v4 v4.11.0
 	github.com/3dsinteractive/wrkgo v0.0.0-20210911134244-26f18db8d978
 	github.com/SeriousBug/webp-go-pure v1.2.0
-	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.12.0

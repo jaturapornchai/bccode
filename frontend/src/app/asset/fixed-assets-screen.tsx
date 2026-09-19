@@ -71,6 +71,27 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     status: "active",
   });
 
+  // Disposal State
+  const [isDisposing, setIsDisposing] = useState(false);
+  const [disposingAsset, setDisposingAsset] = useState<FixedAsset | null>(null);
+  const [disposalForm, setDisposalForm] = useState<{
+    disposaldate: string;
+    disposaltype: "sale" | "write_off" | "scrap";
+    saleprice: string;
+    vatamount: string;
+    settlementaccountcode: string;
+    gainlossaccountcode: string;
+    reason: string;
+  }>({
+    disposaldate: new Date().toISOString().split("T")[0],
+    disposaltype: "sale",
+    saleprice: "0.00",
+    vatamount: "0.00",
+    settlementaccountcode: "110101",
+    gainlossaccountcode: "420101",
+    reason: "",
+  });
+
   const { confirm, confirmationDialog } = useConfirmDialog({
     defaultConfirmLabel: tr("confirm", "ยืนยัน"),
     defaultCancelLabel: tr("cancel", "ยกเลิก"),
@@ -221,6 +242,53 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     } else {
       setPostStatusMsg(tr("fa_failed_reason", "ล้มเหลว: {0}").replace("{0}", String(res?.message ?? "")));
       alert(res?.message || tr("fa_posting_error", "เกิดข้อผิดพลาดในการผ่านรายการ"));
+    }
+  };
+
+  const handleConfirmDisposal = async () => {
+    if (!disposingAsset) return;
+    const ok = await confirm({
+      title: tr("fa_confirm_disposal_title", "ยืนยันการจำหน่ายสินทรัพย์?"),
+      description: tr(
+        "fa_confirm_disposal_desc",
+        "จำหน่ายสินทรัพย์ {0} ({1}) ระบบจะลงบัญชีกำไร/ขาดทุนจากการจำหน่าย และตัดยอดสินทรัพย์ออกจากบัญชี"
+      )
+        .replace("{0}", disposingAsset.assetcode)
+        .replace("{1}", assetName(disposingAsset, language)),
+      confirmLabel: tr("fa_confirm_disposal_btn", "ยืนยันจำหน่าย"),
+      tone: "warning",
+    });
+    if (!ok) return;
+
+    setLoading(true);
+    try {
+      const res = await sendFixedAssetCommand({
+        resource: "disposals",
+        action: "dispose",
+        requestid: crypto.randomUUID(),
+        disposal: {
+          assetcode: disposingAsset.assetcode,
+          disposaldate: disposalForm.disposaldate,
+          disposaltype: disposalForm.disposaltype,
+          saleprice: disposalForm.saleprice,
+          vatamount: disposalForm.vatamount,
+          settlementaccountcode: disposalForm.settlementaccountcode,
+          gainlossaccountcode: disposalForm.gainlossaccountcode,
+          reason: disposalForm.reason,
+        },
+      });
+      if (res?.success) {
+        setIsDisposing(false);
+        setDisposingAsset(null);
+        await loadData();
+      } else {
+        alert(res?.message || tr("fa_disposal_failed", "เกิดข้อผิดพลาดในการจำหน่ายสินทรัพย์"));
+      }
+    } catch (err) {
+      console.error("Disposal failed", err);
+      alert(tr("fa_disposal_failed", "เกิดข้อผิดพลาดในการจำหน่ายสินทรัพย์"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -395,6 +463,28 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                           >
                             {tr("edit", "แก้ไข")}
                           </Button>
+                          {ast.status === "active" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+                              onClick={() => {
+                                setDisposingAsset(ast);
+                                setDisposalForm({
+                                  disposaldate: new Date().toISOString().split("T")[0],
+                                  disposaltype: "sale",
+                                  saleprice: "0.00",
+                                  vatamount: "0.00",
+                                  settlementaccountcode: "110101",
+                                  gainlossaccountcode: "420101",
+                                  reason: "",
+                                });
+                                setIsDisposing(true);
+                              }}
+                            >
+                              {tr("fa_dispose", "จำหน่าย")}
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -579,6 +669,130 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       {tr("cancel", "ยกเลิก")}
                     </Button>
                     <Button onClick={handleSaveAsset}>{tr("gl_save_data", "บันทึกข้อมูล")}</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Dialog for Disposal */}
+            {isDisposing && disposingAsset && (
+              <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-card border border-border rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-foreground border-b border-border/60 pb-3">
+                    {tr("fa_asset_disposal_title", "บันทึกการจำหน่ายสินทรัพย์")} — {disposingAsset.assetcode}
+                  </h2>
+                  <div className="text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg flex flex-col gap-1">
+                    <div><strong>{tr("fa_asset_name", "ชื่อสินทรัพย์")}:</strong> {assetName(disposingAsset, language)}</div>
+                    <div><strong>{tr("fa_cost", "ราคาทุน")}:</strong> {Number(disposingAsset.cost).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm max-h-[60vh] overflow-y-auto pr-1">
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_disposal_date", "วันที่จำหน่าย")}
+                      </label>
+                      <input
+                        type="date"
+                        value={disposalForm.disposaldate}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, disposaldate: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_disposal_type", "ประเภทการจำหน่าย")}
+                      </label>
+                      <select
+                        value={disposalForm.disposaltype}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, disposaltype: e.target.value as "sale" | "write_off" | "scrap" })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background"
+                      >
+                        <option value="sale">{tr("fa_disposal_type_sale", "ขายสินทรัพย์")}</option>
+                        <option value="write_off">{tr("fa_disposal_type_write_off", "ตัดจำหน่าย / สูญหาย")}</option>
+                        <option value="scrap">{tr("fa_disposal_type_scrap", "เศษซาก")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_sale_price", "ราคาขาย (ไม่รวม VAT)")}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={disposalForm.saleprice}
+                        onChange={(e) => {
+                          const price = Number(e.target.value) || 0;
+                          const vat = Math.round(price * 0.07 * 100) / 100;
+                          setDisposalForm({ ...disposalForm, saleprice: e.target.value, vatamount: String(vat) });
+                        }}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_vat_amount", "ภาษีมูลค่าเพิ่ม (VAT 7%)")}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={disposalForm.vatamount}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, vatamount: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_settlement_account", "บัญชีเงินสด/เงินฝาก/ลูกหนี้")}
+                      </label>
+                      <input
+                        type="text"
+                        value={disposalForm.settlementaccountcode}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, settlementaccountcode: e.target.value })}
+                        placeholder="110101"
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_gain_loss_account", "บัญชีกำไร/ขาดทุนจากการขาย")}
+                      </label>
+                      <input
+                        type="text"
+                        value={disposalForm.gainlossaccountcode}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, gainlossaccountcode: e.target.value })}
+                        placeholder="420101"
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_disposal_reason", "เหตุผล / รายละเอียด")}
+                      </label>
+                      <input
+                        type="text"
+                        value={disposalForm.reason}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, reason: e.target.value })}
+                        placeholder={tr("fa_disposal_reason_placeholder", "ระบุเหตุผลในการจำหน่ายสินทรัพย์")}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 border-t border-border/60 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsDisposing(false);
+                        setDisposingAsset(null);
+                      }}
+                    >
+                      {tr("cancel", "ยกเลิก")}
+                    </Button>
+                    <Button
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                      onClick={handleConfirmDisposal}
+                      disabled={loading}
+                    >
+                      {loading ? tr("processing", "กำลังประมวลผล...") : tr("fa_confirm_disposal_btn", "ยืนยันจำหน่าย")}
+                    </Button>
                   </div>
                 </div>
               </div>

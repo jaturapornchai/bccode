@@ -59,7 +59,7 @@ func main() {
 	lt := wrkgo.NewLoadTest()
 	err := lt.Run(config, templates, reqSetupHandler)
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 	}
 }
 

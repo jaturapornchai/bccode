@@ -17,7 +17,6 @@ import (
 	fa "smlcloudplatform/internal/fixedasset"
 	"smlcloudplatform/internal/fixedasset/mcp"
 	gl "smlcloudplatform/internal/generalledger"
-	"smlcloudplatform/internal/generalledger/kafkatransport"
 	"smlcloudplatform/internal/goapi/mypg"
 	access "smlcloudplatform/internal/organization/access"
 	branchmodels "smlcloudplatform/internal/organization/branch/models"
@@ -36,7 +35,6 @@ type Http struct {
 	pst       microservice.IPersisterMongo
 	store     *fa.Store
 	reporter  *fa.Reporter
-	bus       *kafkatransport.Bus
 	poster    *fa.GLPoster
 	posterErr error
 	mu        sync.Mutex
@@ -49,14 +47,6 @@ func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
 		cfg: cfg,
 		pst: pst,
 	}
-	ms.RegisterBackgroundWorker(func(ctx context.Context) {
-		<-ctx.Done()
-		h.mu.Lock()
-		defer h.mu.Unlock()
-		if h.bus != nil {
-			_ = h.bus.Close()
-		}
-	})
 	return h
 }
 
@@ -104,13 +94,8 @@ func (h *Http) ensurePoster(ctx context.Context) (*fa.GLPoster, error) {
 		}
 		return mypg.PgSqlFastConnect(holding)
 	})
-	bus, err := kafkatransport.New(h.cfg.MQConfig(), "fa-v2-gl-producer")
-	if err != nil {
-		h.posterErr = err
-		return nil, err
-	}
-	h.bus = bus
-	h.poster = fa.NewGLPoster(db, gl.NewStore(db, projection, bus))
+	store := gl.NewPostgresStore(projection)
+	h.poster = fa.NewGLPoster(db, store)
 	return h.poster, nil
 }
 

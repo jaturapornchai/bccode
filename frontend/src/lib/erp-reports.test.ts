@@ -10,8 +10,8 @@ import { setupTestAuthSession } from "./test-auth-session";
 setupTestAuthSession();
 
 describe("Unified ERP Reporting Engine", () => {
-  it("registers all 26 ERP report routes across 6 categories", () => {
-    expect(ERP_REPORT_CONFIGS.length).toBe(21);
+  it("registers all 29 ERP report routes across 6 categories", () => {
+    expect(ERP_REPORT_CONFIGS.length).toBe(29);
 
     // Inventory
     expect(isErpReportRoute("/report/stockbalanceitem")).toBe(true);
@@ -40,6 +40,14 @@ describe("Unified ERP Reporting Engine", () => {
     expect(isErpReportRoute("/report/araging")).toBe(true);
     expect(isErpReportRoute("/report/reportdedebipaymentdaily")).toBe(true);
     expect(isErpReportRoute("/report/apaging")).toBe(true);
+    expect(isErpReportRoute("/report/apmovement")).toBe(true);
+    expect(isErpReportRoute("/report/apstatus")).toBe(true);
+    expect(isErpReportRoute("/report/apoutstanding")).toBe(true);
+    expect(isErpReportRoute("/report/apdailypayment")).toBe(true);
+    expect(isErpReportRoute("/report/armovement")).toBe(true);
+    expect(isErpReportRoute("/report/arstatus")).toBe(true);
+    expect(isErpReportRoute("/report/aroutstanding")).toBe(true);
+    expect(isErpReportRoute("/report/arcreditlimit")).toBe(true);
 
     // XBRL
     expect(isErpReportRoute("/report/xbrl")).toBe(true);
@@ -52,11 +60,19 @@ describe("fetchErpReportData", () => {
     vi.restoreAllMocks();
   });
 
-  it("reports API readiness only for the 4 wired reports", () => {
+  it("reports API readiness for wired inventory, sales, and debt reports", () => {
     expect(isErpReportApiReady("sales_by_document")).toBe(true);
     expect(isErpReportApiReady("gross_profit_document")).toBe(true);
     expect(isErpReportApiReady("stock_balance_item")).toBe(true);
     expect(isErpReportApiReady("stock_balance_warehouse")).toBe(true);
+    expect(isErpReportApiReady("ap_movement")).toBe(true);
+    expect(isErpReportApiReady("ap_status")).toBe(true);
+    expect(isErpReportApiReady("ap_outstanding")).toBe(true);
+    expect(isErpReportApiReady("ap_daily_payment")).toBe(true);
+    expect(isErpReportApiReady("ar_movement")).toBe(true);
+    expect(isErpReportApiReady("ar_status")).toBe(true);
+    expect(isErpReportApiReady("ar_outstanding")).toBe(true);
+    expect(isErpReportApiReady("ar_credit_limit")).toBe(true);
 
     expect(isErpReportApiReady("ar_aging")).toBe(false);
     expect(isErpReportApiReady("dbd_xbrl_export")).toBe(false);
@@ -292,5 +308,54 @@ describe("fetchErpReportData", () => {
 
     expect(result.error).toBe("connection_error");
     expect(result.rows).toEqual([]);
+  });
+
+  it("maps debt report (ap_movement) response correctly via debt query API", async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(init?.body as string);
+      expect(body.reportcode).toBe("ap_movement");
+      expect(body.holdingcode).toBe("H01");
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: "success",
+          report_code: "ap_movement",
+          data: [
+            {
+              docdate: "2026-09-01",
+              docno: "AP-001",
+              creditorcode: "V-001",
+              creditorname: "Vendor One",
+              transname: "ซื้อเชื่อ",
+              totalamount: 10000,
+              paidamount: 0,
+              balanceamount: 10000,
+            },
+          ],
+        }),
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchErpReportData({
+      code: "ap_movement",
+      holdingcode: "H01",
+      fromdate: "2026-09-01",
+      todate: "2026-09-30",
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toEqual({
+      docdate: "2026-09-01",
+      docno: "AP-001",
+      creditorcode: "V-001",
+      creditorname: "Vendor One",
+      transname: "ซื้อเชื่อ",
+      totalamount: 10000,
+      paidamount: 0,
+      balanceamount: 10000,
+    });
   });
 });

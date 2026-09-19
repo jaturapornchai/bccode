@@ -314,7 +314,7 @@ export function CommandPalette() {
                 {filteredItems.length === 0 ? (
                   <li className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
                     <Sparkles className="size-8 text-muted-foreground/40 mb-2" />
-                    <p className="text-[0.95rem] font-medium text-foreground">ไม่พบเมนูหรือหน้าจอที่ตรงกับ &ldquo;{query}&rdquo;</p>
+                    <p className="text-[0.95rem] font-medium text-foreground">ไม่พบเมนูหรือหน้าจอที่ตรงกับ “{query}”</p>
                     <p className="text-xs text-muted-foreground mt-1">ลองค้นหาด้วยคำอื่น เช่น รหัส, บัญชี, สต็อก หรือรายงาน</p>
                   </li>
                 ) : (

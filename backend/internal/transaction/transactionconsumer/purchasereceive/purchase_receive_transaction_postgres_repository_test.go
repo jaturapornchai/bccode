@@ -20,8 +20,8 @@ import (
 
 func TestPurcahseReceiveRepository(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 
 	_ = logger.NewAppLogger(config.NewLoggerConfig())

@@ -370,8 +370,48 @@ type Detail struct {
 	SumAmountDoc           float64 `json:"sumamountdoc" bson:"sumamountdoc,omitempty"`
 	DiscountAmountDoc      float64 `json:"discountamountdoc" bson:"discountamountdoc,omitempty"`
 	PriceExcludeVatDoc     float64 `json:"priceexcludevatdoc" bson:"priceexcludevatdoc,omitempty"`
-	SumAmountExcludeVatDoc float64 `json:"sumamountexcludevatdoc" bson:"sumamountexcludevatdoc,omitempty"`
 	TotalValueVatDoc       float64 `json:"totalvaluevatdoc" bson:"totalvaluevatdoc,omitempty"`
+}
+
+func (d *Detail) UnmarshalJSON(data []byte) error {
+	type Alias Detail
+	aux := struct {
+		*Alias
+		AltItemGuid   string          `json:"item_guid"`
+		AltLineNumber *int            `json:"line_number"`
+		AltItemType   *int8           `json:"item_type"`
+		AltVatType    *int8           `json:"vat_type"`
+		AltTaxType    *int8           `json:"tax_type"`
+		AltGroupCode  string          `json:"group_code"`
+		AltGroupNames *[]models.NameX `json:"group_names"`
+	}{
+		Alias: (*Alias)(d),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if d.ItemGuid == "" && aux.AltItemGuid != "" {
+		d.ItemGuid = aux.AltItemGuid
+	}
+	if d.LineNumber == 0 && aux.AltLineNumber != nil {
+		d.LineNumber = *aux.AltLineNumber
+	}
+	if d.ItemType == 0 && aux.AltItemType != nil {
+		d.ItemType = *aux.AltItemType
+	}
+	if d.VatType == 0 && aux.AltVatType != nil {
+		d.VatType = *aux.AltVatType
+	}
+	if d.TaxType == 0 && aux.AltTaxType != nil {
+		d.TaxType = *aux.AltTaxType
+	}
+	if d.GroupCode == "" && aux.AltGroupCode != "" {
+		d.GroupCode = aux.AltGroupCode
+	}
+	if d.GroupNames == nil && aux.AltGroupNames != nil {
+		d.GroupNames = aux.AltGroupNames
+	}
+	return nil
 }
 
 type PaymentDetail struct {

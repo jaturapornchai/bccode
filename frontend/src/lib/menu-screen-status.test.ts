@@ -13,17 +13,15 @@ describe("menu screen availability", () => {
   });
 
   // Champ parity 2026-09-19: routes added from Champ menuconfig.xml that have no screen or backend yet.
+  // AP/AR debt reports (8 routes) connected to PostgreSQL via /api/report/debt/query on 2026-09-19.
   const CHAMP_PENDING_ROUTES = [
     "/transaction/purchasereducedebt", "/transaction/rfqpricetable",
-    "/report/apmovement", "/report/apstatus", "/report/apoutstanding", "/report/apdailypayment",
-    "/report/armovement", "/report/arstatus", "/report/aroutstanding", "/report/arcreditlimit",
     "/report/chequereceived", "/report/chequeissued", "/report/creditcard", "/report/bankstatement",
     "/report/cashmovement", "/report/pettycashmovement", "/report/monthlypaymentbook",
     "/report/maxstock", "/report/nomovementstock", "/report/stockcountvariance",
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
     "/report/depreciationmonthly", "/report/depreciationyearly", "/report/depreciationpnd50", "/report/assetdisposal",
     "/report/vatsummary",
-    "/gl/journal-books", "/report/gljournal", "/report/budgetcomparison",
   ];
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
@@ -45,10 +43,13 @@ describe("menu screen availability", () => {
     expect(isMenuScreenPending("/unknown-screen")).toBe(true);
   });
 
-  it("connects every ledger workflow except the three Champ items without a GL view yet", () => {
+  it("connects every ledger workflow (all 23 Champ items are fully implemented)", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
-    expect(pending).toEqual(["/gl/journal-books", "/report/gljournal", "/report/budgetcomparison"]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(20);
+    expect(pending).toEqual([]);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(23);
+    expect(isMenuScreenPending("/gl/journal-books")).toBe(false);
+    expect(isMenuScreenPending("/report/gljournal")).toBe(false);
+    expect(isMenuScreenPending("/report/budgetcomparison")).toBe(false);
     expect(isMenuScreenPending("/gl/account-groups")).toBe(false);
     expect(isMenuScreenPending("/gl/reprocess")).toBe(false);
   });
@@ -56,9 +57,13 @@ describe("menu screen availability", () => {
 
 describe("Menu data readiness", () => {
   it("flags screens that render but have no live API behind them", () => {
-    // รายงาน: มี API จริง 4 ตัว
+    // รายงาน: มี API จริง 12 ตัว (4 รายงานสินค้า/ขาย + 8 รายงานเจ้าหนี้/ลูกหนี้)
     expect(isMenuDataPending("/report/salesreportbydocument")).toBe(false);
     expect(isMenuDataPending("/report/stockbalanceitem")).toBe(false);
+    expect(isMenuDataPending("/report/apmovement")).toBe(false);
+    expect(isMenuDataPending("/report/apstatus")).toBe(false);
+    expect(isMenuDataPending("/report/armovement")).toBe(false);
+    expect(isMenuDataPending("/report/arstatus")).toBe(false);
     expect(isMenuDataPending("/report/araging")).toBe(true);
     expect(isMenuDataPending("/report/xbrl")).toBe(true);
 

@@ -16,7 +16,9 @@ type MockRepository struct {
 
 func (mock *MockRepository) Get(holdingCode string, docNo string) (*models.TransactionPaymentDetail, error) {
 	args := mock.Called(holdingCode, docNo)
-
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*models.TransactionPaymentDetail), args.Error(1)
 }
 
@@ -36,11 +38,10 @@ func (mock *MockRepository) Delete(holdingCode string, docNo string, doc models.
 }
 
 func TestUpsert(t *testing.T) {
-	mockRepo := new(MockRepository)
-	u := usecase.NewPaymentDetailUsecase(mockRepo)
-
 	t.Run("error on get", func(t *testing.T) {
-		mockRepo.On("Get", "shop1", "doc1").Return(&models.TransactionPaymentDetail{}, errors.New("error"))
+		mockRepo := new(MockRepository)
+		u := usecase.NewPaymentDetailUsecase(mockRepo)
+		mockRepo.On("Get", "shop1", "doc1").Return(nil, errors.New("record not found"))
 		mockRepo.On("Create", mock.Anything).Return(nil)
 
 		err := u.Upsert("shop1", "doc1", models.TransactionPaymentDetail{})
@@ -48,10 +49,12 @@ func TestUpsert(t *testing.T) {
 	})
 
 	t.Run("no error on get", func(t *testing.T) {
-		mockRepo.On("Get", "shop1", "doc1").Return(&models.TransactionPaymentDetail{}, nil)
+		mockRepo := new(MockRepository)
+		u := usecase.NewPaymentDetailUsecase(mockRepo)
+		mockRepo.On("Get", "shop1", "doc1").Return(&models.TransactionPaymentDetail{Amount: 100}, nil)
 		mockRepo.On("Update", "shop1", "doc1", mock.Anything).Return(nil)
 
-		err := u.Upsert("shop1", "doc1", models.TransactionPaymentDetail{})
+		err := u.Upsert("shop1", "doc1", models.TransactionPaymentDetail{Amount: 200})
 		assert.NoError(t, err)
 	})
 }

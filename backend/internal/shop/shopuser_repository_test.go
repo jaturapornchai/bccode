@@ -15,8 +15,8 @@ import (
 )
 
 func TestCreateShopUser(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 
 	mongoPersisterConfig := mock.NewPersisterMongoConfig()
@@ -47,8 +47,8 @@ func TestCreateShopUser(t *testing.T) {
 
 func TestFindByUsernamePage(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 	mongoPersisterConfig := mock.NewPersisterMongoConfig()
 	t.Log(mongoPersisterConfig.DB())

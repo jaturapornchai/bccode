@@ -20,4 +20,13 @@ func TestLedgerPermissionsSeparateEntryFromActions(t *testing.T) {
 	if journalScreen("", "", "draft") != "gl-post" || journalScreen("", "", "posted") != "gl-unpost" || journalScreen("JV", "opening", "") != "gl-opening-balance" {
 		t.Fatal("journal permission routing")
 	}
+	if resourceScreens["journal-books"] != "gl-journal-books" {
+		t.Fatalf("expected resourceScreens[journal-books] to be gl-journal-books, got %s", resourceScreens["journal-books"])
+	}
+	if reportScreens["gljournal"] != "gl-daily-report" {
+		t.Fatalf("expected reportScreens[gljournal] to be gl-daily-report, got %s", reportScreens["gljournal"])
+	}
+	if reportScreens["budgetcomparison"] != "budget-comparison-report" {
+		t.Fatalf("expected reportScreens[budgetcomparison] to be budget-comparison-report, got %s", reportScreens["budgetcomparison"])
+	}
 }

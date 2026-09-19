@@ -345,7 +345,7 @@ function DocFormatBuilder({ formats, onChange, branchCode, disabled }: {
                 </Button>
               </div>
               {rows.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{tr("st_no_format_press_add_format", "ยังไม่มีรูปแบบ — กด &ldquo;เพิ่มรูปแบบ&rdquo;")}</p>
+                <p className="text-xs text-muted-foreground">{tr("st_no_format_press_add_format", "ยังไม่มีรูปแบบ — กด “เพิ่มรูปแบบ”")}</p>
               ) : (
                 <div className="space-y-2">
                   {rows.map(({ f, i }) => {
@@ -1939,7 +1939,7 @@ export function CompanyBranchTreeView({
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-muted-foreground">{tr("st_no_format_add_manage", "ยังไม่มีรูปแบบ — กด &ldquo;จัดการรูปแบบเลขที่เอกสาร&rdquo; เพื่อเพิ่ม")}</p>
+                            <p className="text-xs text-muted-foreground">{tr("st_no_format_add_manage", "ยังไม่มีรูปแบบ — กด “จัดการรูปแบบเลขที่เอกสาร” เพื่อเพิ่ม")}</p>
                           )}
                         </div>
                       );

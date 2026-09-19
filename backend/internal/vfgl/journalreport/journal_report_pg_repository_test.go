@@ -16,8 +16,8 @@ import (
 
 func TestGetDataTrialBalanceReportPgRepository(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 	assert := assert.New(t)
 
@@ -38,8 +38,8 @@ func TestGetDataTrialBalanceReportPgRepository(t *testing.T) {
 }
 
 func TestGetDataProfitAndLossReportPgRepository(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 	assert := assert.New(t)
 
@@ -60,8 +60,8 @@ func TestGetDataProfitAndLossReportPgRepository(t *testing.T) {
 }
 
 func TestGetDataBalanceSheetReportPgRepository(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 	assert := assert.New(t)
 
@@ -81,8 +81,8 @@ func TestGetDataBalanceSheetReportPgRepository(t *testing.T) {
 }
 
 func TestGetDataLedgerAccount(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 
 	pstConfig := mock.NewPersisterPostgresqlConfig()

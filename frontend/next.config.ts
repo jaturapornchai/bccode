@@ -16,10 +16,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    const localBackendUrl = process.env.BCAI_LOCAL_BACKEND_URL?.trim();
-    if (!localBackendUrl) {
-      throw new Error("BCAI_LOCAL_BACKEND_URL is required");
-    }
+    const localBackendUrl = process.env.BCAI_LOCAL_BACKEND_URL?.trim() || (process.env.NODE_ENV === "production" ? "http://mainapi:8888" : "http://localhost:8888");
     // The browser legitimately calls many AUTHENTICATED mainapi paths via this same-origin proxy
     // (e.g. /backend/organization/*, /backend/goapi/*, /backend/assets/*), all requiring a Bearer token.
     // So we proxy /backend/* broadly — but BLOCK the unauthenticated, identity-trusting token routes:

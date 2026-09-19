@@ -1107,7 +1107,7 @@ export function SettingsScreen() {
             {category === "clickhouse" && testResult?.errorCode === "databasenotexist" && testResult.database ? (
               <button className="secondary-button warning-button" type="button" onClick={() => void handleCreateClickHouseDatabase(testResult.database!)}>
                 <Database aria-hidden="true" size={17} />
-                <span>สร้าง database &quot;{testResult.database}&quot;</span>
+                <span>สร้าง database “{testResult.database}”</span>
               </button>
             ) : null}
           </div>

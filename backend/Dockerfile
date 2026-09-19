@@ -1,12 +1,13 @@
 # syntax=docker/dockerfile:1.7
 
+
 ##
 ## Builder
 ##
 FROM golang:1.26-alpine AS builder
 
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk add --update alpine-sdk librdkafka-dev build-base
+    apk add --update ca-certificates git build-base
 
 WORKDIR /go/app
 
@@ -18,14 +19,14 @@ ADD . /go/app
 
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o go-app -tags musl main.go
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o go-app main.go
 
 ##
 ## Deploy
 ##
 FROM alpine:3.21
 
-RUN apk add --no-cache librdkafka ca-certificates python3 && update-ca-certificates
+RUN apk add --no-cache ca-certificates python3 && update-ca-certificates
 RUN addgroup -S -g 10001 appgroup && \
     adduser -S -D -H -u 10001 -G appgroup appuser
 

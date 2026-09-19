@@ -40,11 +40,14 @@ func NewProductHttp(ms *microservice.Microservice, cfg config.IConfig) ProductHt
 	pstmg := ms.MongoPersister(cfg.MongoPersisterConfig())
 	cache := ms.Cacher(cfg.CacherConfig())
 	repo := repositories.NewProductRepository(pstmg)
-	indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancelIndexes()
-	if err := repo.EnsureIndexes(indexContext); err != nil {
-		logger.GetLogger().Errorf("ensure product indexes: %v", err)
-	}
+	go func() {
+		defer func() { _ = recover() }()
+		indexContext, cancelIndexes := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancelIndexes()
+		if err := repo.EnsureIndexes(indexContext); err != nil {
+			logger.GetLogger().Debugf("ensure product indexes: %v", err)
+		}
+	}()
 	repoUnit := unitRepo.NewUnitRepository(pstmg)
 	repomgCreditor := creditorepo.NewCreditorRepository(pstmg)
 	repomgProductBarcode := productBarcodeRepo.NewProductBarcodeRepository(pstmg, cache)

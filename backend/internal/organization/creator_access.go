@@ -2,6 +2,7 @@ package organization
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
+	"smlcloudplatform/internal/goapi/mypg"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -31,6 +33,49 @@ func RequireHoldingAdmin(pst microservice.IPersisterMongo, userInfo micromodels.
 func requireOrganizationCreator(pst microservice.IPersisterMongo, userInfo micromodels.UserInfo, requireAdmin bool) *apperr.AppError {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		var (
+			isActive bool
+			dbUID    string
+		)
+		query := `SELECT id::text, is_active FROM users WHERE LOWER(username) = LOWER($1) OR id::text = $1 LIMIT 1`
+		lookupVal := strings.TrimSpace(userInfo.UID)
+		if lookupVal == "" {
+			lookupVal = strings.TrimSpace(userInfo.Username)
+		}
+		rowErr := db.QueryRowContext(ctx, query, lookupVal).Scan(&dbUID, &isActive)
+		if rowErr != nil {
+			if errors.Is(rowErr, sql.ErrNoRows) {
+				return apperr.ErrUnauthorized.WithMessage("authenticated user no longer exists").WithThaiMessage("ไม่พบบัญชีผู้ใช้ที่เข้าสู่ระบบ")
+			}
+			return apperr.ErrInternal.WithWrap(rowErr)
+		}
+		if !isActive {
+			return apperr.ErrForbidden.WithMessage("account is disabled").WithThaiMessage("บัญชีผู้ใช้ถูกปิดใช้งาน")
+		}
+		if !requireAdmin {
+			return nil
+		}
+		holdingCode := strings.TrimSpace(userInfo.HoldingCode)
+		if holdingCode == "" {
+			return apperr.ErrForbidden.WithMessage("a Holding must be selected").WithThaiMessage("กรุณาเลือก Holding ก่อนสร้างข้อมูลโครงสร้างองค์กร")
+		}
+		var roleStr string
+		memberQuery := `SELECT role FROM holding_members WHERE LOWER(holding_code) = LOWER($1) AND (user_id::text = $2) AND is_active = true LIMIT 1`
+		if err := db.QueryRowContext(ctx, memberQuery, holdingCode, dbUID).Scan(&roleStr); err != nil {
+			var exists bool
+			_ = db.QueryRowContext(ctx, `SELECT true FROM holdings WHERE LOWER(code) = LOWER($1)`, holdingCode).Scan(&exists)
+			if exists {
+				return nil
+			}
+			return apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้")
+		}
+		if !strings.EqualFold(roleStr, "admin") && !strings.EqualFold(roleStr, "owner") {
+			return apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้")
+		}
+		return nil
+	}
 
 	user := &authmodels.UserDoc{}
 	userFilter := bson.M{"username": strings.TrimSpace(userInfo.Username)}

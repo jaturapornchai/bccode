@@ -76,9 +76,8 @@ func TestJournalRepositoryCreate(t *testing.T) {
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`INSERT INTO "journals"`).
 		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	// s.mock.ExpectExec(`INSERT INTO "journals_detail"`).
-	// 	WillReturnResult(sqlmock.NewResult(1, 1))
+	s.mock.ExpectQuery(`INSERT INTO "journalsdetail"`).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	s.mock.ExpectCommit()
 
 	if err = s.repo.Create(s.journal); err != nil {

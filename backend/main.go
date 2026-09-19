@@ -266,7 +266,7 @@ func main() {
 
 		cacher := ms.Cacher(cfg.CacherConfig())
 		pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-		authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour, pst)
+		authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour)
 		publicPath := []string{
 			"/migrationtools/",
 			"/swagger/*",
@@ -562,19 +562,18 @@ func main() {
 		ms.RegisterHttp(migrationAPI.NewMigrationAPI(ms, cfg))
 		ms.RegisterHttp(media.InitMediaUploadHttp(ms, cfg))
 
-		// เริ่ม cleanup scheduler สำหรับ expired coupon reservations
-		// สร้าง indexes สำหรับ coupon reservations
-		err := coupon_database.CreateCouponReservationIndexes(pst)
-		if err != nil {
-			fmt.Printf("Error creating coupon reservation indexes: %v\n", err)
-		}
-
-		reservationRepo := coupon_repositories.NewCouponReservationRepository(pst)
-		cleanupService := coupon_services.NewCouponCleanupService(reservationRepo)
-
-		// เริ่ม background scheduler ที่ตรวจสอบทุก 5 นาที
-		// ใช้ empty holdingCode เพื่อ cleanup ทุกร้าน (จะปรับปรุงในอนาคตให้สำหรับแต่ละร้าน)
-		go cleanupService.StartCleanupScheduler(context.Background(), 5*time.Minute, "")
+		// เริ่ม cleanup scheduler สำหรับ expired coupon reservations ใน background goroutine เพื่อไม่ให้บล็อกการสตาร์ตระบบ
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Coupon cleanup scheduler recovered: %v", r)
+				}
+			}()
+			_ = coupon_database.CreateCouponReservationIndexes(pst)
+			reservationRepo := coupon_repositories.NewCouponReservationRepository(pst)
+			cleanupService := coupon_services.NewCouponCleanupService(reservationRepo)
+			cleanupService.StartCleanupScheduler(context.Background(), 5*time.Minute, "")
+		}()
 
 		// === GoAPI Routes (BI/Analytics) ===
 		goapiServer := goapi.New()
@@ -583,7 +582,7 @@ func main() {
 		} else {
 			goapiGroup := ms.Echo().Group("/goapi")
 			goapiServer.RegisterMiddleware(goapiGroup)
-			goapiServer.RegisterRoutes(goapiGroup, "/goapi", pst)
+			goapiServer.RegisterRoutes(goapiGroup, "/goapi")
 			defer goapiServer.Shutdown()
 			log.Println("GoAPI routes registered under /goapi/*")
 

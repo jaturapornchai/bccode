@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-19 @ commit 326c872a - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-19 @ commit 6973f938 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 50
+Files indexed: 52
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (17364 lines)
 
@@ -1250,37 +1250,37 @@ Files indexed: 50
 | 1709 | function | `formatNumber` |
 | 1713 | function | `formatCodeName` |
 
-## backend/internal/product/productbarcode/productbarcode_http.go (1699 lines)
+## backend/internal/product/productbarcode/productbarcode_http.go (1702 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
 | 48 | function | `NewProductBarcodeHttp` |
-| 96 | function | `RegisterHttp` |
-| 129 | function | `requireProductBarcodeBusinessCode` |
-| 151 | function | `CreateProductBarcode` |
-| 209 | function | `UpdateProductBarcode` |
-| 262 | function | `UpdateProductBarcodeBranch` |
-| 305 | function | `UpdateProductBarcodeBusinessType` |
-| 348 | function | `UpdateProductBarcodeXSort` |
-| 391 | function | `DeleteProductBarcode` |
-| 426 | function | `InfoProductBarcode` |
-| 465 | function | `GetroductBarcodeByRef` |
-| 519 | function | `InfoProductBarcodeByBarcode` |
-| 556 | function | `InfoArray` |
-| 599 | function | `InfoArrayMaster` |
-| 650 | function | `SearchProductBarcodePage` |
-| 688 | function | `SearchProductBarcodePage2` |
-| 732 | function | `SearchProductBarcodeLimit` |
-| 789 | function | `SaveBulk` |
-| 832 | function | `DeleteProductBarcodeByGUIDs` |
-| 870 | function | `GetroductBarcodeByAllUnits` |
-| 916 | function | `GetroductBarcodeByGroups` |
-| 959 | function | `Export` |
-| 1023 | function | `InfoBOMView` |
-| 1045 | function | `postProcessBooleanFilters` |
-| 1059 | function | `searchFilter` |
-| 1598 | function | `Import` |
-| 1641 | function | `ImportRefBarcodeUpdate` |
+| 99 | function | `RegisterHttp` |
+| 132 | function | `requireProductBarcodeBusinessCode` |
+| 154 | function | `CreateProductBarcode` |
+| 212 | function | `UpdateProductBarcode` |
+| 265 | function | `UpdateProductBarcodeBranch` |
+| 308 | function | `UpdateProductBarcodeBusinessType` |
+| 351 | function | `UpdateProductBarcodeXSort` |
+| 394 | function | `DeleteProductBarcode` |
+| 429 | function | `InfoProductBarcode` |
+| 468 | function | `GetroductBarcodeByRef` |
+| 522 | function | `InfoProductBarcodeByBarcode` |
+| 559 | function | `InfoArray` |
+| 602 | function | `InfoArrayMaster` |
+| 653 | function | `SearchProductBarcodePage` |
+| 691 | function | `SearchProductBarcodePage2` |
+| 735 | function | `SearchProductBarcodeLimit` |
+| 792 | function | `SaveBulk` |
+| 835 | function | `DeleteProductBarcodeByGUIDs` |
+| 873 | function | `GetroductBarcodeByAllUnits` |
+| 919 | function | `GetroductBarcodeByGroups` |
+| 962 | function | `Export` |
+| 1026 | function | `InfoBOMView` |
+| 1048 | function | `postProcessBooleanFilters` |
+| 1062 | function | `searchFilter` |
+| 1601 | function | `Import` |
+| 1644 | function | `ImportRefBarcodeUpdate` |
 
 ## frontend/src/app/system-settings/product-group-tree-view.tsx (1689 lines)
 
@@ -1690,6 +1690,49 @@ Files indexed: 50
 | 1235 | function | `TestPurchaseReturnConsumer` |
 | 1269 | function | `GetConsumerStatus` |
 
+## backend/internal/authentication/authentication_http.go (1359 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 63 | function | `NewAuthenticationHttp` |
+| 126 | function | `currentDevLoginConfig` |
+| 137 | function | `devLoginConfigFor` |
+| 146 | function | `devLoginSecretMatches` |
+| 150 | function | `RegisterHttp` |
+| 189 | function | `DevLogin` |
+| 222 | function | `LoginWithPhoneNumber` |
+| 264 | function | `Login` |
+| 311 | function | `Poslogin` |
+| 352 | function | `LoginEmail` |
+| 393 | function | `RefreshToken` |
+| 430 | function | `TokenLogin` |
+| 466 | function | `GoogleLogin` |
+| 518 | function | `verifyGoogleIDToken` |
+| 558 | function | `LoginWithLine` |
+| 592 | function | `LoginWithLineUserID` |
+| 640 | function | `Register` |
+| 677 | function | `RegisterByUsername` |
+| 714 | function | `SendPhoneNumberOTP` |
+| 751 | function | `RegisterByPhoneNumber` |
+| 788 | function | `ForgotPasswordByPhoneNumber` |
+| 823 | function | `RegisterCheckExistUsername` |
+| 860 | function | `RegisterCheckExistPhonenumber` |
+| 898 | function | `Update` |
+| 935 | function | `UpdatePassword` |
+| 964 | function | `ResetPasswordToDefault` |
+| 992 | function | `Logout` |
+| 1019 | function | `VerifyToken` |
+| 1038 | function | `SessionsActiveCount` |
+| 1057 | function | `Profile` |
+| 1084 | function | `ProfileShop` |
+| 1108 | function | `SelectShop` |
+| 1170 | function | `selectableCompanyFilter` |
+| 1187 | function | `ListShopCanAccess` |
+| 1221 | function | `UpdateShopFavorite` |
+| 1258 | function | `LinkLine` |
+| 1294 | function | `UnlinkLine` |
+| 1319 | function | `DisableUser` |
+
 ## frontend/src/app/system-settings/warehouse-tree-view.tsx (1332 lines)
 
 | Line | Kind | Name |
@@ -1708,49 +1751,6 @@ Files indexed: 50
 | 484 | const-arrow | `handleDeleteRow` |
 | 499 | const-arrow | `handleSaveAllLocations` |
 | 696 | const-arrow | `handleResetTable` |
-
-## backend/internal/authentication/authentication_http.go (1331 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 62 | function | `NewAuthenticationHttp` |
-| 110 | function | `currentDevLoginConfig` |
-| 121 | function | `devLoginConfigFor` |
-| 130 | function | `devLoginSecretMatches` |
-| 134 | function | `RegisterHttp` |
-| 173 | function | `DevLogin` |
-| 206 | function | `LoginWithPhoneNumber` |
-| 248 | function | `Login` |
-| 293 | function | `Poslogin` |
-| 334 | function | `LoginEmail` |
-| 375 | function | `RefreshToken` |
-| 412 | function | `TokenLogin` |
-| 448 | function | `GoogleLogin` |
-| 500 | function | `verifyGoogleIDToken` |
-| 540 | function | `LoginWithLine` |
-| 574 | function | `LoginWithLineUserID` |
-| 622 | function | `Register` |
-| 659 | function | `RegisterByUsername` |
-| 696 | function | `SendPhoneNumberOTP` |
-| 733 | function | `RegisterByPhoneNumber` |
-| 770 | function | `ForgotPasswordByPhoneNumber` |
-| 805 | function | `RegisterCheckExistUsername` |
-| 842 | function | `RegisterCheckExistPhonenumber` |
-| 880 | function | `Update` |
-| 917 | function | `UpdatePassword` |
-| 946 | function | `ResetPasswordToDefault` |
-| 974 | function | `Logout` |
-| 1001 | function | `VerifyToken` |
-| 1020 | function | `SessionsActiveCount` |
-| 1039 | function | `Profile` |
-| 1066 | function | `ProfileShop` |
-| 1090 | function | `SelectShop` |
-| 1142 | function | `selectableCompanyFilter` |
-| 1159 | function | `ListShopCanAccess` |
-| 1193 | function | `UpdateShopFavorite` |
-| 1230 | function | `LinkLine` |
-| 1266 | function | `UnlinkLine` |
-| 1291 | function | `DisableUser` |
 
 ## backend/internal/goapi/handlers/image_r2.go (1319 lines)
 
@@ -2019,6 +2019,33 @@ Files indexed: 50
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
 
+## frontend/src/lib/erp-reports.ts (1128 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 518 | function | `isErpReportRoute` |
+| 523 | function | `getErpReportConfig` |
+| 545 | function | `isErpReportApiReady` |
+| 549 | function | `isRecord` |
+| 553 | function | `toNumber` |
+| 564 | function | `toText` |
+| 572 | function | `mapSalesByDocument` |
+| 587 | function | `mapGrossProfitDocument` |
+| 612 | function | `mapStockBalanceItem` |
+| 629 | function | `mapStockBalanceWarehouse` |
+| 646 | function | `mapApMovement` |
+| 667 | function | `mapApStatus` |
+| 686 | function | `mapApOutstanding` |
+| 705 | function | `mapApDailyPayment` |
+| 722 | function | `mapArMovement` |
+| 743 | function | `mapArStatus` |
+| 762 | function | `mapArOutstanding` |
+| 781 | function | `mapArCreditLimit` |
+| 809 | function | `extractRows` |
+| 823 | function | `fetchErpReportData` |
+| 1106 | function | `reportText` |
+| 1115 | function | `reportColumnLabel` |
+
 ## backend/internal/documentwarehouse/documentimage/services/documentimagegroup_service.go (1114 lines)
 
 | Line | Kind | Name |
@@ -2051,20 +2078,34 @@ Files indexed: 50
 | 1028 | function | `newXOrderDocumentImageGroup` |
 | 1045 | function | `UpdateDocNoInReferences` |
 
-## frontend/src/app/crud/erp-crud-workbench.tsx (1056 lines)
+## frontend/src/app/asset/fixed-assets-screen.tsx (1078 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 46 | function | `ErpCrudWorkbench` |
-| 127 | const-arrow | `handleSelectRow` |
-| 149 | const-arrow | `handleStartEdit` |
-| 157 | const-arrow | `handleStartCreate` |
-| 205 | const-arrow | `handleCancelEdit` |
-| 223 | const-arrow | `handleDeleteDoc` |
-| 256 | const-arrow | `updateLineItem` |
-| 318 | const-arrow | `handleSaveDoc` |
-| 664 | section | `EDIT MODE FORM` |
-| 898 | section | `READ-ONLY VIEW MODE` |
+| 40 | function | `FixedAssetsScreen` |
+| 110 | const-arrow | `loadData` |
+| 130 | const-arrow | `loadSchedule` |
+| 139 | const-arrow | `loadScheduleReport` |
+| 151 | const-arrow | `loadTaxReport` |
+| 169 | const-arrow | `handleSaveAsset` |
+| 193 | const-arrow | `handleDeleteAsset` |
+| 217 | const-arrow | `handlePostGL` |
+| 248 | const-arrow | `handleConfirmDisposal` |
+
+## frontend/src/app/crud/erp-crud-workbench.tsx (1074 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 47 | function | `ErpCrudWorkbench` |
+| 128 | const-arrow | `handleSelectRow` |
+| 150 | const-arrow | `handleStartEdit` |
+| 158 | const-arrow | `handleStartCreate` |
+| 206 | const-arrow | `handleCancelEdit` |
+| 224 | const-arrow | `handleDeleteDoc` |
+| 257 | const-arrow | `updateLineItem` |
+| 336 | const-arrow | `handleSaveDoc` |
+| 682 | section | `EDIT MODE FORM` |
+| 916 | section | `READ-ONLY VIEW MODE` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
 
@@ -2131,7 +2172,7 @@ Files indexed: 50
 | 1008 | function | `validateForm` |
 | 1017 | function | `formatCount` |
 
-## frontend/src/app/gl/gl-masters.tsx (1022 lines)
+## frontend/src/app/gl/gl-masters.tsx (1023 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -2159,8 +2200,8 @@ Files indexed: 50
 | 389 | const-arrow | `toggleNode` |
 | 880 | function | `AccountFields` |
 | 885 | const-arrow | `handleTypeChange` |
-| 991 | function | `FiscalYearFields` |
-| 1005 | function | `MasterFields` |
+| 992 | function | `FiscalYearFields` |
+| 1006 | function | `MasterFields` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/base_pdf.go (1019 lines)
 

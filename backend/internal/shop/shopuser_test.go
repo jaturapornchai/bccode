@@ -33,8 +33,8 @@ func setup() {
 
 func TestShopMemberSave(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 	setup()
 
@@ -46,8 +46,8 @@ func TestShopMemberSave(t *testing.T) {
 }
 
 func TestShopMemberFindRole(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 	setup()
 
@@ -61,8 +61,8 @@ func TestShopMemberFindRole(t *testing.T) {
 }
 
 func TestShopMemberFindByShop(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 	setup()
 
@@ -77,8 +77,8 @@ func TestShopMemberFindByShop(t *testing.T) {
 }
 
 func TestShopMemberFindByUsername(t *testing.T) {
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 	setup()
 

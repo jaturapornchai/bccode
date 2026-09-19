@@ -64,7 +64,7 @@ func NewShopHttp(ms *microservice.Microservice, cfg config.IConfig) ShopHttp {
 	shopUserRepo := NewShopUserRepository(pst)
 	service := NewShopService(repo, shopUserRepo, utils.NewGUID, ms.TimeNow)
 
-	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour, pst)
+	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)
 
 	repoBrach := branch_repositories.NewBranchRepository(pst)
 

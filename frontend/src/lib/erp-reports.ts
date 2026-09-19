@@ -355,6 +355,144 @@ export const ERP_REPORT_CONFIGS: ErpReportConfig[] = [
     ],
   },
 
+  // --- รายงานเจ้าหนี้ (Accounts Payable — Champ Parity) ---
+  {
+    route: "/report/apmovement",
+    code: "ap_movement",
+    category: "ap",
+    title: { th: "รายงานความเคลื่อนไหวเจ้าหนี้", en: "AP Movement" },
+    description: { th: "แสดงประวัติการตั้งหนี้ การจ่ายชำระหนี้ และการลดหนี้เจ้าหนี้ตามช่วงเวลา", en: "Accounts payable movement history including purchases, payments, and credit notes" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No." } },
+      { key: "creditorcode", label: { th: "รหัสเจ้าหนี้", en: "Vendor Code" } },
+      { key: "creditorname", label: { th: "ชื่อเจ้าหนี้", en: "Vendor Name" } },
+      { key: "transname", label: { th: "ประเภทรายการ", en: "Transaction" } },
+      { key: "totalamount", label: { th: "ยอดตั้งหนี้", en: "Total Amount" }, align: "right", isCurrency: true },
+      { key: "paidamount", label: { th: "ยอดชำระ", en: "Paid Amount" }, align: "right", isCurrency: true },
+      { key: "balanceamount", label: { th: "คงเหลือ", en: "Balance" }, align: "right", isCurrency: true },
+    ],
+  },
+  {
+    route: "/report/apstatus",
+    code: "ap_status",
+    category: "ap",
+    title: { th: "รายงานสถานะเจ้าหนี้", en: "AP Status" },
+    description: { th: "สรุปยอดหนี้ ยอดชำระ และยอดคงค้างแยกตามเจ้าหนี้", en: "Accounts payable status summary by vendor" },
+    defaultSortKey: "creditorcode",
+    columns: [
+      { key: "creditorcode", label: { th: "รหัสเจ้าหนี้", en: "Vendor Code" } },
+      { key: "creditorname", label: { th: "ชื่อเจ้าหนี้", en: "Vendor Name" } },
+      { key: "creditday", label: { th: "เครดิตเทอม (วัน)", en: "Credit Days" }, align: "right", isNumeric: true },
+      { key: "phone", label: { th: "เบอร์โทร", en: "Phone" } },
+      { key: "totalamount", label: { th: "ยอดหนี้รวม", en: "Total Amount" }, align: "right", isCurrency: true },
+      { key: "paidamount", label: { th: "ยอดชำระแล้ว", en: "Paid Amount" }, align: "right", isCurrency: true },
+      { key: "balanceamount", label: { th: "ยอดคงค้าง", en: "Outstanding Balance" }, align: "right", isCurrency: true },
+    ],
+  },
+  {
+    route: "/report/apoutstanding",
+    code: "ap_outstanding",
+    category: "ap",
+    title: { th: "รายงานหนี้ค้างชำระ", en: "AP Outstanding" },
+    description: { th: "แสดงรายการเอกสารซื้อเชื่อที่ยังมียอดคงค้างชำระ", en: "Outstanding payable invoices" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No." } },
+      { key: "creditorcode", label: { th: "รหัสเจ้าหนี้", en: "Vendor Code" } },
+      { key: "creditorname", label: { th: "ชื่อเจ้าหนี้", en: "Vendor Name" } },
+      { key: "totalamount", label: { th: "ยอดเงินเต็ม", en: "Total Amount" }, align: "right", isCurrency: true },
+      { key: "paidamount", label: { th: "ชำระแล้ว", en: "Paid Amount" }, align: "right", isCurrency: true },
+      { key: "balanceamount", label: { th: "ค้างชำระ", en: "Balance Due" }, align: "right", isCurrency: true },
+    ],
+  },
+  {
+    route: "/report/apdailypayment",
+    code: "ap_daily_payment",
+    category: "ap",
+    title: { th: "รายงานสรุปจ่ายเงินประจำวัน", en: "AP Daily Payment" },
+    description: { th: "สรุปรายการจ่ายชำระหนี้ค่าสินค้าและบริการประจำวัน", en: "Daily payment disbursement report" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No." } },
+      { key: "creditorcode", label: { th: "รหัสเจ้าหนี้", en: "Vendor Code" } },
+      { key: "creditorname", label: { th: "ชื่อเจ้าหนี้", en: "Vendor Name" } },
+      { key: "paidamount", label: { th: "ยอดเงินที่จ่าย", en: "Paid Amount" }, align: "right", isCurrency: true },
+      { key: "balanceamount", label: { th: "คงเหลือหลังจ่าย", en: "Remaining Balance" }, align: "right", isCurrency: true },
+    ],
+  },
+
+  // --- รายงานลูกหนี้ (Accounts Receivable — Champ Parity) ---
+  {
+    route: "/report/armovement",
+    code: "ar_movement",
+    category: "ar",
+    title: { th: "รายงานความเคลื่อนไหวลูกหนี้", en: "AR Movement" },
+    description: { th: "แสดงประวัติการตั้งหนี้ การรับชำระหนี้ และการลดหนี้ลูกหนี้ตามช่วงเวลา", en: "Accounts receivable movement history including sales, receipts, and credit notes" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No." } },
+      { key: "debtorcode", label: { th: "รหัสลูกหนี้", en: "Customer Code" } },
+      { key: "debtorname", label: { th: "ชื่อลูกหนี้", en: "Customer Name" } },
+      { key: "transname", label: { th: "ประเภทรายการ", en: "Transaction" } },
+      { key: "totalamount", label: { th: "ยอดตั้งหนี้", en: "Total Amount" }, align: "right", isCurrency: true },
+      { key: "paidamount", label: { th: "ยอดชำระ", en: "Paid Amount" }, align: "right", isCurrency: true },
+      { key: "balanceamount", label: { th: "คงเหลือ", en: "Balance" }, align: "right", isCurrency: true },
+    ],
+  },
+  {
+    route: "/report/arstatus",
+    code: "ar_status",
+    category: "ar",
+    title: { th: "รายงานสถานะลูกหนี้", en: "AR Status" },
+    description: { th: "สรุปยอดหนี้ ยอดรับชำระ และยอดหนี้คงค้างแยกตามลูกหนี้", en: "Accounts receivable status summary by customer" },
+    defaultSortKey: "debtorcode",
+    columns: [
+      { key: "debtorcode", label: { th: "รหัสลูกหนี้", en: "Customer Code" } },
+      { key: "debtorname", label: { th: "ชื่อลูกหนี้", en: "Customer Name" } },
+      { key: "creditday", label: { th: "เครดิตเทอม (วัน)", en: "Credit Days" }, align: "right", isNumeric: true },
+      { key: "phone", label: { th: "เบอร์โทร", en: "Phone" } },
+      { key: "totalamount", label: { th: "ยอดหนี้รวม", en: "Total Amount" }, align: "right", isCurrency: true },
+      { key: "paidamount", label: { th: "ยอดรับชำระแล้ว", en: "Paid Amount" }, align: "right", isCurrency: true },
+      { key: "balanceamount", label: { th: "ยอดหนี้คงค้าง", en: "Outstanding Balance" }, align: "right", isCurrency: true },
+    ],
+  },
+  {
+    route: "/report/aroutstanding",
+    code: "ar_outstanding",
+    category: "ar",
+    title: { th: "รายงานหนี้ค้างรับ", en: "AR Outstanding" },
+    description: { th: "แสดงรายการเอกสารขายเชื่อที่ยังมียอดคงค้างรับชำระ", en: "Outstanding receivable invoices" },
+    defaultSortKey: "docdate",
+    columns: [
+      { key: "docdate", label: { th: "วันที่", en: "Date" }, align: "center" },
+      { key: "docno", label: { th: "เลขที่เอกสาร", en: "Doc No." } },
+      { key: "debtorcode", label: { th: "รหัสลูกหนี้", en: "Customer Code" } },
+      { key: "debtorname", label: { th: "ชื่อลูกหนี้", en: "Customer Name" } },
+      { key: "totalamount", label: { th: "ยอดเงินเต็ม", en: "Total Amount" }, align: "right", isCurrency: true },
+      { key: "paidamount", label: { th: "รับชำระแล้ว", en: "Paid Amount" }, align: "right", isCurrency: true },
+      { key: "balanceamount", label: { th: "ค้างรับ", en: "Balance Due" }, align: "right", isCurrency: true },
+    ],
+  },
+  {
+    route: "/report/arcreditlimit",
+    code: "ar_credit_limit",
+    category: "ar",
+    title: { th: "รายงานวงเงินสินเชื่อและการใช้วงเงิน", en: "AR Credit Limit Usage" },
+    description: { th: "ตรวจสอบยอดหนี้คงค้างเทียบกับเครดิตเทอมของลูกหนี้แต่ละราย", en: "Customer credit limit and credit term monitoring" },
+    defaultSortKey: "debtorcode",
+    columns: [
+      { key: "debtorcode", label: { th: "รหัสลูกหนี้", en: "Customer Code" } },
+      { key: "debtorname", label: { th: "ชื่อลูกหนี้", en: "Customer Name" } },
+      { key: "balanceamount", label: { th: "ยอดหนี้คงค้าง", en: "Outstanding Balance" }, align: "right", isCurrency: true },
+      { key: "creditday", label: { th: "เครดิตเทอม (วัน)", en: "Credit Days" }, align: "right", isNumeric: true },
+    ],
+  },
+
   // --- ส่งออกงบการเงิน DBD XBRL ---
   {
     route: "/report/xbrl",
@@ -394,6 +532,14 @@ const API_READY_REPORTS: ReadonlySet<string> = new Set<string>([
   "gross_profit_document",
   "stock_balance_item",
   "stock_balance_warehouse",
+  "ap_movement",
+  "ap_status",
+  "ap_outstanding",
+  "ap_daily_payment",
+  "ar_movement",
+  "ar_status",
+  "ar_outstanding",
+  "ar_credit_limit",
 ]);
 
 export function isErpReportApiReady(code: string): boolean {
@@ -497,11 +643,167 @@ function mapStockBalanceWarehouse(source: Record<string, unknown>): ErpReportRow
   return row;
 }
 
+function mapApMovement(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const creditorcode = toText(source.creditorcode);
+  if (creditorcode !== undefined) row.creditorcode = creditorcode;
+  const creditorname = toText(source.creditorname);
+  if (creditorname !== undefined) row.creditorname = creditorname;
+  const transname = toText(source.transname);
+  if (transname !== undefined) row.transname = transname;
+  const totalamount = toNumber(source.totalamount);
+  if (totalamount !== undefined) row.totalamount = totalamount;
+  const paidamount = toNumber(source.paidamount);
+  if (paidamount !== undefined) row.paidamount = paidamount;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  return row;
+}
+
+function mapApStatus(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const creditorcode = toText(source.creditorcode);
+  if (creditorcode !== undefined) row.creditorcode = creditorcode;
+  const creditorname = toText(source.creditorname);
+  if (creditorname !== undefined) row.creditorname = creditorname;
+  const creditday = toNumber(source.creditday);
+  if (creditday !== undefined) row.creditday = creditday;
+  const phone = toText(source.phone);
+  if (phone !== undefined) row.phone = phone;
+  const totalamount = toNumber(source.totalamount);
+  if (totalamount !== undefined) row.totalamount = totalamount;
+  const paidamount = toNumber(source.paidamount);
+  if (paidamount !== undefined) row.paidamount = paidamount;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  return row;
+}
+
+function mapApOutstanding(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const creditorcode = toText(source.creditorcode);
+  if (creditorcode !== undefined) row.creditorcode = creditorcode;
+  const creditorname = toText(source.creditorname);
+  if (creditorname !== undefined) row.creditorname = creditorname;
+  const totalamount = toNumber(source.totalamount);
+  if (totalamount !== undefined) row.totalamount = totalamount;
+  const paidamount = toNumber(source.paidamount);
+  if (paidamount !== undefined) row.paidamount = paidamount;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  return row;
+}
+
+function mapApDailyPayment(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const creditorcode = toText(source.creditorcode);
+  if (creditorcode !== undefined) row.creditorcode = creditorcode;
+  const creditorname = toText(source.creditorname);
+  if (creditorname !== undefined) row.creditorname = creditorname;
+  const paidamount = toNumber(source.paidamount);
+  if (paidamount !== undefined) row.paidamount = paidamount;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  return row;
+}
+
+function mapArMovement(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const debtorcode = toText(source.debtorcode);
+  if (debtorcode !== undefined) row.debtorcode = debtorcode;
+  const debtorname = toText(source.debtorname);
+  if (debtorname !== undefined) row.debtorname = debtorname;
+  const transname = toText(source.transname);
+  if (transname !== undefined) row.transname = transname;
+  const totalamount = toNumber(source.totalamount);
+  if (totalamount !== undefined) row.totalamount = totalamount;
+  const paidamount = toNumber(source.paidamount);
+  if (paidamount !== undefined) row.paidamount = paidamount;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  return row;
+}
+
+function mapArStatus(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const debtorcode = toText(source.debtorcode);
+  if (debtorcode !== undefined) row.debtorcode = debtorcode;
+  const debtorname = toText(source.debtorname);
+  if (debtorname !== undefined) row.debtorname = debtorname;
+  const creditday = toNumber(source.creditday);
+  if (creditday !== undefined) row.creditday = creditday;
+  const phone = toText(source.phone);
+  if (phone !== undefined) row.phone = phone;
+  const totalamount = toNumber(source.totalamount);
+  if (totalamount !== undefined) row.totalamount = totalamount;
+  const paidamount = toNumber(source.paidamount);
+  if (paidamount !== undefined) row.paidamount = paidamount;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  return row;
+}
+
+function mapArOutstanding(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const debtorcode = toText(source.debtorcode);
+  if (debtorcode !== undefined) row.debtorcode = debtorcode;
+  const debtorname = toText(source.debtorname);
+  if (debtorname !== undefined) row.debtorname = debtorname;
+  const totalamount = toNumber(source.totalamount);
+  if (totalamount !== undefined) row.totalamount = totalamount;
+  const paidamount = toNumber(source.paidamount);
+  if (paidamount !== undefined) row.paidamount = paidamount;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  return row;
+}
+
+function mapArCreditLimit(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const debtorcode = toText(source.debtorcode);
+  if (debtorcode !== undefined) row.debtorcode = debtorcode;
+  const debtorname = toText(source.debtorname);
+  if (debtorname !== undefined) row.debtorname = debtorname;
+  const balanceamount = toNumber(source.balanceamount);
+  if (balanceamount !== undefined) row.balanceamount = balanceamount;
+  const creditday = toNumber(source.creditday);
+  if (creditday !== undefined) row.creditday = creditday;
+  return row;
+}
+
 const ROW_MAPPERS: Record<string, RowMapper> = {
   sales_by_document: mapSalesByDocument,
   gross_profit_document: mapGrossProfitDocument,
   stock_balance_item: mapStockBalanceItem,
   stock_balance_warehouse: mapStockBalanceWarehouse,
+  ap_movement: mapApMovement,
+  ap_status: mapApStatus,
+  ap_outstanding: mapApOutstanding,
+  ap_daily_payment: mapApDailyPayment,
+  ar_movement: mapArMovement,
+  ar_status: mapArStatus,
+  ar_outstanding: mapArOutstanding,
+  ar_credit_limit: mapArCreditLimit,
 };
 
 function extractRows(
@@ -555,6 +857,43 @@ export async function fetchErpReportData(params: {
           todate,
           reporttype: "header",
           sortascending: true,
+          limit: 1000,
+          offset: 0,
+        }),
+      });
+      if (!res.ok) {
+        return {
+          rows: [],
+          error: res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed",
+        };
+      }
+      payload = await res.json();
+      const rawRows = extractRows(payload, "data");
+      if (rawRows === null) {
+        return { rows: [], error: "load_failed" };
+      }
+      return { rows: rawRows.map(mapper) };
+    }
+
+    const isDebtReport =
+      code === "ap_movement" ||
+      code === "ap_status" ||
+      code === "ap_outstanding" ||
+      code === "ap_daily_payment" ||
+      code === "ar_movement" ||
+      code === "ar_status" ||
+      code === "ar_outstanding" ||
+      code === "ar_credit_limit";
+
+    if (isDebtReport) {
+      const res = await apiFetch("/api/goapi/api/report/debt/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          holdingcode,
+          reportcode: code,
+          fromdate,
+          todate,
           limit: 1000,
           offset: 0,
         }),

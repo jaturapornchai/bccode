@@ -152,6 +152,7 @@ var MasterCollections = map[string]string{
 	"mappings": "gl_account_mappings", "budgets": "gl_budgets", "periods": "gl_periods", "forecast": "gl_cash_forecast",
 	"allocations":         "gl_allocations",
 	"statement-templates": "gl_statement_templates",
+	"journal-books":       "gl_journal_books",
 }
 
 func (m Master) CollectionName() string { return MasterCollections[m.Kind] }

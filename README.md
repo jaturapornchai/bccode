@@ -1391,4 +1391,91 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `docs/reference/CODE-MAP.md`
 - `README.md`
 
+### 2026-09-19 — การยกระดับตาม Champ Parity: รายงาน AP/AR, Speed Entry ตารางสินค้า, จำหน่ายสินทรัพย์ในทะเบียน, และทำความสะอาด Dead Code
+
+**ประเภทงาน:** `[Feature]` `[Backend API]` `[Champ Parity]` `[UX/UI Speed Entry]` `[Cleanup]`
+
+**สิ่งที่ทำ:**
+1. **เชื่อมต่อ 8 รายงานเจ้าหนี้และลูกหนี้ (AP/AR Debt Reports) สู่ PostgreSQL จริง (`debt_report.go`, `erp-reports.ts`)**:
+   - พัฒนา Backend Handler ใน Go (`backend/internal/goapi/handlers/debt_report.go`) รองรับ endpoint `POST /api/report/debt/query` เชื่อมต่อฐานข้อมูลจริงของแต่ละกิจการ (PostgreSQL per-holding)
+   - ครอบคลุม 8 รายงานตาม Champ Parity:
+     - **AP (เจ้าหนี้)**: ความเคลื่อนไหวเจ้าหนี้ (`/report/apmovement`), สถานะเจ้าหนี้ (`/report/apstatus`), หนี้ค้างชำระ (`/report/apoutstanding`), สรุปจ่ายเงินประจำวัน (`/report/apdailypayment`)
+     - **AR (ลูกหนี้)**: ความเคลื่อนไหวลูกหนี้ (`/report/armovement`), สถานะลูกหนี้ (`/report/arstatus`), หนี้ค้างรับ (`/report/aroutstanding`), วงเงินสินเชื่อและการใช้วงเงิน (`/report/arcreditlimit`)
+   - เพิ่ม `RowMapper` และกำหนดสถานะ `API_READY_REPORTS` ทำให้รายการ pending routes ในระบบลดลงจาก 31 เหลือ 23 รายการ
+   - Unit tests ครบทุก query (`debt_report_test.go`, `erp-reports.test.ts`, `menu-screen-status.test.ts`) ผ่าน 100%
+2. **Speed Entry (Tab / Enter / Numpad auto-flow) ในตารางสินค้าหน้าซื้อ-ขาย (`erp-crud-workbench.tsx`)**:
+   - นำเข้า `useTabularEnterNav` มาผูกเข้ากับตารางรายละเอียดสินค้า (`formDoc.details`)
+   - กด Tab หรือ Enter เพื่อเลื่อนโฟกัสไปเซลล์ถัดไป (รหัสสินค้า -> ชื่อ -> คลัง -> จำนวน -> ราคา -> ส่วนลด)
+   - เมื่อกด Enter/Tab ที่เซลล์สุดท้ายของแถว ระบบจะเรียก `addLineItem` เพิ่มแถวใหม่อัตโนมัติและเลื่อนโฟกัสไปยังช่องรหัสสินค้าของแถวใหม่อย่างต่อเนื่อง
+3. **ระบบจำหน่ายสินทรัพย์ในทะเบียนสินทรัพย์ (Champ Asset Disposal) (`fixed-assets-screen.tsx`)**:
+   - เพิ่มปุ่ม Action "จำหน่าย" ในแถวสินทรัพย์ที่มีสถานะ active บนแท็บทะเบียนสินทรัพย์ ไม่แยกเมนูตามแบบ Champ
+   - มี Modal Dialog ระบุวันที่จำหน่าย, ประเภท (ขาย, ตีเป็นเศษซาก, ตัดจำหน่าย), ราคาขาย, VAT, บัญชีรับเงิน, และบัญชีกำไร/ขาดทุน
+   - เชื่อมต่อ backend `/fa/v2/command` (`DisposeAsset`) ลงบัญชีกำไร/ขาดทุน GL อัตโนมัติ พร้อมรองรับ 12 ภาษา
+4. **กวาด Dead Code ที่อยู่นอกขอบเขต Champ Parity**:
+   - ลบ `frontend/src/app/gl/gl-allocations.tsx`, `gl-allocations.test.ts`, และ `gl-export.tsx`
+   - ลบ dead branches (`/gl/allocations`, `/tools/databackup`, `/report/xbrl`) และ unused imports ใน `general-ledger-screen.tsx`
+   - ลบ routing ที่ตายแล้วใน `menu-icons.ts`
+5. **การทดสอบความถูกต้องและการยืนยันผล 100%**:
+   - Go backend tests ผ่าน 100%
+   - Frontend tests: 91 test files / 648 unit tests ผ่าน 100%
+   - TypeScript `tsc --noEmit` ผ่าน 0 errors
+   - ESLint ผ่าน 0 errors
+   - Next.js Turbopack production build ผ่าน 100%
+   - `docs/reference/CODE-MAP.md` ซิงก์สมบูรณ์ (52 files indexed)
+
+**ไฟล์สำคัญ:**
+- `backend/internal/goapi/handlers/debt_report.go` (ใหม่)
+- `backend/internal/goapi/handlers/debt_report_test.go` (ใหม่)
+- `backend/internal/goapi/bootstrap.go`
+- `backend/assets/language/languages.tsv`
+- `frontend/src/lib/erp-reports.ts`
+- `frontend/src/lib/erp-reports.test.ts`
+- `frontend/src/lib/menu-screen-status.test.ts`
+- `frontend/src/lib/audit-pending.test.ts`
+- `frontend/src/app/crud/erp-crud-workbench.tsx`
+- `frontend/src/app/asset/fixed-assets-screen.tsx`
+- `frontend/src/app/gl/general-ledger-screen.tsx`
+- `frontend/src/lib/menu-icons.ts`
+- `docs/reference/CODE-MAP.md`
+### [2026-09-19] ทดสอบระบบบัญชีแยกประเภทเต็มรูปแบบ (E2E Lifecycle) & เติมเต็ม Champ Parity GL ครบ 100%
+
+**เป้าหมาย:** ทำการทดสอบวงจรบัญชีแยกประเภท (General Ledger) ทั้งหมดตั้งแต่ต้นน้ำจนถึงปลายน้ำ (Lifecycle Simulation), ทดสอบปุ่มคำสั่ง เงื่อนไข และการควบคุมความถูกต้องทั้งหมด พร้อมทั้งปิดงาน Champ Parity คงค้าง 3 รายการของ GL ให้พร้อมใช้งานครบ 100% (23/23 เมนู GL พร้อมใช้งาน 0 pending)
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **เติมเต็ม Champ Parity 3 รายการคงค้างของ General Ledger (ครบ 23/23 เมนู 100%)**:
+   - **สมุดรายวัน (`/gl/journal-books`) [Champ 101004]**:
+     - เพิ่ม resource `journal-books` ใน Go backend (`backend/internal/generalledger/models.go` และ `http.go`) เชื่อมตาราง `gl_journal_books`
+     - เพิ่ม route `journal-books` ใน frontend Master list (`general-ledger-screen.tsx`, `general-ledger.ts`)
+   - **รายงานข้อมูลรายวัน (`/gl/gljournal`) [Champ 104003]**:
+     - พัฒนา backend calculation engine ใน Go (`reports.go` case `"gljournal"`) คำนวณยอดรายวันจาก `gl_journals` และ `gl_lines` จัดกลุ่มตามสมุดรายวันและวันที่เอกสาร
+     - เชื่อมต่อ UI Combobox ตัวกรองสมุดรายวันและช่วงวันที่ใน `gl-reports.tsx`
+   - **รายงานเปรียบเทียบงบประมาณ (`/gl/budgetcomparison`) [Champ 104017]**:
+     - พัฒนา backend calculation engine ใน Go (`reports.go` case `"budgetcomparison"`) คำนวณยอดประมาณการ vs ยอดจริง และผลต่าง (variance) ผ่าน PostgreSQL CTE
+     - ปลดรายการออกจาก `pendingRoutes` ทำให้ GL มีเมนูพร้อมใช้งาน 100% (pending รวมทั้งระบบลดเหลือ 20 รายการ)
+2. **สร้างชุดทดสอบ E2E Lifecycle Test Suite (`frontend/src/app/gl/gl-lifecycle-e2e.test.ts`) รวม 25 การทดสอบ**:
+   - **Phase 1 (Master Data Setup)**: ผังบัญชี (Tree Hierarchy / Parent-Child), ปีบัญชี, สมุดรายวัน, กลุ่มบัญชี, กฎเชื่อมบัญชี, งบประมาณ, และล็อกงวดบัญชี
+   - **Phase 2 (Journal Operations & Safety)**: สมุดรายวัน 5 เล่ม (JV, UV, SV, RV, PV), ยอดยกมา (Opening Balance), ตรวจสอบสมดุลเดบิต-เครดิต (Auto-Balance), Smart Paste จาก Excel, และแท็บแยกผ่านรายการ vs ขอยกเลิกผ่านรายการ
+   - **Phase 3 (Close & Processes)**: คำนวณยอดสะสมใหม่ (Recalculate), สร้างฉบับร่างปิดงวด (Close), ปิดสิ้นปี (Year-End Close), และตรวจสอบย้อนหลัง (Reprocess)
+   - **Phase 4 (Financial Reports)**: งบทดลอง (TB), กระดาษทำการ (Working Paper), แยกประเภททั่วไป (GL), กำไรขาดทุน (P&L), งบแสดงฐานะการเงิน (Balance Sheet), รายงานข้อมูลรายวัน (`gljournal`), เปรียบเทียบงบประมาณ (`budgetcomparison`), กระแสเงินสด, ตรวจสอบรายวัน, และยอดสะสมรายปี
+   - **Phase 5 (Buttons & Controls)**: ปุ่มสร้างใหม่, แก้ไข, แสดงผล (Read-only), ลบ (พร้อม Confirm Dialog), ล็อก/ปลดล็อกงวด, สลับมุมมอง Tree / Table, ย่อ/ขยายบรรทัด (Density), ค้นหา/ล้างค้นหา, ส่งออก CSV (BOM + RFC 4180), Drill-down เอกสาร, Error Boundary และปุ่ม Reset
+3. **การทดสอบความถูกต้องและการยืนยันผล 100% (VERIFY BEFORE DONE)**:
+   - Go backend tests ทั้งหมดใน `internal/generalledger/...` รันผ่าน Docker สำเร็จ (PASS 100%)
+   - Frontend Vitest tests ทั้งหมด 92 test files / 675 tests ผ่าน 100%
+   - TypeScript `tsc --noEmit` ผ่าน 0 errors
+   - ESLint ผ่าน 0 errors
+   - Next.js Turbopack production build ผ่าน 100%
+   - `docs/reference/CODE-MAP.md` ซิงก์สมบูรณ์ (52 files indexed)
+
+**ไฟล์สำคัญ:**
+- `backend/internal/generalledger/champ_parity_test.go` (ใหม่)
+- `frontend/src/app/gl/gl-lifecycle-e2e.test.ts` (ใหม่)
+- `backend/internal/generalledger/models.go`
+- `backend/internal/generalledger/httpapi/http.go`
+- `backend/internal/generalledger/reports.go`
+- `frontend/src/lib/general-ledger.ts`
+- `frontend/src/app/gl/general-ledger-screen.tsx`
+- `frontend/src/app/gl/gl-reports.tsx`
+- `frontend/src/lib/menu-screen-status.ts`
+- `README.md`
+
 

@@ -218,21 +218,20 @@ func TestMongodbFindPage(t *testing.T) {
 		id1 := primitive.NewObjectID()
 		id2 := primitive.NewObjectID()
 
-		first := mtest.CreateCursorResponse(1, "foo.bar", mtest.FirstBatch, bson.D{
+		countResp := mtest.CreateCursorResponse(0, "foo.bar", mtest.FirstBatch, bson.D{
+			{"n", int64(2)},
+		})
+		findResp := mtest.CreateCursorResponse(0, "foo.bar", mtest.FirstBatch, bson.D{
 			{"_id", id1},
 			{"product_code", "0001"},
 			{"product_name", "name 0001"},
-		})
-
-		second := mtest.CreateCursorResponse(1, "foo.bar", mtest.NextBatch, bson.D{
+		}, bson.D{
 			{"_id", id2},
 			{"product_code", "0002"},
 			{"product_name", "name 0002"},
 		})
 
-		//killCursors := mtest.CreateCursorResponse(0, "foo.bar", mtest.NextBatch)
-
-		mt.AddMockResponses(first, second)
+		mt.AddMockResponses(countResp, findResp)
 		pst := microservice.NewPersisterMongoWithDBContext(mt.DB)
 
 		products := []Product{}

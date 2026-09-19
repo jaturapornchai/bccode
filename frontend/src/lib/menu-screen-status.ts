@@ -27,8 +27,8 @@ export function isFixedAssetRoute(route: string): boolean {
 
 const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
 
-// GL menu items (Champ parity 2026-09-19) that general-ledger-screen has no view for yet.
-const pendingRoutes = new Set<string>(["/gl/journal-books", "/report/gljournal", "/report/budgetcomparison"]);
+// GL menu items (Champ parity 2026-09-19) — all GL screens implemented.
+const pendingRoutes = new Set<string>([]);
 
 /** A connected screen is not a guarantee that its business workflow is complete. */
 export function isMenuScreenPending(route: string): boolean {

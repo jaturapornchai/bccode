@@ -3,9 +3,10 @@ import { MENU_SECTIONS } from "./menu-data";
 import { isMenuScreenPending } from "./menu-screen-status";
 
 describe("ERP Menu Completeness Audit", () => {
-  // 2026-09-19 Champ parity: 31 routes were added straight from Champ menuconfig.xml without a screen/backend yet;
-  // the exact list lives in menu-screen-status.test.ts. Nothing else may be pending.
-  it("keeps pending routes limited to the 31 Champ-parity additions", () => {
+  // 2026-09-19 Champ parity: originally 31 routes from Champ menuconfig.xml without screen/backend.
+  // On 2026-09-19, 8 AP/AR debt reports were connected via /api/report/debt/query, leaving 23 pending.
+  // Then, 3 GL routes (/gl/journal-books, /report/gljournal, /report/budgetcomparison) connected, leaving 20 pending.
+  it("keeps pending routes limited to the 20 remaining Champ-parity items", () => {
     const pendingList: { group: string; title: string; route: string }[] = [];
     for (const section of MENU_SECTIONS) {
       for (const group of section.groups) {
@@ -16,7 +17,7 @@ describe("ERP Menu Completeness Audit", () => {
         }
       }
     }
-    expect(pendingList.length).toBe(31);
+    expect(pendingList.length).toBe(20);
   });
 });
 

@@ -84,5 +84,21 @@ describe("Thai general ledger report presentation", () => {
     expect(html).toContain("ดูรายงานแยกประเภท");
     expect(html).toContain("รายละเอียดใบสำคัญรายวัน");
   });
+
+  it("renders budget comparison and gl journal totals properly", () => {
+    const html = render({
+      totals: {
+        budgetamount: "500000.00",
+        actualamount: "320000.00",
+        variance: "180000.00",
+      },
+    });
+    expect(html).toContain("งบประมาณ");
+    expect(html).toContain("ยอดจริง");
+    expect(html).toContain("ผลต่าง");
+    expect(html).toContain("500,000.00");
+    expect(html).toContain("320,000.00");
+    expect(html).toContain("180,000.00");
+  });
 });
 

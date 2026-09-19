@@ -22,8 +22,8 @@ func init() {
 
 func TestFindDetailByGUIDs(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_MONGO_URI") == "" {
+		t.Skip("skipping legacy mongo integration test")
 	}
 
 	docList, err := repoMock.FindCountDetailByDocs(context.Background(), "27dcEdktOoaSBYFmnN6G6ett4Jb", []string{"JO-20220706F8F4CA", "JO-202207069A2102"})

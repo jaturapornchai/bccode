@@ -54,11 +54,14 @@ func NewProductBarcodeHttp(ms *microservice.Microservice, cfg config.IConfig) Pr
 	unitmaster := unitmaster.NewUnitRepository(pst)
 	creditorRepo := creditorRepo.NewCreditorRepository(pst)
 	repo := repositories.NewProductBarcodeRepository(pst, cache)
-	indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancelIndexes()
-	if err := repo.EnsureIndexes(indexContext); err != nil {
-		logger.GetLogger().Errorf("ensure product barcode indexes: %v", err)
-	}
+	go func() {
+		defer func() { _ = recover() }()
+		indexContext, cancelIndexes := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancelIndexes()
+		if err := repo.EnsureIndexes(indexContext); err != nil {
+			logger.GetLogger().Debugf("ensure product barcode indexes: %v", err)
+		}
+	}()
 	clickHouseRepo := repositories.NewProductBarcodeClickhouseRepository(pstClickHouse)
 	mqRepo := repositories.NewProductBarcodeMessageQueueRepository(prod)
 	productMQRepo := productmaster.NewProductMessageQueueRepository(prod)

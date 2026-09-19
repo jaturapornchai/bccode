@@ -74,6 +74,7 @@ func wantStockTransferTransactionPGStruct() models.StockTransferTransactionPG {
 					VatCal:              0,
 				},
 				ToWhCode: "00001",
+				CalcFlag: 1,
 			},
 		},
 	}

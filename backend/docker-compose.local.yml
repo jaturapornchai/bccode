@@ -8,18 +8,6 @@
 # Local-only, no auth/simple-auth — NO real secrets. Do NOT use on .202.
 # ========================================
 services:
-  mongodb:
-    image: mongo:7
-    container_name: mongodb
-    command: ["--replSet", "rs0", "--bind_ip_all"]
-    ports:
-      - "127.0.0.1:27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    restart: unless-stopped
-    networks:
-      - app-network
-
   postgres:
     image: postgres:18-alpine
     container_name: postgres
@@ -109,10 +97,6 @@ services:
     depends_on:
       redis:
         condition: service_started
-      kafka:
-        condition: service_started
-      mongodb:
-        condition: service_started
       postgres:
         condition: service_started
       minio-init:
@@ -124,6 +108,5 @@ services:
       - ./custom_config.local.json:/app/custom_config.json:ro
 
 volumes:
-  mongo-data:
   postgres-data:
   minio-data:

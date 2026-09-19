@@ -136,8 +136,8 @@ func createTestPurchaseOrderTransaction() models.PurchaseOrderTransactionPG {
 
 func TestCreatPurchaseOrder(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 
 	_ = logger.NewAppLogger(config.NewLoggerConfig())
@@ -169,8 +169,8 @@ func TestCreatPurchaseOrder(t *testing.T) {
 
 func TestGetPurchaseOrder(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 
 	_ = logger.NewAppLogger(config.NewLoggerConfig())
@@ -213,8 +213,8 @@ func TestGetPurchaseOrder(t *testing.T) {
 
 func TestUpdatePurchaseOrder(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 
 	_ = logger.NewAppLogger(config.NewLoggerConfig())
@@ -270,8 +270,8 @@ func TestUpdatePurchaseOrder(t *testing.T) {
 
 func TestDeleteData(t *testing.T) {
 
-	if os.Getenv("SERVERLESS") == "serverless" {
-		t.Skip()
+	if os.Getenv("SERVERLESS") == "serverless" || os.Getenv("TEST_POSTGRES_HOST") == "" {
+		t.Skip("skipping postgres integration test")
 	}
 
 	_ = logger.NewAppLogger(config.NewLoggerConfig())
