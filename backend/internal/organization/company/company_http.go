@@ -2,10 +2,12 @@ package company
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/goapi/mypg"
 	common "smlcloudplatform/internal/models"
 	orgaccess "smlcloudplatform/internal/organization"
 	orgpolicy "smlcloudplatform/internal/organization/access"
@@ -145,6 +147,10 @@ func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
 	}
 	holdingCode := ctx.UserInfo().HoldingCode
 
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.searchCompanyPostgres(ctx, db, holdingCode, false)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
@@ -169,6 +175,10 @@ func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
 func (h CompanyHttp) SearchCompanyManagement(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.searchCompanyPostgres(ctx, db, holdingCode, true)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
@@ -180,6 +190,124 @@ func (h CompanyHttp) SearchCompanyManagement(ctx microservice.IContext) error {
 	}
 
 	return h.respondCompanyList(ctx, mongoCtx, pst, visibleCompanyFilter(holdingCode))
+}
+
+func (h CompanyHttp) searchCompanyPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, management bool) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" {
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []companyModels.CompanyDoc{}})
+		return nil
+	}
+
+	query := `SELECT code, name, COALESCE(tax_id, ''), is_active, created_at FROM companies WHERE LOWER(holding_code) = LOWER($1)`
+	if !management {
+		query += ` AND is_active = true`
+	}
+	query += ` ORDER BY code`
+
+	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	rows, err := db.QueryContext(qCtx, query, holdingCode)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	defer rows.Close()
+
+	list := make([]companyModels.CompanyDoc, 0)
+	for rows.Next() {
+		var (
+			code      string
+			name      string
+			taxID     string
+			isActive  bool
+			createdAt time.Time
+		)
+		if err := rows.Scan(&code, &name, &taxID, &isActive, &createdAt); err != nil {
+			continue
+		}
+		thName := name
+		thCode := "th"
+		list = append(list, companyModels.CompanyDoc{
+			HoldingCode: holdingCode,
+			HoldingUID:  holdingCode,
+			GuidFixed:   code,
+			CompanyUID:  code,
+			Company: companyModels.Company{
+				Code: code,
+				Names: common.JSONB{
+					common.NameX{
+						Code: &thCode,
+						Name: &thName,
+					},
+				},
+				TaxID:    taxID,
+				IsActive: isActive,
+			},
+			CreatedAt: createdAt,
+		})
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    list,
+	})
+	return nil
+}
+
+func (h CompanyHttp) infoCompanyPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) (bool, error) {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+	if holdingCode == "" || id == "" {
+		return false, nil
+	}
+
+	query := `SELECT code, name, COALESCE(tax_id, ''), is_active, created_at FROM companies WHERE LOWER(holding_code) = LOWER($1) AND (LOWER(code) = LOWER($2) OR LOWER(code) = LOWER(REPLACE($2, 'company ', ''))) LIMIT 1`
+	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var (
+		code      string
+		name      string
+		taxID     string
+		isActive  bool
+		createdAt time.Time
+	)
+	err := db.QueryRowContext(qCtx, query, holdingCode, id).Scan(&code, &name, &taxID, &isActive, &createdAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	thName := name
+	thCode := "th"
+	data := companyModels.CompanyDoc{
+		HoldingCode: holdingCode,
+		HoldingUID:  holdingCode,
+		GuidFixed:   code,
+		CompanyUID:  code,
+		Company: companyModels.Company{
+			Code: code,
+			Names: common.JSONB{
+				common.NameX{
+					Code: &thCode,
+					Name: &thName,
+				},
+			},
+			TaxID:    taxID,
+			IsActive: isActive,
+		},
+		CreatedAt: createdAt,
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    data,
+	})
+	return true, nil
 }
 
 func (h CompanyHttp) respondCompanyList(ctx microservice.IContext, mongoCtx context.Context, pst microservice.IPersisterMongo, filter bson.M) error {
@@ -200,6 +328,16 @@ func (h CompanyHttp) respondCompanyList(ctx microservice.IContext, mongoCtx cont
 func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		found, err := h.infoCompanyPostgres(ctx, db, holdingCode, id)
+		if found {
+			return nil
+		}
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+	}
 
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

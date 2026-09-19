@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-19 @ commit 6973f938 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-19 @ commit e7b8cee2 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 52
+Files indexed: 53
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (17364 lines)
 
@@ -2091,6 +2091,43 @@ Files indexed: 52
 | 193 | const-arrow | `handleDeleteAsset` |
 | 217 | const-arrow | `handlePostGL` |
 | 248 | const-arrow | `handleConfirmDisposal` |
+
+## backend/internal/organization/branch/branch_http.go (1077 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 43 | function | `NewBranchHttp` |
+| 50 | function | `RegisterHttp` |
+| 58 | function | `CreateBranch` |
+| 149 | function | `SearchBranch` |
+| 190 | function | `SearchBranchManagement` |
+| 215 | function | `searchBranchPostgres` |
+| 287 | function | `infoBranchPostgres` |
+| 343 | function | `respondBranchList` |
+| 358 | function | `InfoBranch` |
+| 409 | function | `UpdateBranch` |
+| 595 | function | `DeleteBranch` |
+| 658 | function | `responseBranchWriteError` |
+| 671 | function | `SearchBranchStep` |
+| 736 | function | `prepareBranchCreate` |
+| 768 | function | `prepareBranchUpdate` |
+| 817 | function | `preserveBranchParent` |
+| 854 | function | `validateBranchNames` |
+| 863 | function | `storedBranchCode` |
+| 875 | function | `requireUnchangedBranchCode` |
+| 893 | function | `normalizeAndValidateDocFormats` |
+| 918 | function | `sanitizeBranchAddresses` |
+| 935 | function | `visibleBranchFilter` |
+| 939 | function | `loadScopedBranchCompanies` |
+| 965 | function | `scopedBranchFilter` |
+| 985 | function | `respondBranchMembershipError` |
+| 995 | function | `findActiveBranchCompany` |
+| 1024 | function | `ensureBranchCompanyExists` |
+| 1029 | function | `ensureBranchCodeAvailableMongo` |
+| 1046 | function | `countCompanyBranches` |
+| 1052 | function | `stableOrLegacyBranchUID` |
+| 1059 | function | `stableOrLegacyBranchCompanyUID` |
+| 1066 | function | `branchIdentityFilter` |
 
 ## frontend/src/app/crud/erp-crud-workbench.tsx (1074 lines)
 

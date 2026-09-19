@@ -19,6 +19,7 @@ import (
 	businesstype_repositories "smlcloudplatform/internal/organization/businesstype/repositories"
 	businesstype_services "smlcloudplatform/internal/organization/businesstype/services"
 	company_model "smlcloudplatform/internal/organization/company/models"
+	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/goapi/process/build"
 	deparment_repositories "smlcloudplatform/internal/organization/department/repositories"
 	"smlcloudplatform/internal/shop/models"
@@ -57,11 +58,19 @@ type ShopHttp struct {
 func NewShopHttp(ms *microservice.Microservice, cfg config.IConfig) ShopHttp {
 
 	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-	repo := NewShopRepository(pst)
+	var repo IShopRepository = NewShopRepository(pst)
+	var shopUserRepo IShopUserRepository = NewShopUserRepository(pst)
+
+	db, err := mypg.PgSqlFastConnect("bcai_projection")
+	if err == nil && db != nil {
+		logger.GetLogger().Info("Shop HTTP: using Pure PostgreSQL repositories")
+		repo = NewShopPostgresRepository(db)
+		shopUserRepo = NewShopUserPostgresRepository(db)
+	}
+
 	cache := ms.Cacher(cfg.CacherConfig())
 	producer := ms.Producer(cfg.MQConfig())
 
-	shopUserRepo := NewShopUserRepository(pst)
 	service := NewShopService(repo, shopUserRepo, utils.NewGUID, ms.TimeNow)
 
 	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)

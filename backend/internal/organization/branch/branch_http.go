@@ -2,6 +2,7 @@ package branch
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"regexp"
 	authModels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/goapi/mypg"
 	common "smlcloudplatform/internal/models"
 	orgaccess "smlcloudplatform/internal/organization"
 	orgpolicy "smlcloudplatform/internal/organization/access"
@@ -151,6 +153,10 @@ func (h BranchHttp) SearchBranch(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	companyGuid := ctx.QueryParam("companyguid")
 
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.searchBranchPostgres(ctx, db, holdingCode, companyGuid, false)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
@@ -185,6 +191,10 @@ func (h BranchHttp) SearchBranchManagement(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	companyGuid := strings.TrimSpace(ctx.QueryParam("companyguid"))
 
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.searchBranchPostgres(ctx, db, holdingCode, companyGuid, true)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
@@ -200,6 +210,134 @@ func (h BranchHttp) SearchBranchManagement(ctx microservice.IContext) error {
 		filter["$or"] = bson.A{bson.M{"companyuid": companyGuid}, bson.M{"companyguid": companyGuid}}
 	}
 	return h.respondBranchList(ctx, mongoCtx, pst, filter)
+}
+
+func (h BranchHttp) searchBranchPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, companyGuid string, management bool) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	companyGuid = strings.TrimSpace(companyGuid)
+	if holdingCode == "" {
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []branchModels.BranchOrgDoc{}})
+		return nil
+	}
+
+	query := `SELECT code, company_code, name, is_headquarters, is_active, created_at FROM branches WHERE LOWER(holding_code) = LOWER($1)`
+	args := []interface{}{holdingCode}
+	if companyGuid != "" {
+		query += ` AND (LOWER(company_code) = LOWER($2) OR LOWER(company_code) = LOWER(REPLACE($2, 'company ', '')))`
+		args = append(args, companyGuid)
+	}
+	if !management {
+		query += ` AND is_active = true`
+	}
+	query += ` ORDER BY code`
+
+	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	rows, err := db.QueryContext(qCtx, query, args...)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	defer rows.Close()
+
+	list := make([]branchModels.BranchOrgDoc, 0)
+	for rows.Next() {
+		var (
+			code           string
+			companyCode    string
+			name           string
+			isHeadquarters bool
+			isActive       bool
+			createdAt      time.Time
+		)
+		if err := rows.Scan(&code, &companyCode, &name, &isHeadquarters, &isActive, &createdAt); err != nil {
+			continue
+		}
+		thName := name
+		thCode := "th"
+		list = append(list, branchModels.BranchOrgDoc{
+			HoldingCode:  holdingCode,
+			HoldingUID:   holdingCode,
+			GuidFixed:    code,
+			BranchUID:    code,
+			CompanyGuid:  companyCode,
+			CompanyUID:   companyCode,
+			BusinessCode: companyCode,
+			Code:         code,
+			BranchCode:   code,
+			Names: common.JSONB{
+				common.NameX{
+					Code: &thCode,
+					Name: &thName,
+				},
+			},
+			IsActive:  isActive,
+			CreatedAt: createdAt,
+		})
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    list,
+	})
+	return nil
+}
+
+func (h BranchHttp) infoBranchPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) (bool, error) {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+	if holdingCode == "" || id == "" {
+		return false, nil
+	}
+
+	query := `SELECT code, company_code, name, is_headquarters, is_active, created_at FROM branches WHERE LOWER(holding_code) = LOWER($1) AND LOWER(code) = LOWER($2) LIMIT 1`
+	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var (
+		code           string
+		companyCode    string
+		name           string
+		isHeadquarters bool
+		isActive       bool
+		createdAt      time.Time
+	)
+	err := db.QueryRowContext(qCtx, query, holdingCode, id).Scan(&code, &companyCode, &name, &isHeadquarters, &isActive, &createdAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	thName := name
+	thCode := "th"
+	data := branchModels.BranchOrgDoc{
+		HoldingCode:  holdingCode,
+		HoldingUID:   holdingCode,
+		GuidFixed:    code,
+		BranchUID:    code,
+		CompanyGuid:  companyCode,
+		CompanyUID:   companyCode,
+		BusinessCode: companyCode,
+		Code:         code,
+		BranchCode:   code,
+		Names: common.JSONB{
+			common.NameX{
+				Code: &thCode,
+				Name: &thName,
+			},
+		},
+		IsActive:  isActive,
+		CreatedAt: createdAt,
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    data,
+	})
+	return true, nil
 }
 
 func (h BranchHttp) respondBranchList(ctx microservice.IContext, mongoCtx context.Context, pst microservice.IPersisterMongo, filter bson.M) error {
@@ -220,6 +358,16 @@ func (h BranchHttp) respondBranchList(ctx microservice.IContext, mongoCtx contex
 func (h BranchHttp) InfoBranch(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	id := ctx.Param("id")
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		found, err := h.infoBranchPostgres(ctx, db, holdingCode, id)
+		if found {
+			return nil
+		}
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+	}
 
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

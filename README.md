@@ -1492,3 +1492,19 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
    - Frontend Vitest tests ทั้งหมด 92 test files / 675 tests ผ่าน 100%
    - ทดสอบความเร็วและการตอบสนองของระบบ ไม่มีส่วนประกอบที่รบกวน DOM
+
+### [2026-09-19] แก้ปัญหาหน้าจอเลือกกลุ่มกิจการค้าง (Fix Holding Screen Hang via Pure PostgreSQL Parity)
+
+**เป้าหมาย:** แก้ปัญหาหน้าจอขั้นตอนที่ 2: เลือกกลุ่มกิจการ (`/holding`) ค้างที่ skeleton card โดยเปลี่ยนการดึงข้อมูลกลุ่มกิจการ (Holding), บริษัท (Company) และสาขา (Branch) มาใช้ Pure PostgreSQL 100% ตอบสนองเร็วทันใจระดับ Sub-second (< 50ms) โดยไม่พึ่งพา MongoDB ที่ปิดไปแล้ว
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **แก้ปัญหา Backend Hang จาก MongoDB Timeout**:
+   - `backend/internal/shop/shop_http.go`: เพิ่ม import `mypg "smlcloudplatform/internal/goapi/mypg"` และเชื่อมต่อ `ShopPostgresRepository` และ `ShopUserPostgresRepository` ดึงข้อมูล `holdings` จาก PostgreSQL
+   - `backend/internal/organization/company/company_http.go`: เพิ่ม `searchCompanyPostgres` และ `infoCompanyPostgres` ค้นหาข้อมูลบริษัทจากตาราง `companies` ใน PostgreSQL ตอบสนองทันที
+   - `backend/internal/organization/branch/branch_http.go`: เพิ่ม `searchBranchPostgres` และ `infoBranchPostgres` ค้นหาข้อมูลสาขาจากตาราง `branches` ใน PostgreSQL ตอบสนองทันที
+2. **การทดสอบความถูกต้องและการยืนยันผล 100% (VERIFY BEFORE DONE)**:
+   - Backend Go tests (`internal/shop`, `internal/organization/company`, `internal/organization/branch`) ผ่าน 100%
+   - Backend `go build main.go` คอมไพล์ผ่าน 100% ไร้ warning / error
+   - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
+   - Frontend Vitest tests ทั้งหมด 92 test files / 675 tests ผ่าน 100%
+
