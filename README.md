@@ -1549,3 +1549,18 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
    - Frontend Vitest tests ทั้งหมด 92 test files / 676 tests ผ่าน 100%
 
+### [2026-09-19] แก้ไขระบบทดสอบที่เก็บรูปภาพ (/api/storage/health) ปลดล็อกให้ทดสอบ MinIO / S3 ได้จริงพร้อม SSRF Guard
+
+**เป้าหมาย:** แก้ไขปัญหา "เก็บรูป ทดสอบไม่ผ่าน" บนหน้าศูนย์ตั้งค่าระบบ (`/settings`) ซึ่งเดิมถูกปิดการทำงานไว้ (HTTP 410) ให้สามารถตรวจสอบการเชื่อมต่อที่เก็บรูปภาพทั้ง On-premise MinIO และ External S3/R2 ได้จริง พร้อมระบบป้องกันความปลอดภัย SSRF อย่างรัดกุม
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **ปลดล็อก Storage Health Probe (`frontend/src/app/api/storage/health/route.ts`)**:
+   - รองรับการทดสอบ MinIO ภายในระบบ (Docker Internal Data Network) โดยตรวจสอบสุขภาพผ่าน Backend Go API
+   - รองรับการทดสอบ External S3 / Cloudflare R2 / Wasabi endpoints โดยตรง พร้อมวัดค่า latency (ms) และรายงาน HTTP status
+   - เพิ่มระบบป้องกัน SSRF Guard บล็อก Cloud Metadata (`169.254.169.254`) และ Private RFC 1918 IPs ที่ไม่ได้รับอนุญาต
+2. **ปรับปรุงและเพิ่มชุดทดสอบ (`frontend/src/app/api/storage/health/route.test.ts`)**:
+   - เพิ่มชุดทดสอบครอบคลุมทั้ง 5 กรณี: Empty endpoint (400), SSRF guard (403), MinIO internal backend check (200), Backend down failure, และ External S3 probe ผ่าน 100%
+3. **การทดสอบความถูกต้อง (VERIFY BEFORE DONE)**:
+   - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
+   - Frontend Vitest tests ทั้งหมด 92 test files / 680 tests ผ่าน 100%
+
