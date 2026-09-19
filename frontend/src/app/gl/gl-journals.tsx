@@ -390,10 +390,10 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 {/* .bc-list-header */}
                 <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="py-2 px-2.5">{tr("gl_date_number", "วันที่ / เลขที่")}</th>
-                    <th className="py-2 px-2 min-w-44">{tr("gl_description", "คำอธิบาย")}</th>
-                    <th className="py-2 px-2 text-center w-28">{tr("gl_status", "สถานะ")}</th>
-                    <th className="py-2 px-2 text-center w-20">{tr("gl_manage", "จัดการ")}</th>
+                    <th className="py-2 px-2.5 text-left">{tr("gl_date_number", "วันที่ / เลขที่")}</th>
+                    <th className="py-2 px-2 text-left min-w-44">{tr("gl_description", "คำอธิบาย")}</th>
+                    <th className="py-2 px-2 text-right w-24">{tr("gl_status", "สถานะ")}</th>
+                    <th className="py-2 pr-2.5 pl-2 text-right w-20">{tr("gl_manage", "จัดการ")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
@@ -405,7 +405,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <tr
                         key={item.id}
                         onClick={() => void openView(item)}
-                        className={`bc-list-row cursor-pointer transition-colors text-[0.75rem] ${
+                        className={`bc-list-row cursor-pointer transition-colors text-[0.75rem] align-middle ${
                           isRowEditing
                             ? "bg-primary/15 font-medium text-foreground ring-1 ring-inset ring-primary/50"
                             : isSelected
@@ -416,7 +416,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         }`}
                         style={{ padding: "3px 8px" }}
                       >
-                        <td className="whitespace-nowrap py-2 px-2.5">
+                        <td className="whitespace-nowrap py-2 px-2.5 align-middle">
                           <div className="text-[0.8rem] text-muted-foreground">{item.date}</div>
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono font-semibold text-primary">{item.docno}</span>
@@ -432,9 +432,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             )}
                           </div>
                         </td>
-                        <td className="max-w-60 truncate py-2 px-2" title={item.description}>{item.description}</td>
-                        <td className="whitespace-nowrap py-2 px-2 text-center">
-                          <span className={`inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold ${
+                        <td className="max-w-60 truncate py-2 px-2 align-middle" title={item.description}>{item.description}</td>
+                        <td className="whitespace-nowrap py-2 px-2 text-right align-middle">
+                          <span className={`inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold leading-none h-5 align-middle ${
                             isDraft
                               ? "bg-muted text-muted-foreground border border-border"
                               : item.status === "posted"
@@ -444,13 +444,13 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             {labelText(statusLabel, item.status, tr, tr("gl_check_status", "ตรวจสอบสถานะ"))}
                           </span>
                         </td>
-                        <td className="py-2 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-center gap-1">
+                        <td className="py-2 pr-2.5 pl-2 text-right whitespace-nowrap align-middle" onClick={(e) => e.stopPropagation()}>
+                          <div className="inline-flex items-center justify-end gap-1 align-middle">
                             {isDraft && effectiveMode === "edit" ? (
                               <>
                                 <button
                                   type="button"
-                                  className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
+                                  className="p-1 rounded text-primary hover:bg-primary/20 transition-colors inline-flex items-center justify-center h-6 w-6"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     void openEdit(item);
@@ -458,11 +458,11 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                   aria-label={tr("gl_edit", "แก้ไข")}
                                   title={tr("gl_edit_draft_2", "แก้ไขฉบับร่าง (Edit)")}
                                 >
-                                  <Pencil className="size-3.5" />
+                                  <Pencil className="size-3.5 block" />
                                 </button>
                                 <button
                                   type="button"
-                                  className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
+                                  className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors inline-flex items-center justify-center h-6 w-6"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     void deleteDraftDirect(item);
@@ -470,13 +470,13 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                   aria-label={tr("gl_delete", "ลบ")}
                                   title={tr("gl_delete_draft_2", "ลบฉบับร่าง (Delete)")}
                                 >
-                                  <Trash2 className="size-3.5" />
+                                  <Trash2 className="size-3.5 block" />
                                 </button>
                               </>
                             ) : (
                               <button
                                 type="button"
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors inline-flex items-center justify-center h-6 w-6"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   void openView(item);
@@ -484,7 +484,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                 aria-label={tr("gl_view_data", "แสดงข้อมูล")}
                                 title={tr("gl_view", "แสดงข้อมูล (View)")}
                               >
-                                <Eye className="size-3.5" />
+                                <Eye className="size-3.5 block" />
                               </button>
                             )}
                           </div>

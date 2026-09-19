@@ -135,55 +135,56 @@ export function TreeNodeRow({
           <span className="truncate text-foreground font-medium max-w-72" title={accountName(acc)}>
             {accountName(acc)}
           </span>
-
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto mr-2">
-            <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-              L{node.level}
-            </span>
-
-            {isControl ? (
-              <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground border border-border">
-                {tr("gl_control_account", "บัญชีคุม")}
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                {tr("gl_posting_account", "บัญชีย่อย")}
-              </span>
-            )}
-
-            {!isActive && (
-              <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium bg-rose-500/10 text-rose-600 border border-rose-500/20">
-                {tr("gl_disable", "ปิดใช้งาน")}
-              </span>
-            )}
-          </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(acc);
-            }}
-            title={tr("gl_edit_label", "แก้ไข (Edit)")}
-            aria-label={tr("gl_edit", "แก้ไข")}
-          >
-            <Pencil className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(acc);
-            }}
-            title={tr("gl_delete", "ลบ")}
-            aria-label={tr("gl_delete", "ลบ")}
-          >
-            <Trash2 className="size-3.5" />
-          </button>
+        {/* Right anchored items: Level -> Account Role -> Status -> Actions */}
+        <div className="flex items-center justify-end gap-1.5 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
+          <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5">
+            L{node.level}
+          </span>
+
+          {isControl ? (
+            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-muted text-muted-foreground border border-border leading-none h-5">
+              {tr("gl_control_account", "บัญชีคุม")}
+            </span>
+          ) : (
+            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5">
+              {tr("gl_posting_account", "บัญชีย่อย")}
+            </span>
+          )}
+
+          {!isActive && (
+            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-rose-500/10 text-rose-600 border border-rose-500/20 leading-none h-5">
+              {tr("gl_disable", "ปิดใช้งาน")}
+            </span>
+          )}
+
+          <div className="flex items-center gap-1 shrink-0 ml-1">
+            <button
+              type="button"
+              className="p-1 rounded text-primary hover:bg-primary/20 transition-colors inline-flex items-center justify-center h-6 w-6"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(acc);
+              }}
+              title={tr("gl_edit_label", "แก้ไข (Edit)")}
+              aria-label={tr("gl_edit", "แก้ไข")}
+            >
+              <Pencil className="size-3.5 block" />
+            </button>
+            <button
+              type="button"
+              className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors inline-flex items-center justify-center h-6 w-6"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(acc);
+              }}
+              title={tr("gl_delete", "ลบ")}
+              aria-label={tr("gl_delete", "ลบ")}
+            >
+              <Trash2 className="size-3.5 block" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -579,12 +580,12 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             {/* .bc-list-header */}
             <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="py-2 px-2.5">{tr("gl_code", "รหัส")}</th>
-                <th className="py-2 px-2 min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
+                <th className="py-2 px-2.5 text-left">{tr("gl_code", "รหัส")}</th>
+                <th className="py-2 px-2 text-left min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
                 {hasAmount && <th className="py-2 px-2 text-right w-36">{tr("gl_amount", "จำนวนเงิน")}</th>}
-                {isAcc && <th className="py-2 px-2 text-center w-24">{tr("gl_level", "ระดับ")}</th>}
-                <th className="py-2 px-2 text-center w-28">{tr("gl_status", "สถานะ")}</th>
-                <th className="py-2 px-2 text-center w-20">{tr("gl_manage", "จัดการ")}</th>
+                {isAcc && <th className="py-2 px-2 text-right w-20">{tr("gl_level", "ระดับ")}</th>}
+                <th className="py-2 px-2 text-right w-24">{tr("gl_status", "สถานะ")}</th>
+                <th className="py-2 pr-2.5 pl-2 text-right w-20">{tr("gl_manage", "จัดการ")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -601,7 +602,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                   <tr
                     key={itemKey || index}
                     onClick={() => void openView(item)}
-                    className={`bc-list-row cursor-pointer transition-colors text-[0.75rem] ${
+                    className={`bc-list-row cursor-pointer transition-colors text-[0.75rem] align-middle ${
                       isRowEditing
                         ? "bg-primary/15 font-medium text-foreground ring-1 ring-inset ring-primary/50"
                         : isSelected
@@ -612,55 +613,55 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                     }`}
                     style={{ padding: "3px 8px" }}
                   >
-                    <td className="py-2 px-2.5 whitespace-nowrap">
+                    <td className="py-2 px-2.5 whitespace-nowrap align-middle">
                       <span className="font-mono font-semibold text-primary">{recordCode(item)}</span>
                     </td>
-                    <td className="py-2 px-2 max-w-72 truncate" title={recordName(item)}>
+                    <td className="py-2 px-2 max-w-72 truncate align-middle" title={recordName(item)}>
                       {isAcc && accLevel > 1 ? (
-                        <span style={{ paddingLeft: `${(accLevel - 1) * 16}px` }} className="inline-flex items-center gap-1.5">
+                        <span style={{ paddingLeft: `${(accLevel - 1) * 16}px` }} className="inline-flex items-center gap-1.5 align-middle">
                           <span className="text-muted-foreground select-none font-mono">└─</span>
                           <span>{recordName(item)}</span>
                         </span>
                       ) : (
-                        recordName(item)
+                        <span className="align-middle">{recordName(item)}</span>
                       )}
                     </td>
                     {hasAmount && (
-                      <td className="py-2 px-2 text-right font-mono font-medium tabular-nums whitespace-nowrap">
+                      <td className="py-2 px-2 text-right font-mono font-medium tabular-nums whitespace-nowrap align-middle">
                         {"amount" in item ? formatAmount(item.amount) : "-"}
                       </td>
                     )}
                     {isAcc && (
-                      <td className="whitespace-nowrap py-2 px-2 text-center">
-                        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20">
+                      <td className="whitespace-nowrap py-2 px-2 text-right align-middle">
+                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5 align-middle">
                           {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(accLevel))}
                         </span>
                       </td>
                     )}
-                    <td className="whitespace-nowrap py-2 px-2 text-center">
+                    <td className="whitespace-nowrap py-2 px-2 text-right align-middle">
                       {isLocked ? (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border">
+                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border leading-none h-5 align-middle">
                           {tr("gl_locked", "ล็อกแล้ว")}
                         </span>
                       ) : isClosed ? (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border">
+                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border leading-none h-5 align-middle">
                           {tr("gl_year_closed", "ปิดปีแล้ว")}
                         </span>
                       ) : !isActive ? (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border">
+                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border leading-none h-5 align-middle">
                           {tr("gl_disable", "ปิดใช้งาน")}
                         </span>
                       ) : (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5 align-middle">
                           {tr("gl_enable", "ใช้งาน")}
                         </span>
                       )}
                     </td>
-                    <td className="py-2 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-1">
+                    <td className="py-2 pr-2.5 pl-2 text-right whitespace-nowrap align-middle" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center justify-end gap-1 align-middle">
                         <button
                           type="button"
-                          className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
+                          className="p-1 rounded text-primary hover:bg-primary/20 transition-colors inline-flex items-center justify-center h-6 w-6"
                           onClick={(e) => {
                             e.stopPropagation();
                             void openEdit(item);
@@ -668,11 +669,11 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                           aria-label={tr("gl_edit", "แก้ไข")}
                           title={tr("gl_edit_label", "แก้ไข (Edit)")}
                         >
-                          <Pencil className="size-3.5" />
+                          <Pencil className="size-3.5 block" />
                         </button>
                         <button
                           type="button"
-                          className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
+                          className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors inline-flex items-center justify-center h-6 w-6"
                           onClick={(e) => {
                             e.stopPropagation();
                             void deleteItem(item);
@@ -680,7 +681,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                           aria-label={tr("gl_delete", "ลบ")}
                           title={tr("gl_delete_label", "ลบ (Delete)")}
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-3.5 block" />
                         </button>
                       </div>
                     </td>

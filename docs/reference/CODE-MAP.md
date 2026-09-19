@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-19 @ commit 23af53d7 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-19 @ commit 0313e145 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 53
 
@@ -2139,7 +2139,7 @@ Files indexed: 53
 | 682 | section | `EDIT MODE FORM` |
 | 916 | section | `READ-ONLY VIEW MODE` |
 
-## frontend/src/app/gl/gl-masters.tsx (1043 lines)
+## frontend/src/app/gl/gl-masters.tsx (1044 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -2155,21 +2155,21 @@ Files indexed: 53
 | 65 | function | `recordCode` |
 | 66 | function | `recordName` |
 | 68 | function | `TreeNodeRow` |
-| 209 | function | `GLMasters` |
-| 238 | function | `showFormError` |
-| 260 | function | `openView` |
-| 277 | function | `openEdit` |
-| 294 | function | `openCreate` |
-| 305 | function | `cancelEdit` |
-| 319 | function | `save` |
-| 338 | function | `deleteItem` |
-| 365 | function | `runAction` |
-| 403 | const-arrow | `toggleCategory` |
-| 407 | const-arrow | `toggleNode` |
-| 900 | function | `AccountFields` |
-| 905 | const-arrow | `handleTypeChange` |
-| 1012 | function | `FiscalYearFields` |
-| 1026 | function | `MasterFields` |
+| 210 | function | `GLMasters` |
+| 239 | function | `showFormError` |
+| 261 | function | `openView` |
+| 278 | function | `openEdit` |
+| 295 | function | `openCreate` |
+| 306 | function | `cancelEdit` |
+| 320 | function | `save` |
+| 339 | function | `deleteItem` |
+| 366 | function | `runAction` |
+| 404 | const-arrow | `toggleCategory` |
+| 408 | const-arrow | `toggleNode` |
+| 901 | function | `AccountFields` |
+| 906 | const-arrow | `handleTypeChange` |
+| 1013 | function | `FiscalYearFields` |
+| 1027 | function | `MasterFields` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
 

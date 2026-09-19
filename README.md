@@ -1721,3 +1721,23 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - Frontend Typecheck: `tsc --noEmit` ผ่าน 0 errors
    - Backend Go tests: `internal/generalledger` ผ่าน 100%
    - Next.js Turbopack build: ผ่าน 100%
+
+### [2026-09-19] จัดตำแหน่งไอคอนและป้ายสถานะให้ชิดขวาเรียงกลับมาเสมอ พร้อมปรับระนาบ Baseline ให้เสมอกันทุกคอลัมน์
+
+**เป้าหมาย:** ปรับปรุงการแสดงผลในหน้าจอรายการผังบัญชี (`gl-masters.tsx`) ทั้ง Table View และ Tree View รวมถึงหน้าสมุดรายวัน (`gl-journals.tsx`) ตามคำสั่งลุงจืด: "icon พวกนี้ ต้องอยู่ชิดขวาเรียงกลับมาเสมอ ตรวจ base line ด้วย"
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **จัดตำแหน่งคอลัมน์และไอคอนชิดขวาเรียงกลับมาเสมอ (Right-Aligned Column Anchor)**:
+   - ใน Table View: กำหนดหัวตาราง `<th>` และเซลล์ `<td>` ของคอลัมน์ **ระดับ**, **สถานะ**, และ **จัดการ** ให้เป็น `text-right` ทั้งหมด เกาะกลุ่มชิดขอบขวาสุดของตาราง
+   - ลำดับการเรียงจากขวามาซ้าย: `[ปุ่มจัดการ ✏️ 🗑️]` ➔ `[ป้ายสถานะ]` ➔ `[ป้ายระดับ]` ➔ `[จำนวนเงิน (ถ้ามี)]` ขณะที่คอลัมน์ชื่อบัญชี/รายละเอียดทางซ้ายขยายพื้นที่ตามขนาดหน้าจอ
+   - ใน Tree View (`TreeNodeRow`): รวมป้ายระดับ, ป้ายคุม/ย่อย, ป้ายสถานะ และปุ่มแก้ไข/ลบ ไว้ในคอนเทนเนอร์เดียวกันทางขวาสุด (`flex items-center justify-end gap-1.5 shrink-0 ml-auto`)
+2. **ปรับแต่งและควบคุมความสูงแนวแกน Baseline ตรงกัน 100% (Vertical Rhythm & Alignment)**:
+   - ทุก `<tr>` และ `<td>`: กำหนด `align-middle` (CSS `vertical-align: middle`) ทุกเซลล์
+   - ป้ายทุกตัว (ระดับ, สถานะ, คุม/ย่อย): เปลี่ยนจาก `inline-block` เป็น `inline-flex items-center justify-center leading-none h-5 align-middle` ป้องกันปัญหากล่องป้ายหย่อนตกขอบ baseline
+   - ปุ่มไอคอน (Pencil, Trash2, Eye): ใช้ `inline-flex items-center justify-center h-6 w-6 align-middle` พร้อมระบุ `block` ให้ SVG ด้านใน
+   - ผลลัพธ์: แกนกลางของตัวหนังสือรหัส, ชื่อบัญชี, ป้ายกำกับ และปุ่มไอคอนอยู่ในแนวระนาบเดียวกันอย่างสมบูรณ์แบบ
+3. **การทดสอบความถูกต้อง 100% (VERIFY BEFORE DONE)**:
+   - Frontend Vitest: 92 test files / 682 tests ผ่าน 100%
+   - Frontend Typecheck: `tsc --noEmit` ผ่าน 0 errors
+   - Next.js Turbopack build: ผ่าน 100%
+
