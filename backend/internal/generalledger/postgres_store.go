@@ -189,7 +189,7 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 
 func (s *PostgresStore) loadRecord(ctx context.Context, tx *sql.Tx, company, kind, id string, target any) error {
 	var payload []byte
-	err := tx.QueryRowContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind=$2 AND id=$3 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, company, kind, id).Scan(&payload)
+	err := tx.QueryRowContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE company=$1 AND kind=$2 AND id=$3 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, company, kind, id).Scan(&payload)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound
 	}

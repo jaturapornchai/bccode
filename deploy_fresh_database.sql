@@ -338,4 +338,12 @@ VALUES
   ('01', 3)
 ON CONFLICT (company) DO UPDATE SET sequence = EXCLUDED.sequence;
 
+-- 16. Embed id and version in all gl_records payloads for API parity
+UPDATE gl_records 
+SET payload = jsonb_set(
+  jsonb_set(payload, '{id}', to_jsonb(id)),
+  '{version}', to_jsonb(version)
+)
+WHERE payload->>'id' IS NULL OR payload->>'version' IS NULL;
+
 COMMIT;

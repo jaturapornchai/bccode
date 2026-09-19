@@ -14,6 +14,13 @@ type MasterResource = Exclude<GLResource, "journals">;
 function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : emptyMaster(); }
 export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
   const base = { ...newRecord(resource), ...raw };
+  if (!base.id) {
+    if (resource === "accounts" && "accountcode" in base && base.accountcode) {
+      base.id = `acc-${base.accountcode}`;
+    } else if ("code" in base && base.code) {
+      base.id = `${resource === "fiscal-years" ? "year-" : resource === "journal-books" ? "book-" : ""}${base.code.toLowerCase()}`;
+    }
+  }
   if (resource === "accounts") {
     const acc = base as GLAccount;
     if (!Array.isArray(acc.names) || acc.names.length === 0) {
@@ -48,6 +55,13 @@ export function errorStatePatch(info: { message: string; field: string }, code =
 /** ช่องที่ต้องโฟกัสเมื่อบันทึกไม่ผ่านและเซิร์ฟเวอร์ไม่ได้ระบุ field */
 export function saveFailureTarget(resource: string) { return resource === "accounts" ? "accountcode" : "code"; }
 
+export function recordId(record: GLRecord | null | undefined): string {
+  if (!record) return "";
+  if ("id" in record && record.id) return String(record.id);
+  if ("accountcode" in record && record.accountcode) return String(record.accountcode);
+  if ("code" in record && record.code) return String(record.code);
+  return "";
+}
 function recordCode(record: GLRecord) { return "accountcode" in record && "names" in record ? record.accountcode : "code" in record ? record.code : ""; }
 function recordName(record: GLRecord) { return "names" in record ? accountName(record) : "name" in record ? record.name : ""; }
 
@@ -75,7 +89,8 @@ export function TreeNodeRow({
   tr: GLTextFn;
 }) {
   const acc = node.account;
-  const isSelected = selectedId === acc.id;
+  const accKey = recordId(acc);
+  const isSelected = Boolean(selectedId && (selectedId === accKey || selectedId === acc.id || selectedId === acc.accountcode));
   const isRowEditing = isSelected && isEditing;
   const isControl = !acc.allowposting;
   const isActive = acc.isactive ?? true;
@@ -245,7 +260,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   async function openView(item: GLRecord) {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
-      const value = item?.id ? await glRequest<GLRecord>(`${resource}/${encodeURIComponent(item.id)}`) : newRecord(resource);
+      const id = recordId(item);
+      const value = id ? await glRequest<GLRecord>(`${resource}/${encodeURIComponent(id)}`) : newRecord(resource);
       const normalized = normalizeRecord(resource, value);
       setRecord(normalized);
       setOriginal(JSON.stringify(normalized));
@@ -261,7 +277,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   async function openEdit(item: GLRecord) {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
-      const value = item?.id ? await glRequest<GLRecord>(`${resource}/${encodeURIComponent(item.id)}`) : newRecord(resource);
+      const id = recordId(item);
+      const value = id ? await glRequest<GLRecord>(`${resource}/${encodeURIComponent(id)}`) : newRecord(resource);
       const normalized = normalizeRecord(resource, value);
       setRecord(normalized);
       setOriginal(JSON.stringify(normalized));
@@ -319,7 +336,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   }
 
   async function deleteItem(item: GLRecord) {
-    if (!item.id || busy) return;
+    const id = recordId(item);
+    if (!id || busy) return;
     const isAcc = resource === "accounts";
     if (!await confirm({
       title: tr("gl_confirm_delete", "ยืนยันลบรายการ?"),
@@ -330,8 +348,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     })) return;
     try {
       setError("");
-      await execute({ resource, id: item.id, version: item.version, action: "delete", reason: tr("gl_delete_item", "ลบรายการ") });
-      if (record?.id === item.id) {
+      await execute({ resource, id, version: item.version, action: "delete", reason: tr("gl_delete_item", "ลบรายการ") });
+      if (record && recordId(record) === id) {
         setRecord(null);
         setOriginal("");
         setIsEditing(false);
@@ -345,7 +363,9 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   }
 
   async function runAction(action: "delete" | "lock" | "unlock") {
-    if (!record?.id || busy) return;
+    if (!record || busy) return;
+    const id = recordId(record);
+    if (!id) return;
     const label = action === "delete" ? tr("gl_delete_item", "ลบรายการ") : action === "lock" ? tr("gl_lock_period_2", "ล็อกงวดบัญชี") : tr("gl_unlock_period_2", "ปลดล็อกงวดบัญชี");
     const defaultReason = action === "delete" ? tr("gl_delete_item", "ลบรายการ") : action === "lock" ? tr("gl_lock_period_2", "ล็อกงวดบัญชี") : tr("gl_unlock_period_2", "ปลดล็อกงวดบัญชี");
     const effectiveReason = reason.trim() || defaultReason;
@@ -358,7 +378,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     })) return;
     try {
       setError("");
-      await execute({ resource, id: record.id, version: record.version, action, reason: effectiveReason });
+      await execute({ resource, id, version: record.version, action, reason: effectiveReason });
       setRecord(null); setOriginal(""); setIsEditing(false); list.reload(); setRevision((value) => value + 1); setMessage(tr("gl_success_message", "{0}เรียบร้อยแล้ว").replace("{0}", String(label)));
     } catch (e) { showFormError(e, tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")); }
   }
@@ -527,7 +547,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                         key={node.account.accountcode}
                         node={node}
                         depth={0}
-                        selectedId={record?.id}
+                        selectedId={recordId(record)}
                         isEditing={isEditing}
                         expandedNodes={expandedNodes}
                         onToggleNode={toggleNode}
@@ -570,14 +590,16 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             <tbody className="divide-y divide-border/40">
               {list.data.items.map((item, index) => {
                 const accLevel = isAcc && "level" in item && typeof item.level === "number" ? item.level : 1;
-                const isSelected = record?.id === item.id;
+                const selectedKey = recordId(record);
+                const itemKey = recordId(item);
+                const isSelected = Boolean(selectedKey && selectedKey === itemKey);
                 const isRowEditing = isSelected && isEditing;
                 const isLocked = "locked" in item && item.locked;
                 const isClosed = "closed" in item && item.closed;
                 const isActive = !("isactive" in item) || item.isactive;
                 return (
                   <tr
-                    key={item.id}
+                    key={itemKey || index}
                     onClick={() => void openView(item)}
                     className={`bc-list-row cursor-pointer transition-colors text-[0.75rem] ${
                       isRowEditing

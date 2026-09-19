@@ -296,7 +296,7 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 	if err = db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE `+where, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status).Scan(&result.Total); err != nil {
 		return result, err
 	}
-	rows, err := db.QueryContext(ctx, `SELECT payload FROM gl_records WHERE `+where+` ORDER BY code,id LIMIT $8 OFFSET $9`, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, limit, (page-1)*limit)
+	rows, err := db.QueryContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE `+where+` ORDER BY code,id LIMIT $8 OFFSET $9`, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, limit, (page-1)*limit)
 	if err != nil {
 		return result, err
 	}
@@ -320,7 +320,7 @@ func (p *Postgres) Get(ctx context.Context, scope Scope, kind, id string) (json.
 		return nil, err
 	}
 	var data []byte
-	err = db.QueryRowContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind=$2 AND id=$3 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($4='' OR kind NOT IN ('journals','budgets','forecast') OR payload->>'branchcode'=$4)`, scope.Company, kind, id, scope.Branch).Scan(&data)
+	err = db.QueryRowContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE company=$1 AND kind=$2 AND id=$3 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($4='' OR kind NOT IN ('journals','budgets','forecast') OR payload->>'branchcode'=$4)`, scope.Company, kind, id, scope.Branch).Scan(&data)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}

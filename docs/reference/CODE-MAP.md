@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-19 @ commit c44b35f3 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-19 @ commit 23af53d7 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 53
 
@@ -2139,6 +2139,38 @@ Files indexed: 53
 | 682 | section | `EDIT MODE FORM` |
 | 916 | section | `READ-ONLY VIEW MODE` |
 
+## frontend/src/app/gl/gl-masters.tsx (1043 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 14 | function | `newRecord` |
+| 15 | function | `normalizeRecord` |
+| 45 | function | `editorAlert` |
+| 50 | function | `pageErrorText` |
+| 51 | function | `paneErrorText` |
+| 52 | function | `FormErrorAlert` |
+| 54 | function | `errorStatePatch` |
+| 56 | function | `saveFailureTarget` |
+| 58 | function | `recordId` |
+| 65 | function | `recordCode` |
+| 66 | function | `recordName` |
+| 68 | function | `TreeNodeRow` |
+| 209 | function | `GLMasters` |
+| 238 | function | `showFormError` |
+| 260 | function | `openView` |
+| 277 | function | `openEdit` |
+| 294 | function | `openCreate` |
+| 305 | function | `cancelEdit` |
+| 319 | function | `save` |
+| 338 | function | `deleteItem` |
+| 365 | function | `runAction` |
+| 403 | const-arrow | `toggleCategory` |
+| 407 | const-arrow | `toggleNode` |
+| 900 | function | `AccountFields` |
+| 905 | const-arrow | `handleTypeChange` |
+| 1012 | function | `FiscalYearFields` |
+| 1026 | function | `MasterFields` |
+
 ## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
 
 | Line | Kind | Name |
@@ -2203,37 +2235,6 @@ Files indexed: 53
 | 1002 | function | `upsertRateEntry` |
 | 1008 | function | `validateForm` |
 | 1017 | function | `formatCount` |
-
-## frontend/src/app/gl/gl-masters.tsx (1021 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 14 | function | `newRecord` |
-| 15 | function | `normalizeRecord` |
-| 38 | function | `editorAlert` |
-| 43 | function | `pageErrorText` |
-| 44 | function | `paneErrorText` |
-| 45 | function | `FormErrorAlert` |
-| 47 | function | `errorStatePatch` |
-| 49 | function | `saveFailureTarget` |
-| 51 | function | `recordCode` |
-| 52 | function | `recordName` |
-| 54 | function | `TreeNodeRow` |
-| 194 | function | `GLMasters` |
-| 223 | function | `showFormError` |
-| 245 | function | `openView` |
-| 261 | function | `openEdit` |
-| 277 | function | `openCreate` |
-| 288 | function | `cancelEdit` |
-| 302 | function | `save` |
-| 321 | function | `deleteItem` |
-| 347 | function | `runAction` |
-| 383 | const-arrow | `toggleCategory` |
-| 387 | const-arrow | `toggleNode` |
-| 878 | function | `AccountFields` |
-| 883 | const-arrow | `handleTypeChange` |
-| 990 | function | `FiscalYearFields` |
-| 1004 | function | `MasterFields` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/base_pdf.go (1019 lines)
 

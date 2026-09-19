@@ -1693,5 +1693,31 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - รีสตาร์ทและตรวจสอบ Container `bcai-account-mainapi-1` และ `bcai-account-frontend-1` สถานะ Healthy
    - Frontend Vitest tests 92 files / 682 tests ผ่าน 100%
 
+### [2026-09-19] แก้ไขบั๊กแถวผังบัญชีถูกไฮไลท์สีฟ้าพร้อมกันทุกแถว และผสาน ID / Version ใน GL Records ให้สมบูรณ์
 
+**เป้าหมาย:** แก้ไขปัญหาในหน้าผังบัญชี (`/gl/chartofaccounts`) ที่ทุกแถวในตารางแสดงผลเป็นสีฟ้าและมีกรอบไฮไลท์พร้อมกัน (`bg-primary/10 ... ring-1 ring-inset ring-primary/40`) แม้ยังไม่ได้เลือกแถว พร้อมแก้ไขปุ่มจัดการ (แก้ไข/ลบ) และ Tree View ให้ทำงานได้ถูกต้อง
 
+**สาเหตุของปัญหา:**
+1. ในหน้า `gl-masters.tsx` มีการตรวจสอบการเลือกแถวด้วย `const isSelected = record?.id === item.id;`
+2. เมื่อยังไม่ได้เลือกแถวใด `record` เป็น `null` ทำให้ `record?.id` เป็น `undefined`
+3. ในขณะเดียวกัน ข้อมูลบัญชีที่โหลดจากฐานข้อมูลไม่ได้ระบุฟิลด์ `id` ไว้ใน JSON payload (`item.id` เป็น `undefined`)
+4. ในภาษา JavaScript ค่า `undefined === undefined` ได้ผลลัพธ์เป็น `true` ส่งผลให้ทุกแถวในตารางประเมินผลเป็นถูกเลือกพร้อมกันทั้งหมด
+5. นอกจากนี้ยังส่งผลให้การเปิดดู/แก้ไข (`openView`, `openEdit`) ไปสร้างรายการใหม่แทน และปุ่มลบ (`deleteItem`) ไม่ทำงานเนื่องจากติดการตรวจสอบ `if (!item.id)`
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **Frontend Defensive Selection Guard (`gl-masters.tsx`)**:
+   - เพิ่มฟังก์ชัน `recordId(record)` เพื่อดึง `id` อย่างปลอดภัยโดยมี fallback ไปที่ `accountcode` หรือ `code`
+   - ปรับปรุง `isSelected` ทั้งใน Table View และ Tree View ให้ตรวจสอบค่าจริง ป้องกันปัญหา `undefined === undefined` อย่างถาวร
+   - ปรับปรุง `openView`, `openEdit`, `deleteItem`, `runAction` ให้ใช้ `recordId(item)` ส่งต่อไปยัง API ได้อย่างถูกต้อง
+   - ปรับปรุง `normalizeRecord` ให้มี Fallback กำหนด `base.id` อัตโนมัติหากยังไม่มีค่า
+2. **Backend Automatic ID & Version Injection (`postgres.go`, `postgres_store.go`)**:
+   - ปรับคำสั่ง SQL ของ `List` และ `Get` ใน `postgres.go` ให้ใช้ `payload || jsonb_build_object('id', id, 'version', version)` เพื่อรับประกันว่าข้อมูล JSON ที่ส่งผ่าน API จะมี `id` และ `version` จากคอลัมน์ของตารางจริงเสมอ 100%
+   - ปรับคำสั่ง SQL ใน `loadRecord` ของ `postgres_store.go` ให้ผสาน `id` และ `version` ด้วยเช่นกัน
+3. **Database Seed & Live Hotfix (`deploy_fresh_database.sql`)**:
+   - ปรับปรุง `deploy_fresh_database.sql` ให้รันคำสั่งผสาน `id` และ `version` เข้าใน payload ของทุกแถวก่อน `COMMIT;`
+   - รันคำสั่ง SQL Hotfix บนฐานข้อมูล Production จริง (`UPDATE gl_records SET payload = jsonb_set(...)`) อัปเดตข้อมูลครบ 100 รายการเรียบร้อยแล้ว
+4. **การทดสอบความถูกต้อง 100% (VERIFY BEFORE DONE)**:
+   - Frontend Vitest: 92 test files / 682 tests ผ่าน 100%
+   - Frontend Typecheck: `tsc --noEmit` ผ่าน 0 errors
+   - Backend Go tests: `internal/generalledger` ผ่าน 100%
+   - Next.js Turbopack build: ผ่าน 100%
