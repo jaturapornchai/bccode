@@ -144,6 +144,27 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-19 — แก้ไขคอลัมน์ตารางผังบัญชีและสมุดรายวันหลุดกรอบ Flexbox คืนค่า Table-Row/Table-Cell และจัดชิดขวา 100%
+
+**ประเภทงาน:** `[Fix]` / `[UI/UX]` / `[Deploy]`
+
+**สิ่งที่ทำ:**
+- **คืนค่าพฤติกรรม Native Table Layout ให้แก่ semantic table row/header (`frontend/src/app/globals.css`)**:
+  - แก้ไขปัญหา `.bc-list-row` และ `.bc-list-header` กำหนด `display: flex !important` ซึ่งทำให้ `<tr>` ใน `<table>` กลายสภาพเป็น flex container ส่งผลให้คอลัมน์ `<td>` ทั้งหมด (รหัส, ชื่อ, ระดับ, สถานะ, จัดการ) ถูกบีบมากองติดกันทางซ้าย และทำให้หัวตารางกับเนื้อหาไม่ตรงกัน
+  - เพิ่ม override `table tr.bc-list-row { display: table-row !important; }` และ `table tr.bc-list-row > td { display: table-cell !important; }` รวมถึง `thead.bc-list-header { display: table-header-group !important; }`
+- **จัดคอลัมน์ตารางผังบัญชีและสมุดรายวันให้ชิดขวาและเว้นพื้นที่ชื่อบัญชีอย่างสมบูรณ์ (`gl-masters.tsx`, `gl-journals.tsx`)**:
+  - กำหนดความกว้างคอลัมน์คงที่ให้ชัดเจน: รหัส (`w-28 whitespace-nowrap`), ระดับ (`w-20 text-right`), สถานะ (`w-24 text-right`), จัดการ (`w-20 text-right pr-2.5`)
+  - คอลัมน์ชื่อบัญชี/รายละเอียด (`min-w-44`) ขยายตัวเต็มพื้นที่ว่างผลักดันคอลัมน์ข้อมูลและไอคอนทางขวาไปชิดขอบขวาตรงกันทุกแถว 100%
+
+**ไฟล์สำคัญ:**
+- `frontend/src/app/globals.css`
+- `frontend/src/app/gl/gl-masters.tsx`
+- `frontend/src/app/gl/gl-journals.tsx`
+
+**ผลการทดสอบ (Evidence):**
+- Frontend Unit Tests: Vitest 92 test files / 682 tests ผ่าน 100%
+- Frontend Typecheck: `tsc --noEmit` ผ่าน 0 errors
+
 ### 2026-09-19 — ปลดปุ่มย่อบรรทัดออกทุกจอ และแก้ปัญหา Toolbar ล้นขวาด้วย flex-wrap และ min-w-0
 
 **ประเภทงาน:** `[Refactor]` / `[UI/UX]` / `[Deploy]`

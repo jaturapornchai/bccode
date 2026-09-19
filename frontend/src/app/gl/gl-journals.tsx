@@ -390,7 +390,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 {/* .bc-list-header */}
                 <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th className="py-2 px-2.5 text-left">{tr("gl_date_number", "วันที่ / เลขที่")}</th>
+                    <th className="py-2 px-2.5 text-left w-36 whitespace-nowrap">{tr("gl_date_number", "วันที่ / เลขที่")}</th>
                     <th className="py-2 px-2 text-left min-w-44">{tr("gl_description", "คำอธิบาย")}</th>
                     <th className="py-2 px-2 text-right w-24">{tr("gl_status", "สถานะ")}</th>
                     <th className="py-2 pr-2.5 pl-2 text-right w-20">{tr("gl_manage", "จัดการ")}</th>
@@ -432,7 +432,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             )}
                           </div>
                         </td>
-                        <td className="max-w-60 truncate py-2 px-2 align-middle" title={item.description}>{item.description}</td>
+                        <td className="truncate py-2 px-2 align-middle" title={item.description}>{item.description}</td>
                         <td className="whitespace-nowrap py-2 px-2 text-right align-middle">
                           <span className={`inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold leading-none h-5 align-middle ${
                             isDraft

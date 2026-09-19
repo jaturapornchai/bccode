@@ -8796,3 +8796,37 @@ main:not(.login-shell):not(.holding-shell) .my-3 {
   font-size: 0.95rem;
   font-weight: 700;
 }
+
+/* ==========================================================================
+   Table-specific overrides for BC list classes when applied to semantic HTML tables:
+   Ensure thead, tr, th, td maintain their native table formatting and column alignment
+   instead of flexbox row behavior breaking table cells.
+   ========================================================================== */
+thead.bc-list-header,
+table thead.bc-list-header {
+  display: table-header-group !important;
+  width: auto !important;
+}
+
+thead.bc-list-header tr,
+table thead.bc-list-header tr,
+tr.bc-list-header,
+table tr.bc-list-header,
+tr.bc-list-row,
+tbody tr.bc-list-row,
+table tbody tr.bc-list-row {
+  display: table-row !important;
+  width: auto !important;
+}
+
+table thead.bc-list-header th,
+thead.bc-list-header th,
+tr.bc-list-header th {
+  display: table-cell !important;
+}
+
+table tbody tr.bc-list-row > td,
+tbody tr.bc-list-row > td,
+tr.bc-list-row > td {
+  display: table-cell !important;
+}

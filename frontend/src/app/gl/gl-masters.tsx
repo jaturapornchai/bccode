@@ -591,12 +591,12 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             {/* .bc-list-header */}
             <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="py-2 px-2.5 text-left">{tr("gl_code", "รหัส")}</th>
+                <th className="py-2 px-2.5 text-left w-28 whitespace-nowrap">{tr("gl_code", "รหัส")}</th>
                 <th className="py-2 px-2 text-left min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
-                {hasAmount && <th className="py-2 px-2 text-right w-36">{tr("gl_amount", "จำนวนเงิน")}</th>}
-                {isAcc && <th className="py-2 px-2 text-right w-20">{tr("gl_level", "ระดับ")}</th>}
-                <th className="py-2 px-2 text-right w-24">{tr("gl_status", "สถานะ")}</th>
-                <th className="py-2 pr-2.5 pl-2 text-right w-20">{tr("gl_manage", "จัดการ")}</th>
+                {hasAmount && <th className="py-2 px-2 text-right w-36 whitespace-nowrap">{tr("gl_amount", "จำนวนเงิน")}</th>}
+                {isAcc && <th className="py-2 px-2 text-right w-20 whitespace-nowrap">{tr("gl_level", "ระดับ")}</th>}
+                <th className="py-2 px-2 text-right w-24 whitespace-nowrap">{tr("gl_status", "สถานะ")}</th>
+                <th className="py-2 pr-2.5 pl-2 text-right w-20 whitespace-nowrap">{tr("gl_manage", "จัดการ")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -627,7 +627,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                     <td className="py-2 px-2.5 whitespace-nowrap align-middle">
                       <span className="font-mono font-semibold text-primary">{recordCode(item)}</span>
                     </td>
-                    <td className="py-2 px-2 max-w-72 truncate align-middle" title={recordName(item)}>
+                    <td className="py-2 px-2 truncate align-middle" title={recordName(item)}>
                       {isAcc && accLevel > 1 ? (
                         <span style={{ paddingLeft: `${(accLevel - 1) * 16}px` }} className="inline-flex items-center gap-1.5 align-middle">
                           <span className="text-muted-foreground select-none font-mono">└─</span>
