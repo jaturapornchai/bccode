@@ -144,6 +144,22 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-20 — ตั้งกฎโฟลเดอร์ mydocs/ เป็นข้อกำหนดของลุงจืดเท่านั้น (AI อ่านใหม่เสมอเมื่อเปลี่ยน และห้าม AI แก้ไข/ลบ/เพิ่ม โดยเด็ดขาด)
+
+**ประเภทงาน:** `[Rule]` / `[Governance]`
+
+**สิ่งที่ทำ:**
+- **ตั้งกฎ Project Rule ใน `AGENTS.md` และ Global Rules (`~/.gemini/GEMINI.md`, `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`)**:
+  - กำหนดให้โฟลเดอร์ `mydocs/` (เช่น `mydocs/specs/rules.md`) เป็นพื้นที่ข้อกำหนดทางธุรกิจ กฎเกณฑ์ และสเปกระบบของลุงจืดโดยตรง (Human-Only Zone)
+  - AI ทุกตัวต้องตรวจสอบและอ่านใหม่เสมอเมื่อลุงจืดมีการเปลี่ยนแปลง เพื่อยึดข้อกำหนดล่าสุดเป็นหลัก
+  - ห้าม AI แก้ไข, เพิ่ม (Create/Add), หรือลบ (Delete/Remove) ไฟล์และโฟลเดอร์ใน `mydocs/` โดยเด็ดขาด กำหนดสิทธิ์ให้เป็น Strict Read-Only สำหรับ AI 100%
+
+**ไฟล์สำคัญ:**
+- `AGENTS.md`
+- `~/.gemini/GEMINI.md`
+- `~/.claude/CLAUDE.md`
+- `~/.codex/AGENTS.md`
+
 ### 2026-09-19 — แก้ไขคอลัมน์ตารางผังบัญชีและสมุดรายวันหลุดกรอบ Flexbox คืนค่า Table-Row/Table-Cell และจัดชิดขวา 100%
 
 **ประเภทงาน:** `[Fix]` / `[UI/UX]` / `[Deploy]`
