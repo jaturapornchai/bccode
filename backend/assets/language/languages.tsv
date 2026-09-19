@@ -7634,3 +7634,4 @@ fa_gain_loss_account	รหัสบัญชีกำไร/ขาดทุน�
 fa_sale_price	ราคาขาย (ไม่รวม VAT)	Sale Price (Excl. VAT)	售价（不含增值税）	売却価格（税抜）	តម្លៃលក់ (មិនរួមពន្ធ VAT)	판매가 (부가세 별도)	ລາຄາຂາຍ (ບໍ່ລວມ VAT)	ရောင်းဈေး (VAT မပါ)	Giá bán (Chưa gồm VAT)	Harga Jualan (Tidak Termasuk VAT)	Harga Jual (Tidak Termasuk PPN)	Presyo ng Pagbebenta (Hindi Kasama ang VAT)
 fa_settlement_account	รหัสบัญชีรับเงิน/พักชำระ (GL)	Settlement Account (GL)	结算账户 (GL)	決済・入金勘定コード (GL)	គណនីទូទាត់/ទទួលប្រាក់ (GL)	결제 계정 (GL)	ລະຫັດບັນຊີຮັບເງິນ/ພັກຊຳລະ (GL)	ရှင်းလင်းရေးစာရင်း (GL)	Tài khoản thanh toán (GL)	Akaun Penyelesaian (GL)	Akun Penyelesaian (GL)	Account ng Settlement (GL)
 fa_vat_amount	จำนวนภาษีมูลค่าเพิ่ม (VAT)	VAT Amount	增值税金额	消費税額	ចំនួនពន្ធលើតម្លៃបន្ថែម (VAT)	부가세액	ຈຳນວນອາກອນມູນຄ່າເພີ່ມ (VAT)	VAT ပမာဏ	Tiền thuế VAT	Jumlah VAT	Jumlah PPN	Halaga ng VAT
+gl_all_records	รายการทั้งหมด	All Records	所有记录	全レコード	កំណត់ត្រាទាំងអស់	모든 기록	ລາຍການທັງໝົດ	မှတ်တမ်းအားလုံး	Tất cả bản ghi	Semua Rekod	Semua Catatan	Lahat ng Rekord

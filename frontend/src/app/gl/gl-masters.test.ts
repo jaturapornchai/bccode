@@ -407,14 +407,14 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
     expect(html).toContain("title=\"มุมมองผังต้นไม้\"");
   });
 
-  it("renders journal-books master table correctly", () => {
+  it("renders standard CRUD table styling with bc-list-toolbar, bc-list-header, and bc-list-row", () => {
     vi.mocked(glCommon.useGLList).mockReturnValue({
       data: {
         items: [
           {
-            id: "jb-1",
-            code: "JV",
-            name: "สมุดรายวันทั่วไป",
+            id: "p-1",
+            code: "P01",
+            name: "งวดบัญชี 1",
             isactive: true,
             version: 1,
           } as GLMaster,
@@ -431,10 +431,34 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
       setPage: vi.fn(),
     });
 
-    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "journal-books", route: "/gl/journal-books" }));
-    expect(html).toContain("JV");
-    expect(html).toContain("สมุดรายวันทั่วไป");
-    expect(html).toContain("ใช้งาน");
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "periods", route: "/gl/periodlock" }));
+    expect(html).toContain("bc-list-toolbar");
+    expect(html).toContain("bc-list-header");
+    expect(html).toContain("bc-list-row");
+    expect(html).toContain("P01");
+    expect(html).toContain("งวดบัญชี 1");
+    expect(html).toContain("รายการทั้งหมด");
+  });
+
+  it("enforces multi-level Thai accounting standard for chart of accounts seed in deploy_fresh_database.sql", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const sqlPath = resolve(process.cwd(), "..", "deploy_fresh_database.sql");
+    const sql = readFileSync(sqlPath, "utf8");
+
+    // Must have Level 1 to Level 4 accounts
+    expect(sql).toContain('"level": 1');
+    expect(sql).toContain('"level": 2');
+    expect(sql).toContain('"level": 3');
+    expect(sql).toContain('"level": 4');
+
+    // Must have parentaccountcode linkage
+    expect(sql).toContain('"parentaccountcode"');
+
+    // Must not have demo words in account names
+    expect(sql).not.toContain("ข้อมูลตัวอย่าง - สินทรัพย์");
+    expect(sql).not.toContain("ข้อมูลตัวอย่าง - หนี้สิน");
   });
 });
+
 

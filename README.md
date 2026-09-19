@@ -1642,3 +1642,27 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
    - Frontend Vitest tests ทั้งหมด 92 test files / 681 tests ผ่าน 100%
 
+### [2026-09-19] ปรับตารางผังบัญชีและสมุดรายวันให้ใช้สไตล์มาตรฐาน CRUD และกำหนดกฎตัวอย่างผังบัญชีหลายระดับแบบไทย
+
+**เป้าหมาย:** ปรับปรุงหน้าจอบัญชีแยกประเภท (`gl-masters.tsx`, `gl-journals.tsx`) ให้ใช้มาตรฐาน UI สไตล์ CRUD (Master-Detail) เช่นเดียวกับหน้าจออื่นๆ ของระบบ (ฟอนต์ `text-[0.75rem]`, `.bc-list-toolbar`, `.bc-list-header`, `.bc-list-row`, action buttons กะทัดรัด, ถอดปุ่ม "ย่อบรรทัด" ออกทั้งหมด) พร้อมตั้งกฎเหล็กว่าหากมีการสร้างตัวอย่างผังบัญชีต้องมีหลายระดับ (Multi-level Hierarchy: Level 1 หมวด, Level 2 กลุ่ม, Level 3 บัญชีคุม, Level 4 บัญชีย่อย) ตามมาตรฐานการบัญชีประเทศไทย
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **ปรับปรุง UI หน้าจอ GL Masters & Journals เป็นมาตรฐาน DataCRUD (`gl-masters.tsx`, `gl-journals.tsx`)**:
+   - ปรับ Summary Toolbar ให้ใช้คลาส `.bc-list-toolbar`
+   - ปรับ Table thead ให้ใช้คลาส `.bc-list-header`
+   - ปรับ Table tbody tr ให้ใช้คลาส `.bc-list-row` ขนาดฟอนต์ `text-[0.75rem]` และ padding `3px 8px` สวยงาม กะทัดรัด สบายตา
+   - ปรับปุ่ม Action ให้เป็นปุ่มไอคอนกะทัดรัด (`p-1 rounded text-primary hover:bg-primary/20` / `text-destructive hover:bg-destructive/20`) แทนปุ่มเต็มของ shadcn Button
+   - ถอดปุ่ม "ย่อบรรทัด" ออกทั้งหมดตามคำสั่งลุงจืด
+2. **บัญญัติกฎเหล็กเรื่องตัวอย่างผังบัญชีต้องมีหลายระดับ (`AGENTS.md`, `ui-scale-polish/SKILL.md`)**:
+   - เพิ่มข้อกำหนดใน `AGENTS.md` และ `docs/skills/ui-scale-polish/SKILL.md` (หัวข้อ 8.13): การสร้างตัวอย่างผังบัญชี (Chart of Accounts) ต้องมีโครงสร้างลำดับชั้นหลายระดับ (Multi-level Hierarchy) แบบมาตรฐานบัญชีประเทศไทย (TFRS / DBD) เสมอ (Level 1 หมวด, Level 2 กลุ่ม, Level 3 บัญชีคุม, Level 4 บัญชีย่อย) และต้องมีฟิลด์ `level` และ `parentaccountcode` ที่ถูกต้อง
+3. **ปรับปรุงข้อมูลตัวอย่างผังบัญชีในฐานข้อมูล (`deploy_fresh_database.sql`)**:
+   - เพิ่มผังบัญชี Level 1 (หมวด 10000, 20000, 30000, 40000, 50000), Level 2 (กลุ่มบัญชี), Level 3 (บัญชีคุม) และเชื่อมโยงกับ Level 4 (บัญชีย่อย) เดิมอย่างสมบูรณ์
+4. **เพิ่มคีย์ภาษาในพจนานุกรมส่วนกลาง (`backend/assets/language/languages.tsv`)**:
+   - เพิ่มคีย์ `gl_all_records` (รายการทั้งหมด) ครบถ้วนทั้ง 12 ภาษาตามมาตรฐานระบบ
+5. **การทดสอบความถูกต้องและการยืนยันผล 100% (VERIFY BEFORE DONE)**:
+   - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
+   - Frontend Vitest tests ทั้งหมด 92 test files / 682 tests ผ่าน 100% (รวม test ใหม่ตรวจจับ `.bc-list-*` และตรวจ Level 1–4 ใน SQL)
+   - Next.js Turbopack production build (`npm run build`) สำเร็จ 100%
+   - Backend Go tests (`internal/generalledger/...`) ผ่าน 100%
+
+

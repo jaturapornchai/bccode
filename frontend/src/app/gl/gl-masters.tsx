@@ -145,32 +145,30 @@ export function TreeNodeRow({
         </div>
 
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-          <Button
+          <button
             type="button"
-            size="icon"
-            variant="outline"
-            className="size-7 rounded-md bg-background text-primary border-primary/30 hover:bg-primary/15 shadow-none shrink-0"
+            className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onEdit(acc);
             }}
             title={tr("gl_edit_label", "แก้ไข (Edit)")}
+            aria-label={tr("gl_edit", "แก้ไข")}
           >
             <Pencil className="size-3.5" />
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            size="icon"
-            variant="outline"
-            className="size-7 rounded-md bg-background text-destructive border-border hover:bg-destructive/10 shadow-none shrink-0"
+            className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(acc);
             }}
             title={tr("gl_delete", "ลบ")}
+            aria-label={tr("gl_delete", "ลบ")}
           >
             <Trash2 className="size-3.5" />
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -456,12 +454,16 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             )}
           </div>
         </form>
-        <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
+        {/* .bc-list-toolbar */}
+        <div className="bc-list-toolbar shrink-0 p-2.5 border-b border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-2 rounded-t-lg">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-foreground/80">
-              {isAcc && viewMode === "tree"
-                ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(treeAccounts.length.toLocaleString("th-TH")))
-                : tr("gl_x_items", "{0} รายการ").replace("{0}", String(list.data.total.toLocaleString("th-TH")))}
+            <span className="text-xs font-semibold text-foreground">
+              {tr("gl_all_records", "รายการทั้งหมด")}:{" "}
+              <strong className="text-primary font-bold">
+                {isAcc && viewMode === "tree"
+                  ? treeAccounts.length.toLocaleString("th-TH")
+                  : list.data.total.toLocaleString("th-TH")}
+              </strong>
             </span>
             {isAcc && viewMode === "tree" && (
               <span className="inline-flex items-center rounded-md bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-medium border border-primary/20">
@@ -493,7 +495,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
         </div>
       </div>
       {isAcc && viewMode === "tree" ? (
-        <div className="flex-1 min-h-[300px] overflow-y-auto rounded-xl border border-border shadow-sm p-2 flex flex-col gap-2.5 bg-card" aria-busy={list.loading}>
+        <div className="flex-1 min-h-[300px] overflow-y-auto rounded-xl border border-border shadow-xs p-2 flex flex-col gap-2.5 bg-card scrollbar-thin" aria-busy={list.loading}>
           {treeGroups.map((group) => {
             const isCatExpanded = expandedCategories[group.category] ?? true;
             return (
@@ -552,19 +554,20 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
           )}
         </div>
       ) : (
-        <div className="flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm" aria-busy={list.loading}>
-          <table className={`w-full text-left text-[0.95rem] leading-normal ${density.tableClass}`}>
-            <thead className="sticky top-0 bg-muted z-10">
+        <div className="flex-1 min-h-[300px] overflow-y-auto scrollbar-thin rounded-xl border border-border shadow-xs" aria-busy={list.loading}>
+          <table className="w-full text-left border-collapse">
+            {/* .bc-list-header */}
+            <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="p-2.5">{tr("gl_code", "รหัส")}</th>
-                <th className="p-2.5 min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
-                {hasAmount && <th className="p-2.5 text-right w-36">{tr("gl_amount", "จำนวนเงิน")}</th>}
-                {isAcc && <th className="p-2.5 text-center w-24">{tr("gl_level", "ระดับ")}</th>}
-                <th className="p-2.5 text-center w-28">{tr("gl_status", "สถานะ")}</th>
-                <th className="p-2.5 text-right pr-3 w-24">{tr("gl_manage", "จัดการ")}</th>
+                <th className="py-2 px-2.5">{tr("gl_code", "รหัส")}</th>
+                <th className="py-2 px-2 min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
+                {hasAmount && <th className="py-2 px-2 text-right w-36">{tr("gl_amount", "จำนวนเงิน")}</th>}
+                {isAcc && <th className="py-2 px-2 text-center w-24">{tr("gl_level", "ระดับ")}</th>}
+                <th className="py-2 px-2 text-center w-28">{tr("gl_status", "สถานะ")}</th>
+                <th className="py-2 px-2 text-center w-20">{tr("gl_manage", "จัดการ")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/40">
               {list.data.items.map((item, index) => {
                 const accLevel = isAcc && "level" in item && typeof item.level === "number" ? item.level : 1;
                 const isSelected = record?.id === item.id;
@@ -575,21 +578,22 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                 return (
                   <tr
                     key={item.id}
-                    className={`group cursor-pointer transition-colors ${
-                      isRowEditing
-                        ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
-                        : isSelected
-                          ? "bg-primary/10 ring-1 ring-inset ring-primary/40 font-medium"
-                          : index % 2 === 0
-                            ? "bg-background hover:bg-accent/60"
-                            : "bg-muted/20 hover:bg-accent/60"
-                    }`}
                     onClick={() => void openView(item)}
+                    className={`bc-list-row cursor-pointer transition-colors text-[0.75rem] ${
+                      isRowEditing
+                        ? "bg-primary/15 font-medium text-foreground ring-1 ring-inset ring-primary/50"
+                        : isSelected
+                          ? "bg-primary/10 font-medium text-foreground ring-1 ring-inset ring-primary/40"
+                          : index % 2 === 0
+                            ? "bg-background hover:bg-muted/40 text-foreground/90"
+                            : "bg-muted/20 hover:bg-muted/40 text-foreground/90"
+                    }`}
+                    style={{ padding: "3px 8px" }}
                   >
-                    <td className="p-2 whitespace-nowrap">
-                      <span className="font-mono font-bold text-primary">{recordCode(item)}</span>
+                    <td className="py-2 px-2.5 whitespace-nowrap">
+                      <span className="font-mono font-semibold text-primary">{recordCode(item)}</span>
                     </td>
-                    <td className="max-w-72 truncate p-2" title={recordName(item)}>
+                    <td className="py-2 px-2 max-w-72 truncate" title={recordName(item)}>
                       {isAcc && accLevel > 1 ? (
                         <span style={{ paddingLeft: `${(accLevel - 1) * 16}px` }} className="inline-flex items-center gap-1.5">
                           <span className="text-muted-foreground select-none font-mono">└─</span>
@@ -600,43 +604,41 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                       )}
                     </td>
                     {hasAmount && (
-                      <td className="p-2 text-right font-mono font-semibold tabular-nums whitespace-nowrap">
+                      <td className="py-2 px-2 text-right font-mono font-medium tabular-nums whitespace-nowrap">
                         {"amount" in item ? formatAmount(item.amount) : "-"}
                       </td>
                     )}
                     {isAcc && (
-                      <td className="whitespace-nowrap p-2 text-center">
-                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                      <td className="whitespace-nowrap py-2 px-2 text-center">
+                        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20">
                           {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(accLevel))}
                         </span>
                       </td>
                     )}
-                    <td className="whitespace-nowrap p-2 text-center">
+                    <td className="whitespace-nowrap py-2 px-2 text-center">
                       {isLocked ? (
-                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border">
                           {tr("gl_locked", "ล็อกแล้ว")}
                         </span>
                       ) : isClosed ? (
-                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border">
                           {tr("gl_year_closed", "ปิดปีแล้ว")}
                         </span>
                       ) : !isActive ? (
-                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground border border-border">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border">
                           {tr("gl_disable", "ปิดใช้งาน")}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                           {tr("gl_enable", "ใช้งาน")}
                         </span>
                       )}
                     </td>
-                    <td className="p-2 text-right whitespace-nowrap pr-2" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
+                    <td className="py-2 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
                           type="button"
-                          size="icon"
-                          variant="outline"
-                          className="size-7 rounded-md bg-background text-primary border-primary/30 hover:bg-primary/15 hover:border-primary/50 shadow-none transition-colors shrink-0"
+                          className="p-1 rounded text-primary hover:bg-primary/20 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
                             void openEdit(item);
@@ -644,13 +646,11 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                           aria-label={tr("gl_edit", "แก้ไข")}
                           title={tr("gl_edit_label", "แก้ไข (Edit)")}
                         >
-                          <Pencil className="size-3.5 shrink-0" />
-                        </Button>
-                        <Button
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
                           type="button"
-                          size="icon"
-                          variant="outline"
-                          className="size-7 rounded-md bg-background text-destructive border-border hover:bg-destructive/10 hover:border-destructive/40 focus-visible:border-destructive/50 focus-visible:ring-destructive/30 shadow-none transition-colors shrink-0"
+                          className="p-1 rounded text-destructive hover:bg-destructive/20 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
                             void deleteItem(item);
@@ -658,8 +658,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                           aria-label={tr("gl_delete", "ลบ")}
                           title={tr("gl_delete_label", "ลบ (Delete)")}
                         >
-                          <Trash2 className="size-3.5 shrink-0" />
-                        </Button>
+                          <Trash2 className="size-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -667,7 +667,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               })}
               {!list.data.items.length && (
                 <tr>
-                  <td colSpan={colSpan} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={colSpan} className="py-10 text-center text-muted-foreground text-xs">
                     {list.loading ? tr("gl_loading_data", "กำลังโหลดข้อมูล…") : tr("gl_no_entries_add", "ยังไม่มีรายการ กดเพิ่มรายการเพื่อเริ่มต้น")}
                   </td>
                 </tr>
