@@ -99,7 +99,7 @@ export function TreeNodeRow({
   return (
     <div className="flex flex-col shrink-0">
       <div
-        className={`group flex items-center justify-between gap-2 px-3 py-1.5 min-h-[38px] cursor-pointer transition-colors text-[0.95rem] border-b border-border/40 shrink-0 ${
+        className={`group flex items-center justify-between gap-2 px-2.5 py-1 min-h-[34px] cursor-pointer transition-colors text-[0.75rem] border-b border-border/40 shrink-0 ${
           isRowEditing
             ? "bg-primary/15 hover:bg-primary/20 text-foreground ring-1 ring-inset ring-primary/50 font-medium"
             : isSelected
@@ -113,14 +113,14 @@ export function TreeNodeRow({
           {node.hasChildren ? (
             <button
               type="button"
-              className="p-0.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted shrink-0 cursor-pointer"
+              className="p-0.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted shrink-0 cursor-pointer inline-flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleNode(acc.accountcode);
               }}
               aria-label={isExpanded ? "Collapse" : "Expand"}
             >
-              {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+              {isExpanded ? <ChevronDown className="size-4 block" /> : <ChevronRight className="size-4 block" />}
             </button>
           ) : (
             <span className="w-4 shrink-0 text-muted-foreground/40 text-center font-mono select-none text-xs">
@@ -128,7 +128,7 @@ export function TreeNodeRow({
             </span>
           )}
 
-          <span className="font-mono font-bold text-primary shrink-0 min-w-24">
+          <span className="font-mono font-semibold text-primary shrink-0 min-w-24">
             {acc.accountcode}
           </span>
 
@@ -137,29 +137,40 @@ export function TreeNodeRow({
           </span>
         </div>
 
-        {/* Right anchored items: Level -> Account Role -> Status -> Actions */}
-        <div className="flex items-center justify-end gap-1.5 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
-          <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5">
-            L{node.level}
-          </span>
-
-          {isControl ? (
-            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-muted text-muted-foreground border border-border leading-none h-5">
-              {tr("gl_control_account", "บัญชีคุม")}
+        {/* Right anchored items: Level -> Account Role -> Status -> Actions (Fixed Width Columns) */}
+        <div className="flex items-center justify-end shrink-0 ml-auto gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="w-16 flex justify-end shrink-0">
+            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5">
+              {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(node.level))}
+              <span className="sr-only">L{node.level}</span>
             </span>
-          ) : (
-            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5">
-              {tr("gl_posting_account", "บัญชีย่อย")}
-            </span>
-          )}
+          </div>
 
-          {!isActive && (
-            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-rose-500/10 text-rose-600 border border-rose-500/20 leading-none h-5">
-              {tr("gl_disable", "ปิดใช้งาน")}
-            </span>
-          )}
+          <div className="w-16 flex justify-end shrink-0">
+            {isControl ? (
+              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-muted text-muted-foreground border border-border leading-none h-5">
+                {tr("gl_control_account", "บัญชีคุม")}
+              </span>
+            ) : (
+              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5">
+                {tr("gl_posting_account", "บัญชีย่อย")}
+              </span>
+            )}
+          </div>
 
-          <div className="flex items-center gap-1 shrink-0 ml-1">
+          <div className="w-16 flex justify-end shrink-0">
+            {isActive ? (
+              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5">
+                {tr("gl_enable", "ใช้งาน")}
+              </span>
+            ) : (
+              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border leading-none h-5">
+                {tr("gl_disable", "ปิดใช้งาน")}
+              </span>
+            )}
+          </div>
+
+          <div className="w-16 flex items-center justify-end gap-1 shrink-0">
             <button
               type="button"
               className="p-1 rounded text-primary hover:bg-primary/20 transition-colors inline-flex items-center justify-center h-6 w-6"
