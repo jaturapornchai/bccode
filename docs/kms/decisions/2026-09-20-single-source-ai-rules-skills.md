@@ -34,7 +34,7 @@ supersedes: 2026-09-07-consolidate-docs-for-multi-ai.md (เฉพาะส่�
 - **คง `docs/skills/` + junction ไปทุกเครื่องมือ** — ปฏิเสธ: junction ไม่ถูก commit → clone ใหม่/เครื่องอื่นไม่มี, Codex/Gemini/ZCode จะไม่เห็น skill
 - **สร้าง `.agents/rules/` ให้ Antigravity** — ไม่จำเป็น: อ่าน `AGENTS.md` ที่ root ได้แล้ว และจะกลายเป็นสำเนากฎที่ drift
 - **symlink `.claude/skills` แบบ commit ลง git** — ปฏิเสธ: symlink บน Windows ต้องเปิด Developer Mode/`core.symlinks` ทุกเครื่อง; junction ผ่านสคริปต์ปลอดภัยกว่า
-- **รวมกฎ global 3 ไฟล์ (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`)** — นอกขอบเขต repo; พบว่า drift แล้ว (Codex global บอกห้ามใช้ DeepSeek ขณะที่ Claude global บอกให้ใช้) → เสนอลุงจืดแยกต่างหาก
+- **รวมกฎ global 3 ไฟล์** — ทำแล้วรอบเดียวกัน (ลุงจืดเลือก [1]): ตัวจริง `~/.agents/AGENTS.md` (20 iron rules — เพิ่ม GIT SAFETY จาก Gemini, ACCOUNTING NUMBER จาก Codex; DeepSeek rule 2026-09-14 แทน Codex-only 2026-07-15); Claude import `@~/.agents/AGENTS.md`, Codex/Gemini(Antigravity)/ZCode ได้สำเนาจาก `node ~/.agents/sync-rules.mjs` (`--check` ตรวจ drift); ของเดิม `~/.agents/backup/2026-09-20/`. **พบว่า Gemini CLI บนเครื่องนี้ใช้ไม่ได้แล้ว** (บัญชี individual ถูกย้ายไป Antigravity — error IneligibleTierError) สำเนา `~/.gemini/GEMINI.md` จึงมีไว้ให้ Antigravity เป็นหลัก
 
 ## Consequences
 

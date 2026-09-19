@@ -153,6 +153,7 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - **Skill ย้ายจาก `docs/skills/` ไป `.agents/skills/`** (3 skill: `ui-scale-polish`, `datacrud`, `audit-mongomodel-sync` ด้วย `git mv`) เพราะเป็นโฟลเดอร์มาตรฐานที่ Codex, Gemini CLI, Antigravity และ ZCode ค้นหา skill เองได้ — ที่เดิมไม่มี AI ตัวไหนโหลดอัตโนมัติ
 - **Claude Code ใช้ junction**: สคริปต์ใหม่ `tools/ai-link.mjs` (`npm run ai:link`) สร้าง `.claude/skills` → `.agents/skills` (รันครั้งเดียวต่อ clone เหมือน `hooks:install`) ไม่มีสำเนาซ้ำ
 - แก้ path อ้างอิง `docs/skills/` → `.agents/skills/` ในเอกสาร/เทสต์ทั้งหมด; ADR 2026-09-07 (เลือก `docs/skills/`) ตั้งสถานะ superseded และเขียน ADR ใหม่
+- **กฎระดับเครื่อง (นอก repo) รวมเป็นไฟล์เดียว `~/.agents/AGENTS.md`** — Claude import, Codex/Gemini(Antigravity)/ZCode ได้สำเนาจาก `node ~/.agents/sync-rules.mjs`; รายละเอียดใน ADR เดียวกัน (Gemini CLI บนเครื่องนี้เลิกให้บริการบัญชี individual แล้ว ต้องใช้ Antigravity)
 
 **ไฟล์สำคัญ:**
 - `AGENTS.md`, `.gemini/settings.json`, `.agents/skills/**`, `tools/ai-link.mjs`, `package.json`
