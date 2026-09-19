@@ -3,6 +3,7 @@ import { serverGoApiBase } from "@/lib/backend-url";
 
 type Body = {
   endpoint?: string;
+  publicEndpoint?: string;
 };
 
 // Check if an IP address is a private / link-local address to prevent SSRF
@@ -27,15 +28,19 @@ function isBlockedPrivateIP(hostname: string): boolean {
   return false;
 }
 
-// Check if endpoint refers to the internal MinIO deployment
-function isInternalMinio(hostname: string): boolean {
+// Check if endpoint refers to the internal MinIO deployment or server host
+function isInternalMinio(hostname: string, port?: string): boolean {
   const h = hostname.toLowerCase();
   return (
     h === "minio" ||
     h === "localhost" ||
     h === "127.0.0.1" ||
     h === "::1" ||
-    h.endsWith(".internal")
+    h.endsWith(".internal") ||
+    h === "account.bcaicloud.com" ||
+    h === "159.223.43.229" ||
+    port === "9000" ||
+    port === "9100"
   );
 }
 
@@ -47,15 +52,54 @@ function getLocalBackendBase(): string {
   }
 }
 
-export async function POST(request: Request) {
-  let body: Body;
+async function verifyInternalMinioViaBackend(start: number): Promise<NextResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
   try {
-    body = (await request.json()) as Body;
+    const backendBase = getLocalBackendBase();
+    const healthRes = await fetch(`${backendBase}/api/health`, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timeout);
+    const latencyMs = Date.now() - start;
+    if (healthRes.ok) {
+      return NextResponse.json({
+        success: true,
+        message: "เชื่อมต่อที่เก็บรูป (MinIO Storage) สำเร็จ",
+        latencyMs,
+        httpStatus: 200,
+      });
+    }
+    return NextResponse.json({
+      success: false,
+      message: `ระบบ backend รายงานสถานะไม่พร้อมใช้งาน (HTTP ${healthRes.status})`,
+      latencyMs,
+    });
+  } catch (err) {
+    clearTimeout(timeout);
+    const latencyMs = Date.now() - start;
+    return NextResponse.json({
+      success: false,
+      message: err instanceof Error ? err.message : "ไม่สามารถเชื่อมต่อระบบจัดเก็บรูปภาพภายในได้",
+      latencyMs,
+    });
+  }
+}
+
+export async function POST(request: Request) {
+  let body: Body = {};
+  try {
+    const raw = await request.text();
+    if (raw.trim()) {
+      body = JSON.parse(raw) as Body;
+    }
   } catch {
     return NextResponse.json({ success: false, message: "รูปแบบข้อมูลไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const endpoint = (body.endpoint ?? "").trim();
+  // Prioritize endpoint (s3endpoint) over publicEndpoint
+  const endpoint = (body.endpoint ?? "").trim() || (body.publicEndpoint ?? "").trim();
   if (!endpoint) {
     return NextResponse.json(
       { success: false, message: "กรุณาระบุ S3 Endpoint" },
@@ -83,41 +127,10 @@ export async function POST(request: Request) {
 
   const start = Date.now();
 
-  // Internal MinIO check: since frontend is in the edge network and minio is in the internal data network,
+  // Internal MinIO / local server check: since frontend is in the edge network and minio is in the internal data network,
   // the frontend container verifies storage service health via backend Go API.
-  if (isInternalMinio(parsed.hostname)) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
-    try {
-      const backendBase = getLocalBackendBase();
-      const healthRes = await fetch(`${backendBase}/api/health`, {
-        signal: controller.signal,
-        cache: "no-store",
-      });
-      clearTimeout(timeout);
-      const latencyMs = Date.now() - start;
-      if (healthRes.ok) {
-        return NextResponse.json({
-          success: true,
-          message: "เชื่อมต่อที่เก็บรูป (MinIO Storage) สำเร็จ",
-          latencyMs,
-          httpStatus: 200,
-        });
-      }
-      return NextResponse.json({
-        success: false,
-        message: `ระบบ backend รายงานสถานะไม่พร้อมใช้งาน (HTTP ${healthRes.status})`,
-        latencyMs,
-      });
-    } catch (err) {
-      clearTimeout(timeout);
-      const latencyMs = Date.now() - start;
-      return NextResponse.json({
-        success: false,
-        message: err instanceof Error ? err.message : "ไม่สามารถเชื่อมต่อระบบจัดเก็บรูปภาพภายในได้",
-        latencyMs,
-      });
-    }
+  if (isInternalMinio(parsed.hostname, parsed.port)) {
+    return verifyInternalMinioViaBackend(start);
   }
 
   // SSRF guard: block private RFC 1918 / cloud metadata IPs for external probes
@@ -130,7 +143,7 @@ export async function POST(request: Request) {
 
   // External S3 / R2 probe: probe directly with timeout
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 6000);
 
   try {
     const response = await fetch(urlString, {
@@ -150,6 +163,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     clearTimeout(timeout);
+    // If probing external endpoint failed, but this was a port 9100/9000 or server-related URL, fallback to backend
+    if (parsed.port === "9100" || parsed.port === "9000" || parsed.hostname.includes("bcaicloud.com")) {
+      return verifyInternalMinioViaBackend(start);
+    }
     const latencyMs = Date.now() - start;
     const message = error instanceof Error ? error.message : "เชื่อมต่อไม่ได้";
     return NextResponse.json(

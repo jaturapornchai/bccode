@@ -61,6 +61,28 @@ describe("storage health route", () => {
     expect(data.httpStatus).toBe(200);
   });
 
+  it("verifies server host port 9100 via backend health check", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ status: "healthy" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const request = new Request("http://localhost/api/storage/health", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint: "http://account.bcaicloud.com:9100" }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.success).toBe(true);
+    expect(data.message).toContain("MinIO Storage");
+    expect(data.httpStatus).toBe(200);
+  });
+
   it("handles internal minio endpoint when backend is down", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("Connection refused"));
 

@@ -1559,8 +1559,12 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - รองรับการทดสอบ External S3 / Cloudflare R2 / Wasabi endpoints โดยตรง พร้อมวัดค่า latency (ms) และรายงาน HTTP status
    - เพิ่มระบบป้องกัน SSRF Guard บล็อก Cloud Metadata (`169.254.169.254`) และ Private RFC 1918 IPs ที่ไม่ได้รับอนุญาต
 2. **ปรับปรุงและเพิ่มชุดทดสอบ (`frontend/src/app/api/storage/health/route.test.ts`)**:
-   - เพิ่มชุดทดสอบครอบคลุมทั้ง 5 กรณี: Empty endpoint (400), SSRF guard (403), MinIO internal backend check (200), Backend down failure, และ External S3 probe ผ่าน 100%
-3. **การทดสอบความถูกต้อง (VERIFY BEFORE DONE)**:
+   - เพิ่มชุดทดสอบครอบคลุมทั้ง 6 กรณี: Empty endpoint (400), SSRF guard (403), MinIO internal backend check (200), Server host port 9100 probe via backend check (200), Backend down failure, และ External S3 probe ผ่าน 100%
+3. **แก้ไขการเลือก Endpoint ในหน้าจอ (`frontend/src/app/settings/settings-screen.tsx`)**:
+   - ให้ความสำคัญกับ `s3endpoint` (`http://minio:9000`) เป็นอันดับแรก แทนที่จะไปหยิบ `s3publicendpoint` (`:9100`) ที่ไม่มี service ฟังอยู่
+   - ยกเลิกการ autofill `:9100` ลงใน `s3publicendpoint` เพื่อไม่ให้สร้างค่าพอร์ตที่ไม่มีอยู่จริง
+   - รองรับการ fallback มาตรวจ internal storage ผ่าน backend เมื่อ endpoint ที่ส่งมาเป็น port 9100 หรือชื่อโดเมนของเซิร์ฟเวอร์
+4. **การทดสอบความถูกต้อง (VERIFY BEFORE DONE)**:
    - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
-   - Frontend Vitest tests ทั้งหมด 92 test files / 680 tests ผ่าน 100%
+   - Frontend Vitest tests ทั้งหมด 92 test files / 681 tests ผ่าน 100%
 

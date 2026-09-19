@@ -209,9 +209,9 @@ export function SettingsScreen() {
           if (item.key === "host" && defaults.host) {
             return { ...item, value: defaults.host };
           }
-          // S3 public endpoint: use the public host (client-facing).
+          // S3 public endpoint: leave empty for standard internal Docker setup.
           if (item.key === "s3publicendpoint") {
-            return { ...item, value: `http://${publicHost}:9100` };
+            return { ...item, value: defaults.s3publicendpoint ?? "" };
           }
           // All other fields: use Docker default if available.
           if (defaults[item.key] !== undefined) {
@@ -1007,13 +1007,11 @@ export function SettingsScreen() {
     const items = (configMap["integrations"] ?? []).filter((item) =>
       storageIntegrationKeys.has(item.key),
     );
-    // S3-compatible endpoint probe (MinIO / Wasabi / etc.).
-    // Use s3publicendpoint (client-facing, reachable from browser/Next.js server)
-    // instead of s3endpoint (Docker-internal, only reachable from backend container).
-    const endpoint =
-      items.find((item) => item.key === "s3publicendpoint")?.value?.trim() ||
-      items.find((item) => item.key === "s3endpoint")?.value?.trim() ||
-      "";
+    // Probe the S3 endpoint that backend actually connects to (s3endpoint e.g. http://minio:9000).
+    // If empty, fallback to s3publicendpoint.
+    const s3Endpoint = items.find((item) => item.key === "s3endpoint")?.value?.trim() || "";
+    const s3PublicEndpoint = items.find((item) => item.key === "s3publicendpoint")?.value?.trim() || "";
+    const endpoint = s3Endpoint || s3PublicEndpoint;
     if (!endpoint) {
       const failed: TestResult = {
         status: "failed",
@@ -1034,7 +1032,7 @@ export function SettingsScreen() {
       const probeResponse = await fetch("/api/storage/health", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint }),
+        body: JSON.stringify({ endpoint, publicEndpoint: s3PublicEndpoint }),
         signal: AbortSignal.timeout(12000),
       });
       const data = (await probeResponse.json()) as {
