@@ -29,7 +29,7 @@ import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-sp
 import { Checkbox, CheckboxCard } from "@/components/ui/checkbox";
 
 import { LogoAvatar } from "@/components/logo-avatar";
-import { type LanguageCode, LANGUAGES } from "@/lib/i18n";
+import { type LanguageCode, LANGUAGES, SYSTEM_LANGUAGES } from "@/lib/i18n";
 import { DEFAULT_TIME_ZONE, timezoneMeta, timezoneSelectOptions } from "@/lib/date-time";
 import { cn } from "@/lib/utils";
 import {
@@ -1774,7 +1774,7 @@ export function CompanyBranchTreeView({
                         disabled={isReadOnlyMode}
                         className="flex h-10 w-full rounded-md border border-input bg-accent/20 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {LANGUAGES.map((lang) => (
+                        {SYSTEM_LANGUAGES.map((lang) => (
                           <option key={lang.code} value={lang.code}>
                             {lang.name}
                           </option>

@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/smlsoft/mongopagination"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -41,7 +43,61 @@ func (r *ShopUserPostgresRepository) SaveStable(ctx context.Context, holdingCode
 }
 
 func (r *ShopUserPostgresRepository) SaveFullProfile(ctx context.Context, holdingCode string, req *models.UserRoleRequest) error {
-	return nil
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" || req == nil {
+		return errors.New("holdingCode and request required")
+	}
+	username := strings.TrimSpace(req.Username)
+	if username == "" {
+		return errors.New("username required")
+	}
+	roleStr := "user"
+	if req.Role == models.ROLE_OWNER {
+		roleStr = "owner"
+	} else if req.Role == models.ROLE_ADMIN {
+		roleStr = "admin"
+	}
+
+	permsJSON, err := json.Marshal(req.PermissionSets)
+	if err != nil {
+		permsJSON = []byte("[]")
+	}
+	scopesJSON, err := json.Marshal(req.AccessScopes)
+	if err != nil {
+		scopesJSON = []byte("[]")
+	}
+
+	// Ensure user exists in users table
+	var userID string
+	err = r.db.QueryRowContext(ctx, `SELECT id::text FROM users WHERE LOWER(username) = LOWER($1)`, username).Scan(&userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			userUUID := uuid.New().String()
+			_, err = r.db.ExecContext(ctx, `INSERT INTO users (id, username, password_hash, email, full_name, is_active) VALUES ($1, $2, '', $3, $4, true)`,
+				userUUID, username, req.Email, req.UserProfileName)
+			if err != nil {
+				return err
+			}
+			userID = userUUID
+		} else {
+			return err
+		}
+	} else {
+		if req.Email != "" || req.UserProfileName != "" {
+			_, _ = r.db.ExecContext(ctx, `UPDATE users SET email = COALESCE(NULLIF($1, ''), email), full_name = COALESCE(NULLIF($2, ''), full_name) WHERE id = $3`, req.Email, req.UserProfileName, userID)
+		}
+	}
+
+	_, err = r.db.ExecContext(ctx, `
+		INSERT INTO holding_members (holding_code, user_id, role, permission_sets, access_scopes, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (holding_code, user_id) DO UPDATE SET
+			role = EXCLUDED.role,
+			permission_sets = EXCLUDED.permission_sets,
+			access_scopes = EXCLUDED.access_scopes,
+			is_active = EXCLUDED.is_active`,
+		holdingCode, userID, roleStr, permsJSON, scopesJSON, !req.IsAccessDisabled)
+	return err
 }
 
 func (r *ShopUserPostgresRepository) UpdateLineFields(ctx context.Context, holdingCode string, userUID string, lineUserID string, lineDisplayName string, linePictureURL string) error {
@@ -57,7 +113,14 @@ func (r *ShopUserPostgresRepository) SaveFavorite(ctx context.Context, holdingCo
 }
 
 func (r *ShopUserPostgresRepository) Delete(ctx context.Context, holdingCode string, username string) error {
-	return nil
+	holdingCode = strings.TrimSpace(holdingCode)
+	username = strings.TrimSpace(username)
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM holding_members m
+		USING users u
+		WHERE m.user_id = u.id AND LOWER(m.holding_code) = LOWER($1) AND LOWER(u.username) = LOWER($2)`,
+		holdingCode, username)
+	return err
 }
 
 func (r *ShopUserPostgresRepository) DeleteEmptyUsernames(ctx context.Context, holdingCode string) (int64, error) {
@@ -81,13 +144,15 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Con
 	userUID = strings.TrimSpace(userUID)
 
 	var (
+		actualUID      string
+		actualUsername string
 		roleStr        string
 		permissionSets []byte
 		accessScopes   []byte
 		isActive       bool
 	)
 
-	query := `SELECT m.role, m.permission_sets, m.access_scopes, m.is_active
+	query := `SELECT u.id::text, u.username, m.role, m.permission_sets, m.access_scopes, m.is_active
 	          FROM holding_members m
 	          JOIN users u ON m.user_id = u.id
 	          WHERE LOWER(m.holding_code) = LOWER($1)
@@ -95,7 +160,7 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Con
 	            AND m.is_active = true
 	          LIMIT 1`
 
-	err := r.db.QueryRowContext(ctx, query, holdingCode, userUID).Scan(&roleStr, &permissionSets, &accessScopes, &isActive)
+	err := r.db.QueryRowContext(ctx, query, holdingCode, userUID).Scan(&actualUID, &actualUsername, &roleStr, &permissionSets, &accessScopes, &isActive)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// Check if holding exists, grant default OWNER
@@ -125,6 +190,7 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Con
 						HoldingUID:    holdingCode,
 						HoldingCode:   holdingCode,
 						UserUID:       userUID,
+						Username:      userUID,
 						Role:          models.ROLE_OWNER,
 					},
 					AccessScopes: fallbackScopes,
@@ -175,7 +241,8 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Con
 			MembershipUID: uuid.New().String(),
 			HoldingUID:    holdingCode,
 			HoldingCode:   holdingCode,
-			UserUID:       userUID,
+			UserUID:       actualUID,
+			Username:      actualUsername,
 			Role:          role,
 		},
 		PermissionSets: perms,
@@ -284,19 +351,138 @@ func (r *ShopUserPostgresRepository) FindByUserUIDPage(ctx context.Context, user
 }
 
 func (r *ShopUserPostgresRepository) FindByUserInShopPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.ShopUser, mongopagination.PaginationData, error) {
-	return nil, mongopagination.PaginationData{}, nil
+	return r.FindByUserInShopPageWithProfileMatches(ctx, holdingCode, pageable, nil)
 }
 
 func (r *ShopUserPostgresRepository) FindByUserInShopPageWithProfileMatches(ctx context.Context, holdingCode string, pageable micromodels.Pageable, profileUsernames []string) ([]models.ShopUser, mongopagination.PaginationData, error) {
-	return nil, mongopagination.PaginationData{}, nil
+	holdingCode = strings.TrimSpace(holdingCode)
+	query := `SELECT m.id, u.id::text, u.username, m.role, m.permission_sets, m.access_scopes, m.is_active
+	          FROM holding_members m
+	          JOIN users u ON m.user_id = u.id
+	          WHERE LOWER(m.holding_code) = LOWER($1)`
+	args := []interface{}{holdingCode}
+
+	if q := strings.TrimSpace(pageable.Query); q != "" {
+		query += ` AND (u.username ILIKE $2 OR u.full_name ILIKE $2 OR u.email ILIKE $2)`
+		args = append(args, "%"+q+"%")
+	}
+	query += ` ORDER BY u.username`
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, mongopagination.PaginationData{}, err
+	}
+	defer rows.Close()
+
+	var result []models.ShopUser
+	for rows.Next() {
+		var (
+			mID            uuid.UUID
+			uID            string
+			uUsername      string
+			roleStr        string
+			permissionSets []byte
+			accessScopes   []byte
+			isActive       bool
+		)
+		if err := rows.Scan(&mID, &uID, &uUsername, &roleStr, &permissionSets, &accessScopes, &isActive); err != nil {
+			continue
+		}
+		role := models.ROLE_USER
+		if strings.EqualFold(roleStr, "OWNER") {
+			role = models.ROLE_OWNER
+		} else if strings.EqualFold(roleStr, "ADMIN") {
+			role = models.ROLE_ADMIN
+		}
+		var perms []string
+		if len(permissionSets) > 0 {
+			_ = json.Unmarshal(permissionSets, &perms)
+		}
+		var scopes []models.AccessScope
+		if len(accessScopes) > 0 {
+			_ = json.Unmarshal(accessScopes, &scopes)
+		}
+		result = append(result, models.ShopUser{
+			ID: primitive.NewObjectID(),
+			ShopUserBase: models.ShopUserBase{
+				MembershipUID:    mID.String(),
+				HoldingUID:       holdingCode,
+				HoldingCode:      holdingCode,
+				UserUID:          uID,
+				Username:         uUsername,
+				Role:             role,
+			},
+			IsAccessDisabled: !isActive,
+			PermissionSets:   perms,
+			AccessScopes:     scopes,
+		})
+	}
+
+	return result, mongopagination.PaginationData{
+		Total:     int64(len(result)),
+		Page:      1,
+		PerPage:   int64(max(len(result), 1)),
+		TotalPage: 1,
+	}, nil
 }
 
 func (r *ShopUserPostgresRepository) FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error) {
-	return []string{}, nil
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []string{}, nil
+	}
+	rows, err := r.db.QueryContext(ctx, `SELECT username FROM users WHERE username ILIKE $1 OR full_name ILIKE $1 OR email ILIKE $1`, "%"+query+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []string
+	for rows.Next() {
+		var u string
+		if err := rows.Scan(&u); err == nil {
+			list = append(list, u)
+		}
+	}
+	return list, nil
 }
 
 func (r *ShopUserPostgresRepository) FindUserProfileByUsernames(ctx context.Context, usernames []string) ([]models.UserProfile, error) {
-	return []models.UserProfile{}, nil
+	if len(usernames) == 0 {
+		return []models.UserProfile{}, nil
+	}
+	query := `SELECT id::text, username, full_name, email, phone FROM users WHERE LOWER(username) = ANY($1)`
+	lower := make([]string, len(usernames))
+	for i, u := range usernames {
+		lower[i] = strings.ToLower(strings.TrimSpace(u))
+	}
+	rows, err := r.db.QueryContext(ctx, query, pq.Array(lower))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []models.UserProfile
+	for rows.Next() {
+		var (
+			id       string
+			username string
+			fullName string
+			email    sql.NullString
+			phone    sql.NullString
+		)
+		if err := rows.Scan(&id, &username, &fullName, &email, &phone); err != nil {
+			continue
+		}
+		result = append(result, models.UserProfile{
+			UsernameField: models.UsernameField{Username: username},
+			Email:         email.String,
+			UserDetail: models.UserDetail{
+				UID:  id,
+				Name: fullName,
+			},
+		})
+	}
+	return result, nil
 }
 
 func (r *ShopUserPostgresRepository) ResolveHoldingCodeByHoldingCode(ctx context.Context, holdingCode string) (string, error) {

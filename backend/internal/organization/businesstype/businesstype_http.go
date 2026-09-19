@@ -1,9 +1,18 @@
 package businesstype
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"smlcloudplatform/internal/config"
+	mypg "smlcloudplatform/internal/goapi/mypg"
 	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/organization/businesstype/models"
@@ -52,6 +61,257 @@ func (h BusinessTypeHttp) RegisterHttp() {
 	h.ms.DELETE("/organization/business-type", h.DeleteBusinessTypeByGUIDs)
 }
 
+func (h BusinessTypeHttp) searchBusinessTypeStepPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, offset int, limit int, q string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" {
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []models.BusinessTypeInfo{}, Total: 0})
+		return nil
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	q = strings.TrimSpace(q)
+	countQuery := `SELECT COUNT(*) FROM business_types WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
+	dataQuery := `SELECT id, code, names, is_default FROM business_types WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
+	args := []interface{}{holdingCode}
+
+	if q != "" {
+		countQuery += ` AND (code ILIKE $2 OR names::text ILIKE $2)`
+		dataQuery += ` AND (code ILIKE $2 OR names::text ILIKE $2)`
+		args = append(args, "%"+q+"%")
+	}
+
+	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var total int64
+	if err := db.QueryRowContext(qCtx, countQuery, args...).Scan(&total); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	dataQuery += fmt.Sprintf(` ORDER BY code LIMIT %d OFFSET %d`, limit, offset)
+	rows, err := db.QueryContext(qCtx, dataQuery, args...)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	defer rows.Close()
+
+	list := make([]models.BusinessTypeInfo, 0)
+	for rows.Next() {
+		var (
+			id        string
+			code      string
+			rawNames  []byte
+			isDefault bool
+		)
+		if err := rows.Scan(&id, &code, &rawNames, &isDefault); err != nil {
+			continue
+		}
+		var namesList []common.NameX
+		if len(rawNames) > 0 {
+			_ = json.Unmarshal(rawNames, &namesList)
+		}
+		list = append(list, models.BusinessTypeInfo{
+			DocIdentity: common.DocIdentity{
+				GuidFixed: id,
+			},
+			BusinessType: models.BusinessType{
+				Code:      code,
+				Names:     &namesList,
+				IsDefault: isDefault,
+			},
+		})
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    list,
+		Total:   total,
+	})
+	return nil
+}
+
+func (h BusinessTypeHttp) infoBusinessTypePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+
+	query := `SELECT id, code, names, is_default FROM business_types WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(code) = LOWER($2)) AND is_active = true LIMIT 1`
+	var (
+		guidFixed string
+		code      string
+		rawNames  []byte
+		isDefault bool
+	)
+	err := db.QueryRowContext(context.Background(), query, holdingCode, id).Scan(&guidFixed, &code, &rawNames, &isDefault)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.ResponseError(http.StatusNotFound, "ไม่พบประเภทธุรกิจ")
+			return err
+		}
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	var namesList []common.NameX
+	if len(rawNames) > 0 {
+		_ = json.Unmarshal(rawNames, &namesList)
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data: models.BusinessTypeInfo{
+			DocIdentity: common.DocIdentity{
+				GuidFixed: guidFixed,
+			},
+			BusinessType: models.BusinessType{
+				Code:      code,
+				Names:     &namesList,
+				IsDefault: isDefault,
+			},
+		},
+	})
+	return nil
+}
+
+func (h BusinessTypeHttp) createBusinessTypePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, docReq models.BusinessType) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	code := strings.TrimSpace(docReq.Code)
+	if code == "" {
+		ctx.ResponseError(http.StatusBadRequest, "code is required")
+		return nil
+	}
+
+	rawNames, err := json.Marshal(docReq.Names)
+	if err != nil {
+		rawNames = []byte("[]")
+	}
+
+	newID := uuid.New().String()
+	query := `INSERT INTO business_types (id, holding_code, code, names, is_default, is_active)
+	          VALUES ($1, $2, $3, $4, $5, true)
+	          ON CONFLICT (holding_code, code) DO UPDATE SET
+	            names = EXCLUDED.names,
+	            is_default = EXCLUDED.is_default,
+	            is_active = true`
+	_, err = db.ExecContext(context.Background(), query, newID, holdingCode, code, rawNames, docReq.IsDefault)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusCreated, common.ApiResponse{
+		Success: true,
+		ID:      newID,
+	})
+	return nil
+}
+
+func (h BusinessTypeHttp) updateBusinessTypePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string, docReq models.BusinessType) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+
+	rawNames, err := json.Marshal(docReq.Names)
+	if err != nil {
+		rawNames = []byte("[]")
+	}
+
+	query := `UPDATE business_types SET names = $1, is_default = $2, updated_at = now()
+	          WHERE LOWER(holding_code) = LOWER($3) AND (id = $4 OR LOWER(code) = LOWER($4))`
+	_, err = db.ExecContext(context.Background(), query, rawNames, docReq.IsDefault, holdingCode, id)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
+	return nil
+}
+
+func (h BusinessTypeHttp) deleteBusinessTypePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+
+	query := `UPDATE business_types SET is_active = false, updated_at = now()
+	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(code) = LOWER($2))`
+	_, err := db.ExecContext(context.Background(), query, holdingCode, id)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+	})
+	return nil
+}
+
+func (h BusinessTypeHttp) deleteBusinessTypeByGUIDsPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, ids []string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	if len(ids) == 0 {
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
+		return nil
+	}
+	query := `UPDATE business_types SET is_active = false, updated_at = now()
+	          WHERE LOWER(holding_code) = LOWER($1) AND (id = ANY($2) OR code = ANY($2))`
+	_, err := db.ExecContext(context.Background(), query, holdingCode, pq.Array(ids))
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
+	return nil
+}
+
+func (h BusinessTypeHttp) infoBusinessTypeDefaultPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+
+	query := `SELECT id, code, names, is_default FROM business_types WHERE LOWER(holding_code) = LOWER($1) AND is_active = true ORDER BY is_default DESC, code ASC LIMIT 1`
+	var (
+		guidFixed string
+		code      string
+		rawNames  []byte
+		isDefault bool
+	)
+	err := db.QueryRowContext(context.Background(), query, holdingCode).Scan(&guidFixed, &code, &rawNames, &isDefault)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.ResponseError(http.StatusNotFound, "ไม่พบประเภทธุรกิจ")
+			return err
+		}
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	var namesList []common.NameX
+	if len(rawNames) > 0 {
+		_ = json.Unmarshal(rawNames, &namesList)
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data: models.BusinessTypeInfo{
+			DocIdentity: common.DocIdentity{
+				GuidFixed: guidFixed,
+			},
+			BusinessType: models.BusinessType{
+				Code:      code,
+				Names:     &namesList,
+				IsDefault: isDefault,
+			},
+		},
+	})
+	return nil
+}
+
 // Create BusinessType godoc
 // @Description Create BusinessType
 // @Tags		BusinessType
@@ -77,6 +337,10 @@ func (h BusinessTypeHttp) CreateBusinessType(ctx microservice.IContext) error {
 	if err = ctx.Validate(docReq); err != nil {
 		ctx.ResponseError(400, err.Error())
 		return err
+	}
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.createBusinessTypePostgres(ctx, db, holdingCode, *docReq)
 	}
 
 	idx, err := h.svc.CreateBusinessType(holdingCode, authUsername, *docReq)
@@ -124,6 +388,10 @@ func (h BusinessTypeHttp) UpdateBusinessType(ctx microservice.IContext) error {
 		return err
 	}
 
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.updateBusinessTypePostgres(ctx, db, holdingCode, id, *docReq)
+	}
+
 	err = h.svc.UpdateBusinessType(holdingCode, id, authUsername, *docReq)
 
 	if err != nil {
@@ -154,6 +422,10 @@ func (h BusinessTypeHttp) DeleteBusinessType(ctx microservice.IContext) error {
 	authUsername := userInfo.Username
 
 	id := ctx.Param("id")
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.deleteBusinessTypePostgres(ctx, db, holdingCode, id)
+	}
 
 	err := h.svc.DeleteBusinessType(holdingCode, id, authUsername)
 
@@ -194,6 +466,10 @@ func (h BusinessTypeHttp) DeleteBusinessTypeByGUIDs(ctx microservice.IContext) e
 		return err
 	}
 
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.deleteBusinessTypeByGUIDsPostgres(ctx, db, holdingCode, docReq)
+	}
+
 	err = h.svc.DeleteBusinessTypeByGUIDs(holdingCode, authUsername, docReq)
 
 	if err != nil {
@@ -224,6 +500,11 @@ func (h BusinessTypeHttp) InfoBusinessType(ctx microservice.IContext) error {
 	id := ctx.Param("id")
 
 	h.ms.Logger.Debugf("Get BusinessType %v", id)
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.infoBusinessTypePostgres(ctx, db, holdingCode, id)
+	}
+
 	doc, err := h.svc.InfoBusinessType(holdingCode, id)
 
 	if err != nil {
@@ -250,6 +531,10 @@ func (h BusinessTypeHttp) InfoBusinessType(ctx microservice.IContext) error {
 func (h BusinessTypeHttp) InfoBusinessTypeDefault(ctx microservice.IContext) error {
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.infoBusinessTypeDefaultPostgres(ctx, db, holdingCode)
+	}
 
 	doc, err := h.svc.InfoBusinessTypeDefault(holdingCode)
 
@@ -279,6 +564,10 @@ func (h BusinessTypeHttp) InfoBusinessTypeByCode(ctx microservice.IContext) erro
 	holdingCode := userInfo.HoldingCode
 
 	code := ctx.Param("code")
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.infoBusinessTypePostgres(ctx, db, holdingCode, code)
+	}
 
 	doc, err := h.svc.InfoBusinessTypeByCode(holdingCode, code)
 
@@ -310,6 +599,19 @@ func (h BusinessTypeHttp) SearchBusinessTypePage(ctx microservice.IContext) erro
 	holdingCode := userInfo.HoldingCode
 
 	pageable := utils.GetPageable(ctx.QueryParam)
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		limit := 100
+		offset := pageable.GetOffest()
+		if pageable.Limit > 0 {
+			limit = pageable.Limit
+		}
+		q := ctx.QueryParam("q")
+		if pageable.Query != "" {
+			q = pageable.Query
+		}
+		return h.searchBusinessTypeStepPostgres(ctx, db, holdingCode, offset, limit, q)
+	}
 
 	docList, pagination, err := h.svc.SearchBusinessType(holdingCode, map[string]interface{}{}, pageable)
 
@@ -343,6 +645,19 @@ func (h BusinessTypeHttp) SearchBusinessTypeStep(ctx microservice.IContext) erro
 	holdingCode := userInfo.HoldingCode
 
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		limit := 100
+		offset := pageableStep.Skip
+		if pageableStep.Limit > 0 {
+			limit = pageableStep.Limit
+		}
+		q := ctx.QueryParam("q")
+		if pageableStep.Query != "" {
+			q = pageableStep.Query
+		}
+		return h.searchBusinessTypeStepPostgres(ctx, db, holdingCode, offset, limit, q)
+	}
 
 	lang := ctx.QueryParam("lang")
 

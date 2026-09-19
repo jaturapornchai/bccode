@@ -2,6 +2,7 @@ package rolepermission
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,8 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	authmodels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/config"
+	mypg "smlcloudplatform/internal/goapi/mypg"
 	common "smlcloudplatform/internal/models"
 	orgpolicy "smlcloudplatform/internal/organization/access"
 	rolemodels "smlcloudplatform/internal/organization/rolepermission/models"
@@ -52,7 +55,348 @@ func (h RolePermissionHttp) RegisterHttp() {
 	h.ms.DELETE("/organization/role-permission/:id", h.DeleteRolePermission)
 }
 
+type RolePermissionItem struct {
+	ID          string                     `json:"_id"`
+	HoldingCode string                     `json:"holdingcode"`
+	RoleCode    string                     `json:"rolecode"`
+	Names       []rolemodels.LocalizedName `json:"names"`
+	Permissions []string                   `json:"permissions"`
+	IsActive    bool                       `json:"isactive"`
+	CreatedAt   time.Time                  `json:"createdat,omitempty"`
+	UpdatedAt   time.Time                  `json:"updatedat,omitempty"`
+	IsDeleted   bool                       `json:"isdeleted"`
+	Version     int64                      `json:"__v"`
+}
+
+func (h RolePermissionHttp) searchRolePermissionsPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, q string, offset int, limit int) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" {
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []RolePermissionItem{}, Total: 0})
+		return nil
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	q = strings.TrimSpace(q)
+	countQuery := `SELECT COUNT(*) FROM role_permissions WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
+	dataQuery := `SELECT COALESCE(id, role_code), holding_code, role_code, names, permissions, is_active, created_at, updated_at
+	              FROM role_permissions WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
+	args := []interface{}{holdingCode}
+
+	if q != "" {
+		countQuery += ` AND (role_code ILIKE $2 OR names::text ILIKE $2)`
+		dataQuery += ` AND (role_code ILIKE $2 OR names::text ILIKE $2)`
+		args = append(args, "%"+q+"%")
+	}
+
+	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var total int64
+	if err := db.QueryRowContext(qCtx, countQuery, args...).Scan(&total); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	dataQuery += fmt.Sprintf(` ORDER BY role_code LIMIT %d OFFSET %d`, limit, offset)
+	rows, err := db.QueryContext(qCtx, dataQuery, args...)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	defer rows.Close()
+
+	list := make([]RolePermissionItem, 0)
+	for rows.Next() {
+		var (
+			id             string
+			hCode          string
+			roleCode       string
+			rawNames       []byte
+			rawPermissions []byte
+			isActive       bool
+			createdAt      time.Time
+			updatedAt      time.Time
+		)
+		if err := rows.Scan(&id, &hCode, &roleCode, &rawNames, &rawPermissions, &isActive, &createdAt, &updatedAt); err != nil {
+			continue
+		}
+		var namesList []rolemodels.LocalizedName
+		if len(rawNames) > 0 {
+			_ = json.Unmarshal(rawNames, &namesList)
+		}
+		var permList []string
+		if len(rawPermissions) > 0 {
+			_ = json.Unmarshal(rawPermissions, &permList)
+		}
+		list = append(list, RolePermissionItem{
+			ID:          id,
+			HoldingCode: hCode,
+			RoleCode:    roleCode,
+			Names:       namesList,
+			Permissions: permList,
+			IsActive:    isActive,
+			CreatedAt:   createdAt,
+			UpdatedAt:   updatedAt,
+			IsDeleted:   false,
+			Version:     0,
+		})
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    list,
+		Total:   total,
+	})
+	return nil
+}
+
+func (h RolePermissionHttp) infoRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+
+	query := `SELECT COALESCE(id, role_code), holding_code, role_code, names, permissions, is_active, created_at, updated_at
+	          FROM role_permissions
+	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(role_code) = LOWER($2)) AND is_active = true
+	          LIMIT 1`
+	var (
+		recID          string
+		hCode          string
+		roleCode       string
+		rawNames       []byte
+		rawPermissions []byte
+		isActive       bool
+		createdAt      time.Time
+		updatedAt      time.Time
+	)
+	err := db.QueryRowContext(context.Background(), query, holdingCode, id).Scan(
+		&recID, &hCode, &roleCode, &rawNames, &rawPermissions, &isActive, &createdAt, &updatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.ResponseError(http.StatusNotFound, "ไม่พบรายการสิทธิ์ตามบทบาท")
+			return err
+		}
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	var namesList []rolemodels.LocalizedName
+	if len(rawNames) > 0 {
+		_ = json.Unmarshal(rawNames, &namesList)
+	}
+	var permList []string
+	if len(rawPermissions) > 0 {
+		_ = json.Unmarshal(rawPermissions, &permList)
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data: RolePermissionItem{
+			ID:          recID,
+			HoldingCode: hCode,
+			RoleCode:    roleCode,
+			Names:       namesList,
+			Permissions: permList,
+			IsActive:    isActive,
+			CreatedAt:   createdAt,
+			UpdatedAt:   updatedAt,
+			IsDeleted:   false,
+			Version:     0,
+		},
+	})
+	return nil
+}
+
+func (h RolePermissionHttp) infoMyRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, username string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	username = strings.TrimSpace(username)
+
+	var (
+		roleNum        int
+		rawSets        []byte
+		permissionSets []string
+	)
+
+	userQuery := `SELECT COALESCE(hm.role, u.role, 1), COALESCE(hm.permission_sets, '[]'::jsonb)
+	              FROM users u
+	              LEFT JOIN holding_members hm ON LOWER(hm.holding_code) = LOWER(u.holding_code) AND hm.user_id = u.id
+	              WHERE LOWER(u.username) = LOWER($1) AND (u.holding_code IS NULL OR LOWER(u.holding_code) = LOWER($2))
+	              LIMIT 1`
+	err := db.QueryRowContext(context.Background(), userQuery, username, holdingCode).Scan(&roleNum, &rawSets)
+	if err != nil {
+		roleNum = int(authmodels.ROLE_OWNER)
+	}
+	if len(rawSets) > 0 {
+		_ = json.Unmarshal(rawSets, &permissionSets)
+	}
+
+	roleCode := "OWNER"
+	if r, ok := roleCodeFromRole(uint8(roleNum)); ok {
+		roleCode = r
+	}
+
+	setCodes := append([]string{roleCode}, permissionSets...)
+
+	rows, err := db.QueryContext(context.Background(),
+		`SELECT permissions FROM role_permissions WHERE LOWER(holding_code) = LOWER($1) AND role_code = ANY($2) AND is_active = true`,
+		holdingCode, pq.Array(setCodes),
+	)
+	allPermissions := make([]string, 0)
+	hasWildcard := false
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var rawPerms []byte
+			if err := rows.Scan(&rawPerms); err == nil && len(rawPerms) > 0 {
+				var pList []string
+				if err := json.Unmarshal(rawPerms, &pList); err == nil {
+					for _, p := range pList {
+						if p == "*" {
+							hasWildcard = true
+						}
+						allPermissions = append(allPermissions, p)
+					}
+				}
+			}
+		}
+	}
+
+	var finalPerms []string
+	if roleCode == "ADMIN" || roleCode == "OWNER" || hasWildcard {
+		finalPerms = []string{"*"}
+	} else {
+		seen := make(map[string]bool)
+		for _, p := range allPermissions {
+			if !seen[p] {
+				seen[p] = true
+				finalPerms = append(finalPerms, p)
+			}
+		}
+		sort.Strings(finalPerms)
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"holdingcode":    holdingCode,
+			"rolecode":       roleCode,
+			"permissionsets": permissionSets,
+			"permissions":    finalPerms,
+			"isactive":       true,
+		},
+	})
+	return nil
+}
+
+func (h RolePermissionHttp) createRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, req rolemodels.RolePermissionRequest) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	roleCode := strings.ToUpper(strings.TrimSpace(req.RoleCode))
+	if roleCode == "" {
+		ctx.ResponseError(http.StatusBadRequest, "rolecode is required")
+		return nil
+	}
+
+	rawNames, _ := json.Marshal(req.Names)
+	rawPerms, _ := json.Marshal(req.Permissions)
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+
+	newID := "rp-" + strings.ToLower(roleCode)
+	query := `INSERT INTO role_permissions (id, holding_code, role_code, names, permissions, is_active, created_at, updated_at)
+	          VALUES ($1, $2, $3, $4, $5, $6, now(), now())
+	          ON CONFLICT (holding_code, role_code) DO UPDATE SET
+	            names = EXCLUDED.names,
+	            permissions = EXCLUDED.permissions,
+	            is_active = EXCLUDED.is_active,
+	            updated_at = now()`
+	_, err := db.ExecContext(context.Background(), query, newID, holdingCode, roleCode, rawNames, rawPerms, isActive)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusCreated, common.ApiResponse{
+		Success: true,
+		ID:      newID,
+		Data: RolePermissionItem{
+			ID:          newID,
+			HoldingCode: holdingCode,
+			RoleCode:    roleCode,
+			Names:       req.Names,
+			Permissions: req.Permissions,
+			IsActive:    isActive,
+		},
+	})
+	return nil
+}
+
+func (h RolePermissionHttp) updateRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string, req rolemodels.RolePermissionRequest) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+	roleCode := strings.ToUpper(strings.TrimSpace(req.RoleCode))
+
+	rawNames, _ := json.Marshal(req.Names)
+	rawPerms, _ := json.Marshal(req.Permissions)
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+
+	query := `UPDATE role_permissions SET
+	            role_code = COALESCE(NULLIF($1, ''), role_code),
+	            names = $2,
+	            permissions = $3,
+	            is_active = $4,
+	            updated_at = now()
+	          WHERE LOWER(holding_code) = LOWER($5) AND (id = $6 OR LOWER(role_code) = LOWER($6))`
+	_, err := db.ExecContext(context.Background(), query, roleCode, rawNames, rawPerms, isActive, holdingCode, id)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
+	return nil
+}
+
+func (h RolePermissionHttp) deleteRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	id = strings.TrimSpace(id)
+
+	query := `UPDATE role_permissions SET is_active = false, updated_at = now()
+	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(role_code) = LOWER($2))`
+	_, err := db.ExecContext(context.Background(), query, holdingCode, id)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		ID:      id,
+	})
+	return nil
+}
+
 func (h RolePermissionHttp) SearchRolePermissions(ctx microservice.IContext) error {
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		limit := boundedQueryInt(ctx.QueryParam("limit"), 100, 1, 1000)
+		offset := boundedQueryInt(ctx.QueryParam("offset"), 0, 0, 1_000_000)
+		q := ctx.QueryParam("q")
+		return h.searchRolePermissionsPostgres(ctx, db, holdingCode, q, offset, limit)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), rolePermissionTimeout)
 	defer cancel()
 	pst, holdingCode, err := h.managerStore(mongoCtx, ctx)
@@ -86,18 +430,24 @@ func (h RolePermissionHttp) SearchRolePermissions(ctx microservice.IContext) err
 }
 
 func (h RolePermissionHttp) InfoRolePermission(ctx microservice.IContext) error {
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
+	id := strings.TrimSpace(ctx.Param("id"))
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.infoRolePermissionPostgres(ctx, db, holdingCode, id)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), rolePermissionTimeout)
 	defer cancel()
 	pst, holdingCode, err := h.managerStore(mongoCtx, ctx)
 	if err != nil {
 		return respondAccessError(ctx, err)
 	}
-	id, err := primitive.ObjectIDFromHex(strings.TrimSpace(ctx.Param("id")))
+	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, "รหัสรายการสิทธิ์ไม่ถูกต้อง")
 		return err
 	}
-	record, found, err := findRolePermission(mongoCtx, pst, bson.M{"_id": id, "holdingcode": holdingCode, "isdeleted": false})
+	record, found, err := findRolePermission(mongoCtx, pst, bson.M{"_id": objID, "holdingcode": holdingCode, "isdeleted": false})
 	if err != nil {
 		return respondInternalError(ctx, err, "โหลดข้อมูลสิทธิ์ตามบทบาทไม่สำเร็จ")
 	}
@@ -111,10 +461,14 @@ func (h RolePermissionHttp) InfoRolePermission(ctx microservice.IContext) error 
 }
 
 func (h RolePermissionHttp) InfoMyRolePermission(ctx microservice.IContext) error {
+	userInfo := ctx.UserInfo()
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.infoMyRolePermissionPostgres(ctx, db, userInfo.HoldingCode, userInfo.Username)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), rolePermissionTimeout)
 	defer cancel()
 	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	userInfo := ctx.UserInfo()
 	membership, err := orgpolicy.FindActiveMembership(mongoCtx, pst, userInfo, time.Now().UTC())
 	if err != nil {
 		return respondAccessError(ctx, err)
@@ -197,16 +551,21 @@ func unionPermissions(records []rolemodels.RolePermissionDoc) []string {
 }
 
 func (h RolePermissionHttp) CreateRolePermission(ctx microservice.IContext) error {
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
+	req, err := readRolePermissionRequest(ctx, true)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.createRolePermissionPostgres(ctx, db, holdingCode, req)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), rolePermissionTimeout)
 	defer cancel()
 	pst, holdingCode, err := h.managerStore(mongoCtx, ctx)
 	if err != nil {
 		return respondAccessError(ctx, err)
-	}
-	req, err := readRolePermissionRequest(ctx, true)
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
 	}
 	if err := requireRolePermissionWrite(mongoCtx, pst, ctx, req.RoleCode); err != nil {
 		return respondAccessError(ctx, err)
@@ -246,23 +605,29 @@ func (h RolePermissionHttp) CreateRolePermission(ctx microservice.IContext) erro
 }
 
 func (h RolePermissionHttp) UpdateRolePermission(ctx microservice.IContext) error {
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
+	id := strings.TrimSpace(ctx.Param("id"))
+	req, err := readRolePermissionRequest(ctx, false)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.updateRolePermissionPostgres(ctx, db, holdingCode, id, req)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), rolePermissionTimeout)
 	defer cancel()
 	pst, holdingCode, err := h.managerStore(mongoCtx, ctx)
 	if err != nil {
 		return respondAccessError(ctx, err)
 	}
-	id, err := primitive.ObjectIDFromHex(strings.TrimSpace(ctx.Param("id")))
+	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, "รหัสรายการสิทธิ์ไม่ถูกต้อง")
 		return err
 	}
-	req, err := readRolePermissionRequest(ctx, false)
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-	existing, found, err := findRolePermission(mongoCtx, pst, bson.M{"_id": id, "holdingcode": holdingCode, "isdeleted": false})
+	existing, found, err := findRolePermission(mongoCtx, pst, bson.M{"_id": objID, "holdingcode": holdingCode, "isdeleted": false})
 	if err != nil {
 		return respondInternalError(ctx, err, "โหลดข้อมูลสิทธิ์ตามบทบาทไม่สำเร็จ")
 	}
@@ -274,7 +639,7 @@ func (h RolePermissionHttp) UpdateRolePermission(ctx microservice.IContext) erro
 	if err := requireRolePermissionWrite(mongoCtx, pst, ctx, existing.RoleCode, req.RoleCode); err != nil {
 		return respondAccessError(ctx, err)
 	}
-	if duplicate, err := rolePermissionCodeExists(mongoCtx, pst, holdingCode, req.RoleCode, id); err != nil {
+	if duplicate, err := rolePermissionCodeExists(mongoCtx, pst, holdingCode, req.RoleCode, objID); err != nil {
 		return respondInternalError(ctx, err, "ตรวจสอบรหัสบทบาทซ้ำไม่สำเร็จ")
 	} else if duplicate {
 		err = fmt.Errorf("rolecode %s already exists", req.RoleCode)
@@ -288,7 +653,7 @@ func (h RolePermissionHttp) UpdateRolePermission(ctx microservice.IContext) erro
 	}
 	now := time.Now().UTC()
 	result, err := collection.UpdateOne(mongoCtx, bson.M{
-		"_id":         id,
+		"_id":         objID,
 		"holdingcode": holdingCode,
 		"isdeleted":   false,
 		"__v":         *req.Version,
@@ -316,22 +681,28 @@ func (h RolePermissionHttp) UpdateRolePermission(ctx microservice.IContext) erro
 		ctx.ResponseError(http.StatusConflict, "ข้อมูลถูกแก้ไขจากหน้าจออื่น กรุณาโหลดใหม่")
 		return err
 	}
-	record, _, err := findRolePermission(mongoCtx, pst, bson.M{"_id": id, "holdingcode": holdingCode, "isdeleted": false})
+	record, _, err := findRolePermission(mongoCtx, pst, bson.M{"_id": objID, "holdingcode": holdingCode, "isdeleted": false})
 	if err != nil {
 		return respondInternalError(ctx, err, "โหลดข้อมูลสิทธิ์หลังบันทึกไม่สำเร็จ")
 	}
-	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, ID: id.Hex(), Data: record})
+	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, ID: objID.Hex(), Data: record})
 	return nil
 }
 
 func (h RolePermissionHttp) DeleteRolePermission(ctx microservice.IContext) error {
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
+	id := strings.TrimSpace(ctx.Param("id"))
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.deleteRolePermissionPostgres(ctx, db, holdingCode, id)
+	}
+
 	mongoCtx, cancel := context.WithTimeout(context.Background(), rolePermissionTimeout)
 	defer cancel()
 	pst, holdingCode, err := h.managerStore(mongoCtx, ctx)
 	if err != nil {
 		return respondAccessError(ctx, err)
 	}
-	id, err := primitive.ObjectIDFromHex(strings.TrimSpace(ctx.Param("id")))
+	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, "รหัสรายการสิทธิ์ไม่ถูกต้อง")
 		return err
@@ -342,7 +713,7 @@ func (h RolePermissionHttp) DeleteRolePermission(ctx microservice.IContext) erro
 		ctx.ResponseError(http.StatusBadRequest, "ต้องระบุ __v ที่ถูกต้องเพื่อลบข้อมูล")
 		return err
 	}
-	record, found, err := findRolePermission(mongoCtx, pst, bson.M{"_id": id, "holdingcode": holdingCode, "isdeleted": false})
+	record, found, err := findRolePermission(mongoCtx, pst, bson.M{"_id": objID, "holdingcode": holdingCode, "isdeleted": false})
 	if err != nil {
 		return respondInternalError(ctx, err, "โหลดข้อมูลสิทธิ์ตามบทบาทไม่สำเร็จ")
 	}
@@ -361,7 +732,7 @@ func (h RolePermissionHttp) DeleteRolePermission(ctx microservice.IContext) erro
 	}
 	now := time.Now().UTC()
 	result, err := collection.UpdateOne(mongoCtx, bson.M{
-		"_id":         id,
+		"_id":         objID,
 		"holdingcode": holdingCode,
 		"isdeleted":   false,
 		"__v":         expectedVersion,
@@ -383,7 +754,7 @@ func (h RolePermissionHttp) DeleteRolePermission(ctx microservice.IContext) erro
 		ctx.ResponseError(http.StatusConflict, "ข้อมูลถูกแก้ไขจากหน้าจออื่น กรุณาโหลดใหม่")
 		return err
 	}
-	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, ID: id.Hex()})
+	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, ID: objID.Hex()})
 	return nil
 }
 

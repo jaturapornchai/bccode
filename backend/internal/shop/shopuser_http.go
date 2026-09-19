@@ -15,6 +15,7 @@ import (
 	companyModels "smlcloudplatform/internal/organization/company/models"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
 	"smlcloudplatform/internal/utils"
+	mypg "smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
 	"time"
@@ -31,9 +32,13 @@ type ShopMemberHttp struct {
 }
 
 func NewShopMemberHttp(ms *microservice.Microservice, cfg config.IConfig) *ShopMemberHttp {
-
-	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-	repo := NewShopUserRepository(pst)
+	var repo IShopUserRepository
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		repo = NewShopUserPostgresRepository(db)
+	} else {
+		pst := ms.MongoPersister(cfg.MongoPersisterConfig())
+		repo = NewShopUserRepository(pst)
+	}
 	svc := NewShopUserService(repo)
 	return &ShopMemberHttp{
 		svc: svc,

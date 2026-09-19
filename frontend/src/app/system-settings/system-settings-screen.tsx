@@ -139,7 +139,7 @@ import {
   findThaiBankPreset,
   thaiBankPresets,
 } from "@/lib/thai-banks";
-import { LANGUAGES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
+import { LANGUAGES, SYSTEM_LANGUAGES, ACTIVE_LANGUAGE_CODES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
 import { ALL_SCREEN_ACTIONS, isActionEntry, type ScreenActions } from "@/lib/permission-actions";
 import { RoleScreenMatrix } from "@/components/system-settings/field-editors/role-screen-matrix";
@@ -11572,12 +11572,6 @@ function LanguageConfigsEditor({
     form["settings.languageconfigs"] ?? form["settings.languageconfigs"],
     defaultCode,
   );
-  const usedCodes = new Set(rows.map((row) => row.code));
-  const availableLanguages = LANGUAGES.filter(
-    (item) => !usedCodes.has(item.code),
-  );
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [draggingCode, setDraggingCode] = useState("");
 
   function commit(
     nextRows: LanguageConfigFormRow[],
@@ -11595,156 +11589,151 @@ function LanguageConfigsEditor({
     });
   }
 
-  function reorderByCode(sourceCode: string, targetCode: string) {
-    if (!sourceCode || sourceCode === targetCode) return;
-    const sourceIndex = rows.findIndex((row) => row.code === sourceCode);
-    const targetIndex = rows.findIndex((row) => row.code === targetCode);
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex)
-      return;
-    commit(moveArrayItem(rows, sourceIndex, targetIndex));
+  const primaryCode = rows[0]?.code ?? defaultCode ?? "th";
+  const isEnActive = rows.some((row) => row.code === "en");
+
+  function setPrimaryLanguage(code: LanguageCode) {
+    if (code === "th") {
+      if (isEnActive) {
+        commit([languageConfigRow("th", true), languageConfigRow("en", false)], "th");
+      } else {
+        commit([languageConfigRow("th", true)], "th");
+      }
+    } else {
+      commit([languageConfigRow("en", true), languageConfigRow("th", false)], "en");
+    }
   }
 
-  function handleDragStart(event: ReactDragEvent<HTMLElement>, code: string) {
-    if (rows.length <= 1) return;
-    setDraggingCode(code);
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", code);
+  function toggleEnglish() {
+    if (isEnActive) {
+      commit([languageConfigRow("th", true)], "th");
+    } else {
+      commit([languageConfigRow(primaryCode, true), languageConfigRow(primaryCode === "en" ? "th" : "en", false)], primaryCode);
+    }
   }
 
-  function handleDragOver(
-    event: ReactDragEvent<HTMLElement>,
-    targetCode: string,
-  ) {
-    const sourceCode = draggingCode || event.dataTransfer.getData("text/plain");
-    if (!sourceCode || sourceCode === targetCode) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    reorderByCode(sourceCode, targetCode);
-  }
-
-  function handleDrop(event: ReactDragEvent<HTMLElement>, targetCode: string) {
-    event.preventDefault();
-    reorderByCode(
-      draggingCode || event.dataTransfer.getData("text/plain"),
-      targetCode,
-    );
-    setDraggingCode("");
-  }
-
-  const textPrimary = backendText(dictionary, "ss_primary", "ภาษาแรก");
-  const textAdd = backendText(dictionary, "ss_add_language", "เพิ่มภาษา");
-  const textRemove = backendText(dictionary, "ss_remove", "เอาออก");
-  const textNoMore =
-    backendText(dictionary, "ss_all_supported_languages_are_already", "เพิ่มครบทุกภาษาที่รองรับแล้ว");
-  const textDrag =
-    backendText(dictionary, "ss_drag_to_reorder_language", "ลากเพื่อจัดลำดับภาษา");
+  const textPrimary = backendText(dictionary, "ss_primary", "ภาษาหลัก");
+  const textSetPrimary = backendText(dictionary, "ss_set_primary", "ตั้งเป็นภาษาหลัก");
 
   return (
-    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm md:col-span-2">
+    <section className="grid gap-2.5 rounded-2xl border border-border bg-background p-3 text-sm md:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="font-semibold">{label}</div>
+          <div className="font-bold text-foreground">{label}</div>
           <div className="text-xs text-muted-foreground">
-            {backendText(dictionary, "ss_first_row_company_language", "ลำดับแรกคือภาษาแรกของบริษัท")}
+            {backendText(dictionary, "ss_first_row_company_language", "เลือกภาษาที่ต้องการใช้งานในระบบ (ไทย / อังกฤษ)")}
           </div>
         </div>
-        {availableLanguages.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setAddDialogOpen(true)}
-            >
-              <Plus />
-              {textAdd}
-            </Button>
-          </div>
-        ) : null}
       </div>
-      <div className="grid gap-1">
-        {rows.map((row, index) => (
-          <div
-            key={row.code}
-            draggable={rows.length > 1}
-            onDragEnd={() => setDraggingCode("")}
-            onDragOver={(event) => handleDragOver(event, row.code)}
-            onDragStart={(event) => handleDragStart(event, row.code)}
-            onDrop={(event) => handleDrop(event, row.code)}
-            title={textDrag}
-            className={cn(
-              "grid cursor-grab gap-2 rounded-xl border border-border bg-card px-2 py-1.5 transition-[transform,box-shadow,border-color,background-color,opacity] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-sm active:cursor-grabbing sm:grid-cols-[84px_minmax(0,1fr)_auto] sm:items-center",
-              index === 0 && "border-primary/40 bg-primary/5",
-              draggingCode === row.code &&
-                "scale-[0.99] opacity-60 ring-2 ring-primary/30",
-            )}
-          >
-            <div className="flex items-center gap-1">
-              <span className="grid size-8 place-items-center rounded-lg border border-border bg-background text-muted-foreground">
-                <ChevronsUpDown className="size-4" aria-hidden="true" />
-              </span>
-              <div
-                className={cn(
-                  "grid size-10 place-items-center rounded-full font-semibold",
-                  index === 0
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground",
-                )}
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {/* การ์ดภาษาไทย */}
+        <div
+          className={cn(
+            "flex flex-col justify-between gap-3 rounded-xl border p-3 transition-all",
+            primaryCode === "th"
+              ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-xs"
+              : "border-border bg-card hover:border-border/80",
+          )}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <LanguageFlag code="th" />
+              <div>
+                <div className="font-bold text-foreground">ภาษาไทย</div>
+                <div className="text-xs text-muted-foreground font-mono">TH</div>
+              </div>
+            </div>
+            {primaryCode === "th" ? (
+              <Badge variant="default" className="gap-1 bg-primary text-primary-foreground font-bold text-xs py-0.5 px-2">
+                <Check className="size-3" />
+                {textPrimary}
+              </Badge>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 font-bold"
+                onClick={() => setPrimaryLanguage("th")}
               >
-                {index + 1}
+                {textSetPrimary}
+              </Button>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {primaryCode === "th" ? "ภาษาเริ่มต้นของระบบ เปิดใช้งานเสมอ" : "เปิดใช้งานคู่กับภาษาอังกฤษ"}
+          </div>
+        </div>
+
+        {/* การ์ด English */}
+        <div
+          className={cn(
+            "flex flex-col justify-between gap-3 rounded-xl border p-3 transition-all",
+            primaryCode === "en"
+              ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-xs"
+              : isEnActive
+                ? "border-border bg-card"
+                : "border-dashed border-border/80 bg-muted/20 opacity-75 hover:opacity-100",
+          )}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <LanguageFlag code="en" />
+              <div>
+                <div className="font-bold text-foreground">English</div>
+                <div className="text-xs text-muted-foreground font-mono">EN</div>
               </div>
             </div>
-            <div className="flex min-w-0 items-center gap-2">
-              <LanguageFlag code={row.code} />
-              <div className="min-w-0">
-                <div className="truncate font-semibold">
-                  {languageName(row.code, language)}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs uppercase text-muted-foreground">
-                  <span>{row.code}</span>
-                  {index === 0 ? (
-                    <Badge variant="outline">{textPrimary}</Badge>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap justify-end gap-1">
-              {rows.length > 1 ? (
+            {primaryCode === "en" ? (
+              <Badge variant="default" className="gap-1 bg-primary text-primary-foreground font-bold text-xs py-0.5 px-2">
+                <Check className="size-3" />
+                {textPrimary}
+              </Badge>
+            ) : isEnActive ? (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7 font-bold"
+                  onClick={() => setPrimaryLanguage("en")}
+                >
+                  {textSetPrimary}
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() =>
-                    commit(rows.filter((item) => item.code !== row.code))
-                  }
-                  title={textRemove}
+                  className="text-xs h-7 text-muted-foreground hover:text-destructive"
+                  onClick={toggleEnglish}
+                  title="ปิดใช้งาน English"
                 >
-                  <Trash2 />
-                  <span className="sr-only">{textRemove}</span>
+                  <X className="size-3.5" />
                 </Button>
-              ) : null}
-            </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 font-bold border-primary/40 text-primary hover:bg-primary/10"
+                onClick={toggleEnglish}
+              >
+                <Plus className="size-3 mr-1" />
+                เปิดใช้งาน
+              </Button>
+            )}
           </div>
-        ))}
+          <div className="text-xs text-muted-foreground">
+            {primaryCode === "en"
+              ? "ภาษาหลักของระบบ"
+              : isEnActive
+                ? "เปิดใช้งานร่วมกับภาษาไทย"
+                : "ยังไม่ได้เปิดใช้งาน คลิกเปิดใช้งานเพื่อกรอกข้อมูลภาษาอังกฤษได้"}
+          </div>
+        </div>
       </div>
-      {availableLanguages.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{textNoMore}</p>
-      ) : null}
-      <LanguageAddDialog
-        activeCodes={rows.map((row) => row.code)}
-        dictionary={dictionary}
-        language={language}
-        open={addDialogOpen}
-        onClose={() => setAddDialogOpen(false)}
-        onToggle={(code) => {
-          const isActive = rows.some((row) => row.code === code);
-          if (isActive) {
-            if (rows[0]?.code === code) return;
-            commit(rows.filter((row) => row.code !== code));
-          } else {
-            commit([...rows, languageConfigRow(code, false)]);
-          }
-        }}
-      />
     </section>
   );
 }
@@ -11767,19 +11756,6 @@ function LanguageListEditor({
   setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
 }) {
   const rows = normalizeLanguageList(form[field.key], form.language);
-  const usedCodes = new Set(rows);
-  const availableLanguages = LANGUAGES.filter(
-    (item) => !usedCodes.has(item.code),
-  );
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [draggingCode, setDraggingCode] = useState("");
-  const textPrimary = backendText(dictionary, "ss_primary", "ภาษาแรก");
-  const textAdd = backendText(dictionary, "ss_add_language", "เพิ่มภาษา");
-  const textRemove = backendText(dictionary, "ss_remove", "เอาออก");
-  const textNoMore =
-    backendText(dictionary, "ss_all_supported_languages_are_already", "เพิ่มครบทุกภาษาที่รองรับแล้ว");
-  const textDrag =
-    backendText(dictionary, "ss_drag_to_reorder_language", "ลากเพื่อจัดลำดับภาษา");
 
   function commit(nextCodes: string[]) {
     if (readOnly || !setForm) return;
@@ -11795,154 +11771,151 @@ function LanguageListEditor({
     });
   }
 
-  function reorderByCode(sourceCode: string, targetCode: string) {
+  const primaryCode = rows[0] ?? form.language ?? "th";
+  const isEnActive = rows.includes("en");
+
+  function setPrimaryLanguage(code: LanguageCode) {
     if (readOnly) return;
-    if (!sourceCode || sourceCode === targetCode) return;
-    const sourceIndex = rows.findIndex((code) => code === sourceCode);
-    const targetIndex = rows.findIndex((code) => code === targetCode);
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex)
-      return;
-    commit(moveArrayItem(rows, sourceIndex, targetIndex));
+    if (code === "th") {
+      commit(isEnActive ? ["th", "en"] : ["th"]);
+    } else {
+      commit(["en", "th"]);
+    }
   }
 
-  function handleDragStart(event: ReactDragEvent<HTMLElement>, code: string) {
+  function toggleEnglish() {
     if (readOnly) return;
-    if (rows.length <= 1) return;
-    setDraggingCode(code);
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", code);
+    if (isEnActive) {
+      commit(["th"]);
+    } else {
+      commit([primaryCode, primaryCode === "en" ? "th" : "en"]);
+    }
   }
 
-  function handleDragOver(
-    event: ReactDragEvent<HTMLElement>,
-    targetCode: string,
-  ) {
-    if (readOnly) return;
-    const sourceCode = draggingCode || event.dataTransfer.getData("text/plain");
-    if (!sourceCode || sourceCode === targetCode) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    reorderByCode(sourceCode, targetCode);
-  }
-
-  function handleDrop(event: ReactDragEvent<HTMLElement>, targetCode: string) {
-    if (readOnly) return;
-    event.preventDefault();
-    reorderByCode(
-      draggingCode || event.dataTransfer.getData("text/plain"),
-      targetCode,
-    );
-    setDraggingCode("");
-  }
+  const textPrimary = backendText(dictionary, "ss_primary", "ภาษาหลัก");
+  const textSetPrimary = backendText(dictionary, "ss_set_primary", "ตั้งเป็นภาษาหลัก");
 
   return (
-    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm md:col-span-2">
+    <section className="grid gap-2.5 rounded-2xl border border-border bg-background p-3 text-sm md:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="font-semibold">{label}</div>
+          <div className="font-bold text-foreground">{label}</div>
           <div className="text-xs text-muted-foreground">
-            {backendText(dictionary, "ss_first_row_record_language", "ลำดับแรกคือภาษาแรกของข้อมูลนี้")}
+            {backendText(dictionary, "ss_first_row_record_language", "เลือกภาษาที่ใช้งานสำหรับข้อมูลนี้ (ไทย / อังกฤษ)")}
           </div>
         </div>
-        {!readOnly && availableLanguages.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setAddDialogOpen(true)}
-            >
-              <Plus />
-              {textAdd}
-            </Button>
-          </div>
-        ) : null}
       </div>
-      <div className="grid gap-1">
-        {rows.map((code, index) => (
-          <div
-            key={code}
-            draggable={!readOnly && rows.length > 1}
-            onDragEnd={() => setDraggingCode("")}
-            onDragOver={(event) => handleDragOver(event, code)}
-            onDragStart={(event) => handleDragStart(event, code)}
-            onDrop={(event) => handleDrop(event, code)}
-            title={textDrag}
-            className={cn(
-              "grid cursor-grab gap-2 rounded-xl border border-border bg-card px-2 py-1.5 transition-[transform,box-shadow,border-color,background-color,opacity] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-sm active:cursor-grabbing sm:grid-cols-[84px_minmax(0,1fr)_auto] sm:items-center",
-              readOnly &&
-                "cursor-default hover:translate-y-0 active:cursor-default",
-              index === 0 && "border-primary/40 bg-primary/5",
-              draggingCode === code &&
-                "scale-[0.99] opacity-60 ring-2 ring-primary/30",
-            )}
-          >
-            <div className="flex items-center gap-1">
-              <span className="grid size-8 place-items-center rounded-lg border border-border bg-background text-muted-foreground">
-                <ChevronsUpDown className="size-4" aria-hidden="true" />
-              </span>
-              <div
-                className={cn(
-                  "grid size-10 place-items-center rounded-full font-semibold",
-                  index === 0
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground",
-                )}
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {/* การ์ดภาษาไทย */}
+        <div
+          className={cn(
+            "flex flex-col justify-between gap-3 rounded-xl border p-3 transition-all",
+            primaryCode === "th"
+              ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-xs"
+              : "border-border bg-card",
+          )}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <LanguageFlag code="th" />
+              <div>
+                <div className="font-bold text-foreground">ภาษาไทย</div>
+                <div className="text-xs text-muted-foreground font-mono">TH</div>
+              </div>
+            </div>
+            {primaryCode === "th" ? (
+              <Badge variant="default" className="gap-1 bg-primary text-primary-foreground font-bold text-xs py-0.5 px-2">
+                <Check className="size-3" />
+                {textPrimary}
+              </Badge>
+            ) : !readOnly ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 font-bold"
+                onClick={() => setPrimaryLanguage("th")}
               >
-                {index + 1}
-              </div>
-            </div>
-            <div className="flex min-w-0 items-center gap-2">
-              <LanguageFlag code={code} />
-              <div className="min-w-0">
-                <div className="truncate font-semibold">
-                  {languageName(code, language)}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs uppercase text-muted-foreground">
-                  <span>{code}</span>
-                  {index === 0 ? (
-                    <Badge variant="outline">{textPrimary}</Badge>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap justify-end gap-1">
-              {!readOnly && rows.length > 1 ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => commit(rows.filter((item) => item !== code))}
-                  title={textRemove}
-                >
-                  <Trash2 />
-                  <span className="sr-only">{textRemove}</span>
-                </Button>
-              ) : null}
-            </div>
+                {textSetPrimary}
+              </Button>
+            ) : null}
           </div>
-        ))}
+          <div className="text-xs text-muted-foreground">
+            {primaryCode === "th" ? "ภาษาเริ่มต้นของระบบ" : "เปิดใช้งานร่วมกับภาษาอังกฤษ"}
+          </div>
+        </div>
+
+        {/* การ์ด English */}
+        <div
+          className={cn(
+            "flex flex-col justify-between gap-3 rounded-xl border p-3 transition-all",
+            primaryCode === "en"
+              ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-xs"
+              : isEnActive
+                ? "border-border bg-card"
+                : "border-dashed border-border/80 bg-muted/20 opacity-75 hover:opacity-100",
+          )}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <LanguageFlag code="en" />
+              <div>
+                <div className="font-bold text-foreground">English</div>
+                <div className="text-xs text-muted-foreground font-mono">EN</div>
+              </div>
+            </div>
+            {primaryCode === "en" ? (
+              <Badge variant="default" className="gap-1 bg-primary text-primary-foreground font-bold text-xs py-0.5 px-2">
+                <Check className="size-3" />
+                {textPrimary}
+              </Badge>
+            ) : isEnActive ? (
+              !readOnly ? (
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 font-bold"
+                    onClick={() => setPrimaryLanguage("en")}
+                  >
+                    {textSetPrimary}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-7 text-muted-foreground hover:text-destructive"
+                    onClick={toggleEnglish}
+                    title="ปิดใช้งาน English"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              ) : null
+            ) : !readOnly ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-7 font-bold border-primary/40 text-primary hover:bg-primary/10"
+                onClick={toggleEnglish}
+              >
+                <Plus className="size-3 mr-1" />
+                เปิดใช้งาน
+              </Button>
+            ) : null}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {primaryCode === "en"
+              ? "ภาษาหลักของข้อมูลนี้"
+              : isEnActive
+                ? "เปิดใช้งานร่วมกับภาษาไทย"
+                : "ยังไม่ได้เปิดใช้งาน"}
+          </div>
+        </div>
       </div>
-      {!readOnly && availableLanguages.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{textNoMore}</p>
-      ) : null}
-      {!readOnly ? (
-        <LanguageAddDialog
-          activeCodes={rows}
-          dictionary={dictionary}
-          language={language}
-          open={addDialogOpen}
-          onClose={() => setAddDialogOpen(false)}
-          onToggle={(code) => {
-            const isActive = rows.includes(code);
-            if (isActive) {
-              if (rows[0] === code) return;
-              commit(rows.filter((item) => item !== code));
-            } else {
-              commit([...rows, code]);
-            }
-          }}
-        />
-      ) : null}
     </section>
   );
 }
@@ -12358,7 +12331,7 @@ function LanguageAddDialog({
         </div>
 
         <div className="language-grid">
-          {LANGUAGES.map((item) => {
+          {SYSTEM_LANGUAGES.map((item) => {
             const isPrimary = activeCodes[0] === item.code;
             const isActive = activeCodes.includes(item.code);
             return (

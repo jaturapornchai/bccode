@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, Check, CheckCircle2, Coins, Copy, Crown, ExternalLink, KeyRound, Languages, Loader2, LogOut, MessageCircle, PanelLeftClose, PanelLeftOpen, Plus, Search, UserRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Briefcase, Building2, CalendarDays, Check, CheckCircle2, Coins, Copy, Crown, ExternalLink, KeyRound, Languages, LayoutGrid, Loader2, LogOut, MessageCircle, PanelLeftClose, PanelLeftOpen, Plus, Search, Shield, UserRound, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
@@ -89,70 +89,102 @@ const emptyLineDialog: LineDialogState = {
   error: "",
   expired: false,
 };
-// ตั้งค่าระบบ = 4 ขั้นตามลำดับที่ต้องทำจริง (ออกแบบใหม่ 2026-09-02): ธุรกิจ → คน → สิทธิ์ → ตรวจสอบ
-// แต่ละขั้นมีแท็บย่อย (STEP_TABS) — route ของแท็บคือจอจริงที่ mount
-const STEP_TABS = {
-  "/company": [
-    { route: "/activelanguages", label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" } },
-    { route: "/company", label: { th: "บริษัทและสาขา", en: "Companies & Branches" } },
-    { route: "/businesstypescreen", label: { th: "ประเภทธุรกิจ", en: "Business Type" } },
-  ],
-  "/permissiongroup": [
-    { route: "/permissiongroup", label: { th: "ชุดสิทธิ์การใช้งาน", en: "Permission sets" } },
-    { route: "/permissiondefinition", label: { th: "รายการจอทั้งหมด", en: "All Screens" } },
-  ],
-  "/people": [
-    { route: "/employee", label: { th: "พนักงาน", en: "Employees" } },
-    { route: "/user", label: { th: "บัญชีเข้าระบบ", en: "Login Accounts" } },
-  ],
-} as const;
-type StepRoute = keyof typeof STEP_TABS;
-const stepTabsFor = (route: string | null) => (route && route in STEP_TABS ? STEP_TABS[route as StepRoute] : null);
-const accessSettingNavItems = [
+export interface AccessSettingNavItem {
+  route: string;
+  icon: React.ComponentType<{ className?: string; size?: number | string }>;
+  label: { th: string; en: string };
+  helper: { th: string; en: string };
+}
+
+export interface AccessSettingSection {
+  group: { th: string; en: string };
+  items: AccessSettingNavItem[];
+}
+
+// ตั้งค่าระบบและการเข้าถึง — เมนูตรงไปตรงมา ไม่ซับซ้อน ใช้ง่ายแบบคนไทย (Thai-Ergonomic Direct Access)
+export const accessSettingSections: AccessSettingSection[] = [
   {
-    route: "/company",
-    label: { th: "ธุรกิจของฉัน", en: "My Business" },
-    helper: { th: "ภาษา บริษัท สาขา สกุลเงิน ประเภทธุรกิจ", en: "Languages, companies, branches, currency, business types" },
-    banner: "/settings/banner-company.webp",
+    group: { th: "ข้อมูลธุรกิจ", en: "Business Info" },
+    items: [
+      {
+        route: "/activelanguages",
+        icon: Languages,
+        label: { th: "ภาษาที่ใช้งาน", en: "Active Languages" },
+        helper: { th: "ภาษาไทย และ English", en: "Thai and English" },
+      },
+      {
+        route: "/company",
+        icon: Building2,
+        label: { th: "บริษัทและสาขา", en: "Companies & Branches" },
+        helper: { th: "จัดการข้อมูลบริษัท สาขา และที่อยู่", en: "Company and branch details" },
+      },
+      {
+        route: "/businesstypescreen",
+        icon: Briefcase,
+        label: { th: "ประเภทธุรกิจ", en: "Business Type" },
+        helper: { th: "กำหนดประเภทธุรกิจขององค์กร", en: "Business categories" },
+      },
+    ],
   },
   {
-    route: "/permissiongroup",
-    label: { th: "สิทธิ์การใช้งาน", en: "Permissions" },
-    helper: { th: "ใช้ชุดมาตรฐาน หรือสร้างชุดเอง เช่น บัญชี ขาย คลัง (ข้ามได้)", en: "Use the defaults or create sets like Accounting, Sales, Stock (optional)" },
-    banner: "/settings/banner-permission-group.webp",
+    group: { th: "คนในองค์กร", en: "People" },
+    items: [
+      {
+        route: "/employee",
+        icon: Users,
+        label: { th: "พนักงาน", en: "Employees" },
+        helper: { th: "รายชื่อพนักงาน ฝ่าย และตำแหน่ง", en: "Employee directory" },
+      },
+      {
+        route: "/user",
+        icon: KeyRound,
+        label: { th: "บัญชีเข้าระบบ", en: "Login Accounts" },
+        helper: { th: "บัญชีผู้ใช้งานและการผูกสิทธิ์", en: "Sign-in accounts & roles" },
+      },
+    ],
   },
   {
-    route: "/people",
-    label: { th: "คนในองค์กร", en: "People" },
-    helper: { th: "เพิ่มพนักงานและบัญชีเข้าระบบ แล้วมอบสิทธิ์ให้แต่ละคน", en: "Add employees and sign-in accounts, then assign their permissions" },
-    banner: "/settings/banner-users.webp",
+    group: { th: "สิทธิ์และการตรวจสอบ", en: "Permissions & Audit" },
+    items: [
+      {
+        route: "/permissiongroup",
+        icon: Shield,
+        label: { th: "ชุดสิทธิ์การใช้งาน", en: "Permission Sets" },
+        helper: { th: "กำหนดบทบาทและสิทธิ์เข้าถึงจอ", en: "Role-based permission sets" },
+      },
+      {
+        route: "/permissiondefinition",
+        icon: LayoutGrid,
+        label: { th: "รายการจอทั้งหมด", en: "All Screens" },
+        helper: { th: "ผังรายการหน้าจอทั้งหมดในระบบ", en: "System screens catalog" },
+      },
+      {
+        route: "/useraccessaudit",
+        icon: CheckCircle2,
+        label: { th: "ตรวจสอบสิทธิ์", en: "Access Audit" },
+        helper: { th: "ใครเข้าอะไรได้จริงตอนนี้", en: "Review actual user access" },
+      },
+    ],
   },
-  {
-    route: "/useraccessaudit",
-    label: { th: "ตรวจสอบ", en: "Review" },
-    helper: { th: "ใครเข้าอะไรได้จริงตอนนี้", en: "Who can access what right now" },
-    banner: "/settings/banner-audit.webp",
-  },
-] as const;
+];
+
+export const accessSettingNavItems: AccessSettingNavItem[] = accessSettingSections.flatMap((s) => s.items);
 
 // 2026-09-16: the Thai/English literals above are the fallback — these keys
 // pull the same words out of languages.tsv for all twelve languages.
 const workspaceCatalogKeys: Record<string, string> = {
-  "steptab/company/activelanguages": "active_languages",
-  "steptab/company/company": "ws_companies_branches",
-  "steptab/company/businesstypescreen": "company_type",
-  "steptab/permissiongroup/permissiongroup": "ws_permission_sets",
-  "steptab/permissiongroup/permissiondefinition": "ws_all_screens",
-  "steptab/people/employee": "ws_employees",
-  "steptab/people/user": "ws_login_accounts",
-  "nav/company.label": "ws_my_business",
-  "nav/company.helper": "ws_languages_companies_branches_currency_business",
-  "nav/permissiongroup.label": "ws_permissions",
-  "nav/permissiongroup.helper": "ws_use_the_defaults_or_create",
-  "nav/people.label": "ws_people",
-  "nav/people.helper": "ws_add_employees_and_sign_in",
+  "nav/company.label": "ws_companies_branches",
+  "nav/businesstypescreen.label": "company_type",
+  "nav/activelanguages.label": "active_languages",
+  "nav/employee.label": "ws_employees",
+  "nav/user.label": "ws_login_accounts",
+  "nav/permissiongroup.label": "ws_permission_sets",
+  "nav/permissiondefinition.label": "ws_all_screens",
   "nav/useraccessaudit.label": "ws_review",
   "nav/useraccessaudit.helper": "ws_who_can_access_what_right",
+  "section0.group": "ws_my_business",
+  "section1.group": "ws_people",
+  "section2.group": "ws_permissions",
   "step1.title": "ws_set_languages",
   "step1.desc": "ws_pick_thai_and_any_other",
   "step2.title": "ws_add_company_branch",
@@ -359,12 +391,9 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   const [pendingUnitSetup, setPendingUnitSetup] = useState<PendingUnitSetup | null>(null);
   const [unitSetupSaving, setUnitSetupSaving] = useState(false);
   const [activeAccessRoute, setActiveAccessRoute] = useState<string | null>(null);
-  const [stepTabs, setStepTabs] = useState<Record<string, string>>({});
-  const activeStepTabs = stepTabsFor(activeAccessRoute);
-  const effectiveAccessRoute = activeStepTabs
-    ? (stepTabs[activeAccessRoute ?? ""] ?? activeStepTabs[0].route)
-    : activeAccessRoute;
-  const selectStepTab = (step: string, route: string) => setStepTabs((current) => ({ ...current, [step]: route }));
+  const effectiveAccessRoute = activeAccessRoute === "/people"
+    ? "/employee"
+    : (activeAccessRoute ?? "/company");
   // ✔ ความคืบหน้าต่อขั้น (นับจากข้อมูลจริงของ holding ที่กำลังตั้งค่า)
   const [stepProgress, setStepProgress] = useState<Record<string, boolean>>({});
   const [peopleSummary, setPeopleSummary] = useState<{ employees: number; accounts: number; linked: number } | null>(null);
@@ -1024,8 +1053,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
       router.push("/holding");
       return;
     }
-    selectStepTab("/company", "/activelanguages");
-    void openAccessSettings("/company");
+    void openAccessSettings("/activelanguages");
   }
 
   async function handleAccessShopChange(shop: ShopListItem) {
@@ -1107,39 +1135,22 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
     company: WorkspaceCompany | null = null,
   ) {
     if (!auth) return;
-    if (company?.code?.trim()) {
-      await callWorkspaceApi(auth, "select-holding", {
-        method: "POST",
-        body: {
-          holdingcode: tenantCodeForShop(shop),
-          businesscode: company.code,
-          ...(branch?.guidfixed ? { branchuid: branch.guidfixed } : {}),
-        },
-      });
+    try {
+      if (company?.code?.trim()) {
+        await callWorkspaceApi(auth, "select-holding", {
+          method: "POST",
+          body: {
+            holdingcode: tenantCodeForShop(shop),
+            businesscode: company.code,
+            ...(branch?.guidfixed ? { branchuid: branch.guidfixed } : {}),
+          },
+        });
+      }
+    } catch (error) {
+      console.warn("select-holding warning:", error);
     }
     persistWorkspace(shop, branch, shopInfo, company);
-    const payload = await callWorkspaceApi<{ data?: unknown[]; total?: number }>(auth, "product-units?offset=0&limit=1&q=");
-
-    if (getApiTotal(payload) > 0) {
-      router.push("/menu");
-      return;
-    }
-
-    const mainHoldingCode = getMainHoldingCode(shopInfo);
-    const standardUnits = await callWorkspaceApi<StandardProductUnitResponse>(
-      auth,
-      `product-units/standard?mainHoldingCode=${encodeURIComponent(mainHoldingCode)}&q=`,
-    );
-    const units = Array.isArray(standardUnits.data) ? standardUnits.data : [];
-    setPendingUnitSetup({
-      shop,
-      company,
-      branch,
-      shopInfo,
-      units,
-      selectedCodes: units.map((unit) => unit.unitcode),
-    });
-    setNotice({ type: "info", text: unitSetupTitle });
+    router.push("/menu");
   }
 
   async function confirmUnitSetup() {
@@ -1194,8 +1205,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
   }
 
   if (step === "access" && activeAccessRoute) {
-    const activeNavIndex = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
-    const activeNav = activeNavIndex >= 0 ? accessSettingNavItems[activeNavIndex] : null;
+    const activeNavIndex = accessSettingNavItems.findIndex((i) => i.route === effectiveAccessRoute);
+    const activeNav = activeNavIndex >= 0 ? accessSettingNavItems[activeNavIndex] : accessSettingNavItems[0];
     const activeManual = getSystemSettingConfig(effectiveAccessRoute ?? "")?.manual;
     return (
       <main className="w-screen h-screen bg-background flex flex-col overflow-hidden">
@@ -1263,7 +1274,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           </div>
           <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-card overflow-hidden">
             {/* Sidebar: vertical rail on desktop, horizontal scroll tabs on mobile */}
-            <aside className={`w-full shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-3 grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-1.5 md:gap-1 md:overflow-y-auto transition-[width] duration-200 ${accessSidebarCollapsed ? "md:w-16" : "md:w-60"}`}>
+            <aside className={`w-full shrink-0 border-b md:border-b-0 md:border-r border-border bg-muted/20 p-2 md:p-3 grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-1.5 md:gap-1 md:overflow-y-auto transition-[width] duration-200 ${accessSidebarCollapsed ? "md:w-16" : "md:w-64"}`}>
               {/* Mobile: collapsible menu header — desktop uses the rail toggle below.
                   Collapsed shows just the active item so the content gets the screen. */}
               <button
@@ -1273,9 +1284,6 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 className="col-span-2 sm:col-span-3 md:hidden flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-bold text-foreground"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                    {activeNavIndex >= 0 ? activeNavIndex + 1 : ""}
-                  </span>
                   <span className="truncate">
                     {accessSidebarCollapsed
                       ? activeNav
@@ -1302,104 +1310,98 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   {accessSidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
                 </button>
               </div>
-              {accessSettingNavItems.map((item, index) => {
-                const isActive = activeAccessRoute === item.route;
-                return (
-                  <button
-                    key={item.route}
-                    title={accessSidebarCollapsed ? `${index + 1}. ${catalog(`nav${item.route}.label`, item.label)}` : undefined}
-                    className={`w-full text-left p-2.5 rounded-xl text-sm font-bold transition-all duration-200 border ${
-                      accessSidebarCollapsed ? "hidden md:flex" : "flex"
-                    } items-center md:items-start gap-3 ${
-                      accessSidebarCollapsed ? "md:justify-center md:p-2" : ""
-                    } ${
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm border-primary ring-2 ring-primary/20"
-                        : "border-transparent bg-transparent text-foreground/90 hover:bg-card hover:border-border/70 hover:text-foreground md:hover:translate-x-0.5"
-                    }`}
-                    type="button"
-                    onClick={() => {
-                      setActiveAccessRoute(item.route);
-                      // On mobile, collapse the menu after picking so the content gets the screen.
-                      if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
-                        setAccessSidebarCollapsed(true);
-                      }
-                    }}
-                  >
-                    <span
-                      className={`mt-0 md:mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-black transition-all ${
-                        isActive
-                          ? "bg-primary-foreground/25 text-primary-foreground ring-1 ring-primary-foreground/40"
-                          : "bg-primary/10 text-primary border border-primary/20"
-                      }`}
-                    >
-                      {index + 1}
-                    </span>
-                    <span className={`min-w-0 ${accessSidebarCollapsed ? "md:hidden" : ""}`}>
-                      <span className="block font-bold leading-tight md:truncate text-sm">
-                        {catalog(`nav${item.route}.label`, item.label)}
-                      </span>
-                      <span
-                        className={`hidden md:block truncate text-xs font-medium mt-0.5 leading-normal ${
+              {accessSettingSections.map((section, sIdx) => (
+                <div key={sIdx} className="col-span-2 sm:col-span-3 md:col-span-1 flex flex-col gap-1 mb-2">
+                  {!accessSidebarCollapsed ? (
+                    <div className="hidden md:block px-2.5 pt-2 pb-1 text-[11px] font-bold text-muted-foreground/80 tracking-wide uppercase">
+                      {catalog(`section${sIdx}.group`, section.group)}
+                    </div>
+                  ) : (
+                    <div className="hidden md:block my-1 border-t border-border/50" />
+                  )}
+                  {section.items.map((item) => {
+                    const isActive = effectiveAccessRoute === item.route;
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.route}
+                        title={accessSidebarCollapsed ? `${catalog(`nav${item.route}.label`, item.label)}` : undefined}
+                        className={`w-full text-left p-2.5 rounded-xl text-sm font-bold transition-all duration-200 border ${
+                          accessSidebarCollapsed ? "hidden md:flex" : "flex"
+                        } items-center gap-3 ${
+                          accessSidebarCollapsed ? "md:justify-center md:p-2" : ""
+                        } ${
                           isActive
-                            ? "text-primary-foreground/85"
-                            : "text-muted-foreground"
+                            ? "bg-primary text-primary-foreground shadow-sm border-primary ring-2 ring-primary/20"
+                            : "border-transparent bg-transparent text-foreground/90 hover:bg-card hover:border-border/70 hover:text-foreground md:hover:translate-x-0.5"
                         }`}
+                        type="button"
+                        onClick={() => {
+                          setActiveAccessRoute(item.route);
+                          if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+                            setAccessSidebarCollapsed(true);
+                          }
+                        }}
                       >
-                        {catalog(`nav${item.route}.helper`, item.helper)}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+                        <span
+                          className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                            isActive
+                              ? "bg-primary-foreground/20 text-primary-foreground"
+                              : "bg-primary/10 text-primary"
+                          }`}
+                        >
+                          <Icon className="size-4" />
+                        </span>
+                        <span className={`min-w-0 flex-1 ${accessSidebarCollapsed ? "md:hidden" : ""}`}>
+                          <span className="block font-bold leading-tight truncate text-sm">
+                            {catalog(`nav${item.route}.label`, item.label)}
+                          </span>
+                          <span
+                            className={`hidden md:block truncate text-xs font-medium mt-0.5 leading-normal ${
+                              isActive ? "text-primary-foreground/80" : "text-muted-foreground"
+                            }`}
+                          >
+                            {catalog(`nav${item.route}.helper`, item.helper)}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </aside>
 
             {/* คอนเทนต์แสดงผลฝั่งขวา */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
               {(() => {
-                const bIdx = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
-                const bItem = bIdx >= 0 ? accessSettingNavItems[bIdx] : null;
-                if (!bItem?.banner) return null;
+                const curItem = activeNav ?? accessSettingNavItems[0];
+                const IconComponent = curItem?.icon ?? Building2;
+                const sysConfig = getSystemSettingConfig(effectiveAccessRoute ?? "");
+                const title = curItem ? catalog(`nav${curItem.route}.label`, curItem.label) : "";
+                const subtitle = curItem ? catalog(`nav${curItem.route}.helper`, curItem.helper) : "";
+
                 return (
-                  <div
-                    className="relative mb-4 h-24 w-full overflow-hidden rounded-2xl border border-border/60 shadow-sm sm:h-36 md:h-44"
-                    style={{
-                      backgroundColor: "var(--primary)",
-                      backgroundImage: `url(${bItem.banner})`,
-                      backgroundSize: "auto 100%",
-                      backgroundPosition: "right center",
-                      backgroundRepeat: "no-repeat",
-                    }}
-                  >
-                    {/* Smooth left-to-right scrim: dense on the left (text area) -> soft on the right (image) */}
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(to right, color-mix(in srgb, var(--primary) 96%, transparent) 0%, color-mix(in srgb, var(--primary) 92%, transparent) 28%, color-mix(in srgb, var(--primary) 72%, transparent) 52%, color-mix(in srgb, var(--primary) 36%, transparent) 76%, color-mix(in srgb, var(--primary) 8%, transparent) 92%, transparent 100%)",
-                      }}
-                    />
-                    {/* Subtle vignette so the image edges blend instead of hard-fading */}
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "radial-gradient(120% 100% at 0% 50%, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 60%)",
-                      }}
-                    />
-                    <div className="relative z-10 flex h-full items-center gap-3 px-5">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-foreground/25 text-lg font-black text-primary-foreground ring-1 ring-primary-foreground/50 backdrop-blur-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
-                        {bIdx + 1}
-                      </span>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/95 to-primary/5 p-3.5 sm:p-4 shadow-xs">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs">
+                        <IconComponent className="size-5 sm:size-6" />
+                      </div>
                       <div className="min-w-0">
-                        <h3 className="text-xl font-black leading-tight text-primary-foreground [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_6px_rgba(0,0,0,0.55)] sm:text-2xl">
-                          {catalog(`nav${bItem.route}.label`, bItem.label)}
+                        <h3 className="text-base sm:text-lg font-extrabold text-foreground leading-tight truncate">
+                          {title}
                         </h3>
-                        <p className="text-xs font-semibold text-primary-foreground/95 [text-shadow:0_1px_2px_rgba(0,0,0,0.75),0_0_5px_rgba(0,0,0,0.5)] sm:text-sm">
-                          {catalog(`nav${bItem.route}.helper`, bItem.helper)}
+                        <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">
+                          {subtitle}
                         </p>
                       </div>
                     </div>
+                    {sysConfig?.manual ? (
+                      <ManualLink
+                        label={backendText(backendLanguage, "ws_getting_started_guide", "คู่มือการใช้งาน")}
+                        language={language}
+                        screen={sysConfig.manual}
+                      />
+                    ) : null}
                   </div>
                 );
               })()}
@@ -1413,8 +1415,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                     className="secondary-button inline-flex items-center gap-1.5 px-2.5 py-1 text-xs"
                     type="button"
                     onClick={() => {
-                      selectStepTab("/company", "/activelanguages");
-                      setActiveAccessRoute("/company");
+                      setActiveAccessRoute("/activelanguages");
                     }}
                   >
                     <Languages size={14} />
@@ -1422,27 +1423,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   </button>
                 </div>
               ) : null}
-              {activeStepTabs ? (
-                <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label={backendText(backendLanguage, "workspace_sections_in_this_step", "หมวดในขั้นนี้")}>
-                  {activeStepTabs.map((tab) => (
-                    <button
-                      aria-selected={effectiveAccessRoute === tab.route}
-                      className={`min-h-[2.6em] rounded-xl border px-4 py-2 text-sm font-bold transition-all shadow-xs cursor-pointer ${
-                        effectiveAccessRoute === tab.route
-                          ? "border-primary bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20"
-                          : "border-border/80 bg-card/90 text-foreground/85 hover:bg-primary/5 hover:border-primary/40 hover:text-primary"
-                      }`}
-                      key={tab.route}
-                      onClick={() => selectStepTab(activeAccessRoute ?? "", tab.route)}
-                      role="tab"
-                      type="button"
-                    >
-                      {catalog(`steptab${activeAccessRoute ?? ""}${tab.route}`, tab.label)}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              {activeAccessRoute === "/people" && peopleSummary ? (
+              {(effectiveAccessRoute === "/employee" || effectiveAccessRoute === "/user") && peopleSummary ? (
                 <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm shadow-xs">
                   <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.employees}</strong> {backendText(backendLanguage, "employee", "พนักงาน")}</span>
                   <span className="font-medium text-foreground"><strong className="text-primary font-black text-base">{peopleSummary.accounts}</strong> {backendText(backendLanguage, "workspace_login_accounts", "บัญชีเข้าระบบ")}</span>
@@ -1460,8 +1441,8 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                 initialLanguage={language}
               />
               {(() => {
-                const idx = accessSettingNavItems.findIndex((i) => i.route === activeAccessRoute);
-                const next = idx >= 0 ? accessSettingNavItems[idx + 1] : undefined;
+                const idx = accessSettingNavItems.findIndex((i) => i.route === effectiveAccessRoute);
+                const next = idx >= 0 && idx < accessSettingNavItems.length - 1 ? accessSettingNavItems[idx + 1] : undefined;
                 if (!next) return null;
                 return (
                   <div className="mt-6 flex justify-end">

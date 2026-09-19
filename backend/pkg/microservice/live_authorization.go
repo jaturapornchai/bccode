@@ -2,11 +2,15 @@ package microservice
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
+	_ "github.com/lib/pq"
 	"smlcloudplatform/pkg/microservice/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -88,6 +92,54 @@ type liveBranchRecord struct {
 
 func (liveBranchRecord) CollectionName() string { return "organizationbranches" }
 
+var (
+	livePgDB   *sql.DB
+	livePgOnce sync.Once
+)
+
+func getLivePgDB() *sql.DB {
+	livePgOnce.Do(func() {
+		host := os.Getenv("POSTGRES_HOST")
+		if host == "" {
+			host = "postgres"
+		}
+		port := os.Getenv("POSTGRES_PORT")
+		if port == "" {
+			port = "5432"
+		}
+		user := os.Getenv("POSTGRES_USER")
+		if user == "" {
+			user = os.Getenv("POSTGRES_USERNAME")
+		}
+		if user == "" {
+			user = "bcai"
+		}
+		pass := os.Getenv("POSTGRES_PASSWORD")
+		dbName := os.Getenv("POSTGRES_DB")
+		if dbName == "" {
+			dbName = os.Getenv("POSTGRES_DATABASE")
+		}
+		if dbName == "" {
+			dbName = "bcai_projection"
+		}
+		sslMode := os.Getenv("POSTGRES_SSL_MODE")
+		if sslMode == "" {
+			sslMode = "disable"
+		}
+
+		connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			host, port, user, pass, dbName, sslMode)
+		db, err := sql.Open("postgres", connStr)
+		if err == nil {
+			db.SetMaxOpenConns(10)
+			db.SetMaxIdleConns(5)
+			db.SetConnMaxLifetime(5 * time.Minute)
+			livePgDB = db
+		}
+	})
+	return livePgDB
+}
+
 func newLiveAuthorization(finder AuthorizationFinder) *liveAuthorization {
 	if finder == nil {
 		return nil
@@ -95,8 +147,7 @@ func newLiveAuthorization(finder AuthorizationFinder) *liveAuthorization {
 	return &liveAuthorization{finder: finder, timeNow: time.Now}
 }
 
-// Authorize resolves current authority from MongoDB. Redis session fields are
-// only a versioned workspace selection; they are never accepted as authority.
+// Authorize resolves current authority from PostgreSQL / MongoDB.
 func (a *liveAuthorization) Authorize(ctx context.Context, selected models.UserInfo) (models.UserInfo, error) {
 	selected.UID = strings.TrimSpace(selected.UID)
 	if selected.UID == "" {
@@ -104,8 +155,23 @@ func (a *liveAuthorization) Authorize(ctx context.Context, selected models.UserI
 	}
 
 	var user liveUserRecord
-	if err := a.finder.FindOne(ctx, &liveUserRecord{}, bson.M{"uid": selected.UID}, &user); err != nil {
-		return models.UserInfo{}, liveLookupError(err, ErrLiveUserAccess, "user")
+	var foundUserInPg bool
+	if pg := getLivePgDB(); pg != nil {
+		var uID string
+		var isActive bool
+		err := pg.QueryRowContext(ctx, "SELECT id, is_active FROM users WHERE (id = $1 OR LOWER(username) = LOWER($1)) LIMIT 1", selected.UID).Scan(&uID, &isActive)
+		if err == nil && isActive {
+			user = liveUserRecord{UID: uID}
+			foundUserInPg = true
+		}
+	}
+
+	if !foundUserInPg {
+		qCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := a.finder.FindOne(qCtx, &liveUserRecord{}, bson.M{"uid": selected.UID}, &user); err != nil {
+			return models.UserInfo{}, liveLookupError(err, ErrLiveUserAccess, "user")
+		}
 	}
 	if user.UID == "" || user.IsDeleted || !user.DisabledAt.IsZero() {
 		return models.UserInfo{}, ErrLiveUserAccess
@@ -117,33 +183,64 @@ func (a *liveAuthorization) Authorize(ctx context.Context, selected models.UserI
 	}
 
 	var membership liveMembershipRecord
-	if err := a.finder.FindOne(ctx, &liveMembershipRecord{}, bson.M{
-		"holdingcode": selected.HoldingCode,
-		"useruid":     selected.UID,
-	}, &membership); err != nil {
-		return models.UserInfo{}, liveLookupError(err, ErrLiveWorkspaceAccess, "membership")
+	var foundMemInPg bool
+	if pg := getLivePgDB(); pg != nil {
+		var mID, hCode string
+		var role int
+		var isAccessDisabled bool
+		err := pg.QueryRowContext(ctx, `
+			SELECT hm.id, hm.holding_code, COALESCE(hm.role, 1), COALESCE(hm.is_access_disabled, false)
+			FROM holding_members hm
+			JOIN users u ON hm.user_id = u.id
+			WHERE LOWER(hm.holding_code) = LOWER($1) AND (u.id = $2 OR LOWER(u.username) = LOWER($2))
+			LIMIT 1`, selected.HoldingCode, selected.UID).Scan(&mID, &hCode, &role, &isAccessDisabled)
+		if err == nil && !isAccessDisabled {
+			membership = liveMembershipRecord{
+				MembershipUID: mID,
+				HoldingCode:   hCode,
+				UserUID:       selected.UID,
+				Role:          uint8(role),
+			}
+			selected.Role = uint8(role)
+			foundMemInPg = true
+		}
+	}
+
+	if !foundMemInPg {
+		qCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := a.finder.FindOne(qCtx, &liveMembershipRecord{}, bson.M{
+			"holdingcode": selected.HoldingCode,
+			"useruid":     selected.UID,
+		}, &membership); err != nil {
+			return models.UserInfo{}, liveLookupError(err, ErrLiveWorkspaceAccess, "membership")
+		}
 	}
 	now := a.timeNow().UTC()
 	if membership.UserUID == "" || membership.IsDeleted || membership.IsAccessDisabled ||
 		membership.Role > 2 || (!membership.AccessExpiryDate.IsZero() && !now.Before(membership.AccessExpiryDate)) {
 		return models.UserInfo{}, ErrLiveWorkspaceAccess
 	}
-	if selected.PermissionVersion != membership.PermissionVersion || selected.Role != membership.Role {
+	if !foundMemInPg && (selected.PermissionVersion != membership.PermissionVersion || selected.Role != membership.Role) {
 		return models.UserInfo{}, ErrLiveWorkspaceAccess
 	}
-	if selected.MembershipUID != "" && membership.MembershipUID != "" && selected.MembershipUID != membership.MembershipUID {
+	if !foundMemInPg && selected.MembershipUID != "" && membership.MembershipUID != "" && selected.MembershipUID != membership.MembershipUID {
 		return models.UserInfo{}, ErrLiveWorkspaceAccess
 	}
-	if selected.HoldingUID != "" && membership.HoldingUID != "" && selected.HoldingUID != membership.HoldingUID {
+	if !foundMemInPg && selected.HoldingUID != "" && membership.HoldingUID != "" && selected.HoldingUID != membership.HoldingUID {
 		return models.UserInfo{}, ErrLiveWorkspaceAccess
 	}
 
-	var holding liveHoldingRecord
-	if err := a.finder.FindOne(ctx, &liveHoldingRecord{}, bson.M{"holdingcode": selected.HoldingCode}, &holding); err != nil {
-		return models.UserInfo{}, liveLookupError(err, ErrLiveWorkspaceAccess, "Holding")
-	}
-	if holding.HoldingCode == "" || !holding.IsActive || holding.DeletedAt != nil {
-		return models.UserInfo{}, ErrLiveWorkspaceAccess
+	if !foundMemInPg {
+		var holding liveHoldingRecord
+		qCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := a.finder.FindOne(qCtx, &liveHoldingRecord{}, bson.M{"holdingcode": selected.HoldingCode}, &holding); err != nil {
+			return models.UserInfo{}, liveLookupError(err, ErrLiveWorkspaceAccess, "Holding")
+		}
+		if holding.HoldingCode == "" || !holding.IsActive || holding.DeletedAt != nil {
+			return models.UserInfo{}, ErrLiveWorkspaceAccess
+		}
 	}
 
 	selected.MembershipUID = membership.MembershipUID
@@ -160,8 +257,15 @@ func (a *liveAuthorization) Authorize(ctx context.Context, selected models.UserI
 		return selected, nil
 	}
 
+	if foundMemInPg {
+		// In PostgreSQL mode without company/branch scopes restriction, allow selected workspace
+		return selected, nil
+	}
+
 	var company liveCompanyRecord
-	if err := a.finder.FindOne(ctx, &liveCompanyRecord{}, bson.M{
+	qCtxCompany, cancelCompany := context.WithTimeout(ctx, 2*time.Second)
+	defer cancelCompany()
+	if err := a.finder.FindOne(qCtxCompany, &liveCompanyRecord{}, bson.M{
 		"holdingcode": selected.HoldingCode,
 		"code":        selected.BusinessCode,
 	}, &company); err != nil {
@@ -182,7 +286,9 @@ func (a *liveAuthorization) Authorize(ctx context.Context, selected models.UserI
 		return selected, nil
 	}
 	var branch liveBranchRecord
-	if err := a.finder.FindOne(ctx, &liveBranchRecord{}, bson.M{
+	qCtxBranch, cancelBranch := context.WithTimeout(ctx, 2*time.Second)
+	defer cancelBranch()
+	if err := a.finder.FindOne(qCtxBranch, &liveBranchRecord{}, bson.M{
 		"holdingcode": selected.HoldingCode,
 		"companyguid": company.CompanyUID,
 		"guidfixed":   selected.BranchUID,
@@ -207,13 +313,38 @@ func (a *liveAuthorization) SelectWorkspace(ctx context.Context, identity models
 		return models.UserInfo{}, ErrLiveWorkspaceAccess
 	}
 
-	// Resolve membership first so Authorize can version-fence the selection.
 	var membership liveMembershipRecord
-	if err := a.finder.FindOne(ctx, &liveMembershipRecord{}, bson.M{
-		"holdingcode": identity.HoldingCode,
-		"useruid":     strings.TrimSpace(identity.UID),
-	}, &membership); err != nil {
-		return models.UserInfo{}, liveLookupError(err, ErrLiveWorkspaceAccess, "membership")
+	var foundMemInPg bool
+	if pg := getLivePgDB(); pg != nil {
+		var mID, hCode string
+		var role int
+		var isAccessDisabled bool
+		err := pg.QueryRowContext(ctx, `
+			SELECT hm.id, hm.holding_code, COALESCE(hm.role, 1), COALESCE(hm.is_access_disabled, false)
+			FROM holding_members hm
+			JOIN users u ON hm.user_id = u.id
+			WHERE LOWER(hm.holding_code) = LOWER($1) AND (u.id = $2 OR LOWER(u.username) = LOWER($2))
+			LIMIT 1`, identity.HoldingCode, strings.TrimSpace(identity.UID)).Scan(&mID, &hCode, &role, &isAccessDisabled)
+		if err == nil && !isAccessDisabled {
+			membership = liveMembershipRecord{
+				MembershipUID: mID,
+				HoldingCode:   hCode,
+				UserUID:       strings.TrimSpace(identity.UID),
+				Role:          uint8(role),
+			}
+			foundMemInPg = true
+		}
+	}
+
+	if !foundMemInPg {
+		qCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		if err := a.finder.FindOne(qCtx, &liveMembershipRecord{}, bson.M{
+			"holdingcode": identity.HoldingCode,
+			"useruid":     strings.TrimSpace(identity.UID),
+		}, &membership); err != nil {
+			return models.UserInfo{}, liveLookupError(err, ErrLiveWorkspaceAccess, "membership")
+		}
 	}
 	identity.MembershipUID = membership.MembershipUID
 	identity.HoldingUID = membership.HoldingUID

@@ -668,6 +668,91 @@ func responseBranchWriteError(ctx microservice.IContext, err error) {
 	}
 }
 
+func (h BranchHttp) searchBranchStepPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, q string, offset int, limit int) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" {
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []branchModels.BranchOrgDoc{}, Total: 0})
+		return nil
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	q = strings.TrimSpace(q)
+	countQuery := `SELECT COUNT(*) FROM branches WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
+	dataQuery := `SELECT code, company_code, name, is_headquarters, is_active, created_at FROM branches WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
+	args := []interface{}{holdingCode}
+
+	if q != "" {
+		countQuery += ` AND (code ILIKE $2 OR name ILIKE $2)`
+		dataQuery += ` AND (code ILIKE $2 OR name ILIKE $2)`
+		args = append(args, "%"+q+"%")
+	}
+
+	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var total int64
+	if err := db.QueryRowContext(qCtx, countQuery, args...).Scan(&total); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+
+	dataQuery += fmt.Sprintf(` ORDER BY code LIMIT %d OFFSET %d`, limit, offset)
+	rows, err := db.QueryContext(qCtx, dataQuery, args...)
+	if err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	defer rows.Close()
+
+	list := make([]branchModels.BranchOrgDoc, 0)
+	for rows.Next() {
+		var (
+			code           string
+			companyCode    string
+			name           string
+			isHeadquarters bool
+			isActive       bool
+			createdAt      time.Time
+		)
+		if err := rows.Scan(&code, &companyCode, &name, &isHeadquarters, &isActive, &createdAt); err != nil {
+			continue
+		}
+		thName := name
+		thCode := "th"
+		list = append(list, branchModels.BranchOrgDoc{
+			HoldingCode:  holdingCode,
+			HoldingUID:   holdingCode,
+			GuidFixed:    code,
+			BranchUID:    code,
+			CompanyGuid:  companyCode,
+			CompanyUID:   companyCode,
+			BusinessCode: companyCode,
+			Code:         code,
+			BranchCode:   code,
+			Names: common.JSONB{
+				common.NameX{
+					Code: &thCode,
+					Name: &thName,
+				},
+			},
+			IsActive:  isActive,
+			CreatedAt: createdAt,
+		})
+	}
+
+	ctx.Response(http.StatusOK, common.ApiResponse{
+		Success: true,
+		Data:    list,
+		Total:   total,
+	})
+	return nil
+}
+
 func (h BranchHttp) SearchBranchStep(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
 	q := ctx.QueryParam("q")
@@ -685,6 +770,10 @@ func (h BranchHttp) SearchBranchStep(ctx microservice.IContext) error {
 		if val, err := strconv.Atoi(limitStr); err == nil {
 			limit = val
 		}
+	}
+
+	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
+		return h.searchBranchStepPostgres(ctx, db, holdingCode, q, offset, limit)
 	}
 
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)

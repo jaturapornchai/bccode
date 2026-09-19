@@ -24,10 +24,14 @@ export function LanguageDialog({ language, onLanguageChange, activeLanguageCodes
   );
 
   const filteredLanguages = useMemo(() => {
-    // Default = ACTIVE_LANGUAGE_CODES (2 ภาษาระหว่าง dev, ลุงจืด 2026-09-19); a holding may narrow it further.
-    const codes = activeLanguageCodes && activeLanguageCodes.length > 0 ? activeLanguageCodes : ACTIVE_LANGUAGE_CODES;
-    return LANGUAGES.filter((item) => (codes as readonly string[]).includes(item.code) || item.code === language);
-  }, [activeLanguageCodes, language]);
+    // ลุงจืด 2026-09-19: ระบบภาษาไม่ต้องให้เพิ่ม ให้เลือกใช้ได้เลย ไทย/อังกฤษ (จำกัดเฉพาะ th, en เท่านั้น)
+    const allowed = new Set<string>(ACTIVE_LANGUAGE_CODES);
+    const codes = activeLanguageCodes && activeLanguageCodes.length > 0
+      ? activeLanguageCodes.filter((c) => allowed.has(c as LanguageCode))
+      : ACTIVE_LANGUAGE_CODES;
+    const finalCodes = codes.length > 0 ? codes : ACTIVE_LANGUAGE_CODES;
+    return LANGUAGES.filter((item) => (finalCodes as readonly string[]).includes(item.code));
+  }, [activeLanguageCodes]);
 
   useEffect(() => {
     if (!open) return;

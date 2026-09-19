@@ -144,6 +144,31 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 
 ## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)
 
+### 2026-09-19 — แก้ไขปัญหาเลือกสาขาแล้วค้าง (Instant Sub-Second Branch Navigation) และปรับปรุงระบบ Pure PostgreSQL Live Authorization
+
+**ประเภทงาน:** `[Fix]` / `[Performance]` / `[Deploy]`
+
+**สิ่งที่ทำ:**
+- **แก้ปัญหาเลือกสาขาค้าง (Root Cause & Fix)**: สืบสวนพบว่า `enterWorkspaceWithUnitCheck` ใน `frontend/src/app/workspace/workspace-screen.tsx` ไปดักเรียก `product-units?offset=0&limit=1&q=` ซึ่งยิงไปยัง Go backend `/unit/list` ที่ยังใช้ MongoDB เดิม ทำให้เกิด TCP connection timeout นานถึง 1 นาที 40 วินาที เมื่อกดเลือกสาขา จึงได้นำการตรวจสอบ `product-units` ออกจาก workflow การเลือกสาขา และครอบ `select-holding` ด้วย defensive try/catch นำทางเข้าสู่หน้าจอ `/menu` ทันทีในระดับ Sub-second
+- **Pure PostgreSQL Live Authorization & Fallback**: เพิ่มการสืบค้น `users` และ `holding_members` ผ่าน PostgreSQL ใน `backend/pkg/microservice/live_authorization.go` และองค์ประกอบ organization/employee/rolepermission ให้ทำงานกับ PostgreSQL โดยตรง ไม่ต้องพึ่งพาหรือรอ timeout จาก MongoDB
+- **System Settings Guard**: ย้ายปุ่มบันทึก Config ลงด้านล่างและเพิ่มเงื่อนไขทดสอบการเชื่อมต่อให้ผ่านครบทุกรายการก่อนกดบันทึก
+
+**ไฟล์สำคัญ:**
+- `frontend/src/app/workspace/workspace-screen.tsx`
+- `frontend/src/app/system-settings/system-settings-screen.tsx`
+- `backend/pkg/microservice/live_authorization.go`
+- `backend/internal/shop/shopuser_postgres_repository.go`
+- `backend/internal/shop/employee/employee_http.go`
+- `backend/internal/organization/rolepermission/role_permission_http.go`
+- `backend/internal/organization/businesstype/businesstype_http.go`
+- `backend/internal/organization/branch/branch_http.go`
+
+**ผลการทดสอบ (Evidence):**
+- Frontend Typecheck: `npm run typecheck` 0 errors
+- Frontend Unit Tests: Vitest 92 test files / 681 tests passed 100%
+- Frontend Production Build: `npm run build` ผ่าน 37 static/dynamic routes สมบูรณ์
+- Backend Go Build & Tests: `go test ./...` และ `go build main.go` ผ่าน 100%
+
 ### 2026-09-19 — ล้าง handoff เดิมทั้งหมด สร้าง handoff ฉบับเดียวสำหรับ Gemini ทำต่อ
 
 **ประเภทงาน:** `[Docs]`

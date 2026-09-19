@@ -33,9 +33,11 @@ export const LANGUAGES = [
 
 export type LanguageCode = (typeof LANGUAGES)[number]["code"];
 
-// ลุงจืด 2026-09-19: ระหว่างพัฒนาเปิดใช้แค่ 2 ภาษา (ไทย/อังกฤษ) — ภาษาอื่นซ่อนจาก picker
-// จนกว่าจะสั่งเปิด; โครง 12 ภาษา (locales, languages.tsv) คงไว้ตามเดิม
+// ลุงจืด 2026-09-19: ระบบภาษาไม่ต้องให้เพิ่ม ให้เลือกใช้ได้เลย ไทย/อังกฤษ (ซ่อนภาษาอื่นจากระบบ)
 export const ACTIVE_LANGUAGE_CODES: readonly LanguageCode[] = ["th", "en"];
+export const SYSTEM_LANGUAGES = LANGUAGES.filter((item) =>
+  (ACTIVE_LANGUAGE_CODES as readonly string[]).includes(item.code),
+);
 
 // TranslationKey is derived from the Thai dictionary (source of truth) so there is no
 // hand-maintained union to drift out of sync. Adding a key to th.json makes it available
