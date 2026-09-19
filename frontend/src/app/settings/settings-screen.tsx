@@ -143,7 +143,6 @@ export function SettingsScreen() {
   const [importText, setImportText] = useState("");
   const [currentSetupPassword, setCurrentSetupPassword] = useState("");
   const [newSetupPassword, setNewSetupPassword] = useState("");
-  const [mongodbMode, setMongodbMode] = useState<"uri" | "fields">("uri");
   const [serverHost, setServerHost] = useState("");
   const { confirm, confirmationDialog } = useConfirmDialog();
   const router = useRouter();
@@ -152,10 +151,7 @@ export function SettingsScreen() {
   const [reloadingConfig, setReloadingConfig] = useState(false);
 
   // Section groups for the redesigned layout. Each group renders its own heading
-  // and contains a list of config categories. R2/S3 storage items are split out
-  // of the integrations category and shown under "ที่เก็บรูปและไฟล์".
-  // S3-compatible storage items (MinIO, Wasabi, etc.) — Cloudflare R2 has been removed;
-  // the system now uses S3-compatible storage exclusively.
+  // and contains a list of config categories. Pure PostgreSQL is the single database.
   const storageIntegrationKeys = new Set([
     "s3endpoint",
     "s3publicendpoint",
@@ -165,9 +161,8 @@ export function SettingsScreen() {
   ]);
 
   const sectionGroups: { id: string; titleTh: string; titleEn: string; categories: string[] }[] = [
-    { id: "databases", titleTh: "ฐานข้อมูล", titleEn: "Databases", categories: ["mongodb", "postgresql", "clickhouse"] },
+    { id: "databases", titleTh: "ฐานข้อมูล", titleEn: "Database", categories: ["postgresql"] },
     { id: "storage", titleTh: "ที่เก็บรูปและไฟล์", titleEn: "Image & File Storage", categories: [] },
-    { id: "kafka", titleTh: "Kafka", titleEn: "Kafka", categories: ["kafka"] },
   ];
 
   // Parse host from a backend URL like http://192.168.2.202:8888/goapi -> 192.168.2.202
@@ -180,55 +175,28 @@ export function SettingsScreen() {
     }
   }
 
-  // Default Docker on-prem values — since backend runs in Docker, these are
-  // fixed container names + ports + credentials. The user only needs to enter
-  // the external Server Host once (for client access); everything else is
-  // derived from the Docker setup.
+  // Default Docker on-prem values — pure PostgreSQL architecture.
   const DOCKER_DEFAULTS: Record<string, Record<string, string>> = {
-    mongodb: {
-      // replicaSet=rs0 is REQUIRED — the backend uses MongoDB transactions (create-holding,
-      // persister_mongo), which only work against a replica set. Dropping it makes the server
-      // connect standalone and every transaction fails with IllegalOperation. Keep it in the
-      // default + Auto-fill so saving config never clobbers the replica-set URI in bootstrap.json.
-      uri: "mongodb://smlsoft:smlsoft@mongodb:27017/appdb?authSource=admin&replicaSet=rs0",
-      database: "appdb",
-      host: "mongodb",
-      port: "27017",
-      username: "smlsoft",
-      password: "smlsoft",
-    },
     postgresql: {
       host: "postgres",
       port: "5432",
-      user: "smlsoft",
-      password: "smlsoft",
-      dbname: "postgres",
+      user: "postgres",
+      password: "***",
+      dbname: "bcai_projection",
       sslmode: "disable",
       timezone: "Asia/Bangkok",
       loggerlevel: "Info",
     },
-    clickhouse: {
-      host: "clickhouse",
-      port: "9000",
-      user: "default",
-      password: "smlsoft",
-      databasename: "appdb",
-    },
-    kafka: {
-      serverurl: "kafka:29092",
-    },
     integrations: {
       s3endpoint: "http://minio:9000",
-      s3publicendpoint: "http://192.168.2.202:9100",
-      s3accesskeyid: "",
-      s3secretaccesskey: "",
-      s3bucketname: "app-images",
+      s3publicendpoint: "",
+      s3accesskeyid: "admin",
+      s3secretaccesskey: "***",
+      s3bucketname: "bcai-media",
     },
   };
 
-  // Auto-fill: populate every DB/storage field with Docker defaults.
-  // The Server Host input is for external client access (e.g. 192.168.2.202);
-  // the actual DB hosts use fixed Docker container names.
+  // Auto-fill: populate PostgreSQL and storage fields with Docker defaults.
   function handleAutoFillHost() {
     if (!serverHost.trim()) return;
     const publicHost = serverHost.trim();
@@ -255,28 +223,6 @@ export function SettingsScreen() {
       return next;
     });
   }
-
-  const handleSetMongodbMode = (mode: "uri" | "fields") => {
-    setMongodbMode(mode);
-    setConfigMap((current) => {
-      const items = current["mongodb"] ?? [];
-      const nextItems = items.map((item) => {
-        if (mode === "uri") {
-          // เคลียร์ค่า host, port, username, password เพื่อไม่ให้สับสน
-          if (item.key === "host" || item.key === "port" || item.key === "username" || item.key === "password") {
-            return { ...item, value: "" };
-          }
-        } else {
-          // เคลียร์ค่า URI ก่อน เพื่อให้ฟังก์ชันประกอบเริ่มคำนวณจากฟิลด์ใหม่
-          if (item.key === "uri") {
-            return { ...item, value: "" };
-          }
-        }
-        return item;
-      });
-      return { ...current, mongodb: nextItems };
-    });
-  };
 
 
   // null = empty (no indicator yet), true/false = valid/invalid backend URL.
@@ -419,15 +365,6 @@ export function SettingsScreen() {
       setConfigMap(merged);
       setAuthenticated(true);
       setStatus(tr("set_config_loaded", "โหลด config สำเร็จ"), "success");
-
-      // ตรวจสอบว่าโหมดเริ่มต้นควรเป็นแบบกรอก URI หรือแบบแยกฟิลด์
-      const mongoItems = merged["mongodb"] ?? [];
-      const host = mongoItems.find((i) => i.key === "host")?.value.trim() ?? "";
-      if (host && !host.includes("xxxx")) {
-        setMongodbMode("fields");
-      } else {
-        setMongodbMode("uri");
-      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : tr("set_config_load_failed", "โหลด config ล้มเหลว"), "error");
     } finally {
@@ -513,13 +450,10 @@ export function SettingsScreen() {
     // Run storage test (S3/MinIO) separately since it uses a different probe path.
     const storageResult = await handleTestStorageConnection();
 
-    // Build detailed summary line: "MongoDB 50ms ✓, PostgreSQL 12ms ✓, ..."
+    // Build detailed summary line: "PostgreSQL 12ms ✓, ..."
     const summaryParts: string[] = [];
     const labelMap: Record<string, string> = {
-      mongodb: "MongoDB",
       postgresql: "PostgreSQL",
-      clickhouse: "ClickHouse",
-      kafka: "Kafka",
     };
     for (let i = 0; i < categories.length; i++) {
       const category = categories[i];
@@ -547,28 +481,6 @@ export function SettingsScreen() {
 
     setStatus(`${headline} — ${detailLine}`, totalSuccess === total ? "success" : "error");
     setLoadingAction("idle");
-  }
-
-  async function handleCreateClickHouseDatabase(database: string) {
-    const items = configMap.clickhouse ?? [];
-    const payload = buildConnectionPayload("clickhouse", items, setupPassword);
-    setTestingCategory("clickhouse");
-    try {
-      const data = await callSetup("create-clickhouse-database", {
-        password: setupPassword,
-        host: payload.host,
-        port: payload.port,
-        user: payload.user,
-        password2: payload.password2,
-        database,
-      });
-      setStatus(data.message ?? tr("set_database_created", "สร้าง database {0} สำเร็จ").replace("{0}", database), "success");
-      await handleTestConnection("clickhouse");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : tr("set_create_clickhouse_failed", "สร้าง ClickHouse database ล้มเหลว"), "error");
-    } finally {
-      setTestingCategory("");
-    }
   }
 
   async function handleExportConfig() {
@@ -1047,15 +959,7 @@ export function SettingsScreen() {
       return renderIntegrationsSection(items);
     }
 
-    // สำหรับ MongoDB: กรองฟิลด์ที่จะแสดงผลตามโหมดเชื่อมต่อ
-    let displayItems = items;
-    if (category === "mongodb") {
-      if (mongodbMode === "uri") {
-        displayItems = items.filter((item) => item.key === "uri" || item.key === "database");
-      } else {
-        displayItems = items;
-      }
-    }
+    const displayItems = items;
 
     return (
       <section className="settings-card config-card" key={category} aria-label={categoryDef.title}>
@@ -1074,27 +978,6 @@ export function SettingsScreen() {
           </div>
         </div>
 
-        {category === "mongodb" && (
-          <div className="mongodb-mode-row">
-            <div className="mongodb-mode-selector">
-              <button
-                className={`mongodb-mode-button ${mongodbMode === "uri" ? "active" : ""}`}
-                type="button"
-                onClick={() => handleSetMongodbMode("uri")}
-              >
-                {tr("set_enter_uri_directly", "กรอก URI โดยตรง")}
-              </button>
-              <button
-                className={`mongodb-mode-button ${mongodbMode === "fields" ? "active" : ""}`}
-                type="button"
-                onClick={() => handleSetMongodbMode("fields")}
-              >
-                {tr("set_enter_fields_separately", "ระบุรายละเอียดแยกฟิลด์")}
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="config-field-grid">{displayItems.map((item) => renderConfigField(item))}</div>
 
         {canTest ? (
@@ -1104,12 +987,6 @@ export function SettingsScreen() {
               <span>ทดสอบ {categoryDef.title}</span>
             </button>
             {testResult?.message ? <p className={testResult.status === "success" ? "test-message success" : "test-message error"}>{formatTestMessage(testResult)}</p> : null}
-            {category === "clickhouse" && testResult?.errorCode === "databasenotexist" && testResult.database ? (
-              <button className="secondary-button warning-button" type="button" onClick={() => void handleCreateClickHouseDatabase(testResult.database!)}>
-                <Database aria-hidden="true" size={17} />
-                <span>สร้าง database “{testResult.database}”</span>
-              </button>
-            ) : null}
           </div>
         ) : null}
       </section>
@@ -1362,12 +1239,7 @@ export function SettingsScreen() {
   }
 
   function getDefaultValue(category: string, key: string): string | null {
-    if (key === "port") {
-      if (category === "postgresql") return "5432";
-      if (category === "clickhouse") return "9000";
-      if (category === "mongodb") return "27017";
-    }
-    if (key === "serverurl" && category === "kafka") return "127.0.0.1:9092";
+    if (key === "port" && category === "postgresql") return "5432";
     if (key === "timezone" && category === "postgresql") return "Asia/Bangkok";
     if (key === "serviceport" && category === "service") return "8888";
     return null;
@@ -1392,8 +1264,6 @@ export function SettingsScreen() {
       item.key.endsWith("accesskeyid") ||
       item.key === "azureaccountkey";
 
-    const isMongoUriReadOnly = item.category === "mongodb" && item.key === "uri" && mongodbMode === "fields";
-
     return (
       <label className={`field-group config-field ${isWideField ? "field-group-wide" : ""}`} key={`${item.category}.${item.key}`}>
         <span>{fieldLabels[item.key] ?? item.key}</span>
@@ -1403,13 +1273,10 @@ export function SettingsScreen() {
             autoComplete="off"
             value={item.value}
             onChange={(event) => updateItem(item.category, item.key, event.target.value)}
-            placeholder={isMongoUriReadOnly ? tr("set_uri_built_automatically", "ระบบประกอบ URI อัตโนมัติ...") : (item.description || item.key)}
+            placeholder={item.description || item.key}
             type={item.isSecret ? "password" : "text"}
-            readOnly={isMongoUriReadOnly}
-            disabled={isMongoUriReadOnly}
-            style={isMongoUriReadOnly ? { opacity: 0.8, cursor: "not-allowed" } : undefined}
           />
-          {hasDefault && item.value.trim() !== defaultValue && !isMongoUriReadOnly && (
+          {hasDefault && item.value.trim() !== defaultValue && (
             <button
               className="default-button-inline"
               type="button"
@@ -1420,13 +1287,7 @@ export function SettingsScreen() {
             </button>
           )}
         </div>
-        {item.description ? (
-          <small>
-            {isMongoUriReadOnly 
-              ? tr("set_uri_built_from_fields", "URI (ประกอบให้อัตโนมัติจากการกรอก Host, Port, User, Pass, Database)") 
-              : item.description}
-          </small>
-        ) : null}
+        {item.description ? <small>{item.description}</small> : null}
       </label>
     );
   }
@@ -1499,7 +1360,7 @@ export function SettingsScreen() {
             className="settings-textarea"
             value={importText}
             onChange={(event) => setImportText(event.target.value)}
-            placeholder='{"mongodb":{"database":"..."} }'
+            placeholder='{"postgresql":{"host":"postgres"} }'
             rows={12}
           />
           <div className="settings-button-row">
@@ -1587,14 +1448,8 @@ function formatTestMessage(result: TestResult): string {
 
 function categoryIcon(category: string): ReactNode {
   switch (category) {
-    case "mongodb":
-      return <Database aria-hidden="true" size={19} />;
     case "postgresql":
       return <Table2 aria-hidden="true" size={19} />;
-    case "clickhouse":
-      return <HardDrive aria-hidden="true" size={19} />;
-    case "kafka":
-      return <Network aria-hidden="true" size={19} />;
     case "storage":
       return <Cloud aria-hidden="true" size={19} />;
     default:

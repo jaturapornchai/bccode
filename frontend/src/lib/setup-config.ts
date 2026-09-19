@@ -44,27 +44,13 @@ export type FieldControl =
   | { type: "checkbox" }
   | { type: "radio"; options: FieldOption[] };
 
-const hiddenCategoryIds = new Set(["mongodbdev", "mongodbuat", "mongodbpro", "mongodbproduction", "mongodbproductionlegacy"]);
+const hiddenCategoryIds = new Set<string>([]);
 
 export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
   {
-    id: "mongodb",
-    title: "MongoDB",
-    description: "ฐานข้อมูลหลักสำหรับ CRUD เอกสาร และ master data",
-    testType: "mongodb",
-    items: [
-      setupItem("mongodb", "uri", true, "MongoDB Connection URI"),
-      setupItem("mongodb", "database", false, "MongoDB Database Name"),
-      setupItem("mongodb", "host", false, "MongoDB Host"),
-      setupItem("mongodb", "port", false, "MongoDB Port"),
-      setupItem("mongodb", "username", false, "MongoDB Username"),
-      setupItem("mongodb", "password", true, "MongoDB Password"),
-    ],
-  },
-  {
     id: "postgresql",
     title: "PostgreSQL",
-    description: "ฐานข้อมูลประมวลผล relation, posting, balance และบัญชี",
+    description: "ฐานข้อมูลหลักของระบบ ประมวลผล relation, posting, balance และบัญชี (Pure PostgreSQL)",
     testType: "postgresql",
     items: [
       setupItem("postgresql", "host", false, "PostgreSQL Host"),
@@ -78,33 +64,10 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
     ],
   },
   {
-    id: "clickhouse",
-    title: "ClickHouse",
-    description: "ฐานข้อมูล BI/analytics สำหรับรายงาน",
-    testType: "clickhouse",
-    items: [
-      setupItem("clickhouse", "host", false, "ClickHouse Host"),
-      setupItem("clickhouse", "port", false, "ClickHouse Port"),
-      setupItem("clickhouse", "user", false, "ClickHouse User"),
-      setupItem("clickhouse", "password", true, "ClickHouse Password"),
-      setupItem("clickhouse", "databasename", false, "ClickHouse Database Name"),
-    ],
-  },
-  {
-    id: "kafka",
-    title: "Kafka",
-    description: "Message broker สำหรับ consumer",
-    testType: "kafka",
-    items: [setupItem("kafka", "serverurl", false, "Kafka broker host:port")],
-  },
-  {
     id: "service",
     title: "Service",
     description: "ค่าระบบและ runtime service",
     items: [
-      setupItem("service", "enablekafka", false, "เปิด/ปิด Kafka"),
-      setupItem("service", "kafkaconsumergroupversion", false, "Kafka consumer group version"),
-      setupItem("service", "enablecloneclickhouse", false, "เปิด/ปิด clone ClickHouse"),
       setupItem("service", "loglevel", false, "Log level"),
       setupItem("service", "jwtsecretkey", true, "JWT Secret Key"),
       setupItem("service", "devapimode", false, "Development API mode"),
@@ -269,8 +232,6 @@ export const fieldLabels: Record<string, string> = {
 };
 
 export const booleanFieldKeys = new Set([
-  "enablekafka",
-  "enablecloneclickhouse",
   "devapimode",
 ]);
 
@@ -336,7 +297,7 @@ export function mergeBackendConfig(entries: unknown): ConfigMap {
 }
 
 export function updateConfigItem(configMap: ConfigMap, category: string, key: string, value: string): ConfigMap {
-  const nextConfigMap = Object.fromEntries(
+  return Object.fromEntries(
     Object.entries(configMap).map(([categoryId, items]) => [
       categoryId,
       categoryId === category
@@ -344,47 +305,6 @@ export function updateConfigItem(configMap: ConfigMap, category: string, key: st
         : items,
     ]),
   );
-
-  // คำนวณ URI อัตโนมัติสำหรับ mongodb เมื่อฟิลด์อื่นที่ไม่ใช่ uri มีการเปลี่ยนแปลง
-  if (category.startsWith("mongodb") && key !== "uri") {
-    const items = nextConfigMap[category] ?? [];
-    const host = items.find((i) => i.key === "host")?.value.trim() ?? "";
-    const port = items.find((i) => i.key === "port")?.value.trim() ?? "";
-    const user = items.find((i) => i.key === "username")?.value.trim() ?? "";
-    const pass = items.find((i) => i.key === "password")?.value.trim() ?? "";
-    const db = items.find((i) => i.key === "database")?.value.trim() ?? "";
-
-    if (host) {
-      let authStr = "";
-      if (user) {
-        authStr = pass ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}@` : `${encodeURIComponent(user)}@`;
-      }
-      const dbStr = db ? `/${db}` : "";
-
-      let generatedUri = "";
-      if (host.toLowerCase().includes("mongodb.net")) {
-        // สำหรับ MongoDB Atlas (Cloud)
-        generatedUri = `mongodb+srv://${authStr}${host}${dbStr}?retryWrites=true&w=majority`;
-      } else {
-        // สำหรับ Local / Server ทั่วไป — ใส่ authSource=admin + replicaSet=rs0 เสมอ
-        // (backend ใช้ transaction ต้องการ replica set; ถ้าขาด rs0 mongo จะต่อแบบ standalone แล้ว
-        // transaction พังด้วย IllegalOperation — ตรงกับ bootstrap.json ของ DEV/UAT/PRO)
-        const portStr = port ? `:${port}` : "";
-        generatedUri = `mongodb://${authStr}${host}${portStr}${dbStr}?authSource=admin&replicaSet=rs0`;
-      }
-
-      return Object.fromEntries(
-        Object.entries(nextConfigMap).map(([categoryId, items]) => [
-          categoryId,
-          categoryId === category
-            ? items.map((item) => (item.key === "uri" ? { ...item, value: generatedUri } : item))
-            : items,
-        ]),
-      );
-    }
-  }
-
-  return nextConfigMap;
 }
 
 export function serializeConfig(configMap: ConfigMap): ConfigItem[] {

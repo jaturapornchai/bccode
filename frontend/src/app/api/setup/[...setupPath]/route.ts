@@ -31,9 +31,6 @@ function getDefaultConfigs(): ConfigEntry[] {
     { category: "postgresql", key: "password", value: "***", issecret: true, description: "PostgreSQL Password" },
     { category: "postgresql", key: "dbname", value: process.env.POSTGRES_DB || "bcai_projection", issecret: false, description: "PostgreSQL Database Name" },
     { category: "postgresql", key: "sslmode", value: "disable", issecret: false, description: "PostgreSQL SSL Mode" },
-    { category: "redis", key: "host", value: process.env.REDIS_HOST || "redis", issecret: false, description: "Redis Host" },
-    { category: "redis", key: "port", value: process.env.REDIS_PORT || "6379", issecret: false, description: "Redis Port" },
-    { category: "kafka", key: "serverurl", value: process.env.KAFKA_SERVER_URL || "kafka:9092", issecret: false, description: "Kafka broker host:port" },
     { category: "storage", key: "s3endpoint", value: process.env.S3_ENDPOINT || "http://minio:9000", issecret: false, description: "S3 Endpoint" },
     { category: "storage", key: "s3publicendpoint", value: process.env.S3_PUBLIC_ENDPOINT || "", issecret: false, description: "S3 Public Endpoint" },
     { category: "storage", key: "s3bucketname", value: process.env.S3_BUCKET || "bcai-media", issecret: false, description: "S3 Bucket" },
@@ -171,38 +168,6 @@ export async function POST(request: Request, context: SetupProxyContext) {
       }
     }
 
-    if (type === "redis") {
-      return NextResponse.json({
-        success: true,
-        message: "เชื่อมต่อ Redis / In-memory Cache สำเร็จ (Ready)",
-        latencyms: 2,
-      });
-    }
-
-    if (type === "mongodb") {
-      return NextResponse.json({
-        success: true,
-        message: "ระบบ Pure PostgreSQL ไม่จำเป็นต้องใช้ MongoDB",
-        latencyms: 0,
-      });
-    }
-
-    if (type === "kafka") {
-      return NextResponse.json({
-        success: true,
-        message: "เชื่อมต่อ Event Queue สำเร็จ (Ready)",
-        latencyms: 5,
-      });
-    }
-
-    if (type === "clickhouse") {
-      return NextResponse.json({
-        success: true,
-        message: "ClickHouse Standby พร้อมใช้งาน",
-        latencyms: 1,
-      });
-    }
-
     if (type === "http" || uri.startsWith("http://") || uri.startsWith("https://")) {
       const targetUrl = uri || (host.startsWith("http") ? host : `http://${host}:${portStr || "80"}`);
       const t0 = Date.now();
@@ -227,10 +192,6 @@ export async function POST(request: Request, context: SetupProxyContext) {
 
     const defaultPorts: Record<string, number> = {
       postgresql: 5432,
-      redis: 6379,
-      kafka: 9092,
-      clickhouse: 8123,
-      mongodb: 27017,
     };
     const port = parseInt(portStr, 10) || defaultPorts[type] || 80;
     const targetHost = host || "localhost";
@@ -253,7 +214,7 @@ export async function POST(request: Request, context: SetupProxyContext) {
 
   // 6. create-clickhouse-database
   if (path === "create-clickhouse-database") {
-    return NextResponse.json({ success: true, message: "สร้างฐานข้อมูลเรียบร้อยแล้ว" });
+    return NextResponse.json({ success: false, message: "ClickHouse เลิกใช้งานแล้ว ระบบใช้ PostgreSQL เท่านั้น" });
   }
 
   return NextResponse.json({ success: true, message: "ดำเนินการสำเร็จ" });

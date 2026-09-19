@@ -1527,3 +1527,25 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - Deploy ขึ้น Production (`account.bcaicloud.com`) สำเร็จ (Release: `r20260919-setup-probe`)
    - Smoke test บน Production จริงผ่าน curl ตอบกลับ `success: true` ครบทุก endpoint (PostgreSQL 28ms, Redis 2ms, Kafka 5ms, ClickHouse 1ms, verify-password 100%)
 
+### [2026-09-19] ปรับศูนย์ตั้งค่าระบบ (/settings) เป็น Pure PostgreSQL อย่างเดียว (เลิกใช้ MongoDB, ClickHouse, Kafka, Redis)
+
+**เป้าหมาย:** ถอดการตั้งค่าและแบบฟอร์มฐานข้อมูลเดิมที่เลิกใช้งานแล้ว (MongoDB, ClickHouse, Kafka, Redis) ออกจากหน้าจอศูนย์ตั้งค่าระบบ (`/settings`) และ Setup API ทั้งหมด ให้เหลือเฉพาะ PostgreSQL เป็นฐานข้อมูลเดียว (Pure PostgreSQL) ตามคำสั่งลุงจืด
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **ปรับปรุงนิยาม Config (`frontend/src/lib/setup-config.ts`)**:
+   - ถอด `mongodb`, `clickhouse`, `kafka` ออกจาก `SETUP_CATEGORY_DEFS`
+   - ปรับ `service` ให้ตัดฟิลด์ `enablekafka`, `kafkaconsumergroupversion`, `enablecloneclickhouse` ออก
+   - ถอดตรรกะการคำนวณ MongoDB URI อัตโนมัติออกจาก `updateConfigItem`
+   - ปรับปรุงชุดทดสอบ `setup-config.test.ts` ให้ทดสอบเฉพาะ Pure PostgreSQL
+2. **ปรับปรุงหน้าจอ UI ศูนย์ตั้งค่าระบบ (`frontend/src/app/settings/settings-screen.tsx`)**:
+   - ปรับหมวดหมู่ฐานข้อมูลให้แสดงเฉพาะ `PostgreSQL` รายการเดียว และถอดหมวด Kafka ออก
+   - ถอดปุ่มสลับโหมด MongoDB URI/Fields และตรรกะที่เกี่ยวข้องออก
+   - ถอดการสร้างฐานข้อมูล ClickHouse และปุ่มที่เกี่ยวข้องออก
+   - ปรับการทดสอบทั้งหมด (Test All) ให้ทดสอบเฉพาะ PostgreSQL และ Storage
+3. **ปรับปรุง Setup API (`frontend/src/app/api/setup/[...setupPath]/route.ts`)**:
+   - ตัด `redis` และ `kafka` ออกจาก default configs
+   - ตัด logic การทดสอบเชื่อมต่อ legacy databases ออกจาก `test-connection` เหลือเฉพาะ PostgreSQL, Service URLs และ HTTP endpoints
+4. **การทดสอบความถูกต้องและการยืนยันผล 100% (VERIFY BEFORE DONE)**:
+   - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
+   - Frontend Vitest tests ทั้งหมด 92 test files / 676 tests ผ่าน 100%
+

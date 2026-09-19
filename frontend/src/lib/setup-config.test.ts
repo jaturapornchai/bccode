@@ -17,37 +17,44 @@ describe("setup config helpers", () => {
     expect(normalizeSetupBackendUrl("http://localhost:8888/goapi/")).toBe("http://localhost:8888/goapi");
   });
 
-  it("shows MongoDB config from backend entries in the settings UI", () => {
-    const config = mergeBackendConfig([{ category: "mongodb", key: "databasename", value: "bcdev", issecret: false }]);
-    expect(config.mongodb?.find((item) => item.key === "database")?.value).toBe("bcdev");
-  });
-
-  it("hides duplicated MongoDB production config from the settings UI", () => {
-    const config = mergeBackendConfig([{ category: "mongodbproduction", key: "uri", value: "mongodb://prod", issecret: true }]);
-    expect(config.mongodbproduction).toBeUndefined();
-  });
-
-  it("shows only the current MongoDB category in the setup UI", () => {
+  it("shows only Pure PostgreSQL as database in default config map", () => {
     const config = createDefaultConfigMap();
-    expect(getCategoryDef("mongodb").title).toBe("MongoDB");
-    expect(config.mongodb).toBeDefined();
-    expect(config.mongodbdev).toBeUndefined();
-    expect(config.mongodbuat).toBeUndefined();
-    expect(config.mongodbpro).toBeUndefined();
+    expect(getCategoryDef("postgresql").title).toBe("PostgreSQL");
+    expect(config.postgresql).toBeDefined();
+    expect(config.mongodb).toBeUndefined();
+    expect(config.clickhouse).toBeUndefined();
+    expect(config.kafka).toBeUndefined();
+    expect(config.redis).toBeUndefined();
   });
 
-  it("hides future MongoDB UAT and PRO config from backend entries", () => {
+  it("merges backend PostgreSQL config entries into config map", () => {
     const config = mergeBackendConfig([
-      { category: "mongodbuat", key: "uri", value: "mongodb://uat", issecret: true },
-      { category: "mongodbpro", key: "uri", value: "mongodb://pro", issecret: true },
+      { category: "postgresql", key: "dbname", value: "bcai_projection", issecret: false },
+      { category: "postgresql", key: "host", value: "postgres", issecret: false },
     ]);
-    expect(config.mongodbuat).toBeUndefined();
-    expect(config.mongodbpro).toBeUndefined();
+    expect(config.postgresql?.find((item) => item.key === "dbname")?.value).toBe("bcai_projection");
+    expect(config.postgresql?.find((item) => item.key === "host")?.value).toBe("postgres");
   });
 
-  it("builds kafka connection payload from serverurl", () => {
-    const payload = buildConnectionPayload("kafka", [{ category: "kafka", key: "serverurl", value: "kafka:29092", isSecret: false, description: "" }], "12345");
-    expect(payload).toMatchObject({ password: "12345", type: "kafka", host: "kafka", port: "29092" });
+  it("builds postgresql connection payload correctly", () => {
+    const payload = buildConnectionPayload(
+      "postgresql",
+      [
+        { category: "postgresql", key: "host", value: "postgres", isSecret: false, description: "" },
+        { category: "postgresql", key: "port", value: "5432", isSecret: false, description: "" },
+        { category: "postgresql", key: "user", value: "postgres", isSecret: false, description: "" },
+        { category: "postgresql", key: "dbname", value: "bcai_projection", isSecret: false, description: "" },
+      ],
+      "12345",
+    );
+    expect(payload).toMatchObject({
+      password: "12345",
+      type: "postgresql",
+      host: "postgres",
+      port: "5432",
+      user: "postgres",
+      database: "bcai_projection",
+    });
   });
 
   it("validates invalid ports", () => {
@@ -63,7 +70,7 @@ describe("setup config helpers", () => {
   });
 
   it("uses checkbox control for boolean service flags", () => {
-    expect(getFieldControl(configItem("service", "enablekafka", "true"))?.type).toBe("checkbox");
+    expect(getFieldControl(configItem("service", "devapimode", "true"))?.type).toBe("checkbox");
     expect(normalizeBooleanValue("TRUE")).toBe(true);
     expect(normalizeBooleanValue("false")).toBe(false);
   });
