@@ -42,6 +42,7 @@ def main():
     parser = argparse.ArgumentParser(description="Fast Deploy BC AI Account")
     parser.add_argument("--tag", default="", help="Release tag (e.g. r20260912-gl-crud-1)")
     parser.add_argument("--all", action="store_true", help="Rebuild and deploy both backend and frontend")
+    parser.add_argument("--frontend", action="store_true", help="Force frontend-only deploy (re-tag existing remote mainapi)")
     args = parser.parse_args()
 
     today_str = datetime.date.today().strftime("%Y%m%d")
@@ -55,8 +56,10 @@ def main():
     log(f"🚀 Starting fast deploy for release: {tag}")
 
     # 1. Check if backend needs rebuild
-    deploy_backend = args.all
-    if not deploy_backend:
+    deploy_backend = args.all and not args.frontend
+    if args.frontend:
+        log("⚡ --frontend specified -> Frontend-only fast path forced (skipping mainapi rebuild/upload).")
+    elif not deploy_backend:
         # Check git status for backend code changes
         try:
             diff_out = run_cmd(["git", "diff", "--name-only", "HEAD", "--", "backend"], cwd=workspace)

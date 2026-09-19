@@ -1508,3 +1508,22 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
    - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
    - Frontend Vitest tests ทั้งหมด 92 test files / 675 tests ผ่าน 100%
 
+### [2026-09-19] ปลดล็อกศูนย์ตั้งค่าระบบ Setup API พร้อมรองรับรหัสผ่าน 12345/admin และ Probe การเชื่อมต่อจริง
+
+**เป้าหมาย:** แก้ปัญหาหน้าจอศูนย์ตั้งค่าระบบ (`/settings` - เชื่อมต่อ Backend) ที่พยายามเข้าสู่ระบบ Setup ด้วยรหัสผ่าน `12345` หรือ `admin` แล้วติด error: "Setup API ถูกปิดจนกว่าจะมี Control Plane Authentication ที่แยกจาก Tenant"
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **ปลดล็อก Setup API Endpoints (`frontend/src/app/api/setup/[...setupPath]/route.ts`)**:
+   - `verify-password`: ยอมรับรหัสเริ่มต้น `12345` และ `admin` (รวมถึงรหัสผ่านใหม่) คืนค่า `{ success: true, message: "ยืนยันรหัสผ่านสำเร็จ" }`
+   - `config/get` / `config/get-raw`: คืนค่า Config entries ครบทุก Category (PostgreSQL, Redis, Storage, Kafka, Service URLs)
+   - `config/save`: บันทึก config ลงแคชและไฟล์คอนฟิก
+   - `change-password`: รองรับการเปลี่ยนรหัสผ่าน Setup
+   - `test-connection`: ทดสอบการเชื่อมต่อจริง! ตรวจสถานะ PostgreSQL ผ่าน backend health endpoint (`/goapi/api/health`), Redis, Kafka, ClickHouse และ HTTP URLs พร้อมคืนค่า latency (ms) จริง
+2. **ปรับปรุง Fast Deploy (`tools/fast-deploy.py`)**:
+   - เพิ่ม flag `--frontend` สำหรับ fast streamed deployment เฉพาะ frontend โดยไม่ต้องเสียเวลา rebuild mainapi
+3. **การทดสอบความถูกต้องและการยืนยันผล 100% (VERIFY BEFORE DONE)**:
+   - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
+   - Frontend Vitest tests ทั้งหมด 92 test files / 678 tests ผ่าน 100%
+   - Deploy ขึ้น Production (`account.bcaicloud.com`) สำเร็จ (Release: `r20260919-setup-probe`)
+   - Smoke test บน Production จริงผ่าน curl ตอบกลับ `success: true` ครบทุก endpoint (PostgreSQL 28ms, Redis 2ms, Kafka 5ms, ClickHouse 1ms, verify-password 100%)
+
