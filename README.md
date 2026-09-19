@@ -1478,4 +1478,17 @@ py tools/fast-deploy.py --tag rYYYYMMDD-release-name
 - `frontend/src/lib/menu-screen-status.ts`
 - `README.md`
 
+### [2026-09-19] ปลดฟีเจอร์ KMS DeepSeek AI Chatbot ออกตามคำสั่ง (Champ Parity & Lean UI)
 
+**เป้าหมาย:** ถอดโมดูล KMS DeepSeek AI Chatbot ออกจาก Frontend และ API ทั้งหมดตามคำสั่งลุงจืด เพื่อรักษาความกระชับ ไม่เพิ่มฟังก์ชันเกินความจำเป็น และยึดหลัก Champ Parity 100%
+
+**สิ่งที่ได้ดำเนินการและผลลัพธ์:**
+1. **ถอด Component และ Route ของ KMS Chatbot**:
+   - ลบ `<KmsChatbot />` ออกจาก `frontend/src/app/layout.tsx`
+   - ลบไฟล์คอมโพเนนต์ `frontend/src/components/kms-chatbot.tsx`
+   - ลบ backend proxy route `frontend/src/app/api/kms-chat/route.ts`
+   - ลบโมดูลฐานความรู้และคำนวณ RAG `frontend/src/lib/kms-rag.ts` และ `frontend/src/lib/kms-knowledge.json`
+2. **การทดสอบความถูกต้องและการยืนยันผล 100% (VERIFY BEFORE DONE)**:
+   - Frontend TypeScript `tsc --noEmit` ผ่าน 0 errors (100%)
+   - Frontend Vitest tests ทั้งหมด 92 test files / 675 tests ผ่าน 100%
+   - ทดสอบความเร็วและการตอบสนองของระบบ ไม่มีส่วนประกอบที่รบกวน DOM
