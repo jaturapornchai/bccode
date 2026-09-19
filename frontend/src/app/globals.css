@@ -8573,6 +8573,146 @@ main:not(.login-shell):not(.holding-shell) .my-3 {
   gap: 4px !important;
 }
 
+
+/* ===== Data List Single-line & Baseline Alignment (2026-09-06: แก้ icon ตกบรรทัด + คุม baseline) =====
+   Problem: .bc-list-header and .bc-list-row had flex-wrap: wrap which caused action buttons
+   and 'จัดการ' to wrap onto a 2nd line when width is constrained, pushing icons to the bottom.
+   Fix: Enforce single-line nowrap, link min-height and padding directly to --baseline rhythm,
+   and align actions to the vertical center/baseline.
+*/
+.bc-list-header:not(.grid) {
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  min-height: calc(var(--baseline) * 8) !important; /* 32px @16 */
+  gap: calc(var(--baseline) * 1.5) !important; /* 6px */
+  padding-top: calc(var(--baseline) * 1) !important; /* 4px */
+  padding-bottom: calc(var(--baseline) * 1) !important; /* 4px */
+}
+
+.bc-list-row:not(.grid) {
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  min-height: calc(var(--baseline) * 9) !important; /* 36px @16 */
+  gap: calc(var(--baseline) * 1.5) !important; /* 6px */
+  padding-top: calc(var(--baseline) * 1) !important; /* 4px */
+  padding-bottom: calc(var(--baseline) * 1) !important; /* 4px */
+}
+
+.bc-list-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  gap: calc(var(--baseline) * 1) !important; /* 4px */
+}
+
+.bc-list-actions button {
+  height: calc(var(--baseline) * 7) !important; /* 28px @16 */
+  width: calc(var(--baseline) * 7) !important; /* 28px @16 */
+  min-height: calc(var(--baseline) * 7) !important;
+  max-height: calc(var(--baseline) * 7) !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.bc-list-actions button svg {
+  width: calc(var(--baseline) * 3.5) !important; /* 14px */
+  height: calc(var(--baseline) * 3.5) !important; /* 14px */
+  flex-shrink: 0 !important;
+}
+.bc-list-header:not(.grid) span:not(.bc-list-actions),
+.bc-list-row:not(.grid) span:not(.bc-list-actions),
+.bc-list-row:not(.grid) b,
+.bc-list-row:not(.grid) .bc-cell-text {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ==========================================================================
+   High-density global compaction pass (2026-09-07: ปรับ padding margin ให้น้อยๆ แสดงข้อมูลได้เยอะๆ ทั้งระบบ — ตั้งโดยลุงจืด)
+   Scope: App shell, tables, data lists, cards, form grids, tree views (excluding login/holding hero)
+   Goal: Maximum information density, minimal vertical sprawl, see maximum data at once
+   ========================================================================== */
+
+/* 1. Global Compact Card & Container Padding */
+main:not(.login-shell):not(.holding-shell) .rounded-2xl.border.bg-card,
+main:not(.login-shell):not(.holding-shell) .rounded-xl.border.bg-card,
+main:not(.login-shell):not(.holding-shell) [data-slot="card"] {
+  padding: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .p-4 {
+  padding: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .p-5,
+main:not(.login-shell):not(.holding-shell) .p-6 {
+  padding: 10px !important;
+}
+
+/* 2. Global Compact Data List Rows & Headers (.bc-list-*) */
+.bc-list-row {
+  min-height: 26px !important;
+  padding: 2px 6px !important;
+  gap: 4px !important;
+}
+
+.bc-list-header {
+  min-height: 26px !important;
+  padding: 2px 6px !important;
+  gap: 4px !important;
+}
+
+.bc-list-toolbar {
+  padding: 2px 6px !important;
+  gap: 4px !important;
+}
+
+/* 3. Global Compact Tables */
+main:not(.login-shell):not(.holding-shell) table th {
+  padding: 3px 6px !important;
+  height: 26px !important;
+  font-size: 0.75rem !important;
+}
+
+main:not(.login-shell):not(.holding-shell) table td {
+  padding: 2px 6px !important;
+  font-size: 0.78rem !important;
+  line-height: 1.35 !important;
+}
+
+/* 4. Global Compact Spacing / Margins */
+main:not(.login-shell):not(.holding-shell) .gap-4 {
+  gap: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .gap-3 {
+  gap: 6px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .mb-4,
+main:not(.login-shell):not(.holding-shell) .my-4 {
+  margin-bottom: 8px !important;
+}
+
+main:not(.login-shell):not(.holding-shell) .mb-3,
+main:not(.login-shell):not(.holding-shell) .my-3 {
+  margin-bottom: 6px !important;
+}
+
+/* 5. Tree Views & Master Data Lists */
+.tree-node-row,
+.branch-tree-node,
+.category-tree-node {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  gap: 4px !important;
+}
+
 /* 6. Form Groups & Config Grids */
 .config-field-grid {
   gap: 6px !important;
@@ -8580,4 +8720,79 @@ main:not(.login-shell):not(.holding-shell) .my-3 {
 
 .field-group {
   margin-bottom: 6px !important;
+}
+
+/* 7. Setup Save Action Card (Bottom) */
+.setup-save-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.25s ease;
+  margin-top: 8px;
+}
+
+.setup-save-card.ready {
+  border-color: color-mix(in srgb, #10b981 50%, var(--line));
+  background: linear-gradient(135deg, color-mix(in srgb, #10b981 7%, var(--panel-strong)), var(--panel-strong));
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.12);
+}
+
+.setup-save-card.pending {
+  border-color: color-mix(in srgb, #f59e0b 50%, var(--line));
+  background: linear-gradient(135deg, color-mix(in srgb, #f59e0b 6%, var(--panel-strong)), var(--panel-strong));
+}
+
+.setup-save-status-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+  flex: 1 1 360px;
+}
+
+.setup-save-icon-wrap {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.setup-save-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.setup-save-copy h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.setup-save-desc {
+  font-size: 0.88rem;
+  color: var(--muted-foreground);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.setup-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.setup-save-actions > button {
+  min-height: 44px;
+  padding: 0 22px;
+  font-size: 0.95rem;
+  font-weight: 700;
 }

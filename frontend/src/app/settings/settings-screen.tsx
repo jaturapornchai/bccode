@@ -165,6 +165,30 @@ export function SettingsScreen() {
     { id: "storage", titleTh: "ที่เก็บรูปและไฟล์", titleEn: "Image & File Storage", categories: [] },
   ];
 
+  // Categories that require connection testing before saving config
+  const testableCategories = useMemo(() => {
+    const cats: { id: string; title: string }[] = [];
+    for (const def of SETUP_CATEGORY_DEFS) {
+      if (def.testType && (configMap[def.id]?.length ?? 0) > 0) {
+        cats.push({ id: def.id, title: def.title });
+      }
+    }
+    const hasStorage = (configMap["integrations"] ?? []).some((item) => storageIntegrationKeys.has(item.key));
+    if (hasStorage) {
+      cats.push({
+        id: "storage",
+        title: st("group.storage", { th: "ที่เก็บรูปและไฟล์", en: "Image & File Storage" }),
+      });
+    }
+    return cats;
+  }, [configMap, storageIntegrationKeys, st]);
+
+  const pendingCategories = useMemo(() => {
+    return testableCategories.filter((cat) => testResults[cat.id]?.status !== "success");
+  }, [testableCategories, testResults]);
+
+  const allTestsPassed = testableCategories.length > 0 && pendingCategories.length === 0;
+
   // Parse host from a backend URL like http://192.168.2.202:8888/goapi -> 192.168.2.202
   function parseHostFromUrl(url: string): string {
     try {
@@ -374,6 +398,19 @@ export function SettingsScreen() {
 
 
   async function handleSaveConfig() {
+    // Guard: ต้องทดสอบการเชื่อมต่อให้ผ่านครบทุกรายการก่อนบันทึก
+    if (!allTestsPassed) {
+      const pendingNames = pendingCategories.map((c) => c.title).join(", ");
+      setStatus(
+        st("mustPassAllTestsFirst", {
+          th: `กรุณาทดสอบการเชื่อมต่อให้ผ่านครบทุกรายการก่อนบันทึก Config (ยังไม่ได้ทดสอบหรือยังไม่ผ่าน: ${pendingNames})`,
+          en: `Please test and pass all connections before saving config (pending: ${pendingNames})`,
+        }),
+        "error",
+      );
+      return;
+    }
+
     const errors = validateConfig(configMap);
     if (errors.length > 0) {
       setStatus(tr("set_config_check_failed", "ตรวจสอบ config ไม่ผ่าน: {0}").replace("{0}", errors.slice(0, 3).join(", ")), "error");
@@ -824,10 +861,6 @@ export function SettingsScreen() {
                     <KeyRound aria-hidden="true" size={17} />
                     <span>{tr("set_change_password_short", "เปลี่ยนรหัส")}</span>
                   </button>
-                  <button className="primary-button settings-primary" type="button" onClick={handleSaveConfig} disabled={isBusy}>
-                    {loadingAction === "save" ? <Loader2 className="spin" size={17} /> : <Save aria-hidden="true" size={17} />}
-                    <span>{tr("set_save_config", "บันทึก Config")}</span>
-                  </button>
                 </div>
               </section>
 
@@ -924,6 +957,82 @@ export function SettingsScreen() {
                   </section>
                 );
               })}
+
+              {/* Bottom Action Area: Save Config with Complete Connection Testing Guard */}
+              <section
+                className={`settings-card setup-save-card ${allTestsPassed ? "ready" : "pending"}`}
+                aria-label={tr("set_save_config", "บันทึก Config")}
+              >
+                <div className="setup-save-status-block">
+                  <div className="setup-save-icon-wrap">
+                    {allTestsPassed ? (
+                      <CheckCircle2 className="text-emerald-500" size={24} aria-hidden="true" />
+                    ) : (
+                      <AlertCircle className="text-amber-500" size={24} aria-hidden="true" />
+                    )}
+                  </div>
+                  <div className="setup-save-copy">
+                    <p className="eyebrow">
+                      {allTestsPassed
+                        ? st("readyToSave", { th: "พร้อมบันทึก", en: "Ready to Save" })
+                        : st("testingRequired", { th: "ต้องทดสอบให้ครบก่อนบันทึก", en: "Testing Required" })}
+                    </p>
+                    <h3>
+                      {allTestsPassed
+                        ? st("allTestsPassedTitle", {
+                            th: `ทดสอบการเชื่อมต่อผ่านครบถ้วนแล้ว (${testableCategories.length}/${testableCategories.length} รายการ)`,
+                            en: `All connection tests passed (${testableCategories.length}/${testableCategories.length})`,
+                          })
+                        : st("testsPendingTitle", {
+                            th: `ต้องทดสอบการเชื่อมต่อให้ครบก่อนบันทึก (ผ่านแล้ว ${testableCategories.length - pendingCategories.length}/${testableCategories.length} รายการ)`,
+                            en: `Please test all connections before saving (${testableCategories.length - pendingCategories.length}/${testableCategories.length} passed)`,
+                          })}
+                    </h3>
+                    <p className="setup-save-desc">
+                      {allTestsPassed
+                        ? st("allTestsPassedDesc", {
+                            th: "ระบบตรวจสอบการเชื่อมต่อฐานข้อมูล PostgreSQL และที่เก็บรูปเรียบร้อยแล้ว พร้อมบันทึกการตั้งค่ากลับสู่ Backend",
+                            en: "PostgreSQL and Storage connections are verified. Safe to save configuration to Backend.",
+                          })
+                        : st("testsPendingDesc", {
+                            th: `รายการที่ต้องทดสอบให้ผ่าน: ${pendingCategories.map((c) => c.title).join(", ")} (กดปุ่ม "ทดสอบทั้งหมด" เพื่อตรวจสอบ)`,
+                            en: `Required tests: ${pendingCategories.map((c) => c.title).join(", ")} (Click "Test All" to verify)`,
+                          })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="setup-save-actions">
+                  {!allTestsPassed ? (
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={handleTestAllConnections}
+                      disabled={isBusy}
+                    >
+                      {loadingAction === "test-all" ? <Loader2 className="spin" size={17} /> : <Wifi aria-hidden="true" size={17} />}
+                      <span>{tr("set_test_all", "ทดสอบทั้งหมด")}</span>
+                    </button>
+                  ) : null}
+                  <button
+                    className={`primary-button settings-primary ${!allTestsPassed ? "opacity-60 cursor-not-allowed" : ""}`}
+                    type="button"
+                    onClick={handleSaveConfig}
+                    disabled={isBusy || !allTestsPassed}
+                    title={
+                      !allTestsPassed
+                        ? st("cannotSaveTooltip", {
+                            th: `ต้องทดสอบการเชื่อมต่อให้ผ่านครบก่อน: ${pendingCategories.map((c) => c.title).join(", ")}`,
+                            en: `Must pass all connection tests: ${pendingCategories.map((c) => c.title).join(", ")}`,
+                          })
+                        : undefined
+                    }
+                  >
+                    {loadingAction === "save" ? <Loader2 className="spin" size={17} /> : <Save aria-hidden="true" size={17} />}
+                    <span>{tr("set_save_config", "บันทึก Config")}</span>
+                  </button>
+                </div>
+              </section>
             </div>
           </>
         ) : null}
