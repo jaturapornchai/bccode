@@ -136,23 +136,6 @@ func main() {
 		return n > 0
 	}
 
-	// ค้นบัญชีตามชื่อแบบยืดหยุ่น (คืน "" ถ้าไม่พบ) และใช้สร้างบัญชีใหม่เมื่อจำเป็น
-	quietFind := func(keywords ...string) string {
-		for _, keyword := range keywords {
-			for name, list := range byName {
-				if !strings.Contains(name, keyword) {
-					continue
-				}
-				for _, a := range list {
-					if a.Posting && a.IsActive {
-						return a.Code
-					}
-				}
-			}
-		}
-		return ""
-	}
-
 	// บัญชีเฉพาะทางที่แผนต้องใช้ หาจากชื่อจริงในผังบัญชี
 	cash := acc("1111")
 	bank := acc("1121")
@@ -163,7 +146,23 @@ func main() {
 	outputVAT := acc("2131")
 	capital := acc("3111")
 	salesVAT := acc("4111")
-	wht := quietFind("ภาษีหัก ณ ที่จ่าย", "ภาษีเงินได้หัก ณ ที่จ่าย")
+	// หัก ณ ที่จ่ายสำหรับคู่ค้านิติบุคคลยื่น ภ.ง.ด.53 — ค้นบัญชีที่ชื่ออ้างแบบยื่นตรงตัว (deterministic)
+	wht := ""
+	for _, c := range []string{"2143"} {
+		if a, ok := accounts[c]; ok && a.Posting && a.IsActive && strings.Contains(a.Name, "ภ.ง.ด.53") {
+			wht = c
+			break
+		}
+	}
+	if wht == "" {
+		for code := range accounts {
+			if a := accounts[code]; a.Posting && a.IsActive && strings.Contains(a.Name, "ภ.ง.ด.53") {
+				if wht == "" || code < wht {
+					wht = code
+				}
+			}
+		}
+	}
 	rent := findByName("ค่าเช่า", "expense")
 	cogs := acc("5121")
 	stationery := acc("5331")

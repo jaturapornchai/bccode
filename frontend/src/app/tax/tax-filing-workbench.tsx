@@ -10,6 +10,7 @@ import {
   taxText,
   fetchVatRegister,
   fetchPp30Summary,
+  fetchWhtReport,
   type ThaiTaxRecord,
   type Pp30Summary,
 } from "@/lib/thai-tax";
@@ -148,73 +149,49 @@ export function TaxFilingWorkbench({
           setErrorKey(registerResult.error ?? null);
         }
       } else if (isWhtType) {
-        // ข้อมูลภาษีหัก ณ ที่จ่าย (WHT Records)
+        // ข้อมูลภาษีหัก ณ ที่จ่ายจากบัญชีแยกประเภทที่ผ่านรายการจริง (backend /api/report/tax/wht)
         const filingTarget = config.formType === "pnd3" ? "pnd3" : "pnd53";
-        const sampleWhtList: ThaiWhtRecord[] = [
-          {
-            id: `wht-${selectedYear}${selectedMonth}-01`,
-            docNo: `50TWI-${selectedYear}/${String(selectedMonth).padStart(2, "0")}-001`,
-            docDate: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-05`,
-            filingType: filingTarget,
-            payeeType: filingTarget === "pnd3" ? "individual" : "corporate",
-            payeeTaxId: filingTarget === "pnd3" ? "1100500123456" : "0105558012345",
-            payeeName: filingTarget === "pnd3" ? "นายวิชาญ รุ่งเรือง (ผู้ให้เช่า)" : "บริษัท ซีเคเค บริการขนส่ง จำกัด",
-            payeeAddress: "123/4 หมู่ 5 ต.บางบัวทอง อ.บางบัวทอง จ.นนทบุรี 11110",
-            payeeBranchNo: "00000",
-            isHeadOffice: true,
-            incomeType: filingTarget === "pnd3" ? "rent_40_5" : "transportation_40_8",
-            incomeDescription: filingTarget === "pnd3" ? "ค่าเช่าสำนักงานและที่จอดรถ" : "ค่าบริการขนส่งสินค้าทั่วประเทศ",
-            taxRate: filingTarget === "pnd3" ? 5 : 1,
-            paymentAmount: filingTarget === "pnd3" ? 25000 : 45000,
-            whtAmount: filingTarget === "pnd3" ? 1250 : 450,
-            condition: "deducted",
-            status: "active",
-          },
-          {
-            id: `wht-${selectedYear}${selectedMonth}-02`,
-            docNo: `50TWI-${selectedYear}/${String(selectedMonth).padStart(2, "0")}-002`,
-            docDate: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-15`,
-            filingType: filingTarget,
-            payeeType: filingTarget === "pnd3" ? "individual" : "corporate",
-            payeeTaxId: filingTarget === "pnd3" ? "3100600890123" : "0105556098765",
-            payeeName: filingTarget === "pnd3" ? "นางสาวกานดา ศิลป์งาม (กราฟิกดีไซเนอร์)" : "บริษัท ดิจิทัล โซลูชั่นส์ จำกัด",
-            payeeAddress: "88/19 แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพมหานคร 10230",
-            payeeBranchNo: "00000",
-            isHeadOffice: true,
-            incomeType: "service_subcontract_40_8",
-            incomeDescription: "ค่าจ้างทำของและออกแบบสื่อออนไลน์",
-            taxRate: 3,
-            paymentAmount: 35000,
-            whtAmount: 1050,
-            condition: "deducted",
-            status: "active",
-          },
-          {
-            id: `wht-${selectedYear}${selectedMonth}-03`,
-            docNo: `50TWI-${selectedYear}/${String(selectedMonth).padStart(2, "0")}-003`,
-            docDate: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-22`,
-            filingType: filingTarget,
-            payeeType: filingTarget === "pnd3" ? "individual" : "corporate",
-            payeeTaxId: filingTarget === "pnd3" ? "2100800345678" : "0105554032109",
-            payeeName: filingTarget === "pnd3" ? "นายอนุชา มั่นคง (ที่ปรึกษาบัญชี)" : "บริษัท มีเดีย แอดส์ คอมมูนิเคชั่น จำกัด",
-            payeeAddress: "45/2 ถนนสุขุมวิท เขตวัฒนา กรุงเทพมหานคร 10110",
-            payeeBranchNo: "00000",
-            isHeadOffice: true,
-            incomeType: filingTarget === "pnd3" ? "professional_40_6" : "advertising_40_8",
-            incomeDescription: filingTarget === "pnd3" ? "ค่าบริการวิชาชีพบัญชีและที่ปรึกษาภาษี" : "ค่าโฆษณาประชาสัมพันธ์",
-            taxRate: filingTarget === "pnd3" ? 3 : 2,
-            paymentAmount: 20000,
-            whtAmount: filingTarget === "pnd3" ? 600 : 400,
-            condition: "deducted",
-            status: "active",
-          },
-        ];
+        // เลือกทิศทางและแบบยื่นตามจอ: ภ.ง.ด.2 = ดอกเบี้ย/ปันผล (บัญชีแยกแบบยื่นไว้แล้วในผังบัญชี)
+        const whtDirection: "paid" | "received" = config.formType === "wht_received" ? "received" : "paid";
+        const whtForms = config.formType === "pnd2" ? ["2"] : undefined;
+        const whtResult = await fetchWhtReport({
+          holdingcode,
+          businesscode,
+          year: selectedYear,
+          month: selectedMonth,
+          direction: whtDirection,
+          forms: whtForms,
+        });
 
-        setWhtRecords(sampleWhtList);
-        setSelectedWhtRecord(sampleWhtList[0]);
+        const mapped: ThaiWhtRecord[] = whtResult.rows.map((r) => {
+          // เลขประจำตัวผู้เสียภาษีนิติบุคคลขึ้นต้นด้วย 0 (หรือ 5 ชั้นวิสาหกิจ) — นอกจากนั้นถือเป็นบุคคลธรรมดา
+          const corporate = r.taxid.startsWith("0") || r.taxid.startsWith("5");
+          return {
+            id: `wht-${r.journalid}`,
+            docNo: r.docno,
+            docDate: r.docdate,
+            filingType: filingTarget,
+            payeeType: corporate ? "corporate" : "individual",
+            payeeTaxId: r.taxid,
+            payeeName: r.partnername,
+            payeeAddress: r.address,
+            payeeBranchNo: "",
+            isHeadOffice: corporate,
+            incomeType: "other",
+            incomeDescription: r.description,
+            taxRate: r.ratepercent,
+            paymentAmount: r.baseamount,
+            whtAmount: r.whtamount,
+            condition: "deducted",
+            status: "active",
+          };
+        });
+
+        setWhtRecords(mapped);
+        setSelectedWhtRecord(mapped[0] ?? null);
 
         // แปลงเป็น ThaiTaxRecord เพื่อรองรับตารางพื้นฐาน
-        const adaptedTaxRecords: ThaiTaxRecord[] = sampleWhtList.map((w) => ({
+        const adaptedTaxRecords: ThaiTaxRecord[] = mapped.map((w) => ({
           id: w.id,
           docdate: w.docDate,
           taxinvoiceno: w.docNo,

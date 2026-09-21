@@ -147,6 +147,63 @@ export interface Pp30Summary {
 
 const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
 const PP30_SUMMARY_PATH = "/api/goapi/api/report/tax/pp30-summary";
+const WHT_REPORT_PATH = "/api/goapi/api/report/tax/wht";
+
+export interface WhtReportRow {
+  journalid: string;
+  docno: string;
+  docdate: string;
+  partnercode: string;
+  partnername: string;
+  taxid: string;
+  address: string;
+  description: string;
+  baseamount: number;
+  whtamount: number;
+  ratepercent: number;
+}
+
+export interface WhtReportParams {
+  holdingcode: string;
+  businesscode: string;
+  year: number;
+  month: number;
+  direction: "paid" | "received";
+  forms?: string[];
+}
+
+// fetchWhtReport - รายการภาษีหัก ณ ที่จ่ายจากบัญชีแยกประเภทที่ผ่านรายการจริง
+// (backend โยงคู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบ และกรองตามแบบยื่น ภ.ง.ด. ที่ผังบัญชีระบุ)
+export async function fetchWhtReport(params: WhtReportParams): Promise<{ rows: WhtReportRow[]; error?: string }> {
+  if (!params.holdingcode || !params.businesscode) {
+    return { rows: [], error: "company_required" };
+  }
+  const result = await postApi(WHT_REPORT_PATH, params);
+  if (!result.ok) {
+    return { rows: [], error: result.error };
+  }
+  const payload = result.payload;
+  if (!isRecord(payload) || !Array.isArray(payload.data)) {
+    return { rows: [], error: "load_failed" };
+  }
+  const rows = payload.data.filter(isRecord).map((raw): WhtReportRow => {
+    const rec = raw as Record<string, unknown>;
+    return {
+      journalid: String(rec.journalid ?? ""),
+      docno: String(rec.docno ?? ""),
+      docdate: String(rec.docdate ?? ""),
+      partnercode: String(rec.partnercode ?? ""),
+      partnername: String(rec.partnername ?? ""),
+      taxid: String(rec.taxid ?? ""),
+      address: String(rec.address ?? ""),
+      description: String(rec.description ?? ""),
+      baseamount: toNumber(rec.baseamount),
+      whtamount: toNumber(rec.whtamount),
+      ratepercent: toNumber(rec.ratepercent),
+    };
+  });
+  return { rows };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

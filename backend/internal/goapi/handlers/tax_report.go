@@ -2,14 +2,20 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
 
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 )
 
 const (
@@ -369,4 +375,349 @@ func normalizeVatRegisterPaging(limit, offset int) (int, int) {
 		offset = 0
 	}
 	return limit, offset
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/report/tax/wht — รายงานภาษีหัก ณ ที่จ่าย (ภ.ง.ด.3 / ภ.ง.ด.53 / ถูกหัก)
+// ---------------------------------------------------------------------------
+
+// TaxWithholdingRequest - request รายงานภาษีหัก ณ ที่จ่าย
+type TaxWithholdingRequest struct {
+	HoldingCode  string   `json:"holdingcode"`
+	BusinessCode string   `json:"businesscode"`
+	Year         int      `json:"year"`
+	Month        int      `json:"month"`
+	Direction    string   `json:"direction"`       // "paid" = เราหักคู่ค้า (ภ.ง.ด.3/53), "received" = เราถูกหัก
+	Forms        []string `json:"forms,omitempty"` // กรองตามแบบยื่น เช่น ["53"], ["3"] — ว่าง = ทุกแบบที่ระบบค้นพบ
+	Limit        int      `json:"limit,omitempty"`
+	Offset       int      `json:"offset,omitempty"`
+}
+
+// TaxWithholdingRow - แถวภาษีหัก ณ ที่จ่ายต่อใบสำคัญ (ข้อมูลจริงจาก GL และหลักฐานประกอบ)
+type TaxWithholdingRow struct {
+	JournalID   string  `json:"journalid"`
+	DocNo       string  `json:"docno"`
+	DocDate     string  `json:"docdate"`
+	PartnerCode string  `json:"partnercode"`
+	PartnerName string  `json:"partnername"`
+	TaxID       string  `json:"taxid"`
+	Address     string  `json:"address"`
+	Description string  `json:"description"`
+	BaseAmount  float64 `json:"baseamount"`
+	WhtAmount   float64 `json:"whtamount"`
+	RatePercent float64 `json:"ratepercent"`
+}
+
+// TaxWithholdingHandler - POST /api/report/tax/wht
+// อ่านยอดหัก ณ ที่จ่ายจากบัญชีภาษีหักในบัญชีแยกประเภทที่ผ่านรายการจริง (gl_lines)
+// แล้วโยงคู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบ (gl_subledger_partners + documents/settlements)
+func TaxWithholdingHandler(c echo.Context) error {
+	var req TaxWithholdingRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]any{
+			"success": false,
+			"code":    "INVALID_PAYLOAD",
+			"message": "Invalid request payload",
+		})
+	}
+
+	holdingCode, _, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	if scopeErr != nil {
+		return c.JSON(scopeErr.Status, map[string]any{
+			"success": false,
+			"code":    scopeErr.Code,
+			"message": scopeErr.Message,
+		})
+	}
+
+	if req.Direction != "paid" && req.Direction != "received" {
+		return c.JSON(http.StatusBadRequest, map[string]any{
+			"success": false,
+			"code":    "INVALID_TYPE",
+			"message": "direction must be 'paid' or 'received'",
+		})
+	}
+
+	if !isValidReportPeriod(req.Year, req.Month) {
+		return c.JSON(http.StatusBadRequest, map[string]any{
+			"success": false,
+			"code":    "INVALID_PERIOD",
+			"message": "year and month are required (month 1-12)",
+		})
+	}
+
+	limit, offset := normalizeVatRegisterPaging(req.Limit, req.Offset)
+
+	db, err := mypg.PgSqlFastConnect(holdingCode)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"success": false,
+			"code":    "DB_CONNECTION_ERROR",
+			"message": "Database connection failed",
+		})
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	rows, total, basetotal, whttotal, note, err := buildWithholdingRows(ctx, db, req.BusinessCode, req.Year, req.Month, req.Direction, req.Forms, limit, offset)
+	if err != nil {
+		logger.Error("TaxWithholding: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"success": false,
+			"code":    "QUERY_ERROR",
+			"message": "Query execution failed",
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"status": "success",
+		"data":   rows,
+		"count":  total,
+		"summary": map[string]any{
+			"basetotal": basetotal,
+			"whttotal":  whttotal,
+		},
+		"limit":  limit,
+		"offset": offset,
+		"note":   note,
+	})
+}
+
+// validWhtForms - แบบยื่นที่ระบบรองรับการจับคู่บัญชี (จับจากชื่อบัญชีที่มีรูปแบบ "ภ.ง.ด.<แบบ>")
+var validWhtForms = map[string]bool{"1": true, "2": true, "3": true, "53": true, "54": true}
+
+// buildWithholdingRows - คำนวณรายการหัก ณ ที่จ่ายจาก GL จริง (แยกออกจาก handler เพื่อทดสอบ integration ตรงกับ *sql.DB)
+//
+// หลักการอ่านข้อมูล (ตรวจกับโครง runtime จริง backend/internal/generalledger/schema.sql):
+//   - บัญชีภาษีหัก = บัญชี liability ที่ชื่อภาษาไทยอ้างแบบยื่น เช่น "ภ.ง.ด.53" (ผังมาตรฐานแยกบัญชีตามแบบยื่น:
+//     ภ.ง.ด.1 เงินเดือน / ภ.ง.ด.3 บุคคลธรรมดา / ภ.ง.ด.53 นิติบุคคล / ภ.ง.ด.2 ดอกเบี้ยปันผล / ภ.ง.ด.54 ต่างประเทศ)
+//     ฝั่ง received คือบัญชี asset ที่ชื่อมีคำว่า "ภาษีถูกหัก" — อ่านจากผังบัญชีจริง ไม่ hard-code รหัสบัญชี
+//   - ยอดหักมาจาก gl_lines เฉพาะใบที่ผ่านรายการแล้ว (projection เก็บเฉพาะ posted)
+//   - คู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบของใบเดียวกัน (documents/settlements → gl_subledger_partners)
+//   - ฐานภาษี = ยอดตัดยอดตาม settlements ของใบ; ถ้าไม่มีการตัดยอดใช้ผลรวมเดบิตของใบ (ไม่รวมบรรทัดภาษีหักเอง)
+//     เอกสารบางใบจ่ายหลายบิลรวมกัน ฐานจึงแสดงรวมต่อใบ — ยอดหักเป็นยอดที่บันทึกจริงเสมอ ไม่คำนวณย้อนจากอัตรา
+func buildWithholdingRows(ctx context.Context, db *sql.DB, company string, year, month int, direction string, forms []string, limit, offset int) ([]TaxWithholdingRow, int, float64, float64, string, error) {
+	suppress := "credit"
+	var formPatterns []string
+	if direction == "received" {
+		suppress = "debit"
+		formPatterns = []string{"ภาษีถูกหัก"}
+	} else {
+		if len(forms) == 0 {
+			forms = []string{"1", "2", "3", "53", "54"}
+		}
+		for _, f := range forms {
+			if !validWhtForms[f] {
+				return nil, 0, 0, 0, "", fmt.Errorf("invalid form %q", f)
+			}
+			formPatterns = append(formPatterns, "ภ.ง.ด."+f)
+		}
+	}
+
+	accountQuery := `
+SELECT payload->>'accountcode' AS code
+FROM gl_records
+WHERE company = $1 AND kind = 'accounts'
+  AND (payload->>'accounttype' = $2 OR $2 = '')
+  AND EXISTS (
+    SELECT 1 FROM jsonb_array_elements(payload->'names') n, unnest($3::text[]) f
+    WHERE n->>'name' LIKE '%' || f || '%'
+  )`
+	acctRows, err := db.QueryContext(ctx, accountQuery, company, func() string {
+		if direction == "received" {
+			return ""
+		}
+		return "liability"
+	}(), pqArray(formPatterns))
+	if err != nil {
+		return nil, 0, 0, 0, "", fmt.Errorf("find wht accounts: %w", err)
+	}
+	whtAccounts := []string{}
+	for acctRows.Next() {
+		var code string
+		if err := acctRows.Scan(&code); err != nil {
+			acctRows.Close()
+			return nil, 0, 0, 0, "", fmt.Errorf("scan wht account: %w", err)
+		}
+		whtAccounts = append(whtAccounts, code)
+	}
+	acctRows.Close()
+	if err := acctRows.Err(); err != nil {
+		return nil, 0, 0, 0, "", fmt.Errorf("read wht accounts: %w", err)
+	}
+	if len(whtAccounts) == 0 {
+		note := "ไม่พบบัญชีภาษีหัก ณ ที่จ่ายในผังบัญชี (ค้นตามแบบยื่น ภ.ง.ด.) รายงานจึงว่าง — เพิ่มบัญชีภาษีหักในผังบัญชีแล้วรายงานจะแสดงทันที"
+		return []TaxWithholdingRow{}, 0, 0, 0, note, nil
+	}
+
+	lineQuery := `
+SELECT l.journal_id, l.doc_no, TO_CHAR(l.entry_date, 'YYYY-MM-DD'), l.credit, l.debit, l.description
+FROM gl_lines l
+WHERE l.company = $1
+  AND l.account_code = ANY($2)
+  AND l.` + suppress + ` > 0
+  AND EXTRACT(YEAR FROM l.entry_date) = $3
+  AND EXTRACT(MONTH FROM l.entry_date) = $4
+ORDER BY l.entry_date ASC, l.journal_id ASC
+LIMIT $5 OFFSET $6`
+	lineRows, err := db.QueryContext(ctx, lineQuery, company, pqArray(whtAccounts), year, month, limit, offset)
+	if err != nil {
+		return nil, 0, 0, 0, "", fmt.Errorf("read wht lines: %w", err)
+	}
+	type lineRow struct {
+		journalID, docNo, docDate, description string
+		credit, debit                          float64
+	}
+	var lines []lineRow
+	for lineRows.Next() {
+		var r lineRow
+		if err := lineRows.Scan(&r.journalID, &r.docNo, &r.docDate, &r.credit, &r.debit, &r.description); err != nil {
+			lineRows.Close()
+			return nil, 0, 0, 0, "", fmt.Errorf("scan wht line: %w", err)
+		}
+		lines = append(lines, r)
+	}
+	lineRows.Close()
+	if err := lineRows.Err(); err != nil {
+		return nil, 0, 0, 0, "", fmt.Errorf("read wht lines: %w", err)
+	}
+
+	results := make([]TaxWithholdingRow, 0, len(lines))
+	var basetotal, whttotal float64
+	for _, line := range lines {
+		row := TaxWithholdingRow{
+			JournalID:   line.journalID,
+			DocNo:       line.docNo,
+			DocDate:     line.docDate,
+			Description: line.description,
+		}
+		if direction == "paid" {
+			row.WhtAmount = line.credit
+		} else {
+			row.WhtAmount = line.debit
+		}
+		whttotal += row.WhtAmount
+
+		if err := fillWithholdingEvidence(ctx, db, company, line.journalID, direction, &row); err != nil {
+			return nil, 0, 0, 0, "", err
+		}
+		if row.BaseAmount > 0 {
+			row.RatePercent = math.Round(row.WhtAmount/row.BaseAmount*1000) / 10
+		}
+		basetotal += row.BaseAmount
+		results = append(results, row)
+	}
+	return results, len(results), basetotal, whttotal, "", nil
+}
+
+// fillWithholdingEvidence - โยงคู่ค้าและฐานภาษีของใบจากหลักฐานประกอบจริง
+func fillWithholdingEvidence(ctx context.Context, db *sql.DB, company, journalID, direction string, row *TaxWithholdingRow) error {
+	var payload []byte
+	if err := db.QueryRowContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind='journals' AND id=$2`, company, journalID).Scan(&payload); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return fmt.Errorf("load journal payload: %w", err)
+	}
+
+	var journal struct {
+		Description string `json:"description"`
+		Details     *struct {
+			Documents []struct {
+				ID          string `json:"id"`
+				Ledger      string `json:"ledger"`
+				PartnerCode string `json:"partner_code"`
+			} `json:"documents"`
+			Settlements []struct {
+				ID                string          `json:"id"`
+				PartnerCode       string          `json:"partner_code"`
+				DebtDocumentID    string          `json:"debt_document_id"`
+				PaymentDocumentID string          `json:"payment_document_id"`
+				Amount            json.RawMessage `json:"amount"`
+			} `json:"settlements"`
+		} `json:"details"`
+	}
+	if err := json.Unmarshal(payload, &journal); err != nil {
+		return fmt.Errorf("parse journal payload: %w", err)
+	}
+	if row.Description == "" {
+		row.Description = journal.Description
+	}
+
+	// ฐานภาษี: รวมยอดตัดยอดของใบ (ตัดชำระจริงต่อบิล) — ยอดหักยังเป็นยอดบรรทัดจริงเสมอ
+	settleBase := 0.0
+	partnerCode := ""
+	var evidenceDocID string
+	if journal.Details != nil {
+		for _, s := range journal.Details.Settlements {
+			if v, err := strconv.ParseFloat(strings.Trim(string(s.Amount), `"`), 64); err == nil {
+				settleBase += v
+			}
+			if partnerCode == "" {
+				partnerCode = s.PartnerCode
+			}
+			if direction == "paid" && evidenceDocID == "" && s.DebtDocumentID != "" {
+				evidenceDocID = s.DebtDocumentID
+			}
+			if direction == "received" && evidenceDocID == "" && s.PaymentDocumentID != "" {
+				evidenceDocID = s.PaymentDocumentID
+			}
+		}
+		// คู่ค้าจากเอกสารของใบนี้เอง (ใบจ่ายมักผูกเอกสารลดหนี้ฝั่งเจ้าหนี้, ใบถูกหักผูกเอกสารลูกหนี้)
+		wantLedger := "ap"
+		if direction == "received" {
+			wantLedger = "ar"
+		}
+		for _, d := range journal.Details.Documents {
+			if d.Ledger == wantLedger && d.PartnerCode != "" {
+				partnerCode = d.PartnerCode
+				if evidenceDocID == "" {
+					evidenceDocID = d.ID
+				}
+				break
+			}
+		}
+	}
+	if settleBase > 0 {
+		row.BaseAmount = settleBase
+	} else {
+		// ไม่มีการตัดยอด: ใช้ผลรวมฝั่งตรงข้ามของบรรทัดภาษีหักเป็นฐาน (เช่น เดบิตเจ้าหนี้ในใบจ่าย)
+		var base sql.NullFloat64
+		opposite := "debit"
+		if direction == "received" {
+			opposite = "credit"
+		}
+		if err := db.QueryRowContext(ctx, `SELECT COALESCE(SUM(`+opposite+`),0) FROM gl_lines WHERE company=$1 AND journal_id=$2 AND account_code NOT IN (
+			SELECT payload->>'accountcode' FROM gl_records WHERE company=$1 AND kind='accounts' AND EXISTS (
+				SELECT 1 FROM jsonb_array_elements(payload->'names') n WHERE n->>'name' LIKE '%ภาษีหัก ณ ที่จ่าย%' OR n->>'name' LIKE '%ภาษีถูกหัก%'))`,
+			company, journalID).Scan(&base); err == nil && base.Valid {
+			row.BaseAmount = base.Float64
+		}
+	}
+
+	if partnerCode == "" && evidenceDocID != "" {
+		if err := db.QueryRowContext(ctx, `SELECT partner_code FROM gl_subledger_documents WHERE company=$1 AND id=$2`, company, evidenceDocID).Scan(&partnerCode); err != nil && err != sql.ErrNoRows {
+			return fmt.Errorf("load document partner: %w", err)
+		}
+	}
+	if partnerCode == "" {
+		return nil
+	}
+	row.PartnerCode = partnerCode
+	var name, taxID, address sql.NullString
+	if err := db.QueryRowContext(ctx, `SELECT COALESCE(payload->>'name_th',''), COALESCE(payload->>'tax_id',''), COALESCE(payload->>'address','') FROM gl_subledger_partners WHERE company=$1 AND code=$2`, company, partnerCode).Scan(&name, &taxID, &address); err != nil {
+		if err != sql.ErrNoRows {
+			return fmt.Errorf("load partner master: %w", err)
+		}
+		return nil
+	}
+	row.PartnerName, row.TaxID, row.Address = name.String, taxID.String, address.String
+	return nil
+}
+
+// pqArray - แปลงรายการรหัสบัญชีเป็น text[] สำหรับ ANY($n) (ใช้ lib/pq เวอร์ชันเดียวกับทั้งโปรเจกต์)
+func pqArray(items []string) interface{} {
+	return pq.StringArray(items)
 }
