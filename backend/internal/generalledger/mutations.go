@@ -186,6 +186,18 @@ func (s *Store) accountMutation(ctx context.Context, scope Scope, cmd Command, n
 			return nil, userError(CodeHasChildren, "ไม่สามารถกำหนดระดับบัญชีนี้ได้ เนื่องจากมีบัญชีลูกที่มีระดับน้อยกว่าหรือเท่ากัน")
 		}
 	}
+	if cmd.Action == "update" && next.AllowPosting {
+		f := scopeFilter(scope)
+		f["parentaccountcode"] = old.AccountCode
+		f["isdeleted"] = false
+		n, err := s.db.Collection("chart_of_accounts").CountDocuments(ctx, f)
+		if err != nil {
+			return nil, err
+		}
+		if n > 0 {
+			return nil, userError(CodeTreeInvalid, "ผังบัญชีที่เป็นหัว (มีตัวลูก) ไม่สามารถเปิดให้บันทึกรายการได้")
+		}
+	}
 	next.Identity = identityFor(scope, cmd, old.Identity, now)
 	return single(s.save(ctx, scope, "accounts", next.ID, next.AccountCode, next, cmd.Version))
 }

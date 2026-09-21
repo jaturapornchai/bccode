@@ -1,7 +1,6 @@
 package productimport
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -106,14 +105,6 @@ func NewProductImportHttp(ms *microservice.Microservice, cfg config.IConfig) Pro
 	unitSvc := unit_services.NewUnitHttpService(unitRepo, repo, unitMqRepo, masterSyncCacheRepo)
 
 	eventOutbox := outbox.New(pst)
-	mq := cfg.MQConfig()
-	delivery := microservice.NewProducerWithTimeout(mq.URI(), mq.SecurityProtocol(), mq.SSLCAFile(), mq.SSLKeyFile(), mq.SSLCertFile(), ms.Logger, 30*time.Second)
-	ms.RegisterBackgroundWorker(func(ctx context.Context) {
-		defer delivery.Close()
-		eventOutbox.Run(ctx, delivery.SendMessage, func(error) {
-			ms.Logger.Warnf("Barcode import outbox delivery pending; inspect pending event IDs and retry status")
-		})
-	})
 	stockBalanceSvc := product_serrvices.NewProductBarcodeHttpService(repo, repoMaster, unitmaster, unitSvc, *creditorRepo, repoMq, repoCh, masterSyncCacheRepo, priceHistorySvc, warehouseRepo, eventOutbox, productMQRepo)
 
 	svc := services.NewProductImportService(chRepo, taskStatusRepo, repo, stockBalanceSvc, unitRepo, groupProductRepo, groupsuboneProductRepo, groupsubtwoproductRepo, brandProductRepo, designProductRepo, modelProductRepo, patternProductRepo, gradeProductRepo, categoryProductRepo, classProductRepo, branchRepo, businessTypeRepo, utils.RandStringBytesMaskImprSrcUnsafe, utils.NewGUID, safeTimeNow)

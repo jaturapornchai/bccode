@@ -39,6 +39,7 @@ import {
 import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
+import { MCPTokenAdminLink } from "../mcp-tokens/token-admin-link";
 
 type Step = "loading" | "shops" | "create" | "branches" | "access";
 type Notice = { type: "success" | "error" | "info"; text?: string; textKey?: WorkspaceTextKey } | null;
@@ -1369,6 +1370,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   })}
                 </div>
               ))}
+              <MCPTokenAdminLink language={language} collapsed={accessSidebarCollapsed} />
             </aside>
 
             {/* คอนเทนต์แสดงผลฝั่งขวา */}

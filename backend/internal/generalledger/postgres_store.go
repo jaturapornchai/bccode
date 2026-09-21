@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 )
 
 // PostgresStore implements a 100% PostgreSQL-based General Ledger Store.
@@ -64,8 +64,11 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if collectionName(cmd.Resource) == "" && cmd.Resource != "processes" {
 		return Result{}, fmt.Errorf("ไม่รองรับรายการบัญชีนี้")
 	}
-	if !contains([]string{"create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess"}, cmd.Action) {
+	if !contains([]string{"reconcile", "review", "create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess"}, cmd.Action) {
 		return Result{}, fmt.Errorf("ไม่รองรับคำสั่งบัญชีนี้")
+	}
+	if cmd.Action == "reconcile" && cmd.Resource != "journals" {
+		return Result{}, fmt.Errorf("กระทบยอดได้เฉพาะใบสำคัญ")
 	}
 	if cmd.Action != "create" && cmd.ID == "" {
 		return Result{}, fmt.Errorf("กรุณาเลือกรายการบัญชี")
@@ -102,6 +105,17 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 				return Result{}, fmt.Errorf("รหัสคำขอนี้ถูกใช้แล้วด้วยข้อมูลที่ต่างกัน")
 			}
 			res := Result{Sequence: savedEvent.Sequence}
+			if cmd.Action == "review" {
+				res.ID = cmd.ID
+				res.Version = cmd.Version
+			}
+			if cmd.Resource == "processes" && (cmd.Action == "close" || cmd.Action == "year-end") {
+				for _, change := range savedEvent.Changes {
+					if change.Kind == "journals" {
+						res.CreatedJournals++
+					}
+				}
+			}
 			if len(savedEvent.Changes) > 0 {
 				res.ID = savedEvent.Changes[0].ID
 				var idt Identity
@@ -112,6 +126,12 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 		}
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return Result{}, err
+	}
+
+	if result, found, err := s.existingSourceJournal(ctx, tx, scope, cmd); err != nil {
+		return Result{}, err
+	} else if found {
+		return result, nil
 	}
 
 	now := time.Now().UTC()
@@ -152,6 +172,10 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 		return Result{}, err
 	}
 
+	if err = s.recordSourceJournal(ctx, tx, scope, cmd, changes, sequence, now); err != nil {
+		return Result{}, err
+	}
+
 	eventHash, data, err := eventDigest(event)
 	if err != nil {
 		return Result{}, err
@@ -171,6 +195,10 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	}
 
 	res := Result{Sequence: event.Sequence, ProjectionPending: false}
+	if cmd.Action == "review" {
+		res.ID = cmd.ID
+		res.Version = cmd.Version
+	}
 	if len(changes) > 0 {
 		res.ID = changes[0].ID
 		var idt Identity
@@ -222,8 +250,14 @@ func (s *PostgresStore) applyMutation(ctx context.Context, tx *sql.Tx, scope Sco
 	case "accounts":
 		return s.mutateAccount(ctx, tx, scope, cmd, now)
 	case "fiscal-years":
-		return s.mutateFiscalYear(ctx, tx, scope, cmd, now)
+		return s.mutatePGFiscalYear(ctx, tx, scope, cmd, now)
 	case "journals":
+		if cmd.Action == "reconcile" {
+			return s.mutateReconciliation(ctx, tx, scope, cmd, now)
+		}
+		if cmd.Action == "review" {
+			return s.mutateReview(ctx, tx, scope, cmd, now)
+		}
 		return s.mutateJournal(ctx, tx, scope, cmd, now)
 	case "processes":
 		return s.mutateProcess(ctx, tx, scope, cmd, now)
@@ -238,7 +272,7 @@ func (s *PostgresStore) mutateAccount(ctx context.Context, tx *sql.Tx, scope Sco
 			return nil, fmt.Errorf("ไม่พบข้อมูลผังบัญชี")
 		}
 		acc := *cmd.Account
-		if err := acc.Validate(); err != nil {
+		if err := s.validatePGAccount(ctx, tx, scope, &acc, nil); err != nil {
 			return nil, err
 		}
 		if err := s.checkDuplicateCode(ctx, tx, scope.Company, "accounts", acc.AccountCode, ""); err != nil {
@@ -261,6 +295,9 @@ func (s *PostgresStore) mutateAccount(ctx context.Context, tx *sql.Tx, scope Sco
 	}
 
 	if cmd.Action == "delete" {
+		if err := s.deletePGAccountGuard(ctx, tx, scope, old.AccountCode); err != nil {
+			return nil, err
+		}
 		var count int
 		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM gl_lines WHERE company=$1 AND account_code=$2`, scope.Company, old.AccountCode).Scan(&count); err != nil {
 			return nil, err
@@ -285,7 +322,7 @@ func (s *PostgresStore) mutateAccount(ctx context.Context, tx *sql.Tx, scope Sco
 		if next.AccountCode != old.AccountCode {
 			return nil, userError(CodeImmutableCode, "รหัสบัญชีแก้ไม่ได้ กรุณาสร้างบัญชีใหม่")
 		}
-		if err := next.Validate(); err != nil {
+		if err := s.validatePGAccount(ctx, tx, scope, &next, &old); err != nil {
 			return nil, err
 		}
 		next.Identity = updateIdentity(scope, old.Identity, now)
@@ -299,64 +336,11 @@ func (s *PostgresStore) mutateAccount(ctx context.Context, tx *sql.Tx, scope Sco
 	return nil, fmt.Errorf("ไม่รองรับคำสั่งนี้สำหรับผังบัญชี")
 }
 
-func (s *PostgresStore) mutateFiscalYear(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {
-	if cmd.Action == "create" {
-		if cmd.FiscalYear == nil {
-			return nil, fmt.Errorf("ไม่พบข้อมูลปีบัญชี")
-		}
-		fy := *cmd.FiscalYear
-		if fy.Code == "" || fy.StartDate == "" || fy.EndDate == "" {
-			return nil, fmt.Errorf("กรุณาระบุรหัสและช่วงวันที่ของปีบัญชี")
-		}
-		if fy.StartDate > fy.EndDate {
-			return nil, fmt.Errorf("วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด")
-		}
-		if fy.ProfitLossAccount == fy.RetainedEarningsAccount {
-			return nil, fmt.Errorf("บัญชีกำไรขาดทุนและกำไรสะสมต้องเป็นคนละบัญชี")
-		}
-		if err := s.checkDuplicateCode(ctx, tx, scope.Company, "fiscal-years", fy.Code, ""); err != nil {
-			return nil, err
-		}
-		fy.Identity = newIdentity(scope, now)
-		data, err := json.Marshal(fy)
-		if err != nil {
-			return nil, err
-		}
-		return []Change{{Kind: "fiscal-years", ID: fy.ID, Code: fy.Code, Payload: string(data)}}, nil
-	}
-
-	var old FiscalYear
-	if err := s.loadRecord(ctx, tx, scope.Company, "fiscal-years", cmd.ID, &old); err != nil {
-		return nil, err
-	}
-	if err := checkVersion(cmd, old.Identity); err != nil {
-		return nil, err
-	}
-
-	if cmd.Action == "update" {
-		if cmd.FiscalYear == nil {
-			return nil, fmt.Errorf("ไม่พบข้อมูลปีบัญชี")
-		}
-		next := *cmd.FiscalYear
-		if next.Code != old.Code {
-			return nil, fmt.Errorf("รหัสปีบัญชีแก้ไม่ได้")
-		}
-		if next.ProfitLossAccount == next.RetainedEarningsAccount {
-			return nil, fmt.Errorf("บัญชีกำไรขาดทุนและกำไรสะสมต้องเป็นคนละบัญชี")
-		}
-		next.Identity = updateIdentity(scope, old.Identity, now)
-		data, err := json.Marshal(next)
-		if err != nil {
-			return nil, err
-		}
-		return []Change{{Kind: "fiscal-years", ID: next.ID, Code: next.Code, Payload: string(data)}}, nil
-	}
-
-	return nil, fmt.Errorf("ไม่รองรับคำสั่งนี้สำหรับปีบัญชี")
-}
-
 func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {
 	kind := cmd.Resource
+	if kind == "periods" {
+		return s.mutatePeriod(ctx, tx, scope, cmd, now)
+	}
 	if cmd.Action == "create" || cmd.Action == "lock" {
 		if cmd.Master == nil {
 			return nil, fmt.Errorf("ไม่พบข้อมูลหลัก")
@@ -424,6 +408,10 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 			return nil, fmt.Errorf("ไม่พบข้อมูลเอกสารรายวัน")
 		}
 		j := *cmd.Journal
+		if j.PostedAt != nil || j.PostedBy != "" || j.ReversalOf != "" || j.IsDeleted || (j.Status != "" && j.Status != "draft") {
+			return nil, fmt.Errorf("สถานะผ่านรายการและข้อมูลกลับรายการกำหนดโดยระบบเท่านั้น")
+		}
+		j.Lines = append([]Line(nil), j.Lines...)
 		if err := s.validateJournalLines(ctx, tx, scope, &j); err != nil {
 			return nil, err
 		}
@@ -432,78 +420,126 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		}
 		j.Status = "draft"
 		j.Identity = newIdentity(scope, now)
+		related, err := s.syncJournalDetails(ctx, tx, scope, &j, nil, "create", now)
+		if err != nil {
+			return nil, err
+		}
 		data, err := json.Marshal(j)
 		if err != nil {
 			return nil, err
 		}
-		return []Change{{Kind: "journals", ID: j.ID, Code: j.DocNo, Payload: string(data)}}, nil
+		return append([]Change{{Kind: "journals", ID: j.ID, Code: j.DocNo, Payload: string(data)}}, related...), nil
 	}
 
 	var old Journal
 	if err := s.loadRecord(ctx, tx, scope.Company, "journals", cmd.ID, &old); err != nil {
 		return nil, err
 	}
+	if scope.Branch != "" && old.BranchCode != scope.Branch {
+		return nil, ErrNotFound
+	}
 	if err := checkVersion(cmd, old.Identity); err != nil {
 		return nil, err
 	}
+	previous := old
 
 	if cmd.Action == "delete" {
-		if old.Status == "posted" {
+		if err := s.protectGeneratedOpening(ctx, tx, scope, old); err != nil {
+			return nil, err
+		}
+		if _, err := s.openPGYear(ctx, tx, scope, old.FiscalYear); err != nil {
+			return nil, err
+		}
+		if err := s.checkOpenDate(ctx, tx, scope, old.Date); err != nil {
+			return nil, err
+		}
+		if old.Status != "draft" {
 			return nil, fmt.Errorf("ห้ามลบรายการที่ผ่านบัญชีแล้ว กรุณาสร้างใบกลับรายการแทน")
 		}
 		old.Identity = updateIdentity(scope, old.Identity, now)
 		old.IsDeleted = true
+		related, err := s.syncJournalDetails(ctx, tx, scope, &old, &previous, "delete", now)
+		if err != nil {
+			return nil, err
+		}
 		data, err := json.Marshal(old)
 		if err != nil {
 			return nil, err
 		}
-		return []Change{{Kind: "journals", ID: old.ID, Code: old.DocNo, Payload: string(data)}}, nil
+		return append([]Change{{Kind: "journals", ID: old.ID, Code: old.DocNo, Payload: string(data)}}, related...), nil
 	}
 
 	if cmd.Action == "update" {
-		if old.Status == "posted" {
+		if err := s.protectGeneratedOpening(ctx, tx, scope, old); err != nil {
+			return nil, err
+		}
+		if _, err := s.openPGYear(ctx, tx, scope, old.FiscalYear); err != nil {
+			return nil, err
+		}
+		if err := s.checkOpenDate(ctx, tx, scope, old.Date); err != nil {
+			return nil, err
+		}
+		if old.Status != "draft" {
 			return nil, fmt.Errorf("ห้ามแก้ไขรายการที่ผ่านบัญชีแล้ว")
 		}
 		if cmd.Journal == nil {
 			return nil, fmt.Errorf("ไม่พบข้อมูลเอกสารรายวัน")
 		}
 		next := *cmd.Journal
-		if next.DocNo != old.DocNo {
+		next.Lines = append([]Line(nil), next.Lines...)
+		if err := preserveJournalSource(old, next); err != nil {
+			return nil, err
+		}
+		if next.DocNo != old.DocNo || next.BookCode != old.BookCode || next.Kind != old.Kind {
 			return nil, fmt.Errorf("เลขที่เอกสารแก้ไม่ได้")
 		}
 		if err := s.validateJournalLines(ctx, tx, scope, &next); err != nil {
 			return nil, err
 		}
 		next.Status = old.Status
+		next.PostedAt = old.PostedAt
+		next.PostedBy = old.PostedBy
+		next.ReversalOf = old.ReversalOf
 		next.Identity = updateIdentity(scope, old.Identity, now)
+		related, err := s.syncJournalDetails(ctx, tx, scope, &next, &previous, "update", now)
+		if err != nil {
+			return nil, err
+		}
 		data, err := json.Marshal(next)
 		if err != nil {
 			return nil, err
 		}
-		return []Change{{Kind: "journals", ID: next.ID, Code: next.DocNo, Payload: string(data)}}, nil
+		return append([]Change{{Kind: "journals", ID: next.ID, Code: next.DocNo, Payload: string(data)}}, related...), nil
 	}
 
 	if cmd.Action == "post" {
-		if old.Status == "posted" {
+		if old.Status != "draft" {
 			return nil, fmt.Errorf("รายการนี้ผ่านบัญชีแล้ว")
+		}
+		if err := s.validateJournalLines(ctx, tx, scope, &old); err != nil {
+			return nil, err
 		}
 		old.Status = "posted"
 		tNow := now
 		old.PostedAt = &tNow
 		old.PostedBy = scope.Actor
 		old.Identity = updateIdentity(scope, old.Identity, now)
+		related, err := s.syncJournalDetails(ctx, tx, scope, &old, &previous, "post", now)
+		if err != nil {
+			return nil, err
+		}
 		data, err := json.Marshal(old)
 		if err != nil {
 			return nil, err
 		}
-		return []Change{{Kind: "journals", ID: old.ID, Code: old.DocNo, Payload: string(data)}}, nil
+		return append([]Change{{Kind: "journals", ID: old.ID, Code: old.DocNo, Payload: string(data)}}, related...), nil
 	}
 
 	if cmd.Action == "reverse" {
 		if old.Status != "posted" {
 			return nil, fmt.Errorf("กลับรายการได้เฉพาะรายการที่ผ่านบัญชีแล้วเท่านั้น")
 		}
-		if cmd.DocNo == "" || cmd.Date == "" {
+		if !validCode(cmd.DocNo) || !validDate(cmd.Date) || cmd.Date < old.Date || strings.TrimSpace(cmd.Reason) == "" || old.Kind == "reversal" || old.Kind == "closing" {
 			return nil, fmt.Errorf("กรุณาระบุเลขที่และวันที่ของใบกลับรายการ")
 		}
 		if err := s.checkDuplicateCode(ctx, tx, scope.Company, "journals", cmd.DocNo, ""); err != nil {
@@ -524,17 +560,22 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 			}
 		}
 
+		year, err := s.pgYearAt(ctx, tx, scope, cmd.Date)
+		if err != nil {
+			return nil, err
+		}
 		revDoc := Journal{
 			DocNo:       cmd.DocNo,
 			Date:        cmd.Date,
 			BookCode:    old.BookCode,
-			FiscalYear:  old.FiscalYear,
+			FiscalYear:  year.Code,
+			BranchCode:  old.BranchCode,
 			Description: "กลับรายการของเอกสาร " + old.DocNo + ": " + cmd.Reason,
 			Reference:   old.DocNo,
-			Kind:        old.Kind,
+			Kind:        "reversal",
 			Status:      "posted",
 			Lines:       revLines,
-			ReversalOf:  old.DocNo,
+			ReversalOf:  old.ID,
 			Reason:      cmd.Reason,
 			Identity:    newIdentity(scope, now),
 		}
@@ -543,6 +584,9 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		revDoc.PostedAt = &tNow
 		revDoc.PostedBy = scope.Actor
 
+		if err := s.validateJournalLines(ctx, tx, scope, &revDoc); err != nil {
+			return nil, err
+		}
 		revData, err := json.Marshal(revDoc)
 		if err != nil {
 			return nil, err
@@ -551,65 +595,52 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		old.Status = "reversed"
 		old.Reason = cmd.Reason
 		old.Identity = updateIdentity(scope, old.Identity, now)
+		related, err := s.syncJournalDetails(ctx, tx, scope, &old, &previous, "reverse", now, cmd.Date)
+		if err != nil {
+			return nil, err
+		}
 		oldData, err := json.Marshal(old)
 		if err != nil {
 			return nil, err
 		}
 
-		return []Change{
+		return append([]Change{
 			{Kind: "journals", ID: old.ID, Code: old.DocNo, Payload: string(oldData)},
 			{Kind: "journals", ID: revDoc.ID, Code: revDoc.DocNo, Payload: string(revData)},
-		}, nil
+		}, related...), nil
 	}
 
 	return nil, fmt.Errorf("ไม่รองรับคำสั่งนี้สำหรับเอกสารรายวัน")
 }
 
 func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, scope Scope, j *Journal) error {
-	if len(j.Lines) < 2 {
-		return fmt.Errorf("รายการบัญชีต้องมีอย่างน้อย 2 บรรทัด")
+	if err := validateJournalSource(*j); err != nil {
+		return err
 	}
-
-	// ตรวจสอบ Period Lock ในงวดที่คีย์
-	var isLocked bool
-	err := tx.QueryRowContext(ctx, `SELECT COALESCE((payload->>'locked')::boolean,false) FROM gl_records WHERE company=$1 AND kind='periods' AND payload->>'startdate'<=$2 AND payload->>'enddate'>=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) LIMIT 1`, scope.Company, j.Date).Scan(&isLocked)
-	if err == nil && isLocked {
-		return fmt.Errorf("งวดบัญชีของวันที่ %s ถูกล็อกแล้ว ไม่อนุญาตให้บันทึกหรือแก้ไข", j.Date)
+	if scope.Branch != "" && j.BranchCode != scope.Branch {
+		return ErrNotFound
 	}
-
-	totalDr := decimal.Zero
-	totalCr := decimal.Zero
-
-	for idx, l := range j.Lines {
-		if l.AccountCode == "" {
-			return fmt.Errorf("บรรทัดที่ %d: กรุณาระบุรหัสบัญชี", idx+1)
-		}
-		dr, _ := decimal.NewFromString(string(l.Debit))
-		cr, _ := decimal.NewFromString(string(l.Credit))
-		if dr.IsNegative() || cr.IsNegative() {
-			return fmt.Errorf("บรรทัดที่ %d: จำนวนเงินต้องไม่ติดลบ", idx+1)
-		}
-		if dr.IsZero() && cr.IsZero() {
-			return fmt.Errorf("บรรทัดที่ %d: ต้องระบุจำนวนเงินเดบิตหรือเครดิต", idx+1)
-		}
-		if !dr.IsZero() && !cr.IsZero() {
-			return fmt.Errorf("บรรทัดที่ %d: ไม่สามารถระบุทั้งเดบิตและเครดิตในบรรทัดเดียวกันได้", idx+1)
-		}
-		totalDr = totalDr.Add(dr)
-		totalCr = totalCr.Add(cr)
+	year, err := s.pgYear(ctx, tx, scope, j.FiscalYear)
+	if err != nil {
+		return err
 	}
-
-	if !totalDr.Equal(totalCr) {
-		return fmt.Errorf("ยอดเดบิต (%s) และเครดิต (%s) ไม่เท่ากัน ต่างกัน %s", totalDr.String(), totalCr.String(), totalDr.Sub(totalCr).Abs().String())
+	accounts, err := loadLineAccounts(ctx, tx, scope.Company, j.Lines)
+	if err != nil {
+		return err
+	}
+	if err = j.Validate(year, accounts); err != nil {
+		return err
+	}
+	if j.Kind == "opening" && j.Date != year.StartDate {
+		return fmt.Errorf("ยอดยกมาต้องลงวันที่เริ่มปีบัญชี")
+	}
+	if err = s.checkOpenDate(ctx, tx, scope, j.Date); err != nil {
+		return err
+	}
+	for i := range j.Lines {
+		j.Lines[i].AccountName = accounts[j.Lines[i].AccountCode].ThaiName()
 	}
 	return nil
-}
-
-func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {
-	if cmd.Action == "recalculate" {
-		return []Change{}, nil // Rebuilds lines and balances directly
-	}
-	return []Change{}, nil
 }
 
 func newIdentity(scope Scope, now time.Time) Identity {

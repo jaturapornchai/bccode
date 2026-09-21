@@ -43,3 +43,30 @@ BEGIN
     END IF;
 END;
 $$;
+CREATE TABLE IF NOT EXISTS gl_journal_review_events (
+    company text NOT NULL, journal_id text NOT NULL,
+    event_no bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    journal_version bigint NOT NULL CHECK (journal_version > 0),
+    status smallint NOT NULL CHECK (status IN (1,2,3)),
+    note text NOT NULL CHECK (length(note) <= 4000),
+    reviewed_by text NOT NULL CHECK (btrim(reviewed_by) <> ''),
+    reviewed_at timestamptz NOT NULL,
+    CHECK (status <> 2 OR btrim(note) <> '')
+);
+CREATE INDEX IF NOT EXISTS gl_journal_review_current_idx ON gl_journal_review_events(company,journal_id,journal_version,event_no DESC);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='gl_journal_review_events'::regclass AND tgname='gl_journal_review_immutable') THEN
+        CREATE TRIGGER gl_journal_review_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON gl_journal_review_events
+        FOR EACH STATEMENT EXECUTE FUNCTION gl_reject_audit_mutation();
+    END IF;
+END; $$;
+
+-- Stable source document identity survives new request IDs and projection rebuilds.
+CREATE TABLE IF NOT EXISTS gl_source_journals (
+    company text NOT NULL, source_system text NOT NULL, source_record_id text NOT NULL,
+    journal_id text NOT NULL, request_hash text NOT NULL, sequence bigint NOT NULL,
+    version bigint NOT NULL, created_at timestamptz NOT NULL,
+    PRIMARY KEY (company,source_system,source_record_id), UNIQUE(company,journal_id),
+    CHECK (length(btrim(source_system)) BETWEEN 1 AND 100),
+    CHECK (length(btrim(source_record_id)) BETWEEN 1 AND 150)
+);

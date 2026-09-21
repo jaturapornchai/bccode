@@ -45,6 +45,16 @@ func TestFrontendAccountCreateBodyDecodesWithCurrentSource(t *testing.T) {
 	if err := cmd.Account.Validate(); err != nil {
 		t.Fatalf("account payload fails model validation: %v", err)
 	}
+
+	// Test when parentaccountcode is null as per mydocs/specs/chatofaccount.md
+	bodyNullParent := strings.Replace(frontendAccountCreate, `"parentaccountcode": ""`, `"parentaccountcode": null`, 1)
+	cmdNull, err := decodeCommand(strings.NewReader(bodyNullParent))
+	if err != nil {
+		t.Fatalf("frontend account create with parentaccountcode null rejected: %v", err)
+	}
+	if cmdNull.Account.ParentAccountCode != "" {
+		t.Fatalf("expected empty string for ParentAccountCode in Go struct, got %q", cmdNull.Account.ParentAccountCode)
+	}
 }
 
 // Any key the backend struct does not know makes decodeCommand fail, which the
@@ -125,5 +135,30 @@ func TestDecodeFailureIsThaiInvalidPayload(t *testing.T) {
 			t.Fatalf("%s: marshal: %v", tc.name, err)
 		}
 		t.Logf("%s -> 400 %s", tc.name, raw)
+	}
+}
+
+func TestJournalEvidenceDecimalBoundary(t *testing.T) {
+	for _, kind := range []string{"documents", "allocations", "settlements", "statement_lines", "matches"} {
+		body := `{"resource":"journals","action":"reconcile","journal":{"details":{"` + kind + `":[{"amount":"90071992547409.91"}]}}}`
+		command, err := decodeCommand(strings.NewReader(body))
+		if err != nil || command.Journal == nil || command.Journal.Details == nil {
+			t.Fatalf("%s exact decimal rejected: %v", kind, err)
+		}
+		raw, err := json.Marshal(command.Journal.Details)
+		if err != nil || !strings.Contains(string(raw), `"amount":"90071992547409.91"`) {
+			t.Fatalf("%s roundtrip lost precision", kind)
+		}
+		for _, bad := range []string{`90071992547409.91`, `true`, `"NaN"`, `"0.000000001"`} {
+			if _, err = decodeCommand(strings.NewReader(strings.Replace(body, `"90071992547409.91"`, bad, 1))); err == nil {
+				t.Fatalf("%s accepted invalid money %s", kind, bad)
+			}
+		}
+	}
+	if _, err := decodeCommand(strings.NewReader(`{"journal":{"details":{"statement_lines":[{"amount":"0.30","balance_after":10.3}]}}}`)); err == nil {
+		t.Fatal("numeric statement balance accepted")
+	}
+	if _, err := decodeCommand(strings.NewReader(`{"journal":{"details":{"documents":[{"company":"OTHER","amount":"0.30"}]}}}`)); err == nil {
+		t.Fatal("caller company inside evidence accepted")
 	}
 }

@@ -55,6 +55,9 @@ func (p *Postgres) database(ctx context.Context, holding string) (*sql.DB, error
 	if _, err = tx.ExecContext(ctx, postgresSchema); err != nil {
 		return nil, err
 	}
+	if _, err = tx.ExecContext(ctx, subledgerSchema); err != nil {
+		return nil, err
+	}
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -208,7 +211,11 @@ func projectJournal(ctx context.Context, tx *sql.Tx, company string, journal Jou
 	if err := json.Unmarshal(fiscalData, &fiscal); err != nil {
 		return err
 	}
-	if !validDate(journal.Date) || journal.Date < fiscal.StartDate || journal.Date > fiscal.EndDate || len(journal.Lines) < 2 || len(journal.Lines) > 500 {
+	maxLines := 500
+	if journal.Kind == "closing" || journal.Kind == "opening" {
+		maxLines = ProcessBalanceRowLimit
+	}
+	if !validDate(journal.Date) || journal.Date < fiscal.StartDate || journal.Date > fiscal.EndDate || len(journal.Lines) < 2 || len(journal.Lines) > maxLines {
 		return fmt.Errorf("ขอบเขตปีและสกุลเงินบัญชีไม่ถูกต้อง")
 	}
 	accounts, err := loadLineAccounts(ctx, tx, company, journal.Lines)

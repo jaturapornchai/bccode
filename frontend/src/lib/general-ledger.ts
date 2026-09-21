@@ -1,10 +1,11 @@
 import { MENU_SECTIONS } from "./menu-data";
+import type { GLJournalDetails } from "./gl-journal-details";
 
 export type GLIdentity = { id?: string; version?: number; isdeleted?: boolean };
 export type GLAccount = GLIdentity & {
   accountcode: string; names: { code: string; name: string }[];
   accounttype: "asset" | "liability" | "equity" | "income" | "expense";
-  parentaccountcode: string; normalbalance: "debit" | "credit";
+  parentaccountcode: string | null; normalbalance: "debit" | "credit";
   allowposting: boolean; isactive: boolean; accountgroup: string; iscash: boolean;
   level?: number;
 };
@@ -26,11 +27,16 @@ export type GLLine = {
   departmentcode: string; projectcode: string; cashflow: string;
 };
 export type GLJournal = GLIdentity & {
+  details?: GLJournalDetails;
+  source_type?: number; source_system?: string; source_record_id?: string;
   docno: string; date: string; bookcode: string; fiscalyear: string; description: string;
   reference: string; branchcode: string; kind: string; status: string;
   lines: GLLine[]; reversalof?: string; reason?: string;
 };
 export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate;
+export type GLReviewStatus = 1 | 2 | 3;
+export type GLReviewEvent = { eventno: number; version: number; status: GLReviewStatus; note: string; reviewedby: string; reviewedat: string };
+export type GLJournalReview = { journalid: string; version: number; status: GLReviewStatus; eventno: number; events: GLReviewEvent[] };
 export type GLPage<T> = { items: T[]; total: number; page: number; limit: number; sequence: number };
 export type GLReport = {
   columns: { key: string; label: string; amount?: boolean }[];
@@ -42,9 +48,10 @@ export type GLResource = typeof GL_RESOURCES[number];
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
-  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster; journal?: GLJournal; statementtemplate?: GLStatementTemplate;
+  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster; journal?: GLJournal | Pick<GLJournal, "details">; statementtemplate?: GLStatementTemplate;
+  review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
 };
-export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison"] as const;
+export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched"] as const;
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items);
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
 /** Screen text follows the selected language (AGENTS.md 2026-09-14): [languages.tsv key, Thai fallback]. */
@@ -61,7 +68,7 @@ export const bookLabels: Record<string, GLLabel> = { JV: ["gl_general_journal", 
 export const accountTypes = thaiLabels(accountTypeLabels);
 export const books = thaiLabels(bookLabels);
 export function accountName(account: GLAccount) { return account.names?.find((name) => name.code === "th")?.name ?? account.accountcode; }
-export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: "", normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1 }; }
+export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1 }; }
 
 export const ACCOUNT_TYPE_ORDER: Record<string, number> = {
   asset: 1,

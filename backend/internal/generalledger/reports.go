@@ -19,6 +19,9 @@ type reportContext struct {
 }
 
 func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q ReportQuery) (Report, error) {
+	if name == "ar-outstanding" || name == "ap-outstanding" || name == "bank-unmatched" {
+		return p.SubledgerReport(ctx, scope, name, q)
+	}
 	empty := Report{Columns: []ReportColumn{}, Rows: []map[string]string{}, Totals: map[string]string{}, Warnings: []string{}}
 	db, err := p.database(ctx, scope.Holding)
 	if err != nil {
@@ -147,18 +150,18 @@ type reportTotal struct {
 	expr string
 }
 
-func (r reportContext) run(ctx context.Context, cte, order string, columns []ReportColumn, totalKeys []string) (Report, error) {
+func (r reportContext) run(ctx context.Context, cte, order string, columns []ReportColumn, totalKeys []string, metadata ...string) (Report, error) {
 	totals := make([]reportTotal, len(totalKeys))
 	for i, key := range totalKeys {
 		totals[i] = reportTotal{key: key, expr: key + "::numeric"}
 	}
-	return r.runWithTotals(ctx, cte, order, columns, totals)
+	return r.runWithTotals(ctx, cte, order, columns, totals, metadata...)
 }
 
 // The rows CTE must expose only text columns and, where needed, private sort
 // columns. PostgreSQL performs all accounting arithmetic before ::text scanning.
 // Consolidates total count, window totals, and paginated rows into a single statement.
-func (r reportContext) runWithTotals(ctx context.Context, cte, order string, columns []ReportColumn, totals []reportTotal) (Report, error) {
+func (r reportContext) runWithTotals(ctx context.Context, cte, order string, columns []ReportColumn, totals []reportTotal, metadata ...string) (Report, error) {
 	result := Report{Columns: columns, Rows: []map[string]string{}, Totals: map[string]string{}, Warnings: []string{}}
 	for _, t := range totals {
 		result.Totals[t.key] = "0"
@@ -168,6 +171,11 @@ func (r reportContext) runWithTotals(ctx context.Context, cte, order string, col
 	for i, column := range columns {
 		selected[i] = column.Key
 		nullCols[i] = "NULL::text"
+	}
+	// Source identifiers and sort keys do not become visible/CSV columns.
+	for _, key := range metadata {
+		selected = append(selected, key)
+		nullCols = append(nullCols, "NULL::text")
 	}
 	windowSums := ""
 	fallbackSums := ""
@@ -208,7 +216,7 @@ func (r reportContext) runWithTotals(ctx context.Context, cte, order string, col
 		var isFallback int
 		var totalRows int64
 		sumVals := make([]string, len(totals))
-		colVals := make([]sql.NullString, len(columns))
+		colVals := make([]sql.NullString, len(selected))
 
 		targets := make([]any, 0, 2+len(totals)+len(columns))
 		targets = append(targets, &isFallback, &totalRows)
@@ -235,6 +243,11 @@ func (r reportContext) runWithTotals(ctx context.Context, cte, order string, col
 			record := make(map[string]string, len(columns))
 			for i, col := range columns {
 				record[col.Key] = colVals[i].String
+			}
+			for i, key := range metadata {
+				if !strings.HasPrefix(key, "__") {
+					record[key] = colVals[len(columns)+i].String
+				}
 			}
 			result.Rows = append(result.Rows, record)
 		}
@@ -288,9 +301,9 @@ func (r reportContext) trialBalance(ctx context.Context, working bool) (Report, 
 func (r reportContext) ledger(ctx context.Context) (Report, error) {
 	cte := r.base() + `, openings AS (SELECT account_code,SUM(debit-credit) AS opening FROM filtered WHERE entry_date<$3::date OR kind='opening' GROUP BY account_code), movements AS (SELECT * FROM filtered WHERE entry_date>=$3::date AND kind<>'opening'), result AS (
       SELECT m.account_code AS accountcode,m.account_name AS accountname,m.entry_date::text AS date,m.doc_no AS docno,m.book_code AS bookcode,m.branch_code AS branchcode,m.department_code AS departmentcode,m.project_code AS projectcode,m.description,
-      m.debit::text,m.credit::text,COALESCE(o.opening,0)::text AS opening,(COALESCE(o.opening,0)+SUM(m.debit-m.credit) OVER(PARTITION BY m.account_code ORDER BY m.entry_date,m.doc_no,m.journal_id,m.line_no ROWS UNBOUNDED PRECEDING))::text AS balance,m.journal_id,m.line_no FROM movements m LEFT JOIN openings o USING(account_code))`
+      m.debit::text,m.credit::text,COALESCE(o.opening,0)::text AS opening,(COALESCE(o.opening,0)+SUM(m.debit-m.credit) OVER(PARTITION BY m.account_code ORDER BY m.entry_date,m.doc_no,m.journal_id,m.line_no ROWS UNBOUNDED PRECEDING))::text AS balance,m.journal_id AS journalid,m.line_no::text AS __line_no FROM movements m LEFT JOIN openings o USING(account_code))`
 	cols := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("date", "วันที่"), textColumn("docno", "เลขที่เอกสาร"), textColumn("bookcode", "สมุดรายวัน"), textColumn("branchcode", "สาขา"), textColumn("departmentcode", "แผนก"), textColumn("projectcode", "โครงการ"), textColumn("description", "รายละเอียด"), amountColumn("opening", "ยอดยกมา"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "ยอดคงเหลือ")}
-	result, err := r.run(ctx, cte, "accountcode,date,docno", cols, []string{"debit", "credit"})
+	result, err := r.run(ctx, cte, "accountcode,date,docno,journalid,__line_no::integer", cols, []string{"debit", "credit"}, "journalid", "__line_no")
 	if err != nil {
 		return result, err
 	}
@@ -393,7 +406,7 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 		       account_code AS accountcode, account_name AS accountname,
 		       description, debit::text, credit::text,
 		       branch_code AS branchcode, department_code AS departmentcode,
-		       project_code AS projectcode, line_no
+		       project_code AS projectcode, journal_id AS journalid, line_no::text AS __line_no
 		FROM movements
 	)`
 	cols := []ReportColumn{
@@ -409,7 +422,7 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 		textColumn("departmentcode", "แผนก"),
 		textColumn("projectcode", "โครงการ"),
 	}
-	return r.run(ctx, cte, "date,docno,line_no", cols, []string{"debit", "credit"})
+	return r.run(ctx, cte, "date,docno,journalid,__line_no::integer", cols, []string{"debit", "credit"}, "journalid", "__line_no")
 }
 
 func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {

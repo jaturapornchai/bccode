@@ -6,10 +6,10 @@ describe("GL authenticated proxy", () => {
   afterEach(() => vi.unstubAllGlobals());
   it("forwards only supported report filters and snapshot", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
-    const response = await GET(new Request("http://localhost/api/gl/reports/ledger?fiscalyear=FY&snapshot=5&holdingcode=other&backendUrl=http://localhost:8888", { headers }), context("reports", "ledger"));
+    const response = await GET(new Request("http://localhost/api/gl/reports/ledger?fiscalyear=FY&snapshot=5&companywide=true&holdingcode=other&backendUrl=http://localhost:8888", { headers }), context("reports", "ledger"));
     expect(response.status).toBe(200);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/gl/v2/reports/ledger?fiscalyear=FY&snapshot=5");
+    expect(url).toContain("/gl/v2/reports/ledger?fiscalyear=FY&snapshot=5&companywide=true");
     expect(url).not.toContain("holdingcode");
     expect(init.headers.Authorization).toBe("Bearer test-token");
   });
@@ -30,5 +30,60 @@ describe("GL authenticated proxy", () => {
     vi.stubGlobal("fetch", vi.fn());
     const response = await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ resource: "journals", action: "create", requestid: "12345678-1234-1234-1234-123456789012", journal: { lines: [{ debit: 0.1, credit: "0" }] } }) }), context("command"));
     expect(response.status).toBe(400); expect(fetch).not.toHaveBeenCalled();
+  });
+  it("forwards journal review reads but rejects missing IDs and nested paths", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    expect((await GET(new Request("http://localhost/api/gl/journal-reviews/j-1?holdingcode=other", { headers }), context("journal-reviews", "j-1"))).status).toBe(200);
+    expect(fetchMock.mock.calls[0][0]).toContain("/gl/v2/journal-reviews/j-1?");
+    expect(fetchMock.mock.calls[0][0]).not.toContain("holdingcode");
+    expect((await GET(new Request("http://localhost/api/gl/journal-reviews", { headers }), context("journal-reviews"))).status).toBe(404);
+    expect((await GET(new Request("http://localhost/api/gl/journal-reviews/j-1/events", { headers }), context("journal-reviews", "j-1", "events"))).status).toBe(404);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("preserves review concurrency fields and strips caller company scope", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const body = { resource: "journals", action: "review", id: "j-1", requestid: "12345678-1234-1234-1234-123456789012", version: 4,
+      holdingcode: "other", reviewedby: "forged", review: { status: 2, note: "ยอดไม่ตรง", expectedEventNo: 7, companycode: "other", createdby: "forged" } };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"))).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ resource: "journals", action: "review", id: "j-1", requestid: body.requestid, version: 4,
+      review: { status: 2, note: "ยอดไม่ตรง", expectedEventNo: 7 } });
+    const response = await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ ...body, resource: "accounts" }) }), context("command"));
+    expect(response.status).toBe(400); expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("pages journal support and preserves as-of while discarding caller scope", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: { items: [], total: 0 } })); vi.stubGlobal("fetch", fetchMock);
+    const response = await GET(new Request("http://localhost/api/gl/journal-support?kind=documents&q=INV-01&page=2&limit=25&asof=2026-06-30&companycode=OTHER&holdingcode=OTHER", { headers }), context("journal-support"));
+    expect(response.status).toBe(200);
+    const query = new URL(fetchMock.mock.calls[0][0]).searchParams;
+    expect(Object.fromEntries(query)).toEqual({ kind: "documents", q: "INV-01", page: "2", limit: "25", asof: "2026-06-30" });
+    expect((await GET(new Request("http://localhost/api/gl/journal-support/id", { headers }), context("journal-support", "id"))).status).toBe(404);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it.each(["ar-outstanding", "ap-outstanding", "bank-unmatched"])("allows the %s evidence report", async (report) => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    expect((await GET(new Request(`http://localhost/api/gl/reports/${report}?to=2026-06-30`, { headers }), context("reports", report))).status).toBe(200);
+    expect(fetchMock.mock.calls[0][0]).toContain(`/gl/v2/reports/${report}?to=2026-06-30`);
+  });
+  it("preserves stable source identity and exact nested evidence amounts", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const journal = { source_type: 2, source_system: "accounting-import", source_record_id: "INV-2569-01", details: { documents: [{ id: "D1", amount: "90071992547409.91" }], statement_lines: [{ id: "S1", amount: "0.30", balance_after: "90071992547410.21" }] } };
+    const body = { resource: "journals", action: "create", requestid: "12345678-1234-1234-1234-123456789012", journal };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"))).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual(body);
+  });
+  it.each(["documents", "allocations", "settlements", "statement_lines", "matches"])("rejects numeric amounts nested under %s", async (kind) => {
+    vi.stubGlobal("fetch", vi.fn());
+    const body = { resource: "journals", action: "reconcile", requestid: "12345678-1234-1234-1234-123456789012", journal: { details: { [kind]: [{ amount: 1 }] } } };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"))).status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("rejects numeric statement balance and limits reconcile to journals", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const body = { resource: "journals", action: "reconcile", id: "J1", version: 3, reason: "statement matching", requestid: "12345678-1234-1234-1234-123456789012", journal: { details: { statement_lines: [{ amount: "0.30", balance_after: "10.30" }] } } };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"))).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual(body);
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ ...body, resource: "accounts" }) }), context("command"))).status).toBe(400);
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ ...body, journal: { details: { statement_lines: [{ amount: "0.30", balance_after: 10 }] } } }) }), context("command"))).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

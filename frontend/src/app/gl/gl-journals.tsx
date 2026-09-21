@@ -11,6 +11,9 @@ import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { parseClipboardJournalLines } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
 import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine, appendVatLine } from "@/lib/gl-smart-guard";
+import { GLJournalDetailsPanel } from "./gl-journal-details";
+import { reconciliationChanges } from "@/lib/gl-journal-details";
+import { GLJournalReviewPanel } from "./gl-journal-review";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -70,12 +73,18 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const density = useRowDensity();
   const [journal, setJournal] = useState<GLJournal | null>(null), [original, setOriginal] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [detailsEditing, setDetailsEditing] = useState(false);
+  const [detailsBusy, setDetailsBusy] = useState(false);
   const [message, setMessage] = useState(""), [error, setError] = useState("");
   const [reason, setReason] = useState(""), [reverseDate, setReverseDate] = useState(localDate()), [reverseDocno, setReverseDocno] = useState("");
-  const { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
+  const [reviewDirty, setReviewDirty] = useState(false), [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewLoad, setReviewLoad] = useState(0);
+  const { busy: journalBusy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
+  const busy = journalBusy || reviewBusy || detailsBusy;
   const isJournalDirty = journal !== null && JSON.stringify(journal) !== original;
   const isReasonDirty = reason.trim() !== "";
-  const dirty = isEditing && journal !== null && (isJournalDirty || isReasonDirty);
+  const detailsDirty = journal?.status === "posted" && JSON.stringify(journal.details ?? {}) !== JSON.stringify(original ? (JSON.parse(original) as GLJournal).details ?? {} : {});
+  const dirty = reviewDirty || detailsDirty || (isEditing && journal !== null && (isJournalDirty || isReasonDirty));
 
   useDirtyGuard(route, dirty);
   const year = refs.years.find((item) => item.code === journal?.fiscalyear);
@@ -141,11 +150,20 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     }
   };
 
+  async function closeView() {
+    if (busy) return;
+    if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
+    setJournal(null); setOriginal(""); setIsEditing(false);
+  }
+
   async function openView(item: GLJournal) {
+    if (busy) return;
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
       const value = item?.id ? await glRequest<GLJournal>(`journals/${encodeURIComponent(item.id)}`) : emptyJournal(book || "JV", kind || "manual");
       setJournal(value);
+      setDetailsEditing(false);
+      setReviewLoad((value) => value + 1);
       setOriginal(JSON.stringify(value));
       setIsEditing(false);
       setError("");
@@ -158,10 +176,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   }
 
   async function openEdit(item: GLJournal) {
+    if (busy) return;
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
       const value = item?.id ? await glRequest<GLJournal>(`journals/${encodeURIComponent(item.id)}`) : emptyJournal(book || "JV", kind || "manual");
       setJournal(value);
+      setDetailsEditing(false);
       setOriginal(JSON.stringify(value));
       setIsEditing(true);
       setError("");
@@ -174,6 +194,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   }
 
   async function openCreate() {
+    if (busy) return;
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     const initialBook = activeBook || "JV";
     const value = emptyJournal(initialBook, kind || "manual");
@@ -188,6 +209,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
   async function cancelEdit() {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
+    setDetailsEditing(false);
     if (journal?.id) {
       setJournal(JSON.parse(original));
       setIsEditing(false);
@@ -217,12 +239,29 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     } catch (e) { setError((e as Error).message); }
   }
 
+  async function saveReconciliation() {
+    if (!journal?.id || !detailsDirty || busy) return;
+    if (!reason.trim()) { setError(tr("gl_details_ui_30","ระบุเหตุผลการกระทบยอดก่อนบันทึก")); return; }
+    try {
+      const before = JSON.parse(original) as GLJournal;
+      const details = reconciliationChanges(before.details, journal.details);
+      const result = await execute({ resource: "journals", action: "reconcile", id: journal.id, version: journal.version, reason, journal: { details } });
+      // The command has committed even if the following refresh fails. Clear pending additions before reload.
+      const committed = { ...journal, version: result.version };
+      setJournal(committed); setOriginal(JSON.stringify(committed)); setDetailsEditing(false); setReason("");
+      setMessage(tr("gl_details_ui_31","บันทึกผลกระทบยอดแล้ว"));
+      const saved = await glRequest<GLJournal>(`journals/${encodeURIComponent(journal.id)}`);
+      setJournal(saved); setOriginal(JSON.stringify(saved)); setDetailsEditing(false); setReason(""); setReviewLoad(value => value + 1);
+      setError(""); setMessage(tr("gl_details_ui_32","บันทึกผลกระทบยอดแล้ว กรุณาตรวจผลตรวจเอกสารอีกครั้ง")); list.reload();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : tr("gl_details_ui_33","บันทึกผลกระทบยอดไม่สำเร็จ")); }
+  }
+
   // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
   useFormShortcuts({
-    onSave: () => void save(),
+    onSave: () => void (detailsDirty ? saveReconciliation() : save()),
     onNew: effectiveMode === "edit" ? () => void openCreate() : undefined,
-    onCancel: isEditing ? () => void cancelEdit() : undefined,
-    canSave: isEditing && dirty && !busy,
+    onCancel: isEditing || detailsEditing ? () => void cancelEdit() : undefined,
+    canSave: (isEditing || detailsDirty) && dirty && !busy,
     disabled: busy,
   });
 
@@ -245,7 +284,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   }
 
   async function deleteDraftDirect(item: GLJournal) {
-    if (!item.id || busy || item.status !== "draft") return;
+    if (!item.id || busy || reviewDirty || item.status !== "draft") return;
     if (!await confirm({
       title: tr("gl_delete_draft_confirm", "ลบฉบับร่าง?"),
       description: tr("gl_delete_draft_keep_history", "ลบฉบับร่าง {0} พร้อมเก็บประวัติ").replace("{0}", String(item.docno)),
@@ -309,6 +348,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   <button
                     type="button"
                     role="tab"
+                    disabled={busy || reviewDirty}
                     aria-selected={postingSubTab === "draft"}
                     onClick={() => {
                       setPostingSubTab("draft");
@@ -328,6 +368,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   <button
                     type="button"
                     role="tab"
+                    disabled={busy || reviewDirty}
                     aria-selected={postingSubTab === "posted"}
                     onClick={() => {
                       setPostingSubTab("posted");
@@ -529,7 +570,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Button
                         type="button"
                         className={actionClass}
-                        onClick={() => setIsEditing(true)}
+                        onClick={() => void openEdit(journal)}
                         disabled={busy}
                         title={tr("gl_edit_this_draft", "แก้ไขฉบับร่างนี้ (Edit)")}
                       >
@@ -541,7 +582,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       variant="ghost"
                       size="icon"
                       className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
-                      onClick={() => { setJournal(null); setOriginal(""); setIsEditing(false); }}
+                      onClick={() => void closeView()}
                       aria-label={tr("gl_close_view_dialog", "ปิดหน้าต่างแสดงข้อมูล")}
                       title={tr("gl_close_view_dialog", "ปิดหน้าต่างแสดงข้อมูล")}
                     >
@@ -598,6 +639,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       </table>
                     </div>
                   </fieldset>
+                  {(journal.source_system || journal.source_record_id) && <p className="rounded-lg border border-border p-3">{tr("gl_details_ui_34","แหล่งข้อมูล:")}{journal.source_system || "—"}{tr("gl_details_ui_35","· อ้างอิง:")}{journal.source_record_id || "—"}</p>}
                   <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3" aria-live="polite">
                     {([ [tr("gl_total_debit", "รวมเดบิต"), totals?.debit], [tr("gl_total_credit", "รวมเครดิต"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
                       <div key={label}>
@@ -606,6 +648,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       </div>
                     ))}
                   </div>
+                  <GLJournalDetailsPanel key={`details:${journal.id ?? "new"}:${journal.version ?? 0}`} value={journal.details} original={original ? (JSON.parse(original) as GLJournal).details : undefined}
+                    onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} journalId={journal.id}
+                    editable={!busy && (isEditing || detailsEditing)} posted={journal.status === "posted"} onBusyChange={setDetailsBusy} scale={year?.scale} />
+                  {journal.id && journal.version && <GLJournalReviewPanel key={`${journal.id}:${journal.version}:${reviewLoad}`}
+                    journalId={journal.id} version={journal.version} onDirtyChange={setReviewDirty} onBusyChange={setReviewBusy}
+                    onReload={() => void openView(journal)} />}
                   {journal.id && journal.status === "draft" && (
                     <Field label={tr("gl_reason", "เหตุผล")}><input className={control} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder={tr("gl_required_for_draft_deletion", "จำเป็นสำหรับลบฉบับร่าง")} /></Field>
                   )}
@@ -616,7 +664,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                   )}
                   {journal.status === "posted" && (
-                    <Field label={tr("gl_reversal_reason", "เหตุผลการกลับรายการ")}><input className={control} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder={tr("gl_required_for_reversal_entry", "จำเป็นสำหรับสร้างรายการกลับบัญชี")} /></Field>
+                    <Field label={tr("gl_reversal_reason", "เหตุผลการกระทบยอด / กลับรายการ")}><input className={control} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder={tr("gl_required_for_reversal_entry", "จำเป็นสำหรับสร้างรายการกลับบัญชี")} /></Field>
                   )}
                 </div>
                 <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
@@ -625,7 +673,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Button
                         type="button"
                         className={actionClass}
-                        onClick={() => setIsEditing(true)}
+                        onClick={() => void openEdit(journal)}
                         disabled={busy}
                       >
                         <Pencil className="size-4 mr-1.5" />{tr("gl_edit_draft_3", "แก้ไขฉบับร่าง")}
@@ -642,6 +690,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         {tr("gl_post_accounting_entry", "ผ่านรายการ")}
                       </Button>
                     )}
+                    {journal.status === "posted" && (detailsEditing ? <><Button type="button" className={actionClass} disabled={busy || !detailsDirty} onClick={() => void saveReconciliation()}><Save className="mr-1.5 size-4" />{tr("gl_details_ui_36","บันทึกผลกระทบยอด")}</Button><Button type="button" variant="outline" onClick={() => void cancelEdit()}>{tr("gl_details_ui_37","ยกเลิกกระทบยอด")}</Button></> : <Button type="button" variant="outline" disabled={busy || reviewDirty} onClick={() => setDetailsEditing(true)}>{tr("gl_details_ui_38","เพิ่มผลกระทบยอด")}</Button>)}
                     {journal.status === "posted" && (
                       <Button
                         type="button"
@@ -656,7 +705,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       type="button"
                       variant="outline"
                       className={actionClass}
-                      onClick={() => { setJournal(null); setOriginal(""); setIsEditing(false); }}
+                      onClick={() => void closeView()}
                     >
                       {tr("gl_close", "ปิด")}
                     </Button>
@@ -777,7 +826,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                 </div>
                               </td>
                               <td className="p-2">
-                                <Button type="button" variant="outline" className={actionClass} disabled={busy || journal.lines.length <= 2} onClick={() => patch({ lines: journal.lines.filter((_, i) => i !== index) })}>
+                                <Button type="button" variant="outline" className={actionClass} disabled={busy || journal.lines.length <= 2} onClick={() => { if ((journal.details?.allocations?.length ?? 0) + (journal.details?.bank_lines?.length ?? 0) + (journal.details?.matches?.length ?? 0) > 0) { setError(tr("gl_details_ui_39","นำการจัดสรรและจับคู่ออกก่อนลบบรรทัดบัญชี เพื่อป้องกันการอ้างอิงผิดแถว")); return; } patch({ lines: journal.lines.filter((_, i) => i !== index) }); }}>
                                   {tr("gl_remove", "นำออก")}
                                 </Button>
                               </td>
@@ -915,6 +964,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       )}
                     </div>
                   )}
+                  <GLJournalDetailsPanel key={`details:${journal.id ?? "new"}:${journal.version ?? 0}`} value={journal.details} original={original ? (JSON.parse(original) as GLJournal).details : undefined}
+                    onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} journalId={journal.id}
+                    editable={!busy && (isEditing || detailsEditing)} posted={journal.status === "posted"} onBusyChange={setDetailsBusy} scale={year?.scale} />
                   {journal.id && (
                     <Field label={tr("gl_reason", "เหตุผล")}><input className={control} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder={tr("gl_edit_reason_hint", "ระบุเหตุผลการแก้ไข (ถ้ามี)")} /></Field>
                   )}

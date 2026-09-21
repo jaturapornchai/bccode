@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-20 @ commit 0ce661a3 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-20 @ commit 365ea413 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 53
+Files indexed: 54
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (17337 lines)
 
@@ -807,63 +807,63 @@ Files indexed: 53
 | 2373 | function | `CalcStockCostForItemsWithProgress` |
 | 2390 | function | `RebuildDocumentFlowWithProgress` |
 
-## frontend/src/app/workspace/workspace-screen.tsx (2275 lines)
+## frontend/src/app/workspace/workspace-screen.tsx (2277 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 367 | function | `wt` |
-| 377 | function | `WorkspaceScreen` |
-| 404 | const-arrow | `toggleAccessSidebar` |
-| 768 | function | `stopLinePolling` |
-| 775 | function | `handleLineLink` |
-| 822 | function | `startLinePolling` |
-| 836 | function | `pollLineLink` |
-| 864 | function | `closeLineDialog` |
-| 869 | function | `copyLineLoginUrl` |
-| 875 | function | `selectShopAndBranch` |
-| 900 | function | `selectShop` |
-| 941 | function | `selectCompany` |
-| 988 | function | `createHeadquarterBranch` |
-| 1016 | function | `openAccessSettings` |
-| 1051 | function | `handlePrimarySetup` |
-| 1059 | function | `handleAccessShopChange` |
-| 1085 | function | `createShop` |
-| 1116 | function | `selectBranch` |
-| 1131 | function | `enterWorkspaceWithUnitCheck` |
-| 1156 | function | `confirmUnitSetup` |
-| 1176 | function | `skipUnitSetup` |
-| 1181 | function | `togglePendingUnit` |
-| 1191 | function | `selectAllPendingUnits` |
-| 1195 | function | `clearPendingUnits` |
-| 1199 | function | `logout` |
-| 1953 | function | `readAuth` |
-| 1957 | function | `canAuthCreateCompany` |
-| 1961 | function | `activeHoldingCodeFromAuth` |
-| 1968 | function | `activeBusinessCodeFromWorkspace` |
-| 1981 | function | `callWorkspaceApi` |
-| 2003 | function | `persistWorkspace` |
-| 2013 | function | `tenantCodeForShop` |
-| 2017 | function | `hasExplicitLanguageSettings` |
-| 2021 | function | `getApiTotal` |
-| 2026 | function | `getMainHoldingCode` |
-| 2032 | function | `unitDisplayName` |
-| 2040 | function | `localeOf` |
-| 2044 | function | `shopLanguageCodes` |
-| 2049 | function | `normalizedCodeList` |
-| 2061 | function | `parseShopInfo` |
-| 2071 | function | `createDefaultBranch` |
-| 2148 | function | `activeLanguageCodes` |
-| 2157 | function | `defaultBranchNames` |
-| 2161 | function | `normalizedNames` |
-| 2174 | function | `recordValue` |
-| 2178 | function | `holdingAccessDisplayName` |
-| 2186 | function | `isVisibleOrganizationRecord` |
-| 2194 | function | `stringValue` |
-| 2198 | function | `numberValue` |
-| 2207 | function | `booleanValue` |
-| 2214 | function | `createDefaultBranchListItem` |
-| 2227 | function | `createDefaultPaymentRounding` |
-| 2247 | function | `createShopPayload` |
+| 368 | function | `wt` |
+| 378 | function | `WorkspaceScreen` |
+| 405 | const-arrow | `toggleAccessSidebar` |
+| 769 | function | `stopLinePolling` |
+| 776 | function | `handleLineLink` |
+| 823 | function | `startLinePolling` |
+| 837 | function | `pollLineLink` |
+| 865 | function | `closeLineDialog` |
+| 870 | function | `copyLineLoginUrl` |
+| 876 | function | `selectShopAndBranch` |
+| 901 | function | `selectShop` |
+| 942 | function | `selectCompany` |
+| 989 | function | `createHeadquarterBranch` |
+| 1017 | function | `openAccessSettings` |
+| 1052 | function | `handlePrimarySetup` |
+| 1060 | function | `handleAccessShopChange` |
+| 1086 | function | `createShop` |
+| 1117 | function | `selectBranch` |
+| 1132 | function | `enterWorkspaceWithUnitCheck` |
+| 1157 | function | `confirmUnitSetup` |
+| 1177 | function | `skipUnitSetup` |
+| 1182 | function | `togglePendingUnit` |
+| 1192 | function | `selectAllPendingUnits` |
+| 1196 | function | `clearPendingUnits` |
+| 1200 | function | `logout` |
+| 1955 | function | `readAuth` |
+| 1959 | function | `canAuthCreateCompany` |
+| 1963 | function | `activeHoldingCodeFromAuth` |
+| 1970 | function | `activeBusinessCodeFromWorkspace` |
+| 1983 | function | `callWorkspaceApi` |
+| 2005 | function | `persistWorkspace` |
+| 2015 | function | `tenantCodeForShop` |
+| 2019 | function | `hasExplicitLanguageSettings` |
+| 2023 | function | `getApiTotal` |
+| 2028 | function | `getMainHoldingCode` |
+| 2034 | function | `unitDisplayName` |
+| 2042 | function | `localeOf` |
+| 2046 | function | `shopLanguageCodes` |
+| 2051 | function | `normalizedCodeList` |
+| 2063 | function | `parseShopInfo` |
+| 2073 | function | `createDefaultBranch` |
+| 2150 | function | `activeLanguageCodes` |
+| 2159 | function | `defaultBranchNames` |
+| 2163 | function | `normalizedNames` |
+| 2176 | function | `recordValue` |
+| 2180 | function | `holdingAccessDisplayName` |
+| 2188 | function | `isVisibleOrganizationRecord` |
+| 2196 | function | `stringValue` |
+| 2200 | function | `numberValue` |
+| 2209 | function | `booleanValue` |
+| 2216 | function | `createDefaultBranchListItem` |
+| 2229 | function | `createDefaultPaymentRounding` |
+| 2249 | function | `createShopPayload` |
 
 ## backend/internal/systemadmin/datamigration/migration_chart_of_account.go (2244 lines)
 
@@ -1194,38 +1194,6 @@ Files indexed: 53
 | 1412 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ZeroValues` |
 | 1601 | function | `TestAPPurchaseReceiveTransactionPhaser_PhaseSingleDoc_ReturnsCorrectType` |
 
-## backend/internal/product/productbarcode/productbarcode_http.go (1702 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 48 | function | `NewProductBarcodeHttp` |
-| 99 | function | `RegisterHttp` |
-| 132 | function | `requireProductBarcodeBusinessCode` |
-| 154 | function | `CreateProductBarcode` |
-| 212 | function | `UpdateProductBarcode` |
-| 265 | function | `UpdateProductBarcodeBranch` |
-| 308 | function | `UpdateProductBarcodeBusinessType` |
-| 351 | function | `UpdateProductBarcodeXSort` |
-| 394 | function | `DeleteProductBarcode` |
-| 429 | function | `InfoProductBarcode` |
-| 468 | function | `GetroductBarcodeByRef` |
-| 522 | function | `InfoProductBarcodeByBarcode` |
-| 559 | function | `InfoArray` |
-| 602 | function | `InfoArrayMaster` |
-| 653 | function | `SearchProductBarcodePage` |
-| 691 | function | `SearchProductBarcodePage2` |
-| 735 | function | `SearchProductBarcodeLimit` |
-| 792 | function | `SaveBulk` |
-| 835 | function | `DeleteProductBarcodeByGUIDs` |
-| 873 | function | `GetroductBarcodeByAllUnits` |
-| 919 | function | `GetroductBarcodeByGroups` |
-| 962 | function | `Export` |
-| 1026 | function | `InfoBOMView` |
-| 1048 | function | `postProcessBooleanFilters` |
-| 1062 | function | `searchFilter` |
-| 1601 | function | `Import` |
-| 1644 | function | `ImportRefBarcodeUpdate` |
-
 ## frontend/src/app/system-settings/product-group-tree-view.tsx (1689 lines)
 
 | Line | Kind | Name |
@@ -1357,6 +1325,38 @@ Files indexed: 53
 | 1634 | function | `LLen` |
 | 1642 | function | `LSet` |
 | 1664 | function | `LPos` |
+
+## backend/internal/product/productbarcode/productbarcode_http.go (1684 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 46 | function | `NewProductBarcodeHttp` |
+| 81 | function | `RegisterHttp` |
+| 114 | function | `requireProductBarcodeBusinessCode` |
+| 136 | function | `CreateProductBarcode` |
+| 194 | function | `UpdateProductBarcode` |
+| 247 | function | `UpdateProductBarcodeBranch` |
+| 290 | function | `UpdateProductBarcodeBusinessType` |
+| 333 | function | `UpdateProductBarcodeXSort` |
+| 376 | function | `DeleteProductBarcode` |
+| 411 | function | `InfoProductBarcode` |
+| 450 | function | `GetroductBarcodeByRef` |
+| 504 | function | `InfoProductBarcodeByBarcode` |
+| 541 | function | `InfoArray` |
+| 584 | function | `InfoArrayMaster` |
+| 635 | function | `SearchProductBarcodePage` |
+| 673 | function | `SearchProductBarcodePage2` |
+| 717 | function | `SearchProductBarcodeLimit` |
+| 774 | function | `SaveBulk` |
+| 817 | function | `DeleteProductBarcodeByGUIDs` |
+| 855 | function | `GetroductBarcodeByAllUnits` |
+| 901 | function | `GetroductBarcodeByGroups` |
+| 944 | function | `Export` |
+| 1008 | function | `InfoBOMView` |
+| 1030 | function | `postProcessBooleanFilters` |
+| 1044 | function | `searchFilter` |
+| 1583 | function | `Import` |
+| 1626 | function | `ImportRefBarcodeUpdate` |
 
 ## frontend/src/app/menu/product-barcode-screen.tsx (1680 lines)
 
@@ -2078,6 +2078,39 @@ Files indexed: 53
 | 1106 | function | `reportText` |
 | 1115 | function | `reportColumnLabel` |
 
+## frontend/src/app/gl/gl-masters.tsx (1126 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 14 | function | `newRecord` |
+| 15 | function | `normalizeRecord` |
+| 45 | function | `editorAlert` |
+| 50 | function | `pageErrorText` |
+| 51 | function | `paneErrorText` |
+| 52 | function | `FormErrorAlert` |
+| 54 | function | `errorStatePatch` |
+| 56 | function | `saveFailureTarget` |
+| 58 | function | `recordId` |
+| 65 | function | `recordCode` |
+| 66 | function | `recordName` |
+| 68 | function | `TreeNodeRow` |
+| 221 | function | `GLMasters` |
+| 250 | function | `showFormError` |
+| 272 | function | `openView` |
+| 289 | function | `openEdit` |
+| 306 | function | `openCreate` |
+| 317 | function | `cancelEdit` |
+| 331 | function | `save` |
+| 360 | function | `deleteItem` |
+| 387 | function | `runAction` |
+| 425 | const-arrow | `toggleCategory` |
+| 429 | const-arrow | `toggleNode` |
+| 922 | function | `AccountFields` |
+| 927 | const-arrow | `handleTypeChange` |
+| 942 | const-arrow | `handleParentChange` |
+| 1095 | function | `FiscalYearFields` |
+| 1109 | function | `MasterFields` |
+
 ## backend/internal/documentwarehouse/documentimage/services/documentimagegroup_service.go (1114 lines)
 
 | Line | Kind | Name |
@@ -2138,38 +2171,6 @@ Files indexed: 53
 | 336 | const-arrow | `handleSaveDoc` |
 | 682 | section | `EDIT MODE FORM` |
 | 916 | section | `READ-ONLY VIEW MODE` |
-
-## frontend/src/app/gl/gl-masters.tsx (1055 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 14 | function | `newRecord` |
-| 15 | function | `normalizeRecord` |
-| 45 | function | `editorAlert` |
-| 50 | function | `pageErrorText` |
-| 51 | function | `paneErrorText` |
-| 52 | function | `FormErrorAlert` |
-| 54 | function | `errorStatePatch` |
-| 56 | function | `saveFailureTarget` |
-| 58 | function | `recordId` |
-| 65 | function | `recordCode` |
-| 66 | function | `recordName` |
-| 68 | function | `TreeNodeRow` |
-| 221 | function | `GLMasters` |
-| 250 | function | `showFormError` |
-| 272 | function | `openView` |
-| 289 | function | `openEdit` |
-| 306 | function | `openCreate` |
-| 317 | function | `cancelEdit` |
-| 331 | function | `save` |
-| 350 | function | `deleteItem` |
-| 377 | function | `runAction` |
-| 415 | const-arrow | `toggleCategory` |
-| 419 | const-arrow | `toggleNode` |
-| 912 | function | `AccountFields` |
-| 917 | const-arrow | `handleTypeChange` |
-| 1024 | function | `FiscalYearFields` |
-| 1038 | function | `MasterFields` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
 
@@ -2235,6 +2236,23 @@ Files indexed: 53
 | 1002 | function | `upsertRateEntry` |
 | 1008 | function | `validateForm` |
 | 1017 | function | `formatCount` |
+
+## frontend/src/app/gl/gl-journals.tsx (1025 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 34 | function | `createSmartNextLine` |
+| 55 | function | `GLJournals` |
+| 138 | const-arrow | `handlePasteClick` |
+| 153 | function | `closeView` |
+| 159 | function | `openView` |
+| 178 | function | `openEdit` |
+| 196 | function | `openCreate` |
+| 210 | function | `cancelEdit` |
+| 225 | function | `save` |
+| 242 | function | `saveReconciliation` |
+| 268 | function | `act` |
+| 286 | function | `deleteDraftDirect` |
 
 ## backend/internal/goapi/handlers/gen-trans-pdf/base_pdf.go (1019 lines)
 

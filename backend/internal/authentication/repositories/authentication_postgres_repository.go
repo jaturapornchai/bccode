@@ -334,29 +334,7 @@ func (r *AuthenticationPostgresRepository) UpdateUserByUID(ctx context.Context, 
 }
 
 func (r *AuthenticationPostgresRepository) FindGoogleIdentity(ctx context.Context, issuer string, subject string) (*models.GoogleIdentity, error) {
-	var (
-		id       uuid.UUID
-		userID   uuid.UUID
-		identity string
-	)
-	query := `SELECT id, user_id, identity_id FROM user_identities WHERE provider = 'google' AND identity_id = $1 LIMIT 1`
-	err := r.db.QueryRowContext(ctx, query, subject).Scan(&id, &userID, &identity)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, mongo.ErrNoDocuments
-		}
-		return nil, err
-	}
-
-	objID, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%024x", id.ID()))
-	return &models.GoogleIdentity{
-		ID:          objID,
-		IdentityUID: id.String(),
-		UserUID:     userID.String(),
-		Issuer:      issuer,
-		Subject:     subject,
-		IsActive:    true,
-	}, nil
+	return findPostgresGoogleIdentity(ctx, r.db, issuer, subject)
 }
 
 func (r *AuthenticationPostgresRepository) CreateAuthAudit(ctx context.Context, audit models.AuthAudit) error {
@@ -364,15 +342,9 @@ func (r *AuthenticationPostgresRepository) CreateAuthAudit(ctx context.Context, 
 }
 
 func (r *AuthenticationPostgresRepository) CreateGoogleUserIdentity(ctx context.Context, user models.UserDoc, identity models.GoogleIdentity, audit models.AuthAudit) (models.UserDoc, error) {
-	objID, err := r.CreateUser(ctx, user)
-	if err != nil {
-		return models.UserDoc{}, err
-	}
-	user.ID = objID
-	return user, nil
+	return r.createPostgresGoogleIdentity(ctx, user, identity, audit)
 }
 
 func (r *AuthenticationPostgresRepository) EnsureGoogleIdentityIndexes(ctx context.Context) error {
 	return nil
 }
-

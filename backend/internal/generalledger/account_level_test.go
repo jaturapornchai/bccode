@@ -2,6 +2,7 @@ package generalledger
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -58,5 +59,29 @@ func TestAccountLevelJsonSerialization(t *testing.T) {
 	}
 	if decoded.Level != 2 {
 		t.Fatalf("Decoded Level = %d, want 2", decoded.Level)
+	}
+	if decoded.ParentAccountCode != "" {
+		t.Fatalf("Decoded ParentAccountCode = %q, want empty", decoded.ParentAccountCode)
+	}
+	if !strings.Contains(string(data), `"parentaccountcode":null`) {
+		t.Fatalf("JSON output %s does not contain parentaccountcode:null", string(data))
+	}
+
+	// Test with parentaccountcode set
+	aWithParent := a
+	aWithParent.ParentAccountCode = "1000"
+	dataWithParent, err := json.Marshal(aWithParent)
+	if err != nil {
+		t.Fatalf("Marshal(aWithParent) err = %v", err)
+	}
+	if !strings.Contains(string(dataWithParent), `"parentaccountcode":"1000"`) {
+		t.Fatalf("JSON output %s does not contain parentaccountcode:1000", string(dataWithParent))
+	}
+	var decodedWithParent Account
+	if err := json.Unmarshal(dataWithParent, &decodedWithParent); err != nil {
+		t.Fatalf("Unmarshal(dataWithParent) err = %v", err)
+	}
+	if decodedWithParent.ParentAccountCode != "1000" {
+		t.Fatalf("Decoded ParentAccountCode = %q, want 1000", decodedWithParent.ParentAccountCode)
 	}
 }

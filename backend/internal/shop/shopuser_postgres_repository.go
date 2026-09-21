@@ -140,8 +140,15 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUIDInfo(ctx context
 }
 
 func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Context, holdingCode string, userUID string) (models.ShopUser, error) {
+	return r.findActiveHoldingMember(ctx, holdingCode, userUID, false)
+}
+
+func (r *ShopUserPostgresRepository) findActiveHoldingMember(ctx context.Context, holdingCode string, userUID string, byUsername bool) (models.ShopUser, error) {
 	holdingCode = strings.TrimSpace(holdingCode)
 	userUID = strings.TrimSpace(userUID)
+	if holdingCode == "" || userUID == "" {
+		return models.ShopUser{}, mongo.ErrNoDocuments
+	}
 
 	var (
 		actualUID      string
@@ -152,51 +159,23 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Con
 		isActive       bool
 	)
 
+	identityFilter := "u.id::text = $2"
+	if byUsername {
+		identityFilter = "LOWER(u.username) = LOWER($2)"
+	}
 	query := `SELECT u.id::text, u.username, m.role, m.permission_sets, m.access_scopes, m.is_active
 	          FROM holding_members m
-	          JOIN users u ON m.user_id = u.id
+	          JOIN users u ON m.user_id = u.id AND u.is_active=true
+	          JOIN holdings h ON h.code=m.holding_code AND h.is_active=true
 	          WHERE LOWER(m.holding_code) = LOWER($1)
-	            AND (u.id::text = $2 OR LOWER(u.username) = LOWER($2))
+	            AND ` + identityFilter + `
 	            AND m.is_active = true
 	          LIMIT 1`
 
 	err := r.db.QueryRowContext(ctx, query, holdingCode, userUID).Scan(&actualUID, &actualUsername, &roleStr, &permissionSets, &accessScopes, &isActive)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// Check if holding exists, grant default OWNER
-			var exists bool
-			_ = r.db.QueryRowContext(ctx, `SELECT true FROM holdings WHERE LOWER(code) = LOWER($1)`, holdingCode).Scan(&exists)
-			if exists {
-				var fallbackScopes []models.AccessScope
-				compRows, compErr := r.db.QueryContext(ctx, `SELECT code FROM companies WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`, holdingCode)
-				if compErr == nil {
-					defer compRows.Close()
-					for compRows.Next() {
-						var cCode string
-						if err := compRows.Scan(&cCode); err == nil {
-							fallbackScopes = append(fallbackScopes, models.AccessScope{
-								ScopeType:    "company",
-								CompanyUID:   cCode,
-								BusinessCode: cCode,
-								AllBranches:  true,
-							})
-						}
-					}
-				}
-				return models.ShopUser{
-					ID: primitive.NewObjectID(),
-					ShopUserBase: models.ShopUserBase{
-						MembershipUID: uuid.New().String(),
-						HoldingUID:    holdingCode,
-						HoldingCode:   holdingCode,
-						UserUID:       userUID,
-						Username:      userUID,
-						Role:          models.ROLE_OWNER,
-					},
-					AccessScopes: fallbackScopes,
-				}, nil
-			}
-			return models.ShopUser{}, mongo.ErrNoDocuments
+			// return models.ShopUser{}, mongo.ErrNoDocuments
 		}
 		return models.ShopUser{}, err
 	}
@@ -209,13 +188,13 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Con
 	}
 
 	var perms []string
-	if len(permissionSets) > 0 {
-		_ = json.Unmarshal(permissionSets, &perms)
+	if len(permissionSets) > 0 && json.Unmarshal(permissionSets, &perms) != nil {
+		return models.ShopUser{}, errors.New("invalid permission sets")
 	}
 
 	var scopes []models.AccessScope
-	if len(accessScopes) > 0 {
-		_ = json.Unmarshal(accessScopes, &scopes)
+	if len(accessScopes) > 0 && string(accessScopes) != "{}" && json.Unmarshal(accessScopes, &scopes) != nil {
+		return models.ShopUser{}, errors.New("invalid access scopes")
 	}
 	if len(scopes) == 0 && (role == models.ROLE_OWNER || role == models.ROLE_ADMIN) {
 		compRows, compErr := r.db.QueryContext(ctx, `SELECT code FROM companies WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`, holdingCode)
@@ -251,11 +230,15 @@ func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUserUID(ctx context.Con
 }
 
 func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUsernameInfo(ctx context.Context, holdingCode string, username string) (models.ShopUserInfo, error) {
-	return r.FindByHoldingCodeAndUserUIDInfo(ctx, holdingCode, username)
+	u, err := r.FindByHoldingCodeAndUsername(ctx, holdingCode, username)
+	if err != nil {
+		return models.ShopUserInfo{}, err
+	}
+	return models.ShopUserInfo{HoldingUID: u.HoldingUID, HoldingCode: u.HoldingCode, Role: u.Role}, nil
 }
 
 func (r *ShopUserPostgresRepository) FindByHoldingCodeAndUsername(ctx context.Context, holdingCode string, username string) (models.ShopUser, error) {
-	return r.FindByHoldingCodeAndUserUID(ctx, holdingCode, username)
+	return r.findActiveHoldingMember(ctx, holdingCode, username, true)
 }
 
 func (r *ShopUserPostgresRepository) FindByHoldingCodeAndLineUserID(ctx context.Context, holdingCode string, lineUserID string) (models.ShopUser, error) {
@@ -280,7 +263,7 @@ func (r *ShopUserPostgresRepository) FindRole(ctx context.Context, holdingCode s
 
 func (r *ShopUserPostgresRepository) FindByHoldingCode(ctx context.Context, holdingCode string) (*[]models.ShopUser, error) {
 	var list []models.ShopUser
-	u, err := r.FindByHoldingCodeAndUserUID(ctx, holdingCode, "admin")
+	u, err := r.FindByHoldingCodeAndUsername(ctx, holdingCode, "admin")
 	if err == nil {
 		list = append(list, u)
 	}
@@ -288,8 +271,8 @@ func (r *ShopUserPostgresRepository) FindByHoldingCode(ctx context.Context, hold
 }
 
 func (r *ShopUserPostgresRepository) FindByUsername(ctx context.Context, username string) (*[]models.ShopUser, error) {
-	query := `SELECT h.code, h.name FROM holdings h WHERE h.is_active = true`
-	rows, err := r.db.QueryContext(ctx, query)
+	query := `SELECT h.code,h.name,m.role FROM holdings h JOIN holding_members m ON m.holding_code=h.code AND m.is_active=true JOIN users u ON u.id=m.user_id AND u.is_active=true WHERE h.is_active=true AND LOWER(u.username)=LOWER($1)`
+	rows, err := r.db.QueryContext(ctx, query, username)
 	if err != nil {
 		return nil, err
 	}
@@ -297,15 +280,15 @@ func (r *ShopUserPostgresRepository) FindByUsername(ctx context.Context, usernam
 
 	var list []models.ShopUser
 	for rows.Next() {
-		var code, name string
-		if err := rows.Scan(&code, &name); err == nil {
+		var code, name, role string
+		if err := rows.Scan(&code, &name, &role); err == nil {
 			list = append(list, models.ShopUser{
 				ID: primitive.NewObjectID(),
 				ShopUserBase: models.ShopUserBase{
 					MembershipUID: uuid.New().String(),
 					HoldingUID:    code,
 					HoldingCode:   code,
-					Role:          models.ROLE_OWNER,
+					Role:          postgresMemberRoleValue(role),
 				},
 			})
 		}
@@ -314,12 +297,20 @@ func (r *ShopUserPostgresRepository) FindByUsername(ctx context.Context, usernam
 }
 
 func (r *ShopUserPostgresRepository) FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
-	return r.FindByUserUIDPage(ctx, username, pageable)
+	return r.findActiveHoldingPage(ctx, username, true)
 }
 
 func (r *ShopUserPostgresRepository) FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
-	query := `SELECT h.code, h.name FROM holdings h WHERE h.is_active = true ORDER BY h.code`
-	rows, err := r.db.QueryContext(ctx, query)
+	return r.findActiveHoldingPage(ctx, userUID, false)
+}
+
+func (r *ShopUserPostgresRepository) findActiveHoldingPage(ctx context.Context, identity string, byUsername bool) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+	filter := "u.id::text=$1"
+	if byUsername {
+		filter = "LOWER(u.username)=LOWER($1)"
+	}
+	query := `SELECT h.code,h.name,m.role FROM holdings h JOIN holding_members m ON m.holding_code=h.code AND m.is_active=true JOIN users u ON u.id=m.user_id AND u.is_active=true WHERE h.is_active=true AND ` + filter + ` ORDER BY h.code`
+	rows, err := r.db.QueryContext(ctx, query, identity)
 	if err != nil {
 		return nil, mongopagination.PaginationData{}, err
 	}
@@ -327,8 +318,8 @@ func (r *ShopUserPostgresRepository) FindByUserUIDPage(ctx context.Context, user
 
 	var result []models.ShopUserInfo
 	for rows.Next() {
-		var code, name string
-		if err := rows.Scan(&code, &name); err != nil {
+		var code, name, role string
+		if err := rows.Scan(&code, &name, &role); err != nil {
 			continue
 		}
 
@@ -336,7 +327,7 @@ func (r *ShopUserPostgresRepository) FindByUserUIDPage(ctx context.Context, user
 			HoldingUID:  code,
 			HoldingCode: code,
 			Name:        name,
-			Role:        models.ROLE_OWNER,
+			Role:        postgresMemberRoleValue(role),
 		}
 		result = append(result, info)
 	}
@@ -348,6 +339,16 @@ func (r *ShopUserPostgresRepository) FindByUserUIDPage(ctx context.Context, user
 		TotalPage: 1,
 	}
 	return result, pagination, nil
+}
+
+func postgresMemberRoleValue(role string) models.UserRole {
+	if strings.EqualFold(role, "OWNER") {
+		return models.ROLE_OWNER
+	}
+	if strings.EqualFold(role, "ADMIN") {
+		return models.ROLE_ADMIN
+	}
+	return models.ROLE_USER
 }
 
 func (r *ShopUserPostgresRepository) FindByUserInShopPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.ShopUser, mongopagination.PaginationData, error) {
@@ -405,12 +406,12 @@ func (r *ShopUserPostgresRepository) FindByUserInShopPageWithProfileMatches(ctx 
 		result = append(result, models.ShopUser{
 			ID: primitive.NewObjectID(),
 			ShopUserBase: models.ShopUserBase{
-				MembershipUID:    mID.String(),
-				HoldingUID:       holdingCode,
-				HoldingCode:      holdingCode,
-				UserUID:          uID,
-				Username:         uUsername,
-				Role:             role,
+				MembershipUID: mID.String(),
+				HoldingUID:    holdingCode,
+				HoldingCode:   holdingCode,
+				UserUID:       uID,
+				Username:      uUsername,
+				Role:          role,
 			},
 			IsAccessDisabled: !isActive,
 			PermissionSets:   perms,

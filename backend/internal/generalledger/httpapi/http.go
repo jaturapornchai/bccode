@@ -63,6 +63,7 @@ func (h *Http) initialize(ctx context.Context) error {
 }
 
 func (h *Http) RegisterHttp() {
+	h.registerMCP()
 	h.ms.POST("/gl/v2/command", h.command)
 	h.ms.GET("/gl/v2/reports/:report", h.report)
 	h.ms.GET("/gl/v2/:resource", h.list)
@@ -70,74 +71,23 @@ func (h *Http) RegisterHttp() {
 }
 
 type requestScope struct {
+	CompanyWide bool
 	Scope       gl.Scope
 	Permissions map[string]bool
 }
 
+var errScopeDenied = errors.New("ไม่สามารถยืนยันสิทธิ์เข้าใช้บัญชีได้ กรุณาติดต่อผู้ดูแลระบบ")
+
 func (h *Http) scope(ctx context.Context, request microservice.IContext) (requestScope, error) {
-	u := request.UserInfo()
-	result := requestScope{
-		Scope: gl.Scope{
-			Holding: u.HoldingCode,
-			Company: u.BusinessCode,
-			Actor:   u.UID,
-		},
-		Permissions: map[string]bool{"*": true},
+	scope, err := resolveScope(ctx, request, mypg.PgSqlFastConnect)
+	if mcpRequest, ok := request.(*mcpGLContext); ok && err == nil {
+		scope.Scope.Actor += ":" + mcpRequest.tokenKind + ":" + mcpRequest.tokenID
 	}
-	if u.HoldingCode == "" || u.BusinessCode == "" {
-		return result, fmt.Errorf("กรุณาเลือกบริษัทก่อนใช้งานบัญชี")
-	}
-
-	// Connect PostgreSQL for holding
-	db, err := mypg.PgSqlFastConnect(u.HoldingCode)
-	if err != nil {
-		return result, nil
-	}
-
-	// Check branch code
-	if u.BranchUID != "" {
-		var branchCode string
-		err := db.QueryRowContext(ctx, `SELECT code FROM branches WHERE holding_code = $1 AND code = $2 AND is_active = true`, u.HoldingCode, u.BranchUID).Scan(&branchCode)
-		if err == nil && branchCode != "" {
-			result.Scope.Branch = branchCode
-		} else {
-			result.Scope.Branch = u.BranchUID
-		}
-	}
-
-	// Check permissions from PostgreSQL holding_members & role_permissions if available
-	var role string
-	var permSetsJSON []byte
-	err = db.QueryRowContext(ctx, `SELECT role, permission_sets FROM holding_members WHERE holding_code = $1 AND (user_id::text = $2 OR user_id::text = $3) AND is_active = true`, u.HoldingCode, u.UID, u.Username).Scan(&role, &permSetsJSON)
-	if err == nil {
-		if strings.EqualFold(role, "OWNER") || strings.EqualFold(role, "ADMIN") {
-			result.Permissions["*"] = true
-			return result, nil
-		}
-		result.Permissions = map[string]bool{}
-		var permSets []string
-		if len(permSetsJSON) > 0 {
-			_ = json.Unmarshal(permSetsJSON, &permSets)
-		}
-		codes := append([]string{role}, permSets...)
-		for _, c := range codes {
-			var permsJSON []byte
-			if err := db.QueryRowContext(ctx, `SELECT permissions FROM role_permissions WHERE holding_code = $1 AND role_code = $2`, u.HoldingCode, c).Scan(&permsJSON); err == nil {
-				var perms []string
-				if json.Unmarshal(permsJSON, &perms) == nil {
-					for _, p := range perms {
-						result.Permissions[p] = true
-					}
-				}
-			}
-		}
-	}
-
-	return result, nil
+	return scope, err
 }
 
-var resourceScreens = map[string]string{"accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "journal-books": "gl-journal-books"}
-var reportScreens = map[string]string{"ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report"}
+var resourceScreens = map[string]string{"journal-support": "jv-journal", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "journal-books": "gl-journal-books"}
+var reportScreens = map[string]string{"ar-outstanding": "jv-journal", "ap-outstanding": "jv-journal", "bank-unmatched": "jv-journal", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report"}
 
 func allowed(p map[string]bool, screen, action string) bool {
 	if p["*"] {
@@ -221,6 +171,10 @@ type errorPayload = apperr.Response
 // 409 (or 404 for missing records) with translated message via language.Text(key, lang);
 // anything else stays a server problem (503) and is logged by failure().
 func errorPayloadFor(err error, lang ...string) (int, errorPayload) {
+	if errors.Is(err, errScopeDenied) {
+		appErr := apperr.New("forbidden", http.StatusForbidden, errScopeDenied.Error(), errScopeDenied.Error())
+		return http.StatusForbidden, appErr.ToResponse()
+	}
 	reqLang := "th"
 	if len(lang) > 0 && lang[0] != "" {
 		reqLang = lang[0]
@@ -520,6 +474,9 @@ func (h *Http) list(request microservice.IContext) error {
 		return failure(request, err)
 	}
 	resource := request.Param("resource")
+	if resource == "journal-support" {
+		return h.listJournalSupport(ctx, request, scope)
+	}
 	screen := resourceScreens[resource]
 	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status")}
 	if resource == "journals" {
@@ -551,6 +508,9 @@ func (h *Http) get(request microservice.IContext) error {
 		return failure(request, err)
 	}
 	resource := request.Param("resource")
+	if resource == "journal-reviews" {
+		return h.getJournalReview(ctx, request, scope)
+	}
 	version, err := h.startRead(ctx, scope.Scope, request)
 	if err != nil {
 		return failure(request, err)
@@ -588,6 +548,12 @@ func (h *Http) report(request microservice.IContext) error {
 	if !canReadReport(scope.Permissions, name) {
 		return fail(request, 403, "ไม่มีสิทธิ์อ่านรายงานบัญชีนี้")
 	}
+	if request.QueryParam("companywide") == "true" {
+		scope, err = scope.companyScope()
+		if err != nil {
+			return failure(request, err)
+		}
+	}
 	version, err := h.startRead(ctx, scope.Scope, request)
 	if err != nil {
 		return failure(request, err)
@@ -622,6 +588,9 @@ func (h *Http) command(request microservice.IContext) error {
 	}
 	screen := resourceScreens[cmd.Resource]
 	action := cmd.Action
+	if cmd.Action == "review" || cmd.Action == "reconcile" {
+		action = "update"
+	}
 	if cmd.Resource == "processes" {
 		screen = map[string]string{"close": "financial-close", "year-end": "gl-year-end", "recalculate": "gl-recalculate-posted", "reprocess": "gl-reprocess"}[cmd.Action]
 		action = "update"
@@ -643,7 +612,7 @@ func (h *Http) command(request microservice.IContext) error {
 				if e != nil {
 					return failure(request, e)
 				}
-				if j != nil && (j.BookCode != old.BookCode || j.Kind != old.Kind) {
+				if j != nil && cmd.Action != "reconcile" && (j.BookCode != old.BookCode || j.Kind != old.Kind) {
 					return fail(request, 409, "เปลี่ยนสมุดรายวันหรือประเภทรายการเดิมไม่ได้")
 				}
 				j = &old
@@ -655,6 +624,12 @@ func (h *Http) command(request microservice.IContext) error {
 	}
 	if !allowed(scope.Permissions, screen, action) {
 		return fail(request, 403, "ไม่มีสิทธิ์ทำรายการบัญชีนี้")
+	}
+	if cmd.Resource == "processes" {
+		scope, err = scope.companyScope()
+		if err != nil {
+			return failure(request, err)
+		}
 	}
 	result, err := h.store.Execute(ctx, scope.Scope, cmd)
 	if err != nil {

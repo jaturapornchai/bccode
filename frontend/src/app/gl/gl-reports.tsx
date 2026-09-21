@@ -12,8 +12,8 @@ import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 
 export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string };
 export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "" };
-export async function fetchReport(name: string, filters: ReportFilters, page = 1, limit = 50, snapshot?: number) {
-  return glRequest<GLReport>(`reports/${name}?${new URLSearchParams({ ...filters, page: String(page), limit: String(limit), ...(snapshot === undefined ? {} : { snapshot: String(snapshot) }) })}`);
+export async function fetchReport(name: string, filters: ReportFilters, page = 1, limit = 50, snapshot?: number, companywide = false) {
+  return glRequest<GLReport>(`reports/${name}?${new URLSearchParams({ ...filters, ...(companywide ? { companywide: "true" } : {}), page: String(page), limit: String(limit), ...(snapshot === undefined ? {} : { snapshot: String(snapshot) }) })}`);
 }
 function reportRows(report: GLReport) { return report.rows ?? []; }
 const reportTextLabels: Record<string, Record<string, GLLabel>> = {
@@ -31,10 +31,12 @@ function reportText(key: string, value = "", tr: GLTextFn) {
 
 export function JournalDrillDownModal({
   docno,
+  journalId,
   open,
   onClose,
 }: {
   docno: string | null;
+  journalId: string | null;
   open: boolean;
   onClose: () => void;
 }) {
@@ -53,25 +55,10 @@ export function JournalDrillDownModal({
     setLoading(true);
     setError("");
 
-    glRequest<{ items?: GLJournal[] }>(`journals?q=${encodeURIComponent(docno)}&limit=10`)
-      .then(async (res) => {
-        if (!active) return;
-        const match = res.items?.find((j) => j.docno.toLowerCase() === docno.toLowerCase()) ?? res.items?.[0];
-        if (!match) {
-          setError(tr("gl_err_not_found", "ไม่พบรายการบัญชี"));
-          return;
-        }
-        if (match.id) {
-          try {
-            const full = await glRequest<GLJournal>(`journals/${encodeURIComponent(match.id)}`);
-            if (active) setJournal(full);
-          } catch {
-            if (active) setJournal(match);
-          }
-        } else {
-          setJournal(match);
-        }
-      })
+    setJournal(null);
+    if (!journalId) { setError(tr("gl_err_not_found", "ไม่พบรายการบัญชี")); setLoading(false); return; }
+    glRequest<GLJournal>(`journals/${encodeURIComponent(journalId)}`)
+      .then((value) => { if (active) setJournal(value); })
       .catch((err) => {
         if (active) setError((err as Error).message);
       })
@@ -82,7 +69,7 @@ export function JournalDrillDownModal({
     return () => {
       active = false;
     };
-  }, [open, docno, tr]);
+  }, [open, docno, journalId, tr]);
 
   useEffect(() => {
     if (!open) return;
@@ -255,7 +242,7 @@ export function ReportGrid({
 }: {
   report: GLReport;
   graphs?: boolean;
-  onDrillDocNo?: (docNo: string) => void;
+  onDrillDocNo?: (docNo: string, journalId: string) => void;
   onDrillAccount?: (accountCode: string) => void;
 }) {
   const tr = useGLText();
@@ -292,12 +279,12 @@ export function ReportGrid({
                 let cellContent;
                 if (column.amount) {
                   cellContent = formatAmount(val);
-                } else if (isDocNoCol && onDrillDocNo) {
+                } else if (isDocNoCol && onDrillDocNo && (row.journalid || row.id)) {
                   cellContent = (
                     <button
                       type="button"
                       className="group inline-flex items-center gap-1 font-mono font-semibold text-primary hover:text-primary/80 hover:underline cursor-pointer"
-                      onClick={(e) => { e.stopPropagation(); onDrillDocNo(val); }}
+                      onClick={(e) => { e.stopPropagation(); onDrillDocNo(val, row.journalid || row.id); }}
                       title={tr("gl_voucher_detail", "รายละเอียดใบสำคัญรายวัน")}
                     >
                       <FileText className="size-3.5 opacity-70 group-hover:opacity-100 shrink-0" />
@@ -343,8 +330,8 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const tr = useGLText();
   const refs = useReferences();
   const [activeReportName, setActiveReportName] = useState(name);
-  const [drilledFrom, setDrilledFrom] = useState<{ report: string; accountcode: string } | null>(null);
-  const [drillDocNo, setDrillDocNo] = useState<string | null>(null);
+  const [drilledFrom, setDrilledFrom] = useState<{ report: string; filters: ReportFilters } | null>(null);
+  const [drillDocument, setDrillDocument] = useState<{ docno: string; journalId: string } | null>(null);
 
   const [filters, setFilters] = useState<ReportFilters>({ ...emptyReportFilters }), [applied, setApplied] = useState<ReportFilters | null>(null);
   const [report, setReport] = useState<GLReport | null>(null), [page, setPage] = useState(1);
@@ -368,21 +355,20 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   }
 
   const handleDrillAccount = (accountCode: string) => {
-    if (!accountCode || accountCode === "__current_earnings__") return;
-    setDrilledFrom({ report: activeReportName, accountcode: filters.accountcode });
+    if (!applied || busy || !accountCode || accountCode === "__current_earnings__") return;
+    setDrilledFrom({ report: activeReportName, filters: { ...applied } });
     setActiveReportName("ledger");
-    const updatedFilters = { ...filters, accountcode: accountCode };
+    const updatedFilters = { ...applied, accountcode: accountCode };
     setFilters(updatedFilters);
     void load(1, updatedFilters, "ledger");
   };
 
   const handleBackFromDrill = () => {
-    if (!drilledFrom) return;
+    if (!drilledFrom || busy) return;
     const prevReport = drilledFrom.report;
-    const prevAccount = drilledFrom.accountcode;
     setDrilledFrom(null);
     setActiveReportName(prevReport);
-    const updatedFilters = { ...filters, accountcode: prevAccount };
+    const updatedFilters = { ...drilledFrom.filters };
     setFilters(updatedFilters);
     void load(1, updatedFilters, prevReport);
   };
@@ -459,7 +445,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         <ReportGrid
           report={report}
           graphs={["financialgraphs", "dashboard", "executivesummary"].includes(activeReportName)}
-          onDrillDocNo={(docno) => setDrillDocNo(docno)}
+          onDrillDocNo={(docno, journalId) => setDrillDocument({ docno, journalId })}
           onDrillAccount={handleDrillAccount}
         />
         <div className="shrink-0">
@@ -474,9 +460,10 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
 
     {/* Drill Down Voucher Detail Modal */}
     <JournalDrillDownModal
-      docno={drillDocNo}
-      open={drillDocNo !== null}
-      onClose={() => setDrillDocNo(null)}
+      docno={drillDocument?.docno ?? null}
+      journalId={drillDocument?.journalId ?? null}
+      open={drillDocument !== null}
+      onClose={() => setDrillDocument(null)}
     />
   </section>;
 }

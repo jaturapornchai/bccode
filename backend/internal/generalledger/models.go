@@ -1,6 +1,7 @@
 package generalledger
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -55,6 +56,22 @@ func (a Account) ThaiName() string {
 		}
 	}
 	return ""
+}
+
+func (a Account) MarshalJSON() ([]byte, error) {
+	type Alias Account
+	var parent *string
+	if strings.TrimSpace(a.ParentAccountCode) != "" {
+		p := strings.TrimSpace(a.ParentAccountCode)
+		parent = &p
+	}
+	return json.Marshal(&struct {
+		Alias
+		ParentAccountCode *string `json:"parentaccountcode"`
+	}{
+		Alias:             Alias(a),
+		ParentAccountCode: parent,
+	})
 }
 
 type FiscalYear struct {
@@ -175,27 +192,32 @@ type Line struct {
 }
 
 type Journal struct {
-	Identity    `bson:",inline"`
-	DocNo       string     `json:"docno" bson:"docno"`
-	Date        string     `json:"date" bson:"date"`
-	BookCode    string     `json:"bookcode" bson:"bookcode"`
-	FiscalYear  string     `json:"fiscalyear" bson:"fiscalyear"`
-	Description string     `json:"description" bson:"description"`
-	Reference   string     `json:"reference" bson:"reference"`
-	BranchCode  string     `json:"branchcode" bson:"branchcode"`
-	Kind        string     `json:"kind" bson:"kind"`
-	Status      string     `json:"status" bson:"status"`
-	Lines       []Line     `json:"lines" bson:"lines"`
-	ReversalOf  string     `json:"reversalof,omitempty" bson:"reversalof,omitempty"`
-	PostedAt    *time.Time `json:"postedat,omitempty" bson:"postedat,omitempty"`
-	PostedBy    string     `json:"postedby,omitempty" bson:"postedby,omitempty"`
-	Reason      string     `json:"reason,omitempty" bson:"reason,omitempty"`
+	Details *JournalDetails `json:"details,omitempty" bson:"details,omitempty"`
+	SourceType     int    `json:"source_type,omitempty" bson:"source_type,omitempty"`
+	SourceSystem   string `json:"source_system,omitempty" bson:"source_system,omitempty"`
+	SourceRecordID string `json:"source_record_id,omitempty" bson:"source_record_id,omitempty"`
+	Identity       `bson:",inline"`
+	DocNo          string     `json:"docno" bson:"docno"`
+	Date           string     `json:"date" bson:"date"`
+	BookCode       string     `json:"bookcode" bson:"bookcode"`
+	FiscalYear     string     `json:"fiscalyear" bson:"fiscalyear"`
+	Description    string     `json:"description" bson:"description"`
+	Reference      string     `json:"reference" bson:"reference"`
+	BranchCode     string     `json:"branchcode" bson:"branchcode"`
+	Kind           string     `json:"kind" bson:"kind"`
+	Status         string     `json:"status" bson:"status"`
+	Lines          []Line     `json:"lines" bson:"lines"`
+	ReversalOf     string     `json:"reversalof,omitempty" bson:"reversalof,omitempty"`
+	PostedAt       *time.Time `json:"postedat,omitempty" bson:"postedat,omitempty"`
+	PostedBy       string     `json:"postedby,omitempty" bson:"postedby,omitempty"`
+	Reason         string     `json:"reason,omitempty" bson:"reason,omitempty"`
 }
 
 func (Journal) CollectionName() string { return "gl_journals" }
 
 type Command struct {
-	TargetYear string `json:"targetyear,omitempty"`
+	Review     *ReviewInput `json:"review,omitempty"`
+	TargetYear string       `json:"targetyear,omitempty"`
 	prepared   *preparedProcess
 	Resource   string      `json:"resource"`
 	ID         string      `json:"id"`

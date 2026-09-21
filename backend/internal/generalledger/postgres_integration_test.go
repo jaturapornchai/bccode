@@ -227,7 +227,7 @@ func TestPostgresAccountingReportsExactAndScoped(t *testing.T) {
 	query := ReportQuery{FiscalYear: "2026", BranchCode: "B1", From: "2026-01-01", To: "2026-12-31"}
 	var report Report
 	var err error
-	for _, name := range []string{"ledger", "trialbalance", "workingpaper", "pnl", "balancesheet", "annual-balances", "daily-check", "cashflow", "cashflowforecast", "project-pnl", "dimensionpnl", "projectsummary", "dashboard", "executivesummary", "financialgraphs"} {
+	for _, name := range []string{"gljournal", "ledger", "trialbalance", "workingpaper", "pnl", "balancesheet", "annual-balances", "daily-check", "cashflow", "cashflowforecast", "project-pnl", "dimensionpnl", "projectsummary", "dashboard", "executivesummary", "financialgraphs"} {
 		t.Run(name, func(t *testing.T) {
 			report, err = p.Report(ctx, scope, name, query)
 			if err != nil {
@@ -235,6 +235,21 @@ func TestPostgresAccountingReportsExactAndScoped(t *testing.T) {
 			}
 			if report.TotalRows == 0 {
 				t.Fatal("empty report")
+			}
+			if name == "gljournal" || name == "ledger" {
+				for _, row := range report.Rows {
+					if row["journalid"] == "" {
+						t.Fatal("missing source journal ID")
+					}
+					if _, exists := row["__line_no"]; exists {
+						t.Fatal("leaked private sort key")
+					}
+				}
+				for _, column := range report.Columns {
+					if column.Key == "journalid" || column.Key == "__line_no" {
+						t.Fatal("metadata became visible column")
+					}
+				}
 			}
 			if report.AsOf != "2026-12-31" {
 				t.Fatal(report.AsOf)

@@ -30,3 +30,22 @@ func TestLedgerPermissionsSeparateEntryFromActions(t *testing.T) {
 		t.Fatalf("expected reportScreens[budgetcomparison] to be budget-comparison-report, got %s", reportScreens["budgetcomparison"])
 	}
 }
+
+func TestJournalSupportReadPermissions(t *testing.T) {
+	for _, screen := range []string{"jv-journal", "uv-journal", "sv-journal", "rv-journal", "pv-journal", "gl-opening-balance", "gl-post", "gl-unpost", "*"} {
+		p := map[string]bool{screen: true}
+		if !canReadJournalSupport(p) {
+			t.Fatalf("journal screen %s cannot read evidence", screen)
+		}
+		for _, report := range []string{"ar-outstanding", "ap-outstanding", "bank-unmatched"} {
+			if !canReadReport(p, report) {
+				t.Fatalf("journal screen %s cannot read %s", screen, report)
+			}
+		}
+	}
+	for _, p := range []map[string]bool{nil, {"sales-order": true}, {"jv-journal": false}, {"jv-journal:update": true}} {
+		if canReadJournalSupport(p) {
+			t.Fatal("unrelated or action-only permission granted evidence read")
+		}
+	}
+}

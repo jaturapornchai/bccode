@@ -41,15 +41,6 @@ func NewWarehouseHttp(ms *microservice.Microservice, cfg config.IConfig) Warehou
 	svcLocation := services.NewWarehouseLocationHttpService(repoLocation, repo, masterSyncCacheRepo)
 	svcBin := services.NewWarehouseBinHttpService(repoBin, repoLocation, masterSyncCacheRepo)
 
-	// Backend-Owned Schema Rule: indexes are created here, on service construction (effectively
-	// "first use" at process start), never by hand-run createIndex/mongosh.
-	go func() {
-		bgCtx := context.Background()
-		_ = repo.EnsureIndexes(bgCtx)
-		_ = repoLocation.EnsureIndexes(bgCtx)
-		_ = repoBin.EnsureIndexes(bgCtx)
-	}()
-
 	return WarehouseHttp{
 		ms:           ms,
 		cfg:          cfg,

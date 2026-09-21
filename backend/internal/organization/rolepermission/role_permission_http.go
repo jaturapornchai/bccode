@@ -69,6 +69,9 @@ type RolePermissionItem struct {
 }
 
 func (h RolePermissionHttp) searchRolePermissionsPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, q string, offset int, limit int) error {
+	if !authorizePostgresRoleManager(ctx, db, holdingCode) {
+		return nil
+	}
 	holdingCode = strings.TrimSpace(holdingCode)
 	if holdingCode == "" {
 		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []RolePermissionItem{}, Total: 0})
@@ -156,6 +159,9 @@ func (h RolePermissionHttp) searchRolePermissionsPostgres(ctx microservice.ICont
 }
 
 func (h RolePermissionHttp) infoRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
+	if !authorizePostgresRoleManager(ctx, db, holdingCode) {
+		return nil
+	}
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
 
@@ -216,30 +222,16 @@ func (h RolePermissionHttp) infoMyRolePermissionPostgres(ctx microservice.IConte
 	holdingCode = strings.TrimSpace(holdingCode)
 	username = strings.TrimSpace(username)
 
-	var (
-		roleNum        int
-		rawSets        []byte
-		permissionSets []string
-	)
-
-	userQuery := `SELECT COALESCE(hm.role, u.role, 1), COALESCE(hm.permission_sets, '[]'::jsonb)
-	              FROM users u
-	              LEFT JOIN holding_members hm ON LOWER(hm.holding_code) = LOWER(u.holding_code) AND hm.user_id = u.id
-	              WHERE LOWER(u.username) = LOWER($1) AND (u.holding_code IS NULL OR LOWER(u.holding_code) = LOWER($2))
-	              LIMIT 1`
-	err := db.QueryRowContext(context.Background(), userQuery, username, holdingCode).Scan(&roleNum, &rawSets)
+	roleCode, rawSets, err := postgresMemberRole(ctx, db, holdingCode)
 	if err != nil {
-		roleNum = int(authmodels.ROLE_OWNER)
+		ctx.ResponseError(http.StatusForbidden, "ปฏิเสธสิทธิ์: ไม่พบสมาชิกที่ใช้งานได้ใน Holding")
+		return nil
 	}
-	if len(rawSets) > 0 {
-		_ = json.Unmarshal(rawSets, &permissionSets)
+	var permissionSets []string
+	if len(rawSets) > 0 && json.Unmarshal(rawSets, &permissionSets) != nil {
+		ctx.ResponseError(http.StatusForbidden, "ปฏิเสธสิทธิ์: ข้อมูลชุดสิทธิ์ไม่ถูกต้อง")
+		return nil
 	}
-
-	roleCode := "OWNER"
-	if r, ok := roleCodeFromRole(uint8(roleNum)); ok {
-		roleCode = r
-	}
-
 	setCodes := append([]string{roleCode}, permissionSets...)
 
 	rows, err := db.QueryContext(context.Background(),
@@ -294,6 +286,9 @@ func (h RolePermissionHttp) infoMyRolePermissionPostgres(ctx microservice.IConte
 }
 
 func (h RolePermissionHttp) createRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, req rolemodels.RolePermissionRequest) error {
+	if !authorizePostgresRoleManager(ctx, db, holdingCode, req.RoleCode) {
+		return nil
+	}
 	holdingCode = strings.TrimSpace(holdingCode)
 	roleCode := strings.ToUpper(strings.TrimSpace(req.RoleCode))
 	if roleCode == "" {
@@ -338,6 +333,13 @@ func (h RolePermissionHttp) createRolePermissionPostgres(ctx microservice.IConte
 }
 
 func (h RolePermissionHttp) updateRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string, req rolemodels.RolePermissionRequest) error {
+	if !authorizePostgresRoleManager(ctx, db, holdingCode) {
+		return nil
+	}
+	oldRole, found := postgresTargetRole(ctx, db, holdingCode, id)
+	if !found || !authorizePostgresRoleManager(ctx, db, holdingCode, oldRole, req.RoleCode) {
+		return nil
+	}
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
 	roleCode := strings.ToUpper(strings.TrimSpace(req.RoleCode))
@@ -370,6 +372,13 @@ func (h RolePermissionHttp) updateRolePermissionPostgres(ctx microservice.IConte
 }
 
 func (h RolePermissionHttp) deleteRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
+	if !authorizePostgresRoleManager(ctx, db, holdingCode) {
+		return nil
+	}
+	oldRole, found := postgresTargetRole(ctx, db, holdingCode, id)
+	if !found || !authorizePostgresRoleManager(ctx, db, holdingCode, oldRole) {
+		return nil
+	}
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
 

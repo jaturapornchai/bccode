@@ -1,28 +1,19 @@
+//go:build integration
+
 package generalledger_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
-	_ "github.com/lib/pq"
 	"github.com/shopspring/decimal"
 	gl "smlcloudplatform/internal/generalledger"
 )
 
 func TestFreshInstall_FullUATCycle(t *testing.T) {
-	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
-	if dsn == "" {
-		dsn = "postgres://postgres:postgres@127.0.0.1:5432/appdb?sslmode=disable"
-	}
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		t.Fatalf("Unable to connect to PostgreSQL: %v", err)
-	}
-	defer db.Close()
+	pg, db := uatFreshInstallDB(t)
 
 	ctx := context.Background()
 
@@ -34,9 +25,6 @@ func TestFreshInstall_FullUATCycle(t *testing.T) {
 		Actor:   "admin",
 	}
 
-	pg := gl.NewPostgres(func(holding string) (*sql.DB, error) {
-		return db, nil
-	})
 	store := gl.NewPostgresStore(pg)
 
 	reqNonce := time.Now().UnixNano()
@@ -55,6 +43,7 @@ func TestFreshInstall_FullUATCycle(t *testing.T) {
 	// ------------------------------------------------------------------------
 	t.Log("=== UAT-1: Verifying Fresh Customer Tenancy Setup ===")
 	var holdingName, companyName, branchName string
+	var err error
 	err = db.QueryRowContext(ctx, `SELECT name FROM holdings WHERE code = $1`, scope.Holding).Scan(&holdingName)
 	if err != nil {
 		t.Fatalf("UAT-1 Failed: Holding not found: %v", err)

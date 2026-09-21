@@ -1,0 +1,5552 @@
+{
+  "batch": "gl-rungrueng-01-2569-20260920-v1",
+  "synthetic": true,
+  "seed": 20260920,
+  "holding": "rungrueng",
+  "company": "01",
+  "fiscalyear": "2569",
+  "status": "draft",
+  "currency": "THB",
+  "rounding": "integer satang; VAT 7/100 half-up once per invoice",
+  "vatSource": "https://rd.go.th/59.html",
+  "journals": [
+    {
+      "docno": "RV6901-0001",
+      "date": "2026-01-01",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6901-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "122862.21",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "122862.21",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6901-0002",
+      "date": "2026-01-05",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6901-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "65304.97",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "4571.35",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "69876.32",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6901-0003",
+      "date": "2026-01-08",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6901-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "161172.96",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "150628.93",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "10544.03",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6901-0004",
+      "date": "2026-01-09",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6901-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "135385.28",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "135385.28",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6901-0005",
+      "date": "2026-01-12",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6901-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "45419.60",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "45419.60",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6901-0006",
+      "date": "2026-01-14",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6901-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "71605.95",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "66921.45",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "4684.50",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6901-0007",
+      "date": "2026-01-15",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6901-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "11126.63",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "778.86",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "11905.49",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6901-0008",
+      "date": "2026-01-19",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6901-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "2152.27",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2152.27",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6901-0009",
+      "date": "2026-01-21",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6901-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "1379.92",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "1379.92",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6901-0010",
+      "date": "2026-01-23",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6901-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "222.95",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "222.95",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6901-0011",
+      "date": "2026-01-24",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6901-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "6316.97",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "6316.97",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6901-0012",
+      "date": "2026-01-26",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6901-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "24004.80",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "24004.80",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6902-0001",
+      "date": "2026-02-06",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6902-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "132017.28",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "132017.28",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6902-0002",
+      "date": "2026-02-08",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6902-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "69577.55",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "4870.43",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "74447.98",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6902-0003",
+      "date": "2026-02-11",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6902-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "145435.18",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "135920.73",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "9514.45",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6902-0004",
+      "date": "2026-02-12",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6902-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "88715.45",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "88715.45",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6902-0005",
+      "date": "2026-02-13",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6902-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "37968.46",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "37968.46",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6902-0006",
+      "date": "2026-02-15",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6902-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "38746.69",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "36211.86",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "2534.83",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6902-0007",
+      "date": "2026-02-16",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6902-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "10743.10",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "752.02",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "11495.12",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6902-0008",
+      "date": "2026-02-17",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6902-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "3826.35",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "3826.35",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6902-0009",
+      "date": "2026-02-18",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6902-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "2678.26",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2678.26",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6902-0010",
+      "date": "2026-02-24",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6902-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "448.34",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "448.34",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6902-0011",
+      "date": "2026-02-25",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6902-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "9059.95",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "9059.95",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6902-0012",
+      "date": "2026-02-27",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6902-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "27684.52",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "27684.52",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6903-0001",
+      "date": "2026-03-03",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6903-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "82993.91",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "82993.91",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6903-0002",
+      "date": "2026-03-06",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6903-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "96647.26",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "6765.31",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "103412.57",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6903-0003",
+      "date": "2026-03-07",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6903-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "116000.06",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "108411.27",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "7588.79",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6903-0004",
+      "date": "2026-03-08",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6903-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "89320.04",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "89320.04",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6903-0005",
+      "date": "2026-03-09",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6903-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "74457.05",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "74457.05",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6903-0006",
+      "date": "2026-03-10",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6903-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "72341.54",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "67608.92",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "4732.62",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6903-0007",
+      "date": "2026-03-22",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6903-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "7777.93",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "544.46",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "8322.39",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6903-0008",
+      "date": "2026-03-25",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6903-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "4119.08",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "4119.08",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6903-0009",
+      "date": "2026-03-26",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6903-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "1221.26",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "1221.26",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6903-0010",
+      "date": "2026-03-29",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6903-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "415.66",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "415.66",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6903-0011",
+      "date": "2026-03-30",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6903-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "6420.19",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "6420.19",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6903-0012",
+      "date": "2026-03-31",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6903-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "24126.72",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "24126.72",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6904-0001",
+      "date": "2026-04-03",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6904-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "105430.75",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "105430.75",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6904-0002",
+      "date": "2026-04-07",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6904-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "79897.86",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "5592.85",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "85490.71",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6904-0003",
+      "date": "2026-04-10",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6904-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "159984.50",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "149518.22",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "10466.28",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6904-0004",
+      "date": "2026-04-13",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6904-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "124787.91",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "124787.91",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6904-0005",
+      "date": "2026-04-15",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6904-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "62408.21",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "62408.21",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6904-0006",
+      "date": "2026-04-18",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6904-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "33209.95",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "31037.34",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "2172.61",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6904-0007",
+      "date": "2026-04-19",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6904-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "8773.36",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "614.14",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "9387.50",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6904-0008",
+      "date": "2026-04-21",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6904-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "4009.46",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "4009.46",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6904-0009",
+      "date": "2026-04-22",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6904-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "1681.97",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "1681.97",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6904-0010",
+      "date": "2026-04-27",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6904-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "425.65",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "425.65",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6904-0011",
+      "date": "2026-04-29",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6904-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "6620.44",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "6620.44",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6904-0012",
+      "date": "2026-04-30",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6904-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "24253.68",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "24253.68",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6905-0001",
+      "date": "2026-05-02",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6905-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "115469.26",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "115469.26",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6905-0002",
+      "date": "2026-05-03",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6905-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "78095.04",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "5466.65",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "83561.69",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6905-0003",
+      "date": "2026-05-04",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6905-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "129165.44",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "120715.36",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "8450.08",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6905-0004",
+      "date": "2026-05-05",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6905-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "109790.62",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "109790.62",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6905-0005",
+      "date": "2026-05-09",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6905-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "43452.07",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "43452.07",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6905-0006",
+      "date": "2026-05-10",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6905-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "55469.51",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "51840.66",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "3628.85",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6905-0007",
+      "date": "2026-05-16",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6905-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "7887.29",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "552.11",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "8439.40",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6905-0008",
+      "date": "2026-05-20",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6905-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "2619.98",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2619.98",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6905-0009",
+      "date": "2026-05-21",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6905-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "2649.56",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2649.56",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6905-0010",
+      "date": "2026-05-29",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6905-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "282.87",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "282.87",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6905-0011",
+      "date": "2026-05-30",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6905-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "5753.07",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "5753.07",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6905-0012",
+      "date": "2026-05-31",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6905-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "24581.44",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "24581.44",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6906-0001",
+      "date": "2026-06-01",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6906-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "84772.08",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "84772.08",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6906-0002",
+      "date": "2026-06-02",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6906-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "72972.72",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "5108.09",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "78080.81",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6906-0003",
+      "date": "2026-06-06",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6906-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "97497.06",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "91118.75",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "6378.31",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6906-0004",
+      "date": "2026-06-08",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6906-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "74097.76",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "74097.76",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6906-0005",
+      "date": "2026-06-09",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6906-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "40602.02",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "40602.02",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6906-0006",
+      "date": "2026-06-11",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6906-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "61129.30",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "57130.19",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "3999.11",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6906-0007",
+      "date": "2026-06-12",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6906-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "10912.85",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "763.90",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "11676.75",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6906-0008",
+      "date": "2026-06-14",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6906-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "1912.52",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "1912.52",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6906-0009",
+      "date": "2026-06-16",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6906-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "1417.22",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "1417.22",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6906-0010",
+      "date": "2026-06-21",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6906-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "110.72",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "110.72",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6906-0011",
+      "date": "2026-06-27",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6906-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "7857.25",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "7857.25",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6906-0012",
+      "date": "2026-06-28",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6906-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "16781.14",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "16781.14",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6907-0001",
+      "date": "2026-07-03",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6907-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "130326.82",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "130326.82",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6907-0002",
+      "date": "2026-07-04",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6907-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "85808.97",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "6006.63",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้ออุปกรณ์ประปาและสุขภัณฑ์เข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "91815.60",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6907-0003",
+      "date": "2026-07-07",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6907-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "133445.83",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "124715.73",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายอุปกรณ์ประปาและสุขภัณฑ์ให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "8730.10",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6907-0004",
+      "date": "2026-07-08",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6907-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "113428.95",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "113428.95",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6907-0005",
+      "date": "2026-07-09",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6907-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "45907.80",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "45907.80",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6907-0006",
+      "date": "2026-07-10",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6907-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "36588.13",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "34194.51",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "2393.62",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6907-0007",
+      "date": "2026-07-11",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6907-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "12502.30",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "875.16",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "13377.46",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6907-0008",
+      "date": "2026-07-13",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6907-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "4310.42",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "4310.42",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6907-0009",
+      "date": "2026-07-20",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6907-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "1338.24",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "1338.24",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6907-0010",
+      "date": "2026-07-21",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6907-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "444.42",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "444.42",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6907-0011",
+      "date": "2026-07-24",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6907-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "6530.25",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "6530.25",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6907-0012",
+      "date": "2026-07-28",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6907-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "28635.77",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "28635.77",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6908-0001",
+      "date": "2026-08-07",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6908-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "124428.95",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "124428.95",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6908-0002",
+      "date": "2026-08-10",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6908-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "62749.25",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "4392.45",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อกระเบื้องและวัสดุมุงหลังคาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "67141.70",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6908-0003",
+      "date": "2026-08-16",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6908-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "125778.83",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "117550.31",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายกระเบื้องและวัสดุมุงหลังคาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "8228.52",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6908-0004",
+      "date": "2026-08-19",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6908-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "103138.64",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "103138.64",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6908-0005",
+      "date": "2026-08-20",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6908-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "35585.10",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "35585.10",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6908-0006",
+      "date": "2026-08-22",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6908-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "67099.76",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "62710.06",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "4389.70",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6908-0007",
+      "date": "2026-08-23",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6908-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "7400.68",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "518.05",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "7918.73",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6908-0008",
+      "date": "2026-08-24",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6908-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "2581.05",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2581.05",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6908-0009",
+      "date": "2026-08-25",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6908-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "1967.76",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "1967.76",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6908-0010",
+      "date": "2026-08-26",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6908-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "433.10",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "433.10",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6908-0011",
+      "date": "2026-08-29",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6908-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "9810.34",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "9810.34",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6908-0012",
+      "date": "2026-08-30",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6908-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "16310.28",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "16310.28",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6909-0001",
+      "date": "2026-09-02",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6909-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "130871.55",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "130871.55",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6909-0002",
+      "date": "2026-09-07",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6909-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "93614.28",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "6553.00",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "100167.28",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6909-0003",
+      "date": "2026-09-08",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6909-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "106150.22",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "99205.81",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "6944.41",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6909-0004",
+      "date": "2026-09-09",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6909-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "65813.13",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "65813.13",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6909-0005",
+      "date": "2026-09-10",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6909-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "63105.38",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "63105.38",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6909-0006",
+      "date": "2026-09-12",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6909-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "68922.70",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "64413.74",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "4508.96",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6909-0007",
+      "date": "2026-09-15",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6909-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "9843.46",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "689.04",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "10532.50",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6909-0008",
+      "date": "2026-09-16",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6909-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "2412.43",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2412.43",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6909-0009",
+      "date": "2026-09-20",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6909-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "2272.77",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2272.77",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6909-0010",
+      "date": "2026-09-21",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6909-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "302.30",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "302.30",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6909-0011",
+      "date": "2026-09-27",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6909-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "6839.33",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "6839.33",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6909-0012",
+      "date": "2026-09-28",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6909-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "22569.66",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "22569.66",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6910-0001",
+      "date": "2026-10-06",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6910-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "126081.38",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "126081.38",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6910-0002",
+      "date": "2026-10-10",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6910-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "72151.28",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "5050.59",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "77201.87",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6910-0003",
+      "date": "2026-10-11",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6910-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "122944.28",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "114901.20",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "8043.08",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6910-0004",
+      "date": "2026-10-12",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6910-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "94667.09",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "94667.09",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6910-0005",
+      "date": "2026-10-15",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6910-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "50953.23",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "50953.23",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6910-0006",
+      "date": "2026-10-16",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6910-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "48964.03",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "45760.78",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "3203.25",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6910-0007",
+      "date": "2026-10-17",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6910-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "9170.43",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "641.93",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "9812.36",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6910-0008",
+      "date": "2026-10-19",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6910-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "3794.27",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "3794.27",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6910-0009",
+      "date": "2026-10-22",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6910-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "2647.51",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2647.51",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6910-0010",
+      "date": "2026-10-24",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6910-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "287.56",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "287.56",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6910-0011",
+      "date": "2026-10-28",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6910-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "6590.47",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "6590.47",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6910-0012",
+      "date": "2026-10-30",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6910-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "19641.69",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "19641.69",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6911-0001",
+      "date": "2026-11-02",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6911-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "108611.25",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "108611.25",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6911-0002",
+      "date": "2026-11-05",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6911-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "90205.46",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "6314.38",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อเหล็กเส้นและลวดผูกเหล็กเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "96519.84",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6911-0003",
+      "date": "2026-11-12",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6911-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "112677.62",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "105306.19",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายเหล็กเส้นและลวดผูกเหล็กให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "7371.43",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6911-0004",
+      "date": "2026-11-13",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6911-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "68733.34",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "68733.34",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6911-0005",
+      "date": "2026-11-14",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6911-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "51155.51",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "51155.51",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6911-0006",
+      "date": "2026-11-15",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6911-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "66951.47",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "62571.47",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "4380.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6911-0007",
+      "date": "2026-11-19",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6911-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "12655.49",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "885.88",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "13541.37",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6911-0008",
+      "date": "2026-11-23",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6911-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "2894.57",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2894.57",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6911-0009",
+      "date": "2026-11-25",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6911-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "2596.23",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2596.23",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6911-0010",
+      "date": "2026-11-28",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6911-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "356.61",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "356.61",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6911-0011",
+      "date": "2026-11-29",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6911-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "6876.88",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "6876.88",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6911-0012",
+      "date": "2026-11-30",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6911-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "26812.14",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "26812.14",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6912-0001",
+      "date": "2026-12-04",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+      "reference": "LN6912-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "82568.87",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "รับเงินกู้ยืมระยะสั้นจากกรรมการเข้าบัญชีธนาคาร",
+          "debit": "0.00",
+          "credit": "82568.87",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6912-0002",
+      "date": "2026-12-05",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+      "reference": "PI6912-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "77697.03",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "5438.79",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ซื้อปูนซีเมนต์และอิฐมวลเบาเข้าคลังสินค้า เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "83135.82",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6912-0003",
+      "date": "2026-12-06",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+      "reference": "INV6912-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "136286.90",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "127370.93",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายปูนซีเมนต์และอิฐมวลเบาให้ผู้รับเหมา เครดิต 30 วัน",
+          "debit": "0.00",
+          "credit": "8915.97",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "RV6912-0004",
+      "date": "2026-12-08",
+      "bookcode": "RV",
+      "fiscalyear": "2569",
+      "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+      "reference": "INV6912-0003",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "100852.30",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1131",
+          "accountname": "ลูกหนี้การค้า - ในประเทศ",
+          "description": "รับชำระลูกหนี้การค้าบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "100852.30",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6912-0005",
+      "date": "2026-12-09",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+      "reference": "PI6912-0002",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2111",
+          "accountname": "เจ้าหนี้การค้า - ในประเทศ",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "44893.34",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระเจ้าหนี้ค่าวัสดุก่อสร้างบางส่วนผ่านธนาคาร",
+          "debit": "0.00",
+          "credit": "44893.34",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "UV6912-0006",
+      "date": "2026-12-12",
+      "bookcode": "UV",
+      "fiscalyear": "2569",
+      "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+      "reference": "INV6912-0006",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "53725.20",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "4111",
+          "accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "50210.47",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "2131",
+          "accountname": "ภาษีขาย",
+          "description": "ขายวัสดุก่อสร้าง รับชำระโดยโอนเข้าธนาคาร",
+          "debit": "0.00",
+          "credit": "3514.73",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "SV6912-0007",
+      "date": "2026-12-13",
+      "bookcode": "SV",
+      "fiscalyear": "2569",
+      "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+      "reference": "PI6912-0007",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1141",
+          "accountname": "สินค้าสำเร็จรูป",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "8903.97",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1151",
+          "accountname": "ภาษีซื้อ",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "623.28",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ซื้อวัสดุก่อสร้างเติมคลัง ชำระโดยโอนธนาคาร",
+          "debit": "0.00",
+          "credit": "9527.25",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6912-0008",
+      "date": "2026-12-16",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+      "reference": "RC6912-0008",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5331",
+          "accountname": "ค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "2074.49",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าเครื่องเขียนและวัสดุสำนักงานตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2074.49",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6912-0009",
+      "date": "2026-12-18",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+      "reference": "RC6912-0009",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5325",
+          "accountname": "ค่าบริการอินเทอร์เน็ต ระบบเซิร์ฟเวอร์ และคลาวด์",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "2463.98",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ชำระค่าบริการระบบคลาวด์ประจำเดือนตามใบเสร็จ",
+          "debit": "0.00",
+          "credit": "2463.98",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6912-0010",
+      "date": "2026-12-25",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+      "reference": "BNK6912-0010",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "5421",
+          "accountname": "ค่าธรรมเนียมธนาคารและธุรกรรมทางการเงิน",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "210.33",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "บันทึกค่าธรรมเนียมธนาคารประจำเดือน",
+          "debit": "0.00",
+          "credit": "210.33",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "JV6912-0011",
+      "date": "2026-12-26",
+      "bookcode": "JV",
+      "fiscalyear": "2569",
+      "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+      "reference": "TR6912-0011",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "1111",
+          "accountname": "เงินสดในมือ",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "5367.67",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "ถอนเงินจากธนาคารสำรองเป็นเงินสดในมือ",
+          "debit": "0.00",
+          "credit": "5367.67",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    },
+    {
+      "docno": "PV6912-0012",
+      "date": "2026-12-28",
+      "bookcode": "PV",
+      "fiscalyear": "2569",
+      "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+      "reference": "LN6912-0001",
+      "branchcode": "00000",
+      "kind": "manual",
+      "lines": [
+        {
+          "accountcode": "2173",
+          "accountname": "เงินกู้ยืมระยะสั้นจากกรรมการหรือบุคคลที่เกี่ยวข้องกัน",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "16237.54",
+          "credit": "0.00",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        },
+        {
+          "accountcode": "1121",
+          "accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+          "description": "คืนเงินกู้ยืมระยะสั้นแก่กรรมการบางส่วน",
+          "debit": "0.00",
+          "credit": "16237.54",
+          "departmentcode": "",
+          "projectcode": "",
+          "cashflow": ""
+        }
+      ]
+    }
+  ],
+  "supersededDrafts": [
+    {
+      "id": "fb324d54-b768-44f9-bf99-7922fb77f494",
+      "docno": "UV6901-0002",
+      "replacement": "03fe0cf8-da9b-48cc-94e8-74554c54819f",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "d25607e6-a94d-4247-b145-a8bd730d4d9e",
+      "docno": "SV6901-0003",
+      "replacement": "79c9930f-574b-4200-af9d-c0f5b2ef5be0",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "9eaa5a33-484f-40d6-94db-151eec866cb1",
+      "docno": "SV6901-0006",
+      "replacement": "c9303c2a-0431-43e1-a394-79fc5f3fc90d",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "21a212a1-53a2-4d65-a22f-c21fb9cad03c",
+      "docno": "UV6901-0007",
+      "replacement": "e56f1342-b1cb-48d3-9927-1087a3d99722",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "e3c957a7-0f7d-4106-aa97-74456b1fbc60",
+      "docno": "UV6902-0002",
+      "replacement": "790b365d-d1fa-4782-bf23-39d7d80a5f63",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "4890c262-e3ca-474c-afdc-5de5759677ec",
+      "docno": "SV6902-0003",
+      "replacement": "d535352e-190d-4f4c-9e36-5458aaef7c61",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "a274216c-823b-4368-8f8f-da974cf0fc69",
+      "docno": "SV6902-0006",
+      "replacement": "a929b72d-52e4-4227-88c3-61965b5b3e91",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "2305f303-a4a2-4d04-b6bc-134e72cd4da5",
+      "docno": "UV6902-0007",
+      "replacement": "f91eaf1b-5581-44bd-8bcf-89a069e52fd2",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "782db416-b41d-49c2-bef9-3a4e468f2028",
+      "docno": "UV6903-0002",
+      "replacement": "4a8f6203-6f97-4203-80b9-3b4b2ca8a7c4",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "b5f85a89-8273-4511-b41d-8d2bf326fdab",
+      "docno": "SV6903-0003",
+      "replacement": "f8ec73a9-359b-47a0-8cec-c5c44e86bea8",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "45e2575b-bd18-40f1-8dd6-3ec557568e7b",
+      "docno": "SV6903-0006",
+      "replacement": "438be9ac-b53c-43b8-92e9-56cb5996ecb6",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "04dcfbf2-3757-4f82-9e00-2ac5cdea7388",
+      "docno": "UV6903-0007",
+      "replacement": "ed6bdf7e-bbe7-4147-bc71-50d166d898a4",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "cce5b424-e25d-4911-ac20-b471a2c47ac2",
+      "docno": "UV6904-0002",
+      "replacement": "2f5f6cc6-7063-4f96-8454-9887133c39fb",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "25192d4f-23c2-45a8-ac72-b9f3cc4ad20f",
+      "docno": "SV6904-0003",
+      "replacement": "b1376bdf-8d53-488d-b9c3-64746c90a32a",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "53610ead-412b-42fa-b23c-b80ba44841e8",
+      "docno": "SV6904-0006",
+      "replacement": "245c037f-407e-4413-b4a3-35dd1253b212",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "6069d9f7-bdf8-4897-8ad4-dc4a99deb5b3",
+      "docno": "UV6904-0007",
+      "replacement": "338a26c2-2d1a-4b1c-83a7-f5b57f2e3762",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "44a08f57-46dc-4990-95dc-441fefa9bb96",
+      "docno": "UV6905-0002",
+      "replacement": "8ec02b22-edd9-474e-a8f2-0dd747f73e6e",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "912b2aec-5c8e-4fa1-90ee-8d259b2ca1c1",
+      "docno": "SV6905-0003",
+      "replacement": "646d5865-0f98-4b31-8f44-d9a1dfe5dc03",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "87b28831-3a4f-4b04-adc2-51ae03373c74",
+      "docno": "SV6905-0006",
+      "replacement": "12cec51c-c535-44d8-aafe-e8720f9ea77f",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "682befeb-b155-4460-83bd-fe1d019326b3",
+      "docno": "UV6905-0007",
+      "replacement": "d1e14366-8844-4c1c-9e0f-d7cf5e130633",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "dec28518-f232-4809-a22a-e1997954c1f7",
+      "docno": "UV6906-0002",
+      "replacement": "80924834-c825-4937-b08b-41d0a5593cf1",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "e2167839-cb9b-4b32-a66c-d49f9663ffa5",
+      "docno": "SV6906-0003",
+      "replacement": "b1462b04-ecf9-4ecc-a727-e9f31c971308",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "1ef557e1-44ed-4a0f-8628-de79152c0daf",
+      "docno": "SV6906-0006",
+      "replacement": "ef1ad98f-53af-4297-a7a2-10c4631cb20a",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "95829d19-a8af-425c-bd48-e663fdc1eefc",
+      "docno": "UV6906-0007",
+      "replacement": "c7a4be3f-5349-47c7-bab7-82f811359db5",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "44268416-2c43-406d-b115-33918d4c285c",
+      "docno": "UV6907-0002",
+      "replacement": "ae0624d4-3557-4747-ab04-3ab1cbf92904",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "c6245840-e529-4127-8117-84d7b901861a",
+      "docno": "SV6907-0003",
+      "replacement": "481178b8-3da7-439c-9f64-d57fd9c25517",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "f786d5f2-972d-415a-ad9f-7259cc4e1971",
+      "docno": "SV6907-0006",
+      "replacement": "1cba1e1b-806f-4ab3-9bc0-e542b1f338a6",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "962d968b-d6ea-44e0-ae9e-24522e84031a",
+      "docno": "UV6907-0007",
+      "replacement": "f9317455-8fd9-489b-9682-1b548e9a6d6f",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "599cd1f7-4e63-4393-a27a-de22de831941",
+      "docno": "UV6908-0002",
+      "replacement": "c9e63651-8db3-4484-beae-506b21079f59",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "8496a042-8d6f-46f0-a7ed-50438ba58ecd",
+      "docno": "SV6908-0003",
+      "replacement": "73a28565-22dd-4bfb-a176-fd723bb3cd13",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "2c9f247d-766c-4f66-839b-f1b614c56a35",
+      "docno": "SV6908-0006",
+      "replacement": "4da522a3-394c-4150-a3bb-8e673d62accc",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "1a9d22c3-38df-46f8-95fd-8a12fec00c52",
+      "docno": "UV6908-0007",
+      "replacement": "f917b668-5407-4036-9dcd-062404e9e03f",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "fa3c2063-5d06-4869-a6c8-69de4fa46779",
+      "docno": "UV6909-0002",
+      "replacement": "91cf2b45-8f73-4ba7-9c15-a9acbfc0a6fd",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "0d2dba58-b218-4c11-b164-9c2783c6b167",
+      "docno": "SV6909-0003",
+      "replacement": "4d3d09b4-124e-4167-9a9d-72085ea7fc79",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "b2fa01a9-dc6a-433b-b855-0fa490a5d408",
+      "docno": "SV6909-0006",
+      "replacement": "3a0ca52d-5524-4e9c-b028-e1d833316819",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "20d28d92-025a-4d6d-b2e3-4ddae7e53353",
+      "docno": "UV6909-0007",
+      "replacement": "30a28ce4-018a-4152-bee3-4bfc074a3f4b",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "23f347da-0113-4318-b91a-b6bb85cdbec1",
+      "docno": "UV6910-0002",
+      "replacement": "dff0ec78-bc43-4540-b7e0-8393753383e8",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "1179c469-c16b-4cb3-8ca3-a2e614d803c7",
+      "docno": "SV6910-0003",
+      "replacement": "bdee1520-1124-4798-b639-d728b552106e",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "34bf653e-d250-4ca1-b687-1cd613c2f6d6",
+      "docno": "SV6910-0006",
+      "replacement": "824d444c-af83-4a5f-889a-450ee8c55564",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "5e2e1ab2-5d80-4302-862f-4fd8605c4fb1",
+      "docno": "UV6910-0007",
+      "replacement": "47f207c1-bf7c-4769-b3d3-1b4919119b7f",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "2be61447-4046-4350-be59-3f917903d885",
+      "docno": "UV6911-0002",
+      "replacement": "97e132f4-f8b7-4e76-8ab4-e77217f834da",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "14170c41-9e04-40eb-9bc9-159299d9215f",
+      "docno": "SV6911-0003",
+      "replacement": "902ed601-6e5a-4db4-b6bb-ecc8b356dffe",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "2b90e25f-04b4-43a5-9122-ca7d18b3a010",
+      "docno": "SV6911-0006",
+      "replacement": "c6055aa5-c809-4a5a-beef-aa2429c3acd1",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "66db7b21-85c8-4192-9044-fad48befe4eb",
+      "docno": "UV6911-0007",
+      "replacement": "3094d589-8200-4df7-b099-adf253fe249b",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "c8f85c5f-8c4f-4326-bacd-e561ed9169ad",
+      "docno": "UV6912-0002",
+      "replacement": "37ba437c-995c-4b80-aa55-0d9014917776",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "edf25d75-4596-4827-88f0-d8803e563030",
+      "docno": "SV6912-0003",
+      "replacement": "0893988f-6c3f-4ac7-ac22-311e729d25e7",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "8790b8ba-27b8-4e12-838c-ea8b23e2e65b",
+      "docno": "SV6912-0006",
+      "replacement": "c3b36d9b-4831-45fd-b4b3-89b716d3a50e",
+      "reason": "correct book to actual company master"
+    },
+    {
+      "id": "360f4cf8-488e-4499-8ca8-d75abe5d0cbd",
+      "docno": "UV6912-0007",
+      "replacement": "e1a594f8-ad38-436f-b2e5-798cb5430720",
+      "reason": "correct book to actual company master"
+    }
+  ],
+  "persistedIds": {
+    "RV6901-0001": "47a2d42f-24b7-4542-a6dd-5d7c2f088404",
+    "SV6901-0002": "03fe0cf8-da9b-48cc-94e8-74554c54819f",
+    "UV6901-0003": "79c9930f-574b-4200-af9d-c0f5b2ef5be0",
+    "RV6901-0004": "1334f79f-9be7-44ac-b1a3-443e284c5491",
+    "PV6901-0005": "1f6a197d-763c-4121-9956-2c099f054c52",
+    "UV6901-0006": "c9303c2a-0431-43e1-a394-79fc5f3fc90d",
+    "SV6901-0007": "e56f1342-b1cb-48d3-9927-1087a3d99722",
+    "PV6901-0008": "b4c0dec4-a7cd-4462-adb2-a9992bb7b3ac",
+    "PV6901-0009": "66eb4302-514b-4a75-9d96-894ffa3d74fb",
+    "PV6901-0010": "ba0e081d-5c8c-4ee7-ae19-5bb23d4e757f",
+    "JV6901-0011": "66aea77f-5fb3-48b5-a496-c49972884926",
+    "PV6901-0012": "2d7486f8-fd56-4706-9a66-c25cf0622614",
+    "RV6902-0001": "455c02d9-6064-443c-a381-e3d876f34a44",
+    "SV6902-0002": "790b365d-d1fa-4782-bf23-39d7d80a5f63",
+    "UV6902-0003": "d535352e-190d-4f4c-9e36-5458aaef7c61",
+    "RV6902-0004": "2853dcbf-9345-481d-abe3-1f619b8275cf",
+    "PV6902-0005": "23e3c482-0fbb-45eb-bfdc-bfb1f19b6b3d",
+    "UV6902-0006": "a929b72d-52e4-4227-88c3-61965b5b3e91",
+    "SV6902-0007": "f91eaf1b-5581-44bd-8bcf-89a069e52fd2",
+    "PV6902-0008": "d4a6a828-78d8-4165-9e46-9991f528355d",
+    "PV6902-0009": "4fb721a7-e110-47b4-bf4a-7332a812b7e4",
+    "PV6902-0010": "9576b036-2116-4853-8e2e-e492a1282a85",
+    "JV6902-0011": "144314be-e065-4656-9d87-46663aa4fe01",
+    "PV6902-0012": "792819a6-3b1e-41ac-add9-16dc2e901b6d",
+    "RV6903-0001": "3653513d-4497-42fa-93ea-9f2f61dc661b",
+    "SV6903-0002": "4a8f6203-6f97-4203-80b9-3b4b2ca8a7c4",
+    "UV6903-0003": "f8ec73a9-359b-47a0-8cec-c5c44e86bea8",
+    "RV6903-0004": "15300749-3bb8-459f-bb51-9de70f2c49d1",
+    "PV6903-0005": "d5e4fab6-aa56-4efb-be2f-c106341ebc7d",
+    "UV6903-0006": "438be9ac-b53c-43b8-92e9-56cb5996ecb6",
+    "SV6903-0007": "ed6bdf7e-bbe7-4147-bc71-50d166d898a4",
+    "PV6903-0008": "7d5e6eb0-e7a0-4304-98c6-bd5268de676e",
+    "PV6903-0009": "6ff21114-98f7-447d-9db1-e76f97c24386",
+    "PV6903-0010": "f8b9c504-ff98-4bc9-bed8-311de1986c8e",
+    "JV6903-0011": "285e2882-3783-4c10-b776-05d030693972",
+    "PV6903-0012": "d9f4bd1c-7b6e-4c77-87a5-ebe43d559720",
+    "RV6904-0001": "656bcb5a-e6e0-44a6-8369-229be7196705",
+    "SV6904-0002": "2f5f6cc6-7063-4f96-8454-9887133c39fb",
+    "UV6904-0003": "b1376bdf-8d53-488d-b9c3-64746c90a32a",
+    "RV6904-0004": "a04bf946-5420-43e6-b1dc-9ab21c6fabe1",
+    "PV6904-0005": "357b917f-dd7b-4e0c-bc06-72aa7c4dd308",
+    "UV6904-0006": "245c037f-407e-4413-b4a3-35dd1253b212",
+    "SV6904-0007": "338a26c2-2d1a-4b1c-83a7-f5b57f2e3762",
+    "PV6904-0008": "3ae43e80-ee31-429e-ac60-82375a72eb09",
+    "PV6904-0009": "df963e11-3407-471e-b489-784eb911e880",
+    "PV6904-0010": "eff158b7-e9ca-4fe9-a7f3-00ade1784a40",
+    "JV6904-0011": "9ec36f53-5daf-4b40-a991-fb87fa4e3a95",
+    "PV6904-0012": "aa19b411-a653-4aca-a9c3-6d2d29e77d87",
+    "RV6905-0001": "e412ae83-2df9-4938-9323-0b0f6e872f27",
+    "SV6905-0002": "8ec02b22-edd9-474e-a8f2-0dd747f73e6e",
+    "UV6905-0003": "646d5865-0f98-4b31-8f44-d9a1dfe5dc03",
+    "RV6905-0004": "34ae5f96-b64d-4b5b-83e5-c1ae036d1e5c",
+    "PV6905-0005": "d6d91b1c-9bc2-400b-a856-9020c4096a45",
+    "UV6905-0006": "12cec51c-c535-44d8-aafe-e8720f9ea77f",
+    "SV6905-0007": "d1e14366-8844-4c1c-9e0f-d7cf5e130633",
+    "PV6905-0008": "611c62c9-74fc-4d3c-8b42-36b8c29d7775",
+    "PV6905-0009": "3ab08768-40ed-4496-b204-fcc816f35e49",
+    "PV6905-0010": "1b532e3e-3c9e-4500-b04d-1ceff0c14d5a",
+    "JV6905-0011": "f41d0220-c702-4663-8387-99d4d6129e5e",
+    "PV6905-0012": "831e248a-c245-40fc-9c27-b36872fc254b",
+    "RV6906-0001": "d1b5d365-be63-446b-949e-e2d08857fed7",
+    "SV6906-0002": "80924834-c825-4937-b08b-41d0a5593cf1",
+    "UV6906-0003": "b1462b04-ecf9-4ecc-a727-e9f31c971308",
+    "RV6906-0004": "f18537c8-144a-4670-92b4-b8e67ef081b7",
+    "PV6906-0005": "41b5abd1-2acf-4bc6-8bdb-7a64535a0af7",
+    "UV6906-0006": "ef1ad98f-53af-4297-a7a2-10c4631cb20a",
+    "SV6906-0007": "c7a4be3f-5349-47c7-bab7-82f811359db5",
+    "PV6906-0008": "62f6fa65-a81c-4a25-ab6b-e729f2caf329",
+    "PV6906-0009": "bc0a4b6b-bde8-4545-9ac1-bd235e3244ce",
+    "PV6906-0010": "8254b83a-dbf9-4e4e-853c-9d2b36adb4e0",
+    "JV6906-0011": "b106478b-6d37-405f-ad8b-11fabac048a5",
+    "PV6906-0012": "9bc2cff8-138c-41cd-93f1-9e656ebcae68",
+    "RV6907-0001": "88f0d9b2-6768-4a00-862c-2e15c58b61ec",
+    "SV6907-0002": "ae0624d4-3557-4747-ab04-3ab1cbf92904",
+    "UV6907-0003": "481178b8-3da7-439c-9f64-d57fd9c25517",
+    "RV6907-0004": "7b6725fc-757e-475d-ad28-dafcc4b7a8af",
+    "PV6907-0005": "91ae6157-f65e-49f5-ac3d-9e11f1288db6",
+    "UV6907-0006": "1cba1e1b-806f-4ab3-9bc0-e542b1f338a6",
+    "SV6907-0007": "f9317455-8fd9-489b-9682-1b548e9a6d6f",
+    "PV6907-0008": "928f334b-c24c-4de1-9cab-819a6b391429",
+    "PV6907-0009": "fd071f69-7ffd-41f3-908b-d1ba03deed28",
+    "PV6907-0010": "a706eeee-41ed-42ce-92df-73c99abff899",
+    "JV6907-0011": "8411f9ea-a6d4-4fa2-8996-14dd055b3c37",
+    "PV6907-0012": "8c4a0de2-9a88-4bc9-8a51-cf8ad6f4509e",
+    "RV6908-0001": "e40a34b4-97e2-4772-bd91-b5ab9f0b839a",
+    "SV6908-0002": "c9e63651-8db3-4484-beae-506b21079f59",
+    "UV6908-0003": "73a28565-22dd-4bfb-a176-fd723bb3cd13",
+    "RV6908-0004": "1ca01513-5897-49a0-8873-3cb7efdfdfdf",
+    "PV6908-0005": "4a580aa7-a143-4bbe-b689-63baafa9549e",
+    "UV6908-0006": "4da522a3-394c-4150-a3bb-8e673d62accc",
+    "SV6908-0007": "f917b668-5407-4036-9dcd-062404e9e03f",
+    "PV6908-0008": "3cbf2299-92bc-4377-b7c7-99a1ed4cf533",
+    "PV6908-0009": "ff3b57f5-0b3d-487d-a721-9080939c8478",
+    "PV6908-0010": "f68cc0f8-3b72-4f82-ac2a-7fb34ce87b9a",
+    "JV6908-0011": "d260d681-aae5-44e2-9de6-59c8a65f6702",
+    "PV6908-0012": "e09b8e58-c781-405d-a50c-3bff970c13dc",
+    "RV6909-0001": "4482e146-9773-40bc-850c-81e8143a9174",
+    "SV6909-0002": "91cf2b45-8f73-4ba7-9c15-a9acbfc0a6fd",
+    "UV6909-0003": "4d3d09b4-124e-4167-9a9d-72085ea7fc79",
+    "RV6909-0004": "4fb018fd-665e-462a-9bea-56f6b2b81e99",
+    "PV6909-0005": "264ea717-98c0-4acf-9539-4c66b0ef96fd",
+    "UV6909-0006": "3a0ca52d-5524-4e9c-b028-e1d833316819",
+    "SV6909-0007": "30a28ce4-018a-4152-bee3-4bfc074a3f4b",
+    "PV6909-0008": "bf253d1f-768c-448c-ade0-d044886e0def",
+    "PV6909-0009": "14e7188f-5481-497d-b462-bb589e07a1bb",
+    "PV6909-0010": "8cbceb5c-0e05-4f43-9522-725d706e3826",
+    "JV6909-0011": "39a5c89d-7b64-4997-9cec-dd294e63a329",
+    "PV6909-0012": "e4c79a00-1279-46c2-921d-e208c1370d8a",
+    "RV6910-0001": "b4622a4e-dee7-407e-bf5d-dedb161dbc87",
+    "SV6910-0002": "dff0ec78-bc43-4540-b7e0-8393753383e8",
+    "UV6910-0003": "bdee1520-1124-4798-b639-d728b552106e",
+    "RV6910-0004": "d352dd48-8bf1-422d-9e81-3fdb82cb9680",
+    "PV6910-0005": "fe0e26e9-3304-41df-9781-48771e755e8a",
+    "UV6910-0006": "824d444c-af83-4a5f-889a-450ee8c55564",
+    "SV6910-0007": "47f207c1-bf7c-4769-b3d3-1b4919119b7f",
+    "PV6910-0008": "ffa2f7ed-b3d5-4e63-91f5-e1e1e45052fd",
+    "PV6910-0009": "33da6a8d-5102-4d9d-84fb-5cadda1121d6",
+    "PV6910-0010": "c5f11017-2433-43f2-8b6a-47191ca21271",
+    "JV6910-0011": "222d2907-2948-42c1-896a-6676d01cf993",
+    "PV6910-0012": "e83f11bc-51e3-4bcd-8270-8effdfb9c174",
+    "RV6911-0001": "c9be4229-f5cc-44b2-9c9f-d36908bb4dad",
+    "SV6911-0002": "97e132f4-f8b7-4e76-8ab4-e77217f834da",
+    "UV6911-0003": "902ed601-6e5a-4db4-b6bb-ecc8b356dffe",
+    "RV6911-0004": "dde2cb7e-8a34-43f9-81c5-806dbf6078ee",
+    "PV6911-0005": "b842bcda-fdfb-494f-ac17-61973579da28",
+    "UV6911-0006": "c6055aa5-c809-4a5a-beef-aa2429c3acd1",
+    "SV6911-0007": "3094d589-8200-4df7-b099-adf253fe249b",
+    "PV6911-0008": "a1df2bb0-aa14-4917-afac-fa2239aba671",
+    "PV6911-0009": "95b3ca0b-5f0e-45ef-8f78-f3be5f81b9b6",
+    "PV6911-0010": "d87b2e1a-666e-480f-bdd8-6342706c9bf7",
+    "JV6911-0011": "baf33553-e7dc-4b13-bc5c-a5029a55de25",
+    "PV6911-0012": "eeeaf336-5b75-4318-81fc-69fa7e450309",
+    "RV6912-0001": "6d602449-eec5-463d-a6ee-4bd53e3e1728",
+    "SV6912-0002": "37ba437c-995c-4b80-aa55-0d9014917776",
+    "UV6912-0003": "0893988f-6c3f-4ac7-ac22-311e729d25e7",
+    "RV6912-0004": "1a231294-a35f-4a8a-aac5-5f5ab8b7eeef",
+    "PV6912-0005": "9627b730-570e-4078-9d52-927cff522022",
+    "UV6912-0006": "c3b36d9b-4831-45fd-b4b3-89b716d3a50e",
+    "SV6912-0007": "e1a594f8-ad38-436f-b2e5-798cb5430720",
+    "PV6912-0008": "c79e6fdc-850c-499a-a21d-21cac4447324",
+    "PV6912-0009": "41355792-0bf1-435c-83cf-bf131437aa62",
+    "PV6912-0010": "95f4d7f3-77a1-4fdf-a9b7-ddb5155552f9",
+    "JV6912-0011": "d27cdc7c-9a66-4a9e-81f9-7777b9f0ddce",
+    "PV6912-0012": "4845fd51-76f9-4f94-bd8b-e96d3a41ab4f"
+  },
+  "verifiedMonths": {
+    "2026-01": 12,
+    "2026-02": 12,
+    "2026-03": 12,
+    "2026-04": 12,
+    "2026-05": 12,
+    "2026-06": 12,
+    "2026-07": 12,
+    "2026-08": 12,
+    "2026-09": 12,
+    "2026-10": 12,
+    "2026-11": 12,
+    "2026-12": 12
+  }
+}

@@ -1,14 +1,12 @@
 package products
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"smlcloudplatform/internal/config"
 	creditorepo "smlcloudplatform/internal/debtaccount/creditor/repositories"
 	build "smlcloudplatform/internal/goapi/process/build"
-	"smlcloudplatform/internal/logger"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/product/product/models"
 	"smlcloudplatform/internal/product/product/outbox"
@@ -40,26 +38,10 @@ func NewProductHttp(ms *microservice.Microservice, cfg config.IConfig) ProductHt
 	pstmg := ms.MongoPersister(cfg.MongoPersisterConfig())
 	cache := ms.Cacher(cfg.CacherConfig())
 	repo := repositories.NewProductRepository(pstmg)
-	go func() {
-		defer func() { _ = recover() }()
-		indexContext, cancelIndexes := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancelIndexes()
-		if err := repo.EnsureIndexes(indexContext); err != nil {
-			logger.GetLogger().Debugf("ensure product indexes: %v", err)
-		}
-	}()
 	repoUnit := unitRepo.NewUnitRepository(pstmg)
 	repomgCreditor := creditorepo.NewCreditorRepository(pstmg)
 	repomgProductBarcode := productBarcodeRepo.NewProductBarcodeRepository(pstmg, cache)
-	mq := cfg.MQConfig()
-	prod := microservice.NewProducerWithTimeout(mq.URI(), mq.SecurityProtocol(), mq.SSLCAFile(), mq.SSLKeyFile(), mq.SSLCertFile(), ms.Logger, 30*time.Second)
 	eventOutbox := outbox.New(pstmg)
-	ms.RegisterBackgroundWorker(func(ctx context.Context) {
-		defer prod.Close()
-		eventOutbox.Run(ctx, prod.SendMessage, func(error) {
-			logger.GetLogger().Warnf("Product outbox delivery pending; inspect pending event IDs and retry status")
-		})
-	})
 	svc := services.NewProductHttpService(repo, repoUnit, *repomgCreditor, *repomgProductBarcode, eventOutbox)
 
 	return ProductHttp{

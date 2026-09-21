@@ -29,7 +29,7 @@ export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLReco
       acc.names = [{ code: "th", name: "" }, ...acc.names];
     }
     acc.accountcode = acc.accountcode || "";
-    acc.parentaccountcode = acc.parentaccountcode || "";
+    acc.parentaccountcode = acc.parentaccountcode && acc.parentaccountcode.trim() !== "" ? acc.parentaccountcode : null;
     acc.accountgroup = acc.accountgroup || "";
     acc.accounttype = acc.accounttype || "asset";
     acc.normalbalance = acc.normalbalance || "debit";
@@ -334,7 +334,17 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     if (record.id && !await confirm({ title: tr("gl_save_changes_confirm", "บันทึกการแก้ไขข้อมูล?"), description: tr("gl_edit_with_history", "แก้ไข {0} โดยเก็บประวัติการเปลี่ยนแปลง").replace("{0}", String(recordCode(record))), confirmLabel: tr("gl_save_changes", "บันทึกการแก้ไข"), tone: "info" })) return;
     try {
       setError("");
-      const field = resource === "accounts" ? { account: record as GLAccount } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : { master: record as GLMaster };
+      let accPayload: GLAccount | undefined;
+      if (resource === "accounts") {
+        const acc = { ...(record as GLAccount) };
+        acc.parentaccountcode = acc.parentaccountcode && acc.parentaccountcode.trim() !== "" ? acc.parentaccountcode.trim() : null;
+        const hasChildren = refs.accounts.some((a) => a.parentaccountcode === acc.accountcode);
+        if (hasChildren) {
+          acc.allowposting = false;
+        }
+        accPayload = acc;
+      }
+      const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : { master: record as GLMaster };
       const result = await execute({ resource, action: record.id ? "update" : "create", id: record.id, version: record.version, reason: reason.trim() || (record.id ? tr("gl_edit_data", "แก้ไขข้อมูล") : tr("gl_create_new", "สร้างข้อมูลใหม่")), ...field });
       const saved = normalizeRecord(resource, { ...record, id: result.id, version: result.version });
       setRecord(saved);
@@ -909,7 +919,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   </div>;
 }
 
-function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) => void; accounts?: GLAccount[] }) {
+function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (patch: object) => void; accounts?: GLAccount[] }) {
   const tr = useGLText();
   const thName = (value.names || []).find((name) => name.code === "th")?.name ?? "";
   const enName = (value.names || []).find((name) => name.code === "en")?.name ?? "";
@@ -917,6 +927,36 @@ function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) 
   const handleTypeChange = (accounttype: string) => {
     const normalbalance = accounttype === "asset" || accounttype === "expense" ? "debit" : "credit";
     set({ accounttype, normalbalance });
+  };
+
+  const hasChildren = Boolean(
+    value.accountcode && accounts.some((a) => a.parentaccountcode === value.accountcode)
+  );
+
+  const parentCandidates = useMemo(() => {
+    return accounts
+      .filter((a) => a.accountcode !== value.accountcode && (!value.id || a.parentaccountcode !== value.accountcode))
+      .sort((a, b) => a.accountcode.localeCompare(b.accountcode, "en", { numeric: true }));
+  }, [accounts, value.accountcode, value.id]);
+
+  const handleParentChange = (parentCode: string) => {
+    if (!parentCode) {
+      set({ parentaccountcode: null, level: 1 });
+      return;
+    }
+    const parentAcc = accounts.find((a) => a.accountcode === parentCode);
+    if (parentAcc) {
+      const newLevel = Math.min(12, (parentAcc.level ?? 1) + 1);
+      const normalbalance = parentAcc.accounttype === "asset" || parentAcc.accounttype === "expense" ? "debit" : "credit";
+      set({
+        parentaccountcode: parentAcc.accountcode,
+        level: newLevel,
+        accounttype: parentAcc.accounttype,
+        normalbalance,
+      });
+    } else {
+      set({ parentaccountcode: parentCode });
+    }
   };
 
   return (
@@ -941,6 +981,25 @@ function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) 
             maxLength={20}
           />
         </Field>
+        <Field label={tr("gl_parent_account", "หัวบัญชี (บัญชีแม่)")}>
+          <Combobox
+            data-field="parentaccountcode"
+            aria-label={tr("gl_parent_account", "หัวบัญชี (บัญชีแม่)")}
+            value={value.parentaccountcode || ""}
+            onChange={handleParentChange}
+          >
+            <option value="">{tr("gl_no_parent_level_1", "-- ไม่มีหัวบัญชี (ระดับ 1 ผังหลัก) --")}</option>
+            {parentCandidates.map((parent) => {
+              const lvl = parent.level ?? 1;
+              const indent = lvl > 1 ? `${"\u00A0\u00A0".repeat(lvl - 1)}└─ ` : "";
+              return (
+                <option key={parent.accountcode} value={parent.accountcode}>
+                  {indent}{parent.accountcode} · {accountName(parent)} ({tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))})
+                </option>
+              );
+            })}
+          </Combobox>
+        </Field>
         <Field label={tr("gl_account_level_range", "ระดับบัญชี (1–12)")}>
           <Combobox
             data-field="level"
@@ -951,6 +1010,18 @@ function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) 
             {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => (
               <option key={lvl} value={lvl}>
                 {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))}
+              </option>
+            ))}
+          </Combobox>
+        </Field>
+        <Field label={tr("gl_account_category", "หมวดบัญชี")}>
+          <Combobox
+            value={value.accounttype || "asset"}
+            onChange={handleTypeChange}
+          >
+            {Object.entries(accountTypeLabels).map(([code, name]) => (
+              <option key={code} value={code}>
+                {tr(...name)}
               </option>
             ))}
           </Combobox>
@@ -981,18 +1052,6 @@ function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) 
             placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")}
           />
         </Field>
-        <Field label={tr("gl_account_category", "หมวดบัญชี")}>
-          <Combobox
-            value={value.accounttype || "asset"}
-            onChange={handleTypeChange}
-          >
-            {Object.entries(accountTypeLabels).map(([code, name]) => (
-              <option key={code} value={code}>
-                {tr(...name)}
-              </option>
-            ))}
-          </Combobox>
-        </Field>
         <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}>
           <div className="flex min-h-[2.6em] w-full items-center justify-between gap-2 rounded-xl border border-input bg-muted/20 px-3 py-1.5 text-[0.95rem] leading-normal text-foreground select-none shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)]">
             <div className="flex items-center gap-2 font-semibold">
@@ -1011,11 +1070,23 @@ function AccountFields({ value, set }: { value: GLAccount; set: (patch: object) 
             checked={value.isactive ?? true}
             onChange={(isactive) => set({ isactive })}
           />
-          <Check
-            label={tr("gl_allow_posting", "บันทึกบัญชีได้ (IsGLAccess)")}
-            checked={value.allowposting ?? true}
-            onChange={(allowposting) => set({ allowposting })}
-          />
+          <div className="inline-flex items-center gap-2">
+            <Check
+              label={tr("gl_allow_posting", "บันทึกบัญชีได้ (IsGLAccess)")}
+              checked={hasChildren ? false : (value.allowposting ?? true)}
+              disabled={hasChildren}
+              onChange={(allowposting) => {
+                if (!hasChildren) {
+                  set({ allowposting });
+                }
+              }}
+            />
+            {hasChildren && (
+              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                ({tr("gl_parent_has_children_no_posting", "ผังบัญชีที่เป็นหัว มีตัวลูก ไม่สามารถบันทึกตัวเลขได้")})
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </>

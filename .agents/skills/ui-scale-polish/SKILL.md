@@ -1319,3 +1319,12 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 * **ข้อความเตือน Unsaved Changes**: ใช้ `text-primary font-medium`
 
 **ตัวอย่างอ้างอิง** — `frontend/src/app/gl/gl-journals.tsx`, `frontend/src/app/gl/gl-masters.tsx`, `frontend/src/app/gl/gl-statement-designer.tsx`, `frontend/src/app/gl/account-search-dialog.tsx`
+
+
+## 8.28 หลักฐานในรายวันและ preview ที่ตรงขอบเขตงาน (2026-09-20)
+
+- **แบบแผน**: รายละเอียดที่บันทึกพร้อมใบสำคัญใช้ Save/dirty guard ของฟอร์มหลัก; posted evidence แสดงปุ่มบันทึกผลกระทบยอดชัดเจน. Picker ใช้ `<dialog>.showModal()` เก็บ focus ของปุ่มเปิดและคืนเมื่อปิด. Preview ของ process ระดับบริษัทต้องส่ง `companywide=true` และบอกผู้ใช้ว่ารวมทุกสาขา.
+- **ห้ามทำซ้ำ**: dialog ที่ Tab หลุดไปด้านหลัง, dirty guard ที่ตรวจเฉพาะยอด GL แต่ไม่ตรวจหลักฐาน, หรือ preview เฉพาะสาขาขณะที่คำสั่งจริงทำทั้งบริษัท. ห้ามให้ UI อนุมานสิทธิ์ทั้งบริษัทจากชื่อ role; backend ต้องตรวจ grant ล่าสุด.
+- **เหตุผล**: ผู้ใช้ต้องแก้หลายส่วนในใบเดียวโดยไม่เสียข้อมูล และยอดก่อนยืนยันต้องตรงกับขอบเขตการทำงานจริง. Native modal จัดการ focus/inert background และ keyboard ได้โดยไม่เพิ่ม dependency.
+- **วิธีตรวจ**: Playwright ตรวจ Tab/Shift+Tab/Escape และ focus กลับปุ่มเดิม, แก้ details แล้วสลับใบต้องเตือน, posted reconciliation ส่งเฉพาะ delta; preview จาก workspace ที่เลือกสาขาต้องรวมทั้งบริษัทได้เฉพาะผู้มี grant. ตรวจ desktop light/dark และ mobile ว่าไม่ล้นแนวนอน.
+- **อ้างอิง**: `frontend/src/app/gl/gl-journal-details.tsx:43`, `frontend/src/app/gl/gl-journals.tsx:86`, `frontend/src/app/gl/gl-journals.tsx:242`, `frontend/src/app/gl/gl-processes.tsx:30`, `frontend/e2e/gl-journal-details.spec.ts`, `backend/internal/generalledger/httpapi/company_scope_test.go`.

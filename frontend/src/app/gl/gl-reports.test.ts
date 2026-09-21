@@ -65,7 +65,7 @@ describe("Thai general ledger report presentation", () => {
         { key: "docno", label: "เลขที่เอกสาร", amount: false },
       ],
       rows: [
-        { accountcode: "1111-01", docno: "JV202609001" },
+        { accountcode: "1111-01", docno: "JV202609001", journalid: "journal-1" },
       ],
       totals: {},
       totalrows: 1,
@@ -102,3 +102,13 @@ describe("Thai general ledger report presentation", () => {
   });
 });
 
+
+describe("report source identifiers", () => {
+  it("keeps hidden journal IDs out of CSV and never makes a missing ID clickable", () => {
+    const report: GLReport = { sequence: 1, columns: [{key: "docno", label: "เลขที่", amount: false}], rows: [{docno: "JV1", journalid: "hidden-id"}, {docno: "JV2"}], totals: {}, totalrows: 2, warnings: [], asof: "2026-09-20" };
+    const html = renderToStaticMarkup(createElement(ReportGrid, {report, onDrillDocNo: () => {}}));
+    expect((html.match(/title="รายละเอียดใบสำคัญรายวัน"/g) ?? []).length).toBe(1);
+    expect(reportCsv(report)).not.toContain("hidden-id");
+    expect(reportCsv(report)).toContain("JV2");
+  });
+});

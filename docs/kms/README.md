@@ -156,3 +156,5 @@
 ## คำถามค้างจากนักอ่าน (รวมจากทุกบทความ — ดูท้ายแต่ละบทความหัวข้อ "ช่องว่าง / สิ่งที่ยังไม่ตรวจ")
 
 รวม 96 ข้อ; ข้อที่ต้องการคำตอบจากลุงจืดโดยตรงสรุปไว้ใน `18-decisions-and-agreements.md` §คำถามที่ยังไม่มีคำตอบ
+
+- [architecture/gl-journal-details.md](architecture/gl-journal-details.md) — หลักฐานลูกหนี้/เจ้าหนี้/Statement แบบ many-to-many ภายในรายวัน, source dedup, API/MCP และข้อจำกัด.

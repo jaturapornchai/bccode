@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/subtle"
 	"fmt"
 	"log"
@@ -14,9 +13,6 @@ import (
 	"smlcloudplatform/internal/channel/transportchannel"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/coupon"
-	coupon_database "smlcloudplatform/internal/coupon/database"
-	coupon_repositories "smlcloudplatform/internal/coupon/repositories"
-	coupon_services "smlcloudplatform/internal/coupon/services"
 	"smlcloudplatform/internal/debtaccount/creditor"
 	"smlcloudplatform/internal/debtaccount/creditorgroup"
 	"smlcloudplatform/internal/debtaccount/customer"
@@ -99,6 +95,7 @@ import (
 
 	fahttp "smlcloudplatform/internal/fixedasset/httpapi"
 	glhttp "smlcloudplatform/internal/generalledger/httpapi"
+	"smlcloudplatform/internal/mcptoken"
 	"smlcloudplatform/internal/transaction/accrualreceive"
 	"smlcloudplatform/internal/transaction/advancepayment"
 	"smlcloudplatform/internal/transaction/advancepaymentrefund"
@@ -127,9 +124,9 @@ import (
 	"smlcloudplatform/internal/transaction/paymentdetail"
 	"smlcloudplatform/internal/transaction/pickandpack"
 	"smlcloudplatform/internal/transaction/purchase"
+	"smlcloudplatform/internal/transaction/purchasedebitnote"
 	"smlcloudplatform/internal/transaction/purchaseorder"
 	"smlcloudplatform/internal/transaction/purchasepartial"
-	"smlcloudplatform/internal/transaction/purchasedebitnote"
 	"smlcloudplatform/internal/transaction/purchaserequisition"
 	"smlcloudplatform/internal/transaction/purchasereturn"
 	"smlcloudplatform/internal/transaction/quotation"
@@ -265,9 +262,10 @@ func main() {
 		ms.Echo().GET("/swagger/*", echoSwagger.WrapHandler)
 
 		cacher := ms.Cacher(cfg.CacherConfig())
-		pst := ms.MongoPersister(cfg.MongoPersisterConfig())
 		authService := microservice.NewAuthService(cacher, 24*3*time.Hour, 24*30*time.Hour)
 		publicPath := []string{
+			"/mcp/gl",              // Uses its own scoped MCP bearer token, never session bypass.
+			"/integration/gl/v2/*", // Separate API-token authentication on each registered route.
 			"/migrationtools/",
 			"/swagger/*",
 
@@ -394,6 +392,7 @@ func main() {
 
 			fahttp.NewHttp(ms, cfg),
 			glhttp.NewHttp(ms, cfg),
+			mcptoken.NewHttp(ms),
 			chartofaccount.NewChartOfAccountHttp(ms, cfg),
 			journal.NewJournalHttp(ms, cfg),
 			journal.NewJournalWs(ms, cfg),
@@ -561,19 +560,6 @@ func main() {
 
 		ms.RegisterHttp(migrationAPI.NewMigrationAPI(ms, cfg))
 		ms.RegisterHttp(media.InitMediaUploadHttp(ms, cfg))
-
-		// เริ่ม cleanup scheduler สำหรับ expired coupon reservations ใน background goroutine เพื่อไม่ให้บล็อกการสตาร์ตระบบ
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("Coupon cleanup scheduler recovered: %v", r)
-				}
-			}()
-			_ = coupon_database.CreateCouponReservationIndexes(pst)
-			reservationRepo := coupon_repositories.NewCouponReservationRepository(pst)
-			cleanupService := coupon_services.NewCouponCleanupService(reservationRepo)
-			cleanupService.StartCleanupScheduler(context.Background(), 5*time.Minute, "")
-		}()
 
 		// === GoAPI Routes (BI/Analytics) ===
 		goapiServer := goapi.New()

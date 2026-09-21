@@ -32,7 +32,6 @@ import (
 	"smlcloudplatform/internal/goapi/workers"
 
 	appConfig "smlcloudplatform/internal/config"
-	serviceConfig "smlcloudplatform/internal/goapi/config"
 	"smlcloudplatform/internal/goapi/setupconfig"
 	"smlcloudplatform/pkg/microservice"
 	msmodels "smlcloudplatform/pkg/microservice/models"
@@ -60,29 +59,7 @@ func (s *GoAPIServer) Init() error {
 	// 1. Load goapi bootstrap config (set goapi-specific env vars)
 	setupconfig.LoadBootstrapConfig()
 
-	config := serviceConfig.NewServiceConfig()
-	_ = config.MongodbDatabaseName()
-
-	// 2. MongoDB connection (Pure PostgreSQL mode: non-blocking background initialization)
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Warn("GoAPI: MongoDB background init recovered: %v", r)
-			}
-		}()
-		_ = myglobal.SafeMongoConnectFast()
-		if err := handlers.InitMongoAtlas(); err != nil {
-			logger.Warn("GoAPI: MongoDB unavailable (%v) - operating in Pure PostgreSQL mode", err)
-			return
-		}
-		atlasClient, atlasDB := handlers.GetAtlasConnection()
-		if atlasClient != nil && atlasDB != nil {
-			lineoa.Init(atlasClient, atlasDB)
-			logger.Success("GoAPI: ✅ Line OA handlers initialized")
-			approval.Init(atlasClient, atlasDB)
-			logger.Success("GoAPI: ✅ Approval handlers initialized")
-		}
-	}()
+	// MongoDB has been retired; startup initializes PostgreSQL services only.
 
 	// 5. S3/R2 Client
 	if err := handlers.InitR2Client(); err != nil {
@@ -602,7 +579,6 @@ func (s *GoAPIServer) Shutdown() {
 		s.workerManager.Stop()
 	}
 	myglobal.DisconnectMongo()
-	handlers.DisconnectMongoAtlas()
 	mydb.CloseAllManagers()
 	myclickhouse.CloseClickHouseConnection()
 	myPg.CleanupPreparedStatements()
