@@ -26,7 +26,7 @@ For every task under `D:\bccode`:
 1. **ห้ามสร้างไฟล์กฎแยกต่อเครื่องมือ** (`GEMINI.md`, `.agents/rules/*`, `.cursorrules`, `.codex/AGENTS.md`, กฎซ้ำใน `CLAUDE.md` ฯลฯ) — ถ้าเครื่องมือใหม่ต้องการไฟล์ของตัวเอง ให้ทำเป็น **pointer/import มาที่ `AGENTS.md`** เท่านั้น ห้ามคัดลอกเนื้อหา
 2. **ห้ามคัดลอก skill ไปที่อื่น** (`.claude/skills/` จริง, `.gemini/skills/`, `docs/skills/`, `~/.agents/skills/`) — ที่เดียวคือ `.agents/skills/`; Claude ใช้ junction จาก `npm run ai:link` (`.claude/` ถูก gitignore จึงต้องรันเองต่อ clone)
 3. **เพิ่ม/แก้ skill = แก้ที่ `.agents/skills/` แล้ว commit พร้อมงาน** (กฎ Mandatory Skill Upgrade ด้านล่างยังบังคับใช้) — ทุก AI ต้องอ่าน SKILL.md ล่าสุดจาก disk ห้ามใช้ที่จำได้/cache เพราะลุงจืดแก้ด้วยมือ
-4. **กฎระดับเครื่อง (global) แยกอยู่ที่ `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`** — เป็นเรื่องนอก repo นี้ กฎของโปรเจ็กต์นี้ต้องอยู่ใน `AGENTS.md` เท่านั้น ห้ามเอากฎโปรเจ็กต์ไปฝังใน global
+4. **กฎระดับเครื่อง (global) ตัวจริงคือ `~/.agents/AGENTS.md`** (Claude import เข้า `~/.claude/CLAUDE.md`; `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.zcode/AGENTS.md` เป็นสำเนาจาก `node ~/.agents/sync-rules.mjs`) — เป็นเรื่องนอก repo นี้ กฎของโปรเจ็กต์นี้ต้องอยู่ใน `AGENTS.md` เท่านั้น ห้ามเอากฎโปรเจ็กต์ไปฝังใน global
 
 ที่มา/ทางเลือกที่พิจารณา: ADR `docs/kms/decisions/2026-09-20-single-source-ai-rules-skills.md` (แทน ADR 2026-09-07 ที่เคยเลือก `docs/skills/`)
 
@@ -256,11 +256,11 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 3. **บทเรียน/กับดัก/ความรู้ที่ต้องไม่ลืม → เขียนลง `docs/kms/`** (ไม่ใช่แค่ memory ส่วนตัวของ AI ตัวใดตัวหนึ่ง) เป็นไฟล์ Markdown หัวข้อละไฟล์ อ้าง `file:line` ของโค้ดจริง และเพิ่มบรรทัดใน `docs/kms/README.md`; docs ต้องตามโค้ด (code = truth) — ถ้าโค้ดเปลี่ยนให้แก้ docs ใน commit เดียวกัน
 4. commit ที่แก้ skill/kms ให้รวมไปกับ commit งานที่ทำให้เกิดการเปลี่ยนแปลงนั้น (เหมือนกฎ Mandatory Skill Upgrade ด้านล่าง)
 
-## กฎ: ผู้ช่วยทำ = DeepSeek ตัวเดียว — "Fable คิด, DeepSeek ทำ" (ตั้งโดยลุงจืด 2026-09-14; ถอด Kimi K3 + GLM ออก)
+## กฎ: ไม่ใช้ DeepSeek หรือผู้ช่วย AI ภายนอก — Claude ทำเองทั้งหมด (ตั้งโดยลุงจืด 2026-09-23; แทนกฎ "Fable คิด, DeepSeek ทำ" 2026-09-14)
 
-- ใช้ตาม Orchestration Rule ใน ~/.claude/CLAUDE.md: `py ~/.claude/tools/deepseek-ask.py` (default deepseek-v4-pro; ต้องใช้ py launcher + PYTHONIOENCODING=utf-8; key จาก env DEEPSEEK_API_KEY หรือ ~/.claude/.deepseek-key)
-- Claude (Fable) = คิด/แบ่งงาน/ตัดสิน/verify; DeepSeek = ร่างโค้ด/เอกสาร/วิเคราะห์/review — คำตอบเป็นความเห็นเท่านั้น Claude ต้อง verify กับ source/build/test ก่อนใช้; ห้ามส่ง secret/PII; R0/R1 ตัดสินโดย Claude + ลุงจืด
-- Kimi/GLM/ChatGPT/OpenRouter ไม่ใช้แล้ว (ถามก่อนถ้าจะเปิดคืน)
+- ลุงจืดสั่ง 2026-09-23: "ต่อไปไม่ต้องใช้ deepseek ให้ claude ทำเลย" — ห้ามเรียก `deepseek-ask.py` / DeepSeek API หรือ AI ภายนอกอื่น (Kimi/GLM/ChatGPT/OpenRouter) เพื่อร่างโค้ด เอกสาร แปล วิเคราะห์ หรือ review
+- AI ที่ทำงานใน repo นี้ทำเองทุกขั้นแล้ว verify กับ source/build/test เอง; งานสำรวจกว้างใช้ subagent ของเครื่องมือเอง (Claude Agent/Workflow ฯลฯ)
+- กฎระดับเครื่องฉบับเต็มอยู่ใน Orchestration Rule ของ `~/.agents/AGENTS.md`; จะเปิดผู้ช่วยภายนอกกลับมาต้องได้คำสั่งจากลุงจืดก่อน
 
 ## กฎ: ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก — โค้ดใช้ key ภาษาอังกฤษ ข้อความอยู่ใน backend (ตั้งโดยลุงจืด 2026-09-14)
 
