@@ -19,7 +19,7 @@ type DataModelGraphScreenProps = {
 const TEXT = {
   th: {
     title: "โครงสร้างข้อมูล (สมอง)",
-    subtitle: "แผนผัง 3D สำหรับดูโมเดลหลักที่เก็บใน MongoDB — คลิกเพื่อดู collection, field และความสัมพันธ์",
+    subtitle: "แผนผัง 3D สำหรับดูโมเดลข้อมูลหลักของระบบ — คลิกเพื่อดูตาราง ฟิลด์ และความสัมพันธ์",
     openTab: "เปิดเต็มจอ",
     retry: "ลองใหม่",
     checking: "กำลังเชื่อมต่อ Jarvis UI...",
@@ -28,7 +28,7 @@ const TEXT = {
   },
   en: {
     title: "Data Model Graph (Brain)",
-    subtitle: "3D browser for MongoDB root models — click to inspect collections, fields, and relationships",
+    subtitle: "3D browser for the system's core data models — click to inspect tables, fields, and relationships",
     openTab: "Open full screen",
     retry: "Retry",
     checking: "Connecting to Jarvis UI...",
@@ -40,7 +40,7 @@ const TEXT = {
 // 2026-09-16: the table above is the fallback; these keys read languages.tsv.
 const dmgTextKeys: Record<string, string> = {
   "title": "dmg_data_model_graph_brain",
-  "subtitle": "dmg_3d_browser_for_mongodb_root",
+  "subtitle": "dmg_3d_browser_for_data_models",
   "openTab": "dmg_open_full_screen",
   "retry": "export_report_retry",
   "checking": "dmg_connecting_to_jarvis_ui",

@@ -3,35 +3,34 @@
 
 ## Environment Variable
 
-### MongoDB
+### Runtime
 | Name        | Description            | Value |
 |-------------|------------------------|-------|
-| MODE / BC_ENV / APP_ENV / ENVIRONMENT | Runtime environment: `development/dev`, `uat`, `production/pro` | `development` |
-| MONGODB_DEV_URI | MongoDB DEV connection URI (`mongodb://` or `mongodb+srv://`) | secret |
-| MONGODB_DEV_DB | MongoDB DEV database name | '' |
-| MONGODB_UAT_URI | MongoDB UAT connection URI (`mongodb://` or `mongodb+srv://`) | secret |
-| MONGODB_UAT_DB | MongoDB UAT database name | '' |
-| MONGODB_PRO_URI / MONGODB_PRODUCTION_URI | MongoDB PRO connection URI (`mongodb://` or `mongodb+srv://`) | secret |
-| MONGODB_PRO_DB / MONGODB_PRODUCTION_DB | MongoDB PRO database name | '' |
-| MONGODB_URI | Legacy/fallback MongoDB URI for DEV only | '' |
-| MONGODB_DB | Legacy/fallback MongoDB DB for DEV only | '' |
+| BC_ENV / APP_ENV / RUN_ENV / ENVIRONMENT / MODE | Runtime environment: `development/dev`, `uat`, `production/pro` | `development` |
 
-MongoDB data must be separated by environment. DEV, UAT, and PRO must use different MongoDB locations or databases and different credentials. The location can be MongoDB Atlas or a private MongoDB deployment. Do not commit real MongoDB URI, password, token, or API key into this repository.
+### PostgreSQL (ฐานข้อมูลเดียวของระบบ — ไม่มี MongoDB/Kafka/Redis/ClickHouse)
+| Name        | Description            | Value |
+|-------------|------------------------|-------|
+| POSTGRES_HOST | PostgreSQL host | secret |
+| POSTGRES_PORT | PostgreSQL port | `5432` |
+| POSTGRES_DB_NAME | Central database name | secret |
+| POSTGRES_USERNAME | PostgreSQL user | secret |
+| POSTGRES_PASSWORD | PostgreSQL password | secret |
+| POSTGRES_SSL_MODE | `disable`, `require`, `verify-ca`, `verify-full` | `disable` |
 
-MongoDB rollout policy: start with fresh empty DEV/UAT/PRO databases. Do not migrate, import, upload, or copy old MongoDB data unless a separate migration task is explicitly approved with source, target, backup, and rollback plan.
+### Object storage (MinIO / S3)
+| Name        | Description            | Value |
+|-------------|------------------------|-------|
+| S3_ENDPOINT / S3_REGION / S3_BUCKET_NAME | Bucket location | secret |
+| S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY | Credentials | secret |
+| S3_FORCE_PATH_STYLE | `true` for MinIO | `true` |
 
-
-### Redis
-
-| Name                 | Description          | Value |
-|----------------------|----------------------|-------|
-| REDIS_CACHE_URI      | Redis connection uri | ''    |
-| REDIS_CACHE_PASSWORD | Redis Password       | ''    |
+Do not commit real passwords, tokens, or API keys into this repository.
 
 
 ## For wsl(ubuntu) Please Read
 
-Install Kafkalib , Gcc
+Install Gcc
 ```
 
 sudo apt-get install build-essential
@@ -97,11 +96,7 @@ make runswagger
 # FOR M1 Run Please Read
 
 ```
-brew install openssl
-brew install librdkafka
-brew install pkg-config
-export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl@3/lib/pkgconfig"
-go build --tags dynamic main.go
+CGO_ENABLED=0 go build main.go
 
 ```
 
@@ -111,41 +106,3 @@ go build --tags dynamic main.go
 docker buildx create --use
 docker buildx build --platform linux/amd64 --push -t <tag_to_push> .
 ```
-
-## M1 Cannot Build Install
-`https://www.baifachuan.com/posts/4862a3b1.html`
-
-error
-```
-linux_syscall.c:67:13: error: implicit declaration of function 'setresgid' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
-linux_syscall.c:67:13: note: did you mean 'setregid'?
-/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/unistd.h:593:6: note: 'setregid' declared here
-linux_syscall.c:73:13: error: implicit declaration of function 'setresuid' is invalid in C99 [-Werror,-Wimplicit-function-declaration]
-linux_syscall.c:73:13: note: did you mean 'setreuid'?
-/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/unistd.h:595:6: note: 'setreuid' declared here
-```
-
-fix by
-```
-brew install FiloSottile/musl-cross/musl-cross
-
-```
-
-and build with
-```
-CGO_ENABLED=1 GOOS=linux GOARCH=amd64 CC=x86_64-linux-musl-gcc  CXX=x86_64-linux-musl-g++  go build  -o go-app -tags musl main.go
-```
-
-
-
-CREATE TABLE task_status (
-    task_id String,
-    holdingcode String,
-    status String,
-    error_message String,
-    progress Int32,
-    createdat DateTime,
-    updatedat DateTime,
-    completed_at Nullable(DateTime)
-) ENGINE = MergeTree()
-ORDER BY (holdingcode, task_id, createdat);

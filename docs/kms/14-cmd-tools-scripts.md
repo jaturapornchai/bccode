@@ -58,8 +58,6 @@
 | ไฟล์ | หน้าที่ | invoked by | สถานะ | อ้างอิง |
 |---|---|---|---|---|
 | `scripts/seed-demo.mjs` + `scripts/demo-data.json` | seed holding `demo` (3 บริษัท/แผนก/ชุดสิทธิ์/พนักงาน/สินค้า/ลูกค้า/ผู้ขาย) สำหรับปุ่ม "ทดลองใช้ระบบ (Demo)"; idempotent (409 = ข้าม); ยิงผ่าน `${SEED_BASE}/backend` (Next rewrite → mainapi) | `node scripts/seed-demo.mjs` / `SEED_BASE=https://... node ...` | LIVE (ใช้กับ demo login; อ้างใน `.agents/skills/ui-scale-polish/references/case-studies-and-gotchas.md:636`, `docs/kms/architecture/product-listing-api-v2-handoff.md:73`) | `scripts/seed-demo.mjs:1-17`; `scripts/demo-data.json:1-5` |
-| `scripts/seed-barcodes.mjs` | seed 20 barcode `UATBC01..20` พร้อมรูปจาก URL ภายนอก (z-cdn.chatglm.cn) → `/api/product-barcode/image` → MinIO + thumb; BASE hard-code `127.0.0.1:3000`, seed 20260831 | `node scripts/seed-barcodes.mjs` | one-off (2026-08-31) | `scripts/seed-barcodes.mjs:1-11` |
-| `scripts/seed-barcodes-fix.mjs` | รอบสอง: ผูกรูปกลับเข้า barcode 20 ตัว, ตรวจผ่าน `docker exec mongodb mongosh appdb` | `node scripts/seed-barcodes-fix.mjs` | one-off | `scripts/seed-barcodes-fix.mjs:1-18,21` |
 | `scripts/test-google-login.js` | Playwright headless เปิด prod แล้วรอปุ่ม Google GSI render, เก็บ console log | `node scripts/test-google-login.js [url]` (default `https://account.bcaicloud.com/`) | one-off / ใช้ซ้ำได้ | `scripts/test-google-login.js:1-6` |
 
 ## 4. `tools/**` — เครื่องมือช่วย dev

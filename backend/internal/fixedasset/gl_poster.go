@@ -14,7 +14,7 @@ import (
 
 // LedgerPoster is the subset of *generalledger.Store used to post fixed-asset
 // journals. Every write goes through the shared GL engine so validation, the
-// closed-period guard, the Mongo outbox and PostgreSQL projection all run
+// closed-period guard and the PostgreSQL transaction all run
 // exactly once, in the one place that already implements them correctly.
 type LedgerPoster interface {
 	Execute(ctx context.Context, scope gl.Scope, cmd gl.Command) (gl.Result, error)
@@ -206,8 +206,8 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		return nil, fmt.Errorf("ยอดรวมค่าเสื่อมราคาเป็น 0")
 	}
 
-	// 5. Post through the general ledger engine (Mongo write + closed-period
-	// guard + outbox + PostgreSQL projection all happen inside Execute).
+	// 5. Post through the general ledger engine (validation + closed-period
+	// guard + PostgreSQL sql.Tx all happen inside Execute).
 	glLines := make([]gl.Line, 0, len(lines))
 	for _, l := range lines {
 		glLines = append(glLines, gl.Line{
