@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -441,8 +442,10 @@ var validWhtForms = map[string]bool{"1": true, "2": true, "3": true, "53": true,
 // หลักการอ่านข้อมูล (ตรวจกับโครง runtime จริง backend/internal/generalledger/schema.sql):
 //   - บัญชีภาษีหัก = บัญชี liability ที่ชื่อภาษาไทยอ้างแบบยื่น เช่น "ภ.ง.ด.53" (ผังมาตรฐานแยกบัญชีตามแบบยื่น:
 //     ภ.ง.ด.1 เงินเดือน / ภ.ง.ด.3 บุคคลธรรมดา / ภ.ง.ด.53 นิติบุคคล / ภ.ง.ด.2 ดอกเบี้ยปันผล / ภ.ง.ด.54 ต่างประเทศ)
-//     ฝั่ง received คือบัญชี asset ที่ชื่อมีคำว่า "ภาษีถูกหัก" — ชั่วคราวจนกว่าจะมีตาราง wht_records ตาม
+//     ฝั่ง received คือบัญชีที่ชื่อมีคำว่า "ภาษีถูกหัก" หรือ "ถูกหัก ณ ที่จ่าย" — ชั่วคราวจนกว่าจะมีตาราง wht_records ตาม
 //     mydocs/datamodels/gl/wht.sql (หนังสือรับรองแยกรายฉบับ) ซึ่งจะเลิกการหาจากชื่อบัญชี
+//   - ใบที่บันทึกรายการภาษีหัก (details.withholdings) ทิศทางเดียวกันเข้ารายงานเสมอ แม้บัญชีภาษีหักจะชื่อไม่ตรงรูปแบบ
+//     (หลักฐานที่ผู้ใช้บันทึกชนะการหาจากชื่อบัญชี)
 //   - ยอดหักมาจาก gl_lines เฉพาะใบที่ผ่านรายการแล้ว (projection เก็บเฉพาะ posted)
 //   - คู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบของใบเดียวกัน (documents/settlements → gl_subledger_partners)
 //   - ฐานภาษี = ยอดตัดยอดตาม settlements ของใบ; ถ้าไม่มีการตัดยอดใช้ผลรวมเดบิตของใบ (ไม่รวมบรรทัดภาษีหักเอง)
@@ -453,7 +456,7 @@ func buildWithholdingReport(ctx context.Context, db *sql.DB, company string, yea
 	var formPatterns []string
 	if direction == "received" {
 		suppress = "debit"
-		formPatterns = []string{"ภาษีถูกหัก"}
+		formPatterns = []string{"ภาษีถูกหัก", "ถูกหัก ณ ที่จ่าย"}
 	} else {
 		if len(forms) == 0 {
 			forms = []string{"1", "2", "3", "53", "54"}
@@ -474,12 +477,6 @@ func buildWithholdingReport(ctx context.Context, db *sql.DB, company string, yea
 	if err != nil {
 		return report, err
 	}
-	if len(whtAccounts) == 0 {
-		report.Note = "ไม่พบบัญชีภาษีหัก ณ ที่จ่ายในผังบัญชี (ค้นตามแบบยื่น ภ.ง.ด.) รายงานจึงว่าง — เพิ่มบัญชีภาษีหักในผังบัญชีแล้วรายงานจะแสดงทันที"
-		report.Summary = summarizeWithholding(report.Rows)
-		return report, nil
-	}
-
 	lineQuery := `
 SELECT l.journal_id, l.doc_no, TO_CHAR(l.entry_date, 'YYYY-MM-DD'), l.credit, l.debit, l.description
 FROM gl_lines l
@@ -497,6 +494,7 @@ LIMIT $5`
 	type lineRow struct {
 		journalID, docNo, docDate, description string
 		credit, debit                          decimal.Decimal
+		recordedOnly                           bool
 	}
 	var lines []lineRow
 	for lineRows.Next() {
@@ -511,9 +509,29 @@ LIMIT $5`
 	if err := lineRows.Err(); err != nil {
 		return report, fmt.Errorf("read wht lines: %w", err)
 	}
+	// ใบที่บันทึกรายการภาษีหักไว้แต่ไม่มีบรรทัดในบัญชีที่ค้นจากชื่อ — ยังต้องเข้ารายงาน
+	onLines := map[string]bool{}
+	for _, line := range lines {
+		onLines[line.journalID] = true
+	}
+	withRecorded, err := journalsWithRecordedWithholdings(ctx, db, company, year, month, direction)
+	if err != nil {
+		return report, err
+	}
+	for _, j := range withRecorded {
+		if !onLines[j.journalID] {
+			lines = append(lines, lineRow{journalID: j.journalID, docNo: j.docNo, docDate: j.docDate, description: j.description, recordedOnly: true})
+		}
+	}
 	if len(lines) > whtReportMaxRows {
 		return report, fmt.Errorf("wht lines exceed %d for %04d-%02d", whtReportMaxRows, year, month)
 	}
+	sort.SliceStable(lines, func(a, b int) bool {
+		if lines[a].docDate != lines[b].docDate {
+			return lines[a].docDate < lines[b].docDate
+		}
+		return lines[a].journalID < lines[b].journalID
+	})
 
 	recorded := map[string]bool{}
 	for _, line := range lines {
@@ -524,6 +542,9 @@ LIMIT $5`
 		items, err := recordedWithholdings(ctx, db, company, line.journalID, direction, forms)
 		if err != nil {
 			return report, err
+		}
+		if len(items) == 0 && line.recordedOnly {
+			continue // บันทึกไว้คนละแบบยื่นกับที่ขอ และไม่มีบรรทัดบัญชีภาษีหักให้ประมาณ
 		}
 		if len(items) > 0 {
 			recorded[line.journalID] = true
@@ -560,8 +581,46 @@ LIMIT $5`
 		}
 		report.Rows = append(report.Rows, finishWithholdingRow(row, ""))
 	}
+	if len(whtAccounts) == 0 && len(report.Rows) == 0 {
+		report.Note = "ไม่พบบัญชีภาษีหัก ณ ที่จ่ายในผังบัญชี (ค้นตามแบบยื่น ภ.ง.ด.) และไม่มีรายการภาษีหักที่บันทึกในใบสำคัญ รายงานจึงว่าง — บันทึกรายการภาษีหักในรายละเอียดใบสำคัญ หรือเพิ่มบัญชีภาษีหักในผังบัญชี แล้วรายงานจะแสดงทันที"
+	}
 	report.Summary = summarizeWithholding(report.Rows)
 	return report, nil
+}
+
+type recordedJournal struct {
+	journalID, docNo, docDate, description string
+}
+
+// journalsWithRecordedWithholdings - ใบที่ผ่านรายการในงวด (ตามวันที่ใบ) ที่บันทึกรายการภาษีหักทิศทางนี้ไว้อย่างน้อยหนึ่งรายการ
+func journalsWithRecordedWithholdings(ctx context.Context, db *sql.DB, company string, year, month int, direction string) ([]recordedJournal, error) {
+	want := 1
+	if direction == "received" {
+		want = 2
+	}
+	rows, err := db.QueryContext(ctx, `
+SELECT DISTINCT ON (l.journal_id) l.journal_id, l.doc_no, TO_CHAR(l.entry_date, 'YYYY-MM-DD'), COALESCE(r.payload->>'description', '')
+FROM gl_lines l
+JOIN gl_records r ON r.company = l.company AND r.kind = 'journals' AND r.id = l.journal_id
+WHERE l.company = $1
+  AND EXTRACT(YEAR FROM l.entry_date) = $2
+  AND EXTRACT(MONTH FROM l.entry_date) = $3
+  AND r.payload->'details'->'withholdings' @> jsonb_build_array(jsonb_build_object('wht_direction', $4::int))
+ORDER BY l.journal_id, l.line_no
+LIMIT $5`, company, year, month, want, whtReportMaxRows+1)
+	if err != nil {
+		return nil, fmt.Errorf("read recorded wht journals: %w", err)
+	}
+	defer rows.Close()
+	var out []recordedJournal
+	for rows.Next() {
+		var j recordedJournal
+		if err := rows.Scan(&j.journalID, &j.docNo, &j.docDate, &j.description); err != nil {
+			return nil, fmt.Errorf("scan recorded wht journal: %w", err)
+		}
+		out = append(out, j)
+	}
+	return out, rows.Err()
 }
 
 // findWithholdingAccounts - รหัสบัญชีภาษีหักจากผังบัญชีจริง (ค้นจากชื่อบัญชีตามแบบยื่น)
