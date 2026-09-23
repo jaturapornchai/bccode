@@ -5,9 +5,6 @@ import (
 	"fmt"
 
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ReportColumn struct {
@@ -25,11 +22,11 @@ type ReportResult struct {
 }
 
 type Reporter struct {
-	db *mongo.Database
+	records *records
 }
 
-func NewReporter(db *mongo.Database) *Reporter {
-	return &Reporter{db: db}
+func NewReporter(connect Connector) *Reporter {
+	return &Reporter{records: newRecords(connect)}
 }
 
 // GetAssetScheduleReport builds the full Fixed Asset Schedule report.
@@ -54,36 +51,19 @@ func (r *Reporter) GetAssetScheduleReport(ctx context.Context, scope Scope, fisc
 		{Key: "netbookvalue", Label: "มูลค่าตามบัญชียกไป", Amount: true},
 	}
 
-	f := scopeFilter(scope)
-	f["isdeleted"] = false
-	if typeCode != "" {
-		f["assettypecode"] = typeCode
-	}
-
-	opts := options.Find().SetSort(bson.D{{Key: "assetcode", Value: 1}})
-	cur, err := r.db.Collection("fixed_assets").Find(ctx, f, opts)
+	db, err := r.records.db(ctx, scope.Holding)
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
-
-	var assets []Asset
-	if err = cur.All(ctx, &assets); err != nil {
+	assets, err := queryRecords[Asset](ctx, db, scope.Company, kindAsset, ` AND ($3 = '' OR payload->>'assettypecode' = $3)`, ` ORDER BY code`, typeCode)
+	if err != nil {
 		return nil, err
 	}
 
 	// Fetch all depreciation items for these assets in the given fiscal year
-	fDep := scopeFilter(scope)
-	fDep["fiscalyear"] = fiscalYear
-	if period > 0 {
-		fDep["period"] = bson.M{"$lte": period}
-	}
-	fDep["isdeleted"] = false
-
-	curDep, err := r.db.Collection("asset_depreciations").Find(ctx, fDep)
-	var allDeprec []DepreciationScheduleItem
-	if err == nil {
-		_ = curDep.All(ctx, &allDeprec)
+	allDeprec, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'fiscalyear' = $3 AND ($4 <= 0 OR (payload->>'period')::int <= $4)`, "", fiscalYear, period)
+	if err != nil {
+		return nil, err
 	}
 
 	deprecByAsset := make(map[string][]DepreciationScheduleItem)
@@ -91,13 +71,9 @@ func (r *Reporter) GetAssetScheduleReport(ctx context.Context, scope Scope, fisc
 		deprecByAsset[d.AssetCode] = append(deprecByAsset[d.AssetCode], d)
 	}
 
-	// Fetch disposals
-	fDisp := scopeFilter(scope)
-	fDisp["isdeleted"] = false
-	curDisp, err := r.db.Collection("asset_disposals").Find(ctx, fDisp)
-	var allDisposals []AssetDisposal
-	if err == nil {
-		_ = curDisp.All(ctx, &allDisposals)
+	allDisposals, err := queryRecords[AssetDisposal](ctx, db, scope.Company, kindDisposal, "", "")
+	if err != nil {
+		return nil, err
 	}
 	dispMap := make(map[string]AssetDisposal)
 	for _, d := range allDisposals {
@@ -211,24 +187,18 @@ func (r *Reporter) GetTaxReconciliationReport(ctx context.Context, scope Scope, 
 		{Key: "remark", Label: "หมายเหตุเกณฑ์ภาษี"},
 	}
 
-	f := scopeFilter(scope)
-	f["isdeleted"] = false
-	cur, err := r.db.Collection("fixed_assets").Find(ctx, f)
+	db, err := r.records.db(ctx, scope.Holding)
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
-
-	var assets []Asset
-	_ = cur.All(ctx, &assets)
-
-	// Fetch year depreciations
-	fDep := scopeFilter(scope)
-	fDep["fiscalyear"] = fiscalYear
-	fDep["isdeleted"] = false
-	curDep, _ := r.db.Collection("asset_depreciations").Find(ctx, fDep)
-	var allDep []DepreciationScheduleItem
-	_ = curDep.All(ctx, &allDep)
+	assets, err := queryRecords[Asset](ctx, db, scope.Company, kindAsset, "", ` ORDER BY code`)
+	if err != nil {
+		return nil, err
+	}
+	allDep, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'fiscalyear' = $3`, "", fiscalYear)
+	if err != nil {
+		return nil, err
+	}
 
 	depMap := make(map[string]decimal.Decimal)
 	for _, d := range allDep {

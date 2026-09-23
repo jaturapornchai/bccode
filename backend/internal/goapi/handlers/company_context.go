@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"smlcloudplatform/internal/utils"
 	msmodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
@@ -46,12 +45,18 @@ func authenticatedCompanyContext(c echo.Context, requestedHolding, requestedBusi
 	if requested := strings.TrimSpace(requestedHolding); requested != "" && !strings.EqualFold(requested, holdingCode) {
 		return "", "", &companyContextError{http.StatusForbidden, "FORBIDDEN", "Forbidden"}
 	}
-	businessCode := utils.NormalizeBusinessCode(userInfo.BusinessCode)
+	businessCode := normalizeBusinessCode(userInfo.BusinessCode)
 	if businessCode == "" {
 		return "", "", &companyContextError{http.StatusConflict, "COMPANY_REQUIRED", "กรุณาเลือกบริษัทก่อนใช้งาน"}
 	}
-	if requested := utils.NormalizeBusinessCode(requestedBusiness); requested != "" && requested != businessCode {
+	if requested := normalizeBusinessCode(requestedBusiness); requested != "" && requested != businessCode {
 		return "", "", &companyContextError{http.StatusForbidden, "FORBIDDEN", "Forbidden"}
 	}
 	return holdingCode, businessCode, nil
+}
+
+// normalizeBusinessCode ทำรหัสบริษัทให้อยู่รูปเดียวกับที่ระบบ login ใช้ (ตัวใหญ่ ไม่มีช่องว่าง)
+// เก็บไว้ในแพ็กเกจนี้เพื่อไม่ต้องพึ่ง internal/utils
+func normalizeBusinessCode(value string) string {
+	return strings.ToUpper(strings.Join(strings.Fields(value), ""))
 }

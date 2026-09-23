@@ -27,10 +27,8 @@ umask 077
 if [[ ! -f "$secret_file" ]]; then
   {
     printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 32)"
-    printf 'CLICKHOUSE_PASSWORD=%s\n' "$(openssl rand -hex 32)"
     printf 'JWT_SECRET_KEY=%s\n' "$(openssl rand -hex 48)"
     printf 'RELOAD_CONFIG_SECRET=%s\n' "$(openssl rand -hex 32)"
-    printf 'KAFKA_CLUSTER_ID=%s\n' "$(openssl rand 16 | openssl base64 -A | tr '+/' '-_' | tr -d '=')"
   } >"$secret_file"
 fi
 
@@ -38,11 +36,6 @@ set -a
 # shellcheck disable=SC1090
 source "$secret_file"
 set +a
-
-if [[ -z ${KAFKA_CLUSTER_ID:-} ]]; then
-  KAFKA_CLUSTER_ID="$(openssl rand 16 | openssl base64 -A | tr '+/' '-_' | tr -d '=')"
-  printf 'KAFKA_CLUSTER_ID=%s\n' "$KAFKA_CLUSTER_ID" >>"$secret_file"
-fi
 
 if [[ -z ${MINIO_ROOT_USER:-} ]]; then
   MINIO_ROOT_USER="bcairoot$(openssl rand -hex 6)"
@@ -76,17 +69,6 @@ POSTGRES_USER=bcai
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 EOF
 
-cat >"$secret_dir/clickhouse.env" <<EOF
-CLICKHOUSE_DB=bcai_analytics
-CLICKHOUSE_USER=bcai
-CLICKHOUSE_PASSWORD=$CLICKHOUSE_PASSWORD
-CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
-EOF
-
-cat >"$secret_dir/kafka.env" <<EOF
-CLUSTER_ID=$KAFKA_CLUSTER_ID
-EOF
-
 cat >"$secret_dir/minio.env" <<EOF
 MINIO_ROOT_USER=$MINIO_ROOT_USER
 MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
@@ -106,8 +88,6 @@ LOG_LEVEL=INFO
 TZ=Asia/Bangkok
 HOST_API=account.bcaicloud.com
 HTTP_CORS=https://account.bcaicloud.com
-MONGODB_PRO_URI=mongodb://mongo:27017/?replicaSet=rs0
-MONGODB_PRO_DB=bcai_account
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 POSTGRES_USER=bcai
@@ -118,18 +98,6 @@ POSTGRES_DATABASE=bcai_projection
 POSTGRES_DB_NAME=bcai_projection
 POSTGRES_SSL_MODE=disable
 POSTGRES_TIMEZONE=UTC
-CH_SERVER_ADDRESS=clickhouse
-CLICKHOUSE_HOST=clickhouse
-CLICKHOUSE_PORT=9000
-CLICKHOUSE_USER=bcai
-CLICKHOUSE_PASSWORD=$CLICKHOUSE_PASSWORD
-CLICKHOUSE_DATABASE=bcai_analytics
-CH_USERNAME=bcai
-CH_PASSWORD=$CLICKHOUSE_PASSWORD
-CH_DATABASE_NAME=bcai_analytics
-REDIS_CACHE_URI=redis:6379
-ENABLE_KAFKA=true
-KAFKA_SERVER_URL=kafka:29092
 JWT_SECRET_KEY=$JWT_SECRET_KEY
 RELOAD_CONFIG_SECRET=$RELOAD_CONFIG_SECRET
 GOOGLE_CLIENT_ID=212036599086-c7aqvm005jiv2kqi4duju8spd9b3jb94.apps.googleusercontent.com

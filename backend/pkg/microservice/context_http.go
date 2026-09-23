@@ -103,20 +103,6 @@ func (ctx *HTTPContext) Persister(cfg config.IPersisterConfig) IPersister {
 	return ctx.ms.Persister(cfg)
 }
 
-// Cacher return cacher
-func (ctx *HTTPContext) Cacher(cacheConfig config.ICacherConfig) ICacher {
-	return ctx.ms.Cacher(cacheConfig)
-}
-
-// Producer return producer
-func (ctx *HTTPContext) Producer(mqConfig config.IMQConfig) IProducer {
-	return ctx.ms.Producer(mqConfig)
-}
-
-// MQ return MQ
-func (ctx *HTTPContext) MQ(mqConfig config.IMQConfig) IMQ {
-	return NewMQ(mqConfig, ctx.ms.Logger)
-}
 
 func (ctx *HTTPContext) ResponseWriter() http.ResponseWriter {
 	return ctx.c.Response()

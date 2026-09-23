@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { pgCount } from './support/pg';
 
 /**
  * Menu permission failure feedback (2026-08-31) — "เอาตรงนี้ให้จบ" follow-up.
@@ -81,7 +82,7 @@ test.describe('menu permission failure feedback', () => {
     await expect(page).toHaveURL(/\/menu/);
   });
 
-  test('MP-04 breadcrumb แสดงจำนวนเซสชันออนไลน์จาก Redis จริง', async ({ page }) => {
+  test('MP-04 breadcrumb แสดงจำนวนเซสชันออนไลน์ตรงกับ PostgreSQL', async ({ page }) => {
     await openMenu(page);
 
     // chip บน breadcrumb: "ผู้ใช้งานออนไลน์: N เซสชัน" (N ≥ 1 — มีเซสชันของเทสนี้เอง)
@@ -90,15 +91,16 @@ test.describe('menu permission failure feedback', () => {
     const text = await chip.textContent();
     const shown = Number((text ?? '').match(/(\d+)/)?.[1] ?? 0);
 
-    // ตรวจสอบข้ามฝั่งกับ Redis จริง: activesessions ของ backend ต้องใกล้เคียงค่าที่แสดง
-    // (ใช้ Lua EVAL คำสั่งเดียว — execSync บน Windows ผ่าน cmd.exe ใช้ pipe/while ไม่ได้)
-    const { execSync } = await import('child_process');
-    const lua = "local ks=redis.call('keys','session-*') local now=tonumber(redis.call('time')[1])*1000 local n=0 for _,k in ipairs(ks) do if string.sub(k,1,15)~='session-revoked' then local ls=tonumber(redis.call('hget',k,'lastseenat') or '0') if now-ls<=1800000 then n=n+1 end end end return n";
-    const raw = execSync(`docker exec redis redis-cli EVAL "${lua}" 0`, { timeout: 45000 })
-      .toString().trim();
-    const redisActive = Number(raw);
-    expect(shown, `UI shows ${shown}, Redis active(30m)=${redisActive}`).toBeGreaterThanOrEqual(1);
-    expect(Math.abs(shown - redisActive), 'UI count matches Redis active window').toBeLessThanOrEqual(3);
+    // ตรวจสอบข้ามฝั่งกับ PostgreSQL (bcai_projection.cache_entries): นับ session-* ที่ยังไม่หมดอายุ
+    // และ lastseenat อยู่ในหน้าต่าง 30 นาที — ตรรกะเดียวกับ activesessions ของ backend
+    const dbActive = pgCount(
+      'cache_entries',
+      `cache_key LIKE 'session-%' AND cache_key NOT LIKE 'session-revoked-%' AND field = 'lastseenat'
+       AND (expires_at IS NULL OR expires_at > now())
+       AND (extract(epoch FROM now()) * 1000 - (CASE WHEN value ~ '^[0-9]+$' THEN value::bigint ELSE 0 END)) <= 1800000`,
+    );
+    expect(shown, `UI shows ${shown}, DB active(30m)=${dbActive}`).toBeGreaterThanOrEqual(1);
+    expect(Math.abs(shown - dbActive), 'UI count matches DB active window').toBeLessThanOrEqual(3);
   });
 
   test('MP-01 session dies mid-use → Thai toast + redirected to login', async ({ page }) => {

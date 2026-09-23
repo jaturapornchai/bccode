@@ -112,6 +112,9 @@
 - [decisions/2026-09-16-menu-labels-follow-champ-wording.md](decisions/2026-09-16-menu-labels-follow-champ-wording.md) — ป้ายเมนูและชื่อฟิลด์ใช้ถ้อยคำเดียวกับระบบเดิม Champ (เปลี่ยนป้าย 103 เมนู, ชื่อเดิมกลายเป็นคำค้น, ห้ามแตะ id/route/language key)
 - [decisions/2026-09-20-single-source-ai-rules-skills.md](decisions/2026-09-20-single-source-ai-rules-skills.md) — กฎ+skill ของ AI ทุกตัวอยู่ที่เดียว: `AGENTS.md` + `.agents/skills/` (ย้ายจาก `docs/skills/`), Gemini CLI ผ่าน `.gemini/settings.json`, Claude ผ่าน junction `npm run ai:link`
 - [decisions/2026-09-23-drop-readme-activity-log.md](decisions/2026-09-23-drop-readme-activity-log.md) — เลิก Activity Log ใน README (ประวัติ = git log + body ไทย), ถอด README guard จาก pre-commit, ล้างกฎ Mongo/Redis/12 ภาษาที่ปลดระวางออกจาก AGENTS.md
+- [decisions/2026-09-23-wht-certificate-pdf-backend.md](decisions/2026-09-23-wht-certificate-pdf-backend.md) — ใบ 50 ทวิ: backend (`internal/whtcert`) สร้าง PDF บนแบบฟอร์มจริงของกรมสรรพากร (ตำแหน่งวัดจากฟอร์ม, ไทยจัดรูปด้วย HarfBuzz, ฉบับที่ 1/2 + สำเนาคู่ฉบับ/ใบแทน) frontend แค่แสดง
+- [decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md) — ถอด MongoDB/Kafka/Redis/ClickHouse: session → `cache_entries`, ตรวจสิทธิ์สดจาก PG ทุกคำขอ, จอที่ API อยู่บน Mongo ขึ้น "รอพัฒนา"
+- [decisions/2026-09-23-tax-inside-general-ledger.md](decisions/2026-09-23-tax-inside-general-ledger.md) — เมนูภาษีทั้งหมดอยู่ใต้ "บัญชีแยกประเภท" ตาม Champ; ผู้ใช้ GL ตัวเดียวใช้ได้เลย, ภ.ง.ด./50 ทวิ อ่านจาก GL
 - [decisions/2026-09-19-champ-parity-no-bloat-rule.md](decisions/2026-09-19-champ-parity-no-bloat-rule.md) — กฎยึด D:\project-champ เป็นต้นแบบหลัก ไม่เพิ่มฟังก์ชันหรือเมนูมากเกินไป เพื่อมุ่งเน้นการ Upgrade จาก Windows สู่ Web ที่รวดเร็ว ปลอดภัย และไม่ทำให้ลูกค้าสับสน
 
 

@@ -109,7 +109,7 @@ async function jsonRequest<T = unknown>(
   }
 }
 
-/** List barcodes via backend product-barcode endpoint (MongoDB source, filters + sort + offset). */
+/** List barcodes via backend product-barcode endpoint (filters + sort + offset). */
 export function listBarcodes(
   auth: AuthSession | null,
   body: ProductBarcodeListRequest,

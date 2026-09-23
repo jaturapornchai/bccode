@@ -2,13 +2,12 @@ package fixedasset
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	gl "smlcloudplatform/internal/generalledger"
 )
@@ -19,21 +18,21 @@ import (
 // exactly once, in the one place that already implements them correctly.
 type LedgerPoster interface {
 	Execute(ctx context.Context, scope gl.Scope, cmd gl.Command) (gl.Result, error)
+	List(ctx context.Context, scope gl.Scope, resource, query string, page, limit int, filter gl.ListFilter) (gl.Page, error)
 }
 
 type GLPoster struct {
-	db     *mongo.Database
-	ledger LedgerPoster
+	records *records
+	ledger  LedgerPoster
 }
 
-func NewGLPoster(db *mongo.Database, ledger LedgerPoster) *GLPoster {
-	return &GLPoster{db: db, ledger: ledger}
+func NewGLPoster(connect Connector, ledger LedgerPoster) *GLPoster {
+	return &GLPoster{records: newRecords(connect), ledger: ledger}
 }
 
 // GLLineDoc / GLJournalDoc are the response shape returned to the HTTP and MCP
 // callers. They are no longer persisted directly: the actual journal is
-// written by generalledger.Store.Execute (Mongo gl_journals + PostgreSQL
-// projection); these structs just describe what was posted.
+// written by generalledger.PostgresStore.Execute; these structs just describe what was posted.
 type GLLineDoc struct {
 	AccountCode string          `json:"accountcode"`
 	Description string          `json:"description"`
@@ -116,20 +115,12 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	}
 
 	// 1. Find all unposted depreciation schedule items for this year & period
-	f := scopeFilter(scope)
-	f["fiscalyear"] = fiscalYear
-	f["period"] = period
-	f["isposted"] = false
-	f["isdeleted"] = false
-
-	cur, err := p.db.Collection("asset_depreciations").Find(ctx, f)
+	db, err := p.records.db(ctx, scope.Holding)
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
-
-	var items []DepreciationScheduleItem
-	if err = cur.All(ctx, &items); err != nil {
+	items, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'fiscalyear' = $3 AND (payload->>'period')::int = $4 AND NOT COALESCE((payload->>'isposted')::boolean, false)`, ` ORDER BY code`, fiscalYear, period)
+	if err != nil {
 		return nil, err
 	}
 	if len(items) == 0 {
@@ -141,19 +132,8 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	for i, it := range items {
 		assetCodes[i] = it.AssetCode
 	}
-
-	fAssets := scopeFilter(scope)
-	fAssets["assetcode"] = bson.M{"$in": assetCodes}
-	fAssets["isdeleted"] = false
-
-	curAssets, err := p.db.Collection("fixed_assets").Find(ctx, fAssets)
+	assets, err := queryRecords[Asset](ctx, db, scope.Company, kindAsset, ` AND code = ANY($3)`, "", pq.Array(assetCodes))
 	if err != nil {
-		return nil, err
-	}
-	defer curAssets.Close(ctx)
-
-	var assets []Asset
-	if err = curAssets.All(ctx, &assets); err != nil {
 		return nil, err
 	}
 
@@ -280,25 +260,15 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	}
 
 	// 6. Update depreciation items to mark as posted
-	itemIDs := make([]string, len(items))
-	for i, it := range items {
-		itemIDs[i] = it.ID
-	}
-	fUpdate := scopeFilter(scope)
-	fUpdate["_id"] = bson.M{"$in": itemIDs}
-
-	u := bson.M{
-		"$set": bson.M{
-			"isposted":     true,
-			"journaldocno": docNo,
-			"postedat":     now,
-			"updatedat":    now,
-			"updatedby":    scope.Actor,
-		},
-	}
-	_, err = p.db.Collection("asset_depreciations").UpdateMany(ctx, fUpdate, u)
-	if err != nil {
-		return nil, fmt.Errorf("ผ่านรายการสำเร็จแต่ไม่สามารถอัปเดตสถานะค่าเสื่อมราคา: %w", err)
+	for _, it := range items {
+		it.IsPosted = true
+		it.JournalDocNo = docNo
+		it.PostedAt = &now
+		it.UpdatedAt = now
+		it.UpdatedBy = scope.Actor
+		if err := putRecord(ctx, db, scope.Company, kindDepreciation, it.ID, depreciationKey(it), it); err != nil {
+			return nil, fmt.Errorf("ผ่านรายการสำเร็จแต่ไม่สามารถอัปเดตสถานะค่าเสื่อมราคา: %w", err)
+		}
 	}
 
 	return journal, nil
@@ -306,14 +276,9 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 
 // ReverseDepreciation cancels a posted depreciation journal and resets asset depreciation flags.
 func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, reason string, now time.Time) error {
-	fJ := scopeFilter(scope)
-	fJ["docno"] = docNo
-	fJ["isdeleted"] = false
-
-	var journal gl.Journal
-	err := p.db.Collection("gl_journals").FindOne(ctx, fJ).Decode(&journal)
+	journal, err := p.findJournal(ctx, scope, docNo)
 	if err != nil {
-		return fmt.Errorf("ไม่พบใบสำคัญสมุดรายวัน %s: %w", docNo, err)
+		return err
 	}
 	if journal.Status != "posted" {
 		return fmt.Errorf("ใบสำคัญ %s ไม่ได้อยู่ในสถานะผ่านรายการ", docNo)
@@ -345,20 +310,43 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 	}
 
 	// 2. Reset asset depreciation items
-	fDep := scopeFilter(scope)
-	fDep["journaldocno"] = docNo
-
-	uDep := bson.M{
-		"$set": bson.M{
-			"isposted":     false,
-			"journaldocno": "",
-			"postedat":     nil,
-			"updatedat":    now,
-			"updatedby":    scope.Actor,
-		},
+	db, err := p.records.db(ctx, scope.Holding)
+	if err != nil {
+		return err
 	}
-	_, err = p.db.Collection("asset_depreciations").UpdateMany(ctx, fDep, uDep)
-	return err
+	items, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'journaldocno' = $3`, "", docNo)
+	if err != nil {
+		return err
+	}
+	for _, it := range items {
+		it.IsPosted = false
+		it.JournalDocNo = ""
+		it.PostedAt = nil
+		it.UpdatedAt = now
+		it.UpdatedBy = scope.Actor
+		if err := putRecord(ctx, db, scope.Company, kindDepreciation, it.ID, depreciationKey(it), it); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// findJournal looks up a GL journal by its exact document number.
+func (p *GLPoster) findJournal(ctx context.Context, scope Scope, docNo string) (*gl.Journal, error) {
+	page, err := p.ledger.List(ctx, glScope(scope), "journals", docNo, 1, 100, gl.ListFilter{})
+	if err != nil {
+		return nil, fmt.Errorf("ไม่พบใบสำคัญสมุดรายวัน %s: %w", docNo, err)
+	}
+	for _, raw := range page.Items {
+		var journal gl.Journal
+		if err := json.Unmarshal(raw, &journal); err != nil {
+			return nil, err
+		}
+		if journal.DocNo == docNo && !journal.IsDeleted {
+			return &journal, nil
+		}
+	}
+	return nil, fmt.Errorf("ไม่พบใบสำคัญสมุดรายวัน %s", docNo)
 }
 
 // DisposeAsset processes asset sale/write-off and generates the GL journal entry.
@@ -379,29 +367,23 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	}
 
 	// 1. Load Asset
-	var asset Asset
-	f := scopeFilter(scope)
-	f["assetcode"] = disposal.AssetCode
-	f["isdeleted"] = false
-	err := p.db.Collection("fixed_assets").FindOne(ctx, f).Decode(&asset)
+	db, err := p.records.db(ctx, scope.Holding)
+	if err != nil {
+		return nil, nil, err
+	}
+	loaded, err := firstRecord[Asset](ctx, db, scope.Company, kindAsset, ` AND code = $3`, disposal.AssetCode)
 	if err != nil {
 		return nil, nil, fmt.Errorf("ไม่พบสินทรัพย์รหัส %s: %w", disposal.AssetCode, err)
 	}
+	asset := *loaded
 	if asset.Status == "disposed" {
 		return nil, nil, fmt.Errorf("สินทรัพย์รหัส %s ถูกจำหน่ายไปแล้ว", disposal.AssetCode)
 	}
 
 	// 2. Calculate Total Accumulated Depreciation up to disposal date
-	fDep := scopeFilter(scope)
-	fDep["assetcode"] = disposal.AssetCode
-	fDep["stopdate"] = bson.M{"$lte": disposal.DisposalDate}
-	fDep["isdeleted"] = false
-
-	opts := options.Find().SetSort(bson.D{{Key: "stopdate", Value: -1}}).SetLimit(1)
-	cur, err := p.db.Collection("asset_depreciations").Find(ctx, fDep, opts)
-	var latestDeprec []DepreciationScheduleItem
-	if err == nil {
-		_ = cur.All(ctx, &latestDeprec)
+	latestDeprec, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3 AND payload->>'stopdate' <= $4`, ` ORDER BY payload->>'stopdate' DESC LIMIT 1`, disposal.AssetCode, disposal.DisposalDate)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	accumDeprec := asset.BeginAccumDeprec.Decimal()
@@ -578,23 +560,18 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	}
 
 	// 5. Save Disposal Record
-	disposal.Identity = identityFor(scope, "disposals", disposal.DocNo, Identity{}, now)
-	_, err = p.db.Collection("asset_disposals").InsertOne(ctx, disposal)
-	if err != nil {
+	disposal.Identity = identityFor(scope, kindDisposal, disposal.DocNo, Identity{}, now)
+	if err := putRecord(ctx, db, scope.Company, kindDisposal, disposal.ID, disposal.DocNo, disposal); err != nil {
 		return nil, nil, fmt.Errorf("ไม่สามารถบันทึกประวัติการจำหน่าย: %w", err)
 	}
 
 	// 6. Update Asset Status to Disposed
-	uAsset := bson.M{
-		"$set": bson.M{
-			"status":    "disposed",
-			"updatedat": now,
-			"updatedby": scope.Actor,
-		},
-	}
 	// ขายสินทรัพย์แล้วสถานะต้องเปลี่ยนจริง ถ้าอัปเดตไม่สำเร็จแล้วเงียบไว้
 	// สินทรัพย์ที่ขายไปแล้วจะยังคิดค่าเสื่อมราคาต่อและถูกขายซ้ำได้
-	if _, err := p.db.Collection("fixed_assets").UpdateOne(ctx, f, uAsset); err != nil {
+	asset.Status = "disposed"
+	asset.UpdatedAt = now
+	asset.UpdatedBy = scope.Actor
+	if err := putRecord(ctx, db, scope.Company, kindAsset, asset.ID, asset.AssetCode, asset); err != nil {
 		return nil, nil, fmt.Errorf("บันทึกการจำหน่ายสำเร็จแต่ไม่สามารถเปลี่ยนสถานะสินทรัพย์เป็นจำหน่ายแล้ว: %w", err)
 	}
 

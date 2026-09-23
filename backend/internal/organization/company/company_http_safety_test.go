@@ -10,8 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestCreateCompanyDoesNotSilentlyCreateDefaultBranch(t *testing.T) {
@@ -35,13 +33,13 @@ func TestPrepareCompanyCreateOverridesClientIdentityAndStatus(t *testing.T) {
 	req.Code = " cmp-001 "
 	req.Names = common.JSONB{{Code: &code, Name: &name}}
 	now := time.Date(2026, 8, 14, 1, 2, 3, 0, time.FixedZone("test", 7*60*60))
-	if err := prepareCompanyCreate(&req, "holding-code", "holding-uid", "owner@example.com", "company-uid", now); err != nil {
+	if err := prepareCompanyCreate(&req, "holding-code", "owner@example.com", now); err != nil {
 		t.Fatal(err)
 	}
-	if req.HoldingUID != "holding-uid" || req.CompanyUID != "company-uid" || req.GuidFixed != "company-uid" || req.IsDeleted || req.Version != 0 || !req.IsActive {
+	if req.HoldingUID != "holding-code" || req.CompanyUID != "CMP-001" || req.GuidFixed != "CMP-001" || req.IsDeleted || req.Version != 0 || !req.IsActive {
 		t.Fatalf("unsafe saved identity/status: %#v", req)
 	}
-	if req.ID.IsZero() || req.Code != "CMP-001" {
+	if req.ID != "CMP-001" || req.Code != "CMP-001" {
 		t.Fatalf("saved identity/code is incomplete: %#v", req)
 	}
 	if req.CreatedAt.Location() != time.UTC || req.UpdatedAt.Location() != time.UTC {
@@ -58,32 +56,13 @@ func TestCompanyCodeCannotChangeThroughOrdinaryUpdate(t *testing.T) {
 	}
 }
 
-func TestCompanyIdentityFilterSupportsCanonicalAndLegacyIDs(t *testing.T) {
-	filter := companyIdentityFilter("holding", "company-id")
-	identities, ok := filter["$or"].(bson.A)
-	if !ok || len(identities) != 2 {
-		t.Fatalf("identity filter = %#v", filter)
-	}
-	if deleted, ok := filter["isdeleted"].(bson.M); !ok || deleted["$ne"] != true {
-		t.Fatalf("identity filter does not reject deleted records: %#v", filter)
-	}
-}
-
-func TestCompanyManagementFilterExcludesSoftDeleted(t *testing.T) {
-	filter := visibleCompanyFilter("holding")
-	deleted, ok := filter["isdeleted"].(bson.M)
-	if !ok || deleted["$ne"] != true {
-		t.Fatalf("unsafe management filter: %#v", filter)
-	}
-}
-
 func TestCompanyCreateResponseExposesSavedEntity(t *testing.T) {
-	payload, err := json.Marshal(orgaccess.OrganizationCreateResponse{Entity: companyModels.CompanyDoc{CompanyUID: "company-uid", HoldingUID: "holding-uid"}, KafkaSync: "outbox"})
+	payload, err := json.Marshal(orgaccess.OrganizationCreateResponse{Entity: companyModels.CompanyDoc{CompanyUID: "company-uid", HoldingUID: "holding-uid"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(payload)
-	for _, required := range []string{`"entity"`, `"companyuid":"company-uid"`, `"holdinguid":"holding-uid"`, `"kafka_sync":"outbox"`} {
+	for _, required := range []string{`"entity"`, `"companyuid":"company-uid"`, `"holdinguid":"holding-uid"`} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("response %s missing %s", text, required)
 		}

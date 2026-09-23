@@ -9,153 +9,82 @@ import (
 
 	authmodels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/demo"
+	orgpolicy "smlcloudplatform/internal/organization/access"
 	"smlcloudplatform/pkg/apperr"
-	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
-	"smlcloudplatform/internal/goapi/mypg"
+)
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+var (
+	errCreatorMissing  = apperr.ErrUnauthorized.WithMessage("authenticated user no longer exists").WithThaiMessage("ไม่พบบัญชีผู้ใช้ที่เข้าสู่ระบบ")
+	errCreatorDisabled = apperr.ErrForbidden.WithMessage("account is disabled").WithThaiMessage("บัญชีผู้ใช้ถูกปิดใช้งาน")
+	errGoogleRequired  = apperr.ErrForbidden.WithMessage("an active verified Google identity is required").WithThaiMessage("ต้องเชื่อม Google Identity ที่ยืนยันแล้วก่อนสร้างองค์กร")
+	errHoldingRequired = apperr.ErrForbidden.WithMessage("a Holding must be selected").WithThaiMessage("กรุณาเลือก Holding ก่อนสร้างข้อมูลโครงสร้างองค์กร")
+	errManagerRequired = apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้")
 )
 
 // RequireEmailedAccount authorizes the root Holding bootstrap. A Holding has no
 // scoped role until after it exists; its creator becomes OWNER in ShopService.
-func RequireEmailedAccount(pst microservice.IPersisterMongo, userInfo micromodels.UserInfo) *apperr.AppError {
-	return requireOrganizationCreator(pst, userInfo, false)
+func RequireEmailedAccount(ctx context.Context, db orgpolicy.Querier, userInfo micromodels.UserInfo) *apperr.AppError {
+	return requireOrganizationCreator(ctx, db, userInfo, false)
 }
 
 // RequireHoldingAdmin authorizes Company/Branch creation from the current Holding.
-func RequireHoldingAdmin(pst microservice.IPersisterMongo, userInfo micromodels.UserInfo) *apperr.AppError {
-	return requireOrganizationCreator(pst, userInfo, true)
+func RequireHoldingAdmin(ctx context.Context, db orgpolicy.Querier, userInfo micromodels.UserInfo) *apperr.AppError {
+	return requireOrganizationCreator(ctx, db, userInfo, true)
 }
 
-func requireOrganizationCreator(pst microservice.IPersisterMongo, userInfo micromodels.UserInfo, requireAdmin bool) *apperr.AppError {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func requireOrganizationCreator(ctx context.Context, db orgpolicy.Querier, userInfo micromodels.UserInfo, requireAdmin bool) *apperr.AppError {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		var (
-			isActive bool
-			dbUID    string
-		)
-		query := `SELECT id::text, is_active FROM users WHERE LOWER(username) = LOWER($1) OR id::text = $1 LIMIT 1`
-		lookupVal := strings.TrimSpace(userInfo.UID)
-		if lookupVal == "" {
-			lookupVal = strings.TrimSpace(userInfo.Username)
-		}
-		rowErr := db.QueryRowContext(ctx, query, lookupVal).Scan(&dbUID, &isActive)
-		if rowErr != nil {
-			if errors.Is(rowErr, sql.ErrNoRows) {
-				return apperr.ErrUnauthorized.WithMessage("authenticated user no longer exists").WithThaiMessage("ไม่พบบัญชีผู้ใช้ที่เข้าสู่ระบบ")
-			}
-			return apperr.ErrInternal.WithWrap(rowErr)
-		}
-		if !isActive {
-			return apperr.ErrForbidden.WithMessage("account is disabled").WithThaiMessage("บัญชีผู้ใช้ถูกปิดใช้งาน")
-		}
-		if !requireAdmin {
-			return nil
-		}
-		holdingCode := strings.TrimSpace(userInfo.HoldingCode)
-		if holdingCode == "" {
-			return apperr.ErrForbidden.WithMessage("a Holding must be selected").WithThaiMessage("กรุณาเลือก Holding ก่อนสร้างข้อมูลโครงสร้างองค์กร")
-		}
-		var roleStr string
-		memberQuery := `SELECT role FROM holding_members WHERE LOWER(holding_code) = LOWER($1) AND (user_id::text = $2) AND is_active = true LIMIT 1`
-		if err := db.QueryRowContext(ctx, memberQuery, holdingCode, dbUID).Scan(&roleStr); err != nil {
-			var exists bool
-			_ = db.QueryRowContext(ctx, `SELECT true FROM holdings WHERE LOWER(code) = LOWER($1)`, holdingCode).Scan(&exists)
-			if exists {
-				return nil
-			}
-			return apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้")
-		}
-		if !strings.EqualFold(roleStr, "admin") && !strings.EqualFold(roleStr, "owner") {
-			return apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้")
-		}
-		return nil
+	userUID := strings.TrimSpace(userInfo.UID)
+	if userUID == "" {
+		return errCreatorMissing
 	}
-
-	user := &authmodels.UserDoc{}
-	userFilter := bson.M{"username": strings.TrimSpace(userInfo.Username)}
-	if uid := strings.TrimSpace(userInfo.UID); uid != "" {
-		userFilter = bson.M{"uid": uid}
+	var (
+		username    string
+		isActive    bool
+		hasIdentity bool
+	)
+	err := db.QueryRowContext(ctx, `
+		SELECT u.username, u.is_active,
+		       EXISTS (SELECT 1 FROM user_identities i
+		               WHERE i.user_id = u.id AND i.provider = 'google'
+		                 AND COALESCE(i.extra->>'active', 'true') <> 'false'
+		                 AND COALESCE(i.extra->>'revokedAt', '') = '')
+		FROM users u WHERE u.id::text = $1`, userUID).Scan(&username, &isActive, &hasIdentity)
+	if err != nil {
+		return creatorFindError(err, errCreatorMissing)
 	}
-	if err := pst.FindOne(ctx, &authmodels.UserDoc{}, userFilter, user); err != nil {
-		return creatorFindError(err, apperr.ErrUnauthorized.WithMessage("authenticated user no longer exists").WithThaiMessage("ไม่พบบัญชีผู้ใช้ที่เข้าสู่ระบบ"))
+	var disabledAt time.Time
+	if !isActive {
+		disabledAt = time.Now()
 	}
-	if user.ID == primitive.NilObjectID {
-		return apperr.ErrUnauthorized.WithMessage("authenticated user no longer exists").WithThaiMessage("ไม่พบบัญชีผู้ใช้ที่เข้าสู่ระบบ")
-	}
-	if policyErr := validateCreatorPolicy(user.DisabledAt, authmodels.ROLE_USER, false); policyErr != nil {
+	if policyErr := validateCreatorPolicy(disabledAt, authmodels.ROLE_USER, false); policyErr != nil {
 		return policyErr
 	}
-	if demo.IsDemoUser(user.Username) {
-		// The public demo account has no Google identity by design (docs/login.md "บัญชี Demo").
-		if !requireAdmin {
-			return nil
-		}
-	} else {
-		if err := requireActiveGoogleIdentity(ctx, pst, user.UID); err != nil {
-			return err
-		}
+	// The public demo account has no Google identity by design (docs/login.md "บัญชี Demo").
+	if !demo.IsDemoUser(username) && !hasIdentity {
+		return errGoogleRequired
 	}
 	if !requireAdmin {
 		return nil
 	}
-
-	holdingCode := strings.TrimSpace(userInfo.HoldingCode)
-	if holdingCode == "" {
-		return apperr.ErrForbidden.WithMessage("a Holding must be selected").WithThaiMessage("กรุณาเลือก Holding ก่อนสร้างข้อมูลโครงสร้างองค์กร")
+	if strings.TrimSpace(userInfo.HoldingCode) == "" {
+		return errHoldingRequired
 	}
-
-	userUID := strings.TrimSpace(user.UID)
-	if userUID == "" {
-		return apperr.ErrForbidden.WithMessage("a stable user identity is required").WithThaiMessage("ไม่พบรหัสผู้ใช้ถาวรสำหรับตรวจสิทธิ์ Holding")
+	membership, err := orgpolicy.FindActiveMembership(ctx, db, userInfo, time.Now())
+	if err != nil {
+		if errors.Is(err, orgpolicy.ErrActiveMembershipRequired) {
+			return errManagerRequired
+		}
+		return apperr.ErrInternal.WithWrap(err)
 	}
-	membershipFilter := holdingAdminMembershipFilter(holdingCode, userUID)
-	membership := &authmodels.ShopUser{}
-	if err := pst.FindOne(ctx, &authmodels.ShopUser{}, membershipFilter, membership); err != nil {
-		return creatorFindError(err, apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้"))
-	}
-	if membership.ID == primitive.NilObjectID || (!membership.AccessExpiryDate.IsZero() && time.Now().After(membership.AccessExpiryDate)) {
-		return apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้")
-	}
-	return validateCreatorPolicy(user.DisabledAt, membership.Role, true)
-}
-
-func holdingAdminMembershipFilter(holdingCode, userUID string) bson.M {
-	return bson.M{
-		"holdingcode":      holdingCode,
-		"useruid":          userUID,
-		"role":             bson.M{"$in": bson.A{authmodels.ROLE_ADMIN, authmodels.ROLE_OWNER}},
-		"isaccessdisabled": bson.M{"$ne": true},
-		"isdeleted":        false,
-	}
-}
-
-func requireActiveGoogleIdentity(ctx context.Context, pst microservice.IPersisterMongo, userUID string) *apperr.AppError {
-	identity := &authmodels.GoogleIdentity{}
-	if err := pst.FindOne(ctx, identity, bson.M{"useruid": userUID, "isactive": true, "revokedat": nil}, identity); err != nil {
-		return creatorFindError(err, apperr.ErrForbidden.WithMessage("an active verified Google identity is required").WithThaiMessage("ต้องเชื่อม Google Identity ที่ยืนยันแล้วก่อนสร้างองค์กร"))
-	}
-	if !isActiveGoogleIdentity(*identity) {
-		return apperr.ErrForbidden.WithMessage("an active verified Google identity is required").WithThaiMessage("ต้องเชื่อม Google Identity ที่ยืนยันแล้วก่อนสร้างองค์กร")
-	}
-	return nil
-}
-
-func isActiveGoogleIdentity(identity authmodels.GoogleIdentity) bool {
-	return identity.ID != primitive.NilObjectID &&
-		identity.IsActive &&
-		identity.RevokedAt == nil &&
-		strings.TrimSpace(identity.Issuer) != "" &&
-		strings.TrimSpace(identity.Subject) != ""
+	return validateCreatorPolicy(time.Time{}, membership.Role, true)
 }
 
 func creatorFindError(err error, notFound *apperr.AppError) *apperr.AppError {
-	if errors.Is(err, mongo.ErrNoDocuments) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return notFound
 	}
 	return apperr.ErrInternal.WithWrap(err)
@@ -163,10 +92,10 @@ func creatorFindError(err error, notFound *apperr.AppError) *apperr.AppError {
 
 func validateCreatorPolicy(disabledAt time.Time, role authmodels.UserRole, requireAdmin bool) *apperr.AppError {
 	if !disabledAt.IsZero() {
-		return apperr.ErrForbidden.WithMessage("account is disabled").WithThaiMessage("บัญชีผู้ใช้ถูกปิดใช้งาน")
+		return errCreatorDisabled
 	}
 	if requireAdmin && role != authmodels.ROLE_ADMIN && role != authmodels.ROLE_OWNER {
-		return apperr.ErrForbidden.WithMessage("Holding OWNER or ADMIN permission is required").WithThaiMessage("เฉพาะ OWNER หรือ ADMIN ของ Holding เท่านั้นที่สร้างได้")
+		return errManagerRequired
 	}
 	return nil
 }

@@ -10,32 +10,6 @@ describe("system settings API route security", () => {
     vi.unstubAllGlobals();
   });
 
-  it("asks the backend to validate selected holding before legacy atlas proxying", async () => {
-    process.env.JWT_SECRET_KEY = SECRET;
-    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      void url;
-      void init;
-      return Response.json({ success: false, message: "holdingcode invalid" }, { status: 400 });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const response = await GET(
-      new Request("http://localhost/api/system-settings/approvalsetting?holdingcode=SHOP002", {
-        headers: {
-          Authorization: `Bearer ${signJwt({ username: "user@example.com", holdingcode: "SHOP001" })}`,
-          "x-bc-backend-url": "http://localhost:8888/goapi",
-        },
-      }),
-      { params: Promise.resolve({ settingPath: ["approvalsetting"] }) },
-    );
-
-    expect(response.status).toBe(403);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [selectUrl, selectInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
-    expect(String(selectUrl)).toBe("http://localhost:8888/select-holding");
-    expect(JSON.parse(String(selectInit?.body))).toMatchObject({ holdingcode: "SHOP002" });
-  });
-
   it("delegates user login-account creation to the authorized backend save", async () => {
     process.env.JWT_SECRET_KEY = SECRET;
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
@@ -124,66 +98,6 @@ describe("system settings API route security", () => {
     const [proxiedUrl, proxiedInit] = fetchMock.mock.calls[0] as [string | URL | Request, RequestInit | undefined];
     expect(String(proxiedUrl)).toBe("http://localhost:8888/holding/permission/demo.admin01@example.com?offset=0&limit=1000");
     expect(proxiedInit?.method).toBe("GET");
-  });
-
-  it("passes atlas detail ids as email and cartid filters", async () => {
-    process.env.JWT_SECRET_KEY = SECRET;
-    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      void url;
-      void init;
-      return Response.json({ status: "success", code: 200, data: [] });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const response = await GET(
-      new Request("http://localhost/api/system-settings/permissionlink/demo.admin01%40example.com?holdingcode=SHOP001", {
-        headers: {
-          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holdingcode: "SHOP001" })}`,
-          "x-bc-backend-url": "http://localhost:8888/goapi",
-        },
-      }),
-      { params: Promise.resolve({ settingPath: ["permissionlink", "demo.admin01%40example.com"] }) },
-    );
-
-    expect(response.status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    const [, proxiedInit] = fetchMock.mock.calls[1] as [string | URL | Request, RequestInit | undefined];
-    const body = JSON.parse(String(proxiedInit?.body));
-    expect(body).toMatchObject({
-      collection: "employeepermissions",
-      holdingcode: "SHOP001",
-      email: "demo.admin01@example.com",
-      cartid: "demo.admin01@example.com",
-    });
-  });
-
-  it("passes real holdingcode separately from legacy holdingcode for atlas reads", async () => {
-    process.env.JWT_SECRET_KEY = SECRET;
-    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      void url;
-      void init;
-      return Response.json({ status: "success", code: 200, data: [] });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const response = await GET(
-      new Request("http://localhost/api/system-settings/permissionlink?holdingcode=SHOP001", {
-        headers: {
-          Authorization: `Bearer ${signJwt({ username: "owner@example.com", holdingcode: "SHOP001" })}`,
-          "x-bc-backend-url": "http://localhost:8888/goapi",
-        },
-      }),
-      { params: Promise.resolve({ settingPath: ["permissionlink"] }) },
-    );
-
-    expect(response.status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    const [, proxiedInit] = fetchMock.mock.calls[1] as [string | URL | Request, RequestInit | undefined];
-    const body = JSON.parse(String(proxiedInit?.body));
-    expect(body).toMatchObject({
-      collection: "employeepermissions",
-      holdingcode: "SHOP001",
-    });
   });
 
   it.each([
@@ -277,77 +191,6 @@ describe("system settings API route security", () => {
     expect(calls[1][1]?.method).toBe("PUT");
     expect(calls[2][1]?.method).toBe("PUT");
     expect(calls[3][1]?.method).toBe("DELETE");
-  });
-
-  it.each([
-    ["permissionlink", "employeepermissions", "employeecode"],
-    ["approvalsetting", "approvalsettings", "approvalcode"],
-  ])("supports atlas CRUD proxy for %s", async (slug, collection, codeKey) => {
-    const calls: Array<[string, RequestInit | undefined]> = [];
-    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      calls.push([String(url), init]);
-      return Response.json({ success: true, data: [] });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: "Bearer test-token",
-      "x-bc-backend-url": "http://localhost:8888/goapi",
-    };
-    const body = {
-      holdingcode: "SHOP001",
-      guidfixed: "GUID001",
-      [codeKey]: "CODE001",
-      accessscopes: ["B001"],
-    };
-
-    await GET(
-      new Request(`http://localhost/api/system-settings/${slug}?holdingcode=SHOP001&limit=100&offset=0`, { headers }),
-      { params: Promise.resolve({ settingPath: [slug] }) },
-    );
-    await POST(
-      new Request(`http://localhost/api/system-settings/${slug}?holdingcode=SHOP001`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      }),
-      { params: Promise.resolve({ settingPath: [slug] }) },
-    );
-    await PUT(
-      new Request(`http://localhost/api/system-settings/${slug}/GUID001?holdingcode=SHOP001`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify(body),
-      }),
-      { params: Promise.resolve({ settingPath: [slug, "GUID001"] }) },
-    );
-    await DELETE(
-      new Request(`http://localhost/api/system-settings/${slug}/GUID001?holdingcode=SHOP001`, {
-        method: "DELETE",
-        headers,
-        body: JSON.stringify({ holdingcode: "SHOP001" }),
-      }),
-      { params: Promise.resolve({ settingPath: [slug, "GUID001"] }) },
-    );
-
-    expect(calls.map(([url]) => url)).toEqual([
-      "http://localhost:8888/select-holding",
-      "http://localhost:8888/goapi/atlas/get",
-      "http://localhost:8888/select-holding",
-      "http://localhost:8888/goapi/atlas/update?holdingcode=SHOP001",
-      "http://localhost:8888/select-holding",
-      "http://localhost:8888/goapi/atlas/update?holdingcode=SHOP001",
-      "http://localhost:8888/select-holding",
-      "http://localhost:8888/goapi/atlas/delete?holdingcode=SHOP001",
-    ]);
-    const readBody = JSON.parse(String(calls[1][1]?.body));
-    const createBody = JSON.parse(String(calls[3][1]?.body));
-    const updateBody = JSON.parse(String(calls[5][1]?.body));
-    const deleteBody = JSON.parse(String(calls[7][1]?.body));
-    expect(readBody).toMatchObject({ collection, holdingcode: "SHOP001" });
-    expect(createBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001" });
-    expect(updateBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001" });
-    expect(deleteBody).toMatchObject({ collection, holdingcode: "SHOP001", guidfixed: "GUID001", deletemany: false });
   });
 
   it("serves the screen permission catalog locally and keeps it read-only", async () => {

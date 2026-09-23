@@ -6,32 +6,32 @@ import (
 )
 
 type ProcessStockMovementStruct struct {
-	ItemCode string                             `json:"itemcode" bson:"itemcode"`
-	Name     string                             `json:"name" bson:"name"`
-	UnitCode string                             `json:"unitcode" bson:"unitcode"`
-	UnitName string                             `json:"unitname" bson:"unitname"`
-	Details  []ProcessStockMovementDetailStruct `json:"details" bson:"details"`
+	ItemCode string                             `json:"itemcode"`
+	Name     string                             `json:"name"`
+	UnitCode string                             `json:"unitcode"`
+	UnitName string                             `json:"unitname"`
+	Details  []ProcessStockMovementDetailStruct `json:"details"`
 }
 
 type ProcessStockMovementDetailStruct struct {
-	IsExtra       bool      `json:"isextra" bson:"isextra"`
-	DocDateTime   time.Time `json:"docdatetime" bson:"docdatetime"`
-	DocNo         string    `json:"docno" bson:"docno"`
-	ItemCode      string    `json:"itemcode" bson:"itemcode"`
-	TransFlag     int       `json:"transflag" bson:"transflag"`
-	UnitCode      string    `json:"unitcode" bson:"unitcode"`
-	WhCode        string    `json:"whcode" bson:"whcode"`
-	LocationCode  string    `json:"locationcode" bson:"locationcode"`
-	TotalQty      float64   `json:"totalqty" bson:"totalqty"`
-	Price         float64   `json:"price" bson:"price"`
-	UnitStand     float64   `json:"unitstand" bson:"unitstand"`
-	UnitDivide    float64   `json:"unitdivide" bson:"unitdivide"`
-	AverageCost   float64   `json:"averagecost" bson:"averagecost"`
-	CalcAmount    float64   `json:"calcamount" bson:"calcamount"`
-	BalanceAmount float64   `json:"balanceamount" bson:"balanceamount"`
-	BalanceQty    float64   `json:"balanceqty" bson:"balanceqty"`
-	UnitCost      float64   `json:"unitcost" bson:"unitcost"`
-	DocRef        string    `json:"docref" bson:"docref"`
+	IsExtra       bool      `json:"isextra"`
+	DocDateTime   time.Time `json:"docdatetime"`
+	DocNo         string    `json:"docno"`
+	ItemCode      string    `json:"itemcode"`
+	TransFlag     int       `json:"transflag"`
+	UnitCode      string    `json:"unitcode"`
+	WhCode        string    `json:"whcode"`
+	LocationCode  string    `json:"locationcode"`
+	TotalQty      float64   `json:"totalqty"`
+	Price         float64   `json:"price"`
+	UnitStand     float64   `json:"unitstand"`
+	UnitDivide    float64   `json:"unitdivide"`
+	AverageCost   float64   `json:"averagecost"`
+	CalcAmount    float64   `json:"calcamount"`
+	BalanceAmount float64   `json:"balanceamount"`
+	BalanceQty    float64   `json:"balanceqty"`
+	UnitCost      float64   `json:"unitcost"`
+	DocRef        string    `json:"docref"`
 }
 
 type ProcessStockLotStruct struct {
@@ -75,32 +75,32 @@ type ProductBarcodePackingStruct struct {
 }
 
 type ProductBalanceByCodeStruct struct {
-	ItemCode      string                                `json:"itemcode" bson:"itemcode"`
-	ItemName      string                                `json:"itemname" bson:"itemname"`
-	BarcodeList   string                                `json:"barcodelist" bson:"barcodelist"`
-	UnitCode      string                                `json:"unitcode" bson:"unitcode"`
-	UnitName      string                                `json:"unitname" bson:"unitname"`
-	BalanceQty    float64                               `json:"balanceqty" bson:"balanceqty"`
-	AverageCost   float64                               `json:"averagecost" bson:"averagecost"`
-	BalanceAmount float64                               `json:"balanceamount" bson:"balanceamount"`
-	BalanceWord   string                                `json:"balanceword" bson:"balanceword"`
-	IsAutoPacking uint64                                `json:"isautopacking" bson:"isautopacking"`
-	WareHouses    []ProductBalanceByCodeWareHouseStruct `json:"warehouses" bson:"warehouses"`
+	ItemCode      string                                `json:"itemcode"`
+	ItemName      string                                `json:"itemname"`
+	BarcodeList   string                                `json:"barcodelist"`
+	UnitCode      string                                `json:"unitcode"`
+	UnitName      string                                `json:"unitname"`
+	BalanceQty    float64                               `json:"balanceqty"`
+	AverageCost   float64                               `json:"averagecost"`
+	BalanceAmount float64                               `json:"balanceamount"`
+	BalanceWord   string                                `json:"balanceword"`
+	IsAutoPacking uint64                                `json:"isautopacking"`
+	WareHouses    []ProductBalanceByCodeWareHouseStruct `json:"warehouses"`
 }
 
 type ProductBalanceByCodeWareHouseStruct struct {
-	WareHouseCode string                               `json:"warehousecode" bson:"warehousecode"`
-	BalanceQty    float64                              `json:"balanceqty" bson:"balanceqty"`
-	AverageCost   float64                              `json:"averagecost" bson:"averagecost"`
-	BalanceWord   string                               `json:"balanceword" bson:"balanceword"`
-	BalanceAmount float64                              `json:"balanceamount" bson:"balanceamount"`
-	Locations     []ProductBalanceByCodeLocationStruct `json:"locations" bson:"locations"`
+	WareHouseCode string                               `json:"warehousecode"`
+	BalanceQty    float64                              `json:"balanceqty"`
+	AverageCost   float64                              `json:"averagecost"`
+	BalanceWord   string                               `json:"balanceword"`
+	BalanceAmount float64                              `json:"balanceamount"`
+	Locations     []ProductBalanceByCodeLocationStruct `json:"locations"`
 }
 
 type ProductBalanceByCodeLocationStruct struct {
-	LocationCode string  `json:"locationcode" bson:"locationcode"`
-	BalanceQty   float64 `json:"balanceqty" bson:"balanceqty"`
-	BalanceWord  string  `json:"balanceword" bson:"balanceword"`
+	LocationCode string  `json:"locationcode"`
+	BalanceQty   float64 `json:"balanceqty"`
+	BalanceWord  string  `json:"balanceword"`
 }
 
 type ProductBalanceByCodeWareHouseGetStruct struct {
@@ -154,46 +154,39 @@ type LocationItemStruct struct {
 }
 
 type ProductBalanceByWareHouseAndBarcodeStruct struct {
-	WareHouseCode string  `json:"whcode" bson:"whcode"`
-	ItemCode      string  `json:"itemcode" bson:"itemcode"`
-	ItemName      string  `json:"itemname" bson:"itemname"`
-	BarcodeList   string  `json:"barcodelist" bson:"barcodelist"`
-	UnitCode      string  `json:"unitcode" bson:"unitcode"`
-	UnitName      string  `json:"unitname" bson:"unitname"`
-	BalanceQty    float64 `json:"balanceqty" bson:"balanceqty"`
-	BalanceWord   string  `json:"balanceword" bson:"balanceword"`
-	IsAutoPacking uint64  `json:"isautopacking" bson:"isautopacking"`
+	WareHouseCode string  `json:"whcode"`
+	ItemCode      string  `json:"itemcode"`
+	ItemName      string  `json:"itemname"`
+	BarcodeList   string  `json:"barcodelist"`
+	UnitCode      string  `json:"unitcode"`
+	UnitName      string  `json:"unitname"`
+	BalanceQty    float64 `json:"balanceqty"`
+	BalanceWord   string  `json:"balanceword"`
+	IsAutoPacking uint64  `json:"isautopacking"`
 }
 
 type ProductBalanceByWareHouseAndLocationAndBarcodeStruct struct {
-	WareHouseCode string  `json:"whcode" bson:"whcode"`
-	LocationCode  string  `json:"locationcode" bson:"locationcode"`
-	ItemCode      string  `json:"itemcode" bson:"itemcode"`
-	ItemName      string  `json:"itemname" bson:"itemname"`
-	BarcodeList   string  `json:"barcodelist" bson:"barcodelist"`
-	UnitCode      string  `json:"unitcode" bson:"unitcode"`
-	UnitName      string  `json:"unitname" bson:"unitname"`
-	BalanceQty    float64 `json:"balanceqty" bson:"balanceqty"`
-	BalanceWord   string  `json:"balanceword" bson:"balanceword"`
-	IsAutoPacking uint64  `json:"isautopacking" bson:"isautopacking"`
+	WareHouseCode string  `json:"whcode"`
+	LocationCode  string  `json:"locationcode"`
+	ItemCode      string  `json:"itemcode"`
+	ItemName      string  `json:"itemname"`
+	BarcodeList   string  `json:"barcodelist"`
+	UnitCode      string  `json:"unitcode"`
+	UnitName      string  `json:"unitname"`
+	BalanceQty    float64 `json:"balanceqty"`
+	BalanceWord   string  `json:"balanceword"`
+	IsAutoPacking uint64  `json:"isautopacking"`
 }
 
 type ProductDocRefStruct struct {
-	ItemCode   string  `json:"itemcode" bson:"itemcode"`
-	Barcode    string  `json:"barcode" bson:"barcode"`
-	UnitCode   string  `json:"unitcode" bson:"unitcode"`
-	UnitStand  float64 `json:"unitstand" bson:"unitstand"`
-	UnitDivide float64 `json:"unitdivide" bson:"unitdivide"`
+	ItemCode   string  `json:"itemcode"`
+	Barcode    string  `json:"barcode"`
+	UnitCode   string  `json:"unitcode"`
+	UnitStand  float64 `json:"unitstand"`
+	UnitDivide float64 `json:"unitdivide"`
 }
 
 type StockTransactionStruct struct {
 	Name  string
 	Flags []int
-}
-
-type PayLoadCopyMongoStruct struct {
-	SourceHoldingCode string `json:"sourceholdingcode"`
-	TargetHoldingCode string `json:"targetholdingcode"`
-	SourceEnvironment string `json:"sourceenvironment"`
-	TargetEnvironment string `json:"targetenvironment"`
 }

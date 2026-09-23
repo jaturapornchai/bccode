@@ -4,7 +4,7 @@ Fast Zero-Disk Streamed Production Deployment for BC Account.
 Optimized for speed:
 - Streaming `docker save` directly through compressed SSH pipe into remote `docker load` (no temporary tar files on disk)
 - When backend is unchanged, re-tags remote mainapi image in 0ms (no rebuild or 300MB upload)
-- Full preflight safety: live database backup (Mongo + Postgres) and atomic release.env switch
+- Full preflight safety: live database backup (Postgres) and atomic release.env switch
 """
 
 import argparse
@@ -111,7 +111,7 @@ def main():
         log(f"✅ Backend image built in {time.time() - t0:.1f}s")
 
     # 4. Preflight backup on remote server
-    log("🔒 [Step 2/7] Running remote preflight backup (Mongo + Postgres + Runtime Config)...")
+    log("🔒 [Step 2/7] Running remote preflight backup (Postgres + Runtime Config)...")
     t0 = time.time()
     preflight_script = f"""
 import datetime, hashlib, json, os, pathlib, subprocess
@@ -148,12 +148,6 @@ artifacts = [
     save_cmd('postgres-all.sql', ['docker', 'exec', 'bcai-account-postgres-1', 'pg_dumpall', '-U', pg_env['POSTGRES_USER']]),
     save_cmd('runtime-config.tar.gz', ['tar', '-czf', '-', '/etc/bcai-account', '/var/lib/bcai-account/config', '/opt/bcai-account/deploy'])
 ]
-try:
-    subprocess.check_call(['docker', 'inspect', 'bcai-account-mongo-1'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    artifacts.append(save_cmd('mongo.archive.gz', ['docker', 'exec', 'bcai-account-mongo-1', 'mongodump', '--archive', '--gzip', '--oplog']))
-except Exception:
-    pass
-
 subprocess.run(['cp', '-p', '/etc/bcai-account/release.env', str(release / 'release.env.before')], check=True)
 os.chmod(release / 'release.env.before', 0o600)
 

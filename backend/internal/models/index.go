@@ -1,6 +1,6 @@
 package models
 
 type Index struct {
-	ID       string `json:"id" bson:"id,omitempty" gorm:"id"`
-	Identity `bson:"inline"`
+	ID       string `json:"id" gorm:"id"`
+	Identity
 }

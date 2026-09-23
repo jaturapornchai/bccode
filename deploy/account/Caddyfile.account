@@ -2,7 +2,6 @@ account.bcaicloud.com {
   encode zstd gzip
 
   @internal_health path \
-    /backend/goapi/api/health/kafka \
     /backend/goapi/api/health/background \
     /backend/goapi/api/health/queue* \
     /backend/goapi/api/health/database \

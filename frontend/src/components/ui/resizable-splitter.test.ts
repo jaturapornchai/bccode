@@ -81,7 +81,7 @@ describe("ResizableSplitter component & usage", () => {
     expect(settingSource).not.toContain('className="hidden w-1.5 shrink-0 cursor-col-resize bg-border/70 transition hover:bg-primary/50 lg:block"');
   });
 
-  it("is adopted by BOM, ProductGroup, ProductSubgroup, and ProductCategory in system-settings-screen", () => {
+  it("is adopted by BOM, ProductGroup, and ProductCategory in system-settings-screen", () => {
     expect(settingSource).toContain("BOM_SPLIT_DEFAULT_LEFT");
     expect(settingSource).toContain("startBomSplitResize");
     expect(settingSource).toContain("adjustBomSplitWithKeyboard");

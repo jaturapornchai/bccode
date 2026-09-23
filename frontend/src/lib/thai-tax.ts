@@ -320,6 +320,65 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
 
 type PostResult = { ok: true; payload: unknown } | { ok: false; error: string };
 
+const WHT_CERTIFICATE_PATH = "/api/goapi/api/report/tax/wht/certificate";
+
+// ข้อมูลใบ 50 ทวิ — ตรงกับ backend/internal/whtcert.Certificate (ยอดเงินเป็น string ทศนิยม ห้าม number)
+export interface WhtCertificateParty {
+  name: string;
+  address: string;
+  taxid: string;
+}
+
+export interface WhtCertificateIncome {
+  type: string;
+  paiddate: string;
+  amount: string;
+  tax: string;
+  note: string;
+}
+
+export interface WhtCertificateInput {
+  bookno: string;
+  runno: string;
+  sequenceno: string;
+  form: string;
+  condition: string;
+  conditionnote: string;
+  issuedate: string;
+  archivecopy: boolean;
+  replacement: boolean;
+  payer: WhtCertificateParty;
+  payee: WhtCertificateParty;
+  incomes: WhtCertificateIncome[];
+}
+
+export type WhtCertificateResult =
+  | { ok: true; pdf: Blob }
+  | { ok: false; error: string; message?: string; field?: string };
+
+// requestWhtCertificatePdf - backend ตรวจข้อมูล คำนวณยอดรวม/ตัวอักษร และสร้าง PDF บนแบบฟอร์มกรมสรรพากร — จอแค่แสดง
+export async function requestWhtCertificatePdf(
+  holdingcode: string,
+  businesscode: string,
+  certificate: WhtCertificateInput,
+): Promise<WhtCertificateResult> {
+  const res = await apiFetch(WHT_CERTIFICATE_PATH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ holdingcode, businesscode, certificate }),
+  }).catch(() => null);
+  if (res === null) return { ok: false, error: "connection_error" };
+  if ((res.headers.get("content-type") ?? "").startsWith("application/pdf")) {
+    return { ok: true, pdf: await res.blob() };
+  }
+  if (res.status === 401 || res.status === 403) return { ok: false, error: "unauthorized" };
+  const payload: unknown = await res.json().catch(() => null);
+  if (isRecord(payload)) {
+    return { ok: false, error: toText(payload.code) || "load_failed", message: toText(payload.message) || undefined, field: toText(payload.field) || undefined };
+  }
+  return { ok: false, error: "load_failed" };
+}
+
 async function postApi(path: string, body: unknown): Promise<PostResult> {
   const res = await apiFetch(path, {
     method: "POST",

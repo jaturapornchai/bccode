@@ -10,7 +10,7 @@ export type CategoryDef = {
   id: string;
   title: string;
   description: string;
-  testType?: "mongodb" | "postgresql" | "clickhouse" | "kafka" | "redis" | "http";
+  testType?: "postgresql" | "http";
   items: Array<Omit<ConfigItem, "value">>;
 };
 
@@ -193,8 +193,6 @@ export const fieldLabels: Record<string, string> = {
   deepseekapikey: "DeepSeek API Key",
   deepseekmodel: "DeepSeek Model",
   devapimode: "Dev API Mode",
-  enablecloneclickhouse: "Enable Clone ClickHouse",
-  enablekafka: "Enable Kafka",
   firebaseprojectid: "Firebase Project ID",
   geminiapikey: "Gemini API Key",
   geminimodel: "Gemini Model",
@@ -204,7 +202,6 @@ export const fieldLabels: Record<string, string> = {
   hostapi: "Host API",
   httpcors: "HTTP CORS",
   jwtsecretkey: "JWT Secret Key",
-  kafkaconsumergroupversion: "Kafka Consumer Group Version",
   loggerlevel: "Logger Level",
   loglevel: "Log Level",
   mode: "Mode",
@@ -279,16 +276,15 @@ export function mergeBackendConfig(entries: unknown): ConfigMap {
     if (!parsed) continue;
     if (hiddenCategoryIds.has(parsed.category)) continue;
 
-    const remapped = remapLegacyConfigItem(parsed);
-    const categoryItems = (configMap[remapped.category] ??= []);
-    const current = categoryItems.find((item) => item.key === remapped.key);
+    const categoryItems = (configMap[parsed.category] ??= []);
+    const current = categoryItems.find((item) => item.key === parsed.key);
 
     if (current) {
-      current.value = remapped.value;
-      current.isSecret = remapped.isSecret;
-      current.description = remapped.description || current.description;
+      current.value = parsed.value;
+      current.isSecret = parsed.isSecret;
+      current.description = parsed.description || current.description;
     } else {
-      categoryItems.push(remapped);
+      categoryItems.push(parsed);
     }
   }
 
@@ -484,13 +480,6 @@ function parseBackendConfigEntry(rawItem: unknown): ConfigItem | null {
     isSecret: item.issecret === true || isSecretKey(key),
     description: typeof item.description === "string" ? item.description : "",
   };
-}
-
-function remapLegacyConfigItem(item: ConfigItem): ConfigItem {
-  if (item.category === "mongodb" && item.key === "databasename") {
-    return { ...item, key: "database" };
-  }
-  return item;
 }
 
 function normalizeHostPort(configMap: ConfigMap) {

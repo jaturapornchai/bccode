@@ -1,10 +1,8 @@
 # Override for a 4 vCPU / 8 GB droplet (DigitalOcean SGP1, 2026-09-02).
-# Pure Single PostgreSQL Engine topology (No Kafka, No Mongo, No ClickHouse).
+# Pure Single PostgreSQL Engine topology (No Kafka, No Mongo, No ClickHouse, No Redis).
 services:
   postgres:
     mem_limit: 1024m
-  redis:
-    mem_limit: 256m
   minio:
     mem_limit: 512m
   mainapi:

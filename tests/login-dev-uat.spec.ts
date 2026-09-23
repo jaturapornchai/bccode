@@ -1,5 +1,5 @@
-import { execSync } from 'child_process';
 import { expect, test, type Page } from '@playwright/test';
+import { pgCount, sqlText } from './support/pg';
 
 // this suite exercises the login page itself — start LOGGED OUT
 // (overrides the project-level storageState)
@@ -8,20 +8,23 @@ test.use({ storageState: { cookies: [], origins: [] } });
 /**
  * Login screen UAT — Dev Login focus (2026-08-30)
  * UI per "คนไทย 40+" rules (Thai labels, button ≥ ~40px, overlap scan) +
- * data-layer verification: every successful Dev Login MUST append
- * authaudits {action:"DEV_LOGIN", outcome:"SUCCESS"} in MongoDB appdb,
+ * data-layer verification: every successful Dev Login MUST create a live
+ * session hash (`session-<uid>`) in PostgreSQL bcai_projection.cache_entries,
  * and guard paths (no-secret backend, non-loopback) must reject.
  */
 
 const SHOT = 'test-results/login-dev-uat';
 const consoleErrors: string[] = [];
 
-function mongoEval(js: string): string {
-  return execSync(`docker exec mongodb mongosh --quiet appdb --eval "${js.replace(/"/g, '\\"')}"`, { timeout: 30000 })
-    .toString().trim().split('\n').pop() ?? '';
-}
-function devLoginAuditCount(outcome = 'SUCCESS'): number {
-  return Number(mongoEval(`print(db.authaudits.countDocuments({action: "DEV_LOGIN", outcome: "${outcome}"}))`));
+/** live sessions of `username` created at/after `sinceMs` (cache_entries hash rows) */
+function sessionsCreatedSince(username: string, sinceMs: number): number {
+  return pgCount(
+    `cache_entries u JOIN cache_entries c ON c.cache_key = u.cache_key AND c.field = 'createdat'`,
+    `u.cache_key LIKE 'session-%' AND u.cache_key NOT LIKE 'session-revoked-%'
+     AND u.field = 'username' AND u.value = ${sqlText(username)}
+     AND (u.expires_at IS NULL OR u.expires_at > now())
+     AND (CASE WHEN c.value ~ '^[0-9]+$' THEN c.value::bigint ELSE 0 END) >= ${Math.floor(sinceMs)}`,
+  );
 }
 
 async function shoot(page: Page, name: string) {
@@ -86,9 +89,9 @@ test('LD-01 login renders per 40+ rules: Thai labels, big-enough Dev Login, no o
   await shoot(page, '01-login-render');
 });
 
-test('LD-02 Dev Login happy path → /holding + authaudits DEV_LOGIN SUCCESS in MongoDB', async ({ page }) => {
+test('LD-02 Dev Login happy path → /holding + session row in PostgreSQL cache_entries', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  const before = devLoginAuditCount('SUCCESS');
+  const startedAt = Date.now() - 2000; // small host/container clock-skew margin
 
   await page.goto('/');
   await page.waitForTimeout(2000);
@@ -103,12 +106,10 @@ test('LD-02 Dev Login happy path → /holding + authaudits DEV_LOGIN SUCCESS in 
   expect(auth?.username, 'session profile stored').toBeTruthy();
   await expect(page.locator('main').getByText('บ้านเชียง').first()).toBeVisible();
 
-  // data layer: exactly the flow's audit appended (single click → single SUCCESS)
+  // data layer: the login materialised a live session for this user in cache_entries
   await page.waitForTimeout(1500);
-  const after = devLoginAuditCount('SUCCESS');
-  expect(after - before, `authaudits DEV_LOGIN/SUCCESS +1 (before ${before}, after ${after})`).toBe(1);
-  const outcomeOk = mongoEval('print(db.authaudits.find({action: "DEV_LOGIN"}).sort({$natural:-1}).limit(1).next().outcome)');
-  expect(outcomeOk, 'latest DEV_LOGIN audit outcome is SUCCESS').toBe('SUCCESS');
+  const sessions = sessionsCreatedSince(String(auth.username), startedAt);
+  expect(sessions, `live session row for ${auth.username} created by this login`).toBeGreaterThanOrEqual(1);
 });
 
 test('LD-03 double-click Dev Login: single session flow, no error, no crash', async ({ page }) => {
@@ -129,7 +130,7 @@ test('LD-03 double-click Dev Login: single session flow, no error, no crash', as
   await shoot(page, '03-double-click-landing');
 });
 
-test('LD-04 backend guard: /dev-login without secret header → 401 (rejected, no audit SUCCESS)', async ({ request }) => {
+test('LD-04 backend guard: /dev-login without secret header → 401 (rejected)', async ({ request }) => {
   const res = await request.post('http://127.0.0.1:8888/dev-login', { data: {} });
   expect(res.status(), 'backend rejects secret-less dev login').toBe(401);
   const body = await res.text();
@@ -150,8 +151,5 @@ test('LD-05 BFF guard: dev login accepts only same-origin loopback calls', async
   // C) legit same-origin loopback → 200 (control case)
   const ok = await request.post(base + '/api/auth/dev-login', { headers: { Origin: 'http://127.0.0.1:3000', Host: '127.0.0.1:3000' } });
   expect(ok.status(), 'legit loopback accepted').toBe(200);
-
-  // rejected attempts are audited (non-SUCCESS) in MongoDB — verify countable
-  const audited = Number(mongoEval('print(db.authaudits.countDocuments({action: "DEV_LOGIN"}))'));
-  expect(audited).toBeGreaterThanOrEqual(1);
+  // (audit-count assertion removed: dev-login attempts are not persisted to any PostgreSQL table)
 });

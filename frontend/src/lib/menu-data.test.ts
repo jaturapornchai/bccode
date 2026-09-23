@@ -255,7 +255,7 @@ describe("menu language labels", () => {
     expect(productIds).not.toContain("add-product-kitchen");
   });
 
-  it("structures menus into the 9 standard ERP accounting modules aligned with Champ (2026-09-11)", () => {
+  it("structures menus into the 8 Champ modules with tax inside General Ledger (2026-09-23)", () => {
     const sectionIds = MENU_SECTIONS.map((s) => s.id);
     expect(sectionIds).toEqual([
       "po",
@@ -265,12 +265,13 @@ describe("menu language labels", () => {
       "cash-bank",
       "ic",
       "fa",
-      "vat",
       "gl",
     ]);
 
     const glSection = MENU_SECTIONS.find((s) => s.id === "gl");
     expect(glSection?.title.th).toBe("บัญชีแยกประเภท");
+    // ผู้ใช้ GL ตัวเดียวต้องเข้าถึงรายงานภาษี/แบบยื่น/50 ทวิ ได้ในหมวดเดียว (Champ วางเมนูภาษีไว้ใต้ GL)
+    expect(glSection?.groups.map((g) => g.id)).toEqual(["gl-master", "gl-journals", "gl-posting", "gl-reports", "vat-transactions", "vat-reports"]);
 
     const icSection = MENU_SECTIONS.find((s) => s.id === "ic");
     expect(icSection?.title.th).toBe("สินค้าคงคลัง");
@@ -290,8 +291,7 @@ describe("menu language labels", () => {
     const cashBankSection = MENU_SECTIONS.find((s) => s.id === "cash-bank");
     expect(cashBankSection?.title.th).toBe("เงินสดและธนาคาร");
 
-    const vatSection = MENU_SECTIONS.find((s) => s.id === "vat");
-    expect(vatSection?.title.th).toBe("ภาษีมูลค่าเพิ่ม");
+    expect(MENU_SECTIONS.find((s) => s.id === "vat")).toBeUndefined();
 
     const faSection = MENU_SECTIONS.find((s) => s.id === "fa");
     expect(faSection?.title.th).toBe("สินทรัพย์และค่าเสื่อมราคา");

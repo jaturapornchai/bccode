@@ -3,9 +3,7 @@ package generalledger
 import (
 	"errors"
 	"net/http"
-	"strings"
 
-	"go.mongodb.org/mongo-driver/mongo"
 	"smlcloudplatform/pkg/apperr"
 )
 
@@ -85,37 +83,4 @@ func validationFailed(err error) error {
 		return user
 	}
 	return userError(CodeValidationFailed, err.Error())
-}
-
-// duplicateKeyError converts a MongoDB duplicate-key (E11000) write failure into
-// a Thai, machine-readable 409. Non-duplicate errors are returned untouched so
-// real database failures stay 503 and are logged.
-func duplicateKeyError(kind string, err error) error {
-	if err == nil || !mongo.IsDuplicateKeyError(err) {
-		return err
-	}
-	return duplicateErrorFromText(kind, err.Error())
-}
-
-// transactionDuplicateError is the safety net around the ledger transaction:
-// whatever the driver wraps the E11000 in (WriteException, TransactionError,
-// CommandError), its text still names the index that collided.
-func transactionDuplicateError(err error) error {
-	if err == nil {
-		return nil
-	}
-	if !mongo.IsDuplicateKeyError(err) && !strings.Contains(err.Error(), "E11000") {
-		return err
-	}
-	return duplicateErrorFromText("", err.Error())
-}
-
-func duplicateErrorFromText(kind string, text string) error {
-	if strings.Contains(text, "index: _id_") {
-		return userError(CodeDuplicateRequest, "รายการนี้ถูกบันทึกไปแล้ว กรุณาโหลดข้อมูลล่าสุดแล้วลองอีกครั้ง")
-	}
-	if kind == "accounts" || strings.Contains(text, "chart_of_accounts") {
-		return userError(CodeDuplicateCode, "รหัสบัญชีนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น")
-	}
-	return userError(CodeDuplicateCode, "รหัสหรือเลขที่เอกสารซ้ำ กรุณาใช้รหัสอื่น")
 }

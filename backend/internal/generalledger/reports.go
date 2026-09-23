@@ -353,7 +353,7 @@ func (r reportContext) annualBalances(ctx context.Context) (Report, error) {
 // allocation reports the cost-allocation setup (gl_allocations) together with
 // the amount of the source account that falls into this period, so the operator
 // can verify each rule splits exactly 100 percent before posting. The setup
-// lives in gl_records (provisioned by the Kafka projection) and the movement
+// lives in gl_records (written by the synchronous PostgreSQL store) and the movement
 // comes from gl_lines, which is the only place accounting arithmetic may run.
 func (r reportContext) allocation(ctx context.Context) (Report, error) {
 	columns := []ReportColumn{

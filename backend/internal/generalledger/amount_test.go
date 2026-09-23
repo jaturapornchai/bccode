@@ -3,9 +3,6 @@ package generalledger
 import (
 	"encoding/json"
 	"testing"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 func TestAmountExactBoundaries(t *testing.T) {
@@ -26,21 +23,6 @@ func TestAmountExactBoundaries(t *testing.T) {
 			}
 			if err = json.Unmarshal(data, &decoded); err != nil || a != decoded.Amount {
 				t.Fatalf("JSON round-trip: %s %v", data, err)
-			}
-			stored, err := bson.Marshal(struct {
-				Amount Amount `bson:"amount"`
-			}{a})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if bson.Raw(stored).Lookup("amount").Type != bsontype.Decimal128 {
-				t.Fatal("money not stored as Decimal128")
-			}
-			var loaded struct {
-				Amount Amount `bson:"amount"`
-			}
-			if err = bson.Unmarshal(stored, &loaded); err != nil || loaded.Amount != a {
-				t.Fatalf("BSON round-trip: %s %v", loaded.Amount, err)
 			}
 		})
 	}
@@ -66,13 +48,6 @@ func TestAmountExactBoundaries(t *testing.T) {
 		if err := a.ValidateScale(2); err != nil {
 			t.Fatal(err)
 		}
-	}
-	bad, _ := bson.Marshal(bson.M{"amount": 0.1})
-	var loaded struct {
-		Amount Amount `bson:"amount"`
-	}
-	if err := bson.Unmarshal(bad, &loaded); err == nil {
-		t.Fatal("accepted BSON double")
 	}
 }
 

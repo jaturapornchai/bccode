@@ -1,74 +1,74 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	common "smlcloudplatform/internal/models"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var (
+	ErrBranchCompanyGuidRequired = errors.New("companyguid is required")
+	ErrBranchCompanyNotFound     = errors.New("company not found")
+)
+
+// BranchOrgDoc is one row of the central branches table. In PostgreSQL the branch
+// identity is (holding_code, company_code, code): guidfixed/branchuid carry the branch
+// code and companyuid/companyguid carry the company code.
 type BranchOrgDoc struct {
-	ID            primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Version       int64              `json:"__v" bson:"__v"`
-	HoldingCode   string             `json:"holdingcode" bson:"holdingcode"`
-	HoldingUID    string             `json:"holdinguid" bson:"holdinguid"`
-	GuidFixed     string             `json:"guidfixed" bson:"guidfixed"`
-	CompanyGuid   string             `json:"companyguid" bson:"companyguid"`
-	CompanyUID    string             `json:"companyuid" bson:"companyuid"`
-	BranchUID     string             `json:"branchuid" bson:"branchuid"`
-	IsDeleted     bool               `json:"isdeleted" bson:"isdeleted"`
-	BusinessCode  string             `json:"businesscode" bson:"businesscode"`
-	Code          string             `json:"code" bson:"code"`
-	BranchCode    string             `json:"branchcode" bson:"branchcode"`
-	Names         common.JSONB       `json:"names" bson:"names"`
-	BusinessTypes []string           `json:"businesstypes" bson:"businesstypes"`
-	LogoURI       string             `json:"logouri" bson:"logouri"`
-	// Locale/date-time settings are explicit per branch. Timezone is the IANA
-	// source of truth; label and offset are display-only derived values.
-	Timezone       string `json:"timezone" bson:"timezone"`
-	TimezoneLabel  string `json:"timezonelabel" bson:"timezonelabel"`
-	TimezoneOffset string `json:"timezoneoffset" bson:"timezoneoffset"`
-	DateFormat     string `json:"dateformat" bson:"dateformat"`
-	YearType       string `json:"yeartype" bson:"yeartype"`
-	BaseCurrency   string `json:"basecurrency" bson:"basecurrency"`
-	Language       string `json:"language" bson:"language"`
-	// Tax / registration fields (ภ.พ.20). BranchType is one of
-	// "head" | "permanent" | "temporary" (สำนักงานใหญ่ / สาขาถาวร / สาขาชั่วคราว).
-	// IsVatRegistered + CompanyRegistrationNo mirror the flat fields on the full Branch struct.
-	BranchType            string `json:"branchtype" bson:"branchtype"`
-	IsVatRegistered       bool   `json:"isvatregistered" bson:"isvatregistered"`
-	CompanyRegistrationNo string `json:"companyregistrationno" bson:"companyregistrationno"`
-	Email                 string `json:"email" bson:"email"`
-	ManagerName           string `json:"managername" bson:"managername"`
-	// Legal/document address per language (used when printing documents). Each
-	// entry is one language; the Address text itself may be multi-line (\n).
-	Addresses []BranchAddress `json:"addresses" bson:"addresses"`
-	// Structured geo-address (province/district/subdistrict/zipcode codes),
-	// language-independent — display names come from the Thailand address
-	// dataset lookup, not stored here. Separate from Addresses above.
-	CountryCode     string `json:"countrycode" bson:"countrycode"`
-	ProvinceCode    string `json:"provincecode" bson:"provincecode"`
-	DistrictCode    string `json:"districtcode" bson:"districtcode"`
-	SubDistrictCode string `json:"subdistrictcode" bson:"subdistrictcode"`
-	ZipCode         string `json:"zipcode" bson:"zipcode"`
-	// Document / accounting config — value-only. The running-number generator and
-	// e-Tax submission engines are separate subsystems and are NOT implemented here;
-	// these just store the per-branch settings they will read.
-	FiscalStartMonth int8              `json:"fiscalstartmonth" bson:"fiscalstartmonth"`
-	DocumentFormats  []BranchDocFormat `json:"documentformats" bson:"documentformats"`
-	ETaxEnabled      bool              `json:"etaxenabled" bson:"etaxenabled"`
-	IsActive         bool              `json:"isactive" bson:"isactive"`
-	CreatedAt        time.Time         `json:"createdat" bson:"createdat"`
-	UpdatedAt        time.Time         `json:"updatedat" bson:"updatedat"`
-	DeletedAt        *time.Time        `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
-	CreatedBy        string            `json:"createdby,omitempty" bson:"createdby,omitempty"`
-	UpdatedBy        string            `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	DeletedBy        string            `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
+	HoldingCode  string       `json:"holdingcode"`
+	HoldingUID   string       `json:"holdinguid"`
+	GuidFixed    string       `json:"guidfixed"`
+	CompanyGuid  string       `json:"companyguid"`
+	CompanyUID   string       `json:"companyuid"`
+	BranchUID    string       `json:"branchuid"`
+	BusinessCode string       `json:"businesscode"`
+	Code         string       `json:"code"`
+	BranchCode   string       `json:"branchcode"`
+	Names        common.JSONB `json:"names"`
+	BranchSettings
+	IsActive  bool      `json:"isactive"`
+	CreatedAt time.Time `json:"createdat"`
+	UpdatedAt time.Time `json:"updatedat"`
+	CreatedBy string    `json:"createdby,omitempty"`
+	UpdatedBy string    `json:"updatedby,omitempty"`
 }
 
-func (BranchOrgDoc) CollectionName() string {
-	return branchCollectionName
+// BranchSettings is the value-only branch configuration stored in branches.settings.
+type BranchSettings struct {
+	BusinessTypes []string `json:"businesstypes"`
+	LogoURI       string   `json:"logouri"`
+	// Locale/date-time settings are explicit per branch. Timezone is the IANA
+	// source of truth; label and offset are display-only derived values.
+	Timezone       string `json:"timezone"`
+	TimezoneLabel  string `json:"timezonelabel"`
+	TimezoneOffset string `json:"timezoneoffset"`
+	DateFormat     string `json:"dateformat"`
+	YearType       string `json:"yeartype"`
+	BaseCurrency   string `json:"basecurrency"`
+	Language       string `json:"language"`
+	// Tax / registration fields (ภ.พ.20). BranchType is one of
+	// "head" | "permanent" | "temporary" (สำนักงานใหญ่ / สาขาถาวร / สาขาชั่วคราว).
+	BranchType            string `json:"branchtype"`
+	IsVatRegistered       bool   `json:"isvatregistered"`
+	CompanyRegistrationNo string `json:"companyregistrationno"`
+	Email                 string `json:"email"`
+	ManagerName           string `json:"managername"`
+	// Legal/document address per language (used when printing documents). Each
+	// entry is one language; the Address text itself may be multi-line (\n).
+	Addresses []BranchAddress `json:"addresses"`
+	// Structured geo-address codes, language-independent — display names come from
+	// the Thailand address dataset lookup, not stored here.
+	CountryCode     string `json:"countrycode"`
+	ProvinceCode    string `json:"provincecode"`
+	DistrictCode    string `json:"districtcode"`
+	SubDistrictCode string `json:"subdistrictcode"`
+	ZipCode         string `json:"zipcode"`
+	// Document / accounting config — value-only. The running-number generator and
+	// e-Tax submission engines are separate subsystems that read these settings.
+	FiscalStartMonth int8              `json:"fiscalstartmonth"`
+	DocumentFormats  []BranchDocFormat `json:"documentformats"`
+	ETaxEnabled      bool              `json:"etaxenabled"`
 }
 
 // BranchDocFormat = หนึ่งรูปแบบเลขที่เอกสาร โดยแต่ละประเภทเอกสาร (DocType) มีได้
@@ -77,24 +77,24 @@ func (BranchOrgDoc) CollectionName() string {
 // (ตรงกับ MODULE_NAME ของ transaction module). YearMode: none|be2|be4|ce2|ce4 ;
 // ResetMode: none/never|yearly|monthly|daily.
 type BranchDocFormat struct {
-	DocType     string `json:"doctype" bson:"doctype"`
-	Name        string `json:"name" bson:"name"`
-	Prefix      string `json:"prefix" bson:"prefix"`
-	UseBranch   bool   `json:"usebranch" bson:"usebranch"`
-	YearMode    string `json:"yearmode" bson:"yearmode"`
-	UseMonth    bool   `json:"usemonth" bson:"usemonth"`
-	UseDay      bool   `json:"useday" bson:"useday"`
-	Separator   bool   `json:"separator" bson:"separator"`
-	RunLength   int    `json:"runlength" bson:"runlength"`
-	ResetMode   string `json:"resetmode" bson:"resetmode"`
-	StartNumber int    `json:"startnumber" bson:"startnumber"`
-	Enabled     bool   `json:"enabled" bson:"enabled"`
-	IsDefault   bool   `json:"isdefault" bson:"isdefault"`
+	DocType     string `json:"doctype"`
+	Name        string `json:"name"`
+	Prefix      string `json:"prefix"`
+	UseBranch   bool   `json:"usebranch"`
+	YearMode    string `json:"yearmode"`
+	UseMonth    bool   `json:"usemonth"`
+	UseDay      bool   `json:"useday"`
+	Separator   bool   `json:"separator"`
+	RunLength   int    `json:"runlength"`
+	ResetMode   string `json:"resetmode"`
+	StartNumber int    `json:"startnumber"`
+	Enabled     bool   `json:"enabled"`
+	IsDefault   bool   `json:"isdefault"`
 }
 
 // BranchAddress = ที่อยู่สาขาแยกตามภาษา ใช้สำหรับออกเอกสาร. Code = language code
 // (เช่น th, en) ; Address = ข้อความที่อยู่ ป้อนได้หลายบรรทัด (เก็บ \n ตามที่ผู้ใช้ป้อน).
 type BranchAddress struct {
-	Code    string `json:"code" bson:"code"`
-	Address string `json:"address" bson:"address"`
+	Code    string `json:"code"`
+	Address string `json:"address"`
 }

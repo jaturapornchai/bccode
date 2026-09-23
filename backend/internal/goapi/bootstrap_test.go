@@ -48,7 +48,7 @@ func TestHoldingCodeFromPayloadReadsNestedJSONBody(t *testing.T) {
 
 func TestGoAPIRouteSurfaceExcludesOperationalEndpoints(t *testing.T) {
 	e := echo.New()
-	New().RegisterRoutes(e.Group("/goapi"), "/goapi")
+	New().RegisterRoutes(e.Group("/goapi"), "/goapi", nil)
 
 	forbidden := []struct {
 		method string
@@ -71,15 +71,14 @@ func TestGoAPIRouteSurfaceExcludesOperationalEndpoints(t *testing.T) {
 		{http.MethodPost, "/goapi/atlas/get"},
 		{http.MethodPost, "/goapi/atlas/update"},
 		{http.MethodPost, "/goapi/atlas/delete"},
-		{http.MethodPost, "/goapi/clickhouse/query"},
-		{http.MethodPost, "/goapi/clickhouse/querys"},
-		{http.MethodPost, "/goapi/clickhouse/select"},
 		{http.MethodPost, "/goapi/copymongouattodev"},
 		{http.MethodPost, "/goapi/previewcopymongo"},
 		{http.MethodGet, "/goapi/listsourceshops"},
 		{http.MethodGet, "/goapi/api/migrate/currency"},
 		{http.MethodGet, "/goapi/api/migrate/currency-backfill"},
-		{http.MethodGet, "/goapi/api/migrate/clickhouse-softdelete"},
+		{http.MethodGet, "/goapi/api/health/background"},
+		{http.MethodPost, "/goapi/image/list"},
+		{http.MethodPost, "/goapi/image/verify"},
 		{http.MethodPost, "/goapi/api/inventory/create-tables"},
 		{http.MethodPost, "/goapi/test/sale-order"},
 		{http.MethodPost, "/goapi/test/purchase"},

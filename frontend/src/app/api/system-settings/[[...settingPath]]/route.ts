@@ -5,7 +5,6 @@ import { getSystemSettingConfig, type SystemSettingConfig } from "@/lib/system-s
 import { flattenMenuItems } from "@/lib/menu-data";
 import {
   getBackendUrlFromRequest,
-  extractMessage,
   getMainApiUrl,
   isRecord,
   readJsonOrText,
@@ -40,7 +39,7 @@ export async function GET(request: Request, context: SystemSettingsProxyContext)
   const base = resolveBaseUrl(request, resolved.config);
   if (base instanceof NextResponse) return base;
 
-  return proxyJson(request, base, buildGetPath(request, resolved.config, resolved.id), buildGetInit(request, resolved.config, resolved.id));
+  return proxyJson(request, base, buildGetPath(request, resolved.config, resolved.id), { method: "GET" });
 }
 
 export async function POST(request: Request, context: SystemSettingsProxyContext) {
@@ -96,7 +95,7 @@ export async function PUT(request: Request, context: SystemSettingsProxyContext)
 
   const path = buildWritePath(request, resolved.config, resolved.id, "PUT", body);
   const payload = buildWritePayload(request, resolved.config, resolved.id, body);
-  return proxyJson(request, base, path, { method: resolved.config.kind === "atlas" || resolved.config.kind === "ai-provider" ? "POST" : "PUT", body: JSON.stringify(payload) });
+  return proxyJson(request, base, path, { method: "PUT", body: JSON.stringify(payload) });
 }
 
 export async function DELETE(request: Request, context: SystemSettingsProxyContext) {
@@ -113,11 +112,7 @@ export async function DELETE(request: Request, context: SystemSettingsProxyConte
   if (base instanceof NextResponse) return base;
 
   const path = buildDeletePath(request, resolved.config, resolved.id);
-  const payload = buildDeletePayload(request, resolved.config, resolved.id, isRecord(body) ? body : {});
-  return proxyJson(request, base, path, {
-    method: resolved.config.kind === "atlas" || resolved.config.kind === "ai-provider" ? "POST" : "DELETE",
-    body: payload === undefined ? undefined : JSON.stringify(payload),
-  });
+  return proxyJson(request, base, path, { method: "DELETE" });
 }
 
 async function resolveProxy(context: SystemSettingsProxyContext): Promise<ResolvedProxy | NextResponse> {
@@ -167,7 +162,7 @@ function rejectUnsupportedProxy(config: SystemSettingConfig, method: "GET" | "PO
 }
 
 function usesGoApi(config: SystemSettingConfig): boolean {
-  return config.kind === "ai-provider" || config.kind === "atlas" || config.kind === "copy-uat" || config.kind === "goapi-crud";
+  return config.kind === "goapi-crud";
 }
 
 async function validateTenantAccess(
@@ -186,59 +181,7 @@ async function validateTenantAccess(
     if (!jwt.ok) return NextResponse.json({ success: false, message: jwt.message }, { status: jwt.status });
   }
 
-  if (config.kind !== "atlas") return null;
-  return ensureBackendHoldingAccess(request, body, authorization, requestedHoldingCode);
-}
-
-async function ensureBackendHoldingAccess(
-  request: Request,
-  body: Record<string, unknown> | undefined,
-  authorization: string,
-  requestedHoldingCode: string,
-): Promise<NextResponse | null> {
-  let mainApiUrl = "";
-  try {
-    mainApiUrl = getMainApiUrl(getBackendUrlFromRequest(request, body));
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Backend URL ไม่ถูกต้อง" },
-      { status: 400 },
-    );
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const response = await fetch(`${mainApiUrl}/select-holding`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept-Language": request.headers.get("accept-language") ?? "th",
-        Authorization: authorization,
-      },
-      body: JSON.stringify({ holdingcode: requestedHoldingCode }),
-      signal: controller.signal,
-      cache: "no-store",
-    });
-    const payload = await readJsonOrText(response);
-    if (response.ok && (!isRecord(payload) || payload.success !== false)) return null;
-    return NextResponse.json(
-      {
-        success: false,
-        message: extractMessage(payload) ?? "ไม่มีสิทธิ์เข้าถึงข้อมูลกลุ่มกิจการนี้ กรุณาเลือกกลุ่มกิจการใหม่หรือเข้าสู่ระบบใหม่",
-      },
-      { status: response.status === 401 ? 401 : 403 },
-    );
-  } catch (error) {
-    const message =
-      error instanceof Error && error.name === "AbortError"
-        ? "Server ไม่ตอบกลับทันเวลา"
-        : "ไม่สามารถเชื่อมต่อ Server ได้";
-    return NextResponse.json({ success: false, message }, { status: 504 });
-  } finally {
-    clearTimeout(timeout);
-  }
+  return null;
 }
 
 // Resolve the holdingcode from a record (body/payload) first, then the query string.
@@ -268,25 +211,12 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
     return `/restaurant/settings/code/${encodeURIComponent(config.code ?? "")}?${query.toString()}`;
   }
 
-  if (config.kind === "atlas") {
-    return "/atlas/get";
-  }
-
   if (config.kind === "goapi-crud") {
     query.set("holdingcode", holdingcode);
     const basePath = id
       ? `${config.basePath ?? ""}/${encodeProxyPathId(config, id)}`
       : (config.listPath ?? config.basePath ?? "");
     return `${basePath}?${query.toString()}`;
-  }
-
-  if (config.kind === "ai-provider") {
-    return "/api/v1/ai-provider/list";
-  }
-
-  if (config.kind === "copy-uat") {
-    const sourceEnvironment = url.searchParams.get("sourceenvironment") ?? url.searchParams.get("sourceenv") ?? "uat";
-    return `/listsourceshops?sourceenvironment=${encodeURIComponent(sourceEnvironment)}`;
   }
 
   let basePath = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.listPath ?? config.basePath ?? "");
@@ -297,38 +227,6 @@ function buildGetPath(request: Request, config: SystemSettingConfig, id: string)
   forwardPagingParams(url, query);
   const queryText = query.toString();
   return queryText ? `${basePath}?${queryText}` : basePath;
-}
-
-function buildGetInit(request: Request, config: SystemSettingConfig, id = ""): RequestInit {
-  const url = new URL(request.url);
-  const holdingcode = holdingCodeFrom(undefined, url);
-  const holdingCode = url.searchParams.get("holdingcode")?.trim() ?? "";
-
-  if (config.kind === "atlas") {
-    const body: Record<string, unknown> = {
-      collection: config.collection,
-      holdingcode,
-      limit: Number(url.searchParams.get("limit") ?? "1000"),
-      skip: Number(url.searchParams.get("offset") ?? "0"),
-    };
-    if (holdingCode) body.holdingcode = holdingCode;
-    if (id) {
-      body.guidfixed = id;
-      body.email = id;
-      body.cartid = id;
-      if (config.collection === "employeepermissions") body.useruid = id;
-    }
-    return {
-      method: "POST",
-      body: JSON.stringify(body),
-    };
-  }
-
-  if (config.kind === "ai-provider") {
-    return { method: "POST", body: JSON.stringify({ holdingcode: holdingcode }) };
-  }
-
-  return { method: "GET" };
 }
 
 function permissionCatalogResponse(request: Request, id: string): NextResponse {
@@ -374,14 +272,8 @@ function buildWritePath(request: Request, config: SystemSettingConfig, id: strin
     path = `/holding/${encodeURIComponent(holdingcode)}`;
   } else if (config.kind === "restaurant-setting") {
     path = id ? `/restaurant/settings/${encodeURIComponent(id)}` : "/restaurant/settings";
-  } else if (config.kind === "atlas") {
-    path = "/atlas/update";
   } else if (config.kind === "goapi-crud") {
     path = id ? `${config.basePath}/${encodeProxyPathId(config, id)}` : (config.basePath ?? "");
-  } else if (config.kind === "ai-provider") {
-    path = "/api/v1/ai-provider/save";
-  } else if (config.kind === "copy-uat") {
-    path = body.action === "copy" ? "/copymongouattodev" : "/previewcopymongo";
   } else if (config.slug === "user") {
     path = "/holding/permission";
   } else {
@@ -396,9 +288,7 @@ function buildDeletePath(request: Request, config: SystemSettingConfig, id: stri
   const search = url.search;
   let path = "";
 
-  if (config.kind === "atlas") path = "/atlas/delete";
-  else if (config.kind === "ai-provider") path = "/api/v1/ai-provider/delete";
-  else if (config.kind === "goapi-crud") path = `${config.basePath}/${encodeProxyPathId(config, id)}`;
+  if (config.kind === "goapi-crud") path = `${config.basePath}/${encodeProxyPathId(config, id)}`;
   else if (config.slug === "user") path = `/holding/permission/${encodeProxyPathId(config, id)}`;
   else path = `${config.basePath}/${encodeProxyPathId(config, id)}`;
 
@@ -411,7 +301,6 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
   normalizeBusinessCodeFields(config, payload);
   const url = new URL(request.url);
   const holdingcode = holdingCodeFrom(payload, url);
-  const holdingCode = holdingcode.trim();
 
   if (config.kind === "restaurant-setting") {
     const { guidfixed: _guidfixed, ...rest } = payload;
@@ -422,48 +311,7 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
     };
   }
 
-  if (config.kind === "atlas") {
-    const key = String(payload.guidfixed ?? payload[config.idField ?? ""] ?? id);
-    const legacyKey = id && id !== key ? id : "";
-    const {
-      _id: _mongoId,
-      holdingcode: _legacyHoldingCode,
-      holdingcode: _legacyHoldingCodeAlt,
-      updatedAt: _legacyUpdatedAt,
-      updatedBy: _legacyUpdatedBy,
-      createdAt: _legacyCreatedAt,
-      createdBy: _legacyCreatedBy,
-      ...atlasData
-    } = payload;
-    void _mongoId;
-    void _legacyHoldingCode;
-    void _legacyHoldingCodeAlt;
-    void _legacyUpdatedAt;
-    void _legacyUpdatedBy;
-    void _legacyCreatedAt;
-    void _legacyCreatedBy;
-    if (!holdingCode) delete atlasData.holdingcode;
-    return {
-      collection: config.collection,
-      holdingcode,
-      ...(holdingCode ? { holdingcode: holdingCode } : {}),
-      guidfixed: key,
-      email: legacyKey,
-      cartid: legacyKey,
-      useruid: typeof payload.useruid === "string" ? payload.useruid : undefined,
-      data: { ...atlasData, ...(holdingCode ? { holdingcode: holdingCode } : {}), guidfixed: key },
-      upsert: true,
-    };
-  }
-
   if (config.kind === "goapi-crud") {
-    return {
-      ...payload,
-      holdingcode: holdingcode,
-    };
-  }
-
-  if (config.kind === "ai-provider") {
     return {
       ...payload,
       holdingcode: holdingcode,
@@ -503,11 +351,9 @@ function normalizeAccessScopePayload(slug: string, payload: Record<string, unkno
   const field =
     slug === "user"
       ? "accessscopes"
-      : slug === "approvalsetting"
-        ? "approvalrules"
-        : slug === "permissiondefinition" || slug === "permissiongroup" || slug === "permissionlink"
-          ? "scoperules"
-          : "";
+      : slug === "permissiondefinition" || slug === "permissiongroup"
+        ? "scoperules"
+        : "";
   if (!field) return;
   const value = payload[field] ?? payload.accessscopes ?? payload.businesscodes ?? payload.companyguids;
   payload[field] = normalizeScopeRules(value);
@@ -590,39 +436,6 @@ function booleanValue(value: unknown): boolean {
   if (typeof value !== "string") return false;
   const text = value.trim().toLowerCase();
   return text === "true" || text === "1" || text === "yes" || text === "y";
-}
-
-function buildDeletePayload(
-  request: Request,
-  config: SystemSettingConfig,
-  id: string,
-  body: Record<string, unknown>,
-): Record<string, unknown> | undefined {
-  const url = new URL(request.url);
-  const holdingcode = holdingCodeFrom(body, url);
-  const holdingCode = holdingcode.trim();
-
-  if (config.kind === "atlas") {
-    return {
-      collection: config.collection,
-      holdingcode,
-      ...(holdingCode ? { holdingcode: holdingCode } : {}),
-      guidfixed: id,
-      email: id,
-      cartid: id,
-      useruid: typeof body.useruid === "string" ? body.useruid : undefined,
-      deletemany: false,
-    };
-  }
-
-  if (config.kind === "ai-provider") {
-    return {
-      holdingcode: holdingcode,
-      providername: id,
-    };
-  }
-
-  return undefined;
 }
 
 function encodeProxyPathId(config: SystemSettingConfig, id: string): string {

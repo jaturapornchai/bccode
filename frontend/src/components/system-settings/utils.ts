@@ -260,8 +260,6 @@ export const systemSettingBackendKeys: Record<string, string> = {
   employee: "employee",
   holidayscreen: "holiday",
   permissiondefinition: "permissiondefinition",
-  permissionlink: "permissionlink",
-  approvalsetting: "approvalsetting",
   user: "user",
   workdayscreen: "work_day",
 };
@@ -330,27 +328,10 @@ export const fieldBackendKeys: Record<string, string> = {
   "permissiondefinition.permissionname": "permissionname",
   "permissiondefinition.scoperules": "scoperules",
   "permissiondefinition.accessrules": "accessrules",
-  "approvalsetting.approvalcode": "approvalcode",
-  "approvalsetting.approvalname": "approvalname",
-  "approvalsetting.approvalrules": "approvalrules",
-  "approvalsetting.approvals": "approval_permission",
-  "permissionlink.employeecode": "user_employeecode",
-  "permissionlink.employeename": "name",
-  "permissionlink.scoperules": "scoperules",
-  "permissionlink.permissioncodes": "permissioncodes",
-  "permissionlink.approvalcodes": "approvalcodes",
 
   // 2026-09-16: the remaining field labels, so every language reads the table
   // instead of falling back to the English label in system-setting-screens.ts.
   "activelanguages.settings.languageconfigs": "active_languages",
-  "aiprovider.apikey": "apikey",
-  "aiprovider.baseurl": "ss_f_base_url",
-  "aiprovider.isactive": "activate",
-  "aiprovider.model": "barcode_model_code",
-  "aiprovider.priority": "ss_col_tier",
-  "aiprovider.providername": "ss_f_provider",
-  "approvalsetting.description": "description_required",
-  "approvalsetting.isactive": "activate",
   "bookbankscreen.accountcode": "chart_of_acc",
   "bookbankscreen.accountname": "account_name",
   "bookbankscreen.bankbranch": "pass_book_branch",
@@ -395,22 +376,6 @@ export const fieldBackendKeys: Record<string, string> = {
   "branch.pos.footerreceiptpos": "footer_receipt_pos",
   "branch.pos.headerreceiptpos": "header_receipt_pos",
   "businesstypescreen.isdefault": "menu_setup",
-  "channelprice.barcode": "ss_f_barcode_sku",
-  "channelprice.businesscodes": "ss_company_access",
-  "channelprice.channelcode": "sale_channel",
-  "channelprice.compareatprice": "ss_f_compare_at_price",
-  "channelprice.currency": "currency",
-  "channelprice.dimensionkey": "product_option",
-  "channelprice.enddate": "ss_f_end_date",
-  "channelprice.isdisabled": "alert_disabled",
-  "channelprice.itemcode": "import_productdetail.product_code",
-  "channelprice.names": "ss_f_price_names",
-  "channelprice.pricecode": "ss_f_price_code",
-  "channelprice.pricelevel": "productdetails_level",
-  "channelprice.saleprice": "ss_col_price",
-  "channelprice.startdate": "ss_f_start_date",
-  "channelprice.status": "ss_f_price_status",
-  "channelprice.syncprice": "ss_f_sync_channel_price",
   "company.logouri": "company_logo",
   "creditor.addressforactual": "ss_f_actual_address_province_district_subdistrict",
   "creditor.addressforactual.address": "ss_f_actual_operating_address_lines",
@@ -484,7 +449,6 @@ export const fieldBackendKeys: Record<string, string> = {
   "permissiongroup.names": "ss_f_permission_set_name",
   "permissiongroup.permissions": "ss_f_accessible_screens",
   "permissiongroup.rolecode": "ss_f_permission_set_code",
-  "permissionlink.groupcode": "ss_permission_group",
   "productbom.barcode": "ss_f_recipe_code",
   "productbom.bom": "ss_recipes",
   "productbom.itemunitcode": "st_formula_unit",
@@ -501,63 +465,11 @@ export const fieldBackendKeys: Record<string, string> = {
   "productcategorygroupselectscreen.useimageorcolor": "ss_f_category_display_mode",
   "productcategorylist.codelist": "doc_details",
   "productcategorylist.names": "category_name",
-  "productcolor.aliases": "ss_f_aliases",
-  "productcolor.businesscodes": "ss_company_access",
-  "productcolor.code": "color_code",
-  "productcolor.colorfamily": "ss_f_color_family",
-  "productcolor.hexcolor": "ss_f_color_hex_2",
-  "productcolor.isdisabled": "alert_disabled",
-  "productcolor.names": "color_name",
   "productgroup.isdisabled": "alert_disabled",
   "productgroup.names": "product_groupname",
   "productgroup.parentguid": "ss_f_parent_group",
-  "productserialregistry.barcode": "ss_f_barcode_sku",
-  "productserialregistry.businesscodes": "ss_company_access",
-  "productserialregistry.customercode": "customer",
-  "productserialregistry.identifiertype": "ss_f_identifier_type",
-  "productserialregistry.isdisabled": "alert_disabled",
-  "productserialregistry.itemcode": "import_productdetail.product_code",
-  "productserialregistry.locationcode": "location",
-  "productserialregistry.note": "ss_col_note",
-  "productserialregistry.purchasedocno": "ss_f_purchase_document",
-  "productserialregistry.saledocno": "ss_f_sale_document",
-  "productserialregistry.serialno": "pos_setting_devicenumber",
-  "productserialregistry.skucode": "ss_f_sku_code",
-  "productserialregistry.status": "ss_f_serial_status",
-  "productserialregistry.suppliercode": "ss_f_supplier",
-  "productserialregistry.unitcode": "import_productdetail.unit",
-  "productserialregistry.warehousecode": "fd_category_inventory",
-  "productserialregistry.warrantyenddate": "ss_f_warranty_end",
-  "productserialregistry.warrantystartdate": "ss_f_warranty_start",
-  "productsize.aliases": "ss_f_aliases",
-  "productsize.businesscodes": "ss_company_access",
-  "productsize.code": "ss_f_size_code",
-  "productsize.isdisabled": "alert_disabled",
-  "productsize.names": "ss_f_size_names",
-  "productsize.sizesystem": "ss_f_size_system",
-  "productsize.sizetype": "ss_f_size_type",
-  "productsize.sortorder": "ss_col_tier",
-  "productsubgroup.code": "ss_f_subgroup_code",
-  "productsubgroup.isdisabled": "alert_disabled",
-  "productsubgroup.names": "ss_f_subgroup_names",
-  "productsubgroup.parentcode": "group_main_guid",
-  "productsubgroup.sortorder": "ss_col_tier",
   "productunit.names": "product_unitname",
   "productunit.unitcode": "product_unitcode",
-  "productvariantmatrix.businesscodes": "ss_company_access",
-  "productvariantmatrix.code": "ss_f_option_set_code",
-  "productvariantmatrix.description": "ss_f_basic_description",
-  "productvariantmatrix.importattributemaps": "ss_f_import_name_matching",
-  "productvariantmatrix.integrationprofiles": "ss_f_sales_channel_connections",
-  "productvariantmatrix.isdisabled": "alert_disabled",
-  "productvariantmatrix.matrixtype": "ss_f_product_business_type",
-  "productvariantmatrix.mediaassets": "ss_f_product_media",
-  "productvariantmatrix.names": "ss_f_option_set_names",
-  "productvariantmatrix.optiontiers": "ss_f_option_tiers",
-  "productvariantmatrix.payloadexamples": "ss_f_import_export_examples",
-  "productvariantmatrix.serialtrackingmode": "ss_f_serial_tracking_mode",
-  "productvariantmatrix.skucombinations": "ss_f_sku_combinations",
-  "productvariantmatrix.specificationgroups": "ss_f_product_specifications",
   "productwarehousescreen.code": "st_warehouse_code",
   "productwarehousescreen.location": "ss_f_storage_locations",
   "productwarehousescreen.names": "ss_f_warehouse_names",
@@ -589,15 +501,6 @@ export const fieldHelperBackendKeys: Record<string, string> = {
   "employee.profilepicture": "ss_h_jpg_png_supported_resized_before",
   "permissiongroup.rolecode": "ss_h_uppercase_a_z_0_9",
   "productcategorylist.codelist": "ss_h_type_the_product_codes_to",
-  "productcolor.aliases": "ss_h_add_names_that_should_map",
-  "productsize.aliases": "ss_h_add_imported_size_labels_that",
-  "productvariantmatrix.importattributemaps": "ss_h_maps_imported_attribute_names_into",
-  "productvariantmatrix.integrationprofiles": "ss_h_stores_external_import_sync_details",
-  "productvariantmatrix.mediaassets": "ss_h_supports_main_images_gallery_images",
-  "productvariantmatrix.optiontiers": "ss_h_supports_multiple_tiers_such_as",
-  "productvariantmatrix.payloadexamples": "ss_h_stores_sample_data_for_developers",
-  "productvariantmatrix.skucombinations": "ss_h_stores_sku_barcode_gtin_price",
-  "productvariantmatrix.specificationgroups": "ss_h_stores_attributes_specifications_from_multiple",
   "user.accessexpirydate": "ss_h_auto_disable_access_on_this",
   "user.accessscopes": "ss_h_pick_the_companies_and_branches",
   "user.avatar": "ss_h_png_supported_transparent_background_ok",
@@ -613,14 +516,10 @@ export const fieldHelperBackendKeys: Record<string, string> = {
 // The one-line description under each settings screen title.
 export const systemSettingSubtitleKeys: Record<string, string> = {
   "activelanguages": "ss_sub_set_this_before_other_data",
-  "aiprovider": "ss_sub_manage_ai_providers_models_api",
-  "approvalsetting": "ss_sub_configure_business_group_approval_roles",
   "bookbankscreen": "ss_sub_manage_bank_accounts_branch_account",
   "branch": "ss_sub_manage_branches_language_timezone_and",
   "businesstypescreen": "ss_sub_manage_business_type_codes_and",
-  "channelprice": "ss_sub_set_selling_prices_by_channel",
   "company": "ss_sub_edit_the_selected_company_profile",
-  "copyuattodev": "ss_sub_select_a_source_shop_preview",
   "creditor": "ss_sub_manage_vendor_master_data_tax",
   "creditorgroup": "ss_sub_manage_vendor_group_codes_and",
   "debtor": "ss_sub_manage_customer_master_data_price",
@@ -633,17 +532,11 @@ export const systemSettingSubtitleKeys: Record<string, string> = {
   "master_brand_screen": "ss_sub_manage_brand_using_the_legacy",
   "permissiondefinition": "ss_sub_read_only_screen_catalog_used",
   "permissiongroup": "ss_sub_define_reusable_permission_sets_e",
-  "permissionlink": "ss_sub_link_users_to_business_group",
   "productbom": "ss_sub_manage_recipe_codes_ingredients_and",
   "productcategorygroupselectscreen": "ss_sub_choose_a_category_set_then",
   "productcategorylist": "ss_sub_choose_products_to_show_in",
-  "productcolor": "ss_sub_define_color_codes_names_and",
   "productgroup": "ss_sub_organize_product_groups_into_main",
-  "productserialregistry": "ss_sub_manage_serial_no_imei_iccid",
-  "productsize": "ss_sub_define_size_codes_size_systems",
-  "productsubgroup": "ss_sub_organize_subgroups_as_a_free",
   "productunit": "ss_sub_manage_product_unit_codes_and",
-  "productvariantmatrix": "ss_sub_define_color_size_or_attribute",
   "productwarehousescreen": "ss_sub_manage_warehouses_and_storage_locations",
   "promotion_screen": "ss_sub_manage_promotion_using_the_legacy",
   "salechannelscreen": "ss_sub_manage_sales_channels_such_as",
@@ -660,10 +553,6 @@ export const fieldValueAliases: Record<string, string[]> = {
   "employee.businesscodes": ["companyguids"],
   "user.businesscodes": ["companyguids"],
   "user.accessscopes": ["scoperules", "businesscodes", "companyguids"],
-  "approvalsetting.approvalcode": ["approvalCode"],
-  "approvalsetting.approvalname": ["approvalName"],
-  "approvalsetting.isactive": ["isActive"],
-  "approvalsetting.approvalrules": ["scoperules"],
   "permissiondefinition.permissioncode": ["permissionCode"],
   "permissiondefinition.permissionname": ["permissionName"],
   "permissiondefinition.isactive": ["isActive"],
@@ -674,13 +563,6 @@ export const fieldValueAliases: Record<string, string[]> = {
   "permissiongroup.isactive": ["isActive"],
   "permissiongroup.scoperules": ["accessscopes"],
   "permissiongroup.permissioncodes": ["permissionCodes"],
-  "permissionlink.employeecode": ["employeeCode"],
-  "permissionlink.employeename": ["employeeName"],
-  "permissionlink.groupcode": ["groupCode"],
-  "permissionlink.scoperules": ["accessscopes", "businesscodes", "companyguids"],
-  "permissionlink.businesscodes": ["companyguids"],
-  "permissionlink.permissioncodes": ["permissionCodes"],
-  "permissionlink.approvalcodes": ["approvalCodes"],
   "branch.pos.taxid": ["pos.taxid"],
   "branch.yeartype": ["yeartype"],
   "productcategorygroupselectscreen.groupnumber": ["groupnumber"],
@@ -851,7 +733,7 @@ export function recordBranchCaption(record: SettingRecord): string {
 // ─── Record State Functions ──────────────────────────────────────────────────
 
 export function shouldHydrateRecordDetail(config: SystemSettingConfig): boolean {
-  return config.kind === "main-crud" || config.kind === "atlas";
+  return config.kind === "main-crud";
 }
 
 export function isCreatorRecord(
@@ -1008,26 +890,6 @@ export function isEmployeeNameField(field: SystemSettingField): boolean {
   return field.key === "employeename" || field.key === "employeeName";
 }
 
-const productVariantStructuredFieldKeys = new Set([
-  "optiontiers",
-  "skucombinations",
-  "mediaassets",
-  "specificationgroups",
-  "importattributemaps",
-  "integrationprofiles",
-  "payloadexamples",
-]);
-
-export function isProductVariantStructuredField(
-  config: SystemSettingConfig,
-  field: SystemSettingField,
-): boolean {
-  return (
-    config.slug === "productvariantmatrix" &&
-    productVariantStructuredFieldKeys.has(field.key)
-  );
-}
-
 export function isBranchStructuredSettingField(
   config: SystemSettingConfig,
   field: SystemSettingField,
@@ -1120,14 +982,7 @@ export function fieldGridItemClass(
   ) {
     return "min-w-0 md:col-span-2";
   }
-  if (
-    (config.slug === "permissiondefinition" && isPermissionAccessRulesField(field)) ||
-    (config.slug === "approvalsetting" && field.key === "approvals") ||
-    (config.slug === "permissionlink" &&
-      (isEmployeeCodeField(field) ||
-        isPermissionCodesField(field) ||
-        isApprovalCodesField(field)))
-  ) {
+  if (config.slug === "permissiondefinition" && isPermissionAccessRulesField(field)) {
     return "min-w-0 md:col-span-2";
   }
   return "min-w-0";
@@ -1145,9 +1000,8 @@ export function isColorHexField(
   field: SystemSettingField,
 ): boolean {
   return (
-    (config.slug === "productcategorygroupselectscreen" &&
-      field.key === "colorselecthex") ||
-    (config.slug === "productcolor" && field.key === "hexcolor")
+    config.slug === "productcategorygroupselectscreen" &&
+    field.key === "colorselecthex"
   );
 }
 

@@ -25,7 +25,7 @@ test("ERP 9-module navigation tree renders uniformly and opens screen", async ({
   await expect(page.getByRole("button", { name: "เมนูซ้าย", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("tree", { name: "เมนู", exact: true })).toBeVisible();
 
-  // 2. Verify all 9 ERP module sections are visible in sidebar in Champ order
+  // 2. Verify all 8 ERP module sections are visible in sidebar in Champ order (tax lives inside GL since 2026-09-23)
   const expectedModules = [
     { id: "po", name: /ซื้อ\/สั่งซื้อสินค้า/ },
     { id: "bill", name: /ใบสั่งของ\/ใบกำกับสินค้า/ },
@@ -34,7 +34,6 @@ test("ERP 9-module navigation tree renders uniformly and opens screen", async ({
     { id: "cash-bank", name: /เงินสดและธนาคาร/ },
     { id: "ic", name: /สินค้าคงคลัง/ },
     { id: "fa", name: /สินทรัพย์และค่าเสื่อมราคา/ },
-    { id: "vat", name: /ภาษีมูลค่าเพิ่ม/ },
     { id: "gl", name: /บัญชีแยกประเภท/ },
   ];
 

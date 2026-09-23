@@ -7,13 +7,10 @@ import (
 )
 
 func (ms *Microservice) isCacherAlive() bool {
-	for _, cacher := range ms.cachers {
-		err := cacher.Healthcheck()
-		if err != nil {
-			return false
-		}
+	if ms.cacher == nil {
+		return true
 	}
-	return true
+	return ms.cacher.Healthcheck() == nil
 }
 
 func (ms *Microservice) isPostgreSQLAlive() bool {

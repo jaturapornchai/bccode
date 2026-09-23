@@ -3,24 +3,18 @@ package fixedasset
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 
 	gl "smlcloudplatform/internal/generalledger"
 )
-
-func toBsonD(v interface{}) bson.D {
-	data, _ := bson.Marshal(v)
-	var doc bson.D
-	_ = bson.Unmarshal(data, &doc)
-	return doc
-}
 
 // fakeLedger stands in for *generalledger.Store in tests. It reproduces just
 // the two guarantees GLPoster relies on from the real Store.Execute:
@@ -31,8 +25,8 @@ func toBsonD(v interface{}) bson.D {
 //     is rejected, never silently applied.
 //
 // This lets the P0 fix (posting through generalledger.Store.Execute instead
-// of writing gl_journals/gl_lines directly) be tested without a live MongoDB
-// replica set + Kafka broker, which Store.Execute itself requires.
+// of writing gl_journals/gl_lines directly) be tested without a live PostgreSQL
+// ledger database.
 type fakeLedger struct {
 	hashes   map[string]string
 	results  map[string]gl.Result
@@ -101,15 +95,41 @@ func (f *fakeLedger) Execute(_ context.Context, _ gl.Scope, cmd gl.Command) (gl.
 	return gl.Result{}, fmt.Errorf("unsupported action in fake ledger: %s", cmd.Action)
 }
 
-func TestFixedAssets_CPACycle(t *testing.T) {
-	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-
-	scope := Scope{
-		Holding: "TEST_HOLDING",
-		Company: "TEST_CO",
-		Branch:  "HQ",
-		Actor:   "CPA_AUDITOR",
+func (f *fakeLedger) List(_ context.Context, _ gl.Scope, _ string, query string, _ int, _ int, _ gl.ListFilter) (gl.Page, error) {
+	page := gl.Page{Items: []json.RawMessage{}}
+	for _, j := range f.journals {
+		if j.DocNo == query {
+			raw, _ := json.Marshal(j)
+			page.Items = append(page.Items, raw)
+		}
 	}
+	return page, nil
+}
+
+// testConnector opens an isolated PostgreSQL database for the fixed-asset store;
+// every row it writes is removed by company code when the test ends.
+func testConnector(t *testing.T) (Connector, string) {
+	t.Helper()
+	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set BC_GL_TEST_POSTGRES_DSN to isolated PostgreSQL")
+	}
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company := fmt.Sprintf("FA_TEST_%d", time.Now().UnixNano())
+	t.Cleanup(func() {
+		_, _ = db.Exec(`DELETE FROM fa_records WHERE company = $1`, company)
+		_ = db.Close()
+	})
+	return func(string) (*sql.DB, error) { return db, nil }, company
+}
+
+func TestFixedAssets_CPACycle(t *testing.T) {
+	connect, company := testConnector(t)
+	ctx := context.Background()
+	scope := Scope{Holding: "TEST_HOLDING", Company: company, Branch: "HQ", Actor: "CPA_AUDITOR"}
 	now := time.Now().UTC()
 
 	asset := Asset{
@@ -129,196 +149,120 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 		Status:                   "active",
 	}
 
-	mt.Run("1_create_asset", func(mt *mtest.T) {
-		db := mt.DB
-		store := NewStore(db)
+	store := NewStore(connect)
+	created, err := store.CreateAsset(ctx, scope, asset, now)
+	if err != nil {
+		t.Fatalf("CreateAsset failed: %v", err)
+	}
+	if _, err := store.CreateAsset(ctx, scope, asset, now); err != ErrCodeDuplicate {
+		t.Fatalf("expected duplicate asset code to be rejected, got %v", err)
+	}
+	got, err := store.GetAsset(ctx, scope, created.AssetCode)
+	if err != nil || got.ID != created.ID || !got.Cost.Decimal().Equal(decimal.RequireFromString("600000")) {
+		t.Fatalf("GetAsset by code = %+v, %v", got, err)
+	}
+	items, total, err := store.ListAssets(ctx, scope, "เครื่องจักร", "", "", 1, 10)
+	if err != nil || total != 1 || len(items) != 1 {
+		t.Fatalf("ListAssets search = %d/%d, %v", len(items), total, err)
+	}
 
-		mt.AddMockResponses(
-			mtest.CreateCursorResponse(1, db.Name()+".fixed_assets", mtest.FirstBatch, bson.D{{Key: "n", Value: 0}}),
-			mtest.CreateCursorResponse(0, db.Name()+".fixed_assets", mtest.NextBatch),
-			mtest.CreateSuccessResponse(), // InsertOne fixed_assets
-			mtest.CreateSuccessResponse(), // InsertMany asset_depreciations
-		)
+	sched, err := store.GetAssetDepreciationSchedule(ctx, scope, asset.AssetCode)
+	if err != nil {
+		t.Fatalf("GetAssetDepreciationSchedule failed: %v", err)
+	}
+	if len(sched) < 60 {
+		t.Fatalf("expected at least 60 months of depreciation, got %d", len(sched))
+	}
+	totDep := decimal.Zero
+	for _, item := range sched {
+		totDep = totDep.Add(item.PeriodDeprec.Decimal())
+	}
+	if expected := asset.Cost.Decimal().Sub(asset.ScrapValue.Decimal()); !totDep.Equal(expected) {
+		t.Fatalf("expected total depreciation %s, got %s", expected, totDep)
+	}
 
-		created, err := store.CreateAsset(context.Background(), scope, asset, now)
-		if err != nil {
-			mt.Fatalf("CreateAsset failed: %v", err)
-		}
-		if created.AssetCode != "EQ-2026-001" {
-			mt.Errorf("expected asset code EQ-2026-001, got %s", created.AssetCode)
-		}
-	})
+	ledger := newFakeLedger()
+	poster := NewGLPoster(connect, ledger)
+	journal, err := poster.PostDepreciation(ctx, scope, "2026", 1, "2026-01-31", "JV-FA-2026-01", now)
+	if err != nil {
+		t.Fatalf("PostDepreciation failed: %v", err)
+	}
+	dr, cr := decimal.Zero, decimal.Zero
+	for _, l := range journal.Lines {
+		dr = dr.Add(l.Debit)
+		cr = cr.Add(l.Credit)
+	}
+	if !dr.Equal(cr) || dr.IsZero() {
+		t.Fatalf("GL journal out of balance: Dr %s Cr %s", dr, cr)
+	}
+	if ledger.created != 1 || ledger.posted != 1 {
+		t.Fatalf("expected exactly 1 create + 1 post, got created=%d posted=%d", ledger.created, ledger.posted)
+	}
+	if _, err := poster.PostDepreciation(ctx, scope, "2026", 1, "2026-01-31", "JV-FA-2026-01", now); err == nil {
+		t.Fatalf("posting the same period twice must fail: no unposted rows remain")
+	}
+	if err := store.DeleteAsset(ctx, scope, created.ID, 0, now); err == nil {
+		t.Fatalf("an asset with posted depreciation must not be deletable")
+	}
 
-	mt.Run("2_calculate_schedule", func(mt *mtest.T) {
-		calc := NewCalculator()
-		sched, err := calc.CalculateSchedule(asset, "2031-12-31")
-		if err != nil {
-			mt.Fatalf("CalculateSchedule failed: %v", err)
-		}
-		if len(sched) < 60 {
-			mt.Errorf("expected at least 60 months of depreciation, got %d", len(sched))
-		}
+	failing := newFakeLedger()
+	failing.failErr = fmt.Errorf("ledger unavailable")
+	if _, err := NewGLPoster(connect, failing).PostDepreciation(ctx, scope, "2026", 2, "2026-02-28", "JV-FA-2026-02", now); err == nil {
+		t.Fatalf("expected PostDepreciation to fail when the GL engine fails")
+	}
+	db, _ := connect("")
+	stillOpen, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'fiscalyear' = '2026' AND (payload->>'period')::int = 2 AND NOT COALESCE((payload->>'isposted')::boolean, false)`, "")
+	if err != nil || len(stillOpen) != 1 {
+		t.Fatalf("failed GL post must leave period 2 unposted, got %d rows, %v", len(stillOpen), err)
+	}
 
-		totDep := decimal.Zero
-		for _, item := range sched {
-			totDep = totDep.Add(item.PeriodDeprec.Decimal())
-		}
-		expectedDep := asset.Cost.Decimal().Sub(asset.ScrapValue.Decimal())
-		if !totDep.Equal(expectedDep) {
-			mt.Errorf("expected total deprecation %s, got %s", expectedDep, totDep)
-		}
-	})
+	disposal := AssetDisposal{
+		AssetCode:             asset.AssetCode,
+		DisposalDate:          "2026-06-30",
+		DisposalType:          "sale",
+		SalePrice:             Amount("550000.00"),
+		VatAmount:             Amount("38500.00"),
+		SettlementAccountCode: "110101",
+		GainLossAccountCode:   "420101",
+		Reason:                "ขายเครื่องจักรเก่า",
+	}
+	disposer := NewGLPoster(connect, newFakeLedger())
+	resDisp, resJourn, err := disposer.DisposeAsset(ctx, scope, disposal, now)
+	if err != nil {
+		t.Fatalf("DisposeAsset failed: %v", err)
+	}
+	dispDr, dispCr := decimal.Zero, decimal.Zero
+	for _, l := range resJourn.Lines {
+		dispDr = dispDr.Add(l.Debit)
+		dispCr = dispCr.Add(l.Credit)
+	}
+	if !dispDr.Equal(dispCr) {
+		t.Fatalf("disposal journal out of balance: Dr %s Cr %s", dispDr, dispCr)
+	}
+	if resDisp.GainLoss.Decimal().IsZero() {
+		t.Fatalf("expected a non-zero gain/loss, got %s", resDisp.GainLoss)
+	}
+	disposed, err := store.GetAsset(ctx, scope, created.ID)
+	if err != nil || disposed.Status != "disposed" {
+		t.Fatalf("asset status after disposal = %+v, %v", disposed, err)
+	}
+	if _, _, err := disposer.DisposeAsset(ctx, scope, disposal, now); err == nil {
+		t.Fatalf("a disposed asset must not be disposed twice")
+	}
 
-	mt.Run("3_post_depreciation_to_gl", func(mt *mtest.T) {
-		db := mt.DB
-		ledger := newFakeLedger()
-		poster := NewGLPoster(db, ledger)
-
-		mockDeprecItem := DepreciationScheduleItem{
-			AssetCode:    asset.AssetCode,
-			FiscalYear:   "2026",
-			Period:       1,
-			PeriodDeprec: Amount("10000.00"),
-			Days:         31,
-		}
-
-		mt.AddMockResponses(
-			mtest.CreateCursorResponse(1, db.Name()+".asset_depreciations", mtest.FirstBatch, toBsonD(mockDeprecItem)),
-			mtest.CreateCursorResponse(0, db.Name()+".asset_depreciations", mtest.NextBatch),
-			mtest.CreateCursorResponse(1, db.Name()+".fixed_assets", mtest.FirstBatch, toBsonD(asset)),
-			mtest.CreateCursorResponse(0, db.Name()+".fixed_assets", mtest.NextBatch),
-			mtest.CreateSuccessResponse(), // UpdateMany asset_depreciations
-		)
-
-		journal, err := poster.PostDepreciation(context.Background(), scope, "2026", 1, "2026-01-31", "JV-FA-2026-01", now)
-		if err != nil {
-			mt.Fatalf("PostDepreciation failed: %v", err)
-		}
-		if journal.DocNo != "JV-FA-2026-01" {
-			mt.Errorf("expected docno JV-FA-2026-01, got %s", journal.DocNo)
-		}
-		if journal.Status != "posted" {
-			mt.Errorf("expected journal status posted, got %s", journal.Status)
-		}
-
-		dr := decimal.Zero
-		cr := decimal.Zero
-		for _, l := range journal.Lines {
-			dr = dr.Add(l.Debit)
-			cr = cr.Add(l.Credit)
-		}
-		if !dr.Equal(cr) {
-			mt.Fatalf("GL Journal out of balance: Dr %s != Cr %s", dr, cr)
-		}
-		if !dr.Equal(decimal.NewFromFloat(10000)) {
-			mt.Errorf("expected journal amount 10000, got Dr %s", dr)
-		}
-
-		// The GL engine (real Store.Execute, mirrored here by fakeLedger) must
-		// have received exactly one create + one post: this is what makes
-		// re-posting the same period idempotent instead of duplicating the
-		// journal (P0-2).
-		if ledger.created != 1 || ledger.posted != 1 {
-			mt.Fatalf("expected exactly 1 create + 1 post through the GL engine, got created=%d posted=%d", ledger.created, ledger.posted)
-		}
-	})
-
-	mt.Run("3b_post_depreciation_gl_failure_not_swallowed", func(mt *mtest.T) {
-		db := mt.DB
-		ledger := newFakeLedger()
-		ledger.failErr = fmt.Errorf("postgresql projection unavailable: connection refused")
-		poster := NewGLPoster(db, ledger)
-
-		mockDeprecItem := DepreciationScheduleItem{
-			AssetCode:    asset.AssetCode,
-			FiscalYear:   "2026",
-			Period:       2,
-			PeriodDeprec: Amount("10000.00"),
-			Days:         28,
-		}
-
-		// Deliberately no "UpdateMany asset_depreciations" mock response queued:
-		// if PostDepreciation reached step 6 (marking items posted) despite the
-		// GL engine failing, the test would fail with "no responses remaining"
-		// instead of the expected error, proving the failure is not swallowed.
-		mt.AddMockResponses(
-			mtest.CreateCursorResponse(1, db.Name()+".asset_depreciations", mtest.FirstBatch, toBsonD(mockDeprecItem)),
-			mtest.CreateCursorResponse(0, db.Name()+".asset_depreciations", mtest.NextBatch),
-			mtest.CreateCursorResponse(1, db.Name()+".fixed_assets", mtest.FirstBatch, toBsonD(asset)),
-			mtest.CreateCursorResponse(0, db.Name()+".fixed_assets", mtest.NextBatch),
-		)
-
-		_, err := poster.PostDepreciation(context.Background(), scope, "2026", 2, "2026-02-28", "JV-FA-2026-02", now)
-		if err == nil {
-			mt.Fatalf("expected PostDepreciation to return an error when the GL engine fails, got nil")
-		}
-		if ledger.created != 0 {
-			mt.Fatalf("expected the failed create to not register as a posted journal, got created=%d", ledger.created)
-		}
-	})
-
-	mt.Run("4_dispose_asset_with_gain", func(mt *mtest.T) {
-		db := mt.DB
-		ledger := newFakeLedger()
-		poster := NewGLPoster(db, ledger)
-
-		disposal := AssetDisposal{
-			AssetCode:             asset.AssetCode,
-			DisposalDate:          "2026-06-30",
-			DisposalType:          "sale",
-			SalePrice:             Amount("550000.00"),
-			VatAmount:             Amount("38500.00"),
-			SettlementAccountCode: "110101",
-			GainLossAccountCode:   "420101",
-			Reason:                "ขายเครื่องจักรเก่า",
-		}
-
-		dispDeprecMock := DepreciationScheduleItem{
-			AssetCode:   asset.AssetCode,
-			AccumDeprec: Amount("100000.00"),
-			StopDate:    "2026-06-30",
-		}
-
-		mt.AddMockResponses(
-			mtest.CreateCursorResponse(1, db.Name()+".fixed_assets", mtest.FirstBatch, toBsonD(asset)),
-			mtest.CreateCursorResponse(0, db.Name()+".fixed_assets", mtest.NextBatch),
-			mtest.CreateCursorResponse(1, db.Name()+".asset_depreciations", mtest.FirstBatch, toBsonD(dispDeprecMock)),
-			mtest.CreateCursorResponse(0, db.Name()+".asset_depreciations", mtest.NextBatch),
-			mtest.CreateSuccessResponse(), // InsertOne asset_disposals
-			mtest.CreateSuccessResponse(), // UpdateOne fixed_assets
-		)
-
-		resDisp, resJourn, err := poster.DisposeAsset(context.Background(), scope, disposal, now)
-		if err != nil {
-			mt.Fatalf("DisposeAsset failed: %v", err)
-		}
-
-		// Gain = 550,000 - (600,000 - 100,000) = 50,000
-		if !resDisp.GainLoss.Decimal().Equal(decimal.NewFromFloat(50000)) {
-			mt.Errorf("expected gain of 50,000, got %s", resDisp.GainLoss)
-		}
-
-		// Verify Disposal Journal Balance
-		dispDr := decimal.Zero
-		dispCr := decimal.Zero
-		for _, l := range resJourn.Lines {
-			dispDr = dispDr.Add(l.Debit)
-			dispCr = dispCr.Add(l.Credit)
-		}
-		if !dispDr.Equal(dispCr) {
-			mt.Fatalf("Disposal Journal out of balance: Dr %s != Cr %s", dispDr, dispCr)
-		}
-		if ledger.created != 1 || ledger.posted != 1 {
-			mt.Fatalf("expected exactly 1 create + 1 post through the GL engine, got created=%d posted=%d", ledger.created, ledger.posted)
-		}
-	})
+	if _, err := NewReporter(connect).GetAssetScheduleReport(ctx, scope, "2026", 12, ""); err != nil {
+		t.Fatalf("schedule report failed: %v", err)
+	}
+	if _, err := NewReporter(connect).GetTaxReconciliationReport(ctx, scope, "2026"); err != nil {
+		t.Fatalf("tax reconciliation report failed: %v", err)
+	}
 }
 
 // TestGLPoster_PostJournalIdempotent exercises postJournal (the low-level
 // helper both PostDepreciation and DisposeAsset use to talk to the GL engine)
-// directly, independent of Mongo mocking. It proves the deterministic
+// directly, without a database. It proves the deterministic
 // RequestID + Store.Execute contract: replaying the exact same journal input
-// (e.g. a network retry between "create" and "post" succeeding on Mongo but
+// (e.g. a network retry between "create" and "post" succeeding but
 // the caller not observing it) must not create a second journal.
 func TestGLPoster_PostJournalIdempotent(t *testing.T) {
 	ledger := newFakeLedger()

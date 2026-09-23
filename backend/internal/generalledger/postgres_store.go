@@ -61,7 +61,7 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if len(cmd.RequestID) < 16 || len(cmd.RequestID) > 80 || !validCode(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
-	if collectionName(cmd.Resource) == "" && cmd.Resource != "processes" {
+	if !supportedRecord(cmd.Resource) && cmd.Resource != "processes" {
 		return Result{}, fmt.Errorf("ไม่รองรับรายการบัญชีนี้")
 	}
 	if !contains([]string{"reconcile", "review", "create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess"}, cmd.Action) {

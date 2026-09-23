@@ -6,40 +6,16 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-const collectionName = "role_permission"
 
 // A permission set code: USER/ADMIN/OWNER are the built-in sets; any other
 // code (ACCOUNTING, SALES, …) is a custom set a member can pick several of.
 var roleCodePattern = regexp.MustCompile(`^[A-Z0-9_-]{2,30}$`)
 
 type LocalizedName struct {
-	Code string `json:"code" bson:"code"`
-	Name string `json:"name" bson:"name"`
+	Code string `json:"code"`
+	Name string `json:"name"`
 }
-
-type RolePermissionDoc struct {
-	ID          primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
-	RoleCode    string             `json:"rolecode" bson:"rolecode"`
-	Names       []LocalizedName    `json:"names" bson:"names"`
-	Permissions []string           `json:"permissions" bson:"permissions"`
-	IsActive    bool               `json:"isactive" bson:"isactive"`
-	CreatedAt   time.Time          `json:"createdat,omitempty" bson:"createdat,omitempty"`
-	CreatedBy   string             `json:"createdby,omitempty" bson:"createdby,omitempty"`
-	UpdatedAt   time.Time          `json:"updatedat,omitempty" bson:"updatedat,omitempty"`
-	UpdatedBy   string             `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	IsDeleted   bool               `json:"isdeleted" bson:"isdeleted"`
-	DeletedAt   *time.Time         `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
-	DeletedBy   string             `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
-	Version     int64              `json:"__v" bson:"__v"`
-}
-
-func (RolePermissionDoc) CollectionName() string { return collectionName }
 
 type RolePermissionRequest struct {
 	RoleCode    string          `json:"rolecode"`

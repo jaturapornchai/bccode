@@ -9,44 +9,40 @@ import (
 
 	"smlcloudplatform/internal/models"
 	timezone "smlcloudplatform/internal/models/timezone"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const userCollectionName = "users"
-
 type UserDetail struct {
-	UID               string `json:"uid" bson:"uid"`
-	Name              string `json:"name,omitempty"`
-	Avatar            string `json:"avatar"`
-	AvatarThumb       string `json:"avatarthumb"`
-	timezone.Timezone `bson:"inline"`
-	YearType          string   `json:"yeartype" bson:"yeartype" validate:"max=21"`
-	DedeZoom          DedeZoom `json:"dedezoom" bson:"dedezoom"`
-	RegisterType      string   `json:"registertype" bson:"registertype"`
+	UID         string `json:"uid"`
+	Name        string `json:"name,omitempty"`
+	Avatar      string `json:"avatar"`
+	AvatarThumb string `json:"avatarthumb"`
+	timezone.Timezone
+	YearType     string   `json:"yeartype" validate:"max=21"`
+	DedeZoom     DedeZoom `json:"dedezoom"`
+	RegisterType string   `json:"registertype"`
 }
 
 type DedeZoom struct {
-	Email       string `json:"email" bson:"email"`
-	PhoneNumber string `json:"phonenumber" bson:"phonenumber"`
-	Address     string `json:"address" bson:"address"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phonenumber"`
+	Address     string `json:"address"`
 }
 
 type UsernameField struct {
-	Username string `json:"username,omitempty" bson:"username,omitempty" validate:"required,gte=3,max=64"`
+	Username string `json:"username,omitempty" validate:"required,gte=3,max=64"`
 }
 
 type PhoneNumberField struct {
-	CountryCode string `json:"countrycode" bson:"countrycode" validate:"required,max=20"`
-	PhoneNumber string `json:"phonenumber" bson:"phonenumber" validate:"required,max=100"`
+	CountryCode string `json:"countrycode" validate:"required,max=20"`
+	PhoneNumber string `json:"phonenumber" validate:"required,max=100"`
 }
 
 type EmailField struct {
-	Email string `json:"email,omitempty" bson:"email" validate:"required,email,max=233"`
+	Email string `json:"email,omitempty" validate:"required,email,max=233"`
 }
 
 type UserPassword struct {
-	Password string `json:"password,omitempty" bson:"password,omitempty" validate:"required,gte=15,max=64"`
+	Password string `json:"password,omitempty" validate:"required,gte=15,max=64"`
 }
 
 var usercodePattern = regexp.MustCompile(`^[a-z0-9._-]+$`)
@@ -82,61 +78,49 @@ func IsKnownCompromisedPassword(password string) bool {
 }
 
 type UserDoc struct {
-	ID               primitive.ObjectID `json:"-" bson:"_id,omitempty"`
-	GuidFixed        string             `json:"guidfixed" bson:"guidfixed"`
-	UsernameField    `bson:"inline"`
-	EmailField       `bson:"inline"`
-	PhoneNumberField `bson:"inline"`
-	UserPassword     `bson:"inline"`
-	UserDetail       `bson:"inline"`
+	ID        string `json:"-"`
+	GuidFixed string `json:"guidfixed"`
+	UsernameField
+	EmailField
+	PhoneNumberField
+	UserPassword
+	UserDetail
 
 	// === ข้อมูล LINE (ระดับ user — ใช้ร่วมทุก shop) ===
-	LineUserID      string `json:"lineuserid" bson:"lineuserid"`           // LINE User ID
-	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"` // LINE Display Name
-	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`   // LINE Profile Picture URL
+	LineUserID      string `json:"lineuserid"`      // LINE User ID
+	LineDisplayName string `json:"linedisplayname"` // LINE Display Name
+	LinePictureURL  string `json:"linepictureurl"`  // LINE Profile Picture URL
 
-	CreatedAt  time.Time `json:"-" bson:"createdat,omitempty"`
-	UpdatedAt  time.Time `json:"-" bson:"updatedat,omitempty"`
-	DisabledAt time.Time `json:"disabledat,omitempty" bson:"disabledat,omitempty"`
-	IsDeleted  bool      `json:"isdeleted" bson:"isdeleted"`
-	Version    int64     `json:"-" bson:"__v"`
+	CreatedAt  time.Time `json:"-"`
+	UpdatedAt  time.Time `json:"-"`
+	DisabledAt time.Time `json:"disabledat,omitempty"`
+	IsDeleted  bool      `json:"isdeleted"`
+	Version    int64     `json:"-"`
 }
 
 type GoogleIdentity struct {
-	ID            primitive.ObjectID `json:"-" bson:"_id,omitempty"`
-	IdentityUID   string             `json:"identityuid" bson:"identityuid"`
-	UserUID       string             `json:"useruid" bson:"useruid"`
-	Issuer        string             `json:"issuer" bson:"issuer"`
-	Subject       string             `json:"subject" bson:"subject"`
-	VerifiedEmail string             `json:"verifiedemail" bson:"verifiedemail"`
-	IsActive      bool               `json:"isactive" bson:"isactive"`
-	LinkedAt      time.Time          `json:"linkedat" bson:"linkedat"`
-	RevokedAt     *time.Time         `json:"revokedat,omitempty" bson:"revokedat,omitempty"`
-	RevokedBy     string             `json:"revokedby,omitempty" bson:"revokedby,omitempty"`
-}
-
-func (*GoogleIdentity) CollectionName() string {
-	return "googleidentities"
+	ID            string     `json:"-"`
+	IdentityUID   string     `json:"identityuid"`
+	UserUID       string     `json:"useruid"`
+	Issuer        string     `json:"issuer"`
+	Subject       string     `json:"subject"`
+	VerifiedEmail string     `json:"verifiedemail"`
+	IsActive      bool       `json:"isactive"`
+	LinkedAt      time.Time  `json:"linkedat"`
+	RevokedAt     *time.Time `json:"revokedat,omitempty"`
+	RevokedBy     string     `json:"revokedby,omitempty"`
 }
 
 type AuthAudit struct {
-	ID         primitive.ObjectID     `json:"-" bson:"_id,omitempty"`
-	AuditUID   string                 `json:"audituid" bson:"audituid"`
-	UserUID    string                 `json:"useruid,omitempty" bson:"useruid,omitempty"`
-	Action     string                 `json:"action" bson:"action"`
-	Outcome    string                 `json:"outcome" bson:"outcome"`
-	ReasonCode string                 `json:"reasoncode,omitempty" bson:"reasoncode,omitempty"`
-	SessionUID string                 `json:"sessionuid,omitempty" bson:"sessionuid,omitempty"`
-	OccurredAt time.Time              `json:"occurredat" bson:"occurredat"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty" bson:"metadata,omitempty"`
-}
-
-func (*AuthAudit) CollectionName() string {
-	return "authaudits"
-}
-
-func (*UserDoc) CollectionName() string {
-	return userCollectionName
+	ID         string                 `json:"-"`
+	AuditUID   string                 `json:"audituid"`
+	UserUID    string                 `json:"useruid,omitempty"`
+	Action     string                 `json:"action"`
+	Outcome    string                 `json:"outcome"`
+	ReasonCode string                 `json:"reasoncode,omitempty"`
+	SessionUID string                 `json:"sessionuid,omitempty"`
+	OccurredAt time.Time              `json:"occurredat"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type RegisterEmailRequest struct {
@@ -159,77 +143,57 @@ type ForgotPasswordPhoneNumberRequest struct {
 	OTPVerifyRequest
 }
 
-func (RegisterEmailRequest) CollectionName() string {
-	return userCollectionName
-}
-
-func (RegisterPhoneNumberRequest) CollectionName() string {
-	return userCollectionName
-}
-
 // RegisterUsernameRequest — สำหรับพนักงานสมัครด้วยรหัสพนักงาน + รหัสผ่าน (ไม่ต้องมี email)
 type RegisterUsernameRequest struct {
-	UsernameField `bson:"inline"`
-	UserPassword  `bson:"inline"`
-	UserDetail    `bson:"inline"`
-}
-
-func (RegisterUsernameRequest) CollectionName() string {
-	return userCollectionName
+	UsernameField
+	UserPassword
+	UserDetail
 }
 
 type UserRequest struct {
-	UsernameField `bson:"inline"`
-	UserPassword  `bson:"inline"`
-	UserDetail    `bson:"inline"`
-}
-
-func (*UserRequest) CollectionName() string {
-	return userCollectionName
+	UsernameField
+	UserPassword
+	UserDetail
 }
 
 type UserLoginRequest struct {
-	UsernameField `bson:"inline"`
-	UserPassword  `bson:"inline"`
-	HoldingCode   string `json:"holdingcode,omitempty"`
+	UsernameField
+	UserPassword
+	HoldingCode string `json:"holdingcode,omitempty"`
 }
 
 type PosLoginRequest struct {
-	UsernameField `bson:"inline"`
-	HoldingCode   string `json:"holdingcode,omitempty"`
+	UsernameField
+	HoldingCode string `json:"holdingcode,omitempty"`
 }
 
 type UserLoginPhoneNumberRequest struct {
-	PhoneNumberField `bson:"inline"`
-	UserPassword     `bson:"inline"`
-	HoldingCode      string `json:"holdingcode,omitempty"`
+	PhoneNumberField
+	UserPassword
+	HoldingCode string `json:"holdingcode,omitempty"`
 }
 
 type UserProfile struct {
-	UsernameField `bson:"inline"`
-	Email         string `json:"email,omitempty" bson:"email,omitempty"`
-	UserDetail    `bson:"inline"`
-	UserPassword  `bson:"inline"`
+	UsernameField
+	Email string `json:"email,omitempty"`
+	UserDetail
+	UserPassword
 
 	// === ข้อมูล LINE (ระดับ user) ===
-	LineUserID      string `json:"lineuserid" bson:"lineuserid"`
-	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"`
-	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`
+	LineUserID      string `json:"lineuserid"`
+	LineDisplayName string `json:"linedisplayname"`
+	LinePictureURL  string `json:"linepictureurl"`
 
-	CreatedAt time.Time `json:"-" bson:"createdat,omitempty"`
-}
-
-func (UserProfile) CollectionName() string {
-	return userCollectionName
+	CreatedAt time.Time `json:"-"`
 }
 
 type UserProfileRequest struct {
-	UserDetail `bson:"inline"`
+	UserDetail
 }
 
 type UserPasswordRequest struct {
-	CurrentPassword string `json:"currentpassword" bson:"currentpassword" validate:"required,gte=15,max=64"`
-	NewPassword     string `json:"newpassword" bson:"newpassword" validate:"required,gte=15,max=64"`
+	CurrentPassword string `json:"currentpassword" validate:"required,gte=15,max=64"`
+	NewPassword     string `json:"newpassword" validate:"required,gte=15,max=64"`
 }
 
 type UserProfileReponse struct {
@@ -254,27 +218,27 @@ const (
 )
 
 type ShopUserBase struct {
-	MembershipUID string   `json:"membershipuid" bson:"membershipuid"`
-	Username      string   `json:"username" bson:"username"`
-	UserUID       string   `json:"useruid" bson:"useruid"`
-	HoldingUID    string   `json:"holdinguid" bson:"holdinguid"`
-	HoldingCode   string   `json:"holdingcode" bson:"holdingcode"`
-	Role          UserRole `json:"role" bson:"role"`
+	MembershipUID string   `json:"membershipuid"`
+	Username      string   `json:"username"`
+	UserUID       string   `json:"useruid"`
+	HoldingUID    string   `json:"holdinguid"`
+	HoldingCode   string   `json:"holdingcode"`
+	Role          UserRole `json:"role"`
 }
 
 // DocumentApproval - ข้อมูลการอนุมัติแยกตามประเภทเอกสาร
 type DocumentApproval struct {
-	ApprovalRole      int     `json:"approvalrole" bson:"approvalrole"`           // 0=ไม่มีสิทธิ์, 1-4=ระดับผู้อนุมัติ
-	MaxApprovalAmount float64 `json:"maxapprovalamount" bson:"maxapprovalamount"` // วงเงินอนุมัติสูงสุด (บาท)
+	ApprovalRole      int     `json:"approvalrole"`      // 0=ไม่มีสิทธิ์, 1-4=ระดับผู้อนุมัติ
+	MaxApprovalAmount float64 `json:"maxapprovalamount"` // วงเงินอนุมัติสูงสุด (บาท)
 }
 
 type AccessScope struct {
-	ScopeType    string `json:"scopetype" bson:"scopetype"`                           // company, branch
-	CompanyUID   string `json:"companyuid,omitempty" bson:"companyuid,omitempty"`     // immutable company id
-	BranchUID    string `json:"branchuid,omitempty" bson:"branchuid,omitempty"`       // immutable branch id
-	BusinessCode string `json:"businesscode,omitempty" bson:"businesscode,omitempty"` // legacy display code
-	BranchCode   string `json:"branchcode,omitempty" bson:"branchcode,omitempty"`     // legacy display code
-	AllBranches  bool   `json:"allbranches,omitempty" bson:"allbranches,omitempty"`
+	ScopeType    string `json:"scopetype"`              // company, branch
+	CompanyUID   string `json:"companyuid,omitempty"`   // immutable company id
+	BranchUID    string `json:"branchuid,omitempty"`    // immutable branch id
+	BusinessCode string `json:"businesscode,omitempty"` // legacy display code
+	BranchCode   string `json:"branchcode,omitempty"`   // legacy display code
+	AllBranches  bool   `json:"allbranches,omitempty"`
 }
 
 // ScopesAllow reports whether the given access scopes permit access to a company (businessCode)
@@ -361,118 +325,110 @@ func ScopesAllowBranchSelection(scopes []AccessScope, companyUID, branchUID stri
 }
 
 type ShopUser struct {
-	ID                primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Version           int64              `json:"-" bson:"__v"`
-	ShopUserBase      `bson:"inline"`
-	PermissionVersion int64     `json:"permissionversion" bson:"permissionversion"`
-	IsDeleted         bool      `json:"isdeleted" bson:"isdeleted"`
-	CreatedAt         time.Time `json:"createdat" bson:"createdat"`
-	CreatedBy         string    `json:"createdby" bson:"createdby"`
-	IsFavorite        bool      `json:"isfavorite" bson:"isfavorite"`
-	LastAccessedAt    time.Time `json:"lastaccessedat" bson:"lastaccessedat"`
-	IsCreator         bool      `json:"iscreator,omitempty" bson:"-"`
-	IsAccessDisabled  bool      `json:"isaccessdisabled" bson:"isaccessdisabled"`
-	AccessDisabledAt  time.Time `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
-	AccessDisabledBy  string    `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
-	AccessEnabledAt   time.Time `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
-	AccessEnabledBy   string    `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
+	ID      string `json:"id"`
+	Version int64  `json:"-"`
+	ShopUserBase
+	PermissionVersion int64     `json:"permissionversion"`
+	IsDeleted         bool      `json:"isdeleted"`
+	CreatedAt         time.Time `json:"createdat"`
+	CreatedBy         string    `json:"createdby"`
+	IsFavorite        bool      `json:"isfavorite"`
+	LastAccessedAt    time.Time `json:"lastaccessedat"`
+	IsCreator         bool      `json:"iscreator,omitempty"`
+	IsAccessDisabled  bool      `json:"isaccessdisabled"`
+	AccessDisabledAt  time.Time `json:"accessdisabledat,omitempty"`
+	AccessDisabledBy  string    `json:"accessdisabledby,omitempty"`
+	AccessEnabledAt   time.Time `json:"accessenabledat,omitempty"`
+	AccessEnabledBy   string    `json:"accessenabledby,omitempty"`
 	// AccessExpiryDate auto-blocks access once the date is reached (offboarding /
 	// last working day). Zero = no expiry. The shop creator is always exempt.
-	AccessExpiryDate time.Time `json:"accessexpirydate,omitempty" bson:"accessexpirydate,omitempty"`
+	AccessExpiryDate time.Time `json:"accessexpirydate,omitempty"`
 
 	// === ข้อมูลพนักงาน ===
-	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
-	Department string `json:"department" bson:"department"` // แผนก
+	Position   string `json:"position"`   // ตำแหน่งงาน
+	Department string `json:"department"` // แผนก
 
 	// === ข้อมูล LINE OA ===
-	LineUserID      string `json:"lineuserid" bson:"lineuserid"`           // LINE User ID
-	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"` // LINE Display Name
-	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`   // LINE Profile Picture URL
+	LineUserID      string `json:"lineuserid"`      // LINE User ID
+	LineDisplayName string `json:"linedisplayname"` // LINE Display Name
+	LinePictureURL  string `json:"linepictureurl"`  // LINE Profile Picture URL
 
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
-	POApproval        *DocumentApproval `json:"poapproval,omitempty" bson:"poapproval,omitempty"`               // อนุมัติใบสั่งซื้อ
-	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"` // อนุมัติใบเสนอราคา
-	AccessScopes      []AccessScope     `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
-	PermissionSets    []string          `json:"permissionsets" bson:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
-}
-
-func (*ShopUser) CollectionName() string {
-	return "shopusers"
+	POApproval        *DocumentApproval `json:"poapproval,omitempty"`        // อนุมัติใบสั่งซื้อ
+	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty"` // อนุมัติใบเสนอราคา
+	AccessScopes      []AccessScope     `json:"accessscopes,omitempty"`
+	PermissionSets    []string          `json:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
 }
 
 type ShopUserInfo struct {
-	HoldingUID  string `json:"holdinguid" bson:"holdinguid"`
-	HoldingCode string `json:"holdingcode" bson:"holdingcode"`
-	Name        string `json:"name" bson:"name1"`
-	// Name1          string         `json:"name1" bson:"name1"`
-	MainHoldingCode     string           `json:"mainholdingcode" bson:"mainholdingcode"`
-	Names               []models.NameX   `json:"names" bson:"names"`
-	BranchCode          string           `json:"branchcode" bson:"branchcode"`
-	Language            string           `json:"language" bson:"language"`
-	LanguageConfigs     []LanguageConfig `json:"languageconfigs" bson:"languageconfigs"`
-	BaseCurrency        string           `json:"basecurrency" bson:"basecurrency"`
-	Currencies          []string         `json:"currencies" bson:"currencies"`
-	Timezone            string           `json:"timezone" bson:"timezone"`
-	TimezoneLabel       string           `json:"timezonelabel" bson:"timezonelabel"`
-	TimezoneOffset      string           `json:"timezoneoffset" bson:"timezoneoffset"`
-	DateFormat          string           `json:"dateformat" bson:"dateformat"`
-	UseBuddhistCalendar bool             `json:"usebuddhistcalendar" bson:"usebuddhistcalendar"`
-	Role                UserRole         `json:"role" bson:"role"`
-	IsFavorite          bool             `json:"isfavorite" bson:"isfavorite"`
-	LastAccessedAt      time.Time        `json:"lastaccessedat" bson:"lastaccessedat"`
-	CreatedBy           string           `json:"createdby" bson:"createdby"`
-	IsCreator           bool             `json:"iscreator,omitempty" bson:"-"`
-	IsAccessDisabled    bool             `json:"isaccessdisabled" bson:"isaccessdisabled"`
-	AccessDisabledAt    time.Time        `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
-	AccessDisabledBy    string           `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
-	AccessEnabledAt     time.Time        `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
-	AccessEnabledBy     string           `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
+	HoldingUID  string `json:"holdinguid"`
+	HoldingCode string `json:"holdingcode"`
+	Name        string `json:"name"`
+	// Name1          string         `json:"name1"`
+	MainHoldingCode     string           `json:"mainholdingcode"`
+	Names               []models.NameX   `json:"names"`
+	BranchCode          string           `json:"branchcode"`
+	Language            string           `json:"language"`
+	LanguageConfigs     []LanguageConfig `json:"languageconfigs"`
+	BaseCurrency        string           `json:"basecurrency"`
+	Currencies          []string         `json:"currencies"`
+	Timezone            string           `json:"timezone"`
+	TimezoneLabel       string           `json:"timezonelabel"`
+	TimezoneOffset      string           `json:"timezoneoffset"`
+	DateFormat          string           `json:"dateformat"`
+	UseBuddhistCalendar bool             `json:"usebuddhistcalendar"`
+	Role                UserRole         `json:"role"`
+	IsFavorite          bool             `json:"isfavorite"`
+	LastAccessedAt      time.Time        `json:"lastaccessedat"`
+	CreatedBy           string           `json:"createdby"`
+	IsCreator           bool             `json:"iscreator,omitempty"`
+	IsAccessDisabled    bool             `json:"isaccessdisabled"`
+	AccessDisabledAt    time.Time        `json:"accessdisabledat,omitempty"`
+	AccessDisabledBy    string           `json:"accessdisabledby,omitempty"`
+	AccessEnabledAt     time.Time        `json:"accessenabledat,omitempty"`
+	AccessEnabledBy     string           `json:"accessenabledby,omitempty"`
 }
 
 type LanguageConfig struct {
-	Code           string `json:"code" bson:"code"`
-	CodeTranslator string `json:"codetranslator" bson:"codetranslator"`
-	Name           string `json:"name" bson:"name"`
-	IsUse          bool   `json:"isuse" bson:"isuse"`
-	IsDefault      bool   `json:"isdefault" bson:"isdefault"`
-}
-
-func (*ShopUserInfo) CollectionName() string {
-	return "shopusers"
+	Code           string `json:"code"`
+	CodeTranslator string `json:"codetranslator"`
+	Name           string `json:"name"`
+	IsUse          bool   `json:"isuse"`
+	IsDefault      bool   `json:"isdefault"`
 }
 
 type UserRoleRequest struct {
-	HoldingCode     string `json:"holdingcode" bson:"holdingcode"`
-	EditUsername    string `json:"editusername" bson:"editusername"`
-	Username        string `json:"username" bson:"username"`
-	UserUID         string `json:"useruid,omitempty" bson:"useruid,omitempty"`
-	UserProfileName string `json:"userprofilename" bson:"userprofilename"`
-	Email           string `json:"email,omitempty" bson:"email,omitempty"`
+	HoldingCode     string `json:"holdingcode"`
+	EditUsername    string `json:"editusername"`
+	Username        string `json:"username"`
+	UserUID         string `json:"useruid,omitempty"`
+	UserProfileName string `json:"userprofilename"`
+	Email           string `json:"email,omitempty"`
 	// Avatar/AvatarThumb are pointers so LINE-sync/auto-unlink callers that omit them do not wipe stored values.
-	Avatar           *string       `json:"avatar,omitempty" bson:"-"`
-	AvatarThumb      *string       `json:"avatarthumb,omitempty" bson:"-"`
-	Role             UserRole      `json:"role" bson:"role"`
-	IsAccessDisabled bool          `json:"isaccessdisabled" bson:"isaccessdisabled"`
-	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
-	AccessDisabledBy string        `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
-	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
-	AccessEnabledBy  string        `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
-	AccessExpiryDate time.Time     `json:"accessexpirydate,omitempty" bson:"accessexpirydate,omitempty"`
-	AccessScopes     []AccessScope `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
-	PermissionSets   []string      `json:"permissionsets" bson:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
+	Avatar           *string       `json:"avatar,omitempty"`
+	AvatarThumb      *string       `json:"avatarthumb,omitempty"`
+	Role             UserRole      `json:"role"`
+	IsAccessDisabled bool          `json:"isaccessdisabled"`
+	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty"`
+	AccessDisabledBy string        `json:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty"`
+	AccessEnabledBy  string        `json:"accessenabledby,omitempty"`
+	AccessExpiryDate time.Time     `json:"accessexpirydate,omitempty"`
+	AccessScopes     []AccessScope `json:"accessscopes,omitempty"`
+	PermissionSets   []string      `json:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
 
 	// === ข้อมูลพนักงาน ===
-	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
-	Department string `json:"department" bson:"department"` // แผนก
+	Position   string `json:"position"`   // ตำแหน่งงาน
+	Department string `json:"department"` // แผนก
 
 	// === ข้อมูล LINE OA ===
-	LineUserID      string `json:"lineuserid" bson:"lineuserid"`           // LINE User ID
-	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"` // LINE Display Name
-	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`   // LINE Profile Picture URL
+	LineUserID      string `json:"lineuserid"`      // LINE User ID
+	LineDisplayName string `json:"linedisplayname"` // LINE Display Name
+	LinePictureURL  string `json:"linepictureurl"`  // LINE Profile Picture URL
 
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
-	POApproval        *DocumentApproval `json:"poapproval,omitempty" bson:"poapproval,omitempty"`
-	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"`
+	POApproval        *DocumentApproval `json:"poapproval,omitempty"`
+	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty"`
 }
 
 // UnmarshalJSON accepts an empty expiry from optional date inputs as no expiry.
@@ -495,44 +451,40 @@ func (req *UserRoleRequest) UnmarshalJSON(data []byte) error {
 }
 
 type ShopUserAccessLog struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	HoldingCode    string             `json:"holdingcode" bson:"holdingcode"`
-	BusinessCode   string             `json:"businesscode,omitempty" bson:"businesscode,omitempty"`
-	Username       string             `json:"username" bson:"username"`
-	Ip             string             `json:"ip" bson:"ip"`
-	LastAccessedAt time.Time          `json:"lastaccessedat" bson:"lastaccessedat"`
-}
-
-func (*ShopUserAccessLog) CollectionName() string {
-	return "shopuseraccesslogs"
+	ID             string    `json:"id"`
+	HoldingCode    string    `json:"holdingcode"`
+	BusinessCode   string    `json:"businesscode,omitempty"`
+	Username       string    `json:"username"`
+	Ip             string    `json:"ip"`
+	LastAccessedAt time.Time `json:"lastaccessedat"`
 }
 
 type ShopUserProfile struct {
-	ShopUserBase     `bson:"inline"`
-	UID              string        `json:"uid,omitempty" bson:"uid,omitempty"`
-	Email            string        `json:"email,omitempty" bson:"email,omitempty"`
-	UserProfileName  string        `json:"userprofilename" bson:"userprofilename"`
-	Avatar           string        `json:"avatar" bson:"avatar"`
-	AvatarThumb      string        `json:"avatarthumb" bson:"avatarthumb"`
-	IsCreator        bool          `json:"iscreator,omitempty" bson:"-"`
-	IsAccessDisabled bool          `json:"isaccessdisabled" bson:"isaccessdisabled"`
-	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty" bson:"accessdisabledat,omitempty"`
-	AccessDisabledBy string        `json:"accessdisabledby,omitempty" bson:"accessdisabledby,omitempty"`
-	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty" bson:"accessenabledat,omitempty"`
-	AccessEnabledBy  string        `json:"accessenabledby,omitempty" bson:"accessenabledby,omitempty"`
-	AccessScopes     []AccessScope `json:"accessscopes,omitempty" bson:"accessscopes,omitempty"`
-	PermissionSets   []string      `json:"permissionsets" bson:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
+	ShopUserBase
+	UID              string        `json:"uid,omitempty"`
+	Email            string        `json:"email,omitempty"`
+	UserProfileName  string        `json:"userprofilename"`
+	Avatar           string        `json:"avatar"`
+	AvatarThumb      string        `json:"avatarthumb"`
+	IsCreator        bool          `json:"iscreator,omitempty"`
+	IsAccessDisabled bool          `json:"isaccessdisabled"`
+	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty"`
+	AccessDisabledBy string        `json:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty"`
+	AccessEnabledBy  string        `json:"accessenabledby,omitempty"`
+	AccessScopes     []AccessScope `json:"accessscopes,omitempty"`
+	PermissionSets   []string      `json:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
 
 	// === ข้อมูลพนักงาน ===
-	Position   string `json:"position" bson:"position"`     // ตำแหน่งงาน
-	Department string `json:"department" bson:"department"` // แผนก
+	Position   string `json:"position"`   // ตำแหน่งงาน
+	Department string `json:"department"` // แผนก
 
 	// === ข้อมูล LINE OA ===
-	LineUserID      string `json:"lineuserid" bson:"lineuserid"`           // LINE User ID
-	LineDisplayName string `json:"linedisplayname" bson:"linedisplayname"` // LINE Display Name
-	LinePictureURL  string `json:"linepictureurl" bson:"linepictureurl"`   // LINE Profile Picture URL
+	LineUserID      string `json:"lineuserid"`      // LINE User ID
+	LineDisplayName string `json:"linedisplayname"` // LINE Display Name
+	LinePictureURL  string `json:"linepictureurl"`  // LINE Profile Picture URL
 
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
-	POApproval        *DocumentApproval `json:"poapproval,omitempty" bson:"poapproval,omitempty"`
-	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty" bson:"quotationapproval,omitempty"`
+	POApproval        *DocumentApproval `json:"poapproval,omitempty"`
+	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty"`
 }

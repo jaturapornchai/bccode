@@ -2,169 +2,82 @@ package shop
 
 import (
 	"context"
-	"errors"
-	organization "smlcloudplatform/internal/organization"
-	"smlcloudplatform/internal/shop/models"
-	"smlcloudplatform/pkg/microservice"
-	micromodels "smlcloudplatform/pkg/microservice/models"
-	"strings"
+	"database/sql"
+	"time"
 
-	"github.com/smlsoft/mongopagination"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	authmodels "smlcloudplatform/internal/authentication/models"
+	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
+	"smlcloudplatform/internal/shop/models"
+	micromodels "smlcloudplatform/pkg/microservice/models"
 )
 
+// IShopRepository stores Holdings (the "shop" of the legacy API) in the central database.
 type IShopRepository interface {
-	Transaction(ctx context.Context, queryFunc func(context.Context) error) error
-	EnsureBootstrapIndexes(ctx context.Context) error
-	Create(ctx context.Context, shop models.ShopDoc) (string, error)
-	CreateCodeClaim(ctx context.Context, claim organization.OrganizationCodeClaim) error
-	CreateAudit(ctx context.Context, audit organization.OrganizationAudit) error
-	CreateOutbox(ctx context.Context, event organization.OrganizationOutboxEvent) error
-	Update(ctx context.Context, guid string, expectedVersion int64, expectedActive bool, shop models.ShopDoc) error
-	FindByGuid(ctx context.Context, guid string) (models.ShopDoc, error)
+	// Transaction runs fn in one database transaction; repositories built on the same
+	// *sql.DB join it through the context.
+	Transaction(ctx context.Context, fn func(context.Context) error) error
+	Create(ctx context.Context, shop models.ShopDoc) error
+	// Update rewrites the Holding profile while the Holding still has expectedActive.
+	Update(ctx context.Context, holdingCode string, expectedActive bool, shop models.ShopDoc) error
+	// UpdateStatus changes is_active only when it still equals expectedActive.
+	UpdateStatus(ctx context.Context, holdingCode string, expectedActive bool, active bool, username string, now time.Time) error
 	FindByHoldingCode(ctx context.Context, holdingCode string) (models.ShopDoc, error)
-	FindPage(ctx context.Context, pageable micromodels.Pageable) ([]models.ShopInfo, mongopagination.PaginationData, error)
-	Delete(ctx context.Context, guid string, username string) error
+	RecordAudit(ctx context.Context, audit orgaccess.Audit) error
 }
 
-func (repo ShopRepository) Transaction(ctx context.Context, queryFunc func(context.Context) error) error {
-	return repo.pst.Transaction(ctx, queryFunc)
+// IShopUserRepository stores Holding memberships (holding_members) and reads user profiles.
+type IShopUserRepository interface {
+	FindByHoldingCodeAndUsername(ctx context.Context, holdingCode string, username string) (authmodels.ShopUser, error)
+	FindByHoldingCodeAndUserUID(ctx context.Context, holdingCode string, userUID string) (authmodels.ShopUser, error)
+	FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]authmodels.ShopUserInfo, common.PaginationData, error)
+	FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]authmodels.ShopUserInfo, common.PaginationData, error)
+	FindByUserInShopPageWithProfileMatches(ctx context.Context, holdingCode string, pageable micromodels.Pageable, profileUsernames []string) ([]authmodels.ShopUser, common.PaginationData, error)
+	FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error)
+	FindUserProfileByUsernames(ctx context.Context, usernames []string) ([]authmodels.UserProfile, error)
+	// FindShopCreatedBy returns the user UID that created the Holding.
+	FindShopCreatedBy(ctx context.Context, holdingCode string) (string, error)
+	SaveFullProfile(ctx context.Context, holdingCode string, req *authmodels.UserRoleRequest) error
+	SaveStable(ctx context.Context, holdingCode string, userUID string, role authmodels.UserRole) error
+	Delete(ctx context.Context, holdingCode string, username string) error
+	UpdateLastAccess(ctx context.Context, holdingCode string, userUID string, lastAccessedAt time.Time) error
+	SaveFavorite(ctx context.Context, holdingCode string, userUID string, isFavorite bool) error
+	ResolveHoldingCodeByHoldingCode(ctx context.Context, holdingCode string) (string, error)
+	ResolveCompanyUID(ctx context.Context, holdingCode string, businessCode string) (string, error)
 }
 
-func (repo ShopRepository) EnsureBootstrapIndexes(ctx context.Context) error {
-	_, err := repo.pst.CreateIndex(ctx, organization.OrganizationCodeClaim{}, "uniq_organizationcodeclaims_scope_code", bson.D{
-		{Key: "entitytype", Value: 1},
-		{Key: "scopeuid", Value: 1},
-		{Key: "normalizedcode", Value: 1},
-	})
-	return err
+// IShopUserAccessLogRepository records Holding selections.
+type IShopUserAccessLogRepository interface {
+	Create(ctx context.Context, shopUserAccessLog authmodels.ShopUserAccessLog) error
 }
 
-type ShopRepository struct {
-	pst microservice.IPersisterMongo
+type txKey struct{}
+
+type dbtx interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
 }
 
-func NewShopRepository(pst microservice.IPersisterMongo) ShopRepository {
-	return ShopRepository{
-		pst: pst,
+// conn returns the transaction carried by ctx, or the pool.
+func conn(ctx context.Context, db *sql.DB) dbtx {
+	if tx, ok := ctx.Value(txKey{}).(*sql.Tx); ok && tx != nil {
+		return tx
 	}
+	return db
 }
 
-func (repo ShopRepository) Create(ctx context.Context, shop models.ShopDoc) (string, error) {
-	idx, err := repo.pst.Create(ctx, &models.ShopDoc{}, shop)
-	if err != nil {
-		return "", err
+func runInTx(ctx context.Context, db *sql.DB, fn func(context.Context) error) error {
+	if _, ok := ctx.Value(txKey{}).(*sql.Tx); ok {
+		return fn(ctx)
 	}
-	return idx.Hex(), nil
-}
-
-func (repo ShopRepository) CreateCodeClaim(ctx context.Context, claim organization.OrganizationCodeClaim) error {
-	_, err := repo.pst.Create(ctx, organization.OrganizationCodeClaim{}, claim)
-	return err
-}
-
-func (repo ShopRepository) CreateAudit(ctx context.Context, audit organization.OrganizationAudit) error {
-	_, err := repo.pst.Create(ctx, organization.OrganizationAudit{}, audit)
-	return err
-}
-
-func (repo ShopRepository) CreateOutbox(ctx context.Context, event organization.OrganizationOutboxEvent) error {
-	_, err := repo.pst.Create(ctx, organization.OrganizationOutboxEvent{}, event)
-	return err
-}
-
-func (repo ShopRepository) Update(ctx context.Context, guid string, expectedVersion int64, expectedActive bool, shop models.ShopDoc) error {
-	collection, err := repo.pst.Exec(ctx, &models.ShopDoc{})
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	result, err := collection.UpdateOne(ctx, bson.M{
-		"guidfixed": guid,
-		"__v":       expectedVersion,
-		"isactive":  expectedActive,
-	}, bson.M{
-		"$set": bson.M{
-			"holdingcode":          shop.HoldingCode,
-			"profilepicture":       shop.ProfilePicture,
-			"name1":                shop.Name1,
-			"names":                shop.Names,
-			"telephone":            shop.Telephone,
-			"branchcode":           shop.BranchCode,
-			"ismainshop":           shop.IsMainShop,
-			"posproductcentertype": shop.PosProductCenterType,
-			"productcentertype":    shop.ProductCenterType,
-			"debtorcentertype":     shop.DebtorCenterType,
-			"mainholdingcode":      shop.MainHoldingCode,
-			"address":              shop.Address,
-			"images":               shop.Images,
-			"logo":                 shop.Logo,
-			"settings":             shop.Settings,
-			"isbcmember":           shop.IsBcMember,
-			"promptshopinfo":       shop.PromptShopInfo,
-			"updatedby":            shop.UpdatedBy,
-			"updatedat":            shop.UpdatedAt,
-		},
-		"$inc": bson.M{"__v": 1},
-	})
-	if err != nil {
+	defer tx.Rollback()
+	if err := fn(context.WithValue(ctx, txKey{}, tx)); err != nil {
 		return err
 	}
-	if result.MatchedCount != 1 {
-		return organization.ErrStatusChangeConflict
-	}
-	return nil
-}
-
-func (repo ShopRepository) FindByGuid(ctx context.Context, guid string) (models.ShopDoc, error) {
-	findShop := &models.ShopDoc{}
-	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"guidfixed": guid, "deletedat": bson.M{"$exists": false}}, findShop)
-
-	if err != nil {
-		return repo.FindByHoldingCode(ctx, guid)
-	}
-	if strings.TrimSpace(findShop.GuidFixed) == "" {
-		return repo.FindByHoldingCode(ctx, guid)
-	}
-	return *findShop, err
-}
-
-func (repo ShopRepository) FindByHoldingCode(ctx context.Context, holdingCode string) (models.ShopDoc, error) {
-	findShop := &models.ShopDoc{}
-	err := repo.pst.FindOne(ctx, &models.ShopDoc{}, bson.M{"holdingcode": holdingCode, "deletedat": bson.M{"$exists": false}}, findShop)
-
-	if err != nil {
-		return models.ShopDoc{}, err
-	}
-	if strings.TrimSpace(findShop.GuidFixed) == "" {
-		return models.ShopDoc{}, errors.New("holding not found")
-	}
-	return *findShop, nil
-}
-
-func (repo ShopRepository) FindPage(ctx context.Context, pageable micromodels.Pageable) ([]models.ShopInfo, mongopagination.PaginationData, error) {
-	filterQueries := bson.M{
-		"deletedat": bson.M{"$exists": false},
-		"name1": bson.M{"$regex": primitive.Regex{
-			Pattern: ".*" + pageable.Query + ".*",
-			Options: "",
-		}}}
-
-	shopList := []models.ShopInfo{}
-
-	pagination, err := repo.pst.FindPage(ctx, &models.ShopInfo{}, filterQueries, pageable, &shopList)
-
-	if err != nil {
-		return []models.ShopInfo{}, mongopagination.PaginationData{}, err
-	}
-
-	return shopList, pagination, nil
-}
-
-func (repo ShopRepository) Delete(ctx context.Context, guid string, username string) error {
-	err := repo.pst.SoftDelete(ctx, &models.ShopDoc{}, username, bson.M{"guidfixed": guid, "deletedat": bson.M{"$exists": false}})
-	if err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit()
 }

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/mongo"
 	"smlcloudplatform/internal/authentication/models"
+
+	"github.com/google/uuid"
 )
 
 const googleIssuer = "https://accounts.google.com"
@@ -40,7 +40,7 @@ func findPostgresGoogleIdentity(ctx context.Context, db googleQuery, issuer, sub
 	var extra []byte
 	err := db.QueryRowContext(ctx, `SELECT id::text,user_id::text,extra,created_at FROM user_identities WHERE provider='google' AND identity_id=$1`, subject).Scan(&identity.IdentityUID, &identity.UserUID, &extra, &identity.LinkedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, mongo.ErrNoDocuments
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (r *AuthenticationPostgresRepository) createPostgresGoogleIdentity(ctx cont
 		}
 		return postgresGoogleUser(ctx, tx, linked.UserUID)
 	}
-	if !errors.Is(err, mongo.ErrNoDocuments) {
+	if !errors.Is(err, ErrNotFound) {
 		return empty, err
 	}
 	uid, err := googleUserForFirstLink(ctx, tx, email, input.Name)

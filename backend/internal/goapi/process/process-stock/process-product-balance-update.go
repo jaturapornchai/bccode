@@ -106,7 +106,7 @@ func ProcessProductBalanceUpdate(holdingCode, businessCode string) error {
 
 // ==================== Partial Update (ทำตามรหัส) ====================
 
-// ProcessProductBalanceUpdateByItems — คำนวณ + UPDATE เฉพาะ itemcodes ที่ระบุ (เรียกจาก Kafka consumer)
+// ProcessProductBalanceUpdateByItems — คำนวณ + UPDATE เฉพาะ itemcodes ที่ระบุ (เรียกจาก stock engine หลังคำนวณต้นทุน)
 func ProcessProductBalanceUpdateByItems(db *sql.DB, holdingCode, businessCode string, itemCodes []string) error {
 	holdingCode = strings.TrimSpace(holdingCode)
 	businessCode = strings.ToUpper(strings.TrimSpace(businessCode))
@@ -162,7 +162,7 @@ func ProcessProductBalanceUpdateByItems(db *sql.DB, holdingCode, businessCode st
 	return nil
 }
 
-// ProcessProductBalanceUpdateByItemsAsync — เรียกแบบ goroutine (ไม่ block Kafka consumer)
+// ProcessProductBalanceUpdateByItemsAsync — เรียกแบบ goroutine (ไม่ block ผู้เรียก)
 // OnBalanceUpdated — optional hook invoked after product balances are updated.
 // Set by the handlers package to invalidate the product search cache without
 // an import cycle (process-stock must not import handlers).

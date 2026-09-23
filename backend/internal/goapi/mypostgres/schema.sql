@@ -1,10 +1,10 @@
 -- ========================================
 -- PostgreSQL Schema for Queue Management
--- แทนที่ Redis Queue System
+-- Queue System (PostgreSQL)
 -- ========================================
 
 -- Table: queues
--- แทนที่ Redis List (queue:{holdingCode})
+-- คิวงานต่อ holding
 CREATE TABLE IF NOT EXISTS queues (
     id BIGSERIAL PRIMARY KEY,
     holdingcode VARCHAR(100) NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS queues (
 );
 
 -- Table: deadletterqueue
--- แทนที่ Redis List (deadletterqueue)
+-- งานที่ล้มเหลว (dead letter)
 CREATE TABLE IF NOT EXISTS deadletterqueue (
     id BIGSERIAL PRIMARY KEY,
     holdingcode VARCHAR(100) NOT NULL,

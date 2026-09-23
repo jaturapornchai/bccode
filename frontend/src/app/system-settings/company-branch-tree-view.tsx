@@ -138,7 +138,6 @@ interface OrganizationSaveResponse {
   message?: string;
   data?: {
     entity?: CompanyRecord | BranchRecord;
-    kafka_sync?: string;
   };
 }
 
@@ -750,9 +749,8 @@ export function CompanyBranchTreeView({
     () => workspace?.shopInfo?.settings?.language || "th",
     [workspace],
   );
-  const canCreateOrganization = Boolean(
-    auth?.profile?.email?.trim() && [1, 2].includes(Number(workspace?.shop?.role)),
-  );
+  // ตรงกับ backend (orgaccess.RequireHoldingAdmin) — ไม่บังคับอีเมล เพื่อให้บัญชี Demo (owner) ทดสอบได้ครบ
+  const canCreateOrganization = [1, 2].includes(Number(workspace?.shop?.role));
 
   // Collapsed states
   const [collapsedCompanies, setCollapsedCompanies] = useState<Record<string, boolean>>({});
@@ -1313,7 +1311,7 @@ export function CompanyBranchTreeView({
               size="sm"
               className="gap-1 font-semibold"
               disabled={!canCreateOrganization}
-              title={!canCreateOrganization ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน") : tr("st_add_company", "เพิ่มบริษัท")}
+              title={!canCreateOrganization ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN ของกลุ่มกิจการ") : tr("st_add_company", "เพิ่มบริษัท")}
               onClick={() => {
                 setFormType("createcompany");
                 setSelectedNode({
@@ -1434,7 +1432,7 @@ export function CompanyBranchTreeView({
                           className="w-7 h-7 text-sky-500 hover:text-sky-600 hover:bg-sky-500/10"
                           title={
                             !canCreateOrganization
-                              ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน")
+                              ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN ของกลุ่มกิจการ")
                               : !companyUID
                                 ? tr("st_company_no_uid_cannot_add_branch", "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้")
                                 : tr("add_branch", "เพิ่มสาขา")
@@ -1600,7 +1598,7 @@ export function CompanyBranchTreeView({
                       disabled={!canCreateOrganization || !selectedCompanyUID}
                       title={
                         !canCreateOrganization
-                          ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN และเชื่อมอีเมลก่อน")
+                          ? tr("st_owner_admin_email_required", "ต้องเป็น OWNER/ADMIN ของกลุ่มกิจการ")
                           : !selectedCompanyUID
                             ? tr("st_company_no_uid_cannot_add_branch", "บริษัทนี้ยังไม่มีรหัสถาวร companyuid จึงเพิ่มสาขาไม่ได้")
                             : tr("st_add_branch_to_company", "เพิ่มสาขาในบริษัทนี้")

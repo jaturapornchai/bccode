@@ -584,37 +584,6 @@ export const MENU_SECTIONS: MenuSection[] = [
     ],
   },
   {
-    id: "vat",
-    title: { key: "menu_vat_taxes", th: "ภาษีมูลค่าเพิ่ม", en: "VAT & Taxes" },
-    groups: [
-      {
-        id: "vat-transactions",
-        title: { key: "menu_tax_registers", th: "บันทึกภาษี", en: "Tax Entries" },
-        items: [
-          tx("purchase-vat-adjust", "ปรับปรุงภาษีซื้อ", "Adjust Purchase VAT", "/transaction/purchasevatadjustment", "finance"),
-          tx("withholding-tax-deduction", "ภาษีหัก ณ ที่จ่าย", "Withholding Tax", "/transaction/withholdingtax", "finance"),
-        ],
-      },
-      {
-        id: "vat-reports",
-        title: { key: "menu_tax_reports_returns", th: "รายงานภาษีและแบบยื่น", en: "Tax Reports & Returns" },
-        items: [
-          tx("vat-buy", "รายงานภาษีซื้อ", "VAT Purchase", "/report/reportvatbuy", "report"),
-          tx("vat-sale", "รายงานภาษีขาย", "VAT Sale", "/report/reportvatsale", "report"),
-          tx("vat-summary-report", "รายงานสรุปยอดภาษี", "VAT Summary Report", "/report/vatsummary", "report"),
-          tx("vat-pp30", "แบบยื่นภาษี ภ.พ.30", "VAT Return (P.P.30)", "/report/vatpp30", "report"),
-          tx("vat-pp36", "แบบยื่น ภ.พ.36", "P.P.36 Return", "/report/vatpp36", "report"),
-          tx("withholding-tax-report", "รายงานภาษีหัก ณ ที่จ่าย", "Withholding Tax Report", "/report/wht-reports", "report"),
-          tx("withholding-tax-received", "รายงานภาษีถูกหัก ณ ที่จ่าย", "Withholding Tax Received", "/report/whtreceived", "report"),
-          tx("vat-pnd2", "แบบยื่น ภ.ง.ด.2", "P.N.D.2 Return", "/report/vatpnd2", "report"),
-          tx("vat-pnd3", "แบบยื่น ภ.ง.ด.3", "P.N.D.3 Return", "/report/vatpnd3", "report"),
-          tx("vat-pnd53", "แบบยื่น ภ.ง.ด.53", "P.N.D.53 Return", "/report/vatpnd53", "report"),
-          tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
-        ],
-      },
-    ],
-  },
-  {
     id: "gl",
     title: { key: "menu_general_ledger_gl", th: "บัญชีแยกประเภท", en: "General Ledger (GL)" },
     groups: [
@@ -663,6 +632,32 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("profit-loss", "งบกำไรขาดทุน", "Profit and Loss", "/report/pnl", "report"),
           tx("balance-sheet", "งบดุล", "Balance Sheet", "/report/balancesheet", "report"),
           tx("budget-comparison-report", "รายงานเปรียบเทียบงบประมาณ", "Budget Comparison Report", "/report/budgetcomparison", "report"),
+        ],
+      },
+      // 2026-09-23 ลุงจืด: ทุกอย่างอยู่ในระบบบัญชีแยกประเภท (ผู้ใช้ GL ตัวเดียว เช่น สำนักงานบัญชี ใช้ได้เลย) — ตรงกับ Champ ที่เมนูภาษีอยู่ใต้ GL
+      {
+        id: "vat-transactions",
+        title: { key: "menu_tax_registers", th: "บันทึกภาษี", en: "Tax Entries" },
+        items: [
+          tx("purchase-vat-adjust", "ปรับปรุงภาษีซื้อ", "Adjust Purchase VAT", "/transaction/purchasevatadjustment", "finance"),
+          tx("withholding-tax-deduction", "ภาษีหัก ณ ที่จ่าย", "Withholding Tax", "/transaction/withholdingtax", "finance"),
+        ],
+      },
+      {
+        id: "vat-reports",
+        title: { key: "menu_tax_reports_returns", th: "รายงานภาษีและแบบยื่น", en: "Tax Reports & Returns" },
+        items: [
+          tx("vat-buy", "รายงานภาษีซื้อ", "VAT Purchase", "/report/reportvatbuy", "report"),
+          tx("vat-sale", "รายงานภาษีขาย", "VAT Sale", "/report/reportvatsale", "report"),
+          tx("vat-summary-report", "รายงานสรุปยอดภาษี", "VAT Summary Report", "/report/vatsummary", "report"),
+          tx("vat-pp30", "แบบยื่นภาษี ภ.พ.30", "VAT Return (P.P.30)", "/report/vatpp30", "report"),
+          tx("vat-pp36", "แบบยื่น ภ.พ.36", "P.P.36 Return", "/report/vatpp36", "report"),
+          tx("withholding-tax-report", "รายงานภาษีหัก ณ ที่จ่าย", "Withholding Tax Report", "/report/wht-reports", "report"),
+          tx("withholding-tax-received", "รายงานภาษีถูกหัก ณ ที่จ่าย", "Withholding Tax Received", "/report/whtreceived", "report"),
+          tx("vat-pnd2", "แบบยื่น ภ.ง.ด.2", "P.N.D.2 Return", "/report/vatpnd2", "report"),
+          tx("vat-pnd3", "แบบยื่น ภ.ง.ด.3", "P.N.D.3 Return", "/report/vatpnd3", "report"),
+          tx("vat-pnd53", "แบบยื่น ภ.ง.ด.53", "P.N.D.53 Return", "/report/vatpnd53", "report"),
+          tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
         ],
       },
     ],

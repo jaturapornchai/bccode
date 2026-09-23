@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"smlcloudplatform/internal/whtcert"
 	msmodels "smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
@@ -115,8 +116,8 @@ func TestThaiBahtText(t *testing.T) {
 		"-500":       "ลบห้าร้อยบาทถ้วน",
 	}
 	for in, want := range cases {
-		if got := thaiBahtText(decimal.RequireFromString(in)); got != want {
-			t.Errorf("thaiBahtText(%s) = %q, want %q", in, got, want)
+		if got := whtcert.BahtText(decimal.RequireFromString(in)); got != want {
+			t.Errorf("whtcert.BahtText(%s) = %q, want %q", in, got, want)
 		}
 	}
 }

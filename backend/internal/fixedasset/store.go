@@ -6,13 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -21,28 +17,17 @@ var (
 	ErrCodeDuplicate = errors.New("รหัสนี้มีอยู่ในระบบแล้ว")
 )
 
+// Store keeps fixed-asset master data and depreciation schedules in the holding's PostgreSQL database.
 type Store struct {
-	db      *mongo.Database
+	records *records
 	calc    *Calculator
-	indexMu sync.Mutex
-	indexed bool
 }
 
-func NewStore(db *mongo.Database) *Store {
+func NewStore(connect Connector) *Store {
 	return &Store{
-		db:   db,
-		calc: NewCalculator(),
+		records: newRecords(connect),
+		calc:    NewCalculator(),
 	}
-}
-
-func scopeFilter(s Scope) bson.M {
-	return bson.M{"holdingcode": s.Holding, "businesscode": s.Company}
-}
-
-func scopedID(s Scope, id string) bson.M {
-	f := scopeFilter(s)
-	f["_id"] = id
-	return f
 }
 
 func digest(value []byte) string {
@@ -84,51 +69,6 @@ func identityFor(s Scope, resource, code string, old Identity, now time.Time) Id
 	}
 }
 
-func (s *Store) EnsureIndexes(ctx context.Context) error {
-	s.indexMu.Lock()
-	defer s.indexMu.Unlock()
-	if s.indexed {
-		return nil
-	}
-
-	// Index for fixed_assets
-	_, err := s.db.Collection("fixed_assets").Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys:    bson.D{{Key: "holdingcode", Value: 1}, {Key: "businesscode", Value: 1}, {Key: "assetcode", Value: 1}},
-			Options: options.Index().SetUnique(true),
-		},
-		{
-			Keys: bson.D{{Key: "holdingcode", Value: 1}, {Key: "businesscode", Value: 1}, {Key: "status", Value: 1}},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	// Index for asset_types
-	_, err = s.db.Collection("asset_types").Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: "holdingcode", Value: 1}, {Key: "businesscode", Value: 1}, {Key: "typecode", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	})
-	if err != nil {
-		return err
-	}
-
-	// Index for asset_depreciations
-	_, err = s.db.Collection("asset_depreciations").Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys: bson.D{{Key: "holdingcode", Value: 1}, {Key: "businesscode", Value: 1}, {Key: "assetcode", Value: 1}, {Key: "fiscalyear", Value: 1}, {Key: "period", Value: 1}},
-			Options: options.Index().SetUnique(true),
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	s.indexed = true
-	return nil
-}
-
 // ---------------- Fixed Assets CRUD ----------------
 
 func (s *Store) CreateAsset(ctx context.Context, scope Scope, asset Asset, now time.Time) (*Asset, error) {
@@ -145,10 +85,17 @@ func (s *Store) CreateAsset(ctx context.Context, scope Scope, asset Asset, now t
 		asset.Status = "active"
 	}
 
-	f := scopeFilter(scope)
-	f["assetcode"] = asset.AssetCode
-	f["isdeleted"] = false
-	count, err := s.db.Collection("fixed_assets").CountDocuments(ctx, f)
+	db, err := s.records.db(ctx, scope.Holding)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	count, err := countRecords(ctx, tx, scope.Company, kindAsset, ` AND code = $3`, asset.AssetCode)
 	if err != nil {
 		return nil, err
 	}
@@ -156,65 +103,73 @@ func (s *Store) CreateAsset(ctx context.Context, scope Scope, asset Asset, now t
 		return nil, ErrCodeDuplicate
 	}
 
-	asset.Identity = identityFor(scope, "assets", asset.AssetCode, Identity{}, now)
-	_, err = s.db.Collection("fixed_assets").InsertOne(ctx, asset)
+	asset.Identity = identityFor(scope, kindAsset, asset.AssetCode, Identity{}, now)
+	if err := putRecord(ctx, tx, scope.Company, kindAsset, asset.ID, asset.AssetCode, asset); err != nil {
+		return nil, err
+	}
+	schedule, err := s.calc.CalculateSchedule(asset, "")
 	if err != nil {
 		return nil, err
 	}
-
-	// Calculate initial schedule
-	schedule, err := s.calc.CalculateSchedule(asset, "")
-	if err == nil && len(schedule) > 0 {
-		var docs []interface{}
-		for _, item := range schedule {
-			item.Identity = identityFor(scope, "depreciations", fmt.Sprintf("%s-%s-%d", item.AssetCode, item.FiscalYear, item.Period), Identity{}, now)
-			docs = append(docs, item)
-		}
-		_, _ = s.db.Collection("asset_depreciations").InsertMany(ctx, docs)
+	if err := putSchedule(ctx, tx, scope, schedule, nil, now); err != nil {
+		return nil, err
 	}
-
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return &asset, nil
 }
 
 func (s *Store) UpdateAsset(ctx context.Context, scope Scope, id string, asset Asset, expectedVersion int64, now time.Time) (*Asset, error) {
-	var old Asset
-	err := s.db.Collection("fixed_assets").FindOne(ctx, scopedID(scope, id)).Decode(&old)
+	db, err := s.records.db(ctx, scope.Holding)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, ErrNotFound
-		}
 		return nil, err
 	}
-	if old.IsDeleted {
-		return nil, ErrNotFound
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	old, err := lockRecord[Asset](ctx, tx, scope.Company, kindAsset, ` AND id = $3`, id)
+	if err != nil {
+		return nil, err
 	}
 	if expectedVersion > 0 && old.Version != expectedVersion {
 		return nil, ErrStaleVersion
 	}
 
-	asset.Identity = identityFor(scope, "assets", old.AssetCode, old.Identity, now)
+	asset.Identity = identityFor(scope, kindAsset, old.AssetCode, old.Identity, now)
 	asset.AssetCode = old.AssetCode // Cannot change asset code
-
-	_, err = s.db.Collection("fixed_assets").ReplaceOne(ctx, scopedID(scope, id), asset)
-	if err != nil {
+	if err := putRecord(ctx, tx, scope.Company, kindAsset, asset.ID, asset.AssetCode, asset); err != nil {
 		return nil, err
 	}
 
 	// Recalculate unposted schedule if cost, useful life, scrap, or dates changed
 	if !asset.Cost.Decimal().Equal(old.Cost.Decimal()) || asset.UsefulLifeYears != old.UsefulLifeYears || !asset.ScrapValue.Decimal().Equal(old.ScrapValue.Decimal()) || asset.StartCalcDate != old.StartCalcDate {
-		_ = s.RecalculateAssetSchedule(ctx, scope, asset.AssetCode, now)
+		if err := s.recalculateSchedule(ctx, tx, scope, asset, now); err != nil {
+			return nil, err
+		}
 	}
-
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return &asset, nil
 }
 
 func (s *Store) DeleteAsset(ctx context.Context, scope Scope, id string, expectedVersion int64, now time.Time) error {
-	var old Asset
-	err := s.db.Collection("fixed_assets").FindOne(ctx, scopedID(scope, id)).Decode(&old)
+	db, err := s.records.db(ctx, scope.Holding)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return ErrNotFound
-		}
+		return err
+	}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	old, err := lockRecord[Asset](ctx, tx, scope.Company, kindAsset, ` AND id = $3`, id)
+	if err != nil {
 		return err
 	}
 	if expectedVersion > 0 && old.Version != expectedVersion {
@@ -222,11 +177,7 @@ func (s *Store) DeleteAsset(ctx context.Context, scope Scope, id string, expecte
 	}
 
 	// Check if any depreciation is already posted to GL
-	fDep := scopeFilter(scope)
-	fDep["assetcode"] = old.AssetCode
-	fDep["isposted"] = true
-	fDep["isdeleted"] = false
-	postedCount, err := s.db.Collection("asset_depreciations").CountDocuments(ctx, fDep)
+	postedCount, err := countRecords(ctx, tx, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3 AND COALESCE((payload->>'isposted')::boolean, false)`, old.AssetCode)
 	if err != nil {
 		return err
 	}
@@ -234,173 +185,122 @@ func (s *Store) DeleteAsset(ctx context.Context, scope Scope, id string, expecte
 		return fmt.Errorf("สินทรัพย์นี้มีการผ่านรายการค่าเสื่อมราคาเข้า GL แล้ว ไม่สามารถลบได้ กรุณายกเลิกการผ่านรายการก่อน")
 	}
 
-	old.Identity = identityFor(scope, "assets", old.AssetCode, old.Identity, now)
+	old.Identity = identityFor(scope, kindAsset, old.AssetCode, old.Identity, now)
 	old.IsDeleted = true
-
-	_, err = s.db.Collection("fixed_assets").ReplaceOne(ctx, scopedID(scope, id), old)
-	if err != nil {
+	if err := putRecord(ctx, tx, scope.Company, kindAsset, old.ID, old.AssetCode, old); err != nil {
 		return err
 	}
-
-	// Delete unposted depreciations
-	fDel := scopeFilter(scope)
-	fDel["assetcode"] = old.AssetCode
-	fDel["isposted"] = false
-	_, _ = s.db.Collection("asset_depreciations").DeleteMany(ctx, fDel)
-
-	return nil
+	if err := deleteUnpostedSchedule(ctx, tx, scope, old.AssetCode); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Store) GetAsset(ctx context.Context, scope Scope, id string) (*Asset, error) {
-	var asset Asset
-	err := s.db.Collection("fixed_assets").FindOne(ctx, scopedID(scope, id)).Decode(&asset)
+	db, err := s.records.db(ctx, scope.Holding)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			// Try by AssetCode
-			f := scopeFilter(scope)
-			f["assetcode"] = id
-			f["isdeleted"] = false
-			err2 := s.db.Collection("fixed_assets").FindOne(ctx, f).Decode(&asset)
-			if err2 != nil {
-				return nil, ErrNotFound
-			}
-			return &asset, nil
-		}
 		return nil, err
 	}
-	if asset.IsDeleted {
-		return nil, ErrNotFound
-	}
-	return &asset, nil
+	// Accept either the document id or the asset code.
+	return firstRecord[Asset](ctx, db, scope.Company, kindAsset, ` AND (id = $3 OR code = $3) ORDER BY (id = $3) DESC`, id)
 }
 
 func (s *Store) ListAssets(ctx context.Context, scope Scope, q, typeCode, status string, page, limit int) ([]Asset, int64, error) {
-	f := scopeFilter(scope)
-	f["isdeleted"] = false
-
-	if typeCode != "" {
-		f["assettypecode"] = typeCode
-	}
-	if status != "" {
-		f["status"] = status
-	}
-	if q != "" {
-		f["$or"] = []bson.M{
-			{"assetcode": bson.M{"$regex": q, "$options": "i"}},
-			{"names.name": bson.M{"$regex": q, "$options": "i"}},
-			{"serialnumber": bson.M{"$regex": q, "$options": "i"}},
-		}
-	}
-
-	total, err := s.db.Collection("fixed_assets").CountDocuments(ctx, f)
+	db, err := s.records.db(ctx, scope.Holding)
 	if err != nil {
 		return nil, 0, err
 	}
-
+	// Search is a literal substring on code, serial number and names (never a regex from user input).
+	where := ` AND ($3 = '' OR payload->>'assettypecode' = $3) AND ($4 = '' OR payload->>'status' = $4)` +
+		` AND ($5 = '' OR strpos(lower(code || ' ' || COALESCE(payload->>'serialnumber', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')), lower($5)) > 0)`
+	total, err := countRecords(ctx, db, scope.Company, kindAsset, where, typeCode, status, q)
+	if err != nil {
+		return nil, 0, err
+	}
 	if limit <= 0 {
 		limit = 50
 	}
 	if page <= 0 {
 		page = 1
 	}
-	skip := int64((page - 1) * limit)
-
-	opts := options.Find().SetSort(bson.D{{Key: "assetcode", Value: 1}}).SetSkip(skip).SetLimit(int64(limit))
-	cur, err := s.db.Collection("fixed_assets").Find(ctx, f, opts)
+	items, err := queryRecords[Asset](ctx, db, scope.Company, kindAsset, where, ` ORDER BY code LIMIT $6 OFFSET $7`, typeCode, status, q, limit, (page-1)*limit)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer cur.Close(ctx)
-
-	var items []Asset
-	if err = cur.All(ctx, &items); err != nil {
-		return nil, 0, err
-	}
-
 	return items, total, nil
 }
 
 // ---------------- Depreciation Schedule ----------------
 
-func (s *Store) RecalculateAssetSchedule(ctx context.Context, scope Scope, assetCode string, now time.Time) error {
-	var asset Asset
-	f := scopeFilter(scope)
-	f["assetcode"] = assetCode
-	f["isdeleted"] = false
-	if err := s.db.Collection("fixed_assets").FindOne(ctx, f).Decode(&asset); err != nil {
-		return err
-	}
+func depreciationKey(item DepreciationScheduleItem) string {
+	return fmt.Sprintf("%s-%s-%d", item.AssetCode, item.FiscalYear, item.Period)
+}
 
-	// Fetch already posted items to preserve them
-	fPosted := scopeFilter(scope)
-	fPosted["assetcode"] = assetCode
-	fPosted["isposted"] = true
-	fPosted["isdeleted"] = false
-	cur, err := s.db.Collection("asset_depreciations").Find(ctx, fPosted)
+// putSchedule stores calculated schedule rows, skipping periods already posted to GL.
+func putSchedule(ctx context.Context, q queryer, scope Scope, schedule []DepreciationScheduleItem, posted map[string]bool, now time.Time) error {
+	for _, item := range schedule {
+		key := depreciationKey(item)
+		if posted[key] {
+			continue
+		}
+		item.Identity = identityFor(scope, kindDepreciation, key, Identity{}, now)
+		if err := putRecord(ctx, q, scope.Company, kindDepreciation, item.ID, key, item); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deleteUnpostedSchedule(ctx context.Context, q queryer, scope Scope, assetCode string) error {
+	_, err := q.ExecContext(ctx, `DELETE FROM fa_records WHERE company = $1 AND kind = $2 AND payload->>'assetcode' = $3 AND NOT COALESCE((payload->>'isposted')::boolean, false)`, scope.Company, kindDepreciation, assetCode)
+	return err
+}
+
+func (s *Store) recalculateSchedule(ctx context.Context, q queryer, scope Scope, asset Asset, now time.Time) error {
+	postedItems, err := queryRecords[DepreciationScheduleItem](ctx, q, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3 AND COALESCE((payload->>'isposted')::boolean, false)`, "", asset.AssetCode)
 	if err != nil {
 		return err
 	}
-	var postedItems []DepreciationScheduleItem
-	_ = cur.All(ctx, &postedItems)
-
-	// Remove unposted items
-	fUnposted := scopeFilter(scope)
-	fUnposted["assetcode"] = assetCode
-	fUnposted["isposted"] = false
-	_, err = s.db.Collection("asset_depreciations").DeleteMany(ctx, fUnposted)
-	if err != nil {
+	if err := deleteUnpostedSchedule(ctx, q, scope, asset.AssetCode); err != nil {
 		return err
 	}
-
-	// Calculate new schedule
 	schedule, err := s.calc.CalculateSchedule(asset, "")
 	if err != nil {
 		return err
 	}
-
-	postedMap := make(map[string]bool)
+	posted := make(map[string]bool, len(postedItems))
 	for _, p := range postedItems {
-		key := fmt.Sprintf("%s-%d", p.FiscalYear, p.Period)
-		postedMap[key] = true
+		posted[depreciationKey(p)] = true
 	}
+	return putSchedule(ctx, q, scope, schedule, posted, now)
+}
 
-	var newDocs []interface{}
-	for _, item := range schedule {
-		key := fmt.Sprintf("%s-%d", item.FiscalYear, item.Period)
-		if postedMap[key] {
-			continue // Skip already posted
-		}
-		item.Identity = identityFor(scope, "depreciations", fmt.Sprintf("%s-%s-%d", item.AssetCode, item.FiscalYear, item.Period), Identity{}, now)
-		newDocs = append(newDocs, item)
+func (s *Store) RecalculateAssetSchedule(ctx context.Context, scope Scope, assetCode string, now time.Time) error {
+	db, err := s.records.db(ctx, scope.Holding)
+	if err != nil {
+		return err
 	}
-
-	if len(newDocs) > 0 {
-		_, err = s.db.Collection("asset_depreciations").InsertMany(ctx, newDocs)
-		if err != nil {
-			return err
-		}
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
 	}
-
-	return nil
+	defer tx.Rollback()
+	asset, err := firstRecord[Asset](ctx, tx, scope.Company, kindAsset, ` AND code = $3`, assetCode)
+	if err != nil {
+		return err
+	}
+	if err := s.recalculateSchedule(ctx, tx, scope, *asset, now); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Store) GetAssetDepreciationSchedule(ctx context.Context, scope Scope, assetCode string) ([]DepreciationScheduleItem, error) {
-	f := scopeFilter(scope)
-	f["assetcode"] = assetCode
-	f["isdeleted"] = false
-
-	opts := options.Find().SetSort(bson.D{{Key: "fiscalyear", Value: 1}, {Key: "period", Value: 1}})
-	cur, err := s.db.Collection("asset_depreciations").Find(ctx, f, opts)
+	db, err := s.records.db(ctx, scope.Holding)
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
-
-	var items []DepreciationScheduleItem
-	if err = cur.All(ctx, &items); err != nil {
-		return nil, err
-	}
-	return items, nil
+	return queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3`, ` ORDER BY payload->>'fiscalyear', (payload->>'period')::int`, assetCode)
 }
 
 // ---------------- Asset Types CRUD ----------------
@@ -409,41 +309,29 @@ func (s *Store) CreateAssetType(ctx context.Context, scope Scope, at AssetType, 
 	if CleanString(at.TypeCode) == "" {
 		return nil, fmt.Errorf("กรุณาระบุรหัสประเภทสินทรัพย์")
 	}
-
-	f := scopeFilter(scope)
-	f["typecode"] = at.TypeCode
-	f["isdeleted"] = false
-	count, err := s.db.Collection("asset_types").CountDocuments(ctx, f)
+	db, err := s.records.db(ctx, scope.Holding)
+	if err != nil {
+		return nil, err
+	}
+	count, err := countRecords(ctx, db, scope.Company, kindType, ` AND code = $3`, at.TypeCode)
 	if err != nil {
 		return nil, err
 	}
 	if count > 0 {
 		return nil, ErrCodeDuplicate
 	}
-
-	at.Identity = identityFor(scope, "types", at.TypeCode, Identity{}, now)
+	at.Identity = identityFor(scope, kindType, at.TypeCode, Identity{}, now)
 	at.IsActive = true
-	_, err = s.db.Collection("asset_types").InsertOne(ctx, at)
-	if err != nil {
+	if err := putRecord(ctx, db, scope.Company, kindType, at.ID, at.TypeCode, at); err != nil {
 		return nil, err
 	}
 	return &at, nil
 }
 
 func (s *Store) ListAssetTypes(ctx context.Context, scope Scope) ([]AssetType, error) {
-	f := scopeFilter(scope)
-	f["isdeleted"] = false
-
-	opts := options.Find().SetSort(bson.D{{Key: "typecode", Value: 1}})
-	cur, err := s.db.Collection("asset_types").Find(ctx, f, opts)
+	db, err := s.records.db(ctx, scope.Holding)
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
-
-	var items []AssetType
-	if err = cur.All(ctx, &items); err != nil {
-		return nil, err
-	}
-	return items, nil
+	return queryRecords[AssetType](ctx, db, scope.Company, kindType, "", ` ORDER BY code`)
 }

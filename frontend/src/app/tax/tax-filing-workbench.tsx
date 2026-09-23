@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChoiceSelect } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { WhtCertificatePanel } from "./wht-certificate-panel";
 import {
   FileText, Printer, Download, Calculator, Building2, Calendar, CheckCircle2, Receipt, Search,
   AlertCircle, Loader2, ShieldCheck,
@@ -356,19 +357,18 @@ export function TaxFilingWorkbench({
             {tr("gl_export_csv", "ส่งออก CSV")}
           </Button>
 
-          <Button
-            variant="default"
-            disabled={!canExport && !pp30 && !selectedWhtRow}
-            onClick={() => window.print()}
-            className="gap-2 shadow-sm"
-          >
-            <Printer className="h-4 w-4" />
-            {activeTab === "pp30"
-              ? tr("tax_print_pp30", "พิมพ์แบบ ภ.พ.30")
-              : activeTab === "50twi"
-                ? tr("tax_print_50twi", "พิมพ์ใบ 50 ทวิ")
-                : tr("print_report", "พิมพ์รายงาน")}
-          </Button>
+          {/* ใบ 50 ทวิ พิมพ์/ดาวน์โหลดจากหน้าต่าง PDF ที่ backend สร้าง ไม่ใช่ window.print() ของหน้าเว็บ */}
+          {activeTab !== "50twi" && (
+            <Button
+              variant="default"
+              disabled={!canExport && !pp30}
+              onClick={() => window.print()}
+              className="gap-2 shadow-sm"
+            >
+              <Printer className="h-4 w-4" />
+              {activeTab === "pp30" ? tr("tax_print_pp30", "พิมพ์แบบ ภ.พ.30") : tr("print_report", "พิมพ์รายงาน")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -728,94 +728,17 @@ export function TaxFilingWorkbench({
         </Card>
       )}
 
-      {/* 4. แท็บหนังสือรับรองการหักภาษี ณ ที่จ่าย (ใบ 50 ทวิ) */}
+      {/* 4. แท็บหนังสือรับรองการหักภาษี ณ ที่จ่าย (ใบ 50 ทวิ) — backend สร้าง PDF บนแบบฟอร์มกรมสรรพากร */}
       {isWhtType && activeTab === "50twi" && selectedWhtRow && (
-        <Card className="overflow-hidden border-2 border-primary/20 shadow-md print:border-none print:shadow-none bg-card p-6">
-          <div className="border border-border p-6 rounded-xl space-y-4 print:border-black print:p-4">
-            <div className="text-center space-y-1 border-b pb-4">
-              <h2 className="text-base font-extrabold text-foreground print:text-black">
-                หนังสือรับรองการหักภาษี ณ ที่จ่าย
-              </h2>
-              <p className="text-xs text-muted-foreground print:text-black">
-                ตามมาตรา 50 ทวิ แห่งประมวลรัษฎากร
-              </p>
-              <div className="flex justify-between items-center text-xs font-mono pt-2">
-                <span>เอกสารอ้างอิง: <strong>{selectedWhtRow.docno}</strong></span>
-                <span>วันที่จ่าย: <strong>{selectedWhtRow.docdate}</strong></span>
-              </div>
-            </div>
-
-            {/* ผู้มีหน้าที่หักภาษี ณ ที่จ่าย (ผู้จ่ายเงิน) */}
-            <div className="rounded-lg bg-muted/20 p-3 text-xs space-y-1 print:bg-white print:border print:border-black">
-              <div className="flex justify-between">
-                <span className="font-bold text-foreground">ผู้มีหน้าที่หักภาษี ณ ที่จ่าย:</span>
-                <span className="font-mono">เลขประจำตัว 13 หลัก: <strong>{companyTaxId}</strong></span>
-              </div>
-              <p className="font-semibold text-foreground">{companyName}</p>
-              <p className="text-muted-foreground print:text-black">ที่อยู่/สาขา: {notInCompanyRegister}</p>
-            </div>
-
-            {/* ผู้ถูกหักภาษี ณ ที่จ่าย (ผู้รับเงิน) */}
-            <div className="rounded-lg bg-muted/20 p-3 text-xs space-y-1 print:bg-white print:border print:border-black">
-              <div className="flex justify-between">
-                <span className="font-bold text-foreground">ผู้ถูกหักภาษี ณ ที่จ่าย:</span>
-                <span className="font-mono">เลขประจำตัว 13 หลัก: <strong>{selectedWhtRow.taxid || notSpecified}</strong></span>
-              </div>
-              <p className="font-semibold text-foreground">{selectedWhtRow.partnername || notSpecified}</p>
-              <p className="text-muted-foreground print:text-black">{selectedWhtRow.address || notSpecified}</p>
-            </div>
-
-            {/* ตารางเงินได้พึงประเมินที่จ่าย */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border">
-                <thead className="bg-muted/60 border-b font-bold">
-                  <tr>
-                    <th className="p-2 border-r">ประเภทเงินได้พึงประเมินที่จ่าย</th>
-                    <th className="p-2 w-28 text-center border-r">วัน เดือน ปี ที่จ่าย</th>
-                    <th className="p-2 w-32 text-right border-r">จำนวนเงินที่จ่าย (บาท)</th>
-                    <th className="p-2 w-32 text-right">ภาษีที่หักและนำส่ง (บาท)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  <tr>
-                    <td className="p-2 border-r font-medium">{selectedWhtRow.description || notSpecified}</td>
-                    <td className="p-2 border-r text-center font-mono">{selectedWhtRow.docdate}</td>
-                    <td className="p-2 border-r text-right font-mono">{money(selectedWhtRow.baseamount)}</td>
-                    <td className="p-2 text-right font-mono font-bold text-primary print:text-black">{money(selectedWhtRow.whtamount)}</td>
-                  </tr>
-                </tbody>
-                <tfoot className="border-t-2 bg-muted/30 font-bold">
-                  <tr>
-                    <td colSpan={2} className="p-2 border-r text-right">
-                      รวมเงินที่จ่ายและภาษีที่หักนำส่ง:
-                    </td>
-                    <td className="p-2 border-r text-right font-mono">{money(selectedWhtRow.baseamount)}</td>
-                    <td className="p-2 text-right font-mono text-primary print:text-black">{money(selectedWhtRow.whtamount)}</td>
-                  </tr>
-                  <tr className="bg-primary/5 print:bg-white">
-                    <td colSpan={4} className="p-2 text-center text-xs font-semibold text-primary print:text-black">
-                      รวมเงินภาษีที่หักนำส่ง (ตัวอักษร): {selectedWhtRow.whtamounttext}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-            <div className="text-xs text-muted-foreground pt-1">
-              เงื่อนไขการหักภาษี: <strong>หัก ณ ที่จ่าย</strong>
-            </div>
-
-            <div className="mt-8 pt-6 border-t grid grid-cols-2 gap-8 text-center text-xs">
-              <div className="space-y-10">
-                <p className="font-medium text-muted-foreground">ลงชื่อ.......................................................... ผู้จ่ายเงิน</p>
-                <p className="text-muted-foreground">วันที่ ......./......./.......</p>
-              </div>
-              <div className="space-y-10">
-                <p className="font-medium text-muted-foreground">ประทับตรานิติบุคคล (ถ้ามี)</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+        <WhtCertificatePanel
+          key={selectedWhtRow.journalid}
+          row={selectedWhtRow}
+          company={company}
+          holdingcode={holdingcode}
+          businesscode={businesscode}
+          formType={config.formType}
+          language={language}
+        />
       )}
 
       {/* 5. ตารางรายงานภาษี หรือ ใบแนบภาษีขาย/ซื้อ (Tax Register & Annex Schedules) */}

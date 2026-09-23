@@ -1,23 +1,14 @@
-import { execSync } from 'child_process';
 import { expect, test, type Page } from '@playwright/test';
+import { pgQuery } from './support/pg';
 
 /**
  * Employee save STRESS (2026-09-01) — ลุงจืดรายงาน "บางครั้ง บันทึกไม่ได้"
  * วนแก้ไข+บันทึก UATEMP01 หลายรอบ จับทุกความล้มเหลว:
- *  - toast/error บนจอ, ฟอร์มไม่ปิด, HTTP status (log), Mongo ค่าเปลี่ยนจริงทีละ step
- * รูปแบบ: PIN เปลี่ยนทุกรอบ (สุ่ม seeded) — ตรวจ Mongo หลัง save ทุกรอบ
+ *  - toast/error บนจอ, ฟอร์มไม่ปิด, HTTP status (log), PostgreSQL ค่าเปลี่ยนจริงทีละ step
+ * รูปแบบ: PIN เปลี่ยนทุกรอบ (สุ่ม seeded) — ตรวจ employees.pin_code หลัง save ทุกรอบ
  */
 
 const ROUNDS = Number(process.env.ROUNDS ?? 8);
-
-function mongoJson(js: string): any {
-  const out = execSync(
-    `docker exec mongodb mongosh --quiet appdb --eval "JSON.stringify(${js})"`,
-    { timeout: 45000 },
-  ).toString().trim();
-  const start = out.indexOf('[') >= 0 ? out.indexOf('[') : out.indexOf('{');
-  return JSON.parse(out.slice(start));
-}
 
 async function uiLogin(page: Page) {
   await page.goto('/');
@@ -93,10 +84,9 @@ test('SAVE-STRESS: แก้ไข+บันทึก UATEMP01 ซ้ำหล�
         throw new Error(`ฟอร์มไม่ปิดหลังบันทึก — error บนจอ: ${alertText || '(ไม่มีข้อความ)'}`);
       }
 
-      // Mongo ทีละ step: PIN เปลี่ยนจริง
-      const docs = mongoJson(`db.employees.find({holdingcode:'bc001', code:'UATEMP01'}, {pincode:1}).toArray()`);
-      const dbPin = docs[0]?.pincode;
-      if (dbPin !== newPin) throw new Error(`Mongo pincode=${dbPin} แต่ตั้งใจ ${newPin}`);
+      // PostgreSQL ทีละ step: PIN เปลี่ยนจริง
+      const dbPin = pgQuery(`SELECT pin_code FROM employees WHERE holding_code = 'bc001' AND code = 'UATEMP01'`);
+      if (dbPin !== newPin) throw new Error(`employees.pin_code=${dbPin} แต่ตั้งใจ ${newPin}`);
     } catch (err) {
       roundError = String(err).slice(0, 250);
       failures.push(`รอบ ${round}: ${roundError}`);

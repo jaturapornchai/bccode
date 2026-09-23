@@ -35,7 +35,7 @@ type ChunkUploadInfo struct {
 }
 
 var (
-	// Store upload sessions in memory (in production, use Redis or database)
+	// Store upload sessions in memory (single instance; sessions are lost on restart)
 	uploadSessions = make(map[string]*ChunkUploadInfo)
 	sessionMutex   sync.RWMutex
 )

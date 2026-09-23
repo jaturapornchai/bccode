@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/authentication/services"
 	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/line"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	micromodels "smlcloudplatform/pkg/microservice/models"
@@ -14,11 +16,8 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/smlsoft/mongopagination"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func mockLoginData(authRepo *AuthenticationRepositoryMock, shopUserRepo *ShopUserRepositoryMock, microAuthServiceMock *AuthServiceMock) {
@@ -341,11 +340,6 @@ func TestAuthService_DevLoginByUIDCreatesSessionAndAudit(t *testing.T) {
 		Name:     user.Name,
 		UID:      user.UID,
 	}).Return("access-token", "refresh-token", nil)
-	authRepo.On("CreateAuthAudit", mock.MatchedBy(func(audit models.AuthAudit) bool {
-		return audit.AuditUID == MockGUID() && audit.UserUID == user.UID &&
-			audit.Action == "DEV_LOGIN" && audit.Outcome == "SUCCESS" &&
-			audit.OccurredAt.Equal(MockTime().UTC()) && audit.Metadata == nil && audit.SessionUID == ""
-	})).Return(nil)
 	authService := services.NewAuthenticationService(
 		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
@@ -359,32 +353,6 @@ func TestAuthService_DevLoginByUIDCreatesSessionAndAudit(t *testing.T) {
 	microAuthServiceMock.AssertNotCalled(t, "RevokeSession", mock.Anything)
 }
 
-func TestAuthService_DevLoginByUIDRevokesSessionWhenAuditFails(t *testing.T) {
-	authRepo := new(AuthenticationRepositoryMock)
-	microAuthServiceMock := &AuthServiceMock{}
-	user := &models.UserDoc{}
-	user.UID = "dev-user-uid"
-	user.Username = "dev_user"
-	user.Email = "jaturapornchai@gmail.com"
-	authRepo.On("FindUserByUID", user.UID).Return(user, nil)
-	microAuthServiceMock.On("CreateSession", micromodels.UserInfo{Username: user.Username, UID: user.UID}).Return("access-token", "refresh-token", nil)
-	authRepo.On("CreateAuthAudit", mock.Anything).Return(errors.New("audit unavailable"))
-	microAuthServiceMock.On("RevokeSession", "Bearer access-token").Return(nil)
-	authService := services.NewAuthenticationService(
-		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
-		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
-		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
-
-	result, err := authService.DevLoginByUID(user.UID, models.AuthenticationContext{})
-
-	assert.Empty(t, result.Token)
-	assert.Empty(t, result.Refresh)
-	appErr := apperr.FromError(err)
-	assert.NotNil(t, appErr)
-	assert.Equal(t, "INTERNAL_ERROR", appErr.Code)
-	microAuthServiceMock.AssertCalled(t, "RevokeSession", "Bearer access-token")
-}
-
 func TestAuthService_DevLoginByUIDRejectsUnavailableUsers(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -392,7 +360,7 @@ func TestAuthService_DevLoginByUIDRejectsUnavailableUsers(t *testing.T) {
 		user    *models.UserDoc
 		err     error
 	}{
-		{name: "missing", userUID: "missing-user", err: mongo.ErrNoDocuments},
+		{name: "missing", userUID: "missing-user", err: repositories.ErrNotFound},
 		{name: "deleted", userUID: "deleted-user", user: &models.UserDoc{UserDetail: models.UserDetail{UID: "deleted-user"}, IsDeleted: true}},
 		{name: "wrong email", userUID: "wrong-email-user", user: &models.UserDoc{UserDetail: models.UserDetail{UID: "wrong-email-user"}, EmailField: models.EmailField{Email: "other@example.com"}}},
 		{name: "disabled", userUID: "disabled-user", user: &models.UserDoc{UserDetail: models.UserDetail{UID: "disabled-user"}, EmailField: models.EmailField{Email: "jaturapornchai@gmail.com"}, DisabledAt: MockTime()}},
@@ -412,7 +380,6 @@ func TestAuthService_DevLoginByUIDRejectsUnavailableUsers(t *testing.T) {
 
 			assert.Error(t, err)
 			microAuthServiceMock.AssertNotCalled(t, "CreateSession", mock.Anything)
-			authRepo.AssertNotCalled(t, "CreateAuthAudit", mock.Anything)
 		})
 	}
 }
@@ -457,7 +424,7 @@ func TestAuthService_GoogleLoginCreatesUserIdentityAndAuditAtomically(t *testing
 	issuer := "https://accounts.google.com"
 	subject := "new-google-subject"
 	email := "new@example.com"
-	authRepo.On("FindGoogleIdentity", issuer, subject).Return((*models.GoogleIdentity)(nil), mongo.ErrNoDocuments)
+	authRepo.On("FindGoogleIdentity", issuer, subject).Return((*models.GoogleIdentity)(nil), repositories.ErrNotFound)
 	authRepo.On("CreateGoogleUserIdentity",
 		mock.MatchedBy(func(user models.UserDoc) bool {
 			return user.GuidFixed == MockGUID() && user.UID == MockGUID() && user.Username == "" &&
@@ -1091,9 +1058,13 @@ func (m *AuthenticationRepositoryMock) FindByLineUserID(ctx context.Context, lin
 	return args.Get(0).(*models.UserDoc), args.Error(1)
 }
 
-func (m *AuthenticationRepositoryMock) CreateUser(ctx context.Context, doc models.UserDoc) (primitive.ObjectID, error) {
+func (m *AuthenticationRepositoryMock) CreateUser(ctx context.Context, doc models.UserDoc) (string, error) {
 	args := m.Called(doc)
-	return args.Get(0).(primitive.ObjectID), args.Error(1)
+	return args.String(0), args.Error(1)
+}
+
+func (m *AuthenticationRepositoryMock) SetLineIdentity(ctx context.Context, userUID string, lineUserID string, displayName string, pictureURL string) error {
+	return m.Called(userUID, lineUserID, displayName, pictureURL).Error(0)
 }
 
 func (m *AuthenticationRepositoryMock) UpdateUser(ctx context.Context, username string, userDoc models.UserDoc) error {
@@ -1123,53 +1094,23 @@ func (m *AuthenticationRepositoryMock) FindUserByUID(ctx context.Context, userUI
 	return user, args.Error(1)
 }
 
-func (m *AuthenticationRepositoryMock) CreateAuthAudit(ctx context.Context, audit models.AuthAudit) error {
-	args := m.Called(audit)
-	return args.Error(0)
-}
-
 func (m *AuthenticationRepositoryMock) CreateGoogleUserIdentity(ctx context.Context, user models.UserDoc, identity models.GoogleIdentity, audit models.AuthAudit) (models.UserDoc, error) {
 	args := m.Called(user, identity, audit)
 	linkedUser, _ := args.Get(0).(models.UserDoc)
 	return linkedUser, args.Error(1)
 }
 
-func (m *AuthenticationRepositoryMock) EnsureGoogleIdentityIndexes(ctx context.Context) error {
-	args := m.Called()
-	return args.Error(0)
-}
-
 type ShopUserRepositoryMock struct {
 	mock.Mock
 }
 
-func (m *ShopUserRepositoryMock) Create(ctx context.Context, shopUser *models.ShopUser) error {
-	args := m.Called(ctx, shopUser)
-	return args.Error(0)
-}
-
-func (m *ShopUserRepositoryMock) Update(ctx context.Context, id primitive.ObjectID, holdingCode string, username string, role models.UserRole) error {
-	args := m.Called(id, holdingCode, username, role)
-	return args.Error(0)
-}
-
-func (m *ShopUserRepositoryMock) Save(ctx context.Context, holdingCode string, username string, role models.UserRole) error {
-	args := m.Called(holdingCode, username, role)
-	return args.Error(0)
-}
-
-func (m *ShopUserRepositoryMock) SaveStable(ctx context.Context, holdingCode string, holdingUID string, userUID string, username string, role models.UserRole, createdAt time.Time) error {
-	args := m.Called(ctx, holdingCode, holdingUID, userUID, username, role, createdAt)
+func (m *ShopUserRepositoryMock) SaveStable(ctx context.Context, holdingCode string, userUID string, role models.UserRole) error {
+	args := m.Called(ctx, holdingCode, userUID, role)
 	return args.Error(0)
 }
 
 func (m *ShopUserRepositoryMock) SaveFullProfile(ctx context.Context, holdingCode string, req *models.UserRoleRequest) error {
 	args := m.Called(holdingCode, req)
-	return args.Error(0)
-}
-
-func (m *ShopUserRepositoryMock) UpdateLineFields(ctx context.Context, holdingCode string, userUID string, lineUserID string, lineDisplayName string, linePictureURL string) error {
-	args := m.Called(holdingCode, userUID, lineUserID, lineDisplayName, linePictureURL)
 	return args.Error(0)
 }
 
@@ -1186,21 +1127,6 @@ func (m *ShopUserRepositoryMock) SaveFavorite(ctx context.Context, holdingCode s
 func (m *ShopUserRepositoryMock) Delete(ctx context.Context, holdingCode string, username string) error {
 	args := m.Called(holdingCode, username)
 	return args.Error(0)
-}
-
-func (m *ShopUserRepositoryMock) DeleteEmptyUsernames(ctx context.Context, holdingCode string) (int64, error) {
-	args := m.Called(holdingCode)
-	return args.Get(0).(int64), args.Error(1)
-}
-
-func (m *ShopUserRepositoryMock) FindByHoldingCodeAndUsernameInfo(ctx context.Context, holdingCode string, username string) (models.ShopUserInfo, error) {
-	args := m.Called(holdingCode, username)
-	return args.Get(0).(models.ShopUserInfo), args.Error(1)
-}
-
-func (m *ShopUserRepositoryMock) FindByHoldingCodeAndUserUIDInfo(ctx context.Context, holdingCode string, userUID string) (models.ShopUserInfo, error) {
-	args := m.Called(holdingCode, userUID)
-	return args.Get(0).(models.ShopUserInfo), args.Error(1)
 }
 
 func (m *ShopUserRepositoryMock) FindByHoldingCodeAndUserUID(ctx context.Context, holdingCode string, userUID string) (models.ShopUser, error) {
@@ -1223,52 +1149,24 @@ func (m *ShopUserRepositoryMock) FindByHoldingCodeAndUsername(ctx context.Contex
 	return args.Get(0).(models.ShopUser), args.Error(1)
 }
 
-func (m *ShopUserRepositoryMock) FindByHoldingCodeAndLineUserID(ctx context.Context, holdingCode string, lineUserID string) (models.ShopUser, error) {
-	args := m.Called(holdingCode, lineUserID)
-	return args.Get(0).(models.ShopUser), args.Error(1)
-}
-
-func (m *ShopUserRepositoryMock) FindByLineUserID(ctx context.Context, lineUserID string) (models.ShopUser, error) {
-	args := m.Called(lineUserID)
-	return args.Get(0).(models.ShopUser), args.Error(1)
-}
-
 func (m *ShopUserRepositoryMock) FindShopCreatedBy(ctx context.Context, holdingCode string) (string, error) {
 	args := m.Called(holdingCode)
 	return args.String(0), args.Error(1)
 }
 
-func (m *ShopUserRepositoryMock) FindRole(ctx context.Context, holdingCode string, username string) (models.UserRole, error) {
-	args := m.Called(holdingCode, username)
-	return args.Get(0).(models.UserRole), args.Error(1)
-}
-func (m *ShopUserRepositoryMock) FindByHoldingCode(ctx context.Context, holdingCode string) (*[]models.ShopUser, error) {
-	args := m.Called(holdingCode)
-	return args.Get(0).(*[]models.ShopUser), args.Error(1)
-}
-
-func (m *ShopUserRepositoryMock) FindByUsername(ctx context.Context, username string) (*[]models.ShopUser, error) {
-	args := m.Called(username)
-	return args.Get(0).(*[]models.ShopUser), args.Error(1)
-}
-func (m *ShopUserRepositoryMock) FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+func (m *ShopUserRepositoryMock) FindByUsernamePage(ctx context.Context, username string, pageable micromodels.Pageable) ([]models.ShopUserInfo, common.PaginationData, error) {
 	args := m.Called(username, pageable)
-	return args.Get(0).([]models.ShopUserInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
+	return args.Get(0).([]models.ShopUserInfo), args.Get(1).(common.PaginationData), args.Error(2)
 }
 
-func (m *ShopUserRepositoryMock) FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+func (m *ShopUserRepositoryMock) FindByUserUIDPage(ctx context.Context, userUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, common.PaginationData, error) {
 	args := m.Called(userUID, pageable)
-	return args.Get(0).([]models.ShopUserInfo), args.Get(1).(mongopagination.PaginationData), args.Error(2)
+	return args.Get(0).([]models.ShopUserInfo), args.Get(1).(common.PaginationData), args.Error(2)
 }
 
-func (m *ShopUserRepositoryMock) FindByUserInShopPage(ctx context.Context, holdingCode string, pageable micromodels.Pageable) ([]models.ShopUser, mongopagination.PaginationData, error) {
-	args := m.Called(holdingCode, pageable)
-	return args.Get(0).([]models.ShopUser), args.Get(1).(mongopagination.PaginationData), args.Error(2)
-}
-
-func (m *ShopUserRepositoryMock) FindByUserInShopPageWithProfileMatches(ctx context.Context, holdingCode string, pageable micromodels.Pageable, profileUsernames []string) ([]models.ShopUser, mongopagination.PaginationData, error) {
+func (m *ShopUserRepositoryMock) FindByUserInShopPageWithProfileMatches(ctx context.Context, holdingCode string, pageable micromodels.Pageable, profileUsernames []string) ([]models.ShopUser, common.PaginationData, error) {
 	args := m.Called(holdingCode, pageable, profileUsernames)
-	return args.Get(0).([]models.ShopUser), args.Get(1).(mongopagination.PaginationData), args.Error(2)
+	return args.Get(0).([]models.ShopUser), args.Get(1).(common.PaginationData), args.Error(2)
 }
 
 func (m *ShopUserRepositoryMock) FindUsernamesByProfileQuery(ctx context.Context, query string) ([]string, error) {
@@ -1279,11 +1177,6 @@ func (m *ShopUserRepositoryMock) FindUsernamesByProfileQuery(ctx context.Context
 func (m *ShopUserRepositoryMock) FindUserProfileByUsernames(ctx context.Context, usernames []string) ([]models.UserProfile, error) {
 	args := m.Called(usernames)
 	return args.Get(0).([]models.UserProfile), args.Error(1)
-}
-
-func (m *ShopUserRepositoryMock) FindByHoldingCodeAndUsernameAndRole(ctx context.Context, holdingCode string, username string, role models.UserRole) (models.ShopUser, error) {
-	args := m.Called(holdingCode, username, role)
-	return args.Get(0).(models.ShopUser), args.Error(1)
 }
 
 // Shop User Access Log
@@ -1303,12 +1196,12 @@ type AuthServiceMock struct {
 	mock.Mock
 }
 
-func (m *AuthServiceMock) MWFuncWithRedisMixShop(cacher microservice.ICacher, shopPath []string, publicPath ...string) echo.MiddlewareFunc {
+func (m *AuthServiceMock) MWFuncMixShop(cacher microservice.ICacher, shopPath []string, publicPath ...string) echo.MiddlewareFunc {
 	args := m.Called(cacher, shopPath, publicPath)
 	return args.Get(0).(echo.MiddlewareFunc)
 }
 
-func (m *AuthServiceMock) MWFuncWithRedis(cacher microservice.ICacher, publicPath ...string) echo.MiddlewareFunc {
+func (m *AuthServiceMock) MWFuncSession(cacher microservice.ICacher, publicPath ...string) echo.MiddlewareFunc {
 	args := m.Called(cacher, publicPath)
 	return args.Get(0).(echo.MiddlewareFunc)
 }
@@ -1337,13 +1230,13 @@ func (m *AuthServiceMock) GetTokenFromAuthorizationHeader(tokenType microservice
 	return args.String(0), args.Error(1)
 }
 
-func (m *AuthServiceMock) GenerateTokenWithRedis(tokenType microservice.TokenType, userInfo micromodels.UserInfo) (string, error) {
+func (m *AuthServiceMock) GenerateToken(tokenType microservice.TokenType, userInfo micromodels.UserInfo) (string, error) {
 
 	args := m.Called(tokenType, userInfo)
 	return args.String(0), args.Error(1)
 }
 
-func (m *AuthServiceMock) GenerateTokenWithRedisExpire(tokenType microservice.TokenType, userInfo micromodels.UserInfo, expireTime time.Duration) (string, error) {
+func (m *AuthServiceMock) GenerateTokenWithExpire(tokenType microservice.TokenType, userInfo micromodels.UserInfo, expireTime time.Duration) (string, error) {
 
 	args := m.Called(tokenType, userInfo, expireTime)
 	return args.String(0), args.Error(1)
@@ -1419,9 +1312,8 @@ func (m *SMSRepositoryMock) VerifyOTPViaLink(otpToken, optRefCode, otpPin string
 	return args.Bool(0), args.Error(1)
 }
 
-func MockObjectID() primitive.ObjectID {
-	idx, _ := primitive.ObjectIDFromHex("62f9cb12c76fd9e83ac1b2ff")
-	return idx
+func MockObjectID() string {
+	return "62f9cb12c76fd9e83ac1b2ff"
 }
 
 func MockHashPassword(password string) (string, error) {

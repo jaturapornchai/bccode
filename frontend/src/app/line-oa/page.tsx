@@ -1,12 +1,8 @@
-import type { Metadata } from "next";
-import { getInitialBackendLanguage } from "@/lib/backend-language-server";
-import { LineOaLinkScreen } from "./line-oa-link-screen";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "เชื่อมต่อ LINE OA",
-};
-
-export default async function LineOaPage() {
-  const initialLanguage = await getInitialBackendLanguage();
-  return <LineOaLinkScreen {...initialLanguage} />;
+// 2026-09-23: backend LINE OA (Mongo-based /api/user/lineoa/*) ถูกถอดแล้ว —
+// ระบบใช้ PostgreSQL อย่างเดียว ยังไม่มี API รองรับฟีเจอร์นี้ ส่งกลับไปหน้าเวิร์กสเปซ
+// แทนการแสดงฟอร์มที่เรียก API ที่ไม่มีอยู่จริง (ดู lib/menu-screen-status.ts RETIRED_BACKEND_ROUTES)
+export default function LineOaPage() {
+  redirect("/workspace");
 }

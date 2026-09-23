@@ -28,7 +28,7 @@ CREATE INDEX IF NOT EXISTS gl_lines_period_idx ON gl_lines(company,fiscal_year,e
 CREATE INDEX IF NOT EXISTS gl_lines_account_idx ON gl_lines(company,fiscal_year,account_code,entry_date,journal_id,line_no);
 CREATE INDEX IF NOT EXISTS gl_lines_dimension_idx ON gl_lines(company,fiscal_year,branch_code,department_code,project_code,entry_date);
 
--- Delivery metadata belongs in the Mongo outbox. PostgreSQL audit snapshots
+-- PostgreSQL audit snapshots
 -- cannot be amended or removed by the normal application connection.
 CREATE OR REPLACE FUNCTION gl_reject_audit_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN

@@ -185,8 +185,8 @@ logger.Debug("Processing...")
 ### Development Mode (LOG_LEVEL=DEBUG)
 ```
 2025/11/07 08:30:15 C:/gif/goapi/cmd/main.go:45: [INFO] Starting server on port 8080
-2025/11/07 08:30:16 C:/gif/goapi/handlers/kafka.go:123: [DEBUG] Processing message: abc123
-2025/11/07 08:30:16 C:/gif/goapi/myglobal/utils.go:67: ✓ MongoDB connected successfully
+2025/11/07 08:30:16 C:/gif/goapi/handlers/upload.go:123: [DEBUG] Processing message: abc123
+2025/11/07 08:30:16 C:/gif/goapi/bootstrap.go:67: ✓ Database Manager Pool เริ่มต้นเรียบร้อย
 2025/11/07 08:30:17 C:/gif/goapi/handlers/api.go:234: ❌ Failed to validate: invalid input
 2025/11/07 08:30:18 C:/gif/goapi/process/build.go:456: ⚠️  Connection pool at 80% capacity
 ```

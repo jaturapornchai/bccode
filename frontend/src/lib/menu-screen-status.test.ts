@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { flattenMenuItems } from "./menu-data";
 import { GL_MENU_ITEMS } from "./general-ledger";
-import { CUSTOM_MENU_SCREEN_ROUTES, isMenuScreenPending, isMenuDataPending } from "./menu-screen-status";
+import { CUSTOM_MENU_SCREEN_ROUTES, isMenuBackendRetired, isMenuScreenPending, isMenuDataPending } from "./menu-screen-status";
 
 describe("menu screen availability", () => {
   it("tracks the actual custom screen dispatcher, including newly connected screens", () => {
@@ -27,18 +27,23 @@ describe("menu screen availability", () => {
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
     expect(items).toHaveLength(194);
-    expect(items.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route).sort()).toEqual([...CHAMP_PENDING_ROUTES].sort());
-    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(194 - CHAMP_PENDING_ROUTES.length);
+    // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
+    const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
+    const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...retired])].sort();
+    expect(items.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route).sort()).toEqual(expected);
+    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(194 - expected.length);
     expect(isMenuScreenPending("/gl/fiscal-years")).toBe(false);
-    expect(isMenuScreenPending("/transaction/landedcost")).toBe(false);
-    expect(isMenuScreenPending("/banking/cheques/deposit")).toBe(false);
-    expect(isMenuScreenPending("/productserialregistry")).toBe(false);
-    expect(isMenuScreenPending("/promotionscreen")).toBe(false);
-    expect(isMenuScreenPending("/transaction/saleorder")).toBe(false);
-    expect(isMenuScreenPending("/product")).toBe(false);
+    expect(isMenuBackendRetired("/transaction/landedcost")).toBe(true);
+    expect(isMenuBackendRetired("/banking/cheques/deposit")).toBe(true);
+    expect(isMenuBackendRetired("/productserialregistry")).toBe(true);
+    expect(isMenuBackendRetired("/promotionscreen")).toBe(true);
+    expect(isMenuBackendRetired("/transaction/saleorder")).toBe(true);
+    expect(isMenuBackendRetired("/product")).toBe(true);
     expect(isMenuScreenPending("/useraccessaudit")).toBe(false);
-    expect(isMenuScreenPending("/bookbankscreen")).toBe(false);
-    expect(isMenuScreenPending("/bank")).toBe(false);
+    expect(isMenuBackendRetired("/organization/branch")).toBe(false);
+    expect(isMenuBackendRetired("/gl/fiscal-years")).toBe(false);
+    expect(isMenuBackendRetired("/bookbankscreen")).toBe(true);
+    expect(isMenuBackendRetired("/bank")).toBe(true);
     // Fallback guard for unmapped routes
     expect(isMenuScreenPending("/unknown-screen")).toBe(true);
   });
@@ -75,9 +80,11 @@ describe("Menu data readiness", () => {
     expect(isMenuDataPending("/procurement/requisition-approval")).toBe(false);
     expect(isMenuDataPending("/sales/quotation-approval")).toBe(true);
 
-    // ภาษี: ภาษีขาย/ซื้อ/ภ.พ.30 ต่อ API แล้ว ส่วน ภ.ง.ด. ยังไม่มีข้อมูลต้นทาง
-    expect(isMenuDataPending("/report/vatsale")).toBe(false);
-    expect(isMenuDataPending("/report/vatpnd3")).toBe(true);
+    // ภาษี (2026-09-23): ภ.ง.ด./50 ทวิ อ่านจาก GL จริง; ภาษีขาย/ซื้อ/ภ.พ.30 ยังพึ่งเอกสารของระบบอื่น → รอเชื่อมข้อมูล
+    expect(isMenuDataPending("/report/vatpnd3")).toBe(false);
+    expect(isMenuDataPending("/report/whtcertificate")).toBe(false);
+    expect(isMenuDataPending("/report/reportvatsale")).toBe(true);
+    expect(isMenuDataPending("/report/vatpp30")).toBe(true);
 
     // จอที่ไม่ได้อยู่ในกลุ่มเหล่านี้ ไม่ถือว่ารอข้อมูล
     expect(isMenuDataPending("/product")).toBe(false);

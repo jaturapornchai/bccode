@@ -21,6 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { LanguageCode } from "@/lib/i18n";
+import { isMenuScreenPending } from "@/lib/menu-screen-status";
 import {
   MENU_SECTIONS,
   menuSearchMatches,
@@ -104,9 +105,11 @@ export function ManageShortcutsScreen({
 
   // Default Smart Fallback shortcut IDs
   const defaultShortcutIds = useMemo(() => {
-    const frequent = frequentMenuEntries.map((e) => e.item.id).filter((id) => allowedMenuIds.has(id));
+    const frequent = frequentMenuEntries.filter((e) => !isMenuScreenPending(e.item.route)).map((e) => e.item.id).filter((id) => allowedMenuIds.has(id));
     if (frequent.length >= 4) return frequent.slice(0, 8);
+    // ข้ามจอที่ยังไม่พร้อม — ผู้ใช้ GL อย่างเดียวต้องไม่เจอทางลัดเริ่มต้นที่ขึ้น "รอพัฒนา"
     const fallback = allMenuItems
+      .filter((item) => !isMenuScreenPending(item.route))
       .map((item) => item.id)
       .filter((id) => allowedMenuIds.has(id) && !frequent.includes(id));
     return [...frequent, ...fallback].slice(0, 8);

@@ -13,6 +13,7 @@ import (
 	"smlcloudplatform/internal/authentication/models"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 
 	"github.com/xuri/excelize/v2"
@@ -55,6 +56,10 @@ type importUsersResult struct {
 // the existing SaveUserFullProfile path. Authorization is per-holding (OWNER/ADMIN), not the
 // JWT-selected role.
 func (h ShopMemberHttp) ImportHoldingUsers(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
 	holdingCode := userInfo.HoldingCode
@@ -68,7 +73,7 @@ func (h ShopMemberHttp) ImportHoldingUsers(ctx microservice.IContext) error {
 		holdingCode = strings.TrimSpace(req.HoldingCode)
 	}
 
-	if err := h.svc.EnsureHoldingManager(holdingCode, authUsername); err != nil {
+	if err := svc.EnsureHoldingManager(holdingCode, authUsername); err != nil {
 		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: "permission denied"})
 		return err
 	}
@@ -104,7 +109,7 @@ func (h ShopMemberHttp) ImportHoldingUsers(ctx microservice.IContext) error {
 			if !r.Valid {
 				continue
 			}
-			saveErr := h.svc.SaveUserFullProfile(holdingCode, authUsername, &models.UserRoleRequest{
+			saveErr := svc.SaveUserFullProfile(holdingCode, authUsername, &models.UserRoleRequest{
 				Username:        r.Username,
 				Email:           r.Email,
 				UserProfileName: r.Name,

@@ -13,7 +13,6 @@ export * from "./setting-form-dialog";
 
 // Panels
 export * from "./work-day-panel";
-export * from "./copy-uat-panel";
 export * from "./stat-card";
 
 // Field editors - import from specific modules to avoid conflicts

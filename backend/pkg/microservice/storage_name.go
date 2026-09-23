@@ -155,14 +155,6 @@ func normalizeStorageIdentifier(name string, aliases map[string]string) string {
 	return normalized
 }
 
-func NormalizeMongoCollectionName(name string) string {
-	return NormalizeStorageName(name)
-}
-
 func NormalizePostgresTableName(name string) string {
-	return NormalizeStorageName(name)
-}
-
-func NormalizeClickHouseTableName(name string) string {
 	return NormalizeStorageName(name)
 }

@@ -2,9 +2,8 @@
 # FULLY-LOCAL dev stack overlay (Docker Desktop)
 # Use with:
 #   docker-compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
-# Adds mongo/postgres/minio as local containers and points
-# (ClickHouse paused 2026-09-06 by ลุงจืด — unused, ~5 GB RSS idle; see HANDOFF-RISKS)
-# mainapi at bootstrap.local.json. Reuses redis + kafka from base compose.
+# Adds postgres/minio as local containers and points mainapi at
+# bootstrap.local.json. PostgreSQL is the only database.
 # Local-only, no auth/simple-auth — NO real secrets. Do NOT use on .202.
 # ========================================
 services:
@@ -95,8 +94,6 @@ services:
     env_file:
       - ./storage.local.env
     depends_on:
-      redis:
-        condition: service_started
       postgres:
         condition: service_started
       minio-init:

@@ -3,33 +3,33 @@ package models
 import "time"
 
 type ActivityDoc struct {
-	CreatedBy     string    `json:"-" bson:"createdby"`
-	CreatedByName string    `json:"-" bson:"createdbyname,omitempty"`
-	CreatedAt     time.Time `json:"-" bson:"createdat"`
-	UpdatedBy     string    `json:"-" bson:"updatedby,omitempty"`
-	UpdatedByName string    `json:"-" bson:"updatedbyname,omitempty"`
-	UpdatedAt     time.Time `json:"-" bson:"updatedat,omitempty"`
-	DeletedBy     string    `json:"-" bson:"deletedby,omitempty"`
-	DeletedByName string    `json:"-" bson:"deletedbyname,omitempty"`
-	DeletedAt     time.Time `json:"-" bson:"deletedat,omitempty"`
+	CreatedBy     string    `json:"-"`
+	CreatedByName string    `json:"-"`
+	CreatedAt     time.Time `json:"-"`
+	UpdatedBy     string    `json:"-"`
+	UpdatedByName string    `json:"-"`
+	UpdatedAt     time.Time `json:"-"`
+	DeletedBy     string    `json:"-"`
+	DeletedByName string    `json:"-"`
+	DeletedAt     time.Time `json:"-"`
 }
 
 type Activity struct {
-	CreatedBy     string    `json:"createdby" bson:"createdby"`
-	CreatedByName string    `json:"createdbyname,omitempty" bson:"createdbyname,omitempty"`
-	CreatedAt     time.Time `json:"createdat" bson:"createdat"`
-	UpdatedBy     string    `json:"updatedby" bson:"updatedby,omitempty"`
-	UpdatedByName string    `json:"updatedbyname,omitempty" bson:"updatedbyname,omitempty"`
-	UpdatedAt     time.Time `json:"updatedat" bson:"updatedat,omitempty"`
-	DeletedBy     string    `json:"deletedby" bson:"deletedby,omitempty"`
-	DeletedByName string    `json:"deletedbyname,omitempty" bson:"deletedbyname,omitempty"`
-	DeletedAt     time.Time `json:"deletedat" bson:"deletedat,omitempty"`
+	CreatedBy     string    `json:"createdby"`
+	CreatedByName string    `json:"createdbyname,omitempty"`
+	CreatedAt     time.Time `json:"createdat"`
+	UpdatedBy     string    `json:"updatedby"`
+	UpdatedByName string    `json:"updatedbyname,omitempty"`
+	UpdatedAt     time.Time `json:"updatedat"`
+	DeletedBy     string    `json:"deletedby"`
+	DeletedByName string    `json:"deletedbyname,omitempty"`
+	DeletedAt     time.Time `json:"deletedat"`
 }
 
 type ActivityTime struct {
-	CreatedAt time.Time `json:"createdat" bson:"createdat"`
-	UpdatedAt time.Time `json:"updatedat" bson:"updatedat,omitempty"`
-	DeletedAt time.Time `json:"deletedat" bson:"deletedat,omitempty"`
+	CreatedAt time.Time `json:"createdat"`
+	UpdatedAt time.Time `json:"updatedat"`
+	DeletedAt time.Time `json:"deletedat"`
 }
 
 type LastActivity struct {
@@ -38,5 +38,5 @@ type LastActivity struct {
 }
 
 type LastUpdate struct {
-	LastUpdatedAt time.Time `json:"lastupdatedat" bson:"lastupdatedat"`
+	LastUpdatedAt time.Time `json:"lastupdatedat"`
 }

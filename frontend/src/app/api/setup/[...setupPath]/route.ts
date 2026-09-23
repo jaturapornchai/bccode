@@ -212,10 +212,5 @@ export async function POST(request: Request, context: SetupProxyContext) {
     });
   }
 
-  // 6. create-clickhouse-database
-  if (path === "create-clickhouse-database") {
-    return NextResponse.json({ success: false, message: "ClickHouse เลิกใช้งานแล้ว ระบบใช้ PostgreSQL เท่านั้น" });
-  }
-
   return NextResponse.json({ success: true, message: "ดำเนินการสำเร็จ" });
 }

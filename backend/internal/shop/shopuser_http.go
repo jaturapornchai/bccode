@@ -2,53 +2,43 @@ package shop
 
 import (
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/config"
 	common "smlcloudplatform/internal/models"
-	companyModels "smlcloudplatform/internal/organization/company/models"
-	branchModels "smlcloudplatform/internal/organization/branch/models"
 	"smlcloudplatform/internal/utils"
-	mypg "smlcloudplatform/internal/goapi/mypg"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 	"strings"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
-
-type IShopMemberHttp interface{}
 
 type ShopMemberHttp struct {
 	ms  *microservice.Microservice
 	cfg config.IConfig
-	svc IShopUserService
 }
 
 func NewShopMemberHttp(ms *microservice.Microservice, cfg config.IConfig) *ShopMemberHttp {
-	var repo IShopUserRepository
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		repo = NewShopUserPostgresRepository(db)
-	} else {
-		pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-		repo = NewShopUserRepository(pst)
-	}
-	svc := NewShopUserService(repo)
 	return &ShopMemberHttp{
-		svc: svc,
 		ms:  ms,
 		cfg: cfg,
 	}
 }
 
+// service binds the membership service to the central database.
+func (h ShopMemberHttp) service() (IShopUserService, error) {
+	db, err := centraldb.Open()
+	if err != nil {
+		return nil, err
+	}
+	return NewShopUserService(NewShopUserPostgresRepository(db)), nil
+}
+
 func (h *ShopMemberHttp) RegisterHttp() {
-	h.ms.GET("/user/permissions", h.ListShopUser)
 	h.ms.GET("/holding/users", h.ListUserInShop)
 	h.ms.GET("/shop/users", h.ListUserInShop)
 
@@ -61,19 +51,11 @@ func (h *ShopMemberHttp) RegisterHttp() {
 	h.ms.POST("/holding/permission", h.SaveUserPermissionShop)
 	h.ms.DELETE("/holding/permission/:username", h.DeleteUserPermissionShop)
 
-	// Bulk import users into the holding from an uploaded .csv/.xlsx (base64 in JSON body).
-
 	// Holding admin management by email (holdingcode comes from the request; the caller's role
 	// is resolved per-holding so it works from the holding-selection screen, no select required).
 	h.ms.GET("/holding-member/list", h.ListHoldingMembers)
 	// Adding and removing members must go through the invitation lifecycle.
 	// Legacy direct-grant routes stay unregistered to prevent bypassing acceptance and audit.
-
-	// Public endpoint สำหรับ sync LINE data จาก lineoa-liff (LIFF callback)
-	h.ms.POST("/line-sync", h.SyncLineData)
-
-	// Endpoint สำหรับให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter)
-	h.ms.PUT("/profile/my-line", h.SaveMyLineData)
 }
 
 // List Shop User godoc
@@ -88,6 +70,10 @@ func (h *ShopMemberHttp) RegisterHttp() {
 // @Security     AccessToken
 // @Router /shop/users [get]
 func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
 	authUsername := userInfo.Username
@@ -96,7 +82,7 @@ func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 
 	// Role is resolved per-holding inside the service (requireHoldingManager); do NOT gate on
 	// the JWT-selected userInfo.Role here — an owner/admin of this holding must always pass.
-	docList, pagination, err := h.svc.ListUserInShop(holdingCode, authUsername, pageable)
+	docList, pagination, err := svc.ListUserInShop(holdingCode, authUsername, pageable)
 
 	if err != nil {
 		if err.Error() == "permission denied" {
@@ -126,9 +112,13 @@ func (h ShopMemberHttp) ListUserInShop(ctx microservice.IContext) error {
 // @Security     AccessToken
 // @Router /shop/permission/{username} [get]
 func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	userInfo := ctx.UserInfo()
 	holdingCode := userInfo.HoldingCode
-	if err := h.svc.EnsureHoldingManager(holdingCode, userInfo.Username); err != nil {
+	if err := svc.EnsureHoldingManager(holdingCode, userInfo.Username); err != nil {
 		ctx.Response(http.StatusForbidden, &common.ApiResponse{Success: false, Message: "permission denied"})
 		return err
 	}
@@ -140,66 +130,18 @@ func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
 		return nil
 	}
 
-	doc, err := h.svc.InfoShopByUser(holdingCode, username)
+	doc, err := svc.InfoShopByUser(holdingCode, username)
 
 	if err != nil {
 		ctx.ResponseError(400, "find failed")
 		h.ms.Logger.Error("HTTP:: SearchShopUser " + err.Error())
 		return err
 	}
-
-	// Debug log
-	h.ms.Logger.Debug("InfoShopUser - username: " + username)
-	h.ms.Logger.Debug("InfoShopUser - LineUserID: " + doc.LineUserID)
-	h.ms.Logger.Debug("InfoShopUser - LineDisplayName: " + doc.LineDisplayName)
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		Data:    doc,
 	})
-	return nil
-}
-
-// List Shop By User godoc
-// @Description get shopuser
-// @Tags		ShopUser
-// @Param		q		query	string		false  "Search Value"
-// @Param		page	query	integer		false  "Page"
-// @Param		limit	query	integer		false  "Limit"
-// @Accept 		json
-// @Success		200	{array}		common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /user/permissions [get]
-func (h ShopMemberHttp) ListShopUser(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
-
-	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-		ctx.Response(http.StatusForbidden, &common.ApiResponse{
-			Success: false,
-			Message: "permission denied",
-		})
-
-		return errors.New("permission denied")
-	}
-
-	pageable := utils.GetPageable(ctx.QueryParam)
-
-	docList, pagination, err := h.svc.ListShopByUser(authUsername, userInfo.UID, pageable)
-
-	if err != nil {
-		ctx.ResponseError(400, "find failed")
-		h.ms.Logger.Error("HTTP:: SearchShopUser " + err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK,
-		common.ApiResponse{
-			Success:    true,
-			Pagination: pagination,
-			Data:       docList,
-		})
 	return nil
 }
 
@@ -213,6 +155,10 @@ type holdingMemberRequest struct {
 // @Security AccessToken
 // @Router /holding-member/list [get]
 func (h ShopMemberHttp) ListHoldingMembers(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	authUsername := ctx.UserInfo().Username
 
 	holdingCode, err := utils.NormalizeHoldingCode(ctx.QueryParam("holdingcode"))
@@ -223,7 +169,7 @@ func (h ShopMemberHttp) ListHoldingMembers(ctx microservice.IContext) error {
 
 	pageable := utils.GetPageable(ctx.QueryParam)
 
-	docList, pagination, err := h.svc.ListHoldingMembersByAdmin(holdingCode, authUsername, pageable)
+	docList, pagination, err := svc.ListHoldingMembersByAdmin(holdingCode, authUsername, pageable)
 	if err != nil {
 		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
 		return err
@@ -238,6 +184,10 @@ func (h ShopMemberHttp) ListHoldingMembers(ctx microservice.IContext) error {
 // @Security AccessToken
 // @Router /holding-member/add [post]
 func (h ShopMemberHttp) AddHoldingMemberAdmin(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	authUsername := ctx.UserInfo().Username
 
 	req := &holdingMemberRequest{}
@@ -252,7 +202,7 @@ func (h ShopMemberHttp) AddHoldingMemberAdmin(ctx microservice.IContext) error {
 		return nil
 	}
 
-	if err := h.svc.AddHoldingAdminByEmail(holdingCode, authUsername, req.Email); err != nil {
+	if err := svc.AddHoldingAdminByEmail(holdingCode, authUsername, req.Email); err != nil {
 		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
 		return err
 	}
@@ -266,6 +216,10 @@ func (h ShopMemberHttp) AddHoldingMemberAdmin(ctx microservice.IContext) error {
 // @Security AccessToken
 // @Router /holding-member/remove [post]
 func (h ShopMemberHttp) RemoveHoldingMemberAdmin(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	authUsername := ctx.UserInfo().Username
 
 	req := &holdingMemberRequest{}
@@ -280,7 +234,7 @@ func (h ShopMemberHttp) RemoveHoldingMemberAdmin(ctx microservice.IContext) erro
 		return nil
 	}
 
-	if err := h.svc.RemoveHoldingMember(holdingCode, authUsername, req.Email); err != nil {
+	if err := svc.RemoveHoldingMember(holdingCode, authUsername, req.Email); err != nil {
 		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
 		return err
 	}
@@ -299,6 +253,10 @@ func (h ShopMemberHttp) RemoveHoldingMemberAdmin(ctx microservice.IContext) erro
 // @Security     AccessToken
 // @Router /shop/permission [put]
 func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
 	holdingCode := userInfo.HoldingCode
@@ -322,14 +280,12 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 		return err
 	}
 
-	// Debug log
-	h.ms.Logger.Debug("SaveUserPermissionShop - input: " + input)
-	h.ms.Logger.Debug("SaveUserPermissionShop - LineUserID: " + userRoleReq.LineUserID)
-	h.ms.Logger.Debug("SaveUserPermissionShop - LineDisplayName: " + userRoleReq.LineDisplayName)
-
 	// ใช้ SaveUserFullProfile เพื่อบันทึกข้อมูลทั้งหมด (รวม position, department, LINE, approval)
-	h.hydrateAccessScopes(holdingCode, userRoleReq)
-	err = h.svc.SaveUserFullProfile(holdingCode, authUsername, userRoleReq)
+	if err := h.hydrateAccessScopes(holdingCode, userRoleReq); err != nil {
+		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+		return err
+	}
+	err = svc.SaveUserFullProfile(holdingCode, authUsername, userRoleReq)
 	if err != nil {
 		h.ms.Logger.Error("SaveUserPermissionShop failed: " + err.Error())
 		ctx.ResponseError(400, err.Error())
@@ -348,72 +304,22 @@ func (h ShopMemberHttp) SaveUserPermissionShop(ctx microservice.IContext) error 
 // docs/organization.md): ScopeType "company"/"branch" must carry CompanyUID /
 // BranchUID or scope enforcement cannot see them; ScopeType "holding" is a UI
 // shorthand for "every company in this holding".
-func (h ShopMemberHttp) hydrateAccessScopes(holdingCode string, req *models.UserRoleRequest) {
+func (h ShopMemberHttp) hydrateAccessScopes(holdingCode string, req *models.UserRoleRequest) error {
 	if req == nil || len(req.AccessScopes) == 0 {
-		return
+		return nil
 	}
-	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-
-	findCompanyUID := func(businessCode string) string {
-		if strings.TrimSpace(businessCode) == "" {
-			return ""
-		}
-		var company companyModels.CompanyDoc
-		err := pst.FindOne(mongoCtx, &companyModels.CompanyDoc{}, bson.M{
-			"holdingcode": holdingCode,
-			"code":        businessCode,
-			"isdeleted":   bson.M{"$ne": true},
-		}, &company)
-		if err != nil {
-			return ""
-		}
-		return company.CompanyUID
+	db, err := centraldb.Open()
+	if err != nil {
+		return err
 	}
-
-	expanded := make([]models.AccessScope, 0, len(req.AccessScopes))
-	for _, scope := range req.AccessScopes {
-		switch strings.ToLower(strings.TrimSpace(scope.ScopeType)) {
-		case "holding":
-			var companies []companyModels.CompanyDoc
-			if err := pst.Find(mongoCtx, &companyModels.CompanyDoc{}, bson.M{
-				"holdingcode": holdingCode,
-				"isdeleted":   bson.M{"$ne": true},
-			}, &companies); err == nil {
-				for _, company := range companies {
-					expanded = append(expanded, models.AccessScope{
-						ScopeType:    "company",
-						CompanyUID:   company.CompanyUID,
-						BusinessCode: company.Code,
-						AllBranches:  true,
-					})
-				}
-			}
-		case "branch":
-			if scope.CompanyUID == "" && scope.BusinessCode != "" {
-				scope.CompanyUID = findCompanyUID(scope.BusinessCode)
-			}
-			if scope.BranchUID == "" && scope.BranchCode != "" && scope.CompanyUID != "" {
-				var branch branchModels.BranchOrgDoc
-				if err := pst.FindOne(mongoCtx, &branchModels.BranchOrgDoc{}, bson.M{
-					"holdingcode": holdingCode,
-					"code":        scope.BranchCode,
-					"companyuid":  scope.CompanyUID,
-					"isdeleted":   bson.M{"$ne": true},
-				}, &branch); err == nil {
-					scope.BranchUID = branch.BranchUID
-				}
-			}
-			expanded = append(expanded, scope)
-		default:
-			if scope.CompanyUID == "" && scope.BusinessCode != "" {
-				scope.CompanyUID = findCompanyUID(scope.BusinessCode)
-			}
-			expanded = append(expanded, scope)
-		}
+	expanded, err := hydrateAccessScopes(ctx, db, holdingCode, req.AccessScopes)
+	if err != nil {
+		return err
 	}
 	req.AccessScopes = expanded
+	return nil
 }
 
 // Delete Shop User godoc
@@ -426,6 +332,10 @@ func (h ShopMemberHttp) hydrateAccessScopes(holdingCode string, req *models.User
 // @Security     AccessToken
 // @Router /shop/permission/{username} [delete]
 func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) error {
+	svc, svcErr := h.service()
+	if svcErr != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
+	}
 	userInfo := ctx.UserInfo()
 	authUsername := userInfo.Username
 	holdingCode := userInfo.HoldingCode
@@ -454,7 +364,7 @@ func (h ShopMemberHttp) DeleteUserPermissionShop(ctx microservice.IContext) erro
 		return nil
 	}
 
-	err := h.svc.DeleteUserPermissionShop(holdingCode, authUsername, username)
+	err := svc.DeleteUserPermissionShop(holdingCode, authUsername, username)
 
 	if err != nil {
 		h.ms.Logger.Error("DeleteUserPermissionShop - error: " + err.Error())
@@ -477,175 +387,4 @@ func decodePathUsername(value string) string {
 		return value
 	}
 	return decoded
-}
-
-// CleanupEmptyUsers - ลบ users ที่ username ว่างออกจากระบบ
-// @Description cleanup users with empty username
-// @Tags		ShopUser
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security    AccessToken
-// @Router /shop/users/cleanup [delete]
-func (h ShopMemberHttp) CleanupEmptyUsers(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-
-	// ต้องเป็น Owner เท่านั้น
-	if userInfo.Role != models.ROLE_OWNER && userInfo.Role != models.ROLE_ADMIN {
-		ctx.Response(http.StatusForbidden, &common.ApiResponse{
-			Success: false,
-			Message: "permission denied",
-		})
-		return nil
-	}
-
-	h.ms.Logger.Debug("CleanupEmptyUsers - holdingCode: " + holdingCode)
-
-	// ลบ users ที่ username ว่าง
-	deletedCount, err := h.svc.CleanupEmptyUsers(holdingCode)
-
-	if err != nil {
-		h.ms.Logger.Error("CleanupEmptyUsers - error: " + err.Error())
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	h.ms.Logger.Debug("CleanupEmptyUsers - deleted count: " + fmt.Sprintf("%d", deletedCount))
-	ctx.Response(http.StatusOK,
-		common.ApiResponse{
-			Success: true,
-			Message: fmt.Sprintf("Deleted %d empty users", deletedCount),
-			Data:    map[string]int64{"deleted_count": deletedCount},
-		})
-
-	return nil
-}
-
-// LineSyncRequest - request body สำหรับ sync LINE data
-type LineSyncRequest struct {
-	HoldingCode     string `json:"holdingcode"`
-	Username        string `json:"username"`
-	EmployeeCode    string `json:"employeecode"` // alias for username
-	LineUserID      string `json:"lineuserid"`
-	LineDisplayName string `json:"linedisplayname"`
-	LinePictureURL  string `json:"linepictureurl"`
-	APIKey          string `json:"apikey"` // สำหรับ authentication
-}
-
-// SyncLineData - Public endpoint สำหรับ sync LINE data จาก lineoa-liff
-// @Description sync LINE data from LIFF callback
-// @Tags		ShopUser
-// @Param		LineSyncRequest  body      LineSyncRequest  true  "LineSyncRequest"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Router /line-sync [post]
-func (h ShopMemberHttp) SyncLineData(ctx microservice.IContext) error {
-	input := ctx.ReadInput()
-
-	req := &LineSyncRequest{}
-	err := json.Unmarshal([]byte(input), &req)
-
-	if err != nil {
-		ctx.ResponseError(400, "Invalid request body")
-		return err
-	}
-
-	configuredAPIKey := strings.TrimSpace(os.Getenv("LINE_SYNC_API_KEY"))
-	requestAPIKey := strings.TrimSpace(req.APIKey)
-	if configuredAPIKey == "" {
-		h.ms.Logger.Error("SyncLineData - LINE_SYNC_API_KEY is not configured")
-		ctx.ResponseError(http.StatusUnauthorized, "LINE sync authentication is not configured")
-		return errors.New("line sync api key is not configured")
-	}
-	if requestAPIKey == "" || subtle.ConstantTimeCompare([]byte(requestAPIKey), []byte(configuredAPIKey)) != 1 {
-		h.ms.Logger.Error("SyncLineData - unauthorized request for shop: " + req.HoldingCode)
-		ctx.ResponseError(http.StatusUnauthorized, "Unauthorized")
-		return errors.New("line sync unauthorized")
-	}
-
-	// ใช้ employee_code หรือ username
-	username := req.Username
-	if username == "" {
-		username = req.EmployeeCode
-	}
-
-	if req.HoldingCode == "" || username == "" {
-		ctx.ResponseError(400, "holdingcode and username/employee_code are required")
-		return errors.New("missing required fields")
-	}
-
-	h.ms.Logger.Debug("SyncLineData - authenticated request for: " + username + " in shop: " + req.HoldingCode)
-
-	// Sync LINE data
-	err = h.svc.SyncLineData(req.HoldingCode, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
-
-	if err != nil {
-		h.ms.Logger.Error("SyncLineData - error: " + err.Error())
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	h.ms.Logger.Debug("SyncLineData - success for: " + username + " in shop: " + req.HoldingCode)
-	ctx.Response(http.StatusOK,
-		common.ApiResponse{
-			Success: true,
-			Message: "LINE data synced successfully",
-		})
-
-	return nil
-}
-
-// MyLineDataRequest - request body สำหรับ user อัปเดต LINE data ของตัวเอง
-type MyLineDataRequest struct {
-	LineUserID      string `json:"lineuserid"`
-	LineDisplayName string `json:"linedisplayname"`
-	LinePictureURL  string `json:"linepictureurl"`
-}
-
-// SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter หลัง LIFF linking)
-// @Description save user's own LINE data
-// @Tags		ShopUser
-// @Param		MyLineDataRequest  body      MyLineDataRequest  true  "MyLineDataRequest"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security    AccessToken
-// @Router /profile/my-line [put]
-func (h ShopMemberHttp) SaveMyLineData(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-	username := userInfo.Username
-
-	input := ctx.ReadInput()
-
-	req := &MyLineDataRequest{}
-	err := json.Unmarshal([]byte(input), &req)
-
-	if err != nil {
-		ctx.ResponseError(400, "Invalid request body")
-		return err
-	}
-
-	h.ms.Logger.Debug("SaveMyLineData - user: " + username + " in shop: " + holdingCode)
-	h.ms.Logger.Debug("SaveMyLineData - LineUserID: " + req.LineUserID)
-	h.ms.Logger.Debug("SaveMyLineData - LineDisplayName: " + req.LineDisplayName)
-
-	// บันทึก LINE data ของตัวเอง
-	err = h.svc.SaveMyLineData(holdingCode, username, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
-
-	if err != nil {
-		h.ms.Logger.Error("SaveMyLineData - error: " + err.Error())
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	h.ms.Logger.Debug("SaveMyLineData - success for: " + username)
-	ctx.Response(http.StatusOK,
-		common.ApiResponse{
-			Success: true,
-			Message: "LINE data saved successfully",
-		})
-
-	return nil
 }

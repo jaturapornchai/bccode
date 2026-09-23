@@ -52,7 +52,8 @@ export type GLCommand = {
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched"] as const;
-export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items);
+// เฉพาะกลุ่ม gl-* ที่จอ GL เปิดเอง; กลุ่มภาษี (vat-*) อยู่ในหมวดเดียวกันแต่ใช้จอภาษี
+export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.filter((group) => group.id.startsWith("gl-")).flatMap((group) => group.items);
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
 /** Screen text follows the selected language (AGENTS.md 2026-09-14): [languages.tsv key, Thai fallback]. */
 export type GLLabel = readonly [key: string, thai: string];

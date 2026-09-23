@@ -3,6 +3,7 @@ package authentication
 import (
 	"context"
 	"crypto/subtle"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/authentication/services"
+	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/demo"
 	"smlcloudplatform/internal/firebase"
@@ -20,7 +22,6 @@ import (
 	common "smlcloudplatform/internal/models"
 	orgaccess "smlcloudplatform/internal/organization"
 	companyModels "smlcloudplatform/internal/organization/company/models"
-	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/apperr"
@@ -28,8 +29,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 const devLoginSecretHeader = "X-BC-Dev-Login-Secret"
@@ -53,7 +52,7 @@ type IAuthenticationHttp interface {
 type AuthenticationHttp struct {
 	ms                    *microservice.Microservice
 	cfg                   config.IConfig
-	pst                   microservice.IPersisterMongo
+	db                    *sql.DB
 	authService           *microservice.AuthService
 	authenticationService services.IAuthenticationService
 	shopService           shop.IShopService
@@ -62,36 +61,18 @@ type AuthenticationHttp struct {
 
 func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IAuthenticationHttp {
 
-	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-	cache := ms.Cacher(cfg.CacherConfig())
-
-	authService := microservice.NewAuthService(ms.Cacher(cfg.CacherConfig()), 24*3*time.Hour, 24*30*time.Hour)
-
-	var shopRepo shop.IShopRepository = shop.NewShopRepository(pst)
-	var shopUserRepo shop.IShopUserRepository = shop.NewShopUserRepository(pst)
-	var authRepo repositories.IAuthenticationMongoCacheRepository = repositories.NewAuthenticationMongoCacheRepository(pst, cache)
-	var shopUserAccessLogRepo shop.IShopUserAccessLogRepository = shop.NewShopUserAccessLogRepository(pst)
-
-	db, err := mypg.PgSqlFastConnect("bcai_projection")
-	if err == nil && db != nil {
-		logger.GetLogger().Info("Authentication HTTP: using Pure PostgreSQL repositories")
-		authRepo = repositories.NewAuthenticationPostgresRepository(db)
-		shopRepo = shop.NewShopPostgresRepository(db)
-		shopUserRepo = shop.NewShopUserPostgresRepository(db)
-		shopUserAccessLogRepo = shop.NewShopUserAccessLogPostgresRepository(db)
+	cache := ms.Cacher()
+	db, err := centraldb.Open()
+	if err != nil {
+		// PostgreSQL is the only user store; without it no request can be served.
+		logger.GetLogger().Fatalf("authentication: %v", err)
 	}
-
-	if err == nil && db != nil {
-		// In PostgreSQL mode, indexes are managed by SQL migrations
-	} else {
-		indexContext, cancelIndexes := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancelIndexes()
-		if mongoRepo, ok := authRepo.(*repositories.AuthenticationMongoCacheRepository); ok {
-			if err := mongoRepo.EnsureGoogleIdentityIndexes(indexContext); err != nil {
-				logger.GetLogger().Errorf("ensure authentication identity indexes: %v", err)
-			}
-		}
-	}
+	// db also drives live authorization: workspace selection re-checks membership and scopes.
+	authService := microservice.NewAuthService(cache, 24*3*time.Hour, 24*30*time.Hour, db)
+	authRepo := repositories.NewAuthenticationPostgresRepository(db)
+	shopRepo := shop.NewShopPostgresRepository(db)
+	shopUserRepo := shop.NewShopUserPostgresRepository(db)
+	shopUserAccessLogRepo := shop.NewShopUserAccessLogPostgresRepository(db)
 	smsRepo := repositories.NewAuthenticationSMSRepository(cache)
 	firebaseAdapter := firebase.NewFirebaseAdapter()
 	lineAdapter := line.NewLineAdapter(cfg.LineClientId())
@@ -110,12 +91,12 @@ func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IA
 		firebaseAdapter,
 		lineAdapter)
 
-	shopService := shop.NewShopService(shopRepo, shopUserRepo, utils.NewGUID, ms.TimeNow)
+	shopService := shop.NewShopService(shopRepo, shopUserRepo, ms.TimeNow)
 	shopUserService := shop.NewShopUserService(shopUserRepo)
 	return AuthenticationHttp{
 		ms:                    ms,
 		cfg:                   cfg,
-		pst:                   pst,
+		db:                    db,
 		authService:           authService,
 		authenticationService: authenticationService,
 		shopUserService:       shopUserService,
@@ -173,7 +154,7 @@ func (h AuthenticationHttp) RegisterHttp() {
 	h.ms.PUT("/profile/link-line", h.LinkLine)
 	h.ms.DELETE("/profile/link-line", h.UnlinkLine)
 
-	middlewareShop := h.authService.MWFuncWithShop(h.ms.Cacher(h.cfg.CacherConfig()))
+	middlewareShop := h.authService.MWFuncWithShop(h.ms.Cacher())
 	h.ms.GET("/list-holding", h.ListShopCanAccess, middlewareShop)
 	h.ms.GET("/list-shop", h.ListShopCanAccess, middlewareShop)
 	h.ms.POST("/select-holding", h.SelectShop, middlewareShop)
@@ -1027,7 +1008,7 @@ func (h AuthenticationHttp) VerifyToken(ctx microservice.IContext) error {
 	return nil
 }
 
-// SessionsActiveCount — จำนวนเซสชันที่กำลังใช้งานระบบ (อ่านจาก Redis)
+// SessionsActiveCount — จำนวนเซสชันที่กำลังใช้งานระบบ (อ่านจากตาราง cache_entries ใน PostgreSQL)
 // @Description จำนวนเซสชัน login ทั้งหมด และที่ active ใน 30 นาทีหลัง แยกตามกลุ่มกิจการ
 // @Tags		Authentication
 // @Accept 		json
@@ -1126,27 +1107,15 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 	shopSelectReq.BusinessCode = companyModels.NormalizeCompanyCode(shopSelectReq.BusinessCode)
 	shopSelectReq.BranchUID = strings.TrimSpace(shopSelectReq.BranchUID)
 	if shopSelectReq.BusinessCode != "" {
-		db, err := mypg.PgSqlFastConnect("bcai_projection")
-		if err == nil && db != nil {
-			var exists bool
-			query := `SELECT true FROM companies WHERE LOWER(holding_code) = LOWER($1) AND (LOWER(code) = LOWER($2) OR LOWER(name) = LOWER($2)) AND is_active = true LIMIT 1`
-			_ = db.QueryRowContext(context.Background(), query, shopSelectReq.HoldingCode, shopSelectReq.BusinessCode).Scan(&exists)
-			if !exists {
-				return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company not found in Holding").WithThaiMessage("ไม่พบบริษัทนี้ใน Holding ที่เลือก"))
-			}
-		} else {
-			companyCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			company := companyModels.CompanyDoc{}
-			if err := h.pst.FindOne(companyCtx, companyModels.CompanyDoc{}, selectableCompanyFilter(
-				shopSelectReq.HoldingCode,
-				shopSelectReq.BusinessCode,
-			), &company); err != nil {
-				return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
-			}
-			if company.GuidFixed == "" {
-				return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company not found in Holding").WithThaiMessage("ไม่พบบริษัทนี้ใน Holding ที่เลือก"))
-			}
+		exists := false
+		err := h.db.QueryRowContext(context.Background(), `SELECT EXISTS (SELECT 1 FROM companies
+			WHERE holding_code = $1 AND UPPER(code) = UPPER($2) AND is_active = true)`,
+			shopSelectReq.HoldingCode, shopSelectReq.BusinessCode).Scan(&exists)
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+		if !exists {
+			return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company not found in Holding").WithThaiMessage("ไม่พบบริษัทนี้ใน Holding ที่เลือก"))
 		}
 	}
 
@@ -1165,15 +1134,6 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 	})
 
 	return nil
-}
-
-func selectableCompanyFilter(holdingCode string, businessCode string) bson.M {
-	return bson.M{
-		"holdingcode": holdingCode,
-		"code":        businessCode,
-		"isactive":    true,
-		"deletedat":   bson.M{"$exists": false},
-	}
 }
 
 // List Shop godoc
@@ -1195,7 +1155,7 @@ func (h AuthenticationHttp) ListShopCanAccess(ctx microservice.IContext) error {
 	if err != nil {
 		return apperr.RespondErr(ctx, err)
 	}
-	canCreateHolding := orgaccess.RequireEmailedAccount(h.pst, userInfo) == nil
+	canCreateHolding := orgaccess.RequireEmailedAccount(context.Background(), h.db, userInfo) == nil
 
 	ctx.Response(http.StatusOK,
 		map[string]interface{}{

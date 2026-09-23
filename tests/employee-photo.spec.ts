@@ -1,10 +1,11 @@
 import { execSync } from 'child_process';
 import { expect, test, type Page } from '@playwright/test';
+import { pgRow } from './support/pg';
 
 /**
- * Employee photo UAT (2026-08-31) — ตามกฎใหม่ "รูปภาพห้ามเก็บใน MongoDB":
+ * Employee photo UAT (2026-08-31) — ตามกฎ "รูปภาพห้ามเก็บในฐานข้อมูล":
  * อัปโหลดรูปพนักงานผ่าน UI → ตรวจว่า
- *  1) Mongo เก็บเป็น URI (/goapi/s3/file/...) เท่านั้น ไม่มี binary/base64
+ *  1) PostgreSQL (bcai_projection.employees) เก็บเป็น URI (/goapi/s3/file/...) เท่านั้น ไม่มี binary/base64
  *  2) ไฟล์จริง (ต้นฉบับ + thumbnail) อยู่ใน S3/MinIO — GET ผ่าน /goapi/s3/file/ ได้ 200
  *  3) จอ list + detail แสดงรูป (img ใช้ URI)
  * ใช้พนักงาน UATEMP01 (ข้อมูล UAT ถาวร) — helpers ลอกจาก employee-uat.spec.ts
@@ -12,15 +13,6 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 const SHOT = 'test-results/employee-photo';
-
-function mongoJson(js: string): any {
-  const out = execSync(
-    `docker exec mongodb mongosh --quiet appdb --eval "JSON.stringify(${js})"`,
-    { timeout: 45000, shell: 'cmd.exe' },
-  ).toString().trim();
-  const start = out.indexOf('[') >= 0 ? out.indexOf('[') : out.indexOf('{');
-  return JSON.parse(out.slice(start));
-}
 
 async function uiLogin(page: Page) {
   await page.goto('/');
@@ -52,7 +44,7 @@ test.afterEach(async ({ page }) => {
   await page.context().storageState({ path: '.auth/user.json' }).catch(() => {});
 });
 
-test('EMP-PHOTO: อัปโหลดรูปพนักงาน → S3 + thumb + Mongo เก็บ URI เท่านั้น', async ({ page }) => {
+test('EMP-PHOTO: อัปโหลดรูปพนักงาน → S3 + thumb + PostgreSQL เก็บ URI เท่านั้น', async ({ page }) => {
   test.setTimeout(300000);
   await ensureEmployeeScreen(page);
 
@@ -107,14 +99,16 @@ test('EMP-PHOTO: อัปโหลดรูปพนักงาน → S3 + th
   await page.locator('button', { hasText: /บันทึก|Save/ }).last().click();
   await expect(fileInput).toBeHidden({ timeout: 20000 });
 
-  // 1) Mongo: URI เท่านั้น (ไม่มี base64/binary) — single-quote กัน cmd.exe กิน
-  const docs = mongoJson(`db.employees.find({holdingcode:'bc001', code:'UATEMP01'}, {profilepicture:1, profilepicturethumb:1}).toArray()`);
-  expect(docs.length).toBe(1);
-  const uri = String(docs[0].profilepicture ?? '');
-  const thumbUri = String(docs[0].profilepicturethumb ?? '');
+  // 1) PostgreSQL: URI เท่านั้น (ไม่มี base64/binary)
+  const dbRow = pgRow<{ profile_picture: string; profile_picture_thumb: string }>(
+    `SELECT profile_picture, profile_picture_thumb FROM employees WHERE holding_code = 'bc001' AND code = 'UATEMP01' AND is_enabled = true`,
+  );
+  expect(dbRow, 'พนักงาน UATEMP01 ต้องมีใน employees').not.toBeNull();
+  const uri = String(dbRow?.profile_picture ?? '');
+  const thumbUri = String(dbRow?.profile_picture_thumb ?? '');
   expect(uri, 'profilepicture เป็น URI S3').toMatch(/^\/goapi\/s3\/file\//);
   expect(thumbUri, 'profilepicturethumb มีคู่เสมอ (กฎ thumbnail)').toMatch(/^\/goapi\/s3\/file\//);
-  expect(uri.length, 'ไม่มี binary ใน Mongo').toBeLessThan(300);
+  expect(uri.length, 'ไม่มี binary ในฐานข้อมูล').toBeLessThan(300);
   expect(thumbUri.length).toBeLessThan(300);
   expect(uri).not.toContain('base64');
 

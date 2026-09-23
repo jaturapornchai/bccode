@@ -77,7 +77,6 @@ import {
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField, TimeField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
-import { ChoiceSelect } from "@/components/ui/select";
 import {
   backendText,
   useBackendLanguage,
@@ -109,7 +108,6 @@ import { PermissionSetsEditor } from "@/components/system-settings/field-editors
 import { ProductCategoryTreeView } from "./product-category-tree-view";
 import { ProductCategoryItemsEditor } from "./product-category-items-editor";
 import { ProductGroupTreeView } from "./product-group-tree-view";
-import { ProductSubgroupTreeView } from "./product-subgroup-tree-view";
 import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { BulkUserImport } from "./bulk-user-import";
@@ -193,7 +191,6 @@ import {
   isBranchLatitudeField,
   isBranchLongitudeField,
   isPermissionAccessRulesField,
-  isProductVariantStructuredField,
   isBranchStructuredSettingField,
   recordId,
   recordDisplayCode,
@@ -758,7 +755,6 @@ export function SystemSettingsScreen({
   const [detailError, setDetailError] = useState("");
   const [autoOpenedCompanyId, setAutoOpenedCompanyId] = useState("");
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
-  const [sourceHoldingCode, setSourceHoldingCode] = useState("");
   const [groupNumber, setGroupNumber] = useState<number | null>(null);
   const [categorySelectedGuid, setCategorySelectedGuid] = useState("");
   const [categorySearchQuery, setCategorySearchQuery] = useState("");
@@ -773,10 +769,6 @@ export function SystemSettingsScreen({
   groupNumberRef.current = groupNumber;
   const forbiddenListRequestKeysRef = useRef<Set<string>>(new Set());
   const listContextKeyRef = useRef("");
-  const [copySourceEnvironment, setCopySourceEnvironment] = useState<
-    "uat" | "pro"
-  >("uat");
-  const [copyPreview, setCopyPreview] = useState<unknown>(null);
   const [standardUnitDialog, setStandardUnitDialog] =
     useState<StandardUnitDialogState>(emptyStandardUnitDialog);
   const activeBackendUrl = auth?.backendUrl ?? initialBackendUrl;
@@ -1010,7 +1002,7 @@ export function SystemSettingsScreen({
         const sortFieldKey =
           currentConfig.fields?.find((field) => field.businessCode)?.key ??
           currentConfig.fields?.[0]?.key;
-        if (sortFieldKey && currentConfig.slug !== "permissionlink") {
+        if (sortFieldKey) {
           searchParams.set("sort", `${sortFieldKey}:1`);
         }
         if ((currentConfig.slug === "productcategorygroupselectscreen" || currentConfig.slug === "productcategorylist") && groupNumberRef.current !== null) {
@@ -1027,9 +1019,7 @@ export function SystemSettingsScreen({
           if (scope.branchguid)
             searchParams.set("branchguid", scope.branchguid);
         }
-        if (currentConfig.kind === "copy-uat")
-          searchParams.set("sourceenvironment", copySourceEnvironment);
-        const fetchSlug = currentConfig.slug === "permissionlink" ? "user" : currentConfig.slug;
+        const fetchSlug = currentConfig.slug;
         const forbiddenKey = `${fetchSlug}|${searchParams.get("holdingcode") ?? ""}`;
         if (forbiddenListRequestKeysRef.current.has(forbiddenKey)) {
           setNotice({
@@ -1055,15 +1045,7 @@ export function SystemSettingsScreen({
         }
         if (!response.ok || isFailed(payload))
           throw new Error(extractMessage(payload) ?? "");
-        let nextRecords = normalizeRecords(payload, currentConfig.slug === "permissionlink" ? getSystemSettingConfig("user")! : currentConfig);
-        if (currentConfig.slug === "permissionlink") {
-          nextRecords = nextRecords.map((r: any) => ({
-            ...r,
-            employeecode: r.user_name || r.username || r.employeecode || r.email || r.useruid || r.uid,
-            employeename: r.userprofilename || r.name || r.username,
-            useruid: r.useruid || r.uid,
-          }));
-        }
+        const nextRecords = normalizeRecords(payload, currentConfig);
         const scopedRecords =
           currentConfig.slug === "holidayscreen" ||
           currentConfig.slug === "department"
@@ -1091,7 +1073,6 @@ export function SystemSettingsScreen({
       }
     },
     [
-      copySourceEnvironment,
       language,
       query,
       setLoading,
@@ -1154,7 +1135,7 @@ export function SystemSettingsScreen({
         const sortFieldKey =
           currentConfig.fields?.find((field) => field.businessCode)?.key ??
           currentConfig.fields?.[0]?.key;
-        if (sortFieldKey && currentConfig.slug !== "permissionlink") {
+        if (sortFieldKey) {
           searchParams.set("sort", `${sortFieldKey}:1`);
         }
         const response = await authFetch(
@@ -1189,13 +1170,6 @@ export function SystemSettingsScreen({
   useEffect(() => {
     forbiddenListRequestKeysRef.current.clear();
   }, [auth?.token, route, workspace?.shop.holdingcode]);
-
-  useEffect(() => {
-    if (config?.kind !== "copy-uat" || !auth || !workspace) return;
-    setSourceHoldingCode("");
-    setCopyPreview(null);
-    void loadRecords(auth, workspace, config);
-  }, [auth, config, copySourceEnvironment, loadRecords, workspace]);
 
   useEffect(() => {
     if (!config) return;
@@ -1644,24 +1618,14 @@ export function SystemSettingsScreen({
       return;
     }
 
-    // Keep an open editor mounted while its next Mongo detail loads. This avoids
+    // Keep an open editor mounted while its next record detail loads. This avoids
     // a blank pane during record switches across every hydrated CRUD screen.
     if (!formOpen) {
       setEditing(null);
       setFormOpen(false);
     }
     if (!auth || !workspace) return;
-    const lookupId =
-      currentConfig.slug === "permissionlink"
-        ? stringValue(
-            record.useruid ??
-              record.uid ??
-              record.employeecode ??
-              record.employeeCode ??
-              newId,
-          )
-        : newId;
-    const detailRecordKey = newId || lookupId;
+    const lookupId = newId;
     setDetailRecord(null);
     setDetailRecordId("");
     setDetailError("");
@@ -1674,30 +1638,10 @@ export function SystemSettingsScreen({
         lookupId,
       );
       if (hydrationRequest !== editorHydrationRef.current) return;
-      const hydratedRecord =
-        currentConfig.slug === "permissionlink"
-          ? {
-              ...record,
-              ...detail,
-              employeecode: firstRecordValue(
-                detail.employeecode,
-                detail.employeeCode,
-                record.employeecode,
-                record.employeeCode,
-                lookupId,
-              ),
-              employeename: firstRecordValue(
-                detail.employeename,
-                detail.employeeName,
-                record.employeename,
-                record.employeeName,
-              ),
-            }
-          : detail;
-      setDetailRecord(hydratedRecord);
-      setDetailRecordId(detailRecordKey);
-      setEditing(hydratedRecord);
-      setForm(formFromRecord(hydratedRecord, currentConfig, language));
+      setDetailRecord(detail);
+      setDetailRecordId(newId);
+      setEditing(detail);
+      setForm(formFromRecord(detail, currentConfig, language));
       setFormOpen(true);
     } catch (error) {
       if (hydrationRequest !== editorHydrationRef.current) return;
@@ -1818,8 +1762,6 @@ export function SystemSettingsScreen({
       }
     }
 
-    normalizeVariantMasterPayload(payload, currentConfig.slug);
-
     // Business Code Uppercase + No-Space rules: normalize every businessCode
     // field (uppercase, strip all whitespace) before required/duplicate checks
     // and before the payload is sent — mirrors backend utils.NormalizeBusinessCode.
@@ -1907,7 +1849,7 @@ export function SystemSettingsScreen({
           return;
         }
       }
-      // Identity-code duplicate guard (e.g. permissionlink employeecode) — case-insensitive,
+      // Identity-code duplicate guard for fields marked uniqueCode — case-insensitive,
       // not uppercased (emails are exempt).
       const idField = currentConfig.fields.find((field) => field.uniqueCode);
       if (idField) {
@@ -2121,9 +2063,6 @@ export function SystemSettingsScreen({
           body: JSON.stringify({
             backendUrl: auth.backendUrl,
             ...workspaceTenantPayload(workspace),
-            ...(currentConfig.slug === "permissionlink"
-              ? { useruid: record.useruid ?? record.uid }
-              : {}),
           }),
         },
       );
@@ -2287,41 +2226,6 @@ export function SystemSettingsScreen({
       setNotice({ type: "success", text: text("saved") });
       notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
-    } catch (error) {
-      setNotice({ type: "error", text: errorText(error) });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function runCopy(action: "copy" | "preview") {
-    if (!auth || !workspace || !sourceHoldingCode) return;
-    setSaving(true);
-    setNotice(null);
-    try {
-      const response = await authFetch(
-        `/api/system-settings/${currentConfig.slug}?${workspaceTenantSearchParams(workspace).toString()}`,
-        {
-          method: "POST",
-          headers: requestHeaders(auth),
-          body: JSON.stringify({
-            action,
-            backendUrl: auth.backendUrl,
-            sourceenvironment: copySourceEnvironment,
-            targetenvironment: "dev",
-            sourceholdingcode: sourceHoldingCode,
-            targetholdingcode: workspace.shop.holdingcode,
-          }),
-        },
-      );
-      const data = (await response.json()) as unknown;
-      if (!response.ok || isFailed(data))
-        throw new Error(extractMessage(data) ?? text("requestFailed"));
-      setCopyPreview(data);
-      setNotice({
-        type: "success",
-        text: action === "copy" ? text("saved") : text("preview"),
-      });
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
     } finally {
@@ -2621,22 +2525,6 @@ export function SystemSettingsScreen({
           language={language}
           workspace={workspace}
         />
-      ) : config.kind === "copy-uat" ? (
-        <CopyUatPanel
-          config={config}
-          copyPreview={copyPreview}
-          language={language}
-          loading={loading}
-          records={records}
-          runCopy={runCopy}
-          saving={saving}
-          selected={sourceHoldingCode}
-          setSelected={setSourceHoldingCode}
-          sourceEnvironment={copySourceEnvironment}
-          setSourceEnvironment={setCopySourceEnvironment}
-          targetHoldingCode={workspace?.shop.holdingcode ?? ""}
-          text={text}
-        />
       ) : config.slug === "workdayscreen" ? (
         <WorkDayPanel
           language={language}
@@ -2680,78 +2568,6 @@ export function SystemSettingsScreen({
             max={TREE_SPLIT_MAX_LEFT}
             label={
               backendText(backendLanguage, "ss_resize_product_group_tree_and", "ปรับขนาดกลุ่มสินค้าและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
-            }
-            isResizing={resizingTreeSplit}
-            onPointerDown={startTreeSplitResize}
-            onDoubleClick={() => setTreeSplitPercent(TREE_SPLIT_DEFAULT_LEFT)}
-            onKeyDown={adjustTreeSplitWithKeyboard}
-            breakpoint="xl"
-          />
-
-          <div className="min-h-0 h-full flex-1 min-w-0">
-            {formOpen ? (
-              <SettingFormDialog
-                inline
-                auth={auth}
-                config={config}
-                dictionary={backendLanguage}
-                editing={editing}
-                form={form}
-                dateTimeScope={dateTimeScope}
-                language={language}
-                onClose={() => {
-                  if (!saving) setFormOpen(false);
-                }}
-                onSubmit={saveRecord}
-                saving={saving}
-                setForm={(update: FormState | ((current: FormState) => FormState)) => {
-                  setForm((prev) => {
-                    const nextForm = typeof update === "function" ? update(prev) : update;
-                    if (!nextForm.code) {
-                      console.error("[DEBUG setForm→no-code] updateIsFn:", typeof update === "function", "prevCode:", prev.code, "nextKeys:", Object.keys(nextForm).length);
-                    }
-                    return nextForm;
-                  });
-                }}
-                text={text}
-                workspace={workspace}
-              />
-            ) : null}
-          </div>
-        </div>
-      ) : config.slug === "productsubgroup" && !hideChrome ? (
-        <div
-          style={{ ["--tree-split-basis" as any]: `${treeSplitPercent}%` }}
-          className="flex flex-col xl:flex-row w-full min-w-0 items-stretch min-h-[calc(100dvh-12rem)]"
-        >
-          <div className="min-h-0 min-w-0 xl:w-[var(--tree-split-basis)] xl:shrink-0">
-            <ProductSubgroupTreeView
-              auth={auth}
-              workspace={workspace}
-              language={language}
-              records={records}
-              selectedGuid={categorySelectedGuid}
-              setSelectedGuid={setCategorySelectedGuid}
-              searchQuery={categorySearchQuery}
-              onOpenCreate={(parentCode) => {
-                setEditing(null);
-                setForm(parentCode ? { parentcode: parentCode } : {});
-                setFormOpen(true);
-              }}
-              onOpenEdit={openEdit}
-              onDeleteRecord={deleteRecord}
-              onRefresh={() => void loadRecords(auth, workspace, config)}
-              saving={saving}
-              loading={loading}
-            />
-          </div>
-
-          <ResizableSplitter
-            value={Math.round(treeSplitPercent)}
-            min={TREE_SPLIT_MIN_LEFT}
-            max={TREE_SPLIT_MAX_LEFT}
-            label={
-              backendText(backendLanguage, "ss_resize_product_subgroup_tree_and", "ปรับขนาดกลุ่มสินค้าย่อยและฟอร์ม (ลากเพื่อปรับ, ดับเบิ้ลคลิกเพื่อรีเซ็ต)")
             }
             isResizing={resizingTreeSplit}
             onPointerDown={startTreeSplitResize}
@@ -3375,7 +3191,7 @@ export function SystemSettingsScreen({
                   )}
                   {text("refresh")}
                 </Button>
-                {canCreate && currentConfig.slug !== "permissionlink" ? (
+                {canCreate ? (
                   <>
                     {/* Always render Copy (disabled when no row is selected) so the toolbar
                         buttons never shift position when a row is picked. */}
@@ -3488,7 +3304,7 @@ export function SystemSettingsScreen({
                   <p className="text-sm text-muted-foreground">
                     {canEdit ? text("emptyHint") : text("readOnlyEmptyHint")}
                   </p>
-                  {canCreate && currentConfig.slug !== "permissionlink" ? (
+                  {canCreate ? (
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       <Button type="button" onClick={openCreate} disabled={!auth}>
                         <Plus />
@@ -4303,63 +4119,6 @@ function settingListColumns(
     ];
   }
 
-  if (config.slug === "permissionlink") {
-    return [
-      {
-        key: "employeename",
-        label: backendText(dictionary, "user", "ผู้ใช้งาน"),
-        className: "basis-40 grow-[2] min-w-[110px]",
-        render: (record, meta) => {
-          const code = stringValue(
-            record.employeecode ?? record.username ?? meta.id,
-          );
-          const name =
-            stringValue(
-              record.employeename ?? record.userprofilename ?? record.name,
-            ) || code;
-          const avatarUri =
-            stringValue(record.avatarthumb) || stringValue(record.avatar);
-          return (
-            <span className="flex min-w-0 items-center gap-2 w-full">
-              <LogoAvatar
-                uri={avatarUri}
-                auth={auth}
-                alt={name}
-                sizeClass="size-8 rounded-full shrink-0"
-                iconSize={16}
-                width={64}
-                fallbackIcon={UserRound}
-              />
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <b className="min-w-0 break-words" title={name}>
-                  {name || "-"}
-                </b>
-                {code ? (
-                  <span className="font-mono text-[9px] px-1.5 py-0.2 bg-muted border border-border/50 text-muted-foreground rounded uppercase font-bold w-fit max-w-full break-all">
-                    {code}
-                  </span>
-                ) : null}
-              </span>
-            </span>
-          );
-        },
-      },
-      {
-        key: "groupcode",
-        label: backendText(dictionary, "ss_permission_group", "กลุ่มสิทธิ์"),
-        className: "basis-28 grow min-w-[80px] hidden sm:inline-flex",
-        render: (record) => (
-          <span
-            className="block break-words"
-            title={stringValue(record.groupcode)}
-          >
-            {stringValue(record.groupcode) || "-"}
-          </span>
-        ),
-      },
-    ];
-  }
-
   if (config.slug === "bookbankscreen") {
     return [
       {
@@ -4831,18 +4590,6 @@ function SettingDetailPanel({
               </div>
             );
           }
-          if (isProductVariantStructuredField(config, field)) {
-            return (
-              <div className={fieldGridItemClass(field, config)} key={field.key}>
-                <ProductVariantStructuredReadOnlyDetail
-                  dictionary={dictionary}
-                  field={field}
-                  label={fieldLabel(field, language, config, dictionary)}
-                  value={recordValueForField(record, config, field)}
-                />
-              </div>
-            );
-          }
           if (field.type === "time-sale-list") {
             return (
               <div className={fieldGridItemClass(field, config)} key={field.key}>
@@ -4913,20 +4660,8 @@ function SettingDetailPanel({
               </div>
             );
           }
-          if (config.slug === "approvalsetting" && field.key === "approvals") {
-            return (
-              <div className="md:col-span-2" key={field.key}>
-                <ApprovalSettingEditor
-                  dictionary={dictionary}
-                  form={record}
-                  readOnly
-                />
-              </div>
-            );
-          }
           if (
-            (config.slug === "permissionlink" ||
-              config.slug === "permissiongroup") &&
+            config.slug === "permissiongroup" &&
             (isPermissionCodesField(field) || isApprovalCodesField(field))
           ) {
             return (
@@ -6411,7 +6146,6 @@ type MenuPermissionAction =
   | "update"
   | "delete"
   | "own_only";
-type ApprovalTarget = "pr" | "po" | "quotation" | "sale_order";
 
 const menuPermissionActions: {
   key: MenuPermissionAction;
@@ -6423,136 +6157,6 @@ const menuPermissionActions: {
   { key: "delete", textKey: "delete" },
   { key: "own_only", textKey: "selfOnly" },
 ];
-
-const approvalTargets: { key: ApprovalTarget; label: string }[] = [
-  { key: "pr", label: "PR" },
-  { key: "po", label: "PO" },
-  { key: "quotation", label: "Quotation" },
-  { key: "sale_order", label: "Sale Order" },
-];
-
-function ApprovalSettingEditor({
-  dictionary,
-  form,
-  readOnly = false,
-  setForm,
-}: {
-  dictionary: BackendLanguageDictionary;
-  form: FormState;
-  readOnly?: boolean;
-  setForm?: (update: FormState | ((current: FormState) => FormState)) => void;
-}) {
-  const approvals = approvalsFromForm(form.approvals);
-
-  function updateApproval(
-    target: ApprovalTarget,
-    key: "enabled" | "approval_role" | "max_approval_amount",
-    value: boolean | number,
-  ) {
-    if (readOnly || !setForm) return;
-    const nextApprovals = approvalsFromForm(form.approvals);
-    const currentApproval = isRecord(nextApprovals[target])
-      ? { ...nextApprovals[target] }
-      : {};
-    currentApproval[key] = value;
-    nextApprovals[target] = currentApproval;
-    setForm({ ...form, approvals: nextApprovals });
-  }
-
-  return (
-    <section className="grid gap-3 rounded-2xl border border-border bg-background p-3 md:col-span-2">
-      <h3 className="text-base font-semibold">
-        {backendText(dictionary, "approval", "Approval")}
-      </h3>
-      <div className="grid gap-2 md:grid-cols-2">
-        {approvalTargets.map((target) => {
-          const approval: SettingRecord = isRecord(approvals[target.key])
-            ? (approvals[target.key] as SettingRecord)
-            : {};
-          return (
-            <div
-              className="grid gap-2 rounded-xl border border-border bg-card p-2"
-              key={target.key}
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
-                <input
-                  className="size-4 accent-primary"
-                  type="checkbox"
-                  checked={Boolean(approval.enabled)}
-                  disabled={readOnly}
-                  onChange={(event) =>
-                    updateApproval(target.key, "enabled", event.target.checked)
-                  }
-                />
-                <span>{target.label}</span>
-              </label>
-              <label className="grid gap-1 text-xs font-semibold">
-                <span>
-                  {approvalLabelText(
-                    dictionary,
-                    "approval_role",
-                    "Approval role",
-                  )}
-                </span>
-                <Input
-                  type="number"
-                  min="0"
-                  value={String(approval.approval_role ?? "")}
-                  disabled={readOnly || !approval.enabled}
-                  onChange={(event) =>
-                    updateApproval(
-                      target.key,
-                      "approval_role",
-                      Number(event.target.value || 0),
-                    )
-                  }
-                />
-              </label>
-              <label className="grid gap-1 text-xs font-semibold">
-                <span>
-                  {approvalLabelText(
-                    dictionary,
-                    "max_approval_amount_label",
-                    "Maximum approval amount",
-                  )}
-                </span>
-                <Input
-                  type="number"
-                  min="0"
-                  value={String(approval.max_approval_amount ?? "")}
-                  disabled={readOnly || !approval.enabled}
-                  onChange={(event) =>
-                    updateApproval(
-                      target.key,
-                      "max_approval_amount",
-                      Number(event.target.value || 0),
-                    )
-                  }
-                />
-              </label>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function approvalsFromForm(value: unknown): SettingRecord {
-  if (isRecord(value)) return { ...value };
-  if (typeof value !== "string" || !value.trim()) return {};
-  const parsed = safeJsonParse(value, {});
-  return isRecord(parsed) ? { ...parsed } : {};
-}
-
-function approvalLabelText(
-  dictionary: BackendLanguageDictionary,
-  key: string,
-  fallback: string,
-): string {
-  const value = backendText(dictionary, key, fallback);
-  return value === key ? fallback : value;
-}
 
 function permissionLinkOption(
   record: SettingRecord,
@@ -8731,539 +8335,6 @@ function workspaceBusinessCode(workspace: WorkspaceSession | null): string {
   );
 }
 
-type VariantColumn = {
-  key: string;
-  labelKey: string;
-  labelTh: string;
-  kind?: "number" | "csv";
-  placeholder?: string;
-};
-
-const variantFieldColumns: Record<string, VariantColumn[]> = {
-  optiontiers: [
-    { key: "tierno", labelKey: "ss_col_tier", labelTh: "ลำดับ", kind: "number" },
-    { key: "optioncode", labelKey: "ss_col_option_code", labelTh: "รหัสแกน", placeholder: "COLOR" },
-    { key: "name", labelKey: "ss_col_option_name", labelTh: "ชื่อแกน", placeholder: "สี/Color" },
-  ],
-  skucombinations: [
-    { key: "sellersku", labelKey: "ss_col_sku", labelTh: "SKU" },
-    { key: "barcode", labelKey: "ss_col_barcode", labelTh: "บาร์โค้ด" },
-    { key: "gtin", labelKey: "ss_col_gtin", labelTh: "GTIN" },
-    { key: "optionvalues", labelKey: "ss_col_options", labelTh: "ค่าตัวเลือก", kind: "csv", placeholder: "BLACK, 128GB" },
-    { key: "saleprice", labelKey: "ss_col_price", labelTh: "ราคาขาย", kind: "number" },
-    { key: "cost", labelKey: "ss_col_cost", labelTh: "ต้นทุน", kind: "number" },
-    { key: "openingstock", labelKey: "ss_col_opening_stock", labelTh: "สต๊อกต้น", kind: "number" },
-  ],
-  mediaassets: [
-    { key: "kind", labelKey: "ss_col_media_type", labelTh: "ชนิดสื่อ", placeholder: "main / gallery / sku / video" },
-    { key: "uri", labelKey: "ss_col_file_path", labelTh: "ที่อยู่ไฟล์" },
-    { key: "optioncode", labelKey: "ss_col_option_code", labelTh: "รหัสแกน" },
-    { key: "optionvalue", labelKey: "ss_col_option_value", labelTh: "ค่าตัวเลือก" },
-    { key: "sortorder", labelKey: "ss_col_sort", labelTh: "ลำดับ", kind: "number" },
-  ],
-  specificationgroups: [
-    { key: "groupcode", labelKey: "ss_col_group_code", labelTh: "รหัสกลุ่ม" },
-    { key: "groupname", labelKey: "ss_col_group_name", labelTh: "ชื่อกลุ่ม" },
-  ],
-  importattributemaps: [
-    { key: "sourcename", labelKey: "ss_col_imported_name", labelTh: "ชื่อจากไฟล์นำเข้า" },
-    { key: "targetoptioncode", labelKey: "ss_col_system_option_code", labelTh: "รหัสแกนในระบบ" },
-  ],
-  integrationprofiles: [
-    { key: "channel", labelKey: "ss_col_channel", labelTh: "ช่องทาง", placeholder: "shopee / lazada / external" },
-    { key: "skufields", labelKey: "ss_col_sku_fields", labelTh: "ช่อง SKU", kind: "csv", placeholder: "sellersku, barcode, price, stock" },
-    { key: "media_keys", labelKey: "ss_col_media_keys", labelTh: "ช่องรูป/วิดีโอ", kind: "csv" },
-    { key: "price_keys", labelKey: "ss_col_price_keys", labelTh: "ช่องราคา", kind: "csv" },
-    { key: "stock_keys", labelKey: "ss_col_stock_keys", labelTh: "ช่องสต๊อก", kind: "csv" },
-  ],
-  payloadexamples: [
-    { key: "direction", labelKey: "ss_col_direction", labelTh: "ทิศทาง", placeholder: "import / export" },
-    { key: "usecase", labelKey: "ss_col_use_case", labelTh: "กรณีใช้งาน" },
-    { key: "channel", labelKey: "ss_col_channel", labelTh: "ช่องทาง" },
-    { key: "note", labelKey: "ss_col_note", labelTh: "หมายเหตุ" },
-  ],
-};
-
-function ProductVariantStructuredFieldEditor({
-  config,
-  dictionary,
-  field,
-  form,
-  label,
-  language,
-  setForm,
-}: {
-  config: SystemSettingConfig;
-  dictionary: BackendLanguageDictionary;
-  field: SystemSettingField;
-  form: FormState;
-  label: string;
-  language: LanguageCode;
-  setForm: (update: FormState | ((current: FormState) => FormState)) => void;
-}) {
-  const items = variantArrayValue(form[field.key]);
-  const columns = variantFieldColumns[field.key] ?? [];
-  const addLabel = backendText(dictionary, "ss_add_item", "เพิ่มรายการ");
-  const emptyText =
-    backendText(dictionary, "ss_no_items_yet_add_an", "ยังไม่มีรายการ กดเพิ่มรายการเพื่อเริ่มกรอก");
-
-  const setItems = (nextItems: SettingRecord[]) => {
-    setForm({ ...form, [field.key]: nextItems });
-  };
-
-  const updateItem = (index: number, key: string, value: unknown) => {
-    setItems(
-      items.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } : item,
-      ),
-    );
-  };
-  const moveItem = (index: number, direction: -1 | 1) => {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= items.length) return;
-    const nextItems = [...items];
-    [nextItems[index], nextItems[nextIndex]] = [
-      nextItems[nextIndex],
-      nextItems[index],
-    ];
-    setItems(
-      field.key === "optiontiers"
-        ? nextItems.map((item, itemIndex) => ({
-            ...item,
-            tierno: itemIndex + 1,
-          }))
-        : nextItems,
-    );
-  };
-
-  return (
-    <section className="grid gap-2 rounded-2xl border border-border bg-background p-2 text-sm md:col-span-2">
-      <header className="flex flex-wrap items-start justify-between gap-2 border-b border-border pb-2">
-        <div className="grid gap-0.5">
-          <h3 className="text-sm font-semibold">
-            {label}
-            {field.required ? " *" : ""}
-          </h3>
-          {field.helper ? (
-            <p className="text-xs leading-snug text-muted-foreground">
-              {fieldHelper(field, language, config, dictionary)}
-            </p>
-          ) : null}
-        </div>
-        <Button
-          className="h-8 gap-1 rounded-xl px-2 text-xs"
-          type="button"
-          variant="outline"
-          onClick={() => setItems([...items, defaultVariantItem(field.key, items.length)])}
-        >
-          <Plus className="size-3.5" />
-          {addLabel}
-        </Button>
-      </header>
-      {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
-          {emptyText}
-        </div>
-      ) : (
-        <div className="grid gap-2">
-          {items.map((item, index) => (
-            <article
-              className="grid gap-2 rounded-xl border border-border bg-muted/20 p-2"
-              key={`${field.key}-${index}`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="rounded-lg text-[11px]">
-                    {backendText(
-                      dictionary,
-                      field.key === "optiontiers"
-                        ? "ss_choice_order_n"
-                        : "ss_item_n",
-                      field.key === "optiontiers" ? "ลำดับเลือก {0}" : "รายการ {0}",
-                    ).replace("{0}", String(index + 1))}
-                  </Badge>
-                  {field.key === "optiontiers" ? (
-                    <span className="text-[11px] font-medium text-muted-foreground">
-                      {backendText(dictionary, "ss_users_choose_in_this_order", "ผู้ใช้เลือกตามลำดับนี้ เช่น สีก่อนไซซ์ หรือไซซ์ก่อนสี")}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-1">
-                  {field.key === "optiontiers" ? (
-                    <>
-                      <Button
-                        aria-label={
-                          backendText(dictionary, "ss_move_up", "เลื่อนขึ้น")
-                        }
-                        className="size-8 rounded-xl p-0"
-                        disabled={index === 0}
-                        type="button"
-                        variant="outline"
-                        onClick={() => moveItem(index, -1)}
-                      >
-                        <ArrowUp className="size-4" />
-                      </Button>
-                      <Button
-                        aria-label={
-                          backendText(dictionary, "ss_move_down", "เลื่อนลง")
-                        }
-                        className="size-8 rounded-xl p-0"
-                        disabled={index === items.length - 1}
-                        type="button"
-                        variant="outline"
-                        onClick={() => moveItem(index, 1)}
-                      >
-                        <ArrowDown className="size-4" />
-                      </Button>
-                    </>
-                  ) : null}
-                  <Button
-                    aria-label={backendText(dictionary, "ss_remove_item", "ลบรายการ")}
-                    className="size-8 rounded-xl p-0 text-destructive"
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      setItems(items.filter((_, itemIndex) => itemIndex !== index))
-                    }
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {columns.map((column) => (
-                  <VariantInput
-                    column={column}
-                    dictionary={dictionary}
-                    key={column.key}
-                    value={item[column.key]}
-                    onChange={(nextValue) => updateItem(index, column.key, nextValue)}
-                  />
-                ))}
-              </div>
-              {field.key === "optiontiers" ? (
-                <VariantNestedRowsEditor
-                  columns={[
-                    { key: "valuecode", labelKey: "ss_col_value_code", labelTh: "รหัสค่า" },
-                    { key: "valuetext", labelKey: "ss_col_value_name", labelTh: "ชื่อค่า" },
-                  ]}
-                  dictionary={dictionary}
-                  items={variantArrayValue(item.values)}
-                  title={backendText(dictionary, "ss_option_values", "ค่าของแกนนี้")}
-                  onChange={(nextRows) => updateItem(index, "values", nextRows)}
-                />
-              ) : null}
-              {field.key === "specificationgroups" ? (
-                <VariantNestedRowsEditor
-                  columns={[
-                    { key: "attributecode", labelKey: "ss_col_attribute_code", labelTh: "รหัสคุณสมบัติ" },
-                    { key: "attributename", labelKey: "ss_col_attribute_name", labelTh: "ชื่อคุณสมบัติ" },
-                    { key: "inputtype", labelKey: "ss_col_input_type", labelTh: "ชนิดช่องกรอก" },
-                    { key: "scope", labelKey: "ss_col_scope", labelTh: "ระดับข้อมูล" },
-                  ]}
-                  dictionary={dictionary}
-                  items={variantArrayValue(item.attributes)}
-                  title={backendText(dictionary, "ss_attributes", "คุณสมบัติในกลุ่มนี้")}
-                  onChange={(nextRows) => updateItem(index, "attributes", nextRows)}
-                />
-              ) : null}
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function VariantNestedRowsEditor({
-  columns,
-  dictionary,
-  items,
-  onChange,
-  title,
-}: {
-  columns: VariantColumn[];
-  dictionary: BackendLanguageDictionary;
-  items: SettingRecord[];
-  onChange: (items: SettingRecord[]) => void;
-  title: string;
-}) {
-  const updateRow = (index: number, key: string, value: unknown) => {
-    onChange(
-      items.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } : item,
-      ),
-    );
-  };
-  return (
-    <div className="grid gap-2 rounded-xl border border-border bg-background/80 p-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-muted-foreground">
-          {title}
-        </span>
-        <Button
-          className="h-7 gap-1 rounded-lg px-2 text-[11px]"
-          type="button"
-          variant="outline"
-          onClick={() => onChange([...items, {}])}
-        >
-          <Plus className="size-3" />
-          {backendText(dictionary, "ss_add", "เพิ่ม")}
-        </Button>
-      </div>
-      {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          {backendText(dictionary, "ss_no_rows_yet", "ยังไม่มีรายการย่อย")}
-        </p>
-      ) : (
-        <div className="grid gap-2">
-          {items.map((item, index) => (
-            <div
-              className="grid gap-2 rounded-lg border border-border bg-muted/20 p-2 md:grid-cols-[1fr_1fr_auto]"
-              key={`nested-${index}`}
-            >
-              {columns.map((column) => (
-                <VariantInput
-                  column={column}
-                  dictionary={dictionary}
-                  key={column.key}
-                  value={item[column.key]}
-                  onChange={(nextValue) => updateRow(index, column.key, nextValue)}
-                />
-              ))}
-              <Button
-                aria-label={backendText(dictionary, "ss_remove_row", "ลบรายการย่อย")}
-                className="size-8 self-end rounded-xl p-0 text-destructive"
-                type="button"
-                variant="outline"
-                onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function VariantInput({
-  column,
-  dictionary,
-  onChange,
-  value,
-}: {
-  column: VariantColumn;
-  dictionary: BackendLanguageDictionary;
-  onChange: (value: unknown) => void;
-  value: unknown;
-}) {
-  const label = backendText(dictionary, column.labelKey, column.labelTh);
-  const inputValue =
-    column.kind === "csv" && Array.isArray(value)
-      ? value.map((item) => stringValue(item)).join(", ")
-      : stringValue(value);
-  return (
-    <label className="grid min-w-0 gap-1 text-xs font-semibold">
-      <span className="text-muted-foreground">{label}</span>
-      <Input
-        className="h-9"
-        inputMode={column.kind === "number" ? "decimal" : undefined}
-        placeholder={column.placeholder}
-        type={column.kind === "number" ? "number" : "text"}
-        value={inputValue}
-        onChange={(event) => {
-          const nextValue = event.target.value;
-          if (column.kind === "number") {
-            onChange(nextValue === "" ? "" : Number(nextValue));
-            return;
-          }
-          if (column.kind === "csv") {
-            onChange(
-              nextValue
-                .split(",")
-                .map((item) => item.trim())
-                .filter(Boolean),
-            );
-            return;
-          }
-          onChange(nextValue);
-        }}
-      />
-    </label>
-  );
-}
-
-function variantArrayValue(value: unknown): SettingRecord[] {
-  const source =
-    typeof value === "string" ? safeJsonParse(value.trim() || "[]", []) : value;
-  if (!Array.isArray(source)) return [];
-  return source.map((item) => (isRecord(item) ? item : { value: item }));
-}
-
-function defaultVariantItem(key: string, index: number): SettingRecord {
-  if (key === "optiontiers") return { tierno: index + 1, values: [] };
-  if (key === "specificationgroups") return { attributes: [] };
-  return {};
-}
-
-function ProductVariantStructuredReadOnlyDetail({
-  dictionary,
-  field,
-  label,
-  value,
-}: {
-  dictionary: BackendLanguageDictionary;
-  field: SystemSettingField;
-  label: string;
-  value: unknown;
-}) {
-  const items = variantArrayValue(value);
-  const columns = variantFieldColumns[field.key] ?? [];
-  return (
-    <section className="grid gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
-        <span className="text-xs font-semibold text-muted-foreground">
-          {label}
-        </span>
-        <Badge variant="secondary" className="rounded-lg text-[11px]">
-          {items.length} {backendText(dictionary, "items", "รายการ")}
-        </Badge>
-      </header>
-      {items.length === 0 ? (
-        <span className="text-sm font-medium text-muted-foreground">-</span>
-      ) : (
-        <div className="grid gap-2">
-          {items.map((item, index) => (
-            <article
-              className="grid gap-2 rounded-lg border border-border bg-muted/20 p-2"
-              key={`${field.key}-readonly-${index}`}
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="rounded-lg text-[11px]">
-                  {backendText(
-                    dictionary,
-                    field.key === "optiontiers" ? "ss_choice_order_n" : "ss_item_n",
-                    field.key === "optiontiers" ? "ลำดับเลือก {0}" : "รายการ {0}",
-                  ).replace("{0}", String(index + 1))}
-                </Badge>
-                {field.key === "optiontiers" ? (
-                  <span className="text-[11px] text-muted-foreground">
-                    {backendText(dictionary, "ss_controls_which_option_tier_users", "ใช้กำหนดว่าผู้ใช้เลือกสี/ไซซ์/ตัวเลือกใดก่อนหลัง")}
-                  </span>
-                ) : null}
-              </div>
-              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {columns.map((column) => (
-                  <VariantReadOnlyCell
-                    column={column}
-                    dictionary={dictionary}
-                    key={column.key}
-                    value={item[column.key]}
-                  />
-                ))}
-              </div>
-              {field.key === "optiontiers" ? (
-                <VariantReadOnlyNestedRows
-                  columns={[
-                    { key: "valuecode", labelKey: "ss_col_value_code", labelTh: "รหัสค่า" },
-                    { key: "valuetext", labelKey: "ss_col_value_name", labelTh: "ชื่อค่า" },
-                  ]}
-                  dictionary={dictionary}
-                  items={variantArrayValue(item.values)}
-                  title={backendText(dictionary, "ss_option_values", "ค่าของแกนนี้")}
-                />
-              ) : null}
-              {field.key === "specificationgroups" ? (
-                <VariantReadOnlyNestedRows
-                  columns={[
-                    { key: "attributecode", labelKey: "ss_col_attribute_code", labelTh: "รหัสคุณสมบัติ" },
-                    { key: "attributename", labelKey: "ss_col_attribute_name", labelTh: "ชื่อคุณสมบัติ" },
-                    { key: "inputtype", labelKey: "ss_col_input_type", labelTh: "ชนิดช่องกรอก" },
-                    { key: "scope", labelKey: "ss_col_scope", labelTh: "ระดับข้อมูล" },
-                  ]}
-                  dictionary={dictionary}
-                  items={variantArrayValue(item.attributes)}
-                  title={backendText(dictionary, "ss_attributes", "คุณสมบัติในกลุ่มนี้")}
-                />
-              ) : null}
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function VariantReadOnlyNestedRows({
-  columns,
-  dictionary,
-  items,
-  title,
-}: {
-  dictionary: BackendLanguageDictionary;
-  columns: VariantColumn[];
-  items: SettingRecord[];
-  title: string;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <div className="grid gap-2 rounded-lg border border-border bg-background/80 p-2">
-      <span className="text-xs font-semibold text-muted-foreground">
-        {title}
-      </span>
-      <div className="grid gap-2">
-        {items.map((item, index) => (
-          <div
-            className="grid gap-2 rounded-md border border-border bg-muted/20 p-2 md:grid-cols-2 xl:grid-cols-4"
-            key={`readonly-nested-${index}`}
-          >
-            {columns.map((column) => (
-              <VariantReadOnlyCell
-                column={column}
-                dictionary={dictionary}
-                key={column.key}
-                value={item[column.key]}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function VariantReadOnlyCell({
-  column,
-  dictionary,
-  value,
-}: {
-  column: VariantColumn;
-  dictionary: BackendLanguageDictionary;
-  value: unknown;
-}) {
-  const label = backendText(dictionary, column.labelKey, column.labelTh);
-  return (
-    <div className="grid min-w-0 gap-0.5 rounded-md border border-border bg-background/80 px-2 py-1.5">
-      <span className="text-[11px] font-semibold text-muted-foreground">
-        {label}
-      </span>
-      <b className="min-w-0 break-words text-xs font-semibold text-foreground">
-        {variantDisplayValue(value)}
-      </b>
-    </div>
-  );
-}
-
-function variantDisplayValue(value: unknown): string {
-  if (Array.isArray(value)) {
-    const text = value.map((item) => stringValue(item)).filter(Boolean).join(", ");
-    return text || "-";
-  }
-  return stringValue(value) || "-";
-}
-
 function FieldEditor({
   auth,
   config,
@@ -9290,20 +8361,6 @@ function FieldEditor({
   const helper = fieldHelper(field, language, config, dictionary);
   const value = form[field.key];
 
-  if (isProductVariantStructuredField(config, field)) {
-    return (
-      <ProductVariantStructuredFieldEditor
-        config={config}
-        dictionary={dictionary}
-        field={field}
-        form={form}
-        label={label}
-        language={language}
-        setForm={setForm}
-      />
-    );
-  }
-
   if (config.slug === "permissiondefinition" && isPermissionAccessRulesField(field)) {
     return (
       <PermissionMatrixEditor
@@ -9317,34 +8374,6 @@ function FieldEditor({
           return backendText(dictionary, uiBackendKey(key), fallback);
         }}
       />
-    );
-  }
-
-  if (config.slug === "approvalsetting" && field.key === "approvals") {
-    return (
-      <ApprovalSettingEditor
-        dictionary={dictionary}
-        form={form}
-        setForm={setForm}
-      />
-    );
-  }
-
-  if (config.slug === "permissionlink" && isEmployeeCodeField(field)) {
-    return (
-      <label className="grid gap-1 text-sm font-semibold">
-        <span>{label}</span>
-        <Input value={String(value ?? "")} readOnly disabled aria-readonly />
-      </label>
-    );
-  }
-
-  if (config.slug === "permissionlink" && isEmployeeNameField(field)) {
-    return (
-      <label className="grid gap-1 text-sm font-semibold">
-        <span>{label}</span>
-        <Input value={String(value ?? "")} readOnly disabled aria-readonly />
-      </label>
     );
   }
 
@@ -9363,7 +8392,7 @@ function FieldEditor({
   }
 
   if (
-    (config.slug === "permissionlink" || config.slug === "permissiongroup") &&
+    config.slug === "permissiongroup" &&
     (isPermissionCodesField(field) || isApprovalCodesField(field))
   ) {
     return (
@@ -10175,9 +9204,8 @@ function isColorHexField(
   field: SystemSettingField,
 ): boolean {
   return (
-    (config.slug === "productcategorygroupselectscreen" &&
-      field.key === "colorselecthex") ||
-    (config.slug === "productcolor" && field.key === "hexcolor")
+    config.slug === "productcategorygroupselectscreen" &&
+    field.key === "colorselecthex"
   );
 }
 
@@ -15339,115 +14367,6 @@ function WorkDayPanel({
   );
 }
 
-function CopyUatPanel({
-  config,
-  copyPreview,
-  language,
-  loading,
-  records,
-  runCopy,
-  saving,
-  selected,
-  setSelected,
-  sourceEnvironment,
-  setSourceEnvironment,
-  targetHoldingCode,
-  text,
-}: {
-  config: SystemSettingConfig;
-  copyPreview: unknown;
-  language: LanguageCode;
-  loading: boolean;
-  records: SettingRecord[];
-  runCopy: (action: "copy" | "preview") => void;
-  saving: boolean;
-  selected: string;
-  setSelected: (value: string) => void;
-  sourceEnvironment: "uat" | "pro";
-  setSourceEnvironment: (value: "uat" | "pro") => void;
-  targetHoldingCode: string;
-  text: (key: keyof typeof uiEn) => string;
-}) {
-  return (
-    <Card>
-      <CardContent className="grid gap-3 p-3">
-        <div className="grid gap-2 lg:grid-cols-[minmax(180px,220px)_minmax(0,1fr)_auto_auto]">
-          <div className="grid gap-1 text-sm font-semibold">
-            <span>{text("sourceEnvironment")}</span>
-            <ChoiceSelect
-              value={sourceEnvironment}
-              disabled={loading || saving}
-              onChange={(val) => {
-                setSelected("");
-                setSourceEnvironment(val === "pro" ? "pro" : "uat");
-              }}
-              options={[
-                { value: "uat", label: text("sourceUat") },
-                { value: "pro", label: text("sourcePro") },
-              ]}
-            />
-          </div>
-          <label className="grid gap-1 text-sm font-semibold">
-            <span>{text("sourceShop")}</span>
-            <select
-              className="min-h-10 w-full rounded-2xl border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              disabled={loading}
-              onChange={(event) => setSelected(event.target.value)}
-              value={selected}
-            >
-              <option value="">{text("selectSourceShop")}</option>
-              {records.map((record, index) => {
-                const id = String(
-                  record.guidfixed ?? record.holdingcode ?? record._id ?? "",
-                );
-                return (
-                  <option key={`${id}-${index}`} value={id}>
-                    {recordTitle(record, config, language)} ({id})
-                  </option>
-                );
-              })}
-            </select>
-          </label>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => runCopy("preview")}
-            disabled={!selected || saving}
-          >
-            {saving ? <Loader2 className="animate-spin" /> : <Search />}
-            {text("preview")}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => runCopy("copy")}
-            disabled={!selected || saving}
-          >
-            {saving ? <Loader2 className="animate-spin" /> : <Copy />}
-            {text("copyNow")}
-          </Button>
-        </div>
-        <div className="grid gap-2 rounded-2xl border border-border bg-background p-3 text-sm">
-          <b>
-            {text("sourceEnvironment")}: {sourceEnvironment.toUpperCase()} → DEV
-          </b>
-          <b>
-            {text("targetShop")}: {targetHoldingCode || "-"}
-          </b>
-          <p className="text-muted-foreground">
-            Preview ก่อน copy ทุกครั้ง เพราะ action นี้มีผลกับข้อมูล MongoDB ของ
-            shop ปัจจุบัน
-          </p>
-        </div>
-        {copyPreview ? (
-          <pre className="max-h-80 overflow-auto rounded-2xl border border-border bg-muted p-3 text-xs text-muted-foreground">
-            {JSON.stringify(copyPreview, null, 2)}
-          </pre>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
 function companyRecordForEdit(
   records: SettingRecord[],
   workspace: WorkspaceSession | null,
@@ -15522,8 +14441,6 @@ function normalizeRecords(
     const company = extractCompanyRecord(payload);
     return company ? [company] : [];
   }
-  if (config.kind === "ai-provider" && Array.isArray(payload.providers))
-    return payload.providers.filter(isRecord);
   if (Array.isArray(payload.data))
     return payload.data
       .filter(isRecord)
@@ -15898,23 +14815,8 @@ function defaultForm(
       );
     else form[field.key] = "";
   }
-  if (config.slug === "aiprovider") {
-    form.providername = "ollama";
-    form.isactive = true;
-    form.priority = "1";
-  }
-  if (config.slug === "approvalsetting") {
-    form.approvalcode = "default";
-    form.approvalname = "Default";
-    form.isactive = true;
-    form.approvals = {};
-  }
   if (config.slug === "permissiondefinition") {
     form.accessrules = {};
-  }
-  if (config.slug === "permissionlink") {
-    form.permissioncodes = [];
-    form.approvalcodes = [];
   }
   applyCompanyDefaults(form, config);
   applyBranchDefaults(form, config);
@@ -15967,18 +14869,6 @@ function formFromRecord(
       isPermissionAccessRulesField(field)
     )
       form[field.key] = isRecord(value) ? value : {};
-    else if (
-      field.type === "json" &&
-      config.slug === "approvalsetting" &&
-      field.key === "approvals"
-    )
-      form[field.key] = isRecord(value) ? value : {};
-    else if (
-      field.type === "json" &&
-      config.slug === "permissionlink" &&
-      (isPermissionCodesField(field) || isApprovalCodesField(field))
-    )
-      form[field.key] = stringArrayFromForm(value);
     else if (field.type === "json")
       form[field.key] = JSON.stringify(
         value ??
@@ -16290,36 +15180,9 @@ function buildPayload(
     }
   }
 
-  if (config.kind === "atlas") {
-    const now = new Date().toISOString();
-    const holdingCode = workspaceHoldingCode(workspace);
-    if (holdingCode) payload.holdingcode = holdingCode;
-    else delete payload.holdingcode;
-    payload.guidfixed = stringValue(payload.guidfixed) || newClientGuidFixed();
-    payload.updatedat = now;
-    payload.updatedby = auth.username;
-    if (!editing) {
-      payload.createdat = now;
-      payload.createdby = auth.username;
-    }
-  }
-
   if (config.kind === "goapi-crud") {
     payload.holdingcode = workspace.shop.holdingcode;
     payload.createdby = payload.createdby ?? auth.username;
-  }
-
-  if (config.kind === "ai-provider") {
-    payload.holdingcode = workspace.shop.holdingcode;
-    if (!payload.apikey && String(payload.providername) !== "ollama") {
-      throw new Error(
-        backendText(
-          dictionary,
-          "ss_api_key_required_for_ai",
-          "กรุณากรอก API Key เมื่อบันทึก AI Provider",
-        ),
-      );
-    }
   }
 
   if (config.kind === "company") {
@@ -16417,13 +15280,6 @@ function buildPayload(
   }
 
   return payload;
-}
-
-function newClientGuidFixed(): string {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
-  );
 }
 
 function resolveDateTimeScope(
@@ -17079,133 +15935,6 @@ function parseJsonField(value: unknown, key: string): unknown {
       ? []
       : {};
   return JSON.parse(trimmed);
-}
-
-function normalizeVariantMasterPayload(payload: SettingRecord, slug: string) {
-  if (
-    slug !== "productcolor" &&
-    slug !== "productsize" &&
-    slug !== "productvariantmatrix"
-  )
-    return;
-
-  normalizePayloadCodeField(payload, "code");
-
-  if (slug === "productcolor") {
-    const rawHex = stringValue(payload.hexcolor);
-    if (rawHex) payload.hexcolor = normalizeHexColor(rawHex);
-    payload.aliases = normalizeStringArray(payload.aliases);
-    return;
-  }
-
-  if (slug === "productsize") {
-    payload.aliases = normalizeStringArray(payload.aliases);
-    return;
-  }
-
-  if (Array.isArray(payload.optiontiers)) {
-    payload.optiontiers = payload.optiontiers.map((entry) => {
-      if (!isRecord(entry)) return entry;
-      return {
-        ...entry,
-        optioncode: normalizeVariantCode(entry.optioncode),
-        values: Array.isArray(entry.values)
-          ? entry.values.map((value) =>
-              isRecord(value)
-                ? { ...value, valuecode: normalizeVariantCode(value.valuecode) }
-                : normalizeVariantCode(value),
-            )
-          : entry.values,
-      };
-    });
-  }
-
-  if (Array.isArray(payload.skucombinations)) {
-    payload.skucombinations = payload.skucombinations.map((entry) => {
-      if (!isRecord(entry)) return entry;
-      return {
-        ...entry,
-        sellersku: normalizeVariantCode(entry.sellersku),
-        barcode: normalizeVariantCode(entry.barcode),
-        gtin: normalizeVariantCode(entry.gtin),
-        unitcode: normalizeVariantCode(entry.unitcode),
-        optionvalues: Array.isArray(entry.optionvalues)
-          ? entry.optionvalues.map(normalizeVariantCode)
-          : entry.optionvalues,
-        serialidentifiers: Array.isArray(entry.serialidentifiers)
-          ? entry.serialidentifiers.map(normalizeVariantCode)
-          : entry.serialidentifiers,
-      };
-    });
-  }
-
-  if (Array.isArray(payload.mediaassets)) {
-    payload.mediaassets = payload.mediaassets.map((entry) => {
-      if (!isRecord(entry)) return entry;
-      return {
-        ...entry,
-        optioncode: normalizeVariantCode(entry.optioncode),
-        optionvalue: normalizeVariantCode(entry.optionvalue),
-      };
-    });
-  }
-
-  if (Array.isArray(payload.specificationgroups)) {
-    payload.specificationgroups = payload.specificationgroups.map((group) => {
-      if (!isRecord(group)) return group;
-      return {
-        ...group,
-        groupcode: normalizeVariantCode(group.groupcode),
-        attributes: Array.isArray(group.attributes)
-          ? group.attributes.map((attribute) => {
-              if (!isRecord(attribute)) return attribute;
-              return {
-                ...attribute,
-                attributecode: normalizeVariantCode(attribute.attributecode),
-                values: Array.isArray(attribute.values)
-                  ? attribute.values.map((value) =>
-                      isRecord(value)
-                        ? {
-                            ...value,
-                            valuecode: normalizeVariantCode(value.valuecode),
-                            unitcode: normalizeVariantCode(value.unitcode),
-                          }
-                        : value,
-                    )
-                  : attribute.values,
-              };
-            })
-          : group.attributes,
-      };
-    });
-  }
-
-  if (Array.isArray(payload.importattributemaps)) {
-    payload.importattributemaps = payload.importattributemaps.map((entry) => {
-      if (!isRecord(entry)) return entry;
-      return {
-        ...entry,
-        targetoptioncode: normalizeVariantCode(entry.targetoptioncode),
-      };
-    });
-  }
-}
-
-function normalizePayloadCodeField(payload: SettingRecord, key: string) {
-  const value = payload[key];
-  if (typeof value !== "string") return;
-  payload[key] = normalizeVariantCode(value);
-}
-
-function normalizeVariantCode(value: unknown): string {
-  return normalizeBusinessCode(value);
-}
-
-function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return Array.from(
-    new Set(value.map((item) => stringValue(item).trim()).filter(Boolean)),
-  );
 }
 
 function setByPath(record: SettingRecord, path: string, value: unknown) {

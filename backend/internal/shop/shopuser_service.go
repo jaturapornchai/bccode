@@ -4,36 +4,29 @@ import (
 	"context"
 	"errors"
 	"smlcloudplatform/internal/authentication/models"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/utils"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"strings"
 	"time"
 
-	"github.com/smlsoft/mongopagination"
 )
 
 type IShopUserService interface {
-	SaveUserPermissionShop(holdingCode string, authUsername string, editusername string, username string, role models.UserRole) error
 	SaveUserFullProfile(holdingCode string, authUsername string, req *models.UserRoleRequest) error
 	DeleteUserPermissionShop(holdingCode string, authUsername string, username string) error
-	CleanupEmptyUsers(holdingCode string) (int64, error)
 
 	// Holding admin management by email (holdingCode comes from the request, role of the
 	// caller is resolved per-holding so it works from the holding-selection screen).
 	AddHoldingAdminByEmail(holdingCode string, authUsername string, targetEmail string) error
 	RemoveHoldingMember(holdingCode string, authUsername string, targetEmail string) error
-	ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
+	ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, common.PaginationData, error)
 	EnsureHoldingManager(holdingCode string, authUsername string) error
 
 	InfoShopByUser(holdingCode string, username string) (models.ShopUserProfile, error)
-	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error)
-	ListUserInShop(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error)
+	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, common.PaginationData, error)
+	ListUserInShop(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, common.PaginationData, error)
 
-	// SyncLineData - sync LINE data จาก LIFF (ใช้สำหรับ callback จาก lineoa-liff)
-	SyncLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error
-
-	// SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง
-	SaveMyLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error
 }
 
 type ShopUserService struct {
@@ -48,15 +41,6 @@ func NewShopUserService(shopUserRepo IShopUserRepository) ShopUserService {
 
 func sameUsername(left string, right string) bool {
 	return strings.EqualFold(utils.NormalizeUsername(left), utils.NormalizeUsername(right))
-}
-
-func copyAccessStatusToRequest(req *models.UserRoleRequest, user models.ShopUser) {
-	req.IsAccessDisabled = user.IsAccessDisabled
-	req.AccessDisabledAt = user.AccessDisabledAt
-	req.AccessDisabledBy = user.AccessDisabledBy
-	req.AccessEnabledAt = user.AccessEnabledAt
-	req.AccessEnabledBy = user.AccessEnabledBy
-	req.AccessExpiryDate = user.AccessExpiryDate
 }
 
 func applyAccessStatus(req *models.UserRoleRequest, existing models.ShopUser, authUsername string, now time.Time, isCreator bool) error {
@@ -197,10 +181,10 @@ func (svc ShopUserService) resolveShopUser(holdingCode string, id string) (model
 	return models.ShopUser{}, errors.New("user not found")
 }
 
-func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, mongopagination.PaginationData, error) {
+func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, common.PaginationData, error) {
 
 	var docList []models.ShopUserInfo
-	var pagination mongopagination.PaginationData
+	var pagination common.PaginationData
 	var err error
 	authUserUID = strings.TrimSpace(authUserUID)
 	if authUserUID != "" {
@@ -220,13 +204,13 @@ func (svc ShopUserService) ListShopByUser(authUsername string, authUserUID strin
 	return docList, pagination, err
 }
 
-func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
+func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, common.PaginationData, error) {
 	shopUserProfiles := []models.ShopUserProfile{}
 
 	// Authorize by the caller's role IN THIS holding (shopusers), not the JWT-selected role,
 	// so an owner/admin of this holding can always list its users (same pattern as holding-member).
 	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
-		return shopUserProfiles, mongopagination.PaginationData{}, err
+		return shopUserProfiles, common.PaginationData{}, err
 	}
 
 	profileMatchedUsernames := []string{}
@@ -234,7 +218,7 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername strin
 		var profileErr error
 		profileMatchedUsernames, profileErr = svc.repo.FindUsernamesByProfileQuery(context.Background(), pageable.Query)
 		if profileErr != nil {
-			return shopUserProfiles, mongopagination.PaginationData{}, profileErr
+			return shopUserProfiles, common.PaginationData{}, profileErr
 		}
 	}
 
@@ -308,70 +292,6 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername strin
 	return shopUserProfiles, pagination, err
 }
 
-func (svc ShopUserService) SaveUserPermissionShop(holdingCode string, authUsername string, editusername string, username string, role models.UserRole) error {
-
-	username = utils.NormalizeUsername(username)
-
-	authUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, authUsername)
-
-	if err != nil {
-		return err
-	}
-
-	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
-		return errors.New("permission denied")
-	}
-
-	// Resolve the target with the RAW id first: a useruid keeps its original
-	// casing and NormalizeUsername would lowercase it into a lookup miss.
-	findEditUser := models.ShopUser{}
-	if strings.TrimSpace(editusername) != "" {
-		findEditUser, err = svc.resolveShopUser(holdingCode, editusername)
-		if err != nil {
-			return err
-		}
-	}
-
-	editusername = utils.NormalizeUsername(editusername)
-
-	// Self edit: allowed only when the role is unchanged (see SaveUserFullProfile).
-	isSelf := sameUsername(authUsername, username) || sameUsername(authUsername, editusername) ||
-		(findEditUser.UserUID != "" && findEditUser.UserUID == authUser.UserUID)
-	if isSelf && role != findEditUser.Role {
-		return errors.New("can not edit self permission")
-	}
-
-	if findEditUser.Username != "" || findEditUser.UserUID != "" {
-		tempID := findEditUser.ID
-
-		err = svc.repo.Update(context.Background(), tempID, holdingCode, username, role)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = svc.repo.Save(context.Background(), holdingCode, username, role)
-
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (svc ShopUserService) create(ctx context.Context, holdingCode string, username string, role models.UserRole) error {
-
-	tempShopUser := models.ShopUser{}
-	tempShopUser.HoldingCode = holdingCode
-	tempShopUser.Username = username
-	tempShopUser.Role = role
-
-	err := svc.repo.Create(ctx, &tempShopUser)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // SaveUserFullProfile - บันทึกข้อมูลผู้ใช้แบบครบถ้วน (รวม position, department, LINE, approval)
 func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername string, req *models.UserRoleRequest) error {
 	rawEditID := strings.TrimSpace(req.EditUsername)
@@ -425,30 +345,6 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 
 	if err = applyAccessStatus(req, existingTarget, authUsername, time.Now().UTC(), targetIsCreator); err != nil {
 		return err
-	}
-
-	// ตรวจสอบว่า LINE ID ไม่ซ้ำกับผู้ใช้คนอื่น - ถ้าซ้ำให้ auto-unlink คนเก่า
-	if req.LineUserID != "" {
-		existingUser, existingUserErr := svc.repo.FindByHoldingCodeAndLineUserID(context.Background(), holdingCode, req.LineUserID)
-		// ถ้าพบผู้ใช้ที่ใช้ LINE ID นี้แล้ว และไม่ใช่ผู้ใช้คนเดียวกัน ให้ลบ LINE data ของคนเก่า (auto-unlink)
-		if existingUserErr == nil && existingUser.Username != "" && !sameUsername(existingUser.Username, username) {
-			// ลบ LINE data ของ user เก่า
-			oldReq := &models.UserRoleRequest{
-				Username:          existingUser.Username,
-				Role:              existingUser.Role,
-				Position:          existingUser.Position,
-				Department:        existingUser.Department,
-				LineUserID:        "", // clear LINE data
-				LineDisplayName:   "",
-				LinePictureURL:    "",
-				POApproval:        existingUser.POApproval,
-				QuotationApproval: existingUser.QuotationApproval,
-				AccessScopes:      existingUser.AccessScopes,
-				PermissionSets:    existingUser.PermissionSets,
-			}
-			copyAccessStatusToRequest(oldReq, existingUser)
-			svc.repo.SaveFullProfile(context.Background(), holdingCode, oldReq)
-		}
 	}
 
 	// Normalize username in request
@@ -591,52 +487,7 @@ func (svc ShopUserService) RemoveHoldingMember(holdingCode string, authUsername 
 }
 
 // ListHoldingMembersByAdmin lists members of a holding for an owner/admin of that holding.
-func (svc ShopUserService) ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, mongopagination.PaginationData, error) {
+func (svc ShopUserService) ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, common.PaginationData, error) {
 	// ListUserInShop now enforces requireHoldingManager itself (per-holding role).
 	return svc.ListUserInShop(holdingCode, authUsername, pageable)
-}
-
-// CleanupEmptyUsers - ลบ users ที่ username ว่างออกจาก shop
-func (svc ShopUserService) CleanupEmptyUsers(holdingCode string) (int64, error) {
-	return svc.repo.DeleteEmptyUsernames(context.Background(), holdingCode)
-}
-
-// SyncLineData - sync LINE data จาก LIFF callback (ใช้สำหรับ callback จาก lineoa-liff หลัง linking สำเร็จ)
-func (svc ShopUserService) SyncLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
-	return svc.updateLineFields(holdingCode, username, lineUserID, lineDisplayName, linePictureURL)
-}
-
-// SaveMyLineData - ให้ผู้ใช้อัปเดต LINE data ของตัวเอง (ใช้จาก Flutter หลัง LIFF linking)
-func (svc ShopUserService) SaveMyLineData(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
-	return svc.updateLineFields(holdingCode, username, lineUserID, lineDisplayName, linePictureURL)
-}
-
-func (svc ShopUserService) updateLineFields(holdingCode string, username string, lineUserID string, lineDisplayName string, linePictureURL string) error {
-	username = utils.NormalizeUsername(username)
-
-	if username == "" {
-		return errors.New("username is required")
-	}
-
-	// ตรวจสอบว่ามี user นี้ใน shop หรือไม่
-	existingUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
-	if err != nil {
-		return errors.New("user not found in shop")
-	}
-
-	if existingUser.Username == "" {
-		return errors.New("user not found in shop")
-	}
-
-	// ถ้า LINE ID ถูกใช้โดยผู้ใช้คนอื่นแล้ว ให้ลบ LINE data ของคนนั้นก่อน (auto-unlink)
-	if lineUserID != "" {
-		existingLineUser, existingLineUserErr := svc.repo.FindByHoldingCodeAndLineUserID(context.Background(), holdingCode, lineUserID)
-		if existingLineUserErr == nil && existingLineUser.Username != "" && !sameUsername(existingLineUser.Username, username) {
-			if err := svc.repo.UpdateLineFields(context.Background(), holdingCode, existingLineUser.UserUID, "", "", ""); err != nil {
-				return err
-			}
-		}
-	}
-
-	return svc.repo.UpdateLineFields(context.Background(), holdingCode, existingUser.UserUID, lineUserID, lineDisplayName, linePictureURL)
 }

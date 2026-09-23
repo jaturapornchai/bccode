@@ -13,9 +13,10 @@ import (
 	"testing"
 	"time"
 
+	"smlcloudplatform/internal/authentication/models"
+
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-	"smlcloudplatform/internal/authentication/models"
 )
 
 func googleTestRepository(t *testing.T) *AuthenticationPostgresRepository {

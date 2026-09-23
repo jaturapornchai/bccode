@@ -1,6 +1,7 @@
 package organization
 
 import (
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -8,8 +9,6 @@ import (
 	authmodels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/pkg/apperr"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestValidateCreatorPolicy(t *testing.T) {
@@ -40,39 +39,8 @@ func TestValidateCreatorPolicy(t *testing.T) {
 	}
 }
 
-func TestActiveGoogleIdentityRejectsRevokedOrIncompleteRecords(t *testing.T) {
-	now := time.Now().UTC()
-	valid := authmodels.GoogleIdentity{
-		ID: primitive.NewObjectID(), Issuer: "https://accounts.google.com", Subject: "subject", IsActive: true,
-	}
-	if !isActiveGoogleIdentity(valid) {
-		t.Fatal("complete active identity must be accepted")
-	}
-
-	for name, identity := range map[string]authmodels.GoogleIdentity{
-		"revoked":  func() authmodels.GoogleIdentity { value := valid; value.RevokedAt = &now; return value }(),
-		"inactive": func() authmodels.GoogleIdentity { value := valid; value.IsActive = false; return value }(),
-		"no issuer": func() authmodels.GoogleIdentity {
-			value := valid
-			value.Issuer = ""
-			return value
-		}(),
-		"no subject": func() authmodels.GoogleIdentity {
-			value := valid
-			value.Subject = ""
-			return value
-		}(),
-	} {
-		t.Run(name, func(t *testing.T) {
-			if isActiveGoogleIdentity(identity) {
-				t.Fatal("invalid Google identity must be rejected")
-			}
-		})
-	}
-}
-
 func TestCreatorFindErrorDistinguishesMissingIdentityFromDatabaseFailure(t *testing.T) {
-	missing := creatorFindError(mongo.ErrNoDocuments, apperr.ErrForbidden)
+	missing := creatorFindError(sql.ErrNoRows, apperr.ErrForbidden)
 	if missing == nil || missing.Code != apperr.ErrForbidden.Code {
 		t.Fatalf("missing identity code = %v, want FORBIDDEN", missing)
 	}
@@ -80,12 +48,5 @@ func TestCreatorFindErrorDistinguishesMissingIdentityFromDatabaseFailure(t *test
 	databaseFailure := creatorFindError(errors.New("database unavailable"), apperr.ErrForbidden)
 	if databaseFailure == nil || databaseFailure.Code != apperr.ErrInternal.Code {
 		t.Fatalf("database failure code = %v, want INTERNAL", databaseFailure)
-	}
-}
-
-func TestHoldingAdminMembershipFilterRejectsDeletedMembership(t *testing.T) {
-	filter := holdingAdminMembershipFilter("holding-1", "user-1")
-	if filter["holdingcode"] != "holding-1" || filter["useruid"] != "user-1" || filter["isdeleted"] != false {
-		t.Fatalf("unsafe membership filter: %#v", filter)
 	}
 }

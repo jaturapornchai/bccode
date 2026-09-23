@@ -7,6 +7,7 @@ import (
 	"smlcloudplatform/internal/authentication/models"
 	auth_models "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/authentication/repositories"
+	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/line"
 	"smlcloudplatform/internal/logger"
@@ -18,9 +19,6 @@ import (
 	"time"
 
 	micromodel "smlcloudplatform/pkg/microservice/models"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const devLoginUserEmail = "jaturapornchai@gmail.com"
@@ -63,7 +61,7 @@ type IAuthenticationService interface {
 
 type AuthenticationService struct {
 	authService           microservice.IAuthService
-	authRepo              repositories.IAuthenticationMongoCacheRepository
+	authRepo              repositories.IAuthenticationRepository
 	shopUserRepo          shop.IShopUserRepository
 	shopUserAccessLogRepo shop.IShopUserAccessLogRepository
 	smsRepo               repositories.IAuthenticationSMSRepository
@@ -78,7 +76,7 @@ type AuthenticationService struct {
 }
 
 func NewAuthenticationService(
-	authRepo repositories.IAuthenticationMongoCacheRepository,
+	authRepo repositories.IAuthenticationRepository,
 	shopUserRepo shop.IShopUserRepository,
 	shopUserAccessLogRepo shop.IShopUserAccessLogRepository,
 	smsRepo repositories.IAuthenticationSMSRepository,
@@ -126,7 +124,7 @@ func (svc AuthenticationService) LoginWithPhoneNumberOTP(userLoginReq *auth_mode
 
 	findUser, err := svc.authRepo.FindByIdentity(context.Background(), "phonenumber", userLoginReq.PhoneNumber)
 
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
 	}
 
@@ -152,7 +150,7 @@ func (svc AuthenticationService) LoginWithPhoneNumber(userLoginReq *auth_models.
 
 	findUser, err := svc.authRepo.FindByPhonenumber(context.Background(), userLoginReq.PhoneNumberField)
 
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
 	}
 
@@ -190,7 +188,7 @@ func (svc AuthenticationService) Login(userLoginReq *auth_models.UserLoginReques
 
 	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
 
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		// svc.ms.Log("Authentication service", err.Error())
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
 	}
@@ -232,7 +230,7 @@ func (svc AuthenticationService) DemoLoginByUsername(username string, authContex
 	}
 	ctx := context.Background()
 	user, err := svc.authRepo.FindUser(ctx, username)
-	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
 	}
 	if err != nil || user == nil || strings.TrimSpace(user.UID) == "" {
@@ -259,17 +257,6 @@ func (svc AuthenticationService) DemoLoginByUsername(username string, authContex
 	if err != nil {
 		return models.TokenLoginResponse{}, err
 	}
-	audit := auth_models.AuthAudit{
-		AuditUID:   svc.generateGUID(),
-		UserUID:    user.UID,
-		Action:     "DEMO_LOGIN",
-		Outcome:    "SUCCESS",
-		OccurredAt: svc.timeNow().UTC(),
-	}
-	if err := svc.authRepo.CreateAuthAudit(ctx, audit); err != nil {
-		_ = svc.authService.RevokeSession("Bearer " + result.Token)
-		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
-	}
 	return result, nil
 }
 
@@ -282,7 +269,7 @@ func (svc AuthenticationService) DevLoginByUID(userUID string, authContext model
 	ctx := context.Background()
 	user, err := svc.authRepo.FindUserByUID(ctx, userUID)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		if errors.Is(err, repositories.ErrNotFound) {
 			return models.TokenLoginResponse{}, apperr.ErrUnauthorized.WithMessage("dev login failed")
 		}
 		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
@@ -301,17 +288,6 @@ func (svc AuthenticationService) DevLoginByUID(userUID string, authContext model
 	if err != nil {
 		return models.TokenLoginResponse{}, err
 	}
-	audit := auth_models.AuthAudit{
-		AuditUID:   svc.generateGUID(),
-		UserUID:    user.UID,
-		Action:     "DEV_LOGIN",
-		Outcome:    "SUCCESS",
-		OccurredAt: svc.timeNow().UTC(),
-	}
-	if err := svc.authRepo.CreateAuthAudit(ctx, audit); err != nil {
-		_ = svc.authService.RevokeSession("Bearer " + result.Token)
-		return models.TokenLoginResponse{}, apperr.ErrInternal.WithWrap(err)
-	}
 
 	return result, nil
 }
@@ -325,7 +301,7 @@ func (svc AuthenticationService) Poslogin(userLoginReq *auth_models.PosLoginRequ
 
 	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
 
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		// svc.ms.Log("Authentication service", err.Error())
 		return models.TokenLoginResponse{}, errors.New("auth: database connect error")
 	}
@@ -363,7 +339,7 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 
 	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
 
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return "", errors.New("auth: database connect error")
 	}
 
@@ -378,17 +354,17 @@ func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRe
 		user.CreatedAt = svc.timeNow()
 
 		_, err := svc.authRepo.CreateUser(context.Background(), user)
-		if err != nil {
+		if err != nil && !errors.Is(err, repositories.ErrUserExists) {
 			return "", err
 		}
 
 		findUser, err = svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
-		if err != nil && err.Error() != "mongo: no documents in result" {
+		if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 			return "", err
 		}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*findUser))
+	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*findUser))
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -419,7 +395,7 @@ func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc,
 			return models.TokenLoginResponse{}, err
 		}
 
-		if shopUser.ID == primitive.NilObjectID {
+		if shopUser.ID == "" {
 			return models.TokenLoginResponse{}, errors.New("holdingcode invalid")
 		}
 
@@ -524,7 +500,7 @@ func (svc AuthenticationService) Register(userEmailRequest auth_models.RegisterE
 	userEmailRequest.Email = utils.NormalizeEmail(userEmailRequest.Email)
 
 	userFind, err := svc.authRepo.FindByIdentity(context.Background(), "email", userEmailRequest.Email)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return "", err
 	}
 
@@ -554,7 +530,7 @@ func (svc AuthenticationService) Register(userEmailRequest auth_models.RegisterE
 		return "", err
 	}
 
-	return idx.Hex(), nil
+	return idx, nil
 }
 
 // RegisterByUsername — สมัครสมาชิกด้วยรหัสพนักงาน + รหัสผ่าน (ไม่ต้องมี email)
@@ -569,7 +545,7 @@ func (svc AuthenticationService) RegisterByUsername(userRequest auth_models.Regi
 	}
 
 	userFind, err := svc.authRepo.FindByIdentity(context.Background(), "username", userRequest.Username)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return "", err
 	}
 
@@ -594,7 +570,7 @@ func (svc AuthenticationService) RegisterByUsername(userRequest auth_models.Regi
 		return "", err
 	}
 
-	return idx.Hex(), nil
+	return idx, nil
 }
 
 func (svc AuthenticationService) CheckExistsUsername(username string) (bool, error) {
@@ -605,7 +581,7 @@ func (svc AuthenticationService) CheckExistsUsername(username string) (bool, err
 	}
 
 	userFind, err := svc.authRepo.FindByIdentity(context.Background(), "username", username)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return true, err
 	}
 
@@ -621,7 +597,7 @@ func (svc AuthenticationService) CheckExistsPhonenumber(phoneNumber string) (boo
 	phoneNumber = utils.NormalizePhonenumber(phoneNumber)
 
 	userPhonenumberFind, err := svc.authRepo.FindByIdentity(context.Background(), "phonenumber", phoneNumber)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return true, err
 	}
 
@@ -697,7 +673,7 @@ func (svc AuthenticationService) RegisterByPhonenumber(userRequest auth_models.R
 		return "", err
 	}
 
-	return idx.Hex(), nil
+	return idx, nil
 }
 
 func (svc AuthenticationService) ForgotPasswordByPhonenumber(userRequest auth_models.ForgotPasswordPhoneNumberRequest) error {
@@ -721,7 +697,7 @@ func (svc AuthenticationService) ForgotPasswordByPhonenumber(userRequest auth_mo
 	}
 
 	userFind, err := svc.authRepo.FindByPhonenumber(context.Background(), userRequest.PhoneNumberField)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return err
 	}
 
@@ -753,7 +729,7 @@ func (svc AuthenticationService) Update(userUID string, userRequest auth_models.
 	}
 
 	userFind, err := svc.authRepo.FindUserByUID(context.Background(), userUID)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return err
 	}
 
@@ -790,7 +766,7 @@ func (svc AuthenticationService) UpdatePassword(username string, currentPassword
 	}
 
 	userFind, err := svc.authRepo.FindUser(context.Background(), username)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return err
 	}
 
@@ -885,7 +861,7 @@ func (svc AuthenticationService) AccessShop(holdingCode string, businessCode str
 		return err
 	}
 
-	if shopUser.ID == primitive.NilObjectID {
+	if shopUser.ID == "" {
 		return errors.New("holdingcode invalid")
 	}
 
@@ -952,7 +928,7 @@ func (svc AuthenticationService) UpdateFavoriteShop(holdingCode string, username
 		return err
 	}
 
-	if shopUser.ID == primitive.NilObjectID {
+	if shopUser.ID == "" {
 		return errors.New("shop invalid")
 	}
 
@@ -973,7 +949,7 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 
 	// find
 	userFind, err := svc.authRepo.FindUser(context.Background(), userInfo.Email)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return "", err
 	}
 
@@ -989,11 +965,11 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 		user.CreatedAt = svc.timeNow()
 
 		_, err := svc.authRepo.CreateUser(context.Background(), user)
-		if err != nil {
+		if err != nil && !errors.Is(err, repositories.ErrUserExists) {
 			return "", err
 		}
 		userFind, err = svc.authRepo.FindUser(context.Background(), userInfo.Email)
-		if err != nil && err.Error() != "mongo: no documents in result" {
+		if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 			return "", err
 		}
 	}
@@ -1002,7 +978,7 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
+	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -1023,10 +999,10 @@ func (svc AuthenticationService) LoginWithGoogleIdentity(issuer string, subject 
 
 	ctx := context.Background()
 	identity, err := svc.authRepo.FindGoogleIdentity(ctx, issuer, subject)
-	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return models.TokenLoginResponse{}, err
 	}
-	if errors.Is(err, mongo.ErrNoDocuments) {
+	if errors.Is(err, repositories.ErrNotFound) {
 		identity = &auth_models.GoogleIdentity{}
 	}
 	if identity.IdentityUID != "" {
@@ -1059,7 +1035,7 @@ func (svc AuthenticationService) LoginWithGoogleIdentity(issuer string, subject 
 	}
 	linkedUser, err := svc.authRepo.CreateGoogleUserIdentity(ctx, user, *identity, audit)
 	if err != nil {
-		if mongo.IsDuplicateKeyError(err) {
+		if centraldb.IsUniqueViolation(err) {
 			linked, findErr := svc.authRepo.FindGoogleIdentity(ctx, issuer, subject)
 			if findErr == nil && linked.IdentityUID != "" {
 				return svc.loginWithLinkedGoogleIdentity(ctx, *linked)
@@ -1105,7 +1081,7 @@ func (svc AuthenticationService) LoginWithLineToken(token string) (string, error
 
 	// find user by line user id (we'll use line user id as username for simplicity)
 	userFind, err := svc.authRepo.FindUser(context.Background(), userInfo.UserId)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return "", err
 	}
 
@@ -1121,11 +1097,11 @@ func (svc AuthenticationService) LoginWithLineToken(token string) (string, error
 		user.CreatedAt = svc.timeNow()
 
 		_, err := svc.authRepo.CreateUser(context.Background(), user)
-		if err != nil {
+		if err != nil && !errors.Is(err, repositories.ErrUserExists) {
 			return "", err
 		}
 		userFind, err = svc.authRepo.FindUser(context.Background(), userInfo.UserId)
-		if err != nil && err.Error() != "mongo: no documents in result" {
+		if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 			return "", err
 		}
 	}
@@ -1134,7 +1110,7 @@ func (svc AuthenticationService) LoginWithLineToken(token string) (string, error
 		return "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
+	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
 
 	if err != nil {
 		return "", errors.New("generate token error")
@@ -1154,17 +1130,11 @@ func (svc AuthenticationService) LoginWithLineUserID(lineUserID string, displayN
 
 	// ค้นหา user ที่เชื่อมต่อ LINE นี้ไว้ (จาก users collection)
 	userFind, err := svc.authRepo.FindByLineUserID(context.Background(), lineUserID)
+	if errors.Is(err, repositories.ErrNotFound) {
+		return "", "", errors.New("ไม่พบบัญชีที่เชื่อมต่อ LINE นี้ กรุณาเชื่อมต่อ LINE กับบัญชีก่อน")
+	}
 	if err != nil {
-		// fallback: ค้นจาก shopusers (สำหรับ backward compatibility กับข้อมูลเก่า)
-		shopUser, shopErr := svc.shopUserRepo.FindByLineUserID(context.Background(), lineUserID)
-		if shopErr != nil || shopUser.Username == "" {
-			return "", "", errors.New("ไม่พบบัญชีที่เชื่อมต่อ LINE นี้ กรุณาเชื่อมต่อ LINE กับบัญชีก่อน")
-		}
-		// หา auth user จาก username ที่ได้จาก shopUser
-		userFind, err = svc.authRepo.FindUser(context.Background(), shopUser.Username)
-		if err != nil {
-			return "", "", errors.New("ไม่พบข้อมูลผู้ใช้ในระบบ")
-		}
+		return "", "", err
 	}
 
 	if userFind.Username == "" {
@@ -1175,7 +1145,7 @@ func (svc AuthenticationService) LoginWithLineUserID(lineUserID string, displayN
 		return "", "", &auth_models.UserDisableLoginError{}
 	}
 
-	tokenString, err := svc.authService.GenerateTokenWithRedis(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
+	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
 
 	if err != nil {
 		return "", "", errors.New("generate token error")
@@ -1207,17 +1177,11 @@ func (svc AuthenticationService) LinkLine(username string, req auth_models.LinkL
 		return errors.New("ไม่พบข้อมูลผู้ใช้")
 	}
 
-	userFind.LineUserID = req.LineUserID
-	userFind.LineDisplayName = req.LineDisplayName
-	userFind.LinePictureURL = req.LinePictureURL
-	userFind.UpdatedAt = svc.timeNow()
-
-	err = svc.authRepo.UpdateUser(context.Background(), username, *userFind)
-	if err != nil {
-		return err
+	err = svc.authRepo.SetLineIdentity(context.Background(), userFind.UID, req.LineUserID, req.LineDisplayName, req.LinePictureURL)
+	if errors.Is(err, repositories.ErrUserExists) {
+		return errors.New("LINE นี้เชื่อมต่อกับบัญชีอื่นแล้ว")
 	}
-
-	return nil
+	return err
 }
 
 // UnlinkLine — ยกเลิกการเชื่อมต่อ LINE จาก user profile
@@ -1236,17 +1200,7 @@ func (svc AuthenticationService) UnlinkLine(username string) error {
 		return errors.New("ไม่พบข้อมูลผู้ใช้")
 	}
 
-	userFind.LineUserID = ""
-	userFind.LineDisplayName = ""
-	userFind.LinePictureURL = ""
-	userFind.UpdatedAt = svc.timeNow()
-
-	err = svc.authRepo.UpdateUser(context.Background(), username, *userFind)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return svc.authRepo.SetLineIdentity(context.Background(), userFind.UID, "", "", "")
 }
 
 func (svc AuthenticationService) DisableUser(userUID string) error {
@@ -1256,7 +1210,7 @@ func (svc AuthenticationService) DisableUser(userUID string) error {
 	}
 
 	userFind, err := svc.authRepo.FindUserByUID(context.Background(), userUID)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return err
 	}
 
@@ -1282,7 +1236,7 @@ func (svc AuthenticationService) DeleteUser(username string) error {
 	}
 
 	userFind, err := svc.authRepo.FindUser(context.Background(), username)
-	if err != nil && err.Error() != "mongo: no documents in result" {
+	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
 		return err
 	}
 
@@ -1294,19 +1248,7 @@ func (svc AuthenticationService) DeleteUser(username string) error {
 		return errors.New("user is not disabled")
 	}
 
-	shopFind, err := svc.shopUserRepo.FindByUsername(context.Background(), username)
-
-	if err != nil {
-		return err
-	}
-
-	for _, shopUser := range *shopFind {
-		err = svc.shopUserRepo.Delete(context.Background(), shopUser.HoldingCode, username)
-		if err != nil {
-			return err
-		}
-	}
-
+	// Holding memberships and linked identities are removed by the database cascade.
 	err = svc.authRepo.DeleteUser(context.Background(), username)
 
 	if err != nil {

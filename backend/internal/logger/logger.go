@@ -19,16 +19,6 @@ const (
 	STATUS = "status"
 	SIZE   = "size"
 	TIME   = "time"
-
-	KafkaHeaders = "kafkaHeaders"
-	MessageSize  = "MessageSize"
-	Topic        = "topic"
-	Partition    = "partition"
-	Message      = "message"
-	WorkerID     = "workerID"
-	Headers      = "headers"
-	Offset       = "offset"
-	TimeStamp    = "timestamp"
 )
 
 type ILogger interface {
@@ -51,8 +41,6 @@ type ILogger interface {
 	Printf(template string, args ...interface{})
 
 	HttpMiddlewareAccessLogger(method string, uri string, status int, size int64, time time.Duration)
-	KafkaProcessMessage(topic string, partition int, message []byte, workerID int, offset int64, time time.Time)
-	KafkaProcessMessageWithHeaders(topic string, partition int, message []byte, workerID int, offset int64, time time.Time, headers map[string]interface{})
 }
 
 // For mapping config logger to email_service logger levels
@@ -260,31 +248,6 @@ func (l *AppLogger) HttpMiddlewareAccessLogger(method, uri string, status int, s
 		zap.Int(STATUS, status),
 		zap.Int64(SIZE, size),
 		zap.Duration(TIME, time),
-	)
-}
-
-func (l *AppLogger) KafkaProcessMessage(topic string, partition int, message []byte, workerID int, offset int64, time time.Time) {
-	l.logger.Debug(
-		"(Processing Kafka message)",
-		zap.String(Topic, topic),
-		zap.Int(Partition, partition),
-		zap.Int(MessageSize, len(message)),
-		zap.Int(WorkerID, workerID),
-		zap.Int64(Offset, offset),
-		zap.Time(TIME, time),
-	)
-}
-
-func (l *AppLogger) KafkaProcessMessageWithHeaders(topic string, partition int, message []byte, workerID int, offset int64, time time.Time, headers map[string]interface{}) {
-	l.logger.Debug(
-		"(Processing Kafka message)",
-		zap.String(Topic, topic),
-		zap.Int(Partition, partition),
-		zap.Int(MessageSize, len(message)),
-		zap.Int(WorkerID, workerID),
-		zap.Int64(Offset, offset),
-		zap.Time(TIME, time),
-		zap.Any(KafkaHeaders, headers),
 	)
 }
 

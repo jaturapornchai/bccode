@@ -2,1686 +2,401 @@ package microservice
 
 import (
 	"context"
-	"crypto/tls"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"runtime"
-	"smlcloudplatform/internal/config"
+	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	redis "github.com/go-redis/redis/v8"
+	"github.com/lib/pq"
 )
 
-// ICacher is the interface for cache service
+// ICacher - ที่เก็บ session/ข้อมูลชั่วคราวแบบ key/hash พร้อมวันหมดอายุ
+// เก็บใน PostgreSQL ตาราง cache_entries (แทน Redis ที่ถอดออกแล้ว 2026-09-23)
+// ความหมายของแต่ละคำสั่งคงเดิมตาม Redis เพื่อให้ auth/session ทำงานเหมือนเดิม
 type ICacher interface {
-	Autonumber(name string) (int, error)
-
-	BitFieldBulkUpdate(cmds []*BitFieldCmd) error
-	BitField(key string, cmds []*BitFieldCmd) ([]int64, error)
-	BitFieldGet(key string, byteSize int, position int) (int64, error)
-	BitFieldSet(key string, byteSize int, position int, value interface{}) (int64, error)
-	BitFieldIncrBy(key string, byteSize int, position int, value int64) (int64, error)
-
-	HScan(key string, cursor uint64, fieldPattern string, count int64) ([]string, uint64 /*next cursor*/, error)
-	HSetS(key string, field string, value string, expire time.Duration) error
-	HSetSNoExpire(key string, field string, value string) error
-	HIncrBy(key string, field string, val int) (int, error)
-	HDecrBy(key string, field string, val int) (int, error)
-	HIncr(key string, field string) (int, error)
-	HDecr(key string, field string) (int, error)
 	HMSet(key string, fieldValues map[string]interface{}) error
 	HGet(key string, field string) (string, error)
 	HGetAll(key string) (map[string]string, error)
 	HMGet(key string, fields []string) ([]interface{}, error)
+	// ConsumeHash อ่าน field ที่ต้องการ บันทึก marker แล้วลบ hash ทิ้งในคำสั่งเดียว (ใช้กับ refresh token ใช้ครั้งเดียว)
+	// ถ้า hash ถูกใช้ไปแล้ว คืน marker ที่ผู้ใช้คนแรกบันทึกไว้ เพื่อให้ผู้เรียกเพิกถอนทั้งตระกูล token
 	ConsumeHash(key string, markerKey string, fields []string, markerTTL time.Duration) ([]interface{}, string, bool, error)
-	HDel(key string, fields ...string) error
-	HExists(key string, field string) (bool, error)
-	HFields(key string, pattern string) ([]string, error)
 
 	Set(key string, value interface{}, expire time.Duration) error
 	SetS(key string, value string, expire time.Duration) error
 	SetNoExpire(key string, value interface{}) error
-	SetSNoExpire(key string, value string) error
-	SetNX(key string, value interface{}, expire time.Duration) (bool, error)
-	SetXX(key string, value interface{}, expire time.Duration) error
-	IncrBy(key string, val int) (int, error)
-	DecrBy(key string, val int) (int, error)
 	Incr(key string) (int, error)
-	Decr(key string) (int, error)
-	MSet(kv map[string]interface{}) error
 	Get(key string) (string, error)
-	MGet(keys []string) ([]interface{}, error)
+	// Expire ค่าติดลบหรือศูนย์ = ลบ key ทันที (เหมือน Redis)
 	Expire(key string, expire time.Duration) error
 	Expires(keys []string, expire time.Duration) error
 	Del(keys ...string) error
 	Exists(key string) (bool, error)
-
-	Pub(channel string, message interface{}) error
-	Sub(channels ...string) (<-chan *redis.Message, string /*subID used for close*/, error)
-	Unsub(subID string) error
+	// Keys รองรับ glob แบบ * เท่านั้น
+	Keys(pattern string) ([]string, error)
 
 	Close() error
 	Healthcheck() error
-
-	// Keys might return value that match the pattern, because it use HScan internally
-	Keys(pattern string) ([]string, error)
-
-	RPush(key string, value interface{}) error
-	LRange(key string) ([]string, error)
-
-	LLen(key string) (int64, error)
-	LSet(key string, index int64, value interface{}) error
-
-	// Find Position of value in list NOT WORK with redis lower 6.0.0
-	LPos(key string, value interface{}) (int64, error)
 }
 
-type pubsubChannels struct {
-	ps       *redis.PubSub
-	channels []string
-}
+// field ว่าง = ค่าแบบ string ธรรมดา (ไม่ใช่ hash)
+const cacheSchemaSQL = `
+CREATE TABLE IF NOT EXISTS cache_entries (
+	cache_key  text        NOT NULL,
+	field      text        NOT NULL DEFAULT '',
+	value      text        NOT NULL,
+	expires_at timestamptz,
+	PRIMARY KEY (cache_key, field)
+);
+CREATE INDEX IF NOT EXISTS idx_cache_entries_expires_at ON cache_entries (expires_at) WHERE expires_at IS NOT NULL;`
 
-// Cacher is the struct for cache service
+const cacheLiveSQL = `(expires_at IS NULL OR expires_at > now())`
+
 type Cacher struct {
-	config      config.ICacherConfig
-	clientMutex sync.Mutex
-	client      *redis.Client
-	subsribers  *sync.Map
+	db *sql.DB
 }
 
-// NewCacher return new Cacher
-func NewCacher(config config.ICacherConfig) *Cacher {
-	return &Cacher{
-		config:     config,
-		subsribers: &sync.Map{},
+// NewCacher - สร้างตาราง cache_entries (ถ้ายังไม่มี) ในฐานข้อมูลควบคุมกลาง แล้วคืนตัวเก็บ session
+func NewCacher(db *sql.DB) (*Cacher, error) {
+	if db == nil {
+		return nil, fmt.Errorf("cacher database is required")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := db.ExecContext(ctx, cacheSchemaSQL); err != nil {
+		return nil, fmt.Errorf("create cache_entries: %w", err)
+	}
+	return &Cacher{db: db}, nil
 }
 
-func (cache *Cacher) newClient() *redis.Client {
-	cfg := cache.config
-	settings := cfg.ConnectionSettings()
+func cacheCtx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 5*time.Second)
+}
 
-	option := &redis.Options{
-		Addr:               cfg.Endpoint(),
-		Username:           cfg.UserName(),
-		Password:           cfg.Password(),
-		DB:                 cfg.DB(),
-		PoolSize:           settings.PoolSize(),
-		MinIdleConns:       settings.MinIdleConns(),
-		MaxRetries:         settings.MaxRetries(),
-		MinRetryBackoff:    settings.MinRetryBackoff(),
-		MaxRetryBackoff:    settings.MaxRetryBackoff(),
-		IdleTimeout:        settings.IdleTimeout(),
-		IdleCheckFrequency: settings.IdleCheckFrequency(),
-		PoolTimeout:        settings.PoolTimeout(),
-		ReadTimeout:        settings.ReadTimeout(),
-		WriteTimeout:       settings.WriteTimeout(),
-	}
-
-	if cfg.TLS() {
-		option.TLSConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
+// cacheValueText - แปลงค่าเป็น string ในรูปแบบเดียวกับที่ระบบ session เดิมเขียนลง hash (bool → 1/0, ตัวเลข → ข้อความ)
+func cacheValueText(value interface{}) (string, error) {
+	switch v := value.(type) {
+	case nil:
+		return "", nil
+	case string:
+		return v, nil
+	case []byte:
+		return string(v), nil
+	case bool:
+		if v {
+			return "1", nil
 		}
-	}
-
-	return redis.NewClient(option)
-}
-
-func (cache *Cacher) getClient() (*redis.Client, error) {
-	cache.clientMutex.Lock()
-	defer cache.clientMutex.Unlock()
-
-	retriesDelayMs := cache.getRetriesDelayInMs()
-	retries := -1
-	for {
-		retries++
-		if retries > len(retriesDelayMs)-1 {
-			return nil, fmt.Errorf("cacher: retry exceed limits")
-		}
-
-		client := cache.client
-		if client == nil {
-			client = cache.newClient()
-			cache.client = client
-		}
-
-		_, err := client.Ping(context.Background()).Result()
-		if err != nil {
-			// Wait by retry delay then reset client and try connect again
-			time.Sleep(time.Millisecond * time.Duration(retriesDelayMs[retries]))
-			cache.client = nil
-			continue
-		}
-
-		// If we can PING without error, just return
-		return client, nil
+		return "0", nil
+	case int:
+		return strconv.Itoa(v), nil
+	case int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", v), nil
+	case float32:
+		return strconv.FormatFloat(float64(v), 'f', -1, 32), nil
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64), nil
+	case time.Time:
+		return v.Format(time.RFC3339Nano), nil
+	case fmt.Stringer:
+		return v.String(), nil
+	default:
+		return "", fmt.Errorf("cacher: unsupported hash value type %T", value)
 	}
 }
 
-// Close close the redis client
-func (cache *Cacher) Close() error {
-	cache.clientMutex.Lock()
-	defer cache.clientMutex.Unlock()
-
-	// Close current client
-	client := cache.client
-	if client != nil {
-		cache.client = nil
-
-		err := client.Close()
-		if err != nil {
-			return err
-		}
-
-	}
-
-	return nil
-}
-
-func (cache *Cacher) RPush(key string, value interface{}) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	str, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	intCmd := c.RPush(context.Background(), key, str)
-	err = intCmd.Err()
-	if err != nil {
-		return err
-		// if err == redis.Nil {
-		// 	// Key does not exists
-		// 	return nil
-		// } else {
-		// 	return err
-		// }
-	}
-
-	return nil
-}
-
-func (cache *Cacher) LRange(key string) ([]string, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return nil, err
-	}
-
-	vals, err := c.LRange(context.Background(), key, 0, -1).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	return vals, nil
-}
-
-// Keys returns keys by given pattern
-func (cache *Cacher) Keys(pattern string) ([]string, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return nil, err
-	}
-
-	allKeys := map[string]interface{}{}
-
-	var nextCursor uint64
-	var keys []string
-
-	retryLimit := 3
-	for {
-		retryLimit--
-		if retryLimit < 0 {
-			return nil, err
-		}
-
-		keys, nextCursor, err = c.Scan(context.Background(), 0, pattern, 100).Result()
-		if err != nil {
-			continue
-		}
-		// Scan can return duplidate item, so we use map to collect result set
-		for _, key := range keys {
-			allKeys[key] = struct{}{}
-		}
-
-		break // break retryLimit
-	}
-
-	for {
-		if nextCursor == 0 {
-			break
-		}
-
-		retryLimit := 3
-		for {
-
-			retryLimit--
-			if retryLimit < 0 {
-				return nil, err
-			}
-
-			keys, nextCursor, err = c.Scan(context.Background(), nextCursor, pattern, 100).Result()
-			if err != nil {
-				continue
-			}
-
-			// Scan can return duplidate item, so we use map to collect result set
-			for _, key := range keys {
-				allKeys[key] = struct{}{}
-			}
-
-			break // retryLimit
-		}
-
-	}
-
-	retKeys := []string{}
-	for key := range allKeys {
-		retKeys = append(retKeys, key)
-	}
-	return retKeys, nil
-}
-
-// getRetriesDelayInMs sum only 1 second
-func (cache *Cacher) getRetriesDelayInMs() []int {
-	return []int{200, 200, 200, 200, 200}
-}
-
-func (cache *Cacher) isNoConnectionError(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	errMsgLower := strings.ToLower(err.Error())
-
-	return strings.Contains(errMsgLower, "connect: connection refused")
-}
-
-// Exists check if key is exists
-func (cache *Cacher) Exists(key string) (bool, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return false, err
-	}
-
-	val, err := c.Exists(context.Background(), key).Result()
-	if err != nil {
-		return false, err
-	}
-
-	// val == 1 means key is exists
-	return val == 1, nil
-}
-
-// Del the cache by keys
-func (cache *Cacher) Del(keys ...string) error {
-	if len(keys) == 0 {
+func expiresAt(expire time.Duration) interface{} {
+	if expire <= 0 {
 		return nil
 	}
+	return time.Now().Add(expire)
+}
 
-	c, err := cache.getClient()
+// HMSet - เขียน field ของ hash โดยคงวันหมดอายุเดิมของ key (เหมือน Redis HSET)
+func (c *Cacher) HMSet(key string, fieldValues map[string]interface{}) error {
+	if len(fieldValues) == 0 {
+		return nil
+	}
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
-	// Delete 10000 items per page
-	pageLimit := 10000
-	from := 0
-	to := pageLimit
-
-	for {
-		// Lower bound
-		if from >= len(keys) {
-			break
-		}
-		// Upper bound
-		if to > len(keys) {
-			to = len(keys)
-		}
-
-		delKeys := keys[from:to]
-		if len(delKeys) == 0 {
-			break
-		}
-
-		_, err = c.Del(context.Background(), delKeys...).Result()
-		if err != nil {
-			if err == redis.Nil {
-				continue
-			} else {
-				return err
-			}
-		}
-		from += pageLimit
-		to += pageLimit
-	}
-
-	return nil
-}
-
-// Expires set expiration for objects in cache
-// if there is error happen, just return last error
-func (cache *Cacher) Expires(keys []string, expire time.Duration) error {
-	return cache.expires(keys, expire)
-}
-
-// Expire set expiration for object in cache
-func (cache *Cacher) Expire(key string, expire time.Duration) error {
-	return cache.expires([]string{key}, expire)
-}
-
-// Expires set expiration for objects in cache
-// if there is error happen, just return last error
-func (cache *Cacher) expires(keys []string, expire time.Duration) error {
-	c, err := cache.getClient()
-	if err != nil {
+	var expiry sql.NullTime
+	err = tx.QueryRowContext(ctx, `SELECT expires_at FROM cache_entries WHERE cache_key = $1 AND field <> '' AND `+cacheLiveSQL+` LIMIT 1`, key).Scan(&expiry)
+	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-
-	var lastErr error
-	for _, key := range keys {
-		err = c.Expire(context.Background(), key, expire).Err()
+	// hash ที่หมดอายุแล้วถือว่าไม่มี — ล้างทิ้งก่อนเขียนใหม่
+	if _, err := tx.ExecContext(ctx, `DELETE FROM cache_entries WHERE cache_key = $1 AND NOT `+cacheLiveSQL, key); err != nil {
+		return err
+	}
+	var expiryArg interface{}
+	if expiry.Valid {
+		expiryArg = expiry.Time
+	}
+	for field, value := range fieldValues {
+		text, err := cacheValueText(value)
 		if err != nil {
-			if err == redis.Nil {
-				// Key does not exists
-				return nil
-			} else {
-				lastErr = err
-			}
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO cache_entries (cache_key, field, value, expires_at) VALUES ($1, $2, $3, $4)
+ON CONFLICT (cache_key, field) DO UPDATE SET value = EXCLUDED.value`, key, field, text, expiryArg); err != nil {
+			return err
 		}
 	}
-	return lastErr
+	return tx.Commit()
 }
 
-// MGet get by multiple keys, the value can be nil, so it will return []interface{} instead of []string
-func (cache *Cacher) MGet(keys []string) ([]interface{}, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return nil, err
-	}
-
-	vals, err := c.MGet(context.Background(), keys...).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	return vals, nil
-}
-
-// Get object from cache
-func (cache *Cacher) Get(key string) (string, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return "", err
-	}
-
-	val, err := c.Get(context.Background(), key).Result()
-	if err == redis.Nil {
-		// Key does not exists
+func (c *Cacher) HGet(key string, field string) (string, error) {
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	var value string
+	err := c.db.QueryRowContext(ctx, `SELECT value FROM cache_entries WHERE cache_key = $1 AND field = $2 AND field <> '' AND `+cacheLiveSQL, key, field).Scan(&value)
+	if err == sql.ErrNoRows {
 		return "", nil
-	} else if err != nil {
-		return "", err
 	}
-
-	return val, nil
+	return value, err
 }
 
-// MSet set multiple key value
-func (cache *Cacher) MSet(kv map[string]interface{}) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	pairs := []interface{}{}
-	for k, v := range kv {
-
-		str, ok := v.(string)
-		// Check empty string if value string
-		if ok && len(str) == 0 {
-			pairs = append(pairs, k, "")
-			continue
-		}
-		// If value is string, not pass it to json.Marshal
-		if len(str) > 0 {
-			pairs = append(pairs, k, str)
-			continue
-		}
-
-		strb, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		pairs = append(pairs, k, strb)
-	}
-
-	err = c.MSet(context.Background(), pairs...).Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Decr minus 1 to a counter on key, return first counter (-1) if cache expire
-func (cache *Cacher) Decr(key string) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.Decr(context.Background(), key).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// Incr do a counter on key, return first counter if cache expire
-func (cache *Cacher) Incr(key string) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.Incr(context.Background(), key).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// decrBy decrement the value on key by given value, return first -value if cache expire
-func (cache *Cacher) DecrBy(key string, value int) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.DecrBy(context.Background(), key, int64(value)).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// IncrBy increment the value on key by given value, return first value if cache expire
-func (cache *Cacher) IncrBy(key string, value int) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.IncrBy(context.Background(), key, int64(value)).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// SetSNoExpire set value as string into cache no expired
-func (cache *Cacher) SetSNoExpire(key string, value string) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	// 0 = no expired
-	err = c.Set(context.Background(), key, value, 0).Err()
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return nil
-		} else {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// SetNoExpire set object into cache no expired
-func (cache *Cacher) SetNoExpire(key string, value interface{}) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	str, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	// 0 = no expired
-	err = c.Set(context.Background(), key, str, 0).Err()
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return nil
-		} else {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// SetS set string into cache
-func (cache *Cacher) SetS(key string, value string, expire time.Duration) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	err = c.Set(context.Background(), key, value, expire).Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cache *Cacher) Set(key string, value interface{}, expire time.Duration) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	str, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	err = c.Set(context.Background(), key, str, expire).Err()
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return nil
-		} else {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (cache *Cacher) SetNX(key string, value interface{}, expire time.Duration) (bool, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return false, err
-	}
-
-	str, err := json.Marshal(value)
-	if err != nil {
-		return false, err
-	}
-
-	result, err := c.SetNX(context.Background(), key, str, expire).Result()
-
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return false, nil
-		} else {
-			return false, err
-		}
-	}
-
-	return result, nil
-}
-
-func (cache *Cacher) SetXX(key string, value interface{}, expire time.Duration) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	str, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	err = c.SetXX(context.Background(), key, str, expire).Err()
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return nil
-		} else {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (cache *Cacher) HScan(
-	key string, cursor uint64, fieldPattern string, count int64) ([]string, uint64 /*next cursor*/, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	fields, nextCursor, err := c.HScan(context.Background(), key, cursor, fieldPattern, count).Result()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return fields, nextCursor, nil
-}
-
-func (cache *Cacher) HFields(key string, pattern string) ([]string, error) {
-
-	c, err := cache.getClient()
+func (c *Cacher) HGetAll(key string) (map[string]string, error) {
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	rows, err := c.db.QueryContext(ctx, `SELECT field, value FROM cache_entries WHERE cache_key = $1 AND field <> '' AND `+cacheLiveSQL, key)
 	if err != nil {
 		return nil, err
 	}
-
-	allFields := map[string]interface{}{}
-	var nextCursor uint64
-	var fields []string
-
-	retryLimit := 3
-	for {
-		retryLimit--
-		if retryLimit < 0 {
+	defer rows.Close()
+	result := map[string]string{}
+	for rows.Next() {
+		var field, value string
+		if err := rows.Scan(&field, &value); err != nil {
 			return nil, err
 		}
-		fields, nextCursor, err = c.HScan(context.Background(), key, 0, pattern, 100).Result()
-		if err != nil {
-			continue
-		}
-
-		// Scan can return duplidate item, so we use map to collect result set
-		for i, field := range fields {
-			if i%2 == 0 {
-				allFields[field] = struct{}{}
-			}
-		}
-		break // retryLimit
+		result[field] = value
 	}
-
-	for {
-		if nextCursor == 0 {
-			break
-		}
-
-		retryLimit := 3
-		for {
-			retryLimit--
-			if retryLimit < 0 {
-				return nil, err
-			}
-
-			fields, nextCursor, err = c.HScan(context.Background(), key, nextCursor, pattern, 100).Result()
-			if err != nil {
-				continue
-			}
-
-			// Scan can return duplidate item, so we use map to collect result set
-			for i, field := range fields {
-				if i%2 == 0 {
-					allFields[field] = struct{}{}
-				}
-			}
-
-			break // retryLimit
-		}
-	}
-
-	retFields := []string{}
-	for field := range allFields {
-		retFields = append(retFields, field)
-	}
-	return retFields, nil
+	return result, rows.Err()
 }
 
-// HExists check if key is exists
-func (cache *Cacher) HExists(key string, field string) (bool, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return false, err
-	}
-
-	val, err := c.HExists(context.Background(), key, field).Result()
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return false, nil
-		} else {
-			return false, err
-		}
-	}
-
-	return val, nil
-}
-
-// Del the cache by keys
-func (cache *Cacher) HDel(key string, fields ...string) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	_, err = c.HDel(context.Background(), key, fields...).Result()
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return nil
-		} else {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// HGet object from cache
-func (cache *Cacher) HGet(key string, field string) (string, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return "", err
-	}
-
-	val, err := c.HGet(context.Background(), key, field).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return "", nil
-	} else if err != nil {
-		return "", err
-	}
-
-	return val, nil
-}
-
-// HMGet get by multiple keys, the value can be nil, so it will return []interface{} instead of []string
-func (cache *Cacher) HMGet(key string, fields []string) ([]interface{}, error) {
-
-	c, err := cache.getClient()
+// HMGet - คืนค่าตามลำดับ fields; field ที่ไม่มีเป็น nil (เหมือน Redis)
+func (c *Cacher) HMGet(key string, fields []string) ([]interface{}, error) {
+	all, err := c.HGetAll(key)
 	if err != nil {
 		return nil, err
 	}
-
-	vals, err := c.HMGet(context.Background(), key, fields...).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	return vals, nil
+	return pickFields(all, fields), nil
 }
 
-// ConsumeHash atomically reads selected hash fields, records a marker, and deletes
-// the hash. It is used for one-time credentials such as refresh tokens. When the
-// hash was already consumed, marker contains the session identifier recorded by
-// the first consumer so callers can revoke the whole token family on replay.
-func (cache *Cacher) ConsumeHash(key string, markerKey string, fields []string, markerTTL time.Duration) ([]interface{}, string, bool, error) {
-	c, err := cache.getClient()
-	if err != nil {
-		return nil, "", false, err
+func pickFields(all map[string]string, fields []string) []interface{} {
+	values := make([]interface{}, len(fields))
+	for i, field := range fields {
+		if value, ok := all[field]; ok {
+			values[i] = value
+		}
 	}
+	return values
+}
+
+func (c *Cacher) ConsumeHash(key string, markerKey string, fields []string, markerTTL time.Duration) ([]interface{}, string, bool, error) {
 	if len(fields) == 0 {
 		return nil, "", false, fmt.Errorf("consume hash fields are required")
 	}
-
-	script := redis.NewScript(`
-local values = redis.call('HMGET', KEYS[1], unpack(ARGV, 2))
-if values[1] then
-  local marker = values[1]
-  redis.call('SET', KEYS[2], marker, 'PX', ARGV[1])
-  redis.call('DEL', KEYS[1])
-  local result = {1, marker}
-  for i = 1, #values do
-    result[#result + 1] = values[i]
-  end
-  return result
-end
-local marker = redis.call('GET', KEYS[2])
-return {0, marker or ''}
-`)
-
-	args := make([]interface{}, 0, len(fields)+1)
-	markerMillis := markerTTL.Milliseconds()
-	if markerMillis < 1 {
-		markerMillis = 1
+	if markerTTL < time.Millisecond {
+		markerTTL = time.Millisecond
 	}
-	args = append(args, markerMillis)
-	for _, field := range fields {
-		args = append(args, field)
-	}
-
-	raw, err := script.Run(context.Background(), c, []string{key, markerKey}, args...).Result()
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, "", false, err
 	}
-	items, ok := raw.([]interface{})
-	if !ok || len(items) < 2 {
-		return nil, "", false, fmt.Errorf("consume hash returned invalid result")
-	}
-	consumed, ok := items[0].(int64)
-	if !ok {
-		return nil, "", false, fmt.Errorf("consume hash returned invalid status")
-	}
-	marker := cacheString(items[1])
-	if consumed == 0 {
-		return nil, marker, false, nil
-	}
-	if len(items) != len(fields)+2 {
-		return nil, "", false, fmt.Errorf("consume hash returned incomplete fields")
-	}
-	return items[2:], marker, true, nil
-}
+	defer tx.Rollback()
 
-func (cache *Cacher) HGetAll(key string) (map[string]string, error) {
-
-	c, err := cache.getClient()
+	// ลบแบบ RETURNING ในคำสั่งเดียว — ถ้าสอง request ใช้ token เดียวกันพร้อมกัน จะมีแค่ตัวแรกที่ได้แถวคืน
+	rows, err := tx.QueryContext(ctx, `DELETE FROM cache_entries WHERE cache_key = $1 AND field <> '' AND `+cacheLiveSQL+` RETURNING field, value`, key)
 	if err != nil {
-		return nil, err
+		return nil, "", false, err
 	}
-
-	vals, err := c.HGetAll(context.Background(), key).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	return vals, nil
-}
-
-// HMSet set multiple key value
-func (cache *Cacher) HMSet(key string, fieldValues map[string]interface{}) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	err = c.HMSet(context.Background(), key, fieldValues).Err()
-	if err != nil {
-		if err == redis.Nil {
-			// Key does not exists
-			return nil
-		} else {
-			return err
+	all := map[string]string{}
+	for rows.Next() {
+		var field, value string
+		if err := rows.Scan(&field, &value); err != nil {
+			rows.Close()
+			return nil, "", false, err
 		}
+		all[field] = value
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, "", false, err
 	}
 
-	return nil
-}
-
-// HDecr minus 1 to a counter on key, return first counter (-1) if cache expire
-func (cache *Cacher) HDecr(key string, field string) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.HIncrBy(context.Background(), key, field, -1).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// Incr do a counter on key, return first counter if cache expire
-func (cache *Cacher) HIncr(key string, field string) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.HIncrBy(context.Background(), key, field, 1).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// HDecrBy decrement the value on key by given value, return first -value if cache expire
-func (cache *Cacher) HDecrBy(key string, field string, value int) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.HIncrBy(context.Background(), key, field, -1*int64(value)).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// HIncrBy increment the value on key by given value, return first value if cache expire
-func (cache *Cacher) HIncrBy(key string, field string, value int) (int, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	val, err := c.HIncrBy(context.Background(), key, field, int64(value)).Result()
-	if err == redis.Nil {
-		// Key does not exists
-		return 0, nil
-	} else if err != nil {
-		return 0, err
-	}
-
-	return int(val), nil
-}
-
-// HSetSNoExpire set value as string into cache no expired
-func (cache *Cacher) HSetSNoExpire(key string, field string, value string) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	err = c.HSet(context.Background(), key, field, value).Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// HSetS set string into cache
-func (cache *Cacher) HSetS(key string, field string, value string, expire time.Duration) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	err = c.HSet(context.Background(), key, field, value).Err()
-	if err != nil {
-		return err
-	}
-
-	if expire > 0 {
-		err := cache.Expires([]string{key}, expire)
-		if err != nil {
-			if err == redis.Nil {
-				// Key does not exists
-				return nil
-			} else {
-				return err
-			}
+	marker, found := all[fields[0]]
+	if !found {
+		var existing string
+		err := tx.QueryRowContext(ctx, `SELECT value FROM cache_entries WHERE cache_key = $1 AND field = '' AND `+cacheLiveSQL, markerKey).Scan(&existing)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, "", false, err
 		}
+		return nil, existing, false, tx.Commit()
 	}
-
-	return nil
+	if _, err := tx.ExecContext(ctx, `INSERT INTO cache_entries (cache_key, field, value, expires_at) VALUES ($1, '', $2, $3)
+ON CONFLICT (cache_key, field) DO UPDATE SET value = EXCLUDED.value, expires_at = EXCLUDED.expires_at`, markerKey, marker, time.Now().Add(markerTTL)); err != nil {
+		return nil, "", false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, "", false, err
+	}
+	return pickFields(all, fields), marker, true, nil
 }
 
-// pp
-func (cache *Cacher) Pipeline(fn func(redis.Pipeliner) error) ([]redis.Cmder, error) {
-
-	c, err := cache.getClient()
+func (c *Cacher) setText(key string, value string, expire time.Duration) error {
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	cmder, err := c.Pipelined(context.Background(), fn)
-
-	if err != nil {
-		return nil, err
+	defer tx.Rollback()
+	// SET แทนที่ key เดิมทั้งหมด (รวม hash field) เหมือน Redis
+	if _, err := tx.ExecContext(ctx, `DELETE FROM cache_entries WHERE cache_key = $1`, key); err != nil {
+		return err
 	}
-
-	return cmder, err
+	if _, err := tx.ExecContext(ctx, `INSERT INTO cache_entries (cache_key, field, value, expires_at) VALUES ($1, '', $2, $3)`, key, value, expiresAt(expire)); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
-func (cache *Cacher) BitFieldBulkUpdate(cmds []*BitFieldCmd) error {
-	if len(cmds) == 0 {
+// Set - เก็บค่าเป็น JSON
+func (c *Cacher) Set(key string, value interface{}, expire time.Duration) error {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return c.setText(key, string(raw), expire)
+}
+
+func (c *Cacher) SetS(key string, value string, expire time.Duration) error {
+	return c.setText(key, value, expire)
+}
+
+func (c *Cacher) SetNoExpire(key string, value interface{}) error {
+	return c.Set(key, value, 0)
+}
+
+func (c *Cacher) Incr(key string) (int, error) {
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM cache_entries WHERE cache_key = $1 AND field = '' AND NOT `+cacheLiveSQL, key); err != nil {
+		return 0, err
+	}
+	var text string
+	err = tx.QueryRowContext(ctx, `INSERT INTO cache_entries (cache_key, field, value) VALUES ($1, '', '1')
+ON CONFLICT (cache_key, field) DO UPDATE SET value = (cache_entries.value::bigint + 1)::text
+RETURNING value`, key).Scan(&text)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(text)
+}
+
+// Get - คืน "" เมื่อไม่มี key
+func (c *Cacher) Get(key string) (string, error) {
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	var value string
+	err := c.db.QueryRowContext(ctx, `SELECT value FROM cache_entries WHERE cache_key = $1 AND field = '' AND `+cacheLiveSQL, key).Scan(&value)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return value, err
+}
+
+func (c *Cacher) Expire(key string, expire time.Duration) error {
+	return c.Expires([]string{key}, expire)
+}
+
+func (c *Cacher) Expires(keys []string, expire time.Duration) error {
+	if len(keys) == 0 {
 		return nil
 	}
-
-	keyCmds := make(map[string][]*BitFieldCmd)
-	keyExpires := make(map[string]time.Duration)
-
-	for _, cmd := range cmds {
-		if len(cmd.CacheKey) == 0 {
-			continue
-		}
-		cmdArr, ok := keyCmds[cmd.CacheKey]
-		if !ok {
-			cmdArr = make([]*BitFieldCmd, 0)
-		}
-		cmdArr = append(cmdArr, cmd)
-
-		keyCmds[cmd.CacheKey] = cmdArr
-		if cmd.CacheExpire > 0 {
-			keyExpires[cmd.CacheKey] = cmd.CacheExpire
-		}
+	if expire <= 0 {
+		return c.Del(keys...)
 	}
-
-	var err error
-	for key, val := range keyCmds {
-
-		_, err = cache.BitField(key, val)
-
-		expire, ok := keyExpires[key]
-		if ok && expire > 0 {
-			cache.Expire(key, expire)
-		}
-	}
-
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	_, err := c.db.ExecContext(ctx, `UPDATE cache_entries SET expires_at = $2 WHERE cache_key = ANY($1) AND `+cacheLiveSQL, pq.Array(keys), time.Now().Add(expire))
 	return err
 }
 
-func (cache *Cacher) BitFieldGet(key string, byteSize int, position int) (int64, error) {
-	cmd := NewBitFieldCmdGetU(byteSize, position)
-	ress, err := cache.bitfield(key, []*BitFieldCmd{cmd})
-	if err != nil {
-		return 0, err
+func (c *Cacher) Del(keys ...string) error {
+	if len(keys) == 0 {
+		return nil
 	}
-	return ress[0], nil
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	_, err := c.db.ExecContext(ctx, `DELETE FROM cache_entries WHERE cache_key = ANY($1)`, pq.Array(keys))
+	return err
 }
 
-func (cache *Cacher) BitFieldSet(key string, byteSize int, position int, value interface{}) (int64, error) {
-	cmd := NewBitFieldCmdSetU(byteSize, position, value)
-	ress, err := cache.bitfield(key, []*BitFieldCmd{NewBitFieldCmdOverflowSat(), cmd})
-	if err != nil {
-		return 0, err
-	}
-	return ress[0], nil
+func (c *Cacher) Exists(key string) (bool, error) {
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	var exists bool
+	err := c.db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM cache_entries WHERE cache_key = $1 AND `+cacheLiveSQL+`)`, key).Scan(&exists)
+	return exists, err
 }
 
-func (cache *Cacher) BitFieldIncrBy(key string, byteSize int, position int, value int64) (int64, error) {
-	cmd := NewBitFieldCmdIncrByU(byteSize, position, value)
-	ress, err := cache.bitfield(key, []*BitFieldCmd{NewBitFieldCmdOverflowSat(), cmd})
-	if err != nil {
-		return 0, err
-	}
-	return ress[0], nil
-}
-
-func (cache *Cacher) BitField(
-	key string,
-	cmds []*BitFieldCmd) ([]int64, error) {
-
-	return cache.bitfield(key, cmds)
-}
-
-func (cache *Cacher) bitfield(
-	key string,
-	cmds []*BitFieldCmd) ([]int64, error) {
-
-	if len(cmds) == 0 {
-		return nil, nil
-	}
-
-	c, err := cache.getClient()
+func (c *Cacher) Keys(pattern string) ([]string, error) {
+	escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(pattern)
+	like := strings.ReplaceAll(escaped, "*", "%")
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	rows, err := c.db.QueryContext(ctx, `SELECT DISTINCT cache_key FROM cache_entries WHERE cache_key LIKE $1 AND `+cacheLiveSQL, like)
 	if err != nil {
 		return nil, err
 	}
-
-	args := []interface{}{}
-	for _, cmd := range cmds {
-
-		switch cmd.CmdType {
-		case BitFieldCmdTypeGet:
-			sign := "u"
-			if cmd.Sign {
-				sign = "i"
-			}
-			itemPosition := fmt.Sprintf("#%d", cmd.ItemPosition)
-			byteSize := fmt.Sprintf("%s%d", sign, cmd.ByteSize)
-			args = append(args, string(cmd.CmdType), byteSize, itemPosition)
-		case BitFieldCmdTypeOverflow:
-			args = append(args, string(cmd.CmdType), string(cmd.OverflowType))
-		default:
-			sign := "u"
-			if cmd.Sign {
-				sign = "i"
-			}
-			itemPosition := fmt.Sprintf("#%d", cmd.ItemPosition)
-			byteSize := fmt.Sprintf("%s%d", sign, cmd.ByteSize)
-			valStr := fmt.Sprintf("%d", cmd.Value)
-			args = append(args, string(cmd.CmdType), byteSize, itemPosition, valStr)
+	defer rows.Close()
+	keys := []string{}
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
 		}
+		keys = append(keys, key)
 	}
+	return keys, rows.Err()
+}
 
-	res, err := c.BitField(context.Background(), key, args...).Result()
+// PurgeExpired - ลบแถวที่หมดอายุ (เรียกเป็นระยะจาก background worker)
+func (c *Cacher) PurgeExpired(ctx context.Context) (int64, error) {
+	result, err := c.db.ExecContext(ctx, `DELETE FROM cache_entries WHERE expires_at IS NOT NULL AND expires_at <= now()`)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-
-	return res, nil
+	return result.RowsAffected()
 }
 
-type BitFieldCmdType string
-
-const (
-	BitFieldCmdTypeIncrBy   BitFieldCmdType = "INCRBY"
-	BitFieldCmdTypeGet      BitFieldCmdType = "GET"
-	BitFieldCmdTypeSet      BitFieldCmdType = "SET"
-	BitFieldCmdTypeOverflow BitFieldCmdType = "OVERFLOW"
-)
-
-type BitFieldOverflowType string
-
-const (
-	BitFieldOverflowTypeWrap BitFieldOverflowType = "WRAP"
-	BitFieldOverflowTypeSat  BitFieldOverflowType = "SAT"
-	BitFieldOverflowTypeFail BitFieldOverflowType = "FAIL"
-)
-
-type BitFieldCmd struct {
-	CacheKey     string
-	CacheExpire  time.Duration
-	CmdType      BitFieldCmdType
-	OverflowType BitFieldOverflowType
-	ByteSize     int
-	Sign         bool // false=unsigned integer, true=signed integer, default is unsigned
-	ItemPosition int
-	Value        interface{}
-}
-
-func (cmd *BitFieldCmd) SetCacheKey(cacheKey string) *BitFieldCmd {
-	cmd.CacheKey = cacheKey
-	return cmd
-}
-
-func (cmd *BitFieldCmd) SetCacheKeyWithExpire(cacheKey string, expire time.Duration) *BitFieldCmd {
-	cmd.CacheKey = cacheKey
-	cmd.CacheExpire = expire
-	return cmd
-}
-
-type BitFieldCmdBuilder struct {
-	cmds []*BitFieldCmd
-}
-
-func NewBitFieldCmdBuilderWithOverflow(firstOverflowType BitFieldOverflowType) *BitFieldCmdBuilder {
-	overflow := NewBitFieldCmdOverflowSat()
-	switch firstOverflowType {
-	case BitFieldOverflowTypeWrap:
-		overflow = NewBitFieldCmdOverflowWrap()
-	case BitFieldOverflowTypeSat:
-		overflow = NewBitFieldCmdOverflowSat()
-	case BitFieldOverflowTypeFail:
-		overflow = NewBitFieldCmdOverflowFail()
-	}
-
-	return &BitFieldCmdBuilder{
-		cmds: []*BitFieldCmd{overflow},
-	}
-}
-
-func NewBitFieldCmdBuilder() *BitFieldCmdBuilder {
-	return &BitFieldCmdBuilder{
-		cmds: []*BitFieldCmd{},
-	}
-}
-
-func (builder *BitFieldCmdBuilder) AddCommand(cmd *BitFieldCmd) {
-	builder.cmds = append(builder.cmds, cmd)
-}
-
-func (builder *BitFieldCmdBuilder) AddCommandByKey(cacheKey string, cmd *BitFieldCmd) {
-	cmd.CacheKey = cacheKey
-	cmd.CacheExpire = 0
-	builder.cmds = append(builder.cmds, cmd)
-}
-
-func (builder *BitFieldCmdBuilder) AddCommandByKeyExpired(cacheKey string, expire time.Duration, cmd *BitFieldCmd) {
-	cmd.CacheKey = cacheKey
-	cmd.CacheExpire = expire
-	builder.cmds = append(builder.cmds, cmd)
-}
-
-func (builder *BitFieldCmdBuilder) Commands() []*BitFieldCmd {
-	return builder.cmds
-}
-
-func (builder *BitFieldCmdBuilder) Size() int {
-	return len(builder.cmds)
-}
-
-func NewBitFieldCmdOverflowWrap() *BitFieldCmd {
-	return &BitFieldCmd{
-		CmdType:      BitFieldCmdTypeOverflow,
-		OverflowType: BitFieldOverflowTypeWrap,
-	}
-}
-
-func NewBitFieldCmdOverflowSat() *BitFieldCmd {
-	return &BitFieldCmd{
-		CmdType:      BitFieldCmdTypeOverflow,
-		OverflowType: BitFieldOverflowTypeSat,
-	}
-}
-
-func NewBitFieldCmdOverflowFail() *BitFieldCmd {
-	return &BitFieldCmd{
-		CmdType:      BitFieldCmdTypeOverflow,
-		OverflowType: BitFieldOverflowTypeFail,
-	}
-}
-
-func NewBitFieldCmdGetU(byteSize int, itemPosition int) *BitFieldCmd {
-	return &BitFieldCmd{
-		CmdType:      BitFieldCmdTypeGet,
-		ByteSize:     byteSize,
-		ItemPosition: itemPosition,
-		Value:        0,
-	}
-}
-
-func NewBitFieldCmdGetU1(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(1, itemPosition)
-}
-
-func NewBitFieldCmdGetU2(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(2, itemPosition)
-}
-
-func NewBitFieldCmdGetU3(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(3, itemPosition)
-}
-
-func NewBitFieldCmdGetU4(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(4, itemPosition)
-}
-
-func NewBitFieldCmdGetU5(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(5, itemPosition)
-}
-
-func NewBitFieldCmdGetU6(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(6, itemPosition)
-}
-
-func NewBitFieldCmdGetU7(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(7, itemPosition)
-}
-
-func NewBitFieldCmdGetU8(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(8, itemPosition)
-}
-
-func NewBitFieldCmdGetU16(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(16, itemPosition)
-}
-
-func NewBitFieldCmdGetU32(itemPosition int) *BitFieldCmd {
-	return NewBitFieldCmdGetU(32, itemPosition)
-}
-
-func NewBitFieldCmdSetU(byteSize int, itemPosition int, value interface{}) *BitFieldCmd {
-	return &BitFieldCmd{
-		CmdType:      BitFieldCmdTypeSet,
-		ByteSize:     byteSize,
-		ItemPosition: itemPosition,
-		Value:        value,
-	}
-}
-
-func NewBitFieldCmdSetU1(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(1, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU2(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(2, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU3(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(3, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU4(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(4, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU5(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(5, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU6(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(6, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU7(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(7, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU8(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(8, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU16(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(16, itemPosition, value)
-}
-
-func NewBitFieldCmdSetU32(itemPosition int, value interface{}) *BitFieldCmd {
-	return NewBitFieldCmdSetU(32, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU(byteSize int, itemPosition int, value int64) *BitFieldCmd {
-	return &BitFieldCmd{
-		CmdType:      BitFieldCmdTypeIncrBy,
-		ByteSize:     byteSize,
-		ItemPosition: itemPosition,
-		Value:        value,
-	}
-}
-
-func NewBitFieldCmdIncrByU1(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(1, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU2(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(2, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU3(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(3, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU4(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(4, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU5(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(5, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU6(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(6, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU7(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(7, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU8(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(8, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU16(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(16, itemPosition, value)
-}
-
-func NewBitFieldCmdIncrByU32(itemPosition int, value int64) *BitFieldCmd {
-	return NewBitFieldCmdIncrByU(32, itemPosition, value)
-}
-
-func NewBitFieldCmdU(cmdType BitFieldCmdType, byteSize int, itemPosition int, value int) *BitFieldCmd {
-	return &BitFieldCmd{
-		CmdType:      cmdType,
-		ByteSize:     byteSize,
-		ItemPosition: itemPosition,
-		Value:        value,
-	}
-}
-
-func NewBitFieldCmdU1(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 1, itemPosition, value)
-}
-
-func NewBitFieldCmdU2(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 2, itemPosition, value)
-}
-
-func NewBitFieldCmdU3(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 3, itemPosition, value)
-}
-
-func NewBitFieldCmdU4(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 4, itemPosition, value)
-}
-
-func NewBitFieldCmdU5(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 5, itemPosition, value)
-}
-
-func NewBitFieldCmdU6(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 6, itemPosition, value)
-}
-
-func NewBitFieldCmdU7(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 7, itemPosition, value)
-}
-
-func NewBitFieldCmdU8(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 8, itemPosition, value)
-}
-
-func NewBitFieldCmdU16(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 16, itemPosition, value)
-}
-
-func NewBitFieldCmdU32(cmdType BitFieldCmdType, itemPosition int, value int) *BitFieldCmd {
-	return NewBitFieldCmdU(cmdType, 32, itemPosition, value)
-}
-
-func (cache *Cacher) Autonumber(name string) (int, error) {
-	key := fmt.Sprintf("autonumber_%s", name)
-	nextNumber, err := cache.Incr(key)
-	if err != nil {
-		return -1, err
-	}
-	return nextNumber, nil
-}
-
-// Pub will publish to subscriber
-func (cache *Cacher) Pub(channel string, message interface{}) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	retriesDelayMs := cache.getRetriesDelayInMs()
-	retries := -1
-	for {
-		retries++
-		if retries > len(retriesDelayMs)-1 {
-			return fmt.Errorf("cacher: retry exceed limits")
-		}
-
-		_, err = c.Publish(context.Background(), channel, message).Result()
-		if err != nil {
-			if cache.isNoConnectionError(err) {
-				time.Sleep(time.Millisecond * time.Duration(retriesDelayMs[retries]))
-				continue
-			}
-			return err
-		}
-
-		return nil
-	}
-}
-
-// Sub subscribe to channel
-func (cache *Cacher) Sub(channels ...string) (<-chan *redis.Message /*subID (used for close)*/, string, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return nil, "", err
-	}
-
-	ps := c.Subscribe(context.Background(), channels...)
-	subID := NewUUID()
-
-	cache.subsribers.Store(subID, &pubsubChannels{
-		ps:       ps,
-		channels: channels,
-	})
-
-	return ps.Channel(), subID, nil
-}
-
-// Unsub will unsub subscriber
-func (cache *Cacher) Unsub(subID string) error {
-	if len(subID) == 0 {
-		return nil
-	}
-
-	psChannels, ok := cache.subsribers.Load(subID)
-	if !ok {
-		return nil
-	}
-	pubsubChannels, ok := psChannels.(*pubsubChannels)
-	if !ok {
-		return nil
-	}
-
-	if pubsubChannels.ps != nil {
-		err := pubsubChannels.ps.Unsubscribe(context.Background(), pubsubChannels.channels...)
-		if err != nil {
-			_, fn, line, _ := runtime.Caller(1)
-			fmt.Println(err.Error(), fn, line)
-		}
-		err = pubsubChannels.ps.Close()
-		if err != nil {
-			_, fn, line, _ := runtime.Caller(1)
-			fmt.Println(err.Error(), fn, line)
-		}
-	}
-
-	cache.subsribers.Delete(subID)
-
+// Close - ฐานข้อมูลเป็นของผู้สร้าง (pool กลาง) จึงไม่ปิดที่นี่
+func (c *Cacher) Close() error {
 	return nil
 }
 
-// Healthcheck return error if health check fail
-func (cache *Cacher) Healthcheck() error {
-	retry := 5
-	// We will try to getClient 5 times
-	for {
-		if retry <= 0 {
-			return fmt.Errorf("Cacher healthcheck failed")
-		}
-		retry--
-
-		_, err := cache.getClient()
-		if err != nil {
-			// Healthcheck failed, wait 250ms then try again
-			time.Sleep(250 * time.Millisecond)
-			continue
-		}
-		return nil
-	}
-}
-
-func (cache *Cacher) LLen(key string) (int64, error) {
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-	return c.LLen(context.Background(), key).Result()
-}
-
-func (cache *Cacher) LSet(key string, index int64, value interface{}) error {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return err
-	}
-
-	str, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	intCmd := c.LSet(context.Background(), key, index, str)
-	err = intCmd.Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Find Position of value in list not work with redis lower 6.0.0
-func (cache *Cacher) LPos(key string, value interface{}) (int64, error) {
-
-	c, err := cache.getClient()
-	if err != nil {
-		return 0, err
-	}
-
-	str, err := json.Marshal(value)
-	if err != nil {
-		return 0, err
-	}
-
-	intCmd := c.LPos(context.Background(), key, string(str), redis.LPosArgs{
-		Rank:   0,
-		MaxLen: 1,
-	})
-	err = intCmd.Err()
-
-	if err != nil {
-		return 0, err
-	}
-
-	return intCmd.Val(), nil
+func (c *Cacher) Healthcheck() error {
+	ctx, cancel := cacheCtx()
+	defer cancel()
+	return c.db.PingContext(ctx)
 }

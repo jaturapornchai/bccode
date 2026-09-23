@@ -9,8 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
+	"smlcloudplatform/internal/whtcert"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -575,6 +577,12 @@ func TaxWithholdingHandler(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// กลุ่มกิจการใหม่ที่ยังไม่เคยเปิด GL ต้องเห็นรายงานว่าง ไม่ใช่ error เพราะยังไม่มีตาราง gl_*
+	if err := generalledger.EnsureSchema(ctx, db); err != nil {
+		logger.Error("TaxWithholding: ensure GL schema: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]any{"success": false, "code": "QUERY_ERROR", "message": "Query execution failed"})
+	}
+
 	report, err := buildWithholdingReport(ctx, db, businessCode, req.Year, req.Month, req.Direction, req.Forms)
 	if err != nil {
 		logger.Error("TaxWithholding: %v", err)
@@ -716,7 +724,7 @@ LIMIT $5`
 			return report, err
 		}
 		row.WhtAmount, row.BaseAmount = moneyText(row.wht), moneyText(row.base)
-		row.WhtText = thaiBahtText(row.wht)
+		row.WhtText = whtcert.BahtText(row.wht)
 		row.NetAmount = moneyText(row.base.Sub(row.wht))
 		if row.base.Sign() > 0 {
 			row.RatePercent = moneyText(row.wht.Mul(decimal.NewFromInt(100)).Div(row.base))
@@ -793,7 +801,7 @@ func summarizeWithholding(rows []TaxWithholdingRow) TaxWithholdingSummary {
 	return TaxWithholdingSummary{
 		BaseTotal:    moneyText(baseTotal),
 		WhtTotal:     moneyText(whtTotal),
-		WhtTotalText: thaiBahtText(whtTotal),
+		WhtTotalText: whtcert.BahtText(whtTotal),
 		NetTotal:     moneyText(baseTotal.Sub(whtTotal)),
 		PayeeCount:   len(payees),
 		ByRate:       byRate,

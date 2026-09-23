@@ -34,7 +34,6 @@ import {
   isApprovalCodesField,
   isEmployeeCodeField,
   isEmployeeNameField,
-  isProductVariantStructuredField,
   isBranchStructuredSettingField,
   isBranchLatitudeField,
   isBranchLongitudeField,
@@ -64,7 +63,6 @@ import {
 import { HoldingScopeRulesEditor } from "./field-editors/holding-scope-editor";
 import { PermissionSetsEditor } from "./field-editors/permission-sets-editor";
 import {
-  ProductVariantStructuredFieldEditor,
   BranchStructuredSettingEditor,
   TimeSaleListEditor,
   BankAccountsEditor,
@@ -111,18 +109,6 @@ export function FieldEditor({
   const helper =
     field.helper?.[language] ?? field.helper?.en ?? field.helper?.th;
   const value = form[field.key];
-
-  if (isProductVariantStructuredField(config, field)) {
-    return (
-      <ProductVariantStructuredFieldEditor
-        field={field}
-        form={form}
-        label={label}
-        language={language}
-        setForm={setForm}
-      />
-    );
-  }
 
   if (config.slug === "permissiondefinition" && isPermissionAccessRulesField(field)) {
     return (

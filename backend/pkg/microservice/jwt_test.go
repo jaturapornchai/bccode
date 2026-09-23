@@ -1,7 +1,6 @@
 package microservice
 
 import (
-	"smlcloudplatform/internal/config"
 	"smlcloudplatform/pkg/microservice/models"
 	"testing"
 )
@@ -10,35 +9,9 @@ const (
 	jwtKey = "946796991b2ece76900bfbc65612debc2e54554ef692cef6ec52181abe063d4d"
 )
 
-type TestCacherConfig struct{}
-
-func (cfg *TestCacherConfig) Endpoint() string {
-	return "127.0.0.1:6379"
-}
-
-func (cfg *TestCacherConfig) Password() string {
-	return ""
-}
-
-func (cfg *TestCacherConfig) DB() int {
-	return 0
-}
-
-func (cfg *TestCacherConfig) ConnectionSettings() config.ICacherConnectionSettings {
-	return config.NewDefaultCacherConnectionSettings()
-}
-
-func (cfg *TestCacherConfig) UserName() string {
-	return ""
-}
-
-func (cfg *TestCacherConfig) TLS() bool {
-	return false
-}
-
 func TestGenerateToken(t *testing.T) {
 
-	cacher := NewCacher(&TestCacherConfig{})
+	cacher := ICacher(nil)
 
 	jwtService := NewJwtService(cacher, jwtKey, 60*24*10)
 
@@ -60,7 +33,7 @@ func TestGenerateToken(t *testing.T) {
 
 func TestParseToken(t *testing.T) {
 
-	cacher := NewCacher(&TestCacherConfig{})
+	cacher := ICacher(nil)
 
 	jwtService := NewJwtService(cacher, jwtKey, 60*24*10)
 
@@ -95,7 +68,7 @@ func TestParseToken(t *testing.T) {
 
 func TestParseTokenReal(t *testing.T) {
 
-	cacher := NewCacher(&TestCacherConfig{})
+	cacher := ICacher(nil)
 	jwtService := NewJwtService(cacher, jwtKey, 60*24*10)
 
 	tokenGen, err := jwtService.GenerateToken(models.UserInfo{Username: "u001", Name: "My Name"})

@@ -1,73 +1,35 @@
 "use client";
 
 import {
-  ArrowRight,
-  ClipboardList,
-  Clock3,
   Plus,
   Settings2,
   Star,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { authFetch } from "@/lib/client-auth-session";
 import type { LanguageCode } from "@/lib/i18n";
+import { isMenuScreenPending } from "@/lib/menu-screen-status";
 import { menuText, type MenuItem } from "@/lib/menu-data";
 import { MenuRouteIcon } from "./menu-icon";
 import { MenuPendingBadge } from "./menu-pending-badge";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
 import type { FrequentMenuEntry } from "@/lib/menu-usage";
 import { backendText, type BackendLanguageDictionary } from "@/lib/backend-language";
-import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
+import type { AuthSession } from "@/lib/workspace-models";
 import {
   readUserShortcuts,
   userShortcutsStorageKey,
 } from "@/lib/user-shortcuts";
 
 /**
- * หน้าแรก = "งานของฉันวันนี้" ประกอบจาก widget ตามสิทธิ์จอ (allowedMenuIds = union ชุดสิทธิ์)
- * แถว 1 เอกสารที่ดูแล (จำนวน + กดไปจอ) · แถว 2 ทางลัดที่ใช้บ่อย · แถว 3 ความเคลื่อนไหวล่าสุด
- * Widget แสดงเฉพาะเมื่อมีสิทธิ์เข้าจอนั้น (fail-closed) — ไม่มี = ไม่แสดง ไม่ใช่เลข 0
+ * หน้าแรก = "งานของฉันวันนี้" ประกอบจากทางลัดตามสิทธิ์จอ (allowedMenuIds = union ชุดสิทธิ์)
+ * วิดเจ็ตสรุปเอกสาร/ความเคลื่อนไหวล่าสุดถูกถอดออก 2026-09-23 พร้อมกับ API /transaction/{docType}/list ฝั่ง MongoDB
+ * (ดูกฎ "ห้ามเพิ่ม MongoDB/Kafka/Redis/ClickHouse กลับมา" ใน AGENTS.md) — เหลือเฉพาะทางลัดของฉัน
  */
-
-// เอกสารที่มี list endpoint (mainapi root) — key = menu id ที่ใช้ตรวจสิทธิ์
-const DOC_WIDGETS: { menuId: string; path: string; party: "custnames" | "creditornames" | null }[] = [
-  { menuId: "quotation", path: "/transaction/quotation/list", party: "custnames" },
-  { menuId: "sale-order", path: "/transaction/sale-order/list", party: "custnames" },
-  { menuId: "sale", path: "/transaction/sale-invoice/list", party: "custnames" },
-  { menuId: "purchase-requisition", path: "/transaction/purchase-requisition/list", party: null },
-  { menuId: "purchase-order", path: "/transaction/purchase-order/list", party: "creditornames" },
-  { menuId: "purchase", path: "/transaction/purchase/list", party: "creditornames" },
-  { menuId: "stock-transfer", path: "/transaction/stock-transfer/list", party: null },
-  { menuId: "stock-adjust", path: "/transaction/stock-adjustment/list", party: null },
-];
-
-type DocRecord = Record<string, unknown>;
-type DocStat = { total: number; latest: DocRecord[] };
-
-function localizedName(value: unknown, language: LanguageCode): string {
-  if (!Array.isArray(value)) return "";
-  const list = value as { code?: string; name?: string }[];
-  return list.find((n) => n.code === language && n.name)?.name ?? list.find((n) => n.name)?.name ?? "";
-}
-
-function dateText(value: unknown, language: LanguageCode): string {
-  const d = typeof value === "string" ? new Date(value) : null;
-  if (!d || Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(language === "th" ? "th-TH" : "en-GB", { day: "numeric", month: "short" });
-}
-
-function money(value: unknown, language: LanguageCode): string {
-  const n = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(n) || n === 0) return "";
-  return n.toLocaleString(language === "th" ? "th-TH" : "en-US", { maximumFractionDigits: 2 });
-}
 
 export function DashboardHome({
   auth,
-  workspace,
   language,
   backendLanguage,
-  mainApiUrl,
   allowedMenuIds,
   allMenuItems,
   frequentMenuEntries,
@@ -75,64 +37,23 @@ export function DashboardHome({
   onOpenManageShortcuts,
 }: {
   auth: AuthSession | null;
-  workspace: WorkspaceSession | null;
   language: LanguageCode;
   backendLanguage: BackendLanguageDictionary;
-  mainApiUrl: string;
   allowedMenuIds: Set<string>;
   allMenuItems: MenuItem[];
   frequentMenuEntries: FrequentMenuEntry[];
   onOpenItem: (item: MenuItem) => void;
   onOpenManageShortcuts?: () => void;
 }) {
-  const isThai = language === "th";
   const itemById = useMemo(() => new Map(allMenuItems.map((item) => [item.id, item])), [allMenuItems]);
-  const widgets = useMemo(() => DOC_WIDGETS.filter((w) => allowedMenuIds.has(w.menuId) && itemById.has(w.menuId)), [allowedMenuIds, itemById]);
-  const [stats, setStats] = useState<Record<string, DocStat>>({});
-  const [loading, setLoading] = useState(false);
-  const branchCode = workspace?.branch?.code ?? "";
-  const token = auth?.token ?? "";
-
-  useEffect(() => {
-    if (!token || !mainApiUrl || widgets.length === 0) {
-      setStats({});
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      const next: Record<string, DocStat> = {};
-      await Promise.all(
-        widgets.map(async (w) => {
-          try {
-            const response = await authFetch(`${mainApiUrl}${w.path}?limit=5&offset=0&page=1&q=`, {
-              headers: { Authorization: `Bearer ${token}` },
-              cache: "no-store",
-            });
-            if (!response.ok) return;
-            const payload = (await response.json()) as { data?: unknown; total?: unknown };
-            const latest = Array.isArray(payload.data) ? (payload.data as DocRecord[]) : [];
-            next[w.menuId] = { total: typeof payload.total === "number" ? payload.total : latest.length, latest };
-          } catch {
-            // widget เงียบเมื่อโหลดไม่ได้ — จอเข้าได้อยู่แล้วผ่านเมนู
-          }
-        }),
-      );
-      if (!cancelled) {
-        setStats(next);
-        setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [token, mainApiUrl, widgets, branchCode]);
 
   // ทางลัดเริ่มต้น (Smart Fallback: เมนูที่ใช้บ่อย หรือเมนูที่มีสิทธิ์ 8 รายการแรก)
   const defaultShortcutIds = useMemo(() => {
-    const frequent = frequentMenuEntries.map((e) => e.item.id).filter((id) => allowedMenuIds.has(id));
+    const frequent = frequentMenuEntries.filter((e) => !isMenuScreenPending(e.item.route)).map((e) => e.item.id).filter((id) => allowedMenuIds.has(id));
     if (frequent.length >= 4) return frequent.slice(0, 8);
+    // ข้ามจอที่ยังไม่พร้อม — ผู้ใช้ GL อย่างเดียวต้องไม่เจอทางลัดเริ่มต้นที่ขึ้น "รอพัฒนา"
     const fallback = allMenuItems
+      .filter((item) => !isMenuScreenPending(item.route))
       .map((item) => item.id)
       .filter((id) => allowedMenuIds.has(id) && !frequent.includes(id));
     return [...frequent, ...fallback].slice(0, 8);
@@ -175,18 +96,6 @@ export function DashboardHome({
     }
   };
 
-  // ความเคลื่อนไหว: รวมเอกสารล่าสุดทุกประเภท เรียงวันที่
-  const recent = useMemo(() => {
-    const rows: { widget: (typeof DOC_WIDGETS)[number]; doc: DocRecord; at: number }[] = [];
-    for (const w of widgets) {
-      for (const doc of stats[w.menuId]?.latest ?? []) {
-        const at = typeof doc.docdatetime === "string" ? Date.parse(doc.docdatetime) : 0;
-        rows.push({ widget: w, doc, at: Number.isFinite(at) ? at : 0 });
-      }
-    }
-    return rows.sort((a, b) => b.at - a.at).slice(0, 8);
-  }, [widgets, stats]);
-
   // If in standalone manage mode, render dedicated ManageShortcutsScreen
   if (isManageMode) {
     return (
@@ -207,41 +116,6 @@ export function DashboardHome({
 
   return (
     <div className="grid min-w-0 gap-2" aria-label="overview">
-      {widgets.length > 0 ? (
-        <section className="grid gap-1.5">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <ClipboardList className="size-4 text-primary" aria-hidden="true" />
-            {t("menu_your_documents", "เอกสารที่ดูแล")}
-            <span className="text-xs font-normal text-muted-foreground">
-              {workspace?.branch ? `· ${localizedName(workspace.branch.names, language) || workspace.branch.code}` : ""}
-            </span>
-          </h2>
-          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
-            {widgets.map((w) => {
-              const item = itemById.get(w.menuId)!;
-              const stat = stats[w.menuId];
-              return (
-                <button
-                  key={w.menuId}
-                  type="button"
-                  onClick={() => onOpenItem(item)}
-                  className="group grid min-w-0 gap-0.5 rounded-xl border border-border bg-card p-2 text-left shadow-sm transition-colors hover:border-primary/50 hover:bg-primary/5"
-                >
-                  <span className="truncate text-xs text-muted-foreground">{menuText(item.label, language, backendLanguage)}</span>
-                  <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
-                  <span className="text-xl font-bold tabular-nums text-foreground">
-                    {loading && !stat ? "…" : (stat?.total ?? 0).toLocaleString(isThai ? "th-TH" : "en-US")}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                    {t("menu_open", "เปิดจอ")} <ArrowRight className="size-3" aria-hidden="true" />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
       <section className="grid gap-1.5" aria-label="shortcuts-section">
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
@@ -290,45 +164,7 @@ export function DashboardHome({
         </div>
       </section>
 
-      {widgets.length > 0 ? (
-        <section className="grid gap-1.5">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Clock3 className="size-4 text-primary" aria-hidden="true" />
-            {t("menu_recent_activity", "ความเคลื่อนไหวล่าสุด")}
-          </h2>
-          {recent.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border bg-card p-3 text-sm text-muted-foreground">
-              {loading ? t("menu_loading", "กำลังโหลด…") : t("menu_no_documents_yet_start_shortcut", "ยังไม่มีเอกสาร — เริ่มจากทางลัดด้านบนได้เลย")}
-            </p>
-          ) : (
-            <ul className="grid gap-1 rounded-xl border border-border bg-card p-1.5 shadow-sm">
-              {recent.map(({ widget, doc }, index) => {
-                const item = itemById.get(widget.menuId)!;
-                const party = widget.party ? localizedName(doc[widget.party], language) : "";
-                return (
-                  <li key={`${widget.menuId}-${String(doc.docno ?? index)}`}>
-                    <button
-                      type="button"
-                      onClick={() => onOpenItem(item)}
-                      className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg px-2 py-1 text-left text-xs transition-colors hover:bg-primary/5"
-                    >
-                      <span className="w-12 shrink-0 text-xs text-muted-foreground">{dateText(doc.docdatetime, language)}</span>
-                      <span className="min-w-0 truncate">
-                        <b className="font-semibold">{menuText(item.label, language, backendLanguage)}</b>
-                        {doc.docno ? <span className="text-muted-foreground"> · {String(doc.docno)}</span> : null}
-                        {party ? <span className="text-muted-foreground"> · {party}</span> : null}
-                      </span>
-                      <span className="text-xs font-semibold tabular-nums text-foreground">{money(doc.totalamount ?? doc.totalvalue, language)}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      ) : null}
-
-      {widgets.length === 0 && shortcuts.length === 0 ? (
+      {shortcuts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
           {t("menu_no_screens_available_yet_ask_admin", "ยังไม่มีสิทธิ์เข้าจอใด — ติดต่อผู้ดูแลเพื่อรับสิทธิ์การใช้งาน")}
         </p>

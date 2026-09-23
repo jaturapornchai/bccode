@@ -39,7 +39,7 @@ func TestPostgresDecimal128BoundaryAndBSONEventReplay(t *testing.T) {
 	event.Delivered = true
 	event.OccurredAt = event.OccurredAt.Truncate(time.Millisecond)
 	if err = p.Project(ctx, event); err != nil {
-		t.Fatalf("Mongo round-trip duplicate: %v", err)
+		t.Fatalf("duplicate projection: %v", err)
 	}
 	var saved string
 	if err = db.QueryRow(`SELECT debit::text FROM gl_lines WHERE company='A' AND account_code='1000'`).Scan(&saved); err != nil {

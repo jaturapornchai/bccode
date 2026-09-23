@@ -18,12 +18,10 @@ var postgresSchema string
 
 type Postgres struct {
 	resolve func(string) (*sql.DB, error)
-	mu      sync.Mutex
-	ready   map[*sql.DB]bool
 }
 
 func NewPostgres(resolve func(string) (*sql.DB, error)) *Postgres {
-	return &Postgres{resolve: resolve, ready: make(map[*sql.DB]bool)}
+	return &Postgres{resolve: resolve}
 }
 
 var _ Projection = (*Postgres)(nil)
@@ -39,30 +37,44 @@ func (p *Postgres) database(ctx context.Context, holding string) (*sql.DB, error
 	if db == nil {
 		return nil, fmt.Errorf("ฐานประมวลผลยังไม่พร้อม")
 	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.ready[db] {
-		return db, nil
+	if err := EnsureSchema(ctx, db); err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+var (
+	schemaMu    sync.Mutex
+	schemaReady = map[*sql.DB]bool{}
+)
+
+// EnsureSchema สร้างตาราง GL (schema.sql + subledger.sql) ในฐานของ holding ครั้งแรกที่ใช้ — ใช้ร่วมกับรายงานที่อ่าน
+// gl_* ตรง (เช่น ภาษีหัก ณ ที่จ่าย) เพื่อให้กลุ่มกิจการใหม่เห็นรายงานว่างแทนที่จะ error เพราะยังไม่มีตาราง
+func EnsureSchema(ctx context.Context, db *sql.DB) error {
+	schemaMu.Lock()
+	defer schemaMu.Unlock()
+	if schemaReady[db] {
+		return nil
 	}
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtext('bc_general_ledger_schema'))`); err != nil {
-		return nil, err
+		return err
 	}
 	if _, err = tx.ExecContext(ctx, postgresSchema); err != nil {
-		return nil, err
+		return err
 	}
 	if _, err = tx.ExecContext(ctx, subledgerSchema); err != nil {
-		return nil, err
+		return err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, err
+		return err
 	}
-	p.ready[db] = true
-	return db, nil
+	schemaReady[db] = true
+	return nil
 }
 
 func lockCompany(ctx context.Context, tx *sql.Tx, company string) error {

@@ -22,11 +22,6 @@ type DatabaseManagerConfig struct {
 	PostgreSQLUser     string
 	PostgreSQLPassword string
 	PostgreSQLSSLMode  string
-
-	ClickHouseHost     string
-	ClickHousePort     string
-	ClickHouseUser     string
-	ClickHousePassword string
 }
 
 var (
@@ -55,11 +50,6 @@ func GetGlobalManagerPool() *ManagerPool {
 			PostgreSQLUser:     getEnv("POSTGRES_USER", "postgres"),
 			PostgreSQLPassword: getEnv("POSTGRES_PASSWORD", ""),
 			PostgreSQLSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
-
-			ClickHouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
-			ClickHousePort:     getEnv("CLICKHOUSE_PORT", "9000"),
-			ClickHouseUser:     getEnv("CLICKHOUSE_USER", "default"),
-			ClickHousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
 		}
 		InitManagerPool(defaultConfig)
 	}
@@ -104,12 +94,6 @@ func (p *ManagerPool) GetManager(holdingCode string) (*DatabaseManager, error) {
 		PostgreSQLPassword: p.config.PostgreSQLPassword,
 		PostgreSQLDatabase: holdingCode,
 		PostgreSQLSSLMode:  p.config.PostgreSQLSSLMode,
-
-		ClickHouseHost:     p.config.ClickHouseHost,
-		ClickHousePort:     p.config.ClickHousePort,
-		ClickHouseUser:     p.config.ClickHouseUser,
-		ClickHousePassword: p.config.ClickHousePassword,
-		ClickHouseDatabase: holdingCode,
 	}
 
 	logger.Info("สร้าง DatabaseManager ใหม่สำหรับ shop=%s", holdingCode)

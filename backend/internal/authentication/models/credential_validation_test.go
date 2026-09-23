@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson"
 	msvalidator "smlcloudplatform/pkg/validator"
 )
 
@@ -35,23 +34,6 @@ func TestUsercodeNormalizationAndValidation(t *testing.T) {
 				t.Fatalf("IsValidUsercode(%q) = %v, want %v", test.usercode, got, test.valid)
 			}
 		})
-	}
-}
-
-func TestGoogleOnlyUserOmitsUnsetPasswordCredentialsFromMongo(t *testing.T) {
-	raw, err := bson.Marshal(UserDoc{EmailField: EmailField{Email: "user@example.com"}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	var document bson.M
-	if err := bson.Unmarshal(raw, &document); err != nil {
-		t.Fatal(err)
-	}
-	if _, exists := document["username"]; exists {
-		t.Fatal("unset username must be omitted so the sparse unique index remains usable")
-	}
-	if _, exists := document["password"]; exists {
-		t.Fatal("Google-only user must not persist an empty password field")
 	}
 }
 

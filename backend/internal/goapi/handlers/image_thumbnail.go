@@ -19,8 +19,8 @@ const (
 	storageImageThumbnailQuality      = 82
 )
 
-// storageThumbnailObjectKey derives a collision-safe key without changing the
-// MongoDB image document. Keeping the original extension in the key also keeps
+// storageThumbnailObjectKey derives a collision-safe key next to the original
+// object. Keeping the original extension in the key also keeps
 // foo.jpg and foo.png thumbnails distinct.
 func storageThumbnailObjectKey(objectKey string) string {
 	objectKey = storageNormalizeObjectKey(objectKey)

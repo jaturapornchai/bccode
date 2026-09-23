@@ -12,13 +12,6 @@ type IConfig interface {
 	IsDebugMode() bool
 	PathPrefix() string
 	PersisterConfig() IPersisterConfig
-	MongoPersisterConfig() IPersisterMongoConfig
-	ClickHouseConfig() IPersisterClickHouseConfig
-	ElkPersisterConfig() IPersisterElkConfig
-	OpenSearchPersisterConfig() IPersisterOpenSearchConfig
-	CacherConfig() ICacherConfig
-	MQConfig() IMQConfig
-	TopicName() string
 	HttpCORS() []string
 
 	// SignKeyPath() string
@@ -26,7 +19,6 @@ type IConfig interface {
 	JwtSecretKey() string
 	HttpConfig() IHttpConfig
 	LoggerConfig() ILoggerConfig
-	ProductGroupServiceConfig() IProductGroupServiceConfig
 	LineClientId() string
 	GoogleClientId() string
 }
@@ -87,18 +79,6 @@ func (*Config) PersisterConfig() IPersisterConfig {
 	return NewPersisterConfig()
 }
 
-func (cfg *Config) MongoPersisterConfig() IPersisterMongoConfig {
-	return NewMongoPersisterConfig()
-}
-
-func (cfg *Config) ClickHouseConfig() IPersisterClickHouseConfig {
-	return NewPersisterClickHouseConfig()
-}
-
-func (*Config) TopicName() string {
-	return os.Getenv("TOPIC_NAME")
-}
-
 func (*Config) HttpCORS() []string {
 	rawCORS := getEnv("HTTP_CORS", "*")
 
@@ -117,30 +97,12 @@ func (*Config) JwtSecretKey() string {
 	return getEnv("JWT_SECRET_KEY", "")
 }
 
-func (cfg *Config) ElkPersisterConfig() IPersisterElkConfig {
-	return NewPersisterElkConfig()
-}
-
-func (cfg *Config) OpenSearchPersisterConfig() IPersisterOpenSearchConfig {
-	return NewPersisterOpenSearchConfig()
-}
-
-///
-
-func (cfg *Config) CacherConfig() ICacherConfig {
-	return NewCacherConfig()
-}
-
 func (*Config) HttpConfig() IHttpConfig {
 	return NewHttpConfig()
 }
 
 func (*Config) LoggerConfig() ILoggerConfig {
 	return NewLoggerConfig()
-}
-
-func (*Config) ProductGroupServiceConfig() IProductGroupServiceConfig {
-	return NewProductGroupServiceConfig()
 }
 
 func (*Config) LineClientId() string {

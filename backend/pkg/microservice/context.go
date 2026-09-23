@@ -26,9 +26,6 @@ type IContext interface {
 	Request() *http.Request
 
 	Persister(cfg config.IPersisterConfig) IPersister
-	Cacher(cacherConfig config.ICacherConfig) ICacher
-	Producer(servers config.IMQConfig) IProducer
-	MQ(servers config.IMQConfig) IMQ
 
 	EchoContext() echo.Context
 }

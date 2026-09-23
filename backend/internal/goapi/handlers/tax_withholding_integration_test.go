@@ -11,6 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// ใช้ env แยก (BC_TAX_TEST_POSTGRES_DSN) เพราะต้องการฐานที่ seed แล้ว — verify.sh postgres ใช้ฐานเปล่าจึงข้ามเคสนี้
 // TestTaxWithholdingReportFromGL ตรวจรายงานภาษีหัก ณ ที่จ่ายกับฐานทดสอบที่มีข้อมูล GL จริง
 // (seed ผ่าน backend/cmd/glseed — ใบจ่ายเจ้าหนี้หัก 3% และใบค่าเช่าหัก 5% ลงบัญชี ภ.ง.ด.53)
 //
@@ -19,11 +20,11 @@ import (
 //	docker run -d --name bc-gl-wht-test-pg18 -e POSTGRES_HOST_AUTH_METHOD=trust \
 //	  -e POSTGRES_DB=restore -p 127.0.0.1:55443:5432 postgres:18-alpine
 //	(restore ฐาน rungrueng + รัน glseed -apply ตาม docs)
-//	BC_GL_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:55443/rungrueng?sslmode=disable'
+//	BC_TAX_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:55443/rungrueng?sslmode=disable'
 func TestTaxWithholdingReportFromGL(t *testing.T) {
-	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
+	dsn := os.Getenv("BC_TAX_TEST_POSTGRES_DSN")
 	if dsn == "" {
-		t.Skip("set BC_GL_TEST_POSTGRES_DSN to a GL test database with seeded WHT journals")
+		t.Skip("set BC_TAX_TEST_POSTGRES_DSN to a GL test database with seeded WHT journals")
 	}
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -119,9 +120,9 @@ func TestTaxWithholdingReportFromGL(t *testing.T) {
 // (ตาราง ERP มีเฉพาะใน bcai_projection ไม่มีในฐาน Holding — ดู docs/kms/bugs/2026-09-23-vat-report-reads-missing-erp-tables.md)
 // (คอลัมน์ยอดเงิน ERP ยังเป็น double precision — ต้องแปลงเป็น numeric ได้โดยไม่ error)
 func TestTaxVatQueriesRunOnRealSchema(t *testing.T) {
-	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
+	dsn := os.Getenv("BC_TAX_TEST_POSTGRES_DSN")
 	if dsn == "" {
-		t.Skip("set BC_GL_TEST_POSTGRES_DSN to a restored Holding database")
+		t.Skip("set BC_TAX_TEST_POSTGRES_DSN to a restored Holding database")
 	}
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

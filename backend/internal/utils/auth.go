@@ -1,14 +1,7 @@
 package utils
 
 import (
-	"context"
-	"fmt"
-	"smlcloudplatform/internal/shop/models"
-	"smlcloudplatform/pkg/microservice"
 	"strings"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func NormalizeUsername(username string) string {
@@ -31,37 +24,4 @@ func NormalizeEmail(email string) string {
 func NormalizeName(username string) string {
 	username = strings.TrimSpace(username)
 	return username
-}
-
-func HasPermissionShop(pst microservice.IPersisterMongo, ctx microservice.IContext) (bool, error) {
-
-	holdingCode := ctx.Param("holdingcode")
-
-	return HasPermissionShopByID(pst, ctx, holdingCode)
-}
-
-func HasPermissionShopByID(pst microservice.IPersisterMongo, ctx microservice.IContext, holdingCode string) (bool, error) {
-
-	authUsername := ctx.UserInfo().Username
-
-	if len(holdingCode) < 1 {
-		return false, fmt.Errorf("shop not found")
-	}
-
-	pstContect, pstContextCancel := context.WithTimeout(context.Background(), time.Duration(15)*time.Second)
-	defer pstContextCancel()
-
-	shop := &models.ShopDoc{}
-
-	pst.FindOne(pstContect, &models.Shop{}, bson.M{"guidfixed": holdingCode, "deletedat": bson.M{"$exists": false}}, shop)
-
-	if len(shop.GuidFixed) < 1 {
-		return false, fmt.Errorf("shop invalid")
-	}
-
-	if shop.CreatedBy != authUsername {
-		return false, fmt.Errorf("username invalid")
-	}
-
-	return true, nil
 }

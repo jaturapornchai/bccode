@@ -9,7 +9,7 @@ import { getThaiTaxConfig } from "./thai-tax";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
-  "/shortcuts", "/line-oa", "/product",
+  "/shortcuts", "/product",
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph", "/inventory/product-sets", "/productset",
 ] as const;
@@ -31,9 +31,30 @@ const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
 const pendingRoutes = new Set<string>([]);
 
 /** A connected screen is not a guarantee that its business workflow is complete. */
+// 2026-09-23: ระบบใช้ PostgreSQL อย่างเดียว (ถอด MongoDB/Kafka/Redis/ClickHouse) — จอเหล่านี้เคยอ่าน/เขียนผ่าน
+// API บน MongoDB ซึ่งถูกลบไปแล้ว จึงเป็น "ยังไม่พร้อม" จนกว่าจะสร้าง API บน PostgreSQL ให้ (แล้วค่อยเอาออกจากรายการนี้)
+const RETIRED_BACKEND_ROUTES = new Set<string>([
+  "/line-oa", "/product", "/productbarcode", "/productbarcodeshelf",
+  "/pricehistory", "/inventory/product-sets", "/productset",
+]);
+
+// ข้อมูลตั้งค่าที่ backend PostgreSQL ยังให้บริการ
+const POSTGRES_SETTING_BASE_PATHS = new Set<string>([
+  "/organization/business-type", "/organization/branch",
+  "/holding/employee", "/holding/permission", "/organization/role-permission",
+]);
+
+export function isMenuBackendRetired(route: string): boolean {
+  const clean = route.split("?")[0];
+  if (RETIRED_BACKEND_ROUTES.has(clean) || isErpTransactionRoute(clean) || isOperationsRoute(clean)) return true;
+  const setting = getSystemSettingConfig(clean);
+  return Boolean(setting?.basePath && !POSTGRES_SETTING_BASE_PATHS.has(setting.basePath));
+}
+
 export function isMenuScreenPending(route: string): boolean {
   return (
     pendingRoutes.has(route) ||
+    isMenuBackendRetired(route) ||
     (!customRoutes.has(route) &&
       !isGeneralLedgerRoute(route) &&
       !isFixedAssetRoute(route) &&
@@ -48,7 +69,9 @@ export function isMenuScreenPending(route: string): boolean {
 
 
 // แบบภาษีที่มี API จริงแล้ว (ที่เหลือยังไม่มีตารางภาษีหัก ณ ที่จ่ายใน backend)
-const LIVE_TAX_FORMS = new Set(["vat_sale", "vat_buy", "pp30"]);
+// 2026-09-23: ภาษีหัก ณ ที่จ่ายอ่านจากบัญชีแยกประเภท (gl_lines) จริง; ภาษีซื้อ/ขาย/ภ.พ.30/36 ยังอ่านตารางเอกสารซื้อขาย
+// ของระบบอื่นที่ผู้ใช้ GL อย่างเดียวไม่มี → "รอเชื่อมข้อมูล" จนกว่าจะมีรายละเอียด VAT ในใบสำคัญ GL
+const LIVE_TAX_FORMS = new Set(["pnd2", "pnd3", "pnd53", "50twi", "wht_received", "wht_summary"]);
 
 /**
  * จอเปิดใช้งานแล้ว แต่ยังไม่มี API จริงป้อนข้อมูลให้

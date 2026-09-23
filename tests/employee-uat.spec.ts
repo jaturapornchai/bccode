@@ -1,11 +1,12 @@
-import { execSync } from 'child_process';
 import { expect, test, type Page } from '@playwright/test';
+import { pgCount, pgQuery, sqlText } from './support/pg';
 
 /**
  * Employee UAT (2026-08-30) — "เพิ่มพนักงาน 10 คน UAT CRUD ด้วย"
  * Screen: /employee (generic main-crud, API /api/system-settings/employee,
- * Mongo collection `employees` under holdingcode bc001).
- * Rules applied: seeded-random data, MongoDB verified AFTER EVERY step
+ * PostgreSQL table `employees` in bcai_projection under holding_code bc001;
+ * delete = soft (is_enabled = false)).
+ * Rules applied: seeded-random data, PostgreSQL verified AFTER EVERY step
  * (create→check, update→check, delete→check), side-effect check (other rows
  * survive), cleanup only by exact ids. The 10 seeded employees STAY in the
  * system (user asked to add them); one sacrificial temp row proves Delete.
@@ -17,24 +18,6 @@ import { expect, test, type Page } from '@playwright/test';
 
 const SHOT = 'test-results/employee-uat';
 const consoleErrors: string[] = [];
-
-function mongoEval(js: string): string {
-  const cmd = `docker exec mongodb mongosh --quiet appdb --eval "${js.replace(/"/g, '\\"')}"`;
-  // docker exec can blip transiently (seen once: E-01 verify step) — retry once
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      return execSync(cmd, { timeout: 45000 }).toString().trim().split('\n').pop() ?? '';
-    } catch (err) {
-      lastErr = err;
-      if (attempt < 2) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500); // sync sleep
-    }
-  }
-  throw lastErr;
-}
-function mongoCount(coll: string, query: string): number {
-  return Number(mongoEval(`print(db.${coll}.countDocuments(${query}))`));
-}
 
 async function shoot(page: Page, name: string) {
   await page.screenshot({ path: `${SHOT}/${name}.png` });
@@ -104,6 +87,9 @@ const EMPLOYEES = Array.from({ length: 10 }, (_, i) => ({
   email: i % 3 === 0 ? `uatemp${i + 1}@uat.test` : '',
   pin: String(100000 + Math.floor(rnd() * 899999)),
 }));
+/** exact UAT codes as a SQL list — cleanup/count by exact code, never a pattern */
+const UAT_CODES_SQL = EMPLOYEES.map((e) => sqlText(e.code)).join(', ');
+const EMP_WHERE = `holding_code = 'bc001'`;
 
 /** row for one employee — self-heals the screen first, then waits patiently */
 async function listRow(page: Page, code: string) {
@@ -144,27 +130,27 @@ test.afterEach(async ({ page }) => {
   await page.context().storageState({ path: '.auth/user.json' }).catch(() => {});
 });
 
-test('E-01 CREATE ×10 employees — Mongo verified after EACH create', async ({ page }) => {
+test('E-01 CREATE ×10 employees — PostgreSQL verified after EACH create', async ({ page }) => {
   test.setTimeout(420000);
   await openEmployeeScreen(page);
   page.on('pageerror', (e) => consoleErrors.push(`employee: ${e.message}`));
 
   // pre-clean my own exact codes from any previous attempt (scoped: exact prefix + holding)
-  execSync('docker exec mongodb mongosh --quiet appdb --eval "db.employees.deleteMany({holdingcode: \'bc001\', code: {$regex: \'^UATEMP[0-9]{2}$\'}})"', { timeout: 30000 });
+  pgQuery(`DELETE FROM employees WHERE ${EMP_WHERE} AND code IN (${UAT_CODES_SQL})`);
 
   for (const emp of EMPLOYEES) {
     await ensureEmployeeScreen(page);
     await createEmployee(page, emp.code, emp.name, emp.email, emp.pin, true);
-    // step-by-step Mongo verification — immediately after this create
-    const n = mongoCount(
+    // step-by-step PostgreSQL verification — immediately after this create
+    const n = pgCount(
       'employees',
-      `{"holdingcode": "bc001", "code": "${emp.code}", "name": "${emp.name}", "isenabled": true}`,
+      `${EMP_WHERE} AND code = ${sqlText(emp.code)} AND name = ${sqlText(emp.name)} AND is_enabled = true`,
     );
     expect(n, `${emp.code} must be persisted with its name right after creation`).toBeGreaterThanOrEqual(1);
   }
   await shoot(page, '01-created-10');
 
-  const total = mongoCount('employees', '{"holdingcode": "bc001", "code": {"$regex": "^UATEMP[0-9]{2}$"}}');
+  const total = pgCount('employees', `${EMP_WHERE} AND code IN (${UAT_CODES_SQL})`);
   expect(total, 'exactly 10 UAT employees persisted').toBe(10);
 });
 
@@ -202,7 +188,7 @@ test('E-02 READ: search filters and finds every created employee', async ({ page
   await expect(rows, 'clearing search restores all 10 rows').toHaveCount(10, { timeout: 15000 });
 });
 
-test('E-03 UPDATE: rename employee #05 → verified in Mongo (same doc, not orphan)', async ({ page }) => {
+test('E-03 UPDATE: rename employee #05 → verified in PostgreSQL (same row, not orphan)', async ({ page }) => {
   test.setTimeout(300000);
   await openEmployeeScreen(page);
 
@@ -217,29 +203,30 @@ test('E-03 UPDATE: rename employee #05 → verified in Mongo (same doc, not orph
   await expect(nameInput).toBeHidden({ timeout: 10000 });
   await shoot(page, '03-updated');
 
-  // step-by-step Mongo verification: the SAME doc (same guid) carries the new name
-  const guid = mongoEval(`print(db.employees.findOne({holdingcode: "bc001", code: "${target.code}"}).guidfixed)`);
-  const updated = mongoCount('employees', `{"holdingcode": "bc001", "guidfixed": "${guid}", "name": "${newName}"}`);
-  expect(updated, `rename must land on the SAME doc (${target.code}) in mongodb`).toBeGreaterThanOrEqual(1);
-  const oldNameLeft = mongoCount('employees', `{"holdingcode": "bc001", "code": "${target.code}", "name": "${target.name}"}`);
-  expect(oldNameLeft, 'old name must not remain on any doc').toBe(0);
+  // step-by-step PostgreSQL verification: the SAME row (same id) carries the new name
+  const rowId = pgQuery(`SELECT id FROM employees WHERE ${EMP_WHERE} AND code = ${sqlText(target.code)}`);
+  expect(rowId, `${target.code} row id`).not.toBe('');
+  const updated = pgCount('employees', `${EMP_WHERE} AND id = ${sqlText(rowId)} AND name = ${sqlText(newName)}`);
+  expect(updated, `rename must land on the SAME row (${target.code}) in employees`).toBeGreaterThanOrEqual(1);
+  const oldNameLeft = pgCount('employees', `${EMP_WHERE} AND code = ${sqlText(target.code)} AND name = ${sqlText(target.name)}`);
+  expect(oldNameLeft, 'old name must not remain on any row').toBe(0);
 
   // side-effect check: the other 9 survive untouched
   for (const emp of EMPLOYEES.filter((_, i) => i !== 4)) {
-    const n = mongoCount('employees', `{"holdingcode": "bc001", "code": "${emp.code}", "name": "${emp.name}"}`);
+    const n = pgCount('employees', `${EMP_WHERE} AND code = ${sqlText(emp.code)} AND name = ${sqlText(emp.name)}`);
     expect(n, `${emp.code} must be untouched by the rename`).toBeGreaterThanOrEqual(1);
   }
 });
 
-test('E-04 DELETE: temp employee removed via UI → gone in Mongo; the 10 remain', async ({ page }) => {
+test('E-04 DELETE: temp employee removed via UI → gone in PostgreSQL; the 10 remain', async ({ page }) => {
   test.setTimeout(300000);
   await openEmployeeScreen(page);
 
   // sacrificial row (exact code, cleaned by id)
   const tempCode = 'UATETMP99';
-  execSync(`docker exec mongodb mongosh --quiet appdb --eval "db.employees.deleteMany({code: '${tempCode}'})"`, { timeout: 30000 });
+  pgQuery(`DELETE FROM employees WHERE ${EMP_WHERE} AND code = ${sqlText(tempCode)}`);
   await createEmployee(page, tempCode, 'พนักงานชั่วคราว ลบทดสอบ', '', '', true);
-  let n = mongoCount('employees', `{"holdingcode": "bc001", "code": "${tempCode}"}`);
+  let n = pgCount('employees', `${EMP_WHERE} AND code = ${sqlText(tempCode)} AND is_enabled = true`);
   expect(n, 'temp employee created').toBeGreaterThanOrEqual(1);
 
   const row = await listRow(page, tempCode);
@@ -250,12 +237,12 @@ test('E-04 DELETE: temp employee removed via UI → gone in Mongo; the 10 remain
   await expect(row).toBeHidden({ timeout: 10000 });
   await shoot(page, '04-deleted');
 
-  // The app uses soft-delete (deletedat); verify the temp row is no longer active.
-  n = mongoCount('employees', `{"holdingcode": "bc001", "code": "${tempCode}", "deletedat": {"$exists": false}}`);
-  expect(n, 'temp employee must be gone from active list in mongodb').toBe(0);
+  // The app soft-deletes (is_enabled = false); verify the temp row is no longer active.
+  n = pgCount('employees', `${EMP_WHERE} AND code = ${sqlText(tempCode)} AND is_enabled = true`);
+  expect(n, 'temp employee must be gone from active list in employees').toBe(0);
 
   // side-effect: the 10 stay
-  const remain = mongoCount('employees', '{"holdingcode": "bc001", "code": {"$regex": "^UATEMP[0-9]{2}$"}, "deletedat": {"$exists": false}}');
+  const remain = pgCount('employees', `${EMP_WHERE} AND code IN (${UAT_CODES_SQL}) AND is_enabled = true`);
   expect(remain, 'the 10 UAT employees must remain').toBe(10);
 });
 
@@ -269,8 +256,8 @@ test('E-05 EDGE: duplicate code rejected + empty required fields blocked', async
   // duplicate → the form STAYS open with an error toast; verify then cancel
   const bodyText = (await page.locator('body').textContent()) ?? '';
   expect(bodyText, 'duplicate code must be rejected with an error').toMatch(/ซ้ำ|already|duplicate/i);
-  const dupCount = mongoCount('employees', `{"holdingcode": "bc001", "code": "${dup.code}"}`);
-  expect(dupCount, 'no second doc for the duplicate code').toBe(1);
+  const dupCount = pgCount('employees', `${EMP_WHERE} AND code = ${sqlText(dup.code)}`);
+  expect(dupCount, 'no second row for the duplicate code').toBe(1);
   await shoot(page, '05-duplicate-rejected');
   await page.locator('button', { hasText: /ยกเลิก|Cancel/ }).first().click();
   await expect(page.getByLabel('รหัสพนักงาน')).toBeHidden({ timeout: 10000 });
@@ -287,10 +274,10 @@ test('E-05 EDGE: duplicate code rejected + empty required fields blocked', async
   await expect(codeInput).toBeHidden({ timeout: 10000 });
 });
 
-test('E-99 final state: exactly 10 UAT employees in Mongo + console clean', async () => {
-  const total = mongoCount('employees', '{"holdingcode": "bc001", "code": {"$regex": "^UATEMP[0-9]{2}$"}, "deletedat": {"$exists": false}}');
+test('E-99 final state: exactly 10 UAT employees in PostgreSQL + console clean', async () => {
+  const total = pgCount('employees', `${EMP_WHERE} AND code IN (${UAT_CODES_SQL}) AND is_enabled = true`);
   expect(total, '10 UAT employees remain (user request: เพิ่มพนักงาน 10 คน)').toBe(10);
-  const temp = mongoCount('employees', '{"code": "UATETMP99", "deletedat": {"$exists": false}}');
+  const temp = pgCount('employees', `${EMP_WHERE} AND code = 'UATETMP99' AND is_enabled = true`);
   expect(temp, 'sacrificial temp row cleaned from active list').toBe(0);
   console.log('[employee-uat] console errors:', consoleErrors.length);
   expect(consoleErrors, 'no uncaught page errors').toEqual([]);

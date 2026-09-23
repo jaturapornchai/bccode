@@ -362,33 +362,3 @@ func TestFileUploadHandlerRejectsCrossShopForm(t *testing.T) {
 		t.Fatalf("expected status %d when form holdingcode mismatches token, got %d", http.StatusForbidden, rec.Code)
 	}
 }
-
-func TestAttachmentUploadHandlerRejectsCrossShopForm(t *testing.T) {
-	e := echo.New()
-	c, rec := newMultipartUploadContext(t, e, "SHOP002")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
-
-	if err := AttachmentUploadHandler(c); err != nil {
-		t.Fatalf("AttachmentUploadHandler returned error: %v", err)
-	}
-	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when form holdingcode mismatches token, got %d", http.StatusForbidden, rec.Code)
-	}
-}
-
-func TestAttachmentDownloadHandlerRejectsCrossShopQuery(t *testing.T) {
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/attachment/download/507f1f77bcf86cd799439011?holdingcode=SHOP002", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("507f1f77bcf86cd799439011")
-	c.Set("UserInfo", msmodels.UserInfo{Username: "user@example.com", HoldingCode: "SHOP001"})
-
-	if err := AttachmentDownloadHandler(c); err != nil {
-		t.Fatalf("AttachmentDownloadHandler returned error: %v", err)
-	}
-	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected status %d when query holdingcode mismatches token, got %d", http.StatusForbidden, rec.Code)
-	}
-}

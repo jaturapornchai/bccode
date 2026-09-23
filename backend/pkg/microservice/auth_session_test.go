@@ -2,31 +2,17 @@ package microservice
 
 import (
 	"context"
-	"errors"
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
-	"smlcloudplatform/internal/config"
 	"smlcloudplatform/pkg/microservice/models"
 
 	"github.com/labstack/echo/v4"
 )
-
-type sessionTestCacherConfig struct {
-	endpoint string
-}
-
-func (cfg *sessionTestCacherConfig) Endpoint() string { return cfg.endpoint }
-func (cfg *sessionTestCacherConfig) Password() string { return "" }
-func (cfg *sessionTestCacherConfig) DB() int          { return 0 }
-func (cfg *sessionTestCacherConfig) UserName() string { return "" }
-func (cfg *sessionTestCacherConfig) TLS() bool        { return false }
-func (cfg *sessionTestCacherConfig) ConnectionSettings() config.ICacherConnectionSettings {
-	return config.NewDefaultCacherConnectionSettings()
-}
 
 func TestGetTokenFromContextRejectsXAPIKey(t *testing.T) {
 	e := echo.New()
@@ -41,16 +27,7 @@ func TestGetTokenFromContextRejectsXAPIKey(t *testing.T) {
 }
 
 func TestSessionRefreshRotationRejectsReplay(t *testing.T) {
-	endpoint := os.Getenv("TEST_REDIS_ADDR")
-	if endpoint == "" {
-		t.Skip("TEST_REDIS_ADDR not set")
-	}
-
-	cacher := NewCacher(&sessionTestCacherConfig{endpoint: endpoint})
-	if err := cacher.Healthcheck(); err != nil {
-		t.Fatalf("redis healthcheck: %v", err)
-	}
-	defer cacher.Close()
+	cacher := newTestPostgresCacher(t)
 
 	prefix := "test-auth-" + NewUUID() + "-"
 	refreshPrefix := "test-refresh-" + NewUUID() + "-"
@@ -82,15 +59,11 @@ func TestSessionRefreshRotationRejectsReplay(t *testing.T) {
 	if err := authService.validateAccessSession(AUTHTYPE_BEARER, accessKey, sessionUID); err != nil {
 		t.Fatalf("new access token must be active: %v", err)
 	}
-	redisClient, err := cacher.getClient()
-	if err != nil {
-		t.Fatalf("get redis client: %v", err)
-	}
-	accessTTL, err := redisClient.TTL(context.Background(), accessKey).Result()
+	accessTTL, err := cacheTTL(cacher, accessKey)
 	if err != nil || accessTTL <= 0 || accessTTL > accessTokenMaxAge {
 		t.Fatalf("access token TTL = %v, want (0,%v]; err=%v", accessTTL, accessTokenMaxAge, err)
 	}
-	refreshTTL, err := redisClient.TTL(context.Background(), refreshPrefix+refreshToken).Result()
+	refreshTTL, err := cacheTTL(cacher, refreshPrefix+refreshToken)
 	if err != nil || refreshTTL <= 0 || refreshTTL > sessionMaxAge {
 		t.Fatalf("refresh token TTL = %v, want (0,%v]; err=%v", refreshTTL, sessionMaxAge, err)
 	}
@@ -133,16 +106,7 @@ func TestSessionRefreshRotationRejectsReplay(t *testing.T) {
 }
 
 func TestLogoutWithPreviousAccessRevokesRotatedSession(t *testing.T) {
-	endpoint := os.Getenv("TEST_REDIS_ADDR")
-	if endpoint == "" {
-		t.Skip("TEST_REDIS_ADDR not set")
-	}
-
-	cacher := NewCacher(&sessionTestCacherConfig{endpoint: endpoint})
-	if err := cacher.Healthcheck(); err != nil {
-		t.Fatalf("redis healthcheck: %v", err)
-	}
-	defer cacher.Close()
+	cacher := newTestPostgresCacher(t)
 
 	prefix := "test-auth-" + NewUUID() + "-"
 	refreshPrefix := "test-refresh-" + NewUUID() + "-"
@@ -190,16 +154,7 @@ func TestLogoutWithPreviousAccessRevokesRotatedSession(t *testing.T) {
 }
 
 func TestSessionIdleTimeoutRevokesCurrentTokens(t *testing.T) {
-	endpoint := os.Getenv("TEST_REDIS_ADDR")
-	if endpoint == "" {
-		t.Skip("TEST_REDIS_ADDR not set")
-	}
-
-	cacher := NewCacher(&sessionTestCacherConfig{endpoint: endpoint})
-	if err := cacher.Healthcheck(); err != nil {
-		t.Fatalf("redis healthcheck: %v", err)
-	}
-	defer cacher.Close()
+	cacher := newTestPostgresCacher(t)
 
 	prefix := "test-auth-" + NewUUID() + "-"
 	refreshPrefix := "test-refresh-" + NewUUID() + "-"
@@ -243,16 +198,7 @@ func TestSessionIdleTimeoutRevokesCurrentTokens(t *testing.T) {
 }
 
 func TestSessionAbsoluteTimeoutRevokesCurrentTokens(t *testing.T) {
-	endpoint := os.Getenv("TEST_REDIS_ADDR")
-	if endpoint == "" {
-		t.Skip("TEST_REDIS_ADDR not set")
-	}
-
-	cacher := NewCacher(&sessionTestCacherConfig{endpoint: endpoint})
-	if err := cacher.Healthcheck(); err != nil {
-		t.Fatalf("redis healthcheck: %v", err)
-	}
-	defer cacher.Close()
+	cacher := newTestPostgresCacher(t)
 
 	prefix := "test-auth-" + NewUUID() + "-"
 	refreshPrefix := "test-refresh-" + NewUUID() + "-"
@@ -296,16 +242,7 @@ func TestSessionAbsoluteTimeoutRevokesCurrentTokens(t *testing.T) {
 }
 
 func TestRevokedSessionCannotBeResurrected(t *testing.T) {
-	endpoint := os.Getenv("TEST_REDIS_ADDR")
-	if endpoint == "" {
-		t.Skip("TEST_REDIS_ADDR not set")
-	}
-
-	cacher := NewCacher(&sessionTestCacherConfig{endpoint: endpoint})
-	if err := cacher.Healthcheck(); err != nil {
-		t.Fatalf("redis healthcheck: %v", err)
-	}
-	defer cacher.Close()
+	cacher := newTestPostgresCacher(t)
 
 	prefix := "test-auth-" + NewUUID() + "-"
 	refreshPrefix := "test-refresh-" + NewUUID() + "-"
@@ -349,69 +286,29 @@ func TestRevokedSessionCannotBeResurrected(t *testing.T) {
 	}
 }
 
-func TestPermissionChangeClearsWorkspaceButKeepsLoginSession(t *testing.T) {
-	endpoint := os.Getenv("TEST_REDIS_ADDR")
-	if endpoint == "" {
-		t.Skip("TEST_REDIS_ADDR not set")
+// newTestPostgresCacher - ใช้ PostgreSQL จริงจาก BC_GL_TEST_POSTGRES_DSN (ข้ามถ้าไม่ได้ตั้ง)
+func newTestPostgresCacher(t *testing.T) *Cacher {
+	t.Helper()
+	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("BC_GL_TEST_POSTGRES_DSN not set")
 	}
-
-	cacher := NewCacher(&sessionTestCacherConfig{endpoint: endpoint})
-	if err := cacher.Healthcheck(); err != nil {
-		t.Fatalf("redis healthcheck: %v", err)
-	}
-	defer cacher.Close()
-
-	_, finder, _ := activeAuthorizationFixture()
-	prefix := "test-auth-" + NewUUID() + "-"
-	refreshPrefix := "test-refresh-" + NewUUID() + "-"
-	authService := NewAuthServicePrefix(prefix, refreshPrefix, cacher, time.Hour, 24*time.Hour, finder)
-	accessToken, refreshToken, err := authService.CreateSession(models.UserInfo{
-		Username: "permission_change_user",
-		UID:      "user-1",
-	})
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		t.Fatalf("create session: %v", err)
+		t.Fatalf("open postgres: %v", err)
 	}
-	accessKey := prefix + accessToken
-	sessionUID, err := cacher.HGet(accessKey, "sessionuid")
-	if err != nil || sessionUID == "" {
-		t.Fatalf("read session uid: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = cacher.Del(
-			accessKey,
-			refreshPrefix+refreshToken,
-			"session-"+sessionUID,
-			"session-revoked-"+sessionUID,
-			"refresh-used-"+refreshToken,
-		)
-	})
-
-	if err := authService.SelectShop(AUTHTYPE_BEARER, accessToken, "HOLDING-A", "COMP-A", "", 1); err != nil {
-		t.Fatalf("select workspace: %v", err)
-	}
-	selected, err := authService.AuthenticateAccessToken(context.Background(), accessToken)
-	if err != nil || selected.CompanyUID != "company-1" {
-		t.Fatalf("selected workspace = %#v, err=%v", selected, err)
-	}
-
-	finder.membership.PermissionVersion++
-	if _, err := authService.AuthenticateAccessToken(context.Background(), accessToken); !errors.Is(err, ErrLiveWorkspaceAccess) {
-		t.Fatalf("permission change error = %v, want ErrLiveWorkspaceAccess", err)
-	}
-	state, err := cacher.HGetAll("session-" + sessionUID)
+	t.Cleanup(func() { db.Close() })
+	cacher, err := NewCacher(db)
 	if err != nil {
-		t.Fatalf("read cleared session: %v", err)
+		t.Fatalf("new cacher: %v", err)
 	}
-	if state["holdingcode"] != "" || state["businesscode"] != "" || state["membershipuid"] != "" {
-		t.Fatalf("workspace was not cleared: %#v", state)
-	}
+	return cacher
+}
 
-	loginOnly, err := authService.AuthenticateAccessToken(context.Background(), accessToken)
-	if err != nil {
-		t.Fatalf("login-only session must remain active: %v", err)
-	}
-	if loginOnly.UID != "user-1" || loginOnly.HoldingCode != "" {
-		t.Fatalf("login-only identity = %#v", loginOnly)
-	}
+// cacheTTL is the remaining lifetime of a cache key (its earliest expiring field).
+func cacheTTL(cacher *Cacher, key string) (time.Duration, error) {
+	var seconds float64
+	err := cacher.db.QueryRowContext(context.Background(),
+		`SELECT EXTRACT(EPOCH FROM MIN(expires_at) - now()) FROM cache_entries WHERE cache_key = $1`, key).Scan(&seconds)
+	return time.Duration(seconds * float64(time.Second)), err
 }

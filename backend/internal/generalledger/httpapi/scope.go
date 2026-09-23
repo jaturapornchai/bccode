@@ -9,6 +9,7 @@ import (
 
 	authmodels "smlcloudplatform/internal/authentication/models"
 	gl "smlcloudplatform/internal/generalledger"
+	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/mcptoken"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -114,4 +115,11 @@ func (s requestScope) companyScope() (requestScope, error) {
 	}
 	s.Scope.Branch = ""
 	return s, nil
+}
+
+// ResolveSessionScope validates a browser session against the central PostgreSQL membership
+// metadata (company, branch, access scopes) — shared by modules that post through the ledger.
+func ResolveSessionScope(ctx context.Context, request microservice.IContext) (gl.Scope, error) {
+	scope, err := resolveScope(ctx, request, mypg.PgSqlFastConnect)
+	return scope.Scope, err
 }

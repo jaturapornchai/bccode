@@ -2,11 +2,7 @@ package models
 
 import (
 	"smlcloudplatform/internal/models"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-const shopCollectionName = "shops"
 
 type ShopRequest struct {
 	Shop
@@ -14,93 +10,83 @@ type ShopRequest struct {
 }
 
 type ShopBusinessType struct {
-	Code  string          `json:"code" bson:"code"`
-	Names *[]models.NameX `json:"names" bson:"names"`
+	Code  string          `json:"code"`
+	Names *[]models.NameX `json:"names"`
 }
 
 type Shop struct {
-	HoldingCode          string         `json:"holdingcode" bson:"holdingcode"`
-	IsActive             bool           `json:"isactive" bson:"isactive"`
-	ProfilePicture       string         `json:"profilepicture" bson:"profilepicture"`
-	Name1                string         `json:"name1" bson:"name1"`
-	Names                []models.NameX `json:"names" bson:"names"`
-	Telephone            string         `json:"telephone" bson:"telephone"`
-	BranchCode           string         `json:"branchcode" bson:"branchcode"`
-	IsMainShop           bool           `json:"ismainshop" bson:"ismainshop"`
-	PosProductCenterType int8           `json:"posproductcentertype" bson:"posproductcentertype"`
-	ProductCenterType    int8           `json:"productcentertype" bson:"productcentertype"`
-	DebtorCenterType     int8           `json:"debtorcentertype" bson:"debtorcentertype"`
-	MainHoldingCode      string         `json:"mainholdingcode" bson:"mainholdingcode"`
-	Address              []models.NameX `json:"address" bson:"address"`
-	Images               []ShopImage    `json:"images" bson:"images"`
-	Logo                 string         `json:"logo" bson:"logo"`
-	Settings             ShopSettings   `json:"settings" bson:"settings"`
-	IsBcMember           bool           `json:"isbcmember" bson:"isbcmember"`
-	ApiKey               string         `json:"apikey" bson:"apikey"`
-	PromptShopInfo       string         `json:"promptshopinfo" bson:"promptshopinfo"`
+	HoldingCode          string         `json:"holdingcode"`
+	IsActive             bool           `json:"isactive"`
+	ProfilePicture       string         `json:"profilepicture"`
+	Name1                string         `json:"name1"`
+	Names                []models.NameX `json:"names"`
+	Telephone            string         `json:"telephone"`
+	BranchCode           string         `json:"branchcode"`
+	IsMainShop           bool           `json:"ismainshop"`
+	PosProductCenterType int8           `json:"posproductcentertype"`
+	ProductCenterType    int8           `json:"productcentertype"`
+	DebtorCenterType     int8           `json:"debtorcentertype"`
+	MainHoldingCode      string         `json:"mainholdingcode"`
+	Address              []models.NameX `json:"address"`
+	Images               []ShopImage    `json:"images"`
+	Logo                 string         `json:"logo"`
+	Settings             ShopSettings   `json:"settings"`
+	IsBcMember           bool           `json:"isbcmember"`
+	ApiKey               string         `json:"apikey"`
+	PromptShopInfo       string         `json:"promptshopinfo"`
 }
 
 type ShopImage struct {
-	XOrder int    `json:"xorder" bson:"xorder"`
-	URI    string `json:"uri" bson:"uri"`
+	XOrder int    `json:"xorder"`
+	URI    string `json:"uri"`
 }
 
 type ShopSettings struct {
-	TaxID                 string           `json:"taxid" bson:"taxid"`
-	CompanyRegistrationNo string           `json:"companyregistrationno" bson:"companyregistrationno"`
-	CountryCode           string           `json:"countrycode" bson:"countrycode"`
-	Language              string           `json:"language" bson:"language"`
-	EmailOwners           []string         `json:"emailowners" bson:"emailowners"`
-	EmailStaffs           []string         `json:"emailstaffs" bson:"emailstaffs"`
-	Latitude              float64          `json:"latitude" bson:"latitude"`
-	Longitude             float64          `json:"longitude" bson:"longitude"`
-	IsUseBranch           bool             `json:"isusebranch" bson:"isusebranch"`
-	IsUseDepartment       bool             `json:"isusedepartment" bson:"isusedepartment"`
-	UseBuddhistCalendar   bool             `json:"usebuddhistcalendar" bson:"usebuddhistcalendar"` // true = พ.ศ., false = ค.ศ.
-	IsVatRegistered       bool             `json:"isvatregistered" bson:"isvatregistered"`
-	VatRate               float64          `json:"vatrate" bson:"vatrate"`
-	VatTypeSale           float64          `json:"vattypesale" bson:"vattypesale"`
-	VateTypePurchase      int              `json:"vattypepurchase" bson:"vattypepurchase"`
-	InquiryTypeSale       int              `json:"inquirytypesale" bson:"inquirytypesale"`
-	InquiryTypePurchase   int              `json:"inquirytypepurchase" bson:"inquirytypepurchase"`
-	LanguageConfigs       []LanguageConfig `json:"languageconfigs" bson:"languageconfigs"`
-	BaseCurrency          string           `json:"basecurrency" bson:"basecurrency"` // สกุลเงินหลักของบริษัท (เช่น THB, USD)
-	CurrencyCodes         []string         `json:"currencycodes" bson:"currencycodes"`
-	Timezone              string           `json:"timezone" bson:"timezone"`
-	TimezoneLabel         string           `json:"timezonelabel" bson:"timezonelabel"`
-	TimezoneOffset        string           `json:"timezoneoffset" bson:"timezoneoffset"`
-	DateFormat            string           `json:"dateformat" bson:"dateformat"`
-	DecimalQuantity       int8             `json:"decimalquantity" bson:"decimalquantity"`
-	DecimalPrice          int8             `json:"decimalprice" bson:"decimalprice"`
-	DecimalDocument       int8             `json:"decimaldocument" bson:"decimaldocument"`
+	TaxID                 string           `json:"taxid"`
+	CompanyRegistrationNo string           `json:"companyregistrationno"`
+	CountryCode           string           `json:"countrycode"`
+	Language              string           `json:"language"`
+	EmailOwners           []string         `json:"emailowners"`
+	EmailStaffs           []string         `json:"emailstaffs"`
+	Latitude              float64          `json:"latitude"`
+	Longitude             float64          `json:"longitude"`
+	IsUseBranch           bool             `json:"isusebranch"`
+	IsUseDepartment       bool             `json:"isusedepartment"`
+	UseBuddhistCalendar   bool             `json:"usebuddhistcalendar"` // true = พ.ศ., false = ค.ศ.
+	IsVatRegistered       bool             `json:"isvatregistered"`
+	VatRate               float64          `json:"vatrate"`
+	VatTypeSale           float64          `json:"vattypesale"`
+	VateTypePurchase      int              `json:"vattypepurchase"`
+	InquiryTypeSale       int              `json:"inquirytypesale"`
+	InquiryTypePurchase   int              `json:"inquirytypepurchase"`
+	LanguageConfigs       []LanguageConfig `json:"languageconfigs"`
+	BaseCurrency          string           `json:"basecurrency"` // สกุลเงินหลักของบริษัท (เช่น THB, USD)
+	CurrencyCodes         []string         `json:"currencycodes"`
+	Timezone              string           `json:"timezone"`
+	TimezoneLabel         string           `json:"timezonelabel"`
+	TimezoneOffset        string           `json:"timezoneoffset"`
+	DateFormat            string           `json:"dateformat"`
+	DecimalQuantity       int8             `json:"decimalquantity"`
+	DecimalPrice          int8             `json:"decimalprice"`
+	DecimalDocument       int8             `json:"decimaldocument"`
 }
 
 type LanguageConfig struct {
-	Code           string `json:"code" bson:"code"`
-	CodeTranslator string `json:"codetranslator" bson:"codetranslator"`
-	Name           string `json:"name" bson:"name"`
-	IsUse          bool   `json:"isuse" bson:"isuse"`
-	IsDefault      bool   `json:"isdefault" bson:"isdefault"`
+	Code           string `json:"code"`
+	CodeTranslator string `json:"codetranslator"`
+	Name           string `json:"name"`
+	IsUse          bool   `json:"isuse"`
+	IsDefault      bool   `json:"isdefault"`
 }
 
 type ShopInfo struct {
-	models.DocIdentity `bson:"inline"`
-	Shop               `bson:"inline"`
-}
-
-func (ShopInfo) CollectionName() string {
-	return shopCollectionName
+	models.DocIdentity
+	Shop
 }
 
 type ShopDoc struct {
-	ID                 primitive.ObjectID `json:"-" bson:"_id,omitempty"`
-	Version            int64              `json:"-" bson:"__v"`
-	HoldingUID         string             `json:"holdinguid" bson:"holdinguid"`
-	IsDeleted          bool               `json:"isdeleted" bson:"isdeleted"`
-	ShopInfo           `bson:"inline"`
-	models.ActivityDoc `bson:"inline"`
-}
-
-func (ShopDoc) CollectionName() string {
-	return shopCollectionName
+	HoldingUID string `json:"holdinguid"`
+	IsDeleted  bool   `json:"isdeleted"`
+	ShopInfo
+	models.ActivityDoc
 }

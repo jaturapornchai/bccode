@@ -90,7 +90,7 @@ func (jwtService *JwtService) MWFunc() echo.MiddlewareFunc {
 	}
 }
 
-func (jwtService *JwtService) MWFuncWithRedis(cacher ICacher, publicPath ...string) echo.MiddlewareFunc {
+func (jwtService *JwtService) MWFuncSession(cacher ICacher, publicPath ...string) echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -273,7 +273,7 @@ func (jwtService *JwtService) GenerateToken(userInfo models.UserInfo) (string, e
 	return token.SignedString([]byte(jwtService.jwtSecretKey))
 }
 
-func (jwtService *JwtService) GenerateTokenWithRedis(userInfo models.UserInfo) (string, error) {
+func (jwtService *JwtService) GenerateTokenWithCache(userInfo models.UserInfo) (string, error) {
 
 	claims := &CustomClaims{
 		&jwt.RegisteredClaims{

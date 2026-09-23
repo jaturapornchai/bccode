@@ -1,7 +1,6 @@
 package generalledger
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -57,34 +56,16 @@ func TestAllocationModelSerialization(t *testing.T) {
 	}
 }
 
+// Allocation department/project/branch codes share the ledger code rule.
 func TestAllocationDimensionCodeValidation(t *testing.T) {
-	store := &Store{}
-	ctx := context.Background()
-	scope := Scope{Holding: "H", Company: "C"}
-
-	validCodes := []string{"SALES", "DEPT-01", "PRJ_100", "HQ", "BRANCH.2", "DEPT/01"}
-	for _, c := range validCodes {
-		if err := store.checkAllocationDepartment(ctx, scope, c); err != nil {
-			t.Errorf("expected valid department %q, got err: %v", c, err)
-		}
-		if err := store.checkAllocationProject(ctx, scope, c); err != nil {
-			t.Errorf("expected valid project %q, got err: %v", c, err)
-		}
-		if err := store.checkAllocationBranch(ctx, scope, c); err != nil {
-			t.Errorf("expected valid branch %q, got err: %v", c, err)
+	for _, c := range []string{"SALES", "DEPT-01", "PRJ_100", "HQ", "BRANCH.2", "DEPT/01"} {
+		if !validCode(c) {
+			t.Errorf("expected valid dimension code %q", c)
 		}
 	}
-
-	invalidCodes := []string{"", "SALES@123", "PRJ 100", "BRANCH#1", " 123", "a!b"}
-	for _, c := range invalidCodes {
-		if err := store.checkAllocationDepartment(ctx, scope, c); err == nil {
-			t.Errorf("expected error for department %q, got nil", c)
-		}
-		if err := store.checkAllocationProject(ctx, scope, c); err == nil {
-			t.Errorf("expected error for project %q, got nil", c)
-		}
-		if err := store.checkAllocationBranch(ctx, scope, c); err == nil {
-			t.Errorf("expected error for branch %q, got nil", c)
+	for _, c := range []string{"", "SALES@123", "PRJ 100", "BRANCH#1", " 123", "a!b"} {
+		if validCode(c) {
+			t.Errorf("expected invalid dimension code %q", c)
 		}
 	}
 }

@@ -10,7 +10,7 @@
 #
 #   sh tools/verify.sh              # fast: codemap + frontend lint/typecheck/test  (~2-4 min)
 #   sh tools/verify.sh all          # everything, including the Docker integration suites (~20 min)
-#   sh tools/verify.sh backend      # one target: codemap|frontend|frontend-build|backend|outbox|projection
+#   sh tools/verify.sh backend      # one target: codemap|frontend|frontend-build|backend|postgres
 #
 # Requirements: Docker Desktop running, pwsh (for codemap), Node/npm (for frontend).
 #
@@ -148,78 +148,28 @@ t_backend() {
   record backend $?
 }
 
-# --- outbox: mirrors job backend-outbox-integration -------------------------
-t_outbox() {
-  hr "outbox — transaction rollback + barcode replay (Mongo rs0 + PG แยกต่างหาก)"
-  need_docker || { record outbox 1; return; }
+# --- postgres: integration tests against a throwaway PostgreSQL 18 ------------
+# PostgreSQL is the only database (MongoDB/Kafka/Redis/ClickHouse removed 2026-09-23); every
+# integration test gated by BC_GL_TEST_POSTGRES_DSN / GL_AUTH_TEST_DSN runs here.
+t_postgres() {
+  hr "postgres — integration tests (PostgreSQL 18 แยกต่างหาก ลบทิ้งหลังจบ)"
+  need_docker || { record postgres 1; return; }
   rc=0
-  docker rm -fv bc-outbox-ci bc-barcode-ci >/dev/null 2>&1
-
-  docker run -d --name bc-outbox-ci mongo:7 --replSet rs0 --bind_ip_all >/dev/null || rc=1
-  attempt=1
-  while [ $rc -eq 0 ] && [ $attempt -le 30 ]; do
-    echo "MongoDB readiness attempt $attempt"
-    if docker exec bc-outbox-ci mongosh --quiet --eval 'db.adminCommand({ping:1})' >/dev/null 2>&1; then break; fi
-    attempt=$((attempt + 1))
-    sleep 1
-  done
-  [ $rc -eq 0 ] && docker exec bc-outbox-ci mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})' >/dev/null 2>&1
-
+  docker rm -fv bc-pg-ci >/dev/null 2>&1
+  docker run -d --name bc-pg-ci -e POSTGRES_HOST_AUTH_METHOD=trust postgres:18-alpine >/dev/null || rc=1
   if [ $rc -eq 0 ]; then
-    docker run --rm --network container:bc-outbox-ci \
-      -e SERVERLESS=serverless \
-      -e BC_OUTBOX_TEST_MONGODB_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' \
-      -v "$WINROOT/backend:/src" -w /src "$GO_IMAGE" \
-      bash -c 'set -euo pipefail; go test -tags=integration -count=1 -timeout=120s -json -run "^TestProduct(Outbox|ServiceOutbox)Integration$" ./internal/product/product/outbox ./internal/product/product/services | tee outbox-test-results.json' || rc=1
-  fi
-
-  if [ $rc -eq 0 ]; then
-    docker run -d --name bc-barcode-ci -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-alpine >/dev/null || rc=1
-    attempt=1
-    while [ $rc -eq 0 ] && [ $attempt -le 30 ]; do
-      echo "PostgreSQL readiness attempt $attempt"
-      if docker exec bc-barcode-ci pg_isready -U postgres >/dev/null 2>&1; then break; fi
-      attempt=$((attempt + 1))
+    for attempt in $(seq 1 30); do
+      if docker exec bc-pg-ci pg_isready -U postgres >/dev/null 2>&1; then break; fi
       sleep 1
     done
-    [ $rc -eq 0 ] && docker run --rm --network container:bc-barcode-ci \
-      -e SERVERLESS=serverless \
-      -e BC_BARCODE_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:5432/postgres?sslmode=disable' \
+    docker run --rm --network container:bc-pg-ci \
+      -e BC_GL_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:5432/postgres?sslmode=disable' \
+      -e GL_AUTH_TEST_DSN='postgres://postgres@127.0.0.1:5432/postgres?sslmode=disable' \
       -v "$WINROOT/backend:/src" -w /src "$GO_IMAGE" \
-      bash -c 'set -euo pipefail; go test -tags=integration -count=1 -timeout=120s -json -run "^TestBarcodeBatchIntegration$" ./internal/goapi/handlers/kafka | tee barcode-test-results.json' || rc=1
+      bash -c 'set -euo pipefail; go test -tags=integration -count=1 -timeout=300s ./pkg/... ./internal/...' || rc=1
   fi
-
-  # Always clean up, exactly like the workflow's `if: always()` step.
-  docker rm -fv bc-outbox-ci bc-barcode-ci >/dev/null 2>&1
-  echo "ผลดิบ: backend/outbox-test-results.json, backend/barcode-test-results.json"
-  record outbox $rc
-}
-
-# --- projection: mirrors job backend-projection-kafka-integration -----------
-t_projection() {
-  hr "projection — cross-topic fences + legacy writers (Kafka + Mongo + PG18)"
-  need_docker || { record projection 1; return; }
-  COMPOSE=backend/.ci/projection.compose.yml
-  rc=0
-  docker compose -p bc-projection-ci -f "$COMPOSE" up -d mongo mongo-init postgres kafka || rc=1
-  if [ $rc -eq 0 ]; then
-    docker compose -p bc-projection-ci -f "$COMPOSE" up -d --wait mongo postgres kafka || rc=1
-  fi
-  if [ $rc -eq 0 ]; then
-    # `... | tee` would report tee's exit status, hiding a failing test — the workflow got away
-    # with it only because its step ran under `set -o pipefail`. Carry the real status by hand.
-    status_file=$(mktemp)
-    {
-      docker compose -p bc-projection-ci -f "$COMPOSE" run --rm --no-deps tests \
-        'go test -tags=integration -count=1 -timeout=180s -json -run "^Test(Projection(Kafka|Rebalance)|BarcodeServiceOutbox|LegacyBarcode(Reconcile|PrimarySource))Integration$" ./internal/goapi/handlers/kafka ./internal/product/productbarcode/repositories ./internal/product/productbarcode/services ./internal/product/projection'
-      echo $? > "$status_file"
-    } | tee backend/projection-test-results.json
-    [ "$(cat "$status_file")" = "0" ] || rc=1
-    rm -f "$status_file"
-  fi
-  docker compose -p bc-projection-ci -f "$COMPOSE" down -v --remove-orphans >/dev/null 2>&1
-  echo "ผลดิบ: backend/projection-test-results.json"
-  record projection $rc
+  docker rm -fv bc-pg-ci >/dev/null 2>&1
+  record postgres $rc
 }
 
 usage() {
@@ -232,8 +182,7 @@ usage() {
   echo "  frontend        eslint + tsc --noEmit + vitest"
   echo "  frontend-build  next build"
   echo "  backend         go build/test ใน golang:1.26 (ข้าม quarantine list)"
-  echo "  outbox          integration: outbox rollback + barcode replay"
-  echo "  projection      integration: Kafka projection fences"
+  echo "  postgres        integration tests กับ PostgreSQL 18 ชั่วคราว"
 }
 
 targets=${*:-fast}
@@ -245,13 +194,12 @@ started=$(date '+%H:%M:%S')
 for t in $targets; do
   case "$t" in
     fast)           t_fast ;;
-    all)            t_codemap; t_frontend; t_frontend_build; t_backend; t_outbox; t_projection ;;
+    all)            t_codemap; t_frontend; t_frontend_build; t_backend; t_postgres ;;
     codemap)        t_codemap ;;
     frontend)       t_frontend ;;
     frontend-build) t_frontend_build ;;
     backend)        t_backend ;;
-    outbox)         t_outbox ;;
-    projection)     t_projection ;;
+    postgres)       t_postgres ;;
     *) echo "ไม่รู้จัก target: $t" >&2; usage; exit 2 ;;
   esac
 done

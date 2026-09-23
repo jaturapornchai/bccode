@@ -10,9 +10,7 @@ import (
 	"time"
 
 	"smlcloudplatform/internal/goapi/logger"
-	"smlcloudplatform/internal/goapi/myclickhouse"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/lib/pq"
 )
 
@@ -21,21 +19,17 @@ type DatabaseType string
 
 const (
 	PostgreSQL DatabaseType = "PostgreSQL"
-	ClickHouse DatabaseType = "ClickHouse"
 )
 
 // DatabaseManager จัดการ database connections แบบ unified พร้อม circuit breaker
 type DatabaseManager struct {
-	postgreSQLConn  *sql.DB
-	clickHouseConn  clickhouse.Conn
-	postgresMutex   sync.RWMutex
-	clickHouseMutex sync.RWMutex
-	perfLogger      *DatabasePerformanceLogger
-	statsCollector  *QueryStatsCollector
+	postgreSQLConn *sql.DB
+	postgresMutex  sync.RWMutex
+	perfLogger     *DatabasePerformanceLogger
+	statsCollector *QueryStatsCollector
 
 	// Circuit breakers สำหรับป้องกัน cascade failures
 	pgCircuitBreaker *CircuitBreaker
-	chCircuitBreaker *CircuitBreaker
 
 	// Retry configuration
 	retryConfig RetryConfig
@@ -49,12 +43,6 @@ type DatabaseConfig struct {
 	PostgreSQLPassword string
 	PostgreSQLDatabase string
 	PostgreSQLSSLMode  string
-
-	ClickHouseHost     string
-	ClickHousePort     string
-	ClickHouseUser     string
-	ClickHousePassword string
-	ClickHouseDatabase string
 }
 
 // NewDatabaseManager สร้าง database manager ใหม่พร้อม circuit breaker และ retry logic
@@ -68,7 +56,6 @@ func NewDatabaseManager(config DatabaseConfig) (*DatabaseManager, error) {
 		perfLogger:       perfLogger,
 		statsCollector:   statsCollector,
 		pgCircuitBreaker: NewCircuitBreaker("PostgreSQL"),
-		chCircuitBreaker: NewCircuitBreaker("ClickHouse"),
 		retryConfig:      DefaultRetryConfig(),
 	}
 
@@ -80,15 +67,7 @@ func NewDatabaseManager(config DatabaseConfig) (*DatabaseManager, error) {
 		return nil, fmt.Errorf("failed to connect PostgreSQL after retries: %w", err)
 	}
 
-	// เชื่อมต่อ ClickHouse พร้อม retry
-	err = ExecuteWithRetry(context.Background(), dm.retryConfig, func(ctx context.Context) error {
-		return dm.connectClickHouse(config)
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect ClickHouse after retries: %w", err)
-	}
-
-	logger.Success("Database Manager สร้างสำเร็จ (PostgreSQL + ClickHouse + Circuit Breakers)")
+	logger.Success("Database Manager สร้างสำเร็จ (PostgreSQL + Circuit Breaker)")
 	return dm, nil
 }
 
@@ -211,12 +190,6 @@ func (dm *DatabaseManager) connectPostgreSQL(config DatabaseConfig) error {
 	return nil
 }
 
-// connectClickHouse เชื่อมต่อ ClickHouse พร้อม connection pooling (เลิกใช้งานแล้ว)
-func (dm *DatabaseManager) connectClickHouse(config DatabaseConfig) error {
-	// ปิดและ bypass การเชื่อมต่อ ClickHouse ทั้งหมด
-	return nil
-}
-
 // GetPostgreSQLConnection ดึง PostgreSQL connection พร้อม performance logging
 func (dm *DatabaseManager) GetPostgreSQLConnection() (*sql.DB, error) {
 	dm.postgresMutex.RLock()
@@ -235,26 +208,6 @@ func (dm *DatabaseManager) GetPostgreSQLConnection() (*sql.DB, error) {
 	}
 
 	return dm.postgreSQLConn, nil
-}
-
-// GetClickHouseConnection ดึง ClickHouse connection พร้อม performance logging
-func (dm *DatabaseManager) GetClickHouseConnection() (clickhouse.Conn, error) {
-	dm.clickHouseMutex.RLock()
-	defer dm.clickHouseMutex.RUnlock()
-
-	if dm.clickHouseConn == nil {
-		return nil, fmt.Errorf("ClickHouse connection is not initialized")
-	}
-
-	// ตรวจสอบสุขภาพ
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	if err := dm.clickHouseConn.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("ClickHouse connection is unhealthy: %w", err)
-	}
-
-	return dm.clickHouseConn, nil
 }
 
 // QueryPostgreSQL รัน query บน PostgreSQL พร้อม circuit breaker และ performance logging
@@ -314,33 +267,6 @@ func (dm *DatabaseManager) QueryPostgreSQL(ctx context.Context, query string, ar
 	return results, err
 }
 
-// QueryClickHouse รัน query บน ClickHouse พร้อม circuit breaker และ performance logging
-func (dm *DatabaseManager) QueryClickHouse(ctx context.Context, query string) ([]map[string]any, error) {
-	startTime := time.Now()
-	var results []map[string]any
-
-	// ใช้ circuit breaker เพื่อป้องกัน cascade failures
-	err := dm.chCircuitBreaker.Execute(ctx, func(ctx context.Context) error {
-		conn, err := dm.GetClickHouseConnection()
-		if err != nil {
-			return err
-		}
-
-		// ใช้ existing ClickHouse query function
-		results, err = myclickhouse.QuerySelectAll(conn, query)
-		return err
-	})
-
-	// บันทึก performance
-	status := "success"
-	if err != nil {
-		status = "error"
-	}
-	dm.logPerformance(ctx, "ClickHouse", "Query", query, int64(len(results)), startTime, status, err)
-
-	return results, err
-}
-
 // ExecPostgreSQL รันคำสั่งบน PostgreSQL พร้อม circuit breaker และ performance logging
 func (dm *DatabaseManager) ExecPostgreSQL(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	startTime := time.Now()
@@ -369,29 +295,6 @@ func (dm *DatabaseManager) ExecPostgreSQL(ctx context.Context, query string, arg
 	dm.logPerformance(ctx, "PostgreSQL", "Exec", query, rowsAffected, startTime, status, err)
 
 	return result, err
-}
-
-// ExecClickHouse รันคำสั่งบน ClickHouse พร้อม circuit breaker และ performance logging
-func (dm *DatabaseManager) ExecClickHouse(ctx context.Context, query string) error {
-	startTime := time.Now()
-
-	// ใช้ circuit breaker เพื่อป้องกัน cascade failures
-	err := dm.chCircuitBreaker.Execute(ctx, func(ctx context.Context) error {
-		conn, err := dm.GetClickHouseConnection()
-		if err != nil {
-			return err
-		}
-		return conn.Exec(ctx, query)
-	})
-
-	// บันทึก performance
-	status := "success"
-	if err != nil {
-		status = "error"
-	}
-	dm.logPerformance(ctx, "ClickHouse", "Exec", query, 0, startTime, status, err)
-
-	return err
 }
 
 // BatchInsertPostgreSQL แทรกข้อมูลแบบ batch บน PostgreSQL
@@ -449,61 +352,6 @@ func (dm *DatabaseManager) BatchInsertPostgreSQL(ctx context.Context, tableName 
 	return nil
 }
 
-// BatchInsertClickHouse แทรกข้อมูลแบบ batch บน ClickHouse
-func (dm *DatabaseManager) BatchInsertClickHouse(ctx context.Context, tableName string, columns []string, data [][]any) error {
-	startTime := time.Now()
-
-	conn, err := dm.GetClickHouseConnection()
-	if err != nil {
-		dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
-		return err
-	}
-
-	if len(data) == 0 {
-		dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "success", nil)
-		return nil
-	}
-
-	// เตรียม batch insert statement
-	placeholders := make([]string, len(columns))
-	for i := range columns {
-		placeholders[i] = "?"
-	}
-
-	insertQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
-		tableName, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
-
-	// สร้าง batch
-	batch, err := conn.PrepareBatch(ctx, insertQuery)
-	if err != nil {
-		dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
-		return fmt.Errorf("failed to prepare batch: %w", err)
-	}
-	defer batch.Close()
-
-	successCount := 0
-	for i, row := range data {
-		err := batch.Append(row...)
-		if err != nil {
-			logger.Error("ClickHouse แถว %d ล้มเหลว: %v", i, err)
-			dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
-			return fmt.Errorf("batch insert failed at row %d: %w", i, err)
-		}
-		successCount++
-	}
-
-	// ส่ง batch ทั้งหมด
-	err = batch.Send()
-	if err != nil {
-		dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), 0, startTime, "error", err)
-		return fmt.Errorf("failed to send batch: %w", err)
-	}
-
-	dm.logPerformance(ctx, "ClickHouse", "BatchInsert", fmt.Sprintf("INSERT %s", tableName), int64(successCount), startTime, "success", nil)
-	logger.Success("ClickHouse batch insert สำเร็จ: %d/%d rows", successCount, len(data))
-	return nil
-}
-
 func (dm *DatabaseManager) logPerformance(ctx context.Context, database, operation, query string, rowsAffected int64, startTime time.Time, status string, err error) {
 	duration := time.Since(startTime)
 
@@ -547,14 +395,6 @@ func (dm *DatabaseManager) GetStats(databaseType DatabaseType) interface{} {
 		if dm.postgreSQLConn != nil {
 			return dm.postgreSQLConn.Stats()
 		}
-	case ClickHouse:
-		dm.clickHouseMutex.RLock()
-		defer dm.clickHouseMutex.RUnlock()
-		// ClickHouse ไม่มี Stats แบบ PostgreSQL
-		return map[string]interface{}{
-			"status": "available",
-			"type":   "ClickHouse",
-		}
 	}
 	return nil
 }
@@ -564,9 +404,6 @@ func (dm *DatabaseManager) Close() error {
 	dm.postgresMutex.Lock()
 	defer dm.postgresMutex.Unlock()
 
-	dm.clickHouseMutex.Lock()
-	defer dm.clickHouseMutex.Unlock()
-
 	var errors []error
 
 	if dm.postgreSQLConn != nil {
@@ -574,13 +411,6 @@ func (dm *DatabaseManager) Close() error {
 			errors = append(errors, fmt.Errorf("PostgreSQL close error: %w", err))
 		}
 		dm.postgreSQLConn = nil
-	}
-
-	if dm.clickHouseConn != nil {
-		if err := dm.clickHouseConn.Close(); err != nil {
-			errors = append(errors, fmt.Errorf("ClickHouse close error: %w", err))
-		}
-		dm.clickHouseConn = nil
 	}
 
 	if len(errors) > 0 {
@@ -602,13 +432,6 @@ func (dm *DatabaseManager) PingAll() map[string]error {
 		results["PostgreSQL"] = nil
 	}
 
-	// ทดสอบ ClickHouse
-	if _, err := dm.GetClickHouseConnection(); err != nil {
-		results["ClickHouse"] = err
-	} else {
-		results["ClickHouse"] = nil
-	}
-
 	return results
 }
 
@@ -616,14 +439,12 @@ func (dm *DatabaseManager) PingAll() map[string]error {
 func (dm *DatabaseManager) GetCircuitBreakerStats() map[string]interface{} {
 	return map[string]interface{}{
 		"postgresql": dm.pgCircuitBreaker.GetStats(),
-		"clickhouse": dm.chCircuitBreaker.GetStats(),
 	}
 }
 
 func (dm *DatabaseManager) ResetCircuitBreakers() {
 	logger.Info("Resetting all circuit breakers...")
 	dm.pgCircuitBreaker.Reset()
-	dm.chCircuitBreaker.Reset()
 	logger.Success("All circuit breakers reset successfully")
 }
 
@@ -637,12 +458,6 @@ func GetGlobalConnection(holdingCode string) (*sql.DB, error) {
 		PostgreSQLPassword: getEnv("POSTGRES_PASSWORD", ""),
 		PostgreSQLDatabase: holdingCode,
 		PostgreSQLSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
-
-		ClickHouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
-		ClickHousePort:     getEnv("CLICKHOUSE_PORT", "9000"),
-		ClickHouseUser:     getEnv("CLICKHOUSE_USER", "default"),
-		ClickHousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
-		ClickHouseDatabase: holdingCode,
 	}
 
 	// สร้าง manager และ return PostgreSQL connection
@@ -664,12 +479,6 @@ func GetGlobalManager(holdingCode string) (*DatabaseManager, error) {
 		PostgreSQLPassword: getEnv("POSTGRES_PASSWORD", ""),
 		PostgreSQLDatabase: holdingCode,
 		PostgreSQLSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
-
-		ClickHouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
-		ClickHousePort:     getEnv("CLICKHOUSE_PORT", "9000"),
-		ClickHouseUser:     getEnv("CLICKHOUSE_USER", "default"),
-		ClickHousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
-		ClickHouseDatabase: holdingCode,
 	}
 
 	return NewDatabaseManager(config)

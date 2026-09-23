@@ -3,18 +3,16 @@ package shop
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"encoding/json"
+	"errors"
 	"strings"
+	"time"
 
-	"github.com/google/uuid"
-	"github.com/smlsoft/mongopagination"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-
-	organization "smlcloudplatform/internal/organization"
+	orgaccess "smlcloudplatform/internal/organization"
 	"smlcloudplatform/internal/shop/models"
-	micromodels "smlcloudplatform/pkg/microservice/models"
 )
+
+var errHoldingNotFound = errors.New("holding not found")
 
 type ShopPostgresRepository struct {
 	db *sql.DB
@@ -24,151 +22,105 @@ func NewShopPostgresRepository(db *sql.DB) IShopRepository {
 	return &ShopPostgresRepository{db: db}
 }
 
-func (r *ShopPostgresRepository) Transaction(ctx context.Context, queryFunc func(context.Context) error) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r *ShopPostgresRepository) Transaction(ctx context.Context, fn func(context.Context) error) error {
+	return runInTx(ctx, r.db, fn)
+}
+
+// holdingName is the relational display name: the Thai/first localized name, then name1.
+func holdingName(shop models.Shop) string {
+	if name := orgaccess.PrimaryName(shop.Names); name != "" {
+		return name
+	}
+	return strings.TrimSpace(shop.Name1)
+}
+
+func holdingProfile(shop models.Shop) (string, error) {
+	raw, err := json.Marshal(shop)
+	return string(raw), err
+}
+
+func (r *ShopPostgresRepository) Create(ctx context.Context, shop models.ShopDoc) error {
+	profile, err := holdingProfile(shop.Shop)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
-
-	if err := queryFunc(ctx); err != nil {
-		return err
-	}
-	return tx.Commit()
-}
-
-func (r *ShopPostgresRepository) EnsureBootstrapIndexes(ctx context.Context) error {
-	return nil
-}
-
-func (r *ShopPostgresRepository) Create(ctx context.Context, shop models.ShopDoc) (string, error) {
-	query := `INSERT INTO holdings (code, name, tax_id, is_active, created_at)
-	          VALUES ($1, $2, $3, $4, now())
-	          ON CONFLICT (code) DO UPDATE
-	          SET name = EXCLUDED.name,
-	              tax_id = EXCLUDED.tax_id,
-	              is_active = EXCLUDED.is_active`
-	_, err := r.db.ExecContext(ctx, query,
-		strings.TrimSpace(shop.HoldingCode),
-		shop.Name1,
-		shop.Settings.TaxID,
-		shop.IsActive,
-	)
-	if err != nil {
-		return "", err
-	}
-	return shop.HoldingCode, nil
-}
-
-func (r *ShopPostgresRepository) CreateCodeClaim(ctx context.Context, claim organization.OrganizationCodeClaim) error {
-	return nil
-}
-
-func (r *ShopPostgresRepository) CreateAudit(ctx context.Context, audit organization.OrganizationAudit) error {
-	return nil
-}
-
-func (r *ShopPostgresRepository) CreateOutbox(ctx context.Context, event organization.OrganizationOutboxEvent) error {
-	return nil
-}
-
-func (r *ShopPostgresRepository) Update(ctx context.Context, guid string, expectedVersion int64, expectedActive bool, shop models.ShopDoc) error {
-	query := `UPDATE holdings SET name = $2, tax_id = $3, is_active = $4 WHERE code = $1`
-	_, err := r.db.ExecContext(ctx, query,
-		shop.HoldingCode,
-		shop.Name1,
-		shop.Settings.TaxID,
-		shop.IsActive,
-	)
+	_, err = conn(ctx, r.db).ExecContext(ctx, `
+		INSERT INTO holdings (code, name, tax_id, profile, is_active, created_by, created_at, updated_by, updated_at)
+		VALUES ($1, $2, $3, $4, true, $5, $6, '', $6)`,
+		shop.HoldingCode, holdingName(shop.Shop), strings.TrimSpace(shop.Settings.TaxID), profile, shop.CreatedBy, shop.CreatedAt.UTC())
 	return err
 }
 
-func (r *ShopPostgresRepository) FindByGuid(ctx context.Context, guid string) (models.ShopDoc, error) {
-	return r.FindByHoldingCode(ctx, guid)
+func (r *ShopPostgresRepository) Update(ctx context.Context, holdingCode string, expectedActive bool, shop models.ShopDoc) error {
+	profile, err := holdingProfile(shop.Shop)
+	if err != nil {
+		return err
+	}
+	result, err := conn(ctx, r.db).ExecContext(ctx, `
+		UPDATE holdings SET name = $2, tax_id = $3, profile = $4, updated_by = $5, updated_at = $6
+		WHERE code = $1 AND is_active = $7`,
+		holdingCode, holdingName(shop.Shop), strings.TrimSpace(shop.Settings.TaxID), profile, shop.UpdatedBy, shop.UpdatedAt.UTC(), expectedActive)
+	return requireOneRow(result, err)
+}
+
+func (r *ShopPostgresRepository) UpdateStatus(ctx context.Context, holdingCode string, expectedActive bool, active bool, username string, now time.Time) error {
+	result, err := conn(ctx, r.db).ExecContext(ctx, `
+		UPDATE holdings SET is_active = $2, updated_by = $3, updated_at = $4
+		WHERE code = $1 AND is_active = $5`,
+		holdingCode, active, username, now.UTC(), expectedActive)
+	return requireOneRow(result, err)
+}
+
+func requireOneRow(result sql.Result, err error) error {
+	if err != nil {
+		return err
+	}
+	if affected, err := result.RowsAffected(); err != nil || affected != 1 {
+		return orgaccess.ErrStatusChangeConflict
+	}
+	return nil
 }
 
 func (r *ShopPostgresRepository) FindByHoldingCode(ctx context.Context, holdingCode string) (models.ShopDoc, error) {
 	holdingCode = strings.TrimSpace(holdingCode)
 	var (
-		code     string
-		name     string
-		taxID    sql.NullString
-		isActive bool
+		doc     models.ShopDoc
+		name    string
+		taxID   string
+		profile []byte
 	)
-
-	query := `SELECT code, name, tax_id, is_active FROM holdings WHERE LOWER(code) = LOWER($1) LIMIT 1`
-	err := r.db.QueryRowContext(ctx, query, holdingCode).Scan(&code, &name, &taxID, &isActive)
+	err := conn(ctx, r.db).QueryRowContext(ctx, `
+		SELECT code, name, COALESCE(tax_id, ''), profile, is_active, created_by, created_at, updated_by, updated_at
+		FROM holdings WHERE code = $1`, holdingCode).
+		Scan(&doc.HoldingCode, &name, &taxID, &profile, &doc.IsActive, &doc.CreatedBy, &doc.CreatedAt, &doc.UpdatedBy, &doc.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.ShopDoc{}, errHoldingNotFound
+	}
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return models.ShopDoc{}, mongo.ErrNoDocuments
-		}
 		return models.ShopDoc{}, err
 	}
-
-	doc := models.ShopDoc{
-		HoldingUID: code,
-		IsDeleted:  !isActive,
-		ShopInfo: models.ShopInfo{
-			Shop: models.Shop{
-				HoldingCode: code,
-				Name1:       name,
-				IsActive:    isActive,
-				Settings: models.ShopSettings{
-					TaxID: taxID.String,
-				},
-			},
-		},
+	code, active := doc.HoldingCode, doc.IsActive
+	if len(profile) > 0 {
+		if err := json.Unmarshal(profile, &doc.Shop); err != nil {
+			return models.ShopDoc{}, err
+		}
 	}
-	objID, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%024x", uuid.New().ID()))
-	doc.ID = objID
-
+	// Relational columns are the source of truth for identity, status, name and tax id.
+	doc.HoldingCode, doc.IsActive = code, active
+	if strings.TrimSpace(doc.Name1) == "" {
+		doc.Name1 = name
+	}
+	if len(doc.Names) == 0 && name != "" {
+		doc.Names = orgaccess.DecodeNames(nil, name)
+	}
+	if strings.TrimSpace(doc.Settings.TaxID) == "" {
+		doc.Settings.TaxID = taxID
+	}
+	doc.GuidFixed = code
+	doc.HoldingUID = code
 	return doc, nil
 }
 
-func (r *ShopPostgresRepository) FindPage(ctx context.Context, pageable micromodels.Pageable) ([]models.ShopInfo, mongopagination.PaginationData, error) {
-	query := `SELECT code, name, tax_id, is_active FROM holdings WHERE is_active = true ORDER BY code`
-	rows, err := r.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, mongopagination.PaginationData{}, err
-	}
-	defer rows.Close()
-
-	var result []models.ShopInfo
-	for rows.Next() {
-		var (
-			code     string
-			name     string
-			taxID    sql.NullString
-			isActive bool
-		)
-		if err := rows.Scan(&code, &name, &taxID, &isActive); err != nil {
-			continue
-		}
-		info := models.ShopInfo{
-			Shop: models.Shop{
-				HoldingCode: code,
-				Name1:       name,
-				IsActive:    isActive,
-				Settings: models.ShopSettings{
-					TaxID: taxID.String,
-				},
-			},
-		}
-		result = append(result, info)
-	}
-
-	pagination := mongopagination.PaginationData{
-		Total:     int64(len(result)),
-		Page:      1,
-		PerPage:   int64(max(len(result), 1)),
-		TotalPage: 1,
-	}
-
-	return result, pagination, nil
-}
-
-func (r *ShopPostgresRepository) Delete(ctx context.Context, guid string, username string) error {
-	query := `UPDATE holdings SET is_active = false WHERE LOWER(code) = LOWER($1)`
-	_, err := r.db.ExecContext(ctx, query, strings.TrimSpace(guid))
-	return err
+func (r *ShopPostgresRepository) RecordAudit(ctx context.Context, audit orgaccess.Audit) error {
+	return orgaccess.RecordAudit(ctx, conn(ctx, r.db), audit)
 }

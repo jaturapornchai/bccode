@@ -11,32 +11,13 @@
 # │   /goapi/*          │        │   → goapi (embedded)          │
 # │   /*                │        │   → mainapi routes            │
 # ├─────────────────────┼────────┼────────────────────────────────┤
-# │ MongoDB             │ 27017  │ NATIVE (systemd) — ไม่อยู่ Docker │
 # │ PostgreSQL          │  5432  │ NATIVE (systemd) — ไม่อยู่ Docker │
-# │ Redis               │  6379  │ 127.0.0.1                     │
-# │ Kafka (KRaft)       │  9092  │ 127.0.0.1                     │
 # └─────────────────────┴────────┴────────────────────────────────┘
 # Local: http://localhost:8888
-# MongoDB + PostgreSQL = NATIVE (ไม่อยู่ใน Docker — ข้อมูลปลอดภัย)
+# PostgreSQL = ฐานข้อมูลเดียวของระบบ (NATIVE ไม่อยู่ใน Docker — ข้อมูลปลอดภัย)
 # Docker containers เข้า DB ผ่าน host.docker.internal
 
 services:
-  # ─── Infrastructure ───────────────────────
-
-  # MongoDB + PostgreSQL = NATIVE (systemd service บน host)
-  # Docker containers เข้าผ่าน host.docker.internal:27017 / :5432
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis-data:/data
-    restart: unless-stopped
-    networks:
-      - app-network
-
   mainapi:
     build:
       context: .
@@ -45,8 +26,6 @@ services:
     env_file:
       - path: ./storage.local.env
         required: false
-    depends_on:
-      - redis
     ports:
       - "8888:8888"
     extra_hosts:
@@ -81,7 +60,6 @@ services:
       - ./bootstrap.json:/app/bootstrap.json:ro
       - ${BCAI_CUSTOM_CONFIG_FILE:-./custom_config.json}:/app/custom_config.json:rw
       - ./tdict-std.txt:/app/tdict-std.txt
-      - ./docs/swagger.json:/app/docs/swagger.json:ro
     restart: unless-stopped
     networks:
       - app-network
@@ -90,5 +68,3 @@ networks:
   app-network:
     driver: bridge
 
-volumes:
-  redis-data:

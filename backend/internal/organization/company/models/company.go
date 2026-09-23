@@ -5,39 +5,32 @@ import (
 	"time"
 
 	common "smlcloudplatform/internal/models"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const companyCollectionName = "organizationcompanies"
 
 type Company struct {
-	Code     string       `json:"code" bson:"code"`
-	Names    common.JSONB `json:"names" bson:"names"`
-	TaxID    string       `json:"taxid" bson:"taxid"`
-	LogoURI  string       `json:"logouri" bson:"logouri"`
-	IsActive bool         `json:"isactive" bson:"isactive"`
+	Code     string       `json:"code"`
+	Names    common.JSONB `json:"names"`
+	TaxID    string       `json:"taxid"`
+	LogoURI  string       `json:"logouri"`
+	IsActive bool         `json:"isactive"`
 }
 
 type CompanyDoc struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Version     int64              `json:"__v" bson:"__v"`
-	HoldingCode string             `json:"holdingcode" bson:"holdingcode"`
-	HoldingUID  string             `json:"holdinguid" bson:"holdinguid"`
-	GuidFixed   string             `json:"guidfixed" bson:"guidfixed"`
-	CompanyUID  string             `json:"companyuid" bson:"companyuid"`
-	IsDeleted   bool               `json:"isdeleted" bson:"isdeleted"`
-	Company     `bson:"inline"`
-	CreatedAt   time.Time  `json:"createdat" bson:"createdat"`
-	UpdatedAt   time.Time  `json:"updatedat" bson:"updatedat"`
-	DeletedAt   *time.Time `json:"deletedat,omitempty" bson:"deletedat,omitempty"`
-	CreatedBy   string     `json:"createdby,omitempty" bson:"createdby,omitempty"`
-	UpdatedBy   string     `json:"updatedby,omitempty" bson:"updatedby,omitempty"`
-	DeletedBy   string     `json:"deletedby,omitempty" bson:"deletedby,omitempty"`
-}
-
-func (CompanyDoc) CollectionName() string {
-	return companyCollectionName
+	ID          string `json:"id"`
+	Version     int64              `json:"__v"`
+	HoldingCode string             `json:"holdingcode"`
+	HoldingUID  string             `json:"holdinguid"`
+	GuidFixed   string             `json:"guidfixed"`
+	CompanyUID  string             `json:"companyuid"`
+	IsDeleted   bool               `json:"isdeleted"`
+	Company
+	CreatedAt   time.Time  `json:"createdat"`
+	UpdatedAt   time.Time  `json:"updatedat"`
+	DeletedAt   *time.Time `json:"deletedat,omitempty"`
+	CreatedBy   string     `json:"createdby,omitempty"`
+	UpdatedBy   string     `json:"updatedby,omitempty"`
+	DeletedBy   string     `json:"deletedby,omitempty"`
 }
 
 func NormalizeCompanyCode(value string) string {

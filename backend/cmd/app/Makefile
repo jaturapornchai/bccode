@@ -1,2 +1,0 @@
-run:
-	JAEGER_AGENT_HOST=localhost JAEGER_AGENT_PORT=6831 JAEGER_SERVICE_NAME=myapp go run main.go

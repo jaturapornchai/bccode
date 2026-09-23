@@ -3,7 +3,6 @@ package mypostgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"smlcloudplatform/internal/goapi/logger"
@@ -12,7 +11,7 @@ import (
 	"time"
 )
 
-// QueueItem - โครงสร้างข้อมูล queue item (เหมือน myredis.QueueItem)
+// QueueItem - โครงสร้างข้อมูล queue item
 type QueueItem struct {
 	ID          int64     `json:"id,omitempty"`
 	HoldingCode string    `json:"holdingcode"`
@@ -64,7 +63,7 @@ func (qm *QueueManager) runWithReconnect(operation func(db *sql.DB) error) error
 	return operation(qm.db)
 }
 
-// AddToQueue - เพิ่มงานเข้า queue (แทนที่ Redis LPUSH)
+// AddToQueue - เพิ่มงานเข้า queue
 func (qm *QueueManager) AddToQueue(ctx context.Context, item QueueItem) error {
 	query := `
 		INSERT INTO queues (holdingcode, docno, transflag, retrycount, createdat, status)
@@ -95,7 +94,7 @@ func (qm *QueueManager) AddToQueue(ctx context.Context, item QueueItem) error {
 	return nil
 }
 
-// PopFromQueue - ดึงงานจาก queue (แทนที่ Redis LPOP)
+// PopFromQueue - ดึงงานจาก queue
 // ใช้ FOR UPDATE SKIP LOCKED เพื่อป้องกัน race condition
 func (qm *QueueManager) PopFromQueue(ctx context.Context, holdingCode string) (*QueueItem, error) {
 	query := `
@@ -139,7 +138,7 @@ func (qm *QueueManager) PopFromQueue(ctx context.Context, holdingCode string) (*
 	return &item, nil
 }
 
-// RequeueItem - ใส่งานกลับเข้า queue (แทนที่ Redis LPUSH)
+// RequeueItem - ใส่งานกลับเข้า queue
 func (qm *QueueManager) RequeueItem(ctx context.Context, item QueueItem) error {
 	query := `
 		UPDATE queues
@@ -163,7 +162,7 @@ func (qm *QueueManager) RequeueItem(ctx context.Context, item QueueItem) error {
 	return nil
 }
 
-// AddToDeadLetterQueue - ส่งงานล้มเหลวไปยัง DLQ (แทนที่ Redis LPUSH deadletterqueue)
+// AddToDeadLetterQueue - ส่งงานล้มเหลวไปยัง DLQ
 func (qm *QueueManager) AddToDeadLetterQueue(ctx context.Context, item QueueItem, errorMessage string) error {
 	insertQuery := `
 		INSERT INTO deadletterqueue (holdingcode, docno, transflag, retrycount, createdat, errormessage)
@@ -224,7 +223,7 @@ func (qm *QueueManager) AddToDeadLetterQueue(ctx context.Context, item QueueItem
 	return nil
 }
 
-// GetActiveShops - ดึงรายชื่อ shop ที่มีงาน (แทนที่ Redis KEYS queue:*)
+// GetActiveShops - ดึงรายชื่อ shop ที่มีงาน
 func (qm *QueueManager) GetActiveShops(ctx context.Context) ([]string, error) {
 	query := `
 		SELECT DISTINCT holdingcode
@@ -258,7 +257,7 @@ func (qm *QueueManager) GetActiveShops(ctx context.Context) ([]string, error) {
 	return shops, nil
 }
 
-// GetQueueLength - ดึงความยาว queue ของ shop (แทนที่ Redis LLEN)
+// GetQueueLength - ดึงความยาว queue ของ shop
 func (qm *QueueManager) GetQueueLength(ctx context.Context, holdingCode string) (int64, error) {
 	query := `
 		SELECT COUNT(*)
@@ -288,7 +287,7 @@ type QueueStats struct {
 	OldestItem      *time.Time `json:"oldestitem,omitempty"`
 }
 
-// GetQueueStats - ดึงสถิติ queue ของ shop (แทนที่ Redis custom stats)
+// GetQueueStats - ดึงสถิติ queue ของ shop
 func (qm *QueueManager) GetQueueStats(ctx context.Context, holdingCode string) (*QueueStats, error) {
 	query := `
 		SELECT
@@ -342,7 +341,7 @@ type QueueSummary struct {
 	ShopStats       []map[string]interface{} `json:"shopstats"`
 }
 
-// GetQueueSummary - ดึงสรุปข้อมูล queue ทั้งหมด (แทนที่ Redis custom stats)
+// GetQueueSummary - ดึงสรุปข้อมูล queue ทั้งหมด
 func (qm *QueueManager) GetQueueSummary(ctx context.Context) (*QueueSummary, error) {
 	query := `
 		SELECT
@@ -444,74 +443,4 @@ func (qm *QueueManager) CleanupOldCompletedItems(ctx context.Context, olderThan 
 	}
 
 	return deleted, nil
-}
-
-// Backward compatibility functions to match myredis API
-
-// AddToQueueCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.AddToQueue
-func AddToQueue(ctx context.Context, db *sql.DB, item QueueItem) error {
-	qm := NewQueueManager(db)
-	return qm.AddToQueue(ctx, item)
-}
-
-// PopFromQueueCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.PopFromQueue
-func PopFromQueue(ctx context.Context, db *sql.DB, holdingCode string) (*QueueItem, error) {
-	qm := NewQueueManager(db)
-	return qm.PopFromQueue(ctx, holdingCode)
-}
-
-// RequeueItemCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.RequeueItem
-func RequeueItem(ctx context.Context, db *sql.DB, item QueueItem) error {
-	qm := NewQueueManager(db)
-	return qm.RequeueItem(ctx, item)
-}
-
-// AddToDeadLetterQueueCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.AddToDeadLetterQueue
-func AddToDeadLetterQueue(ctx context.Context, db *sql.DB, item QueueItem, errorMessage string) error {
-	qm := NewQueueManager(db)
-	return qm.AddToDeadLetterQueue(ctx, item, errorMessage)
-}
-
-// GetActiveShopsCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.GetActiveShops
-func GetActiveShops(ctx context.Context, db *sql.DB) ([]string, error) {
-	qm := NewQueueManager(db)
-	return qm.GetActiveShops(ctx)
-}
-
-// GetQueueLengthCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.GetQueueLength
-func GetQueueLength(ctx context.Context, db *sql.DB, holdingCode string) (int64, error) {
-	qm := NewQueueManager(db)
-	return qm.GetQueueLength(ctx, holdingCode)
-}
-
-// GetQueueStatsCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.GetQueueStats
-func GetQueueStats(ctx context.Context, db *sql.DB, holdingCode string) (map[string]interface{}, error) {
-	qm := NewQueueManager(db)
-	stats, err := qm.GetQueueStats(ctx, holdingCode)
-	if err != nil {
-		return nil, err
-	}
-
-	// แปลงเป็น map เพื่อ compatibility
-	statsMap := make(map[string]interface{})
-	data, _ := json.Marshal(stats)
-	json.Unmarshal(data, &statsMap)
-
-	return statsMap, nil
-}
-
-// GetQueueSummaryCompat - ฟังก์ชันเพื่อความเข้ากันได้กับ myredis.GetQueueSummary
-func GetQueueSummary(ctx context.Context, db *sql.DB) (map[string]interface{}, error) {
-	qm := NewQueueManager(db)
-	summary, err := qm.GetQueueSummary(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// แปลงเป็น map เพื่อ compatibility
-	summaryMap := make(map[string]interface{})
-	data, _ := json.Marshal(summary)
-	json.Unmarshal(data, &summaryMap)
-
-	return summaryMap, nil
 }

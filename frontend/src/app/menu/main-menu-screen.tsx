@@ -117,12 +117,11 @@ import {
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
 import { AppHeaderControls } from "../app-header-controls";
-import { LineOaLinkScreen } from "../line-oa/line-oa-link-screen";
 import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
 import { ZoomControl } from "../zoom-control";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
-import { isMenuScreenPending, isFixedAssetRoute } from "@/lib/menu-screen-status";
+import { isMenuBackendRetired, isMenuScreenPending, isFixedAssetRoute } from "@/lib/menu-screen-status";
 import { isGeneralLedgerRoute } from "@/lib/general-ledger";
 import { GeneralLedgerScreen } from "@/app/gl/general-ledger-screen";
 import { FixedAssetsScreen } from "@/app/asset/fixed-assets-screen";
@@ -313,7 +312,7 @@ type SessionStatItem = { holdingcode: string; sessions: number; active: number; 
 type SessionEntryItem = { username: string; name: string; holdingcode: string; role: string; createdat: number; lastseenat: number; sessions: number; active: boolean };
 type SessionStatsData = { totalsessions: number; activesessions: number; activewindowms: number; holdings: SessionStatItem[]; entries: SessionEntryItem[] };
 
-/** จำนวนเซสชัน + รายชื่อผู้ใช้ที่กำลังใช้งาน (Redis ฝั่ง backend) — ข้อมูลประกอบ เงียบเมื่อล้ม */
+/** จำนวนเซสชัน + รายชื่อผู้ใช้ที่กำลังใช้งาน (ตาราง cache_entries บน PostgreSQL ฝั่ง backend) — ข้อมูลประกอบ เงียบเมื่อล้ม */
 async function fetchSessionStats(auth: AuthSession): Promise<SessionStatsData | null> {
   try {
     const response = await authFetch("/api/auth/sessions", {
@@ -1467,10 +1466,8 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                       {tab.id === "home" ? (
                         <DashboardHome
                           auth={auth}
-                          workspace={workspace}
                           language={language}
                           backendLanguage={backendLanguage}
-                          mainApiUrl={mainApiUrl}
                           allowedMenuIds={allowedMenuIds}
                           allMenuItems={allMenuItems}
                           frequentMenuEntries={frequentMenuEntries}
@@ -2569,7 +2566,6 @@ function SectionIcon({ sectionId }: { sectionId: string }) {
   if (sectionId === "ar") return <HandCoins className="h-4 w-4" />;
   if (sectionId === "bill") return <ReceiptText className="h-4 w-4" />;
   if (sectionId === "cash-bank") return <Landmark className="h-4 w-4" />;
-  if (sectionId === "vat") return <Calculator className="h-4 w-4" />;
   if (sectionId === "fa") return <Building2 className="h-4 w-4" />;
   if (sectionId === "transactions") return <BriefcaseBusiness className="h-4 w-4" />;
   if (sectionId === "reports") return <BarChart3 className="h-4 w-4" />;
@@ -2807,6 +2803,32 @@ function WorkTabPanel({
   onOpenRoute: (route: string, productCode?: string) => void;
   workspace?: WorkspaceSession | null;
 }) {
+  const plannedCard = (
+    <Card className="min-h-[420px]">
+      <CardContent className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 gap-4">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+              {activeTab.item ? <MenuRouteIcon item={activeTab.item} size={28} /> : <HomeMenuIcon size={28} />}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-muted-foreground">{menuText({ key: "menu_planned_workflow", th: "เมนูในแผนพัฒนา", en: "Planned Workflow" }, language, backendLanguage)}</p>
+              <h2 className="break-words text-2xl font-semibold leading-relaxed">{activeTab.item ? menuText(activeTab.item.label, language, backendLanguage) : activeTab.title}</h2>
+            </div>
+          </div>
+          <MenuPendingBadge route={activeTab.route} language={language} backendLanguage={backendLanguage} />
+        </div>
+
+        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-base leading-relaxed text-muted-foreground">
+          {menuText({ key: "menu_planned_description", th: "หน้าจอนี้ยังอยู่ระหว่างเตรียมพัฒนา จึงยังบันทึกหรือประมวลผลข้อมูลไม่ได้ เลือกใช้งานเมนูอื่นจากแถบเมนูได้ตามปกติ", en: "This screen is planned and cannot save or process data yet. You can continue using other menus." }, language, backendLanguage)}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // 2026-09-23: backend เป็น PostgreSQL อย่างเดียว — จอที่ API เดิมอยู่บน MongoDB ถูกถอดแล้ว แสดง "ยังไม่พร้อม" ทันที ไม่ยิง API ที่ไม่มีอยู่
+  if (isMenuBackendRetired(activeTab.route)) return plannedCard;
+
   if (activeTab.route === "/shortcuts") {
     return (
       <ManageShortcutsScreen
@@ -2822,10 +2844,6 @@ function WorkTabPanel({
     );
   }
 
-
-  if (activeTab.route === "/line-oa") {
-    return <LineOaLinkScreen embedded language={language} />;
-  }
 
   if (activeTab.route === "/product") {
     return (
@@ -2908,28 +2926,7 @@ function WorkTabPanel({
     return <SystemSettingsScreen embedded language={language} route={activeTab.route} />;
   }
 
-  return (
-    <Card className="min-h-[420px]">
-      <CardContent className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 gap-4">
-            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-              {activeTab.item ? <MenuRouteIcon item={activeTab.item} size={28} /> : <HomeMenuIcon size={28} />}
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-muted-foreground">{menuText({ key: "menu_planned_workflow", th: "เมนูในแผนพัฒนา", en: "Planned Workflow" }, language, backendLanguage)}</p>
-              <h2 className="break-words text-2xl font-semibold leading-relaxed">{activeTab.item ? menuText(activeTab.item.label, language, backendLanguage) : activeTab.title}</h2>
-            </div>
-          </div>
-          <MenuPendingBadge route={activeTab.route} language={language} backendLanguage={backendLanguage} />
-        </div>
-
-        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-base leading-relaxed text-muted-foreground">
-          {menuText({ key: "menu_planned_description", th: "หน้าจอนี้ยังอยู่ระหว่างเตรียมพัฒนา จึงยังบันทึกหรือประมวลผลข้อมูลไม่ได้ เลือกใช้งานเมนูอื่นจากแถบเมนูได้ตามปกติ", en: "This screen is planned and cannot save or process data yet. You can continue using other menus." }, language, backendLanguage)}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  return plannedCard;
 }
 
 function DashboardLoading({ backendLanguage }: { backendLanguage: BackendLanguageDictionary }) {

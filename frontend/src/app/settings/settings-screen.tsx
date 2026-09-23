@@ -34,8 +34,8 @@ import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { persistLanguagePreferenceCookies } from "@/lib/backend-language-preload";
-import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
-import { backendText, useBackendLanguage } from "@/lib/backend-language";
+import { normalizeLanguage, t, type LanguageCode } from "@/lib/i18n";
+import { backendText, useBackendLanguage } from "@/lib/backend-language";
 import { catalogText } from "@/lib/catalog-text";
 import {
   AI_PROVIDERS,
@@ -83,36 +83,35 @@ const storageKeys = {
   language: "user_language",
 };
 
-// 2026-09-16: the Thai/English literals below are the fallback — these keys
-// pull the same words out of languages.tsv for all twelve languages.
-const settingsTextKeys: Record<string, string> = {
-  "group.databases": "set_databases",
-  "testedSummary": "set_tested_0_1_passed",
-  "reachable": "set_reachable_0",
-  "group.storage": "set_image_file_storage",
-  "group.kafka": "set_kafka",
-  "storageShort": "set_storage",
-  "serverConnection": "set_server_connection",
-  "serverConnectionHint": "set_enter_a_single_host_and",
-  "autofillTitle": "set_fill_this_host_into_every",
-  "autofillAll": "set_auto_fill_all",
-  "storageHint": "set_configure_s3_compatible_storage_e",
-  "storageDescription": "set_s3_compatible_e_g_minio",
-  "s3EndpointRequired": "set_please_fill_s3_endpoint_first",
-  "testing": "testing",
-  "unreachable": "set_unreachable",
-  "fields": "set_fields",
-  "testStorage": "set_test_storage",
-};
+// 2026-09-16: the Thai/English literals below are the fallback — these keys
+// pull the same words out of languages.tsv for all twelve languages.
+const settingsTextKeys: Record<string, string> = {
+  "group.databases": "set_databases",
+  "testedSummary": "set_tested_0_1_passed",
+  "reachable": "set_reachable_0",
+  "group.storage": "set_image_file_storage",
+  "storageShort": "set_storage",
+  "serverConnection": "set_server_connection",
+  "serverConnectionHint": "set_enter_a_single_host_and",
+  "autofillTitle": "set_fill_this_host_into_every",
+  "autofillAll": "set_auto_fill_all",
+  "storageHint": "set_configure_s3_compatible_storage_e",
+  "storageDescription": "set_s3_compatible_e_g_minio",
+  "s3EndpointRequired": "set_please_fill_s3_endpoint_first",
+  "testing": "testing",
+  "unreachable": "set_unreachable",
+  "fields": "set_fields",
+  "testStorage": "set_test_storage",
+};
 export function SettingsScreen() {
   const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND_URL);
   const [urlHistory, setUrlHistory] = useState<string[]>([]);
-  const [language, setLanguage] = useState<LanguageCode>("th");
-  const backendLanguage = useBackendLanguage(language, backendUrl || undefined);
-  const st = useCallback(
-    (id: string, bilingual: { th: string; en: string }) =>
-      catalogText(settingsTextKeys, id, bilingual, language, backendLanguage),
-    [backendLanguage, language],
+  const [language, setLanguage] = useState<LanguageCode>("th");
+  const backendLanguage = useBackendLanguage(language, backendUrl || undefined);
+  const st = useCallback(
+    (id: string, bilingual: { th: string; en: string }) =>
+      catalogText(settingsTextKeys, id, bilingual, language, backendLanguage),
+    [backendLanguage, language],
   );
   // Strings that never had an English twin: the key is the identity and the
   // Thai is only the offline fallback.

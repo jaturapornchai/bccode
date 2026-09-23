@@ -1,5 +1,5 @@
-import { execSync } from 'child_process';
 import { expect, test, type Page } from '@playwright/test';
+import { pgCount, pgQuery, sqlText } from './support/pg';
 
 /**
  * Detailed CRUD UAT (2026-08-29): "UAT ให้ละเอียด CRUD ให้ครบ สุ่มทดสอบ"
@@ -97,20 +97,18 @@ async function gotoSetting(page: Page, route: string) {
 }
 
 /**
- * Data-layer verification (user request: "ตรวจสอบ ใน mongodb หรือยัง CRUD"):
- * every C/U/D must be confirmed in the appdb — holdings live in `shops`,
- * companies in `organizationcompanies`, branches in `organizationbranches`,
- * users in `users` + per-holding membership in `shopusers`, role mappings in
- * `role_permission`. Queries run in the mongodb container via mongosh.
+ * Data-layer verification: every C/U/D must be confirmed in PostgreSQL
+ * (central DB bcai_projection) — holdings in `holdings`, companies in
+ * `companies`, branches in `branches`, users in `users` + per-holding
+ * membership in `holding_members`, role mappings in `role_permissions`.
+ * Queries run via psql in the postgres container (tests/support/pg.ts).
  */
-function mongoEval(js: string): string {
-  return execSync(
-    `docker exec mongodb mongosh --quiet appdb --eval "${js.replace(/"/g, '\\"')}"`,
-    { timeout: 30000 },
-  ).toString().trim().split('\n').pop() ?? '';
-}
-function mongoCount(coll: string, query: string): number {
-  return Number(mongoEval(`print(db.${coll}.countDocuments(${query}))`));
+/** membership rows of `username` in `holding` (holding_members ⨝ users) */
+function memberCount(holding: string, username: string, extra = 'true'): number {
+  return pgCount(
+    'holding_members m JOIN users u ON u.id = m.user_id',
+    `m.holding_code = ${sqlText(holding)} AND u.username = ${sqlText(username)} AND ${extra}`,
+  );
 }
 
 /**
@@ -219,8 +217,8 @@ test('CRUD-01 Holding: create edge cases → create → read → update (no dele
       // modal closed — a holding may have been created; verify against the DB
       await page.waitForTimeout(1200);
       const normalized = bad.replace(/[^a-z0-9]/g, '').toLowerCase();
-      const dbJunk = normalized.length >= 3 ? mongoCount('shops', `{"holdingcode": "${normalized}"}`) : 0;
-      expect(dbJunk, `edge "${bad}" must not create holding "${normalized}" in mongodb`).toBe(0);
+      const dbJunk = normalized.length >= 3 ? pgCount('holdings', `code = ${sqlText(normalized)}`) : 0;
+      expect(dbJunk, `edge "${bad}" must not create holding "${normalized}" in holdings`).toBe(0);
       findings.push(`HOLDING: edge case "${bad}" closed the modal (silently normalized${normalized.length >= 3 ? ` to "${normalized}" and ACCEPTED` : ' but nothing reached the DB — verify error UX'})`);
       visible = await addBtn.waitFor({ state: 'visible', timeout: 8000 }).then(() => true).catch(() => false);
       if (!visible) {
@@ -260,9 +258,9 @@ test('CRUD-01 Holding: create edge cases → create → read → update (no dele
   const autoNav = await page.waitForURL(/\/workspace/, { timeout: 15000 }).then(() => true).catch(() => false);
   if (!autoNav) findings.push('HOLDING: after create the app did NOT auto-navigate to /workspace (unexpected flow change)');
 
-  // --- read (data layer): persisted in mongodb `shops`
-  const dbHoldings = mongoCount('shops', `{"holdingcode": "${code}", "names.name": "${name}"}`);
-  expect(dbHoldings, `holding ${code} must be persisted in mongodb shops`).toBeGreaterThanOrEqual(1);
+  // --- read (data layer): persisted in PostgreSQL `holdings`
+  const dbHoldings = pgCount('holdings', `code = ${sqlText(code)} AND name = ${sqlText(name)}`);
+  expect(dbHoldings, `holding ${code} must be persisted in holdings`).toBeGreaterThanOrEqual(1);
 
   // --- read (UI): back on /holding, search finds the new holding ---
   await page.goto('http://127.0.0.1:3000/holding');
@@ -292,8 +290,8 @@ test('CRUD-01 Holding: create edge cases → create → read → update (no dele
   await shootAudit(page, 'holding-renamed');
   const after = (await page.locator('main').textContent()) ?? '';
   expect(after, 'renamed holding name should appear in list').toContain(newName);
-  const dbRenamed = mongoCount('shops', `{"holdingcode": "${code}", "names.name": "${newName}"}`);
-  expect(dbRenamed, `rename must be persisted in mongodb shops (${code} → ${newName})`).toBeGreaterThanOrEqual(1);
+  const dbRenamed = pgCount('holdings', `code = ${sqlText(code)} AND name = ${sqlText(newName)}`);
+  expect(dbRenamed, `rename must be persisted in holdings (${code} → ${newName})`).toBeGreaterThanOrEqual(1);
 
   // --- delete: is there any delete control for holdings? ---
   const cardAfter = page.locator('.workspace-card-grid > div', { hasText: code }).first();
@@ -341,8 +339,8 @@ test('CRUD-02 Company: empty-name guard → create → read → update', async (
   await shootAudit(page, 'company-created');
   const treeText = (await page.locator('main').textContent()) ?? '';
   expect(treeText, 'new company should appear in the tree').toContain(compName);
-  const dbCompanies = mongoCount('organizationcompanies', `{"code": "${compCode}", "names.name": "${compName}", "isdeleted": {"$ne": true}}`);
-  expect(dbCompanies, `company ${compCode} must be persisted in mongodb organizationcompanies`).toBeGreaterThanOrEqual(1);
+  const dbCompanies = pgCount('companies', `code = ${sqlText(compCode)} AND name = ${sqlText(compName)}`);
+  expect(dbCompanies, `company ${compCode} must be persisted in companies`).toBeGreaterThanOrEqual(1);
 
   // update: rename via the edit button INSIDE the created company's node
   const editBtn = await actionButtonForNode(page, '[title="แก้ไขบริษัท"]', compName);
@@ -362,8 +360,8 @@ test('CRUD-02 Company: empty-name guard → create → read → update', async (
     await shootAudit(page, 'company-renamed');
     const after = (await page.locator('main').textContent()) ?? '';
     expect(after).toContain(newName);
-    const dbRenamed = mongoCount('organizationcompanies', `{"code": "${compCode}", "names.name": "${newName}", "isdeleted": {"$ne": true}}`);
-    expect(dbRenamed, `company rename must be persisted in mongodb (${compCode} → ${newName})`).toBeGreaterThanOrEqual(1);
+    const dbRenamed = pgCount('companies', `code = ${sqlText(compCode)} AND name = ${sqlText(newName)}`);
+    expect(dbRenamed, `company rename must be persisted in companies (${compCode} → ${newName})`).toBeGreaterThanOrEqual(1);
   } else {
     findings.push('COMPANY: edit form did not open from [title=แก้ไขบริษัท]');
   }
@@ -385,7 +383,7 @@ test('CRUD-03 Branch: create under company → rename', async ({ page }) => {
   await page.locator('button:has-text("บันทึก")').last().click();
   await handleConfirmSaveDialog(page);
   await page.waitForTimeout(2500);
-  const dbCompany = mongoCount('organizationcompanies', `{"code": "${compCode}", "isdeleted": {"$ne": true}}`);
+  const dbCompany = pgCount('companies', `code = ${sqlText(compCode)}`);
   expect(dbCompany, `owner company ${compCode} persisted`).toBeGreaterThanOrEqual(1);
 
   // add branch to THAT company's node
@@ -412,8 +410,8 @@ test('CRUD-03 Branch: create under company → rename', async ({ page }) => {
   await shootAudit(page, 'branch-created');
   const treeText = (await page.locator('main').textContent()) ?? '';
   expect(treeText, 'new branch should appear in the tree').toContain(branchName);
-  const dbBranches = mongoCount('organizationbranches', `{"names.name": "${branchName}"}`);
-  expect(dbBranches, 'branch must be persisted in mongodb organizationbranches').toBeGreaterThanOrEqual(1);
+  const dbBranches = pgCount('branches', `company_code = ${sqlText(compCode)} AND name = ${sqlText(branchName)}`);
+  expect(dbBranches, 'branch must be persisted in branches').toBeGreaterThanOrEqual(1);
 
   // rename it back via แก้ไขสาขา inside the branch's own node
   const editBranch = await actionButtonForNode(page, '[title="แก้ไขสาขา"]', branchName);
@@ -431,8 +429,8 @@ test('CRUD-03 Branch: create under company → rename', async ({ page }) => {
   await handleConfirmSaveDialog(page);
   await page.waitForTimeout(2500);
   await shootAudit(page, 'branch-renamed');
-  const dbRenamed = mongoCount('organizationbranches', `{"names.name": "${newBranchName}"}`);
-  expect(dbRenamed, 'branch rename must be persisted in mongodb').toBeGreaterThanOrEqual(1);
+  const dbRenamed = pgCount('branches', `company_code = ${sqlText(compCode)} AND name = ${sqlText(newBranchName)}`);
+  expect(dbRenamed, 'branch rename must be persisted in branches').toBeGreaterThanOrEqual(1);
 });
 
 test('CRUD-04 User: membership create → search → update → delete', async ({ page }) => {
@@ -451,9 +449,9 @@ test('CRUD-04 User: membership create → search → update → delete', async (
   const displayName = `${thaiName()} ${thaiName()}`;
 
   // pre-clean leftovers from any previous attempt/run (the attach is idempotent)
-  execSync(
-    `docker exec mongodb mongosh --quiet appdb --eval "db.shopusers.deleteMany({holdingcode: 'bc001', username: '${usercode}'})"`,
-    { timeout: 30000 },
+  pgQuery(
+    `DELETE FROM holding_members m USING users u
+     WHERE m.user_id = u.id AND m.holding_code = 'bc001' AND u.username = ${sqlText(usercode)}`,
   );
 
   await page.getByRole('button', { name: 'เพิ่ม', exact: true }).first().click();
@@ -511,8 +509,8 @@ test('CRUD-04 User: membership create → search → update → delete', async (
   await page.waitForTimeout(1200);
   const listText = (await page.locator('main').textContent()) ?? '';
   expect(listText, 'created member should be findable by usercode').toContain(usercode);
-  const dbMembers = mongoCount('shopusers', `{"holdingcode": "bc001", "username": "${usercode}"}`);
-  expect(dbMembers, `membership must be persisted in mongodb shopusers (bc001/${usercode})`).toBeGreaterThanOrEqual(1);
+  const dbMembers = memberCount('bc001', usercode);
+  expect(dbMembers, `membership must be persisted in holding_members (bc001/${usercode})`).toBeGreaterThanOrEqual(1);
   await shootAudit(page, 'user-search-hit');
   await search.fill('');
   await page.waitForTimeout(800);
@@ -535,8 +533,8 @@ test('CRUD-04 User: membership create → search → update → delete', async (
     findings.push(`USER EDIT DEFECT: save rejected — ${updateToast} (only the status toggle was changed)`);
     await shoot(page, 'user-update-rejected');
   } else {
-    const dbUpdated = mongoCount('shopusers', `{"holdingcode": "bc001", "username": "${usercode}", "isaccessdisabled": true}`);
-    expect(dbUpdated, `status toggle must be persisted in mongodb shopusers`).toBeGreaterThanOrEqual(1);
+    const dbUpdated = memberCount('bc001', usercode, 'm.is_active = false');
+    expect(dbUpdated, `status toggle must be persisted in holding_members`).toBeGreaterThanOrEqual(1);
   }
   await shootAudit(page, 'user-updated');
 
@@ -554,25 +552,12 @@ test('CRUD-04 User: membership create → search → update → delete', async (
       .filter({ hasText: /^(ลบ|ใช่|ยืนยัน|Delete|Yes)$/ }).last();
     await confirmBtn.click();
     await page.waitForTimeout(3000);
-    // data-layer truth: the REAL membership (with membershipuid) must be gone
-    const dbReal = mongoEval(
-      `print(db.shopusers.countDocuments({holdingcode: "bc001", username: "${usercode}", membershipuid: {$exists: true, $ne: ""}}))`,
-    );
-    expect(Number(dbReal), 'the real membership must be deleted from mongodb shopusers').toBe(0);
-    // known defect: the rejected UPDATE earlier wrote an orphan doc (no
-    // membershipuid/createdat) that still renders as a list row
-    const orphans = mongoEval(
-      `print(db.shopusers.countDocuments({holdingcode: "bc001", username: "${usercode}", $or: [{membershipuid: {$in: [null, ""]}}, {membershipuid: {$exists: false}}]}))`,
-    );
-    if (Number(orphans) > 0) {
-      findings.push(`USER DEFECT: the rejected update-save wrote ${orphans} orphan shopusers doc(s) (no membershipuid/createdat) — DELETE API returned success while the row kept rendering`);
-      await shootAudit(page, 'user-orphan-left');
-      execSync(`docker exec mongodb mongosh --quiet appdb --eval "db.shopusers.deleteMany({holdingcode: 'bc001', username: '${usercode}', membershipuid: {$in: [null, '']}})"`, { timeout: 30000 });
-    } else {
-      const rowsLeft = await page.locator('table tbody tr, .bc-list-row').filter({ hasText: usercode }).count();
-      expect(rowsLeft, 'deleted member row should disappear from the list').toBe(0);
-    }
-    const originalIntact = mongoCount('shopusers', `{"holdingcode": "uat260810a", "username": "${usercode}"}`);
+    // data-layer truth: the membership row must be gone
+    expect(memberCount('bc001', usercode), 'the membership must be deleted from holding_members').toBe(0);
+    // (orphan-row check removed: holding_members is UNIQUE (holding_code, user_id), so no orphan can exist)
+    const rowsLeft = await page.locator('table tbody tr, .bc-list-row').filter({ hasText: usercode }).count();
+    expect(rowsLeft, 'deleted member row should disappear from the list').toBe(0);
+    const originalIntact = memberCount('uat260810a', usercode);
     expect(originalIntact, `the user's ORIGINAL membership (uat260810a) must survive`).toBeGreaterThanOrEqual(1);
     await shootAudit(page, 'user-deleted');
   }
@@ -598,7 +583,7 @@ test('CRUD-05 PermissionGroup: create → toggle → cleanup', async ({ page }) 
   }
 
   const groupName = `กลุ่มสิทธิ์${thaiName()}${digits(2)}`;
-  const rolePermBefore = mongoCount('role_permission', '{}');
+  const rolePermBefore = pgCount('role_permissions');
   if ((await textInputs.count()) > 0) await textInputs.first().fill(groupName);
   if ((await selects.count()) > 0) await selects.first().selectOption({ index: 1 }).catch(() => {});
   const cbCount = await checkboxes.count();
@@ -607,7 +592,7 @@ test('CRUD-05 PermissionGroup: create → toggle → cleanup', async ({ page }) 
   await page.locator('button:has-text("บันทึก")').last().click();
   await page.waitForTimeout(2500);
   await shootAudit(page, 'permgroup-saved');
-  const rolePermAfter = mongoCount('role_permission', '{}');
+  const rolePermAfter = pgCount('role_permissions');
   metrics.rolePermissionCounts = { before: rolePermBefore, after: rolePermAfter };
 
   const pageText = (await page.locator('main').textContent()) ?? '';

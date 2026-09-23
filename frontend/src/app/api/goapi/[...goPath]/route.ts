@@ -4,6 +4,7 @@ import {
   getMainApiUrl,
   isRecord,
   proxyMainApiJson,
+  readJsonOrText,
   requireBearerToken,
 } from "@/lib/workspace-api";
 
@@ -16,22 +17,17 @@ const POST_ALLOWED_EXACT = [
   "api/report/tax/vat-register",
   "api/report/tax/pp30-summary",
   "api/report/tax/wht",
+  "api/report/tax/wht/certificate",
   "api/report/debt/query",
   "api/report/sales/summary",
   "api/report/sales/by-document",
   "api/process/product-balance",
   "api/stockcost/check",
   "processstockcalccost",
-  "api/approval/pr-status/approve",
-  "api/approval/pr-status/reject",
-  "api/approval/pr-status/pending",
-  "api/approval/po-status/pending",
-  "api/approval/rfq-status/pending",
-  "api/approval/po-status/approve",
-  "api/approval/po-status/reject",
-  "api/approval/rfq-status/approve",
-  "api/approval/rfq-status/reject",
 ];
+
+// ปลายทางที่ backend ตอบเป็นไฟล์ PDF (ใบ 50 ทวิ) — ส่งต่อ byte ตรง ๆ แทนการแปลง JSON
+const PDF_PATHS = ["api/report/tax/wht/certificate"];
 
 const ALLOWED_QUERY_PARAMS = [
   "holdingcode",
@@ -111,13 +107,55 @@ export async function POST(request: Request, context: Context) {
   if (!isRecord(parsedBody) || Array.isArray(parsedBody)) return bad("error_occurred", 400);
 
   try {
+    const mainApiUrl = getMainApiUrl(getBackendUrlFromRequest(request));
+    if (PDF_PATHS.includes(goPath.join("/"))) {
+      return await proxyPdf(request, authorization, `${mainApiUrl}${toGoApiPath(goPath)}`, parsedBody);
+    }
     return await proxyMainApiJson(
       request,
-      getMainApiUrl(getBackendUrlFromRequest(request)),
+      mainApiUrl,
       toGoApiPath(goPath),
       { method: "POST", body: JSON.stringify(parsedBody) },
     );
   } catch {
     return bad("connection_error", 500);
+  }
+}
+
+// proxyPdf - สำเร็จ = ไฟล์ PDF จาก backend; ผิดพลาด = JSON ของ backend (code/field/message ภาษาผู้ใช้)
+// user error (4xx มี code) ส่งเป็น 200 + success:false เหมือน proxyMainApiJson เพื่อไม่ให้ browser log error
+async function proxyPdf(request: Request, authorization: string, url: string, body: unknown): Promise<NextResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Language": request.headers.get("accept-language") ?? "th",
+        Authorization: authorization,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (response.ok && (response.headers.get("content-type") ?? "").startsWith("application/pdf")) {
+      return new NextResponse(await response.arrayBuffer(), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": response.headers.get("content-disposition") ?? "inline",
+          "Cache-Control": "no-store",
+        },
+      });
+    }
+    const payload = await readJsonOrText(response);
+    const record = isRecord(payload) ? payload : { message: String(payload ?? "") };
+    const userError = response.status >= 400 && response.status < 500 && response.status !== 401 && response.status !== 403 && typeof record.code === "string";
+    return NextResponse.json({ ...record, success: false }, { status: userError ? 200 : response.status });
+  } catch {
+    return bad("connection_error", 504);
+  } finally {
+    clearTimeout(timeout);
   }
 }

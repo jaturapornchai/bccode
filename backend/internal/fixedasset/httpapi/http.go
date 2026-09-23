@@ -9,17 +9,14 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"smlcloudplatform/internal/config"
 	fa "smlcloudplatform/internal/fixedasset"
 	"smlcloudplatform/internal/fixedasset/mcp"
 	gl "smlcloudplatform/internal/generalledger"
+	glhttp "smlcloudplatform/internal/generalledger/httpapi"
 	"smlcloudplatform/internal/goapi/mypg"
-	access "smlcloudplatform/internal/organization/access"
-	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -30,73 +27,28 @@ import (
 var validHoldingRegex = regexp.MustCompile(`^[A-Za-z0-9_]{1,63}$`)
 
 type Http struct {
-	ms        *microservice.Microservice
-	cfg       config.IConfig
-	pst       microservice.IPersisterMongo
-	store     *fa.Store
-	reporter  *fa.Reporter
-	poster    *fa.GLPoster
-	posterErr error
-	mu        sync.Mutex
+	ms       *microservice.Microservice
+	store    *fa.Store
+	reporter *fa.Reporter
+	poster   *fa.GLPoster
 }
 
+// NewHttp wires fixed assets to the holding PostgreSQL database; depreciation and
+// disposal journals post through the same PostgreSQL general ledger engine.
 func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
-	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-	h := &Http{
-		ms:  ms,
-		cfg: cfg,
-		pst: pst,
-	}
-	return h
-}
-
-// initialize wires the Mongo-backed store and reporter. It has no PostgreSQL
-// or Kafka dependency, so asset CRUD and reports keep working even when the
-// general ledger broker is unreachable; only ensurePoster (used for the
-// depreciations/disposals GL-posting commands) needs Kafka.
-func (h *Http) initialize(ctx context.Context) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if h.store != nil {
-		return nil
-	}
-	col, err := h.pst.Exec(ctx, fa.Asset{})
-	if err != nil {
-		return err
-	}
-	db := col.Database()
-	h.store = fa.NewStore(db)
-	h.reporter = fa.NewReporter(db)
-	return nil
-}
-
-// ensurePoster wires the general ledger poster: fixed-asset journals are
-// posted through generalledger.Store.Execute, which resolves the PostgreSQL
-// projection per holding on every call (no cross-tenant *sql.DB caching,
-// fixing P0-3) and requires the shared GL Kafka outbox to be configured.
-func (h *Http) ensurePoster(ctx context.Context) (*fa.GLPoster, error) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if h.poster != nil {
-		return h.poster, nil
-	}
-	if h.posterErr != nil {
-		return nil, h.posterErr
-	}
-	col, err := h.pst.Exec(ctx, fa.Asset{})
-	if err != nil {
-		return nil, err
-	}
-	db := col.Database()
-	projection := gl.NewPostgres(func(holding string) (*sql.DB, error) {
+	connect := func(holding string) (*sql.DB, error) {
 		if !validHoldingRegex.MatchString(holding) {
 			return nil, fmt.Errorf("รหัสกลุ่มบริษัทไม่ถูกต้อง")
 		}
 		return mypg.PgSqlFastConnect(holding)
-	})
-	store := gl.NewPostgresStore(projection)
-	h.poster = fa.NewGLPoster(db, store)
-	return h.poster, nil
+	}
+	ledger := gl.NewPostgresStore(gl.NewPostgres(connect))
+	return &Http{
+		ms:       ms,
+		store:    fa.NewStore(connect),
+		reporter: fa.NewReporter(connect),
+		poster:   fa.NewGLPoster(connect, ledger),
+	}
 }
 
 func (h *Http) RegisterHttp() {
@@ -111,32 +63,11 @@ func (h *Http) RegisterHttp() {
 }
 
 func (h *Http) scope(ctx context.Context, request microservice.IContext) (fa.Scope, error) {
-	u := request.UserInfo()
-	result := fa.Scope{Holding: u.HoldingCode, Company: u.BusinessCode, Actor: u.UID}
-	if u.HoldingCode == "" || u.BusinessCode == "" || u.CompanyUID == "" {
-		return result, fmt.Errorf("กรุณาเลือกบริษัทก่อนใช้งานระบบสินทรัพย์")
-	}
-	membership, err := access.FindActiveMembership(ctx, h.pst, u, time.Now().UTC())
+	scope, err := glhttp.ResolveSessionScope(ctx, request)
 	if err != nil {
-		return result, err
+		return fa.Scope{}, fmt.Errorf("กรุณาเลือกบริษัทที่มีสิทธิ์ก่อนใช้งานระบบสินทรัพย์")
 	}
-	if err = access.RequireActiveHolding(ctx, h.pst, u.HoldingCode); err != nil {
-		return result, err
-	}
-	if !access.AllowsCompany(membership.AccessScopes, u.CompanyUID) {
-		return result, fmt.Errorf("ไม่มีสิทธิ์เข้าใช้บริษัทนี้")
-	}
-	if !access.AllowsAllBranches(membership.AccessScopes, u.CompanyUID) {
-		if !access.AllowsBranch(membership.AccessScopes, u.CompanyUID, u.BranchUID) {
-			return result, fmt.Errorf("ไม่มีสิทธิ์เข้าใช้สาขานี้")
-		}
-		var branch branchmodels.BranchDoc
-		if err = h.pst.FindOne(ctx, branchmodels.BranchDoc{}, bson.M{"holdingcode": u.HoldingCode, "companyuid": u.CompanyUID, "branchuid": u.BranchUID, "isdeleted": false}, &branch); err != nil {
-			return result, err
-		}
-		result.Branch = branch.Code
-	}
-	return result, nil
+	return fa.Scope{Holding: scope.Holding, Company: scope.Company, Branch: scope.Branch, Actor: scope.Actor}, nil
 }
 
 func fail(request microservice.IContext, status int, message string) error {
@@ -164,16 +95,11 @@ func (h *Http) command(request microservice.IContext) error {
 		return fail(request, http.StatusForbidden, err.Error())
 	}
 
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
-	}
-
 	var cmd fa.Command
 	if err := json.NewDecoder(request.Request().Body).Decode(&cmd); err != nil {
 		return fail(request, http.StatusBadRequest, "รูปแบบคำสั่งไม่ถูกต้อง")
 	}
 
-	_ = h.store.EnsureIndexes(ctx)
 	now := time.Now().UTC()
 
 	switch cmd.Resource {
@@ -233,10 +159,7 @@ func (h *Http) command(request microservice.IContext) error {
 		}
 
 	case "depreciations":
-		poster, err := h.ensurePoster(ctx)
-		if err != nil {
-			return fail(request, http.StatusServiceUnavailable, "ไม่สามารถเชื่อมต่อระบบบัญชีแยกประเภทได้")
-		}
+		poster := h.poster
 		switch cmd.Action {
 		case "post-gl":
 			journal, err := poster.PostDepreciation(ctx, scope, cmd.FiscalYear, cmd.Period, cmd.Date, cmd.DocNo, now)
@@ -258,10 +181,7 @@ func (h *Http) command(request microservice.IContext) error {
 			if cmd.Disposal == nil {
 				return fail(request, http.StatusBadRequest, "กรุณาส่งข้อมูลการจำหน่ายสินทรัพย์")
 			}
-			poster, err := h.ensurePoster(ctx)
-			if err != nil {
-				return fail(request, http.StatusServiceUnavailable, "ไม่สามารถเชื่อมต่อระบบบัญชีแยกประเภทได้")
-			}
+			poster := h.poster
 			disp, journal, err := poster.DisposeAsset(ctx, scope, *cmd.Disposal, now)
 			if err != nil {
 				return fail(request, http.StatusBadRequest, err.Error())
@@ -280,9 +200,6 @@ func (h *Http) listAssets(request microservice.IContext) error {
 	scope, err := h.scope(ctx, request)
 	if err != nil {
 		return fail(request, http.StatusForbidden, err.Error())
-	}
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
 	}
 
 	q := request.QueryParam("q")
@@ -313,9 +230,6 @@ func (h *Http) getAsset(request microservice.IContext) error {
 	if err != nil {
 		return fail(request, http.StatusForbidden, err.Error())
 	}
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
-	}
 
 	id := request.Param("id")
 	asset, err := h.store.GetAsset(ctx, scope, id)
@@ -336,9 +250,6 @@ func (h *Http) getAssetSchedule(request microservice.IContext) error {
 	if err != nil {
 		return fail(request, http.StatusForbidden, err.Error())
 	}
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
-	}
 
 	id := request.Param("id")
 	items, err := h.store.GetAssetDepreciationSchedule(ctx, scope, id)
@@ -356,9 +267,6 @@ func (h *Http) listTypes(request microservice.IContext) error {
 	if err != nil {
 		return fail(request, http.StatusForbidden, err.Error())
 	}
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
-	}
 
 	items, err := h.store.ListAssetTypes(ctx, scope)
 	if err != nil {
@@ -374,9 +282,6 @@ func (h *Http) reportSchedule(request microservice.IContext) error {
 	scope, err := h.scope(ctx, request)
 	if err != nil {
 		return fail(request, http.StatusForbidden, err.Error())
-	}
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
 	}
 
 	fiscalYear := request.QueryParam("fiscalyear")
@@ -397,9 +302,6 @@ func (h *Http) reportTaxReconciliation(request microservice.IContext) error {
 	scope, err := h.scope(ctx, request)
 	if err != nil {
 		return fail(request, http.StatusForbidden, err.Error())
-	}
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
 	}
 
 	fiscalYear := request.QueryParam("fiscalyear")
@@ -423,9 +325,6 @@ func (h *Http) mcpRPC(request microservice.IContext) error {
 	if err != nil {
 		return fail(request, http.StatusForbidden, err.Error())
 	}
-	if err := h.initialize(ctx); err != nil {
-		return fail(request, http.StatusInternalServerError, "ไม่สามารถเชื่อมต่อฐานข้อมูลได้")
-	}
 
 	var req mcpRequest
 	if err := json.NewDecoder(request.Request().Body).Decode(&req); err != nil {
@@ -440,14 +339,7 @@ func (h *Http) mcpRPC(request microservice.IContext) error {
 	case "tools/call":
 		name, _ := req.Params["name"].(string)
 		args, _ := req.Params["arguments"].(map[string]interface{})
-		var poster *fa.GLPoster
-		if name == "fa_post_depreciation_to_gl" || name == "fa_dispose_asset" {
-			poster, err = h.ensurePoster(ctx)
-			if err != nil {
-				return fail(request, http.StatusServiceUnavailable, "ไม่สามารถเชื่อมต่อระบบบัญชีแยกประเภทได้")
-			}
-		}
-		mcpHandler := mcp.NewMCPHandler(h.store, poster, h.reporter)
+		mcpHandler := mcp.NewMCPHandler(h.store, h.poster, h.reporter)
 		res, err := mcpHandler.HandleToolCall(ctx, scope, name, args)
 		if err != nil {
 			return success(request, map[string]interface{}{

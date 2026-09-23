@@ -6,9 +6,6 @@ import (
 	"regexp"
 
 	"github.com/shopspring/decimal"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Amount is an exact decimal at every boundary. JSON numbers and implicit
@@ -55,42 +52,6 @@ func (a *Amount) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("จำนวนเงินต้องส่งเป็นข้อความทศนิยม")
 	}
 	parsed, err := ParseAmount(value)
-	if err == nil {
-		*a = parsed
-	}
-	return err
-}
-
-func (a Amount) MarshalBSONValue() (bsontype.Type, []byte, error) {
-	value := a
-	if value == "" {
-		value = "0"
-	}
-	if _, err := ParseAmount(string(value)); err != nil {
-		return bsontype.Null, nil, err
-	}
-	d, err := primitive.ParseDecimal128(string(value))
-	if err != nil {
-		return bsontype.Null, nil, err
-	}
-	return bson.MarshalValue(d)
-}
-
-func (a *Amount) UnmarshalBSONValue(t bsontype.Type, data []byte) error {
-	if t != bsontype.Decimal128 {
-		return fmt.Errorf("ledger amount must be BSON Decimal128")
-	}
-	d, ok := (bson.RawValue{Type: t, Value: data}).Decimal128OK()
-	if !ok {
-		return fmt.Errorf("invalid BSON ledger decimal")
-	}
-	// Decimal128 uses exponent notation for tiny values. Normalize only this
-	// trusted decimal representation; JSON input still requires plain decimals.
-	exact, err := decimal.NewFromString(d.String())
-	if err != nil {
-		return fmt.Errorf("invalid BSON ledger decimal")
-	}
-	parsed, err := ParseAmount(exact.String())
 	if err == nil {
 		*a = parsed
 	}

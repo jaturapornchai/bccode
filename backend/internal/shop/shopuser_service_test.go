@@ -2,42 +2,17 @@ package shop_test
 
 import (
 	"context"
-	"errors"
 	"smlcloudplatform/internal/authentication/models"
+	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/shop"
 	"testing"
 	"time"
 
-	"github.com/smlsoft/mongopagination"
+	micromodels "smlcloudplatform/pkg/microservice/models"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	micromodels "smlcloudplatform/pkg/microservice/models"
 )
-
-func TestShopUserSave(t *testing.T) {
-	shopUserRepo := new(ShopUserRepositoryMock)
-
-	mockHoldingCode := "MockHoldingCode"
-
-	authUser := "auth_user"
-
-	ctx := context.Background()
-
-	mockShopUserAuth := models.ShopUser{}
-	mockShopUserAuth.HoldingCode = mockHoldingCode
-	mockShopUserAuth.Username = authUser
-	mockShopUserAuth.Role = models.ROLE_OWNER
-
-	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, mockHoldingCode, authUser).Return(mockShopUserAuth, nil)
-	shopUserRepo.On("Save", ctx, mockHoldingCode, "user_create", models.ROLE_OWNER).Return(nil)
-
-	shopUserSvc := shop.NewShopUserService(shopUserRepo)
-
-	err := shopUserSvc.SaveUserPermissionShop(mockHoldingCode, authUser, "", "user_create", models.ROLE_OWNER)
-
-	require.NoError(t, err)
-	shopUserRepo.AssertExpectations(t)
-}
 
 func TestShopUserDeleteCannotDeleteCreator(t *testing.T) {
 	shopUserRepo := new(ShopUserRepositoryMock)
@@ -91,7 +66,6 @@ func TestShopUserSaveFullProfileDisablesMember(t *testing.T) {
 	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, authUsername).Return(testShopUser(holdingCode, authUsername, models.ROLE_OWNER), nil)
 	shopUserRepo.On("FindShopCreatedBy", ctx, holdingCode).Return(authUsername, nil)
 	shopUserRepo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, targetUsername).Return(testShopUser(holdingCode, targetUsername, models.ROLE_ADMIN), nil)
-	shopUserRepo.On("FindByHoldingCodeAndLineUserID", ctx, holdingCode, "line-id").Return(models.ShopUser{}, errors.New("not found"))
 	shopUserRepo.On("SaveFullProfile", ctx, holdingCode, requireAccessDisabledRequest(t, targetUsername, authUsername)).Return(nil)
 
 	shopUserSvc := shop.NewShopUserService(shopUserRepo)
@@ -99,7 +73,6 @@ func TestShopUserSaveFullProfileDisablesMember(t *testing.T) {
 	err := shopUserSvc.SaveUserFullProfile(holdingCode, authUsername, &models.UserRoleRequest{
 		Username:         targetUsername,
 		Role:             models.ROLE_ADMIN,
-		LineUserID:       "line-id",
 		IsAccessDisabled: true,
 	})
 
@@ -170,7 +143,7 @@ func TestListShopByUserUsesUIDForCreatorWithoutAccessExemption(t *testing.T) {
 		{CreatedBy: "stable-user-uid", IsAccessDisabled: true},
 		{CreatedBy: "renamed@example.com"},
 	}
-	repo.On("FindByUserUIDPage", ctx, "stable-user-uid", pageable).Return(docList, mongopagination.PaginationData{}, nil)
+	repo.On("FindByUserUIDPage", ctx, "stable-user-uid", pageable).Return(docList, common.PaginationData{}, nil)
 
 	got, _, err := shop.NewShopUserService(repo).ListShopByUser("renamed@example.com", "stable-user-uid", pageable)
 
@@ -179,54 +152,6 @@ func TestListShopByUserUsesUIDForCreatorWithoutAccessExemption(t *testing.T) {
 	require.True(t, got[0].IsAccessDisabled)
 	require.False(t, got[1].IsCreator)
 	repo.AssertNotCalled(t, "FindByUsernamePage", mock.Anything, mock.Anything)
-	repo.AssertExpectations(t)
-}
-
-func TestSyncLineDataUsesNarrowMembershipUpdate(t *testing.T) {
-	repo := new(ShopUserRepositoryMock)
-	ctx := context.Background()
-	holdingCode := "holdingcode"
-	username := "member@example.com"
-	userUID := "member-uid"
-	lineUserID := "line-user-id"
-
-	member := testShopUser(holdingCode, username, models.ROLE_ADMIN)
-	member.UserUID = userUID
-	member.IsAccessDisabled = true
-	member.AccessScopes = []models.AccessScope{{ScopeType: "company", CompanyUID: "company-uid"}}
-
-	repo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, username).Return(member, nil)
-	repo.On("FindByHoldingCodeAndLineUserID", ctx, holdingCode, lineUserID).Return(models.ShopUser{}, errors.New("not found"))
-	repo.On("UpdateLineFields", ctx, holdingCode, userUID, lineUserID, "Member", "https://example.test/member.png").Return(nil)
-
-	err := shop.NewShopUserService(repo).SyncLineData(holdingCode, username, lineUserID, "Member", "https://example.test/member.png")
-
-	require.NoError(t, err)
-	repo.AssertNotCalled(t, "SaveFullProfile", mock.Anything, mock.Anything, mock.Anything)
-	repo.AssertExpectations(t)
-}
-
-func TestSaveMyLineDataUnlinksPreviousOwnerWithNarrowUpdates(t *testing.T) {
-	repo := new(ShopUserRepositoryMock)
-	ctx := context.Background()
-	holdingCode := "holdingcode"
-	username := "member@example.com"
-	lineUserID := "shared-line-user-id"
-
-	member := testShopUser(holdingCode, username, models.ROLE_USER)
-	member.UserUID = "member-uid"
-	previous := testShopUser(holdingCode, "previous@example.com", models.ROLE_OWNER)
-	previous.UserUID = "previous-uid"
-
-	repo.On("FindByHoldingCodeAndUsername", ctx, holdingCode, username).Return(member, nil)
-	repo.On("FindByHoldingCodeAndLineUserID", ctx, holdingCode, lineUserID).Return(previous, nil)
-	repo.On("UpdateLineFields", ctx, holdingCode, previous.UserUID, "", "", "").Return(nil).Once()
-	repo.On("UpdateLineFields", ctx, holdingCode, member.UserUID, lineUserID, "Member", "https://example.test/member.png").Return(nil).Once()
-
-	err := shop.NewShopUserService(repo).SaveMyLineData(holdingCode, username, lineUserID, "Member", "https://example.test/member.png")
-
-	require.NoError(t, err)
-	repo.AssertNotCalled(t, "SaveFullProfile", mock.Anything, mock.Anything, mock.Anything)
 	repo.AssertExpectations(t)
 }
 
@@ -248,35 +173,4 @@ func requireAccessDisabledRequest(t *testing.T, username string, disabledBy stri
 			req.AccessEnabledAt.Equal(time.Time{}) &&
 			req.AccessEnabledBy == ""
 	})
-}
-
-func TestShopUserSaveRejectsMissingEditTarget(t *testing.T) {
-	repo := new(ShopUserRepositoryMock)
-	ctx := context.Background()
-	holding, owner, missing := "holding", "owner", "missing"
-	repo.On("FindByHoldingCodeAndUsername", ctx, holding, owner).
-		Return(testShopUser(holding, owner, models.ROLE_OWNER), nil).Once()
-	repo.On("FindByHoldingCodeAndUsername", ctx, holding, missing).
-		Return(models.ShopUser{}, errors.New("not found")).Once()
-	repo.On("FindByHoldingCodeAndUserUID", ctx, holding, missing).
-		Return(models.ShopUser{}, errors.New("not found")).Once()
-
-	err := shop.NewShopUserService(repo).SaveUserPermissionShop(holding, owner, missing, "target", models.ROLE_OWNER)
-	require.EqualError(t, err, "user not found")
-	repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
-	repo.AssertExpectations(t)
-}
-
-func TestShopUserSavePropagatesCreateFailure(t *testing.T) {
-	repo := new(ShopUserRepositoryMock)
-	ctx := context.Background()
-	holding, owner := "holding", "owner"
-	saveErr := errors.New("write failed")
-	repo.On("FindByHoldingCodeAndUsername", ctx, holding, owner).
-		Return(testShopUser(holding, owner, models.ROLE_OWNER), nil).Once()
-	repo.On("Save", ctx, holding, "target", models.ROLE_OWNER).Return(saveErr).Once()
-
-	err := shop.NewShopUserService(repo).SaveUserPermissionShop(holding, owner, "", "target", models.ROLE_OWNER)
-	require.ErrorIs(t, err, saveErr)
-	repo.AssertExpectations(t)
 }

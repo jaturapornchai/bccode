@@ -56,7 +56,7 @@ export type SystemSettingField = {
   businessCode?: boolean;
   /**
    * Marks an identity code field that must be unique per holding but is NOT a business code
-   * (e.g. permissionlink `employeecode` = email/username). It is NOT uppercased (emails are
+   * (e.g. an employee code that is an email/username). It is NOT uppercased (emails are
    * exempt) — only trimmed — but still gets a case-insensitive duplicate guard.
    */
   uniqueCode?: boolean;
@@ -75,10 +75,7 @@ export type SystemSettingField = {
 };
 
 export type SystemSettingKind =
-  | "ai-provider"
-  | "atlas"
   | "company"
-  | "copy-uat"
   | "goapi-crud"
   | "main-crud"
   | "permission-catalog"
@@ -97,7 +94,6 @@ export type SystemSettingConfig = {
   listPath?: string;
   idField?: string;
   code?: string;
-  collection?: string;
   editable?: boolean;
   deleteKey?: string;
   fields: SystemSettingField[];
@@ -781,29 +777,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
     ],
   },
   {
-    slug: "approvalsetting",
-    route: "/approvalsetting",
-    manual: "approvalsetting",
-    kind: "atlas",
-    icon: "shield",
-    collection: "approvalsettings",
-    idField: "guidfixed",
-    deleteKey: "guidfixed",
-    title: { th: "สิทธิ์การอนุมัติ", en: "Approval Permission" },
-    subtitle: {
-      th: "กำหนดสิทธิ์และวงเงินอนุมัติภายใต้กลุ่มกิจการ และกำหนดขอบเขตบริษัท/สาขา",
-      en: "Configure business group approval roles, limits, and company/branch scope.",
-    },
-    fields: [
-      businessCodeField("approvalcode", "รหัส", "Code", true),
-      textField("approvalname", "ชื่อ", "Name", true),
-      textareaField("description", "คำอธิบาย", "Description"),
-      checkboxField("isactive", "เปิดใช้งาน", "Active"),
-      holdingScopeRulesField("approvalrules", "ขอบเขตที่ใช้สิทธิ์อนุมัติ", "Approval scope"),
-      jsonField("approvals", "สิทธิ์การอนุมัติ", "Approval permission JSON"),
-    ],
-  },
-  {
     slug: "useraccessaudit",
     route: "/useraccessaudit",
     manual: "useraccessaudit",
@@ -865,82 +838,6 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       checkboxField("isactive", "เปิดใช้งาน", "Active"),
       jsonField("permissions", "หน้าจอที่เข้าใช้งานได้", "Accessible screens"),
     ],
-  },
-  {
-    slug: "permissionlink",
-    route: "/permissionlink",
-    manual: "permissionlink",
-    kind: "atlas",
-    icon: "link",
-    collection: "employeepermissions",
-    idField: "guidfixed",
-    deleteKey: "guidfixed",
-    title: { th: "กำหนดสิทธิ์ผู้ใช้งาน", en: "User Permission" },
-    subtitle: {
-      th: "ผูกผู้ใช้กับกลุ่มสิทธิ์/สิทธิ์หน้าจอภายใต้กลุ่มกิจการ และกำหนดขอบเขตบริษัท/สาขา",
-      en: "Link users to business group permissions and company/branch scope.",
-    },
-    fields: [
-      uniqueCodeField(
-        "employeecode",
-        "รหัสผู้ใช้/พนักงาน",
-        "User/employee code",
-        true,
-      ),
-      textField("employeename", "ชื่อ", "Name"),
-      textField("groupcode", "กลุ่มสิทธิ์", "Permission group", false),
-      holdingScopeRulesField("scoperules", "ขอบเขตที่ผู้ใช้นี้ใช้สิทธิ์ได้", "User permission scope"),
-      jsonField("permissioncodes", "สิทธิ์", "Permissions"),
-      jsonField("approvalcodes", "สิทธิ์การอนุมัติ", "Approval permissions"),
-    ],
-  },
-  {
-    slug: "aiprovider",
-    route: "/aiprovider",
-    manual: "aiprovider",
-    kind: "ai-provider",
-    icon: "bot",
-    idField: "providername",
-    title: { th: "AI Provider", en: "AI Provider" },
-    subtitle: {
-      th: "จัดการ provider, model, API key และลำดับใช้งานของ AI",
-      en: "Manage AI providers, models, API keys, and priority.",
-    },
-    fields: [
-      selectField(
-        "providername",
-        "Provider",
-        "Provider",
-        [
-          { value: "ollama", label: "Ollama" },
-          { value: "groq", label: "Groq" },
-          { value: "openrouter", label: "OpenRouter" },
-          { value: "deepseek", label: "DeepSeek" },
-          { value: "gemini", label: "Google Gemini" },
-          { value: "custom", label: "Custom" },
-        ],
-        true,
-      ),
-      textField("model", "Model", "Model", true),
-      textField("apikey", "API Key", "API Key"),
-      textField("baseurl", "Base URL", "Base URL"),
-      numberField("priority", "ลำดับ", "Priority"),
-      checkboxField("isactive", "เปิดใช้งาน", "Active"),
-    ],
-  },
-  {
-    slug: "copyuattodev",
-    route: "/copyuattodev",
-    manual: "copyuattodev",
-    kind: "copy-uat",
-    icon: "download-cloud",
-    editable: false,
-    title: { th: "โอนข้อมูล UAT ไป DEV", en: "Copy UAT to DEV" },
-    subtitle: {
-      th: "เลือก shop ต้นทาง ดู preview แล้วสั่งโอน MongoDB ไปยัง shop ปัจจุบัน",
-      en: "Select a source shop, preview counts, then copy MongoDB data into the current shop.",
-    },
-    fields: [],
   },
   {
     slug: "creditorgroup",
@@ -1260,80 +1157,6 @@ function productMasterConfigs(): SystemSettingConfig[] {
       titleEn,
     );
 
-  const atlasMasterConfig = (
-    slug: string,
-    route: string,
-    icon: string,
-    collection: string,
-    titleTh: string,
-    titleEn: string,
-    subtitleTh: string,
-    subtitleEn: string,
-    fields: SystemSettingField[],
-  ): SystemSettingConfig => ({
-    slug,
-    route,
-    manual: slug,
-    kind: "atlas",
-    icon,
-    collection,
-    idField: "guidfixed",
-    title: { th: titleTh, en: titleEn },
-    subtitle: { th: subtitleTh, en: subtitleEn },
-    fields,
-  });
-
-  const sizeSystemOptions: SystemSettingOption[] = [
-    { value: "intl", label: "International", labels: { th: "สากล", en: "International" } },
-    { value: "th", label: "Thai", labels: { th: "ไทย", en: "Thai" } },
-    { value: "us", label: "US", labels: { th: "US", en: "US" } },
-    { value: "uk", label: "UK", labels: { th: "UK", en: "UK" } },
-    { value: "eu", label: "EU", labels: { th: "EU", en: "EU" } },
-    { value: "jp", label: "JP", labels: { th: "JP", en: "JP" } },
-  ];
-
-  const sizeTypeOptions: SystemSettingOption[] = [
-    { value: "regular", label: "Regular", labels: { th: "ปกติ", en: "Regular" } },
-    { value: "petite", label: "Petite", labels: { th: "ตัวเล็ก", en: "Petite" } },
-    { value: "plus", label: "Plus", labels: { th: "พลัสไซซ์", en: "Plus size" } },
-    { value: "tall", label: "Tall", labels: { th: "ตัวสูง", en: "Tall" } },
-    { value: "kids", label: "Kids", labels: { th: "เด็ก", en: "Kids" } },
-    { value: "freesize", label: "Free size", labels: { th: "ฟรีไซซ์", en: "Free size" } },
-  ];
-
-  const variantMatrixTypeOptions: SystemSettingOption[] = [
-    { value: "general", label: "General", labels: { th: "สินค้าทั่วไป", en: "General" } },
-    { value: "apparel", label: "Apparel", labels: { th: "เสื้อผ้า/แฟชั่น", en: "Apparel" } },
-    { value: "mobilephone", label: "Mobile phone", labels: { th: "มือถือ/โทรศัพท์", en: "Mobile phone" } },
-    { value: "sim", label: "SIM", labels: { th: "ซิมการ์ด", en: "SIM card" } },
-    { value: "computer", label: "Computer", labels: { th: "คอมพิวเตอร์", en: "Computer" } },
-    { value: "electronics", label: "Electronics", labels: { th: "อิเล็กทรอนิกส์", en: "Electronics" } },
-  ];
-
-  const serialTrackingModeOptions: SystemSettingOption[] = [
-    { value: "none", label: "None", labels: { th: "ไม่คุมหมายเลขเครื่อง", en: "None" } },
-    { value: "serialno", label: "Serial No.", labels: { th: "Serial No.", en: "Serial No." } },
-    { value: "imei", label: "IMEI", labels: { th: "IMEI", en: "IMEI" } },
-    { value: "iccid", label: "ICCID", labels: { th: "ICCID ซิม", en: "SIM ICCID" } },
-    { value: "macaddress", label: "MAC address", labels: { th: "MAC address", en: "MAC address" } },
-    { value: "multiple", label: "Multiple", labels: { th: "หลายเลขต่อชิ้น", en: "Multiple identifiers" } },
-  ];
-
-  const serialRegistryStatusOptions: SystemSettingOption[] = [
-    { value: "instock", label: "In stock", labels: { th: "อยู่ในสต๊อก", en: "In stock" } },
-    { value: "reserved", label: "Reserved", labels: { th: "จองแล้ว", en: "Reserved" } },
-    { value: "sold", label: "Sold", labels: { th: "ขายแล้ว", en: "Sold" } },
-    { value: "repair", label: "Repair", labels: { th: "ส่งซ่อม", en: "Repair" } },
-    { value: "claim", label: "Claim", labels: { th: "เคลม", en: "Claim" } },
-    { value: "blocked", label: "Blocked", labels: { th: "ห้ามขาย", en: "Blocked" } },
-  ];
-
-  const channelPriceStatusOptions: SystemSettingOption[] = [
-    { value: "active", label: "Active", labels: { th: "ใช้งาน", en: "Active" } },
-    { value: "scheduled", label: "Scheduled", labels: { th: "ตั้งเวลาล่วงหน้า", en: "Scheduled" } },
-    { value: "ended", label: "Ended", labels: { th: "สิ้นสุดแล้ว", en: "Ended" } },
-  ];
-
   return [
     {
       slug: "productunit",
@@ -1467,192 +1290,6 @@ function productMasterConfigs(): SystemSettingConfig[] {
         },
       ],
     },
-    atlasMasterConfig(
-      "productcolor",
-      "/productcolor",
-      "color",
-      "productcolors",
-      "สีสินค้า",
-      "Product Color",
-      "กำหนดรหัสสี ชื่อสี และชื่อเรียกอื่นสำหรับใช้สร้าง SKU",
-      "Define color codes, names, and aliases for SKU generation.",
-      [
-        businessCodeField("code", "รหัสสี", "Color code", true),
-        namesField("names", "ชื่อสี", "Color names"),
-        textField("hexcolor", "ค่าสี (HEX)", "Color HEX"),
-        textField("colorfamily", "กลุ่มสี", "Color family"),
-        {
-          ...stringListField("aliases", "ชื่อเรียกอื่น", "Aliases"),
-          placeholder: "ดำ, black, สีดำ",
-          helper: {
-            th: "เพิ่มชื่อที่ระบบควรจับคู่เป็นสีเดียวกัน เช่น ดำ, black, สีดำ",
-            en: "Add names that should map to the same color, such as black, dark, BK.",
-          },
-        },
-        companyMultiSelectField("businesscodes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
-      ],
-    ),
-    atlasMasterConfig(
-      "productsize",
-      "/productsize",
-      "ruler",
-      "productsizes",
-      "ไซซ์สินค้า",
-      "Product Size",
-      "กำหนดรหัสไซซ์ ระบบไซซ์ และชื่อเรียกอื่น",
-      "Define size codes, size systems, and aliases.",
-      [
-        businessCodeField("code", "รหัสไซซ์", "Size code", true),
-        namesField("names", "ชื่อไซซ์", "Size names"),
-        selectField("sizesystem", "ระบบไซซ์", "Size system", sizeSystemOptions),
-        selectField("sizetype", "ประเภทไซซ์", "Size type", sizeTypeOptions),
-        numberField("sortorder", "ลำดับ", "Sort order"),
-        {
-          ...stringListField("aliases", "ชื่อเรียกอื่น", "Aliases"),
-          placeholder: "XL, XL(60-70kg), 36-37",
-          helper: {
-            th: "เพิ่มชื่อไซซ์ที่ระบบควรจับคู่เป็นไซซ์เดียวกัน เช่น XL, XL(60-70kg), 36-37",
-            en: "Add imported size labels that should map to the same size.",
-          },
-        },
-        companyMultiSelectField("businesscodes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
-      ],
-    ),
-    atlasMasterConfig(
-      "productvariantmatrix",
-      "/productvariantmatrix",
-      "grid",
-      "productvariantmatrices",
-      "ชุดตัวเลือกสินค้า",
-      "Product Option Sets",
-      "กำหนดชุดสี ไซซ์ หรือคุณสมบัติที่ใช้สร้างตัวเลือกสินค้าและรหัสขาย",
-      "Define color, size, or attribute option sets used to create sellable product choices.",
-      [
-        businessCodeField("code", "รหัสชุดตัวเลือก", "Option set code", true),
-        namesField("names", "ชื่อชุดตัวเลือก", "Option set names"),
-        textareaField("description", "คำอธิบายเบื้องต้น", "Basic description"),
-        selectField("matrixtype", "ประเภทธุรกิจสินค้า", "Product business type", variantMatrixTypeOptions),
-        selectField("serialtrackingmode", "การคุมหมายเลขเครื่อง", "Serial tracking mode", serialTrackingModeOptions),
-        {
-          ...jsonField("optiontiers", "แกนตัวเลือก", "Option tiers"),
-          placeholder: `[{"tierno":1,"optioncode":"COLOR","name":"สี/Color"},{"tierno":2,"optioncode":"SIZE","name":"ขนาด/Size"}]`,
-          helper: {
-            th: "รองรับหลายแกน เช่น สี, ไซซ์, ความจุ, รุ่น, เครือข่าย, วัสดุ, รสชาติ, แพ็ก",
-            en: "Supports multiple tiers such as color, size, storage, model, network, material, flavor, and pack.",
-          },
-        },
-        {
-          ...jsonField("skucombinations", "รายการ SKU/ตัวเลือก", "SKU combinations"),
-          placeholder: `[{"sellersku":"SKU-001","barcode":"885000000001","gtin":"885000000001","optionvalues":["BLACK","128GB"],"saleprice":0,"cost":0,"openingstock":0,"packageweight":0}]`,
-          helper: {
-            th: "ใช้เก็บ SKU, barcode/GTIN, ราคา, ต้นทุน, สต๊อกเริ่มต้น, น้ำหนัก/ขนาด และหมายเลขเครื่องต่อ SKU",
-            en: "Stores SKU, barcode/GTIN, price, cost, opening stock, package size/weight, and serial policy per SKU.",
-          },
-        },
-        {
-          ...jsonField("mediaassets", "รูปภาพและวิดีโอสินค้า", "Product media"),
-          placeholder: `[{"kind":"main","uri":"images/products/example-main.webp","sortorder":1},{"kind":"sku","optioncode":"COLOR","optionvalue":"BLACK","uri":"images/products/example-black.webp"}]`,
-          helper: {
-            th: "รองรับรูปหลัก รูปเพิ่มเติม รูปตามตัวเลือก วิดีโอ ตารางไซซ์ และรูปในรายละเอียดสินค้า",
-            en: "Supports main images, gallery images, SKU option images, video, size chart, and detail-page media.",
-          },
-        },
-        {
-          ...jsonField("specificationgroups", "ข้อมูลจำเพาะสินค้า", "Product specifications"),
-          placeholder: `[{"groupcode":"GENERAL","groupname":"ข้อมูลทั่วไป","attributes":[{"attributecode":"MATERIAL","attributename":"วัสดุ","inputtype":"multiselect","scope":"product","values":[{"valuecode":"COTTON","valuetext":"Cotton"}]}]}]`,
-          helper: {
-            th: "ใช้เก็บ attribute/specification จากหลายช่องทางขายแล้วแปลงเป็นสเปกกลางของระบบ",
-            en: "Stores attributes/specifications from multiple channels as the system's neutral product spec structure.",
-          },
-        },
-        {
-          ...jsonField("importattributemaps", "จับคู่ชื่อจากไฟล์นำเข้า", "Import name matching"),
-          placeholder: `[{"sourcename":"Color","targetoptioncode":"COLOR"},{"sourcename":"Storage","targetoptioncode":"STORAGE"}]`,
-          helper: {
-            th: "ใช้แมพชื่อ attribute จากข้อมูลนำเข้าให้เข้ากับแกนตัวเลือกของระบบ โดยไม่ต้องแสดงแหล่งที่มา",
-            en: "Maps imported attribute names into system option tiers without exposing the source channel.",
-          },
-        },
-        {
-          ...jsonField("integrationprofiles", "การเชื่อมต่อช่องทางขาย", "Sales channel connections"),
-          placeholder: `[{"channel":"external","skufields":["sellersku","barcode","price","stock"]}]`,
-          helper: {
-            th: "เก็บรายละเอียดสำหรับ import/sync ภายนอกไว้ให้ระบบใช้ ไม่ใช้เป็นข้อความแสดงที่มาของสินค้า",
-            en: "Stores external import/sync details for the system without showing them as product-source labels.",
-          },
-        },
-        {
-          ...jsonField("payloadexamples", "ตัวอย่างข้อมูลนำเข้า/ส่งออก", "Import/export examples"),
-          placeholder: `[{"direction":"import","usecase":"productdetail","payload":{"title":"Example","images":[],"attributes":[],"skus":[]}}]`,
-          helper: {
-            th: "เก็บตัวอย่างข้อมูลสำหรับทีมพัฒนา/ตัวนำเข้า ไม่ใช้เป็นข้อความแสดงในหน้าขายปกติ",
-            en: "Stores sample data for developers/importers, not as normal product display text.",
-          },
-        },
-        companyMultiSelectField("businesscodes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
-      ],
-    ),
-    atlasMasterConfig(
-      "productserialregistry",
-      "/productserialregistry",
-      "qr",
-      "productserialregistries",
-      "บันทึก Serial Number",
-      "Serial Registry",
-      "จัดการ Serial No., IMEI, ICCID, MAC address และสถานะเครื่องต่อสินค้า",
-      "Manage Serial No., IMEI, ICCID, MAC address, and item status per product.",
-      [
-        businessCodeField("serialno", "หมายเลขเครื่อง", "Serial / identifier", true),
-        selectField("identifiertype", "ประเภทหมายเลขเครื่อง", "Identifier type", serialTrackingModeOptions),
-        selectField("status", "สถานะหมายเลขเครื่อง", "Serial status", serialRegistryStatusOptions),
-        textField("itemcode", "รหัสสินค้า", "Product code", true),
-        textField("barcode", "บาร์โค้ด/SKU", "Barcode / SKU"),
-        textField("skucode", "รหัส SKU", "SKU code"),
-        textField("unitcode", "หน่วยนับ", "Unit code"),
-        textField("warehousecode", "คลัง", "Warehouse"),
-        textField("locationcode", "ที่เก็บ", "Location / shelf"),
-        textField("suppliercode", "ซื้อจาก (เจ้าหนี้)", "Supplier"),
-        textField("customercode", "ลูกค้า", "Customer"),
-        textField("purchasedocno", "เอกสารซื้อ", "Purchase document"),
-        textField("saledocno", "เอกสารขาย", "Sale document"),
-        dateField("warrantystartdate", "เริ่มประกัน", "Warranty start"),
-        dateField("warrantyenddate", "หมดประกัน", "Warranty end"),
-        textareaField("note", "หมายเหตุ", "Note"),
-        companyMultiSelectField("businesscodes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
-      ],
-    ),
-    atlasMasterConfig(
-      "channelprice",
-      "/channelprice",
-      "money",
-      "productchannelprices",
-      "ราคาตามช่องทางขาย",
-      "Channel Prices",
-      "กำหนดราคาขายตามช่องทาง เช่น หน้าร้าน Shopee Lazada TikTok และ Marketplace อื่น",
-      "Set selling prices by channel such as POS, Shopee, Lazada, TikTok, and other marketplaces.",
-      [
-        businessCodeField("pricecode", "รหัสราคา", "Price code", true),
-        namesField("names", "ชื่อราคา", "Price names"),
-        textField("channelcode", "ช่องทางขาย", "Sales channel", true),
-        textField("itemcode", "รหัสสินค้า", "Product code", true),
-        textField("barcode", "บาร์โค้ด/SKU", "Barcode / SKU"),
-        textField("dimensionkey", "ตัวเลือกสินค้า", "Product option key"),
-        textField("pricelevel", "ระดับราคา", "Price level"),
-        textField("currency", "สกุลเงิน", "Currency"),
-        numberField("saleprice", "ราคาขาย", "Sale price"),
-        numberField("compareatprice", "ราคาเต็ม/ก่อนลด", "Compare-at price"),
-        dateField("startdate", "เริ่มใช้ราคา", "Start date"),
-        dateField("enddate", "สิ้นสุดราคา", "End date"),
-        selectField("status", "สถานะราคา", "Price status", channelPriceStatusOptions),
-        checkboxField("syncprice", "ซิงค์ราคากับช่องทางขาย", "Sync channel price"),
-        companyMultiSelectField("businesscodes", "สิทธิ์การเข้าถึงบริษัท", "Active companies"),
-        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
-      ],
-    ),
     {
       slug: "productbom",
       route: "/productbom",
@@ -1703,23 +1340,6 @@ function productMasterConfigs(): SystemSettingConfig[] {
       "ยี่ห้อสินค้า",
       "Brand",
     ),
-    atlasMasterConfig(
-      "productsubgroup",
-      "/productsubgroup",
-      "group",
-      "productsubgroups",
-      "กลุ่มย่อยสินค้า",
-      "Product Subgroups",
-      "จัดกลุ่มย่อยแบบ tree กี่ระดับก็ได้ ลากวางจัดลำดับและย้ายกลุ่มได้อิสระ",
-      "Organize subgroups as a free-form tree. Drag to reorder or reparent to any depth.",
-      [
-        businessCodeField("code", "รหัสกลุ่มย่อย", "Subgroup code", true),
-        namesField("names", "ชื่อกลุ่มย่อย", "Subgroup names"),
-        textField("parentcode", "กลุ่มหลัก", "Parent group"),
-        numberField("sortorder", "ลำดับ", "Sort order"),
-        checkboxField("isdisabled", "ปิดใช้งาน", "Disabled"),
-      ],
-    ),
   ];
 }
 
@@ -1767,17 +1387,6 @@ function businessCodeField(
   required = false,
 ): SystemSettingField {
   return { key, label: { th, en }, type: "text", required, businessCode: true };
-}
-
-// uniqueCodeField — an identity code that must be unique per holding but is NOT uppercased
-// (e.g. employeecode = email/username). Trimmed + case-insensitive duplicate-guarded.
-function uniqueCodeField(
-  key: string,
-  th: string,
-  en: string,
-  required = false,
-): SystemSettingField {
-  return { key, label: { th, en }, type: "text", required, uniqueCode: true };
 }
 
 function textareaField(

@@ -6,30 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"smlcloudplatform/internal/config"
-	"smlcloudplatform/internal/goapi/mypg"
-	common "smlcloudplatform/internal/models"
-	orgaccess "smlcloudplatform/internal/organization"
-	orgpolicy "smlcloudplatform/internal/organization/access"
-	branchModels "smlcloudplatform/internal/organization/branch/models"
-	companyModels "smlcloudplatform/internal/organization/company/models"
-	orgEvents "smlcloudplatform/internal/organization/events"
-	"smlcloudplatform/internal/utils"
-	"smlcloudplatform/pkg/apperr"
-	"smlcloudplatform/pkg/microservice"
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
-
-const (
-	companyTopicUpdated       = "when-organization-company-updated"
-	companyTopicDeleted       = "when-organization-company-deleted"
-	companyBranchTopicDeleted = "when-organization-branch-deleted"
+	"smlcloudplatform/internal/centraldb"
+	"smlcloudplatform/internal/config"
+	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
+	orgpolicy "smlcloudplatform/internal/organization/access"
+	companyModels "smlcloudplatform/internal/organization/company/models"
+	"smlcloudplatform/pkg/apperr"
+	"smlcloudplatform/pkg/microservice"
 )
 
 type CompanyHttp struct {
@@ -51,9 +38,29 @@ func (h CompanyHttp) RegisterHttp() {
 	h.ms.PUT("/organization/company/:id", h.UpdateCompany)
 }
 
+const companyColumns = `code, name, names, COALESCE(tax_id, ''), logo_uri, is_active, created_at, updated_at, created_by, updated_by`
+
+func scanCompany(row interface{ Scan(...interface{}) error }, holdingCode string) (companyModels.CompanyDoc, error) {
+	var (
+		doc   companyModels.CompanyDoc
+		name  string
+		names []byte
+	)
+	err := row.Scan(&doc.Code, &name, &names, &doc.TaxID, &doc.LogoURI, &doc.IsActive, &doc.CreatedAt, &doc.UpdatedAt, &doc.CreatedBy, &doc.UpdatedBy)
+	if err != nil {
+		return doc, err
+	}
+	doc.Names = orgaccess.DecodeNames(names, name)
+	doc.HoldingCode = holdingCode
+	doc.HoldingUID = holdingCode
+	doc.GuidFixed = doc.Code
+	doc.CompanyUID = doc.Code
+	doc.ID = doc.Code
+	return doc, nil
+}
+
 func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 	holdingCode := ctx.UserInfo().HoldingCode
-	authUsername := ctx.UserInfo().Username
 	input := ctx.ReadInput()
 
 	var req companyModels.CompanyDoc
@@ -62,62 +69,51 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 		return err
 	}
 
-	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	if authErr := orgaccess.RequireHoldingAdmin(pst, ctx.UserInfo()); authErr != nil {
+	db, err := centraldb.Open()
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+	}
+	if authErr := orgaccess.RequireHoldingAdmin(reqCtx, db, ctx.UserInfo()); authErr != nil {
 		return apperr.Respond(ctx, authErr)
 	}
-	membership, err := orgpolicy.FindActiveHoldingManager(mongoCtx, pst, ctx.UserInfo(), time.Now())
-	if err != nil {
+	if _, err := orgpolicy.FindActiveHoldingManager(reqCtx, db, ctx.UserInfo(), time.Now()); err != nil {
 		return respondCompanyMembershipError(ctx, err)
 	}
-	holding, err := orgpolicy.FindActiveHolding(mongoCtx, pst, holdingCode)
+	holding, err := orgpolicy.FindActiveHolding(reqCtx, db, holdingCode)
 	if err != nil {
 		return respondCompanyMembershipError(ctx, err)
-	}
-	holdingUID := strings.TrimSpace(holding.HoldingUID)
-	if holdingUID == "" || strings.TrimSpace(holding.GuidFixed) != holdingUID || strings.TrimSpace(membership.HoldingUID) != holdingUID {
-		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("Holding lineage does not match Membership").WithThaiMessage("Membership ไม่ตรงกับ Holding ที่เลือก"))
 	}
 
 	actorUID := strings.TrimSpace(ctx.UserInfo().UID)
 	now := time.Now().UTC()
-	if err := prepareCompanyCreate(&req, holdingCode, holdingUID, authUsername, utils.NewGUID(), now); err != nil {
+	if err := prepareCompanyCreate(&req, holding.Code, ctx.UserInfo().Username, now); err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	if err := orgaccess.EnsureOrganizationCreateIndexes(mongoCtx, pst,
-		orgaccess.UniqueIndexSpec{Model: companyModels.CompanyDoc{}, Name: "uniq_organizationcompanies_companyuid", Keys: bson.D{{Key: "companyuid", Value: 1}}, PartialFilter: orgaccess.CanonicalStringFieldsFilter("companyuid")},
-		orgaccess.UniqueIndexSpec{Model: companyModels.CompanyDoc{}, Name: "uniq_organizationcompanies_holding_code", Keys: bson.D{{Key: "holdinguid", Value: 1}, {Key: "code", Value: 1}}, PartialFilter: orgaccess.CanonicalStringFieldsFilter("holdinguid", "code")},
-	); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
+	names, err := orgaccess.EncodeNames(req.Names)
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
 
-	auditUID := primitive.NewObjectID().Hex()
-	err = orgaccess.ApplyOrganizationCreate(mongoCtx, pst, orgaccess.OrganizationCreate{
-		TargetModel: companyModels.CompanyDoc{},
-		Target:      req,
-		CodeClaim: orgaccess.OrganizationCodeClaim{
-			EntityType: "company", ScopeUID: req.HoldingUID, NormalizedCode: req.Code,
-			EntityUID: req.CompanyUID, ClaimedAt: now, ClaimedBy: actorUID,
-		},
-		Audit: orgaccess.OrganizationAudit{
-			AuditUID: auditUID, ActorUID: actorUID, Action: "company.created",
-			TargetType: "company", TargetUID: req.CompanyUID, HoldingUID: req.HoldingUID, CompanyUID: req.CompanyUID,
-			After:      bson.M{"holdinguid": req.HoldingUID, "companyuid": req.CompanyUID, "code": req.Code, "isactive": true},
+	err = inTx(reqCtx, db, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(reqCtx, `
+			INSERT INTO companies (holding_code, code, name, names, tax_id, logo_uri, is_active, created_by, updated_by, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, true, $7, '', $8, $8)`,
+			req.HoldingCode, req.Code, orgaccess.PrimaryName(req.Names), names, req.TaxID, req.LogoURI, req.CreatedBy, now); err != nil {
+			return err
+		}
+		return orgaccess.RecordAudit(reqCtx, tx, orgaccess.Audit{
+			HoldingCode: req.HoldingCode, Action: "company.created", TargetType: "company", TargetCode: req.Code,
+			CompanyCode: req.Code, ActorUID: actorUID,
+			After:      map[string]interface{}{"code": req.Code, "isactive": true},
 			OccurredAt: now,
-		},
-		Outbox: orgaccess.OrganizationOutboxEvent{
-			EventUID: primitive.NewObjectID().Hex(), AggregateType: "company", AggregateUID: req.CompanyUID,
-			Version: 0, EventType: "company.created",
-			Payload: bson.M{"audituid": auditUID, "holdinguid": req.HoldingUID, "companyuid": req.CompanyUID, "code": req.Code},
-			Status:  "PENDING", Attempts: 0, OccurredAt: now,
-		},
+		})
 	})
 	if err != nil {
-		if mongo.IsDuplicateKeyError(err) {
+		if centraldb.IsUniqueViolation(err) {
 			return apperr.Respond(ctx, apperr.DuplicateCode("code", req.Code).
 				WithMessage("company code is exists").WithThaiMessage("รหัสบริษัทนี้มีอยู่แล้วใน Holding").WithWrap(err))
 		}
@@ -127,88 +123,47 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
 		ID:      req.CompanyUID,
-		Data:    orgaccess.OrganizationCreateResponse{Entity: req, KafkaSync: "outbox"},
+		Data:    orgaccess.OrganizationCreateResponse{Entity: req},
 	})
 	return nil
 }
 
-func visibleCompanyBranchFilter(holdingCode string, companyGuid string) bson.M {
-	return bson.M{
-		"holdingcode": holdingCode,
-		"companyguid": companyGuid,
-		"isdeleted":   bson.M{"$ne": true},
-		"deletedat":   bson.M{"$exists": false},
-	}
-}
-
+// SearchCompany lists the active companies the caller's access scopes allow
+// (workspace selector). management=true lists the whole structure for Holding managers.
 func (h CompanyHttp) SearchCompany(ctx microservice.IContext) error {
-	if strings.EqualFold(strings.TrimSpace(ctx.QueryParam("management")), "true") {
-		return h.SearchCompanyManagement(ctx)
-	}
-	holdingCode := ctx.UserInfo().HoldingCode
+	management := strings.EqualFold(strings.TrimSpace(ctx.QueryParam("management")), "true")
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
 
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.searchCompanyPostgres(ctx, db, holdingCode, false)
-	}
-
-	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	membership, err := orgpolicy.FindActiveMembership(mongoCtx, pst, ctx.UserInfo(), time.Now())
+	db, err := centraldb.Open()
 	if err != nil {
-		return respondCompanyMembershipError(ctx, err)
-	}
-	allowedUIDs := orgpolicy.AllowedCompanyUIDs(membership.AccessScopes)
-	if len(allowedUIDs) == 0 {
-		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []companyModels.CompanyDoc{}})
-		return nil
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 	}
 
-	filter := visibleCompanyFilter(holdingCode)
-	filter["companyuid"] = bson.M{"$in": allowedUIDs}
-	return h.respondCompanyList(ctx, mongoCtx, pst, filter)
-}
-
-// SearchCompanyManagement returns organization structure for Holding managers.
-// It is intentionally separate from SearchCompany, whose result remains limited
-// by transaction scopes used by the workspace selector.
-func (h CompanyHttp) SearchCompanyManagement(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.searchCompanyPostgres(ctx, db, holdingCode, true)
-	}
-
-	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	if _, err := orgpolicy.FindActiveHoldingManager(mongoCtx, pst, ctx.UserInfo(), time.Now()); err != nil {
-		return respondCompanyMembershipError(ctx, err)
-	}
-	if err := orgpolicy.RequireActiveHolding(mongoCtx, pst, holdingCode); err != nil {
-		return respondCompanyMembershipError(ctx, err)
-	}
-
-	return h.respondCompanyList(ctx, mongoCtx, pst, visibleCompanyFilter(holdingCode))
-}
-
-func (h CompanyHttp) searchCompanyPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, management bool) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	if holdingCode == "" {
-		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []companyModels.CompanyDoc{}})
-		return nil
-	}
-
-	query := `SELECT code, name, COALESCE(tax_id, ''), is_active, created_at FROM companies WHERE LOWER(holding_code) = LOWER($1)`
-	if !management {
+	query := `SELECT ` + companyColumns + ` FROM companies WHERE holding_code = $1`
+	var allowed map[string]bool
+	if management {
+		if _, err := orgpolicy.FindActiveHoldingManager(reqCtx, db, ctx.UserInfo(), time.Now()); err != nil {
+			return respondCompanyMembershipError(ctx, err)
+		}
+		if err := orgpolicy.RequireActiveHolding(reqCtx, db, holdingCode); err != nil {
+			return respondCompanyMembershipError(ctx, err)
+		}
+	} else {
+		membership, err := orgpolicy.FindActiveMembership(reqCtx, db, ctx.UserInfo(), time.Now())
+		if err != nil {
+			return respondCompanyMembershipError(ctx, err)
+		}
+		allowed = map[string]bool{}
+		for _, uid := range orgpolicy.AllowedCompanyUIDs(membership.AccessScopes) {
+			allowed[uid] = true
+		}
 		query += ` AND is_active = true`
 	}
-	query += ` ORDER BY code`
+	query += ` ORDER BY created_at, code`
 
-	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	rows, err := db.QueryContext(qCtx, query, holdingCode)
+	rows, err := db.QueryContext(reqCtx, query, holdingCode)
 	if err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
@@ -217,103 +172,17 @@ func (h CompanyHttp) searchCompanyPostgres(ctx microservice.IContext, db *sql.DB
 
 	list := make([]companyModels.CompanyDoc, 0)
 	for rows.Next() {
-		var (
-			code      string
-			name      string
-			taxID     string
-			isActive  bool
-			createdAt time.Time
-		)
-		if err := rows.Scan(&code, &name, &taxID, &isActive, &createdAt); err != nil {
+		doc, err := scanCompany(rows, holdingCode)
+		if err != nil {
+			ctx.ResponseError(http.StatusInternalServerError, err.Error())
+			return err
+		}
+		if allowed != nil && !allowed[doc.CompanyUID] {
 			continue
 		}
-		thName := name
-		thCode := "th"
-		list = append(list, companyModels.CompanyDoc{
-			HoldingCode: holdingCode,
-			HoldingUID:  holdingCode,
-			GuidFixed:   code,
-			CompanyUID:  code,
-			Company: companyModels.Company{
-				Code: code,
-				Names: common.JSONB{
-					common.NameX{
-						Code: &thCode,
-						Name: &thName,
-					},
-				},
-				TaxID:    taxID,
-				IsActive: isActive,
-			},
-			CreatedAt: createdAt,
-		})
+		list = append(list, doc)
 	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    list,
-	})
-	return nil
-}
-
-func (h CompanyHttp) infoCompanyPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) (bool, error) {
-	holdingCode = strings.TrimSpace(holdingCode)
-	id = strings.TrimSpace(id)
-	if holdingCode == "" || id == "" {
-		return false, nil
-	}
-
-	query := `SELECT code, name, COALESCE(tax_id, ''), is_active, created_at FROM companies WHERE LOWER(holding_code) = LOWER($1) AND (LOWER(code) = LOWER($2) OR LOWER(code) = LOWER(REPLACE($2, 'company ', ''))) LIMIT 1`
-	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	var (
-		code      string
-		name      string
-		taxID     string
-		isActive  bool
-		createdAt time.Time
-	)
-	err := db.QueryRowContext(qCtx, query, holdingCode, id).Scan(&code, &name, &taxID, &isActive, &createdAt)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	thName := name
-	thCode := "th"
-	data := companyModels.CompanyDoc{
-		HoldingCode: holdingCode,
-		HoldingUID:  holdingCode,
-		GuidFixed:   code,
-		CompanyUID:  code,
-		Company: companyModels.Company{
-			Code: code,
-			Names: common.JSONB{
-				common.NameX{
-					Code: &thCode,
-					Name: &thName,
-				},
-			},
-			TaxID:    taxID,
-			IsActive: isActive,
-		},
-		CreatedAt: createdAt,
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    data,
-	})
-	return true, nil
-}
-
-func (h CompanyHttp) respondCompanyList(ctx microservice.IContext, mongoCtx context.Context, pst microservice.IPersisterMongo, filter bson.M) error {
-	var list []companyModels.CompanyDoc
-	opts := options.Find().SetSort(bson.D{{Key: "createdat", Value: 1}, {Key: "code", Value: 1}})
-	if err := pst.Find(mongoCtx, companyModels.CompanyDoc{}, filter, &list, opts); err != nil {
+	if err := rows.Err(); err != nil {
 		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
@@ -325,24 +194,27 @@ func (h CompanyHttp) respondCompanyList(ctx microservice.IContext, mongoCtx cont
 	return nil
 }
 
+func findCompany(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
+}, holdingCode, code string, lock bool) (companyModels.CompanyDoc, error) {
+	query := `SELECT ` + companyColumns + ` FROM companies WHERE holding_code = $1 AND code = $2`
+	if lock {
+		query += ` FOR UPDATE`
+	}
+	return scanCompany(q.QueryRowContext(ctx, query, holdingCode, strings.TrimSpace(code)), holdingCode)
+}
+
 func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
 	id := ctx.Param("id")
 
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		found, err := h.infoCompanyPostgres(ctx, db, holdingCode, id)
-		if found {
-			return nil
-		}
-		if err != nil {
-			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
-		}
-	}
-
-	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	membership, err := orgpolicy.FindActiveMembership(mongoCtx, pst, ctx.UserInfo(), time.Now())
+	db, err := centraldb.Open()
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+	}
+	membership, err := orgpolicy.FindActiveMembership(reqCtx, db, ctx.UserInfo(), time.Now())
 	if err != nil {
 		return respondCompanyMembershipError(ctx, err)
 	}
@@ -350,17 +222,15 @@ func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
 		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company access denied").WithThaiMessage("ไม่มีสิทธิ์ใช้งานบริษัทนี้"))
 	}
 
-	var data companyModels.CompanyDoc
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, companyIdentityFilter(holdingCode, id), &data); err != nil {
+	data, err := findCompany(reqCtx, db, holdingCode, id, false)
+	if errors.Is(err, sql.ErrNoRows) {
 		ctx.ResponseError(http.StatusNotFound, "Company not found")
 		return err
 	}
-	companyUID := stableOrLegacyCompanyUID(data)
-	if companyUID == "" {
-		ctx.ResponseError(http.StatusNotFound, "Company not found")
-		return errors.New("Company not found")
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 	}
-	if !orgpolicy.AllowsCompany(membership.AccessScopes, companyUID) {
+	if !orgpolicy.AllowsCompany(membership.AccessScopes, data.CompanyUID) {
 		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("company access denied").WithThaiMessage("ไม่มีสิทธิ์ใช้งานบริษัทนี้"))
 	}
 
@@ -382,38 +252,10 @@ func respondCompanyMembershipError(ctx microservice.IContext, err error) error {
 }
 
 func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
+	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
 	authUsername := ctx.UserInfo().Username
 	id := ctx.Param("id")
 	input := ctx.ReadInput()
-
-	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	membership, err := orgpolicy.FindActiveHoldingManager(mongoCtx, pst, ctx.UserInfo(), time.Now())
-	if err != nil {
-		return respondCompanyMembershipError(ctx, err)
-	}
-	holding, err := orgpolicy.FindActiveHolding(mongoCtx, pst, holdingCode)
-	if err != nil {
-		return respondCompanyMembershipError(ctx, err)
-	}
-	canonicalHoldingUID := strings.TrimSpace(holding.HoldingUID)
-	if canonicalHoldingUID == "" || strings.TrimSpace(holding.GuidFixed) != canonicalHoldingUID || strings.TrimSpace(membership.HoldingUID) != canonicalHoldingUID {
-		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("Holding lineage does not match Membership").WithThaiMessage("Membership ไม่ตรงกับ Holding ที่เลือก"))
-	}
-
-	var existing companyModels.CompanyDoc
-	identityFilter := companyIdentityFilter(holdingCode, id)
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, identityFilter, &existing); err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Company not found")
-		return err
-	}
-	companyUID := stableOrLegacyCompanyUID(existing)
-	if companyUID == "" {
-		ctx.ResponseError(http.StatusNotFound, "Company not found")
-		return errors.New("Company not found")
-	}
 
 	var req companyModels.CompanyDoc
 	if err := json.Unmarshal([]byte(input), &req); err != nil {
@@ -429,77 +271,78 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	if err := requireUnchangedCompanyCode(existing.Code, req.Code); err != nil {
-		ctx.ResponseError(http.StatusConflict, err.Error())
-		return err
-	}
-	if existing.HoldingUID != "" && strings.TrimSpace(existing.HoldingUID) != canonicalHoldingUID {
-		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("Company lineage does not match Holding").WithThaiMessage("บริษัทไม่อยู่ใน Holding ที่เลือก"))
-	}
-	existing.Names = req.Names
-	existing.TaxID = req.TaxID
-	existing.Code = req.Code
-	existing.LogoURI = req.LogoURI
-	requestedStatus, statusChanged, err := orgaccess.ResolveRequestedActiveStatus(input, existing.IsActive)
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-	existing.IsActive = requestedStatus
-	existing.UpdatedAt = time.Now()
-	existing.UpdatedBy = authUsername
 
-	set := bson.M{
-		"names":     existing.Names,
-		"taxid":     existing.TaxID,
-		"code":      existing.Code,
-		"logouri":   existing.LogoURI,
-		"updatedat": existing.UpdatedAt,
-		"updatedby": existing.UpdatedBy,
+	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	db, err := centraldb.Open()
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 	}
-	kafkaSync := ""
-	if statusChanged {
-		reason, err := orgaccess.StatusChangeReason(input)
-		if err != nil {
-			ctx.ResponseError(http.StatusBadRequest, err.Error())
+	if _, err := orgpolicy.FindActiveHoldingManager(reqCtx, db, ctx.UserInfo(), time.Now()); err != nil {
+		return respondCompanyMembershipError(ctx, err)
+	}
+	if err := orgpolicy.RequireActiveHolding(reqCtx, db, holdingCode); err != nil {
+		return respondCompanyMembershipError(ctx, err)
+	}
+
+	var responseErr error
+	err = inTx(reqCtx, db, func(tx *sql.Tx) error {
+		existing, err := findCompany(reqCtx, tx, holdingCode, id, true)
+		if errors.Is(err, sql.ErrNoRows) {
+			ctx.ResponseError(http.StatusNotFound, "Company not found")
+			responseErr = err
 			return err
 		}
-		holdingUID := strings.TrimSpace(membership.HoldingUID)
-		if holdingUID == "" {
-			ctx.ResponseError(http.StatusConflict, "stable Holding identity is required")
-			return errors.New("stable Holding identity is required")
+		if err != nil {
+			return err
 		}
-		err = orgaccess.ApplyStatusChange(mongoCtx, pst, orgaccess.StatusChange{
-			TargetModel:      companyModels.CompanyDoc{},
-			TargetFilter:     identityFilter,
-			MembershipFilter: orgaccess.CompanyMembershipStatusFilter(holdingCode, companyUID),
-			TargetType:       "company",
-			TargetUID:        companyUID,
-			HoldingUID:       holdingUID,
-			CompanyUID:       companyUID,
-			ActorUID:         ctx.UserInfo().UID,
-			Reason:           reason,
-			Before:           !requestedStatus,
-			After:            requestedStatus,
-			Version:          existing.Version,
-			Set:              set,
-			OccurredAt:       existing.UpdatedAt,
+		if err := requireUnchangedCompanyCode(existing.Code, req.Code); err != nil {
+			ctx.ResponseError(http.StatusConflict, err.Error())
+			responseErr = err
+			return err
+		}
+		requestedStatus, statusChanged, err := orgaccess.ResolveRequestedActiveStatus(input, existing.IsActive)
+		if err != nil {
+			ctx.ResponseError(http.StatusBadRequest, err.Error())
+			responseErr = err
+			return err
+		}
+		reason := ""
+		if statusChanged {
+			if reason, err = orgaccess.StatusChangeReason(input); err != nil {
+				ctx.ResponseError(http.StatusBadRequest, err.Error())
+				responseErr = err
+				return err
+			}
+		}
+		names, err := orgaccess.EncodeNames(req.Names)
+		if err != nil {
+			return err
+		}
+		now := time.Now().UTC()
+		result, err := tx.ExecContext(reqCtx, `
+			UPDATE companies SET name = $3, names = $4, tax_id = $5, logo_uri = $6, is_active = $7, updated_by = $8, updated_at = $9
+			WHERE holding_code = $1 AND code = $2 AND is_active = $10`,
+			holdingCode, existing.Code, orgaccess.PrimaryName(req.Names), names, req.TaxID, req.LogoURI,
+			requestedStatus, authUsername, now, existing.IsActive)
+		if err != nil {
+			return err
+		}
+		if affected, err := result.RowsAffected(); err != nil || affected != 1 {
+			return orgaccess.ErrStatusChangeConflict
+		}
+		if !statusChanged {
+			return nil
+		}
+		return orgaccess.RecordAudit(reqCtx, tx, orgaccess.Audit{
+			HoldingCode: holdingCode, Action: "organization.status.changed", TargetType: "company",
+			TargetCode: existing.Code, CompanyCode: existing.Code, ActorUID: ctx.UserInfo().UID, Reason: reason,
+			Before: map[string]bool{"isactive": existing.IsActive}, After: map[string]bool{"isactive": requestedStatus},
+			OccurredAt: now,
 		})
-		kafkaSync = "outbox"
-	} else {
-		err = orgaccess.ApplyMetadataUpdate(
-			mongoCtx,
-			pst,
-			companyModels.CompanyDoc{},
-			identityFilter,
-			existing.Version,
-			existing.IsActive,
-			set,
-		)
-		if err == nil {
-			existing.Version++
-			kafkaSync, err = orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationcompany", "updated", companyTopicUpdated, companyUID, existing)
-		}
+	})
+	if responseErr != nil {
+		return responseErr
 	}
 	if err != nil {
 		if errors.Is(err, orgaccess.ErrStatusChangeConflict) {
@@ -513,83 +356,23 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		ID:      id,
-		Data:    map[string]string{"kafka_sync": kafkaSync},
 	})
 	return nil
 }
 
-func (h CompanyHttp) DeleteCompany(ctx microservice.IContext) error {
-	holdingCode := ctx.UserInfo().HoldingCode
-	id := ctx.Param("id")
-
-	mongoCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	pst := h.ms.MongoPersister(h.cfg.MongoPersisterConfig())
-	if _, err := orgpolicy.FindActiveHoldingManager(mongoCtx, pst, ctx.UserInfo(), time.Now()); err != nil {
-		return respondCompanyMembershipError(ctx, err)
-	}
-	if err := orgpolicy.RequireActiveHolding(mongoCtx, pst, holdingCode); err != nil {
-		return respondCompanyMembershipError(ctx, err)
-	}
-
-	companyFilter := companyIdentityFilter(holdingCode, id)
-	var data companyModels.CompanyDoc
-	if err := pst.FindOne(mongoCtx, companyModels.CompanyDoc{}, companyFilter, &data); err != nil {
-		ctx.ResponseError(http.StatusNotFound, "Company not found")
-		return err
-	}
-	if strings.TrimSpace(data.CompanyUID) == "" {
-		ctx.ResponseError(http.StatusNotFound, "Company not found")
-		return errors.New("Company not found")
-	}
-
-	branchFilter := visibleCompanyBranchFilter(holdingCode, id)
-	var branches []branchModels.BranchOrgDoc
-	if err := pst.Find(mongoCtx, branchModels.BranchOrgDoc{}, branchFilter, &branches); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-	if err := pst.Delete(mongoCtx, branchModels.BranchOrgDoc{}, branchFilter); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-	if err := pst.Delete(mongoCtx, companyModels.CompanyDoc{}, companyFilter); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-
-	lastBranchKafkaSync := ""
-	for _, branch := range branches {
-		branchKafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationbranch", "deleted", companyBranchTopicDeleted, branch.GuidFixed, branch)
-		if err != nil {
-			ctx.ResponseError(http.StatusInternalServerError, err.Error())
-			return err
-		}
-		lastBranchKafkaSync = branchKafkaSync
-	}
-
-	kafkaSync, err := orgEvents.PublishOrOutbox(mongoCtx, pst, h.ms.Producer(h.cfg.MQConfig()), holdingCode, "organizationcompany", "deleted", companyTopicDeleted, id, data)
+func inTx(ctx context.Context, db *sql.DB, fn func(*sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
 		return err
 	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		ID:      id,
-		Data: map[string]string{
-			"kafka_sync":        kafkaSync,
-			"branch_kafka_sync": lastBranchKafkaSync,
-		},
-	})
-	return nil
+	defer tx.Rollback()
+	if err := fn(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
-func visibleCompanyFilter(holdingCode string) bson.M {
-	return bson.M{"holdingcode": holdingCode, "isdeleted": bson.M{"$ne": true}, "deletedat": bson.M{"$exists": false}}
-}
-
-func prepareCompanyCreate(req *companyModels.CompanyDoc, holdingCode, holdingUID, actor, companyUID string, now time.Time) error {
+func prepareCompanyCreate(req *companyModels.CompanyDoc, holdingCode, actor string, now time.Time) error {
 	req.Code = companyModels.NormalizeCompanyCode(req.Code)
 	if req.Code == "" {
 		return errors.New("company code is required")
@@ -598,17 +381,15 @@ func prepareCompanyCreate(req *companyModels.CompanyDoc, holdingCode, holdingUID
 		return err
 	}
 	holdingCode = strings.TrimSpace(holdingCode)
-	holdingUID = strings.TrimSpace(holdingUID)
-	companyUID = strings.TrimSpace(companyUID)
-	if holdingCode == "" || holdingUID == "" || companyUID == "" {
+	if holdingCode == "" {
 		return errors.New("stable Company parent identity is required")
 	}
 	now = now.UTC()
-	req.ID = primitive.NewObjectID()
+	req.ID = req.Code
 	req.HoldingCode = holdingCode
-	req.HoldingUID = holdingUID
-	req.GuidFixed = companyUID
-	req.CompanyUID = companyUID
+	req.HoldingUID = holdingCode
+	req.GuidFixed = req.Code
+	req.CompanyUID = req.Code
 	req.IsDeleted = false
 	req.Version = 0
 	req.IsActive = true
@@ -635,42 +416,6 @@ var errCompanyCodeChange = errors.New("company code cannot be changed by ordinar
 func requireUnchangedCompanyCode(existingCode, requestedCode string) error {
 	if companyModels.NormalizeCompanyCode(existingCode) != companyModels.NormalizeCompanyCode(requestedCode) {
 		return errCompanyCodeChange
-	}
-	return nil
-}
-
-func stableOrLegacyCompanyUID(company companyModels.CompanyDoc) string {
-	if uid := strings.TrimSpace(company.CompanyUID); uid != "" {
-		return uid
-	}
-	return strings.TrimSpace(company.GuidFixed)
-}
-
-func companyIdentityFilter(holdingCode, id string) bson.M {
-	id = strings.TrimSpace(id)
-	return bson.M{
-		"holdingcode": strings.TrimSpace(holdingCode),
-		"$or": bson.A{
-			bson.M{"companyuid": id},
-			bson.M{"guidfixed": id},
-		},
-		"isdeleted": bson.M{"$ne": true},
-		"deletedat": bson.M{"$exists": false},
-	}
-}
-
-func ensureCompanyCodeAvailable(ctx context.Context, pst microservice.IPersisterMongo, holdingCode string, code string, excludeGuid string) error {
-	filter := visibleCompanyFilter(holdingCode)
-	filter["code"] = code
-	if excludeGuid != "" {
-		filter["companyuid"] = bson.M{"$ne": excludeGuid}
-	}
-	count, err := pst.Count(ctx, companyModels.CompanyDoc{}, filter)
-	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		return err
-	}
-	if count > 0 {
-		return errors.New("company code is exists")
 	}
 	return nil
 }

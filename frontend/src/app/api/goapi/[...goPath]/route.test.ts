@@ -53,4 +53,29 @@ describe("goapi BFF allowlist", () => {
     expect(response.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("passes the 50 ทวิ PDF through as bytes", async () => {
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]); // %PDF-
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request) => {
+      expect(String(url)).toBe("http://localhost:8888/goapi/api/report/tax/wht/certificate");
+      return new Response(pdf, { headers: { "Content-Type": "application/pdf", "Content-Disposition": 'inline; filename="50tawi-1.pdf"' } });
+    }));
+
+    const response = await postReport("api/report/tax/wht/certificate");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/pdf");
+    expect(response.headers.get("content-disposition")).toBe('inline; filename="50tawi-1.pdf"');
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(pdf);
+  });
+
+  it("relays 50 ทวิ validation errors as success:false with the backend message", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      Response.json({ success: false, code: "wht_cert_taxid_checksum", field: "payee.taxid", message: "เลขไม่ถูกต้อง" }, { status: 400 })));
+
+    const response = await postReport("api/report/tax/wht/certificate");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: false, code: "wht_cert_taxid_checksum", field: "payee.taxid" });
+  });
 });

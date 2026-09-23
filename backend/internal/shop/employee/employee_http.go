@@ -4,50 +4,36 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+
+	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/config"
-	mypg "smlcloudplatform/internal/goapi/mypg"
-	mastersync "smlcloudplatform/internal/mastersync/repositories"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/internal/shop/employee/models"
-	"smlcloudplatform/internal/shop/employee/repositories"
-	"smlcloudplatform/internal/shop/employee/services"
 	"smlcloudplatform/internal/utils"
+	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
 
-type IEmployeeHttp interface{}
+const employeeQueryTimeout = 5 * time.Second
 
 type EmployeeHttp struct {
 	ms  *microservice.Microservice
 	cfg config.IConfig
-	svc services.IEmployeeHttpService
 }
 
 func NewEmployeeHttp(ms *microservice.Microservice, cfg config.IConfig) EmployeeHttp {
-	pst := ms.MongoPersister(cfg.MongoPersisterConfig())
-	cache := ms.Cacher(cfg.CacherConfig())
-
-	repo := repositories.NewEmployeeRepository(pst)
-
-	masterSyncCacheRepo := mastersync.NewMasterSyncCacheRepository(cache)
-	svc := services.NewEmployeeHttpService(repo, masterSyncCacheRepo, utils.HashPassword)
-
-	return EmployeeHttp{
-		ms:  ms,
-		cfg: cfg,
-		svc: svc,
-	}
+	return EmployeeHttp{ms: ms, cfg: cfg}
 }
 
 func (h EmployeeHttp) RegisterHttp() {
-
 	h.ms.GET("/holding/employee", h.SearchEmployeePage)
 	h.ms.GET("/shop/employee", h.SearchEmployeePage)
 	h.ms.GET("/holding/employee/list", h.SearchEmployeeStep)
@@ -56,722 +42,289 @@ func (h EmployeeHttp) RegisterHttp() {
 	h.ms.POST("/shop/employee", h.CreateEmployee)
 	h.ms.GET("/holding/employee/:id", h.InfoEmployee)
 	h.ms.GET("/shop/employee/:id", h.InfoEmployee)
-	h.ms.GET("/holding/employee/code/:code", h.InfoEmployeeByCode)
-	h.ms.GET("/shop/employee/code/:code", h.InfoEmployeeByCode)
-	h.ms.GET("/holding/employee/email/:email", h.InfoEmployeeByEmail)
-	h.ms.GET("/shop/employee/email/:email", h.InfoEmployeeByEmail)
+	h.ms.GET("/holding/employee/code/:code", h.InfoEmployee)
+	h.ms.GET("/shop/employee/code/:code", h.InfoEmployee)
+	h.ms.GET("/holding/employee/email/:email", h.InfoEmployee)
+	h.ms.GET("/shop/employee/email/:email", h.InfoEmployee)
 	h.ms.PUT("/holding/employee/:id", h.UpdateEmployee)
 	h.ms.PUT("/shop/employee/:id", h.UpdateEmployee)
-	h.ms.PUT("/holding/employee/password", h.UpdatePassword)
-	h.ms.PUT("/shop/employee/password", h.UpdatePassword)
 	h.ms.DELETE("/holding/employee/:id", h.DeleteEmployee)
 	h.ms.DELETE("/shop/employee/:id", h.DeleteEmployee)
 	h.ms.DELETE("/holding/employee", h.DeleteEmployeeByGUIDs)
 	h.ms.DELETE("/shop/employee", h.DeleteEmployeeByGUIDs)
 }
 
-func (h EmployeeHttp) searchEmployeeStepPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, offset int, limit int, q string) error {
-	holdingCode = strings.TrimSpace(holdingCode)
+// withEmployeeDB opens the central database for the caller's Holding.
+func withEmployeeDB(ctx microservice.IContext, fn func(context.Context, *sql.DB, string) error) error {
+	holdingCode := strings.ToLower(strings.TrimSpace(ctx.UserInfo().HoldingCode))
 	if holdingCode == "" {
-		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: []models.EmployeeInfo{}, Total: 0})
-		return nil
+		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("holding is required").WithThaiMessage("กรุณาเลือกกลุ่มกิจการก่อน"))
 	}
+	db, err := centraldb.Open()
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+	}
+	reqCtx, cancel := context.WithTimeout(context.Background(), employeeQueryTimeout)
+	defer cancel()
+	return fn(reqCtx, db, holdingCode)
+}
+
+func readEmployee(ctx microservice.IContext) (models.Employee, error) {
+	doc := models.Employee{}
+	if err := json.Unmarshal([]byte(ctx.ReadInput()), &doc); err != nil {
+		return doc, apperr.ErrBadRequest.WithMessage("payload invalid").WithWrap(err)
+	}
+	if err := ctx.Validate(doc); err != nil {
+		return doc, apperr.ErrBadRequest.WithMessage(err.Error()).WithWrap(err)
+	}
+	doc.Code = strings.TrimSpace(doc.Code)
+	doc.Name = strings.TrimSpace(doc.Name)
+	doc.Email = strings.TrimSpace(doc.Email)
+	return doc, nil
+}
+
+type employeeJSON struct {
+	roles, contact, branches, scopes []byte
+}
+
+func marshalEmployeeJSON(doc models.Employee) (employeeJSON, error) {
+	var out employeeJSON
+	var err error
+	roles := []string{}
+	if doc.Roles != nil {
+		roles = *doc.Roles
+	}
+	branches := []models.EmployeeBranch{}
+	if doc.Branches != nil {
+		branches = *doc.Branches
+	}
+	scopes := doc.AccessScopes
+	if scopes == nil {
+		scopes = []models.EmployeeAccessScope{}
+	}
+	if out.roles, err = json.Marshal(roles); err != nil {
+		return out, err
+	}
+	if out.contact, err = json.Marshal(doc.Contact); err != nil {
+		return out, err
+	}
+	if out.branches, err = json.Marshal(branches); err != nil {
+		return out, err
+	}
+	out.scopes, err = json.Marshal(scopes)
+	return out, err
+}
+
+const employeeColumns = `id, code, name, email, roles, is_enabled, is_use_pos, pin_code, contact, branches, access_scopes, profile_picture, profile_picture_thumb`
+
+type rowScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanEmployee(row rowScanner) (models.EmployeeInfo, error) {
+	var (
+		info                                     models.EmployeeInfo
+		rawRoles, rawContact, rawBranches, rawSc []byte
+	)
+	emp := &info.Employee
+	if err := row.Scan(&info.GuidFixed, &emp.Code, &emp.Name, &emp.Email, &rawRoles, &emp.IsEnabled, &emp.IsUsePOS, &emp.PinCode,
+		&rawContact, &rawBranches, &rawSc, &emp.ProfilePicture, &emp.ProfilePictureThumb); err != nil {
+		return info, err
+	}
+	roles := []string{}
+	branches := []models.EmployeeBranch{}
+	for _, part := range []struct {
+		raw    []byte
+		target interface{}
+	}{{rawRoles, &roles}, {rawContact, &emp.Contact}, {rawBranches, &branches}, {rawSc, &emp.AccessScopes}} {
+		if len(part.raw) > 0 {
+			if err := json.Unmarshal(part.raw, part.target); err != nil {
+				return info, err
+			}
+		}
+	}
+	emp.Roles = &roles
+	emp.Branches = &branches
+	return info, nil
+}
+
+func likePattern(q string) string {
+	return "%" + strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(q) + "%"
+}
+
+func (h EmployeeHttp) searchEmployees(ctx microservice.IContext, offset int, limit int, q string) error {
 	if limit <= 0 {
 		limit = 100
 	}
 	if offset < 0 {
 		offset = 0
 	}
-
-	q = strings.TrimSpace(q)
-	countQuery := `SELECT COUNT(*) FROM employees WHERE LOWER(holding_code) = LOWER($1) AND is_enabled = true`
-	dataQuery := `SELECT id, code, name, email, COALESCE(roles, '[]'::jsonb), is_enabled, is_use_pos, COALESCE(pin_code, ''), COALESCE(contact, '{}'::jsonb), COALESCE(branches, '[]'::jsonb), COALESCE(access_scopes, '[]'::jsonb)
-	              FROM employees WHERE LOWER(holding_code) = LOWER($1) AND is_enabled = true`
-	args := []interface{}{holdingCode}
-
-	if q != "" {
-		countQuery += ` AND (code ILIKE $2 OR name ILIKE $2 OR email ILIKE $2)`
-		dataQuery += ` AND (code ILIKE $2 OR name ILIKE $2 OR email ILIKE $2)`
-		args = append(args, "%"+q+"%")
-	}
-
-	qCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	var total int64
-	if err := db.QueryRowContext(qCtx, countQuery, args...).Scan(&total); err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-
-	dataQuery += fmt.Sprintf(` ORDER BY code LIMIT %d OFFSET %d`, limit, offset)
-	rows, err := db.QueryContext(qCtx, dataQuery, args...)
-	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-	defer rows.Close()
-
-	list := make([]models.EmployeeInfo, 0)
-	for rows.Next() {
-		var (
-			id          string
-			code        string
-			name        string
-			email       string
-			rawRoles    []byte
-			isEnabled   bool
-			isUsePOS    bool
-			pinCode     string
-			rawContact  []byte
-			rawBranches []byte
-			rawScopes   []byte
-		)
-		if err := rows.Scan(&id, &code, &name, &email, &rawRoles, &isEnabled, &isUsePOS, &pinCode, &rawContact, &rawBranches, &rawScopes); err != nil {
-			continue
+	return withEmployeeDB(ctx, func(reqCtx context.Context, db *sql.DB, holdingCode string) error {
+		where := ` FROM employees WHERE holding_code = $1 AND is_enabled = true`
+		args := []interface{}{holdingCode}
+		if q = strings.TrimSpace(q); q != "" {
+			where += ` AND (code ILIKE $2 OR name ILIKE $2 OR email ILIKE $2)`
+			args = append(args, likePattern(q))
 		}
-		var rolesList []string
-		if len(rawRoles) > 0 {
-			_ = json.Unmarshal(rawRoles, &rolesList)
+		var total int64
+		if err := db.QueryRowContext(reqCtx, `SELECT COUNT(*)`+where, args...).Scan(&total); err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 		}
-		var contact models.EmployeeContact
-		if len(rawContact) > 0 {
-			_ = json.Unmarshal(rawContact, &contact)
+		limitArg, offsetArg := len(args)+1, len(args)+2
+		args = append(args, limit, offset)
+		rows, err := db.QueryContext(reqCtx, `SELECT `+employeeColumns+where+
+			` ORDER BY code LIMIT $`+strconv.Itoa(limitArg)+` OFFSET $`+strconv.Itoa(offsetArg), args...)
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 		}
-		var branchesList []models.EmployeeBranch
-		if len(rawBranches) > 0 {
-			_ = json.Unmarshal(rawBranches, &branchesList)
+		defer rows.Close()
+		list := make([]models.EmployeeInfo, 0)
+		for rows.Next() {
+			info, err := scanEmployee(rows)
+			if err != nil {
+				return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+			}
+			list = append(list, info)
 		}
-		var scopesList []models.EmployeeAccessScope
-		if len(rawScopes) > 0 {
-			_ = json.Unmarshal(rawScopes, &scopesList)
+		if err := rows.Err(); err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
 		}
-
-		list = append(list, models.EmployeeInfo{
-			DocIdentity: common.DocIdentity{
-				GuidFixed: id,
-			},
-			Employee: models.Employee{
-				Code:         code,
-				Name:         name,
-				Email:        email,
-				Roles:        &rolesList,
-				IsEnabled:    isEnabled,
-				IsUsePOS:     isUsePOS,
-				PinCode:      pinCode,
-				Contact:      contact,
-				Branches:     &branchesList,
-				AccessScopes: scopesList,
-			},
-		})
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    list,
-		Total:   total,
-	})
-	return nil
-}
-
-func (h EmployeeHttp) infoEmployeePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	id = strings.TrimSpace(id)
-
-	query := `SELECT id, code, name, email, COALESCE(roles, '[]'::jsonb), is_enabled, is_use_pos, COALESCE(pin_code, ''), COALESCE(contact, '{}'::jsonb), COALESCE(branches, '[]'::jsonb), COALESCE(access_scopes, '[]'::jsonb)
-	          FROM employees
-	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(code) = LOWER($2) OR LOWER(email) = LOWER($2)) AND is_enabled = true
-	          LIMIT 1`
-	var (
-		recID       string
-		code        string
-		name        string
-		email       string
-		rawRoles    []byte
-		isEnabled   bool
-		isUsePOS    bool
-		pinCode     string
-		rawContact  []byte
-		rawBranches []byte
-		rawScopes   []byte
-	)
-	err := db.QueryRowContext(context.Background(), query, holdingCode, id).Scan(
-		&recID, &code, &name, &email, &rawRoles, &isEnabled, &isUsePOS, &pinCode, &rawContact, &rawBranches, &rawScopes,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.ResponseError(http.StatusNotFound, "ไม่พบข้อมูลพนักงาน")
-			return err
-		}
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-
-	var rolesList []string
-	if len(rawRoles) > 0 {
-		_ = json.Unmarshal(rawRoles, &rolesList)
-	}
-	var contact models.EmployeeContact
-	if len(rawContact) > 0 {
-		_ = json.Unmarshal(rawContact, &contact)
-	}
-	var branchesList []models.EmployeeBranch
-	if len(rawBranches) > 0 {
-		_ = json.Unmarshal(rawBranches, &branchesList)
-	}
-	var scopesList []models.EmployeeAccessScope
-	if len(rawScopes) > 0 {
-		_ = json.Unmarshal(rawScopes, &scopesList)
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data: models.EmployeeInfo{
-			DocIdentity: common.DocIdentity{
-				GuidFixed: recID,
-			},
-			Employee: models.Employee{
-				Code:         code,
-				Name:         name,
-				Email:        email,
-				Roles:        &rolesList,
-				IsEnabled:    isEnabled,
-				IsUsePOS:     isUsePOS,
-				PinCode:      pinCode,
-				Contact:      contact,
-				Branches:     &branchesList,
-				AccessScopes: scopesList,
-			},
-		},
-	})
-	return nil
-}
-
-func (h EmployeeHttp) createEmployeePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, docReq models.EmployeeRequestRegister) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	code := strings.TrimSpace(docReq.Code)
-	if code == "" {
-		ctx.ResponseError(http.StatusBadRequest, "code is required")
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: list, Total: total})
 		return nil
-	}
-
-	rawRoles, _ := json.Marshal(docReq.Roles)
-	rawContact, _ := json.Marshal(docReq.Contact)
-	rawBranches, _ := json.Marshal(docReq.Branches)
-	rawScopes, _ := json.Marshal(docReq.AccessScopes)
-
-	newID := uuid.New().String()
-	query := `INSERT INTO employees (id, holding_code, code, name, email, roles, is_enabled, is_use_pos, pin_code, contact, branches, access_scopes, created_at, updated_at)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), now())
-	          ON CONFLICT (holding_code, code) DO UPDATE SET
-	            name = EXCLUDED.name,
-	            email = EXCLUDED.email,
-	            roles = EXCLUDED.roles,
-	            is_enabled = EXCLUDED.is_enabled,
-	            is_use_pos = EXCLUDED.is_use_pos,
-	            pin_code = EXCLUDED.pin_code,
-	            contact = EXCLUDED.contact,
-	            branches = EXCLUDED.branches,
-	            access_scopes = EXCLUDED.access_scopes,
-	            updated_at = now()`
-	_, err := db.ExecContext(context.Background(), query,
-		newID, holdingCode, code, docReq.Name, docReq.Email, rawRoles, docReq.IsEnabled, docReq.IsUsePOS, docReq.PinCode, rawContact, rawBranches, rawScopes,
-	)
-	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-		ID:      newID,
 	})
-	return nil
 }
 
-func (h EmployeeHttp) updateEmployeePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string, docReq models.EmployeeRequestUpdate) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	id = strings.TrimSpace(id)
-
-	rawRoles, _ := json.Marshal(docReq.Roles)
-	rawContact, _ := json.Marshal(docReq.Contact)
-	rawBranches, _ := json.Marshal(docReq.Branches)
-	rawScopes, _ := json.Marshal(docReq.AccessScopes)
-
-	query := `UPDATE employees SET
-	            name = $1,
-	            email = $2,
-	            roles = $3,
-	            is_enabled = $4,
-	            is_use_pos = $5,
-	            pin_code = $6,
-	            contact = $7,
-	            branches = $8,
-	            access_scopes = $9,
-	            updated_at = now()
-	          WHERE LOWER(holding_code) = LOWER($10) AND (id = $11 OR LOWER(code) = LOWER($11))`
-	_, err := db.ExecContext(context.Background(), query,
-		docReq.Name, docReq.Email, rawRoles, docReq.IsEnabled, docReq.IsUsePOS, docReq.PinCode, rawContact, rawBranches, rawScopes, holdingCode, id,
-	)
-	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		ID:      id,
-	})
-	return nil
-}
-
-func (h EmployeeHttp) deleteEmployeePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	id = strings.TrimSpace(id)
-
-	query := `UPDATE employees SET is_enabled = false, updated_at = now()
-	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(code) = LOWER($2))`
-	_, err := db.ExecContext(context.Background(), query, holdingCode, id)
-	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		ID:      id,
-	})
-	return nil
-}
-
-func (h EmployeeHttp) deleteEmployeeByGUIDsPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, ids []string) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	if len(ids) == 0 {
-		ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
-		return nil
-	}
-	query := `UPDATE employees SET is_enabled = false, updated_at = now()
-	          WHERE LOWER(holding_code) = LOWER($1) AND (id = ANY($2) OR code = ANY($2))`
-	_, err := db.ExecContext(context.Background(), query, holdingCode, pq.Array(ids))
-	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
-	}
-	ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
-	return nil
-}
-
-// Create Employee godoc
-// @Description Create Employee
-// @Tags		Employee
-// @Param		Employee  body      models.EmployeeRequestRegister  true  "Employee"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee [post]
-func (h EmployeeHttp) CreateEmployee(ctx microservice.IContext) error {
-	authUsername := ctx.UserInfo().Username
-	holdingCode := ctx.UserInfo().HoldingCode
-	input := ctx.ReadInput()
-
-	docReq := &models.EmployeeRequestRegister{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.createEmployeePostgres(ctx, db, holdingCode, *docReq)
-	}
-
-	idx, err := h.svc.CreateEmployee(holdingCode, authUsername, *docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-		ID:      idx,
-	})
-	return nil
-}
-
-// Update Employee godoc
-// @Description Update Employee
-// @Tags		Employee
-// @Param		id  path      string  true  "Employee ID"
-// @Param		Employee  body      models.EmployeeRequestUpdate  true  "Employee"
-// @Accept 		json
-// @Success		201	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee/{id} [put]
-func (h EmployeeHttp) UpdateEmployee(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	authUsername := userInfo.Username
-	holdingCode := userInfo.HoldingCode
-
-	id := ctx.Param("id")
-	input := ctx.ReadInput()
-
-	docReq := &models.EmployeeRequestUpdate{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if err = ctx.Validate(docReq); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.updateEmployeePostgres(ctx, db, holdingCode, id, *docReq)
-	}
-
-	err = h.svc.UpdateEmployee(holdingCode, id, authUsername, *docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
-		ID:      id,
-	})
-
-	return nil
-}
-
-// Delete Employee godoc
-// @Description Delete Employee
-// @Tags		Employee
-// @Param		id  path      string  true  "Employee ID"
-// @Accept 		json
-// @Success		200	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee/{id} [delete]
-func (h EmployeeHttp) DeleteEmployee(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
-
-	id := ctx.Param("id")
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.deleteEmployeePostgres(ctx, db, holdingCode, id)
-	}
-
-	err := h.svc.DeleteEmployee(holdingCode, id, authUsername)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		ID:      id,
-	})
-
-	return nil
-}
-
-// Delete Employee godoc
-// @Description Delete Employee
-// @Tags		Employee
-// @Param		Employee  body      []string  true  "Employee GUIDs"
-// @Accept 		json
-// @Success		200	{object}	common.ResponseSuccessWithID
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee [delete]
-func (h EmployeeHttp) DeleteEmployeeByGUIDs(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-	authUsername := userInfo.Username
-
-	input := ctx.ReadInput()
-
-	docReq := []string{}
-	err := json.Unmarshal([]byte(input), &docReq)
-
-	if err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.deleteEmployeeByGUIDsPostgres(ctx, db, holdingCode, docReq)
-	}
-
-	err = h.svc.DeleteEmployeeByGUIDs(holdingCode, authUsername, docReq)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-	})
-
-	return nil
-}
-
-// Get Employee godoc
-// @Description get struct array by ID
-// @Tags		Employee
-// @Param		id  path      string  true  "Employee ID"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee/{id} [get]
-func (h EmployeeHttp) InfoEmployee(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-
-	id := ctx.Param("id")
-
-	h.ms.Logger.Debugf("Get Employee %v", id)
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.infoEmployeePostgres(ctx, db, holdingCode, id)
-	}
-
-	doc, err := h.svc.InfoEmployee(holdingCode, id)
-
-	if err != nil {
-		h.ms.Logger.Errorf("Error getting document %v: %v", id, err)
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    doc,
-	})
-	return nil
-}
-
-// Get Employee By Code godoc
-// @Description get employee by code
-// @Tags		Employee
-// @Param		code  path      string  true  "Employee code"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee/code/{code} [get]
-func (h EmployeeHttp) InfoEmployeeByCode(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-
-	code := ctx.Param("code")
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.infoEmployeePostgres(ctx, db, holdingCode, code)
-	}
-
-	doc, err := h.svc.InfoEmployeeByCode(holdingCode, code)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    doc,
-	})
-	return nil
-}
-
-// Get Employee By Email godoc
-// @Description get employee by email
-// @Tags		Employee
-// @Param		email  path      string  true  "Employee email"
-// @Accept 		json
-// @Success		200	{object}	common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee/email/{email} [get]
-func (h EmployeeHttp) InfoEmployeeByEmail(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-
-	email := ctx.Param("email")
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		return h.infoEmployeePostgres(ctx, db, holdingCode, email)
-	}
-
-	doc, err := h.svc.InfoEmployeeByEmail(holdingCode, email)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    doc,
-	})
-	return nil
-}
-
-// List Employee godoc
-// @Description get struct array by ID
-// @Tags		Employee
-// @Param		q		query	string		false  "Search Value"
-// @Param		page	query	integer		false  "page"
-// @Param		limit	query	integer		false  "limit"
-// @Accept 		json
-// @Success		200	{array}		common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee [get]
 func (h EmployeeHttp) SearchEmployeePage(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-
 	pageable := utils.GetPageable(ctx.QueryParam)
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		limit := 100
-		offset := pageable.GetOffest()
-		if pageable.Limit > 0 {
-			limit = pageable.Limit
-		}
-		q := ctx.QueryParam("q")
-		if pageable.Query != "" {
-			q = pageable.Query
-		}
-		return h.searchEmployeeStepPostgres(ctx, db, holdingCode, offset, limit, q)
-	}
-
-	docList, pagination, err := h.svc.SearchEmployee(holdingCode, map[string]interface{}{}, pageable)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success:    true,
-		Data:       docList,
-		Pagination: pagination,
-	})
-	return nil
+	return h.searchEmployees(ctx, pageable.GetOffest(), pageable.Limit, pageable.Query)
 }
 
-// List Employee godoc
-// @Description search limit offset
-// @Tags		Employee
-// @Param		q		query	string		false  "Search Value"
-// @Param		offset	query	integer		false  "offset"
-// @Param		limit	query	integer		false  "limit"
-// @Param		lang	query	string		false  "lang"
-// @Accept 		json
-// @Success		200	{array}		common.ApiResponse
-// @Failure		401 {object}	common.AuthResponseFailed
-// @Security     AccessToken
-// @Router /shop/employee/list [get]
 func (h EmployeeHttp) SearchEmployeeStep(ctx microservice.IContext) error {
-	userInfo := ctx.UserInfo()
-	holdingCode := userInfo.HoldingCode
-
 	pageableStep := utils.GetPageableStep(ctx.QueryParam)
-
-	// Set default limit to 1000 if not provided
+	limit := pageableStep.Limit
 	if ctx.QueryParam("limit") == "" {
-		pageableStep.Limit = 1000
+		limit = 1000
 	}
-
-	if db, err := mypg.PgSqlFastConnect("bcai_projection"); err == nil && db != nil {
-		limit := 1000
-		offset := pageableStep.Skip
-		if pageableStep.Limit > 0 {
-			limit = pageableStep.Limit
-		}
-		q := ctx.QueryParam("q")
-		if pageableStep.Query != "" {
-			q = pageableStep.Query
-		}
-		return h.searchEmployeeStepPostgres(ctx, db, holdingCode, offset, limit, q)
-	}
-
-	lang := ctx.QueryParam("lang")
-
-	docList, total, err := h.svc.SearchEmployeeStep(holdingCode, lang, pageableStep)
-
-	if err != nil {
-		ctx.ResponseError(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{
-		Success: true,
-		Data:    docList,
-		Total:   total,
-	})
-	return nil
+	return h.searchEmployees(ctx, pageableStep.Skip, limit, pageableStep.Query)
 }
 
-// Update Password Employee godoc
-// @Summary		Update Password Employee
-// @Description	Update Password Employee
-// @Tags		Employee
-// @Param		id  path      string  true  "Employee ID"
-// @Param		Employee  body      models.EmployeeRequestPassword  true  "Register Employee"
-// @Success		200	{object}	models.ResponseSuccess
-// @Failure		400 {object}	models.AuthResponseFailed
-// @Accept 		json
-// @Security     AccessToken
-// @Router		/employee/password [put]
-func (h EmployeeHttp) UpdatePassword(ctx microservice.IContext) error {
-	userAuthInfo := ctx.UserInfo()
-	authUsername := userAuthInfo.Username
-	holdingCode := userAuthInfo.HoldingCode
-
-	input := ctx.ReadInput()
-
-	userPwdReq := models.EmployeeRequestPassword{}
-	err := json.Unmarshal([]byte(input), &userPwdReq)
-
-	if err != nil {
-		ctx.ResponseError(400, "user payload invalid")
-		return err
-	}
-
-	err = h.svc.UpdatePassword(holdingCode, authUsername, userPwdReq)
-
-	if err != nil {
-		ctx.Response(http.StatusBadRequest, common.ApiResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return err
-	}
-
-	ctx.Response(http.StatusCreated, common.ApiResponse{
-		Success: true,
+// InfoEmployee serves /:id, /code/:code and /email/:email — one lookup by id, code or email.
+func (h EmployeeHttp) InfoEmployee(ctx microservice.IContext) error {
+	key := strings.TrimSpace(firstNonBlank(ctx.Param("id"), ctx.Param("code"), ctx.Param("email")))
+	return withEmployeeDB(ctx, func(reqCtx context.Context, db *sql.DB, holdingCode string) error {
+		info, err := scanEmployee(db.QueryRowContext(reqCtx, `SELECT `+employeeColumns+` FROM employees
+			WHERE holding_code = $1 AND is_enabled = true AND (id = $2 OR LOWER(code) = LOWER($2) OR (email <> '' AND LOWER(email) = LOWER($2)))
+			ORDER BY (id = $2) DESC, (LOWER(code) = LOWER($2)) DESC, code LIMIT 1`, holdingCode, key))
+		if errors.Is(err, sql.ErrNoRows) {
+			return apperr.Respond(ctx, apperr.NotFound("employee").WithThaiMessage("ไม่พบข้อมูลพนักงาน"))
+		}
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: info})
+		return nil
 	})
+}
 
-	return nil
+func firstNonBlank(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func (h EmployeeHttp) CreateEmployee(ctx microservice.IContext) error {
+	doc, err := readEmployee(ctx)
+	if err != nil {
+		return apperr.RespondErr(ctx, err)
+	}
+	if doc.Code == "" {
+		return apperr.Respond(ctx, apperr.Validation("code", "required").WithThaiMessage("กรุณาระบุรหัสพนักงาน"))
+	}
+	raw, err := marshalEmployeeJSON(doc)
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithWrap(err))
+	}
+	return withEmployeeDB(ctx, func(reqCtx context.Context, db *sql.DB, holdingCode string) error {
+		newID := uuid.NewString()
+		_, err := db.ExecContext(reqCtx, `INSERT INTO employees (id, holding_code, code, name, email, roles, is_enabled, is_use_pos, pin_code,
+				contact, branches, access_scopes, profile_picture, profile_picture_thumb, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, now(), now())`,
+			newID, holdingCode, doc.Code, doc.Name, doc.Email, raw.roles, doc.IsEnabled, doc.IsUsePOS, doc.PinCode,
+			raw.contact, raw.branches, raw.scopes, doc.ProfilePicture, doc.ProfilePictureThumb)
+		if centraldb.IsUniqueViolation(err) {
+			return apperr.Respond(ctx, apperr.DuplicateCode("code", doc.Code).WithThaiMessage("รหัสพนักงานนี้มีอยู่แล้ว"))
+		}
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+		ctx.Response(http.StatusCreated, common.ApiResponse{Success: true, ID: newID})
+		return nil
+	})
+}
+
+func (h EmployeeHttp) UpdateEmployee(ctx microservice.IContext) error {
+	id := strings.TrimSpace(ctx.Param("id"))
+	doc, err := readEmployee(ctx)
+	if err != nil {
+		return apperr.RespondErr(ctx, err)
+	}
+	raw, err := marshalEmployeeJSON(doc)
+	if err != nil {
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithWrap(err))
+	}
+	return withEmployeeDB(ctx, func(reqCtx context.Context, db *sql.DB, holdingCode string) error {
+		// The employee code is its business identity; it is not renamed through update.
+		result, err := db.ExecContext(reqCtx, `UPDATE employees SET name = $3, email = $4, roles = $5, is_enabled = $6, is_use_pos = $7,
+				pin_code = $8, contact = $9, branches = $10, access_scopes = $11, profile_picture = $12, profile_picture_thumb = $13, updated_at = now()
+			WHERE holding_code = $1 AND (id = $2 OR LOWER(code) = LOWER($2))`,
+			holdingCode, id, doc.Name, doc.Email, raw.roles, doc.IsEnabled, doc.IsUsePOS,
+			doc.PinCode, raw.contact, raw.branches, raw.scopes, doc.ProfilePicture, doc.ProfilePictureThumb)
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+		if affected, _ := result.RowsAffected(); affected == 0 {
+			return apperr.Respond(ctx, apperr.NotFound("employee").WithThaiMessage("ไม่พบข้อมูลพนักงาน"))
+		}
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, ID: id})
+		return nil
+	})
+}
+
+// DeleteEmployee disables the employee; rows stay for the audit trail.
+func (h EmployeeHttp) DeleteEmployee(ctx microservice.IContext) error {
+	id := strings.TrimSpace(ctx.Param("id"))
+	return h.disableEmployees(ctx, []string{id}, id)
+}
+
+func (h EmployeeHttp) DeleteEmployeeByGUIDs(ctx microservice.IContext) error {
+	ids := []string{}
+	if err := json.Unmarshal([]byte(ctx.ReadInput()), &ids); err != nil {
+		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("payload invalid").WithWrap(err))
+	}
+	return h.disableEmployees(ctx, ids, "")
+}
+
+func (h EmployeeHttp) disableEmployees(ctx microservice.IContext, ids []string, responseID string) error {
+	cleaned := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if id = strings.TrimSpace(id); id != "" {
+			cleaned = append(cleaned, id)
+		}
+	}
+	if len(cleaned) == 0 {
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, ID: responseID})
+		return nil
+	}
+	return withEmployeeDB(ctx, func(reqCtx context.Context, db *sql.DB, holdingCode string) error {
+		_, err := db.ExecContext(reqCtx, `UPDATE employees SET is_enabled = false, updated_at = now()
+			WHERE holding_code = $1 AND (id = ANY($2) OR code = ANY($2))`, holdingCode, pq.Array(cleaned))
+		if err != nil {
+			return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+		}
+		ctx.Response(http.StatusOK, common.ApiResponse{Success: true, ID: responseID})
+		return nil
+	})
 }

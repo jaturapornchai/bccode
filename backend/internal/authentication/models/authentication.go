@@ -7,8 +7,8 @@ type AuthenticationContext struct {
 }
 
 type ShopFavoriteRequest struct {
-	HoldingCode string `json:"holdingcode" bson:"holdingcode"`
-	IsFavorite  bool   `json:"isfavorite" bson:"isfavorite"`
+	HoldingCode string `json:"holdingcode"`
+	IsFavorite  bool   `json:"isfavorite"`
 }
 
 type TokenLoginRequest struct {
@@ -52,13 +52,13 @@ type PhoneNumberLoginReponse struct {
 }
 
 type PhoneNumberLoginRequest struct {
-	PhoneNumber string `json:"phonenumber" bson:"phonenumber" validate:"required,max=233"`
+	PhoneNumber string `json:"phonenumber" validate:"required,max=233"`
 }
 
 type PhoneNumberOTPRequest struct {
-	PhoneNumber string `json:"phonenumber" bson:"phonenumber" validate:"required,max=233"`
+	PhoneNumber string `json:"phonenumber" validate:"required,max=233"`
 	RefCode     string `json:"refcode"`
-	OTP         string `json:"otp" bson:"otp" validate:"required,max=20"`
+	OTP         string `json:"otp" validate:"required,max=20"`
 }
 
 type PhoneOTP struct {

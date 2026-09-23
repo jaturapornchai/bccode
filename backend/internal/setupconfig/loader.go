@@ -8,32 +8,16 @@ import (
 )
 
 // bootstrapConfig โครงสร้าง JSON สำหรับ bootstrap ทุก config section
-// Redis และ Kafka ไม่อยู่ใน bootstrap.json — ใช้ค่า default (redis:6379, kafka:9092)
 type bootstrapConfig struct {
-	MongoDB           map[string]string `json:"mongodb"`
-	MongoDBDev        map[string]string `json:"mongodbdev"`
-	MongoDBUAT        map[string]string `json:"mongodbuat"`
-	MongoDBPRO        map[string]string `json:"mongodbpro"`
-	MongoDBProduction map[string]string `json:"mongodbproduction"`
-	PostgreSQL        map[string]string `json:"postgresql"`
-	ClickHouse        map[string]string `json:"clickhouse"`
-	Service           map[string]string `json:"service"`
-	Integrations      map[string]string `json:"integrations"`
-	Storage           map[string]string `json:"storage"`
-	Kafka             map[string]string `json:"kafka"`
+	PostgreSQL   map[string]string `json:"postgresql"`
+	Service      map[string]string `json:"service"`
+	Integrations map[string]string `json:"integrations"`
+	Storage      map[string]string `json:"storage"`
 }
 
 // configMapping กำหนดว่า Setup Config key ไหน map กับ env var อะไรบ้าง
 // mainapi ใช้ env var names ต่างจาก goapi บางตัว
 var configMapping = map[string]map[string][]string{
-	"mongodb": {
-		"uri":      {"MONGODB_URI", "MONGODB_DEV_URI", "MONGODB_UAT_URI", "MONGODB_PRO_URI", "MONGODB_PRODUCTION_URI"},
-		"database": {"MONGODB_DB", "MONGODB_DEV_DB", "MONGODB_UAT_DB", "MONGODB_PRO_DB", "MONGODB_PRODUCTION_DB"},
-		"host":     {"MONGODB_HOST", "MONGODB_DEV_HOST", "MONGODB_UAT_HOST", "MONGODB_PRO_HOST"},
-		"port":     {"MONGODB_PORT", "MONGODB_DEV_PORT", "MONGODB_UAT_PORT", "MONGODB_PRO_PORT"},
-		"username": {"MONGODB_USERNAME", "MONGODB_USER", "MONGODB_DEV_USER", "MONGODB_UAT_USER", "MONGODB_PRO_USER"},
-		"password": {"MONGODB_PASSWORD", "MONGODB_DEV_PASSWORD", "MONGODB_UAT_PASSWORD", "MONGODB_PRO_PASSWORD"},
-	},
 	"postgresql": {
 		"host":        {"POSTGRES_HOST"},
 		"port":        {"POSTGRES_PORT"},
@@ -44,15 +28,7 @@ var configMapping = map[string]map[string][]string{
 		"timezone":    {"POSTGRES_TIMEZONE"},
 		"loggerlevel": {"POSTGRES_LOGGER_LEVEL"},
 	},
-	"clickhouse": {
-		"host":         {"CH_SERVER_ADDRESS"},
-		"port":         {"CLICKHOUSE_PORT"},
-		"user":         {"CH_USERNAME"},
-		"password":     {"CH_PASSWORD"},
-		"databasename": {"CH_DATABASE_NAME"},
-	},
 	"service": {
-		"enablekafka":       {"ENABLE_KAFKA"},
 		"loglevel":          {"LOG_LEVEL"},
 		"jwtsecretkey":      {"JWT_SECRET_KEY"},
 		"devapimode":        {"DEV_API_MODE"},
@@ -78,9 +54,6 @@ var configMapping = map[string]map[string][]string{
 		"s3accesskeyid":      {"S3_ACCESS_KEY_ID"},
 		"s3secretaccesskey":  {"S3_SECRET_ACCESS_KEY"},
 		"s3bucketname":       {"S3_BUCKET_NAME"},
-	},
-	"kafka": {
-		"serverurl": {"KAFKA_SERVER_URL"},
 	},
 }
 
@@ -128,17 +101,10 @@ func mergeCustomConfig(base *bootstrapConfig, customData []byte) error {
 		}
 	}
 
-	mergeMap(&base.MongoDB, custom.MongoDB)
-	mergeMap(&base.MongoDBDev, custom.MongoDBDev)
-	mergeMap(&base.MongoDBUAT, custom.MongoDBUAT)
-	mergeMap(&base.MongoDBPRO, custom.MongoDBPRO)
-	mergeMap(&base.MongoDBProduction, custom.MongoDBProduction)
 	mergeMap(&base.PostgreSQL, custom.PostgreSQL)
-	mergeMap(&base.ClickHouse, custom.ClickHouse)
 	mergeMap(&base.Service, custom.Service)
 	mergeMap(&base.Integrations, custom.Integrations)
 	mergeMap(&base.Storage, custom.Storage)
-	mergeMap(&base.Kafka, custom.Kafka)
 
 	return nil
 }
@@ -190,23 +156,10 @@ func LoadBootstrapConfig() {
 	overrideCount := 0
 
 	// โหลดทุก section ที่มีใน bootstrap.json ตาม configMapping
-	overrideCount += applyBootstrapSection("mongodb", cfg.MongoDB)
-	overrideCount += applyBootstrapSection("mongodbdev", cfg.MongoDBDev)
-	overrideCount += applyBootstrapSection("mongodbuat", cfg.MongoDBUAT)
-	overrideCount += applyBootstrapSection("mongodbpro", cfg.MongoDBPRO)
-	overrideCount += applyBootstrapSection("mongodbproduction", cfg.MongoDBProduction)
 	overrideCount += applyBootstrapSection("postgresql", cfg.PostgreSQL)
-	overrideCount += applyBootstrapSection("clickhouse", cfg.ClickHouse)
 	overrideCount += applyBootstrapSection("service", cfg.Service)
 	overrideCount += applyBootstrapSection("integrations", cfg.Integrations)
 	overrideCount += applyBootstrapSection("storage", cfg.Storage)
-	overrideCount += applyBootstrapSection("kafka", cfg.Kafka)
-
-	// ตั้งค่า default สำหรับ Redis และ Kafka (ไม่ต้องตั้งใน bootstrap.json)
-	setDefaultEnvVars()
-
-	// compose CH_SERVER_ADDRESS = host:port (ClickHouse client ต้องการ host:port)
-	composeClickHouseAddress()
 
 	if overrideCount > 0 {
 		log.Printf("[Bootstrap] ✅ โหลด config สำเร็จ (%d env vars)", overrideCount)
@@ -258,44 +211,6 @@ func applyBootstrapSection(category string, values map[string]string) int {
 	}
 
 	return count
-}
-
-// setDefaultEnvVars ตั้งค่า default สำหรับ Redis และ Kafka
-// ค่าเหล่านี้ไม่ต้องอยู่ใน bootstrap.json — ใช้ค่า default ที่ตรงกับ Docker network
-func setDefaultEnvVars() {
-	defaults := map[string]string{
-		"REDIS_HOST":       "redis",
-		"REDIS_PORT":       "6379",
-		"REDIS_CACHE_URI":  "redis:6379",
-		"KAFKA_SERVER_URL": "kafka:9092",
-	}
-	for envVar, defaultVal := range defaults {
-		if os.Getenv(envVar) == "" {
-			if envVar == "KAFKA_SERVER_URL" && os.Getenv("ENABLE_KAFKA") == "false" {
-				continue
-			}
-			os.Setenv(envVar, defaultVal)
-			log.Printf("[Bootstrap] default %s = %s", envVar, defaultVal)
-		}
-	}
-}
-
-// composeClickHouseAddress compose CH_SERVER_ADDRESS = host:port
-// ClickHouse client ต้องการ address ในรูปแบบ host:port (เช่น 103.13.30.32:9000)
-// แต่ bootstrap.json แยก host กับ port คนละ field
-func composeClickHouseAddress() {
-	host := os.Getenv("CH_SERVER_ADDRESS")
-	port := os.Getenv("CLICKHOUSE_PORT")
-	if host == "" || port == "" {
-		return
-	}
-	// ถ้า host มี port อยู่แล้ว (เช่น host:9000) → ไม่ต้องเพิ่ม
-	if strings.Contains(host, ":") {
-		return
-	}
-	composed := host + ":" + port
-	os.Setenv("CH_SERVER_ADDRESS", composed)
-	log.Printf("[Bootstrap] compose CH_SERVER_ADDRESS = %s", composed)
 }
 
 // isSecretKey ตรวจสอบว่า key เป็น secret ที่ต้อง mask ใน log หรือไม่

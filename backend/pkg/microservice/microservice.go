@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -50,20 +49,9 @@ type Microservice struct {
 	backgroundWorkers         []func(context.Context)
 	echo                      *echo.Echo
 	exitChannel               chan bool
-	cachers                   map[string]ICacher
-	cachersMutex              sync.Mutex
+	cacher                    ICacher
 	persisters                map[string]IPersister
 	persistersMutex           sync.Mutex
-	mongoPersisters           map[string]IPersisterMongo
-	persistersMongoMutex      sync.Mutex
-	clickHousePersisters      map[string]IPersisterClickHouse
-	persistersClickHouseMutex sync.Mutex
-	elkPersisters             map[string]IPersisterElk
-	persistersElkMutex        sync.Mutex
-	openSearchPersisters      map[string]IPersisterOpenSearch
-	persistersOpenSearchMutex sync.Mutex
-	prods                     map[string]IProducer
-	prodMutex                 sync.Mutex
 	websocketPool             *WebsocketPool
 	pathPrefix                string
 	config                    config.IConfig
@@ -104,12 +92,7 @@ func NewMicroservice(config config.IConfig) (*Microservice, error) {
 
 	m := &Microservice{
 		echo:                 e,
-		cachers:              map[string]ICacher{},
 		persisters:           map[string]IPersister{},
-		mongoPersisters:      map[string]IPersisterMongo{},
-		clickHousePersisters: map[string]IPersisterClickHouse{},
-		elkPersisters:        map[string]IPersisterElk{},
-		prods:                map[string]IProducer{},
 		pathPrefix:           config.PathPrefix(),
 		config:               config,
 		Logger:               logger,
@@ -131,29 +114,6 @@ func NewMicroservice(config config.IConfig) (*Microservice, error) {
 
 func (ms *Microservice) CheckReadyToStart() error {
 	// check resources availability
-
-	// mongodb (Pure PostgreSQL mode: decommissioned, zero mongo)
-
-	// kafka (Pure PostgreSQL mode: decommissioned, no-op)
-
-
-	// redis
-	redis_clsuter_uri := ms.config.CacherConfig().Endpoint()
-	if redis_clsuter_uri != "" {
-		ms.Logger.Debug("[REDIS_CACHER]Test Connection.")
-
-		cacher, ok := ms.cachers[redis_clsuter_uri]
-		if !ok {
-			cacher = NewCacher(ms.config.CacherConfig())
-			ms.cachers[redis_clsuter_uri] = cacher
-		}
-		err := cacher.Healthcheck()
-		if err != nil {
-			ms.Logger.Error("[REDIS_CACHER]Connection Failed.", err)
-			return err
-		}
-		ms.Logger.Debug("[REDIS_CACHER]Connection Success.")
-	}
 
 	// postgresql
 	persisterConfig := ms.config.PersisterConfig()
@@ -275,22 +235,8 @@ func (ms *Microservice) Stop() {
 // Cleanup clean resources up from every registered services before exit
 func (ms *Microservice) Cleanup() error {
 	ms.Logger.Info("Stop Service Cleanup System.")
-	if ms.prods != nil {
-		for idx := range ms.prods {
-			ms.prods[idx].Close()
-		}
-	}
-
-	if ms.mongoPersisters != nil {
-		for _, pst := range ms.mongoPersisters {
-			pst.Cleanup(context.TODO())
-		}
-	}
-
-	if ms.cachers != nil {
-		for _, cache := range ms.cachers {
-			cache.Close()
-		}
+	if ms.cacher != nil {
+		ms.cacher.Close()
 	}
 
 	if ms.jaegerCloser != nil {
@@ -372,87 +318,17 @@ func (ms *Microservice) Persister(cfg config.IPersisterConfig) IPersister {
 	return pst
 }
 
-func (ms *Microservice) MongoPersister(cfg config.IPersisterMongoConfig) IPersisterMongo {
-	pst, ok := ms.mongoPersisters[cfg.MongodbURI()]
-	if !ok {
-		pst = NewPersisterMongo(cfg)
-		ms.persistersMongoMutex.Lock()
-		ms.mongoPersisters[cfg.MongodbURI()] = pst
-		ms.persistersMongoMutex.Unlock()
-	}
-	return pst
+// SetCacher - กำหนดที่เก็บ session (PostgreSQL) ที่ทุก module ใช้ร่วมกัน
+func (ms *Microservice) SetCacher(cacher ICacher) {
+	ms.cacher = cacher
 }
 
-func (ms *Microservice) ClickHousePersister(cfg config.IPersisterClickHouseConfig) IPersisterClickHouse {
-
-	indexCfg := strings.Join(cfg.ServerAddress(), "_")
-
-	pst, ok := ms.clickHousePersisters[indexCfg]
-	if !ok {
-		pst = NewPersisterClickHouse(cfg)
-
-		ms.persistersClickHouseMutex.Lock()
-		ms.clickHousePersisters[indexCfg] = pst
-		ms.persistersClickHouseMutex.Unlock()
-
+// Cacher - ที่เก็บ session กลาง (ต้องเรียก SetCacher ก่อน register module)
+func (ms *Microservice) Cacher() ICacher {
+	if ms.cacher == nil {
+		panic("microservice: cacher is not configured; call SetCacher before registering modules")
 	}
-	return pst
-}
-
-func (ms *Microservice) ElkPersister(cfg config.IPersisterElkConfig) IPersisterElk {
-	if len(cfg.ElkAddress()) < 1 {
-		return nil
-	}
-
-	idx := cfg.Username() + cfg.ElkAddress()[0] + strconv.Itoa(len(cfg.ElkAddress()))
-
-	pst, ok := ms.elkPersisters[idx]
-	if !ok {
-		pst = NewPersisterElk(cfg)
-		ms.persistersElkMutex.Lock()
-		ms.elkPersisters[idx] = pst
-		ms.persistersElkMutex.Unlock()
-	}
-	return pst
-}
-
-func (ms *Microservice) SearchPersister(cfg config.IPersisterOpenSearchConfig) IPersisterOpenSearch {
-	if len(cfg.Address()) < 1 {
-		return nil
-	}
-
-	idx := cfg.Username() + cfg.Address()[0] + strconv.Itoa(len(cfg.Address()))
-
-	pst, ok := ms.openSearchPersisters[idx]
-	if !ok {
-		pst = NewPersisterOpenSearch(cfg)
-		ms.persistersOpenSearchMutex.Lock()
-		ms.elkPersisters[idx] = pst
-		ms.persistersOpenSearchMutex.Unlock()
-	}
-	return pst
-}
-
-func (ms *Microservice) Cacher(cfg config.ICacherConfig) ICacher {
-	cacher, ok := ms.cachers[cfg.Endpoint()]
-	if !ok {
-		cacher = NewCacher(cfg)
-		ms.cachersMutex.Lock()
-		ms.cachers[cfg.Endpoint()] = cacher
-		ms.cachersMutex.Unlock()
-	}
-	return cacher
-}
-
-func (ms *Microservice) Producer(cfg config.IMQConfig) IProducer {
-	prod, ok := ms.prods[cfg.URI()]
-	if !ok {
-		prod = NewProducer(cfg.URI(), cfg.SecurityProtocol(), cfg.SSLCAFile(), cfg.SSLKeyFile(), cfg.SSLCertFile(), ms.Logger)
-		ms.prodMutex.Lock()
-		ms.prods[cfg.URI()] = prod
-		ms.prodMutex.Unlock()
-	}
-	return prod
+	return ms.cacher
 }
 
 func (ms *Microservice) Websocket(id string, response http.ResponseWriter, request *http.Request) (*websocket.Conn, error) {

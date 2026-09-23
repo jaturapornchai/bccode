@@ -3,308 +3,99 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"encoding/json"
+	"errors"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/centraldb"
 )
+
+// ErrNotFound is returned (with an empty, non-nil document) when a user or identity does not exist.
+var ErrNotFound = errors.New("record not found")
+
+// ErrUserExists is returned by CreateUser when the username is already taken.
+var ErrUserExists = errors.New("username is exists")
+
+type IAuthenticationRepository interface {
+	FindByIdentity(ctx context.Context, fieldName string, value string) (*models.UserDoc, error)
+	FindUser(ctx context.Context, username string) (*models.UserDoc, error)
+	FindByPhonenumber(ctx context.Context, phonenumber models.PhoneNumberField) (*models.UserDoc, error)
+	FindByLineUserID(ctx context.Context, lineUserID string) (*models.UserDoc, error)
+	CreateUser(ctx context.Context, doc models.UserDoc) (string, error)
+	UpdateUser(ctx context.Context, username string, user models.UserDoc) error
+	UpdateUserByUID(ctx context.Context, userUID string, user models.UserDoc) error
+	SetLineIdentity(ctx context.Context, userUID string, lineUserID string, displayName string, pictureURL string) error
+	DeleteUser(ctx context.Context, username string) error
+	FindGoogleIdentity(ctx context.Context, issuer string, subject string) (*models.GoogleIdentity, error)
+	FindUserByUID(ctx context.Context, userUID string) (*models.UserDoc, error)
+	CreateGoogleUserIdentity(ctx context.Context, user models.UserDoc, identity models.GoogleIdentity, audit models.AuthAudit) (models.UserDoc, error)
+}
 
 type AuthenticationPostgresRepository struct {
 	db *sql.DB
 }
 
-func NewAuthenticationPostgresRepository(db *sql.DB) IAuthenticationMongoCacheRepository {
+func NewAuthenticationPostgresRepository(db *sql.DB) IAuthenticationRepository {
 	return &AuthenticationPostgresRepository{db: db}
 }
 
-func (r *AuthenticationPostgresRepository) FindUser(ctx context.Context, username string) (*models.UserDoc, error) {
-	username = strings.ToLower(strings.TrimSpace(username))
-	var (
-		id           uuid.UUID
-		uName        string
-		passwordHash string
-		email        sql.NullString
-		phone        sql.NullString
-		fullName     string
-		isActive     bool
-		createdAt    time.Time
-		updatedAt    time.Time
-	)
+const userColumns = `u.id::text, u.username, u.password_hash, COALESCE(u.email, ''), COALESCE(u.phone, ''), u.full_name, u.is_active, u.created_at, u.updated_at,
+	COALESCE(l.identity_id, ''), COALESCE(l.extra->>'displayName', ''), COALESCE(l.extra->>'pictureUrl', '')`
 
-	query := `SELECT id, username, password_hash, email, phone, full_name, is_active, created_at, updated_at
-	          FROM users WHERE LOWER(username) = $1 LIMIT 1`
-	err := r.db.QueryRowContext(ctx, query, username).Scan(
-		&id, &uName, &passwordHash, &email, &phone, &fullName, &isActive, &createdAt, &updatedAt,
+const userFrom = ` FROM users u LEFT JOIN user_identities l ON l.user_id = u.id AND l.provider = 'line' `
+
+// findOne scans one user. A missing user yields an empty document plus ErrNotFound,
+// so callers that read fields before checking the error never dereference nil.
+func (r *AuthenticationPostgresRepository) findOne(ctx context.Context, where string, args ...interface{}) (*models.UserDoc, error) {
+	doc := &models.UserDoc{}
+	var isActive bool
+	err := r.db.QueryRowContext(ctx, `SELECT `+userColumns+userFrom+where+` LIMIT 1`, args...).Scan(
+		&doc.UID, &doc.Username, &doc.Password, &doc.Email, &doc.PhoneNumber, &doc.Name, &isActive, &doc.CreatedAt, &doc.UpdatedAt,
+		&doc.LineUserID, &doc.LineDisplayName, &doc.LinePictureURL,
 	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return &models.UserDoc{}, ErrNotFound
+	}
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, mongo.ErrNoDocuments
-		}
-		return nil, err
+		return &models.UserDoc{}, err
 	}
-
-	doc := &models.UserDoc{
-		GuidFixed: id.String(),
-		UsernameField: models.UsernameField{
-			Username: uName,
-		},
-		EmailField: models.EmailField{
-			Email: email.String,
-		},
-		PhoneNumberField: models.PhoneNumberField{
-			PhoneNumber: phone.String,
-		},
-		UserPassword: models.UserPassword{
-			Password: passwordHash,
-		},
-		UserDetail: models.UserDetail{
-			UID:  id.String(),
-			Name: fullName,
-		},
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-		IsDeleted: !isActive,
+	doc.GuidFixed = doc.UID
+	doc.ID = doc.UID
+	if !isActive {
+		doc.DisabledAt = doc.UpdatedAt
 	}
-
-	// Synthesize primitive.ObjectID for backward compatibility with Mongo ObjectId calls
-	objID, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%024x", id.ID()))
-	doc.ID = objID
-
 	return doc, nil
+}
+
+func (r *AuthenticationPostgresRepository) FindUser(ctx context.Context, username string) (*models.UserDoc, error) {
+	return r.findOne(ctx, `WHERE LOWER(u.username) = $1`, strings.ToLower(strings.TrimSpace(username)))
 }
 
 func (r *AuthenticationPostgresRepository) FindByIdentity(ctx context.Context, fieldName string, value string) (*models.UserDoc, error) {
-	var query string
-	var arg interface{}
-
 	switch strings.ToLower(fieldName) {
 	case "uid", "guidfixed":
-		query = `SELECT id, username, password_hash, email, phone, full_name, is_active, created_at, updated_at
-		          FROM users WHERE id::text = $1 LIMIT 1`
-		arg = value
+		return r.FindUserByUID(ctx, value)
 	case "username":
 		return r.FindUser(ctx, value)
 	case "email":
-		query = `SELECT id, username, password_hash, email, phone, full_name, is_active, created_at, updated_at
-		          FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1`
-		arg = value
+		return r.findOne(ctx, `WHERE LOWER(u.email) = LOWER($1) ORDER BY u.created_at`, strings.TrimSpace(value))
 	case "phone", "phonenumber":
-		query = `SELECT id, username, password_hash, email, phone, full_name, is_active, created_at, updated_at
-		          FROM users WHERE phone = $1 LIMIT 1`
-		arg = value
+		return r.findOne(ctx, `WHERE u.phone = $1`, strings.TrimSpace(value))
 	default:
-		query = `SELECT u.id, u.username, u.password_hash, u.email, u.phone, u.full_name, u.is_active, u.created_at, u.updated_at
-		          FROM users u
-		          JOIN user_identities i ON u.id = i.user_id
-		          WHERE i.provider = $1 AND i.identity_id = $2 LIMIT 1`
-		var (
-			id           uuid.UUID
-			uName        string
-			passwordHash string
-			email        sql.NullString
-			phone        sql.NullString
-			fullName     string
-			isActive     bool
-			createdAt    time.Time
-			updatedAt    time.Time
-		)
-		err := r.db.QueryRowContext(ctx, query, fieldName, value).Scan(
-			&id, &uName, &passwordHash, &email, &phone, &fullName, &isActive, &createdAt, &updatedAt,
-		)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return nil, mongo.ErrNoDocuments
-			}
-			return nil, err
-		}
-		doc := &models.UserDoc{
-			GuidFixed: id.String(),
-			UsernameField: models.UsernameField{
-				Username: uName,
-			},
-			EmailField: models.EmailField{
-				Email: email.String,
-			},
-			PhoneNumberField: models.PhoneNumberField{
-				PhoneNumber: phone.String,
-			},
-			UserPassword: models.UserPassword{
-				Password: passwordHash,
-			},
-			UserDetail: models.UserDetail{
-				UID:  id.String(),
-				Name: fullName,
-			},
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
-			IsDeleted: !isActive,
-		}
-		objID, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%024x", id.ID()))
-		doc.ID = objID
-		return doc, nil
+		return r.findOne(ctx, `WHERE u.id = (SELECT user_id FROM user_identities WHERE provider = $1 AND identity_id = $2)`,
+			strings.ToLower(fieldName), value)
 	}
-
-	var (
-		id           uuid.UUID
-		uName        string
-		passwordHash string
-		email        sql.NullString
-		phone        sql.NullString
-		fullName     string
-		isActive     bool
-		createdAt    time.Time
-		updatedAt    time.Time
-	)
-	err := r.db.QueryRowContext(ctx, query, arg).Scan(
-		&id, &uName, &passwordHash, &email, &phone, &fullName, &isActive, &createdAt, &updatedAt,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, mongo.ErrNoDocuments
-		}
-		return nil, err
-	}
-
-	doc := &models.UserDoc{
-		GuidFixed: id.String(),
-		UsernameField: models.UsernameField{
-			Username: uName,
-		},
-		EmailField: models.EmailField{
-			Email: email.String,
-		},
-		PhoneNumberField: models.PhoneNumberField{
-			PhoneNumber: phone.String,
-		},
-		UserPassword: models.UserPassword{
-			Password: passwordHash,
-		},
-		UserDetail: models.UserDetail{
-			UID:  id.String(),
-			Name: fullName,
-		},
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-		IsDeleted: !isActive,
-	}
-	objID, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%024x", id.ID()))
-	doc.ID = objID
-	return doc, nil
 }
 
 func (r *AuthenticationPostgresRepository) FindByPhonenumber(ctx context.Context, phonenumber models.PhoneNumberField) (*models.UserDoc, error) {
-	phone := strings.TrimSpace(phonenumber.PhoneNumber)
-	var (
-		id           uuid.UUID
-		uName        string
-		passwordHash string
-		email        sql.NullString
-		phoneVal     sql.NullString
-		fullName     string
-		isActive     bool
-		createdAt    time.Time
-		updatedAt    time.Time
-	)
-
-	query := `SELECT id, username, password_hash, email, phone, full_name, is_active, created_at, updated_at
-	          FROM users WHERE phone = $1 LIMIT 1`
-	err := r.db.QueryRowContext(ctx, query, phone).Scan(
-		&id, &uName, &passwordHash, &email, &phoneVal, &fullName, &isActive, &createdAt, &updatedAt,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, mongo.ErrNoDocuments
-		}
-		return nil, err
+	doc, err := r.findOne(ctx, `WHERE u.phone = $1`, strings.TrimSpace(phonenumber.PhoneNumber))
+	if err == nil {
+		doc.CountryCode = phonenumber.CountryCode
 	}
-
-	doc := &models.UserDoc{
-		GuidFixed: id.String(),
-		UsernameField: models.UsernameField{
-			Username: uName,
-		},
-		EmailField: models.EmailField{
-			Email: email.String,
-		},
-		PhoneNumberField: models.PhoneNumberField{
-			CountryCode: phonenumber.CountryCode,
-			PhoneNumber: phoneVal.String,
-		},
-		UserPassword: models.UserPassword{
-			Password: passwordHash,
-		},
-		UserDetail: models.UserDetail{
-			UID:  id.String(),
-			Name: fullName,
-		},
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-		IsDeleted: !isActive,
-	}
-	objID, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%024x", id.ID()))
-	doc.ID = objID
-	return doc, nil
-}
-
-func (r *AuthenticationPostgresRepository) CreateUser(ctx context.Context, doc models.UserDoc) (primitive.ObjectID, error) {
-	newID := uuid.New()
-	if doc.GuidFixed != "" {
-		if parsed, err := uuid.Parse(doc.GuidFixed); err == nil {
-			newID = parsed
-		}
-	}
-
-	query := `INSERT INTO users (id, username, password_hash, email, phone, full_name, is_active, created_at, updated_at)
-	          VALUES ($1, $2, $3, $4, $5, $6, true, now(), now())
-	          ON CONFLICT (username) DO UPDATE
-	          SET password_hash = EXCLUDED.password_hash,
-	              full_name = EXCLUDED.full_name,
-	              updated_at = now()
-	          RETURNING id`
-	var returnedID uuid.UUID
-	err := r.db.QueryRowContext(ctx, query,
-		newID,
-		strings.ToLower(strings.TrimSpace(doc.Username)),
-		doc.Password,
-		doc.Email,
-		doc.PhoneNumber,
-		doc.Name,
-	).Scan(&returnedID)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-
-	objID, _ := primitive.ObjectIDFromHex(fmt.Sprintf("%024x", returnedID.ID()))
-	return objID, nil
-}
-
-func (r *AuthenticationPostgresRepository) UpdateUser(ctx context.Context, username string, user models.UserDoc) error {
-	query := `UPDATE users
-	          SET password_hash = CASE WHEN $2 <> '' THEN $2 ELSE password_hash END,
-	              full_name = CASE WHEN $3 <> '' THEN $3 ELSE full_name END,
-	              email = CASE WHEN $4 <> '' THEN $4 ELSE email END,
-	              phone = CASE WHEN $5 <> '' THEN $5 ELSE phone END,
-	              updated_at = now()
-	          WHERE LOWER(username) = LOWER($1)`
-	_, err := r.db.ExecContext(ctx, query,
-		strings.ToLower(strings.TrimSpace(username)),
-		user.Password,
-		user.Name,
-		user.Email,
-		user.PhoneNumber,
-	)
-	return err
-}
-
-func (r *AuthenticationPostgresRepository) DeleteUser(ctx context.Context, username string) error {
-	query := `UPDATE users SET is_active = false, updated_at = now() WHERE LOWER(username) = LOWER($1)`
-	_, err := r.db.ExecContext(ctx, query, strings.ToLower(strings.TrimSpace(username)))
-	return err
+	return doc, err
 }
 
 func (r *AuthenticationPostgresRepository) FindByLineUserID(ctx context.Context, lineUserID string) (*models.UserDoc, error) {
@@ -312,24 +103,95 @@ func (r *AuthenticationPostgresRepository) FindByLineUserID(ctx context.Context,
 }
 
 func (r *AuthenticationPostgresRepository) FindUserByUID(ctx context.Context, userUID string) (*models.UserDoc, error) {
-	return r.FindByIdentity(ctx, "uid", userUID)
+	if _, err := uuid.Parse(strings.TrimSpace(userUID)); err != nil {
+		return &models.UserDoc{}, ErrNotFound
+	}
+	return r.findOne(ctx, `WHERE u.id = $1`, strings.TrimSpace(userUID))
+}
+
+// CreateUser inserts a new user and never overwrites an existing account.
+func (r *AuthenticationPostgresRepository) CreateUser(ctx context.Context, doc models.UserDoc) (string, error) {
+	newID := uuid.NewString()
+	for _, candidate := range []string{doc.UID, doc.GuidFixed} {
+		if parsed, err := uuid.Parse(strings.TrimSpace(candidate)); err == nil {
+			newID = parsed.String()
+			break
+		}
+	}
+	_, err := r.db.ExecContext(ctx, `INSERT INTO users (id, username, password_hash, email, phone, full_name, is_active)
+		VALUES ($1, $2, $3, NULLIF($4, ''), NULLIF($5, ''), $6, true)`,
+		newID, strings.ToLower(strings.TrimSpace(doc.Username)), doc.Password, strings.TrimSpace(doc.Email), strings.TrimSpace(doc.PhoneNumber), doc.Name)
+	if centraldb.IsUniqueViolation(err) {
+		return "", ErrUserExists
+	}
+	if err != nil {
+		return "", err
+	}
+	return newID, nil
+}
+
+// updateUser writes profile fields; blank values keep what is stored. A non-zero
+// DisabledAt deactivates the account.
+func (r *AuthenticationPostgresRepository) updateUser(ctx context.Context, where string, key string, user models.UserDoc) error {
+	result, err := r.db.ExecContext(ctx, `UPDATE users u
+		SET password_hash = CASE WHEN $2 <> '' THEN $2 ELSE password_hash END,
+		    full_name = CASE WHEN $3 <> '' THEN $3 ELSE full_name END,
+		    email = CASE WHEN $4 <> '' THEN $4 ELSE email END,
+		    phone = CASE WHEN $5 <> '' THEN $5 ELSE phone END,
+		    is_active = $6,
+		    updated_at = now()
+		`+where, key, user.Password, user.Name, user.Email, user.PhoneNumber, user.DisabledAt.IsZero())
+	if err != nil {
+		return err
+	}
+	if affected, _ := result.RowsAffected(); affected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *AuthenticationPostgresRepository) UpdateUser(ctx context.Context, username string, user models.UserDoc) error {
+	return r.updateUser(ctx, `WHERE LOWER(u.username) = $1`, strings.ToLower(strings.TrimSpace(username)), user)
 }
 
 func (r *AuthenticationPostgresRepository) UpdateUserByUID(ctx context.Context, userUID string, user models.UserDoc) error {
-	query := `UPDATE users
-	          SET password_hash = CASE WHEN $2 <> '' THEN $2 ELSE password_hash END,
-	              full_name = CASE WHEN $3 <> '' THEN $3 ELSE full_name END,
-	              email = CASE WHEN $4 <> '' THEN $4 ELSE email END,
-	              phone = CASE WHEN $5 <> '' THEN $5 ELSE phone END,
-	              updated_at = now()
-	          WHERE id::text = $1`
-	_, err := r.db.ExecContext(ctx, query,
-		userUID,
-		user.Password,
-		user.Name,
-		user.Email,
-		user.PhoneNumber,
-	)
+	if _, err := uuid.Parse(strings.TrimSpace(userUID)); err != nil {
+		return ErrNotFound
+	}
+	return r.updateUser(ctx, `WHERE u.id = $1`, strings.TrimSpace(userUID), user)
+}
+
+// SetLineIdentity links a LINE account to the user (replacing any previous link);
+// an empty lineUserID unlinks it.
+func (r *AuthenticationPostgresRepository) SetLineIdentity(ctx context.Context, userUID string, lineUserID string, displayName string, pictureURL string) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM user_identities WHERE user_id = $1 AND provider = 'line'`, userUID); err != nil {
+		return err
+	}
+	if lineUserID = strings.TrimSpace(lineUserID); lineUserID != "" {
+		extra, err := json.Marshal(map[string]string{"displayName": displayName, "pictureUrl": pictureURL})
+		if err != nil {
+			return err
+		}
+		_, err = tx.ExecContext(ctx, `INSERT INTO user_identities (user_id, provider, identity_id, extra) VALUES ($1, 'line', $2, $3)`,
+			userUID, lineUserID, string(extra))
+		if centraldb.IsUniqueViolation(err) {
+			return ErrUserExists
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// DeleteUser removes the account; memberships and identities cascade.
+func (r *AuthenticationPostgresRepository) DeleteUser(ctx context.Context, username string) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE LOWER(username) = $1`, strings.ToLower(strings.TrimSpace(username)))
 	return err
 }
 
@@ -337,14 +199,6 @@ func (r *AuthenticationPostgresRepository) FindGoogleIdentity(ctx context.Contex
 	return findPostgresGoogleIdentity(ctx, r.db, issuer, subject)
 }
 
-func (r *AuthenticationPostgresRepository) CreateAuthAudit(ctx context.Context, audit models.AuthAudit) error {
-	return nil
-}
-
 func (r *AuthenticationPostgresRepository) CreateGoogleUserIdentity(ctx context.Context, user models.UserDoc, identity models.GoogleIdentity, audit models.AuthAudit) (models.UserDoc, error) {
 	return r.createPostgresGoogleIdentity(ctx, user, identity, audit)
-}
-
-func (r *AuthenticationPostgresRepository) EnsureGoogleIdentityIndexes(ctx context.Context) error {
-	return nil
 }

@@ -17,14 +17,14 @@ import (
 )
 
 type IAuthService interface {
-	MWFuncWithRedisMixShop(cacher ICacher, shopPath []string, publicPath ...string) echo.MiddlewareFunc
-	MWFuncWithRedis(cacher ICacher, publicPath ...string) echo.MiddlewareFunc
+	MWFuncMixShop(cacher ICacher, shopPath []string, publicPath ...string) echo.MiddlewareFunc
+	MWFuncSession(cacher ICacher, publicPath ...string) echo.MiddlewareFunc
 	MWFuncWithShop(cacher ICacher, publicPath ...string) echo.MiddlewareFunc
 	GetPrefixCacheKey(tokenType TokenType) string
 	GetTokenFromContext(c echo.Context) (*TokenContext, error)
 	GetTokenFromAuthorizationHeader(tokenType TokenType, tokenAuthorization string) (string, error)
-	GenerateTokenWithRedis(tokenType TokenType, userInfo models.UserInfo) (string, error)
-	GenerateTokenWithRedisExpire(tokenType TokenType, userInfo models.UserInfo, expireTime time.Duration) (string, error)
+	GenerateToken(tokenType TokenType, userInfo models.UserInfo) (string, error)
+	GenerateTokenWithExpire(tokenType TokenType, userInfo models.UserInfo, expireTime time.Duration) (string, error)
 	CreateSession(userInfo models.UserInfo) (string, string, error)
 	SelectShop(tokenType TokenType, tokenStr string, holdingCode string, businessCode string, branchUID string, role uint8) error
 	ExpireToken(tokenType TokenType, tokenAuthorizationHeader string) error
@@ -157,7 +157,7 @@ func boundedDuration(value time.Duration, maximum time.Duration) time.Duration {
 	return value
 }
 
-func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath []string, publicPath ...string) echo.MiddlewareFunc {
+func (authService *AuthService) MWFuncMixShop(cacher ICacher, shopPath []string, publicPath ...string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 
@@ -270,7 +270,7 @@ func (authService *AuthService) MWFuncWithRedisMixShop(cacher ICacher, shopPath 
 	}
 }
 
-func (authService *AuthService) MWFuncWithRedis(cacher ICacher, publicPath ...string) echo.MiddlewareFunc {
+func (authService *AuthService) MWFuncSession(cacher ICacher, publicPath ...string) echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -447,7 +447,7 @@ func (authService *AuthService) GetTokenFromAuthorizationHeader(tokenType TokenT
 
 }
 
-func (authService *AuthService) GenerateTokenWithRedis(tokenType TokenType, userInfo models.UserInfo) (string, error) {
+func (authService *AuthService) GenerateToken(tokenType TokenType, userInfo models.UserInfo) (string, error) {
 
 	tokenStr := authService.encrypt.GenerateSHA256Hash(NewUUID())
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
@@ -462,7 +462,7 @@ func (authService *AuthService) GenerateTokenWithRedis(tokenType TokenType, user
 	return tokenStr, nil
 }
 
-func (authService *AuthService) GenerateTokenWithRedisExpire(tokenType TokenType, userInfo models.UserInfo, expireTime time.Duration) (string, error) {
+func (authService *AuthService) GenerateTokenWithExpire(tokenType TokenType, userInfo models.UserInfo, expireTime time.Duration) (string, error) {
 
 	tokenStr := authService.encrypt.GenerateSHA256Hash(NewUUID())
 	cacheKey := authService.GetPrefixCacheKey(tokenType) + tokenStr
@@ -578,7 +578,7 @@ func hmInt64Value(value interface{}) int64 {
 	return parsed
 }
 
-// ActiveSessionStats นับเซสชันใน Redis แยกตามกลุ่มกิจการ
+// ActiveSessionStats นับเซสชันใน cache_entries (PostgreSQL) แยกตามกลุ่มกิจการ
 // (ผู้ดูแลเรียกดูว่า "ขณะนี้มีใคร/กี่เซสชันกำลังใช้ระบบอยู่")
 func (authService *AuthService) ActiveSessionStats() (*SessionStats, error) {
 	keys, err := authService.cacher.Keys(authService.prefixSessionCacheKey + "*")
@@ -916,7 +916,7 @@ func (authService *AuthService) activeSession(sessionUID string, now time.Time) 
 }
 
 // AuthenticateAccessToken resolves identity from the access token and current
-// workspace authority from the shared session plus MongoDB.
+// workspace authority from the shared session plus the central PostgreSQL database.
 func (authService *AuthService) AuthenticateAccessToken(ctx context.Context, token string) (models.UserInfo, error) {
 	cacheKey := authService.prefixBearerCacheKey + strings.TrimSpace(token)
 	raw, err := authService.cacher.HMGet(cacheKey, []string{"username", "name", "uid", "sessionuid"})

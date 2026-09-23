@@ -23,21 +23,6 @@ services:
     mem_limit: 1024m
     logging: *default-logging
 
-  redis:
-    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
-    restart: unless-stopped
-    volumes:
-      - redis-data:/data
-    networks: [data]
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-    mem_limit: 256m
-    logging: *default-logging
-
   minio:
     image: minio/minio@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
     command: ["server", "/data"]
@@ -104,8 +89,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
       minio-init:
         condition: service_completed_successfully
     restart: unless-stopped
@@ -159,5 +142,4 @@ networks:
 
 volumes:
   postgres-data:
-  redis-data:
   minio-data:

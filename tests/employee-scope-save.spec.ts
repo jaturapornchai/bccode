@@ -1,20 +1,11 @@
-import { execSync } from 'child_process';
 import { expect, test, type Page } from '@playwright/test';
+import { pgQuery } from './support/pg';
 
 /**
- * SCOPE-SAVE UAT — แก้ไขพนักงานพร้อมบริษัท/สาขาที่เข้าใช้งานได้ (accessscopes)
- * เพิ่มบริษัท TST01 → save → ตรวจ Mongo → ลบออก → save → ตรวจ Mongo
+ * SCOPE-SAVE UAT — แก้ไขพนักงานพร้อมบริษัท/สาขาที่เข้าใช้งานได้ (employees.access_scopes)
+ * เพิ่มบริษัท TST01 → save → ตรวจ PostgreSQL → ลบออก → save → ตรวจ PostgreSQL
  * (ข้อมูลต้นทางรอด: UATEMP01 มีอยู่แล้ว, holding อื่นไม่แตะ)
  */
-
-function mongoJson(js: string): any {
-  const out = execSync(
-    `docker exec mongodb mongosh --quiet appdb --eval "JSON.stringify(${js})"`,
-    { timeout: 45000 },
-  ).toString().trim();
-  const start = out.indexOf('[') >= 0 ? out.indexOf('[') : out.indexOf('{');
-  return JSON.parse(out.slice(start));
-}
 
 async function uiLogin(page: Page) {
   await page.goto('/');
@@ -40,14 +31,14 @@ async function ensureEmployeeScreen(page: Page) {
   await expect(search).toBeVisible({ timeout: 20000 });
 }
 
-function scopesInMongo(): any {
-  const docs = mongoJson(`db.employees.find({holdingcode:'bc001', code:'UATEMP01'}, {accessscopes:1}).toArray()`);
-  return docs[0]?.accessscopes ?? null;
+function scopesInDb(): any {
+  const out = pgQuery(`SELECT access_scopes FROM employees WHERE holding_code = 'bc001' AND code = 'UATEMP01'`);
+  return out ? JSON.parse(out) : null;
 }
 
 test.describe.configure({ mode: 'serial', retries: 1 });
 
-test('SCOPE-SAVE: เพิ่มบริษัทใน scope → save → Mongo → ลบ → save → Mongo', async ({ page }) => {
+test('SCOPE-SAVE: เพิ่มบริษัทใน scope → save → PostgreSQL → ลบ → save → PostgreSQL', async ({ page }) => {
   test.setTimeout(420000);
   const failures: string[] = [];
 
@@ -152,12 +143,12 @@ test('SCOPE-SAVE: เพิ่มบริษัทใน scope → save → Mon
 
   await save('เพิ่ม scope TST01');
 
-  const afterAdd = scopesInMongo();
+  const afterAdd = scopesInDb();
   const added = Array.isArray(afterAdd)
     ? JSON.stringify(afterAdd).includes('TST01')
     : afterAdd === true || afterAdd === 'all';
   console.log('after add:', JSON.stringify(afterAdd)?.slice(0, 200));
-  if (!added) failures.push('หลังเพิ่ม: Mongo accessscopes ไม่มี TST01 — ' + JSON.stringify(afterAdd)?.slice(0, 150));
+  if (!added) failures.push('หลังเพิ่ม: employees.access_scopes ไม่มี TST01 — ' + JSON.stringify(afterAdd)?.slice(0, 150));
 
   // ===== 2) ลบบริษัทออก (คืนค่าเดิม) =====
   await ensureEmployeeScreen(page);
@@ -175,10 +166,10 @@ test('SCOPE-SAVE: เพิ่มบริษัทใน scope → save → Mon
     console.log('ไม่พบปุ่มลบในการ์ด TST01');
   }
 
-  const afterRemove = scopesInMongo();
+  const afterRemove = scopesInDb();
   console.log('after remove:', JSON.stringify(afterRemove)?.slice(0, 200));
   const removed = !Array.isArray(afterRemove) || !JSON.stringify(afterRemove).includes('TST01');
-  if (!removed) failures.push('หลังลบ: Mongo accessscopes ยังมี TST01');
+  if (!removed) failures.push('หลังลบ: employees.access_scopes ยังมี TST01');
 
   console.log(`\nRESULT: ${failures.length === 0 ? 'ALL OK' : 'FAILURES:'}`);
   failures.forEach((f) => console.log(' -', f));

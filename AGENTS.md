@@ -240,7 +240,7 @@ AI ทุกตัวที่ทำงานในโปรเจกต์น�
    - `minio` (เก็บไฟล์รูปภาพ + thumbnail ตาม `mydocs/specs/rules.md`)
    - `mainapi` (Go Backend บริการ REST API & WebSocket)
    - `frontend` (Next.js Standalone SSR Web Application)
-   - **สถานะจริง 2026-09-23:** prod ยังรัน `redis` เพราะ session ของระบบ login ยังพึ่งอยู่ (`backend/main.go` — `ms.Cacher`) — เป็นหนี้ที่ต้องถอด ห้ามเพิ่มการใช้งาน Redis ใหม่
+   - **สถานะจริง 2026-09-23 (หลังถอด):** session/token อยู่ในตาราง `cache_entries` ของ PostgreSQL (`backend/pkg/microservice/cacher.go`) — prod ไม่มี `redis` แล้ว (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`)
 
 ## กฎ: ขอบเขตผลิตภัณฑ์ — ไม่ทำระบบเงินเดือน (ตั้งโดยลุงจืด 2026-09-08)
 
@@ -494,7 +494,8 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 - BC Ai Account เลิกใช้ MongoDB, ClickHouse, Kafka และ Redis แล้ว ห้ามเพิ่มกลับหรือออกแบบให้พึ่งพาระบบเหล่านี้
 - ใช้ PostgreSQL เป็นฐานข้อมูลหลักเพียงตัวเดียว และบันทึกธุรกรรมบัญชีทั้งหมดผ่าน Go sql.Tx แบบ synchronous ACID
-- หัวข้อเก่าที่อ้าง MongoDB/Kafka/Redis (2-Tier, UAT ใน Mongo, รูปภาพใน Mongo, topology) ถูกล้างออกจากไฟล์นี้แล้ว 2026-09-23; ในโค้ดยังมีของค้าง (Mongo driver, route `internal/vfgl`, Kafka consumer, Redis session) ซึ่งเป็นหนี้ที่ต้องถอด ไม่ใช่แบบอย่าง
+- หัวข้อเก่าที่อ้าง MongoDB/Kafka/Redis (2-Tier, UAT ใน Mongo, รูปภาพใน Mongo, topology) ถูกล้างออกจากไฟล์นี้แล้ว 2026-09-23; โค้ดถอด Mongo driver, Kafka, Redis, ClickHouse ออกหมดแล้วในวันเดียวกัน — จอที่ API เดิมอยู่บน Mongo ขึ้น "รอพัฒนา" จนกว่าจะสร้างบน PostgreSQL (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`)
+- ภาษีทุกเมนูอยู่ในหมวด "บัญชีแยกประเภท" — ผู้ใช้ GL ตัวเดียว (เช่น สำนักงานบัญชี) ต้องใช้ได้เลย ระบบอื่นยังไม่ต้องทำ (ลุงจืดสั่ง 2026-09-23, ADR `docs/kms/decisions/2026-09-23-tax-inside-general-ledger.md`)
 - ขอบเขต GL ล่าสุด: ไม่เกี่ยวกับลูกจ้าง/เงินเดือน บันทึกรายวันครั้งเดียวเชื่อมลูกหนี้ เจ้าหนี้ และ Statement ธนาคารแบบ many-to-many โดยเก็บยอดจัดสรรในตารางเชื่อม
 
 - ขอบเขต GL ที่ลุงจืดย้ำล่าสุด: เป็นระบบของห้องบัญชี เน้นรับข้อมูล ตรวจสอบ กระทบยอด และปิดงบ ไม่ใช่ระบบหน้าบ้านหรือ workflow ปฏิบัติงานของระบบอื่น AR/AP/Statement เป็นรายละเอียดตรวจสอบบัญชี ไม่ใช่คำสั่งรับจ่ายเงินจริง; ยึด mydocs/specs/gl/spec.md เป็นสเปกหลัก

@@ -1,21 +1,16 @@
 package branch
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	common "smlcloudplatform/internal/models"
-	orgaccess "smlcloudplatform/internal/organization"
 	"strings"
 	"testing"
 	"time"
 
+	authModels "smlcloudplatform/internal/authentication/models"
+	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
 	branchModels "smlcloudplatform/internal/organization/branch/models"
-	companyModels "smlcloudplatform/internal/organization/company/models"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestPrepareBranchUpdateRequiresIANATimezone(t *testing.T) {
@@ -30,7 +25,7 @@ func TestPrepareBranchUpdateRequiresIANATimezone(t *testing.T) {
 		{name: "offset", timezone: "+07:00", wantErr: branchModels.ErrBranchTimezoneInvalid},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			req := branchModels.BranchOrgDoc{CompanyGuid: "company-id", Code: "00001", Timezone: test.timezone, Names: validBranchNames()}
+			req := branchModels.BranchOrgDoc{CompanyGuid: "company-id", Code: "00001", BranchSettings: branchModels.BranchSettings{Timezone: test.timezone}, Names: validBranchNames()}
 			err := prepareBranchUpdate(&req)
 			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
 				t.Fatalf("error = %v, want %v", err, test.wantErr)
@@ -48,17 +43,18 @@ func TestPrepareBranchUpdateRequiresIANATimezone(t *testing.T) {
 func TestPrepareBranchCreateForcesActive(t *testing.T) {
 	req := branchModels.BranchOrgDoc{
 		HoldingUID: "client-holding", CompanyUID: "company-id", CompanyGuid: "company-id",
-		BranchUID: "client-branch", GuidFixed: "client-guid", IsDeleted: true, Version: 99,
-		Code: "1", Timezone: "UTC", Names: validBranchNames(),
+		BranchUID: "client-branch", GuidFixed: "client-guid",
+		Code: "1", BranchSettings: branchModels.BranchSettings{Timezone: "UTC"}, Names: validBranchNames(),
 	}
 	now := time.Date(2026, 8, 14, 1, 2, 3, 0, time.FixedZone("test", 7*60*60))
-	if err := prepareBranchCreate(&req, "holding", "holding-uid", "owner@example.com", "branch-uid", now); err != nil {
+	if err := prepareBranchCreate(&req, "holding", "owner@example.com", now); err != nil {
 		t.Fatal(err)
 	}
-	if !req.IsActive || req.IsDeleted || req.Version != 0 || req.ID.IsZero() {
-		t.Fatalf("unsafe saved status/ID: %#v", req)
+	if !req.IsActive {
+		t.Fatalf("unsafe saved status: %#v", req)
 	}
-	if req.HoldingUID != "holding-uid" || req.BranchUID != "branch-uid" || req.GuidFixed != "branch-uid" || req.BranchCode != "00001" {
+	// PostgreSQL identity: branch UID is the branch code, company UID the company code.
+	if req.HoldingUID != "holding" || req.BranchUID != "00001" || req.GuidFixed != "00001" || req.BranchCode != "00001" || req.BusinessCode != "company-id" {
 		t.Fatalf("unsafe saved stable identity/code: %#v", req)
 	}
 	if req.BusinessTypes == nil || req.CreatedAt.Location() != time.UTC || req.UpdatedAt.Location() != time.UTC {
@@ -92,43 +88,6 @@ func validBranchNames() common.JSONB {
 	return common.JSONB{{Code: &code, Name: &name}}
 }
 
-type companyFinderStub struct {
-	company companyModels.CompanyDoc
-	filter  bson.M
-}
-
-func (stub *companyFinderStub) FindOne(_ context.Context, _ interface{}, filter interface{}, decode interface{}, _ ...*options.FindOneOptions) error {
-	stub.filter = filter.(bson.M)
-	*(decode.(*companyModels.CompanyDoc)) = stub.company
-	return nil
-}
-
-func TestFindActiveBranchCompanyRequiresCanonicalActiveParent(t *testing.T) {
-	active := companyModels.CompanyDoc{ID: primitive.NewObjectID(), HoldingUID: "holding-uid", CompanyUID: "company-id"}
-	active.IsActive = true
-	finder := &companyFinderStub{company: active}
-	got, err := findActiveBranchCompany(context.Background(), finder, "holding", "holding-uid", "company-id")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.CompanyUID != "company-id" || finder.filter["isactive"] != true || finder.filter["holdinguid"] != "holding-uid" || finder.filter["companyuid"] != "company-id" {
-		t.Fatalf("company lookup is not fail-closed: %#v", finder.filter)
-	}
-	if deleted, ok := finder.filter["isdeleted"].(bson.M); !ok || deleted["$ne"] != true {
-		t.Fatalf("company lookup does not reject deleted parent: %#v", finder.filter)
-	}
-
-	inactive := &companyFinderStub{company: companyModels.CompanyDoc{ID: primitive.NewObjectID(), HoldingUID: "holding-uid", CompanyUID: "company-id"}}
-	if _, err := findActiveBranchCompany(context.Background(), inactive, "holding", "holding-uid", "company-id"); !errors.Is(err, branchModels.ErrBranchCompanyNotFound) {
-		t.Fatalf("inactive company error = %v", err)
-	}
-	legacy := companyModels.CompanyDoc{ID: primitive.NewObjectID(), GuidFixed: "company-id"}
-	legacy.IsActive = true
-	if _, err := findActiveBranchCompany(context.Background(), &companyFinderStub{company: legacy}, "holding", "holding-uid", "company-id"); !errors.Is(err, branchModels.ErrBranchCompanyNotFound) {
-		t.Fatalf("legacy parent without stable IDs error = %v", err)
-	}
-}
-
 func TestPreserveBranchParentRejectsClientMove(t *testing.T) {
 	existing := branchModels.BranchOrgDoc{HoldingCode: "holding", HoldingUID: "holding-uid", CompanyUID: "company-uid", BranchUID: "branch-uid"}
 	for _, req := range []branchModels.BranchOrgDoc{
@@ -159,25 +118,45 @@ func TestBranchCodeCannotChangeThroughOrdinaryUpdate(t *testing.T) {
 	}
 }
 
-func TestBranchManagementFilterExcludesSoftDeleted(t *testing.T) {
-	filter := visibleBranchFilter("holding")
-	deleted, ok := filter["isdeleted"].(bson.M)
-	if !ok || deleted["$ne"] != true {
-		t.Fatalf("unsafe management filter: %#v", filter)
-	}
-}
-
 func TestBranchCreateResponseExposesSavedEntity(t *testing.T) {
 	payload, err := json.Marshal(orgaccess.OrganizationCreateResponse{Entity: branchModels.BranchOrgDoc{
 		HoldingUID: "holding-uid", CompanyUID: "company-uid", BranchUID: "branch-uid", CompanyGuid: "company-uid",
-	}, KafkaSync: "outbox"})
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(payload)
-	for _, required := range []string{`"entity"`, `"holdinguid":"holding-uid"`, `"companyuid":"company-uid"`, `"branchuid":"branch-uid"`, `"kafka_sync":"outbox"`} {
+	for _, required := range []string{`"entity"`, `"holdinguid":"holding-uid"`, `"companyuid":"company-uid"`, `"branchuid":"branch-uid"`} {
 		if !strings.Contains(text, required) {
 			t.Fatalf("response %s missing %s", text, required)
 		}
+	}
+}
+
+func TestScopedBranchPredicateFailsClosedAndBindsScopes(t *testing.T) {
+	scopes := []authModels.AccessScope{
+		{ScopeType: "company", CompanyUID: "01", AllBranches: true},
+		{ScopeType: "branch", CompanyUID: "02", BranchUID: "00001"},
+	}
+	predicate, args := scopedBranchPredicate(scopes, []interface{}{"holding"})
+	if !strings.Contains(predicate, "$2::text[]") || !strings.Contains(predicate, "unnest($3::text[], $4::text[])") || len(args) != 4 {
+		t.Fatalf("predicate = %s args = %d", predicate, len(args))
+	}
+	if _, emptyArgs := scopedBranchPredicate(nil, nil); len(emptyArgs) != 3 {
+		t.Fatalf("empty scopes must still bind empty arrays: %d", len(emptyArgs))
+	}
+}
+
+func TestBranchSettingsRoundTripKeepsFlatJSON(t *testing.T) {
+	doc := branchModels.BranchOrgDoc{Code: "00000", BranchSettings: branchModels.BranchSettings{Timezone: "Asia/Bangkok", BaseCurrency: "THB"}}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"timezone":"Asia/Bangkok"`) || strings.Contains(string(raw), "BranchSettings") {
+		t.Fatalf("branch settings must stay flat in JSON: %s", raw)
+	}
+	if !isHeadquarters(doc) {
+		t.Fatal("branch 00000 is the head office")
 	}
 }

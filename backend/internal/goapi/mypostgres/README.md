@@ -1,6 +1,6 @@
 # PostgreSQL Queue System
 
-แทนที่ระบบ Redis ด้วย PostgreSQL สำหรับ Queue Management
+Queue ของ goapi เก็บใน PostgreSQL (ฐานข้อมูลเดียวของระบบ)
 
 ## คุณสมบัติ
 
@@ -58,7 +58,7 @@ psql -h localhost -U postgres -d your_database -f mypostgres/schema.sql
 
 ### 2. ตั้งค่า environment variables
 
-ไม่ต้องมี Redis config แล้ว ใช้ PostgreSQL ที่มีอยู่:
+ใช้ค่าเชื่อมต่อ PostgreSQL ที่มีอยู่:
 
 ```bash
 POSTGRES_HOST=localhost
@@ -115,28 +115,6 @@ stats, err := qm.GetQueueStats(ctx, "SHOP001")
 summary, err := qm.GetQueueSummary(ctx)
 ```
 
-## ข้อดีของ PostgreSQL เทียบกับ Redis
-
-### 1. Durability
-- ✅ **PostgreSQL**: ข้อมูล persist บน disk, ไม่สูญหายเมื่อ restart
-- ❌ **Redis**: ข้อมูลอยู่ใน memory, อาจสูญหายถ้าไม่ได้ persist
-
-### 2. ACID Compliance
-- ✅ **PostgreSQL**: Transaction support เต็มรูปแบบ
-- ⚠️ **Redis**: Transaction จำกัด
-
-### 3. Complex Queries
-- ✅ **PostgreSQL**: รองรับ SQL ซับซ้อน, JOIN, aggregation
-- ❌ **Redis**: Query จำกัด, ไม่มี JOIN
-
-### 4. Cost
-- ✅ **PostgreSQL**: ใช้ infrastructure ที่มีอยู่
-- ❌ **Redis**: ต้องมี Redis server แยก
-
-### 5. Monitoring
-- ✅ **PostgreSQL**: เครื่องมือ monitoring มากมาย
-- ⚠️ **Redis**: เครื่องมือน้อยกว่า
-
 ## Performance Considerations
 
 ### Indexing
@@ -154,32 +132,6 @@ DELETE FROM queues
 WHERE status = 'completed'
   AND updatedat < NOW() - INTERVAL '7 days';
 ```
-
-## Migration จาก Redis
-
-### ข้อมูลใน Redis (ไม่ต้อง migrate)
-- Queue items ใน Redis เป็น temporary data
-- ไม่จำเป็นต้อง migrate เพราะจะ process ใหม่อัตโนมัติ
-
-### ขั้นตอน Migration
-
-1. **Deploy โค้ดใหม่**:
-   - ปิด workers ชั่วคราว
-   - Deploy โค้ดที่ใช้ PostgreSQL
-   - สร้างตารางด้วย schema.sql
-
-2. **Verify**:
-   - ตรวจสอบว่าตารางถูกสร้างแล้ว
-   - Test เพิ่ม/ดึงงานจาก queue
-
-3. **Enable Workers**:
-   - เปิด workers ใหม่
-   - Monitor logs
-
-4. **ลบ Redis** (หลังจากมั่นใจว่าทำงานดี):
-   - หยุด Redis service
-   - ลบ Redis config จาก docker-compose.yml
-   - ลบโฟลเดอร์ myredis/
 
 ## Monitoring & Debugging
 
