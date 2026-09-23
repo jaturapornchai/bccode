@@ -24,7 +24,7 @@ const MASTER_PATHS: Record<string, string> = {
   unit: "/unit",
   producttype: "/product/type",
   ordertype: "/product/order-type",
-  businesstype: "/product-section/business-type",
+  businesstype: "/organization/business-type",
   branch: "/list-holding",
   company: "/organization/company",
   creditor: "/debtaccount/creditor",
