@@ -27,6 +27,12 @@ var (
 	prepareErr  error
 )
 
+// pdfcpu ห้ามเขียน config ลง $HOME: container รันด้วย appuser ที่ไม่มี home (adduser -H) — ถ้าไม่ปิด
+// จะ panic "config problem: mkdir /home/appuser: permission denied" ตอนสร้าง 50 ทวิ บน production
+func init() {
+	api.DisableConfigDir()
+}
+
 func pdfConfig() *model.Configuration {
 	conf := model.NewDefaultConfiguration()
 	conf.ValidationMode = model.ValidationRelaxed

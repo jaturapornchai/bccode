@@ -43,12 +43,12 @@ VALUES
 -- 3. Holdings (Single Holding: 'rungrueng')
 INSERT INTO holdings (code, name, tax_id, is_active)
 VALUES 
-  ('rungrueng', 'กลุ่มกิจการรุ่งเรืองกรุ๊ป', '0105560001234', true);
+  ('rungrueng', 'กลุ่มกิจการรุ่งเรืองกรุ๊ป', '0105560001235', true);
 
 -- 4. Companies (Single Company: '01')
 INSERT INTO companies (holding_code, code, name, tax_id, is_active)
 VALUES 
-  ('rungrueng', '01', 'บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด', '0105566123450', true);
+  ('rungrueng', '01', 'บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด', '0105566123456', true);
 
 -- 5. Branches (Single Branch: '00000' สำนักงานใหญ่)
 INSERT INTO branches (holding_code, company_code, code, name, is_headquarters, is_active)

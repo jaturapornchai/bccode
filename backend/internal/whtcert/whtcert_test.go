@@ -123,6 +123,21 @@ func sampleCertificates() map[string]Certificate {
 	}
 }
 
+// TestRenderWithoutHomeDir - production รันด้วยผู้ใช้ที่ไม่มี home; การสร้าง PDF ต้องไม่พึ่ง config dir
+func TestRenderWithoutHomeDir(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "no-such-home", "deeper")
+	for _, key := range []string{"HOME", "XDG_CONFIG_HOME", "AppData"} {
+		t.Setenv(key, missing)
+	}
+	cert := sampleCertificates()["01-pnd53-service-withhold"]
+	if _, err := Render(cert); err != nil {
+		t.Fatalf("render without home dir: %v", err)
+	}
+	if _, err := os.Stat(missing); !os.IsNotExist(err) {
+		t.Fatalf("pdfcpu สร้างโฟลเดอร์ config ใน home (%s) — ต้องปิดด้วย api.DisableConfigDir", missing)
+	}
+}
+
 func TestRenderSamples(t *testing.T) {
 	dir := os.Getenv("WHT_CERT_SAMPLE_DIR") // ตั้งเพื่อบันทึกไฟล์ตัวอย่างไว้เปิดดู
 	for name, cert := range sampleCertificates() {

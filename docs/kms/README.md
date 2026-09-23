@@ -139,6 +139,7 @@
 - [bugs/2026-09-05-projection-consumer-head-of-line-block.md](bugs/2026-09-05-projection-consumer-head-of-line-block.md)
 - [bugs/2026-09-14-settings-language-switch-loop.md](bugs/2026-09-14-settings-language-switch-loop.md) — **ยังไม่แก้ (open)**: จอตั้งค่าเปิดผ่าน URL ตรงแล้วกดเลือกภาษา → render loop สลับ th/ja (effect อ่าน localStorage ผูก deps กับ loadRecords ที่มี language)
 - [bugs/2026-09-23-vat-report-reads-missing-erp-tables.md](bugs/2026-09-23-vat-report-reads-missing-erp-tables.md) — **ยังไม่แก้ (open)**: รายงานภาษีขาย/ซื้อ + ภ.พ.30 อ่านตาราง ERP ที่ไม่มีในฐาน holding (prod 500 ทุก holding) + `m.name0` ไม่มีจริง — ต้องย้ายไปอ่านจาก GL ตาม `mydocs/datamodels/gl/vat.sql`
+- [bugs/2026-09-23-wht-cert-pdf-panic-on-prod.md](bugs/2026-09-23-wht-cert-pdf-panic-on-prod.md) — 50 ทวิ บน prod panic เพราะ pdfcpu mkdir ใน home ที่ไม่มี (แก้ `api.DisableConfigDir`) + เลขผู้เสียภาษีบริษัทใน seed ผิด checksum + คอลัมน์ `business_code` ขาดใน `shop_user_access_logs`
 
 - [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ
 - [บทเรียน code review 2026-09-14](bugs/2026-09-14-code-review-gl-warehouse-fixes.md) — confirm() เป็น Promise, PUT location ต้อง spread doc เดิม, GL consumer group คงที่, ห้าม panic ตอน register consumer, เพดานบรรทัด journal ปิดงบ, report วนหน้า, NumericInput ไม่ปัดค่า

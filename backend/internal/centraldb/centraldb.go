@@ -214,6 +214,8 @@ var schemaStatements = []string{
 		ip TEXT NOT NULL DEFAULT '',
 		last_accessed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 	)`,
+	// ตารางที่สร้างก่อนมีคอลัมน์นี้ (prod 2026-09) — CREATE IF NOT EXISTS ไม่เติมคอลัมน์ให้
+	`ALTER TABLE shop_user_access_logs ADD COLUMN IF NOT EXISTS business_code TEXT NOT NULL DEFAULT ''`,
 }
 
 // IsUniqueViolation reports a PostgreSQL unique_violation (SQLSTATE 23505).

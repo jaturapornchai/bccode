@@ -8,17 +8,17 @@ BEGIN;
 -- 1. Holdings
 INSERT INTO holdings (code, name, tax_id, is_active)
 VALUES 
-  ('demo', 'บริษัท บีซีเอไอ สาธิต จำกัด (กลุ่มกิจการรุ่งเรือง)', '0105560001234', true),
+  ('demo', 'บริษัท บีซีเอไอ สาธิต จำกัด (กลุ่มกิจการรุ่งเรือง)', '0105560001235', true),
   ('THAI_HOLDING', 'บริษัท สยามพาณิชย์ กรุ๊ป จำกัด (มหาชน)', '0107565000123', true)
 ON CONFLICT (code) DO UPDATE SET is_active = true, name = EXCLUDED.name;
 
 -- 2. Companies
 INSERT INTO companies (holding_code, code, name, tax_id, is_active)
 VALUES 
-  ('demo', '01', 'สำนักงานใหญ่ (01 - Demo Headquarters)', '0105560001234', true),
-  ('demo', 'C01', 'บริษัท รุ่งเรืองวัสดุก่อสร้าง จำกัด (C01)', '0105566123450', true),
-  ('demo', 'C02', 'บริษัท หอมกรุ่น คอฟฟี่ แอนด์ เบเกอรี่ จำกัด (C02)', '0125567001236', true),
-  ('demo', 'C03', 'ห้างหุ้นส่วนจำกัด รุ่งเรืองการค้า (C03)', '0115565012348', true),
+  ('demo', '01', 'สำนักงานใหญ่ (01 - Demo Headquarters)', '0105560001235', true),
+  ('demo', 'C01', 'บริษัท รุ่งเรืองวัสดุก่อสร้าง จำกัด (C01)', '0105566123456', true),
+  ('demo', 'C02', 'บริษัท หอมกรุ่น คอฟฟี่ แอนด์ เบเกอรี่ จำกัด (C02)', '0125567001231', true),
+  ('demo', 'C03', 'ห้างหุ้นส่วนจำกัด รุ่งเรืองการค้า (C03)', '0115565012341', true),
   ('THAI_HOLDING', '01', 'สำนักงานใหญ่ (01 - Headquarters)', '0107565000123', true),
   ('THAI_HOLDING', 'C01', 'สำนักงานใหญ่ (C01 - Headquarters)', '0107565000123', true)
 ON CONFLICT (holding_code, code) DO UPDATE SET is_active = true, name = EXCLUDED.name;
