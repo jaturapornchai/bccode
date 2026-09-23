@@ -12,6 +12,7 @@ type JournalDetails struct {
 	StatementLines []SubledgerStatementLine `json:"statement_lines,omitempty"`
 	Matches        []SubledgerMatch         `json:"matches,omitempty"`
 	Withdrawals    []SubledgerWithdrawal    `json:"withdrawals,omitempty"`
+	Withholdings   []SubledgerWithholding   `json:"withholdings,omitempty"`
 }
 type SubledgerPartner struct {
 	Code       string `json:"partner_code"`

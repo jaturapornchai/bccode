@@ -8,7 +8,9 @@ export type GLDetailBankLine = {journal_id?:string;line_number:number;bank_accou
 export type GLDetailStatement = {id:string;bank_account_code:string;source_key:string;transaction_date:string;value_date?:string;bank_reference?:string;description?:string;direction:number;amount:string;balance_after?:string};
 export type GLDetailMatch = {id:string;statement_line_id:string;journal_id?:string;line_number:number;amount:string};
 export type GLDetailWithdrawal = {kind:string;id:string;reason:string};
-export type GLJournalDetails = {partners?:GLDetailPartner[];bank_accounts?:GLDetailBankAccount[];documents?:GLDetailDocument[];allocations?:GLDetailAllocation[];settlements?:GLDetailSettlement[];bank_lines?:GLDetailBankLine[];statement_lines?:GLDetailStatement[];matches?:GLDetailMatch[];withdrawals?:GLDetailWithdrawal[]};
+/** ภาษีหัก ณ ที่จ่ายประกอบใบสำคัญ (ตาม mydocs wht.sql) — ฐานภาษีแก้ได้เสมอ; tax_amount ว่าง = backend คำนวณ ฐาน × อัตรา */
+export type GLDetailWithholding = {id:string;wht_direction:number;form_type:string;partner_code:string;wht_cert_no?:string;certificate_date?:string;payment_date:string;income_tax_type:string;income_description?:string;condition_type:number;wht_rate:string;base_amount:string;tax_amount?:string};
+export type GLJournalDetails = {partners?:GLDetailPartner[];bank_accounts?:GLDetailBankAccount[];documents?:GLDetailDocument[];allocations?:GLDetailAllocation[];settlements?:GLDetailSettlement[];bank_lines?:GLDetailBankLine[];statement_lines?:GLDetailStatement[];matches?:GLDetailMatch[];withdrawals?:GLDetailWithdrawal[];withholdings?:GLDetailWithholding[]};
 export type GLSupportRow = Record<string,string|number|boolean|undefined>;
 export type GLSupportKind = "partners"|"bank-accounts"|"documents"|"statements"|"bank-lines"|"allocations"|"settlements"|"matches";
 export function supportLabel(kind: GLSupportKind, row: GLSupportRow): string {
@@ -29,6 +31,8 @@ export function reconciliationChanges(before: GLJournalDetails = {}, after: GLJo
     const rows = (after[key] ?? []).filter(row => !oldIDs.has(identity(row)));
     Object.assign(result, {[key]: rows});
   }
+  // ภาษีหัก ณ ที่จ่ายส่งทั้งชุดเมื่อมีการแก้ (backend แทนทั้งชุดและเก็บค่าเดิมใน audit)
+  if((after.withholdings ?? []).length > 0 && JSON.stringify(before.withholdings ?? []) !== JSON.stringify(after.withholdings)) result.withholdings = after.withholdings;
   return result;
 }
 /** CSV supports quoted commas/newlines; source identity uses SHA-256 of the original file + row. */

@@ -51,8 +51,9 @@ describe("general ledger language keys", () => {
     for (const file of screens) {
       // Allowed carriers of Thai fallback text: tr("gl_key", "ไทย") calls and ["gl_key", "ไทย"] GLLabel tuples.
       // menu_* keys are the shared main-menu texts (planned-workflow card reused by GLPendingPanel, 2026-09-19).
+      // wht_* keys are the shared 50 Tawi form/income/condition labels reused by the GL withholding details (2026-09-23).
       const source = stripComments(readFileSync(file, "utf8"))
-        .replace(/\btr\(\s*"(?:gl|common|menu)_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\)/g, "")
+        .replace(/\btr\(\s*"(?:gl|common|menu|wht)_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\)/g, "")
         .replace(/\[\s*"gl_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\]/g, "");
       source.split(/\r?\n/).forEach((line, index) => {
         if (/[฀-๿]/.test(line)) leftovers.push(`${file.split(/[\\/]/).pop()}:${index + 1}`);

@@ -229,7 +229,8 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     if (journal.id && !await confirm({ title: tr("gl_save_draft_changes", "บันทึกการแก้ไขฉบับร่าง?"), description: journal.docno, confirmLabel: tr("gl_save_draft", "บันทึกฉบับร่าง"), tone: "info" })) return;
     try {
       const result = await execute({ resource: "journals", id: journal.id, version: journal.version, action: journal.id ? "update" : "create", journal });
-      const saved = { ...journal, id: result.id, version: result.version };
+      // backend เติมค่าที่คำนวณเอง (เช่น ภาษีหัก ณ ที่จ่าย = ฐาน × อัตรา) — แสดงฉบับที่บันทึกจริง; โหลดไม่ได้ใช้ค่าที่ส่งไป (คำสั่ง commit แล้ว)
+      const saved = await glRequest<GLJournal>(`journals/${encodeURIComponent(result.id)}`).catch(() => ({ ...journal, id: result.id, version: result.version }));
       setJournal(saved);
       setOriginal(JSON.stringify(saved));
       setIsEditing(false);

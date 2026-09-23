@@ -483,6 +483,13 @@ type TaxWithholdingRow struct {
 	WhtText     string `json:"whtamounttext"` // ยอดหักเป็นตัวอักษรไทย สำหรับหนังสือรับรอง 50 ทวิ
 	NetAmount   string `json:"netamount"`     // ยอดจ่ายสุทธิ = ฐาน - ยอดหัก
 	RatePercent string `json:"ratepercent"`   // อัตรา = ยอดหัก / ฐาน × 100 ปัด 2 ตำแหน่ง ("" เมื่อไม่มีฐาน)
+	// ฐานภาษีมาจากไหน: recorded = ผู้ใช้บันทึกในรายละเอียดใบสำคัญ (แก้ได้เสมอ), inferred = ระบบประมาณจากบรรทัดบัญชี
+	TaxBaseSource string `json:"taxbasesource"`
+	FormType      string `json:"formtype,omitempty"`   // PND2/PND3/PND53 ตามที่บันทึก
+	IncomeType    string `json:"incometype,omitempty"` // รหัสประเภทเงินได้ของแบบ 50 ทวิ
+	Condition     int    `json:"condition,omitempty"`  // 1=หัก ณ ที่จ่าย 2=ออกให้ตลอดไป 3=ออกให้ครั้งเดียว
+	PaidDate      string `json:"paiddate,omitempty"`
+	CertificateNo string `json:"certificateno,omitempty"`
 
 	base, wht decimal.Decimal
 }
@@ -709,13 +716,42 @@ LIMIT $5`
 		return report, fmt.Errorf("wht lines exceed %d for %04d-%02d", whtReportMaxRows, year, month)
 	}
 
+	recorded := map[string]bool{}
 	for _, line := range lines {
+		if recorded[line.journalID] {
+			continue
+		}
+		// ใบที่บันทึกรายการภาษีหักไว้ ใช้ฐาน/ยอดหัก/อัตราที่ผู้ใช้บันทึกตรง ๆ (หนึ่งแถวต่อรายการเงินได้)
+		items, err := recordedWithholdings(ctx, db, company, line.journalID, direction, forms)
+		if err != nil {
+			return report, err
+		}
+		if len(items) > 0 {
+			recorded[line.journalID] = true
+			for _, item := range items {
+				row := TaxWithholdingRow{JournalID: line.journalID, DocNo: line.docNo, DocDate: line.docDate, Description: item.Description,
+					TaxBaseSource: "recorded", FormType: item.FormType, IncomeType: item.IncomeType, Condition: item.Condition,
+					PaidDate: item.PaymentDate, CertificateNo: item.CertificateNo, base: item.BaseAmount.Decimal()}
+				if item.TaxAmount != nil {
+					row.wht = item.TaxAmount.Decimal()
+				}
+				if row.Description == "" {
+					row.Description = line.description
+				}
+				if err := fillPartnerMaster(ctx, db, company, item.PartnerCode, &row); err != nil {
+					return report, err
+				}
+				report.Rows = append(report.Rows, finishWithholdingRow(row, moneyText(item.Rate.Decimal())))
+			}
+			continue
+		}
 		row := TaxWithholdingRow{
-			JournalID:   line.journalID,
-			DocNo:       line.docNo,
-			DocDate:     line.docDate,
-			Description: line.description,
-			wht:         line.debit,
+			JournalID:     line.journalID,
+			DocNo:         line.docNo,
+			DocDate:       line.docDate,
+			Description:   line.description,
+			TaxBaseSource: "inferred",
+			wht:           line.debit,
 		}
 		if direction == "paid" {
 			row.wht = line.credit
@@ -723,13 +759,7 @@ LIMIT $5`
 		if err := fillWithholdingEvidence(ctx, db, company, line.journalID, direction, &row); err != nil {
 			return report, err
 		}
-		row.WhtAmount, row.BaseAmount = moneyText(row.wht), moneyText(row.base)
-		row.WhtText = whtcert.BahtText(row.wht)
-		row.NetAmount = moneyText(row.base.Sub(row.wht))
-		if row.base.Sign() > 0 {
-			row.RatePercent = moneyText(row.wht.Mul(decimal.NewFromInt(100)).Div(row.base))
-		}
-		report.Rows = append(report.Rows, row)
+		report.Rows = append(report.Rows, finishWithholdingRow(row, ""))
 	}
 	report.Summary = summarizeWithholding(report.Rows)
 	return report, nil
@@ -901,6 +931,11 @@ func fillWithholdingEvidence(ctx context.Context, db *sql.DB, company, journalID
 	if partnerCode == "" {
 		return nil
 	}
+	return fillPartnerMaster(ctx, db, company, partnerCode, row)
+}
+
+// fillPartnerMaster - ชื่อ/เลขผู้เสียภาษี/ที่อยู่ของคู่ค้าจากทะเบียนคู่ค้าของห้องบัญชี
+func fillPartnerMaster(ctx context.Context, db *sql.DB, company, partnerCode string, row *TaxWithholdingRow) error {
 	row.PartnerCode = partnerCode
 	var name, taxID, address sql.NullString
 	if err := db.QueryRowContext(ctx, `SELECT COALESCE(payload->>'name_th',''), COALESCE(payload->>'tax_id',''), COALESCE(payload->>'address','') FROM gl_subledger_partners WHERE company=$1 AND code=$2`, company, partnerCode).Scan(&name, &taxID, &address); err != nil {
@@ -911,6 +946,49 @@ func fillWithholdingEvidence(ctx context.Context, db *sql.DB, company, journalID
 	}
 	row.PartnerName, row.TaxID, row.Address = name.String, taxID.String, address.String
 	return nil
+}
+
+// recordedWithholdings - รายการภาษีหักที่ผู้ใช้บันทึกในรายละเอียดใบสำคัญ ตามทิศทางและแบบยื่นที่ขอ
+func recordedWithholdings(ctx context.Context, db *sql.DB, company, journalID, direction string, forms []string) ([]generalledger.SubledgerWithholding, error) {
+	var raw []byte
+	if err := db.QueryRowContext(ctx, `SELECT COALESCE(payload->'details'->'withholdings','[]'::jsonb) FROM gl_records WHERE company=$1 AND kind='journals' AND id=$2`, company, journalID).Scan(&raw); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("load recorded withholdings: %w", err)
+	}
+	var all []generalledger.SubledgerWithholding
+	if err := json.Unmarshal(raw, &all); err != nil {
+		return nil, fmt.Errorf("parse recorded withholdings: %w", err)
+	}
+	want, allowed := 1, map[string]bool{}
+	if direction == "received" {
+		want = 2
+	}
+	for _, f := range forms {
+		allowed["PND"+f] = true
+	}
+	items := all[:0]
+	for _, item := range all {
+		if item.Direction == want && (want == 2 || allowed[item.FormType]) {
+			items = append(items, item)
+		}
+	}
+	return items, nil
+}
+
+// finishWithholdingRow - ยอดข้อความ/สุทธิ/อัตรา; อัตราที่บันทึกไว้ชนะอัตราที่คำนวณย้อนจากยอด
+func finishWithholdingRow(row TaxWithholdingRow, recordedRate string) TaxWithholdingRow {
+	row.WhtAmount, row.BaseAmount = moneyText(row.wht), moneyText(row.base)
+	row.WhtText = whtcert.BahtText(row.wht)
+	row.NetAmount = moneyText(row.base.Sub(row.wht))
+	switch {
+	case recordedRate != "":
+		row.RatePercent = recordedRate
+	case row.base.Sign() > 0:
+		row.RatePercent = moneyText(row.wht.Mul(decimal.NewFromInt(100)).Div(row.base))
+	}
+	return row
 }
 
 // pqArray - แปลงรายการรหัสบัญชีเป็น text[] สำหรับ ANY($n) (ใช้ lib/pq เวอร์ชันเดียวกับทั้งโปรเจกต์)

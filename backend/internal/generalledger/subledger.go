@@ -148,7 +148,7 @@ func (m *subledgerMutation) touchDetails(d *JournalDetails) error {
 }
 
 func (m *subledgerMutation) apply(d *JournalDetails, reconcile bool) error {
-	if len(d.Partners)+len(d.BankAccounts)+len(d.Documents)+len(d.Allocations)+len(d.Settlements)+len(d.BankLines)+len(d.StatementLines)+len(d.Matches)+len(d.Withdrawals) > 2000 {
+	if len(d.Partners)+len(d.BankAccounts)+len(d.Documents)+len(d.Allocations)+len(d.Settlements)+len(d.BankLines)+len(d.StatementLines)+len(d.Matches)+len(d.Withdrawals)+len(d.Withholdings) > 2000 {
 		return fmt.Errorf("รายละเอียดประกอบมากเกิน 2000 รายการต่อคำขอ")
 	}
 	if err := m.lockReferences(d); err != nil {
@@ -199,6 +199,11 @@ func (m *subledgerMutation) apply(d *JournalDetails, reconcile bool) error {
 	}
 	for i := range d.Matches {
 		if err := m.match(&d.Matches[i]); err != nil {
+			return err
+		}
+	}
+	for i := range d.Withholdings {
+		if err := m.withholding(&d.Withholdings[i]); err != nil {
 			return err
 		}
 	}

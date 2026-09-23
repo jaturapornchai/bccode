@@ -179,6 +179,12 @@ export interface WhtReportRow {
   whtamounttext: string;
   netamount: string;
   ratepercent: string;
+  /** recorded = ผู้ใช้บันทึกฐานภาษีในใบสำคัญ, inferred = ระบบประมาณจากบรรทัดบัญชี */
+  taxbasesource: string;
+  incometype: string;
+  condition: number;
+  paiddate: string;
+  certificateno: string;
 }
 
 export interface WhtRateGroup {
@@ -250,6 +256,11 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
     whtamounttext: toText(rec.whtamounttext),
     netamount: toMoney(rec.netamount),
     ratepercent: toText(rec.ratepercent),
+    taxbasesource: toText(rec.taxbasesource),
+    incometype: toText(rec.incometype),
+    condition: toCount(rec.condition, 0),
+    paiddate: toText(rec.paiddate),
+    certificateno: toText(rec.certificateno),
   }));
   const summary = isRecord(payload.summary) ? payload.summary : {};
   return {
@@ -515,3 +526,21 @@ export function taxText(
 ): string {
   return catalogText(catalogKeys, `${config.code}.${part}`, config[part], language, dictionary);
 }
+
+// ประเภทเงินได้ของแบบ 50 ทวิ (รหัสตรงกับ backend/internal/whtcert) — ใช้ทั้งจอ 50 ทวิ และรายละเอียดภาษีในใบสำคัญ GL
+export const WHT_INCOME_OPTIONS: { value: string; key: string; th: string }[] = [
+  { value: "3_tres", key: "wht_cert_ui_income_3_tres", th: "5. ตามมาตรา 3 เตรส (ค่าบริการ ค่าเช่า ค่าขนส่ง ค่าโฆษณา ค่าจ้างทำของ ฯลฯ)" },
+  { value: "40_2", key: "wht_cert_ui_income_40_2", th: "2. ค่าธรรมเนียม ค่านายหน้า ฯลฯ 40 (2)" },
+  { value: "40_3", key: "wht_cert_ui_income_40_3", th: "3. ค่าแห่งลิขสิทธิ์ ฯลฯ 40 (3)" },
+  { value: "40_4a", key: "wht_cert_ui_income_40_4a", th: "4. (ก) ดอกเบี้ย ฯลฯ 40 (4) (ก)" },
+  { value: "40_4b_1_1", key: "wht_cert_ui_income_div_1_1", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — กำไรเสียภาษีร้อยละ 30" },
+  { value: "40_4b_1_2", key: "wht_cert_ui_income_div_1_2", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — กำไรเสียภาษีร้อยละ 25" },
+  { value: "40_4b_1_3", key: "wht_cert_ui_income_div_1_3", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — กำไรเสียภาษีร้อยละ 20" },
+  { value: "40_4b_1_4", key: "wht_cert_ui_income_div_1_4", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — อัตราอื่น (ระบุอัตรา)" },
+  { value: "40_4b_2_1", key: "wht_cert_ui_income_div_2_1", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — กิจการได้รับยกเว้นภาษี" },
+  { value: "40_4b_2_2", key: "wht_cert_ui_income_div_2_2", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — เงินปันผลที่ได้รับยกเว้น" },
+  { value: "40_4b_2_3", key: "wht_cert_ui_income_div_2_3", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — หักผลขาดทุนยกมาไม่เกิน 5 ปี" },
+  { value: "40_4b_2_4", key: "wht_cert_ui_income_div_2_4", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — วิธีส่วนได้เสีย (equity method)" },
+  { value: "40_4b_2_5", key: "wht_cert_ui_income_div_2_5", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — อื่น ๆ (ระบุ)" },
+  { value: "other", key: "wht_cert_ui_income_other", th: "6. อื่น ๆ (ระบุ)" },
+];

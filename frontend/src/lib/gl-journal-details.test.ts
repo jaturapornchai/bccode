@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseStatementCsv, reconciliationChanges, supportLabel } from "./gl-journal-details";
+import { type GLDetailWithholding, parseStatementCsv, reconciliationChanges, supportLabel } from "./gl-journal-details";
 
 describe("statement evidence import",()=>{
   it("preserves decimal strings and stable file-row identities across retries",async()=>{
@@ -30,4 +30,16 @@ it("retains optional statement values and original row positions", async()=>{
 });
 it("distinguishes withdrawals sharing an ID across relation types",()=>{
   expect(reconciliationChanges({withdrawals:[{kind:"allocation",id:"same",reason:"old"}]},{withdrawals:[{kind:"allocation",id:"same",reason:"old"},{kind:"match",id:"same",reason:"new"}]}).withdrawals).toEqual([{kind:"match",id:"same",reason:"new"}]);
+});
+
+const wht = (base: string): GLDetailWithholding => ({ id: "W1", wht_direction: 1, form_type: "PND53", partner_code: "TRANS", payment_date: "2026-09-15", income_tax_type: "3_tres", condition_type: 1, wht_rate: "3", base_amount: base, tax_amount: "3000" });
+
+describe("reconciliationChanges — withholding tax base (ต้องแก้ได้เสมอ)", () => {
+  it("sends the whole withholding set when the base was edited after posting", () => {
+    const changed = { ...wht("95000"), tax_amount: undefined };
+    expect(reconciliationChanges({ withholdings: [wht("100000")] }, { withholdings: [changed] }).withholdings).toEqual([changed]);
+  });
+  it("sends nothing for withholdings that did not change", () => {
+    expect(reconciliationChanges({ withholdings: [wht("100000")] }, { withholdings: [wht("100000")] }).withholdings).toBeUndefined();
+  });
 });

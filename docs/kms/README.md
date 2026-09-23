@@ -115,6 +115,7 @@
 - [decisions/2026-09-23-wht-certificate-pdf-backend.md](decisions/2026-09-23-wht-certificate-pdf-backend.md) — ใบ 50 ทวิ: backend (`internal/whtcert`) สร้าง PDF บนแบบฟอร์มจริงของกรมสรรพากร (ตำแหน่งวัดจากฟอร์ม, ไทยจัดรูปด้วย HarfBuzz, ฉบับที่ 1/2 + สำเนาคู่ฉบับ/ใบแทน) frontend แค่แสดง
 - [decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md) — ถอด MongoDB/Kafka/Redis/ClickHouse: session → `cache_entries`, ตรวจสิทธิ์สดจาก PG ทุกคำขอ, จอที่ API อยู่บน Mongo ขึ้น "รอพัฒนา"
 - [decisions/2026-09-23-tax-inside-general-ledger.md](decisions/2026-09-23-tax-inside-general-ledger.md) — เมนูภาษีทั้งหมดอยู่ใต้ "บัญชีแยกประเภท" ตาม Champ; ผู้ใช้ GL ตัวเดียวใช้ได้เลย, ภ.ง.ด./50 ทวิ อ่านจาก GL
+- [decisions/2026-09-23-wht-tax-base-editable.md](decisions/2026-09-23-wht-tax-base-editable.md) — ฐานภาษีหัก ณ ที่จ่ายแก้ได้เสมอ: เก็บใน `details.withholdings` ของใบสำคัญ (ภาษีว่าง = ฐาน × อัตรา), แก้หลังผ่านบัญชีผ่าน reconcile + เหตุผล + audit, รายงาน ภ.ง.ด./50 ทวิ ใช้ฐานที่บันทึก (recorded) ก่อนค่าประมาณ (inferred)
 - [decisions/2026-09-19-champ-parity-no-bloat-rule.md](decisions/2026-09-19-champ-parity-no-bloat-rule.md) — กฎยึด D:\project-champ เป็นต้นแบบหลัก ไม่เพิ่มฟังก์ชันหรือเมนูมากเกินไป เพื่อมุ่งเน้นการ Upgrade จาก Windows สู่ Web ที่รวดเร็ว ปลอดภัย และไม่ทำให้ลูกค้าสับสน
 
 

@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-23 @ commit a1f3e016 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-23 @ commit 994a8a3c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -1325,7 +1325,7 @@ Files indexed: 29
 | 1008 | function | `validateForm` |
 | 1017 | function | `formatCount` |
 
-## frontend/src/app/gl/gl-journals.tsx (1025 lines)
+## frontend/src/app/gl/gl-journals.tsx (1026 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -1338,7 +1338,7 @@ Files indexed: 29
 | 196 | function | `openCreate` |
 | 210 | function | `cancelEdit` |
 | 225 | function | `save` |
-| 242 | function | `saveReconciliation` |
-| 268 | function | `act` |
-| 286 | function | `deleteDraftDirect` |
+| 243 | function | `saveReconciliation` |
+| 269 | function | `act` |
+| 287 | function | `deleteDraftDirect` |
 

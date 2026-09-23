@@ -10,10 +10,11 @@ import { DateField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
 import { formatAmount } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
-import { requestWhtCertificatePdf, type CompanyHeader, type WhtReportRow } from "@/lib/thai-tax";
+import { requestWhtCertificatePdf, type CompanyHeader, type WhtReportRow, WHT_INCOME_OPTIONS } from "@/lib/thai-tax";
 
 // ใบ 50 ทวิ: จอนี้เตรียมข้อมูลให้นักบัญชีตรวจ/เลือก แล้วให้ backend สร้าง PDF บนแบบฟอร์มกรมสรรพากร
 // ยอดเงินมาจากรายงานภาษีหัก ณ ที่จ่าย (backend) อ่านอย่างเดียว — จอไม่คำนวณยอดรวมหรือตัวอักษรเอง
+// ฐานภาษีแก้ที่รายละเอียดใบสำคัญ GL (หมวดภาษีหัก ณ ที่จ่าย) เพื่อให้หนังสือรับรองกับแบบยื่นตรงกันเสมอ
 // ไม่มีตัวเลือกเงินเดือน (40(1), ภ.ง.ด.1ก) เพราะ BC ไม่ทำระบบเงินเดือน
 
 const FORM_OPTIONS = [
@@ -24,23 +25,17 @@ const FORM_OPTIONS = [
   { value: "2a", key: "wht_cert_ui_form_2a", th: "ภ.ง.ด.2ก" },
 ];
 
-const INCOME_OPTIONS = [
-  { value: "3_tres", key: "wht_cert_ui_income_3_tres", th: "5. ตามมาตรา 3 เตรส (ค่าบริการ ค่าเช่า ค่าขนส่ง ค่าโฆษณา ค่าจ้างทำของ ฯลฯ)" },
-  { value: "40_2", key: "wht_cert_ui_income_40_2", th: "2. ค่าธรรมเนียม ค่านายหน้า ฯลฯ 40 (2)" },
-  { value: "40_3", key: "wht_cert_ui_income_40_3", th: "3. ค่าแห่งลิขสิทธิ์ ฯลฯ 40 (3)" },
-  { value: "40_4a", key: "wht_cert_ui_income_40_4a", th: "4. (ก) ดอกเบี้ย ฯลฯ 40 (4) (ก)" },
-  { value: "40_4b_1_1", key: "wht_cert_ui_income_div_1_1", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — กำไรเสียภาษีร้อยละ 30" },
-  { value: "40_4b_1_2", key: "wht_cert_ui_income_div_1_2", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — กำไรเสียภาษีร้อยละ 25" },
-  { value: "40_4b_1_3", key: "wht_cert_ui_income_div_1_3", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — กำไรเสียภาษีร้อยละ 20" },
-  { value: "40_4b_1_4", key: "wht_cert_ui_income_div_1_4", th: "4. (ข) เงินปันผล ได้เครดิตภาษี — อัตราอื่น (ระบุอัตรา)" },
-  { value: "40_4b_2_1", key: "wht_cert_ui_income_div_2_1", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — กิจการได้รับยกเว้นภาษี" },
-  { value: "40_4b_2_2", key: "wht_cert_ui_income_div_2_2", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — เงินปันผลที่ได้รับยกเว้น" },
-  { value: "40_4b_2_3", key: "wht_cert_ui_income_div_2_3", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — หักผลขาดทุนยกมาไม่เกิน 5 ปี" },
-  { value: "40_4b_2_4", key: "wht_cert_ui_income_div_2_4", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — วิธีส่วนได้เสีย (equity method)" },
-  { value: "40_4b_2_5", key: "wht_cert_ui_income_div_2_5", th: "4. (ข) เงินปันผล ไม่ได้เครดิต — อื่น ๆ (ระบุ)" },
-  { value: "other", key: "wht_cert_ui_income_other", th: "6. อื่น ๆ (ระบุ)" },
-];
 const INCOME_WITH_NOTE = new Set(["40_4b_1_4", "40_4b_2_5", "other"]);
+// ชื่อช่องตาม field ที่ backend (whtcert/render.go) รายงานเมื่อข้อความยาวเกินช่องบนแบบฟอร์ม
+const WHT_FIELD_LABELS: Record<string, [string, string]> = {
+  bookno: ["wht_cert_ui_book_no", "เล่มที่"],
+  runno: ["wht_cert_ui_run_no", "เลขที่"],
+  sequenceno: ["wht_cert_ui_sequence_no", "ลำดับที่ในใบแนบ"],
+  conditionnote: ["wht_cert_ui_condition_note", "ระบุเงื่อนไขอื่น ๆ"],
+  "payer.address": ["wht_cert_ui_payer_address", "ที่อยู่ผู้มีหน้าที่หักภาษี (บริษัทเรา)"],
+  "payee.name": ["wht_cert_ui_payee_name", "ชื่อผู้ถูกหักภาษี"],
+  "payee.address": ["wht_cert_ui_payee_address", "ที่อยู่ผู้ถูกหักภาษี"],
+};
 
 const CONDITION_OPTIONS = [
   { value: "withhold", key: "wht_cert_ui_condition_withhold", th: "(1) หัก ณ ที่จ่าย" },
@@ -72,14 +67,16 @@ type Props = {
 export function WhtCertificatePanel({ row, company, holdingcode, businesscode, formType, language }: Props) {
   const tr = useBackendText();
   const [form, setForm] = useState(formType === "pnd3" ? "3" : formType === "pnd2" ? "2" : "53");
-  const [incomeType, setIncomeType] = useState(formType === "pnd2" ? "40_4a" : "3_tres");
+  const recordedIncome = WHT_INCOME_OPTIONS.some((o) => o.value === row.incometype) ? row.incometype : "";
+  const [incomeType, setIncomeType] = useState(recordedIncome || (formType === "pnd2" ? "40_4a" : "3_tres"));
   const [incomeNote, setIncomeNote] = useState("");
-  const [condition, setCondition] = useState("withhold");
+  // condition_type ที่บันทึกในใบสำคัญ: 1=หัก ณ ที่จ่าย 2=ออกให้ตลอดไป 3=ออกให้ครั้งเดียว
+  const [condition, setCondition] = useState(row.condition === 2 ? "always" : row.condition === 3 ? "once" : "withhold");
   const [conditionNote, setConditionNote] = useState("");
-  const [paidDate, setPaidDate] = useState(row.docdate);
+  const [paidDate, setPaidDate] = useState(row.paiddate || row.docdate);
   const [issueDate, setIssueDate] = useState(today);
   const [bookNo, setBookNo] = useState("");
-  const [runNo, setRunNo] = useState(row.docno);
+  const [runNo, setRunNo] = useState(row.certificateno || row.docno);
   const [sequenceNo, setSequenceNo] = useState("");
   const [payerAddress, setPayerAddress] = useState("");
   const [payeeName, setPayeeName] = useState(row.partnername ?? "");
@@ -129,7 +126,10 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, f
     setPdfUrl("");
     // code จาก backend เป็น language key (wht_cert_*) → แปลตามภาษาบนจอ ไม่ยึด Accept-Language ของเบราว์เซอร์
     const fallback = tr("wht_cert_render_failed", "สร้างหนังสือรับรอง 50 ทวิ ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
-    setError(result.error.startsWith("wht_cert_") ? tr(result.error, result.message || fallback) : result.message || fallback);
+    const message = result.error.startsWith("wht_cert_") ? tr(result.error, result.message || fallback) : result.message || fallback;
+    // backend บอกช่องที่ข้อความยาวเกิน (field) — บอกชื่อช่องให้ผู้ใช้รู้ว่าต้องย่อตรงไหน
+    const box = result.field ? WHT_FIELD_LABELS[result.field] : undefined;
+    setError(box ? `${message} — ${tr("wht_cert_ui_error_field", "ช่องที่ต้องแก้")}: ${tr(box[0], box[1])}` : message);
   };
 
   const label = (key: string, th: string) => <span className="text-[0.9rem] font-semibold text-foreground">{tr(key, th)}</span>;
@@ -151,6 +151,11 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, f
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-muted/30 p-3 text-sm">
           <div>{tr("wht_cert_ui_amount", "จำนวนเงินที่จ่าย")}<div className="font-mono text-base font-bold text-foreground">{formatAmount(row.baseamount, 2)}</div></div>
           <div>{tr("wht_cert_ui_tax", "ภาษีที่หักและนำส่ง")}<div className="font-mono text-base font-bold text-primary">{formatAmount(row.whtamount, 2)}</div></div>
+          <p className="col-span-2 leading-relaxed text-muted-foreground" data-field="taxbasesource">
+            {row.taxbasesource === "recorded"
+              ? tr("wht_cert_ui_base_recorded", "ฐานภาษีตามที่บันทึกในใบสำคัญ — แก้ได้ที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย")
+              : tr("wht_cert_ui_base_inferred", "ฐานภาษีนี้ระบบประมาณจากบรรทัดบัญชี กรุณาตรวจ — บันทึกฐานภาษีจริงได้ที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย")}
+          </p>
         </div>
 
         <label className={field}>
@@ -163,7 +168,7 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, f
         <label className={field}>
           {label("wht_cert_ui_income", "ประเภทเงินได้พึงประเมินที่จ่าย")}
           <select className={selectClass} value={incomeType} onChange={(e) => setIncomeType(e.target.value)} data-field="incomes[0].type">
-            {INCOME_OPTIONS.map((o) => <option key={o.value} value={o.value}>{tr(o.key, o.th)}</option>)}
+            {WHT_INCOME_OPTIONS.map((o) => <option key={o.value} value={o.value}>{tr(o.key, o.th)}</option>)}
           </select>
         </label>
         {INCOME_WITH_NOTE.has(incomeType) && (
