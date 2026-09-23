@@ -14,12 +14,12 @@ export interface ThaiTaxRecord {
   taxid: string;
   branchno: string; // "00000" for Head Office
   isheadoffice: boolean;
-  amountbeforevat: number;
-  vatamount: number;
-  totalamount: number;
+  amountbeforevat: string;
+  vatamount: string;
+  totalamount: string;
   incometype?: string;
-  taxrate?: number;
-  whtamount?: number;
+  taxrate?: string;
+  whtamount?: string;
   remark?: string;
   status: "active" | "cancelled" | "excluded";
 }
@@ -131,18 +131,34 @@ export function getThaiTaxConfig(route: string): ThaiTaxConfig | undefined {
   return taxRouteMap.get(clean);
 }
 
+// ยอดเงินทุกช่องเป็น string ทศนิยม 2 ตำแหน่งจาก backend (decimal) — จอแสดงผลอย่างเดียว ห้ามแปลงเป็น number มาคำนวณ
+export interface CompanyHeader {
+  code: string;
+  name: string;
+  taxid: string;
+}
+
+export interface VatRegisterSummary {
+  amountbeforevat: string;
+  vatamount: string;
+  totalamount: string;
+}
+
 export interface Pp30Summary {
   year: number;
   month: number;
-  salestaxable: number;
-  saleszerorated: number;
-  salesexempt: number;
-  outputvat: number;
-  purchasetaxable: number;
-  inputvat: number;
-  netvat: number;
-  payable: number;
-  creditable: number;
+  company: CompanyHeader;
+  salesgross: string;
+  saleszerorated: string;
+  salesexempt: string;
+  salestaxable: string;
+  outputvat: string;
+  purchasetaxable: string;
+  inputvat: string;
+  creditbroughtforward: string;
+  netvat: string;
+  payable: string;
+  creditable: string;
 }
 
 const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
@@ -158,9 +174,27 @@ export interface WhtReportRow {
   taxid: string;
   address: string;
   description: string;
-  baseamount: number;
-  whtamount: number;
-  ratepercent: number;
+  baseamount: string;
+  whtamount: string;
+  whtamounttext: string;
+  netamount: string;
+  ratepercent: string;
+}
+
+export interface WhtRateGroup {
+  ratepercent: string;
+  count: number;
+  baseamount: string;
+  whtamount: string;
+}
+
+export interface WhtReportSummary {
+  basetotal: string;
+  whttotal: string;
+  whttotaltext: string;
+  nettotal: string;
+  payeecount: number;
+  byrate: WhtRateGroup[];
 }
 
 export interface WhtReportParams {
@@ -170,56 +204,98 @@ export interface WhtReportParams {
   month: number;
   direction: "paid" | "received";
   forms?: string[];
+  limit?: number;
+  offset?: number;
 }
 
+export interface WhtReportResult {
+  rows: WhtReportRow[];
+  total: number;
+  summary: WhtReportSummary;
+  company: CompanyHeader;
+  note: string;
+  error?: string;
+}
+
+const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "" };
+const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [] };
+const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", vatamount: "0.00", totalamount: "0.00" };
+
 // fetchWhtReport - รายการภาษีหัก ณ ที่จ่ายจากบัญชีแยกประเภทที่ผ่านรายการจริง
-// (backend โยงคู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบ และกรองตามแบบยื่น ภ.ง.ด. ที่ผังบัญชีระบุ)
-export async function fetchWhtReport(params: WhtReportParams): Promise<{ rows: WhtReportRow[]; error?: string }> {
+// (backend โยงคู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบ กรองตามแบบยื่น และรวมยอดทั้งงวดด้วย decimal)
+export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReportResult> {
+  const empty = { rows: [], total: 0, summary: EMPTY_WHT_SUMMARY, company: EMPTY_COMPANY, note: "" };
   if (!params.holdingcode || !params.businesscode) {
-    return { rows: [], error: "company_required" };
+    return { ...empty, error: "company_required" };
   }
   const result = await postApi(WHT_REPORT_PATH, params);
   if (!result.ok) {
-    return { rows: [], error: result.error };
+    return { ...empty, error: result.error };
   }
   const payload = result.payload;
   if (!isRecord(payload) || !Array.isArray(payload.data)) {
-    return { rows: [], error: "load_failed" };
+    return { ...empty, error: "load_failed" };
   }
-  const rows = payload.data.filter(isRecord).map((raw): WhtReportRow => {
-    const rec = raw as Record<string, unknown>;
-    return {
-      journalid: String(rec.journalid ?? ""),
-      docno: String(rec.docno ?? ""),
-      docdate: String(rec.docdate ?? ""),
-      partnercode: String(rec.partnercode ?? ""),
-      partnername: String(rec.partnername ?? ""),
-      taxid: String(rec.taxid ?? ""),
-      address: String(rec.address ?? ""),
-      description: String(rec.description ?? ""),
-      baseamount: toNumber(rec.baseamount),
-      whtamount: toNumber(rec.whtamount),
-      ratepercent: toNumber(rec.ratepercent),
-    };
-  });
-  return { rows };
+  const rows = payload.data.filter(isRecord).map((rec): WhtReportRow => ({
+    journalid: toText(rec.journalid),
+    docno: toText(rec.docno),
+    docdate: toText(rec.docdate),
+    partnercode: toText(rec.partnercode),
+    partnername: toText(rec.partnername),
+    taxid: toText(rec.taxid),
+    address: toText(rec.address),
+    description: toText(rec.description),
+    baseamount: toMoney(rec.baseamount),
+    whtamount: toMoney(rec.whtamount),
+    whtamounttext: toText(rec.whtamounttext),
+    netamount: toMoney(rec.netamount),
+    ratepercent: toText(rec.ratepercent),
+  }));
+  const summary = isRecord(payload.summary) ? payload.summary : {};
+  return {
+    rows,
+    total: toCount(payload.total, rows.length),
+    summary: {
+      basetotal: toMoney(summary.basetotal),
+      whttotal: toMoney(summary.whttotal),
+      whttotaltext: toText(summary.whttotaltext),
+      nettotal: toMoney(summary.nettotal),
+      payeecount: toCount(summary.payeecount, 0),
+      byrate: (Array.isArray(summary.byrate) ? summary.byrate : []).filter(isRecord).map((group) => ({
+        ratepercent: toText(group.ratepercent),
+        count: toCount(group.count, 0),
+        baseamount: toMoney(group.baseamount),
+        whtamount: toMoney(group.whtamount),
+      })),
+    },
+    company: toCompany(payload.company),
+    note: toText(payload.note),
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function toNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return 0;
+const MONEY_TEXT = /^-?\d+(\.\d+)?$/;
+
+// toMoney - รับเฉพาะ string ทศนิยมจาก backend; ค่าอื่น (null/number/ข้อความแปลก) แสดงเป็น 0.00 แทนการเดา
+function toMoney(value: unknown): string {
+  return typeof value === "string" && MONEY_TEXT.test(value.trim()) ? value.trim() : "0.00";
+}
+
+// จำนวนแถว/จำนวนราย (ไม่ใช่เงิน) — เป็น integer จึงใช้ number ได้
+function toCount(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : fallback;
 }
 
 function toText(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function toCompany(value: unknown): CompanyHeader {
+  if (!isRecord(value)) return EMPTY_COMPANY;
+  return { code: toText(value.code), name: toText(value.name), taxid: toText(value.taxid) };
 }
 
 function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord {
@@ -234,9 +310,9 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
     taxid: toText(row.taxid),
     branchno,
     isheadoffice: branchno === "" || branchno === "00000",
-    amountbeforevat: toNumber(row.amountbeforevat),
-    vatamount: toNumber(row.vatamount),
-    totalamount: toNumber(row.totalamount),
+    amountbeforevat: toMoney(row.amountbeforevat),
+    vatamount: toMoney(row.vatamount),
+    totalamount: toMoney(row.totalamount),
     // backend กรองเอกสารที่ยกเลิก/ตัดออกแล้ว จึงแสดงเป็น active ได้
     status: "active",
   };
@@ -275,32 +351,41 @@ export async function fetchVatRegister(params: {
   type: "sale" | "purchase";
   limit?: number;
   offset?: number;
-}): Promise<{ records: ThaiTaxRecord[]; total: number; error?: string }> {
+}): Promise<{ records: ThaiTaxRecord[]; total: number; summary: VatRegisterSummary; error?: string }> {
   if (!params.holdingcode || !params.businesscode) {
-    return { records: [], total: 0, error: "company_required" };
+    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: "company_required" };
   }
 
   const result = await postApi(VAT_REGISTER_PATH, params);
   if (!result.ok) {
-    return { records: [], total: 0, error: result.error };
+    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: result.error };
   }
 
   const payload = result.payload;
   if (!isRecord(payload) || !Array.isArray(payload.data)) {
-    return { records: [], total: 0, error: "load_failed" };
+    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: "load_failed" };
   }
 
   const records = payload.data.filter(isRecord).map(toTaxRecord);
-  const total = payload.count === undefined ? records.length : toNumber(payload.count);
-
-  return { records, total };
+  const summary = isRecord(payload.summary) ? payload.summary : {};
+  return {
+    records,
+    total: toCount(payload.total, records.length),
+    summary: {
+      amountbeforevat: toMoney(summary.amountbeforevat),
+      vatamount: toMoney(summary.vatamount),
+      totalamount: toMoney(summary.totalamount),
+    },
+  };
 }
 
+// fetchPp30Summary - ยอดทุกข้อของแบบ ภ.พ.30 คำนวณที่ backend (รวมข้อ 8 ภาษีชำระเกินยกมาที่ผู้ใช้กรอก)
 export async function fetchPp30Summary(params: {
   holdingcode: string;
   businesscode: string;
   year: number;
   month: number;
+  creditbroughtforward?: string;
 }): Promise<{ summary: Pp30Summary | null; error?: string }> {
   if (!params.holdingcode || !params.businesscode) {
     return { summary: null, error: "company_required" };
@@ -320,17 +405,20 @@ export async function fetchPp30Summary(params: {
 
   return {
     summary: {
-      year: toNumber(data.year),
-      month: toNumber(data.month),
-      salestaxable: toNumber(data.salestaxable),
-      saleszerorated: toNumber(data.saleszerorated),
-      salesexempt: toNumber(data.salesexempt),
-      outputvat: toNumber(data.outputvat),
-      purchasetaxable: toNumber(data.purchasetaxable),
-      inputvat: toNumber(data.inputvat),
-      netvat: toNumber(data.netvat),
-      payable: toNumber(data.payable),
-      creditable: toNumber(data.creditable),
+      year: toCount(data.year, params.year),
+      month: toCount(data.month, params.month),
+      company: toCompany(data.company),
+      salesgross: toMoney(data.salesgross),
+      saleszerorated: toMoney(data.saleszerorated),
+      salesexempt: toMoney(data.salesexempt),
+      salestaxable: toMoney(data.salestaxable),
+      outputvat: toMoney(data.outputvat),
+      purchasetaxable: toMoney(data.purchasetaxable),
+      inputvat: toMoney(data.inputvat),
+      creditbroughtforward: toMoney(data.creditbroughtforward),
+      netvat: toMoney(data.netvat),
+      payable: toMoney(data.payable),
+      creditable: toMoney(data.creditable),
     },
   };
 }

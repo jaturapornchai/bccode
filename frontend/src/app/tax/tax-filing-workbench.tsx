@@ -11,23 +11,14 @@ import {
   fetchVatRegister,
   fetchPp30Summary,
   fetchWhtReport,
+  type CompanyHeader,
   type ThaiTaxRecord,
   type Pp30Summary,
+  type VatRegisterSummary,
+  type WhtReportRow,
+  type WhtReportSummary,
 } from "@/lib/thai-tax";
-import { computeOfficialPp30, type OfficialPp30FormData } from "@/lib/thai-pp30-form";
-import {
-  generateVatClosingJournal,
-  thaiBahtText,
-  type VatClosingResult,
-} from "@/lib/thai-vat-closing";
-import {
-  computePndSummary,
-  generate50TwiCertificate,
-  THAI_WHT_INCOME_CONFIGS,
-  type ThaiWhtRecord,
-  type Certificate50TwiData,
-  type PndFilingSummary,
-} from "@/lib/thai-wht";
+import { formatAmount } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +26,7 @@ import { ChoiceSelect } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText, Printer, Download, Calculator, Building2, Calendar, CheckCircle2, Receipt, Search,
-  AlertCircle, Loader2, ShieldCheck, Sparkles, Send, Copy, Check,
-  Info, ExternalLink,
+  AlertCircle, Loader2, ShieldCheck,
 } from "lucide-react";
 
 interface TaxFilingWorkbenchProps {
@@ -46,6 +36,14 @@ interface TaxFilingWorkbenchProps {
   holdingcode?: string;
   businesscode?: string;
 }
+
+// ยอดเงินมาจาก backend เป็น string ทศนิยม — จอนี้จัดรูปแบบแสดงผลอย่างเดียว ไม่คำนวณภาษีเอง
+const money = (value: string | undefined) => formatAmount(value ?? "0.00", 2);
+const isZeroMoney = (value: string) => /^-?0*(\.0*)?$/.test(value.trim());
+// ช่องกรอกภาษีชำระเกินยกมา: ตัวเลขไม่ติดลบ ทศนิยมไม่เกิน 2 ตำแหน่ง (backend ตรวจซ้ำ)
+const CREDIT_INPUT = /^\d{0,13}(\.\d{0,2})?$/;
+// ขอทั้งงวดในหน้าเดียวตามเพดาน backend (taxRegisterMaxLimit) — ยอดรวมท้ายตารางมาจาก backend ทั้งงวดเสมอ
+const REGISTER_PAGE_LIMIT = 500;
 
 export function TaxFilingWorkbench({
   route,
@@ -73,24 +71,23 @@ export function TaxFilingWorkbench({
   >(() => (config.formType === "pp30" ? "pp30" : config.formType.includes("pnd") ? "pnd_form" : config.formType === "50twi" ? "50twi" : "table"));
 
   const [selectedRecord, setSelectedRecord] = useState<ThaiTaxRecord | null>(null);
-  const [selectedWhtRecord, setSelectedWhtRecord] = useState<ThaiWhtRecord | null>(null);
+  const [selectedWhtRow, setSelectedWhtRow] = useState<WhtReportRow | null>(null);
 
   const [records, setRecords] = useState<ThaiTaxRecord[]>([]);
   const [salesRecords, setSalesRecords] = useState<ThaiTaxRecord[]>([]);
   const [purchaseRecords, setPurchaseRecords] = useState<ThaiTaxRecord[]>([]);
-  const [whtRecords, setWhtRecords] = useState<ThaiWhtRecord[]>([]);
+  const [salesSummary, setSalesSummary] = useState<{ total: number; summary: VatRegisterSummary } | null>(null);
+  const [purchaseSummary, setPurchaseSummary] = useState<{ total: number; summary: VatRegisterSummary } | null>(null);
+  const [whtRows, setWhtRows] = useState<WhtReportRow[]>([]);
+  const [whtSummary, setWhtSummary] = useState<{ total: number; summary: WhtReportSummary; note: string } | null>(null);
+  const [company, setCompany] = useState<CompanyHeader | null>(null);
   const [pp30, setPp30] = useState<Pp30Summary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
-  // ภาษีชำระเกินยกมาจากเดือนก่อน (ข้อ 8 ของ ภ.พ.30)
-  const [creditBroughtForward, setCreditBroughtForward] = useState<number>(0);
-
-  // Modal สำหรับพรีวิวรายการโอนปิดภาษีสิ้นงวด (VAT Closing Journal)
-  const [showVatClosingModal, setShowVatClosingModal] = useState<boolean>(false);
-  const [vatClosingVoucher, setVatClosingVoucher] = useState<VatClosingResult | null>(null);
-  const [copiedVoucher, setCopiedVoucher] = useState<boolean>(false);
-  const [postedVoucherSuccess, setPostedVoucherSuccess] = useState<boolean>(false);
+  // ภาษีชำระเกินยกมาจากเดือนก่อน (ข้อ 8 ของ ภ.พ.30) — ส่งให้ backend คำนวณข้อ 9/10 เมื่อกรอกเสร็จ
+  const [creditInput, setCreditInput] = useState<string>("");
+  const [creditBroughtForward, setCreditBroughtForward] = useState<string>("");
 
   // รองรับทั้ง VAT และ WHT ทุกประเภท
   const isVatType = config.formType === "vat_sale" || config.formType === "vat_buy" || config.formType === "pp30" || config.formType === "pp36";
@@ -102,55 +99,41 @@ export function TaxFilingWorkbench({
 
     try {
       if (isVatType) {
+        const period = { holdingcode, businesscode, year: selectedYear, month: selectedMonth, limit: REGISTER_PAGE_LIMIT };
         if (config.formType === "pp30") {
           const [salesResult, purchaseResult, summaryResult] = await Promise.all([
-            fetchVatRegister({
-              holdingcode,
-              businesscode,
-              year: selectedYear,
-              month: selectedMonth,
-              type: "sale",
-            }),
-            fetchVatRegister({
-              holdingcode,
-              businesscode,
-              year: selectedYear,
-              month: selectedMonth,
-              type: "purchase",
-            }),
-            fetchPp30Summary({
-              holdingcode,
-              businesscode,
-              year: selectedYear,
-              month: selectedMonth,
-            }),
+            fetchVatRegister({ ...period, type: "sale" }),
+            fetchVatRegister({ ...period, type: "purchase" }),
+            fetchPp30Summary({ holdingcode, businesscode, year: selectedYear, month: selectedMonth, creditbroughtforward: creditBroughtForward }),
           ]);
 
           setSalesRecords(salesResult.records);
           setPurchaseRecords(purchaseResult.records);
+          setSalesSummary({ total: salesResult.total, summary: salesResult.summary });
+          setPurchaseSummary({ total: purchaseResult.total, summary: purchaseResult.summary });
           setRecords(salesResult.records);
           setPp30(summaryResult.summary);
+          setCompany(summaryResult.summary?.company ?? null);
           setErrorKey(summaryResult.error ?? salesResult.error ?? purchaseResult.error ?? null);
         } else {
           const registerType: "sale" | "purchase" =
             config.formType === "vat_buy" ? "purchase" : "sale";
-          const registerResult = await fetchVatRegister({
-            holdingcode,
-            businesscode,
-            year: selectedYear,
-            month: selectedMonth,
-            type: registerType,
-          });
+          const registerResult = await fetchVatRegister({ ...period, type: registerType });
+          const periodSummary = { total: registerResult.total, summary: registerResult.summary };
 
           setRecords(registerResult.records);
-          if (registerType === "sale") setSalesRecords(registerResult.records);
-          else setPurchaseRecords(registerResult.records);
+          if (registerType === "sale") {
+            setSalesRecords(registerResult.records);
+            setSalesSummary(periodSummary);
+          } else {
+            setPurchaseRecords(registerResult.records);
+            setPurchaseSummary(periodSummary);
+          }
           setPp30(null);
           setErrorKey(registerResult.error ?? null);
         }
       } else if (isWhtType) {
         // ข้อมูลภาษีหัก ณ ที่จ่ายจากบัญชีแยกประเภทที่ผ่านรายการจริง (backend /api/report/tax/wht)
-        const filingTarget = config.formType === "pnd3" ? "pnd3" : "pnd53";
         // เลือกทิศทางและแบบยื่นตามจอ: ภ.ง.ด.2 = ดอกเบี้ย/ปันผล (บัญชีแยกแบบยื่นไว้แล้วในผังบัญชี)
         const whtDirection: "paid" | "received" = config.formType === "wht_received" ? "received" : "paid";
         const whtForms = config.formType === "pnd2" ? ["2"] : undefined;
@@ -161,67 +144,48 @@ export function TaxFilingWorkbench({
           month: selectedMonth,
           direction: whtDirection,
           forms: whtForms,
+          limit: REGISTER_PAGE_LIMIT,
         });
 
-        const mapped: ThaiWhtRecord[] = whtResult.rows.map((r) => {
-          // เลขประจำตัวผู้เสียภาษีนิติบุคคลขึ้นต้นด้วย 0 (หรือ 5 ชั้นวิสาหกิจ) — นอกจากนั้นถือเป็นบุคคลธรรมดา
-          const corporate = r.taxid.startsWith("0") || r.taxid.startsWith("5");
-          return {
-            id: `wht-${r.journalid}`,
-            docNo: r.docno,
-            docDate: r.docdate,
-            filingType: filingTarget,
-            payeeType: corporate ? "corporate" : "individual",
-            payeeTaxId: r.taxid,
-            payeeName: r.partnername,
-            payeeAddress: r.address,
-            payeeBranchNo: "",
-            isHeadOffice: corporate,
-            incomeType: "other",
-            incomeDescription: r.description,
-            taxRate: r.ratepercent,
-            paymentAmount: r.baseamount,
-            whtAmount: r.whtamount,
-            condition: "deducted",
-            status: "active",
-          };
-        });
+        setWhtRows(whtResult.rows);
+        setSelectedWhtRow(whtResult.rows[0] ?? null);
+        setWhtSummary(whtResult.error ? null : { total: whtResult.total, summary: whtResult.summary, note: whtResult.note });
+        setCompany(whtResult.error ? null : whtResult.company);
 
-        setWhtRecords(mapped);
-        setSelectedWhtRecord(mapped[0] ?? null);
-
-        // แปลงเป็น ThaiTaxRecord เพื่อรองรับตารางพื้นฐาน
-        const adaptedTaxRecords: ThaiTaxRecord[] = mapped.map((w) => ({
-          id: w.id,
-          docdate: w.docDate,
-          taxinvoiceno: w.docNo,
-          counterpartyname: w.payeeName,
-          taxid: w.payeeTaxId,
-          branchno: w.payeeBranchNo,
-          isheadoffice: w.isHeadOffice,
-          amountbeforevat: w.paymentAmount,
-          vatamount: 0,
-          totalamount: w.paymentAmount - w.whtAmount,
-          whtamount: w.whtAmount,
-          taxrate: w.taxRate,
-          incometype: THAI_WHT_INCOME_CONFIGS[w.incomeType]?.nameTh || w.incomeDescription,
-          status: w.status,
-        }));
-
-        setRecords(adaptedTaxRecords);
+        // แปลงเป็น ThaiTaxRecord เพื่อใช้ตารางทะเบียนร่วมกับภาษีมูลค่าเพิ่ม (ยอดทุกช่องมาจาก backend)
+        setRecords(whtResult.rows.map((row) => ({
+          id: `wht-${row.journalid}`,
+          docdate: row.docdate,
+          taxinvoiceno: row.docno,
+          counterpartyname: row.partnername,
+          taxid: row.taxid,
+          branchno: "",
+          isheadoffice: false,
+          amountbeforevat: row.baseamount,
+          vatamount: "0.00",
+          totalamount: row.netamount,
+          whtamount: row.whtamount,
+          taxrate: row.ratepercent,
+          incometype: row.description,
+          status: "active",
+        })));
         setPp30(null);
+        setErrorKey(whtResult.error ?? null);
       }
     } catch {
       setRecords([]);
       setSalesRecords([]);
       setPurchaseRecords([]);
-      setWhtRecords([]);
+      setWhtRows([]);
+      setSalesSummary(null);
+      setPurchaseSummary(null);
+      setWhtSummary(null);
       setPp30(null);
       setErrorKey("connection_error");
     } finally {
       setLoading(false);
     }
-  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth]);
+  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, creditBroughtForward]);
 
   useEffect(() => {
     void loadData();
@@ -245,73 +209,35 @@ export function TaxFilingWorkbench({
     );
   }, [displayRecords, searchTerm]);
 
-  // ยอดรวมท้ายตาราง
+  // ยอดรวมทั้งงวดจาก backend (decimal) — ไม่บวกเลขบน browser
   const totals = useMemo(() => {
-    let beforeVat = 0;
-    let vat = 0;
-    let wht = 0;
-    let total = 0;
-    for (const r of filteredRecords) {
-      beforeVat += r.amountbeforevat;
-      vat += r.vatamount;
-      wht += r.whtamount || 0;
-      total += r.totalamount;
+    if (isWhtType) {
+      const summary = whtSummary?.summary;
+      return {
+        count: whtSummary?.total ?? 0,
+        beforeVat: summary?.basetotal ?? "0.00",
+        tax: summary?.whttotal ?? "0.00",
+        total: summary?.nettotal ?? "0.00",
+      };
     }
-    return { beforeVat, vat, wht, total };
-  }, [filteredRecords]);
+    const register = activeTab === "annex_purchases" || config.formType === "vat_buy" ? purchaseSummary : salesSummary;
+    return {
+      count: register?.total ?? 0,
+      beforeVat: register?.summary.amountbeforevat ?? "0.00",
+      tax: register?.summary.vatamount ?? "0.00",
+      total: register?.summary.totalamount ?? "0.00",
+    };
+  }, [isWhtType, whtSummary, activeTab, config.formType, purchaseSummary, salesSummary]);
 
-  // ข้อมูลแบบฟอร์ม ภ.พ. 30 ฉบับทางการ (Official RD Form Data)
-  const officialPp30: OfficialPp30FormData | null = useMemo(() => {
-    if (!pp30) return null;
-    return computeOfficialPp30({
-      taxId: holdingcode || "0105559123456",
-      companyName: businesscode || "บริษัท บีซีเอไอ แอคเคานต์ จำกัด",
-      month: selectedMonth,
-      yearCe: selectedYear,
-      taxableSales: pp30.salestaxable,
-      zeroRatedSales: pp30.saleszerorated,
-      exemptSales: pp30.salesexempt,
-      outputVat: pp30.outputvat,
-      taxablePurchases: pp30.purchasetaxable,
-      inputVat: pp30.inputvat,
-      creditBroughtForward,
-    });
-  }, [pp30, holdingcode, businesscode, selectedMonth, selectedYear, creditBroughtForward]);
-
-  // สรุปแบบยื่น ภ.ง.ด.3 / ภ.ง.ด.53
-  const pndSummary: PndFilingSummary | null = useMemo(() => {
-    if (whtRecords.length === 0) return null;
-    const formTarget = config.formType === "pnd3" ? "pnd3" : "pnd53";
-    return computePndSummary(whtRecords, formTarget, selectedMonth, selectedYear);
-  }, [whtRecords, config.formType, selectedMonth, selectedYear]);
-
-  // ข้อมูลหนังสือรับรอง 50 ทวิ
-  const certificate50Twi: Certificate50TwiData | null = useMemo(() => {
-    if (!selectedWhtRecord) return null;
-    return generate50TwiCertificate(selectedWhtRecord, {
-      taxId: holdingcode || "0105559123456",
-      nameTh: businesscode || "บริษัท บีซีเอไอ แอคเคานต์ จำกัด",
-      addressTh: "123/45 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร 10110",
-      branchNo: "00000",
-      isHeadOffice: true,
-    });
-  }, [selectedWhtRecord, holdingcode, businesscode]);
-
-  // คำนวณและเปิด Modal โอนปิดภาษีสิ้นงวด (VAT Closing Entry)
-  const handleOpenVatClosing = () => {
-    if (!pp30) return;
-    const voucher = generateVatClosingJournal({
-      year: selectedYear,
-      month: selectedMonth,
-      outputVat: pp30.outputvat,
-      inputVat: pp30.inputvat,
-      creditBroughtForward,
-    });
-    setVatClosingVoucher(voucher);
-    setCopiedVoucher(false);
-    setPostedVoucherSuccess(false);
-    setShowVatClosingModal(true);
+  const applyCreditBroughtForward = () => {
+    const value = creditInput.trim();
+    if (value !== creditBroughtForward) setCreditBroughtForward(value);
   };
+
+  const notSpecified = tr("tax_not_specified", "ยังไม่ระบุ");
+  const notInCompanyRegister = tr("tax_not_in_company_register", "ยังไม่ระบุในทะเบียนบริษัท");
+  const companyName = company?.name || notSpecified;
+  const companyTaxId = company?.taxid || notSpecified;
 
   const canExport = !loading && !errorKey && filteredRecords.length > 0;
 
@@ -370,14 +296,6 @@ export function TaxFilingWorkbench({
               >
                 <FileText className="h-4 w-4" />
                 {tr("tax_annex_purchases", "ใบแนบภาษีซื้อ")}
-              </Button>
-              <Button
-                variant="default"
-                onClick={handleOpenVatClosing}
-                className="gap-2 shadow-sm bg-amber-600 hover:bg-amber-700 text-white font-medium"
-              >
-                <Sparkles className="h-4 w-4" />
-                {tr("tax_create_vat_closing", "สร้างรายการโอนปิดภาษีสิ้นงวด")}
               </Button>
             </>
           )}
@@ -440,7 +358,7 @@ export function TaxFilingWorkbench({
 
           <Button
             variant="default"
-            disabled={!canExport && !officialPp30 && !certificate50Twi}
+            disabled={!canExport && !pp30 && !selectedWhtRow}
             onClick={() => window.print()}
             className="gap-2 shadow-sm"
           >
@@ -487,7 +405,7 @@ export function TaxFilingWorkbench({
 
             <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs text-muted-foreground">
               <Building2 className="h-3.5 w-3.5" />
-              <span>สำนักงานใหญ่ (00000)</span>
+              <span>{companyName}</span>
             </div>
           </div>
 
@@ -496,11 +414,16 @@ export function TaxFilingWorkbench({
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground">เครดิตยกมา (ข้อ 8):</span>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={creditBroughtForward || ""}
-                  onChange={(e) => setCreditBroughtForward(Number(e.target.value) || 0)}
+                  type="text"
+                  inputMode="decimal"
+                  value={creditInput}
+                  onChange={(e) => {
+                    if (CREDIT_INPUT.test(e.target.value)) setCreditInput(e.target.value);
+                  }}
+                  onBlur={applyCreditBroughtForward}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") applyCreditBroughtForward();
+                  }}
                   placeholder="0.00"
                   className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-right font-mono text-xs focus:border-primary focus:outline-none"
                 />
@@ -528,7 +451,7 @@ export function TaxFilingWorkbench({
             {isWhtType ? "มูลค่าเงินได้พึงประเมินก่อนหักภาษี" : tr("ops_base_amount_before_vat", "มูลค่าสินค้า/บริการก่อนภาษี")}
           </p>
           <p className="mt-1 text-xl font-bold text-foreground font-mono">
-            {totals.beforeVat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+            {money(totals.beforeVat)}
           </p>
           <span className="text-xs text-muted-foreground">บาท (THB)</span>
         </Card>
@@ -540,7 +463,7 @@ export function TaxFilingWorkbench({
               : tr("ops_total_vat_7", "ยอดภาษีมูลค่าเพิ่ม 7%")}
           </p>
           <p className="mt-1 text-xl font-bold text-primary font-mono">
-            {(isWhtType ? totals.wht : totals.vat).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+            {money(totals.tax)}
           </p>
           <span className="text-xs text-muted-foreground">บาท (THB)</span>
         </Card>
@@ -548,7 +471,7 @@ export function TaxFilingWorkbench({
         <Card className="p-4 shadow-sm border-border">
           <p className="text-xs text-muted-foreground">{tr("ops_total_documents", "จำนวนรายการเอกสาร")}</p>
           <p className="mt-1 text-xl font-bold text-foreground font-mono">
-            {filteredRecords.length}
+            {totals.count}
           </p>
           <span className="text-xs text-muted-foreground">รายการ (Docs)</span>
         </Card>
@@ -588,12 +511,17 @@ export function TaxFilingWorkbench({
             </span>
           </div>
         </div>
+      ) : whtSummary?.note ? (
+        <div role="status" className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 print:hidden">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{whtSummary.note}</span>
+        </div>
       ) : null}
 
       {/* Main Content Area based on Active Tab */}
 
       {/* 1. แบบฟอร์ม ภ.พ. 30 สรรพากร (Official RD Form View) */}
-      {config.formType === "pp30" && activeTab === "pp30" && officialPp30 && (
+      {config.formType === "pp30" && activeTab === "pp30" && pp30 && (
         <Card className="overflow-hidden border-2 border-primary/20 shadow-md print:border-none print:shadow-none bg-card">
           <div className="border-b bg-muted/40 p-5 print:bg-white print:border-b-2 print:border-black">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -616,9 +544,10 @@ export function TaxFilingWorkbench({
 
               <div className="text-right text-xs space-y-0.5 print:text-black">
                 <p><span className="font-semibold">เดือนภาษี:</span> {monthNamesTh[selectedMonth - 1]}</p>
-                <p><span className="font-semibold">พ.ศ.:</span> {officialPp30.taxPeriodYearBe}</p>
-                <p><span className="font-semibold">เลขประจำตัวผู้เสียภาษี:</span> <span className="font-mono font-bold text-primary print:text-black">{officialPp30.taxId}</span></p>
-                <p><span className="font-semibold">สถานประกอบการ:</span> {officialPp30.isHeadOffice ? "สำนักงานใหญ่" : `สาขาที่ ${officialPp30.branchNo}`}</p>
+                <p><span className="font-semibold">พ.ศ.:</span> {selectedYear + 543}</p>
+                <p><span className="font-semibold">ผู้ประกอบการ:</span> {companyName}</p>
+                <p><span className="font-semibold">เลขประจำตัวผู้เสียภาษี:</span> <span className="font-mono font-bold text-primary print:text-black">{companyTaxId}</span></p>
+                <p><span className="font-semibold">สถานประกอบการ:</span> {notInCompanyRegister}</p>
               </div>
             </div>
           </div>
@@ -631,61 +560,58 @@ export function TaxFilingWorkbench({
             <div className="divide-y divide-border text-sm font-medium">
               <div className="flex items-center justify-between py-2.5 hover:bg-muted/20 px-2 rounded">
                 <span className="text-foreground">1. ยอดขายเดือนนี้ (ตามมาตรา 79)</span>
-                <span className="font-mono text-base font-semibold">{officialPp30.item1_grossSales.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono text-base font-semibold">{money(pp30.salesgross)} บาท</span>
               </div>
               <div className="flex items-center justify-between py-2 pl-6 text-muted-foreground hover:bg-muted/20 px-2 rounded">
                 <span>2. ยอดขายที่เสียภาษีอัตราร้อยละ 0</span>
-                <span className="font-mono">{officialPp30.item2_zeroRatedSales.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono">{money(pp30.saleszerorated)} บาท</span>
               </div>
               <div className="flex items-center justify-between py-2 pl-6 text-muted-foreground hover:bg-muted/20 px-2 rounded">
                 <span>3. ยอดขายที่ได้รับการยกเว้นภาษี</span>
-                <span className="font-mono">{officialPp30.item3_exemptSales.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono">{money(pp30.salesexempt)} บาท</span>
               </div>
               <div className="flex items-center justify-between py-2.5 bg-muted/30 px-3 rounded font-semibold text-foreground">
                 <span>4. ยอดขายที่ต้องเสียภาษี (ข้อ 1 - ข้อ 2 - ข้อ 3)</span>
-                <span className="font-mono text-base text-primary">{officialPp30.item4_taxableSales.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono text-base text-primary">{money(pp30.salestaxable)} บาท</span>
               </div>
               <div className="flex items-center justify-between py-2.5 bg-primary/5 px-3 rounded font-bold text-primary">
                 <span>5. ภาษีขาย (ร้อยละ 7 ของยอดขายตามข้อ 4)</span>
-                <span className="font-mono text-lg">{officialPp30.item5_outputVat.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono text-lg">{money(pp30.outputvat)} บาท</span>
               </div>
               <div className="flex items-center justify-between py-2.5 hover:bg-muted/20 px-2 rounded">
                 <span className="text-foreground">6. ยอดซื้อที่มีสิทธินำภาษีซื้อมาหักในการคำนวณภาษี</span>
-                <span className="font-mono font-semibold">{officialPp30.item6_taxablePurchases.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono font-semibold">{money(pp30.purchasetaxable)} บาท</span>
               </div>
               <div className="flex items-center justify-between py-2.5 bg-primary/5 px-3 rounded font-bold text-primary">
                 <span>7. ภาษีซื้อ (ตามใบกำกับภาษีซื้อที่มีสิทธินำมาหัก)</span>
-                <span className="font-mono text-lg">{officialPp30.item7_inputVat.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono text-lg">{money(pp30.inputvat)} บาท</span>
               </div>
               <div className="flex items-center justify-between py-2 pl-6 text-muted-foreground hover:bg-muted/20 px-2 rounded">
                 <span>8. ภาษีมูลค่าเพิ่มชำระเกินยกมาจากเดือนก่อน (ถ้ามี)</span>
-                <span className="font-mono font-semibold">{officialPp30.item8_creditBroughtForward.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                <span className="font-mono font-semibold">{money(pp30.creditbroughtforward)} บาท</span>
               </div>
 
               <div
                 className={`flex items-center justify-between py-3 px-4 rounded-xl font-bold my-2 ${
-                  officialPp30.item9_vatPayable > 0
+                  !isZeroMoney(pp30.payable)
                     ? "bg-primary/10 text-primary border border-primary/30"
                     : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
                 }`}
               >
                 <div>
                   <span className="text-base">
-                    {officialPp30.item9_vatPayable > 0
+                    {!isZeroMoney(pp30.payable)
                       ? "9. ภาษีมูลค่าเพิ่มที่ต้องชำระเดือนนี้ (ถ้าข้อ 5 มากกว่า ข้อ 7 และ ข้อ 8)"
                       : "10. ภาษีมูลค่าเพิ่มชำระเกินเดือนนี้ (ถ้าข้อ 7 และ ข้อ 8 มากกว่า ข้อ 5)"}
                   </span>
                   <p className="text-xs font-normal opacity-80 mt-0.5">
-                    {officialPp30.item9_vatPayable > 0
+                    {!isZeroMoney(pp30.payable)
                       ? "นำส่งชำระต่อกรมสรรพากรภายในวันที่ 15 ของเดือนถัดไป (หรือ 23 หากยื่นผ่านอินเทอร์เน็ต)"
                       : "ขอคืนเป็นเงินสด หรือ ยกยอดไปเครดิตภาษีในเดือนถัดไป"}
                   </p>
                 </div>
                 <span className="font-mono text-2xl">
-                  {(officialPp30.item9_vatPayable > 0
-                    ? officialPp30.item9_vatPayable
-                    : officialPp30.item10_vatOverpaid
-                  ).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท
+                  {money(isZeroMoney(pp30.payable) ? pp30.creditable : pp30.payable)} บาท
                 </span>
               </div>
             </div>
@@ -707,7 +633,7 @@ export function TaxFilingWorkbench({
       )}
 
       {/* 3. แท็บแบบยื่นภาษีหัก ณ ที่จ่าย ภ.ง.ด. 3 หรือ ภ.ง.ด. 53 สรรพากร (Official PND Form) */}
-      {isWhtType && activeTab === "pnd_form" && pndSummary && (
+      {isWhtType && activeTab === "pnd_form" && whtSummary && (
         <Card className="overflow-hidden border-2 border-primary/20 shadow-md print:border-none print:shadow-none bg-card">
           <div className="border-b bg-muted/40 p-5 print:bg-white print:border-b-2 print:border-black">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -718,14 +644,14 @@ export function TaxFilingWorkbench({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-extrabold text-foreground tracking-tight">
-                      {pndSummary.formType === "pnd3" ? "ภ.ง.ด. 3" : "ภ.ง.ด. 53"}
+                      {config.formType === "pnd3" ? "ภ.ง.ด. 3" : "ภ.ง.ด. 53"}
                     </span>
                     <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary print:border print:border-black">
                       แบบยื่นรายการภาษีเงินได้หัก ณ ที่จ่าย
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground print:text-black">
-                    {pndSummary.formType === "pnd3"
+                    {config.formType === "pnd3"
                       ? "สำหรับการหักภาษีบุคคลธรรมดา ตามมาตรา 50 และ 52 แห่งประมวลรัษฎากร"
                       : "สำหรับการหักภาษีนิติบุคคล ตามมาตรา 3 เตรส และ 69 ตรี แห่งประมวลรัษฎากร"}
                   </p>
@@ -734,8 +660,9 @@ export function TaxFilingWorkbench({
 
               <div className="text-right text-xs space-y-0.5 print:text-black">
                 <p><span className="font-semibold">เดือนภาษี:</span> {monthNamesTh[selectedMonth - 1]}</p>
-                <p><span className="font-semibold">พ.ศ.:</span> {pndSummary.periodYearBe}</p>
-                <p><span className="font-semibold">เลขประจำตัวผู้จ่ายเงิน:</span> <span className="font-mono font-bold text-primary print:text-black">{holdingcode || "0105559123456"}</span></p>
+                <p><span className="font-semibold">พ.ศ.:</span> {selectedYear + 543}</p>
+                <p><span className="font-semibold">ผู้จ่ายเงิน:</span> {companyName}</p>
+                <p><span className="font-semibold">เลขประจำตัวผู้จ่ายเงิน:</span> <span className="font-mono font-bold text-primary print:text-black">{companyTaxId}</span></p>
               </div>
             </div>
           </div>
@@ -748,18 +675,18 @@ export function TaxFilingWorkbench({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="rounded-xl border border-border p-4 bg-muted/20">
                 <span className="text-xs text-muted-foreground">จำนวนผู้มีเงินได้ (ราย)</span>
-                <p className="text-2xl font-bold font-mono text-foreground mt-1">{pndSummary.totalPayees}</p>
+                <p className="text-2xl font-bold font-mono text-foreground mt-1">{whtSummary.summary.payeecount}</p>
                 <span className="text-xs text-muted-foreground">ราย</span>
               </div>
               <div className="rounded-xl border border-border p-4 bg-muted/20">
                 <span className="text-xs text-muted-foreground">รวมยอดเงินได้ที่จ่ายทั้งสิ้น</span>
-                <p className="text-2xl font-bold font-mono text-foreground mt-1">{pndSummary.totalPaymentAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</p>
+                <p className="text-2xl font-bold font-mono text-foreground mt-1">{money(whtSummary.summary.basetotal)}</p>
                 <span className="text-xs text-muted-foreground">บาท (THB)</span>
               </div>
               <div className="rounded-xl border border-primary/30 p-4 bg-primary/10">
                 <span className="text-xs text-primary font-medium">รวมยอดภาษีที่นำส่งทั้งสิ้น</span>
-                <p className="text-2xl font-bold font-mono text-primary mt-1">{pndSummary.totalWhtAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</p>
-                <span className="text-xs text-primary font-semibold">({pndSummary.totalWhtTextTh})</span>
+                <p className="text-2xl font-bold font-mono text-primary mt-1">{money(whtSummary.summary.whttotal)}</p>
+                <span className="text-xs text-primary font-semibold">({whtSummary.summary.whttotaltext})</span>
               </div>
             </div>
 
@@ -768,21 +695,19 @@ export function TaxFilingWorkbench({
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/60 text-xs font-bold uppercase text-muted-foreground">
                   <tr>
-                    <th className="p-3">ประเภทเงินได้พึงประเมิน</th>
-                    <th className="p-3 text-center">อัตราภาษี</th>
+                    <th className="p-3">อัตราภาษี</th>
                     <th className="p-3 text-center">จำนวนราย</th>
                     <th className="p-3 text-right">จำนวนเงินได้ที่จ่าย (บาท)</th>
                     <th className="p-3 text-right">จำนวนภาษีที่นำส่ง (บาท)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {pndSummary.byIncomeType.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-muted/30">
-                      <td className="p-3 font-medium text-foreground">{row.incomeNameTh}</td>
-                      <td className="p-3 text-center font-mono">{row.rate}%</td>
+                  {whtSummary.summary.byrate.map((row) => (
+                    <tr key={row.ratepercent} className="hover:bg-muted/30">
+                      <td className="p-3 font-mono font-medium text-foreground">{row.ratepercent ? `${row.ratepercent}%` : notSpecified}</td>
                       <td className="p-3 text-center font-mono">{row.count}</td>
-                      <td className="p-3 text-right font-mono">{row.paymentAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
-                      <td className="p-3 text-right font-mono font-bold text-primary">{row.whtAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                      <td className="p-3 text-right font-mono">{money(row.baseamount)}</td>
+                      <td className="p-3 text-right font-mono font-bold text-primary">{money(row.whtamount)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -804,7 +729,7 @@ export function TaxFilingWorkbench({
       )}
 
       {/* 4. แท็บหนังสือรับรองการหักภาษี ณ ที่จ่าย (ใบ 50 ทวิ) */}
-      {isWhtType && activeTab === "50twi" && certificate50Twi && (
+      {isWhtType && activeTab === "50twi" && selectedWhtRow && (
         <Card className="overflow-hidden border-2 border-primary/20 shadow-md print:border-none print:shadow-none bg-card p-6">
           <div className="border border-border p-6 rounded-xl space-y-4 print:border-black print:p-4">
             <div className="text-center space-y-1 border-b pb-4">
@@ -815,8 +740,8 @@ export function TaxFilingWorkbench({
                 ตามมาตรา 50 ทวิ แห่งประมวลรัษฎากร
               </p>
               <div className="flex justify-between items-center text-xs font-mono pt-2">
-                <span>เล่มที่/เลขที่: <strong>{certificate50Twi.certNo}</strong></span>
-                <span>วันที่ออกหนังสือ: <strong>{certificate50Twi.certDate}</strong></span>
+                <span>เอกสารอ้างอิง: <strong>{selectedWhtRow.docno}</strong></span>
+                <span>วันที่จ่าย: <strong>{selectedWhtRow.docdate}</strong></span>
               </div>
             </div>
 
@@ -824,20 +749,20 @@ export function TaxFilingWorkbench({
             <div className="rounded-lg bg-muted/20 p-3 text-xs space-y-1 print:bg-white print:border print:border-black">
               <div className="flex justify-between">
                 <span className="font-bold text-foreground">ผู้มีหน้าที่หักภาษี ณ ที่จ่าย:</span>
-                <span className="font-mono">เลขประจำตัว 13 หลัก: <strong>{certificate50Twi.payer.taxId}</strong></span>
+                <span className="font-mono">เลขประจำตัว 13 หลัก: <strong>{companyTaxId}</strong></span>
               </div>
-              <p className="font-semibold text-foreground">{certificate50Twi.payer.nameTh} ({certificate50Twi.payer.isHeadOffice ? "สำนักงานใหญ่" : `สาขา ${certificate50Twi.payer.branchNo}`})</p>
-              <p className="text-muted-foreground print:text-black">{certificate50Twi.payer.addressTh}</p>
+              <p className="font-semibold text-foreground">{companyName}</p>
+              <p className="text-muted-foreground print:text-black">ที่อยู่/สาขา: {notInCompanyRegister}</p>
             </div>
 
             {/* ผู้ถูกหักภาษี ณ ที่จ่าย (ผู้รับเงิน) */}
             <div className="rounded-lg bg-muted/20 p-3 text-xs space-y-1 print:bg-white print:border print:border-black">
               <div className="flex justify-between">
                 <span className="font-bold text-foreground">ผู้ถูกหักภาษี ณ ที่จ่าย:</span>
-                <span className="font-mono">เลขประจำตัว 13 หลัก: <strong>{certificate50Twi.payee.taxId}</strong></span>
+                <span className="font-mono">เลขประจำตัว 13 หลัก: <strong>{selectedWhtRow.taxid || notSpecified}</strong></span>
               </div>
-              <p className="font-semibold text-foreground">{certificate50Twi.payee.name}</p>
-              <p className="text-muted-foreground print:text-black">{certificate50Twi.payee.address}</p>
+              <p className="font-semibold text-foreground">{selectedWhtRow.partnername || notSpecified}</p>
+              <p className="text-muted-foreground print:text-black">{selectedWhtRow.address || notSpecified}</p>
             </div>
 
             {/* ตารางเงินได้พึงประเมินที่จ่าย */}
@@ -852,26 +777,24 @@ export function TaxFilingWorkbench({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {certificate50Twi.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="p-2 border-r font-medium">{item.incomeCategoryName}</td>
-                      <td className="p-2 border-r text-center font-mono">{item.paymentDate}</td>
-                      <td className="p-2 border-r text-right font-mono">{item.paymentAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
-                      <td className="p-2 text-right font-mono font-bold text-primary print:text-black">{item.whtAmount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                  ))}
+                  <tr>
+                    <td className="p-2 border-r font-medium">{selectedWhtRow.description || notSpecified}</td>
+                    <td className="p-2 border-r text-center font-mono">{selectedWhtRow.docdate}</td>
+                    <td className="p-2 border-r text-right font-mono">{money(selectedWhtRow.baseamount)}</td>
+                    <td className="p-2 text-right font-mono font-bold text-primary print:text-black">{money(selectedWhtRow.whtamount)}</td>
+                  </tr>
                 </tbody>
                 <tfoot className="border-t-2 bg-muted/30 font-bold">
                   <tr>
                     <td colSpan={2} className="p-2 border-r text-right">
                       รวมเงินที่จ่ายและภาษีที่หักนำส่ง:
                     </td>
-                    <td className="p-2 border-r text-right font-mono">{certificate50Twi.totalPayment.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
-                    <td className="p-2 text-right font-mono text-primary print:text-black">{certificate50Twi.totalWht.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                    <td className="p-2 border-r text-right font-mono">{money(selectedWhtRow.baseamount)}</td>
+                    <td className="p-2 text-right font-mono text-primary print:text-black">{money(selectedWhtRow.whtamount)}</td>
                   </tr>
                   <tr className="bg-primary/5 print:bg-white">
                     <td colSpan={4} className="p-2 text-center text-xs font-semibold text-primary print:text-black">
-                      รวมเงินภาษีที่หักนำส่ง (ตัวอักษร): {certificate50Twi.totalWhtBahtText}
+                      รวมเงินภาษีที่หักนำส่ง (ตัวอักษร): {selectedWhtRow.whtamounttext}
                     </td>
                   </tr>
                 </tfoot>
@@ -879,13 +802,13 @@ export function TaxFilingWorkbench({
             </div>
 
             <div className="text-xs text-muted-foreground pt-1">
-              เงื่อนไขการหักภาษี: <strong>{certificate50Twi.conditionTextTh}</strong>
+              เงื่อนไขการหักภาษี: <strong>หัก ณ ที่จ่าย</strong>
             </div>
 
             <div className="mt-8 pt-6 border-t grid grid-cols-2 gap-8 text-center text-xs">
               <div className="space-y-10">
                 <p className="font-medium text-muted-foreground">ลงชื่อ.......................................................... ผู้จ่ายเงิน</p>
-                <p className="text-muted-foreground">วันที่ {certificate50Twi.certDate}</p>
+                <p className="text-muted-foreground">วันที่ ......./......./.......</p>
               </div>
               <div className="space-y-10">
                 <p className="font-medium text-muted-foreground">ประทับตรานิติบุคคล (ถ้ามี)</p>
@@ -951,8 +874,8 @@ export function TaxFilingWorkbench({
                     onClick={() => {
                       setSelectedRecord(item);
                       if (isWhtType) {
-                        const matchedWht = whtRecords.find((w) => w.id === item.id);
-                        if (matchedWht) setSelectedWhtRecord(matchedWht);
+                        const matchedWht = whtRows.find((w) => `wht-${w.journalid}` === item.id);
+                        if (matchedWht) setSelectedWhtRow(matchedWht);
                       }
                     }}
                   >
@@ -972,13 +895,13 @@ export function TaxFilingWorkbench({
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono font-medium">
-                      {item.amountbeforevat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      {money(item.amountbeforevat)}
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono font-medium text-primary">
-                      {(item.whtamount ?? item.vatamount).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      {money(item.whtamount ?? item.vatamount)}
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono font-bold text-foreground">
-                      {item.totalamount.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                      {money(item.totalamount)}
                     </td>
                     <td className="px-3 py-2.5 text-center print:hidden">
                       <Button
@@ -988,8 +911,8 @@ export function TaxFilingWorkbench({
                           e.stopPropagation();
                           setSelectedRecord(item);
                           if (isWhtType) {
-                            const matchedWht = whtRecords.find((w) => w.id === item.id);
-                            if (matchedWht) setSelectedWhtRecord(matchedWht);
+                            const matchedWht = whtRows.find((w) => `wht-${w.journalid}` === item.id);
+                            if (matchedWht) setSelectedWhtRow(matchedWht);
                           }
                         }}
                         className="h-8 px-2 text-xs"
@@ -1002,12 +925,12 @@ export function TaxFilingWorkbench({
               </tbody>
               <tfoot className="border-t-2 bg-muted/40 font-bold">
                 <tr>
-                  <td colSpan={6} className="px-4 py-3 text-right">รวมทั้งสิ้น ({filteredRecords.length} รายการ):</td>
-                  <td className="px-4 py-3 text-right font-mono">{totals.beforeVat.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                  <td colSpan={6} className="px-4 py-3 text-right">{tr("tax_period_total", "รวมทั้งงวด")} ({totals.count} รายการ):</td>
+                  <td className="px-4 py-3 text-right font-mono">{money(totals.beforeVat)}</td>
                   <td className="px-4 py-3 text-right font-mono text-primary">
-                    {(isWhtType ? totals.wht : totals.vat).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                    {money(totals.tax)}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono">{totals.total.toLocaleString("th-TH", { minimumFractionDigits: 2 })}</td>
+                  <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>
                   <td className="print:hidden"></td>
                 </tr>
               </tfoot>
@@ -1064,15 +987,15 @@ export function TaxFilingWorkbench({
               <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-1.5 font-mono">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">มูลค่าก่อนภาษี:</span>
-                  <span>{selectedRecord.amountbeforevat.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                  <span>{money(selectedRecord.amountbeforevat)} บาท</span>
                 </div>
                 <div className="flex justify-between text-primary font-semibold">
                   <span>{selectedRecord.whtamount ? "ภาษีหัก ณ ที่จ่าย:" : "ภาษีมูลค่าเพิ่ม 7%:"}</span>
-                  <span>{(selectedRecord.whtamount ?? selectedRecord.vatamount).toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                  <span>{money(selectedRecord.whtamount ?? selectedRecord.vatamount)} บาท</span>
                 </div>
                 <div className="flex justify-between border-t pt-1 text-base font-bold">
                   <span>ยอดสุทธิ:</span>
-                  <span>{selectedRecord.totalamount.toLocaleString("th-TH", { minimumFractionDigits: 2 })} บาท</span>
+                  <span>{money(selectedRecord.totalamount)} บาท</span>
                 </div>
               </div>
 
@@ -1090,140 +1013,6 @@ export function TaxFilingWorkbench({
         </div>
       )}
 
-      {/* Modal: พรีวิวรายการโอนปิดภาษีมูลค่าเพิ่มสิ้นงวด (VAT Closing Journal Voucher) */}
-      {showVatClosingModal && vatClosingVoucher && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <Card className="w-full max-w-2xl shadow-2xl border-2 border-primary/30 bg-card">
-            <div className="flex items-center justify-between border-b p-4 bg-muted/30">
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                <h3 className="font-bold text-foreground text-base">
-                  {tr("tax_vat_closing_preview", "พรีวิวรายการโอนปิดภาษีมูลค่าเพิ่มสิ้นงวด (JV)")}
-                </h3>
-              </div>
-              <Button size="sm" variant="ghost" onClick={() => setShowVatClosingModal(false)}>
-                ✕
-              </Button>
-            </div>
-
-            <CardContent className="p-5 space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-3 text-xs bg-muted/20 p-3 rounded-xl border">
-                <div>
-                  <span className="text-muted-foreground">เลขที่เอกสาร:</span>
-                  <p className="font-mono font-bold text-primary text-sm">{vatClosingVoucher.docno}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">วันที่สิ้นงวด (Posting Date):</span>
-                  <p className="font-mono font-medium">{vatClosingVoucher.date}</p>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">คำอธิบายรายการ (Description):</span>
-                  <p className="font-medium text-foreground">{vatClosingVoucher.description}</p>
-                </div>
-              </div>
-
-              {/* ตารางคู่บัญชีเดบิต-เครดิต */}
-              <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-muted/70 border-b font-bold uppercase text-muted-foreground">
-                    <tr>
-                      <th className="p-2.5">รหัสบัญชี / ชื่อบัญชี</th>
-                      <th className="p-2.5 text-right w-28">เดบิต (บาท)</th>
-                      <th className="p-2.5 text-right w-28">เครดิต (บาท)</th>
-                      <th className="p-2.5">คำอธิบายบรรทัด</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border font-mono">
-                    {vatClosingVoucher.lines.map((line, idx) => (
-                      <tr key={idx} className="hover:bg-muted/30">
-                        <td className="p-2.5 font-sans font-medium text-foreground">
-                          <span className="font-mono font-bold text-primary mr-1.5">{line.accountCode}</span>
-                          {line.accountNameTh}
-                        </td>
-                        <td className="p-2.5 text-right font-bold text-foreground">
-                          {line.debit ? Number(line.debit).toLocaleString("th-TH", { minimumFractionDigits: 2 }) : "—"}
-                        </td>
-                        <td className="p-2.5 text-right font-bold text-foreground">
-                          {line.credit ? Number(line.credit).toLocaleString("th-TH", { minimumFractionDigits: 2 }) : "—"}
-                        </td>
-                        <td className="p-2.5 font-sans text-muted-foreground text-xs">{line.descriptionTh}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="border-t-2 bg-muted/40 font-mono font-bold">
-                    <tr>
-                      <td className="p-2.5 font-sans text-right">รวมทั้งสิ้น:</td>
-                      <td className="p-2.5 text-right text-foreground">
-                        {vatClosingVoucher.totalDebit.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="p-2.5 text-right text-foreground">
-                        {vatClosingVoucher.totalCredit.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="p-2.5 font-sans text-xs">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold">
-                          ✓ ดุล 100%
-                        </span>
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              {/* ข้อความสรุปและตัวหนังสือภาษาไทย */}
-              <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs space-y-1">
-                <p className="font-semibold text-foreground">{vatClosingVoucher.summaryNoteTh}</p>
-                <p className="text-muted-foreground">
-                  สมุดรายวันเป้าหมาย: <strong>{vatClosingVoucher.bookCode} (สมุดรายวันทั่วไป)</strong>
-                </p>
-              </div>
-
-              {postedVoucherSuccess ? (
-                <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>บันทึกรายการโอนปิดภาษีเข้าสู่สมุดรายวันทั่วไป (JV) เป็นฉบับร่างเรียบร้อยแล้ว</span>
-                </div>
-              ) : null}
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const text = vatClosingVoucher.lines
-                      .map((l) => `${l.accountCode}\t${l.debit}\t${l.credit}\t${l.descriptionTh}`)
-                      .join("\n");
-                    void navigator.clipboard?.writeText(text);
-                    setCopiedVoucher(true);
-                    setTimeout(() => setCopiedVoucher(false), 2000);
-                  }}
-                  className="gap-1.5 text-xs"
-                >
-                  {copiedVoucher ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copiedVoucher ? "คัดลอกแล้ว" : "คัดลอกแถวตาราง"}
-                </Button>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowVatClosingModal(false)}>
-                    ปิดหน้าต่าง
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      setPostedVoucherSuccess(true);
-                    }}
-                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    {tr("tax_send_to_gl", "ส่งเข้าระบบบัญชีแยกประเภท GL")}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

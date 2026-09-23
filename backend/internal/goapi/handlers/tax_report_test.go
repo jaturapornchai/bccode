@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/shopspring/decimal"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -70,27 +71,68 @@ func TestNormalizeVatRegisterPaging(t *testing.T) {
 // -------------------- computeVatSettlement --------------------
 
 func TestComputeVatSettlement(t *testing.T) {
+	d := decimal.RequireFromString
 	cases := []struct {
-		name           string
-		outputVat      float64
-		inputVat       float64
-		wantNet        float64
-		wantPayable    float64
-		wantCreditable float64
+		name                                 string
+		outputVat, inputVat, creditForward   string
+		wantNet, wantPayable, wantCreditable string
 	}{
-		{"output greater than input => payable", 1000, 400, 600, 600, 0},
-		{"input greater than output => creditable", 400, 1000, -600, 0, 600},
-		{"equal => zero both", 500, 500, 0, 0, 0},
-		{"zero both", 0, 0, 0, 0, 0},
+		{"output greater than input => payable (ข้อ 9)", "1000.00", "400.00", "0", "600.00", "600.00", "0.00"},
+		{"input greater than output => creditable (ข้อ 10)", "400.00", "1000.00", "0", "-600.00", "0.00", "600.00"},
+		{"credit brought forward reduces payable (ข้อ 8)", "1000.00", "400.00", "250.50", "349.50", "349.50", "0.00"},
+		{"credit brought forward larger than net => creditable", "1000.00", "400.00", "700.00", "-100.00", "0.00", "100.00"},
+		{"0.1 + 0.2 exact, no float drift", "0.30", "0.10", "0.20", "0.00", "0.00", "0.00"},
+		{"zero both", "0", "0", "0", "0.00", "0.00", "0.00"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			net, payable, creditable := computeVatSettlement(tc.outputVat, tc.inputVat)
-			if net != tc.wantNet || payable != tc.wantPayable || creditable != tc.wantCreditable {
-				t.Errorf("computeVatSettlement(%v,%v) = (%v,%v,%v), want (%v,%v,%v)",
-					tc.outputVat, tc.inputVat, net, payable, creditable, tc.wantNet, tc.wantPayable, tc.wantCreditable)
+			net, payable, creditable := computeVatSettlement(d(tc.outputVat), d(tc.inputVat), d(tc.creditForward))
+			got := []string{moneyText(net), moneyText(payable), moneyText(creditable)}
+			want := []string{tc.wantNet, tc.wantPayable, tc.wantCreditable}
+			for i := range got {
+				if got[i] != want[i] {
+					t.Fatalf("computeVatSettlement(%s,%s,%s) = %v, want %v", tc.outputVat, tc.inputVat, tc.creditForward, got, want)
+				}
 			}
 		})
+	}
+}
+
+func TestThaiBahtText(t *testing.T) {
+	cases := map[string]string{
+		"0":          "ศูนย์บาทถ้วน",
+		"1":          "หนึ่งบาทถ้วน",
+		"11":         "สิบเอ็ดบาทถ้วน",
+		"21":         "ยี่สิบเอ็ดบาทถ้วน",
+		"101":        "หนึ่งร้อยเอ็ดบาทถ้วน",
+		"1000000":    "หนึ่งล้านบาทถ้วน",
+		"10000000":   "สิบล้านบาทถ้วน",
+		"1250500.00": "หนึ่งล้านสองแสนห้าหมื่นห้าร้อยบาทถ้วน",
+		"0.5":        "ห้าสิบสตางค์",
+		"0.01":       "หนึ่งสตางค์",
+		"1234.75":    "หนึ่งพันสองร้อยสามสิบสี่บาทเจ็ดสิบห้าสตางค์",
+		"3210":       "สามพันสองร้อยสิบบาทถ้วน",
+		"-500":       "ลบห้าร้อยบาทถ้วน",
+	}
+	for in, want := range cases {
+		if got := thaiBahtText(decimal.RequireFromString(in)); got != want {
+			t.Errorf("thaiBahtText(%s) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestParseMoneyInput(t *testing.T) {
+	valid := map[string]string{"": "0.00", " 1250.5 ": "1250.50", "0.01": "0.01", "1000000": "1000000.00"}
+	for in, want := range valid {
+		got, ok := parseMoneyInput(in)
+		if !ok || moneyText(got) != want {
+			t.Errorf("parseMoneyInput(%q) = %s,%v want %s", in, moneyText(got), ok, want)
+		}
+	}
+	for _, in := range []string{"-1", "1.234", "abc", "1,000", "1e5", "NaN"} {
+		if _, ok := parseMoneyInput(in); ok {
+			t.Errorf("parseMoneyInput(%q) should be rejected", in)
+		}
 	}
 }
 
@@ -156,7 +198,7 @@ func TestBuildPP30SalesQuery(t *testing.T) {
 	if !strings.Contains(query, "public.saleinvoicetransaction") {
 		t.Errorf("expected sales query to reference saleinvoicetransaction, got: %s", query)
 	}
-	if !strings.Contains(query, "SUM(s.totalvatvalue)") {
+	if !strings.Contains(query, "SUM(ROUND(COALESCE(s.totalvatvalue, 0)::numeric, 2))") {
 		t.Errorf("expected outputvat to be SUM(totalvatvalue) not a computed rate, got: %s", query)
 	}
 	if strings.Contains(query, "* 0.07") || strings.Contains(query, "*0.07") {
@@ -175,7 +217,7 @@ func TestBuildPP30PurchaseQuery(t *testing.T) {
 	if !strings.Contains(query, "public.purchasetransaction") {
 		t.Errorf("expected purchase query to reference purchasetransaction, got: %s", query)
 	}
-	if !strings.Contains(query, "SUM(p.totalvatvalue)") {
+	if !strings.Contains(query, "SUM(ROUND(COALESCE(p.totalvatvalue, 0)::numeric, 2))") {
 		t.Errorf("expected inputvat to be SUM(totalvatvalue) not a computed rate, got: %s", query)
 	}
 	wantArgs := []any{2026, 9}

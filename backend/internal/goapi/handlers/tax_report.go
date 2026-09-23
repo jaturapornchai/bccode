@@ -5,9 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +14,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -40,14 +39,21 @@ type TaxVatRegisterRequest struct {
 
 // TaxVatRegisterRow - แถวรายงานภาษีซื้อ/ขายต่อเอกสาร
 type TaxVatRegisterRow struct {
-	DocDate          string  `json:"docdate"`
-	TaxInvoiceNo     string  `json:"taxinvoiceno"`
-	CounterpartyName string  `json:"counterpartyname"`
-	TaxID            string  `json:"taxid"`
-	BranchNo         string  `json:"branchno"`
-	AmountBeforeVat  float64 `json:"amountbeforevat"`
-	VatAmount        float64 `json:"vatamount"`
-	TotalAmount      float64 `json:"totalamount"`
+	DocDate          string `json:"docdate"`
+	TaxInvoiceNo     string `json:"taxinvoiceno"`
+	CounterpartyName string `json:"counterpartyname"`
+	TaxID            string `json:"taxid"`
+	BranchNo         string `json:"branchno"`
+	AmountBeforeVat  string `json:"amountbeforevat"` // ทศนิยม 2 ตำแหน่งแบบ string (ห้ามส่งเงินเป็น JSON number)
+	VatAmount        string `json:"vatamount"`
+	TotalAmount      string `json:"totalamount"`
+}
+
+// TaxVatRegisterSummary - ยอดรวมทั้งงวด (ไม่ใช่เฉพาะหน้าที่แสดง) คำนวณใน PostgreSQL
+type TaxVatRegisterSummary struct {
+	AmountBeforeVat string `json:"amountbeforevat"`
+	VatAmount       string `json:"vatamount"`
+	TotalAmount     string `json:"totalamount"`
 }
 
 // TaxVatRegisterHandler - POST /api/report/tax/vat-register
@@ -117,15 +123,16 @@ func TaxVatRegisterHandler(c echo.Context) error {
 	data := make([]TaxVatRegisterRow, 0)
 	for rows.Next() {
 		var row TaxVatRegisterRow
+		var beforeVat, vat, total decimal.Decimal
 		if err := rows.Scan(
 			&row.DocDate,
 			&row.TaxInvoiceNo,
 			&row.CounterpartyName,
 			&row.TaxID,
 			&row.BranchNo,
-			&row.AmountBeforeVat,
-			&row.VatAmount,
-			&row.TotalAmount,
+			&beforeVat,
+			&vat,
+			&total,
 		); err != nil {
 			// รายงานภาษีต้องครบทุกใบ แถวที่อ่านไม่ได้ต้องแจ้งให้รู้ ไม่ใช่ข้ามเงียบ ๆ
 			// ทะเบียนภาษีที่ขาดใบกำกับไปเฉย ๆ คือรายงานที่ผิดโดยไม่มีใครเห็น
@@ -136,6 +143,7 @@ func TaxVatRegisterHandler(c echo.Context) error {
 				"message": "Query execution failed",
 			})
 		}
+		row.AmountBeforeVat, row.VatAmount, row.TotalAmount = moneyText(beforeVat), moneyText(vat), moneyText(total)
 		data = append(data, row)
 	}
 	if err := rows.Err(); err != nil {
@@ -147,10 +155,29 @@ func TaxVatRegisterHandler(c echo.Context) error {
 		})
 	}
 
+	// ยอดรวมท้ายรายงานต้องเป็นของทั้งงวด ไม่ใช่ผลรวมเฉพาะหน้าที่ browser ได้รับ
+	summaryQuery, summaryArgs := buildVatRegisterSummaryQuery(req.Type, req.Year, req.Month)
+	var totalRows int
+	var sumBefore, sumVat, sumTotal decimal.Decimal
+	if err := db.QueryRowContext(ctx, summaryQuery, summaryArgs...).Scan(&totalRows, &sumBefore, &sumVat, &sumTotal); err != nil {
+		logger.Error("TaxVatRegister: summary: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"success": false,
+			"code":    "QUERY_ERROR",
+			"message": "Query execution failed",
+		})
+	}
+
 	return c.JSON(http.StatusOK, map[string]any{
 		"status": "success",
 		"data":   data,
 		"count":  len(data),
+		"total":  totalRows,
+		"summary": TaxVatRegisterSummary{
+			AmountBeforeVat: moneyText(sumBefore),
+			VatAmount:       moneyText(sumVat),
+			TotalAmount:     moneyText(sumTotal),
+		},
 		"limit":  limit,
 		"offset": offset,
 	})
@@ -166,13 +193,10 @@ func TaxVatRegisterHandler(c echo.Context) error {
 // ก็ตาม (Go struct field ชื่อ DebtorCode แต่ gorm/json tag คือ creditorcode) — ดู
 // backend/internal/transaction/models/transaction_saleinvoice_postgres.go:14
 func buildVatRegisterQuery(docType string, year, month, limit, offset int) (string, []any) {
-	table := "public.saleinvoicetransaction"
-	masterTable := "public.debtor"
-	if docType == "purchase" {
-		table = "public.purchasetransaction"
-		masterTable = "public.creditor"
-	}
+	table, masterTable := vatRegisterTables(docType)
 
+	// คอลัมน์ยอดเงินของตารางเอกสาร ERP ยังเป็น double precision จึงแปลงเป็น numeric แล้วปัด 2 ตำแหน่งใน SQL
+	// ต่อใบก่อนส่งออก — ผลรวมทุกจุดใช้ค่าที่ปัดแล้วชุดเดียวกัน ยอดท้ายรายงานจึงเท่ากับผลบวกของแถวเสมอ
 	query := fmt.Sprintf(`
 SELECT
   TO_CHAR(t.docdate + INTERVAL '7 hour', 'YYYY-MM-DD') AS docdate,
@@ -180,19 +204,39 @@ SELECT
   COALESCE(m.name0, '') AS counterpartyname,
   COALESCE(m.taxid, '') AS taxid,
   COALESCE(m.branchnumber, '') AS branchno,
-  COALESCE(t.totalbeforevat, 0) AS amountbeforevat,
-  COALESCE(t.totalvatvalue, 0) AS vatamount,
-  COALESCE(t.totalaftervat, 0) AS totalamount
+  %s AS amountbeforevat,
+  %s AS vatamount,
+  %s AS totalamount
 FROM %s t
 LEFT JOIN %s m ON m.code = t.creditorcode
-WHERE t.iscancel = false
-  AND t.totalvatvalue <> 0
-  AND EXTRACT(YEAR FROM t.docdate + INTERVAL '7 hour') = $1
-  AND EXTRACT(MONTH FROM t.docdate + INTERVAL '7 hour') = $2
+%s
 ORDER BY t.docdate ASC, t.docno ASC
-LIMIT $3 OFFSET $4`, table, masterTable)
+LIMIT $3 OFFSET $4`, moneySQL("t.totalbeforevat"), moneySQL("t.totalvatvalue"), moneySQL("t.totalaftervat"), table, masterTable, vatRegisterWhere)
 
 	return query, []any{year, month, limit, offset}
+}
+
+// buildVatRegisterSummaryQuery - จำนวนใบและยอดรวมทั้งงวด (เงื่อนไขเดียวกับรายการ ไม่มี LIMIT)
+func buildVatRegisterSummaryQuery(docType string, year, month int) (string, []any) {
+	table, _ := vatRegisterTables(docType)
+	query := fmt.Sprintf(`
+SELECT COUNT(*), COALESCE(SUM(%s), 0), COALESCE(SUM(%s), 0), COALESCE(SUM(%s), 0)
+FROM %s t
+%s`, moneySQL("t.totalbeforevat"), moneySQL("t.totalvatvalue"), moneySQL("t.totalaftervat"), table, vatRegisterWhere)
+	return query, []any{year, month}
+}
+
+const vatRegisterWhere = `WHERE t.iscancel = false
+  AND t.totalvatvalue <> 0
+  AND EXTRACT(YEAR FROM t.docdate + INTERVAL '7 hour') = $1
+  AND EXTRACT(MONTH FROM t.docdate + INTERVAL '7 hour') = $2`
+
+// vatRegisterTables - ชื่อตารางมาจาก whitelist คงที่ในโค้ดเท่านั้น
+func vatRegisterTables(docType string) (table, masterTable string) {
+	if docType == "purchase" {
+		return "public.purchasetransaction", "public.creditor"
+	}
+	return "public.saleinvoicetransaction", "public.debtor"
 }
 
 // ---------------------------------------------------------------------------
@@ -205,21 +249,26 @@ type PP30SummaryRequest struct {
 	BusinessCode string `json:"businesscode"`
 	Year         int    `json:"year"`
 	Month        int    `json:"month"`
+	// ภาษีชำระเกินยกมาจากเดือนก่อน (ภ.พ.30 ข้อ 8) — ผู้ใช้กรอกเป็นทศนิยม string เช่น "1250.50"; ว่าง = 0
+	CreditBroughtForward string `json:"creditbroughtforward,omitempty"`
 }
 
-// PP30SummaryData - สรุปยอดภาษีซื้อ/ขายประจำเดือน (ภ.พ.30)
+// PP30SummaryData - แบบ ภ.พ.30 ข้อ 1–10 ประจำเดือน ยอดเงินทุกช่องเป็นทศนิยม 2 ตำแหน่งแบบ string
 type PP30SummaryData struct {
-	Year            int     `json:"year"`
-	Month           int     `json:"month"`
-	SalesTaxable    float64 `json:"salestaxable"`
-	SalesZeroRated  float64 `json:"saleszerorated"`
-	SalesExempt     float64 `json:"salesexempt"`
-	OutputVat       float64 `json:"outputvat"`
-	PurchaseTaxable float64 `json:"purchasetaxable"`
-	InputVat        float64 `json:"inputvat"`
-	NetVat          float64 `json:"netvat"`
-	Payable         float64 `json:"payable"`
-	Creditable      float64 `json:"creditable"`
+	Year                 int           `json:"year"`
+	Month                int           `json:"month"`
+	Company              CompanyHeader `json:"company"`
+	SalesGross           string        `json:"salesgross"`           // ข้อ 1 ยอดขายเดือนนี้ (= 2 + 3 + 4)
+	SalesZeroRated       string        `json:"saleszerorated"`       // ข้อ 2 ยอดขายอัตราร้อยละ 0
+	SalesExempt          string        `json:"salesexempt"`          // ข้อ 3 ยอดขายที่ได้รับยกเว้น
+	SalesTaxable         string        `json:"salestaxable"`         // ข้อ 4 ยอดขายที่ต้องเสียภาษี
+	OutputVat            string        `json:"outputvat"`            // ข้อ 5 ภาษีขาย (ยอดที่บันทึกจริงรายใบ)
+	PurchaseTaxable      string        `json:"purchasetaxable"`      // ข้อ 6 ยอดซื้อที่มีสิทธินำภาษีซื้อมาหัก
+	InputVat             string        `json:"inputvat"`             // ข้อ 7 ภาษีซื้อ (ยอดที่บันทึกจริงรายใบ)
+	CreditBroughtForward string        `json:"creditbroughtforward"` // ข้อ 8 ภาษีชำระเกินยกมา
+	NetVat               string        `json:"netvat"`               // 5 - (7 + 8)
+	Payable              string        `json:"payable"`              // ข้อ 9 ภาษีที่ต้องชำระ
+	Creditable           string        `json:"creditable"`           // ข้อ 10 ภาษีชำระเกิน
 }
 
 // PP30SummaryHandler - POST /api/report/tax/pp30-summary
@@ -235,7 +284,7 @@ func PP30SummaryHandler(c echo.Context) error {
 		})
 	}
 
-	holdingCode, _, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
 	if scopeErr != nil {
 		return c.JSON(scopeErr.Status, map[string]any{
 			"success": false,
@@ -249,6 +298,15 @@ func PP30SummaryHandler(c echo.Context) error {
 			"success": false,
 			"code":    "INVALID_PERIOD",
 			"message": "year and month are required (month 1-12)",
+		})
+	}
+
+	creditForward, ok := parseMoneyInput(req.CreditBroughtForward)
+	if !ok {
+		return c.JSON(http.StatusBadRequest, map[string]any{
+			"success": false,
+			"code":    "INVALID_AMOUNT",
+			"message": "creditbroughtforward must be a non-negative amount with at most 2 decimals",
 		})
 	}
 
@@ -266,7 +324,7 @@ func PP30SummaryHandler(c echo.Context) error {
 
 	salesQuery, salesArgs := buildPP30SalesQuery(req.Year, req.Month)
 
-	var salesTaxable, salesZeroRated, salesExempt, outputVat float64
+	var salesTaxable, salesZeroRated, salesExempt, outputVat decimal.Decimal
 	if err := db.QueryRowContext(ctx, salesQuery, salesArgs...).Scan(&salesTaxable, &salesZeroRated, &salesExempt, &outputVat); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
@@ -277,7 +335,7 @@ func PP30SummaryHandler(c echo.Context) error {
 
 	purchaseQuery, purchaseArgs := buildPP30PurchaseQuery(req.Year, req.Month)
 
-	var purchaseTaxable, inputVat float64
+	var purchaseTaxable, inputVat decimal.Decimal
 	if err := db.QueryRowContext(ctx, purchaseQuery, purchaseArgs...).Scan(&purchaseTaxable, &inputVat); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
@@ -286,22 +344,35 @@ func PP30SummaryHandler(c echo.Context) error {
 		})
 	}
 
-	netVat, payable, creditable := computeVatSettlement(outputVat, inputVat)
+	company, err := loadCompanyHeader(ctx, holdingCode, businessCode)
+	if err != nil {
+		logger.Error("PP30Summary: company header: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"success": false,
+			"code":    "QUERY_ERROR",
+			"message": "Company lookup failed",
+		})
+	}
+
+	netVat, payable, creditable := computeVatSettlement(outputVat, inputVat, creditForward)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"status": "success",
 		"data": PP30SummaryData{
-			Year:            req.Year,
-			Month:           req.Month,
-			SalesTaxable:    salesTaxable,
-			SalesZeroRated:  salesZeroRated,
-			SalesExempt:     salesExempt,
-			OutputVat:       outputVat,
-			PurchaseTaxable: purchaseTaxable,
-			InputVat:        inputVat,
-			NetVat:          netVat,
-			Payable:         payable,
-			Creditable:      creditable,
+			Year:                 req.Year,
+			Month:                req.Month,
+			Company:              company,
+			SalesGross:           moneyText(salesTaxable.Add(salesZeroRated).Add(salesExempt)),
+			SalesZeroRated:       moneyText(salesZeroRated),
+			SalesExempt:          moneyText(salesExempt),
+			SalesTaxable:         moneyText(salesTaxable),
+			OutputVat:            moneyText(outputVat),
+			PurchaseTaxable:      moneyText(purchaseTaxable),
+			InputVat:             moneyText(inputVat),
+			CreditBroughtForward: moneyText(creditForward),
+			NetVat:               moneyText(netVat),
+			Payable:              moneyText(payable),
+			Creditable:           moneyText(creditable),
 		},
 	})
 }
@@ -317,16 +388,18 @@ func PP30SummaryHandler(c echo.Context) error {
 // คอลัมน์จริง: เอกสารที่ totalbeforevat>0 แต่ vatrate=0 และ totalvatvalue=0 ถือเป็น "0%" (zero-rated), ที่เหลือถือเป็น
 // "ปกติ" (taxable). ถ้าความเข้าใจนี้ผิดต้องแก้ตาม business rule ที่ยืนยันแล้วเท่านั้น
 func buildPP30SalesQuery(year, month int) (string, []any) {
-	query := `
+	// ปัดต่อใบก่อนรวม (moneySQL) ให้ยอด ภ.พ.30 เท่ากับผลรวมของรายงานภาษีขายรายใบเป๊ะ
+	base, vat, exempt := moneySQL("s.totalbeforevat"), moneySQL("s.totalvatvalue"), moneySQL("s.totalexceptvat")
+	query := fmt.Sprintf(`
 SELECT
-  COALESCE(SUM(CASE WHEN NOT (s.vatrate = 0 AND s.totalvatvalue = 0) THEN s.totalbeforevat ELSE 0 END), 0) AS salestaxable,
-  COALESCE(SUM(CASE WHEN s.vatrate = 0 AND s.totalvatvalue = 0 AND s.totalbeforevat <> 0 THEN s.totalbeforevat ELSE 0 END), 0) AS saleszerorated,
-  COALESCE(SUM(s.totalexceptvat), 0) AS salesexempt,
-  COALESCE(SUM(s.totalvatvalue), 0) AS outputvat
+  COALESCE(SUM(CASE WHEN NOT (s.vatrate = 0 AND s.totalvatvalue = 0) THEN %[1]s ELSE 0 END), 0) AS salestaxable,
+  COALESCE(SUM(CASE WHEN s.vatrate = 0 AND s.totalvatvalue = 0 AND s.totalbeforevat <> 0 THEN %[1]s ELSE 0 END), 0) AS saleszerorated,
+  COALESCE(SUM(%[3]s), 0) AS salesexempt,
+  COALESCE(SUM(%[2]s), 0) AS outputvat
 FROM public.saleinvoicetransaction s
 WHERE s.iscancel = false
   AND EXTRACT(YEAR FROM s.docdate + INTERVAL '7 hour') = $1
-  AND EXTRACT(MONTH FROM s.docdate + INTERVAL '7 hour') = $2`
+  AND EXTRACT(MONTH FROM s.docdate + INTERVAL '7 hour') = $2`, base, vat, exempt)
 	return query, []any{year, month}
 }
 
@@ -334,27 +407,27 @@ WHERE s.iscancel = false
 // purchasetaxable = SUM(totalbeforevat) รวมทุกอัตรา (contract ไม่ได้ขอแยก zero-rated/exempt ฝั่งซื้อ)
 // inputvat        = SUM(totalvatvalue) ยอด VAT ที่บันทึกจริงรายเอกสาร
 func buildPP30PurchaseQuery(year, month int) (string, []any) {
-	query := `
+	query := fmt.Sprintf(`
 SELECT
-  COALESCE(SUM(p.totalbeforevat), 0) AS purchasetaxable,
-  COALESCE(SUM(p.totalvatvalue), 0) AS inputvat
+  COALESCE(SUM(%s), 0) AS purchasetaxable,
+  COALESCE(SUM(%s), 0) AS inputvat
 FROM public.purchasetransaction p
 WHERE p.iscancel = false
   AND EXTRACT(YEAR FROM p.docdate + INTERVAL '7 hour') = $1
-  AND EXTRACT(MONTH FROM p.docdate + INTERVAL '7 hour') = $2`
+  AND EXTRACT(MONTH FROM p.docdate + INTERVAL '7 hour') = $2`, moneySQL("p.totalbeforevat"), moneySQL("p.totalvatvalue"))
 	return query, []any{year, month}
 }
 
-// computeVatSettlement - netvat = output - input; บวก = ต้องชำระ (payable), ลบ = ขอคืน/ยกไป (creditable)
-func computeVatSettlement(outputVat, inputVat float64) (netVat, payable, creditable float64) {
-	netVat = outputVat - inputVat
-	if netVat > 0 {
-		return netVat, netVat, 0
+// computeVatSettlement - ภ.พ.30: netvat = ข้อ5 - (ข้อ7 + ข้อ8); บวก = ข้อ9 ต้องชำระ, ลบ = ข้อ10 ชำระเกิน
+func computeVatSettlement(outputVat, inputVat, creditForward decimal.Decimal) (netVat, payable, creditable decimal.Decimal) {
+	netVat = outputVat.Sub(inputVat).Sub(creditForward)
+	switch netVat.Sign() {
+	case 1:
+		return netVat, netVat, decimal.Zero
+	case -1:
+		return netVat, decimal.Zero, netVat.Neg()
 	}
-	if netVat < 0 {
-		return netVat, 0, -netVat
-	}
-	return 0, 0, 0
+	return decimal.Zero, decimal.Zero, decimal.Zero
 }
 
 // ---------------------------------------------------------------------------
@@ -395,18 +468,50 @@ type TaxWithholdingRequest struct {
 
 // TaxWithholdingRow - แถวภาษีหัก ณ ที่จ่ายต่อใบสำคัญ (ข้อมูลจริงจาก GL และหลักฐานประกอบ)
 type TaxWithholdingRow struct {
-	JournalID   string  `json:"journalid"`
-	DocNo       string  `json:"docno"`
-	DocDate     string  `json:"docdate"`
-	PartnerCode string  `json:"partnercode"`
-	PartnerName string  `json:"partnername"`
-	TaxID       string  `json:"taxid"`
-	Address     string  `json:"address"`
-	Description string  `json:"description"`
-	BaseAmount  float64 `json:"baseamount"`
-	WhtAmount   float64 `json:"whtamount"`
-	RatePercent float64 `json:"ratepercent"`
+	JournalID   string `json:"journalid"`
+	DocNo       string `json:"docno"`
+	DocDate     string `json:"docdate"`
+	PartnerCode string `json:"partnercode"`
+	PartnerName string `json:"partnername"`
+	TaxID       string `json:"taxid"`
+	Address     string `json:"address"`
+	Description string `json:"description"`
+	BaseAmount  string `json:"baseamount"`    // ทศนิยม 2 ตำแหน่งแบบ string
+	WhtAmount   string `json:"whtamount"`     // ยอดหักที่บันทึกจริงในบรรทัด GL
+	WhtText     string `json:"whtamounttext"` // ยอดหักเป็นตัวอักษรไทย สำหรับหนังสือรับรอง 50 ทวิ
+	NetAmount   string `json:"netamount"`     // ยอดจ่ายสุทธิ = ฐาน - ยอดหัก
+	RatePercent string `json:"ratepercent"`   // อัตรา = ยอดหัก / ฐาน × 100 ปัด 2 ตำแหน่ง ("" เมื่อไม่มีฐาน)
+
+	base, wht decimal.Decimal
 }
+
+// TaxWithholdingRateGroup - สรุปตามอัตราภาษี สำหรับหน้าสรุปแบบยื่น ภ.ง.ด.
+type TaxWithholdingRateGroup struct {
+	RatePercent string `json:"ratepercent"`
+	Count       int    `json:"count"`
+	BaseAmount  string `json:"baseamount"`
+	WhtAmount   string `json:"whtamount"`
+}
+
+// TaxWithholdingSummary - ยอดรวมทั้งงวด (ทุกแถว ไม่ใช่เฉพาะหน้าที่แสดง)
+type TaxWithholdingSummary struct {
+	BaseTotal    string                    `json:"basetotal"`
+	WhtTotal     string                    `json:"whttotal"`
+	WhtTotalText string                    `json:"whttotaltext"`
+	NetTotal     string                    `json:"nettotal"`
+	PayeeCount   int                       `json:"payeecount"`
+	ByRate       []TaxWithholdingRateGroup `json:"byrate"`
+}
+
+// taxWithholdingReport - ผลคำนวณรายงานทั้งงวดก่อนตัดหน้า
+type taxWithholdingReport struct {
+	Rows    []TaxWithholdingRow
+	Summary TaxWithholdingSummary
+	Note    string
+}
+
+// whtReportMaxRows - เพดานรายการต่อเดือน (ภาษีหักของ SME ต่อเดือนหลักสิบถึงหลักร้อยใบ) กันงานหนักผิดปกติ
+const whtReportMaxRows = 5000
 
 // TaxWithholdingHandler - POST /api/report/tax/wht
 // อ่านยอดหัก ณ ที่จ่ายจากบัญชีภาษีหักในบัญชีแยกประเภทที่ผ่านรายการจริง (gl_lines)
@@ -421,7 +526,7 @@ func TaxWithholdingHandler(c echo.Context) error {
 		})
 	}
 
-	holdingCode, _, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
 	if scopeErr != nil {
 		return c.JSON(scopeErr.Status, map[string]any{
 			"success": false,
@@ -436,6 +541,15 @@ func TaxWithholdingHandler(c echo.Context) error {
 			"code":    "INVALID_TYPE",
 			"message": "direction must be 'paid' or 'received'",
 		})
+	}
+	for _, f := range req.Forms {
+		if !validWhtForms[f] {
+			return c.JSON(http.StatusBadRequest, map[string]any{
+				"success": false,
+				"code":    "INVALID_FORM",
+				"message": "forms must be one of 1, 2, 3, 53, 54",
+			})
+		}
 	}
 
 	if !isValidReportPeriod(req.Year, req.Month) {
@@ -456,12 +570,12 @@ func TaxWithholdingHandler(c echo.Context) error {
 			"message": "Database connection failed",
 		})
 	}
-	defer db.Close()
+	// ห้าม db.Close(): PgSqlFastConnect คืน pool กลางของ holding ที่ทุก request ใช้ร่วมกัน
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	rows, total, basetotal, whttotal, note, err := buildWithholdingRows(ctx, db, req.BusinessCode, req.Year, req.Month, req.Direction, req.Forms, limit, offset)
+	report, err := buildWithholdingReport(ctx, db, businessCode, req.Year, req.Month, req.Direction, req.Forms)
 	if err != nil {
 		logger.Error("TaxWithholding: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]any{
@@ -471,34 +585,56 @@ func TaxWithholdingHandler(c echo.Context) error {
 		})
 	}
 
+	company, err := loadCompanyHeader(ctx, holdingCode, businessCode)
+	if err != nil {
+		logger.Error("TaxWithholding: company header: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"success": false,
+			"code":    "QUERY_ERROR",
+			"message": "Company lookup failed",
+		})
+	}
+
 	return c.JSON(http.StatusOK, map[string]any{
-		"status": "success",
-		"data":   rows,
-		"count":  total,
-		"summary": map[string]any{
-			"basetotal": basetotal,
-			"whttotal":  whttotal,
-		},
-		"limit":  limit,
-		"offset": offset,
-		"note":   note,
+		"status":  "success",
+		"data":    pageWithholdingRows(report.Rows, limit, offset),
+		"total":   len(report.Rows),
+		"summary": report.Summary,
+		"company": company,
+		"limit":   limit,
+		"offset":  offset,
+		"note":    report.Note,
 	})
+}
+
+// pageWithholdingRows - ตัดหน้าหลังคำนวณครบทั้งงวดแล้ว (ยอดรวมจึงเป็นของทั้งงวดเสมอ)
+func pageWithholdingRows(rows []TaxWithholdingRow, limit, offset int) []TaxWithholdingRow {
+	if offset >= len(rows) {
+		return []TaxWithholdingRow{}
+	}
+	end := offset + limit
+	if end > len(rows) {
+		end = len(rows)
+	}
+	return rows[offset:end]
 }
 
 // validWhtForms - แบบยื่นที่ระบบรองรับการจับคู่บัญชี (จับจากชื่อบัญชีที่มีรูปแบบ "ภ.ง.ด.<แบบ>")
 var validWhtForms = map[string]bool{"1": true, "2": true, "3": true, "53": true, "54": true}
 
-// buildWithholdingRows - คำนวณรายการหัก ณ ที่จ่ายจาก GL จริง (แยกออกจาก handler เพื่อทดสอบ integration ตรงกับ *sql.DB)
+// buildWithholdingReport - คำนวณรายการหัก ณ ที่จ่ายทั้งงวดจาก GL จริง (แยกออกจาก handler เพื่อทดสอบ integration ตรงกับ *sql.DB)
 //
 // หลักการอ่านข้อมูล (ตรวจกับโครง runtime จริง backend/internal/generalledger/schema.sql):
 //   - บัญชีภาษีหัก = บัญชี liability ที่ชื่อภาษาไทยอ้างแบบยื่น เช่น "ภ.ง.ด.53" (ผังมาตรฐานแยกบัญชีตามแบบยื่น:
 //     ภ.ง.ด.1 เงินเดือน / ภ.ง.ด.3 บุคคลธรรมดา / ภ.ง.ด.53 นิติบุคคล / ภ.ง.ด.2 ดอกเบี้ยปันผล / ภ.ง.ด.54 ต่างประเทศ)
-//     ฝั่ง received คือบัญชี asset ที่ชื่อมีคำว่า "ภาษีถูกหัก" — อ่านจากผังบัญชีจริง ไม่ hard-code รหัสบัญชี
+//     ฝั่ง received คือบัญชี asset ที่ชื่อมีคำว่า "ภาษีถูกหัก" — ชั่วคราวจนกว่าจะมีตาราง wht_records ตาม
+//     mydocs/datamodels/gl/wht.sql (หนังสือรับรองแยกรายฉบับ) ซึ่งจะเลิกการหาจากชื่อบัญชี
 //   - ยอดหักมาจาก gl_lines เฉพาะใบที่ผ่านรายการแล้ว (projection เก็บเฉพาะ posted)
 //   - คู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบของใบเดียวกัน (documents/settlements → gl_subledger_partners)
 //   - ฐานภาษี = ยอดตัดยอดตาม settlements ของใบ; ถ้าไม่มีการตัดยอดใช้ผลรวมเดบิตของใบ (ไม่รวมบรรทัดภาษีหักเอง)
-//     เอกสารบางใบจ่ายหลายบิลรวมกัน ฐานจึงแสดงรวมต่อใบ — ยอดหักเป็นยอดที่บันทึกจริงเสมอ ไม่คำนวณย้อนจากอัตรา
-func buildWithholdingRows(ctx context.Context, db *sql.DB, company string, year, month int, direction string, forms []string, limit, offset int) ([]TaxWithholdingRow, int, float64, float64, string, error) {
+//     ยอดหักเป็นยอดที่บันทึกจริงเสมอ ไม่คำนวณย้อนจากอัตรา; ทุกยอดเป็น decimal ไม่มี float
+func buildWithholdingReport(ctx context.Context, db *sql.DB, company string, year, month int, direction string, forms []string) (taxWithholdingReport, error) {
+	report := taxWithholdingReport{Rows: []TaxWithholdingRow{}, Summary: TaxWithholdingSummary{ByRate: []TaxWithholdingRateGroup{}}}
 	suppress := "credit"
 	var formPatterns []string
 	if direction == "received" {
@@ -510,46 +646,24 @@ func buildWithholdingRows(ctx context.Context, db *sql.DB, company string, year,
 		}
 		for _, f := range forms {
 			if !validWhtForms[f] {
-				return nil, 0, 0, 0, "", fmt.Errorf("invalid form %q", f)
+				return report, fmt.Errorf("invalid form %q", f)
 			}
 			formPatterns = append(formPatterns, "ภ.ง.ด."+f)
 		}
 	}
 
-	accountQuery := `
-SELECT payload->>'accountcode' AS code
-FROM gl_records
-WHERE company = $1 AND kind = 'accounts'
-  AND (payload->>'accounttype' = $2 OR $2 = '')
-  AND EXISTS (
-    SELECT 1 FROM jsonb_array_elements(payload->'names') n, unnest($3::text[]) f
-    WHERE n->>'name' LIKE '%' || f || '%'
-  )`
-	acctRows, err := db.QueryContext(ctx, accountQuery, company, func() string {
-		if direction == "received" {
-			return ""
-		}
-		return "liability"
-	}(), pqArray(formPatterns))
+	accountType := "liability"
+	if direction == "received" {
+		accountType = ""
+	}
+	whtAccounts, err := findWithholdingAccounts(ctx, db, company, accountType, formPatterns)
 	if err != nil {
-		return nil, 0, 0, 0, "", fmt.Errorf("find wht accounts: %w", err)
-	}
-	whtAccounts := []string{}
-	for acctRows.Next() {
-		var code string
-		if err := acctRows.Scan(&code); err != nil {
-			acctRows.Close()
-			return nil, 0, 0, 0, "", fmt.Errorf("scan wht account: %w", err)
-		}
-		whtAccounts = append(whtAccounts, code)
-	}
-	acctRows.Close()
-	if err := acctRows.Err(); err != nil {
-		return nil, 0, 0, 0, "", fmt.Errorf("read wht accounts: %w", err)
+		return report, err
 	}
 	if len(whtAccounts) == 0 {
-		note := "ไม่พบบัญชีภาษีหัก ณ ที่จ่ายในผังบัญชี (ค้นตามแบบยื่น ภ.ง.ด.) รายงานจึงว่าง — เพิ่มบัญชีภาษีหักในผังบัญชีแล้วรายงานจะแสดงทันที"
-		return []TaxWithholdingRow{}, 0, 0, 0, note, nil
+		report.Note = "ไม่พบบัญชีภาษีหัก ณ ที่จ่ายในผังบัญชี (ค้นตามแบบยื่น ภ.ง.ด.) รายงานจึงว่าง — เพิ่มบัญชีภาษีหักในผังบัญชีแล้วรายงานจะแสดงทันที"
+		report.Summary = summarizeWithholding(report.Rows)
+		return report, nil
 	}
 
 	lineQuery := `
@@ -561,55 +675,129 @@ WHERE l.company = $1
   AND EXTRACT(YEAR FROM l.entry_date) = $3
   AND EXTRACT(MONTH FROM l.entry_date) = $4
 ORDER BY l.entry_date ASC, l.journal_id ASC
-LIMIT $5 OFFSET $6`
-	lineRows, err := db.QueryContext(ctx, lineQuery, company, pqArray(whtAccounts), year, month, limit, offset)
+LIMIT $5`
+	lineRows, err := db.QueryContext(ctx, lineQuery, company, pqArray(whtAccounts), year, month, whtReportMaxRows+1)
 	if err != nil {
-		return nil, 0, 0, 0, "", fmt.Errorf("read wht lines: %w", err)
+		return report, fmt.Errorf("read wht lines: %w", err)
 	}
 	type lineRow struct {
 		journalID, docNo, docDate, description string
-		credit, debit                          float64
+		credit, debit                          decimal.Decimal
 	}
 	var lines []lineRow
 	for lineRows.Next() {
 		var r lineRow
 		if err := lineRows.Scan(&r.journalID, &r.docNo, &r.docDate, &r.credit, &r.debit, &r.description); err != nil {
 			lineRows.Close()
-			return nil, 0, 0, 0, "", fmt.Errorf("scan wht line: %w", err)
+			return report, fmt.Errorf("scan wht line: %w", err)
 		}
 		lines = append(lines, r)
 	}
 	lineRows.Close()
 	if err := lineRows.Err(); err != nil {
-		return nil, 0, 0, 0, "", fmt.Errorf("read wht lines: %w", err)
+		return report, fmt.Errorf("read wht lines: %w", err)
+	}
+	if len(lines) > whtReportMaxRows {
+		return report, fmt.Errorf("wht lines exceed %d for %04d-%02d", whtReportMaxRows, year, month)
 	}
 
-	results := make([]TaxWithholdingRow, 0, len(lines))
-	var basetotal, whttotal float64
 	for _, line := range lines {
 		row := TaxWithholdingRow{
 			JournalID:   line.journalID,
 			DocNo:       line.docNo,
 			DocDate:     line.docDate,
 			Description: line.description,
+			wht:         line.debit,
 		}
 		if direction == "paid" {
-			row.WhtAmount = line.credit
-		} else {
-			row.WhtAmount = line.debit
+			row.wht = line.credit
 		}
-		whttotal += row.WhtAmount
-
 		if err := fillWithholdingEvidence(ctx, db, company, line.journalID, direction, &row); err != nil {
-			return nil, 0, 0, 0, "", err
+			return report, err
 		}
-		if row.BaseAmount > 0 {
-			row.RatePercent = math.Round(row.WhtAmount/row.BaseAmount*1000) / 10
+		row.WhtAmount, row.BaseAmount = moneyText(row.wht), moneyText(row.base)
+		row.WhtText = thaiBahtText(row.wht)
+		row.NetAmount = moneyText(row.base.Sub(row.wht))
+		if row.base.Sign() > 0 {
+			row.RatePercent = moneyText(row.wht.Mul(decimal.NewFromInt(100)).Div(row.base))
 		}
-		basetotal += row.BaseAmount
-		results = append(results, row)
+		report.Rows = append(report.Rows, row)
 	}
-	return results, len(results), basetotal, whttotal, "", nil
+	report.Summary = summarizeWithholding(report.Rows)
+	return report, nil
+}
+
+// findWithholdingAccounts - รหัสบัญชีภาษีหักจากผังบัญชีจริง (ค้นจากชื่อบัญชีตามแบบยื่น)
+func findWithholdingAccounts(ctx context.Context, db *sql.DB, company, accountType string, patterns []string) ([]string, error) {
+	rows, err := db.QueryContext(ctx, `
+SELECT payload->>'accountcode' AS code
+FROM gl_records
+WHERE company = $1 AND kind = 'accounts'
+  AND (payload->>'accounttype' = $2 OR $2 = '')
+  AND EXISTS (
+    SELECT 1 FROM jsonb_array_elements(payload->'names') n, unnest($3::text[]) f
+    WHERE n->>'name' LIKE '%' || f || '%'
+  )`, company, accountType, pqArray(patterns))
+	if err != nil {
+		return nil, fmt.Errorf("find wht accounts: %w", err)
+	}
+	defer rows.Close()
+	codes := []string{}
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, fmt.Errorf("scan wht account: %w", err)
+		}
+		codes = append(codes, code)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read wht accounts: %w", err)
+	}
+	return codes, nil
+}
+
+// summarizeWithholding - ยอดรวมทั้งงวด + สรุปตามอัตรา (สำหรับหน้าสรุปแบบยื่น) จากยอด decimal ของทุกแถว
+func summarizeWithholding(rows []TaxWithholdingRow) TaxWithholdingSummary {
+	baseTotal, whtTotal := decimal.Zero, decimal.Zero
+	payees := map[string]bool{}
+	type group struct {
+		count     int
+		base, wht decimal.Decimal
+	}
+	groups := map[string]*group{}
+	var order []string
+	for _, r := range rows {
+		baseTotal, whtTotal = baseTotal.Add(r.base), whtTotal.Add(r.wht)
+		payee := r.TaxID
+		if payee == "" {
+			payee = r.PartnerCode
+		}
+		if payee == "" {
+			payee = "journal:" + r.JournalID
+		}
+		payees[payee] = true
+		g, ok := groups[r.RatePercent]
+		if !ok {
+			g = &group{}
+			groups[r.RatePercent] = g
+			order = append(order, r.RatePercent)
+		}
+		g.count++
+		g.base, g.wht = g.base.Add(r.base), g.wht.Add(r.wht)
+	}
+	byRate := make([]TaxWithholdingRateGroup, 0, len(order))
+	for _, rate := range order {
+		g := groups[rate]
+		byRate = append(byRate, TaxWithholdingRateGroup{RatePercent: rate, Count: g.count, BaseAmount: moneyText(g.base), WhtAmount: moneyText(g.wht)})
+	}
+	return TaxWithholdingSummary{
+		BaseTotal:    moneyText(baseTotal),
+		WhtTotal:     moneyText(whtTotal),
+		WhtTotalText: thaiBahtText(whtTotal),
+		NetTotal:     moneyText(baseTotal.Sub(whtTotal)),
+		PayeeCount:   len(payees),
+		ByRate:       byRate,
+	}
 }
 
 // fillWithholdingEvidence - โยงคู่ค้าและฐานภาษีของใบจากหลักฐานประกอบจริง
@@ -647,13 +835,13 @@ func fillWithholdingEvidence(ctx context.Context, db *sql.DB, company, journalID
 	}
 
 	// ฐานภาษี: รวมยอดตัดยอดของใบ (ตัดชำระจริงต่อบิล) — ยอดหักยังเป็นยอดบรรทัดจริงเสมอ
-	settleBase := 0.0
+	settleBase := decimal.Zero
 	partnerCode := ""
 	var evidenceDocID string
 	if journal.Details != nil {
 		for _, s := range journal.Details.Settlements {
-			if v, err := strconv.ParseFloat(strings.Trim(string(s.Amount), `"`), 64); err == nil {
-				settleBase += v
+			if v, err := decimal.NewFromString(strings.Trim(string(s.Amount), `"`)); err == nil {
+				settleBase = settleBase.Add(v)
 			}
 			if partnerCode == "" {
 				partnerCode = s.PartnerCode
@@ -680,11 +868,11 @@ func fillWithholdingEvidence(ctx context.Context, db *sql.DB, company, journalID
 			}
 		}
 	}
-	if settleBase > 0 {
-		row.BaseAmount = settleBase
+	if settleBase.Sign() > 0 {
+		row.base = settleBase
 	} else {
 		// ไม่มีการตัดยอด: ใช้ผลรวมฝั่งตรงข้ามของบรรทัดภาษีหักเป็นฐาน (เช่น เดบิตเจ้าหนี้ในใบจ่าย)
-		var base sql.NullFloat64
+		var base decimal.NullDecimal
 		opposite := "debit"
 		if direction == "received" {
 			opposite = "credit"
@@ -693,7 +881,7 @@ func fillWithholdingEvidence(ctx context.Context, db *sql.DB, company, journalID
 			SELECT payload->>'accountcode' FROM gl_records WHERE company=$1 AND kind='accounts' AND EXISTS (
 				SELECT 1 FROM jsonb_array_elements(payload->'names') n WHERE n->>'name' LIKE '%ภาษีหัก ณ ที่จ่าย%' OR n->>'name' LIKE '%ภาษีถูกหัก%'))`,
 			company, journalID).Scan(&base); err == nil && base.Valid {
-			row.BaseAmount = base.Float64
+			row.base = base.Decimal
 		}
 	}
 
