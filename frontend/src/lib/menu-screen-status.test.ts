@@ -26,12 +26,12 @@ describe("menu screen availability", () => {
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(194);
+    expect(items).toHaveLength(195);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
     const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...retired])].sort();
     expect(items.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route).sort()).toEqual(expected);
-    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(194 - expected.length);
+    expect(items.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(195 - expected.length);
     expect(isMenuScreenPending("/gl/fiscal-years")).toBe(false);
     expect(isMenuBackendRetired("/transaction/landedcost")).toBe(true);
     expect(isMenuBackendRetired("/banking/cheques/deposit")).toBe(true);
@@ -80,11 +80,16 @@ describe("Menu data readiness", () => {
     expect(isMenuDataPending("/procurement/requisition-approval")).toBe(false);
     expect(isMenuDataPending("/sales/quotation-approval")).toBe(true);
 
-    // ภาษี (2026-09-23): ภ.ง.ด./50 ทวิ อ่านจาก GL จริง; ภาษีขาย/ซื้อ/ภ.พ.30 ยังพึ่งเอกสารของระบบอื่น → รอเชื่อมข้อมูล
+    // ภาษี (2026-09-23): รายงานภาษีหัก ณ ที่จ่าย/50 ทวิ และภาษีขาย/ซื้อ อ่านจาก GL จริง (details.vats);
+    // แบบยื่นทุกแบบเป็นจอกรอกแบบ (TaxFormEditor) — แบบที่ยังไม่มีข้อมูลต้นทาง (ภ.พ.36) กรอกเองได้ จึงไม่ "รอเชื่อมข้อมูล"
     expect(isMenuDataPending("/report/vatpnd3")).toBe(false);
     expect(isMenuDataPending("/report/whtcertificate")).toBe(false);
-    expect(isMenuDataPending("/report/reportvatsale")).toBe(true);
-    expect(isMenuDataPending("/report/vatpp30")).toBe(true);
+    expect(isMenuDataPending("/report/reportvatsale")).toBe(false);
+    expect(isMenuDataPending("/report/reportvatbuy")).toBe(false);
+    expect(isMenuDataPending("/report/vatpp30")).toBe(false);
+    expect(isMenuDataPending("/report/vatpp36")).toBe(false);
+    expect(isMenuScreenPending("/report/vatpp36")).toBe(false);
+    expect(isMenuScreenPending("/report/taxforms")).toBe(false);
 
     // จอที่ไม่ได้อยู่ในกลุ่มเหล่านี้ ไม่ถือว่ารอข้อมูล
     expect(isMenuDataPending("/product")).toBe(false);

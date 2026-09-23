@@ -1,0 +1,901 @@
+{
+ "code": "pnd51",
+ "source": "ภงด.51-ประมาณการภาษีครึ่งปี.pdf",
+ "title": "ภ.ง.ด.51 แบบแสดงรายการภาษีเงินได้บริษัทหรือห้างหุ้นส่วนนิติบุคคล ตามมาตรา 67 ทวิ (ครึ่งรอบระยะเวลาบัญชี)",
+ "pages": [
+  1,
+  2
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "w": 1,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร",
+   "group": "payer"
+  },
+  {
+   "key": "name",
+   "w": 2,
+   "type": "text",
+   "label": "ชื่อ (ระบุให้ชัดเจนว่าเป็นบริษัทจำกัด บริษัทมหาชนจำกัด ห้างหุ้นส่วนจำกัด ฯลฯ)",
+   "group": "payer"
+  },
+  {
+   "key": "addr_building",
+   "w": 3,
+   "type": "text",
+   "label": "ที่ตั้งสำนักงาน : อาคาร",
+   "group": "address"
+  },
+  {
+   "key": "addr_room",
+   "w": 5,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_floor",
+   "w": 6,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_village",
+   "w": 4,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address"
+  },
+  {
+   "key": "addr_no",
+   "w": 7,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_moo",
+   "w": 9,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_soi",
+   "w": 10,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address"
+  },
+  {
+   "key": "addr_junction",
+   "w": 11,
+   "type": "text",
+   "label": "แยก",
+   "group": "address"
+  },
+  {
+   "key": "addr_road",
+   "w": 8,
+   "type": "text",
+   "label": "ถนน",
+   "group": "address"
+  },
+  {
+   "key": "addr_subdistrict",
+   "w": 12,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address"
+  },
+  {
+   "key": "addr_district",
+   "w": 13,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address"
+  },
+  {
+   "key": "addr_province",
+   "w": 15,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address"
+  },
+  {
+   "key": "addr_postcode",
+   "w": 26,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address"
+  },
+  {
+   "key": "phone",
+   "w": 16,
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "address"
+  },
+  {
+   "key": "website",
+   "w": 17,
+   "type": "text",
+   "label": "ชื่อเว็บไซต์",
+   "group": "address"
+  },
+  {
+   "key": "period_start_day",
+   "w": 18,
+   "type": "text",
+   "label": "รอบระยะเวลาบัญชี ตั้งแต่วันที่",
+   "group": "period"
+  },
+  {
+   "key": "period_start_month",
+   "w": 19,
+   "type": "text",
+   "label": "รอบระยะเวลาบัญชี ตั้งแต่ เดือน",
+   "group": "period"
+  },
+  {
+   "key": "period_start_year_be",
+   "w": 20,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ตั้งแต่ พ.ศ.",
+   "group": "period"
+  },
+  {
+   "key": "period_end_day",
+   "w": 21,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ถึงวันที่",
+   "group": "period"
+  },
+  {
+   "key": "period_end_month",
+   "w": 22,
+   "type": "text",
+   "label": "รอบระยะเวลาบัญชี ถึง เดือน",
+   "group": "period"
+  },
+  {
+   "key": "period_end_year_be",
+   "w": 23,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ถึง พ.ศ.",
+   "group": "period"
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่น",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "w": 24,
+     "label": "(1) ยื่นปกติ"
+    },
+    {
+     "value": "additional",
+     "w": 25,
+     "label": "(2) ยื่นเพิ่มเติม"
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "w": 14,
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing"
+  },
+  {
+   "key": "extra_tax_paid_baht",
+   "w": 27,
+   "type": "digits",
+   "label": "ภาษีที่ชำระเพิ่มเติม จำนวนเงิน (บาท)",
+   "group": "payment",
+   "note": "บาทกับสตางค์เป็นคนละช่องบนแบบ: ช่องนี้เฉพาะส่วนบาท (เลขจำนวนเต็ม ชิดขวา); ยกมาจากรายการที่ 2 ข้อ 8. หรือ (3) ของกรอบเงินตราสกุลอื่น"
+  },
+  {
+   "key": "extra_tax_paid_satang",
+   "w": 28,
+   "type": "digits",
+   "label": "ภาษีที่ชำระเพิ่มเติม จำนวนเงิน (สตางค์)",
+   "group": "payment",
+   "note": "สตางค์ 2 หลัก"
+  },
+  {
+   "key": "currency_type",
+   "type": "choice",
+   "label": "สกุลเงินที่ใช้ในการดำเนินงาน",
+   "group": "currency",
+   "options": [
+    {
+     "value": "thb",
+     "w": 58,
+     "label": "บาท"
+    },
+    {
+     "value": "other",
+     "w": 59,
+     "label": "อื่นๆ ระบุสกุลเงิน (ได้รับแจ้งหรือได้รับอนุมัติจากอธิบดีตามมาตรา 76 ตรี แห่งประมวลรัษฎากรแล้ว)"
+    }
+   ]
+  },
+  {
+   "key": "currency_name",
+   "w": 80,
+   "type": "text",
+   "label": "อื่นๆ ระบุสกุลเงิน",
+   "group": "currency"
+  },
+  {
+   "key": "currency_code",
+   "w": 60,
+   "type": "text",
+   "label": "รหัสสกุลเงิน",
+   "group": "currency",
+   "note": "01 USD, 02 GBP, 03 EUR, 04 JPY, 05 HKD, 06 MYR, 07 SGD, 08 BND, 09 PHP, 10 IDR, 11 INR, 12 CHF, 13 AUD, 14 NZD, 15 CAD (วิธีกรอกแบบ ภ.ง.ด.51)"
+  },
+  {
+   "key": "fx_rate_day",
+   "w": 29,
+   "type": "text",
+   "label": "เฉพาะกรณีที่ใช้เงินตราสกุลอื่น: อัตราแลกเปลี่ยน ณ วันที่",
+   "group": "currency"
+  },
+  {
+   "key": "fx_rate_month",
+   "w": 31,
+   "type": "text",
+   "label": "อัตราแลกเปลี่ยน ณ เดือน",
+   "group": "currency"
+  },
+  {
+   "key": "fx_rate_year_be",
+   "w": 32,
+   "type": "digits",
+   "label": "อัตราแลกเปลี่ยน ณ พ.ศ.",
+   "group": "currency"
+  },
+  {
+   "key": "fx_rate_int",
+   "w": 33,
+   "type": "digits",
+   "label": "จำนวนเงิน ... บาทต่อ 1 หน่วยเงินตราต่างประเทศ (ส่วนจำนวนเต็ม)",
+   "group": "currency",
+   "note": "ตัวอย่างวิธีกรอกแบบ: 32.2076 → 32 | 2076"
+  },
+  {
+   "key": "fx_rate_frac",
+   "w": 34,
+   "type": "digits",
+   "label": "จำนวนเงิน ... บาทต่อ 1 หน่วยเงินตราต่างประเทศ (ทศนิยม 4 ตำแหน่ง)",
+   "group": "currency",
+   "note": "ทศนิยม 4 หลักเสมอ (เติม 0 ด้านขวา)"
+  },
+  {
+   "key": "fx_tax_thb_baht",
+   "w": 35,
+   "type": "digits",
+   "label": "(1) จำนวนเงินภาษี (จากรายการที่ 2 6.) X อัตราแลกเปลี่ยนฯ (บาท)",
+   "group": "currency",
+   "note": "ส่วนบาท (เลขจำนวนเต็ม ชิดขวา)"
+  },
+  {
+   "key": "fx_tax_thb_satang",
+   "w": 36,
+   "type": "digits",
+   "label": "(1) จำนวนเงินภาษี (จากรายการที่ 2 6.) X อัตราแลกเปลี่ยนฯ (สตางค์)",
+   "group": "currency",
+   "note": "สตางค์ 2 หลัก"
+  },
+  {
+   "key": "fx_surcharge_thb_baht",
+   "w": 37,
+   "type": "digits",
+   "label": "(2) บวกเงินเพิ่ม (ถ้ามี) (จากรายการที่ 2 7.) X อัตราแลกเปลี่ยนฯ (บาท)",
+   "group": "currency",
+   "note": "ส่วนบาท (เลขจำนวนเต็ม ชิดขวา)"
+  },
+  {
+   "key": "fx_surcharge_thb_satang",
+   "w": 38,
+   "type": "digits",
+   "label": "(2) บวกเงินเพิ่ม (ถ้ามี) (จากรายการที่ 2 7.) X อัตราแลกเปลี่ยนฯ (สตางค์)",
+   "group": "currency",
+   "note": "สตางค์ 2 หลัก"
+  },
+  {
+   "key": "fx_total_thb_baht",
+   "w": 39,
+   "type": "digits",
+   "label": "(3) จำนวนเงินรวม (จากรายการที่ 2 8.) X อัตราแลกเปลี่ยนฯ (บาท)",
+   "group": "currency",
+   "note": "ส่วนบาท (เลขจำนวนเต็ม ชิดขวา)"
+  },
+  {
+   "key": "fx_total_thb_satang",
+   "w": 40,
+   "type": "digits",
+   "label": "(3) จำนวนเงินรวม (จากรายการที่ 2 8.) X อัตราแลกเปลี่ยนฯ (สตางค์)",
+   "group": "currency",
+   "note": "สตางค์ 2 หลัก"
+  },
+  {
+   "key": "reviewed_fs_copies",
+   "w": 30,
+   "type": "int",
+   "label": "งบแสดงสถานะทางการเงิน และหนังสือรับรองของผู้สอบทานงบแสดงสถานะทางการเงิน จำนวน (ฉบับ) — กรณีเสียภาษีตามมาตรา 67 ทวิ (2)",
+   "group": "attachment"
+  },
+  {
+   "key": "signer_name",
+   "w": 41,
+   "type": "text",
+   "label": "ลงชื่อ กรรมการ หรือผู้เป็นหุ้นส่วน หรือผู้จัดการ (คนที่ 1) (ชื่อตัวบรรจง)",
+   "group": "signature"
+  },
+  {
+   "key": "signer_position",
+   "w": 43,
+   "type": "text",
+   "label": "ตำแหน่ง (คนที่ 1)",
+   "group": "signature"
+  },
+  {
+   "key": "signer2_name",
+   "w": 42,
+   "type": "text",
+   "label": "ลงชื่อ กรรมการ หรือผู้เป็นหุ้นส่วน หรือผู้จัดการ (คนที่ 2) (ชื่อตัวบรรจง)",
+   "group": "signature"
+  },
+  {
+   "key": "signer2_position",
+   "w": 44,
+   "type": "text",
+   "label": "ตำแหน่ง (คนที่ 2)",
+   "group": "signature"
+  },
+  {
+   "key": "sign_day",
+   "w": 52,
+   "type": "digits",
+   "label": "ยื่นวันที่",
+   "group": "signature"
+  },
+  {
+   "key": "sign_month",
+   "w": 53,
+   "type": "text",
+   "label": "เดือน",
+   "group": "signature"
+  },
+  {
+   "key": "sign_year_be",
+   "w": 54,
+   "type": "digits",
+   "label": "พ.ศ.",
+   "group": "signature"
+  },
+  {
+   "key": "auditor_tax_id",
+   "w": 46,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้ตรวจสอบและรับรองบัญชี)",
+   "group": "auditor"
+  },
+  {
+   "key": "auditor_name",
+   "w": 45,
+   "type": "text",
+   "label": "ชื่อผู้ตรวจสอบและรับรองบัญชี",
+   "group": "auditor"
+  },
+  {
+   "key": "auditor_license_no",
+   "w": 47,
+   "type": "digits",
+   "label": "ทะเบียนเลขที่ (ผู้ตรวจสอบและรับรองบัญชี)",
+   "group": "auditor"
+  },
+  {
+   "key": "audit_firm_tax_id",
+   "w": 48,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของสำนักงานสอบบัญชี)",
+   "group": "auditor"
+  },
+  {
+   "key": "auditor_report_day",
+   "w": 55,
+   "type": "digits",
+   "label": "วันที่ในรายงานของผู้ตรวจสอบและรับรองบัญชี วันที่",
+   "group": "auditor"
+  },
+  {
+   "key": "auditor_report_month",
+   "w": 56,
+   "type": "text",
+   "label": "วันที่ในรายงานของผู้ตรวจสอบและรับรองบัญชี เดือน",
+   "group": "auditor"
+  },
+  {
+   "key": "auditor_report_year_be",
+   "w": 57,
+   "type": "digits",
+   "label": "วันที่ในรายงานของผู้ตรวจสอบและรับรองบัญชี พ.ศ.",
+   "group": "auditor"
+  },
+  {
+   "key": "bookkeeper_tax_id",
+   "w": 49,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้ทำบัญชี)",
+   "group": "bookkeeper"
+  },
+  {
+   "key": "bookkeeper_name",
+   "w": 50,
+   "type": "text",
+   "label": "ชื่อผู้ทำบัญชี",
+   "group": "bookkeeper"
+  },
+  {
+   "key": "accounting_firm_tax_id",
+   "w": 51,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของสำนักงานบัญชี)",
+   "group": "bookkeeper"
+  },
+  {
+   "key": "calc_basis",
+   "type": "choice",
+   "label": "วิธีการคำนวณและชำระภาษี",
+   "group": "method",
+   "options": [
+    {
+     "value": "half_estimate",
+     "w": 61,
+     "label": "1. กึ่งหนึ่งของประมาณการกำไรสุทธิ"
+    },
+    {
+     "value": "first_half_actual",
+     "w": 62,
+     "label": "2. กำไรสุทธิของรอบระยะเวลาบัญชีหกเดือนแรก"
+    }
+   ]
+  },
+  {
+   "key": "r1_1_1_est_revenue",
+   "w": 63,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 1.(1) ประมาณการยอดรายรับหรือยอดขายก่อนหักรายจ่ายใดๆ ของรอบระยะเวลาบัญชีปัจจุบัน",
+   "group": "base"
+  },
+  {
+   "key": "r1_1_2_est_expenses",
+   "w": 64,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 1.(2) หัก ประมาณการรายจ่ายของรอบระยะเวลาบัญชีปัจจุบัน",
+   "group": "base"
+  },
+  {
+   "key": "r1_1_3_sign",
+   "type": "choice",
+   "label": "รายการที่ 1 ข้อ 1.(3) คงเหลือ ประมาณการ กำไรสุทธิ / ขาดทุนสุทธิ",
+   "group": "base",
+   "options": [
+    {
+     "value": "profit",
+     "w": 66,
+     "label": "กำไรสุทธิ"
+    },
+    {
+     "value": "loss",
+     "w": 65,
+     "label": "ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r1_1_3_est_net",
+   "w": 67,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 1.(3) คงเหลือ ประมาณการกำไรสุทธิ (ขาดทุนสุทธิ)",
+   "group": "base"
+  },
+  {
+   "key": "r1_1_4_loss_carryforward",
+   "w": 68,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 1.(4) หัก ขาดทุนสุทธิยกมาไม่เกิน 5 ปี ก่อนรอบระยะเวลาบัญชีปัจจุบัน",
+   "group": "base"
+  },
+  {
+   "key": "r1_1_5_exempt_profit",
+   "w": 71,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 1.(5) หัก ประมาณการกำไรสุทธิที่ได้รับการยกเว้นตามกฎหมาย",
+   "group": "base"
+  },
+  {
+   "key": "r1_1_6_sign",
+   "type": "choice",
+   "label": "รายการที่ 1 ข้อ 1.(6) ประมาณการ กำไรสุทธิที่ต้องคำนวณภาษี / ขาดทุนสุทธิ",
+   "group": "base",
+   "options": [
+    {
+     "value": "profit",
+     "w": 69,
+     "label": "กำไรสุทธิที่ต้องคำนวณภาษี"
+    },
+    {
+     "value": "loss",
+     "w": 70,
+     "label": "ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r1_1_6_est_net_taxable",
+   "w": 74,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 1.(6) ประมาณการกำไรสุทธิที่ต้องคำนวณภาษี (ขาดทุนสุทธิ)",
+   "group": "base"
+  },
+  {
+   "key": "r1_1_7_sign",
+   "type": "choice",
+   "label": "รายการที่ 1 ข้อ 1.(7) กึ่งหนึ่งของประมาณการ กำไรสุทธิที่ต้องเสียภาษี / ขาดทุนสุทธิ",
+   "group": "base",
+   "options": [
+    {
+     "value": "profit",
+     "w": 72,
+     "label": "กำไรสุทธิที่ต้องเสียภาษี"
+    },
+    {
+     "value": "loss",
+     "w": 73,
+     "label": "ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r1_1_7_half_est_net",
+   "w": 75,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 1.(7) กึ่งหนึ่งของประมาณการกำไรสุทธิที่ต้องเสียภาษี (ขาดทุนสุทธิ)",
+   "group": "base"
+  },
+  {
+   "key": "r1_2_1_sign",
+   "type": "choice",
+   "label": "รายการที่ 1 ข้อ 2.(1) กำไรสุทธิ / ขาดทุนสุทธิ ของรอบระยะเวลาบัญชีหกเดือนแรก",
+   "group": "base",
+   "options": [
+    {
+     "value": "profit",
+     "w": 77,
+     "label": "กำไรสุทธิ"
+    },
+    {
+     "value": "loss",
+     "w": 76,
+     "label": "ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r1_2_1_net_6m",
+   "w": 78,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 2.(1) กำไรสุทธิ (ขาดทุนสุทธิ) ของรอบระยะเวลาบัญชีหกเดือนแรก",
+   "group": "base"
+  },
+  {
+   "key": "r1_2_2_loss_carryforward",
+   "w": 79,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 2.(2) หัก ขาดทุนสุทธิยกมาไม่เกิน 5 ปี ก่อนรอบระยะเวลาบัญชีปัจจุบัน",
+   "group": "base"
+  },
+  {
+   "key": "r1_2_3_exempt_profit",
+   "w": 83,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 2.(3) หัก กำไรสุทธิที่ได้รับการยกเว้นตามกฎหมาย",
+   "group": "base"
+  },
+  {
+   "key": "r1_2_4_sign",
+   "type": "choice",
+   "label": "รายการที่ 1 ข้อ 2.(4) กำไรสุทธิที่ต้องเสียภาษี / ขาดทุนสุทธิ",
+   "group": "base",
+   "options": [
+    {
+     "value": "profit",
+     "w": 81,
+     "label": "กำไรสุทธิที่ต้องเสียภาษี"
+    },
+    {
+     "value": "loss",
+     "w": 82,
+     "label": "ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r1_2_4_net_taxable",
+   "w": 84,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 2.(4) กำไรสุทธิที่ต้องเสียภาษี (ขาดทุนสุทธิ)",
+   "group": "base"
+  },
+  {
+   "key": "r1_3_revenue_6m",
+   "w": 85,
+   "type": "money",
+   "label": "รายการที่ 1 ข้อ 3. กรณีเสียภาษีจากยอดรายรับก่อนหักรายจ่าย: ยอดรายรับก่อนหักรายจ่ายของรอบระยะเวลาบัญชีหกเดือนแรก",
+   "group": "base"
+  },
+  {
+   "key": "r2_1_sign",
+   "type": "choice",
+   "label": "รายการที่ 2 ข้อ 1. กึ่งหนึ่งของประมาณการ (1) กำไรสุทธิที่ต้องเสียภาษี / (2) ขาดทุนสุทธิ",
+   "group": "tax",
+   "options": [
+    {
+     "value": "profit",
+     "w": 86,
+     "label": "(1) กำไรสุทธิที่ต้องเสียภาษี"
+    },
+    {
+     "value": "loss",
+     "w": 87,
+     "label": "(2) ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r2_1_half_est_net",
+   "w": 88,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 1. กึ่งหนึ่งของประมาณการกำไรสุทธิที่ต้องเสียภาษี (ขาดทุนสุทธิ) (จากรายการที่ 1 1.(7))",
+   "group": "tax"
+  },
+  {
+   "key": "r2_2_sign",
+   "type": "choice",
+   "label": "รายการที่ 2 ข้อ 2. (1) กำไรสุทธิที่ต้องเสียภาษี / (2) ขาดทุนสุทธิ",
+   "group": "tax",
+   "options": [
+    {
+     "value": "profit",
+     "w": 89,
+     "label": "(1) กำไรสุทธิที่ต้องเสียภาษี"
+    },
+    {
+     "value": "loss",
+     "w": 90,
+     "label": "(2) ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r2_2_net_6m",
+   "w": 91,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 2. กำไรสุทธิที่ต้องเสียภาษี (ขาดทุนสุทธิ) (จากรายการที่ 1 2.(4))",
+   "group": "tax"
+  },
+  {
+   "key": "r2_3_revenue",
+   "w": 92,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 3. รายรับก่อนหักรายจ่าย (กรณีเสียภาษีจากยอดรายรับ) (จากรายการที่ 1 3.)",
+   "group": "tax"
+  },
+  {
+   "key": "r2_4_tax_method",
+   "type": "choice",
+   "label": "รายการที่ 2 ข้อ 4. การคำนวณภาษี",
+   "group": "tax",
+   "options": [
+    {
+     "value": "general",
+     "w": 93,
+     "label": "(1) กรณีทั่วไป"
+    },
+    {
+     "value": "reduced_rate",
+     "w": 94,
+     "label": "(2) กรณีลดอัตราภาษี"
+    },
+    {
+     "value": "revenue_basis",
+     "w": 95,
+     "label": "(3) กรณีได้รับอนุมัติจากกรมสรรพากรให้เสียภาษีจากยอดรายรับ"
+    },
+    {
+     "value": "exempt",
+     "w": 96,
+     "label": "(4) กรณียกเว้นภาษีเงินได้ตามกฎหมาย"
+    }
+   ]
+  },
+  {
+   "key": "r2_4_reduced_rate",
+   "type": "choice",
+   "label": "รายการที่ 2 ข้อ 4.(2) กรณีลดอัตราภาษี",
+   "group": "tax",
+   "options": [
+    {
+     "value": "sme",
+     "w": 97,
+     "label": "SMEs"
+    },
+    {
+     "value": "15",
+     "w": 98,
+     "label": "ร้อยละ 15"
+    },
+    {
+     "value": "10",
+     "w": 99,
+     "label": "ร้อยละ 10"
+    },
+    {
+     "value": "8",
+     "w": 100,
+     "label": "ร้อยละ 8"
+    },
+    {
+     "value": "5",
+     "w": 101,
+     "label": "ร้อยละ 5"
+    },
+    {
+     "value": "3",
+     "w": 102,
+     "label": "ร้อยละ 3"
+    },
+    {
+     "value": "other",
+     "w": 103,
+     "label": "อื่นๆ ที่มิได้ระบุ"
+    }
+   ]
+  },
+  {
+   "key": "r2_4_exempt_scope",
+   "type": "choice",
+   "label": "รายการที่ 2 ข้อ 4.(4) กรณียกเว้นภาษีเงินได้ตามกฎหมาย",
+   "group": "tax",
+   "options": [
+    {
+     "value": "all",
+     "w": 104,
+     "label": "(1) ทั้งหมด"
+    },
+    {
+     "value": "partial",
+     "w": 105,
+     "label": "(2) บางส่วน"
+    }
+   ]
+  },
+  {
+   "key": "r2_4_tax_computed",
+   "w": 106,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 4. ภาษีที่คำนวณได้",
+   "group": "tax"
+  },
+  {
+   "key": "r2_5_1_wht",
+   "w": 107,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 5. หัก (1) ภาษีเงินได้หัก ณ ที่จ่ายและภาษีที่บุคคลอื่นเสียแทน",
+   "group": "tax"
+  },
+  {
+   "key": "r2_5_2_reduced_rate_relief",
+   "w": 108,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 5.(2) ภาษีในส่วนที่ได้รับการลดหย่อนอัตราไม่เกินร้อยละ 50 ของอัตราปกติ",
+   "group": "tax"
+  },
+  {
+   "key": "r2_5_3_prior_pnd51_paid",
+   "w": 109,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 5.(3) ภาษีที่ชำระแล้วตามแบบ ภ.ง.ด.51 (กรณียื่นเพิ่มเติม)",
+   "group": "tax"
+  },
+  {
+   "key": "r2_5_total_credits",
+   "w": 110,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 5. รวม (5.(1) + 5.(2) + 5.(3))",
+   "group": "tax"
+  },
+  {
+   "key": "r2_6_sign",
+   "type": "choice",
+   "label": "รายการที่ 2 ข้อ 6. คงเหลือภาษีที่ ชำระเพิ่มเติม / ชำระไว้เกิน",
+   "group": "tax",
+   "options": [
+    {
+     "value": "payable",
+     "w": 111,
+     "label": "ชำระเพิ่มเติม"
+    },
+    {
+     "value": "overpaid",
+     "w": 112,
+     "label": "ชำระไว้เกิน (นำไปเครดิตในแบบ ภ.ง.ด.50)"
+    }
+   ]
+  },
+  {
+   "key": "r2_6_balance",
+   "w": 113,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 6. คงเหลือภาษีที่ชำระเพิ่มเติม (ชำระไว้เกิน)",
+   "group": "tax"
+  },
+  {
+   "key": "r2_7_surcharge_s27",
+   "w": 114,
+   "type": "check",
+   "label": "รายการที่ 2 ข้อ 7. บวกเงินเพิ่ม มาตรา 27",
+   "group": "tax"
+  },
+  {
+   "key": "r2_7_surcharge_s67tri",
+   "w": 115,
+   "type": "check",
+   "label": "รายการที่ 2 ข้อ 7. บวกเงินเพิ่ม มาตรา 67 ตรี",
+   "group": "tax"
+  },
+  {
+   "key": "r2_7_surcharge",
+   "w": 116,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 7. บวกเงินเพิ่ม (ถ้ามี)",
+   "group": "tax"
+  },
+  {
+   "key": "r2_8_sign",
+   "type": "choice",
+   "label": "รายการที่ 2 ข้อ 8. รวมภาษีที่ ชำระเพิ่มเติม / ชำระไว้เกิน",
+   "group": "tax",
+   "options": [
+    {
+     "value": "payable",
+     "w": 117,
+     "label": "ชำระเพิ่มเติม"
+    },
+    {
+     "value": "overpaid",
+     "w": 118,
+     "label": "ชำระไว้เกิน"
+    }
+   ]
+  },
+  {
+   "key": "r2_8_total",
+   "w": 119,
+   "type": "money",
+   "label": "รายการที่ 2 ข้อ 8. รวมภาษีที่ชำระเพิ่มเติม (ชำระไว้เกิน)",
+   "group": "tax"
+  }
+ ]
+}

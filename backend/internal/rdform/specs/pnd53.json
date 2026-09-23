@@ -1,0 +1,836 @@
+{
+ "code": "pnd53",
+ "title": "ภ.ง.ด.53 แบบยื่นรายการภาษีเงินได้หัก ณ ที่จ่าย (ผู้รับเป็นนิติบุคคล)",
+ "template": "pnd53.pdf",
+ "pages": [
+  1
+ ],
+ "sizes": [
+  [
+   612.28,
+   858.9
+  ]
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้มีหน้าที่หักภาษี ณ ที่จ่าย)",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    168.7,
+    744.0,
+    339.5,
+    759.9
+   ],
+   "align": 0,
+   "cells": [
+    [
+     169.5,
+     180.62
+    ],
+    [
+     186.25,
+     197.5
+    ],
+    [
+     197.5,
+     208.88
+    ],
+    [
+     208.88,
+     220.25
+    ],
+    [
+     220.25,
+     231.5
+    ],
+    [
+     237.0,
+     248.5
+    ],
+    [
+     248.5,
+     259.75
+    ],
+    [
+     259.75,
+     271.12
+    ],
+    [
+     271.12,
+     282.5
+    ],
+    [
+     282.5,
+     293.75
+    ],
+    [
+     299.62,
+     310.88
+    ],
+    [
+     310.88,
+     322.25
+    ],
+    [
+     327.75,
+     339.12
+    ]
+   ]
+  },
+  {
+   "key": "branch_no",
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    283.5,
+    712.2,
+    342.0,
+    727.9
+   ],
+   "align": 0,
+   "cells": [
+    [
+     284.75,
+     295.88
+    ],
+    [
+     295.88,
+     307.0
+    ],
+    [
+     307.0,
+     318.0
+    ],
+    [
+     318.0,
+     329.25
+    ],
+    [
+     329.25,
+     340.25
+    ]
+   ]
+  },
+  {
+   "key": "name",
+   "type": "text",
+   "label": "ชื่อผู้มีหน้าที่หักภาษี ณ ที่จ่าย (หน่วยงาน)",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    47.1,
+    697.2,
+    341.5,
+    711.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_building",
+   "type": "text",
+   "label": "อาคาร",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    97.7,
+    681.5,
+    161.6,
+    695.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_room",
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    197.2,
+    681.5,
+    216.6,
+    695.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_floor",
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    234.3,
+    681.0,
+    246.9,
+    695.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_village",
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    272.7,
+    681.2,
+    341.1,
+    695.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_no",
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    68.1,
+    665.6,
+    146.4,
+    680.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_moo",
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    164.1,
+    664.9,
+    177.7,
+    679.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_soi",
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    217.8,
+    665.5,
+    282.6,
+    679.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_junction",
+   "type": "text",
+   "label": "แยก",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    300.8,
+    665.7,
+    341.3,
+    680.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_road",
+   "type": "text",
+   "label": "ถนน",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    65.6,
+    649.2,
+    178.5,
+    663.6
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_subdistrict",
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    223.2,
+    649.4,
+    342.3,
+    663.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_district",
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    89.1,
+    633.0,
+    196.6,
+    647.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_province",
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    223.7,
+    633.6,
+    341.5,
+    648.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_postcode",
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    98.8,
+    617.0,
+    157.8,
+    632.7
+   ],
+   "align": 0,
+   "cells": [
+    [
+     99.38,
+     110.75
+    ],
+    [
+     110.75,
+     122.0
+    ],
+    [
+     122.0,
+     133.5
+    ],
+    [
+     133.5,
+     144.75
+    ],
+    [
+     144.75,
+     156.12
+    ]
+   ]
+  },
+  {
+   "key": "tax_section",
+   "type": "choice",
+   "label": "นำส่งภาษีตาม",
+   "group": "filing",
+   "options": [
+    {
+     "value": "3tres",
+     "label": "(1) มาตรา 3 เตรส แห่งประมวลรัษฎากร",
+     "page": 1,
+     "rect": [
+      379.8,
+      720.2,
+      392.9,
+      733.5
+     ],
+     "align": 0
+    },
+    {
+     "value": "65jattawa",
+     "label": "(2) มาตรา 65 จัตวา แห่งประมวลรัษฎากร",
+     "page": 1,
+     "rect": [
+      379.8,
+      701.3,
+      392.9,
+      714.6
+     ],
+     "align": 0
+    },
+    {
+     "value": "69tawi",
+     "label": "(3) มาตรา 69 ทวิ แห่งประมวลรัษฎากร",
+     "page": 1,
+     "rect": [
+      380.3,
+      681.6,
+      393.4,
+      694.8
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่น",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "label": "ยื่นปกติ",
+     "page": 1,
+     "rect": [
+      369.1,
+      639.7,
+      382.1,
+      653.0
+     ],
+     "align": 0
+    },
+    {
+     "value": "additional",
+     "label": "ยื่นเพิ่มเติม",
+     "page": 1,
+     "rect": [
+      465.5,
+      639.9,
+      478.5,
+      653.2
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing",
+   "page": 1,
+   "rect": [
+    548.7,
+    641.4,
+    567.3,
+    654.4
+   ],
+   "align": 1
+  },
+  {
+   "key": "month",
+   "type": "choice",
+   "label": "เดือนที่จ่ายเงินได้พึงประเมิน",
+   "group": "period",
+   "options": [
+    {
+     "value": "1",
+     "label": "(1) มกราคม",
+     "page": 1,
+     "rect": [
+      44.7,
+      573.7,
+      55.5,
+      586.1
+     ],
+     "align": 0
+    },
+    {
+     "value": "2",
+     "label": "(2) กุมภาพันธ์",
+     "page": 1,
+     "rect": [
+      44.8,
+      559.9,
+      55.6,
+      572.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "3",
+     "label": "(3) มีนาคม",
+     "page": 1,
+     "rect": [
+      44.6,
+      546.2,
+      55.4,
+      558.6
+     ],
+     "align": 0
+    },
+    {
+     "value": "4",
+     "label": "(4) เมษายน",
+     "page": 1,
+     "rect": [
+      121.7,
+      574.2,
+      132.5,
+      586.5
+     ],
+     "align": 0
+    },
+    {
+     "value": "5",
+     "label": "(5) พฤษภาคม",
+     "page": 1,
+     "rect": [
+      121.5,
+      559.6,
+      132.3,
+      572.0
+     ],
+     "align": 0
+    },
+    {
+     "value": "6",
+     "label": "(6) มิถุนายน",
+     "page": 1,
+     "rect": [
+      121.7,
+      545.9,
+      132.5,
+      558.3
+     ],
+     "align": 0
+    },
+    {
+     "value": "7",
+     "label": "(7) กรกฎาคม",
+     "page": 1,
+     "rect": [
+      199.7,
+      574.4,
+      210.5,
+      586.7
+     ],
+     "align": 0
+    },
+    {
+     "value": "8",
+     "label": "(8) สิงหาคม",
+     "page": 1,
+     "rect": [
+      199.5,
+      559.8,
+      210.3,
+      572.1
+     ],
+     "align": 0
+    },
+    {
+     "value": "9",
+     "label": "(9) กันยายน",
+     "page": 1,
+     "rect": [
+      199.9,
+      545.4,
+      210.7,
+      557.8
+     ],
+     "align": 0
+    },
+    {
+     "value": "10",
+     "label": "(10) ตุลาคม",
+     "page": 1,
+     "rect": [
+      274.6,
+      573.6,
+      285.4,
+      586.0
+     ],
+     "align": 0
+    },
+    {
+     "value": "11",
+     "label": "(11) พฤศจิกายน",
+     "page": 1,
+     "rect": [
+      274.8,
+      559.9,
+      285.6,
+      572.3
+     ],
+     "align": 0
+    },
+    {
+     "value": "12",
+     "label": "(12) ธันวาคม",
+     "page": 1,
+     "rect": [
+      274.7,
+      546.1,
+      285.5,
+      558.5
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "year_be",
+   "type": "text",
+   "label": "พ.ศ. (ปีที่จ่ายเงินได้)",
+   "group": "period",
+   "page": 1,
+   "rect": [
+    315.3,
+    588.5,
+    339.2,
+    602.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "has_attachment",
+   "type": "check",
+   "label": "ใบแนบ ภ.ง.ด.53 ที่แนบมาพร้อมนี้",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    276.5,
+    515.3,
+    289.6,
+    528.6
+   ],
+   "align": 0
+  },
+  {
+   "key": "attach_payees",
+   "type": "int",
+   "label": "ใบแนบ จำนวน (ราย)",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    511.0,
+    516.1,
+    552.9,
+    530.5
+   ],
+   "align": 1
+  },
+  {
+   "key": "attach_sheets",
+   "type": "int",
+   "label": "ใบแนบ จำนวน (แผ่น)",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    511.0,
+    501.7,
+    552.9,
+    516.1
+   ],
+   "align": 1
+  },
+  {
+   "key": "has_media",
+   "type": "check",
+   "label": "สื่อบันทึกในระบบคอมพิวเตอร์ ที่แนบมาพร้อมนี้",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    276.5,
+    460.9,
+    289.6,
+    474.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "media_payees",
+   "type": "int",
+   "label": "สื่อบันทึกฯ จำนวน (ราย)",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    510.8,
+    462.4,
+    553.6,
+    476.8
+   ],
+   "align": 1
+  },
+  {
+   "key": "media_sheets",
+   "type": "int",
+   "label": "สื่อบันทึกฯ จำนวน (แผ่น)",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    511.2,
+    447.6,
+    553.1,
+    461.9
+   ],
+   "align": 1
+  },
+  {
+   "key": "media_reg_no",
+   "type": "text",
+   "label": "ตามหนังสือแสดงความประสงค์ฯ ทะเบียนรับเลขที่",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    454.4,
+    433.4,
+    566.8,
+    447.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "media_ref_no",
+   "type": "text",
+   "label": "หรือตามหนังสือข้อตกลงการใช้งานฯ เลขอ้างอิงการลงทะเบียน",
+   "group": "attachment",
+   "page": 1,
+   "rect": [
+    489.0,
+    419.0,
+    563.7,
+    433.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "total_income",
+   "type": "money",
+   "label": "1. รวมยอดเงินได้ทั้งสิ้น",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    414.2,
+    358.3,
+    510.8,
+    371.5
+   ],
+   "align": 2,
+   "split": 496.38
+  },
+  {
+   "key": "total_tax",
+   "type": "money",
+   "label": "2. รวมยอดภาษีที่นำส่งทั้งสิ้น",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    414.1,
+    337.6,
+    511.2,
+    351.8
+   ],
+   "align": 2,
+   "split": 496.38
+  },
+  {
+   "key": "surcharge",
+   "type": "money",
+   "label": "3. เงินเพิ่ม (ถ้ามี)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    413.6,
+    317.2,
+    511.5,
+    331.8
+   ],
+   "align": 2,
+   "split": 496.25
+  },
+  {
+   "key": "total_payable",
+   "type": "money",
+   "label": "4. รวมยอดภาษีที่นำส่งทั้งสิ้น และเงินเพิ่ม (2. + 3.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    413.8,
+    297.6,
+    510.9,
+    311.3
+   ],
+   "align": 2,
+   "split": 496.38
+  },
+  {
+   "key": "signer_name",
+   "type": "text",
+   "label": "ลงชื่อ ผู้จ่ายเงิน (ชื่อตัวบรรจง)",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    243.0,
+    199.8,
+    393.6,
+    214.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "signer_position",
+   "type": "text",
+   "label": "ตำแหน่ง",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    257.7,
+    182.9,
+    395.3,
+    197.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "sign_day",
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    251.7,
+    165.6,
+    267.9,
+    179.9
+   ],
+   "align": 1
+  },
+  {
+   "key": "sign_month",
+   "type": "text",
+   "label": "เดือน",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    289.7,
+    165.8,
+    350.4,
+    180.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "sign_year_be",
+   "type": "text",
+   "label": "พ.ศ.",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    369.0,
+    165.9,
+    399.7,
+    180.3
+   ],
+   "align": 0
+  }
+ ]
+}

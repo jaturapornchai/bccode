@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   THAI_TAX_CONFIGS,
-  fetchPp30Summary,
   fetchVatRegister,
   fetchWhtReport,
   getThaiTaxConfig,
@@ -25,8 +24,8 @@ afterEach(() => {
 });
 
 describe("thai tax configs", () => {
-  it("ให้ config ครบ 12 รายการ และ resolve ได้จาก route", () => {
-    expect(THAI_TAX_CONFIGS).toHaveLength(10);
+  it("ให้ config ครบ 5 รายการ และ resolve ได้จาก route", () => {
+    expect(THAI_TAX_CONFIGS).toHaveLength(5);
     THAI_TAX_CONFIGS.forEach((config) => {
       expect(isThaiTaxRoute(config.route)).toBe(true);
       expect(getThaiTaxConfig(config.route)).toEqual(config);
@@ -147,89 +146,6 @@ describe("fetchVatRegister", () => {
     expect(result.error).toBe("company_required");
     expect(result.records).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-});
-
-describe("fetchPp30Summary", () => {
-  it("200 → คืนค่าตามที่ API ส่งมาทุกฟิลด์ ไม่คำนวณ VAT ใหม่จากฐาน", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse(200, {
-        status: "success",
-        data: {
-          year: 2026,
-          month: 9,
-          company: { code: "01", name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxid: "0105558001234" },
-          salesgross: "107000.00",
-          saleszerorated: "5000.00",
-          salesexempt: "2000.00",
-          salestaxable: "100000.00",
-          outputvat: "6999.37",
-          purchasetaxable: "40000.00",
-          inputvat: "2800.12",
-          creditbroughtforward: "100.00",
-          netvat: "4099.25",
-          payable: "4099.25",
-          creditable: "0.00",
-        },
-      }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    const result = await fetchPp30Summary({
-      holdingcode: "H001",
-      businesscode: "B001",
-      year: 2026,
-      month: 9,
-      creditbroughtforward: "100.00",
-    });
-
-    expect(result.error).toBeUndefined();
-    expect(result.summary).toEqual({
-      year: 2026,
-      month: 9,
-      company: { code: "01", name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxid: "0105558001234" },
-      salesgross: "107000.00",
-      saleszerorated: "5000.00",
-      salesexempt: "2000.00",
-      salestaxable: "100000.00",
-      outputvat: "6999.37",
-      purchasetaxable: "40000.00",
-      inputvat: "2800.12",
-      creditbroughtforward: "100.00",
-      netvat: "4099.25",
-      payable: "4099.25",
-      creditable: "0.00",
-    });
-    // 100000 × 0.07 = 7000 จึงยืนยันว่าไม่ได้คำนวณซ้ำบน browser
-    expect(result.summary?.outputvat).toBe("6999.37");
-    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
-    expect(body.creditbroughtforward).toBe("100.00");
-  });
-
-  it("ยอดเงินที่ไม่ใช่ string ทศนิยม (JSON number/null) ไม่ถูกเดา — แสดง 0.00", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse(200, { status: "success", data: { year: 2026, month: 9, outputvat: 0.1 + 0.2, inputvat: null } }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    const result = await fetchPp30Summary({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9 });
-    expect(result.summary?.outputvat).toBe("0.00");
-    expect(result.summary?.inputvat).toBe("0.00");
-    expect(result.summary?.company).toEqual({ code: "", name: "", taxid: "" });
-  });
-
-  it("500 → summary เป็น null และมี error key", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(500, { status: "error" }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    const result = await fetchPp30Summary({
-      holdingcode: "H001",
-      businesscode: "B001",
-      year: 2026,
-      month: 9,
-    });
-
-    expect(result.summary).toBeNull();
-    expect(result.error).toBe("load_failed");
   });
 });
 

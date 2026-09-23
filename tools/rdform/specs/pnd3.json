@@ -1,0 +1,364 @@
+{
+ "code": "pnd3",
+ "source": "ภงด.3-แบบ.pdf",
+ "title": "ภ.ง.ด.3 แบบยื่นรายการภาษีเงินได้หัก ณ ที่จ่าย ตามมาตรา 59 แห่งประมวลรัษฎากร (ผู้รับเป็นบุคคลธรรมดา)",
+ "pages": [
+  1
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "w": 1,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้มีหน้าที่หักภาษี ณ ที่จ่าย)",
+   "group": "payer"
+  },
+  {
+   "key": "branch_no",
+   "w": 2,
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer"
+  },
+  {
+   "key": "name",
+   "w": 3,
+   "type": "text",
+   "label": "ชื่อผู้มีหน้าที่หักภาษี ณ ที่จ่าย (หน่วยงาน)",
+   "group": "payer"
+  },
+  {
+   "key": "addr_building",
+   "w": 4,
+   "type": "text",
+   "label": "อาคาร",
+   "group": "address"
+  },
+  {
+   "key": "addr_room",
+   "w": 5,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_floor",
+   "w": 6,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_village",
+   "w": 7,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address"
+  },
+  {
+   "key": "addr_no",
+   "w": 8,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_moo",
+   "w": 9,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_soi",
+   "w": 10,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address"
+  },
+  {
+   "key": "addr_junction",
+   "w": 11,
+   "type": "text",
+   "label": "แยก",
+   "group": "address"
+  },
+  {
+   "key": "addr_road",
+   "w": 12,
+   "type": "text",
+   "label": "ถนน",
+   "group": "address"
+  },
+  {
+   "key": "addr_subdistrict",
+   "w": 13,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address"
+  },
+  {
+   "key": "addr_district",
+   "w": 14,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address"
+  },
+  {
+   "key": "addr_province",
+   "w": 15,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address"
+  },
+  {
+   "key": "addr_postcode",
+   "w": 16,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address"
+  },
+  {
+   "key": "tax_section",
+   "type": "choice",
+   "label": "นำส่งภาษีตาม",
+   "group": "filing",
+   "options": [
+    {
+     "value": "3tres",
+     "w": 22,
+     "label": "(1) มาตรา 3 เตรส"
+    },
+    {
+     "value": "48tawi",
+     "w": 31,
+     "label": "(2) มาตรา 48 ทวิ"
+    },
+    {
+     "value": "50_3_4_5",
+     "w": 32,
+     "label": "(3) มาตรา 50 (3) (4) (5)"
+    }
+   ]
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่น",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "w": 18,
+     "label": "(1) ยื่นปกติ"
+    },
+    {
+     "value": "additional",
+     "w": 30,
+     "label": "(2) ยื่นเพิ่มเติม"
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "w": 19,
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing"
+  },
+  {
+   "key": "month",
+   "type": "choice",
+   "label": "เดือนที่จ่ายเงินได้พึงประเมิน",
+   "group": "period",
+   "options": [
+    {
+     "value": "1",
+     "w": 21,
+     "label": "(1) มกราคม"
+    },
+    {
+     "value": "2",
+     "w": 36,
+     "label": "(2) กุมภาพันธ์"
+    },
+    {
+     "value": "3",
+     "w": 40,
+     "label": "(3) มีนาคม"
+    },
+    {
+     "value": "4",
+     "w": 33,
+     "label": "(4) เมษายน"
+    },
+    {
+     "value": "5",
+     "w": 37,
+     "label": "(5) พฤษภาคม"
+    },
+    {
+     "value": "6",
+     "w": 41,
+     "label": "(6) มิถุนายน"
+    },
+    {
+     "value": "7",
+     "w": 34,
+     "label": "(7) กรกฎาคม"
+    },
+    {
+     "value": "8",
+     "w": 38,
+     "label": "(8) สิงหาคม"
+    },
+    {
+     "value": "9",
+     "w": 42,
+     "label": "(9) กันยายน"
+    },
+    {
+     "value": "10",
+     "w": 35,
+     "label": "(10) ตุลาคม"
+    },
+    {
+     "value": "11",
+     "w": 39,
+     "label": "(11) พฤศจิกายน"
+    },
+    {
+     "value": "12",
+     "w": 43,
+     "label": "(12) ธันวาคม"
+    }
+   ]
+  },
+  {
+   "key": "year_be",
+   "w": 20,
+   "type": "text",
+   "label": "พ.ศ. (ปีที่จ่ายเงินได้)",
+   "group": "period"
+  },
+  {
+   "key": "has_attachment",
+   "w": 23,
+   "type": "check",
+   "label": "ใบแนบ ภ.ง.ด.3 ที่แนบมาพร้อมนี้",
+   "group": "attachment"
+  },
+  {
+   "key": "attach_payees",
+   "w": 24,
+   "type": "int",
+   "label": "ใบแนบ จำนวน (ราย)",
+   "group": "attachment"
+  },
+  {
+   "key": "attach_sheets",
+   "w": 25,
+   "type": "int",
+   "label": "ใบแนบ จำนวน (แผ่น)",
+   "group": "attachment"
+  },
+  {
+   "key": "has_media",
+   "w": 44,
+   "type": "check",
+   "label": "สื่อบันทึกในระบบคอมพิวเตอร์ ที่แนบมาพร้อมนี้",
+   "group": "attachment"
+  },
+  {
+   "key": "media_payees",
+   "w": 26,
+   "type": "int",
+   "label": "สื่อบันทึกฯ จำนวน (ราย)",
+   "group": "attachment"
+  },
+  {
+   "key": "media_sheets",
+   "w": 27,
+   "type": "int",
+   "label": "สื่อบันทึกฯ จำนวน (แผ่น)",
+   "group": "attachment"
+  },
+  {
+   "key": "media_reg_no",
+   "w": 28,
+   "type": "text",
+   "label": "ตามหนังสือแสดงความประสงค์ฯ ทะเบียนรับเลขที่",
+   "group": "attachment"
+  },
+  {
+   "key": "media_ref_no",
+   "w": 29,
+   "type": "text",
+   "label": "หรือตามหนังสือข้อตกลงการใช้งานฯ เลขอ้างอิงการลงทะเบียน",
+   "group": "attachment"
+  },
+  {
+   "key": "total_income",
+   "w": 45,
+   "type": "money",
+   "label": "1. รวมยอดเงินได้ทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "total_tax",
+   "w": 46,
+   "type": "money",
+   "label": "2. รวมยอดภาษีที่นำส่งทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "surcharge",
+   "w": 47,
+   "type": "money",
+   "label": "3. เงินเพิ่ม (ถ้ามี)",
+   "group": "summary"
+  },
+  {
+   "key": "total_payable",
+   "w": 48,
+   "type": "money",
+   "label": "4. รวมยอดภาษีที่นำส่งทั้งสิ้น และเงินเพิ่ม (2. + 3.)",
+   "group": "summary"
+  },
+  {
+   "key": "signer_name",
+   "w": 49,
+   "type": "text",
+   "label": "ลงชื่อ ผู้จ่ายเงิน (ชื่อตัวบรรจง)",
+   "group": "signature"
+  },
+  {
+   "key": "signer_position",
+   "w": 50,
+   "type": "text",
+   "label": "ตำแหน่ง",
+   "group": "signature"
+  },
+  {
+   "key": "sign_day",
+   "w": 51,
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature"
+  },
+  {
+   "key": "sign_month",
+   "w": 52,
+   "type": "text",
+   "label": "เดือน",
+   "group": "signature"
+  },
+  {
+   "key": "sign_year_be",
+   "w": 53,
+   "type": "text",
+   "label": "พ.ศ.",
+   "group": "signature"
+  }
+ ]
+}

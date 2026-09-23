@@ -1,5 +1,5 @@
 // Thai Tax & Compliance Engine for Thai SMEs & Thai Accounting
-// Covers VAT (ภ.พ. 30, ภ.พ. 36, รายงานภาษีขาย/ซื้อ) and WHT (ภ.ง.ด. 2, ภ.ง.ด. 3, ภ.ง.ด. 53, 50 ทวิ)
+// Covers VAT registers (รายงานภาษีขาย/ซื้อ) and WHT reports + 50 ทวิ; แบบยื่นกรมสรรพากรอยู่ที่ tax-forms.ts
 
 import { apiFetch } from "./client-auth-session";
 import { catalogText } from "@/lib/catalog-text";
@@ -29,7 +29,7 @@ export interface ThaiTaxConfig {
   route: string;
   code: string;
   title: { th: string; en: string };
-  formType: "vat_sale" | "vat_buy" | "pp30" | "pp36" | "pnd2" | "pnd3" | "pnd53" | "50twi" | "wht_received" | "wht_summary";
+  formType: "vat_sale" | "vat_buy" | "50twi" | "wht_received" | "wht_summary";
   description: { th: string; en: string };
   revenueDepartmentFormCode: string;
 }
@@ -50,46 +50,6 @@ export const THAI_TAX_CONFIGS: ThaiTaxConfig[] = [
     formType: "vat_buy",
     description: { th: "รายงานภาษีซื้อตามมาตรา 87(2) แห่งประมวลรัษฎากร", en: "Purchase VAT report pursuant to Section 87(2)" },
     revenueDepartmentFormCode: "ภ.พ. 87(2)",
-  },
-  {
-    route: "/report/vatpp30",
-    code: "pp30",
-    title: { th: "แบบยื่นภาษี ภ.พ.30", en: "PP.30 VAT Return" },
-    formType: "pp30",
-    description: { th: "แบบแสดงรายการภาษีมูลค่าเพิ่ม ภ.พ.30 นำส่งกรมสรรพากรประจำเดือน", en: "Monthly Value Added Tax Return Form PP.30" },
-    revenueDepartmentFormCode: "ภ.พ.30",
-  },
-  {
-    route: "/report/vatpp36",
-    code: "pp36",
-    title: { th: "แบบยื่น ภ.พ.36", en: "PP.36 Cross-Border VAT" },
-    formType: "pp36",
-    description: { th: "แบบนำส่งภาษีมูลค่าเพิ่มจากการจ่ายเงินค่าบริการไปต่างประเทศ", en: "Cross-border services VAT remittance form PP.36" },
-    revenueDepartmentFormCode: "ภ.พ.36",
-  },
-  {
-    route: "/report/vatpnd2",
-    code: "pnd2",
-    title: { th: "แบบยื่น ภ.ง.ด.2", en: "PND.2 Withholding Tax Return" },
-    formType: "pnd2",
-    description: { th: "ภาษีหัก ณ ที่จ่ายเงินได้พึงประเมิน 40(3) และ 40(4) ดอกเบี้ย เงินปันผล ค่าสิทธิ", en: "WHT return for Section 40(3), (4) royalties and interest" },
-    revenueDepartmentFormCode: "ภ.ง.ด.2",
-  },
-  {
-    route: "/report/vatpnd3",
-    code: "pnd3",
-    title: { th: "แบบยื่น ภ.ง.ด.3", en: "PND.3 Personal WHT Return" },
-    formType: "pnd3",
-    description: { th: "ภาษีหัก ณ ที่จ่ายบุคคลธรรมดา (ค่าเช่า 5%, ค่าบริการ 3%, ค่าวิชาชีพ)", en: "Personal withholding tax return for individuals" },
-    revenueDepartmentFormCode: "ภ.ง.ด.3",
-  },
-  {
-    route: "/report/vatpnd53",
-    code: "pnd53",
-    title: { th: "แบบยื่น ภ.ง.ด.53", en: "PND.53 Corporate WHT Return" },
-    formType: "pnd53",
-    description: { th: "ภาษีหัก ณ ที่จ่ายนิติบุคคล (ค่าบริการ 3%, ค่าขนส่ง 1%, ค่าเช่า 5%, โฆษณา 2%)", en: "Corporate withholding tax return" },
-    revenueDepartmentFormCode: "ภ.ง.ด.53",
   },
   {
     route: "/report/whtcertificate",
@@ -144,25 +104,7 @@ export interface VatRegisterSummary {
   totalamount: string;
 }
 
-export interface Pp30Summary {
-  year: number;
-  month: number;
-  company: CompanyHeader;
-  salesgross: string;
-  saleszerorated: string;
-  salesexempt: string;
-  salestaxable: string;
-  outputvat: string;
-  purchasetaxable: string;
-  inputvat: string;
-  creditbroughtforward: string;
-  netvat: string;
-  payable: string;
-  creditable: string;
-}
-
 const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
-const PP30_SUMMARY_PATH = "/api/goapi/api/report/tax/pp30-summary";
 const WHT_REPORT_PATH = "/api/goapi/api/report/tax/wht";
 
 export interface WhtReportRow {
@@ -449,50 +391,6 @@ export async function fetchVatRegister(params: {
   };
 }
 
-// fetchPp30Summary - ยอดทุกข้อของแบบ ภ.พ.30 คำนวณที่ backend (รวมข้อ 8 ภาษีชำระเกินยกมาที่ผู้ใช้กรอก)
-export async function fetchPp30Summary(params: {
-  holdingcode: string;
-  businesscode: string;
-  year: number;
-  month: number;
-  creditbroughtforward?: string;
-}): Promise<{ summary: Pp30Summary | null; error?: string }> {
-  if (!params.holdingcode || !params.businesscode) {
-    return { summary: null, error: "company_required" };
-  }
-
-  const result = await postApi(PP30_SUMMARY_PATH, params);
-  if (!result.ok) {
-    return { summary: null, error: result.error };
-  }
-
-  const payload = result.payload;
-  if (!isRecord(payload) || !isRecord(payload.data)) {
-    return { summary: null, error: "load_failed" };
-  }
-
-  const data = payload.data;
-
-  return {
-    summary: {
-      year: toCount(data.year, params.year),
-      month: toCount(data.month, params.month),
-      company: toCompany(data.company),
-      salesgross: toMoney(data.salesgross),
-      saleszerorated: toMoney(data.saleszerorated),
-      salesexempt: toMoney(data.salesexempt),
-      salestaxable: toMoney(data.salestaxable),
-      outputvat: toMoney(data.outputvat),
-      purchasetaxable: toMoney(data.purchasetaxable),
-      inputvat: toMoney(data.inputvat),
-      creditbroughtforward: toMoney(data.creditbroughtforward),
-      netvat: toMoney(data.netvat),
-      payable: toMoney(data.payable),
-      creditable: toMoney(data.creditable),
-    },
-  };
-}
-
 // 2026-09-16: every user-visible string above also lives in languages.tsv,
 // keyed by `<code>.<part>`. The literals stay as the offline fallback.
 const catalogKeys: Record<string, string> = {
@@ -500,16 +398,6 @@ const catalogKeys: Record<string, string> = {
   "vat_sale.description": "tax_sales_vat_report_pursuant_to",
   "vat_buy.title": "report_vat_buy",
   "vat_buy.description": "tax_purchase_vat_report_pursuant_to",
-  "pp30.title": "vat_pp30",
-  "pp30.description": "tax_monthly_value_added_tax_return",
-  "pp36.title": "vat_pp36",
-  "pp36.description": "tax_cross_border_services_vat_remittance",
-  "pnd2.title": "vat_pnd2",
-  "pnd2.description": "tax_wht_return_for_section_40",
-  "pnd3.title": "vat_pnd3",
-  "pnd3.description": "tax_personal_withholding_tax_return_for",
-  "pnd53.title": "vat_pnd53",
-  "pnd53.description": "tax_corporate_withholding_tax_return",
   "50twi.title": "wht_certificate",
   "50twi.description": "tax_certificate_of_withholding_tax_deduction",
   "wht_received.title": "withholding_tax_received",

@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
+
+	"smlcloudplatform/internal/pdftext"
 )
 
 // withCheckDigit - เติมหลักตรวจสอบ (mod 11) ให้เลข 12 หลักแรก
@@ -146,10 +148,10 @@ func TestRenderSamples(t *testing.T) {
 			if err != nil {
 				t.Fatalf("render: %v", err)
 			}
-			if err := api.Validate(bytes.NewReader(pdf), pdfConfig()); err != nil {
+			if err := api.Validate(bytes.NewReader(pdf), pdftext.Config()); err != nil {
 				t.Fatalf("invalid pdf: %v", err)
 			}
-			pages, err := api.PageCount(bytes.NewReader(pdf), pdfConfig())
+			pages, err := api.PageCount(bytes.NewReader(pdf), pdftext.Config())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -160,7 +162,7 @@ func TestRenderSamples(t *testing.T) {
 			if pages != want {
 				t.Fatalf("pages = %d, want %d", pages, want)
 			}
-			fields, err := api.FormFields(bytes.NewReader(pdf), pdfConfig())
+			fields, err := api.FormFields(bytes.NewReader(pdf), pdftext.Config())
 			if err == nil && len(fields) > 0 {
 				t.Fatalf("output still has %d AcroForm fields", len(fields))
 			}
@@ -243,19 +245,5 @@ func TestNormalizeRejects(t *testing.T) {
 				t.Fatalf("err = %v, want key %s", err, tc.key)
 			}
 		})
-	}
-}
-
-// TestThaiShaping - สระบน + วรรณยุกต์ต้องไม่ทับกัน: glyph ของ "ปั้ม" ต้องมีวรรณยุกต์ยกสูงกว่าสระ ั
-func TestThaiShaping(t *testing.T) {
-	if err := prepare(); err != nil {
-		t.Fatal(err)
-	}
-	glyphs, width := textShaper.shape("ปั้ม", fontSize)
-	if len(glyphs) < 4 || width <= 0 {
-		t.Fatalf("glyphs=%d width=%v", len(glyphs), width)
-	}
-	if glyphs[0].text == "" {
-		t.Fatal("first glyph missing cluster text for ToUnicode")
 	}
 }

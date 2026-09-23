@@ -1,0 +1,861 @@
+{
+ "code": "pnd93",
+ "source": "ภงด.93.pdf",
+ "title": "ภ.ง.ด.93 แบบแสดงรายการภาษีเงินได้บุคคลธรรมดา สำหรับใช้ยื่นก่อนถึงกำหนดเวลายื่นแบบแสดงรายการภาษี",
+ "pages": [
+  1,
+  2
+ ],
+ "fields": [
+  {
+   "key": "tax_year_be",
+   "w": 0,
+   "type": "digits",
+   "label": "ปีภาษี 25.. (2 หลักท้ายของ พ.ศ.)",
+   "group": "period",
+   "note": "แบบพิมพ์ \"25\" ไว้แล้ว ช่องรับเพียง 2 หลักท้าย (maxlen 2) เช่น 2568 → 68"
+  },
+  {
+   "key": "tax_id",
+   "w": 2,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ผู้มีเงินได้)",
+   "group": "taxpayer"
+  },
+  {
+   "key": "name",
+   "w": 4,
+   "type": "text",
+   "label": "ชื่อ (ให้ระบุให้ชัดเจนว่าเป็น นาย นาง นางสาว ยศ กองมรดก ห้างหุ้นส่วนสามัญ หรือคณะบุคคล)",
+   "group": "taxpayer"
+  },
+  {
+   "key": "middle_name",
+   "w": 5,
+   "type": "text",
+   "label": "ชื่อกลาง",
+   "group": "taxpayer"
+  },
+  {
+   "key": "surname",
+   "w": 6,
+   "type": "text",
+   "label": "ชื่อสกุล",
+   "group": "taxpayer"
+  },
+  {
+   "key": "addr_building",
+   "w": 10,
+   "type": "text",
+   "label": "อาคาร",
+   "group": "address"
+  },
+  {
+   "key": "addr_room",
+   "w": 11,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_floor",
+   "w": 12,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_village",
+   "w": 13,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address"
+  },
+  {
+   "key": "addr_no",
+   "w": 16,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_moo",
+   "w": 17,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_soi",
+   "w": 18,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address"
+  },
+  {
+   "key": "addr_junction",
+   "w": 19,
+   "type": "text",
+   "label": "แยก",
+   "group": "address"
+  },
+  {
+   "key": "addr_road",
+   "w": 20,
+   "type": "text",
+   "label": "ถนน",
+   "group": "address"
+  },
+  {
+   "key": "addr_subdistrict",
+   "w": 21,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address"
+  },
+  {
+   "key": "addr_district",
+   "w": 22,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address"
+  },
+  {
+   "key": "addr_province",
+   "w": 23,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address"
+  },
+  {
+   "key": "addr_postcode",
+   "w": 24,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address"
+  },
+  {
+   "key": "phone",
+   "w": 25,
+   "type": "text",
+   "label": "โทรศัพท์: ที่บ้าน",
+   "group": "contact"
+  },
+  {
+   "key": "phone_work",
+   "w": 26,
+   "type": "text",
+   "label": "โทรศัพท์: ที่ทำงาน",
+   "group": "contact"
+  },
+  {
+   "key": "business_name",
+   "w": 27,
+   "type": "text",
+   "label": "ชื่อสถานประกอบการ",
+   "group": "business"
+  },
+  {
+   "key": "business_phone",
+   "w": 28,
+   "type": "text",
+   "label": "โทรศัพท์ (สถานประกอบการ)",
+   "group": "business"
+  },
+  {
+   "key": "business_address1",
+   "w": 29,
+   "type": "text",
+   "label": "ที่อยู่สถานประกอบการ/สถานที่ขายสินค้า/บริการ บรรทัดที่ 1",
+   "group": "business"
+  },
+  {
+   "key": "business_address2",
+   "w": 30,
+   "type": "text",
+   "label": "ที่อยู่สถานประกอบการ/สถานที่ขายสินค้า/บริการ บรรทัดที่ 2",
+   "group": "business"
+  },
+  {
+   "key": "website",
+   "w": 31,
+   "type": "text",
+   "label": "ชื่อเว็บไซต์ (ให้ระบุชื่อเว็บไซต์หลักที่ใช้ในการประกอบธุรกรรม)",
+   "group": "business"
+  },
+  {
+   "key": "spouse_tax_id",
+   "w": 3,
+   "type": "taxid",
+   "label": "คู่สมรส เลขประจำตัวผู้เสียภาษีอากร",
+   "group": "spouse"
+  },
+  {
+   "key": "spouse_name",
+   "w": 7,
+   "type": "text",
+   "label": "คู่สมรส ชื่อ (ให้ระบุให้ชัดเจนว่าเป็น นาย นาง นางสาว หรือยศ)",
+   "group": "spouse"
+  },
+  {
+   "key": "spouse_middle_name",
+   "w": 8,
+   "type": "text",
+   "label": "คู่สมรส ชื่อกลาง",
+   "group": "spouse"
+  },
+  {
+   "key": "spouse_surname",
+   "w": 9,
+   "type": "text",
+   "label": "คู่สมรส ชื่อสกุล",
+   "group": "spouse"
+  },
+  {
+   "key": "spouse_income_status",
+   "type": "choice",
+   "label": "คู่สมรส (การมีเงินได้)",
+   "group": "spouse",
+   "options": [
+    {
+     "value": "no_income",
+     "w": 14,
+     "label": "(1) ไม่มีเงินได้"
+    },
+    {
+     "value": "has_income",
+     "w": 15,
+     "label": "(2) มีเงินได้"
+    }
+   ]
+  },
+  {
+   "key": "taxpayer_status",
+   "type": "choice",
+   "label": "สถานภาพของผู้มีเงินได้",
+   "group": "status",
+   "options": [
+    {
+     "value": "individual",
+     "w": 32,
+     "label": "(1) บุคคลธรรมดา"
+    },
+    {
+     "value": "deceased_in_year",
+     "w": 34,
+     "label": "(2) ผู้ถึงแก่ความตายระหว่างปีภาษี"
+    },
+    {
+     "value": "undivided_estate",
+     "w": 36,
+     "label": "(3) กองมรดกที่ยังมิได้แบ่ง"
+    },
+    {
+     "value": "ordinary_partnership",
+     "w": 33,
+     "label": "(4) ห้างหุ้นส่วนสามัญที่มิใช่นิติบุคคล"
+    },
+    {
+     "value": "non_juristic_body",
+     "w": 35,
+     "label": "(5) คณะบุคคลที่มิใช่นิติบุคคล"
+    },
+    {
+     "value": "community_enterprise",
+     "w": 37,
+     "label": "(6) วิสาหกิจชุมชนตาม พ.ร.บ. ส่งเสริมวิสาหกิจชุมชน พ.ศ. 2548"
+    }
+   ]
+  },
+  {
+   "key": "tax_payment",
+   "w": 38,
+   "type": "money",
+   "label": "ภาษีที่ชำระเพิ่มเติม (บาท)",
+   "group": "summary"
+  },
+  {
+   "key": "attach_count",
+   "w": 39,
+   "type": "int",
+   "label": "คำรับรอง: พร้อมนี้ได้แนบหลักฐาน และใบแนบ (ถ้ามี) รวม ... ฉบับ",
+   "group": "attachment"
+  },
+  {
+   "key": "signer_name",
+   "w": 40,
+   "type": "text",
+   "label": "ลงชื่อ ... ผู้แทน (ชื่อผู้แทนในวงเล็บ)",
+   "group": "signature",
+   "note": "ผู้มีเงินได้ลงชื่อเองไม่มีช่องชื่อ — ช่องนี้คือชื่อผู้แทน"
+  },
+  {
+   "key": "signer_position",
+   "w": 41,
+   "type": "text",
+   "label": "ในฐานะเป็น ... ของผู้มีเงินได้",
+   "group": "signature"
+  },
+  {
+   "key": "rep_address1",
+   "w": 42,
+   "type": "text",
+   "label": "ที่อยู่ (ของผู้แทน) บรรทัดที่ 1",
+   "group": "signature"
+  },
+  {
+   "key": "rep_address2",
+   "w": 43,
+   "type": "text",
+   "label": "ที่อยู่ (ของผู้แทน) บรรทัดที่ 2",
+   "group": "signature"
+  },
+  {
+   "key": "sign_date",
+   "w": 44,
+   "type": "text",
+   "label": "วันที่",
+   "group": "signature",
+   "note": "ช่องเดียว ใส่วันที่ เดือน พ.ศ. รวมกัน"
+  },
+  {
+   "key": "inc1_payer",
+   "w": 45,
+   "type": "text",
+   "label": "ก 1. ชื่อและที่อยู่ของผู้จ่ายเงินได้พึงประเมิน",
+   "group": "income"
+  },
+  {
+   "key": "inc1_type",
+   "w": 46,
+   "type": "text",
+   "label": "ก 1. เงินได้ (ระบุ)",
+   "group": "income"
+  },
+  {
+   "key": "inc1_amount",
+   "w": 47,
+   "type": "money",
+   "label": "ก 1. เงินได้ (จำนวนเงิน)",
+   "group": "income"
+  },
+  {
+   "key": "inc1_expense_method",
+   "type": "choice",
+   "label": "ก 1. หักค่าใช้จ่าย (วิธี)",
+   "group": "income",
+   "options": [
+    {
+     "value": "rate",
+     "w": 48,
+     "label": "ร้อยละ"
+    },
+    {
+     "value": "actual",
+     "w": 50,
+     "label": "จริง"
+    }
+   ]
+  },
+  {
+   "key": "inc1_expense_rate",
+   "w": 49,
+   "type": "text",
+   "label": "ก 1. หักค่าใช้จ่าย ร้อยละ (อัตรา)",
+   "group": "income"
+  },
+  {
+   "key": "inc1_expense",
+   "w": 51,
+   "type": "money",
+   "label": "ก 1. หักค่าใช้จ่าย (จำนวนเงิน)",
+   "group": "income"
+  },
+  {
+   "key": "inc1_net",
+   "w": 52,
+   "type": "money",
+   "label": "ก 1. คงเหลือ (เฉพาะกรณีเงินได้มากกว่าค่าใช้จ่าย) (1)",
+   "group": "income"
+  },
+  {
+   "key": "inc2_payer",
+   "w": 53,
+   "type": "text",
+   "label": "ก 2. ชื่อและที่อยู่ของผู้จ่ายเงินได้พึงประเมิน",
+   "group": "income"
+  },
+  {
+   "key": "inc2_type",
+   "w": 54,
+   "type": "text",
+   "label": "ก 2. เงินได้ (ระบุ)",
+   "group": "income"
+  },
+  {
+   "key": "inc2_amount",
+   "w": 55,
+   "type": "money",
+   "label": "ก 2. เงินได้ (จำนวนเงิน)",
+   "group": "income"
+  },
+  {
+   "key": "inc2_expense_method",
+   "type": "choice",
+   "label": "ก 2. หักค่าใช้จ่าย (วิธี)",
+   "group": "income",
+   "options": [
+    {
+     "value": "rate",
+     "w": 56,
+     "label": "ร้อยละ"
+    },
+    {
+     "value": "actual",
+     "w": 60,
+     "label": "จริง"
+    }
+   ]
+  },
+  {
+   "key": "inc2_expense_rate",
+   "w": 57,
+   "type": "text",
+   "label": "ก 2. หักค่าใช้จ่าย ร้อยละ (อัตรา)",
+   "group": "income"
+  },
+  {
+   "key": "inc2_expense",
+   "w": 58,
+   "type": "money",
+   "label": "ก 2. หักค่าใช้จ่าย (จำนวนเงิน)",
+   "group": "income"
+  },
+  {
+   "key": "inc2_net",
+   "w": 59,
+   "type": "money",
+   "label": "ก 2. คงเหลือ (เฉพาะกรณีเงินได้มากกว่าค่าใช้จ่าย) (2)",
+   "group": "income"
+  },
+  {
+   "key": "inc3_payer",
+   "w": 61,
+   "type": "text",
+   "label": "ก 3. ชื่อและที่อยู่ของผู้จ่ายเงินได้พึงประเมิน",
+   "group": "income"
+  },
+  {
+   "key": "inc3_type",
+   "w": 62,
+   "type": "text",
+   "label": "ก 3. เงินได้ (ระบุ)",
+   "group": "income"
+  },
+  {
+   "key": "inc3_amount",
+   "w": 63,
+   "type": "money",
+   "label": "ก 3. เงินได้ (จำนวนเงิน)",
+   "group": "income"
+  },
+  {
+   "key": "inc3_expense_method",
+   "type": "choice",
+   "label": "ก 3. หักค่าใช้จ่าย (วิธี)",
+   "group": "income",
+   "options": [
+    {
+     "value": "rate",
+     "w": 64,
+     "label": "ร้อยละ"
+    },
+    {
+     "value": "actual",
+     "w": 65,
+     "label": "จริง"
+    }
+   ]
+  },
+  {
+   "key": "inc3_expense_rate",
+   "w": 66,
+   "type": "text",
+   "label": "ก 3. หักค่าใช้จ่าย ร้อยละ (อัตรา)",
+   "group": "income"
+  },
+  {
+   "key": "inc3_expense",
+   "w": 67,
+   "type": "money",
+   "label": "ก 3. หักค่าใช้จ่าย (จำนวนเงิน)",
+   "group": "income"
+  },
+  {
+   "key": "inc3_net",
+   "w": 68,
+   "type": "money",
+   "label": "ก 3. คงเหลือ (เฉพาะกรณีเงินได้มากกว่าค่าใช้จ่าย) (3)",
+   "group": "income"
+  },
+  {
+   "key": "income_net_total",
+   "w": 69,
+   "type": "money",
+   "label": "ก รวม (1) ถึง (3) ยกไปกรอกในรายการ ค 1.",
+   "group": "income"
+  },
+  {
+   "key": "ded_taxpayer",
+   "w": 70,
+   "type": "money",
+   "label": "ข 1. ผู้มีเงินได้ (60,000 บาท หรือ 120,000 บาท แล้วแต่กรณี)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_spouse",
+   "w": 71,
+   "type": "money",
+   "label": "ข 2. คู่สมรส (60,000 บาท)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_child_count",
+   "w": 72,
+   "type": "int",
+   "label": "ข 3. บุตร คนละ 30,000 บาท (จำนวนคน)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_child",
+   "w": 73,
+   "type": "money",
+   "label": "ข 3. บุตร คนละ 30,000 บาท (จำนวนเงิน)",
+   "group": "deduction"
+  },
+  {
+   "key": "child_id_1",
+   "w": 96,
+   "type": "taxid",
+   "label": "ข 3. บุตร (คนละ 30,000 บาท) เลขประจำตัวประชาชน ช่องที่ 1",
+   "group": "deduction"
+  },
+  {
+   "key": "child_id_2",
+   "w": 97,
+   "type": "taxid",
+   "label": "ข 3. บุตร (คนละ 30,000 บาท) เลขประจำตัวประชาชน ช่องที่ 2",
+   "group": "deduction"
+  },
+  {
+   "key": "child_id_3",
+   "w": 98,
+   "type": "taxid",
+   "label": "ข 3. บุตร (คนละ 30,000 บาท) เลขประจำตัวประชาชน ช่องที่ 3",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_child2561_count",
+   "w": 99,
+   "type": "int",
+   "label": "ข 3. บุตร (ตั้งแต่คนที่ 2 เป็นต้นไปที่เกิดในหรือหลังปี พ.ศ. 2561) คนละ 60,000 บาท (จำนวนคน)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_child2561",
+   "w": 100,
+   "type": "money",
+   "label": "ข 3. บุตร (ตั้งแต่คนที่ 2 เป็นต้นไปที่เกิดในหรือหลังปี พ.ศ. 2561) คนละ 60,000 บาท (จำนวนเงิน)",
+   "group": "deduction"
+  },
+  {
+   "key": "child2561_id_1",
+   "w": 101,
+   "type": "taxid",
+   "label": "ข 3. บุตร (ตั้งแต่คนที่ 2 ที่เกิดในหรือหลังปี พ.ศ. 2561) เลขประจำตัวประชาชน ช่องที่ 1",
+   "group": "deduction"
+  },
+  {
+   "key": "child2561_id_2",
+   "w": 102,
+   "type": "taxid",
+   "label": "ข 3. บุตร (ตั้งแต่คนที่ 2 ที่เกิดในหรือหลังปี พ.ศ. 2561) เลขประจำตัวประชาชน ช่องที่ 2",
+   "group": "deduction"
+  },
+  {
+   "key": "child2561_id_3",
+   "w": 103,
+   "type": "taxid",
+   "label": "ข 3. บุตร (ตั้งแต่คนที่ 2 ที่เกิดในหรือหลังปี พ.ศ. 2561) เลขประจำตัวประชาชน ช่องที่ 3",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_care_father_id",
+   "w": 106,
+   "type": "taxid",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา เลขประจำตัวประชาชน (บิดาของผู้มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_parent_care_father",
+   "w": 107,
+   "type": "money",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา จำนวนเงิน (บิดาของผู้มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_care_mother_id",
+   "w": 108,
+   "type": "taxid",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา เลขประจำตัวประชาชน (มารดาของผู้มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_parent_care_mother",
+   "w": 109,
+   "type": "money",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา จำนวนเงิน (มารดาของผู้มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_care_spouse_father_id",
+   "w": 110,
+   "type": "taxid",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา เลขประจำตัวประชาชน (บิดาของคู่สมรสที่ไม่มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_parent_care_spouse_father",
+   "w": 111,
+   "type": "money",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา จำนวนเงิน (บิดาของคู่สมรสที่ไม่มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_care_spouse_mother_id",
+   "w": 112,
+   "type": "taxid",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา เลขประจำตัวประชาชน (มารดาของคู่สมรสที่ไม่มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_parent_care_spouse_mother",
+   "w": 113,
+   "type": "money",
+   "label": "ข 4. อุปการะเลี้ยงดูบิดามารดา จำนวนเงิน (มารดาของคู่สมรสที่ไม่มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_disabled_care",
+   "w": 114,
+   "type": "money",
+   "label": "ข 5. อุปการะเลี้ยงดูคนพิการหรือคนทุพพลภาพ",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_health_father_id",
+   "w": 83,
+   "type": "taxid",
+   "label": "ข 6. เบี้ยประกันสุขภาพบิดามารดา เลขประจำตัวประชาชน (บิดาของผู้มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_health_mother_id",
+   "w": 84,
+   "type": "taxid",
+   "label": "ข 6. เบี้ยประกันสุขภาพบิดามารดา เลขประจำตัวประชาชน (มารดาของผู้มีเงินได้)",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_health_spouse_father_id",
+   "w": 85,
+   "type": "taxid",
+   "label": "ข 6. เบี้ยประกันสุขภาพบิดามารดา เลขประจำตัวประชาชน (บิดาของคู่สมรส)",
+   "group": "deduction"
+  },
+  {
+   "key": "parent_health_spouse_mother_id",
+   "w": 86,
+   "type": "taxid",
+   "label": "ข 6. เบี้ยประกันสุขภาพบิดามารดา เลขประจำตัวประชาชน (มารดาของคู่สมรส)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_parent_health_insurance",
+   "w": 87,
+   "type": "money",
+   "label": "ข 6. เบี้ยประกันสุขภาพบิดามารดา (จำนวนเงิน)",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_life_insurance",
+   "w": 88,
+   "type": "money",
+   "label": "ข 7. เบี้ยประกันชีวิต",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_health_insurance",
+   "w": 89,
+   "type": "money",
+   "label": "ข 7. เบี้ยประกันสุขภาพ",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_pension_insurance",
+   "w": 90,
+   "type": "money",
+   "label": "ข 7. เบี้ยประกันชีวิตแบบบำนาญ",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_nsf",
+   "w": 91,
+   "type": "money",
+   "label": "ข 8. เงินสะสมกองทุนการออมแห่งชาติ",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_rmf",
+   "w": 92,
+   "type": "money",
+   "label": "ข 9. ค่าซื้อหน่วยลงทุนในกองทุนรวมเพื่อการเลี้ยงชีพ",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_home_loan_interest",
+   "w": 93,
+   "type": "money",
+   "label": "ข 10. ดอกเบี้ยเงินกู้ยืมเพื่อซื้อ เช่าซื้อ หรือสร้างอาคารอยู่อาศัย",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_social_security",
+   "w": 94,
+   "type": "money",
+   "label": "ข 11. เงินสมทบกองทุนประกันสังคม",
+   "group": "deduction"
+  },
+  {
+   "key": "ded_total",
+   "w": 95,
+   "type": "money",
+   "label": "ข 12. รวม (1. ถึง 11.) ยกไปกรอกในรายการ ค 2.",
+   "group": "deduction"
+  },
+  {
+   "key": "calc_income_after_expense",
+   "w": 75,
+   "type": "money",
+   "label": "ค 1. เงินได้หลังจากหักค่าใช้จ่าย (รวมยอดมาจากรายการสุดท้ายของ ก)",
+   "group": "calc",
+   "note": "ข้อ 1. มี 2 ช่อง — ใช้ช่องบรรทัด (รวมยอดมาจากรายการสุดท้ายของ ก); ช่องบน (w74) ไม่ map เพราะแบบไม่ระบุความหมาย"
+  },
+  {
+   "key": "calc_deductions",
+   "w": 76,
+   "type": "money",
+   "label": "ค 2. หักค่าลดหย่อนฯ (ยกมาจาก ข 13.)",
+   "group": "calc",
+   "note": "แบบพิมพ์ ข 13. แต่ ข มีถึงข้อ 12. ซึ่งระบุ ยกไปกรอกในรายการ ค 2."
+  },
+  {
+   "key": "calc_balance",
+   "w": 77,
+   "type": "money",
+   "label": "ค 3. คงเหลือ (1. - 2.)",
+   "group": "calc"
+  },
+  {
+   "key": "calc_donation_double",
+   "w": 78,
+   "type": "money",
+   "label": "ค 4. หัก เงินบริจาค (2 เท่าของจำนวนเงินที่ได้จ่ายไปจริง แต่ไม่เกินร้อยละ 10 ของ 3.)",
+   "group": "calc"
+  },
+  {
+   "key": "calc_balance_after_donation_double",
+   "w": 79,
+   "type": "money",
+   "label": "ค 5. คงเหลือ (3. - 4.)",
+   "group": "calc"
+  },
+  {
+   "key": "calc_donation",
+   "w": 80,
+   "type": "money",
+   "label": "ค 6. หัก เงินบริจาค (ไม่เกินร้อยละ 10 ของ 5.)",
+   "group": "calc"
+  },
+  {
+   "key": "calc_net_income",
+   "w": 81,
+   "type": "money",
+   "label": "ค 7. เงินได้สุทธิ (5. - 6.)",
+   "group": "calc"
+  },
+  {
+   "key": "calc_tax_on_net_income",
+   "w": 82,
+   "type": "money",
+   "label": "ค 8. ภาษีที่คำนวณจากเงินได้สุทธิตาม 7.",
+   "group": "calc"
+  },
+  {
+   "key": "calc_tax_on_gross_income",
+   "w": 104,
+   "type": "money",
+   "label": "ค 9. ภาษีที่คำนวณจากเงินได้พึงประเมิน กรณีเป็นผู้มีเงินได้ตั้งแต่ 120,000 บาทขึ้นไป ให้นำยอดรวมเงินได้ทุกประเภท ตาม ก 1. ถึง ก 3. คูณด้วย 0.005",
+   "group": "calc"
+  },
+  {
+   "key": "calc_income_tax",
+   "w": 105,
+   "type": "money",
+   "label": "ค 10. ภาษีเงินได้ (จำนวนที่มากกว่าระหว่าง 8. กับ 9. เว้นแต่กรณี 9. คำนวณแล้วไม่เกิน 5,000 บาท ให้กรอกจำนวนภาษีตาม 8.)",
+   "group": "calc"
+  },
+  {
+   "key": "calc_sez_tax",
+   "w": 115,
+   "type": "money",
+   "label": "ค 11. ภาษีที่ต้องชำระจากใบแสดงเงินได้ฯ ในเขตพัฒนาพิเศษ",
+   "group": "calc"
+  },
+  {
+   "key": "calc_total_tax",
+   "w": 116,
+   "type": "money",
+   "label": "ค 12. รวมภาษีที่ต้องชำระ",
+   "group": "calc"
+  },
+  {
+   "key": "calc_tax_paid",
+   "w": 117,
+   "type": "money",
+   "label": "ค 13. หัก ภาษีเงินได้ที่ชำระไว้แล้ว",
+   "group": "calc"
+  },
+  {
+   "key": "calc_tax_payable",
+   "w": 118,
+   "type": "money",
+   "label": "ค 14. ภาษีเงินได้ที่ต้องชำระเพิ่มเติม",
+   "group": "calc"
+  },
+  {
+   "key": "surcharge",
+   "w": 119,
+   "type": "money",
+   "label": "ค 15. บวกเงินเพิ่ม (ถ้ามี)",
+   "group": "calc"
+  },
+  {
+   "key": "calc_total_payable",
+   "w": 120,
+   "type": "money",
+   "label": "ค 16. รวมภาษีเงินได้ที่ต้องชำระ",
+   "group": "calc"
+  }
+ ]
+}

@@ -1,0 +1,3370 @@
+{
+ "code": "pnd50",
+ "source": "ภงด.50.pdf",
+ "title": "ภ.ง.ด.50 แบบแสดงรายการภาษีเงินได้บริษัทหรือห้างหุ้นส่วนนิติบุคคล (ตามมาตรา 68 และมาตรา 69 แห่งประมวลรัษฎากร)",
+ "pages": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "w": 2,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ให้ใช้เลขทะเบียนนิติบุคคลที่กรมพัฒนาธุรกิจการค้าหรือกรมสรรพากรออกให้)",
+   "group": "header"
+  },
+  {
+   "key": "name",
+   "w": 6,
+   "type": "text",
+   "label": "ชื่อ (ระบุให้ชัดเจนว่าเป็นบริษัทจำกัด บริษัทมหาชนจำกัด ห้างหุ้นส่วนจำกัด ฯลฯ)",
+   "group": "header"
+  },
+  {
+   "key": "addr_building",
+   "w": 10,
+   "type": "text",
+   "label": "ที่ตั้งสำนักงาน : อาคาร",
+   "group": "address"
+  },
+  {
+   "key": "addr_room",
+   "w": 11,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_floor",
+   "w": 12,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_village",
+   "w": 17,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address"
+  },
+  {
+   "key": "addr_no",
+   "w": 13,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_moo",
+   "w": 14,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_soi",
+   "w": 15,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address"
+  },
+  {
+   "key": "addr_junction",
+   "w": 16,
+   "type": "text",
+   "label": "แยก",
+   "group": "address"
+  },
+  {
+   "key": "addr_road",
+   "w": 18,
+   "type": "text",
+   "label": "ถนน",
+   "group": "address"
+  },
+  {
+   "key": "addr_subdistrict",
+   "w": 19,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address"
+  },
+  {
+   "key": "addr_district",
+   "w": 20,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address"
+  },
+  {
+   "key": "addr_province",
+   "w": 21,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address"
+  },
+  {
+   "key": "addr_postcode",
+   "w": 22,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address"
+  },
+  {
+   "key": "phone",
+   "w": 23,
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "address"
+  },
+  {
+   "key": "website",
+   "w": 28,
+   "type": "text",
+   "label": "ชื่อเว็บไซต์",
+   "group": "address"
+  },
+  {
+   "key": "email",
+   "w": 29,
+   "type": "text",
+   "label": "ชื่ออีเมล แอดเดรสของผู้ประกอบการ",
+   "group": "address"
+  },
+  {
+   "key": "accountant_email",
+   "w": 30,
+   "type": "text",
+   "label": "ชื่ออีเมล แอดเดรสของผู้ทำบัญชี",
+   "group": "address"
+  },
+  {
+   "key": "period_start_day",
+   "w": 3,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ตั้งแต่วันที่",
+   "group": "period"
+  },
+  {
+   "key": "period_start_month",
+   "w": 5,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ตั้งแต่ เดือน (ตัวเลข 2 หลัก)",
+   "group": "period"
+  },
+  {
+   "key": "period_start_year_be",
+   "w": 4,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ตั้งแต่ พ.ศ.",
+   "group": "period"
+  },
+  {
+   "key": "period_end_day",
+   "w": 7,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ถึงวันที่",
+   "group": "period"
+  },
+  {
+   "key": "period_end_month",
+   "w": 8,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ถึง เดือน (ตัวเลข 2 หลัก)",
+   "group": "period"
+  },
+  {
+   "key": "period_end_year_be",
+   "w": 9,
+   "type": "digits",
+   "label": "รอบระยะเวลาบัญชี ถึง พ.ศ.",
+   "group": "period"
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่นแบบ",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "w": 24,
+     "label": "(1) ยื่นปกติ"
+    },
+    {
+     "value": "additional",
+     "w": 25,
+     "label": "(2) ยื่นเพิ่มเติมครั้งที่"
+    },
+    {
+     "value": "advance",
+     "w": 26,
+     "label": "(3) ชำระล่วงหน้า"
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "w": 27,
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing"
+  },
+  {
+   "key": "company_status",
+   "type": "choice",
+   "label": "สถานภาพของบริษัทหรือห้างหุ้นส่วนนิติบุคคล",
+   "group": "status",
+   "options": [
+    {
+     "value": "thai_law",
+     "w": 31,
+     "label": "(1) บริษัทหรือห้างฯ ที่ตั้งขึ้นตามกฎหมายไทย"
+    },
+    {
+     "value": "foreign_law_in_thailand",
+     "w": 32,
+     "label": "(2) บริษัทหรือห้างฯ ที่ตั้งขึ้นตามกฎหมายของต่างประเทศและกระทำกิจการในประเทศไทย"
+    },
+    {
+     "value": "other_foreign_juristic",
+     "w": 33,
+     "label": "(3) นิติบุคคลอื่นที่ตั้งขึ้นตามกฎหมายของต่างประเทศ"
+    },
+    {
+     "value": "foreign_government",
+     "w": 34,
+     "label": "(4) กิจการของรัฐบาลต่างประเทศ หรือองค์การของรัฐบาลต่างประเทศ"
+    },
+    {
+     "value": "joint_venture",
+     "w": 35,
+     "label": "(5) กิจการร่วมค้า"
+    },
+    {
+     "value": "other",
+     "w": 36,
+     "label": "(6) กิจการอื่นนอกจาก (1) ถึง (5) ให้กรอกใบแนบสถานภาพของบริษัทหรือห้างหุ้นส่วนนิติบุคคล"
+    }
+   ]
+  },
+  {
+   "key": "business_1_line1",
+   "w": 38,
+   "type": "text",
+   "label": "กิจการที่ประกอบ 1. (บรรทัดที่ 1) ให้ระบุตามลำดับความสำคัญโดยให้ถือรายได้จากการขายหรือรายได้จากการประกอบกิจการเป็นเกณฑ์",
+   "group": "business"
+  },
+  {
+   "key": "business_1_line2",
+   "w": 39,
+   "type": "text",
+   "label": "กิจการที่ประกอบ 1. (บรรทัดที่ 2)",
+   "group": "business"
+  },
+  {
+   "key": "business_1_isic",
+   "w": 37,
+   "type": "digits",
+   "label": "รหัส ISIC ของกิจการ 1. (สำหรับเจ้าหน้าที่)",
+   "group": "business",
+   "note": "ช่องนี้พิมพ์ว่า \"สำหรับเจ้าหน้าที่\" — ปกติเว้นว่าง"
+  },
+  {
+   "key": "business_2_line1",
+   "w": 40,
+   "type": "text",
+   "label": "กิจการที่ประกอบ 2. (บรรทัดที่ 1) ให้ระบุตามลำดับความสำคัญโดยให้ถือรายได้จากการขายหรือรายได้จากการประกอบกิจการเป็นเกณฑ์",
+   "group": "business"
+  },
+  {
+   "key": "business_2_line2",
+   "w": 41,
+   "type": "text",
+   "label": "กิจการที่ประกอบ 2. (บรรทัดที่ 2)",
+   "group": "business"
+  },
+  {
+   "key": "business_2_isic",
+   "w": 45,
+   "type": "digits",
+   "label": "รหัส ISIC ของกิจการ 2. (สำหรับเจ้าหน้าที่)",
+   "group": "business",
+   "note": "ช่องนี้พิมพ์ว่า \"สำหรับเจ้าหน้าที่\" — ปกติเว้นว่าง"
+  },
+  {
+   "key": "business_3_line1",
+   "w": 42,
+   "type": "text",
+   "label": "กิจการที่ประกอบ 3. (บรรทัดที่ 1) ให้ระบุตามลำดับความสำคัญโดยให้ถือรายได้จากการขายหรือรายได้จากการประกอบกิจการเป็นเกณฑ์",
+   "group": "business"
+  },
+  {
+   "key": "business_3_line2",
+   "w": 43,
+   "type": "text",
+   "label": "กิจการที่ประกอบ 3. (บรรทัดที่ 2)",
+   "group": "business"
+  },
+  {
+   "key": "business_3_isic",
+   "w": 47,
+   "type": "digits",
+   "label": "รหัส ISIC ของกิจการ 3. (สำหรับเจ้าหน้าที่)",
+   "group": "business",
+   "note": "ช่องนี้พิมพ์ว่า \"สำหรับเจ้าหน้าที่\" — ปกติเว้นว่าง"
+  },
+  {
+   "key": "related_party_71bis",
+   "type": "choice",
+   "label": "บริษัทหรือห้างหุ้นส่วนนิติบุคคลที่มีความสัมพันธ์กันตามมาตรา 71 ทวิ แห่งประมวลรัษฎากร",
+   "group": "related_party",
+   "options": [
+    {
+     "value": "yes",
+     "w": 44,
+     "label": "มี (รายได้เกินสองร้อยล้านบาทให้กรอกรายงานประจำปี)"
+    },
+    {
+     "value": "no",
+     "w": 46,
+     "label": "ไม่มี/มี แต่มีรายได้ไม่เกินสองร้อยล้านบาท"
+    }
+   ]
+  },
+  {
+   "key": "additional_tax_payment_baht",
+   "w": 49,
+   "type": "int",
+   "label": "ภาษีที่ชำระเพิ่มเติม จำนวนเงิน (บาท)",
+   "group": "summary",
+   "note": "ช่องบาทแยกจากช่องสตางค์ (additional_tax_payment_satang) — กรอกเฉพาะจำนวนเต็มบาท ชิดขวา"
+  },
+  {
+   "key": "additional_tax_payment_satang",
+   "w": 50,
+   "type": "digits",
+   "label": "ภาษีที่ชำระเพิ่มเติม จำนวนเงิน (สตางค์)",
+   "group": "summary"
+  },
+  {
+   "key": "overpaid_tax_baht",
+   "w": 51,
+   "type": "int",
+   "label": "ภาษีที่ชำระไว้เกิน จำนวนเงิน (บาท) (ให้กรอกจำนวนเงินตามสกุลเงินที่ใช้ในการดำเนินงาน)",
+   "group": "summary",
+   "note": "ช่องบาทแยกจากช่องสตางค์ (overpaid_tax_satang) — กรอกเฉพาะจำนวนเต็มบาท ชิดขวา"
+  },
+  {
+   "key": "overpaid_tax_satang",
+   "w": 52,
+   "type": "digits",
+   "label": "ภาษีที่ชำระไว้เกิน จำนวนเงิน (สตางค์)",
+   "group": "summary"
+  },
+  {
+   "key": "refund_signer1_name",
+   "w": 48,
+   "type": "text",
+   "label": "คำร้องขอคืนเงินภาษี ลงชื่อ (คนที่ 1)",
+   "group": "refund"
+  },
+  {
+   "key": "refund_signer1_position",
+   "w": 55,
+   "type": "text",
+   "label": "คำร้องขอคืนเงินภาษี ตำแหน่ง (คนที่ 1)",
+   "group": "refund"
+  },
+  {
+   "key": "refund_signer2_name",
+   "w": 57,
+   "type": "text",
+   "label": "คำร้องขอคืนเงินภาษี ลงชื่อ (คนที่ 2)",
+   "group": "refund"
+  },
+  {
+   "key": "refund_signer2_position",
+   "w": 59,
+   "type": "text",
+   "label": "คำร้องขอคืนเงินภาษี ตำแหน่ง (คนที่ 2)",
+   "group": "refund"
+  },
+  {
+   "key": "refund_sign_day",
+   "w": 60,
+   "type": "digits",
+   "label": "คำร้องขอคืนเงินภาษี ยื่นวันที่",
+   "group": "refund"
+  },
+  {
+   "key": "refund_sign_month",
+   "w": 61,
+   "type": "digits",
+   "label": "คำร้องขอคืนเงินภาษี เดือน (ตัวเลข 2 หลัก)",
+   "group": "refund"
+  },
+  {
+   "key": "refund_sign_year_be",
+   "w": 62,
+   "type": "digits",
+   "label": "คำร้องขอคืนเงินภาษี พ.ศ.",
+   "group": "refund"
+  },
+  {
+   "key": "signer_name",
+   "w": 54,
+   "type": "text",
+   "label": "คำรับรองของกรรมการ หรือผู้เป็นหุ้นส่วน หรือผู้จัดการ ลงชื่อ (คนที่ 1)",
+   "group": "signature"
+  },
+  {
+   "key": "signer_position",
+   "w": 56,
+   "type": "text",
+   "label": "ตำแหน่ง (คนที่ 1)",
+   "group": "signature"
+  },
+  {
+   "key": "signer2_name",
+   "w": 58,
+   "type": "text",
+   "label": "คำรับรองของกรรมการ ลงชื่อ (คนที่ 2)",
+   "group": "signature"
+  },
+  {
+   "key": "signer2_position",
+   "w": 63,
+   "type": "text",
+   "label": "ตำแหน่ง (คนที่ 2)",
+   "group": "signature"
+  },
+  {
+   "key": "sign_day",
+   "w": 64,
+   "type": "digits",
+   "label": "ยื่นวันที่",
+   "group": "signature"
+  },
+  {
+   "key": "sign_month",
+   "w": 65,
+   "type": "digits",
+   "label": "เดือน (ตัวเลข 2 หลัก)",
+   "group": "signature"
+  },
+  {
+   "key": "sign_year_be",
+   "w": 66,
+   "type": "digits",
+   "label": "พ.ศ.",
+   "group": "signature"
+  },
+  {
+   "key": "auditor_tax_id",
+   "w": 67,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้ตรวจสอบและรับรองบัญชี)",
+   "group": "auditor"
+  },
+  {
+   "key": "auditor_name",
+   "w": 68,
+   "type": "text",
+   "label": "ชื่อผู้ตรวจสอบและรับรองบัญชี",
+   "group": "auditor"
+  },
+  {
+   "key": "auditor_license_no",
+   "w": 70,
+   "type": "digits",
+   "label": "ทะเบียนเลขที่ (ผู้ตรวจสอบและรับรองบัญชี)",
+   "group": "auditor"
+  },
+  {
+   "key": "audit_report_day",
+   "w": 71,
+   "type": "digits",
+   "label": "วันที่ในรายงานของผู้ตรวจสอบและรับรองบัญชี วันที่",
+   "group": "auditor"
+  },
+  {
+   "key": "audit_report_month",
+   "w": 72,
+   "type": "digits",
+   "label": "วันที่ในรายงานของผู้ตรวจสอบและรับรองบัญชี เดือน (ตัวเลข 2 หลัก)",
+   "group": "auditor"
+  },
+  {
+   "key": "audit_report_year_be",
+   "w": 73,
+   "type": "digits",
+   "label": "วันที่ในรายงานของผู้ตรวจสอบและรับรองบัญชี พ.ศ.",
+   "group": "auditor"
+  },
+  {
+   "key": "audit_firm_tax_id",
+   "w": 74,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของสำนักงานสอบบัญชี)",
+   "group": "auditor"
+  },
+  {
+   "key": "accountant_tax_id",
+   "w": 75,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้ทำบัญชี)",
+   "group": "accountant"
+  },
+  {
+   "key": "accountant_name",
+   "w": 69,
+   "type": "text",
+   "label": "ชื่อผู้ทำบัญชี",
+   "group": "accountant"
+  },
+  {
+   "key": "accounting_firm_tax_id",
+   "w": 76,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของสำนักงานทำบัญชี)",
+   "group": "accountant"
+  },
+  {
+   "key": "currency",
+   "type": "choice",
+   "label": "สกุลเงินที่ใช้ในการดำเนินงาน",
+   "group": "currency",
+   "options": [
+    {
+     "value": "thb",
+     "w": 78,
+     "label": "บาท"
+    },
+    {
+     "value": "other",
+     "w": 79,
+     "label": "อื่นๆ ระบุสกุลเงิน (ได้รับแจ้งหรือได้รับอนุมัติจากอธิบดีตามมาตรา 76 ตรี แห่งประมวลรัษฎากรแล้ว)"
+    }
+   ]
+  },
+  {
+   "key": "currency_name",
+   "w": 80,
+   "type": "text",
+   "label": "อื่นๆ ระบุสกุลเงิน",
+   "group": "currency"
+  },
+  {
+   "key": "currency_code",
+   "w": 81,
+   "type": "digits",
+   "label": "รหัสสกุลเงิน",
+   "group": "currency",
+   "note": "ช่องพิมพ์ 2 ช่อง"
+  },
+  {
+   "key": "fx_rate_day",
+   "w": 82,
+   "type": "digits",
+   "label": "อัตราแลกเปลี่ยน ณ วันที่",
+   "group": "currency"
+  },
+  {
+   "key": "fx_rate_month",
+   "w": 83,
+   "type": "digits",
+   "label": "อัตราแลกเปลี่ยน เดือน (ตัวเลข 2 หลัก)",
+   "group": "currency"
+  },
+  {
+   "key": "fx_rate_year_be",
+   "w": 84,
+   "type": "digits",
+   "label": "อัตราแลกเปลี่ยน พ.ศ.",
+   "group": "currency"
+  },
+  {
+   "key": "fx_rate",
+   "w": 85,
+   "type": "digits",
+   "label": "อัตราแลกเปลี่ยนถัวเฉลี่ยระหว่างอัตราซื้อและอัตราขาย จำนวนเงิน ... บาทต่อ 1 หน่วยเงินตราต่างประเทศ",
+   "group": "currency",
+   "note": "ช่องพิมพ์ 4 หลัก - 4 หลัก (comb 9 ช่องรวมจุด) กรอกรูปแบบ NNNN.NNNN"
+  },
+  {
+   "key": "thb_tax_baht",
+   "w": 86,
+   "type": "int",
+   "label": "(1) จำนวนเงินภาษี (จากรายการที่ 1 4.) X อัตราแลกเปลี่ยนฯ (บาท)",
+   "group": "currency",
+   "note": "ช่องบาทแยกจากช่องสตางค์ (thb_tax_satang) — กรอกเฉพาะจำนวนเต็มบาท ชิดขวา"
+  },
+  {
+   "key": "thb_tax_satang",
+   "w": 87,
+   "type": "digits",
+   "label": "(1) จำนวนเงินภาษี (จากรายการที่ 1 4.) X อัตราแลกเปลี่ยนฯ (สตางค์)",
+   "group": "currency"
+  },
+  {
+   "key": "thb_surcharge_baht",
+   "w": 88,
+   "type": "int",
+   "label": "(2) บวกเงินเพิ่ม (ถ้ามี) (จากรายการที่ 1 5.) X อัตราแลกเปลี่ยนฯ (บาท)",
+   "group": "currency",
+   "note": "ช่องบาทแยกจากช่องสตางค์ (thb_surcharge_satang) — กรอกเฉพาะจำนวนเต็มบาท ชิดขวา"
+  },
+  {
+   "key": "thb_surcharge_satang",
+   "w": 89,
+   "type": "digits",
+   "label": "(2) บวกเงินเพิ่ม (ถ้ามี) (จากรายการที่ 1 5.) X อัตราแลกเปลี่ยนฯ (สตางค์)",
+   "group": "currency"
+  },
+  {
+   "key": "thb_total_baht",
+   "w": 90,
+   "type": "int",
+   "label": "(3) จำนวนเงินรวม (จากรายการที่ 1 6.) X อัตราแลกเปลี่ยนฯ — ให้นำไปกรอกในช่องภาษีที่ชำระเพิ่มเติมในหน้าแรกด้วย (บาท)",
+   "group": "currency",
+   "note": "ช่องบาทแยกจากช่องสตางค์ (thb_total_satang) — กรอกเฉพาะจำนวนเต็มบาท ชิดขวา"
+  },
+  {
+   "key": "thb_total_satang",
+   "w": 91,
+   "type": "digits",
+   "label": "(3) จำนวนเงินรวม (จากรายการที่ 1 6.) X อัตราแลกเปลี่ยนฯ — ให้นำไปกรอกในช่องภาษีที่ชำระเพิ่มเติมในหน้าแรกด้วย (สตางค์)",
+   "group": "currency"
+  },
+  {
+   "key": "income_basis",
+   "type": "choice",
+   "label": "รายการที่ 1 ข้อ 1. เงินได้ที่ต้องเสียภาษี",
+   "group": "tax_computation",
+   "options": [
+    {
+     "value": "net_profit",
+     "w": 92,
+     "label": "(1) กำไรสุทธิที่ต้องเสียภาษี"
+    },
+    {
+     "value": "net_loss",
+     "w": 93,
+     "label": "(2) ขาดทุนสุทธิ (จากรายการที่ 2 21.)"
+    },
+    {
+     "value": "gross_receipts",
+     "w": 94,
+     "label": "(3) รายรับก่อนหักรายจ่าย (กรณีเสียภาษีจากยอดรายรับ)"
+    }
+   ]
+  },
+  {
+   "key": "income_basis_amount",
+   "w": 95,
+   "type": "money",
+   "label": "1. จำนวนเงิน กำไรสุทธิที่ต้องเสียภาษี / ขาดทุนสุทธิ / รายรับก่อนหักรายจ่าย",
+   "group": "tax_computation"
+  },
+  {
+   "key": "tax_rate_case",
+   "type": "choice",
+   "label": "2. การคำนวณภาษี",
+   "group": "tax_computation",
+   "options": [
+    {
+     "value": "general",
+     "w": 96,
+     "label": "(1) กรณีทั่วไป"
+    },
+    {
+     "value": "reduced",
+     "w": 97,
+     "label": "(2) กรณีลดอัตราภาษี"
+    },
+    {
+     "value": "gross_receipts",
+     "w": 98,
+     "label": "(3) กรณีได้รับอนุมัติจากกรมสรรพากรให้เสียภาษีจากยอดรายรับ"
+    }
+   ]
+  },
+  {
+   "key": "reduced_rate",
+   "type": "choice",
+   "label": "2. (2) กรณีลดอัตราภาษี — อัตรา",
+   "group": "tax_computation",
+   "options": [
+    {
+     "value": "sme",
+     "w": 99,
+     "label": "SMEs"
+    },
+    {
+     "value": "15",
+     "w": 100,
+     "label": "ร้อยละ 15"
+    },
+    {
+     "value": "10",
+     "w": 101,
+     "label": "ร้อยละ 10"
+    },
+    {
+     "value": "8",
+     "w": 102,
+     "label": "ร้อยละ 8"
+    },
+    {
+     "value": "5",
+     "w": 103,
+     "label": "ร้อยละ 5"
+    },
+    {
+     "value": "3",
+     "w": 104,
+     "label": "ร้อยละ 3"
+    },
+    {
+     "value": "other",
+     "w": 105,
+     "label": "อื่นๆ ที่มิได้ระบุ"
+    }
+   ]
+  },
+  {
+   "key": "tax_computed",
+   "w": 106,
+   "type": "money",
+   "label": "ภาษีที่คำนวณได้",
+   "group": "tax_computation"
+  },
+  {
+   "key": "less_exempt_tax_rd18_463",
+   "w": 107,
+   "type": "money",
+   "label": "3. หัก (1) ภาษีเงินได้ที่ได้รับยกเว้นตาม พระราชกฤษฎีกาฯ (ฉบับที่ 18) หรือ (ฉบับที่ 463)",
+   "group": "tax_computation"
+  },
+  {
+   "key": "less_exempt_tax_rd300",
+   "w": 108,
+   "type": "money",
+   "label": "3. หัก (2) ภาษีเงินได้ที่ได้รับยกเว้นตาม พระราชกฤษฎีกาฯ (ฉบับที่ 300)",
+   "group": "tax_computation"
+  },
+  {
+   "key": "less_wht",
+   "w": 109,
+   "type": "money",
+   "label": "3. หัก (3) ภาษีเงินได้หัก ณ ที่จ่าย และภาษีที่บุคคลอื่นเสียแทน",
+   "group": "tax_computation"
+  },
+  {
+   "key": "less_pnd51_paid",
+   "w": 110,
+   "type": "money",
+   "label": "3. หัก (4) ภาษีที่ชำระแล้วตามแบบ ภ.ง.ด.51",
+   "group": "tax_computation"
+  },
+  {
+   "key": "less_reduced_rate_tax",
+   "w": 111,
+   "type": "money",
+   "label": "3. หัก (5) ภาษีในส่วนที่ได้รับการลดหย่อนอัตราไม่เกินร้อยละ 50 ของอัตราปกติ",
+   "group": "tax_computation"
+  },
+  {
+   "key": "less_pnd50_paid",
+   "w": 112,
+   "type": "money",
+   "label": "3. หัก (6) ภาษีที่ชำระแล้วตามแบบ ภ.ง.ด.50 (กรณียื่นเพิ่มเติม)",
+   "group": "tax_computation"
+  },
+  {
+   "key": "less_total",
+   "w": 113,
+   "type": "money",
+   "label": "3. รวม (1) ถึง (6)",
+   "group": "tax_computation"
+  },
+  {
+   "key": "tax_balance_type",
+   "type": "choice",
+   "label": "4. คงเหลือภาษีที่",
+   "group": "tax_computation",
+   "options": [
+    {
+     "value": "payable",
+     "w": 114,
+     "label": "ชำระเพิ่มเติม"
+    },
+    {
+     "value": "overpaid",
+     "w": 115,
+     "label": "ชำระไว้เกิน"
+    }
+   ]
+  },
+  {
+   "key": "tax_balance",
+   "w": 116,
+   "type": "money",
+   "label": "4. คงเหลือภาษีที่ ชำระเพิ่มเติม / ชำระไว้เกิน",
+   "group": "tax_computation"
+  },
+  {
+   "key": "surcharge",
+   "w": 117,
+   "type": "money",
+   "label": "5. บวกเงินเพิ่ม (ถ้ามี)",
+   "group": "tax_computation"
+  },
+  {
+   "key": "tax_net_type",
+   "type": "choice",
+   "label": "6. รวมภาษีที่",
+   "group": "tax_computation",
+   "options": [
+    {
+     "value": "payable",
+     "w": 118,
+     "label": "ชำระเพิ่มเติม"
+    },
+    {
+     "value": "overpaid",
+     "w": 119,
+     "label": "ชำระไว้เกิน"
+    }
+   ]
+  },
+  {
+   "key": "tax_net",
+   "w": 120,
+   "type": "money",
+   "label": "6. รวมภาษีที่ ชำระเพิ่มเติม / ชำระไว้เกิน",
+   "group": "tax_computation"
+  },
+  {
+   "key": "r2_01_revenue_exempt",
+   "w": 126,
+   "type": "money",
+   "label": "1. รายได้โดยตรงจากการประกอบกิจการ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_01_revenue_taxable",
+   "w": 127,
+   "type": "money",
+   "label": "1. รายได้โดยตรงจากการประกอบกิจการ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_01_revenue_total",
+   "w": 128,
+   "type": "money",
+   "label": "1. รายได้โดยตรงจากการประกอบกิจการ — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_02_cost_of_sales_exempt",
+   "w": 129,
+   "type": "money",
+   "label": "2. หัก ต้นทุนขายหรือรายจ่ายเพื่อคำนวณกำไรขั้นต้น (จากรายการที่ 3 9.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_02_cost_of_sales_taxable",
+   "w": 130,
+   "type": "money",
+   "label": "2. หัก ต้นทุนขายหรือรายจ่ายเพื่อคำนวณกำไรขั้นต้น (จากรายการที่ 3 9.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_02_cost_of_sales_total",
+   "w": 131,
+   "type": "money",
+   "label": "2. หัก ต้นทุนขายหรือรายจ่ายเพื่อคำนวณกำไรขั้นต้น (จากรายการที่ 3 9.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_03_gross_profit_exempt",
+   "w": 132,
+   "type": "money",
+   "label": "3. กำไรขั้นต้น / ขาดทุนขั้นต้น — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_03_gross_profit_taxable",
+   "w": 133,
+   "type": "money",
+   "label": "3. กำไรขั้นต้น / ขาดทุนขั้นต้น — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_03_gross_profit_total",
+   "w": 134,
+   "type": "money",
+   "label": "3. กำไรขั้นต้น / ขาดทุนขั้นต้น — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_04_other_income_exempt",
+   "w": 135,
+   "type": "money",
+   "label": "4. บวก รายได้อื่น (จากรายการที่ 5 7.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_04_other_income_taxable",
+   "w": 136,
+   "type": "money",
+   "label": "4. บวก รายได้อื่น (จากรายการที่ 5 7.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_04_other_income_total",
+   "w": 137,
+   "type": "money",
+   "label": "4. บวก รายได้อื่น (จากรายการที่ 5 7.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_05_sum_3_4_exempt",
+   "w": 138,
+   "type": "money",
+   "label": "5. รวม (3. + 4.) ถ้าขาดทุนขั้นต้น (4. - 3.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_05_sum_3_4_taxable",
+   "w": 139,
+   "type": "money",
+   "label": "5. รวม (3. + 4.) ถ้าขาดทุนขั้นต้น (4. - 3.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_05_sum_3_4_total",
+   "w": 140,
+   "type": "money",
+   "label": "5. รวม (3. + 4.) ถ้าขาดทุนขั้นต้น (4. - 3.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_06_other_expenses_exempt",
+   "w": 141,
+   "type": "money",
+   "label": "6. หัก รายจ่ายอื่น (จากรายการที่ 6 5.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_06_other_expenses_taxable",
+   "w": 142,
+   "type": "money",
+   "label": "6. หัก รายจ่ายอื่น (จากรายการที่ 6 5.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_06_other_expenses_total",
+   "w": 143,
+   "type": "money",
+   "label": "6. หัก รายจ่ายอื่น (จากรายการที่ 6 5.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_07_sum_5_6_exempt",
+   "w": 144,
+   "type": "money",
+   "label": "7. รวม (5. - 6.) ถ้าขาดทุนขั้นต้น (5. + 6.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_07_sum_5_6_taxable",
+   "w": 145,
+   "type": "money",
+   "label": "7. รวม (5. - 6.) ถ้าขาดทุนขั้นต้น (5. + 6.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_07_sum_5_6_total",
+   "w": 146,
+   "type": "money",
+   "label": "7. รวม (5. - 6.) ถ้าขาดทุนขั้นต้น (5. + 6.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_08_selling_admin_expenses_exempt",
+   "w": 147,
+   "type": "money",
+   "label": "8. หัก รายจ่ายในการขายและบริหาร (จากรายการที่ 7 24.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_08_selling_admin_expenses_taxable",
+   "w": 148,
+   "type": "money",
+   "label": "8. หัก รายจ่ายในการขายและบริหาร (จากรายการที่ 7 24.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_08_selling_admin_expenses_total",
+   "w": 149,
+   "type": "money",
+   "label": "8. หัก รายจ่ายในการขายและบริหาร (จากรายการที่ 7 24.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_09_net_profit_per_accounts_exempt",
+   "w": 150,
+   "type": "money",
+   "label": "9. กำไรสุทธิ / ขาดทุนสุทธิ ตามบัญชีกำไรขาดทุน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_09_net_profit_per_accounts_taxable",
+   "w": 151,
+   "type": "money",
+   "label": "9. กำไรสุทธิ / ขาดทุนสุทธิ ตามบัญชีกำไรขาดทุน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_09_net_profit_per_accounts_total",
+   "w": 152,
+   "type": "money",
+   "label": "9. กำไรสุทธิ / ขาดทุนสุทธิ ตามบัญชีกำไรขาดทุน — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_10_add_deemed_income_exempt",
+   "w": 153,
+   "type": "money",
+   "label": "10. บวก รายได้ที่ให้ถือเป็นรายได้ตามประมวลรัษฎากร — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_10_add_deemed_income_taxable",
+   "w": 154,
+   "type": "money",
+   "label": "10. บวก รายได้ที่ให้ถือเป็นรายได้ตามประมวลรัษฎากร — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_10_add_deemed_income_total",
+   "w": 155,
+   "type": "money",
+   "label": "10. บวก รายได้ที่ให้ถือเป็นรายได้ตามประมวลรัษฎากร — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_11_add_nondeductible_expenses_exempt",
+   "w": 156,
+   "type": "money",
+   "label": "11. บวก รายจ่ายที่ไม่ให้ถือเป็นรายจ่ายตามประมวลรัษฎากร (จากรายการที่ 8 7.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_11_add_nondeductible_expenses_taxable",
+   "w": 157,
+   "type": "money",
+   "label": "11. บวก รายจ่ายที่ไม่ให้ถือเป็นรายจ่ายตามประมวลรัษฎากร (จากรายการที่ 8 7.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_11_add_nondeductible_expenses_total",
+   "w": 158,
+   "type": "money",
+   "label": "11. บวก รายจ่ายที่ไม่ให้ถือเป็นรายจ่ายตามประมวลรัษฎากร (จากรายการที่ 8 7.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_12_sum_9_10_11_exempt",
+   "w": 159,
+   "type": "money",
+   "label": "12. รวม (9. + 10. + 11.) ถ้าขาดทุน (9. - 10. - 11.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_12_sum_9_10_11_taxable",
+   "w": 160,
+   "type": "money",
+   "label": "12. รวม (9. + 10. + 11.) ถ้าขาดทุน (9. - 10. - 11.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_12_sum_9_10_11_total",
+   "w": 161,
+   "type": "money",
+   "label": "12. รวม (9. + 10. + 11.) ถ้าขาดทุน (9. - 10. - 11.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_13_less_exempt_income_extra_deductions_exempt",
+   "w": 162,
+   "type": "money",
+   "label": "13. หัก รายได้ที่ได้รับการยกเว้นภาษีเงินได้หรือรายจ่ายที่มีสิทธิหักได้เพิ่มขึ้น (จากใบแนบรายได้ที่ได้รับการยกเว้นภาษีเงินได้หรือรายจ่ายที่มีสิทธิหักได้เพิ่มขึ้น 5.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_13_less_exempt_income_extra_deductions_taxable",
+   "w": 163,
+   "type": "money",
+   "label": "13. หัก รายได้ที่ได้รับการยกเว้นภาษีเงินได้หรือรายจ่ายที่มีสิทธิหักได้เพิ่มขึ้น (จากใบแนบรายได้ที่ได้รับการยกเว้นภาษีเงินได้หรือรายจ่ายที่มีสิทธิหักได้เพิ่มขึ้น 5.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_13_less_exempt_income_extra_deductions_total",
+   "w": 164,
+   "type": "money",
+   "label": "13. หัก รายได้ที่ได้รับการยกเว้นภาษีเงินได้หรือรายจ่ายที่มีสิทธิหักได้เพิ่มขึ้น (จากใบแนบรายได้ที่ได้รับการยกเว้นภาษีเงินได้หรือรายจ่ายที่มีสิทธิหักได้เพิ่มขึ้น 5.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_14_sum_12_13_exempt",
+   "w": 165,
+   "type": "money",
+   "label": "14. รวม (12. - 13.) ถ้าขาดทุน (12. + 13.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_14_sum_12_13_taxable",
+   "w": 166,
+   "type": "money",
+   "label": "14. รวม (12. - 13.) ถ้าขาดทุน (12. + 13.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_14_sum_12_13_total",
+   "w": 167,
+   "type": "money",
+   "label": "14. รวม (12. - 13.) ถ้าขาดทุน (12. + 13.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_15_less_loss_carryforward_exempt",
+   "w": 168,
+   "type": "money",
+   "label": "15. หัก ขาดทุนสุทธิที่มีสิทธินำมาหักตามกฎหมาย (จากใบแนบขาดทุนสุทธิที่ปรับปรุงตามประมวลรัษฎากร หรือรายการที่ 3 ของใบแนบสำหรับกิจการศูนย์กลางธุรกิจระหว่างประเทศ (IBC)) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_15_less_loss_carryforward_taxable",
+   "w": 169,
+   "type": "money",
+   "label": "15. หัก ขาดทุนสุทธิที่มีสิทธินำมาหักตามกฎหมาย (จากใบแนบขาดทุนสุทธิที่ปรับปรุงตามประมวลรัษฎากร หรือรายการที่ 3 ของใบแนบสำหรับกิจการศูนย์กลางธุรกิจระหว่างประเทศ (IBC)) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_15_less_loss_carryforward_total",
+   "w": 170,
+   "type": "money",
+   "label": "15. หัก ขาดทุนสุทธิที่มีสิทธินำมาหักตามกฎหมาย (จากใบแนบขาดทุนสุทธิที่ปรับปรุงตามประมวลรัษฎากร หรือรายการที่ 3 ของใบแนบสำหรับกิจการศูนย์กลางธุรกิจระหว่างประเทศ (IBC)) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_16_sum_14_15_exempt",
+   "w": 171,
+   "type": "money",
+   "label": "16. รวม (14. - 15.) ถ้าขาดทุน (14. + 15.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_16_sum_14_15_taxable",
+   "w": 172,
+   "type": "money",
+   "label": "16. รวม (14. - 15.) ถ้าขาดทุน (14. + 15.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_16_sum_14_15_total",
+   "w": 173,
+   "type": "money",
+   "label": "16. รวม (14. - 15.) ถ้าขาดทุน (14. + 15.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_17_add_expenses_over_10pct_exempt",
+   "w": 174,
+   "type": "money",
+   "label": "17. บวก รายจ่ายส่วนที่เกินร้อยละ 10 ของกำไรสุทธิ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_17_add_expenses_over_10pct_taxable",
+   "w": 175,
+   "type": "money",
+   "label": "17. บวก รายจ่ายส่วนที่เกินร้อยละ 10 ของกำไรสุทธิ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_17_add_expenses_over_10pct_total",
+   "w": 176,
+   "type": "money",
+   "label": "17. บวก รายจ่ายส่วนที่เกินร้อยละ 10 ของกำไรสุทธิ — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_18_add_charity_over_2pct_exempt",
+   "w": 177,
+   "type": "money",
+   "label": "18. บวก รายจ่ายเพื่อการกุศลสาธารณะฯ ส่วนที่เกินร้อยละ 2 ของกำไรสุทธิ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_18_add_charity_over_2pct_taxable",
+   "w": 178,
+   "type": "money",
+   "label": "18. บวก รายจ่ายเพื่อการกุศลสาธารณะฯ ส่วนที่เกินร้อยละ 2 ของกำไรสุทธิ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_18_add_charity_over_2pct_total",
+   "w": 179,
+   "type": "money",
+   "label": "18. บวก รายจ่ายเพื่อการกุศลสาธารณะฯ ส่วนที่เกินร้อยละ 2 ของกำไรสุทธิ — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_19_add_education_sports_over_2pct_exempt",
+   "w": 180,
+   "type": "money",
+   "label": "19. บวก รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา ส่วนที่เกินร้อยละ 2 ของกำไรสุทธิ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_19_add_education_sports_over_2pct_taxable",
+   "w": 181,
+   "type": "money",
+   "label": "19. บวก รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา ส่วนที่เกินร้อยละ 2 ของกำไรสุทธิ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_19_add_education_sports_over_2pct_total",
+   "w": 182,
+   "type": "money",
+   "label": "19. บวก รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา ส่วนที่เกินร้อยละ 2 ของกำไรสุทธิ — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_20_sum_16_to_19_exempt",
+   "w": 183,
+   "type": "money",
+   "label": "20. รวม (16.+17.+18.+19.) ถ้าขาดทุน (16.-17.-18.-19.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_20_sum_16_to_19_taxable",
+   "w": 184,
+   "type": "money",
+   "label": "20. รวม (16.+17.+18.+19.) ถ้าขาดทุน (16.-17.-18.-19.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_20_sum_16_to_19_total",
+   "w": 185,
+   "type": "money",
+   "label": "20. รวม (16.+17.+18.+19.) ถ้าขาดทุน (16.-17.-18.-19.) — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r2_03_gross_result",
+   "type": "choice",
+   "label": "3. กำไรขั้นต้น / ขาดทุนขั้นต้น",
+   "group": "profit_loss",
+   "options": [
+    {
+     "value": "profit",
+     "w": 122,
+     "label": "กำไรขั้นต้น"
+    },
+    {
+     "value": "loss",
+     "w": 123,
+     "label": "ขาดทุนขั้นต้น"
+    }
+   ]
+  },
+  {
+   "key": "r2_09_net_result",
+   "type": "choice",
+   "label": "9. กำไรสุทธิ / ขาดทุนสุทธิ ตามบัญชีกำไรขาดทุน",
+   "group": "profit_loss",
+   "options": [
+    {
+     "value": "profit",
+     "w": 124,
+     "label": "กำไรสุทธิ"
+    },
+    {
+     "value": "loss",
+     "w": 125,
+     "label": "ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r2_21_taxable_result",
+   "type": "choice",
+   "label": "21. กำไรสุทธิที่ต้องเสียภาษี / ขาดทุนสุทธิ",
+   "group": "profit_loss",
+   "options": [
+    {
+     "value": "profit",
+     "w": 188,
+     "label": "กำไรสุทธิที่ต้องเสียภาษี"
+    },
+    {
+     "value": "loss",
+     "w": 187,
+     "label": "ขาดทุนสุทธิ"
+    }
+   ]
+  },
+  {
+   "key": "r2_21_taxable_net_profit_total",
+   "w": 186,
+   "type": "money",
+   "label": "21. กำไรสุทธิที่ต้องเสียภาษี / ขาดทุนสุทธิ — ช่อง 3 รวม",
+   "group": "profit_loss"
+  },
+  {
+   "key": "r3_01_opening_inventory_exempt",
+   "w": 189,
+   "type": "money",
+   "label": "1. สินค้าคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_01_opening_inventory_taxable",
+   "w": 190,
+   "type": "money",
+   "label": "1. สินค้าคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_01_opening_inventory_total",
+   "w": 191,
+   "type": "money",
+   "label": "1. สินค้าคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_02_purchases_exempt",
+   "w": 192,
+   "type": "money",
+   "label": "2. ซื้อสินค้า — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_02_purchases_taxable",
+   "w": 193,
+   "type": "money",
+   "label": "2. ซื้อสินค้า — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_02_purchases_total",
+   "w": 194,
+   "type": "money",
+   "label": "2. ซื้อสินค้า — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_03_production_cost_exempt",
+   "w": 195,
+   "type": "money",
+   "label": "3. ต้นทุนผลิต/ต้นทุนการให้บริการ (จากรายการที่ 4 17.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_03_production_cost_taxable",
+   "w": 196,
+   "type": "money",
+   "label": "3. ต้นทุนผลิต/ต้นทุนการให้บริการ (จากรายการที่ 4 17.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_03_production_cost_total",
+   "w": 197,
+   "type": "money",
+   "label": "3. ต้นทุนผลิต/ต้นทุนการให้บริการ (จากรายการที่ 4 17.) — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_04_goodwill_royalties_exempt",
+   "w": 198,
+   "type": "money",
+   "label": "4. ค่าแห่งกู๊ดวิลล์ ค่าแห่งลิขสิทธิ์ หรือสิทธิอย่างอื่น — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_04_goodwill_royalties_taxable",
+   "w": 199,
+   "type": "money",
+   "label": "4. ค่าแห่งกู๊ดวิลล์ ค่าแห่งลิขสิทธิ์ หรือสิทธิอย่างอื่น — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_04_goodwill_royalties_total",
+   "w": 200,
+   "type": "money",
+   "label": "4. ค่าแห่งกู๊ดวิลล์ ค่าแห่งลิขสิทธิ์ หรือสิทธิอย่างอื่น — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_05_other_purchase_expenses_exempt",
+   "w": 201,
+   "type": "money",
+   "label": "5. ค่าใช้จ่ายอื่นๆ ในการซื้อสินค้า — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_05_other_purchase_expenses_taxable",
+   "w": 202,
+   "type": "money",
+   "label": "5. ค่าใช้จ่ายอื่นๆ ในการซื้อสินค้า — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_05_other_purchase_expenses_total",
+   "w": 203,
+   "type": "money",
+   "label": "5. ค่าใช้จ่ายอื่นๆ ในการซื้อสินค้า — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_06_sum_3_to_5_exempt",
+   "w": 204,
+   "type": "money",
+   "label": "6. รวม 3. ถึง 5. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_06_sum_3_to_5_taxable",
+   "w": 205,
+   "type": "money",
+   "label": "6. รวม 3. ถึง 5. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_06_sum_3_to_5_total",
+   "w": 206,
+   "type": "money",
+   "label": "6. รวม 3. ถึง 5. — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_07_sum_1_2_6_exempt",
+   "w": 207,
+   "type": "money",
+   "label": "7. รวม (1. + 2. + 6.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_07_sum_1_2_6_taxable",
+   "w": 208,
+   "type": "money",
+   "label": "7. รวม (1. + 2. + 6.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_07_sum_1_2_6_total",
+   "w": 209,
+   "type": "money",
+   "label": "7. รวม (1. + 2. + 6.) — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_08_less_closing_inventory_exempt",
+   "w": 210,
+   "type": "money",
+   "label": "8. หัก สินค้าคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_08_less_closing_inventory_taxable",
+   "w": 211,
+   "type": "money",
+   "label": "8. หัก สินค้าคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_08_less_closing_inventory_total",
+   "w": 212,
+   "type": "money",
+   "label": "8. หัก สินค้าคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_09_cost_of_sales_exempt",
+   "w": 213,
+   "type": "money",
+   "label": "9. ต้นทุนขายหรือรายจ่ายเพื่อคำนวณกำไรขั้นต้น (7. - 8.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_09_cost_of_sales_taxable",
+   "w": 214,
+   "type": "money",
+   "label": "9. ต้นทุนขายหรือรายจ่ายเพื่อคำนวณกำไรขั้นต้น (7. - 8.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r3_09_cost_of_sales_total",
+   "w": 215,
+   "type": "money",
+   "label": "9. ต้นทุนขายหรือรายจ่ายเพื่อคำนวณกำไรขั้นต้น (7. - 8.) — ช่อง 3 รวม",
+   "group": "cost_of_sales"
+  },
+  {
+   "key": "r4_01_opening_raw_materials_exempt",
+   "w": 217,
+   "type": "money",
+   "label": "1. วัตถุดิบ และวัสดุคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_01_opening_raw_materials_taxable",
+   "w": 218,
+   "type": "money",
+   "label": "1. วัตถุดิบ และวัสดุคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_01_opening_raw_materials_total",
+   "w": 219,
+   "type": "money",
+   "label": "1. วัตถุดิบ และวัสดุคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_02_raw_material_purchases_exempt",
+   "w": 220,
+   "type": "money",
+   "label": "2. ซื้อวัตถุดิบ และวัสดุ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_02_raw_material_purchases_taxable",
+   "w": 221,
+   "type": "money",
+   "label": "2. ซื้อวัตถุดิบ และวัสดุ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_02_raw_material_purchases_total",
+   "w": 222,
+   "type": "money",
+   "label": "2. ซื้อวัตถุดิบ และวัสดุ — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_03_other_material_purchase_expenses_exempt",
+   "w": 223,
+   "type": "money",
+   "label": "3. ค่าใช้จ่ายอื่นๆ ในการซื้อวัตถุดิบ และวัสดุ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_03_other_material_purchase_expenses_taxable",
+   "w": 224,
+   "type": "money",
+   "label": "3. ค่าใช้จ่ายอื่นๆ ในการซื้อวัตถุดิบ และวัสดุ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_03_other_material_purchase_expenses_total",
+   "w": 225,
+   "type": "money",
+   "label": "3. ค่าใช้จ่ายอื่นๆ ในการซื้อวัตถุดิบ และวัสดุ — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_04_sum_1_to_3_exempt",
+   "w": 226,
+   "type": "money",
+   "label": "4. รวม 1. ถึง 3. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_04_sum_1_to_3_taxable",
+   "w": 227,
+   "type": "money",
+   "label": "4. รวม 1. ถึง 3. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_04_sum_1_to_3_total",
+   "w": 228,
+   "type": "money",
+   "label": "4. รวม 1. ถึง 3. — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_05_less_closing_raw_materials_exempt",
+   "w": 229,
+   "type": "money",
+   "label": "5. หักวัตถุดิบ และวัสดุคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_05_less_closing_raw_materials_taxable",
+   "w": 230,
+   "type": "money",
+   "label": "5. หักวัตถุดิบ และวัสดุคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_05_less_closing_raw_materials_total",
+   "w": 231,
+   "type": "money",
+   "label": "5. หักวัตถุดิบ และวัสดุคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_06_raw_materials_used_exempt",
+   "w": 232,
+   "type": "money",
+   "label": "6. ต้นทุนวัตถุดิบ และวัสดุใช้ไป (4. - 5.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_06_raw_materials_used_taxable",
+   "w": 233,
+   "type": "money",
+   "label": "6. ต้นทุนวัตถุดิบ และวัสดุใช้ไป (4. - 5.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_06_raw_materials_used_total",
+   "w": 234,
+   "type": "money",
+   "label": "6. ต้นทุนวัตถุดิบ และวัสดุใช้ไป (4. - 5.) — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_07_opening_wip_exempt",
+   "w": 235,
+   "type": "money",
+   "label": "7. งานระหว่างทำ หรือสินค้าระหว่างผลิตคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_07_opening_wip_taxable",
+   "w": 236,
+   "type": "money",
+   "label": "7. งานระหว่างทำ หรือสินค้าระหว่างผลิตคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_07_opening_wip_total",
+   "w": 237,
+   "type": "money",
+   "label": "7. งานระหว่างทำ หรือสินค้าระหว่างผลิตคงเหลือ ณ วันเริ่มรอบระยะเวลาบัญชี — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_08_wages_exempt",
+   "w": 238,
+   "type": "money",
+   "label": "8. เงินเดือน และค่าจ้างแรงงาน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_08_wages_taxable",
+   "w": 239,
+   "type": "money",
+   "label": "8. เงินเดือน และค่าจ้างแรงงาน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_08_wages_total",
+   "w": 240,
+   "type": "money",
+   "label": "8. เงินเดือน และค่าจ้างแรงงาน — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_09_goodwill_royalties_exempt",
+   "w": 241,
+   "type": "money",
+   "label": "9. ค่าแห่งกู๊ดวิลล์ ค่าแห่งลิขสิทธิ์ หรือสิทธิอย่างอื่น — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_09_goodwill_royalties_taxable",
+   "w": 242,
+   "type": "money",
+   "label": "9. ค่าแห่งกู๊ดวิลล์ ค่าแห่งลิขสิทธิ์ หรือสิทธิอย่างอื่น — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_09_goodwill_royalties_total",
+   "w": 243,
+   "type": "money",
+   "label": "9. ค่าแห่งกู๊ดวิลล์ ค่าแห่งลิขสิทธิ์ หรือสิทธิอย่างอื่น — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_10_fuel_energy_exempt",
+   "w": 244,
+   "type": "money",
+   "label": "10. ค่าเชื้อเพลิงหรือพลังงาน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_10_fuel_energy_taxable",
+   "w": 245,
+   "type": "money",
+   "label": "10. ค่าเชื้อเพลิงหรือพลังงาน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_10_fuel_energy_total",
+   "w": 246,
+   "type": "money",
+   "label": "10. ค่าเชื้อเพลิงหรือพลังงาน — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_11_packaging_exempt",
+   "w": 247,
+   "type": "money",
+   "label": "11. ค่าภาชนะบรรจุ ค่าหีบห่อ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_11_packaging_taxable",
+   "w": 248,
+   "type": "money",
+   "label": "11. ค่าภาชนะบรรจุ ค่าหีบห่อ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_11_packaging_total",
+   "w": 249,
+   "type": "money",
+   "label": "11. ค่าภาชนะบรรจุ ค่าหีบห่อ — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_12_depreciation_exempt",
+   "w": 250,
+   "type": "money",
+   "label": "12. ค่าสึกหรอและค่าเสื่อมราคา — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_12_depreciation_taxable",
+   "w": 251,
+   "type": "money",
+   "label": "12. ค่าสึกหรอและค่าเสื่อมราคา — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_12_depreciation_total",
+   "w": 252,
+   "type": "money",
+   "label": "12. ค่าสึกหรอและค่าเสื่อมราคา — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_13_other_production_expenses_exempt",
+   "w": 253,
+   "type": "money",
+   "label": "13. ค่าใช้จ่ายในการผลิต/การให้บริการ อื่นๆ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_13_other_production_expenses_taxable",
+   "w": 254,
+   "type": "money",
+   "label": "13. ค่าใช้จ่ายในการผลิต/การให้บริการ อื่นๆ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_13_other_production_expenses_total",
+   "w": 255,
+   "type": "money",
+   "label": "13. ค่าใช้จ่ายในการผลิต/การให้บริการ อื่นๆ — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_14_sum_8_to_13_exempt",
+   "w": 256,
+   "type": "money",
+   "label": "14. รวม 8. ถึง 13. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_14_sum_8_to_13_taxable",
+   "w": 257,
+   "type": "money",
+   "label": "14. รวม 8. ถึง 13. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_14_sum_8_to_13_total",
+   "w": 258,
+   "type": "money",
+   "label": "14. รวม 8. ถึง 13. — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_15_sum_6_7_14_exempt",
+   "w": 259,
+   "type": "money",
+   "label": "15. รวม (6. + 7. + 14.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_15_sum_6_7_14_taxable",
+   "w": 260,
+   "type": "money",
+   "label": "15. รวม (6. + 7. + 14.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_15_sum_6_7_14_total",
+   "w": 261,
+   "type": "money",
+   "label": "15. รวม (6. + 7. + 14.) — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_16_less_closing_wip_exempt",
+   "w": 262,
+   "type": "money",
+   "label": "16. หัก งานระหว่างทำ หรือสินค้าระหว่างผลิตคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_16_less_closing_wip_taxable",
+   "w": 263,
+   "type": "money",
+   "label": "16. หัก งานระหว่างทำ หรือสินค้าระหว่างผลิตคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_16_less_closing_wip_total",
+   "w": 264,
+   "type": "money",
+   "label": "16. หัก งานระหว่างทำ หรือสินค้าระหว่างผลิตคงเหลือ ณ วันสุดท้ายของรอบระยะเวลาบัญชี — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_17_production_cost_exempt",
+   "w": 265,
+   "type": "money",
+   "label": "17. ต้นทุนผลิต/ต้นทุนการให้บริการ (15. - 16.) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_17_production_cost_taxable",
+   "w": 266,
+   "type": "money",
+   "label": "17. ต้นทุนผลิต/ต้นทุนการให้บริการ (15. - 16.) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "production_cost"
+  },
+  {
+   "key": "r4_17_production_cost_total",
+   "w": 267,
+   "type": "money",
+   "label": "17. ต้นทุนผลิต/ต้นทุนการให้บริการ (15. - 16.) — ช่อง 3 รวม",
+   "group": "production_cost"
+  },
+  {
+   "key": "r5_01_gain_on_asset_disposal_exempt",
+   "w": 268,
+   "type": "money",
+   "label": "1. กำไรจากการจำหน่ายทรัพย์สิน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_01_gain_on_asset_disposal_taxable",
+   "w": 269,
+   "type": "money",
+   "label": "1. กำไรจากการจำหน่ายทรัพย์สิน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_01_gain_on_asset_disposal_total",
+   "w": 270,
+   "type": "money",
+   "label": "1. กำไรจากการจำหน่ายทรัพย์สิน — ช่อง 3 รวม",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_02_fx_gain_exempt",
+   "w": 271,
+   "type": "money",
+   "label": "2. กำไรจากอัตราแลกเปลี่ยนเงินตรา — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_02_fx_gain_taxable",
+   "w": 272,
+   "type": "money",
+   "label": "2. กำไรจากอัตราแลกเปลี่ยนเงินตรา — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_02_fx_gain_total",
+   "w": 273,
+   "type": "money",
+   "label": "2. กำไรจากอัตราแลกเปลี่ยนเงินตรา — ช่อง 3 รวม",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_03_interest_income_exempt",
+   "w": 274,
+   "type": "money",
+   "label": "3. ดอกเบี้ยรับ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_03_interest_income_taxable",
+   "w": 275,
+   "type": "money",
+   "label": "3. ดอกเบี้ยรับ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_03_interest_income_total",
+   "w": 276,
+   "type": "money",
+   "label": "3. ดอกเบี้ยรับ — ช่อง 3 รวม",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_04_dividends_profit_shares_exempt",
+   "w": 277,
+   "type": "money",
+   "label": "4. เงินปันผลหรือส่วนแบ่งกำไร — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_04_dividends_profit_shares_taxable",
+   "w": 278,
+   "type": "money",
+   "label": "4. เงินปันผลหรือส่วนแบ่งกำไร — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_04_dividends_profit_shares_total",
+   "w": 279,
+   "type": "money",
+   "label": "4. เงินปันผลหรือส่วนแบ่งกำไร — ช่อง 3 รวม",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_05_tax_compensation_exempt",
+   "w": 280,
+   "type": "money",
+   "label": "5. เงินชดเชยค่าภาษีอากร — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_05_tax_compensation_taxable",
+   "w": 281,
+   "type": "money",
+   "label": "5. เงินชดเชยค่าภาษีอากร — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_05_tax_compensation_total",
+   "w": 282,
+   "type": "money",
+   "label": "5. เงินชดเชยค่าภาษีอากร — ช่อง 3 รวม",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_06_other_income_exempt",
+   "w": 283,
+   "type": "money",
+   "label": "6. รายได้อื่นที่นอกเหนือจาก 1. ถึง 5. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_06_other_income_taxable",
+   "w": 284,
+   "type": "money",
+   "label": "6. รายได้อื่นที่นอกเหนือจาก 1. ถึง 5. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_06_other_income_total",
+   "w": 285,
+   "type": "money",
+   "label": "6. รายได้อื่นที่นอกเหนือจาก 1. ถึง 5. — ช่อง 3 รวม",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_07_total_exempt",
+   "w": 286,
+   "type": "money",
+   "label": "7. รวม 1. ถึง 6. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_07_total_taxable",
+   "w": 287,
+   "type": "money",
+   "label": "7. รวม 1. ถึง 6. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_income"
+  },
+  {
+   "key": "r5_07_total_total",
+   "w": 288,
+   "type": "money",
+   "label": "7. รวม 1. ถึง 6. — ช่อง 3 รวม",
+   "group": "other_income"
+  },
+  {
+   "key": "r6_01_loss_on_asset_disposal_exempt",
+   "w": 289,
+   "type": "money",
+   "label": "1. ขาดทุนจากการจำหน่ายทรัพย์สิน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_01_loss_on_asset_disposal_taxable",
+   "w": 290,
+   "type": "money",
+   "label": "1. ขาดทุนจากการจำหน่ายทรัพย์สิน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_01_loss_on_asset_disposal_total",
+   "w": 291,
+   "type": "money",
+   "label": "1. ขาดทุนจากการจำหน่ายทรัพย์สิน — ช่อง 3 รวม",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_02_fx_loss_exempt",
+   "w": 292,
+   "type": "money",
+   "label": "2. ขาดทุนจากอัตราแลกเปลี่ยนเงินตรา — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_02_fx_loss_taxable",
+   "w": 293,
+   "type": "money",
+   "label": "2. ขาดทุนจากอัตราแลกเปลี่ยนเงินตรา — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_02_fx_loss_total",
+   "w": 294,
+   "type": "money",
+   "label": "2. ขาดทุนจากอัตราแลกเปลี่ยนเงินตรา — ช่อง 3 รวม",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_03_finance_costs_exempt",
+   "w": 295,
+   "type": "money",
+   "label": "3. ต้นทุนทางการเงิน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_03_finance_costs_taxable",
+   "w": 296,
+   "type": "money",
+   "label": "3. ต้นทุนทางการเงิน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_03_finance_costs_total",
+   "w": 297,
+   "type": "money",
+   "label": "3. ต้นทุนทางการเงิน — ช่อง 3 รวม",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_04_other_expenses_exempt",
+   "w": 298,
+   "type": "money",
+   "label": "4. รายจ่ายอื่นที่นอกเหนือจาก 1. ถึง 3. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_04_other_expenses_taxable",
+   "w": 299,
+   "type": "money",
+   "label": "4. รายจ่ายอื่นที่นอกเหนือจาก 1. ถึง 3. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_04_other_expenses_total",
+   "w": 300,
+   "type": "money",
+   "label": "4. รายจ่ายอื่นที่นอกเหนือจาก 1. ถึง 3. — ช่อง 3 รวม",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_05_total_exempt",
+   "w": 301,
+   "type": "money",
+   "label": "5. รวม 1. ถึง 4. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_05_total_taxable",
+   "w": 302,
+   "type": "money",
+   "label": "5. รวม 1. ถึง 4. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r6_05_total_total",
+   "w": 303,
+   "type": "money",
+   "label": "5. รวม 1. ถึง 4. — ช่อง 3 รวม",
+   "group": "other_expenses"
+  },
+  {
+   "key": "r7_01_employee_expenses_exempt",
+   "w": 305,
+   "type": "money",
+   "label": "1. รายจ่ายเกี่ยวกับพนักงาน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_01_employee_expenses_taxable",
+   "w": 306,
+   "type": "money",
+   "label": "1. รายจ่ายเกี่ยวกับพนักงาน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_01_employee_expenses_total",
+   "w": 307,
+   "type": "money",
+   "label": "1. รายจ่ายเกี่ยวกับพนักงาน — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_02_directors_remuneration_exempt",
+   "w": 308,
+   "type": "money",
+   "label": "2. ค่าตอบแทนกรรมการ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_02_directors_remuneration_taxable",
+   "w": 309,
+   "type": "money",
+   "label": "2. ค่าตอบแทนกรรมการ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_02_directors_remuneration_total",
+   "w": 310,
+   "type": "money",
+   "label": "2. ค่าตอบแทนกรรมการ — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_03_utilities_exempt",
+   "w": 311,
+   "type": "money",
+   "label": "3. ค่าไฟฟ้า ค่าประปา ค่าโทรศัพท์ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_03_utilities_taxable",
+   "w": 312,
+   "type": "money",
+   "label": "3. ค่าไฟฟ้า ค่าประปา ค่าโทรศัพท์ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_03_utilities_total",
+   "w": 313,
+   "type": "money",
+   "label": "3. ค่าไฟฟ้า ค่าประปา ค่าโทรศัพท์ — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_04_travel_exempt",
+   "w": 314,
+   "type": "money",
+   "label": "4. ค่าพาหนะ รายจ่ายในการเดินทาง ค่าที่พัก — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_04_travel_taxable",
+   "w": 315,
+   "type": "money",
+   "label": "4. ค่าพาหนะ รายจ่ายในการเดินทาง ค่าที่พัก — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_04_travel_total",
+   "w": 316,
+   "type": "money",
+   "label": "4. ค่าพาหนะ รายจ่ายในการเดินทาง ค่าที่พัก — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_05_freight_exempt",
+   "w": 317,
+   "type": "money",
+   "label": "5. ค่าระวาง ค่าขนส่ง — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_05_freight_taxable",
+   "w": 318,
+   "type": "money",
+   "label": "5. ค่าระวาง ค่าขนส่ง — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_05_freight_total",
+   "w": 319,
+   "type": "money",
+   "label": "5. ค่าระวาง ค่าขนส่ง — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_06_rent_exempt",
+   "w": 320,
+   "type": "money",
+   "label": "6. ค่าเช่า — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_06_rent_taxable",
+   "w": 321,
+   "type": "money",
+   "label": "6. ค่าเช่า — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_06_rent_total",
+   "w": 322,
+   "type": "money",
+   "label": "6. ค่าเช่า — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_07_repairs_exempt",
+   "w": 323,
+   "type": "money",
+   "label": "7. ค่าซ่อมแซม — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_07_repairs_taxable",
+   "w": 324,
+   "type": "money",
+   "label": "7. ค่าซ่อมแซม — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_07_repairs_total",
+   "w": 325,
+   "type": "money",
+   "label": "7. ค่าซ่อมแซม — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_08_entertainment_exempt",
+   "w": 326,
+   "type": "money",
+   "label": "8. ค่ารับรอง — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_08_entertainment_taxable",
+   "w": 327,
+   "type": "money",
+   "label": "8. ค่ารับรอง — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_08_entertainment_total",
+   "w": 328,
+   "type": "money",
+   "label": "8. ค่ารับรอง — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_09_commission_advertising_exempt",
+   "w": 329,
+   "type": "money",
+   "label": "9. ค่านายหน้า ค่าโฆษณา ค่าส่งเสริมการขาย — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_09_commission_advertising_taxable",
+   "w": 330,
+   "type": "money",
+   "label": "9. ค่านายหน้า ค่าโฆษณา ค่าส่งเสริมการขาย — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_09_commission_advertising_total",
+   "w": 331,
+   "type": "money",
+   "label": "9. ค่านายหน้า ค่าโฆษณา ค่าส่งเสริมการขาย — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_10_specific_business_tax_exempt",
+   "w": 332,
+   "type": "money",
+   "label": "10. ค่าภาษีธุรกิจเฉพาะ (รวมรายได้ส่วนท้องถิ่น) — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_10_specific_business_tax_taxable",
+   "w": 333,
+   "type": "money",
+   "label": "10. ค่าภาษีธุรกิจเฉพาะ (รวมรายได้ส่วนท้องถิ่น) — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_10_specific_business_tax_total",
+   "w": 334,
+   "type": "money",
+   "label": "10. ค่าภาษีธุรกิจเฉพาะ (รวมรายได้ส่วนท้องถิ่น) — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_11_other_taxes_exempt",
+   "w": 335,
+   "type": "money",
+   "label": "11. ค่าภาษีอากรอื่นๆ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_11_other_taxes_taxable",
+   "w": 336,
+   "type": "money",
+   "label": "11. ค่าภาษีอากรอื่นๆ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_11_other_taxes_total",
+   "w": 337,
+   "type": "money",
+   "label": "11. ค่าภาษีอากรอื่นๆ — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_12_finance_costs_exempt",
+   "w": 338,
+   "type": "money",
+   "label": "12. ต้นทุนทางการเงิน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_12_finance_costs_taxable",
+   "w": 339,
+   "type": "money",
+   "label": "12. ต้นทุนทางการเงิน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_12_finance_costs_total",
+   "w": 340,
+   "type": "money",
+   "label": "12. ต้นทุนทางการเงิน — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_13_accounting_fees_exempt",
+   "w": 341,
+   "type": "money",
+   "label": "13. ค่าทำบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_13_accounting_fees_taxable",
+   "w": 342,
+   "type": "money",
+   "label": "13. ค่าทำบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_13_accounting_fees_total",
+   "w": 343,
+   "type": "money",
+   "label": "13. ค่าทำบัญชี — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_14_audit_fees_exempt",
+   "w": 344,
+   "type": "money",
+   "label": "14. ค่าสอบบัญชี — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_14_audit_fees_taxable",
+   "w": 345,
+   "type": "money",
+   "label": "14. ค่าสอบบัญชี — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_14_audit_fees_total",
+   "w": 346,
+   "type": "money",
+   "label": "14. ค่าสอบบัญชี — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_15_political_donations_exempt",
+   "w": 347,
+   "type": "money",
+   "label": "15. เงินที่บริจาคแก่พรรคการเมือง — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_15_political_donations_taxable",
+   "w": 348,
+   "type": "money",
+   "label": "15. เงินที่บริจาคแก่พรรคการเมือง — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_15_political_donations_total",
+   "w": 349,
+   "type": "money",
+   "label": "15. เงินที่บริจาคแก่พรรคการเมือง — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_16_charity_donations_exempt",
+   "w": 350,
+   "type": "money",
+   "label": "16. รายจ่ายเพื่อการกุศลสาธารณะฯ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_16_charity_donations_taxable",
+   "w": 351,
+   "type": "money",
+   "label": "16. รายจ่ายเพื่อการกุศลสาธารณะฯ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_16_charity_donations_total",
+   "w": 352,
+   "type": "money",
+   "label": "16. รายจ่ายเพื่อการกุศลสาธารณะฯ — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_17_education_sports_donations_exempt",
+   "w": 353,
+   "type": "money",
+   "label": "17. รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_17_education_sports_donations_taxable",
+   "w": 354,
+   "type": "money",
+   "label": "17. รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_17_education_sports_donations_total",
+   "w": 355,
+   "type": "money",
+   "label": "17. รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_18_consulting_fees_exempt",
+   "w": 356,
+   "type": "money",
+   "label": "18. ค่าธรรมเนียมในการให้คำแนะนำและปรึกษา — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_18_consulting_fees_taxable",
+   "w": 357,
+   "type": "money",
+   "label": "18. ค่าธรรมเนียมในการให้คำแนะนำและปรึกษา — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_18_consulting_fees_total",
+   "w": 358,
+   "type": "money",
+   "label": "18. ค่าธรรมเนียมในการให้คำแนะนำและปรึกษา — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_19_other_fees_exempt",
+   "w": 359,
+   "type": "money",
+   "label": "19. ค่าธรรมเนียมอื่นๆ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_19_other_fees_taxable",
+   "w": 360,
+   "type": "money",
+   "label": "19. ค่าธรรมเนียมอื่นๆ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_19_other_fees_total",
+   "w": 361,
+   "type": "money",
+   "label": "19. ค่าธรรมเนียมอื่นๆ — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_20_bad_debts_exempt",
+   "w": 362,
+   "type": "money",
+   "label": "20. หนี้สูญ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_20_bad_debts_taxable",
+   "w": 363,
+   "type": "money",
+   "label": "20. หนี้สูญ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_20_bad_debts_total",
+   "w": 364,
+   "type": "money",
+   "label": "20. หนี้สูญ — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_21_depreciation_exempt",
+   "w": 365,
+   "type": "money",
+   "label": "21. ค่าสึกหรอและค่าเสื่อมราคาของทรัพย์สิน — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_21_depreciation_taxable",
+   "w": 366,
+   "type": "money",
+   "label": "21. ค่าสึกหรอและค่าเสื่อมราคาของทรัพย์สิน — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_21_depreciation_total",
+   "w": 367,
+   "type": "money",
+   "label": "21. ค่าสึกหรอและค่าเสื่อมราคาของทรัพย์สิน — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_22_other_expenses_exempt",
+   "w": 368,
+   "type": "money",
+   "label": "22. รายจ่ายอื่นที่นอกเหนือจาก 1. ถึง 21. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_22_other_expenses_taxable",
+   "w": 369,
+   "type": "money",
+   "label": "22. รายจ่ายอื่นที่นอกเหนือจาก 1. ถึง 21. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_22_other_expenses_total",
+   "w": 370,
+   "type": "money",
+   "label": "22. รายจ่ายอื่นที่นอกเหนือจาก 1. ถึง 21. — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_23_double_deduction_capped_exempt",
+   "w": 371,
+   "type": "money",
+   "label": "23. รายจ่ายอื่นหักได้ 2 เท่าไม่เกินร้อยละ 10 ของกำไรสุทธิ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_23_double_deduction_capped_taxable",
+   "w": 372,
+   "type": "money",
+   "label": "23. รายจ่ายอื่นหักได้ 2 เท่าไม่เกินร้อยละ 10 ของกำไรสุทธิ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_23_double_deduction_capped_total",
+   "w": 373,
+   "type": "money",
+   "label": "23. รายจ่ายอื่นหักได้ 2 เท่าไม่เกินร้อยละ 10 ของกำไรสุทธิ — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_24_total_exempt",
+   "w": 374,
+   "type": "money",
+   "label": "24. รวม 1. ถึง 23. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_24_total_taxable",
+   "w": 375,
+   "type": "money",
+   "label": "24. รวม 1. ถึง 23. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r7_24_total_total",
+   "w": 376,
+   "type": "money",
+   "label": "24. รวม 1. ถึง 23. — ช่อง 3 รวม",
+   "group": "selling_admin"
+  },
+  {
+   "key": "r8_01_corporate_income_tax_exempt",
+   "w": 377,
+   "type": "money",
+   "label": "1. ภาษีเงินได้บริษัทหรือห้างหุ้นส่วนนิติบุคคล — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_01_corporate_income_tax_taxable",
+   "w": 378,
+   "type": "money",
+   "label": "1. ภาษีเงินได้บริษัทหรือห้างหุ้นส่วนนิติบุคคล — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_01_corporate_income_tax_total",
+   "w": 379,
+   "type": "money",
+   "label": "1. ภาษีเงินได้บริษัทหรือห้างหุ้นส่วนนิติบุคคล — ช่อง 3 รวม",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_02_entertainment_exempt",
+   "w": 380,
+   "type": "money",
+   "label": "2. ค่ารับรอง — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_02_entertainment_taxable",
+   "w": 381,
+   "type": "money",
+   "label": "2. ค่ารับรอง — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_02_entertainment_total",
+   "w": 382,
+   "type": "money",
+   "label": "2. ค่ารับรอง — ช่อง 3 รวม",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_03_bad_debts_exempt",
+   "w": 383,
+   "type": "money",
+   "label": "3. หนี้สูญ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_03_bad_debts_taxable",
+   "w": 384,
+   "type": "money",
+   "label": "3. หนี้สูญ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_03_bad_debts_total",
+   "w": 385,
+   "type": "money",
+   "label": "3. หนี้สูญ — ช่อง 3 รวม",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_04_reserves_exempt",
+   "w": 386,
+   "type": "money",
+   "label": "4. เงินสำรอง — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_04_reserves_taxable",
+   "w": 387,
+   "type": "money",
+   "label": "4. เงินสำรอง — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_04_reserves_total",
+   "w": 388,
+   "type": "money",
+   "label": "4. เงินสำรอง — ช่อง 3 รวม",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_05_item7_23_expenses_exempt",
+   "w": 389,
+   "type": "money",
+   "label": "5. รายจ่ายตามรายการที่ 7 23. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_05_item7_23_expenses_taxable",
+   "w": 390,
+   "type": "money",
+   "label": "5. รายจ่ายตามรายการที่ 7 23. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_05_item7_23_expenses_total",
+   "w": 391,
+   "type": "money",
+   "label": "5. รายจ่ายตามรายการที่ 7 23. — ช่อง 3 รวม",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_06_other_nondeductible_exempt",
+   "w": 392,
+   "type": "money",
+   "label": "6. รายจ่ายที่ไม่ให้ถือเป็นรายจ่ายฯ อื่นๆ — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_06_other_nondeductible_taxable",
+   "w": 393,
+   "type": "money",
+   "label": "6. รายจ่ายที่ไม่ให้ถือเป็นรายจ่ายฯ อื่นๆ — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_06_other_nondeductible_total",
+   "w": 394,
+   "type": "money",
+   "label": "6. รายจ่ายที่ไม่ให้ถือเป็นรายจ่ายฯ อื่นๆ — ช่อง 3 รวม",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_07_total_exempt",
+   "w": 395,
+   "type": "money",
+   "label": "7. รวม 1. ถึง 6. — ช่อง 1 กิจการที่ได้รับยกเว้นภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_07_total_taxable",
+   "w": 396,
+   "type": "money",
+   "label": "7. รวม 1. ถึง 6. — ช่อง 2 กิจการที่ต้องเสียภาษีเงินได้",
+   "group": "nondeductible"
+  },
+  {
+   "key": "r8_07_total_total",
+   "w": 397,
+   "type": "money",
+   "label": "7. รวม 1. ถึง 6. — ช่อง 3 รวม",
+   "group": "nondeductible"
+  },
+  {
+   "key": "bs_cash",
+   "w": 399,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 1. สินทรัพย์หมุนเวียน (1) เงินสดและรายการเทียบเท่าเงินสด",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_trade_receivables_net",
+   "w": 400,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 1. (2) ลูกหนี้การค้า - สุทธิ",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_inventories",
+   "w": 401,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 1. (3) สินค้าคงเหลือ",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_other_current_assets",
+   "w": 402,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 1. (4) สินทรัพย์หมุนเวียนอื่น (นอกจากที่ระบุใน (1) ถึง (3))",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_lt_loans_to_related",
+   "w": 403,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 2. สินทรัพย์ไม่หมุนเวียน (1) เงินให้กู้ยืมระยะยาวแก่บุคคลหรือกิจการที่เกี่ยวข้องกัน/กรรมการ/ผู้ถือหุ้นและพนักงาน",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_land_buildings_net",
+   "w": 404,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 2. (2) ที่ดิน และอาคารซึ่งหักค่าสึกหรอและค่าเสื่อมราคาแล้ว",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_other_fixed_assets_net",
+   "w": 405,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 2. (3) ทรัพย์สินอื่นซึ่งหักค่าสึกหรอและค่าเสื่อมราคาแล้ว",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_leasehold_right_of_use",
+   "w": 406,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 2. (4) สิทธิการเช่าและหรือสิทธิการใช้ทรัพย์สิน",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_other_noncurrent_assets",
+   "w": 407,
+   "type": "money",
+   "label": "รายการที่ 9 สินทรัพย์ 2. (5) สินทรัพย์ไม่หมุนเวียนอื่น (นอกจากที่ระบุใน (1) ถึง (4))",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_total_assets",
+   "w": 408,
+   "type": "money",
+   "label": "รายการที่ 9 รวมสินทรัพย์",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_overdraft_st_loans_fi",
+   "w": 409,
+   "type": "money",
+   "label": "รายการที่ 9 หนี้สิน 1. หนี้สินหมุนเวียน (1) เงินเบิกเกินบัญชีและเงินกู้ยืมระยะสั้นจากสถาบันการเงิน",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_trade_payables",
+   "w": 410,
+   "type": "money",
+   "label": "รายการที่ 9 หนี้สิน 1. (2) เจ้าหนี้การค้า",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_current_borrowings",
+   "w": 411,
+   "type": "money",
+   "label": "รายการที่ 9 หนี้สิน 1. (3) เงินกู้ยืม",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_other_current_liabilities",
+   "w": 412,
+   "type": "money",
+   "label": "รายการที่ 9 หนี้สิน 1. (4) หนี้สินหมุนเวียนอื่น (นอกจากที่ระบุใน (1) ถึง (3))",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_lt_borrowings",
+   "w": 413,
+   "type": "money",
+   "label": "รายการที่ 9 หนี้สิน 2. หนี้สินไม่หมุนเวียน (1) เงินกู้ยืมระยะยาว",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_other_noncurrent_liabilities",
+   "w": 414,
+   "type": "money",
+   "label": "รายการที่ 9 หนี้สิน 2. (2) หนี้สินไม่หมุนเวียนอื่น",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_total_liabilities",
+   "w": 415,
+   "type": "money",
+   "label": "รายการที่ 9 รวมหนี้สิน",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_registered_capital",
+   "w": 416,
+   "type": "money",
+   "label": "รายการที่ 9 3. ส่วนของผู้ถือหุ้น/ผู้เป็นหุ้นส่วน : ทุนจดทะเบียน",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_paid_up_capital",
+   "w": 419,
+   "type": "money",
+   "label": "รายการที่ 9 3. (1) ทุนที่ออกและชำระแล้ว",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_other_equity",
+   "w": 420,
+   "type": "money",
+   "label": "รายการที่ 9 3. (2) อื่นๆ",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_retained_earnings",
+   "w": 421,
+   "type": "money",
+   "label": "รายการที่ 9 3. (3) กำไรสะสม / ขาดทุนสะสม",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_total_equity",
+   "w": 422,
+   "type": "money",
+   "label": "รายการที่ 9 รวมส่วนของผู้ถือหุ้น/ผู้เป็นหุ้นส่วน",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_total_liabilities_equity",
+   "w": 423,
+   "type": "money",
+   "label": "รายการที่ 9 รวมหนี้สินและส่วนของผู้ถือหุ้น/ผู้เป็นหุ้นส่วน",
+   "group": "balance_sheet"
+  },
+  {
+   "key": "bs_retained_result",
+   "type": "choice",
+   "label": "รายการที่ 9 3. (3) กำไรสะสม / ขาดทุนสะสม",
+   "group": "balance_sheet",
+   "options": [
+    {
+     "value": "profit",
+     "w": 417,
+     "label": "กำไรสะสม"
+    },
+    {
+     "value": "loss",
+     "w": 418,
+     "label": "ขาดทุนสะสม"
+    }
+   ]
+  },
+  {
+   "key": "att_pnd50_sheets",
+   "w": 424,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ ภ.ง.ด.50 1. ใบแนบ ภ.ง.ด.50 (กรณียื่นเพิ่มเติมต้องยื่นใบแนบใหม่ทั้งชุด) จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "att_balance_sheet_sheets",
+   "w": 425,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ ภ.ง.ด.50 2. บัญชีงบดุล จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "att_income_statement_sheets",
+   "w": 426,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ ภ.ง.ด.50 3. บัญชีทำการ และบัญชีกำไรขาดทุน จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "att_cash_flow_sheets",
+   "w": 427,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ ภ.ง.ด.50 4. งบกระแสเงินสด จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "att_annual_report_sheets",
+   "w": 433,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ ภ.ง.ด.50 5. รายงานประจำปี จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "att_audit_report_sheets",
+   "w": 434,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ ภ.ง.ด.50 6. รายงานของผู้ตรวจสอบและรับรองบัญชี จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "att_disclosure_form_sheets",
+   "w": 428,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ ภ.ง.ด.50 7. รายงานประจำปีสำหรับบริษัทหรือห้างหุ้นส่วนนิติบุคคลที่มีความสัมพันธ์กันตามมาตรา 71 ทวิ แห่งประมวลรัษฎากร (Disclosure Form) จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "auditor_opinion",
+   "type": "choice",
+   "label": "รายละเอียดเอกสารแนบ 6. รายงานของผู้ตรวจสอบและรับรองบัญชี — ความเห็น",
+   "group": "attachments",
+   "options": [
+    {
+     "value": "unqualified",
+     "w": 435,
+     "label": "กรณีเป็นรายงานของผู้สอบบัญชีรับอนุญาต (1) ไม่มีเงื่อนไข"
+    },
+    {
+     "value": "qualified",
+     "w": 436,
+     "label": "กรณีเป็นรายงานของผู้สอบบัญชีรับอนุญาต (2) มีเงื่อนไข"
+    },
+    {
+     "value": "disclaimer",
+     "w": 437,
+     "label": "กรณีเป็นรายงานของผู้สอบบัญชีรับอนุญาต (3) ไม่แสดงความเห็น"
+    },
+    {
+     "value": "adverse",
+     "w": 438,
+     "label": "กรณีเป็นรายงานของผู้สอบบัญชีรับอนุญาต (4) ไม่ถูกต้อง"
+    },
+    {
+     "value": "no_exception",
+     "w": 439,
+     "label": "กรณีเป็นรายงานการตรวจสอบและรับรองบัญชี (5) ไม่มีข้อยกเว้น"
+    },
+    {
+     "value": "with_exception",
+     "w": 440,
+     "label": "กรณีเป็นรายงานการตรวจสอบและรับรองบัญชี (6) มีข้อยกเว้น"
+    }
+   ],
+   "note": "รวมกลุ่มปุ่มเลือก 2 กลุ่มในไฟล์ (Group92: 1-4, Group93: 5-6) เป็นตัวเลือกเดียว"
+  },
+  {
+   "key": "att_other1_desc",
+   "w": 429,
+   "type": "text",
+   "label": "รายละเอียดเอกสารแนบ 8. อื่นๆ (ระบุ) บรรทัดที่ 1",
+   "group": "attachments"
+  },
+  {
+   "key": "att_other1_sheets",
+   "w": 430,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ 8. อื่นๆ บรรทัดที่ 1 จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "att_other2_desc",
+   "w": 431,
+   "type": "text",
+   "label": "รายละเอียดเอกสารแนบ 8. อื่นๆ (ระบุ) บรรทัดที่ 2",
+   "group": "attachments"
+  },
+  {
+   "key": "att_other2_sheets",
+   "w": 432,
+   "type": "int",
+   "label": "รายละเอียดเอกสารแนบ 8. อื่นๆ บรรทัดที่ 2 จำนวน (แผ่น)",
+   "group": "attachments"
+  },
+  {
+   "key": "ds_company_name",
+   "w": 442,
+   "type": "text",
+   "label": "แบบแจ้งข้อความของกรรมการ ชื่อ (บริษัทหรือห้างหุ้นส่วนนิติบุคคล)",
+   "group": "director_statement",
+   "note": "ค่าเดียวกับ name"
+  },
+  {
+   "key": "ds_period_start_day",
+   "w": 443,
+   "type": "digits",
+   "label": "สำหรับรอบระยะเวลาบัญชี ตั้งแต่วันที่",
+   "group": "director_statement",
+   "note": "ค่าเดียวกับ period_start_day"
+  },
+  {
+   "key": "ds_period_start_month",
+   "w": 444,
+   "type": "digits",
+   "label": "สำหรับรอบระยะเวลาบัญชี ตั้งแต่ เดือน (ตัวเลข 2 หลัก)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_period_start_year_be",
+   "w": 445,
+   "type": "digits",
+   "label": "สำหรับรอบระยะเวลาบัญชี ตั้งแต่ พ.ศ.",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_period_end_day",
+   "w": 446,
+   "type": "digits",
+   "label": "สำหรับรอบระยะเวลาบัญชี ถึงวันที่",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_period_end_month",
+   "w": 447,
+   "type": "digits",
+   "label": "สำหรับรอบระยะเวลาบัญชี ถึง เดือน (ตัวเลข 2 หลัก)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_period_end_year_be",
+   "w": 448,
+   "type": "digits",
+   "label": "สำหรับรอบระยะเวลาบัญชี ถึง พ.ศ.",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_1_below_market",
+   "type": "choice",
+   "label": "1. กิจการขายสินค้า บริการ หรือทรัพย์สิน ให้กู้ยืมเงิน หรือให้เช่าทรัพย์สิน โดยไม่มีค่าตอบแทนหรือมีแต่ต่ำกว่าราคาตลาด อันถือได้ว่าเป็นสาระสำคัญโดยชัดแจ้ง",
+   "group": "director_statement",
+   "options": [
+    {
+     "value": "yes",
+     "w": 449,
+     "label": "มี"
+    },
+    {
+     "value": "no",
+     "w": 450,
+     "label": "ไม่มี"
+    }
+   ]
+  },
+  {
+   "key": "ds_1_reason",
+   "w": 451,
+   "type": "text",
+   "label": "1. มี เพราะ",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_2_above_market_purchase",
+   "type": "choice",
+   "label": "2. กิจการซื้อทรัพย์สิน รวมทั้งรายจ่ายเพื่อซื้อทรัพย์สินดังกล่าว และค่าบริการในราคาที่เกินปกติ อันถือได้ว่าเป็นสาระสำคัญโดยชัดแจ้ง",
+   "group": "director_statement",
+   "options": [
+    {
+     "value": "yes",
+     "w": 452,
+     "label": "มี"
+    },
+    {
+     "value": "no",
+     "w": 453,
+     "label": "ไม่มี"
+    }
+   ]
+  },
+  {
+   "key": "ds_2_reason",
+   "w": 454,
+   "type": "text",
+   "label": "2. มี เพราะ",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_3_fictitious_creditors_debtors",
+   "type": "choice",
+   "label": "3. กิจการตั้งเจ้าหนี้หรือลูกหนี้โดยไม่มีตัวตน หรือมีตัวตน แต่จำนวนเกินความเป็นจริง อันถือได้ว่าเป็นสาระสำคัญโดยชัดแจ้ง",
+   "group": "director_statement",
+   "options": [
+    {
+     "value": "yes",
+     "w": 455,
+     "label": "มี"
+    },
+    {
+     "value": "no",
+     "w": 456,
+     "label": "ไม่มี"
+    }
+   ]
+  },
+  {
+   "key": "ds_3_reason",
+   "w": 457,
+   "type": "text",
+   "label": "3. มี เพราะ",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_4_losses_3y_expansion",
+   "type": "choice",
+   "label": "4. กิจการเกิดผลขาดทุนสุทธิติดต่อกันเกินกว่า 3 รอบระยะเวลาบัญชี แต่มีการขยายกิจการ",
+   "group": "director_statement",
+   "options": [
+    {
+     "value": "yes",
+     "w": 458,
+     "label": "มี"
+    },
+    {
+     "value": "no",
+     "w": 459,
+     "label": "ไม่มี"
+    }
+   ]
+  },
+  {
+   "key": "ds_4_reason",
+   "w": 460,
+   "type": "text",
+   "label": "4. มี เพราะ",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_5_wht_complete",
+   "type": "choice",
+   "label": "5. การหักภาษี ณ ที่จ่าย และนำส่งภาษี กิจการได้ดำเนินการครบถ้วนแล้วหรือไม่",
+   "group": "director_statement",
+   "options": [
+    {
+     "value": "done",
+     "w": 461,
+     "label": "ได้ดำเนินการครบถ้วนแล้ว"
+    },
+    {
+     "value": "not_done",
+     "w": 462,
+     "label": "ไม่ได้ดำเนินการ"
+    }
+   ]
+  },
+  {
+   "key": "ds_5_reason_line1",
+   "w": 463,
+   "type": "text",
+   "label": "5. ไม่ได้ดำเนินการ เพราะ (บรรทัดที่ 1)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_5_reason_line2",
+   "w": 464,
+   "type": "text",
+   "label": "5. ไม่ได้ดำเนินการ เพราะ (บรรทัดที่ 2)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_signer1_name",
+   "w": 465,
+   "type": "text",
+   "label": "แบบแจ้งข้อความของกรรมการ ลงชื่อ (คนที่ 1)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_signer1_position",
+   "w": 467,
+   "type": "text",
+   "label": "ตำแหน่ง (คนที่ 1)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_signer2_name",
+   "w": 466,
+   "type": "text",
+   "label": "แบบแจ้งข้อความของกรรมการ ลงชื่อ (คนที่ 2)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_signer2_position",
+   "w": 468,
+   "type": "text",
+   "label": "ตำแหน่ง (คนที่ 2)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_sign_day",
+   "w": 469,
+   "type": "digits",
+   "label": "แบบแจ้งข้อความของกรรมการ วันที่",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_sign_month",
+   "w": 470,
+   "type": "digits",
+   "label": "แบบแจ้งข้อความของกรรมการ เดือน (ตัวเลข 2 หลัก)",
+   "group": "director_statement"
+  },
+  {
+   "key": "ds_sign_year_be",
+   "w": 471,
+   "type": "digits",
+   "label": "แบบแจ้งข้อความของกรรมการ พ.ศ.",
+   "group": "director_statement"
+  },
+  {
+   "key": "as_opinion_line1",
+   "w": 472,
+   "type": "text",
+   "label": "ส่วนของผู้ตรวจสอบและรับรองบัญชี 1. ถูกต้องตามที่ควรและมีความเห็นเพิ่มเติมดังนี้ (บรรทัดที่ 1)",
+   "group": "auditor_statement"
+  },
+  {
+   "key": "as_opinion_line2",
+   "w": 473,
+   "type": "text",
+   "label": "ส่วนของผู้ตรวจสอบและรับรองบัญชี 1. ความเห็นเพิ่มเติม (บรรทัดที่ 2)",
+   "group": "auditor_statement"
+  },
+  {
+   "key": "as_other_line1",
+   "w": 474,
+   "type": "text",
+   "label": "ส่วนของผู้ตรวจสอบและรับรองบัญชี 2. กรณีอื่นๆ (บรรทัดที่ 1)",
+   "group": "auditor_statement"
+  },
+  {
+   "key": "as_other_line2",
+   "w": 475,
+   "type": "text",
+   "label": "ส่วนของผู้ตรวจสอบและรับรองบัญชี 2. กรณีอื่นๆ (บรรทัดที่ 2)",
+   "group": "auditor_statement"
+  },
+  {
+   "key": "as_auditor_name",
+   "w": 476,
+   "type": "text",
+   "label": "ลงชื่อ ผู้ตรวจสอบและรับรองบัญชี",
+   "group": "auditor_statement"
+  },
+  {
+   "key": "as_sign_day",
+   "w": 477,
+   "type": "digits",
+   "label": "ผู้ตรวจสอบและรับรองบัญชี วันที่",
+   "group": "auditor_statement"
+  },
+  {
+   "key": "as_sign_month",
+   "w": 478,
+   "type": "digits",
+   "label": "ผู้ตรวจสอบและรับรองบัญชี เดือน (ตัวเลข 2 หลัก)",
+   "group": "auditor_statement"
+  },
+  {
+   "key": "as_sign_year_be",
+   "w": 479,
+   "type": "digits",
+   "label": "ผู้ตรวจสอบและรับรองบัญชี พ.ศ.",
+   "group": "auditor_statement"
+  }
+ ]
+}

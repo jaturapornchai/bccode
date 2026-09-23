@@ -1,0 +1,248 @@
+{
+ "code": "pnd2_attach",
+ "source": "ภงด.2-ใบแนบ.pdf",
+ "title": "ใบแนบ ภ.ง.ด.2",
+ "pages": [
+  1
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "w": 1,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้มีหน้าที่หักภาษี ณ ที่จ่าย)",
+   "group": "payer"
+  },
+  {
+   "key": "branch_no",
+   "w": 2,
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer"
+  },
+  {
+   "key": "income_type",
+   "type": "choice",
+   "label": "ประเภทเงินได้ (ให้แยกกรอกรายการในใบแนบนี้ตามเงินได้แต่ละประเภท เพียงข้อเดียว)",
+   "group": "sheet",
+   "options": [
+    {
+     "value": "royalty",
+     "w": 3,
+     "label": "(1) เงินได้ตามมาตรา 40 (3) ค่าแห่งลิขสิทธิ์ ค่าแห่งกู๊ดวิลล์ ฯลฯ"
+    },
+    {
+     "value": "interest",
+     "w": 20,
+     "label": "(2) เงินได้ตามมาตรา 40 (4) (ก) ดอกเบี้ยเงินฝาก ดอกเบี้ยพันธบัตร ดอกเบี้ยตั๋วเงิน ฯลฯ"
+    },
+    {
+     "value": "dividend",
+     "w": 21,
+     "label": "(3) เงินได้ตามมาตรา 40 (4) (ข) เงินปันผล ฯลฯ"
+    },
+    {
+     "value": "share_transfer",
+     "w": 22,
+     "label": "(4) เงินได้ตามมาตรา 40 (4) (ช) เงินผลประโยชน์ที่ได้จากการโอนหุ้น ฯลฯ"
+    },
+    {
+     "value": "other_404",
+     "w": 23,
+     "label": "(5) เงินได้ตามมาตรา 40 (4) อื่นๆ"
+    }
+   ]
+  },
+  {
+   "key": "sheet_no",
+   "w": 4,
+   "type": "int",
+   "label": "แผ่นที่",
+   "group": "sheet"
+  },
+  {
+   "key": "sheet_total",
+   "w": 5,
+   "type": "int",
+   "label": "ในจำนวน (แผ่น)",
+   "group": "sheet"
+  },
+  {
+   "key": "signer_name",
+   "w": 80,
+   "type": "text",
+   "label": "ลงชื่อ ผู้จ่ายเงิน (ชื่อตัวบรรจง)",
+   "group": "signature"
+  },
+  {
+   "key": "signer_position",
+   "w": 81,
+   "type": "text",
+   "label": "ตำแหน่ง",
+   "group": "signature"
+  },
+  {
+   "key": "sign_day",
+   "w": 82,
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature"
+  },
+  {
+   "key": "sign_month",
+   "w": 83,
+   "type": "text",
+   "label": "เดือน",
+   "group": "signature"
+  },
+  {
+   "key": "sign_year_be",
+   "w": 84,
+   "type": "text",
+   "label": "พ.ศ.",
+   "group": "signature"
+  }
+ ],
+ "table": {
+  "key": "payees",
+  "label": "รายละเอียดการหักเป็นรายผู้มีเงินได้",
+  "columns": [
+   {
+    "key": "seq",
+    "type": "int",
+    "label": "ลำดับที่"
+   },
+   {
+    "key": "tax_id",
+    "type": "taxid",
+    "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้มีเงินได้)"
+   },
+   {
+    "key": "bank_account_no",
+    "type": "digits",
+    "label": "เลขที่บัญชีเงินฝาก (ของผู้มีเงินได้) — ให้กรอกเฉพาะกรณีจ่ายดอกเบี้ยเงินฝาก"
+   },
+   {
+    "key": "name",
+    "type": "text",
+    "label": "ชื่อผู้มีเงินได้: ชื่อ (ให้ระบุให้ชัดเจนว่าเป็น นาย นาง นางสาว หรือยศ)"
+   },
+   {
+    "key": "surname",
+    "type": "text",
+    "label": "ชื่อผู้มีเงินได้: ชื่อสกุล"
+   },
+   {
+    "key": "l1_date",
+    "type": "text",
+    "label": "วัน เดือน ปี ที่จ่าย"
+   },
+   {
+    "key": "l1_rate",
+    "type": "text",
+    "label": "อัตราภาษีร้อยละ"
+   },
+   {
+    "key": "l1_amount",
+    "type": "money",
+    "label": "จำนวนเงินได้ที่จ่ายในครั้งนี้"
+   },
+   {
+    "key": "l1_tax",
+    "type": "money",
+    "label": "จำนวนเงินภาษีที่หักและนำส่งในครั้งนี้"
+   },
+   {
+    "key": "l1_condition",
+    "type": "text",
+    "label": "เงื่อนไข (1 หัก ณ ที่จ่าย, 2 ออกให้ตลอดไป, 3 ออกให้ครั้งเดียว)"
+   }
+  ],
+  "rows": [
+   {
+    "seq": 6,
+    "tax_id": 7,
+    "bank_account_no": 8,
+    "name": 9,
+    "surname": 10,
+    "l1_date": 11,
+    "l1_rate": 12,
+    "l1_amount": 13,
+    "l1_tax": 14,
+    "l1_condition": 15
+   },
+   {
+    "seq": 16,
+    "tax_id": 17,
+    "bank_account_no": 18,
+    "name": 19,
+    "surname": 24,
+    "l1_date": 25,
+    "l1_rate": 26,
+    "l1_amount": 27,
+    "l1_tax": 28,
+    "l1_condition": 29
+   },
+   {
+    "seq": 30,
+    "tax_id": 31,
+    "bank_account_no": 32,
+    "name": 33,
+    "surname": 34,
+    "l1_date": 35,
+    "l1_rate": 36,
+    "l1_amount": 37,
+    "l1_tax": 38,
+    "l1_condition": 39
+   },
+   {
+    "seq": 40,
+    "tax_id": 41,
+    "bank_account_no": 42,
+    "name": 43,
+    "surname": 44,
+    "l1_date": 45,
+    "l1_rate": 46,
+    "l1_amount": 47,
+    "l1_tax": 48,
+    "l1_condition": 49
+   },
+   {
+    "seq": 50,
+    "tax_id": 51,
+    "bank_account_no": 52,
+    "name": 53,
+    "surname": 54,
+    "l1_date": 55,
+    "l1_rate": 56,
+    "l1_amount": 57,
+    "l1_tax": 58,
+    "l1_condition": 59
+   },
+   {
+    "seq": 60,
+    "tax_id": 61,
+    "bank_account_no": 62,
+    "name": 63,
+    "surname": 64,
+    "l1_date": 65,
+    "l1_rate": 66,
+    "l1_amount": 67,
+    "l1_tax": 68,
+    "l1_condition": 69
+   },
+   {
+    "seq": 70,
+    "tax_id": 71,
+    "bank_account_no": 72,
+    "name": 73,
+    "surname": 74,
+    "l1_date": 75,
+    "l1_rate": 76,
+    "l1_amount": 77,
+    "l1_tax": 78,
+    "l1_condition": 79
+   }
+  ]
+ }
+}

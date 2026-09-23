@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/whtcert"
 	msmodels "smlcloudplatform/pkg/microservice/models"
 
@@ -69,36 +70,6 @@ func TestNormalizeVatRegisterPaging(t *testing.T) {
 	}
 }
 
-// -------------------- computeVatSettlement --------------------
-
-func TestComputeVatSettlement(t *testing.T) {
-	d := decimal.RequireFromString
-	cases := []struct {
-		name                                 string
-		outputVat, inputVat, creditForward   string
-		wantNet, wantPayable, wantCreditable string
-	}{
-		{"output greater than input => payable (ข้อ 9)", "1000.00", "400.00", "0", "600.00", "600.00", "0.00"},
-		{"input greater than output => creditable (ข้อ 10)", "400.00", "1000.00", "0", "-600.00", "0.00", "600.00"},
-		{"credit brought forward reduces payable (ข้อ 8)", "1000.00", "400.00", "250.50", "349.50", "349.50", "0.00"},
-		{"credit brought forward larger than net => creditable", "1000.00", "400.00", "700.00", "-100.00", "0.00", "100.00"},
-		{"0.1 + 0.2 exact, no float drift", "0.30", "0.10", "0.20", "0.00", "0.00", "0.00"},
-		{"zero both", "0", "0", "0", "0.00", "0.00", "0.00"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			net, payable, creditable := computeVatSettlement(d(tc.outputVat), d(tc.inputVat), d(tc.creditForward))
-			got := []string{moneyText(net), moneyText(payable), moneyText(creditable)}
-			want := []string{tc.wantNet, tc.wantPayable, tc.wantCreditable}
-			for i := range got {
-				if got[i] != want[i] {
-					t.Fatalf("computeVatSettlement(%s,%s,%s) = %v, want %v", tc.outputVat, tc.inputVat, tc.creditForward, got, want)
-				}
-			}
-		})
-	}
-}
-
 func TestThaiBahtText(t *testing.T) {
 	cases := map[string]string{
 		"0":          "ศูนย์บาทถ้วน",
@@ -122,110 +93,78 @@ func TestThaiBahtText(t *testing.T) {
 	}
 }
 
-func TestParseMoneyInput(t *testing.T) {
-	valid := map[string]string{"": "0.00", " 1250.5 ": "1250.50", "0.01": "0.01", "1000000": "1000000.00"}
-	for in, want := range valid {
-		got, ok := parseMoneyInput(in)
-		if !ok || moneyText(got) != want {
-			t.Errorf("parseMoneyInput(%q) = %s,%v want %s", in, moneyText(got), ok, want)
-		}
+// -------------------- VAT register / ภ.พ.30 จากรายละเอียดภาษีมูลค่าเพิ่มในใบสำคัญ --------------------
+
+func vatRecord(doc, invoice string, documentType int, base, zero, exempt, vat string) generalledger.VatRecord {
+	amount := generalledger.Amount(vat)
+	return generalledger.VatRecord{JournalID: "J-" + doc, DocNo: doc, DocDate: "2026-09-10", SubledgerVat: generalledger.SubledgerVat{
+		ID: doc + invoice, TaxType: 2, DocumentType: documentType, TaxInvoiceNo: invoice, TaxInvoiceDate: "2026-09-10",
+		PartnerName: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", PartnerTaxID: "0105558012349", PartnerBranchNo: "00000",
+		BaseAmount: generalledger.Amount(base), ZeroRateAmount: generalledger.Amount(zero), ExemptAmount: generalledger.Amount(exempt),
+		Rate: "7", VatAmount: &amount,
+	}}
+}
+
+// ใบลดหนี้หักออก ใบเพิ่มหนี้บวกเพิ่ม และยอดรวมท้ายรายงาน = ผลบวกของแถว (ปัด 2 ตำแหน่งต่อรายการ)
+func TestBuildVatRegisterSignsAndTotals(t *testing.T) {
+	records := []generalledger.VatRecord{
+		vatRecord("UV1", "IV001", 1, "1000", "0", "0", "70"),
+		vatRecord("UV2", "EX001", 1, "0", "500", "0", "0"),
+		vatRecord("UV3", "CN001", 3, "100", "0", "0", "7"),
+		vatRecord("UV4", "DN001", 2, "0.105", "0", "0", "0.0074"),
 	}
-	for _, in := range []string{"-1", "1.234", "abc", "1,000", "1e5", "NaN"} {
-		if _, ok := parseMoneyInput(in); ok {
-			t.Errorf("parseMoneyInput(%q) should be rejected", in)
-		}
+	rows, summary := buildVatRegister(records)
+	if len(rows) != 4 {
+		t.Fatalf("rows = %+v", rows)
+	}
+	credit := rows[2]
+	if credit.TaxInvoiceNo != "CN001" || credit.AmountBeforeVat != "-100.00" || credit.VatAmount != "-7.00" || credit.TotalAmount != "-107.00" {
+		t.Fatalf("credit note row = %+v", credit)
+	}
+	if debit := rows[3]; debit.AmountBeforeVat != "0.11" || debit.VatAmount != "0.01" || debit.TotalAmount != "0.12" {
+		t.Fatalf("debit note row = %+v", debit)
+	}
+	if rows[0].DocDate != "2026-09-10" || rows[0].CounterpartyName == "" || rows[0].TaxID != "0105558012349" || rows[0].BranchNo != "00000" {
+		t.Fatalf("invoice row = %+v", rows[0])
+	}
+	if summary.AmountBeforeVat != "1400.11" || summary.VatAmount != "63.01" || summary.TotalAmount != "1463.12" {
+		t.Fatalf("summary = %+v", summary)
+	}
+	if page := pageVatRegisterRows(rows, 2, 3); len(page) != 1 || page[0].TaxInvoiceNo != "DN001" {
+		t.Fatalf("page = %+v", page)
+	}
+	if page := pageVatRegisterRows(rows, 2, 9); len(page) != 0 {
+		t.Fatalf("offset past rows = %+v", page)
+	}
+	if empty, s := buildVatRegister(nil); len(empty) != 0 || s.TotalAmount != "0.00" {
+		t.Fatalf("empty register = %+v %+v", empty, s)
 	}
 }
 
-// -------------------- buildVatRegisterQuery --------------------
-
-func TestBuildVatRegisterQuery_Sale(t *testing.T) {
-	query, args := buildVatRegisterQuery("sale", 2026, 9, 200, 0)
-
-	if !strings.Contains(query, "public.saleinvoicetransaction") {
-		t.Errorf("expected sale query to reference saleinvoicetransaction, got: %s", query)
+// ภ.พ.30: ข้อ 2/3/4 แยกจากยอดที่บันทึก, ข้อ 5/7 = VAT ที่บันทึก (ไม่คำนวณจากฐาน x 7%), ใบลดหนี้หักออก
+func TestSumPP30FromRecordedVat(t *testing.T) {
+	sales := []generalledger.VatRecord{
+		vatRecord("UV1", "IV001", 1, "1000", "0", "0", "70.01"),
+		vatRecord("UV2", "EX001", 1, "0", "500", "250", "0"),
+		vatRecord("UV3", "CN001", 3, "100", "0", "0", "7"),
 	}
-	if !strings.Contains(query, "public.debtor") {
-		t.Errorf("expected sale query to join debtor, got: %s", query)
+	purchases := []generalledger.VatRecord{
+		vatRecord("SV1", "PI001", 1, "400", "0", "0", "28"),
+		vatRecord("SV2", "PC001", 3, "40", "0", "0", "2.80"),
 	}
-	if strings.Contains(query, "purchasetransaction") || strings.Contains(query, "public.creditor") {
-		t.Errorf("sale query must not reference purchase tables, got: %s", query)
-	}
-	wantArgs := []any{2026, 9, 200, 0}
-	if len(args) != len(wantArgs) {
-		t.Fatalf("expected %d args, got %d (%v)", len(wantArgs), len(args), args)
-	}
-	for i := range wantArgs {
-		if args[i] != wantArgs[i] {
-			t.Errorf("arg[%d] = %v, want %v", i, args[i], wantArgs[i])
+	totals := sumPP30(sales, purchases)
+	got := map[string]string{"taxable": moneyText(totals.salesTaxable), "zero": moneyText(totals.salesZeroRated), "exempt": moneyText(totals.salesExempt),
+		"output": moneyText(totals.outputVat), "purchase": moneyText(totals.purchaseTaxable), "input": moneyText(totals.inputVat)}
+	want := map[string]string{"taxable": "900.00", "zero": "500.00", "exempt": "250.00", "output": "63.01", "purchase": "360.00", "input": "25.20"}
+	for key, value := range want {
+		if got[key] != value {
+			t.Fatalf("%s = %s want %s (all %v)", key, got[key], value, got)
 		}
 	}
-}
-
-func TestBuildVatRegisterQuery_Purchase(t *testing.T) {
-	query, args := buildVatRegisterQuery("purchase", 2026, 9, 50, 100)
-
-	if !strings.Contains(query, "public.purchasetransaction") {
-		t.Errorf("expected purchase query to reference purchasetransaction, got: %s", query)
-	}
-	if !strings.Contains(query, "public.creditor") {
-		t.Errorf("expected purchase query to join creditor, got: %s", query)
-	}
-	if strings.Contains(query, "saleinvoicetransaction") || strings.Contains(query, "public.debtor") {
-		t.Errorf("purchase query must not reference sale tables, got: %s", query)
-	}
-	wantArgs := []any{2026, 9, 50, 100}
-	for i := range wantArgs {
-		if args[i] != wantArgs[i] {
-			t.Errorf("arg[%d] = %v, want %v", i, args[i], wantArgs[i])
-		}
-	}
-}
-
-func TestBuildVatRegisterQuery_ExcludesCancelledAndZeroVat(t *testing.T) {
-	query, _ := buildVatRegisterQuery("sale", 2026, 9, 200, 0)
-	if !strings.Contains(query, "t.iscancel = false") {
-		t.Errorf("expected query to exclude cancelled documents, got: %s", query)
-	}
-	if !strings.Contains(query, "t.totalvatvalue <> 0") {
-		t.Errorf("expected query to only include documents with VAT, got: %s", query)
-	}
-}
-
-// -------------------- buildPP30SalesQuery / buildPP30PurchaseQuery --------------------
-
-func TestBuildPP30SalesQuery(t *testing.T) {
-	query, args := buildPP30SalesQuery(2026, 9)
-	if !strings.Contains(query, "public.saleinvoicetransaction") {
-		t.Errorf("expected sales query to reference saleinvoicetransaction, got: %s", query)
-	}
-	if !strings.Contains(query, "SUM(ROUND(COALESCE(s.totalvatvalue, 0)::numeric, 2))") {
-		t.Errorf("expected outputvat to be SUM(totalvatvalue) not a computed rate, got: %s", query)
-	}
-	if strings.Contains(query, "* 0.07") || strings.Contains(query, "*0.07") {
-		t.Errorf("must not compute VAT from base * 7%%, got: %s", query)
-	}
-	wantArgs := []any{2026, 9}
-	for i := range wantArgs {
-		if args[i] != wantArgs[i] {
-			t.Errorf("arg[%d] = %v, want %v", i, args[i], wantArgs[i])
-		}
-	}
-}
-
-func TestBuildPP30PurchaseQuery(t *testing.T) {
-	query, args := buildPP30PurchaseQuery(2026, 9)
-	if !strings.Contains(query, "public.purchasetransaction") {
-		t.Errorf("expected purchase query to reference purchasetransaction, got: %s", query)
-	}
-	if !strings.Contains(query, "SUM(ROUND(COALESCE(p.totalvatvalue, 0)::numeric, 2))") {
-		t.Errorf("expected inputvat to be SUM(totalvatvalue) not a computed rate, got: %s", query)
-	}
-	wantArgs := []any{2026, 9}
-	for i := range wantArgs {
-		if args[i] != wantArgs[i] {
-			t.Errorf("arg[%d] = %v, want %v", i, args[i], wantArgs[i])
-		}
+	missing := vatRecord("UV9", "IV009", 1, "10", "0", "0", "0")
+	missing.VatAmount = nil
+	if total := sumPP30([]generalledger.VatRecord{missing}, nil); !total.outputVat.IsZero() {
+		t.Fatalf("missing vat amount must count as zero, got %s", total.outputVat)
 	}
 }
 
@@ -278,33 +217,6 @@ func TestTaxVatRegisterHandler_InvalidPeriod(t *testing.T) {
 
 func TestTaxVatRegisterHandler_InvalidPayload(t *testing.T) {
 	rec := callTaxReportHandler(t, TaxVatRegisterHandler, `{invalid-json`, &taxReportTestUser)
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected 400, got %d body=%s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), "INVALID_PAYLOAD") {
-		t.Errorf("expected INVALID_PAYLOAD code, got body=%s", rec.Body.String())
-	}
-}
-
-func TestPP30SummaryHandler_Unauthorized(t *testing.T) {
-	rec := callTaxReportHandler(t, PP30SummaryHandler, `{"year":2026,"month":9}`, nil)
-	if rec.Code != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d body=%s", rec.Code, rec.Body.String())
-	}
-}
-
-func TestPP30SummaryHandler_InvalidPeriod(t *testing.T) {
-	rec := callTaxReportHandler(t, PP30SummaryHandler, `{"year":2026,"month":0}`, &taxReportTestUser)
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected 400, got %d body=%s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), "INVALID_PERIOD") {
-		t.Errorf("expected INVALID_PERIOD code, got body=%s", rec.Body.String())
-	}
-}
-
-func TestPP30SummaryHandler_InvalidPayload(t *testing.T) {
-	rec := callTaxReportHandler(t, PP30SummaryHandler, `{invalid-json`, &taxReportTestUser)
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d body=%s", rec.Code, rec.Body.String())
 	}

@@ -10,7 +10,10 @@ export type GLDetailMatch = {id:string;statement_line_id:string;journal_id?:stri
 export type GLDetailWithdrawal = {kind:string;id:string;reason:string};
 /** ภาษีหัก ณ ที่จ่ายประกอบใบสำคัญ (ตาม mydocs wht.sql) — ฐานภาษีแก้ได้เสมอ; tax_amount ว่าง = backend คำนวณ ฐาน × อัตรา */
 export type GLDetailWithholding = {id:string;wht_direction:number;form_type:string;partner_code:string;wht_cert_no?:string;certificate_date?:string;payment_date:string;income_tax_type:string;income_description?:string;condition_type:number;wht_rate:string;base_amount:string;tax_amount?:string};
-export type GLJournalDetails = {partners?:GLDetailPartner[];bank_accounts?:GLDetailBankAccount[];documents?:GLDetailDocument[];allocations?:GLDetailAllocation[];settlements?:GLDetailSettlement[];bank_lines?:GLDetailBankLine[];statement_lines?:GLDetailStatement[];matches?:GLDetailMatch[];withdrawals?:GLDetailWithdrawal[];withholdings?:GLDetailWithholding[]};
+/** ภาษีมูลค่าเพิ่มประกอบใบสำคัญ (ตาม mydocs vat.sql) — 1 แถว = 1 ใบกำกับภาษี; ฐานภาษีแก้ได้เสมอ; vat_amount ว่าง = backend คำนวณ ฐาน × อัตรา
+ *  tax_type 1=ซื้อ 2=ขาย · document_type 1=ใบกำกับ 2=ใบเพิ่มหนี้ 3=ใบลดหนี้ · claim_status (เฉพาะซื้อ) 1=ใช้สิทธิ 2=ต้องห้าม 3=รอใช้สิทธิ 4=ไม่ใช้สิทธิ */
+export type GLDetailVat = {id:string;tax_type:number;document_type:number;tax_invoice_no:string;tax_invoice_date:string;original_invoice_no?:string;original_invoice_date?:string;tax_period_year?:number;tax_period_month?:number;partner_code?:string;partner_tax_id?:string;partner_branch_no?:string;partner_name:string;base_amount:string;zero_rate_amount:string;exempt_amount:string;vat_rate:string;vat_amount?:string;claim_status?:number;claim_reason?:string;remark?:string};
+export type GLJournalDetails = {partners?:GLDetailPartner[];bank_accounts?:GLDetailBankAccount[];documents?:GLDetailDocument[];allocations?:GLDetailAllocation[];settlements?:GLDetailSettlement[];bank_lines?:GLDetailBankLine[];statement_lines?:GLDetailStatement[];matches?:GLDetailMatch[];withdrawals?:GLDetailWithdrawal[];withholdings?:GLDetailWithholding[];vats?:GLDetailVat[]};
 export type GLSupportRow = Record<string,string|number|boolean|undefined>;
 export type GLSupportKind = "partners"|"bank-accounts"|"documents"|"statements"|"bank-lines"|"allocations"|"settlements"|"matches";
 export function supportLabel(kind: GLSupportKind, row: GLSupportRow): string {
@@ -33,7 +36,34 @@ export function reconciliationChanges(before: GLJournalDetails = {}, after: GLJo
   }
   // ภาษีหัก ณ ที่จ่ายส่งทั้งชุดเมื่อมีการแก้ (backend แทนทั้งชุดและเก็บค่าเดิมใน audit)
   if((after.withholdings ?? []).length > 0 && JSON.stringify(before.withholdings ?? []) !== JSON.stringify(after.withholdings)) result.withholdings = after.withholdings;
+  // ภาษีมูลค่าเพิ่มเช่นเดียวกัน: ส่งทั้งชุดเมื่อแก้ (backend แทนทั้งชุดและเก็บค่าเดิมใน audit vat_replace)
+  if((after.vats ?? []).length > 0 && JSON.stringify(before.vats ?? []) !== JSON.stringify(after.vats)) result.vats = after.vats;
   return result;
+}
+/** ประเภทภาษีเริ่มต้นตามสมุด: UV = สมุดรายวันขาย → ภาษีขาย (2); อื่น ๆ → ภาษีซื้อ (1) ผู้ใช้เปลี่ยนได้ */
+export function defaultVatTaxType(bookcode?: string): 1 | 2 { return bookcode === "UV" ? 2 : 1; }
+/** งวดภาษีของแถวเป็นค่า "YYYY-MM" (ค.ศ.) — ว่าง = ยังไม่กำหนดงวด */
+export function vatPeriodValue(row: {tax_period_year?: unknown; tax_period_month?: unknown}): string {
+  const year = Number(row.tax_period_year), month = Number(row.tax_period_month);
+  return Number.isInteger(year) && year >= 1900 && Number.isInteger(month) && month >= 1 && month <= 12 ? `${year}-${String(month).padStart(2, "0")}` : "";
+}
+/** "YYYY-MM" → ปี/เดือนของ payload; ว่าง = ไม่มีงวดทั้งคู่ (vat.sql: ว่างทั้งคู่หรือระบุทั้งคู่) */
+export function vatPeriodPatch(value: string): {tax_period_year?: number; tax_period_month?: number} {
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  return match ? {tax_period_year: Number(match[1]), tax_period_month: Number(match[2])} : {tax_period_year: undefined, tax_period_month: undefined};
+}
+/** ตัวเลือกงวดภาษีรอบวันที่ใบสำคัญ: ย้อนหลัง 12 เดือนถึงล่วงหน้า 6 เดือน (ภาษีซื้อใช้สิทธิภายหลังได้) + งวดที่บันทึกไว้เดิมเสมอ */
+export function vatPeriodChoices(date: string, current = ""): string[] {
+  const match = /^(\d{4})-(\d{2})/.exec(date);
+  const today = new Date();
+  const baseYear = match ? Number(match[1]) : today.getFullYear(), baseMonth = match ? Number(match[2]) : today.getMonth() + 1;
+  const choices: string[] = [];
+  for(let offset = -12; offset <= 6; offset++) {
+    const index = baseYear * 12 + baseMonth - 1 + offset;
+    choices.push(`${Math.floor(index / 12)}-${String(index % 12 + 1).padStart(2, "0")}`);
+  }
+  if(current && !choices.includes(current)) choices.push(current);
+  return choices.sort();
 }
 /** CSV supports quoted commas/newlines; source identity uses SHA-256 of the original file + row. */
 export async function parseStatementCsv(text:string, bankAccountCode:string):Promise<GLDetailStatement[]> {

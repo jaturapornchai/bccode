@@ -1,0 +1,163 @@
+//go:build integration
+
+package handlers
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"os"
+	"testing"
+
+	"smlcloudplatform/internal/rdform"
+)
+
+// TestTaxFilingStorage ตรวจการบันทึกแบบยื่นภาษีกับ PostgreSQL จริงทีละขั้น:
+// สร้าง → ซ้ำงวด → แก้ตาม version → version เก่า → ประวัติ → รายการ → เปิด → ลบ
+//
+//	BC_TAX_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:5432/taxform_it?sslmode=disable'
+func TestTaxFilingStorage(t *testing.T) {
+	dsn := os.Getenv("BC_TAX_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set BC_TAX_TEST_POSTGRES_DSN")
+	}
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	ctx := context.Background()
+	if err := ensureTaxFilingSchema(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	const company = "IT01"
+	cleanup := func() {
+		db.ExecContext(ctx, `DELETE FROM tax_filing_history WHERE filing_id IN (SELECT id FROM tax_filings WHERE company_code=$1)`, company)
+		db.ExecContext(ctx, `DELETE FROM tax_filings WHERE company_code=$1`, company)
+	}
+	cleanup()
+	defer cleanup()
+
+	doc := rdform.Document{Values: map[string]string{"filing_type": "normal", "output_tax": "70.00", "input_tax": "35.00"}}
+	f := TaxFiling{Code: "pp30", Year: 2026, Month: 9, Document: &doc}
+	if err := saveTaxFiling(ctx, db, company, "demo", &f); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	var stored string
+	if err := db.QueryRowContext(ctx, `SELECT document->'values'->>'output_tax' FROM tax_filings WHERE id=$1 AND version=1`, f.ID).Scan(&stored); err != nil || stored != "70.00" {
+		t.Fatalf("PG after create: %q %v (ยอดต้องเก็บเป็นสตริงทศนิยม)", stored, err)
+	}
+
+	dup := TaxFiling{Code: "pp30", Year: 2026, Month: 9, Document: &doc}
+	if err := saveTaxFiling(ctx, db, company, "demo", &dup); !errors.Is(err, errTaxFilingDuplicate) {
+		t.Fatalf("duplicate period err = %v", err)
+	}
+
+	doc.Values["output_tax"] = "77.00"
+	if err := saveTaxFiling(ctx, db, company, "demo2", &f); err != nil || f.Version != 2 || f.UpdatedBy != "demo2" {
+		t.Fatalf("update: v=%d by=%s err=%v", f.Version, f.UpdatedBy, err)
+	}
+	var count int
+	db.QueryRowContext(ctx, `SELECT count(*) FROM tax_filings WHERE company_code=$1`, company).Scan(&count)
+	if count != 1 {
+		t.Fatalf("rows after update = %d, want 1 (แก้แถวเดิม ไม่สร้างใหม่)", count)
+	}
+
+	stale := f
+	stale.Version = 1
+	if err := saveTaxFiling(ctx, db, company, "demo", &stale); !errors.Is(err, errTaxFilingConflict) {
+		t.Fatalf("stale version err = %v", err)
+	}
+	db.QueryRowContext(ctx, `SELECT count(*) FROM tax_filing_history WHERE filing_id=$1`, f.ID).Scan(&count)
+	if count != 2 {
+		t.Fatalf("history = %d, want 2", count)
+	}
+
+	// ยื่นเพิ่มเติมเป็นอีกฉบับของงวดเดียวกัน
+	extra := TaxFiling{Code: "pp30", Year: 2026, Month: 9, FilingSeq: 1, Document: &doc}
+	if err := saveTaxFiling(ctx, db, company, "demo", &extra); err != nil {
+		t.Fatalf("additional filing: %v", err)
+	}
+	list, err := listTaxFilings(ctx, db, company, "pp30", 2026)
+	if err != nil || len(list) != 2 || list[0].FilingSeq != 0 {
+		t.Fatalf("list = %+v err=%v", list, err)
+	}
+	loaded, err := loadTaxFiling(ctx, db, company, f.ID)
+	if err != nil || loaded.Version != 2 || loaded.Document.Values["output_tax"] != "77.00" {
+		t.Fatalf("load = %+v err=%v", loaded, err)
+	}
+	if _, err := loadTaxFiling(ctx, db, "OTHER", f.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("other company must not load: %v", err)
+	}
+}
+
+// TestTaxFormFillFromLedger - บริษัทที่ยังไม่มีรายการเปิดแบบได้พร้อมหมายเหตุ (ไม่ error) และ ภ.พ.30 ดึงยอดจากรายการภาษีที่บันทึกจริง
+func TestTaxFormFillFromLedger(t *testing.T) {
+	dsn := os.Getenv("BC_TAX_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set BC_TAX_TEST_POSTGRES_DSN")
+	}
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	ctx := context.Background()
+
+	doc := rdform.Document{Values: map[string]string{}}
+	notes, err := fillWithholdingForm(ctx, db, "IT01", "pnd53", 2026, 9, &doc)
+	if err != nil || len(notes) != 1 || notes[0].Key != "tax_form_note_no_withholding" {
+		t.Fatalf("pnd53 notes=%+v err=%v", notes, err)
+	}
+	f, err := newFormFiller("pp30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes, err = fillVatForm(ctx, db, "IT01", 2026, 9, f)
+	if err != nil || notes[0].Key != "tax_form_note_no_vat" || f.values["output_tax"] != "0.00" {
+		t.Fatalf("pp30 notes=%+v values=%v err=%v", notes, f.values, err)
+	}
+	cit, err := newFormFiller("pnd50")
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes, err = fillCitForm(ctx, db, "IT01", "pnd50", 2026, cit)
+	if err != nil || notes[0].Key != "tax_form_note_no_fiscal_year" || cit.values["period_start_year_be"] != "2569" || cit.values["period_end_day"] != "31" {
+		t.Fatalf("pnd50 notes=%+v values=%v err=%v", notes, cit.values, err)
+	}
+
+	// ภ.พ.30 จากรายการภาษีของใบสำคัญที่ผ่านบัญชี: ขาย 100,000 + 0% 20,000, ลดหนี้ 1,000, ซื้อใช้สิทธิ 50,000 (ต้องห้าม/ร่างไม่นับ)
+	const company = "IT02"
+	cleanup := func() { db.ExecContext(ctx, `DELETE FROM gl_records WHERE company=$1`, company) }
+	cleanup()
+	defer cleanup()
+	insert := func(id, status, vats string) {
+		t.Helper()
+		payload := `{"docno":"` + id + `","date":"2026-09-05","status":"` + status + `","details":{"vats":` + vats + `}}`
+		if _, err := db.ExecContext(ctx, `INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals',$2,$2,1,$3::jsonb)`, company, id, payload); err != nil {
+			t.Fatal(err)
+		}
+	}
+	const party = `"partner_name":"บริษัท หอมกรุ่น คอฟฟี่ แอนด์ เบเกอรี่ จำกัด","partner_tax_id":"0105558012349","partner_branch_no":"00000","tax_period_year":2026,"tax_period_month":9,"vat_rate":"7","exempt_amount":"0"`
+	insert("UV1", "posted", `[{"id":"S1","tax_type":2,"document_type":1,"tax_invoice_no":"IV1","tax_invoice_date":"2026-09-05",`+party+`,"base_amount":"100000","zero_rate_amount":"20000","vat_amount":"7000"}]`)
+	insert("UV2", "posted", `[{"id":"S2","tax_type":2,"document_type":3,"tax_invoice_no":"CN1","tax_invoice_date":"2026-09-20","original_invoice_no":"IV1","original_invoice_date":"2026-09-05",`+party+`,"base_amount":"1000","zero_rate_amount":"0","vat_amount":"70"}]`)
+	insert("SV1", "posted", `[{"id":"P1","tax_type":1,"document_type":1,"tax_invoice_no":"PI1","tax_invoice_date":"2026-09-10","claim_status":1,`+party+`,"base_amount":"50000","zero_rate_amount":"0","vat_amount":"3500"},
+		{"id":"P2","tax_type":1,"document_type":1,"tax_invoice_no":"PI2","tax_invoice_date":"2026-09-10","claim_status":2,`+party+`,"base_amount":"10000","zero_rate_amount":"0","vat_amount":"700"}]`)
+	insert("UV9", "draft", `[{"id":"S9","tax_type":2,"document_type":1,"tax_invoice_no":"IV9","tax_invoice_date":"2026-09-25",`+party+`,"base_amount":"9000","zero_rate_amount":"0","vat_amount":"630"}]`)
+
+	pp30, err := newFormFiller("pp30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes, err = fillVatForm(ctx, db, company, 2026, 9, pp30)
+	if err != nil || notes[0].Key != "tax_form_note_vat_records" || notes[0].Count != 3 {
+		t.Fatalf("pp30 notes=%+v err=%v", notes, err)
+	}
+	pp30.values["excess_brought_forward"] = "400"
+	filled := rdform.Document{Values: pp30.values}
+	if err := computeTaxForm("pp30", &filled); err != nil {
+		t.Fatal(err)
+	}
+	expectValues(t, filled.Values, map[string]string{"sales_amount": "119000.00", "sales_zero_rate": "20000.00", "sales_taxable": "99000.00",
+		"output_tax": "6930.00", "purchase_amount": "50000.00", "input_tax": "3500.00", "tax_payable": "3430.00", "net_payable": "3030.00", "total_payable": "3030.00"})
+}

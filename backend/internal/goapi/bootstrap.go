@@ -358,9 +358,18 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, cacher micros
 	authGroup.POST("/api/report/sales/by-document", handlers.SalesReportByDocumentHandler)
 	authGroup.POST("/api/report/sales/summary", handlers.SalesReportSummaryHandler)
 	authGroup.POST("/api/report/tax/vat-register", handlers.TaxVatRegisterHandler)
-	authGroup.POST("/api/report/tax/pp30-summary", handlers.PP30SummaryHandler)
 	authGroup.POST("/api/report/tax/wht", handlers.TaxWithholdingHandler)
 	authGroup.POST("/api/report/tax/wht/certificate", handlers.WhtCertificateHandler)
+	// แบบยื่นภาษีของกรมสรรพากร (ภ.ง.ด./ภ.พ./ภ.ธ.) — ดึงยอดจาก GL, แก้ได้ทุกช่อง, บันทึกฉบับ, พิมพ์ลงแบบ PDF จริง
+	authGroup.POST("/api/report/tax/form/catalog", handlers.TaxFormCatalogHandler)
+	authGroup.POST("/api/report/tax/form/schema", handlers.TaxFormSchemaHandler)
+	authGroup.POST("/api/report/tax/form/prefill", handlers.TaxFormPrefillHandler)
+	authGroup.POST("/api/report/tax/form/compute", handlers.TaxFormComputeHandler)
+	authGroup.POST("/api/report/tax/form/pdf", handlers.TaxFormPDFHandler)
+	authGroup.POST("/api/report/tax/form/save", handlers.TaxFormSaveHandler)
+	authGroup.POST("/api/report/tax/form/list", handlers.TaxFormListHandler)
+	authGroup.POST("/api/report/tax/form/load", handlers.TaxFormLoadHandler)
+	authGroup.POST("/api/report/tax/form/delete", handlers.TaxFormDeleteHandler)
 	authGroup.POST("/api/report/debt/query", handlers.DebtReportHandler)
 
 	// Product search

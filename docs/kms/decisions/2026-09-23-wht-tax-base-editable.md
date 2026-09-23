@@ -33,7 +33,7 @@ tags: [bc-account, general-ledger, wht, tax, postgres]
 - ⚠️ ยังไม่ตรวจว่า `tax_amount` ในรายละเอียดตรงกับยอดบรรทัดบัญชีภาษีหัก ณ ที่จ่ายของใบเดียวกัน (UAT พบ 935 vs 1,000 บันทึกได้)
 - ⚠️ ชื่อ/ที่อยู่ผู้ถูกหักอ่านจากทะเบียนคู่ค้าปัจจุบัน ไม่ได้ snapshot ตอนออกหนังสือรับรอง
 - ⚠️ หลังผ่านบัญชีลบรายการภาษีจนหมดไม่ได้ (reconcile ต้องมีอย่างน้อย 1 รายการ)
-- ⚠️ ภาษีมูลค่าเพิ่ม (vat.sql) ยังไม่ได้ทำแบบเดียวกัน — รายงาน VAT ยังเปิดอยู่ใน `docs/kms/bugs/2026-09-23-vat-report-reads-missing-erp-tables.md`
+- ⚠️ ภาษีมูลค่าเพิ่ม (vat.sql) ยังไม่ได้ทำแบบเดียวกัน — รายงาน VAT ยังเปิดอยู่ใน `docs/kms/bugs/2026-09-23-vat-report-reads-missing-erp-tables.md` — **อัปเดตวันเดียวกัน:** ทำแล้วเป็น `details.vats` ของใบสำคัญ (`backend/internal/generalledger/subledger_vat.go`, skill ui-scale-polish §8.32) และ ภ.พ.30 อ่านจากตรงนั้น (ADR `2026-09-23-rd-tax-forms-engine.md`)
 
 ## Evidence
 

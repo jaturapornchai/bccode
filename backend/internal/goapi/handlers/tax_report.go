@@ -59,8 +59,8 @@ type TaxVatRegisterSummary struct {
 }
 
 // TaxVatRegisterHandler - POST /api/report/tax/vat-register
-// รายงานภาษีซื้อ/ขายรายเอกสาร อ่านจาก saleinvoicetransaction/purchasetransaction จริงใน PostgreSQL
-// (ไม่ mock ข้อมูล — ฟิลด์ใดไม่มีจริงในตารางจะคืนค่าว่าง/0 ผ่าน COALESCE)
+// รายงานภาษีซื้อ/ขายรายใบกำกับ อ่านจากรายละเอียดภาษีมูลค่าเพิ่มของใบสำคัญ GL ที่ผ่านรายการแล้ว (details.vats)
+// ของบริษัทที่ผู้ใช้เลือก ตามงวดภาษีที่บันทึก (ไม่ใช่วันที่ใบสำคัญ) — ภาษีซื้อนับเฉพาะรายการที่ใช้สิทธิในงวดนี้
 func TaxVatRegisterHandler(c echo.Context) error {
 	var req TaxVatRegisterRequest
 	if err := c.Bind(&req); err != nil {
@@ -71,7 +71,7 @@ func TaxVatRegisterHandler(c echo.Context) error {
 		})
 	}
 
-	holdingCode, _, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
+	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
 	if scopeErr != nil {
 		return c.JSON(scopeErr.Status, map[string]any{
 			"success": false,
@@ -106,50 +106,24 @@ func TaxVatRegisterHandler(c echo.Context) error {
 			"message": "Database connection failed",
 		})
 	}
+	// ห้าม db.Close(): PgSqlFastConnect คืน pool กลางของ holding ที่ทุก request ใช้ร่วมกัน
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	query, args := buildVatRegisterQuery(req.Type, req.Year, req.Month, limit, offset)
+	// กลุ่มกิจการใหม่ที่ยังไม่เคยเปิด GL ต้องเห็นรายงานว่าง ไม่ใช่ error เพราะยังไม่มีตาราง gl_*
+	if err := generalledger.EnsureSchema(ctx, db); err != nil {
+		logger.Error("TaxVatRegister: ensure GL schema: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]any{"success": false, "code": "QUERY_ERROR", "message": "Query execution failed"})
+	}
 
-	rows, err := db.QueryContext(ctx, query, args...)
+	taxType := 2
+	if req.Type == "purchase" {
+		taxType = 1
+	}
+	records, err := generalledger.VatRecordsForPeriod(ctx, db, businessCode, req.Year, req.Month, taxType)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"success": false,
-			"code":    "QUERY_ERROR",
-			"message": "Query execution failed",
-		})
-	}
-	defer rows.Close()
-
-	data := make([]TaxVatRegisterRow, 0)
-	for rows.Next() {
-		var row TaxVatRegisterRow
-		var beforeVat, vat, total decimal.Decimal
-		if err := rows.Scan(
-			&row.DocDate,
-			&row.TaxInvoiceNo,
-			&row.CounterpartyName,
-			&row.TaxID,
-			&row.BranchNo,
-			&beforeVat,
-			&vat,
-			&total,
-		); err != nil {
-			// รายงานภาษีต้องครบทุกใบ แถวที่อ่านไม่ได้ต้องแจ้งให้รู้ ไม่ใช่ข้ามเงียบ ๆ
-			// ทะเบียนภาษีที่ขาดใบกำกับไปเฉย ๆ คือรายงานที่ผิดโดยไม่มีใครเห็น
-			logger.Error("TaxVatRegister: scan row: %v", err)
-			return c.JSON(http.StatusInternalServerError, map[string]any{
-				"success": false,
-				"code":    "SCAN_ERROR",
-				"message": "Query execution failed",
-			})
-		}
-		row.AmountBeforeVat, row.VatAmount, row.TotalAmount = moneyText(beforeVat), moneyText(vat), moneyText(total)
-		data = append(data, row)
-	}
-	if err := rows.Err(); err != nil {
-		logger.Error("TaxVatRegister: read rows: %v", err)
+		logger.Error("TaxVatRegister: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
 			"code":    "QUERY_ERROR",
@@ -157,279 +131,104 @@ func TaxVatRegisterHandler(c echo.Context) error {
 		})
 	}
 
-	// ยอดรวมท้ายรายงานต้องเป็นของทั้งงวด ไม่ใช่ผลรวมเฉพาะหน้าที่ browser ได้รับ
-	summaryQuery, summaryArgs := buildVatRegisterSummaryQuery(req.Type, req.Year, req.Month)
-	var totalRows int
-	var sumBefore, sumVat, sumTotal decimal.Decimal
-	if err := db.QueryRowContext(ctx, summaryQuery, summaryArgs...).Scan(&totalRows, &sumBefore, &sumVat, &sumTotal); err != nil {
-		logger.Error("TaxVatRegister: summary: %v", err)
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"success": false,
-			"code":    "QUERY_ERROR",
-			"message": "Query execution failed",
-		})
-	}
-
+	// ยอดรวมท้ายรายงานเป็นของทั้งงวด ไม่ใช่ผลรวมเฉพาะหน้าที่ browser ได้รับ
+	rows, summary := buildVatRegister(records)
+	data := pageVatRegisterRows(rows, limit, offset)
 	return c.JSON(http.StatusOK, map[string]any{
-		"status": "success",
-		"data":   data,
-		"count":  len(data),
-		"total":  totalRows,
-		"summary": TaxVatRegisterSummary{
-			AmountBeforeVat: moneyText(sumBefore),
-			VatAmount:       moneyText(sumVat),
-			TotalAmount:     moneyText(sumTotal),
-		},
-		"limit":  limit,
-		"offset": offset,
+		"status":  "success",
+		"data":    data,
+		"count":   len(data),
+		"total":   len(rows),
+		"summary": summary,
+		"limit":   limit,
+		"offset":  offset,
 	})
 }
 
-// buildVatRegisterQuery - สร้าง query รายเอกสารสำหรับ VAT register (parameterized ทั้งหมด ป้องกัน SQL injection;
-// ชื่อ table มาจาก whitelist คงที่ในโค้ดเท่านั้น ไม่ประกอบจาก input ของผู้ใช้)
-//
-// docType "sale"     -> public.saleinvoicetransaction join public.debtor
-// docType "purchase" -> public.purchasetransaction   join public.creditor
-//
-// หมายเหตุ: คอลัมน์รหัสคู่ค้าบน saleinvoicetransaction ชื่อจริงในฐานข้อมูลคือ "creditorcode" แม้จะเก็บรหัส "ลูกค้า"
-// ก็ตาม (Go struct field ชื่อ DebtorCode แต่ gorm/json tag คือ creditorcode) — ดู
-// backend/internal/transaction/models/transaction_saleinvoice_postgres.go:14
-func buildVatRegisterQuery(docType string, year, month, limit, offset int) (string, []any) {
-	table, masterTable := vatRegisterTables(docType)
-
-	// คอลัมน์ยอดเงินของตารางเอกสาร ERP ยังเป็น double precision จึงแปลงเป็น numeric แล้วปัด 2 ตำแหน่งใน SQL
-	// ต่อใบก่อนส่งออก — ผลรวมทุกจุดใช้ค่าที่ปัดแล้วชุดเดียวกัน ยอดท้ายรายงานจึงเท่ากับผลบวกของแถวเสมอ
-	query := fmt.Sprintf(`
-SELECT
-  TO_CHAR(t.docdate + INTERVAL '7 hour', 'YYYY-MM-DD') AS docdate,
-  COALESCE(t.taxdocno, '') AS taxinvoiceno,
-  COALESCE(m.name0, '') AS counterpartyname,
-  COALESCE(m.taxid, '') AS taxid,
-  COALESCE(m.branchnumber, '') AS branchno,
-  %s AS amountbeforevat,
-  %s AS vatamount,
-  %s AS totalamount
-FROM %s t
-LEFT JOIN %s m ON m.code = t.creditorcode
-%s
-ORDER BY t.docdate ASC, t.docno ASC
-LIMIT $3 OFFSET $4`, moneySQL("t.totalbeforevat"), moneySQL("t.totalvatvalue"), moneySQL("t.totalaftervat"), table, masterTable, vatRegisterWhere)
-
-	return query, []any{year, month, limit, offset}
+// vatSign - ใบลดหนี้ (document_type 3) หักออกจากยอด; ใบกำกับภาษีและใบเพิ่มหนี้บวกเพิ่ม (vat.sql เก็บยอดบวกเสมอ)
+func vatSign(documentType int) decimal.Decimal {
+	if documentType == 3 {
+		return decimal.NewFromInt(-1)
+	}
+	return decimal.NewFromInt(1)
 }
 
-// buildVatRegisterSummaryQuery - จำนวนใบและยอดรวมทั้งงวด (เงื่อนไขเดียวกับรายการ ไม่มี LIMIT)
-func buildVatRegisterSummaryQuery(docType string, year, month int) (string, []any) {
-	table, _ := vatRegisterTables(docType)
-	query := fmt.Sprintf(`
-SELECT COUNT(*), COALESCE(SUM(%s), 0), COALESCE(SUM(%s), 0), COALESCE(SUM(%s), 0)
-FROM %s t
-%s`, moneySQL("t.totalbeforevat"), moneySQL("t.totalvatvalue"), moneySQL("t.totalaftervat"), table, vatRegisterWhere)
-	return query, []any{year, month}
+// vatMoney - ยอดที่บันทึก ปัด 2 ตำแหน่งต่อรายการก่อนรวม (ยอดท้ายรายงานจึงเท่ากับผลบวกของแถวเสมอ) แล้วใส่เครื่องหมาย
+func vatMoney(amount generalledger.Amount, sign decimal.Decimal) decimal.Decimal {
+	return amount.Decimal().Round(2).Mul(sign)
 }
 
-const vatRegisterWhere = `WHERE t.iscancel = false
-  AND t.totalvatvalue <> 0
-  AND EXTRACT(YEAR FROM t.docdate + INTERVAL '7 hour') = $1
-  AND EXTRACT(MONTH FROM t.docdate + INTERVAL '7 hour') = $2`
-
-// vatRegisterTables - ชื่อตารางมาจาก whitelist คงที่ในโค้ดเท่านั้น
-func vatRegisterTables(docType string) (table, masterTable string) {
-	if docType == "purchase" {
-		return "public.purchasetransaction", "public.creditor"
+// vatAmountOf - ยอดภาษีที่บันทึก (backend คำนวณให้ตอนบันทึกเสมอ; ค่าว่างจากข้อมูลเสียถือเป็น 0 ไม่เดา)
+func vatAmountOf(record generalledger.VatRecord, sign decimal.Decimal) decimal.Decimal {
+	if record.VatAmount == nil {
+		return decimal.Zero
 	}
-	return "public.saleinvoicetransaction", "public.debtor"
+	return vatMoney(*record.VatAmount, sign)
 }
 
-// ---------------------------------------------------------------------------
-// POST /api/report/tax/pp30-summary — สรุปยอด ภ.พ.30 รายเดือน
-// ---------------------------------------------------------------------------
-
-// PP30SummaryRequest - request สำหรับสรุปยอดภาษีมูลค่าเพิ่มประจำเดือน (ภ.พ.30)
-type PP30SummaryRequest struct {
-	HoldingCode  string `json:"holdingcode"`
-	BusinessCode string `json:"businesscode"`
-	Year         int    `json:"year"`
-	Month        int    `json:"month"`
-	// ภาษีชำระเกินยกมาจากเดือนก่อน (ภ.พ.30 ข้อ 8) — ผู้ใช้กรอกเป็นทศนิยม string เช่น "1250.50"; ว่าง = 0
-	CreditBroughtForward string `json:"creditbroughtforward,omitempty"`
+// buildVatRegister - แถวรายงานภาษีซื้อ/ขาย + ยอดรวมทั้งงวด (decimal) จากรายการภาษีที่บันทึกในใบสำคัญ
+// มูลค่าก่อนภาษี = ฐานภาษี + ยอดอัตรา 0% + ยอดยกเว้น ของใบกำกับ (มูลค่าสินค้า/บริการ ไม่รวม VAT)
+func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, TaxVatRegisterSummary) {
+	rows := make([]TaxVatRegisterRow, 0, len(records))
+	var sumBefore, sumVat decimal.Decimal
+	for _, r := range records {
+		sign := vatSign(r.DocumentType)
+		before := vatMoney(r.BaseAmount, sign).Add(vatMoney(r.ZeroRateAmount, sign)).Add(vatMoney(r.ExemptAmount, sign))
+		vat := vatAmountOf(r, sign)
+		rows = append(rows, TaxVatRegisterRow{
+			DocDate:          r.TaxInvoiceDate,
+			TaxInvoiceNo:     r.TaxInvoiceNo,
+			CounterpartyName: r.PartnerName,
+			TaxID:            r.PartnerTaxID,
+			BranchNo:         r.PartnerBranchNo,
+			AmountBeforeVat:  moneyText(before),
+			VatAmount:        moneyText(vat),
+			TotalAmount:      moneyText(before.Add(vat)),
+		})
+		sumBefore, sumVat = sumBefore.Add(before), sumVat.Add(vat)
+	}
+	return rows, TaxVatRegisterSummary{
+		AmountBeforeVat: moneyText(sumBefore),
+		VatAmount:       moneyText(sumVat),
+		TotalAmount:     moneyText(sumBefore.Add(sumVat)),
+	}
 }
 
-// PP30SummaryData - แบบ ภ.พ.30 ข้อ 1–10 ประจำเดือน ยอดเงินทุกช่องเป็นทศนิยม 2 ตำแหน่งแบบ string
-type PP30SummaryData struct {
-	Year                 int           `json:"year"`
-	Month                int           `json:"month"`
-	Company              CompanyHeader `json:"company"`
-	SalesGross           string        `json:"salesgross"`           // ข้อ 1 ยอดขายเดือนนี้ (= 2 + 3 + 4)
-	SalesZeroRated       string        `json:"saleszerorated"`       // ข้อ 2 ยอดขายอัตราร้อยละ 0
-	SalesExempt          string        `json:"salesexempt"`          // ข้อ 3 ยอดขายที่ได้รับยกเว้น
-	SalesTaxable         string        `json:"salestaxable"`         // ข้อ 4 ยอดขายที่ต้องเสียภาษี
-	OutputVat            string        `json:"outputvat"`            // ข้อ 5 ภาษีขาย (ยอดที่บันทึกจริงรายใบ)
-	PurchaseTaxable      string        `json:"purchasetaxable"`      // ข้อ 6 ยอดซื้อที่มีสิทธินำภาษีซื้อมาหัก
-	InputVat             string        `json:"inputvat"`             // ข้อ 7 ภาษีซื้อ (ยอดที่บันทึกจริงรายใบ)
-	CreditBroughtForward string        `json:"creditbroughtforward"` // ข้อ 8 ภาษีชำระเกินยกมา
-	NetVat               string        `json:"netvat"`               // 5 - (7 + 8)
-	Payable              string        `json:"payable"`              // ข้อ 9 ภาษีที่ต้องชำระ
-	Creditable           string        `json:"creditable"`           // ข้อ 10 ภาษีชำระเกิน
+// pageVatRegisterRows - ตัดหน้าหลังคำนวณครบทั้งงวดแล้ว
+func pageVatRegisterRows(rows []TaxVatRegisterRow, limit, offset int) []TaxVatRegisterRow {
+	if offset >= len(rows) {
+		return []TaxVatRegisterRow{}
+	}
+	end := offset + limit
+	if end > len(rows) {
+		end = len(rows)
+	}
+	return rows[offset:end]
 }
 
-// PP30SummaryHandler - POST /api/report/tax/pp30-summary
-// outputvat/inputvat เป็นผลรวมของยอด VAT ที่บันทึกจริงรายเอกสาร (SUM(totalvatvalue)) เสมอ
-// ห้ามคำนวณจากฐาน x 7% ตามกฎบัญชี (ดู prompt ผู้สั่งงาน)
-func PP30SummaryHandler(c echo.Context) error {
-	var req PP30SummaryRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"code":    "INVALID_PAYLOAD",
-			"message": "Invalid request payload",
-		})
-	}
-
-	holdingCode, businessCode, scopeErr := authenticatedCompanyContext(c, req.HoldingCode, req.BusinessCode)
-	if scopeErr != nil {
-		return c.JSON(scopeErr.Status, map[string]any{
-			"success": false,
-			"code":    scopeErr.Code,
-			"message": scopeErr.Message,
-		})
-	}
-
-	if !isValidReportPeriod(req.Year, req.Month) {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"code":    "INVALID_PERIOD",
-			"message": "year and month are required (month 1-12)",
-		})
-	}
-
-	creditForward, ok := parseMoneyInput(req.CreditBroughtForward)
-	if !ok {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"code":    "INVALID_AMOUNT",
-			"message": "creditbroughtforward must be a non-negative amount with at most 2 decimals",
-		})
-	}
-
-	db, err := mypg.PgSqlFastConnect(holdingCode)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"success": false,
-			"code":    "DB_CONNECTION_ERROR",
-			"message": "Database connection failed",
-		})
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	salesQuery, salesArgs := buildPP30SalesQuery(req.Year, req.Month)
-
-	var salesTaxable, salesZeroRated, salesExempt, outputVat decimal.Decimal
-	if err := db.QueryRowContext(ctx, salesQuery, salesArgs...).Scan(&salesTaxable, &salesZeroRated, &salesExempt, &outputVat); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"success": false,
-			"code":    "QUERY_ERROR",
-			"message": "Sales aggregation query failed",
-		})
-	}
-
-	purchaseQuery, purchaseArgs := buildPP30PurchaseQuery(req.Year, req.Month)
-
-	var purchaseTaxable, inputVat decimal.Decimal
-	if err := db.QueryRowContext(ctx, purchaseQuery, purchaseArgs...).Scan(&purchaseTaxable, &inputVat); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"success": false,
-			"code":    "QUERY_ERROR",
-			"message": "Purchase aggregation query failed",
-		})
-	}
-
-	company, err := loadCompanyHeader(ctx, holdingCode, businessCode)
-	if err != nil {
-		logger.Error("PP30Summary: company header: %v", err)
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"success": false,
-			"code":    "QUERY_ERROR",
-			"message": "Company lookup failed",
-		})
-	}
-
-	netVat, payable, creditable := computeVatSettlement(outputVat, inputVat, creditForward)
-
-	return c.JSON(http.StatusOK, map[string]any{
-		"status": "success",
-		"data": PP30SummaryData{
-			Year:                 req.Year,
-			Month:                req.Month,
-			Company:              company,
-			SalesGross:           moneyText(salesTaxable.Add(salesZeroRated).Add(salesExempt)),
-			SalesZeroRated:       moneyText(salesZeroRated),
-			SalesExempt:          moneyText(salesExempt),
-			SalesTaxable:         moneyText(salesTaxable),
-			OutputVat:            moneyText(outputVat),
-			PurchaseTaxable:      moneyText(purchaseTaxable),
-			InputVat:             moneyText(inputVat),
-			CreditBroughtForward: moneyText(creditForward),
-			NetVat:               moneyText(netVat),
-			Payable:              moneyText(payable),
-			Creditable:           moneyText(creditable),
-		},
-	})
+// pp30Totals - ยอด ภ.พ.30 ข้อ 2–7 รวมจากรายการภาษีที่บันทึก (decimal) — ใช้เติมแบบ ภ.พ.30 ใน tax_form_vat.go
+type pp30Totals struct {
+	salesTaxable, salesZeroRated, salesExempt, outputVat, purchaseTaxable, inputVat decimal.Decimal
 }
 
-// buildPP30SalesQuery - รวมยอดขายตามงวดจาก saleinvoicetransaction
-//
-// salesexempt = SUM(totalexceptvat) — ฟิลด์ "มูลค่ายกเว้นภาษี" ที่มีอยู่จริงในเอกสารแต่ละใบ
-// outputvat   = SUM(totalvatvalue)  — ยอด VAT ที่บันทึกจริงรายเอกสาร (ตรงกับ vat-register เป๊ะ)
-//
-// salestaxable/saleszerorated: backend ไม่มี const/comment ที่ยืนยันความหมายของ vattype (0/1/...) ที่ชัดเจน
-// (grep ทั่ว repo ไม่พบ enum ใน Go แม้แต่ docs/kms/decisions/2026-09-03-product-two-user-groups-plan-proposed.md:207
-// เองก็บันทึกไว้ว่ายังไม่ยืนยัน) จึงไม่ใช้ vattype แบ่งกลุ่ม แต่ใช้ vatrate+totalvatvalue ซึ่งมีความหมายชัดจากชื่อ
-// คอลัมน์จริง: เอกสารที่ totalbeforevat>0 แต่ vatrate=0 และ totalvatvalue=0 ถือเป็น "0%" (zero-rated), ที่เหลือถือเป็น
-// "ปกติ" (taxable). ถ้าความเข้าใจนี้ผิดต้องแก้ตาม business rule ที่ยืนยันแล้วเท่านั้น
-func buildPP30SalesQuery(year, month int) (string, []any) {
-	// ปัดต่อใบก่อนรวม (moneySQL) ให้ยอด ภ.พ.30 เท่ากับผลรวมของรายงานภาษีขายรายใบเป๊ะ
-	base, vat, exempt := moneySQL("s.totalbeforevat"), moneySQL("s.totalvatvalue"), moneySQL("s.totalexceptvat")
-	query := fmt.Sprintf(`
-SELECT
-  COALESCE(SUM(CASE WHEN NOT (s.vatrate = 0 AND s.totalvatvalue = 0) THEN %[1]s ELSE 0 END), 0) AS salestaxable,
-  COALESCE(SUM(CASE WHEN s.vatrate = 0 AND s.totalvatvalue = 0 AND s.totalbeforevat <> 0 THEN %[1]s ELSE 0 END), 0) AS saleszerorated,
-  COALESCE(SUM(%[3]s), 0) AS salesexempt,
-  COALESCE(SUM(%[2]s), 0) AS outputvat
-FROM public.saleinvoicetransaction s
-WHERE s.iscancel = false
-  AND EXTRACT(YEAR FROM s.docdate + INTERVAL '7 hour') = $1
-  AND EXTRACT(MONTH FROM s.docdate + INTERVAL '7 hour') = $2`, base, vat, exempt)
-	return query, []any{year, month}
-}
-
-// buildPP30PurchaseQuery - รวมยอดซื้อตามงวดจาก purchasetransaction
-// purchasetaxable = SUM(totalbeforevat) รวมทุกอัตรา (contract ไม่ได้ขอแยก zero-rated/exempt ฝั่งซื้อ)
-// inputvat        = SUM(totalvatvalue) ยอด VAT ที่บันทึกจริงรายเอกสาร
-func buildPP30PurchaseQuery(year, month int) (string, []any) {
-	query := fmt.Sprintf(`
-SELECT
-  COALESCE(SUM(%s), 0) AS purchasetaxable,
-  COALESCE(SUM(%s), 0) AS inputvat
-FROM public.purchasetransaction p
-WHERE p.iscancel = false
-  AND EXTRACT(YEAR FROM p.docdate + INTERVAL '7 hour') = $1
-  AND EXTRACT(MONTH FROM p.docdate + INTERVAL '7 hour') = $2`, moneySQL("p.totalbeforevat"), moneySQL("p.totalvatvalue"))
-	return query, []any{year, month}
-}
-
-// computeVatSettlement - ภ.พ.30: netvat = ข้อ5 - (ข้อ7 + ข้อ8); บวก = ข้อ9 ต้องชำระ, ลบ = ข้อ10 ชำระเกิน
-func computeVatSettlement(outputVat, inputVat, creditForward decimal.Decimal) (netVat, payable, creditable decimal.Decimal) {
-	netVat = outputVat.Sub(inputVat).Sub(creditForward)
-	switch netVat.Sign() {
-	case 1:
-		return netVat, netVat, decimal.Zero
-	case -1:
-		return netVat, decimal.Zero, netVat.Neg()
+// sumPP30 - ขาย: ข้อ 4 = ฐานภาษี, ข้อ 2 = ยอดอัตรา 0%, ข้อ 3 = ยอดยกเว้น, ข้อ 5 = VAT ที่บันทึก
+// ซื้อ (เฉพาะรายการที่ใช้สิทธิงวดนี้): ข้อ 6 = ฐานภาษีที่มีสิทธินำภาษีซื้อมาหัก, ข้อ 7 = VAT ที่บันทึก
+// ใช้การปัดต่อรายการเดียวกับรายงานภาษีซื้อ/ขาย ยอด ภ.พ.30 จึงเท่ากับผลรวมของรายงานรายใบเป๊ะ
+func sumPP30(sales, purchases []generalledger.VatRecord) pp30Totals {
+	var t pp30Totals
+	for _, r := range sales {
+		sign := vatSign(r.DocumentType)
+		t.salesTaxable = t.salesTaxable.Add(vatMoney(r.BaseAmount, sign))
+		t.salesZeroRated = t.salesZeroRated.Add(vatMoney(r.ZeroRateAmount, sign))
+		t.salesExempt = t.salesExempt.Add(vatMoney(r.ExemptAmount, sign))
+		t.outputVat = t.outputVat.Add(vatAmountOf(r, sign))
 	}
-	return decimal.Zero, decimal.Zero, decimal.Zero
+	for _, r := range purchases {
+		sign := vatSign(r.DocumentType)
+		t.purchaseTaxable = t.purchaseTaxable.Add(vatMoney(r.BaseAmount, sign))
+		t.inputVat = t.inputVat.Add(vatAmountOf(r, sign))
+	}
+	return t
 }
 
 // ---------------------------------------------------------------------------

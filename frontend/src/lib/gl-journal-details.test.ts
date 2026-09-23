@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type GLDetailWithholding, parseStatementCsv, reconciliationChanges, supportLabel } from "./gl-journal-details";
+import { type GLDetailVat, type GLDetailWithholding, defaultVatTaxType, parseStatementCsv, reconciliationChanges, supportLabel, vatPeriodChoices, vatPeriodPatch, vatPeriodValue } from "./gl-journal-details";
 
 describe("statement evidence import",()=>{
   it("preserves decimal strings and stable file-row identities across retries",async()=>{
@@ -41,5 +41,42 @@ describe("reconciliationChanges — withholding tax base (ต้องแก้�
   });
   it("sends nothing for withholdings that did not change", () => {
     expect(reconciliationChanges({ withholdings: [wht("100000")] }, { withholdings: [wht("100000")] }).withholdings).toBeUndefined();
+  });
+});
+
+const vat = (base: string): GLDetailVat => ({ id: "V1", tax_type: 2, document_type: 1, tax_invoice_no: "IV6909-001", tax_invoice_date: "2026-09-10", tax_period_year: 2026, tax_period_month: 9, partner_name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", base_amount: base, zero_rate_amount: "0", exempt_amount: "0", vat_rate: "7", vat_amount: "7000" });
+
+describe("reconciliationChanges — VAT tax base (ต้องแก้ได้เสมอ)", () => {
+  it("sends the whole VAT set when a line was edited after posting", () => {
+    const changed = { ...vat("95000"), vat_amount: undefined };
+    expect(reconciliationChanges({ vats: [vat("100000")] }, { vats: [changed] }).vats).toEqual([changed]);
+  });
+  it("sends nothing for VAT lines that did not change", () => {
+    expect(reconciliationChanges({ vats: [vat("100000")] }, { vats: [vat("100000")] }).vats).toBeUndefined();
+  });
+});
+
+describe("VAT detail helpers", () => {
+  it("defaults to output VAT only for the sales journal (UV)", () => {
+    expect(defaultVatTaxType("UV")).toBe(2);
+    expect(defaultVatTaxType("SV")).toBe(1);
+    expect(defaultVatTaxType(undefined)).toBe(1);
+  });
+  it("round-trips the tax period between YYYY-MM and year/month fields", () => {
+    expect(vatPeriodValue({ tax_period_year: 2026, tax_period_month: 9 })).toBe("2026-09");
+    expect(vatPeriodValue({})).toBe("");
+    expect(vatPeriodValue({ tax_period_year: 2026, tax_period_month: 13 })).toBe("");
+    expect(vatPeriodPatch("2026-09")).toEqual({ tax_period_year: 2026, tax_period_month: 9 });
+    // ว่าง = ไม่มีงวดทั้งคู่ และหายไปจาก JSON ที่ส่ง backend
+    expect(JSON.stringify(vatPeriodPatch(""))).toBe("{}");
+  });
+  it("offers 12 months back to 6 months ahead of the voucher and keeps an older saved period", () => {
+    const choices = vatPeriodChoices("2026-01-15");
+    expect(choices).toHaveLength(19);
+    expect(choices[0]).toBe("2025-01");
+    expect(choices).toContain("2026-01");
+    expect(choices[choices.length - 1]).toBe("2026-07");
+    expect(vatPeriodChoices("2026-01-15", "2024-03")[0]).toBe("2024-03");
+    expect(vatPeriodChoices("2026-01-15", "2026-01")).toHaveLength(19);
   });
 });

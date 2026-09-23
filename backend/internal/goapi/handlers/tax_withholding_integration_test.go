@@ -7,8 +7,6 @@ import (
 	"database/sql"
 	"os"
 	"testing"
-
-	"github.com/shopspring/decimal"
 )
 
 // ใช้ env แยก (BC_TAX_TEST_POSTGRES_DSN) เพราะต้องการฐานที่ seed แล้ว — verify.sh postgres ใช้ฐานเปล่าจึงข้ามเคสนี้
@@ -113,45 +111,5 @@ func TestTaxWithholdingReportFromGL(t *testing.T) {
 	// 6) paging ตัดหน้าแต่ยอดรวมยังเป็นทั้งงวด
 	if page := pageWithholdingRows(rows, 1, 5); len(page) != 0 {
 		t.Fatalf("offset เกินจำนวนแถวต้องได้หน้าว่าง: %+v", page)
-	}
-}
-
-// TestTaxVatQueriesRunOnRealSchema ยิง query ยอดรวมภาษีซื้อ/ขาย และ ภ.พ.30 กับ DDL จริงของตาราง ERP
-// (ตาราง ERP มีเฉพาะใน bcai_projection ไม่มีในฐาน Holding — ดู docs/kms/bugs/2026-09-23-vat-report-reads-missing-erp-tables.md)
-// (คอลัมน์ยอดเงิน ERP ยังเป็น double precision — ต้องแปลงเป็น numeric ได้โดยไม่ error)
-func TestTaxVatQueriesRunOnRealSchema(t *testing.T) {
-	dsn := os.Getenv("BC_TAX_TEST_POSTGRES_DSN")
-	if dsn == "" {
-		t.Skip("set BC_TAX_TEST_POSTGRES_DSN to a restored Holding database")
-	}
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	ctx := context.Background()
-
-	// ยอดขายทดสอบ (DSN ต้องมีแถว double: 0.1/0.2/0.3 และ 100.005/7.0035/107.0085 เดือน ม.ค. 2026)
-	// ปัดต่อใบก่อนรวม: 0.10+100.01 / 0.20+7.00 / 0.30+107.01 — ไม่มีเศษ float หลุดออกมา
-	query, args := buildVatRegisterSummaryQuery("sale", 2026, 1)
-	var count int
-	var before, vat, total decimal.Decimal
-	if err := db.QueryRowContext(ctx, query, args...).Scan(&count, &before, &vat, &total); err != nil {
-		t.Fatalf("sale summary: %v", err)
-	}
-	if got := []string{moneyText(before), moneyText(vat), moneyText(total)}; count != 2 || got[0] != "100.11" || got[1] != "7.20" || got[2] != "107.31" {
-		t.Fatalf("sale summary count=%d amounts=%v คาด 2 [100.11 7.20 107.31]", count, got)
-	}
-	query, args = buildVatRegisterSummaryQuery("purchase", 2026, 1)
-	if err := db.QueryRowContext(ctx, query, args...).Scan(&count, &before, &vat, &total); err != nil {
-		t.Fatalf("purchase summary: %v", err)
-	}
-	for name, build := range map[string]func(int, int) (string, []any){"sales": buildPP30SalesQuery, "purchase": buildPP30PurchaseQuery} {
-		query, args := build(2026, 1)
-		rows, err := db.QueryContext(ctx, query, args...)
-		if err != nil {
-			t.Fatalf("pp30 %s: %v", name, err)
-		}
-		rows.Close()
 	}
 }

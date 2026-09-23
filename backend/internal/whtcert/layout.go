@@ -1,5 +1,13 @@
 package whtcert
 
+import "smlcloudplatform/internal/pdftext"
+
+const (
+	alignLeft   = pdftext.AlignLeft
+	alignCenter = pdftext.AlignCenter
+	alignRight  = pdftext.AlignRight
+)
+
 // พิกัดทุกช่องบนแบบ "หนังสือรับรองการหักภาษี ณ ที่จ่าย ตามมาตรา 50 ทวิ" ของกรมสรรพากร
 // (assets/50tawi-rd.pdf = approve_wh3_081156.pdf จาก rd.go.th, หน้า A4 595×842 pt, จุดกำเนิดมุมซ้ายล่าง)
 // ค่าทั้งหมดวัดจากฟอร์มจริง: เส้นกรอบ/ช่องจาก raster 8 เท่า, baseline จาก text layer ของฟอร์ม,
@@ -35,7 +43,7 @@ var (
 // lineField - ข้อความบนเส้นประ: เริ่มที่ x, baseline, กว้างได้ไม่เกิน maxWidth (ย่อฟอนต์ถ้ายาว)
 type lineField struct {
 	x, baseline, maxWidth float64
-	align                 align
+	align                 pdftext.Align
 }
 
 var (

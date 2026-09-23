@@ -28,7 +28,12 @@ describe("goapi BFF allowlist", () => {
   });
 
   // Every path the frontend calls through /api/goapi must be allowlisted; a missing entry is a silent 404.
-  it.each(["api/report/tax/wht", "api/report/debt/query", "api/report/tax/vat-register"])(
+  it.each([
+    "api/report/tax/wht",
+    "api/report/debt/query",
+    "api/report/tax/vat-register",
+    ...["catalog", "schema", "prefill", "compute", "save", "list", "load", "delete"].map((p) => `api/report/tax/form/${p}`),
+  ])(
     "proxies POST %s to mainapi /goapi",
     async (path) => {
       const fetchMock = vi.fn(async (url: string | URL | Request) => {
@@ -66,6 +71,16 @@ describe("goapi BFF allowlist", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("application/pdf");
     expect(response.headers.get("content-disposition")).toBe('inline; filename="50tawi-1.pdf"');
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(pdf);
+  });
+
+  it("passes the tax form PDF through as bytes", async () => {
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(pdf, { headers: { "Content-Type": "application/pdf" } })));
+
+    const response = await postReport("api/report/tax/form/pdf");
+
+    expect(response.headers.get("content-type")).toBe("application/pdf");
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(pdf);
   });
 

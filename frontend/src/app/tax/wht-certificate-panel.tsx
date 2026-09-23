@@ -60,15 +60,14 @@ type Props = {
   company: CompanyHeader | null;
   holdingcode: string;
   businesscode: string;
-  formType: string;
   language: LanguageCode;
 };
 
-export function WhtCertificatePanel({ row, company, holdingcode, businesscode, formType, language }: Props) {
+export function WhtCertificatePanel({ row, company, holdingcode, businesscode, language }: Props) {
   const tr = useBackendText();
-  const [form, setForm] = useState(formType === "pnd3" ? "3" : formType === "pnd2" ? "2" : "53");
+  const [form, setForm] = useState("53");
   const recordedIncome = WHT_INCOME_OPTIONS.some((o) => o.value === row.incometype) ? row.incometype : "";
-  const [incomeType, setIncomeType] = useState(recordedIncome || (formType === "pnd2" ? "40_4a" : "3_tres"));
+  const [incomeType, setIncomeType] = useState(recordedIncome || "3_tres");
   const [incomeNote, setIncomeNote] = useState("");
   // condition_type ที่บันทึกในใบสำคัญ: 1=หัก ณ ที่จ่าย 2=ออกให้ตลอดไป 3=ออกให้ครั้งเดียว
   const [condition, setCondition] = useState(row.condition === 2 ? "always" : row.condition === 3 ? "once" : "withhold");

@@ -657,6 +657,8 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("vat-pnd2", "แบบยื่น ภ.ง.ด.2", "P.N.D.2 Return", "/report/vatpnd2", "report"),
           tx("vat-pnd3", "แบบยื่น ภ.ง.ด.3", "P.N.D.3 Return", "/report/vatpnd3", "report"),
           tx("vat-pnd53", "แบบยื่น ภ.ง.ด.53", "P.N.D.53 Return", "/report/vatpnd53", "report"),
+          // 2026-09-23 ลุงจืดสั่ง "เอาให้ครบ" แบบใน mydocs/sample: ภ.ง.ด.2ก/50/51/93/94, ภ.ธ.40 เปิดจากจอเดียวนี้ (ไม่แตกเมนูรายแบบ)
+          tx("tax-forms", "แบบยื่นภาษีทั้งหมด", "All Tax Returns", "/report/taxforms", "report"),
           tx("wht-certificate", "หนังสือรับรองหัก ณ ที่จ่าย (50 ทวิ)", "Withholding Tax Certificate", "/report/whtcertificate", "report"),
         ],
       },

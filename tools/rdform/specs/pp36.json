@@ -1,0 +1,683 @@
+{
+ "code": "pp36",
+ "source": "ภพ.36.pdf",
+ "title": "ภ.พ.36 แบบนำส่งภาษีมูลค่าเพิ่ม ตามประมวลรัษฎากร",
+ "pages": [
+  1
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "w": 6,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร",
+   "group": "payer"
+  },
+  {
+   "key": "branch_no",
+   "w": 1,
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer"
+  },
+  {
+   "key": "name",
+   "w": 7,
+   "type": "text",
+   "label": "ชื่อผู้นำส่งภาษีมูลค่าเพิ่ม",
+   "group": "payer"
+  },
+  {
+   "key": "addr_building",
+   "w": 8,
+   "type": "text",
+   "label": "อาคาร",
+   "group": "address"
+  },
+  {
+   "key": "addr_room",
+   "w": 9,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_floor",
+   "w": 10,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_village",
+   "w": 11,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address"
+  },
+  {
+   "key": "addr_no",
+   "w": 12,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_moo",
+   "w": 13,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_soi",
+   "w": 14,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address"
+  },
+  {
+   "key": "addr_junction",
+   "w": 15,
+   "type": "text",
+   "label": "แยก",
+   "group": "address"
+  },
+  {
+   "key": "addr_road",
+   "w": 16,
+   "type": "text",
+   "label": "ถนน",
+   "group": "address"
+  },
+  {
+   "key": "addr_subdistrict",
+   "w": 17,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address"
+  },
+  {
+   "key": "addr_district",
+   "w": 18,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address"
+  },
+  {
+   "key": "addr_province",
+   "w": 19,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address"
+  },
+  {
+   "key": "addr_postcode",
+   "w": 2,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address"
+  },
+  {
+   "key": "phone",
+   "w": 20,
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "address"
+  },
+  {
+   "key": "remit_case",
+   "type": "choice",
+   "label": "มีหน้าที่นำส่งภาษีมูลค่าเพิ่มกรณี",
+   "group": "filing",
+   "options": [
+    {
+     "value": "purchase",
+     "w": 3,
+     "label": "(1) จ่ายเงินค่าซื้อสินค้าหรือบริการให้ผู้ประกอบการที่เข้ามาประกอบกิจการในราชอาณาจักรเป็นการชั่วคราวฯ หรือให้แก่ผู้ประกอบการที่ได้ให้บริการในต่างประเทศ หรือให้แก่ผู้ประกอบการอื่นที่กำหนดโดยพระราชกฤษฎีกา"
+    },
+    {
+     "value": "transfer_zero_rate",
+     "w": 4,
+     "label": "(2) รับโอนสินค้าหรือรับโอนสิทธิในบริการที่ได้เสียภาษีในอัตราร้อยละ 0"
+    },
+    {
+     "value": "auction",
+     "w": 5,
+     "label": "(3) ขายทอดตลาดทรัพย์สินของผู้ประกอบการจดทะเบียนหรือส่วนราชการขายทรัพย์สินของผู้ประกอบการจดทะเบียนที่ถูกยึดมาตามกฎหมายโดยวิธีอื่น นอกจากการขายทอดตลาด"
+    }
+   ]
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่น",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "w": 33,
+     "label": "ยื่นปกติ"
+    },
+    {
+     "value": "additional",
+     "w": 34,
+     "label": "ยื่นเพิ่มเติม"
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "w": 21,
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing"
+  },
+  {
+   "key": "payee_name",
+   "w": 22,
+   "type": "text",
+   "label": "ชื่อผู้ประกอบการซึ่งเป็นผู้รับเงิน",
+   "group": "payee"
+  },
+  {
+   "key": "payee_addr_building",
+   "w": 23,
+   "type": "text",
+   "label": "ที่อยู่: อาคาร",
+   "group": "payee"
+  },
+  {
+   "key": "payee_addr_no",
+   "w": 24,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "payee"
+  },
+  {
+   "key": "payee_addr_road",
+   "w": 25,
+   "type": "text",
+   "label": "ถนน",
+   "group": "payee"
+  },
+  {
+   "key": "payee_city",
+   "w": 26,
+   "type": "text",
+   "label": "เมือง",
+   "group": "payee"
+  },
+  {
+   "key": "payee_state",
+   "w": 27,
+   "type": "text",
+   "label": "รัฐ",
+   "group": "payee"
+  },
+  {
+   "key": "payee_country",
+   "w": 28,
+   "type": "text",
+   "label": "ประเทศ",
+   "group": "payee"
+  },
+  {
+   "key": "payee_postcode",
+   "w": 35,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "payee"
+  },
+  {
+   "key": "pay_day",
+   "w": 29,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงิน: วันที่",
+   "group": "payee"
+  },
+  {
+   "key": "pay_month",
+   "w": 30,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงิน: เดือน",
+   "group": "payee"
+  },
+  {
+   "key": "pay_year_be",
+   "w": 31,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงิน: พ.ศ.",
+   "group": "payee"
+  },
+  {
+   "key": "fx_doc_no",
+   "w": 32,
+   "type": "text",
+   "label": "เลขที่เอกสารแลกเปลี่ยนเงินตรา",
+   "group": "payee"
+  },
+  {
+   "key": "payee_type",
+   "type": "choice",
+   "label": "ประเภทผู้รับเงิน",
+   "group": "payee",
+   "options": [
+    {
+     "value": "temporary",
+     "w": 77,
+     "label": "(1) เป็นผู้ประกอบการที่อยู่นอกราชอาณาจักรซึ่งได้เข้ามาประกอบกิจการขายสินค้าหรือให้บริการในราชอาณาจักรเป็นการชั่วคราว และไม่ได้จดทะเบียนภาษีมูลค่าเพิ่มเป็นการชั่วคราว"
+    },
+    {
+     "value": "foreign_service",
+     "w": 79,
+     "label": "(2) เป็นผู้ประกอบการที่ได้ให้บริการในต่างประเทศ และได้มีการใช้บริการนั้นในราชอาณาจักร"
+    },
+    {
+     "value": "other",
+     "w": 78,
+     "label": "(3) อื่นๆ (ระบุ)"
+    }
+   ]
+  },
+  {
+   "key": "payee_type_other",
+   "w": 82,
+   "type": "text",
+   "label": "(3) อื่นๆ (ระบุ)",
+   "group": "payee"
+  },
+  {
+   "key": "pay_for_fee_40_2",
+   "w": 81,
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 1. ค่าธรรมเนียม ค่านายหน้า หรืออื่นๆ ตามมาตรา 40 (2)",
+   "group": "payee"
+  },
+  {
+   "key": "pay_for_royalty_40_3",
+   "w": 80,
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 2. ค่าสิทธิในงานวรรณกรรม ศิลป และวิทยาศาสตร์ ค่าสิทธิในสิทธิบัตร สูตรหรือกรรมวิธี ค่าสิทธิอื่นๆ ตามมาตรา 40 (3)",
+   "group": "payee"
+  },
+  {
+   "key": "pay_for_rent_40_5",
+   "w": 83,
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 3. ค่าเช่าหรือเงินหรือประโยชน์อย่างอื่น ตามมาตรา 40 (5)",
+   "group": "payee"
+  },
+  {
+   "key": "pay_for_professional_40_6",
+   "w": 84,
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 4. เงินได้จากวิชาชีพอิสระ ตามมาตรา 40 (6)",
+   "group": "payee"
+  },
+  {
+   "key": "pay_for_service_40_8",
+   "w": 85,
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 5. ค่าบริการหรือเงินได้ ตามมาตรา 40 (8)",
+   "group": "payee"
+  },
+  {
+   "key": "pay_for_other",
+   "w": 86,
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 6. รายการชำระเงินอื่นๆ (ระบุ)",
+   "group": "payee"
+  },
+  {
+   "key": "pay_for_other_text",
+   "w": 36,
+   "type": "text",
+   "label": "6. รายการชำระเงินอื่นๆ (ระบุ)",
+   "group": "payee"
+  },
+  {
+   "key": "transferor_name",
+   "w": 37,
+   "type": "text",
+   "label": "ชื่อผู้โอนสินค้าหรือโอนสิทธิในบริการ",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_tax_id",
+   "w": 38,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ผู้โอน)",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_building",
+   "w": 39,
+   "type": "text",
+   "label": "อาคาร",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_room",
+   "w": 40,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_floor",
+   "w": 41,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_village",
+   "w": 42,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_no",
+   "w": 43,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_moo",
+   "w": 44,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_soi",
+   "w": 45,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_road",
+   "w": 46,
+   "type": "text",
+   "label": "ถนน",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_subdistrict",
+   "w": 47,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_district",
+   "w": 48,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_province",
+   "w": 49,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_addr_postcode",
+   "w": 50,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "transferor"
+  },
+  {
+   "key": "transferor_phone",
+   "w": 51,
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "transferor"
+  },
+  {
+   "key": "transfer_day",
+   "w": 53,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่รับโอน: วันที่",
+   "group": "transferor"
+  },
+  {
+   "key": "transfer_month",
+   "w": 54,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่รับโอน: เดือน",
+   "group": "transferor"
+  },
+  {
+   "key": "transfer_year_be",
+   "w": 55,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่รับโอน: พ.ศ.",
+   "group": "transferor"
+  },
+  {
+   "key": "transfer_items_1",
+   "w": 52,
+   "type": "text",
+   "label": "รายการสินค้าหรือบริการที่รับโอน (บรรทัด 1)",
+   "group": "transferor"
+  },
+  {
+   "key": "transfer_items_2",
+   "w": 56,
+   "type": "text",
+   "label": "รายการสินค้าหรือบริการที่รับโอน (บรรทัด 2)",
+   "group": "transferor"
+  },
+  {
+   "key": "auction_owner_name",
+   "w": 57,
+   "type": "text",
+   "label": "ชื่อผู้ประกอบการ (ขายทอดตลาด)",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_tax_id",
+   "w": 58,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ผู้ประกอบการ ขายทอดตลาด)",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_building",
+   "w": 59,
+   "type": "text",
+   "label": "อาคาร",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_room",
+   "w": 60,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_floor",
+   "w": 61,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_village",
+   "w": 62,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_no",
+   "w": 63,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_moo",
+   "w": 64,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_soi",
+   "w": 65,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_road",
+   "w": 66,
+   "type": "text",
+   "label": "ถนน",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_subdistrict",
+   "w": 67,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_district",
+   "w": 68,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_province",
+   "w": 69,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_addr_postcode",
+   "w": 70,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "auction"
+  },
+  {
+   "key": "auction_owner_phone",
+   "w": 71,
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "auction"
+  },
+  {
+   "key": "auction_pay_day",
+   "w": 73,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงินให้ผู้ประกอบการจดทะเบียน: วันที่",
+   "group": "auction"
+  },
+  {
+   "key": "auction_pay_month",
+   "w": 74,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงินให้ผู้ประกอบการจดทะเบียน: เดือน",
+   "group": "auction"
+  },
+  {
+   "key": "auction_pay_year_be",
+   "w": 75,
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงินให้ผู้ประกอบการจดทะเบียน: พ.ศ.",
+   "group": "auction"
+  },
+  {
+   "key": "auction_items_1",
+   "w": 72,
+   "type": "text",
+   "label": "รายการทรัพย์สินที่ขายทอดตลาด (บรรทัด 1)",
+   "group": "auction"
+  },
+  {
+   "key": "auction_items_2",
+   "w": 76,
+   "type": "text",
+   "label": "รายการทรัพย์สินที่ขายทอดตลาด (บรรทัด 2)",
+   "group": "auction"
+  },
+  {
+   "key": "paid_amount",
+   "w": 87,
+   "type": "money",
+   "label": "1. จำนวนเงินที่จ่าย",
+   "group": "summary"
+  },
+  {
+   "key": "vat_amount",
+   "w": 88,
+   "type": "money",
+   "label": "2. จำนวนเงินภาษีมูลค่าเพิ่มที่ต้องนำส่ง",
+   "group": "summary"
+  },
+  {
+   "key": "vat_amount_text",
+   "w": 89,
+   "type": "text",
+   "label": "2. (ตัวอักษร)",
+   "group": "summary"
+  },
+  {
+   "key": "surcharge",
+   "w": 90,
+   "type": "money",
+   "label": "3. เงินเพิ่ม",
+   "group": "summary"
+  },
+  {
+   "key": "penalty",
+   "w": 91,
+   "type": "money",
+   "label": "4. เบี้ยปรับ (ถ้ามี (เฉพาะกรณีรับโอนสินค้าหรือรับโอนสิทธิในบริการที่ได้เสียภาษีในอัตราร้อยละ 0))",
+   "group": "summary"
+  },
+  {
+   "key": "total_payable",
+   "w": 92,
+   "type": "money",
+   "label": "5. รวมภาษีมูลค่าเพิ่มที่ต้องนำส่ง เงินเพิ่ม และเบี้ยปรับ (2. + 3. + 4.)",
+   "group": "summary"
+  },
+  {
+   "key": "total_payable_text",
+   "w": 93,
+   "type": "text",
+   "label": "5. (ตัวอักษร)",
+   "group": "summary"
+  },
+  {
+   "key": "signer_name",
+   "w": 94,
+   "type": "text",
+   "label": "ลงชื่อ ผู้ประกอบการ (ชื่อตัวบรรจง)",
+   "group": "signature"
+  },
+  {
+   "key": "sign_date",
+   "w": 95,
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature"
+  }
+ ]
+}

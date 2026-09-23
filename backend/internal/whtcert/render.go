@@ -1,64 +1,31 @@
 package whtcert
 
 import (
-	"bytes"
 	_ "embed"
-	"fmt"
-	"io"
 	"strconv"
 	"sync"
 
-	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 	"github.com/shopspring/decimal"
+
+	"smlcloudplatform/internal/pdftext"
 )
 
 //go:embed assets/50tawi-rd.pdf
 var officialForm []byte
 
-//go:embed assets/Sarabun-Regular.ttf
-var sarabun []byte
-
 var (
 	prepareOnce sync.Once
 	blankForm   []byte // แบบฟอร์มทางการที่ถอดช่องกรอก (AcroForm) ออกแล้ว — ข้อความเราเป็นตัวจริงตัวเดียว
-	textShaper  *shaper
+	textShaper  *pdftext.Shaper
 	prepareErr  error
 )
 
-// pdfcpu ห้ามเขียน config ลง $HOME: container รันด้วย appuser ที่ไม่มี home (adduser -H) — ถ้าไม่ปิด
-// จะ panic "config problem: mkdir /home/appuser: permission denied" ตอนสร้าง 50 ทวิ บน production
-func init() {
-	api.DisableConfigDir()
-}
-
-func pdfConfig() *model.Configuration {
-	conf := model.NewDefaultConfiguration()
-	conf.ValidationMode = model.ValidationRelaxed
-	return conf
-}
-
 func prepare() error {
 	prepareOnce.Do(func() {
-		if textShaper, prepareErr = newShaper(sarabun); prepareErr != nil {
+		if textShaper, prepareErr = pdftext.Default(); prepareErr != nil {
 			return
 		}
-		fields, err := api.FormFields(bytes.NewReader(officialForm), pdfConfig())
-		if err != nil {
-			prepareErr = fmt.Errorf("read form fields: %w", err)
-			return
-		}
-		ids := make([]string, 0, len(fields))
-		for _, f := range fields {
-			ids = append(ids, f.ID)
-		}
-		var out bytes.Buffer
-		if err := api.RemoveFormFields(bytes.NewReader(officialForm), &out, ids, pdfConfig()); err != nil {
-			prepareErr = fmt.Errorf("remove form fields: %w", err)
-			return
-		}
-		blankForm = out.Bytes()
+		blankForm, prepareErr = pdftext.BlankForm(officialForm)
 	})
 	return prepareErr
 }
@@ -73,29 +40,29 @@ func Render(c Certificate) ([]byte, error) {
 	if err := prepare(); err != nil {
 		return nil, err
 	}
-	o := newOverlay(textShaper, sarabun)
+	o := pdftext.NewOverlay(textShaper)
 	copies := []int{1, 2}
 	if n.ArchiveCopy {
 		copies = append(copies, 3)
 	}
 	for _, copyNo := range copies {
-		if err := drawCertificate(o, o.newPage(), n, copyNo); err != nil {
+		if err := drawCertificate(o, o.NewPage(pageWidth, pageHeight), n, copyNo); err != nil {
 			return nil, err
 		}
 	}
 	return stamp(o, len(copies))
 }
 
-func drawCertificate(o *overlay, p *overlayPage, n normalized, copyNo int) error {
+func drawCertificate(o *pdftext.Overlay, p *pdftext.Page, n normalized, copyNo int) error {
 	put := func(f lineField, text, field string) error {
 		if text == "" {
 			return nil
 		}
-		size, ok := o.fits(text, f.maxWidth)
+		size, ok := o.Fit(text, f.maxWidth, fontSize, minFont)
 		if !ok {
 			return invalid("wht_cert_text_too_long", field)
 		}
-		o.text(p, f.x, f.baseline, text, size, f.align)
+		o.Text(p, f.x, f.baseline, text, size, f.align)
 		return nil
 	}
 
@@ -113,7 +80,7 @@ func drawCertificate(o *overlay, p *overlayPage, n normalized, copyNo int) error
 		return err
 	}
 	if c, ok := copyChecks[copyNo]; ok {
-		o.check(p, c)
+		o.Check(p, c.x, c.y)
 	}
 
 	for _, item := range []struct {
@@ -137,8 +104,9 @@ func drawCertificate(o *overlay, p *overlayPage, n normalized, copyNo int) error
 	digits(o, p, payeeID13, n.payeeID)
 	digits(o, p, payerID10, n.payerID10)
 	digits(o, p, payeeID10, n.payeeID10)
-	o.check(p, formChecks[n.Form])
-	o.check(p, conditionChecks[n.Condition])
+	for _, c := range []point{formChecks[n.Form], conditionChecks[n.Condition]} {
+		o.Check(p, c.x, c.y)
+	}
 
 	for _, row := range n.incomes {
 		baseline := incomeRowBaselines[row.Type]
@@ -177,7 +145,7 @@ func drawCertificate(o *overlay, p *overlayPage, n normalized, copyNo int) error
 }
 
 // amountCells - ยอดจ่าย|ภาษี แยกบาท (ชิดขวาก่อนเส้นแบ่ง) และสตางค์ (กลางช่องสตางค์)
-func amountCells(o *overlay, p *overlayPage, baseline float64, amount, tax decimal.Decimal) error {
+func amountCells(o *pdftext.Overlay, p *pdftext.Page, baseline float64, amount, tax decimal.Decimal) error {
 	for _, col := range []struct {
 		v                    decimal.Decimal
 		right, satang, width float64
@@ -186,18 +154,18 @@ func amountCells(o *overlay, p *overlayPage, baseline float64, amount, tax decim
 		{tax, colTaxBahtRight, colTaxSatang, colTaxBahtWidth},
 	} {
 		baht, satang := splitMoney(col.v)
-		size, ok := o.fits(baht, col.width)
+		size, ok := o.Fit(baht, col.width, fontSize, minFont)
 		if !ok {
 			return invalid("wht_cert_amount_too_large", "amount")
 		}
-		o.text(p, col.right, baseline, baht, size, alignRight)
-		o.text(p, col.satang, baseline, satang, fontSize, alignCenter)
+		o.Text(p, col.right, baseline, baht, size, alignRight)
+		o.Text(p, col.satang, baseline, satang, fontSize, alignCenter)
 	}
 	return nil
 }
 
 // digits - หนึ่งหลักต่อหนึ่งช่อง กลางช่อง
-func digits(o *overlay, p *overlayPage, boxes idBoxes, id string) {
+func digits(o *pdftext.Overlay, p *pdftext.Page, boxes idBoxes, id string) {
 	if id == "" {
 		return
 	}
@@ -205,33 +173,21 @@ func digits(o *overlay, p *overlayPage, boxes idBoxes, id string) {
 	for _, g := range boxes.groups {
 		cell := (g.right - g.left) / float64(g.count)
 		for k := 0; k < g.count && i < len(id); k++ {
-			o.text(p, g.left+cell*(float64(k)+0.5), boxes.baseline, id[i:i+1], fontSize, alignCenter)
+			o.Text(p, g.left+cell*(float64(k)+0.5), boxes.baseline, id[i:i+1], fontSize, alignCenter)
 			i++
 		}
 	}
 }
 
 // stamp - ต่อแบบฟอร์มเปล่า N หน้า แล้วประทับชั้นข้อความหน้า i ลงหน้า i (multistamp)
-func stamp(o *overlay, pages int) ([]byte, error) {
-	overlayPDF, err := o.bytes()
+func stamp(o *pdftext.Overlay, pages int) ([]byte, error) {
+	copies := make([][]byte, pages)
+	for i := range copies {
+		copies[i] = blankForm
+	}
+	base, err := pdftext.Merge(copies...)
 	if err != nil {
 		return nil, err
 	}
-	readers := make([]io.ReadSeeker, pages)
-	for i := range readers {
-		readers[i] = bytes.NewReader(blankForm)
-	}
-	var base bytes.Buffer
-	if err := api.MergeRaw(readers, &base, false, pdfConfig()); err != nil {
-		return nil, fmt.Errorf("merge form pages: %w", err)
-	}
-	wm, err := api.PDFWatermarkForReadSeeker(bytes.NewReader(overlayPDF), 0, "scalefactor:1 abs, pos:bl, off:0 0, rot:0", true, false, types.POINTS)
-	if err != nil {
-		return nil, fmt.Errorf("load text layer: %w", err)
-	}
-	var out bytes.Buffer
-	if err := api.AddWatermarks(bytes.NewReader(base.Bytes()), &out, nil, wm, pdfConfig()); err != nil {
-		return nil, fmt.Errorf("stamp text layer: %w", err)
-	}
-	return out.Bytes(), nil
+	return pdftext.Stamp(base, o)
 }

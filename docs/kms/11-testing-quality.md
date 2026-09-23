@@ -82,7 +82,7 @@ trigger: **ไม่มี** — ไม่มีอะไรรันให้�
 | seeded random | `CRUD_SEED` ใน `uat-crud.spec.ts` | ยังใช้ `Date.now()` uid |
 
 ## 9. ช่องว่าง / สิ่งที่ยังไม่ตรวจ
-- ภาษีซื้อ/ภาษีขาย/ภ.พ.30 อ่านตารางเอกสารของระบบอื่นที่ไม่มีในฐาน holding — ไม่มี test ที่ผ่านบนฐานจริง (`bugs/2026-09-23-vat-report-reads-missing-erp-tables.md`)
+- ภาษีซื้อ/ภาษีขาย/ภ.พ.30 อ่านจาก `details.vats` ของใบสำคัญ GL — integration test `TestVatReportsReadRecordedVat` + `TestPostgresVatRecordsForPeriod` (tag `integration`, ต้องมี `BC_GL_TEST_POSTGRES_DSN`); ภ.พ.36 ยังไม่มีข้อมูลต้นทาง (`bugs/2026-09-23-vat-report-reads-missing-erp-tables.md`)
 - `TestTaxWithholdingReportFromGL` รันได้เฉพาะเมื่อตั้ง `BC_TAX_TEST_POSTGRES_DSN` เป็นฐานที่ seed แล้ว — `verify.sh` ข้าม
 - `tests/employee-scope-save.spec.ts:114` มี type error เดิม (ไม่กระทบ `npm run verify` เพราะ root `tests/` ไม่อยู่ใน typecheck ของ frontend)
 - gofmt ค้าง 3 ไฟล์ (§2.3)

@@ -1,0 +1,275 @@
+package handlers
+
+import (
+	"strconv"
+	"strings"
+
+	"github.com/shopspring/decimal"
+
+	"smlcloudplatform/internal/rdform"
+	"smlcloudplatform/internal/whtcert"
+)
+
+// ยอดรวม/ยอดสุทธิของแบบคำนวณตามสูตรที่พิมพ์บนแบบฟอร์มของกรมสรรพากรเท่านั้น (เช่น ภ.พ.30 ข้อ 4 = 1 - 2 - 3)
+// ยอดรายการและฐานภาษีเป็นค่าที่ผู้ใช้กรอก/แก้ได้เสมอ — ระบบไม่คำนวณย้อนหรือเดาฐานภาษี
+// ทุกยอดเป็น decimal ทศนิยม 2 ตำแหน่ง (ห้าม float); แบบที่ไม่มีในตารางนี้ไม่มีบรรทัดรวมอัตโนมัติ
+
+var taxFormComputers = map[string]func(*rdform.Spec, *rdform.Document) error{
+	"pnd3":  computeWithholdingCover,
+	"pnd53": computeWithholdingCover,
+	"pnd2":  computePnd2Cover,
+	"pnd2a": computePnd2Cover,
+	"pp30":  computePP30,
+	"pp36":  computePP36,
+	"pbt40": computePBT40,
+}
+
+func computeTaxForm(code string, doc *rdform.Document) error {
+	if doc.Values == nil {
+		doc.Values = map[string]string{}
+	}
+	fn := taxFormComputers[code]
+	if fn == nil {
+		return nil
+	}
+	cover, err := rdform.Lookup(code)
+	if err != nil {
+		return err
+	}
+	return fn(cover, doc)
+}
+
+// amounts - ตัวอ่านยอดเงินจาก map (ว่าง = 0) ที่จำ error แรกไว้ ให้สูตรเขียนอ่านง่ายเป็นบรรทัดเดียว
+type amounts struct {
+	values map[string]string
+	err    error
+}
+
+func (a *amounts) get(key string) decimal.Decimal {
+	raw := strings.ReplaceAll(strings.TrimSpace(a.values[key]), ",", "")
+	if raw == "" {
+		return decimal.Zero
+	}
+	d, err := decimal.NewFromString(raw)
+	if err != nil && a.err == nil {
+		a.err = &rdform.FieldError{Key: key}
+	}
+	return d
+}
+
+func (a *amounts) set(key string, d decimal.Decimal) { a.values[key] = d.StringFixed(2) }
+
+// setPositive - บรรทัด "ถ้า ... มากกว่า ..." : มีค่าเมื่อเป็นบวก ไม่งั้นว่าง
+func (a *amounts) setPositive(key string, d decimal.Decimal) {
+	if d.IsPositive() {
+		a.set(key, d)
+	} else {
+		delete(a.values, key)
+	}
+}
+
+// sumRows - รวมคอลัมน์ที่ชื่อ = name หรือ l<n>_name ของทุกแถว
+func sumRows(rows []map[string]string, name string) (decimal.Decimal, error) {
+	total := decimal.Zero
+	for i, r := range rows {
+		a := amounts{values: r}
+		for k := range r {
+			if k == name || (strings.HasPrefix(k, "l") && strings.HasSuffix(k, "_"+name)) {
+				total = total.Add(a.get(k))
+			}
+		}
+		if a.err != nil {
+			fe := a.err.(*rdform.FieldError)
+			fe.Row = i + 1
+			return total, fe
+		}
+	}
+	return total, nil
+}
+
+// computeWithholdingCover - ภ.ง.ด.3/53: 1. รวมยอดเงินได้ 2. รวมภาษี (จากใบแนบ) 4. = 2. + 3.
+// ยื่นทางสื่อบันทึก (ไม่มีรายการใบแนบในระบบ) ใช้ยอดที่ผู้ใช้กรอกเอง
+func computeWithholdingCover(_ *rdform.Spec, doc *rdform.Document) error {
+	a := &amounts{values: doc.Values}
+	if len(doc.Rows) > 0 {
+		income, err := sumRows(doc.Rows, "amount")
+		if err != nil {
+			return err
+		}
+		tax, err := sumRows(doc.Rows, "tax")
+		if err != nil {
+			return err
+		}
+		a.set("total_income", income)
+		a.set("total_tax", tax)
+	}
+	a.set("total_payable", a.get("total_tax").Add(a.get("surcharge")))
+	return a.err
+}
+
+var pnd2Kinds = []string{"royalty", "interest", "dividend", "share_transfer", "other_404"}
+
+// computePnd2Cover - ภ.ง.ด.2/2ก: จำนวนราย/เงินได้/ภาษี แยกตามประเภทเงินได้ของใบแนบ แล้ว 6. รวม, 8. = 6. + 7.
+// (ภ.ง.ด.2ก ไม่มีบรรทัด 40(3) และไม่มีเงินเพิ่ม — ข้ามช่องที่แบบไม่มี)
+func computePnd2Cover(cover *rdform.Spec, doc *rdform.Document) error {
+	a := &amounts{values: doc.Values}
+	if len(doc.Rows) > 0 {
+		totalCount, totalIncome, totalTax := 0, decimal.Zero, decimal.Zero
+		for _, kind := range pnd2Kinds {
+			var rows []map[string]string
+			for _, r := range doc.Rows {
+				if r["income_type"] == kind {
+					rows = append(rows, r)
+				}
+			}
+			income, err := sumRows(rows, "amount")
+			if err != nil {
+				return err
+			}
+			tax, err := sumRows(rows, "tax")
+			if err != nil {
+				return err
+			}
+			if cover.Field(kind+"_count") != nil {
+				doc.Values[kind+"_count"] = strconv.Itoa(len(rows))
+				a.set(kind+"_income", income)
+				a.set(kind+"_tax", tax)
+			}
+			totalCount, totalIncome, totalTax = totalCount+len(rows), totalIncome.Add(income), totalTax.Add(tax)
+		}
+		doc.Values["total_count"] = strconv.Itoa(totalCount)
+		a.set("total_income", totalIncome)
+		a.set("total_tax", totalTax)
+	}
+	if cover.Field("total_payable") != nil {
+		a.set("total_payable", a.get("total_tax").Add(a.get("surcharge")))
+	}
+	return a.err
+}
+
+// pp30RowColumns - ยอดของใบแนบ ภ.พ.30 (ยื่นรวมหลายสาขา) ที่รวมขึ้นหน้าแบบ
+var pp30RowColumns = []string{"sales_amount", "sales_zero_rate", "sales_exempt", "sales_taxable", "output_tax", "purchase_amount", "input_tax",
+	"add_sales_under", "add_purchase_over", "add_purchase_under", "add_sales_over"}
+
+// computePP30 - ตามสูตรบนแบบ ภ.พ.30: 4 = 1-2-3, 8 = 5-7 (ถ้า 5>7), 9 = 7-5 (ถ้า 5<7), 11 = 8-10 (ถ้า 8>10),
+// 12 = (10-8 ถ้า 10>8) หรือ (9+10), 15 = (11+13+14) หรือ (13+14-12), 16 = 12-13-14
+func computePP30(_ *rdform.Spec, doc *rdform.Document) error {
+	a := &amounts{values: doc.Values}
+	for i, r := range doc.Rows {
+		ra := &amounts{values: r}
+		ra.set("sales_taxable", ra.get("sales_amount").Sub(ra.get("sales_zero_rate")).Sub(ra.get("sales_exempt")))
+		ra.set("tax_net", ra.get("output_tax").Sub(ra.get("input_tax")))
+		if ra.err != nil {
+			fe := ra.err.(*rdform.FieldError)
+			fe.Row = i + 1
+			return fe
+		}
+	}
+	if len(doc.Rows) > 0 {
+		for _, k := range pp30RowColumns {
+			total, err := sumRows(doc.Rows, k)
+			if err != nil {
+				return err
+			}
+			a.set(k, total)
+		}
+	}
+	a.set("sales_taxable", a.get("sales_amount").Sub(a.get("sales_zero_rate")).Sub(a.get("sales_exempt")))
+	diff := a.get("output_tax").Sub(a.get("input_tax"))
+	a.setPositive("tax_payable", diff)
+	a.setPositive("tax_excess", diff.Neg())
+	if diff.IsZero() {
+		a.set("tax_payable", decimal.Zero)
+	}
+	forward := a.get("excess_brought_forward")
+	payable, excess := decimal.Zero, decimal.Zero
+	if diff.IsPositive() {
+		payable = diff.Sub(forward)
+		if payable.IsNegative() {
+			payable, excess = decimal.Zero, payable.Neg()
+		}
+	} else {
+		excess = diff.Neg().Add(forward)
+	}
+	a.setPositive("net_payable", payable)
+	a.setPositive("net_excess", excess)
+	penalties := a.get("surcharge").Add(a.get("penalty"))
+	delete(doc.Values, "total_payable")
+	delete(doc.Values, "total_excess")
+	delete(doc.Values, "net_result")
+	switch {
+	case payable.IsPositive():
+		doc.Values["net_result"] = "payable"
+		a.set("total_payable", payable.Add(penalties))
+	case excess.IsPositive():
+		doc.Values["net_result"] = "excess"
+		a.setPositive("total_payable", penalties.Sub(excess))
+		a.setPositive("total_excess", excess.Sub(penalties))
+	default:
+		a.setPositive("total_payable", penalties)
+	}
+	return a.err
+}
+
+// computePP36 - 5. = 2. + 3. + 4. และจำนวนเงินเป็นตัวอักษรของข้อ 2 และ 5
+func computePP36(_ *rdform.Spec, doc *rdform.Document) error {
+	a := &amounts{values: doc.Values}
+	vat := a.get("vat_amount")
+	total := vat.Add(a.get("surcharge")).Add(a.get("penalty"))
+	if strings.TrimSpace(doc.Values["vat_amount"]) != "" {
+		doc.Values["vat_amount_text"] = whtcert.BahtText(vat)
+	}
+	if total.IsPositive() {
+		a.set("total_payable", total)
+		doc.Values["total_payable_text"] = whtcert.BahtText(total)
+	}
+	return a.err
+}
+
+// computePBT40 - 12. รวมภาษีธุรกิจเฉพาะ = ผลรวมช่องภาษีทุกประเภทกิจการ, 15. = 12+13+14, 17. = 15+16
+// ใบแนบรายสถานประกอบการ: ยอดรวมภาษีของแผ่น และหน้าแบบ = ผลรวมทุกแผ่น
+// ข้อ 16 รายได้ส่วนท้องถิ่น ผู้ใช้กรอกตามอัตราที่กฎหมายกำหนด (ระบบไม่ใส่อัตราเอง)
+func computePBT40(_ *rdform.Spec, doc *rdform.Document) error {
+	a := &amounts{values: doc.Values}
+	for i, s := range doc.Sheets {
+		sa := &amounts{values: s}
+		sa.set("est_total_tax", sumSuffix(sa, "_tax"))
+		if sa.err != nil {
+			return &rdform.FieldError{Key: sa.err.(*rdform.FieldError).Key, Row: i + 1}
+		}
+	}
+	if len(doc.Sheets) > 0 {
+		keys := map[string]bool{}
+		for _, s := range doc.Sheets {
+			for k := range s {
+				if strings.HasPrefix(k, "biz") && (strings.HasSuffix(k, "_receipts") || strings.HasSuffix(k, "_tax")) {
+					keys[k] = true
+				}
+			}
+		}
+		for k := range keys {
+			total, err := sumRows(doc.Sheets, k)
+			if err != nil {
+				return err
+			}
+			a.set(k, total)
+		}
+	}
+	sbt := sumSuffix(a, "_tax")
+	a.set("total_sbt_tax", sbt)
+	withPenalty := sbt.Add(a.get("surcharge")).Add(a.get("penalty"))
+	a.set("total_with_surcharge_penalty", withPenalty)
+	a.set("total_payable", withPenalty.Add(a.get("local_tax")))
+	return a.err
+}
+
+// sumSuffix - รวมช่องประเภทกิจการ biz*_<suffix>
+func sumSuffix(a *amounts, suffix string) decimal.Decimal {
+	total := decimal.Zero
+	for k := range a.values {
+		if strings.HasPrefix(k, "biz") && strings.HasSuffix(k, suffix) {
+			total = total.Add(a.get(k))
+		}
+	}
+	return total
+}

@@ -29,9 +29,9 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 		return nil, err
 	}
 	if len(patch.Partners)+len(patch.BankAccounts)+len(patch.Documents)+len(patch.BankLines) > 0 {
-		return nil, fmt.Errorf("หลังผ่านบัญชีเพิ่มได้เฉพาะ Statement การตัดยอด การจับคู่ การถอน และภาษีหัก ณ ที่จ่าย")
+		return nil, fmt.Errorf("หลังผ่านบัญชีเพิ่มได้เฉพาะ Statement การตัดยอด การจับคู่ การถอน ภาษีหัก ณ ที่จ่าย และภาษีมูลค่าเพิ่ม")
 	}
-	if len(patch.StatementLines)+len(patch.Settlements)+len(patch.Matches)+len(patch.Withdrawals)+len(patch.Withholdings) == 0 {
+	if len(patch.StatementLines)+len(patch.Settlements)+len(patch.Matches)+len(patch.Withdrawals)+len(patch.Withholdings)+len(patch.Vats) == 0 {
 		return nil, fmt.Errorf("ไม่มีรายละเอียดกระทบยอด")
 	}
 	if err = s.checkOpenDate(ctx, tx, scope, current.Date); err != nil {
@@ -62,16 +62,24 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 	current.Details.StatementLines = mergeSubledgerRows(current.Details.StatementLines, patch.StatementLines, func(v SubledgerStatementLine) string { return v.ID })
 	current.Details.Settlements = mergeSubledgerRows(current.Details.Settlements, patch.Settlements, func(v SubledgerSettlement) string { return v.ID })
 	current.Details.Matches = mergeSubledgerRows(current.Details.Matches, patch.Matches, func(v SubledgerMatch) string { return v.ID })
-	// ภาษีหัก ณ ที่จ่ายเป็นรายละเอียดประกอบ ไม่ใช่ยอด GL — แก้ได้เสมอแม้ผ่านบัญชีแล้ว: แทนทั้งชุด และเก็บค่าเดิมไว้ใน audit
-	if len(patch.Withholdings) > 0 {
+	// ภาษีหัก ณ ที่จ่าย/ภาษีมูลค่าเพิ่มเป็นรายละเอียดประกอบ ไม่ใช่ยอด GL — แก้ได้เสมอแม้ผ่านบัญชีแล้ว: แทนทั้งชุด และเก็บค่าเดิมไว้ใน audit
+	if len(patch.Withholdings)+len(patch.Vats) > 0 {
 		reason := strings.TrimSpace(cmd.Reason)
 		if reason == "" || len([]rune(reason)) > 500 {
 			return nil, fmt.Errorf("ระบุเหตุผลการแก้ฐานภาษีหลังผ่านบัญชี (ไม่เกิน 500 ตัวอักษร)")
 		}
-		if err = m.audit("withholding_replace", map[string]any{"before": current.Details.Withholdings, "after": patch.Withholdings, "reason": reason}); err != nil {
-			return nil, err
+		if len(patch.Withholdings) > 0 {
+			if err = m.audit("withholding_replace", map[string]any{"before": current.Details.Withholdings, "after": patch.Withholdings, "reason": reason}); err != nil {
+				return nil, err
+			}
+			current.Details.Withholdings = patch.Withholdings
 		}
-		current.Details.Withholdings = patch.Withholdings
+		if len(patch.Vats) > 0 {
+			if err = m.audit("vat_replace", map[string]any{"before": current.Details.Vats, "after": patch.Vats, "reason": reason}); err != nil {
+				return nil, err
+			}
+			current.Details.Vats = patch.Vats
+		}
 	}
 	current.Details.Withdrawals = mergeSubledgerRows(current.Details.Withdrawals, patch.Withdrawals, func(v SubledgerWithdrawal) string { return v.Kind + ":" + v.ID })
 	current.Identity = updateIdentity(scope, current.Identity, now)

@@ -116,6 +116,7 @@
 - [decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md) — ถอด MongoDB/Kafka/Redis/ClickHouse: session → `cache_entries`, ตรวจสิทธิ์สดจาก PG ทุกคำขอ, จอที่ API อยู่บน Mongo ขึ้น "รอพัฒนา"
 - [decisions/2026-09-23-tax-inside-general-ledger.md](decisions/2026-09-23-tax-inside-general-ledger.md) — เมนูภาษีทั้งหมดอยู่ใต้ "บัญชีแยกประเภท" ตาม Champ; ผู้ใช้ GL ตัวเดียวใช้ได้เลย, ภ.ง.ด./50 ทวิ อ่านจาก GL
 - [decisions/2026-09-23-wht-tax-base-editable.md](decisions/2026-09-23-wht-tax-base-editable.md) — ฐานภาษีหัก ณ ที่จ่ายแก้ได้เสมอ: เก็บใน `details.withholdings` ของใบสำคัญ (ภาษีว่าง = ฐาน × อัตรา), แก้หลังผ่านบัญชีผ่าน reconcile + เหตุผล + audit, รายงาน ภ.ง.ด./50 ทวิ ใช้ฐานที่บันทึก (recorded) ก่อนค่าประมาณ (inferred)
+- [decisions/2026-09-23-rd-tax-forms-engine.md](decisions/2026-09-23-rd-tax-forms-engine.md) — แบบยื่นกรมสรรพากรทุกแบบใน `mydocs/sample` (ภ.ง.ด.2/2ก/3/53/50/51/93/94, ภ.พ.30/36, ภ.ธ.40): `internal/rdform` สเปก JSON → PDF ทางการ, API `/api/report/tax/form/*` ดึงยอดจาก GL/แก้ได้ทุกช่อง/บันทึก `tax_filings`, จอ `TaxFormEditor`; ลบแบบ HTML + `pp30-summary`
 - [decisions/2026-09-19-champ-parity-no-bloat-rule.md](decisions/2026-09-19-champ-parity-no-bloat-rule.md) — กฎยึด D:\project-champ เป็นต้นแบบหลัก ไม่เพิ่มฟังก์ชันหรือเมนูมากเกินไป เพื่อมุ่งเน้นการ Upgrade จาก Windows สู่ Web ที่รวดเร็ว ปลอดภัย และไม่ทำให้ลูกค้าสับสน
 
 
@@ -139,7 +140,7 @@
 - [bugs/2026-09-04-refresh-logs-out-non-https.md](bugs/2026-09-04-refresh-logs-out-non-https.md)
 - [bugs/2026-09-05-projection-consumer-head-of-line-block.md](bugs/2026-09-05-projection-consumer-head-of-line-block.md)
 - [bugs/2026-09-14-settings-language-switch-loop.md](bugs/2026-09-14-settings-language-switch-loop.md) — **ยังไม่แก้ (open)**: จอตั้งค่าเปิดผ่าน URL ตรงแล้วกดเลือกภาษา → render loop สลับ th/ja (effect อ่าน localStorage ผูก deps กับ loadRecords ที่มี language)
-- [bugs/2026-09-23-vat-report-reads-missing-erp-tables.md](bugs/2026-09-23-vat-report-reads-missing-erp-tables.md) — **ยังไม่แก้ (open)**: รายงานภาษีขาย/ซื้อ + ภ.พ.30 อ่านตาราง ERP ที่ไม่มีในฐาน holding (prod 500 ทุก holding) + `m.name0` ไม่มีจริง — ต้องย้ายไปอ่านจาก GL ตาม `mydocs/datamodels/gl/vat.sql`
+- [bugs/2026-09-23-vat-report-reads-missing-erp-tables.md](bugs/2026-09-23-vat-report-reads-missing-erp-tables.md) — **แก้แล้ว 2026-09-23**: รายงานภาษีขาย/ซื้อ + ภ.พ.30 เคยอ่านตาราง ERP ที่ไม่มีในฐาน holding (prod 500 ทุก holding) → อ่านจากรายละเอียดภาษีมูลค่าเพิ่มของใบสำคัญ GL ที่ผ่านบัญชี (`details.vats`, `generalledger.VatRecordsForPeriod`) ตาม `mydocs/datamodels/gl/vat.sql`
 - [bugs/2026-09-23-wht-cert-pdf-panic-on-prod.md](bugs/2026-09-23-wht-cert-pdf-panic-on-prod.md) — 50 ทวิ บน prod panic เพราะ pdfcpu mkdir ใน home ที่ไม่มี (แก้ `api.DisableConfigDir`) + เลขผู้เสียภาษีบริษัทใน seed ผิด checksum + คอลัมน์ `business_code` ขาดใน `shop_user_access_logs`
 
 - [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ

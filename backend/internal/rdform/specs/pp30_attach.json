@@ -1,0 +1,5417 @@
+{
+ "code": "pp30_attach",
+ "title": "ใบแนบ ภ.พ.30 รายละเอียดภาษีขายและภาษีซื้อของสถานประกอบการแต่ละแห่ง",
+ "template": "pp30_attach.pdf",
+ "pages": [
+  1
+ ],
+ "sizes": [
+  [
+   841.89,
+   595.28
+  ]
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    643.2,
+    504.3,
+    824.8,
+    520.1
+   ],
+   "align": 0,
+   "cells": [
+    [
+     643.75,
+     655.62
+    ],
+    [
+     661.62,
+     673.5
+    ],
+    [
+     673.5,
+     685.5
+    ],
+    [
+     685.5,
+     697.5
+    ],
+    [
+     697.5,
+     709.62
+    ],
+    [
+     715.38,
+     727.5
+    ],
+    [
+     727.5,
+     739.5
+    ],
+    [
+     739.5,
+     751.5
+    ],
+    [
+     751.5,
+     763.5
+    ],
+    [
+     763.5,
+     775.5
+    ],
+    [
+     781.75,
+     793.62
+    ],
+    [
+     793.62,
+     805.62
+    ],
+    [
+     811.62,
+     823.62
+    ]
+   ]
+  },
+  {
+   "key": "name",
+   "type": "text",
+   "label": "ชื่อผู้ประกอบการ",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    302.3,
+    506.0,
+    526.7,
+    521.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "sheet_no",
+   "type": "int",
+   "label": "แผ่นที่",
+   "group": "sheet",
+   "page": 1,
+   "rect": [
+    702.5,
+    551.5,
+    735.1,
+    566.6
+   ],
+   "align": 1
+  },
+  {
+   "key": "sheet_total",
+   "type": "int",
+   "label": "ในจำนวน (แผ่น)",
+   "group": "sheet",
+   "page": 1,
+   "rect": [
+    771.5,
+    551.2,
+    807.4,
+    566.4
+   ],
+   "align": 1
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "เป็นใบแนบ ภ.พ.30",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "label": "กรณียื่นปกติ",
+     "page": 1,
+     "rect": [
+      397.3,
+      525.8,
+      414.8,
+      540.1
+     ],
+     "align": 0
+    },
+    {
+     "value": "additional",
+     "label": "กรณียื่นเพิ่มเติม",
+     "page": 1,
+     "rect": [
+      467.2,
+      525.3,
+      485.3,
+      540.9
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "type": "text",
+   "label": "กรณียื่นเพิ่มเติมครั้งที่",
+   "group": "filing",
+   "page": 1,
+   "rect": [
+    572.0,
+    527.1,
+    605.5,
+    542.3
+   ],
+   "align": 1
+  },
+  {
+   "key": "month_name",
+   "type": "text",
+   "label": "สำหรับเดือนภาษี (ชื่อเดือน)",
+   "group": "period",
+   "page": 1,
+   "rect": [
+    685.8,
+    527.3,
+    743.5,
+    542.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "year_be",
+   "type": "text",
+   "label": "พ.ศ.",
+   "group": "period",
+   "page": 1,
+   "rect": [
+    767.3,
+    526.8,
+    808.1,
+    542.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "signer_name",
+   "type": "text",
+   "label": "ลงชื่อ ผู้ประกอบการ (ชื่อตัวบรรจง)",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    523.6,
+    19.5,
+    704.4,
+    34.7
+   ],
+   "align": 0
+  }
+ ],
+ "table": {
+  "key": "branches",
+  "label": "รายละเอียดภาษีขายและภาษีซื้อของสถานประกอบการแต่ละแห่ง (ลำดับที่ 1-25 พิมพ์ไว้บนแบบ)",
+  "columns": [
+   {
+    "key": "branch_d1",
+    "type": "text",
+    "label": "สนง.ใหญ่/สาขาที่ หลักที่ 1"
+   },
+   {
+    "key": "branch_d2",
+    "type": "text",
+    "label": "สนง.ใหญ่/สาขาที่ หลักที่ 2"
+   },
+   {
+    "key": "branch_d3",
+    "type": "text",
+    "label": "สนง.ใหญ่/สาขาที่ หลักที่ 3"
+   },
+   {
+    "key": "branch_d4",
+    "type": "text",
+    "label": "สนง.ใหญ่/สาขาที่ หลักที่ 4"
+   },
+   {
+    "key": "branch_d5",
+    "type": "text",
+    "label": "สนง.ใหญ่/สาขาที่ หลักที่ 5"
+   },
+   {
+    "key": "add_sales_under",
+    "type": "money",
+    "label": "ยอดขายในเดือนนี้: *ยอดขายแจ้งไว้ขาด"
+   },
+   {
+    "key": "add_purchase_over",
+    "type": "money",
+    "label": "ยอดขายในเดือนนี้: *ยอดซื้อแจ้งไว้เกิน"
+   },
+   {
+    "key": "sales_amount",
+    "type": "money",
+    "label": "ยอดขายในเดือนนี้: ยอดขาย"
+   },
+   {
+    "key": "add_zero_rate_over",
+    "type": "check",
+    "label": "*แจ้งไว้เกิน (ยอดขายที่เสียภาษีในอัตราร้อยละ 0)"
+   },
+   {
+    "key": "sales_zero_rate",
+    "type": "money",
+    "label": "ยอดขายที่เสียภาษีในอัตราร้อยละ 0"
+   },
+   {
+    "key": "add_exempt_over",
+    "type": "check",
+    "label": "*แจ้งไว้เกิน (ยอดขายที่ได้รับยกเว้น)"
+   },
+   {
+    "key": "sales_exempt",
+    "type": "money",
+    "label": "ยอดขายที่ได้รับยกเว้น"
+   },
+   {
+    "key": "sales_taxable",
+    "type": "money",
+    "label": "ยอดขายที่ต้องเสียภาษี"
+   },
+   {
+    "key": "output_tax",
+    "type": "money",
+    "label": "ภาษีขาย"
+   },
+   {
+    "key": "add_purchase_under",
+    "type": "money",
+    "label": "ยอดซื้อที่มีสิทธินำภาษีซื้อมาหักในการคำนวณภาษี: *ยอดซื้อแจ้งไว้ขาด"
+   },
+   {
+    "key": "add_sales_over",
+    "type": "money",
+    "label": "ยอดซื้อที่มีสิทธินำภาษีซื้อมาหักในการคำนวณภาษี: *ยอดขายแจ้งไว้เกิน"
+   },
+   {
+    "key": "purchase_amount",
+    "type": "money",
+    "label": "ยอดซื้อที่มีสิทธินำภาษีซื้อมาหักในการคำนวณภาษี: ยอดซื้อ"
+   },
+   {
+    "key": "input_tax",
+    "type": "money",
+    "label": "ภาษีซื้อ"
+   },
+   {
+    "key": "tax_net",
+    "type": "money",
+    "label": "ภาษีมูลค่าเพิ่มที่ต้องชำระ (+) / ชำระเกิน (-)"
+   }
+  ],
+  "rows": [
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      420.2,
+      50.4,
+      432.8
+     ],
+     "align": 0
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      420.1,
+      58.5,
+      432.8
+     ],
+     "align": 0
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      59.0,
+      420.2,
+      66.5,
+      432.8
+     ],
+     "align": 0
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.8,
+      420.3,
+      74.3,
+      433.0
+     ],
+     "align": 0
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.3,
+      420.1,
+      81.8,
+      432.8
+     ],
+     "align": 0
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.8,
+      420.3,
+      147.5,
+      433.0
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.2,
+      420.6,
+      207.6,
+      433.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.7,
+      420.2,
+      268.1,
+      432.9
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.3,
+      421.8,
+      281.4,
+      430.0
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      286.7,
+      420.2,
+      354.3,
+      433.2
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.5,
+      421.5,
+      368.6,
+      429.7
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.1,
+      420.1,
+      423.7,
+      433.1
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.0,
+      419.7,
+      474.6,
+      432.8
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.7,
+      419.7,
+      526.3,
+      432.7
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.8,
+      420.3,
+      591.5,
+      433.0
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.2,
+      420.6,
+      651.6,
+      433.3
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.7,
+      420.2,
+      712.1,
+      432.9
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.1,
+      419.7,
+      761.7,
+      432.7
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.8,
+      420.5,
+      824.9,
+      433.2
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      406.7,
+      50.5,
+      419.3
+     ],
+     "align": 0
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      406.7,
+      58.5,
+      419.3
+     ],
+     "align": 0
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      59.0,
+      406.7,
+      66.5,
+      419.4
+     ],
+     "align": 0
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.9,
+      406.8,
+      74.4,
+      419.5
+     ],
+     "align": 0
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.4,
+      406.6,
+      81.9,
+      419.3
+     ],
+     "align": 0
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.8,
+      406.2,
+      147.5,
+      418.9
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.1,
+      406.4,
+      207.4,
+      419.1
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.7,
+      406.5,
+      268.1,
+      419.2
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.1,
+      408.4,
+      281.3,
+      416.7
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.6,
+      406.1,
+      355.2,
+      419.2
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.4,
+      408.2,
+      368.5,
+      416.4
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.3,
+      405.7,
+      423.9,
+      418.7
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.2,
+      405.3,
+      474.8,
+      418.4
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.9,
+      405.3,
+      526.5,
+      418.3
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.8,
+      406.2,
+      591.5,
+      418.9
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.1,
+      406.4,
+      651.5,
+      419.1
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.7,
+      406.5,
+      712.1,
+      419.2
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.3,
+      405.3,
+      761.9,
+      418.3
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.8,
+      406.4,
+      824.9,
+      419.1
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.1,
+      392.2,
+      50.6,
+      404.8
+     ],
+     "align": 0
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.1,
+      392.1,
+      58.6,
+      404.8
+     ],
+     "align": 0
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      59.1,
+      392.2,
+      66.7,
+      404.8
+     ],
+     "align": 0
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      67.0,
+      392.3,
+      74.5,
+      405.0
+     ],
+     "align": 0
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      392.1,
+      82.0,
+      404.8
+     ],
+     "align": 0
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.6,
+      391.8,
+      147.3,
+      404.5
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.0,
+      392.0,
+      207.4,
+      404.7
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.7,
+      392.1,
+      268.1,
+      404.8
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.1,
+      394.0,
+      281.3,
+      402.3
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.6,
+      391.7,
+      355.2,
+      404.8
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.4,
+      393.8,
+      368.5,
+      402.0
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.2,
+      391.9,
+      423.7,
+      404.9
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.1,
+      391.5,
+      474.6,
+      404.6
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.7,
+      391.5,
+      526.3,
+      404.5
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.6,
+      391.8,
+      591.3,
+      404.5
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.1,
+      392.0,
+      651.4,
+      404.7
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.7,
+      392.1,
+      712.1,
+      404.8
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.2,
+      391.5,
+      761.7,
+      404.5
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.8,
+      392.0,
+      824.9,
+      404.7
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.1,
+      378.0,
+      50.6,
+      390.6
+     ],
+     "align": 0
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.1,
+      377.9,
+      58.6,
+      390.6
+     ],
+     "align": 0
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      59.1,
+      378.0,
+      66.6,
+      390.6
+     ],
+     "align": 0
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      67.0,
+      378.1,
+      74.5,
+      390.8
+     ],
+     "align": 0
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      377.9,
+      82.0,
+      390.6
+     ],
+     "align": 0
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.8,
+      377.6,
+      147.6,
+      390.3
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.1,
+      377.7,
+      207.4,
+      390.4
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.5,
+      377.8,
+      267.9,
+      390.5
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      272.9,
+      380.1,
+      281.0,
+      388.3
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.0,
+      377.1,
+      354.6,
+      390.1
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.2,
+      379.8,
+      368.3,
+      388.1
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.6,
+      376.9,
+      424.2,
+      389.9
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.5,
+      376.5,
+      475.1,
+      389.5
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.5,
+      376.5,
+      526.1,
+      389.5
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.9,
+      377.6,
+      591.6,
+      390.3
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.1,
+      377.7,
+      651.5,
+      390.4
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.5,
+      377.8,
+      711.9,
+      390.5
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.6,
+      376.5,
+      762.1,
+      389.5
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.8,
+      377.8,
+      824.9,
+      390.5
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      363.6,
+      50.5,
+      376.3
+     ],
+     "align": 0
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.1,
+      363.6,
+      58.6,
+      376.2
+     ],
+     "align": 0
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      59.1,
+      363.6,
+      66.6,
+      376.3
+     ],
+     "align": 0
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.9,
+      363.8,
+      74.4,
+      376.4
+     ],
+     "align": 0
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.4,
+      363.6,
+      81.9,
+      376.2
+     ],
+     "align": 0
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.7,
+      363.4,
+      147.4,
+      376.1
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.0,
+      363.3,
+      207.4,
+      376.0
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.8,
+      363.4,
+      268.1,
+      376.1
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      272.9,
+      366.3,
+      281.0,
+      374.5
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.4,
+      363.1,
+      355.0,
+      376.1
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.2,
+      366.1,
+      368.3,
+      374.3
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.4,
+      363.1,
+      424.0,
+      376.1
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.3,
+      362.7,
+      474.9,
+      375.7
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.5,
+      362.7,
+      526.1,
+      375.7
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.7,
+      363.4,
+      591.4,
+      376.1
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.0,
+      363.3,
+      651.4,
+      376.0
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.8,
+      363.4,
+      712.2,
+      376.1
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.4,
+      362.7,
+      762.0,
+      375.7
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.8,
+      363.4,
+      824.9,
+      376.1
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      349.0,
+      50.5,
+      361.6
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      348.9,
+      58.5,
+      361.6
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      348.9,
+      66.3,
+      361.6
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      348.9,
+      74.1,
+      361.5
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      348.9,
+      82.0,
+      361.6
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.3,
+      348.7,
+      147.0,
+      361.4
+     ],
+     "align": 1,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.0,
+      349.0,
+      207.3,
+      361.7
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.8,
+      349.0,
+      268.1,
+      361.7
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.3,
+      351.6,
+      281.4,
+      359.8
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.4,
+      348.7,
+      355.0,
+      361.7
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.5,
+      351.4,
+      368.6,
+      359.6
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.4,
+      349.1,
+      424.0,
+      362.1
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.3,
+      348.7,
+      474.9,
+      361.7
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.0,
+      348.7,
+      526.6,
+      361.7
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.3,
+      348.7,
+      591.0,
+      361.4
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.0,
+      349.0,
+      651.3,
+      361.7
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.8,
+      349.0,
+      712.2,
+      361.7
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.4,
+      348.7,
+      762.0,
+      361.7
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      349.1,
+      825.2,
+      361.8
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      334.6,
+      50.5,
+      347.3
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      334.6,
+      58.5,
+      347.3
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      334.6,
+      66.4,
+      347.3
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      334.5,
+      74.2,
+      347.2
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      334.6,
+      82.1,
+      347.3
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.6,
+      334.8,
+      147.3,
+      347.5
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.0,
+      334.6,
+      207.4,
+      347.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.6,
+      334.7,
+      267.9,
+      347.4
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.3,
+      337.2,
+      281.4,
+      345.4
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.4,
+      334.4,
+      355.0,
+      347.5
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.5,
+      337.0,
+      368.6,
+      345.2
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.3,
+      334.6,
+      423.9,
+      347.6
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.2,
+      334.3,
+      474.8,
+      347.3
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.8,
+      334.2,
+      526.4,
+      347.3
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.6,
+      334.8,
+      591.3,
+      347.5
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.0,
+      334.6,
+      651.4,
+      347.3
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.6,
+      334.7,
+      712.0,
+      347.4
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.3,
+      334.2,
+      761.9,
+      347.2
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      334.7,
+      825.2,
+      347.4
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      320.4,
+      50.5,
+      333.0
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      320.3,
+      58.5,
+      333.0
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      320.3,
+      66.3,
+      333.0
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      320.3,
+      74.1,
+      332.9
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      320.3,
+      82.0,
+      333.0
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.4,
+      320.2,
+      147.1,
+      332.9
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.3,
+      320.3,
+      207.7,
+      333.0
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.3,
+      320.1,
+      267.7,
+      332.8
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.0,
+      323.2,
+      281.1,
+      331.5
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.9,
+      320.3,
+      355.5,
+      333.3
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      323.0,
+      368.4,
+      331.2
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.7,
+      320.2,
+      424.3,
+      333.3
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.6,
+      319.9,
+      475.2,
+      332.9
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.3,
+      319.9,
+      526.8,
+      332.9
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.4,
+      320.2,
+      591.1,
+      332.9
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.3,
+      320.3,
+      651.7,
+      333.0
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.3,
+      320.1,
+      711.7,
+      332.8
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.7,
+      319.8,
+      762.3,
+      332.9
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      320.6,
+      825.2,
+      333.3
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      306.0,
+      50.5,
+      318.7
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      306.0,
+      58.5,
+      318.6
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.9,
+      306.0,
+      66.4,
+      318.6
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      305.9,
+      74.2,
+      318.5
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      306.0,
+      82.1,
+      318.6
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.8,
+      306.1,
+      147.5,
+      318.8
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.3,
+      306.0,
+      207.6,
+      318.7
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.3,
+      305.7,
+      267.7,
+      318.4
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.0,
+      309.5,
+      281.1,
+      317.7
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.9,
+      305.9,
+      355.5,
+      318.9
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      309.3,
+      368.4,
+      317.5
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.5,
+      305.8,
+      424.1,
+      318.8
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.4,
+      305.4,
+      475.0,
+      318.5
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.1,
+      305.4,
+      526.7,
+      318.4
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.8,
+      306.2,
+      591.5,
+      318.9
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.3,
+      306.0,
+      651.7,
+      318.7
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.3,
+      305.7,
+      711.7,
+      318.4
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.5,
+      305.4,
+      762.1,
+      318.4
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      306.2,
+      825.2,
+      318.9
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      291.5,
+      50.4,
+      304.2
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      291.5,
+      58.5,
+      304.2
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      291.5,
+      66.3,
+      304.2
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      291.4,
+      74.1,
+      304.1
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      291.5,
+      82.0,
+      304.2
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      83.0,
+      291.0,
+      147.7,
+      303.7
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.3,
+      291.6,
+      207.7,
+      304.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.1,
+      291.4,
+      267.5,
+      304.1
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.3,
+      294.4,
+      281.4,
+      302.6
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.3,
+      291.2,
+      354.9,
+      304.2
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.5,
+      294.2,
+      368.6,
+      302.4
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.4,
+      291.6,
+      424.0,
+      304.7
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.3,
+      291.3,
+      474.9,
+      304.3
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.0,
+      291.3,
+      526.5,
+      304.3
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      527.0,
+      291.0,
+      591.8,
+      303.7
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.3,
+      291.6,
+      651.7,
+      304.3
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.1,
+      291.4,
+      711.5,
+      304.1
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.4,
+      291.2,
+      762.0,
+      304.3
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.1,
+      291.8,
+      825.3,
+      304.5
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      277.3,
+      50.4,
+      289.9
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      50.9,
+      277.2,
+      58.4,
+      289.9
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      277.2,
+      66.3,
+      289.9
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      277.2,
+      74.1,
+      289.8
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      277.2,
+      82.0,
+      289.9
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.9,
+      276.6,
+      147.6,
+      289.3
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.2,
+      277.3,
+      207.6,
+      290.0
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.4,
+      277.1,
+      267.7,
+      289.7
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.3,
+      280.0,
+      281.4,
+      288.2
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.7,
+      277.2,
+      355.3,
+      290.2
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.5,
+      279.8,
+      368.6,
+      288.0
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.2,
+      277.2,
+      423.8,
+      290.2
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.1,
+      276.8,
+      474.7,
+      289.9
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.8,
+      276.8,
+      526.4,
+      289.8
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.9,
+      276.6,
+      591.6,
+      289.3
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.2,
+      277.3,
+      651.6,
+      290.0
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.4,
+      277.1,
+      711.8,
+      289.8
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.2,
+      276.8,
+      761.8,
+      289.8
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.1,
+      277.4,
+      825.3,
+      290.1
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      262.9,
+      50.5,
+      275.6
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      262.9,
+      58.5,
+      275.5
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.9,
+      262.9,
+      66.4,
+      275.5
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      262.8,
+      74.2,
+      275.4
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      262.9,
+      82.1,
+      275.5
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      83.1,
+      262.3,
+      147.8,
+      275.0
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.2,
+      262.9,
+      207.5,
+      275.6
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.4,
+      262.6,
+      267.7,
+      275.3
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.1,
+      266.0,
+      281.2,
+      274.2
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.7,
+      262.8,
+      355.3,
+      275.8
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      265.8,
+      368.4,
+      274.0
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.6,
+      262.8,
+      424.2,
+      275.8
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.5,
+      262.5,
+      475.1,
+      275.5
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.2,
+      262.4,
+      526.8,
+      275.5
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      527.1,
+      262.3,
+      591.8,
+      275.0
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.2,
+      262.9,
+      651.6,
+      275.6
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.4,
+      262.7,
+      711.8,
+      275.4
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.6,
+      262.4,
+      762.2,
+      275.4
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.1,
+      263.2,
+      825.3,
+      275.9
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      248.6,
+      50.4,
+      261.3
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      50.9,
+      248.6,
+      58.5,
+      261.2
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      248.6,
+      66.3,
+      261.2
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      248.5,
+      74.1,
+      261.2
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      248.6,
+      82.0,
+      261.2
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.9,
+      248.1,
+      147.7,
+      260.8
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.2,
+      248.6,
+      207.6,
+      261.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.2,
+      248.3,
+      267.5,
+      261.0
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.1,
+      252.3,
+      281.2,
+      260.5
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.7,
+      248.5,
+      355.3,
+      261.6
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      252.0,
+      368.4,
+      260.3
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.5,
+      249.0,
+      424.1,
+      262.0
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.4,
+      248.7,
+      475.0,
+      261.7
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.0,
+      248.6,
+      526.6,
+      261.7
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      527.0,
+      248.1,
+      591.7,
+      260.8
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.2,
+      248.6,
+      651.6,
+      261.3
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.2,
+      248.4,
+      711.6,
+      261.0
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.5,
+      248.6,
+      762.0,
+      261.6
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.1,
+      248.8,
+      825.3,
+      261.5
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      234.3,
+      50.5,
+      246.9
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      234.2,
+      58.5,
+      246.9
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.9,
+      234.2,
+      66.4,
+      246.9
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      234.2,
+      74.2,
+      246.8
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      234.2,
+      82.1,
+      246.9
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.6,
+      233.5,
+      147.3,
+      246.1
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.1,
+      234.3,
+      207.5,
+      247.0
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      209.1,
+      234.9,
+      268.4,
+      247.6
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.4,
+      237.6,
+      281.5,
+      245.8
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.3,
+      234.9,
+      354.9,
+      247.9
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.6,
+      237.3,
+      368.7,
+      245.5
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.5,
+      234.6,
+      424.1,
+      247.6
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.4,
+      234.6,
+      475.0,
+      247.7
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.1,
+      234.6,
+      526.7,
+      247.6
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.6,
+      233.5,
+      591.3,
+      246.2
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.2,
+      234.4,
+      651.5,
+      247.0
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      653.1,
+      234.9,
+      712.5,
+      247.6
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.5,
+      234.6,
+      762.1,
+      247.6
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.3,
+      234.5,
+      825.5,
+      247.2
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      219.8,
+      50.4,
+      232.5
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      50.9,
+      219.8,
+      58.4,
+      232.4
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      219.8,
+      66.3,
+      232.4
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      219.7,
+      74.1,
+      232.3
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      219.8,
+      82.0,
+      232.4
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.8,
+      219.5,
+      147.5,
+      232.2
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.1,
+      220.0,
+      207.5,
+      232.7
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      209.1,
+      220.5,
+      268.4,
+      233.2
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.4,
+      223.2,
+      281.5,
+      231.4
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.3,
+      220.5,
+      354.9,
+      233.5
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.6,
+      222.9,
+      368.7,
+      231.1
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.3,
+      220.3,
+      423.9,
+      233.4
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.2,
+      220.0,
+      474.8,
+      233.0
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.9,
+      220.2,
+      526.5,
+      233.2
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.8,
+      219.6,
+      591.6,
+      232.2
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.1,
+      220.0,
+      651.5,
+      232.7
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      653.1,
+      220.5,
+      712.5,
+      233.2
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.3,
+      220.8,
+      761.9,
+      233.8
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.3,
+      220.1,
+      825.5,
+      232.8
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      205.5,
+      50.4,
+      218.2
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      50.9,
+      205.5,
+      58.4,
+      218.1
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      205.5,
+      66.3,
+      218.1
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      205.4,
+      74.1,
+      218.1
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      205.5,
+      82.0,
+      218.1
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.7,
+      205.0,
+      147.4,
+      217.7
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.1,
+      205.7,
+      207.5,
+      218.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.9,
+      206.2,
+      268.2,
+      218.9
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.2,
+      209.2,
+      281.3,
+      217.4
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      286.7,
+      205.8,
+      354.3,
+      218.8
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.4,
+      209.0,
+      368.5,
+      217.2
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.8,
+      205.5,
+      424.3,
+      218.6
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.7,
+      205.8,
+      475.2,
+      218.8
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.3,
+      205.8,
+      526.9,
+      218.8
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.7,
+      205.0,
+      591.4,
+      217.7
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.2,
+      205.7,
+      651.5,
+      218.4
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.9,
+      206.2,
+      712.3,
+      218.9
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.7,
+      205.8,
+      762.3,
+      218.8
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.3,
+      206.0,
+      825.5,
+      218.7
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      191.2,
+      50.5,
+      203.8
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      191.1,
+      58.5,
+      203.8
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      191.1,
+      66.3,
+      203.8
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      191.1,
+      74.2,
+      203.7
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      191.1,
+      82.1,
+      203.8
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      83.1,
+      190.9,
+      147.8,
+      203.6
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.0,
+      191.3,
+      207.4,
+      204.0
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      209.1,
+      191.8,
+      268.5,
+      204.5
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.2,
+      194.4,
+      281.3,
+      202.6
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.1,
+      191.9,
+      354.7,
+      204.9
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.4,
+      194.1,
+      368.5,
+      202.3
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.6,
+      191.4,
+      424.2,
+      204.4
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.5,
+      191.0,
+      475.1,
+      204.1
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      476.2,
+      191.0,
+      526.7,
+      204.0
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      527.1,
+      190.9,
+      591.8,
+      203.6
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.1,
+      191.3,
+      651.4,
+      204.0
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      653.1,
+      191.8,
+      712.5,
+      204.5
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.6,
+      191.0,
+      762.2,
+      204.0
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.3,
+      191.6,
+      825.5,
+      204.3
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      176.8,
+      50.5,
+      189.5
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      176.8,
+      58.5,
+      189.4
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.9,
+      176.8,
+      66.4,
+      189.4
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      176.7,
+      74.2,
+      189.4
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      176.8,
+      82.1,
+      189.4
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.5,
+      177.3,
+      147.2,
+      190.0
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.0,
+      176.9,
+      207.4,
+      189.6
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      209.1,
+      177.4,
+      268.5,
+      190.1
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.0,
+      180.0,
+      281.1,
+      188.2
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.1,
+      177.5,
+      354.7,
+      190.5
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      179.8,
+      368.4,
+      188.0
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      372.8,
+      177.8,
+      423.4,
+      190.8
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      423.7,
+      177.4,
+      474.3,
+      190.4
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.3,
+      177.4,
+      525.9,
+      190.4
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.5,
+      177.3,
+      591.2,
+      190.0
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.0,
+      177.0,
+      651.4,
+      189.7
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      653.1,
+      177.4,
+      712.5,
+      190.1
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      710.8,
+      177.3,
+      761.4,
+      190.4
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.7,
+      177.0,
+      824.9,
+      189.7
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      162.9,
+      50.5,
+      175.6
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      162.9,
+      58.5,
+      175.5
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      162.9,
+      66.3,
+      175.5
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      162.8,
+      74.2,
+      175.4
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      162.9,
+      82.1,
+      175.5
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.3,
+      162.9,
+      147.0,
+      175.6
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.0,
+      162.6,
+      207.4,
+      175.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.9,
+      163.1,
+      268.3,
+      175.8
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.0,
+      165.6,
+      281.1,
+      173.8
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.1,
+      163.2,
+      354.7,
+      176.2
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      165.4,
+      368.4,
+      173.6
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      372.6,
+      163.3,
+      423.2,
+      176.3
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      423.5,
+      162.9,
+      474.1,
+      176.0
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.2,
+      162.9,
+      525.8,
+      175.9
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.3,
+      162.9,
+      591.0,
+      175.6
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.1,
+      162.6,
+      651.4,
+      175.3
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.9,
+      163.1,
+      712.3,
+      175.8
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      710.6,
+      162.9,
+      761.2,
+      175.9
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.7,
+      162.6,
+      824.9,
+      175.3
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      148.5,
+      50.5,
+      161.2
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.1,
+      148.5,
+      58.6,
+      161.2
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.9,
+      148.5,
+      66.4,
+      161.2
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      148.4,
+      74.2,
+      161.1
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      148.5,
+      82.1,
+      161.2
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.5,
+      148.7,
+      147.3,
+      161.4
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.4,
+      148.3,
+      207.7,
+      161.0
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.7,
+      148.6,
+      268.0,
+      161.3
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      272.8,
+      151.6,
+      280.9,
+      159.9
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.6,
+      149.0,
+      355.2,
+      162.0
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.0,
+      151.4,
+      368.1,
+      159.6
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.0,
+      148.9,
+      423.6,
+      162.0
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      423.9,
+      148.6,
+      474.5,
+      161.6
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.6,
+      148.5,
+      526.2,
+      161.6
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.6,
+      148.7,
+      591.3,
+      161.4
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.4,
+      148.3,
+      651.8,
+      161.0
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.7,
+      148.6,
+      712.0,
+      161.3
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.0,
+      148.5,
+      761.6,
+      161.5
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.7,
+      148.4,
+      824.9,
+      161.1
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      134.1,
+      50.5,
+      146.7
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      134.0,
+      58.5,
+      146.7
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      134.0,
+      66.3,
+      146.7
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      134.0,
+      74.2,
+      146.6
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      134.0,
+      82.0,
+      146.7
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.4,
+      134.5,
+      147.1,
+      147.2
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.3,
+      133.9,
+      207.7,
+      146.6
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.7,
+      134.2,
+      268.0,
+      146.9
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      272.8,
+      136.8,
+      280.9,
+      145.0
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.6,
+      134.6,
+      355.2,
+      147.6
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.0,
+      136.6,
+      368.1,
+      144.8
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      372.9,
+      134.3,
+      423.4,
+      147.3
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      423.8,
+      133.9,
+      474.3,
+      146.9
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.4,
+      133.9,
+      526.0,
+      146.9
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.4,
+      134.5,
+      591.1,
+      147.2
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.3,
+      133.9,
+      651.7,
+      146.6
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.7,
+      134.2,
+      712.0,
+      146.9
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      710.9,
+      134.7,
+      761.4,
+      147.7
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      762.7,
+      134.0,
+      824.9,
+      146.7
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      119.8,
+      50.4,
+      132.4
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      50.9,
+      119.8,
+      58.5,
+      132.4
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      119.8,
+      66.3,
+      132.4
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      119.7,
+      74.1,
+      132.3
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      119.8,
+      82.0,
+      132.4
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.0,
+      119.8,
+      146.7,
+      132.5
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.4,
+      119.6,
+      207.7,
+      132.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.5,
+      119.9,
+      267.8,
+      132.6
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.1,
+      122.5,
+      281.2,
+      130.8
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.0,
+      119.9,
+      354.6,
+      133.0
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      122.3,
+      368.4,
+      130.5
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      372.9,
+      120.3,
+      423.5,
+      133.3
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      423.8,
+      119.9,
+      474.4,
+      132.9
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.5,
+      119.9,
+      526.1,
+      132.9
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.0,
+      119.8,
+      590.8,
+      132.5
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.4,
+      119.6,
+      651.8,
+      132.3
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.5,
+      119.9,
+      711.8,
+      132.6
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      710.9,
+      120.7,
+      761.5,
+      133.7
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      119.7,
+      825.1,
+      132.4
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      105.4,
+      50.5,
+      118.1
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      105.4,
+      58.5,
+      118.0
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.9,
+      105.4,
+      66.4,
+      118.0
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      105.3,
+      74.2,
+      118.0
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      105.4,
+      82.1,
+      118.0
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.3,
+      105.9,
+      147.0,
+      118.6
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.3,
+      105.3,
+      207.6,
+      118.0
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.7,
+      105.5,
+      268.1,
+      118.2
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      273.1,
+      108.2,
+      281.2,
+      116.4
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.4,
+      106.0,
+      355.0,
+      119.0
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.3,
+      107.9,
+      368.4,
+      116.1
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      372.7,
+      105.8,
+      423.3,
+      118.8
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      423.6,
+      105.4,
+      474.2,
+      118.5
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.3,
+      105.4,
+      525.9,
+      118.4
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.3,
+      105.9,
+      591.0,
+      118.6
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.3,
+      105.3,
+      651.7,
+      118.0
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.7,
+      105.5,
+      712.1,
+      118.2
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      710.7,
+      106.9,
+      761.3,
+      119.9
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      105.3,
+      825.1,
+      118.0
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      42.9,
+      91.5,
+      50.4,
+      104.1
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      50.9,
+      91.4,
+      58.5,
+      104.1
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.8,
+      91.4,
+      66.3,
+      104.1
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.6,
+      91.3,
+      74.1,
+      104.0
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.5,
+      91.4,
+      82.0,
+      104.1
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.1,
+      91.3,
+      146.8,
+      104.0
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.2,
+      90.9,
+      207.6,
+      103.6
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.7,
+      91.1,
+      268.1,
+      103.8
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      272.9,
+      94.2,
+      281.0,
+      102.4
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.4,
+      91.6,
+      355.0,
+      104.6
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.1,
+      94.0,
+      368.2,
+      102.2
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.1,
+      91.6,
+      423.7,
+      104.7
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      424.0,
+      91.3,
+      474.6,
+      104.3
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.7,
+      91.3,
+      526.3,
+      104.3
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.1,
+      91.4,
+      590.8,
+      104.0
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.3,
+      90.9,
+      651.6,
+      103.6
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.7,
+      91.1,
+      712.1,
+      103.8
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.1,
+      91.9,
+      761.7,
+      104.9
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      91.1,
+      825.1,
+      103.8
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   },
+   {
+    "branch_d1": {
+     "page": 1,
+     "rect": [
+      43.0,
+      77.1,
+      50.5,
+      89.7
+     ],
+     "align": 1
+    },
+    "branch_d2": {
+     "page": 1,
+     "rect": [
+      51.0,
+      77.1,
+      58.5,
+      89.7
+     ],
+     "align": 1
+    },
+    "branch_d3": {
+     "page": 1,
+     "rect": [
+      58.9,
+      77.1,
+      66.4,
+      89.7
+     ],
+     "align": 1
+    },
+    "branch_d4": {
+     "page": 1,
+     "rect": [
+      66.7,
+      77.0,
+      74.2,
+      89.6
+     ],
+     "align": 1
+    },
+    "branch_d5": {
+     "page": 1,
+     "rect": [
+      74.6,
+      77.1,
+      82.1,
+      89.7
+     ],
+     "align": 1
+    },
+    "add_sales_under": {
+     "page": 1,
+     "rect": [
+      82.5,
+      77.2,
+      147.2,
+      89.9
+     ],
+     "align": 2,
+     "split": 132.12
+    },
+    "add_purchase_over": {
+     "page": 1,
+     "rect": [
+      148.3,
+      76.6,
+      207.6,
+      89.3
+     ],
+     "align": 2,
+     "split": 192.5
+    },
+    "sales_amount": {
+     "page": 1,
+     "rect": [
+      208.5,
+      76.8,
+      267.9,
+      89.5
+     ],
+     "align": 2,
+     "split": 252.75
+    },
+    "add_zero_rate_over": {
+     "page": 1,
+     "rect": [
+      272.9,
+      79.4,
+      281.0,
+      87.6
+     ],
+     "align": 0
+    },
+    "sales_zero_rate": {
+     "page": 1,
+     "rect": [
+      287.4,
+      77.3,
+      355.0,
+      90.3
+     ],
+     "align": 2,
+     "split": 338.75
+    },
+    "add_exempt_over": {
+     "page": 1,
+     "rect": [
+      360.1,
+      79.1,
+      368.2,
+      87.3
+     ],
+     "align": 0
+    },
+    "sales_exempt": {
+     "page": 1,
+     "rect": [
+      373.0,
+      77.5,
+      423.6,
+      90.5
+     ],
+     "align": 2,
+     "split": 409.88
+    },
+    "sales_taxable": {
+     "page": 1,
+     "rect": [
+      423.9,
+      77.1,
+      474.5,
+      90.2
+     ],
+     "align": 2,
+     "split": 460.75
+    },
+    "output_tax": {
+     "page": 1,
+     "rect": [
+      475.5,
+      77.1,
+      526.1,
+      90.2
+     ],
+     "align": 2,
+     "split": 511.75
+    },
+    "add_purchase_under": {
+     "page": 1,
+     "rect": [
+      526.5,
+      77.3,
+      591.2,
+      90.0
+     ],
+     "align": 2,
+     "split": 575.75
+    },
+    "add_sales_over": {
+     "page": 1,
+     "rect": [
+      592.3,
+      76.6,
+      651.7,
+      89.3
+     ],
+     "align": 2,
+     "split": 636.12
+    },
+    "purchase_amount": {
+     "page": 1,
+     "rect": [
+      652.5,
+      76.8,
+      711.9,
+      89.5
+     ],
+     "align": 2,
+     "split": 696.5
+    },
+    "input_tax": {
+     "page": 1,
+     "rect": [
+      711.0,
+      77.1,
+      761.6,
+      90.1
+     ],
+     "align": 2,
+     "split": 747.75
+    },
+    "tax_net": {
+     "page": 1,
+     "rect": [
+      763.0,
+      76.7,
+      825.1,
+      89.4
+     ],
+     "align": 2,
+     "split": 809.88
+    }
+   }
+  ]
+ }
+}

@@ -13,6 +13,7 @@ type JournalDetails struct {
 	Matches        []SubledgerMatch         `json:"matches,omitempty"`
 	Withdrawals    []SubledgerWithdrawal    `json:"withdrawals,omitempty"`
 	Withholdings   []SubledgerWithholding   `json:"withholdings,omitempty"`
+	Vats           []SubledgerVat           `json:"vats,omitempty"`
 }
 type SubledgerPartner struct {
 	Code       string `json:"partner_code"`

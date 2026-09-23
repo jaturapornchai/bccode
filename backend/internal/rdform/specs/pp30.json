@@ -1,0 +1,1236 @@
+{
+ "code": "pp30",
+ "title": "ภ.พ.30 แบบแสดงรายการภาษีมูลค่าเพิ่ม ตามประมวลรัษฎากร",
+ "template": "pp30.pdf",
+ "pages": [
+  1
+ ],
+ "sizes": [
+  [
+   595.28,
+   841.89
+  ]
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    150.7,
+    742.6,
+    332.3,
+    758.5
+   ],
+   "align": 0,
+   "cells": [
+    [
+     151.5,
+     163.38
+    ],
+    [
+     169.38,
+     181.25
+    ],
+    [
+     181.25,
+     193.38
+    ],
+    [
+     193.38,
+     205.38
+    ],
+    [
+     205.38,
+     217.38
+    ],
+    [
+     223.12,
+     235.25
+    ],
+    [
+     235.25,
+     247.25
+    ],
+    [
+     247.25,
+     259.25
+    ],
+    [
+     259.25,
+     271.25
+    ],
+    [
+     271.25,
+     283.38
+    ],
+    [
+     289.5,
+     301.5
+    ],
+    [
+     301.5,
+     313.5
+    ],
+    [
+     319.38,
+     331.38
+    ]
+   ]
+  },
+  {
+   "key": "branch_no",
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    270.2,
+    724.7,
+    332.3,
+    740.1
+   ],
+   "align": 0,
+   "cells": [
+    [
+     270.25,
+     282.25
+    ],
+    [
+     282.25,
+     294.25
+    ],
+    [
+     294.25,
+     306.25
+    ],
+    [
+     306.25,
+     318.25
+    ],
+    [
+     318.25,
+     330.38
+    ]
+   ]
+  },
+  {
+   "key": "name",
+   "type": "text",
+   "label": "ชื่อผู้ประกอบการ",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    92.5,
+    705.9,
+    333.4,
+    721.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "name_line2",
+   "type": "text",
+   "label": "ชื่อผู้ประกอบการ (บรรทัดที่ 2)",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    24.7,
+    689.1,
+    333.4,
+    704.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "establishment_name",
+   "type": "text",
+   "label": "ชื่อสถานประกอบการ",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    109.4,
+    672.8,
+    333.2,
+    687.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_building",
+   "type": "text",
+   "label": "อาคาร",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    75.5,
+    656.3,
+    209.5,
+    671.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_room",
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    246.5,
+    656.5,
+    288.9,
+    671.6
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_floor",
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    309.7,
+    656.2,
+    333.6,
+    671.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_village",
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    53.9,
+    640.2,
+    136.2,
+    655.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_no",
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    157.5,
+    639.5,
+    194.0,
+    654.6
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_moo",
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    213.9,
+    639.2,
+    229.8,
+    654.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_soi",
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    273.4,
+    638.9,
+    333.8,
+    654.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_junction",
+   "type": "text",
+   "label": "แยก",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    44.7,
+    622.9,
+    87.3,
+    638.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_road",
+   "type": "text",
+   "label": "ถนน",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    110.9,
+    623.0,
+    180.6,
+    638.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_subdistrict",
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    228.5,
+    623.1,
+    333.5,
+    638.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_district",
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    66.4,
+    606.2,
+    186.4,
+    621.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_province",
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    217.2,
+    606.3,
+    333.2,
+    621.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_postcode",
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    76.8,
+    588.6,
+    138.0,
+    603.3
+   ],
+   "align": 0,
+   "cells": [
+    [
+     77.12,
+     89.25
+    ],
+    [
+     89.25,
+     101.25
+    ],
+    [
+     101.25,
+     113.25
+    ],
+    [
+     113.25,
+     125.25
+    ],
+    [
+     125.25,
+     137.38
+    ]
+   ]
+  },
+  {
+   "key": "phone",
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    61.4,
+    573.4,
+    331.5,
+    588.6
+   ],
+   "align": 0
+  },
+  {
+   "key": "branch_filing",
+   "type": "choice",
+   "label": "กรณีมีสาขา ยื่นแบบแสดงรายการโดย",
+   "group": "filing",
+   "options": [
+    {
+     "value": "separate",
+     "label": "(1) แยกยื่นเป็นรายสถานประกอบการ",
+     "page": 1,
+     "rect": [
+      340.3,
+      745.0,
+      352.1,
+      755.6
+     ],
+     "align": 0
+    },
+    {
+     "value": "combined",
+     "label": "(2) ยื่นรวมกันที่ (ตามที่ได้ยื่นคำขอฯ และได้รับอนุมัติแล้ว)",
+     "page": 1,
+     "rect": [
+      340.3,
+      718.1,
+      352.1,
+      728.6
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "separate_place",
+   "type": "choice",
+   "label": "(1) แยกยื่นเป็นรายสถานประกอบการ เป็นแบบฯ ของ",
+   "group": "filing",
+   "options": [
+    {
+     "value": "hq",
+     "label": "(1.1) สำนักงานใหญ่",
+     "page": 1,
+     "rect": [
+      364.9,
+      732.6,
+      376.6,
+      743.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "branch",
+     "label": "(1.2) สาขาที่",
+     "page": 1,
+     "rect": [
+      451.3,
+      732.0,
+      463.1,
+      742.6
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "separate_branch_no",
+   "type": "digits",
+   "label": "(1.2) สาขาที่",
+   "group": "filing",
+   "page": 1,
+   "rect": [
+    509.2,
+    730.6,
+    565.9,
+    744.9
+   ],
+   "align": 0,
+   "cells": [
+    [
+     509.12,
+     520.25
+    ],
+    [
+     520.25,
+     531.25
+    ],
+    [
+     531.25,
+     542.25
+    ],
+    [
+     542.25,
+     553.38
+    ],
+    [
+     553.38,
+     564.38
+    ]
+   ]
+  },
+  {
+   "key": "combined_place",
+   "type": "choice",
+   "label": "(2) ยื่นรวมกันที่",
+   "group": "filing",
+   "options": [
+    {
+     "value": "hq",
+     "label": "(2.1) สำนักงานใหญ่",
+     "page": 1,
+     "rect": [
+      364.4,
+      705.2,
+      376.2,
+      715.8
+     ],
+     "align": 0
+    },
+    {
+     "value": "branch",
+     "label": "(2.2) สาขาที่",
+     "page": 1,
+     "rect": [
+      452.2,
+      705.0,
+      464.0,
+      715.6
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "combined_branch_no",
+   "type": "digits",
+   "label": "(2.2) สาขาที่",
+   "group": "filing",
+   "page": 1,
+   "rect": [
+    509.5,
+    704.3,
+    566.2,
+    719.0
+   ],
+   "align": 0,
+   "cells": [
+    [
+     509.75,
+     520.88
+    ],
+    [
+     520.88,
+     531.88
+    ],
+    [
+     531.88,
+     543.0
+    ],
+    [
+     543.0,
+     554.0
+    ],
+    [
+     554.0,
+     565.12
+    ]
+   ]
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่น",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "label": "ยื่นปกติ",
+     "page": 1,
+     "rect": [
+      337.6,
+      685.6,
+      349.4,
+      696.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "additional",
+     "label": "ยื่นเพิ่มเติม",
+     "page": 1,
+     "rect": [
+      377.2,
+      685.6,
+      388.9,
+      696.2
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing",
+   "page": 1,
+   "rect": [
+    439.4,
+    685.1,
+    452.5,
+    700.3
+   ],
+   "align": 1
+  },
+  {
+   "key": "original_filing_timing",
+   "type": "choice",
+   "label": "ของ ภ.พ.30 ซึ่งยื่นไว้",
+   "group": "filing",
+   "options": [
+    {
+     "value": "on_time",
+     "label": "ภายในกำหนดเวลา",
+     "page": 1,
+     "rect": [
+      515.1,
+      689.7,
+      526.8,
+      700.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "late",
+     "label": "เกินกำหนดเวลา",
+     "page": 1,
+     "rect": [
+      515.1,
+      677.5,
+      526.8,
+      688.1
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "month",
+   "type": "choice",
+   "label": "สำหรับเดือนภาษี",
+   "group": "period",
+   "options": [
+    {
+     "value": "1",
+     "label": "(1) มกราคม",
+     "page": 1,
+     "rect": [
+      338.2,
+      655.0,
+      350.0,
+      665.5
+     ],
+     "align": 0
+    },
+    {
+     "value": "2",
+     "label": "(2) กุมภาพันธ์",
+     "page": 1,
+     "rect": [
+      338.4,
+      642.7,
+      350.2,
+      653.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "3",
+     "label": "(3) มีนาคม",
+     "page": 1,
+     "rect": [
+      338.4,
+      630.5,
+      350.2,
+      641.1
+     ],
+     "align": 0
+    },
+    {
+     "value": "4",
+     "label": "(4) เมษายน",
+     "page": 1,
+     "rect": [
+      398.4,
+      655.0,
+      410.2,
+      665.5
+     ],
+     "align": 0
+    },
+    {
+     "value": "5",
+     "label": "(5) พฤษภาคม",
+     "page": 1,
+     "rect": [
+      398.3,
+      643.0,
+      410.0,
+      653.6
+     ],
+     "align": 0
+    },
+    {
+     "value": "6",
+     "label": "(6) มิถุนายน",
+     "page": 1,
+     "rect": [
+      398.5,
+      630.6,
+      410.3,
+      641.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "7",
+     "label": "(7) กรกฎาคม",
+     "page": 1,
+     "rect": [
+      456.8,
+      655.0,
+      468.5,
+      665.6
+     ],
+     "align": 0
+    },
+    {
+     "value": "8",
+     "label": "(8) สิงหาคม",
+     "page": 1,
+     "rect": [
+      456.6,
+      642.6,
+      468.4,
+      653.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "9",
+     "label": "(9) กันยายน",
+     "page": 1,
+     "rect": [
+      456.4,
+      630.2,
+      468.2,
+      640.8
+     ],
+     "align": 0
+    },
+    {
+     "value": "10",
+     "label": "(10) ตุลาคม",
+     "page": 1,
+     "rect": [
+      513.8,
+      654.6,
+      525.5,
+      665.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "11",
+     "label": "(11) พฤศจิกายน",
+     "page": 1,
+     "rect": [
+      513.6,
+      642.7,
+      525.4,
+      653.3
+     ],
+     "align": 0
+    },
+    {
+     "value": "12",
+     "label": "(12) ธันวาคม",
+     "page": 1,
+     "rect": [
+      513.4,
+      630.7,
+      525.2,
+      641.3
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "year_be",
+   "type": "text",
+   "label": "พ.ศ.",
+   "group": "period",
+   "page": 1,
+   "rect": [
+    550.3,
+    668.1,
+    575.1,
+    680.0
+   ],
+   "align": 1
+  },
+  {
+   "key": "sales_amount",
+   "type": "money",
+   "label": "1. ยอดขายในเดือนนี้",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    334.8,
+    514.8,
+    438.8,
+    532.6
+   ],
+   "align": 2,
+   "split": 420.12
+  },
+  {
+   "key": "add_sales_under_check",
+   "type": "check",
+   "label": "1. หรือกรณียื่นเพิ่มเติม (1.1) ยอดขายแจ้งไว้ขาด",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    164.2,
+    528.5,
+    176.0,
+    539.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "add_sales_under",
+   "type": "money",
+   "label": "(1.1) ยอดขายแจ้งไว้ขาด (กรณียื่นเพิ่มเติม)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    237.7,
+    527.1,
+    322.8,
+    541.4
+   ],
+   "align": 2,
+   "split": 309.25
+  },
+  {
+   "key": "add_purchase_over_check",
+   "type": "check",
+   "label": "1. หรือกรณียื่นเพิ่มเติม (1.2) ยอดซื้อแจ้งไว้เกิน",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    164.2,
+    515.5,
+    176.0,
+    526.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "add_purchase_over",
+   "type": "money",
+   "label": "(1.2) ยอดซื้อแจ้งไว้เกิน (กรณียื่นเพิ่มเติม)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    237.6,
+    513.6,
+    322.9,
+    526.5
+   ],
+   "align": 2,
+   "split": 309.25
+  },
+  {
+   "key": "sales_zero_rate",
+   "type": "money",
+   "label": "2. ลบ ยอดขายที่เสียภาษีในอัตราร้อยละ 0 (ถ้ามี)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    335.1,
+    496.2,
+    437.8,
+    513.9
+   ],
+   "align": 2,
+   "split": 420.12
+  },
+  {
+   "key": "add_zero_rate_over",
+   "type": "check",
+   "label": "2. หรือกรณียื่นเพิ่มเติม แจ้งไว้เกิน",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    241.9,
+    494.3,
+    253.7,
+    504.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "sales_exempt",
+   "type": "money",
+   "label": "3. ลบ ยอดขายที่ได้รับยกเว้น (ถ้ามี)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    335.4,
+    477.0,
+    437.2,
+    494.8
+   ],
+   "align": 2,
+   "split": 420.12
+  },
+  {
+   "key": "add_exempt_over",
+   "type": "check",
+   "label": "3. หรือกรณียื่นเพิ่มเติม แจ้งไว้เกิน",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    241.8,
+    481.2,
+    253.6,
+    491.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "sales_taxable",
+   "type": "money",
+   "label": "4. ยอดขายที่ต้องเสียภาษี (1. - 2. - 3.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    335.2,
+    458.3,
+    437.9,
+    475.6
+   ],
+   "align": 2,
+   "split": 420.12
+  },
+  {
+   "key": "output_tax",
+   "type": "money",
+   "label": "5. ภาษีขายเดือนนี้",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    453.2,
+    438.7,
+    556.3,
+    457.8
+   ],
+   "align": 2,
+   "split": 538.38
+  },
+  {
+   "key": "purchase_amount",
+   "type": "money",
+   "label": "6. ยอดซื้อที่มีสิทธินำภาษีซื้อมาหักในการคำนวณภาษีเดือนนี้",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    336.6,
+    418.2,
+    438.9,
+    436.4
+   ],
+   "align": 2,
+   "split": 421.38
+  },
+  {
+   "key": "add_purchase_under_check",
+   "type": "check",
+   "label": "6. หรือกรณียื่นเพิ่มเติม (6.1) ยอดซื้อแจ้งไว้ขาด",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    167.6,
+    424.7,
+    179.4,
+    435.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "add_purchase_under",
+   "type": "money",
+   "label": "(6.1) ยอดซื้อแจ้งไว้ขาด (กรณียื่นเพิ่มเติม)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    237.8,
+    424.3,
+    322.8,
+    438.6
+   ],
+   "align": 2,
+   "split": 309.25
+  },
+  {
+   "key": "add_sales_over_check",
+   "type": "check",
+   "label": "6. หรือกรณียื่นเพิ่มเติม (6.2) ยอดขายแจ้งไว้เกิน",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    167.8,
+    413.3,
+    179.5,
+    423.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "add_sales_over",
+   "type": "money",
+   "label": "(6.2) ยอดขายแจ้งไว้เกิน (กรณียื่นเพิ่มเติม)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    237.6,
+    410.9,
+    323.0,
+    423.7
+   ],
+   "align": 2,
+   "split": 309.25
+  },
+  {
+   "key": "input_tax",
+   "type": "money",
+   "label": "7. ภาษีซื้อเดือนนี้ (ตามหลักฐานใบกำกับภาษีของยอดซื้อตาม 6.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    452.8,
+    394.2,
+    556.8,
+    413.7
+   ],
+   "align": 2,
+   "split": 538.38
+  },
+  {
+   "key": "tax_payable",
+   "type": "money",
+   "label": "8. ภาษีที่ต้องชำระเดือนนี้ (ถ้า 5. มากกว่า 7.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    453.1,
+    375.9,
+    558.0,
+    393.2
+   ],
+   "align": 2,
+   "split": 538.38
+  },
+  {
+   "key": "tax_excess",
+   "type": "money",
+   "label": "9. ภาษีที่ชำระเกินเดือนนี้ (ถ้า 5. น้อยกว่า 7.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    453.8,
+    356.3,
+    558.2,
+    374.5
+   ],
+   "align": 2,
+   "split": 538.38
+  },
+  {
+   "key": "excess_brought_forward",
+   "type": "money",
+   "label": "10. ภาษีที่ชำระเกินยกมา",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    453.2,
+    337.2,
+    558.1,
+    355.4
+   ],
+   "align": 2,
+   "split": 538.38
+  },
+  {
+   "key": "net_result",
+   "type": "choice",
+   "label": "ภาษีสุทธิ",
+   "group": "summary",
+   "options": [
+    {
+     "value": "payable",
+     "label": "11. ต้องชำระ",
+     "page": 1,
+     "rect": [
+      49.7,
+      319.4,
+      62.9,
+      332.6
+     ],
+     "align": 0
+    },
+    {
+     "value": "excess",
+     "label": "12. ชำระเกิน",
+     "page": 1,
+     "rect": [
+      49.5,
+      302.3,
+      62.6,
+      315.6
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "net_payable",
+   "type": "money",
+   "label": "11. ต้องชำระ (ถ้า 8. มากกว่า 10.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    337.1,
+    318.9,
+    440.2,
+    337.6
+   ],
+   "align": 2,
+   "split": 421.38
+  },
+  {
+   "key": "net_excess",
+   "type": "money",
+   "label": "12. ชำระเกิน ((ถ้า 10. มากกว่า 8.) หรือ (9. รวมกับ 10.))",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    336.9,
+    299.3,
+    440.5,
+    318.0
+   ],
+   "align": 2,
+   "split": 421.38
+  },
+  {
+   "key": "surcharge",
+   "type": "money",
+   "label": "13. เงินเพิ่ม",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    335.8,
+    261.6,
+    440.3,
+    279.8
+   ],
+   "align": 2,
+   "split": 421.38
+  },
+  {
+   "key": "penalty",
+   "type": "money",
+   "label": "14. เบี้ยปรับ",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    336.2,
+    242.4,
+    440.6,
+    260.7
+   ],
+   "align": 2,
+   "split": 421.38
+  },
+  {
+   "key": "total_payable",
+   "type": "money",
+   "label": "15. รวมภาษี เงินเพิ่ม และเบี้ยปรับที่ต้องชำระ ((11. + 13. + 14.) หรือ (13. + 14. - 12.))",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    452.6,
+    225.8,
+    557.9,
+    244.0
+   ],
+   "align": 2,
+   "split": 538.38
+  },
+  {
+   "key": "total_excess",
+   "type": "money",
+   "label": "16. รวมภาษีที่ชำระเกิน หลังคำนวณเงินเพิ่มและเบี้ยปรับแล้ว (12. - 13. - 14.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    453.7,
+    207.1,
+    557.7,
+    224.9
+   ],
+   "align": 2,
+   "split": 538.38
+  },
+  {
+   "key": "signer_name",
+   "type": "text",
+   "label": "ลงชื่อ ผู้ประกอบการ (ชื่อตัวบรรจง)",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    372.9,
+    49.7,
+    517.6,
+    64.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "sign_date",
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    381.2,
+    32.0,
+    519.2,
+    47.2
+   ],
+   "align": 0
+  }
+ ]
+}

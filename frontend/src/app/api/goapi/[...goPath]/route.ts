@@ -15,9 +15,17 @@ const GET_ALLOWED_EXACT = ["api/reports/inventory-valuation"];
 
 const POST_ALLOWED_EXACT = [
   "api/report/tax/vat-register",
-  "api/report/tax/pp30-summary",
   "api/report/tax/wht",
   "api/report/tax/wht/certificate",
+  "api/report/tax/form/catalog",
+  "api/report/tax/form/schema",
+  "api/report/tax/form/prefill",
+  "api/report/tax/form/compute",
+  "api/report/tax/form/pdf",
+  "api/report/tax/form/save",
+  "api/report/tax/form/list",
+  "api/report/tax/form/load",
+  "api/report/tax/form/delete",
   "api/report/debt/query",
   "api/report/sales/summary",
   "api/report/sales/by-document",
@@ -26,8 +34,8 @@ const POST_ALLOWED_EXACT = [
   "processstockcalccost",
 ];
 
-// ปลายทางที่ backend ตอบเป็นไฟล์ PDF (ใบ 50 ทวิ) — ส่งต่อ byte ตรง ๆ แทนการแปลง JSON
-const PDF_PATHS = ["api/report/tax/wht/certificate"];
+// ปลายทางที่ backend ตอบเป็นไฟล์ PDF (ใบ 50 ทวิ, แบบยื่นภาษี) — ส่งต่อ byte ตรง ๆ แทนการแปลง JSON
+const PDF_PATHS = ["api/report/tax/wht/certificate", "api/report/tax/form/pdf"];
 
 const ALLOWED_QUERY_PARAMS = [
   "holdingcode",

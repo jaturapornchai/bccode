@@ -1,0 +1,336 @@
+{
+ "code": "pnd2a",
+ "source": "ภงด.2ก.-แบบ.pdf",
+ "title": "ภ.ง.ด.2ก แบบยื่นรายการภาษีเงินได้หัก ณ ที่จ่าย ตามมาตรา 58 (2) (แสดงรายการเงินได้พึงประเมินตามมาตรา 40 (4) ประจำปี)",
+ "pages": [
+  1
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "w": 1,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้มีหน้าที่หักภาษี ณ ที่จ่าย)",
+   "group": "payer"
+  },
+  {
+   "key": "branch_no",
+   "w": 2,
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer"
+  },
+  {
+   "key": "name",
+   "w": 3,
+   "type": "text",
+   "label": "ชื่อผู้มีหน้าที่หักภาษี ณ ที่จ่าย (หน่วยงาน)",
+   "group": "payer"
+  },
+  {
+   "key": "addr_building",
+   "w": 4,
+   "type": "text",
+   "label": "อาคาร",
+   "group": "address"
+  },
+  {
+   "key": "addr_room",
+   "w": 5,
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_floor",
+   "w": 6,
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_village",
+   "w": 7,
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address"
+  },
+  {
+   "key": "addr_no",
+   "w": 8,
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_moo",
+   "w": 9,
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address"
+  },
+  {
+   "key": "addr_soi",
+   "w": 10,
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address"
+  },
+  {
+   "key": "addr_junction",
+   "w": 11,
+   "type": "text",
+   "label": "แยก",
+   "group": "address"
+  },
+  {
+   "key": "addr_road",
+   "w": 12,
+   "type": "text",
+   "label": "ถนน",
+   "group": "address"
+  },
+  {
+   "key": "addr_subdistrict",
+   "w": 13,
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address"
+  },
+  {
+   "key": "addr_district",
+   "w": 14,
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address"
+  },
+  {
+   "key": "addr_province",
+   "w": 15,
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address"
+  },
+  {
+   "key": "addr_postcode",
+   "w": 16,
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address"
+  },
+  {
+   "key": "tax_year_be",
+   "w": 17,
+   "type": "text",
+   "label": "รายการภาษีเงินได้หัก ณ ที่จ่าย ประจำปีภาษี (พ.ศ.)",
+   "group": "period"
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่น",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "w": 18,
+     "label": "(1) ยื่นปกติ"
+    },
+    {
+     "value": "additional",
+     "w": 26,
+     "label": "(2) ยื่นเพิ่มเติม"
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "w": 19,
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing"
+  },
+  {
+   "key": "has_attachment",
+   "w": 20,
+   "type": "check",
+   "label": "ใบแนบ ภ.ง.ด.2ก ที่แนบมาพร้อมนี้",
+   "group": "attachment"
+  },
+  {
+   "key": "attach_sheets",
+   "w": 21,
+   "type": "int",
+   "label": "ใบแนบ จำนวน (แผ่น)",
+   "group": "attachment"
+  },
+  {
+   "key": "has_media",
+   "w": 22,
+   "type": "check",
+   "label": "สื่อบันทึกในระบบคอมพิวเตอร์ ที่แนบมาพร้อมนี้",
+   "group": "attachment"
+  },
+  {
+   "key": "media_sheets",
+   "w": 23,
+   "type": "int",
+   "label": "สื่อบันทึกฯ จำนวน (แผ่น)",
+   "group": "attachment"
+  },
+  {
+   "key": "media_reg_no",
+   "w": 24,
+   "type": "text",
+   "label": "ตามหนังสือแสดงความประสงค์ฯ ทะเบียนรับเลขที่",
+   "group": "attachment"
+  },
+  {
+   "key": "media_ref_no",
+   "w": 25,
+   "type": "text",
+   "label": "หรือตามหนังสือข้อตกลงการใช้งานฯ เลขอ้างอิงการลงทะเบียน",
+   "group": "attachment"
+  },
+  {
+   "key": "interest_count",
+   "w": 27,
+   "type": "int",
+   "label": "1. เงินได้ตามมาตรา 40 (4) (ก) ดอกเบี้ยเงินฝาก ดอกเบี้ยพันธบัตร ดอกเบี้ยตั๋วเงิน ฯลฯ — จำนวนราย",
+   "group": "summary"
+  },
+  {
+   "key": "interest_income",
+   "w": 28,
+   "type": "money",
+   "label": "1. เงินได้ตามมาตรา 40 (4) (ก) ดอกเบี้ยเงินฝาก ดอกเบี้ยพันธบัตร ดอกเบี้ยตั๋วเงิน ฯลฯ — เงินได้ทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "interest_tax",
+   "w": 29,
+   "type": "money",
+   "label": "1. เงินได้ตามมาตรา 40 (4) (ก) ดอกเบี้ยเงินฝาก ดอกเบี้ยพันธบัตร ดอกเบี้ยตั๋วเงิน ฯลฯ — ภาษีที่นำส่งทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "dividend_count",
+   "w": 30,
+   "type": "int",
+   "label": "2. เงินได้ตามมาตรา 40 (4) (ข) เงินปันผล ฯลฯ — จำนวนราย",
+   "group": "summary"
+  },
+  {
+   "key": "dividend_income",
+   "w": 31,
+   "type": "money",
+   "label": "2. เงินได้ตามมาตรา 40 (4) (ข) เงินปันผล ฯลฯ — เงินได้ทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "dividend_tax",
+   "w": 32,
+   "type": "money",
+   "label": "2. เงินได้ตามมาตรา 40 (4) (ข) เงินปันผล ฯลฯ — ภาษีที่นำส่งทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "share_transfer_count",
+   "w": 33,
+   "type": "int",
+   "label": "3. เงินได้ตามมาตรา 40 (4) (ช) เงินผลประโยชน์ที่ได้จากการโอนหุ้น ฯลฯ — จำนวนราย",
+   "group": "summary"
+  },
+  {
+   "key": "share_transfer_income",
+   "w": 34,
+   "type": "money",
+   "label": "3. เงินได้ตามมาตรา 40 (4) (ช) เงินผลประโยชน์ที่ได้จากการโอนหุ้น ฯลฯ — เงินได้ทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "share_transfer_tax",
+   "w": 35,
+   "type": "money",
+   "label": "3. เงินได้ตามมาตรา 40 (4) (ช) เงินผลประโยชน์ที่ได้จากการโอนหุ้น ฯลฯ — ภาษีที่นำส่งทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "other_404_count",
+   "w": 36,
+   "type": "int",
+   "label": "4. เงินได้ตามมาตรา 40 (4) อื่นๆ — จำนวนราย",
+   "group": "summary"
+  },
+  {
+   "key": "other_404_income",
+   "w": 37,
+   "type": "money",
+   "label": "4. เงินได้ตามมาตรา 40 (4) อื่นๆ — เงินได้ทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "other_404_tax",
+   "w": 38,
+   "type": "money",
+   "label": "4. เงินได้ตามมาตรา 40 (4) อื่นๆ — ภาษีที่นำส่งทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "total_count",
+   "w": 39,
+   "type": "int",
+   "label": "5. รวม — จำนวนราย",
+   "group": "summary"
+  },
+  {
+   "key": "total_income",
+   "w": 40,
+   "type": "money",
+   "label": "5. รวม — เงินได้ทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "total_tax",
+   "w": 41,
+   "type": "money",
+   "label": "5. รวม — ภาษีที่นำส่งทั้งสิ้น",
+   "group": "summary"
+  },
+  {
+   "key": "signer_name",
+   "w": 42,
+   "type": "text",
+   "label": "ลงชื่อ ผู้จ่ายเงิน (ชื่อตัวบรรจง)",
+   "group": "signature"
+  },
+  {
+   "key": "signer_position",
+   "w": 43,
+   "type": "text",
+   "label": "ตำแหน่ง",
+   "group": "signature"
+  },
+  {
+   "key": "sign_day",
+   "w": 44,
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature"
+  },
+  {
+   "key": "sign_month",
+   "w": 45,
+   "type": "text",
+   "label": "เดือน",
+   "group": "signature"
+  },
+  {
+   "key": "sign_year_be",
+   "w": 46,
+   "type": "text",
+   "label": "พ.ศ.",
+   "group": "signature"
+  }
+ ]
+}

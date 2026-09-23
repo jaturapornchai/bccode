@@ -1,0 +1,1578 @@
+{
+ "code": "pp36",
+ "title": "ภ.พ.36 แบบนำส่งภาษีมูลค่าเพิ่ม ตามประมวลรัษฎากร",
+ "template": "pp36.pdf",
+ "pages": [
+  1
+ ],
+ "sizes": [
+  [
+   595.28,
+   841.89
+  ]
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    154.6,
+    752.0,
+    337.1,
+    767.4
+   ],
+   "align": 0,
+   "cells": [
+    [
+     155.5,
+     167.5
+    ],
+    [
+     173.38,
+     185.38
+    ],
+    [
+     185.38,
+     197.38
+    ],
+    [
+     197.38,
+     209.38
+    ],
+    [
+     209.38,
+     221.5
+    ],
+    [
+     227.25,
+     239.25
+    ],
+    [
+     239.25,
+     251.25
+    ],
+    [
+     251.25,
+     263.38
+    ],
+    [
+     263.38,
+     275.38
+    ],
+    [
+     275.38,
+     287.38
+    ],
+    [
+     293.5,
+     305.5
+    ],
+    [
+     305.5,
+     317.5
+    ],
+    [
+     323.5,
+     335.5
+    ]
+   ]
+  },
+  {
+   "key": "branch_no",
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    274.3,
+    733.9,
+    336.8,
+    749.3
+   ],
+   "align": 0,
+   "cells": [
+    [
+     275.0,
+     287.12
+    ],
+    [
+     287.12,
+     299.12
+    ],
+    [
+     299.12,
+     311.12
+    ],
+    [
+     311.12,
+     323.12
+    ],
+    [
+     323.12,
+     335.25
+    ]
+   ]
+  },
+  {
+   "key": "name",
+   "type": "text",
+   "label": "ชื่อผู้นำส่งภาษีมูลค่าเพิ่ม",
+   "group": "payer",
+   "page": 1,
+   "rect": [
+    116.1,
+    718.3,
+    336.7,
+    733.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_building",
+   "type": "text",
+   "label": "อาคาร",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    75.2,
+    702.9,
+    206.5,
+    718.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_room",
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    241.6,
+    703.5,
+    291.9,
+    718.7
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_floor",
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    312.5,
+    703.3,
+    337.0,
+    718.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_village",
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    52.6,
+    688.0,
+    130.1,
+    703.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_no",
+   "type": "text",
+   "label": "เลขที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    150.1,
+    688.3,
+    186.2,
+    703.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_moo",
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    208.1,
+    688.5,
+    221.7,
+    703.7
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_soi",
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    257.6,
+    688.2,
+    336.8,
+    702.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_junction",
+   "type": "text",
+   "label": "แยก",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    41.7,
+    671.9,
+    85.5,
+    687.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_road",
+   "type": "text",
+   "label": "ถนน",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    106.3,
+    670.7,
+    186.8,
+    685.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_subdistrict",
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    225.9,
+    671.5,
+    335.7,
+    686.7
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_district",
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    63.0,
+    657.1,
+    169.6,
+    672.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_province",
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    197.6,
+    657.2,
+    336.6,
+    672.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "addr_postcode",
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    75.3,
+    639.4,
+    136.5,
+    654.6
+   ],
+   "align": 0,
+   "cells": [
+    [
+     76.12,
+     88.12
+    ],
+    [
+     88.12,
+     100.12
+    ],
+    [
+     100.12,
+     112.25
+    ],
+    [
+     112.25,
+     124.25
+    ],
+    [
+     124.25,
+     136.25
+    ]
+   ]
+  },
+  {
+   "key": "phone",
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "address",
+   "page": 1,
+   "rect": [
+    179.5,
+    642.1,
+    336.4,
+    657.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "remit_case",
+   "type": "choice",
+   "label": "มีหน้าที่นำส่งภาษีมูลค่าเพิ่มกรณี",
+   "group": "filing",
+   "options": [
+    {
+     "value": "purchase",
+     "label": "(1) จ่ายเงินค่าซื้อสินค้าหรือบริการให้ผู้ประกอบการที่เข้ามาประกอบกิจการในราชอาณาจักรเป็นการชั่วคราวฯ หรือให้แก่ผู้ประกอบการที่ได้ให้บริการในต่างประเทศ หรือให้แก่ผู้ประกอบการอื่นที่กำหนดโดยพระราชกฤษฎีกา",
+     "page": 1,
+     "rect": [
+      344.4,
+      728.6,
+      355.7,
+      740.1
+     ],
+     "align": 0
+    },
+    {
+     "value": "transfer_zero_rate",
+     "label": "(2) รับโอนสินค้าหรือรับโอนสิทธิในบริการที่ได้เสียภาษีในอัตราร้อยละ 0",
+     "page": 1,
+     "rect": [
+      343.6,
+      672.3,
+      354.9,
+      683.7
+     ],
+     "align": 0
+    },
+    {
+     "value": "auction",
+     "label": "(3) ขายทอดตลาดทรัพย์สินของผู้ประกอบการจดทะเบียนหรือส่วนราชการขายทรัพย์สินของผู้ประกอบการจดทะเบียนที่ถูกยึดมาตามกฎหมายโดยวิธีอื่น นอกจากการขายทอดตลาด",
+     "page": 1,
+     "rect": [
+      342.7,
+      657.7,
+      354.0,
+      669.1
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "filing_type",
+   "type": "choice",
+   "label": "ประเภทการยื่น",
+   "group": "filing",
+   "options": [
+    {
+     "value": "normal",
+     "label": "ยื่นปกติ",
+     "page": 1,
+     "rect": [
+      80.9,
+      615.4,
+      94.0,
+      628.6
+     ],
+     "align": 0
+    },
+    {
+     "value": "additional",
+     "label": "ยื่นเพิ่มเติม",
+     "page": 1,
+     "rect": [
+      188.1,
+      614.5,
+      201.2,
+      627.8
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "additional_no",
+   "type": "text",
+   "label": "ยื่นเพิ่มเติมครั้งที่",
+   "group": "filing",
+   "page": 1,
+   "rect": [
+    268.5,
+    614.9,
+    293.3,
+    630.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_name",
+   "type": "text",
+   "label": "ชื่อผู้ประกอบการซึ่งเป็นผู้รับเงิน",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    158.2,
+    597.8,
+    335.7,
+    613.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_addr_building",
+   "type": "text",
+   "label": "ที่อยู่: อาคาร",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    87.9,
+    580.7,
+    183.3,
+    595.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_addr_no",
+   "type": "text",
+   "label": "เลขที่",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    206.6,
+    580.9,
+    238.8,
+    596.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_addr_road",
+   "type": "text",
+   "label": "ถนน",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    260.7,
+    581.1,
+    336.1,
+    596.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_city",
+   "type": "text",
+   "label": "เมือง",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    60.4,
+    563.7,
+    180.9,
+    578.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_state",
+   "type": "text",
+   "label": "รัฐ",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    198.0,
+    563.7,
+    336.1,
+    578.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_country",
+   "type": "text",
+   "label": "ประเทศ",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    72.2,
+    546.8,
+    225.9,
+    561.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_postcode",
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    273.2,
+    546.6,
+    334.4,
+    561.8
+   ],
+   "align": 0,
+   "cells": [
+    [
+     273.0,
+     285.12
+    ],
+    [
+     285.12,
+     297.12
+    ],
+    [
+     297.12,
+     309.12
+    ],
+    [
+     309.12,
+     321.12
+    ],
+    [
+     321.12,
+     333.25
+    ]
+   ]
+  },
+  {
+   "key": "pay_day",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงิน: วันที่",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    61.9,
+    519.7,
+    84.4,
+    534.9
+   ],
+   "align": 1
+  },
+  {
+   "key": "pay_month",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงิน: เดือน",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    106.6,
+    519.7,
+    171.4,
+    534.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_year_be",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงิน: พ.ศ.",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    192.5,
+    520.4,
+    222.7,
+    535.6
+   ],
+   "align": 1
+  },
+  {
+   "key": "fx_doc_no",
+   "type": "text",
+   "label": "เลขที่เอกสารแลกเปลี่ยนเงินตรา",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    44.1,
+    488.7,
+    224.3,
+    503.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "payee_type",
+   "type": "choice",
+   "label": "ประเภทผู้รับเงิน",
+   "group": "payee",
+   "options": [
+    {
+     "value": "temporary",
+     "label": "(1) เป็นผู้ประกอบการที่อยู่นอกราชอาณาจักรซึ่งได้เข้ามาประกอบกิจการขายสินค้าหรือให้บริการในราชอาณาจักรเป็นการชั่วคราว และไม่ได้จดทะเบียนภาษีมูลค่าเพิ่มเป็นการชั่วคราว",
+     "page": 1,
+     "rect": [
+      231.2,
+      530.5,
+      243.4,
+      542.4
+     ],
+     "align": 0
+    },
+    {
+     "value": "foreign_service",
+     "label": "(2) เป็นผู้ประกอบการที่ได้ให้บริการในต่างประเทศ และได้มีการใช้บริการนั้นในราชอาณาจักร",
+     "page": 1,
+     "rect": [
+      231.2,
+      503.3,
+      243.4,
+      515.2
+     ],
+     "align": 0
+    },
+    {
+     "value": "other",
+     "label": "(3) อื่นๆ (ระบุ)",
+     "page": 1,
+     "rect": [
+      231.0,
+      489.1,
+      243.2,
+      501.0
+     ],
+     "align": 0
+    }
+   ]
+  },
+  {
+   "key": "payee_type_other",
+   "type": "text",
+   "label": "(3) อื่นๆ (ระบุ)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    299.9,
+    491.0,
+    575.9,
+    506.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_for_fee_40_2",
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 1. ค่าธรรมเนียม ค่านายหน้า หรืออื่นๆ ตามมาตรา 40 (2)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    126.6,
+    472.6,
+    138.8,
+    484.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_for_royalty_40_3",
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 2. ค่าสิทธิในงานวรรณกรรม ศิลป และวิทยาศาสตร์ ค่าสิทธิในสิทธิบัตร สูตรหรือกรรมวิธี ค่าสิทธิอื่นๆ ตามมาตรา 40 (3)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    278.1,
+    472.9,
+    290.3,
+    484.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_for_rent_40_5",
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 3. ค่าเช่าหรือเงินหรือประโยชน์อย่างอื่น ตามมาตรา 40 (5)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    126.9,
+    460.0,
+    139.1,
+    472.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_for_professional_40_6",
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 4. เงินได้จากวิชาชีพอิสระ ตามมาตรา 40 (6)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    299.8,
+    459.4,
+    312.0,
+    471.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_for_service_40_8",
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 5. ค่าบริการหรือเงินได้ ตามมาตรา 40 (8)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    435.5,
+    459.8,
+    447.7,
+    471.7
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_for_other",
+   "type": "check",
+   "label": "จ่ายเงินชำระราคาสำหรับ 6. รายการชำระเงินอื่นๆ (ระบุ)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    127.3,
+    446.8,
+    139.5,
+    458.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "pay_for_other_text",
+   "type": "text",
+   "label": "6. รายการชำระเงินอื่นๆ (ระบุ)",
+   "group": "payee",
+   "page": 1,
+   "rect": [
+    221.5,
+    449.2,
+    573.0,
+    460.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_name",
+   "type": "text",
+   "label": "ชื่อผู้โอนสินค้าหรือโอนสิทธิในบริการ",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    176.2,
+    432.5,
+    576.6,
+    445.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_tax_id",
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ผู้โอน)",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    139.6,
+    416.8,
+    322.1,
+    431.3
+   ],
+   "align": 0,
+   "cells": [
+    [
+     141.25,
+     153.25
+    ],
+    [
+     159.12,
+     171.12
+    ],
+    [
+     171.12,
+     183.12
+    ],
+    [
+     183.12,
+     195.12
+    ],
+    [
+     195.12,
+     207.25
+    ],
+    [
+     213.0,
+     225.0
+    ],
+    [
+     225.0,
+     237.0
+    ],
+    [
+     237.0,
+     249.12
+    ],
+    [
+     249.12,
+     261.12
+    ],
+    [
+     261.12,
+     273.12
+    ],
+    [
+     279.25,
+     291.25
+    ],
+    [
+     291.25,
+     303.25
+    ],
+    [
+     309.25,
+     321.25
+    ]
+   ]
+  },
+  {
+   "key": "transferor_addr_building",
+   "type": "text",
+   "label": "อาคาร",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    376.3,
+    416.2,
+    574.4,
+    431.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_room",
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    78.3,
+    402.9,
+    121.9,
+    418.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_floor",
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    141.0,
+    403.1,
+    162.2,
+    418.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_village",
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    189.3,
+    402.8,
+    295.0,
+    418.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_no",
+   "type": "text",
+   "label": "เลขที่",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    316.3,
+    403.0,
+    369.8,
+    418.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_moo",
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    389.4,
+    402.7,
+    412.4,
+    417.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_soi",
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    452.2,
+    402.7,
+    574.1,
+    417.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_road",
+   "type": "text",
+   "label": "ถนน",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    63.2,
+    387.9,
+    191.3,
+    403.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_subdistrict",
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    233.7,
+    390.7,
+    365.6,
+    403.7
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_district",
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    408.1,
+    390.5,
+    574.6,
+    403.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_province",
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    69.8,
+    374.5,
+    192.3,
+    389.7
+   ],
+   "align": 0
+  },
+  {
+   "key": "transferor_addr_postcode",
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    241.7,
+    373.1,
+    302.9,
+    388.2
+   ],
+   "align": 0,
+   "cells": [
+    [
+     242.0,
+     254.0
+    ],
+    [
+     254.0,
+     266.0
+    ],
+    [
+     266.0,
+     278.0
+    ],
+    [
+     278.0,
+     290.0
+    ],
+    [
+     290.0,
+     302.0
+    ]
+   ]
+  },
+  {
+   "key": "transferor_phone",
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    346.9,
+    375.2,
+    574.3,
+    389.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "transfer_day",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่รับโอน: วันที่",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    60.7,
+    347.8,
+    82.3,
+    362.9
+   ],
+   "align": 1
+  },
+  {
+   "key": "transfer_month",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่รับโอน: เดือน",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    104.6,
+    347.4,
+    169.3,
+    362.6
+   ],
+   "align": 0
+  },
+  {
+   "key": "transfer_year_be",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่รับโอน: พ.ศ.",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    191.3,
+    347.9,
+    221.5,
+    363.1
+   ],
+   "align": 1
+  },
+  {
+   "key": "transfer_items_1",
+   "type": "text",
+   "label": "รายการสินค้าหรือบริการที่รับโอน (บรรทัด 1)",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    341.3,
+    358.6,
+    573.6,
+    371.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "transfer_items_2",
+   "type": "text",
+   "label": "รายการสินค้าหรือบริการที่รับโอน (บรรทัด 2)",
+   "group": "transferor",
+   "page": 1,
+   "rect": [
+    230.5,
+    347.7,
+    573.8,
+    359.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_name",
+   "type": "text",
+   "label": "ชื่อผู้ประกอบการ (ขายทอดตลาด)",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    108.3,
+    332.8,
+    574.7,
+    345.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_tax_id",
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ผู้ประกอบการ ขายทอดตลาด)",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    139.9,
+    318.2,
+    322.3,
+    333.6
+   ],
+   "align": 0,
+   "comb": 17
+  },
+  {
+   "key": "auction_owner_addr_building",
+   "type": "text",
+   "label": "อาคาร",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    374.9,
+    318.1,
+    574.9,
+    333.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_room",
+   "type": "text",
+   "label": "ห้องเลขที่",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    78.2,
+    303.9,
+    121.8,
+    319.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_floor",
+   "type": "text",
+   "label": "ชั้นที่",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    140.9,
+    304.1,
+    162.1,
+    319.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_village",
+   "type": "text",
+   "label": "หมู่บ้าน",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    189.2,
+    303.8,
+    294.9,
+    319.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_no",
+   "type": "text",
+   "label": "เลขที่",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    316.2,
+    304.0,
+    369.8,
+    319.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_moo",
+   "type": "text",
+   "label": "หมู่ที่",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    389.3,
+    303.7,
+    412.3,
+    318.8
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_soi",
+   "type": "text",
+   "label": "ตรอก/ซอย",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    452.8,
+    303.7,
+    574.9,
+    318.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_road",
+   "type": "text",
+   "label": "ถนน",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    62.6,
+    289.9,
+    193.1,
+    305.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_subdistrict",
+   "type": "text",
+   "label": "ตำบล/แขวง",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    233.6,
+    289.9,
+    364.7,
+    305.0
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_district",
+   "type": "text",
+   "label": "อำเภอ/เขต",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    405.7,
+    289.2,
+    574.5,
+    304.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_province",
+   "type": "text",
+   "label": "จังหวัด",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    69.7,
+    275.9,
+    192.2,
+    291.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_owner_addr_postcode",
+   "type": "digits",
+   "label": "รหัสไปรษณีย์",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    242.0,
+    275.3,
+    303.2,
+    288.7
+   ],
+   "align": 0,
+   "cells": [
+    [
+     242.0,
+     254.0
+    ],
+    [
+     254.0,
+     266.0
+    ],
+    [
+     266.0,
+     278.0
+    ],
+    [
+     278.0,
+     290.0
+    ],
+    [
+     290.0,
+     302.0
+    ]
+   ]
+  },
+  {
+   "key": "auction_owner_phone",
+   "type": "text",
+   "label": "โทรศัพท์",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    346.8,
+    276.1,
+    574.6,
+    291.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_pay_day",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงินให้ผู้ประกอบการจดทะเบียน: วันที่",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    60.5,
+    245.8,
+    82.1,
+    260.9
+   ],
+   "align": 1
+  },
+  {
+   "key": "auction_pay_month",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงินให้ผู้ประกอบการจดทะเบียน: เดือน",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    104.5,
+    245.8,
+    171.1,
+    260.9
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_pay_year_be",
+   "type": "text",
+   "label": "วัน เดือน ปี ที่จ่ายเงินให้ผู้ประกอบการจดทะเบียน: พ.ศ.",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    190.1,
+    245.8,
+    222.1,
+    260.9
+   ],
+   "align": 1
+  },
+  {
+   "key": "auction_items_1",
+   "type": "text",
+   "label": "รายการทรัพย์สินที่ขายทอดตลาด (บรรทัด 1)",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    348.0,
+    260.1,
+    574.4,
+    275.3
+   ],
+   "align": 0
+  },
+  {
+   "key": "auction_items_2",
+   "type": "text",
+   "label": "รายการทรัพย์สินที่ขายทอดตลาด (บรรทัด 2)",
+   "group": "auction",
+   "page": 1,
+   "rect": [
+    231.3,
+    246.7,
+    574.6,
+    261.4
+   ],
+   "align": 0
+  },
+  {
+   "key": "paid_amount",
+   "type": "money",
+   "label": "1. จำนวนเงินที่จ่าย",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    414.0,
+    215.6,
+    516.6,
+    231.5
+   ],
+   "align": 2,
+   "split": 500.12
+  },
+  {
+   "key": "vat_amount",
+   "type": "money",
+   "label": "2. จำนวนเงินภาษีมูลค่าเพิ่มที่ต้องนำส่ง",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    414.2,
+    198.9,
+    516.4,
+    214.9
+   ],
+   "align": 2,
+   "split": 500.12
+  },
+  {
+   "key": "vat_amount_text",
+   "type": "text",
+   "label": "2. (ตัวอักษร)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    105.4,
+    181.1,
+    413.2,
+    198.1
+   ],
+   "align": 0
+  },
+  {
+   "key": "surcharge",
+   "type": "money",
+   "label": "3. เงินเพิ่ม",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    413.6,
+    145.5,
+    516.3,
+    161.4
+   ],
+   "align": 2,
+   "split": 500.12
+  },
+  {
+   "key": "penalty",
+   "type": "money",
+   "label": "4. เบี้ยปรับ (ถ้ามี (เฉพาะกรณีรับโอนสินค้าหรือรับโอนสิทธิในบริการที่ได้เสียภาษีในอัตราร้อยละ 0))",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    413.9,
+    129.3,
+    516.1,
+    145.3
+   ],
+   "align": 2,
+   "split": 500.12
+  },
+  {
+   "key": "total_payable",
+   "type": "money",
+   "label": "5. รวมภาษีมูลค่าเพิ่มที่ต้องนำส่ง เงินเพิ่ม และเบี้ยปรับ (2. + 3. + 4.)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    414.2,
+    113.1,
+    515.6,
+    129.1
+   ],
+   "align": 2,
+   "split": 500.12
+  },
+  {
+   "key": "total_payable_text",
+   "type": "text",
+   "label": "5. (ตัวอักษร)",
+   "group": "summary",
+   "page": 1,
+   "rect": [
+    104.7,
+    95.6,
+    412.5,
+    112.5
+   ],
+   "align": 0
+  },
+  {
+   "key": "signer_name",
+   "type": "text",
+   "label": "ลงชื่อ ผู้ประกอบการ (ชื่อตัวบรรจง)",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    220.0,
+    31.4,
+    361.2,
+    45.2
+   ],
+   "align": 0
+  },
+  {
+   "key": "sign_date",
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature",
+   "page": 1,
+   "rect": [
+    233.4,
+    17.9,
+    364.3,
+    31.7
+   ],
+   "align": 0
+  }
+ ]
+}

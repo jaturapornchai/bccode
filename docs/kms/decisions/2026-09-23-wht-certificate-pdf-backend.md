@@ -19,7 +19,7 @@ supersedes: ใบ 50 ทวิ แบบ HTML จำลอง + window.print() 
 1. **Package ใหม่ `backend/internal/whtcert`** (ไม่ผูก DB): `Render(Certificate) ([]byte, error)`
    - ฝังฟอร์มทางการ `assets/50tawi-rd.pdf` + ฟอนต์ `assets/Sarabun-Regular.ttf` (OFL) ด้วย `go:embed`
    - ถอดช่อง AcroForm ทั้งหมดครั้งเดียว (pdfcpu `RemoveFormFields`) → ข้อความของเราเป็นตัวจริงตัวเดียว แก้ในโปรแกรมอ่าน PDF ไม่ได้
-   - ชั้นข้อความ: จัดรูปอักษรไทย (สระบน/ล่าง วรรณยุกต์ซ้อน) ด้วย `go-text/typesetting` (HarfBuzz, BSD/Unlicense) แล้วเขียน PDF เองแบบ CIDFontType2 Identity-H + ToUnicode (ค้นหา/คัดลอกข้อความได้) — `textpdf.go`
+   - ชั้นข้อความ: จัดรูปอักษรไทย (สระบน/ล่าง วรรณยุกต์ซ้อน) ด้วย `go-text/typesetting` (HarfBuzz, BSD/Unlicense) แล้วเขียน PDF เองแบบ CIDFontType2 Identity-H + ToUnicode (ค้นหา/คัดลอกข้อความได้) — `textpdf.go` (ย้ายเป็น package `backend/internal/pdftext` 2026-09-23 ให้แบบยื่นกรมสรรพากรใช้ร่วม — ADR `2026-09-23-rd-tax-forms-engine.md`)
    - ประทับชั้นข้อความหน้า i ลงแบบฟอร์มหน้า i (pdfcpu multistamp) → หน้า 1 = ฉบับที่ 1 (✓ หน้าข้อความ "ฉบับที่ 1"), หน้า 2 = ฉบับที่ 2, หน้า 3 = "สำเนาคู่ฉบับ" (ถ้า `archivecopy`), `replacement` พิมพ์ "ใบแทน" มุมขวาบน
    - พิกัดทุกช่องอยู่ที่ `layout.go` วัดจากฟอร์มจริง (เส้นกรอบจาก raster 8×, baseline จาก text layer, ตำแหน่ง AcroForm เดิม) — จำนวนเงินแยก **บาท | สตางค์** ตามเส้นแบ่งบนฟอร์ม, เลข 13 หลักลงช่องละหลัก, ✓ เป็นเส้นวาด (Sarabun ไม่มี glyph ✓)
    - ตรวจก่อนสร้าง: เลข 13 หลัก + หลักตรวจสอบ mod 11, ยอดเงินเป็น decimal string ≤ 2 ตำแหน่ง ห้ามติดลบ, ภาษี ≤ ยอดจ่าย, ประเภทเงินได้ห้ามซ้ำ, ช่อง "ระบุ" ต้องมีเมื่อเป็นบรรทัด (1.4)/(2.5)/6 และห้ามมีในบรรทัดอื่น, ข้อความยาวเกินช่องย่อฟอนต์ถึง 7pt แล้วค่อย error — error เป็น language key (`wht_cert_*` ใน `languages.tsv`)

@@ -1,0 +1,371 @@
+{
+ "code": "pnd3_attach",
+ "source": "ภงด.3-ใบแนบ.pdf",
+ "title": "ใบแนบ ภ.ง.ด.3",
+ "pages": [
+  1
+ ],
+ "fields": [
+  {
+   "key": "tax_id",
+   "w": 1,
+   "type": "taxid",
+   "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้มีหน้าที่หักภาษี ณ ที่จ่าย)",
+   "group": "payer"
+  },
+  {
+   "key": "branch_no",
+   "w": 2,
+   "type": "digits",
+   "label": "สาขาที่",
+   "group": "payer"
+  },
+  {
+   "key": "sheet_no",
+   "w": 3,
+   "type": "int",
+   "label": "แผ่นที่",
+   "group": "sheet"
+  },
+  {
+   "key": "sheet_total",
+   "w": 4,
+   "type": "int",
+   "label": "ในจำนวน (แผ่น)",
+   "group": "sheet"
+  },
+  {
+   "key": "page_total_amount",
+   "w": 149,
+   "type": "money",
+   "label": "รวมยอดเงินได้ (แผ่นนี้) (นำไปรวมกับใบแนบ ภ.ง.ด.3 แผ่นอื่น (ถ้ามี))",
+   "group": "sheet"
+  },
+  {
+   "key": "page_total_tax",
+   "w": 150,
+   "type": "money",
+   "label": "รวมภาษีที่นำส่ง (แผ่นนี้) (นำไปรวมกับใบแนบ ภ.ง.ด.3 แผ่นอื่น (ถ้ามี))",
+   "group": "sheet"
+  },
+  {
+   "key": "signer_name",
+   "w": 151,
+   "type": "text",
+   "label": "ลงชื่อ ผู้จ่ายเงิน (ชื่อตัวบรรจง)",
+   "group": "signature"
+  },
+  {
+   "key": "signer_position",
+   "w": 152,
+   "type": "text",
+   "label": "ตำแหน่ง",
+   "group": "signature"
+  },
+  {
+   "key": "sign_day",
+   "w": 153,
+   "type": "text",
+   "label": "ยื่นวันที่",
+   "group": "signature"
+  },
+  {
+   "key": "sign_month",
+   "w": 154,
+   "type": "text",
+   "label": "เดือน",
+   "group": "signature"
+  },
+  {
+   "key": "sign_year_be",
+   "w": 155,
+   "type": "text",
+   "label": "พ.ศ.",
+   "group": "signature"
+  }
+ ],
+ "table": {
+  "key": "payees",
+  "label": "รายละเอียดการหักเป็นรายผู้มีเงินได้",
+  "columns": [
+   {
+    "key": "seq",
+    "type": "int",
+    "label": "ลำดับที่"
+   },
+   {
+    "key": "tax_id",
+    "type": "taxid",
+    "label": "เลขประจำตัวผู้เสียภาษีอากร (ของผู้มีเงินได้)"
+   },
+   {
+    "key": "name",
+    "type": "text",
+    "label": "ชื่อผู้มีเงินได้: ชื่อ (ให้ระบุให้ชัดเจนว่าเป็น นาย นาง นางสาว หรือยศ)"
+   },
+   {
+    "key": "surname",
+    "type": "text",
+    "label": "ชื่อผู้มีเงินได้: ชื่อสกุล"
+   },
+   {
+    "key": "address1",
+    "type": "text",
+    "label": "ที่อยู่ของผู้มีเงินได้ (ให้ระบุเลขที่ ตรอก/ซอย ถนน ตำบล/แขวง อำเภอ/เขต จังหวัด)"
+   },
+   {
+    "key": "branch_no",
+    "type": "digits",
+    "label": "สาขาที่"
+   },
+   {
+    "key": "l1_date",
+    "type": "text",
+    "label": "รายการที่ 1: วัน เดือน ปี ที่จ่าย"
+   },
+   {
+    "key": "l1_income_type",
+    "type": "text",
+    "label": "รายการที่ 1: ประเภทเงินได้ (ถ้ามากกว่าหนึ่งประเภทให้กรอกเรียงลงไป)"
+   },
+   {
+    "key": "l1_rate",
+    "type": "text",
+    "label": "รายการที่ 1: อัตราภาษีร้อยละ"
+   },
+   {
+    "key": "l1_amount",
+    "type": "money",
+    "label": "รายการที่ 1: จำนวนเงินที่จ่ายแต่ละประเภท เฉพาะคนหนึ่งๆ ในครั้งนี้"
+   },
+   {
+    "key": "l1_tax",
+    "type": "money",
+    "label": "รายการที่ 1: จำนวนเงินภาษีที่หักและนำส่งในครั้งนี้"
+   },
+   {
+    "key": "l1_condition",
+    "type": "text",
+    "label": "รายการที่ 1: เงื่อนไข (1 หัก ณ ที่จ่าย, 2 ออกให้ตลอดไป, 3 ออกให้ครั้งเดียว)"
+   },
+   {
+    "key": "l2_date",
+    "type": "text",
+    "label": "รายการที่ 2: วัน เดือน ปี ที่จ่าย"
+   },
+   {
+    "key": "l2_income_type",
+    "type": "text",
+    "label": "รายการที่ 2: ประเภทเงินได้ (ถ้ามากกว่าหนึ่งประเภทให้กรอกเรียงลงไป)"
+   },
+   {
+    "key": "l2_rate",
+    "type": "text",
+    "label": "รายการที่ 2: อัตราภาษีร้อยละ"
+   },
+   {
+    "key": "l2_amount",
+    "type": "money",
+    "label": "รายการที่ 2: จำนวนเงินที่จ่ายแต่ละประเภท เฉพาะคนหนึ่งๆ ในครั้งนี้"
+   },
+   {
+    "key": "l2_tax",
+    "type": "money",
+    "label": "รายการที่ 2: จำนวนเงินภาษีที่หักและนำส่งในครั้งนี้"
+   },
+   {
+    "key": "l2_condition",
+    "type": "text",
+    "label": "รายการที่ 2: เงื่อนไข (1 หัก ณ ที่จ่าย, 2 ออกให้ตลอดไป, 3 ออกให้ครั้งเดียว)"
+   },
+   {
+    "key": "l3_date",
+    "type": "text",
+    "label": "รายการที่ 3: วัน เดือน ปี ที่จ่าย"
+   },
+   {
+    "key": "l3_income_type",
+    "type": "text",
+    "label": "รายการที่ 3: ประเภทเงินได้ (ถ้ามากกว่าหนึ่งประเภทให้กรอกเรียงลงไป)"
+   },
+   {
+    "key": "l3_rate",
+    "type": "text",
+    "label": "รายการที่ 3: อัตราภาษีร้อยละ"
+   },
+   {
+    "key": "l3_amount",
+    "type": "money",
+    "label": "รายการที่ 3: จำนวนเงินที่จ่ายแต่ละประเภท เฉพาะคนหนึ่งๆ ในครั้งนี้"
+   },
+   {
+    "key": "l3_tax",
+    "type": "money",
+    "label": "รายการที่ 3: จำนวนเงินภาษีที่หักและนำส่งในครั้งนี้"
+   },
+   {
+    "key": "l3_condition",
+    "type": "text",
+    "label": "รายการที่ 3: เงื่อนไข (1 หัก ณ ที่จ่าย, 2 ออกให้ตลอดไป, 3 ออกให้ครั้งเดียว)"
+   }
+  ],
+  "rows": [
+   {
+    "seq": 5,
+    "tax_id": 6,
+    "name": 8,
+    "surname": 9,
+    "address1": 10,
+    "branch_no": 7,
+    "l1_date": 11,
+    "l1_income_type": 12,
+    "l1_rate": 13,
+    "l1_amount": 14,
+    "l1_tax": 15,
+    "l1_condition": 16,
+    "l2_date": 17,
+    "l2_income_type": 18,
+    "l2_rate": 19,
+    "l2_amount": 20,
+    "l2_tax": 21,
+    "l2_condition": 22,
+    "l3_date": 23,
+    "l3_income_type": 24,
+    "l3_rate": 25,
+    "l3_amount": 26,
+    "l3_tax": 27,
+    "l3_condition": 28
+   },
+   {
+    "seq": 29,
+    "tax_id": 30,
+    "name": 32,
+    "surname": 33,
+    "address1": 34,
+    "branch_no": 31,
+    "l1_date": 35,
+    "l1_income_type": 36,
+    "l1_rate": 37,
+    "l1_amount": 38,
+    "l1_tax": 39,
+    "l1_condition": 40,
+    "l2_date": 41,
+    "l2_income_type": 42,
+    "l2_rate": 43,
+    "l2_amount": 44,
+    "l2_tax": 45,
+    "l2_condition": 46,
+    "l3_date": 47,
+    "l3_income_type": 48,
+    "l3_rate": 49,
+    "l3_amount": 50,
+    "l3_tax": 51,
+    "l3_condition": 52
+   },
+   {
+    "seq": 53,
+    "tax_id": 54,
+    "name": 56,
+    "surname": 57,
+    "address1": 58,
+    "branch_no": 55,
+    "l1_date": 59,
+    "l1_income_type": 60,
+    "l1_rate": 61,
+    "l1_amount": 62,
+    "l1_tax": 63,
+    "l1_condition": 64,
+    "l2_date": 65,
+    "l2_income_type": 66,
+    "l2_rate": 67,
+    "l2_amount": 68,
+    "l2_tax": 69,
+    "l2_condition": 70,
+    "l3_date": 71,
+    "l3_income_type": 72,
+    "l3_rate": 73,
+    "l3_amount": 74,
+    "l3_tax": 75,
+    "l3_condition": 76
+   },
+   {
+    "seq": 77,
+    "tax_id": 78,
+    "name": 80,
+    "surname": 81,
+    "address1": 82,
+    "branch_no": 79,
+    "l1_date": 83,
+    "l1_income_type": 84,
+    "l1_rate": 85,
+    "l1_amount": 86,
+    "l1_tax": 87,
+    "l1_condition": 88,
+    "l2_date": 89,
+    "l2_income_type": 90,
+    "l2_rate": 91,
+    "l2_amount": 92,
+    "l2_tax": 93,
+    "l2_condition": 94,
+    "l3_date": 95,
+    "l3_income_type": 96,
+    "l3_rate": 97,
+    "l3_amount": 98,
+    "l3_tax": 99,
+    "l3_condition": 100
+   },
+   {
+    "seq": 101,
+    "tax_id": 102,
+    "name": 104,
+    "surname": 105,
+    "address1": 106,
+    "branch_no": 103,
+    "l1_date": 107,
+    "l1_income_type": 108,
+    "l1_rate": 109,
+    "l1_amount": 110,
+    "l1_tax": 111,
+    "l1_condition": 112,
+    "l2_date": 113,
+    "l2_income_type": 114,
+    "l2_rate": 115,
+    "l2_amount": 116,
+    "l2_tax": 117,
+    "l2_condition": 118,
+    "l3_date": 119,
+    "l3_income_type": 120,
+    "l3_rate": 121,
+    "l3_amount": 122,
+    "l3_tax": 123,
+    "l3_condition": 124
+   },
+   {
+    "seq": 125,
+    "tax_id": 126,
+    "name": 128,
+    "surname": 129,
+    "address1": 130,
+    "branch_no": 127,
+    "l1_date": 131,
+    "l1_income_type": 132,
+    "l1_rate": 133,
+    "l1_amount": 134,
+    "l1_tax": 135,
+    "l1_condition": 136,
+    "l2_date": 137,
+    "l2_income_type": 138,
+    "l2_rate": 139,
+    "l2_amount": 140,
+    "l2_tax": 141,
+    "l2_condition": 142,
+    "l3_date": 143,
+    "l3_income_type": 144,
+    "l3_rate": 145,
+    "l3_amount": 146,
+    "l3_tax": 147,
+    "l3_condition": 148
+   }
+  ]
+ }
+}

@@ -6,6 +6,7 @@ import { isErpReportRoute, getErpReportConfig, isErpReportApiReady } from "./erp
 import { isErpToolsRoute, getErpToolConfig, isErpToolApiReady } from "./erp-tools";
 import { isOperationsRoute, getOperationsConfig, isApprovalApiReady } from "./erp-operations";
 import { getThaiTaxConfig } from "./thai-tax";
+import { taxFormRouteCode } from "./tax-forms";
 
 // Keep aligned with the explicit WorkTabPanel branches (checked by the test).
 export const CUSTOM_MENU_SCREEN_ROUTES = [
@@ -60,6 +61,7 @@ export function isMenuScreenPending(route: string): boolean {
       !isFixedAssetRoute(route) &&
       !isErpTransactionRoute(route) &&
       !isThaiTaxRoute(route) &&
+      taxFormRouteCode(route) === undefined &&
       !isErpReportRoute(route) &&
       !isErpToolsRoute(route) &&
       !isOperationsRoute(route) &&
@@ -68,10 +70,10 @@ export function isMenuScreenPending(route: string): boolean {
 }
 
 
-// แบบภาษีที่มี API จริงแล้ว (ที่เหลือยังไม่มีตารางภาษีหัก ณ ที่จ่ายใน backend)
-// 2026-09-23: ภาษีหัก ณ ที่จ่ายอ่านจากบัญชีแยกประเภท (gl_lines) จริง; ภาษีซื้อ/ขาย/ภ.พ.30/36 ยังอ่านตารางเอกสารซื้อขาย
-// ของระบบอื่นที่ผู้ใช้ GL อย่างเดียวไม่มี → "รอเชื่อมข้อมูล" จนกว่าจะมีรายละเอียด VAT ในใบสำคัญ GL
-const LIVE_TAX_FORMS = new Set(["pnd2", "pnd3", "pnd53", "50twi", "wht_received", "wht_summary"]);
+// แบบภาษีที่มี API จริงแล้ว
+// 2026-09-23: ภาษีหัก ณ ที่จ่ายอ่านจากบัญชีแยกประเภท (gl_lines) จริง; ภาษีซื้อ/ขาย/ภ.พ.30 อ่านจากรายละเอียดภาษีมูลค่าเพิ่ม
+// ของใบสำคัญ GL ที่ผ่านบัญชี (details.vats); ภ.พ.36 ยังไม่มีข้อมูลต้นทาง → "รอเชื่อมข้อมูล"
+const LIVE_TAX_FORMS = new Set(["vat_sale", "vat_buy", "50twi", "wht_received", "wht_summary"]);
 
 /**
  * จอเปิดใช้งานแล้ว แต่ยังไม่มี API จริงป้อนข้อมูลให้
