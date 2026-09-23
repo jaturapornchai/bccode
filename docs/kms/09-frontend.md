@@ -78,7 +78,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/product/[[...path]]` | GET/POST/PUT/DELETE | M `/product?…`, `/product/{id}`, `/product/resync` | Bearer | LIVE | `product/[[...productPath]]/route.ts:15-24,43-51,133,152-164` |
 | `/api/product-barcode/[[...path]]` | GET/POST/PUT/DELETE | M `/product/barcode*` | Bearer | LIVE | `product-barcode/[[...barcodePath]]/route.ts:36,79,92,102-114` |
 | `/api/product-barcode/list` | POST | G `/api/product/barcode/list` | Bearer | LIVE | `product-barcode/list/route.ts:16,39` |
-| `/api/product-barcode/master/[master]` | GET | M ตาม `MASTER_PATHS` 20 คีย์ (`/product/group`, `/aicloud/brand`, `/unit`, `/organization/company`, `/debtaccount/creditor`, …) | Bearer (ผ่าน proxyMainApiJson) | LIVE | `product-barcode/master/[master]/route.ts:19-38,43-70` |
+| `/api/product-barcode/master/[master]` | GET | M ตาม `MASTER_PATHS` 9 คีย์ — ใช้งานจริงแค่ `businesstype` (`/organization/business-type`) + `branch` (`/list-holding`); ที่เหลือ (`/product/group`, `/unit`, `/product/order-type`, `/debtaccount/*`, `/product`) เป็นท่อของจอ "รอพัฒนา" หลังถอด MongoDB (2026-09-23 ลบ 6 คีย์ที่ไม่มีผู้เรียก) | Bearer (ผ่าน proxyMainApiJson) | LIVE (บางคีย์) | `product-barcode/master/[master]/route.ts:18-32` |
 | `/api/product-barcode/bom/[barcode]` | GET | M `/product/barcode/bom/{code}?itemcode=` | Bearer | LIVE | `product-barcode/bom/[barcode]/route.ts:10-42` |
 | `/api/product-barcode/price-history/[barcode]` | GET | M `/product/barcode/price-history/{code}` | Bearer | LIVE | `product-barcode/price-history/[barcode]/route.ts:6-30` |
 | `/api/product-price-history/[[...path]]` | GET/POST | M `/product/barcode/price-history/*` | Bearer | LIVE | `product-price-history/[[...historyPath]]/route.ts:14,24,35,47` |

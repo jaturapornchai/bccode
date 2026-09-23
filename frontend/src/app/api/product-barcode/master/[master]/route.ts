@@ -15,18 +15,14 @@ import {
  * Whitelist of accepted master names → backend path. Anything else returns 404
  * so we don't accidentally proxy arbitrary mainapi endpoints.
  */
+// Only businesstype + branch have a live backend; the rest serve screens marked "รอพัฒนา" since the
+// MongoDB API removal (ADR 2026-09-23) and go away or change path when those screens move to PostgreSQL.
 const MASTER_PATHS: Record<string, string> = {
   group: "/product/group",
-  groupsubone: "/aicloud/groupsubone",
-  groupsubtwo: "/aicloud/groupsubtwo",
-  brand: "/aicloud/brand",
-  category: "/aicloud/category",
   unit: "/unit",
-  producttype: "/product/type",
   ordertype: "/product/order-type",
   businesstype: "/organization/business-type",
   branch: "/list-holding",
-  company: "/organization/company",
   creditor: "/debtaccount/creditor",
   creditorgroup: "/debtaccount/creditor-group",
   debtorgroup: "/debtaccount/debtor-group",
@@ -73,7 +69,7 @@ export async function GET(request: Request, context: MasterContext) {
     const entries = rawData.flatMap((entry: unknown) => {
       if (!isRecord(entry)) return [];
       let guid = String(entry.guidfixed ?? entry.guidfixed ?? "");
-      let code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? entry.brandcode ?? entry.categorycode ?? "");
+      let code = String(entry.code ?? entry.unitcode ?? entry.itemunitcode ?? entry.groupcode ?? "");
       if (masterKey === "branch") {
         guid = String(entry.holdingcode ?? "");
         code = String(entry.branchcode && entry.branchcode !== "" ? entry.branchcode : (entry.holdingcode ?? ""));

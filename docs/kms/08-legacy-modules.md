@@ -100,7 +100,7 @@
 | 1 | `apikeyservice`, `requestapi`, `shopcoupon`, `report/reportqueryc` | 0 importer ทั้ง main.go และ cmd/* | §3 |
 | 2 | `cmd/app/main.go` + โมดูลที่มันถือคนเดียว (`storefront`, `logistics/vehicle`, `restaurant/notifier{,device}`, `report/reportquerym`) — **ไม่รวม** `smsreceive/smspatterns`/`smspaymentsettings` เพราะ repo ถูก `smstransaction` ใช้อยู่ (§3) | ไม่มี Dockerfile/compose build | §3 หมายเหตุ |
 | 3 | `creditorprocess`, `debtorprocess` | producer ไร้ consumer; ปุ่ม ReSync/ReCalc ใน systemadmin จึงไม่มีผล | `queue_config.go:4-5` ทั้งสอง |
-| 4 | `smlaiproduct/groupsuboneproduct`, `groupsubtwoproduct` + `route.ts:20-21` | FE ถอดออกจากจอแล้ว (397f83bd) แต่ยังมี 7/8 doc ใน appdb | `backend/main.go:490-491` |
+| 4 | `smlaiproduct/groupsuboneproduct`, `groupsubtwoproduct` (คีย์ใน BFF master `route.ts` ลบแล้ว 2026-09-23) | FE ถอดออกจากจอแล้ว (397f83bd) แต่ยังมี 7/8 doc ใน appdb | `backend/main.go:490-491` |
 | 5 | `debtaccount/customer{,group}` | ซ้ำ debtor, ไม่มี FE, ไม่มี collection | `backend/main.go:418-419` |
 | 6 | register ซ้ำ `member.NewMemberHttp` | ลบบรรทัดใดบรรทัดหนึ่ง | `backend/main.go:363,541` |
 

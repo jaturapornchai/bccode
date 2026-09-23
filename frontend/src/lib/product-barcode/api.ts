@@ -241,12 +241,7 @@ export type MasterEntry = {
  */
 export type MasterName =
   | "group"
-  | "groupsubone"
-  | "groupsubtwo"
-  | "brand"
-  | "category"
   | "unit"
-  | "producttype"
   | "ordertype"
   | "businesstype"
   | "branch"

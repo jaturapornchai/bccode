@@ -31,8 +31,7 @@ type FieldPickerPlacement = {
 /**
  * Master-data picker.
  *
- * - Reuse for: group, brand, category, class, design, grade, model, pattern,
- *   unit, producttype, ordertype, businesstype, branch.
+ * - Reuse for the keys in `MasterName` (`@/lib/product-barcode/api`).
  * - Debounced server search (300ms).
  * - Returns the picked `MasterEntry` to caller via `onSelect`.
  * - Modal overlay; ESC closes; backdrop closes; tap row picks.
@@ -40,7 +39,7 @@ type FieldPickerPlacement = {
  * Usage:
  *   <MasterPicker
  *     open={pickerOpen} onClose={() => setPickerOpen(false)}
- *     auth={auth} language={lang} master="brand"
+ *     auth={auth} language={lang} master="unit"
  *     onSelect={(entry) => setBrand(entry)}
  *   />
  */

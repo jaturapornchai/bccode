@@ -37,9 +37,11 @@ describe("master picker proxy", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await GET(new Request("http://localhost/api/product-barcode/master/users"), context("users"));
-
-    expect(response.status).toBe(404);
+    // brand/company were removed 2026-09-23 (no caller, brand backend gone with MongoDB)
+    for (const master of ["users", "brand", "company"]) {
+      const response = await GET(new Request(`http://localhost/api/product-barcode/master/${master}`), context(master));
+      expect(response.status).toBe(404);
+    }
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
