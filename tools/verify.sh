@@ -150,7 +150,7 @@ t_backend() {
 
 # --- postgres: integration tests against a throwaway PostgreSQL 18 ------------
 # PostgreSQL is the only database (MongoDB/Kafka/Redis/ClickHouse removed 2026-09-23); every
-# integration test gated by BC_GL_TEST_POSTGRES_DSN / GL_AUTH_TEST_DSN runs here.
+# integration test gated by BC_GL_TEST_POSTGRES_DSN / GL_AUTH_TEST_DSN / BC_TAXFORM_TEST_POSTGRES_DSN runs here.
 t_postgres() {
   hr "postgres — integration tests (PostgreSQL 18 แยกต่างหาก ลบทิ้งหลังจบ)"
   need_docker || { record postgres 1; return; }
@@ -165,6 +165,7 @@ t_postgres() {
     docker run --rm --network container:bc-pg-ci \
       -e BC_GL_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:5432/postgres?sslmode=disable' \
       -e GL_AUTH_TEST_DSN='postgres://postgres@127.0.0.1:5432/postgres?sslmode=disable' \
+      -e BC_TAXFORM_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:5432/postgres?sslmode=disable' \
       -v "$WINROOT/backend:/src" -w /src "$GO_IMAGE" \
       bash -c 'set -euo pipefail; go test -tags=integration -count=1 -timeout=300s ./pkg/... ./internal/...' || rc=1
   fi

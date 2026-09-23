@@ -83,6 +83,7 @@ key อื่นเฉพาะแบบ ตั้งเป็นอังกฤ
 - **คู่ช่อง `X_baht` + `X_satang`** (แบบที่พิมพ์เป็น 2 ช่องกรอกแยก): จอเห็นเป็นยอดเงินเดียว `X` (`rdform.Spec.MoneyPairs`) ตัวกรอกแยกบาท/สตางค์ให้
 - **คอลัมน์ `X_d1`..`X_dN`** ของตารางใบแนบ (เลขที่พิมพ์ช่องละหลักเป็นคนละช่องกรอก เช่น สาขาที่ของใบแนบ ภ.พ.30): จอเห็นเป็นช่องเดียว `X` (`rdform.Table.DigitGroups`)
 - **ใบแนบ 2 แบบ** (`rdform.SchemaFor`): สเปกมี `table` = `rows` (ระบบแบ่งแผ่นละ `len(table.rows)` แถว เติม `seq`/`sheet_no`/`sheet_total`/`page_total_*` เอง); ไม่มี `table` = `sheets` (หนึ่งแผ่นต่อหนึ่งรายการ เช่น ใบแนบ ภ.ธ.40 รายสถานประกอบการ)
+- ที่มาของทุกช่องที่ระบบเติม/คำนวณ (คำชี้แจงทางการข้อไหน) อยู่ในทะเบียน `docs/kms/21-thai-tax-form-references.md` — เพิ่ม/แก้สูตรต้องแก้ทะเบียนด้วย (skill `.agents/skills/thai-accounting-tax/SKILL.md`)
 - ค่าที่ต้องคำนวณตามสูตรบนแบบ (ยอดรวม/ภาษีสุทธิ) อยู่ใน Go `backend/internal/goapi/handlers/tax_form_compute.go` ไม่ใช่ในสเปก — เพิ่มแบบใหม่ที่มีสูตร ต้องเพิ่ม computer + unit test ที่นั่น และเพิ่มแบบใน `taxFormOrder`/`taxForms` ของ `tax_form.go` + แถว `tax_form_title_<code>` ใน `languages.tsv`
 
 แบบที่ทำครบแล้ว (สเปกใน `specs/`): ภ.ง.ด.2, 2ก, 3, 53 (+ใบแนบ), ภ.พ.30 (+ใบแนบรายสาขา), ภ.พ.36, ภ.ธ.40 (+ใบแนบ), ภ.ง.ด.50, 51, 93, 94 — ภ.ง.ด.1/1ก ไม่ทำ (ระบบเงินเดือนอยู่นอกขอบเขต), 50 ทวิ ใช้ `backend/internal/whtcert` (ADR `docs/kms/decisions/2026-09-23-rd-tax-forms-engine.md`)

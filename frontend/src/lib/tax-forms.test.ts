@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   acceptsTyping,
   cleanDocument,
+  computeTaxForm,
   groupFields,
   noteText,
   prefillTaxForm,
@@ -95,6 +96,14 @@ describe("tax form API client", () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain("/api/goapi/api/report/tax/form/prefill");
     expect(JSON.parse(String(init.body))).toMatchObject({ holdingcode: "rungrueng", businesscode: "01", code: "pp30", year: 2026, month: 9 });
+  });
+
+  it("compute คืนหมายเหตุที่ตรวจใหม่ + key ที่ต้องแทน (แก้เลขผู้เสียภาษีแล้วหมายเหตุหายได้)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      success: true, data: { values: { total_income: "1000.00" }, rows: [] }, notes: [], rechecked: ["tax_form_note_missing_taxid", 7],
+    })));
+    const result = await computeTaxForm(scope, "pnd53", { values: {}, rows: [] });
+    expect(result).toEqual({ ok: true, data: { values: { total_income: "1000.00" }, rows: [] }, notes: [], rechecked: ["tax_form_note_missing_taxid"] });
   });
 
   it("บันทึกชนเวอร์ชันคืน code + field จาก backend", async () => {

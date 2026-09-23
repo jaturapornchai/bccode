@@ -80,7 +80,8 @@ export interface TaxFormError {
   row?: number;
 }
 
-export type TaxFormResult<T> = { ok: true; data: T; notes?: TaxFormNote[] } | { ok: false; error: TaxFormError };
+// rechecked = key หมายเหตุที่ backend ตรวจใหม่จากเอกสารปัจจุบัน: ผู้เรียกแทนหมายเหตุ key เหล่านั้นด้วย notes ชุดนี้
+export type TaxFormResult<T> = { ok: true; data: T; notes?: TaxFormNote[]; rechecked?: string[] } | { ok: false; error: TaxFormError };
 
 export interface TaxFormScope {
   holdingcode: string;
@@ -188,7 +189,8 @@ export async function prefillTaxForm(scope: TaxFormScope, period: TaxFormPeriodI
 export async function computeTaxForm(scope: TaxFormScope, code: string, document: TaxFormDocument): Promise<TaxFormResult<TaxFormDocument>> {
   const r = await post("compute", { ...scope, code, document });
   if (!r.ok) return r;
-  return { ok: true, data: toDocument(r.payload.data) };
+  const rechecked = Array.isArray(r.payload.rechecked) ? r.payload.rechecked.filter((k): k is string => typeof k === "string") : [];
+  return { ok: true, data: toDocument(r.payload.data), notes: toNotes(r.payload.notes), rechecked };
 }
 
 export async function saveTaxForm(

@@ -20,6 +20,7 @@ test ที่ต้องต่อฐานจะ `t.Skip()` เมื่อไ
 |---|---|---|
 | `BC_GL_TEST_POSTGRES_DSN` | `internal/generalledger` (+ `httpapi`), `internal/fixedasset`, `internal/organization/rolepermission`, `pkg/microservice` | ฐานเปล่าก็ได้ — test สร้าง schema เอง (`generalledger.EnsureSchema`) |
 | `GL_AUTH_TEST_DSN` | test auth/สิทธิ์ที่ต่อ `bcai_projection` | ฐานเปล่าก็ได้ |
+| `BC_TAXFORM_TEST_POSTGRES_DSN` | `internal/goapi/handlers/tax_form_integration_test.go` (แบบยื่นภาษี: บันทึกฉบับ, prefill จาก GL, เครดิต ภ.ง.ด.50/51) | ฐานเปล่าก็ได้ — test สร้างข้อมูลเองแล้วลบตาม company code (IT01–IT03); `verify.sh postgres` ตั้งค่านี้ให้ (แยกจาก `BC_TAX_TEST_POSTGRES_DSN` 2026-09-23 เพราะตัวนั้นต้องใช้ฐานที่ seed แล้ว) |
 | `BC_TAX_TEST_POSTGRES_DSN` | `internal/goapi/handlers/tax_withholding_integration_test.go` | ต้องเป็นฐาน holding ที่ seed ใบสำคัญ WHT ด้วย `backend/cmd/glseed` แล้ว — `verify.sh` ไม่ตั้งค่านี้จึงข้าม |
 
 ### 2.3 gofmt / vet
@@ -33,7 +34,7 @@ test ที่ต้องต่อฐานจะ `t.Skip()` เมื่อไ
 `backend/.ci/test-quarantine.txt` ว่างแล้ว (2026-09-23) — package legacy ที่เคยถูกกักถูกลบไปพร้อมโค้ด Mongo/Kafka; `verify.sh backend` รันทุก package ที่เหลือ ถ้าจะกักใหม่ต้องเขียนเหตุผลในไฟล์นั้น
 
 ## 4. Integration suite — `tools/verify.sh postgres`
-เปิด `postgres:18-alpine` ชั่วคราวชื่อ `bc-pg-ci` (trust auth) → รัน `go test -tags=integration -count=1 ./pkg/... ./internal/...` ใน `golang:1.26` ด้วย `--network container:bc-pg-ci` ตั้ง `BC_GL_TEST_POSTGRES_DSN` + `GL_AUTH_TEST_DSN` → ลบ container ทิ้งหลังจบ (`tools/verify.sh:154`)
+เปิด `postgres:18-alpine` ชั่วคราวชื่อ `bc-pg-ci` (trust auth) → รัน `go test -tags=integration -count=1 ./pkg/... ./internal/...` ใน `golang:1.26` ด้วย `--network container:bc-pg-ci` ตั้ง `BC_GL_TEST_POSTGRES_DSN` + `GL_AUTH_TEST_DSN` + `BC_TAXFORM_TEST_POSTGRES_DSN` → ลบ container ทิ้งหลังจบ (`tools/verify.sh:154`)
 - ไม่มี MongoDB replica set / Kafka broker / `projection.compose.yml` อีกแล้ว (ลบ 2026-09-23)
 - รันจริง 2026-09-23 **ผ่าน** (~50 วินาที)
 

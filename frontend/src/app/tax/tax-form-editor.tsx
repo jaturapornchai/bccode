@@ -215,6 +215,8 @@ export function TaxFormEditor({ language = "th", holdingcode = "", businesscode 
       return null;
     }
     setDoc(r.data);
+    const rechecked = r.rechecked ?? [];
+    if (rechecked.length > 0) setNotes((prev) => [...prev.filter((n) => !rechecked.includes(n.key)), ...(r.notes ?? [])]);
     setInvalid(null);
     setError(null);
     return r.data;

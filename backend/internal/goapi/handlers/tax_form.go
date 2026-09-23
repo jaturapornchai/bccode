@@ -220,7 +220,13 @@ func TaxFormComputeHandler(c echo.Context) error {
 	if err := computeTaxForm(t.req.Code, &doc); err != nil {
 		return t.failValue(err)
 	}
-	return c.JSON(http.StatusOK, map[string]any{"success": true, "data": doc})
+	res := map[string]any{"success": true, "data": doc}
+	if taxForms[t.req.Code].Source == "wht" {
+		// หมายเหตุที่ตรวจจากเอกสารได้ ตรวจใหม่ทุกครั้ง: frontend แทนหมายเหตุ key ใน rechecked ด้วยชุดใหม่ (แก้แล้วหายเอง)
+		res["notes"] = missingTaxIDNotes(doc.Rows)
+		res["rechecked"] = []string{"tax_form_note_missing_taxid"}
+	}
+	return c.JSON(http.StatusOK, res)
 }
 
 // TaxFormPDFHandler - POST /api/report/tax/form/pdf → application/pdf บนแบบฟอร์มทางการ

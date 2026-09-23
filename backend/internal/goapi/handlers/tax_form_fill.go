@@ -228,30 +228,39 @@ func fillWithholdingForm(ctx context.Context, db *sql.DB, company, code string, 
 	default:
 		doc.Rows = payeeRows(rows, code == "pnd3")
 	}
-	return withholdingNotes(rows), nil
+	return append(withholdingNotes(rows), missingTaxIDNotes(doc.Rows)...), nil
 }
 
 func withholdingNotes(rows []TaxWithholdingRow) []TaxFormNote {
 	if len(rows) == 0 {
 		return []TaxFormNote{{Key: "tax_form_note_no_withholding"}}
 	}
-	inferred, missingID := 0, 0
+	inferred := 0
 	for _, r := range rows {
 		if r.TaxBaseSource != "recorded" {
 			inferred++
-		}
-		if len(digitsOnly(r.TaxID)) != 13 {
-			missingID++
 		}
 	}
 	var notes []TaxFormNote
 	if inferred > 0 {
 		notes = append(notes, TaxFormNote{Key: "tax_form_note_inferred_base", Count: inferred})
 	}
-	if missingID > 0 {
-		notes = append(notes, TaxFormNote{Key: "tax_form_note_missing_taxid", Count: missingID})
-	}
 	return notes
+}
+
+// missingTaxIDNotes - แถวใบแนบที่ยังไม่มีเลขประจำตัวผู้เสียภาษี 13 หลัก นับจากเอกสารปัจจุบัน
+// (prefill และ compute ใช้ตัวเดียวกัน — ผู้ใช้กรอกเลขแล้วกดคำนวณ/บันทึก หมายเหตุหายเอง)
+func missingTaxIDNotes(rows []map[string]string) []TaxFormNote {
+	missing := 0
+	for _, r := range rows {
+		if len(digitsOnly(r["tax_id"])) != 13 {
+			missing++
+		}
+	}
+	if missing == 0 {
+		return []TaxFormNote{}
+	}
+	return []TaxFormNote{{Key: "tax_form_note_missing_taxid", Count: missing}}
 }
 
 // payeeRows - ใบแนบ ภ.ง.ด.3/53: หนึ่งแถวต่อผู้มีเงินได้ ไม่เกิน 3 รายการเงินได้ต่อแถว (เกินขึ้นแถวใหม่ของรายเดิม)
@@ -472,6 +481,11 @@ func fillCitForm(ctx context.Context, db *sql.DB, company, code string, year int
 		f.setDate(prefix+"_end", fy.end)
 	}
 	f.set("ds_company_name", f.values["name"])
+	credits, err := fillCitCredits(ctx, db, company, code, year, fy.start, periodEnd, f)
+	if err != nil {
+		return nil, err
+	}
+	notes = append(notes, credits...)
 	if !found {
 		return notes, nil
 	}
@@ -497,6 +511,66 @@ func setProfit(f *formFiller, amountKey, resultKey string, profit decimal.Decima
 	} else {
 		f.set(resultKey, "profit")
 	}
+}
+
+// fillCitCredits - เครดิตภาษีที่มีหลักฐานในระบบ ตามคู่มือวิธีกรอกแบบของกรมสรรพากร (docs/kms/21-thai-tax-form-references.md §2–§3):
+// ภ.ง.ด.50 ข้อ 3.(3) = ภาษีที่บริษัทถูกหัก ณ ที่จ่ายทั้งรอบบัญชี, ภ.ง.ด.51 ข้อ 5.(1) = เฉพาะ 6 เดือนแรก (from..to ของแบบ);
+// ภ.ง.ด.50 ข้อ 3.(4) = ยอด "ชำระเพิ่มเติม" รายการที่ 2 ข้อ 6 ของ ภ.ง.ด.51 ที่บันทึกไว้ — ช่องอื่นของรายการเครดิตผู้ใช้กรอกเอง
+func fillCitCredits(ctx context.Context, db *sql.DB, company, code string, year int, from, to time.Time, f *formFiller) ([]TaxFormNote, error) {
+	var notes []TaxFormNote
+	withheld, entries, err := generalledger.WithheldFromCompanyTotal(ctx, db, company, from.Format("2006-01-02"), to.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+	if entries > 0 {
+		key := "less_wht"
+		if code == "pnd51" {
+			key = "r2_5_1_wht"
+		}
+		f.set(key, withheld.StringFixed(2))
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_cit_wht_credit", Count: entries, Amount: withheld.StringFixed(2)})
+	}
+	if code != "pnd50" {
+		return notes, nil
+	}
+	paid, filings, err := pnd51PaidTax(ctx, db, company, year)
+	if err != nil {
+		return nil, err
+	}
+	if filings > 0 {
+		f.set("less_pnd51_paid", paid.StringFixed(2))
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_cit_pnd51_paid", Count: filings, Amount: paid.StringFixed(2)})
+	}
+	return notes, nil
+}
+
+// pnd51PaidTax - ผลรวมยอด "ชำระเพิ่มเติม" (รายการที่ 2 ข้อ 6) ของ ภ.ง.ด.51 ทุกฉบับของปีเดียวกัน (ฉบับยื่นเพิ่มเติมหักยอดฉบับก่อนในข้อ 5.(3) แล้ว จึงรวมกันได้ตรง)
+func pnd51PaidTax(ctx context.Context, db *sql.DB, company string, year int) (decimal.Decimal, int, error) {
+	total, filings := decimal.Zero, 0
+	if err := ensureTaxFilingSchema(ctx, db); err != nil {
+		return total, filings, err
+	}
+	rows, err := db.QueryContext(ctx, `SELECT COALESCE(document->'values'->>'r2_6_balance','') FROM tax_filings
+WHERE company_code=$1 AND form_code='pnd51' AND period_year=$2 AND document->'values'->>'r2_6_sign'='payable'`, company, year)
+	if err != nil {
+		return total, filings, fmt.Errorf("read pnd51 filings: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var balance string
+		if err := rows.Scan(&balance); err != nil {
+			return total, filings, fmt.Errorf("scan pnd51 filing: %w", err)
+		}
+		if strings.TrimSpace(balance) == "" {
+			continue
+		}
+		amount, err := decimal.NewFromString(balance)
+		if err != nil {
+			return total, filings, fmt.Errorf("pnd51 balance %q: %w", balance, err)
+		}
+		total, filings = total.Add(amount), filings+1
+	}
+	return total, filings, rows.Err()
 }
 
 // profitAndLoss - รายได้ (เครดิต-เดบิต) และค่าใช้จ่าย (เดบิต-เครดิต) ของบัญชีหมวด 4/5 ในช่วง ไม่รวมรายการยกมา/ปิดบัญชี

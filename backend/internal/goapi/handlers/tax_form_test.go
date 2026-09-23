@@ -200,3 +200,45 @@ func TestTaxFormTextHelpers(t *testing.T) {
 		}
 	}
 }
+
+// ภ.ง.ด.50 รายการที่ 1 ข้อ 3–6 และ ภ.ง.ด.51 รายการที่ 2 ข้อ 5–8 ตามคู่มือวิธีกรอกแบบของกรมสรรพากร (docs/kms/21-thai-tax-form-references.md §4)
+func TestComputeCorporateIncomeTax(t *testing.T) {
+	cases := []struct {
+		name, code string
+		in, want   map[string]string
+	}{
+		{"pnd50 payable", "pnd50", map[string]string{"tax_computed": "150,000.00", "less_wht": "12000", "less_pnd51_paid": "60000.50", "surcharge": "900"},
+			map[string]string{"less_total": "72000.50", "tax_balance": "77999.50", "tax_balance_type": "payable", "tax_net": "78899.50", "tax_net_type": "payable"}},
+		{"pnd50 overpaid", "pnd50", map[string]string{"tax_computed": "10000", "less_wht": "4000", "less_pnd51_paid": "9000"},
+			map[string]string{"less_total": "13000.00", "tax_balance": "3000.00", "tax_balance_type": "overpaid", "tax_net": "3000.00", "tax_net_type": "overpaid"}},
+		{"pnd50 zero is payable", "pnd50", map[string]string{"tax_computed": "0.1", "less_wht": "0.1"},
+			map[string]string{"less_total": "0.10", "tax_balance": "0.00", "tax_balance_type": "payable"}},
+		// ยังไม่กรอกภาษีที่คำนวณได้: รวมเครดิตได้ แต่ห้ามขึ้น "ชำระไว้เกิน"
+		{"pnd50 tax not entered", "pnd50", map[string]string{"less_wht": "5000"},
+			map[string]string{"less_total": "5000.00", "tax_balance": "", "tax_balance_type": "", "tax_net": ""}},
+		{"pnd50 no credits", "pnd50", map[string]string{"tax_computed": "800"},
+			map[string]string{"less_total": "", "tax_balance": "800.00", "tax_balance_type": "payable", "tax_net": "800.00"}},
+		{"pnd51 payable with surcharge", "pnd51", map[string]string{"r2_4_tax_computed": "45000", "r2_5_1_wht": "3000", "r2_5_3_prior_pnd51_paid": "20000", "r2_7_surcharge": "4400"},
+			map[string]string{"r2_5_total_credits": "23000.00", "r2_6_balance": "22000.00", "r2_6_sign": "payable", "r2_8_total": "26400.00", "r2_8_sign": "payable"}},
+		{"pnd51 overpaid", "pnd51", map[string]string{"r2_4_tax_computed": "1000", "r2_5_1_wht": "1500.25"},
+			map[string]string{"r2_5_total_credits": "1500.25", "r2_6_balance": "500.25", "r2_6_sign": "overpaid", "r2_8_total": "500.25", "r2_8_sign": "overpaid"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := computeDoc(t, tc.code, rdform.Document{Values: tc.in})
+			expectValues(t, doc.Values, tc.want)
+		})
+	}
+}
+
+func TestMissingTaxIDNotesRecheck(t *testing.T) {
+	rows := []map[string]string{{"tax_id": "0105566123456"}, {"tax_id": ""}, {"tax_id": "123"}}
+	notes := missingTaxIDNotes(rows)
+	if len(notes) != 1 || notes[0].Key != "tax_form_note_missing_taxid" || notes[0].Count != 2 {
+		t.Fatalf("missing notes = %+v", notes)
+	}
+	rows[1]["tax_id"], rows[2]["tax_id"] = "0-1055-66123-45-6", "0105566123456"
+	if notes := missingTaxIDNotes(rows); notes == nil || len(notes) != 0 {
+		t.Fatalf("after fixing every row the note must disappear (empty, not nil): %+v", notes)
+	}
+}

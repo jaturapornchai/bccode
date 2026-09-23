@@ -22,6 +22,8 @@ var taxFormComputers = map[string]func(*rdform.Spec, *rdform.Document) error{
 	"pp30":  computePP30,
 	"pp36":  computePP36,
 	"pbt40": computePBT40,
+	"pnd50": computePND50,
+	"pnd51": computePND51,
 }
 
 func computeTaxForm(code string, doc *rdform.Document) error {
@@ -224,6 +226,61 @@ func computePP36(_ *rdform.Spec, doc *rdform.Document) error {
 		doc.Values["total_payable_text"] = whtcert.BahtText(total)
 	}
 	return a.err
+}
+
+// ภ.ง.ด.50 รายการที่ 1 ข้อ 3–6 / ภ.ง.ด.51 รายการที่ 2 ข้อ 5–8 ตามคู่มือวิธีกรอกแบบของกรมสรรพากร (docs/kms/21-thai-tax-form-references.md §4):
+// รวมเครดิต = ผลรวมช่อง "หัก" ทุกช่อง, คงเหลือ = ภาษีที่คำนวณได้ − รวมเครดิต (บวก = ชำระเพิ่มเติม, ลบ = ชำระไว้เกิน), รวมภาษี = คงเหลือ + เงินเพิ่ม
+// ภาษีที่คำนวณได้ (อัตราตามกรณีของกิจการ) และเงินเพิ่ม (ลดได้ตามระเบียบอธิบดี) ผู้ใช้กรอกเอง — ระบบไม่เดาอัตรา
+var pnd50Credits = []string{"less_exempt_tax_rd18_463", "less_exempt_tax_rd300", "less_wht", "less_pnd51_paid", "less_reduced_rate_tax", "less_pnd50_paid"}
+var pnd51Credits = []string{"r2_5_1_wht", "r2_5_2_reduced_rate_relief", "r2_5_3_prior_pnd51_paid"}
+
+func computePND50(_ *rdform.Spec, doc *rdform.Document) error {
+	a := &amounts{values: doc.Values}
+	credits := sumCredits(a, pnd50Credits, "less_total")
+	settleTax(a, "tax_computed", credits, "tax_balance", "tax_balance_type", "surcharge", "tax_net", "tax_net_type")
+	return a.err
+}
+
+func computePND51(_ *rdform.Spec, doc *rdform.Document) error {
+	a := &amounts{values: doc.Values}
+	credits := sumCredits(a, pnd51Credits, "r2_5_total_credits")
+	settleTax(a, "r2_4_tax_computed", credits, "r2_6_balance", "r2_6_sign", "r2_7_surcharge", "r2_8_total", "r2_8_sign")
+	return a.err
+}
+
+// sumCredits - ช่องรวมเครดิตมีค่าเมื่อผู้ใช้/ระบบกรอกช่องเครดิตอย่างน้อยหนึ่งช่อง (ไม่มีเลย = ว่าง)
+func sumCredits(a *amounts, keys []string, totalKey string) decimal.Decimal {
+	total, filled := decimal.Zero, false
+	for _, k := range keys {
+		if strings.TrimSpace(a.values[k]) != "" {
+			total, filled = total.Add(a.get(k)), true
+		}
+	}
+	if filled {
+		a.set(totalKey, total)
+	} else {
+		delete(a.values, totalKey)
+	}
+	return total
+}
+
+// settleTax - คำนวณเมื่อกรอกภาษีที่คำนวณได้แล้วเท่านั้น (ช่องว่าง ≠ 0: ไม่ให้แบบขึ้น "ชำระไว้เกิน" ทั้งที่ยังไม่กรอก)
+func settleTax(a *amounts, taxKey string, credits decimal.Decimal, balanceKey, balanceSign, surchargeKey, netKey, netSign string) {
+	if strings.TrimSpace(a.values[taxKey]) == "" {
+		return
+	}
+	balance := a.get(taxKey).Sub(credits)
+	setSigned(a, balanceKey, balanceSign, balance)
+	setSigned(a, netKey, netSign, balance.Add(a.get(surchargeKey)))
+}
+
+func setSigned(a *amounts, key, signKey string, d decimal.Decimal) {
+	a.set(key, d.Abs())
+	if d.IsNegative() {
+		a.values[signKey] = "overpaid"
+	} else {
+		a.values[signKey] = "payable"
+	}
 }
 
 // computePBT40 - 12. รวมภาษีธุรกิจเฉพาะ = ผลรวมช่องภาษีทุกประเภทกิจการ, 15. = 12+13+14, 17. = 15+16

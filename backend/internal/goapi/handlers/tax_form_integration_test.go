@@ -7,19 +7,23 @@ import (
 	"database/sql"
 	"errors"
 	"os"
+	"strconv"
 	"testing"
 
+	"smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/rdform"
 )
 
 // TestTaxFilingStorage ตรวจการบันทึกแบบยื่นภาษีกับ PostgreSQL จริงทีละขั้น:
 // สร้าง → ซ้ำงวด → แก้ตาม version → version เก่า → ประวัติ → รายการ → เปิด → ลบ
 //
-//	BC_TAX_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:5432/taxform_it?sslmode=disable'
+// ฐานเปล่าก็รันได้ (test สร้างข้อมูลเอง) — verify.sh postgres ส่งตัวแปรนี้ให้อัตโนมัติ
+//
+//	BC_TAXFORM_TEST_POSTGRES_DSN='postgres://postgres@127.0.0.1:5432/taxform_it?sslmode=disable'
 func TestTaxFilingStorage(t *testing.T) {
-	dsn := os.Getenv("BC_TAX_TEST_POSTGRES_DSN")
+	dsn := os.Getenv("BC_TAXFORM_TEST_POSTGRES_DSN")
 	if dsn == "" {
-		t.Skip("set BC_TAX_TEST_POSTGRES_DSN")
+		t.Skip("set BC_TAXFORM_TEST_POSTGRES_DSN")
 	}
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -93,9 +97,9 @@ func TestTaxFilingStorage(t *testing.T) {
 
 // TestTaxFormFillFromLedger - บริษัทที่ยังไม่มีรายการเปิดแบบได้พร้อมหมายเหตุ (ไม่ error) และ ภ.พ.30 ดึงยอดจากรายการภาษีที่บันทึกจริง
 func TestTaxFormFillFromLedger(t *testing.T) {
-	dsn := os.Getenv("BC_TAX_TEST_POSTGRES_DSN")
+	dsn := os.Getenv("BC_TAXFORM_TEST_POSTGRES_DSN")
 	if dsn == "" {
-		t.Skip("set BC_TAX_TEST_POSTGRES_DSN")
+		t.Skip("set BC_TAXFORM_TEST_POSTGRES_DSN")
 	}
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -160,4 +164,105 @@ func TestTaxFormFillFromLedger(t *testing.T) {
 	}
 	expectValues(t, filled.Values, map[string]string{"sales_amount": "119000.00", "sales_zero_rate": "20000.00", "sales_taxable": "99000.00",
 		"output_tax": "6930.00", "purchase_amount": "50000.00", "input_tax": "3500.00", "tax_payable": "3430.00", "net_payable": "3030.00", "total_payable": "3030.00"})
+}
+
+// TestCitCreditsFromLedger ตรวจเครดิตภาษีของ ภ.ง.ด.50/51 จาก PostgreSQL จริง (docs/kms/21-thai-tax-form-references.md §2–§3):
+// ภาษีที่บริษัทถูกหักตามรายการภาษีหักของใบที่ผ่านรายการ (ช่วงตามวันที่จ่ายในหลักฐาน ไม่ใช่วันลงบัญชี) และยอดชำระเพิ่มเติมของ ภ.ง.ด.51 ที่บันทึกไว้
+func TestCitCreditsFromLedger(t *testing.T) {
+	dsn := os.Getenv("BC_TAXFORM_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set BC_TAXFORM_TEST_POSTGRES_DSN")
+	}
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	ctx := context.Background()
+	if err := generalledger.EnsureSchema(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if err := ensureTaxFilingSchema(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	const company = "IT03"
+	cleanup := func() {
+		db.ExecContext(ctx, `DELETE FROM gl_lines WHERE company=$1`, company)
+		db.ExecContext(ctx, `DELETE FROM gl_records WHERE company=$1`, company)
+		db.ExecContext(ctx, `DELETE FROM tax_filing_history WHERE filing_id IN (SELECT id FROM tax_filings WHERE company_code=$1)`, company)
+		db.ExecContext(ctx, `DELETE FROM tax_filings WHERE company_code=$1`, company)
+	}
+	cleanup()
+	defer cleanup()
+	exec := func(query string, args ...any) {
+		t.Helper()
+		if _, err := db.ExecContext(ctx, query, args...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// ใบสำคัญ: สถานะ, วันลงบัญชี, รายการภาษีหัก (ทิศทาง, วันที่จ่ายในหลักฐาน, ยอดภาษี)
+	journal := func(id, status, entryDate, withholdings string) {
+		t.Helper()
+		exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals',$2,$2,1,$3::jsonb)`, company, id,
+			`{"docno":"`+id+`","date":"`+entryDate+`","status":"`+status+`","details":{"withholdings":[`+withholdings+`]}}`)
+	}
+	wht := func(id string, direction int, paidDate, tax string) string {
+		return `{"id":"` + id + `","wht_direction":` + strconv.Itoa(direction) + `,"form_type":"PND53","partner_code":"C001","payment_date":"` + paidDate +
+			`","income_tax_type":"3_tres","condition_type":1,"wht_rate":"3","base_amount":"10000","tax_amount":"` + tax + `"}`
+	}
+	journal("RV1", "posted", "2026-03-10", wht("W1", 2, "2026-03-10", "300.00")+","+wht("W2", 1, "2026-03-10", "90.00")) // ทิศทาง 1 = เราหักผู้อื่น → ไม่นับ
+	journal("RV2", "posted", "2026-08-15", "")                                                                           // ไม่มีรายการภาษีหัก = ไม่มีหลักฐาน → ไม่นับ
+	journal("RV3", "posted", "2026-01-05", wht("W3", 2, "2025-12-28", "50.00"))                                          // ถูกหักปีก่อน ลงบัญชีปีนี้ → ไม่นับ
+	journal("RV4", "posted", "2027-01-03", wht("W4", 2, "2026-12-30", "20.25"))                                          // ถูกหักปลายปี ลงบัญชีปีหน้า → นับใน ภ.ง.ด.50
+	journal("RV5", "draft", "2026-04-01", wht("W5", 2, "2026-04-01", "70.00"))                                           // ร่างยังไม่ผ่านรายการ → ไม่นับ
+
+	pnd51 := func(year, seq int, sign, balance string) {
+		t.Helper()
+		doc := rdform.Document{Values: map[string]string{"filing_type": "normal", "r2_6_sign": sign, "r2_6_balance": balance}}
+		if err := saveTaxFiling(ctx, db, company, "demo", &TaxFiling{Code: "pnd51", Year: year, FilingSeq: seq, Document: &doc}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pnd51(2026, 0, "payable", "60000.50")
+	pnd51(2026, 1, "payable", "1000.00") // ยื่นเพิ่มเติม: ยอดชำระเพิ่มของฉบับนี้
+	pnd51(2026, 2, "overpaid", "500.00") // ชำระไว้เกิน = ไม่ได้ชำระ → ไม่นับ
+	pnd51(2025, 0, "payable", "999.00")  // คนละปี
+
+	f50, err := newFormFiller("pnd50")
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes, err := fillCitForm(ctx, db, company, "pnd50", 2026, f50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectValues(t, f50.values, map[string]string{"less_wht": "320.25", "less_pnd51_paid": "61000.50"})
+	expectNote(t, notes, TaxFormNote{Key: "tax_form_note_cit_wht_credit", Count: 2, Amount: "320.25"})
+	expectNote(t, notes, TaxFormNote{Key: "tax_form_note_cit_pnd51_paid", Count: 2, Amount: "61000.50"})
+	doc := rdform.Document{Values: f50.values}
+	if err := computeTaxForm("pnd50", &doc); err != nil {
+		t.Fatal(err)
+	}
+	expectValues(t, doc.Values, map[string]string{"less_total": "61320.75", "tax_balance": ""})
+
+	f51, err := newFormFiller("pnd51")
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes, err = fillCitForm(ctx, db, company, "pnd51", 2026, f51)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectValues(t, f51.values, map[string]string{"r2_5_1_wht": "300.00", "less_pnd51_paid": ""})
+	expectNote(t, notes, TaxFormNote{Key: "tax_form_note_cit_wht_credit", Count: 1, Amount: "300.00"})
+}
+
+func expectNote(t *testing.T, notes []TaxFormNote, want TaxFormNote) {
+	t.Helper()
+	for _, n := range notes {
+		if n == want {
+			return
+		}
+	}
+	t.Fatalf("note %+v not found in %+v", want, notes)
 }

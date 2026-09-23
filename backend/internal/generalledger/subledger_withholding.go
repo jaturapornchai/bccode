@@ -1,6 +1,8 @@
 package generalledger
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -63,4 +65,41 @@ func (m *subledgerMutation) withholding(w *SubledgerWithholding) error {
 		return fmt.Errorf("ไม่พบคู่ค้าของรายการภาษีหัก ณ ที่จ่าย หรือคู่ค้าปิดใช้งาน")
 	}
 	return nil
+}
+
+// WithheldFromCompanyTotal - ภาษีที่ผู้จ่ายเงินหักบริษัทไว้ (wht_direction=2) ตามรายการภาษีหักของใบสำคัญที่ผ่านรายการ
+// ที่วันที่จ่ายในหลักฐานอยู่ในช่วง from..to (YYYY-MM-DD) — ใช้เป็นเครดิตภาษีของ ภ.ง.ด.50 ข้อ 3.(3) / ภ.ง.ด.51 ข้อ 5.(1)
+// (คู่มือวิธีกรอกแบบของกรมสรรพากร: "ตามหลักฐานที่ถูกหักไว้" — docs/kms/21-thai-tax-form-references.md §2)
+// ยอดภาษีเป็นยอดที่บันทึก (ช่องว่างถูกเติม ฐาน × อัตรา ตอนบันทึกแล้ว) รวมด้วย decimal; ใบที่ไม่มีรายการภาษีหักไม่นับ (ไม่ใช่หลักฐาน)
+func WithheldFromCompanyTotal(ctx context.Context, db *sql.DB, company, from, to string) (decimal.Decimal, int, error) {
+	total, count := decimal.Zero, 0
+	if !validDate(from) || !validDate(to) {
+		return total, count, fmt.Errorf("invalid withholding period %s..%s", from, to)
+	}
+	rows, err := db.QueryContext(ctx, `
+SELECT COALESCE(w.item->>'tax_amount','')
+FROM gl_records r
+CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'details'->'withholdings') = 'array'
+  THEN r.payload->'details'->'withholdings' ELSE '[]'::jsonb END) AS w(item)
+WHERE r.company = $1 AND r.kind = 'journals'
+  AND r.payload->>'status' = 'posted'
+  AND NOT COALESCE((r.payload->>'isdeleted')::boolean, false)
+  AND w.item @> '{"wht_direction":2}'::jsonb
+  AND w.item->>'payment_date' BETWEEN $2 AND $3`, company, from, to)
+	if err != nil {
+		return total, count, fmt.Errorf("read withheld tax: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return total, count, fmt.Errorf("scan withheld tax: %w", err)
+		}
+		tax, err := decimal.NewFromString(raw)
+		if err != nil {
+			return total, count, fmt.Errorf("withheld tax amount %q: %w", raw, err)
+		}
+		total, count = total.Add(tax), count+1
+	}
+	return total, count, rows.Err()
 }
