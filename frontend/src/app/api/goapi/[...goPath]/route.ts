@@ -27,11 +27,7 @@ const POST_ALLOWED_EXACT = [
   "api/report/tax/form/load",
   "api/report/tax/form/delete",
   "api/report/debt/query",
-  "api/report/sales/summary",
   "api/report/sales/by-document",
-  "api/process/product-balance",
-  "api/stockcost/check",
-  "processstockcalccost",
 ];
 
 // ปลายทางที่ backend ตอบเป็นไฟล์ PDF (ใบ 50 ทวิ, แบบยื่นภาษี) — ส่งต่อ byte ตรง ๆ แทนการแปลง JSON
@@ -59,16 +55,7 @@ function toGoApiPath(segments: string[]): string {
 }
 
 function isAllowedGet(segments: string[]): boolean {
-  if (GET_ALLOWED_EXACT.includes(segments.join("/"))) return true;
-  // api/reports/stock-card/<itemcode>
-  if (segments.length === 4 && segments[0] === "api" && segments[1] === "reports" && segments[2] === "stock-card") {
-    return true;
-  }
-  // api/products/<itemcode>/cost-layers
-  if (segments.length === 4 && segments[0] === "api" && segments[1] === "products" && segments[3] === "cost-layers") {
-    return true;
-  }
-  return false;
+  return GET_ALLOWED_EXACT.includes(segments.join("/"));
 }
 
 export async function GET(request: Request, context: Context) {

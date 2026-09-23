@@ -74,19 +74,6 @@ export async function GET(request: Request, context: WorkspaceProxyContext) {
       const branchPath = `/organization/branch/list?offset=${encodeURIComponent(offset)}&limit=${encodeURIComponent(limit)}&q=${encodeURIComponent(query)}`;
       return proxyMainApiJson(request, mainApiUrl, branchPath, { method: "GET" });
     }
-    case "product-units": {
-      const offset = url.searchParams.get("offset") ?? "0";
-      const limit = url.searchParams.get("limit") ?? "1";
-      const query = url.searchParams.get("q") ?? "";
-      const unitPath = `/unit/list?offset=${encodeURIComponent(offset)}&limit=${encodeURIComponent(limit)}&q=${encodeURIComponent(query)}&sort=unitcode:1`;
-      return proxyMainApiJson(request, mainApiUrl, unitPath, { method: "GET" });
-    }
-    case "product-units/search": {
-      const limit = url.searchParams.get("limit") ?? "1";
-      const holdingCode = url.searchParams.get("holdingcode") ?? "";
-      const unitPath = `/unit?limit=${encodeURIComponent(limit)}&holdingcode=${encodeURIComponent(holdingCode)}`;
-      return proxyMainApiJson(request, mainApiUrl, unitPath, { method: "GET" });
-    }
     case "product-units/standard": {
       const mainHoldingCode = url.searchParams.get("mainHoldingCode")?.trim() ?? url.searchParams.get("main_holdingcode")?.trim() ?? "";
       const query = url.searchParams.get("q")?.trim() ?? "";

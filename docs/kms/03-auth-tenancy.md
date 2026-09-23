@@ -23,7 +23,7 @@
 | `internal/organization/{create,status_change,creator_access}.go` | code claim + audit + outbox ใน Mongo transaction; นโยบายผู้สร้าง (ต้องมี Google identity) | เรียกจาก service สร้าง holding/company/branch | LIVE | `backend/internal/organization/create.go:42-64`; `backend/internal/organization/status_change.go:81-163`; `backend/internal/organization/creator_access.go:22-31,94-103` |
 | `internal/systemadmin` | เครื่องมือ admin ระดับแพลตฟอร์ม (`/systemadm/*`) | `NewSystemAdmin` | LIVE แต่**ไม่มี role guard** (ดู §10) | `backend/internal/systemadmin/systemadmin.go:18,66-77`; `backend/main.go:535` |
 | `internal/demo` | flag/ชื่อบัญชี demo | `Enabled()`, `Username()`, `IsDemoUser()` | LIVE | `backend/internal/demo/demo.go:12-32` |
-| `frontend/src/app/api/auth/*` | BFF: login/demo/dev/google/refresh/logout/profile/sessions | Next route handlers | LIVE (ยกเว้น `register-username`, `google/session` ดู §9) | `frontend/src/app/api/auth/login/route.ts:63`; `frontend/src/app/api/auth/refresh/route.ts:21`; `frontend/src/app/api/auth/logout/route.ts:56` |
+| `frontend/src/app/api/auth/*` | BFF: login/demo/dev/google/refresh/logout/profile/sessions | Next route handlers | LIVE | `frontend/src/app/api/auth/login/route.ts:63`; `frontend/src/app/api/auth/refresh/route.ts:21`; `frontend/src/app/api/auth/logout/route.ts:56` |
 
 ## 3. โมเดล token / session (Redis)
 | key | เนื้อหา | TTL | อ้างอิง |
@@ -88,8 +88,8 @@
 ## 9. ฝั่ง frontend เพิ่มเติม
 - Rewrite `/backend/:path*` → mainapi แต่ **block** เส้นทาง login/register/dev/demo/googlelogin และ route อันตราย (`/goapi/get|exec|getdoc`, `/reportm/*`, `/goapi/api/setup/*`, `/goapi/api/mcp/*`, `/reload-config`) ให้ไปที่ `/_blocked-auth-route` (`frontend/next.config.ts:29-73`)
 - `frontend/src/app/api/auth/dev-login/route.ts:9-27,84-99,124-146` ยังอยู่ (ต้อง `BCAI_DEV_LOGIN_ENABLED=true`, Origin เป็น loopback และตรงกับ Host, secret ≥ 32, backend เป็น loopback หรือ `BCAI_DEV_LOGIN_BACKEND_URL`) — แต่**ปุ่ม Dev Login ถูกถอดจาก UI แล้ว** แทนด้วย Demo (`frontend/src/app/login-screen.tsx:303-304`); grep ไม่พบ UI ใดเรียก `/api/auth/dev-login`
-- `frontend/src/app/api/auth/register-username/route.ts:47` เรียก backend `/register-username` ซึ่ง**ไม่ได้ register** ใน `RegisterHttp` (มีแค่ใน swagger `backend/docs/docs.go:28362`) และไม่มี UI เรียก → DEAD ทั้งสาย
-- `frontend/src/app/api/auth/google/session/route.ts:18` และ `line/*` ใช้ `BC_AUTH_BRIDGE_URL` (`frontend/src/lib/auth-bridge.ts:6-9`); grep ไม่พบผู้เรียก `google/session` นอกโฟลเดอร์ api → น่าจะ DEAD (ยังไม่ตรวจ LINE)
+- BFF ที่ไม่มีผู้เรียกถูกลบแล้ว 2026-09-23: `auth/register-username` (backend ไม่มี `/register-username`), `auth/google/session`, `auth/google/status`, `auth/line/status` (สองตัวหลังตอบ 410 ตลอด) — Google login ใช้ `/api/auth/google/verify` เท่านั้น
+- `line/code` และ `line/link/status` (ผูกบัญชี LINE จากจอหลัก/workspace) ยังใช้ `BC_AUTH_BRIDGE_URL` (`frontend/src/lib/auth-bridge.ts:6-9`)
 - `frontend/src/lib/server-jwt.ts:7-36` ตรวจ HS256 ด้วย `JWT_SECRET_KEY` ใช้ใน `api/system-settings` และ `api/line-oa/user` **เฉพาะเมื่อตั้ง env นี้** (`frontend/src/app/api/system-settings/[[...settingPath]]/route.ts:178-181`; `frontend/src/app/api/line-oa/user/route.ts:99-105`) — ขัดกับความจริงที่ access token ไม่ใช่ JWT; ถ้าตั้ง `JWT_SECRET_KEY` เส้นทางเหล่านี้จะ 401 ทั้งหมด
 - Playwright `tests/auth.setup.ts:5,16` และ `tests/login-dev-uat.spec.ts:33-42` ยังกดปุ่ม "Dev Login" ที่ไม่มีแล้ว → ยังไม่ตรวจว่ารันผ่านหรือไม่
 
@@ -117,4 +117,4 @@
 - ยังไม่ตรวจ index ของ `shopusers`/`shopuseraccesslogs`/`authaudits` ใน Mongo จริง และสาเหตุ `refresh-*` > `session-*`
 - ยังไม่ตรวจว่า `exceptShopPath` ครอบ `/holding/:id` หรือไม่ในทางปฏิบัติ (จาก code ไม่ครอบ → หน้า holding-info ต้องเลือก holding ก่อน)
 - ยังไม่ตรวจไฟล์/บรรทัดของ `setupconfig` ที่ inject `REDIS_CACHE_*` จาก bootstrap.json (พบเพียง grep `os.Setenv`)
-- คำถามถึงลุงจืด: (1) `/systemadm/*` ตั้งใจให้ทุกคนเรียกได้จริงหรือควรใส่ guard `ROLE_SYSTEM`/allowlist email? (2) จะลบ handler DEAD ในหมวด login (phone/OTP/LINE/register) และ `register-username` ฝั่ง Next ทิ้งไหม? (3) `server-jwt.ts`+`JWT_SECRET_KEY` ควรถอดออกไหมเพราะ token ไม่ใช่ JWT? (4) แบบร่าง `admin-access-control.md` ยังเป็นเป้าหมายอยู่หรือยกเลิก?
+- คำถามถึงลุงจืด: (1) `/systemadm/*` ตั้งใจให้ทุกคนเรียกได้จริงหรือควรใส่ guard `ROLE_SYSTEM`/allowlist email? (2) จะลบ handler DEAD ในหมวด login (phone/OTP/LINE/register) ทิ้งไหม? (`register-username` ฝั่ง Next ลบแล้ว 2026-09-23) (3) `server-jwt.ts`+`JWT_SECRET_KEY` ควรถอดออกไหมเพราะ token ไม่ใช่ JWT? (4) แบบร่าง `admin-access-control.md` ยังเป็นเป้าหมายอยู่หรือยกเลิก?

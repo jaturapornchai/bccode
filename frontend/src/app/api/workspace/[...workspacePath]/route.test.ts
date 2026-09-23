@@ -381,27 +381,6 @@ describe("workspace product unit setup route", () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
-  it("proxies the product unit existence check to mainapi", async () => {
-    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      expect(String(url)).toBe("http://localhost:8888/unit/list?offset=0&limit=1&q=&sort=unitcode:1");
-      expect(init?.method).toBe("GET");
-      return Response.json({ success: true, data: [], total: 0 });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const response = await GET(
-      new Request("http://localhost/api/workspace/product-units?backendUrl=http://localhost:8888/goapi", {
-        headers: { Authorization: "Bearer test-token" },
-      }),
-      workspaceContext("product-units"),
-    );
-    const json = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(json).toMatchObject({ success: true, total: 0 });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
   it("normalizes holdingcode before creating a Holding", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toBe("http://localhost:8888/create-holding");

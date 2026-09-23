@@ -68,11 +68,6 @@ export function getString(payload: Record<string, unknown>, key: string): string
   return typeof value === "string" ? value : undefined;
 }
 
-export function getNumber(payload: Record<string, unknown>, key: string): number | undefined {
-  const value = payload[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
 export async function postMainApiAuth(mainApiUrl: string, path: string, payload: Record<string, unknown>) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
