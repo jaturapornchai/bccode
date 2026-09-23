@@ -111,6 +111,7 @@
 - [decisions/2026-09-15-complete-menu-coverage-standard.md](decisions/2026-09-15-complete-menu-coverage-standard.md) — ระบบรองรับหน้าจอที่รอพัฒนาครบ 100% สำหรับบัญชีและ SME ไทย (ภาษี, รายงาน, เครื่องมือประมวลผล, ปฏิบัติการ SME) สู่ Production (r20260915-all-screens-1)
 - [decisions/2026-09-16-menu-labels-follow-champ-wording.md](decisions/2026-09-16-menu-labels-follow-champ-wording.md) — ป้ายเมนูและชื่อฟิลด์ใช้ถ้อยคำเดียวกับระบบเดิม Champ (เปลี่ยนป้าย 103 เมนู, ชื่อเดิมกลายเป็นคำค้น, ห้ามแตะ id/route/language key)
 - [decisions/2026-09-20-single-source-ai-rules-skills.md](decisions/2026-09-20-single-source-ai-rules-skills.md) — กฎ+skill ของ AI ทุกตัวอยู่ที่เดียว: `AGENTS.md` + `.agents/skills/` (ย้ายจาก `docs/skills/`), Gemini CLI ผ่าน `.gemini/settings.json`, Claude ผ่าน junction `npm run ai:link`
+- [decisions/2026-09-23-drop-readme-activity-log.md](decisions/2026-09-23-drop-readme-activity-log.md) — เลิก Activity Log ใน README (ประวัติ = git log + body ไทย), ถอด README guard จาก pre-commit, ล้างกฎ Mongo/Redis/12 ภาษาที่ปลดระวางออกจาก AGENTS.md
 - [decisions/2026-09-19-champ-parity-no-bloat-rule.md](decisions/2026-09-19-champ-parity-no-bloat-rule.md) — กฎยึด D:\project-champ เป็นต้นแบบหลัก ไม่เพิ่มฟังก์ชันหรือเมนูมากเกินไป เพื่อมุ่งเน้นการ Upgrade จาก Windows สู่ Web ที่รวดเร็ว ปลอดภัย และไม่ทำให้ลูกค้าสับสน
 
 

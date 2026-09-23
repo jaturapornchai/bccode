@@ -107,13 +107,13 @@ AI ทุกตัวที่ทำงานในโปรเจกต์น�
 
 5. **เป็น DevOps ที่รอบคอบและรัดกุม (Prudent, Rigorous & Safe Operations)**:
    - **ประเมินรัศมีความเสียหาย (Blast Radius) ทุกครั้ง**: ก่อนแก้โค้ดหรือคอนฟิก ต้องถามตัวเองเสมอว่ากระทบหน้าจออื่น, BFF, Backend, ฐานข้อมูล หรือระบบแคชหรือไม่
-   - **ไม่ทำลายโดยไม่มีทางถอย (Reversibility & Safety First)**: สำรองข้อมูลก่อนสลับเวอร์ชันเสมอ (Preflight Backups: Mongo, Postgres, Config), เก็บ release เก่าไว้ให้ rollback ได้อย่างน้อย 72 ชั่วโมง
+   - **ไม่ทำลายโดยไม่มีทางถอย (Reversibility & Safety First)**: สำรองข้อมูลก่อนสลับเวอร์ชันเสมอ (Preflight Backups: Postgres, Config), เก็บ release เก่าไว้ให้ rollback ได้อย่างน้อย 72 ชั่วโมง
    - **กฎเหล็ก VERIFY BEFORE DONE**: ห้ามทึกทักหรือเดาว่า "น่าจะเสร็จแล้ว" ต้องรันชุดทดสอบ (Unit tests, Typecheck, Lint) และตรวจดู evidence จริงก่อนบอกเสร็จเสมอ
 
 6. **ชอบพัฒนาระบบให้ "เร็ว เล็ก ปลอดภัย" (High-Performance, Lean & Zero-Bloat, Ironclad Security)**:
    - **เร็ว (Fast)**: สตรีมมิ่ง deploy ไร้การเขียนดิสก์ (Zero-Disk Stream Pipe), Turbopack build, Go concurrent goroutines, SSR/SSG caching ที่เหมาะสม, ทุก endpoint ตอบสนองเร็วทันใจระดับ sub-second
    - **เล็ก (Lean & Zero-Bloat)**: รักษาระดับ docker image และ client bundle ให้กะทัดรัด, ล้าง build cache และ images เก่าอัตโนมัติ (Automated Retention Pruning), ตัด dependency หรือโค้ดที่ไม่จำเป็น (YAGNI), ประหยัด context window ของ AI
-   - **ปลอดภัย (Ironclad Security)**: ป้องกันช่องโหว่ OWASP อย่างเข้มงวด, ไร้ Hardcoded Secret/Token, ใช้ HTTP-Only Secure Cookies, Parameterized SQL / Mongo Prepared Queries 100%, คัดกรองและ Sanitize User Input ทุกจุด
+   - **ปลอดภัย (Ironclad Security)**: ป้องกันช่องโหว่ OWASP อย่างเข้มงวด, ไร้ Hardcoded Secret/Token, ใช้ HTTP-Only Secure Cookies, Parameterized SQL 100%, คัดกรองและ Sanitize User Input ทุกจุด
 
 7. **มีความคิดสร้างสรรค์ ทันสมัย และชอบแนะนำลุงจืดว่าต้องทำอะไรต่อดี (Creative, Modern & Proactive Strategic Advisor)**:
    - **ความคิดสร้างสรรค์และทันสมัย (Creative & Modern Solutions)**: นำเทคโนโลยีและแนวคิด UX ที่ทันสมัยมาผสานใช้อย่างกลมกลืน (เช่น AI Assistant, Generative UI, Keyboard Shortcuts, Adaptive Forms, Micro-interactions นุ่มนวล)
@@ -235,11 +235,12 @@ AI ทุกตัวที่ทำงานในโปรเจกต์น�
    - ไม่ใช้ Eventual Consistency ผ่าน Message Queue สำหรับ Transaction ทางบัญชี
 3. **Pagination ด้วย `LIMIT` และ `OFFSET`**:
    - ทุกการค้นหาและดึงรายการ (Pagination) บน PostgreSQL ต้องใช้คำสั่ง `LIMIT $1 OFFSET $2` ร่วมกับ `ORDER BY` ที่ชัดเจนเสมอ
-4. **Topology บน Production Server เหลือเพียง 4 คอนเทนเนอร์หลัก**:
-   - `postgres` (PostgreSQL 16 Engine หลักสำหรับ Auth, Multi-Tenancy, ERP, GL)
-   - `redis` (Cache & Session)
+4. **Topology บน Production Server (เป้าหมาย)**:
+   - `postgres` (PostgreSQL หลักสำหรับ Auth, Multi-Tenancy, ERP, GL — prod ใช้ `postgres:18-alpine` ตาม `deploy/account/compose.yml`)
+   - `minio` (เก็บไฟล์รูปภาพ + thumbnail ตาม `mydocs/specs/rules.md`)
    - `mainapi` (Go Backend บริการ REST API & WebSocket)
    - `frontend` (Next.js Standalone SSR Web Application)
+   - **สถานะจริง 2026-09-23:** prod ยังรัน `redis` เพราะ session ของระบบ login ยังพึ่งอยู่ (`backend/main.go` — `ms.Cacher`) — เป็นหนี้ที่ต้องถอด ห้ามเพิ่มการใช้งาน Redis ใหม่
 
 ## กฎ: ขอบเขตผลิตภัณฑ์ — ไม่ทำระบบเงินเดือน (ตั้งโดยลุงจืด 2026-09-08)
 
@@ -264,7 +265,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 ## กฎ: ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก — โค้ดใช้ key ภาษาอังกฤษ ข้อความอยู่ใน backend (ตั้งโดยลุงจืด 2026-09-14)
 
-ผู้ใช้กด "เลือกภาษา" (12 ภาษา) แล้ว **ทุกข้อความบนจอต้องเปลี่ยนตาม** — ป้าย ปุ่ม หัวคอลัมน์ placeholder ข้อความยืนยัน ข้อความสำเร็จ/ผิดพลาด ชื่อประเภท/สถานะ
+ผู้ใช้กด "เลือกภาษา" (ตอนนี้เปิดแค่ ไทย + อังกฤษ — ดูกฎ 2 ภาษาด้านล่าง; โครงรองรับ 12 ภาษา) แล้ว **ทุกข้อความบนจอต้องเปลี่ยนตาม** — ป้าย ปุ่ม หัวคอลัมน์ placeholder ข้อความยืนยัน ข้อความสำเร็จ/ผิดพลาด ชื่อประเภท/สถานะ
 
 1. **ในโค้ดห้าม hard-code ข้อความไทย (หรือภาษาใดๆ) ที่ผู้ใช้เห็น** — ใช้ **key ภาษาอังกฤษ** (snake_case เช่น `gl_post_journal`, `warehouse_location_code`) แล้วดึงข้อความจริงด้วย `backendText(dictionary, key, fallback)` จาก `frontend/src/lib/backend-language.ts`; ข้อความทุกภาษาอยู่ที่ **`backend/assets/language/languages.tsv`** (13 คอลัมน์ `key th en cn ja km ko lo my vi ms id fil` — ระบบนี้ทำไว้แล้ว เสิร์ฟผ่าน `/api/language/{lang}`)
 2. **ทุกจอต้องรับ `language` + dictionary จริง** — จอลูกใต้ `main-menu-screen.tsx` รับ `language` เป็น prop และเรียก `useBackendLanguage(language, backendUrl)` (หรือรับ `backendLanguage` จาก parent) ห้ามอ่าน `localStorage` เองแล้วเมินค่า prop; component กลาง (`confirm-dialog`, `numeric-input`, dialog/ตาราง) ต้องรับป้ายเป็น prop จากผู้เรียก ไม่ฝังไทยไว้ข้างใน
@@ -279,7 +280,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 กฎนี้ **ทับกฎ i18n ด้านบนเฉพาะส่วน "แปล 12 ภาษา"** ตราบใดที่ระบบยังอยู่ระหว่างพัฒนา:
 
-1. **ห้ามเริ่มงานแปลภาษาอื่นเอง** — ห้ามไล่แปลแถวใน `backend/assets/language/languages.tsv` เป็นจีน/ญี่ปุ่น/เขมร/เกาหลี/ลาว/พม่า/เวียดนาม/มลายู/อินโดนีเซีย/ฟิลิปปินส์ และห้ามส่ง batch ให้ DeepSeek แปล **จนกว่าลุงจืดจะสั่งเป็นคำ ๆ ว่าให้แปล**
+1. **ห้ามเริ่มงานแปลภาษาอื่นเอง** — ห้ามไล่แปลแถวใน `backend/assets/language/languages.tsv` เป็นจีน/ญี่ปุ่น/เขมร/เกาหลี/ลาว/พม่า/เวียดนาม/มลายู/อินโดนีเซีย/ฟิลิปปินส์ **จนกว่าลุงจืดจะสั่งเป็นคำ ๆ ว่าให้แปล**
 2. **โครงสร้างยังต้องถูกต้องเหมือนเดิม** — ข้อความบนจอยังต้องผ่าน key + `backendText(dictionary, key, fallback)` เสมอ (ห้ามกลับไป hard-code ไทยในโค้ด และห้ามใช้ helper สองภาษา `t(th, en)`) เพราะการ "ต่อสายไฟ" ไว้ก่อนคือสิ่งที่ทำให้แปลทีเดียวจบทีหลังได้
 3. **แถวใหม่ใส่ไทยเป็นหลัก** — เพิ่มแถวใน `languages.tsv` ให้ครบ 13 คอลัมน์เหมือนเดิม โดย **คอลัมน์ th คือของจริง ส่วนคอลัมน์ภาษาอื่นใส่อังกฤษ (หรือไทย) เป็น placeholder ไปก่อน** ห้ามปล่อยว่าง (แถวไม่ครบจะถูกข้ามและคืน key ดิบ)
 4. **ตรวจรับใช้ภาษาไทยพอ** — ไม่ต้องสลับไป en/ja แล้ว screenshot ทุกจอในช่วงนี้; ดูว่าไทยถูกและข้อความมาจากตาราง (ไม่ใช่ค่าที่ฝังในโค้ด) ก็พอ
@@ -350,26 +351,26 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
    - ทุก Git Commit ที่มีการเปลี่ยนแปลง UX/UI มาตรฐาน ต้องรวมไฟล์ `SKILL.md` ไว้ใน Commit เดียวกันเสมอ เพื่อให้เครื่องอื่นและ AI ตัวถัดไปได้รับมาตรฐานใหม่อย่างต่อเนื่อง
 
 
-## กฎ: UAT ต้องตรวจ CRUD + MongoDB เสมอ (ตั้งโดยลุงจืด 2026-08-30)
+## กฎ: UAT ต้องตรวจ CRUD + PostgreSQL เสมอ (ตั้งโดยลุงจืด 2026-08-30; เปลี่ยนจาก MongoDB เป็น PostgreSQL 2026-09-23)
 
 การทดสอบ UAT ทุกครั้ง (ทุก entity/หน้าจอที่มีการเขียนข้อมูล) ต้อง:
 
 1. **CRUD ครบ** — ไม่หยุดที่อ่านข้อมูล/happy path: ต้อง Create → Read → Update → Delete ครบวงจรของ entity นั้น รวม edge cases (ค่าว่าง, ซ้ำ, อักขระพิเศษ, double-click)
-2. **ยืนยันใน MongoDB จริง — ทีละ step** — หลังแต่ละ operation ต้อง query ตรวจใน `appdb` (mongosh ใน container `mongodb`) **ทันทีเป็นขั้นตอน**: Create → ตรวจว่า doc ถูกสร้างถูก field/ค่าทันที → Update → ตรวจว่าค่าเปลี่ยนจริงใน doc เดิม (ไม่ใช่ doc ใหม่/orphan) → Delete → ตรวจว่าหายจริง — **ห้ามรอจบชุดทดสอบแล้วตรวจรวดเดียวทีหลัง** (ตรวจทีเดียวจะไม่รู้ว่า step ไหนเขียนผิด; เคยเจอ API ตอบ success แต่ DB มีขยะ/orphan)
+2. **ยืนยันใน PostgreSQL จริง — ทีละ step** — หลังแต่ละ operation ต้อง query ตรวจในฐานข้อมูลของ holding นั้น (`psql` ใน container `postgres`) **ทันทีเป็นขั้นตอน**: Create → ตรวจว่าแถวถูกสร้างถูก column/ค่าทันที → Update → ตรวจว่าค่าเปลี่ยนจริงในแถวเดิม (ไม่ใช่แถวใหม่/orphan) → Delete → ตรวจว่าหายจริง — **ห้ามรอจบชุดทดสอบแล้วตรวจรวดเดียวทีหลัง** (ตรวจทีเดียวจะไม่รู้ว่า step ไหนเขียนผิด; เคยเจอ API ตอบ success แต่ DB มีขยะ/orphan)
 3. **ข้อมูลต้นทางต้องรอด** — ตรวจว่าการทดสอบไม่กระทบ record ตัวอื่น/กลุ่มอื่น (เช่น ลบ membership ที่ทดสอบแล้ว membership เดิมในกลุ่มอื่นต้องอยู่ครบ)
 4. **เคลียร์ข้อมูลทดสอบหลังจบ** — ลบด้วย id/code ที่ระบุเป้าหมายเท่านั้น **ห้ามใช้ regex กว้างกับชื่อ/ข้อความ** (เคยโดนลบสาขาจริงไป 2 ตัว)
 5. **สุ่มข้อมูลแบบมี seed** — ใช้ pattern `tests/uat-crud.spec.ts` (seeded random + บันทึก seed ลง metrics) เพื่อ reproduce ได้
 6. **รายงานผลตรงไปตรงมา** — ผ่าน/ไม่ผ่าน + หลักฐาน (ภาพ + query result) ไม่ใช่แค่ "ทดสอบแล้ว"
 
 
-## กฎ: รูปภาพห้ามเก็บใน MongoDB — เก็บใน S3 (MinIO) + ต้องมี thumbnail เสมอ (ตั้งโดยลุงจืด 2026-08-31)
+## กฎ: รูปภาพห้ามเก็บในฐานข้อมูล — เก็บใน S3 (MinIO) + ต้องมี thumbnail เสมอ (ตั้งโดยลุงจืด 2026-08-31)
 
 ทุกฟีเจอร์ที่มีรูปภาพ (พนักงาน, ผู้ใช้, สินค้า ฯลฯ) ต้องทำตามนี้เสมอ:
 
-1. **ห้ามเก็บไฟล์รูป (binary/base64 ขนาดใหญ่) ใน MongoDB** — Mongo เก็บได้แค่ URI/object key ของรูป (เช่น `/goapi/s3/file/<key>`)
+1. **ห้ามเก็บไฟล์รูป (binary/base64 ขนาดใหญ่) ใน PostgreSQL** — ฐานข้อมูลเก็บได้แค่ URI/object key ของรูป (เช่น `/goapi/s3/file/<key>`)
 2. **ไฟล์รูปเก็บใน S3/MinIO เท่านั้น** — ใช้ช่องทางอัปโหลดที่มีอยู่ (`POST /api/upload/image` → `/goapi/image/upload` → PutObject ลง bucket จาก env S3_*)
 3. **ต้องมี thumbnail เสมอ** — ทุกรูปต้องมีรูปย่อ (editor สร้างอัตโนมัติและอัปโหลดเป็นอีก object) — เก็บ uri ของ thumb ใน field `<field>thumb` คู่กับ field หลักเสมอ (เช่น `avatar`/`avatarthumb`, `profilepicture`/`profilepicturethumb`) และจอ list ต้องใช้ thumb เป็นตัวแสดงหลัก
-4. **ตอน UAT ตรวจตามกฎ UAT + Mongo** — ต้องยืนยันว่า Mongo เก็บแค่ URI, ไฟล์จริงอยู่ใน bucket (ตรวจผ่าน minio client/mc หรือ GET ผ่าน endpoint), และมี object thumbnail คู่กัน
+4. **ตอน UAT ตรวจตามกฎ UAT + PostgreSQL** — ต้องยืนยันว่า PostgreSQL เก็บแค่ URI, ไฟล์จริงอยู่ใน bucket (ตรวจผ่าน minio client/mc หรือ GET ผ่าน endpoint), และมี object thumbnail คู่กัน
 
 
 ## กฎ: ความเร็วสูงสุด + ประหยัด Context และ Token (ตั้งโดยลุงจืด 2026-09-07)
@@ -396,24 +397,6 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
    - ไม่แก้ไขสลับไปมาใน system instructions / rules บ่อย เพื่อให้ backend ของโมเดลติด Prompt Cache สูงสุด (ประหยัด token 90% และตอบเร็วกว่าปกติ 2-4 เท่า)
 
 
-## กฎ: สถาปัตยกรรม 2-Tier — MongoDB เก็บย่อ (Storage) + PostgreSQL ประมวลผลเร็วแบบครบจบ (Processing Engine) (ตั้งโดยลุงจืด 2026-09-07)
-
-ระบบกำหนดบทบาทและข้อตกลงการจัดการข้อมูลระหว่าง MongoDB และ PostgreSQL ไว้อย่างเคร่งครัด ดังนี้:
-
-1. **Clone จาก MongoDB ไปสร้างใน PostgreSQL เสมอ (Single Direction of Clone / Projection)**:
-   - ข้อมูลทุกอย่างที่ถูกบันทึกลงใน MongoDB ต้องมีกลไก (Outbox / Kafka Consumer / Worker Sync) ไปสร้างสำเนา (Clone / Read Model) ใน PostgreSQL (per-holding database `<holdingcode>`) เสมอ
-   - ทุก entity / collection ที่มีการเขียนในระบบ ต้องมีคู่ตารางใน PostgreSQL รองรับ
-2. **MongoDB = Storage Layer (เน้นเก็บข้อมูล ประหยัดขนาด ไม่บวม)**:
-   - MongoDB ทำหน้าที่เป็น Store หลักในการรับเข้าและบันทึกข้อมูล (Intake & Persistence)
-   - **ต้องประหยัดขนาดข้อมูล (Compact & Slim Storage)**: เก็บเฉพาะฟิลด์ที่จำเป็น ไม่เก็บข้อมูลบวมซ้ำซ้อน (No Redundant Data) และห้ามเก็บไฟล์ binary หรือรูปภาพใน MongoDB เด็ดขาด (เก็บแค่ URI / Object Key ตามกฎรูปภาพ)
-3. **PostgreSQL = Processing & Computation Engine (การประมวลผลทั้งหมดเพื่อความเร็วสูงสุด)**:
-   - การประมวลผลทางธุรกิจ การคำนวณซับซ้อน งานรายงาน และการสืบค้นทั้งหมด ต้องเกิดขึ้นและประมวลผลใน PostgreSQL เท่านั้น (เช่น งานตัดสต็อก, คำนวณต้นทุน FIFO/Average, สรุปยอดขาย, ภาษี, บัญชีแยกประเภท, งบการเงิน, Search & Filter ขั้นสูง)
-   - ใช้ความสามารถเชิงสัมพันธ์ (Relational, B-Tree/GIN Indexing, CTE, Window Functions, Views) เพื่อให้ระบบทำงานได้เร็วที่สุด
-4. **PostgreSQL ต้องมีรายละเอียดครบถ้วนในตัว (Self-Contained — ไม่พึ่งพา MongoDB อีก)**:
-   - โครงสร้างตาราง / แถวข้อมูลใน PostgreSQL ต้อง Denormalize และ Enrich ข้อมูลที่จำเป็นในการคำนวณและออกรายงานให้ครบถ้วนในตัว (เช่น ชื่อภาษาต่างๆ, รหัสบาร์โค้ด, ข้อมูลอ้างอิง, สถานะ, หน่วยนับ)
-   - **ตอนดึงข้อมูลจาก PostgreSQL ไปประมวลผล จะต้องจบในตัว 100% ห้ามมีการ query ข้ามกลับมาต่อหรือ join กับ MongoDB อีกเด็ดขาด** (Zero Cross-DB Runtime Dependency) เพื่อรักษาความเร็วสูงสุดและความเป็นอิสระของ Processing Engine
-
-
 ## กฎ: GitHub เก็บโค้ดอย่างเดียว — ไม่มี CI ต้องตรวจเองก่อน push (ตั้งโดยลุงจืด 2026-09-09)
 
 ลุงจืดตัดสินใจว่า **จะไม่จ่ายเงินให้ GitHub อีก** และให้ GitHub ทำหน้าที่เดียวคือเก็บ/แชร์โค้ด (`origin`) — `.github/workflows/ci.yml` ถูกลบทิ้งถาวรแล้ว (บัญชีถูกล็อกเรื่อง billing ตั้งแต่ 2026-09-02 ทำให้ทุก run ตายก่อนเริ่ม job อยู่แล้ว)
@@ -429,25 +412,15 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 เหตุผลเต็ม + ทางเลือกที่พิจารณาแล้ว: `docs/kms/decisions/2026-09-09-github-storage-only.md`
  
  
-## กฎ: ต้องบันทึกประวัติการแก้ไขใน README.md ทุกครั้ง (ตั้งโดยลุงจืด 2026-09-09)
- 
-ลุงจืดต้องการให้ทุกครั้งที่มีการแก้ไขระบบ ต้องบันทึกใน `README.md` เสมอ เพื่อให้รู้ว่าแก้อะไรไปบ้าง และสามารถติดตามประวัติย้อนหลังได้จากหน้าแรกของ GitHub Repository หรือในเครื่องทันที:
- 
-1. **บันทึก Activity Log ทุกรอบงาน (Mandatory Activity Log)**:
-   - ทุกครั้งที่ AI (ทุกตัว: Gemini, Claude, Codex) มีการแก้ไขโค้ด (frontend, backend), เพิ่มฟีเจอร์, แก้บั๊ก, ปรับ UI หรือแก้คอนฟิก/สคริปต์ **ต้องเพิ่มบันทึกรายการลงในส่วน "## 📋 บันทึกประวัติการพัฒนาและแก้ไขระบบ (Project Activity Log)" ใน `README.md` เสมอ**
-   - เรียงลำดับจากล่าสุดอยู่บนสุด (Reverse Chronological)
-2. **ข้อมูลที่ต้องระบุให้ครบถ้วน**:
-   - **วันที่ & หัวข้อ**: รูปแบบ `### YYYY-MM-DD — <หัวข้องานสั้นกระชับ>`
-   - **ประเภทงาน**: เช่น `[Feature]`, `[Fix]`, `[UI/UX]`, `[Refactor]`, `[Deploy]`, `[Docs]`
-   - **สิ่งที่ทำ**: ภาษาไทยที่ชัดเจน คนอายุ 40+ อ่านแล้วเข้าใจทันทีว่าแก้อะไรและได้อะไร ไม่ใช้ศัพท์เทคนิคกำกวม
-   - **ไฟล์สำคัญ**: รายการ path ของไฟล์หลักที่แก้ไข
-   - **ผลการทดสอบ (Evidence)**: ผลการรันเทสต์, typecheck, uat หรือสถานะ deploy (สอดคล้องกับกฎ VERIFY BEFORE DONE)
-3. **Commit พร้อมโค้ดเสมอ (Atomic Commit)**:
-   - ต้อง `git add README.md` เข้าไปใน commit เดียวกันกับงานนั้นเสมอ ห้ามแยก commit และห้ามบอกว่า "งานเสร็จแล้ว" โดยยังไม่ได้อัปเดต `README.md`
-4. **มีระบบตรวจจับอัตโนมัติ (Git Pre-commit Hook)**:
-   - `.githooks/pre-commit` จะตรวจสอบหากมีการ stage โค้ดใน `frontend/src` หรือ `backend` แต่ไม่มี `README.md` ระบบจะปฏิเสธ commit ทันที (ข้ามกรณีจำเป็นพิเศษ: `SKIP_README_CHECK=1 git commit ...`)
- 
- 
+## กฎ: ประวัติการแก้ไขดูจาก git log — ไม่บันทึก Activity Log ใน README.md (ลุงจืดเลือก 2026-09-23; แทนกฎ 2026-09-09)
+
+ลุงจืดเขียน README ใหม่เหลือ 134 บรรทัดและตัด Activity Log ออก (commit `96c73cbb`, 2026-09-21) — README เป็นหน้าแนะนำระบบเท่านั้น:
+
+1. **ห้ามเพิ่ม Activity Log / ประวัติรายงานงานลงใน `README.md`** — แก้ README เฉพาะเมื่อข้อมูลภาพรวมระบบเปลี่ยนจริง (สถาปัตยกรรม วิธีรัน วิธี deploy)
+2. **ประวัติการแก้ไข = `git log`** — commit message บรรทัดแรกเป็นอังกฤษแบบ conventional (`feat(gl): ...`) และ **body ต้องมีสรุปภาษาไทย** ว่าแก้อะไร ได้อะไร และผลการทดสอบ (evidence) เพื่อให้ลุงจืดอ่านย้อนหลังได้
+3. เหตุผลการตัดสินใจ → ADR ใน `docs/kms/decisions/`; บั๊ก → `docs/kms/bugs/` (ตามกฎ skill/kms ด้านบน)
+4. pre-commit hook ไม่ตรวจ README แล้ว — ADR `docs/kms/decisions/2026-09-23-drop-readme-activity-log.md`
+
 ## กฎ: ห้ามมีข้อความและอ้างอิงถึง FlowAccount / PEAK Account (ตั้งโดยลุงจืด 2026-09-09)
  
 ลุงจืดสั่งเด็ดขาดว่า **ห้ามมีข้อความ ชื่อ ยี่ห้อ หรือการอ้างอิงถึง FlowAccount หรือ PEAK Account (หรือบุคคลภายนอกใด ๆ)** ทั้งในเอกสารและโค้ดของระบบ เพื่อความปลอดภัยทางกฎหมาย ลิขสิทธิ์ และเครื่องหมายการค้า เพราะระบบนำมาใช้เพียงเป็นไอเดียและแนวทางกระบวนการทำงานเท่านั้น:
@@ -471,7 +444,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
    - ฟังก์ชัน กระบวนการทำงาน (Workflow), ตรรกะทางธุรกิจ (Business Logic), ฟิลด์ข้อมูล, การคำนวณ, และเมนูงานที่มีอยู่ใน `D:\project-champ` (เช่น ใน `champ/champ/menuconfigxml/menuconfig.xml`, `BC5Account.rc`, ซอร์สโค้ด และรีพอร์ตทั้งหมด) จะต้องถูกนำมาเป็นคุณสมบัติพื้นฐานของระบบ และต้องทำงานได้เทียบเท่าต้นแบบ
    - ห้ามตัดทอนหรือละเลยความสามารถเดิมที่มีอยู่ใน Champ เว้นแต่ลุงจืดสั่งยกเว้นเป็นลายลักษณ์อักษร (เช่น ข้อยกเว้นระบบเงินเดือนตามกฎเดิม)
 2. **เพิ่มความสามารถใหม่บนฐานเดิม (Enhance & Modernize)**:
-   - พัฒนาต่อยอดบนสถาปัตยกรรมใหม่ (Web/Cloud, PostgreSQL Processing Engine + MongoDB Storage, Multi-Tenant, รองรับ 12 ภาษา, UI พรีเมี่ยมสำหรับคนไทย 40+)
+   - พัฒนาต่อยอดบนสถาปัตยกรรมใหม่ (Web/Cloud, PostgreSQL เท่านั้น, Multi-Tenant, ภาษาไทย + อังกฤษ บนโครงรองรับ 12 ภาษา, UI พรีเมี่ยมสำหรับคนไทย 40+)
    - เพิ่มความสามารถใหม่ เช่น การเชื่อมต่อตลาดออนไลน์ (Shopee/Lazada/TikTok), ระบบ AI ผู้ช่วย, เชื่อมต่อ LINE OA, e-Tax Invoice, Dashboard วิเคราะห์สำหรับผู้บริหาร ฯลฯ
 3. **การค้นหาและอ้างอิงต้นทาง (Inspect Champ Source First)**:
    - เมื่องานเกี่ยวข้องกับหน้าจอ ธุรกรรม หรือรายงานใดๆ ให้ค้นหาและตรวจสอบ Implementation เดิมใน `D:\project-champ` ก่อนเสมอเพื่อดู Business Rule, Schema, และพฤติกรรมการทำงานที่ถูกต้องของระบบเดิม
@@ -500,7 +473,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 
 - BC Ai Account เลิกใช้ MongoDB, ClickHouse, Kafka และ Redis แล้ว ห้ามเพิ่มกลับหรือออกแบบให้พึ่งพาระบบเหล่านี้
 - ใช้ PostgreSQL เป็นฐานข้อมูลหลักเพียงตัวเดียว และบันทึกธุรกรรมบัญชีทั้งหมดผ่าน Go sql.Tx แบบ synchronous ACID
-- ข้อนี้แทนข้อความเก่าในไฟล์นี้ที่ยังกล่าวถึง MongoDB/Kafka/Redis ในสถาปัตยกรรม, topology, UAT หรือ storage; ข้อความเก่าไม่ใช่เป้าหมายระบบปัจจุบัน
+- หัวข้อเก่าที่อ้าง MongoDB/Kafka/Redis (2-Tier, UAT ใน Mongo, รูปภาพใน Mongo, topology) ถูกล้างออกจากไฟล์นี้แล้ว 2026-09-23; ในโค้ดยังมีของค้าง (Mongo driver, route `internal/vfgl`, Kafka consumer, Redis session) ซึ่งเป็นหนี้ที่ต้องถอด ไม่ใช่แบบอย่าง
 - ขอบเขต GL ล่าสุด: ไม่เกี่ยวกับลูกจ้าง/เงินเดือน บันทึกรายวันครั้งเดียวเชื่อมลูกหนี้ เจ้าหนี้ และ Statement ธนาคารแบบ many-to-many โดยเก็บยอดจัดสรรในตารางเชื่อม
 
 - ขอบเขต GL ที่ลุงจืดย้ำล่าสุด: เป็นระบบของห้องบัญชี เน้นรับข้อมูล ตรวจสอบ กระทบยอด และปิดงบ ไม่ใช่ระบบหน้าบ้านหรือ workflow ปฏิบัติงานของระบบอื่น AR/AP/Statement เป็นรายละเอียดตรวจสอบบัญชี ไม่ใช่คำสั่งรับจ่ายเงินจริง; ยึด mydocs/specs/gl/spec.md เป็นสเปกหลัก
