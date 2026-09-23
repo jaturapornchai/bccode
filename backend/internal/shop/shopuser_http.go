@@ -54,8 +54,8 @@ func (h *ShopMemberHttp) RegisterHttp() {
 	// Holding admin management by email (holdingcode comes from the request; the caller's role
 	// is resolved per-holding so it works from the holding-selection screen, no select required).
 	h.ms.GET("/holding-member/list", h.ListHoldingMembers)
-	// Adding and removing members must go through the invitation lifecycle.
-	// Legacy direct-grant routes stay unregistered to prevent bypassing acceptance and audit.
+	// Read-only here: adding/removing members is done in System Settings › Users via
+	// PUT/DELETE /holding/permission (decision 2026-09-23).
 }
 
 // List Shop User godoc
@@ -145,11 +145,6 @@ func (h ShopMemberHttp) InfoShopUser(ctx microservice.IContext) error {
 	return nil
 }
 
-type holdingMemberRequest struct {
-	HoldingCode string `json:"holdingcode"`
-	Email       string `json:"email"`
-}
-
 // ListHoldingMembers godoc — list members of a holding for its owner/admin (holdingcode via query).
 // @Tags ShopUser
 // @Security AccessToken
@@ -176,70 +171,6 @@ func (h ShopMemberHttp) ListHoldingMembers(ctx microservice.IContext) error {
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Pagination: pagination, Data: docList})
-	return nil
-}
-
-// AddHoldingMemberAdmin godoc — grant ADMIN to a holding by email (owner/admin only, idempotent).
-// @Tags ShopUser
-// @Security AccessToken
-// @Router /holding-member/add [post]
-func (h ShopMemberHttp) AddHoldingMemberAdmin(ctx microservice.IContext) error {
-	svc, svcErr := h.service()
-	if svcErr != nil {
-		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
-	}
-	authUsername := ctx.UserInfo().Username
-
-	req := &holdingMemberRequest{}
-	if err := json.Unmarshal([]byte(ctx.ReadInput()), req); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	holdingCode, err := utils.NormalizeHoldingCode(req.HoldingCode)
-	if err != nil || holdingCode == "" {
-		ctx.ResponseError(400, "holdingcode invalid")
-		return nil
-	}
-
-	if err := svc.AddHoldingAdminByEmail(holdingCode, authUsername, req.Email); err != nil {
-		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
-	return nil
-}
-
-// RemoveHoldingMemberAdmin godoc — remove a member by email (owner protected, owner/admin only).
-// @Tags ShopUser
-// @Security AccessToken
-// @Router /holding-member/remove [post]
-func (h ShopMemberHttp) RemoveHoldingMemberAdmin(ctx microservice.IContext) error {
-	svc, svcErr := h.service()
-	if svcErr != nil {
-		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(svcErr))
-	}
-	authUsername := ctx.UserInfo().Username
-
-	req := &holdingMemberRequest{}
-	if err := json.Unmarshal([]byte(ctx.ReadInput()), req); err != nil {
-		ctx.ResponseError(400, err.Error())
-		return err
-	}
-
-	holdingCode, err := utils.NormalizeHoldingCode(req.HoldingCode)
-	if err != nil || holdingCode == "" {
-		ctx.ResponseError(400, "holdingcode invalid")
-		return nil
-	}
-
-	if err := svc.RemoveHoldingMember(holdingCode, authUsername, req.Email); err != nil {
-		ctx.Response(http.StatusOK, &common.ApiResponse{Success: false, Message: err.Error()})
-		return err
-	}
-
-	ctx.Response(http.StatusOK, common.ApiResponse{Success: true})
 	return nil
 }
 

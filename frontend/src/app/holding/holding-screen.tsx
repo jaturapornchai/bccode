@@ -6,15 +6,12 @@ import {
   KeyRound,
   Loader2,
   LogOut,
-  Mail,
   Pencil,
   Plus,
   RefreshCcw,
   Save,
   Search,
   ShieldCheck,
-  Trash2,
-  UserPlus,
   UserRound,
   Users,
   X,
@@ -617,8 +614,6 @@ export function HoldingScreen({
   const [adminHolding, setAdminHolding] = useState<{ holdingcode: string; name: string } | null>(null);
   const [members, setMembers] = useState<HoldingMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminBusy, setAdminBusy] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -810,7 +805,6 @@ export function HoldingScreen({
     if (!holdingCode) return;
     setCreateOpen(false);
     setEditForm(null);
-    setAdminEmail("");
     setAdminHolding({ holdingcode: holdingCode, name: displayNameForEdit(shop) || holdingCode });
     setNotice(null);
     if (auth) void loadMembers(auth, holdingCode);
@@ -819,14 +813,12 @@ export function HoldingScreen({
   function closeAdminHolding() {
     setAdminHolding(null);
     setMembers([]);
-    setAdminEmail("");
-    setAdminBusy(false);
   }
 
   async function loadMembers(currentAuth: AuthSession, holdingCode: string) {
     setMembersLoading(true);
     try {
-      const payload = await callHoldingMemberApi(currentAuth, "GET", { holdingcode: holdingCode });
+      const payload = await listHoldingMembers(currentAuth, holdingCode);
       const list = Array.isArray(payload.data) ? (payload.data as HoldingMember[]) : [];
       setMembers(sortMembers(list));
     } catch (error) {
@@ -834,49 +826,6 @@ export function HoldingScreen({
       setMembers([]);
     } finally {
       setMembersLoading(false);
-    }
-  }
-
-  async function addAdmin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!auth || !adminHolding) return;
-    const email = adminEmail.trim().toLowerCase();
-    if (!email || !email.includes("@")) {
-      setNotice({ type: "error", text: backendText(backendLanguage, "holding_please_enter_a_valid_email", "กรุณากรอกอีเมลให้ถูกต้อง") });
-      return;
-    }
-    setAdminBusy(true);
-    setNotice(null);
-    try {
-      await callHoldingMemberApi(auth, "POST", { holdingcode: adminHolding.holdingcode, email });
-      setAdminEmail("");
-      await loadMembers(auth, adminHolding.holdingcode);
-      setNotice({ type: "success", text: backendText(backendLanguage, "holding_admin_added", "เพิ่มผู้ดูแลแล้ว") });
-    } catch (error) {
-      setNotice({
-        type: "error",
-        text: error instanceof Error && error.message ? error.message : (backendText(backendLanguage, "holding_could_not_add_admin", "เพิ่มผู้ดูแลไม่สำเร็จ")),
-      });
-    } finally {
-      setAdminBusy(false);
-    }
-  }
-
-  async function removeMember(email: string) {
-    if (!auth || !adminHolding) return;
-    setAdminBusy(true);
-    setNotice(null);
-    try {
-      await callHoldingMemberApi(auth, "DELETE", { holdingcode: adminHolding.holdingcode, email });
-      await loadMembers(auth, adminHolding.holdingcode);
-      setNotice({ type: "success", text: backendText(backendLanguage, "holding_member_removed", "ถอดผู้ดูแลแล้ว") });
-    } catch (error) {
-      setNotice({
-        type: "error",
-        text: error instanceof Error && error.message ? error.message : (backendText(backendLanguage, "holding_could_not_remove_member", "ถอดผู้ดูแลไม่สำเร็จ")),
-      });
-    } finally {
-      setAdminBusy(false);
     }
   }
 
@@ -1156,31 +1105,13 @@ export function HoldingScreen({
                 <div>
                   <strong>{backendText(backendLanguage, "holding_admins", "ผู้ดูแล")}: {adminHolding.name}</strong>
                   <span>
-                    {backendText(backendLanguage, "holding_add_admins_by_email_unlimited", "เพิ่มผู้ดูแลด้วยอีเมล (เพิ่มได้ไม่จำกัด) — เจ้าของถอดไม่ได้")}
+                    {backendText(backendLanguage, "holding_manage_admins_in_users_screen", "เพิ่มหรือถอดผู้ดูแลได้ที่ การตั้งค่าระบบ › ผู้ใช้งานระบบ หลังเข้ากลุ่มกิจการนี้")}
                   </span>
                 </div>
                 <button className="icon-button" type="button" onClick={closeAdminHolding} aria-label={ht(language, "cancel")} title={ht(language, "cancel")}>
                   <X aria-hidden="true" size={18} />
                 </button>
               </div>
-
-              <form onSubmit={addAdmin} style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
-                <div className="input-shell" style={{ flex: 1 }}>
-                  <Mail aria-hidden="true" size={18} />
-                  <input
-                    type="email"
-                    autoComplete="off"
-                    value={adminEmail}
-                    onChange={(event) => setAdminEmail(event.target.value)}
-                    placeholder={backendText(backendLanguage, "holding_admin_email_e_g_name", "อีเมลผู้ดูแล เช่น name@gmail.com")}
-                    disabled={adminBusy}
-                  />
-                </div>
-                <button className="primary-button" type="submit" disabled={adminBusy || !adminEmail.trim()}>
-                  {adminBusy ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <UserPlus aria-hidden="true" size={18} />}
-                  <span>{backendText(backendLanguage, "add", "เพิ่ม")}</span>
-                </button>
-              </form>
 
               <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "min(50vh, 360px)", overflowY: "auto" }}>
                 {membersLoading ? (
@@ -1195,7 +1126,6 @@ export function HoldingScreen({
                     const email = memberEmail(member);
                     const role = Number(member.role ?? 0);
                     const owner = role === 2 || member.iscreator === true;
-                    const isSelf = Boolean(signedInAs && email.toLowerCase() === signedInAs.toLowerCase());
                     return (
                       <div key={email} className="flex items-center justify-between gap-3 p-2 rounded-lg border border-border/60 bg-card/60">
                         <div className="flex items-center gap-2 min-w-0">
@@ -1214,18 +1144,6 @@ export function HoldingScreen({
                             </span>
                           </div>
                         </div>
-                        {owner || isSelf ? null : (
-                          <button
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-600 hover:bg-red-500/5 border border-transparent hover:border-red-500/20 transition-all cursor-pointer shrink-0"
-                            type="button"
-                            disabled={adminBusy}
-                            onClick={() => void removeMember(email)}
-                            aria-label={`${backendText(backendLanguage, "holding_remove", "ถอด")} ${email}`}
-                            title={backendText(backendLanguage, "holding_remove_admin", "ถอดผู้ดูแล")}
-                          >
-                            <Trash2 aria-hidden="true" size={15} />
-                          </button>
-                        )}
                       </div>
                     );
                   })
@@ -1345,8 +1263,8 @@ export function HoldingScreen({
                             disabled={Boolean(busyHoldingCode || savingHoldingCode)}
                             onClick={() => openAdminHolding(shop)}
                             type="button"
-                            aria-label={`${backendText(backendLanguage, "holding_manage_admins", "จัดการผู้ดูแล")} ${shopDisplayName(shop)}`}
-                            title={backendText(backendLanguage, "holding_manage_admins", "จัดการผู้ดูแล")}
+                            aria-label={`${backendText(backendLanguage, "holding_view_admins", "ดูรายชื่อผู้ดูแล")} ${shopDisplayName(shop)}`}
+                            title={backendText(backendLanguage, "holding_view_admins", "ดูรายชื่อผู้ดูแล")}
                           >
                             <Users aria-hidden="true" size={14} />
                           </button>
@@ -1501,23 +1419,17 @@ function sortMembers(list: HoldingMember[]): HoldingMember[] {
     .sort((a, b) => Number(b.role ?? 0) - Number(a.role ?? 0) || memberEmail(a).localeCompare(memberEmail(b)));
 }
 
-async function callHoldingMemberApi(
+// Read-only: adding/removing admins happens in System Settings › Users (decision 2026-09-23).
+async function listHoldingMembers(
   auth: AuthSession,
-  method: "GET" | "POST" | "DELETE",
-  params: { holdingcode: string; email?: string },
+  holdingcode: string,
 ): Promise<{ success?: boolean; message?: string; data?: unknown[] }> {
-  const url =
-    method === "GET"
-      ? `/api/holding-member?holdingcode=${encodeURIComponent(params.holdingcode)}`
-      : "/api/holding-member";
-  const response = await authFetch(url, {
-    method,
+  const response = await authFetch(`/api/holding-member?holdingcode=${encodeURIComponent(holdingcode)}`, {
+    method: "GET",
     headers: {
-      "Content-Type": "application/json",
       "x-bc-backend-url": auth.backendUrl,
       Authorization: `Bearer ${auth.token}`,
     },
-    body: method === "GET" ? undefined : JSON.stringify({ holdingcode: params.holdingcode, email: params.email ?? "" }),
     cache: "no-store",
   });
   const data = (await response.json()) as { success?: boolean; message?: string; data?: unknown[] };

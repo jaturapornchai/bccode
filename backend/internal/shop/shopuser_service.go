@@ -9,7 +9,6 @@ import (
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"strings"
 	"time"
-
 )
 
 type IShopUserService interface {
@@ -18,15 +17,12 @@ type IShopUserService interface {
 
 	// Holding admin management by email (holdingCode comes from the request, role of the
 	// caller is resolved per-holding so it works from the holding-selection screen).
-	AddHoldingAdminByEmail(holdingCode string, authUsername string, targetEmail string) error
-	RemoveHoldingMember(holdingCode string, authUsername string, targetEmail string) error
 	ListHoldingMembersByAdmin(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, common.PaginationData, error)
 	EnsureHoldingManager(holdingCode string, authUsername string) error
 
 	InfoShopByUser(holdingCode string, username string) (models.ShopUserProfile, error)
 	ListShopByUser(authUsername string, authUserUID string, pageable micromodels.Pageable) ([]models.ShopUserInfo, common.PaginationData, error)
 	ListUserInShop(holdingCode string, authUsername string, pageable micromodels.Pageable) ([]models.ShopUserProfile, common.PaginationData, error)
-
 }
 
 type ShopUserService struct {
@@ -419,71 +415,6 @@ func (svc ShopUserService) requireHoldingManager(holdingCode string, authUsernam
 func (svc ShopUserService) EnsureHoldingManager(holdingCode string, authUsername string) error {
 	_, err := svc.requireHoldingManager(holdingCode, authUsername)
 	return err
-}
-
-// AddHoldingAdminByEmail grants ADMIN access to a holding by email. The email is stored as the
-// shopuser username (normalized lowercase) so it binds when that person later logs in by the
-// same email (Google/password) — no prior login required. Idempotent (safe to call repeatedly).
-func (svc ShopUserService) AddHoldingAdminByEmail(holdingCode string, authUsername string, targetEmail string) error {
-	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
-		return err
-	}
-
-	target := utils.NormalizeUsername(targetEmail)
-	if target == "" {
-		return errors.New("email is required")
-	}
-
-	existing, existingErr := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, target)
-	if existingErr == nil && existing.Role == models.ROLE_OWNER {
-		// Never downgrade or re-grant an owner through the admin tool.
-		return errors.New("cannot change owner")
-	}
-
-	req := &models.UserRoleRequest{
-		Username: target,
-		Email:    target,
-		Role:     models.ROLE_ADMIN,
-	}
-	if existingErr == nil && existing.UserUID != "" {
-		req.UserUID = existing.UserUID
-	}
-
-	return svc.repo.SaveFullProfile(context.Background(), holdingCode, req)
-}
-
-// RemoveHoldingMember removes a member from a holding. Owners (and the shop creator) are
-// protected and cannot be removed; callers cannot remove themselves.
-func (svc ShopUserService) RemoveHoldingMember(holdingCode string, authUsername string, targetEmail string) error {
-	if _, err := svc.requireHoldingManager(holdingCode, authUsername); err != nil {
-		return err
-	}
-
-	target := utils.NormalizeUsername(targetEmail)
-	if target == "" {
-		return errors.New("email is required")
-	}
-	if sameUsername(target, authUsername) {
-		return errors.New("can't remove yourself")
-	}
-
-	findUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, target)
-	if err != nil {
-		return err
-	}
-	if findUser.Username == "" {
-		return errors.New("user not found")
-	}
-	if findUser.Role == models.ROLE_OWNER {
-		return errors.New("cannot remove owner")
-	}
-
-	createdBy, createdByErr := svc.repo.FindShopCreatedBy(context.Background(), holdingCode)
-	if createdByErr == nil && sameUsername(findUser.Username, createdBy) {
-		return errors.New("cannot remove creator")
-	}
-
-	return svc.repo.Delete(context.Background(), holdingCode, target)
 }
 
 // ListHoldingMembersByAdmin lists members of a holding for an owner/admin of that holding.

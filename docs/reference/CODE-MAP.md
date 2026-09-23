@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-23 @ commit 54b901f0 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-23 @ commit 3f9af8c4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -762,43 +762,6 @@ Files indexed: 29
 | 1566 | function | `TestBadge` |
 | 1570 | function | `ModelChips` |
 
-## frontend/src/app/holding/holding-screen.tsx (1559 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 45 | type | `CreateHoldingForm` |
-| 588 | function | `HoldingScreen` |
-| 670 | function | `loadHoldings` |
-| 692 | function | `openCreateHolding` |
-| 703 | function | `closeCreateHolding` |
-| 708 | function | `createHolding` |
-| 755 | function | `startEditHolding` |
-| 767 | function | `closeEditHolding` |
-| 772 | function | `updateHolding` |
-| 807 | function | `openAdminHolding` |
-| 819 | function | `closeAdminHolding` |
-| 826 | function | `loadMembers` |
-| 840 | function | `addAdmin` |
-| 865 | function | `removeMember` |
-| 883 | function | `selectHolding` |
-| 905 | function | `activateHolding` |
-| 923 | function | `logout` |
-| 1391 | function | `ht` |
-| 1395 | function | `normalizeDisplayName` |
-| 1403 | function | `generateConfirmationCode` |
-| 1412 | function | `readAuth` |
-| 1416 | function | `activeHoldingCode` |
-| 1420 | function | `callWorkspaceApi` |
-| 1442 | function | `dedupeHoldings` |
-| 1454 | function | `tenantCodeForShop` |
-| 1458 | function | `displayNameForEdit` |
-| 1464 | function | `canEditHolding` |
-| 1485 | function | `canManageAdmins` |
-| 1490 | function | `memberEmail` |
-| 1494 | function | `sortMembers` |
-| 1504 | function | `callHoldingMemberApi` |
-| 1530 | function | `createHoldingPayload` |
-
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 
 | Line | Kind | Name |
@@ -862,6 +825,41 @@ Files indexed: 29
 | 1182 | function | `updateSpecialRule` |
 | 1275 | function | `PointGeneralRulesTable` |
 | 1376 | function | `PointSpecialRulesTable` |
+
+## frontend/src/app/holding/holding-screen.tsx (1471 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 42 | type | `CreateHoldingForm` |
+| 585 | function | `HoldingScreen` |
+| 665 | function | `loadHoldings` |
+| 687 | function | `openCreateHolding` |
+| 698 | function | `closeCreateHolding` |
+| 703 | function | `createHolding` |
+| 750 | function | `startEditHolding` |
+| 762 | function | `closeEditHolding` |
+| 767 | function | `updateHolding` |
+| 802 | function | `openAdminHolding` |
+| 813 | function | `closeAdminHolding` |
+| 818 | function | `loadMembers` |
+| 832 | function | `selectHolding` |
+| 854 | function | `activateHolding` |
+| 872 | function | `logout` |
+| 1309 | function | `ht` |
+| 1313 | function | `normalizeDisplayName` |
+| 1321 | function | `generateConfirmationCode` |
+| 1330 | function | `readAuth` |
+| 1334 | function | `activeHoldingCode` |
+| 1338 | function | `callWorkspaceApi` |
+| 1360 | function | `dedupeHoldings` |
+| 1372 | function | `tenantCodeForShop` |
+| 1376 | function | `displayNameForEdit` |
+| 1382 | function | `canEditHolding` |
+| 1403 | function | `canManageAdmins` |
+| 1408 | function | `memberEmail` |
+| 1412 | function | `sortMembers` |
+| 1423 | function | `listHoldingMembers` |
+| 1442 | function | `createHoldingPayload` |
 
 ## backend/internal/authentication/services/authentication_service_test.go (1350 lines)
 
