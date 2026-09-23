@@ -1105,7 +1105,7 @@ export function HoldingScreen({
                 <div>
                   <strong>{backendText(backendLanguage, "holding_admins", "ผู้ดูแล")}: {adminHolding.name}</strong>
                   <span>
-                    {backendText(backendLanguage, "holding_manage_admins_in_users_screen", "เพิ่มหรือถอดผู้ดูแลได้ที่ การตั้งค่าระบบ › ผู้ใช้งานระบบ หลังเข้ากลุ่มกิจการนี้")}
+                    {backendText(backendLanguage, "holding_manage_admins_in_users_screen", "เพิ่มหรือถอดผู้ดูแลได้ที่ ตั้งค่าระบบและการเข้าถึง › บัญชีเข้าระบบ หลังเข้ากลุ่มกิจการนี้")}
                   </span>
                 </div>
                 <button className="icon-button" type="button" onClick={closeAdminHolding} aria-label={ht(language, "cancel")} title={ht(language, "cancel")}>
@@ -1419,7 +1419,7 @@ function sortMembers(list: HoldingMember[]): HoldingMember[] {
     .sort((a, b) => Number(b.role ?? 0) - Number(a.role ?? 0) || memberEmail(a).localeCompare(memberEmail(b)));
 }
 
-// Read-only: adding/removing admins happens in System Settings › Users (decision 2026-09-23).
+// Read-only: adding/removing admins happens in Settings & Access Control › Login Accounts (decision 2026-09-23).
 async function listHoldingMembers(
   auth: AuthSession,
   holdingcode: string,

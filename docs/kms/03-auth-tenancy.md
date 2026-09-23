@@ -83,7 +83,7 @@
 ## 8. Guard ระดับ handler ที่พบ
 - แก้ holding (`PUT /holding/:id`) ต้องเป็น OWNER/ADMIN active (`backend/internal/shop/shop_http.go:520-528`); สร้าง holding ต้อง `RequireEmailedAccount` (`backend/internal/shop/shop_http.go:132-138`)
 - บันทึก/ลบสิทธิ์สมาชิก (`/holding/permission`) เช็ค `userInfo.Role` เป็น OWNER/ADMIN จาก session (`backend/internal/shop/shopuser_http.go:173,296-301`); การสร้าง membership ใหม่ต้องมี `users` ที่มี `uid` แล้ว ("ต้อง sign in ด้วย Google และรับคำเชิญก่อน") (`backend/internal/shop/shopuser_repository.go:254-259`)
-- `/holding-member/list` รับ `holdingcode` จาก query แล้วให้ service ตรวจ role ต่อ holding เอง (จึงใช้ได้ก่อนเลือก holding) (`backend/internal/shop/shopuser_http.go:152-175`; `backend/internal/shop/shopuser_service.go:421-424`) — อ่านอย่างเดียว: เพิ่ม/ถอดสมาชิกทำที่ การตั้งค่าระบบ › ผู้ใช้งานระบบ (`/holding/permission`) ตามที่ลุงจืดเลือก 2026-09-23
+- `/holding-member/list` รับ `holdingcode` จาก query แล้วให้ service ตรวจ role ต่อ holding เอง (จึงใช้ได้ก่อนเลือก holding) (`backend/internal/shop/shopuser_http.go:152-175`; `backend/internal/shop/shopuser_service.go:421-424`) — อ่านอย่างเดียว: เพิ่ม/ถอดสมาชิกทำที่ ตั้งค่าระบบและการเข้าถึง › บัญชีเข้าระบบ (`/holding/permission`) ตามที่ลุงจืดเลือก 2026-09-23
 
 ## 9. ฝั่ง frontend เพิ่มเติม
 - Rewrite `/backend/:path*` → mainapi แต่ **block** เส้นทาง login/register/dev/demo/googlelogin และ route อันตราย (`/goapi/get|exec|getdoc`, `/reportm/*`, `/goapi/api/setup/*`, `/goapi/api/mcp/*`, `/reload-config`) ให้ไปที่ `/_blocked-auth-route` (`frontend/next.config.ts:29-73`)

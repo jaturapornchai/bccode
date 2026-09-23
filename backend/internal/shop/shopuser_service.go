@@ -82,19 +82,14 @@ func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (
 	shopUserProfile := models.ShopUserProfile{}
 
 	// ดึงข้อมูล ShopUser เพื่อให้ได้ fields ใหม่ด้วย (position, department, LINE, approval)
-	shopUser, err := svc.repo.FindByHoldingCodeAndUsername(context.Background(), holdingCode, username)
+	// The settings screen addresses members by useruid (Google-only users have no usercode);
+	// resolveShopUser falls back to the uid because the PostgreSQL repo returns ErrShopUserNotFound.
+	shopUser, err := svc.resolveShopUser(holdingCode, username)
 	if err != nil {
 		return models.ShopUserProfile{}, err
 	}
-	if shopUser.Username == "" {
-		// Users without a usercode (Google-only) are addressed by their stable useruid
-		// because their shopuser row keeps an empty username by design.
-		resolved, uidErr := svc.repo.FindByHoldingCodeAndUserUID(context.Background(), holdingCode, username)
-		if uidErr != nil {
-			return models.ShopUserProfile{}, errors.New("user not found")
-		}
-		shopUser = resolved
-		err = nil
+	if shopUser.Username != "" {
+		username = shopUser.Username
 	}
 
 	if strings.TrimSpace(username) != "" {

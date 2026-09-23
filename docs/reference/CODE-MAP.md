@@ -4,11 +4,11 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-23 @ commit 3f9af8c4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-23 @ commit 5ebc8cea - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
-## frontend/src/app/system-settings/system-settings-screen.tsx (16066 lines)
+## frontend/src/app/system-settings/system-settings-screen.tsx (16069 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -312,59 +312,59 @@ Files indexed: 29
 | 14743 | function | `restaurantBody` |
 | 14753 | function | `filterRecordsByDateTimeScope` |
 | 14770 | function | `defaultForm` |
-| 14826 | function | `formFromRecord` |
-| 14931 | function | `applyCompanyDefaults` |
-| 14941 | function | `applyBranchDefaults` |
-| 14954 | function | `applyCountryDefaultsToForm` |
-| 14979 | function | `syncCompanyLanguageForm` |
-| 14989 | function | `setFormValueIfEmpty` |
-| 14993 | function | `isEmptyFormValue` |
-| 14997 | function | `applyTimezoneMetaToForm` |
-| 15010 | function | `buildPayload` |
-| 15285 | function | `resolveDateTimeScope` |
-| 15330 | function | `localDateToUtcIso` |
-| 15341 | function | `normalizeUtcOffset` |
-| 15348 | function | `productCategoryGuid` |
-| 15353 | function | `productCategoryParentGuid` |
-| 15360 | function | `productCategoryGroupNumber` |
-| 15368 | function | `productCategoryXOrder` |
-| 15375 | function | `productCategoryDisplayName` |
-| 15383 | function | `productCategoryCodelistCount` |
-| 15392 | function | `productCategoryGroupLabel` |
-| 15415 | function | `isEmailLike` |
-| 15419 | function | `isProductUnitOption` |
-| 15427 | function | `productUnitCode` |
-| 15431 | function | `unitDisplayName` |
-| 15450 | function | `uploadUiText` |
-| 15454 | function | `ImageCropDialog` |
-| 15501 | const-arrow | `handler` |
-| 15508 | function | `apply` |
-| 15603 | function | `drawCroppedImage` |
-| 15640 | function | `clampNumber` |
-| 15644 | function | `extractUploadUri` |
-| 15667 | function | `resizeLogoFile` |
-| 15709 | function | `resizeImageFile` |
-| 15744 | function | `makeThumbnailFile` |
-| 15773 | function | `loadImageElement` |
-| 15782 | function | `canvasToBlob` |
-| 15790 | function | `isDecimalSettingField` |
-| 15801 | function | `normalizeDecimalPlaces` |
-| 15807 | function | `comboOptionsForField` |
-| 15824 | function | `timezoneOptions` |
-| 15838 | function | `supportedTimeZones` |
-| 15850 | function | `timezoneMeta` |
-| 15858 | function | `setTimezoneDerivedPayload` |
-| 15871 | function | `timezoneUtcOffset` |
-| 15888 | function | `namesToObject` |
-| 15901 | function | `objectToNames` |
-| 15925 | function | `parseJsonField` |
-| 15940 | function | `setByPath` |
-| 15950 | function | `deleteByPath` |
-| 15959 | function | `shortValue` |
-| 15969 | function | `fieldDisplayValue` |
-| 16026 | function | `masterPickerDisplayValue` |
-| 16039 | function | `isActiveRecord` |
-| 16049 | function | `settingIcon` |
+| 14827 | function | `formFromRecord` |
+| 14933 | function | `applyCompanyDefaults` |
+| 14943 | function | `applyBranchDefaults` |
+| 14956 | function | `applyCountryDefaultsToForm` |
+| 14981 | function | `syncCompanyLanguageForm` |
+| 14991 | function | `setFormValueIfEmpty` |
+| 14995 | function | `isEmptyFormValue` |
+| 14999 | function | `applyTimezoneMetaToForm` |
+| 15012 | function | `buildPayload` |
+| 15287 | function | `resolveDateTimeScope` |
+| 15332 | function | `localDateToUtcIso` |
+| 15343 | function | `normalizeUtcOffset` |
+| 15350 | function | `productCategoryGuid` |
+| 15355 | function | `productCategoryParentGuid` |
+| 15362 | function | `productCategoryGroupNumber` |
+| 15370 | function | `productCategoryXOrder` |
+| 15377 | function | `productCategoryDisplayName` |
+| 15385 | function | `productCategoryCodelistCount` |
+| 15394 | function | `productCategoryGroupLabel` |
+| 15417 | function | `isEmailLike` |
+| 15421 | function | `isProductUnitOption` |
+| 15429 | function | `productUnitCode` |
+| 15433 | function | `unitDisplayName` |
+| 15452 | function | `uploadUiText` |
+| 15456 | function | `ImageCropDialog` |
+| 15503 | const-arrow | `handler` |
+| 15510 | function | `apply` |
+| 15605 | function | `drawCroppedImage` |
+| 15642 | function | `clampNumber` |
+| 15646 | function | `extractUploadUri` |
+| 15669 | function | `resizeLogoFile` |
+| 15711 | function | `resizeImageFile` |
+| 15746 | function | `makeThumbnailFile` |
+| 15775 | function | `loadImageElement` |
+| 15784 | function | `canvasToBlob` |
+| 15792 | function | `isDecimalSettingField` |
+| 15803 | function | `normalizeDecimalPlaces` |
+| 15809 | function | `comboOptionsForField` |
+| 15826 | function | `timezoneOptions` |
+| 15840 | function | `supportedTimeZones` |
+| 15852 | function | `timezoneMeta` |
+| 15860 | function | `setTimezoneDerivedPayload` |
+| 15873 | function | `timezoneUtcOffset` |
+| 15890 | function | `namesToObject` |
+| 15903 | function | `objectToNames` |
+| 15927 | function | `parseJsonField` |
+| 15943 | function | `setByPath` |
+| 15953 | function | `deleteByPath` |
+| 15962 | function | `shortValue` |
+| 15972 | function | `fieldDisplayValue` |
+| 16029 | function | `masterPickerDisplayValue` |
+| 16042 | function | `isActiveRecord` |
+| 16052 | function | `settingIcon` |
 
 ## frontend/src/app/menu/product-screen.tsx (3104 lines)
 

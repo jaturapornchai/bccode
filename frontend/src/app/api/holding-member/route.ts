@@ -2,7 +2,7 @@ import { serverMainApiBase } from "@/lib/backend-url";
 import { proxyMainApiJson } from "@/lib/workspace-api";
 
 // Holding admin list (server-side proxy to mainapi /holding-member/list) — read-only; adding/removing
-// members goes through System Settings › Users (/holding/permission). holdingcode comes from the request
+// members goes through Settings & Access Control › Login Accounts (/holding/permission). holdingcode comes from the request
 // so it works from the holding-selection screen; the backend resolves the caller's role per-holding.
 // Uses serverMainApiBase (local backend) per the server-side hairpin rule and forwards the bearer token.
 

@@ -54,7 +54,7 @@ func (h *ShopMemberHttp) RegisterHttp() {
 	// Holding admin management by email (holdingcode comes from the request; the caller's role
 	// is resolved per-holding so it works from the holding-selection screen, no select required).
 	h.ms.GET("/holding-member/list", h.ListHoldingMembers)
-	// Read-only here: adding/removing members is done in System Settings › Users via
+	// Read-only here: adding/removing members is done in Settings & Access Control › Login Accounts via
 	// PUT/DELETE /holding/permission (decision 2026-09-23).
 }
 

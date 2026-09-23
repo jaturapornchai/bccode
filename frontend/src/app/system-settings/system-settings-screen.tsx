@@ -14802,6 +14802,7 @@ function defaultForm(
             : isPermissionCodesField(field) ||
                 isApprovalCodesField(field) ||
                 field.key === "allowedtools" ||
+                field.key === "permissionsets" ||
                 field.key === "items" ||
                 field.placeholder?.trimStart().startsWith("[")
               ? "[]"
@@ -14874,7 +14875,8 @@ function formFromRecord(
         value ??
           (isPermissionCodesField(field) ||
           isApprovalCodesField(field) ||
-          field.key === "allowedtools"
+          field.key === "allowedtools" ||
+          field.key === "permissionsets"
             ? []
             : {}),
         null,
@@ -15931,6 +15933,7 @@ function parseJsonField(value: unknown, key: string): unknown {
       key === "approvalcodes" ||
       key === "approvalCodes" ||
       key === "allowedtools" ||
+      key === "permissionsets" ||
       key === "items"
       ? []
       : {};

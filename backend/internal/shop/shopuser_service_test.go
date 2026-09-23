@@ -174,3 +174,30 @@ func requireAccessDisabledRequest(t *testing.T, username string, disabledBy stri
 			req.AccessEnabledBy == ""
 	})
 }
+
+// TestInfoShopByUserResolvesUserUID - the settings screen opens a member by useruid; the PostgreSQL
+// repo returns ErrShopUserNotFound for the username lookup, so the service must fall back to the uid
+// (regression: "find failed" when editing any login account, 2026-09-23).
+func TestInfoShopByUserResolvesUserUID(t *testing.T) {
+	repo := new(ShopUserRepositoryMock)
+	ctx := context.Background()
+	member := testShopUser("rungrueng", "uat_admin", models.ROLE_ADMIN)
+	member.UserUID = "acceddcf-f223-4e5a-a863-f9259b0b4298"
+	member.PermissionSets = []string{}
+	profile := models.UserProfile{}
+	profile.Name = "วิภาวดี ผู้ดูแลบัญชี"
+	repo.On("FindByHoldingCodeAndUsername", ctx, "rungrueng", member.UserUID).Return(models.ShopUser{}, shop.ErrShopUserNotFound)
+	repo.On("FindByHoldingCodeAndUserUID", ctx, "rungrueng", member.UserUID).Return(member, nil)
+	repo.On("FindUserProfileByUsernames", ctx, []string{"uat_admin"}).Return([]models.UserProfile{profile}, nil)
+	repo.On("FindShopCreatedBy", ctx, "rungrueng").Return("demo", nil)
+
+	got, err := shop.NewShopUserService(repo).InfoShopByUser("rungrueng", member.UserUID)
+
+	require.NoError(t, err)
+	require.Equal(t, "uat_admin", got.Username)
+	require.Equal(t, member.UserUID, got.UserUID)
+	require.Equal(t, models.ROLE_ADMIN, got.Role)
+	require.Equal(t, "วิภาวดี ผู้ดูแลบัญชี", got.UserProfileName)
+	require.False(t, got.IsCreator)
+	repo.AssertExpectations(t)
+}

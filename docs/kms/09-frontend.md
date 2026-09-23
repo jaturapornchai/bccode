@@ -86,7 +86,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/product-barcode/video` | POST | M `/goapi/video/upload` (stream + จำกัดขนาด) | Bearer | LIVE | `product-barcode/video/route.ts:7-15`, `frontend/src/lib/image-upload-proxy.ts:47-79` |
 | `/api/upload/image` | POST | M `/goapi/image/upload` (category `system-settings`, client ต้องส่ง category) | Bearer | LIVE | `upload/image/route.ts:3-8` |
 | `/api/currency/[[...path]]` | GET/POST/PUT/DELETE | M `/currency/*` | Bearer | LIVE | `currency/[[...currencyPath]]/route.ts:14-60,80,91` |
-| `/api/holding-member` | GET | M `/holding-member/list` (อ่านอย่างเดียว; เพิ่ม/ถอดผู้ดูแลทำที่ ผู้ใช้งานระบบ) | Bearer | LIVE | `holding-member/route.ts:1-17` |
+| `/api/holding-member` | GET | M `/holding-member/list` (อ่านอย่างเดียว; เพิ่ม/ถอดผู้ดูแลทำที่ ตั้งค่าระบบและการเข้าถึง › บัญชีเข้าระบบ) | Bearer | LIVE | `holding-member/route.ts:1-17` |
 | `/api/holding-users-import` | POST | M `/holding/users/import` | Bearer | LIVE | `holding-users-import/route.ts:8-12` |
 | `/api/line-oa/user` | POST | G `/api/user/lineoa/link|profile` | Bearer + tenant JWT | LIVE | `line-oa/user/route.ts:20-21,32,47,63-68` |
 | `/api/setup/[...path]` | POST | — ตอบ 410 | — | STUBBED | `setup/[...setupPath]/route.ts:6-11` |
