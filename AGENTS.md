@@ -432,6 +432,17 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 3. เหตุผลการตัดสินใจ → ADR ใน `docs/kms/decisions/`; บั๊ก → `docs/kms/bugs/` (ตามกฎ skill/kms ด้านบน)
 4. pre-commit hook ไม่ตรวจ README แล้ว — ADR `docs/kms/decisions/2026-09-23-drop-readme-activity-log.md`
 
+## กฎ: งานเสร็จ + verify ผ่าน → commit อัตโนมัติ ให้ลุงจืดปิด session ได้ทันที (ตั้งโดยลุงจืด 2026-09-25)
+
+ลุงจืดสั่ง: "ต่อไป commit auto เลย ให้สามารถปิด session ได้" — ไม่ต้องถามก่อน commit อีก:
+
+1. **จบงานแล้ว verify ผ่าน → commit ทันที ไม่ถาม** — ทำก่อนสรุปงาน (ก่อน deploy ถ้ามี) ตามรูปแบบ commit ของกฎด้านบน: บรรทัดแรกอังกฤษแบบ conventional + body สรุปภาษาไทยพร้อมผลทดสอบ; งานคนละเรื่องแยก commit
+2. **verify ไม่ผ่าน / งานยังไม่จบ = ห้าม commit เป็นงานเสร็จ** — รายงานลุงจืดตรง ๆ ว่าค้างอะไร (กฎ VERIFY BEFORE DONE)
+3. **stage เฉพาะไฟล์ของงานนี้** ด้วย `git add <path>` — ห้าม `git add -A` / `git add .` เพราะมี AI session อื่นแก้ tree เดียวกันได้; ดู `git status -s` + `git diff --cached --stat` ก่อน และ grep หา secret (`sk-`, `Bearer `, `password=`, `api_key=`) ใน diff ที่ stage — เจอ = หยุดถาม
+4. **commit ≠ push** — push ยังทำเมื่อลุงจืดสั่งเท่านั้น; ห้าม `--no-verify` ข้าม hook; hook ไม่ผ่าน = แก้ให้ผ่านแล้ว commit ใหม่ (ห้าม `--amend` commit ที่มีอยู่แล้ว)
+5. **ทำงานใน worktree** (`.claude/worktrees/*`) → commit บน branch ของ worktree นั้น ไม่แตะ `dev` ที่ checkout อยู่ใน `D:\bccode` เอง; การรวมเข้า `dev` เป็นการตัดสินใจของลุงจืด
+6. **บรรทัดท้ายของรายงานต้องบอก** hash + branch ที่ commit และว่าเหลืออะไรที่ยังไม่ commit (ถ้ามี) — ลุงจืดดูบรรทัดนี้แล้วปิด session ได้เลย
+
 ## กฎ: ห้ามมีข้อความและอ้างอิงถึง FlowAccount / PEAK Account (ตั้งโดยลุงจืด 2026-09-09)
  
 ลุงจืดสั่งเด็ดขาดว่า **ห้ามมีข้อความ ชื่อ ยี่ห้อ หรือการอ้างอิงถึง FlowAccount หรือ PEAK Account (หรือบุคคลภายนอกใด ๆ)** ทั้งในเอกสารและโค้ดของระบบ เพื่อความปลอดภัยทางกฎหมาย ลิขสิทธิ์ และเครื่องหมายการค้า เพราะระบบนำมาใช้เพียงเป็นไอเดียและแนวทางกระบวนการทำงานเท่านั้น:
