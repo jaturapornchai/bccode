@@ -19,7 +19,6 @@ type IConfig interface {
 	JwtSecretKey() string
 	HttpConfig() IHttpConfig
 	LoggerConfig() ILoggerConfig
-	LineClientId() string
 	GoogleClientId() string
 }
 
@@ -103,10 +102,6 @@ func (*Config) HttpConfig() IHttpConfig {
 
 func (*Config) LoggerConfig() ILoggerConfig {
 	return NewLoggerConfig()
-}
-
-func (*Config) LineClientId() string {
-	return getEnv("LINE_CLIENT_ID", "1657004770")
 }
 
 // GoogleClientId is the public Google OAuth client ID used to verify the audience (aud)

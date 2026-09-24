@@ -58,7 +58,7 @@
 ## 5. เส้นทาง B — goapi Kafka consumer → `docdetail` → คิว `stock_dirty` → `stock_ledger` (LIVE)
 
 ### 5.1 การเปิดใช้และหลักฐานว่ารันอยู่
-- goapi เริ่ม consumer เมื่อ `ENABLE_KAFKA == "true"` (`backend/internal/goapi/bootstrap.go:157-160`); ค่านี้ map จากคีย์ `service.enablekafka` ใน bootstrap.json (`backend/internal/goapi/setupconfig/loader.go:78`) ไม่ใช่ env ของ container (docker inspect ไม่มี `ENABLE_KAFKA`)
+- goapi เริ่ม consumer เมื่อ `ENABLE_KAFKA == "true"` (`backend/internal/goapi/bootstrap.go:157-160`); ค่านี้ map จากคีย์ `service.enablekafka` ใน bootstrap.json (`backend/internal/goapi/setupconfig/loader.go:77`) ไม่ใช่ env ของ container (docker inspect ไม่มี `ENABLE_KAFKA`)
 - log mainapi 2026-09-05 23:27:40: `bootstrap.go:159 เริ่มต้น Kafka consumers` และ `kafka.go:1008 เริ่มต้น Kafka consumers เรียบร้อย`; Kafka มี consumer group `goapi-stocktransfer|stockreceiveproduct|stockpickupproduct|stockreturnproduct|stockadjustment|stockbalance-consumer-v1` (suffix จาก `getVersionedGroupID` `backend/internal/goapi/handlers/kafka.go:19-22`)
 - topic ที่ฟัง: `when-stocktransfer-*` (:599-623), `when-stockreceiveproduct-*` (:637-661), `when-stockpickupproduct-*` (:675-699), `when-stockreturnproduct-*` (:713-737), `when-stockadjustment-*` (:751-775), `when-stockbalance-*` (:789-813), `when-warehouse-*` (:230-255) — ทั้งหมดใน `backend/internal/goapi/handlers/kafka.go`; bridge อยู่ `backend/internal/goapi/handlers/kafka_bridge.go:412-475`
 

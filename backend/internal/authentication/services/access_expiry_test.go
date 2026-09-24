@@ -32,7 +32,7 @@ func accessExpiryService(t *testing.T, expiry time.Time) (*AuthServiceMock, func
 	svc := authmodels.NewAuthenticationService(
 		new(AuthenticationRepositoryMock), shopUserRepo, accessLogRepo,
 		new(SMSRepositoryMock), microAuth, MockRandomString, MockRandomNumber,
-		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime)
 	return microAuth, func() error {
 		return svc.AccessShop("rungrueng", "", "", "somchai01", "user-uid-1", "Bearer token", models.AuthenticationContext{Ip: "127.0.0.1"})
 	}
@@ -77,7 +77,7 @@ func TestLoginWithGoogleIdentityRequiresVerifiedEmail(t *testing.T) {
 	svc := authmodels.NewAuthenticationService(
 		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), &AuthServiceMock{}, MockRandomString, MockRandomNumber,
-		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime)
 
 	_, err := svc.LoginWithGoogleIdentity("accounts.google.com", "subject-1", "somchai@company.co.th", false, "Somchai")
 

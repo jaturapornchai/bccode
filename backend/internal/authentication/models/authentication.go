@@ -15,19 +15,6 @@ type TokenLoginRequest struct {
 	Token string `json:"token" validate:"required"`
 }
 
-type LineLoginRequest struct {
-	Token string `json:"token" validate:"required"`
-}
-
-// LineUserLoginRequest — สำหรับ QR code / LIFF login flow
-// Flutter sends lineuserid from LIFF server without LINE access token.
-type LineUserLoginRequest struct {
-	LineUserID  string `json:"lineuserid" validate:"required"`
-	DisplayName string `json:"displayname"`
-	PictureUrl  string `json:"pictureurl"`
-	Email       string `json:"email"`
-}
-
 // GoogleLoginRequest — สำหรับ Google OAuth mobile (Android/iOS)
 // Flutter ส่ง google_user_id + email หลังจาก Google OAuth สำเร็จ
 type GoogleLoginRequest struct {

@@ -123,6 +123,7 @@
 - [decisions/2026-09-24-holding-wide-access-scope.md](decisions/2026-09-24-holding-wide-access-scope.md) — "ใช้ได้ทั้งกลุ่มกิจการ" เก็บเป็นกฎ holding กฎเดียว ขยายตอนอ่านเป็นทุกบริษัท active (รวมที่เพิ่มภายหลัง); ตรวจทุกกฎตอนบันทึก (400), ADMIN ให้เกินขอบเขตตัวเองไม่ได้ (403), frontend เลิกแปลงกฎเสียเป็น holding
 - [decisions/2026-09-24-user-defined-journal-books.md](decisions/2026-09-24-user-defined-journal-books.md) — สมุดรายวันเป็น master ที่ผู้ใช้กำหนดเอง (`booktype` 1–6 ตาม `journalbook.sql`, SV=ขาย UV=ซื้อ): โค้ดเลือกสมุดตามประเภทไม่ยึดรหัส, สมุดที่มีเอกสารหรือรูปแบบการเชื่อมบัญชีอ้างถึงลบไม่ได้ให้ปิดใช้งาน, สมุดเก่าไม่มีประเภทผู้ใช้กำหนดเองตามชื่อ (ไม่เดาจากรหัส), สิทธิ์ `gl-journals`/`gl-opening-balance`/`gl-post` แทนสิทธิ์รายสมุด, สาขาหัวเอกสารบังคับเมื่อเข้าระบบระดับบริษัท
 - [decisions/2026-09-24-rd-wht-file-export.md](decisions/2026-09-24-rd-wht-file-export.md) — ไฟล์ยื่นภาษีหัก ณ ที่จ่ายด้วยสื่อ = .txt Format กลาง V2.0 สำหรับโปรแกรม SWC-UI (ภ.ง.ด.53/3/2 รายเดือน) จากฉบับที่บันทึกแล้ว — **ไม่ใช่ไฟล์อัปโหลด e-Filing**; ไม่ทำ .rdx/XML/Open API/RD Prep รอบนี้
+- [decisions/2026-09-24-remove-legacy-login-flows.md](decisions/2026-09-24-remove-legacy-login-flows.md) — ลบ flow login ที่ไม่มี route: `LoginEmail` (ออก token โดยไม่ตรวจรหัสผ่าน), Firebase `TokenLogin` + package/dependency, LINE login + package + `LINE_CLIENT_ID`; เก็บ Google/Demo/Dev login และการเชื่อมบัญชี LINE (`/profile/link-line` ยังมี UI เรียก แต่ prod ไม่มี `BC_AUTH_BRIDGE_URL`)
 
 
 

@@ -11,8 +11,8 @@
 
 ## 2. เส้นทาง network: rewrite `/backend/*` และ route ที่ถูกบล็อก
 
-- `next.config.ts` rewrite `/backend/:path*` → `${BCAI_LOCAL_BACKEND_URL}/:path*` (afterFiles) และ **throw ถ้าไม่ตั้ง env** (`frontend/next.config.ts:19-22,73-75`)
-- บล็อก (beforeFiles → `/_blocked-auth-route`) กลุ่ม login/register ที่ browser ไม่ควรเรียกตรง เช่น `/backend/login`, `/backend/googlelogin`, `/backend/dev-login`, `/backend/demo-login`, `/backend/register-username` (`frontend/next.config.ts:29-45`) และกลุ่มอันตราย `/backend/goapi/get|exec|getdoc`, `/backend/reportm/*`, `/backend/goapi/api/setup/*`, `/backend/goapi/api/mcp/*`, `/backend/goapi/mcp/*`, `/backend/reload-config` (`frontend/next.config.ts:58-67`)
+- `next.config.ts` rewrite `/backend/:path*` → `${BCAI_LOCAL_BACKEND_URL}/:path*` (afterFiles) และ **throw ถ้าไม่ตั้ง env** (`frontend/next.config.ts:19-22,69-71`)
+- บล็อก (beforeFiles → `/_blocked-auth-route`) กลุ่ม login/register ที่ browser ไม่ควรเรียกตรง เช่น `/backend/login`, `/backend/googlelogin`, `/backend/dev-login`, `/backend/demo-login`, `/backend/register-username` (`frontend/next.config.ts:28-41`) และกลุ่มอันตราย `/backend/goapi/get|exec|getdoc`, `/backend/reportm/*`, `/backend/goapi/api/setup/*`, `/backend/goapi/api/mcp/*`, `/backend/goapi/mcp/*`, `/backend/reload-config` (`frontend/next.config.ts:54-63`)
 - Header ทุก path: `Referrer-Policy: no-referrer-when-downgrade`, `COOP: same-origin-allow-popups` (จำเป็นสำหรับ Google popup) (`frontend/next.config.ts:10-15`)
 - `allowedDevOrigins` ระบุ IP Tailscale 1 ค่าเพื่อให้เครื่องอื่นเรียก dev server ได้ (`frontend/next.config.ts:6`)
 - Browser ใช้ URL สาธารณะรูป `<origin>/backend/goapi` (`frontend/src/lib/backend-url.ts:6-8`) ส่วน server-side ใช้ `serverMainApiBase()`/`serverGoApiBase()` — client URL ถูก validate แล้วทิ้ง ไม่ถูก echo กลับ (`frontend/src/lib/workspace-api.ts:24-31`); `public/config.json` มี key เดียว `goapi_url` (ตรวจด้วย node; ไม่คัดลอกค่า)
@@ -118,7 +118,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `workspace-api.ts` | helper proxy กลาง: `requireBearerToken`, `getBackendUrlFromRequest` (body > header `x-bc-backend-url` > query), `proxyMainApiJson` | `frontend/src/lib/workspace-api.ts:8-31,61` |
 | `client-auth-session.ts` / `auth-session-server.ts` / `server-jwt.ts` | session ฝั่ง client / cookie ฝั่ง server / JWT verify | ดู §3 |
 | `auth-bridge.ts` | URL ของ auth bridge (`BC_AUTH_BRIDGE_URL`) + `postMainApiAuth` timeout 15 วิ | `frontend/src/lib/auth-bridge.ts:6-10,76-87` |
-| `setup-config.ts` | นิยามหมวด setup (mongodb/postgresql/clickhouse/kafka/service/integrations/storage) — ยังมี ClickHouse/R2 อยู่ แม้ BFF setup ปิดแล้ว | `frontend/src/lib/setup-config.ts:49-150` |
+| `setup-config.ts` | นิยามหมวด setup (mongodb/postgresql/clickhouse/kafka/service/integrations/storage) — ยังมี ClickHouse/R2 อยู่ แม้ BFF setup ปิดแล้ว | `frontend/src/lib/setup-config.ts:49-149` |
 | `theme-data.ts` | 10 พาเลต (`ban-chiang` default, `sukhothai-jade`, `ayutthaya-gold`, `lanna-teak`, `andaman-blue`, `siam-rose`, `violet-bloom`, `coral-sunset`, `citrus-lime`, `berry-magenta`) × light/dark; cookie/storage key `bc_theme`, `bc_color_theme`; ตัวแปรถูก inline บน `<html style>` ตั้งแต่ server | `frontend/src/lib/theme-data.ts:47-53,100-476,530-542`, `frontend/src/app/layout.tsx:48-73` |
 | `font-data.ts` | 8 ฟอนต์ (inter default, noto-sans-thai, prompt, sarabun, kanit, ibm-plex-sans-thai, mitr, bai-jamjuree) key `bc_app_font`; layout preload Google Fonts ทั้ง 8 | `frontend/src/lib/font-data.ts:31-86`, `frontend/src/app/layout.tsx:77-88` |
 | `i18n.ts` + `locales/*.json` | 12 ภาษา (th, en, cn, ja, ko, lo, my, km, vi, ms, id, fil) ไฟล์ละ 93 key เท่ากัน; `t(language,key)` | `frontend/src/lib/i18n.ts:19-31,67` |

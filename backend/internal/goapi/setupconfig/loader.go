@@ -59,7 +59,6 @@ var configMapping = map[string]map[string][]string{
 		"mode":               {"MODE"},
 		"httpcors":           {"HTTP_CORS"},
 		"corsallowedorigins": {"CORS_ALLOWED_ORIGINS"},
-		"firebaseprojectid":  {"FIREBASE_PROJECT_ID"},
 	},
 	"integrations": {
 		"aiprovider":        {"AI_PROVIDER"}, // "gemini" | "openrouter" | "groq" | "deepseek"

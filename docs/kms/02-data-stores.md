@@ -102,7 +102,7 @@
 - compose: `redis:7-alpine` (`backend/docker-compose.yml:29-31`, `deploy/account/compose.yml:79`)
 
 ## 5. MinIO / S3
-- env key: `S3_ENDPOINT S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_BUCKET_NAME S3_REGION S3_FORCE_PATH_STYLE S3_ACCOUNT_ID` (+ alias `R2_*`) map จาก bootstrap key `s3bucketname` ฯลฯ (`backend/internal/goapi/setupconfig/loader.go:109`; อ่านใน `handlers/image_r2.go`)
+- env key: `S3_ENDPOINT S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY S3_BUCKET_NAME S3_REGION S3_FORCE_PATH_STYLE S3_ACCOUNT_ID` (+ alias `R2_*`) map จาก bootstrap key `s3bucketname` ฯลฯ (`backend/internal/goapi/setupconfig/loader.go:108`; อ่านใน `handlers/image_r2.go`)
 - เส้นทางอัปโหลด: frontend `POST /api/upload/image` (`frontend/src/app/api/upload/image/route.ts:3-9`) → `proxyImageUploadToGoApi` ยิง `${mainApiUrl}/goapi/image/upload` (`frontend/src/lib/image-upload-proxy.ts:129`) → `ImageUploadHandler` ตรวจ holdingcode จาก token (`image_r2.go:224-226`) ตั้ง key `holdingcode/category/timestamp_hash.ext` (`:319-320`) สร้าง WebP thumbnail แล้ว `PutObject` 2 object (`:356-388`) key thumb = `<key>.thumb.webp` (`backend/internal/goapi/handlers/image_thumbnail.go:25-30`)
 - อ่านรูป: `GET /goapi/s3/file/*` (`bootstrap.go:509`) — frontend ประกอบ URL แบบนี้ (`image-upload-proxy.ts:188,218`); Mongo เก็บ metadata ใน `images` (`image_r2.go:430`) ตามกฎ AGENTS.md (ห้ามเก็บ binary)
 - dev จริง: bucket ใน `/data` ของ container `minio` = `app-images`, `bcai-account` (`docker exec minio ls /data` 2026-09-07)
@@ -110,7 +110,7 @@
 ## 6. ClickHouse (พักแล้ว)
 - goapi: `ClickHouseFastConnect` คืน `"clickhouse is disabled"` (`backend/internal/goapi/myclickhouse/utils.go:234-236`), `InsertDocumentToClickHouse` เป็น no-op (`backend/internal/goapi/handlers/kafka/utils.go:375-378`); ยังมี 68 ไฟล์ Go อ้างถึง (`rg -il --no-ignore clickhouse backend -g '*.go'` 2026-09-07; 63 ถ้าไม่รวม `process/build/`) ส่วนใหญ่ `goapi/handlers/kafka` (16)
 - legacy ที่ยัง register (`backend/main.go:520-521`) แต่จะพังเมื่อเรียก: `productimport` (`backend/internal/productimport/services/productimport_service.go:158`), `stockbalanceimport` (`backend/internal/stockbalanceimport/services/stockbalanceimport_service.go:42-52`), `/product/barcode2` hard-code holding (`backend/internal/product/productbarcode/services/productbarcode_http_service.go:1885-1886`)
-- infra: container local ถูกตัดออก (`backend/docker-compose.local.yml:6`); prod compose ยังมี service + `depends_on` (`deploy/account/compose.yml:63-68,218,242,282`); `bootstrap.json` ยังมี block `clickhouse` (key: `host port user password database_name`) และ loader map `CLICKHOUSE_HOST`/`CH_SERVER_ADDRESS` (`backend/internal/goapi/setupconfig/loader.go:322-323`)
+- infra: container local ถูกตัดออก (`backend/docker-compose.local.yml:6`); prod compose ยังมี service + `depends_on` (`deploy/account/compose.yml:63-68,218,242,282`); `bootstrap.json` ยังมี block `clickhouse` (key: `host port user password database_name`) และ loader map `CLICKHOUSE_HOST`/`CH_SERVER_ADDRESS` (`backend/internal/goapi/setupconfig/loader.go:321-322`)
 
 ## 7. Kafka (pointer)
 Consumer ฝั่ง goapi ทั้งหมดอยู่ใน `StartConsumers` (`backend/internal/goapi/handlers/kafka.go:26-1009`) group ลงท้าย `-<KAFKA_CONSUMER_GROUP_VERSION>` default `v1` (`backend/internal/goapi/config/config.go:118-120`); product topic ใช้ consumer ใหม่ ack-after-success (§3.2 แถวแรก) — รายละเอียด topic/producer/outbox ดูบทความ 12

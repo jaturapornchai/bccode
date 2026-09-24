@@ -76,7 +76,6 @@ export const SETUP_CATEGORY_DEFS: CategoryDef[] = [
       setupItem("service", "mode", false, "Runtime mode"),
       setupItem("service", "httpcors", false, "HTTP CORS"),
       setupItem("service", "corsallowedorigins", false, "CORS allowed origins"),
-      setupItem("service", "firebaseprojectid", false, "Firebase project id"),
     ],
   },
   {
@@ -193,7 +192,6 @@ export const fieldLabels: Record<string, string> = {
   deepseekapikey: "DeepSeek API Key",
   deepseekmodel: "DeepSeek Model",
   devapimode: "Dev API Mode",
-  firebaseprojectid: "Firebase Project ID",
   geminiapikey: "Gemini API Key",
   geminimodel: "Gemini Model",
   groqapikey: "Groq API Key",

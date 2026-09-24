@@ -25,17 +25,13 @@ const nextConfig: NextConfig = {
     // (Next /api/auth/* -> local backend), never by the browser, so blocking them here breaks nothing.
     const blockedAuthRoutes = [
       "/backend/login",
-      "/backend/login/email",
       "/backend/login/phone-number",
-      "/backend/login/line",
       "/backend/poslogin",
-      "/backend/linelogin",
       "/backend/googlelogin",
       "/backend/dev-login",
       "/backend/v1/dev-login",
       "/backend/demo-login",
       "/backend/v1/demo-login",
-      "/backend/tokenlogin",
       "/backend/register",
       "/backend/register-username",
       "/backend/register-phonenumber",
