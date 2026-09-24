@@ -1259,7 +1259,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
+                <AppHeaderControls language={language} onLanguageChange={setLanguage} />
                 <ManualLink compact language={language} screen="menu" />
                 <ZoomControl dictionary={backendLanguage} language={language} />
                 <DropdownMenu>

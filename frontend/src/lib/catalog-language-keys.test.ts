@@ -16,7 +16,6 @@ const catalogs = [
   "src/app/menu/product-price-history-screen.tsx",
   "src/app/menu/datamodel-graph-screen.tsx",
   "src/app/workspace/workspace-screen.tsx",
-  "src/app/settings/settings-screen.tsx",
   "src/app/login-screen.tsx",
   "src/components/system-settings/field-editors/role-screen-matrix.tsx",
 ];
@@ -26,7 +25,6 @@ const screens = [
   "src/app/report/erp-report-viewer.tsx",
   "src/app/tax/tax-filing-workbench.tsx",
   "src/app/asset/fixed-assets-screen.tsx",
-  "src/app/settings/settings-screen.tsx",
 ];
 const languageColumns = ["th", "en", "cn", "ja", "km", "ko", "lo", "my", "vi", "ms", "id", "fil"];
 

@@ -42,7 +42,7 @@ type ManualFile = {
   translations: Partial<Record<LanguageCode, ManualContent>>;
 };
 
-const manualScreens = new Set(["login", "workspace", "settings", "menu", "currency", ...SYSTEM_SETTING_SLUGS]);
+const manualScreens = new Set(["login", "workspace", "menu", "currency", ...SYSTEM_SETTING_SLUGS]);
 const manualLanguages = LANGUAGES.filter((item) => item.code === "th" || item.code === "en");
 const manualUi: Record<LanguageCode, {
   actions: string;

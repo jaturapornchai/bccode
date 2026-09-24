@@ -15,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "motion/react";
@@ -112,11 +111,9 @@ const storageKeys = {
 
 // 2026-09-16: the Thai/English literals below are the fallback — these keys
 // pull the same words out of languages.tsv for all twelve languages.
-const loginTextKeys: Record<string, string> = {
-  "openSettingsAria": "login_open_settings_to_change_backend",
+const loginTextKeys: Record<string, string> = {
   "cannotConnect": "login_cannot_connect_to_backend",
-  "cannotConnectHint": "login_make_sure_the_backend_url",
-  "openSettings": "login_open_settings",
+  "cannotConnectHint": "login_make_sure_the_backend_url",
   "tryDemo": "login_try_the_demo",
 };
 export function LoginScreen() {
@@ -603,13 +600,6 @@ export function LoginScreen() {
                   <code className="connection-error-url" title={backendUrl}>
                     {backendUrl || t(language, "api")}
                   </code>
-                  <Link
-                    href="/settings"
-                    className="connection-error-link"
-                    aria-label={lt("openSettingsAria", { th: "ไปตั้งค่า Backend URL", en: "Open settings to change Backend URL" })}
-                  >
-                    {lt("openSettings", { th: "ไปตั้งค่า →", en: "Open Settings →" })}
-                  </Link>
                 </div>
               </div>
             </motion.div>

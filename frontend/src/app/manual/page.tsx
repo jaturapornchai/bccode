@@ -27,7 +27,7 @@ type ManualIndexProps = {
   searchParams?: Promise<{ lang?: string; screen?: string }>;
 };
 
-const manualScreens = ["login", "workspace", "settings", "menu", "currency", ...SYSTEM_SETTING_SLUGS] as const;
+const manualScreens = ["login", "workspace", "menu", "currency", ...SYSTEM_SETTING_SLUGS] as const;
 const manualLanguages = LANGUAGES.filter((item) => item.code === "th" || item.code === "en");
 
 const indexUi = {

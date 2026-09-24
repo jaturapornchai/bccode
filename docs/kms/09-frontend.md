@@ -32,7 +32,7 @@
 
 ## 4. หน้าจอ (App Router pages)
 
-page ส่วนใหญ่เป็น server component บาง ๆ ที่อ่านภาษาจาก cookie แล้ว render screen component client (`frontend/src/lib/backend-language-server.ts:16-19`) — ยกเว้น `/` และ `/settings` ที่ render screen ตรงโดยไม่อ่านภาษา (`frontend/src/app/page.tsx:9-10`, `frontend/src/app/settings/page.tsx:8-9`)
+page ส่วนใหญ่เป็น server component บาง ๆ ที่อ่านภาษาจาก cookie แล้ว render screen component client (`frontend/src/lib/backend-language-server.ts:16-19`) — ยกเว้น `/` ที่ render screen ตรงโดยไม่อ่านภาษา (`frontend/src/app/page.tsx:9-10`)
 
 | route | หน้าที่ | screen component | สถานะ | อ้างอิง |
 |---|---|---|---|---|
@@ -45,8 +45,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/price_history` | ประวัติราคาสินค้า | `menu/product-price-history-screen.tsx` | LIVE | `frontend/src/app/price_history/page.tsx:3,11` |
 | `/product_barcode_shelf` | ชั้นวางบาร์โค้ด | `menu/product-barcode-shelf-screen.tsx` | LIVE | `frontend/src/app/product_barcode_shelf/page.tsx:3,11` |
 | `/line-oa` | ผูก LINE OA กับผู้ใช้ | `line-oa/line-oa-link-screen.tsx` | LIVE | `frontend/src/app/line-oa/page.tsx:3,11` |
-| `/settings` | Setup infra (Mongo/PG/ClickHouse/Kafka/S3/AI keys) | `settings/settings-screen.tsx` (1576) | **DEAD ทางปฏิบัติ** — BFF `/api/setup/*` และ `/api/storage/health` ตอบ 410 | `frontend/src/app/settings/page.tsx:2,9`, `frontend/src/app/api/setup/[...setupPath]/route.ts:6-11`, `frontend/src/app/api/storage/health/route.ts:5-12` |
-| `/manual`, `/manual/[screen]` | คู่มือ th/en อ่านจากไฟล์ `frontend/manual/*.json` (login, workspace, settings, menu, currency + ทุก slug) | server-rendered | LIVE (มี json 10 ไฟล์) | `frontend/src/app/manual/page.tsx:1,30-31,60-71`, `frontend/Dockerfile:47` |
+| `/manual`, `/manual/[screen]` | คู่มือ th/en อ่านจากไฟล์ `frontend/manual/*.json` (login, workspace, menu, currency + ทุก slug) | server-rendered | LIVE (มี json 9 ไฟล์) | `frontend/src/app/manual/page.tsx:1,30-31,60-71`, `frontend/Dockerfile:47` |
 | `/favicon.ico` | route handler ส่ง icon พร้อม cache 1 ปี | — | LIVE | `frontend/src/app/favicon.ico/route.ts:8-11` |
 
 ## 5. API route handlers (36 ไฟล์ `route.ts` ใต้ `frontend/src/app/api/`; รวม `favicon.ico/route.ts` = 37 — นับจาก `git ls-files frontend/src/app | grep route.ts`) → backend path
@@ -89,8 +88,6 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/holding-member` | GET | M `/holding-member/list` (อ่านอย่างเดียว; เพิ่ม/ถอดผู้ดูแลทำที่ ตั้งค่าระบบและการเข้าถึง › บัญชีเข้าระบบ) | Bearer | LIVE | `holding-member/route.ts:1-17` |
 | `/api/holding-users-import` | POST | M `/holding/users/import` | Bearer | LIVE | `holding-users-import/route.ts:8-12` |
 | `/api/line-oa/user` | POST | G `/api/user/lineoa/link|profile` | Bearer + tenant JWT | LIVE | `line-oa/user/route.ts:20-21,32,47,63-68` |
-| `/api/setup/[...path]` | POST | — ตอบ 410 | — | STUBBED | `setup/[...setupPath]/route.ts:6-11` |
-| `/api/storage/health` | POST | — ตอบ 410 (กัน SSRF) | — | STUBBED | `storage/health/route.ts:3-12` |
 
 (path ในคอลัมน์อ้างอิงย่อจาก `frontend/src/app/api/`)
 
@@ -108,7 +105,6 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/[systemSetting]` | `system-settings/*`, `system-settings/branch`, `workspace/holdings`, `workspace/product-units/standard|defaults`, `upload/image`, `auth/profile/reset-password` (501), `holding-users-import` | `frontend/src/app/system-settings/system-settings-screen.tsx`, `bulk-user-import.tsx` |
 | `/currency` | `currency`, `currency/*` | `frontend/src/app/currency/currency-screen.tsx` |
 | `/line-oa` | `line-oa/user` | `frontend/src/app/line-oa/line-oa-link-screen.tsx` |
-| `/settings` | `backend/check`, `storage/health` (410), `setup/*` (410) | `frontend/src/app/settings/settings-screen.tsx` |
 | lib/components ทั่วไป | `auth/refresh`, `auth/logout`, `language/{lang}`, `address/thailand`, `product-barcode/master/*` (ผ่าน `listMaster()` ที่ `master-picker.tsx` import), `upload/image` | `frontend/src/lib/client-auth-session.ts:121,205`, `frontend/src/lib/backend-language.ts:135`, `frontend/src/lib/thailand-addresses.ts`, `frontend/src/lib/product-barcode/api.ts:288`, `frontend/src/components/product-barcode/master-picker.tsx:8`, `frontend/src/components/system-settings/field-editors/image-upload-editor.tsx` |
 
 ## 7. `frontend/src/lib/**` — โมดูลสำคัญ
@@ -119,7 +115,6 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `workspace-api.ts` | helper proxy กลาง: `requireBearerToken`, `getBackendUrlFromRequest` (body > header `x-bc-backend-url` > query), `proxyMainApiJson` | `frontend/src/lib/workspace-api.ts:8-31,61` |
 | `client-auth-session.ts` / `auth-session-server.ts` / `server-jwt.ts` | session ฝั่ง client / cookie ฝั่ง server / JWT verify | ดู §3 |
 | `auth-bridge.ts` | URL ของ auth bridge (`BC_AUTH_BRIDGE_URL`) + `postMainApiAuth` timeout 15 วิ | `frontend/src/lib/auth-bridge.ts:6-10,76-87` |
-| `setup-config.ts` | นิยามหมวด setup (mongodb/postgresql/clickhouse/kafka/service/integrations/storage) — ยังมี ClickHouse/R2 อยู่ แม้ BFF setup ปิดแล้ว | `frontend/src/lib/setup-config.ts:49-150` |
 | `theme-data.ts` | 10 พาเลต (`ban-chiang` default, `sukhothai-jade`, `ayutthaya-gold`, `lanna-teak`, `andaman-blue`, `siam-rose`, `violet-bloom`, `coral-sunset`, `citrus-lime`, `berry-magenta`) × light/dark; cookie/storage key `bc_theme`, `bc_color_theme`; ตัวแปรถูก inline บน `<html style>` ตั้งแต่ server | `frontend/src/lib/theme-data.ts:47-53,100-476,530-542`, `frontend/src/app/layout.tsx:48-73` |
 | `font-data.ts` | 8 ฟอนต์ (inter default, noto-sans-thai, prompt, sarabun, kanit, ibm-plex-sans-thai, mitr, bai-jamjuree) key `bc_app_font`; layout preload Google Fonts ทั้ง 8 | `frontend/src/lib/font-data.ts:31-86`, `frontend/src/app/layout.tsx:77-88` |
 | `i18n.ts` + `locales/*.json` | 12 ภาษา (th, en, cn, ja, ko, lo, my, km, vi, ms, id, fil) ไฟล์ละ 93 key เท่ากัน; `t(language,key)` | `frontend/src/lib/i18n.ts:19-31,67` |
@@ -166,8 +161,8 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 ## 12. รัน dev / build / deploy และ env (ชื่อเท่านั้น)
 
 - Dev: `cd frontend && npm run dev` (root มี `npm run dev:frontend` = port 3001, `package.json:13`); ต้องมี `BCAI_LOCAL_BACKEND_URL` ไม่งั้น `next.config.ts` throw (`frontend/next.config.ts:20-22`); ตรวจ runtime 2026-09-07: `curl localhost:3000` → 200, container `mainapi` up ที่ 8888 (read-only)
-- Env ที่โค้ดอ่าน: `BCAI_LOCAL_BACKEND_URL`, `JWT_SECRET_KEY`, `BCAI_DEV_LOGIN_ENABLED`, `BCAI_DEV_LOGIN_SECRET`, `BCAI_DEV_LOGIN_BACKEND_URL`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BC_AUTH_BRIDGE_URL`, `NEXT_PUBLIC_DEFAULT_BACKEND_URL`, `NODE_ENV`, `E2E_BASE_URL`, `E2E_BROWSER_CHANNEL`, `PW_BASE_URL`, `CI` (grep `process.env.*` ใน `frontend/src`, `next.config.ts`, `playwright.config.ts`); `BCAI_DEMO_LOGIN_ENABLED` เป็นของ backend (`frontend/src/app/api/auth/demo-login/route.ts:9`)
-- Docker: `frontend/Dockerfile` multi-stage `node:24.18.0-alpine`, build-args `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BCAI_LOCAL_BACKEND_URL`, `NEXT_PUBLIC_DEFAULT_BACKEND_URL`, copy `manual/` + `.next` แล้ว `npm run start` (ไม่ใช้ standalone) (`frontend/Dockerfile:2,25-32,44-57`)
+- Env ที่โค้ดอ่าน: `BCAI_LOCAL_BACKEND_URL`, `JWT_SECRET_KEY`, `BCAI_DEV_LOGIN_ENABLED`, `BCAI_DEV_LOGIN_SECRET`, `BCAI_DEV_LOGIN_BACKEND_URL`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BC_AUTH_BRIDGE_URL`, `NODE_ENV`, `E2E_BASE_URL`, `E2E_BROWSER_CHANNEL`, `PW_BASE_URL`, `CI` (grep `process.env.*` ใน `frontend/src`, `next.config.ts`, `playwright.config.ts`); `BCAI_DEMO_LOGIN_ENABLED` เป็นของ backend (`frontend/src/app/api/auth/demo-login/route.ts:9`)
+- Docker: `frontend/Dockerfile` multi-stage `node:24.18.0-alpine`, build-args `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BCAI_LOCAL_BACKEND_URL`, copy `manual/` + `.next` แล้ว `npm run start` (ไม่ใช้ standalone) (`frontend/Dockerfile:2,25-32,44-57`)
 - Prod compose: service `frontend` image `${FRONTEND_IMAGE}` + `env_file /etc/bcai-account/frontend.env` (`deploy/account/compose.yml:309-311`)
 - ~~ไฟล์ log ถูก track ใน git~~ **เลิก track แล้ว 2026-09-09** (`git rm --cached frontend/.next-dev.log frontend/.next-dev.err.log`) — root `.gitignore:53` (`*.log`) คุมอยู่แล้ว ส่วน `frontend/.gitignore:9-12` ยัง ignore เฉพาะ `npm-debug.log*`, `yarn-debug.log*`, `yarn-error.log*`, `pnpm-debug.log*` (`git ls-files frontend | grep .log`, `frontend/.gitignore:9-12`)
 
@@ -209,7 +204,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 - **ยังไม่ตรวจ** `BC_AUTH_BRIDGE_URL` ชี้ไปที่บริการใด/ยังรันอยู่ไหม — ถ้าไม่มี flow ผูก LINE (`/api/auth/line/code`, `link/status`) จะตอบ error ไทย "ระบบยังไม่ได้ตั้งค่า Auth bridge" (`frontend/src/lib/auth-bridge.ts:8`)
 - ขัดกันจริงในโค้ด: `frontend/src/app/login-screen.tsx:304-309,649-657` มีเฉพาะปุ่ม "ทดลองใช้ระบบ (Demo)" (comment บอกว่าแทนปุ่ม Dev Login เดิม) และ `frontend/src/app/login-screen.security.test.ts:8-12` บังคับว่าห้ามมี `/api/auth/dev-login` ในหน้า login — แต่ `frontend/e2e/dev-login.spec.ts:8` และ `tests/auth.setup.ts:16` ยังหาปุ่ม "Dev Login" อยู่ → e2e/UAT ชุดนี้น่าจะไม่ผ่านตั้งแต่ขั้น login (**ยังไม่รันยืนยัน**); ถามลุงจืดว่าจะย้าย e2e ไป Demo หรือคืนปุ่ม Dev
 - (ปิดแล้ว 2026-09-07) skill ส่วนตัวอยู่ที่ `.agents/skills/ui-scale-polish/SKILL.md` (271 บรรทัด, ตรวจ 2026-09-09) ตามกฎใน `AGENTS.md:20-25` ซึ่งชี้ path นี้ถูกต้องแล้ว — โฟลเดอร์ `.agents/skills/` ถูกย้ายออกไปแล้ว (`git ls-files .agents` ว่างเป็นเรื่องปกติ ไม่ใช่ bug) ห้ามสร้างกลับ และ **ห้ามแก้ path ใน AGENTS.md อีก**
-- `/settings` + `setup-config.ts` ยังอ้าง ClickHouse/R2 และเรียก BFF ที่ตอบ 410 — ควรตัดสินว่าจะลบจอนี้หรือรอ Control Plane auth
+- (ปิดแล้ว 2026-09-24) ลบจอ `/settings` + `setup-config.ts` + BFF `/api/setup/*` และ `/api/storage/health` — ไม่ตรวจ session, รับรหัสว่าง/`12345`/`admin`, เปิด SSRF ให้ใครก็ได้บน URL สาธารณะ และ config ที่บันทึกไม่มี service ใดอ่าน; guard test `frontend/src/app/api/removed-setup-api.test.ts` — ดู `bugs/2026-09-24-unauthenticated-setup-api-ssrf.md`
 - `system-settings-screen.tsx` 16,600 บรรทัดในไฟล์เดียว — ไม่ได้อ่านทั้งไฟล์ (ใช้ grep) จึง**ยังไม่ตรวจ** พฤติกรรมรายจอ 31 slug
 - ไม่ได้รัน `npm test`/`typecheck`/playwright ในรอบนี้ (อ่านโค้ดอย่างเดียว) — สถานะผ่าน/ตกล่าสุด**ยังไม่ตรวจ**
 - คำถาม: ไฟล์ `frontend/src/app/.dialog-header` และ `.next-dev*.log` ที่ถูก track ลบได้ไหม (R2 แต่รอคำสั่ง)

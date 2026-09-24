@@ -1378,3 +1378,11 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 - **เหตุผล**: คน 40+ เชื่อปุ่มที่เห็น — ปุ่มที่ไม่ทำงานทำลายความเชื่อมั่นทั้งระบบ; ทางเดียวที่ทำงาน = สิทธิ์ตรวจที่เดียว ไม่มีทางลัดข้ามการตรวจสิทธิ์
 - **วิธีตรวจ**: `git grep` ชื่อ route ใน `backend/**/*_http.go` ว่า register จริง (`h.ms.GET/POST`), ทดสอบกดจริงด้วยปุ่ม Demo แล้วดู network ว่าไม่มี 404/405
 - **อ้างอิง**: `frontend/src/app/holding/holding-screen.tsx` (modal ผู้ดูแล ~บรรทัด 1101, `listHoldingMembers` ~1423), `frontend/src/app/api/holding-member/route.ts` (GET อย่างเดียว), `backend/internal/shop/shopuser_http.go:56`
+
+## 8.38 Header controls มีแค่ ฟอนต์ / ธีม / ภาษา — ห้ามมีลิงก์ไปจอตั้งค่า infra (2026-09-24)
+
+- **แบบแผน**: `<AppHeaderControls language onLanguageChange />` แสดง 3 ตัวเท่านั้น (FontPicker, ThemeToggle = ปุ่มธีมสี+โหมดมืด, LanguageDialog) → การ์ด login มี 4 ปุ่ม; ไม่มี prop `showSettings` แล้ว
+- **ห้ามทำซ้ำ**: ปุ่มฟันเฟือง/ลิงก์ "ไปตั้งค่า →" ไปจอตั้งค่า server/Backend URL/DB/S3/AI key บนหน้าเว็บ (จอ `/settings` + `/api/setup/*` ถูกลบ เพราะไม่ตรวจ session และเปิด SSRF); class `.header-control-button` ถูกลบจาก CSS แล้ว อย่าใช้กลับ
+- **เหตุผล**: ค่า infra ตั้งตอน deploy (compose/env) ไม่ใช่งานของผู้ใช้ปลายทาง — ปุ่มที่ดูเหมือนตั้งค่าได้แต่ไม่มีผลจริงทำลายความเชื่อมั่น (ดู 8.34) และหน้าที่ไม่ต้อง login แต่แตะ infra คือช่องโหว่
+- **วิธีตรวจ**: หน้า login ต้องนับ `.card-header .header-controls button` ได้ 4 (`tests/login-header-controls.spec.ts` HC-01); `npx vitest run src/app/api/removed-setup-api.test.ts`
+- **อ้างอิง**: `frontend/src/app/app-header-controls.tsx`, `docs/kms/bugs/2026-09-24-unauthenticated-setup-api-ssrf.md`

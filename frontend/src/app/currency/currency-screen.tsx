@@ -556,7 +556,7 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
             </div>
           </div>
           <div className="flex min-w-0 flex-wrap justify-end gap-2">
-            {embedded ? null : <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />}
+            {embedded ? null : <AppHeaderControls language={language} onLanguageChange={setLanguage} />}
             <ManualLink compact language={language} screen="currency" />
           </div>
         </div>

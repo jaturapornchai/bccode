@@ -1270,7 +1270,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
                   })}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
+              <AppHeaderControls language={language} onLanguageChange={setLanguage} />
             </div>
           </div>
           <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-card overflow-hidden">
@@ -1509,7 +1509,7 @@ export function WorkspaceScreen({ initialBackendLanguage, initialBackendUrl, ini
           >
             {lineDialog.loading ? <Loader2 className="spin" size={18} /> : <MessageCircle size={18} />}
           </button>
-          <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
+          <AppHeaderControls language={language} onLanguageChange={setLanguage} />
           <button className="icon-button" type="button" onClick={logout} aria-label={text("logout")} title={text("logout")}>
             <LogOut size={18} />
           </button>
