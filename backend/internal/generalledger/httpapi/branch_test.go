@@ -55,3 +55,18 @@ func TestCheckJournalBranch(t *testing.T) {
 		}
 	}
 }
+
+// CheckJournalBranch is the same rule for journals other modules (fixed assets) post.
+func TestCheckJournalBranchExported(t *testing.T) {
+	ctx := context.Background()
+	session := gl.Scope{Holding: "H", Company: "C", Branch: "B"}
+	if user, ok := gl.AsUserError(CheckJournalBranch(ctx, nil, session, "X")); !ok || user.Code != "journal_branch_outside_session" {
+		t.Fatalf("other branch in a branch session = %#v", user)
+	}
+	if err := CheckJournalBranch(ctx, nil, session, ""); err != nil {
+		t.Fatalf("blank must mean the session branch: %v", err)
+	}
+	if err := CheckJournalBranch(ctx, nil, gl.Scope{Holding: "H", Company: "C"}, "B"); err == nil {
+		t.Fatal("a company session without the branch registry must fail closed")
+	}
+}

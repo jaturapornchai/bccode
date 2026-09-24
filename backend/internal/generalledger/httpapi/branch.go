@@ -9,6 +9,13 @@ import (
 	"smlcloudplatform/internal/mcptoken"
 )
 
+// CheckJournalBranch applies the same header-branch rule to a journal another module (fixed
+// assets) posts through the ledger for this session; branch is the voucher header branch and
+// connect opens the control database that holds the branch registry.
+func CheckJournalBranch(ctx context.Context, connect func(string) (*sql.DB, error), session gl.Scope, branch string) error {
+	return checkJournalBranch(ctx, connect, requestScope{Scope: session}, &gl.Journal{BranchCode: branch})
+}
+
 // checkJournalBranch validates the voucher header branch against the organisation registry
 // (audit 2026-09-24: a company-wide session saved blank or made-up branches).
 //   - branch-scoped session: blank means the session branch (the store fills it in); any

@@ -3,8 +3,13 @@ package fixedasset
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"sort"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/lib/pq"
 	"github.com/shopspring/decimal"
@@ -21,13 +26,138 @@ type LedgerPoster interface {
 	List(ctx context.Context, scope gl.Scope, resource, query string, page, limit int, filter gl.ListFilter) (gl.Page, error)
 }
 
+// BranchChecker validates a voucher header branch for the session. HTTP wires it to
+// generalledger/httpapi.CheckJournalBranch so fixed-asset journals follow the GL screen rule:
+// a branch session may leave it blank (= its own branch) but not pick another branch; a
+// company-wide session must name an active branch of the company.
+type BranchChecker func(ctx context.Context, scope Scope, branch string) error
+
 type GLPoster struct {
-	records *records
-	ledger  LedgerPoster
+	records     *records
+	ledger      LedgerPoster
+	checkBranch BranchChecker
 }
 
-func NewGLPoster(connect Connector, ledger LedgerPoster) *GLPoster {
-	return &GLPoster{records: newRecords(connect), ledger: ledger}
+func NewGLPoster(connect Connector, ledger LedgerPoster, checkBranch BranchChecker) *GLPoster {
+	return &GLPoster{records: newRecords(connect), ledger: ledger, checkBranch: checkBranch}
+}
+
+var errBranchCheckUnavailable = errors.New("ระบบตรวจสาขาของใบสำคัญยังไม่พร้อม กรุณาติดต่อผู้ดูแลระบบ")
+
+// Labels of the account settings a user must fill; the asset's own account wins over its type's.
+const (
+	labelCostAccount    = "รหัสบัญชีสินทรัพย์ (ราคาทุน)"
+	labelAccumAccount   = "รหัสบัญชีค่าเสื่อมราคาสะสม"
+	labelExpenseAccount = "รหัสบัญชีค่าใช้จ่ายค่าเสื่อมราคา"
+)
+
+// faFieldError is a user-input failure the screen can point at (code + JSON field + Thai text).
+func faFieldError(code, field, message string) error {
+	return &gl.UserError{Code: code, Field: field, Status: http.StatusBadRequest, Message: message}
+}
+
+// journalBranch validates the voucher header branch and returns the branch to store; blank
+// means the session branch, which the check only allows for a branch session.
+func (p *GLPoster) journalBranch(ctx context.Context, scope Scope, branch string) (string, error) {
+	branch = gl.NormalizeCode(branch)
+	if p.checkBranch == nil {
+		return "", errBranchCheckUnavailable
+	}
+	if err := p.checkBranch(ctx, scope, branch); err != nil {
+		return "", err
+	}
+	if branch == "" {
+		branch = scope.Branch
+	}
+	return branch, nil
+}
+
+// disposalBranch posts a disposal in the asset's branch under the same rule, with messages that
+// point at the asset: the disposal dialog has no branch field of its own.
+func (p *GLPoster) disposalBranch(ctx context.Context, scope Scope, asset Asset) (string, error) {
+	branch, err := p.journalBranch(ctx, scope, asset.BranchCode)
+	user, ok := gl.AsUserError(err)
+	if !ok {
+		return branch, err
+	}
+	switch user.Code {
+	case "journal_branch_required":
+		return "", faFieldError(user.Code, "branchcode", fmt.Sprintf("สินทรัพย์ %s ยังไม่ได้กำหนดสาขา และคุณเข้าระบบระดับบริษัท ระบบจึงเลือกสาขาของใบสำคัญให้ไม่ได้ กรุณากำหนดสาขาในข้อมูลสินทรัพย์ หรือเข้าระบบในสาขาที่ต้องการ", asset.AssetCode))
+	case "journal_branch_outside_session":
+		return "", faFieldError(user.Code, "branchcode", fmt.Sprintf("สินทรัพย์ %s อยู่สาขา “%s” ไม่ตรงกับสาขาที่เข้าระบบ “%s” กรุณาเข้าระบบในสาขาของสินทรัพย์หรือระดับบริษัท แล้วจำหน่ายอีกครั้ง", asset.AssetCode, gl.NormalizeCode(asset.BranchCode), scope.Branch))
+	}
+	return "", err
+}
+
+// assetAccounts are the GL accounts of one asset, resolved from the asset, then its asset type.
+type assetAccounts struct{ cost, accum, expense string }
+
+// resolveAssetAccounts never guesses a code: charts of accounts differ per company, so an
+// account missing on both the asset and its type stays blank and the caller asks the user.
+func resolveAssetAccounts(asset Asset, assetType *AssetType) assetAccounts {
+	var t AssetType
+	if assetType != nil {
+		t = *assetType
+	}
+	pick := func(own, typed string) string {
+		if code := gl.NormalizeCode(own); code != "" {
+			return code
+		}
+		return gl.NormalizeCode(typed)
+	}
+	return assetAccounts{
+		cost:    pick(asset.AssetAccountCode, t.AssetAccountCode),
+		accum:   pick(asset.AccumDeprecAccountCode, t.AccumDeprecAccountCode),
+		expense: pick(asset.DeprecExpenseAccountCode, t.DeprecExpenseAccountCode),
+	}
+}
+
+// assetAccountMissing names the account setting and the assets that lack it.
+func assetAccountMissing(field, label string, assetCodes []string) error {
+	shown, more := assetCodes, ""
+	if len(shown) > 10 {
+		shown, more = shown[:10], fmt.Sprintf(" และอีก %d รายการ", len(assetCodes)-10)
+	}
+	return faFieldError("fa_account_required", field, fmt.Sprintf("ยังไม่ได้กำหนด%sของสินทรัพย์ %s%s กรุณากำหนดที่ข้อมูลสินทรัพย์หรือประเภทสินทรัพย์ แล้วทำรายการอีกครั้ง", label, strings.Join(shown, ", "), more))
+}
+
+// assetTypesByCode loads the asset types the assets refer to, keyed by type code.
+func assetTypesByCode(ctx context.Context, q queryer, company string, assets []Asset) (map[string]*AssetType, error) {
+	byCode := map[string]*AssetType{}
+	seen := map[string]bool{}
+	codes := []string{}
+	for _, a := range assets {
+		if a.AssetTypeCode != "" && !seen[a.AssetTypeCode] {
+			seen[a.AssetTypeCode] = true
+			codes = append(codes, a.AssetTypeCode)
+		}
+	}
+	if len(codes) == 0 {
+		return byCode, nil
+	}
+	types, err := queryRecords[AssetType](ctx, q, company, kindType, ` AND code = ANY($3)`, "", pq.Array(codes))
+	if err != nil {
+		return nil, err
+	}
+	for i := range types {
+		byCode[types[i].TypeCode] = &types[i]
+	}
+	return byCode, nil
+}
+
+// checkJournalDocNo validates the voucher number before anything is posted. A number the
+// system builds from the book and asset codes can outgrow doc_no VARCHAR(30) (counted in runes),
+// so that failure says what was built and how to fix it.
+func checkJournalDocNo(docNo, field string, generated bool) error {
+	err := gl.CheckDocNo(docNo, field)
+	user, ok := gl.AsUserError(err)
+	if !ok || !generated {
+		return err
+	}
+	if user.Code == "code_too_long" {
+		return faFieldError(user.Code, field, fmt.Sprintf("เลขที่ใบสำคัญที่ระบบสร้างให้ “%s” ยาว %d ตัวอักษร เกินที่รับได้ %d ตัว กรุณาระบุเลขที่ใบสำคัญเองให้ไม่เกิน %d ตัวอักษร", docNo, utf8.RuneCountInString(docNo), gl.DocNoMaxRunes, gl.DocNoMaxRunes))
+	}
+	return faFieldError(user.Code, field, fmt.Sprintf("เลขที่ใบสำคัญที่ระบบสร้างให้ “%s” ใช้ไม่ได้: %s กรุณาระบุเลขที่ใบสำคัญเอง", docNo, user.Message))
 }
 
 // GLLineDoc / GLJournalDoc are the response shape returned to the HTTP and MCP
@@ -103,15 +233,30 @@ func (p *GLPoster) postJournal(ctx context.Context, scope Scope, j *gl.Journal) 
 }
 
 // PostDepreciation posts monthly depreciation for a specific year and period into GL Journal.
-func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear string, period int, date, docNo string, now time.Time) (*GLJournalDoc, error) {
+// branch is the voucher header branch (blank = the session branch, branch sessions only).
+func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear string, period int, date, docNo, branch string, now time.Time) (*GLJournalDoc, error) {
 	if fiscalYear == "" || period < 1 || period > 12 {
 		return nil, fmt.Errorf("กรุณาระบุปีบัญชีและงวดที่ต้องการผ่านรายการ (1-12)")
 	}
-	if docNo == "" {
-		docNo = fmt.Sprintf("JV-FA-%s-%02d", fiscalYear, period)
-	}
 	if date == "" {
 		date = now.Format("2006-01-02")
+	}
+	branch, err := p.journalBranch(ctx, scope, branch)
+	if err != nil {
+		return nil, err
+	}
+	book, err := p.generalBookCode(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	// Book codes are user-defined: the generated number starts with the chosen book, never "JV".
+	docNo = gl.NormalizeCode(docNo)
+	generated := docNo == ""
+	if generated {
+		docNo = fmt.Sprintf("%s-FA-%s-%02d", book, fiscalYear, period)
+	}
+	if err := checkJournalDocNo(docNo, "docno", generated); err != nil {
+		return nil, err
 	}
 
 	// 1. Find all unposted depreciation schedule items for this year & period
@@ -141,40 +286,66 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	for _, a := range assets {
 		assetMap[a.AssetCode] = a
 	}
+	types, err := assetTypesByCode(ctx, db, scope.Company, assets)
+	if err != nil {
+		return nil, err
+	}
 
 	// 3. Group depreciation amounts by Expense Account and Accumulated Depreciation Account.
-	// Branch is not a GL journal-line dimension, so every line here shares the
-	// journal's own branch (the acting user's scope); see gl_poster.go P0-1/P0-2 fix notes.
+	// Branch is not a GL journal-line dimension, so every line here shares the journal's
+	// header branch (checked above).
 	type accGroup struct {
 		expenseAcc string
 		accumAcc   string
 	}
 	grouped := make(map[accGroup]decimal.Decimal)
+	var missingExpense, missingAccum []string
 
 	for _, it := range items {
-		ast, ok := assetMap[it.AssetCode]
-		if !ok {
+		amount := it.PeriodDeprec.Decimal()
+		if amount.IsZero() {
 			continue
 		}
-		expAcc := ast.DeprecExpenseAccountCode
-		if expAcc == "" {
-			expAcc = "520103" // Default Depreciation Expense
+		ast, ok := assetMap[it.AssetCode]
+		if !ok {
+			// Skipping would still mark the row posted below with no journal line behind it.
+			return nil, fmt.Errorf("ไม่พบข้อมูลสินทรัพย์ %s ของรายการค่าเสื่อมราคางวดนี้ กรุณาตรวจสอบทะเบียนสินทรัพย์ก่อนผ่านรายการ", it.AssetCode)
 		}
-		accAcc := ast.AccumDeprecAccountCode
-		if accAcc == "" {
-			accAcc = "129101" // Default Accum Depreciation
+		acc := resolveAssetAccounts(ast, types[ast.AssetTypeCode])
+		if acc.expense == "" {
+			missingExpense = append(missingExpense, ast.AssetCode)
 		}
-
-		key := accGroup{expenseAcc: expAcc, accumAcc: accAcc}
-		grouped[key] = grouped[key].Add(it.PeriodDeprec.Decimal())
+		if acc.accum == "" {
+			missingAccum = append(missingAccum, ast.AssetCode)
+		}
+		key := accGroup{expenseAcc: acc.expense, accumAcc: acc.accum}
+		grouped[key] = grouped[key].Add(amount)
+	}
+	if len(missingExpense) > 0 {
+		return nil, assetAccountMissing("deprecexpenseaccountcode", labelExpenseAccount, missingExpense)
+	}
+	if len(missingAccum) > 0 {
+		return nil, assetAccountMissing("accumdeprecaccountcode", labelAccumAccount, missingAccum)
 	}
 
-	// 4. Build GL Lines
+	// 4. Build GL Lines in a stable order: map order is random, and a retry must send the same
+	// lines under the same docno or the GL engine rejects it as a different journal.
+	keys := make([]accGroup, 0, len(grouped))
+	for k := range grouped {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].expenseAcc != keys[j].expenseAcc {
+			return keys[i].expenseAcc < keys[j].expenseAcc
+		}
+		return keys[i].accumAcc < keys[j].accumAcc
+	})
 	var lines []GLLineDoc
 	totalDebit := decimal.Zero
 	totalCredit := decimal.Zero
 
-	for k, amount := range grouped {
+	for _, k := range keys {
+		amount := grouped[k]
 		if amount.LessThanOrEqual(decimal.Zero) {
 			continue
 		}
@@ -184,7 +355,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 			Description: fmt.Sprintf("ค่าเสื่อมราคาประจำงวด %d/%s", period, fiscalYear),
 			Debit:       amount,
 			Credit:      decimal.Zero,
-			BranchCode:  scope.Branch,
+			BranchCode:  branch,
 		})
 		totalDebit = totalDebit.Add(amount)
 
@@ -194,13 +365,13 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 			Description: fmt.Sprintf("ค่าเสื่อมราคาสะสมประจำงวด %d/%s", period, fiscalYear),
 			Debit:       decimal.Zero,
 			Credit:      amount,
-			BranchCode:  scope.Branch,
+			BranchCode:  branch,
 		})
 		totalCredit = totalCredit.Add(amount)
 	}
 
 	if !totalDebit.Equal(totalCredit) {
-		return nil, fmt.Errorf("ยอดเดบิต (%.2f) และเครดิต (%.2f) ไม่สมดุลกัน", totalDebit.InexactFloat64(), totalCredit.InexactFloat64())
+		return nil, fmt.Errorf("ยอดเดบิต (%s) และเครดิต (%s) ไม่สมดุลกัน", totalDebit.String(), totalCredit.String())
 	}
 	if totalDebit.LessThanOrEqual(decimal.Zero) {
 		return nil, fmt.Errorf("ยอดรวมค่าเสื่อมราคาเป็น 0")
@@ -219,10 +390,6 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	}
 	description := fmt.Sprintf("บันทึกค่าเสื่อมราคาสินทรัพย์ประจำงวด %d/%s", period, fiscalYear)
 	reference := fmt.Sprintf("FA-%s-%02d", fiscalYear, period)
-	book, err := p.generalBookCode(ctx, scope)
-	if err != nil {
-		return nil, err
-	}
 	journalInput := &gl.Journal{
 		DocNo:       docNo,
 		Date:        date,
@@ -230,7 +397,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		FiscalYear:  fiscalYear,
 		Description: description,
 		Reference:   reference,
-		BranchCode:  scope.Branch,
+		BranchCode:  branch,
 		Kind:        "manual",
 		Lines:       glLines,
 	}
@@ -250,7 +417,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		FiscalYear:   fiscalYear,
 		Description:  description,
 		Reference:    reference,
-		BranchCode:   scope.Branch,
+		BranchCode:   branch,
 		Kind:         "manual",
 		Status:       "posted",
 		Lines:        lines,
@@ -402,6 +569,10 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	if asset.Status == "disposed" {
 		return nil, nil, fmt.Errorf("สินทรัพย์รหัส %s ถูกจำหน่ายไปแล้ว", disposal.AssetCode)
 	}
+	branch, err := p.disposalBranch(ctx, scope, asset)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// 2. Calculate Total Accumulated Depreciation up to disposal date
 	latestDeprec, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3 AND payload->>'stopdate' <= $4`, ` ORDER BY payload->>'stopdate' DESC LIMIT 1`, disposal.AssetCode, disposal.DisposalDate)
@@ -429,91 +600,92 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	disposal.NetBookValueAtDisposal = AmountFromDecimal(netBookValue)
 	disposal.GainLoss = AmountFromDecimal(gainLoss)
 
-	// 3. Build Disposal GL Journal
+	// 3. Build Disposal GL Journal. Every account comes from the asset, its asset type or the
+	// disposal input — never a guessed code (charts of accounts differ per company).
+	types, err := assetTypesByCode(ctx, db, scope.Company, []Asset{asset})
+	if err != nil {
+		return nil, nil, err
+	}
+	acc := resolveAssetAccounts(asset, types[asset.AssetTypeCode])
+	settlementAcc := gl.NormalizeCode(disposal.SettlementAccountCode)
+	gainLossAcc := gl.NormalizeCode(disposal.GainLossAccountCode)
+	vatAcc := gl.NormalizeCode(disposal.VatAccountCode)
+	totalReceipt := salePrice.Add(vatAmount)
+	switch {
+	case totalReceipt.GreaterThan(decimal.Zero) && settlementAcc == "":
+		return nil, nil, faFieldError("fa_account_required", "settlementaccountcode", fmt.Sprintf("กรุณาระบุรหัสบัญชีรับชำระ (เงินสด/เงินฝาก/ลูกหนี้) สำหรับยอดรับ %s บาท", totalReceipt.StringFixed(2)))
+	case accumDeprec.GreaterThan(decimal.Zero) && acc.accum == "":
+		return nil, nil, assetAccountMissing("accumdeprecaccountcode", labelAccumAccount, []string{asset.AssetCode})
+	case !gainLoss.IsZero() && gainLossAcc == "":
+		return nil, nil, faFieldError("fa_account_required", "gainlossaccountcode", fmt.Sprintf("กรุณาระบุรหัสบัญชีกำไร/ขาดทุนจากการจำหน่ายสินทรัพย์ สำหรับยอด %s บาท", gainLoss.Abs().StringFixed(2)))
+	case acc.cost == "":
+		return nil, nil, assetAccountMissing("assetaccountcode", labelCostAccount, []string{asset.AssetCode})
+	case vatAmount.GreaterThan(decimal.Zero) && vatAcc == "":
+		return nil, nil, faFieldError("fa_account_required", "vataccountcode", fmt.Sprintf("กรุณาระบุรหัสบัญชีภาษีขาย สำหรับภาษีมูลค่าเพิ่ม %s บาท", vatAmount.StringFixed(2)))
+	}
 	var lines []GLLineDoc
-	settlementAcc := disposal.SettlementAccountCode
-	if settlementAcc == "" {
-		settlementAcc = "110101" // Default Cash
-	}
-	costAcc := asset.AssetAccountCode
-	if costAcc == "" {
-		costAcc = "120101" // Default Asset Cost
-	}
-	accumAcc := asset.AccumDeprecAccountCode
-	if accumAcc == "" {
-		accumAcc = "129101" // Default Accum Deprec
-	}
 
 	// Dr. Cash / AR (Sale Price + VAT)
-	totalReceipt := salePrice.Add(vatAmount)
 	if totalReceipt.GreaterThan(decimal.Zero) {
 		lines = append(lines, GLLineDoc{
 			AccountCode: settlementAcc,
 			Description: fmt.Sprintf("รับชำระเงินค่าจำหน่ายสินทรัพย์ %s", asset.AssetCode),
 			Debit:       totalReceipt,
 			Credit:      decimal.Zero,
-			BranchCode:  asset.BranchCode,
+			BranchCode:  branch,
 		})
 	}
 
 	// Dr. Accumulated Depreciation
 	if accumDeprec.GreaterThan(decimal.Zero) {
 		lines = append(lines, GLLineDoc{
-			AccountCode: accumAcc,
+			AccountCode: acc.accum,
 			Description: fmt.Sprintf("ตัดค่าเสื่อมราคาสะสม สินทรัพย์ %s", asset.AssetCode),
 			Debit:       accumDeprec,
 			Credit:      decimal.Zero,
-			BranchCode:  asset.BranchCode,
+			BranchCode:  branch,
 		})
 	}
 
 	// Dr. Loss on Disposal (if GainLoss < 0)
 	if gainLoss.LessThan(decimal.Zero) {
-		lossAcc := disposal.GainLossAccountCode
-		if lossAcc == "" {
-			lossAcc = "530101" // Default Loss on Asset Disposal
-		}
 		lines = append(lines, GLLineDoc{
-			AccountCode: lossAcc,
+			AccountCode: gainLossAcc,
 			Description: fmt.Sprintf("ขาดทุนจากการจำหน่ายสินทรัพย์ %s", asset.AssetCode),
 			Debit:       gainLoss.Abs(),
 			Credit:      decimal.Zero,
-			BranchCode:  asset.BranchCode,
+			BranchCode:  branch,
 		})
 	}
 
 	// Cr. Asset Cost
 	lines = append(lines, GLLineDoc{
-		AccountCode: costAcc,
+		AccountCode: acc.cost,
 		Description: fmt.Sprintf("ตัดราคาทุนสินทรัพย์ %s", asset.AssetCode),
 		Debit:       decimal.Zero,
 		Credit:      cost,
-		BranchCode:  asset.BranchCode,
+		BranchCode:  branch,
 	})
 
 	// Cr. Gain on Disposal (if GainLoss > 0)
 	if gainLoss.GreaterThan(decimal.Zero) {
-		gainAcc := disposal.GainLossAccountCode
-		if gainAcc == "" {
-			gainAcc = "420101" // Default Gain on Asset Disposal
-		}
 		lines = append(lines, GLLineDoc{
-			AccountCode: gainAcc,
+			AccountCode: gainLossAcc,
 			Description: fmt.Sprintf("กำไรจากการจำหน่ายสินทรัพย์ %s", asset.AssetCode),
 			Debit:       decimal.Zero,
 			Credit:      gainLoss,
-			BranchCode:  asset.BranchCode,
+			BranchCode:  branch,
 		})
 	}
 
 	// Cr. Output VAT (if any)
 	if vatAmount.GreaterThan(decimal.Zero) {
 		lines = append(lines, GLLineDoc{
-			AccountCode: "210301", // Output VAT
+			AccountCode: vatAcc,
 			Description: fmt.Sprintf("ภาษีขายจากการจำหน่ายสินทรัพย์ %s", asset.AssetCode),
 			Debit:       decimal.Zero,
 			Credit:      vatAmount,
-			BranchCode:  asset.BranchCode,
+			BranchCode:  branch,
 		})
 	}
 
@@ -525,10 +697,23 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		totCr = totCr.Add(l.Credit)
 	}
 	if !totDr.Equal(totCr) {
-		return nil, nil, fmt.Errorf("รายการจำหน่ายสินทรัพย์ไม่สมดุล: เดบิต (%.2f) != เครดิต (%.2f)", totDr.InexactFloat64(), totCr.InexactFloat64())
+		return nil, nil, fmt.Errorf("รายการจำหน่ายสินทรัพย์ไม่สมดุล: เดบิต (%s) != เครดิต (%s)", totDr.String(), totCr.String())
 	}
 
-	journalDocNo := fmt.Sprintf("JV-DISP-%s", asset.AssetCode)
+	book, err := p.generalBookCode(ctx, scope)
+	if err != nil {
+		return nil, nil, err
+	}
+	// The voucher number is the user's, else the chosen general book + asset code — which can
+	// outgrow doc_no VARCHAR(30), so it is checked before anything is posted.
+	journalDocNo := gl.NormalizeCode(disposal.JournalDocNo)
+	generated := journalDocNo == ""
+	if generated {
+		journalDocNo = book + "-DISP-" + asset.AssetCode
+	}
+	if err := checkJournalDocNo(journalDocNo, "journaldocno", generated); err != nil {
+		return nil, nil, err
+	}
 	disposal.JournalDocNo = journalDocNo
 
 	// 4. Post through the general ledger engine
@@ -542,10 +727,6 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		})
 	}
 	description := fmt.Sprintf("บันทึกจำหน่ายสินทรัพย์ %s (%s)", asset.AssetCode, asset.ThaiName())
-	book, err := p.generalBookCode(ctx, scope)
-	if err != nil {
-		return nil, nil, err
-	}
 	journalInput := &gl.Journal{
 		DocNo:       journalDocNo,
 		Date:        disposal.DisposalDate,
@@ -553,7 +734,7 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		FiscalYear:  disposal.DisposalDate[:4],
 		Description: description,
 		Reference:   disposal.DocNo,
-		BranchCode:  asset.BranchCode,
+		BranchCode:  branch,
 		Kind:        "manual",
 		Lines:       glLines,
 	}
@@ -573,7 +754,7 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		FiscalYear:   disposal.DisposalDate[:4],
 		Description:  description,
 		Reference:    disposal.DocNo,
-		BranchCode:   asset.BranchCode,
+		BranchCode:   branch,
 		Kind:         "manual",
 		Status:       "posted",
 		Lines:        lines,

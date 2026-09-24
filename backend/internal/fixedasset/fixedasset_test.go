@@ -119,6 +119,10 @@ func (f *fakeLedger) List(_ context.Context, _ gl.Scope, resource string, query 
 	return page, nil
 }
 
+// allowBranch accepts every voucher branch; the header-branch rule itself is covered by
+// generalledger/httpapi TestCheckJournalBranch and gl_poster_integration_test.go.
+func allowBranch(context.Context, Scope, string) error { return nil }
+
 // testConnector opens an isolated PostgreSQL database for the fixed-asset store;
 // every row it writes is removed by company code when the test ends.
 func testConnector(t *testing.T) (Connector, string) {
@@ -195,8 +199,8 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 	}
 
 	ledger := newFakeLedger()
-	poster := NewGLPoster(connect, ledger)
-	journal, err := poster.PostDepreciation(ctx, scope, "2026", 1, "2026-01-31", "JV-FA-2026-01", now)
+	poster := NewGLPoster(connect, ledger, allowBranch)
+	journal, err := poster.PostDepreciation(ctx, scope, "2026", 1, "2026-01-31", "", "", now)
 	if err != nil {
 		t.Fatalf("PostDepreciation failed: %v", err)
 	}
@@ -208,13 +212,13 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 	if !dr.Equal(cr) || dr.IsZero() {
 		t.Fatalf("GL journal out of balance: Dr %s Cr %s", dr, cr)
 	}
-	if journal.BookCode != "GJ" {
-		t.Fatalf("depreciation must go to the active general book chosen by type, got %q", journal.BookCode)
+	if journal.BookCode != "GJ" || journal.DocNo != "GJ-FA-2026-01" || journal.BranchCode != "HQ" {
+		t.Fatalf("depreciation must go to the active general book chosen by type, numbered from it, in the session branch; got book %q docno %q branch %q", journal.BookCode, journal.DocNo, journal.BranchCode)
 	}
 	if ledger.created != 1 || ledger.posted != 1 {
 		t.Fatalf("expected exactly 1 create + 1 post, got created=%d posted=%d", ledger.created, ledger.posted)
 	}
-	if _, err := poster.PostDepreciation(ctx, scope, "2026", 1, "2026-01-31", "JV-FA-2026-01", now); err == nil {
+	if _, err := poster.PostDepreciation(ctx, scope, "2026", 1, "2026-01-31", "", "", now); err == nil {
 		t.Fatalf("posting the same period twice must fail: no unposted rows remain")
 	}
 	if err := store.DeleteAsset(ctx, scope, created.ID, 0, now); err == nil {
@@ -223,7 +227,7 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 
 	failing := newFakeLedger()
 	failing.failErr = fmt.Errorf("ledger unavailable")
-	if _, err := NewGLPoster(connect, failing).PostDepreciation(ctx, scope, "2026", 2, "2026-02-28", "JV-FA-2026-02", now); err == nil {
+	if _, err := NewGLPoster(connect, failing, allowBranch).PostDepreciation(ctx, scope, "2026", 2, "2026-02-28", "", "", now); err == nil {
 		t.Fatalf("expected PostDepreciation to fail when the GL engine fails")
 	}
 	db, _ := connect("")
@@ -240,9 +244,10 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 		VatAmount:             Amount("38500.00"),
 		SettlementAccountCode: "110101",
 		GainLossAccountCode:   "420101",
+		VatAccountCode:        "210301",
 		Reason:                "ขายเครื่องจักรเก่า",
 	}
-	disposer := NewGLPoster(connect, newFakeLedger())
+	disposer := NewGLPoster(connect, newFakeLedger(), allowBranch)
 	resDisp, resJourn, err := disposer.DisposeAsset(ctx, scope, disposal, now)
 	if err != nil {
 		t.Fatalf("DisposeAsset failed: %v", err)
@@ -282,7 +287,7 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 // the caller not observing it) must not create a second journal.
 func TestGLPoster_PostJournalIdempotent(t *testing.T) {
 	ledger := newFakeLedger()
-	poster := NewGLPoster(nil, ledger)
+	poster := NewGLPoster(nil, ledger, nil)
 	scope := Scope{Holding: "TEST_HOLDING", Company: "TEST_CO", Branch: "HQ", Actor: "CPA_AUDITOR"}
 
 	journalInput := &gl.Journal{
@@ -332,12 +337,12 @@ func TestGLPoster_PostJournalIdempotent(t *testing.T) {
 // lowest code and explains in Thai when the company has none (2026-09-24).
 func TestGLPosterChoosesGeneralBookByType(t *testing.T) {
 	scope := Scope{Holding: "H", Company: "C", Branch: "B", Actor: "tester"}
-	code, err := NewGLPoster(nil, newFakeLedger()).generalBookCode(context.Background(), scope)
+	code, err := NewGLPoster(nil, newFakeLedger(), nil).generalBookCode(context.Background(), scope)
 	if err != nil || code != "GJ" {
 		t.Fatalf("general book = %q, %v; want GJ (active type 1, not the inactive GJ-OLD or the sales book)", code, err)
 	}
 	empty := &noBooksLedger{fakeLedger: newFakeLedger()}
-	_, err = NewGLPoster(nil, empty).generalBookCode(context.Background(), scope)
+	_, err = NewGLPoster(nil, empty, nil).generalBookCode(context.Background(), scope)
 	user, ok := gl.AsUserError(err)
 	if !ok || user.Code != "journal_book_general_missing" || !strings.Contains(user.Message, "กำหนดสมุดรายวัน") {
 		t.Fatalf("missing general book error = %v", err)

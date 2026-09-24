@@ -47,8 +47,14 @@ func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
 		ms:       ms,
 		store:    fa.NewStore(connect),
 		reporter: fa.NewReporter(connect),
-		poster:   fa.NewGLPoster(connect, ledger),
+		poster:   fa.NewGLPoster(connect, ledger, checkJournalBranch),
 	}
+}
+
+// checkJournalBranch holds depreciation and disposal vouchers to the GL screen's header-branch
+// rule (audit 2026-09-24: this module posted without it).
+func checkJournalBranch(ctx context.Context, scope fa.Scope, branch string) error {
+	return glhttp.CheckJournalBranch(ctx, mypg.PgSqlFastConnect, gl.Scope{Holding: scope.Holding, Company: scope.Company, Branch: scope.Branch, Actor: scope.Actor}, branch)
 }
 
 func (h *Http) RegisterHttp() {
@@ -79,6 +85,17 @@ func fail(request microservice.IContext, status int, message string) error {
 	}
 	request.Response(status, appErr.ToResponse())
 	return nil
+}
+
+// failure keeps the machine code and field of ledger/field errors (e.g. fa_account_required on
+// deprecexpenseaccountcode) so the screen can point at the input to fix; others stay 400.
+func failure(request microservice.IContext, err error) error {
+	if user, ok := gl.AsUserError(err); ok {
+		appErr := user.ToAppError()
+		request.Response(appErr.HTTPStatus, appErr.ToResponse())
+		return nil
+	}
+	return fail(request, http.StatusBadRequest, err.Error())
 }
 
 func success(request microservice.IContext, data interface{}) error {
@@ -162,16 +179,16 @@ func (h *Http) command(request microservice.IContext) error {
 		poster := h.poster
 		switch cmd.Action {
 		case "post-gl":
-			journal, err := poster.PostDepreciation(ctx, scope, cmd.FiscalYear, cmd.Period, cmd.Date, cmd.DocNo, now)
+			journal, err := poster.PostDepreciation(ctx, scope, cmd.FiscalYear, cmd.Period, cmd.Date, cmd.DocNo, cmd.BranchCode, now)
 			if err != nil {
-				return fail(request, http.StatusBadRequest, err.Error())
+				return failure(request, err)
 			}
 			return success(request, map[string]interface{}{"success": true, "journal": journal})
 
 		case "reverse-gl":
 			err := poster.ReverseDepreciation(ctx, scope, cmd.DocNo, cmd.Reason, now)
 			if err != nil {
-				return fail(request, http.StatusBadRequest, err.Error())
+				return failure(request, err)
 			}
 			return success(request, map[string]interface{}{"success": true})
 		}
@@ -184,7 +201,7 @@ func (h *Http) command(request microservice.IContext) error {
 			poster := h.poster
 			disp, journal, err := poster.DisposeAsset(ctx, scope, *cmd.Disposal, now)
 			if err != nil {
-				return fail(request, http.StatusBadRequest, err.Error())
+				return failure(request, err)
 			}
 			return success(request, map[string]interface{}{"success": true, "disposal": disp, "journal": journal})
 		}

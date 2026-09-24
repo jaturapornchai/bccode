@@ -123,7 +123,8 @@ type AssetDisposal struct {
 	GainLoss               Amount `json:"gainloss"`              // SalePrice - NetBookValue
 	SettlementAccountCode  string `json:"settlementaccountcode"` // Cash or AR
 	GainLossAccountCode    string `json:"gainlossaccountcode"`
-	JournalDocNo           string `json:"journaldocno"`
+	VatAccountCode         string `json:"vataccountcode"` // output VAT; required when vatamount > 0
+	JournalDocNo           string `json:"journaldocno"`   // optional input; blank = <general book>-DISP-<assetcode>
 	Reason                 string `json:"reason"`
 }
 
@@ -141,6 +142,7 @@ type Command struct {
 	AssetCode  string         `json:"assetcode,omitempty"`
 	Reason     string         `json:"reason,omitempty"`
 	DocNo      string         `json:"docno,omitempty"`
+	BranchCode string         `json:"branchcode,omitempty"` // post-gl voucher branch; blank = session branch
 	Asset      *Asset         `json:"asset,omitempty"`
 	AssetType  *AssetType     `json:"assettype,omitempty"`
 	Disposal   *AssetDisposal `json:"disposal,omitempty"`

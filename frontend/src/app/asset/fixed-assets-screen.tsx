@@ -65,9 +65,10 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     purchasedate: "2026-01-01",
     startcalcdate: "2026-01-01",
     firstyearpercent: "0.00",
-    assetaccountcode: "120101",
-    accumdeprecaccountcode: "129101",
-    deprecexpenseaccountcode: "520103",
+    // GL accounts start blank: charts differ per company, blank = use the asset type's account
+    assetaccountcode: "",
+    accumdeprecaccountcode: "",
+    deprecexpenseaccountcode: "",
     status: "active",
   });
 
@@ -81,14 +82,18 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     vatamount: string;
     settlementaccountcode: string;
     gainlossaccountcode: string;
+    vataccountcode: string;
+    journaldocno: string;
     reason: string;
   }>({
     disposaldate: new Date().toISOString().split("T")[0],
     disposaltype: "sale",
     saleprice: "0.00",
     vatamount: "0.00",
-    settlementaccountcode: "110101",
-    gainlossaccountcode: "420101",
+    settlementaccountcode: "",
+    gainlossaccountcode: "",
+    vataccountcode: "",
+    journaldocno: "",
     reason: "",
   });
 
@@ -236,7 +241,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     setLoading(false);
 
     if (res?.success) {
-      setPostStatusMsg(tr("fa_posted_journal_docno", "ผ่านรายการสำเร็จ! เลขที่ใบสำคัญสมุดรายวัน: {0}").replace("{0}", res?.journal?.docno || "JV"));
+      setPostStatusMsg(tr("fa_posted_journal_docno", "ผ่านรายการสำเร็จ! เลขที่ใบสำคัญสมุดรายวัน: {0}").replace("{0}", String(res?.journal?.docno ?? "")));
       alert(tr("fa_posted_voucher_docno", "ผ่านรายการสำเร็จ! เลขที่ใบสำคัญ: {0}").replace("{0}", String(res?.journal?.docno ?? "")));
       loadData();
     } else {
@@ -274,6 +279,8 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
           vatamount: disposalForm.vatamount,
           settlementaccountcode: disposalForm.settlementaccountcode,
           gainlossaccountcode: disposalForm.gainlossaccountcode,
+          vataccountcode: disposalForm.vataccountcode,
+          journaldocno: disposalForm.journaldocno,
           reason: disposalForm.reason,
         },
       });
@@ -385,9 +392,9 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       purchasedate: new Date().toISOString().split("T")[0],
                       startcalcdate: new Date().toISOString().split("T")[0],
                       firstyearpercent: "0.00",
-                      assetaccountcode: "120101",
-                      accumdeprecaccountcode: "129101",
-                      deprecexpenseaccountcode: "520103",
+                      assetaccountcode: "",
+                      accumdeprecaccountcode: "",
+                      deprecexpenseaccountcode: "",
                       status: "active",
                     });
                     setIsEditing(true);
@@ -475,8 +482,10 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                                   disposaltype: "sale",
                                   saleprice: "0.00",
                                   vatamount: "0.00",
-                                  settlementaccountcode: "110101",
-                                  gainlossaccountcode: "420101",
+                                  settlementaccountcode: "",
+                                  gainlossaccountcode: "",
+                                  vataccountcode: "",
+                                  journaldocno: "",
                                   reason: "",
                                 });
                                 setIsDisposing(true);
@@ -639,7 +648,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_asset_account_code", "รหัสบัญชีสินทรัพย์ (GL)")}</label>
                       <input
                         type="text"
-                        value={editForm.assetaccountcode || "120101"}
+                        value={editForm.assetaccountcode ?? ""}
                         onChange={(e) => setEditForm({ ...editForm, assetaccountcode: e.target.value })}
                         className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
                       />
@@ -648,7 +657,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_accumulated_depreciation_account_code", "รหัสบัญชีค่าเสื่อมสะสม (GL)")}</label>
                       <input
                         type="text"
-                        value={editForm.accumdeprecaccountcode || "129101"}
+                        value={editForm.accumdeprecaccountcode ?? ""}
                         onChange={(e) => setEditForm({ ...editForm, accumdeprecaccountcode: e.target.value })}
                         className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
                       />
@@ -657,7 +666,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                       <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_depreciation_expense_account_code", "รหัสบัญชีค่าใช้จ่ายค่าเสื่อม (GL)")}</label>
                       <input
                         type="text"
-                        value={editForm.deprecexpenseaccountcode || "520103"}
+                        value={editForm.deprecexpenseaccountcode ?? ""}
                         onChange={(e) => setEditForm({ ...editForm, deprecexpenseaccountcode: e.target.value })}
                         className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
                       />
@@ -747,7 +756,6 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                         type="text"
                         value={disposalForm.settlementaccountcode}
                         onChange={(e) => setDisposalForm({ ...disposalForm, settlementaccountcode: e.target.value })}
-                        placeholder="110101"
                         className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
                       />
                     </div>
@@ -759,7 +767,29 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                         type="text"
                         value={disposalForm.gainlossaccountcode}
                         onChange={(e) => setDisposalForm({ ...disposalForm, gainlossaccountcode: e.target.value })}
-                        placeholder="420101"
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_vat_account", "รหัสบัญชีภาษีขาย (GL)")}
+                      </label>
+                      <input
+                        type="text"
+                        value={disposalForm.vataccountcode}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, vataccountcode: e.target.value })}
+                        className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                        {tr("fa_journal_docno_optional", "เลขที่ใบสำคัญ (เว้นว่าง = ระบบสร้างให้)")}
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={30}
+                        value={disposalForm.journaldocno}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, journaldocno: e.target.value })}
                         className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
                       />
                     </div>
@@ -897,7 +927,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                 {tr("fa_transfer_depreciation_to_gl", "โอนค่าเสื่อมราคาเข้าบัญชีแยกประเภท (GL Journal Posting)")}
               </h2>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {tr("fa_depreciation_journal_voucher", "ระบบจะรวบรวมค่าเสื่อมราคาของสินทรัพย์ทุกตัวในงวดที่เลือก นำมาบันทึกสมุดรายวันทั่วไป (JV)")}
+                {tr("fa_depreciation_journal_voucher", "ระบบจะรวบรวมค่าเสื่อมราคาของสินทรัพย์ทุกตัวในงวดที่เลือก นำมาบันทึกในสมุดรายวันประเภททั่วไปที่เปิดใช้งาน")}
                 {tr("fa_depreciation_account_entry", "โดยเดบิตบัญชีค่าใช้จ่ายค่าเสื่อมราคา และเครดิตบัญชีค่าเสื่อมราคาสะสม")}
               </p>
 

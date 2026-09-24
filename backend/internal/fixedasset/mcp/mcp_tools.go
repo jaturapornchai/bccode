@@ -46,9 +46,9 @@ var Tools = []ToolDefinition{
 				"purchasedate":      map[string]interface{}{"type": "string", "description": "วันที่ซื้อ (YYYY-MM-DD)"},
 				"startcalcdate":     map[string]interface{}{"type": "string", "description": "วันที่เริ่มคำนวณค่าเสื่อม (YYYY-MM-DD)"},
 				"firstyearpercent":  map[string]interface{}{"type": "number", "description": "สิทธิพิเศษทางภาษีหักปีแรก (%) เช่น คอมพิวเตอร์ 40%"},
-				"assetaccount":      map[string]interface{}{"type": "string", "description": "รหัสบัญชีสินทรัพย์ (default 120101)"},
-				"accumaccount":      map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าเสื่อมสะสม (default 129101)"},
-				"expenseaccount":    map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าใช้จ่ายค่าเสื่อม (default 520103)"},
+				"assetaccount":      map[string]interface{}{"type": "string", "description": "รหัสบัญชีสินทรัพย์ตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
+				"accumaccount":      map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าเสื่อมราคาสะสมตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
+				"expenseaccount":    map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าใช้จ่ายค่าเสื่อมราคาตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
 			},
 		},
 	},
@@ -73,7 +73,8 @@ var Tools = []ToolDefinition{
 				"fiscalyear": map[string]interface{}{"type": "string", "description": "ปีบัญชี เช่น 2026"},
 				"period":     map[string]interface{}{"type": "integer", "description": "งวดที่ (1-12)"},
 				"date":       map[string]interface{}{"type": "string", "description": "วันที่บันทึกบัญชี (YYYY-MM-DD)"},
-				"docno":      map[string]interface{}{"type": "string", "description": "เลขที่ใบสำคัญ (optional)"},
+				"docno":      map[string]interface{}{"type": "string", "description": "เลขที่ใบสำคัญ ไม่เกิน 30 ตัวอักษร (เว้นว่าง = <รหัสสมุดรายวันทั่วไป>-FA-<ปี>-<งวด>)"},
+				"branchcode": map[string]interface{}{"type": "string", "description": "สาขาของใบสำคัญ (จำเป็นเมื่อเข้าระบบระดับบริษัท)"},
 			},
 		},
 	},
@@ -89,8 +90,10 @@ var Tools = []ToolDefinition{
 				"disposaltype":          map[string]interface{}{"type": "string", "description": "ประเภท: sale, write_off, scrap"},
 				"saleprice":             map[string]interface{}{"type": "number", "description": "ราคาขายสุทธิ (ก่อน VAT)"},
 				"vatamount":             map[string]interface{}{"type": "number", "description": "ภาษีมูลค่าเพิ่ม (ถ้ามี)"},
-				"settlementaccountcode": map[string]interface{}{"type": "string", "description": "รหัสบัญชีรับเงิน เช่น 110101 (เงินสด)"},
-				"gainlossaccountcode":   map[string]interface{}{"type": "string", "description": "รหัสบัญชีกำไร/ขาดทุนจากการจำหน่าย"},
+				"settlementaccountcode": map[string]interface{}{"type": "string", "description": "รหัสบัญชีรับเงิน (เงินสด/เงินฝาก/ลูกหนี้) ตามผังบัญชีของบริษัท — จำเป็นเมื่อมียอดรับ"},
+				"gainlossaccountcode":   map[string]interface{}{"type": "string", "description": "รหัสบัญชีกำไร/ขาดทุนจากการจำหน่าย — จำเป็นเมื่อมีกำไรหรือขาดทุน"},
+				"vataccountcode":        map[string]interface{}{"type": "string", "description": "รหัสบัญชีภาษีขาย — จำเป็นเมื่อมีภาษีมูลค่าเพิ่ม"},
+				"journaldocno":          map[string]interface{}{"type": "string", "description": "เลขที่ใบสำคัญ ไม่เกิน 30 ตัวอักษร (เว้นว่าง = <รหัสสมุดรายวันทั่วไป>-DISP-<รหัสสินทรัพย์>)"},
 				"reason":                map[string]interface{}{"type": "string", "description": "เหตุผลในการจำหน่าย"},
 			},
 		},
@@ -191,7 +194,8 @@ func (h *MCPHandler) HandleToolCall(ctx context.Context, scope fa.Scope, toolNam
 		periodNum, _ := args["period"].(float64)
 		date, _ := args["date"].(string)
 		docNo, _ := args["docno"].(string)
-		return h.poster.PostDepreciation(ctx, scope, year, int(periodNum), date, docNo, now)
+		branch, _ := args["branchcode"].(string)
+		return h.poster.PostDepreciation(ctx, scope, year, int(periodNum), date, docNo, branch, now)
 
 	case "fa_dispose_asset":
 		code, _ := args["assetcode"].(string)
@@ -201,6 +205,8 @@ func (h *MCPHandler) HandleToolCall(ctx context.Context, scope fa.Scope, toolNam
 		vat, _ := args["vatamount"].(float64)
 		settlementAcc, _ := args["settlementaccountcode"].(string)
 		gainLossAcc, _ := args["gainlossaccountcode"].(string)
+		vatAcc, _ := args["vataccountcode"].(string)
+		journalDocNo, _ := args["journaldocno"].(string)
 		reason, _ := args["reason"].(string)
 
 		disp := fa.AssetDisposal{
@@ -211,6 +217,8 @@ func (h *MCPHandler) HandleToolCall(ctx context.Context, scope fa.Scope, toolNam
 			VatAmount:             fa.AmountFromFloat(vat),
 			SettlementAccountCode: settlementAcc,
 			GainLossAccountCode:   gainLossAcc,
+			VatAccountCode:        vatAcc,
+			JournalDocNo:          journalDocNo,
 			Reason:                reason,
 		}
 		resDisp, resJournal, err := h.poster.DisposeAsset(ctx, scope, disp, now)

@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-24 @ commit 8d1fbfae - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-24 @ commit 8564415d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 30
 
@@ -1254,6 +1254,20 @@ Files indexed: 30
 | 1106 | function | `reportText` |
 | 1115 | function | `reportColumnLabel` |
 
+## frontend/src/app/asset/fixed-assets-screen.tsx (1108 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 40 | function | `FixedAssetsScreen` |
+| 115 | const-arrow | `loadData` |
+| 135 | const-arrow | `loadSchedule` |
+| 144 | const-arrow | `loadScheduleReport` |
+| 156 | const-arrow | `loadTaxReport` |
+| 174 | const-arrow | `handleSaveAsset` |
+| 198 | const-arrow | `handleDeleteAsset` |
+| 222 | const-arrow | `handlePostGL` |
+| 253 | const-arrow | `handleConfirmDisposal` |
+
 ## frontend/src/app/gl/gl-journals.tsx (1096 lines)
 
 | Line | Kind | Name |
@@ -1273,20 +1287,6 @@ Files indexed: 30
 | 299 | function | `saveReconciliation` |
 | 330 | function | `act` |
 | 348 | function | `deleteDraftDirect` |
-
-## frontend/src/app/asset/fixed-assets-screen.tsx (1078 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 40 | function | `FixedAssetsScreen` |
-| 110 | const-arrow | `loadData` |
-| 130 | const-arrow | `loadSchedule` |
-| 139 | const-arrow | `loadScheduleReport` |
-| 151 | const-arrow | `loadTaxReport` |
-| 169 | const-arrow | `handleSaveAsset` |
-| 193 | const-arrow | `handleDeleteAsset` |
-| 217 | const-arrow | `handlePostGL` |
-| 248 | const-arrow | `handleConfirmDisposal` |
 
 ## frontend/src/app/crud/erp-crud-workbench.tsx (1074 lines)
 

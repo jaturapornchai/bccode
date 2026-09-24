@@ -78,6 +78,7 @@ export type AssetDisposal = FAIdentity & {
   gainloss: string;
   settlementaccountcode: string;
   gainlossaccountcode: string;
+  vataccountcode: string;
   journaldocno: string;
   reason: string;
 };

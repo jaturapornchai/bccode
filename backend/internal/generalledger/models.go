@@ -290,6 +290,12 @@ func checkCode(value, field, label string, max int) error {
 	return nil
 }
 
+// CheckDocNo validates a journal document number exactly as Journal.Validate does, so a module
+// that generates voucher numbers (fixed assets) can explain a failure before it posts anything.
+func CheckDocNo(docNo, field string) error {
+	return checkCode(docNo, field, "เลขที่เอกสาร", DocNoMaxRunes)
+}
+
 // validCode is the boolean form for callers that report their own message.
 func validCode(code string) bool { return checkCode(code, "", "", codeMaxRunes) == nil }
 
