@@ -1,0 +1,273 @@
+{
+  "batch": "gl-tax-rungrueng-01-2569-20260924",
+  "note": "Provenance of the GL + tax data seeded on production 2026-09-24 (pre go-live). Same shape as the script manifest, so it can be used read-only with SEED_MANIFEST=<this file> ... verify. Contains no tokens. Guide: docs/kms/22-sample-data-gl-tax-2569.md",
+  "base": "https://account.bcaicloud.com",
+  "script": "scripts/seed-gl-tax-rungrueng-2569.mjs",
+  "scope": {
+    "holding": "rungrueng",
+    "company": "01",
+    "branch": "00000",
+    "fiscalyear": "2569",
+    "taxyear": 2026
+  },
+  "seededat": "2026-09-24",
+  "books": {
+    "2": "PV",
+    "3": "RV",
+    "4": "UV",
+    "5": "SV"
+  },
+  "booktypes": {
+    "1": "general",
+    "2": "pay",
+    "3": "receive",
+    "4": "sale",
+    "5": "purchase",
+    "6": "opening"
+  },
+  "journals": {
+    "SV6907-0101": {
+      "id": "4f6266b6-183c-4943-9f79-d71e2b5ec3c8",
+      "status": "posted",
+      "scenario": "purchase:6907-0101"
+    },
+    "SV6907-0102": {
+      "id": "b6641bac-c5f2-4921-91bd-ccbd7eb0935f",
+      "status": "posted",
+      "scenario": "purchase:6907-0102"
+    },
+    "UV6907-0101": {
+      "id": "e8411c62-c2ba-4427-9e8f-024b86ede168",
+      "status": "posted",
+      "scenario": "sale:6907-0101"
+    },
+    "UV6907-0102": {
+      "id": "6240f565-7c48-4e35-b179-49feae59aa43",
+      "status": "posted",
+      "scenario": "sale:6907-0102"
+    },
+    "PV6907-0101": {
+      "id": "ee820c8c-0a21-4295-affa-113cf894b4f0",
+      "status": "posted",
+      "scenario": "pay:6907-0101"
+    },
+    "PV6907-0102": {
+      "id": "d14ec83c-fa58-4b47-9c66-f8fbdbe8b946",
+      "status": "posted",
+      "scenario": "pay:6907-0102"
+    },
+    "RV6907-0101": {
+      "id": "381a1da6-180c-4347-ae98-45df5d759877",
+      "status": "posted",
+      "scenario": "receive:6907-0101"
+    },
+    "SV6908-0101": {
+      "id": "912d3a66-2676-4802-b2b3-4bb841329726",
+      "status": "posted",
+      "scenario": "purchase:6908-0101"
+    },
+    "SV6908-0102": {
+      "id": "79326b7a-3038-45d8-9005-f10dc9175764",
+      "status": "posted",
+      "scenario": "purchase:6908-0102"
+    },
+    "UV6908-0101": {
+      "id": "8335c880-758f-4340-996f-cdc3071a0e37",
+      "status": "posted",
+      "scenario": "sale:6908-0101"
+    },
+    "UV6908-0102": {
+      "id": "f7540511-98f4-4389-9459-03e2803fdafa",
+      "status": "posted",
+      "scenario": "sale:6908-0102"
+    },
+    "PV6908-0101": {
+      "id": "e019afa8-579e-43a7-befe-93ba82773a21",
+      "status": "posted",
+      "scenario": "pay:6908-0101"
+    },
+    "PV6908-0102": {
+      "id": "44a93fbf-6270-43cf-a0b9-6f984c824f92",
+      "status": "posted",
+      "scenario": "pay:6908-0102"
+    },
+    "PV6908-0103": {
+      "id": "a31ff94d-aa17-4b4b-aa55-f6a6153fd6db",
+      "status": "posted",
+      "scenario": "pay:6908-0103"
+    },
+    "PV6908-0104": {
+      "id": "8eff8e43-0af1-4933-af79-4f106827b1b8",
+      "status": "posted",
+      "scenario": "pay:6908-0104"
+    },
+    "PV6908-0105": {
+      "id": "f5f02c6d-94d4-441a-a336-d61b71e48a87",
+      "status": "posted",
+      "scenario": "pay:6908-0105"
+    },
+    "PV6908-0106": {
+      "id": "b077c6c4-b853-4041-9237-20f2e136156b",
+      "status": "posted",
+      "scenario": "pay:6908-0106"
+    },
+    "PV6908-0107": {
+      "id": "b5561697-75d6-44b1-89df-32a40c778b5d",
+      "status": "posted",
+      "scenario": "pay:6908-0107"
+    },
+    "SV6909-0101": {
+      "id": "6064a129-7857-486b-a00e-28aea049d77d",
+      "status": "posted",
+      "scenario": "purchase:6909-0101"
+    },
+    "UV6909-0101": {
+      "id": "d18bd921-ecab-41e3-94db-efb9ec5c516e",
+      "status": "posted",
+      "scenario": "sale:6909-0101"
+    },
+    "PV6909-0101": {
+      "id": "6c486d9f-b221-44c1-bdd7-169c95e12327",
+      "status": "posted",
+      "scenario": "pay:6909-0101"
+    },
+    "PV6909-0102": {
+      "id": "3539e633-9961-48b9-b5c4-7ef93072f6cc",
+      "status": "posted",
+      "scenario": "pay:6909-0102"
+    },
+    "RV6909-0101": {
+      "id": "9b5baa72-4387-4718-a28b-9703a59b0f49",
+      "status": "posted",
+      "scenario": "receive:6909-0101"
+    },
+    "PV6909-0103": {
+      "id": "000b7ddb-af16-404e-8988-3be9e8fa5098",
+      "status": "posted",
+      "scenario": "pay:6909-0103"
+    },
+    "SV6909-0102": {
+      "id": "0577c3f6-78c3-4e7a-a71f-af62111f6825",
+      "status": "posted",
+      "scenario": "purchase:6909-0102"
+    },
+    "UV6909-0102": {
+      "id": "efae66ff-05a3-4491-966f-c2792074cf81",
+      "status": "posted",
+      "scenario": "sale:6909-0102"
+    },
+    "PV6909-0104": {
+      "id": "29a3e183-4a19-432f-a9d9-351222adc441",
+      "status": "posted",
+      "scenario": "pay:6909-0104"
+    },
+    "PV6909-0105": {
+      "id": "d74f2bd8-1883-44d1-aa9b-25926ab982b9",
+      "status": "posted",
+      "scenario": "pay:6909-0105"
+    },
+    "PV6909-0106": {
+      "id": "3ca20fbb-7695-4a08-a427-6a266573c47a",
+      "status": "posted",
+      "scenario": "pay:6909-0106"
+    },
+    "PV6909-0107": {
+      "id": "0e21051f-a8a7-46a2-93d1-da934e3c17aa",
+      "status": "posted",
+      "scenario": "pay:6909-0107"
+    },
+    "RV6909-0102": {
+      "id": "bf2ca1de-68d9-4f93-aaac-d0b6b710de8f",
+      "status": "posted",
+      "scenario": "receive:6909-0102"
+    }
+  },
+  "accounts": [
+    {
+      "code": "5414",
+      "id": "457cd0fa-f38a-408b-a558-dc12a35b7115"
+    }
+  ],
+  "filings": [
+    {
+      "code": "pp30",
+      "year": 2026,
+      "month": 7,
+      "id": 1
+    },
+    {
+      "code": "pnd3",
+      "year": 2026,
+      "month": 7,
+      "id": 2
+    },
+    {
+      "code": "pnd53",
+      "year": 2026,
+      "month": 7,
+      "id": 3
+    },
+    {
+      "code": "pp30",
+      "year": 2026,
+      "month": 8,
+      "id": 4
+    },
+    {
+      "code": "pnd3",
+      "year": 2026,
+      "month": 8,
+      "id": 5
+    },
+    {
+      "code": "pnd53",
+      "year": 2026,
+      "month": 8,
+      "id": 6
+    },
+    {
+      "code": "pnd2",
+      "year": 2026,
+      "month": 8,
+      "id": 7
+    }
+  ],
+  "partners": [
+    "S101",
+    "S102",
+    "S103",
+    "S104",
+    "S105",
+    "S106",
+    "S107",
+    "C101",
+    "C102"
+  ],
+  "fictitious": {
+    "media_ref_no": {
+      "value": "01055661234560000001",
+      "filing_ids": [
+        2,
+        3,
+        5,
+        6,
+        7
+      ],
+      "why": "made-up RD media-filing registration reference so the RD file (Format กลาง USER_ID) could be generated; clear or replace with the real number before go-live"
+    },
+    "personal_tax_ids": {
+      "S105": "3130100456786",
+      "S106": "3130200567890",
+      "S107": "3100500678905"
+    },
+    "generated_juristic_tax_ids": {
+      "S101": "0105537012340",
+      "S102": "0105548023453",
+      "S103": "0135561034561",
+      "S104": "0105562045671",
+      "C101": "0105559087652",
+      "C102": "0103558076540"
+    },
+    "other": "partner names/addresses, invoice/receipt references (IV6907-00125 ...), certificate numbers 001-010/1245 and amounts are invented for a realistic Thai SME month-end"
+  }
+}

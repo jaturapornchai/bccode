@@ -6,15 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/goapi/language"
 	common "smlcloudplatform/internal/models"
 	orgaccess "smlcloudplatform/internal/organization"
 	orgpolicy "smlcloudplatform/internal/organization/access"
 	companyModels "smlcloudplatform/internal/organization/company/models"
+	"smlcloudplatform/internal/taxaddress"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
 )
@@ -38,19 +41,40 @@ func (h CompanyHttp) RegisterHttp() {
 	h.ms.PUT("/organization/company/:id", h.UpdateCompany)
 }
 
-const companyColumns = `code, name, names, COALESCE(tax_id, ''), logo_uri, is_active, created_at, updated_at, created_by, updated_by`
+// companyTaxAddressColumns - ที่อยู่สำหรับภาษี (ตามลำดับ taxaddress.Keys) + โทรศัพท์ — ชื่อคอลัมน์เท่ากับ key หัวแบบ rdform
+var companyTaxAddressColumns = append(append([]string{}, taxaddress.Keys...), taxaddress.PhoneKey)
+
+var companyColumns = `code, name, names, COALESCE(tax_id, ''), logo_uri, is_active, created_at, updated_at, created_by, updated_by, ` +
+	strings.Join(companyTaxAddressColumns, ", ")
+
+// insertCompanySQL - $1..$8 = holding, code, name, names, tax_id, logo_uri, created_by, now; ต่อด้วย companyTaxAddressArgs
+var insertCompanySQL = `INSERT INTO companies (holding_code, code, name, names, tax_id, logo_uri, is_active, created_by, updated_by, created_at, updated_at, ` +
+	strings.Join(companyTaxAddressColumns, ", ") + `)
+	VALUES ($1, $2, $3, $4, $5, $6, true, $7, '', $8, $8, ` + companyPlaceholders(9, len(companyTaxAddressColumns)) + `)`
+
+// updateCompanySQL - $1..$10 = holding, code, name, names, tax_id, logo_uri, is_active ใหม่, updated_by, now, is_active เดิม;
+// ต่อด้วย companyTaxAddressArgs ($11..)
+var updateCompanySQL = `UPDATE companies SET name = $3, names = $4, tax_id = $5, logo_uri = $6, is_active = $7, updated_by = $8, updated_at = $9, ` +
+	companyTaxAddressAssignments(11) + `
+	WHERE holding_code = $1 AND code = $2 AND is_active = $10`
 
 func scanCompany(row interface{ Scan(...interface{}) error }, holdingCode string) (companyModels.CompanyDoc, error) {
 	var (
-		doc   companyModels.CompanyDoc
-		name  string
-		names []byte
+		doc     companyModels.CompanyDoc
+		name    string
+		names   []byte
+		address taxaddress.Address
+		phone   string
 	)
-	err := row.Scan(&doc.Code, &name, &names, &doc.TaxID, &doc.LogoURI, &doc.IsActive, &doc.CreatedAt, &doc.UpdatedAt, &doc.CreatedBy, &doc.UpdatedBy)
-	if err != nil {
+	dest := []interface{}{&doc.Code, &name, &names, &doc.TaxID, &doc.LogoURI, &doc.IsActive, &doc.CreatedAt, &doc.UpdatedAt, &doc.CreatedBy, &doc.UpdatedBy}
+	for _, field := range address.Fields() {
+		dest = append(dest, field)
+	}
+	if err := row.Scan(append(dest, &phone)...); err != nil {
 		return doc, err
 	}
 	doc.Names = orgaccess.DecodeNames(names, name)
+	doc.Address, doc.Phone = &address, &phone
 	doc.HoldingCode = holdingCode
 	doc.HoldingUID = holdingCode
 	doc.GuidFixed = doc.Code
@@ -92,6 +116,11 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+	if err := prepareCompanyTaxAddress(&req); err != nil {
+		return apperr.Respond(ctx, companyTaxAddressError(err, orgaccess.RequestLanguage(ctx)))
+	}
+	address, phone := mergeCompanyTaxAddress(companyModels.CompanyDoc{}, req) // ไม่ส่งมา = ว่าง
+	req.Address, req.Phone = &address, &phone
 	names, err := orgaccess.EncodeNames(req.Names)
 	if err != nil {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
@@ -99,10 +128,9 @@ func (h CompanyHttp) CreateCompany(ctx microservice.IContext) error {
 	}
 
 	err = inTx(reqCtx, db, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(reqCtx, `
-			INSERT INTO companies (holding_code, code, name, names, tax_id, logo_uri, is_active, created_by, updated_by, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, true, $7, '', $8, $8)`,
-			req.HoldingCode, req.Code, orgaccess.PrimaryName(req.Names), names, req.TaxID, req.LogoURI, req.CreatedBy, now); err != nil {
+		args := append([]interface{}{req.HoldingCode, req.Code, orgaccess.PrimaryName(req.Names), names, req.TaxID, req.LogoURI, req.CreatedBy, now},
+			companyTaxAddressArgs(address, phone)...)
+		if _, err := tx.ExecContext(reqCtx, insertCompanySQL, args...); err != nil {
 			return err
 		}
 		return orgaccess.RecordAudit(reqCtx, tx, orgaccess.Audit{
@@ -274,6 +302,9 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
+	if err := prepareCompanyTaxAddress(&req); err != nil {
+		return apperr.Respond(ctx, companyTaxAddressError(err, orgaccess.RequestLanguage(ctx)))
+	}
 
 	reqCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -323,11 +354,10 @@ func (h CompanyHttp) UpdateCompany(ctx microservice.IContext) error {
 			return err
 		}
 		now := time.Now().UTC()
-		result, err := tx.ExecContext(reqCtx, `
-			UPDATE companies SET name = $3, names = $4, tax_id = $5, logo_uri = $6, is_active = $7, updated_by = $8, updated_at = $9
-			WHERE holding_code = $1 AND code = $2 AND is_active = $10`,
-			holdingCode, existing.Code, orgaccess.PrimaryName(req.Names), names, req.TaxID, req.LogoURI,
-			requestedStatus, authUsername, now, existing.IsActive)
+		address, phone := mergeCompanyTaxAddress(existing, req) // PUT ไม่ส่งที่อยู่/โทรศัพท์ = คงค่าเดิม
+		args := append([]interface{}{holdingCode, existing.Code, orgaccess.PrimaryName(req.Names), names, req.TaxID, req.LogoURI,
+			requestedStatus, authUsername, now, existing.IsActive}, companyTaxAddressArgs(address, phone)...)
+		result, err := tx.ExecContext(reqCtx, updateCompanySQL, args...)
 		if err != nil {
 			return err
 		}
@@ -421,4 +451,98 @@ func requireUnchangedCompanyCode(existingCode, requestedCode string) error {
 		return errCompanyCodeChange
 	}
 	return nil
+}
+
+// prepareCompanyTaxAddress - ตัดช่องว่างหัวท้าย + ตรวจที่อยู่สำหรับภาษี/โทรศัพท์ที่ส่งมา (ช่องที่ไม่ได้ส่ง = nil ไม่ตรวจ)
+func prepareCompanyTaxAddress(req *companyModels.CompanyDoc) error {
+	address, phone := taxaddress.Address{}, ""
+	if req.Address != nil {
+		req.Address.Normalize()
+		address = *req.Address
+	}
+	if req.Phone != nil {
+		normalized := taxaddress.NormalizePhone(*req.Phone)
+		req.Phone, phone = &normalized, normalized
+	}
+	return taxaddress.Validate(address, phone)
+}
+
+// mergeCompanyTaxAddress - ค่าที่จะบันทึก: ส่งมา (ไม่ใช่ nil) = แทนทั้งชุด 13 ช่อง / ไม่ส่ง = ค่าเดิมของบริษัท
+// (PUT แทนทั้งเอกสาร แต่ client เก่าที่ไม่รู้จักที่อยู่ต้องไม่ล้างที่อยู่ทิ้ง)
+func mergeCompanyTaxAddress(existing, req companyModels.CompanyDoc) (taxaddress.Address, string) {
+	address, phone := taxaddress.Address{}, ""
+	if existing.Address != nil {
+		address = *existing.Address
+	}
+	if existing.Phone != nil {
+		phone = *existing.Phone
+	}
+	if req.Address != nil {
+		address = *req.Address
+	}
+	if req.Phone != nil {
+		phone = *req.Phone
+	}
+	return address, phone
+}
+
+// companyTaxAddressArgs - ค่าตามลำดับ companyTaxAddressColumns
+func companyTaxAddressArgs(address taxaddress.Address, phone string) []interface{} {
+	args := make([]interface{}, 0, len(companyTaxAddressColumns))
+	for _, field := range address.Fields() {
+		args = append(args, *field)
+	}
+	return append(args, phone)
+}
+
+// companyPlaceholders - "$from, $from+1, ..." จำนวน n ตัว (SQL parameterized เท่านั้น)
+func companyPlaceholders(from, n int) string {
+	parts := make([]string, n)
+	for i := range parts {
+		parts[i] = "$" + strconv.Itoa(from+i)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// companyTaxAddressAssignments - "addr_building = $from, ..., phone = $…" ตามลำดับ companyTaxAddressColumns
+func companyTaxAddressAssignments(from int) string {
+	parts := make([]string, len(companyTaxAddressColumns))
+	for i, column := range companyTaxAddressColumns {
+		parts[i] = column + " = $" + strconv.Itoa(from+i)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// companyTaxAddressLabels - key ภาษาของชื่อช่องที่ใช้ในข้อความผิดพลาด (แถวเดียวกับป้ายบนจอทะเบียนบริษัท)
+var companyTaxAddressLabels = map[string]string{
+	"addr_building": "company_tax_addr_building", "addr_room": "company_tax_addr_room", "addr_floor": "company_tax_addr_floor",
+	"addr_village": "company_tax_addr_village", "addr_no": "company_tax_addr_no", "addr_moo": "company_tax_addr_moo",
+	"addr_soi": "company_tax_addr_soi", "addr_junction": "company_tax_addr_junction", "addr_road": "company_tax_addr_road",
+	"addr_subdistrict": "ss_subdistrict", "addr_district": "ss_district", "addr_province": "address_province",
+	"addr_postcode": "address_zipcode", taxaddress.PhoneKey: "company_telephone",
+}
+
+// companyTaxAddressReasons - key ภาษาของเหตุผล ({field} = ชื่อช่อง, {max} = ความยาวสูงสุด)
+var companyTaxAddressReasons = map[string]string{
+	taxaddress.ReasonTooLong:  "company_tax_addr_err_too_long",
+	taxaddress.ReasonControl:  "company_tax_addr_err_control",
+	taxaddress.ReasonPostcode: "company_tax_addr_err_postcode",
+}
+
+// companyTaxAddressError - 400 VALIDATION_FAILED พร้อมข้อความจาก languages.tsv ในภาษาผู้ใช้ (message_th = ไทย)
+// และ field = address.<key หัวแบบ> หรือ phone ให้จอพาไปที่ช่อง
+func companyTaxAddressError(err error, lang string) *apperr.AppError {
+	fe := taxaddress.AsFieldError(err)
+	if fe == nil {
+		return apperr.ErrValidation.WithWrap(err)
+	}
+	render := func(l string) string {
+		return strings.NewReplacer("{field}", language.Text(companyTaxAddressLabels[fe.Field], l), "{max}", strconv.Itoa(fe.Max)).
+			Replace(language.Text(companyTaxAddressReasons[fe.Reason], l))
+	}
+	field := "address." + fe.Field
+	if fe.Field == taxaddress.PhoneKey {
+		field = taxaddress.PhoneKey
+	}
+	return apperr.ErrValidation.WithMessage(render(lang)).WithThaiMessage(render("th")).WithField(field).WithWrap(err)
 }

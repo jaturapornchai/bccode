@@ -294,6 +294,9 @@ type TaxWithholdingRow struct {
 	// คำนำหน้าชื่อ + อำเภอ/จังหวัด/รหัสไปรษณีย์แยกช่องจากทะเบียนคู่ค้า (payload title_name/addr_district/addr_province/addr_postcode)
 	// ใช้กับใบแนบ ภ.ง.ด. และไฟล์ยื่นด้วยสื่อ (Format กลาง บังคับคำนำหน้าทุกแบบ และที่อยู่ 3 ช่องของ ภ.ง.ด.3)
 	Title string `json:"title,omitempty"`
+	// PartnerFullName - ชื่อสำหรับแสดงบนจอ/CSV/พิมพ์ทะเบียน = คำนำหน้า + ชื่อ (generalledger.PartnerFullName ไม่เติมซ้ำ);
+	// partnername/title ยังแยกช่องเหมือนเดิมสำหรับใบแนบ ภ.ง.ด. และไฟล์ยื่นด้วยสื่อ
+	PartnerFullName string `json:"partnerfullname,omitempty"`
 	// เลขสาขาภาษีของคู่ค้า (5 หลัก, 00000 = สำนักงานใหญ่): snapshot ในรายการก่อน แล้วทะเบียนคู่ค้า — เดิมไม่มีช่องนี้ จอรายงานแสดงสาขาว่าง
 	BranchNo    string `json:"branchno,omitempty"`
 	District    string `json:"district,omitempty"`
@@ -1245,8 +1248,9 @@ FROM gl_subledger_partners WHERE company=$1 AND code=$2`, company, partnerCode).
 	return nil
 }
 
-// finishWithholdingRow - ยอดข้อความ/สุทธิ/อัตรา; อัตราที่บันทึกไว้ชนะอัตราที่คำนวณย้อนจากยอด
+// finishWithholdingRow - ชื่อแสดงผล (คำนำหน้า + ชื่อ) และยอดข้อความ/สุทธิ/อัตรา; อัตราที่บันทึกไว้ชนะอัตราที่คำนวณย้อนจากยอด
 func finishWithholdingRow(row TaxWithholdingRow, recordedRate string) TaxWithholdingRow {
+	row.PartnerFullName = generalledger.PartnerFullName(row.Title, row.PartnerName)
 	row.WhtAmount, row.BaseAmount = moneyText(row.wht), moneyText(row.base)
 	row.WhtText = whtcert.BahtText(row.wht)
 	row.NetAmount = ""

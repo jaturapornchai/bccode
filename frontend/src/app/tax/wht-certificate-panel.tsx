@@ -126,20 +126,44 @@ export function findRecordedWithholding(journal: Pick<GLJournal, "details"> | nu
   return { problem: matches.length > 1 ? "ambiguous" : "not_found" };
 }
 
-/** ค่าที่แสดงบนจอ: snapshot ที่บันทึกก่อน → ทะเบียนบริษัท/คู่ค้าจากรายงาน (ไม่มีที่อยู่บริษัทในทะเบียน จึงว่างให้กรอก) */
+/**
+ * ค่าที่แสดงบนจอ: snapshot ที่บันทึกก่อน → ทะเบียนบริษัท/คู่ค้าจากรายงาน; ที่อยู่ผู้หักภาษี (บริษัทเรา) ที่ใบยังไม่มี
+ * ใช้ที่อยู่สำหรับภาษีในทะเบียนบริษัท (addressline จาก backend) เป็นค่าตั้งต้นที่ยังแก้ได้ — ทะเบียนว่าง = ว่างให้กรอก
+ * ค่าตั้งต้นจากทะเบียนเป็นค่าแสดง/พิมพ์เท่านั้น ไม่ถูกบันทึกลงใบสำคัญจนกว่าผู้ใช้แก้ช่องนั้นเอง (whtSnapshotChanges)
+ */
 export function whtSnapshotView(item: GLDetailWithholding | undefined, row: WhtReportRow, company: CompanyHeader | null): WhtSnapshot {
   return {
     payer_name: item?.payer_name || company?.name || "",
     payer_tax_id: item?.payer_tax_id || company?.taxid || "",
     payer_branch_no: item?.payer_branch_no ?? "",
-    payer_address: item?.payer_address ?? "",
-    payee_name: item?.payee_name || row.partnername || "",
+    payer_address: item?.payer_address || company?.addressline || "",
+    payee_name: item?.payee_name || row.partnerfullname || row.partnername || "",
     payee_tax_id: item?.payee_tax_id || row.taxid || "",
     payee_branch_no: item?.payee_branch_no ?? "",
     payee_address: item?.payee_address || row.address || "",
     wht_book_no: item?.wht_book_no ?? "",
     remark: item?.remark ?? "",
   };
+}
+
+const normalizeSnapshotValue = (field: WhtSnapshotField, value: string | undefined) =>
+  field.endsWith("_tax_id") ? taxDigits(value) : field.endsWith("_branch_no") ? normalizeBranchNo(value) : (value ?? "").trim();
+
+/**
+ * ช่องที่จะบันทึกลงรายการภาษีหัก: เฉพาะช่องที่ผู้ใช้แก้บนจอ (ไม่ล็อก) และค่าใหม่ต่างจากค่าที่บันทึกในใบสำคัญจริง
+ * before = ค่าในใบสำคัญ (ไม่ใช่ค่าตั้งต้นบนจอ) — หน้ายืนยันแสดงทุกช่องที่จะถูกเขียน ค่าตั้งต้นจากทะเบียนที่ผู้ใช้ไม่ได้แตะไม่ถูกบันทึกเงียบ ๆ
+ * (review 2026-09-25: เดิมส่งทุกช่อง ที่อยู่บริษัทจากทะเบียนถูกแช่ลงใบที่ผ่านบัญชีโดยหน้ายืนยันไม่แสดง)
+ */
+export function whtSnapshotChanges(
+  recorded: GLDetailWithholding | undefined,
+  snapshot: WhtSnapshot,
+  shown: WhtSnapshot,
+  locked: Partial<Record<WhtSnapshotField, boolean>> = {},
+): { field: WhtSnapshotField; before: string; after: string }[] {
+  return WHT_SNAPSHOT_FIELDS
+    .filter((field) => !locked[field] && snapshot[field].trim() !== shown[field].trim())
+    .map((field) => ({ field, before: normalizeSnapshotValue(field, recorded?.[field]), after: normalizeSnapshotValue(field, snapshot[field]) }))
+    .filter((change) => change.before !== change.after);
 }
 
 /**
@@ -312,10 +336,6 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, l
     setError(box ? `${message} — ${tr("wht_cert_ui_error_field", "ช่องที่ต้องแก้")}: ${tr(box[0], box[1])}` : message);
   };
 
-  // ส่งเฉพาะค่าที่ผู้ใช้เห็นและแก้ได้: ชื่อ/เลขผู้หักภาษีที่ล็อกตามทะเบียนคงค่าที่บันทึกไว้เดิม
-  const snapshotPatch = (): Partial<GLDetailWithholding> => Object.fromEntries(WHT_SNAPSHOT_FIELDS
-    .filter((field) => !(field === "payer_name" && payerNameLocked) && !(field === "payer_tax_id" && payerTaxIdLocked))
-    .map((field) => [field, field.endsWith("_tax_id") ? taxDigits(snapshot[field]) : field.endsWith("_branch_no") ? normalizeBranchNo(snapshot[field]) : snapshot[field].trim()]));
   const changedFields = WHT_SNAPSHOT_FIELDS.filter((field) => snapshot[field].trim() !== shown[field].trim());
   const canSaveSnapshot = recordState === "ready" && journal?.status !== "reversed" && changedFields.length > 0 && !saving;
   // Dirty guard (AGENTS.md 40+ rule 7): unsaved payer/payee edits are reported to the workbench,
@@ -334,7 +354,11 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, l
     if (!journal?.id || !recorded || !canSaveSnapshot) return;
     setSaveError("");
     setSaveMessage("");
-    const updated: GLDetailWithholding = { ...recorded, ...snapshotPatch() };
+    // ชื่อ/เลขผู้หักภาษีที่ล็อกตามทะเบียนคงค่าที่บันทึกไว้เดิม; ช่องที่ไม่ได้แก้คงค่าในใบสำคัญ (ไม่แช่ค่าตั้งต้นจากทะเบียน)
+    const changes = whtSnapshotChanges(recorded, snapshot, shown, { payer_name: payerNameLocked, payer_tax_id: payerTaxIdLocked });
+    // แก้แล้วแต่ค่าตรงกับที่บันทึกอยู่แล้ว (เช่น ล้างค่าตั้งต้นที่ไม่เคยถูกบันทึก) = ไม่มีอะไรต้องเขียน
+    if (!changes.length) { setShown(snapshot); setSaveMessage(tr("wht_cert_ui_snapshot_saved", "บันทึกข้อมูลลงใบสำคัญแล้ว")); return; }
+    const updated: GLDetailWithholding = { ...recorded, ...Object.fromEntries(changes.map((change) => [change.field, change.after])) };
     const details = { ...journal.details, withholdings: (journal.details?.withholdings ?? []).map((item) => (item.id === recorded.id ? updated : item)) };
     const problem = journalDetailsProblem(details, tr);
     if (problem) { setSaveError(problem.message); return; }
@@ -344,9 +368,9 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, l
       description: tr("wht_cert_ui_snapshot_confirm_hint", "ค่าที่บันทึกไว้เดิมจะถูกแทนด้วยค่าใหม่ (ระบบเก็บค่าเดิมไว้ในประวัติ)"),
       details: (
         <ul className="grid gap-1 text-[0.9rem] leading-snug">
-          {changedFields.map((field) => (
+          {changes.map(({ field, before, after }) => (
             <li key={field} className="[overflow-wrap:anywhere]">
-              <span className="font-semibold">{tr(...WHT_SNAPSHOT_LABELS[field])}</span>: {shown[field].trim() || notSpecified} → {snapshot[field].trim() || notSpecified}
+              <span className="font-semibold">{tr(...WHT_SNAPSHOT_LABELS[field])}</span>: {before || notSpecified} → {after || notSpecified}
             </li>
           ))}
         </ul>
@@ -595,11 +619,12 @@ export function WhtReceivedCertificateDetails({ row, company }: { row: WhtReport
   const income = WHT_INCOME_OPTIONS.find((o) => o.value === row.incometype);
   const conditionOption = CONDITION_OPTIONS.find((o) => o.value === conditionValue(row.condition));
   const details: { label: string; value: string; mono?: boolean }[] = [
-    { label: tr("wht_received_ui_payer", "ผู้มีหน้าที่หักภาษี (ลูกค้า/ผู้จ่ายเงิน)"), value: row.partnername },
+    { label: tr("wht_received_ui_payer", "ผู้มีหน้าที่หักภาษี (ลูกค้า/ผู้จ่ายเงิน)"), value: row.partnerfullname || row.partnername },
     { label: tr("wht_received_ui_payer_taxid", "เลขประจำตัวผู้เสียภาษีของผู้หักภาษี"), value: row.taxid, mono: true },
     { label: tr("wht_received_ui_payer_address", "ที่อยู่ผู้หักภาษี"), value: row.address },
     { label: tr("wht_received_ui_payee", "ผู้ถูกหักภาษี (กิจการของเรา)"), value: company?.name ?? "" },
     { label: tr("wht_received_ui_payee_taxid", "เลขประจำตัวผู้เสียภาษีของกิจการเรา"), value: company?.taxid ?? "", mono: true },
+    { label: tr("wht_received_ui_payee_address", "ที่อยู่ของกิจการเรา (ตามทะเบียนบริษัท)"), value: company?.addressline ?? "" },
     { label: tr("wht_received_ui_form", "แบบยื่นรายการของผู้หักภาษี"), value: formOption ? tr(formOption.key, formOption.th) : "" },
     { label: tr("wht_cert_ui_income", "ประเภทเงินได้พึงประเมินที่จ่าย"), value: income ? tr(income.key, income.th) : "" },
     { label: tr("wht_cert_ui_paid_date", "วันที่จ่ายเงิน"), value: row.paiddate, mono: true },

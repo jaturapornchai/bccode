@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { GLDetailWithholding } from "@/lib/gl-journal-details";
 import type { WhtReportRow } from "@/lib/thai-tax";
 import type { ConfirmDialogOptions } from "@/components/ui/confirm-dialog";
-import { WhtCertificatePanel, WhtReceivedCertificateDetails, findRecordedWithholding, leaveWhtCertificate, whtCertificateFigures, whtCertificateIssueDate, whtRecordRef, whtSnapshotView } from "./wht-certificate-panel";
+import { WhtCertificatePanel, WhtReceivedCertificateDetails, findRecordedWithholding, leaveWhtCertificate, whtCertificateFigures, whtCertificateIssueDate, whtRecordRef, whtSnapshotChanges, whtSnapshotView } from "./wht-certificate-panel";
 
 const row = (overrides: Partial<WhtReportRow> = {}): WhtReportRow => ({
   rowid: "wht-J1#0",
@@ -13,6 +13,7 @@ const row = (overrides: Partial<WhtReportRow> = {}): WhtReportRow => ({
   docdate: "2026-09-10",
   partnercode: "CUS-001",
   partnername: "บริษัท ก่อสร้างโครงการเอ จำกัด",
+  partnerfullname: "บริษัท ก่อสร้างโครงการเอ จำกัด",
   taxid: "0105558002001",
   address: "99 ถนนพระราม 2 กรุงเทพมหานคร",
   description: "ค่าขนส่งวัสดุก่อสร้าง",
@@ -180,5 +181,64 @@ describe("whtRecordRef / whtCertificateFigures — recorded withholdings print f
     const open = whtCertificateFigures(false, values, row());
     expect(open.form).toBe("7");
     expect(open.incomes[0]).toMatchObject({ type: "3_tres", paiddate: "2026-09-10", amount: "20000.00", tax: "200.00" });
+  });
+});
+
+describe("ชื่อคู่ค้าพร้อมคำนำหน้า (partnerfullname)", () => {
+  const person = { partnername: "วิไลวรรณ ศรีสุข", partnerfullname: "นางสาว วิไลวรรณ ศรีสุข" };
+
+  it("ไม่มีชื่อใน snapshot → ผู้ถูกหักใช้ชื่อพร้อมคำนำหน้าจากรายงาน; ไม่มี partnerfullname → ใช้ partnername", () => {
+    expect(whtSnapshotView(undefined, row(person), company).payee_name).toBe("นางสาว วิไลวรรณ ศรีสุข");
+    expect(whtSnapshotView(undefined, row({ partnername: "วิไลวรรณ ศรีสุข", partnerfullname: "" }), company).payee_name).toBe("วิไลวรรณ ศรีสุข");
+  });
+
+  it("ภาษีถูกหัก: ผู้หักภาษีแสดงคำนำหน้า + ชื่อ", () => {
+    const html = renderToStaticMarkup(createElement(WhtReceivedCertificateDetails, { row: row(person), company }));
+    expect(html).toContain("นางสาว วิไลวรรณ ศรีสุข");
+  });
+});
+
+describe("ที่อยู่บริษัทจากทะเบียน (ที่อยู่สำหรับภาษี สำนักงานใหญ่)", () => {
+  const registered = { ...company, addressline: "เลขที่ 88/12 ถนนลาดหลุมแก้ว ตำบลคูบางหลวง อำเภอลาดหลุมแก้ว จังหวัดปทุมธานี 12140" };
+  const item = (overrides: Partial<GLDetailWithholding> = {}): GLDetailWithholding => ({
+    id: "W1", wht_direction: 1, form_type: "PND53", partner_code: "CUS-001", payment_date: "2026-09-10", income_tax_type: "3_tres",
+    condition_type: 1, wht_rate: "1", base_amount: "20000", tax_amount: "200", wht_cert_no: "WT-0042", ...overrides,
+  });
+
+  it("ที่อยู่ผู้หักภาษี: ใบยังไม่มี → ที่อยู่จากทะเบียน (แก้ได้); ใบมีแล้ว → ของใบ; ทะเบียนว่าง → ว่าง", () => {
+    expect(whtSnapshotView(undefined, row(), registered).payer_address).toBe(registered.addressline);
+    expect(whtSnapshotView(item({ payer_address: "" }), row(), registered).payer_address).toBe(registered.addressline);
+    expect(whtSnapshotView(item({ payer_address: "ที่อยู่ที่บันทึกในใบ" }), row(), registered).payer_address).toBe("ที่อยู่ที่บันทึกในใบ");
+    expect(whtSnapshotView(undefined, row(), company).payer_address).toBe("");
+    expect(whtSnapshotView(undefined, row(), null).payer_address).toBe("");
+    // ฝั่งผู้ถูกหัก (คู่ค้า) ไม่ได้ที่อยู่ของบริษัท
+    expect(whtSnapshotView(undefined, row({ address: "" }), registered).payee_address).toBe("");
+  });
+
+  it("บันทึกลงใบสำคัญ: ค่าตั้งต้นจากทะเบียนที่ไม่ได้แก้ไม่ถูกบันทึก; ช่องที่แก้แสดงค่าเดิมตามใบสำคัญ (review 2026-09-25)", () => {
+    const recorded = item({ payer_address: "", remark: "" });
+    const view = whtSnapshotView(recorded, row(), registered);
+    // แก้แค่หมายเหตุ → เขียนแค่หมายเหตุ ไม่แช่ที่อยู่บริษัทจากทะเบียนลงใบ
+    expect(whtSnapshotChanges(recorded, { ...view, remark: "จ่ายตามสัญญาเลขที่ 12/2569" }, view)).toEqual([
+      { field: "remark", before: "", after: "จ่ายตามสัญญาเลขที่ 12/2569" },
+    ]);
+    // แก้ที่อยู่ผู้หักภาษี → ค่าเดิมคือค่าที่บันทึก (ว่าง) ไม่ใช่ค่าตั้งต้นจากทะเบียน
+    expect(whtSnapshotChanges(recorded, { ...view, payer_address: "59/3 หมู่ 7 ถนนพหลโยธิน" }, view)).toEqual([
+      { field: "payer_address", before: "", after: "59/3 หมู่ 7 ถนนพหลโยธิน" },
+    ]);
+    // ล้างค่าตั้งต้นที่ไม่เคยบันทึก = ไม่มีอะไรต้องเขียน
+    expect(whtSnapshotChanges(recorded, { ...view, payer_address: "" }, view)).toEqual([]);
+    // ช่องที่ล็อกตามทะเบียนไม่ถูกเขียน; เลขสาขาเทียบแบบ 5 หลัก
+    expect(whtSnapshotChanges(item({ payee_branch_no: "00001" }), { ...view, payer_name: "ชื่ออื่น", payee_branch_no: "1" }, view, { payer_name: true })).toEqual([]);
+  });
+
+  it("ภาษีถูกหัก: แสดงที่อยู่ของกิจการเรา (ทะเบียนว่าง = ยังไม่ระบุ)", () => {
+    const html = renderToStaticMarkup(createElement(WhtReceivedCertificateDetails, { row: row(), company: registered }));
+    expect(html).toContain("ที่อยู่ของกิจการเรา (ตามทะเบียนบริษัท)");
+    expect(html).toContain(registered.addressline);
+    const blank = renderToStaticMarkup(createElement(WhtReceivedCertificateDetails, { row: row(), company }));
+    const at = blank.indexOf("ที่อยู่ของกิจการเรา (ตามทะเบียนบริษัท)");
+    expect(at).toBeGreaterThan(0);
+    expect(blank.slice(at, at + 400)).toContain("ยังไม่ระบุ");
   });
 });

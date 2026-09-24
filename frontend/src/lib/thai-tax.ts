@@ -99,6 +99,64 @@ export interface CompanyHeader {
   code: string;
   name: string;
   taxid: string;
+  /** ที่อยู่สำหรับภาษี (สำนักงานใหญ่) จากทะเบียนบริษัท — null = ทะเบียนยังไม่มีที่อยู่ */
+  address?: TaxAddress | null;
+  phone?: string;
+  /** ที่อยู่บรรทัดเดียวสำหรับ 50 ทวิ ที่ backend ประกอบให้ (taxaddress.Address.Line) — ว่าง = ยังไม่ระบุ */
+  addressline?: string;
+}
+
+/** ช่องที่อยู่สำหรับภาษีตาม key หัวแบบ rdform — ลำดับ/ชื่อเดียวกับ backend `taxaddress.Keys` และ json ของ API บริษัท */
+export const TAX_ADDRESS_KEYS = [
+  "addr_building", "addr_room", "addr_floor", "addr_village", "addr_no", "addr_moo", "addr_soi",
+  "addr_junction", "addr_road", "addr_subdistrict", "addr_district", "addr_province", "addr_postcode",
+] as const;
+export type TaxAddressKey = (typeof TAX_ADDRESS_KEYS)[number];
+export type TaxAddress = Record<TaxAddressKey, string>;
+
+/** ความยาวสูงสุด (ตัวอักษร) เท่ากับ backend `taxaddress` (ช่องที่อยู่ของไฟล์ยื่นกรมสรรพากร); รหัสไปรษณีย์ = 5 หลัก */
+export const TAX_ADDRESS_MAX_LENGTH: Record<TaxAddressKey, number> = {
+  addr_building: 40, addr_room: 20, addr_floor: 20, addr_village: 100, addr_no: 20, addr_moo: 20, addr_soi: 100,
+  addr_junction: 100, addr_road: 100, addr_subdistrict: 50, addr_district: 50, addr_province: 50, addr_postcode: 5,
+};
+export const TAX_PHONE_MAX_LENGTH = 50;
+
+export function emptyTaxAddress(): TaxAddress {
+  return Object.fromEntries(TAX_ADDRESS_KEYS.map((key) => [key, ""])) as TaxAddress;
+}
+
+/** อ่านที่อยู่จาก API แบบกัน null: ช่องที่ไม่ใช่ข้อความ/ไม่มี = "" */
+export function toTaxAddress(value: unknown): TaxAddress {
+  const address = emptyTaxAddress();
+  if (!isRecord(value)) return address;
+  for (const key of TAX_ADDRESS_KEYS) address[key] = toText(value[key]);
+  return address;
+}
+
+/** ตัดช่องว่างหัวท้ายทุกช่องก่อนส่ง (ส่งครบ 13 ช่องเสมอ — backend แทนทั้งชุด) */
+export function trimTaxAddress(address: TaxAddress): TaxAddress {
+  return Object.fromEntries(TAX_ADDRESS_KEYS.map((key) => [key, (address[key] ?? "").trim()])) as TaxAddress;
+}
+
+export type TaxAddressProblem = "too_long" | "control_char" | "postcode";
+
+/**
+ * ตรวจก่อนส่ง (กติกาเดียวกับ backend `taxaddress.Validate` ซึ่งตรวจซ้ำเสมอ): ห้ามขึ้นบรรทัด/แท็บ, ยาวไม่เกินกำหนด (นับตัวอักษร),
+ * รหัสไปรษณีย์ว่างหรือเลข 5 หลัก — คืนเฉพาะช่องที่ผิด (หลังตัดช่องว่างหัวท้าย)
+ */
+export function taxAddressProblems(address: TaxAddress, phone: string): Partial<Record<TaxAddressKey | "phone", TaxAddressProblem>> {
+  const problems: Partial<Record<TaxAddressKey | "phone", TaxAddressProblem>> = {};
+  const check = (key: TaxAddressKey | "phone", raw: string, max: number) => {
+    const value = (raw ?? "").trim();
+    // อักขระควบคุม (ขึ้นบรรทัด/แท็บ) กลางข้อความ — ที่อยู่บน 50 ทวิ เป็นบรรทัดเดียว
+    if (/[\u0000-\u001f\u007f-\u009f]/.test(value)) problems[key] = "control_char";
+    else if (key === "addr_postcode") {
+      if (value && !/^[0-9]{5}$/.test(value)) problems[key] = "postcode";
+    } else if (Array.from(value).length > max) problems[key] = "too_long";
+  };
+  for (const key of TAX_ADDRESS_KEYS) check(key, address[key], TAX_ADDRESS_MAX_LENGTH[key]);
+  check("phone", phone, TAX_PHONE_MAX_LENGTH);
+  return problems;
 }
 
 export interface VatRegisterSummary {
@@ -122,6 +180,8 @@ export interface WhtReportRow {
   docdate: string;
   partnercode: string;
   partnername: string;
+  /** ชื่อแสดงผล = คำนำหน้า + ชื่อ (backend ไม่เติมซ้ำ) สำหรับจอ/CSV/พิมพ์ทะเบียน; partnername ไม่มีคำนำหน้า — ว่าง = ใช้ partnername */
+  partnerfullname: string;
   taxid: string;
   /** เลขสาขาภาษีของคู่ค้า 5 หลัก (00000 = สำนักงานใหญ่) — ว่าง = ไม่ทราบ */
   branchno?: string;
@@ -183,7 +243,7 @@ export interface WhtReportResult {
   error?: string;
 }
 
-const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "" };
+const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "", address: null, phone: "", addressline: "" };
 const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [] };
 const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
 
@@ -237,6 +297,7 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
     docdate: toText(rec.docdate),
     partnercode: toText(rec.partnercode),
     partnername: toText(rec.partnername),
+    partnerfullname: toText(rec.partnerfullname) || toText(rec.partnername),
     taxid: toText(rec.taxid),
     branchno: toText(rec.branchno),
     address: toText(rec.address),
@@ -288,7 +349,7 @@ export function whtRegisterRecords(rows: WhtReportRow[]): ThaiTaxRecord[] {
     id: row.rowid,
     docdate: row.docdate,
     taxinvoiceno: row.docno,
-    counterpartyname: row.partnername,
+    counterpartyname: row.partnerfullname || row.partnername,
     taxid: row.taxid,
     branchno: row.branchno ?? "",
     isheadoffice: isHeadOfficeBranch(row.branchno ?? ""),
@@ -358,7 +419,14 @@ function toTextList(value: unknown): string[] {
 
 function toCompany(value: unknown): CompanyHeader {
   if (!isRecord(value)) return EMPTY_COMPANY;
-  return { code: toText(value.code), name: toText(value.name), taxid: toText(value.taxid) };
+  return {
+    code: toText(value.code),
+    name: toText(value.name),
+    taxid: toText(value.taxid),
+    address: isRecord(value.address) ? toTaxAddress(value.address) : null,
+    phone: toText(value.phone).trim(),
+    addressline: toText(value.addressline).trim(),
+  };
 }
 
 function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord {

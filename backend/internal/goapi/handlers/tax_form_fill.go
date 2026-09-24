@@ -17,6 +17,7 @@ import (
 	"smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/rdform"
+	"smlcloudplatform/internal/taxaddress"
 )
 
 // TaxFormNote - ข้อความเตือนหลังเติมค่า (key ภาษา + จำนวนรายการ/ยอดอ้างอิงถ้ามี) ให้ผู้ใช้ตรวจก่อนยื่น
@@ -26,7 +27,8 @@ type TaxFormNote struct {
 	Amount string `json:"amount,omitempty"`
 }
 
-// profileKeys - หัวแบบที่ยกจากฉบับล่าสุด: ทะเบียนบริษัทยังไม่มีที่อยู่/สาขา/ผู้ลงนาม ผู้ใช้จึงกรอกครั้งแรกครั้งเดียว
+// profileKeys - หัวแบบที่ยกจากฉบับล่าสุด: ทะเบียนบริษัทยังไม่มีสาขา/ผู้ลงนาม ผู้ใช้จึงกรอกครั้งแรกครั้งเดียว;
+// ที่อยู่ (addr_*) และโทรศัพท์ยกมาเฉพาะเมื่อทะเบียนบริษัทยังไม่มีที่อยู่สำหรับภาษี — มีแล้วใช้ของทะเบียน (applyRegistryAddress)
 // media_ref_no = เลขอ้างอิงการลงทะเบียนยื่นด้วยสื่อ (USER_ID ของไฟล์ยื่นกรมสรรพากร) กรอกครั้งเดียวแล้วยกไปฉบับถัดไป
 var profileKeys = []string{"branch_no", "establishment_name", "name_line2", "addr_building", "addr_room", "addr_floor",
 	"addr_village", "addr_no", "addr_moo", "addr_soi", "addr_junction", "addr_road", "addr_subdistrict", "addr_district",
@@ -134,6 +136,7 @@ func prefillTaxForm(ctx context.Context, db *sql.DB, holding, company, code stri
 			f.set("tax_id", id)
 		}
 		f.set("name", header.Name)
+		f.applyRegistryAddress(header)
 		if f.values["branch_no"] == "" {
 			f.set("branch_no", "00000") // ทะเบียนยังไม่มีสาขา: สำนักงานใหญ่ แก้ได้
 		}
@@ -202,6 +205,26 @@ ORDER BY updated_at DESC LIMIT 1`, company, pq.StringArray(family)).Scan(&raw)
 		f.set(k, last.Values[k])
 	}
 	return nil
+}
+
+// applyRegistryAddress - ที่อยู่สำหรับภาษี (สำนักงานใหญ่) + โทรศัพท์จากทะเบียนบริษัท ชนะค่าที่ยกจากฉบับก่อน:
+// ทะเบียนมีที่อยู่แม้ช่องเดียว → ล้าง addr_* ที่ยกมาทั้งชุดแล้วใส่ของทะเบียน (กันที่อยู่สองแห่งปนกันบนหัวแบบ);
+// ทะเบียนว่าง → คงค่าที่ยกมาตามเดิม; โทรศัพท์ใส่เมื่อทะเบียนมีค่าและแบบมีช่องโทรศัพท์ (f.set ข้ามช่องที่แบบไม่มี)
+// ทุกช่องยังแก้ได้บนจอ และฉบับที่บันทึกแล้วพิมพ์ตามที่บันทึก (applyCompanyHeader ทับเฉพาะชื่อ/เลขผู้เสียภาษี)
+// ทะเบียนเก็บเฉพาะที่อยู่สำนักงานใหญ่: ฉบับก่อนยื่นในนามสาขา (branch_no ไม่ใช่ 00000) → คงที่อยู่/โทรศัพท์ของสาขาที่ยกมา
+func (f *formFiller) applyRegistryAddress(header CompanyHeader) {
+	if strings.Trim(f.values["branch_no"], "0") != "" {
+		return
+	}
+	if address := header.registryAddress(); !address.IsBlank() {
+		for _, key := range taxaddress.Keys {
+			delete(f.values, key)
+		}
+		for key, value := range address.Values() {
+			f.set(key, value)
+		}
+	}
+	f.set(taxaddress.PhoneKey, header.Phone)
 }
 
 func digitsOnly(s string) string {

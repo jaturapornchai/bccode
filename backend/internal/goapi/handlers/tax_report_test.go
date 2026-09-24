@@ -483,3 +483,33 @@ func TestApplyWithholdingPartySnapshotSplitsFullSnapshot(t *testing.T) {
 		t.Fatalf("recorded branch must win: %+v", branch)
 	}
 }
+
+// ทะเบียนภาษีหัก ณ ที่จ่าย: จอ/CSV/พิมพ์แสดงคำนำหน้า + ชื่อ (partnerfullname) แต่ partnername/title ยังแยกช่องสำหรับใบแนบ/ไฟล์ยื่น
+func TestWithholdingRowPartnerFullName(t *testing.T) {
+	cases := []struct{ title, name, want string }{
+		{"นางสาว", "วิไลวรรณ ศรีสุข", "นางสาว วิไลวรรณ ศรีสุข"},
+		{"บริษัท", "บริษัท สยามวัสดุ จำกัด", "บริษัท สยามวัสดุ จำกัด"}, // ชื่อบริษัทมีคำนำหน้าอยู่แล้ว ไม่เติมซ้ำ
+		{"-", "ร้านทองดีการช่าง", "ร้านทองดีการช่าง"},
+		{"", "สมชาย ใจดี", "สมชาย ใจดี"},
+		{"นาย", "", ""},
+	}
+	for _, c := range cases {
+		row := finishWithholdingRow(TaxWithholdingRow{Title: c.title, PartnerName: c.name}, "")
+		if row.PartnerFullName != c.want || row.PartnerName != c.name || row.Title != c.title {
+			t.Fatalf("title=%q name=%q: got full=%q name=%q title=%q, want full=%q", c.title, c.name, row.PartnerFullName, row.PartnerName, row.Title, c.want)
+		}
+	}
+	// snapshot เต็มที่ตรงทะเบียน → แยกกลับ แต่ชื่อแสดงผลยังมีคำนำหน้า; snapshot ของชื่อเดิม (ทะเบียนถูกแก้ภายหลัง) → แสดงตาม snapshot
+	split := TaxWithholdingRow{PartnerName: "วิไลวรรณ ศรีสุข", Title: "นางสาว"}
+	applyWithholdingPartySnapshot(&split, generalledger.SubledgerWithholding{Direction: 1, PayeeName: "นางสาว วิไลวรรณ ศรีสุข"})
+	split = finishWithholdingRow(split, "")
+	if split.PartnerName != "วิไลวรรณ ศรีสุข" || split.Title != "นางสาว" || split.PartnerFullName != "นางสาว วิไลวรรณ ศรีสุข" {
+		t.Fatalf("split snapshot = %+v", split)
+	}
+	renamed := TaxWithholdingRow{PartnerName: "วิไลวรรณ ศรีสุข", Title: "นาง"}
+	applyWithholdingPartySnapshot(&renamed, generalledger.SubledgerWithholding{Direction: 1, PayeeName: "นางสาว วิไลวรรณ ทองคำ"})
+	renamed = finishWithholdingRow(renamed, "")
+	if renamed.PartnerFullName != "นางสาว วิไลวรรณ ทองคำ" || renamed.Title != "" {
+		t.Fatalf("renamed snapshot = %+v", renamed)
+	}
+}

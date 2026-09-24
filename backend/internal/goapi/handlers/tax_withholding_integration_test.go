@@ -60,7 +60,7 @@ func TestTaxWithholdingReportFromGL(t *testing.T) {
 	if !ok {
 		t.Fatalf("แถวแรกไม่ใช่ PV6901-S001: %+v", rows[0])
 	}
-	if pv1.PartnerCode != "SUPP-TH-001" || pv1.TaxID != "0105558002001" {
+	if pv1.PartnerCode != "SUPP-TH-001" || pv1.TaxID != "0105558002017" {
 		t.Fatalf("PV6901-S001 partner=%q taxid=%q", pv1.PartnerCode, pv1.TaxID)
 	}
 	if pv1.WhtAmount != "3210.00" || pv1.BaseAmount != "107000.00" || pv1.RatePercent != "3.00" {

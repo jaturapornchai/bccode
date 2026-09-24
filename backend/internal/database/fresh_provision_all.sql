@@ -60,6 +60,21 @@ CREATE TABLE IF NOT EXISTS companies (
     tax_id TEXT DEFAULT '',
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- ที่อยู่สำหรับภาษี (สำนักงานใหญ่) ตาม key หัวแบบ rdform + โทรศัพท์ (internal/taxaddress)
+    addr_building TEXT NOT NULL DEFAULT '',
+    addr_room TEXT NOT NULL DEFAULT '',
+    addr_floor TEXT NOT NULL DEFAULT '',
+    addr_village TEXT NOT NULL DEFAULT '',
+    addr_no TEXT NOT NULL DEFAULT '',
+    addr_moo TEXT NOT NULL DEFAULT '',
+    addr_soi TEXT NOT NULL DEFAULT '',
+    addr_junction TEXT NOT NULL DEFAULT '',
+    addr_road TEXT NOT NULL DEFAULT '',
+    addr_subdistrict TEXT NOT NULL DEFAULT '',
+    addr_district TEXT NOT NULL DEFAULT '',
+    addr_province TEXT NOT NULL DEFAULT '',
+    addr_postcode TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (holding_code, code)
 );
 

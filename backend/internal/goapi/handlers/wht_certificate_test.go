@@ -308,3 +308,61 @@ func TestWhtAccessAllowsBranch(t *testing.T) {
 		t.Fatal("branch access must cover only its branch (a voucher without a branch needs company-wide access)")
 	}
 }
+
+// ที่อยู่ฝั่งบริษัทบน 50 ทวิ: snapshot ที่บันทึก → ค่าที่หน้าจอส่งมา → ที่อยู่สำหรับภาษีในทะเบียนบริษัท (ค่าตั้งต้นเมื่อใบยังไม่มีที่อยู่)
+// ฝั่งคู่ค้าห้ามได้ที่อยู่ของบริษัท
+func TestApplyRecordedWithholdingCompanyAddressFallback(t *testing.T) {
+	registryLine := "เลขที่ 88/12 ถนนลาดหลุมแก้ว ตำบลคูบางหลวง อำเภอลาดหลุมแก้ว จังหวัดปทุมธานี 12140"
+	company := CompanyHeader{Name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", TaxID: "0105558012349", AddressLine: registryLine}
+	partner := generalledger.SubledgerPartner{Code: "TRANS", Name: "บริษัท ขนส่งไทยเร็ว จำกัด", TaxID: "0105562045671"}
+	blankScreen := whtcert.Certificate{}
+	screen := whtcert.Certificate{Payer: whtcert.Party{Address: "ที่อยู่ผู้หักจากจอ"}, Payee: whtcert.Party{Address: "ที่อยู่ผู้รับจากจอ"}}
+
+	// ทิศทาง 1 เราหัก: ผู้จ่าย = บริษัท
+	got := applyRecordedWithholding(blankScreen, generalledger.SubledgerWithholding{Direction: 1}, partner, company)
+	if got.Payer.Address != registryLine {
+		t.Fatalf("blank snapshot + blank screen must use the registry address: %q", got.Payer.Address)
+	}
+	if got.Payee.Address != "" {
+		t.Fatalf("partner side must never get the company address: %q", got.Payee.Address)
+	}
+	if got = applyRecordedWithholding(screen, generalledger.SubledgerWithholding{Direction: 1}, partner, company); got.Payer.Address != "ที่อยู่ผู้หักจากจอ" {
+		t.Fatalf("screen address must win over the registry: %q", got.Payer.Address)
+	}
+	snap := generalledger.SubledgerWithholding{Direction: 1, PayerAddress: "ที่อยู่ตาม snapshot"}
+	if got = applyRecordedWithholding(screen, snap, partner, company); got.Payer.Address != "ที่อยู่ตาม snapshot" {
+		t.Fatalf("recorded snapshot address must win: %q", got.Payer.Address)
+	}
+
+	// ทิศทาง 2 ผู้จ่ายหักภาษีเรา: ผู้รับ = บริษัท
+	got = applyRecordedWithholding(blankScreen, generalledger.SubledgerWithholding{Direction: 2}, partner, company)
+	if got.Payee.Address != registryLine || got.Payer.Address != "" {
+		t.Fatalf("direction 2: payee %q payer %q", got.Payee.Address, got.Payer.Address)
+	}
+	if got = applyRecordedWithholding(screen, generalledger.SubledgerWithholding{Direction: 2, PayeeAddress: "ที่อยู่ผู้รับตาม snapshot"}, partner, company); got.Payee.Address != "ที่อยู่ผู้รับตาม snapshot" {
+		t.Fatalf("direction 2 snapshot must win: %q", got.Payee.Address)
+	}
+}
+
+// ไม่อ้างรายการที่บันทึก: ที่อยู่ผู้หักภาษีว่างในคำขอ → ใช้ที่อยู่สำหรับภาษีในทะเบียน; ทะเบียนก็ว่าง → 400 ต้องระบุที่อยู่
+func TestWhtCertificateHandler_PayerAddressFromRegistry(t *testing.T) {
+	body := strings.Replace(whtCertBody, `"address":"เลขที่ 88/12 ถนนลาดหลุมแก้ว จังหวัดปทุมธานี 12140"`, `"address":""`, 1)
+	if body == whtCertBody {
+		t.Fatal("fixture payer address not found")
+	}
+	stubWhtCompany(t, CompanyHeader{Name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", TaxID: "0105558012349",
+		AddressLine: "เลขที่ 88/12 ถนนลาดหลุมแก้ว ตำบลคูบางหลวง อำเภอลาดหลุมแก้ว จังหวัดปทุมธานี 12140"})
+	if rec := callTaxReportHandler(t, WhtCertificateHandler, body, &taxReportTestUser); rec.Code != http.StatusOK {
+		t.Fatalf("registry address fallback: status %d body=%s", rec.Code, rec.Body.String())
+	}
+
+	stubWhtCompany(t, CompanyHeader{Name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", TaxID: "0105558012349"})
+	rec := callTaxReportHandler(t, WhtCertificateHandler, body, &taxReportTestUser)
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if rec.Code != http.StatusBadRequest || resp["code"] != "wht_cert_payer_address_required" {
+		t.Fatalf("blank registry: status %d body %v", rec.Code, resp)
+	}
+}

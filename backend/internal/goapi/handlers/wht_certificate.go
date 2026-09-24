@@ -152,8 +152,8 @@ func WhtCertificateHandler(c echo.Context) error {
 	cert := req.Certificate
 	journalID, itemID := strings.TrimSpace(req.JournalID), strings.TrimSpace(req.WithholdingID)
 	if journalID == "" && itemID == "" {
-		// ไม่อ้างรายการที่บันทึก (แบบเดิม): ผู้หักภาษีทิศทางเราหักยึดทะเบียนบริษัท
-		cert.Payer = partyOr(whtcert.Party{Name: company.Name, TaxID: company.TaxID}, cert.Payer)
+		// ไม่อ้างรายการที่บันทึก (แบบเดิม): ผู้หักภาษีทิศทางเราหักยึดทะเบียนบริษัท; ที่อยู่ = ค่าที่หน้าจอส่งมา → ทะเบียนบริษัท
+		cert.Payer = partyOr(whtcert.Party{Name: company.Name, TaxID: company.TaxID}, partyOr(cert.Payer, companyAddressParty(company)))
 	} else {
 		if journalID == "" {
 			return fail(http.StatusBadRequest, "wht_cert_record_not_found", "journalid")
@@ -194,10 +194,12 @@ func WhtCertificateHandler(c echo.Context) error {
 // applyRecordedWithholding - ช่องของผู้จ่าย/ผู้รับเงินทีละช่อง
 // ฝั่งคู่ค้า: snapshot ที่บันทึกในรายการ → ทะเบียนคู่ค้าปัจจุบัน → ค่าที่หน้าจอส่งมา
 // ฝั่งบริษัท: ชื่อ/เลขผู้เสียภาษีจากทะเบียนบริษัทเมื่อทะเบียนมีค่า (กันพิมพ์ในนามบริษัทอื่น — snapshot ฝั่งบริษัทแก้ได้ทาง API/reconcile
-// และค้างค่าที่พิมพ์ไว้ตอนทะเบียนยังว่าง) → snapshot → ค่าที่หน้าจอส่งมา; ที่อยู่ไม่มีในทะเบียนจึงใช้ snapshot ก่อน
+// และค้างค่าที่พิมพ์ไว้ตอนทะเบียนยังว่าง) → snapshot → ค่าที่หน้าจอส่งมา; ที่อยู่: snapshot → ค่าที่หน้าจอส่งมา → ที่อยู่สำหรับภาษีในทะเบียน
+// (ที่อยู่ที่บันทึก/แก้ไว้ต่อใบชนะทะเบียน — ทะเบียนเป็นค่าตั้งต้นเมื่อใบยังไม่มีที่อยู่)
 // ทิศทาง 1 (เราหักภาษีผู้รับเงิน) ผู้จ่าย = บริษัท ผู้รับ = คู่ค้า; ทิศทาง 2 สลับกัน (wht.sql: payer=ผู้จ่าย/ผู้หัก เสมอ)
 func applyRecordedWithholding(cert whtcert.Certificate, item generalledger.SubledgerWithholding, partner generalledger.SubledgerPartner, company CompanyHeader) whtcert.Certificate {
 	companyParty := whtcert.Party{Name: company.Name, TaxID: company.TaxID}
+	companyAddress := companyAddressParty(company)
 	// ชื่อ/ที่อยู่เต็มแบบเดียวกับ snapshot (fillPartnerSnapshot) — แบบ 50 ทวิ ให้ระบุอำเภอ/เขต จังหวัด ในที่อยู่
 	partnerParty := whtcert.Party{Name: generalledger.PartnerFullName(partner.TitleName, partner.Name), TaxID: partner.TaxID,
 		Address: generalledger.PartnerFullAddress(partner.Address, partner.AddrDistrict, partner.AddrProvince, partner.AddrPostcode)}
@@ -206,9 +208,9 @@ func applyRecordedWithholding(cert whtcert.Certificate, item generalledger.Suble
 	payeeSnap := whtcert.Party{Name: payee.Name, TaxID: payee.TaxID, Address: payee.Address}
 	if item.PartnerIsPayer() {
 		cert.Payer = partyOr(payerSnap, partyOr(partnerParty, cert.Payer))
-		cert.Payee = partyOr(companyParty, partyOr(payeeSnap, cert.Payee))
+		cert.Payee = partyOr(companyParty, partyOr(payeeSnap, partyOr(cert.Payee, companyAddress)))
 	} else {
-		cert.Payer = partyOr(companyParty, partyOr(payerSnap, cert.Payer))
+		cert.Payer = partyOr(companyParty, partyOr(payerSnap, partyOr(cert.Payer, companyAddress)))
 		cert.Payee = partyOr(payeeSnap, partyOr(partnerParty, cert.Payee))
 	}
 	cert.BookNo = firstNonBlank(item.BookNo, cert.BookNo)
@@ -253,6 +255,11 @@ func applyRecordedFigures(cert whtcert.Certificate, item generalledger.Subledger
 }
 
 // partyOr - ใช้ช่องของ preferred ที่ไม่ว่าง ช่องที่ว่างใช้ของ fallback (TaxID10 มาจาก fallback เสมอ — ไม่มีใน snapshot)
+// companyAddressParty - ที่อยู่บรรทัดเดียวจากทะเบียนบริษัทเป็นค่าสำรองท้ายสุดของฝั่งบริษัท (ชื่อ/เลขผู้เสียภาษีใช้ companyParty)
+func companyAddressParty(company CompanyHeader) whtcert.Party {
+	return whtcert.Party{Address: company.AddressLine}
+}
+
 func partyOr(preferred, fallback whtcert.Party) whtcert.Party {
 	return whtcert.Party{
 		Name:    firstNonBlank(preferred.Name, fallback.Name),

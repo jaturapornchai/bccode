@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-25 @ commit eae698b3 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-25 @ commit 32f02c71 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 30
 
@@ -471,6 +471,33 @@ Files indexed: 30
 | 2789 | function | `WorkTabPanel` |
 | 2947 | function | `DashboardLoading` |
 
+## frontend/src/app/system-settings/company-branch-tree-view.tsx (2389 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 192 | function | `dateFormatOptionsFor` |
+| 256 | function | `defaultDocFormat` |
+| 275 | function | `buildDocExample` |
+| 295 | function | `duplicateDocPrefixes` |
+| 304 | function | `DocSelect` |
+| 326 | function | `DocFormatBuilder` |
+| 334 | const-arrow | `update` |
+| 451 | function | `BranchGeoAddressPicker` |
+| 528 | function | `chooseProvince` |
+| 553 | function | `chooseDistrict` |
+| 576 | function | `chooseSubdistrict` |
+| 589 | function | `applyPostalCode` |
+| 701 | function | `taxAddressProblemText` |
+| 712 | function | `firstTaxAddressProblemText` |
+| 723 | function | `CompanyTaxAddressSection` |
+| 767 | function | `change` |
+| 876 | function | `CompanyBranchTreeView` |
+| 1074 | const-arrow | `closeConfirmCodeDialog` |
+| 1078 | const-arrow | `handleConfirmCodeSubmit` |
+| 1149 | const-arrow | `handleLogoUpload` |
+| 1206 | const-arrow | `handleSave` |
+| 2365 | function | `saveErrorMessage` |
+
 ## frontend/src/app/workspace/workspace-screen.tsx (2277 lines)
 
 | Line | Kind | Name |
@@ -528,29 +555,6 @@ Files indexed: 30
 | 2216 | function | `createDefaultBranchListItem` |
 | 2229 | function | `createDefaultPaymentRounding` |
 | 2249 | function | `createShopPayload` |
-
-## frontend/src/app/system-settings/company-branch-tree-view.tsx (2176 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 178 | function | `dateFormatOptionsFor` |
-| 242 | function | `defaultDocFormat` |
-| 261 | function | `buildDocExample` |
-| 281 | function | `duplicateDocPrefixes` |
-| 290 | function | `DocSelect` |
-| 312 | function | `DocFormatBuilder` |
-| 320 | const-arrow | `update` |
-| 437 | function | `BranchGeoAddressPicker` |
-| 514 | function | `chooseProvince` |
-| 539 | function | `chooseDistrict` |
-| 562 | function | `chooseSubdistrict` |
-| 575 | function | `applyPostalCode` |
-| 684 | function | `CompanyBranchTreeView` |
-| 877 | const-arrow | `closeConfirmCodeDialog` |
-| 881 | const-arrow | `handleConfirmCodeSubmit` |
-| 950 | const-arrow | `handleLogoUpload` |
-| 1007 | const-arrow | `handleSave` |
-| 2152 | function | `saveErrorMessage` |
 
 ## frontend/src/app/menu/product-set-screen.tsx (2144 lines)
 
@@ -961,7 +965,7 @@ Files indexed: 30
 | 1318 | function | `MockRandomString` |
 | 1322 | function | `MockRandomNumber` |
 
-## backend/internal/goapi/handlers/tax_report.go (1274 lines)
+## backend/internal/goapi/handlers/tax_report.go (1278 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -977,29 +981,29 @@ Files indexed: 30
 | 239 | function | `taxScopeFail` |
 | 248 | function | `isValidReportPeriod` |
 | 254 | function | `normalizeVatRegisterPaging` |
-| 358 | function | `TaxWithholdingHandler` |
-| 435 | function | `withholdingReportNotes` |
-| 453 | function | `reversedLaterCount` |
-| 468 | function | `taxMonthLabel` |
-| 481 | function | `pageWithholdingRows` |
-| 541 | function | `formType` |
-| 559 | function | `wantsForm` |
-| 564 | function | `wantsAccount` |
-| 590 | function | `buildWithholdingReport` |
-| 671 | function | `recordedWithholdingRows` |
-| 740 | function | `applyWithholdingPartySnapshot` |
-| 776 | function | `sameSpacedText` |
-| 788 | function | `inferredWithholdingRows` |
-| 943 | function | `recordedTaxByForm` |
-| 981 | function | `withholdingRemainders` |
-| 1022 | function | `nonTaxCounterTotals` |
-| 1059 | function | `findWithholdingAccounts` |
-| 1096 | function | `summarizeWithholding` |
-| 1146 | function | `fillWithholdingEvidence` |
-| 1235 | function | `fillPartnerMaster` |
-| 1249 | function | `finishWithholdingRow` |
-| 1267 | function | `withholdingNetKnown` |
-| 1272 | function | `pqArray` |
+| 361 | function | `TaxWithholdingHandler` |
+| 438 | function | `withholdingReportNotes` |
+| 456 | function | `reversedLaterCount` |
+| 471 | function | `taxMonthLabel` |
+| 484 | function | `pageWithholdingRows` |
+| 544 | function | `formType` |
+| 562 | function | `wantsForm` |
+| 567 | function | `wantsAccount` |
+| 593 | function | `buildWithholdingReport` |
+| 674 | function | `recordedWithholdingRows` |
+| 743 | function | `applyWithholdingPartySnapshot` |
+| 779 | function | `sameSpacedText` |
+| 791 | function | `inferredWithholdingRows` |
+| 946 | function | `recordedTaxByForm` |
+| 984 | function | `withholdingRemainders` |
+| 1025 | function | `nonTaxCounterTotals` |
+| 1062 | function | `findWithholdingAccounts` |
+| 1099 | function | `summarizeWithholding` |
+| 1149 | function | `fillWithholdingEvidence` |
+| 1238 | function | `fillPartnerMaster` |
+| 1252 | function | `finishWithholdingRow` |
+| 1271 | function | `withholdingNetKnown` |
+| 1276 | function | `pqArray` |
 
 ## frontend/src/app/gl/gl-masters.tsx (1227 lines)
 

@@ -1,5 +1,6 @@
 # เครื่องมือบรรทัดคำสั่งและสคริปต์ (backend/cmd, scripts, tools, scratch, prompts, cluster)
 > ตรวจล่าสุด: 2026-09-07 (commit d93a210d) — ผู้เขียน: AI reader; ทุกข้อเท็จจริงอ้าง path:line · ตรวจซ้ำโดย fact-checker
+> อัปเดต 2026-09-25 (HEAD 32f02c71): เพิ่มแถว `scripts/seed-gl-tax-rungrueng-2569.mjs` ใน §3 เท่านั้น — ส่วนอื่นยังเป็นผลตรวจ 2026-09-07 และ **ล้าสมัยแล้ว** (เช่น `backend/cmd/` เหลือแค่ `glseed/`, §3 ยังไม่มี `scripts/seed-gl-local.mjs` / `scripts/seed-gl-rungrueng-2569.py`) ต้องตรวจใหม่ทั้งบทความ
 
 ## 1. ภาพรวม: binary จริงมีตัวเดียว ที่เหลือคือ legacy หรือ one-off
 
@@ -58,6 +59,7 @@
 | ไฟล์ | หน้าที่ | invoked by | สถานะ | อ้างอิง |
 |---|---|---|---|---|
 | `scripts/seed-demo.mjs` + `scripts/demo-data.json` | seed holding `demo` (3 บริษัท/แผนก/ชุดสิทธิ์/พนักงาน/สินค้า/ลูกค้า/ผู้ขาย) สำหรับปุ่ม "ทดลองใช้ระบบ (Demo)"; idempotent (409 = ข้าม); ยิงผ่าน `${SEED_BASE}/backend` (Next rewrite → mainapi) | `node scripts/seed-demo.mjs` / `SEED_BASE=https://... node ...` | LIVE (ใช้กับ demo login; อ้างใน `.agents/skills/ui-scale-polish/references/case-studies-and-gotchas.md:636`, `docs/kms/architecture/product-listing-api-v2-handoff.md:73`) | `scripts/seed-demo.mjs:1-17`; `scripts/demo-data.json:1-5` |
+| `scripts/seed-gl-tax-rungrueng-2569.mjs` + `.data.mjs` | ข้อมูลบัญชี+ภาษี ก.ค.–ก.ย. 2569 ของ `rungrueng/01/00000`: ใบรายวัน 31 ใบ (docno `-01NN`) พร้อมคู่ค้า/VAT/หัก ณ ที่จ่าย แล้วผ่านรายการ + แบบยื่น 7 ฉบับ (ภ.พ.30/ภ.ง.ด.3/53 ก.ค.–ส.ค., ภ.ง.ด.2 ส.ค.); dry-run เป็นค่าเริ่มต้น, idempotent ตาม docno/แบบ+งวด, เลือกสมุดตาม booktype ครั้งเดียวแล้วจำใน manifest `tmp/sample-data/`; `verify` อ่านรายงาน VAT/WHT + ดาวน์โหลดไฟล์ยื่นด้วยสื่อ/PDF แบบ/50 ทวิ | `node scripts/seed-gl-tax-rungrueng-2569.mjs [--apply]` / `... verify` (env `SEED_BASE`, `SEED_MANIFEST`, `SEED_MEDIA_REF_NO`) | LIVE (ใช้ seed prod 2026-09-24; dry-run local+prod และ verify prod ผ่าน 2026-09-25) | `scripts/seed-gl-tax-rungrueng-2569.mjs:1-9,89-110`; `docs/kms/22-sample-data-gl-tax-2569.md`; provenance `docs/examples/gl-tax-rungrueng-01-2569-20260924.json` |
 | `scripts/test-google-login.js` | Playwright headless เปิด prod แล้วรอปุ่ม Google GSI render, เก็บ console log | `node scripts/test-google-login.js [url]` (default `https://account.bcaicloud.com/`) | one-off / ใช้ซ้ำได้ | `scripts/test-google-login.js:1-6` |
 
 ## 4. `tools/**` — เครื่องมือช่วย dev

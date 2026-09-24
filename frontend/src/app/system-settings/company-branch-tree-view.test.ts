@@ -96,3 +96,27 @@ describe("CompanyBranchTreeView organization-management contract", () => {
     expect(source).toContain("disabled={!canCreateOrganization || !selectedCompanyUID}");
   });
 });
+
+describe("CompanyBranchTreeView company tax address (head office)", () => {
+  // the component file is CRLF; compare on LF so the contract does not depend on line endings
+  const lf = source.replace(/\r\n/g, "\n");
+
+  it("loads, sends and optimistically keeps the registry tax address + phone", () => {
+    expect(lf).toContain("setFormTaxAddress(toTaxAddress((selectedNode.data as CompanyRecord).address));");
+    expect(lf).toContain('setFormPhone(String((selectedNode.data as CompanyRecord).phone ?? ""));');
+    // create + edit payloads both carry the full address (PUT without it would keep stale values on the server)
+    expect(lf.split("address: trimTaxAddress(formTaxAddress),\n          phone: formPhone.trim(),").length - 1).toBe(2);
+    expect(lf).toContain("? { taxid: formTaxId, address: trimTaxAddress(formTaxAddress), phone: formPhone.trim() }");
+  });
+
+  it("renders the section only for companies and blocks save on invalid fields", () => {
+    expect(lf).toContain('{formType.includes("company") && (\n                    <CompanyTaxAddressSection');
+    expect(lf).toContain("firstTaxAddressProblemText(formTaxAddress, formPhone, tr)");
+    expect(lf).toContain('formType.includes("company") && taxAddressError');
+    // no silent truncation: over-long input is flagged under the field, never cut by maxLength
+    const section = lf.slice(lf.indexOf("function CompanyTaxAddressSection"), lf.indexOf("const isVisibleOrganizationRecord"));
+    expect(section).not.toContain("maxLength");
+    expect(section).toContain('role="alert"');
+    expect(section).toContain('data-testid="company-tax-address"');
+  });
+});

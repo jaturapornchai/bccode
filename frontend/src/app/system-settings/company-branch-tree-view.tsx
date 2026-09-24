@@ -9,7 +9,7 @@ import {
   settingsRequestError,
   userFacingErrorText,
 } from "@/components/system-settings/user-facing-error";
-import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import React, { useCallback, useId, useMemo, useState, useEffect, useRef } from "react";
 import {
   Building2,
   GitBranch,
@@ -67,6 +67,17 @@ import { AddressesEditor } from "@/components/product-barcode/addresses-editor";
 import { isThaiHeadOfficeBranchCode, normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
 import { notifyWorkspaceChanged } from "@/lib/workspace-models";
 import { normalizeBusinessCode } from "@/lib/business-code";
+import {
+  TAX_ADDRESS_MAX_LENGTH,
+  TAX_PHONE_MAX_LENGTH,
+  emptyTaxAddress,
+  taxAddressProblems,
+  toTaxAddress,
+  trimTaxAddress,
+  type TaxAddress,
+  type TaxAddressKey,
+  type TaxAddressProblem,
+} from "@/lib/thai-tax";
 
 interface CompanyBranchTreeViewProps {
   auth: { token: string; backendUrl: string; profile?: { email?: string } | null } | null;
@@ -100,6 +111,9 @@ interface CompanyRecord {
   logouri?: string;
   names?: LocalizedNames;
   taxid?: string;
+  /** ที่อยู่สำหรับภาษี (สำนักงานใหญ่) ตาม key หัวแบบ rdform — backend คืนเสมอ แต่อ่านแบบกัน null */
+  address?: Partial<Record<string, unknown>> | null;
+  phone?: string | null;
   isactive?: boolean;
   isdeleted?: boolean;
   deletedat?: string | null;
@@ -665,6 +679,184 @@ function BranchGeoAddressPicker({
   );
 }
 
+// ช่องที่อยู่สำหรับภาษีของบริษัท (สำนักงานใหญ่) ตามลำดับหัวแบบกรมสรรพากร — ป้ายใช้แถวเดิมใน languages.tsv เมื่อมีอยู่แล้ว
+const COMPANY_TAX_ADDRESS_FIELDS: { key: TaxAddressKey; label: readonly [string, string]; numeric?: boolean }[] = [
+  { key: "addr_building", label: ["company_tax_addr_building", "อาคาร"] },
+  { key: "addr_room", label: ["company_tax_addr_room", "ห้องเลขที่"] },
+  { key: "addr_floor", label: ["company_tax_addr_floor", "ชั้นที่"] },
+  { key: "addr_village", label: ["company_tax_addr_village", "หมู่บ้าน"] },
+  { key: "addr_no", label: ["company_tax_addr_no", "เลขที่"] },
+  { key: "addr_moo", label: ["company_tax_addr_moo", "หมู่ที่"] },
+  { key: "addr_soi", label: ["company_tax_addr_soi", "ตรอก/ซอย"] },
+  { key: "addr_junction", label: ["company_tax_addr_junction", "แยก"] },
+  { key: "addr_road", label: ["company_tax_addr_road", "ถนน"] },
+  { key: "addr_subdistrict", label: ["ss_subdistrict", "ตำบล/แขวง"] },
+  { key: "addr_district", label: ["ss_district", "อำเภอ/เขต"] },
+  { key: "addr_province", label: ["address_province", "จังหวัด"] },
+  { key: "addr_postcode", label: ["address_zipcode", "รหัสไปรษณีย์"], numeric: true },
+];
+const COMPANY_PHONE_LABEL = ["company_telephone", "หมายเลขโทรศัพท์"] as const;
+
+// ข้อความเตือนใต้ช่อง — แถวเดียวกับที่ backend ตอบ (company_tax_addr_err_*) ให้ข้อความตรงกันทั้งก่อนและหลังส่ง
+function taxAddressProblemText(problem: TaxAddressProblem, label: string, max: number, tr: BackendTextFn): string {
+  const text =
+    problem === "control_char"
+      ? tr("company_tax_addr_err_control", "{field} มีการขึ้นบรรทัดใหม่หรือแท็บ — กรุณาพิมพ์ต่อกันในบรรทัดเดียว")
+      : problem === "postcode"
+        ? tr("company_tax_addr_err_postcode", "{field} ต้องเป็นตัวเลข 5 หลัก หรือเว้นว่าง")
+        : tr("company_tax_addr_err_too_long", "{field} ยาวเกิน {max} ตัวอักษร — กรุณาย่อให้สั้นลง");
+  return text.replace("{field}", label).replace("{max}", String(max));
+}
+
+// ข้อความของช่องแรกที่ผิด (กันบันทึก + แสดงในแถบแจ้งด้านบน) — "" = ผ่าน
+function firstTaxAddressProblemText(address: TaxAddress, phone: string, tr: BackendTextFn): string {
+  const problems = taxAddressProblems(address, phone);
+  for (const field of COMPANY_TAX_ADDRESS_FIELDS) {
+    const problem = problems[field.key];
+    if (problem) return taxAddressProblemText(problem, tr(...field.label), TAX_ADDRESS_MAX_LENGTH[field.key], tr);
+  }
+  return problems.phone ? taxAddressProblemText(problems.phone, tr(...COMPANY_PHONE_LABEL), TAX_PHONE_MAX_LENGTH, tr) : "";
+}
+
+// ที่อยู่สำหรับแบบภาษี (สำนักงานใหญ่) + โทรศัพท์: เติมหัวแบบ ภ.พ.30/ภ.ง.ด. และ 50 ทวิ ให้อัตโนมัติ (ยังแก้ได้ในแต่ละแบบ)
+// ตำบล/อำเภอ/จังหวัดมีรายชื่อจากฐานที่อยู่ไทยให้เลือก (datalist) แต่พิมพ์เองได้ — ไม่ตัดข้อความที่ยาวเกิน (ไม่ใส่ maxLength) ให้เตือนใต้ช่องแทน
+function CompanyTaxAddressSection({
+  address,
+  phone,
+  backendUrl,
+  disabled,
+  onAddressChange,
+  onPhoneChange,
+}: {
+  address: TaxAddress;
+  phone: string;
+  backendUrl?: string;
+  disabled?: boolean;
+  onAddressChange: (next: TaxAddress) => void;
+  onPhoneChange: (next: string) => void;
+}) {
+  const tr = useBackendText();
+  const idPrefix = useId();
+  const [geo, setGeo] = useState<ThailandAddressData | null>(null);
+  const problems = disabled ? {} : taxAddressProblems(address, phone);
+
+  useEffect(() => {
+    if (disabled) return;
+    let active = true;
+    loadThailandAddressData(backendUrl)
+      .then((data) => {
+        if (active) setGeo(data);
+      })
+      .catch(() => {
+        // รายชื่อเป็นตัวช่วยเลือกเท่านั้น โหลดไม่ได้ก็ยังพิมพ์เองได้
+      });
+    return () => {
+      active = false;
+    };
+  }, [backendUrl, disabled]);
+
+  const country = geo ? getThailandCountry(geo) : undefined;
+  const province = country?.provinces.find((item) => item.name.th === address.addr_province.trim());
+  const district = province?.districts.find((item) => item.name.th === address.addr_district.trim());
+  const suggestions: Partial<Record<TaxAddressKey, string[]>> = {
+    addr_province: country?.provinces.map((item) => item.name.th) ?? [],
+    addr_district: province?.districts.map((item) => item.name.th) ?? [],
+    addr_subdistrict: district?.subdistricts.map((item) => item.name.th) ?? [],
+  };
+
+  function change(key: TaxAddressKey, value: string) {
+    const next = { ...address, [key]: value };
+    // เลือกตำบลจากรายชื่อแล้วยังไม่มีรหัสไปรษณีย์ → เติมรหัสของตำบลนั้น (แก้ได้)
+    if (key === "addr_subdistrict" && !address.addr_postcode.trim()) {
+      const postalCode = district?.subdistricts.find((item) => item.name.th === value.trim())?.postalCode ?? "";
+      if (postalCode) next.addr_postcode = postalCode;
+    }
+    onAddressChange(next);
+  }
+
+  const fieldError = (key: TaxAddressKey | "phone", label: string, max: number) => {
+    const problem = problems[key];
+    return problem ? (
+      <span id={`${idPrefix}-${key}-error`} role="alert" className="text-[0.9rem] leading-snug text-destructive">
+        {taxAddressProblemText(problem, label, max, tr)}
+      </span>
+    ) : null;
+  };
+
+  return (
+    <section
+      className="grid gap-3 rounded-2xl border border-border bg-background p-3 shadow-sm"
+      aria-labelledby={`${idPrefix}-title`}
+      data-testid="company-tax-address"
+    >
+      <div className="grid gap-1">
+        <h3 id={`${idPrefix}-title`} className="text-sm font-bold leading-normal text-foreground">
+          {tr("company_tax_addr_title", "ที่อยู่สำหรับแบบภาษี (สำนักงานใหญ่)")}
+        </h3>
+        <p className="text-[0.9rem] leading-relaxed text-muted-foreground">
+          {tr("company_tax_addr_hint", "ระบบใช้ที่อยู่และเบอร์โทรนี้เติมหัวแบบ ภ.พ.30 / ภ.ง.ด. และหนังสือรับรอง 50 ทวิ ให้อัตโนมัติ (ยังแก้ได้ในแต่ละแบบ) — กรอกตามที่อยู่สำนักงานใหญ่ที่จดทะเบียนกับกรมสรรพากร")}
+        </p>
+        {!disabled ? (
+          <p className="text-[0.9rem] leading-relaxed text-muted-foreground">
+            {tr("company_tax_addr_prefix_hint", "กรอกเฉพาะชื่อหรือเลข ไม่ต้องพิมพ์คำนำหน้า (ถนน ซอย ตำบล อำเภอ จังหวัด) — ระบบเติมให้บนหนังสือรับรอง 50 ทวิ; ถ้าเป็นตรอก ให้พิมพ์คำว่า ตรอก นำหน้าชื่อ")}
+          </p>
+        ) : null}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {COMPANY_TAX_ADDRESS_FIELDS.map((field) => {
+          const label = tr(...field.label);
+          const inputId = `${idPrefix}-${field.key}`;
+          const options = suggestions[field.key] ?? [];
+          return (
+            <div key={field.key} className="grid content-start gap-1">
+              <label htmlFor={inputId} className="text-sm font-semibold leading-normal text-foreground">
+                {label}
+              </label>
+              <Input
+                id={inputId}
+                value={address[field.key]}
+                onChange={(event) => change(field.key, event.target.value)}
+                inputMode={field.numeric ? "numeric" : undefined}
+                autoComplete={field.key === "addr_postcode" ? "postal-code" : "off"}
+                list={options.length > 0 ? `${inputId}-options` : undefined}
+                aria-invalid={problems[field.key] ? true : undefined}
+                aria-describedby={problems[field.key] ? `${inputId}-error` : undefined}
+                className="h-10 bg-accent/20"
+                disabled={disabled}
+              />
+              {options.length > 0 ? (
+                <datalist id={`${inputId}-options`}>
+                  {options.map((option) => (
+                    <option key={option} value={option} />
+                  ))}
+                </datalist>
+              ) : null}
+              {fieldError(field.key, label, TAX_ADDRESS_MAX_LENGTH[field.key])}
+            </div>
+          );
+        })}
+        <div className="grid content-start gap-1">
+          <label htmlFor={`${idPrefix}-phone`} className="text-sm font-semibold leading-normal text-foreground">
+            {tr(...COMPANY_PHONE_LABEL)}
+          </label>
+          <Input
+            id={`${idPrefix}-phone`}
+            type="tel"
+            value={phone}
+            onChange={(event) => onPhoneChange(event.target.value)}
+            autoComplete="tel"
+            aria-invalid={problems.phone ? true : undefined}
+            aria-describedby={problems.phone ? `${idPrefix}-phone-error` : undefined}
+            className="h-10 bg-accent/20"
+            disabled={disabled}
+          />
+          {fieldError("phone", tr(...COMPANY_PHONE_LABEL), TAX_PHONE_MAX_LENGTH)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const isVisibleOrganizationRecord = <T extends { isdeleted?: boolean; deletedat?: string | null }>(record: T): boolean => {
   if (record.isdeleted === true) return false;
   return !record.deletedat || String(record.deletedat).trim().length === 0;
@@ -822,6 +1014,8 @@ export function CompanyBranchTreeView({
   // Right Form Values
   const [formCode, setFormCode] = useState("");
   const [formTaxId, setFormTaxId] = useState("");
+  const [formTaxAddress, setFormTaxAddress] = useState<TaxAddress>(() => emptyTaxAddress());
+  const [formPhone, setFormPhone] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
   const [formStatusReason, setFormStatusReason] = useState("");
   const [formNames, setFormNames] = useState<LocalizedNameEntry[]>([]);
@@ -852,6 +1046,7 @@ export function CompanyBranchTreeView({
   const hasRequiredName = formNames.some(
     (entry) => entry.code?.trim().toLowerCase() === primaryLanguage.toLowerCase() && Boolean(entry.name?.trim()),
   );
+  const taxAddressError = formType?.includes("company") ? firstTaxAddressProblemText(formTaxAddress, formPhone, tr) : "";
   const requiredFormError = !formType || formType.startsWith("view")
     ? ""
     : !formCode.trim()
@@ -860,6 +1055,8 @@ export function CompanyBranchTreeView({
         : tr("st_enter_branch_code", "กรุณากรอกรหัสสาขา")
       : !hasRequiredName
         ? tr("st_enter_first_lang_code", "กรุณากรอก{0}ในช่องภาษาแรก ({1}) — รหัสภาษาไม่ใช่ชื่อ").replace("{0}", String(formType.includes("company") ? tr("company_name", "ชื่อบริษัท") : tr("company_branch_name", "ชื่อสาขา"))).replace("{1}", String(primaryLanguage.toUpperCase()))
+        : formType.includes("company") && taxAddressError
+          ? taxAddressError
         : formType.includes("branch") && (!formTimezone.trim() || !formLanguage.trim())
           ? tr("st_select_branch_timezone_lang", "กรุณาเลือกเขตเวลาและภาษาของสาขา")
           : "";
@@ -908,6 +1105,8 @@ export function CompanyBranchTreeView({
 
     if (selectedNode.type === "company") {
       setFormTaxId((selectedNode.data as CompanyRecord).taxid || "");
+      setFormTaxAddress(toTaxAddress((selectedNode.data as CompanyRecord).address));
+      setFormPhone(String((selectedNode.data as CompanyRecord).phone ?? ""));
       setFormAddresses({});
       setFormCountryCode("TH");
       setFormProvinceCode("");
@@ -1065,6 +1264,8 @@ export function CompanyBranchTreeView({
           code: normalizedCompanyCode,
           names: namesList,
           taxid: formTaxId,
+          address: trimTaxAddress(formTaxAddress),
+          phone: formPhone.trim(),
           logouri: formLogoUri,
           isactive: true,
         };
@@ -1075,6 +1276,8 @@ export function CompanyBranchTreeView({
           code: normalizedCompanyCode,
           names: namesList,
           taxid: formTaxId,
+          address: trimTaxAddress(formTaxAddress),
+          phone: formPhone.trim(),
           logouri: formLogoUri,
           isactive: formIsActive,
           statusreason: formStatusReason.trim(),
@@ -1214,7 +1417,7 @@ export function CompanyBranchTreeView({
             logouri: formLogoUri,
             isactive: formIsActive,
             ...(selectedNode.type === "company"
-              ? { taxid: formTaxId }
+              ? { taxid: formTaxId, address: trimTaxAddress(formTaxAddress), phone: formPhone.trim() }
               : {
                   timezone: formTimezone,
                   timezonelabel: branchTzMeta.label,
@@ -1979,6 +2182,16 @@ export function CompanyBranchTreeView({
                     disabled={isReadOnlyMode}
                     languageSelect
                   />
+                  {formType.includes("company") && (
+                    <CompanyTaxAddressSection
+                      address={formTaxAddress}
+                      phone={formPhone}
+                      backendUrl={auth?.backendUrl}
+                      disabled={isReadOnlyMode}
+                      onAddressChange={setFormTaxAddress}
+                      onPhoneChange={setFormPhone}
+                    />
+                  )}
                   {formType.includes("branch") && (
                     <AddressesEditor
                       addresses={formAddresses}

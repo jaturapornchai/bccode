@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"testing"
 
+	"smlcloudplatform/internal/centraldb/centraldbtest"
 	"smlcloudplatform/internal/generalledger"
 	"smlcloudplatform/internal/rdform"
 )
@@ -347,4 +348,35 @@ func expectNote(t *testing.T, notes []TaxFormNote, want TaxFormNote) {
 		}
 	}
 	t.Fatalf("note %+v not found in %+v", want, notes)
+}
+
+// หัวแบบจากทะเบียนบริษัทบนฐานควบคุมกลางจริง: ที่อยู่สำหรับภาษี + โทรศัพท์ + ที่อยู่บรรทัดเดียวสำหรับ 50 ทวิ;
+// บริษัทที่ยังไม่กรอกที่อยู่ = ไม่มี address/addressline (จอแสดงว่ายังไม่ระบุ ไม่เดา)
+func TestQueryCompanyHeaderTaxAddress(t *testing.T) {
+	db := centraldbtest.New(t)
+	ctx := context.Background()
+	centraldbtest.Exec(t, db, `INSERT INTO holdings (code, name) VALUES ('rungrueng','กลุ่มกิจการรุ่งเรืองกรุ๊ป')`)
+	centraldbtest.Exec(t, db, `INSERT INTO companies (holding_code, code, name, tax_id, addr_building, addr_room, addr_floor, addr_no, addr_road,
+		addr_subdistrict, addr_district, addr_province, addr_postcode, phone) VALUES
+		('rungrueng','01','บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด','0105558012349','สาทรซิตี้ทาวเวอร์','1201','12','175','สาทรใต้',
+		 'ทุ่งมหาเมฆ','สาทร','กรุงเทพมหานคร','10120',' 02-123-4567 '),
+		('rungrueng','02','บริษัท หอมกรุ่น คอฟฟี่ แอนด์ เบเกอรี่ จำกัด','','','','','','','','','','','')`)
+
+	header, err := queryCompanyHeader(ctx, db, "rungrueng", "01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "อาคารสาทรซิตี้ทาวเวอร์ ห้องเลขที่ 1201 ชั้นที่ 12 เลขที่ 175 ถนนสาทรใต้ แขวงทุ่งมหาเมฆ เขตสาทร กรุงเทพมหานคร 10120"
+	if header.TaxID != "0105558012349" || header.Phone != "02-123-4567" || header.Address == nil || header.Address.Postcode != "10120" || header.AddressLine != want {
+		t.Fatalf("header %+v line %q", header, header.AddressLine)
+	}
+
+	blank, err := queryCompanyHeader(ctx, db, "rungrueng", "02")
+	if err != nil || blank.Address != nil || blank.AddressLine != "" || blank.Phone != "" || blank.Name == "" {
+		t.Fatalf("blank registry: %+v err=%v", blank, err)
+	}
+	missing, err := queryCompanyHeader(ctx, db, "rungrueng", "99")
+	if err != nil || missing.Code != "99" || missing.Name != "" {
+		t.Fatalf("missing company: %+v err=%v", missing, err)
+	}
 }

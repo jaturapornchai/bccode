@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"smlcloudplatform/internal/rdform"
+	"smlcloudplatform/internal/taxaddress"
 )
 
 func computeDoc(t *testing.T, code string, doc rdform.Document) rdform.Document {
@@ -347,5 +348,76 @@ func TestMissingTaxIDNotesRecheck(t *testing.T) {
 	rows[1]["tax_id"], rows[2]["tax_id"] = "0-1055-66123-45-6", "0105566123456"
 	if notes := missingTaxIDNotes(rows); notes == nil || len(notes) != 0 {
 		t.Fatalf("after fixing every row the note must disappear (empty, not nil): %+v", notes)
+	}
+}
+
+// ทะเบียนบริษัทมีที่อยู่สำหรับภาษี → ล้างที่อยู่ที่ยกจากฉบับก่อนทั้งชุดแล้วใส่ของทะเบียน (ไม่ปนสองที่อยู่); ทะเบียนว่าง → คงค่าที่ยกมา;
+// โทรศัพท์ใส่เฉพาะแบบที่มีช่องโทรศัพท์ (ภ.พ.30 มี, ภ.ง.ด.53 ไม่มี)
+func TestApplyRegistryAddress(t *testing.T) {
+	copied := map[string]string{"addr_no": "9/9", "addr_soi": "ซอยเดิม", "addr_road": "ถนนเดิม", "addr_province": "นนทบุรี", "phone": "02-000-0000", "signer_name": "นายกรรมการ บริษัท"}
+	registry := CompanyHeader{Name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", Phone: "02-123-4567",
+		Address: &taxaddress.Address{No: "88/12", Road: "ลาดหลุมแก้ว", Subdistrict: "คูบางหลวง", District: "ลาดหลุมแก้ว", Province: "ปทุมธานี", Postcode: "12140"}}
+
+	pp30, err := newFormFiller("pp30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pp30.keys["phone"] || !pp30.keys["addr_soi"] {
+		t.Fatal("pp30 spec must have phone and address keys")
+	}
+	for k, v := range copied {
+		pp30.set(k, v)
+	}
+	pp30.applyRegistryAddress(registry)
+	expectValues(t, pp30.values, map[string]string{"addr_no": "88/12", "addr_road": "ลาดหลุมแก้ว", "addr_subdistrict": "คูบางหลวง",
+		"addr_district": "ลาดหลุมแก้ว", "addr_province": "ปทุมธานี", "addr_postcode": "12140", "addr_soi": "", "phone": "02-123-4567",
+		"signer_name": "นายกรรมการ บริษัท"})
+	if _, ok := pp30.values["addr_soi"]; ok {
+		t.Fatal("copied soi from the last filing must be cleared when the registry has an address")
+	}
+
+	pnd53, err := newFormFiller("pnd53")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pnd53.keys["phone"] {
+		t.Fatal("pnd53 spec unexpectedly has phone — update this test")
+	}
+	pnd53.applyRegistryAddress(registry)
+	if _, ok := pnd53.values["phone"]; ok || pnd53.values["addr_no"] != "88/12" {
+		t.Fatalf("pnd53 values %v", pnd53.values)
+	}
+
+	// ทะเบียนว่าง → พฤติกรรมเดิม (ค่าที่ยกจากฉบับก่อนอยู่ครบ)
+	kept, err := newFormFiller("pp30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for k, v := range copied {
+		kept.set(k, v)
+	}
+	kept.applyRegistryAddress(CompanyHeader{Name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด"})
+	expectValues(t, kept.values, copied)
+
+	// ฉบับก่อนยื่นในนามสาขา → ทะเบียน (สำนักงานใหญ่) ไม่ทับที่อยู่/โทรศัพท์ของสาขา; สำนักงานใหญ่ 00000 ยังใช้ทะเบียน
+	branch, err := newFormFiller("pp30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for k, v := range copied {
+		branch.set(k, v)
+	}
+	branch.set("branch_no", "00001")
+	branch.applyRegistryAddress(registry)
+	expectValues(t, branch.values, map[string]string{"addr_no": "9/9", "addr_soi": "ซอยเดิม", "addr_road": "ถนนเดิม", "addr_province": "นนทบุรี",
+		"phone": "02-000-0000", "branch_no": "00001"})
+	head, err := newFormFiller("pp30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	head.set("branch_no", "00000")
+	head.applyRegistryAddress(registry)
+	if head.values["addr_no"] != "88/12" || head.values["phone"] != "02-123-4567" {
+		t.Fatalf("head office filing must use the registry: %v", head.values)
 	}
 }

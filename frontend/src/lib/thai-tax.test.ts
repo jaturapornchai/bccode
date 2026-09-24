@@ -9,7 +9,10 @@ import {
   isHeadOfficeBranch,
   isThaiTaxRoute,
   requestWhtCertificatePdf,
+  taxAddressProblems,
   taxCompanyLabel,
+  toTaxAddress,
+  trimTaxAddress,
   whtCertificateForm,
   whtRegisterRecords,
 } from "./thai-tax";
@@ -427,5 +430,78 @@ describe("requestWhtCertificatePdf 403", () => {
   it("keeps unauthorized for a 403 without a code (BFF)", async () => {
     respond(403, { success: false, message: "forbidden" });
     expect(await requestWhtCertificatePdf("h", "01", certificate)).toMatchObject({ ok: false, error: "unauthorized" });
+  });
+});
+
+describe("ชื่อผู้ถูกหักภาษีพร้อมคำนำหน้าในทะเบียนภาษีหัก ณ ที่จ่าย", () => {
+  it("ใช้ partnerfullname จาก backend แสดงบนจอ/CSV/พิมพ์ — partnername ไม่มีคำนำหน้ายังคงเดิม; backend เก่า/ค่าว่าง → ใช้ partnername", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      status: "success",
+      data: [
+        { journalid: "J1", partnername: "วิไลวรรณ ศรีสุข", title: "นางสาว", partnerfullname: "นางสาว วิไลวรรณ ศรีสุข", whtamount: "300.00" },
+        { journalid: "J2", partnername: "บริษัท ปูนกรุงไทย จำกัด", partnerfullname: null, whtamount: "3210.00" },
+        { journalid: "J3", whtamount: "100.00" },
+      ],
+      total: 3,
+      summary: {},
+      company: {},
+    })));
+
+    const result = await fetchWhtReport({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 1, direction: "paid" });
+
+    expect(result.rows.map((row) => [row.partnername, row.partnerfullname])).toEqual([
+      ["วิไลวรรณ ศรีสุข", "นางสาว วิไลวรรณ ศรีสุข"],
+      ["บริษัท ปูนกรุงไทย จำกัด", "บริษัท ปูนกรุงไทย จำกัด"],
+      ["", ""],
+    ]);
+    expect(whtRegisterRecords(result.rows).map((record) => record.counterpartyname)).toEqual([
+      "นางสาว วิไลวรรณ ศรีสุข",
+      "บริษัท ปูนกรุงไทย จำกัด",
+      "",
+    ]);
+  });
+});
+
+describe("ที่อยู่สำหรับภาษีของบริษัท (ทะเบียนบริษัท → หัวแบบ/50 ทวิ)", () => {
+  it("หัวบริษัทของรายงานภาษีหัก ณ ที่จ่ายอ่าน address/phone/addressline แบบกัน null", async () => {
+    const payload = (company: unknown) => jsonResponse(200, { status: "success", data: [], total: 0, summary: {}, company, note: "" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(payload({
+      code: "01", name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxid: "0105558001234",
+      address: { addr_no: "88/12", addr_province: "ปทุมธานี", addr_postcode: 12140, addr_road: null },
+      phone: " 02-123-4567 ",
+      addressline: "เลขที่ 88/12 จังหวัดปทุมธานี 12140",
+    })));
+    const result = await fetchWhtReport({ holdingcode: "H001", businesscode: "01", year: 2026, month: 1, direction: "paid" });
+    expect(result.company.address?.addr_no).toBe("88/12");
+    expect(result.company.address?.addr_road).toBe("");
+    expect(result.company.address?.addr_postcode).toBe(""); // ตัวเลข JSON ไม่ใช่ข้อความ → ไม่เดา
+    expect(result.company.phone).toBe("02-123-4567");
+    expect(result.company.addressline).toBe("เลขที่ 88/12 จังหวัดปทุมธานี 12140");
+
+    // backend เก่า / ทะเบียนยังไม่มีที่อยู่ → null + ค่าว่าง ไม่พัง
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(payload({ code: "01", name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxid: "0105558001234", address: null })));
+    const blank = await fetchWhtReport({ holdingcode: "H001", businesscode: "01", year: 2026, month: 1, direction: "paid" });
+    expect(blank.company).toMatchObject({ address: null, phone: "", addressline: "" });
+  });
+
+  it("toTaxAddress ครบ 13 ช่องเสมอ + trimTaxAddress ตัดช่องว่างหัวท้าย", () => {
+    const empty = toTaxAddress(undefined);
+    expect(Object.keys(empty)).toHaveLength(13);
+    expect(Object.values(empty).every((v) => v === "")).toBe(true);
+    expect(trimTaxAddress({ ...empty, addr_no: " 88/12 ", addr_province: "  " })).toMatchObject({ addr_no: "88/12", addr_province: "" });
+  });
+
+  it("taxAddressProblems ตรวจเหมือน backend: รหัสไปรษณีย์ 5 หลัก, ขึ้นบรรทัด/แท็บ, ความยาวนับตัวอักษร", () => {
+    const base = toTaxAddress({});
+    expect(taxAddressProblems(base, "")).toEqual({});
+    expect(taxAddressProblems({ ...base, addr_postcode: "12120" }, "")).toEqual({});
+    expect(taxAddressProblems({ ...base, addr_postcode: "1212" }, "").addr_postcode).toBe("postcode");
+    expect(taxAddressProblems({ ...base, addr_postcode: "๑๒๑๒๐" }, "").addr_postcode).toBe("postcode");
+    expect(taxAddressProblems({ ...base, addr_road: "พหลโยธิน\nกม. 40" }, "").addr_road).toBe("control_char");
+    expect(taxAddressProblems({ ...base, addr_soi: "ลาดพร้าว\t71" }, "").addr_soi).toBe("control_char");
+    expect(taxAddressProblems({ ...base, addr_building: "ก".repeat(40) }, "")).toEqual({});
+    expect(taxAddressProblems({ ...base, addr_building: "ก".repeat(41) }, "").addr_building).toBe("too_long");
+    expect(taxAddressProblems(base, "0".repeat(51)).phone).toBe("too_long");
+    expect(taxAddressProblems({ ...base, addr_no: " 88/12 " }, " 02-123-4567 ")).toEqual({});
   });
 });
