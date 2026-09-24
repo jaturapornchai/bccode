@@ -4,6 +4,11 @@
 //
 // ใช้งาน: GLSEED_DSN='postgres://...' go run ./cmd/glseed -company 01 -fiscal 2569
 // ตรวจแผนก่อนเขียนจริง: เพิ่ม -apply (ค่าเริ่มต้น dry-run พิมพ์แผนอย่างเดียว)
+//
+// บัญชีที่แผนใช้หาจากคุณสมบัติในผังบัญชีของบริษัท (ประเภท ลงรายการได้ เปิดใช้งาน เป็นเงินสด) + คำในชื่อไทย
+// ไม่ยึดรหัสบัญชี เพราะแต่ละบริษัทมีผังของตัวเอง — ถ้าเจอ 0 หรือหลายบัญชี คำสั่งหยุดและให้ระบุรหัสเองด้วย
+// -acc-<บทบาท> เช่น -acc-cash 1111; ถ้าผังไม่มีบัญชีภาษีหัก ณ ที่จ่ายค้างจ่าย ภ.ง.ด.53 ให้สร้างใหม่ด้วย
+// -wht-new-code <รหัสใหม่> -wht-new-parent <รหัสกลุ่มบัญชีแม่>
 package main
 
 import (
@@ -13,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	_ "github.com/lib/pq"
@@ -24,16 +30,42 @@ import (
 type seedAccount struct {
 	Code     string `json:"accountcode"`
 	Name     string `json:"-"`
-	Level    int    `json:"level"`
 	Posting  bool   `json:"allowposting"`
 	Type     string `json:"accounttype"`
 	IsActive bool   `json:"isactive"`
-	Parent   string `json:"parentaccountcode"`
+	IsCash   bool   `json:"iscash"`
 }
 
 type nameEntry struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
+}
+
+// accountRole คือบัญชีที่แผนต้องใช้ ระบุด้วยประเภทบัญชี + คำในชื่อไทย (ไม่ใช่รหัส)
+type accountRole struct {
+	key     string // ชื่อ flag -acc-<key>
+	label   string
+	keyword string
+	accType string
+	cash    bool // ต้องเป็นบัญชีเงินสด/เงินฝาก (iscash) ตอนค้นจากชื่อ
+}
+
+var accountTypeLabels = map[string]string{"asset": "สินทรัพย์", "liability": "หนี้สิน", "equity": "ส่วนของเจ้าของ", "income": "รายได้", "expense": "ค่าใช้จ่าย"}
+
+var seedRoles = []accountRole{
+	{key: "cash", label: "เงินสดในมือ", keyword: "เงินสด", accType: "asset", cash: true},
+	{key: "bank", label: "เงินฝากธนาคาร", keyword: "เงินฝาก", accType: "asset", cash: true},
+	{key: "ar", label: "ลูกหนี้การค้า", keyword: "ลูกหนี้การค้า", accType: "asset"},
+	{key: "goods", label: "สินค้าคงเหลือ", keyword: "สินค้า", accType: "asset"},
+	{key: "input-vat", label: "ภาษีซื้อ", keyword: "ภาษีซื้อ", accType: "asset"},
+	{key: "ap", label: "เจ้าหนี้การค้า", keyword: "เจ้าหนี้การค้า", accType: "liability"},
+	{key: "output-vat", label: "ภาษีขาย", keyword: "ภาษีขาย", accType: "liability"},
+	{key: "wht53", label: "ภาษีเงินได้หัก ณ ที่จ่ายค้างจ่าย ภ.ง.ด.53", keyword: "ภ.ง.ด.53", accType: "liability"},
+	{key: "capital", label: "ทุนเรือนหุ้น/ทุนเจ้าของ", keyword: "ทุน", accType: "equity"},
+	{key: "sales", label: "รายได้จากการขายสินค้า", keyword: "รายได้จากการขาย", accType: "income"},
+	{key: "rent", label: "ค่าเช่าหน้าร้านและคลังสินค้า", keyword: "ค่าเช่า", accType: "expense"},
+	{key: "cogs", label: "ต้นทุนขาย", keyword: "ต้นทุน", accType: "expense"},
+	{key: "stationery", label: "ค่าเครื่องเขียนและวัสดุสำนักงาน", keyword: "เครื่องเขียน", accType: "expense"},
 }
 
 func main() {
@@ -43,6 +75,12 @@ func main() {
 	fiscal := flag.String("fiscal", "2569", "ปีบัญชี")
 	actor := flag.String("actor", "seed-gl-complete-screens", "ผู้บันทึกใน audit")
 	apply := flag.Bool("apply", false, "เขียนจริง (ค่าเริ่มต้น dry-run)")
+	roleFlags := map[string]*string{}
+	for _, r := range seedRoles {
+		roleFlags[r.key] = flag.String("acc-"+r.key, "", fmt.Sprintf("รหัสบัญชี%s (ว่าง = ค้นบัญชีประเภท%sที่ชื่อมีคำว่า %q)", r.label, accountTypeLabels[r.accType], r.keyword))
+	}
+	whtNewCode := flag.String("wht-new-code", "", "รหัสบัญชีใหม่สำหรับภาษีเงินได้หัก ณ ที่จ่ายค้างจ่าย ภ.ง.ด.53 (ใช้เมื่อผังบัญชียังไม่มี)")
+	whtNewParent := flag.String("wht-new-parent", "", "รหัสกลุ่มบัญชีแม่ (หนี้สิน ไม่ลงรายการ) ของบัญชีที่สร้างด้วย -wht-new-code")
 	flag.Parse()
 
 	dsn := os.Getenv("GLSEED_DSN")
@@ -60,12 +98,11 @@ func main() {
 	}
 
 	// โหลดผังบัญชีจริงของบริษัท เพื่อให้ทุกใบใหม่ใช้บัญชีที่มีอยู่แล้วเท่านั้น
-	rows, err := db.Query(`SELECT payload FROM gl_records WHERE company=$1 AND kind='accounts'`, *company)
+	rows, err := db.Query(`SELECT payload FROM gl_records WHERE company=$1 AND kind='accounts' AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, *company)
 	if err != nil {
 		fatal("อ่านผังบัญชีไม่ได้: %v", err)
 	}
 	accounts := map[string]*seedAccount{}
-	byName := map[string][]*seedAccount{}
 	for rows.Next() {
 		var raw []byte
 		var a seedAccount
@@ -79,48 +116,97 @@ func main() {
 		_ = json.Unmarshal(raw, &struct {
 			Names *[]nameEntry `json:"names"`
 		}{Names: &names})
-		if len(names) > 0 {
-			a.Name = names[0].Name
+		for i, n := range names {
+			if i == 0 || n.Code == "th" {
+				a.Name = n.Name
+			}
+			if n.Code == "th" {
+				break
+			}
 		}
 		accounts[a.Code] = &a
-		byName[a.Name] = append(byName[a.Name], &a)
 	}
 	rows.Close()
 	if len(accounts) == 0 {
 		fatal("ไม่พบผังบัญชีของบริษัท %s", *company)
 	}
 
-	acc := func(code string) string {
-		a, ok := accounts[code]
-		if !ok || !a.Posting || !a.IsActive {
-			fatal("บัญชี %s ไม่พร้อมลงรายการ (มี=%v)", code, ok)
+	// หาบัญชีตามบทบาท: รหัสที่ผู้ใช้ระบุมาก่อน ไม่งั้นค้นจากประเภท + คำในชื่อ ต้องเจอบัญชีเดียวเท่านั้น (ไม่เดา)
+	// รวบปัญหาทุกบทบาทไว้แจ้งทีเดียว และตรวจให้จบก่อนเขียนข้อมูลใดๆ
+	var problems []string
+	useCode := func(r accountRole, flagName, code string) string {
+		if a, ok := accounts[code]; ok && a.Posting && a.IsActive && a.Type == r.accType {
+			return code
 		}
-		return code
+		problems = append(problems, fmt.Sprintf("%s %s: ใช้เป็นบัญชี%sไม่ได้ ต้องมีในผังบัญชี เปิดใช้งาน ลงรายการได้ และเป็นประเภท%s", flagName, code, r.label, accountTypeLabels[r.accType]))
+		return ""
 	}
-	// หาบัญชีจากชื่อ (ต้องเจอตัวเดียวเท่านั้น เพื่อไม่ให้ seed เดาเอง)
-	findByName := func(keyword, wantType string) string {
+	resolve := func(r accountRole) string {
+		if code := strings.TrimSpace(*roleFlags[r.key]); code != "" {
+			return useCode(r, "-acc-"+r.key, code)
+		}
 		var hits []*seedAccount
-		for name, list := range byName {
-			if !strings.Contains(name, keyword) {
-				continue
-			}
-			for _, a := range list {
-				if a.Posting && a.IsActive && a.Type == wantType {
-					hits = append(hits, a)
-				}
+		for _, a := range accounts {
+			if a.Posting && a.IsActive && a.Type == r.accType && (!r.cash || a.IsCash) && strings.Contains(a.Name, r.keyword) {
+				hits = append(hits, a)
 			}
 		}
-		if len(hits) != 1 {
-			fatal("ค้นหาบัญชีด้วยคำว่า %q พบ %d บัญชี ต้องเจอตัวเดียว: %v", keyword, len(hits), func() []string {
-				codes := []string{}
-				for _, h := range hits {
-					codes = append(codes, h.Code+" "+h.Name)
-				}
-				return codes
-			}())
+		if len(hits) == 1 {
+			return hits[0].Code
 		}
-		return hits[0].Code
+		found := "ไม่พบ"
+		if len(hits) > 1 {
+			labels := make([]string, 0, len(hits))
+			for _, h := range hits {
+				labels = append(labels, h.Code+" "+h.Name)
+			}
+			sort.Strings(labels)
+			found = fmt.Sprintf("พบ %d บัญชี (%s)", len(hits), strings.Join(labels, ", "))
+		}
+		problems = append(problems, fmt.Sprintf("บัญชี%s: ค้นบัญชีประเภท%sที่ลงรายการได้และชื่อมีคำว่า %q %s — กรุณาระบุรหัสด้วย -acc-%s", r.label, accountTypeLabels[r.accType], r.keyword, found, r.key))
+		return ""
 	}
+	role := map[string]string{}
+	var whtRole accountRole
+	for _, r := range seedRoles {
+		if r.key == "wht53" {
+			whtRole = r
+			continue
+		}
+		role[r.key] = resolve(r)
+	}
+	// ภาษีหัก ณ ที่จ่ายของคู่ค้านิติบุคคล (ภ.ง.ด.53): ถ้าผังยังไม่มี ผู้ใช้ต้องกำหนดรหัสใหม่และกลุ่มแม่เอง ระบบไม่ตั้งรหัสให้
+	wht := ""
+	var whtCreate *gl.Account
+	newCode, newParent := strings.TrimSpace(*whtNewCode), strings.TrimSpace(*whtNewParent)
+	switch {
+	case newCode == "" && newParent != "":
+		problems = append(problems, "-wht-new-parent ต้องใช้คู่กับ -wht-new-code")
+	case newCode == "":
+		wht = resolve(whtRole)
+	case strings.TrimSpace(*roleFlags[whtRole.key]) != "":
+		problems = append(problems, "ระบุ -acc-wht53 (ใช้บัญชีที่มี) หรือ -wht-new-code (สร้างใหม่) อย่างใดอย่างหนึ่ง")
+	case accounts[newCode] != nil:
+		// รันซ้ำหลังสร้างแล้ว: รหัสนี้มีในผังแล้ว ใช้บัญชีนั้นเลย
+		wht = useCode(whtRole, "-wht-new-code", newCode)
+	default:
+		if p := accounts[newParent]; p == nil || p.Posting || !p.IsActive || p.Type != "liability" {
+			problems = append(problems, fmt.Sprintf("-wht-new-parent %q: ต้องเป็นกลุ่มบัญชีหนี้สินที่มีในผังบัญชี เปิดใช้งาน และไม่ลงรายการ", newParent))
+			break
+		}
+		wht = newCode
+		whtCreate = &gl.Account{AccountCode: newCode, Names: []gl.Name{{Code: "th", Name: "ภาษีเงินได้หัก ณ ที่จ่ายค้างจ่าย - ภ.ง.ด.53"}}, AccountType: "liability", NormalBalance: "credit", AllowPosting: true, IsActive: true, ParentAccountCode: newParent}
+	}
+	if len(problems) > 0 {
+		fmt.Fprintln(os.Stderr, "glseed: เลือกบัญชีให้แผนไม่ได้ (ระบบไม่เดารหัสบัญชี) — กรุณาแก้ตามนี้แล้วรันใหม่:")
+		for _, p := range problems {
+			fmt.Fprintln(os.Stderr, "  - "+p)
+		}
+		os.Exit(1)
+	}
+	cash, bank, ar, goods, inputVAT := role["cash"], role["bank"], role["ar"], role["goods"], role["input-vat"]
+	ap, outputVAT, capital, salesVAT := role["ap"], role["output-vat"], role["capital"], role["sales"]
+	rent, cogs, stationery := role["rent"], role["cogs"], role["stationery"]
 
 	ctx := context.Background()
 	pg := gl.NewPostgres(func(string) (*sql.DB, error) { return db, nil })
@@ -216,66 +302,14 @@ func main() {
 		opening = code
 	}
 
-	// บัญชีเฉพาะทางที่แผนต้องใช้ หาจากชื่อจริงในผังบัญชี
-	cash := acc("1111")
-	bank := acc("1121")
-	ar := acc("1131")
-	goods := acc("1141")
-	inputVAT := acc("1151")
-	ap := acc("2111")
-	outputVAT := acc("2131")
-	capital := acc("3111")
-	salesVAT := acc("4111")
-	// หัก ณ ที่จ่ายสำหรับคู่ค้านิติบุคคลยื่น ภ.ง.ด.53 — ค้นบัญชีที่ชื่ออ้างแบบยื่นตรงตัว (deterministic)
-	wht := ""
-	for _, c := range []string{"2143"} {
-		if a, ok := accounts[c]; ok && a.Posting && a.IsActive && strings.Contains(a.Name, "ภ.ง.ด.53") {
-			wht = c
-			break
-		}
-	}
-	if wht == "" {
-		for code := range accounts {
-			if a := accounts[code]; a.Posting && a.IsActive && strings.Contains(a.Name, "ภ.ง.ด.53") {
-				if wht == "" || code < wht {
-					wht = code
-				}
-			}
-		}
-	}
-	rent := findByName("ค่าเช่า", "expense")
-	cogs := acc("5121")
-	stationery := acc("5331")
-
-	// ถ้าผังบัญชียังไม่มีบัญชีค้างนำส่งภาษีหัก ณ ที่จ่าย ให้สร้างใหม่ใต้กลุ่มเดียวกับภาษีขาย
-	if wht == "" {
-		vatAcct, ok := accounts[outputVAT]
-		if !ok || vatAcct.Parent == "" {
-			fatal("ไม่พบกลุ่มบัญชีแม่ของภาษีขาย %s สำหรับสร้างบัญชีภาษีหัก ณ ที่จ่าย", outputVAT)
-		}
-		whtCode := ""
-		for n := 1; n <= 9; n++ {
-			candidate := outputVAT[:2] + fmt.Sprintf("%d1", n) + "1"
-			if candidate != outputVAT {
-				if _, taken := accounts[candidate]; !taken {
-					whtCode = candidate
-					break
-				}
-			}
-		}
-		if whtCode == "" {
-			fatal("ไม่พบรหัสบัญชีว่างสำหรับบัญชีภาษีหัก ณ ที่จ่าย")
-		}
-		fmt.Printf("แผน: สร้างบัญชีภาษีหัก ณ ที่จ่ายค้างนำส่ง %s ใต้ %s\n", whtCode, vatAcct.Parent)
+	if whtCreate != nil {
+		fmt.Printf("แผน: สร้างบัญชี %s %s ใต้ %s (รหัสตาม -wht-new-code)\n", whtCreate.AccountCode, whtCreate.ThaiName(), whtCreate.ParentAccountCode)
 		if *apply {
-			cmd := gl.Command{Resource: "accounts", Action: "create", RequestID: "seed-gl-screens-acc-" + whtCode,
-				Account: &gl.Account{AccountCode: whtCode, Names: []gl.Name{{Code: "th", Name: "ภาษีเงินได้หัก ณ ที่จ่ายค้างนำส่ง"}}, AccountType: "liability", NormalBalance: "credit", AllowPosting: true, IsActive: true, Level: vatAcct.Level, ParentAccountCode: vatAcct.Parent}}
+			cmd := gl.Command{Resource: "accounts", Action: "create", RequestID: "seed-gl-screens-acc-" + whtCreate.AccountCode, Account: whtCreate}
 			if _, err := store.Execute(ctx, scope, cmd); err != nil {
 				fatal("สร้างบัญชีภาษีหัก ณ ที่จ่ายไม่ได้: %v", err)
 			}
-			accounts[whtCode] = &seedAccount{Code: whtCode, Level: vatAcct.Level, Posting: true, Type: "liability", IsActive: true, Parent: vatAcct.Parent}
 		}
-		wht = whtCode
 	}
 
 	createJournal := func(docno, date, book, desc, kind string, lines []gl.Line, details *gl.JournalDetails) (string, string) {
@@ -320,7 +354,7 @@ func main() {
 	fmt.Printf("=== แผนเติมข้อมูล บริษัท %s สาขา %s ปี %s (apply=%v) ===\n", *company, *branch, *fiscal, *apply)
 	fmt.Printf("บัญชีที่ใช้: เงินสด=%s ธนาคาร=%s ลูกหนี้=%s สินค้า=%s ภาษีซื้อ=%s เจ้าหนี้=%s ภาษีขาย=%s ทุน=%s รายได้=%s\n",
 		cash, bank, ar, goods, inputVAT, ap, outputVAT, capital, salesVAT)
-	fmt.Printf("บัญชีค้นชื่อ: ภาษีหัก=%s ค่าเช่า=%s ต้นทุนขาย=%s วัสดุสำนักงาน=%s\n", wht, rent, cogs, stationery)
+	fmt.Printf("บัญชี: ภาษีหัก ภ.ง.ด.53=%s ค่าเช่า=%s ต้นทุนขาย=%s วัสดุสำนักงาน=%s\n", wht, rent, cogs, stationery)
 
 	create := func(docno, date, book, desc, kind string, lines []gl.Line, details *gl.JournalDetails) {
 		_, _ = createJournal(docno, date, book, desc, kind, lines, details)
@@ -408,30 +442,19 @@ func main() {
 		fmt.Printf("แผน: reconcile %s6901-S001 — Statement เข้า 150,000 จับคู่สำเร็จ\n", receipt)
 	}
 
-	// 7) จ่ายเจ้าหนี้ปูนกรุงไทย พร้อมหัก ณ ที่จ่าย 3% (ถ้าผังมีบัญชี WHT)
-	var pvLines []gl.Line
-	var pvDetails *gl.JournalDetails
-	{
-		if wht != "" {
-			pvLines = []gl.Line{
-				L(ap, "ตัดเจ้าหนี้การค้า บริษัท ปูนกรุงไทย จำกัด", "107000.00", "0.00"),
-				L(bank, "จ่ายโอนออกจากธนาคารกสิกรไทย", "0.00", "103790.00"),
-				L(wht, "ภาษีหัก ณ ที่จ่าย 3% ค้างนำส่ง", "0.00", "3210.00"),
-			}
-		} else {
-			pvLines = []gl.Line{
-				L(ap, "ตัดเจ้าหนี้การค้า บริษัท ปูนกรุงไทย จำกัด", "107000.00", "0.00"),
-				L(bank, "จ่ายโอนออกจากธนาคารกสิกรไทย", "0.00", "107000.00"),
-			}
-		}
-		pvDetails = &gl.JournalDetails{
-			Partners:     []gl.SubledgerPartner{partnerSuppA},
-			BankAccounts: []gl.SubledgerBankAccount{kbank},
-			BankLines:    []gl.SubledgerBankLine{{LineNumber: 2, BankAccountCode: "BANK-KBANK", Direction: 2}},
-			Documents:    []gl.SubledgerDocument{{ID: "AP-SPAY1", Ledger: "ap", PartnerCode: partnerSuppA.Code, DocumentNo: "PAY-2569-0021", Date: "2026-01-22", BranchCode: *branch, Kind: 2, Side: 2, Amount: gl.Amount("107000.00"), Currency: "THB", ControlAccountCode: ap}},
-			Allocations:  []gl.SubledgerAllocation{{ID: "ALLOC-S006", Ledger: "ap", DocumentID: "AP-SPAY1", LineNumber: 1, Amount: gl.Amount("107000.00")}},
-			Settlements:  []gl.SubledgerSettlement{{ID: "SETTLE-S002", Ledger: "ap", PartnerCode: partnerSuppA.Code, DebtDocumentID: "AP-S001", PaymentDocumentID: "AP-SPAY1", Date: "2026-01-22", Amount: gl.Amount("107000.00")}},
-		}
+	// 7) จ่ายเจ้าหนี้ปูนกรุงไทย พร้อมหัก ณ ที่จ่าย 3%
+	pvLines := []gl.Line{
+		L(ap, "ตัดเจ้าหนี้การค้า บริษัท ปูนกรุงไทย จำกัด", "107000.00", "0.00"),
+		L(bank, "จ่ายโอนออกจากธนาคารกสิกรไทย", "0.00", "103790.00"),
+		L(wht, "ภาษีหัก ณ ที่จ่าย 3% ค้างนำส่ง", "0.00", "3210.00"),
+	}
+	pvDetails := &gl.JournalDetails{
+		Partners:     []gl.SubledgerPartner{partnerSuppA},
+		BankAccounts: []gl.SubledgerBankAccount{kbank},
+		BankLines:    []gl.SubledgerBankLine{{LineNumber: 2, BankAccountCode: "BANK-KBANK", Direction: 2}},
+		Documents:    []gl.SubledgerDocument{{ID: "AP-SPAY1", Ledger: "ap", PartnerCode: partnerSuppA.Code, DocumentNo: "PAY-2569-0021", Date: "2026-01-22", BranchCode: *branch, Kind: 2, Side: 2, Amount: gl.Amount("107000.00"), Currency: "THB", ControlAccountCode: ap}},
+		Allocations:  []gl.SubledgerAllocation{{ID: "ALLOC-S006", Ledger: "ap", DocumentID: "AP-SPAY1", LineNumber: 1, Amount: gl.Amount("107000.00")}},
+		Settlements:  []gl.SubledgerSettlement{{ID: "SETTLE-S002", Ledger: "ap", PartnerCode: partnerSuppA.Code, DebtDocumentID: "AP-S001", PaymentDocumentID: "AP-SPAY1", Date: "2026-01-22", Amount: gl.Amount("107000.00")}},
 	}
 	pvS001ID, pvS001Status := createJournal(payment+"6901-S001", "2026-01-22", payment, "จ่ายชำระหนี้ บจก.ปูนกรุงไทย ตามบิล PT-2569-0112 พร้อมหักภาษี ณ ที่จ่าย 3%", "manual", pvLines, pvDetails)
 	if pvS001Status == "created" && *apply {
@@ -457,15 +480,11 @@ func main() {
 	})
 
 	// 9) จ่ายค่าเช่าหน้าร้าน + WHT 5%
-	create(payment+"6901-S002", "2026-02-05", payment, "จ่ายค่าเช่าหน้าร้านและคลังสินค้า ประจำเดือนมกราคม 2569 หักภาษี ณ ที่จ่าย 5%", "manual", func() []gl.Line {
-		lines := []gl.Line{L(rent, "ค่าเช่าหน้าร้านและคลังสินค้า", "20000.00", "0.00"), L(bank, "จ่ายโอนออกจากธนาคารกสิกรไทย", "0.00", "19000.00")}
-		if wht != "" {
-			lines = append(lines, L(wht, "ภาษีหัก ณ ที่จ่าย 5% ค้างนำส่ง", "0.00", "1000.00"))
-		} else {
-			lines[1] = L(bank, "จ่ายโอนออกจากธนาคารกสิกรไทย", "0.00", "20000.00")
-		}
-		return lines
-	}(), nil)
+	create(payment+"6901-S002", "2026-02-05", payment, "จ่ายค่าเช่าหน้าร้านและคลังสินค้า ประจำเดือนมกราคม 2569 หักภาษี ณ ที่จ่าย 5%", "manual", []gl.Line{
+		L(rent, "ค่าเช่าหน้าร้านและคลังสินค้า", "20000.00", "0.00"),
+		L(bank, "จ่ายโอนออกจากธนาคารกสิกรไทย", "0.00", "19000.00"),
+		L(wht, "ภาษีหัก ณ ที่จ่าย 5% ค้างนำส่ง", "0.00", "1000.00"),
+	}, nil)
 
 	// 10) จ่ายค่าเครื่องเขียนเงินสด
 	create(payment+"6901-S003", "2026-02-08", payment, "จ่ายค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน เงินสด", "manual", []gl.Line{
