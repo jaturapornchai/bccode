@@ -41,7 +41,6 @@ services:
       LOG_LEVEL: DEBUG
       TZ: Asia/Bangkok
       GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-212036599086-c7aqvm005jiv2kqi4duju8spd9b3jb94.apps.googleusercontent.com}"
-      FIREBASE_PROJECT_ID: "test06-a1240"
       GODEBUG: "x509negativeserial=1"
       # Dev Login remains disabled unless all three server-side values are supplied.
       # Keep the secret outside git (for example in the caller's environment).

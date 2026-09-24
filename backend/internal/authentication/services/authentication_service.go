@@ -8,9 +8,7 @@ import (
 	auth_models "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/centraldb"
-	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/goapi/language"
-	"smlcloudplatform/internal/line"
 	"smlcloudplatform/internal/logger"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/utils"
@@ -31,7 +29,6 @@ type IAuthenticationService interface {
 	DevLoginByUID(userUID string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	DemoLoginByUsername(username string, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
 	Poslogin(userReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (models.TokenLoginResponse, error)
-	LoginEmail(userReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (string, error)
 	Register(userRequest auth_models.RegisterEmailRequest) (string, error)
 	ForgotPasswordByPhonenumber(userRequest auth_models.ForgotPasswordPhoneNumberRequest) error
 	Update(userUID string, userRequest auth_models.UserProfileRequest) error
@@ -41,9 +38,6 @@ type IAuthenticationService interface {
 	Profile(username string, userUID string) (auth_models.UserProfile, error)
 	AccessShop(holdingCode string, businessCode string, branchUID string, username string, userUID string, authorizationHeader string, authContext models.AuthenticationContext) error
 	UpdateFavoriteShop(holdingCode string, username string, userUID string, isFavorite bool) error
-	LoginWithFirebaseToken(token string) (string, error)
-	LoginWithLineToken(token string) (string, error)
-	LoginWithLineUserID(lineUserID string, displayName string, pictureUrl string, email string) (string, string, error)
 	LoginWithGoogleIdentity(issuer string, subject string, email string, emailVerified bool, displayName string) (models.TokenLoginResponse, error)
 	RefreshToken(tokenRequest models.TokenLoginRequest) (models.TokenLoginResponse, error)
 
@@ -72,8 +66,6 @@ type AuthenticationService struct {
 	passwordEncoder       func(string) (string, error)
 	checkHashPassword     func(password string, hash string) bool
 	timeNow               func() time.Time
-	firebaseAdapter       firebase.IFirebaseAdapter
-	lineAdapter           line.ILineAdapter
 }
 
 func NewAuthenticationService(
@@ -87,9 +79,7 @@ func NewAuthenticationService(
 	generateGUID func() string,
 	passwordEncoder func(string) (string, error),
 	checkHashPassword func(password string, hash string) bool,
-	timeNow func() time.Time,
-	firebaseAdapter firebase.IFirebaseAdapter,
-	lineAdapter line.ILineAdapter) IAuthenticationService {
+	timeNow func() time.Time) IAuthenticationService {
 	return AuthenticationService{
 		authRepo:              authRepo,
 		authService:           authService,
@@ -102,8 +92,6 @@ func NewAuthenticationService(
 		passwordEncoder:       passwordEncoder,
 		checkHashPassword:     checkHashPassword,
 		timeNow:               timeNow,
-		firebaseAdapter:       firebaseAdapter,
-		lineAdapter:           lineAdapter,
 	}
 }
 
@@ -329,48 +317,6 @@ func (svc AuthenticationService) Poslogin(userLoginReq *auth_models.PosLoginRequ
 	}
 
 	return resultLogin, nil
-}
-
-func (svc AuthenticationService) LoginEmail(userLoginReq *auth_models.PosLoginRequest, authContext models.AuthenticationContext) (string, error) {
-
-	userLoginReq.Username = utils.NormalizeUsername(userLoginReq.Username)
-
-	userLoginReq.Username = strings.TrimSpace(userLoginReq.Username)
-	userLoginReq.HoldingCode = strings.TrimSpace(userLoginReq.HoldingCode)
-
-	findUser, err := svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
-
-	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
-		return "", errors.New("auth: database connect error")
-	}
-
-	if len(findUser.Username) == 0 {
-		// Register user if not found
-		user := auth_models.UserDoc{}
-		user.UID = svc.generateGUID()
-		user.Username = userLoginReq.Username
-		user.Email = userLoginReq.Username
-		user.Password = ""
-		user.UserDetail.Name = userLoginReq.Username
-		user.CreatedAt = svc.timeNow()
-
-		_, err := svc.authRepo.CreateUser(context.Background(), user)
-		if err != nil && !errors.Is(err, repositories.ErrUserExists) {
-			return "", err
-		}
-
-		findUser, err = svc.authRepo.FindUser(context.Background(), userLoginReq.Username)
-		if err != nil && !errors.Is(err, repositories.ErrNotFound) {
-			return "", err
-		}
-	}
-
-	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*findUser))
-
-	if err != nil {
-		return "", errors.New("generate token error")
-	}
-	return tokenString, nil
 }
 
 func (svc *AuthenticationService) processUserLogin(findUser auth_models.UserDoc, holdingCode string, authContext models.AuthenticationContext) (result models.TokenLoginResponse, resultErr error) {
@@ -972,53 +918,6 @@ func (svc AuthenticationService) UpdateFavoriteShop(holdingCode string, username
 	return nil
 }
 
-func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, error) {
-
-	userInfo, err := svc.firebaseAdapter.ValidateToken(token)
-	if err != nil {
-		return "", err
-	}
-
-	// find
-	userFind, err := svc.authRepo.FindUser(context.Background(), userInfo.Email)
-	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
-		return "", err
-	}
-
-	if len(userFind.Username) == 0 {
-		// register
-		user := auth_models.UserDoc{}
-
-		user.UID = svc.generateGUID()
-		user.Username = userInfo.Email
-		user.Email = userInfo.Email
-		user.Password = ""
-		user.UserDetail.Name = userInfo.Name
-		user.CreatedAt = svc.timeNow()
-
-		_, err := svc.authRepo.CreateUser(context.Background(), user)
-		if err != nil && !errors.Is(err, repositories.ErrUserExists) {
-			return "", err
-		}
-		userFind, err = svc.authRepo.FindUser(context.Background(), userInfo.Email)
-		if err != nil && !errors.Is(err, repositories.ErrNotFound) {
-			return "", err
-		}
-	}
-
-	if !userFind.DisabledAt.IsZero() {
-		return "", &auth_models.UserDisableLoginError{}
-	}
-
-	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
-
-	if err != nil {
-		return "", errors.New("generate token error")
-	}
-
-	return tokenString, nil
-}
-
 // LoginWithGoogleIdentity resolves returning users exclusively by the stable OIDC
 // issuer+subject pair. Email is only used during the first link, and only when Google
 // reports it verified: the first link may attach the login to an account an admin created
@@ -1107,89 +1006,6 @@ func normalizeGoogleIssuer(issuer string) string {
 	default:
 		return ""
 	}
-}
-
-func (svc AuthenticationService) LoginWithLineToken(token string) (string, error) {
-
-	userInfo, err := svc.lineAdapter.ValidateToken(token)
-	if err != nil {
-		return "", err
-	}
-
-	// find user by line user id (we'll use line user id as username for simplicity)
-	userFind, err := svc.authRepo.FindUser(context.Background(), userInfo.UserId)
-	if err != nil && !errors.Is(err, repositories.ErrNotFound) {
-		return "", err
-	}
-
-	if len(userFind.Username) == 0 {
-		// register new user
-		user := auth_models.UserDoc{}
-
-		user.UID = svc.generateGUID()
-		user.Username = userInfo.UserId
-		user.Password = ""
-		user.UserDetail.Name = userInfo.DisplayName
-		user.UserDetail.Avatar = userInfo.PictureUrl
-		user.CreatedAt = svc.timeNow()
-
-		_, err := svc.authRepo.CreateUser(context.Background(), user)
-		if err != nil && !errors.Is(err, repositories.ErrUserExists) {
-			return "", err
-		}
-		userFind, err = svc.authRepo.FindUser(context.Background(), userInfo.UserId)
-		if err != nil && !errors.Is(err, repositories.ErrNotFound) {
-			return "", err
-		}
-	}
-
-	if !userFind.DisabledAt.IsZero() {
-		return "", &auth_models.UserDisableLoginError{}
-	}
-
-	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
-
-	if err != nil {
-		return "", errors.New("generate token error")
-	}
-
-	return tokenString, nil
-}
-
-// LoginWithLineUserID — สำหรับ QR code / LIFF login flow
-// ค้นหา user ที่เชื่อมต่อ LINE ไว้แล้ว (จาก users collection — ระดับ user ไม่ใช่ per-shop)
-// แล้ว login ด้วย username ของ user นั้น
-func (svc AuthenticationService) LoginWithLineUserID(lineUserID string, displayName string, pictureUrl string, email string) (string, string, error) {
-
-	if lineUserID == "" {
-		return "", "", errors.New("lineuserid is required")
-	}
-
-	// ค้นหา user ที่เชื่อมต่อ LINE นี้ไว้ (จาก users collection)
-	userFind, err := svc.authRepo.FindByLineUserID(context.Background(), lineUserID)
-	if errors.Is(err, repositories.ErrNotFound) {
-		return "", "", errors.New("ไม่พบบัญชีที่เชื่อมต่อ LINE นี้ กรุณาเชื่อมต่อ LINE กับบัญชีก่อน")
-	}
-	if err != nil {
-		return "", "", err
-	}
-
-	if userFind.Username == "" {
-		return "", "", errors.New("ไม่พบบัญชีที่เชื่อมต่อ LINE นี้ กรุณาเชื่อมต่อ LINE กับบัญชีก่อน")
-	}
-
-	if !userFind.DisabledAt.IsZero() {
-		return "", "", &auth_models.UserDisableLoginError{}
-	}
-
-	tokenString, err := svc.authService.GenerateToken(microservice.AUTHTYPE_BEARER, svc.tokenUserInfo(*userFind))
-
-	if err != nil {
-		return "", "", errors.New("generate token error")
-	}
-
-	// return token + username ของ user จริง (เช่น email) ไม่ใช่ LINE display name
-	return tokenString, userFind.Username, nil
 }
 
 // LinkLine — เชื่อมต่อ LINE กับ user profile (ระดับ user ไม่ใช่ per-shop)

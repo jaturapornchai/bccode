@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-24 @ commit 8564415d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-25 @ commit eae698b3 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 30
 
@@ -862,134 +862,6 @@ Files indexed: 30
 | 1425 | function | `listHoldingMembers` |
 | 1445 | function | `createHoldingPayload` |
 
-## backend/internal/authentication/authentication_http.go (1365 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 64 | function | `NewAuthenticationHttp` |
-| 109 | function | `currentDevLoginConfig` |
-| 120 | function | `devLoginConfigFor` |
-| 129 | function | `devLoginSecretMatches` |
-| 133 | function | `RegisterHttp` |
-| 174 | function | `DevLogin` |
-| 207 | function | `LoginWithPhoneNumber` |
-| 249 | function | `Login` |
-| 297 | function | `Poslogin` |
-| 338 | function | `LoginEmail` |
-| 379 | function | `RefreshToken` |
-| 416 | function | `TokenLogin` |
-| 452 | function | `GoogleLogin` |
-| 509 | function | `verifyGoogleIDToken` |
-| 543 | function | `emailVerified` |
-| 554 | function | `LoginWithLine` |
-| 588 | function | `LoginWithLineUserID` |
-| 636 | function | `Register` |
-| 673 | function | `RegisterByUsername` |
-| 710 | function | `SendPhoneNumberOTP` |
-| 747 | function | `RegisterByPhoneNumber` |
-| 784 | function | `ForgotPasswordByPhoneNumber` |
-| 819 | function | `RegisterCheckExistUsername` |
-| 856 | function | `RegisterCheckExistPhonenumber` |
-| 894 | function | `Update` |
-| 931 | function | `UpdatePassword` |
-| 960 | function | `ResetPasswordToDefault` |
-| 988 | function | `Logout` |
-| 1014 | function | `SessionSelection` |
-| 1019 | function | `sessionSelectionPayload` |
-| 1033 | function | `VerifyToken` |
-| 1052 | function | `SessionsActiveCount` |
-| 1071 | function | `Profile` |
-| 1098 | function | `ProfileShop` |
-| 1122 | function | `SelectShop` |
-| 1184 | function | `ListShopCanAccess` |
-| 1218 | function | `UpdateShopFavorite` |
-| 1255 | function | `LinkLine` |
-| 1291 | function | `UnlinkLine` |
-| 1316 | function | `DisableUser` |
-| 1360 | function | `authRequestLanguage` |
-
-## backend/internal/authentication/services/authentication_service_test.go (1350 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 23 | function | `mockLoginData` |
-| 91 | function | `TestAuthService_Login` |
-| 215 | function | `TestAuthService_LoginRevokesSessionWhenStableMembershipIsMissing` |
-| 245 | function | `TestAuthService_LoginDoesNotUseSharedPasswordState` |
-| 281 | function | `TestAuthService_OTPLoginDoesNotUseSharedPasswordState` |
-| 314 | function | `TestAuthService_RefreshTokenReturnsRotatedTokens` |
-| 329 | function | `TestAuthService_DevLoginByUIDCreatesSessionAndAudit` |
-| 356 | function | `TestAuthService_DevLoginByUIDRejectsUnavailableUsers` |
-| 387 | function | `TestAuthService_GoogleLoginResolvesLinkedUserByIssuerAndSubject` |
-| 421 | function | `TestAuthService_GoogleLoginCreatesUserIdentityAndAuditAtomically` |
-| 461 | function | `TestAuthService_GoogleLoginRejectsInactiveIdentity` |
-| 481 | function | `TestAuthService_Register` |
-| 560 | function | `TestAuthService_Update` |
-| 638 | function | `TestAuthService_UpdatePassword` |
-| 720 | function | `TestAuthService_UpdatePasswordRejectsShortPassword` |
-| 743 | function | `TestAuthService_ProfileDoesNotExposeSharedPasswordState` |
-| 780 | function | `TestAuthService_ResetPasswordToDefaultIsDisabled` |
-| 808 | function | `TestAuthService_LogoutRevokesWholeSession` |
-| 823 | function | `TestAuthService_AccessShop` |
-| 1039 | function | `FindByIdentity` |
-| 1046 | function | `FindUser` |
-| 1051 | function | `FindByPhonenumber` |
-| 1056 | function | `FindByLineUserID` |
-| 1061 | function | `CreateUser` |
-| 1066 | function | `SetLineIdentity` |
-| 1070 | function | `UpdateUser` |
-| 1075 | function | `UpdateUserByUID` |
-| 1080 | function | `DeleteUser` |
-| 1085 | function | `FindGoogleIdentity` |
-| 1091 | function | `FindUserByUID` |
-| 1097 | function | `CreateGoogleUserIdentity` |
-| 1107 | function | `SaveStable` |
-| 1112 | function | `SaveFullProfile` |
-| 1117 | function | `UpdateLastAccess` |
-| 1122 | function | `SaveFavorite` |
-| 1127 | function | `Delete` |
-| 1132 | function | `FindByHoldingCodeAndUserUID` |
-| 1137 | function | `ResolveHoldingCodeByHoldingCode` |
-| 1142 | function | `ResolveCompanyUID` |
-| 1147 | function | `FindByHoldingCodeAndUsername` |
-| 1152 | function | `FindShopCreatedBy` |
-| 1157 | function | `FindByUsernamePage` |
-| 1162 | function | `FindByUserUIDPage` |
-| 1167 | function | `FindByUserInShopPageWithProfileMatches` |
-| 1172 | function | `FindUsernamesByProfileQuery` |
-| 1177 | function | `FindUserProfileByUsernames` |
-| 1187 | function | `Create` |
-| 1199 | function | `MWFuncMixShop` |
-| 1204 | function | `MWFuncSession` |
-| 1209 | function | `MWFuncWithShop` |
-| 1214 | function | `GetPrefixCacheKey` |
-| 1219 | function | `GetTokenFromContext` |
-| 1226 | function | `GetTokenFromAuthorizationHeader` |
-| 1233 | function | `GenerateToken` |
-| 1239 | function | `GenerateTokenWithExpire` |
-| 1245 | function | `CreateSession` |
-| 1250 | function | `SelectShop` |
-| 1256 | function | `ExpireToken` |
-| 1261 | function | `DeleteToken` |
-| 1266 | function | `RefreshToken` |
-| 1271 | function | `RevokeSession` |
-| 1276 | function | `RevokeUserTokens` |
-| 1281 | function | `RevokeUserTokensByUID` |
-| 1290 | function | `SendSMS` |
-| 1295 | function | `SendOTP` |
-| 1300 | function | `VerifyOTP` |
-| 1305 | function | `SendOTPViaLink` |
-| 1310 | function | `VerifyOTPViaLink` |
-| 1315 | function | `MockObjectID` |
-| 1319 | function | `MockHashPassword` |
-| 1323 | function | `MockCheckPasswordHash` |
-| 1327 | function | `MockTime` |
-| 1332 | function | `MockFirebaseAdapter` |
-| 1336 | function | `MockLineAdapter` |
-| 1340 | function | `MockGUID` |
-| 1344 | function | `MockRandomString` |
-| 1348 | function | `MockRandomNumber` |
-
 ## frontend/src/app/system-settings/warehouse-tree-view.tsx (1332 lines)
 
 | Line | Kind | Name |
@@ -1009,51 +881,85 @@ Files indexed: 30
 | 499 | const-arrow | `handleSaveAllLocations` |
 | 696 | const-arrow | `handleResetTable` |
 
-## backend/internal/authentication/services/authentication_service.go (1296 lines)
+## backend/internal/authentication/services/authentication_service_test.go (1324 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 79 | function | `NewAuthenticationService` |
-| 110 | function | `ValidateOTP` |
-| 114 | function | `LoginWithPhoneNumberOTP` |
-| 148 | function | `LoginWithPhoneNumber` |
-| 182 | function | `Login` |
-| 227 | function | `DemoLoginByUsername` |
-| 264 | function | `DevLoginByUID` |
-| 296 | function | `Poslogin` |
-| 334 | function | `LoginEmail` |
-| 376 | function | `processUserLogin` |
-| 436 | function | `tokenUserInfo` |
-| 444 | function | `resolveLoginHoldingCode` |
-| 463 | function | `findShopUser` |
-| 480 | function | `ShopAccessDeniedKey` |
-| 494 | function | `ShopAccessDenied` |
-| 499 | function | `ensureShopAccessAllowed` |
-| 516 | function | `RefreshToken` |
-| 530 | function | `Register` |
-| 569 | function | `RegisterByUsername` |
-| 608 | function | `CheckExistsUsername` |
-| 627 | function | `CheckExistsPhonenumber` |
-| 643 | function | `SendPhonenumberOTP` |
-| 657 | function | `RegisterByPhonenumber` |
-| 711 | function | `ForgotPasswordByPhonenumber` |
-| 757 | function | `Update` |
-| 788 | function | `UpdatePassword` |
-| 833 | function | `ResetPasswordToDefault` |
-| 839 | function | `Logout` |
-| 843 | function | `Profile` |
-| 866 | function | `AccessShop` |
-| 947 | function | `UpdateFavoriteShop` |
-| 975 | function | `LoginWithFirebaseToken` |
-| 1026 | function | `LoginWithGoogleIdentity` |
-| 1086 | function | `loginWithLinkedGoogleIdentity` |
-| 1103 | function | `normalizeGoogleIssuer` |
-| 1112 | function | `LoginWithLineToken` |
-| 1162 | function | `LoginWithLineUserID` |
-| 1196 | function | `LinkLine` |
-| 1225 | function | `UnlinkLine` |
-| 1243 | function | `DisableUser` |
-| 1269 | function | `DeleteUser` |
+| 21 | function | `mockLoginData` |
+| 89 | function | `TestAuthService_Login` |
+| 211 | function | `TestAuthService_LoginRevokesSessionWhenStableMembershipIsMissing` |
+| 241 | function | `TestAuthService_LoginDoesNotUseSharedPasswordState` |
+| 277 | function | `TestAuthService_OTPLoginDoesNotUseSharedPasswordState` |
+| 310 | function | `TestAuthService_RefreshTokenReturnsRotatedTokens` |
+| 325 | function | `TestAuthService_DevLoginByUIDCreatesSessionAndAudit` |
+| 352 | function | `TestAuthService_DevLoginByUIDRejectsUnavailableUsers` |
+| 383 | function | `TestAuthService_GoogleLoginResolvesLinkedUserByIssuerAndSubject` |
+| 417 | function | `TestAuthService_GoogleLoginCreatesUserIdentityAndAuditAtomically` |
+| 457 | function | `TestAuthService_GoogleLoginRejectsInactiveIdentity` |
+| 477 | function | `TestAuthService_Register` |
+| 554 | function | `TestAuthService_Update` |
+| 630 | function | `TestAuthService_UpdatePassword` |
+| 710 | function | `TestAuthService_UpdatePasswordRejectsShortPassword` |
+| 731 | function | `TestAuthService_ProfileDoesNotExposeSharedPasswordState` |
+| 766 | function | `TestAuthService_ResetPasswordToDefaultIsDisabled` |
+| 792 | function | `TestAuthService_LogoutRevokesWholeSession` |
+| 807 | function | `TestAuthService_AccessShop` |
+| 1021 | function | `FindByIdentity` |
+| 1028 | function | `FindUser` |
+| 1033 | function | `FindByPhonenumber` |
+| 1038 | function | `FindByLineUserID` |
+| 1043 | function | `CreateUser` |
+| 1048 | function | `SetLineIdentity` |
+| 1052 | function | `UpdateUser` |
+| 1057 | function | `UpdateUserByUID` |
+| 1062 | function | `DeleteUser` |
+| 1067 | function | `FindGoogleIdentity` |
+| 1073 | function | `FindUserByUID` |
+| 1079 | function | `CreateGoogleUserIdentity` |
+| 1089 | function | `SaveStable` |
+| 1094 | function | `SaveFullProfile` |
+| 1099 | function | `UpdateLastAccess` |
+| 1104 | function | `SaveFavorite` |
+| 1109 | function | `Delete` |
+| 1114 | function | `FindByHoldingCodeAndUserUID` |
+| 1119 | function | `ResolveHoldingCodeByHoldingCode` |
+| 1124 | function | `ResolveCompanyUID` |
+| 1129 | function | `FindByHoldingCodeAndUsername` |
+| 1134 | function | `FindShopCreatedBy` |
+| 1139 | function | `FindByUsernamePage` |
+| 1144 | function | `FindByUserUIDPage` |
+| 1149 | function | `FindByUserInShopPageWithProfileMatches` |
+| 1154 | function | `FindUsernamesByProfileQuery` |
+| 1159 | function | `FindUserProfileByUsernames` |
+| 1169 | function | `Create` |
+| 1181 | function | `MWFuncMixShop` |
+| 1186 | function | `MWFuncSession` |
+| 1191 | function | `MWFuncWithShop` |
+| 1196 | function | `GetPrefixCacheKey` |
+| 1201 | function | `GetTokenFromContext` |
+| 1208 | function | `GetTokenFromAuthorizationHeader` |
+| 1215 | function | `GenerateToken` |
+| 1221 | function | `GenerateTokenWithExpire` |
+| 1227 | function | `CreateSession` |
+| 1232 | function | `SelectShop` |
+| 1238 | function | `ExpireToken` |
+| 1243 | function | `DeleteToken` |
+| 1248 | function | `RefreshToken` |
+| 1253 | function | `RevokeSession` |
+| 1258 | function | `RevokeUserTokens` |
+| 1263 | function | `RevokeUserTokensByUID` |
+| 1272 | function | `SendSMS` |
+| 1277 | function | `SendOTP` |
+| 1282 | function | `VerifyOTP` |
+| 1287 | function | `SendOTPViaLink` |
+| 1292 | function | `VerifyOTPViaLink` |
+| 1297 | function | `MockObjectID` |
+| 1301 | function | `MockHashPassword` |
+| 1305 | function | `MockCheckPasswordHash` |
+| 1309 | function | `MockTime` |
+| 1314 | function | `MockGUID` |
+| 1318 | function | `MockRandomString` |
+| 1322 | function | `MockRandomNumber` |
 
 ## backend/internal/goapi/handlers/tax_report.go (1274 lines)
 
@@ -1131,6 +1037,48 @@ Files indexed: 30
 | 1162 | function | `UntypedJournalBooksNotice` |
 | 1182 | function | `JournalBookTypeBadge` |
 | 1194 | function | `JournalBookFields` |
+
+## backend/internal/authentication/authentication_http.go (1202 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 61 | function | `NewAuthenticationHttp` |
+| 102 | function | `currentDevLoginConfig` |
+| 113 | function | `devLoginConfigFor` |
+| 122 | function | `devLoginSecretMatches` |
+| 126 | function | `RegisterHttp` |
+| 167 | function | `DevLogin` |
+| 200 | function | `LoginWithPhoneNumber` |
+| 242 | function | `Login` |
+| 290 | function | `Poslogin` |
+| 332 | function | `RefreshToken` |
+| 370 | function | `GoogleLogin` |
+| 427 | function | `verifyGoogleIDToken` |
+| 461 | function | `emailVerified` |
+| 473 | function | `Register` |
+| 510 | function | `RegisterByUsername` |
+| 547 | function | `SendPhoneNumberOTP` |
+| 584 | function | `RegisterByPhoneNumber` |
+| 621 | function | `ForgotPasswordByPhoneNumber` |
+| 656 | function | `RegisterCheckExistUsername` |
+| 693 | function | `RegisterCheckExistPhonenumber` |
+| 731 | function | `Update` |
+| 768 | function | `UpdatePassword` |
+| 797 | function | `ResetPasswordToDefault` |
+| 825 | function | `Logout` |
+| 851 | function | `SessionSelection` |
+| 856 | function | `sessionSelectionPayload` |
+| 870 | function | `VerifyToken` |
+| 889 | function | `SessionsActiveCount` |
+| 908 | function | `Profile` |
+| 935 | function | `ProfileShop` |
+| 959 | function | `SelectShop` |
+| 1021 | function | `ListShopCanAccess` |
+| 1055 | function | `UpdateShopFavorite` |
+| 1092 | function | `LinkLine` |
+| 1128 | function | `UnlinkLine` |
+| 1153 | function | `DisableUser` |
+| 1197 | function | `authRequestLanguage` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 
@@ -1253,6 +1201,48 @@ Files indexed: 30
 | 823 | function | `fetchErpReportData` |
 | 1106 | function | `reportText` |
 | 1115 | function | `reportColumnLabel` |
+
+## backend/internal/authentication/services/authentication_service.go (1112 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 71 | function | `NewAuthenticationService` |
+| 98 | function | `ValidateOTP` |
+| 102 | function | `LoginWithPhoneNumberOTP` |
+| 136 | function | `LoginWithPhoneNumber` |
+| 170 | function | `Login` |
+| 215 | function | `DemoLoginByUsername` |
+| 252 | function | `DevLoginByUID` |
+| 284 | function | `Poslogin` |
+| 322 | function | `processUserLogin` |
+| 382 | function | `tokenUserInfo` |
+| 390 | function | `resolveLoginHoldingCode` |
+| 409 | function | `findShopUser` |
+| 426 | function | `ShopAccessDeniedKey` |
+| 440 | function | `ShopAccessDenied` |
+| 445 | function | `ensureShopAccessAllowed` |
+| 462 | function | `RefreshToken` |
+| 476 | function | `Register` |
+| 515 | function | `RegisterByUsername` |
+| 554 | function | `CheckExistsUsername` |
+| 573 | function | `CheckExistsPhonenumber` |
+| 589 | function | `SendPhonenumberOTP` |
+| 603 | function | `RegisterByPhonenumber` |
+| 657 | function | `ForgotPasswordByPhonenumber` |
+| 703 | function | `Update` |
+| 734 | function | `UpdatePassword` |
+| 779 | function | `ResetPasswordToDefault` |
+| 785 | function | `Logout` |
+| 789 | function | `Profile` |
+| 812 | function | `AccessShop` |
+| 893 | function | `UpdateFavoriteShop` |
+| 925 | function | `LoginWithGoogleIdentity` |
+| 985 | function | `loginWithLinkedGoogleIdentity` |
+| 1002 | function | `normalizeGoogleIssuer` |
+| 1012 | function | `LinkLine` |
+| 1041 | function | `UnlinkLine` |
+| 1059 | function | `DisableUser` |
+| 1085 | function | `DeleteUser` |
 
 ## frontend/src/app/asset/fixed-assets-screen.tsx (1108 lines)
 

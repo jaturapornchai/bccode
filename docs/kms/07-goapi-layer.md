@@ -18,7 +18,7 @@
 | 7 | ขอ manager `"postgres"` → global `*sql.DB` + provider closure → `mypostgres.InitQueueSchema` (ตาราง queues/deadletterqueue/distributedlocks) | `bootstrap.go:104-131`, `mypostgres/init_schema.go:11`, `mypostgres/schema.sql:8,28,45` |
 | 8 | `workers.NewWorkerManager(0)` → `Start()` (จำนวน worker auto §7) | `bootstrap.go:136-143` |
 | 9 | goroutine: `StartConnectionHealthChecker` (ทุก 5 นาที), `StartBackgroundTask` (ทุก 10 นาที), `CleanupPreparedStatements` ทุก 30 นาที | `bootstrap.go:146-154`, `handlers/health.go:28,53` |
-| 10 | ถ้า env `ENABLE_KAFKA=="true"` → `handlers.StartConsumers()` (§5) | `bootstrap.go:157-162`, key map ที่ `setupconfig/loader.go:78` |
+| 10 | ถ้า env `ENABLE_KAFKA=="true"` → `handlers.StartConsumers()` (§5) | `bootstrap.go:157-162`, key map ที่ `setupconfig/loader.go:77` |
 - `Shutdown()` หยุด worker, ปิด Mongo ทั้งสอง, `mydb.CloseAllManagers`, `myclickhouse.CloseClickHouseConnection` (no-op stub), `myPg.CloseAllPools` (`bootstrap.go:577-589`)
 
 ## 3. Middleware และ auth ของ goapi

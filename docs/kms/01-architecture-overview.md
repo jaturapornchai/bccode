@@ -5,7 +5,7 @@
 - ระบบเป็น monorepo 2 ส่วนหลัก: Go backend (module `smlcloudplatform`, binary เดียวจาก `backend/main.go`) และ Next.js frontend (`frontend/`); ทั้งคู่ deploy เป็น Docker container ตาม `deploy/account/compose.yml`
 - binary backend ตัวเดียวทำได้ 3 บทบาทตาม env `DEV_API_MODE` (อ่านที่ `backend/main.go:238`): HTTP API + goapi (`""`/`"2"`, `backend/main.go:256`), Kafka consumer รุ่นเก่า (`""`/`"1"`, `backend/main.go:654`), migration (`"3"`, `backend/main.go:585`) — **ค่าว่าง `""` รัน HTTP และ consumer พร้อมกันใน process เดียว** เพราะเป็น `if` แยกกัน 2 ก้อน ไม่ใช่ `else`
 - goapi ไม่ใช่ service แยกใน deploy ปัจจุบัน แต่เป็น sub-server ที่ mount ใต้ `/goapi` ของ mainapi (`backend/main.go:568-576`); `cmd/goapi` + `Dockerfile.goapi` เป็น entry สำรองแบบ standalone ที่ไม่มี compose ไหนอ้างถึง (ดู §4)
-- browser ไม่คุย mainapi ตรง: ทุก request ผ่าน Next.js (route handler ใต้ `frontend/src/app/api/**` หรือ rewrite `/backend/*`) แล้ว Next.js ค่อย fetch ไป `BCAI_LOCAL_BACKEND_URL` ฝั่ง server (`frontend/next.config.ts:19-21,74`, `frontend/src/lib/backend-url.ts:117-127`)
+- browser ไม่คุย mainapi ตรง: ทุก request ผ่าน Next.js (route handler ใต้ `frontend/src/app/api/**` หรือ rewrite `/backend/*`) แล้ว Next.js ค่อย fetch ไป `BCAI_LOCAL_BACKEND_URL` ฝั่ง server (`frontend/next.config.ts:19-21,70`, `frontend/src/lib/backend-url.ts:117-127`)
 
 ## 2. แผนภาพ (ASCII)
 ```
@@ -14,7 +14,7 @@
    v
  Next.js frontend :3000 (prod publish 127.0.0.1:3200, deploy/account/compose.yml:317-318)
    |-- route handlers  frontend/src/app/api/**  (36 route.ts)  -- forward Authorization: Bearer
-   `-- rewrites        /backend/:path*  ->  ${BCAI_LOCAL_BACKEND_URL}/:path*   (next.config.ts:74)
+   `-- rewrites        /backend/:path*  ->  ${BCAI_LOCAL_BACKEND_URL}/:path*   (next.config.ts:70)
    v
  mainapi :8888  (backend/main.go, DEV_API_MODE=2)  -- Echo via pkg/microservice
    |-- /login /holding /shop /... (132 module HTTP, main.go:357-548, auth middleware main.go:343)
@@ -74,7 +74,7 @@ Stack prod (`deploy/account/compose.yml`): mongo 7.0 (`:10`), postgres 18 (`:47`
 ## 7. เส้นทาง request: browser → Next.js → mainapi
 1. browser เรียก `/api/<domain>/...` ของ Next.js เอง; route handler เช่น `frontend/src/app/api/product/[[...productPath]]/route.ts:15-104` (GET/POST/PUT/DELETE) ดึง `Authorization` header ด้วย `requireBearerToken` (`frontend/src/lib/workspace-api.ts:8-13`) แล้ว `fetch(baseUrl + path)` พร้อม header เดิม (`route.ts:159-164`)
 2. `baseUrl` มาจาก `getMainApiUrl(getBackendUrlFromRequest(...))` — ค่าที่ client ส่งมา (body / header `x-bc-backend-url` / query) ถูก validate แล้ว **ทิ้ง**; ฝั่ง server ใช้ `serverMainApiBase()` = env `BCAI_LOCAL_BACKEND_URL` เสมอ (`frontend/src/lib/workspace-api.ts:16-30`, `frontend/src/lib/backend-url.ts:117-123`; goapi base = `${BCAI_LOCAL_BACKEND_URL}/goapi` `:125-127`)
-3. เส้นทางที่สอง: rewrite `/backend/:path*` → `${BCAI_LOCAL_BACKEND_URL}/:path*` (`frontend/next.config.ts:74`) โดยบล็อกเส้นทาง auth และเส้นทางอันตราย (`/backend/login*`, `/backend/goapi/exec`, `/backend/goapi/api/setup/*`, `/backend/reload-config` ฯลฯ) ไปที่ `/_blocked-auth-route` ก่อน (`frontend/next.config.ts:30-72`)
+3. เส้นทางที่สอง: rewrite `/backend/:path*` → `${BCAI_LOCAL_BACKEND_URL}/:path*` (`frontend/next.config.ts:70`) โดยบล็อกเส้นทาง auth และเส้นทางอันตราย (`/backend/login*`, `/backend/goapi/exec`, `/backend/goapi/api/setup/*`, `/backend/reload-config` ฯลฯ) ไปที่ `/_blocked-auth-route` ก่อน (`frontend/next.config.ts:26-64`)
 4. ที่ mainapi: middleware `MWFuncWithRedisMixShop(cacher, exceptShopPath, publicPath...)` (`backend/main.go:343`) — publicPath ไม่ต้อง token (`:265-297`), exceptShopPath ต้อง token แต่ไม่ต้องเลือก shop (`:300-320`), ที่เหลือต้องมี shop context
 5. `BCAI_LOCAL_BACKEND_URL` เป็น build ARG/ENV ของ image frontend (`frontend/Dockerfile:26-29`), image ฟัง `:3000` ด้วย `npm run start` (`frontend/Dockerfile:52,57`; scripts `frontend/package.json:10-16`)
 
@@ -90,9 +90,9 @@ Stack prod (`deploy/account/compose.yml`): mongo 7.0 (`:10`), postgres 18 (`:47`
 
 ## 9. การโหลด config (bootstrap.json → env)
 - มี loader 2 ชุดที่ทำงานเหมือนกันแต่คนละแพ็กเกจ: `backend/internal/setupconfig/loader.go` (mainapi, `:148`) และ `backend/internal/goapi/setupconfig/loader.go` (goapi, `:196`) — goapi เรียกซ้ำอีกครั้งใน `Init()` (`bootstrap.go:59`)
-- ลำดับหาไฟล์: `/app/bootstrap/bootstrap.json` → `/app/bootstrap.json` → `bootstrap.json` → `config/bootstrap.json` (`backend/internal/setupconfig/loader.go:99-104`, goapi `:146-151`); ถ้ามี `custom_config.json` ข้าง ๆ จะ merge ทับ (`:106-113,177-187`); log จริงบน dev: "อ่าน bootstrap.json จาก /app/bootstrap.json"
-- section ที่ map: mongodb, mongodbdev/uat/pro/production, postgresql, clickhouse, service, integrations, storage, kafka (`backend/internal/setupconfig/loader.go:193-203`); key ใน JSON ถูก map เป็นชื่อ env เช่น `serviceport → SERVICE_PORT` (`:59`), goapi มี `enablekafka → ENABLE_KAFKA`, `kafkaconsumergroupversion → KAFKA_CONSUMER_GROUP_VERSION` (goapi loader `:78-79`) โดยตัด `_` ออกก่อน lookup (goapi `:284`)
-- **precedence จริง: ค่าใน bootstrap.json ชนะ env ของ process** เพราะ `applyBootstrapSection` เรียก `os.Setenv` ทุก key ที่ไม่ว่างโดยไม่เช็คว่ามี env อยู่ก่อน (`backend/internal/setupconfig/loader.go:226-248`); env จาก compose จึงมีผลเฉพาะ key ที่ไม่อยู่ใน JSON (เช่น `DEV_API_MODE`, `CONSUMER_GROUP_NAME`) — Redis ไม่มีใน mapping ของ bootstrap; Kafka มี section `kafka.serverurl → KAFKA_SERVER_URL` ทั้ง 2 loader (mainapi `:82-83,203`, goapi `:118,251`) แม้ comment ใน goapi loader `:17` จะบอกว่าไม่มี; ถ้า env ยังว่างค่อยเติม default `redis:6379`, `kafka:9092` (mainapi loader `:267-274`, goapi `:329-340`)
+- ลำดับหาไฟล์: `/app/bootstrap/bootstrap.json` → `/app/bootstrap.json` → `bootstrap.json` → `config/bootstrap.json` (`backend/internal/setupconfig/loader.go:98-103`, goapi `:146-151`); ถ้ามี `custom_config.json` ข้าง ๆ จะ merge ทับ (`:106-113,177-187`); log จริงบน dev: "อ่าน bootstrap.json จาก /app/bootstrap.json"
+- section ที่ map: mongodb, mongodbdev/uat/pro/production, postgresql, clickhouse, service, integrations, storage, kafka (`backend/internal/setupconfig/loader.go:192-202`); key ใน JSON ถูก map เป็นชื่อ env เช่น `serviceport → SERVICE_PORT` (`:59`), goapi มี `enablekafka → ENABLE_KAFKA`, `kafkaconsumergroupversion → KAFKA_CONSUMER_GROUP_VERSION` (goapi loader `:78-79`) โดยตัด `_` ออกก่อน lookup (goapi `:284`)
+- **precedence จริง: ค่าใน bootstrap.json ชนะ env ของ process** เพราะ `applyBootstrapSection` เรียก `os.Setenv` ทุก key ที่ไม่ว่างโดยไม่เช็คว่ามี env อยู่ก่อน (`backend/internal/setupconfig/loader.go:225-247`); env จาก compose จึงมีผลเฉพาะ key ที่ไม่อยู่ใน JSON (เช่น `DEV_API_MODE`, `CONSUMER_GROUP_NAME`) — Redis ไม่มีใน mapping ของ bootstrap; Kafka มี section `kafka.serverurl → KAFKA_SERVER_URL` ทั้ง 2 loader (mainapi `:82-83,203`, goapi `:118,251`) แม้ comment ใน goapi loader `:17` จะบอกว่าไม่มี; ถ้า env ยังว่างค่อยเติม default `redis:6379`, `kafka:9092` (mainapi loader `:267-274`, goapi `:329-340`)
 - goapi ยังเขียนกลับไฟล์ได้ (`UpdateBootstrapJSON` `:514`) และ `ReloadAndReconnect` + แจ้ง mainapi ผ่าน `POST <MAINAPI_INTERNAL_URL>/reload-config` default `http://mainapi:8080` (`:370,398-404`) ซึ่ง mainapi รับที่ `backend/main.go:323-340` — default port 8080 ไม่ตรงกับ 8888 ที่ mainapi ฟังจริง ถ้าไม่ตั้ง `MAINAPI_INTERNAL_URL` (ยังไม่ตรวจว่า prod/local ตั้งไว้)
 - ไฟล์ `backend/bootstrap.json`, `bootstrap.local.json`, `custom_config.json`, `custom_config.local.json` มีอยู่ใน working tree แต่ **ไม่ถูก track ใน git** (`git ls-files` ว่าง, `git check-ignore -v` ชี้ `backend/.gitignore:62,64`; กฎอยู่ที่ `.gitignore:13`, `backend/.gitignore:62-64`) — บทความนี้ไม่ได้เปิดดูค่าในไฟล์
 
@@ -129,4 +129,4 @@ Stack prod (`deploy/account/compose.yml`): mongo 7.0 (`:10`), postgres 18 (`:47`
 - mongodb container บนเครื่อง dev: `docker inspect` ยืนยันว่า PortBindings ตั้ง `127.0.0.1:27017` แต่ port ไม่ active (ดู §10) — สาเหตุ (เช่น สร้าง container ตอน port ถูกยึด) ยังไม่ตรวจ เพราะต้อง recreate container
 - `backend/bootstrap*.json` + `custom_config*.json` ไม่ได้ถูก track (ตรวจแล้ว §9) — ค่าในไฟล์ยังไม่ได้เปิดดู จึงยังไม่รู้ว่า local/prod ตั้ง `enablekafka`, `kafkaconsumergroupversion`, `MAINAPI_INTERNAL_URL` อย่างไร
 - จำนวน module HTTP นับได้ 132 (grep `New*Http(ms, cfg)` ใน `backend/main.go:357-547` = 133 บรรทัด, 1 บรรทัดเป็น comment) — ยังไม่ได้ไล่ว่าแต่ละ module ลงทะเบียน route กี่เส้น
-- ยังไม่ตรวจว่า `/reload-config` ของ mainapi (`backend/main.go:323`) ถูก frontend/goapi เรียกจริงในการทำงานปกติหรือไม่ (frontend บล็อก `/backend/reload-config` ไว้ที่ `frontend/next.config.ts:66`)
+- ยังไม่ตรวจว่า `/reload-config` ของ mainapi (`backend/main.go:323`) ถูก frontend/goapi เรียกจริงในการทำงานปกติหรือไม่ (frontend บล็อก `/backend/reload-config` ไว้ที่ `frontend/next.config.ts:62`)

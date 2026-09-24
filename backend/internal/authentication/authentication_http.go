@@ -16,9 +16,7 @@ import (
 	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/demo"
-	"smlcloudplatform/internal/firebase"
 	"smlcloudplatform/internal/goapi/language"
-	"smlcloudplatform/internal/line"
 	"smlcloudplatform/internal/logger"
 	common "smlcloudplatform/internal/models"
 	orgaccess "smlcloudplatform/internal/organization"
@@ -43,7 +41,6 @@ type devLoginConfig struct {
 type IAuthenticationHttp interface {
 	Login(ctx microservice.IContext) error
 	Poslogin(ctx microservice.IContext) error
-	TokenLogin(ctx microservice.IContext) error
 	Register(ctx microservice.IContext) error
 	Logout(ctx microservice.IContext) error
 	Profile(ctx microservice.IContext) error
@@ -76,8 +73,6 @@ func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IA
 	shopUserRepo := shop.NewShopUserPostgresRepository(db)
 	shopUserAccessLogRepo := shop.NewShopUserAccessLogPostgresRepository(db)
 	smsRepo := repositories.NewAuthenticationSMSRepository(cache)
-	firebaseAdapter := firebase.NewFirebaseAdapter()
-	lineAdapter := line.NewLineAdapter(cfg.LineClientId())
 	authenticationService := services.NewAuthenticationService(
 		authRepo,
 		shopUserRepo,
@@ -89,9 +84,7 @@ func NewAuthenticationHttp(ms *microservice.Microservice, cfg config.IConfig) IA
 		utils.NewGUID,
 		utils.HashPassword,
 		utils.CheckHashPassword,
-		ms.TimeNow,
-		firebaseAdapter,
-		lineAdapter)
+		ms.TimeNow)
 
 	shopService := shop.NewShopService(shopRepo, shopUserRepo, ms.TimeNow)
 	shopUserService := shop.NewShopUserService(shopUserRepo)
@@ -328,46 +321,6 @@ func (h AuthenticationHttp) Poslogin(ctx microservice.IContext) error {
 	return nil
 }
 
-// Login Email
-// @Description get struct array by ID
-// @Tags		Authentication
-// @Param		User  body      models.PosLoginRequest  true  "User Account"
-// @Accept 		json
-// @Success		200	{object}	common.AuthResponse
-// @Failure		400 {object}	common.AuthResponseFailed
-func (h AuthenticationHttp) LoginEmail(ctx microservice.IContext) error {
-
-	input := ctx.ReadInput()
-
-	userReq := &models.PosLoginRequest{}
-	err := json.Unmarshal([]byte(input), &userReq)
-
-	if err != nil {
-		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
-	}
-
-	if err = ctx.Validate(userReq); err != nil {
-		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
-	}
-
-	authContext := models.AuthenticationContext{
-		Ip: ctx.RealIp(),
-	}
-
-	result, err := h.authenticationService.LoginEmail(userReq, authContext)
-
-	if err != nil {
-		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
-	}
-
-	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success": true,
-		"token":   result,
-	})
-
-	return nil
-}
-
 // Login refresh
 // @Description refresh token
 // @Tags		Authentication
@@ -401,41 +354,6 @@ func (h AuthenticationHttp) RefreshToken(ctx microservice.IContext) error {
 		"success": true,
 		"token":   result.Token,
 		"refresh": result.Refresh,
-	})
-
-	return nil
-}
-
-// Login login
-// @Description get struct array by ID
-// @Tags		Authentication
-// @Param		TokenLoginRequest  body      models.TokenLoginRequest  true  "User Account"
-// @Accept 		json
-// @Success		200	{object}	common.AuthResponse
-// @Failure		400 {object}	common.AuthResponseFailed
-func (h AuthenticationHttp) TokenLogin(ctx microservice.IContext) error {
-
-	input := ctx.ReadInput()
-
-	tokenReq := &models.TokenLoginRequest{}
-	err := json.Unmarshal([]byte(input), &tokenReq)
-
-	if err != nil {
-		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
-	}
-
-	tokenString, err := h.authenticationService.LoginWithFirebaseToken(tokenReq.Token)
-
-	if err != nil {
-		if errors.Is(err, &models.UserDisableLoginError{}) {
-			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
-		}
-		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
-	}
-
-	ctx.Response(http.StatusOK, common.AuthResponse{
-		Success: true,
-		Token:   tokenString,
 	})
 
 	return nil
@@ -542,87 +460,6 @@ func verifyGoogleIDToken(credential string, clientID string) (*googleTokenInfo, 
 // emailVerified is Google's email_verified claim ("true"/"1" from tokeninfo).
 func (info googleTokenInfo) emailVerified() bool {
 	return info.EmailVerified == "true" || info.EmailVerified == "1"
-}
-
-// Login with LINE
-// @Description Login with LINE access token
-// @Tags		Authentication
-// @Param		LineLoginRequest  body      models.LineLoginRequest  true  "LINE Access Token"
-// @Accept 		json
-// @Success		200	{object}	common.AuthResponse
-// @Failure		400 {object}	common.AuthResponseFailed
-func (h AuthenticationHttp) LoginWithLine(ctx microservice.IContext) error {
-
-	input := ctx.ReadInput()
-
-	lineReq := &models.LineLoginRequest{}
-	err := json.Unmarshal([]byte(input), &lineReq)
-
-	if err != nil {
-		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
-	}
-
-	if err = ctx.Validate(lineReq); err != nil {
-		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
-	}
-
-	tokenString, err := h.authenticationService.LoginWithLineToken(lineReq.Token)
-
-	if err != nil {
-		if errors.Is(err, &models.UserDisableLoginError{}) {
-			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
-		}
-		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
-	}
-
-	ctx.Response(http.StatusOK, common.AuthResponse{
-		Success: true,
-		Token:   tokenString,
-	})
-
-	return nil
-}
-
-// Login with LINE User ID (QR code / LIFF flow)
-// QR code login: Flutter sends lineuserid from LIFF server.
-func (h AuthenticationHttp) LoginWithLineUserID(ctx microservice.IContext) error {
-
-	input := ctx.ReadInput()
-
-	lineReq := &models.LineUserLoginRequest{}
-	err := json.Unmarshal([]byte(input), &lineReq)
-
-	if err != nil {
-		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
-	}
-
-	if err = ctx.Validate(lineReq); err != nil {
-		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
-	}
-
-	tokenString, username, err := h.authenticationService.LoginWithLineUserID(
-		lineReq.LineUserID,
-		lineReq.DisplayName,
-		lineReq.PictureUrl,
-		lineReq.Email,
-	)
-
-	if err != nil {
-		if errors.Is(err, &models.UserDisableLoginError{}) {
-			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
-		}
-		// ส่ง error message จริงจาก service (เช่น "ไม่พบบัญชีที่เชื่อมต่อ LINE นี้")
-		return apperr.RespondErr(ctx, err)
-	}
-
-	// ส่ง username จริงกลับไปด้วย — Flutter จะได้แสดง email แทน LINE display name
-	ctx.Response(http.StatusOK, map[string]interface{}{
-		"success":  true,
-		"token":    tokenString,
-		"username": username,
-	})
-
-	return nil
 }
 
 // Register Member godoc

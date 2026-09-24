@@ -6,8 +6,6 @@ import (
 	"smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/authentication/services"
-	"smlcloudplatform/internal/firebase"
-	"smlcloudplatform/internal/line"
 	common "smlcloudplatform/internal/models"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
@@ -183,9 +181,7 @@ func TestAuthService_Login(t *testing.T) {
 		MockGUID,
 		MockHashPassword,
 		MockCheckPasswordHash,
-		MockTime,
-		MockFirebaseAdapter(),
-		MockLineAdapter())
+		MockTime)
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -229,7 +225,7 @@ func TestAuthService_LoginRevokesSessionWhenStableMembershipIsMissing(t *testing
 	authService := services.NewAuthenticationService(
 		authRepo, shopUserRepo, new(ShopUserAccessLogRepositoryMock), new(SMSRepositoryMock),
 		microAuthServiceMock, MockRandomString, MockRandomNumber, MockGUID, MockHashPassword,
-		MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockCheckPasswordHash, MockTime)
 
 	_, err := authService.Login(&models.UserLoginRequest{
 		UsernameField: models.UsernameField{Username: user.Username},
@@ -266,7 +262,7 @@ func TestAuthService_LoginDoesNotUseSharedPasswordState(t *testing.T) {
 	authService := services.NewAuthenticationService(
 		authRepo, shopUserRepo, shopUserAccessLogRepo, smsRepo, microAuthServiceMock,
 		MockRandomString, MockRandomNumber, MockGUID, MockHashPassword, MockCheckPasswordHash,
-		MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockTime)
 
 	result, err := authService.Login(&models.UserLoginRequest{
 		UsernameField: models.UsernameField{Username: user.Username},
@@ -298,7 +294,7 @@ func TestAuthService_OTPLoginDoesNotUseSharedPasswordState(t *testing.T) {
 	authService := services.NewAuthenticationService(
 		authRepo, shopUserRepo, shopUserAccessLogRepo, smsRepo, microAuthServiceMock,
 		MockRandomString, MockRandomNumber, MockGUID, MockHashPassword, MockCheckPasswordHash,
-		MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockTime)
 
 	result, err := authService.LoginWithPhoneNumberOTP(&models.PhoneNumberOTPRequest{
 		PhoneNumber: user.PhoneNumber,
@@ -317,7 +313,7 @@ func TestAuthService_RefreshTokenReturnsRotatedTokens(t *testing.T) {
 	authService := services.NewAuthenticationService(
 		new(AuthenticationRepositoryMock), new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber, MockGUID,
-		MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockHashPassword, MockCheckPasswordHash, MockTime)
 
 	result, err := authService.RefreshToken(models.TokenLoginRequest{Token: "refresh-in"})
 
@@ -343,7 +339,7 @@ func TestAuthService_DevLoginByUIDCreatesSessionAndAudit(t *testing.T) {
 	authService := services.NewAuthenticationService(
 		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
-		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime)
 
 	result, err := authService.DevLoginByUID(user.UID, models.AuthenticationContext{Ip: "127.0.0.1"})
 
@@ -374,7 +370,7 @@ func TestAuthService_DevLoginByUIDRejectsUnavailableUsers(t *testing.T) {
 			authService := services.NewAuthenticationService(
 				authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 				new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
-				MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+				MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime)
 
 			_, err := authService.DevLoginByUID(tt.userUID, models.AuthenticationContext{})
 
@@ -407,7 +403,7 @@ func TestAuthService_GoogleLoginResolvesLinkedUserByIssuerAndSubject(t *testing.
 	authService := services.NewAuthenticationService(
 		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
-		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime)
 
 	result, err := authService.LoginWithGoogleIdentity("accounts.google.com", identity.Subject, "new@example.com", true, user.Name)
 
@@ -449,7 +445,7 @@ func TestAuthService_GoogleLoginCreatesUserIdentityAndAuditAtomically(t *testing
 	authService := services.NewAuthenticationService(
 		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
-		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime)
 
 	result, err := authService.LoginWithGoogleIdentity(issuer, subject, " NEW@EXAMPLE.COM ", true, " New Google User ")
 
@@ -469,7 +465,7 @@ func TestAuthService_GoogleLoginRejectsInactiveIdentity(t *testing.T) {
 	authService := services.NewAuthenticationService(
 		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
-		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime)
 
 	_, err := authService.LoginWithGoogleIdentity("accounts.google.com", "revoked-subject", "user@example.com", true, "User")
 
@@ -534,9 +530,7 @@ func TestAuthService_Register(t *testing.T) {
 				MockGUID,
 				MockHashPassword,
 				MockCheckPasswordHash,
-				MockTime,
-				MockFirebaseAdapter(),
-				MockLineAdapter())
+				MockTime)
 
 			userReq := models.RegisterEmailRequest{}
 			userReq.Email = tt.args.username
@@ -616,9 +610,7 @@ func TestAuthService_Update(t *testing.T) {
 				MockGUID,
 				MockHashPassword,
 				MockCheckPasswordHash,
-				MockTime,
-				MockFirebaseAdapter(),
-				MockLineAdapter())
+				MockTime)
 
 			userReq := models.UserProfileRequest{}
 			userReq.Name = tt.args.name
@@ -702,9 +694,7 @@ func TestAuthService_UpdatePassword(t *testing.T) {
 				MockGUID,
 				MockHashPassword,
 				MockCheckPasswordHash,
-				MockTime,
-				MockFirebaseAdapter(),
-				MockLineAdapter())
+				MockTime)
 			err := authService.UpdatePassword(tt.args.username, tt.args.currentPassword, tt.args.newPassword)
 
 			if tt.wantErr {
@@ -729,9 +719,7 @@ func TestAuthService_UpdatePasswordRejectsShortPassword(t *testing.T) {
 		MockGUID,
 		MockHashPassword,
 		MockCheckPasswordHash,
-		MockTime,
-		MockFirebaseAdapter(),
-		MockLineAdapter())
+		MockTime)
 
 	err := authService.UpdatePassword("default-user", "current_password", "12345")
 	appErr := apperr.FromError(err)
@@ -766,9 +754,7 @@ func TestAuthService_ProfileDoesNotExposeSharedPasswordState(t *testing.T) {
 		MockGUID,
 		MockHashPassword,
 		MockCheckPasswordHash,
-		MockTime,
-		MockFirebaseAdapter(),
-		MockLineAdapter())
+		MockTime)
 
 	profile, err := authService.Profile("default_user", "")
 
@@ -792,9 +778,7 @@ func TestAuthService_ResetPasswordToDefaultIsDisabled(t *testing.T) {
 		MockGUID,
 		MockHashPassword,
 		MockCheckPasswordHash,
-		MockTime,
-		MockFirebaseAdapter(),
-		MockLineAdapter())
+		MockTime)
 
 	err := authService.ResetPasswordToDefault("shoptest", "owner_user", "target_user")
 
@@ -811,7 +795,7 @@ func TestAuthService_LogoutRevokesWholeSession(t *testing.T) {
 	authService := services.NewAuthenticationService(
 		new(AuthenticationRepositoryMock), new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber, MockGUID,
-		MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
+		MockHashPassword, MockCheckPasswordHash, MockTime)
 
 	err := authService.Logout("Bearer access-token")
 
@@ -1017,9 +1001,7 @@ func TestAuthService_AccessShop(t *testing.T) {
 				MockGUID,
 				MockHashPassword,
 				MockCheckPasswordHash,
-				MockTime,
-				MockFirebaseAdapter(),
-				MockLineAdapter())
+				MockTime)
 			err := authService.AccessShop(tt.args.holdingCode, tt.args.businessCode, tt.args.branchUID, tt.args.username, tt.args.userUID, tt.args.authorizationHeader, authContext)
 
 			if tt.wantErr {
@@ -1327,14 +1309,6 @@ func MockCheckPasswordHash(password string, hash string) bool {
 func MockTime() time.Time {
 	timeVal, _ := time.Parse("2006-01-02 15:04:05", "2022-08-30 00:00:00")
 	return timeVal
-}
-
-func MockFirebaseAdapter() firebase.IFirebaseAdapter {
-	return &firebase.FirebaseAdapter{}
-}
-
-func MockLineAdapter() line.ILineAdapter {
-	return &line.LineAdapter{}
 }
 
 func MockGUID() string {
