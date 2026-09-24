@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import {
   type FormState,
   applyWorkspaceTenantParams,
-  extractMessage,
   isFailed,
   isRecord,
   localizedNameForLanguage,
@@ -25,6 +24,7 @@ import {
   uniqueStrings,
 } from "../types";
 import { stringArrayFromForm } from "./permission-editors";
+import { settingsRequestError, userFacingErrorText } from "../user-facing-error";
 
 type PermissionSetOption = {
   code: string;
@@ -99,7 +99,7 @@ export function PermissionSetsEditor({
         });
         const payload = (await response.json()) as unknown;
         if (!response.ok || isFailed(payload)) {
-          throw new Error(extractMessage(payload) ?? backendText(dictionary, "request_failed", "Request failed."));
+          throw settingsRequestError(response.status, payload);
         }
         if (cancelled) return;
         const data = isRecord(payload) ? payload.data : payload;
@@ -111,7 +111,8 @@ export function PermissionSetsEditor({
             .filter((option) => option.code && !BUILT_IN_SETS.has(option.code)),
         );
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error && loadError.message ? loadError.message : backendText(dictionary, "request_failed", "Request failed."));
+        if (!cancelled)
+          setError(userFacingErrorText(loadError, language, dictionary, backendText(dictionary, "request_failed", "Request failed.")));
       } finally {
         if (!cancelled) setLoading(false);
       }

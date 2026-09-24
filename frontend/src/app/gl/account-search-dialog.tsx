@@ -82,9 +82,13 @@ export function AccountSearchDialog({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
 
-  // Initialize on open
+  // Initialize on open only (false → true). Depending on selectedCodes alone re-ran this on every render
+  // because the default `[]` is a new array each time, wiping the search box on each keystroke.
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (open) {
+    const justOpened = open && !wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (justOpened) {
       setSearch("");
       setCategory("all");
       setOnlyPosting(false);

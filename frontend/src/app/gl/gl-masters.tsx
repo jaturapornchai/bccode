@@ -5,13 +5,33 @@ import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, Folder
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { accountName, accountTypeLabels, bookLabels, emptyAccount, emptyFiscalYear, emptyMaster, formatAmount, type GLAccount, type GLFiscalYear, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_TYPES, accountName, accountTypeLabels, activeJournalBooks, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
 
 type MasterResource = Exclude<GLResource, "journals">;
-function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : emptyMaster(); }
+function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : resource === "journal-books" ? emptyJournalBook() : emptyMaster(); }
+
+/** บัญชีแม่ที่เลือกได้: บัญชีคุม (ไม่รับลงรายการ) ที่เปิดใช้งานและไม่ถูกลบ — ไม่รวมตัวเองและบัญชีลูกหลานทุกชั้น (กันผังวนเป็นวง) */
+export function parentAccountCandidates(accounts: GLAccount[], accountcode: string): GLAccount[] {
+  const self = accountcode.trim();
+  const children = new Map<string, string[]>();
+  for (const account of accounts) {
+    if (!account.parentaccountcode) continue;
+    children.set(account.parentaccountcode, [...(children.get(account.parentaccountcode) ?? []), account.accountcode]);
+  }
+  const descendants = new Set<string>();
+  const queue = self ? [self] : [];
+  while (queue.length > 0) {
+    for (const child of children.get(queue.shift()!) ?? []) {
+      if (!descendants.has(child)) { descendants.add(child); queue.push(child); }
+    }
+  }
+  return accounts
+    .filter((account) => account.isactive && !account.allowposting && !account.isdeleted && account.accountcode !== self && !descendants.has(account.accountcode))
+    .sort((a, b) => a.accountcode.localeCompare(b.accountcode, "en", { numeric: true }));
+}
 export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
   const base = { ...newRecord(resource), ...raw };
   if (!base.id) {
@@ -152,7 +172,7 @@ export function TreeNodeRow({
                 {tr("gl_control_account", "บัญชีคุม")}
               </span>
             ) : (
-              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5">
+              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-primary/10 text-primary border border-primary/20 leading-none h-5">
                 {tr("gl_posting_account", "บัญชีย่อย")}
               </span>
             )}
@@ -160,7 +180,7 @@ export function TreeNodeRow({
 
           <div className="w-16 flex justify-end shrink-0">
             {isActive ? (
-              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5">
+              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5">
                 {tr("gl_enable", "ใช้งาน")}
               </span>
             ) : (
@@ -330,6 +350,12 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
 
   async function save() {
     if (!record || busy || !isEditing) return;
+    if (resource === "journal-books") {
+      // A legacy book stored without a type can be renamed or deactivated as it is (backend allowUntyped).
+      const storedBookType = original ? Number((JSON.parse(original) as GLJournalBook).booktype) || 0 : 0;
+      const bookProblem = validateJournalBook(record as GLJournalBook, tr, Boolean(record.id) && storedBookType === 0);
+      if (bookProblem) { showFormError(null, bookProblem.message, bookProblem.field); return; }
+    }
     if (!recordCode(record).trim() || resource !== "fiscal-years" && !recordName(record).trim()) { showFormError(null, tr("gl_enter_code_and_name", "กรุณาระบุรหัสและชื่อให้ครบ"), recordCode(record).trim() ? (isAcc ? "accountnameth" : "name") : (isAcc ? "accountcode" : "code")); return; }
     if (record.id && !await confirm({ title: tr("gl_save_changes_confirm", "บันทึกการแก้ไขข้อมูล?"), description: tr("gl_edit_with_history", "แก้ไข {0} โดยเก็บประวัติการเปลี่ยนแปลง").replace("{0}", String(recordCode(record))), confirmLabel: tr("gl_save_changes", "บันทึกการแก้ไข"), tone: "info" })) return;
     try {
@@ -344,7 +370,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
         }
         accPayload = acc;
       }
-      const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : { master: record as GLMaster };
+      const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : resource === "journal-books" ? { master: journalBookPayload(record as GLJournalBook) } : { master: record as GLMaster };
       const result = await execute({ resource, action: record.id ? "update" : "create", id: record.id, version: record.version, reason: reason.trim() || (record.id ? tr("gl_edit_data", "แก้ไขข้อมูล") : tr("gl_create_new", "สร้างข้อมูลใหม่")), ...field });
       const saved = normalizeRecord(resource, { ...record, id: result.id, version: result.version });
       setRecord(saved);
@@ -364,7 +390,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     if (!await confirm({
       title: tr("gl_confirm_delete", "ยืนยันลบรายการ?"),
       description: `${recordCode(item)} · ${recordName(item)}`,
-      details: isAcc ? tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน") : undefined,
+      details: isAcc ? tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
       confirmLabel: tr("gl_delete_item", "ลบรายการ"),
       tone: "danger",
     })) return;
@@ -394,7 +420,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     if (!await confirm({
       title: `${label}?`,
       description: `${recordCode(record)} · ${effectiveReason}`,
-      details: resource === "accounts" && action === "delete" ? tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน") : undefined,
+      details: resource === "accounts" && action === "delete" ? tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน") : resource === "journal-books" && action === "delete" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
       confirmLabel: label,
       tone: action === "delete" ? "danger" : "warning"
     })) return;
@@ -496,6 +522,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             )}
           </div>
         </form>
+        {resource === "journal-books" && <UntypedJournalBooksNotice books={refs.books} onOpen={(book) => void openView(book)} />}
         {/* .bc-list-toolbar */}
         <div className="bc-list-toolbar shrink-0 p-2.5 border-b border-border/60 bg-muted/20 flex flex-wrap items-center justify-between gap-2 rounded-t-lg">
           <div className="flex items-center gap-2">
@@ -644,7 +671,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                           <span>{recordName(item)}</span>
                         </span>
                       ) : (
-                        <span className="align-middle">{recordName(item)}</span>
+                        <span className="align-middle">{recordName(item)}{resource === "journal-books" && <JournalBookTypeBadge booktype={(item as GLJournalBook).booktype} />}</span>
                       )}
                     </td>
                     {hasAmount && (
@@ -673,7 +700,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                           {tr("gl_disable", "ปิดใช้งาน")}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none h-5 align-middle">
+                        <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5 align-middle">
                           {tr("gl_enable", "ใช้งาน")}
                         </span>
                       )}
@@ -779,8 +806,10 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               <AccountFields value={record as GLAccount} set={set} accounts={refs.accounts} />
             ) : resource === "fiscal-years" ? (
               <FiscalYearFields value={record as GLFiscalYear} set={set} accounts={refs.accounts} />
+            ) : resource === "journal-books" ? (
+              <JournalBookFields value={record as GLJournalBook} set={set} />
             ) : (
-              <MasterFields resource={resource} value={record as GLMaster} set={set} accounts={refs.accounts} years={refs.years} />
+              <MasterFields resource={resource} value={record as GLMaster} set={set} accounts={refs.accounts} years={refs.years} books={refs.books ?? []} />
             )}
           </fieldset>
           <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
@@ -858,8 +887,10 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               <AccountFields value={record as GLAccount} set={set} accounts={refs.accounts} />
             ) : resource === "fiscal-years" ? (
               <FiscalYearFields value={record as GLFiscalYear} set={set} accounts={refs.accounts} />
+            ) : resource === "journal-books" ? (
+              <JournalBookFields value={record as GLJournalBook} set={set} />
             ) : (
-              <MasterFields resource={resource} value={record as GLMaster} set={set} accounts={refs.accounts} years={refs.years} />
+              <MasterFields resource={resource} value={record as GLMaster} set={set} accounts={refs.accounts} years={refs.years} books={refs.books ?? []} />
             )}
             {record.id && (
               <Field label={tr("gl_change_reason_optional", "เหตุผลการเปลี่ยนแปลง (ไม่บังคับ)")}>
@@ -933,11 +964,9 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
     value.accountcode && accounts.some((a) => a.parentaccountcode === value.accountcode)
   );
 
-  const parentCandidates = useMemo(() => {
-    return accounts
-      .filter((a) => a.accountcode !== value.accountcode && (!value.id || a.parentaccountcode !== value.accountcode))
-      .sort((a, b) => a.accountcode.localeCompare(b.accountcode, "en", { numeric: true }));
-  }, [accounts, value.accountcode, value.id]);
+  const parentCandidates = useMemo(() => parentAccountCandidates(accounts, value.accountcode || ""), [accounts, value.accountcode]);
+  // บัญชีแม่เดิมที่เลือกไม่ได้แล้ว (ปิดใช้งาน/รับลงรายการ/เป็นลูกของตัวเอง) ยังแสดงให้เห็น พร้อมบอกให้เลือกใหม่
+  const invalidParent = value.parentaccountcode && !parentCandidates.some((a) => a.accountcode === value.parentaccountcode) ? value.parentaccountcode : "";
 
   const handleParentChange = (parentCode: string) => {
     if (!parentCode) {
@@ -989,6 +1018,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             onChange={handleParentChange}
           >
             <option value="">{tr("gl_no_parent_level_1", "-- ไม่มีหัวบัญชี (ระดับ 1 ผังหลัก) --")}</option>
+            {invalidParent && <option value={invalidParent}>{invalidParent} {tr("gl_parent_not_allowed_suffix", "(ใช้เป็นบัญชีแม่ไม่ได้ — ต้องเป็นบัญชีคุมที่เปิดใช้งาน กรุณาเลือกใหม่)")}</option>}
             {parentCandidates.map((parent) => {
               const lvl = parent.level ?? 1;
               const indent = lvl > 1 ? `${"\u00A0\u00A0".repeat(lvl - 1)}└─ ` : "";
@@ -1056,9 +1086,9 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
           <div className="flex min-h-[2.6em] w-full items-center justify-between gap-2 rounded-xl border border-input bg-muted/20 px-3 py-1.5 text-[0.95rem] leading-normal text-foreground select-none shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)]">
             <div className="flex items-center gap-2 font-semibold">
               {value.accounttype === "asset" || value.accounttype === "expense" ? (
-                <span className="text-blue-600 dark:text-blue-400">{tr("gl_debit", "เดบิต")} (Dr.)</span>
+                <span className="text-primary">{tr("gl_debit", "เดบิต")} (Dr.)</span>
               ) : (
-                <span className="text-emerald-600 dark:text-emerald-400">{tr("gl_credit", "เครดิต")} (Cr.)</span>
+                <span className="text-foreground">{tr("gl_credit", "เครดิต")} (Cr.)</span>
               )}
             </div>
             <span className="text-xs text-muted-foreground font-normal">({tr("gl_auto_by_category", "กำหนดตามหมวดบัญชี")})</span>
@@ -1082,7 +1112,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
               }}
             />
             {hasChildren && (
-              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+              <span className="text-[0.9rem] text-muted-foreground font-medium">
                 ({tr("gl_parent_has_children_no_posting", "ผังบัญชีที่เป็นหัว มีตัวลูก ไม่สามารถบันทึกตัวเลขได้")})
               </span>
             )}
@@ -1106,8 +1136,10 @@ function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: 
     </div>
   </div>{value.closed && <Notice text={tr("gl_fiscal_year_closed", "ปีบัญชีนี้ปิดแล้ว")} />}</>;
 }
-function MasterFields({ resource, value, set, accounts, years }: { resource: MasterResource; value: GLMaster; set: (patch: object) => void; accounts: GLAccount[]; years: GLFiscalYear[] }) {
+function MasterFields({ resource, value, set, accounts, years, books }: { resource: MasterResource; value: GLMaster; set: (patch: object) => void; accounts: GLAccount[]; years: GLFiscalYear[]; books: GLJournalBook[] }) {
   const tr = useGLText();
+  const language = useGLLanguage();
+  const usableBooks = activeJournalBooks(books);
   const dateFields = ["budgets", "periods", "forecast"].includes(resource);
   return <><div className="grid gap-3 sm:grid-cols-2">
     <Field label={tr("gl_code", "รหัส")}><input className={control} data-field="code" required disabled={!!value.id} value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
@@ -1116,11 +1148,80 @@ function MasterFields({ resource, value, set, accounts, years }: { resource: Mas
     {["budgets", "forecast"].includes(resource) && <><Field label={tr("gl_account", "บัญชี")}><AccountSelect value={value.accountcode || ""} onChange={(accountcode) => set({ accountcode })} accounts={accounts} /></Field><Field label={tr("gl_amount", "จำนวนเงิน")}><AmountInput required value={value.amount || ""} onChange={(amount) => set({ amount })} /></Field><Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={value.branchcode || ""} onChange={(e) => set({ branchcode: e.target.value })} /></Field><Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={value.departmentcode || ""} onChange={(e) => set({ departmentcode: e.target.value })} /></Field><Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={value.projectcode || ""} onChange={(e) => set({ projectcode: e.target.value })} /></Field></>}
     {resource === "forecast" && <Field label={tr("gl_money_direction", "ทิศทางเงิน")}><ChoiceSelect value={value.direction || "in"} onChange={(direction) => set({ direction })}><option value="in">{tr("gl_money_in", "เงินเข้า")}</option><option value="out">{tr("gl_money_out", "เงินออก")}</option></ChoiceSelect></Field>}
     {resource === "product-account-groups" && <>{([ ["itemaccount", tr("gl_inventory_account", "บัญชีสินค้า")], ["costaccount", tr("gl_cogs_account", "บัญชีต้นทุนขาย")], ["revenueaccount", tr("gl_sales_revenue_account", "บัญชีรายได้จากการขาย")] ] as const).map(([key, label]) => <Field key={key} label={label}><AccountSelect label={label} value={value[key] ?? ""} onChange={(accountcode) => set({ [key]: accountcode })} accounts={accounts} /></Field>)}</>}
-    {resource === "mappings" && <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={value.bookcode || ""} onChange={(bookcode) => set({ bookcode })}>{Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</Combobox></Field>}
+    {resource === "mappings" && <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={value.bookcode || ""} onChange={(bookcode) => set({ bookcode })}><option value="">{tr("gl_select", "เลือก")}</option>{usableBooks.map((book) => <option key={book.code} value={book.code}>{book.code} · {journalBookName(book, book.code, language)}</option>)}{value.bookcode && !usableBooks.some((book) => book.code === value.bookcode) && <option value={value.bookcode}>{value.bookcode} {tr("gl_book_inactive_suffix", "(ปิดใช้งาน — เลือกสมุดอื่น)")}</option>}</Combobox></Field>}
     <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
       <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
     </div>
   </div>
     {resource === "mappings" && <div className="grid gap-2"><h3 className="font-semibold">{tr("gl_account_mapping_rules", "กฎการเชื่อมบัญชี")}</h3>{(value.rules ?? []).map((rule, index) => <div key={index} className="grid gap-2 rounded-xl border border-border p-2 sm:grid-cols-2 shadow-sm bg-muted/20"><AccountSelect label={tr("gl_accounts_in_rule", "บัญชีในกฎ {0}").replace("{0}", String(index + 1))} value={rule.accountcode || ""} accounts={accounts} onChange={(accountcode) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, accountcode } : item) })} /><Field label={tr("gl_accounting_side_rule", "ด้านบัญชีกฎ {0}").replace("{0}", String(index + 1))}><ChoiceSelect value={rule.side || "debit"} onChange={(side) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, side } : item) })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field><Field label={tr("gl_amount_source_rule", "แหล่งจำนวนเงินกฎ {0}").replace("{0}", String(index + 1))}><input className={control} value={rule.source || ""} placeholder={tr("gl_select_supported_source_doc", "เลือกตามเอกสารต้นทางที่ระบบรองรับ")} onChange={(e) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, source: e.target.value } : item) })} /></Field><Button type="button" className={actionClass} variant="outline" onClick={() => set({ rules: (value.rules ?? []).filter((_, i) => i !== index) })}>{tr("gl_remove_rule", "นำกฎ {0} ออก").replace("{0}", String(index + 1))}</Button></div>)}<Button type="button" variant="outline" className={actionClass} onClick={() => set({ rules: [...(value.rules ?? []), { accountcode: "", side: "debit", source: "" }] })}>{tr("gl_add_account_mapping_rule", "เพิ่มกฎการเชื่อมบัญชี")}</Button></div>}
   </>;
+}
+
+/** สมุดเดิมที่ยังไม่กำหนดประเภทใช้บันทึกใบใหม่ไม่ได้ — แสดงรายชื่อทั้งหมด (ไม่ใช่เฉพาะหน้าที่เปิดอยู่) ให้กดเปิดไปเลือกประเภทได้ทันที
+ *  เปลี่ยนชื่อหรือปิดใช้งานสมุดเหล่านี้ได้โดยไม่ต้องเลือกประเภท (backend allowUntyped) */
+function UntypedJournalBooksNotice({ books, onOpen }: { books: GLJournalBook[]; onOpen: (book: GLJournalBook) => void }) {
+  const tr = useGLText();
+  const untyped = untypedJournalBooks(books);
+  if (!untyped.length) return null;
+  return (
+    <div role="status" data-field="untyped-journal-books" className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <p className="font-semibold">{tr("gl_books_untyped_notice", "สมุดรายวัน {0} เล่มยังไม่ได้กำหนดประเภท — เลือกประเภทก่อนบันทึกเอกสาร").replace("{0}", String(untyped.length))}</p>
+      <p className="text-[0.9rem] text-muted-foreground">{tr("gl_books_untyped_hint", "กดชื่อสมุดเพื่อเปิด แล้วกดแก้ไขและเลือกประเภท (ทั่วไป จ่าย รับ ขาย ซื้อ หรือยอดยกมา) — ถ้าเลิกใช้ ให้ปิดใช้งานได้เลยโดยไม่ต้องเลือกประเภท")}</p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {untyped.map((book) => (
+          <li key={book.id || book.code}>
+            <Button type="button" variant="outline" className="min-h-11 h-auto whitespace-normal text-left" onClick={() => onOpen(book)}>{book.code} · {book.name}</Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** ป้ายประเภทสมุดในรายการ — สมุดที่ยังไม่กำหนดประเภทใช้บันทึกใบใหม่ไม่ได้ จึงแสดงเตือนเป็นข้อความ */
+function JournalBookTypeBadge({ booktype }: { booktype?: number }) {
+  const tr = useGLText();
+  const label = journalBookTypeLabels[String(booktype)];
+  return (
+    <span className={`ml-2 inline-flex items-center rounded px-1.5 py-0.5 text-[0.7rem] font-semibold border leading-none h-5 align-middle ${label ? "bg-muted text-muted-foreground border-border" : "bg-destructive/10 text-destructive border-destructive/30"}`}>
+      {label ? tr(label[0], label[1]) : tr("gl_book_type_missing_badge", "ยังไม่กำหนดประเภท")}
+    </span>
+  );
+}
+
+/** ฟอร์มสมุดรายวัน (journalbook.sql): รหัส ≤ 15 ตัวอักษร, ชื่อไทยบังคับ, ชื่ออังกฤษไม่บังคับ, ประเภทสมุด 1–6 บังคับ
+ *  สมุดที่มีใบสำคัญใช้อยู่ backend ไม่ให้เปลี่ยนรหัส/ประเภทหรือลบ (แจ้งข้อความไทยกลับมา) — แก้ชื่อและเปิด/ปิดใช้งานได้เสมอ */
+function JournalBookFields({ value, set }: { value: GLJournalBook; set: (patch: object) => void }) {
+  const tr = useGLText();
+  const codeLength = [...(value.code ?? "")].length;
+  return (
+    <>
+      {value.id && <Notice text={tr("gl_journal_book_in_use_hint", "สมุดที่มีใบสำคัญใช้อยู่แล้ว เปลี่ยนรหัสหรือประเภทไม่ได้ และลบไม่ได้ — ถ้าเลิกใช้ให้ปิดใช้งานแทน (แก้ชื่อได้เสมอ)")} />}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={tr("gl_code", "รหัส")} hint={tr("gl_book_code_hint", "ไม่เกิน {0} ตัวอักษร เช่น JV, PV, RV, SV, UV").replace("{0}", String(JOURNAL_BOOK_CODE_MAX))}>
+          <input className={control} data-field="code" required value={value.code || ""} aria-invalid={codeLength > JOURNAL_BOOK_CODE_MAX || undefined} onChange={(e) => set({ code: e.target.value })} />
+          {codeLength > JOURNAL_BOOK_CODE_MAX && (
+            <span role="alert" className="text-[0.9rem] leading-snug text-destructive">
+              {tr("gl_book_code_too_long", "รหัสสมุดรายวันยาวได้ไม่เกิน {0} ตัวอักษร (ตอนนี้ {1} ตัว)").replace("{0}", String(JOURNAL_BOOK_CODE_MAX)).replace("{1}", String(codeLength))}
+            </span>
+          )}
+        </Field>
+        <Field label={tr("gl_book_type", "ประเภทสมุดรายวัน")} hint={value.id && !isJournalBookType(value.booktype) ? tr("gl_book_type_untyped_hint", "ยังไม่ได้กำหนดประเภท — เลือกประเภทก่อนบันทึกเอกสาร (เปลี่ยนชื่อหรือปิดใช้งานได้โดยไม่ต้องเลือก)") : undefined}>
+          <Combobox data-field="booktype" aria-label={tr("gl_book_type", "ประเภทสมุดรายวัน")} value={value.booktype ? String(value.booktype) : ""} onChange={(booktype) => set({ booktype: Number(booktype) || 0 })}>
+            <option value="">{tr("gl_select", "เลือก")}</option>
+            {JOURNAL_BOOK_TYPES.map((type) => <option key={type} value={String(type)}>{tr(journalBookTypeLabels[type][0], journalBookTypeLabels[type][1])}</option>)}
+          </Combobox>
+        </Field>
+        <Field label={tr("gl_name", "ชื่อ")}>
+          <input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} />
+        </Field>
+        <Field label={tr("gl_name_en", "ชื่อภาษาอังกฤษ (ไม่บังคับ)")}>
+          <input className={control} data-field="nameen" value={value.nameen || ""} onChange={(e) => set({ nameen: e.target.value })} />
+        </Field>
+        <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
+          <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
+        </div>
+      </div>
+    </>
+  );
 }

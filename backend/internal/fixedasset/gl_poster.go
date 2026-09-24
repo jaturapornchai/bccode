@@ -219,10 +219,14 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	}
 	description := fmt.Sprintf("บันทึกค่าเสื่อมราคาสินทรัพย์ประจำงวด %d/%s", period, fiscalYear)
 	reference := fmt.Sprintf("FA-%s-%02d", fiscalYear, period)
+	book, err := p.generalBookCode(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
 	journalInput := &gl.Journal{
 		DocNo:       docNo,
 		Date:        date,
-		BookCode:    "JV",
+		BookCode:    book,
 		FiscalYear:  fiscalYear,
 		Description: description,
 		Reference:   reference,
@@ -242,7 +246,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		Version:      posted.Version,
 		DocNo:        docNo,
 		Date:         date,
-		BookCode:     "JV",
+		BookCode:     book,
 		FiscalYear:   fiscalYear,
 		Description:  description,
 		Reference:    reference,
@@ -286,9 +290,10 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 
 	// 1. Reverse through the general ledger engine: it flips debit/credit,
 	// keeps the original journal for audit, and re-projects PostgreSQL.
+	// doc_no is VARCHAR(30) characters: cut by runes so a Thai document number is never split mid-character.
 	reversalDocNo := "REV-" + docNo
-	if len(reversalDocNo) > 60 {
-		reversalDocNo = reversalDocNo[:60]
+	if runes := []rune(reversalDocNo); len(runes) > gl.DocNoMaxRunes {
+		reversalDocNo = string(runes[:gl.DocNoMaxRunes])
 	}
 	reverseDate := now.Format("2006-01-02")
 	if reverseDate < journal.Date {
@@ -329,6 +334,24 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 		}
 	}
 	return nil
+}
+
+// generalBookCode picks the company's active general journal book (booktype 1) by type —
+// book codes are user-defined, so the poster never assumes "JV".
+func (p *GLPoster) generalBookCode(ctx context.Context, scope Scope) (string, error) {
+	page, err := p.ledger.List(ctx, glScope(scope), "journal-books", "", 1, 1000, gl.ListFilter{})
+	if err != nil {
+		return "", err
+	}
+	books := make([]gl.Master, 0, len(page.Items))
+	for _, raw := range page.Items {
+		var book gl.Master
+		if err := json.Unmarshal(raw, &book); err != nil {
+			return "", err
+		}
+		books = append(books, book)
+	}
+	return gl.ChooseBookCode(books, gl.BookTypeGeneral)
 }
 
 // findJournal looks up a GL journal by its exact document number.
@@ -519,10 +542,14 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		})
 	}
 	description := fmt.Sprintf("บันทึกจำหน่ายสินทรัพย์ %s (%s)", asset.AssetCode, asset.ThaiName())
+	book, err := p.generalBookCode(ctx, scope)
+	if err != nil {
+		return nil, nil, err
+	}
 	journalInput := &gl.Journal{
 		DocNo:       journalDocNo,
 		Date:        disposal.DisposalDate,
-		BookCode:    "JV",
+		BookCode:    book,
 		FiscalYear:  disposal.DisposalDate[:4],
 		Description: description,
 		Reference:   disposal.DocNo,
@@ -542,7 +569,7 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		Version:      posted.Version,
 		DocNo:        journalDocNo,
 		Date:         disposal.DisposalDate,
-		BookCode:     "JV",
+		BookCode:     book,
 		FiscalYear:   disposal.DisposalDate[:4],
 		Description:  description,
 		Reference:    disposal.DocNo,

@@ -1,6 +1,7 @@
 import { authFetch, getAuthSession, restoreAuthSession } from "./client-auth-session";
 import type { GLCommand, GLPage, GLRecord, GLResource } from "./general-ledger";
 import { extractMessage, getString, isRecord } from "./workspace-api";
+import { normalizeLanguage } from "./i18n";
 
 const projectionWaitMs = 15_000;
 const projectionBackoffMs = [100, 250, 500, 1000];
@@ -75,7 +76,9 @@ export function commandErrorInfo(payload: unknown, status: number): { code: stri
   const body = isRecord(payload) ? payload : {};
   const code = (getString(body, "code") ?? getString(body, "errorcode") ?? "").trim();
   const raw = extractMessage(payload) ?? "";
-  const serverThai = raw.trim() && thaiText.test(raw) ? raw.trim() : "";
+  // message follows Accept-Language; message_th is always the backend's Thai text for the same error (Thai first — UAT S3 2026-09-24)
+  const thaiCopy = (getString(body, "message_th") ?? "").trim();
+  const serverThai = raw.trim() && thaiText.test(raw) ? raw.trim() : thaiText.test(thaiCopy) ? thaiCopy : "";
   const message = serverThai || commandCodeMessages[code] || (status === 409 ? "ข้อมูลถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดใหม่" : genericCommandMessage);
   const field = getString(body, "field") ?? commandCodeFields[code] ?? "";
   return { code, message, field };
@@ -88,6 +91,16 @@ function waitForProjection(delay: number, signal: AbortSignal) {
     const timer = setTimeout(() => { signal.removeEventListener("abort", onAbort); resolve(); }, delay);
     signal.addEventListener("abort", onAbort, { once: true });
   });
+}
+
+/** Language picked in the app (same key the main menu keeps) — sent as Accept-Language so the backend answers in the
+ *  app's language instead of the browser's (a browser set to en-US used to get English text, which the screen dropped). */
+function appLanguage(): string {
+  try {
+    return normalizeLanguage(typeof localStorage === "undefined" ? "th" : localStorage.getItem("user_language") ?? "th");
+  } catch {
+    return "th";
+  }
 }
 
 export async function glRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -104,7 +117,7 @@ export async function glRequest<T>(path: string, init?: RequestInit): Promise<T>
       signal?.throwIfAborted();
       const response = await authFetch(`/api/gl/${path}`, { ...init, signal, cache: "no-store", headers: {
         Authorization: `Bearer ${auth.token}`, "x-bc-backend-url": auth.backendUrl,
-        "Content-Type": "application/json", ...init?.headers,
+        "Content-Type": "application/json", "Accept-Language": appLanguage(), ...init?.headers,
       } });
       const payload = await response.json().catch(() => ({})) as { success?: boolean; data: T; message?: string; code?: string; errorcode?: string; error?: { message?: string } };
       signal?.throwIfAborted();

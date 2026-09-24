@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { glRequest } from "@/lib/general-ledger-api";
 import { emptyReportFilters, fetchReport } from "./gl-reports";
@@ -11,5 +13,13 @@ describe("process preview company scope",()=>{
     await fetchReport(name,applied);
     query=new URLSearchParams(vi.mocked(glRequest).mock.calls.at(-1)![0].split("?")[1]);
     expect(query.has("companywide")).toBe(false);expect(applied).not.toHaveProperty("companywide");
+  });
+});
+// adversarial review 2026-09-24: the book column shows the book name only when ReportGrid gets the company books
+describe("every ReportGrid gets the journal books",()=>{
+  it("passes books= so the bookcode column shows names, not raw codes",()=>{
+    const dir=resolve(process.cwd(),"src","app","gl");
+    const missing=readdirSync(dir).filter((name)=>name.endsWith(".tsx")).flatMap((name)=>[...readFileSync(resolve(dir,name),"utf8").matchAll(/<ReportGrid\b[\s\S]*?\/>/g)].filter((match)=>!/\bbooks=/.test(match[0])).map(()=>name));
+    expect(missing).toEqual([]);
   });
 });

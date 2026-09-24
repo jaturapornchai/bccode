@@ -3,6 +3,12 @@
 import { useBackendDictionary, useBackendText, type BackendTextFn } from "@/components/backend-text-provider";
 
 import { authFetch } from "@/lib/client-auth-session";
+import type { BackendLanguageDictionary } from "@/lib/backend-language";
+import {
+  type SettingsRequestError,
+  settingsRequestError,
+  userFacingErrorText,
+} from "@/components/system-settings/user-facing-error";
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   Building2,
@@ -682,6 +688,7 @@ export function CompanyBranchTreeView({
   onRefresh,
 }: CompanyBranchTreeViewProps) {
   const tr = useBackendText();
+  const dictionary = useBackendDictionary();
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
   const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -732,9 +739,9 @@ export function CompanyBranchTreeView({
     });
     const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
     if (!res.ok || json.success === false) {
-      throw new Error(json.message || tr("st_select_company_load_failed", "เลือกบริษัทสำหรับโหลดข้อมูลไม่สำเร็จ"));
+      throw settingsRequestError(res.status, json);
     }
-  }, [auth, workspace, tr]);
+  }, [auth, workspace]);
 
   // Active languages for multilingual names
   const editorLanguages = useMemo(() => {
@@ -780,7 +787,7 @@ export function CompanyBranchTreeView({
       });
       const jsonComp = await resComp.json();
       if (!resComp.ok || jsonComp.success === false) {
-        throw new Error(jsonComp.message || tr("st_load_company_data_failed", "โหลดข้อมูลบริษัทไม่สำเร็จ"));
+        throw settingsRequestError(resComp.status, jsonComp);
       }
       if (jsonComp.success && Array.isArray(jsonComp.data)) {
         setCompanies(jsonComp.data.filter(isVisibleOrganizationRecord));
@@ -793,18 +800,20 @@ export function CompanyBranchTreeView({
       });
       const jsonBranch = await resBranch.json();
       if (!resBranch.ok || jsonBranch.success === false) {
-        throw new Error(jsonBranch.message || tr("st_load_branch_data_failed", "โหลดข้อมูลสาขาไม่สำเร็จ"));
+        throw settingsRequestError(resBranch.status, jsonBranch);
       }
       if (jsonBranch.success && Array.isArray(jsonBranch.data)) {
         setBranches(jsonBranch.data.filter(isVisibleOrganizationRecord));
       }
     } catch (e) {
-      setLoadError(e instanceof Error && e.message ? e.message : tr("st_load_org_structure_failed", "โหลดข้อมูลโครงสร้างองค์กรไม่สำเร็จ"));
+      setLoadError(
+        userFacingErrorText(e, language, dictionary, tr("st_load_org_structure_failed", "โหลดข้อมูลโครงสร้างองค์กรไม่สำเร็จ")),
+      );
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [auth, ensureActiveWorkspaceHolding, mainApiUrl, tr]);
+  }, [auth, dictionary, ensureActiveWorkspaceHolding, language, mainApiUrl, tr]);
 
   useEffect(() => {
     void loadData();
@@ -970,9 +979,7 @@ export function CompanyBranchTreeView({
         };
       };
       if (!response.ok || payload.success === false) {
-        throw new Error(
-          typeof payload.message === "string" ? payload.message : tr("st_logo_upload_failed", "อัปโหลดโลโก้ไม่สำเร็จ"),
-        );
+        throw settingsRequestError(response.status, payload);
       }
       // Backend (image_r2.go) stores images as private R2 objects and only returns
       // holdingcode/filename/category — no URL. We construct the proxy URI
@@ -989,7 +996,7 @@ export function CompanyBranchTreeView({
       const proxyUri = `/goapi/s3/file/${pathSegments.join("/")}`;
       setFormLogoUri(proxyUri);
     } catch (error) {
-      setLogoError(error instanceof Error && error.message ? error.message : tr("st_logo_upload_failed", "อัปโหลดโลโก้ไม่สำเร็จ"));
+      setLogoError(userFacingErrorText(error, language, dictionary, tr("st_logo_upload_failed", "อัปโหลดโลโก้ไม่สำเร็จ")));
     } finally {
       setLogoUploading(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
@@ -1146,7 +1153,7 @@ export function CompanyBranchTreeView({
 
       const json = (await res.json().catch(() => ({}))) as OrganizationSaveResponse;
       if (!res.ok || json.success === false) {
-        setSaveError(saveErrorMessage(json.message, formType, tr));
+        setSaveError(saveErrorMessage(settingsRequestError(res.status, json), tr, language, dictionary));
         return;
       }
       if (json.success) {
@@ -1255,7 +1262,8 @@ export function CompanyBranchTreeView({
         }
       }
     } catch (e) {
-      setSaveError(e instanceof Error && e.message ? e.message : tr("st_save_data_failed", "บันทึกข้อมูลไม่สำเร็จ"));
+      // Network/runtime errors and raw backend text (e.g. "holdingcode invalid") never reach the user.
+      setSaveError(userFacingErrorText(e, language, dictionary, tr("st_save_data_failed", "บันทึกข้อมูลไม่สำเร็จ")));
       console.error(e);
     } finally {
       setSaving(false);
@@ -2141,8 +2149,13 @@ export function CompanyBranchTreeView({
   );
 }
 
-function saveErrorMessage(message: string | undefined, formType: OrganizationFormType, tr: BackendTextFn): string {
-  void formType;
+function saveErrorMessage(
+  error: SettingsRequestError,
+  tr: BackendTextFn,
+  language: LanguageCode,
+  dictionary: BackendLanguageDictionary,
+): string {
+  const message = error.message;
   switch (message) {
     case "branch code is required":
       return tr("st_enter_branch_code", "กรุณากรอกรหัสสาขา");
@@ -2157,7 +2170,7 @@ function saveErrorMessage(message: string | undefined, formType: OrganizationFor
     case "branch code is exists":
       return tr("st_branch_code_exists_in_company", "รหัสสาขานี้มีอยู่แล้วในบริษัทนี้");
     default:
-      if (message?.includes("duplicate key")) return tr("st_duplicate_code", "รหัสนี้ซ้ำกับข้อมูลเดิม");
-      return message || tr("st_save_data_failed", "บันทึกข้อมูลไม่สำเร็จ");
+      if (message.includes("duplicate key")) return tr("st_duplicate_code", "รหัสนี้ซ้ำกับข้อมูลเดิม");
+      return `${tr("st_save_data_failed", "บันทึกข้อมูลไม่สำเร็จ")}: ${userFacingErrorText(error, language, dictionary)}`;
   }
 }

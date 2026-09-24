@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { THAI_ADDRESS_SUBKEYS } from "@/components/system-settings/types";
-import { getSystemSettingConfig } from "./system-setting-screens";
+import { getSystemSettingConfig, USER_FORM_SECTION_KEYS } from "./system-setting-screens";
 
 describe("system setting screen configs", () => {
+  // UAT S7 2026-09-24: "ใช้งานได้ถึงวันที่" was declared on the user config but no form section listed it
+  it("shows every user field in a user form section, including the access expiry date", () => {
+    const sectionKeys = new Set<string>(Object.values(USER_FORM_SECTION_KEYS).flat());
+    const fields = getSystemSettingConfig("user")?.fields.map((field) => field.key) ?? [];
+
+    expect(fields).toContain("accessexpirydate");
+    expect(USER_FORM_SECTION_KEYS.accessStatus).toContain("accessexpirydate");
+    expect(fields.filter((key) => !sectionKeys.has(key))).toEqual([]);
+  });
+
   it("uses the immutable guidfixed field when deleting product units and allows all companies", () => {
     const config = getSystemSettingConfig("productunit");
 

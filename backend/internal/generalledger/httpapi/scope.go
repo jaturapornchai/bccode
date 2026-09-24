@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	authmodels "smlcloudplatform/internal/authentication/models"
 	gl "smlcloudplatform/internal/generalledger"
@@ -43,19 +44,25 @@ func resolveScope(ctx context.Context, request microservice.IContext, connect fu
 		}
 		result.Scope.Branch = branchCode
 	}
-	var role string
+	var role, timezone string
 	var permSetsJSON, accessScopesJSON []byte
-	err = db.QueryRowContext(ctx, `SELECT m.role, m.permission_sets, m.access_scopes FROM holding_members m JOIN users u ON u.id=m.user_id JOIN holdings h ON h.code=m.holding_code WHERE m.holding_code=$1 AND m.user_id::text=$2 AND m.is_active=true AND u.is_active=true AND h.is_active=true`, u.HoldingCode, u.UID).Scan(&role, &permSetsJSON, &accessScopesJSON)
+	var expiryDate sql.NullTime
+	err = db.QueryRowContext(ctx, `SELECT m.role, m.permission_sets, m.access_scopes, m.access_expiry_date, COALESCE(h.profile->'settings'->>'timezone', '') FROM holding_members m JOIN users u ON u.id=m.user_id JOIN holdings h ON h.code=m.holding_code WHERE m.holding_code=$1 AND m.user_id::text=$2 AND m.is_active=true AND u.is_active=true AND h.is_active=true`, u.HoldingCode, u.UID).Scan(&role, &permSetsJSON, &accessScopesJSON, &expiryDate, &timezone)
 	if err != nil || strings.TrimSpace(role) == "" {
 		return result, errScopeDenied
 	}
+	// วันหมดอายุการเข้าใช้งาน: ใช้ได้ถึงสิ้นวันตามเขตเวลาของกลุ่มกิจการ — กฎเดียวกับ login/organization
+	// (authmodels.AccessEndsAt); session หรือ API/MCP token ที่ออกก่อนหมดอายุต้องถูกปิดที่นี่ด้วย
+	if expiryDate.Valid && authmodels.AccessExpired(authmodels.AccessEndsAt(expiryDate.Time, timezone), time.Now()) {
+		return result, errAccessExpired
+	}
 	manager := strings.EqualFold(role, "OWNER") || strings.EqualFold(role, "ADMIN")
-	// Verified API/MCP contexts already enforce their stored company allow-list.
-	// Browser sessions must revalidate membership scopes on every GL request.
-	_, tokenRequest := request.(*mcpGLContext)
-	if !tokenRequest && !sessionScopeAllowed(accessScopesJSON, manager, companyCode, u.BranchUID) {
+	// Every GL request revalidates membership scopes, API/MCP token requests included
+	// (u.UID is then the token issuer): a token never reaches further than its issuer now.
+	if !sessionScopeAllowed(accessScopesJSON, manager, companyCode, u.BranchUID) {
 		return result, errScopeDenied
 	}
+	_, tokenRequest := request.(*mcpGLContext)
 	companyWide := sessionScopeAllowed(accessScopesJSON, manager, companyCode, "")
 	if tokenRequest {
 		// Legacy tokens may retain a narrower branch grant than their owner.
@@ -90,6 +97,9 @@ func resolveScope(ctx context.Context, request microservice.IContext, connect fu
 	return result, nil
 }
 
+// sessionScopeAllowed checks the stored access scopes for the company/branch that
+// resolveScope already verified as active. A holding rule covers them through the
+// shared predicates; it grants access only, never GL permissions.
 func sessionScopeAllowed(raw []byte, manager bool, company, branch string) bool {
 	var scopes []authmodels.AccessScope
 	// The central schema historically represents an empty manager grant as {}.

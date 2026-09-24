@@ -94,6 +94,7 @@ import {
 import {
   getSystemSettingConfig,
   systemSettingLabel,
+  USER_FORM_SECTION_KEYS,
   type SystemSettingConfig,
   type SystemSettingField,
   type SystemSettingOption,
@@ -103,6 +104,7 @@ import {
   CompanyScopeSearchPicker,
   BranchScopeSearchPicker,
   PortalDropdownList,
+  toggleHoldingScopeRules,
 } from "@/components/system-settings/field-editors/holding-scope-editor";
 import { PermissionSetsEditor } from "@/components/system-settings/field-editors/permission-sets-editor";
 import { ProductCategoryTreeView } from "./product-category-tree-view";
@@ -110,7 +112,6 @@ import { ProductCategoryItemsEditor } from "./product-category-items-editor";
 import { ProductGroupTreeView } from "./product-group-tree-view";
 import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
-import { BulkUserImport } from "./bulk-user-import";
 import { ProductBomEditor } from "./product-bom-editor";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
 import { useAuthenticatedImageDisplaySource } from "@/components/authenticated-image";
@@ -218,6 +219,13 @@ import {
   fieldBackendKeys,
   fieldValueAliases,
 } from "@/components/system-settings/utils";
+import {
+  JsonFieldError,
+  dictionaryMessage,
+  offersExistingLogin,
+  settingsRequestError,
+  userFacingErrorText,
+} from "@/components/system-settings/user-facing-error";
 import { StatCard } from "@/components/system-settings/stat-card";
 
 // Enable only after the Backend can issue and deliver one-time reset links.
@@ -736,7 +744,6 @@ export function SystemSettingsScreen({
   // เพิ่ม/แก้ไข/ลบ ที่บทบาทของผู้ใช้ทำได้บนจอนี้ (role permission: "<screen>:<action>")
   const screenActions = useScreenActions(auth, workspace, route);
   const [records, setRecords] = useState<SettingRecord[]>([]);
-  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -934,30 +941,34 @@ export function SystemSettingsScreen({
     [backendLanguage, language],
   );
   const errorText = useCallback(
-    (error: unknown, fallback = text("requestFailed")) => {
-      const message = error instanceof Error ? error.message : "";
-      return message
-        ? backendText(backendLanguage, message, message)
-        : fallback;
-    },
-    [backendLanguage, text],
+    (error: unknown, fallback = text("requestFailed")) =>
+      userFacingErrorText(error, language, backendLanguage, fallback),
+    [backendLanguage, language, text],
   );
   const errorTextRef = useRef(errorText);
   errorTextRef.current = errorText;
   const saveSuccessText = useCallback(
     (message?: string) => {
       const success = text("saveSucceeded");
-      const detail = String(message ?? "").trim();
+      // Only a languages.tsv key is shown; raw backend text never reaches a toast.
+      const detail = dictionaryMessage(backendLanguage, message);
       return detail && detail !== success && detail !== text("saved")
         ? `${success}: ${detail}`
         : success;
     },
-    [text],
+    [backendLanguage, text],
   );
   const saveErrorText = useCallback(
     (error: unknown) => {
       return `${text("saveFailed")}: ${errorText(error)}`;
     },
+    [errorText, text],
+  );
+  const payloadErrorText = useCallback(
+    (error: unknown) =>
+      error instanceof JsonFieldError
+        ? `${text("jsonInvalid")} (${error.fieldLabel})`
+        : errorText(error, text("jsonInvalid")),
     [errorText, text],
   );
   const title = config
@@ -1044,7 +1055,7 @@ export function SystemSettingsScreen({
           forbiddenListRequestKeysRef.current.add(forbiddenKey);
         }
         if (!response.ok || isFailed(payload))
-          throw new Error(extractMessage(payload) ?? "");
+          throw settingsRequestError(response.status, payload);
         const nextRecords = normalizeRecords(payload, currentConfig);
         const scopedRecords =
           currentConfig.slug === "holidayscreen" ||
@@ -1105,7 +1116,7 @@ export function SystemSettingsScreen({
       );
       const payload = (await response.json()) as unknown;
       if (!response.ok || isFailed(payload))
-        throw new Error(extractMessage(payload) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, payload);
       const detail = normalizeRecords(payload, currentConfig)[0];
       if (!detail)
         throw new Error(
@@ -1147,7 +1158,7 @@ export function SystemSettingsScreen({
         );
         const payload = (await response.json()) as unknown;
         if (!response.ok || isFailed(payload))
-          throw new Error(extractMessage(payload) ?? text("requestFailed"));
+          throw settingsRequestError(response.status, payload);
         const records = normalizeRecords(payload, currentConfig);
         const match =
           records.find((record) =>
@@ -1673,10 +1684,7 @@ export function SystemSettingsScreen({
         backendLanguage,
       );
     } catch (error) {
-      setNotice({
-        type: "error",
-        text: error instanceof Error ? error.message : text("jsonInvalid"),
-      });
+      setNotice({ type: "error", text: payloadErrorText(error) });
       return;
     }
 
@@ -1874,21 +1882,48 @@ export function SystemSettingsScreen({
     setSaving(true);
     setNotice(null);
     try {
-      const response = await authFetch(
-        `/api/system-settings/${currentConfig.slug}${editing && id ? `/${encodeURIComponent(id)}` : ""}`,
-        {
-          method: editing ? "PUT" : "POST",
-          headers: requestHeaders(auth),
-          body: JSON.stringify({
-            ...payload,
-            backendUrl: auth.backendUrl,
-            ...workspaceTenantPayload(workspace),
-          }),
-        },
-      );
-      const data = (await response.json()) as unknown;
+      const send = (extra: Record<string, unknown> = {}) =>
+        authFetch(
+          `/api/system-settings/${currentConfig.slug}${editing && id ? `/${encodeURIComponent(id)}` : ""}`,
+          {
+            method: editing ? "PUT" : "POST",
+            headers: requestHeaders(auth),
+            body: JSON.stringify({
+              ...payload,
+              ...extra,
+              backendUrl: auth.backendUrl,
+              ...workspaceTenantPayload(workspace),
+            }),
+          },
+        );
+      let response = await send();
+      let data = (await response.json()) as unknown;
+      // รหัสผู้ใช้นี้มีบัญชีเข้าระบบอยู่แล้ว: ถามก่อนนำบัญชีเดิมเข้ากลุ่ม (backend ต้องได้ addexistinguser ชัดเจน)
+      if (!editing && currentConfig.slug === "user" && offersExistingLogin(response.status, data)) {
+        const userCode = stringValue(payload.username);
+        const attach = await confirm({
+          title: backendText(backendLanguage, "ss_existing_login_title", "รหัสผู้ใช้นี้มีบัญชีเข้าระบบอยู่แล้ว"),
+          description: backendText(
+            backendLanguage,
+            "ss_existing_login_desc",
+            "รหัสผู้ใช้ “{0}” มีบัญชีเข้าระบบอยู่แล้ว ต้องการนำบัญชีเดิมเข้ากลุ่มกิจการนี้หรือไม่? บัญชีเดิมเข้าระบบด้วยรหัสผ่านหรือ Google แบบเดิม ได้สิทธิ์ตามที่ตั้งในหน้านี้ และชื่อผู้ใช้ที่กรอกจะบันทึกลงบัญชีนั้น ส่วนอีเมลเปลี่ยนได้เฉพาะบัญชีที่ยังไม่มีใครเข้าสู่ระบบ (ถ้าเจ้าของบัญชีเข้าระบบแล้ว ให้คงอีเมลเดิมหรือเว้นช่องอีเมลว่าง)",
+          ).replace("{0}", userCode),
+          confirmLabel: backendText(backendLanguage, "ss_existing_login_attach", "นำบัญชีเดิมเข้ากลุ่มนี้"),
+          cancelLabel: backendText(backendLanguage, "ss_existing_login_change_code", "กลับไปเปลี่ยนรหัสผู้ใช้"),
+          tone: "warning",
+        });
+        if (!attach) {
+          setNotice({
+            type: "error",
+            text: backendText(backendLanguage, "ss_existing_login_not_added", "ยังไม่ได้เพิ่มผู้ใช้ — เปลี่ยนช่อง “รหัสผู้ใช้” เป็นรหัสที่ยังไม่มีผู้ใช้ แล้วกดบันทึกอีกครั้ง"),
+          });
+          return;
+        }
+        response = await send({ addexistinguser: true });
+        data = (await response.json()) as unknown;
+      }
       if (!response.ok || isFailed(data))
-        throw new Error(extractMessage(data) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, data);
       const saveMessage = extractMessage(data);
       const savedRecord = normalizeRecords(data, currentConfig)[0] ?? null;
       const savedBusinessLookup = firstRecordValue(
@@ -2068,7 +2103,7 @@ export function SystemSettingsScreen({
       );
       const data = (await response.json()) as unknown;
       if (!response.ok || isFailed(data))
-        throw new Error(extractMessage(data) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, data);
       setNotice({ type: "success", text: text("saved") });
       notifyWorkspaceChanged();
       if (wasSelected) setAllRecordTotal((current) => Math.max(0, current - 1));
@@ -2107,10 +2142,7 @@ export function SystemSettingsScreen({
         backendLanguage,
       );
     } catch (error) {
-      setNotice({
-        type: "error",
-        text: error instanceof Error ? error.message : text("jsonInvalid"),
-      });
+      setNotice({ type: "error", text: payloadErrorText(error) });
       return;
     }
 
@@ -2131,7 +2163,7 @@ export function SystemSettingsScreen({
       );
       const data = (await response.json()) as unknown;
       if (!response.ok || isFailed(data))
-        throw new Error(extractMessage(data) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, data);
       setNotice({ type: "success", text: text("saved") });
       notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
@@ -2191,7 +2223,7 @@ export function SystemSettingsScreen({
       });
       const data = (await response.json()) as unknown;
       if (!response.ok || isFailed(data))
-        throw new Error(extractMessage(data) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, data);
       setNotice({ type: "success", text: text("resetPasswordDone") });
     } catch (error) {
       setNotice({ type: "error", text: errorText(error) });
@@ -2222,7 +2254,7 @@ export function SystemSettingsScreen({
       );
       const data = (await response.json()) as unknown;
       if (!response.ok || isFailed(data))
-        throw new Error(extractMessage(data) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, data);
       setNotice({ type: "success", text: text("saved") });
       notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
@@ -2268,7 +2300,7 @@ export function SystemSettingsScreen({
       );
       const payload = (await response.json()) as unknown;
       if (!response.ok || isFailed(payload))
-        throw new Error(extractMessage(payload) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, payload);
       const options =
         isRecord(payload) && Array.isArray(payload.data)
           ? payload.data.filter(isProductUnitOption)
@@ -2310,11 +2342,11 @@ export function SystemSettingsScreen({
       });
       const payload = (await response.json()) as unknown;
       if (!response.ok || isFailed(payload))
-        throw new Error(extractMessage(payload) ?? text("requestFailed"));
+        throw settingsRequestError(response.status, payload);
       setStandardUnitDialog(emptyStandardUnitDialog);
       setNotice({
         type: "success",
-        text: extractMessage(payload) ?? text("saved"),
+        text: dictionaryMessage(backendLanguage, extractMessage(payload)) || text("saved"),
       });
       notifyWorkspaceChanged();
       await loadRecords(auth, workspace, currentConfig);
@@ -3218,20 +3250,6 @@ export function SystemSettingsScreen({
                       <Plus />
                       {text("add")}
                     </Button>
-                    {currentConfig.slug === "user" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="shrink-0"
-                        onClick={() => setBulkImportOpen(true)}
-                        disabled={!auth}
-                        title={backendText(backendLanguage, "ss_import_users_from_excel_csv", "นำเข้าผู้ใช้จาก Excel/CSV")}
-                      >
-                        <UploadCloud />
-                        {backendText(backendLanguage, "import", "นำเข้า")}
-                      </Button>
-                    ) : null}
                   </>
                 ) : null}
               </div>
@@ -3316,16 +3334,6 @@ export function SystemSettingsScreen({
               </CardContent>
             </Card>
           )}
-
-          {bulkImportOpen && auth && workspace ? (
-            <BulkUserImport
-              open={bulkImportOpen}
-              onClose={() => setBulkImportOpen(false)}
-              holdingcode={workspace.shop.holdingcode}
-              authToken={auth.token}
-              onImported={() => void loadRecords(auth, workspace, config)}
-            />
-          ) : null}
 
           {standardUnitDialog.open ? (
             <StandardUnitDialog
@@ -5191,31 +5199,31 @@ function UserFormSections({
     : backendText(dictionary, "ss_to_let_the_user_sign", "ถ้าต้องการให้ผู้ใช้งานเข้าสู่ระบบด้วยอีเมล ให้กรอกอีเมลในช่องรหัสผู้ใช้ หรือ email ส่วนอีเมลที่ลงทะเบียนมีไว้สำหรับส่งอีเมลเท่านั้น");
   const sections = [
     {
-      keys: ["avatar", "uid", "username", "userprofilename", "email"],
+      keys: USER_FORM_SECTION_KEYS.signIn,
       title: backendText(dictionary, "ss_sign_in_account", "บัญชีเข้าสู่ระบบ"),
       description: loginHint,
     },
     {
-      keys: ["role", "permissionsets"],
+      keys: USER_FORM_SECTION_KEYS.role,
       title: backendText(dictionary, "user_role", "สิทธิ์ผู้ใช้งาน"),
       description:
         backendText(dictionary, "ss_pick_the_access_level_then", "เลือกระดับสิทธิ์ แล้วเพิ่มสิทธิ์การใช้งานสำเร็จรูปได้หลายชุด (สร้างชุดที่ขั้น 2 สิทธิ์การใช้งาน)"),
     },
     {
-      keys: ["isaccessdisabled"],
+      keys: USER_FORM_SECTION_KEYS.accessStatus,
       title: backendText(dictionary, "access_status", "สถานะเข้าใช้งาน"),
       description:
         backendText(dictionary, "ss_enable_or_temporarily_disable_this", "เปิดหรือปิดการเข้าใช้งานของผู้ใช้นี้ ปิดชั่วคราวได้โดยไม่ต้องลบ"),
     },
     {
-      keys: ["accessscopes"],
+      keys: USER_FORM_SECTION_KEYS.accessScopes,
       title:
         backendText(dictionary, "ss_accessible_companies_and_branches", "บริษัทและสาขาที่เข้าได้"),
       description:
         backendText(dictionary, "ss_select_the_company_first_then", "ต้องเลือกบริษัทก่อน แล้วเลือกว่าจะเข้าได้ทุกสาขาหรือเฉพาะสาขาที่กำหนด"),
     },
     {
-      keys: ["position", "department", "lineuserid", "linedisplayname"],
+      keys: USER_FORM_SECTION_KEYS.organization,
       title:
         backendText(dictionary, "ss_organization_and_line", "ข้อมูลองค์กรและ LINE"),
       description:
@@ -6344,10 +6352,7 @@ function PermissionLinkUserSelector({
         );
         const payload = (await response.json()) as unknown;
         if (!response.ok || isFailed(payload))
-          throw new Error(
-            extractMessage(payload) ??
-              backendText(dictionary, "request_failed", "Request failed."),
-          );
+          throw settingsRequestError(response.status, payload);
         if (cancelled) return;
         setUsers(
           normalizeRecords(payload, userConfig)
@@ -6357,9 +6362,12 @@ function PermissionLinkUserSelector({
       } catch (loadError) {
         if (!cancelled)
           setError(
-            loadError instanceof Error && loadError.message
-              ? loadError.message
-              : backendText(dictionary, "request_failed", "Request failed."),
+            userFacingErrorText(
+              loadError,
+              language,
+              dictionary,
+              backendText(dictionary, "request_failed", "Request failed."),
+            ),
           );
       } finally {
         if (!cancelled) setLoading(false);
@@ -6369,7 +6377,7 @@ function PermissionLinkUserSelector({
     return () => {
       cancelled = true;
     };
-  }, [auth, canSearch, dictionary, searchText, userConfig, workspace]);
+  }, [auth, canSearch, dictionary, language, searchText, userConfig, workspace]);
 
   function choose(user: PermissionLinkUserOption) {
     if (user.isDisabled) return;
@@ -6571,10 +6579,7 @@ function PermissionLinkMultiSelectEditor({
         );
         const payload = (await response.json()) as unknown;
         if (!response.ok || isFailed(payload))
-          throw new Error(
-            extractMessage(payload) ??
-              backendText(dictionary, "request_failed", "Request failed."),
-          );
+          throw settingsRequestError(response.status, payload);
         if (cancelled) return;
         setOptions(
           normalizeRecords(payload, sourceConfig)
@@ -6584,9 +6589,12 @@ function PermissionLinkMultiSelectEditor({
       } catch (loadError) {
         if (!cancelled)
           setError(
-            loadError instanceof Error && loadError.message
-              ? loadError.message
-              : backendText(dictionary, "request_failed", "Request failed."),
+            userFacingErrorText(
+              loadError,
+              language,
+              dictionary,
+              backendText(dictionary, "request_failed", "Request failed."),
+            ),
           );
       } finally {
         if (!cancelled) setLoading(false);
@@ -6596,7 +6604,7 @@ function PermissionLinkMultiSelectEditor({
     return () => {
       cancelled = true;
     };
-  }, [auth, dictionary, isApproval, sourceConfig, workspace]);
+  }, [auth, dictionary, isApproval, language, sourceConfig, workspace]);
 
   function toggle(code: string, checked: boolean) {
     if (readOnly || !setForm || !selectedUserCode) return;
@@ -7092,9 +7100,12 @@ function UserAccessAuditReportPanel({
       .catch((loadError: unknown) => {
         if (loadError instanceof DOMException && loadError.name === "AbortError") return;
         setError(
-          loadError instanceof Error && loadError.message
-            ? loadError.message
-            : backendText(dictionary, "ss_failed_to_load_the_user", "โหลดรายงานสิทธิ์ผู้ใช้งานไม่สำเร็จ"),
+          userFacingErrorText(
+            loadError,
+            language,
+            dictionary,
+            backendText(dictionary, "ss_failed_to_load_the_user", "โหลดรายงานสิทธิ์ผู้ใช้งานไม่สำเร็จ"),
+          ),
         );
       })
       .finally(() => setLoading(false));
@@ -7143,7 +7154,14 @@ function UserAccessAuditReportPanel({
                 void loadUserAccessAuditData(auth, workspace, language)
                   .then(setData)
                   .catch((loadError: unknown) =>
-                    setError(loadError instanceof Error ? loadError.message : String(loadError)),
+                    setError(
+                      userFacingErrorText(
+                        loadError,
+                        language,
+                        dictionary,
+                        backendText(dictionary, "ss_failed_to_load_the_user", "โหลดรายงานสิทธิ์ผู้ใช้งานไม่สำเร็จ"),
+                      ),
+                    ),
                   )
                   .finally(() => setLoading(false));
               }}
@@ -7479,7 +7497,7 @@ async function loadAuditRecords(
   });
   const payload = (await response.json()) as unknown;
   if (!response.ok || isFailed(payload)) {
-    throw new Error(extractMessage(payload) ?? `Failed to load ${slug}`);
+    throw settingsRequestError(response.status, payload);
   }
   return normalizeRecords(payload, config);
 }
@@ -7500,7 +7518,7 @@ async function loadAuditHoldingData(
   });
   const payload = (await response.json()) as unknown;
   if (!response.ok || isFailed(payload)) {
-    throw new Error(extractMessage(payload) ?? "Failed to load holding data");
+    throw settingsRequestError(response.status, payload);
   }
   const holdingRecords = extractListRecords(payload);
   const activeHolding = activeHoldingCode.toLowerCase();
@@ -7819,7 +7837,8 @@ function HoldingScopeRulesEditor({
       signal: controller.signal,
     })
       .then(async (response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok)
+          throw settingsRequestError(response.status, await response.json().catch(() => null));
         return response.json() as Promise<unknown>;
       })
       .then(async (payload) => {
@@ -7867,9 +7886,12 @@ function HoldingScopeRulesEditor({
         if (cancelled) return;
         if (catchError instanceof DOMException && catchError.name === "AbortError") return;
         setError(
-          catchError instanceof Error && catchError.message
-            ? catchError.message
-            : backendText(dictionary, "ss_failed_to_load_companies_and", "โหลดบริษัท/สาขาไม่สำเร็จ"),
+          userFacingErrorText(
+            catchError,
+            language,
+            dictionary,
+            backendText(dictionary, "ss_failed_to_load_companies_and", "โหลดบริษัท/สาขาไม่สำเร็จ"),
+          ),
         );
         setLoading(false);
       });
@@ -7890,19 +7912,25 @@ function HoldingScopeRulesEditor({
     }
   }, [activeBusinessCode, holdingSelected, selectedCompanyScopes]);
 
-  function commit(nextRules: HoldingScopeRule[]) {
-    if (readOnly || !setForm) return;
+  function commit(nextRules: HoldingScopeRule[]): HoldingScopeRule[] {
     const normalized = normalizeHoldingScopeRules(nextRules);
+    if (readOnly || !setForm) return normalized;
     // functional update — อ่าน form ล่าสุดเสมอ กัน closure เก่าทับการแก้ก่อนหน้า
     setForm((current) => ({ ...current, [field.key]: normalized }));
+    return normalized;
   }
 
+  // จำบริษัท/สาขาที่เลือกไว้ก่อนติ๊ก "ใช้ได้ทั้งกลุ่มกิจการ" เพื่อคืนให้ตอนเอาติ๊กออก — ผูกกับค่าที่
+  // commit ไปจริง ถ้า form กลายเป็นของ record อื่นแล้วจะไม่คืนค่าข้าม record
+  const picksBeforeHoldingRef = useRef<{ picks: HoldingScopeRule[]; committed: unknown }>({ picks: [], committed: null });
+
   function setHoldingScope(enabled: boolean) {
-    if (enabled) {
-      commit(holdingSelected ? rules : [{ scopetype: "holding", allbranches: false }, ...rules]);
-      return;
-    }
-    commit(rules.filter((rule) => rule.scopetype !== "holding"));
+    const remembered = picksBeforeHoldingRef.current;
+    const picks = remembered.committed === form[field.key] ? remembered.picks : [];
+    const next = toggleHoldingScopeRules(rules, enabled, picks);
+    // The holding rule stands alone: it already covers every company and branch.
+    const committed = commit(next.rules);
+    picksBeforeHoldingRef.current = { picks: next.picksBeforeHolding, committed };
   }
 
   function addCompanyScope(businessCode: string) {
@@ -8068,7 +8096,7 @@ function HoldingScopeRulesEditor({
           <span className="grid gap-1">
             <span>{backendText(dictionary, "ss_apply_to_whole_business_group", "ใช้ได้ทั้งกลุ่มกิจการ")}</span>
             <span className="text-xs font-normal text-muted-foreground">
-              {backendText(dictionary, "ss_when_checked_this_user_or", "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา")}
+              {backendText(dictionary, "ss_when_checked_this_user_or", "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา รวมถึงบริษัทและสาขาที่เพิ่มภายหลังโดยอัตโนมัติ")}
             </span>
           </span>
         </label>
@@ -8262,6 +8290,7 @@ function normalizeHoldingScopeRules(value: unknown, fallbackCompanies?: unknown)
   const result: HoldingScopeRule[] = [];
   for (const item of source) {
     const normalized = normalizeHoldingScopeRule(item);
+    if (!normalized) continue;
     const key = `${normalized.scopetype}|${normalized.businesscode ?? ""}|${normalized.branchcode ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -8280,18 +8309,22 @@ function holdingScopeRawArray(value: unknown): unknown[] {
   return trimmed.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
-function normalizeHoldingScopeRule(value: unknown): HoldingScopeRule {
+// Only an explicit holding rule grants the whole group; a rule with an unknown type or
+// without a company is dropped, never widened to holding.
+function normalizeHoldingScopeRule(value: unknown): HoldingScopeRule | null {
   if (typeof value === "string") {
     const businessCode = normalizeBusinessCode(value);
-    return businessCode
-      ? { scopetype: "company", businesscode: businessCode, allbranches: true }
-      : { scopetype: "holding" };
+    return businessCode ? { scopetype: "company", businesscode: businessCode, allbranches: true } : null;
   }
   const record = isRecord(value) ? value : {};
   const scopeType = normalizeHoldingScopeType(record.scopetype ?? record.scopeType);
-  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.companycode ?? record.companyCode);
-  const branchCode = normalizeScopeBranchCode(record.branchcode ?? record.branchCode ?? record.code);
-  if (scopeType === "holding" || !businessCode) return { scopetype: "holding", allbranches: false };
+  if (scopeType === "holding") return { scopetype: "holding" };
+  // The company uid is the company code (PostgreSQL central schema).
+  const businessCode = normalizeBusinessCode(
+    record.businesscode ?? record.businessCode ?? record.companycode ?? record.companyCode ?? record.companyuid,
+  );
+  if (!scopeType || !businessCode) return null;
+  const branchCode = normalizeScopeBranchCode(record.branchcode ?? record.branchCode ?? record.branchuid ?? record.code);
   if (scopeType === "company" || booleanLikeValue(record.allbranches ?? record.allBranches)) {
     return { scopetype: "company", businesscode: businessCode, allbranches: true };
   }
@@ -8309,11 +8342,12 @@ function hasInvalidHoldingScopeRules(value: unknown, required: boolean): boolean
   });
 }
 
-function normalizeHoldingScopeType(value: unknown): HoldingScopeType {
+function normalizeHoldingScopeType(value: unknown): HoldingScopeType | "" {
   const text = stringValue(value).toLowerCase();
+  if (text === "holding") return "holding";
   if (text === "company" || text === "business") return "company";
   if (text === "branch") return "branch";
-  return "holding";
+  return "";
 }
 
 function normalizeScopeBranchCode(value: unknown): string {
@@ -11752,10 +11786,7 @@ function ImageUploadFieldEditor({
       });
       const payload = (await response.json()) as unknown;
       if (!response.ok || isFailed(payload))
-        throw new Error(
-          extractMessage(payload) ??
-            uploadUiText(language, "imageUploadFailed"),
-        );
+        throw settingsRequestError(response.status, payload);
       const uri = extractUploadUri(payload);
       if (!uri) throw new Error(uploadUiText(language, "imageUploadFailed"));
       return uri;
@@ -11775,14 +11806,14 @@ function ImageUploadFieldEditor({
           [field.thumbnailKey]: thumbUri,
         });
       } else {
-        const uri = await uploadOne(await resizeLogoFile(file));
+        const uri = await uploadOne(
+          await resizeLogoFile(file, backendText(dictionary, "ss_only_png_supported", "รองรับเฉพาะไฟล์ PNG")),
+        );
         setForm({ ...form, [field.key]: uri });
       }
     } catch (uploadError) {
       setError(
-        uploadError instanceof Error && uploadError.message
-          ? uploadError.message
-          : uploadUiText(language, "imageUploadFailed"),
+        userFacingErrorText(uploadError, language, dictionary, uploadUiText(language, "imageUploadFailed")),
       );
     } finally {
       setUploading(false);
@@ -12078,10 +12109,7 @@ function ImageGalleryFieldEditor({
       });
       const payload = (await response.json()) as unknown;
       if (!response.ok || isFailed(payload))
-        throw new Error(
-          extractMessage(payload) ??
-            uploadUiText(language, "imageUploadFailed"),
-        );
+        throw settingsRequestError(response.status, payload);
       const uri = extractUploadUri(payload);
       if (!uri) throw new Error(uploadUiText(language, "imageUploadFailed"));
       if (typeof replaceIndex === "number") {
@@ -12091,9 +12119,7 @@ function ImageGalleryFieldEditor({
       }
     } catch (uploadError) {
       setError(
-        uploadError instanceof Error && uploadError.message
-          ? uploadError.message
-          : uploadUiText(language, "imageUploadFailed"),
+        userFacingErrorText(uploadError, language, dictionary, uploadUiText(language, "imageUploadFailed")),
       );
     } finally {
       setUploading(false);
@@ -12513,7 +12539,7 @@ function BranchMultiSelectFieldEditor({
       signal: controller.signal,
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error("Load shops failed");
+        if (!res.ok) throw settingsRequestError(res.status, await res.json().catch(() => null));
         return res.json() as Promise<any>;
       })
       .then(async (shopsPayload) => {
@@ -12535,8 +12561,8 @@ function BranchMultiSelectFieldEditor({
             cache: "no-store",
             signal: controller.signal,
           });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const payload = await response.json();
+          const payload = await response.json().catch(() => null);
+          if (!response.ok) throw settingsRequestError(response.status, payload);
           const records = extractListRecords(payload);
           return records
             .map(recordToBranchOption)
@@ -12564,9 +12590,12 @@ function BranchMultiSelectFieldEditor({
         )
           return;
         setError(
-          catchError instanceof Error && catchError.message
-            ? catchError.message
-            : backendText(dictionary, "ss_failed_to_load_branches", "โหลดสาขาไม่สำเร็จ"),
+          userFacingErrorText(
+            catchError,
+            language,
+            dictionary,
+            backendText(dictionary, "ss_failed_to_load_branches", "โหลดสาขาไม่สำเร็จ"),
+          ),
         );
         setLoading(false);
       });
@@ -12991,7 +13020,7 @@ function CompanyMultiSelectFieldEditor({
       signal: controller.signal,
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error("Load shops failed");
+        if (!res.ok) throw settingsRequestError(res.status, await res.json().catch(() => null));
         return res.json() as Promise<any>;
       })
       .then(async (shopsPayload) => {
@@ -13003,9 +13032,12 @@ function CompanyMultiSelectFieldEditor({
       .catch((catchError: unknown) => {
         if (cancelled) return;
         setError(
-          catchError instanceof Error && catchError.message
-            ? catchError.message
-            : backendText(dictionary, "ss_failed_to_load_companies", "โหลดข้อมูลบริษัทไม่สำเร็จ"),
+          userFacingErrorText(
+            catchError,
+            language,
+            dictionary,
+            backendText(dictionary, "ss_failed_to_load_companies", "โหลดข้อมูลบริษัทไม่สำเร็จ"),
+          ),
         );
         setLoading(false);
       });
@@ -15097,8 +15129,15 @@ function buildPayload(
         setByPath(payload, alias, companyList);
       }
     }
-    else if (field.type === "json")
-      setByPath(payload, field.key, parseJsonField(value, field.key));
+    else if (field.type === "json") {
+      let parsed: unknown;
+      try {
+        parsed = parseJsonField(value, field.key);
+      } catch {
+        throw new JsonFieldError(fieldLabel(field, language, config, dictionary));
+      }
+      setByPath(payload, field.key, parsed);
+    }
     else if (field.type === "checkbox")
       setByPath(payload, field.key, Boolean(value));
     else if (field.type === "radio")
@@ -15666,12 +15705,12 @@ function extractUploadUri(payload: unknown): string {
   );
 }
 
-async function resizeLogoFile(file: File): Promise<File> {
+async function resizeLogoFile(file: File, notPngMessage: string): Promise<File> {
   // PNG-only: reject other formats with a clear error before processing.
   const isPngByName = /\.png$/i.test(file.name);
   const isPngByType = file.type === "image/png";
   if (!isPngByName && !isPngByType) {
-    throw new Error("โลโก้ต้องเป็นไฟล์ PNG เท่านั้น");
+    throw new Error(notPngMessage);
   }
 
   const objectUrl = URL.createObjectURL(file);

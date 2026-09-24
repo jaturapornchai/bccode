@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"smlcloudplatform/pkg/microservice"
 	"smlcloudplatform/pkg/microservice/models"
@@ -26,6 +27,7 @@ type scopeDriver struct {
 	role, sets           string
 	scopes               string
 	memberErr, branchErr error
+	expiry               driver.Value // holding_members.access_expiry_date (nil = ไม่มีกำหนด)
 	grants               map[string]string
 	grantErrors          map[string]error
 }
@@ -52,7 +54,7 @@ func (c *scopeConn) QueryContext(_ context.Context, q string, args []driver.Name
 		if c.d.memberErr != nil {
 			return nil, c.d.memberErr
 		}
-		return &scopeRows{cols: []string{"role", "permission_sets", "access_scopes"}, data: []driver.Value{c.d.role, []byte(c.d.sets), []byte(c.d.scopes)}}, nil
+		return &scopeRows{cols: []string{"role", "permission_sets", "access_scopes", "access_expiry_date", "timezone"}, data: []driver.Value{c.d.role, []byte(c.d.sets), []byte(c.d.scopes), c.d.expiry, "Asia/Bangkok"}}, nil
 	case strings.Contains(q, "FROM role_permissions"):
 		code := fmt.Sprint(args[len(args)-1].Value)
 		if err := c.d.grantErrors[code]; err != nil {
@@ -108,7 +110,7 @@ func TestScopeFailsClosed(t *testing.T) {
 		{name: "missing or inactive member", db: scopeDriver{memberErr: sql.ErrNoRows}},
 		{name: "member query failure", db: scopeDriver{memberErr: lookupErr}},
 		{name: "invalid permission sets", db: scopeDriver{role: "STAFF", sets: "broken"}},
-		{name: "partial grants then query failure", db: scopeDriver{role: "STAFF", sets: `["EXTRA"]`, grants: map[string]string{"STAFF": `["jv-journal","jv-journal:update"]`}, grantErrors: map[string]error{"EXTRA": lookupErr}}},
+		{name: "partial grants then query failure", db: scopeDriver{role: "STAFF", sets: `["EXTRA"]`, grants: map[string]string{"STAFF": `["gl-journals","gl-journals:update"]`}, grantErrors: map[string]error{"EXTRA": lookupErr}}},
 		{name: "invalid grant JSON", db: scopeDriver{role: "STAFF", sets: `[]`, grants: map[string]string{"STAFF": "broken"}}},
 		{name: "branch query failure", branch: "B", db: scopeDriver{role: "OWNER", sets: `[]`, branchErr: lookupErr}},
 		{name: "inactive branch", branch: "B", db: scopeDriver{role: "OWNER", sets: `[]`, branchErr: sql.ErrNoRows}},
@@ -135,10 +137,39 @@ func TestScopeFailsClosed(t *testing.T) {
 		})
 	}
 }
+
+// วันหมดอายุการเข้าใช้งาน: ใช้ได้ถึงสิ้นวันที่กำหนด (เขตเวลากลุ่มกิจการ) — เลยแล้วทุกคำขอ GL ได้ 403 user_access_expired
+// ไม่ใช่แค่ตอน login (session/token ที่ออกก่อนหมดอายุต้องถูกปิดด้วย)
+func TestScopeAccessExpiry(t *testing.T) {
+	bangkok := time.FixedZone("ICT", 7*60*60)
+	now := time.Now().In(bangkok)
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC) // lib/pq คืน DATE เป็น 00:00 UTC
+	request := scopeContext{user: models.UserInfo{HoldingCode: "H", BusinessCode: "C", UID: "U"}}
+	resolve := func(expiry driver.Value) (requestScope, error) {
+		db := scopeDB(t, &scopeDriver{role: "OWNER", sets: `[]`, scopes: `{}`, expiry: expiry})
+		return resolveScope(context.Background(), request, func(string) (*sql.DB, error) { return db, nil })
+	}
+	for name, expiry := range map[string]driver.Value{"no expiry": nil, "expires today (usable through end of day)": today, "expires tomorrow": today.AddDate(0, 0, 1)} {
+		if _, err := resolve(expiry); err != nil {
+			t.Fatalf("%s: denied: %v", name, err)
+		}
+	}
+	scope, err := resolve(today.AddDate(0, 0, -1))
+	if !errors.Is(err, errAccessExpired) {
+		t.Fatalf("expired yesterday: err=%v", err)
+	}
+	if len(scope.Permissions) != 0 {
+		t.Fatalf("permissions leaked for expired member: %+v", scope.Permissions)
+	}
+	if status, payload := errorPayloadFor(err, "th"); status != 403 || payload.Code != "user_access_expired" || !strings.Contains(payload.Message, "หมดอายุ") {
+		t.Fatalf("expired payload = %d %+v", status, payload)
+	}
+}
+
 func TestScopeValidPermissions(t *testing.T) {
 	for _, role := range []string{"OWNER", "ADMIN", "STAFF"} {
 		t.Run(role, func(t *testing.T) {
-			db := scopeDB(t, &scopeDriver{role: role, sets: `["EXTRA"]`, scopes: `[{"scopetype":"company","companyuid":"C","allbranches":true}]`, grants: map[string]string{"STAFF": `["jv-journal"]`, "EXTRA": `["jv-journal:update"]`}})
+			db := scopeDB(t, &scopeDriver{role: role, sets: `["EXTRA"]`, scopes: `[{"scopetype":"company","companyuid":"C","allbranches":true}]`, grants: map[string]string{"STAFF": `["gl-journals"]`, "EXTRA": `["gl-journals:update"]`}})
 			request := scopeContext{user: models.UserInfo{HoldingCode: "H", BusinessCode: "C", UID: "U", BranchUID: "B"}}
 			result, err := resolveScope(context.Background(), request, func(database string) (*sql.DB, error) {
 				if database != "bcai_projection" {
@@ -153,13 +184,29 @@ func TestScopeValidPermissions(t *testing.T) {
 				t.Fatalf("scope lost: %+v", result.Scope)
 			}
 			if role == "STAFF" {
-				if result.Permissions["*"] || !allowed(result.Permissions, "jv-journal", "update") || allowed(result.Permissions, "pv-journal", "update") {
+				if result.Permissions["*"] || !allowed(result.Permissions, "gl-journals", "update") || allowed(result.Permissions, "gl-post", "update") {
 					t.Fatalf("unexpected grants: %+v", result.Permissions)
 				}
 			} else if !result.Permissions["*"] {
 				t.Fatal("owner/admin lost wildcard")
 			}
 		})
+	}
+}
+
+// A holding-wide scope opens every active company/branch but must not grant GL permissions.
+func TestHoldingScopeKeepsRolePermissions(t *testing.T) {
+	db := scopeDB(t, &scopeDriver{role: "STAFF", sets: `[]`, scopes: `[{"scopetype":"holding"}]`, grants: map[string]string{"STAFF": `["gl-journals"]`}})
+	request := scopeContext{user: models.UserInfo{HoldingCode: "H", BusinessCode: "C", UID: "U", BranchUID: "B"}}
+	result, err := resolveScope(context.Background(), request, func(string) (*sql.DB, error) { return db, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.CompanyWide || result.Scope.Branch != "B" {
+		t.Fatalf("holding scope lost company/branch access: %+v", result)
+	}
+	if result.Permissions["*"] || !allowed(result.Permissions, "gl-journals", "") || allowed(result.Permissions, "gl-post", "") {
+		t.Fatalf("holding scope changed permissions: %+v", result.Permissions)
 	}
 }
 
@@ -176,6 +223,9 @@ func TestCurrentSessionAccessScopes(t *testing.T) {
 		{name: "other branch denied", scopes: `[{"scopetype":"branch","companyuid":"C","branchuid":"B"}]`, company: "C", branch: "OTHER"},
 		{name: "explicit owner scope respected", scopes: `[{"scopetype":"company","companyuid":"OTHER","allbranches":true}]`, company: "C", manager: true},
 		{name: "whole company", scopes: `[{"scopetype":"company","companyuid":"C","allbranches":true}]`, company: "C", branch: "B", allowed: true},
+		{name: "holding rule covers company", scopes: `[{"scopetype":"holding"}]`, company: "C", allowed: true},
+		{name: "holding rule covers branch", scopes: `[{"scopetype":"holding"}]`, company: "C", branch: "B", allowed: true},
+		{name: "unknown rule type denied", scopes: `[{"scopetype":"everything","companyuid":"C"}]`, company: "C"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := sessionScopeAllowed([]byte(tc.scopes), tc.manager, tc.company, tc.branch); got != tc.allowed {

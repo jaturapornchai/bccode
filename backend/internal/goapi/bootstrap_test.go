@@ -1,6 +1,7 @@
 package goapi
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -115,5 +116,57 @@ func TestGoAPIRouteSurfaceExcludesOperationalEndpoints(t *testing.T) {
 	e.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("domain route status = %d, want 401 without a token", rec.Code)
+	}
+}
+
+// UAT S22 2026-09-24: ด่านตรวจสิทธิ์ goapi ต้องคืนรหัส (code) + ข้อความตามภาษาผู้ใช้ ไม่ใช่อังกฤษเปล่า ๆ
+func TestGoAPIAuthFailReturnsCodeAndTranslatedMessage(t *testing.T) {
+	e := echo.New()
+	serve := func(lang string) map[string]any {
+		t.Helper()
+		e := echo.New()
+		New().RegisterRoutes(e.Group("/goapi"), "/goapi", nil)
+		req := httptest.NewRequest(http.MethodPost, "/goapi/api/report/tax/wht", strings.NewReader(`{}`))
+		req.Header.Set("Accept-Language", lang)
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("status = %d, want 401", rec.Code)
+		}
+		var body map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+			t.Fatal(err)
+		}
+		return body
+	}
+	if body := serve("th"); body["code"] != "UNAUTHORIZED" || body["message"] != "ไม่มีสิทธิ์เข้าถึงข้อมูล" || body["success"] != false {
+		t.Fatalf("th body = %v", body)
+	}
+	if body := serve("en-US,en;q=0.9"); body["code"] != "UNAUTHORIZED" || body["message"] != "Unauthorized" {
+		t.Fatalf("en body = %v", body)
+	}
+
+	for _, tc := range []struct {
+		status          int
+		code, key, lang string
+		want            string
+	}{
+		{http.StatusForbidden, "FORBIDDEN", "goapi_holding_forbidden", "en", "You do not have access to this business group. Choose the business group you signed in to."},
+		{http.StatusBadRequest, "INVALID_PAYLOAD", "goapi_request_payload_invalid", "th", "ข้อมูลที่ส่งมาไม่ถูกต้อง กรุณาเปิดจอใหม่แล้วลองอีกครั้ง"},
+		{http.StatusUnauthorized, "HOLDING_REQUIRED", "holding_required", "th", "ยังไม่ได้เลือกกิจการ"},
+	} {
+		req := httptest.NewRequest(http.MethodPost, "/goapi/api/report/tax/wht", nil)
+		req.Header.Set("Accept-Language", tc.lang)
+		rec := httptest.NewRecorder()
+		if err := goAPIAuthFail(e.NewContext(req, rec), tc.status, tc.code, tc.key); err != nil {
+			t.Fatal(err)
+		}
+		var body map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+			t.Fatal(err)
+		}
+		if rec.Code != tc.status || body["code"] != tc.code || body["message"] != tc.want {
+			t.Errorf("%s: status=%d body=%v", tc.code, rec.Code, body)
+		}
 	}
 }

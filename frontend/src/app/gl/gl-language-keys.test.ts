@@ -9,6 +9,7 @@ const languageColumns = ["th", "en", "cn", "ja", "km", "ko", "lo", "my", "vi", "
 const glSources = [
   ...readdirSync(glDir).filter((name) => name.endsWith(".tsx")).map((name) => resolve(glDir, name)),
   resolve(process.cwd(), "src", "lib", "general-ledger.ts"),
+  resolve(process.cwd(), "src", "lib", "gl-journal-details.ts"),
 ];
 
 function backendLanguageRows(): Map<string, Record<string, string>> {
@@ -29,12 +30,13 @@ function stripComments(source: string) {
 }
 
 describe("general ledger language keys", () => {
+  // vat_* = VAT detail hints (vat_ui_*), 2026-09-24; the claim-window hint reuses the backend error keys gl_err_vat_claim_*.
   it("every gl_* key used in GL code exists in languages.tsv with all language cells", () => {
     const rows = backendLanguageRows();
     const missing = new Set<string>();
     for (const file of glSources) {
       const source = stripComments(readFileSync(file, "utf8"));
-      for (const match of source.matchAll(/["'`](gl_[a-z0-9_]+|common_[a-z0-9_]+|menu_[a-z0-9_]+)["'`]/g)) {
+      for (const match of source.matchAll(/["'`](gl_[a-z0-9_]+|common_[a-z0-9_]+|menu_[a-z0-9_]+|vat_[a-z0-9_]+)["'`]/g)) {
         const key = match[1];
         const row = rows.get(key);
         if (!row) { missing.add(`${key}:row`); continue; }
@@ -52,8 +54,9 @@ describe("general ledger language keys", () => {
       // Allowed carriers of Thai fallback text: tr("gl_key", "ไทย") calls and ["gl_key", "ไทย"] GLLabel tuples.
       // menu_* keys are the shared main-menu texts (planned-workflow card reused by GLPendingPanel, 2026-09-19).
       // wht_* keys are the shared 50 Tawi form/income/condition labels reused by the GL withholding details (2026-09-23).
+      // vat_* keys are the VAT claim-window hints; out-of-window text reuses the backend error keys (2026-09-24).
       const source = stripComments(readFileSync(file, "utf8"))
-        .replace(/\btr\(\s*"(?:gl|common|menu|wht)_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\)/g, "")
+        .replace(/\btr\(\s*"(?:gl|common|menu|wht|vat)_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\)/g, "")
         .replace(/\[\s*"gl_[a-z0-9_]+"\s*,\s*"(?:[^"\\]|\\.)*"\s*\]/g, "");
       source.split(/\r?\n/).forEach((line, index) => {
         if (/[฀-๿]/.test(line)) leftovers.push(`${file.split(/[\\/]/).pop()}:${index + 1}`);

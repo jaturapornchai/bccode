@@ -53,7 +53,8 @@ func TestPostgresMembershipFailsClosed(t *testing.T) {
 
 	centraldbtest.Exec(t, db, `UPDATE holding_members SET is_active = true`)
 	owner, err := repo.FindByHoldingCodeAndUserUID(ctx, "h", uid)
-	if err != nil || owner.Role != models.ROLE_OWNER || owner.IsAccessDisabled || len(owner.AccessScopes) != 1 || owner.AccessScopes[0].CompanyUID != "C" {
+	// A manager without explicit scopes reads back as the holding rule, not a company snapshot.
+	if err != nil || owner.Role != models.ROLE_OWNER || owner.IsAccessDisabled || len(owner.AccessScopes) != 1 || !models.HasHoldingScope(owner.AccessScopes) {
 		t.Fatalf("active owner lost scope: %+v %v", owner, err)
 	}
 	if _, err = repo.FindByHoldingCodeAndUserUID(ctx, "h", "member"); err == nil {
@@ -166,5 +167,106 @@ func TestPostgresSaveFullProfileCreatesUserMembership(t *testing.T) {
 	}
 	if _, err := repo.FindByHoldingCodeAndUserUID(ctx, "h", ownerUID); err != nil {
 		t.Fatalf("owner membership lost: %v", err)
+	}
+}
+
+func TestPostgresHydrateAccessScopesAgainstCentralSchema(t *testing.T) {
+	db := centraldbtest.New(t)
+	ctx := context.Background()
+	centraldbtest.Exec(t, db, `INSERT INTO holdings (code, name) VALUES ('h', 'Holding'), ('other', 'Other')`)
+	centraldbtest.Exec(t, db, `INSERT INTO companies (holding_code, code, name) VALUES ('h', 'C01', 'Company'), ('h', 'C02', 'Closed'), ('other', 'X01', 'Other company')`)
+	centraldbtest.Exec(t, db, `UPDATE companies SET is_active = false WHERE code = 'C02'`)
+	centraldbtest.Exec(t, db, `INSERT INTO branches (holding_code, company_code, code, name) VALUES ('h', 'C01', '00001', 'Branch'), ('other', 'X01', '00002', 'Other branch')`)
+
+	got, err := hydrateAccessScopes(ctx, db, "h", []models.AccessScope{
+		{ScopeType: "company", BusinessCode: "c01", AllBranches: true},
+		{ScopeType: "branch", CompanyUID: "C01", BranchCode: "1"},
+	})
+	if err != nil || len(got) != 2 || got[0].CompanyUID != "C01" || got[1].BranchUID != "00001" {
+		t.Fatalf("hydrated = %+v err=%v", got, err)
+	}
+	for _, foreign := range []models.AccessScope{
+		{ScopeType: "company", BusinessCode: "X01"},
+		{ScopeType: "branch", CompanyUID: "C01", BranchUID: "00002"},
+	} {
+		if _, err := hydrateAccessScopes(ctx, db, "h", []models.AccessScope{foreign}); !errors.Is(err, errAccessScopeInvalid) {
+			t.Fatalf("foreign scope %+v err = %v", foreign, err)
+		}
+	}
+
+	repo := &ShopUserPostgresRepository{db: db}
+	if code, err := repo.ResolveCompanyUID(ctx, "h", "c01"); err != nil || code != "C01" {
+		t.Fatalf("active company = %q %v", code, err)
+	}
+	if _, err := repo.ResolveCompanyUID(ctx, "h", "C02"); err == nil {
+		t.Fatal("closed company resolved: a holding scope would open it")
+	}
+}
+
+// The member list (access audit) and the detail must agree that an OWNER/ADMIN without explicit
+// scopes is holding-wide, and a company-restricted ADMIN must not narrow or remove that member
+// (review 2026-09-24).
+func TestPostgresHoldingWideAdminListedAndProtectedFromCompanyAdmin(t *testing.T) {
+	db := centraldbtest.New(t)
+	ctx := context.Background()
+	uids := map[string]string{}
+	for _, username := range []string{"owner", "group-admin", "admin-a"} {
+		var uid string
+		if err := db.QueryRow(`INSERT INTO users (username) VALUES ($1) RETURNING id::text`, username).Scan(&uid); err != nil {
+			t.Fatal(err)
+		}
+		uids[username] = uid
+	}
+	centraldbtest.Exec(t, db, `INSERT INTO holdings (code, name, created_by) VALUES ('h', 'Holding', $1)`, uids["owner"])
+	centraldbtest.Exec(t, db, `INSERT INTO companies (holding_code, code, name) VALUES ('h', 'C01', 'Company A'), ('h', 'C02', 'Company B')`)
+	centraldbtest.Exec(t, db, `INSERT INTO holding_members (holding_code, user_id, role) VALUES ('h', $1, 'OWNER'), ('h', $2, 'ADMIN')`, uids["owner"], uids["group-admin"])
+	centraldbtest.Exec(t, db, `INSERT INTO holding_members (holding_code, user_id, role, access_scopes) VALUES ('h', $1, 'ADMIN', $2)`,
+		uids["admin-a"], `[{"scopetype":"company","companyuid":"C01","businesscode":"C01","allbranches":true}]`)
+	repo := &ShopUserPostgresRepository{db: db}
+
+	list, _, err := repo.FindByUserInShopPageWithProfileMatches(ctx, "h", msmodels.Pageable{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	listed := map[string]models.ShopUser{}
+	for _, member := range list {
+		listed[member.Username] = member
+	}
+	for _, username := range []string{"owner", "group-admin"} {
+		detail, err := repo.FindByHoldingCodeAndUsername(ctx, "h", username)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for source, scopes := range map[string][]models.AccessScope{"list": listed[username].AccessScopes, "detail": detail.AccessScopes} {
+			if len(scopes) != 1 || !models.HasHoldingScope(scopes) {
+				t.Fatalf("%s %s scopes = %+v, want the single holding rule", source, username, scopes)
+			}
+		}
+	}
+	if scopes := listed["admin-a"].AccessScopes; len(scopes) != 1 || scopes[0].CompanyUID != "C01" {
+		t.Fatalf("company admin listed with %+v", scopes)
+	}
+
+	svc := NewShopUserService(repo)
+	err = svc.SaveUserFullProfile("h", "admin-a", &models.UserRoleRequest{
+		Username: "group-admin", Role: models.ROLE_ADMIN,
+		AccessScopes: []models.AccessScope{{ScopeType: "company", CompanyUID: "C01", BusinessCode: "C01", AllBranches: true}},
+	})
+	if !errors.Is(err, errAccessScopeExceedsGrantor) {
+		t.Fatalf("narrowing a holding-wide admin: err = %v", err)
+	}
+	if err := svc.DeleteUserPermissionShop("h", "admin-a", "group-admin"); !errors.Is(err, errAccessScopeExceedsGrantor) {
+		t.Fatalf("removing a holding-wide admin: err = %v", err)
+	}
+	var role, scopes string
+	if err := db.QueryRow(`SELECT role, access_scopes::text FROM holding_members WHERE holding_code = 'h' AND user_id = $1`, uids["group-admin"]).Scan(&role, &scopes); err != nil {
+		t.Fatalf("holding-wide admin row: %v", err)
+	}
+	if role != "ADMIN" || (scopes != "[]" && scopes != "{}") {
+		t.Fatalf("holding-wide admin row changed: role=%s scopes=%s", role, scopes)
+	}
+
+	if err := repo.SaveFullProfile(ctx, "h", &models.UserRoleRequest{Username: "x", UserUID: "not-a-uuid"}); !errors.Is(err, errMemberRequestInvalid) {
+		t.Fatalf("malformed useruid: err = %v, want errMemberRequestInvalid", err)
 	}
 }

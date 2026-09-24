@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/lib/pq"
 )
@@ -28,11 +29,26 @@ type subledgerMutation struct {
 	statementAliases map[string]string
 	reversalDate     string
 	reallocatedDocs  []string
+	// previousPartners - snapshot คู่ค้าที่ใบนี้ฝังไว้ก่อนคำสั่งนี้ (ตาม partner_code): แถวที่ผู้ใช้ไม่ได้แก้ไม่ต้องตรง version ทะเบียนปัจจุบัน
+	previousPartners map[string]SubledgerPartner
+	// previousWithholdings - รายการภาษีหักก่อนคำสั่งนี้ (ตาม id): แถวเดิมที่เปลี่ยนคู่ค้า/ทิศทางต้องไม่พก snapshot ของคู่ค้าเดิมไปด้วย
+	previousWithholdings map[string]SubledgerWithholding
+	// previousVats - รายการภาษีมูลค่าเพิ่มก่อนคำสั่งนี้ (ตาม id): แถวที่ไม่เปลี่ยนไม่ต้องผ่านกฎที่เพิ่มภายหลัง (vatRowNeedsRules)
+	previousVats map[string]SubledgerVat
+	// strict - ผ่านรายการ: ตรวจกฎทุกแถวแม้ไม่เปลี่ยน เพราะแถวจะเข้ารายงานภาษีทันที
+	strict bool
 }
 
 func cloneJournalDetails(details *JournalDetails) (*JournalDetails, error) {
 	if details == nil {
 		return &JournalDetails{}, nil
+	}
+	// การคัดลอกผ่าน JSON แปลงยอดว่างเป็น "0" — ช่องที่ "ว่าง" ต่างจาก "0" จริง (อัตรา VAT) ต้องตรวจก่อนตรงนี้
+	if err := requireVatRates(details); err != nil {
+		return nil, err
+	}
+	if err := requireWithholdingRates(details); err != nil {
+		return nil, err
 	}
 	raw, err := json.Marshal(details)
 	if err != nil {
@@ -71,7 +87,15 @@ func (s *PostgresStore) syncJournalDetails(ctx context.Context, tx *sql.Tx, scop
 		if err = m.touchDetails(old.Details); err != nil {
 			return nil, err
 		}
+		m.previousPartners = map[string]SubledgerPartner{}
+		for _, p := range old.Details.Partners {
+			normalizePartner(&p)
+			m.previousPartners[p.Code] = p
+		}
+		m.rememberWithholdings(old.Details)
+		m.rememberVats(old.Details)
 	}
+	m.strict = action == "post"
 	if len(effectiveDate) > 0 {
 		m.reversalDate = effectiveDate[0]
 	}
@@ -291,7 +315,7 @@ func (m *subledgerMutation) amount(a Amount) error {
 	return nil
 }
 func subledgerID(id string) bool {
-	return len(id) <= 100 && strings.TrimSpace(id) == id && id != "" && !strings.ContainsAny(id, "\x00\r\n")
+	return utf8.RuneCountInString(id) <= 100 && strings.TrimSpace(id) == id && id != "" && !strings.ContainsAny(id, "\x00\r\n")
 }
 func subledgerCurrency(currency *string) error {
 	if *currency == "" {

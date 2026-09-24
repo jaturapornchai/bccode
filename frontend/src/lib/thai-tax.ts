@@ -5,6 +5,7 @@ import { apiFetch } from "./client-auth-session";
 import { catalogText } from "@/lib/catalog-text";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
 import type { LanguageCode } from "@/lib/i18n";
+import { companyDisplayName, type WorkspaceSession } from "@/lib/workspace-models";
 
 export interface ThaiTaxRecord {
   id: string;
@@ -22,6 +23,8 @@ export interface ThaiTaxRecord {
   whtamount?: string;
   remark?: string;
   status: "active" | "cancelled" | "excluded";
+  /** เลขที่ใบสำคัญอื่นที่ยังมีผลซึ่งบันทึกใบกำกับภาษีฉบับเดียวกัน (backend จับจากผู้ออกใบกำกับ + เลขที่) — ว่าง = ไม่ซ้ำ */
+  duplicatedocnos: string[];
 }
 
 
@@ -102,18 +105,26 @@ export interface VatRegisterSummary {
   amountbeforevat: string;
   vatamount: string;
   totalamount: string;
+  /** จำนวนแถวในงวดที่ใบกำกับฉบับเดียวกันถูกบันทึกในใบสำคัญอื่นด้วย (นับทั้งงวดโดย backend ไม่ใช่เฉพาะแถวที่โหลด) */
+  duplicatecount: number;
 }
 
 const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
 const WHT_REPORT_PATH = "/api/goapi/api/report/tax/wht";
 
 export interface WhtReportRow {
+  /** id ของแถวบนจอ — ใบสำคัญหนึ่งใบมีรายการภาษีหักได้หลายรายการ จึงใช้ journalid อย่างเดียวไม่ได้ */
+  rowid: string;
   journalid: string;
+  /** id ของรายการใน details.withholdings (backend ส่งเฉพาะแถวที่บันทึก) — ใช้จับคู่รายการแบบตรงตัว */
+  withholdingid?: string;
   docno: string;
   docdate: string;
   partnercode: string;
   partnername: string;
   taxid: string;
+  /** เลขสาขาภาษีของคู่ค้า 5 หลัก (00000 = สำนักงานใหญ่) — ว่าง = ไม่ทราบ */
+  branchno?: string;
   address: string;
   description: string;
   baseamount: string;
@@ -123,10 +134,15 @@ export interface WhtReportRow {
   ratepercent: string;
   /** recorded = ผู้ใช้บันทึกฐานภาษีในใบสำคัญ, inferred = ระบบประมาณจากบรรทัดบัญชี */
   taxbasesource: string;
+  /** แบบยื่น PND2 | PND3 | PND53: แถวที่บันทึก = ค่าในใบสำคัญ, แถวประมาณ = backend อ่านจากชื่อบัญชีภาษีหัก ณ ที่จ่าย
+   *  ("ภ.ง.ด.3"/"ภ.ง.ด.53"/"ภ.ง.ด.2"); "" = ระบุไม่ได้ ให้จอใช้ค่าเริ่มต้นเอง */
+  formtype: string;
   incometype: string;
   condition: number;
   paiddate: string;
   certificateno: string;
+  /** หมายเหตุของแถวที่ backend แปลตามภาษาผู้ใช้แล้ว เช่น "กลับรายการภายหลังในเดือน ..." (tax_wht_row_reversed_later) — ว่าง = ไม่มี */
+  note: string;
 }
 
 export interface WhtRateGroup {
@@ -154,6 +170,8 @@ export interface WhtReportParams {
   forms?: string[];
   limit?: number;
   offset?: number;
+  /** ภาษาที่เลือกในแอป — backend แปลข้อความ (ประเภทเงินได้, หมายเหตุ) ตามภาษานี้ ไม่ใช่ภาษาของเบราว์เซอร์ */
+  language?: LanguageCode;
 }
 
 export interface WhtReportResult {
@@ -167,7 +185,32 @@ export interface WhtReportResult {
 
 const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "" };
 const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [] };
-const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", vatamount: "0.00", totalamount: "0.00" };
+const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
+
+// taxCompanyLabel - ป้ายบริษัทบนหัวรายงาน: หัวบริษัทจาก backend (รายงานภาษีหัก ณ ที่จ่ายส่งมา) ก่อน
+// ทะเบียนภาษีมูลค่าเพิ่มไม่ส่งหัวบริษัท จึงใช้บริษัทที่ผู้ใช้เลือกไว้ใน workspace ของ session แทน — ใช้เฉพาะเมื่อ
+// รหัสกลุ่มกิจการ/บริษัทตรงกับที่จอแสดงอยู่ (ห้ามโชว์ชื่อบริษัทอื่นบนรายงานภาษี); ไม่รู้ชื่อ = รหัสบริษัท; ไม่มีรหัส = ""
+export function taxCompanyLabel(company: CompanyHeader | null, workspaceJson: string, holdingcode: string, businesscode: string): string {
+  if (company?.name) {
+    const code = company.code || businesscode;
+    return code ? `[${code}] ${company.name}` : company.name;
+  }
+  if (!businesscode) return "";
+  const workspace = parseWorkspace(workspaceJson);
+  if (workspace?.company && workspace.shop?.holdingcode === holdingcode && workspace.company.code === businesscode) {
+    return companyDisplayName(workspace.company);
+  }
+  return `[${businesscode}]`;
+}
+
+function parseWorkspace(json: string): WorkspaceSession | null {
+  try {
+    const value: unknown = json ? JSON.parse(json) : null;
+    return isRecord(value) && isRecord(value.shop) ? (value as unknown as WorkspaceSession) : null;
+  } catch {
+    return null;
+  }
+}
 
 // fetchWhtReport - รายการภาษีหัก ณ ที่จ่ายจากบัญชีแยกประเภทที่ผ่านรายการจริง
 // (backend โยงคู่ค้า/เลขผู้เสียภาษีจากหลักฐานประกอบ กรองตามแบบยื่น และรวมยอดทั้งงวดด้วย decimal)
@@ -176,7 +219,8 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
   if (!params.holdingcode || !params.businesscode) {
     return { ...empty, error: "company_required" };
   }
-  const result = await postApi(WHT_REPORT_PATH, params);
+  const { language, ...body } = params;
+  const result = await postApi(WHT_REPORT_PATH, body, language);
   if (!result.ok) {
     return { ...empty, error: result.error };
   }
@@ -184,25 +228,31 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
   if (!isRecord(payload) || !Array.isArray(payload.data)) {
     return { ...empty, error: "load_failed" };
   }
-  const rows = payload.data.filter(isRecord).map((rec): WhtReportRow => ({
+  const offset = params.offset ?? 0;
+  const rows = payload.data.filter(isRecord).map((rec, index): WhtReportRow => ({
+    rowid: whtRowId(toText(rec.journalid), offset + index),
     journalid: toText(rec.journalid),
+    withholdingid: toText(rec.withholdingid),
     docno: toText(rec.docno),
     docdate: toText(rec.docdate),
     partnercode: toText(rec.partnercode),
     partnername: toText(rec.partnername),
     taxid: toText(rec.taxid),
+    branchno: toText(rec.branchno),
     address: toText(rec.address),
     description: toText(rec.description),
     baseamount: toMoney(rec.baseamount),
     whtamount: toMoney(rec.whtamount),
     whtamounttext: toText(rec.whtamounttext),
-    netamount: toMoney(rec.netamount),
+    netamount: toMoneyOrBlank(rec.netamount),
     ratepercent: toText(rec.ratepercent),
     taxbasesource: toText(rec.taxbasesource),
+    formtype: toText(rec.formtype),
     incometype: toText(rec.incometype),
     condition: toCount(rec.condition, 0),
     paiddate: toText(rec.paiddate),
     certificateno: toText(rec.certificateno),
+    note: toText(rec.note),
   }));
   const summary = isRecord(payload.summary) ? payload.summary : {};
   return {
@@ -226,6 +276,56 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
   };
 }
 
+// whtRowId - ลำดับในผลทั้งงวด (offset + index) ทำให้ไม่ซ้ำแม้ใบเดียวมีหลายรายการเงินได้หรือหลายแบบยื่น
+export function whtRowId(journalid: string, position: number): string {
+  return `wht-${journalid}#${position}`;
+}
+
+// whtRegisterRecords - แถวภาษีหัก ณ ที่จ่ายในรูปทะเบียนเดียวกับภาษีมูลค่าเพิ่ม (ยอดทุกช่องมาจาก backend)
+// id = rowid เพื่อให้คลิกแถวแล้วได้รายการเงินได้ตัวนั้นจริง ไม่ใช่รายการแรกของใบสำคัญ
+export function whtRegisterRecords(rows: WhtReportRow[]): ThaiTaxRecord[] {
+  return rows.map((row) => ({
+    id: row.rowid,
+    docdate: row.docdate,
+    taxinvoiceno: row.docno,
+    counterpartyname: row.partnername,
+    taxid: row.taxid,
+    branchno: row.branchno ?? "",
+    isheadoffice: isHeadOfficeBranch(row.branchno ?? ""),
+    amountbeforevat: row.baseamount,
+    vatamount: "0.00",
+    totalamount: row.netamount,
+    whtamount: row.whtamount,
+    taxrate: row.ratepercent,
+    incometype: row.description,
+    remark: row.note || undefined,
+    status: "active",
+    duplicatedocnos: [],
+  }));
+}
+
+// แบบยื่นของแถว (form_type ที่บันทึก หรือที่ backend อ่านจากชื่อบัญชีภาษีหักของแถวประมาณ) → ค่า "ลำดับที่ในแบบ" ของใบ 50 ทวิ
+// ไม่รู้จัก = "" ให้จอใช้ค่าเริ่มต้นเอง — จอไม่เดาแบบยื่นจากรหัสบัญชี (ผังบัญชีแต่ละกิจการต่างกัน)
+const WHT_CERTIFICATE_FORM_BY_TYPE: Record<string, string> = { PND2: "2", PND3: "3", PND53: "53" };
+
+export function whtCertificateForm(formtype: string): string {
+  return WHT_CERTIFICATE_FORM_BY_TYPE[formtype.trim().toUpperCase()] ?? "";
+}
+
+// รหัสสาขา 00000 = สำนักงานใหญ่เท่านั้น; ช่องว่าง = ไม่ได้บันทึกสาขา ห้ามเดาว่าเป็นสำนักงานใหญ่
+export function isHeadOfficeBranch(branchno: string): boolean {
+  return branchno.trim() === "00000";
+}
+
+// นับเฉพาะตัวเลขเหมือน backend (missingTaxIDNotes/digitsOnly) — ขีดหรือช่องว่างคั่นไม่ทำให้ผิด
+export function hasThirteenDigitTaxId(taxid: string): boolean {
+  return taxid.replace(/\D/g, "").length === 13;
+}
+
+export function countTaxIdIssues(records: Pick<ThaiTaxRecord, "taxid">[]): number {
+  return records.filter((record) => !hasThirteenDigitTaxId(record.taxid)).length;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -237,6 +337,11 @@ function toMoney(value: unknown): string {
   return typeof value === "string" && MONEY_TEXT.test(value.trim()) ? value.trim() : "0.00";
 }
 
+// ยอดสุทธิว่างจาก backend = ยังไม่รู้ฐานภาษี (แถวประมาณที่แบ่งฐานไม่ได้) ไม่ใช่ 0 — คงว่างให้จอแสดง "—" แทนเลขติดลบ/ศูนย์ที่ไม่มีความหมาย
+function toMoneyOrBlank(value: unknown): string {
+  return typeof value === "string" && value.trim() === "" ? "" : toMoney(value);
+}
+
 // จำนวนแถว/จำนวนราย (ไม่ใช่เงิน) — เป็น integer จึงใช้ number ได้
 function toCount(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : fallback;
@@ -244,6 +349,11 @@ function toCount(value: unknown, fallback: number): number {
 
 function toText(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+// รายการข้อความ (เช่น เลขที่ใบสำคัญที่ซ้ำ) — ทิ้งค่าที่ไม่ใช่ข้อความหรือว่าง ไม่เดา
+function toTextList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim() !== "").map((item) => item.trim()) : [];
 }
 
 function toCompany(value: unknown): CompanyHeader {
@@ -262,12 +372,13 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
     counterpartyname: toText(row.counterpartyname),
     taxid: toText(row.taxid),
     branchno,
-    isheadoffice: branchno === "" || branchno === "00000",
+    isheadoffice: isHeadOfficeBranch(branchno),
     amountbeforevat: toMoney(row.amountbeforevat),
     vatamount: toMoney(row.vatamount),
     totalamount: toMoney(row.totalamount),
     // backend กรองเอกสารที่ยกเลิก/ตัดออกแล้ว จึงแสดงเป็น active ได้
     status: "active",
+    duplicatedocnos: toTextList(row.duplicatedocnos),
   };
 }
 
@@ -309,33 +420,50 @@ export type WhtCertificateResult =
   | { ok: true; pdf: Blob }
   | { ok: false; error: string; message?: string; field?: string };
 
+/** รายการภาษีหักที่บันทึกในใบสำคัญซึ่งใบ 50 ทวิ อ้างถึง — backend ใช้ยอด/แบบ/เงื่อนไข/ผู้รับเงินตามรายการนี้ และปฏิเสธค่าที่ไม่ตรง */
+export interface WhtCertificateRecordRef {
+  journalid: string;
+  withholdingid: string;
+}
+
 // requestWhtCertificatePdf - backend ตรวจข้อมูล คำนวณยอดรวม/ตัวอักษร และสร้าง PDF บนแบบฟอร์มกรมสรรพากร — จอแค่แสดง
 export async function requestWhtCertificatePdf(
   holdingcode: string,
   businesscode: string,
   certificate: WhtCertificateInput,
+  options: { record?: WhtCertificateRecordRef | null; language?: LanguageCode } = {},
 ): Promise<WhtCertificateResult> {
+  const record = options.record ? { journalid: options.record.journalid, withholdingid: options.record.withholdingid } : {};
   const res = await apiFetch(WHT_CERTIFICATE_PATH, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ holdingcode, businesscode, certificate }),
+    headers: taxRequestHeaders(options.language),
+    body: JSON.stringify({ holdingcode, businesscode, ...record, certificate }),
   }).catch(() => null);
   if (res === null) return { ok: false, error: "connection_error" };
   if ((res.headers.get("content-type") ?? "").startsWith("application/pdf")) {
     return { ok: true, pdf: await res.blob() };
   }
-  if (res.status === 401 || res.status === 403) return { ok: false, error: "unauthorized" };
+  if (res.status === 401) return { ok: false, error: "unauthorized" };
   const payload: unknown = await res.json().catch(() => null);
+  // 403 ของ backend มี code ที่บอกทางแก้ (wht_cert_scope_denied = เลือกบริษัท/สาขาที่มีสิทธิ์, user_access_expired = ติดต่อผู้ดูแล)
+  // — ส่งต่อให้จอแปล; 403 ที่ไม่มี code (BFF) ยังเป็น unauthorized (review 2026-09-24)
+  if (res.status === 403 && !(isRecord(payload) && toText(payload.code))) return { ok: false, error: "unauthorized" };
   if (isRecord(payload)) {
     return { ok: false, error: toText(payload.code) || "load_failed", message: toText(payload.message) || undefined, field: toText(payload.field) || undefined };
   }
   return { ok: false, error: "load_failed" };
 }
 
-async function postApi(path: string, body: unknown): Promise<PostResult> {
+// taxRequestHeaders - ส่งภาษาที่ผู้ใช้เลือกในแอปเป็น Accept-Language (BFF ส่งต่อให้ backend `taxRequestLanguage`)
+// ไม่ส่ง = เบราว์เซอร์ใส่ภาษาของเครื่องเอง → ผู้ใช้ไทยที่ตั้งเบราว์เซอร์เป็นอังกฤษได้ข้อความอังกฤษ (UAT 2026-09-24)
+function taxRequestHeaders(language?: LanguageCode): Record<string, string> {
+  return language ? { "Content-Type": "application/json", "Accept-Language": language } : { "Content-Type": "application/json" };
+}
+
+async function postApi(path: string, body: unknown, language?: LanguageCode): Promise<PostResult> {
   const res = await apiFetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: taxRequestHeaders(language),
     body: JSON.stringify(body),
   }).catch(() => null);
 
@@ -363,12 +491,14 @@ export async function fetchVatRegister(params: {
   type: "sale" | "purchase";
   limit?: number;
   offset?: number;
+  language?: LanguageCode;
 }): Promise<{ records: ThaiTaxRecord[]; total: number; summary: VatRegisterSummary; error?: string }> {
   if (!params.holdingcode || !params.businesscode) {
     return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: "company_required" };
   }
 
-  const result = await postApi(VAT_REGISTER_PATH, params);
+  const { language, ...body } = params;
+  const result = await postApi(VAT_REGISTER_PATH, body, language);
   if (!result.ok) {
     return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: result.error };
   }
@@ -387,6 +517,7 @@ export async function fetchVatRegister(params: {
       amountbeforevat: toMoney(summary.amountbeforevat),
       vatamount: toMoney(summary.vatamount),
       totalamount: toMoney(summary.totalamount),
+      duplicatecount: toCount(summary.duplicatecount, 0),
     },
   };
 }

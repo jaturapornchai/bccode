@@ -20,7 +20,7 @@ The standard account name "ภาษี**เงินได้**ถูกหั�
 
 ## Fix
 
-- A new function `journalsWithRecordedWithholdings` pulls every posted journal in the period that has a recorded withholding entry in the requested direction. Those journals are merged into the report even when the tax line was posted to an account whose name does not match. Recorded evidence beats guessing from the account name.
+- A new function (then `journalsWithRecordedWithholdings`; since 2026-09-24 `recordedWithholdingRows` in `backend/internal/goapi/handlers/tax_report.go`, which reads each recorded entry by its payment date) pulls every posted journal in the period that has a recorded withholding entry in the requested direction. Those journals are merged into the report even when the tax line was posted to an account whose name does not match. Recorded evidence beats guessing from the account name.
 - For `received`, the name lookup now accepts both "ภาษีถูกหัก" and "ถูกหัก ณ ที่จ่าย". Rows found this way are still labelled `inferred`.
 - The "no account found" note now appears only when there is no matching account **and** no recorded entry.
 - The PND50/51 tax credit (`generalledger.WithheldFromCompanyTotal`) still counts recorded entries only. This fix does not change it.

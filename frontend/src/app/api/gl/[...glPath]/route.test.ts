@@ -31,6 +31,12 @@ describe("GL authenticated proxy", () => {
     const response = await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ resource: "journals", action: "create", requestid: "12345678-1234-1234-1234-123456789012", journal: { lines: [{ debit: 0.1, credit: "0" }] } }) }), context("command"));
     expect(response.status).toBe(400); expect(fetch).not.toHaveBeenCalled();
   });
+  it("accepts Thai codes with vowel signs and tone marks as path segments", async () => {
+    // สระ/วรรณยุกต์ไทยเป็น combining mark (\p{M}) ไม่ใช่ \p{L} — regex เดิมตอบ 404 กับรหัส "สมุดซื้อ"
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    expect((await GET(new Request("http://localhost/api/gl/journal-books/สมุดซื้อ", { headers }), context("journal-books", "สมุดซื้อ"))).status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("forwards journal review reads but rejects missing IDs and nested paths", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
     expect((await GET(new Request("http://localhost/api/gl/journal-reviews/j-1?holdingcode=other", { headers }), context("journal-reviews", "j-1"))).status).toBe(200);

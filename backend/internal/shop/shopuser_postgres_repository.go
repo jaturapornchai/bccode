@@ -5,12 +5,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 
 	"smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/centraldb"
 	common "smlcloudplatform/internal/models"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 )
@@ -18,6 +21,31 @@ import (
 // ErrShopUserNotFound means the user has no membership row in the Holding (or the
 // user/Holding is closed).
 var ErrShopUserNotFound = errors.New("holding member not found")
+
+// errMemberRequestInvalid wraps a save the caller can fix (no holding/username, malformed
+// useruid): the handler answers 400 VALIDATION_FAILED instead of a 500.
+var errMemberRequestInvalid = errors.New("member request invalid")
+
+// Save rejections the settings screen explains per field (shopUserErrorRow).
+var (
+	// errMemberAlreadyExists: an ADD named a username that is already a member here.
+	errMemberAlreadyExists = errors.New("member already exists")
+	// errUsernameTaken: the username already has a login account (for example in another
+	// business group) and the request did not explicitly ask to add that account.
+	errUsernameTaken = errors.New("username taken")
+	// errLoginExists: the username has exactly one login account and no other business group uses
+	// it — the same save with addexistinguser attaches it. The screen asks before sending that, so
+	// only this answer opens the "attach the existing account" dialog (errUsernameTaken never can
+	// be attached; review 2026-09-24: the dialog used to promise an attach the save then refused).
+	errLoginExists = errors.New("login account exists")
+	// errUserCodeLocked / errUserEmailLocked: the account is not managed by this business
+	// group (someone signed in with it, or another group uses it), so its usercode/email
+	// cannot be changed from here.
+	errUserCodeLocked  = errors.New("usercode locked")
+	errUserEmailLocked = errors.New("email locked")
+	// errSaveTargetNotFound: an EDIT addressed a member that is not in this business group.
+	errSaveTargetNotFound = errors.New("user not found")
+)
 
 type ShopUserPostgresRepository struct {
 	db *sql.DB
@@ -27,10 +55,14 @@ func NewShopUserPostgresRepository(db *sql.DB) IShopUserRepository {
 	return &ShopUserPostgresRepository{db: db}
 }
 
+// memberColumns is what scanMember reads (m = holding_members, u = users, h = holdings).
+const memberColumns = `m.id::text, u.id::text, u.username, m.role, m.permission_sets, m.access_scopes, m.is_active,
+		m.is_favorite, COALESCE(m.last_accessed_at, 'epoch'::timestamptz), m.created_at,
+		m.position, m.department, m.avatar, m.avatar_thumb, m.access_expiry_date, ` + centraldb.HoldingTimezoneSQL
+
 // memberSelect reads one membership of an active user in an active Holding. Disabled
 // memberships are returned with IsAccessDisabled so callers can explain the denial.
-const memberSelect = `SELECT m.id::text, u.id::text, u.username, m.role, m.permission_sets, m.access_scopes, m.is_active,
-		m.is_favorite, COALESCE(m.last_accessed_at, 'epoch'::timestamptz), m.created_at
+const memberSelect = `SELECT ` + memberColumns + `
 	FROM holding_members m
 	JOIN users u ON u.id = m.user_id AND u.is_active = true
 	JOIN holdings h ON h.code = m.holding_code AND h.is_active = true
@@ -58,11 +90,6 @@ func (r *ShopUserPostgresRepository) findMember(ctx context.Context, holdingCode
 	if err != nil {
 		return models.ShopUser{}, err
 	}
-	if len(member.AccessScopes) == 0 && (member.Role == models.ROLE_OWNER || member.Role == models.ROLE_ADMIN) {
-		if member.AccessScopes, err = allCompanyScopes(ctx, db, holdingCode); err != nil {
-			return models.ShopUser{}, err
-		}
-	}
 	return member, nil
 }
 
@@ -74,12 +101,16 @@ func scanMember(row interface{ Scan(...interface{}) error }, holdingCode string)
 		accessScopes   []byte
 		isActive       bool
 		lastAccessedAt time.Time
+		expiryDate     sql.NullTime
+		timezone       string
 	)
 	err := row.Scan(&member.MembershipUID, &member.UserUID, &member.Username, &role, &permissionSets, &accessScopes, &isActive,
-		&member.IsFavorite, &lastAccessedAt, &member.CreatedAt)
+		&member.IsFavorite, &lastAccessedAt, &member.CreatedAt,
+		&member.Position, &member.Department, &member.Avatar, &member.AvatarThumb, &expiryDate, &timezone)
 	if err != nil {
 		return models.ShopUser{}, err
 	}
+	member.AccessExpiryDate = centraldb.AccessExpiryInstant(expiryDate, timezone)
 	if len(permissionSets) > 0 && json.Unmarshal(permissionSets, &member.PermissionSets) != nil {
 		return models.ShopUser{}, errors.New("invalid permission sets")
 	}
@@ -97,37 +128,95 @@ func scanMember(row interface{ Scan(...interface{}) error }, holdingCode string)
 	member.HoldingCode = holdingCode
 	member.Role = models.RoleFromText(role)
 	member.IsAccessDisabled = !isActive
+	// A manager without explicit scopes is holding-wide. Report it as the holding rule (not
+	// a snapshot of today's companies) in the detail AND the list, so the editor and the
+	// access audit agree and a re-save keeps it holding-wide.
+	if len(member.AccessScopes) == 0 && (member.Role == models.ROLE_OWNER || member.Role == models.ROLE_ADMIN) {
+		member.AccessScopes = []models.AccessScope{{ScopeType: "holding"}}
+	}
 	return member, nil
 }
 
-// allCompanyScopes grants a Holding manager without explicit scopes every active company.
-func allCompanyScopes(ctx context.Context, db dbtx, holdingCode string) ([]models.AccessScope, error) {
-	rows, err := db.QueryContext(ctx, `SELECT code FROM companies WHERE holding_code = $1 AND is_active = true ORDER BY code`, holdingCode)
+// loginAccount is the users row a membership save may touch.
+type loginAccount struct {
+	id       string
+	username string
+	email    string
+	fullName string
+	// claimed: somebody has signed in with the account (it has a password or a linked login).
+	claimed bool
+	// elsewhere / member: it is a member of another / of this business group.
+	elsewhere bool
+	member    bool
+	// removedHere: this business group removed its membership before (organization_audits
+	// member_removed, written by Delete) — re-adding it brings the same account back.
+	removedHere bool
+}
+
+// managedHere: the usercode and email of an account may be changed from this business
+// group's settings only while nobody has signed in with it and no other group uses it.
+// Otherwise the email is someone's identity (and the key a first Google login links by),
+// and another group's admin must not be able to repoint it.
+func (a loginAccount) managedHere() bool {
+	return !a.claimed && !a.elsewhere
+}
+
+const loginAccountSelect = `SELECT u.id::text, u.username, COALESCE(u.email, ''), u.full_name,
+		(u.password_hash <> '' OR EXISTS (SELECT 1 FROM user_identities i WHERE i.user_id = u.id)),
+		EXISTS (SELECT 1 FROM holding_members o WHERE o.user_id = u.id AND o.holding_code <> $1),
+		EXISTS (SELECT 1 FROM holding_members o WHERE o.user_id = u.id AND o.holding_code = $1),
+		EXISTS (SELECT 1 FROM organization_audits a WHERE a.holding_code = $1 AND a.target_type = '` + memberAuditTarget + `'
+			AND a.target_code = u.id::text AND a.action = '` + memberRemovedAction + `')
+	FROM users u WHERE `
+
+// findLoginAccounts locks and returns the accounts matching filter ($2 = identity).
+func findLoginAccounts(ctx context.Context, db dbtx, holdingCode string, filter string, identity string) ([]loginAccount, error) {
+	query := loginAccountSelect + filter + ` ORDER BY u.username`
+	// Lock first, then read the flags in a fresh statement: a statement that waited for a row
+	// lock still evaluates its sub-queries on the snapshot it started with, so a Google login
+	// that claimed the account meanwhile would be missed (and the account wrongly editable).
+	if _, err := db.ExecContext(ctx, query+` FOR UPDATE OF u`, holdingCode, identity); err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, holdingCode, identity)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	scopes := []models.AccessScope{}
+	accounts := []loginAccount{}
 	for rows.Next() {
-		var code string
-		if err := rows.Scan(&code); err != nil {
+		var account loginAccount
+		if err := rows.Scan(&account.id, &account.username, &account.email, &account.fullName,
+			&account.claimed, &account.elsewhere, &account.member, &account.removedHere); err != nil {
 			return nil, err
 		}
-		scopes = append(scopes, models.AccessScope{ScopeType: "company", CompanyUID: code, BusinessCode: code, AllBranches: true})
+		accounts = append(accounts, account)
 	}
-	return scopes, rows.Err()
+	return accounts, rows.Err()
 }
 
-// SaveFullProfile upserts a membership by username, creating the user row when the
-// person has not logged in yet (the username/email binds on first login).
-func (r *ShopUserPostgresRepository) SaveFullProfile(ctx context.Context, holdingCode string, req *models.UserRoleRequest) error {
-	holdingCode = strings.TrimSpace(holdingCode)
-	if holdingCode == "" || req == nil {
-		return errors.New("holdingCode and request required")
+// membershipFields are the per-membership values of a save, ready as SQL arguments.
+type membershipFields struct {
+	role, permissionSets, accessScopes string
+	isActive                           bool
+	position, department               string
+	avatar, avatarThumb                interface{} // nil keeps the stored picture
+	accessExpiryDate                   string      // "YYYY-MM-DD" or "" (no expiry)
+}
+
+func newMembershipFields(req *models.UserRoleRequest) (membershipFields, error) {
+	fields := membershipFields{
+		role:       models.RoleText(req.Role),
+		isActive:   !req.IsAccessDisabled,
+		position:   strings.TrimSpace(req.Position),
+		department: strings.TrimSpace(req.Department),
 	}
-	username := strings.TrimSpace(req.Username)
-	if username == "" && strings.TrimSpace(req.UserUID) == "" {
-		return errors.New("username required")
+	if expiry := strings.TrimSpace(req.AccessExpiryDate); expiry != "" {
+		day, err := models.NormalizeAccessExpiryDate(json.RawMessage(`"` + expiry + `"`))
+		if err != nil {
+			return membershipFields{}, err
+		}
+		fields.accessExpiryDate = day
 	}
 	permissionSets := req.PermissionSets
 	if permissionSets == nil {
@@ -135,47 +224,217 @@ func (r *ShopUserPostgresRepository) SaveFullProfile(ctx context.Context, holdin
 	}
 	permsJSON, err := json.Marshal(permissionSets)
 	if err != nil {
-		return err
+		return membershipFields{}, err
 	}
-	scopesJSON := []byte("[]")
+	fields.permissionSets = string(permsJSON)
+	fields.accessScopes = "[]"
 	if len(req.AccessScopes) > 0 {
-		if scopesJSON, err = json.Marshal(req.AccessScopes); err != nil {
-			return err
+		scopesJSON, err := json.Marshal(req.AccessScopes)
+		if err != nil {
+			return membershipFields{}, err
+		}
+		fields.accessScopes = string(scopesJSON)
+	}
+	if req.Avatar != nil {
+		fields.avatar = strings.TrimSpace(*req.Avatar)
+	}
+	if req.AvatarThumb != nil {
+		fields.avatarThumb = strings.TrimSpace(*req.AvatarThumb)
+	}
+	return fields, nil
+}
+
+// SaveFullProfile writes one membership in a single transaction.
+//
+// ADD (no editusername and no useruid): a new username gets a new login account; a username
+// that is already a member here is errMemberAlreadyExists; a username that already has an
+// account elsewhere is errUsernameTaken unless req.AddExistingUser explicitly joins that
+// account and no other business group uses it. EDIT (editusername or useruid): updates that member only, never creates one.
+func (r *ShopUserPostgresRepository) SaveFullProfile(ctx context.Context, holdingCode string, req *models.UserRoleRequest) error {
+	holdingCode = strings.TrimSpace(holdingCode)
+	if holdingCode == "" || req == nil {
+		return fmt.Errorf("%w: holdingCode and request required", errMemberRequestInvalid)
+	}
+	username := strings.TrimSpace(req.Username)
+	userUID := strings.TrimSpace(req.UserUID)
+	editID := strings.TrimSpace(req.EditUsername)
+	if username == "" && userUID == "" {
+		return fmt.Errorf("%w: username required", errMemberRequestInvalid)
+	}
+	if userUID != "" {
+		if _, err := uuid.Parse(userUID); err != nil {
+			return fmt.Errorf("%w: invalid useruid", errMemberRequestInvalid)
 		}
 	}
-
+	fields, err := newMembershipFields(req)
+	if err != nil {
+		return err
+	}
 	return runInTx(ctx, r.db, func(txCtx context.Context) error {
 		db := conn(txCtx, r.db)
-		userID := strings.TrimSpace(req.UserUID)
-		if userID == "" {
-			err := db.QueryRowContext(txCtx, `SELECT id::text FROM users WHERE LOWER(username) = LOWER($1)`, username).Scan(&userID)
-			if errors.Is(err, sql.ErrNoRows) {
-				err = db.QueryRowContext(txCtx, `
-					INSERT INTO users (username, password_hash, email, full_name, is_active)
-					VALUES ($1, '', NULLIF($2, ''), $3, true) RETURNING id::text`,
-					username, strings.TrimSpace(req.Email), strings.TrimSpace(req.UserProfileName)).Scan(&userID)
-			}
-			if err != nil {
-				return err
-			}
-		} else if req.Email != "" || req.UserProfileName != "" {
-			if _, err := db.ExecContext(txCtx, `
-				UPDATE users SET email = COALESCE(NULLIF($1, ''), email), full_name = COALESCE(NULLIF($2, ''), full_name), updated_at = now()
-				WHERE id::text = $3`, strings.TrimSpace(req.Email), strings.TrimSpace(req.UserProfileName), userID); err != nil {
-				return err
-			}
+		if userUID == "" && editID == "" {
+			return addMember(txCtx, db, holdingCode, username, req, fields)
 		}
-		_, err := db.ExecContext(txCtx, `
-			INSERT INTO holding_members (holding_code, user_id, role, permission_sets, access_scopes, is_active)
-			VALUES ($1, $2::uuid, $3, $4, $5, $6)
-			ON CONFLICT (holding_code, user_id) DO UPDATE SET
-				role = EXCLUDED.role,
-				permission_sets = EXCLUDED.permission_sets,
-				access_scopes = EXCLUDED.access_scopes,
-				is_active = EXCLUDED.is_active`,
-			holdingCode, userID, models.RoleText(req.Role), string(permsJSON), string(scopesJSON), !req.IsAccessDisabled)
-		return err
+		return editMember(txCtx, db, holdingCode, userUID, editID, username, req, fields)
 	})
+}
+
+func addMember(ctx context.Context, db dbtx, holdingCode string, username string, req *models.UserRoleRequest, fields membershipFields) error {
+	// Two admins adding the same new usercode at once must not both create it.
+	if _, err := db.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, "login-account:"+strings.ToLower(username)); err != nil {
+		return err
+	}
+	accounts, err := findLoginAccounts(ctx, db, holdingCode, `LOWER(u.username) = LOWER($2)`, username)
+	if err != nil {
+		return err
+	}
+	for _, account := range accounts {
+		if account.member {
+			return errMemberAlreadyExists
+		}
+	}
+	var userID string
+	switch {
+	// A login account this business group removed earlier comes back as the same account
+	// (reactivated) without the addexistinguser confirmation: it is not another group's account.
+	// Only while nobody has signed in with it: a claimed account (password or Google login) would
+	// hand the new role to whoever still holds that sign-in, so the admin must confirm the attach
+	// (errLoginExists → dialog). One still used by another group stays refused below (review 2026-09-24).
+	case len(accounts) == 1 && accounts[0].removedHere && !accounts[0].elsewhere && !accounts[0].claimed:
+		if err := updateLoginAccount(ctx, db, accounts[0], "", req.Email, req.UserProfileName); err != nil {
+			return err
+		}
+		userID = accounts[0].id
+	case len(accounts) == 0:
+		err = db.QueryRowContext(ctx, `
+			INSERT INTO users (username, password_hash, email, full_name, is_active)
+			VALUES ($1, '', NULLIF($2, ''), $3, true) RETURNING id::text`,
+			username, strings.TrimSpace(req.Email), strings.TrimSpace(req.UserProfileName)).Scan(&userID)
+		if centraldb.IsUniqueViolation(err) {
+			return errUsernameTaken
+		}
+		if err != nil {
+			return err
+		}
+	// addexistinguser joins only an account no other business group uses. Attaching another
+	// group's account by its usercode alone let any group admin (or the public Demo owner) read
+	// that account's email/name and lock its home group out of fixing its usercode/email
+	// (managedHere turns false) — cross-group access needs an owner-accepted invitation instead.
+	// Same answer with or without the flag.
+	case len(accounts) > 1 || accounts[0].elsewhere:
+		return errUsernameTaken
+	case !req.AddExistingUser:
+		return errLoginExists
+	default:
+		if err := updateLoginAccount(ctx, db, accounts[0], "", req.Email, req.UserProfileName); err != nil {
+			return err
+		}
+		userID = accounts[0].id
+	}
+	_, err = db.ExecContext(ctx, `
+		INSERT INTO holding_members (holding_code, user_id, role, permission_sets, access_scopes, is_active,
+			position, department, avatar, avatar_thumb, access_expiry_date)
+		VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, $8, COALESCE($9, ''), COALESCE($10, ''), NULLIF($11, '')::date)`,
+		holdingCode, userID, fields.role, fields.permissionSets, fields.accessScopes, fields.isActive,
+		fields.position, fields.department, fields.avatar, fields.avatarThumb, fields.accessExpiryDate)
+	if centraldb.IsUniqueViolation(err) {
+		return errMemberAlreadyExists
+	}
+	return err
+}
+
+func editMember(ctx context.Context, db dbtx, holdingCode, userUID, editID, username string, req *models.UserRoleRequest, fields membershipFields) error {
+	filter, identity := `u.id::text = $2`, userUID
+	if userUID == "" {
+		filter, identity = `(LOWER(u.username) = LOWER($2) OR u.id::text = $2)`, editID
+	}
+	accounts, err := findLoginAccounts(ctx, db, holdingCode, filter, identity)
+	if err != nil {
+		return err
+	}
+	members := []loginAccount{}
+	for _, account := range accounts {
+		if account.member {
+			members = append(members, account)
+		}
+	}
+	if len(members) != 1 {
+		return errSaveTargetNotFound
+	}
+	account := members[0]
+	rename := ""
+	if username != "" && !strings.EqualFold(username, account.username) {
+		rename = username
+	}
+	if err := updateLoginAccount(ctx, db, account, rename, req.Email, req.UserProfileName); err != nil {
+		return err
+	}
+	result, err := db.ExecContext(ctx, `
+		UPDATE holding_members SET
+			role = $3,
+			permission_sets = $4,
+			access_scopes = $5,
+			is_active = $6,
+			position = $7,
+			department = $8,
+			avatar = COALESCE($9, avatar),
+			avatar_thumb = COALESCE($10, avatar_thumb),
+			access_expiry_date = NULLIF($11, '')::date
+		WHERE holding_code = $1 AND user_id = $2::uuid`,
+		holdingCode, account.id, fields.role, fields.permissionSets, fields.accessScopes, fields.isActive,
+		fields.position, fields.department, fields.avatar, fields.avatarThumb, fields.accessExpiryDate)
+	if err != nil {
+		return err
+	}
+	if affected, err := result.RowsAffected(); err != nil || affected != 1 {
+		if err != nil {
+			return err
+		}
+		return errSaveTargetNotFound
+	}
+	return nil
+}
+
+// updateLoginAccount applies the account-level values of a save: a new usercode, the email
+// and the display name. Usercode and email change only on an account managedHere; an
+// empty email/name keeps the stored one.
+func updateLoginAccount(ctx context.Context, db dbtx, account loginAccount, rename string, email string, fullName string) error {
+	email = strings.TrimSpace(email)
+	fullName = strings.TrimSpace(fullName)
+	if rename != "" && !account.managedHere() {
+		return errUserCodeLocked
+	}
+	setEmail := ""
+	if email != "" && !strings.EqualFold(email, account.email) {
+		if !account.managedHere() {
+			return errUserEmailLocked
+		}
+		setEmail = email
+	}
+	if rename == "" && setEmail == "" && (fullName == "" || fullName == account.fullName) {
+		return nil
+	}
+	if rename != "" {
+		var taken bool
+		if err := db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM users WHERE LOWER(username) = LOWER($1) AND id::text <> $2)`,
+			rename, account.id).Scan(&taken); err != nil {
+			return err
+		}
+		if taken {
+			return errUsernameTaken
+		}
+	}
+	_, err := db.ExecContext(ctx, `
+		UPDATE users SET
+			username = COALESCE(NULLIF($2, ''), username),
+			email = COALESCE(NULLIF($3, ''), email),
+			full_name = COALESCE(NULLIF($4, ''), full_name),
+			updated_at = now()
+		WHERE id::text = $1`, account.id, rename, setEmail, fullName)
+	if centraldb.IsUniqueViolation(err) {
+		return errUsernameTaken
+	}
+	return err
 }
 
 // SaveStable makes an existing user a member with the given role (Holding creation).
@@ -189,12 +448,26 @@ func (r *ShopUserPostgresRepository) SaveStable(ctx context.Context, holdingCode
 	return err
 }
 
-func (r *ShopUserPostgresRepository) Delete(ctx context.Context, holdingCode string, username string) error {
+// Member removal is recorded in organization_audits (append-only): who removed whom, and the
+// evidence addMember uses to bring the same login account back when it is re-added.
+const (
+	memberAuditTarget   = "holding_member"
+	memberRemovedAction = "member_removed"
+)
+
+// Delete removes the membership and records the removal (actorUID = the admin) in one statement.
+func (r *ShopUserPostgresRepository) Delete(ctx context.Context, holdingCode string, username string, actorUID string) error {
 	_, err := conn(ctx, r.db).ExecContext(ctx, `
-		DELETE FROM holding_members m
-		USING users u
-		WHERE m.user_id = u.id AND m.holding_code = $1 AND (LOWER(u.username) = LOWER($2) OR u.id::text = $2)`,
-		strings.TrimSpace(holdingCode), strings.TrimSpace(username))
+		WITH removed AS (
+			DELETE FROM holding_members m
+			USING users u
+			WHERE m.user_id = u.id AND m.holding_code = $1 AND (LOWER(u.username) = LOWER($2) OR u.id::text = $2)
+			RETURNING m.holding_code, m.user_id, m.role, u.username)
+		INSERT INTO organization_audits (holding_code, action, target_type, target_code, actor_uid, before_state)
+		SELECT holding_code, '`+memberRemovedAction+`', '`+memberAuditTarget+`', user_id::text, $3,
+			jsonb_build_object('username', username, 'role', role)
+		FROM removed`,
+		strings.TrimSpace(holdingCode), strings.TrimSpace(username), strings.TrimSpace(actorUID))
 	return err
 }
 
@@ -303,10 +576,10 @@ func (r *ShopUserPostgresRepository) findActiveHoldingPage(ctx context.Context, 
 
 func (r *ShopUserPostgresRepository) FindByUserInShopPageWithProfileMatches(ctx context.Context, holdingCode string, pageable micromodels.Pageable, profileUsernames []string) ([]models.ShopUser, common.PaginationData, error) {
 	holdingCode = strings.TrimSpace(holdingCode)
-	query := `SELECT m.id::text, u.id::text, u.username, m.role, m.permission_sets, m.access_scopes, m.is_active,
-			m.is_favorite, COALESCE(m.last_accessed_at, 'epoch'::timestamptz), m.created_at
+	query := `SELECT ` + memberColumns + `
 		FROM holding_members m
 		JOIN users u ON u.id = m.user_id
+		JOIN holdings h ON h.code = m.holding_code
 		WHERE m.holding_code = $1`
 	args := []interface{}{holdingCode}
 	if q := strings.TrimSpace(pageable.Query); q != "" {
@@ -384,10 +657,11 @@ func (r *ShopUserPostgresRepository) ResolveHoldingCodeByHoldingCode(ctx context
 	return code, err
 }
 
-// ResolveCompanyUID maps a company code to its UID; in PostgreSQL the UID is the code.
+// ResolveCompanyUID maps an ACTIVE company code to its UID; in PostgreSQL the UID is the
+// code. A holding-wide scope covers any company, so closed companies must fail here.
 func (r *ShopUserPostgresRepository) ResolveCompanyUID(ctx context.Context, holdingCode string, businessCode string) (string, error) {
 	var code string
-	err := conn(ctx, r.db).QueryRowContext(ctx, `SELECT code FROM companies WHERE holding_code = $1 AND UPPER(code) = UPPER($2)`,
+	err := conn(ctx, r.db).QueryRowContext(ctx, `SELECT code FROM companies WHERE holding_code = $1 AND UPPER(code) = UPPER($2) AND is_active = true`,
 		strings.TrimSpace(holdingCode), strings.TrimSpace(businessCode)).Scan(&code)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", errors.New("company not found")

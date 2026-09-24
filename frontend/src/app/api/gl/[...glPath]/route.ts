@@ -13,7 +13,7 @@ export async function GET(request: Request, context: Context) {
     : glPath[0] === "journal-support" ? glPath.length === 1
     : glPath[0] === "journal-reviews" ? glPath.length === 2
     : (GL_RESOURCES as readonly string[]).includes(glPath[0]) && glPath.length <= 2;
-  if (!valid || glPath.some((segment) => !/^[\p{L}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
+  if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
   try {
     const query = new URLSearchParams();
     const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "branchcode", "departmentcode", "projectcode", "bookcode", "status", "kind", "snapshot", "asof", "companywide"];

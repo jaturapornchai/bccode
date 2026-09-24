@@ -116,7 +116,6 @@ var pnd2Kinds = []string{"royalty", "interest", "dividend", "share_transfer", "o
 func computePnd2Cover(cover *rdform.Spec, doc *rdform.Document) error {
 	a := &amounts{values: doc.Values}
 	if len(doc.Rows) > 0 {
-		totalCount, totalIncome, totalTax := 0, decimal.Zero, decimal.Zero
 		for _, kind := range pnd2Kinds {
 			var rows []map[string]string
 			for _, r := range doc.Rows {
@@ -137,9 +136,17 @@ func computePnd2Cover(cover *rdform.Spec, doc *rdform.Document) error {
 				a.set(kind+"_income", income)
 				a.set(kind+"_tax", tax)
 			}
-			totalCount, totalIncome, totalTax = totalCount+len(rows), totalIncome.Add(income), totalTax.Add(tax)
 		}
-		doc.Values["total_count"] = strconv.Itoa(totalCount)
+		// 6. รวม = ทุกแถวของใบแนบ รวมแถวที่ยังไม่เลือกประเภทเงินได้ (ระบบไม่เดาประเภทให้) — ยอดภาษีที่นำส่งต้องไม่ตกหล่นเงียบ ๆ
+		totalIncome, err := sumRows(doc.Rows, "amount")
+		if err != nil {
+			return err
+		}
+		totalTax, err := sumRows(doc.Rows, "tax")
+		if err != nil {
+			return err
+		}
+		doc.Values["total_count"] = strconv.Itoa(len(doc.Rows))
 		a.set("total_income", totalIncome)
 		a.set("total_tax", totalTax)
 	}
@@ -150,8 +157,20 @@ func computePnd2Cover(cover *rdform.Spec, doc *rdform.Document) error {
 }
 
 // pp30RowColumns - ยอดของใบแนบ ภ.พ.30 (ยื่นรวมหลายสาขา) ที่รวมขึ้นหน้าแบบ
-var pp30RowColumns = []string{"sales_amount", "sales_zero_rate", "sales_exempt", "sales_taxable", "output_tax", "purchase_amount", "input_tax",
-	"add_sales_under", "add_purchase_over", "add_purchase_under", "add_sales_over"}
+var pp30RowColumns = []string{"sales_amount", "sales_zero_rate", "sales_exempt", "sales_taxable", "output_tax", "purchase_amount", "input_tax"}
+
+// pp30AdditionalColumns - ช่องของการยื่นเพิ่มเติม (ยอดขายต่ำไป/ซื้อสูงไป ฯลฯ) รวมขึ้นหน้าแบบเฉพาะเมื่อมีสาขากรอกไว้
+// การยื่นปกติต้องเว้นว่าง ไม่ใช่ "0.00"
+var pp30AdditionalColumns = []string{"add_sales_under", "add_purchase_over", "add_purchase_under", "add_sales_over"}
+
+func anyRowFilled(rows []map[string]string, key string) bool {
+	for _, r := range rows {
+		if strings.TrimSpace(r[key]) != "" {
+			return true
+		}
+	}
+	return false
+}
 
 // computePP30 - ตามสูตรบนแบบ ภ.พ.30: 4 = 1-2-3, 8 = 5-7 (ถ้า 5>7), 9 = 7-5 (ถ้า 5<7), 11 = 8-10 (ถ้า 8>10),
 // 12 = (10-8 ถ้า 10>8) หรือ (9+10), 15 = (11+13+14) หรือ (13+14-12), 16 = 12-13-14
@@ -168,7 +187,17 @@ func computePP30(_ *rdform.Spec, doc *rdform.Document) error {
 		}
 	}
 	if len(doc.Rows) > 0 {
-		for _, k := range pp30RowColumns {
+		columns := pp30RowColumns
+		for _, k := range pp30AdditionalColumns {
+			if anyRowFilled(doc.Rows, k) {
+				columns = append(columns[:len(columns):len(columns)], k)
+			} else {
+				// หน้าแบบเป็นผลรวมของใบแนบเมื่อมีสาขา — สาขาล้างช่องยื่นเพิ่มเติมหมดแล้ว ยอดรวมเดิมบนหน้าแบบต้องหายด้วย
+				// (เดิมค้างยอดเก่าไว้ ทำให้แบบยื่นปกติมียอด "ยื่นเพิ่มเติม" ที่ไม่มีสาขาใดกรอก)
+				delete(doc.Values, k)
+			}
+		}
+		for _, k := range columns {
 			total, err := sumRows(doc.Rows, k)
 			if err != nil {
 				return err

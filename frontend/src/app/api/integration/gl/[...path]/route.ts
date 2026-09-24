@@ -5,7 +5,7 @@ type Context = { params: Promise<{ path: string[] }> };
 const missing = () => Response.json({ success: false, message: "Not found" }, { status: 404 });
 export async function GET(request: Request, context: Context) {
   const { path } = await context.params;
-  if (path.some((segment) => !/^[\p{L}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return missing();
+  if (path.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return missing();
   const valid = path[0] === "reports"
     ? path.length === 2 && (GL_REPORTS as readonly string[]).includes(path[1])
     : path[0] === "journal-support" ? path.length === 1

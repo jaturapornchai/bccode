@@ -212,8 +212,8 @@ func (m *ShopUserRepositoryMock) SaveStable(ctx context.Context, holdingCode str
 	return m.Called(ctx, holdingCode, userUID, role).Error(0)
 }
 
-func (m *ShopUserRepositoryMock) Delete(ctx context.Context, holdingCode string, username string) error {
-	return m.Called(ctx, holdingCode, username).Error(0)
+func (m *ShopUserRepositoryMock) Delete(ctx context.Context, holdingCode string, username string, actorUID string) error {
+	return m.Called(ctx, holdingCode, username, actorUID).Error(0)
 }
 
 func (m *ShopUserRepositoryMock) UpdateLastAccess(ctx context.Context, holdingCode string, userUID string, lastAccessedAt time.Time) error {

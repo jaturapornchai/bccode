@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
-import { accountTypeLabels, bookLabels, displayAmountUnits, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString } from "@/lib/general-ledger";
+import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { AccountSelect, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 
@@ -18,14 +18,15 @@ export async function fetchReport(name: string, filters: ReportFilters, page = 1
 function reportRows(report: GLReport) { return report.rows ?? []; }
 const reportTextLabels: Record<string, Record<string, GLLabel>> = {
   accounttype: accountTypeLabels,
-  bookcode: bookLabels,
   status: { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"], void: ["gl_cancel_draft", "ยกเลิกร่าง"] },
   direction: { in: ["gl_money_in", "เงินเข้า"], out: ["gl_money_out", "เงินออก"] },
   category: { operating: ["gl_operating", "ดำเนินงาน"], investing: ["gl_investing", "ลงทุน"], financing: ["gl_raise_funds", "จัดหาเงิน"], unclassified: ["gl_not_specified", "ยังไม่ระบุ"] },
 };
-function reportText(key: string, value = "", tr: GLTextFn) {
+function reportText(key: string, value = "", tr: GLTextFn, books: GLJournalBook[] = [], language = "th") {
   // The computed earnings row is not a chart-of-accounts entry. Keep its source key for exports.
   if (key === "accountcode" && value === "__current_earnings__") return "—";
+  // สมุดรายวันเป็นข้อมูลหลักของบริษัท: แสดงชื่อสมุดจริง (ไม่รู้จักรหัส = แสดงรหัส)
+  if (key === "bookcode") return journalBookName(findJournalBook(books, value), value, language);
   return reportTextLabels[key] ? labelText(reportTextLabels[key], value, tr) : value;
 }
 
@@ -239,13 +240,16 @@ export function ReportGrid({
   graphs = false,
   onDrillDocNo,
   onDrillAccount,
+  books = [],
 }: {
   report: GLReport;
   graphs?: boolean;
+  books?: GLJournalBook[];
   onDrillDocNo?: (docNo: string, journalId: string) => void;
   onDrillAccount?: (accountCode: string) => void;
 }) {
   const tr = useGLText();
+  const language = useGLLanguage();
   const density = useRowDensity();
   const reportPref = useReportPreferences();
   const amountColumns = report.columns.filter((column) => column.amount);
@@ -307,7 +311,7 @@ export function ReportGrid({
                     </div>
                   );
                 } else {
-                  cellContent = reportText(column.key, val, tr);
+                  cellContent = reportText(column.key, val, tr, books, language);
                 }
 
                 return (
@@ -329,6 +333,7 @@ const totalLabels: Record<string, GLLabel> = { debit: ["gl_total_debit", "รว
 export function GLReports({ name, heading }: { name: string; heading?: string }) {
   const tr = useGLText();
   const refs = useReferences();
+  const language = useGLLanguage();
   const [activeReportName, setActiveReportName] = useState(name);
   const [drilledFrom, setDrilledFrom] = useState<{ report: string; filters: ReportFilters } | null>(null);
   const [drillDocument, setDrillDocument] = useState<{ docno: string; journalId: string } | null>(null);
@@ -427,7 +432,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
         <Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={filters.departmentcode} onChange={(e) => set("departmentcode", e.target.value)} placeholder={tr("gl_all_departments", "ทุกแผนก")} /></Field>
         <Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={filters.projectcode} onChange={(e) => set("projectcode", e.target.value)} placeholder={tr("gl_all_projects", "ทุกโครงการ")} /></Field>
-        <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={filters.bookcode} onChange={(value) => set("bookcode", value)}><option value="">{tr("gl_all_types", "ทุกสมุดรายวัน")}</option>{Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}</Combobox></Field>
+        <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={filters.bookcode} onChange={(value) => set("bookcode", value)}><option value="">{tr("gl_all_types", "ทุกสมุดรายวัน")}</option>{(refs.books ?? []).filter((book) => !book.isdeleted).map((book) => <option key={book.code} value={book.code}>{book.code} · {journalBookName(book, book.code, language)}</option>)}</Combobox></Field>
         <div className="flex flex-wrap items-end gap-2">
           <Button type="submit" className={actionClass} disabled={busy || !filters.fiscalyear}>
             <RefreshCw />
@@ -447,6 +452,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
           graphs={["financialgraphs", "dashboard", "executivesummary"].includes(activeReportName)}
           onDrillDocNo={(docno, journalId) => setDrillDocument({ docno, journalId })}
           onDrillAccount={handleDrillAccount}
+          books={refs.books ?? []}
         />
         <div className="shrink-0">
           <Pager page={page} total={report.totalrows} onPage={(next) => void load(next, applied!)} loading={busy} limit={50} />

@@ -33,7 +33,10 @@ export type GLJournal = GLIdentity & {
   reference: string; branchcode: string; kind: string; status: string;
   lines: GLLine[]; reversalof?: string; reason?: string;
 };
-export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate;
+/** สมุดรายวันเป็นข้อมูลหลักที่ผู้ใช้กำหนดเอง (mydocs/datamodels/gl/journalbook.sql) — ห้ามอิงรหัสสมุด ใช้ booktype เท่านั้น
+ *  booktype 1=ทั่วไป 2=จ่าย 3=รับ 4=ขาย 5=ซื้อ 6=ยอดยกมา; 0/ไม่มี = ยังไม่กำหนด (ใช้กับใบใหม่ไม่ได้) */
+export type GLJournalBook = GLIdentity & { code: string; name: string; nameen?: string; booktype?: number; isactive: boolean };
+export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate | GLJournalBook;
 export type GLReviewStatus = 1 | 2 | 3;
 export type GLReviewEvent = { eventno: number; version: number; status: GLReviewStatus; note: string; reviewedby: string; reviewedat: string };
 export type GLJournalReview = { journalid: string; version: number; status: GLReviewStatus; eventno: number; events: GLReviewEvent[] };
@@ -48,7 +51,7 @@ export type GLResource = typeof GL_RESOURCES[number];
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
-  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster; journal?: GLJournal | Pick<GLJournal, "details">; statementtemplate?: GLStatementTemplate;
+  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook; journal?: GLJournal | Pick<GLJournal, "details">; statementtemplate?: GLStatementTemplate;
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched"] as const;
@@ -65,9 +68,61 @@ export function thaiLabels<K extends string>(labels: Record<K, GLLabel>): Record
   return Object.fromEntries(Object.entries<GLLabel>(labels).map(([code, label]) => [code, label[1]])) as Record<K, string>;
 }
 export const accountTypeLabels: Record<GLAccount["accounttype"], GLLabel> = { asset: ["gl_asset", "สินทรัพย์"], liability: ["gl_liability", "หนี้สิน"], equity: ["gl_equity", "ส่วนของเจ้าของ"], income: ["gl_revenue", "รายได้"], expense: ["gl_expense", "ค่าใช้จ่าย"] };
-export const bookLabels: Record<string, GLLabel> = { JV: ["gl_general_journal", "รายวันทั่วไป"], UV: ["gl_sales_journal", "รายวันขาย"], SV: ["gl_purchase_journal", "รายวันซื้อ"], RV: ["gl_cash_receipts_journal", "รายวันรับเงิน"], PV: ["gl_cash_payments_journal", "รายวันจ่ายเงิน"] };
 export const accountTypes = thaiLabels(accountTypeLabels);
-export const books = thaiLabels(bookLabels);
+export const JOURNAL_BOOK_TYPES = [1, 2, 3, 4, 5, 6] as const;
+export type GLJournalBookType = (typeof JOURNAL_BOOK_TYPES)[number];
+/** ป้ายประเภทสมุดตาม journalbook.sql (ค่าตัวเลขเป็น key; ชื่อสมุดจริงมาจากข้อมูลหลักของบริษัท) */
+export const journalBookTypeLabels: Record<string, GLLabel> = { 1: ["gl_general_journal", "รายวันทั่วไป"], 2: ["gl_cash_payments_journal", "รายวันจ่ายเงิน"], 3: ["gl_cash_receipts_journal", "รายวันรับเงิน"], 4: ["gl_sales_journal", "รายวันขาย"], 5: ["gl_purchase_journal", "รายวันซื้อ"], 6: ["gl_opening_balance_2", "ยอดยกมา"] };
+export const JOURNAL_BOOK_CODE_MAX = 15;
+export const JOURNAL_BOOK_NAME_MAX = 100;
+export function isJournalBookType(value: unknown): value is GLJournalBookType { return Number.isInteger(Number(value)) && JOURNAL_BOOK_TYPES.includes(Number(value) as GLJournalBookType); }
+export function emptyJournalBook(): GLJournalBook { return { code: "", name: "", nameen: "", booktype: 0, isactive: true }; }
+/** payload ของคำสั่ง create/update สมุดรายวัน: ส่งเฉพาะช่องตามสัญญา ไม่พ่วงช่องของข้อมูลหลักอื่น */
+export function journalBookPayload(book: GLJournalBook): GLJournalBook {
+  return { ...(book.id ? { id: book.id } : {}), ...(book.version ? { version: book.version } : {}), code: book.code.trim(), name: book.name.trim(), nameen: (book.nameen ?? "").trim(), booktype: Number(book.booktype) || 0, isactive: book.isactive ?? true };
+}
+/** ตรวจก่อนส่ง: ข้อความบอกช่องที่ผิดและวิธีแก้ (field = data-field ของช่อง) — นับความยาวเป็นตัวอักษร ไม่ใช่ไบต์
+ *  allowUntyped: แก้สมุดเดิมที่ยังไม่มีประเภท — เปลี่ยนชื่อ/ปิดใช้งานได้โดยไม่ต้องเลือกประเภท (ตรงกับ backend allowUntyped) */
+export function validateJournalBook(book: GLJournalBook, tr: GLTextFn = (_key, fallback) => fallback, allowUntyped = false): { message: string; field: string } | null {
+  const code = book.code.trim(), name = book.name.trim(), nameen = (book.nameen ?? "").trim();
+  if (!code) return { message: tr("gl_book_code_required", "กรุณาระบุรหัสสมุดรายวัน เช่น JV"), field: "code" };
+  if ([...code].length > JOURNAL_BOOK_CODE_MAX) return { message: tr("gl_book_code_too_long", "รหัสสมุดรายวันยาวได้ไม่เกิน {0} ตัวอักษร (ตอนนี้ {1} ตัว)").replace("{0}", String(JOURNAL_BOOK_CODE_MAX)).replace("{1}", String([...code].length)), field: "code" };
+  if (!name) return { message: tr("gl_book_name_required", "กรุณาระบุชื่อสมุดรายวันภาษาไทย"), field: "name" };
+  if ([...name].length > JOURNAL_BOOK_NAME_MAX) return { message: tr("gl_book_name_too_long", "ชื่อสมุดรายวันยาวได้ไม่เกิน {0} ตัวอักษร").replace("{0}", String(JOURNAL_BOOK_NAME_MAX)), field: "name" };
+  if ([...nameen].length > JOURNAL_BOOK_NAME_MAX) return { message: tr("gl_book_name_en_too_long", "ชื่อสมุดรายวันภาษาอังกฤษยาวได้ไม่เกิน {0} ตัวอักษร").replace("{0}", String(JOURNAL_BOOK_NAME_MAX)), field: "nameen" };
+  if (!isJournalBookType(book.booktype) && !(allowUntyped && !Number(book.booktype))) return { message: tr("gl_book_type_required", "กรุณาเลือกประเภทสมุดรายวัน (ทั่วไป จ่าย รับ ขาย ซื้อ หรือยอดยกมา)"), field: "booktype" };
+  return null;
+}
+/** สมุดที่ใช้บันทึกใบใหม่ได้: เปิดใช้งาน ไม่ถูกลบ และกำหนดประเภทแล้ว — เรียงตามประเภทแล้วตามรหัส */
+/** สมุดเดิมที่เปิดใช้งานแต่ยังไม่กำหนดประเภท (ใช้บันทึกใบใหม่ไม่ได้จนกว่าจะเลือกประเภท) — เรียงตามรหัส */
+export function untypedJournalBooks(books: GLJournalBook[]): GLJournalBook[] {
+  return books.filter((book) => book.isactive && !book.isdeleted && !isJournalBookType(book.booktype))
+    .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }));
+}
+export function activeJournalBooks(books: GLJournalBook[]): GLJournalBook[] {
+  return books.filter((book) => book.isactive && !book.isdeleted && isJournalBookType(book.booktype))
+    .sort((a, b) => Number(a.booktype) - Number(b.booktype) || a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }));
+}
+export function findJournalBook(books: GLJournalBook[], code: string): GLJournalBook | undefined { return books.find((book) => book.code === code && !book.isdeleted); }
+/** ชื่อสมุดตามภาษาที่เลือก: ไทยใช้ชื่อไทย ภาษาอื่นใช้ชื่ออังกฤษถ้ามี — ไม่รู้จักรหัส = แสดงรหัสตรง ๆ */
+export function journalBookName(book: GLJournalBook | undefined, code: string, language = "th"): string {
+  if (!book) return code;
+  return language !== "th" && book.nameen?.trim() ? book.nameen.trim() : book.name || code;
+}
+/** สมุดเริ่มต้นของใบใหม่: สมุดที่ขอ (แท็บที่เลือก) ถ้ายังใช้ได้ → สมุดประเภททั่วไปตัวแรก → สมุดที่ใช้ได้ตัวแรก → ว่าง (ให้ผู้ใช้เลือก) */
+export function defaultJournalBookCode(books: GLJournalBook[], preferred = ""): string {
+  const usable = activeJournalBooks(books);
+  return usable.find((book) => book.code === preferred)?.code ?? usable.find((book) => Number(book.booktype) === 1)?.code ?? usable[0]?.code ?? "";
+}
+/** สมุดของใบใหม่หรือเมื่อเปลี่ยนสมุดต้องเปิดใช้งานและกำหนดประเภทแล้ว; ใบเดิมที่ไม่เปลี่ยนสมุดใช้สมุดที่ปิดแล้วต่อได้ */
+export function journalBookProblem(bookcode: string, books: GLJournalBook[], previousBookcode: string | undefined, tr: GLTextFn = (_key, fallback) => fallback): string | null {
+  const book = findJournalBook(books, bookcode);
+  if (!bookcode || !book) return tr("gl_journal_book_required", "กรุณาเลือกสมุดรายวัน — ถ้ายังไม่มีสมุดให้เพิ่มที่เมนู กำหนดสมุดรายวัน");
+  if (previousBookcode !== undefined && previousBookcode === bookcode) return null;
+  if (!book.isactive) return tr("gl_journal_book_inactive", "สมุดรายวัน {0} ปิดใช้งานแล้ว — เลือกสมุดอื่น หรือเปิดใช้งานที่เมนู กำหนดสมุดรายวัน").replace("{0}", bookcode);
+  if (!isJournalBookType(book.booktype)) return tr("gl_journal_book_type_missing", "สมุดรายวัน {0} ยังไม่กำหนดประเภท — กำหนดประเภทที่เมนู กำหนดสมุดรายวัน ก่อนใช้บันทึก").replace("{0}", bookcode);
+  return null;
+}
 export function accountName(account: GLAccount) { return account.names?.find((name) => name.code === "th")?.name ?? account.accountcode; }
 export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1 }; }
 
@@ -181,10 +236,22 @@ export function sortAccountsHierarchically(accounts: GLAccount[]): (GLAccount & 
 
 export function emptyFiscalYear(): GLFiscalYear { return { code: "", startdate: "", enddate: "", scale: 2, retainedearningsaccount: "", profitlossaccount: "", isactive: true, closed: false }; }
 export function emptyAllocationRule(): GLAllocationRule { return { branchcode: "", departmentcode: "", projectcode: "", accountcode: "", rate: "0" }; }
-export function emptyMaster(): GLMaster { return { code: "", name: "", isactive: true, accountcode: "", fiscalyear: "", startdate: "", enddate: "", locked: false, amount: "0", branchcode: "", departmentcode: "", projectcode: "", direction: "in", bookcode: "JV", rules: [], itemaccount: "", costaccount: "", revenueaccount: "", allocatemode: "percent", allocaterules: [] }; }
+export function emptyMaster(): GLMaster { return { code: "", name: "", isactive: true, accountcode: "", fiscalyear: "", startdate: "", enddate: "", locked: false, amount: "0", branchcode: "", departmentcode: "", projectcode: "", direction: "in", bookcode: "", rules: [], itemaccount: "", costaccount: "", revenueaccount: "", allocatemode: "percent", allocaterules: [] }; }
 export function emptyLine(): GLLine { return { accountcode: "", description: "", debit: "0", credit: "0", departmentcode: "", projectcode: "", cashflow: "" }; }
 export function localDate() { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
-export function emptyJournal(bookcode = "JV", kind = "manual"): GLJournal { return { docno: "", date: localDate(), bookcode, fiscalyear: "", description: "", reference: "", branchcode: "", kind, status: "draft", lines: [emptyLine(), emptyLine()] }; }
+/** ปีบัญชีที่เปิดใช้งาน (ยังไม่ปิด) ซึ่งครอบคลุมวันที่ — ไม่มี = "" ให้ผู้ใช้เลือกเอง */
+export function fiscalYearForDate(years: GLFiscalYear[], date: string): string {
+  return years.find((year) => year.isactive && !year.closed && !year.isdeleted && date >= year.startdate && date <= year.enddate)?.code ?? "";
+}
+export function emptyJournal(bookcode = "", kind = "manual", years: GLFiscalYear[] = [], branchcode = ""): GLJournal { const date = localDate(); return { docno: "", date, bookcode, fiscalyear: fiscalYearForDate(years, date), description: "", reference: "", branchcode, kind, status: "draft", lines: [emptyLine(), emptyLine()] }; }
+/** สาขาที่ผู้ใช้เลือกตอนเข้าพื้นที่ทำงาน (localStorage bc_workspace → branch.code/guidfixed) — ใบใหม่ใช้เป็นสาขาเริ่มต้น
+ *  เพราะ session อาจกลายเป็นระดับบริษัท (บางจอเรียก select-holding โดยไม่ส่งสาขา) แล้ว backend บังคับให้ระบุสาขาเอง */
+export function workspaceBranchCode(workspaceJson: string | null): string {
+  try {
+    const branch = (JSON.parse(workspaceJson ?? "") as { branch?: { code?: string; guidfixed?: string } | null } | null)?.branch;
+    return String(branch?.code || branch?.guidfixed || "").trim();
+  } catch { return ""; }
+}
 
 const amountPattern = /^-?(0|[1-9]\d{0,25})(\.\d{1,8})?$/;
 const factor = 100000000n;
@@ -234,9 +301,12 @@ export function formatAmount(value: string, scale = 2): string {
   return `${sign}${wholeFormatted}.${fracFormatted}`;
 }
 
+/** ช่องเงินที่ว่าง = ศูนย์ (backend ไม่รับข้อความว่าง) — ใช้ก่อนตรวจ/บันทึกทุกครั้ง ไม่เปลี่ยนค่าที่ผู้ใช้พิมพ์ */
+export function blankAmountAsZero(value: string | undefined): string { const text = (value ?? "").trim(); return text === "" ? "0" : text; }
+export function normalizeJournalLines(lines: GLLine[]): GLLine[] { return lines.map((line) => ({ ...line, debit: blankAmountAsZero(line.debit), credit: blankAmountAsZero(line.credit) })); }
 export function journalTotals(lines: GLLine[]) {
-  const debit = lines.reduce((sum, line) => sum + amountUnits(line.debit), 0n);
-  const credit = lines.reduce((sum, line) => sum + amountUnits(line.credit), 0n);
+  const debit = lines.reduce((sum, line) => sum + amountUnits(blankAmountAsZero(line.debit)), 0n);
+  const credit = lines.reduce((sum, line) => sum + amountUnits(blankAmountAsZero(line.credit)), 0n);
   return { debit, credit, difference: debit - credit };
 }
 export function validateJournal(journal: GLJournal, year: GLFiscalYear | undefined, accounts: GLAccount[], tr: GLTextFn = (_key, fallback) => fallback): string | null {
@@ -244,13 +314,21 @@ export function validateJournal(journal: GLJournal, year: GLFiscalYear | undefin
   if (!year || !year.isactive || year.closed || journal.date < year.startdate || journal.date > year.enddate) return tr("gl_select_active_fiscal_year_date", "กรุณาเลือกปีบัญชีที่เปิดใช้งานและวันที่ภายในปีบัญชี");
   if (journal.lines.length < 2 || journal.lines.length > 500) return tr("gl_entries_2_500_lines", "รายการบัญชีต้องมี 2–500 บรรทัด");
   try {
-    for (const [index, line] of journal.lines.entries()) {
+    for (const [index, raw] of journal.lines.entries()) {
+      const line = { ...raw, debit: blankAmountAsZero(raw.debit), credit: blankAmountAsZero(raw.credit) };
+      const lineNo = String(index + 1);
       const account = accounts.find((item) => item.accountcode === line.accountcode);
-      if (!account?.isactive || !account.allowposting || account.isdeleted) return tr("gl_line_select_active_account", "บรรทัด {0}: เลือกบัญชีที่เปิดใช้งานและลงรายการได้").replace("{0}", String(index + 1));
+      if (!account?.isactive || !account.allowposting || account.isdeleted) return tr("gl_line_select_active_account", "บรรทัดที่ {0}: เลือกบัญชีที่เปิดใช้งานและลงรายการได้").replace("{0}", lineNo);
+      // ตรวจทีละช่อง: บอกบรรทัดและช่องที่ผิด พร้อมวิธีแก้ (ไม่ใช้ข้อความรวมที่ไม่บอกบรรทัด)
+      const sides = [[line.debit, tr("gl_debit", "เดบิต"), tr("gl_credit", "เครดิต")], [line.credit, tr("gl_credit", "เครดิต"), tr("gl_debit", "เดบิต")]] as const;
+      for (const [value, side, opposite] of sides) {
+        if (!amountPattern.test(value)) return tr("gl_line_amount_invalid", "บรรทัดที่ {0}: ช่อง{1}ต้องเป็นตัวเลข เช่น 1500.00 (ไม่ใส่จุลภาค ทศนิยมไม่เกิน 8 ตำแหน่ง)").replace("{0}", lineNo).replace("{1}", side);
+        if (value.startsWith("-") && decimalUnits(value) !== 0n) return tr("gl_line_amount_negative", "บรรทัดที่ {0}: ยอด{1}ติดลบไม่ได้ — ถ้าเป็นยอดกลับด้าน ให้ใส่เป็นบวกในช่อง{2}").replace("{0}", lineNo).replace("{1}", side).replace("{2}", opposite);
+      }
       const debit = amountUnits(line.debit), credit = amountUnits(line.credit);
-      if (debit < 0n || credit < 0n || (debit === 0n) === (credit === 0n)) return tr("gl_line_enter_amount_one_side_only", "บรรทัด {0}: ใส่ยอดมากกว่าศูนย์เพียงด้านเดียว").replace("{0}", String(index + 1));
+      if ((debit === 0n) === (credit === 0n)) return tr("gl_line_enter_amount_one_side_only", "บรรทัดที่ {0}: ใส่ยอดมากกว่าศูนย์เพียงด้านเดียว").replace("{0}", lineNo);
       const precision = 10n ** BigInt(8 - year.scale);
-      if (debit % precision !== 0n || credit % precision !== 0n) return tr("gl_line_amount_exceeds_decimal_places", "บรรทัด {0}: จำนวนเงินเกิน {1} ตำแหน่งทศนิยม").replace("{0}", String(index + 1)).replace("{1}", String(year.scale));
+      if (debit % precision !== 0n || credit % precision !== 0n) return tr("gl_line_amount_exceeds_decimal_places", "บรรทัดที่ {0}: จำนวนเงินเกิน {1} ตำแหน่งทศนิยม").replace("{0}", lineNo).replace("{1}", String(year.scale));
     }
     if (journalTotals(journal.lines).difference !== 0n) return tr("gl_dr_cr_equal_before_save", "ยอดเดบิตและเครดิตต้องเท่ากันก่อนบันทึก");
   } catch (error) { return error instanceof Error ? error.message : tr("gl_please_check_amount", "กรุณาตรวจสอบจำนวนเงิน"); }

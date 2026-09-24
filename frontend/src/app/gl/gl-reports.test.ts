@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { accountTypes, books, reportCsv, type GLReport } from "@/lib/general-ledger";
+import { accountTypes, reportCsv, type GLJournalBook, type GLReport } from "@/lib/general-ledger";
 import { ReportGrid } from "./gl-reports";
 
 function render(patch: Partial<GLReport>) {
@@ -12,7 +12,6 @@ function render(patch: Partial<GLReport>) {
 describe("Thai general ledger report presentation", () => {
   it.each([
     ["accounttype", accountTypes],
-    ["bookcode", books],
     ["status", { draft: "ฉบับร่าง", posted: "ผ่านรายการแล้ว", reversed: "กลับรายการแล้ว", void: "ยกเลิกร่าง" }],
     ["direction", { in: "เงินเข้า", out: "เงินออก" }],
     ["category", { operating: "ดำเนินงาน", investing: "ลงทุน", financing: "จัดหาเงิน", unclassified: "ยังไม่ระบุ" }],
@@ -22,6 +21,18 @@ describe("Thai general ledger report presentation", () => {
       expect(html).toContain(`>${label}</td>`);
       expect(html).not.toContain(`>${value}</td>`);
     }
+  });
+
+  it("renders book codes with the company's journal-book names (unknown codes stay as codes)", () => {
+    const books: GLJournalBook[] = [
+      { id: "b1", code: "JV", name: "สมุดรายวันทั่วไป", booktype: 1, isactive: true },
+      { id: "b2", code: "POS1", name: "สมุดขายหน้าร้าน", booktype: 4, isactive: false },
+    ];
+    const report: GLReport = { sequence: 1, columns: [{ key: "bookcode", label: "สมุด", amount: false }], rows: [{ bookcode: "JV" }, { bookcode: "POS1" }, { bookcode: "ZZ" }], totals: {}, totalrows: 3, warnings: [], asof: "2026-09-11" };
+    const html = renderToStaticMarkup(createElement(ReportGrid, { report, books }));
+    expect(html).toContain(">สมุดรายวันทั่วไป</td>");
+    expect(html).toContain(">สมุดขายหน้าร้าน</td>");
+    expect(html).toContain(">ZZ</td>");
   });
 
   it("labels supplemental financial totals and shows a line count without money decimals", () => {

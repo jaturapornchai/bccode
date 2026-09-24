@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"smlcloudplatform/internal/config"
+	msModels "smlcloudplatform/pkg/microservice/models"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,6 +22,7 @@ func TestAuthenticationRouteSurface(t *testing.T) {
 		"POST /refresh",
 		"POST /logout",
 		"POST /dev-login",
+		"GET /session/selection",
 	} {
 		if !routes[route] {
 			t.Errorf("required authentication route is not registered: %s", route)
@@ -132,4 +134,18 @@ func registeredAuthenticationRoutes(t *testing.T) map[string]bool {
 		return true
 	})
 	return routes
+}
+
+// BFF คืนค่า session หลังสลับ Holding ชั่วคราวจากค่านี้ — ต้องมีสาขาด้วย ไม่งั้นคืนค่าแล้วสาขาหาย (UAT S7 2026-09-24)
+func TestSessionSelectionPayloadCarriesCompanyAndBranch(t *testing.T) {
+	got := sessionSelectionPayload(msModels.UserInfo{HoldingCode: "rungrueng", BusinessCode: "01", BranchUID: "00000", Username: "demo"})
+	want := map[string]string{"holdingcode": "rungrueng", "businesscode": "01", "branchuid": "00000"}
+	if len(got) != len(want) {
+		t.Fatalf("payload = %v, want only %v", got, want)
+	}
+	for key, value := range want {
+		if got[key] != value {
+			t.Fatalf("payload[%s] = %q, want %q", key, got[key], value)
+		}
+	}
 }

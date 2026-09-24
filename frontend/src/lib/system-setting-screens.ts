@@ -279,6 +279,18 @@ const vatRegisteredLabel: SystemSettingText = {
   fil: "Registered for VAT",
 };
 
+/**
+ * Groups of the user form (ตั้งค่า › บัญชีเข้าระบบ). Both user dialogs render ONLY these keys, so a user field
+ * missing here is invisible — accessexpirydate was declared but never shown (UAT S7 2026-09-24).
+ */
+export const USER_FORM_SECTION_KEYS = {
+  signIn: ["avatar", "uid", "username", "userprofilename", "email"],
+  role: ["role", "permissionsets"],
+  accessStatus: ["isaccessdisabled", "accessexpirydate"],
+  accessScopes: ["accessscopes"],
+  organization: ["position", "department", "lineuserid", "linedisplayname"],
+} as const;
+
 export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
   ...productMasterConfigs(),
   {
@@ -296,7 +308,7 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
       en: "Manage business type codes and names for the selected language.",
     },
     fields: [
-      textField("code", "รหัส", "Code", true),
+      businessCodeField("code", "รหัส", "Code", true),
       namesField("names", "ชื่อประเภทธุรกิจ", "Business type names"),
       checkboxField("isdefault", "ค่าเริ่มต้น", "Default"),
     ],
@@ -699,10 +711,10 @@ export const SYSTEM_SETTING_CONFIGS: SystemSettingConfig[] = [
         },
       },
       {
-        ...dateField("accessexpirydate", "วันหมดอายุการเข้าใช้งาน", "Access expiry date"),
+        ...dateField("accessexpirydate", "ใช้งานได้ถึงวันที่", "Access until"),
         helper: {
-          th: "ตั้งวันที่ปิดการเข้าใช้งานอัตโนมัติ (เช่น วันสุดท้ายของพนักงาน) เว้นว่างถ้าไม่มีกำหนด",
-          en: "Auto-disable access on this date (e.g. employee's last working day). Leave empty for no expiry.",
+          th: "ผู้ใช้เข้าระบบได้ถึงสิ้นวันที่เลือก (ตามเวลาของกลุ่มกิจการ) แล้วระบบปิดสิทธิ์ให้อัตโนมัติ เช่น เลือกวันทำงานวันสุดท้ายของพนักงาน — เว้นว่างถ้าไม่มีกำหนด",
+          en: "The user can sign in through the end of this date (business group time), then access closes automatically, e.g. the employee's last working day. Leave empty for no end date.",
         },
       },
       textField("position", "ตำแหน่ง", "Position"),

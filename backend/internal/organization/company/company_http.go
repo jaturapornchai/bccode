@@ -242,6 +242,9 @@ func (h CompanyHttp) InfoCompany(ctx microservice.IContext) error {
 }
 
 func respondCompanyMembershipError(ctx microservice.IContext, err error) error {
+	if expired := orgaccess.AccessExpiredError(err, orgaccess.RequestLanguage(ctx)); expired != nil {
+		return apperr.Respond(ctx, expired)
+	}
 	if errors.Is(err, orgpolicy.ErrActiveMembershipRequired) || errors.Is(err, orgpolicy.ErrHoldingManagerRequired) {
 		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("active Holding membership is required").WithThaiMessage("ไม่มี Membership ที่ใช้งานได้ใน Holding นี้"))
 	}

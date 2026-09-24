@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check as CheckIcon, Search, X } from "lucide-react";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
 import { getAuthSession, restoreAuthSession } from "@/lib/client-auth-session";
@@ -9,8 +9,9 @@ import type { GLTextFn } from "@/lib/general-ledger";
 import { ResizableSplitter } from "@/components/ui/resizable-splitter";
 import { Button } from "@/components/ui/button";
 import { glAllRecords, glCommand, glRequest } from "@/lib/general-ledger-api";
-import { accountName, formatAmount, sortAccountsHierarchically, type GLAccount, type GLCommand, type GLFiscalYear, type GLPage, type GLRecord, type GLResource } from "@/lib/general-ledger";
+import { accountName, formatAmount, sortAccountsHierarchically, type GLAccount, type GLCommand, type GLFiscalYear, type GLJournalBook, type GLPage, type GLRecord, type GLResource } from "@/lib/general-ledger";
 import { cn } from "@/lib/utils";
+import { thousandsCommasValid } from "@/lib/clipboard-journal-parser";
 import { AccountSearchDialog } from "./account-search-dialog";
 import { Combobox } from "@/components/ui/combobox";
 
@@ -36,6 +37,10 @@ export function GLLanguageProvider({ language, children }: { language: LanguageC
 export function useGLText(): GLTextFn {
   const { dictionary } = useContext(GLLanguageContext);
   return useCallback((key: string, fallback: string) => backendText(dictionary, key, fallback), [dictionary]);
+}
+/** ภาษาที่ผู้ใช้เลือก — ใช้เลือกชื่อข้อมูลหลักที่มีทั้งไทย/อังกฤษ (เช่น ชื่อสมุดรายวัน) */
+export function useGLLanguage(): LanguageCode {
+  return useContext(GLLanguageContext).language;
 }
 
 export const control = "min-h-[2.6em] w-full rounded-xl border border-input bg-background px-3 py-1.5 text-[0.95rem] leading-normal text-foreground shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)] transition-[border-color,box-shadow] hover:border-primary/80 hover:shadow-[0_4px_16px_rgba(0,0,0,0.18),0_1px_4px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[0_4px_16px_rgba(0,0,0,0.2)] disabled:cursor-default disabled:bg-muted/20 disabled:border-border disabled:shadow-[0_2px_8px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.07)] disabled:text-foreground";
@@ -240,22 +245,76 @@ export { formatAmount };
 
 
 
-/** Strips commas and cleans numeric string */
-export function cleanAmountValue(value: string, allowNegative = false): string {
-  let cleaned = value.replace(/,/g, "").trim();
-  if (!allowNegative) {
-    cleaned = cleaned.replace(/-/g, "");
-  } else {
-    const isNeg = cleaned.startsWith("-");
-    cleaned = (isNeg ? "-" : "") + cleaned.replace(/-/g, "");
+/**
+ * Normalises typed/pasted amount text without changing its value: Thai digits → 0-9, accounting
+ * negatives "(1,500.00)" → "-1500.00", thousands commas/spaces/currency signs removed.
+ * Anything else that has to be removed (letters, a second decimal point, a stray minus) sets
+ * `dropped` so the screen tells the user instead of changing the number silently — so do commas
+ * that are not thousands separators ("1.500,00" European format would otherwise become 1.50).
+ * The minus sign is never dropped here — a field that does not accept negatives shows a message.
+ */
+export function normalizeAmountText(raw: string): { value: string; dropped: boolean } {
+  // Thai digits U+0E50–U+0E59 and the baht sign U+0E3F are written as escapes (GL files keep Thai text in tr() only)
+  let text = raw.replace(/[\u0E50-\u0E59]/g, (digit) => String(digit.charCodeAt(0) - 0x0e50)).trim();
+  const accountingNegative = /^\((.*)\)$/.exec(text);
+  if (accountingNegative) text = `-${accountingNegative[1].trim()}`;
+  text = text.replace(/[\s\u0E3F$]/g, "");
+  const misplacedComma = /^-?[0-9.,]+$/.test(text) && !thousandsCommasValid(text.replace(/^-/, ""));
+  text = text.replace(/,/g, "");
+  let dropped = misplacedComma || /[^0-9.-]/.test(text);
+  text = text.replace(/[^0-9.-]/g, "");
+  const negative = text.startsWith("-");
+  if ((text.match(/-/g)?.length ?? 0) > (negative ? 1 : 0)) dropped = true;
+  let body = text.replace(/-/g, "");
+  const dot = body.indexOf(".");
+  if (dot !== -1 && body.indexOf(".", dot + 1) !== -1) {
+    dropped = true;
+    body = body.slice(0, dot + 1) + body.slice(dot + 1).replace(/\./g, "");
   }
-  const dotIndex = cleaned.indexOf(".");
-  if (dotIndex !== -1) {
-    const beforeDot = cleaned.slice(0, dotIndex + 1);
-    const afterDot = cleaned.slice(dotIndex + 1).replace(/\./g, "");
-    cleaned = beforeDot + afterDot;
-  }
-  return cleaned.replace(/[^0-9.\-]/g, "");
+  return { value: (negative ? "-" : "") + body, dropped };
+}
+
+/** Amount text that the field cannot accept as typed: a negative in a positive-only field, or more decimals than the scale (never rounded). */
+export function amountInputIssue(value: string, scale: number, allowNegative: boolean): "negative" | "scale" | "" {
+  const text = (value ?? "").replace(/,/g, "").trim();
+  if (!allowNegative && text.startsWith("-") && /[1-9]/.test(text)) return "negative";
+  const fraction = text.split(".")[1] ?? "";
+  if (fraction.replace(/0+$/, "").length > Math.max(0, scale)) return "scale";
+  return "";
+}
+
+/** "Characters removed" is shown while editing, and afterwards only while the field still holds the value it emitted then. */
+export function droppedWarningShown(droppedFor: string | null, focused: boolean, value: string): boolean {
+  return droppedFor !== null && (focused || droppedFor === value);
+}
+
+/** The message a field shows: a real problem with the number (negative, too many decimals) before "characters removed". */
+export function amountFieldIssue(text: string, scale: number, allowNegative: boolean, droppedShown: boolean): "negative" | "scale" | "characters" | "" {
+  return amountInputIssue(text, scale, allowNegative) || (droppedShown ? "characters" : "");
+}
+
+/** Text shown when the field gains focus: plain digits without commas; a zero focuses as "" so typing "1" gives "1" (not "01"). */
+export function amountFocusText(value: string): string {
+  const raw = (value || "").replace(/,/g, "").trim();
+  return /^-?0*(\.0*)?$/.test(raw) ? "" : raw;
+}
+
+/** Value to emit on blur — null when the user did not type (Tab/click through keeps the stored value, e.g. "0", exactly). */
+export function amountBlurValue(touched: boolean, text: string, scale: number, emptyValue: string): string | null {
+  return touched ? commitAmountText(text, scale, emptyValue) : null;
+}
+
+/** Blur/Enter commit: pads decimals to the scale, strips leading zeros and a negative zero — never rounds or drops digits. */
+export function commitAmountText(text: string, scale: number, emptyValue: string): string {
+  const clean = text.replace(/,/g, "").trim();
+  if (!clean || clean === "-" || clean === "." || clean === "-.") return emptyValue;
+  const negative = clean.startsWith("-");
+  const [wholeRaw = "", fractionRaw = ""] = clean.replace(/^-/, "").split(".");
+  const whole = wholeRaw.replace(/^0+(?=\d)/, "") || "0";
+  const trimmed = fractionRaw.length > scale ? fractionRaw.replace(/0+$/, "") : fractionRaw;
+  const fraction = scale > 0 ? trimmed.padEnd(scale, "0") : trimmed;
+  const isZero = /^0+$/.test(whole) && /^0*$/.test(fraction);
+  return `${negative && !isZero ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""}`;
 }
 
 /**
@@ -293,10 +352,20 @@ export function AmountInput({
   id?: string;
   onBlur?: () => void;
 }) {
+  const tr = useGLText();
+  const messageId = useId();
   const [focused, setFocused] = useState(false);
   const [editText, setEditText] = useState<string | null>(null);
+  // true only after the user typed/pasted: tabbing through a field must never rewrite its value
+  const touchedRef = useRef(false);
+  // The value this field emitted when it removed characters. The warning belongs to that value only:
+  // rows are keyed by index, so after a row is deleted or a new voucher opens, this input shows another
+  // value and must not carry the old warning (adversarial review 2026-09-24).
+  const [droppedFor, setDroppedFor] = useState<string | null>(null);
+  const droppedCharacters = droppedWarningShown(droppedFor, focused, value);
   const suppressMouseUpRef = useRef(false);
   const resolvedPlaceholder = placeholder ?? (scale > 0 ? `0.${"0".repeat(scale)}` : "0");
+  const zeroText = scale > 0 ? `0.${"0".repeat(scale)}` : "0";
 
   // Formatted string when not focused (commas + decimals)
   const displayFormatted = useMemo(() => {
@@ -311,11 +380,11 @@ export function AmountInput({
 
   const handleFocus = (event: React.FocusEvent<HTMLInputElement>) => {
     setFocused(true);
-    const raw = (value || "").replace(/,/g, "").trim();
-    const num = Number(raw);
-    const isZero = !raw || (Number.isFinite(num) && num === 0);
-    // A zero value focuses as empty (no pre-filled "0" that would turn into "10" on typing "1")
-    setEditText(isZero ? "" : raw);
+    touchedRef.current = false;
+    setDroppedFor(null);
+    const focusText = amountFocusText(value);
+    const isZero = focusText === "";
+    setEditText(focusText);
     suppressMouseUpRef.current = true;
     const target = event.currentTarget;
     requestAnimationFrame(() => {
@@ -333,50 +402,35 @@ export function AmountInput({
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = event.target.value;
-    let cleaned = cleanAmountValue(raw, allowNegative);
+    const normalized = normalizeAmountText(event.target.value);
     // Normalize leading zeros: e.g. typing "1" when "0" is present: "01" -> "1", "-01" -> "-1"
-    cleaned = cleaned.replace(/^(-?)0+([1-9])/, "$1$2");
+    const cleaned = normalized.value.replace(/^(-?)0+([1-9])/, "$1$2");
+    touchedRef.current = true;
+    setDroppedFor(normalized.dropped ? cleaned : null);
     setEditText(cleaned);
     onChange(cleaned);
   };
 
   const handleBlur = () => {
     setFocused(false);
-    let finalValue = (editText !== null ? editText : value || "").replace(/,/g, "").trim();
-    if (!finalValue || finalValue === "-" || finalValue === ".") {
-      finalValue = !allowEmpty || required ? (scale > 0 ? `0.${"0".repeat(scale)}` : "0") : "";
-    } else {
-      const isNegative = allowNegative && finalValue.startsWith("-");
-      const unsigned = isNegative ? finalValue.slice(1) : finalValue;
-      const parts = unsigned.split(".");
-      let whole = parts[0] || "0";
-      if (whole.length > 1 && whole.startsWith("0")) {
-        whole = whole.replace(/^0+/, "") || "0";
-      }
-      let frac = parts[1] ?? "";
-      if (scale <= 0) {
-        finalValue = `${isNegative && whole !== "0" ? "-" : ""}${whole}`;
-      } else {
-        if (frac.length > scale) {
-          const digits = `${whole}${frac.slice(0, scale)}`;
-          const nextDigit = Number(frac[scale] ?? "0");
-          let val = BigInt(digits);
-          if (nextDigit >= 5) val += 1n;
-          const valStr = val.toString();
-          whole = valStr.length > scale ? valStr.slice(0, -scale) : "0";
-          frac = valStr.slice(-scale).padStart(scale, "0");
-        } else {
-          frac = frac.padEnd(scale, "0");
-        }
-        const isZero = whole === "0" && frac.replace(/0/g, "") === "";
-        finalValue = `${isNegative && !isZero ? "-" : ""}${whole}.${frac}`;
-      }
-    }
     setEditText(null);
-    onChange(finalValue);
+    // Untouched (e.g. Tab through a 0.00 field): keep the stored value exactly — never turn "0" into "".
+    const next = amountBlurValue(touchedRef.current, editText ?? value ?? "", scale, !allowEmpty || required ? zeroText : "");
+    touchedRef.current = false;
+    if (next !== null) {
+      if (droppedFor !== null) setDroppedFor(next); // keep the warning on the committed value
+      onChange(next);
+    }
     externalBlur?.();
   };
+  const issue = amountFieldIssue(focused && editText !== null ? editText : value, scale, allowNegative, droppedCharacters);
+  const issueText = issue === "negative"
+    ? tr("gl_amount_negative_not_allowed", "ช่องนี้ไม่รับยอดติดลบ — กรุณาใส่ตัวเลขบวก (ถ้าเป็นรายการกลับด้าน ให้ใส่อีกฝั่ง)")
+    : issue === "scale"
+      ? tr("gl_amount_too_many_decimals", "ใส่ทศนิยมได้ไม่เกิน {0} ตำแหน่ง — ระบบไม่ปัดเศษให้ กรุณาแก้ตัวเลข").replace("{0}", String(scale))
+      : issue === "characters"
+        ? tr("gl_amount_characters_removed", "ตัดตัวอักษรที่ไม่ใช่ตัวเลขออกแล้ว — กรุณาตรวจตัวเลขในช่องนี้อีกครั้ง")
+        : "";
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
@@ -384,24 +438,30 @@ export function AmountInput({
     }
   };
 
+  // Same wrapper in every state so the input is never remounted (focus stays) when a message appears.
   return (
-    <input
-      id={id}
-      type="text"
-      inputMode="decimal"
-      className={`${control} text-right tabular-nums ${className}`}
-      aria-label={ariaLabel}
-      placeholder={resolvedPlaceholder}
-      value={shownText}
-      disabled={disabled}
-      required={required}
-      autoFocus={autoFocus}
-      onFocus={handleFocus}
-      onMouseUp={handleMouseUp}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-    />
+    <span className="grid w-full min-w-0 gap-1">
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        className={`${control} text-right tabular-nums ${issueText ? "border-destructive focus-visible:border-destructive" : ""} ${className}`}
+        aria-label={ariaLabel}
+        aria-invalid={issueText ? true : undefined}
+        aria-describedby={issueText ? messageId : undefined}
+        placeholder={resolvedPlaceholder}
+        value={shownText}
+        disabled={disabled}
+        required={required}
+        autoFocus={autoFocus}
+        onFocus={handleFocus}
+        onMouseUp={handleMouseUp}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+      />
+      {issueText && <span id={messageId} role="alert" className="text-[0.9rem] leading-snug text-destructive [overflow-wrap:anywhere]">{issueText}</span>}
+    </span>
   );
 }
 
@@ -510,19 +570,21 @@ export function YearSelect({ value, onChange, years, label: labelProp, disabled 
 interface ReferencesCache {
   accounts: GLAccount[];
   years: GLFiscalYear[];
+  books: GLJournalBook[];
   loaded: boolean;
 }
 
 let referencesCache: ReferencesCache = {
   accounts: [],
   years: [],
+  books: [],
   loaded: false,
 };
 
 let inFlightReferences: Promise<ReferencesCache> | null = null;
 
 export function invalidateReferencesCache() {
-  referencesCache = { accounts: [], years: [], loaded: false };
+  referencesCache = { accounts: [], years: [], books: [], loaded: false };
   inFlightReferences = null;
 }
 
@@ -534,6 +596,7 @@ export function useReferences(refresh = 0) {
   }, []);
   const [accounts, setAccounts] = useState<GLAccount[]>(() => referencesCache.accounts);
   const [years, setYears] = useState<GLFiscalYear[]>(() => referencesCache.years);
+  const [books, setBooks] = useState<GLJournalBook[]>(() => referencesCache.books);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -541,15 +604,17 @@ export function useReferences(refresh = 0) {
     if (referencesCache.loaded && revision === 0 && refresh === 0) {
       setAccounts(referencesCache.accounts);
       setYears(referencesCache.years);
+      setBooks(referencesCache.books);
       return;
     }
     if (!inFlightReferences) {
       inFlightReferences = Promise.all([
         glAllRecords<GLAccount>("accounts", "", 10000),
         glAllRecords<GLFiscalYear>("fiscal-years", "", 1000),
+        glAllRecords<GLJournalBook>("journal-books", "", 1000),
       ])
-        .then(([a, y]) => {
-          referencesCache = { accounts: a, years: y, loaded: true };
+        .then(([a, y, b]) => {
+          referencesCache = { accounts: a, years: y, books: b, loaded: true };
           inFlightReferences = null;
           return referencesCache;
         })
@@ -563,6 +628,7 @@ export function useReferences(refresh = 0) {
         if (active) {
           setAccounts(cache.accounts);
           setYears(cache.years);
+          setBooks(cache.books);
           setError("");
         }
       })
@@ -574,7 +640,7 @@ export function useReferences(refresh = 0) {
     };
   }, [refresh, revision]);
 
-  return { accounts, years, error, reload };
+  return { accounts, years, books, error, reload };
 }
 export function useGLList<T extends GLRecord>(resource: GLResource, query = "", extra = "", defaultLimit?: number) {
   const limit = defaultLimit ?? (resource === "accounts" ? 1000 : 30);

@@ -4,27 +4,41 @@ import { useMemo, useState } from "react";
 import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { amountString, amountUnits, bookLabels, labelText, type GLLabel, emptyJournal, emptyLine, formatAmount, journalTotals, localDate, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
-import { glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLText } from "./gl-common";
+import { activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
+import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
+import { workspaceStorageKeys } from "@/lib/workspace-models";
+import { formatAppDate } from "@/lib/date-time";
+import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
-import { parseClipboardJournalLines } from "@/lib/clipboard-journal-parser";
+import { isTabularPaste, parseClipboardJournalLines, type ClipboardJournalIssue } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
 import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine, appendVatLine } from "@/lib/gl-smart-guard";
 import { GLJournalDetailsPanel } from "./gl-journal-details";
-import { reconciliationChanges } from "@/lib/gl-journal-details";
+import { detailTaxIdTarget, journalDetailsProblem, normalizeJournalDetails, reconciliationChanges } from "@/lib/gl-journal-details";
 import { GLJournalReviewPanel } from "./gl-journal-review";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
-export const JOURNAL_BOOK_TABS: readonly { code: string; label: GLLabel; badgeClass: string }[] = [
-  { code: "", label: ["gl_all", "ทั้งหมด"], badgeClass: "bg-muted text-muted-foreground border-border" },
-  { code: "UV", label: ["gl_sales_journal", "สมุดรายวันขาย"], badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
-  { code: "SV", label: ["gl_purchase_journal", "สมุดรายวันซื้อ"], badgeClass: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" },
-  { code: "RV", label: ["gl_cash_receipts_journal", "สมุดรายวันรับเงิน"], badgeClass: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
-  { code: "PV", label: ["gl_cash_payments_journal", "สมุดรายวันจ่ายเงิน"], badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
-  { code: "JV", label: ["gl_general_journal", "สมุดรายวันทั่วไป"], badgeClass: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" },
-] as const;
+/** สีป้ายสมุดตามประเภทสมุด (booktype) ด้วย theme token เท่านั้น — รหัส/ชื่อสมุดผู้ใช้กำหนดเอง จึงห้ามเลือกสีจากรหัส; ป้ายแสดงรหัสเป็นข้อความเสมอ (ไม่สื่อด้วยสีอย่างเดียว) */
+export function journalBookBadgeClass(booktype?: number): string {
+  switch (Number(booktype)) {
+    case 2: return "bg-destructive/10 text-destructive border-destructive/30";
+    case 3: return "bg-primary/10 text-primary border-primary/30";
+    case 4: return "bg-accent text-accent-foreground border-primary/20";
+    case 5: return "bg-secondary text-secondary-foreground border-border";
+    case 6: return "bg-background text-muted-foreground border-dashed border-border";
+    default: return "bg-muted text-foreground border-border";
+  }
+}
+
+/** ข้อความแจ้งแถวที่วางจาก Excel ไม่ได้ (บอกแถว ช่อง ค่า และวิธีแก้) — ทั้งชุดไม่ถูกวางจนกว่าจะแก้ */
+export function pasteIssueText(issue: ClipboardJournalIssue, tr: (key: string, fallback: string) => string): string {
+  const field = issue.field === "debit" ? tr("gl_debit", "เดบิต") : issue.field === "credit" ? tr("gl_credit", "เครดิต") : tr("gl_amount", "จำนวนเงิน");
+  const text = issue.problem === "negative"
+    ? tr("gl_paste_issue_negative", "แถวที่ {0} ช่อง{1} เป็นยอดติดลบ {2} — ใส่ยอดเป็นบวกในช่องฝั่งตรงข้ามแทน")
+    : tr("gl_paste_issue_invalid", "แถวที่ {0} ช่อง{1} ไม่ใช่ตัวเลข ({2}) — ใส่เป็นตัวเลข เช่น 1,500.00");
+  return text.replace("{0}", String(issue.row)).replace("{1}", field).replace("{2}", issue.value);
+}
 
 /**
  * Intelligent helper to create the next journal row with automatic debit/credit balance.
@@ -52,6 +66,21 @@ export function createSmartNextLine(lines: GLLine[], scale = 2): GLLine {
   return line;
 }
 
+/** พาไปที่ช่องรายละเอียดที่ต้องแก้: เปิดหมวด เลื่อนมาให้เห็น (ไม่กระโดดถ้าผู้ใช้ปิด motion) แล้ว focus — แถบแจ้งด้านบนบอกเหตุผล
+ *  เดิมบอกแค่แถบแจ้ง ผู้ใช้ต้องไล่หาเองว่าแถวไหนผิด (UAT S3 2026-09-24) */
+function focusDetailField(target: { section: string; row: number; field: string } | null) {
+  if (!target || typeof document === "undefined") return;
+  requestAnimationFrame(() => {
+    const cell = document.querySelector<HTMLElement>(`[data-detail-field="${target.section}.${target.row}.${target.field}"]`);
+    const input = cell?.querySelector<HTMLElement>("input, select, textarea, button");
+    const group = cell?.closest("details");
+    if (group) group.open = true;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    input?.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+    input?.focus({ preventScroll: true });
+  });
+}
+
 export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { route: string; book?: string; kind?: string; mode?: "edit" | "post" | "reverse" }) {
   const tr = useGLText();
   const [selectedBook, setSelectedBook] = useState(book || "");
@@ -63,6 +92,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const activeStatus = effectiveMode === "post" ? "draft" : effectiveMode === "reverse" ? "posted" : "";
   const filters = new URLSearchParams({ ...(activeBook ? { bookcode: activeBook } : {}), ...(kind ? { kind } : {}), ...(activeStatus ? { status: activeStatus } : {}) }).toString();
   const list = useGLList<GLJournal>("journals", search, filters), refs = useReferences();
+  const language = useGLLanguage();
+  const books = useMemo(() => refs.books ?? [], [refs.books]);
+  const usableBooks = useMemo(() => activeJournalBooks(books), [books]);
+  const bookLabel = (code: string) => journalBookName(findJournalBook(books, code), code, language);
+  // สมุดของใบใหม่: แท็บที่เลือก → (ยอดยกมา) สมุดประเภทยอดยกมา → สมุดทั่วไป — ไม่ผูกกับรหัสสมุดใดตายตัว
+  const newBookCode = () => defaultJournalBookCode(books, activeBook || (kind === "opening" ? usableBooks.find((item) => Number(item.booktype) === 6)?.code ?? "" : ""));
   const searchDebounce = useDebouncedSearch({
     onSearch: (val) => {
       list.setPage(1);
@@ -123,22 +158,34 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
   const applyPastedLines = (clipboardText: string) => {
     if (!journal || !clipboardText.trim()) return;
-    const parsed = parseClipboardJournalLines(clipboardText);
-    if (parsed.length === 0) return;
+    const { lines: parsed, issues } = parseClipboardJournalLines(clipboardText);
+    if (issues.length > 0) {
+      setMessage("");
+      setError(tr("gl_paste_rejected", "ยังไม่ได้วางข้อมูล — แก้ใน Excel แล้ววางใหม่: {0}").replace("{0}", issues.slice(0, 3).map((issue) => pasteIssueText(issue, tr)).join(" · ")));
+      return;
+    }
+    if (parsed.length === 0) {
+      setError(tr("gl_paste_no_rows", "ไม่พบแถวข้อมูลที่วางได้ — คัดลอกคอลัมน์ รหัสบัญชี คำอธิบาย เดบิต เครดิต จาก Excel"));
+      return;
+    }
 
     const isEmptyJournal = journal.lines.every(
       (l) => !l.accountcode && !l.description && (!l.debit || l.debit === "0") && (!l.credit || l.credit === "0")
     );
     const combined = isEmptyJournal ? parsed : [...journal.lines, ...parsed];
-    const finalLines = combined.slice(0, 500);
-    patch({ lines: finalLines });
-    setMessage(`Pasted ${parsed.length} row(s)`);
+    if (combined.length > 500) {
+      setError(tr("gl_paste_too_many_lines", "ใบสำคัญมีได้ไม่เกิน 500 บรรทัด — ถ้าวางจะมี {0} บรรทัด กรุณาแบ่งเป็นหลายใบ").replace("{0}", String(combined.length)));
+      return;
+    }
+    patch({ lines: combined });
+    setError("");
+    setMessage(tr("gl_paste_rows_added", "วางข้อมูลจาก Excel แล้ว {0} บรรทัด — ตรวจบัญชีและยอดก่อนบันทึก").replace("{0}", String(parsed.length)));
   };
 
   const handlePasteClick = async () => {
     try {
       if (!navigator?.clipboard?.readText) {
-        setError("Clipboard API not supported in this browser");
+        setError(tr("gl_clipboard_unsupported", "เบราว์เซอร์นี้อ่านคลิปบอร์ดไม่ได้ — คลิกในตารางบรรทัดบัญชีแล้วกด Ctrl+V แทน"));
         return;
       }
       const text = await navigator.clipboard.readText();
@@ -146,7 +193,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
         applyPastedLines(text);
       }
     } catch {
-      setError("Clipboard read permission denied");
+      setError(tr("gl_clipboard_denied", "เบราว์เซอร์ไม่อนุญาตให้อ่านคลิปบอร์ด — คลิกในตารางบรรทัดบัญชีแล้วกด Ctrl+V แทน"));
     }
   };
 
@@ -160,7 +207,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     if (busy) return;
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
-      const value = item?.id ? await glRequest<GLJournal>(`journals/${encodeURIComponent(item.id)}`) : emptyJournal(book || "JV", kind || "manual");
+      const value = item?.id ? await glRequest<GLJournal>(`journals/${encodeURIComponent(item.id)}`) : emptyJournal(newBookCode(), kind || "manual", refs.years, workspaceBranchCode(localStorage.getItem(workspaceStorageKeys.workspace)));
       setJournal(value);
       setDetailsEditing(false);
       setReviewLoad((value) => value + 1);
@@ -169,7 +216,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
       setError("");
       setMessage("");
       setReason("");
-      setReverseDocno("");
+      setReverseDocno(""); setReverseDate(localDate());
     } catch (e) {
       setError((e as Error).message);
     }
@@ -179,7 +226,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     if (busy) return;
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
-      const value = item?.id ? await glRequest<GLJournal>(`journals/${encodeURIComponent(item.id)}`) : emptyJournal(book || "JV", kind || "manual");
+      const value = item?.id ? await glRequest<GLJournal>(`journals/${encodeURIComponent(item.id)}`) : emptyJournal(newBookCode(), kind || "manual", refs.years, workspaceBranchCode(localStorage.getItem(workspaceStorageKeys.workspace)));
       setJournal(value);
       setDetailsEditing(false);
       setOriginal(JSON.stringify(value));
@@ -187,7 +234,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
       setError("");
       setMessage("");
       setReason("");
-      setReverseDocno("");
+      setReverseDocno(""); setReverseDate(localDate());
     } catch (e) {
       setError((e as Error).message);
     }
@@ -196,15 +243,14 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   async function openCreate() {
     if (busy) return;
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
-    const initialBook = activeBook || "JV";
-    const value = emptyJournal(initialBook, kind || "manual");
+    const value = emptyJournal(newBookCode(), kind || "manual", refs.years, workspaceBranchCode(localStorage.getItem(workspaceStorageKeys.workspace)));
     setJournal(value);
     setOriginal(JSON.stringify(value));
     setIsEditing(true);
     setError("");
     setMessage("");
     setReason("");
-    setReverseDocno("");
+    setReverseDocno(""); setReverseDate(localDate());
   }
 
   async function cancelEdit() {
@@ -224,20 +270,30 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
   async function save() {
     if (!journal || busy || !isEditing) return;
-    const problem = validateJournal(journal, year, refs.accounts, tr);
+    const saved = journal.id && original ? (JSON.parse(original) as GLJournal) : undefined;
+    const bookProblem = journalBookProblem(journal.bookcode, books, saved?.bookcode, tr);
+    if (bookProblem) { setError(bookProblem); return; }
+    const candidate: GLJournal = { ...journal, lines: normalizeJournalLines(journal.lines) };
+    const problem = validateJournal(candidate, year, refs.accounts, tr);
     if (problem) { setError(problem); return; }
+    const detailProblem = journalDetailsProblem(journal.details, tr);
+    if (detailProblem) { setError(detailProblem.message); focusDetailField(detailProblem); return; }
+    const payload: GLJournal = { ...candidate, details: normalizeJournalDetails(journal.details) };
     if (journal.id && !await confirm({ title: tr("gl_save_draft_changes", "บันทึกการแก้ไขฉบับร่าง?"), description: journal.docno, confirmLabel: tr("gl_save_draft", "บันทึกฉบับร่าง"), tone: "info" })) return;
     try {
-      const result = await execute({ resource: "journals", id: journal.id, version: journal.version, action: journal.id ? "update" : "create", journal });
+      const result = await execute({ resource: "journals", id: journal.id, version: journal.version, action: journal.id ? "update" : "create", journal: payload });
       // backend เติมค่าที่คำนวณเอง (เช่น ภาษีหัก ณ ที่จ่าย = ฐาน × อัตรา) — แสดงฉบับที่บันทึกจริง; โหลดไม่ได้ใช้ค่าที่ส่งไป (คำสั่ง commit แล้ว)
-      const saved = await glRequest<GLJournal>(`journals/${encodeURIComponent(result.id)}`).catch(() => ({ ...journal, id: result.id, version: result.version }));
-      setJournal(saved);
-      setOriginal(JSON.stringify(saved));
+      const reloaded = await glRequest<GLJournal>(`journals/${encodeURIComponent(result.id)}`).catch(() => ({ ...payload, id: result.id, version: result.version }));
+      setJournal(reloaded);
+      setOriginal(JSON.stringify(reloaded));
       setIsEditing(false);
       list.reload();
       setError("");
       setMessage(result.projectionpending ? tr("gl_draft_saved_updating_report_data", "บันทึกฉบับร่างแล้ว กำลังปรับปรุงข้อมูลสำหรับรายงาน") : tr("gl_draft_saved_review_and_post", "บันทึกฉบับร่างแล้ว ตรวจสอบและกดผ่านรายการเมื่อพร้อม"));
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) {
+      setError((e as Error).message);
+      if (e instanceof GLCommandError) focusDetailField(detailTaxIdTarget(payload.details, e.field));
+    }
   }
 
   async function saveReconciliation() {
@@ -245,7 +301,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     if (!reason.trim()) { setError(tr("gl_details_ui_30","ระบุเหตุผลการกระทบยอดก่อนบันทึก")); return; }
     try {
       const before = JSON.parse(original) as GLJournal;
-      const details = reconciliationChanges(before.details, journal.details);
+      const detailProblem = journalDetailsProblem(journal.details, tr);
+      if (detailProblem) { setError(detailProblem.message); focusDetailField(detailProblem); return; }
+      const details = reconciliationChanges(before.details, normalizeJournalDetails(journal.details));
       const result = await execute({ resource: "journals", action: "reconcile", id: journal.id, version: journal.version, reason, journal: { details } });
       // The command has committed even if the following refresh fails. Clear pending additions before reload.
       const committed = { ...journal, version: result.version };
@@ -254,7 +312,10 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
       const saved = await glRequest<GLJournal>(`journals/${encodeURIComponent(journal.id)}`);
       setJournal(saved); setOriginal(JSON.stringify(saved)); setDetailsEditing(false); setReason(""); setReviewLoad(value => value + 1);
       setError(""); setMessage(tr("gl_details_ui_32","บันทึกผลกระทบยอดแล้ว กรุณาตรวจผลตรวจเอกสารอีกครั้ง")); list.reload();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : tr("gl_details_ui_33","บันทึกผลกระทบยอดไม่สำเร็จ")); }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : tr("gl_details_ui_33","บันทึกผลกระทบยอดไม่สำเร็จ"));
+      if (cause instanceof GLCommandError) focusDetailField(detailTaxIdTarget(journal.details, cause.field));
+    }
   }
 
   // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
@@ -272,7 +333,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     if (action !== "post" && !reason.trim()) { setError(tr("gl_enter_reason_before_posting", "กรุณาระบุเหตุผลก่อนทำรายการ")); return; }
     if (action === "reverse" && (!reverseDate || !reverseDocno.trim())) { setError(tr("gl_enter_date_and_reversal_doc_no", "กรุณาระบุวันที่และเลขที่ใบกลับรายการ")); return; }
     const label = action === "post" ? tr("gl_post_accounting_entry", "ผ่านรายการ") : action === "reverse" ? tr("gl_create_reversing_entry", "สร้างรายการกลับบัญชี") : tr("gl_delete_draft", "ลบฉบับร่าง");
-    if (!await confirm({ title: `${label}?`, description: action === "post" ? tr("gl_after_posting_edit_requires_reversal", "หลังผ่านรายการจะไม่สามารถแก้ไขหรือลบได้ การแก้ไขต้องสร้างรายการกลับบัญชีพร้อมเหตุผล") : action === "reverse" ? tr("gl_create_reversal_doc", "สร้างเอกสาร {0} วันที่ {1} กลับเดบิตและเครดิตของ {2} โดยเก็บรายการเดิมไว้").replace("{0}", String(reverseDocno)).replace("{1}", String(reverseDate)).replace("{2}", String(journal.docno)) : tr("gl_delete_draft_keep_history", "ลบฉบับร่าง {0} พร้อมเก็บประวัติ").replace("{0}", String(journal.docno)), details: tr("gl_debit_credit", "เดบิต {0} · เครดิต {1}").replace("{0}", String(totals ? formatAmount(amountString(totals.debit), year?.scale) : "—")).replace("{1}", String(totals ? formatAmount(amountString(totals.credit), year?.scale) : "—")), confirmLabel: label, tone: action === "delete" ? "danger" : "warning" })) return;
+    if (!await confirm({ title: `${label}?`, description: action === "post" ? tr("gl_after_posting_edit_requires_reversal", "หลังผ่านรายการจะไม่สามารถแก้ไขหรือลบได้ การแก้ไขต้องสร้างรายการกลับบัญชีพร้อมเหตุผล") : action === "reverse" ? tr("gl_create_reversal_doc", "สร้างเอกสาร {0} วันที่ {1} กลับเดบิตและเครดิตของ {2} โดยเก็บรายการเดิมไว้").replace("{0}", String(reverseDocno)).replace("{1}", formatAppDate(reverseDate, language)).replace("{2}", String(journal.docno)) : tr("gl_delete_draft_keep_history", "ลบฉบับร่าง {0} พร้อมเก็บประวัติ").replace("{0}", String(journal.docno)), details: tr("gl_debit_credit", "เดบิต {0} · เครดิต {1}").replace("{0}", String(totals ? formatAmount(amountString(totals.debit), year?.scale) : "—")).replace("{1}", String(totals ? formatAmount(amountString(totals.credit), year?.scale) : "—")), confirmLabel: label, tone: action === "delete" ? "danger" : "warning" })) return;
     try {
       await execute({ resource: "journals", action, id: journal.id, version: journal.version, reason, ...(action === "reverse" ? { date: reverseDate, docno: reverseDocno } : {}) });
       setJournal(null);
@@ -391,7 +452,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
               {/* Journal Book Category Tabs (แยกกันข้างในตามคำสั่งลุงจืด) */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" role="tablist" aria-label={tr("gl_journal", "สมุดรายวัน")}>
-                {JOURNAL_BOOK_TABS.map((tab) => {
+                {[
+                  { code: "", label: tr("gl_all", "ทั้งหมด") },
+                  ...usableBooks.map((item) => ({ code: item.code, label: journalBookName(item, item.code, language) })),
+                  // สมุดจากเมนู/ลิงก์ที่ไม่อยู่ในรายการใช้งาน (ปิดใช้งานแล้ว) ยังแสดงให้เห็นว่ากำลังกรองอยู่
+                  ...(activeBook && !usableBooks.some((item) => item.code === activeBook) ? [{ code: activeBook, label: bookLabel(activeBook) }] : []),
+                ].map((tab) => {
                   const isActive = activeBook === tab.code;
                   return (
                     <button
@@ -409,7 +475,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/80 border-border/70"
                       }`}
                     >
-                      <span>{tr(...tab.label)}</span>
+                      <span>{tab.label}</span>
                       {tab.code && (
                         <span className={`rounded px-1.5 py-0.2 text-[10px] font-mono font-bold ${isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground border border-border/60"}`}>
                           {tab.code}
@@ -464,10 +530,8 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             <span className="font-mono font-semibold text-primary">{item.docno}</span>
                             {item.bookcode && (
                               <span
-                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-mono font-bold border ${
-                                  JOURNAL_BOOK_TABS.find((t) => t.code === item.bookcode)?.badgeClass ?? "bg-muted text-muted-foreground border-border"
-                                }`}
-                                title={labelText(bookLabels, item.bookcode, tr)}
+                                className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-mono font-bold border ${journalBookBadgeClass(findJournalBook(books, item.bookcode)?.booktype)}`}
+                                title={bookLabel(item.bookcode)}
                               >
                                 {item.bookcode}
                               </span>
@@ -603,7 +667,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} value={journal.docno} readOnly /></Field>
                       <Field label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} type="date" value={journal.date} readOnly /></Field>
                       <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><input className={control} value={journal.fiscalyear} readOnly /></Field>
-                      <Field label={tr("gl_journal", "สมุดรายวัน")}><input className={control} value={labelText(bookLabels, journal.bookcode, tr)} readOnly /></Field>
+                      <Field label={tr("gl_journal", "สมุดรายวัน")}><input className={control} value={journal.bookcode ? `${journal.bookcode} · ${bookLabel(journal.bookcode)}` : ""} readOnly /></Field>
                       <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}><input className={control} value={journal.description} readOnly /></Field>
                       <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference || "-"} readOnly /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode || "-"} readOnly /></Field>
@@ -650,7 +714,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     ))}
                   </div>
                   <GLJournalDetailsPanel key={`details:${journal.id ?? "new"}:${journal.version ?? 0}`} value={journal.details} original={original ? (JSON.parse(original) as GLJournal).details : undefined}
-                    onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} bookcode={journal.bookcode} journalId={journal.id}
+                    onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} booktype={findJournalBook(books, journal.bookcode)?.booktype} journalId={journal.id}
                     editable={!busy && (isEditing || detailsEditing)} posted={journal.status === "posted"} onBusyChange={setDetailsBusy} scale={year?.scale} />
                   {journal.id && journal.version && <GLJournalReviewPanel key={`${journal.id}:${journal.version}:${reviewLoad}`}
                     journalId={journal.id} version={journal.version} onDirtyChange={setReviewDirty} onBusyChange={setReviewBusy}
@@ -762,7 +826,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           value={journal.date}
                           onChange={(e) => {
                             const newDate = e.target.value;
-                            const matched = refs.years.find((y) => newDate >= y.startdate && newDate <= y.enddate)?.code;
+                            const matched = fiscalYearForDate(refs.years, newDate);
                             patch({ date: newDate, ...(matched ? { fiscalyear: matched } : {}) });
                           }}
                         />
@@ -770,12 +834,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={journal.fiscalyear} onChange={(fiscalyear) => patch({ fiscalyear })} /></Field>
                       <Field label={tr("gl_journal", "สมุดรายวัน")}>
                         <Combobox
-                          disabled={!isEditing || busy}
+                          // backend ห้ามเปลี่ยนสมุดของใบสำคัญที่บันทึกแล้ว (journal_book_immutable) — ล็อกไว้ ไม่ให้ผู้ใช้เลือกแล้วค่อยเจอ error ตอนบันทึก
+                          disabled={!isEditing || busy || Boolean(journal.id)}
                           value={journal.bookcode}
                           onChange={(val) => patch({ bookcode: String(val) })}
                           placeholder={tr("gl_journal", "สมุดรายวัน")}
                         >
-                          {Object.entries(bookLabels).map(([code, name]) => <option key={code} value={code}>{tr(...name)}</option>)}
+                          {!journal.bookcode && <option value="">{tr("gl_select", "เลือก")}</option>}
+                          {usableBooks.map((item) => <option key={item.code} value={item.code}>{item.code} · {journalBookName(item, item.code, language)}</option>)}
+                          {journal.bookcode && !usableBooks.some((item) => item.code === journal.bookcode) && (
+                            <option value={journal.bookcode}>{journal.bookcode} · {bookLabel(journal.bookcode)}{!journal.id && <> {tr("gl_book_inactive_suffix", "(ปิดใช้งาน — เลือกสมุดอื่น)")}</>}</option>
+                          )}
                         </Combobox>
                       </Field>
                       <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}>
@@ -789,7 +858,8 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       onKeyDown={tabularEnterNav.onKeyDown}
                       onPaste={(e) => {
                         const text = e.clipboardData.getData("text");
-                        if (text && (text.includes("\t") || text.includes("\n"))) {
+                        // One Excel cell ("1,500.00\r\n") pastes into the focused box; only a block of cells becomes lines
+                        if (text && isTabularPaste(text)) {
                           e.preventDefault();
                           applyPastedLines(text);
                         }
@@ -815,10 +885,10 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                 </div>
                               </td>
                               <td className="min-w-32 p-2">
-                                <AmountInput ariaLabel={tr("gl_line_debit", "เดบิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} value={line.debit} onChange={(debit) => patchLine(index, { debit })} />
+                                <AmountInput ariaLabel={tr("gl_line_debit", "เดบิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.debit} onChange={(debit) => patchLine(index, { debit })} />
                               </td>
                               <td className="min-w-32 p-2">
-                                <AmountInput ariaLabel={tr("gl_line_credit", "เครดิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} value={line.credit} onChange={(credit) => patchLine(index, { credit })} />
+                                <AmountInput ariaLabel={tr("gl_line_credit", "เครดิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.credit} onChange={(credit) => patchLine(index, { credit })} />
                               </td>
                               <td className="min-w-32 p-2">
                                 <div className="grid gap-1">
@@ -840,19 +910,19 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => addNewLine()}>
                         <Plus className="size-4 mr-1.5" />{tr("gl_add_line", "เพิ่มบรรทัด")}
                       </Button>
-                      <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => void handlePasteClick()} title="Paste rows from Excel or Google Sheets (Ctrl+V)">
+                      <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => void handlePasteClick()} title={tr("gl_paste_from_excel_hint", "วางแถวที่คัดลอกจาก Excel หรือ Google Sheets (Ctrl+V) คอลัมน์: รหัสบัญชี คำอธิบาย เดบิต เครดิต แผนก โครงการ")}>
                         <ClipboardPaste className="size-4 mr-1.5" />
-                        <span>Excel Paste</span>
+                        <span>{tr("gl_paste_from_excel", "วางจาก Excel")}</span>
                       </Button>
                       {smartGuard && !smartGuard.isBalanced && (
                         <Button
                           type="button"
                           variant="outline"
-                          className={`${actionClass} border-amber-500/40 text-amber-700 bg-amber-50/80 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-700/50 shadow-sm`}
+                          className={`${actionClass} border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 shadow-sm`}
                           onClick={() => patch({ lines: autoBalanceJournalLines(journal.lines, year?.scale ?? 2) })}
                           title={tr("gl_auto_balance_hint", "ปรับยอดให้เดบิตและเครดิตสมดุลกันอัตโนมัติ")}
                         >
-                          <Scale className="size-4 mr-1.5 text-amber-600 dark:text-amber-400" />
+                          <Scale className="size-4 mr-1.5 text-primary" />
                           <span>{tr("gl_auto_balance", "ปรับยอดให้ดุล (Auto-Balance)")}</span>
                         </Button>
                       )}
@@ -875,7 +945,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   <div
                     className={`grid gap-2 rounded-xl border p-3 sm:grid-cols-3 transition-colors ${
                       smartGuard?.isBalanced
-                        ? "border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/10"
+                        ? "border-primary/30 bg-primary/5"
                         : "border-destructive/30 bg-destructive/5"
                     }`}
                     aria-live="polite"
@@ -896,7 +966,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <div className="flex items-center justify-between gap-1">
                         <span className="text-[0.9rem] text-muted-foreground">{tr("gl_difference", "ผลต่าง")}</span>
                         {smartGuard?.isBalanced ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                             <CheckCircle2 className="size-3" />
                             {tr("gl_balanced_100", "สมดุล 100%")}
                           </span>
@@ -909,7 +979,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           </span>
                         )}
                       </div>
-                      <strong className={`text-lg tabular-nums ${smartGuard?.isBalanced ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
+                      <strong className={`text-lg tabular-nums ${smartGuard?.isBalanced ? "text-primary" : "text-destructive"}`}>
                         {totals?.difference === undefined ? tr("gl_verify_amount", "ตรวจจำนวนเงิน") : formatAmount(amountString(totals.difference), year?.scale)}
                       </strong>
                       {!smartGuard?.isBalanced && smartGuard && (
@@ -927,17 +997,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     <div
                       className={`flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border text-xs ${
                         smartGuard.vat.isExactVat
-                          ? "bg-emerald-50/50 border-emerald-500/20 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-300"
+                          ? "bg-primary/5 border-primary/20 text-foreground"
                           : smartGuard.vat.isCloseVat
-                          ? "bg-amber-50/50 border-amber-500/30 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300"
-                          : "bg-rose-50/50 border-rose-500/30 text-rose-800 dark:bg-rose-950/20 dark:text-rose-300"
+                          ? "bg-muted border-border text-foreground"
+                          : "bg-destructive/5 border-destructive/30 text-foreground"
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         {smartGuard.vat.isExactVat ? (
-                          <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle2 className="size-4 shrink-0 text-primary" />
                         ) : (
-                          <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                          <AlertTriangle className={`size-4 shrink-0 ${smartGuard.vat.isCloseVat ? "text-muted-foreground" : "text-destructive"}`} />
                         )}
                         <span>
                           {smartGuard.vat.isExactVat
@@ -966,7 +1036,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                   )}
                   <GLJournalDetailsPanel key={`details:${journal.id ?? "new"}:${journal.version ?? 0}`} value={journal.details} original={original ? (JSON.parse(original) as GLJournal).details : undefined}
-                    onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} bookcode={journal.bookcode} journalId={journal.id}
+                    onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} booktype={findJournalBook(books, journal.bookcode)?.booktype} journalId={journal.id}
                     editable={!busy && (isEditing || detailsEditing)} posted={journal.status === "posted"} onBusyChange={setDetailsBusy} scale={year?.scale} />
                   {journal.id && (
                     <Field label={tr("gl_reason", "เหตุผล")}><input className={control} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder={tr("gl_edit_reason_hint", "ระบุเหตุผลการแก้ไข (ถ้ามี)")} /></Field>

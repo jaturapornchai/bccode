@@ -16,15 +16,21 @@ type JournalDetails struct {
 	Vats           []SubledgerVat           `json:"vats,omitempty"`
 }
 type SubledgerPartner struct {
-	Code       string `json:"partner_code"`
-	Name       string `json:"name_th"`
-	TaxID      string `json:"tax_id,omitempty"`
-	TaxBranch  string `json:"tax_branch_no,omitempty"`
-	Address    string `json:"address,omitempty"`
-	IsCustomer bool   `json:"is_customer"`
-	IsSupplier bool   `json:"is_supplier"`
-	IsActive   bool   `json:"is_active"`
-	Version    int64  `json:"version,omitempty"`
+	Code      string `json:"partner_code"`
+	Name      string `json:"name_th"`
+	TaxID     string `json:"tax_id,omitempty"`
+	TaxBranch string `json:"tax_branch_no,omitempty"`
+	Address   string `json:"address,omitempty"`
+	// ช่องไม่บังคับสำหรับไฟล์ยื่นภาษีหัก ณ ที่จ่ายด้วยสื่อ (Format กลาง ภ.ง.ด.3/53/2: TITLE_NAME, AMPHUR, PROVINCE, POSTAL_CODE)
+	// เก็บใน payload ของทะเบียน ไม่มีคอลัมน์ใน mydocs/datamodels/gl/partners.sql — ตรวจที่ validatePartner
+	TitleName    string `json:"title_name,omitempty"`    // คำนำหน้าชื่อ ≤ 100 ตัวอักษร
+	AddrDistrict string `json:"addr_district,omitempty"` // อำเภอ/เขต ≤ 50 ตัวอักษร
+	AddrProvince string `json:"addr_province,omitempty"` // จังหวัด ≤ 50 ตัวอักษร
+	AddrPostcode string `json:"addr_postcode,omitempty"` // รหัสไปรษณีย์ ตัวเลข 5 หลัก (ว่างได้)
+	IsCustomer   bool   `json:"is_customer"`
+	IsSupplier   bool   `json:"is_supplier"`
+	IsActive     bool   `json:"is_active"`
+	Version      int64  `json:"version,omitempty"`
 }
 type SubledgerBankAccount struct {
 	Code          string `json:"bank_account_code"`

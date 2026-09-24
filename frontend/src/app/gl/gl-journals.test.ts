@@ -3,14 +3,29 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLJournal, GLLine } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { GLJournals, createSmartNextLine } from "./gl-journals";
+import { GLJournals, createSmartNextLine, journalBookBadgeClass, pasteIssueText } from "./gl-journals";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
   return {
     ...actual,
     useGLList: vi.fn(),
-    useReferences: vi.fn().mockReturnValue({ accounts: [], years: [], error: "", reload: vi.fn() }),
+    useReferences: vi.fn().mockReturnValue({
+      accounts: [],
+      years: [],
+      // สมุดเป็นข้อมูลหลักที่บริษัทกำหนดเอง — รวมรหัสที่ไม่ใช่มาตรฐาน (POS1) และสมุดที่ปิดใช้งาน (OLD)
+      books: [
+        { id: "b1", code: "JV", name: "สมุดรายวันทั่วไป", booktype: 1, isactive: true },
+        { id: "b2", code: "PV", name: "สมุดรายวันจ่ายเงิน", booktype: 2, isactive: true },
+        { id: "b3", code: "RV", name: "สมุดรายวันรับเงิน", booktype: 3, isactive: true },
+        { id: "b4", code: "SV", name: "สมุดรายวันขาย", booktype: 4, isactive: true },
+        { id: "b5", code: "UV", name: "สมุดรายวันซื้อ", booktype: 5, isactive: true },
+        { id: "b6", code: "POS1", name: "สมุดขายหน้าร้าน", booktype: 4, isactive: true },
+        { id: "b7", code: "OLD", name: "สมุดเก่าเลิกใช้", booktype: 1, isactive: false },
+      ],
+      error: "",
+      reload: vi.fn(),
+    }),
     useGLCommand: vi.fn().mockReturnValue({ busy: false, execute: vi.fn() }),
     useDirtyGuard: vi.fn(),
   };
@@ -136,16 +151,16 @@ describe("GLJournals CRUD table presentation", () => {
     expect(html).not.toContain("บันทึกฉบับร่าง");
   });
 
-  it("renders journal book category tabs (ทั้งหมด, UV, SV, RV, PV, JV) to separate books inside one screen", () => {
+  it("renders journal book tabs from the company's active journal-books master (name label, colour by book type)", () => {
     vi.mocked(glCommon.useGLList).mockReturnValue({
       data: {
         items: [
           {
             id: "j-sales",
-            docno: "UV-2026-001",
+            docno: "SV-2026-001",
             date: "2026-09-18",
             fiscalyear: "2026",
-            bookcode: "UV",
+            bookcode: "SV",
             description: "ขายสินค้าเงินเชื่อ",
             status: "draft",
             version: 1,
@@ -165,16 +180,17 @@ describe("GLJournals CRUD table presentation", () => {
     });
 
     const html = renderToStaticMarkup(createElement(GLJournals, { route: "/gl/journals", book: "" }));
-    // Contains all book selector tabs
+    // Tabs = "all" + every active book of the company, labelled by the book name
     expect(html).toContain("ทั้งหมด");
-    expect(html).toContain("สมุดรายวันขาย");
-    expect(html).toContain("สมุดรายวันซื้อ");
-    expect(html).toContain("สมุดรายวันรับเงิน");
-    expect(html).toContain("สมุดรายวันจ่ายเงิน");
-    expect(html).toContain("สมุดรายวันทั่วไป");
-    // Contains book code badge
-    expect(html).toContain("UV");
-    expect(html).toContain("UV-2026-001");
+    for (const name of ["สมุดรายวันขาย", "สมุดรายวันซื้อ", "สมุดรายวันรับเงิน", "สมุดรายวันจ่ายเงิน", "สมุดรายวันทั่วไป", "สมุดขายหน้าร้าน"]) {
+      expect(html).toContain(name);
+    }
+    expect(html).toContain("POS1");
+    // Inactive books are not offered as tabs
+    expect(html).not.toContain("สมุดเก่าเลิกใช้");
+    // Badge shows the code as text; colour follows the book type (4 = sales), not the code
+    expect(html).toContain("SV-2026-001");
+    expect(html).toContain(journalBookBadgeClass(4));
   });
 
   it("renders posting dual tabs (รอผ่านรายการ and ผ่านรายการแล้ว) when on posting route", () => {
@@ -197,5 +213,29 @@ describe("GLJournals CRUD table presentation", () => {
     // Contains Posting & Reversal dual tabs
     expect(html).toContain("รอผ่านรายการ (ฉบับร่าง)");
     expect(html).toContain("ผ่านรายการแล้ว (ขอยกเลิก)");
+  });
+});
+
+describe("journal book badge colours", () => {
+  it("uses theme tokens only and depends on the book type, never the code", () => {
+    for (const booktype of [undefined, 1, 2, 3, 4, 5, 6]) {
+      expect(journalBookBadgeClass(booktype)).not.toMatch(/(blue|rose|emerald|amber|purple|red|green)-\d/);
+    }
+    expect(journalBookBadgeClass(4)).not.toBe(journalBookBadgeClass(5));
+    expect(journalBookBadgeClass(undefined)).toBe(journalBookBadgeClass(1));
+  });
+});
+
+describe("pasteIssueText", () => {
+  const tr = (_key: string, fallback: string) => fallback;
+  it("names the row, the column and how to fix an accounting negative", () => {
+    const text = pasteIssueText({ row: 3, field: "debit", value: "(1,500.00)", problem: "negative" }, tr);
+    expect(text).toContain("แถวที่ 3");
+    expect(text).toContain("เดบิต");
+    expect(text).toContain("(1,500.00)");
+    expect(text).toContain("ฝั่งตรงข้าม");
+  });
+  it("names the column of a non-numeric cell", () => {
+    expect(pasteIssueText({ row: 2, field: "credit", value: "หนึ่งพัน", problem: "invalid" }, tr)).toContain("เครดิต");
   });
 });

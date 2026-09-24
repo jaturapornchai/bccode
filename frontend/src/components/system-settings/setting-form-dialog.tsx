@@ -8,9 +8,10 @@ import { Loader2, Save, X } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import type { AuthSession, WorkspaceSession } from "@/lib/workspace-models";
 import type { BackendLanguageDictionary } from "@/lib/backend-language";
-import type {
-  SystemSettingConfig,
-  SystemSettingField,
+import {
+  USER_FORM_SECTION_KEYS,
+  type SystemSettingConfig,
+  type SystemSettingField,
 } from "@/lib/system-setting-screens";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -240,12 +241,12 @@ function UserFormSections({
       : "To let the user sign in with email, enter the email in User code or email. The registered email is only for sending email.";
   const sections = [
     {
-      keys: ["avatar", "uid", "username", "userprofilename", "email"],
+      keys: USER_FORM_SECTION_KEYS.signIn,
       title: language === "th" ? "บัญชีเข้าสู่ระบบ" : "Sign-in account",
       description: loginHint,
     },
     {
-      keys: ["role", "permissionsets"],
+      keys: USER_FORM_SECTION_KEYS.role,
       title: language === "th" ? "สิทธิ์ผู้ใช้งาน" : "User role",
       description:
         language === "th"
@@ -253,7 +254,7 @@ function UserFormSections({
           : "Pick the access level, then add any number of reusable permission sets (managed in step 2).",
     },
     {
-      keys: ["isaccessdisabled"],
+      keys: USER_FORM_SECTION_KEYS.accessStatus,
       title: language === "th" ? "สถานะเข้าใช้งาน" : "Access status",
       description:
         language === "th"
@@ -261,7 +262,7 @@ function UserFormSections({
           : "Enable or temporarily disable this user's access without deleting.",
     },
     {
-      keys: ["accessscopes"],
+      keys: USER_FORM_SECTION_KEYS.accessScopes,
       title:
         language === "th"
           ? "บริษัทและสาขาที่เข้าได้"
@@ -272,7 +273,7 @@ function UserFormSections({
           : "Select the company first, then choose all branches or specific branches.",
     },
     {
-      keys: ["position", "department", "lineuserid", "linedisplayname"],
+      keys: USER_FORM_SECTION_KEYS.organization,
       title:
         language === "th" ? "ข้อมูลองค์กรและ LINE" : "Organization and LINE",
       description:

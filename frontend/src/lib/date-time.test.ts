@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDefaultDate, formatDefaultDateTime, formatLocalDate, localTimeToUtcTime, normalizeTimeInput } from "@/lib/date-time";
+import { formatAppDate, formatDefaultDate, formatDefaultDateTime, formatLocalDate, localTimeToUtcTime, normalizeTimeInput } from "@/lib/date-time";
 
 describe("date-time helpers", () => {
   it("normalizes compact and clock time input", () => {
@@ -32,5 +32,14 @@ describe("date-time helpers", () => {
       timeZone: "Asia/Bangkok",
     })).toBe("29/05/2026");
     expect(formatDefaultDateTime("not-a-date")).toBe("not-a-date");
+  });
+});
+
+// UAT 2026-09-24: ทะเบียน VAT/รายงานภาษีหัก และ dialog กลับรายการแสดง 2026-11-05 ปนกับงวดที่เป็น พ.ศ.
+describe("formatAppDate", () => {
+  it("shows Thai dates in the Buddhist year and keeps the Christian year for other languages", () => {
+    expect(formatAppDate("2026-11-05", "th")).toBe("05 พ.ย. 2569");
+    expect(formatAppDate("2026-11-05", "en")).toContain("2026");
+    expect(formatAppDate("", "th")).toBe("");
   });
 });

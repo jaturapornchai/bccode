@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -84,11 +85,23 @@ func (r *AuthenticationPostgresRepository) createPostgresGoogleIdentity(ctx cont
 	if !errors.Is(err, ErrNotFound) {
 		return empty, err
 	}
-	uid, err := googleUserForFirstLink(ctx, tx, email, input.Name)
+	uid, precreated, err := googleUserForFirstLink(ctx, tx, email, input.Name)
 	if err != nil {
 		return empty, err
 	}
 	audit.UserUID = uid
+	if precreated != nil {
+		// Who and when: this identity row (created_at) + the audit say which Google account
+		// claimed which admin-created login account.
+		audit.Action = "GOOGLE_IDENTITY_LINK_PRECREATED"
+		if audit.Metadata == nil {
+			audit.Metadata = map[string]interface{}{}
+		}
+		audit.Metadata["matched_by"] = precreated.matchedBy
+		audit.Metadata["precreated_username"] = precreated.username
+		audit.Metadata["verified_email"] = email
+		audit.Metadata["linked_by"] = "google:" + identity.Subject
+	}
 	active := true
 	extra, err := json.Marshal(googleIdentityExtra{Issuer: googleIssuer, VerifiedEmail: email, Active: &active, Audit: &audit})
 	if err != nil {
@@ -107,7 +120,105 @@ func (r *AuthenticationPostgresRepository) createPostgresGoogleIdentity(ctx cont
 	return user, nil
 }
 
-func googleUserForFirstLink(ctx context.Context, tx *sql.Tx, email, name string) (string, error) {
+// precreatedLogin is the admin-created login account a first Google login attached to.
+type precreatedLogin struct {
+	uid, username string
+	matchedBy     string // "email" or "username"
+}
+
+// googleUserForFirstLink picks the account a Google identity seen for the first time signs in
+// to: the pinned legacy developer account, else the one account an admin pre-created for this
+// verified email (findPrecreatedLogin), else a new "google_<uuid>" account.
+func googleUserForFirstLink(ctx context.Context, tx *sql.Tx, email, name string) (string, *precreatedLogin, error) {
+	uid, err := legacyDeveloperForFirstLink(ctx, tx, email)
+	if err != nil || uid != "" {
+		return uid, nil, err
+	}
+	precreated, err := findPrecreatedLogin(ctx, tx, email)
+	if err != nil {
+		return "", nil, err
+	}
+	if precreated != nil {
+		// Fill only what the admin left blank; never overwrite what they entered.
+		_, err = tx.ExecContext(ctx, `UPDATE users SET
+			email = CASE WHEN COALESCE(TRIM(email), '') = '' THEN $2 ELSE email END,
+			full_name = CASE WHEN TRIM(full_name) = '' THEN $3 ELSE full_name END,
+			updated_at = now()
+			WHERE id = $1`, precreated.uid, email, strings.TrimSpace(name))
+		return precreated.uid, precreated, err
+	}
+	uid = uuid.NewString()
+	_, err = tx.ExecContext(ctx, `INSERT INTO users(id,username,password_hash,email,full_name,is_active) VALUES($1,$2,'',$3,$4,true)`, uid, "google_"+strings.ReplaceAll(uid, "-", ""), email, strings.TrimSpace(name))
+	return uid, nil, err
+}
+
+// precreatedEligible is an account an admin created (Settings › Login Accounts) that nobody has
+// signed in to yet: it has a usercode, belongs to a Holding, is active, and has no password and
+// no linked identity of any provider. Its email or usercode must equal the Google-verified email
+// ($1, lower-case) exactly, ignoring case. Legacy rows without a usercode are never matched.
+const precreatedEligible = `u.is_active AND u.password_hash = '' AND u.username <> ''
+	AND (LOWER(TRIM(COALESCE(u.email, ''))) = $1 OR LOWER(TRIM(u.username)) = $1)
+	AND NOT EXISTS (SELECT 1 FROM user_identities i WHERE i.user_id = u.id)
+	AND EXISTS (SELECT 1 FROM holding_members m WHERE m.user_id = u.id)`
+
+// ErrGooglePrecreatedAmbiguous: more than one pre-created account matches the Google-verified
+// email. The login is refused (the message asks the user to contact their admin) instead of
+// creating a fresh account: that account would bind the Google identity for good, so the
+// account the real admin prepared could never be linked — anyone able to add a member with
+// that email in some Holding could block (or hijack) another Holding's invitation.
+var ErrGooglePrecreatedAmbiguous = errors.New("more than one pre-created login account matches this Google email")
+
+// findPrecreatedLogin returns the single pre-created account for email, nil when there is
+// none, or ErrGooglePrecreatedAmbiguous (wrapped with the account ids for the log) when more than one
+// match (ambiguous: never guess which person this is, and never merge accounts).
+// A claimed account (password or any identity) is never taken over: its owner already proved
+// who they are, so an email match alone must not hand it to someone else.
+func findPrecreatedLogin(ctx context.Context, tx *sql.Tx, email string) (*precreatedLogin, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT u.id::text FROM users u WHERE `+precreatedEligible+` ORDER BY u.id FOR UPDATE OF u`, email)
+	if err != nil {
+		return nil, err
+	}
+	locked := []string{}
+	for rows.Next() {
+		var id string
+		if err = rows.Scan(&id); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		locked = append(locked, id)
+	}
+	if err = rows.Close(); err != nil {
+		return nil, err
+	}
+	if len(locked) > 1 {
+		return nil, fmt.Errorf("%w: accounts %s", ErrGooglePrecreatedAmbiguous, strings.Join(locked, ","))
+	}
+	if len(locked) == 0 {
+		return nil, nil
+	}
+	// Re-check in a fresh statement: a statement that waited for the row lock still evaluates
+	// its sub-queries on the snapshot it started with, so an identity linked or an email changed
+	// while we waited would be missed.
+	link := &precreatedLogin{}
+	var byEmail bool
+	err = tx.QueryRowContext(ctx, `SELECT u.id::text, u.username, LOWER(TRIM(COALESCE(u.email, ''))) = $1
+		FROM users u WHERE u.id = $2::uuid AND `+precreatedEligible, email, locked[0]).Scan(&link.uid, &link.username, &byEmail)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	link.matchedBy = "username"
+	if byEmail {
+		link.matchedBy = "email"
+	}
+	return link, nil
+}
+
+// legacyDeveloperForFirstLink repairs the one pinned legacy account (see legacyDeveloperUID);
+// "" when email is not its email or the account no longer exists.
+func legacyDeveloperForFirstLink(ctx context.Context, tx *sql.Tx, email string) (string, error) {
 	if email == legacyDeveloperEmail {
 		var storedEmail, username, password string
 		var active bool
@@ -129,9 +240,7 @@ func googleUserForFirstLink(ctx context.Context, tx *sql.Tx, email, name string)
 			return "", err
 		}
 	}
-	uid := uuid.NewString()
-	_, err := tx.ExecContext(ctx, `INSERT INTO users(id,username,password_hash,email,full_name,is_active) VALUES($1,$2,'',$3,$4,true)`, uid, "google_"+strings.ReplaceAll(uid, "-", ""), email, strings.TrimSpace(name))
-	return uid, err
+	return "", nil
 }
 
 func postgresGoogleUser(ctx context.Context, db googleQuery, uid string) (models.UserDoc, error) {

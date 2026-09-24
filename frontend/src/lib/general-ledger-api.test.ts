@@ -145,6 +145,18 @@ describe("command failure -> Thai message for the editor pane", () => {
     expect(/[ก-๛]/.test(error.message)).toBe(true);
   });
 
+  // UAT S3 2026-09-24: browser Accept-Language en-US → backend message was English and the screen fell back to the generic text
+  it("shows message_th when the server message is not Thai and sends the app language", async () => {
+    vi.stubGlobal("localStorage", { getItem: (key: string) => (key === "user_language" ? "th" : null) });
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: false, code: "journal_book_in_use_delete", field: "code", message: "This journal book is used by journals", message_th: "สมุดรายวันนี้มีใบสำคัญใช้อยู่ ลบไม่ได้ — ปิดใช้งานแทน" }, { status: 409 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const error = await glCommand({ resource: "journal-books", action: "delete" }, "req-1").catch((e) => e);
+    expect(error.message).toBe("สมุดรายวันนี้มีใบสำคัญใช้อยู่ ลบไม่ได้ — ปิดใช้งานแทน");
+    expect(error.code).toBe("journal_book_in_use_delete");
+    expect(error.field).toBe("code");
+    expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ "Accept-Language": "th" });
+  });
+
   it("maps a non-JSON error body to Thai instead of a parse error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>Bad Gateway</html>", { status: 502 })));
     const error = await glCommand({ resource: "accounts", action: "create" }, "req-1").catch((e) => e);

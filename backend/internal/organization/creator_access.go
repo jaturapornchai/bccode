@@ -75,6 +75,9 @@ func requireOrganizationCreator(ctx context.Context, db orgpolicy.Querier, userI
 	}
 	membership, err := orgpolicy.FindActiveMembership(ctx, db, userInfo, time.Now())
 	if err != nil {
+		if expired := AccessExpiredError(err, "th"); expired != nil {
+			return expired
+		}
 		if errors.Is(err, orgpolicy.ErrActiveMembershipRequired) {
 			return errManagerRequired
 		}

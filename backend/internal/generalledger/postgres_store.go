@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -58,7 +59,13 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if scope.Holding == "" || scope.Company == "" || scope.Actor == "" {
 		return Result{}, fmt.Errorf("กรุณาเลือกบริษัทและเข้าสู่ระบบก่อนใช้งานบัญชี")
 	}
-	if len(cmd.RequestID) < 16 || len(cmd.RequestID) > 80 || !validCode(cmd.RequestID) {
+	// Codes are trimmed + NFC-normalised before the request hash, so a retry with a pasted
+	// trailing space is the same request; NUL is refused before it reaches jsonb.
+	normalizeCommandCodes(&cmd)
+	if err := rejectNUL(cmd); err != nil {
+		return Result{}, err
+	}
+	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
 	if !supportedRecord(cmd.Resource) && cmd.Resource != "processes" {
@@ -250,7 +257,16 @@ func (s *PostgresStore) applyMutation(ctx context.Context, tx *sql.Tx, scope Sco
 	case "accounts":
 		return s.mutateAccount(ctx, tx, scope, cmd, now)
 	case "fiscal-years":
-		return s.mutatePGFiscalYear(ctx, tx, scope, cmd, now)
+		changes, err := s.mutatePGFiscalYear(ctx, tx, scope, cmd, now)
+		if err != nil || cmd.Action != "create" {
+			return changes, err
+		}
+		// A company's first fiscal year is its ledger setup: the standard journal books come with it.
+		books, err := defaultJournalBookChanges(ctx, tx, scope, now)
+		if err != nil {
+			return nil, err
+		}
+		return append(changes, books...), nil
 	case "journals":
 		if cmd.Action == "reconcile" {
 			return s.mutateReconciliation(ctx, tx, scope, cmd, now)
@@ -347,8 +363,8 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		}
 		m := *cmd.Master
 		m.Kind = kind
-		if m.Code == "" {
-			return nil, fmt.Errorf("กรุณาระบุรหัส")
+		if err := validateMasterCode(&m, false); err != nil {
+			return nil, err
 		}
 		if cmd.Action == "lock" {
 			m.Locked = true
@@ -373,6 +389,11 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 	}
 
 	if cmd.Action == "delete" {
+		if kind == "journal-books" {
+			if err := guardJournalBookDelete(ctx, tx, scope.Company, old); err != nil {
+				return nil, err
+			}
+		}
 		old.Identity = updateIdentity(scope, old.Identity, now)
 		old.IsDeleted = true
 		data, err := json.Marshal(old)
@@ -390,6 +411,19 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		next.Kind = kind
 		if cmd.Action == "unlock" {
 			next.Locked = false
+		}
+		if err := validateMasterCode(&next, old.BookType == 0); err != nil {
+			return nil, err
+		}
+		if kind == "journal-books" {
+			if err := guardJournalBookUpdate(ctx, tx, scope.Company, old, next); err != nil {
+				return nil, err
+			}
+		}
+		if next.Code != old.Code {
+			if err := s.checkDuplicateCode(ctx, tx, scope.Company, kind, next.Code, old.ID); err != nil {
+				return nil, err
+			}
 		}
 		next.Identity = updateIdentity(scope, old.Identity, now)
 		data, err := json.Marshal(next)
@@ -412,7 +446,15 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 			return nil, fmt.Errorf("สถานะผ่านรายการและข้อมูลกลับรายการกำหนดโดยระบบเท่านั้น")
 		}
 		j.Lines = append([]Line(nil), j.Lines...)
-		if err := s.validateJournalLines(ctx, tx, scope, &j); err != nil {
+		// The new-journal form starts with no branch; it belongs to the branch the session works in.
+		// Without this a branch-scoped session rejected every new journal as "not found" (UAT 2026-09-24).
+		if strings.TrimSpace(j.BranchCode) == "" {
+			j.BranchCode = scope.Branch
+		}
+		if err := s.validateJournalLines(ctx, tx, scope, &j, true); err != nil {
+			return nil, err
+		}
+		if err := checkJournalTextLimits(j, nil); err != nil {
 			return nil, err
 		}
 		if err := s.checkDuplicateCode(ctx, tx, scope.Company, "journals", j.DocNo, ""); err != nil {
@@ -487,13 +529,26 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		}
 		next := *cmd.Journal
 		next.Lines = append([]Line(nil), next.Lines...)
+		// Same default as create: a form whose local state still has branch "" must save into the
+		// session branch instead of being refused as "not found"; an explicit other branch is still refused below.
+		if strings.TrimSpace(next.BranchCode) == "" {
+			next.BranchCode = scope.Branch
+		}
 		if err := preserveJournalSource(old, next); err != nil {
 			return nil, err
 		}
-		if next.DocNo != old.DocNo || next.BookCode != old.BookCode || next.Kind != old.Kind {
-			return nil, fmt.Errorf("เลขที่เอกสารแก้ไม่ได้")
+		switch {
+		case next.DocNo != old.DocNo:
+			return nil, errJournalDocNoImmutable
+		case next.BookCode != old.BookCode:
+			return nil, errJournalBookImmutable
+		case next.Kind != old.Kind:
+			return nil, errJournalKindImmutable
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &next); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &next, false); err != nil {
+			return nil, err
+		}
+		if err := checkJournalTextLimits(next, &old); err != nil {
 			return nil, err
 		}
 		next.Status = old.Status
@@ -516,7 +571,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		if old.Status != "draft" {
 			return nil, fmt.Errorf("รายการนี้ผ่านบัญชีแล้ว")
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &old); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &old, false); err != nil {
 			return nil, err
 		}
 		old.Status = "posted"
@@ -536,22 +591,36 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 	}
 
 	if cmd.Action == "reverse" {
-		if old.Status != "posted" {
-			return nil, fmt.Errorf("กลับรายการได้เฉพาะรายการที่ผ่านบัญชีแล้วเท่านั้น")
-		}
-		if !validCode(cmd.DocNo) || !validDate(cmd.Date) || cmd.Date < old.Date || strings.TrimSpace(cmd.Reason) == "" || old.Kind == "reversal" || old.Kind == "closing" {
-			return nil, fmt.Errorf("กรุณาระบุเลขที่และวันที่ของใบกลับรายการ")
+		// แยกข้อความตามสาเหตุ — เดิมรวม 5 สาเหตุเป็นข้อความเดียว ผู้ใช้ที่กรอกครบแล้วไม่รู้ว่าต้องแก้อะไร (UAT S08/S09/V14 2026-09-24)
+		switch {
+		case old.Status != "posted":
+			return nil, userError("reverse_requires_posted", "กลับรายการได้เฉพาะรายการที่ผ่านบัญชีแล้วเท่านั้น")
+		case old.Kind == "reversal" || old.Kind == "closing":
+			return nil, userError("reverse_kind_not_allowed", "ใบกลับรายการและใบปิดบัญชีไม่สามารถกลับรายการซ้ำได้")
+		case cmd.DocNo == "":
+			return nil, fieldError("reverse_doc_no_invalid", "docno", "กรุณาระบุเลขที่ใบกลับรายการให้ถูกต้อง")
+		case checkCode(cmd.DocNo, "docno", "เลขที่ใบกลับรายการ", DocNoMaxRunes) != nil:
+			return nil, checkCode(cmd.DocNo, "docno", "เลขที่ใบกลับรายการ", DocNoMaxRunes)
+		case !validDate(cmd.Date):
+			return nil, fieldError("reverse_date_invalid", "date", "กรุณาระบุวันที่ใบกลับรายการให้ถูกต้อง")
+		case cmd.Date < old.Date:
+			return nil, fieldError("reverse_date_before_original", "date", "วันที่กลับรายการต้องไม่ก่อนวันที่ของรายการเดิม")
+		case strings.TrimSpace(cmd.Reason) == "":
+			return nil, fieldError("reverse_reason_required", "reason", "กรุณาระบุเหตุผลการกลับรายการ")
+		case utf8.RuneCountInString(strings.TrimSpace(cmd.Reason)) > ReversalReasonMaxRunes:
+			return nil, fieldError("reverse_reason_too_long", "reason", fmt.Sprintf("เหตุผลการกลับรายการต้องไม่เกิน %d ตัวอักษร — กรุณาย่อให้สั้นลง", ReversalReasonMaxRunes))
 		}
 		if err := s.checkDuplicateCode(ctx, tx, scope.Company, "journals", cmd.DocNo, ""); err != nil {
 			return nil, err
 		}
 
 		revLines := make([]Line, len(old.Lines))
+		// ข้อความที่ระบบต่อท้ายต้นฉบับอาจยาวเกินคอลัมน์ — ตัดให้พอดี ไม่ให้การกลับรายการติดความยาวของใบเดิม
 		for i, l := range old.Lines {
 			revLines[i] = Line{
 				AccountCode:    l.AccountCode,
 				AccountName:    l.AccountName,
-				Description:    "กลับรายการ: " + l.Description,
+				Description:    truncateRunes("กลับรายการ: "+l.Description, JournalLineDescriptionMaxRunes),
 				Debit:          l.Credit, // สลับ Dr/Cr
 				Credit:         l.Debit,
 				DepartmentCode: l.DepartmentCode,
@@ -570,7 +639,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 			BookCode:    old.BookCode,
 			FiscalYear:  year.Code,
 			BranchCode:  old.BranchCode,
-			Description: "กลับรายการของเอกสาร " + old.DocNo + ": " + cmd.Reason,
+			Description: truncateRunes("กลับรายการของเอกสาร "+old.DocNo+": "+cmd.Reason, JournalDescriptionMaxRunes),
 			Reference:   old.DocNo,
 			Kind:        "reversal",
 			Status:      "posted",
@@ -584,7 +653,8 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		revDoc.PostedAt = &tNow
 		revDoc.PostedBy = scope.Actor
 
-		if err := s.validateJournalLines(ctx, tx, scope, &revDoc); err != nil {
+		// The reversal stays in the original's book even if that book was deactivated since.
+		if err := s.validateJournalLines(ctx, tx, scope, &revDoc, false); err != nil {
 			return nil, err
 		}
 		revData, err := json.Marshal(revDoc)
@@ -613,7 +683,9 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 	return nil, fmt.Errorf("ไม่รองรับคำสั่งนี้สำหรับเอกสารรายวัน")
 }
 
-func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, scope Scope, j *Journal) error {
+// validateJournalLines checks a voucher before it is stored; requireActiveBook is true for new
+// vouchers only (an existing voucher stays editable/postable after its book is deactivated).
+func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, scope Scope, j *Journal, requireActiveBook bool) error {
 	if err := validateJournalSource(*j); err != nil {
 		return err
 	}
@@ -629,6 +701,9 @@ func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, sc
 		return err
 	}
 	if err = j.Validate(year, accounts); err != nil {
+		return err
+	}
+	if err = checkJournalBook(ctx, tx, scope.Company, *j, requireActiveBook); err != nil {
 		return err
 	}
 	if j.Kind == "opening" && j.Date != year.StartDate {

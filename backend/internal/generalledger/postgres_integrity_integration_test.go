@@ -118,6 +118,43 @@ func TestPostgresIntegrityLifecycleAndBranch(t *testing.T) {
 		t.Fatalf("branch not reconciled: %s", total)
 	}
 }
+// UAT 2026-09-24: the new-journal form sends branchcode "", which a branch-scoped session rejected as not found.
+func TestPostgresIntegrityBlankBranchDefaultsToSession(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	session := f.scope
+	session.Branch = "B1"
+	j := Journal{DocNo: "JVB1", Date: "2026-01-10", BookCode: "JV", FiscalYear: "2026", Description: "test", Kind: "manual", Lines: []Line{{AccountCode: "1000", Debit: Amount("100"), Credit: Amount("0")}, {AccountCode: "4000", Debit: Amount("0"), Credit: Amount("100")}}}
+	r, err := f.execute(session, Command{Resource: "journals", Action: "create", Journal: &j})
+	if err != nil {
+		t.Fatalf("blank branch rejected in branch session: %v", err)
+	}
+	if got := f.journal(r.ID).BranchCode; got != "B1" {
+		t.Fatalf("branch = %q, want session branch B1", got)
+	}
+	// An explicit other branch is still refused.
+	other := j
+	other.DocNo = "JVB2"
+	other.BranchCode = "B2"
+	f.deny(session, Command{Resource: "journals", Action: "create", Journal: &other})
+
+	// Saving an edit whose local state still has branch "" keeps the session branch instead of 404.
+	saved := f.journal(r.ID)
+	edited := saved
+	edited.BranchCode = ""
+	edited.Description = "edited"
+	u, err := f.execute(session, Command{Resource: "journals", Action: "update", ID: saved.ID, Version: saved.Version, Journal: &edited})
+	if err != nil {
+		t.Fatalf("blank branch rejected on update in branch session: %v", err)
+	}
+	if got := f.journal(u.ID); got.BranchCode != "B1" || got.Description != "edited" {
+		t.Fatalf("update = branch %q desc %q, want B1/edited", got.BranchCode, got.Description)
+	}
+	// An explicit other branch is still refused on update.
+	moved := f.journal(u.ID)
+	moved.BranchCode = "B2"
+	f.deny(session, Command{Resource: "journals", Action: "update", ID: moved.ID, Version: moved.Version, Journal: &moved})
+}
+
 func TestPostgresIntegrityPeriodAndValidation(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	j := f.draft("JV1", "B1")

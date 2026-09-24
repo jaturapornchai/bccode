@@ -6,7 +6,7 @@ import (
 )
 
 func canReadJournalSupport(permissions map[string]bool) bool {
-	for _, screen := range []string{"jv-journal", "uv-journal", "sv-journal", "rv-journal", "pv-journal", "gl-opening-balance", "gl-post", "gl-unpost"} {
+	for _, screen := range []string{journalsScreen, openingScreen, postingScreen} {
 		if allowed(permissions, screen, "") {
 			return true
 		}

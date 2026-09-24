@@ -49,6 +49,11 @@ export function formatLocalDate(value: string, language: LanguageCode, yearType:
   }).format(date);
 }
 
+/** วันที่ YYYY-MM-DD บนจอ: ภาษาไทยปี พ.ศ. ภาษาอื่น ค.ศ. — ไม่แสดงวันที่ ISO ดิบปนกับงวดที่เป็น พ.ศ. (UAT 2026-09-24) */
+export function formatAppDate(value: string, language: LanguageCode): string {
+  return formatLocalDate(value, language, language === "th" ? "buddhist" : "christian");
+}
+
 export function formatDefaultDate(value: DateTimeInput, options: DateTimeDisplayOptions = {}): string {
   return formatDateTimeValue(value, { ...options, includeSeconds: false }, false);
 }

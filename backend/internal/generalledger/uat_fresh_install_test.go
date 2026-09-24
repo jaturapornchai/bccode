@@ -4,6 +4,7 @@ package generalledger_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -154,32 +155,26 @@ func TestFreshInstall_FullUATCycle(t *testing.T) {
 	// ------------------------------------------------------------------------
 	// UAT-4: Journal Books Setup (สมุดรายวัน 5 เล่มมาตรฐาน)
 	// ------------------------------------------------------------------------
-	t.Log("=== UAT-4: Setting up Standard Journal Books (JV, PV, RV, SV, UV) ===")
-	books := []struct{ code, name string }{
-		{"JV", "สมุดรายวันทั่วไป"},
-		{"PV", "สมุดรายวันจ่ายเงิน"},
-		{"RV", "สมุดรายวันรับเงิน"},
-		{"SV", "สมุดรายวันซื้อ"},
-		{"UV", "สมุดรายวันขาย"},
+	t.Log("=== UAT-4: Standard Journal Books created with the first fiscal year (JV, PV, RV, SV, UV) ===")
+	// ปีบัญชีแรกของบริษัทสร้างสมุดมาตรฐานพร้อมประเภทให้ (SV = ขาย, UV = ซื้อ ตาม mydocs journalbook.sql)
+	bookPage, err := store.List(ctx, scope, "journal-books", "", 1, 50, gl.ListFilter{})
+	if err != nil {
+		t.Fatalf("UAT-4 Failed: list journal books: %v", err)
 	}
-	for i, b := range books {
-		jbCmd := gl.Command{
-			RequestID: fmt.Sprintf("req-uat-jb-%d-%d", reqNonce, i),
-			Resource:  "journal-books",
-			Action:    "create",
-			Master: &gl.Master{
-				Kind:     "journal-books",
-				Code:     b.code,
-				Name:     b.name,
-				IsActive: true,
-			},
+	bookTypes := map[string]int{}
+	for _, raw := range bookPage.Items {
+		var m gl.Master
+		if err := json.Unmarshal(raw, &m); err != nil {
+			t.Fatalf("UAT-4 Failed: decode journal book: %v", err)
 		}
-		_, err := store.Execute(ctx, scope, jbCmd)
-		if err != nil {
-			t.Fatalf("UAT-4 Failed: Create journal book %s: %v", b.code, err)
+		bookTypes[m.Code] = m.BookType
+	}
+	for _, want := range gl.DefaultJournalBooks() {
+		if bookTypes[want.Code] != want.BookType {
+			t.Fatalf("UAT-4 Failed: book %s type=%d want %d", want.Code, bookTypes[want.Code], want.BookType)
 		}
 	}
-	t.Log("✓ Created 5 Standard Journal Books (JV, PV, RV, SV, UV)")
+	t.Log("✓ 5 Standard Journal Books exist with book types (JV, PV, RV, SV, UV)")
 
 	// ------------------------------------------------------------------------
 	// UAT-5: Opening Balance Entry (ยอดยกมาต้นงวด 1,000,000 บาท)

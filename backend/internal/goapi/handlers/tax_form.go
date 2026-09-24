@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -106,13 +107,13 @@ func (t *taxFormCall) failValue(err error) error {
 
 // begin - อ่าน payload + ตรวจสิทธิ์บริษัท; needCode = ต้องระบุแบบที่ระบบรองรับ
 func beginTaxForm(c echo.Context, needCode bool) (*taxFormCall, error) {
-	t := &taxFormCall{c: c, lang: language.Normalize(c.Request().Header.Get("Accept-Language"))}
+	t := &taxFormCall{c: c, lang: taxRequestLanguage(c)}
 	if err := c.Bind(&t.req); err != nil {
 		return nil, t.fail(http.StatusBadRequest, "tax_form_payload_invalid")
 	}
 	holding, company, scopeErr := authenticatedCompanyContext(c, t.req.HoldingCode, t.req.BusinessCode)
 	if scopeErr != nil {
-		return nil, c.JSON(scopeErr.Status, map[string]any{"success": false, "code": scopeErr.Code, "message": scopeErr.Message})
+		return nil, taxScopeFail(c, scopeErr)
 	}
 	t.holding, t.company = holding, company
 	if info, ok := c.Get("UserInfo").(msmodels.UserInfo); ok {
@@ -154,6 +155,8 @@ func TaxFormCatalogHandler(c echo.Context) error {
 		Code          string `json:"code"`
 		Title         string `json:"title"`
 		HasAttachment bool   `json:"hasattachment"`
+		// RdFile - แบบนี้สร้างไฟล์ยื่นภาษีด้วยสื่อ (Format กลาง) ได้: จอแสดงปุ่มสร้างไฟล์ตามค่านี้ ไม่ฝังรายการแบบไว้ที่ frontend
+		RdFile bool `json:"rdfile,omitempty"`
 		taxFormMeta
 	}
 	out := make([]entry, 0, len(taxFormOrder))
@@ -163,7 +166,8 @@ func TaxFormCatalogHandler(c echo.Context) error {
 			logger.Error("TaxFormCatalog: %v", err)
 			return t.fail(http.StatusInternalServerError, "tax_form_failed")
 		}
-		out = append(out, entry{Code: code, Title: spec.Title, HasAttachment: rdform.Attachment(code) != nil, taxFormMeta: taxForms[code]})
+		_, rdFile := rdFileKinds[code] // ภ.ง.ด.53/3/2 — รายการเดียวกับที่ TaxFormRdFileHandler รองรับ
+		out = append(out, entry{Code: code, Title: spec.Title, HasAttachment: rdform.Attachment(code) != nil, RdFile: rdFile, taxFormMeta: taxForms[code]})
 	}
 	return c.JSON(http.StatusOK, map[string]any{"success": true, "data": out})
 }
@@ -213,18 +217,15 @@ func TaxFormComputeHandler(c echo.Context) error {
 	if t == nil {
 		return err
 	}
-	doc := normalizeDocument(t.req.Document)
-	if err := rdform.Validate(t.req.Code, doc); err != nil {
-		return t.failValue(err)
-	}
-	if err := computeTaxForm(t.req.Code, &doc); err != nil {
+	doc, err := prepareTaxDocument(t.req.Code, t.req.Document)
+	if err != nil {
 		return t.failValue(err)
 	}
 	res := map[string]any{"success": true, "data": doc}
 	if taxForms[t.req.Code].Source == "wht" {
 		// หมายเหตุที่ตรวจจากเอกสารได้ ตรวจใหม่ทุกครั้ง: frontend แทนหมายเหตุ key ใน rechecked ด้วยชุดใหม่ (แก้แล้วหายเอง)
-		res["notes"] = missingTaxIDNotes(doc.Rows)
-		res["rechecked"] = []string{"tax_form_note_missing_taxid"}
+		res["notes"] = append(missingTaxIDNotes(doc.Rows), missingIncomeTypeNotes(t.req.Code, doc.Rows)...)
+		res["rechecked"] = []string{"tax_form_note_missing_taxid", "tax_form_note_missing_income_type"}
 	}
 	return c.JSON(http.StatusOK, res)
 }
@@ -235,8 +236,9 @@ func TaxFormPDFHandler(c echo.Context) error {
 	if t == nil {
 		return err
 	}
-	doc := normalizeDocument(t.req.Document)
-	if err := rdform.Validate(t.req.Code, doc); err != nil {
+	// พิมพ์ยอดรวมที่คำนวณใหม่เสมอ — ยอดรวมจาก browser แก้ได้ จึงเชื่อได้แค่ยอดรายการ
+	doc, err := prepareTaxDocument(t.req.Code, t.req.Document)
+	if err != nil {
 		return t.failValue(err)
 	}
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
@@ -270,6 +272,17 @@ func applyCompanyHeader(values map[string]string, company CompanyHeader) {
 	if taxID := digitsOnly(company.TaxID); len(taxID) == 13 {
 		values["tax_id"] = taxID
 	}
+}
+
+// prepareTaxDocument - เอกสารที่จะบันทึก/พิมพ์/ส่งกลับ: ตัดช่องว่าง → ตรวจค่า → คำนวณบรรทัดรวมใหม่ด้วยสูตรเดียวกับ /compute
+// (ยอดรวมที่ส่งมาถูกแทนด้วยผลคำนวณเสมอ ยอดรวมที่ถูกแก้จึงไม่ถูกบันทึกหรือพิมพ์)
+func prepareTaxDocument(code string, in rdform.Document) (rdform.Document, error) {
+	doc := normalizeDocument(in)
+	if err := rdform.Validate(code, doc); err != nil {
+		return doc, err
+	}
+	err := computeTaxForm(code, &doc)
+	return doc, err
 }
 
 // normalizeDocument - map ว่างแทน nil และตัดช่องว่างหัวท้าย (ผู้ใช้ก๊อปจาก Excel มักติดช่องว่าง)
@@ -309,8 +322,9 @@ func TaxFormSaveHandler(c echo.Context) error {
 	if !t.validPeriod() {
 		return t.fail(http.StatusBadRequest, "tax_form_period_invalid", "period")
 	}
-	doc := normalizeDocument(t.req.Document)
-	if err := rdform.Validate(t.req.Code, doc); err != nil {
+	// เก็บยอดรวมที่คำนวณใหม่เสมอ (ไม่เชื่อยอดรวมจาก browser)
+	doc, err := prepareTaxDocument(t.req.Code, t.req.Document)
+	if err != nil {
 		return t.failValue(err)
 	}
 	seq, ok := filingSeq(doc.Values)
@@ -396,13 +410,14 @@ func TaxFormDeleteHandler(c echo.Context) error {
 		logger.Error("TaxFormDelete: db: %v", err)
 		return t.fail(http.StatusInternalServerError, "tax_form_failed")
 	}
-	res, err := db.ExecContext(ctx, `DELETE FROM tax_filings WHERE id=$1 AND company_code=$2 AND version=$3`, t.req.ID, t.company, t.req.Version)
-	if err != nil {
+	switch err := deleteTaxFiling(ctx, db, t.company, t.req.ID, t.req.Version); {
+	case errors.Is(err, errTaxFilingNotFound):
+		return t.fail(http.StatusNotFound, "tax_form_not_found")
+	case errors.Is(err, errTaxFilingConflict):
+		return t.fail(http.StatusConflict, "tax_form_version_conflict")
+	case err != nil:
 		logger.Error("TaxFormDelete: %v", err)
 		return t.fail(http.StatusInternalServerError, "tax_form_failed")
-	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return t.fail(http.StatusConflict, "tax_form_version_conflict")
 	}
 	return c.JSON(http.StatusOK, map[string]any{"success": true})
 }
@@ -412,24 +427,70 @@ func TaxFormDeleteHandler(c echo.Context) error {
 var (
 	errTaxFilingConflict  = errors.New("tax filing changed by someone else")
 	errTaxFilingDuplicate = errors.New("tax filing for this period already exists")
+	errTaxFilingNotFound  = errors.New("tax filing not found")
 )
+
+// deleteTaxFiling - ลบตาม id + version ของบริษัท; ไม่มีฉบับนี้ (หรือเป็นของบริษัทอื่น) = not found ไม่ใช่ "มีผู้อื่นแก้"
+func deleteTaxFiling(ctx context.Context, db *sql.DB, company string, id int64, version int) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM tax_filings WHERE id=$1 AND company_code=$2 AND version=$3`, id, company, version)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil || n > 0 {
+		return err
+	}
+	var exists bool
+	if err := db.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM tax_filings WHERE id=$1 AND company_code=$2)`, id, company).Scan(&exists); err != nil {
+		return err
+	}
+	if !exists {
+		return errTaxFilingNotFound
+	}
+	return errTaxFilingConflict
+}
 
 // ensureTaxFilingSchema - ตารางของกลุ่มกิจการ (โค้ดใหม่คือ migration ตามกฎ "เดินหน้าอย่างเดียว")
 // ยอดเงินในเอกสารเป็นสตริงทศนิยมใน JSONB ไม่ใช่ตัวเลข float
 func ensureTaxFilingSchema(ctx context.Context, db *sql.DB) error {
+	gate, _ := taxFilingSchemaGates.LoadOrStore(db, &taxFilingSchemaGate{})
+	g := gate.(*taxFilingSchemaGate)
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.done {
+		return nil
+	}
+	if err := migrateTaxFilingSchema(ctx, db); err != nil {
+		return err // ไม่จำว่าเสร็จ — request ถัดไปลองใหม่
+	}
+	g.done = true
+	return nil
+}
+
+// taxFilingSchemaGates - ตรวจโครงตาราง tax_filings ครั้งเดียวต่อ pool ของกลุ่มกิจการต่อ process
+// (เดิมทุก request รัน CREATE IF NOT EXISTS + ค้น information_schema); key = *sql.DB จาก PgSqlFastConnect
+// pool ที่สร้างใหม่ได้ pointer ใหม่ จึงถูกตรวจใหม่เอง
+var taxFilingSchemaGates sync.Map
+
+type taxFilingSchemaGate struct {
+	mu   sync.Mutex
+	done bool
+}
+
+// migrateTaxFilingSchema - สร้าง/ขยายตารางแบบยื่นภาษี (เรียกผ่าน ensureTaxFilingSchema เท่านั้น)
+func migrateTaxFilingSchema(ctx context.Context, db *sql.DB) error {
 	_, err := db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS tax_filings (
     id           BIGSERIAL PRIMARY KEY,
-    company_code VARCHAR(20) NOT NULL,
+    company_code TEXT NOT NULL,
     form_code    VARCHAR(30) NOT NULL,
     period_year  INT NOT NULL CHECK (period_year BETWEEN 2000 AND 2200),
     period_month SMALLINT NOT NULL CHECK (period_month BETWEEN 0 AND 12),
     filing_seq   SMALLINT NOT NULL DEFAULT 0 CHECK (filing_seq BETWEEN 0 AND 99),
     document     JSONB NOT NULL,
     version      INT NOT NULL DEFAULT 1,
-    created_by   VARCHAR(100) NOT NULL DEFAULT '',
+    created_by   TEXT NOT NULL DEFAULT '',
     created_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by   VARCHAR(100) NOT NULL DEFAULT '',
+    updated_by   TEXT NOT NULL DEFAULT '',
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_tax_filings_period UNIQUE (company_code, form_code, period_year, period_month, filing_seq)
 );
@@ -438,10 +499,23 @@ CREATE TABLE IF NOT EXISTS tax_filing_history (
     filing_id BIGINT NOT NULL,
     version   INT NOT NULL,
     document  JSONB NOT NULL,
-    saved_by  VARCHAR(100) NOT NULL DEFAULT '',
+    saved_by  TEXT NOT NULL DEFAULT '',
     saved_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_tax_filing_history_filing ON tax_filing_history(filing_id, version);`)
+CREATE INDEX IF NOT EXISTS idx_tax_filing_history_filing ON tax_filing_history(filing_id, version);
+-- Tables made before these columns became TEXT (company codes and usernames/emails did not fit
+-- VARCHAR(20)/(100)): widen once; later calls find nothing to change.
+DO $$
+DECLARE col record;
+BEGIN
+    FOR col IN SELECT table_name, column_name FROM information_schema.columns
+        WHERE table_schema = current_schema() AND data_type <> 'text'
+          AND ((table_name = 'tax_filings' AND column_name IN ('company_code', 'created_by', 'updated_by'))
+            OR (table_name = 'tax_filing_history' AND column_name = 'saved_by'))
+    LOOP
+        EXECUTE format('ALTER TABLE %I ALTER COLUMN %I TYPE TEXT', col.table_name, col.column_name);
+    END LOOP;
+END $$;`)
 	if err != nil {
 		return fmt.Errorf("ensure tax_filings: %w", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"smlcloudplatform/internal/authentication/repositories"
 	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/firebase"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/line"
 	"smlcloudplatform/internal/logger"
 	"smlcloudplatform/internal/shop"
@@ -43,7 +44,7 @@ type IAuthenticationService interface {
 	LoginWithFirebaseToken(token string) (string, error)
 	LoginWithLineToken(token string) (string, error)
 	LoginWithLineUserID(lineUserID string, displayName string, pictureUrl string, email string) (string, string, error)
-	LoginWithGoogleIdentity(issuer string, subject string, email string, displayName string) (models.TokenLoginResponse, error)
+	LoginWithGoogleIdentity(issuer string, subject string, email string, emailVerified bool, displayName string) (models.TokenLoginResponse, error)
 	RefreshToken(tokenRequest models.TokenLoginRequest) (models.TokenLoginResponse, error)
 
 	LinkLine(username string, req auth_models.LinkLineRequest) error
@@ -466,19 +467,50 @@ func (svc AuthenticationService) findShopUser(ctx context.Context, holdingCode s
 	return svc.shopUserRepo.FindByHoldingCodeAndUserUID(ctx, holdingCode, userUID)
 }
 
+// Reasons a Holding selection (login into a business group) is refused. Each is returned
+// inside a 403 AppError whose message is the languages.tsv row ShopAccessDeniedKey names.
+var (
+	ErrShopAccessExpired  = errors.New("user_access_expired")
+	ErrShopAccessDisabled = errors.New("user_access_disabled")
+	ErrShopAccessRevoked  = errors.New("user_access_revoked")
+)
+
+// ShopAccessDeniedKey is the languages.tsv row explaining a refused Holding selection, or ""
+// when err is not one.
+func ShopAccessDeniedKey(err error) string {
+	switch {
+	case errors.Is(err, ErrShopAccessExpired):
+		return "user_access_expired"
+	case errors.Is(err, ErrShopAccessDisabled):
+		return "user_access_disabled"
+	case errors.Is(err, ErrShopAccessRevoked):
+		return "ss_err_no_permission"
+	}
+	return ""
+}
+
+// ShopAccessDenied is the 403 for a refused Holding selection with its message in lang
+// (Thai when the caller's language is unknown).
+func ShopAccessDenied(reason error, lang string) *apperr.AppError {
+	key := ShopAccessDeniedKey(reason)
+	return apperr.ErrForbidden.WithMessage(language.Text(key, lang)).WithThaiMessage(language.Text(key, "th")).WithWrap(reason)
+}
+
 func (svc *AuthenticationService) ensureShopAccessAllowed(shopUser auth_models.ShopUser) error {
-	expired := !shopUser.AccessExpiryDate.IsZero() && !svc.timeNow().Before(shopUser.AccessExpiryDate)
+	// The expiry date is usable through its end in the Holding's timezone; AccessExpiryDate is
+	// already 00:00 of the next day (centraldb.AccessExpiryInstant → auth_models.AccessEndsAt).
+	expired := auth_models.AccessExpired(shopUser.AccessExpiryDate, svc.timeNow())
 	if !shopUser.IsDeleted && !shopUser.IsAccessDisabled && !expired {
 		return nil
 	}
 
 	if expired {
-		return errors.New("user_access_expired")
+		return ShopAccessDenied(ErrShopAccessExpired, "th")
 	}
 	if shopUser.IsDeleted {
-		return errors.New("user_access_revoked")
+		return ShopAccessDenied(ErrShopAccessRevoked, "th")
 	}
-	return errors.New("user_access_disabled")
+	return ShopAccessDenied(ErrShopAccessDisabled, "th")
 }
 
 func (svc AuthenticationService) RefreshToken(tokenRequest models.TokenLoginRequest) (models.TokenLoginResponse, error) {
@@ -988,13 +1020,18 @@ func (svc AuthenticationService) LoginWithFirebaseToken(token string) (string, e
 }
 
 // LoginWithGoogleIdentity resolves returning users exclusively by the stable OIDC
-// issuer+subject pair. Email is only recorded during the first verified link.
-func (svc AuthenticationService) LoginWithGoogleIdentity(issuer string, subject string, email string, displayName string) (models.TokenLoginResponse, error) {
+// issuer+subject pair. Email is only used during the first link, and only when Google
+// reports it verified: the first link may attach the login to an account an admin created
+// for that email (repositories: googleUserForFirstLink).
+func (svc AuthenticationService) LoginWithGoogleIdentity(issuer string, subject string, email string, emailVerified bool, displayName string) (models.TokenLoginResponse, error) {
 	issuer = normalizeGoogleIssuer(issuer)
 	subject = strings.TrimSpace(subject)
 	email = strings.ToLower(strings.TrimSpace(email))
 	if issuer == "" || subject == "" || email == "" {
 		return models.TokenLoginResponse{}, errors.New("google identity is invalid")
+	}
+	if !emailVerified {
+		return models.TokenLoginResponse{}, errors.New("google email not verified")
 	}
 
 	ctx := context.Background()

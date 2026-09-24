@@ -17,6 +17,7 @@ import (
 	"smlcloudplatform/internal/config"
 	"smlcloudplatform/internal/demo"
 	"smlcloudplatform/internal/firebase"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/line"
 	"smlcloudplatform/internal/logger"
 	common "smlcloudplatform/internal/models"
@@ -26,6 +27,7 @@ import (
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
+	msModels "smlcloudplatform/pkg/microservice/models"
 	"strconv"
 	"strings"
 	"time"
@@ -143,6 +145,8 @@ func (h AuthenticationHttp) RegisterHttp() {
 
 	h.ms.GET("/verify-token", h.VerifyToken)
 	h.ms.GET("/sessions/active-count", h.SessionsActiveCount)
+	// ไม่อยู่ใน exceptShopPath: ต้องเลือก Holding แล้ว middleware จึงให้บริษัท/สาขาของ session มาครบ
+	h.ms.GET("/session/selection", h.SessionSelection)
 
 	h.ms.GET("/profile", h.Profile)
 	h.ms.PUT("/profile/disable-user", h.DisableUser)
@@ -244,14 +248,15 @@ func (h AuthenticationHttp) LoginWithPhoneNumber(ctx microservice.IContext) erro
 // @Router /login [post]
 func (h AuthenticationHttp) Login(ctx microservice.IContext) error {
 
+	// Never log the login body: it contains the password (removed 2026-09-24).
 	input := ctx.ReadInput()
-	logger.GetLogger().Infof("[DEBUG_LOGIN] raw input len=%d: '%s'", len(input), input)
 
 	userReq := &models.UserLoginRequest{}
 	err := json.Unmarshal([]byte(input), &userReq)
 
 	if err != nil {
-		logger.GetLogger().Errorf("[DEBUG_LOGIN] unmarshal failed: %v", err)
+		// Error type only: a JSON syntax error quotes a character of the body, which may be the password.
+		logger.GetLogger().Errorf("login payload unmarshal failed: %T", err)
 		return apperr.Respond(ctx, apperr.ErrBadRequest.WithMessage("user payload invalid"))
 	}
 
@@ -464,10 +469,15 @@ func (h AuthenticationHttp) GoogleLogin(ctx microservice.IContext) error {
 		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("google token verification failed"))
 	}
 
-	result, err := h.authenticationService.LoginWithGoogleIdentity(claims.Iss, claims.Sub, claims.Email, claims.Name)
+	result, err := h.authenticationService.LoginWithGoogleIdentity(claims.Iss, claims.Sub, claims.Email, claims.emailVerified(), claims.Name)
 	if err != nil {
 		if errors.Is(err, &models.UserDisableLoginError{}) {
 			return apperr.Respond(ctx, apperr.ErrDisabled.WithMessage("user is disabled"))
+		}
+		if errors.Is(err, repositories.ErrGooglePrecreatedAmbiguous) {
+			logger.GetLogger().Warnf("google login refused: %v", err) // account ids for the admin; no email in the log
+			return apperr.Respond(ctx, apperr.ErrConflict.WithMessage(language.Text("auth_err_google_precreated_ambiguous", authRequestLanguage(ctx))).
+				WithThaiMessage(language.Text("auth_err_google_precreated_ambiguous", "th")))
 		}
 		return apperr.Respond(ctx, apperr.ErrUnauthorized.WithWrap(err).WithMessage("login failed."))
 	}
@@ -523,10 +533,15 @@ func verifyGoogleIDToken(credential string, clientID string) (*googleTokenInfo, 
 	if err != nil || time.Now().Unix() >= expUnix {
 		return nil, errors.New("google token expired")
 	}
-	if info.Email == "" || (info.EmailVerified != "true" && info.EmailVerified != "1") {
+	if info.Email == "" || !info.emailVerified() {
 		return nil, errors.New("google email not verified")
 	}
 	return &info, nil
+}
+
+// emailVerified is Google's email_verified claim ("true"/"1" from tokeninfo).
+func (info googleTokenInfo) emailVerified() bool {
+	return info.EmailVerified == "true" || info.EmailVerified == "1"
 }
 
 // Login with LINE
@@ -987,6 +1002,24 @@ func (h AuthenticationHttp) Logout(ctx microservice.IContext) error {
 	return nil
 }
 
+// SessionSelection — Holding/บริษัท/สาขาที่ session นี้เลือกอยู่
+// BFF อ่านก่อนสลับ Holding ชั่วคราวเพื่อโหลดรายชื่อบริษัท/สาขา แล้วคืนค่าเดิมครบทั้งบริษัทและสาขา
+// (เดิมจอตั้งค่าที่ไม่ส่ง businesscode ทำให้ session เหลือแต่ Holding ทุกจอบัญชีขึ้น "กรุณาเลือกบริษัท" — UAT S7 2026-09-24)
+// @Summary		Current workspace selection
+// @Tags		Authentication
+// @Success		200	{object}	common.ApiResponse
+// @Failure		401 {object}	common.AuthResponseFailed
+// @Security     AccessToken
+// @Router /session/selection [get]
+func (h AuthenticationHttp) SessionSelection(ctx microservice.IContext) error {
+	ctx.Response(http.StatusOK, common.ApiResponse{Success: true, Data: sessionSelectionPayload(ctx.UserInfo())})
+	return nil
+}
+
+func sessionSelectionPayload(user msModels.UserInfo) map[string]string {
+	return map[string]string{"holdingcode": user.HoldingCode, "businesscode": user.BusinessCode, "branchuid": user.BranchUID}
+}
+
 // Get Current Profile
 // VerifyToken — ตรวจสอบ token ว่า valid หรือไม่ (สำหรับ app ภายนอก)
 // @Summary		Verify Token
@@ -1126,6 +1159,10 @@ func (h AuthenticationHttp) SelectShop(ctx microservice.IContext) error {
 	err = h.authenticationService.AccessShop(shopSelectReq.HoldingCode, shopSelectReq.BusinessCode, shopSelectReq.BranchUID, authUsername, userInfo.UID, authorizationHeader, authContext)
 
 	if err != nil {
+		// Expired/disabled membership: say why, in the caller's language.
+		if services.ShopAccessDeniedKey(err) != "" {
+			return apperr.Respond(ctx, services.ShopAccessDenied(err, authRequestLanguage(ctx)))
+		}
 		return apperr.RespondErr(ctx, err)
 	}
 
@@ -1317,3 +1354,12 @@ func (h AuthenticationHttp) DisableUser(ctx microservice.IContext) error {
 
 // 	return nil
 // }
+
+// authRequestLanguage is the caller's language for user-facing messages (query lang, then
+// Accept-Language; language.Text falls back to Thai).
+func authRequestLanguage(ctx microservice.IContext) string {
+	if lang := strings.TrimSpace(ctx.QueryParam("lang")); lang != "" {
+		return lang
+	}
+	return ctx.Header("Accept-Language")
+}

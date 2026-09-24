@@ -18,7 +18,8 @@ import {
   reportCsv,
   GL_RESOURCES,
   GL_REPORTS,
-  books,
+  type GLJournalBook,
+  journalBookTypeLabels,
 } from "@/lib/general-ledger";
 import { parseClipboardJournalLines } from "@/lib/clipboard-journal-parser";
 import { isMenuScreenPending } from "@/lib/menu-screen-status";
@@ -47,6 +48,13 @@ vi.mock("./gl-common", async (importOriginal) => {
       ],
       years: [
         { id: "y-2026", code: "2026", startdate: "2026-01-01", enddate: "2026-12-31", scale: 2, retainedearningsaccount: "3200", profitlossaccount: "3200", isactive: true, closed: false },
+      ],
+      books: [
+        { id: "jb-1", code: "JV", name: "สมุดรายวันทั่วไป", booktype: 1, isactive: true },
+        { id: "jb-2", code: "PV", name: "สมุดรายวันจ่ายเงิน", booktype: 2, isactive: true },
+        { id: "jb-3", code: "RV", name: "สมุดรายวันรับเงิน", booktype: 3, isactive: true },
+        { id: "jb-4", code: "SV", name: "สมุดรายวันขาย", booktype: 4, isactive: true },
+        { id: "jb-5", code: "UV", name: "สมุดรายวันซื้อ", booktype: 5, isactive: true },
       ],
       error: "",
       reload: vi.fn(),
@@ -152,20 +160,22 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
     });
 
     it("verifies journal books definition and book labels", () => {
-      expect(books.JV).toBe("รายวันทั่วไป");
-      expect(books.UV).toBe("รายวันขาย");
-      expect(books.SV).toBe("รายวันซื้อ");
-      expect(books.RV).toBe("รายวันรับเงิน");
-      expect(books.PV).toBe("รายวันจ่ายเงิน");
+      // Book types are fixed by the spec; codes are user-defined (standard defaults JV/PV/RV/SV/UV)
+      expect(journalBookTypeLabels[1][1]).toBe("รายวันทั่วไป");
+      expect(journalBookTypeLabels[2][1]).toBe("รายวันจ่ายเงิน");
+      expect(journalBookTypeLabels[3][1]).toBe("รายวันรับเงิน");
+      expect(journalBookTypeLabels[4][1]).toBe("รายวันขาย");
+      expect(journalBookTypeLabels[5][1]).toBe("รายวันซื้อ");
+      expect(journalBookTypeLabels[6][1]).toBe("ยอดยกมา");
 
       vi.mocked(glCommon.useGLList).mockReturnValue({
         data: {
           items: [
-            { id: "jb-1", code: "JV", name: "สมุดรายวันทั่วไป", isactive: true } as GLMaster,
-            { id: "jb-2", code: "UV", name: "สมุดรายวันขาย", isactive: true } as GLMaster,
-            { id: "jb-3", code: "SV", name: "สมุดรายวันซื้อ", isactive: true } as GLMaster,
-            { id: "jb-4", code: "RV", name: "สมุดรายวันรับเงิน", isactive: true } as GLMaster,
-            { id: "jb-5", code: "PV", name: "สมุดรายวันจ่ายเงิน", isactive: true } as GLMaster,
+            { id: "jb-1", code: "JV", name: "สมุดรายวันทั่วไป", booktype: 1, isactive: true } as GLJournalBook,
+            { id: "jb-2", code: "PV", name: "สมุดรายวันจ่ายเงิน", booktype: 2, isactive: true } as GLJournalBook,
+            { id: "jb-3", code: "RV", name: "สมุดรายวันรับเงิน", booktype: 3, isactive: true } as GLJournalBook,
+            { id: "jb-4", code: "SV", name: "สมุดรายวันขาย", booktype: 4, isactive: true } as GLJournalBook,
+            { id: "jb-5", code: "UV", name: "สมุดรายวันซื้อ", booktype: 5, isactive: true } as GLJournalBook,
           ],
           total: 5,
           page: 1,
@@ -304,17 +314,17 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
 
     it("parses and validates tabular journal paste from Excel", () => {
       const excelText = "1111-01\tเงินสด\t15000.00\t0.00\tแผนกขาย\tโครงการ A\n4100\tขายสินค้า\t0.00\t15000.00\tแผนกขาย\tโครงการ A";
-      const parsed = parseClipboardJournalLines(excelText);
+      const { lines: parsed, issues } = parseClipboardJournalLines(excelText);
+      expect(issues).toEqual([]);
       expect(parsed.length).toBe(2);
       expect(parsed[0].accountcode).toBe("1111-01");
       expect(parsed[0].debit).toBe("15000.00");
-      expect(parsed[0].credit).toBe("");
+      expect(parsed[0].credit).toBe("0");
       expect(parsed[1].accountcode).toBe("4100");
-      expect(parsed[1].debit).toBe("");
+      expect(parsed[1].debit).toBe("0");
       expect(parsed[1].credit).toBe("15000.00");
 
-      const normalized = parsed.map((l) => ({ ...l, debit: l.debit || "0.00", credit: l.credit || "0.00" }));
-      const totals = journalTotals(normalized);
+      const totals = journalTotals(parsed);
       expect(totals.debit === totals.credit).toBe(true);
     });
 

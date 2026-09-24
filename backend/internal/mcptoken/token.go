@@ -15,7 +15,9 @@ import (
 	"strings"
 	"time"
 
+	authmodels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/goapi/mypg"
+	"smlcloudplatform/internal/organization/access"
 	"smlcloudplatform/pkg/microservice/models"
 )
 
@@ -92,21 +94,28 @@ type querier interface {
 	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
 }
 
-// Resolve the role and tenant from database state, never from a session role claim.
-func authorizeHolding(ctx context.Context, db querier, u models.UserInfo) error {
+// Resolve the role, tenant and access scopes from database state, never from a session
+// claim. FindActiveMembership expands a holding-wide grant to every active company, so the
+// returned scopes bound what a token may reach, both when it is issued and on every use.
+func authorizeHolding(ctx context.Context, db access.Querier, u models.UserInfo) (authmodels.ShopUser, error) {
 	if !holdingPattern.MatchString(u.HoldingCode) || u.UID == "" {
-		return ErrDenied
+		return authmodels.ShopUser{}, ErrDenied
 	}
-	var role string
-	err := db.QueryRowContext(ctx, `SELECT m.role FROM holding_members m
- JOIN users u ON u.id=m.user_id AND u.is_active=true
- JOIN holdings h ON h.code=m.holding_code AND h.is_active=true
- WHERE m.holding_code=$1 AND u.id::text=$2 AND m.is_active=true`, u.HoldingCode, u.UID).Scan(&role)
-	if err != nil || !(strings.EqualFold(role, "OWNER") || strings.EqualFold(role, "ADMIN")) {
-		return ErrDenied
+	member, err := access.FindActiveHoldingManager(ctx, db, u, time.Now())
+	if err != nil {
+		return authmodels.ShopUser{}, ErrDenied
 	}
+	return member, nil
+}
 
-	return nil
+// withinScope reports whether a token grant fits the issuer's scopes exactly as a browser
+// session selection would: a company-wide grant needs a company-wide scope (a branch-only
+// scope is never promoted), a legacy branch grant a scope covering that branch.
+func withinScope(scopes []authmodels.AccessScope, company, branch string) bool {
+	if branch != "" {
+		return authmodels.ScopesAllowBranchSelection(scopes, company, branch)
+	}
+	return authmodels.ScopesAllowCompanySelection(scopes, company)
 }
 
 // Authenticate accepts MCP credentials only, never caller-provided tenant scope or schema creation.
@@ -143,12 +152,15 @@ func authenticateAudience(ctx context.Context, raw, kind string, connect func(st
 	if err != nil || p.Kind != kind || subtle.ConstantTimeCompare(hash, sum[:]) != 1 || !now.Before(expiry) || revoked.Valid || (p.Mode != "readonly" && p.Mode != "readwrite") {
 		return Principal{}, ErrDenied
 	}
-	if authorizeHolding(ctx, tx, p.User) != nil {
+	issuer, err := authorizeHolding(ctx, tx, p.User)
+	if err != nil {
 		return Principal{}, ErrDenied
 	}
+	// The stored grant is intersected with the issuer's CURRENT scope on every use: narrowing
+	// the issuer, or a grant minted before issue-time scope checks, takes effect at once.
 	// Legacy tokens retain their original company and branch even after migration.
 	if p.User.BusinessCode != "" {
-		if activeCompany(ctx, tx, p.User, p.User.BusinessCode) != nil {
+		if activeCompany(ctx, tx, p.User, p.User.BusinessCode) != nil || !withinScope(issuer.AccessScopes, p.User.BusinessCode, p.User.BranchUID) {
 			return Principal{}, ErrDenied
 		}
 		p.CompanyCodes = []string{p.User.BusinessCode}
@@ -163,7 +175,9 @@ func authenticateAudience(ctx context.Context, raw, kind string, connect func(st
 				rows.Close()
 				return Principal{}, ErrDenied
 			}
-			p.CompanyCodes = append(p.CompanyCodes, code)
+			if withinScope(issuer.AccessScopes, code, "") {
+				p.CompanyCodes = append(p.CompanyCodes, code)
+			}
 		}
 		e = rows.Err()
 		rows.Close()

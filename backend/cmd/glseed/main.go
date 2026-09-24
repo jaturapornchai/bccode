@@ -136,6 +136,86 @@ func main() {
 		return n > 0
 	}
 
+	// สมุดรายวันเลือกตามประเภท (booktype) ไม่ยึดรหัส — ความหมายตาม mydocs/datamodels/gl/journalbook.sql
+	// (1 ทั่วไป 2 จ่าย 3 รับ 4 ขาย 5 ซื้อ 6 ยอดยกมา); ถ้าบริษัทยังไม่มีสมุดประเภทใด สร้างสมุดมาตรฐานให้ (SV ขาย, UV ซื้อ)
+	type seedBook struct {
+		Code      string `json:"code"`
+		BookType  int    `json:"booktype"`
+		IsActive  bool   `json:"isactive"`
+		IsDeleted bool   `json:"isdeleted"`
+	}
+	bookRows, err := db.QueryContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind='journal-books'`, *company)
+	if err != nil {
+		fatal("อ่านสมุดรายวันไม่ได้: %v", err)
+	}
+	existingBooks := map[string]seedBook{}
+	for bookRows.Next() {
+		var raw []byte
+		var b seedBook
+		if err := bookRows.Scan(&raw); err != nil {
+			fatal("%v", err)
+		}
+		if err := json.Unmarshal(raw, &b); err != nil {
+			fatal("payload สมุดรายวันพัง: %v", err)
+		}
+		if !b.IsDeleted {
+			existingBooks[b.Code] = b
+		}
+	}
+	bookRows.Close()
+	// รหัสสมุดที่ใบสำคัญเดิมใช้อยู่แล้ว: ข้อมูลเก่าอาจใช้ SV/UV คนละความหมายกับสมุดมาตรฐาน (SV=ซื้อ UV=ขาย) —
+	// ห้ามสร้างสมุดรหัสนั้นพร้อมประเภทให้เอง (= เดาประเภทจากรหัส) ให้ผู้ใช้กำหนดที่หน้ากำหนดสมุดรายวันก่อน
+	usedBookCodes := map[string]bool{}
+	usedRows, err := db.QueryContext(ctx, `SELECT DISTINCT COALESCE(payload->>'bookcode','') FROM gl_records WHERE company=$1 AND kind='journals' AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, *company)
+	if err != nil {
+		fatal("อ่านรหัสสมุดของใบสำคัญเดิมไม่ได้: %v", err)
+	}
+	for usedRows.Next() {
+		var code string
+		if err := usedRows.Scan(&code); err != nil {
+			fatal("%v", err)
+		}
+		usedBookCodes[code] = true
+	}
+	usedRows.Close()
+	bookOfType := func(bookType int) string {
+		best := ""
+		for code, b := range existingBooks {
+			if b.IsActive && b.BookType == bookType && (best == "" || code < best) {
+				best = code
+			}
+		}
+		return best
+	}
+	bookFor := map[int]string{}
+	for _, d := range gl.DefaultJournalBooks() {
+		code := bookOfType(d.BookType)
+		if code == "" {
+			if _, taken := existingBooks[d.Code]; taken {
+				fatal("สมุดรายวัน %s มีอยู่แล้วแต่ไม่ใช่ประเภท %d ที่เปิดใช้งาน (หรือยังไม่กำหนดประเภท) — กรุณากำหนดประเภทสมุดที่หน้ากำหนดสมุดรายวันก่อน ระบบไม่เดาประเภทจากรหัส", d.Code, d.BookType)
+			}
+			if usedBookCodes[d.Code] {
+				fatal("ใบสำคัญเดิมใช้รหัสสมุด %s อยู่แล้วแต่ยังไม่มีสมุดนี้ — กรุณาสร้างสมุด %s และกำหนดประเภทที่หน้ากำหนดสมุดรายวันก่อน ระบบไม่เดาประเภทจากรหัส", d.Code, d.Code)
+			}
+			fmt.Printf("แผน: สร้างสมุดรายวัน %s %s (ประเภท %d)\n", d.Code, d.Name, d.BookType)
+			if *apply {
+				cmd := gl.Command{Resource: "journal-books", Action: "create", RequestID: "seed-gl-screens-book-" + d.Code,
+					Master: &gl.Master{Kind: "journal-books", Code: d.Code, Name: d.Name, NameEn: d.NameEn, BookType: d.BookType, IsActive: true}}
+				if _, err := store.Execute(ctx, scope, cmd); err != nil {
+					fatal("สร้างสมุดรายวัน %s ไม่ได้: %v", d.Code, err)
+				}
+			}
+			code = d.Code
+		}
+		bookFor[d.BookType] = code
+	}
+	general, payment, receipt := bookFor[gl.BookTypeGeneral], bookFor[gl.BookTypePayment], bookFor[gl.BookTypeReceipt]
+	sales, purchase := bookFor[gl.BookTypeSales], bookFor[gl.BookTypePurchase]
+	opening := general
+	if code := bookOfType(gl.BookTypeOpening); code != "" {
+		opening = code
+	}
+
 	// บัญชีเฉพาะทางที่แผนต้องใช้ หาจากชื่อจริงในผังบัญชี
 	cash := acc("1111")
 	bank := acc("1121")
@@ -246,14 +326,14 @@ func main() {
 		_, _ = createJournal(docno, date, book, desc, kind, lines, details)
 	}
 
-	partnerCustA := gl.SubledgerPartner{Code: "CUST-TH-001", Name: "บริษัท โครงการก่อสร้างรุ่งเรืองพัฒน์ จำกัด", TaxID: "0105558001001", IsCustomer: true, IsActive: true}
+	partnerCustA := gl.SubledgerPartner{Code: "CUST-TH-001", Name: "บริษัท โครงการก่อสร้างรุ่งเรืองพัฒน์ จำกัด", TaxID: "0105558001011", IsCustomer: true, IsActive: true}
 	partnerCustB := gl.SubledgerPartner{Code: "CUST-TH-002", Name: "ร้านวัสดุบ้านแข็งแรง", TaxID: "0105558001002", IsCustomer: true, IsActive: true}
-	partnerSuppA := gl.SubledgerPartner{Code: "SUPP-TH-001", Name: "บริษัท ปูนกรุงไทย จำกัด", TaxID: "0105558002001", IsSupplier: true, IsActive: true}
-	partnerSuppB := gl.SubledgerPartner{Code: "SUPP-TH-002", Name: "บริษัท เหล็กไทยพัฒนา จำกัด", TaxID: "0105558002002", IsSupplier: true, IsActive: true}
+	partnerSuppA := gl.SubledgerPartner{Code: "SUPP-TH-001", Name: "บริษัท ปูนกรุงไทย จำกัด", TaxID: "0105558002017", IsSupplier: true, IsActive: true}
+	partnerSuppB := gl.SubledgerPartner{Code: "SUPP-TH-002", Name: "บริษัท เหล็กไทยพัฒนา จำกัด", TaxID: "0105558002025", IsSupplier: true, IsActive: true}
 	kbank := gl.SubledgerBankAccount{Code: "BANK-KBANK", BankName: "ธนาคารกสิกรไทย", AccountNumber: "123-4-56789-0", AccountName: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", GLAccountCode: bank, Currency: "THB", IsActive: true}
 
 	// 1) ยอดยกมาต้นงวด
-	create("JV6901-S001", "2026-01-01", "JV", "บันทึกยอดยกมาต้นงวด บัญชีแยกประเภท ปี 2569", "opening", []gl.Line{
+	create(opening+"6901-S001", "2026-01-01", opening, "บันทึกยอดยกมาต้นงวด บัญชีแยกประเภท ปี 2569", "opening", []gl.Line{
 		L(cash, "ยอดยกมา เงินสดในมือ", "80000.00", "0.00"),
 		L(bank, "ยอดยกมา เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย", "1650000.00", "0.00"),
 		L(goods, "ยอดยกมา สินค้าสำเร็จรูป (ปูนซีเมนต์ เหล็กเส้น สีทาอาคาร)", "920000.00", "0.00"),
@@ -261,7 +341,7 @@ func main() {
 	}, nil)
 
 	// 2) ซื้อปูนซีเมนต์เชื่อ + เอกสาร AP
-	create("SV6901-S001", "2026-01-05", "SV", "ซื้อปูนซีเมนต์ปอร์ตแลนด์ 50 กก. 800 ถุง เป็นเงินเชื่อ", "manual", []gl.Line{
+	create(purchase+"6901-S001", "2026-01-05", purchase, "ซื้อปูนซีเมนต์ปอร์ตแลนด์ 50 กก. 800 ถุง เป็นเงินเชื่อ", "manual", []gl.Line{
 		L(goods, "รับสินค้าปูนซีเมนต์", "100000.00", "0.00"),
 		L(inputVAT, "ภาษีซื้อ 7%", "7000.00", "0.00"),
 		L(ap, "เจ้าหนี้การค้า บริษัท ปูนกรุงไทย จำกัด", "0.00", "107000.00"),
@@ -272,7 +352,7 @@ func main() {
 	})
 
 	// 3) ซื้อเหล็กเส้นเชื่อ + เอกสาร AP
-	create("SV6901-S002", "2026-01-08", "SV", "ซื้อเหล็กเส้นกลม SZ12 120 เส้น เป็นเงินเชื่อ", "manual", []gl.Line{
+	create(purchase+"6901-S002", "2026-01-08", purchase, "ซื้อเหล็กเส้นกลม SZ12 120 เส้น เป็นเงินเชื่อ", "manual", []gl.Line{
 		L(goods, "รับสินค้าเหล็กเส้น", "200000.00", "0.00"),
 		L(inputVAT, "ภาษีซื้อ 7%", "14000.00", "0.00"),
 		L(ap, "เจ้าหนี้การค้า บริษัท เหล็กไทยพัฒนา จำกัด", "0.00", "214000.00"),
@@ -283,7 +363,7 @@ func main() {
 	})
 
 	// 4) ขายเชื่อโครงการ A + เอกสาร AR
-	create("UV6901-S001", "2026-01-12", "UV", "ขายวัสดุก่อสร้าง ปูนและสีทาอาคาร โครงการรุ่งเรืองพัฒน์ เป็นเงินเชื่อ", "manual", []gl.Line{
+	create(sales+"6901-S001", "2026-01-12", sales, "ขายวัสดุก่อสร้าง ปูนและสีทาอาคาร โครงการรุ่งเรืองพัฒน์ เป็นเงินเชื่อ", "manual", []gl.Line{
 		L(ar, "ลูกหนี้การค้า บริษัท โครงการก่อสร้างรุ่งเรืองพัฒน์ จำกัด", "267500.00", "0.00"),
 		L(salesVAT, "รายได้จากการขายสินค้า (ก่อนภาษี)", "0.00", "250000.00"),
 		L(outputVAT, "ภาษีขาย 7%", "0.00", "17500.00"),
@@ -294,7 +374,7 @@ func main() {
 	})
 
 	// 5) ขายเชื่อร้านวัสดุ + เอกสาร AR
-	create("UV6901-S002", "2026-01-16", "UV", "ขายเหล็กเส้นและปูนซีเมนต์ ร้านวัสดุบ้านแข็งแรง เป็นเงินเชื่อ", "manual", []gl.Line{
+	create(sales+"6901-S002", "2026-01-16", sales, "ขายเหล็กเส้นและปูนซีเมนต์ ร้านวัสดุบ้านแข็งแรง เป็นเงินเชื่อ", "manual", []gl.Line{
 		L(ar, "ลูกหนี้การค้า ร้านวัสดุบ้านแข็งแรง", "160500.00", "0.00"),
 		L(salesVAT, "รายได้จากการขายสินค้า (ก่อนภาษี)", "0.00", "150000.00"),
 		L(outputVAT, "ภาษีขาย 7%", "0.00", "10500.00"),
@@ -305,7 +385,7 @@ func main() {
 	})
 
 	// 6) รับชำระบางส่วน 150,000 จากโครงการ A (โอนกสิกร) + settlement
-	rvS001ID, rvS001Status := createJournal("RV6901-S001", "2026-01-20", "RV", "รับชำระบางส่วนใบ INV-2569-0201 โอนเข้าธนาคารกสิกรไทย", "manual", []gl.Line{
+	rvS001ID, rvS001Status := createJournal(receipt+"6901-S001", "2026-01-20", receipt, "รับชำระบางส่วนใบ INV-2569-0201 โอนเข้าธนาคารกสิกรไทย", "manual", []gl.Line{
 		L(bank, "รับเงินโอนเข้าธนาคารกสิกรไทย", "150000.00", "0.00"),
 		L(ar, "ตัดลูกหนี้การค้าบางส่วน", "0.00", "150000.00"),
 	}, &gl.JournalDetails{
@@ -317,15 +397,15 @@ func main() {
 		Settlements:  []gl.SubledgerSettlement{{ID: "SETTLE-S001", Ledger: "ar", PartnerCode: partnerCustA.Code, DebtDocumentID: "AR-S001", PaymentDocumentID: "AR-SREC1", Date: "2026-01-20", Amount: gl.Amount("150000.00")}},
 	})
 	if rvS001Status == "created" && *apply {
-		recon := gl.Command{Resource: "journals", Action: "reconcile", RequestID: "seed-gl-screens-RV6901-S001-recon", ID: rvS001ID, Version: 2, Reason: "จับคู่หลักฐานรายการเงินเข้าจากธนาคาร",
+		recon := gl.Command{Resource: "journals", Action: "reconcile", RequestID: "seed-gl-screens-" + receipt + "6901-S001-recon", ID: rvS001ID, Version: 2, Reason: "จับคู่หลักฐานรายการเงินเข้าจากธนาคาร",
 			Journal: &gl.Journal{Details: &gl.JournalDetails{
 				StatementLines: []gl.SubledgerStatementLine{{ID: "STMT-KB-001", BankAccountCode: "BANK-KBANK", SourceKey: "kbank-2569-01-20-000118", Date: "2026-01-20", Reference: "FT256901A0018", Description: "โอนเข้าจาก บจก.โครงการก่อสร้างรุ่งเรืองพัฒน์", Direction: 1, Amount: gl.Amount("150000.00")}},
 				Matches:        []gl.SubledgerMatch{{ID: "MATCH-S001", StatementLineID: "STMT-KB-001", LineNumber: 1, Amount: gl.Amount("150000.00")}},
 			}}}
 		if _, err := store.Execute(ctx, scope, recon); err != nil {
-			fatal("จับคู่ Statement RV-S001 ไม่ได้: %v", err)
+			fatal("จับคู่ Statement %s6901-S001 ไม่ได้: %v", receipt, err)
 		}
-		fmt.Println("แผน: reconcile RV6901-S001 — Statement เข้า 150,000 จับคู่สำเร็จ")
+		fmt.Printf("แผน: reconcile %s6901-S001 — Statement เข้า 150,000 จับคู่สำเร็จ\n", receipt)
 	}
 
 	// 7) จ่ายเจ้าหนี้ปูนกรุงไทย พร้อมหัก ณ ที่จ่าย 3% (ถ้าผังมีบัญชี WHT)
@@ -353,21 +433,21 @@ func main() {
 			Settlements:  []gl.SubledgerSettlement{{ID: "SETTLE-S002", Ledger: "ap", PartnerCode: partnerSuppA.Code, DebtDocumentID: "AP-S001", PaymentDocumentID: "AP-SPAY1", Date: "2026-01-22", Amount: gl.Amount("107000.00")}},
 		}
 	}
-	pvS001ID, pvS001Status := createJournal("PV6901-S001", "2026-01-22", "PV", "จ่ายชำระหนี้ บจก.ปูนกรุงไทย ตามบิล PT-2569-0112 พร้อมหักภาษี ณ ที่จ่าย 3%", "manual", pvLines, pvDetails)
+	pvS001ID, pvS001Status := createJournal(payment+"6901-S001", "2026-01-22", payment, "จ่ายชำระหนี้ บจก.ปูนกรุงไทย ตามบิล PT-2569-0112 พร้อมหักภาษี ณ ที่จ่าย 3%", "manual", pvLines, pvDetails)
 	if pvS001Status == "created" && *apply {
-		recon := gl.Command{Resource: "journals", Action: "reconcile", RequestID: "seed-gl-screens-PV6901-S001-recon", ID: pvS001ID, Version: 2, Reason: "จับคู่หลักฐานรายการเงินออกจากธนาคาร",
+		recon := gl.Command{Resource: "journals", Action: "reconcile", RequestID: "seed-gl-screens-" + payment + "6901-S001-recon", ID: pvS001ID, Version: 2, Reason: "จับคู่หลักฐานรายการเงินออกจากธนาคาร",
 			Journal: &gl.Journal{Details: &gl.JournalDetails{
 				StatementLines: []gl.SubledgerStatementLine{{ID: "STMT-KB-002", BankAccountCode: "BANK-KBANK", SourceKey: "kbank-2569-01-22-000127", Date: "2026-01-22", Reference: "FT256901A0027", Description: "โอนออก ชำระ บจก.ปูนกรุงไทย", Direction: 2, Amount: gl.Amount("103790.00")}},
 				Matches:        []gl.SubledgerMatch{{ID: "MATCH-S002", StatementLineID: "STMT-KB-002", LineNumber: 2, Amount: gl.Amount("103790.00")}},
 			}}}
 		if _, err := store.Execute(ctx, scope, recon); err != nil {
-			fatal("จับคู่ Statement PV-S001 ไม่ได้: %v", err)
+			fatal("จับคู่ Statement %s6901-S001 ไม่ได้: %v", payment, err)
 		}
-		fmt.Println("แผน: reconcile PV6901-S001 — Statement ออก 103,790 จับคู่สำเร็จ")
+		fmt.Printf("แผน: reconcile %s6901-S001 — Statement ออก 103,790 จับคู่สำเร็จ\n", payment)
 	}
 
 	// 8) ขายสดรับโอน
-	create("UV6901-S003", "2026-02-03", "UV", "ขายวัสดุก่อสร้าง รับชำระโอนเข้าธนาคารกสิกรไทย", "manual", []gl.Line{
+	create(sales+"6901-S003", "2026-02-03", sales, "ขายวัสดุก่อสร้าง รับชำระโอนเข้าธนาคารกสิกรไทย", "manual", []gl.Line{
 		L(bank, "รับเงินโอนเข้าบัญชีธนาคาร", "32100.00", "0.00"),
 		L(salesVAT, "รายได้จากการขายสินค้า (ก่อนภาษี)", "0.00", "30000.00"),
 		L(outputVAT, "ภาษีขาย 7%", "0.00", "2100.00"),
@@ -377,7 +457,7 @@ func main() {
 	})
 
 	// 9) จ่ายค่าเช่าหน้าร้าน + WHT 5%
-	create("PV6901-S002", "2026-02-05", "PV", "จ่ายค่าเช่าหน้าร้านและคลังสินค้า ประจำเดือนมกราคม 2569 หักภาษี ณ ที่จ่าย 5%", "manual", func() []gl.Line {
+	create(payment+"6901-S002", "2026-02-05", payment, "จ่ายค่าเช่าหน้าร้านและคลังสินค้า ประจำเดือนมกราคม 2569 หักภาษี ณ ที่จ่าย 5%", "manual", func() []gl.Line {
 		lines := []gl.Line{L(rent, "ค่าเช่าหน้าร้านและคลังสินค้า", "20000.00", "0.00"), L(bank, "จ่ายโอนออกจากธนาคารกสิกรไทย", "0.00", "19000.00")}
 		if wht != "" {
 			lines = append(lines, L(wht, "ภาษีหัก ณ ที่จ่าย 5% ค้างนำส่ง", "0.00", "1000.00"))
@@ -388,19 +468,19 @@ func main() {
 	}(), nil)
 
 	// 10) จ่ายค่าเครื่องเขียนเงินสด
-	create("PV6901-S003", "2026-02-08", "PV", "จ่ายค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน เงินสด", "manual", []gl.Line{
+	create(payment+"6901-S003", "2026-02-08", payment, "จ่ายค่าเครื่องเขียน แบบพิมพ์ และวัสดุสำนักงาน เงินสด", "manual", []gl.Line{
 		L(stationery, "ค่าเครื่องเขียนและวัสดุสำนักงาน", "1500.00", "0.00"),
 		L(cash, "จ่ายด้วยเงินสดในมือ", "0.00", "1500.00"),
 	}, nil)
 
 	// 11) ตัดต้นทุนขาย
-	create("JV6901-S002", "2026-02-28", "JV", "ตัดต้นทุนขายวัสดุก่อสร้างประจำเดือนมกราคม 2569", "manual", []gl.Line{
+	create(general+"6901-S002", "2026-02-28", general, "ตัดต้นทุนขายวัสดุก่อสร้างประจำเดือนมกราคม 2569", "manual", []gl.Line{
 		L(cogs, "ต้นทุนขายวัสดุก่อสร้าง", "240000.00", "0.00"),
 		L(goods, "ตัดสินค้าสำเร็จรูปออกจากคลัง", "0.00", "240000.00"),
 	}, nil)
 
 	// 12) รับชำระเต็มจำนวนจากร้านวัสดุ + settlement เต็ม
-	create("RV6901-S002", "2026-02-10", "RV", "รับชำระหนี้เต็มจำนวนใบ INV-2569-0215 โอนเข้าธนาคารกสิกรไทย", "manual", []gl.Line{
+	create(receipt+"6901-S002", "2026-02-10", receipt, "รับชำระหนี้เต็มจำนวนใบ INV-2569-0215 โอนเข้าธนาคารกสิกรไทย", "manual", []gl.Line{
 		L(bank, "รับเงินโอนเข้าธนาคารกสิกรไทย", "160500.00", "0.00"),
 		L(ar, "ล้างลูกหนี้การค้า ร้านวัสดุบ้านแข็งแรง", "0.00", "160500.00"),
 	}, &gl.JournalDetails{
@@ -443,17 +523,17 @@ func main() {
 		code, name, book string
 		rules            []gl.MappingRule
 	}{
-		{"MAP-SV", "รูปแบบการเชื่อมบัญชี สมุดรายวันซื้อเชื่อ", "SV", []gl.MappingRule{
+		{"MAP-" + purchase, "รูปแบบการเชื่อมบัญชี สมุดรายวันซื้อเชื่อ", purchase, []gl.MappingRule{
 			{AccountCode: goods, Side: "debit", Source: "สินค้า"},
 			{AccountCode: inputVAT, Side: "debit", Source: "ภาษีซื้อ"},
 			{AccountCode: ap, Side: "credit", Source: "ยอดรวมเอกสาร"},
 		}},
-		{"MAP-UV", "รูปแบบการเชื่อมบัญชี สมุดรายวันขายเชื่อ", "UV", []gl.MappingRule{
+		{"MAP-" + sales, "รูปแบบการเชื่อมบัญชี สมุดรายวันขายเชื่อ", sales, []gl.MappingRule{
 			{AccountCode: ar, Side: "debit", Source: "ยอดรวมเอกสาร"},
 			{AccountCode: salesVAT, Side: "credit", Source: "รายได้"},
 			{AccountCode: outputVAT, Side: "credit", Source: "ภาษีขาย"},
 		}},
-		{"MAP-RV", "รูปแบบการเชื่อมบัญชี สมุดรายวันรับเงิน", "RV", []gl.MappingRule{
+		{"MAP-" + receipt, "รูปแบบการเชื่อมบัญชี สมุดรายวันรับเงิน", receipt, []gl.MappingRule{
 			{AccountCode: bank, Side: "debit", Source: "ยอดรับจริง"},
 			{AccountCode: ar, Side: "credit", Source: "ยอดตัดลูกหนี้"},
 		}},

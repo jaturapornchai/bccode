@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -233,7 +234,7 @@ type DocumentApproval struct {
 }
 
 type AccessScope struct {
-	ScopeType    string `json:"scopetype"`              // company, branch
+	ScopeType    string `json:"scopetype"`              // holding, company, branch
 	CompanyUID   string `json:"companyuid,omitempty"`   // immutable company id
 	BranchUID    string `json:"branchuid,omitempty"`    // immutable branch id
 	BusinessCode string `json:"businesscode,omitempty"` // legacy display code
@@ -271,9 +272,23 @@ func ScopesAllow(scopes []AccessScope, businessCode string, branchCode string) b
 	return false
 }
 
+// HasHoldingScope reports whether the scopes contain a holding-wide rule: every
+// active company and branch of the Holding, including ones created later. Only the
+// scope type counts; company/branch fields on a holding rule are ignored.
+func HasHoldingScope(scopes []AccessScope) bool {
+	for _, scope := range scopes {
+		if strings.ToLower(strings.TrimSpace(scope.ScopeType)) == "holding" {
+			return true
+		}
+	}
+	return false
+}
+
 // ScopesAllowCompanySelection reports whether a user may enter a company-wide
 // session by immutable CompanyUID. Branch-only scopes and legacy business codes
-// must not be promoted to company-wide access.
+// must not be promoted to company-wide access. A holding scope covers every
+// company: callers must already have checked the company is an active company
+// of the selected Holding.
 func ScopesAllowCompanySelection(scopes []AccessScope, companyUID string) bool {
 	if len(scopes) == 0 {
 		return false
@@ -281,6 +296,9 @@ func ScopesAllowCompanySelection(scopes []AccessScope, companyUID string) bool {
 	companyUID = strings.TrimSpace(companyUID)
 	if companyUID == "" {
 		return false
+	}
+	if HasHoldingScope(scopes) {
+		return true
 	}
 	for _, scope := range scopes {
 		scopeType := strings.ToLower(strings.TrimSpace(scope.ScopeType))
@@ -297,14 +315,18 @@ func ScopesAllowCompanySelection(scopes []AccessScope, companyUID string) bool {
 	return false
 }
 
-// ScopesAllowBranchSelection permits an exact Branch scope or a Company scope
-// explicitly covering every Branch. It never promotes a Branch scope to a
-// Company-wide workspace.
+// ScopesAllowBranchSelection permits a holding scope, an exact Branch scope or a
+// Company scope explicitly covering every Branch. It never promotes a Branch scope
+// to a Company-wide workspace. Callers must already have checked the branch is an
+// active branch of that company.
 func ScopesAllowBranchSelection(scopes []AccessScope, companyUID, branchUID string) bool {
 	companyUID = strings.TrimSpace(companyUID)
 	branchUID = strings.TrimSpace(branchUID)
 	if companyUID == "" || branchUID == "" {
 		return false
+	}
+	if HasHoldingScope(scopes) {
+		return true
 	}
 	for _, scope := range scopes {
 		if strings.TrimSpace(scope.CompanyUID) != companyUID {
@@ -340,13 +362,17 @@ type ShopUser struct {
 	AccessDisabledBy  string    `json:"accessdisabledby,omitempty"`
 	AccessEnabledAt   time.Time `json:"accessenabledat,omitempty"`
 	AccessEnabledBy   string    `json:"accessenabledby,omitempty"`
-	// AccessExpiryDate auto-blocks access once the date is reached (offboarding /
-	// last working day). Zero = no expiry. The shop creator is always exempt.
+	// AccessExpiryDate is the instant access ends: the expiry date is usable through its end,
+	// so this is 00:00 of the day AFTER the membership's expiry date in the Holding's timezone
+	// (AccessEndsAt / centraldb.AccessExpiryInstant). Zero = no expiry. The shop creator can
+	// never be given one (the save is rejected).
 	AccessExpiryDate time.Time `json:"accessexpirydate,omitempty"`
 
-	// === ข้อมูลพนักงาน ===
-	Position   string `json:"position"`   // ตำแหน่งงาน
-	Department string `json:"department"` // แผนก
+	// === ข้อมูลพนักงาน (ต่อ membership) ===
+	Position    string `json:"position"`    // ตำแหน่งงาน
+	Department  string `json:"department"`  // แผนก
+	Avatar      string `json:"avatar"`      // รูปผู้ใช้งาน (URI ใน S3)
+	AvatarThumb string `json:"avatarthumb"` // รูปย่อ
 
 	// === ข้อมูล LINE OA ===
 	LineUserID      string `json:"lineuserid"`      // LINE User ID
@@ -405,17 +431,25 @@ type UserRoleRequest struct {
 	UserProfileName string `json:"userprofilename"`
 	Email           string `json:"email,omitempty"`
 	// Avatar/AvatarThumb are pointers so LINE-sync/auto-unlink callers that omit them do not wipe stored values.
-	Avatar           *string       `json:"avatar,omitempty"`
-	AvatarThumb      *string       `json:"avatarthumb,omitempty"`
-	Role             UserRole      `json:"role"`
-	IsAccessDisabled bool          `json:"isaccessdisabled"`
-	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty"`
-	AccessDisabledBy string        `json:"accessdisabledby,omitempty"`
-	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty"`
-	AccessEnabledBy  string        `json:"accessenabledby,omitempty"`
-	AccessExpiryDate time.Time     `json:"accessexpirydate,omitempty"`
+	Avatar           *string   `json:"avatar,omitempty"`
+	AvatarThumb      *string   `json:"avatarthumb,omitempty"`
+	Role             UserRole  `json:"role"`
+	IsAccessDisabled bool      `json:"isaccessdisabled"`
+	AccessDisabledAt time.Time `json:"accessdisabledat,omitempty"`
+	AccessDisabledBy string    `json:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time `json:"accessenabledat,omitempty"`
+	AccessEnabledBy  string    `json:"accessenabledby,omitempty"`
+	// AccessExpiryDate is a calendar date "YYYY-MM-DD" — the last day access is usable
+	// ("ใช้งานได้ถึงสิ้นวันที่กำหนด" in the Holding's timezone) — or "" for no expiry.
+	// See UnmarshalJSON for the accepted input.
+	AccessExpiryDate string        `json:"accessexpirydate,omitempty"`
 	AccessScopes     []AccessScope `json:"accessscopes,omitempty"`
 	PermissionSets   []string      `json:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
+
+	// AddExistingUser must be true to add a login account that already exists (for example a
+	// user of another business group) to this Holding. Without it an add whose username is
+	// taken is rejected, so nobody is granted access by typing a username by accident.
+	AddExistingUser bool `json:"addexistinguser,omitempty"`
 
 	// === ข้อมูลพนักงาน ===
 	Position   string `json:"position"`   // ตำแหน่งงาน
@@ -431,7 +465,19 @@ type UserRoleRequest struct {
 	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty"`
 }
 
-// UnmarshalJSON accepts an empty expiry from optional date inputs as no expiry.
+// ErrInvalidAccessExpiryDate means accessexpirydate is not a usable calendar date.
+var ErrInvalidAccessExpiryDate = errors.New("accessexpirydate invalid")
+
+// Years outside this range are typing mistakes (a Buddhist-era year such as 2569 would
+// silently mean "never expires").
+const (
+	minAccessExpiryYear = 2000
+	maxAccessExpiryYear = 2200
+)
+
+// UnmarshalJSON normalizes accessexpirydate to "YYYY-MM-DD": the date input sends
+// "YYYY-MM-DD"; an RFC 3339 timestamp (older API callers) keeps the date it states in its
+// own offset; empty/null means no expiry. Anything else is ErrInvalidAccessExpiryDate.
 func (req *UserRoleRequest) UnmarshalJSON(data []byte) error {
 	type requestAlias UserRoleRequest
 	decoded := struct {
@@ -441,13 +487,41 @@ func (req *UserRoleRequest) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		return err
 	}
-
-	rawExpiry := strings.TrimSpace(string(decoded.AccessExpiryDate))
-	if rawExpiry == "" || rawExpiry == "null" || rawExpiry == `""` {
-		req.AccessExpiryDate = time.Time{}
-		return nil
+	expiry, err := NormalizeAccessExpiryDate(decoded.AccessExpiryDate)
+	if err != nil {
+		return err
 	}
-	return json.Unmarshal(decoded.AccessExpiryDate, &req.AccessExpiryDate)
+	req.AccessExpiryDate = expiry
+	return nil
+}
+
+// NormalizeAccessExpiryDate turns the raw JSON value of accessexpirydate into "YYYY-MM-DD"
+// or "" (no expiry).
+func NormalizeAccessExpiryDate(raw json.RawMessage) (string, error) {
+	text := strings.TrimSpace(string(raw))
+	if text == "" || text == "null" {
+		return "", nil
+	}
+	var value string
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return "", ErrInvalidAccessExpiryDate
+	}
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", nil
+	}
+	day, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		moment, rfcErr := time.Parse(time.RFC3339, value)
+		if rfcErr != nil {
+			return "", ErrInvalidAccessExpiryDate
+		}
+		day = moment
+	}
+	if day.Year() < minAccessExpiryYear || day.Year() > maxAccessExpiryYear {
+		return "", ErrInvalidAccessExpiryDate
+	}
+	return day.Format("2006-01-02"), nil
 }
 
 type ShopUserAccessLog struct {
@@ -461,17 +535,19 @@ type ShopUserAccessLog struct {
 
 type ShopUserProfile struct {
 	ShopUserBase
-	UID              string        `json:"uid,omitempty"`
-	Email            string        `json:"email,omitempty"`
-	UserProfileName  string        `json:"userprofilename"`
-	Avatar           string        `json:"avatar"`
-	AvatarThumb      string        `json:"avatarthumb"`
-	IsCreator        bool          `json:"iscreator,omitempty"`
-	IsAccessDisabled bool          `json:"isaccessdisabled"`
-	AccessDisabledAt time.Time     `json:"accessdisabledat,omitempty"`
-	AccessDisabledBy string        `json:"accessdisabledby,omitempty"`
-	AccessEnabledAt  time.Time     `json:"accessenabledat,omitempty"`
-	AccessEnabledBy  string        `json:"accessenabledby,omitempty"`
+	UID              string    `json:"uid,omitempty"`
+	Email            string    `json:"email,omitempty"`
+	UserProfileName  string    `json:"userprofilename"`
+	Avatar           string    `json:"avatar"`
+	AvatarThumb      string    `json:"avatarthumb"`
+	IsCreator        bool      `json:"iscreator,omitempty"`
+	IsAccessDisabled bool      `json:"isaccessdisabled"`
+	AccessDisabledAt time.Time `json:"accessdisabledat,omitempty"`
+	AccessDisabledBy string    `json:"accessdisabledby,omitempty"`
+	AccessEnabledAt  time.Time `json:"accessenabledat,omitempty"`
+	AccessEnabledBy  string    `json:"accessenabledby,omitempty"`
+	// AccessExpiryDate is "YYYY-MM-DD" (the date input's own format) or "" for no expiry.
+	AccessExpiryDate string        `json:"accessexpirydate,omitempty"`
 	AccessScopes     []AccessScope `json:"accessscopes,omitempty"`
 	PermissionSets   []string      `json:"permissionsets"` // ชุดสิทธิ์ (role_permission.rolecode) เลือกได้หลายชุด
 
@@ -487,4 +563,14 @@ type ShopUserProfile struct {
 	// === ข้อมูลการอนุมัติแยกตามประเภทเอกสาร ===
 	POApproval        *DocumentApproval `json:"poapproval,omitempty"`
 	QuotationApproval *DocumentApproval `json:"quotationapproval,omitempty"`
+}
+
+// AccessExpiryDay renders a ShopUser.AccessExpiryDate instant (00:00 of the day after the
+// last usable day, AccessEndsAt) as the "YYYY-MM-DD" expiry date the date input shows
+// ("" = no expiry). The instant carries the Holding's timezone.
+func AccessExpiryDay(instant time.Time) string {
+	if instant.IsZero() {
+		return ""
+	}
+	return instant.AddDate(0, 0, -1).Format("2006-01-02")
 }

@@ -343,3 +343,31 @@ func TestPostgresSubledgerDraftRemovalKeepsBankEvidence(t *testing.T) {
 	}
 	assertSubledgerAmount(t, statement.Matched, "0.10")
 }
+
+// เอกสารลูกหนี้/เจ้าหนี้ในเซสชันระดับบริษัทต้องอยู่สาขาเดียวกับใบสำคัญ — เดิมรับสาขาที่พิมพ์มั่ว ๆ (adversarial review 2026-09-24)
+func TestPostgresSubledgerDocumentBranchFollowsJournal(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	details := func(branch string) *JournalDetails {
+		return &JournalDetails{
+			Partners:  []SubledgerPartner{{Code: "CUST1", Name: "บริษัท ก่อสร้างไทย จำกัด", IsCustomer: true, IsActive: true}},
+			Documents: []SubledgerDocument{{ID: "AR1", Ledger: "ar", PartnerCode: "CUST1", DocumentNo: "INV6901-001", Date: "2026-01-10", BranchCode: branch, Kind: 1, Side: 1, Amount: "100", Currency: "THB", ControlAccountCode: "1000"}},
+		}
+	}
+	j := Journal{DocNo: "SV6901-001", Date: "2026-01-10", BookCode: "JV", FiscalYear: "2026", Description: "ขายวัสดุก่อสร้างเป็นเงินเชื่อ", Kind: "manual", BranchCode: "B1",
+		Lines:   []Line{{AccountCode: "1000", Debit: "100", Credit: "0"}, {AccountCode: "4000", Debit: "0", Credit: "100"}},
+		Details: details("ZZZ")}
+	_, err := f.execute(f.scope, Command{Resource: "journals", Action: "create", Journal: &j})
+	if user, ok := AsUserError(err); !ok || user.Code != "subledger_document_branch_mismatch" || user.Field != "branch_code" {
+		t.Fatalf("made-up document branch: %v", err)
+	}
+	var count int
+	if err = f.db.QueryRow(`SELECT COUNT(*) FROM gl_subledger_documents WHERE company='C'`).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("rejected document stored: %d (%v)", count, err)
+	}
+	j.Details = details(" B1 ")
+	r := f.run(Command{Resource: "journals", Action: "create", Journal: &j})
+	var branch string
+	if err = f.db.QueryRow(`SELECT branch_code FROM gl_subledger_documents WHERE company='C' AND id='AR1'`).Scan(&branch); err != nil || branch != "B1" || r.ID == "" {
+		t.Fatalf("document branch stored = %q (%v)", branch, err)
+	}
+}

@@ -35,7 +35,8 @@ const ALLOWED_MODULES = [
 ];
 
 function sanitizeSegments(segments: string[]): boolean {
-  return segments.every((seg) => /^[\p{L}\p{N}_.-]+$/u.test(seg) && seg !== "." && seg !== "..");
+  // \p{M} = สระบน/ล่างและวรรณยุกต์ไทย (รหัสเช่น "ที่01") — ขาดแล้วรหัสไทยถูกปฏิเสธ (docs/kms/17-dev-gotchas.md)
+  return segments.every((seg) => /^[\p{L}\p{M}\p{N}_.-]+$/u.test(seg) && seg !== "." && seg !== "..");
 }
 
 export async function GET(request: Request, context: Context) {

@@ -93,6 +93,88 @@ func TestTaxFilingStorage(t *testing.T) {
 	if _, err := loadTaxFiling(ctx, db, "OTHER", f.ID); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("other company must not load: %v", err)
 	}
+
+	// ลบ: id ที่ไม่มี (หรือของบริษัทอื่น) = not found (404) ไม่ใช่ "มีผู้อื่นแก้" (409); version เก่า = conflict; ถูกต้อง = หายจริงใน PG
+	if err := deleteTaxFiling(ctx, db, company, f.ID+100000, 1); !errors.Is(err, errTaxFilingNotFound) {
+		t.Fatalf("delete missing id err = %v, want not found", err)
+	}
+	if err := deleteTaxFiling(ctx, db, "OTHER", f.ID, f.Version); !errors.Is(err, errTaxFilingNotFound) {
+		t.Fatalf("delete other company err = %v, want not found", err)
+	}
+	if err := deleteTaxFiling(ctx, db, company, f.ID, 1); !errors.Is(err, errTaxFilingConflict) {
+		t.Fatalf("delete stale version err = %v, want conflict", err)
+	}
+	if err := deleteTaxFiling(ctx, db, company, f.ID, f.Version); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	db.QueryRowContext(ctx, `SELECT count(*) FROM tax_filings WHERE id=$1`, f.ID).Scan(&count)
+	if count != 0 {
+		t.Fatalf("filing still in PG after delete: %d", count)
+	}
+}
+
+// TestCopyProfileSameFamily - หัวแบบ (ที่อยู่/ผู้ลงนาม) ยกจากฉบับล่าสุดของแบบตระกูลเดียวกันเท่านั้น:
+// แบบของบริษัทห้ามยกที่อยู่ของผู้ยื่นบุคคลธรรมดา (ภ.ง.ด.93/94) และกลับกัน
+func TestCopyProfileSameFamily(t *testing.T) {
+	dsn := os.Getenv("BC_TAXFORM_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set BC_TAXFORM_TEST_POSTGRES_DSN")
+	}
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	ctx := context.Background()
+	if err := ensureTaxFilingSchema(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	const company = "IT04"
+	cleanup := func() {
+		db.ExecContext(ctx, `DELETE FROM tax_filing_history WHERE filing_id IN (SELECT id FROM tax_filings WHERE company_code=$1)`, company)
+		db.ExecContext(ctx, `DELETE FROM tax_filings WHERE company_code=$1`, company)
+	}
+	cleanup()
+	defer cleanup()
+	save := func(code string, year, month int, values map[string]string) {
+		t.Helper()
+		doc := rdform.Document{Values: values}
+		if err := saveTaxFiling(ctx, db, company, "demo", &TaxFiling{Code: code, Year: year, Month: month, Document: &doc}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("pnd53", 2026, 8, map[string]string{"filing_type": "normal", "addr_road": "ถนนพระราม 2", "signer_name": "นายกรรมการ บริษัท"})
+	// ฉบับล่าสุดเป็นแบบบุคคลธรรมดา — ต้องไม่ปนเข้าแบบของบริษัท
+	save("pnd94", 2026, 0, map[string]string{"tax_id": "3100500123456", "name": "นายสมชาย ใจดี", "addr_road": "ถนนสุขุมวิท", "signer_name": "นายสมชาย ใจดี"})
+
+	pp30, err := newFormFiller("pp30")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := pp30.copyProfile(ctx, db, company, "pp30", false); err != nil {
+		t.Fatal(err)
+	}
+	expectValues(t, pp30.values, map[string]string{"addr_road": "ถนนพระราม 2", "signer_name": "นายกรรมการ บริษัท", "tax_id": "", "name": ""})
+
+	pnd94, err := newFormFiller("pnd94")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := pnd94.copyProfile(ctx, db, company, "pnd94", true); err != nil {
+		t.Fatal(err)
+	}
+	expectValues(t, pnd94.values, map[string]string{"addr_road": "ถนนสุขุมวิท", "tax_id": "3100500123456", "name": "นายสมชาย ใจดี"})
+
+	pnd93, err := newFormFiller("pnd93")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := pnd93.copyProfile(ctx, db, company, "pnd93", true); err != nil {
+		t.Fatal(err)
+	}
+	if len(pnd93.values) != 0 {
+		t.Fatalf("pnd93 must not copy from pnd53/pnd94: %v", pnd93.values)
+	}
 }
 
 // TestTaxFormFillFromLedger - บริษัทที่ยังไม่มีรายการเปิดแบบได้พร้อมหมายเหตุ (ไม่ error) และ ภ.พ.30 ดึงยอดจากรายการภาษีที่บันทึกจริง

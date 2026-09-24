@@ -87,7 +87,6 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/upload/image` | POST | M `/goapi/image/upload` (category `system-settings`, client ต้องส่ง category) | Bearer | LIVE | `upload/image/route.ts:3-8` |
 | `/api/currency/[[...path]]` | GET/POST/PUT/DELETE | M `/currency/*` | Bearer | LIVE | `currency/[[...currencyPath]]/route.ts:14-60,80,91` |
 | `/api/holding-member` | GET | M `/holding-member/list` (อ่านอย่างเดียว; เพิ่ม/ถอดผู้ดูแลทำที่ ตั้งค่าระบบและการเข้าถึง › บัญชีเข้าระบบ) | Bearer | LIVE | `holding-member/route.ts:1-17` |
-| `/api/holding-users-import` | POST | M `/holding/users/import` | Bearer | LIVE | `holding-users-import/route.ts:8-12` |
 | `/api/line-oa/user` | POST | G `/api/user/lineoa/link|profile` | Bearer + tenant JWT | LIVE | `line-oa/user/route.ts:20-21,32,47,63-68` |
 | `/api/setup/[...path]` | POST | — ตอบ 410 | — | STUBBED | `setup/[...setupPath]/route.ts:6-11` |
 | `/api/storage/health` | POST | — ตอบ 410 (กัน SSRF) | — | STUBBED | `storage/health/route.ts:3-12` |
@@ -105,7 +104,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/menu` product / product-set | `product`, `product/*`, `product-barcode/*`, `product-barcode/list`, `workspace/select-holding` | `frontend/src/app/menu/product-screen.tsx`, `product-set-screen.tsx` |
 | `/menu` barcode / shelf / marketplace | `product-barcode/*`, `product-barcode/list` | `frontend/src/app/menu/product-barcode-screen.tsx`, `product-barcode-shelf-screen.tsx`, `marketplace-screen.tsx` |
 | `/price_history` | `product-barcode/list`, `product-price-history` | `frontend/src/app/menu/product-price-history-screen.tsx` |
-| `/[systemSetting]` | `system-settings/*`, `system-settings/branch`, `workspace/holdings`, `workspace/product-units/standard|defaults`, `upload/image`, `auth/profile/reset-password` (501), `holding-users-import` | `frontend/src/app/system-settings/system-settings-screen.tsx`, `bulk-user-import.tsx` |
+| `/[systemSetting]` | `system-settings/*`, `system-settings/branch`, `workspace/holdings`, `workspace/product-units/standard|defaults`, `upload/image`, `auth/profile/reset-password` (501) | `frontend/src/app/system-settings/system-settings-screen.tsx` |
 | `/currency` | `currency`, `currency/*` | `frontend/src/app/currency/currency-screen.tsx` |
 | `/line-oa` | `line-oa/user` | `frontend/src/app/line-oa/line-oa-link-screen.tsx` |
 | `/settings` | `backend/check`, `storage/health` (410), `setup/*` (410) | `frontend/src/app/settings/settings-screen.tsx` |
@@ -205,7 +204,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 
 ## ช่องว่าง / สิ่งที่ยังไม่ตรวจ
 
-- **ยังไม่ตรวจ** ว่า backend มี route ครบตามที่ BFF เรียกทุกตัว (เช่น `/holding/users/import`, `/product/resync`, `/sessions/active-count`, `/unit/bulk`, `/api/user/lineoa/*`) — ต้อง cross-check กับ `backend/main.go` exceptShopPath และ module routes (บทความ backend)
+- **ยังไม่ตรวจ** ว่า backend มี route ครบตามที่ BFF เรียกทุกตัว (เช่น `/product/resync`, `/sessions/active-count`, `/unit/bulk`, `/api/user/lineoa/*`) — ต้อง cross-check กับ `backend/main.go` exceptShopPath และ module routes (บทความ backend)
 - **ยังไม่ตรวจ** `BC_AUTH_BRIDGE_URL` ชี้ไปที่บริการใด/ยังรันอยู่ไหม — ถ้าไม่มี flow ผูก LINE (`/api/auth/line/code`, `link/status`) จะตอบ error ไทย "ระบบยังไม่ได้ตั้งค่า Auth bridge" (`frontend/src/lib/auth-bridge.ts:8`)
 - ขัดกันจริงในโค้ด: `frontend/src/app/login-screen.tsx:304-309,649-657` มีเฉพาะปุ่ม "ทดลองใช้ระบบ (Demo)" (comment บอกว่าแทนปุ่ม Dev Login เดิม) และ `frontend/src/app/login-screen.security.test.ts:8-12` บังคับว่าห้ามมี `/api/auth/dev-login` ในหน้า login — แต่ `frontend/e2e/dev-login.spec.ts:8` และ `tests/auth.setup.ts:16` ยังหาปุ่ม "Dev Login" อยู่ → e2e/UAT ชุดนี้น่าจะไม่ผ่านตั้งแต่ขั้น login (**ยังไม่รันยืนยัน**); ถามลุงจืดว่าจะย้าย e2e ไป Demo หรือคืนปุ่ม Dev
 - (ปิดแล้ว 2026-09-07) skill ส่วนตัวอยู่ที่ `.agents/skills/ui-scale-polish/SKILL.md` (271 บรรทัด, ตรวจ 2026-09-09) ตามกฎใน `AGENTS.md:20-25` ซึ่งชี้ path นี้ถูกต้องแล้ว — โฟลเดอร์ `.agents/skills/` ถูกย้ายออกไปแล้ว (`git ls-files .agents` ว่างเป็นเรื่องปกติ ไม่ใช่ bug) ห้ามสร้างกลับ และ **ห้ามแก้ path ใน AGENTS.md อีก**

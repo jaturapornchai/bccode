@@ -114,6 +114,12 @@ var incomeNoteField = map[string]lineField{
 	IncomeOther: fieldOtherNote,
 }
 
+// IncomeHasNote - บรรทัดประเภทเงินได้นี้มีช่อง "ระบุ" บนแบบ (Income.Note ต้องมีค่า) — บรรทัดอื่น Note ต้องว่าง
+func IncomeHasNote(incomeType string) bool {
+	_, ok := incomeNoteField[incomeType]
+	return ok
+}
+
 // normalizedIncome - บรรทัดที่ตรวจแล้ว
 type normalizedIncome struct {
 	Income
@@ -232,14 +238,28 @@ func thaiTaxID(raw string, length int, field string) (string, error) {
 	if len(id) != length || strings.Trim(id, "0123456789") != "" {
 		return "", invalid("wht_cert_taxid_invalid", field)
 	}
-	sum := 0
-	for i := 0; i < 12; i++ {
-		sum += int(id[i]-'0') * (13 - i)
-	}
-	if (11-sum%11)%10 != int(id[12]-'0') {
+	if !ValidThaiTaxID(id) {
 		return "", invalid("wht_cert_taxid_checksum", field)
 	}
 	return id, nil
+}
+
+// ValidThaiTaxID - เลขประจำตัวผู้เสียภาษี/เลขบัตรประชาชน 13 หลัก (ตัวเลขล้วน) ที่หลักสุดท้ายตรงกับหลักตรวจสอบ mod 11
+// ใช้ร่วมกับไฟล์ยื่นภาษีด้วยสื่อ (internal/rdfile) — แหล่งเดียวของสูตรนี้
+func ValidThaiTaxID(id string) bool {
+	if len(id) != 13 {
+		return false
+	}
+	sum := 0
+	for i := 0; i < 13; i++ {
+		if id[i] < '0' || id[i] > '9' {
+			return false
+		}
+		if i < 12 {
+			sum += int(id[i]-'0') * (13 - i)
+		}
+	}
+	return (11-sum%11)%10 == int(id[12]-'0')
 }
 
 func optionalTaxID10(raw, field string) (string, error) {

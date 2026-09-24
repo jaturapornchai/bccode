@@ -32,12 +32,12 @@ func TestPostgresScopeRevocation(t *testing.T) {
 	}
 	defer db.Exec("DROP SCHEMA " + ns + " CASCADE")
 	uid := uuid.NewString()
-	_, err = db.Exec(`CREATE TABLE users(id uuid,is_active boolean);CREATE TABLE holdings(code text,is_active boolean);
- CREATE TABLE holding_members(holding_code text,user_id uuid,role text,permission_sets jsonb,access_scopes jsonb,is_active boolean);
+	_, err = db.Exec(`CREATE TABLE users(id uuid,is_active boolean);CREATE TABLE holdings(code text,is_active boolean,profile jsonb);
+ CREATE TABLE holding_members(holding_code text,user_id uuid,role text,permission_sets jsonb,access_scopes jsonb,is_active boolean,access_expiry_date date);
  CREATE TABLE companies(holding_code text,code text,is_active boolean);CREATE TABLE branches(holding_code text,company_code text,code text,is_active boolean);
  CREATE TABLE role_permissions(holding_code text,role_code text,permissions jsonb,is_active boolean);
  INSERT INTO holdings VALUES('H',true);INSERT INTO companies VALUES('H','C',true);INSERT INTO branches VALUES('H','C','B',true);
- INSERT INTO role_permissions VALUES('H','USER','[]',true),('H','ACCOUNTING','["jv-journal","jv-journal:update"]',true);`)
+ INSERT INTO role_permissions VALUES('H','USER','[]',true),('H','ACCOUNTING','["gl-journals","gl-journals:update"]',true);`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestPostgresScopeRevocation(t *testing.T) {
 		}
 		return db, nil
 	}
-	if got, e := resolveScope(context.Background(), request, connect); e != nil || !allowed(got.Permissions, "jv-journal", "update") {
+	if got, e := resolveScope(context.Background(), request, connect); e != nil || !allowed(got.Permissions, "gl-journals", "update") {
 		t.Fatalf("active scope rejected: %v", e)
 	}
 	for _, tc := range []struct{ name, change, restore string }{
@@ -65,6 +65,8 @@ func TestPostgresScopeRevocation(t *testing.T) {
 		{"member disabled", `UPDATE holding_members SET is_active=false`, `UPDATE holding_members SET is_active=true`},
 		{"user disabled", `UPDATE users SET is_active=false`, `UPDATE users SET is_active=true`},
 		{"scopes revoked", `UPDATE holding_members SET access_scopes='[]'`, `UPDATE holding_members SET access_scopes='` + scopes + `'`},
+		// ใช้ได้ถึงสิ้นวันที่กำหนดตามเขตเวลากลุ่มกิจการ — เมื่อวาน (เวลาไทย) = หมดอายุแล้ว
+		{"access expired", `UPDATE holding_members SET access_expiry_date=(now() AT TIME ZONE 'Asia/Bangkok')::date - 1`, `UPDATE holding_members SET access_expiry_date=NULL`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if _, e := db.Exec(tc.change); e != nil {
@@ -94,9 +96,16 @@ func TestPostgresScopeRevocation(t *testing.T) {
 	if _, err = resolveScope(context.Background(), request, connect); err == nil {
 		t.Fatal("explicit owner restriction ignored")
 	}
-	// Adapter-only contexts retain independently verified token grants.
+	// A token request is bounded by its issuer's current scope like a session: the token's
+	// own allow-list cannot reach a company the issuer is restricted away from.
 	tokenRequest := &mcpGLContext{IContext: request, tokenKind: "mcp", tokenID: "verified"}
-	if _, err = resolveScope(context.Background(), tokenRequest, connect); err != nil {
-		t.Fatal("token allow-list replaced by session restriction")
+	if _, err = resolveScope(context.Background(), tokenRequest, connect); err == nil {
+		t.Fatal("token reached a company outside its issuer's scope")
+	}
+	if _, err = db.Exec(`UPDATE holding_members SET access_scopes='[{"scopetype":"holding"}]'`); err != nil {
+		t.Fatal(err)
+	}
+	if got, e := resolveScope(context.Background(), tokenRequest, connect); e != nil || !got.CompanyWide || !got.Permissions["*"] {
+		t.Fatalf("holding-wide issuer's token denied: %v", e)
 	}
 }

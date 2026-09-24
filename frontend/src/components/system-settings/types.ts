@@ -90,6 +90,13 @@ export function extractMessage(payload: unknown): string | undefined {
       : undefined;
 }
 
+// Extract the machine-readable error code (apperr errorcode/code) from a failed API response
+export function extractErrorCode(payload: unknown): string | undefined {
+  if (!isRecord(payload)) return undefined;
+  const code = payload.errorcode ?? payload.code;
+  return typeof code === "string" && code ? code : undefined;
+}
+
 // Safe JSON parse with fallback
 export function safeJsonParse(value: string, fallback: unknown): unknown {
   try {

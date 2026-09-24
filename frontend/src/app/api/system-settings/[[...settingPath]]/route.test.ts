@@ -44,6 +44,70 @@ describe("system settings API route security", () => {
     expect(saveBody).not.toHaveProperty("password");
   });
 
+  it("rejects an invalid access scope rule instead of dropping it (an empty manager scope is the whole holding)", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      void url;
+      void init;
+      return Response.json({ success: true });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: "Bearer test-token",
+      "x-bc-backend-url": "http://localhost:8888/goapi",
+    };
+    const save = (accessscopes: unknown) =>
+      PUT(
+        new Request("http://localhost/api/system-settings/user/staff@example.com?holdingcode=SHOP001", {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ holdingcode: "SHOP001", username: "group-admin", role: 1, accessscopes }),
+        }),
+        { params: Promise.resolve({ settingPath: ["user", "staff@example.com"] }) },
+      );
+    for (const invalid of [
+      [{ scopetype: "company", companyuid: "c01" }, { scopetype: "everything", businesscode: "C03" }],
+      [{ businesscode: "C02" }],
+      [{ scopetype: "branch", businesscode: "C01" }],
+      [{}],
+      { scopetype: "holding" },
+    ]) {
+      fetchMock.mockClear();
+      const response = await save(invalid);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        success: false,
+        errorcode: "VALIDATION_FAILED",
+        message: "ss_err_access_scope_invalid",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+
+    const savedScopes = async (accessscopes: unknown[]) => {
+      fetchMock.mockClear();
+      await PUT(
+        new Request("http://localhost/api/system-settings/user/staff@example.com?holdingcode=SHOP001", {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ holdingcode: "SHOP001", username: "staff@example.com", accessscopes }),
+        }),
+        { params: Promise.resolve({ settingPath: ["user", "staff@example.com"] }) },
+      );
+      return JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).accessscopes;
+    };
+
+    expect(
+      await savedScopes([
+        { scopetype: "company", companyuid: "c01" },
+        { scopetype: "branch", businesscode: "c02", branchcode: "1" },
+      ]),
+    ).toEqual([
+      { scopetype: "company", businesscode: "C01", allbranches: true },
+      { scopetype: "branch", businesscode: "C02", branchcode: "00001", allbranches: false },
+    ]);
+    expect(await savedScopes([{ scopetype: " Holding " }])).toEqual([{ scopetype: "holding" }]);
+  });
+
   it("proxies product unit deletes to the legacy unit guid endpoint", async () => {
     const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       void url;

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, TreeNodeRow, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, saveFailureTarget } from "./gl-masters";
+import { FormErrorAlert, GLMasters, TreeNodeRow, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -398,6 +398,7 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
         } as GLAccount,
       ],
       years: [],
+      books: [],
       error: "",
       reload: vi.fn(),
     });
@@ -461,4 +462,29 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
   });
 });
 
+describe("ผังบัญชี: parent-account picker", () => {
+  const account = (accountcode: string, parentaccountcode: string | null, patch: Partial<GLAccount> = {}): GLAccount => ({
+    accountcode, names: [{ code: "th", name: accountcode }], accounttype: "asset", parentaccountcode, normalbalance: "debit",
+    allowposting: false, isactive: true, accountgroup: "", iscash: false, ...patch,
+  });
+  const chart = [
+    account("10000", null),
+    account("11000", "10000"),
+    account("11100", "11000"),
+    account("11110", "11100", { allowposting: true }),
+    account("12000", "10000", { isactive: false }),
+    account("13000", "10000", { isdeleted: true }),
+    account("20000", null),
+    account("21000", "20000"),
+  ];
+  const codes = (list: GLAccount[]) => list.map((row) => row.accountcode);
 
+  it("offers only active, non-posting, not-deleted accounts", () => {
+    expect(codes(parentAccountCandidates(chart, ""))).toEqual(["10000", "11000", "11100", "20000", "21000"]);
+  });
+
+  it("excludes the account itself and every descendant so the chart can never loop", () => {
+    expect(codes(parentAccountCandidates(chart, "11000"))).toEqual(["10000", "20000", "21000"]);
+    expect(codes(parentAccountCandidates(chart, "10000"))).toEqual(["20000", "21000"]);
+  });
+});

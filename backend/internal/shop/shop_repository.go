@@ -39,7 +39,8 @@ type IShopUserRepository interface {
 	FindShopCreatedBy(ctx context.Context, holdingCode string) (string, error)
 	SaveFullProfile(ctx context.Context, holdingCode string, req *authmodels.UserRoleRequest) error
 	SaveStable(ctx context.Context, holdingCode string, userUID string, role authmodels.UserRole) error
-	Delete(ctx context.Context, holdingCode string, username string) error
+	// Delete removes a membership; actorUID (the admin) is recorded with the removal.
+	Delete(ctx context.Context, holdingCode string, username string, actorUID string) error
 	UpdateLastAccess(ctx context.Context, holdingCode string, userUID string, lastAccessedAt time.Time) error
 	SaveFavorite(ctx context.Context, holdingCode string, userUID string, isFavorite bool) error
 	ResolveHoldingCodeByHoldingCode(ctx context.Context, holdingCode string) (string, error)

@@ -66,6 +66,75 @@ func TestComputePP30Branches(t *testing.T) {
 	expectValues(t, doc.Rows[1], map[string]string{"sales_taxable": "400.00", "tax_net": "28.00"})
 	expectValues(t, doc.Values, map[string]string{"sales_amount": "1500.00", "sales_exempt": "100.00", "sales_taxable": "1400.00",
 		"output_tax": "98.00", "input_tax": "28.00", "tax_payable": "70.00", "net_payable": "70.00"})
+	// ยื่นปกติ: ช่องยื่นเพิ่มเติมต้องว่าง ไม่ใช่ "0.00" (UAT 2026-09-24)
+	for _, k := range pp30AdditionalColumns {
+		if v, ok := doc.Values[k]; ok {
+			t.Errorf("normal filing %s = %q, want blank", k, v)
+		}
+	}
+
+	// ยื่นเพิ่มเติม: สาขาที่กรอกยอดขายต่ำไป รวมขึ้นหน้าแบบ ช่องที่ไม่มีสาขากรอกยังว่าง
+	extra := computeDoc(t, "pp30", rdform.Document{Values: map[string]string{}, Rows: []map[string]string{
+		{"branch": "00000", "sales_amount": "1000", "output_tax": "70", "add_sales_under": "100"},
+		{"branch": "00001", "sales_amount": "500", "output_tax": "35", "add_sales_under": "50.50"},
+	}})
+	expectValues(t, extra.Values, map[string]string{"add_sales_under": "150.50", "add_purchase_over": ""})
+	if _, ok := extra.Values["add_purchase_over"]; ok {
+		t.Error("add_purchase_over must stay blank when no branch filled it")
+	}
+
+	// สาขาล้างยอดยื่นเพิ่มเติมออกหมด (กลับเป็นยื่นปกติ) — ยอดรวมเดิม 150.50 บนหน้าแบบต้องหาย ไม่ค้างไว้
+	for _, r := range extra.Rows {
+		delete(r, "add_sales_under")
+	}
+	cleared := computeDoc(t, "pp30", extra)
+	if v, ok := cleared.Values["add_sales_under"]; ok {
+		t.Errorf("stale additional-filing total after branches cleared = %q, want blank", v)
+	}
+	expectValues(t, cleared.Values, map[string]string{"sales_amount": "1500.00", "output_tax": "105.00"})
+}
+
+// TestPrepareTaxDocumentRecomputesTotals - บันทึก/พิมพ์ใช้ยอดรวมที่คำนวณใหม่เสมอ: ยอดรวมที่ถูกแก้จาก browser ต้องไม่รอด
+func TestPrepareTaxDocumentRecomputesTotals(t *testing.T) {
+	tampered := rdform.Document{Values: map[string]string{"total_income": "1.00", "total_tax": "1.00", "total_payable": "1.00"}, Rows: []map[string]string{
+		{"name": "บริษัท รุ่งเรืองขนส่ง จำกัด", "l1_amount": "100000", "l1_tax": "3000.00", "l2_amount": "66353.50", "l2_tax": "3317.07"},
+	}}
+	doc, err := prepareTaxDocument("pnd53", tampered)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectValues(t, doc.Values, map[string]string{"total_income": "166353.50", "total_tax": "6317.07", "total_payable": "6317.07"})
+	if err := rdform.Validate("pnd53", doc); err != nil {
+		t.Fatalf("prepared document must still be valid: %v", err)
+	}
+	if _, err := prepareTaxDocument("pnd53", rdform.Document{Rows: []map[string]string{{"l1_tax": "abc"}}}); !errors.Is(err, rdform.ErrInvalidValue) {
+		t.Fatalf("bad money must be rejected, got %v", err)
+	}
+}
+
+// TestPayeeKeyWithoutIdentity - แถวที่ไม่มีทั้งเลขผู้เสียภาษีและชื่อ ห้ามรวมเป็นผู้มีเงินได้รายเดียวกัน
+func TestPayeeKeyWithoutIdentity(t *testing.T) {
+	rows := []TaxWithholdingRow{
+		{JournalID: "J1", PartnerCode: "S001", RatePercent: "3", BaseAmount: "1000.00", WhtAmount: "30.00", DocDate: "2026-09-01"},
+		{JournalID: "J2", PartnerCode: "S002", RatePercent: "3", BaseAmount: "2000.00", WhtAmount: "60.00", DocDate: "2026-09-02"},
+		{JournalID: "J3", PartnerCode: "S001", RatePercent: "3", BaseAmount: "500.00", WhtAmount: "15.00", DocDate: "2026-09-03"},
+		{JournalID: "J4", RatePercent: "3", BaseAmount: "100.00", WhtAmount: "3.00", DocDate: "2026-09-04"},
+		{JournalID: "J5", RatePercent: "3", BaseAmount: "200.00", WhtAmount: "6.00", DocDate: "2026-09-05"},
+	}
+	out := payeeRows(rows, false)
+	if len(out) != 4 {
+		t.Fatalf("payees = %d, want 4 (S001 รวมกัน, S002, J4, J5 แยก): %+v", len(out), out)
+	}
+	expectValues(t, out[0], map[string]string{"l1_amount": "1000.00", "l2_amount": "500.00"})
+	expectValues(t, out[2], map[string]string{"l1_amount": "100.00", "l2_amount": ""})
+
+	annual := pnd2Rows([]TaxWithholdingRow{
+		{JournalID: "J1", PartnerCode: "A", IncomeType: "40_4a", BaseAmount: "10.00", WhtAmount: "1.50"},
+		{JournalID: "J2", PartnerCode: "B", IncomeType: "40_4a", BaseAmount: "20.00", WhtAmount: "3.00"},
+	}, true)
+	if len(annual) != 2 {
+		t.Fatalf("ภ.ง.ด.2ก rows = %d, want 2 (คนละคู่ค้า)", len(annual))
+	}
 }
 
 func TestComputeWithholdingCover(t *testing.T) {
@@ -89,6 +158,11 @@ func TestComputePnd2Cover(t *testing.T) {
 	doc := computeDoc(t, "pnd2", rdform.Document{Values: map[string]string{"surcharge": "5"}, Rows: rows})
 	expectValues(t, doc.Values, map[string]string{"interest_count": "2", "interest_income": "12000.00", "interest_tax": "1800.00",
 		"dividend_count": "1", "royalty_count": "0", "total_count": "3", "total_income": "17000.00", "total_tax": "2300.00", "total_payable": "2305.00"})
+
+	// แถวที่ยังไม่เลือกประเภทเงินได้ไม่อยู่ในบรรทัดใด แต่ต้องอยู่ใน 6. รวม (ยอดภาษีที่นำส่งไม่ตกหล่น)
+	blank := computeDoc(t, "pnd2", rdform.Document{Values: map[string]string{}, Rows: append(append([]map[string]string{}, rows...),
+		map[string]string{"income_type": "", "name": "นาย ง", "l1_amount": "100", "l1_tax": "15"})})
+	expectValues(t, blank.Values, map[string]string{"interest_count": "2", "total_count": "4", "total_income": "17100.00", "total_tax": "2315.00"})
 
 	annual := computeDoc(t, "pnd2a", rdform.Document{Values: map[string]string{}, Rows: rows})
 	expectValues(t, annual.Values, map[string]string{"interest_count": "2", "total_count": "3", "total_tax": "2300.00"})
@@ -142,6 +216,14 @@ func TestPayeeRowsForAttachments(t *testing.T) {
 
 	person := payeeRows(rows[4:], true)
 	expectValues(t, person[0], map[string]string{"name": "นายสมชาย", "surname": "ใจดี"})
+
+	// review 2026-09-24: มาตรา 3 เตรส ที่ไม่มีคำอธิบาย ไม่ใช่ "ค่าอะไร" ([F53] ช่อง 13) → ว่าง + หมายเหตุ ไม่เขียนชื่อมาตราลงแบบ
+	tres := payeeRows([]TaxWithholdingRow{{TaxID: "0105558012349", PartnerName: "บริษัท ขนส่งไทยเร็ว จำกัด", IncomeType: "3_tres", RatePercent: "1", BaseAmount: "1000.00", WhtAmount: "10.00", Condition: 1, PaidDate: "2026-09-15"},
+		{TaxID: "0105558012349", PartnerName: "บริษัท ขนส่งไทยเร็ว จำกัด", IncomeType: "3_tres", Description: "ค่าขนส่ง", RatePercent: "1", BaseAmount: "500.00", WhtAmount: "5.00", Condition: 1, PaidDate: "2026-09-16"}}, false)
+	expectValues(t, tres[0], map[string]string{"l1_income_type": "", "l2_income_type": "ค่าขนส่ง"})
+	if notes := missingIncomeTypeNotes("pnd53", tres); len(notes) != 1 || notes[0].Key != "tax_form_note_missing_income_type" || notes[0].Count != 1 {
+		t.Errorf("missing income type notes = %+v", notes)
+	}
 	computeDoc(t, "pnd3", rdform.Document{Values: map[string]string{}, Rows: person})
 }
 
@@ -163,18 +245,43 @@ func TestPnd2Rows(t *testing.T) {
 		t.Fatalf("annual rows = %d, want 3 (ดอกเบี้ยของรายเดียวกันรวมเป็นแถวเดียว)", len(annual))
 	}
 	expectValues(t, annual[0], map[string]string{"income_type": "interest", "l1_amount": "3000.00", "l1_tax": "450.00", "l1_rate": "15"})
-	if annual[2]["income_type"] != "other_404" {
-		t.Errorf("ภ.ง.ด.2ก ไม่มีค่าลิขสิทธิ์ → other_404, got %q", annual[2]["income_type"])
+	// review 2026-09-24: ภ.ง.ด.2ก ไม่มีบรรทัด 40(3) — ไม่เดาเป็น "40(4) อื่น ๆ" ให้ผู้ใช้เลือกเอง
+	if annual[2]["income_type"] != "" {
+		t.Errorf("ภ.ง.ด.2ก ค่าลิขสิทธิ์ → ว่าง (ผู้ใช้เลือก), got %q", annual[2]["income_type"])
 	}
-	computeDoc(t, "pnd2a", rdform.Document{Values: map[string]string{}, Rows: annual})
+	annualDoc := computeDoc(t, "pnd2a", rdform.Document{Values: map[string]string{}, Rows: annual})
+	expectValues(t, annualDoc.Values, map[string]string{"total_count": "3", "total_income": "3600.00"})
+	if notes := missingIncomeTypeNotes("pnd2a", annual); len(notes) != 1 || notes[0].Count != 1 {
+		t.Errorf("missing income type notes = %+v", notes)
+	}
+	// ภ.ง.ด.2 รับเฉพาะ 40(3)/40(4) (Format กลาง ภ.ง.ด.2 ช่อง 14) — 40(2)/มาตรา 3 เตรส/อื่น ๆ ไม่ถูกเขียนเป็น 40(4) อื่น ๆ เงียบ ๆ
+	for _, code := range []string{"40_2", "3_tres", "other", "40_1"} {
+		if kind := pnd2IncomeType(code, false); kind != "" {
+			t.Errorf("pnd2IncomeType(%q) = %q, want empty", code, kind)
+		}
+	}
 }
 
 func TestTaxFormTextHelpers(t *testing.T) {
-	if a, b := splitPersonName("นางสาว มาลี ศรีสุข"); a != "นางสาว มาลี" || b != "ศรีสุข" {
+	// ไม่รู้คำนำหน้า: คำสุดท้ายเป็นชื่อสกุล (แยกคำนำหน้าแยกคำกับชื่อกลางไม่ออก)
+	if a, b := splitPersonName("นางสาว มาลี ศรีสุข", ""); a != "นางสาว มาลี" || b != "ศรีสุข" {
 		t.Errorf("splitPersonName = %q %q", a, b)
 	}
-	if a, b := splitPersonName("สมชาย"); a != "สมชาย" || b != "" {
+	if a, b := splitPersonName("สมชาย", "นาย"); a != "สมชาย" || b != "" {
 		t.Errorf("splitPersonName single = %q %q", a, b)
+	}
+	// review 2026-09-24: Format กลาง ภ.ง.ด.3 ช่อง 8 / ภ.ง.ด.2 ช่อง 9 — ชื่อกลางอยู่ในช่องชื่อสกุล ("ชื่อกลาง+1 ช่องว่าง+นามสกุล")
+	for _, tc := range []struct{ full, title, name, surname string }{
+		{"Mr. John Michael Smith", "Mr.", "Mr. John", "Michael Smith"},
+		{"นายสมชาย ณ อยุธยา", "นาย", "นายสมชาย", "ณ อยุธยา"},
+		{"นาย สมชาย ใจดี", "นาย", "นาย สมชาย", "ใจดี"},
+		{"นายสมชาย ใจดี", "นาย", "นายสมชาย", "ใจดี"},
+		{"ว่าที่ ร.ต. สมชาย ใจดี", "ว่าที่ ร.ต.", "ว่าที่ ร.ต. สมชาย", "ใจดี"},
+		{"สมชาย ใจดี", "-", "สมชาย", "ใจดี"},
+	} {
+		if a, b := splitPersonName(tc.full, tc.title); a != tc.name || b != tc.surname {
+			t.Errorf("splitPersonName(%q, %q) = %q %q, want %q %q", tc.full, tc.title, a, b, tc.name, tc.surname)
+		}
 	}
 	if a, b := splitAddress("สั้น", 60); a != "สั้น" || b != "" {
 		t.Errorf("splitAddress short = %q %q", a, b)

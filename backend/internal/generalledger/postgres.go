@@ -303,7 +303,12 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 	if !supportedRecord(kind) {
 		return result, fmt.Errorf("ไม่พบชนิดข้อมูลบัญชี")
 	}
-	if filter.BookCode != "" && !contains([]string{"JV", "UV", "SV", "RV", "PV"}, filter.BookCode) || filter.Kind != "" && !contains([]string{"manual", "opening", "closing", "reversal", "mapping"}, filter.Kind) || filter.Status != "" && !contains([]string{"draft", "posted", "reversed", "void"}, filter.Status) {
+	// Books are user-defined: the filter only has to be a well-formed book code.
+	filter.BookCode = NormalizeCode(filter.BookCode)
+	if filter.BookCode != "" && checkCode(filter.BookCode, "bookcode", "สมุดรายวัน", BookCodeMaxRunes) != nil {
+		return result, fieldError("journal_filter_book_invalid", "bookcode", "ตัวกรองสมุดรายวันไม่ถูกต้อง กรุณาเลือกสมุดรายวันจากรายการ")
+	}
+	if filter.Kind != "" && !contains([]string{"manual", "opening", "closing", "reversal", "mapping"}, filter.Kind) || filter.Status != "" && !contains([]string{"draft", "posted", "reversed", "void"}, filter.Status) {
 		return result, fmt.Errorf("ตัวกรองรายการบัญชีไม่ถูกต้อง")
 	}
 	db, err := p.database(ctx, scope.Holding)

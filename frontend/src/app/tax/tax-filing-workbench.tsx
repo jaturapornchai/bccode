@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import {
   useBackendDictionary,
   useBackendText,
@@ -10,6 +10,9 @@ import {
   taxText,
   fetchVatRegister,
   fetchWhtReport,
+  countTaxIdIssues,
+  taxCompanyLabel,
+  whtRegisterRecords,
   type CompanyHeader,
   type ThaiTaxRecord,
   type VatRegisterSummary,
@@ -17,15 +20,19 @@ import {
   type WhtReportSummary,
 } from "@/lib/thai-tax";
 import { formatAmount } from "@/lib/general-ledger";
+import { formatAppDate } from "@/lib/date-time";
 import type { LanguageCode } from "@/lib/i18n";
+import { WORKSPACE_CHANGED_EVENT, workspaceStorageKeys } from "@/lib/workspace-models";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChoiceSelect } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { WhtCertificatePanel } from "./wht-certificate-panel";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { WhtCertificatePanel, WhtReceivedCertificateDetails, leaveWhtCertificate } from "./wht-certificate-panel";
+import { useDirtyGuard } from "@/app/gl/gl-common";
 import {
   FileText, Printer, Download, Building2, Calendar, CheckCircle2, Receipt, Search,
-  AlertCircle, Loader2,
+  AlertCircle, AlertTriangle, Loader2,
 } from "lucide-react";
 
 interface TaxFilingWorkbenchProps {
@@ -40,6 +47,18 @@ interface TaxFilingWorkbenchProps {
 const money = (value: string | undefined) => formatAmount(value ?? "0.00", 2);
 // ขอทั้งงวดในหน้าเดียวตามเพดาน backend (taxRegisterMaxLimit) — ยอดรวมท้ายตารางมาจาก backend ทั้งงวดเสมอ
 const REGISTER_PAGE_LIMIT = 500;
+
+// บริษัทที่เลือกใน workspace ของ session (ทะเบียน VAT ไม่ส่งหัวบริษัท) — อ่านผ่าน useSyncExternalStore ให้ SSR ได้ค่าว่างและตามการสลับบริษัท
+function subscribeWorkspace(onChange: () => void): () => void {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(WORKSPACE_CHANGED_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(WORKSPACE_CHANGED_EVENT, onChange);
+  };
+}
+const readWorkspaceJson = () => window.localStorage.getItem(workspaceStorageKeys.workspace) ?? "";
+const noWorkspaceJson = () => "";
 
 export function TaxFilingWorkbench({
   route,
@@ -66,6 +85,15 @@ export function TaxFilingWorkbench({
 
   const [selectedRecord, setSelectedRecord] = useState<ThaiTaxRecord | null>(null);
   const [selectedWhtRow, setSelectedWhtRow] = useState<WhtReportRow | null>(null);
+  // 50 ทวิ: ข้อมูลผู้จ่าย/ผู้รับเงินที่แก้แต่ยังไม่บันทึกลงใบสำคัญ — ถามก่อนเปลี่ยนแท็บหรืองวด (แผงถูกถอดแล้วค่าที่แก้หาย)
+  const whtDirtyRef = useRef(false);
+  const [whtDirty, setWhtDirty] = useState(false);
+  const reportWhtDirty = useCallback((dirty: boolean) => { whtDirtyRef.current = dirty; setWhtDirty(dirty); }, []);
+  // ปิดแท็บงาน/เปลี่ยนบริษัท/ออกจากระบบ/รีเฟรชหน้า ขณะมีค่าที่ยังไม่บันทึก ต้องถามก่อนเหมือนจอบัญชีแยกประเภท
+  // (เดิมรู้แค่การเปลี่ยนแท็บ/งวดภายในจอนี้ — ปิดแท็บของเมนูหลักแล้วค่าที่แก้หายเงียบ ๆ; review 2026-09-24)
+  useDirtyGuard(route, whtDirty);
+  const { confirm: confirmLeave, confirmationDialog: leaveDialog } = useConfirmDialog();
+  const leaveWhtEdits = () => leaveWhtCertificate(whtDirtyRef.current, confirmLeave, tr);
 
   const [records, setRecords] = useState<ThaiTaxRecord[]>([]);
   const [salesSummary, setSalesSummary] = useState<{ total: number; summary: VatRegisterSummary } | null>(null);
@@ -79,6 +107,12 @@ export function TaxFilingWorkbench({
   // รองรับทั้ง VAT และ WHT ทุกประเภท
   const isVatType = config.formType === "vat_sale" || config.formType === "vat_buy";
   const isWhtType = config.formType === "50twi" || config.formType === "wht_received" || config.formType === "wht_summary";
+  // ภาษีถูกหัก: ลูกค้า (ผู้จ่ายเงิน) เป็นผู้ออก 50 ทวิ ให้เรา — จอนี้ดูรายละเอียดที่บันทึกได้อย่างเดียว ห้ามออกใบแทนลูกค้า
+  const isReceivedWht = config.formType === "wht_received";
+  // ภาษาที่เลือกในแอปส่งไปกับทุกคำขอรายงาน (ข้อความประเภทเงินได้/หมายเหตุจาก backend) — เก็บใน ref ไม่ใส่ใน deps ของ loadData
+  // เพราะโหลดใหม่ตอนสลับภาษาจะได้แถวชุดใหม่ แล้วแผง 50 ทวิ ล้างข้อมูลผู้จ่าย/ผู้รับเงินที่แก้ค้างอยู่ทิ้ง; งวดถัดไปได้ภาษาใหม่เอง
+  const languageRef = useRef(language);
+  useEffect(() => { languageRef.current = language; }, [language]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -89,7 +123,7 @@ export function TaxFilingWorkbench({
         const period = { holdingcode, businesscode, year: selectedYear, month: selectedMonth, limit: REGISTER_PAGE_LIMIT };
         const registerType: "sale" | "purchase" =
           config.formType === "vat_buy" ? "purchase" : "sale";
-        const registerResult = await fetchVatRegister({ ...period, type: registerType });
+        const registerResult = await fetchVatRegister({ ...period, type: registerType, language: languageRef.current });
         const periodSummary = { total: registerResult.total, summary: registerResult.summary };
 
         setRecords(registerResult.records);
@@ -109,6 +143,7 @@ export function TaxFilingWorkbench({
           month: selectedMonth,
           direction: whtDirection,
           limit: REGISTER_PAGE_LIMIT,
+          language: languageRef.current,
         });
 
         setWhtRows(whtResult.rows);
@@ -116,28 +151,13 @@ export function TaxFilingWorkbench({
         setWhtSummary(whtResult.error ? null : { total: whtResult.total, summary: whtResult.summary, note: whtResult.note });
         setCompany(whtResult.error ? null : whtResult.company);
 
-        // แปลงเป็น ThaiTaxRecord เพื่อใช้ตารางทะเบียนร่วมกับภาษีมูลค่าเพิ่ม (ยอดทุกช่องมาจาก backend)
-        setRecords(whtResult.rows.map((row) => ({
-          id: `wht-${row.journalid}`,
-          docdate: row.docdate,
-          taxinvoiceno: row.docno,
-          counterpartyname: row.partnername,
-          taxid: row.taxid,
-          branchno: "",
-          isheadoffice: false,
-          amountbeforevat: row.baseamount,
-          vatamount: "0.00",
-          totalamount: row.netamount,
-          whtamount: row.whtamount,
-          taxrate: row.ratepercent,
-          incometype: row.description,
-          status: "active",
-        })));
+        setRecords(whtRegisterRecords(whtResult.rows));
         setErrorKey(whtResult.error ?? null);
       }
     } catch {
       setRecords([]);
       setWhtRows([]);
+      setSelectedWhtRow(null);
       setSalesSummary(null);
       setPurchaseSummary(null);
       setWhtSummary(null);
@@ -171,6 +191,7 @@ export function TaxFilingWorkbench({
         beforeVat: summary?.basetotal ?? "0.00",
         tax: summary?.whttotal ?? "0.00",
         total: summary?.nettotal ?? "0.00",
+        duplicates: 0,
       };
     }
     const register = config.formType === "vat_buy" ? purchaseSummary : salesSummary;
@@ -179,13 +200,66 @@ export function TaxFilingWorkbench({
       beforeVat: register?.summary.amountbeforevat ?? "0.00",
       tax: register?.summary.vatamount ?? "0.00",
       total: register?.summary.totalamount ?? "0.00",
+      duplicates: register?.summary.duplicatecount ?? 0,
     };
   }, [isWhtType, whtSummary, config.formType, purchaseSummary, salesSummary]);
 
   const notSpecified = tr("tax_not_specified", "ยังไม่ระบุ");
-  const companyName = company?.name || notSpecified;
+  const workspaceJson = useSyncExternalStore(subscribeWorkspace, readWorkspaceJson, noWorkspaceJson);
+  const companyName = taxCompanyLabel(company, workspaceJson, holdingcode, businesscode) || notSpecified;
+  // ใบกำกับฉบับเดียวกันถูกบันทึกในใบสำคัญอื่นด้วย (backend นับทั้งงวด) — เตือนก่อนยื่น เพราะใบกำกับหนึ่งฉบับใช้ได้ครั้งเดียว (ม.82/5)
+  const showDuplicateNotice = isVatType && !loading && !errorKey && totals.duplicates > 0;
 
   const canExport = !loading && !errorKey && filteredRecords.length > 0;
+
+  // backend ส่งแถวไม่เกิน REGISTER_PAGE_LIMIT แต่ total/summary เป็นของทั้งงวด — ต้องบอกเมื่อแถวที่เห็นไม่ครบ
+  const isTruncated = !loading && !errorKey && records.length < totals.count;
+
+  // สถานะตรวจจากแถวที่โหลดจริง: ตรวจได้แค่เลขผู้เสียภาษี 13 หลัก จึงห้ามขึ้นว่า "พร้อมยื่นแบบ" ลอย ๆ
+  // (สื่อสถานะด้วยข้อความ + ไอคอน ไม่ใช่สีอย่างเดียว)
+  const taxIdIssues = useMemo(() => countTaxIdIssues(records), [records]);
+  const checkedScope = tr("tax_check_scope", "ตรวจจาก {0} รายการที่โหลด").replace("{0}", String(records.length));
+  const taxIdCheck = loading
+    ? { tone: "text-muted-foreground", Icon: Loader2, text: tr("tax_check_loading", "กำลังตรวจสอบ..."), detail: "" }
+    : errorKey
+      ? { tone: "text-destructive", Icon: AlertCircle, text: tr("tax_check_failed", "ตรวจสอบไม่ได้ เพราะโหลดข้อมูลไม่สำเร็จ"), detail: "" }
+      : records.length === 0
+        ? { tone: "text-muted-foreground", Icon: FileText, text: tr("tax_check_no_rows", "ไม่มีรายการในงวดนี้"), detail: "" }
+        : taxIdIssues > 0
+          ? {
+              tone: "text-destructive",
+              Icon: AlertTriangle,
+              text: tr("tax_check_taxid_issues", "{0} รายการ เลขประจำตัวผู้เสียภาษีไม่ครบ 13 หลัก — กรุณาตรวจ").replace("{0}", String(taxIdIssues)),
+              detail: checkedScope,
+            }
+          : { tone: "text-primary", Icon: CheckCircle2, text: tr("tax_check_taxid_ok", "เลขประจำตัวผู้เสียภาษีครบ 13 หลักทุกรายการ"), detail: checkedScope };
+
+  const partyHeader = isReceivedWht
+    ? tr("tax_register_col_withholder", "ชื่อผู้หักภาษี (ผู้จ่ายเงิน)")
+    : isWhtType
+      ? tr("tax_register_col_payee", "ชื่อผู้ถูกหักภาษี (ผู้รับเงิน)")
+      : tr("tax_register_col_party", "ชื่อผู้ซื้อ/ผู้ขาย");
+  const viewDetails = tr("tax_register_view_details", "ดูรายละเอียด");
+  const closeLabel = tr("close", "ปิด");
+  const baht = tr("baht", "บาท");
+
+  // Escape ปิดหน้าต่างรายละเอียด (แบบเดียวกับกรอบตัวอย่างแบบยื่น) — ผู้ใช้คีย์บอร์ดไม่ต้องหาปุ่มปิด
+  useEffect(() => {
+    if (!selectedRecord) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedRecord(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedRecord]);
+
+  const selectRecord = (item: ThaiTaxRecord) => {
+    setSelectedRecord(item);
+    if (isWhtType) {
+      const matchedWht = whtRows.find((w) => w.rowid === item.id);
+      if (matchedWht) setSelectedWhtRow(matchedWht);
+    }
+  };
 
   const monthNamesTh = [
     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
@@ -225,11 +299,13 @@ export function TaxFilingWorkbench({
                 className="gap-2 shadow-sm font-medium"
               >
                 <FileText className="h-4 w-4" />
-                {tr("tax_print_50twi", "หนังสือรับรอง 50 ทวิ")}
+                {isReceivedWht
+                  ? tr("wht_received_ui_tab", "รายละเอียด 50 ทวิ ที่ได้รับ")
+                  : tr("tax_print_50twi", "หนังสือรับรอง 50 ทวิ")}
               </Button>
               <Button
                 variant={activeTab === "table" ? "default" : "outline"}
-                onClick={() => setActiveTab("table")}
+                onClick={() => void leaveWhtEdits().then((ok) => { if (ok) setActiveTab("table"); })}
                 className="gap-2 shadow-sm font-medium"
               >
                 <Receipt className="h-4 w-4" />
@@ -289,7 +365,7 @@ export function TaxFilingWorkbench({
             </div>
             <select
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              onChange={(e) => { const month = Number(e.target.value); void leaveWhtEdits().then((ok) => { if (ok) setSelectedMonth(month); }); }}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
             >
               {monthNamesTh.map((name, i) => (
@@ -300,7 +376,7 @@ export function TaxFilingWorkbench({
             </select>
             <ChoiceSelect
               value={selectedYear}
-              onChange={(val) => setSelectedYear(Number(val))}
+              onChange={(val) => { const year = Number(val); void leaveWhtEdits().then((ok) => { if (ok) setSelectedYear(year); }); }}
               layout="flex"
               className="w-auto"
               radioClassName="w-auto px-3 min-h-[2.2em] text-xs font-semibold"
@@ -346,7 +422,7 @@ export function TaxFilingWorkbench({
           <p className="text-xs text-muted-foreground">
             {isWhtType
               ? tr("ops_total_withholding_tax", "ยอดภาษีหัก ณ ที่จ่ายรวม")
-              : tr("ops_total_vat_7", "ยอดภาษีมูลค่าเพิ่ม 7%")}
+              : tr("tax_ui_vat_total", "ยอดภาษีมูลค่าเพิ่มรวม")}
           </p>
           <p className="mt-1 text-xl font-bold text-primary font-mono">
             {money(totals.tax)}
@@ -364,13 +440,11 @@ export function TaxFilingWorkbench({
 
         <Card className="p-4 shadow-sm border-border">
           <p className="text-xs text-muted-foreground">{tr("ops_compliance_status", "สถานะการตรวจสอบ")}</p>
-          <div className="mt-1 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="h-5 w-5" />
-            <span className="text-base font-semibold">{tr("ops_ready_to_file", "ถูกต้อง พร้อมยื่นแบบ")}</span>
+          <div role="status" className={`mt-1 flex items-start gap-1.5 ${taxIdCheck.tone}`} data-field="taxid-check">
+            <taxIdCheck.Icon className={`mt-0.5 h-5 w-5 shrink-0 ${loading ? "animate-spin" : ""}`} aria-hidden />
+            <span className="text-[0.95rem] font-semibold leading-normal">{taxIdCheck.text}</span>
           </div>
-          <span className="text-xs text-muted-foreground">
-            Tax ID ครบ 13 หลัก
-          </span>
+          {taxIdCheck.detail && <span className="text-xs text-muted-foreground">{taxIdCheck.detail}</span>}
         </Card>
       </div>
 
@@ -407,16 +481,20 @@ export function TaxFilingWorkbench({
       {/* Main Content Area based on Active Tab */}
 
       {/* 4. แท็บหนังสือรับรองการหักภาษี ณ ที่จ่าย (ใบ 50 ทวิ) — backend สร้าง PDF บนแบบฟอร์มกรมสรรพากร */}
-      {isWhtType && activeTab === "50twi" && selectedWhtRow && (
+      {isWhtType && activeTab === "50twi" && selectedWhtRow && (isReceivedWht ? (
+        <WhtReceivedCertificateDetails row={selectedWhtRow} company={company} />
+      ) : (
         <WhtCertificatePanel
-          key={selectedWhtRow.journalid}
+          key={selectedWhtRow.rowid}
           row={selectedWhtRow}
           company={company}
           holdingcode={holdingcode}
           businesscode={businesscode}
           language={language}
+          onDirtyChange={reportWhtDirty}
         />
-      )}
+      ))}
+      {leaveDialog}
 
       {/* ตารางรายงานภาษี (Tax Register) */}
       {activeTab === "table" && (
@@ -429,6 +507,25 @@ export function TaxFilingWorkbench({
               <p className="text-xs text-muted-foreground">
                 ประจำเดือน {monthNamesTh[selectedMonth - 1]} พ.ศ. {selectedYear + 543} (จำนวน {filteredRecords.length} รายการ)
               </p>
+              {isTruncated && (
+                <p role="status" className="mt-1 flex items-start gap-1.5 text-[0.9rem] font-semibold leading-normal text-primary" data-field="register-truncated">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                  <span>
+                    {tr("tax_register_truncated", "แสดง {0} จาก {1} รายการ — ยอดในการ์ดและท้ายตารางเป็นยอดรวมทั้งงวด")
+                      .replace("{0}", String(records.length))
+                      .replace("{1}", String(totals.count))}
+                  </span>
+                </p>
+              )}
+              {showDuplicateNotice && (
+                <p role="status" className="mt-2 flex items-start gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-[0.95rem] leading-[1.5] text-foreground" data-field="register-duplicates">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+                  <span>
+                    {tr("vat_ui_duplicate_notice", "{0} รายการในงวดนี้เป็นใบกำกับภาษีฉบับเดียวกับที่บันทึกในใบสำคัญอื่นด้วย (ผู้ออกใบกำกับและเลขที่เดียวกัน) — ใบกำกับหนึ่งฉบับใช้ได้ครั้งเดียว ตรวจแถวที่มีป้าย “ใบกำกับซ้ำ” แล้วลบรายละเอียดภาษีที่บันทึกเกิน หรือแก้เลขที่/เลขผู้เสียภาษีให้ตรงใบจริง; เลขที่เดียวกันแต่ต่างผู้ออกใบกำกับไม่นับว่าซ้ำ")
+                      .replace("{0}", String(totals.duplicates))}
+                  </span>
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-2 print:hidden">
@@ -448,16 +545,16 @@ export function TaxFilingWorkbench({
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
-                  <th className="px-3 py-3 w-12 text-center">ลำดับ</th>
-                  <th className="px-3 py-3 w-28">วันที่</th>
-                  <th className="px-3 py-3 w-36">เลขที่เอกสาร/ใบกำกับ</th>
-                  <th className="px-4 py-3">ชื่อผู้ซื้อ/ผู้ขาย/ผู้รับเงิน</th>
-                  <th className="px-3 py-3 w-36">เลขประจำตัว 13 หลัก</th>
-                  <th className="px-3 py-3 w-20 text-center">สาขา</th>
-                  <th className="px-4 py-3 text-right">มูลค่าก่อนภาษี</th>
-                  <th className="px-4 py-3 text-right">ภาษี</th>
-                  <th className="px-4 py-3 text-right">ยอดสุทธิ</th>
-                  <th className="px-3 py-3 w-20 text-center print:hidden">จัดการ</th>
+                  <th className="px-3 py-3 w-12 text-center">{tr("tax_register_col_seq", "ลำดับ")}</th>
+                  <th className="px-3 py-3 w-28">{tr("tax_register_col_date", "วันที่")}</th>
+                  <th className="px-3 py-3 w-36">{tr("tax_register_col_docno", "เลขที่เอกสาร/ใบกำกับ")}</th>
+                  <th className="px-4 py-3">{partyHeader}</th>
+                  <th className="px-3 py-3 w-36">{tr("tax_register_col_taxid", "เลขประจำตัวผู้เสียภาษี 13 หลัก")}</th>
+                  <th className="px-3 py-3 w-20 text-center">{tr("tax_register_col_branch", "สาขา")}</th>
+                  <th className="px-4 py-3 text-right">{tr("tax_register_col_base", "มูลค่าก่อนภาษี")}</th>
+                  <th className="px-4 py-3 text-right">{tr("tax_register_col_tax", "ภาษี")}</th>
+                  <th className="px-4 py-3 text-right">{tr("tax_register_col_net", "ยอดสุทธิ")}</th>
+                  <th className="px-3 py-3 w-20 text-center print:hidden">{tr("tax_register_col_actions", "จัดการ")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -465,28 +562,33 @@ export function TaxFilingWorkbench({
                   <tr
                     key={item.id}
                     className="hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => {
-                      setSelectedRecord(item);
-                      if (isWhtType) {
-                        const matchedWht = whtRows.find((w) => `wht-${w.journalid}` === item.id);
-                        if (matchedWht) setSelectedWhtRow(matchedWht);
-                      }
-                    }}
+                    onClick={() => selectRecord(item)}
                   >
                     <td className="px-3 py-2.5 text-center text-muted-foreground font-mono">{idx + 1}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs">{item.docdate}</td>
-                    <td className="px-3 py-2.5 font-medium text-primary">{item.taxinvoiceno}</td>
+                    <td className="px-3 py-2.5 text-xs whitespace-nowrap">{formatAppDate(item.docdate, language)}</td>
+                    <td className="px-3 py-2.5 font-medium text-primary">
+                      {item.taxinvoiceno}
+                      <DuplicateInvoiceBadge docnos={item.duplicatedocnos} tr={tr} />
+                    </td>
                     <td className="px-4 py-2.5">
                       <div className="font-medium text-foreground">{item.counterpartyname}</div>
                       {item.incometype && (
                         <div className="text-xs text-muted-foreground">{item.incometype}</div>
                       )}
+                      {item.remark && (
+                        <div role="note" className="mt-0.5 flex items-start gap-1 text-sm leading-relaxed text-foreground">
+                          <AlertTriangle className="mt-1 size-3.5 shrink-0 text-primary" aria-hidden />
+                          <span>{item.remark}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{item.taxid}</td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
-                        {item.branchno}
-                      </span>
+                      {item.branchno && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
+                          {item.branchno}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono font-medium">
                       {money(item.amountbeforevat)}
@@ -503,15 +605,13 @@ export function TaxFilingWorkbench({
                         variant="ghost"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedRecord(item);
-                          if (isWhtType) {
-                            const matchedWht = whtRows.find((w) => `wht-${w.journalid}` === item.id);
-                            if (matchedWht) setSelectedWhtRow(matchedWht);
-                          }
+                          selectRecord(item);
                         }}
+                        aria-label={viewDetails}
+                        title={viewDetails}
                         className="h-8 px-2 text-xs"
                       >
-                        <FileText className="h-4 w-4" />
+                        <FileText className="h-4 w-4" aria-hidden />
                       </Button>
                     </td>
                   </tr>
@@ -535,44 +635,51 @@ export function TaxFilingWorkbench({
 
       {/* Modal: รายละเอียดเอกสารภาษี */}
       {selectedRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:hidden">
-          <Card className="w-full max-w-xl shadow-2xl">
+        // คลิกพื้นหลังหรือกด Escape ปิดได้ (useEffect ด้านบน) — ข้อความทุกคำมาจาก languages.tsv
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:hidden"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedRecord(null);
+          }}
+        >
+          <Card className="w-full max-w-xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="tax-record-detail-title">
             <div className="flex items-center justify-between border-b p-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
-                <h3 className="font-bold text-foreground">
-                  รายละเอียดเอกสาร: {selectedRecord.taxinvoiceno}
+                <h3 id="tax-record-detail-title" className="font-bold text-foreground">
+                  {tr("tax_detail_title", "รายละเอียดเอกสาร: {docno}").replace("{docno}", selectedRecord.taxinvoiceno)}
                 </h3>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedRecord(null)}>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedRecord(null)} aria-label={closeLabel} title={closeLabel}>
                 ✕
               </Button>
             </div>
             <CardContent className="space-y-3 p-5 text-sm">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <span className="text-xs text-muted-foreground">วันที่เอกสาร:</span>
-                  <p className="font-medium">{selectedRecord.docdate}</p>
+                  <span className="text-xs text-muted-foreground">{tr("tax_register_col_date", "วันที่")}</span>
+                  <p className="font-medium">{formatAppDate(selectedRecord.docdate, language)}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">เลขที่เอกสาร:</span>
+                  <span className="text-xs text-muted-foreground">{tr("tax_register_col_docno", "เลขที่เอกสาร/ใบกำกับ")}</span>
                   <p className="font-medium text-primary">{selectedRecord.taxinvoiceno}</p>
+                  <DuplicateInvoiceBadge docnos={selectedRecord.duplicatedocnos} tr={tr} />
                 </div>
                 <div className="col-span-2">
-                  <span className="text-xs text-muted-foreground">ชื่อคู่ค้า / ผู้เสียภาษี:</span>
+                  <span className="text-xs text-muted-foreground">{partyHeader}</span>
                   <p className="font-medium">{selectedRecord.counterpartyname}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">เลขประจำตัว 13 หลัก:</span>
+                  <span className="text-xs text-muted-foreground">{tr("tax_register_col_taxid", "เลขประจำตัวผู้เสียภาษี 13 หลัก")}</span>
                   <p className="font-mono font-medium">{selectedRecord.taxid}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">สาขา:</span>
-                  <p className="font-mono">{selectedRecord.branchno} {selectedRecord.isheadoffice ? "(สำนักงานใหญ่)" : ""}</p>
+                  <span className="text-xs text-muted-foreground">{tr("tax_register_col_branch", "สาขา")}</span>
+                  <p className="font-mono">{selectedRecord.branchno} {selectedRecord.isheadoffice ? `(${tr("head_office", "สำนักงานใหญ่")})` : ""}</p>
                 </div>
                 {selectedRecord.incometype && (
                   <div className="col-span-2">
-                    <span className="text-xs text-muted-foreground">ประเภทเงินได้:</span>
+                    <span className="text-xs text-muted-foreground">{tr("tax_detail_income_type", "ประเภทเงินได้")}</span>
                     <p className="font-medium text-amber-600 dark:text-amber-400">{selectedRecord.incometype}</p>
                   </div>
                 )}
@@ -580,33 +687,66 @@ export function TaxFilingWorkbench({
 
               <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-1.5 font-mono">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">มูลค่าก่อนภาษี:</span>
-                  <span>{money(selectedRecord.amountbeforevat)} บาท</span>
+                  <span className="text-muted-foreground">{tr("tax_register_col_base", "มูลค่าก่อนภาษี")}</span>
+                  <span>{money(selectedRecord.amountbeforevat)} {baht}</span>
                 </div>
                 <div className="flex justify-between text-primary font-semibold">
-                  <span>{selectedRecord.whtamount ? "ภาษีหัก ณ ที่จ่าย:" : "ภาษีมูลค่าเพิ่ม 7%:"}</span>
-                  <span>{money(selectedRecord.whtamount ?? selectedRecord.vatamount)} บาท</span>
+                  {/* ภาษีมูลค่าเพิ่มไม่ใส่อัตราตายตัว: รายการส่งออก 0% / ยกเว้น ก็เปิดดูจากตารางเดียวกัน (UAT V29 2026-09-24) */}
+                  <span>
+                    {selectedRecord.whtamount !== undefined
+                      ? `${tr("tax_detail_wht_amount", "ภาษีหัก ณ ที่จ่าย")}${selectedRecord.taxrate ? ` (${selectedRecord.taxrate}%)` : ""}`
+                      : tr("tax_detail_vat_amount", "ภาษีมูลค่าเพิ่ม")}
+                  </span>
+                  <span>{money(selectedRecord.whtamount ?? selectedRecord.vatamount)} {baht}</span>
                 </div>
                 <div className="flex justify-between border-t pt-1 text-base font-bold">
-                  <span>ยอดสุทธิ:</span>
-                  <span>{money(selectedRecord.totalamount)} บาท</span>
+                  <span>{tr("tax_register_col_net", "ยอดสุทธิ")}</span>
+                  {/* ยอดสุทธิว่าง = backend ยังไม่รู้ฐานภาษี (แถวประมาณที่แบ่งฐานไม่ได้) — ไม่แสดงเลขติดลบ */}
+                  <span>{selectedRecord.totalamount ? `${money(selectedRecord.totalamount)} ${baht}` : "—"}</span>
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setSelectedRecord(null)}>
-                  ปิดหน้าต่าง
+                  {closeLabel}
                 </Button>
-                <Button variant="default" onClick={() => window.print()} className="gap-1.5">
-                  <Printer className="h-4 w-4" />
-                  พิมพ์เอกสารรับรอง
-                </Button>
+                {/* 50 ทวิ ออกจากแผง PDF ของ backend เท่านั้น (window.print() พิมพ์หน้าทะเบียน ไม่ใช่หนังสือรับรอง);
+                    ภาษีถูกหัก = ผู้จ่ายเงินเป็นผู้ออกใบให้เรา และภาษีมูลค่าเพิ่มไม่มีหนังสือรับรอง จึงไม่มีปุ่มนี้ */}
+                {isWhtType && !isReceivedWht && selectedWhtRow?.rowid === selectedRecord.id && (
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      setActiveTab("50twi");
+                      setSelectedRecord(null);
+                    }}
+                    className="gap-1.5"
+                  >
+                    <FileText className="h-4 w-4" aria-hidden />
+                    {tr("tax_ui_open_50twi", "ออกหนังสือรับรอง 50 ทวิ ของรายการนี้")}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
+    </div>
+  );
+}
+
+// ป้ายใบกำกับซ้ำ: ไอคอน + ข้อความ + เลขที่ใบสำคัญอื่น (ห้ามสื่อด้วยสีอย่างเดียว — กฎ 40+ ข้อ 5)
+function DuplicateInvoiceBadge({ docnos, tr }: { docnos: string[]; tr: (key: string, fallback: string) => string }) {
+  if (docnos.length === 0) return null;
+  return (
+    <div className="mt-1 grid gap-0.5" data-field="duplicate-invoice">
+      <span className="inline-flex w-fit items-center gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[0.85rem] font-semibold leading-normal text-destructive">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {tr("vat_ui_duplicate_badge", "ใบกำกับซ้ำ")}
+      </span>
+      <span className="text-[0.85rem] font-normal leading-normal text-foreground [overflow-wrap:anywhere]">
+        {tr("vat_ui_duplicate_docnos", "บันทึกซ้ำในใบสำคัญ {0}").replace("{0}", docnos.join(", "))}
+      </span>
     </div>
   );
 }

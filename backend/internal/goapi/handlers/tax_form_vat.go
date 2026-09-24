@@ -35,5 +35,20 @@ func fillVatForm(ctx context.Context, db *sql.DB, company string, year, month in
 	} else {
 		notes = append(notes, TaxFormNote{Key: "tax_form_note_vat_records", Count: len(sales) + len(purchases)})
 	}
+	// ใบกำกับฉบับเดียวกันอยู่ในใบสำคัญอื่นด้วย = อาจคีย์ซ้ำ (ใบกำกับหนึ่งฉบับใช้สิทธิได้ครั้งเดียว ม.82/5) — เตือนให้ตรวจก่อนยื่น ไม่ตัดยอดเอง
+	if n := countDuplicateInvoices(sales) + countDuplicateInvoices(purchases); n > 0 {
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_duplicate_invoice", Count: n})
+	}
 	return append(notes, TaxFormNote{Key: "tax_form_note_vat_forward"}), nil
+}
+
+// countDuplicateInvoices - จำนวนรายการของงวดที่ใบกำกับฉบับเดียวกันถูกบันทึกซ้ำ (ในใบสำคัญเดียวกันหรือใบสำคัญอื่น — DuplicateDocNos)
+func countDuplicateInvoices(records []generalledger.VatRecord) int {
+	n := 0
+	for _, r := range records {
+		if len(r.DuplicateDocNos) > 0 {
+			n++
+		}
+	}
+	return n
 }

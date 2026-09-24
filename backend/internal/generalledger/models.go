@@ -1,13 +1,18 @@
 package generalledger
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"regexp"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/shopspring/decimal"
+	"golang.org/x/text/unicode/norm"
 )
 
 type Scope struct {
@@ -106,6 +111,8 @@ type Master struct {
 	Kind           string                `json:"kind" bson:"-"`
 	Code           string                `json:"code" bson:"code"`
 	Name           string                `json:"name" bson:"name"`
+	NameEn         string                `json:"nameen,omitempty" bson:"nameen,omitempty"`     // journal-books: English name
+	BookType       int                   `json:"booktype,omitempty" bson:"booktype,omitempty"` // journal-books: 1 ทั่วไป 2 จ่าย 3 รับ 4 ขาย 5 ซื้อ 6 ยอดยกมา
 	IsActive       bool                  `json:"isactive" bson:"isactive"`
 	AccountCode    string                `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
 	FiscalYear     string                `json:"fiscalyear,omitempty" bson:"fiscalyear,omitempty"`
@@ -192,10 +199,10 @@ type Line struct {
 }
 
 type Journal struct {
-	Details *JournalDetails `json:"details,omitempty" bson:"details,omitempty"`
-	SourceType     int    `json:"source_type,omitempty" bson:"source_type,omitempty"`
-	SourceSystem   string `json:"source_system,omitempty" bson:"source_system,omitempty"`
-	SourceRecordID string `json:"source_record_id,omitempty" bson:"source_record_id,omitempty"`
+	Details        *JournalDetails `json:"details,omitempty" bson:"details,omitempty"`
+	SourceType     int             `json:"source_type,omitempty" bson:"source_type,omitempty"`
+	SourceSystem   string          `json:"source_system,omitempty" bson:"source_system,omitempty"`
+	SourceRecordID string          `json:"source_record_id,omitempty" bson:"source_record_id,omitempty"`
 	Identity       `bson:",inline"`
 	DocNo          string     `json:"docno" bson:"docno"`
 	Date           string     `json:"date" bson:"date"`
@@ -233,20 +240,79 @@ type Command struct {
 	Journal    *Journal    `json:"journal,omitempty"`
 }
 
-var codePattern = regexp.MustCompile(`^[\p{L}\p{N}][\p{L}\p{N}_.\-/]{0,59}$`)
+// Code lengths are counted in runes (PostgreSQL VARCHAR(n) counts characters) and follow
+// mydocs/datamodels/gl: journal_entries.doc_no VARCHAR(30), chart_of_accounts.account_code
+// VARCHAR(20), journal_books.code VARCHAR(15). Codes without a column there keep the old 60.
+const (
+	DocNoMaxRunes        = 30
+	AccountCodeMaxRunes  = 20
+	BookCodeMaxRunes     = 15
+	codeMaxRunes         = 60
+	accountNameMaxRunes  = 150 // chart_of_accounts.name_th / name_en VARCHAR(150)
+	accountNameLanguages = 12
+)
 
-func validCode(code string) bool { return codePattern.MatchString(code) }
+// Punctuation allowed after the first character of a code. Space, | " ' , ; and every
+// control/format character (NUL, zero-width, bidi marks) are rejected.
+const codePunctuation = "_.-/#():"
+
+// NormalizeCode trims and NFC-normalises a code so a pasted trailing space or a decomposed
+// character cannot create a second, visually identical code. NFC does not reorder a Thai
+// tone mark against an above vowel (both combining class 0), so such typos stay distinct.
+func NormalizeCode(code string) string { return norm.NFC.String(strings.TrimSpace(code)) }
+
+// checkCode validates one code field and names the field and the fix in Thai.
+// Thai vowel signs and tone marks are Unicode combining marks (\p{M}), so they are allowed
+// after the first character; the first character must be a letter or a digit.
+func checkCode(value, field, label string, max int) error {
+	if value == "" {
+		return fieldError("code_required", field, "กรุณาระบุ"+label)
+	}
+	if !utf8.ValidString(value) {
+		return fieldError("code_invisible_char", field, label+"มีอักขระที่อ่านไม่ได้ปนอยู่ (มักติดมาจากการคัดลอก) กรุณาลบแล้วพิมพ์ใหม่")
+	}
+	for i, r := range value {
+		switch {
+		case unicode.IsSpace(r):
+			return fieldError("code_has_space", field, label+"ห้ามมีช่องว่าง กรุณาลบช่องว่างออก หรือใช้ - หรือ _ คั่นแทน")
+		case unicode.Is(unicode.C, r):
+			return fieldError("code_invisible_char", field, label+"มีอักขระที่มองไม่เห็นปนอยู่ (มักติดมาจากการคัดลอก) กรุณาลบแล้วพิมพ์ใหม่")
+		case i == 0 && !unicode.IsLetter(r) && !unicode.IsNumber(r):
+			return fieldError("code_invalid_start", field, label+"ต้องขึ้นต้นด้วยตัวอักษรหรือตัวเลข ห้ามขึ้นต้นด้วยสระ วรรณยุกต์ หรือเครื่องหมาย")
+		case unicode.IsLetter(r) || unicode.IsMark(r) || unicode.IsNumber(r) || strings.ContainsRune(codePunctuation, r):
+		default:
+			return fieldError("code_invalid_char", field, fmt.Sprintf("%sมีอักขระ “%s” ที่ใช้ไม่ได้ ใช้ได้เฉพาะตัวอักษร ตัวเลข และเครื่องหมาย _ . - / # ( ) :", label, string(r)))
+		}
+	}
+	if n := utf8.RuneCountInString(value); n > max {
+		return fieldError("code_too_long", field, fmt.Sprintf("%sยาวได้ไม่เกิน %d ตัวอักษร (ตอนนี้ %d ตัว) กรุณาย่อให้สั้นลง", label, max, n))
+	}
+	return nil
+}
+
+// validCode is the boolean form for callers that report their own message.
+func validCode(code string) bool { return checkCode(code, "", "", codeMaxRunes) == nil }
+
+// validRequestID keeps the idempotency key contract: 16–80 bytes of code characters
+// (UUIDs, and the 64-hex-character digests the fixed-asset poster sends).
+func validRequestID(id string) bool {
+	return len(id) >= 16 && len(id) <= 80 && checkCode(id, "", "", 80) == nil
+}
+
 func validDate(value string) bool {
 	t, err := time.Parse("2006-01-02", value)
 	return err == nil && t.Format("2006-01-02") == value
 }
 
 func (a Account) Validate() error {
-	if len(a.Names) > 32 {
-		return fmt.Errorf("ชื่อบัญชีรองรับไม่เกิน 32 ภาษา")
+	if err := checkCode(a.AccountCode, "accountcode", "รหัสบัญชี", AccountCodeMaxRunes); err != nil {
+		return err
 	}
-	if !validCode(a.AccountCode) || strings.TrimSpace(a.ThaiName()) == "" || len(a.Names) > 12 {
-		return fmt.Errorf("กรุณาระบุรหัสบัญชีและชื่อภาษาไทย")
+	if len(a.Names) > accountNameLanguages {
+		return fieldError("account_names_too_many", "names", fmt.Sprintf("ชื่อบัญชีรองรับไม่เกิน %d ภาษา กรุณาลบชื่อภาษาที่ไม่ใช้ออก", accountNameLanguages))
+	}
+	if strings.TrimSpace(a.ThaiName()) == "" {
+		return fieldError("account_name_th_required", "names", "กรุณาระบุชื่อบัญชีภาษาไทย")
 	}
 	if !contains([]string{"asset", "liability", "equity", "income", "expense"}, a.AccountType) {
 		return fmt.Errorf("กรุณาเลือกหมวดบัญชี")
@@ -264,16 +330,24 @@ func (a Account) Validate() error {
 		return fmt.Errorf("ระดับบัญชีต้องอยู่ระหว่าง 1 ถึง 12")
 	}
 	for _, n := range a.Names {
-		if len(n.Name) > 300 {
-			return fmt.Errorf("ชื่อบัญชียาวเกินไป")
+		if utf8.RuneCountInString(n.Name) > accountNameMaxRunes {
+			return fieldError("account_name_too_long", "names", fmt.Sprintf("ชื่อบัญชียาวได้ไม่เกิน %d ตัวอักษร กรุณาย่อชื่อให้สั้นลง", accountNameMaxRunes))
 		}
 	}
 	return nil
 }
 
 func (f FiscalYear) Validate() error {
-	if !validCode(f.Code) || !validDate(f.StartDate) || !validDate(f.EndDate) || f.StartDate > f.EndDate {
-		return fmt.Errorf("กรุณาระบุรหัสและช่วงปีบัญชีให้ถูกต้อง")
+	if err := checkCode(f.Code, "code", "รหัสปีบัญชี", codeMaxRunes); err != nil {
+		return err
+	}
+	switch {
+	case !validDate(f.StartDate):
+		return fieldError("fiscal_year_start_invalid", "startdate", "วันเริ่มต้นปีบัญชีไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
+	case !validDate(f.EndDate):
+		return fieldError("fiscal_year_end_invalid", "enddate", "วันสิ้นสุดปีบัญชีไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
+	case f.StartDate > f.EndDate:
+		return fieldError("fiscal_year_range_invalid", "enddate", "วันสิ้นสุดปีบัญชีต้องไม่ก่อนวันเริ่มต้น กรุณาแก้วันที่ให้ถูกต้อง")
 	}
 	if f.Scale < 0 || f.Scale > 8 {
 		return fmt.Errorf("กรุณากำหนดจำนวนทศนิยม 0–8 ตำแหน่ง")
@@ -281,13 +355,59 @@ func (f FiscalYear) Validate() error {
 	return nil
 }
 
+// Free-text lengths follow mydocs/datamodels/gl: journal_entries.description VARCHAR(500),
+// journal_entries.ref_doc_no VARCHAR(50), journal_lines.description VARCHAR(255) and
+// journal_entries.reversal_reason VARCHAR(500) — counted in runes like PostgreSQL VARCHAR(n).
+const (
+	JournalDescriptionMaxRunes     = 500
+	JournalReferenceMaxRunes       = 50
+	JournalLineDescriptionMaxRunes = 255
+	ReversalReasonMaxRunes         = 500
+)
+
+// checkJournalTextLimits checks only text that is new or changed (old = the stored draft, nil on
+// create): a draft saved before these limits existed stays editable as long as its long text is untouched.
+func checkJournalTextLimits(next Journal, old *Journal) error {
+	if (old == nil || next.Description != old.Description) && utf8.RuneCountInString(strings.TrimSpace(next.Description)) > JournalDescriptionMaxRunes {
+		return fieldError("journal_description_too_long", "description", fmt.Sprintf("คำอธิบายรายการต้องไม่เกิน %d ตัวอักษร — กรุณาย่อให้สั้นลง แล้วใส่รายละเอียดที่เหลือในคำอธิบายบรรทัด", JournalDescriptionMaxRunes))
+	}
+	if (old == nil || next.Reference != old.Reference) && utf8.RuneCountInString(strings.TrimSpace(next.Reference)) > JournalReferenceMaxRunes {
+		return fieldError("journal_reference_too_long", "reference", fmt.Sprintf("เลขที่อ้างอิงต้องไม่เกิน %d ตัวอักษร — กรุณาใส่เฉพาะเลขที่เอกสารอ้างอิง", JournalReferenceMaxRunes))
+	}
+	previous := map[string]bool{}
+	if old != nil {
+		for _, l := range old.Lines {
+			previous[l.Description] = true
+		}
+	}
+	for i, l := range next.Lines {
+		if !previous[l.Description] && utf8.RuneCountInString(strings.TrimSpace(l.Description)) > JournalLineDescriptionMaxRunes {
+			return fieldError("journal_line_description_too_long", fmt.Sprintf("lines[%d].description", i), fmt.Sprintf("บรรทัดที่ %d: คำอธิบายบรรทัดต้องไม่เกิน %d ตัวอักษร — กรุณาย่อให้สั้นลง", i+1, JournalLineDescriptionMaxRunes))
+		}
+	}
+	return nil
+}
+
+// truncateRunes cuts generated text (reversal descriptions built from the original's text) to max runes.
+func truncateRunes(text string, max int) string {
+	if utf8.RuneCountInString(text) <= max {
+		return text
+	}
+	return string([]rune(text)[:max])
+}
+
 func (j Journal) Validate(f FiscalYear, accounts map[string]Account) error {
-	if !validCode(j.DocNo) || !validDate(j.Date) || strings.TrimSpace(j.Description) == "" {
-		return fmt.Errorf("กรุณาระบุเลขที่ วันที่ และคำอธิบายรายการ")
+	if err := checkCode(j.DocNo, "docno", "เลขที่เอกสาร", DocNoMaxRunes); err != nil {
+		return err
 	}
-	if !contains([]string{"JV", "UV", "SV", "RV", "PV"}, j.BookCode) {
-		return fmt.Errorf("สมุดรายวันไม่ถูกต้อง")
+	if !validDate(j.Date) {
+		return fieldError("journal_date_invalid", "date", "วันที่เอกสารไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
 	}
+	if strings.TrimSpace(j.Description) == "" {
+		return fieldError("journal_description_required", "description", "กรุณาระบุคำอธิบายรายการ")
+	}
+	// bookcode is checked against the company's journal-books master by the store
+	// (checkJournalBook) — books are user-defined, so there is no fixed list here.
 	if !contains([]string{"manual", "opening", "closing", "reversal", "mapping"}, j.Kind) {
 		return fmt.Errorf("ประเภทรายการไม่ถูกต้อง")
 	}
@@ -337,4 +457,141 @@ func contains(values []string, value string) bool {
 		}
 	}
 	return false
+}
+
+// normalizeCommandCodes trims and NFC-normalises every code the ledger compares or keys on,
+// before the request hash, on copies so the caller's structs are left untouched.
+func normalizeCommandCodes(cmd *Command) {
+	cmd.DocNo = NormalizeCode(cmd.DocNo)
+	cmd.TargetYear = NormalizeCode(cmd.TargetYear)
+	if cmd.Account != nil {
+		a := *cmd.Account
+		a.AccountCode = NormalizeCode(a.AccountCode)
+		a.ParentAccountCode = NormalizeCode(a.ParentAccountCode)
+		a.AccountGroup = NormalizeCode(a.AccountGroup)
+		cmd.Account = &a
+	}
+	if cmd.FiscalYear != nil {
+		f := *cmd.FiscalYear
+		f.Code = NormalizeCode(f.Code)
+		f.ProfitLossAccount = NormalizeCode(f.ProfitLossAccount)
+		f.RetainedEarningsAccount = NormalizeCode(f.RetainedEarningsAccount)
+		cmd.FiscalYear = &f
+	}
+	if cmd.Master != nil {
+		m := *cmd.Master
+		for _, code := range []*string{&m.Code, &m.AccountCode, &m.FiscalYear, &m.BranchCode, &m.DepartmentCode, &m.ProjectCode, &m.BookCode, &m.ItemAccount, &m.CostAccount, &m.RevenueAccount} {
+			*code = NormalizeCode(*code)
+		}
+		cmd.Master = &m
+	}
+	if cmd.Journal != nil {
+		j := *cmd.Journal
+		j.DocNo = NormalizeCode(j.DocNo)
+		j.BookCode = NormalizeCode(j.BookCode)
+		j.FiscalYear = NormalizeCode(j.FiscalYear)
+		j.BranchCode = NormalizeCode(j.BranchCode)
+		j.Lines = append([]Line(nil), j.Lines...)
+		for i := range j.Lines {
+			j.Lines[i].AccountCode = NormalizeCode(j.Lines[i].AccountCode)
+			j.Lines[i].DepartmentCode = NormalizeCode(j.Lines[i].DepartmentCode)
+			j.Lines[i].ProjectCode = NormalizeCode(j.Lines[i].ProjectCode)
+		}
+		cmd.Journal = &j
+	}
+}
+
+// rejectNUL refuses a command carrying U+0000 anywhere: PostgreSQL jsonb cannot store it,
+// so without this check the INSERT failed as a generic 500 (text pasted from PDFs carries it).
+func rejectNUL(cmd Command) error {
+	path := nulPath(reflect.ValueOf(cmd), "")
+	if path == "" {
+		return nil
+	}
+	// Field is relative to the record the screen edits (journal.lines[1].description → lines[1].description).
+	for _, record := range []string{"journal.", "account.", "master.", "fiscalyear.", "review."} {
+		path = strings.TrimPrefix(path, record)
+	}
+	return fieldError("text_contains_nul", path, nulFieldLabel(path)+"มีอักขระที่มองไม่เห็น (NUL) ซึ่งมักติดมาจากการคัดลอกจาก PDF หรือโปรแกรมอื่น กรุณาลบข้อความในช่องนั้นแล้วพิมพ์ใหม่")
+}
+
+// nulPath returns the JSON path of the first string holding U+0000, or "".
+func nulPath(v reflect.Value, path string) string {
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if v.IsNil() {
+			return ""
+		}
+		return nulPath(v.Elem(), path)
+	case reflect.String:
+		if strings.IndexByte(v.String(), 0) >= 0 {
+			return path
+		}
+	case reflect.Struct:
+		t := v.Type()
+		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+			if !f.IsExported() {
+				continue
+			}
+			tag := f.Tag.Get("json")
+			if tag == "-" {
+				continue
+			}
+			name, _, _ := strings.Cut(tag, ",")
+			child := path
+			if !(f.Anonymous && name == "") {
+				if name == "" {
+					name = f.Name
+				}
+				child = strings.TrimPrefix(path+"."+name, ".")
+			}
+			if found := nulPath(v.Field(i), child); found != "" {
+				return found
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		if v.Type().Elem().Kind() == reflect.Uint8 {
+			if v.Kind() == reflect.Slice && bytes.IndexByte(v.Bytes(), 0) >= 0 {
+				return path
+			}
+			return ""
+		}
+		for i := 0; i < v.Len(); i++ {
+			if found := nulPath(v.Index(i), fmt.Sprintf("%s[%d]", path, i)); found != "" {
+				return found
+			}
+		}
+	case reflect.Map:
+		iter := v.MapRange()
+		for iter.Next() {
+			if found := nulPath(iter.Value(), fmt.Sprintf("%s.%v", path, iter.Key())); found != "" {
+				return found
+			}
+		}
+	}
+	return ""
+}
+
+var nulFieldLabels = map[string]string{
+	"description": "คำอธิบาย", "reference": "เอกสารอ้างอิง", "reason": "เหตุผล", "name": "ชื่อ",
+	"nameen": "ชื่อภาษาอังกฤษ", "docno": "เลขที่เอกสาร", "code": "รหัส", "accountcode": "รหัสบัญชี",
+	"bookcode": "สมุดรายวัน", "branchcode": "สาขา", "remark": "หมายเหตุ",
+}
+
+// nulFieldLabel turns lines[2].description into "บรรทัดที่ 3 คำอธิบาย" for the Thai message.
+func nulFieldLabel(path string) string {
+	prefix := ""
+	if rest, ok := strings.CutPrefix(path, "lines["); ok {
+		if index, _, found := strings.Cut(rest, "]"); found {
+			if n, err := strconv.Atoi(index); err == nil {
+				prefix = fmt.Sprintf("บรรทัดที่ %d ", n+1)
+			}
+		}
+	}
+	last := path[strings.LastIndex(path, ".")+1:]
+	if label, ok := nulFieldLabels[last]; ok {
+		return prefix + label
+	}
+	return prefix + "ข้อความที่กรอก"
 }

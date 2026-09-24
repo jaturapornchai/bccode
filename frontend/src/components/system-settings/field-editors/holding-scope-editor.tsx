@@ -153,6 +153,7 @@ export function normalizeHoldingScopeRules(value: unknown, fallbackCompanies?: u
   const result: HoldingScopeRule[] = [];
   for (const item of source) {
     const normalized = normalizeHoldingScopeRule(item);
+    if (!normalized) continue;
     const key = `${normalized.scopetype}|${normalized.businesscode ?? ""}|${normalized.branchcode ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -171,22 +172,41 @@ function holdingScopeRawArray(value: unknown): unknown[] {
   return trimmed.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
-function normalizeHoldingScopeRule(value: unknown): HoldingScopeRule {
+// Only an explicit holding rule grants the whole group; a rule with an unknown type or
+// without a company is dropped, never widened to holding.
+function normalizeHoldingScopeRule(value: unknown): HoldingScopeRule | null {
   if (typeof value === "string") {
     const businessCode = normalizeBusinessCode(value);
-    return businessCode
-      ? { scopetype: "company", businesscode: businessCode, allbranches: true }
-      : { scopetype: "holding" };
+    return businessCode ? { scopetype: "company", businesscode: businessCode, allbranches: true } : null;
   }
   const record = isRecord(value) ? value : {};
   const scopeType = normalizeHoldingScopeType(record.scopetype ?? record.scopeType);
-  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.companycode ?? record.companyCode);
-  const branchCode = normalizeScopeBranchCode(record.branchcode ?? record.branchCode ?? record.code);
-  if (scopeType === "holding" || !businessCode) return { scopetype: "holding", allbranches: false };
+  if (scopeType === "holding") return { scopetype: "holding" };
+  // The company uid is the company code (PostgreSQL central schema).
+  const businessCode = normalizeBusinessCode(
+    record.businesscode ?? record.businessCode ?? record.companycode ?? record.companyCode ?? record.companyuid,
+  );
+  if (!scopeType || !businessCode) return null;
+  const branchCode = normalizeScopeBranchCode(record.branchcode ?? record.branchCode ?? record.branchuid ?? record.code);
   if (scopeType === "company" || booleanLikeValue(record.allbranches ?? record.allBranches)) {
     return { scopetype: "company", businesscode: businessCode, allbranches: true };
   }
   return { scopetype: "branch", businesscode: businessCode, branchcode: branchCode, allbranches: false };
+}
+
+/**
+ * Ticking "whole holding" replaces the company/branch picks with the single holding rule;
+ * unticking brings back the picks it replaced (remembered by the editor), so a mis-tick does
+ * not wipe them.
+ */
+export function toggleHoldingScopeRules(
+  rules: HoldingScopeRule[],
+  enabled: boolean,
+  picksBeforeHolding: HoldingScopeRule[],
+): { rules: HoldingScopeRule[]; picksBeforeHolding: HoldingScopeRule[] } {
+  const picks = rules.filter((rule) => rule.scopetype !== "holding");
+  if (enabled) return { rules: [{ scopetype: "holding" }], picksBeforeHolding: picks };
+  return { rules: picks.length ? picks : picksBeforeHolding, picksBeforeHolding: [] };
 }
 
 export function hasInvalidHoldingScopeRules(value: unknown, required: boolean): boolean {
@@ -200,11 +220,12 @@ export function hasInvalidHoldingScopeRules(value: unknown, required: boolean): 
   });
 }
 
-function normalizeHoldingScopeType(value: unknown): HoldingScopeType {
+function normalizeHoldingScopeType(value: unknown): HoldingScopeType | "" {
   const text = stringValue(value).toLowerCase();
+  if (text === "holding") return "holding";
   if (text === "company" || text === "business") return "company";
   if (text === "branch") return "branch";
-  return "holding";
+  return "";
 }
 
 function workspaceHoldingCode(workspace: WorkspaceSession): string {
@@ -342,17 +363,24 @@ export function HoldingScopeRulesEditor({
     }
   }, [activeBusinessCode, holdingSelected, selectedCompanyScopes]);
 
-  function commit(nextRules: HoldingScopeRule[]) {
-    if (readOnly || !setForm) return;
-    setForm((current) => ({ ...current, [field.key]: normalizeHoldingScopeRules(nextRules) }));
+  function commit(nextRules: HoldingScopeRule[]): HoldingScopeRule[] {
+    const normalized = normalizeHoldingScopeRules(nextRules);
+    if (readOnly || !setForm) return normalized;
+    setForm((current) => ({ ...current, [field.key]: normalized }));
+    return normalized;
   }
 
+  // The picks replaced by the holding rule, tied to the exact value committed: if the form now
+  // holds another record's rules, nothing is restored into it.
+  const picksBeforeHoldingRef = useRef<{ picks: HoldingScopeRule[]; committed: unknown }>({ picks: [], committed: null });
+
   function setHoldingScope(enabled: boolean) {
-    if (enabled) {
-      commit(holdingSelected ? rules : [{ scopetype: "holding", allbranches: false }, ...rules]);
-      return;
-    }
-    commit(rules.filter((rule) => rule.scopetype !== "holding"));
+    const remembered = picksBeforeHoldingRef.current;
+    const picks = remembered.committed === form[field.key] ? remembered.picks : [];
+    const next = toggleHoldingScopeRules(rules, enabled, picks);
+    // The holding rule stands alone: it already covers every company and branch.
+    const committed = commit(next.rules);
+    picksBeforeHoldingRef.current = { picks: next.picksBeforeHolding, committed };
   }
 
   function addCompanyScope(businessCode: string) {
@@ -513,7 +541,7 @@ export function HoldingScopeRulesEditor({
           <span className="grid gap-1">
             <span>{tr("ss_apply_to_whole_business_group", "ใช้ได้ทั้งกลุ่มกิจการ")}</span>
             <span className="text-xs font-normal text-muted-foreground">
-              {tr("ss_when_checked_this_user_or", "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา")}
+              {tr("ss_when_checked_this_user_or", "ถ้าเลือกข้อนี้ ผู้ใช้งานหรือสิทธิ์นี้ใช้ได้ทุกบริษัทและทุกสาขา รวมถึงบริษัทและสาขาที่เพิ่มภายหลังโดยอัตโนมัติ")}
             </span>
           </span>
         </label>

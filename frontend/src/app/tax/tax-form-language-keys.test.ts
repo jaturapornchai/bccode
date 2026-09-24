@@ -1,13 +1,15 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 // จอแบบยื่นกรมสรรพากร (tax-form-editor) — ข้อความบนจอมาจาก languages.tsv ทั้งหมด รวม key ที่ประกอบขึ้นตอนรัน
 // (tax_form_title_<code>, tax_form_group_<group>) และ code/note ที่ backend ส่งกลับมา
 const root = resolve(process.cwd(), "..");
-const screens = ["tax-form-editor.tsx", "tax-form-fields.tsx"].map((name) => resolve(process.cwd(), "src", "app", "tax", name));
+const screens = ["tax-form-editor.tsx", "tax-form-fields.tsx", "tax-rdfile-panel.tsx"].map((name) => resolve(process.cwd(), "src", "app", "tax", name));
 const specDir = resolve(root, "backend", "internal", "rdform", "specs");
 const handlerDir = resolve(root, "backend", "internal", "goapi", "handlers");
+// ไฟล์ยื่นกรมสรรพากร: key ของจุดที่ต้องแก้ (issues) มาจากตัวตรวจไฟล์และ handler — จอแปลด้วย tr(issue.key, …)
+const rdFileDir = resolve(root, "backend", "internal", "rdfile");
 const languageColumns = ["th", "en", "cn", "ja", "km", "ko", "lo", "my", "vi", "ms", "id", "fil"];
 
 function languageRows(): Map<string, Record<string, string>> {
@@ -43,6 +45,13 @@ function requiredKeys(): Set<string> {
   for (const month of ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]) keys.add(`month_${month}`);
   for (const name of readdirSync(handlerDir).filter((n) => n.startsWith("tax_form") && n.endsWith(".go") && !n.endsWith("_test.go"))) {
     for (const match of readFileSync(resolve(handlerDir, name), "utf8").matchAll(/"(tax_form_[a-z0-9_]+)"/g)) keys.add(match[1]);
+  }
+  const rdSources = [
+    ...readdirSync(handlerDir).filter((n) => n.startsWith("tax_rdfile")).map((n) => resolve(handlerDir, n)),
+    ...(existsSync(rdFileDir) ? readdirSync(rdFileDir).map((n) => resolve(rdFileDir, n)) : []),
+  ].filter((file) => file.endsWith(".go") && !file.endsWith("_test.go"));
+  for (const file of rdSources) {
+    for (const match of readFileSync(file, "utf8").matchAll(/"(tax_rdfile_[a-z0-9_]*[a-z0-9])"/g)) keys.add(match[1]);
   }
   return keys;
 }

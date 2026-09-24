@@ -10,7 +10,7 @@ func (h *Http) getJournalReview(ctx context.Context, request microservice.IConte
 	if err != nil {
 		return failure(request, err)
 	}
-	if !allowed(scope.Permissions, journalScreen(j.BookCode, j.Kind, ""), "") {
+	if !allowed(scope.Permissions, journalScreen(j.Kind), "") {
 		return fail(request, 403, "ไม่มีสิทธิ์อ่านรายการบัญชีนี้")
 	}
 	version, err := h.startRead(ctx, scope.Scope, request)

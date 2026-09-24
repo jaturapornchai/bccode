@@ -400,6 +400,14 @@ type MainMenuScreenProps = {
   initialLanguage?: LanguageCode;
 };
 
+/**
+ * แท็บงานที่ถามก่อนปิด/เปลี่ยนบริษัท/ออกจากระบบ เมื่อมีข้อมูลยังไม่บันทึก (event "bc-gl-dirty" จาก useDirtyGuard):
+ * จอบัญชีแยกประเภท + จอแบบยื่นภาษี (50 ทวิ แก้ข้อมูลผู้จ่าย/ผู้รับเงิน) — review 2026-09-24
+ */
+function guardsUnsavedRoute(route: string): boolean {
+  return isGeneralLedgerRoute(route) || isThaiTaxRoute(route);
+}
+
 export function MainMenuScreen(props: MainMenuScreenProps = {}) {
   return (
     <MenuQueryProvider>
@@ -658,7 +666,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   useEffect(() => {
     const listener = (event: Event) => {
       const detail = (event as CustomEvent<{ route?: unknown; dirty?: unknown }>).detail;
-      if (typeof detail?.route !== "string" || typeof detail.dirty !== "boolean" || !isGeneralLedgerRoute(detail.route)) return;
+      if (typeof detail?.route !== "string" || typeof detail.dirty !== "boolean" || !guardsUnsavedRoute(detail.route)) return;
       const route = detail.route, dirty = detail.dirty;
       if (dirty) dirtyLedgerRoutes.current.add(route); else dirtyLedgerRoutes.current.delete(route);
       setTabs((current) => current.map((tab) => tab.route === route && tab.dirty !== dirty ? { ...tab, dirty } : tab));

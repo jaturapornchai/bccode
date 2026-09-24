@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 )
 
 func (m *subledgerMutation) bankLine(b *SubledgerBankLine) error {
@@ -53,11 +54,27 @@ func (m *subledgerMutation) bankLine(b *SubledgerBankLine) error {
 }
 
 func (m *subledgerMutation) statement(s *SubledgerStatementLine) error {
-	if !subledgerID(s.ID) || strings.TrimSpace(s.SourceKey) == "" || len(s.SourceKey) > 150 || !validDate(s.Date) || (s.ValueDate != "" && !validDate(s.ValueDate)) || (s.Direction != 1 && s.Direction != 2) || len(s.Description) > 500 || len(s.Reference) > 150 {
-		return fmt.Errorf("Statement ต้องมี ID ต้นทาง วันที่ ทิศทางและยอดจริง")
+	// ตรวจทีละช่อง นับความยาวเป็นตัวอักษร (ไทย 1 ตัว = 3 ไบต์ — เดิมนับไบต์ คำอธิบายไทย ~170 ตัวก็ถูกปฏิเสธ)
+	switch {
+	case !subledgerID(s.ID):
+		return fieldError("statement_id_invalid", "id", "รายการ Statement ไม่มีรหัสรายการ หรือรหัสรายการไม่ถูกต้อง")
+	case strings.TrimSpace(s.SourceKey) == "":
+		return fieldError("statement_source_key_required", "source_key", "กรุณาระบุรหัสอ้างอิงต้นทางของรายการ Statement (ใช้กันนำเข้ารายการเดียวกันซ้ำ)")
+	case utf8.RuneCountInString(s.SourceKey) > 150:
+		return fieldError("statement_source_key_too_long", "source_key", "รหัสอ้างอิงต้นทางของรายการ Statement ต้องไม่เกิน 150 ตัวอักษร")
+	case !validDate(s.Date):
+		return fieldError("statement_date_invalid", "transaction_date", "กรุณาระบุวันที่รายการ Statement ให้ถูกต้อง")
+	case s.ValueDate != "" && !validDate(s.ValueDate):
+		return fieldError("statement_value_date_invalid", "value_date", "วันที่มีผลของรายการ Statement ไม่ถูกต้อง")
+	case s.Direction != 1 && s.Direction != 2:
+		return fieldError("statement_direction_invalid", "direction", "กรุณาเลือกทิศทางรายการ Statement: เงินเข้า หรือ เงินออก")
+	case utf8.RuneCountInString(s.Description) > 500:
+		return fieldError("statement_description_too_long", "description", "คำอธิบายรายการ Statement ต้องไม่เกิน 500 ตัวอักษร")
+	case utf8.RuneCountInString(s.Reference) > 150:
+		return fieldError("statement_reference_too_long", "bank_reference", "เลขอ้างอิงธนาคารของรายการ Statement ต้องไม่เกิน 150 ตัวอักษร")
 	}
-	if err := m.amount(s.Amount); err != nil {
-		return err
+	if err := s.Amount.ValidateScale(m.scale); err != nil || !s.Amount.Decimal().IsPositive() {
+		return fieldError("statement_amount_invalid", "amount", "ยอดเงินของรายการ Statement ต้องมากกว่าศูนย์ และทศนิยมตามปีบัญชี")
 	}
 	if s.BalanceAfter != nil {
 		if err := s.BalanceAfter.ValidateScale(m.scale); err != nil {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/lib/pq"
 
+	authmodels "smlcloudplatform/internal/authentication/models"
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/mcptoken"
 )
@@ -149,6 +150,15 @@ var schemaStatements = []string{
 	)`,
 	`ALTER TABLE holding_members ADD COLUMN IF NOT EXISTS is_favorite BOOLEAN NOT NULL DEFAULT false`,
 	`ALTER TABLE holding_members ADD COLUMN IF NOT EXISTS last_accessed_at TIMESTAMPTZ`,
+	// Login-account screen fields are per membership: a person may hold another position,
+	// department and picture in each business group, and one group's admin must not change
+	// what another group shows. access_expiry_date: usable through the END of that date in the
+	// Holding's timezone (AccessExpiryInstant → authmodels.AccessEndsAt); NULL = no expiry.
+	`ALTER TABLE holding_members ADD COLUMN IF NOT EXISTS position TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE holding_members ADD COLUMN IF NOT EXISTS department TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE holding_members ADD COLUMN IF NOT EXISTS avatar TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE holding_members ADD COLUMN IF NOT EXISTS avatar_thumb TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE holding_members ADD COLUMN IF NOT EXISTS access_expiry_date DATE`,
 	`CREATE TABLE IF NOT EXISTS role_permissions (
 		holding_code TEXT NOT NULL REFERENCES holdings(code) ON DELETE CASCADE,
 		role_code TEXT NOT NULL,
@@ -160,6 +170,9 @@ var schemaStatements = []string{
 	`ALTER TABLE role_permissions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`,
 	`ALTER TABLE role_permissions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now()`,
 	`ALTER TABLE role_permissions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now()`,
+	// Optimistic lock of a permission set (API field __v): every write adds 1, an update must
+	// send the version it loaded or it is refused as changed meanwhile (409).
+	`ALTER TABLE role_permissions ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0`,
 	`CREATE TABLE IF NOT EXISTS business_types (
 		id TEXT PRIMARY KEY,
 		holding_code TEXT NOT NULL,
@@ -222,4 +235,24 @@ var schemaStatements = []string{
 func IsUniqueViolation(err error) bool {
 	var pqErr *pq.Error
 	return errors.As(err, &pqErr) && pqErr.Code == "23505"
+}
+
+// HoldingTimezoneSQL reads a Holding's timezone setting; h is the holdings row alias.
+const HoldingTimezoneSQL = `COALESCE(h.profile->'settings'->>'timezone', '')`
+
+// HoldingLocation is the Holding's timezone (authmodels.HoldingLocation — one rule for every package).
+func HoldingLocation(timezone string) *time.Location {
+	return authmodels.HoldingLocation(timezone)
+}
+
+// AccessExpiryInstant is the moment a membership's access ends: the expiry date is usable
+// through its end ("ใช้งานได้ถึงสิ้นวันที่กำหนด"), so access ends at 00:00 of the next day in
+// the Holding's timezone (authmodels.AccessEndsAt). Zero time = no expiry. Login and
+// permission checks must all use this one rule: access is allowed only while now is
+// before the returned instant (authmodels.AccessExpired).
+func AccessExpiryInstant(expiryDate sql.NullTime, timezone string) time.Time {
+	if !expiryDate.Valid {
+		return time.Time{}
+	}
+	return authmodels.AccessEndsAt(expiryDate.Time, timezone)
 }

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {
@@ -15,8 +16,12 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 	if err := s.loadRecord(ctx, tx, scope.Company, "journals", cmd.ID, &current); err != nil {
 		return nil, err
 	}
-	if current.IsDeleted || current.Status != "posted" || (scope.Branch != "" && scope.Branch != current.BranchCode) {
+	if current.IsDeleted || (scope.Branch != "" && scope.Branch != current.BranchCode) {
 		return nil, ErrNotFound
+	}
+	// ใบที่มีอยู่จริงแต่สถานะไม่ใช่ posted ต้องบอกเหตุผล ไม่ใช่ "ไม่พบรายการ" (UAT S09 2026-09-24)
+	if current.Status != "posted" {
+		return nil, userError("reconcile_requires_posted", "กระทบยอดได้เฉพาะรายการที่ผ่านบัญชีแล้วและยังไม่กลับรายการ — รายการร่างให้แก้ในใบสำคัญโดยตรง")
 	}
 	if err := checkVersion(cmd, current.Identity); err != nil {
 		return nil, err
@@ -24,6 +29,10 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 	if cmd.Journal == nil || cmd.Journal.Details == nil {
 		return nil, fmt.Errorf("กรุณาระบุรายละเอียดกระทบยอด")
 	}
+	// ภาษีหัก/VAT แทนทั้งชุด: ส่งคีย์มา (แม้เป็น [] = ล้างทุกแถว) = แทน, ไม่ส่งคีย์ = คงเดิม
+	// ต้องอ่านก่อน cloneJournalDetails เพราะการคัดลอกผ่าน JSON (omitempty) ทำให้ [] กับไม่ส่งกลายเป็นค่าเดียวกัน
+	replaceWithholdings := cmd.Journal.Details.Withholdings != nil
+	replaceVats := cmd.Journal.Details.Vats != nil
 	patch, err := cloneJournalDetails(cmd.Journal.Details)
 	if err != nil {
 		return nil, err
@@ -31,7 +40,7 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 	if len(patch.Partners)+len(patch.BankAccounts)+len(patch.Documents)+len(patch.BankLines) > 0 {
 		return nil, fmt.Errorf("หลังผ่านบัญชีเพิ่มได้เฉพาะ Statement การตัดยอด การจับคู่ การถอน ภาษีหัก ณ ที่จ่าย และภาษีมูลค่าเพิ่ม")
 	}
-	if len(patch.StatementLines)+len(patch.Settlements)+len(patch.Matches)+len(patch.Withdrawals)+len(patch.Withholdings)+len(patch.Vats) == 0 {
+	if len(patch.StatementLines)+len(patch.Settlements)+len(patch.Matches)+len(patch.Withdrawals) == 0 && !replaceWithholdings && !replaceVats {
 		return nil, fmt.Errorf("ไม่มีรายละเอียดกระทบยอด")
 	}
 	if err = s.checkOpenDate(ctx, tx, scope, current.Date); err != nil {
@@ -46,6 +55,8 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 		return nil, err
 	}
 	m := &subledgerMutation{ctx: ctx, tx: tx, store: s, scope: scope, journal: &current, now: now, scale: fiscal.Scale, affected: map[string]bool{}}
+	m.rememberWithholdings(current.Details)
+	m.rememberVats(current.Details)
 	if err = m.apply(patch, true); err != nil {
 		return nil, err
 	}
@@ -63,19 +74,31 @@ func (s *PostgresStore) mutateReconciliation(ctx context.Context, tx *sql.Tx, sc
 	current.Details.Settlements = mergeSubledgerRows(current.Details.Settlements, patch.Settlements, func(v SubledgerSettlement) string { return v.ID })
 	current.Details.Matches = mergeSubledgerRows(current.Details.Matches, patch.Matches, func(v SubledgerMatch) string { return v.ID })
 	// ภาษีหัก ณ ที่จ่าย/ภาษีมูลค่าเพิ่มเป็นรายละเอียดประกอบ ไม่ใช่ยอด GL — แก้ได้เสมอแม้ผ่านบัญชีแล้ว: แทนทั้งชุด และเก็บค่าเดิมไว้ใน audit
-	if len(patch.Withholdings)+len(patch.Vats) > 0 {
+	// ชุดว่าง = ลบแถวสุดท้ายออก (เช่น บันทึก VAT ผิดใบ) — audit เก็บแถวเดิมไว้ใน before (append-only)
+	if replaceWithholdings || replaceVats {
 		reason := strings.TrimSpace(cmd.Reason)
-		if reason == "" || len([]rune(reason)) > 500 {
-			return nil, fmt.Errorf("ระบุเหตุผลการแก้ฐานภาษีหลังผ่านบัญชี (ไม่เกิน 500 ตัวอักษร)")
+		if reason == "" {
+			return nil, fieldError("tax_edit_reason_required", "reason", "กรุณาระบุเหตุผลการแก้รายการภาษีหลังผ่านบัญชี (เก็บไว้ในประวัติการแก้ไข)")
 		}
-		if len(patch.Withholdings) > 0 {
-			if err = m.audit("withholding_replace", map[string]any{"before": current.Details.Withholdings, "after": patch.Withholdings, "reason": reason}); err != nil {
+		if utf8.RuneCountInString(reason) > 500 {
+			return nil, fieldError("tax_edit_reason_too_long", "reason", "เหตุผลการแก้รายการภาษีหลังผ่านบัญชีต้องไม่เกิน 500 ตัวอักษร")
+		}
+		if replaceWithholdings {
+			after := patch.Withholdings
+			if after == nil {
+				after = []SubledgerWithholding{}
+			}
+			if err = m.audit("withholding_replace", map[string]any{"before": current.Details.Withholdings, "after": after, "reason": reason}); err != nil {
 				return nil, err
 			}
 			current.Details.Withholdings = patch.Withholdings
 		}
-		if len(patch.Vats) > 0 {
-			if err = m.audit("vat_replace", map[string]any{"before": current.Details.Vats, "after": patch.Vats, "reason": reason}); err != nil {
+		if replaceVats {
+			after := patch.Vats
+			if after == nil {
+				after = []SubledgerVat{}
+			}
+			if err = m.audit("vat_replace", map[string]any{"before": current.Details.Vats, "after": after, "reason": reason}); err != nil {
 				return nil, err
 			}
 			current.Details.Vats = patch.Vats
@@ -137,8 +160,13 @@ func (m *subledgerMutation) relatedChanges() ([]Change, error) {
 
 func (m *subledgerMutation) withdraw(w SubledgerWithdrawal) error {
 	w.Reason = strings.TrimSpace(w.Reason)
-	if !subledgerID(w.ID) || w.Reason == "" || len(w.Reason) > 500 {
-		return fmt.Errorf("การถอนต้องระบุ ID และเหตุผลไม่เกิน 500 ตัวอักษร")
+	switch {
+	case !subledgerID(w.ID):
+		return fieldError("withdraw_id_invalid", "id", "รายการที่จะถอนไม่มีรหัสรายการ หรือรหัสรายการไม่ถูกต้อง")
+	case w.Reason == "":
+		return fieldError("withdraw_reason_required", "reason", "กรุณาระบุเหตุผลการถอนรายการ (เก็บไว้ในประวัติการแก้ไข)")
+	case utf8.RuneCountInString(w.Reason) > 500: // นับตัวอักษร ไม่ใช่ไบต์ — ไทย 1 ตัว = 3 ไบต์
+		return fieldError("withdraw_reason_too_long", "reason", "เหตุผลการถอนรายการต้องไม่เกิน 500 ตัวอักษร")
 	}
 	var table, owner string
 	switch w.Kind {

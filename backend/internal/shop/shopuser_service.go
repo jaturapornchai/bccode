@@ -5,6 +5,7 @@ import (
 	"errors"
 	"smlcloudplatform/internal/authentication/models"
 	common "smlcloudplatform/internal/models"
+	orgpolicy "smlcloudplatform/internal/organization/access"
 	"smlcloudplatform/internal/utils"
 	micromodels "smlcloudplatform/pkg/microservice/models"
 	"strings"
@@ -29,6 +30,9 @@ type ShopUserService struct {
 	repo IShopUserRepository
 }
 
+// errCreatorAccessExpiry: an expiry date was set on the Holding's creator.
+var errCreatorAccessExpiry = errors.New("creator access expiry not allowed")
+
 func NewShopUserService(shopUserRepo IShopUserRepository) ShopUserService {
 	return ShopUserService{
 		repo: shopUserRepo,
@@ -43,6 +47,10 @@ func applyAccessStatus(req *models.UserRoleRequest, existing models.ShopUser, au
 	if isCreator {
 		if req.IsAccessDisabled {
 			return errors.New("creator_access_cannot_be_disabled")
+		}
+		// The Holding must always keep a working owner: no expiry date for its creator.
+		if strings.TrimSpace(req.AccessExpiryDate) != "" {
+			return errCreatorAccessExpiry
 		}
 		req.IsAccessDisabled = false
 		req.AccessDisabledAt = time.Time{}
@@ -103,8 +111,6 @@ func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (
 			shopUserProfile.UID = userProfiles[0].UID
 			shopUserProfile.Email = userProfiles[0].Email
 			shopUserProfile.UserProfileName = userProfiles[0].Name
-			shopUserProfile.Avatar = userProfiles[0].Avatar
-			shopUserProfile.AvatarThumb = userProfiles[0].AvatarThumb
 		}
 	}
 
@@ -128,9 +134,12 @@ func (svc ShopUserService) InfoShopByUser(holdingCode string, username string) (
 		shopUserProfile.IsAccessDisabled = false
 	}
 
-	// === ข้อมูลพนักงาน ===
+	// === ข้อมูลพนักงาน (ต่อ membership) ===
 	shopUserProfile.Position = shopUser.Position
 	shopUserProfile.Department = shopUser.Department
+	shopUserProfile.Avatar = shopUser.Avatar
+	shopUserProfile.AvatarThumb = shopUser.AvatarThumb
+	shopUserProfile.AccessExpiryDate = models.AccessExpiryDay(shopUser.AccessExpiryDate)
 
 	// === ข้อมูล LINE OA ===
 	shopUserProfile.LineUserID = shopUser.LineUserID
@@ -250,6 +259,9 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername strin
 		shopUserProfile.Role = doc.Role
 		shopUserProfile.Position = doc.Position
 		shopUserProfile.Department = doc.Department
+		shopUserProfile.Avatar = doc.Avatar
+		shopUserProfile.AvatarThumb = doc.AvatarThumb
+		shopUserProfile.AccessExpiryDate = models.AccessExpiryDay(doc.AccessExpiryDate)
 		shopUserProfile.POApproval = doc.POApproval
 		shopUserProfile.QuotationApproval = doc.QuotationApproval
 		shopUserProfile.AccessScopes = doc.AccessScopes
@@ -273,8 +285,6 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername strin
 			shopUserProfile.UID = tempUserProfile.UID
 			shopUserProfile.Email = tempUserProfile.Email
 			shopUserProfile.UserProfileName = tempUserProfile.Name
-			shopUserProfile.Avatar = tempUserProfile.Avatar
-			shopUserProfile.AvatarThumb = tempUserProfile.AvatarThumb
 		}
 
 		shopUserProfiles = append(shopUserProfiles, shopUserProfile)
@@ -284,8 +294,13 @@ func (svc ShopUserService) ListUserInShop(holdingCode string, authUsername strin
 }
 
 // SaveUserFullProfile - บันทึกข้อมูลผู้ใช้แบบครบถ้วน (รวม position, department, LINE, approval)
+//
+// A request without editusername and without useruid ADDS a member: naming someone who is
+// already a member is rejected (errMemberAlreadyExists) instead of silently overwriting
+// their role and permissions. With either id it EDITS that member and never creates one.
 func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername string, req *models.UserRoleRequest) error {
 	rawEditID := strings.TrimSpace(req.EditUsername)
+	adding := rawEditID == "" && strings.TrimSpace(req.UserUID) == ""
 	username := utils.NormalizeUsername(req.Username)
 	editusername := utils.NormalizeUsername(req.EditUsername)
 	req.EditUsername = editusername
@@ -300,18 +315,12 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 		return err
 	}
 
-	lookupUsername := rawEditID
-	if lookupUsername == "" {
-		lookupUsername = username
-	}
-	existingTarget := models.ShopUser{}
-	if lookupUsername != "" {
-		// Resolve with the RAW id: a useruid keeps its original casing and
-		// NormalizeUsername would lowercase it into a lookup miss.
-		existingTarget, err = svc.resolveShopUser(holdingCode, lookupUsername)
-		if err != nil {
-			existingTarget = models.ShopUser{}
-		}
+	// Resolve with the RAW edit id first: a useruid keeps its original casing and
+	// NormalizeUsername would lowercase it into a lookup miss.
+	existingTarget := svc.findSaveTarget(holdingCode, rawEditID, username, req.UserUID)
+	targetFound := existingTarget.UserUID != "" || strings.TrimSpace(existingTarget.Username) != ""
+	if !adding && !targetFound {
+		return errSaveTargetNotFound
 	}
 	if existingTarget.UserUID != "" {
 		req.UserUID = existingTarget.UserUID
@@ -333,9 +342,19 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 	if authUser.Role == models.ROLE_ADMIN && (existingTarget.Role == models.ROLE_OWNER || req.Role == models.ROLE_OWNER) {
 		return errors.New("permission denied")
 	}
+	if err = checkScopeGrant(authUser, req); err != nil {
+		return err
+	}
+	if err = checkTargetWithinGrantor(authUser, existingTarget); err != nil {
+		return err
+	}
 
 	if err = applyAccessStatus(req, existingTarget, authUsername, time.Now().UTC(), targetIsCreator); err != nil {
 		return err
+	}
+	// Checked after the permission checks so a denied caller learns nothing about members.
+	if adding && targetFound {
+		return errMemberAlreadyExists
 	}
 
 	// Normalize username in request
@@ -347,6 +366,68 @@ func (svc ShopUserService) SaveUserFullProfile(holdingCode string, authUsername 
 		return err
 	}
 
+	return nil
+}
+
+// findSaveTarget resolves the existing member a save would write. The repository upserts by
+// useruid, else by username, so the edit id, the username and the client useruid are all
+// tried: a bogus editusername must not skip the owner/creator/scope checks of the member
+// whose row the upsert would overwrite. A zero ShopUser means a new member.
+func (svc ShopUserService) findSaveTarget(holdingCode string, ids ...string) models.ShopUser {
+	tried := map[string]bool{}
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" || tried[id] {
+			continue
+		}
+		tried[id] = true
+		if member, err := svc.resolveShopUser(holdingCode, id); err == nil {
+			return member
+		}
+	}
+	return models.ShopUser{}
+}
+
+// checkTargetWithinGrantor stops a manager from changing or removing a member they could not
+// have granted: the member's CURRENT role and scope must fit inside the manager's own scope.
+// checkScopeGrant alone only vets the requested scope, so a company-restricted ADMIN could
+// otherwise narrow, demote or strip a holding-wide ADMIN, or move another company's staff
+// into their own company. A new member (zero ShopUser) has nothing to protect.
+func checkTargetWithinGrantor(grantor models.ShopUser, target models.ShopUser) error {
+	if target.UserUID == "" && strings.TrimSpace(target.Username) == "" {
+		return nil
+	}
+	return checkScopeGrant(grantor, &models.UserRoleRequest{Role: target.Role, AccessScopes: target.AccessScopes})
+}
+
+// checkScopeGrant stops a manager from granting more than they can reach themselves
+// (also when editing their own membership). OWNER may grant anything; an ADMIN grants
+// the holding-wide scope only when holding-wide themselves, otherwise only companies
+// and branches inside their own scope. Scopes must already be hydrated.
+func checkScopeGrant(grantor models.ShopUser, req *models.UserRoleRequest) error {
+	if grantor.Role == models.ROLE_OWNER || models.HasHoldingScope(grantor.AccessScopes) {
+		return nil
+	}
+	requested := req.AccessScopes
+	// OWNER/ADMIN without explicit scopes is holding-wide (organization/access.FindActiveMembership).
+	managerTarget := req.Role == models.ROLE_OWNER || req.Role == models.ROLE_ADMIN
+	if models.HasHoldingScope(requested) || (len(requested) == 0 && managerTarget) {
+		return errAccessScopeExceedsGrantor
+	}
+	for _, scope := range requested {
+		companyUID := strings.TrimSpace(scope.CompanyUID)
+		allowed := false
+		switch accessScopeType(scope) {
+		case "company":
+			allowed = models.ScopesAllowCompanySelection(grantor.AccessScopes, companyUID) &&
+				(!scope.AllBranches || orgpolicy.AllowsAllBranches(grantor.AccessScopes, companyUID))
+		case "branch":
+			allowed = models.ScopesAllowBranchSelection(grantor.AccessScopes, companyUID, scope.BranchUID)
+		}
+		if !allowed {
+			return errAccessScopeExceedsGrantor
+		}
+	}
 	return nil
 }
 
@@ -379,8 +460,16 @@ func (svc ShopUserService) DeleteUserPermissionShop(holdingCode string, authUser
 	if sameUsername(findUser.Username, authUsername) || (findUser.UserUID != "" && findUser.UserUID == authUser.UserUID) {
 		return errors.New("can't delete your permission")
 	}
+	if err = checkTargetWithinGrantor(authUser, findUser); err != nil {
+		return err
+	}
 
-	err = svc.repo.Delete(context.Background(), holdingCode, username)
+	// Delete the member that was checked above, not whatever else the raw id might match.
+	deleteID := username
+	if findUser.UserUID != "" {
+		deleteID = findUser.UserUID
+	}
+	err = svc.repo.Delete(context.Background(), holdingCode, deleteID, authUser.UserUID)
 
 	if err != nil {
 		return err
@@ -399,7 +488,7 @@ func (svc ShopUserService) requireHoldingManager(holdingCode string, authUsernam
 	if authUser.Role != models.ROLE_OWNER && authUser.Role != models.ROLE_ADMIN {
 		return models.ShopUser{}, errors.New("permission denied")
 	}
-	if authUser.IsAccessDisabled || (!authUser.AccessExpiryDate.IsZero() && time.Now().After(authUser.AccessExpiryDate)) {
+	if authUser.IsAccessDisabled || models.AccessExpired(authUser.AccessExpiryDate, time.Now()) {
 		return models.ShopUser{}, errors.New("permission denied")
 	}
 	return authUser, nil

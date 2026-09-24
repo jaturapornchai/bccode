@@ -36,6 +36,8 @@ func (r *postgresRoleRequest) Response(status int, data interface{}) {
 	r.data = data
 }
 func (r *postgresRoleRequest) ResponseError(status int, message string) { r.status = status }
+func (r *postgresRoleRequest) QueryParam(string) string                 { return "" }
+func (r *postgresRoleRequest) Header(string) string                     { return "th" }
 
 func TestPostgresRolePermissionAdministration(t *testing.T) {
 	dsn := os.Getenv("GL_AUTH_TEST_DSN")
@@ -53,10 +55,10 @@ func TestPostgresRolePermissionAdministration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Exec("DROP SCHEMA " + ns + " CASCADE")
-	_, err = db.Exec(`CREATE TABLE users(id uuid,is_active boolean);CREATE TABLE holdings(code text,is_active boolean);
- CREATE TABLE holding_members(holding_code text,user_id uuid,role text,permission_sets jsonb,is_active boolean);
- CREATE TABLE role_permissions(id text,holding_code text,role_code text,names jsonb,permissions jsonb,is_active boolean,created_at timestamptz,updated_at timestamptz,UNIQUE(holding_code,role_code));
- INSERT INTO holdings VALUES('H',true);INSERT INTO role_permissions VALUES('rp-accounting','H','ACCOUNTING','[{"code":"th","name":"Accounting"}]','["jv-journal"]',true,now(),now());`)
+	_, err = db.Exec(`CREATE TABLE users(id uuid,is_active boolean);CREATE TABLE holdings(code text,is_active boolean,profile jsonb);
+ CREATE TABLE holding_members(holding_code text,user_id uuid,role text,permission_sets jsonb,is_active boolean,access_expiry_date date);
+ CREATE TABLE role_permissions(id text,holding_code text,role_code text,names jsonb,permissions jsonb,is_active boolean,created_at timestamptz,updated_at timestamptz,version bigint NOT NULL DEFAULT 0,UNIQUE(holding_code,role_code));
+ INSERT INTO holdings VALUES('H',true);INSERT INTO role_permissions VALUES('rp-accounting','H','ACCOUNTING','[{"code":"th","name":"Accounting"}]','["gl-journals"]',true,now(),now());`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,14 +72,15 @@ func TestPostgresRolePermissionAdministration(t *testing.T) {
 	r := &postgresRoleRequest{user: models.UserInfo{UID: uid, Username: "claimed-owner", HoldingCode: "H", Role: 2}}
 	h := RolePermissionHttp{}
 	active := true
-	input := rolemodels.RolePermissionRequest{RoleCode: "ACCOUNTING", Names: []rolemodels.LocalizedName{{Code: "th", Name: "Accounting"}}, Permissions: []string{"*"}, IsActive: &active}
+	zeroVersion := int64(0)
+	input := rolemodels.RolePermissionRequest{RoleCode: "ACCOUNTING", Names: []rolemodels.LocalizedName{{Code: "th", Name: "Accounting"}}, Permissions: []string{"*"}, IsActive: &active, Version: &zeroVersion}
 	if err = rolemodels.NormalizeRequest(&input); err != nil {
 		t.Fatal(err)
 	}
 	actions := []func() error{
 		func() error { return h.createRolePermissionPostgres(r, db, "H", input) },
 		func() error { return h.updateRolePermissionPostgres(r, db, "H", "rp-accounting", input) },
-		func() error { return h.deleteRolePermissionPostgres(r, db, "H", "rp-accounting") },
+		func() error { return h.deleteRolePermissionPostgres(r, db, "H", "rp-accounting", 0) },
 	}
 	denyAll := func() {
 		t.Helper()
@@ -113,19 +116,27 @@ func TestPostgresRolePermissionAdministration(t *testing.T) {
 	if _, err = db.Exec(`UPDATE holding_members SET role='owner'`); err != nil {
 		t.Fatal(err)
 	}
-	if err = h.createRolePermissionPostgres(r, db, "H", input); err != nil || r.status != 201 {
+	// Creating a code that already exists must not overwrite it (was a silent upsert).
+	if _ = h.createRolePermissionPostgres(r, db, "H", input); r.status != http.StatusConflict {
+		t.Fatalf("create of existing ACCOUNTING status=%d, want 409", r.status)
+	}
+	sales := input
+	sales.RoleCode = "SALES"
+	if err = h.createRolePermissionPostgres(r, db, "H", sales); err != nil || r.status != 201 {
 		t.Fatal("active OWNER denied")
 	}
 	if err = h.updateRolePermissionPostgres(r, db, "H", "rp-accounting", input); err != nil || r.status != 200 {
 		t.Fatal("active OWNER update denied")
 	}
-	if err = h.deleteRolePermissionPostgres(r, db, "H", "rp-accounting"); err != nil || r.status != 200 {
+	if err = h.deleteRolePermissionPostgres(r, db, "H", "rp-accounting", 1); err != nil || r.status != 200 {
 		t.Fatal("active OWNER delete denied")
 	}
 	for _, tc := range []struct{ change, restore string }{
 		{`UPDATE holding_members SET is_active=false`, `UPDATE holding_members SET is_active=true`},
 		{`UPDATE users SET is_active=false`, `UPDATE users SET is_active=true`},
 		{`UPDATE holdings SET is_active=false`, `UPDATE holdings SET is_active=true`},
+		// access expiry date passed: usable through the END of the date only (review 2026-09-24)
+		{`UPDATE holding_members SET access_expiry_date = CURRENT_DATE - 2`, `UPDATE holding_members SET access_expiry_date = NULL`},
 	} {
 		if _, err = db.Exec(tc.change); err != nil {
 			t.Fatal(err)

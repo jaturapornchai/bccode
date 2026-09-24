@@ -14,15 +14,17 @@ func TestAccountGuardsCarryCodesAndThaiMessages(t *testing.T) {
 		t.Fatalf("stale version message changed: %q", user.Error())
 	}
 
-	invalid := Account{AccountCode: "มีช่องว่าง"}.Validate()
+	invalid := Account{AccountCode: "มี ช่องว่าง"}.Validate()
 	if invalid == nil {
 		t.Fatal("expected Account.Validate to reject an invalid account code")
 	}
+	// ข้อผิดพลาดรายช่องมีรหัสของตัวเองอยู่แล้ว validationFailed ต้องส่งต่อโดยไม่ทับรหัสและชื่อช่อง
 	wrapped, ok := AsUserError(validationFailed(invalid))
-	if !ok || wrapped.Code != CodeValidationFailed || wrapped.Error() != invalid.Error() {
+	if !ok || wrapped.Code != "code_has_space" || wrapped.Field != "accountcode" || wrapped.Error() != invalid.Error() {
 		t.Fatalf("validation wrapping: got %v (ok=%v) want message %q", wrapped, ok, invalid.Error())
 	}
-	if wrapped.HTTPStatus() != 409 {
-		t.Fatalf("validation status = %d, want 409", wrapped.HTTPStatus())
+	// ข้อมูลที่ผู้ใช้กรอกผิด = 400; 409 สงวนไว้สำหรับ version/รหัสซ้ำ/สถานะไม่ให้ทำ (errors.go fieldError vs conflictError)
+	if wrapped.HTTPStatus() != 400 {
+		t.Fatalf("validation status = %d, want 400", wrapped.HTTPStatus())
 	}
 }

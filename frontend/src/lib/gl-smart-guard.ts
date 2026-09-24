@@ -37,34 +37,41 @@ export interface GLBalanceAnalysis {
   vat: VatAnalysis;
 }
 
+// Withholding tax (ภาษีเงินได้ถูกหัก/ค้างจ่าย, ภ.ง.ด.51 จ่ายล่วงหน้า) is not VAT even when it sits next to VAT in the chart.
+const NOT_VAT_NAME = /หัก\s*ณ\s*ที่จ่าย|ภาษีเงินได้|withholding/i;
+// Undue VAT (ภาษีซื้อ/ภาษีขายยังไม่ถึงกำหนด) waits for the tax point; it is not the account for a normal VAT line.
+const UNDUE_VAT_NAME = /ยังไม่ถึงกำหนด|undue/i;
+
 /**
- * Checks whether an account or description corresponds to Thai VAT (ภาษีซื้อ / ภาษีขาย)
+ * Checks whether a line is a Thai VAT line (ภาษีซื้อ / ภาษีขาย) from the account name, account type and line
+ * description only. Account codes are never a condition: every company keeps its own chart (ลุงจืด 2026-09-24).
+ * Income/expense accounts are never the VAT line, even when named e.g. "รายได้ - ได้รับยกเว้นภาษีมูลค่าเพิ่ม".
  */
 export function isVatAccount(
-  accountCode: string,
   accountName: string,
-  lineDescription: string
+  lineDescription: string,
+  accountType = ""
 ): { isVat: boolean; type: TaxType | null } {
-  const code = (accountCode || "").trim();
   const name = (accountName || "").trim().toLowerCase();
   const desc = (lineDescription || "").trim().toLowerCase();
+  const none = { isVat: false, type: null };
 
-  // Common Thai VAT account codes
-  // 1150-1159: ภาษีซื้อ (Input Tax / Asset)
-  // 2140-2149: ภาษีขาย (Output Tax / Liability)
-  if (code.startsWith("115") || /ภาษีซื้อ|input\s*tax|vat\s*buy/i.test(name) || /ภาษีซื้อ/i.test(desc)) {
+  if (NOT_VAT_NAME.test(name) || accountType === "income" || accountType === "expense") {
+    return none;
+  }
+  if (/ภาษีซื้อ|input\s*(tax|vat)|vat\s*buy/i.test(name) || /ภาษีซื้อ/i.test(desc)) {
     return { isVat: true, type: "input_tax" };
   }
-  if (code.startsWith("214") || /ภาษีขาย|output\s*tax|vat\s*sale/i.test(name) || /ภาษีขาย/i.test(desc)) {
+  if (/ภาษีขาย|output\s*(tax|vat)|vat\s*sale/i.test(name) || /ภาษีขาย/i.test(desc)) {
     return { isVat: true, type: "output_tax" };
   }
-  if (/ภาษีมูลค่าเพิ่ม|vat/i.test(name) || /ภาษีมูลค่าเพิ่ม|vat\s*7%/i.test(desc)) {
-    if (code.startsWith("1")) return { isVat: true, type: "input_tax" };
-    if (code.startsWith("2")) return { isVat: true, type: "output_tax" };
+  if (/ภาษีมูลค่าเพิ่ม|\bvat\b/i.test(name) || /ภาษีมูลค่าเพิ่ม|vat\s*7%/i.test(desc)) {
+    if (accountType === "asset") return { isVat: true, type: "input_tax" };
+    if (accountType === "liability") return { isVat: true, type: "output_tax" };
     return { isVat: true, type: null };
   }
 
-  return { isVat: false, type: null };
+  return none;
 }
 
 /**
@@ -112,7 +119,7 @@ export function analyzeGLTaxAndBalance(
 
     const acc = accountsMap.get(line.accountcode);
     const accName = acc?.names?.[0]?.name || "";
-    const vatInfo = isVatAccount(line.accountcode, accName, line.description);
+    const vatInfo = isVatAccount(accName, line.description, acc?.accounttype ?? "");
 
     return {
       index,
@@ -356,21 +363,18 @@ export function appendVatLine(
   const vatStr = amountString(vatUnits, scale);
   const isInput = vatType === "input_tax";
 
-  const matchingAcc = accounts.find((a) => {
-    if (isInput) {
-      return (
-        a.accountcode.startsWith("115") ||
-        a.names.some((n) => /ภาษีซื้อ|input\s*tax/i.test(n.name))
-      );
-    } else {
-      return (
-        a.accountcode.startsWith("214") ||
-        a.names.some((n) => /ภาษีขาย|output\s*tax/i.test(n.name))
-      );
-    }
-  });
+  // Find the VAT account by name among active posting accounts; no code guessing. Not found → leave the account
+  // empty so the user picks it (the save validates it) rather than writing to a code that may not exist.
+  // Charts often keep "ภาษีซื้อ/ภาษีขายยังไม่ถึงกำหนด" next to the normal VAT account; a plain 7% VAT line
+  // belongs to the normal one, so the undue account is only the fallback when it is the sole match.
+  const candidates = accounts.filter((a) =>
+    a.allowposting !== false &&
+    a.isactive !== false &&
+    isVatAccount(a.names?.[0]?.name ?? "", "", a.accounttype).type === vatType
+  );
+  const matchingAcc = candidates.find((a) => !UNDUE_VAT_NAME.test(a.names?.[0]?.name ?? "")) ?? candidates[0];
 
-  const accountCode = matchingAcc?.accountcode || (isInput ? "1151" : "2141");
+  const accountCode = matchingAcc?.accountcode ?? "";
   const description = isInput ? "ภาษีซื้อ 7%" : "ภาษีขาย 7%";
 
   const newLine: GLLine = {

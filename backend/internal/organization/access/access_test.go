@@ -28,7 +28,7 @@ func TestScopesFailClosedAndMatchOnlyCompanyOrBranch(t *testing.T) {
 		t.Fatal("branch scope must match both stable company and branch UIDs")
 	}
 	if AllowsCompany([]authmodels.AccessScope{{ScopeType: "holding"}}, "company-a-uid") {
-		t.Fatal("holding role/scope must not imply company transaction access")
+		t.Fatal("a raw holding rule is expanded by FindActiveMembership, never matched here")
 	}
 	if AllowsCompany([]authmodels.AccessScope{{ScopeType: "branch", CompanyUID: "company-a-uid"}}, "company-a-uid") {
 		t.Fatal("branch scope without a branch UID must not imply company access")

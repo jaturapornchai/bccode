@@ -409,7 +409,7 @@ func TestAuthService_GoogleLoginResolvesLinkedUserByIssuerAndSubject(t *testing.
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
 		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
 
-	result, err := authService.LoginWithGoogleIdentity("accounts.google.com", identity.Subject, "new@example.com", user.Name)
+	result, err := authService.LoginWithGoogleIdentity("accounts.google.com", identity.Subject, "new@example.com", true, user.Name)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "access-token", result.Token)
@@ -451,7 +451,7 @@ func TestAuthService_GoogleLoginCreatesUserIdentityAndAuditAtomically(t *testing
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
 		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
 
-	result, err := authService.LoginWithGoogleIdentity(issuer, subject, " NEW@EXAMPLE.COM ", " New Google User ")
+	result, err := authService.LoginWithGoogleIdentity(issuer, subject, " NEW@EXAMPLE.COM ", true, " New Google User ")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "access-token", result.Token)
@@ -471,7 +471,7 @@ func TestAuthService_GoogleLoginRejectsInactiveIdentity(t *testing.T) {
 		new(SMSRepositoryMock), microAuthServiceMock, MockRandomString, MockRandomNumber,
 		MockGUID, MockHashPassword, MockCheckPasswordHash, MockTime, MockFirebaseAdapter(), MockLineAdapter())
 
-	_, err := authService.LoginWithGoogleIdentity("accounts.google.com", "revoked-subject", "user@example.com", "User")
+	_, err := authService.LoginWithGoogleIdentity("accounts.google.com", "revoked-subject", "user@example.com", true, "User")
 
 	assert.EqualError(t, err, "google identity is inactive")
 	authRepo.AssertNotCalled(t, "FindUserByUID", mock.Anything)
@@ -1124,8 +1124,8 @@ func (m *ShopUserRepositoryMock) SaveFavorite(ctx context.Context, holdingCode s
 	return args.Error(0)
 }
 
-func (m *ShopUserRepositoryMock) Delete(ctx context.Context, holdingCode string, username string) error {
-	args := m.Called(holdingCode, username)
+func (m *ShopUserRepositoryMock) Delete(ctx context.Context, holdingCode string, username string, actorUID string) error {
+	args := m.Called(holdingCode, username, actorUID)
 	return args.Error(0)
 }
 

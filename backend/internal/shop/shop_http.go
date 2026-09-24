@@ -168,6 +168,9 @@ func (h ShopHttp) UpdateShop(ctx microservice.IContext) error {
 }
 
 func respondHoldingAccessError(ctx microservice.IContext, err error) error {
+	if expired := orgaccess.AccessExpiredError(err, requestLanguage(ctx)); expired != nil {
+		return apperr.Respond(ctx, expired)
+	}
 	if errors.Is(err, orgpolicy.ErrActiveMembershipRequired) ||
 		errors.Is(err, orgpolicy.ErrHoldingManagerRequired) ||
 		errors.Is(err, orgpolicy.ErrHoldingOwnerRequired) {
@@ -193,6 +196,9 @@ func (h ShopHttp) InfoShop(ctx microservice.IContext) error {
 	member, err := NewShopUserPostgresRepository(db).FindByHoldingCodeAndUserUID(reqCtx, holdingCode, ctx.UserInfo().UID)
 	if err != nil || member.IsAccessDisabled {
 		return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage("Holding access denied").WithThaiMessage("ไม่มีสิทธิ์ใช้งานกลุ่มกิจการนี้"))
+	}
+	if authmodels.AccessExpired(member.AccessExpiryDate, time.Now()) {
+		return apperr.Respond(ctx, orgaccess.AccessExpiredError(orgpolicy.ErrAccessExpired, requestLanguage(ctx)))
 	}
 	service := NewShopService(NewShopPostgresRepository(db), NewShopUserPostgresRepository(db), h.ms.TimeNow)
 	shopInfo, err := service.InfoShop(holdingCode)

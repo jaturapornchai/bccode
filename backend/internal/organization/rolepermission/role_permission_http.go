@@ -17,6 +17,7 @@ import (
 	common "smlcloudplatform/internal/models"
 	rolemodels "smlcloudplatform/internal/organization/rolepermission/models"
 	"smlcloudplatform/pkg/microservice"
+	"smlcloudplatform/pkg/textguard"
 
 	"github.com/lib/pq"
 )
@@ -72,7 +73,7 @@ func (h RolePermissionHttp) searchRolePermissionsPostgres(ctx microservice.ICont
 
 	q = strings.TrimSpace(q)
 	countQuery := `SELECT COUNT(*) FROM role_permissions WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
-	dataQuery := `SELECT COALESCE(id, role_code), holding_code, role_code, names, permissions, is_active, created_at, updated_at
+	dataQuery := `SELECT COALESCE(id, role_code), holding_code, role_code, names, permissions, is_active, created_at, updated_at, version
 	              FROM role_permissions WHERE LOWER(holding_code) = LOWER($1) AND is_active = true`
 	args := []interface{}{holdingCode}
 
@@ -110,8 +111,9 @@ func (h RolePermissionHttp) searchRolePermissionsPostgres(ctx microservice.ICont
 			isActive       bool
 			createdAt      time.Time
 			updatedAt      time.Time
+			version        int64
 		)
-		if err := rows.Scan(&id, &hCode, &roleCode, &rawNames, &rawPermissions, &isActive, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&id, &hCode, &roleCode, &rawNames, &rawPermissions, &isActive, &createdAt, &updatedAt, &version); err != nil {
 			continue
 		}
 		var namesList []rolemodels.LocalizedName
@@ -132,7 +134,7 @@ func (h RolePermissionHttp) searchRolePermissionsPostgres(ctx microservice.ICont
 			CreatedAt:   createdAt,
 			UpdatedAt:   updatedAt,
 			IsDeleted:   false,
-			Version:     0,
+			Version:     version,
 		})
 	}
 
@@ -151,7 +153,7 @@ func (h RolePermissionHttp) infoRolePermissionPostgres(ctx microservice.IContext
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
 
-	query := `SELECT COALESCE(id, role_code), holding_code, role_code, names, permissions, is_active, created_at, updated_at
+	query := `SELECT COALESCE(id, role_code), holding_code, role_code, names, permissions, is_active, created_at, updated_at, version
 	          FROM role_permissions
 	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(role_code) = LOWER($2)) AND is_active = true
 	          LIMIT 1`
@@ -164,9 +166,10 @@ func (h RolePermissionHttp) infoRolePermissionPostgres(ctx microservice.IContext
 		isActive       bool
 		createdAt      time.Time
 		updatedAt      time.Time
+		version        int64
 	)
 	err := db.QueryRowContext(context.Background(), query, holdingCode, id).Scan(
-		&recID, &hCode, &roleCode, &rawNames, &rawPermissions, &isActive, &createdAt, &updatedAt,
+		&recID, &hCode, &roleCode, &rawNames, &rawPermissions, &isActive, &createdAt, &updatedAt, &version,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -198,7 +201,7 @@ func (h RolePermissionHttp) infoRolePermissionPostgres(ctx microservice.IContext
 			CreatedAt:   createdAt,
 			UpdatedAt:   updatedAt,
 			IsDeleted:   false,
-			Version:     0,
+			Version:     version,
 		},
 	})
 	return nil
@@ -210,7 +213,7 @@ func (h RolePermissionHttp) infoMyRolePermissionPostgres(ctx microservice.IConte
 
 	roleCode, rawSets, err := postgresMemberRole(ctx, db, holdingCode)
 	if err != nil {
-		ctx.ResponseError(http.StatusForbidden, "ปฏิเสธสิทธิ์: ไม่พบสมาชิกที่ใช้งานได้ใน Holding")
+		respondMemberRoleError(ctx, err, "ปฏิเสธสิทธิ์: ไม่พบสมาชิกที่ใช้งานได้ใน Holding")
 		return nil
 	}
 	var permissionSets []string
@@ -220,8 +223,12 @@ func (h RolePermissionHttp) infoMyRolePermissionPostgres(ctx microservice.IConte
 	}
 	setCodes := append([]string{roleCode}, permissionSets...)
 
+	// Codes are matched ignoring case: older rows may be stored as "admin" while members list "ADMIN".
+	for i, code := range setCodes {
+		setCodes[i] = strings.ToUpper(strings.TrimSpace(code))
+	}
 	rows, err := db.QueryContext(context.Background(),
-		`SELECT permissions FROM role_permissions WHERE LOWER(holding_code) = LOWER($1) AND role_code = ANY($2) AND is_active = true`,
+		`SELECT permissions FROM role_permissions WHERE LOWER(holding_code) = LOWER($1) AND UPPER(role_code) = ANY($2) AND is_active = true`,
 		holdingCode, pq.Array(setCodes),
 	)
 	allPermissions := make([]string, 0)
@@ -275,6 +282,9 @@ func (h RolePermissionHttp) createRolePermissionPostgres(ctx microservice.IConte
 	if !authorizePostgresRoleManager(ctx, db, holdingCode, req.RoleCode) {
 		return nil
 	}
+	if path := textguard.NULField(req); path != "" {
+		return respondPermissionSetNUL(ctx, path)
+	}
 	holdingCode = strings.TrimSpace(holdingCode)
 	roleCode := strings.ToUpper(strings.TrimSpace(req.RoleCode))
 	if roleCode == "" {
@@ -289,30 +299,27 @@ func (h RolePermissionHttp) createRolePermissionPostgres(ctx microservice.IConte
 		isActive = *req.IsActive
 	}
 
-	newID := "rp-" + strings.ToLower(roleCode)
-	query := `INSERT INTO role_permissions (id, holding_code, role_code, names, permissions, is_active, created_at, updated_at)
-	          VALUES ($1, $2, $3, $4, $5, $6, now(), now())
-	          ON CONFLICT (holding_code, role_code) DO UPDATE SET
-	            names = EXCLUDED.names,
-	            permissions = EXCLUDED.permissions,
-	            is_active = EXCLUDED.is_active,
-	            updated_at = now()`
-	_, err := db.ExecContext(context.Background(), query, newID, holdingCode, roleCode, rawNames, rawPerms, isActive)
+	// Never overwrite an existing set: a code already used (in any spelling) answers 409.
+	saved, err := createPermissionSet(ctx.Request().Context(), db, holdingCode, roleCode,
+		permissionSetValues{names: rawNames, permissions: rawPerms, isActive: isActive})
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
+		return respondPermissionSetError(ctx, err)
 	}
 
+	// Timestamps and __v are what the row stored (was zero time "0001-01-01" and no version).
 	ctx.Response(http.StatusCreated, common.ApiResponse{
 		Success: true,
-		ID:      newID,
+		ID:      saved.id,
 		Data: RolePermissionItem{
-			ID:          newID,
+			ID:          saved.id,
 			HoldingCode: holdingCode,
-			RoleCode:    roleCode,
+			RoleCode:    saved.roleCode,
 			Names:       req.Names,
 			Permissions: req.Permissions,
 			IsActive:    isActive,
+			CreatedAt:   saved.createdAt,
+			UpdatedAt:   saved.updatedAt,
+			Version:     saved.version,
 		},
 	})
 	return nil
@@ -326,6 +333,9 @@ func (h RolePermissionHttp) updateRolePermissionPostgres(ctx microservice.IConte
 	if !found || !authorizePostgresRoleManager(ctx, db, holdingCode, oldRole, req.RoleCode) {
 		return nil
 	}
+	if path := textguard.NULField(req); path != "" {
+		return respondPermissionSetNUL(ctx, path)
+	}
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
 	roleCode := strings.ToUpper(strings.TrimSpace(req.RoleCode))
@@ -337,27 +347,24 @@ func (h RolePermissionHttp) updateRolePermissionPostgres(ctx microservice.IConte
 		isActive = *req.IsActive
 	}
 
-	query := `UPDATE role_permissions SET
-	            role_code = COALESCE(NULLIF($1, ''), role_code),
-	            names = $2,
-	            permissions = $3,
-	            is_active = $4,
-	            updated_at = now()
-	          WHERE LOWER(holding_code) = LOWER($5) AND (id = $6 OR LOWER(role_code) = LOWER($6))`
-	_, err := db.ExecContext(context.Background(), query, roleCode, rawNames, rawPerms, isActive, holdingCode, id)
+	if req.Version == nil { // readRolePermissionRequest refuses this for HTTP; guards direct callers
+		return respondPermissionSetError(ctx, errPermissionSetChanged)
+	}
+	version, err := updatePermissionSet(ctx.Request().Context(), db, holdingCode, oldRole, roleCode, *req.Version,
+		permissionSetValues{names: rawNames, permissions: rawPerms, isActive: isActive})
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
+		return respondPermissionSetError(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,
 		ID:      id,
+		Data:    map[string]int64{"__v": version},
 	})
 	return nil
 }
 
-func (h RolePermissionHttp) deleteRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string) error {
+func (h RolePermissionHttp) deleteRolePermissionPostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string, version int64) error {
 	if !authorizePostgresRoleManager(ctx, db, holdingCode) {
 		return nil
 	}
@@ -368,12 +375,8 @@ func (h RolePermissionHttp) deleteRolePermissionPostgres(ctx microservice.IConte
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
 
-	query := `UPDATE role_permissions SET is_active = false, updated_at = now()
-	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(role_code) = LOWER($2))`
-	_, err := db.ExecContext(context.Background(), query, holdingCode, id)
-	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
+	if err := deletePermissionSet(ctx.Request().Context(), db, holdingCode, oldRole, version); err != nil {
+		return respondPermissionSetError(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -444,9 +447,28 @@ func (h RolePermissionHttp) UpdateRolePermission(ctx microservice.IContext) erro
 func (h RolePermissionHttp) DeleteRolePermission(ctx microservice.IContext) error {
 	holdingCode := strings.TrimSpace(ctx.UserInfo().HoldingCode)
 	id := strings.TrimSpace(ctx.Param("id"))
+	version, err := deleteVersion(ctx.QueryParam("__v"))
+	if err != nil {
+		ctx.ResponseError(http.StatusBadRequest, err.Error())
+		return err
+	}
 	return withCentralDB(ctx, func(db *sql.DB) error {
-		return h.deleteRolePermissionPostgres(ctx, db, holdingCode, id)
+		return h.deleteRolePermissionPostgres(ctx, db, holdingCode, id, version)
 	})
+}
+
+// deleteVersion reads the __v query of a delete (the version the screen loaded; the settings
+// screen sends it) — required like the update's __v so a stale delete cannot switch a set off.
+func deleteVersion(raw string) (int64, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, errors.New("ต้องระบุ __v เพื่อป้องกันการลบทับข้อมูลใหม่ — รีเฟรชรายการแล้วลบอีกครั้ง")
+	}
+	version, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || version < 0 {
+		return 0, errors.New("__v ต้องเป็นเลขจำนวนเต็มไม่น้อยกว่า 0 — รีเฟรชรายการแล้วลบอีกครั้ง")
+	}
+	return version, nil
 }
 
 func readRolePermissionRequest(ctx microservice.IContext, creating bool) (rolemodels.RolePermissionRequest, error) {

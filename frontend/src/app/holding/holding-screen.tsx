@@ -32,6 +32,7 @@ import {
   workspaceStorageKeys,
 } from "@/lib/workspace-models";
 import { LogoAvatar, useProfileAvatar } from "@/components/logo-avatar";
+import { settingsRequestError, userFacingErrorText } from "@/components/system-settings/user-facing-error";
 import { AppHeaderControls } from "../app-header-controls";
 
 type HoldingListItem = ShopListItem & {
@@ -822,7 +823,8 @@ export function HoldingScreen({
       const list = Array.isArray(payload.data) ? (payload.data as HoldingMember[]) : [];
       setMembers(sortMembers(list));
     } catch (error) {
-      setNotice({ type: "error", text: error instanceof Error && error.message ? error.message : ht(language, "requestFailed") });
+      // Plain-language row, never the raw backend/proxy text (e.g. "Unexpected token <").
+      setNotice({ type: "error", text: userFacingErrorText(error, language, backendLanguage, ht(language, "requestFailed")) });
       setMembers([]);
     } finally {
       setMembersLoading(false);
@@ -1432,9 +1434,10 @@ async function listHoldingMembers(
     },
     cache: "no-store",
   });
-  const data = (await response.json()) as { success?: boolean; message?: string; data?: unknown[] };
-  if (!response.ok || data.success === false) {
-    throw new Error(data.message ?? "");
+  // An HTML error page (proxy/gateway) is not JSON: keep the status, drop the body.
+  const data = (await response.json().catch(() => null)) as { success?: boolean; message?: string; data?: unknown[] } | null;
+  if (!response.ok || !data || data.success === false) {
+    throw settingsRequestError(response.status, data);
   }
   return data;
 }

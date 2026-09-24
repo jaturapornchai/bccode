@@ -44,7 +44,7 @@ describe("ledger WorkTab data preservation", () => {
     menu.selectWorkTab(home.id);
     expect(menu.current()).toEqual([ledger, home]);
     expect(menu.setTabs).not.toHaveBeenCalled();
-    menu.openMenuItem({ id: "jv-journal", route: ledger.route, label: { th: ledger.title } }, { forceNew: true });
+    menu.openMenuItem({ id: "gl-journals", route: ledger.route, label: { th: ledger.title } }, { forceNew: true });
     expect(menu.current()).toEqual([ledger, home]);
     expect(menu.setActiveTabId).toHaveBeenLastCalledWith(ledger.id);
     expect(menu.confirmDiscard).not.toHaveBeenCalled();
@@ -59,5 +59,24 @@ describe("ledger WorkTab data preservation", () => {
     for (let parent = container!.parent; parent; parent = parent.parent) {
       if (ts.isConditionalExpression(parent)) expect(parent.condition.getText(file)).not.toBe("topSearchResults");
     }
+  });
+});
+
+// review 2026-09-24: จอแบบยื่นภาษี (50 ทวิ แก้ผู้จ่าย/ผู้รับเงิน) ต้องอยู่ในการ์ดถามก่อนปิดแท็บ/เปลี่ยนบริษัท/ออกจากระบบ เหมือนจอบัญชีแยกประเภท
+describe("unsaved-data guard covers tax filing tabs", () => {
+  it("tracks ledger and Thai tax routes, not other screens", async () => {
+    const { isThaiTaxRoute } = await import("@/lib/thai-tax");
+    const code = ts.transpileModule(functionSource("guardsUnsavedRoute"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
+    const guards = new Function("isGeneralLedgerRoute", "isThaiTaxRoute", `${code}; return guardsUnsavedRoute;`)(isGeneralLedgerRoute, isThaiTaxRoute) as (route: string) => boolean;
+    expect(guards("/gl/journal/jv")).toBe(true);
+    expect(guards("/report/whtcertificate")).toBe(true);
+    expect(guards("/report/wht-reports")).toBe(true);
+    expect(guards("/product")).toBe(false);
+    expect(source).toContain("!guardsUnsavedRoute(detail.route)");
+  });
+  it("the tax workbench reports unsaved 50 ทวิ edits to the main menu", () => {
+    const workbench = readFileSync(fileURLToPath(new URL("../tax/tax-filing-workbench.tsx", import.meta.url)), "utf8");
+    expect(workbench).toMatch(/const reportWhtDirty = useCallback\(\(dirty: boolean\) => \{ whtDirtyRef\.current = dirty; setWhtDirty\(dirty\); \}, \[\]\);/);
+    expect(workbench).toContain("useDirtyGuard(route, whtDirty);");
   });
 });

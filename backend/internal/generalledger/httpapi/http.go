@@ -33,6 +33,8 @@ type Http struct {
 	store *gl.PostgresStore
 	pg    *gl.Postgres
 	mu    sync.Mutex
+	// central opens the control database that holds the organisation registry (branches).
+	central func(string) (*sql.DB, error)
 }
 
 func NewHttp(ms *microservice.Microservice, cfg config.IConfig) *Http {
@@ -55,7 +57,7 @@ func newRuntime(ms *microservice.Microservice, cfg config.IConfig) *Http {
 		return mypg.PgSqlFastConnect(holding)
 	})
 	store := gl.NewPostgresStore(projection)
-	return &Http{ms: ms, store: store, pg: projection}
+	return &Http{ms: ms, store: store, pg: projection, central: mypg.PgSqlFastConnect}
 }
 
 func (h *Http) initialize(ctx context.Context) error {
@@ -78,6 +80,9 @@ type requestScope struct {
 
 var errScopeDenied = errors.New("ไม่สามารถยืนยันสิทธิ์เข้าใช้บัญชีได้ กรุณาติดต่อผู้ดูแลระบบ")
 
+// errAccessExpired - สมาชิกภาพเลยวันหมดอายุการเข้าใช้งานแล้ว → 403 พร้อมข้อความ user_access_expired (แถวเดียวกับที่ login ใช้)
+var errAccessExpired = errors.New("user_access_expired")
+
 func (h *Http) scope(ctx context.Context, request microservice.IContext) (requestScope, error) {
 	scope, err := resolveScope(ctx, request, mypg.PgSqlFastConnect)
 	if mcpRequest, ok := request.(*mcpGLContext); ok && err == nil {
@@ -86,8 +91,8 @@ func (h *Http) scope(ctx context.Context, request microservice.IContext) (reques
 	return scope, err
 }
 
-var resourceScreens = map[string]string{"journal-support": "jv-journal", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "journal-books": "gl-journal-books"}
-var reportScreens = map[string]string{"ar-outstanding": "jv-journal", "ap-outstanding": "jv-journal", "bank-unmatched": "jv-journal", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report"}
+var resourceScreens = map[string]string{"journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "journal-books": "gl-journal-books"}
+var reportScreens = map[string]string{"ar-outstanding": "gl-journals", "ap-outstanding": "gl-journals", "bank-unmatched": "gl-journals", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report"}
 
 func allowed(p map[string]bool, screen, action string) bool {
 	if p["*"] {
@@ -112,39 +117,44 @@ func anyLedger(p map[string]bool) bool {
 			return true
 		}
 	}
-	for _, screen := range []string{"jv-journal", "uv-journal", "sv-journal", "rv-journal", "pv-journal", "gl-post", "gl-unpost", "gl-opening-balance", "financial-close", "gl-year-end", "gl-reprocess", "gl-recalculate-posted", "xbrl-export", "data-backup-export"} {
+	for _, screen := range []string{journalsScreen, postingScreen, openingScreen, "financial-close", "gl-year-end", "gl-reprocess", "gl-recalculate-posted", "xbrl-export", "data-backup-export"} {
 		if p[screen] {
 			return true
 		}
 	}
 	return false
 }
-func journalScreen(book, kind, status string) string {
+
+// Journal permission ids are the menu ids a role can be granted in the role editor
+// (frontend/src/lib/menu-data.ts → permission catalog): "gl-journals" (สมุดรายวัน),
+// "gl-opening-balance" (บันทึกยอดสะสมประจำปี) and "gl-post" (ผ่านรายการและยกเลิก, which covers
+// reversal). Book codes are user-defined, so authorization never depends on the book.
+// The per-book ids jv/uv/sv/rv/pv-journal and gl-unpost left the menu on 2026-09-19
+// (commit 326c872a) and are no longer grantable anywhere.
+const (
+	journalsScreen = "gl-journals"
+	openingScreen  = "gl-opening-balance"
+	postingScreen  = "gl-post"
+)
+
+func journalScreen(kind string) string {
 	if kind == "opening" {
-		return "gl-opening-balance"
+		return openingScreen
 	}
-	if book != "" {
-		switch strings.ToUpper(book) {
-		case "JV":
-			return "jv-journal"
-		case "UV":
-			return "uv-journal"
-		case "SV":
-			return "sv-journal"
-		case "RV":
-			return "rv-journal"
-		case "PV":
-			return "pv-journal"
-		}
-		return ""
-	}
-	if status == "draft" {
-		return "gl-post"
-	}
-	if status == "posted" {
-		return "gl-unpost"
-	}
-	return ""
+	return journalsScreen
+}
+
+// canListJournals: the journal screen sees every voucher; the opening screen only opening
+// vouchers; the posting screen lists drafts to post and posted vouchers to reverse.
+func canListJournals(p map[string]bool, kind, status string) bool {
+	return allowed(p, journalsScreen, "") ||
+		(kind == "opening" && allowed(p, openingScreen, "")) ||
+		((status == "draft" || status == "posted") && allowed(p, postingScreen, ""))
+}
+
+// Reference masters every ledger user needs to fill a voucher (account, year and book pickers).
+func ledgerLookup(resource string) bool {
+	return resource == "accounts" || resource == "fiscal-years" || resource == "journal-books"
 }
 
 func response(request microservice.IContext, data interface{}) error {
@@ -179,6 +189,10 @@ func errorPayloadFor(err error, lang ...string) (int, errorPayload) {
 	if len(lang) > 0 && lang[0] != "" {
 		reqLang = lang[0]
 	}
+	if errors.Is(err, errAccessExpired) {
+		appErr := apperr.New("user_access_expired", http.StatusForbidden, language.Text("user_access_expired", reqLang), language.Text("user_access_expired", "th"))
+		return http.StatusForbidden, appErr.ToResponse()
+	}
 
 	if errors.Is(err, gl.ErrProjectionPending) {
 		msg := language.Text("gl_err_projection_pending", reqLang)
@@ -209,6 +223,7 @@ func errorPayloadFor(err error, lang ...string) (int, errorPayload) {
 			Message:    msg,
 			ThaiMsg:    user.Message,
 			HTTPStatus: user.HTTPStatus(),
+			Field:      user.Field,
 		}
 		return appErr.StatusCode(), appErr.ToResponse()
 	}
@@ -479,11 +494,12 @@ func (h *Http) list(request microservice.IContext) error {
 	}
 	screen := resourceScreens[resource]
 	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status")}
+	permitted := allowed(scope.Permissions, screen, "")
 	if resource == "journals" {
-		screen = journalScreen(filters.BookCode, filters.Kind, filters.Status)
+		permitted = canListJournals(scope.Permissions, filters.Kind, filters.Status)
 	}
-	lookup := (resource == "accounts" || resource == "fiscal-years") && anyLedger(scope.Permissions)
-	if !allowed(scope.Permissions, screen, "") && !lookup && !allowed(scope.Permissions, "data-backup-export", "") {
+	lookup := ledgerLookup(resource) && anyLedger(scope.Permissions)
+	if !permitted && !lookup && !allowed(scope.Permissions, "data-backup-export", "") {
 		return fail(request, 403, "ไม่มีสิทธิ์อ่านข้อมูลบัญชีนี้")
 	}
 	version, err := h.startRead(ctx, scope.Scope, request)
@@ -526,10 +542,10 @@ func (h *Http) get(request microservice.IContext) error {
 		if err = json.Unmarshal(data, &j); err != nil {
 			return failure(request, err)
 		}
-		screen = journalScreen(j.BookCode, j.Kind, "")
-		operationalRead = (j.Status == "draft" && allowed(scope.Permissions, "gl-post", "")) || (j.Status == "posted" && allowed(scope.Permissions, "gl-unpost", ""))
+		screen = journalScreen(j.Kind)
+		operationalRead = (j.Status == "draft" || j.Status == "posted") && allowed(scope.Permissions, postingScreen, "")
 	}
-	if !operationalRead && !allowed(scope.Permissions, screen, "") && !((resource == "accounts" || resource == "fiscal-years") && anyLedger(scope.Permissions)) {
+	if !operationalRead && !allowed(scope.Permissions, screen, "") && !(ledgerLookup(resource) && anyLedger(scope.Permissions)) {
 		return fail(request, 403, "ไม่มีสิทธิ์อ่านรายการบัญชีนี้")
 	}
 	if err = h.endRead(ctx, scope.Scope, version); err != nil {
@@ -599,11 +615,8 @@ func (h *Http) command(request microservice.IContext) error {
 		action = "update"
 	}
 	if cmd.Resource == "journals" {
-		if cmd.Action == "post" {
-			screen = "gl-post"
-			action = "update"
-		} else if cmd.Action == "reverse" {
-			screen = "gl-unpost"
+		if cmd.Action == "post" || cmd.Action == "reverse" {
+			screen = postingScreen
 			action = "update"
 		} else {
 			j := cmd.Journal
@@ -612,18 +625,28 @@ func (h *Http) command(request microservice.IContext) error {
 				if e != nil {
 					return failure(request, e)
 				}
-				if j != nil && cmd.Action != "reconcile" && (j.BookCode != old.BookCode || j.Kind != old.Kind) {
-					return fail(request, 409, "เปลี่ยนสมุดรายวันหรือประเภทรายการเดิมไม่ได้")
+				if j != nil && cmd.Action != "reconcile" {
+					if gl.NormalizeCode(j.BookCode) != old.BookCode {
+						return failure(request, gl.JournalBookImmutable())
+					}
+					if j.Kind != old.Kind {
+						return failure(request, gl.JournalKindImmutable())
+					}
 				}
 				j = &old
 			}
 			if j != nil {
-				screen = journalScreen(j.BookCode, j.Kind, "")
+				screen = journalScreen(j.Kind)
 			}
 		}
 	}
 	if !allowed(scope.Permissions, screen, action) {
 		return fail(request, 403, "ไม่มีสิทธิ์ทำรายการบัญชีนี้")
+	}
+	if cmd.Resource == "journals" && cmd.Journal != nil && (cmd.Action == "create" || cmd.Action == "update") {
+		if err := checkJournalBranch(ctx, h.central, scope, cmd.Journal); err != nil {
+			return failure(request, err)
+		}
 	}
 	if cmd.Resource == "processes" {
 		scope, err = scope.companyScope()

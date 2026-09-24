@@ -74,10 +74,7 @@ func TestFreshInstall_FullStackSubledgerUAT(t *testing.T) {
 	}
 	exec("สร้างปีบัญชี 2026", gl.Command{Resource: "fiscal-years", Action: "create", RequestID: fmt.Sprintf("req-uat2-fy-%d", nonce),
 		FiscalYear: &gl.FiscalYear{Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", Scale: 2, IsActive: true, ProfitLossAccount: "3300", RetainedEarningsAccount: "3200"}})
-	for i, b := range []struct{ code, name string }{{"JV", "สมุดรายวันทั่วไป"}, {"PV", "สมุดรายวันจ่ายเงิน"}, {"RV", "สมุดรายวันรับเงิน"}, {"SV", "สมุดรายวันซื้อ"}, {"UV", "สมุดรายวันขาย"}} {
-		exec("สร้างสมุด "+b.code, gl.Command{Resource: "journal-books", Action: "create", RequestID: fmt.Sprintf("req-uat2-book-%d-%d", i, nonce),
-			Master: &gl.Master{Kind: "journal-books", Code: b.code, Name: b.name, IsActive: true}})
-	}
+	// สมุดรายวันมาตรฐาน (JV PV RV SV UV พร้อมประเภท) ถูกสร้างพร้อมปีบัญชีแรกแล้ว
 
 	// ---------------- UAT-F1: ใบแจ้งหนี้ลูกหนี้หลายบรรทัด (UV-2701) ----------------
 	arCmd := newCmd("create")
@@ -89,7 +86,7 @@ func TestFreshInstall_FullStackSubledgerUAT(t *testing.T) {
 			{AccountCode: "2118", Description: "ภาษีมูลค่าเพิ่ม 7%", Debit: gl.Amount("0.00"), Credit: gl.Amount("1750.00")},
 		},
 		Details: &gl.JournalDetails{
-			Partners:    []gl.SubledgerPartner{{Code: "CUST-TH-001", Name: "บริษัท ซีพี โลจิสติกส์ จำกัด", TaxID: "0105558000001", IsCustomer: true, IsSupplier: false, IsActive: true}},
+			Partners:    []gl.SubledgerPartner{{Code: "CUST-TH-001", Name: "บริษัท ซีพี โลจิสติกส์ จำกัด", TaxID: "0105558000006", IsCustomer: true, IsSupplier: false, IsActive: true}},
 			Documents:   []gl.SubledgerDocument{{ID: "AR-INV-001", Ledger: "ar", PartnerCode: "CUST-TH-001", DocumentNo: "INV-2701-001", Date: "2026-02-05", DueDate: "2026-03-07", BranchCode: "00000", Kind: 1, Side: 1, Amount: gl.Amount("26750.00"), Currency: "THB", ControlAccountCode: "1120"}},
 			Allocations: []gl.SubledgerAllocation{{ID: "ALLOC-001", Ledger: "ar", DocumentID: "AR-INV-001", LineNumber: 1, Amount: gl.Amount("26750.00")}},
 		},
@@ -116,7 +113,7 @@ func TestFreshInstall_FullStackSubledgerUAT(t *testing.T) {
 			{AccountCode: "2110", Description: "เจ้าหนี้การค้า", Debit: gl.Amount("0.00"), Credit: gl.Amount("10700.00")},
 		},
 		Details: &gl.JournalDetails{
-			Partners:    []gl.SubledgerPartner{{Code: "SUPP-TH-001", Name: "บริษัท ไทยซัพพลาย เน็ตเวิร์ค จำกัด", TaxID: "0105558000002", IsCustomer: false, IsSupplier: true, IsActive: true}},
+			Partners:    []gl.SubledgerPartner{{Code: "SUPP-TH-001", Name: "บริษัท ไทยซัพพลาย เน็ตเวิร์ค จำกัด", TaxID: "0105558000014", IsCustomer: false, IsSupplier: true, IsActive: true}},
 			Documents:   []gl.SubledgerDocument{{ID: "AP-INV-001", Ledger: "ap", PartnerCode: "SUPP-TH-001", DocumentNo: "BILL-2701-001", Date: "2026-02-06", DueDate: "2026-03-08", BranchCode: "00000", Kind: 1, Side: 1, Amount: gl.Amount("10700.00"), Currency: "THB", ControlAccountCode: "2110"}},
 			Allocations: []gl.SubledgerAllocation{{ID: "ALLOC-002", Ledger: "ap", DocumentID: "AP-INV-001", LineNumber: 3, Amount: gl.Amount("10700.00")}},
 		},

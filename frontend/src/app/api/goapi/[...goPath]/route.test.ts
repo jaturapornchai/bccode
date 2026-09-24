@@ -84,6 +84,49 @@ describe("goapi BFF allowlist", () => {
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(pdf);
   });
 
+  // ไฟล์ยื่นด้วยสื่อ (Format กลาง V2.0): SWC-UI ตรวจ BOM + CRLF — BFF ต้องส่งทุกไบต์ตามเดิม พร้อมชื่อไฟล์จาก backend
+  it("passes the RD media file (.txt) through byte for byte with BOM, CRLF and Content-Disposition", async () => {
+    const encoder = new TextEncoder();
+    const body = new Uint8Array([0xef, 0xbb, 0xbf, ...encoder.encode("H|0000|0105555555555|000000\r\nD|1|นาย|สมชาย")]);
+    const disposition = 'attachment; filename="PND53_0105555555555_000000_2569_08_00_00.txt"';
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request) => {
+      expect(String(url)).toBe("http://localhost:8888/goapi/api/report/tax/form/rdfile");
+      return new Response(body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Content-Disposition": disposition, "Cache-Control": "no-store" } });
+    }));
+
+    const response = await postReport("api/report/tax/form/rdfile");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+    expect(response.headers.get("content-disposition")).toBe(disposition);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    expect(bytes).toEqual(body);
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+  });
+
+  it("relays RD media file issues as JSON (success:false) with every issue, total and args", async () => {
+    const issues = [{ key: "tax_rdfile_forbidden_char", field: "name", row: 2, args: { char: "|" }, message: "มีอักขระต้องห้าม |" }];
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      Response.json({ success: false, code: "tax_rdfile_invalid", message: "สร้างไฟล์ไม่ได้", total: 3, issues }, { status: 400 })));
+
+    const response = await postReport("api/report/tax/form/rdfile");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: false, code: "tax_rdfile_invalid", message: "สร้างไฟล์ไม่ได้", total: 3, issues });
+  });
+
+  // \p{M}: สระบน/ล่างและวรรณยุกต์ไทยต้องผ่านตัวตรวจ path — ไม่งั้นได้ 400 แทน 404 ของ allowlist
+  it("accepts Thai path segments with vowel/tone marks at the segment check (allowlist still decides)", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await postReport("api/report/ที่ดิน");
+
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("relays 50 ทวิ validation errors as success:false with the backend message", async () => {
     vi.stubGlobal("fetch", vi.fn(async () =>
       Response.json({ success: false, code: "wht_cert_taxid_checksum", field: "payee.taxid", message: "เลขไม่ถูกต้อง" }, { status: 400 })));

@@ -337,6 +337,13 @@ function buildWritePayload(request: Request, config: SystemSettingConfig, id: st
 
 function validateSystemSettingWrite(config: SystemSettingConfig, body: unknown): NextResponse | null {
   if (!isRecord(body)) return null;
+  if (hasInvalidAccessScopeRules(config.slug, body)) {
+    // A languages.tsv key: the screen shows it in the user's language.
+    return NextResponse.json(
+      { success: false, errorcode: "VALIDATION_FAILED", message: "ss_err_access_scope_invalid" },
+      { status: 400 },
+    );
+  }
   if (config.slug === "bookbankscreen" || config.slug === "bookbank") {
     const hasBanknames = Array.isArray(body.banknames) && body.banknames.some((item) => isRecord(item) && typeof item.name === "string" && item.name.trim() !== "");
     const hasNames = Array.isArray(body.names) && body.names.some((item) => isRecord(item) && typeof item.name === "string" && item.name.trim() !== "");
@@ -347,16 +354,30 @@ function validateSystemSettingWrite(config: SystemSettingConfig, body: unknown):
   return null;
 }
 
+function accessScopeField(slug: string): string {
+  if (slug === "user") return "accessscopes";
+  if (slug === "permissiondefinition" || slug === "permissiongroup") return "scoperules";
+  return "";
+}
+
+function submittedScopeRules(field: string, payload: Record<string, unknown>): unknown {
+  return payload[field] ?? payload.accessscopes ?? payload.businesscodes ?? payload.companyguids;
+}
+
+// Every submitted rule must be valid: dropping a bad one silently is unsafe, because for an
+// OWNER/ADMIN an all-invalid list would be saved as [] = the whole Holding.
+function hasInvalidAccessScopeRules(slug: string, body: Record<string, unknown>): boolean {
+  const field = accessScopeField(slug);
+  if (!field) return false;
+  const value = submittedScopeRules(field, body);
+  if (value !== undefined && value !== null && typeof value !== "string" && !Array.isArray(value)) return true;
+  return scopeRawArray(value).some((item) => !normalizeScopeRule(item));
+}
+
 function normalizeAccessScopePayload(slug: string, payload: Record<string, unknown>) {
-  const field =
-    slug === "user"
-      ? "accessscopes"
-      : slug === "permissiondefinition" || slug === "permissiongroup"
-        ? "scoperules"
-        : "";
+  const field = accessScopeField(slug);
   if (!field) return;
-  const value = payload[field] ?? payload.accessscopes ?? payload.businesscodes ?? payload.companyguids;
-  payload[field] = normalizeScopeRules(value);
+  payload[field] = normalizeScopeRules(submittedScopeRules(field, payload));
 }
 
 function normalizeScopeRules(value: unknown): Record<string, unknown>[] {
@@ -365,6 +386,7 @@ function normalizeScopeRules(value: unknown): Record<string, unknown>[] {
   const rules: Record<string, unknown>[] = [];
   for (const item of raw) {
     const rule = normalizeScopeRule(item);
+    if (!rule) continue; // unreachable for writes: hasInvalidAccessScopeRules rejected the request
     const key = `${rule.scopetype}|${rule.businesscode ?? ""}|${rule.branchcode ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -387,25 +409,28 @@ function scopeRawArray(value: unknown): unknown[] {
   return trimmed.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
-function normalizeScopeRule(value: unknown): Record<string, unknown> {
+// Only an explicit scopetype "holding" grants the whole Holding (companies added later
+// included); a rule with an unknown type, without a company, or a branch rule without a
+// branch is invalid (null), never widened.
+function normalizeScopeRule(value: unknown): Record<string, unknown> | null {
   if (typeof value === "string") {
     const businessCode = normalizeBusinessCode(value);
-    return businessCode
-      ? { scopetype: "company", businesscode: businessCode, allbranches: true }
-      : { scopetype: "holding" };
+    return businessCode ? { scopetype: "company", businesscode: businessCode, allbranches: true } : null;
   }
-  const record = isRecord(value) ? value : {};
-  const rawScope = String(record.scopetype ?? record.scopeType ?? "holding").trim().toLowerCase();
-  const businessCode = normalizeBusinessCode(record.businesscode ?? record.businessCode ?? record.companycode ?? record.companyCode);
-  if (rawScope === "holding" || !businessCode) return { scopetype: "holding", allbranches: false };
-  const allBranches = booleanValue(record.allbranches ?? record.allBranches ?? record.useallbranches);
+  if (!isRecord(value)) return null;
+  const rawScope = String(value.scopetype ?? value.scopeType ?? "").trim().toLowerCase();
+  if (rawScope === "holding") return { scopetype: "holding" };
+  if (rawScope !== "company" && rawScope !== "branch") return null;
+  // The company uid is the company code (PostgreSQL central schema).
+  const businessCode = normalizeBusinessCode(
+    value.businesscode ?? value.businessCode ?? value.companycode ?? value.companyCode ?? value.companyuid ?? value.companyUID,
+  );
+  if (!businessCode) return null;
+  const allBranches = booleanValue(value.allbranches ?? value.allBranches ?? value.useallbranches);
   if (rawScope === "company" || allBranches) return { scopetype: "company", businesscode: businessCode, allbranches: true };
-  return {
-    scopetype: "branch",
-    businesscode: businessCode,
-    branchcode: normalizeBranchCode(record.branchcode ?? record.branchCode ?? record.code),
-    allbranches: false,
-  };
+  const branchCode = normalizeBranchCode(value.branchcode ?? value.branchCode ?? value.branchuid ?? value.code);
+  if (!branchCode) return null;
+  return { scopetype: "branch", businesscode: businessCode, branchcode: branchCode, allbranches: false };
 }
 
 function normalizeBusinessCode(value: unknown): string {

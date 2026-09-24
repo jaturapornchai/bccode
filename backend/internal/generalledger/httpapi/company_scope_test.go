@@ -51,6 +51,29 @@ func TestCompanyScopeUsesCurrentGrantNotSelectedBranch(t *testing.T) {
 	}
 }
 
+func TestTokenScopeBoundedByIssuer(t *testing.T) {
+	for _, tc := range []struct {
+		name, scopes, branch string
+		allowed              bool
+	}{
+		{"issuer restricted to another company", `[{"scopetype":"company","companyuid":"OTHER"}]`, "", false},
+		{"issuer branch-only is not company-wide", `[{"scopetype":"branch","companyuid":"C","branchuid":"B"}]`, "", false},
+		{"issuer branch covers legacy branch token", `[{"scopetype":"branch","companyuid":"C","branchuid":"B"}]`, "B", true},
+		{"issuer company grant", `[{"scopetype":"company","companyuid":"C"}]`, "", true},
+		{"issuer holding-wide", `[{"scopetype":"holding"}]`, "", true},
+		{"issuer without scopes", `[]`, "", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := scopeDB(t, &scopeDriver{role: "ADMIN", sets: "[]", scopes: tc.scopes})
+			connect := func(string) (*sql.DB, error) { return db, nil }
+			request := &mcpGLContext{IContext: scopeContext{user: models.UserInfo{UID: "U", HoldingCode: "H", BusinessCode: "C", BranchUID: tc.branch}}, tokenKind: "api", tokenID: "verified"}
+			if _, err := resolveScope(context.Background(), request, connect); (err == nil) != tc.allowed {
+				t.Fatalf("allowed=%v err=%v", tc.allowed, err)
+			}
+		})
+	}
+}
+
 func TestCompanyScopePreservesLegacyTokenBranch(t *testing.T) {
 	db := scopeDB(t, &scopeDriver{role: "OWNER", sets: "[]", scopes: "{}"})
 	connect := func(string) (*sql.DB, error) { return db, nil }

@@ -4,21 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/lib/pq"
 
 	"smlcloudplatform/internal/centraldb"
 	"smlcloudplatform/internal/config"
+	"smlcloudplatform/internal/goapi/language"
 	common "smlcloudplatform/internal/models"
+	orgaccess "smlcloudplatform/internal/organization"
+	orgpolicy "smlcloudplatform/internal/organization/access"
 	"smlcloudplatform/internal/organization/businesstype/models"
 	"smlcloudplatform/internal/utils"
 	"smlcloudplatform/pkg/apperr"
 	"smlcloudplatform/pkg/microservice"
+	micromodels "smlcloudplatform/pkg/microservice/models"
+	"smlcloudplatform/pkg/textguard"
 )
 
 type IBusinessTypeHttp interface{}
@@ -167,6 +172,9 @@ func (h BusinessTypeHttp) infoBusinessTypePostgres(ctx microservice.IContext, db
 
 func (h BusinessTypeHttp) createBusinessTypePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, docReq models.BusinessType) error {
 	holdingCode = strings.TrimSpace(holdingCode)
+	if path := textguard.NULField(docReq); path != "" {
+		return respondBusinessTypeNUL(ctx, path)
+	}
 	code := strings.TrimSpace(docReq.Code)
 	if code == "" {
 		ctx.ResponseError(http.StatusBadRequest, "code is required")
@@ -178,17 +186,10 @@ func (h BusinessTypeHttp) createBusinessTypePostgres(ctx microservice.IContext, 
 		rawNames = []byte("[]")
 	}
 
-	newID := uuid.New().String()
-	query := `INSERT INTO business_types (id, holding_code, code, names, is_default, is_active)
-	          VALUES ($1, $2, $3, $4, $5, true)
-	          ON CONFLICT (holding_code, code) DO UPDATE SET
-	            names = EXCLUDED.names,
-	            is_default = EXCLUDED.is_default,
-	            is_active = true`
-	_, err = db.ExecContext(context.Background(), query, newID, holdingCode, code, rawNames, docReq.IsDefault)
+	// Never overwrite an existing type: a code already used (in any spelling) answers 409.
+	newID, err := createBusinessType(ctx.Request().Context(), db, holdingCode, code, rawNames, docReq.IsDefault)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
+		return respondBusinessTypeError(ctx, err)
 	}
 
 	ctx.Response(http.StatusCreated, common.ApiResponse{
@@ -201,18 +202,23 @@ func (h BusinessTypeHttp) createBusinessTypePostgres(ctx microservice.IContext, 
 func (h BusinessTypeHttp) updateBusinessTypePostgres(ctx microservice.IContext, db *sql.DB, holdingCode string, id string, docReq models.BusinessType) error {
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
+	if path := textguard.NULField(docReq); path != "" {
+		return respondBusinessTypeNUL(ctx, path)
+	}
 
 	rawNames, err := json.Marshal(docReq.Names)
 	if err != nil {
 		rawNames = []byte("[]")
 	}
 
-	query := `UPDATE business_types SET names = $1, is_default = $2, updated_at = now()
-	          WHERE LOWER(holding_code) = LOWER($3) AND (id = $4 OR LOWER(code) = LOWER($4))`
-	_, err = db.ExecContext(context.Background(), query, rawNames, docReq.IsDefault, holdingCode, id)
+	target, err := resolveBusinessType(ctx.Request().Context(), db, holdingCode, id)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
+		return respondBusinessTypeError(ctx, err)
+	}
+	result, err := db.ExecContext(ctx.Request().Context(), `UPDATE business_types SET names = $1, is_default = $2, updated_at = now()
+	          WHERE holding_code = $3 AND id = $4`, rawNames, docReq.IsDefault, holdingCode, target)
+	if err = oneBusinessTypeChanged(result, err); err != nil {
+		return respondBusinessTypeError(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -226,12 +232,14 @@ func (h BusinessTypeHttp) deleteBusinessTypePostgres(ctx microservice.IContext, 
 	holdingCode = strings.TrimSpace(holdingCode)
 	id = strings.TrimSpace(id)
 
-	query := `UPDATE business_types SET is_active = false, updated_at = now()
-	          WHERE LOWER(holding_code) = LOWER($1) AND (id = $2 OR LOWER(code) = LOWER($2))`
-	_, err := db.ExecContext(context.Background(), query, holdingCode, id)
+	target, err := resolveBusinessType(ctx.Request().Context(), db, holdingCode, id)
 	if err != nil {
-		ctx.ResponseError(http.StatusInternalServerError, err.Error())
-		return err
+		return respondBusinessTypeError(ctx, err)
+	}
+	result, err := db.ExecContext(ctx.Request().Context(), `UPDATE business_types SET is_active = false, updated_at = now()
+	          WHERE holding_code = $1 AND id = $2`, holdingCode, target)
+	if err = oneBusinessTypeChanged(result, err); err != nil {
+		return respondBusinessTypeError(ctx, err)
 	}
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
@@ -308,6 +316,57 @@ func withCentralDB(ctx microservice.IContext, fn func(db *sql.DB) error) error {
 	return fn(db)
 }
 
+// Business types are Holding settings: the same role check as the other Holding settings
+// (companies, branches, permission sets). Reading needs an active, unexpired membership of
+// the selected Holding; adding, editing and deleting need its OWNER or ADMIN. Before review
+// 2026-09-24 any logged-in session could write another member's Holding list.
+const (
+	businessTypeRead  = false
+	businessTypeWrite = true
+)
+
+// withBusinessTypeAccess checks the caller's membership in the central database, then runs fn.
+func withBusinessTypeAccess(ctx microservice.IContext, write bool, fn func(db *sql.DB) error) error {
+	return withCentralDB(ctx, func(db *sql.DB) error {
+		if err := businessTypeAccess(db, ctx.UserInfo(), write, time.Now()); err != nil {
+			return respondBusinessTypeAccessError(ctx, err)
+		}
+		return fn(db)
+	})
+}
+
+// businessTypeAccess is nil when user may read (write=false) or change (write=true) the
+// selected Holding's business types at now.
+func businessTypeAccess(db *sql.DB, user micromodels.UserInfo, write bool, now time.Time) error {
+	reqCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var err error
+	if write {
+		_, err = orgpolicy.FindActiveHoldingManager(reqCtx, db, user, now)
+	} else {
+		_, err = orgpolicy.FindActiveMembership(reqCtx, db, user, now)
+	}
+	return err
+}
+
+// respondBusinessTypeAccessError answers a refused membership with a message that says what to do.
+func respondBusinessTypeAccessError(ctx microservice.IContext, err error) error {
+	lang := orgaccess.RequestLanguage(ctx)
+	if expired := orgaccess.AccessExpiredError(err, lang); expired != nil {
+		return apperr.Respond(ctx, expired)
+	}
+	key := ""
+	switch {
+	case errors.Is(err, orgpolicy.ErrHoldingManagerRequired):
+		key = "ss_err_business_type_manager_required"
+	case errors.Is(err, orgpolicy.ErrActiveMembershipRequired), errors.Is(err, orgpolicy.ErrActiveHoldingRequired):
+		key = "ss_err_holding_membership_required"
+	default:
+		return apperr.Respond(ctx, apperr.ErrInternal.WithWrap(err))
+	}
+	return apperr.Respond(ctx, apperr.ErrForbidden.WithMessage(language.Text(key, lang)).WithThaiMessage(language.Text(key, "th")).WithWrap(err))
+}
+
 func readBusinessType(ctx microservice.IContext) (models.BusinessType, error) {
 	docReq := models.BusinessType{}
 	if err := json.Unmarshal([]byte(ctx.ReadInput()), &docReq); err != nil {
@@ -328,7 +387,7 @@ func (h BusinessTypeHttp) CreateBusinessType(ctx microservice.IContext) error {
 	if err != nil {
 		return err
 	}
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeWrite, func(db *sql.DB) error {
 		return h.createBusinessTypePostgres(ctx, db, ctx.UserInfo().HoldingCode, docReq)
 	})
 }
@@ -340,7 +399,7 @@ func (h BusinessTypeHttp) UpdateBusinessType(ctx microservice.IContext) error {
 	if err != nil {
 		return err
 	}
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeWrite, func(db *sql.DB) error {
 		return h.updateBusinessTypePostgres(ctx, db, ctx.UserInfo().HoldingCode, ctx.Param("id"), docReq)
 	})
 }
@@ -348,7 +407,7 @@ func (h BusinessTypeHttp) UpdateBusinessType(ctx microservice.IContext) error {
 // DeleteBusinessType godoc
 // @Router /organization/business-type/{id} [delete]
 func (h BusinessTypeHttp) DeleteBusinessType(ctx microservice.IContext) error {
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeWrite, func(db *sql.DB) error {
 		return h.deleteBusinessTypePostgres(ctx, db, ctx.UserInfo().HoldingCode, ctx.Param("id"))
 	})
 }
@@ -361,7 +420,7 @@ func (h BusinessTypeHttp) DeleteBusinessTypeByGUIDs(ctx microservice.IContext) e
 		ctx.ResponseError(http.StatusBadRequest, err.Error())
 		return err
 	}
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeWrite, func(db *sql.DB) error {
 		return h.deleteBusinessTypeByGUIDsPostgres(ctx, db, ctx.UserInfo().HoldingCode, docReq)
 	})
 }
@@ -369,7 +428,7 @@ func (h BusinessTypeHttp) DeleteBusinessTypeByGUIDs(ctx microservice.IContext) e
 // InfoBusinessType godoc
 // @Router /organization/business-type/{id} [get]
 func (h BusinessTypeHttp) InfoBusinessType(ctx microservice.IContext) error {
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeRead, func(db *sql.DB) error {
 		return h.infoBusinessTypePostgres(ctx, db, ctx.UserInfo().HoldingCode, ctx.Param("id"))
 	})
 }
@@ -377,7 +436,7 @@ func (h BusinessTypeHttp) InfoBusinessType(ctx microservice.IContext) error {
 // InfoBusinessTypeDefault godoc
 // @Router /organization/business-type/default [get]
 func (h BusinessTypeHttp) InfoBusinessTypeDefault(ctx microservice.IContext) error {
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeRead, func(db *sql.DB) error {
 		return h.infoBusinessTypeDefaultPostgres(ctx, db, ctx.UserInfo().HoldingCode)
 	})
 }
@@ -385,7 +444,7 @@ func (h BusinessTypeHttp) InfoBusinessTypeDefault(ctx microservice.IContext) err
 // InfoBusinessTypeByCode godoc
 // @Router /organization/business-type/code/{code} [get]
 func (h BusinessTypeHttp) InfoBusinessTypeByCode(ctx microservice.IContext) error {
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeRead, func(db *sql.DB) error {
 		return h.infoBusinessTypePostgres(ctx, db, ctx.UserInfo().HoldingCode, ctx.Param("code"))
 	})
 }
@@ -402,7 +461,7 @@ func (h BusinessTypeHttp) SearchBusinessTypePage(ctx microservice.IContext) erro
 	if pageable.Query != "" {
 		q = pageable.Query
 	}
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeRead, func(db *sql.DB) error {
 		return h.searchBusinessTypeStepPostgres(ctx, db, ctx.UserInfo().HoldingCode, pageable.GetOffest(), limit, q)
 	})
 }
@@ -419,7 +478,7 @@ func (h BusinessTypeHttp) SearchBusinessTypeStep(ctx microservice.IContext) erro
 	if pageableStep.Query != "" {
 		q = pageableStep.Query
 	}
-	return withCentralDB(ctx, func(db *sql.DB) error {
+	return withBusinessTypeAccess(ctx, businessTypeRead, func(db *sql.DB) error {
 		return h.searchBusinessTypeStepPostgres(ctx, db, ctx.UserInfo().HoldingCode, pageableStep.Skip, limit, q)
 	})
 }

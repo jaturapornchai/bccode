@@ -31,9 +31,9 @@ func TestPostgresAuthenticationScopeAndRevocation(t *testing.T) {
 	if _, err = db.Exec("SET search_path TO " + namespace); err != nil {
 		t.Fatal(err)
 	}
-	setup := `CREATE TABLE users(id text,is_active boolean);
- CREATE TABLE holdings(code text,is_active boolean);
- CREATE TABLE holding_members(holding_code text,user_id text,role text,is_active boolean);
+	setup := `CREATE TABLE users(id text,is_active boolean,username text DEFAULT '');
+ CREATE TABLE holdings(code text,is_active boolean,profile jsonb DEFAULT '{}');
+ CREATE TABLE holding_members(holding_code text,user_id text,role text,is_active boolean,access_scopes jsonb DEFAULT '[]',permission_sets jsonb DEFAULT '[]',id text DEFAULT md5(random()::text),access_expiry_date date);
  CREATE TABLE companies(holding_code text,code text,is_active boolean);
  CREATE TABLE branches(holding_code text,company_code text,code text,is_active boolean);
  INSERT INTO users VALUES('admin',true);
@@ -118,6 +118,7 @@ func TestPostgresAuthenticationScopeAndRevocation(t *testing.T) {
 		{"holding inactive", `UPDATE holdings SET is_active=false`, `UPDATE holdings SET is_active=true`},
 		{"issuer inactive", `UPDATE holding_members SET is_active=false`, `UPDATE holding_members SET is_active=true`},
 		{"issuer demoted", `UPDATE holding_members SET role='STAFF'`, `UPDATE holding_members SET role='ADMIN'`},
+		{"issuer access expired", `UPDATE holding_members SET access_expiry_date=DATE '2000-01-01'`, `UPDATE holding_members SET access_expiry_date=NULL`},
 		{"company inactive", `UPDATE companies SET is_active=false`, `UPDATE companies SET is_active=true`},
 		{"wrong company branch", `UPDATE branches SET company_code='other'`, `UPDATE branches SET company_code='C'`},
 		{"hash mismatch", `UPDATE mcp_access_tokens SET token_hash=decode(repeat('00',32),'hex')`, ""},
@@ -142,5 +143,98 @@ func TestPostgresAuthenticationScopeAndRevocation(t *testing.T) {
 	}
 	if err = db.QueryRow(`SELECT count(*) FROM mcp_token_audit`).Scan(&count); err != nil || count != 3 {
 		t.Fatal("denied authentication wrote use event")
+	}
+}
+
+// A token reaches only what its issuer may reach NOW: the stored allow-list is intersected
+// with the issuer's current scope on every use (tokens minted before issue-time checks, or
+// an issuer narrowed afterwards).
+func TestPostgresAuthenticationBoundedByIssuerScope(t *testing.T) {
+	dsn := os.Getenv("MCP_TOKEN_TEST_DSN")
+	if dsn == "" {
+		t.Skip("MCP_TOKEN_TEST_DSN required")
+	}
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	db.SetMaxOpenConns(1)
+	namespace := fmt.Sprintf("mcp_token_scope_test_%d", time.Now().UnixNano())
+	if _, err = db.Exec("CREATE SCHEMA " + namespace); err != nil {
+		t.Fatal(err)
+	}
+	defer db.Exec("DROP SCHEMA " + namespace + " CASCADE")
+	if _, err = db.Exec("SET search_path TO " + namespace); err != nil {
+		t.Fatal(err)
+	}
+	setup := `CREATE TABLE users(id text,is_active boolean,username text DEFAULT '');
+ CREATE TABLE holdings(code text,is_active boolean,profile jsonb DEFAULT '{}');
+ CREATE TABLE holding_members(holding_code text,user_id text,role text,is_active boolean,access_scopes jsonb DEFAULT '[]',permission_sets jsonb DEFAULT '[]',id text DEFAULT md5(random()::text),access_expiry_date date);
+ CREATE TABLE companies(holding_code text,code text,is_active boolean);
+ CREATE TABLE branches(holding_code text,company_code text,code text,is_active boolean);
+ INSERT INTO users VALUES('admin',true);
+ INSERT INTO holdings VALUES('H',true);
+ INSERT INTO holding_members VALUES('H','admin','ADMIN',true,'[{"scopetype":"holding"}]');
+ INSERT INTO companies VALUES('H','C',true),('H','C2',true),('H','C3',true);
+ INSERT INTO branches VALUES('H','C','B',true);`
+	if _, err = db.Exec(setup + schema); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	insert := func(company, branch string, companies ...string) string {
+		id, raw, hash, _ := generate("H", "mcp")
+		if _, e := db.Exec(`INSERT INTO mcp_access_tokens(id,holding_code,company_code,branch_code,name,kind,mode,token_hash,created_by,creator_username,created_at,expires_at) VALUES($1,'H',$2,$3,'test','mcp','readonly',$4,'admin','admin',$5,$6)`, id, company, branch, hash, now, now.Add(time.Hour)); e != nil {
+			t.Fatal(e)
+		}
+		for _, code := range companies {
+			if _, e := db.Exec(`INSERT INTO mcp_token_companies(token_id,holding_code,company_code) VALUES($1,'H',$2)`, id, code); e != nil {
+				t.Fatal(e)
+			}
+		}
+		return raw
+	}
+	multi := insert("", "", "C", "C2")
+	legacy := insert("C", "B")
+	connect := func(string) (*sql.DB, error) { return db, nil }
+	companies := func(raw string) (Principal, string) {
+		p, e := authenticateAudience(context.Background(), raw, "mcp", connect, now)
+		if e != nil {
+			return p, "denied"
+		}
+		return p, fmt.Sprint(p.CompanyCodes)
+	}
+	for _, tc := range []struct{ scopes, multi, legacy string }{
+		{`[{"scopetype":"holding"}]`, "[C C2]", "[C]"},
+		{`[]`, "[C C2]", "[C]"},
+		{`[{"scopetype":"company","companyuid":"C"}]`, "[C]", "denied"},
+		{`[{"scopetype":"company","companyuid":"C","allbranches":true}]`, "[C]", "[C]"},
+		{`[{"scopetype":"company","companyuid":"C3"}]`, "denied", "denied"},
+		{`[{"scopetype":"branch","companyuid":"C","branchuid":"B"}]`, "denied", "[C]"},
+	} {
+		if _, e := db.Exec(`UPDATE holding_members SET access_scopes=$1::jsonb`, tc.scopes); e != nil {
+			t.Fatal(e)
+		}
+		if _, got := companies(multi); got != tc.multi {
+			t.Errorf("issuer %s: multi-company token reaches %s, want %s", tc.scopes, got, tc.multi)
+		}
+		if _, got := companies(legacy); got != tc.legacy {
+			t.Errorf("issuer %s: legacy branch token reaches %s, want %s", tc.scopes, got, tc.legacy)
+		}
+	}
+	// Narrowed issuer: the dropped company is no longer selectable even though still stored.
+	if _, e := db.Exec(`UPDATE holding_members SET access_scopes='[{"scopetype":"company","companyuid":"C"}]'`); e != nil {
+		t.Fatal(e)
+	}
+	p, _ := companies(multi)
+	if _, e := resolveCompany(context.Background(), p, "C2", connect); e == nil {
+		t.Fatal("company outside the issuer's current scope resolved")
+	}
+	if resolved, e := resolveCompany(context.Background(), p, "C", connect); e != nil || resolved.User.BusinessCode != "C" {
+		t.Fatal("company inside the issuer's scope denied")
+	}
+	var stored int
+	if e := db.QueryRow(`SELECT count(*) FROM mcp_token_companies`).Scan(&stored); e != nil || stored != 2 {
+		t.Fatal("use-time check must not rewrite the stored grant")
 	}
 }

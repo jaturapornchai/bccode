@@ -23,6 +23,23 @@ const displayMoney = (value: string) => {
 
 export type FieldInvalid = { key: string; row: number } | null;
 
+// taxFormFieldId - id ของช่องในจอ (ใช้พาไปช่องที่ต้องแก้): หัวแบบ = <prefix>-<key>, แถวใบแนบที่ n = <prefix>-row<n>-<key>
+export const taxFormFieldId = (prefix: string, key: string, row = 0) => (row > 0 ? `${prefix}-row${row}-${key}` : `${prefix}-${key}`);
+
+// focusTaxFormField - เปิดหมวดที่พับอยู่ เลื่อนไปช่องตาม id แล้วโฟกัส (ผู้ใช้กดเองจึงเลื่อนได้ — นุ่มนวล ยกเว้นตั้งลดการเคลื่อนไหว)
+// ช่องตัวเลือกแบบปุ่มไม่มี id → หา label[for] แล้วโฟกัสตัวเลือกแรกในช่องนั้น (id ที่เป็นกล่องครอบก็โฟกัสตัวเลือกแรกข้างใน)
+const FOCUSABLE = "input, select, textarea, button";
+export function focusTaxFormField(id: string): boolean {
+  if (typeof document === "undefined") return false;
+  const target = document.getElementById(id) ?? document.querySelector(`label[for="${CSS.escape(id)}"]`)?.parentElement ?? null;
+  if (!target) return false;
+  for (let d = target.closest("details"); d; d = d.parentElement?.closest("details") ?? null) d.open = true;
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  target.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+  (target.matches(FOCUSABLE) ? target : target.querySelector<HTMLElement>(FOCUSABLE))?.focus({ preventScroll: true });
+  return true;
+}
+
 type FieldInputProps = {
   field: TaxFormField;
   value: string;
@@ -115,7 +132,7 @@ export function TaxFormFieldGroups({ fields, values, onChange, invalid, search, 
           </summary>
           <div className="grid gap-x-4 gap-y-3 p-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr))]">
             {groupFieldsList.map((f) => {
-              const id = `${idPrefix}-${f.key}`;
+              const id = taxFormFieldId(idPrefix, f.key);
               const bad = invalid?.row === 0 && invalid.key === f.key;
               return (
                 <div key={f.key} className={cn("grid content-start gap-1", f.type === "choice" && (f.options?.length ?? 0) <= 3 && "col-span-full")}>
@@ -139,10 +156,11 @@ type RowsProps = {
   rows: TaxFormValues[];
   onChange: (rows: TaxFormValues[]) => void;
   invalid: FieldInvalid;
+  idPrefix?: string;
 };
 
 // TaxFormRowsTable - ใบแนบแบบตาราง (ภ.ง.ด.3/53/2/2ก, ภ.พ.30 หลายสาขา): ระบบแบ่งแผ่นและใส่ลำดับ/ยอดรวมแผ่นเอง
-export function TaxFormRowsTable({ attachment, rows, onChange, invalid }: RowsProps) {
+export function TaxFormRowsTable({ attachment, rows, onChange, invalid, idPrefix }: RowsProps) {
   const tr = useBackendText();
   const setCell = (i: number, key: string, value: string) => onChange(rows.map((r, j) => (j === i ? { ...r, [key]: value } : r)));
   return (
@@ -170,6 +188,7 @@ export function TaxFormRowsTable({ attachment, rows, onChange, invalid }: RowsPr
                 {attachment.columns.map((c) => (
                   <td key={c.key} className={cn("px-1.5 py-1", c.type === "choice" ? "min-w-[12rem]" : c.type === "money" ? "min-w-[9rem]" : "min-w-[8rem]")}>
                     <TaxFormFieldInput
+                      id={idPrefix ? taxFormFieldId(idPrefix, c.key, i + 1) : undefined}
                       field={c}
                       value={r[c.key] ?? ""}
                       onChange={(v) => setCell(i, c.key, v)}

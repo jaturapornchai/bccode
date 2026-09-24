@@ -3,6 +3,7 @@ package generalledger_test
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -16,7 +17,8 @@ import (
 func getTestDB(t *testing.T) *sql.DB {
 	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
 	if dsn == "" {
-		dsn = "postgres://postgres:postgres@127.0.0.1:5432/appdb?sslmode=disable"
+		// ห้าม fallback ไป localhost:5432 — เครื่อง dev มี postgres ของ tenant จริงรันอยู่ ต้องใช้ฐานทดสอบแยกเท่านั้น
+		t.Skip("set BC_GL_TEST_POSTGRES_DSN to isolated PostgreSQL")
 	}
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -110,24 +112,23 @@ func TestPostgresStore_FullLedgerFlow(t *testing.T) {
 		t.Fatalf("Expected fiscal year ID")
 	}
 
-	// 3. Create Journal Book (JV)
-	jbCmd := gl.Command{
-		RequestID: fmt.Sprintf("req-jb-create-%d", reqNonce),
-		Resource:  "journal-books",
-		Action:    "create",
-		Master: &gl.Master{
-			Kind:     "journal-books",
-			Code:     "JV",
-			Name:     "สมุดรายวันทั่วไป",
-			IsActive: true,
-		},
-	}
-	jbRes, err := store.Execute(ctx, scope, jbCmd)
+	// 3. ปีบัญชีแรกสร้างสมุดรายวันมาตรฐานให้ (JV ทั่วไป ... UV ซื้อ) พร้อมประเภทสมุด
+	books, err := store.List(ctx, scope, "journal-books", "", 1, 50, gl.ListFilter{})
 	if err != nil {
-		t.Fatalf("Failed to create journal book: %v", err)
+		t.Fatalf("list journal books: %v", err)
 	}
-	if jbRes.ID == "" {
-		t.Fatalf("Expected journal book ID")
+	gotTypes := map[string]int{}
+	for _, raw := range books.Items {
+		var m gl.Master
+		if err := json.Unmarshal(raw, &m); err != nil {
+			t.Fatalf("decode journal book: %v", err)
+		}
+		gotTypes[m.Code] = m.BookType
+	}
+	for _, want := range gl.DefaultJournalBooks() {
+		if gotTypes[want.Code] != want.BookType {
+			t.Fatalf("default book %s type=%d want %d (all=%v)", want.Code, gotTypes[want.Code], want.BookType, gotTypes)
+		}
 	}
 
 	// 4. Create Unbalanced Journal (Must Fail)

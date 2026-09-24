@@ -86,6 +86,9 @@ func glpgSeed(t *testing.T, p *Postgres, company string) {
 	}
 	f := FiscalYear{Identity: glpgIdentity("year-2026", company, 1), Code: "2026", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true, Scale: 2, RetainedEarningsAccount: "3000"}
 	changes = append(changes, glpgChange(t, "fiscal-years", f.ID, f.Code, f))
+	// the store checks journal.bookcode against the journal-books master (glpgJournal uses JV)
+	book := Master{Identity: glpgIdentity("book-JV", company, 1), Kind: "journal-books", Code: "JV", Name: "สมุดรายวันทั่วไป", BookType: BookTypeGeneral, IsActive: true}
+	changes = append(changes, glpgChange(t, "journal-books", book.ID, book.Code, book))
 	if err := p.Project(context.Background(), glpgEvent(company, 1, changes...)); err != nil {
 		t.Fatal(err)
 	}

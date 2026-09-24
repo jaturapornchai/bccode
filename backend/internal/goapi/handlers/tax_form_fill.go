@@ -11,9 +11,11 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/lib/pq"
 	"github.com/shopspring/decimal"
 
 	"smlcloudplatform/internal/generalledger"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/rdform"
 )
 
@@ -25,9 +27,11 @@ type TaxFormNote struct {
 }
 
 // profileKeys - หัวแบบที่ยกจากฉบับล่าสุด: ทะเบียนบริษัทยังไม่มีที่อยู่/สาขา/ผู้ลงนาม ผู้ใช้จึงกรอกครั้งแรกครั้งเดียว
+// media_ref_no = เลขอ้างอิงการลงทะเบียนยื่นด้วยสื่อ (USER_ID ของไฟล์ยื่นกรมสรรพากร) กรอกครั้งเดียวแล้วยกไปฉบับถัดไป
 var profileKeys = []string{"branch_no", "establishment_name", "name_line2", "addr_building", "addr_room", "addr_floor",
 	"addr_village", "addr_no", "addr_moo", "addr_soi", "addr_junction", "addr_road", "addr_subdistrict", "addr_district",
-	"addr_province", "addr_postcode", "phone", "website", "signer_name", "signer_position", "signer2_name", "signer2_position"}
+	"addr_province", "addr_postcode", "phone", "website", "signer_name", "signer_position", "signer2_name", "signer2_position",
+	"media_ref_no"}
 
 // ictZone - เวลาประเทศไทย (ไม่มี DST) ไม่พึ่ง tzdata ใน container
 var ictZone = time.FixedZone("ICT", 7*3600)
@@ -165,17 +169,25 @@ func prefillTaxForm(ctx context.Context, db *sql.DB, holding, company, code stri
 	return doc, notes, nil
 }
 
-// copyProfile - ที่อยู่/ผู้ลงนามจากฉบับล่าสุดของบริษัท (แบบบุคคลธรรมดายกเฉพาะจากแบบเดียวกัน พร้อมชื่อ/เลขผู้เสียภาษี)
+// copyProfile - ที่อยู่/ผู้ลงนามจากฉบับล่าสุดของบริษัท เฉพาะแบบตระกูลเดียวกัน: แบบของบริษัทยกจากแบบของบริษัทเท่านั้น
+// (ผู้ยื่น ภ.ง.ด.93/94 เป็นบุคคลธรรมดา ที่อยู่/ผู้ลงนามคนละรายกับบริษัท ห้ามปนข้ามกัน);
+// แบบบุคคลธรรมดายกเฉพาะจากแบบเดียวกัน พร้อมชื่อ/เลขผู้เสียภาษี
 func (f *formFiller) copyProfile(ctx context.Context, db *sql.DB, company, code string, individual bool) error {
-	sameForm := ""
+	family := []string{code}
 	keys := profileKeys
 	if individual {
-		sameForm = code
 		keys = append([]string{"tax_id", "name"}, profileKeys...)
+	} else {
+		family = family[:0]
+		for form, meta := range taxForms {
+			if !meta.Individual {
+				family = append(family, form)
+			}
+		}
 	}
 	var raw []byte
-	err := db.QueryRowContext(ctx, `SELECT document FROM tax_filings WHERE company_code=$1 AND ($2='' OR form_code=$2)
-ORDER BY updated_at DESC LIMIT 1`, company, sameForm).Scan(&raw)
+	err := db.QueryRowContext(ctx, `SELECT document FROM tax_filings WHERE company_code=$1 AND form_code = ANY($2)
+ORDER BY updated_at DESC LIMIT 1`, company, pq.StringArray(family)).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil
 	}
@@ -215,12 +227,14 @@ func fillWithholdingForm(ctx context.Context, db *sql.DB, company, code string, 
 		months = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
 	}
 	var rows []TaxWithholdingRow
+	unknownForm := 0
 	for _, m := range months {
 		report, err := buildWithholdingReport(ctx, db, company, year, m, "paid", []string{whtFormOf[code]})
 		if err != nil {
 			return nil, err
 		}
 		rows = append(rows, report.Rows...)
+		unknownForm += report.UnknownForm
 	}
 	switch code {
 	case "pnd2", "pnd2a":
@@ -228,7 +242,13 @@ func fillWithholdingForm(ctx context.Context, db *sql.DB, company, code string, 
 	default:
 		doc.Rows = payeeRows(rows, code == "pnd3")
 	}
-	return append(withholdingNotes(rows), missingTaxIDNotes(doc.Rows)...), nil
+	notes := withholdingNotes(rows)
+	// ยอดที่ไม่รู้แบบไม่ถูกเติมลงแบบนี้ (ไม่เดาว่าเป็น ภ.ง.ด.3 หรือ 53) — บอกจำนวนให้ผู้ใช้บันทึกรายละเอียดและเลือกแบบ
+	if unknownForm > 0 {
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_wht_form_unknown", Count: unknownForm})
+	}
+	notes = append(notes, missingTaxIDNotes(doc.Rows)...)
+	return append(notes, missingIncomeTypeNotes(code, doc.Rows)...), nil
 }
 
 func withholdingNotes(rows []TaxWithholdingRow) []TaxFormNote {
@@ -244,6 +264,10 @@ func withholdingNotes(rows []TaxWithholdingRow) []TaxFormNote {
 	var notes []TaxFormNote
 	if inferred > 0 {
 		notes = append(notes, TaxFormNote{Key: "tax_form_note_inferred_base", Count: inferred})
+	}
+	// กลับรายการในเดือนหลัง: ยังเป็นรายการของแบบเดือนนี้ (ยื่นแล้ว) — บอกทางแก้ภาษีที่ยื่นไปแล้ว (whtReversalMonthSQL)
+	if reversed := reversedLaterCount(rows); reversed > 0 {
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_wht_reversed_later", Count: reversed})
 	}
 	return notes
 }
@@ -263,13 +287,37 @@ func missingTaxIDNotes(rows []map[string]string) []TaxFormNote {
 	return []TaxFormNote{{Key: "tax_form_note_missing_taxid", Count: missing}}
 }
 
+// missingIncomeTypeNotes - รายการในใบแนบที่ยังไม่มีประเภทเงินได้ (ระบบไม่เดาให้: ภ.ง.ด.2 รหัสที่ไม่ใช่ 40(3)/40(4), ภ.ง.ด.3/53 ที่มีแต่ชื่อมาตรา)
+// นับจากเอกสารปัจจุบันเหมือน missingTaxIDNotes — ผู้ใช้เลือก/กรอกแล้วกดคำนวณ หมายเหตุหายเอง
+func missingIncomeTypeNotes(code string, rows []map[string]string) []TaxFormNote {
+	missing := 0
+	for _, r := range rows {
+		if code == "pnd2" || code == "pnd2a" {
+			if strings.TrimSpace(r["income_type"]) == "" {
+				missing++
+			}
+			continue
+		}
+		for k := 1; k <= 3; k++ {
+			p := "l" + strconv.Itoa(k) + "_"
+			if strings.TrimSpace(r[p+"amount"]) != "" && strings.TrimSpace(r[p+"income_type"]) == "" {
+				missing++
+			}
+		}
+	}
+	if missing == 0 {
+		return []TaxFormNote{}
+	}
+	return []TaxFormNote{{Key: "tax_form_note_missing_income_type", Count: missing}}
+}
+
 // payeeRows - ใบแนบ ภ.ง.ด.3/53: หนึ่งแถวต่อผู้มีเงินได้ ไม่เกิน 3 รายการเงินได้ต่อแถว (เกินขึ้นแถวใหม่ของรายเดิม)
 func payeeRows(rows []TaxWithholdingRow, individual bool) []map[string]string {
 	var out []map[string]string
 	current := map[string]int{}
 	lines := map[int]int{}
 	for _, r := range rows {
-		key := digitsOnly(r.TaxID) + "|" + r.PartnerName
+		key := payeeKey(r)
 		i, ok := current[key]
 		if !ok || lines[i] == 3 {
 			out = append(out, payeeHeader(r, individual))
@@ -279,7 +327,7 @@ func payeeRows(rows []TaxWithholdingRow, individual bool) []map[string]string {
 		lines[i]++
 		p := fmt.Sprintf("l%d_", lines[i])
 		out[i][p+"date"] = thaiDate(firstNonEmpty(r.PaidDate, r.DocDate))
-		out[i][p+"income_type"] = incomeTypeText(r)
+		out[i][p+"income_type"] = attachmentIncomeType(r)
 		out[i][p+"rate"] = rateText(r.RatePercent)
 		out[i][p+"amount"] = r.BaseAmount
 		out[i][p+"tax"] = r.WhtAmount
@@ -288,15 +336,32 @@ func payeeRows(rows []TaxWithholdingRow, individual bool) []map[string]string {
 	return out
 }
 
+// payeeKey - ผู้มีเงินได้รายเดียวกัน = เลขผู้เสียภาษี + ชื่อเดียวกัน; แถวที่ไม่มีทั้งสองอย่างห้ามรวมเป็นรายเดียว
+// (คนละรายจะถูกพิมพ์ในบรรทัดเดียวกัน) — ใช้รหัสคู่ค้า ถ้าไม่มีใช้เลขใบสำคัญ
+func payeeKey(r TaxWithholdingRow) string {
+	taxID := digitsOnly(r.TaxID)
+	switch {
+	case taxID != "" || strings.TrimSpace(r.PartnerName) != "":
+		return "payee:" + taxID + "|" + r.PartnerName
+	case r.PartnerCode != "":
+		return "partner:" + r.PartnerCode
+	}
+	return "journal:" + r.JournalID
+}
+
 func payeeHeader(r TaxWithholdingRow, individual bool) map[string]string {
 	row := map[string]string{"seq": ""}
 	if id := digitsOnly(r.TaxID); len(id) == 13 {
 		row["tax_id"] = id
 	}
+	setNonEmpty(row, "title", r.Title) // คำนำหน้าจากทะเบียนคู่ค้า (ไฟล์ยื่นด้วยสื่อบังคับ) ผู้ใช้แก้ได้ในใบแนบ
 	address := strings.Join(strings.Fields(r.Address), " ")
-	if individual { // ใบแนบ ภ.ง.ด.3 แยกชื่อ/ชื่อสกุล และมีที่อยู่บรรทัดเดียว
-		row["name"], row["surname"] = splitPersonName(r.PartnerName)
+	if individual { // ใบแนบ ภ.ง.ด.3 แยกชื่อ/ชื่อสกุล และมีที่อยู่บรรทัดเดียว (+อำเภอ/จังหวัด/รหัสไปรษณีย์ที่ไฟล์ ภ.ง.ด.3 บังคับ)
+		row["name"], row["surname"] = splitPersonName(r.PartnerName, r.Title)
 		row["address1"] = address
+		setNonEmpty(row, "addr_district", r.District)
+		setNonEmpty(row, "addr_province", r.Province)
+		setNonEmpty(row, "addr_postcode", r.Postcode)
 		return row
 	}
 	row["name"] = r.PartnerName
@@ -304,13 +369,31 @@ func payeeHeader(r TaxWithholdingRow, individual bool) map[string]string {
 	return row
 }
 
-// splitPersonName - "นายสมชาย ใจดี" → ("นายสมชาย", "ใจดี"); คำเดียว = ชื่ออย่างเดียว
-func splitPersonName(full string) (string, string) {
+func setNonEmpty(row map[string]string, key, value string) {
+	if value = strings.TrimSpace(value); value != "" {
+		row[key] = value
+	}
+}
+
+// splitPersonName - ชื่อ/ชื่อสกุลของใบแนบและไฟล์ยื่น: "นายสมชาย ใจดี" → ("นายสมชาย", "ใจดี"); คำเดียว = ชื่ออย่างเดียว
+// รู้คำนำหน้า (ทะเบียนคู่ค้า): ชื่อคือคำแรกหลังคำนำหน้า ที่เหลือเป็นชื่อสกุล — Format กลาง ภ.ง.ด.3 ช่อง 8 / ภ.ง.ด.2 ช่อง 9 SNAME
+// "กรณีมีชื่อกลาง ให้ระบุชื่อกลาง+1 ช่องว่าง+นามสกุล" ("Mr. John Michael Smith" → "Mr. John" / "Michael Smith", "นายสมชาย ณ อยุธยา" → "ณ อยุธยา");
+// คำนำหน้าที่เขียนแยกคำ ("นาย สมชาย ใจดี") อยู่ในช่องชื่อตามแบบ ("ให้ระบุให้ชัดเจนว่าเป็น นาย นาง นางสาว หรือยศ")
+// ไม่รู้คำนำหน้า: แยกคำนำหน้าแยกคำกับชื่อกลางไม่ออก จึงใช้คำสุดท้ายเป็นชื่อสกุลแบบเดิม (ไฟล์ยื่นบังคับคำนำหน้าอยู่แล้ว)
+func splitPersonName(full, title string) (string, string) {
 	parts := strings.Fields(full)
 	if len(parts) < 2 {
 		return strings.TrimSpace(full), ""
 	}
-	return strings.Join(parts[:len(parts)-1], " "), parts[len(parts)-1]
+	titleWords := strings.Fields(title)
+	if len(titleWords) == 0 || strings.TrimSpace(title) == "-" {
+		return strings.Join(parts[:len(parts)-1], " "), parts[len(parts)-1]
+	}
+	first := 1
+	if len(parts) > len(titleWords)+1 && strings.Join(parts[:len(titleWords)], " ") == strings.Join(titleWords, " ") {
+		first = len(titleWords) + 1
+	}
+	return strings.Join(parts[:first], " "), strings.Join(parts[first:], " ")
 }
 
 // splitAddress - ที่อยู่ยาวเกินบรรทัด: ตัดที่ช่องว่างใกล้ครึ่งแรกที่ไม่เกิน max ตัวอักษร
@@ -359,27 +442,51 @@ func conditionText(c int) string {
 	return "1"
 }
 
-// incomeTypeText - ประเภทเงินได้บนใบแนบ: คำอธิบายที่ผู้ใช้บันทึก ถ้าไม่มีใช้ชื่อมาตราของรหัสประเภทเงินได้
-func incomeTypeText(r TaxWithholdingRow) string {
+// incomeTypeText - ประเภทเงินได้: คำอธิบายที่ผู้ใช้บันทึก ถ้าไม่มีใช้ชื่อมาตราของรหัสประเภทเงินได้ตามภาษา lang (languages.tsv)
+// ใบแนบ ภ.ง.ด. ส่ง "th"; รายงานบนจอส่งภาษาของผู้ใช้ — ห้ามฝังข้อความไทยใน API (กฎ i18n ของ AGENTS.md)
+func incomeTypeText(r TaxWithholdingRow, lang string) string {
 	if d := strings.TrimSpace(r.Description); d != "" {
 		return d
 	}
+	if key := incomeTypeKey(r.IncomeType); key != "" {
+		return language.Text(key, lang)
+	}
+	return ""
+}
+
+// attachmentIncomeType - ประเภทเงินได้ในใบแนบ ภ.ง.ด.3/53 (INC_TYPE_PND ของไฟล์ยื่น) ต้องบอกว่าเป็นค่าอะไร —
+// Format กลาง ภ.ง.ด.53 ช่อง 13 "ให้ระบุว่าเป็นค่าอะไร เช่น ค่าเช่าอาคาร ค่าบริการ", ภ.ง.ด.3 "ต้องระบุประเภทเงินได้"
+// (https://www.rd.go.th/fileadmin/user_upload/WHT/Download/FormatPND53V2_0.pdf) — "มาตรา 3 เตรส" เป็นชื่อมาตรา ไม่ใช่ค่าอะไร
+// จึงเว้นว่างให้ผู้ใช้กรอก (missingIncomeTypeNotes แจ้ง, ไฟล์ยื่นขึ้น tax_rdfile_income_type_required) แทนการเขียนชื่อมาตราลงแบบ;
+// ใบแนบ ภ.ง.ด. เป็นแบบทางการภาษาไทยเสมอ
+func attachmentIncomeType(r TaxWithholdingRow) string {
+	if r.IncomeType == "3_tres" && strings.TrimSpace(r.Description) == "" {
+		return ""
+	}
+	return incomeTypeText(r, "th")
+}
+
+// incomeTypeKey - key ชื่อมาตราของรหัสประเภทเงินได้แบบ 50 ทวิ; เงินปันผล 40(4)(ข) ทุกกรณีย่อย (40_4b*) ใช้ชื่อเดียวกัน
+func incomeTypeKey(code string) string {
 	switch {
-	case r.IncomeType == "3_tres":
-		return "มาตรา 3 เตรส"
-	case r.IncomeType == "40_2":
-		return "ค่านายหน้า 40(2)"
-	case r.IncomeType == "40_3":
-		return "ค่าลิขสิทธิ์ 40(3)"
-	case r.IncomeType == "40_4a":
-		return "ดอกเบี้ย 40(4)(ก)"
-	case strings.HasPrefix(r.IncomeType, "40_4b"):
-		return "เงินปันผล 40(4)(ข)"
+	case code == "3_tres":
+		return "tax_income_type_3_tres"
+	case code == "40_2":
+		return "tax_income_type_40_2"
+	case code == "40_3":
+		return "tax_income_type_40_3"
+	case code == "40_4a":
+		return "tax_income_type_40_4a"
+	case strings.HasPrefix(code, "40_4b"):
+		return "tax_income_type_40_4b"
 	}
 	return ""
 }
 
 // pnd2IncomeType - รหัสประเภทเงินได้ของ 50 ทวิ → ตัวเลือก "ประเภทเงินได้" ของ ภ.ง.ด.2/2ก (หนึ่งแผ่นต่อหนึ่งประเภท)
+// Format กลาง ภ.ง.ด.2 V2.0 ช่อง 14 INC_TYPE_PND มีแค่ 40(3), 40(4)(ก), 40(4)(ข), 40(4)(ช), 40(4) อื่น ๆ
+// (https://www.rd.go.th/fileadmin/user_upload/WHT/Download/FormatPND2V2_0.pdf) — รหัสนอกตระกูลนี้ (40(2), มาตรา 3 เตรส, อื่น ๆ)
+// และ 40(3) ใน ภ.ง.ด.2ก (แบบไม่มีบรรทัด 40(3)) คืนค่าว่างให้ผู้ใช้เลือกเอง — เดิมตกไปเป็น "40(4) อื่น ๆ" เงียบ ๆ (review 2026-09-24)
 func pnd2IncomeType(code string, annual bool) string {
 	switch {
 	case code == "40_3" && !annual:
@@ -389,7 +496,7 @@ func pnd2IncomeType(code string, annual bool) string {
 	case strings.HasPrefix(code, "40_4b"):
 		return "dividend"
 	}
-	return "other_404"
+	return ""
 }
 
 // pnd2Rows - ใบแนบ ภ.ง.ด.2 (รายการจ่ายแต่ละครั้ง) / ภ.ง.ด.2ก (รวมทั้งปีต่อผู้รับต่อประเภท)
@@ -398,7 +505,7 @@ func pnd2Rows(rows []TaxWithholdingRow, annual bool) []map[string]string {
 	index := map[string]int{}
 	for _, r := range rows {
 		kind := pnd2IncomeType(r.IncomeType, annual)
-		key := kind + "|" + digitsOnly(r.TaxID) + "|" + r.PartnerName
+		key := kind + "|" + payeeKey(r)
 		if i, ok := index[key]; ok && annual {
 			out[i]["l1_amount"] = addMoneyText(out[i]["l1_amount"], r.BaseAmount)
 			out[i]["l1_tax"] = addMoneyText(out[i]["l1_tax"], r.WhtAmount)
@@ -412,11 +519,12 @@ func pnd2Rows(rows []TaxWithholdingRow, annual bool) []map[string]string {
 		if id := digitsOnly(r.TaxID); len(id) == 13 {
 			row["tax_id"] = id
 		}
-		row["name"], row["surname"] = splitPersonName(r.PartnerName)
+		row["name"], row["surname"] = splitPersonName(r.PartnerName, r.Title)
 		if annual {
 			row["address1"] = strings.Join(strings.Fields(r.Address), " ")
-		} else {
+		} else { // ใบแนบ ภ.ง.ด.2ก ไม่มีช่องคำนำหน้า (ไฟล์ ภ.ง.ด.2ก เลื่อนไปก่อน)
 			row["l1_date"] = thaiDate(firstNonEmpty(r.PaidDate, r.DocDate))
+			setNonEmpty(row, "title", r.Title)
 		}
 		index[key] = len(out)
 		out = append(out, row)

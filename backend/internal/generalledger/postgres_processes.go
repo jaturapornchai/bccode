@@ -34,8 +34,12 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 	if err = checkVersion(cmd, year.Identity); err != nil {
 		return nil, err
 	}
-	if !validCode(cmd.DocNo) || !validDate(cmd.Date) {
-		return nil, fmt.Errorf("กรุณาระบุเลขที่และวันที่ประมวลผล")
+	// Several branches get "-001" style suffixes, so 4 characters of doc_no are reserved for them.
+	if err := checkCode(cmd.DocNo, "docno", "เลขที่เอกสารประมวลผล", DocNoMaxRunes-4); err != nil {
+		return nil, err
+	}
+	if !validDate(cmd.Date) {
+		return nil, fieldError("process_date_invalid", "date", "วันที่ประมวลผลไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
 	}
 	to := cmd.Date
 	if cmd.Action == "year-end" {
@@ -147,6 +151,11 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 	if len(byBranch) == 0 && cmd.Action == "close" {
 		return nil, fmt.Errorf("ไม่มียอดคงเหลือที่ต้องประมวลผล")
 	}
+	// Generated vouchers go to a book chosen by its type, never by a fixed code.
+	book, err := processBookCode(ctx, tx, scope.Company, prepared.CloseYear)
+	if err != nil {
+		return nil, err
+	}
 	branches := make([]string, 0, len(byBranch))
 	for branch := range byBranch {
 		branches = append(branches, branch)
@@ -157,13 +166,13 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 		if len(branches) > 1 {
 			docno = fmt.Sprintf("%s-%03d", cmd.DocNo, i+1)
 		}
-		j := Journal{DocNo: docno, Date: cmd.Date, BookCode: "JV", FiscalYear: target.Code, Description: "ปิดงบบัญชี " + year.Code, Kind: "closing", Status: "draft", Reason: cmd.Reason, Reference: "CLOSE:" + year.Code + ":" + cmd.Date, BranchCode: branch, Lines: byBranch[branch]}
+		j := Journal{DocNo: docno, Date: cmd.Date, BookCode: book, FiscalYear: target.Code, Description: "ปิดงบบัญชี " + year.Code, Kind: "closing", Status: "draft", Reason: cmd.Reason, Reference: "CLOSE:" + year.Code + ":" + cmd.Date, BranchCode: branch, Lines: byBranch[branch]}
 		if prepared.CloseYear {
 			j.Kind = "opening"
 			j.Reference = "YEAR-END:" + year.Code
 			j.Description = "ยอดยกมาจากปี " + year.Code
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &j); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &j, true); err != nil {
 			return nil, err
 		}
 		prepared.Journals = append(prepared.Journals, j)

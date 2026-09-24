@@ -78,7 +78,72 @@ describe("workspace product unit setup route", () => {
       { holdingcode: "SHOP001", businesscode: "COMPANY01" },
       { holdingcode: "SHOP001", businesscode: "COMPANY01" },
     ]);
-    expect(fetchMock).toHaveBeenCalledTimes(5);
+    // list-holding + session/selection (unknown here → ignored) + select + company + branch + restore
+    expect(fetchMock).toHaveBeenCalledTimes(6);
+  });
+
+  it("keeps the session's Company and Branch when the caller passes only the Holding (settings screens)", async () => {
+    const selections: Array<Record<string, unknown>> = [];
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      if (requestUrl === "http://localhost:8888/list-holding?limit=100") {
+        return Response.json({ success: true, data: [{ holdingcode: "rungrueng", names: [{ code: "th", name: "กลุ่มกิจการรุ่งเรืองกรุ๊ป" }] }], total: 1 });
+      }
+      if (requestUrl === "http://localhost:8888/session/selection") {
+        return Response.json({ success: true, data: { holdingcode: "rungrueng", businesscode: "01", branchuid: "00000" } });
+      }
+      if (requestUrl === "http://localhost:8888/select-holding") {
+        selections.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return Response.json({ success: true });
+      }
+      if (requestUrl.startsWith("http://localhost:8888/holding/")) return Response.json({ success: true, data: {} });
+      if (requestUrl === "http://localhost:8888/organization/company?management=true") {
+        return Response.json({ success: true, data: [{ guidfixed: "C01", code: "01" }] });
+      }
+      if (requestUrl === "http://localhost:8888/organization/branch?management=true") {
+        return Response.json({ success: true, data: [] });
+      }
+      throw new Error(`Unexpected URL ${requestUrl}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/workspace/holdings?backendUrl=http://localhost:8888/goapi&management=true&activeholdingcode=rungrueng",
+        { headers: { Authorization: "Bearer test-token" } },
+      ),
+      workspaceContext("holdings"),
+    );
+
+    expect(response.status).toBe(200);
+    // Before the fix both calls sent only { holdingcode } and the session lost Company 01 / Branch 00000.
+    expect(selections).toEqual([
+      { holdingcode: "rungrueng", businesscode: "01", branchuid: "00000" },
+      { holdingcode: "rungrueng", businesscode: "01", branchuid: "00000" },
+    ]);
+  });
+
+  it("drops the session's Branch when the caller switches to another Company", async () => {
+    const selections: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const requestUrl = String(url);
+      if (requestUrl === "http://localhost:8888/list-holding?limit=100") return Response.json({ success: true, data: [{ holdingcode: "rungrueng" }] });
+      if (requestUrl === "http://localhost:8888/session/selection") return Response.json({ success: true, data: { holdingcode: "rungrueng", businesscode: "01", branchuid: "00000" } });
+      if (requestUrl === "http://localhost:8888/select-holding") {
+        selections.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return Response.json({ success: true });
+      }
+      if (requestUrl.startsWith("http://localhost:8888/organization/")) return Response.json({ success: true, data: [] });
+      if (requestUrl.startsWith("http://localhost:8888/holding/")) return Response.json({ success: true, data: {} });
+      throw new Error(`Unexpected URL ${requestUrl}`);
+    }));
+
+    await GET(
+      new Request("http://localhost/api/workspace/holdings?backendUrl=http://localhost:8888/goapi&activeholdingcode=rungrueng&businesscode=02", { headers: { Authorization: "Bearer test-token" } }),
+      workspaceContext("holdings"),
+    );
+
+    expect(selections.at(-1)).toEqual({ holdingcode: "rungrueng", businesscode: "02" });
   });
 
   it("lists the whole holding only when the caller passes management=true", async () => {
@@ -183,7 +248,7 @@ describe("workspace product unit setup route", () => {
       companies: [],
       branches: [],
     });
-    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(fetchMock).toHaveBeenCalledTimes(6); // +1 session/selection lookup
   });
 
   it("uses company metadata returned by list-holding without requiring selected holding detail", async () => {
@@ -250,7 +315,7 @@ describe("workspace product unit setup route", () => {
       companies: [],
       branches: [],
     });
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(5); // +1 session/selection lookup
   });
 
   it("attaches organization companies and branches to the shop selected for each lookup", async () => {
@@ -317,7 +382,7 @@ describe("workspace product unit setup route", () => {
       companies: [{ guidfixed: "COMP001", code: "001" }],
       branches: [{ guidfixed: "BR001", companyguid: "COMP001", code: "00000" }],
     });
-    expect(fetchMock).toHaveBeenCalledTimes(7);
+    expect(fetchMock).toHaveBeenCalledTimes(8); // +1 session/selection lookup
   });
 
   it("filters deleted organization records from workspace holdings", async () => {
@@ -378,7 +443,7 @@ describe("workspace product unit setup route", () => {
       companies: [{ guidfixed: "COMP_ACTIVE", code: "001" }],
       branches: [{ guidfixed: "BR_ACTIVE", companyguid: "COMP_ACTIVE", code: "00000" }],
     });
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(5); // +1 session/selection lookup
   });
 
   it("normalizes holdingcode before creating a Holding", async () => {

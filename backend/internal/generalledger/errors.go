@@ -38,6 +38,7 @@ type UserError struct {
 	Code    string
 	Message string // Thai, user facing
 	Status  int    // HTTP status; 0 = 409 Conflict
+	Field   string // JSON field of the offending input (e.g. payment_date) so the screen can point at it; "" = whole record
 }
 
 func (e *UserError) Error() string { return e.Message }
@@ -55,6 +56,7 @@ func (e *UserError) ToAppError() *apperr.AppError {
 		Message:    e.Message,
 		ThaiMsg:    e.Message,
 		HTTPStatus: e.HTTPStatus(),
+		Field:      e.Field,
 	}
 }
 
@@ -71,6 +73,22 @@ func AsUserError(err error) (*UserError, bool) {
 // exact Thai text the guard already produced.
 func userError(code string, message string) *UserError {
 	return &UserError{Code: code, Message: message}
+}
+
+// fieldError is a user-input failure of one input field: code gets a gl_err_<code> row in
+// languages.tsv (non-Thai screens) and field names the JSON key the screen should focus.
+// HTTP 400: the input itself is invalid (like a NUL character) — 409 is kept for conflicts with
+// stored data (conflictError, stale version, duplicate code) so REST/MCP clients can tell
+// "fix the field" from "reload and retry". The web BFF relays both as 200 + success:false and the
+// screen reads code/message/field, never the status (frontend/src/lib/workspace-api.ts userErrorStatusOk).
+func fieldError(code, field, message string) *UserError {
+	return &UserError{Code: code, Field: field, Message: message, Status: http.StatusBadRequest}
+}
+
+// conflictError is a field failure caused by other stored data rather than by the input: a newer
+// version of the record, or records that still use it (in use / role in use). HTTP 409.
+func conflictError(code, field, message string) *UserError {
+	return &UserError{Code: code, Field: field, Message: message, Status: http.StatusConflict}
 }
 
 // validationFailed keeps the Thai text of a model validation error and tags it

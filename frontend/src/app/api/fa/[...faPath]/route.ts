@@ -22,7 +22,8 @@ export async function GET(request: Request, context: Context) {
   }
 
   // Segment safety check
-  if (faPath.some((segment) => !/^[\p{L}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) {
+  // \p{M} = สระบน/ล่างและวรรณยุกต์ไทย (รหัสทรัพย์สินไทย) — docs/kms/17-dev-gotchas.md
+  if (faPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) {
     return bad("ไม่พบรายการที่ต้องการ", 404);
   }
 

@@ -14,6 +14,7 @@ import (
 
 	"smlcloudplatform/internal/goapi/handlers"
 	"smlcloudplatform/internal/goapi/inventory"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mydb"
 	"smlcloudplatform/internal/goapi/myglobal"
@@ -171,41 +172,26 @@ func createGoAPIAuthMiddleware(authService *microservice.AuthService) echo.Middl
 			tokenText, err := getBearerToken(c.Request().Header.Get(echo.HeaderAuthorization))
 			if err != nil {
 				logger.Warn("GoAPI auth failed: %v", err)
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Unauthorized",
-				})
+				return goAPIAuthFail(c, http.StatusUnauthorized, "UNAUTHORIZED", "unauthorized")
 			}
 
 			userInfo, ok := authenticateGoAPIToken(c.Request().Context(), authService, tokenText)
 			if !ok {
 				logger.Warn("GoAPI auth failed: inactive session")
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Unauthorized",
-				})
+				return goAPIAuthFail(c, http.StatusUnauthorized, "UNAUTHORIZED", "unauthorized")
 			}
 			if userInfo.HoldingCode == "" {
 				logger.Warn("GoAPI auth failed: shop not selected")
-				return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-					"success": false,
-					"message": "Shop not selected",
-				})
+				return goAPIAuthFail(c, http.StatusUnauthorized, "HOLDING_REQUIRED", "holding_required")
 			}
 			requestedHoldingCode, err := goAPIRequestHoldingCode(c)
 			if err != nil {
 				logger.Warn("GoAPI auth failed: invalid tenant payload")
-				return c.JSON(http.StatusBadRequest, map[string]interface{}{
-					"success": false,
-					"message": "Invalid request payload",
-				})
+				return goAPIAuthFail(c, http.StatusBadRequest, "INVALID_PAYLOAD", "goapi_request_payload_invalid")
 			}
 			if requestedHoldingCode != "" && requestedHoldingCode != userInfo.HoldingCode {
 				logger.Warn("GoAPI tenant blocked: route=%s requested_shop=%s token_shop=%s", c.Path(), requestedHoldingCode, userInfo.HoldingCode)
-				return c.JSON(http.StatusForbidden, map[string]interface{}{
-					"success": false,
-					"message": "Forbidden",
-				})
+				return goAPIAuthFail(c, http.StatusForbidden, "FORBIDDEN", "goapi_holding_forbidden")
 			}
 
 			if isDevelopmentMode() {
@@ -217,6 +203,16 @@ func createGoAPIAuthMiddleware(authService *microservice.AuthService) echo.Middl
 			return next(c)
 		}
 	}
+}
+
+// goAPIAuthFail - ข้อผิดพลาดของด่านตรวจสิทธิ์ goapi: รหัสคงที่ (code) ให้ frontend/ระบบภายนอกตัดสินใจ + ข้อความจาก languages.tsv
+// ตามภาษาผู้ใช้ (?lang ก่อน แล้ว Accept-Language แบบเดียวกับ handlers.taxReportFail) — เดิมคืนอังกฤษเปล่า ๆ ไม่มีรหัส (UAT S22 2026-09-24)
+func goAPIAuthFail(c echo.Context, status int, code, key string) error {
+	lang := strings.TrimSpace(c.QueryParam("lang"))
+	if lang == "" {
+		lang = c.Request().Header.Get("Accept-Language")
+	}
+	return c.JSON(status, map[string]any{"success": false, "code": code, "message": language.Text(key, language.Normalize(lang))})
 }
 
 func authenticateGoAPIToken(ctx context.Context, authService *microservice.AuthService, tokenText string) (msmodels.UserInfo, bool) {
@@ -366,6 +362,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, cacher micros
 	authGroup.POST("/api/report/tax/form/prefill", handlers.TaxFormPrefillHandler)
 	authGroup.POST("/api/report/tax/form/compute", handlers.TaxFormComputeHandler)
 	authGroup.POST("/api/report/tax/form/pdf", handlers.TaxFormPDFHandler)
+	authGroup.POST("/api/report/tax/form/rdfile", handlers.TaxFormRdFileHandler) // ไฟล์ .txt Format กลาง V2.0 สำหรับ SWC-UI
 	authGroup.POST("/api/report/tax/form/save", handlers.TaxFormSaveHandler)
 	authGroup.POST("/api/report/tax/form/list", handlers.TaxFormListHandler)
 	authGroup.POST("/api/report/tax/form/load", handlers.TaxFormLoadHandler)

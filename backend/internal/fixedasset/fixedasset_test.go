@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -95,8 +96,20 @@ func (f *fakeLedger) Execute(_ context.Context, _ gl.Scope, cmd gl.Command) (gl.
 	return gl.Result{}, fmt.Errorf("unsupported action in fake ledger: %s", cmd.Action)
 }
 
-func (f *fakeLedger) List(_ context.Context, _ gl.Scope, _ string, query string, _ int, _ int, _ gl.ListFilter) (gl.Page, error) {
+func (f *fakeLedger) List(_ context.Context, _ gl.Scope, resource string, query string, _ int, _ int, _ gl.ListFilter) (gl.Page, error) {
 	page := gl.Page{Items: []json.RawMessage{}}
+	if resource == "journal-books" {
+		// The company's general book is deliberately not named "JV": the poster must pick by booktype.
+		for _, b := range []gl.Master{
+			{Kind: "journal-books", Code: "AA-SALE", Name: "สมุดรายวันขาย", BookType: gl.BookTypeSales, IsActive: true},
+			{Kind: "journal-books", Code: "GJ-OLD", Name: "สมุดรายวันทั่วไป (เลิกใช้)", BookType: gl.BookTypeGeneral, IsActive: false},
+			{Kind: "journal-books", Code: "GJ", Name: "สมุดรายวันทั่วไป", BookType: gl.BookTypeGeneral, IsActive: true},
+		} {
+			raw, _ := json.Marshal(b)
+			page.Items = append(page.Items, raw)
+		}
+		return page, nil
+	}
 	for _, j := range f.journals {
 		if j.DocNo == query {
 			raw, _ := json.Marshal(j)
@@ -194,6 +207,9 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 	}
 	if !dr.Equal(cr) || dr.IsZero() {
 		t.Fatalf("GL journal out of balance: Dr %s Cr %s", dr, cr)
+	}
+	if journal.BookCode != "GJ" {
+		t.Fatalf("depreciation must go to the active general book chosen by type, got %q", journal.BookCode)
 	}
 	if ledger.created != 1 || ledger.posted != 1 {
 		t.Fatalf("expected exactly 1 create + 1 post, got created=%d posted=%d", ledger.created, ledger.posted)
@@ -310,4 +326,29 @@ func TestGLPoster_PostJournalIdempotent(t *testing.T) {
 	if _, _, err := poster.postJournal(context.Background(), scope, &tampered); err == nil {
 		t.Fatalf("expected an error when retrying the same docno with different content, got nil")
 	}
+}
+
+// Book codes are user-defined: the poster picks the active general (booktype 1) book with the
+// lowest code and explains in Thai when the company has none (2026-09-24).
+func TestGLPosterChoosesGeneralBookByType(t *testing.T) {
+	scope := Scope{Holding: "H", Company: "C", Branch: "B", Actor: "tester"}
+	code, err := NewGLPoster(nil, newFakeLedger()).generalBookCode(context.Background(), scope)
+	if err != nil || code != "GJ" {
+		t.Fatalf("general book = %q, %v; want GJ (active type 1, not the inactive GJ-OLD or the sales book)", code, err)
+	}
+	empty := &noBooksLedger{fakeLedger: newFakeLedger()}
+	_, err = NewGLPoster(nil, empty).generalBookCode(context.Background(), scope)
+	user, ok := gl.AsUserError(err)
+	if !ok || user.Code != "journal_book_general_missing" || !strings.Contains(user.Message, "กำหนดสมุดรายวัน") {
+		t.Fatalf("missing general book error = %v", err)
+	}
+}
+
+type noBooksLedger struct{ *fakeLedger }
+
+func (l *noBooksLedger) List(ctx context.Context, scope gl.Scope, resource, query string, page, limit int, filter gl.ListFilter) (gl.Page, error) {
+	if resource == "journal-books" {
+		return gl.Page{Items: []json.RawMessage{}}, nil
+	}
+	return l.fakeLedger.List(ctx, scope, resource, query, page, limit, filter)
 }

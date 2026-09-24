@@ -203,6 +203,12 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
     const holdings = getArrayFromPayload(result.payload, "data");
     const enriched = await Promise.all(holdings.map((holding) => enrichHoldingDisplayName(request, mainApiUrl, authorization, holding)));
     const activeHoldingCodeKey = activeHoldingCode.toLowerCase();
+    // select-holding below switches the bearer session to read each Holding's companies/branches.
+    // Remember the session's own Company/Branch first and put exactly that back: callers such as the
+    // settings screens pass only the Holding, which used to leave the session without a Company and
+    // every GL screen asked to pick a company again (UAT S7 2026-09-24).
+    const restore = workspaceRestoreSelection(activeHoldingCode, activeBusinessCode, await readSessionSelection(request, mainApiUrl, authorization));
+    const restoreHoldingKey = restore?.holdingcode.toLowerCase() ?? "";
 
     // Fetch companies and branches sequentially because select-holding mutates the bearer-token session.
     // When the caller passes activeholdingcode, only enrich the active Holding to avoid racing screen data loads.
@@ -225,12 +231,9 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
       }
 
       try {
-        const selectPayload = {
-          holdingcode: holdingCode,
-          ...(activeBusinessCode && holdingCode.toLowerCase() === activeHoldingCodeKey
-            ? { businesscode: activeBusinessCode }
-            : {}),
-        };
+        // Same Holding as the one restored at the end: select it with the same Company/Branch so the
+        // session never passes through a "no company" state while screens are loading.
+        const selectPayload = restore && holdingCode.toLowerCase() === restoreHoldingKey ? restore : { holdingcode: holdingCode };
         const selectResult = await callMainApiJson(
           request,
           mainApiUrl,
@@ -292,21 +295,16 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
       });
     }
 
-    if (activeHoldingCode) {
+    if (restore) {
       const restoreResult = await callMainApiJson(
         request,
         mainApiUrl,
         "/select-holding",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            holdingcode: activeHoldingCode,
-            ...(activeBusinessCode ? { businesscode: activeBusinessCode } : {}),
-          }),
-        },
+        { method: "POST", body: JSON.stringify(restore) },
         authorization,
       );
-      if (!restoreResult.ok || isApiFailure(restoreResult.payload)) {
+      // Restoring the session's own earlier Holding (no activeholdingcode) stays best effort, as before.
+      if (activeHoldingCode && (!restoreResult.ok || isApiFailure(restoreResult.payload))) {
         return mainApiError(restoreResult, "คืนค่าบริษัทที่เลือกไม่สำเร็จ");
       }
     }
@@ -319,6 +317,35 @@ async function listHoldingsWithDisplayNames(request: Request, mainApiUrl: string
   } catch (error) {
     return NextResponse.json({ success: false, message: workspaceErrorMessage(error, "โหลดบริษัทไม่สำเร็จ") }, { status: 504 });
   }
+}
+
+type WorkspaceSelection = { holdingcode: string; businesscode?: string; branchuid?: string };
+
+/** The Holding/Company/Branch this bearer session has selected now; null when none or unreadable. */
+async function readSessionSelection(request: Request, mainApiUrl: string, authorization: string): Promise<WorkspaceSelection | null> {
+  try {
+    const result = await callMainApiJson(request, mainApiUrl, "/session/selection", { method: "GET" }, authorization);
+    const data = result.ok && !isApiFailure(result.payload) ? payloadDataRecord(result.payload) : null;
+    const holdingcode = data ? stringFromUnknown(data.holdingcode) : "";
+    if (!data || !holdingcode) return null;
+    return { holdingcode, businesscode: normalizeBusinessCode(data.businesscode), branchuid: stringFromUnknown(data.branchuid) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What to select after enrichment: the caller's Holding/Company when given, otherwise the session's own.
+ * The session's Company is kept when the caller names only the same Holding, and its Branch is kept while
+ * the Company stays the same (a Branch belongs to one Company).
+ */
+function workspaceRestoreSelection(activeHoldingCode: string, activeBusinessCode: string, current: WorkspaceSelection | null): WorkspaceSelection | null {
+  const holdingcode = activeHoldingCode || current?.holdingcode || "";
+  if (!holdingcode) return null;
+  const session = current && current.holdingcode.toLowerCase() === holdingcode.toLowerCase() ? current : null;
+  const businesscode = activeBusinessCode || session?.businesscode || "";
+  const branchuid = session && businesscode && businesscode === session.businesscode ? session.branchuid ?? "" : "";
+  return { holdingcode, ...(businesscode ? { businesscode } : {}), ...(branchuid ? { branchuid } : {}) };
 }
 
 async function updateHoldingDisplayName(

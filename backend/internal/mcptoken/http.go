@@ -12,6 +12,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	authmodels "smlcloudplatform/internal/authentication/models"
+	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/pkg/microservice"
 	"smlcloudplatform/pkg/microservice/models"
@@ -43,40 +45,52 @@ func respond(r microservice.IContext, status int, data interface{}) error {
 	}
 	return nil
 }
-func (h *Http) admin(ctx context.Context, u models.UserInfo) (*sql.DB, error) {
+
+// requestLanguage is the caller's language for user-facing messages (query lang, then the
+// Accept-Language the BFF forwards).
+func requestLanguage(r microservice.IContext) string {
+	if lang := strings.TrimSpace(r.Request().URL.Query().Get("lang")); lang != "" {
+		return lang
+	}
+	return r.Request().Header.Get("Accept-Language")
+}
+
+// admin returns the control database and the caller's OWNER/ADMIN membership with scopes expanded.
+func (h *Http) admin(ctx context.Context, u models.UserInfo) (*sql.DB, authmodels.ShopUser, error) {
 	if !holdingPattern.MatchString(u.HoldingCode) {
-		return nil, ErrDenied
+		return nil, authmodels.ShopUser{}, ErrDenied
 	}
 	db, err := h.connect(ControlDatabase)
 	if err != nil || db == nil {
-		return nil, ErrDenied
+		return nil, authmodels.ShopUser{}, ErrDenied
 	}
-	if authorizeHolding(ctx, db, u) != nil {
-		return nil, ErrDenied
+	issuer, err := authorizeHolding(ctx, db, u)
+	if err != nil {
+		return nil, authmodels.ShopUser{}, ErrDenied
 	}
 	// Serialize first-time initialization across simultaneous admin requests.
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, authmodels.ShopUser{}, err
 	}
 	defer tx.Rollback()
 	if _, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(194857231)`); err != nil {
-		return nil, err
+		return nil, authmodels.ShopUser{}, err
 	}
 	if _, err = tx.ExecContext(ctx, schema); err != nil {
-		return nil, err
+		return nil, authmodels.ShopUser{}, err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, err
+		return nil, authmodels.ShopUser{}, err
 	}
-	return db, nil
+	return db, issuer, nil
 }
 
 func (h *Http) list(r microservice.IContext) error {
 	ctx, cancel := context.WithTimeout(r.Request().Context(), 15*time.Second)
 	defer cancel()
 	u := r.UserInfo()
-	db, err := h.admin(ctx, u)
+	db, _, err := h.admin(ctx, u)
 	if err != nil {
 		return respond(r, 403, ErrDenied.Error())
 	}
@@ -114,7 +128,7 @@ func (h *Http) create(r microservice.IContext) error {
 	ctx, cancel := context.WithTimeout(r.Request().Context(), 15*time.Second)
 	defer cancel()
 	u := r.UserInfo()
-	db, err := h.admin(ctx, u)
+	db, issuer, err := h.admin(ctx, u)
 	if err != nil {
 		return respond(r, 403, ErrDenied.Error())
 	}
@@ -141,6 +155,14 @@ func (h *Http) create(r microservice.IContext) error {
 	if validateCompanies(ctx, tx, u.HoldingCode, in.CompanyCodes) != nil {
 		return respond(r, 400, "เลือกบริษัทที่เปิดใช้งานใน Holding นี้อย่างน้อยหนึ่งบริษัท")
 	}
+	// A token never reaches further than its issuer: an ADMIN limited to some companies may
+	// allow only companies they can open company-wide. 400, not 403: the token screen
+	// treats 403 as lost administrator access and would discard the form.
+	for _, code := range in.CompanyCodes {
+		if !withinScope(issuer.AccessScopes, code, "") {
+			return respond(r, 400, language.Text("mcp_err_company_outside_scope", requestLanguage(r)))
+		}
+	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO mcp_access_tokens(id,holding_code,company_code,branch_code,name,kind,mode,token_hash,created_by,creator_username,created_at,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, id, u.HoldingCode, "", "", in.Name, in.Kind, in.Mode, hash, u.UID, u.Username, now, in.ExpiresAt)
 	if err == nil {
 		_, err = tx.ExecContext(ctx, `INSERT INTO mcp_token_companies(token_id,holding_code,company_code) SELECT $1,$2,unnest($3::text[])`, id, u.HoldingCode, pq.Array(in.CompanyCodes))
@@ -161,7 +183,7 @@ func (h *Http) revoke(r microservice.IContext) error {
 	ctx, cancel := context.WithTimeout(r.Request().Context(), 15*time.Second)
 	defer cancel()
 	u := r.UserInfo()
-	db, err := h.admin(ctx, u)
+	db, _, err := h.admin(ctx, u)
 	if err != nil {
 		return respond(r, 403, ErrDenied.Error())
 	}
@@ -198,7 +220,7 @@ func (h *Http) companies(r microservice.IContext) error {
 	ctx, cancel := context.WithTimeout(r.Request().Context(), 15*time.Second)
 	defer cancel()
 	u := r.UserInfo()
-	db, err := h.admin(ctx, u)
+	db, issuer, err := h.admin(ctx, u)
 	if err != nil {
 		return respond(r, 403, ErrDenied.Error())
 	}
@@ -217,7 +239,10 @@ func (h *Http) companies(r microservice.IContext) error {
 		if rows.Scan(&item.Code, &item.Name) != nil {
 			return respond(r, 503, "ไม่สามารถอ่านบริษัทได้")
 		}
-		result = append(result, item)
+		// Offer only companies this administrator may allow; create enforces the same rule.
+		if withinScope(issuer.AccessScopes, item.Code, "") {
+			result = append(result, item)
+		}
 	}
 	if rows.Err() != nil {
 		return respond(r, 503, "ไม่สามารถอ่านบริษัทได้")

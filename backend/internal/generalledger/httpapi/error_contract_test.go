@@ -11,11 +11,11 @@ import (
 // Contract QA/frontend rely on: `code` is the machine code, `message` is Thai.
 func TestGLCommandErrorContract(t *testing.T) {
 	cases := []struct {
-		name       string
-		err        error
-		status     int
-		wantCode   string
-		wantMsg    string
+		name     string
+		err      error
+		status   int
+		wantCode string
+		wantMsg  string
 	}{
 		{
 			name:     "duplicate account code",
@@ -23,6 +23,14 @@ func TestGLCommandErrorContract(t *testing.T) {
 			status:   409,
 			wantCode: "duplicate_code",
 			wantMsg:  "รหัสบัญชีนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น",
+		},
+		{
+			// ข้อมูลที่ผู้ใช้กรอกผิด (fieldError) = 400 พร้อม field; BFF ส่งต่อเป็น success:false เหมือน 409
+			name:     "field validation is 400",
+			err:      gl.Account{AccountCode: "มี ช่องว่าง"}.Validate(),
+			status:   400,
+			wantCode: "code_has_space",
+			wantMsg:  "รหัสบัญชีห้ามมีช่องว่าง กรุณาลบช่องว่างออก หรือใช้ - หรือ _ คั่นแทน",
 		},
 		{
 			name:     "guard: account code cannot be changed",

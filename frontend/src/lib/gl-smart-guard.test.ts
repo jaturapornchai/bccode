@@ -20,28 +20,84 @@ describe("gl-smart-guard (Thai Accounting Tax & Balance Guard)", () => {
   ];
 
   describe("isVatAccount", () => {
-    it("detects input VAT from account code 1151", () => {
-      const res = isVatAccount("1151", "ภาษีซื้อ", "");
+    it("detects input VAT from the account name", () => {
+      const res = isVatAccount("ภาษีซื้อ", "", "asset");
       expect(res.isVat).toBe(true);
       expect(res.type).toBe("input_tax");
     });
 
-    it("detects output VAT from account code 2141", () => {
-      const res = isVatAccount("2141", "ภาษีขาย", "");
+    it("detects output VAT from the account name", () => {
+      const res = isVatAccount("ภาษีขาย", "", "liability");
       expect(res.isVat).toBe(true);
       expect(res.type).toBe("output_tax");
     });
 
     it("detects VAT from description if account name is generic", () => {
-      const res = isVatAccount("9999", "เบ็ดเตล็ด", "บันทึกภาษีซื้อ 7%");
+      const res = isVatAccount("เบ็ดเตล็ด", "บันทึกภาษีซื้อ 7%");
       expect(res.isVat).toBe(true);
       expect(res.type).toBe("input_tax");
     });
 
     it("returns false for regular cash or expense accounts", () => {
-      const res = isVatAccount("1111", "เงินสด", "เบิกเงินสดสำรอง");
+      const res = isVatAccount("เงินสด", "เบิกเงินสดสำรอง", "asset");
       expect(res.isVat).toBe(false);
       expect(res.type).toBe(null);
+    });
+
+    // UAT 2026-09-24: 1153 "ภาษีเงินได้ถูกหัก ณ ที่จ่าย" was flagged as input VAT because its code starts with 115
+    it("never treats withholding-tax accounts as VAT", () => {
+      expect(isVatAccount("ภาษีเงินได้ถูกหัก ณ ที่จ่าย (WHT ถูกหัก)", "", "asset").isVat).toBe(false);
+      expect(isVatAccount("ภาษีเงินได้หัก ณ ที่จ่ายค้างจ่าย - ภ.ง.ด.53", "ภาษีขาย", "liability").isVat).toBe(false);
+    });
+
+    it("never treats income/expense accounts as the VAT line even when the name mentions VAT", () => {
+      expect(isVatAccount("รายได้จากการให้บริการ - ได้รับยกเว้นภาษีมูลค่าเพิ่ม", "", "income").isVat).toBe(false);
+      expect(isVatAccount("รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%", "", "income").isVat).toBe(false);
+    });
+
+    it("types a generic VAT account by account type, not by code", () => {
+      expect(isVatAccount("ภาษีมูลค่าเพิ่ม", "", "asset").type).toBe("input_tax");
+      expect(isVatAccount("ภาษีมูลค่าเพิ่ม", "", "liability").type).toBe("output_tax");
+      expect(isVatAccount("Private fund", "", "asset").isVat).toBe(false);
+    });
+  });
+
+  describe("account codes are never a condition", () => {
+    const chart: GLAccount[] = [
+      { ...emptyAccount(), accountcode: "1111", names: [{ code: "th", name: "เงินสดในมือ" }] },
+      { ...emptyAccount(), accountcode: "1153", names: [{ code: "th", name: "ภาษีเงินได้ถูกหัก ณ ที่จ่าย (WHT ถูกหัก)" }] },
+      { ...emptyAccount(), accountcode: "4122", accounttype: "income", normalbalance: "credit", names: [{ code: "th", name: "รายได้จากการให้บริการ - ได้รับยกเว้นภาษีมูลค่าเพิ่ม" }] },
+    ];
+
+    it("does not flag a withheld-tax receipt as a VAT mismatch", () => {
+      const res = analyzeGLTaxAndBalance([
+        { ...emptyLine(), accountcode: "1111", debit: "9700.00", credit: "0" },
+        { ...emptyLine(), accountcode: "1153", debit: "300.00", credit: "0" },
+        { ...emptyLine(), accountcode: "4122", debit: "0", credit: "10000.00" },
+      ], chart);
+      expect(res.isBalanced).toBe(true);
+      expect(res.vat.hasVatLine).toBe(false);
+    });
+
+    it("recognises VAT by name in a chart that uses unusual codes", () => {
+      const other: GLAccount[] = [
+        { ...emptyAccount(), accountcode: "9001", names: [{ code: "th", name: "ภาษีซื้อ" }] },
+        { ...emptyAccount(), accountcode: "7000", accounttype: "expense", names: [{ code: "th", name: "ค่าวัสดุสิ้นเปลือง" }] },
+      ];
+      const res = analyzeGLTaxAndBalance([
+        { ...emptyLine(), accountcode: "7000", debit: "1000.00", credit: "0" },
+        { ...emptyLine(), accountcode: "9001", debit: "70.00", credit: "0" },
+        { ...emptyLine(), accountcode: "2111", debit: "0", credit: "1070.00" },
+      ], other);
+      expect(res.vat.hasVatLine).toBe(true);
+      expect(res.vat.vatAccountCode).toBe("9001");
+      expect(res.vat.isExactVat).toBe(true);
+    });
+
+    it("leaves the account empty when the chart has no VAT account (no hard-coded fallback code)", () => {
+      const updated = appendVatLine([{ ...emptyLine(), accountcode: "1111", debit: "100.00", credit: "0" }], chart, "input_tax", amountUnits("7.00"), 2);
+      expect(updated[1].accountcode).toBe("");
+      expect(updated[1].debit).toBe("7.00");
     });
   });
 
@@ -170,6 +226,37 @@ describe("gl-smart-guard (Thai Accounting Tax & Balance Guard)", () => {
       expect(updated[1].debit).toBe("140.00");
       expect(updated[1].credit).toBe("0");
       expect(updated[1].description).toContain("7%");
+    });
+
+    const line: GLLine = { ...emptyLine(), accountcode: "5111", debit: "1000.00", credit: "0" };
+
+    it("skips an inactive VAT account", () => {
+      const chart: GLAccount[] = [
+        { ...emptyAccount(), accountcode: "8801", isactive: false, names: [{ code: "th", name: "ภาษีซื้อ" }] },
+        { ...emptyAccount(), accountcode: "8802", names: [{ code: "th", name: "ภาษีซื้อ" }] },
+      ];
+      expect(appendVatLine([line], chart, "input_tax", amountUnits("70.00"), 2)[1].accountcode).toBe("8802");
+    });
+
+    it("prefers the normal VAT account over an undue-VAT account listed first", () => {
+      const chart: GLAccount[] = [
+        { ...emptyAccount(), accountcode: "8801", names: [{ code: "th", name: "ภาษีซื้อยังไม่ถึงกำหนด" }] },
+        { ...emptyAccount(), accountcode: "8802", names: [{ code: "th", name: "ภาษีซื้อ" }] },
+        { ...emptyAccount(), accountcode: "8803", accounttype: "liability", names: [{ code: "th", name: "ภาษีขายยังไม่ถึงกำหนด" }] },
+        { ...emptyAccount(), accountcode: "8804", accounttype: "liability", names: [{ code: "th", name: "ภาษีขาย" }] },
+      ];
+      expect(appendVatLine([line], chart, "input_tax", amountUnits("70.00"), 2)[1].accountcode).toBe("8802");
+      expect(appendVatLine([line], chart, "output_tax", amountUnits("70.00"), 2)[1].accountcode).toBe("8804");
+    });
+
+    it("leaves the account empty when no active posting VAT account matches", () => {
+      const chart: GLAccount[] = [
+        { ...emptyAccount(), accountcode: "8801", isactive: false, names: [{ code: "th", name: "ภาษีซื้อ" }] },
+        { ...emptyAccount(), accountcode: "8802", allowposting: false, names: [{ code: "th", name: "ภาษีซื้อ" }] },
+      ];
+      const updated = appendVatLine([line], chart, "input_tax", amountUnits("70.00"), 2);
+      expect(updated[1].accountcode).toBe("");
+      expect(updated[1].debit).toBe("70.00");
     });
   });
 });

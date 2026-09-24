@@ -52,8 +52,8 @@ func TestTaxWithholdingReportFromGL(t *testing.T) {
 	if len(report.Summary.ByRate) != 1 || report.Summary.ByRate[0].RatePercent != "3.00" {
 		t.Fatalf("paid byrate=%+v คาด 1 กลุ่ม 3.00%%", report.Summary.ByRate)
 	}
-	if report.Note != "" {
-		t.Fatalf("ไม่ควรมี note เมื่อพบบัญชี: %s", report.Note)
+	if report.NoteKey != "" {
+		t.Fatalf("ไม่ควรมี note เมื่อพบบัญชี: %s", report.NoteKey)
 	}
 
 	pv1, ok := rows[0], rows[0].DocNo == "PV6901-S001"

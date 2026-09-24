@@ -18,6 +18,11 @@ var (
 	ErrHoldingManagerRequired   = errors.New("Holding OWNER or ADMIN required")
 	ErrHoldingOwnerRequired     = errors.New("Holding OWNER required")
 	ErrActiveHoldingRequired    = errors.New("active Holding required")
+	// ErrAccessExpired: the membership's access expiry date has passed (usable through the END
+	// of that date in the Holding's timezone — authmodels.AccessEndsAt). It wraps
+	// ErrActiveMembershipRequired so existing checks still refuse; responders that can say why
+	// test it first and answer with the language key "user_access_expired".
+	ErrAccessExpired = fmt.Errorf("%w: access expired", ErrActiveMembershipRequired)
 )
 
 // Querier is satisfied by *sql.DB and *sql.Tx on the central control database.
@@ -54,9 +59,11 @@ func FindActiveHolding(ctx context.Context, db Querier, holdingCode string) (Hol
 }
 
 // FindActiveMembership resolves the caller's current membership of the selected Holding.
-// Inactive users, memberships and Holdings fail closed. OWNER/ADMIN memberships without
-// explicit scopes cover every active company of the Holding.
-func FindActiveMembership(ctx context.Context, db Querier, userInfo micromodels.UserInfo, _ time.Time) (authmodels.ShopUser, error) {
+// Inactive users, memberships and Holdings fail closed. A holding-wide grant (a stored
+// holding rule, or OWNER/ADMIN without explicit scopes) expands here, at read time, to
+// every ACTIVE company of the Holding, so companies created after the grant are covered.
+// A membership whose access expiry date has passed at now fails with ErrAccessExpired.
+func FindActiveMembership(ctx context.Context, db Querier, userInfo micromodels.UserInfo, now time.Time) (authmodels.ShopUser, error) {
 	holdingCode := strings.TrimSpace(userInfo.HoldingCode)
 	userUID := strings.TrimSpace(userInfo.UID)
 	if holdingCode == "" || userUID == "" {
@@ -68,19 +75,30 @@ func FindActiveMembership(ctx context.Context, db Querier, userInfo micromodels.
 		roleText       string
 		permissionSets []byte
 		accessScopes   []byte
+		expiryDate     sql.NullTime
+		timezone       string
 	)
+	// Timezone expression = centraldb.HoldingTimezoneSQL (not imported: centraldb → mcptoken → access).
 	err := db.QueryRowContext(ctx, `
-		SELECT m.id::text, u.id::text, u.username, m.role, m.permission_sets, m.access_scopes
+		SELECT m.id::text, u.id::text, u.username, m.role, m.permission_sets, m.access_scopes,
+			m.access_expiry_date, COALESCE(h.profile->'settings'->>'timezone', '')
 		FROM holding_members m
 		JOIN users u ON u.id = m.user_id AND u.is_active = true
 		JOIN holdings h ON h.code = m.holding_code AND h.is_active = true
 		WHERE m.holding_code = $1 AND m.user_id::text = $2 AND m.is_active = true`,
-		holdingCode, userUID).Scan(&membership.MembershipUID, &membership.UserUID, &membership.Username, &roleText, &permissionSets, &accessScopes)
+		holdingCode, userUID).Scan(&membership.MembershipUID, &membership.UserUID, &membership.Username, &roleText, &permissionSets, &accessScopes,
+		&expiryDate, &timezone)
 	if errors.Is(err, sql.ErrNoRows) {
 		return authmodels.ShopUser{}, ErrActiveMembershipRequired
 	}
 	if err != nil {
 		return authmodels.ShopUser{}, fmt.Errorf("load membership: %w", err)
+	}
+	if expiryDate.Valid {
+		membership.AccessExpiryDate = authmodels.AccessEndsAt(expiryDate.Time, timezone)
+	}
+	if authmodels.AccessExpired(membership.AccessExpiryDate, now) {
+		return authmodels.ShopUser{}, ErrAccessExpired
 	}
 	role := authmodels.RoleFromText(roleText)
 	membership.ID = membership.MembershipUID
@@ -94,7 +112,8 @@ func FindActiveMembership(ctx context.Context, db Querier, userInfo micromodels.
 	if err != nil {
 		return authmodels.ShopUser{}, fmt.Errorf("load membership: %w", err)
 	}
-	if len(scopes) == 0 && (role == authmodels.ROLE_OWNER || role == authmodels.ROLE_ADMIN) {
+	manager := role == authmodels.ROLE_OWNER || role == authmodels.ROLE_ADMIN
+	if authmodels.HasHoldingScope(scopes) || (len(scopes) == 0 && manager) {
 		if scopes, err = allCompanyScopes(ctx, db, holdingCode); err != nil {
 			return authmodels.ShopUser{}, err
 		}
