@@ -78,7 +78,11 @@ type Asset struct {
 	Model                    string `json:"model"`
 	SupplierCode             string `json:"suppliercode"`
 	IsTaxDeductible          bool   `json:"istaxdeductible"`
-	Notes                    string `json:"notes"`
+	// Passenger car / bus with ≤10 seats: tax depreciation only on cost up to the statutory
+	// cap (docs/kms/21-thai-tax-form-references.md §13). Set per asset, not by type code,
+	// because the law exempts some cars (car-rental stock, R&D prototypes).
+	PassengerCarTaxCap bool   `json:"passengercartaxcap"`
+	Notes              string `json:"notes"`
 }
 
 func (Asset) CollectionName() string { return "fixed_assets" }

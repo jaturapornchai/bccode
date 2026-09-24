@@ -48,6 +48,7 @@ export type FixedAsset = FAIdentity & {
   model: string;
   suppliercode: string;
   istaxdeductible: boolean;
+  passengercartaxcap: boolean;
   notes: string;
 };
 

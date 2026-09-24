@@ -36,19 +36,20 @@ var Tools = []ToolDefinition{
 			"type": "object",
 			"required": []string{"assetcode", "name_th", "cost", "purchasedate"},
 			"properties": map[string]interface{}{
-				"assetcode":         map[string]interface{}{"type": "string", "description": "รหัสสินทรัพย์"},
-				"name_th":           map[string]interface{}{"type": "string", "description": "ชื่อสินทรัพย์ (ภาษาไทย)"},
-				"assettypecode":     map[string]interface{}{"type": "string", "description": "รหัสประเภทสินทรัพย์"},
-				"cost":              map[string]interface{}{"type": "number", "description": "ราคาทุนสินทรัพย์"},
-				"scrapvalue":        map[string]interface{}{"type": "number", "description": "ราคาซาก (default 0)"},
-				"usefullifeyears":   map[string]interface{}{"type": "integer", "description": "อายุการใช้งาน (ปี)"},
-				"deprecpercent":     map[string]interface{}{"type": "number", "description": "อัตราค่าเสื่อมต่อปี (%)"},
-				"purchasedate":      map[string]interface{}{"type": "string", "description": "วันที่ซื้อ (YYYY-MM-DD)"},
-				"startcalcdate":     map[string]interface{}{"type": "string", "description": "วันที่เริ่มคำนวณค่าเสื่อม (YYYY-MM-DD)"},
-				"firstyearpercent":  map[string]interface{}{"type": "number", "description": "สิทธิพิเศษทางภาษีหักปีแรก (%) เช่น คอมพิวเตอร์ 40%"},
-				"assetaccount":      map[string]interface{}{"type": "string", "description": "รหัสบัญชีสินทรัพย์ตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
-				"accumaccount":      map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าเสื่อมราคาสะสมตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
-				"expenseaccount":    map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าใช้จ่ายค่าเสื่อมราคาตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
+				"assetcode":          map[string]interface{}{"type": "string", "description": "รหัสสินทรัพย์"},
+				"name_th":            map[string]interface{}{"type": "string", "description": "ชื่อสินทรัพย์ (ภาษาไทย)"},
+				"assettypecode":      map[string]interface{}{"type": "string", "description": "รหัสประเภทสินทรัพย์"},
+				"cost":               map[string]interface{}{"type": "number", "description": "ราคาทุนสินทรัพย์"},
+				"scrapvalue":         map[string]interface{}{"type": "number", "description": "ราคาซาก (default 0)"},
+				"usefullifeyears":    map[string]interface{}{"type": "integer", "description": "อายุการใช้งาน (ปี)"},
+				"deprecpercent":      map[string]interface{}{"type": "number", "description": "อัตราค่าเสื่อมต่อปี (%)"},
+				"purchasedate":       map[string]interface{}{"type": "string", "description": "วันที่ซื้อ (YYYY-MM-DD)"},
+				"startcalcdate":      map[string]interface{}{"type": "string", "description": "วันที่เริ่มคำนวณค่าเสื่อม (YYYY-MM-DD)"},
+				"firstyearpercent":   map[string]interface{}{"type": "number", "description": "สิทธิพิเศษทางภาษีหักปีแรก (%) เช่น คอมพิวเตอร์ 40%"},
+				"passengercartaxcap": map[string]interface{}{"type": "boolean", "description": "รถยนต์นั่งหรือรถยนต์โดยสารไม่เกิน 10 ที่นั่ง: ค่าเสื่อมทางภาษีคิดจากต้นทุนไม่เกินคันละ 1,000,000 บาท (ไม่ใช้กับรถของกิจการให้เช่ารถยนต์)"},
+				"assetaccount":       map[string]interface{}{"type": "string", "description": "รหัสบัญชีสินทรัพย์ตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
+				"accumaccount":       map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าเสื่อมราคาสะสมตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
+				"expenseaccount":     map[string]interface{}{"type": "string", "description": "รหัสบัญชีค่าใช้จ่ายค่าเสื่อมราคาตามผังบัญชีของบริษัท (เว้นว่าง = ใช้ของประเภทสินทรัพย์)"},
 			},
 		},
 	},
@@ -158,6 +159,7 @@ func (h *MCPHandler) HandleToolCall(ctx context.Context, scope fa.Scope, toolNam
 		purchaseDate, _ := args["purchasedate"].(string)
 		startCalcDate, _ := args["startcalcdate"].(string)
 		firstYearPct, _ := args["firstyearpercent"].(float64)
+		passengerCarCap, _ := args["passengercartaxcap"].(bool)
 		assetAcc, _ := args["assetaccount"].(string)
 		accumAcc, _ := args["accumaccount"].(string)
 		expenseAcc, _ := args["expenseaccount"].(string)
@@ -173,6 +175,7 @@ func (h *MCPHandler) HandleToolCall(ctx context.Context, scope fa.Scope, toolNam
 			PurchaseDate:             purchaseDate,
 			StartCalcDate:            startCalcDate,
 			FirstYearPercent:         fa.AmountFromFloat(firstYearPct),
+			PassengerCarTaxCap:       passengerCarCap,
 			AssetAccountCode:         assetAcc,
 			AccumDeprecAccountCode:   accumAcc,
 			DeprecExpenseAccountCode: expenseAcc,

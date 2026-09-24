@@ -32,6 +32,7 @@ describe("Fixed Assets Client Library", () => {
       model: "OptiPlex",
       suppliercode: "SUP-01",
       istaxdeductible: true,
+      passengercartaxcap: false,
       notes: "",
     };
 
