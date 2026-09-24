@@ -21,7 +21,7 @@ async function shoot(page: Page, name: string) {
 async function measureHeaderControls(page: Page) {
   return page.evaluate(() => {
     const buttons = Array.from(
-      document.querySelectorAll('.card-header .header-controls button, .card-header .header-controls a.header-control-button'),
+      document.querySelectorAll('.card-header .header-controls button'),
     );
     return buttons.map((b) => {
       const r = b.getBoundingClientRect();
@@ -54,7 +54,7 @@ test('HC-01 login card header: 3em buttons, 1.4em icons, fluid across viewports'
     await page.setViewportSize({ width: w, height: h });
     await page.waitForTimeout(600);
     const rows = await measureHeaderControls(page);
-    expect(rows.length, `${w}: five header controls`).toBe(5);
+    expect(rows.length, `${w}: four header controls`).toBe(4);
     for (const r of rows) {
       // 3em box: 45px @1280 → ~59px @1920 → ~42px @700 (root ladder 10/13.1/8.19px)
       expect(r.w, `${w} ${r.label} width ≥ 40`).toBeGreaterThanOrEqual(40);
@@ -66,7 +66,7 @@ test('HC-01 login card header: 3em buttons, 1.4em icons, fluid across viewports'
     }
     const heights = rows.map((r) => r.h);
     expect(Math.max(...heights) - Math.min(...heights), `${w}: equal heights`).toBeLessThanOrEqual(1);
-    // icon glyph heights must match across all five buttons — flag included
+    // icon glyph heights must match across all four buttons — flag included
     const iconHeights = rows.map((r) => r.iconH);
     expect(Math.max(...iconHeights) - Math.min(...iconHeights), `${w}: equal icon heights (flag = svg)`).toBeLessThanOrEqual(1.5);
     // icon grows with the box (1.4em ≥ 19px everywhere; flag 2em ≥ 26px)
@@ -141,19 +141,4 @@ test('HC-03 holding card header parity with login', async ({ page }) => {
     expect(parseFloat(r.borderWidth)).toBeGreaterThanOrEqual(1);
   }
   await shoot(page, '05-holding-header');
-});
-
-test('HC-04 non-card-header chrome (settings) keeps the 36px lock', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/settings');
-  await page.waitForTimeout(1000);
-  const sizes = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('.header-controls button, .header-controls a.header-control-button'))
-      .filter((b) => !b.closest('.card-header'))
-      .map((b) => Math.round(b.getBoundingClientRect().height)),
-  );
-  expect(sizes.length, 'settings page has non-card header controls').toBeGreaterThan(0);
-  for (const s of sizes) {
-    expect(s, `settings chrome control stays compact (≤ 40px), got ${s}`).toBeLessThanOrEqual(40);
-  }
 });

@@ -3,7 +3,6 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const setupScreens = [
-  "settings",
   "menu",
   "currency",
   "workspace",

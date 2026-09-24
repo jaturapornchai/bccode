@@ -213,12 +213,6 @@ test('UAT-07 full happy path: dev login → holding → workspace → settings',
   await shoot(page, '14-after-branch-select');
   await audit(page, 'after-branch');
 
-  // Settings screen (main functions): open via /settings
-  await page.goto('/settings');
-  await page.waitForTimeout(1500);
-  await shoot(page, '15-settings-open');
-  await audit(page, 'settings-open');
-
   const step3 = page.getByRole('button', { name: /รายการสิทธิ์หน้าจอ/ });
   if (await step3.count()) {
     await step3.first().click();

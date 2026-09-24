@@ -2532,7 +2532,6 @@ export function SystemSettingsScreen({
               <AppHeaderControls
                 language={language}
                 onLanguageChange={setLanguage}
-                showSettings={false}
               />
             )}
             <ManualLink

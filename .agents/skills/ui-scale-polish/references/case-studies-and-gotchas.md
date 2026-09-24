@@ -23,7 +23,7 @@
 
 ```css
 button[class*="rounded-lg"], button[class*="h-8"], button[class*="h-9"],
-.header-control-button, .icon-button, .zoom-control-trigger {
+.icon-button, .zoom-control-trigger {
   font-size: 0.8rem; font-weight: 600; line-height: 1.4;
   height: 36px; min-height: 36px; border-radius: 6px;
   padding-inline: 0.7em; gap: 0.45em;

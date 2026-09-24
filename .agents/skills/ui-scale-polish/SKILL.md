@@ -1516,3 +1516,11 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 - **เหตุผล (Root Cause & Rationale)**: ที่อยู่บนแบบภาษีต้องตรงกับที่จดทะเบียน — ข้อความที่ถูกตัดโดยไม่รู้ตัวคือเอกสารผิด; กฎ 40+ ข้อ 7–8 (validate ก่อนส่ง + feedback ทันทีเป็นภาษาไทย); ข้อความเดียวกันทั้ง client/server ทำให้ผู้ใช้ไม่เจอคำเตือนสองแบบ
 - **วิธีตรวจ**: `npx vitest run src/app/system-settings/company-branch-tree-view.test.ts src/app/system-settings/settings-language-keys.test.ts src/lib/thai-tax.test.ts src/app/tax/wht-certificate-panel.test.ts`; บนจอ: แก้บริษัท → วางข้อความยาวเกินในช่องถนน ต้องเห็นเตือนใต้ช่องและบันทึกไม่ได้, รหัสไปรษณีย์ 4 หลักต้องเตือน, บันทึกแล้ว `SELECT addr_road, addr_postcode, phone FROM companies WHERE holding_code=… AND code=…` ต้องตรง
 - **อ้างอิง (Reference Implementation)**: `frontend/src/app/system-settings/company-branch-tree-view.tsx` (`COMPANY_TAX_ADDRESS_FIELDS` :683, `firstTaxAddressProblemText` :712, `CompanyTaxAddressSection` :723, เตือนใต้ช่อง :780, กันบันทึก :1049, payload :1267/:1279, optimistic :1420, render :2186); `frontend/src/lib/thai-tax.ts` (`TAX_ADDRESS_KEYS` :110, `toTaxAddress` :129, `trimTaxAddress` :137, `taxAddressProblems` :147); backend คู่กัน `backend/internal/taxaddress/taxaddress.go` (`Validate`), ADR `docs/kms/decisions/2026-09-25-company-tax-address.md`
+
+## 8.46 Header controls มีแค่ ฟอนต์ / ธีม / ภาษา — ห้ามมีลิงก์ไปจอตั้งค่า infra (2026-09-24)
+
+- **แบบแผน**: `<AppHeaderControls language onLanguageChange />` แสดง 3 ตัวเท่านั้น (FontPicker, ThemeToggle = ปุ่มธีมสี+โหมดมืด, LanguageDialog) → การ์ด login มี 4 ปุ่ม; ไม่มี prop `showSettings` แล้ว
+- **ห้ามทำซ้ำ**: ปุ่มฟันเฟือง/ลิงก์ "ไปตั้งค่า →" ไปจอตั้งค่า server/Backend URL/DB/S3/AI key บนหน้าเว็บ (จอ `/settings` + `/api/setup/*` ถูกลบ เพราะไม่ตรวจ session และเปิด SSRF); class `.header-control-button` ถูกลบจาก CSS แล้ว อย่าใช้กลับ
+- **เหตุผล**: ค่า infra ตั้งตอน deploy (compose/env) ไม่ใช่งานของผู้ใช้ปลายทาง — ปุ่มที่ดูเหมือนตั้งค่าได้แต่ไม่มีผลจริงทำลายความเชื่อมั่น (ดู 8.34) และหน้าที่ไม่ต้อง login แต่แตะ infra คือช่องโหว่
+- **วิธีตรวจ**: หน้า login ต้องนับ `.card-header .header-controls button` ได้ 4 (`tests/login-header-controls.spec.ts` HC-01); `npx vitest run src/app/api/removed-setup-api.test.ts`
+- **อ้างอิง**: `frontend/src/app/app-header-controls.tsx`, `docs/kms/bugs/2026-09-24-unauthenticated-setup-api-ssrf.md`

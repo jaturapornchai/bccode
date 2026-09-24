@@ -938,7 +938,7 @@ export function HoldingScreen({
               </div>
             </div>
             <div className="header-actions">
-              <AppHeaderControls language={language} onLanguageChange={setLanguage} showSettings={false} />
+              <AppHeaderControls language={language} onLanguageChange={setLanguage} />
               <button className="icon-button" type="button" onClick={logout} aria-label={ht(language, "logout")} title={ht(language, "logout")}>
                 <LogOut aria-hidden="true" size={18} />
               </button>

@@ -18,7 +18,6 @@ const manualScreensWithContent = new Set([
   "menu",
   "permissiondefinition",
   "permissiongroup",
-  "settings",
   "user",
   "useraccessaudit",
   "workspace",
