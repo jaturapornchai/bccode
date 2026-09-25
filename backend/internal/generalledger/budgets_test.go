@@ -32,15 +32,32 @@ func TestSpreadAnnualRemainderToLastMonth(t *testing.T) {
 }
 
 func TestSpreadCommandValidatesAmounts(t *testing.T) {
-	r, err := spreadBudget(Command{Budget: &Budget{Lines: []BudgetLine{{AccountCode: "5000", Total: "100000"}}}})
+	r, err := spreadBudget(Command{Budget: &Budget{Lines: []BudgetLine{{AccountCode: "5000", Total: "100000"}}}}, BudgetPeriods)
 	if err != nil || len(r.Lines) != 1 || r.Lines[0].Periods[0] != "8333.33" || r.Lines[0].Periods[11] != "8333.37" || r.Lines[0].Total != "100000.00" {
 		t.Fatalf("spread = %+v, %v", r, err)
 	}
 	for amount, code := range map[Amount]string{"-1": "budget_amount_negative", "1.005": "budget_amount_scale", "10000000000000000": "budget_amount_too_large"} {
-		_, err := spreadBudget(Command{Budget: &Budget{Lines: []BudgetLine{{Total: amount}}}})
+		_, err := spreadBudget(Command{Budget: &Budget{Lines: []BudgetLine{{Total: amount}}}}, BudgetPeriods)
 		if u, ok := AsUserError(err); !ok || u.Code != code {
 			t.Fatalf("%s: %v, want %s", amount, err, code)
 		}
+	}
+}
+
+// A short fiscal year (9 periods) gets the whole annual amount in its 9 real periods: the
+// last real period takes the remainder and periods 10-12 stay zero, so the result can be saved.
+func TestSpreadShortFiscalYear(t *testing.T) {
+	r, err := spreadBudget(Command{Budget: &Budget{Lines: []BudgetLine{{AccountCode: "5000", Total: "100000"}}}}, 9)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := r.Lines[0].Periods
+	sum := decimal.Zero
+	for _, a := range p {
+		sum = sum.Add(a.Decimal())
+	}
+	if p[0] != "11111.11" || p[7] != "11111.11" || p[8] != "11111.12" || p[9] != "0.00" || p[11] != "0.00" || !sum.Equal(decimal.RequireFromString("100000")) || r.Lines[0].Total != "100000.00" {
+		t.Fatalf("9-period spread = %v (sum %s)", p, sum)
 	}
 }
 

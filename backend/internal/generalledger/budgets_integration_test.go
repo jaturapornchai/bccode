@@ -4,6 +4,7 @@ package generalledger
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -155,5 +156,84 @@ func TestBudgetLifecycleAndComparisonIntegration(t *testing.T) {
 	}
 	if err := f.db.QueryRowContext(f.ctx, `SELECT count(*) FROM gl_budgets WHERE company='C'`).Scan(&lines); err != nil || lines != 1 {
 		t.Fatalf("replay wrote %d headers (%v)", lines, err)
+	}
+}
+
+// Budgets live outside gl_records, yet they are references like journals: while a budget exists
+// its fiscal year cannot be moved, shortened or deleted (period_no counts from the fiscal start)
+// and its accounts cannot be deleted. Budgets are usually entered before the year has any
+// journal, so FY 2027 of the fixture has none; the budget is its only reference.
+func TestBudgetBlocksFiscalYearAndAccountChangesIntegration(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	acc := Account{AccountCode: "5100", AccountType: "expense", NormalBalance: "debit", AllowPosting: true, IsActive: true, Names: []Name{{Code: "th", Name: "ค่าเช่าสำนักงานและคลังสินค้า"}}}
+	ar := f.run(Command{Resource: "accounts", Action: "create", Account: &acc})
+	b := Budget{Code: "BG-2570", Name: "งบค่าเช่าสำนักงานและคลังสินค้า ปี 2570", FiscalYear: "2027", Lines: []BudgetLine{{AccountCode: "5100", Periods: budgetMonths("20000")}}}
+	created := f.run(Command{Resource: "budgets", Action: "create", Budget: &b})
+
+	y := f.years["2027"]
+	for name, mut := range map[string]func(*FiscalYear){
+		"move start": func(x *FiscalYear) { x.StartDate, x.EndDate = "2027-04-01", "2028-03-31" },
+		"shorten":    func(x *FiscalYear) { x.EndDate = "2027-09-30" },
+		"deactivate": func(x *FiscalYear) { x.IsActive = false },
+	} {
+		next := y
+		mut(&next)
+		if _, err := f.execute(f.scope, Command{Resource: "fiscal-years", Action: "update", ID: y.ID, Version: y.Version, FiscalYear: &next}); err == nil || !strings.Contains(err.Error(), "ปีบัญชีมีข้อมูลอ้างอิง") {
+			t.Fatalf("%s budgeted fiscal year: %v", name, err)
+		}
+	}
+	if _, err := f.execute(f.scope, Command{Resource: "fiscal-years", Action: "delete", ID: y.ID, Version: y.Version}); err == nil || !strings.Contains(err.Error(), "ปีบัญชีมีข้อมูลอ้างอิง") {
+		t.Fatalf("delete budgeted fiscal year: %v", err)
+	}
+	f.failCode(Command{Resource: "accounts", Action: "delete", ID: ar.ID, Version: ar.Version}, CodeReferenced, "")
+
+	// PostgreSQL: the year keeps its dates and the account is still live
+	var start, end string
+	var liveAccounts int
+	if err := f.db.QueryRowContext(f.ctx, `SELECT payload->>'startdate', payload->>'enddate' FROM gl_records WHERE company='C' AND kind='fiscal-years' AND code='2027' AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`).Scan(&start, &end); err != nil || start != "2027-01-01" || end != "2027-12-31" {
+		t.Fatalf("FY 2027 after refused changes = %s..%s (%v)", start, end, err)
+	}
+	if err := f.db.QueryRowContext(f.ctx, `SELECT count(*) FROM gl_records WHERE company='C' AND kind='accounts' AND code='5100' AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`).Scan(&liveAccounts); err != nil || liveAccounts != 1 {
+		t.Fatalf("account 5100 live rows = %d (%v)", liveAccounts, err)
+	}
+
+	// the budget was the only reference: once it is deleted the account and the year can go
+	f.run(Command{Resource: "budgets", Action: "delete", ID: "BG-2570", Version: created.Version})
+	f.run(Command{Resource: "accounts", Action: "delete", ID: ar.ID, Version: ar.Version})
+	f.run(Command{Resource: "fiscal-years", Action: "delete", ID: y.ID, Version: y.Version})
+}
+
+// Action "spread" follows the fiscal year's real period count, so a short first year gets its
+// whole annual amount in its own periods and the result can be saved unchanged.
+func TestBudgetSpreadShortFiscalYearIntegration(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	y := FiscalYear{Code: "2028", StartDate: "2028-04-01", EndDate: "2028-12-31", IsActive: true, Scale: 2, ProfitLossAccount: "3200", RetainedEarningsAccount: "3100"}
+	f.run(Command{Resource: "fiscal-years", Action: "create", FiscalYear: &y})
+	spread := func(year string) (Result, error) {
+		return f.execute(f.scope, Command{Resource: "budgets", Action: "spread", Budget: &Budget{FiscalYear: year, Lines: []BudgetLine{{AccountCode: "5000", Total: "90000"}}}})
+	}
+
+	r, err := spread("2028")
+	if err != nil || len(r.Lines) != 1 {
+		t.Fatalf("spread 9-period year = %+v, %v", r, err)
+	}
+	p := r.Lines[0].Periods
+	if p[0] != "10000.00" || p[8] != "10000.00" || p[9] != "0.00" || p[11] != "0.00" {
+		t.Fatalf("9-period spread = %v", p)
+	}
+	b := Budget{Code: "BG-2571", Name: "งบค่าใช้จ่ายในการขายและบริหาร ปีบัญชีแรก", FiscalYear: "2028", Lines: []BudgetLine{{AccountCode: "5000", Periods: p}}}
+	f.run(Command{Resource: "budgets", Action: "create", Budget: &b})
+	var total string
+	if err := f.db.QueryRowContext(f.ctx, `SELECT sum(amount)::text FROM gl_budget_lines WHERE company='C' AND budget_code='BG-2571'`).Scan(&total); err != nil || total != "90000.00" {
+		t.Fatalf("PG saved spread total = %s (%v)", total, err)
+	}
+
+	if r, err := spread(""); err != nil || r.Lines[0].Periods[11] != "7500.00" {
+		t.Fatalf("spread without a fiscal year = %+v, %v", r, err)
+	}
+	if _, err := spread("2099"); err == nil {
+		t.Fatal("spread accepted an unknown fiscal year")
+	} else if u, ok := AsUserError(err); !ok || u.Code != "budget_fiscal_year_not_found" {
+		t.Fatalf("unknown fiscal year error = %v", err)
 	}
 }

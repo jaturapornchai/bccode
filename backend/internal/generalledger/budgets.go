@@ -25,8 +25,8 @@ import (
 var budgetSchema string
 
 const (
-	BudgetPeriods       = 12
-	budgetNameMaxRunes  = 200
+	BudgetPeriods      = 12
+	budgetNameMaxRunes = 200
 	// Champ BCGLBudget.Status: a plain open/closed flag (no approval workflow, no lock).
 	budgetStatusOpen   = "open"
 	budgetStatusClosed = "closed"
@@ -93,12 +93,22 @@ func budgetAccountNotPosting(code string) error {
 // divided by 12 truncated to 2 decimals, and the last month takes the remainder so the
 // months always add back to the annual exactly (100000 → 8333.33 × 11 + 8333.37).
 func SpreadAnnual(annual decimal.Decimal) []decimal.Decimal {
-	month := annual.Div(decimal.NewFromInt(BudgetPeriods)).Truncate(2)
+	return spreadOver(annual, BudgetPeriods)
+}
+
+// spreadOver splits an annual amount across the first n (1..12) of the 12 period slots, the
+// same way as SpreadAnnual: a short fiscal year (n < 12) gets its whole annual amount in its
+// real periods, the last real period takes the remainder and the slots after it stay zero.
+func spreadOver(annual decimal.Decimal, n int) []decimal.Decimal {
 	out := make([]decimal.Decimal, BudgetPeriods)
-	for i := 0; i < BudgetPeriods-1; i++ {
+	for i := range out {
+		out[i] = decimal.Zero
+	}
+	month := annual.Div(decimal.NewFromInt(int64(n))).Truncate(2)
+	for i := 0; i < n-1; i++ {
 		out[i] = month
 	}
-	out[BudgetPeriods-1] = annual.Sub(month.Mul(decimal.NewFromInt(BudgetPeriods - 1)))
+	out[n-1] = annual.Sub(month.Mul(decimal.NewFromInt(int64(n - 1))))
 	return out
 }
 
@@ -116,8 +126,9 @@ func checkBudgetAmount(a Amount) error {
 	return nil
 }
 
-// spreadBudget answers action "spread" without touching the database.
-func spreadBudget(cmd Command) (Result, error) {
+// spreadBudget answers action "spread" (nothing is saved): each line's annual total is split
+// across periodCount periods (budgetSpreadPeriods), so the result always passes validateBudget.
+func spreadBudget(cmd Command, periodCount int) (Result, error) {
 	if cmd.Budget == nil || len(cmd.Budget.Lines) == 0 {
 		return Result{}, errBudgetLinesRequired
 	}
@@ -127,7 +138,7 @@ func spreadBudget(cmd Command) (Result, error) {
 			return Result{}, err
 		}
 		periods := make([]Amount, BudgetPeriods)
-		for p, d := range SpreadAnnual(line.Total.Decimal()) {
+		for p, d := range spreadOver(line.Total.Decimal(), periodCount) {
 			periods[p] = Amount(d.StringFixed(2))
 		}
 		lines[i] = BudgetLine{AccountCode: line.AccountCode, Periods: periods, Total: Amount(line.Total.Decimal().StringFixed(2))}
@@ -170,6 +181,32 @@ func fiscalPeriodStarts(y FiscalYear) []string {
 		out = append(out, p.Format("2006-01-02"))
 	}
 	return out
+}
+
+// budgetSpreadPeriods is how many periods action "spread" fills: the real period count of the
+// budget's fiscal year (a short first year has fewer than 12), or 12 when no year is given.
+func (s *PostgresStore) budgetSpreadPeriods(ctx context.Context, scope Scope, b *Budget) (int, error) {
+	if b == nil || b.FiscalYear == "" {
+		return BudgetPeriods, nil
+	}
+	db, err := s.pg.database(ctx, scope.Holding)
+	if err != nil {
+		return 0, err
+	}
+	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	year, err := s.pgYear(ctx, tx, scope, b.FiscalYear)
+	if err != nil {
+		return 0, errBudgetFiscalYear
+	}
+	n := len(fiscalPeriodStarts(year))
+	if n == 0 {
+		return 0, errBudgetFiscalYear
+	}
+	return n, nil
 }
 
 func (s *PostgresStore) validateBudget(ctx context.Context, tx *sql.Tx, scope Scope, b Budget) error {

@@ -535,7 +535,8 @@ func main() {
 		for _, month := range gl.SpreadAnnual(gl.Amount(b.amount).Decimal()) {
 			periods = append(periods, gl.Amount(month.StringFixed(2)))
 		}
-		cmd := gl.Command{Resource: "budgets", Action: "create", RequestID: "seed-gl-screens-" + b.code,
+		// namespace ใหม่: seed รุ่นก่อนใช้ seed-gl-screens-<code> กับคำสั่ง master งบประมาณแบบเดิม ถ้าใช้ซ้ำจะชน "รหัสคำขอนี้ถูกใช้แล้วด้วยข้อมูลที่ต่างกัน"
+		cmd := gl.Command{Resource: "budgets", Action: "create", RequestID: "seed-gl-budget-monthly-" + b.code,
 			Budget: &gl.Budget{Code: b.code, Name: b.name, FiscalYear: *fiscal, BranchCode: *branch, Lines: []gl.BudgetLine{{AccountCode: b.acct, Periods: periods}}}}
 		if _, err := store.Execute(ctx, scope, cmd); err != nil {
 			fatal("สร้างงบประมาณ %s ไม่ได้: %v", b.code, err)

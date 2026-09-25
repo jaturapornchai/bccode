@@ -34,6 +34,12 @@ it("API token can page accounting evidence at an as-of date without overriding i
   expect((await GET(request, context(["journal-support","id"]))).status).toBe(404);
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
+it("API token keeps the budgetcode filter on the budget comparison report (same allowlist as /api/gl)", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetcher);
+  const response = await GET(new Request("http://local/api/integration/gl/reports/budgetcomparison?fiscalyear=2569&budgetcode=BG-2569&holdingcode=other", { headers: { authorization: "Bearer bcaiapi_test.id.secret" } }), context(["reports", "budgetcomparison"]));
+  expect(response.status).toBe(200);
+  expect(fetcher.mock.calls[0][0]).toBe("http://mainapi:8888/integration/gl/v2/reports/budgetcomparison?fiscalyear=2569&budgetcode=BG-2569");
+});
 it.each(["ar-outstanding","ap-outstanding","bank-unmatched"])("API token exposes %s through the authenticated report route", async (report) => {
   const fetcher = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetcher);
   const response = await GET(new Request(`http://local/api/integration/gl/reports/${report}?to=2026-06-30&companywide=true`, { headers: { authorization: "Bearer bcaiapi_test.id.secret" } }), context(["reports",report]));

@@ -66,7 +66,11 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 		return Result{}, err
 	}
 	if cmd.Resource == "budgets" && cmd.Action == "spread" {
-		return spreadBudget(cmd)
+		periods, err := s.budgetSpreadPeriods(ctx, scope, cmd.Budget)
+		if err != nil {
+			return Result{}, err
+		}
+		return spreadBudget(cmd, periods)
 	}
 	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
