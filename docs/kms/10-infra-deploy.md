@@ -1,139 +1,110 @@
 # โครงสร้างพื้นฐานและการ deploy (Infra & Deploy)
-> ตรวจล่าสุด: 2026-09-07 (commit d93a210d) — ผู้เขียน: AI reader; ทุกข้อเท็จจริงอ้าง path:line · ตรวจซ้ำโดย fact-checker
+> ตรวจล่าสุด: 2026-09-25 — ผู้เขียน: AI reader; ทุกข้อเท็จจริงอ้าง path:line ตรวจกับซอร์สจริงในรอบนี้
+> **สถาปัตยกรรมเปลี่ยนใหญ่ 2026-09-23**: ถอด MongoDB, Kafka, Redis และ ClickHouse ออกจากระบบทั้งหมด — เหลือ **PostgreSQL ตัวเดียว** (+ MinIO สำหรับไฟล์/รูปภาพ) ดูเหตุผลและรายการที่ถอดที่ ADR [`decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md) — **ห้ามเพิ่มสี่ตัวนี้กลับเข้าระบบ**
 
 ## 1. ภาพรวม
-ระบบมี binary หลักตัวเดียว (`backend/main.go`) ที่สลับบทบาทด้วย env `DEV_API_MODE` และมี 3 ชุด compose ที่ใช้งานจริง: local dev (`backend/docker-compose.yml` + overlay `docker-compose.local.yml`), integration test ที่รันมือผ่าน `sh tools/verify.sh projection` (`backend/.ci/projection.compose.yml`) และ production (`deploy/account/compose.yml` + override `compose.8gb.yml`). Frontend เป็น Next.js image แยก (`frontend/Dockerfile`) ที่ proxy `/backend/*` ไป mainapi ผ่าน `BCAI_LOCAL_BACKEND_URL` (frontend/next.config.ts:19-21, 74).
+ระบบมี binary หลักตัวเดียว (`backend/main.go`, 192 บรรทัด) รันเป็น process เดียว ไม่มีการแยกโหมดทำงานแล้ว — env `DEV_API_MODE` ยังถูกตั้งใน Dockerfile/compose/`provision-server.sh` และมี mapping ใน loader ทั้งสองตัว (§6) แต่ไม่มีโค้ดใดอ่านค่านี้ (grep `DEV_API_MODE` ใน `backend/**/*.go` เจอแค่ mapping) มี 2 ชุด compose ที่ใช้งานจริง: local dev (`backend/docker-compose.yml` + overlay `backend/docker-compose.local.yml`) และ production (`deploy/account/compose.yml` + override `deploy/account/compose.8gb.yml`). Frontend เป็น Next.js image แยก (`frontend/Dockerfile`) ที่ proxy `/backend/*` ไป mainapi ผ่าน `BCAI_LOCAL_BACKEND_URL` (ค่าตั้งต้นเมื่อไม่ส่ง: production = `http://mainapi:8888`, dev = `http://localhost:8888` — frontend/next.config.ts:19, rewrite ที่บรรทัด 71).
 
-### โหมดของ binary (`DEV_API_MODE`)
-| ค่า | หน้าที่ | หลักฐาน | ใช้โดย |
-|---|---|---|---|
-| `""` | รันทั้ง API และ consumers ใน process เดียว | backend/main.go:256, backend/main.go:654 | ไม่มี compose ไหนใช้ค่าว่าง |
-| `"2"` | HTTP API (mainapi modules) + goapi embed ที่ `/goapi/*` + `/api/language/:lang` public | backend/main.go:256, backend/main.go:568-580 | local `mainapi` (backend/docker-compose.yml:80), prod `mainapi` (provision-server.sh:103), Dockerfile default (backend/Dockerfile:41) |
-| `"1"` | legacy Kafka consumers (gorm → PostgreSQL), `CONSUMER_GROUP_NAME` default `"03"` | backend/main.go:654-662 | prod `worker` (deploy/account/compose.yml:275-276) |
-| `"3"` | migrations อย่างเดียวแล้ว `return` | backend/main.go:585-652 | prod `migrate` (deploy/account/compose.yml:212) |
-
-ทุกโหมดจบด้วย `ms.Start()` (backend/main.go:728) ซึ่งเปิด HTTP เมื่อมี route ≥ 1 (backend/pkg/microservice/microservice.go:255-260); โหมด 1 ลงทะเบียน `/healthz` (backend/main.go:658) จึงตอบ healthcheck ของ `worker` ได้ (deploy/account/compose.yml:301). goapi เริ่ม Kafka consumers ของตัวเองเมื่อ `ENABLE_KAFKA=true` (backend/internal/goapi/bootstrap.go:157-161) → prod จึงมี consumer 2 ชุดเขียน PG เดียวกัน (mainapi mode 2 + worker mode 1) ตามที่ docs/handoff/HANDOFF-2026-09-06.md:61 ระบุเป็น P3.
+### สิ่งที่ `main.go` ทำตอน start (backend/main.go:76-181)
+- `setupconfig.LoadBootstrapConfig()` โหลด `bootstrap.json`/`custom_config.json` ทับ env (บรรทัด 77; ดู §6)
+- เปิดฐานควบคุมกลางด้วย `mypg.PgSqlFastConnect(mcptoken.ControlDatabase)` (main.go:90) แล้วสร้าง `microservice.NewCacher(controlDB)` เก็บ session/token ในตาราง PostgreSQL `cache_entries` (main.go:94-98; ตารางสร้างเองด้วย `CREATE TABLE IF NOT EXISTS` — backend/pkg/microservice/cacher.go:45-53, `NewCacher` บรรทัด 62) — งานพื้นหลังล้าง session หมดอายุทุก 10 นาที (main.go:99-112)
+- ตรวจสิทธิ์สดทุกคำขอผ่าน `microservice.NewAuthService(...)` ที่ผูกกับ `controlDB` เดียวกัน (main.go:118; ตรรกะจริงอยู่ที่ `backend/pkg/microservice/live_authorization.go:37-150`) — ผู้ใช้ถูกปิด/ถูกถอดจากกลุ่มกิจการ/บริษัท-สาขาถูกปิด → session เดิมใช้ไม่ได้ทันที
+- ลงทะเบียน HTTP module ของ mainapi (authentication, shop + shop member, employee, fixedasset, generalledger, mcptoken, company, branch, businesstype, rolepermission — main.go:153-165 และ media upload ที่บรรทัด 166) แล้ว mount goapi ทั้งชุดใต้ `/goapi/*` (main.go:168-178, log ยืนยัน "GoAPI routes registered under /goapi/\*" ที่บรรทัด 176)
+- จบด้วย `ms.Start()` (main.go:181)
 
 ## 2. Local stack (Docker Desktop)
-คำสั่งเริ่ม: `cd backend && docker compose -f docker-compose.yml -f docker-compose.local.yml up -d` (docs/handoff/HANDOFF-2026-09-06.md:19-22)
+คำสั่งเริ่ม: `cd backend && docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build`
 
-| service | image | port (host) | volume | อ้างอิง |
+| service | image/build | port (host) | volume | อ้างอิง |
 |---|---|---|---|---|
-| redis | redis:7-alpine | 127.0.0.1:6379 | redis-data | backend/docker-compose.yml:29-38 |
-| kafka | confluentinc/confluent-local (KRaft, auto-create topics) | 127.0.0.1:9092 (ภายใน `kafka:29092`) | kafka-data | backend/docker-compose.yml:40-57 |
-| mainapi | build `Dockerfile.local` (overlay ทับ `Dockerfile`) | 0.0.0.0:8888 | mount bootstrap/custom_config/tdict/swagger | backend/docker-compose.yml:59-108, backend/docker-compose.local.yml:103-124 |
-| mongodb | mongo:7 `--replSet rs0` | 127.0.0.1:27017 | mongo-data | backend/docker-compose.local.yml:11-21 |
-| postgres | postgres:18-alpine (db `appdb`) | 127.0.0.1:5432 | postgres-data (mount `/var/lib/postgresql`) | backend/docker-compose.local.yml:23-37 |
-| minio | minio/minio (pinned digest), console :9001 | 127.0.0.1:9100→9000, 9001 | minio-data, mem 1g, cap_drop ALL | backend/docker-compose.local.yml:39-66 |
-| minio-init | minio/mc one-shot: mb + versioning + policy `bcai-account-app` + app user | — | mount `deploy/account/minio-app-policy.json` | backend/docker-compose.local.yml:68-101 |
-| clickhouse | **ถอดออกจาก overlay แล้ว 2026-09-06** | — | volume `backend_clickhouse-data` ยังค้าง (runtime `docker volume ls`) | backend/docker-compose.local.yml:6, docs/handoff/HANDOFF-RISKS-2026-09-05.md:22 |
+| mainapi | build `Dockerfile.local` (overlay ทับ `Dockerfile`) | 0.0.0.0:8888 | mount `bootstrap.local.json`, `custom_config.local.json` | backend/docker-compose.yml:21-65, backend/docker-compose.local.yml:90-106 |
+| postgres | postgres:18-alpine (db `appdb`) | 127.0.0.1:5432 | postgres-data (mount `/var/lib/postgresql`) | backend/docker-compose.local.yml:10-25 |
+| minio | minio/minio (pinned digest), console :9001 | 127.0.0.1:9100→9000, 9001 | minio-data, mem 1g, cap_drop ALL | backend/docker-compose.local.yml:26-54 |
+| minio-init | minio/mc one-shot: mb + versioning + policy `bcai-account-app` + app user | — | mount `deploy/account/minio-app-policy.json` | backend/docker-compose.local.yml:55-89 |
 
-ข้อสังเกตจากไฟล์:
-- Header ของ base compose บอกว่า Mongo/PG เป็น NATIVE systemd และ container เข้าผ่าน `host.docker.internal` (backend/docker-compose.yml:14-21, 72-73) แต่ overlay local เพิ่ม mongodb/postgres เป็น container และชี้ `bootstrap.local.json` แทน (backend/docker-compose.local.yml:120-124) — comment ใน base ล้าสมัยสำหรับเครื่อง dev
-- `mainapi` local รัน `user: root` (backend/docker-compose.yml:76) ทั้งที่ image ตั้ง `USER appuser` (backend/Dockerfile:45); overlay `depends_on` minio-init `service_completed_successfully` (backend/docker-compose.local.yml:118-119)
-- `Dockerfile.local`, `bootstrap*.json`, `custom_config*.json`, `*.env` ถูก gitignore (backend/.gitignore:62-66, .gitignore:11-13) — เครื่องใหม่ต้องสร้างเองก่อน `up`
-- local ไม่มี job `rs.initiate` (มีเฉพาะ deploy/account/mongo-init.js:7-10 และ backend/.ci/projection.compose.yml:19) — บนเครื่อง dev replica set ถูก init ด้วยมือมาก่อน (runtime: `rs.status()` = `rs0 members=1`)
-- local compose ยังส่ง env `R2_*` ให้ mainapi (backend/docker-compose.yml:95-100) ควบคู่กับ `storage.local.env` ที่มี key `S3_*`/`STORAGE_ALLOW_PRESIGNED_URL` (backend/docker-compose.yml:64-66, backend/docker-compose.local.yml:107-108)
-- `docker-compose.dev.yml` เป็น overlay เล็กสำหรับ hot-reload ไฟล์ภาษา/ที่อยู่ (backend/docker-compose.dev.yml:5-12)
-
-หลักฐาน runtime (อ่านอย่างเดียว 2026-09-07): container `mainapi` healthy, `postgres/redis/kafka/mongodb/minio` Up; Kafka มี 99 topics; PG มี db `appdb bc001 bctest01 demo postgres qa23995213 test uat260810a`; `docker ps` แสดง `mongodb` ไม่มี host port mapping (แค่ `27017/tcp`) ต่างจาก compose ที่ประกาศ `127.0.0.1:27017:27017` → container ถูกสร้างก่อนแก้ compose (ต้อง recreate ถ้าต้องต่อจาก host); log mainapi (start ล่าสุด 2026-09-05 23:27, container Up ~25 ชม.): loader ของ mainapi โหลด 24 env vars, loader ของ goapi โหลด 41 env vars, worker pool auto = 24 (12 CPU × 2, `docker info` NCPU=12) ตามสูตร backend/internal/goapi/workers/doc_processor.go:48-54, 64-68
+ข้อสังเกตจากไฟล์ปัจจุบัน:
+- Base compose (`backend/docker-compose.yml`) มี service เดียวคือ `mainapi` — คอมเมนต์หัวไฟล์บอกว่า PostgreSQL เป็น "NATIVE (systemd) — ไม่อยู่ Docker" (บรรทัด 14) แต่ overlay local เพิ่ม `postgres` เป็น container จริงเสมอ (docker-compose.local.yml:10-25) → คอมเมนต์นี้ล้าสมัยสำหรับ workflow dev ปัจจุบัน
+- `mainapi` local รัน `user: root` (backend/docker-compose.yml:35) ทั้งที่ image ตั้ง `USER appuser` (backend/Dockerfile:46, uid/gid 10001 สร้างที่บรรทัด 30)
+- `Dockerfile.local`, `bootstrap*.json`, `custom_config*.json`, `*.env` ถูก gitignore (backend/.gitignore:62-66, root `.gitignore:11-13) — เครื่องใหม่ต้องสร้างเองก่อน `up`
+- base compose ยังส่ง env `R2_*` ให้ mainapi (backend/docker-compose.yml:52-57) ควบคู่กับ `env_file: storage.local.env` (บรรทัด 26-28) — persister อ่าน `S3_*` ก่อนแล้ว fallback `R2_*` (§7)
+- `docker-compose.dev.yml` เป็น overlay เล็กสำหรับ hot-reload ไฟล์ภาษา/ที่อยู่ (mount `assets/language`, `assets/address` เป็น read-only — backend/docker-compose.dev.yml:1-12)
 
 ## 3. Production compose (`deploy/account/compose.yml`, project `bcai-account`)
-| service | image | mem_limit (base → 8gb) | healthcheck | env_file / mode | depends_on | อ้างอิง |
+| service | image | mem_limit | healthcheck | env_file | depends_on | อ้างอิง |
 |---|---|---|---|---|---|---|
-| mongo | mongo:7.0 (digest) `--replSet rs0` | 1g → 768m (+wiredTiger 0.25 GB) | mongosh ping | — | — | compose.yml:10-24, compose.8gb.yml:7-9 |
-| mongo-init | mongo:7.0 one-shot รัน `mongo-init.js` แล้วรอ PRIMARY ≤60s | — | — | — | mongo healthy | compose.yml:26-45 |
-| postgres | postgres:18-alpine | 512m → 384m | pg_isready | `/etc/bcai-account/postgres.env` | — | compose.yml:47-61 |
-| clickhouse | clickhouse-server:25.8-alpine | 1g → 768m | wget /ping | `clickhouse.env` | — | compose.yml:63-77 (**โค้ด stub แล้ว แต่ยังเป็น dependency**) |
-| redis | redis:7-alpine AOF, maxmemory 192mb | 256m → 128m | redis-cli ping | — | — | compose.yml:79-92 |
-| minio | minio/minio (digest), cpus 1.0 | 1g → 512m | /minio/health/ready | `minio.env` | — | compose.yml:94-118 |
-| minio-init | minio/mc one-shot (เหมือน local) | 256m | — | `minio.env` | minio healthy | compose.yml:120-152 |
-| kafka-init | alpine chown 1000:1000 volume | 32m | — | — | — | compose.yml:154-168 |
-| kafka | apache/kafka:4.3.1 KRaft single node, heap 768m → 512m | 1280m → 1g | kafka-topics --list | `kafka.env` (CLUSTER_ID) | kafka-init completed | compose.yml:170-206, compose.8gb.yml:18-21 |
-| migrate | `${MAINAPI_IMAGE}` `DEV_API_MODE=3` | 1536m → 768m | — | `backend.env` | mongo-init, postgres, clickhouse, redis, kafka | compose.yml:208-232 |
-| mainapi | `${MAINAPI_IMAGE}` (mode 2 จาก backend.env) | 1536m → 1g | wget /healthz (start 90s) | `backend.env` | + minio-init, migrate completed | compose.yml:234-269 |
-| worker | `${MAINAPI_IMAGE}` `DEV_API_MODE=1`, group `bcai-account-01` | 1g → 512m | wget /healthz | `backend.env` | เหมือน mainapi | compose.yml:271-307 |
-| frontend | `${FRONTEND_IMAGE}` | 768m → 512m | wget :3000/ | `frontend.env` | mainapi healthy | compose.yml:309-330 |
+| postgres | postgres:18-alpine (digest) | 1024m | pg_isready | `/etc/bcai-account/postgres.env` | — | compose.yml:10-24, compose.8gb.yml:4-5 |
+| minio | minio/minio (digest), cpus 1.0 | 512m | /minio/health/ready | `/etc/bcai-account/minio.env` | — | compose.yml:26-50, compose.8gb.yml:6-7 |
+| minio-init | minio/mc one-shot (เหมือน local) | 256m | — | `/etc/bcai-account/minio.env` | minio healthy | compose.yml:52-83 |
+| mainapi | `${MAINAPI_IMAGE}` | 1536m | wget /healthz (start 60s) | `/etc/bcai-account/backend.env` | postgres healthy, minio-init completed | compose.yml:86-110, compose.8gb.yml:8-9 |
+| frontend | `${FRONTEND_IMAGE}` | 768m | wget :3000/ | `/etc/bcai-account/frontend.env` | mainapi healthy | compose.yml:113-133, compose.8gb.yml:10-11 |
 
-- Network: `edge` (bridge) และ `data` (`internal: true`); เฉพาะ mainapi อยู่ทั้งสอง, frontend อยู่ `edge` (compose.yml:258, 319, 332-337). Port ออก host มีแค่ `127.0.0.1:8888` (mainapi) และ `127.0.0.1:3200→3000` (frontend) (compose.yml:254-255, 317-318)
-- `cap_drop: [ALL]` + `no-new-privileges` มีเฉพาะ minio/minio-init/kafka-init/migrate/mainapi/worker/frontend (compose.yml:115-117, 148-150, 163-165, 228-230, 259-261, 297-299, 320-322) — mongo/postgres/clickhouse/redis/kafka ไม่มี; `init: true` มีเฉพาะ mainapi/worker/frontend (compose.yml:253, 293, 316); log json-file 10m×3 ผ่าน anchor ทุก service (compose.yml:3-7); config mount `/var/lib/bcai-account/config → /app/bootstrap` (compose.yml:226, 257, 295)
-- ผลรวม mem_limit base ≈ 9 GB จึงมี `compose.8gb.yml` สำหรับ droplet 4 vCPU/8 GB (compose.8gb.yml:1-5)
-- Caddy: site `account.bcaicloud.com` → `reverse_proxy 127.0.0.1:3200`, ตอบ 404 ให้ `/backend/goapi/api/health/{kafka,background,queue*,database,system}` (deploy/account/Caddyfile.account:1-13) ซึ่งเป็น route ที่ goapi ลงทะเบียนบน group `g` ตรง ๆ ไม่ใช่ `authGroup` จึงไม่ผ่าน bearer auth (backend/internal/goapi/bootstrap.go:353, 377-382; mainapi ก็ยกเว้น `/goapi/*` จาก auth ที่ backend/main.go:296); frontend เองก็ block `/backend/goapi/get|exec|getdoc`, `/backend/reportm/*`, `/backend/goapi/api/setup|mcp/*`, `/backend/reload-config` และ login routes ที่ระดับ rewrite (frontend/next.config.ts:28-41, 58-72)
+ชื่อ project `bcai-account` มาจาก `name:` ที่ compose.yml:1. ตัวเลข `mem_limit` ใน `compose.8gb.yml` (postgres 1024m, minio 512m, mainapi 1536m, frontend 768m — compose.8gb.yml:4-11) **ตรงกับค่าใน `compose.yml` เองทุกตัว** (compose.yml:23, 40, 110, 133) — override นี้จึงไม่ได้เปลี่ยนค่าใดจากฐานแล้ว (vestigial) แต่ `tools/fast-deploy.py` ยังส่ง `-f compose.8gb.yml` เสมอ (fast-deploy.py:216). backend มี service เดียวคือ `mainapi` — ไม่มี service migration/worker แยกแล้วตั้งแต่ 2026-09-23
+
+- Network: `edge` (bridge) และ `data` (`internal: true`) (compose.yml:136-141); เฉพาะ mainapi อยู่ทั้งสอง (compose.yml:100), frontend อยู่ `edge` เท่านั้น (compose.yml:123). Port ออก host มีแค่ `127.0.0.1:8888` (mainapi, compose.yml:96-97) และ `127.0.0.1:3200→3000` (frontend, compose.yml:121-122)
+- `cap_drop: [ALL]` + `no-new-privileges` มีทุก service ยกเว้น postgres (compose.yml:47-49, 81-82, 102-103, 125-126); `init: true` มีเฉพาะ mainapi/frontend (compose.yml:95, 120); log json-file 10m×3 ผ่าน anchor ทุก service (compose.yml:3-7)
+- Caddy: site `account.bcaicloud.com` → `reverse_proxy 127.0.0.1:3200`, ตอบ 404 ให้ path `/backend/goapi/api/health/{background,queue*,database,system}` (deploy/account/Caddyfile.account:1-12) — ในจำนวนนี้ `/api/health/background` **ไม่มี route จริงใน goapi ปัจจุบัน** (goapi ลงทะเบียนแค่ `/api/health`, `/api/health/queue[/:holdingcode]`, `/api/health/database`, `/api/health/system` — backend/internal/goapi/bootstrap.go:323-335) จึง 404 อยู่แล้วโดยธรรมชาติ ไม่ต่างจากที่ Caddy บล็อกไว้; route เหล่านี้ลงทะเบียนบน group `g` ตรง ๆ ไม่ผ่าน `authGroup` (bootstrap.go:308 เทียบ 323-335) และ mainapi ก็ยกเว้น `/goapi/*` จากการตรวจ auth ทั้งกลุ่ม (main.go:133)
 
 ## 4. สคริปต์บนเซิร์ฟเวอร์ (`deploy/account/`)
 `provision-server.sh` (ต้อง root, ต้องมี env `MAINAPI_IMAGE`/`FRONTEND_IMAGE`) ทำตามลำดับ (deploy/account/provision-server.sh):
-1. สร้าง `/etc/bcai-account` 0700, `/opt/bcai-account` 0750, `/var/lib/bcai-account/config` owner 10001 (บรรทัด 22-25)
-2. ถ้ายังไม่มี `secrets.env` → gen `POSTGRES_PASSWORD`, `CLICKHOUSE_PASSWORD`, `JWT_SECRET_KEY`, `RELOAD_CONFIG_SECRET`, `KAFKA_CLUSTER_ID` แล้วเติม `MINIO_ROOT_USER/PASSWORD`, `MINIO_APP_ACCESS_KEY/SECRET_KEY` ถ้าขาด (27-62)
-3. สร้าง `bootstrap.json` และ `custom_config.json` เป็น `{}` ถ้ายังไม่มี, chown 10001, chmod 0600 (64-71) → บน prod config ทั้งหมดมาจาก env_file ไม่ใช่ bootstrap
-4. เขียน `postgres.env` (db `bcai_projection`, user `bcai`), `clickhouse.env` (db `bcai_analytics`), `kafka.env`, `minio.env` (bucket `bcai-account`, `MINIO_BROWSER=off`) (73-97)
-5. เขียน `backend.env` — key ที่ตั้ง: `MODE/GO_ENV/BC_ENV=production`, `DEV_API_MODE=2`, `SERVICE_PORT`, `LOG_LEVEL=INFO`, `TZ`, `HOST_API`, `HTTP_CORS`, `MONGODB_PRO_URI/DB`, `POSTGRES_*` (ทั้ง `USER`/`USERNAME`, `DB`/`DATABASE`/`DB_NAME` เพราะ mainapi กับ goapi อ่านคนละชื่อ), `CH_*`/`CLICKHOUSE_*`, `REDIS_CACHE_URI`, `ENABLE_KAFKA=true`, `KAFKA_SERVER_URL`, `JWT_SECRET_KEY`, `RELOAD_CONFIG_SECRET`, `GOOGLE_CLIENT_ID`, `BCAI_DEV_LOGIN_ENABLED=false`, `BCAI_DEMO_LOGIN_ENABLED=true`, `BCAI_DEMO_USERNAME`, `GODEBUG`, `S3_ENDPOINT/REGION/ACCESS_KEY_ID/SECRET_ACCESS_KEY/BUCKET_NAME/FORCE_PATH_STYLE`, `STORAGE_ALLOW_PRESIGNED_URL=false` (99-147)
-6. เขียน `frontend.env` (`NODE_ENV`, `BCAI_LOCAL_BACKEND_URL=http://mainapi:8888`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `BCAI_DEV_LOGIN_ENABLED=false`) และ `release.env` (`MAINAPI_IMAGE`, `FRONTEND_IMAGE`) แล้ว chmod 0600 ทุก env (149-162)
+1. สร้าง `/etc/bcai-account` 0700, `/opt/bcai-account` 0750, `/var/lib/bcai-account/config` owner 10001 (บรรทัด 22-24)
+2. ถ้ายังไม่มี `secrets.env` → gen `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, `RELOAD_CONFIG_SECRET` แล้วเติม `MINIO_ROOT_USER/PASSWORD`, `MINIO_APP_ACCESS_KEY/SECRET_KEY` ถ้าขาด (27-55)
+3. สร้าง `bootstrap.json` และ `custom_config.json` เป็น `{}` ถ้ายังไม่มี, chown 10001, chmod 0600 (57-64)
+4. เขียน env ของ dependency 2 ไฟล์: `postgres.env` (db `bcai_projection`, user `bcai`) และ `minio.env` (bucket `bcai-account`, `MINIO_BROWSER=off`) (66-79)
+5. เขียน `backend.env` — key ที่ตั้ง: `MODE/GO_ENV/BC_ENV=production`, `DEV_API_MODE=2` (ไม่มีโค้ดอ่าน — ดู §1), `SERVICE_PORT`, `LOG_LEVEL=INFO`, `TZ`, `HOST_API`, `HTTP_CORS`, `POSTGRES_*` (ทั้ง `USER`/`USERNAME`, `DB`/`DATABASE`/`DB_NAME` เพราะ mainapi กับ goapi อ่านคนละชื่อ — internal/config/config_postgresql.go:32,40 เทียบ internal/goapi/config/config.go:40-53), `JWT_SECRET_KEY`, `RELOAD_CONFIG_SECRET`, `GOOGLE_CLIENT_ID`, `BCAI_DEV_LOGIN_ENABLED=false`, `BCAI_DEMO_LOGIN_ENABLED=true`, `BCAI_DEMO_USERNAME`, `GODEBUG`, `S3_ENDPOINT/REGION/ACCESS_KEY_ID/SECRET_ACCESS_KEY/BUCKET_NAME/FORCE_PATH_STYLE`, `STORAGE_ALLOW_PRESIGNED_URL=false` (81-115)
+6. เขียน `frontend.env` (`NODE_ENV`, `BCAI_LOCAL_BACKEND_URL=http://mainapi:8888`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `BCAI_DEV_LOGIN_ENABLED=false`) และ `release.env` (`MAINAPI_IMAGE`, `FRONTEND_IMAGE`) แล้ว chmod 0600 ทุก env (117-130)
 
-`rotate-postgres-password.sh`: gen รหัสใหม่ → `ALTER ROLE bcai` ผ่าน `compose exec postgres psql` (23-30) → เขียนทับใน `secrets.env` (37-47) → รัน provision ใหม่ (54) → `rm -sf mainapi worker migrate`, recreate postgres, รัน migrate รอ `exited:0` ≤120s (56-77) → `up -d --no-deps mainapi worker` แล้วรอ healthy ≤180s ต่อ service (79-102)
+`rotate-postgres-password.sh`: gen รหัสใหม่ → `ALTER ROLE bcai` ผ่าน `compose exec postgres psql` (บรรทัด 26-34) → เขียนทับใน `secrets.env` (37-47) → รัน provision ใหม่ ซึ่งเขียน `postgres.env`/`backend.env` ด้วยรหัสใหม่ (54) → `docker compose rm -sf mainapi worker migrate` (56) → recreate postgres (57) → `up -d migrate` แล้วรอ `exited:0` (58-77) → `up -d --no-deps mainapi worker` แล้วรอ healthy (79-102). **สคริปต์นี้ใช้ไม่ได้กับ compose ปัจจุบัน:** `compose.yml` ไม่มี service `worker`/`migrate` แล้ว — ทดสอบกับ Docker Compose v5.3.1 บนโปรเจกต์ทดลอง: `docker compose rm -sf mainapi worker migrate` ตอบ `no such service: worker` exit 1 และ **ไม่แตะ `mainapi` เลย** (container ยัง running) → `set -euo pipefail` หยุดสคริปต์ที่บรรทัด 56 หลังจากรหัสใน PostgreSQL, `secrets.env` และ env files ถูกเปลี่ยนไปแล้ว แต่ `mainapi` ยังรันด้วย env รหัสเก่า (อนุมานจากโค้ด ยังไม่ได้ทดสอบบน prod: connection ใหม่ของ `mainapi` จะ login PostgreSQL ไม่ผ่านจนกว่าจะ recreate `mainapi`) — ห้ามรันจนกว่าจะแก้สคริปต์ให้เหลือแค่ `mainapi` (R1)
 
 `sshd-hardening.conf`: ปิด password/kbd-interactive, `PermitRootLogin prohibit-password`, `MaxAuthTries 3`, `LoginGraceTime 30` (deploy/account/sshd-hardening.conf:3-8). `minio-app-policy.json`: สิทธิ์ app user จำกัดที่ bucket `bcai-account` (list + get/put/delete/multipart) (deploy/account/minio-app-policy.json:6-26).
-
-`docs/runbooks/RECOVERY-READINESS.md` (2026-09-05) เป็น runbook เตรียมการเท่านั้น — ยืนยันว่า **ยังไม่มีหลักฐาน backup/restore จริง**, ต้องตกลง RPO/RTO/ปลายทางก่อน, และต้อง restore Mongo+outbox+PG fences+Kafka offsets+MinIO objects (คู่ต้นฉบับ/thumbnail) เป็นชุดเดียวกัน (docs/runbooks/RECOVERY-READINESS.md:3, 7, 17, 24, 26, 29-30, 40)
 
 ## 5. Dockerfiles
 | ไฟล์ | base / build | entry | สถานะ | อ้างอิง |
 |---|---|---|---|---|
-| backend/Dockerfile | golang:1.26-alpine + librdkafka, `CGO_ENABLED=1 -tags musl`, BuildKit cache mounts → alpine:3.21 uid/gid 10001, `DEV_API_MODE=2`, `SERVICE_PORT=8888`, HEALTHCHECK `/healthz` start 120s | `/app/go-app` (`main.go`) | LIVE (prod image `MAINAPI_IMAGE`) | backend/Dockerfile:6-21, 26-30, 41-52 |
-| backend/Dockerfile.local | เหมือนบนแต่ไม่มี `--mount=type=cache` (เครื่อง dev ไม่มี buildx); uid ไม่ fix | เดียวกัน | LIVE local เท่านั้น, **ไม่ tracked** | backend/Dockerfile.local:1-5, 23; backend/.gitignore:65 |
-| backend/Dockerfile.goapi | `CGO_ENABLED=0` build `./cmd/goapi/`, HEALTHCHECK `/version` | `/app/goapi` | ยังไม่ตรวจว่ามีใครใช้ (ไม่มี compose อ้าง; `backend/cmd/goapi/` มีอยู่) | backend/Dockerfile.goapi:15, 41-44 |
-| backend/Dockerfile-consumer | golang:1.21-alpine3.17, librdkafka 1.9.2, `DEV_API_MODE=1` | `/root/go-app` | DEAD (go.mod ประกาศ `go 1.26` ที่ backend/go.mod:3; ไม่มี compose อ้าง — อ้างเฉพาะ workflow ค้างเก่า backend/.github/workflows/build_consumer.yaml:35, build_deploy_consumer_dev.yaml:35 ซึ่งอยู่นอก root `.github/` จึงไม่ถูก GitHub รัน) | backend/Dockerfile-consumer:6-9, 29 |
-| backend/Dockerfile-member | golang:1.20.2-alpine3.17, build `cmd/member/main.go` | `/root/go-app` | DEAD (ไม่มี compose อ้าง — เหลือแค่ workflow ค้างเก่า backend/.github/workflows/build_api_member.yaml:35, build_deploy_api_member_dev.yaml:35) | backend/Dockerfile-member:6, 20 |
-| backend/Dockerfile-migration | golang:1.21-alpine3.17, `DEV_API_MODE=3` | `/root/go-app` | DEAD — prod ใช้ image เดียวกับ mainapi + env แทน (compose.yml:208-212); เหลือแค่ workflow ค้างเก่า backend/.github/workflows/build_migration.yaml:34 | backend/Dockerfile-migration:6, 28 |
-| backend/DockerfileM1 | golang:1.18.0-alpine3.15, `SERVERLESS=serverless` | `/root/go-app` | DEAD (อ้างจาก backend/Makefile:101 เท่านั้น — target push `smlsoft/smlcloudplatform:apidev` ยุคเก่า) | backend/DockerfileM1:6, 14 |
-| frontend/Dockerfile | node:24.18.0-alpine 4 stage; build args `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BCAI_LOCAL_BACKEND_URL`; runner uid 1001 `npm run start` :3000 (ไม่ใช่ standalone) | `npm run start` | LIVE (prod `FRONTEND_IMAGE`) | frontend/Dockerfile:2, 25-32, 41-57 |
+| backend/Dockerfile | golang:1.26-alpine, `CGO_ENABLED=0` (Pure Go), BuildKit cache mounts → alpine:3.21 uid/gid 10001, `DEV_API_MODE=2` (ไม่มีโค้ดอ่าน), `SERVICE_PORT=8888`, HEALTHCHECK `/healthz` start 120s | `/app/go-app` (`main.go`) | LIVE (prod image `MAINAPI_IMAGE`) | backend/Dockerfile:7-53 |
+| backend/Dockerfile.local | เหมือนบนแต่ไม่มี `--mount=type=cache` (เครื่อง dev ไม่มี buildx); uid ไม่ fix | เดียวกัน | LIVE local เท่านั้น, **ไม่ tracked** (gitignore) | backend/Dockerfile.local:1-5, 18; backend/.gitignore:65 |
+| frontend/Dockerfile | node:24.18.0-alpine 5 stage (base/deps/prod-deps/builder/runner); build args `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BCAI_LOCAL_BACKEND_URL`; runner uid 1001 `npm run start` :3000 (ไม่ใช่ standalone) | `npm run start` | LIVE (prod `FRONTEND_IMAGE`) | frontend/Dockerfile:2, 25-30, 39-55 |
 
-ไม่มี `frontend/Dockerfile.onprem` ใน repo (`git ls-files frontend/Dockerfile*` มีแค่ `frontend/Dockerfile`) — memory เก่าที่อ้างชื่อนี้ล้าสมัย. Build frontend ต้องส่ง `BCAI_LOCAL_BACKEND_URL` เสมอ ไม่งั้น `next build` โยน error ที่ rewrites (frontend/next.config.ts:19-21; `start` = `next start` ตาม frontend/package.json:13, ไม่มี `output: standalone` ใน next.config.ts)
+Dockerfile อื่นใน `backend/` และ `backend/Makefile` ถูกลบพร้อม `backend/cmd/*` microservice เก่าเมื่อ 2026-09-23 (`ls backend/Dockerfile*` เหลือ 2 ไฟล์ข้างต้น; ดู `14-cmd-tools-scripts.md` §1–§2)
 
 ## 6. การโหลด config (bootstrap.json → env)
-มี loader **สองตัว** ที่ทำงานตามลำดับใน process เดียว:
-1. mainapi: `setupconfig.LoadBootstrapConfig()` ก่อน `config.NewConfig()` (backend/main.go:236, 248). ค้นหาไฟล์ตามลำดับ `/app/bootstrap/bootstrap.json` → `/app/bootstrap.json` → `bootstrap.json` → `config/bootstrap.json` (backend/internal/setupconfig/loader.go:98-103), merge `custom_config.json` ข้าง ๆ ทับ (loader.go:106-111, 177-186), แล้ว `os.Setenv` **ทับ env เดิมโดยไม่เช็ค** (loader.go:247-248) → ค่าใน bootstrap ชนะ env_file เสมอ; ตั้ง default `REDIS_HOST/PORT`, `REDIS_CACHE_URI=redis:6379`, `KAFKA_SERVER_URL=kafka:9092` ถ้าว่าง (loader.go:266-281); compose `CH_SERVER_ADDRESS=host:port` (loader.go:284-299)
-2. goapi: `setupconfig.LoadBootstrapConfig()` ของตัวเองใน `Init()` (backend/internal/goapi/bootstrap.go:59) path list เดียวกัน (backend/internal/goapi/setupconfig/loader.go:145-149) แต่ mapping กว้างกว่า (AI provider keys, `r2*`/`s3*` ใต้ `integrations` บรรทัด 101-106, `KAFKA_CONSUMER_GROUP_VERSION` บรรทัด 79, `CORS_ALLOWED_ORIGINS` บรรทัด 88) (goapi/setupconfig/loader.go:60-128)
+มี loader **สองตัว** ที่ทำงานตามลำดับใน process เดียว (ไม่มี section ของระบบที่ถอดไปแล้ว 2026-09-23 เหลือใน `configMapping` ของทั้งสองไฟล์):
+1. mainapi: `setupconfig.LoadBootstrapConfig()` ก่อน `config.NewConfig()` (backend/main.go:77). ค้นหาไฟล์ตามลำดับ `/app/bootstrap/bootstrap.json` → `/app/bootstrap.json` → `bootstrap.json` → `config/bootstrap.json` (backend/internal/setupconfig/loader.go:71-76), merge `custom_config.json` ข้าง ๆ ทับ (loader.go:78-83, 85-109), แล้ว `os.Setenv` ทับ env เดิมโดยไม่เช็คใน `applyBootstrapSection` (loader.go:178-213, `os.Setenv` ที่บรรทัด 200) → ค่าใน bootstrap ชนะ env_file เสมอ. `configMapping` ปัจจุบันมีแค่ 4 section: `postgresql`, `service`, `integrations` (Gemini API key/model เท่านั้น), `storage` (STORAGE_DATA_PATH/URI, Azure, S3_*) (loader.go:20-56)
+2. goapi: `setupconfig.LoadBootstrapConfig()` ของตัวเองเรียกใน `Init()` (backend/internal/goapi/bootstrap.go:45, 49) path list เดียวกัน (backend/internal/goapi/setupconfig/loader.go:116-119) แต่ mapping กว้างกว่า (AI provider keys, `r2*`/`s3*` ใต้ `integrations` บรรทัด 73-83, `CORS_ALLOWED_ORIGINS` บรรทัด 61) (goapi/setupconfig/loader.go:42-83)
 
-**กับดักที่ตรวจพบ:** loader ของ goapi ตัด `_` ออกจาก key ก่อน lookup (goapi/setupconfig/loader.go:282-284) แต่ loader ของ mainapi ใช้ key ดิบ (backend/internal/setupconfig/loader.go:241-243) และ mapping เป็นแบบไม่มีตัวคั่น เช่น `dbname`, `databasename`, `serverurl`, `enablekafka`, `loglevel` (loader.go:37-84). ไฟล์ `backend/bootstrap.json` บนเครื่อง dev ใช้ key snake_case (`db_name`, `database_name`, `server_url`, `enable_kafka`, `log_level`, `ssl_mode`) จึงถูก mainapi loader ข้ามเงียบ ๆ; `bootstrap.local.json` แก้ปัญหาด้วยการใส่ทั้งสองแบบซ้ำกัน (สังเกตจากชื่อ key ในไฟล์, ไม่ใช่ค่า) — ควรแก้ที่ loader ให้ normalize เหมือน goapi. อีกจุด: `custom_config.json` วาง `r2_*` ใต้ `integrations` ซึ่ง mainapi loader ไม่มี mapping (loader.go:65-68) แต่ goapi loader มี (goapi loader:101-104).
+**กับดักที่ยังอยู่:** loader ของ goapi ตัด `_` ออกจาก key ก่อน lookup (`strings.ReplaceAll(rawKey, "_", "")` — goapi/setupconfig/loader.go:233) แต่ loader ของ mainapi ใช้ key ดิบไม่มีตัวคั่น เช่น `dbname`, `serviceport`, `devapimode` (backend/internal/setupconfig/loader.go:21-36) — ถ้า `bootstrap.json` ใช้ snake_case (`db_name`) mainapi loader จะข้ามเงียบ ๆ ต่างจาก goapi ที่ normalize ให้ก่อน — จุดนี้ยังไม่ถูกแก้ ยังเป็นความเสี่ยงเดิม
 
-ตาราง section → env (mainapi loader, backend/internal/setupconfig/loader.go:28-83): `mongodb.{uri,database,host,port,username,password}` → `MONGODB_*` ทุก suffix (DEV/UAT/PRO/PRODUCTION พร้อมกัน); `postgresql.{host,port,user,password,sslmode,dbname,timezone,loggerlevel}` → `POSTGRES_HOST/PORT/USERNAME/PASSWORD/SSL_MODE/DB_NAME/TIMEZONE/LOGGER_LEVEL`; `clickhouse.*` → `CH_SERVER_ADDRESS/CLICKHOUSE_PORT/CH_USERNAME/CH_PASSWORD/CH_DATABASE_NAME`; `service.*` → `ENABLE_KAFKA, LOG_LEVEL, JWT_SECRET_KEY, DEV_API_MODE, SERVICE_PORT, HOST_API, MODE, HTTP_CORS`; `integrations.*` → `GEMINI_API_KEY/MODEL`; `storage.*` → `STORAGE_DATA_PATH/URI, AZURE_*, S3_ENDPOINT/PUBLIC_ENDPOINT/ACCESS_KEY_ID/SECRET_ACCESS_KEY/BUCKET_NAME`; `kafka.serverurl` → `KAFKA_SERVER_URL`.
-
-Reload runtime: mainapi เปิด `POST /reload-config` (อยู่ใน public path บรรทัด 294, handler backend/main.go:323) ตรวจ `RELOAD_CONFIG_SECRET` (backend/main.go:326) แล้วเรียก `setupconfig.ReloadConfig()` (backend/main.go:333-335); goapi ฝั่งเขียน `UpdateBootstrapJSON` + `notifyMainAPIReload` (goapi/setupconfig/loader.go:397, 415, 514) — บน prod ไฟล์เป็น `{}` และ owner 10001 (provision-server.sh:64-71) จึงเขียนได้จาก container.
+Reload runtime: mainapi เปิด `POST /reload-config` (public path, main.go:131, handler main.go:138-146) ตรวจ `RELOAD_CONFIG_SECRET` แล้วเรียก `setupconfig.ReloadConfig()`; goapi ฝั่งเขียน `UpdateBootstrapJSON` แล้วเรียก mainapi ให้ reload — บน prod ไฟล์เป็น `{}` และ owner 10001 จึงเขียนได้จาก container
 
 ## 7. Object storage (รูปภาพ/ไฟล์)
-- mainapi: `NewFilePersister()` คืน persister S3/R2 ตัวเดียว (backend/pkg/microservice/persister_factory.go:4-6) อ่าน `S3_ACCOUNT_ID|R2_ACCOUNT_ID`, `S3_ENDPOINT|R2_ENDPOINT`, `S3_ACCESS_KEY_ID|R2_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY|R2_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME|R2_BUCKET_NAME`, region default `us-east-1` (persister_file_r2.go:51-58, 68) — ถ้ามี endpoint จะใช้ BaseEndpoint (MinIO path-style)
-- goapi: `handlers.InitR2Client()` (backend/internal/goapi/bootstrap.go:82) ใช้ชุด env เดียวกัน + `S3_FORCE_PATH_STYLE|R2_FORCE_PATH_STYLE` (backend/internal/goapi/handlers/image_r2.go:75-86, 111); presigned URL ตรงต้องเปิด `STORAGE_ALLOW_PRESIGNED_URL=true` (image_r2.go:154, backend/internal/goapi/handlers/storage_private.go:14) — prod ตั้ง `false` (provision-server.sh:146)
-- bucket: local จาก `minio.local.env` (`MINIO_BUCKET_NAME`) และ prod = `bcai-account` เปิด versioning ผ่าน minio-init (compose.yml:131-132) ใช้ app user สิทธิ์จำกัด (minio-app-policy.json) — Mongo เก็บแค่ URI ตามกฎใน AGENTS.md
+- mainapi: `NewFilePersister()` คืน persister S3/MinIO ตัวเดียว (backend/pkg/microservice/persister_factory.go:4) อ่าน `S3_ACCOUNT_ID|R2_ACCOUNT_ID`, `S3_ENDPOINT|R2_ENDPOINT`, `S3_ACCESS_KEY_ID|R2_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY|R2_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME|R2_BUCKET_NAME`, region default `us-east-1` (persister_file_r2.go:51-68) — ถ้ามี endpoint จะใช้ BaseEndpoint (MinIO path-style)
+- goapi: `handlers.InitR2Client()` (backend/internal/goapi/bootstrap.go:52) ใช้ชุด env เดียวกัน + `S3_FORCE_PATH_STYLE|R2_FORCE_PATH_STYLE` (backend/internal/goapi/handlers/image_r2.go:75, `InitR2Client` บรรทัด 176); presigned URL ตรงต้องเปิด `STORAGE_ALLOW_PRESIGNED_URL=true` (image_r2.go:148, handlers/storage_private.go:14) — prod ตั้ง `false`
+- bucket: local จาก `minio.local.env` (`MINIO_BUCKET_NAME`) และ prod = `bcai-account` เปิด versioning ผ่าน minio-init ใช้ app user สิทธิ์จำกัด (minio-app-policy.json) — PostgreSQL เก็บแค่ URI ของไฟล์ตามกฎใน AGENTS.md ไม่เก็บ binary ในฐานข้อมูล
 
-## 8. ชุดตรวจ (local) / test infra — ไม่มี CI ฝั่ง GitHub แล้ว
-- `tools/verify.sh` (แทน `.github/workflows/ci.yml` ที่ถูกลบ 2026-09-09): target `backend` (compile ทุก package + unit test ยกเว้น `backend/.ci/test-quarantine.txt` + compile integration tags ใน `golang:1.26`) (`tools/verify.sh:87-109`), `frontend` (lint/typecheck/vitest ด้วย `BCAI_LOCAL_BACKEND_URL=http://localhost:8888`) และ `frontend-build` (`:64-84`), `outbox` (mongo rs0 + postgres:17-alpine ชั่วคราว) (`:111-156`), `projection` ใช้ `backend/.ci/projection.compose.yml` (`:158-182`) — คำสั่งทั้งหมดคัดลอกจาก workflow เดิมแบบคำต่อคำ
-- `projection.compose.yml`: mongo rs0 + mongo-init idempotent, postgres:18-alpine trust, apache/kafka:4.3.1 auto-create **ปิด**, service `tests` profile `test` รัน integration tests ชุด outbox/projection/barcode (backend/.ci/projection.compose.yml:3-75)
-- **ไม่มี CI/CD ฝั่ง GitHub เลย** ตั้งแต่ 2026-09-09 (มติลุงจืด: GitHub = ที่เก็บโค้ดอย่างเดียว ไม่จ่ายค่า GitHub; ก่อนหน้านั้น Actions ล็อกเพราะ billing ตั้งแต่ 2026-09-03 อยู่แล้ว) → หลักฐาน build/test ทั้งหมดเป็น local เท่านั้น; โฟลเดอร์ root `.github/` ถูกลบทั้งโฟลเดอร์ (`git ls-files .github` → ว่าง) ส่วน `backend/.github/workflows/*.yaml` (9 ไฟล์ tracked: build_api_image, build_api_member, build_consumer, build_deploy_*_dev, build_migration, ci.yml) เป็นของค้างยุค repo แยก อยู่นอก root `.github/` จึงไม่เคยถูก GitHub Actions รัน — **ยังไม่ลบ ต้องถามลุงจืดก่อน** (อยู่นอกขอบเขตงานที่ลบ CI)
+## 8. ชุดตรวจ (local) — ไม่มี CI ฝั่ง GitHub แล้ว
+- `tools/verify.sh` (แทน `.github/workflows/ci.yml` ที่ถูกลบ 2026-09-09) มี target เดี่ยว 5 ตัว: `codemap`, `frontend` (lint/typecheck/vitest), `frontend-build`, `backend` (compile + unit test ยกเว้น `backend/.ci/test-quarantine.txt` ใน container `golang:1.26`) และ `postgres` (integration tests กับ PostgreSQL 18 ชั่วคราว) + ชุดรวม 2 ตัว: `fast` (ค่าเริ่มต้น) = codemap + frontend, `all` = ทั้ง 5 ตัว (tools/verify.sh:189-203) — `backend/.ci/` เหลือแค่ `test-quarantine.txt`
+- `t_postgres` สร้าง container `postgres:18-alpine` แยก (`POSTGRES_HOST_AUTH_METHOD=trust`) แล้วรัน `go test -tags=integration ./pkg/... ./internal/...` โดยตั้ง `BC_GL_TEST_POSTGRES_DSN`/`GL_AUTH_TEST_DSN`/`BC_TAXFORM_TEST_POSTGRES_DSN` ชี้ container นั้น แล้วลบทิ้งเสมอ (tools/verify.sh:154-175)
+- **ไม่มี CI/CD ฝั่ง GitHub เลย** ตั้งแต่ 2026-09-09 (มติลุงจืด: GitHub = ที่เก็บโค้ดอย่างเดียว) → หลักฐาน build/test ทั้งหมดเป็น local เท่านั้น ต้องรัน `npm run verify`/`npm run verify:all` เอง
 
 ## 9. เซิร์ฟเวอร์ที่รู้จัก (ไม่มี secret)
-| เครื่อง | บทบาท | สถานะล่าสุดที่มีหลักฐาน | อ้างอิง |
-|---|---|---|---|
-| dev Windows (Docker Desktop) | local stack §2 + `next dev` :3000 | ใช้งานอยู่ (runtime 2026-09-07) | docs/handoff/HANDOFF-2026-09-06.md:17-23 |
-| on-prem 192.168.2.202 | Docker stack เดิม (คนละ compose กับ local) | ssh timeout 2026-09-06 → ไม่ทราบสถานะ | docs/handoff/HANDOFF-2026-09-06.md:79 |
-| DigitalOcean SGP1 159.223.43.229 (4 vCPU/8 GB) | prod ใหม่สำหรับ `account.bcaicloud.com` ด้วย compose.yml + compose.8gb.yml | **ขัดกัน**: docs/handoff/HANDOFF-2026-09-06.md:80 บอก "provision แล้ว ยังไม่ deploy app" แต่ memory `do-sgp1-new-prod-server` บันทึกว่า deploy ครบ 9 service เมื่อ 2026-09-02/03 → ยังไม่ตรวจ (ไม่ได้ ssh ในงานนี้) | docs/handoff/HANDOFF-2026-09-06.md:80 |
-| 188.212.158.39 (prod เก่า) | host เดิมของ `account.bcaicloud.com` | เข้าไม่ได้แล้ว | docs/handoff/HANDOFF-2026-09-06.md:80 |
+| เครื่อง | บทบาท | อ้างอิง |
+|---|---|---|
+| dev Windows (Docker Desktop) | local stack §2 + `next dev` :3000 | backend/docker-compose*.yml |
+| DigitalOcean SGP1 159.223.43.229 (4 vCPU/8 GB) | prod สำหรับ `account.bcaicloud.com` ด้วย compose.yml + compose.8gb.yml, deploy ผ่าน `tools/fast-deploy.py` | tools/fast-deploy.py:25, 216; deploy/account/compose.yml |
+
+เครื่องอื่นที่เอกสารรุ่นก่อนเคยกล่าวถึง (192.168.2.202, 188.212.158.39) ไม่มีหลักฐานสถานะปัจจุบันใน repo — ไม่ยืนยัน
 
 ## 10. โครง runbook deploy (สกัดจากไฟล์ — ทุกขั้นที่แตะ prod เป็น R0 ต้องถามลุงจืดก่อน)
-1. **Build image บนเครื่อง dev** (ต้องมี BuildKit สำหรับ `backend/Dockerfile`): `docker build -f backend/Dockerfile -t bcai-account-mainapi:rYYYYMMDD-N backend` และ `docker build --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=… --build-arg BCAI_LOCAL_BACKEND_URL=http://mainapi:8888 -t bcai-account-frontend:rYYYYMMDD-N frontend` (frontend/Dockerfile:25-32; provision-server.sh:151 กำหนด URL ภายในเป็น `http://mainapi:8888`)
-2. **ครั้งแรกบนเซิร์ฟเวอร์**: copy `deploy/account/*` ไป `/opt/bcai-account/deploy`, วาง `sshd-hardening.conf` ใน `/etc/ssh/sshd_config.d/` ให้เรียงก่อน cloud-init, รัน `MAINAPI_IMAGE=… FRONTEND_IMAGE=… ./provision-server.sh` (สร้าง secrets/env/bootstrap `{}`), ติดตั้ง `Caddyfile.account` ใน Caddy (rotate-postgres-password.sh:5-8 ยืนยัน path `/opt/bcai-account/deploy/compose.yml`)
-3. **ส่ง image**: ไม่มี registry → `docker save <image> | ssh root@<host> docker load` แล้วแก้ `MAINAPI_IMAGE`/`FRONTEND_IMAGE` ใน `/etc/bcai-account/release.env` (สำรองไฟล์เดิมไว้ก่อน)
-4. **up**: `docker compose --env-file /etc/bcai-account/release.env -f compose.yml -f compose.8gb.yml up -d` (คำสั่งตาม compose.8gb.yml:4-5; ชื่อ project `bcai-account` มาจาก `name:` ที่ compose.yml:1 ไม่ต้องใส่ `-p`) — ลำดับจะเป็น mongo→mongo-init, kafka-init→kafka, minio→minio-init, migrate (mode 3) → mainapi/worker → frontend ตาม `depends_on` §3; release เฉพาะ service ใช้ `up -d --no-deps <svc>` เหมือนใน rotate-postgres-password.sh:79
-5. **ตรวจรับ**: รอ healthcheck `healthy` ทุกตัว (`docker compose ps`), `curl 127.0.0.1:8888/healthz` และ `127.0.0.1:3200/`, ดู `docker logs` ของ mainapi ว่ามีบรรทัด `GoAPI routes registered under /goapi/*` (backend/main.go:576) และ `[Bootstrap]` ไม่ฟ้อง; เปิดโดเมนผ่าน Caddy
-6. **Rollback**: คืน `release.env` เดิมแล้ว `up -d --no-deps mainapi worker frontend` (image เก่ายังอยู่บนเครื่อง); DB data ถือว่า disposable ก่อน go-live (docs/handoff/HANDOFF-2026-09-06.md:14)
-7. **หมุนรหัส PG**: `rotate-postgres-password.sh` (§4) — ทำให้ mainapi/worker/migrate ถูกลบและสร้างใหม่ มี downtime สั้น
+1. **Build image บนเครื่อง dev** (ต้องมี BuildKit สำหรับ `backend/Dockerfile`): `docker build -f backend/Dockerfile -t bcai-account-mainapi:rYYYYMMDD-N backend` และ `docker build --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=… --build-arg BCAI_LOCAL_BACKEND_URL=http://mainapi:8888 -t bcai-account-frontend:rYYYYMMDD-N frontend`
+2. **ครั้งแรกบนเซิร์ฟเวอร์**: copy `deploy/account/*` ไป `/opt/bcai-account/deploy`, วาง `sshd-hardening.conf` ใน `/etc/ssh/sshd_config.d/` ให้เรียงก่อน cloud-init, รัน `MAINAPI_IMAGE=… FRONTEND_IMAGE=… ./provision-server.sh` (สร้าง secrets/env/bootstrap `{}`), ติดตั้ง `Caddyfile.account` ใน Caddy
+3. **ส่ง image**: ไม่มี registry ส่วนกลาง → สตรีมผ่าน `docker save <image> | ssh -C root@<host> docker load` แล้วแก้ `MAINAPI_IMAGE`/`FRONTEND_IMAGE` ใน `/etc/bcai-account/release.env` (สำรองไฟล์เดิมไว้ก่อน) — งานประจำใช้ `tools/fast-deploy.py` แทนการทำมือทุกขั้น
+4. **up** (ใน `/opt/bcai-account/deploy`): `docker compose --env-file /etc/bcai-account/release.env -f compose.yml -f compose.8gb.yml up -d` — ลำดับตาม `depends_on` §3: postgres → minio → minio-init → mainapi (รอ postgres healthy + minio-init completed) → frontend (รอ mainapi healthy); ไม่มีขั้น migration แยก — backend สร้างโครงสร้างเองด้วย `CREATE ... IF NOT EXISTS` (เช่น `cache_entries` ตอน start — cacher.go:45-53). งานประจำ `fast-deploy.py` สั่ง `up -d --no-deps` เฉพาะ `frontend` หรือ `mainapi frontend` แล้วรอ healthy (fast-deploy.py:230-256)
+5. **ตรวจรับ**: รอ healthcheck `healthy` ทุกตัว (`docker compose ps`), `curl 127.0.0.1:8888/healthz` และ `127.0.0.1:3200/`, ดู `docker logs` ของ mainapi ว่ามีบรรทัด `GoAPI routes registered under /goapi/*` (backend/main.go:176) และ `[Bootstrap]` ไม่ฟ้อง
+6. **Rollback**: คืน `release.env` เดิม (`fast-deploy.py` สำรองไว้ที่ `/opt/bcai-account/releases/<tag>/release.env.before` พร้อม `pg_dumpall` ใน `backup/` — fast-deploy.py:119-151) แล้ว `up -d --no-deps mainapi frontend` (image เก่ายังอยู่บนเครื่อง); DB data ถือว่า disposable ก่อน go-live
+7. **หมุนรหัส PG**: `rotate-postgres-password.sh` — **ห้ามใช้จนกว่าจะแก้** (ทดสอบแล้วว่าหยุดกลางทางที่บรรทัด 56 — ดู §4)
 
 ## ช่องว่าง / สิ่งที่ยังไม่ตรวจ
-- สถานะจริงของ 159.223.43.229 (deploy แล้วหรือยัง, image tag ปัจจุบัน, Caddyfile/DNS) และของ 192.168.2.202 — ต้อง ssh ตรวจเอง; งานนี้ไม่ได้เชื่อมต่อเครื่องใดนอกจาก local docker
-- ไม่ได้รัน `docker build` ทั้ง backend/frontend ในงานนี้ → ยังไม่ยืนยันว่า `backend/Dockerfile` (BuildKit) build ผ่านบน go.mod ปัจจุบัน; Dockerfile-consumer/-member/-migration/M1 ใช้ Go 1.18–1.21 ซึ่งน่าจะ build ไม่ผ่านแล้ว แต่ยังไม่ตรวจ
-- `backend/Dockerfile.goapi` + `backend/cmd/goapi/` มีใครใช้ deploy แยกหรือไม่ — ไม่มี compose/CI อ้าง; ถ้าไม่ใช้ควรลบ (คำถามลุงจืด)
-- ผลกระทบจริงของ key snake_case ใน `bootstrap.json` ต่อ mainapi loader (§6) — ยืนยันจากโค้ดและชื่อ key เท่านั้น ยังไม่ได้เขียน test/พิสูจน์ด้วย log เฉพาะ key; ควรตัดสินว่าจะ normalize ใน `internal/setupconfig/loader.go` หรือแก้ไฟล์
-- `worker` (mode 1) บน prod ยังจำเป็นไหม เมื่อ goapi consumers ใน mainapi ทำงานอยู่แล้ว (HANDOFF P3) — เป็น R1 รอลุงจืด
-- ClickHouse ยังเป็น `depends_on: service_healthy` ของ migrate/mainapi/worker บน prod (compose.yml:216-219, 240-243, 280-283) ทั้งที่โค้ด stub → ถ้าถอด container บน prod โดยไม่แก้ compose stack จะไม่ขึ้น; การถอดถาวรเป็น R1 (docs/handoff/HANDOFF-2026-09-06.md:60)
-- Backup/restore: ไม่มี job/หลักฐานใด ๆ ใน repo (docs/runbooks/RECOVERY-READINESS.md:40); ต้องกำหนด RPO/RTO/ปลายทาง
-- `mongodb` local ไม่มี host port mapping ที่ runtime แม้ compose ประกาศไว้ — ยังไม่ recreate (งานนี้อ่านอย่างเดียว)
-- ไม่ได้ตรวจ `deploy/account/*` เทียบกับสำเนาบนเซิร์ฟเวอร์ (drift), และไม่ได้ตรวจ Caddy config จริงบนเครื่อง
+- สถานะจริงของ 159.223.43.229 ปัจจุบัน (image tag ล่าสุด, Caddyfile/DNS ตรงกับไฟล์ใน repo หรือไม่) — งานนี้ไม่ได้ ssh เข้าเครื่องใด อ่านจาก repo อย่างเดียว
+- ไม่ได้รัน `docker build` ทั้ง backend/frontend ในรอบนี้ — ยืนยันแค่คำสั่ง build ของ `backend/Dockerfile:22` ด้วย Go บนเครื่อง dev (2026-09-25: `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" main.go` ผ่าน ได้ binary ~55 MB)
+- `rotate-postgres-password.sh` ต้องแก้ให้เหลือแค่ `mainapi` (ตัดขั้น `migrate`/`worker`) ก่อนใช้งานครั้งต่อไป (§4 — ยืนยันแล้วว่าหยุดกลางทาง; R1 เพราะเป็นสคริปต์บนเครื่อง prod)
+- `docs/runbooks/RECOVERY-READINESS.md` ยังอธิบาย backup/restore ของระบบที่ถอดไปแล้ว — ต้องเขียนใหม่ให้ตรงกับ PostgreSQL + MinIO
+- Backup/restore: มีแค่ preflight ใน `fast-deploy.py` (`pg_dumpall` + tar config — fast-deploy.py:147-150) ไม่มี backup ของ MinIO และยังไม่มีหลักฐานว่าเคยทดสอบ restore จริง

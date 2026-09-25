@@ -1,5 +1,7 @@
 # Admin And Multi-Company Access Control
 
+> Status (checked 2026-09-25): design proposal, not implemented. The tables `platform_admins`, `company_groups`, `tenants`, `access_grants` and the `/api/v1/admin/*`, `/api/v1/me/access` APIs below do not exist in `backend/`. Current access model: `holding_members` (role, `permission_sets`, `access_scopes`) in the central PostgreSQL DB `bcai_projection` (`backend/internal/centraldb/centraldb.go:156`), checked live on every request (`backend/pkg/microservice/live_authorization.go`).
+
 ## Objective
 
 Design access control for BC Ai Account so:
@@ -132,7 +134,7 @@ For existing records, do not add a new tenant id only for naming consistency.
 
 ### Access Grants
 
-One collection/table should represent all company/tenant/branch grants.
+One table should represent all company/tenant/branch grants (PostgreSQL only — MongoDB was removed 2026-09-23, see [ADR](../decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)).
 
 ```text
 access_grants(
@@ -195,7 +197,7 @@ Can:
 
 - Access the selected `tenant_id`.
 - Manage branch grants under that tenant.
-- Use existing `shopUsers` compatibility where needed.
+- Use existing `holding_members` compatibility where needed.
 
 ### Branch User
 
@@ -242,7 +244,7 @@ Backend rules:
 - Frontend may send selected `tenant_id` / `branch_id`, but backend must validate them against resolved access.
 - Query builders must reject requests where selected tenant/branch is not allowed.
 - Owner overview must use only the authorized `tenant_id` list.
-- ClickHouse must be queried only through backend APIs after access resolution.
+- Owner-overview/BI queries must run on PostgreSQL only through backend APIs after access resolution (see "Owner Overview And BI").
 
 ## API Design
 
@@ -319,13 +321,13 @@ Returns all groups, tenants, branches, and roles the current user may select.
 6. Backend writes `access_grants`.
 7. On next request, the target email can see only allowed companies/branches.
 
-## ClickHouse And BI
+## Owner Overview And BI
 
-Owner overview:
+ClickHouse was removed from the system on 2026-09-23 (see [ADR](../decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)) and must not be re-added. Any owner-overview or BI query for this design must run against PostgreSQL, scoped the same way:
 
 ```text
 allowed_tenants = resolveAccess(email).tenants
-query ClickHouse WHERE company_group_id = ? AND tenant_id IN allowed_tenants
+query PostgreSQL WHERE company_group_id = ? AND tenant_id IN allowed_tenants
 ```
 
 Branch report:
@@ -376,8 +378,8 @@ Production must load these from a controlled secret source or environment config
 ## Dependencies
 
 - Auth provider must provide verified email.
-- Existing `shopUsers` can remain for tenant-level compatibility.
-- Branch data comes from existing branch collections using `holdingcode` + branch code/id.
+- Existing `holding_members` (PostgreSQL, `backend/internal/centraldb/centraldb.go:156`) can remain for tenant-level compatibility.
+- Branch data comes from the existing PostgreSQL `branches` table (`holding_code` + `company_code` + `code`, `backend/internal/centraldb/centraldb.go:139`).
 - Backend request context must support resolved access.
 - BI/report APIs must accept authorized tenant/branch filters from backend context.
 
@@ -385,10 +387,10 @@ Production must load these from a controlled secret source or environment config
 
 Phase 1:
 
-- Keep `shopUsers` and existing role behavior.
+- Keep `holding_members` and existing role behavior.
 - Add `platform_admins`, `company_groups`, `tenants`, and `access_grants`.
 - Set `tenant_id = holdingcode`.
-- Resolve access from new grants first, fallback to `shopUsers` for legacy screens.
+- Resolve access from new grants first, fallback to `holding_members` for legacy screens.
 
 Phase 2:
 

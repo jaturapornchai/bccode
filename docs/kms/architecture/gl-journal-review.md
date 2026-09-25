@@ -13,7 +13,7 @@
 
 ## Config และ dependencies
 
-ไม่เพิ่ม env หรือ service ใหม่ ใช้การเชื่อม PostgreSQL และ auth/session ของ GL เดิม ตาราง runtime คือ `gl_journal_review_events` ใน `backend/internal/generalledger/schema.sql` สร้างผ่านตัวโหลด schema เดิมเมื่อ backend เริ่มใช้ฐานนั้น ข้อมูลบัญชีจริงยังอยู่ใน gl_records/gl_journal_lines ไม่ใช่ journal_entries ในร่าง mydocs
+ไม่เพิ่ม env หรือ service ใหม่ ใช้การเชื่อม PostgreSQL และ auth/session ของ GL เดิม ตาราง runtime คือ `gl_journal_review_events` ใน `backend/internal/generalledger/schema.sql` สร้างผ่านตัวโหลด schema เดิมเมื่อ backend เริ่มใช้ฐานนั้น ข้อมูลบัญชีจริงยังอยู่ใน `gl_records`/`gl_lines` (`backend/internal/generalledger/schema.sql:1-29`) ไม่ใช่ journal_entries ในร่าง mydocs
 
 Frontend ใช้ GLJournalReviewPanel, useGLCommand และ BFF `/api/gl`; Backend ใช้ Go sql.Tx, company lock และ idempotency เดิม ไม่มี MongoDB, ClickHouse, Kafka หรือ Redis เพิ่มในงานนี้
 
@@ -52,4 +52,4 @@ Backend ใช้ตัวตนผู้ตรวจจาก session ไม่
 - PostgreSQL integration ผ่าน lifecycle, retry, payload mismatch, concurrent reviewer, stale version, company/branch isolation และ append-only
 - Playwright ใช้หน้าจอจริงกับ HTTP fixtures ตรวจหมายเหตุบังคับ ประวัติ ป้องกันทิ้งข้อมูล โหลด version ใหม่ และคงข้อความเมื่อบันทึกชนกันผ่าน ตรวจภาพ light/dark แล้ว
 - Production รุ่น `r20260920-gl-review-deny-1`: สำรองฐานข้อมูล/config ก่อนสลับ ทั้งสองบริการ healthy หน้าเว็บคืน HTML 200 และ GL API ไม่มี token คืน JSON 401; ยังไม่ได้ทดสอบ session ผู้ใช้จริงบน production
-- ถอด MongoDB startup initializer, การสร้าง index อัตโนมัติของสินค้า/บาร์โค้ด/คลัง, Mongo-to-Kafka outbox workers และ coupon cleanup scheduler แล้ว เส้นทาง GL ใช้ PostgreSQL เช่นเดิม; legacy API ที่อ้าง MongoDB ยังอยู่ จึงไม่ใช่การย้ายฐานข้อมูลทั้งระบบ
+- เส้นทาง GL ของงานนี้ใช้ PostgreSQL (ตรวจ 2026-09-20); MongoDB/Kafka/Redis/ClickHouse ถูกถอดออกจากทั้งระบบเมื่อ 2026-09-23 ตาม ADR [ถอด MongoDB/Kafka/Redis/ClickHouse](../decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)

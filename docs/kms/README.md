@@ -9,10 +9,10 @@
 > **ห้ามอ่านเอกสารทั้งหมดพร้อมกันเด็ดขาด**: อ่านเฉพาะไฟล์ที่ตรงกับงานเพื่อประหยัด Context Window ของ AI
 > 1. **งานเล็ก / แก้บั๊ก 1 บรรทัด / คำถามทั่วไป** → ดูโค้ดจริงโดยตรง (`code = truth`) ไม่ต้องเปิด docs
 > 2. **งาน UX/UI** → อ่านเฉพาะ `.agents/skills/ui-scale-polish/SKILL.md`
-> 3. **งาน Schema / MongoModel** → อ่านเฉพาะ `.agents/skills/audit-mongomodel-sync/SKILL.md`
+> 3. **งาน Schema / ฐานข้อมูล** → อ่าน [02-data-stores.md](02-data-stores.md) แล้วยืนยันกับโค้ดจริง (`backend/internal/centraldb/centraldb.go`, `backend/internal/generalledger/schema.sql`) + สเปกของลุงจืดใน `mydocs/datamodels/gl/` (อ่านอย่างเดียว) — ระบบใช้ PostgreSQL ตัวเดียว
 > 3.1 **งานบัญชี/ภาษีไทย (แบบยื่น อัตรา เครดิตภาษี งบการเงิน)** → อ่าน `.agents/skills/thai-accounting-tax/SKILL.md` + ทะเบียน [21-thai-tax-form-references.md](21-thai-tax-form-references.md) — ห้ามเดา ต้องมีอ้างอิงทางการ
 > 4. **งานสถาปัตยกรรม / โดเมนเฉพาะเรื่อง** → ดูตารางสรุป 1 บรรทัดด้านล่าง แล้วเลือกเปิดเฉพาะ **1 บทความที่เกี่ยวข้อง**
-> 5. **Handoff (`docs/handoff/` — เก็บฉบับล่าสุดฉบับเดียว; การอ้าง `HANDOFF-2026-09-06.md` / `HANDOFF-RISKS-2026-09-05.md` ในบทความ kms เป็นหลักฐานประวัติ ดูได้ด้วย `git show 1660b335:docs/handoff/<file>`)** → อ่านเฉพาะเมื่อลุงจืดถามสถานะงานค้าง/ความเสี่ยง หรือเริ่มงานสถาปัตยกรรมใหญ่ข้ามระบบ
+> 5. **Handoff (`docs/handoff/` — ตอนนี้มี `HANDOFF-2026-09-19.md`, `HANDOFF-2026-09-20-GL-GLM.md`, `HANDOFF-2026-09-20-GL-TAX.md`; การอ้าง `HANDOFF-2026-09-06.md` / `HANDOFF-RISKS-2026-09-05.md` ในบทความ kms เป็นหลักฐานประวัติ ดูได้ด้วย `git show 1660b335:docs/handoff/<file>`)** → อ่านเฉพาะเมื่อลุงจืดถามสถานะงานค้าง/ความเสี่ยง หรือเริ่มงานสถาปัตยกรรมใหญ่ข้ามระบบ
 
 ## กติกา
 
@@ -22,44 +22,46 @@
 - ADR ใหม่ → `decisions/YYYY-MM-DD-<slug>.md` (template ใน `decisions/README.md`); บั๊กที่แก้แล้ว → `bugs/YYYY-MM-DD-<symptom>.md` (template ใน `bugs/README.md`)
 - `D:\bcdev` (project เก่า Flutter) ไม่เกี่ยวกับ repo นี้ — อย่านำความรู้จากที่นั่นมาปน
 
-## บทความหลัก (อ่านโค้ดทั้ง repo 2026-09-07 ที่ commit d93a210d — 15 นักอ่าน + 15 fact-checker เปิดไฟล์ตรวจทุก citation; ยังไม่ได้ตรวจซ้ำทั้งชุดที่ HEAD `098107e1`)
+## บทความหลัก (เขียนใหม่ตามโค้ดจริงหลังถอด MongoDB/Kafka/Redis/ClickHouse — ตรวจรอบ 2026-09-25 ที่ HEAD `c58f0b62`; รอบก่อนหน้าอ่านทั้ง repo 2026-09-07 ที่ `d93a210d`)
 
-| # | ไฟล์ | เรื่อง | สรุปบรรทัดเดียว | อ้างอิง path:line | ตรวจซ้ำ (แก้/ยังไม่ตรวจ) |
-|---|---|---|---|---|---|
-| 00 | [00-source-router.md](00-source-router.md) | แผนที่หาโค้ดตาม feature | router เดิม (AI_INDEX) — ชี้ว่า feature ไหนอยู่ package ไหน | — | — |
-| 01 | [01-architecture-overview.md](01-architecture-overview.md) | ภาพรวมสถาปัตยกรรมระบบ BC Ai Account | binary Go ตัวเดียวสลับ 3 บทบาทด้วย DEV_API_MODE, goapi ซ้อนใต้ /goapi ของ mainapi:8888, browser ผ่าน Next.js เสมอ, bootstrap.json ชนะ env | 65 | 175 claims (12/3) |
-| 02 | [02-data-stores.md](02-data-stores.md) | 02 — ที่เก็บข้อมูล (Data stores) และบทบาทจริงของแต่ละตัว | สถาปัตยกรรม 2-Tier: Mongo (appdb) เป็น Storage Layer รับเขียน/เก็บย่อ (compact); PG per-holding เป็น Processing Engine ประมวลผลเร็วแบบ self-contained ไม่พึ่ง Mongo อีก; Redis แค่ cache token; MinIO เก็บรูป+thumb; ClickHouse พักแล้ว | 87 | 168 claims (17/6) |
-| 03 | [03-auth-tenancy.md](03-auth-tenancy.md) | การยืนยันตัวตน เซสชัน และ Tenancy (Holding / Company / Branch) | token ไม่ใช่ JWT แต่เป็น Redis session 15 นาที/12 ชม. ที่ตรวจสิทธิ์สดจาก Mongo ทุก request; holding ถูกเลือกฝั่ง server ผ่าน /select-holding ไม่ใช่ header; /systemadm/* ไม่มี role guard | 138 | 118 claims (22/0) |
-| 04 | [04-product-domain.md](04-product-domain.md) | โดเมนสินค้า (Product / Barcode / Unit / BOM) — Mongo SoT, outbox, projection PG, import, listing v2, จอ frontend | สินค้าเขียนลง Mongo + outbox แล้วค่อย project ไป PG ต่อ holding ผ่าน Kafka; import/barcode2 ยังผูก ClickHouse ที่ถอดไปแล้ว | 148 | 168 claims (5/0) |
-| 05 | [05-transaction-sales-purchase.md](05-transaction-sales-purchase.md) | ธุรกรรมซื้อ–ขาย (Transaction: Sales & Purchase) — เส้นทางจาก Mongo → Kafka → PG projection | เอกสารซื้อ-ขาย 19 module: Mongo เป็นต้นทาง, Kafka ยิงแบบ fire-and-forget, goapi project ลง PG doc/docdetail — พร้อมตาราง transflag, สูตรเลขที่เอกสาร และจุดที่โค้ดค้าง (docwaitprocess ไม่ถูกลบ, docref ซ้ำ, PP/PO prefix ชน, quotation/paid/pay ไม่มี consumer) | 180 | 168 claims (27/1) |
-| 06 | [06-transaction-stock.md](06-transaction-stock.md) | ธุรกรรมสต็อกและเครื่องคำนวณต้นทุน (Stock transactions & cost engines) | สต็อกมี engine ต้นทุน 3 ชุดในโค้ด แต่ที่ทำงานจริงมีแค่ goapi process-stock (average) — legacy stockprocess ตาย, inventory/costing ยังไม่มีใครใช้, stockwaitprocess ไม่มีใคร drain | 118 | 118 claims (9/2) |
-| 07 | [07-goapi-layer.md](07-goapi-layer.md) | ชั้น goapi — HTTP routes, Kafka consumers, workers, และ connection managers | goapi ไม่ใช่ binary แยก: mount ใต้ /goapi ใน mainapi, มี route LIVE ~160 เส้น, handler DEAD 55 ตัว, Kafka 25 group -v1, worker 24 ตัว busy-poll คิวว่าง, ClickHouse เป็น stub | 146 | 160 claims (11/2) |
-| 08 | [08-legacy-modules.md](08-legacy-modules.md) | โมดูล legacy/อื่น ๆ ใน backend/internal — inventory, สถานะ และผู้เรียกใช้ | แผนที่โมดูล legacy 40+ ตัวใน backend/internal: ตัวไหน register จริงใน main.go (mode 1/2/3), frontend เรียกอะไรบ้าง, และ 15+ ตัวที่เป็นซากตายพร้อมหลักฐาน path:line + runtime | 221 | 212 claims (10/0) |
-| 09 | [09-frontend.md](09-frontend.md) | 09 — Frontend (Next.js BFF): หน้าจอ, API proxy, session, ธีม และกฎ UX | Next 16 BFF: 12 หน้าจอ + 36 route proxy ไป mainapi/goapi, refresh cookie 12 ชม., 10 พาเลต/8 ฟอนต์/12 ภาษา, จอ /settings ตายเพราะ BFF ตอบ 410 | 118 | 148 claims (19/2) |
-| 10 | [10-infra-deploy.md](10-infra-deploy.md) | โครงสร้างพื้นฐานและการ deploy (Infra & Deploy) | binary เดียวสลับ 4 โหมดด้วย DEV_API_MODE, local/integration-test/prod compose 3 ชุด, config โหลด 2 loader ที่ normalize key ไม่เหมือนกัน, prod ยังผูก ClickHouse ที่ stub แล้ว | 124 | 142 claims (11/1) |
-| 11 | [11-testing-quality.md](11-testing-quality.md) | การทดสอบและคุณภาพโค้ด (Testing & Quality) | Go test 204 ไฟล์แต่ 15 package ถูก quarantine, ไม่มี CI แล้ว (ลบ 2026-09-09) ใช้ `tools/verify.sh` แทน, Playwright UAT ที่ root เท่านั้นที่ตรวจ Mongo ทีละ step | 71 | 118 claims (11/1) |
-| 12 | [12-kafka-messaging.md](12-kafka-messaging.md) | Kafka Messaging — แคตตาล็อก topic / producer / consumer / offset semantics | Kafka มี 384 topic `when-*`, consumer 3 ตระกูล (goapi kafka-go `-v1` / legacy librdkafka / barcode `-projection`) — goapi ส่วนใหญ่ commit offset ก่อน handler เสร็จ (at-most-once) มีเพียง 9 topic product/barcode ที่ ack-after-success, DLQ เป็น log-only | 99 | 118 claims (19/2) |
-| 13 | [13-pkg-framework.md](13-pkg-framework.md) | แพ็กเกจ framework กลางของ backend: pkg/microservice, pkg/*, internal/config, utils, models, repositories | แผนที่ framework กลาง (Microservice/persister/cacher/producer/config env/utils/models/repositories) พร้อมสถานะ LIVE/DEAD และกับดักที่ตรวจจากโค้ดจริง | 142 | 190 claims (29/2) |
-| 14 | [14-cmd-tools-scripts.md](14-cmd-tools-scripts.md) | เครื่องมือบรรทัดคำสั่งและสคริปต์ (backend/cmd, scripts, tools, scratch, prompts, cluster) | binary จริงมีตัวเดียวคือ root main.go — backend/cmd 30 dir เป็น legacy/dead/one-off, tools/kung_* กับ prompt chat-agent ชี้ route ที่ไม่มีแล้ว, scratch 18 ไฟล์ติด git ทั้งที่ .gitignore ห้าม | 88 | 118 claims (11/0) |
-| 15 | [15-known-issues.md](15-known-issues.md) | ปัญหาที่รู้แล้วและงานค้าง (Known Issues & Backlog) — ตรวจซ้ำที่ HEAD d93a210d | 27 issue จาก handoff ตรวจซ้ำทีละบรรทัดที่ HEAD: 20 ยังอยู่ / 3 แก้แล้ว / 3 ตรวจไม่ได้ / 1 ปิดเรื่อง (KI-23 เรื่อง CI) + พบใหม่ outbox องค์กร 98 PENDING ไม่มี dispatcher | 76 | 118 claims (9/0) |
-| 16 | [16-environments-and-servers.md](16-environments-and-servers.md) | สภาพแวดล้อมและเซิร์ฟเวอร์ | dev local / on-prem .202 / prod DigitalOcean / prod เก่า / tunnel / Google sign-in — ค่า secret ไม่อยู่ในนี้ | จาก memory/handoff | ผู้เขียนหลัก |
-| 17 | [17-dev-gotchas.md](17-dev-gotchas.md) | กับดักตอนพัฒนา | กับดัก frontend/backend/UAT/เครื่องมือ พร้อมวันที่ยืนยัน (รวม regex `\p{L}` ไม่รับสระ/วรรณยุกต์ไทย 2026-09-24) — อ่านก่อนเสียเวลาซ้ำ | จาก memory/handoff | ผู้เขียนหลัก |
-| 18 | [18-decisions-and-agreements.md](18-decisions-and-agreements.md) | ข้อตกลงและการตัดสินใจ | ลำดับการอ่านสำหรับ AI ทุกตัว + ไทม์ไลน์การตัดสินใจ 2026-06→09 + คำถามค้าง 6 ข้อ | จาก memory/handoff | ผู้เขียนหลัก |
-| 19 | [19-menu-coverage-market-standard.md](19-menu-coverage-market-standard.md) | ความครบของเมนูเทียบมาตรฐานโปรแกรมบัญชีชั้นนำในตลาด | ประวัติการเทียบเมนูกับมาตรฐานตลาด (เคย 224 รายการ) — **ตั้งแต่ 2026-09-19 ยึด Champ parity เหลือ 194 รายการ ดู ADR 2026-09-19-champ-parity-menu-cut** + วิธีตรวจจอกำพร้า | ชุดข้อกำหนดมาตรฐาน 411 รายการ + แหล่งข้อมูลงานจริง 442 ข้อกล่าวอ้าง | ตรวจซ้ำแบบหักล้างทั้งสองรอบ |
-| 20 | [20-champ-parity-gap.md](20-champ-parity-gap.md) | ช่องว่างเทียบต้นแบบ Champ (D:project-champ) | เมนู 490 vs 225, รายงาน/ภาษี/เครื่องมือที่ต่างเชิงระบบ, BCProcess Windows Service ที่ BC ยังไม่มี worker | ซอร์ส Champ + ซอร์ส BC อ้าง file:line | ตรวจข้อกล่าวอ้าง subagent ซ้ำเอง 1 ข้อพบผิด |
-| 21 | [21-thai-tax-form-references.md](21-thai-tax-form-references.md) | ทะเบียนอ้างอิงทางการของแบบยื่นภาษี | ช่องไหนของแบบ (ภ.ง.ด.50/51 เครดิตภาษี + สูตรข้อ 3–8) ระบบเติม/คำนวณ เพราะคำชี้แจงกรมสรรพากรข้อไหน + สิ่งที่ยังไม่เติมเพราะข้อมูลไม่พอ (ห้ามเดา); งวดภาษีหัก/กลับรายการ (§9), ภาษีซื้อ ใบเพิ่ม/ลดหนี้ ใบกำกับซ้ำ (§10), mapping ไฟล์ยื่นด้วยสื่อ Format กลาง V2.0 (§11), หลักตรวจสอบเลขผู้เสียภาษี (§12) — คู่กับ skill `thai-accounting-tax` | คู่มือ/ประมวลรัษฎากร/Format กลาง rd.go.th (ถอดข้อความ PDF) + โค้ด path:line | ตรวจ 2026-09-24 |
-| 22 | [22-sample-data-gl-tax-2569.md](22-sample-data-gl-tax-2569.md) | ข้อมูลบัญชีและภาษี ก.ค.–ก.ย. 2569 ของ rungrueng/01 | สคริปต์ `scripts/seed-gl-tax-rungrueng-2569.mjs` (dry-run เป็นค่าเริ่มต้น, `--apply`, `verify`), ใบรายวัน 31 ใบ + แบบยื่น 7 ฉบับ, สมุดเลือกตามประเภทและจำใน manifest, ค่าสมมติที่ต้องล้างก่อน go-live | สคริปต์ + manifest `docs/examples/gl-tax-rungrueng-01-2569-20260924.json` + แหล่งภาษี rd.go.th | dry-run local/prod 2026-09-25 |
+| # | ไฟล์ | เรื่อง | สรุปบรรทัดเดียว | ตรวจล่าสุด |
+|---|---|---|---|---|
+| 00 | [00-source-router.md](00-source-router.md) | แผนที่หาโค้ดตามงาน | ชี้ path จริงของ auth/tenancy, GL, ภาษี, สินทรัพย์ถาวร, API/MCP token, infra, จอที่ backend ถูกลบ และชุดตรวจ — ไม่นิยามพฤติกรรมระบบ | 2026-09-25 |
+| 01 | [01-architecture-overview.md](01-architecture-overview.md) | ภาพรวมสถาปัตยกรรมระบบ BC Ai Account | binary Go ตัวเดียว (`backend/main.go`) ไม่มีโหมดสลับ, goapi mount ใต้ `/goapi` ของ mainapi:8888, browser ผ่าน Next.js BFF เสมอ, เก็บข้อมูลใน PostgreSQL + MinIO เท่านั้น | 2026-09-25 |
+| 02 | [02-data-stores.md](02-data-stores.md) | ที่เก็บข้อมูลและบทบาทจริงของแต่ละตัว | PostgreSQL ฐานกลาง `bcai_projection` (identity/holding/สมาชิก/สิทธิ์/`cache_entries`/MCP token) + ฐานแยกต่อ holding (GL/ภาษี/สินทรัพย์ถาวร สร้างอัตโนมัติ) + MinIO เก็บไฟล์คู่ thumbnail | 2026-09-25 |
+| 03 | [03-auth-tenancy.md](03-auth-tenancy.md) | การยืนยันตัวตน เซสชัน และ Tenancy (Holding / Company / Branch) | token ไม่ใช่ JWT แต่เป็น opaque token ในตาราง `cache_entries` (access ≤ 15 นาที, session 12 ชม.), ตรวจสิทธิ์สดจาก PostgreSQL ทุกคำขอ, holding เลือกฝั่ง server ผ่าน `/select-holding`, login 4 ทาง (password/Google/Demo/Dev) | 2026-09-25 |
+| 04 | [04-product-domain.md](04-product-domain.md) | โดเมนสินค้า (Product / Barcode / Unit / BOM) | backend สินค้าถูกลบ 2026-09-23 — จอเดิมขึ้น "รอพัฒนา", เหลือ route goapi ค้างที่อ่านตารางที่ไม่มีใครเติม + อัปโหลดรูป/วิดีโอลง MinIO ที่ยังใช้ได้ | 2026-09-25 |
+| 05 | [05-transaction-sales-purchase.md](05-transaction-sales-purchase.md) | ธุรกรรมซื้อ–ขาย | module ซื้อ-ขายเดิมถูกลบ 2026-09-23 — frontend มี registry `ERP_MODULE_CONFIGS` รอ backend บน PostgreSQL, route goapi รายงานขายที่ยังค้าง | 2026-09-25 |
+| 06 | [06-transaction-stock.md](06-transaction-stock.md) | ธุรกรรมสต็อกและเครื่องคำนวณต้นทุน | ทางเข้าเอกสารสต็อกเดิมถูกลบทั้งหมด — เหลือ engine ต้นทุนฝั่ง goapi (`stockengine`, `process-stock`, `inventory`) ที่ไม่มีข้อมูลป้อน | 2026-09-25 |
+| 07 | [07-goapi-layer.md](07-goapi-layer.md) | ชั้น goapi — HTTP routes, connection managers และ stock engine | goapi mount ใต้ `/goapi` ใน mainapi: ลำดับ `Init()`, middleware/auth ของตัวเอง, ตาราง route, handler DEAD, stock engine และคิวที่ไม่มีผู้ใช้, connection manager `mydb`/`mypg` | 2026-09-25 |
+| 08 | [08-legacy-modules.md](08-legacy-modules.md) | โมดูล legacy/อื่น ๆ ใน `backend/internal` | เกือบทุกโมดูล legacy ถูกลบ 2026-09-23 (`backend/cmd/` เหลือแค่ `glseed/`) — เหลือ `media`, `demo`, `encrypt`, `models`, `utils` และสคริปต์ SQL ใน `backend/internal/database/` | 2026-09-25 |
+| 09 | [09-frontend.md](09-frontend.md) | Frontend (Next.js BFF): หน้าจอ, API proxy, session, ธีม และกฎ UX | Next 16 BFF: หน้าจอ, route proxy ไป mainapi/goapi, refresh cookie, ธีม/ฟอนต์/ภาษา — BFF ที่ปลายทาง backend ถูกลบติดป้าย BACKEND-REMOVED (จอขึ้น "รอพัฒนา") | 2026-09-07 + ตรวจซ้ำบางหัวข้อ 2026-09-25 |
+| 10 | [10-infra-deploy.md](10-infra-deploy.md) | โครงสร้างพื้นฐานและการ deploy | local stack (Docker Desktop) + prod compose `deploy/account/compose.yml` (postgres, minio, mainapi, frontend), config bootstrap.json → env, deploy ด้วย `tools/fast-deploy.py` | 2026-09-25 |
+| 11 | [11-testing-quality.md](11-testing-quality.md) | การทดสอบและคุณภาพโค้ด | Go test บน PostgreSQL (integration ด้วย tag), ไม่มี CI แล้ว ใช้ `tools/verify.sh`, vitest/Playwright, UAT ด้วยปุ่ม Demo + ตรวจ PostgreSQL ทีละ step | 2026-09-25 |
+| 13 | [13-pkg-framework.md](13-pkg-framework.md) | แพ็กเกจ framework กลางของ backend | `pkg/microservice` (echo, cacher `cache_entries`, persister ไฟล์ S3/MinIO, live authorization), `pkg/*` อื่น, ชื่อ env ใน `internal/config`, utils/models และกับดักที่ตรวจจากโค้ด | 2026-09-25 |
+| 14 | [14-cmd-tools-scripts.md](14-cmd-tools-scripts.md) | เครื่องมือบรรทัดคำสั่งและสคริปต์ | binary จริงตัวเดียวคือ `backend/main.go`, `backend/cmd/glseed`, สคริปต์ seed/UAT ใน `scripts/`, เครื่องมือใน `tools/`, `scratch/` ที่ติด git, prompt assets | 2026-09-25 |
+| 15 | [15-known-issues.md](15-known-issues.md) | ปัญหาที่รู้แล้วและงานค้าง | issue เดิมตรวจซ้ำที่ HEAD — ข้อที่ผูกกับ Kafka/Mongo ปิดเพราะโค้ดถูกลบ, ที่เหลือแยกยังอยู่/แก้แล้ว + คำถามเปิดถึงลุงจืด | 2026-09-25 |
+| 16 | [16-environments-and-servers.md](16-environments-and-servers.md) | สภาพแวดล้อมและเซิร์ฟเวอร์ | DEV เครื่องลุงจืด + PROD DigitalOcean `159.223.43.229` (`account.bcaicloud.com`), Google Sign-In — ค่า secret ไม่อยู่ในนี้ | 2026-09-25 |
+| 17 | [17-dev-gotchas.md](17-dev-gotchas.md) | กับดักตอนพัฒนา | กับดัก frontend/backend/UAT/สคริปต์/เครื่องมือ AI พร้อมวันที่ยืนยัน (รวม regex `\p{L}` ไม่รับสระ/วรรณยุกต์ไทย) — อ่านก่อนเสียเวลาซ้ำ | 2026-09-07 + ล้างแถวยุคเก่า 2026-09-25 |
+| 18 | [18-decisions-and-agreements.md](18-decisions-and-agreements.md) | ข้อตกลงและการตัดสินใจ | ลำดับการอ่านสำหรับ AI ทุกตัว + ไทม์ไลน์การตัดสินใจ + คำถามที่ยังไม่มีคำตอบ | 2026-09-25 |
+| 19 | [19-menu-coverage-market-standard.md](19-menu-coverage-market-standard.md) | ความครบของเมนูเทียบมาตรฐานโปรแกรมบัญชีในตลาด | ประวัติการเทียบเมนูกับมาตรฐานตลาด (เคย 224 รายการ) — **ตั้งแต่ 2026-09-19 ยึด Champ parity ดู ADR 2026-09-19-champ-parity-menu-cut** + วิธีตรวจจอกำพร้า | ผัง 2026-09-11 (เนื้อหาเทียบตลาดเป็นประวัติ 2026-09-08) |
+| 20 | [20-champ-parity-gap.md](20-champ-parity-gap.md) | ช่องว่างเทียบต้นแบบ Champ (`D:\project-champ`) | ผังเมนู, รายงาน/ภาษี/เครื่องมือที่ต่างเชิงระบบ, BCProcess Windows Service ที่ BC ยังไม่มี worker | Champ 2026-09-15; ฝั่ง BC 2026-09-25 |
+| 21 | [21-thai-tax-form-references.md](21-thai-tax-form-references.md) | ทะเบียนอ้างอิงทางการของแบบยื่นภาษี | ช่องไหนของแบบ (ภ.ง.ด.50/51 เครดิตภาษี + สูตรข้อ 3–8) ระบบเติม/คำนวณ เพราะคำชี้แจงกรมสรรพากรข้อไหน + สิ่งที่ยังไม่เติมเพราะข้อมูลไม่พอ (ห้ามเดา); งวดภาษีหัก/กลับรายการ (§9), ภาษีซื้อ ใบเพิ่ม/ลดหนี้ ใบกำกับซ้ำ (§10), mapping ไฟล์ยื่นด้วยสื่อ Format กลาง V2.0 (§11), หลักตรวจสอบเลขผู้เสียภาษี (§12) — คู่กับ skill `thai-accounting-tax` | 2026-09-23–24 |
+| 22 | [22-sample-data-gl-tax-2569.md](22-sample-data-gl-tax-2569.md) | ข้อมูลบัญชีและภาษี ก.ค.–ก.ย. 2569 ของ rungrueng/01 | สคริปต์ `scripts/seed-gl-tax-rungrueng-2569.mjs` (dry-run เป็นค่าเริ่มต้น, `--apply`, `verify`), ใบรายวัน 31 ใบ + แบบยื่น 7 ฉบับ, สมุดเลือกตามประเภทและจำใน manifest, ค่าสมมติที่ต้องล้างก่อน go-live | 2026-09-25 |
 
-## เอกสารสถาปัตยกรรม/สัญญา (ย้ายจาก `backend/architecture/` 2026-09-07)
+บทความ `12-kafka-messaging.md` ถูกลบ 2026-09-25 เพราะ Kafka ถูกถอดออกจากระบบแล้ว ([ADR](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)) — เลข 12 เว้นว่างไว้
 
-- [บัญชีแยกประเภทใหม่ตาม Champ — 35 เมนู](architecture/2026-09-11-general-ledger-v2.md): decimal exact, Mongo→Kafka→PG deploy แล้ว, ผ่าน/กลับรายการ, ปิดงบ/สิ้นปี, ผลทดสอบและข้อจำกัด XBRL/เอกสารต้นทาง
+## เอกสารสถาปัตยกรรม/สัญญา (`architecture/`)
 
-- [architecture/admin-access-control.md](architecture/admin-access-control.md)
-- [architecture/high-scale-multitenant-bi.md](architecture/high-scale-multitenant-bi.md)
-- [architecture/product-listing-api-v2-handoff.md](architecture/product-listing-api-v2-handoff.md)
-- [architecture/product-listing-api-v2.md](architecture/product-listing-api-v2.md)
+- [architecture/2026-09-11-general-ledger-v2.md](architecture/2026-09-11-general-ledger-v2.md) — บัญชีแยกประเภทตาม Champ: PostgreSQL ล้วนแบบ synchronous ACID ตั้งแต่ 2026-09-23, decimal exact, ผ่าน/กลับรายการ, ปิดงบ/สิ้นปี, ผลทดสอบและข้อจำกัด XBRL/เอกสารต้นทาง
+- [architecture/gl-journal-details.md](architecture/gl-journal-details.md) — หลักฐานลูกหนี้/เจ้าหนี้/Statement ธนาคารแบบ many-to-many ภายในรายวัน, source dedup, API/MCP และข้อจำกัด
+- [architecture/gl-journal-review.md](architecture/gl-journal-review.md) — ผลตรวจและข้อแตกต่างในหน้ารายวัน แยกจากสถานะผ่านรายการ พร้อมประวัติผู้ตรวจ/รุ่นเอกสาร
+- [architecture/gl-mcp-tokens.md](architecture/gl-mcp-tokens.md) — API / MCP token ของ Holding (`/mcp-tokens`, `/mcp/gl`): credential แยกจาก session, ตรวจสิทธิ์ผู้ออกทุกคำขอ, เพิกถอนได้
+- [architecture/admin-access-control.md](architecture/admin-access-control.md) — ข้อเสนอออกแบบ admin หลายบริษัท (**ยังไม่ได้ทำ** — ตาราง/API ในเอกสารไม่มีใน `backend/`; โมเดลปัจจุบันคือ `holding_members` ในฐานกลาง)
 
-## การตัดสินใจ (ADR) — 26 ไฟล์ใน `decisions/`
+## การตัดสินใจ (ADR) — 70 ไฟล์ใน `decisions/`
+
+> ADR และบั๊กเป็นบันทึกประวัติ ไม่แก้ย้อนหลัง — ฉบับก่อน 2026-09-23 ที่อธิบายการออกแบบบน MongoDB/Kafka/Redis/ClickHouse (2-Tier, outbox, projection, consumer) ใช้เป็นหลักฐานประวัติเท่านั้น ระบบปัจจุบันยึด [ADR ถอดระบบ 2026-09-23](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)
 
 - [decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md](decisions/2026-06-10-product-readmodel-parity-taxtype-rename.md)
 - [decisions/2026-06-11-productlanguage-join-table.md](decisions/2026-06-11-productlanguage-join-table.md)
@@ -87,7 +89,8 @@
 - [decisions/2026-09-10-master-menu-streamlining.md](decisions/2026-09-10-master-menu-streamlining.md)
 - [decisions/2026-09-11-erp-nine-modules-menu-restructure.md](decisions/2026-09-11-erp-nine-modules-menu-restructure.md)
 - [decisions/2026-09-11-champ-menu-structure-alignment.md](decisions/2026-09-11-champ-menu-structure-alignment.md)
-- [decisions/2026-09-11-deploy-gl-kafka-demo.md](decisions/2026-09-11-deploy-gl-kafka-demo.md) — GL Kafka deploy r20260911-gl-kafka-1, commit ordering/replay, sanitized evidence, backup/rollback; ข้อมูลตัวอย่างผ่าน seed/กระทบยอดฐานข้อมูลแล้ว; frontend gl-demo-thai-1 deploy และ final UI ผ่าน 5 reports / 35 routes
+- [decisions/2026-09-11-deploy-champ-menu.md](decisions/2026-09-11-deploy-champ-menu.md) — Deploy frontend 223 เมนู Champ, ชื่อหมวดไทยล้วน และเมนูบนเป็นค่าเริ่มต้น (r20260911-menu-top-1)
+- [decisions/2026-09-11-deploy-gl-kafka-demo.md](decisions/2026-09-11-deploy-gl-kafka-demo.md) — ประวัติ deploy GL รอบ r20260911-gl-kafka-1 + frontend gl-demo-thai-1 (เส้นทาง Kafka ในเอกสารนี้ถูกถอดแล้ว 2026-09-23)
 - [decisions/2026-09-11-deploy-general-ledger-v2.md](decisions/2026-09-11-deploy-general-ledger-v2.md) — Main API/worker/frontend GL v2, สำรองและ restore แยก, ตรวจ HTTPS 35 เมนูและ rollback
 - [decisions/2026-09-11-deploy-chart-of-accounts-level-and-delete-guard.md](decisions/2026-09-11-deploy-chart-of-accounts-level-and-delete-guard.md) — Deploy ผังบัญชีรองรับระดับ 1–12, ป้องกันการลบเมื่อมีข้อมูลอ้างอิงจากสมุดรายวันเด็ดขาด (r20260911-gl-level-1)
 - [decisions/2026-09-11-champ-upgrade-menu-workflows.md](decisions/2026-09-11-champ-upgrade-menu-workflows.md) — ผังอัปเกรด Champ 223 เมนู, baseline 154, 69 คำสั่งเพิ่มและสถานะจอจริง
@@ -97,6 +100,7 @@
 - [decisions/2026-09-12-fullscreen-account-search-dialog.md](decisions/2026-09-12-fullscreen-account-search-dialog.md) — ระบบค้นหาผังบัญชีแบบเต็มจอ (Full-Screen Chart of Accounts Search Dialog) พร้อมตัวกรอง 5 หมวดและคีย์ลัดสำหรับผู้ใช้ 40+
 - [decisions/2026-09-12-enable-dom-inspector-on-production.md](decisions/2026-09-12-enable-dom-inspector-on-production.md) — เปิดใช้งานวิดเจ็ต Copy DOM (DevDomInspector) บน Production (account.bcaicloud.com)
 - [decisions/2026-09-12-deploy-search-and-copy-dom.md](decisions/2026-09-12-deploy-search-and-copy-dom.md) — Deploy ระบบค้นหาผังบัญชีแบบเต็มจอและ Copy DOM สู่ Production (r20260912-search-dom-1)
+- [decisions/2026-09-12-chart-of-accounts-tree-sort-and-search-icon.md](decisions/2026-09-12-chart-of-accounts-tree-sort-and-search-icon.md) — แก้การเรียงผังบัญชีแบบต้นไม้ (ระดับที่แท้จริง) และไอคอนในช่องค้นหาโดนทับ
 - [decisions/2026-09-12-baseline-search-debounce-and-clean-icon.md](decisions/2026-09-12-baseline-search-debounce-and-clean-icon.md) — ระบบค้นหาหลัก Baseline Toolbar ค้นหาอัตโนมัติ (Auto 2s debounce) และปุ่ม Clean (✕) ล้างคำค้น
 - [decisions/2026-09-12-deploy-baseline-search-auto-and-clean.md](decisions/2026-09-12-deploy-baseline-search-auto-and-clean.md) — Deploy แถบค้นหาหลัก Baseline Toolbar (Auto Search 2s & Clean Icon) สู่ Production (r20260912-search-auto-1)
 - [decisions/2026-09-12-formatted-numeric-input.md](decisions/2026-09-12-formatted-numeric-input.md) — มาตรฐานช่องกรอกตัวเลขและการแสดงผลจำนวนเงิน (Formatted Numeric Input Standard — Comma, Decimal, Right-Aligned & Clean Edit Mode)
@@ -105,10 +109,11 @@
 - [decisions/2026-09-13-crud-view-edit-separation.md](decisions/2026-09-13-crud-view-edit-separation.md) — มาตรฐานการแยกโหมดแสดงข้อมูลและโหมดแก้ไขใน CRUD Table (Row Click View Mode, No Save Button in View, Explicit Edit Mode)
 - [decisions/2026-09-14-shorten-nine-module-menu-titles.md](decisions/2026-09-14-shorten-nine-module-menu-titles.md) — ตัดคำว่า "ระบบ" และ "ระบบบัญชี" ออกจากชื่อเมนูหลัก 9 ระบบ ERP เพื่อแก้ปัญหาเมนูล้นจอแนวนอน (Shorten 9 Module Menu Titles)
 - [decisions/2026-09-14-menu-bar-flex-wrap.md](decisions/2026-09-14-menu-bar-flex-wrap.md) — ปรับแถบเมนูนำทางด้านบนให้ตัดขึ้นบรรทัดใหม่ (Flex Wrap) แทนการมีแถบเลื่อนแนวนอน (No Horizontal Scroll)
+- [decisions/2026-09-14-gl-workbench-full-height-expanded.md](decisions/2026-09-14-gl-workbench-full-height-expanded.md) — จอ GL workbench ขยายความสูงเต็มพื้นที่ที่เหลืออัตโนมัติ (viewport lock ใน `main-menu-screen.tsx`)
 - [decisions/2026-09-14-input-addon-icons-no-overlap.md](decisions/2026-09-14-input-addon-icons-no-overlap.md) — แก้ไขปัญหาไอคอนในช่องเลือกผังบัญชีซ้อนทับกัน (Fix AccountSelect Addon Icons Overlap)
 - [decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md](decisions/2026-09-15-deploy-gl-thai-accounting-firm-and-champ-parity.md) — Deploy ระบบบัญชีแยกประเภท วงจรบัญชีมาตรฐานไทย และแก้ไขระบบรายงาน สู่ Production (r20260915-1)
-- [decisions/2026-09-15-fixed-assets-and-depreciation-engine.md](decisions/2026-09-15-fixed-assets-and-depreciation-engine.md) — ระบบบริหารสินทรัพย์ถาวรและการคำนวณค่าเสื่อมราคา (Fixed Assets & Depreciation Engine) ตามต้นแบบ Champ, 2-Tier DB, GL Posting, สิทธิประโยชน์ภาษี และ MCP Tools สู่ Production (r20260915-fa-1)
-- [decisions/2026-09-15-background-process-engine.md](decisions/2026-09-15-background-process-engine.md) — เครื่องยนต์ประมวลผลหลังบ้าน: แทน timer ของ BCProcess ด้วย Kafka (ขนส่งเหตุการณ์) + ตาราง dirty-set ที่ยุบงานซ้ำ + worker ตื่นด้วย LISTEN/NOTIFY (ข้อเสนอ รออนุมัติ)
+- [decisions/2026-09-15-fixed-assets-and-depreciation-engine.md](decisions/2026-09-15-fixed-assets-and-depreciation-engine.md) — ระบบบริหารสินทรัพย์ถาวรและการคำนวณค่าเสื่อมราคา (Fixed Assets & Depreciation Engine) ตามต้นแบบ Champ, GL Posting, สิทธิประโยชน์ภาษี และ MCP Tools สู่ Production (r20260915-fa-1)
+- [decisions/2026-09-15-background-process-engine.md](decisions/2026-09-15-background-process-engine.md) — ข้อเสนอเดิม (รออนุมัติ) ให้แทน timer ของ BCProcess ด้วย dirty-set + worker LISTEN/NOTIFY — ถูกแทนด้วย stock-cost-engine-v2 ด้านล่าง; ส่วนที่อิง Kafka ใช้ไม่ได้แล้วหลัง 2026-09-23
 - [decisions/2026-09-15-stock-cost-engine-v2.md](decisions/2026-09-15-stock-cost-engine-v2.md) — ออกแบบเครื่องยนต์สต็อก/ต้นทุนใหม่ทั้งชุด: PK ทางธุรกิจ, total order key ที่ deterministic, checkpoint ต่องวด, เขียนผลใน transaction เดียว, advisory lock, dirty-set (แทน ADR worker ฉบับก่อน)
 - [decisions/2026-09-15-erp-datacrud-workbench-standard.md](decisions/2026-09-15-erp-datacrud-workbench-standard.md) — ระบบธุรกรรม ERP แบบ Master-Detail DataCRUD (สินค้า, ขาย, ซื้อ, ลูกหนี้, เจ้าหนี้, เงินสดธนาคาร) ตามมาตรฐาน datacrud skill สู่ Production (r20260915-datacrud-1)
 - [decisions/2026-09-15-complete-menu-coverage-standard.md](decisions/2026-09-15-complete-menu-coverage-standard.md) — ระบบรองรับหน้าจอที่รอพัฒนาครบ 100% สำหรับบัญชีและ SME ไทย (ภาษี, รายงาน, เครื่องมือประมวลผล, ปฏิบัติการ SME) สู่ Production (r20260915-all-screens-1)
@@ -127,10 +132,9 @@
 - [decisions/2026-09-24-remove-legacy-login-flows.md](decisions/2026-09-24-remove-legacy-login-flows.md) — ลบ flow login ที่ไม่มี route: `LoginEmail` (ออก token โดยไม่ตรวจรหัสผ่าน), Firebase `TokenLogin` + package/dependency, LINE login + package + `LINE_CLIENT_ID`; เก็บ Google/Demo/Dev login และการเชื่อมบัญชี LINE (`/profile/link-line` ยังมี UI เรียก แต่ prod ไม่มี `BC_AUTH_BRIDGE_URL`)
 - [decisions/2026-09-25-company-tax-address.md](decisions/2026-09-25-company-tax-address.md) — ที่อยู่สำหรับภาษีของบริษัท (สำนักงานใหญ่) เก็บในทะเบียนบริษัทแยก 13 ช่องตาม key `addr_*` ของแบบ + โทรศัพท์ (Champ เก็บข้อความก้อนเดียว แต่แบบกรมสรรพากรแยกช่อง); prefill หัวแบบใช้ที่อยู่ทะเบียนแทนฉบับก่อน, 50 ทวิ ใช้ที่อยู่ทะเบียนเมื่อใบไม่มี, ยังแก้รายฉบับได้; กรุงเทพฯ ใช้ แขวง/เขต (พ.ร.บ.ฯ กทม. 2528 ม.8); สาขาและ snapshot ตอนบันทึก = งานอนาคต
 - [decisions/2026-09-25-gl-monthly-budget.md](decisions/2026-09-25-gl-monthly-budget.md) — งบประมาณรายเดือนต่อบัญชี (Champ 5500 `BCGLBudget`): ตาราง `gl_budgets` + `gl_budget_lines` (บัญชี × งวด 1–12, `numeric(18,2)`), คำสั่ง `budgets` create/update/delete/spread ผ่าน `Execute`, สถานะเปิด/ปิดแบบ Champ (ไม่มีอนุมัติ), รายงาน `budgetcomparison` (Champ 5530) เทียบ `gl_lines` ที่ผ่านบัญชีตาม `normal_balance`; จอ `/gl/budget` ขึ้น "ยังไม่พร้อม" จนกว่าจะทำจองบรายเดือน; ส่วนที่ต่างจาก Champ โดยตั้งใจอยู่ในตาราง ADR
+- [decisions/2026-09-25-retire-mongo-era-docs-and-skills.md](decisions/2026-09-25-retire-mongo-era-docs-and-skills.md) — ล้างเอกสาร/skill ยุค MongoDB/Kafka/Redis/ClickHouse: เขียนบทความ kms ใหม่ตามโค้ด, ลบ `12-kafka-messaging.md` + architecture/snippet ที่ตาย, ลบ skill `audit-mongomodel-sync` และ server `mongodb`/`mongomodel` ใน `.mcp.json`
 
-
-
-## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 34 ไฟล์ใน `bugs/`
+## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 35 ไฟล์ใน `bugs/`
 
 - [bugs/2026-06-13-product-browser-url-drift-base-href.md](bugs/2026-06-13-product-browser-url-drift-base-href.md)
 - [bugs/2026-06-13-productbarcodes-camelcase-naming.md](bugs/2026-06-13-productbarcodes-camelcase-naming.md)
@@ -164,27 +168,31 @@
 - [bugs/2026-09-08-permissiongroup-me-400-missing-backend-url.md](bugs/2026-09-08-permissiongroup-me-400-missing-backend-url.md) — **แก้แล้ว (รวมเข้า dev 2026-09-25)**: `GET /api/system-settings/permissiongroup/me` ตอบ 400 เมื่อผู้เรียกไม่ส่ง `x-bc-backend-url` — BFF ตรวจ URL ฝั่ง client เฉพาะเมื่อส่งมา (proxy ใช้ URL ฝั่ง server อยู่แล้ว)
 - [bugs/2026-09-25-line-code-route-unauthenticated.md](bugs/2026-09-25-line-code-route-unauthenticated.md) — **แก้แล้ว 2026-09-25**: `POST /api/auth/line/code` ออก LINE bridge code ให้ใครก็ได้โดยไม่ตรวจ session — BFF ตรวจรูปแบบ header แล้วถาม mainapi `/verify-token` ก่อนเรียก bridge (token ปลอม/หมดอายุ → 401 ไม่ยิง bridge)
 - [bugs/2026-09-25-fa-edit-does-not-recalculate-schedule.md](bugs/2026-09-25-fa-edit-does-not-recalculate-schedule.md) — **แก้แล้ว 2026-09-25**: แก้อัตราค่าเสื่อม/% ปีแรก/ค่าเสื่อมสะสมยกมาแล้วตารางค่าเสื่อมไม่คำนวณใหม่ — ตอนนี้คำนวณใหม่เมื่อค่าที่ใช้คำนวณเปลี่ยน และปฏิเสธ (409 `fa_schedule_posted`) ทั้งการแก้และการสั่งคำนวณใหม่เมื่อมีงวดผ่านรายการ GL แล้ว
+- [bugs/2026-09-25-fa-post-gl-ce-year-as-fiscal-year-code.md](bugs/2026-09-25-fa-post-gl-ce-year-as-fiscal-year-code.md) — **แก้แล้ว 2026-09-25**: ผ่านค่าเสื่อม/จำหน่ายสินทรัพย์เข้า GL ส่งปี ค.ศ. เป็นรหัสปีบัญชี บริษัทที่ใช้รหัส พ.ศ. จึงได้ "กรุณาตั้งค่าปีบัญชี" — ตอนนี้หาปีบัญชีจากวันที่ของใบสำคัญแบบ Champ (ไม่พบ/ปิด/ทับซ้อน = field error ไทย) และช่องปีบนจอผ่านรายการรับ พ.ศ. ได้
 
 - [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ
 - [บทเรียน code review 2026-09-14](bugs/2026-09-14-code-review-gl-warehouse-fixes.md) — confirm() เป็น Promise, PUT location ต้อง spread doc เดิม, GL consumer group คงที่, ห้าม panic ตอน register consumer, เพดานบรรทัด journal ปิดงบ, report วนหน้า, NumericInput ไม่ปัดค่า
 
 ## Snippets (รูปแบบการเขียนดูที่ `snippets/README.md`)
 
-- [snippets/picklangname.md](snippets/picklangname.md)
+- [snippets/champ-menu-source-audit.md](snippets/champ-menu-source-audit.md) — บัญชีรายการต้นทางจาก `menuconfig.xml` ของ Champ สำหรับตรวจผังเมนู (ตรวจ 2026-09-11)
+- [snippets/champ-upgrade-menu-map.md](snippets/champ-upgrade-menu-map.md) — ผังเมนู BC สำหรับผู้ใช้อัปเกรดจาก Champ 223 รายการ (ตรวจ 2026-09-11 — ผังปัจจุบันยึด ADR 2026-09-19-champ-parity-menu-cut)
 
 ## ที่อื่นใน `docs/`
 
-- `docs/handoff/` — สถานะงานค้างระหว่าง session (`HANDOFF-2026-09-08.md` เมนูความครอบคลุม + ขอบเขตที่ตัดออก, `HANDOFF-2026-09-06.md` วิธีรัน/งานค้าง backend, `HANDOFF-RISKS-2026-09-05.md` รายละเอียด outbox/projection + audit 3 store)
+- `docs/handoff/` — สถานะงานค้างระหว่าง session: `HANDOFF-2026-09-19.md` (รอบ Champ-parity), `HANDOFF-2026-09-20-GL-GLM.md`, `HANDOFF-2026-09-20-GL-TAX.md` (GL + ภาษี); handoff เก่ากว่านี้ดูผ่าน `git show 1660b335:docs/handoff/<file>`
+- `docs/audits/` — ผลตรวจ GL 2026-09-20 (`GL-AUDIT-2026-09-20.md`, `GL-FIX-2026-09-20.md`)
+- `docs/user-guide/gl-journals.md` — คู่มือใช้งานสมุดรายวัน GL
+- `docs/examples/` — ชุดข้อมูล/manifest ตัวอย่าง GL และภาษี (อ้างจาก [22-sample-data-gl-tax-2569.md](22-sample-data-gl-tax-2569.md))
+- `docs/evidence/` — หลักฐาน deploy/UAT รอบ 2026-09-11 (บันทึกประวัติ)
 - `docs/runbooks/RECOVERY-READINESS.md` — runbook กู้คืน prod (รอข้อมูล backup/RPO/RTO จากลุงจืด)
 - `docs/reference/CODE-MAP.md` — ดัชนีไฟล์ใหญ่ที่สร้างอัตโนมัติด้วย `tools/gen-code-map.ps1`
-- `.agents/skills/` — skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
+- `.agents/skills/` — skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `datacrud`, `thai-accounting-tax`)
 
 ## README ที่ยังอยู่ข้างโค้ด (เอกสารเฉพาะ package — อ่านคู่กับบทความด้านบน)
 
-- `backend/README.md`, `backend/VSCODE_RUN.md`, `backend/server/README.md`, `backend/internal/product/product/outbox/README.md`, `backend/internal/goapi/mydb/README.md`, `backend/internal/goapi/mypostgres/README.md`, `backend/internal/goapi/logger/README.md`, `backend/internal/productimport/TESTING.md`, `backend/cmd/datatransfer/README.md`, `backend/cmd/storage_name_migration/README.md`, `backend/cmd/stable_identity_migration/ROLLBACK.md`, `frontend/AGENTS.md` (สร้างโดย Next.js เอง)
+- `backend/README.md`, `backend/internal/goapi/mydb/README.md`, `backend/internal/goapi/mypostgres/README.md`, `backend/internal/goapi/logger/README.md`, `tools/rdform/README.md`, `backend/prompts/language_requests/README.md`, `frontend/AGENTS.md` (สร้างโดย Next.js เอง)
 
-## คำถามค้างจากนักอ่าน (รวมจากทุกบทความ — ดูท้ายแต่ละบทความหัวข้อ "ช่องว่าง / สิ่งที่ยังไม่ตรวจ")
+## คำถามค้าง
 
-รวม 96 ข้อ; ข้อที่ต้องการคำตอบจากลุงจืดโดยตรงสรุปไว้ใน `18-decisions-and-agreements.md` §คำถามที่ยังไม่มีคำตอบ
-
-- [architecture/gl-journal-details.md](architecture/gl-journal-details.md) — หลักฐานลูกหนี้/เจ้าหนี้/Statement แบบ many-to-many ภายในรายวัน, source dedup, API/MCP และข้อจำกัด.
+แต่ละบทความมีหัวข้อ "ช่องว่าง / สิ่งที่ยังไม่ตรวจ" ท้ายบทความ; ข้อที่ต้องการคำตอบจากลุงจืดโดยตรงสรุปไว้ใน [18-decisions-and-agreements.md](18-decisions-and-agreements.md) §คำถามที่ยังไม่มีคำตอบ

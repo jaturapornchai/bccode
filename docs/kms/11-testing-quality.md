@@ -1,10 +1,10 @@
 # การทดสอบและคุณภาพโค้ด (Testing & Quality)
-> ตรวจล่าสุด: 2026-09-23 (หลังถอด MongoDB/Kafka/Redis/ClickHouse — ADR `decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`)
+> ตรวจล่าสุด: 2026-09-25 (หลังถอด MongoDB/Kafka/Redis/ClickHouse — ADR `decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`; รอบนี้แก้ §6.3 ให้ตรงกับ `tests/uat-crud.spec.ts` ปัจจุบัน และนับจำนวน test/ตาราง env/รายการ gofmt ใหม่จากโค้ดจริง)
 
 ## 1. ภาพรวม 30 วินาที
-- Backend Go เป็น Pure Go (`CGO_ENABLED=0`) ต่อ PostgreSQL ตัวเดียว — test file 225 ไฟล์ (`git ls-files '*_test.go'` ใน `backend/`), 21 ไฟล์ติด tag `//go:build integration`
+- Backend Go เป็น Pure Go (`CGO_ENABLED=0`) ต่อ PostgreSQL ตัวเดียว — test file 138 ไฟล์ (`git ls-files '*_test.go'` ใน `backend/`), 47 ไฟล์ติด tag `//go:build integration` (นับ 2026-09-25)
 - **ไม่มี CI อัตโนมัติ** (`.github/workflows/ci.yml` ลบ 2026-09-09 — ADR `decisions/2026-09-09-github-storage-only.md`) ตัวตรวจจริงคือ `tools/verify.sh` ที่คนสั่งเอง (§5)
-- Frontend: vitest 95 ไฟล์ใน `frontend/src`, Playwright e2e 10 spec ใน `frontend/e2e/`, UAT ที่ root `tests/` (§6)
+- Frontend: vitest 107 ไฟล์ใน `frontend/src`, Playwright e2e 10 spec ใน `frontend/e2e/`, UAT ที่ root `tests/` (§6)
 - กฎ UAT (`AGENTS.md`) = CRUD ครบ + ตรวจ PostgreSQL ทีละ step + ลบด้วย id/code เท่านั้น + seeded random
 
 ## 2. Go tests — วิธีรัน
@@ -18,17 +18,18 @@ sh tools/verify.sh backend
 test ที่ต้องต่อฐานจะ `t.Skip()` เมื่อไม่มี env:
 | env | ใช้กับ | หมายเหตุ |
 |---|---|---|
-| `BC_GL_TEST_POSTGRES_DSN` | `internal/generalledger` (+ `httpapi`), `internal/fixedasset`, `internal/organization/rolepermission`, `pkg/microservice` | ฐานเปล่าก็ได้ — test สร้าง schema เอง (`generalledger.EnsureSchema`) |
-| `GL_AUTH_TEST_DSN` | test auth/สิทธิ์ที่ต่อ `bcai_projection` | ฐานเปล่าก็ได้ |
-| `BC_TAXFORM_TEST_POSTGRES_DSN` | `internal/goapi/handlers/tax_form_integration_test.go` (แบบยื่นภาษี: บันทึกฉบับ, prefill จาก GL, เครดิต ภ.ง.ด.50/51) | ฐานเปล่าก็ได้ — test สร้างข้อมูลเองแล้วลบตาม company code (IT01–IT03); `verify.sh postgres` ตั้งค่านี้ให้ (แยกจาก `BC_TAX_TEST_POSTGRES_DSN` 2026-09-23 เพราะตัวนั้นต้องใช้ฐานที่ seed แล้ว) |
+| `BC_GL_TEST_POSTGRES_DSN` | `internal/generalledger`, `internal/fixedasset`, `internal/authentication`, `pkg/microservice`, รายงานภาษีที่อ่านจาก GL ใน `internal/goapi/handlers` (`tax_vat_*`, `tax_withholding_recorded_*`, `tax_withholding_uat_*`, `tax_report_review_*`) | ฐานเปล่าก็ได้ — test สร้าง schema เอง (`generalledger.EnsureSchema`, `backend/internal/generalledger/postgres.go:53`) |
+| `GL_AUTH_TEST_DSN` | `internal/generalledger/httpapi`, `internal/organization/rolepermission`, `internal/organization/businesstype` | ฐานเปล่าก็ได้ |
+| (ตัวใดตัวหนึ่งข้างบน) | test ที่ใช้ `internal/centraldb/centraldbtest` (`DSN()` อ่าน `BC_GL_TEST_POSTGRES_DSN` ก่อน แล้วค่อย `GL_AUTH_TEST_DSN`) — `internal/centraldb`, `internal/shop`, `internal/organization/{access,branch,company,businesstype}`, `internal/authentication/repositories`, `pkg/microservice` | ฐานเปล่าก็ได้ |
+| `BC_TAXFORM_TEST_POSTGRES_DSN` | `internal/goapi/handlers/tax_form_integration_test.go` (แบบยื่นภาษี: บันทึกฉบับ, prefill จาก GL, เครดิต ภ.ง.ด.50/51), `tax_rdfile_integration_test.go`, `tax_filing_width_integration_test.go` | ฐานเปล่าก็ได้ — test สร้างข้อมูลเองแล้วลบตาม company code (IT01–IT04, RDF1) หรือสร้าง schema ชั่วคราวเอง; `verify.sh postgres` ตั้งค่านี้ให้ (แยกจาก `BC_TAX_TEST_POSTGRES_DSN` 2026-09-23 เพราะตัวนั้นต้องใช้ฐานที่ seed แล้ว) |
 | `BC_TAX_TEST_POSTGRES_DSN` | `internal/goapi/handlers/tax_withholding_integration_test.go` | ต้องเป็นฐาน holding ที่ seed ใบสำคัญ WHT ด้วย `backend/cmd/glseed` แล้ว — `verify.sh` ไม่ตั้งค่านี้จึงข้าม |
 
 ### 2.3 gofmt / vet
 | เครื่องมือ | บังคับที่ไหน | สถานะ |
 |---|---|---|
 | `go vet ./...` | ทำด้วยมือก่อน commit งาน backend | ผ่าน 2026-09-23 |
-| `gofmt -l .` | ทำด้วยมือ — `verify.sh` ไม่เช็ค | ค้าง: `generalledger/models.go`, `statement_template_test.go`, `httpapi/error_contract_test.go` |
-| กับดัก EOL | ไฟล์เก่าบางไฟล์เป็น CRLF ห้าม `gofmt -w` ทั้งไฟล์โดยไม่ดู diff | — |
+| `gofmt -l` | ทำด้วยมือ — `verify.sh` ไม่เช็ค | ค้าง 9 ไฟล์ (ตรวจเนื้อหาที่ commit แล้ว 2026-09-25): `internal/fixedasset/mcp/mcp_tools.go`, `internal/generalledger/{postgres_integrity_integration_test.go,reports.go,statement_template_test.go}`, `internal/models/index.go`, `internal/organization/creator_access_test.go`, `pkg/microservice/{auth.go,context_http.go,microservice.go}` |
+| กับดัก EOL | repo ตั้ง `core.autocrlf=true` → working tree บน Windows เป็น CRLF ทำให้ `gofmt -l .` ฟ้องเกือบทุกไฟล์ (80 ไฟล์) ทั้งที่ใน git เป็น LF — ตรวจของจริงด้วย `git show HEAD:backend/<file> \| gofmt -l`; ห้าม `gofmt -w` ทั้งไฟล์โดยไม่ดู diff | — |
 
 ## 3. Quarantine
 `backend/.ci/test-quarantine.txt` ว่างแล้ว (2026-09-23) — package legacy ที่เคยถูกกักถูกลบไปพร้อมโค้ด Mongo/Kafka; `verify.sh backend` รันทุก package ที่เหลือ ถ้าจะกักใหม่ต้องเขียนเหตุผลในไฟล์นั้น
@@ -51,7 +52,7 @@ test ที่ต้องต่อฐานจะ `t.Skip()` เมื่อไ
 trigger: **ไม่มี** — ไม่มีอะไรรันให้อัตโนมัติหลัง push; hook อัตโนมัติมีแค่ `.githooks/pre-commit` (CODE-MAP + คำต้องห้าม) และ `.githooks/pre-push` (codemap + frontend เมื่อแตะ `frontend/`) — ต้อง `npm run hooks:install` ครั้งหนึ่งต่อ clone
 
 ## 6. Frontend tests
-### 6.1 vitest (unit, 95 ไฟล์)
+### 6.1 vitest (unit, 107 ไฟล์)
 - config `frontend/vitest.config.ts:3-12`: environment `node`, include `src/**/*.test.ts`, alias `@` → `src`
 - รูปแบบหลัก = ทดสอบ Next route handler โดย stub `fetch` ด้วย `vi.fn` แล้วตรวจ header/URL ที่ส่งไป backend เช่น `frontend/src/app/api/product/[[...productPath]]/route.test.ts:1-14`; ไฟล์ security เช่น `frontend/src/app/login-screen.security.test.ts`, `frontend/src/app/menu/main-menu-password.security.test.ts`
 - รัน: `cd frontend && npm test` (`frontend/package.json:15` script `test` = `vitest run`)
@@ -64,9 +65,9 @@ trigger: **ไม่มี** — ไม่มีอะไรรันให้�
 - รัน: `cd frontend && npm run test:e2e` (`frontend/package.json:16` script `test:e2e` = `playwright test`)
 
 ### 6.3 Playwright UAT ที่ root `tests/` (12 spec + `auth.setup.ts`)
-- config `playwright.config.ts:16-53`: testDir `./tests`, baseURL `PW_BASE_URL` (default `http://127.0.0.1:3000`), reporter `html`, project `setup` รัน `tests/auth.setup.ts` ครั้งเดียวแล้ว project `chromium` ใช้ `storageState` `.auth/user.json` (`:11,49-52`; `.auth/` อยู่ใน `.gitignore:79`)
-- `tests/auth.setup.ts:12-33`: กด `Dev Login` → เลือก holding `บ้านเชียง` → สาขา `สาขาทดสอบไทย|TST03` → `สำนักงานใหญ่|00001` แล้ว assert `localStorage.bc_workspace.shop.holdingcode === 'bc001'` — **ผูกกับข้อมูล holding `bc001` ที่ต้องมีอยู่ใน Mongo local**
-- spec หลัก `tests/uat-crud.spec.ts` (653 บรรทัด): seed จาก `CRUD_SEED` หรือ `Date.now()%1e9` (`:16`), PRNG `mulberry32` (`:25`), เก็บ seed ลง `metrics` (`:34`) และเขียน `test-results/uat-crud/metrics-crud.json` (`:649`); helper `memberCount()` (`:107`) นับแถว `holding_members` ผ่าน `tests/support/pg.ts` + `mongoCount()` (`:112-114`); ลำดับ CRUD-01 Holding → 02 Company → 03 Branch → 04 User → 05 PermissionGroup → 06 read-only screens → 99 report (`:168,305,372,438,581,632,645`) รันแบบ serial retries 2 (`:162`); cleanup ลบเฉพาะ `shopusers` ที่ตรง `holdingcode`+`username` ที่สร้างเอง (`:455,570`)
+- config `playwright.config.ts:16-53`: testDir `./tests`, baseURL `PW_BASE_URL` (default `http://127.0.0.1:3000`), reporter `html`, project `setup` รัน `tests/auth.setup.ts` ครั้งเดียวแล้ว project `chromium` ใช้ `storageState` `.auth/user.json` (`:11,49-52`; `.auth/` อยู่ใน `.gitignore:86`)
+- `tests/auth.setup.ts:12-33`: กด `Dev Login` → เลือก holding `บ้านเชียง` → สาขา `สาขาทดสอบไทย|TST03` → `สำนักงานใหญ่|00001` แล้ว assert `localStorage.bc_workspace.shop.holdingcode === 'bc001'` — **ผูกกับข้อมูล holding `bc001` ที่ต้องมีอยู่ใน PostgreSQL (`bcai_projection.holdings`) ของเครื่อง local**
+- spec หลัก `tests/uat-crud.spec.ts` (638 บรรทัด): seed จาก `CRUD_SEED` หรือ `Date.now()%1e9` (`:16`), PRNG `mulberry32` (`:17`), เก็บ seed ลง `metrics` (`:34`) และเขียน `test-results/uat-crud/metrics-crud.json` (`:634`); helper `memberCount()` (`:107`) นับแถว `holding_members ⨝ users` ผ่าน `tests/support/pg.ts`; ลำดับ CRUD-00 setup log → 01 Holding → 02 Company → 03 Branch → 04 User → 05 PermissionGroup → 06 read-only screens → 99 report (`:162,166,303,370,436,566,617,630`) รันแบบ serial retries 2 (`:160`); cleanup ลบล่วงหน้าเฉพาะแถว `holding_members` ที่ตรง `holding_code`+`username` (join `users`) ของผู้ใช้ทดสอบที่ระบุชื่อ (`:452-455`) แล้วตรวจการลบจริงผ่าน UI ด้วย `memberCount()===0` (`:556`)
 - spec อื่น (รายชื่อจาก `git ls-files 'tests/*'`): `tests/employee-*.spec.ts` (photo/save-stress/scope-save/uat), `tests/login-*.spec.ts` (clear-buttons/dev-uat/header-controls), `tests/logout-expired.spec.ts`, `tests/menu-session-feedback.spec.ts`, `tests/uat.spec.ts`, `tests/example.spec.ts` (ยังไม่ตรวจเนื้อหาทีละไฟล์)
 - รัน: `npx playwright test tests/uat-crud.spec.ts` หรือ script root `npm run test:headed|test:ui|test:debug` (`package.json:10-12`) — ต้องมี container PostgreSQL (`PG_CONTAINER`, ค่าเริ่มต้น `postgres`) ให้ `tests/support/pg.ts` ใช้ `docker exec psql` ได้
 
@@ -86,4 +87,4 @@ trigger: **ไม่มี** — ไม่มีอะไรรันให้�
 - ภาษีซื้อ/ภาษีขาย/ภ.พ.30 อ่านจาก `details.vats` ของใบสำคัญ GL — integration test `TestVatReportsReadRecordedVat` + `TestPostgresVatRecordsForPeriod` (tag `integration`, ต้องมี `BC_GL_TEST_POSTGRES_DSN`); ภ.พ.36 ยังไม่มีข้อมูลต้นทาง (`bugs/2026-09-23-vat-report-reads-missing-erp-tables.md`)
 - `TestTaxWithholdingReportFromGL` รันได้เฉพาะเมื่อตั้ง `BC_TAX_TEST_POSTGRES_DSN` เป็นฐานที่ seed แล้ว — `verify.sh` ข้าม
 - `tests/employee-scope-save.spec.ts:114` มี type error เดิม (ไม่กระทบ `npm run verify` เพราะ root `tests/` ไม่อยู่ใน typecheck ของ frontend)
-- gofmt ค้าง 3 ไฟล์ (§2.3)
+- gofmt ค้าง 9 ไฟล์ (§2.3)
