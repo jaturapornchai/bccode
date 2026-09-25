@@ -60,12 +60,8 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/auth/demo-login` | POST | M `/demo-login` | ไม่มี (backend gate) | LIVE | `auth/demo-login/route.ts:11-27,51` |
 | `/api/auth/dev-login` | POST | M (หรือ `BCAI_DEV_LOGIN_BACKEND_URL`) `/dev-login` | env gate + secret ≥32 | LIVE (dev) | `auth/dev-login/route.ts:9,22-27,34,122` |
 | `/api/auth/google/verify` | POST | Google tokeninfo → M `/googlelogin` | ตรวจ `GOOGLE_CLIENT_ID` | LIVE | `auth/google/verify/route.ts:29,54-55,82` |
-| `/api/auth/google/session` | POST | `BC_AUTH_BRIDGE_URL` `/api/google/session` | — | LEGACY (bridge) | `auth/google/session/route.ts:8-18` |
-| `/api/auth/google/status` | POST | — ตอบ 410 | — | STUBBED | `auth/google/status/route.ts:6-10` |
-| `/api/auth/line/code` | POST | bridge `/api/login?action=create` | — | LIVE (ต้อง bridge) | `auth/line/code/route.ts:4-7` |
-| `/api/auth/line/link/status` | POST | bridge `/api/login?code=` → M `PUT /profile/link-line` | Bearer | LIVE | `auth/line/link/status/route.ts:31,54,121` |
-| `/api/auth/line/status` | POST | — ตอบ 410 (LINE login ปิด) | — | STUBBED | `auth/line/status/route.ts:5-9` |
-| `/api/auth/register-username` | POST | M `/register-username` | validate | LIVE | `auth/register-username/route.ts:11,47` |
+| `/api/auth/line/code` | POST | M `GET /verify-token` → bridge `/api/login?action=create` (ไม่ส่ง token/body ให้ bridge) | Bearer + ตรวจ session ที่ mainapi (bugs/2026-09-25-line-code-route-unauthenticated.md) | LIVE (ต้อง bridge) | `auth/line/code/route.ts:10,13,18,49-54` |
+| `/api/auth/line/link/status` | POST | bridge `/api/login?code=` → M `PUT /profile/link-line` | Bearer — ตรวจแค่รูปแบบ header ก่อนยิง bridge (mainapi เห็น token ตอน PUT เท่านั้น; ยังไม่แก้ รอลุงจืด) | LIVE | `auth/line/link/status/route.ts:31,54,121` |
 | `/api/auth/profile` | GET/PUT | M `/profile`, `/profile/password` (PUT สำเร็จ → clear cookie) | Bearer | LIVE | `auth/profile/route.ts:5-26` |
 | `/api/auth/profile/reset-password` | PUT | — ตอบ 501 | — | STUBBED | `auth/profile/reset-password/route.ts:3-12` |
 | `/api/auth/sessions` | GET | M `/sessions/active-count` | Bearer | LIVE | `auth/sessions/route.ts:5-8` |

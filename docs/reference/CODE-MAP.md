@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-25 @ commit f0d77be9 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-25 @ commit 467c174d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -405,7 +405,7 @@ Files indexed: 29
 | 3047 | function | `DetailSection` |
 | 3090 | function | `DetailField` |
 
-## frontend/src/app/menu/main-menu-screen.tsx (2962 lines)
+## frontend/src/app/menu/main-menu-screen.tsx (2965 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -437,39 +437,39 @@ Files indexed: 29
 | 794 | function | `reorderTabs` |
 | 810 | function | `stopLinePolling` |
 | 817 | function | `handleLineLink` |
-| 865 | function | `startLinePolling` |
-| 879 | function | `pollLineLink` |
-| 913 | function | `closeLineDialog` |
-| 919 | function | `copyLineLoginUrl` |
-| 929 | function | `handleChangePassword` |
-| 981 | function | `logout` |
-| 990 | function | `handleContentScroll` |
-| 1018 | const-arrow | `onPointerMove` |
-| 1024 | const-arrow | `onPointerUp` |
-| 1710 | function | `TopMenuChrome` |
-| 1752 | function | `closeOnOutsidePointer` |
-| 1761 | function | `closeOnEscape` |
-| 1777 | function | `positionOpenSection` |
-| 1794 | function | `closeTopMenu` |
-| 1801 | function | `topMenuItemRow` |
-| 2070 | function | `SidebarButton` |
-| 2103 | function | `MenuSectionAccordion` |
-| 2222 | function | `MenuTreeGroup` |
-| 2276 | function | `MenuTreeFolder` |
-| 2328 | function | `MenuTreeItemButton` |
-| 2394 | function | `countSectionItems` |
-| 2398 | function | `getVisibleGroups` |
-| 2407 | function | `getVisibleItems` |
-| 2416 | function | `getMenuTreeNodes` |
-| 2562 | function | `MenuGroupIcon` |
-| 2571 | function | `SectionIcon` |
-| 2587 | function | `OpenTabs` |
-| 2641 | function | `captureTabRects` |
-| 2652 | function | `getInsertSide` |
-| 2657 | function | `clearDragState` |
-| 2664 | function | `reorderFromPointer` |
-| 2789 | function | `WorkTabPanel` |
-| 2947 | function | `DashboardLoading` |
+| 868 | function | `startLinePolling` |
+| 882 | function | `pollLineLink` |
+| 916 | function | `closeLineDialog` |
+| 922 | function | `copyLineLoginUrl` |
+| 932 | function | `handleChangePassword` |
+| 984 | function | `logout` |
+| 993 | function | `handleContentScroll` |
+| 1021 | const-arrow | `onPointerMove` |
+| 1027 | const-arrow | `onPointerUp` |
+| 1713 | function | `TopMenuChrome` |
+| 1755 | function | `closeOnOutsidePointer` |
+| 1764 | function | `closeOnEscape` |
+| 1780 | function | `positionOpenSection` |
+| 1797 | function | `closeTopMenu` |
+| 1804 | function | `topMenuItemRow` |
+| 2073 | function | `SidebarButton` |
+| 2106 | function | `MenuSectionAccordion` |
+| 2225 | function | `MenuTreeGroup` |
+| 2279 | function | `MenuTreeFolder` |
+| 2331 | function | `MenuTreeItemButton` |
+| 2397 | function | `countSectionItems` |
+| 2401 | function | `getVisibleGroups` |
+| 2410 | function | `getVisibleItems` |
+| 2419 | function | `getMenuTreeNodes` |
+| 2565 | function | `MenuGroupIcon` |
+| 2574 | function | `SectionIcon` |
+| 2590 | function | `OpenTabs` |
+| 2644 | function | `captureTabRects` |
+| 2655 | function | `getInsertSide` |
+| 2660 | function | `clearDragState` |
+| 2667 | function | `reorderFromPointer` |
+| 2792 | function | `WorkTabPanel` |
+| 2950 | function | `DashboardLoading` |
 
 ## frontend/src/app/system-settings/company-branch-tree-view.tsx (2389 lines)
 
@@ -498,7 +498,7 @@ Files indexed: 29
 | 1206 | const-arrow | `handleSave` |
 | 2365 | function | `saveErrorMessage` |
 
-## frontend/src/app/workspace/workspace-screen.tsx (2277 lines)
+## frontend/src/app/workspace/workspace-screen.tsx (2280 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -507,54 +507,54 @@ Files indexed: 29
 | 405 | const-arrow | `toggleAccessSidebar` |
 | 769 | function | `stopLinePolling` |
 | 776 | function | `handleLineLink` |
-| 823 | function | `startLinePolling` |
-| 837 | function | `pollLineLink` |
-| 865 | function | `closeLineDialog` |
-| 870 | function | `copyLineLoginUrl` |
-| 876 | function | `selectShopAndBranch` |
-| 901 | function | `selectShop` |
-| 942 | function | `selectCompany` |
-| 989 | function | `createHeadquarterBranch` |
-| 1017 | function | `openAccessSettings` |
-| 1052 | function | `handlePrimarySetup` |
-| 1060 | function | `handleAccessShopChange` |
-| 1086 | function | `createShop` |
-| 1117 | function | `selectBranch` |
-| 1132 | function | `enterWorkspaceWithUnitCheck` |
-| 1157 | function | `confirmUnitSetup` |
-| 1177 | function | `skipUnitSetup` |
-| 1182 | function | `togglePendingUnit` |
-| 1192 | function | `selectAllPendingUnits` |
-| 1196 | function | `clearPendingUnits` |
-| 1200 | function | `logout` |
-| 1955 | function | `readAuth` |
-| 1959 | function | `canAuthCreateCompany` |
-| 1963 | function | `activeHoldingCodeFromAuth` |
-| 1970 | function | `activeBusinessCodeFromWorkspace` |
-| 1983 | function | `callWorkspaceApi` |
-| 2005 | function | `persistWorkspace` |
-| 2015 | function | `tenantCodeForShop` |
-| 2019 | function | `hasExplicitLanguageSettings` |
-| 2023 | function | `getApiTotal` |
-| 2028 | function | `getMainHoldingCode` |
-| 2034 | function | `unitDisplayName` |
-| 2042 | function | `localeOf` |
-| 2046 | function | `shopLanguageCodes` |
-| 2051 | function | `normalizedCodeList` |
-| 2063 | function | `parseShopInfo` |
-| 2073 | function | `createDefaultBranch` |
-| 2150 | function | `activeLanguageCodes` |
-| 2159 | function | `defaultBranchNames` |
-| 2163 | function | `normalizedNames` |
-| 2176 | function | `recordValue` |
-| 2180 | function | `holdingAccessDisplayName` |
-| 2188 | function | `isVisibleOrganizationRecord` |
-| 2196 | function | `stringValue` |
-| 2200 | function | `numberValue` |
-| 2209 | function | `booleanValue` |
-| 2216 | function | `createDefaultBranchListItem` |
-| 2229 | function | `createDefaultPaymentRounding` |
-| 2249 | function | `createShopPayload` |
+| 826 | function | `startLinePolling` |
+| 840 | function | `pollLineLink` |
+| 868 | function | `closeLineDialog` |
+| 873 | function | `copyLineLoginUrl` |
+| 879 | function | `selectShopAndBranch` |
+| 904 | function | `selectShop` |
+| 945 | function | `selectCompany` |
+| 992 | function | `createHeadquarterBranch` |
+| 1020 | function | `openAccessSettings` |
+| 1055 | function | `handlePrimarySetup` |
+| 1063 | function | `handleAccessShopChange` |
+| 1089 | function | `createShop` |
+| 1120 | function | `selectBranch` |
+| 1135 | function | `enterWorkspaceWithUnitCheck` |
+| 1160 | function | `confirmUnitSetup` |
+| 1180 | function | `skipUnitSetup` |
+| 1185 | function | `togglePendingUnit` |
+| 1195 | function | `selectAllPendingUnits` |
+| 1199 | function | `clearPendingUnits` |
+| 1203 | function | `logout` |
+| 1958 | function | `readAuth` |
+| 1962 | function | `canAuthCreateCompany` |
+| 1966 | function | `activeHoldingCodeFromAuth` |
+| 1973 | function | `activeBusinessCodeFromWorkspace` |
+| 1986 | function | `callWorkspaceApi` |
+| 2008 | function | `persistWorkspace` |
+| 2018 | function | `tenantCodeForShop` |
+| 2022 | function | `hasExplicitLanguageSettings` |
+| 2026 | function | `getApiTotal` |
+| 2031 | function | `getMainHoldingCode` |
+| 2037 | function | `unitDisplayName` |
+| 2045 | function | `localeOf` |
+| 2049 | function | `shopLanguageCodes` |
+| 2054 | function | `normalizedCodeList` |
+| 2066 | function | `parseShopInfo` |
+| 2076 | function | `createDefaultBranch` |
+| 2153 | function | `activeLanguageCodes` |
+| 2162 | function | `defaultBranchNames` |
+| 2166 | function | `normalizedNames` |
+| 2179 | function | `recordValue` |
+| 2183 | function | `holdingAccessDisplayName` |
+| 2191 | function | `isVisibleOrganizationRecord` |
+| 2199 | function | `stringValue` |
+| 2203 | function | `numberValue` |
+| 2212 | function | `booleanValue` |
+| 2219 | function | `createDefaultBranchListItem` |
+| 2232 | function | `createDefaultPaymentRounding` |
+| 2252 | function | `createShopPayload` |
 
 ## frontend/src/app/menu/product-set-screen.tsx (2144 lines)
 

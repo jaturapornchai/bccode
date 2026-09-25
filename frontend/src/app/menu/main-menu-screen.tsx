@@ -822,7 +822,10 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     setLineDialog({ ...emptyLineDialog, open: true, loading: true });
 
     try {
-      const response = await authFetch("/api/auth/line/code", { method: "POST" });
+      const response = await authFetch("/api/auth/line/code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
       const data = (await response.json()) as {
         success?: boolean;
         message?: string;
