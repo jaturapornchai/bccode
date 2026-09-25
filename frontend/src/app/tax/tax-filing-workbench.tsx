@@ -295,7 +295,10 @@ export function TaxFilingWorkbench({
     : establishments.length === 1 ? establishments[0] : null;
   const establishmentOffice = (e: TaxEstablishment) =>
     e.isheadoffice ? tr("head_office", "สำนักงานใหญ่") : tr("tax_vat_branch_no", "สาขาที่ {0}").replace("{0}", e.code);
-  const establishmentOption = (e: TaxEstablishment) => `${establishmentOffice(e)} · ${e.name}`;
+  const establishmentOption = (e: TaxEstablishment) => {
+    const office = establishmentOffice(e);
+    return e.name && e.name !== office ? `${office} · ${e.name}` : office;
+  };
   const columnLabels = {
     seq: tr("tax_register_col_seq", "ลำดับ"),
     date: tr("tax_register_col_date", "วันที่"),
@@ -597,7 +600,7 @@ export function TaxFilingWorkbench({
               {isVatType && (
                 // หัวรายงานตามแบบท้ายประกาศฯ VAT ฉบับที่ 202: ชื่อผู้ประกอบการ เลขผู้เสียภาษี ชื่อสถานประกอบการ สำนักงานใหญ่/สาขา
                 <dl className="mt-2 grid gap-x-6 gap-y-1 text-[0.9rem] leading-normal text-foreground sm:grid-cols-2" data-field="register-header">
-                  <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_operator", "ชื่อผู้ประกอบการ")}:</dt><dd className="font-medium">{companyName}</dd></div>
+                  <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_operator", "ชื่อผู้ประกอบการ")}:</dt><dd className="font-medium">{company?.name || companyName}</dd></div>
                   <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_taxid", "เลขประจำตัวผู้เสียภาษีอากร")}:</dt><dd className="font-mono">{company?.taxid || notSpecified}</dd></div>
                   <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_establishment", "ชื่อสถานประกอบการ")}:</dt><dd className="font-medium">{activeEstablishment?.name ?? tr("tax_vat_all_establishments", "ทุกสถานประกอบการ (รวม)")}</dd></div>
                   <div className="flex gap-1.5" data-field="register-office"><dt className="text-muted-foreground">{tr("tax_vat_header_office", "สำนักงานใหญ่/สาขา")}:</dt><dd className="font-medium">{activeEstablishment ? establishmentOffice(activeEstablishment) : "—"}</dd></div>
