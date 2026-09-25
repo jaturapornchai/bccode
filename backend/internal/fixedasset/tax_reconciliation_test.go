@@ -3,7 +3,6 @@ package fixedasset
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"testing"
 	"time"
 
@@ -118,9 +117,11 @@ func TestTaxReconciliationPassengerCarCap(t *testing.T) {
 	}
 
 	// The ceiling follows the days the car is owned, not the days of the book items (RD145 s.4
-	// opening). Bought 1 Jul 2026, 3-year life: the book items stop in July 2029, the car is held
-	// all of 2029, so the capped book amount (247,945.21 × 1M/1.5M) is under the full 200,000.
-	// Sold 31 Mar 2027: the 2027 ceiling stops at the disposal date (200,000 × 90/365).
+	// opening), and what the ceiling held back is deducted in later years until the capped basis is
+	// used up (ป.3/2527 ข้อ 8, กค 0702/570). Bought 1 Jul 2026, 3-year life, scrap 0: tax 100,821.92
+	// + 200,000 × 4 + 99,178.08 = 1,000,000.00, the last two years with no book items (a negative
+	// difference = a deduction on the ภ.ง.ด.50). Sold 31 Mar 2027: the 2027 ceiling stops at the
+	// disposal date (200,000 × 90/365).
 	db, err := connect(scope.Holding)
 	if err != nil {
 		t.Fatal(err)
@@ -130,22 +131,32 @@ func TestTaxReconciliationPassengerCarCap(t *testing.T) {
 	if err := putRecord(ctx, db, scope.Company, kindDisposal, sold.ID, sold.DocNo, sold); err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range []struct{ year, code, want string }{
-		{"2029", "CAR-3Y-JUL", "165296.81"},
-		{"2027", "CAR-3Y", "49315.07"},
+	for _, tc := range []struct{ year, code, want, wantBook string }{
+		{"2029", "CAR-3Y-JUL", "200000.00", "247945.21"},
+		{"2030", "CAR-3Y-JUL", "200000.00", "0.00"},
+		{"2031", "CAR-3Y-JUL", "99178.08", "0.00"},
+		{"2027", "CAR-3Y", "49315.07", ""},
+		{"2028", "CAR-3Y", "0.00", ""},
 	} {
 		rep, err := NewReporter(connect).GetTaxReconciliationReport(ctx, scope, tc.year)
 		if err != nil {
 			t.Fatal(err)
 		}
-		var got string
+		var got map[string]string
 		for _, row := range rep.Rows {
 			if row["assetcode"] == tc.code {
-				got = row["tax_deprec"]
+				got = row
 			}
 		}
-		if got != tc.want {
-			t.Fatalf("%s %s tax depreciation = %q, want %s", tc.year, tc.code, got, tc.want)
+		if got["tax_deprec"] != tc.want {
+			t.Fatalf("%s %s tax depreciation = %q, want %s", tc.year, tc.code, got["tax_deprec"], tc.want)
+		}
+		if tc.wantBook != "" && got["accounting_deprec"] != tc.wantBook {
+			t.Fatalf("%s %s book depreciation = %q, want %s", tc.year, tc.code, got["accounting_deprec"], tc.wantBook)
+		}
+		book, tax := decimal.RequireFromString(got["accounting_deprec"]), decimal.RequireFromString(got["tax_deprec"])
+		if got["tax_difference"] != book.Sub(tax).StringFixed(2) {
+			t.Fatalf("%s %s tax difference = %q, want book − tax", tc.year, tc.code, got["tax_difference"])
 		}
 	}
 }
@@ -175,59 +186,45 @@ func TestTaxHeldDays(t *testing.T) {
 	}
 }
 
-// The report's own steps without a database (stored schedule → days held → cap) for a car bought
-// 1 Jul 2026: in the last book year the items stop part-way, but the ceiling is the full year.
-func TestPassengerCarTaxLastBookYear(t *testing.T) {
+// The three pieces of the passenger-car rule without a database — docs/kms/21-thai-tax-form-references.md §13:
+// the yearly ceiling (20% of the cost up to 1M, by days held), the capped share of a book amount,
+// and the most the tax can ever deduct (1M above the cap, else cost − 1 baht).
+func TestPassengerCarTaxPieces(t *testing.T) {
+	d := decimal.RequireFromString
 	for _, tc := range []struct {
-		name             string
-		life, year       int
-		wantBook, wantTx string
-	}{
-		{"3-year, first year (184 days)", 3, 2026, "252054.78", "100821.92"},
-		{"3-year, last book year", 3, 2029, "247945.21", "165296.81"},
-		{"3-year, after the book ends", 3, 2030, "0", "0"},
-		{"4-year, last book year", 4, 2030, "185958.79", "123972.53"},
-	} {
-		asset := Asset{AssetCode: "CAR", PassengerCarTaxCap: true, Cost: Amount("1500000.00"), ScrapValue: Amount("0.00"),
-			UsefulLifeYears: tc.life, PurchaseDate: "2026-07-01", StartCalcDate: "2026-07-01"}
-		items, err := NewCalculator().CalculateSchedule(asset, "")
-		if err != nil {
-			t.Fatal(err)
-		}
-		book := decimal.Zero
-		for _, it := range items {
-			if it.FiscalYear == strconv.Itoa(tc.year) {
-				book = book.Add(it.PeriodDeprec.Decimal())
-			}
-		}
-		tax := passengerCarTaxDeprec(asset.Cost.Decimal(), book, taxHeldDays(asset, "", tc.year), daysInYear(tc.year))
-		if !book.Equal(decimal.RequireFromString(tc.wantBook)) || !tax.Equal(decimal.RequireFromString(tc.wantTx)) {
-			t.Errorf("%s: book %s tax %s, want book %s tax %s", tc.name, book, tax, tc.wantBook, tc.wantTx)
-		}
-	}
-}
-
-// passengerCarTaxDeprec without a database: min(book × 1M/cost, 20% × min(cost, 1M) × days held
-// ÷ days in the year) — docs/kms/21-thai-tax-form-references.md §13.
-func TestPassengerCarTaxDeprec(t *testing.T) {
-	for _, tc := range []struct {
-		name, cost, book   string
+		name, cost         string
 		heldDays, yearDays int
 		want               string
 	}{
-		{"3-year straight line, full year", "1500000", "500000.00", 365, 365, "200000.00"},
-		{"5-year straight line, full year", "1500000", "300000.00", 365, 365, "200000.00"},
-		{"10-year straight line, below ceiling", "1500000", "150000.00", 365, 365, "100000.00"},
-		{"cost 800,000, 3-year", "800000", "266666.67", 365, 365, "160000.00"},
-		{"3-year bought 1 Jul (184 days)", "1500000", "252054.78", 184, 365, "100821.92"},
-		{"sum of years 3-year, first full year", "1500000", "750000.00", 365, 365, "200000.00"},
-		{"leap year, full year", "1500000", "500000.00", 366, 366, "200000.00"},
-		{"cost 900,000 at 20%, book under ceiling", "900000", "179999.99", 365, 365, "179999.99"},
-		{"no depreciation this year", "1500000", "0", 0, 365, "0"},
+		{"full year, cost over the cap", "1500000", 365, 365, "200000.00"},
+		{"bought 1 Jul (184 days)", "1500000", 184, 365, "100821.92"},
+		{"leap year, bought 1 Mar (306 of 366 days)", "1500000", 306, 366, "167213.11"},
+		{"sold 31 Mar (90 days)", "1500000", 90, 365, "49315.07"},
+		{"cost 800,000", "800000", 365, 365, "160000.00"},
+		{"not held this year", "1500000", 0, 365, "0"},
 	} {
-		got := passengerCarTaxDeprec(decimal.RequireFromString(tc.cost), decimal.RequireFromString(tc.book), tc.heldDays, tc.yearDays)
-		if !got.Equal(decimal.RequireFromString(tc.want)) {
-			t.Errorf("%s: tax depreciation = %s, want %s", tc.name, got, tc.want)
+		if got := passengerCarTaxCeiling(d(tc.cost), tc.heldDays, tc.yearDays); !got.Equal(d(tc.want)) {
+			t.Errorf("ceiling %s: %s, want %s", tc.name, got, tc.want)
+		}
+	}
+	for _, tc := range []struct{ cost, book, want string }{
+		{"1500000", "500000.00", "333333.33"},
+		{"1500000", "252054.78", "168036.52"},
+		{"1000000", "500000.00", "500000.00"},
+		{"800000", "266666.67", "266666.67"},
+	} {
+		if got := passengerCarTaxShare(d(tc.cost), d(tc.book)); !got.Equal(d(tc.want)) {
+			t.Errorf("share of %s at cost %s: %s, want %s", tc.book, tc.cost, got, tc.want)
+		}
+	}
+	for _, tc := range []struct{ cost, want string }{
+		{"1500000", "1000000"},
+		{"1000000", "999999"},
+		{"800000", "799999"},
+		{"0.50", "0"},
+	} {
+		if got := passengerCarTaxBasis(d(tc.cost)); !got.Equal(d(tc.want)) {
+			t.Errorf("basis at cost %s: %s, want %s", tc.cost, got, tc.want)
 		}
 	}
 }

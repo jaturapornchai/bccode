@@ -324,6 +324,10 @@ func (h *Http) reportTaxReconciliation(request microservice.IContext) error {
 	fiscalYear := request.QueryParam("fiscalyear")
 	rep, err := h.reporter.GetTaxReconciliationReport(ctx, scope, fiscalYear)
 	if err != nil {
+		// A bad fiscalyear is a field error (400 + code/field), not a server fault.
+		if _, ok := gl.AsUserError(err); ok {
+			return failure(request, err)
+		}
 		return fail(request, http.StatusInternalServerError, err.Error())
 	}
 	return success(request, map[string]interface{}{"success": true, "report": rep})
