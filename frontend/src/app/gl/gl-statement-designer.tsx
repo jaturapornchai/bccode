@@ -22,20 +22,19 @@ import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  formatAmount,
   emptyStatementTemplate,
   statementTypeLabels,
   statementRowTypeLabels,
   labelText,
   type GLLabel,
   generateStarterTemplates,
-  calculateStatement,
+  reportCsv,
+  type GLReport,
   type GLStatementTemplate,
   type StatementRow,
   type StatementType,
   type StatementRowType,
   type StatementRowUnderline,
-  type CalculatedStatement,
 } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import {
@@ -56,9 +55,11 @@ import {
   AccountSearchDialog,
   SearchInput,
   useDebouncedSearch,
+  useGLLanguage,
   useGLText,
 } from "./gl-common";
 import { fetchReport, type ReportFilters, emptyReportFilters } from "./gl-reports";
+import { GLStatementTable, printCompanyName, statementPeriodText, useGLPrint } from "./gl-print";
 
 const FONT_OPTIONS: { id: string; name: GLLabel; family: string; href: string }[] = [
   { id: "sarabun", name: ["gl_font_family_sarabun", "Sarabun (สารบรรณ - มาตรฐานทางการ)"], family: '"Sarabun", sans-serif', href: "https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" },
@@ -106,8 +107,10 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   // Live preview state
   const [filters, setFilters] = useState<ReportFilters>({ ...emptyReportFilters });
   const [calculating, setCalculating] = useState(false);
-  const [calculated, setCalculated] = useState<CalculatedStatement | null>(null);
+  const [calculated, setCalculated] = useState<GLReport | null>(null);
   const [previewError, setPreviewError] = useState("");
+  const language = useGLLanguage();
+  const statementPrint = useGLPrint();
 
   const { busy, execute } = useGLCommand();
   const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
@@ -195,6 +198,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
       const saved: GLStatementTemplate = { ...template, id: result.id, version: result.version };
       setTemplate(saved);
       setOriginal(JSON.stringify(saved));
+      setCalculated(null);
       list.reload();
       setMessage(tr("gl_fin_stmt_template_saved", "บันทึกแม่แบบงบการเงินเรียบร้อยแล้ว"));
     } catch (e) {
@@ -283,26 +287,23 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
     setTemplate({ ...template, rows: nextRows });
   }
 
-  // Calculation for preview
+  // งบคำนวณที่ backend จากแม่แบบที่บันทึกแล้ว (backend/internal/generalledger/statements.go) — จอนี้แค่แสดงผล
   async function runCalculation() {
     if (!template) return;
     if (!filters.fiscalyear) {
       setPreviewError(tr("gl_select_fiscal_year_before_process", "กรุณาเลือกปีบัญชีก่อนประมวลผล"));
       return;
     }
+    if (!template.id || dirty) {
+      setCalculated(null);
+      setPreviewError(tr("gl_statement_save_before_preview", "กรุณาบันทึกแม่แบบก่อน ระบบคำนวณงบจากแม่แบบที่บันทึกแล้ว"));
+      return;
+    }
     setCalculating(true);
     setPreviewError("");
     try {
-      // The server caps a page at 1000 rows; follow the pages on the same snapshot.
-      const first = await fetchReport("trialbalance", filters, 1, 1000);
-      const rows = [...(first.rows ?? [])];
-      for (let page = 2; rows.length < first.totalrows; page++) {
-        const next = await fetchReport("trialbalance", filters, page, 1000, first.sequence);
-        if (!next.rows?.length) break;
-        rows.push(...next.rows);
-      }
-      const res = calculateStatement(template, rows);
-      setCalculated(res);
+      const query = { ...filters, template: template.code };
+      setCalculated(await fetchReport("statement", query));
     } catch (e) {
       setPreviewError((e as Error).message);
     } finally {
@@ -317,6 +318,16 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
       globalstyle: { ...template.globalstyle, ...patch },
     });
   };
+
+  // หัวงบ: ทั้งปีบัญชี = "สำหรับปีสิ้นสุดวันที่", ช่วงย่อย = "สำหรับงวดตั้งแต่ … ถึง …", งบที่ใช้ยอดคงเหลือ = "ณ วันที่" (กติกาเดียวกับ backend)
+  function statementView(report: GLReport) {
+    if (!template) return null;
+    const periodic = template.statementtype === "pnl" || template.statementtype === "production_cost";
+    const current = report.periods?.[0];
+    const year = refs.years.find((item) => item.code === current?.fiscalyear);
+    const fullYear = Boolean(year && current && current.from === year.startdate && current.to === year.enddate);
+    return <GLStatementTable report={report} company={printCompanyName()} title={template.name} period={statementPeriodText(current, !periodic, fullYear, tr, language)} showNote={template.globalstyle?.shownotecolumn ?? true} scale={template.globalstyle?.scale ?? 2} tr={tr} />;
+  }
 
   const selectedFont = FONT_OPTIONS.find((f) => f.id === (template?.globalstyle?.fontfamily ?? "sarabun")) ?? FONT_OPTIONS[0];
 
@@ -551,6 +562,17 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     <option value="15px">{tr("gl_font_size_15_comfort", "15px - สบายตา (แนะนำ 40+)")}</option>
                     <option value="16px">{tr("gl_font_size_16_large", "16px - ตัวใหญ่")}</option>
                     <option value="18px">{tr("gl_font_size_18_extra", "18px - พิเศษ")}</option>
+                  </Combobox>
+                </Field>
+
+                <Field label={tr("gl_statement_comparison", "คอลัมน์เปรียบเทียบ")}>
+                  <Combobox
+                    value={template.globalstyle?.comparisontype === "previous_year" ? "previous_year" : "none"}
+                    onChange={(val) => updateGlobalStyle({ comparisontype: val === "previous_year" ? "previous_year" : "none" })}
+                    placeholder={tr("gl_statement_comparison", "คอลัมน์เปรียบเทียบ")}
+                  >
+                    <option value="previous_year">{tr("gl_statement_compare_previous_year", "แสดงปีก่อนเปรียบเทียบ (ตามแบบงบการเงิน)")}</option>
+                    <option value="none">{tr("gl_statement_compare_none", "ไม่แสดงปีก่อน")}</option>
                   </Combobox>
                 </Field>
 
@@ -842,20 +864,17 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button type="button" variant="outline" className={actionClass} onClick={() => window.print()}>
+                      <Button type="button" variant="outline" className={actionClass} disabled={!calculated} onClick={() => calculated && statementPrint.print(statementView(calculated))}>
                         <Printer className="mr-1.5 h-4 w-4" /> {tr("gl_print_financial_statements", "พิมพ์งบการเงิน")}
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         className={actionClass}
+                        disabled={!calculated}
                         onClick={() => {
                           if (!calculated) return;
-                          const csv = "\uFEFF" + [
-                            [tr("gl_sequence", "ลำดับ"), tr("gl_items", "รายการ"), tr("gl_note", "หมายเหตุ"), tr("gl_amount", "จำนวนเงิน")].join(","),
-                            ...calculated.rows.map((r) => [`"'${r.rowno}"`, `"${r.title.replace(/"/g, '""')}"`, `"${r.noteno ?? ""}"`, `"'${r.amountFormatted}"`].join(",")),
-                          ].join("\r\n");
-                          downloadText(tr("gl_financial_statements_csv", "งบการเงิน-{0}-{1}.csv").replace("{0}", String(template.code)).replace("{1}", String(filters.fiscalyear)), csv, "text/csv;charset=utf-8");
+                          downloadText(tr("gl_financial_statements_csv", "งบการเงิน-{0}-{1}.csv").replace("{0}", String(template.code)).replace("{1}", String(filters.fiscalyear)), reportCsv(calculated), "text/csv;charset=utf-8");
                         }}
                       >
                         <Download className="mr-1.5 h-4 w-4" /> {tr("gl_export_csv", "ส่งออก CSV")}
@@ -871,75 +890,12 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                       fontSize: template.globalstyle?.fontsize ?? "15px",
                     }}
                   >
-                    {/* Header */}
-                    <div className="mb-6 text-center">
-                      <h1 className="text-xl font-bold tracking-tight">{template.name}</h1>
-                      <p className="text-sm text-muted-foreground">{tr("gl_for_period_as_of", "สำหรับงวดบัญชี {0} (ณ วันที่ {1})").replace("{0}", String(filters.fiscalyear)).replace("{1}", String(filters.to || "-"))}</p>
-                      <p className="text-xs text-muted-foreground">{tr("gl_unit_baht", "(หน่วย: บาท)")}</p>
-                    </div>
-
-                    {/* Statement Table */}
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b-2 border-foreground/30">
-                          <th className="py-2 text-left font-bold">{tr("gl_items", "รายการ")}</th>
-                          {template.globalstyle?.shownotecolumn && (
-                            <th className="w-24 py-2 text-center font-bold">{tr("gl_note", "หมายเหตุ")}</th>
-                          )}
-                          <th className="w-44 py-2 text-right font-bold">{tr("gl_amount_2", "ยอดเงิน")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {calculated?.rows.map((row) => {
-                          const indentPx = (row.style?.indent ?? 0) * 20;
-                          const isBold = row.style?.fontweight === "bold";
-                          const isItalic = row.style?.fontstyle === "italic";
-
-                          return (
-                            <tr key={row.id} className="hover:bg-muted/10">
-                              <td
-                                className={`py-1.5 ${isBold ? "font-bold" : ""} ${isItalic ? "italic" : ""}`}
-                                style={{ paddingLeft: `${indentPx}px` }}
-                              >
-                                {row.title}
-                              </td>
-
-                              {template.globalstyle?.shownotecolumn && (
-                                <td className="py-1.5 text-center text-xs text-muted-foreground">
-                                  {row.noteno ?? ""}
-                                </td>
-                              )}
-
-                              <td className="py-1.5 text-right tabular-nums">
-                                {row.amountFormatted && (
-                                  <span
-                                    className={`inline-block min-w-24 ${isBold ? "font-bold" : ""} ${
-                                      row.style?.underline === "single"
-                                        ? "border-b border-foreground"
-                                        : row.style?.underline === "double"
-                                        ? "border-b-4 border-double border-foreground"
-                                        : row.style?.underline === "top_single_bottom_double"
-                                        ? "border-t border-b-4 border-double border-foreground"
-                                        : ""
-                                    }`}
-                                  >
-                                    {row.amountFormatted}
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-
-                        {!calculated?.rows.length && (
-                          <tr>
-                            <td colSpan={3} className="py-8 text-center text-muted-foreground">
-                              {calculating ? tr("gl_processing_financial_amounts", "กำลังประมวลผลยอดงบการเงิน...") : tr("gl_press_calculate_display_to_process", "กดปุ่ม 'คำนวณและแสดงผล' เพื่อประมวลผลยอดบัญชี")}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                    {calculated ? statementView(calculated) : (
+                      <p className="py-8 text-center text-muted-foreground">
+                        {calculating ? tr("gl_processing_financial_amounts", "กำลังประมวลผลยอดงบการเงิน...") : tr("gl_press_calculate_display_to_process", "กดปุ่ม 'คำนวณและแสดงผล' เพื่อประมวลผลยอดบัญชี")}
+                      </p>
+                    )}
+                    {calculated?.warnings?.map((warning) => <p key={warning} className="mt-3 text-sm text-muted-foreground">{warning}</p>)}
                   </div>
                 </div>
               )}
@@ -1032,6 +988,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
       )}
 
       {confirmationDialog}
+      {statementPrint.portal}
     </div>
   );
 }

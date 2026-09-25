@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-26 @ commit 9097836f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-26 @ commit 9d3af5c6 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 28
+Files indexed: 27
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (16107 lines)
 
@@ -1257,24 +1257,6 @@ Files indexed: 28
 | 1046 | function | `optionValueToFormValue` |
 | 1057 | function | `normalizeHexColor` |
 | 1064 | function | `languageName` |
-
-## frontend/src/app/gl/gl-statement-designer.tsx (1037 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 72 | function | `ensureFontLoaded` |
-| 85 | function | `GLStatementDesigner` |
-| 136 | function | `open` |
-| 159 | function | `applyStarterTemplate` |
-| 172 | function | `save` |
-| 205 | function | `cloneTemplate` |
-| 219 | function | `remove` |
-| 246 | function | `addRow` |
-| 265 | function | `updateRow` |
-| 271 | function | `deleteRow` |
-| 276 | function | `moveRow` |
-| 287 | function | `runCalculation` |
-| 313 | const-arrow | `updateGlobalStyle` |
 
 ## frontend/src/app/currency/currency-screen.tsx (1033 lines)
 

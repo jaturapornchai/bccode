@@ -66,6 +66,8 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 		report, err = rc.glJournal(ctx)
 	case "budgetcomparison":
 		report, err = rc.budgetComparison(ctx)
+	case "statement":
+		report, err = rc.statement(ctx)
 	default:
 		return empty, fmt.Errorf("รายงานนี้ยังไม่มีรูปแบบที่ยืนยันแล้ว")
 	}

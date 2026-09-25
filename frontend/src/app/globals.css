@@ -7861,3 +7861,102 @@ tr.bc-list-row > td {
     font-size: 8.5pt;
   }
 }
+
+/* 2026-09-26 GL financial statements — GLStatementTable (frontend/src/app/gl/gl-print.tsx) ใช้ทั้งพรีวิวบนจอและหน้าพิมพ์:
+   หัวงบกึ่งกลาง (ชื่อกิจการ ชื่องบ วันที่/งวด หน่วยเงิน), คอลัมน์ปีนี้/ปีก่อน, ขีดเส้นใต้ยอดรวมแบบเดี่ยว/คู่;
+   สีเส้นใช้ currentColor จึงตามธีมบนจอ และเป็นสีดำบนกระดาษ (.gl-print-root color #000) */
+.gl-statement {
+  width: 100%;
+  border-collapse: collapse;
+  line-height: 1.5;
+}
+
+.gl-statement th,
+.gl-statement td {
+  padding: 0.3em 0.5em;
+  text-align: left;
+  vertical-align: bottom;
+}
+
+.gl-statement .gl-statement-heading {
+  text-align: center;
+  font-weight: 400;
+  padding-bottom: 1em;
+}
+
+.gl-statement .gl-statement-heading .gl-print-company,
+.gl-statement .gl-statement-heading .gl-print-title {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.gl-statement .gl-statement-columns th {
+  border-bottom: 1px solid currentColor;
+  font-weight: 700;
+}
+
+.gl-statement .gl-print-num {
+  width: 10em;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.gl-statement .gl-statement-note {
+  width: 6em;
+  text-align: center;
+}
+
+.gl-statement .gl-print-num > span {
+  display: inline-block;
+  min-width: 7em;
+  padding-bottom: 1px;
+}
+
+.gl-statement-bold {
+  font-weight: 700;
+}
+
+.gl-statement-italic {
+  font-style: italic;
+}
+
+.gl-statement-u-single {
+  border-bottom: 1px solid currentColor;
+}
+
+.gl-statement-u-double {
+  border-bottom: 3px double currentColor;
+}
+
+.gl-statement-u-top,
+.gl-statement-divider {
+  border-top: 1px solid currentColor;
+}
+
+@media print {
+  .gl-print-root table.gl-print-statement {
+    margin-top: 0;
+  }
+
+  .gl-print-root table.gl-print-statement th,
+  .gl-print-root table.gl-print-statement td {
+    border: 0;
+    background: none;
+    padding: 0.6mm 1.5mm;
+    vertical-align: bottom;
+  }
+
+  .gl-print-root table.gl-print-statement .gl-statement-heading {
+    text-align: center;
+    padding-bottom: 3mm;
+  }
+
+  .gl-print-root table.gl-print-statement .gl-statement-columns th {
+    border-bottom: 0.75pt solid #000;
+  }
+
+  .gl-print-root table.gl-print-statement .gl-statement-divider {
+    border-top: 0.75pt solid #000;
+  }
+}

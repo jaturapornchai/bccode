@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
-import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, evaluateStatementFormula, generateStarterTemplates } from "./general-ledger";
+import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates } from "./general-ledger";
 
 const accounts = [ { ...emptyAccount(), accountcode: "A", names: [{ code: "th", name: "เงินสด" }] }, { ...emptyAccount(), accountcode: "B", names: [{ code: "th", name: "ทุน" }] } ];
 const year = { ...emptyFiscalYear(), code: "FY", startdate: "2026-01-01", enddate: "2026-12-31", currency: "THB", scale: 2 };
@@ -73,21 +73,6 @@ describe("general ledger exact accounting helpers", () => {
     expect(isGeneralLedgerRoute("/employee")).toBe(false);
   });
 
-  it("evaluates statement formulas accurately with range sums and arithmetic", () => {
-    const rowValues = new Map<number, bigint>([
-      [10, 10000000000n], // 100.00
-      [20, 5000000000n],  // 50.00
-      [30, 2500000000n],  // 25.00
-    ]);
-    expect(evaluateStatementFormula("R10 + R20", rowValues)).toBe(15000000000n);
-    expect(evaluateStatementFormula("R10 - R20", rowValues)).toBe(5000000000n);
-    expect(evaluateStatementFormula("SUM(R10:R30)", rowValues)).toBe(17500000000n);
-    expect(evaluateStatementFormula("SUM(10..30)", rowValues)).toBe(17500000000n);
-    expect(evaluateStatementFormula("(R10 - R20) * 2", rowValues)).toBe(10000000000n);
-    // Prevents self-reference recursion
-    expect(evaluateStatementFormula("R10", rowValues, 10)).toBe(0n);
-  });
-
   it("provides 4 standard starter templates with valid rows and structure", () => {
     const templates = generateStarterTemplates();
     expect(templates).toHaveLength(4);
@@ -97,6 +82,21 @@ describe("general ledger exact accounting helpers", () => {
     const pnl = templates.find((t) => t.statementtype === "pnl")!;
     expect(pnl).toBeDefined();
     expect(pnl.rows.length).toBeGreaterThan(10);
+  });
+
+  // งบคำนวณที่ backend (statements_test.go); แม่แบบต้องไม่เดารหัสบัญชี (ผังบัญชีแต่ละกิจการไม่เหมือนกัน) และสูตรต้องอ้างแถวที่มีจริง
+  it("starter templates carry no guessed account codes and formulas reference existing rows", () => {
+    for (const template of generateStarterTemplates()) {
+      const rownos = new Set(template.rows.map((row) => row.rowno));
+      expect(rownos.size).toBe(template.rows.length);
+      for (const row of template.rows) {
+        for (const code of row.accountcodes ?? []) expect(code).toBe("__current_earnings__");
+        for (const ref of (row.formula ?? "").match(/\d+/g) ?? []) expect(rownos.has(Number(ref))).toBe(true);
+      }
+    }
+    const [bs, pnl] = generateStarterTemplates();
+    expect([bs.name, bs.globalstyle.comparisontype, pnl.name, pnl.globalstyle.comparisontype]).toEqual(["งบแสดงฐานะการเงิน", "previous_year", "งบกำไรขาดทุน", "previous_year"]);
+    expect(bs.rows.find((row) => row.rowno === 690)).toMatchObject({ rowtype: "subtotal", formula: "R540 + R680", style: { underline: "double" } });
   });
 });
 

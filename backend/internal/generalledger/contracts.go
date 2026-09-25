@@ -51,6 +51,7 @@ type ReportQuery struct {
 	ProjectCode    string
 	BookCode       string
 	BudgetCode     string
+	Template       string // statement: รหัสรูปแบบงบการเงิน
 	Page           int
 	Limit          int
 }
@@ -68,6 +69,7 @@ type Report struct {
 	TotalRows int64               `json:"totalrows"`
 	Warnings  []string            `json:"warnings"`
 	AsOf      string              `json:"asof"`
+	Periods   []ReportPeriod      `json:"periods,omitempty"`
 }
 
 type Projection interface {

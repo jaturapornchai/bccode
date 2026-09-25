@@ -2,12 +2,13 @@
 // พิมพ์สมุดบัญชีและใบสำคัญรายวันตามประกาศกรมทะเบียนการค้า เรื่อง กำหนดชนิดของบัญชีที่ต้องจัดทำฯ พ.ศ. 2544
 // ข้อ 4 (ชื่อผู้มีหน้าที่จัดทำบัญชี ชนิดของบัญชี ลำดับเล่ม), ข้อ 5 (ชื่อบัญชี วันที่ เลขที่เอกสาร รายการ จำนวนเงิน + เลขหน้าเรียงทุกหน้า),
 // ข้อ 11 (เอกสารที่ทำขึ้นใช้เอง: คำอธิบายรายการ วิธีคำนวณ ลายมือชื่อผู้จัดทำบัญชีหรือผู้อนุมัติ) — ทะเบียนอ้างอิง docs/kms/21 §11
+// งบการเงิน (GLStatementTable) ตามประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566 + TFRS for NPAEs บทที่ 4 — docs/kms/21
 // หน้าพิมพ์เป็นแค่การแสดงผล: ตัวเลขทุกตัวมาจาก API ของ backend ตามเดิม
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LanguageCode } from "@/lib/i18n";
-import { formatAppDate } from "@/lib/date-time";
-import { amountString, formatAmount, journalBookName, journalTotals, type GLJournal, type GLJournalBook, type GLTextFn } from "@/lib/general-ledger";
+import { formatAppDate, localeForDate } from "@/lib/date-time";
+import { amountString, formatAmount, journalBookName, journalTotals, type GLJournal, type GLJournalBook, type GLReport, type GLTextFn } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { useGLText } from "./gl-common";
 
@@ -158,4 +159,72 @@ export function GLVoucherPrint({ journal, books, company, tr, language, scale = 
       </div>)}
     </div>
   </article>;
+}
+
+/** วันที่หัวงบแบบเต็ม (เช่น 31 ธันวาคม 2569) ตามแบบงบการเงินของกรมพัฒนาธุรกิจการค้า — ภาษาไทยปี พ.ศ. */
+function statementDate(value: string, language: LanguageCode): string {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Intl.DateTimeFormat(localeForDate(language, language === "th" ? "buddhist" : "christian"), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+}
+
+/** บรรทัดวันที่ของหัวงบ (TFRS for NPAEs ย่อหน้า 4.7): งบ ณ วันใดวันหนึ่ง "ณ วันที่", งบช่วงเวลา "สำหรับปีสิ้นสุดวันที่" หรือ "สำหรับงวดตั้งแต่วันที่ … ถึงวันที่ …" */
+export function statementPeriodText(period: { from: string; to: string } | undefined, pointInTime: boolean, fullYear: boolean, tr: GLTextFn, language: LanguageCode): string {
+  if (!period?.to) return "";
+  const to = statementDate(period.to, language);
+  if (pointInTime) return tr("gl_statement_as_of", "ณ วันที่ {0}").replace("{0}", to);
+  if (fullYear) return tr("gl_statement_year_ended", "สำหรับปีสิ้นสุดวันที่ {0}").replace("{0}", to);
+  return tr("gl_statement_period_range", "สำหรับงวดตั้งแต่วันที่ {0} ถึงวันที่ {1}").replace("{0}", statementDate(period.from, language)).replace("{1}", to);
+}
+
+/** ยอดในงบ: backend ปัดตามทศนิยมของรูปแบบแล้ว; ศูนย์แสดง "-" เว้นแต่แถวตั้งให้แสดงศูนย์ */
+export function statementAmountText(value: string, showZero: boolean, scale = 2): string {
+  const text = formatAmount(value, scale);
+  return text && !showZero && /^-?0(\.0+)?$/.test(text) ? "-" : text;
+}
+
+const statementUnderline: Record<string, string> = { single: "gl-statement-u-single", double: "gl-statement-u-double", top_single: "gl-statement-u-top", top_single_bottom_double: "gl-statement-u-top gl-statement-u-double" };
+
+/** งบการเงินจากรูปแบบงบ (GET reports/statement) ใช้ทั้งพรีวิวบนจอและหน้าพิมพ์: หัวงบ = ชื่อกิจการ ชื่องบ วันที่/งวด หน่วยเงิน;
+ *  คอลัมน์เงินตามที่ backend ส่ง (ปีนี้ + ปีก่อนเมื่อรูปแบบตั้งเปรียบเทียบ — TFRS for NPAEs ย่อหน้า 4.3) */
+export function GLStatementTable({ report, company, title, period, showNote, scale = 2, tr }: { report: GLReport; company: string; title: string; period: string; showNote: boolean; scale?: number; tr: GLTextFn }) {
+  const amounts = report.columns.filter((column) => column.amount);
+  const span = 1 + (showNote ? 1 : 0) + amounts.length;
+  return (
+    <table className="gl-print-statement gl-statement">
+      <thead>
+        <tr className="gl-print-head">
+          <th colSpan={span} className="gl-statement-heading">
+            <div className="gl-print-company">{company}</div>
+            <div className="gl-print-title">{title}</div>
+            {period && <div className="gl-print-meta">{period}</div>}
+            <div className="gl-print-meta">{tr("gl_statement_unit_baht", "(หน่วย : บาท)")}</div>
+          </th>
+        </tr>
+        <tr className="gl-statement-columns">
+          <th />
+          {showNote && <th className="gl-statement-note">{tr("gl_note", "หมายเหตุ")}</th>}
+          {amounts.map((column) => <th key={column.key} className="gl-print-num">{column.label}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {(report.rows ?? []).map((row, index) => {
+          if (row.rowtype === "blank") return <tr key={index}><td colSpan={span}>&nbsp;</td></tr>;
+          if (row.rowtype === "divider") return <tr key={index}><td colSpan={span} className="gl-statement-divider" /></tr>;
+          const font = `${row.fontweight === "bold" || row.fontweight === "semibold" ? "gl-statement-bold" : ""} ${row.fontstyle === "italic" ? "gl-statement-italic" : ""}`.trim();
+          return (
+            <tr key={index}>
+              <td className={font} style={{ paddingLeft: `${Number(row.indent || 0) * 1.25 + 0.25}em` }}>{row.title}</td>
+              {showNote && <td className="gl-statement-note">{row.noteno}</td>}
+              {amounts.map((column) => (
+                <td key={column.key} className="gl-print-num">
+                  <span className={`${font} ${statementUnderline[row.underline ?? ""] ?? ""}`.trim()}>{statementAmountText(row[column.key] ?? "", row.showzero === "true", scale)}</span>
+                </td>
+              ))}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
 }

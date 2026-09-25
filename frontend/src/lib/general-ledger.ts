@@ -64,6 +64,8 @@ export type GLReport = {
   columns: { key: string; label: string; amount?: boolean }[];
   rows: Record<string, string>[]; totals: Record<string, string>;
   totalrows: number; warnings: string[]; asof: string; sequence: number;
+  // statement: ช่วงของแต่ละคอลัมน์ยอดเงิน (ปีนี้/ปีก่อน) สำหรับหัวงบ
+  periods?: { key: string; fiscalyear: string; from: string; to: string }[];
 };
 export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "journal-books"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
@@ -73,7 +75,7 @@ export type GLCommand = {
   account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
 };
-export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched"] as const;
+export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement"] as const;
 // เฉพาะกลุ่ม gl-* ที่จอ GL เปิดเอง; กลุ่มภาษี (vat-*) อยู่ในหมวดเดียวกันแต่ใช้จอภาษี
 export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.filter((group) => group.id.startsWith("gl-")).flatMap((group) => group.items);
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
@@ -446,279 +448,84 @@ export function emptyStatementTemplate(): GLStatementTemplate {
   };
 }
 
-export function evaluateStatementFormula(
-  formula: string,
-  rowValues: Map<number, bigint>,
-  currentRowNo?: number,
-  visited: Set<number> = new Set(),
-): bigint {
-  const clean = formula.trim();
-  if (!clean) return 0n;
-
-  // Range sum: SUM(R10:R50) or SUM(10:50) or SUM(R10..R50)
-  const rangeMatch = clean.match(/^SUM\s*\(\s*R?(\d+)\s*(?::|\.\.)\s*R?(\d+)\s*\)$/i);
-  if (rangeMatch) {
-    const from = parseInt(rangeMatch[1], 10);
-    const to = parseInt(rangeMatch[2], 10);
-    const start = Math.min(from, to);
-    const end = Math.max(from, to);
-    let sum = 0n;
-    for (const [rno, val] of rowValues.entries()) {
-      if (rno >= start && rno <= end && rno !== currentRowNo) {
-        sum += val;
-      }
-    }
-    return sum;
-  }
-
-  // Tokenize arithmetic expression
-  try {
-    const tokens = tokenizeFormula(clean);
-    return parseFormulaExpr(tokens, rowValues, currentRowNo, visited);
-  } catch {
-    return 0n;
-  }
-}
-
-function tokenizeFormula(formula: string): string[] {
-  const matches = formula.match(/[A-Za-z]+[0-9]*|[0-9]+(?:\.[0-9]+)?|\+|-|\*|\/|\(|\)/g);
-  return matches ?? [];
-}
-
-function parseFormulaExpr(
-  tokens: string[],
-  rowValues: Map<number, bigint>,
-  currentRowNo?: number,
-  visited: Set<number> = new Set(),
-): bigint {
-  let pos = 0;
-
-  function peek(): string | undefined {
-    return tokens[pos];
-  }
-
-  function consume(): string {
-    return tokens[pos++];
-  }
-
-  function expr(): bigint {
-    let result = term();
-    while (peek() === "+" || peek() === "-") {
-      const op = consume();
-      const right = term();
-      result = op === "+" ? result + right : result - right;
-    }
-    return result;
-  }
-
-  function term(): bigint {
-    let result = parsePrimary();
-    while (peek() === "*" || peek() === "/") {
-      const op = consume();
-      const right = parsePrimary();
-      if (op === "*") {
-        result = (result * right) / factor;
-      } else {
-        result = right === 0n ? 0n : (result * factor) / right;
-      }
-    }
-    return result;
-  }
-
-  function parsePrimary(): bigint {
-    const token = peek();
-    if (!token) return 0n;
-
-    if (token === "+") {
-      consume();
-      return parsePrimary();
-    }
-    if (token === "-") {
-      consume();
-      return -parsePrimary();
-    }
-    if (token === "(") {
-      consume();
-      const val = expr();
-      if (peek() === ")") consume();
-      return val;
-    }
-
-    consume();
-
-    // Row reference like R10, r10
-    if (/^[Rr]\d+$/.test(token)) {
-      const rowNo = parseInt(token.slice(1), 10);
-      if (rowNo === currentRowNo || visited.has(rowNo)) return 0n;
-      return rowValues.get(rowNo) ?? 0n;
-    }
-
-    // Pure number
-    if (/^\d+(\.\d+)?$/.test(token)) {
-      try {
-        return decimalUnits(token);
-      } catch {
-        return 0n;
-      }
-    }
-
-    return 0n;
-  }
-
-  return expr();
-}
-
-export type CalculatedStatementRow = StatementRow & {
-  amount: bigint;
-  amountFormatted: string;
-};
-
-export type CalculatedStatement = {
-  template: GLStatementTemplate;
-  rows: CalculatedStatementRow[];
-  totals: Record<string, string>;
-  isBalanced?: boolean;
-  difference?: string;
-};
-
-export function calculateStatement(
-  template: GLStatementTemplate,
-  trialBalanceRows: Record<string, string>[],
-): CalculatedStatement {
-  const rowValues = new Map<number, bigint>();
-  const accountBalances = new Map<string, { balance: bigint; debit: bigint; credit: bigint; type: string }>();
-
-  for (const tr of trialBalanceRows) {
-    const code = tr.accountcode ?? "";
-    if (!code) continue;
-    try {
-      const deb = displayAmountUnits(tr.endingdebit ?? tr.debit ?? "0");
-      const cre = displayAmountUnits(tr.endingcredit ?? tr.credit ?? "0");
-      const bal = displayAmountUnits(tr.balance ?? "0");
-      accountBalances.set(code, { balance: bal, debit: deb, credit: cre, type: tr.accounttype ?? "asset" });
-    } catch {
-      // Ignore unparseable values
-    }
-  }
-
-  // Pass 1: Account rows
-  for (const row of template.rows) {
-    if (row.rowtype === "account") {
-      let sum = 0n;
-      const codes = row.accountcodes ?? [];
-      for (const code of codes) {
-        const acc = accountBalances.get(code);
-        if (!acc) continue;
-        const norm = row.normalbalance ?? (["asset", "expense"].includes(acc.type) ? "debit" : "credit");
-        let val = 0n;
-        if (norm === "debit") val = acc.balance;
-        else if (norm === "credit") val = -acc.balance;
-        else val = acc.balance;
-        sum += val;
-      }
-      if (row.reversesign) sum = -sum;
-      rowValues.set(row.rowno, sum);
-    }
-  }
-
-  // Pass 2: Formulas & Subtotals
-  for (const row of template.rows) {
-    if (row.rowtype === "formula" || row.rowtype === "subtotal") {
-      let sum = 0n;
-      if (row.formula?.trim()) {
-        sum = evaluateStatementFormula(row.formula, rowValues, row.rowno);
-      }
-      if (row.reversesign) sum = -sum;
-      rowValues.set(row.rowno, sum);
-    }
-  }
-
-  const scale = template.globalstyle?.scale ?? 2;
-  const calculatedRows: CalculatedStatementRow[] = template.rows.map((row) => {
-    const isAmountRow = ["account", "formula", "subtotal"].includes(row.rowtype);
-    const amount = isAmountRow ? (rowValues.get(row.rowno) ?? 0n) : 0n;
-    const amountFormatted = isAmountRow ? (amount === 0n && !row.showzero ? "-" : formatAmount(amountString(amount, scale), scale)) : "";
-    return {
-      ...row,
-      amount,
-      amountFormatted,
-    };
+// งบการเงินคำนวณที่ backend (GET reports/statement?template=) — backend/internal/generalledger/statements.go
+type StarterRow = [rowno: number, kind: "header" | "blank" | "subtotal" | "total" | "debit" | "credit", title: string, indent?: number, formula?: string, accountcodes?: string[]];
+/** แถวแม่แบบงบ: debit/credit = แถวยอดบัญชี (ผู้ใช้เลือกบัญชีเอง), subtotal = รวมย่อยขีดเส้นเดี่ยว, total = ยอดรวมขีดเส้นคู่ */
+function starterRows(prefix: string, rows: StarterRow[]): StatementRow[] {
+  return rows.map(([rowno, kind, title, indent = 2, formula, accountcodes]) => {
+    const id = `${prefix}-${rowno}`;
+    if (kind === "header") return { id, rowno, rowtype: "header", title, style: { fontweight: "bold", indent } };
+    if (kind === "blank") return { id, rowno, rowtype: "blank", title };
+    if (kind === "subtotal" || kind === "total") return { id, rowno, rowtype: "subtotal", title, formula, style: { fontweight: "bold", indent, underline: kind === "total" ? "double" : "single" } };
+    return { id, rowno, rowtype: "account", title, noteno: "", accountcodes: accountcodes ?? [], normalbalance: kind, style: { indent } };
   });
-
-  return {
-    template,
-    rows: calculatedRows,
-    totals: {},
-  };
 }
-
 export function generateStarterTemplates(): GLStatementTemplate[] {
   return [
     {
       code: "BS-DBD",
-      name: "งบแสดงฐานะการเงิน (แบบ DBD กรมพัฒนาธุรกิจการค้า)",
+      // ชื่อแม่แบบ = ชื่องบที่พิมพ์บนหัวงบ; แถวตามแบบ 2 (บริษัทจำกัด) ของประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 — docs/kms/21
+      name: "งบแสดงฐานะการเงิน",
       statementtype: "balance_sheet",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "none" },
-      rows: [
-        { id: "bs-1", rowno: 10, rowtype: "header", title: "สินทรัพย์", style: { fontweight: "bold", indent: 0 } },
-        { id: "bs-2", rowno: 20, rowtype: "header", title: "สินทรัพย์หมุนเวียน", style: { fontweight: "bold", indent: 1 } },
-        { id: "bs-3", rowno: 30, rowtype: "account", title: "เงินสดและรายการเทียบเท่าเงินสด", noteno: "3", accountcodes: ["1111-01", "1111-02", "1112-01"], normalbalance: "debit", style: { indent: 2 } },
-        { id: "bs-4", rowno: 40, rowtype: "account", title: "ลูกหนี้การค้าและลูกหนี้อื่น", noteno: "4", accountcodes: ["1131-01", "1131-02"], normalbalance: "debit", style: { indent: 2 } },
-        { id: "bs-5", rowno: 50, rowtype: "account", title: "สินค้าคงเหลือ", noteno: "5", accountcodes: ["1141-01"], normalbalance: "debit", style: { indent: 2 } },
-        { id: "bs-6", rowno: 60, rowtype: "account", title: "สินทรัพย์หมุนเวียนอื่น", noteno: "6", accountcodes: ["1151-01"], normalbalance: "debit", style: { indent: 2 } },
-        { id: "bs-7", rowno: 70, rowtype: "subtotal", title: "รวมสินทรัพย์หมุนเวียน", formula: "SUM(R30:R60)", style: { fontweight: "bold", indent: 1, underline: "single" } },
-        { id: "bs-8", rowno: 80, rowtype: "blank", title: "" },
-        { id: "bs-9", rowno: 90, rowtype: "header", title: "สินทรัพย์ไม่หมุนเวียน", style: { fontweight: "bold", indent: 1 } },
-        { id: "bs-10", rowno: 100, rowtype: "account", title: "ที่ดิน อาคาร และอุปกรณ์", noteno: "7", accountcodes: ["1211-01", "1221-01"], normalbalance: "debit", style: { indent: 2 } },
-        { id: "bs-11", rowno: 110, rowtype: "account", title: "ค่าเสื่อมราคาสะสม", noteno: "7", accountcodes: ["1222-01"], normalbalance: "credit", reversesign: true, style: { indent: 2 } },
-        { id: "bs-12", rowno: 120, rowtype: "account", title: "สินทรัพย์ไม่หมุนเวียนอื่น", noteno: "8", accountcodes: ["1251-01"], normalbalance: "debit", style: { indent: 2 } },
-        { id: "bs-13", rowno: 130, rowtype: "subtotal", title: "รวมสินทรัพย์ไม่หมุนเวียน", formula: "SUM(R100:R120)", style: { fontweight: "bold", indent: 1, underline: "single" } },
-        { id: "bs-14", rowno: 140, rowtype: "formula", title: "รวมสินทรัพย์ทั้งสิ้น", formula: "R70 + R130", style: { fontweight: "bold", indent: 0, underline: "double" } },
-        { id: "bs-15", rowno: 150, rowtype: "blank", title: "" },
-        { id: "bs-16", rowno: 160, rowtype: "header", title: "หนี้สินและส่วนของเจ้าของ", style: { fontweight: "bold", indent: 0 } },
-        { id: "bs-17", rowno: 170, rowtype: "header", title: "หนี้สินหมุนเวียน", style: { fontweight: "bold", indent: 1 } },
-        { id: "bs-18", rowno: 180, rowtype: "account", title: "เจ้าหนี้การค้าและเจ้าหนี้อื่น", noteno: "9", accountcodes: ["2121-01", "2131-01"], normalbalance: "credit", style: { indent: 2 } },
-        { id: "bs-19", rowno: 190, rowtype: "account", title: "เงินกู้ยืมระยะสั้น", noteno: "10", accountcodes: ["2111-01"], normalbalance: "credit", style: { indent: 2 } },
-        { id: "bs-20", rowno: 200, rowtype: "account", title: "หนี้สินหมุนเวียนอื่น", noteno: "11", accountcodes: ["2191-01"], normalbalance: "credit", style: { indent: 2 } },
-        { id: "bs-21", rowno: 210, rowtype: "subtotal", title: "รวมหนี้สินหมุนเวียน", formula: "SUM(R180:R200)", style: { fontweight: "bold", indent: 1, underline: "single" } },
-        { id: "bs-22", rowno: 220, rowtype: "blank", title: "" },
-        { id: "bs-23", rowno: 230, rowtype: "header", title: "หนี้สินไม่หมุนเวียน", style: { fontweight: "bold", indent: 1 } },
-        { id: "bs-24", rowno: 240, rowtype: "account", title: "เงินกู้ยืมระยะยาว", noteno: "12", accountcodes: ["2211-01"], normalbalance: "credit", style: { indent: 2 } },
-        { id: "bs-25", rowno: 250, rowtype: "subtotal", title: "รวมหนี้สินไม่หมุนเวียน", formula: "R240", style: { fontweight: "bold", indent: 1, underline: "single" } },
-        { id: "bs-26", rowno: 260, rowtype: "formula", title: "รวมหนี้สินทั้งสิ้น", formula: "R210 + R250", style: { fontweight: "bold", indent: 1, underline: "single" } },
-        { id: "bs-27", rowno: 270, rowtype: "blank", title: "" },
-        { id: "bs-28", rowno: 280, rowtype: "header", title: "ส่วนของเจ้าของ", style: { fontweight: "bold", indent: 1 } },
-        { id: "bs-29", rowno: 290, rowtype: "account", title: "ทุนจดทะเบียนและชำระแล้ว", noteno: "13", accountcodes: ["3111-01"], normalbalance: "credit", style: { indent: 2 } },
-        { id: "bs-30", rowno: 300, rowtype: "account", title: "กำไรสะสม", noteno: "14", accountcodes: ["3211-01"], normalbalance: "credit", style: { indent: 2 } },
-        { id: "bs-31", rowno: 310, rowtype: "account", title: "กำไร (ขาดทุน) สุทธิประจำงวด", noteno: "14", accountcodes: ["__current_earnings__"], normalbalance: "credit", style: { indent: 2 } },
-        { id: "bs-32", rowno: 320, rowtype: "subtotal", title: "รวมส่วนของเจ้าของ", formula: "SUM(R290:R310)", style: { fontweight: "bold", indent: 1, underline: "single" } },
-        { id: "bs-33", rowno: 330, rowtype: "formula", title: "รวมหนี้สินและส่วนของเจ้าของทั้งสิ้น", formula: "R260 + R320", style: { fontweight: "bold", indent: 0, underline: "double" } },
-      ],
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year" },
+      rows: starterRows("bs", [
+        [10, "header", "สินทรัพย์", 0], [20, "header", "สินทรัพย์หมุนเวียน", 1],
+        [30, "debit", "เงินสดและรายการเทียบเท่าเงินสด"], [40, "debit", "เงินลงทุนชั่วคราว"], [50, "debit", "ลูกหนี้การค้าและลูกหนี้หมุนเวียนอื่น"],
+        [60, "debit", "มูลค่าของงานส่วนที่เสร็จแต่ยังไม่ถึงกำหนดเรียกชำระเงิน - หมุนเวียน"], [70, "debit", "เงินให้กู้ยืมระยะสั้น"], [80, "debit", "สินค้าคงเหลือ"],
+        [90, "debit", "สินทรัพย์ชีวภาพหมุนเวียน"], [100, "debit", "สินทรัพย์หมุนเวียนอื่น"], [110, "debit", "สินทรัพย์ไม่หมุนเวียนที่ถือไว้เพื่อขาย - หมุนเวียน"],
+        [120, "subtotal", "รวมสินทรัพย์หมุนเวียน", 1, "SUM(R30:R110)"],
+        [130, "header", "สินทรัพย์ไม่หมุนเวียน", 1],
+        [140, "debit", "เงินฝากธนาคารที่มีภาระค้ำประกัน"], [150, "debit", "เงินลงทุนในบริษัทย่อย"], [160, "debit", "เงินลงทุนในการร่วมค้า"], [170, "debit", "เงินลงทุนในบริษัทร่วม"],
+        [180, "debit", "เงินลงทุนระยะยาวอื่น"], [190, "debit", "ลูกหนี้การค้าและลูกหนี้ไม่หมุนเวียนอื่น"], [200, "debit", "เงินให้กู้ยืมระยะยาว"],
+        [210, "debit", "มูลค่าของงานส่วนที่เสร็จแต่ยังไม่ถึงกำหนดเรียกชำระเงิน - ไม่หมุนเวียน"], [220, "debit", "อสังหาริมทรัพย์เพื่อการลงทุน"], [230, "debit", "ที่ดิน อาคารและอุปกรณ์"],
+        [240, "debit", "ค่าความนิยม"], [250, "debit", "สินทรัพย์ไม่มีตัวตน"], [260, "debit", "สินทรัพย์ชีวภาพไม่หมุนเวียน"], [270, "debit", "สินทรัพย์ไม่หมุนเวียนอื่น"],
+        [280, "debit", "สินทรัพย์ไม่หมุนเวียนที่ถือไว้เพื่อขาย - ไม่หมุนเวียน"],
+        [290, "subtotal", "รวมสินทรัพย์ไม่หมุนเวียน", 1, "SUM(R140:R280)"],
+        [300, "total", "รวมสินทรัพย์", 0, "R120 + R290"], [310, "blank", ""],
+        [320, "header", "หนี้สินและส่วนของผู้ถือหุ้น", 0], [330, "header", "หนี้สินหมุนเวียน", 1],
+        [340, "credit", "เงินเบิกเกินบัญชีและเงินกู้ยืมระยะสั้นจากสถาบันการเงิน"], [350, "credit", "เจ้าหนี้การค้าและเจ้าหนี้หมุนเวียนอื่น"],
+        [360, "credit", "เงินรับล่วงหน้าส่วนที่เกินกว่างานส่วนที่เสร็จ - หมุนเวียน"], [370, "credit", "ส่วนของหนี้สินระยะยาวที่ถึงกำหนดชำระภายในหนึ่งปี"],
+        [380, "credit", "ส่วนของหนี้สินตามสัญญาเช่าเงินทุนที่ถึงกำหนดชำระภายในหนึ่งปี"], [390, "credit", "เงินกู้ยืมระยะสั้น"], [400, "credit", "ภาษีเงินได้นิติบุคคลค้างจ่าย"],
+        [410, "credit", "ประมาณการหนี้สินหมุนเวียนสำหรับผลประโยชน์พนักงาน"], [420, "credit", "ประมาณการหนี้สินระยะสั้นอื่น"], [430, "credit", "หนี้สินหมุนเวียนอื่น"],
+        [440, "subtotal", "รวมหนี้สินหมุนเวียน", 1, "SUM(R340:R430)"],
+        [450, "header", "หนี้สินไม่หมุนเวียน", 1],
+        [460, "credit", "เงินกู้ยืมระยะยาว"], [470, "credit", "หนี้สินตามสัญญาเช่าเงินทุน"], [480, "credit", "เจ้าหนี้การค้าและเจ้าหนี้ไม่หมุนเวียนอื่น"],
+        [490, "credit", "เงินรับล่วงหน้าส่วนที่เกินกว่างานส่วนที่เสร็จ - ไม่หมุนเวียน"], [500, "credit", "ประมาณการหนี้สินไม่หมุนเวียนสำหรับผลประโยชน์พนักงาน"],
+        [510, "credit", "ประมาณการหนี้สินระยะยาวอื่น"], [520, "credit", "หนี้สินไม่หมุนเวียนอื่น"],
+        [530, "subtotal", "รวมหนี้สินไม่หมุนเวียน", 1, "SUM(R460:R520)"],
+        [540, "subtotal", "รวมหนี้สิน", 0, "R440 + R530"],
+        [550, "header", "ส่วนของผู้ถือหุ้น", 1], [560, "header", "ทุนเรือนหุ้น", 2], [570, "header", "ทุนจดทะเบียน (แสดงจำนวนหุ้นและมูลค่าในหมายเหตุ)", 3],
+        [580, "credit", "ทุนที่ชำระแล้ว", 3], [590, "credit", "ส่วนเกินมูลค่าหุ้น"], [600, "credit", "ส่วนเกิน (ต่ำกว่า) ทุนอื่น"],
+        [610, "header", "กำไร (ขาดทุน) สะสม", 2], [620, "header", "จัดสรรแล้ว", 3],
+        [630, "credit", "ทุนสำรองตามกฎหมาย", 4], [640, "credit", "อื่น ๆ", 4],
+        // กำไรขาดทุนที่ยังไม่ปิดบัญชีเป็นส่วนหนึ่งของกำไรสะสมที่ยังไม่ได้จัดสรร; ผู้ใช้เพิ่มบัญชีกำไรสะสมของตนเอง
+        [650, "credit", "ยังไม่ได้จัดสรร", 3, undefined, ["__current_earnings__"]],
+        [660, "credit", "ส่วนได้เสีย - ทุนอื่น"], [670, "credit", "องค์ประกอบอื่นของส่วนของผู้ถือหุ้น"],
+        [680, "subtotal", "รวมส่วนของผู้ถือหุ้น", 1, "SUM(R580:R670)"],
+        [690, "total", "รวมหนี้สินและส่วนของผู้ถือหุ้น", 0, "R540 + R680"],
+      ]),
     },
     {
-      code: "PNL-FUNCTION",
-      name: "งบกำไรขาดทุน (จำแนกค่าใช้จ่ายตามหน้าที่)",
+      code: "PNL-DBD",
+      // แบบ 2 จำแนกค่าใช้จ่ายตามหน้าที่ แบบหลายขั้น
+      name: "งบกำไรขาดทุน",
       statementtype: "pnl",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "none" },
-      rows: [
-        { id: "pnl-1", rowno: 10, rowtype: "header", title: "รายได้", style: { fontweight: "bold", indent: 0 } },
-        { id: "pnl-2", rowno: 20, rowtype: "account", title: "รายได้จากการขายและบริการ", noteno: "15", accountcodes: ["4111-01", "4111-02"], normalbalance: "credit", style: { indent: 1 } },
-        { id: "pnl-3", rowno: 30, rowtype: "account", title: "รายได้อื่นๆ", noteno: "16", accountcodes: ["4211-01"], normalbalance: "credit", style: { indent: 1 } },
-        { id: "pnl-4", rowno: 40, rowtype: "subtotal", title: "รวมรายได้", formula: "R20 + R30", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "pnl-5", rowno: 50, rowtype: "blank", title: "" },
-        { id: "pnl-6", rowno: 60, rowtype: "header", title: "ค่าใช้จ่าย", style: { fontweight: "bold", indent: 0 } },
-        { id: "pnl-7", rowno: 70, rowtype: "account", title: "ต้นทุนขายและบริการ", noteno: "17", accountcodes: ["5111-01"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "pnl-8", rowno: 80, rowtype: "formula", title: "กำไร (ขาดทุน) ขั้นต้น", formula: "R20 - R70", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "pnl-9", rowno: 90, rowtype: "account", title: "ค่าใช้จ่ายในการขาย", noteno: "18", accountcodes: ["5211-01"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "pnl-10", rowno: 100, rowtype: "account", title: "ค่าใช้จ่ายในการบริหาร", noteno: "19", accountcodes: ["5311-01"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "pnl-11", rowno: 110, rowtype: "subtotal", title: "รวมค่าใช้จ่ายในการดำเนินงาน", formula: "R90 + R100", style: { fontweight: "bold", indent: 1, underline: "single" } },
-        { id: "pnl-12", rowno: 120, rowtype: "formula", title: "กำไร (ขาดทุน) ก่อนต้นทุนทางการเงินและภาษี", formula: "R40 - R70 - R110", style: { fontweight: "bold", indent: 0 } },
-        { id: "pnl-13", rowno: 130, rowtype: "account", title: "ต้นทุนทางการเงิน (ดอกเบี้ยจ่าย)", noteno: "20", accountcodes: ["5411-01"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "pnl-14", rowno: 140, rowtype: "account", title: "ค่าใช้จ่ายภาษีเงินได้", noteno: "21", accountcodes: ["5511-01"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "pnl-15", rowno: 150, rowtype: "formula", title: "กำไร (ขาดทุน) สุทธิสำหรับงวด", formula: "R120 - R130 - R140", style: { fontweight: "bold", indent: 0, underline: "double" } },
-      ],
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year" },
+      rows: starterRows("pnl", [
+        [10, "credit", "รายได้จากการขายหรือการให้บริการ", 1], [20, "debit", "ต้นทุนขายหรือต้นทุนการให้บริการ", 1],
+        [30, "subtotal", "กำไร (ขาดทุน) ขั้นต้น", 0, "R10 - R20"],
+        [40, "credit", "รายได้อื่น", 1],
+        [50, "subtotal", "กำไร (ขาดทุน) ก่อนค่าใช้จ่าย", 0, "R30 + R40"],
+        [60, "debit", "ค่าใช้จ่ายในการขาย", 1], [70, "debit", "ค่าใช้จ่ายในการบริหาร", 1], [80, "debit", "ค่าใช้จ่ายอื่น", 1],
+        [90, "subtotal", "รวมค่าใช้จ่าย", 0, "SUM(R60:R80)"],
+        [100, "subtotal", "กำไร (ขาดทุน) ก่อนต้นทุนทางการเงินและภาษีเงินได้", 0, "R50 - R90"],
+        [110, "debit", "ต้นทุนทางการเงิน", 1],
+        [120, "subtotal", "กำไร (ขาดทุน) ก่อนภาษีเงินได้", 0, "R100 - R110"],
+        [130, "debit", "ภาษีเงินได้", 1],
+        [140, "total", "กำไร (ขาดทุน) สุทธิ", 0, "R120 - R130"],
+      ]),
     },
     {
       code: "COGS-STMT",
@@ -728,18 +535,18 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "none" },
       rows: [
         { id: "cog-1", rowno: 10, rowtype: "header", title: "วัตถุดิบทางตรงที่ใช้ไป", style: { fontweight: "bold", indent: 0 } },
-        { id: "cog-2", rowno: 20, rowtype: "account", title: "วัตถุดิบต้นงวด", accountcodes: ["1141-10"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-3", rowno: 30, rowtype: "account", title: "บวก: ซื้อวัตถุดิบสุทธิ", accountcodes: ["5111-10"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-4", rowno: 40, rowtype: "account", title: "หัก: วัตถุดิบปลายงวด", accountcodes: ["1141-10"], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
+        { id: "cog-2", rowno: 20, rowtype: "account", title: "วัตถุดิบต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-3", rowno: 30, rowtype: "account", title: "บวก: ซื้อวัตถุดิบสุทธิ", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-4", rowno: 40, rowtype: "account", title: "หัก: วัตถุดิบปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
         { id: "cog-5", rowno: 50, rowtype: "subtotal", title: "วัตถุดิบทางตรงใช้ไปในการผลิต", formula: "R20 + R30 + R40", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "cog-6", rowno: 60, rowtype: "account", title: "ค่าแรงทางตรง", accountcodes: ["5111-20"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-7", rowno: 70, rowtype: "account", title: "ค่าใช้จ่ายการผลิต", accountcodes: ["5111-30"], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-6", rowno: 60, rowtype: "account", title: "ค่าแรงทางตรง", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-7", rowno: 70, rowtype: "account", title: "ค่าใช้จ่ายการผลิต", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
         { id: "cog-8", rowno: 80, rowtype: "subtotal", title: "รวมต้นทุนการผลิตงวดนี้", formula: "R50 + R60 + R70", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "cog-9", rowno: 90, rowtype: "account", title: "บวก: งานระหว่างทำต้นงวด", accountcodes: ["1141-20"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-10", rowno: 100, rowtype: "account", title: "หัก: งานระหว่างทำปลายงวด", accountcodes: ["1141-20"], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
+        { id: "cog-9", rowno: 90, rowtype: "account", title: "บวก: งานระหว่างทำต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-10", rowno: 100, rowtype: "account", title: "หัก: งานระหว่างทำปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
         { id: "cog-11", rowno: 110, rowtype: "formula", title: "ต้นทุนสินค้าสำเร็จรูป", formula: "R80 + R90 + R100", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "cog-12", rowno: 120, rowtype: "account", title: "บวก: สินค้าสำเร็จรูปต้นงวด", accountcodes: ["1141-01"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-13", rowno: 130, rowtype: "account", title: "หัก: สินค้าสำเร็จรูปปลายงวด", accountcodes: ["1141-01"], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
+        { id: "cog-12", rowno: 120, rowtype: "account", title: "บวก: สินค้าสำเร็จรูปต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-13", rowno: 130, rowtype: "account", title: "หัก: สินค้าสำเร็จรูปปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
         { id: "cog-14", rowno: 140, rowtype: "formula", title: "ต้นทุนขายทั้งสิ้น", formula: "R110 + R120 + R130", style: { fontweight: "bold", indent: 0, underline: "double" } },
       ],
     },
@@ -752,18 +559,18 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       rows: [
         { id: "cf-1", rowno: 10, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมดำเนินงาน", style: { fontweight: "bold", indent: 0 } },
         { id: "cf-2", rowno: 20, rowtype: "account", title: "กำไร (ขาดทุน) สุทธิประจำงวด", accountcodes: ["__current_earnings__"], normalbalance: "credit", style: { indent: 1 } },
-        { id: "cf-3", rowno: 30, rowtype: "account", title: "ปรับปรุง: ค่าเสื่อมราคาและค่าตัดจำหน่าย", accountcodes: ["5311-90"], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cf-4", rowno: 40, rowtype: "account", title: "การเปลี่ยนแปลงในลูกหนี้การค้า (เพิ่มขึ้น) ลดลง", accountcodes: ["1131-01"], normalbalance: "credit", style: { indent: 1 } },
-        { id: "cf-5", rowno: 50, rowtype: "account", title: "การเปลี่ยนแปลงในสินค้าคงเหลือ (เพิ่มขึ้น) ลดลง", accountcodes: ["1141-01"], normalbalance: "credit", style: { indent: 1 } },
-        { id: "cf-6", rowno: 60, rowtype: "account", title: "การเปลี่ยนแปลงในเจ้าหนี้การค้า เพิ่มขึ้น (ลดลง)", accountcodes: ["2121-01"], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-3", rowno: 30, rowtype: "account", title: "ปรับปรุง: ค่าเสื่อมราคาและค่าตัดจำหน่าย", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cf-4", rowno: 40, rowtype: "account", title: "การเปลี่ยนแปลงในลูกหนี้การค้า (เพิ่มขึ้น) ลดลง", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-5", rowno: 50, rowtype: "account", title: "การเปลี่ยนแปลงในสินค้าคงเหลือ (เพิ่มขึ้น) ลดลง", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-6", rowno: 60, rowtype: "account", title: "การเปลี่ยนแปลงในเจ้าหนี้การค้า เพิ่มขึ้น (ลดลง)", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
         { id: "cf-7", rowno: 70, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมดำเนินงาน", formula: "SUM(R20:R60)", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-8", rowno: 80, rowtype: "blank", title: "" },
         { id: "cf-9", rowno: 90, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมลงทุน", style: { fontweight: "bold", indent: 0 } },
-        { id: "cf-10", rowno: 100, rowtype: "account", title: "เงินสดจ่ายเพื่อซื้อที่ดิน อาคาร และอุปกรณ์", accountcodes: ["1211-01"], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-10", rowno: 100, rowtype: "account", title: "เงินสดจ่ายเพื่อซื้อที่ดิน อาคาร และอุปกรณ์", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
         { id: "cf-11", rowno: 110, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมลงทุน", formula: "R100", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-12", rowno: 120, rowtype: "blank", title: "" },
         { id: "cf-13", rowno: 130, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมจัดหาเงิน", style: { fontweight: "bold", indent: 0 } },
-        { id: "cf-14", rowno: 140, rowtype: "account", title: "เงินสดรับจากเงินกู้ยืมระยะสั้น / ระยะยาว", accountcodes: ["2111-01", "2211-01"], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-14", rowno: 140, rowtype: "account", title: "เงินสดรับจากเงินกู้ยืมระยะสั้น / ระยะยาว", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
         { id: "cf-15", rowno: 150, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมจัดหาเงิน", formula: "R140", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-16", rowno: 160, rowtype: "formula", title: "เงินสดและรายการเทียบเท่าเงินสดเพิ่มขึ้น (ลดลง) สุทธิ", formula: "R70 + R110 + R150", style: { fontweight: "bold", indent: 0, underline: "double" } },
       ],

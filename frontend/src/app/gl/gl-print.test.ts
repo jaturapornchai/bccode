@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { GLJournal } from "@/lib/general-ledger";
-import { GLVoucherPrint, printAmountCell, printOrientation, printPageStyle, visiblePrintColumns } from "./gl-print";
+import type { GLJournal, GLReport } from "@/lib/general-ledger";
+import { GLStatementTable, GLVoucherPrint, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -76,5 +76,41 @@ describe("GLVoucherPrint", () => {
     expect(html).not.toContain("รหัสแผนก");
     // เจ้าหนี้ไม่มีเดบิต: ช่องว่าง ไม่ใช่ 0.00
     expect(html).not.toContain(">0.00<");
+  });
+});
+
+// หัวงบตาม TFRS for NPAEs ย่อหน้า 4.7 (ชื่อกิจการ ชื่องบ วันที่/งวด หน่วยเงิน) + คอลัมน์ปีก่อน ย่อหน้า 4.3 — ตัวเลขมาจาก backend
+describe("financial statement print", () => {
+  it("dates the heading as a point in time, a full year or a partial period", () => {
+    const period = { from: "2026-01-01", to: "2026-12-31" };
+    expect(statementPeriodText(period, true, true, tr, "th")).toBe("ณ วันที่ 31 ธันวาคม 2569");
+    expect(statementPeriodText(period, false, true, tr, "th")).toBe("สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569");
+    expect(statementPeriodText({ from: "2026-04-01", to: "2026-06-30" }, false, false, tr, "th")).toBe("สำหรับงวดตั้งแต่วันที่ 1 เมษายน 2569 ถึงวันที่ 30 มิถุนายน 2569");
+    expect(statementPeriodText(undefined, true, true, tr, "th")).toBe("");
+  });
+
+  it("shows zero as a dash unless the row asks for zero", () => {
+    expect(statementAmountText("0.00", false)).toBe("-");
+    expect(statementAmountText("0.00", true)).toBe("0.00");
+    expect(statementAmountText("-1234.50", false)).toBe("-1,234.50");
+    expect(statementAmountText("", false)).toBe("");
+  });
+
+  it("renders company, title, period, unit, comparative columns and underlines", () => {
+    const report: GLReport = {
+      columns: [{ key: "rowno", label: "ลำดับ" }, { key: "title", label: "รายการ" }, { key: "noteno", label: "หมายเหตุ" }, { key: "amount", label: "2569", amount: true }, { key: "prioramount", label: "2568", amount: true }],
+      rows: [
+        { rowno: "10", title: "สินทรัพย์", rowtype: "header", indent: "0", fontweight: "bold", amount: "", prioramount: "" },
+        { rowno: "20", title: "เงินสด", rowtype: "account", indent: "2", noteno: "3", amount: "219.75", prioramount: "0.00", showzero: "false" },
+        { rowno: "30", title: "", rowtype: "blank" },
+        { rowno: "40", title: "รวมสินทรัพย์", rowtype: "subtotal", indent: "0", fontweight: "bold", underline: "double", amount: "219.75", prioramount: "69.75" },
+      ],
+      totals: {}, totalrows: 4, warnings: [], asof: "", sequence: 1,
+    };
+    const html = renderToStaticMarkup(createElement(GLStatementTable, { report, company: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", title: "งบแสดงฐานะการเงิน", period: "ณ วันที่ 31 ธันวาคม 2569", showNote: true, tr }));
+    for (const text of ["บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", "งบแสดงฐานะการเงิน", "ณ วันที่ 31 ธันวาคม 2569", "(หน่วย : บาท)", ">2569<", ">2568<", ">หมายเหตุ<", ">219.75<", ">69.75<"]) expect(html).toContain(text);
+    expect(html).toContain('class="gl-statement-bold gl-statement-u-double">219.75<');
+    expect(html).toContain(">-<");
+    expect(html).not.toContain("ลำดับ");
   });
 });
