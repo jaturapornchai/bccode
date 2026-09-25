@@ -85,6 +85,9 @@ const CHAMP_SEARCH_ALIASES: Record<string, string[]> = {
   "financial-close": ["ปิดงบบัญชีสิ้นงวด"],
   "financial-statement-designer": ["ออกแบบงบการเงิน"],
   "general-ledger": ["บัญชีแยกประเภท"],
+  "gl-ap-outstanding": ["รายงานสถานะเจ้าหนี้", "เจ้าหนี้คงค้าง"],
+  "gl-ar-outstanding": ["รายงานสถานะลูกหนี้", "ลูกหนี้คงค้าง"],
+  "gl-bank-unmatched": ["รายงาน Bank Statement", "กระทบยอดธนาคาร"],
   "gl-account-mapping": ["รูปแบบการเชื่อมโยงบัญชีอัตโนมัติ", "Account Mapping"],
   "gl-budget": ["กำหนดงบประมาณประจำปี", "Budgeting"],
   "gl-opening-balance": ["บันทึกข้อมูลรายวันยกมา", "ยอดยกมาทางบัญชี"],
@@ -635,6 +638,10 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("profit-loss", "งบกำไรขาดทุน", "Profit and Loss", "/report/pnl", "report"),
           tx("balance-sheet", "งบดุล", "Balance Sheet", "/report/balancesheet", "report"),
           tx("budget-comparison-report", "รายงานเปรียบเทียบงบประมาณ", "Budget Comparison Report", "/report/budgetcomparison", "report"),
+          // 2026-09-25 รายละเอียดประกอบบัญชีตาม mydocs/specs/gl/spec.md (ยอดค้างรับ/จ่าย + Statement รอจับคู่) — Champ: รายงานสถานะลูกหนี้/เจ้าหนี้, รายงาน Bank Statement
+          tx("gl-ar-outstanding", "รายงานยอดคงค้างลูกหนี้", "Outstanding Receivables", "/report/ar-outstanding", "report"),
+          tx("gl-ap-outstanding", "รายงานยอดคงค้างเจ้าหนี้", "Outstanding Payables", "/report/ap-outstanding", "report"),
+          tx("gl-bank-unmatched", "รายงาน Statement ธนาคารที่ยังไม่จับคู่", "Unmatched Bank Statement Lines", "/report/bank-unmatched", "report"),
         ],
       },
       // 2026-09-23 ลุงจืด: ทุกอย่างอยู่ในระบบบัญชีแยกประเภท (ผู้ใช้ GL ตัวเดียว เช่น สำนักงานบัญชี ใช้ได้เลย) — ตรงกับ Champ ที่เมนูภาษีอยู่ใต้ GL

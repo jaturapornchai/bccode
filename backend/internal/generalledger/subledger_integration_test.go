@@ -291,6 +291,22 @@ func TestPostgresSubledgerAPNetAndBangkokCutoff(t *testing.T) {
 	if report.TotalRows != 2 || len(report.Rows) != 1 {
 		t.Fatal("report pagination/totals failed")
 	}
+	// เรียงตามคู่ค้า วันที่ เลขที่เอกสาร และแสดงชื่อคู่ค้าจากทะเบียน + ประเภทเอกสาร (ไม่ใช่ด้านหนี้ดิบ)
+	if row := report.Rows[0]; row["document_no"] != "AP-D" || row["partner_name"] != "supplier" || row["document_kind"] != "1" {
+		t.Fatalf("ap-outstanding first row = %v", row)
+	}
+	for _, column := range report.Columns {
+		if column.Key == "balance_side" {
+			t.Fatal("balance_side column must not be shown; amounts are already signed")
+		}
+	}
+	if report, err = f.store.pg.SubledgerReport(f.ctx, f.scope, "ap-outstanding", ReportQuery{To: "9999-12-30", Page: 2, Limit: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Rows) != 1 || report.Rows[0]["document_no"] != "AP-P" {
+		t.Fatalf("ap-outstanding page 2 = %v", report.Rows)
+	}
+	assertSubledgerAmount(t, Amount(report.Rows[0]["remaining_amount"]), "-20")
 	// 17:00 UTC is midnight of the next accounting day in Bangkok.
 	if _, err = f.db.Exec(`UPDATE gl_records SET payload=jsonb_set(payload,'{postedat}','"2026-01-11T00:00:00Z"'::jsonb) WHERE kind='journals' AND payload->>'status'='posted'; UPDATE gl_subledger_allocations SET created_at='2026-01-31 16:59:59+00' WHERE id='AP-AD'; UPDATE gl_subledger_allocations SET created_at='2026-01-31 17:00:00+00' WHERE id='AP-AP'`); err != nil {
 		t.Fatal(err)

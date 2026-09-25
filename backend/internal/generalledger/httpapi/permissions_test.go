@@ -44,6 +44,18 @@ func TestJournalSupportReadPermissions(t *testing.T) {
 			}
 		}
 	}
+	// สิทธิ์เฉพาะจอรายงานยอดคงค้าง เปิดได้เฉพาะรายงานของจอนั้น ไม่ลามไปอ่านหลักฐานรายวันหรือรายงานอื่น
+	for report, screen := range map[string]string{"ar-outstanding": "gl-ar-outstanding", "ap-outstanding": "gl-ap-outstanding", "bank-unmatched": "gl-bank-unmatched"} {
+		p := map[string]bool{screen: true}
+		if !canReadReport(p, report) || canReadJournalSupport(p) {
+			t.Fatalf("screen %s: report %s access wrong", screen, report)
+		}
+		for _, other := range []string{"ar-outstanding", "ap-outstanding", "bank-unmatched", "ledger"} {
+			if other != report && canReadReport(p, other) {
+				t.Fatalf("screen %s must not read %s", screen, other)
+			}
+		}
+	}
 	// สิทธิ์ตามรหัสสมุดแบบเก่า (jv-journal ฯลฯ) และ gl-unpost ไม่มีในเมนูแล้ว ต้องไม่เปิดสิทธิ์อ่าน
 	for _, p := range []map[string]bool{nil, {"sales-order": true}, {"gl-journals": false}, {"gl-journals:update": true}, {"jv-journal": true}, {"sv-journal": true}, {"gl-unpost": true}} {
 		if canReadJournalSupport(p) {

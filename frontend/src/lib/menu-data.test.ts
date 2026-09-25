@@ -74,7 +74,8 @@ describe("menu language labels", () => {
     const baseline = JSON.parse(readFileSync(resolve(process.cwd(), "src/lib/__fixtures__/menu-before-champ-upgrade.json"), "utf8")) as { id: string; route: string }[];
     const items = flattenMenuItems();
     expect(baseline).toHaveLength(194);
-    expect(items).toHaveLength(195);
+    // +3 รายงานยอดคงค้างลูกหนี้/เจ้าหนี้/Statement ในบัญชีแยกประเภท (2026-09-25)
+    expect(items).toHaveLength(198);
     for (const previous of baseline) {
       expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(previous.route);
     }

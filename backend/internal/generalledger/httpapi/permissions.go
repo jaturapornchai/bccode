@@ -3,8 +3,9 @@ package httpapi
 // Process and filing screens need the same source reports for their previews.
 // These grants are read-only; posting and configuration still require actions.
 func canReadReport(p map[string]bool, name string) bool {
+	// ผู้บันทึกรายวันดูยอดคงค้างประกอบการตัดยอดได้เสมอ; ผู้ที่ได้สิทธิ์เฉพาะจอรายงานก็อ่านได้
 	if name == "ar-outstanding" || name == "ap-outstanding" || name == "bank-unmatched" {
-		return canReadJournalSupport(p)
+		return allowed(p, reportScreens[name], "") || canReadJournalSupport(p)
 	}
 	if allowed(p, reportScreens[name], "") {
 		return true

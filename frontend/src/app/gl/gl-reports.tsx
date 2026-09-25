@@ -16,10 +16,17 @@ export async function fetchReport(name: string, filters: ReportFilters, page = 1
   return glRequest<GLReport>(`reports/${name}?${new URLSearchParams({ ...filters, ...(companywide ? { companywide: "true" } : {}), page: String(page), limit: String(limit), ...(snapshot === undefined ? {} : { snapshot: String(snapshot) }) })}`);
 }
 function reportRows(report: GLReport) { return report.rows ?? []; }
+// ยอดคงค้างลูกหนี้/เจ้าหนี้/Statement เป็นยอด ณ วันที่ (backend อ่านแค่ to + branchcode) จึงไม่ต้องเลือกปีบัญชี
+const AS_OF_REPORTS: ReadonlySet<string> = new Set(["ar-outstanding", "ap-outstanding", "bank-unmatched"]);
+function localToday() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 const reportTextLabels: Record<string, Record<string, GLLabel>> = {
   accounttype: accountTypeLabels,
   status: { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"], void: ["gl_cancel_draft", "ยกเลิกร่าง"] },
-  direction: { in: ["gl_money_in", "เงินเข้า"], out: ["gl_money_out", "เงินออก"] },
+  direction: { in: ["gl_money_in", "เงินเข้า"], out: ["gl_money_out", "เงินออก"], 1: ["gl_money_in", "เงินเข้า"], 2: ["gl_money_out", "เงินออก"] },
+  document_kind: { 1: ["gl_details_ui_1", "ตั้งหนี้"], 2: ["gl_details_ui_2", "ผลชำระที่เกิดแล้ว"], 3: ["gl_details_ui_3", "เพิ่มหนี้"], 4: ["gl_details_ui_4", "ลดหนี้"], 5: ["gl_opening_balance_2", "ยอดยกมา"] },
   category: { operating: ["gl_operating", "ดำเนินงาน"], investing: ["gl_investing", "ลงทุน"], financing: ["gl_raise_funds", "จัดหาเงิน"], unclassified: ["gl_not_specified", "ยังไม่ระบุ"] },
   budgetstatus: { open: ["gl_open", "เปิด"], closed: ["gl_closed", "ปิดแล้ว"] },
 };
@@ -339,13 +346,14 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const [drilledFrom, setDrilledFrom] = useState<{ report: string; filters: ReportFilters } | null>(null);
   const [drillDocument, setDrillDocument] = useState<{ docno: string; journalId: string } | null>(null);
 
-  const [filters, setFilters] = useState<ReportFilters>({ ...emptyReportFilters }), [applied, setApplied] = useState<ReportFilters | null>(null);
+  const [filters, setFilters] = useState<ReportFilters>(() => ({ ...emptyReportFilters, ...(AS_OF_REPORTS.has(name) ? { to: localToday() } : {}) })), [applied, setApplied] = useState<ReportFilters | null>(null);
+  const asOf = AS_OF_REPORTS.has(activeReportName);
   const [report, setReport] = useState<GLReport | null>(null), [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const set = (key: keyof ReportFilters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
 
   async function load(nextPage = 1, selected = filters, targetReport = activeReportName) {
-    if (!selected.fiscalyear || busy) return;
+    if (!(AS_OF_REPORTS.has(targetReport) ? selected.to : selected.fiscalyear) || busy) return;
     if (selected.from && selected.to && selected.from > selected.to) { setError(tr("gl_start_date_not_after_end", "วันเริ่มต้นต้องไม่เกินวันสิ้นสุด")); return; }
     setBusy(true); setError("");
     try {
@@ -391,7 +399,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         if (chunk.totalrows !== complete.totalrows || chunk.sequence !== complete.sequence || !chunk.rows?.length) throw new Error(tr("gl_data_changed_during_export_retry", "ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่"));
         complete.rows.push(...chunk.rows);
       }
-      downloadText(tr("gl_accounts_csv", "บัญชี-{0}-{1}.csv").replace("{0}", String(activeReportName)).replace("{1}", String(applied.fiscalyear)), reportCsv(complete), "text/csv;charset=utf-8");
+      downloadText(tr("gl_accounts_csv", "บัญชี-{0}-{1}.csv").replace("{0}", String(activeReportName)).replace("{1}", String(asOf ? applied.to : applied.fiscalyear)), reportCsv(complete), "text/csv;charset=utf-8");
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -426,6 +434,10 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     <Notice error text={error || refs.error} />
     <form className="shrink-0 grid gap-3" onSubmit={(event) => { event.preventDefault(); void load(); }}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {asOf ? <>
+        <Field label={tr("gl_as_of_date", "ณ วันที่")}><input className={control} type="date" required value={filters.to} onChange={(e) => set("to", e.target.value)} /></Field>
+        <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
+        </> : <>
         <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={filters.fiscalyear} onChange={(value) => { const year = refs.years.find((item) => item.code === value); setFilters((current) => ({ ...current, fiscalyear: value, from: year?.startdate ?? "", to: year?.enddate ?? "" })); }} /></Field>
         <Field label={tr("gl_from_date", "ตั้งแต่วันที่")}><input className={control} type="date" value={filters.from} onChange={(e) => set("from", e.target.value)} /></Field>
         <Field label={tr("gl_to_date", "ถึงวันที่")}><input className={control} type="date" value={filters.to} onChange={(e) => set("to", e.target.value)} /></Field>
@@ -434,8 +446,9 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         <Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={filters.departmentcode} onChange={(e) => set("departmentcode", e.target.value)} placeholder={tr("gl_all_departments", "ทุกแผนก")} /></Field>
         <Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={filters.projectcode} onChange={(e) => set("projectcode", e.target.value)} placeholder={tr("gl_all_projects", "ทุกโครงการ")} /></Field>
         <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={filters.bookcode} onChange={(value) => set("bookcode", value)}><option value="">{tr("gl_all_types", "ทุกสมุดรายวัน")}</option>{(refs.books ?? []).filter((book) => !book.isdeleted).map((book) => <option key={book.code} value={book.code}>{book.code} · {journalBookName(book, book.code, language)}</option>)}</Combobox></Field>
+        </>}
         <div className="flex flex-wrap items-end gap-2">
-          <Button type="submit" className={actionClass} disabled={busy || !filters.fiscalyear}>
+          <Button type="submit" className={actionClass} disabled={busy || !(asOf ? filters.to : filters.fiscalyear)}>
             <RefreshCw />
             {busy ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_show_report", "แสดงรายงาน")}
           </Button>
@@ -461,7 +474,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       </>
     ) : (
       <div className="rounded-xl border border-dashed border-border p-6 text-center text-muted-foreground">
-        {tr("gl_select_fy_and_conditions_show_report", "เลือกปีบัญชีและเงื่อนไข แล้วกดแสดงรายงาน")}
+        {asOf ? tr("gl_select_date_show_report", "เลือกวันที่ แล้วกดแสดงรายงาน") : tr("gl_select_fy_and_conditions_show_report", "เลือกปีบัญชีและเงื่อนไข แล้วกดแสดงรายงาน")}
       </div>
     )}
 

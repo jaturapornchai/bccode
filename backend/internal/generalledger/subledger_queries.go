@@ -148,7 +148,9 @@ func (p *Postgres) SubledgerReport(ctx context.Context, scope Scope, name string
 	report := Report{Rows: []map[string]string{}, Totals: map[string]string{}, Warnings: []string{}}
 	kind, filter := "documents", ""
 	money := []string{"posted_amount", "settled_amount", "remaining_amount"}
-	report.Columns = []ReportColumn{{Key: "document_no", Label: "เลขที่เอกสาร"}, {Key: "partner_code", Label: "คู่ค้า"}, {Key: "balance_side", Label: "ด้านหนี้"}, {Key: "document_date", Label: "วันที่"}, {Key: "due_date", Label: "ครบกำหนด"}, {Key: "posted_amount", Label: "ผ่านบัญชี", Amount: true}, {Key: "settled_amount", Label: "ตัดยอดแล้ว", Amount: true}, {Key: "remaining_amount", Label: "คงเหลือสุทธิ", Amount: true}}
+	// ยอดของเอกสารลดหนี้ (balance_side=2) ติดลบแล้ว จึงแสดงประเภทเอกสารแทนด้านหนี้
+	report.Columns = []ReportColumn{{Key: "partner_code", Label: "รหัสคู่ค้า"}, {Key: "partner_name", Label: "ชื่อคู่ค้า"}, {Key: "document_no", Label: "เลขที่เอกสาร"}, {Key: "document_kind", Label: "ประเภทเอกสาร"}, {Key: "document_date", Label: "วันที่"}, {Key: "due_date", Label: "ครบกำหนด"}, {Key: "posted_amount", Label: "ผ่านบัญชี", Amount: true}, {Key: "settled_amount", Label: "ตัดยอดแล้ว", Amount: true}, {Key: "remaining_amount", Label: "คงเหลือสุทธิ", Amount: true}}
+	order := "payload->>'partner_code',payload->>'document_date',payload->>'document_no',sortkey"
 	switch name {
 	case "ar-outstanding":
 		filter = `payload->>'ledger'='ar'`
@@ -157,6 +159,7 @@ func (p *Postgres) SubledgerReport(ctx context.Context, scope Scope, name string
 	case "bank-unmatched":
 		kind = "statements"
 		filter = "true"
+		order = "payload->>'bank_account_code',payload->>'transaction_date',sortkey"
 		money = []string{"amount", "matched_amount", "remaining_amount"}
 		report.Columns = []ReportColumn{{Key: "bank_account_code", Label: "บัญชีธนาคาร"}, {Key: "transaction_date", Label: "วันที่"}, {Key: "bank_reference", Label: "อ้างอิง"}, {Key: "direction", Label: "รับ/จ่าย"}, {Key: "amount", Label: "ยอด Statement", Amount: true}, {Key: "matched_amount", Label: "จับคู่แล้ว", Amount: true}, {Key: "remaining_amount", Label: "ยังไม่จับคู่", Amount: true}}
 	default:
@@ -185,7 +188,8 @@ func (p *Postgres) SubledgerReport(ctx context.Context, scope Scope, name string
 		for _, key := range money {
 			signed = append(signed, "'"+key+"',((payload->>'"+key+"')::numeric * CASE WHEN payload->>'balance_side'='2' THEN -1 ELSE 1 END)::text")
 		}
-		selectSQL = "SELECT sortkey,payload||jsonb_build_object(" + strings.Join(signed, ",") + ") AS payload FROM (" + selectSQL + ") gross"
+		partnerName := "'partner_name',COALESCE((SELECT p.payload->>'name_th' FROM gl_subledger_partners p WHERE p.company=$1 AND p.code=gross.payload->>'partner_code'),'')"
+		selectSQL = "SELECT sortkey,payload||jsonb_build_object(" + strings.Join(append(signed, partnerName), ",") + ") AS payload FROM (" + selectSQL + ") gross"
 	}
 	base := subledgerReadCTE + `, balances AS (` + selectSQL + `) `
 	where := ` WHERE ` + filter + ` AND (payload->>'remaining_amount')::numeric<>0`
@@ -227,7 +231,7 @@ func (p *Postgres) SubledgerReport(ctx context.Context, scope Scope, name string
 	if page > 1000000 {
 		return report, fmt.Errorf("เลขหน้ามากเกินกำหนด")
 	}
-	rows, err := tx.QueryContext(ctx, base+`SELECT payload FROM balances`+where+` ORDER BY sortkey LIMIT $5 OFFSET $6`, append(args, limit, (page-1)*limit)...)
+	rows, err := tx.QueryContext(ctx, base+`SELECT payload FROM balances`+where+` ORDER BY `+order+` LIMIT $5 OFFSET $6`, append(args, limit, (page-1)*limit)...)
 	if err != nil {
 		return report, err
 	}

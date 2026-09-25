@@ -1567,3 +1567,10 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 - **เหตุผล (Root Cause & Rationale)**: ม.87 + ประกาศฯ VAT ฉบับที่ 89 ข้อ 5 ให้ทำรายงานเป็นรายสถานประกอบการ และแบบมีหัวบังคับ — กระดาษที่พิมพ์ต้องใช้เป็นรายงานที่เก็บให้เจ้าหน้าที่ตรวจได้; ข้อความฝังในโค้ดไม่เปลี่ยนตามภาษา
 - **วิธีตรวจ**: Demo → บัญชีแยกประเภท › รายงานภาษีขาย → หัวรายงานมีชื่อบริษัท/เลขผู้เสียภาษี/สำนักงานใหญ่; เลือก "สำนักงานใหญ่" → payload `branchcode: "00000"` และยอดเท่าเดิมเมื่อบริษัทมีสาขาเดียว; ปีมี พ.ศ. ปีปัจจุบัน +1/−3
 - **อ้างอิง (Reference Implementation)**: `frontend/src/app/tax/tax-filing-workbench.tsx` (`vatBranch`, `activeEstablishment`, `columnLabels`, `register-header`); backend `backend/internal/goapi/handlers/tax_report.go` (`vatRecordsOfBranch`), `tax_money.go` (`loadTaxEstablishments`)
+
+## 8.50 รายงานยอด ณ วันที่ในจอรายงาน GL: ซ่อนตัวกรองที่ backend ไม่ใช้ (2026-09-25, ยอดคงค้างลูกหนี้/เจ้าหนี้/Statement)
+
+- **แบบแผนใหม่ (New Standard Pattern)**: รายงานที่ backend อ่านแค่ `to` + `branchcode` (ยอดคงค้าง ณ วันที่) ใส่ชื่อไว้ใน `AS_OF_REPORTS` ของ `GLReports` → ฟอร์มแสดงแค่ `ณ วันที่` (ค่าเริ่มต้น = วันนี้ตามเวลาเครื่อง) + `รหัสสาขา`, ปุ่มแสดงรายงานเปิดเมื่อมีวันที่, ข้อความว่างใช้ `gl_select_date_show_report`, ชื่อไฟล์ CSV ใช้วันที่แทนปีบัญชี; ค่ารหัสที่เป็นตัวเลข (`document_kind`, `direction` 1/2) แปลงเป็นป้ายผ่าน `reportTextLabels` ด้วย key เดิมของจอรายละเอียดรายวัน
+- **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern)**: ห้ามโชว์ ปีบัญชี/ช่วงวันที่/บัญชี/แผนก/โครงการ/สมุด ในรายงานที่ backend ไม่กรองตามช่องเหล่านั้น — ผู้ใช้จะเข้าใจว่ากรองแล้วแต่ตัวเลขไม่เปลี่ยน; ห้ามแสดงรหัสดิบ `1`/`2` หรือคอลัมน์ด้านหนี้เมื่อยอดติดเครื่องหมายแล้ว
+- **เหตุผล (Rationale)**: ยอดคงค้างเป็นยอดสะสมถึงวันที่ ไม่ผูกกับปีบัญชี; ตัวกรองหลอกทำให้คน 40+ สับสนและไว้ใจตัวเลขผิด; key ภาษาในจอ GL ต้องขึ้นต้น `gl_` (test `gl-language-keys.test.ts`) จึงเพิ่ม `gl_as_of_date` แทนการยืม `as_date`
+- **อ้างอิง (Reference Implementation)**: `frontend/src/app/gl/gl-reports.tsx` (`AS_OF_REPORTS`, `localToday`, `reportTextLabels.document_kind`); backend `backend/internal/generalledger/subledger_queries.go` (`SubledgerReport` เรียงคู่ค้า/วันที่ + `partner_name`)

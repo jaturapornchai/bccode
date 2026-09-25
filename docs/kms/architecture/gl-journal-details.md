@@ -47,6 +47,12 @@ API และ MCP ใช้ token คนละชนิด ผูก Holding แ
 | Statement ยังไม่จับคู่ | `GET /gl/v2/reports/bank-unmatched?to=2026-12-31` | `gl_report`, report=`bank-unmatched` |
 | สร้าง/แก้/กระทบยอด | `POST /gl/v2/command` | `gl_command`, command ใช้ contract เดียวกัน |
 
+จอ (2026-09-25): เมนู บัญชีแยกประเภท › รายงานการเงินและงบบัญชี › `รายงานยอดคงค้างลูกหนี้` (`/report/ar-outstanding`), `รายงานยอดคงค้างเจ้าหนี้` (`/report/ap-outstanding`), `รายงาน Statement ธนาคารที่ยังไม่จับคู่` (`/report/bank-unmatched`) ใช้ `GLReports` โหมดยอด ณ วันที่ (`AS_OF_REPORTS` ใน `frontend/src/app/gl/gl-reports.tsx`) — กรองแค่ ณ วันที่ + สาขา ไม่ต้องเลือกปีบัญชี
+
+- เอกสารค้าง: เรียงรหัสคู่ค้า → วันที่ → เลขที่เอกสาร, มีชื่อคู่ค้าจากทะเบียน `gl_subledger_partners.payload->>'name_th'` และประเภทเอกสาร (1 ตั้งหนี้ / 2 ผลชำระ / 3 เพิ่มหนี้ / 4 ลดหนี้ / 5 ยอดยกมา) แทนด้านหนี้ดิบ เพราะยอดเอกสารลดหนี้ติดลบแล้ว (`backend/internal/generalledger/subledger_queries.go` `SubledgerReport`)
+- Statement: เรียงบัญชีธนาคาร → วันที่รายการ, ทิศทาง 1/2 แสดงเป็น เงินเข้า/เงินออก
+- สิทธิ์: อ่านได้เมื่อมีสิทธิ์จอรายงานนั้น (`gl-ar-outstanding` / `gl-ap-outstanding` / `gl-bank-unmatched`) หรือสิทธิ์อ่านหลักฐานรายวัน (`canReadReport` ใน `httpapi/permissions.go`)
+
 API token เข้าทาง `/integration/gl/v2` (ผ่านเว็บ `/api/integration/gl`) พร้อม `X-BC-Company-Code` หรือ readonly `X-BC-Company-Codes`. MCP endpoint `/mcp/gl` และชื่อบริษัทอยู่ใน arguments. Support kinds: `partners`, `bank-accounts`, `documents`, `allocations`, `settlements`, `statements`, `bank-lines`, `matches`; รองรับ `q,page,limit,asof`. ค่าเงินในผลลัพธ์เป็นข้อความด้วย. รายงาน AR/AP ใช้ยอดสุทธิ: เพิ่มหนี้เป็นบวก ลดหนี้เป็นลบ; รายการ `journal-support` แสดงยอดบวกแยกแต่ละเอกสารสำหรับเลือกตัดยอด.
 
 ตัวอย่าง arguments ของ MCP ที่อ่านเอกสารค้างจากบริษัทที่ token อนุญาต:

@@ -332,6 +332,9 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/gl/journal-books": "folder",
   "/report/gljournal": "fileText",
   "/report/budgetcomparison": "barChart",
+  "/report/ar-outstanding": "fileText",
+  "/report/ap-outstanding": "fileText",
+  "/report/bank-unmatched": "fileText",
 };
 
 export function menuIconKeyForRoute(route: string, category: MenuCategory): MenuIconKey {
