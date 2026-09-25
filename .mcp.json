@@ -1,23 +1,11 @@
 {
   "mcpServers": {
-    "mongodb": {
-      "command": "node",
-      "args": [
-        "C:/Users/jatur/AppData/Roaming/npm/node_modules/mongodb-mcp-server/dist/esm/index.js"
-      ],
-      "env": {}
-    },
     "docker": {
       "command": "node",
       "args": [
         "C:/Users/jatur/AppData/Roaming/npm/node_modules/mcp-server-docker/dist/index.js"
       ],
       "env": {}
-    },
-
-    "mongomodel": {
-      "type": "http",
-      "url": "http://localhost:3100/mcp"
     },
     "playwright": {
       "command": "node",
@@ -32,7 +20,6 @@
       "env": {},
       "disabled": true
     },
-
     "windows": {
       "command": "uvx",
       "args": [

@@ -325,6 +325,11 @@ sidebar/โหมดเมนูบน = ช่องค้นหา header ก�
 
 กฎผลิตภัณฑ์ "อย่างน้อยต้องมี 1 สกุลเงิน" — ปรับทั้ง Go + UI:
 
+> **สถานะปัจจุบัน:** backend สกุลเงิน (guard ด้านล่าง + repository บน MongoDB) ถูกลบแล้ว
+> (commit `f76df3a1` และ ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`)
+> — `frontend/src/app/currency/currency-screen.tsx` และ BFF `/api/currency` ยังอยู่แต่ backend `/currency`
+> ไม่มีแล้ว; กฎ "อย่างน้อย 1 สกุลเงิน" ต้องทำใหม่บน PostgreSQL เมื่อสร้าง API
+
 - **Backend guard** (`currency_http_service.go`): lastActiveCurrencyGuard ใน
   UpdateCurrency (case disable) / DeleteCurrency / DeleteCurrencyByGUIDs —
   นับ active ที่จะ "รอด" หลังกระทบ (active ที่ guid ไม่อยู่ในชุดที่ลบ) เหลือ 0
@@ -365,7 +370,10 @@ sidebar/โหมดเมนูบน = ช่องค้นหา header ก�
     refetch เกิดเองที่ window focus ซึ่ง effect มีอยู่แล้ว)
 - **chip จำนวนเซสชัน** (ผู้ใช้ขอ "กี่เครื่องกำลังใช้ระบบ"): backend
   `GET /sessions/active-count` (authentication_http.go + AuthService.
-  ActiveSessionStats ใน auth.go — SCAN Redis session-* ตัด session-revoked-*,
+  ActiveSessionStats ใน auth.go — `cacher.Keys("session-*")` ตัด session-revoked-*
+  (session ย้ายจาก Redis มาตาราง `cache_entries` ของ PostgreSQL แล้วตั้งแต่
+  2026-09-23, ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`
+  — `backend/pkg/microservice/cacher.go`),
   active = lastseenat ≤ 30 นาที, แยก holdingcode) → proxy Next
   `/api/auth/sessions` → chip ชิดขวาใน breadcrumb "ผู้ใช้งานออนไลน์: N เซสชัน"
   + title รายละเอียดต่อ holding; โหลดตอน mount + ทุก focus; ล้มเงียบ (ข้อมูลประกอบ)
@@ -404,24 +412,29 @@ sidebar/โหมดเมนูบน = ช่องค้นหา header ก�
   กระจุก) — ชุด login-page (test.use storageState: empty) ไม่ต้อง chain
 - ชุดที่เปิด /menu ตรง ๆ (menu-session-feedback) ต้องมี openMenu self-heal
   (เจอ Dev Login = cookie ตาย → login ใหม่ → กลับ /menu) กัน cookie เก่าตั้งแต่ตัวแรก
-- **execSync บน Windows = cmd.exe**: ห้าม pipe/while/$( ) ในคำสั่ง — ถ้าต้อง
-  รวมข้อมูลฝั่ง Redis ให้เขียนเป็น Lua EVAL คำสั่งเดียว
-  (`redis-cli EVAL "local ks=redis.call('keys','session-*') ..." 0` — ใน Lua ใช้
-  single-quote เท่านั้น cmd ไม่ตีความ)
+- **execSync บน Windows = cmd.exe**: ห้าม pipe/while/$( ) ในคำสั่ง และ cmd.exe
+  กิน double-quote — ตรวจฐานข้อมูลจาก spec ให้ใช้ helper `tests/support/pg.ts`
+  (`pgRow`/`pgCount` เรียก `docker exec <container> psql` ผ่าน `execFileSync`
+  ไม่ผ่าน shell จึงไม่ติดปัญหา quote) — session อยู่ในตาราง `cache_entries`
+  ของ PostgreSQL ตั้งแต่ Redis ถูกถอด 2026-09-23 (ADR
+  `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`)
 - **IAB จอ /workspace**: ปุ่มการ์ดบริษัท getByRole กับชื่อไทย timeout ทั้งที่มีจริง
   (DOM re-render ตลอด) — ใช้ `page.evaluate` หา `[...document.querySelectorAll('button')].find(x=>x.textContent.includes('TST03')).click()` แทน
 
 ## 4.21) รูปพนักงาน: อัปโหลด → S3 + thumbnail (กฎรูปภาพ 2026-08-31)
 
-กฎใหม่ (AGENTS.md): รูปห้ามเก็บ Mongo — เก็บ S3/MinIO + ต้องมี thumbnail เสมอ
+กฎใหม่ (AGENTS.md): รูปห้ามเก็บในฐานข้อมูล — เก็บ S3/MinIO + ต้องมี thumbnail เสมอ
 
 - **เปิดฟิลด์รูป**: config จอ (system-setting-screens.ts) เพิ่ม
   `imageUploadField("profilepicture", "รูปพนักงาน", "Employee photo", undefined, "profilepicturethumb")`
   — thumbnailKey = ชื่อ field thumb (บังคับตามกฎ) — editor เดิม
   (image-upload-editor.tsx) ย่อรูป + อัปโหลด 2 ไฟล์อัตโนมัติผ่าน /api/upload/image
-- **backend**: models.Employee (ทั้ง internal/models และ shop/employee/models)
-  เพิ่ม `ProfilePictureThumb json/bson:"profilepicturethumb"` — ไม่งั้น PUT
-  รับค่าแล้วเงียบ ๆ ทิ้ง field thumb (พฤติกรรม binding unknown field = drop)
+- **backend**: `models.Employee` (`backend/internal/shop/employee/models/employee.go`)
+  เพิ่ม `ProfilePictureThumb json:"profilepicturethumb"` — ไม่งั้น PUT รับค่าแล้ว
+  เงียบ ๆ ทิ้ง field thumb (JSON binding ทิ้ง unknown field) ปัจจุบัน Employee อยู่บน
+  PostgreSQL: ฟิลด์ใหม่ต้องเพิ่มครบทั้ง struct, คอลัมน์ `profile_picture_thumb`
+  ใน `backend/internal/centraldb/centraldb.go` และ `employeeColumns`/INSERT/UPDATE
+  ใน `backend/internal/shop/employee/employee_http.go` (ตกหล่นจุดใดค่าก็หายเงียบ ๆ)
 - **แสดงผล**: list + detail header ใช้ LogoAvatar (authenticated image → blob:
   src ปกติ) — ลำดับ uri: `profilepicturethumb → profilepicture → avatarthumb → avatar`
   (thumb ก่อนเสมอตามกฎ)
@@ -430,10 +443,12 @@ sidebar/โหมดเมนูบน = ช่องค้นหา header ก�
   PNG เสียโดน handler ปฏิเสธตอน decode สร้าง thumbnail ("zlib: invalid checksum")
   (3) waitForResponse ต้อง match `/api/upload/image` (Next proxy ที่จอยิง) ไม่ใช่
   `/goapi/image/upload` (server-side) (4) ตรวจ S3 ด้วย `docker exec minio ls
-  /data/bcai-account/<key>` (5) execSync mongosh: ใช้ single-quote ใน JS query
-  กัน cmd.exe กิน double-quote
-- ผลจริง: Mongo = URI คู่ (ต้นฉบับ+thumb) ไม่มี binary · MinIO มี object จริง ·
-  list/detail แสดงรูปผ่าน authenticated image
+  /data/bcai-account/<key>` (5) ตรวจค่าในฐานข้อมูลผ่าน `pgRow` ของ
+  `tests/support/pg.ts` (ดูกฎ execSync ใน §4.19)
+- ผลจริง (2026-08-31 ยุคก่อนย้ายฐาน): ฐานข้อมูลเก็บ URI คู่ (ต้นฉบับ+thumb) ไม่มี
+  binary · MinIO มี object จริง · list/detail แสดงรูปผ่าน authenticated image —
+  ปัจจุบัน `tests/employee-photo.spec.ts` ตรวจคอลัมน์ `profile_picture` /
+  `profile_picture_thumb` ใน PostgreSQL ด้วย `pgRow`
 - **ตามมา (2026-08-31 เย็น)**: แทรกรูปไว้ fields[0] ทำ "รหัส:" ใน detail โชว์ URI —
   เพราะ recordDisplayCode → recordBusinessLookup อ่าน `config.fields[0].key` ก่อน
   record.code — แก้ด้วย `businessCodeField("code", ...)` (mark businessCode:true,
@@ -579,10 +594,7 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 - เมนูหลัก: ลบ 3 item ออกจาก `MENU_SECTIONS` (menu-data.ts) และลบโฟลเดอร์ `company-settings`
   (main-menu-screen.tsx) → ตั้งค่า เหลือ ภาษาที่ใช้งาน + ตั้งค่าทั่วไป
 - ผลข้างเคียงที่รู้: `useScreenActions` map route→รหัสจอผ่านเมนู — จอที่ไม่อยู่ในเมนูจะไม่ล็อกปุ่ม
-  (ADMIN/OWNER เท่านั้นที่เข้า wizard ได้อยู่แล้ว); รหัสสิทธิ์ `currency/company-type/employee`
-  ยังอยู่ใน permissiondefinition ของ backend
-- MongoModel MCP: workflow `company_settings_hub` (project "BC Ai Account") บันทึกโครงนี้ไว้
-  — เวลาย้าย/รวมจอ ให้บันทึก workflow ที่นั่นด้วยเสมอ (ลุงจืดใช้เป็น bcmodel)
+  (ADMIN/OWNER เท่านั้นที่เข้า wizard ได้อยู่แล้ว)
 - แบบแผน: "hub ขั้นตอน + แท็บย่อย" ใช้ปุ่ม tab `min-h-10 rounded-lg` active = bg-primary; key ของ
   SystemSettingsScreen ต้องรวม route ของแท็บเพื่อ remount ตอนสลับ
 - **ต่อมาในวันเดียวกัน**: ลุงจืดสั่งถอด "ตั้งค่าทั่วไป" (LINE OA, ออกแบบฟอร์ม, แจ้งเตือน LINE, ผู้ให้บริการ AI,
@@ -606,7 +618,7 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
   — การรวมเป็น entity เดียวยังไม่ทำ (ต้องเปลี่ยน schema) นิยาม "พนักงาน" เคยเขียนไว้ใน `docs/organization.md` ซึ่งถูกลบไปพร้อม business-rule docs เมื่อ 2026-09-03 (ยังไม่มีเอกสารแทน — ต้องถามลุงจืด)
 - ขั้น 3: ตารางสิทธิ์มีปุ่ม **ใช้ค่าแนะนำ** (`RoleScreenMatrix role=`; USER = เข้า+เพิ่ม+แก้ไข, ADMIN/OWNER = ทั้งหมด, กับจอที่แสดงอยู่)
   + แท็บ รายการจอทั้งหมด (permissiondefinition) แทนการเป็นขั้นแยก
-- MongoModel: workflow `system_setup_steps` (rev 1355) · เมนูหลักไม่มีหมวด ตั้งค่า
+- เมนูหลักไม่มีหมวด ตั้งค่า
 
 ## 4.31) อัปโหลดรูป local ล้ม "Failed to upload image to storage" ทั้งที่ env ถูก → ดู bootstrap.json (2026-09-02)
 - **อาการ:** upload PNG (โลโก้สาขา ฯลฯ) ตอบ `Failed to upload image to storage`; `docker logs mainapi` มี `S3 … 403 InvalidAccessKeyId` ทั้ง GetObject/PutObject แม้ `docker exec mainapi env` และ `/proc/1/environ` แสดง `S3_ACCESS_KEY_ID` ที่ถูกต้อง และ `mc` ด้วย creds เดียวกัน (ผ่าน `--network container:mainapi`) ใช้ได้
@@ -620,30 +632,28 @@ stagger ของลูก ผ่าน `initial={false} animate="animate"` ต�
 - **ขั้น 3 ชุดสิทธิ์ (`permissiongroup`):** `rolecode` เป็น `businessCodeField` (พิมพ์อะไรก็ได้ → proxy ทำ uppercase+ตัดช่องว่าง; backend regex `^[A-Z0-9_-]{2,30}$` กันเรียกตรง) · ตาราง `RoleScreenMatrix` เดิม · ปุ่ม "ใช้ค่าแนะนำ" โผล่เฉพาะ USER/ADMIN/OWNER
 - **ขั้น 2 ผู้ใช้งาน (`user`):** ฟิลด์ `permissionsets` (jsonField) เรนเดอร์ด้วย `PermissionSetsEditor` (`field-editors/permission-sets-editor.tsx`): การ์ด checkbox หลายคอลัมน์ + ค้นหาเมื่อ >6 ชุด + badge จำนวน · ซ่อน USER/ADMIN/OWNER ออกจากตัวเลือก (มาจาก radio ระดับสิทธิ์อยู่แล้ว) · empty state ชี้ไปขั้น 3
 - **กับดัก:** จอ user มี renderer 2 ชุดที่ hard-code `sections[].keys` (`system-settings-screen.tsx` ~4780 และ `setting-form-dialog.tsx` ~249) **และ** `FieldEditor` ซ้ำ 2 ที่ (`components/system-settings/field-editor.tsx` + local ใน `system-settings-screen.tsx` ~8598) — เพิ่มฟิลด์ใหม่ต้องแตะทั้ง 4 จุด ไม่งั้นได้ textarea JSON ดิบ
-- **Backend:** `shopusers.permissionsets []string` (normalize uppercase/dedup ตอน save; copy ลง profile ทั้ง list+info) · `/organization/role-permission/me` คืน `permissions` ที่ union แล้ว + `permissionsets`; ADMIN/OWNER ที่ไม่มี record ของ role ตัวเองยังได้ `*` เสมอ (บั๊กที่เจอตอน verify: union แล้ว owner หลุด `*`) · unit test `union_test.go` · bcmodel diagram "การ Login" (shopusers.permissionsets, role_permission.rolecode)
+- **Backend (ปัจจุบันบน PostgreSQL):** ชุดสิทธิ์ของสมาชิกเก็บที่ `holding_members.permission_sets` (JSONB, `backend/internal/centraldb/centraldb.go`) · `/organization/role-permission/me` (`backend/internal/organization/rolepermission/role_permission_http.go`) คืน `permissions` ที่ union จาก `role_permissions` ของ role + ทุกชุด พร้อม `permissionsets`; ADMIN/OWNER ได้ `*` เสมอ (บั๊กที่เจอตอน verify ครั้งแรก: union แล้ว owner หลุด `*`)
 - **Verify:** สร้างชุด `sales` ผ่าน UI → list แสดง `SALES` · ผู้ใช้ติ๊ก/ปลดชุดในการ์ดได้ · API `/me` owner = `["*"]` + sets · `permtest`: username ว่าง (Google-only owner) กดบันทึกจอ user ไม่ผ่าน "กรุณากรอกช่องที่จำเป็น" = ปัญหาเดิมนอกขอบเขต (flag แล้ว)
 
 ## 4.33) ลำดับตั้งค่าระบบ: ธุรกิจ → สิทธิ์การใช้งาน → คน → ตรวจสอบ (2026-09-02)
 - **ทำไมสลับ (ลุงจืดยืนยัน + Kimi K3 เห็นตรงกัน):** wizard ต้องเดินหน้าอย่างเดียว — จอบัญชีเข้าระบบเลือกชุดสิทธิ์ ถ้าชุดอยู่ขั้นหลังผู้ใช้ต้องข้ามไปสร้างแล้วย้อน · SME ไทยคิด "กำหนดหน้าที่ก่อน แล้วจับคนลง" · ขั้นสิทธิ์ข้ามได้ (ชุดมาตรฐานมีเสมอ)
 - **คำที่ใช้ทั้งระบบ:** "สิทธิ์การใช้งาน" (ไม่ใช้ "ชุดสิทธิ์"/"Permission Set" ในจอ) — แท็บขั้น 2 = "ชุดสิทธิ์การใช้งาน", ช่องในจอบัญชี = "สิทธิ์การใช้งานเพิ่มเติม"
-- **จุดแก้เมื่อสลับขั้น:** `workspace-screen.tsx` `STEP_TABS` + `accessSettingNavItems` (ลำดับ object = ลำดับขั้น, `stepProgress` ใช้ route key จึงไม่ต้องแก้) · ข้อความ "ขั้น N" ที่ hard-code ใน `permission-sets-editor.tsx`, `system-settings-screen.tsx` ~4784, `setting-form-dialog.tsx` ~252 · bcmodel workflow `system_setup_steps` (rev 1358)
+- **จุดแก้เมื่อสลับขั้น:** `workspace-screen.tsx` `STEP_TABS` + `accessSettingNavItems` (ลำดับ object = ลำดับขั้น, `stepProgress` ใช้ route key จึงไม่ต้องแก้) · ข้อความ "ขั้น N" ที่ hard-code ใน `permission-sets-editor.tsx`, `system-settings-screen.tsx` ~4784, `setting-form-dialog.tsx` ~252
 - **Verify:** เปิด /workspace → ตั้งค่าระบบ → sidebar 1 ธุรกิจของฉัน / 2 สิทธิ์การใช้งาน / 3 คนในองค์กร / 4 ตรวจสอบ, ปุ่ม "ถัดไป: สิทธิ์การใช้งาน" · tsc + vitest ผ่าน
 - **ระยะถัดไป (Kimi เสนอ):** ปุ่ม "สร้างชุดใหม่" แบบ modal ในจอบัญชีเข้าระบบ เป็น safety net สำหรับคนที่ข้ามขั้น 2
 
 ## 4.34) ปุ่ม "ทดลองใช้ระบบ (Demo)" แทน Dev Login + ข้อมูลตัวอย่าง SME ไทย (2026-09-02)
-- **สิ่งที่ทำ:** login-screen ปุ่ม Dev (loopback-only) → ปุ่ม Demo แสดงทุก environment เรียก `/api/auth/demo-login` → backend `POST /demo-login` (public, whitelist ใน `main.go` + `cmd/*/main.go` exceptShopPath, blocked ที่ `/backend/demo-login` ใน next.config เหมือน dev-login) · เปิดด้วย `BCAI_DEMO_LOGIN_ENABLED=true` (+`BCAI_DEMO_USERNAME`, default `demo`) — local: `docker-compose.yml` default true, prod: `provision-server.sh` backend.env
+- **สิ่งที่ทำ:** login-screen ปุ่ม Dev (loopback-only) → ปุ่ม Demo แสดงทุก environment เรียก `/api/auth/demo-login` → backend `POST /demo-login` (public, whitelist ใน `backend/main.go`, blocked ที่ `/backend/demo-login` ใน next.config เหมือน dev-login) · เปิดด้วย `BCAI_DEMO_LOGIN_ENABLED=true` (+`BCAI_DEMO_USERNAME`, default `demo`) — local: `backend/docker-compose.yml` default true, prod: `deploy/account/provision-server.sh` backend.env
 - **Backend:** `internal/demo` (env helper) · `DemoLoginByUsername` สร้าง user `demo` อัตโนมัติครั้งแรก (RegisterByUsername, password สุ่ม) audit `DEMO_LOGIN` · `creator_access.go` ยกเว้นเงื่อนไข Google Identity ให้ demo user ตอนสร้างองค์กร (เฉพาะเมื่อ demo เปิด)
-- **Seed:** `node scripts/seed-demo.mjs` (`SEED_BASE=https://…` สำหรับ server) อ่าน `scripts/demo-data.json` (Kimi K3 ร่าง, Claude verify EAN-13 checksum + dedup ข้ามบริษัท) — 1 holding `demo` / 3 บริษัท (วัสดุก่อสร้าง 2 สาขา, คาเฟ่, หจก.ซื้อมาขายไป) / 6 แผนก / 4 ชุดสิทธิ์ / 12 พนักงาน / 15 สินค้า+8 ลูกค้า+6 ผู้ขาย ต่อบริษัท · idempotent (dup = skip)
-- **กับดักที่เจอ:** (1) `/backend/:path*` rewrite ชี้ mainapi root — ห้ามใช้ `/backend/goapi/...` สำหรับ auth routes (2) create-holding/company/branch ตอบแค่ success ต้อง GET list กลับมาเอา uid (3) เจ้าของต้องมี `accessscopes` ครอบทุกบริษัท ไม่งั้น `select-holding` รายบริษัท 403 — PUT `/holding/permission` ต้อง key ด้วย `editusername=useruid` + `username:""` ไม่งั้น upsert เป็น membership ซ้ำ (4) ลบข้อมูล holding ทิ้งต้องลบ `organizationcodeclaims.normalizedcode` ด้วย ไม่งั้น create-holding เงียบแต่ไม่สร้าง (5) barcode `prices[].price` เป็น number, branch `addresses[].address` เป็น string
+- **Seed:** `node scripts/seed-demo.mjs` (`SEED_BASE=https://…` สำหรับ server) อ่าน `scripts/demo-data.json` (Kimi K3 ร่าง, Claude verify EAN-13 checksum + dedup ข้ามบริษัท) — 1 holding `demo` / 3 บริษัท (วัสดุก่อสร้าง 2 สาขา, คาเฟ่, หจก.ซื้อมาขายไป) / 6 แผนก / 4 ชุดสิทธิ์ / 12 พนักงาน / 15 สินค้า+8 ลูกค้า+6 ผู้ขาย ต่อบริษัท · idempotent (dup = skip) — **สถานะ 2026-09-23:** ขั้นสินค้า/บาร์โค้ด/ลูกหนี้/เจ้าหนี้ในสคริปต์ยิง API บน MongoDB (`/product/*`, `/debtaccount/*`) ที่ถูกถอดแล้ว (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`)
+- **กับดักที่เจอ:** (1) `/backend/:path*` rewrite ชี้ mainapi root — ห้ามใช้ `/backend/goapi/...` สำหรับ auth routes (2) create-holding/company/branch ตอบแค่ success ต้อง GET list กลับมาเอา uid (3) เจ้าของต้องมี `accessscopes` ครอบทุกบริษัท ไม่งั้น `select-holding` รายบริษัท 403 — PUT `/holding/permission` ต้อง key ด้วย `editusername=useruid` + `username:""` ไม่งั้น upsert เป็น membership ซ้ำ (4) branch `addresses[].address` เป็น string
 - **Verify:** local กดปุ่ม → หน้าเลือกกลุ่มกิจการ "กลุ่มกิจการรุ่งเรือง (สาธิต) 3 บริษัท 4 สาขา" → เลือกบริษัทได้ทั้ง 3 · Go tests organization/services ผ่าน (builder stage)
 
 ## 4.35) หน้าแรก (ภาพรวม) = งานของฉันวันนี้ ตามสิทธิ์ (2026-09-02)
 - **แนวคิด (ลุงจืดยืนยัน):** ไม่ทำ dashboard แยกต่อบทบาท — widget ผูกกับรหัสจอ แสดงเฉพาะที่ `allowedMenuIds` (union ชุดสิทธิ์จาก `/permissiongroup/me`) มี; ไม่มีสิทธิ์ = ไม่แสดง (ไม่ใช่เลข 0)
-- **ไฟล์:** `src/app/menu/dashboard-home.tsx` (แทน `DashboardHome` เปล่าใน main-menu-screen) props: auth, workspace, allowedMenuIds, allMenuItems, frequentMenuEntries, onOpenItem, mainApiUrl (`deriveMainApiUrl(auth.backendUrl)` → `/backend` root)
-- **3 แถว:** เอกสารที่ดูแล (การ์ดตัวเลข `total` จาก `/transaction/<doc>/list?limit=5` ต่อประเภท, กดเปิดแท็บจอ) · ทางลัด (`getFrequentMenuEntries` ≥4 อัน ไม่งั้นเติมจอที่มีสิทธิ์) · ความเคลื่อนไหวล่าสุด (รวม 5 รายการล่าสุดทุกประเภท เรียง `docdatetime`, แสดง docno/คู่ค้า `custnames|creditornames`/`totalamount`)
-- **กับดัก:** menu id ≠ ชื่อ route: ขายสินค้า = `sale` (ไม่ใช่ sale-invoice), ปรับปรุงสต็อก = `stock-adjust`; list endpoint คืน `total` ระดับบน ไม่ใช่ใน pagination; ยังไม่มี filter สถานะ/ช่วงวัน (param "-" = docdatetime range ยังไม่ได้ใช้)
-- **ยังไม่ทำ (เฟส 2):** แถวตัวเลขเงิน (ยอดขาย/ซื้อ/กำไร — ไม่มี summary endpoint), รออนุมัติ (`/api/approval/*-status/pending` เป็น POST payload ยังไม่ได้ไล่), สินค้าใกล้หมด, ประกาศจากเจ้าของ
-- **Verify:** demo owner เห็นการ์ด 8 ประเภท (0 เอกสาร) + ทางลัด 8 + empty state; tsc/eslint ผ่าน
+- **ไฟล์:** `frontend/src/app/menu/dashboard-home.tsx` (`DashboardHome`) props: auth, language, backendLanguage, allowedMenuIds, allMenuItems, frequentMenuEntries, onOpenItem, onOpenManageShortcuts
+- **สถานะ 2026-09-23:** เดิมมี 3 แถว (การ์ดเอกสารที่ดูแล + ความเคลื่อนไหวล่าสุด จาก `/transaction/<doc>/list` + ทางลัด) — วิดเจ็ตเอกสาร/ความเคลื่อนไหวถูกถอดพร้อม API บน MongoDB (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`) **เหลือเฉพาะทางลัดของฉัน**: ใช้เมนูที่ใช้บ่อย ≥4 อัน ไม่งั้นเติมจอที่มีสิทธิ์ ครบ 8 และข้ามจอที่ยัง "รอพัฒนา" (`isMenuScreenPending`) เพื่อให้ผู้ใช้ GL อย่างเดียวไม่เจอทางลัดที่เปิดไม่ได้
+- **วิธีตรวจ:** กด Demo → หน้าแรกต้องแสดงทางลัดไม่เกิน 8 อันและไม่มีจอที่ขึ้น "รอพัฒนา"; tsc/eslint
 
 ## 4.36) กับดัก: sidebar โชว์แต่ตัวเลข (ไม่มีไอคอน/label) หลัง restart dev server = tab ค้าง ไม่ใช่ CSS bug (2026-09-04)
 

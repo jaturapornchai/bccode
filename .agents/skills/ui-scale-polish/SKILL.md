@@ -207,8 +207,8 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - **High Information Density**: ผู้ใช้สามารถกรอกและตรวจทานที่เก็บสินค้าได้หลายสิบรายการในหน้าจอเดียว
       4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
          - หน้าจอผังคลังและตารางที่เก็บสินค้า: [`frontend/src/app/system-settings/warehouse-tree-view.tsx`](../../../frontend/src/app/system-settings/warehouse-tree-view.tsx)
-         - สเปกการตั้งค่าเมนูและฟิลด์: [`frontend/src/lib/system-setting-screens.ts`](../../../frontend/src/lib/system-setting-screens.ts#L1455-L1472)
-         - การทดสอบ E2E อัตโนมัติ: [`frontend/e2e/product-warehouse-crud.spec.ts`](../../../frontend/e2e/product-warehouse-crud.spec.ts#L197-L265)
+         - สเปกการตั้งค่าเมนูและฟิลด์: [`frontend/src/lib/system-setting-screens.ts`](../../../frontend/src/lib/system-setting-screens.ts#L1282-L1304) (slug `productwarehousescreen`, basePath `/warehouse`)
+         - สถานะ 2026-09-23: backend `/warehouse` เดิมอยู่บน MongoDB ถูกถอดแล้ว (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`) — จอขึ้น "รอพัฒนา" ผ่าน `isMenuBackendRetired` (`frontend/src/lib/menu-screen-status.ts`) และ e2e `product-warehouse-crud.spec.ts` ถูกลบไปพร้อมกัน; ใช้เป็นแบบแผน UI ได้ แต่ยังทดสอบ CRUD จริงไม่ได้จนกว่าจะมี API บน PostgreSQL
     * **แบบแผน: ตัวแบ่งและปรับความกว้างแนวตั้งมาตรฐานทั้งระบบ (Universal Resizable Splitter with Floating Pill Handle) (ตั้งโดยลุงจืด 2026-09-10)**:
       1) **แบบแผนใหม่ (New Standard Pattern)**:
          - **คอมโพเนนต์กลาง `ResizableSplitter`**: ทุกจุดที่มีการปรับขนาดความกว้างระหว่างคอลัมน์ซ้าย-ขวา (List-Detail Pane) ในระบบ ต้องใช้คอมโพเนนต์กลาง `<ResizableSplitter />` จาก `frontend/src/components/ui/resizable-splitter.tsx`
@@ -252,7 +252,7 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - **ห้ามวางไอคอน Search หรือ Clean โดยไม่มี `top-1/2 -translate-y-1/2` และ `z-10`**: หาก input มี `bg-card` หรือ font ปรับขนาด ไอคอนจะถูกทับหรือเบี้ยวหลุดกึ่งกลาง
          - **ห้ามลืมใส่ `!` ใน padding ช่องค้นหา (เช่น ใช้แค่ `pl-11 pr-10`)**: จะถูก `.px-3` หรือ global input CSS ชนะ ทำให้ตัวหนังสือทับไอคอน
          - **ห้ามกำหนด `onlyPosting: true` เป็นค่าเริ่มต้นใน Dialog ค้นหาผังบัญชี**: จะทำให้บัญชีคุมถูกกรองทิ้งหมด และบัญชีย่อยระดับ 2 ปรากฏเดี่ยวๆ บนตารางโดยไม่มีหัวข้อแม่
-         - **ห้ามพึ่งพาค่า `level` จากฐานข้อมูลดิบอย่างเดียว**: ข้อมูลใน MongoDB/PostgreSQL อาจไม่มีฟิลด์ level ให้คำนวณจากความสัมพันธ์ `parentaccountcode` เสมอ
+         - **ห้ามพึ่งพาค่า `level` จากฐานข้อมูลดิบอย่างเดียว**: payload บัญชีใน `gl_records` อาจไม่มีฟิลด์ level ให้คำนวณจากความสัมพันธ์ `parentaccountcode` เสมอ
       3) **เหตุผลทางเทคนิค (Root Cause & Rationale)**:
          - **Thai 40+ Ergonomics**: ผู้ใช้มองเห็นโครงสร้างบัญชีชัดเจนตามมาตรฐานบัญชีไทย บัญชีคุมชัดเจนไม่ทำให้กดผิด
          - **CSS Cascade Specificity**: Tailwind class `.px-3` ในตัวแปร `control` และ global stylesheet มักชนะ `.pr-9` ทำให้ต้องใช้ `!important` เพื่อรับประกันความปลอดภัยของ padding
@@ -495,14 +495,16 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 
 ## 8.4 รวมการจัดหมวดสินค้าและบาร์โค้ดในหมวดไว้ในหน้าจอเดียว (Master-Detail Category & Barcodes Consolidation)
 
+> **สถานะปัจจุบัน:** (1) เมนู "จัดหมวดสินค้า" ถูกเอาออกจาก `MENU_SECTIONS` ตั้งแต่จัดเมนู 9 โมดูล (commit `83014952`, 2026-09-14) — route `/productcategorygroupselectscreen` ยังมี config ใน `frontend/src/lib/system-setting-screens.ts` แต่ไม่อยู่ในเมนู (2) backend ของจอนี้และของ "บาร์โค้ด" (`/productbarcode`, basePath `/product/category`, BFF `/api/product-barcode/list` → `/api/product/barcode/list`) อยู่บน MongoDB ซึ่งถูกถอดแล้ว 2026-09-23 (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`) — `isMenuBackendRetired` ใน `frontend/src/lib/menu-screen-status.ts` ถือว่าทั้งสอง route "รอพัฒนา" จนกว่าจะมี API บน PostgreSQL; โค้ด UI ด้านล่างยังอยู่และใช้เป็นแบบแผนอ้างอิงได้ แต่ endpoint ที่อ้างถึงยังใช้งานจริงไม่ได้ ตำแหน่งเมนูในข้อ 1 และจำนวนเมนูในข้อ 4 เป็นประวัติก่อน 2026-09-14
+
 **แบบแผนใหม่ (New Standard Pattern)** — สำหรับ Master Data ที่มีโครงสร้างหมวดหมู่และรายการบาร์โค้ดผูกในหมวด (เช่น จัดหมวดสินค้า):
 1. **ตำแหน่งเมนูในกลุ่มข้อมูลหลัก (Master Data Placement)**:
    - "จัดหมวดสินค้า" (`/productcategorygroupselectscreen`) จัดอยู่ในส่วน **"ข้อมูลหลัก" (Master Data)** ภายใต้กลุ่ม **"สินค้าและบาร์โค้ด" (Product Catalog)** โดยวางต่อท้าย "บาร์โค้ด" (`/productbarcode`) ทันที เพื่อให้สอดคล้องกับขั้นตอนการทำงานจริง (ต้องกำหนดรหัสสินค้าและบาร์โค้ดก่อน จึงจะนำบาร์โค้ดมาจัดเข้าหมวดหมู่สำหรับ POS/ขายหน้าร้านได้)
    - กลุ่ม "จัดกลุ่มสินค้า" ในส่วน "ค่าเริ่มต้น" (Defaults) จะคงเหลือเฉพาะ "หน่วยนับสินค้า" (`/productunit`) และ "กลุ่มสินค้า" (`/productgroup`)
 2. **ผูกรายการระดับ "บาร์โค้ด" ไม่ใช่ระดับสินค้าทั่วไป (Barcode-Level Items)**:
    - ใช้ศัพท์ **"บาร์โค้ดในหมวด"** (Barcodes in Category) และปุ่ม **`+ เพิ่มบาร์โค้ด`** (Add Barcode) แทนคำว่า "สินค้า" เพราะในระบบขายหน้าร้าน/แคชเชียร์ หมวดสินค้าจะจัดกลุ่มหน่วยขายย่อยระดับบาร์โค้ด (SKU Barcodes)
-   - ค้นหาผ่าน API `POST /api/product-barcode/list` (พร้อม `{ holdingcode, keyword, limit }`) เพื่อดึงบาร์โค้ดจริงจาก MongoDB พร้อมข้อมูลประกอบ: บาร์โค้ด, ชื่อสินค้า/บาร์โค้ด, รหัสสินค้า, หน่วยนับ, และราคาขาย
-   - บันทึกลงฟิลด์ `codelist: [{ code: barcode, xorder: index, names: [...] }]` ของคอลเลกชัน `productcategories`
+   - ค้นหาผ่าน API `POST /api/product-barcode/list` (พร้อม `{ holdingcode, keyword, limit }`) เพื่อดึงบาร์โค้ดพร้อมข้อมูลประกอบ: บาร์โค้ด, ชื่อสินค้า/บาร์โค้ด, รหัสสินค้า, หน่วยนับ, และราคาขาย
+   - บันทึกลงฟิลด์ `codelist: [{ code: barcode, xorder: index, names: [...] }]` ของ record หมวดสินค้า (ที่เก็บเดิมบน MongoDB ถูกถอดแล้ว — ต้องออกแบบตารางบน PostgreSQL ใหม่เมื่อสร้าง API)
 3. **รวมเป็นหน้าจอเดียว (Consolidated Master-Detail Layout)**:
    - หน้าจอเดียวจบที่ "จัดหมวดสินค้า" (`/productcategorygroupselectscreen`) ไม่แยกเมนู "สินค้าในหมวด" ออกไปเป็นเมนูโดดเดี่ยวที่ทำให้ผู้ใช้สับสน
    - **ฝั่งซ้าย**: `ProductCategoryTreeView` เลือกกลุ่ม 1–20 และผังหมวดหมู่แบบลากวาง (Drag & Drop Hierarchy)
@@ -513,7 +515,7 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
      - **แบนเนอร์เชื่อมโยงในฟอร์มแก้ไข**: ในหน้าฟอร์มแก้ไขหมวด (`SettingFormDialog`) จะมีแบนเนอร์ด้านบนระบุจำนวนบาร์โค้ดที่ผูกอยู่ พร้อมปุ่ม **`+ เพิ่มบาร์โค้ด`** ที่กดแล้วสลับไปแท็บรายการบาร์โค้ดและเปิดหน้าต่างค้นหาเพิ่มบาร์โค้ดทันที
 4. **Backward Compatibility & Menu Cleanup**:
    - หน้า `/productcategorylist` ทำ Next.js `redirect("/productcategorygroupselectscreen")` เพื่อรองรับ bookmark/url เดิม
-   - ตัดเมนูย่อยซ้ำซ้อน `product-category-list` ออกจาก `MENU_SECTIONS` (คงเหลือเมนูทั้งหมด 223 เมนู)
+   - ตัดเมนูย่อยซ้ำซ้อน `product-category-list` ออกจาก `MENU_SECTIONS` (ตอนนั้นเหลือ 223 เมนู — ปัจจุบันจำนวนเมนูเปลี่ยนไปแล้วตาม ADR `docs/kms/decisions/2026-09-19-champ-parity-menu-cut.md`)
 5. **Dirty State Guards & Responsive Switching**:
    - ตรวจสอบ `categoryUnsavedChanges` ก่อนให้ผู้ใช้สลับรายการหมวดใน Tree ป้องกันรายการที่เพิ่งเพิ่ม/จัดลำดับสูญหาย
    - เมื่อผู้ใช้อยู่ในฟอร์มแก้ไขแล้วคลิกแถวหมวดเดิมใน Tree ให้ปิดฟอร์มและสลับกลับสู่แท็บ "บาร์โค้ดในหมวด" ทันที ไม่ติดค้างในหน้าจอแก้ไข
@@ -525,14 +527,14 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 - **ห้ามซ่อนปุ่มเพิ่มรายการเมื่อผู้ใช้อยู่ในหน้าจอแก้ไขหมวด**: ผู้ใช้มองว่าการแก้ไขหมวดรวมถึงการจัดการบาร์โค้ดในหมวดด้วย การไม่มีปุ่มเพิ่มในหน้าแก้ไขทำให้เข้าใจผิดว่าระบบไม่มีฟังก์ชันนี้
 
 **เหตุผลทางเทคนิค (Root Cause & Rationale)**:
-โครงสร้างข้อมูล MongoDB สำหรับหมวดสินค้าเก็บทั้ง Tree Metadata (`guidfixed`, `parentguid`, `groupnumber`, `names`) และ `codelist` (รายการบาร์โค้ดที่ผูกในหมวด) อยู่ใน collection เดียวกัน (`productcategories`) โดย `codelist.code` เก็บค่า barcode string การเชื่อมต่อด้วย `/api/product-barcode/list` และจัดวาง UI ในกลุ่ม Master Data สอดคล้องกับ Business Process และ Data Model จริง 100%
+record หมวดสินค้าที่ UI ใช้มีทั้ง Tree Metadata (`guidfixed`, `parentguid`, `groupnumber`, `names`) และ `codelist` (รายการบาร์โค้ดที่ผูกในหมวด) ใน record เดียวกัน โดย `codelist.code` เก็บค่า barcode string — UI จึงผูกรายการระดับบาร์โค้ด ไม่ใช่ระดับสินค้า (ที่เก็บข้อมูลและ API เดิมถูกถอดแล้ว — ดูสถานะต้นหัวข้อ)
 
 **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
 - `frontend/src/app/system-settings/system-settings-screen.tsx` (`data-testid="product-category-detail-pane"`, `SettingFormDialog`)
 - `frontend/src/app/system-settings/product-category-tree-view.tsx` (`ProductCategoryTreeView`)
 - `frontend/src/app/system-settings/product-category-items-editor.tsx` (`ProductCategoryItemsEditor`)
 - `frontend/src/app/[systemSetting]/page.tsx` (Route redirect)
-- `frontend/src/lib/menu-data.ts` (`MENU_SECTIONS` -> `master` -> `products`)
+- `frontend/src/lib/menu-screen-status.ts` (`isMenuBackendRetired` — สถานะ "รอพัฒนา")
 
 
 
@@ -569,11 +571,11 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 - **ห้ามขาดช่องค้นหาเฉพาะเจาะจงสำหรับที่เก็บสินค้า**: ผู้ใช้ 40+ ไม่ควรต้องเลื่อนไล่หาที่เก็บสินค้าเป็นร้อยรายการด้วยสายตา
 
 **เหตุผลทางเทคนิค (Root Cause & Rationale)**:
-การแยกคลังสินค้าออกเป็น Selector ทางซ้าย และมอบพื้นที่หลักตรงกลางให้กับรายการที่เก็บสินค้า ทำให้ผู้ใช้สามารถสแกนรายการนับร้อย ค้นหาด้วยคีย์เวิร์ด และเจาะลึกดูที่วางสินค้า (Drill-down) ได้อย่างสะดวกรวดเร็วตามหลัก Cognitive Information Hierarchy โดยที่ฟอร์มด้านขวาพร้อมทำงานทันทีโดยไม่ต้องสลับหน้าจอไปมา และคงความเข้ากันได้ 100% กับ E2E Regression Contract
+การแยกคลังสินค้าออกเป็น Selector ทางซ้าย และมอบพื้นที่หลักตรงกลางให้กับรายการที่เก็บสินค้า ทำให้ผู้ใช้สามารถสแกนรายการนับร้อย ค้นหาด้วยคีย์เวิร์ด และเจาะลึกดูที่วางสินค้า (Drill-down) ได้อย่างสะดวกรวดเร็วตามหลัก Cognitive Information Hierarchy โดยที่ฟอร์มด้านขวาพร้อมทำงานทันทีโดยไม่ต้องสลับหน้าจอไปมา
 
 **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
 - `frontend/src/app/system-settings/warehouse-tree-view.tsx`
-- `frontend/e2e/product-warehouse-crud.spec.ts`
+- (e2e `product-warehouse-crud.spec.ts` ถูกลบพร้อม backend คลังบน MongoDB เมื่อ 2026-09-23 — จอขึ้น "รอพัฒนา" จนกว่าจะมี API บน PostgreSQL)
 
 ---
 
@@ -628,7 +630,7 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 
 **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
 - `frontend/src/app/system-settings/warehouse-tree-view.tsx`
-- `frontend/e2e/product-warehouse-crud.spec.ts`
+- (e2e `product-warehouse-crud.spec.ts` ถูกลบพร้อม backend คลังบน MongoDB เมื่อ 2026-09-23 — จอขึ้น "รอพัฒนา" จนกว่าจะมี API บน PostgreSQL)
 
 ---
 
@@ -776,9 +778,9 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 - **New Standard Pattern:** หน้าบัญชีใช้ `gl-workbench`, `panel`, `control`, `actionClass` จาก `frontend/src/app/gl/gl-common.tsx:9`; control/action `min-h-[2.6em] text-[0.95rem]`, panel `rounded-2xl border-border bg-card`, สีจาก theme tokens เท่านั้น ใช้ ResizableSplitter และตัวเลือกย่อ/ขยายบรรทัดตาม §8.7 จำนวนเงินเก็บ decimal strings และคำนวณด้วย BigInt ไม่อ่านค่าที่จัดรูปแบบกลับไปคำนวณ
 - **New Standard Pattern — ฟอร์มค้าง:** ส่ง `window.dispatchEvent(new CustomEvent("bc-gl-dirty", { detail: { route, dirty } }))` พร้อม beforeunload; main menu ฟัง dirty ตาม route และใช้ GL หนึ่งแท็บต่อ route ปิดแท็บ/เปลี่ยน workspace/ออกจากระบบต้องยืนยันก่อนทิ้งข้อมูล สลับแท็บหรือค้นหาให้คง component mounted และซ่อนด้วย container ไม่ unmount
 - **New Standard Pattern — โหลด lookup ใหม่:** ปุ่มโหลดใหม่เรียก `list.reload(); refs.reload();` คู่กัน โดยไม่ reset record/original ของฟอร์ม เพื่อให้แท็บที่ยัง mounted เลือกบัญชี/ปีที่เพิ่มจากอีกแท็บได้ ห้ามบังคับ remount เพื่อรีเฟรชข้อมูลอ้างอิง (`frontend/src/app/gl/gl-common.tsx:36`, `frontend/src/app/gl/gl-masters.tsx:65`); ทดสอบเพิ่มบัญชีจากอีกแท็บแล้วโหลดกลับมาเลือกโดยข้อมูลและสถานะยังไม่บันทึกคงอยู่
-- **New Standard Pattern — รอรายงานหลัง Kafka:** `glRequest` รอซ้ำเฉพาะ GET ที่ตอบ HTTP 409 และ `errorcode: "GL_PROJECTION_PENDING"` โดยเว้น 100 → 250 → 500 → 1000 ms สูงสุดประมาณ 15 วินาที ยกเลิก backoff และ fetch ที่กำลัง retry เมื่อหมดเวลาหรือ caller abort; แสดงข้อความไทยให้รอแล้วโหลดใหม่เมื่อยังไม่พร้อม ฟอร์มและ lookup ใช้ component เดิมต่อโดยไม่ remount (`frontend/src/lib/general-ledger-api.ts:17`)
+- **New Standard Pattern (เดิม, ปัจจุบันไม่มี backend path ที่ trigger) — รอรายงานหลัง projection:** `glRequest` มีกลไกรอซ้ำเฉพาะ GET ที่ตอบ HTTP 409 และ `errorcode: "GL_PROJECTION_PENDING"` โดยเว้น 100 → 250 → 500 → 1000 ms สูงสุดประมาณ 15 วินาที ยกเลิก backoff และ fetch ที่กำลัง retry เมื่อหมดเวลาหรือ caller abort; แสดงข้อความไทยให้รอแล้วโหลดใหม่เมื่อยังไม่พร้อม ฟอร์มและ lookup ใช้ component เดิมต่อโดยไม่ remount (`frontend/src/lib/general-ledger-api.ts:124`) — **หมายเหตุ 2026-09-23:** `backend/internal/generalledger/httpapi/http.go:197` ยังแปลง `gl.ErrProjectionPending` (`contracts.go:81`) เป็น `GL_PROJECTION_PENDING` ในสัญญา error แต่ไม่มีโค้ดใน `internal/generalledger` คืน error นี้แล้ว (เขียนผ่าน PostgreSQL `sql.Tx` เดียว อ่านรุ่นล่าสุดได้ทันที) — โค้ด retry ฝั่ง frontend ยังอยู่ แต่ไม่ใช่ path ที่เกิดจริงตอนนี้ จอใหม่ไม่ต้องทำกลไกนี้ซ้ำ
 - **Anti-pattern — รอ projection:** ห้าม retry ทุก 409 เพราะ version/snapshot conflict ต้องให้ผู้ใช้ตรวจข้อมูลใหม่; ห้ามส่ง POST command ซ้ำหรือสร้าง requestid ใหม่จากกลไกรอ GET และห้ามตั้ง polling ไม่สิ้นสุด
-- **Root Cause & Rationale — รอ projection:** MongoDB รับคำสั่งแล้วส่งผ่าน Kafka ก่อน PostgreSQL พร้อมอ่าน จึงอาจมีช่วงสั้นที่ GET หลังบันทึกยังอ่านรุ่นล่าสุดไม่ได้ การ retry ต้องผูก typed error เฉพาะนี้เพื่อไม่ซ่อนความผิดพลาดอื่นหรือส่งรายการบัญชีซ้ำ
+- **Root Cause & Rationale — รอ projection (ประวัติ):** error code นี้มาจากสถาปัตยกรรมเดิมที่ถูกถอดเมื่อ 2026-09-23 (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`) — ปัจจุบันคำสั่งเขียนผ่าน PostgreSQL transaction เดียว GET หลังบันทึกจึงอ่านรุ่นล่าสุดได้ทันที
 - **วิธีตรวจ / Reference — รอ projection:** fake timers ใน `frontend/src/lib/general-ledger-api.test.ts:28` ตรวจ delayed readiness/backoff, timeout 15 วินาทีรวม fetch ระหว่าง retry, other 409 ไม่ retry, POST ไม่ retry/ไม่เปลี่ยน requestid และ caller abort; รัน focused Vitest และ tsc ก่อนส่งงาน
 - **New Standard Pattern — คำแสดงผลรายงานไทย:** แปลค่าที่คอลัมน์ `accounttype/bookcode/status/direction/category` เฉพาะตอน render ด้วย mapping ตาม source; เติมชื่อยอด `currentearnings` ว่า “กำไรขาดทุนที่ยังไม่ปิด”, `cash` ว่า “เงินสดและเงินฝากธนาคาร” และ `unclassifiedlines` ว่า “บรรทัดที่ยังไม่ระบุประเภท” โดยแสดงจำนวนเป็นสตริงตามด้วย “รายการ” แถว `__current_earnings__` แสดงรหัสเป็น “—” และคงชื่ออธิบายบัญชีไว้
 - **Anti-pattern — รายงานไทย:** ห้ามแสดง enum ภายในหรือ synthetic key เป็นข้อมูลบัญชีที่ผู้ใช้ต้องตีความ ห้ามใช้คำว่า “ยอดรวม” แทนยอดที่มีความหมายเฉพาะ และห้ามแก้ payload/จำนวนเงิน/API/CSV เพื่อเปลี่ยนภาษาแสดงผล
@@ -786,9 +788,9 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 - **วิธีตรวจ / Reference — รายงานไทย:** `frontend/src/app/gl/gl-reports.tsx:16` และ `gl-reports.test.ts:12` ตรวจ HTML ที่ render จริงสำหรับ enum, ป้ายยอด, จำนวนบรรทัด, synthetic key และจำนวนเงิน `0.30000001` พร้อมยืนยัน payload/CSV ไม่เปลี่ยน; ตรวจภาพรายงานที่มีข้อมูลจริง light/dark ด้วยปุ่ม theme และงบทดลอง 1600/1280/1024/768 ก่อนปิดงาน
 - **New Standard Pattern — split pane:** ใช้ `<div>` เป็นกรอบรายการ/ฟอร์มของ SplitWorkbench และ `min-w-0` ที่ form/fieldset; ห้ามใช้ `<section>` แล้วหวังว่า `xl:w-[var(--gl-list-width)]` จะชนะกฎ CSS กลาง `main,section,form,fieldset,... { width:100%;max-width:100% }` ซึ่งอยู่นอก Tailwind layer (`frontend/src/app/globals.css:383`) ต้องตรวจ bounding rect ของสอง pane และภาพจริงว่าฟอร์มไม่ถูกบีบ ไม่อาศัยแค่ document overflow
 - **Anti-pattern / Deprecated:** ห้ามเอา `topSearchResults ? results : workTabs` มาครอบฟอร์มที่มี state; ห้ามใช้ query loading หลังสลับภาษาเป็นเงื่อนไข unmount แท็บเดิม; ห้ามใช้ Number/parseFloat กับจำนวนเงิน; ห้ามจำกัดยอดรายงานเท่ากับ precision ของหนึ่งรายการ; ห้ามปลดป้ายรอพัฒนาเพียงเพราะมีหน้าเตรียมข้อมูล
-- **Root Cause & Rationale:** การค้นหาเมนูแบบ ternary เดิมทำลายฟอร์มที่เปิดอยู่ และ GL หลายแท็บ route เดียวทำให้ event dirty ชนกัน จำนวนเงิน MongoDB Decimal128 อาจอ่านกลับเป็นเลขยกกำลัง แต่ UI/API ต้องคงสตริงทศนิยม plain และไม่ตัดทศนิยม ยอดส่งออกหลายหน้าต้องใช้ sequence เดียวกันเพื่อไม่ปะปนคนละ snapshot
+- **Root Cause & Rationale:** การค้นหาเมนูแบบ ternary เดิมทำลายฟอร์มที่เปิดอยู่ และ GL หลายแท็บ route เดียวทำให้ event dirty ชนกัน จำนวนเงินที่คำนวณด้วย float/parseFloat อาจปัดเศษผิดหรือกลับมาเป็นเลขยกกำลัง แต่ UI/API ต้องคงสตริงทศนิยม plain และไม่ตัดทศนิยม (PostgreSQL `NUMERIC`) ยอดส่งออกหลายหน้าต้องใช้ sequence เดียวกันเพื่อไม่ปะปนคนละ snapshot
 - **Reference Implementation:** `frontend/src/app/menu/main-menu-screen.tsx:663`, `frontend/src/app/menu/main-menu-screen.tsx:2865`, `frontend/src/app/gl/gl-common.tsx:76`, `frontend/src/lib/general-ledger.ts:59`, `frontend/src/lib/general-ledger-api.ts:64`, `frontend/src/lib/menu-screen-status.ts:19`
-- **วิธีตรวจ:** Vitest ชุด general-ledger/BFF/menu-screen-status และ tsc; Playwright `frontend/e2e/general-ledger-uat.spec.ts` ตรวจ dirty ค้นหา/สลับแท็บ/ปิดแท็บ, CRUD พร้อม query Mongo ทีละขั้น, light+dark กด theme toggle จริง ×1600/1280/1024/768 และ console/overflow; ผลจริงอ้าง `docs/kms/architecture/2026-09-11-general-ledger-v2.md` ห้ามอ้างว่าผ่านก่อนรันจบ
+- **วิธีตรวจ:** Vitest ชุด general-ledger/BFF/menu-screen-status และ tsc; Playwright GL ที่มีอยู่ (`frontend/e2e/gl-*.spec.ts`) + ตรวจ dirty ค้นหา/สลับแท็บ/ปิดแท็บด้วยปุ่ม Demo, light+dark กด theme toggle จริง ×1600/1280/1024/768 และ console/overflow; งานที่เขียนข้อมูลต้อง query PostgreSQL ทีละขั้นตามกฎ UAT (helper `pgRow`/`pgCount` ใน `tests/support/pg.ts`) — spec เดิม `general-ledger-uat.spec.ts` ตรวจผ่าน MongoDB จึงถูกลบ 2026-09-23 และยังไม่มี spec แทน; ห้ามอ้างว่าผ่านก่อนรันจบ
 
 
 ## 8.13 ผังบัญชีรองรับระดับ (Level 1–12) และการแสดงผลลำดับชั้น — กฎการสร้างตัวอย่างผังบัญชีต้องมีหลาย Level แบบบัญชีประเทศไทย (2026-09-11, อัปเกรด 2026-09-19 โดยลุงจืด)
@@ -815,15 +817,15 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
   - นักบัญชีและผู้สอบบัญชีไทย (วัย 40+) ต้องการมองเห็นระดับการสรุปยอด (หมวดบัญชีคุม > บัญชีย่อย > บัญชีลงรายการ) ในพริบตา การมีระดับ 1–12 พร้อมการเยื้องภาพช่วยลดความสับสนและข้อผิดพลาดในการลงบัญชี
   - การเยื้องใน `<option>` ต้องใช้ `\u00A0` เนื่องจากเบราว์เซอร์ตัด space ปกติทิ้งใน native `<select>`
 - **Reference Implementation:**
-  - Backend: `backend/internal/generalledger/models.go:47`, `backend/internal/generalledger/mutations.go:158`, `backend/internal/generalledger/account_level_test.go`
-  - Frontend: `frontend/src/lib/general-ledger.ts:9`, `frontend/src/app/gl/gl-masters.tsx:71`, `frontend/src/app/gl/gl-masters.tsx:112`, `frontend/src/app/gl/gl-common.tsx:30`
+  - Backend: `backend/internal/generalledger/models.go:53` (`Account.Level`), `backend/internal/generalledger/postgres_guards.go:150` (`validatePGAccount` — คำนวณระดับจากบัญชีแม่ ตรวจช่วง 1–12 และต้องลึกกว่าบัญชีแม่), `backend/internal/generalledger/account_level_test.go`
+  - Frontend: `frontend/src/lib/general-ledger.ts:10` (`level`), `frontend/src/lib/general-ledger.ts:127` (`emptyAccount`), `frontend/src/app/gl/gl-masters.tsx:669` (เยื้อง + badge ระดับ), `frontend/src/app/gl/gl-masters.tsx:1033` (ช่อง "ระดับบัญชี (1–12)"), `frontend/src/app/gl/gl-common.tsx:498` (`AccountSelect` เยื้องด้วย `\u00A0`)
 - **วิธีตรวจ:**
   - `go test -v ./internal/generalledger -run "TestAccountLevel"`
 
 ## 8.14 การป้องกันการลบผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวันเด็ดขาด (2026-09-11)
 
 - **New Standard Pattern:**
-  - **Backend Strict Guard (`mutations.go`):** เมื่อลบผังบัญชี (`cmd.Action == "delete"` ใน `accounts`) ระบบต้องตรวจว่ารหัสบัญชีดังกล่าวถูกอ้างอิงใน `lines.accountcode` ของ `gl_journals` หรือไม่ โดยห้ามกรอง `isdeleted: false` ออก (แม้สมุดรายวันนั้นจะถูกยกเลิก/void แล้ว ประวัติการทำรายการก็ยังคงอยู่เพื่อการตรวจสอบ Audit Trail) หากพบข้อมูลอ้างอิง ต้องปฏิเสธการลบด้วยข้อความภาษาไทยที่ชัดเจน:
+  - **Backend Strict Guard (`postgres_store.go`/`postgres_guards.go`):** เมื่อลบผังบัญชี (`cmd.Action == "delete"` ใน `accounts`) ระบบต้องตรวจว่ารหัสบัญชีดังกล่าวถูกอ้างอิงใน `gl_lines`/`gl_records` (สมุดรายวัน, งบประมาณ, กฎ, บัญชีแม่ ฯลฯ) หรือไม่ก่อนเสมอ (แม้สมุดรายวันนั้นจะถูกยกเลิก/void แล้ว ประวัติการทำรายการก็ยังคงอยู่เพื่อการตรวจสอบ Audit Trail) หากพบข้อมูลอ้างอิง ต้องปฏิเสธการลบด้วยข้อความภาษาไทยที่ชัดเจน:
     `"บัญชีนี้มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบผังบัญชีเด็ดขาด กรุณาปิดใช้งานแทนการลบ"`
   - **Frontend Warning Notice (`AccountFields`):** ในฟอร์มแก้ไขผังบัญชีเดิม (`value.id`) ให้แสดง `<Notice text="ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ต้องการใช้งานให้ปิดใช้งานแทน" />` เพื่อแจ้งผู้ใช้ล่วงหน้า
   - **Frontend Confirmation Dialog (`GLMasters`):** ในกล่องยืนยันการลบ (`runAction("delete")`) ให้ระบุคำอธิบายเพิ่มเติม (`details`) ชี้แจงชัดเจนว่าหากมีรายการเคลื่อนไหวหรืออ้างอิงจากสมุดรายวัน ระบบจะไม่อนุญาตให้ลบเด็ดขาด
@@ -834,10 +836,10 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 - **Root Cause & Rationale:**
   - ตามหลักมาตรฐานการบัญชีและข้อกำหนดกรมสรรพากร ผังบัญชีที่มีรายการเคลื่อนไหวทางบัญชีหรือถูกอ้างอิงในสมุดรายวัน ห้ามถูกลบทิ้งจากระบบบัญชีโดยเด็ดขาด การอนุญาตให้ลบจะทำให้งบการเงินย้อนหลัง รายงานแยกประเภท และรายงานการตรวจสอบ (Audit Trail) เสียหาย
 - **Reference Implementation:**
-  - Backend: `backend/internal/generalledger/mutations.go:79`, `backend/internal/generalledger/account_crud_integration_test.go:217`
-  - Frontend: `frontend/src/app/gl/gl-masters.tsx:55`, `frontend/src/app/gl/gl-masters.tsx:124`
+  - Backend: `backend/internal/generalledger/postgres_guards.go:228` (`deletePGAccountGuard` — ตรวจ `gl_budget_lines` + `gl_records`), `backend/internal/generalledger/postgres_store.go:322` (การลบบัญชี เรียก guard แล้วเช็ก `gl_lines` ซ้ำ พร้อมข้อความข้างบน)
+  - Frontend: `frontend/src/app/gl/gl-masters.tsx:393`, `frontend/src/app/gl/gl-masters.tsx:423`, `frontend/src/app/gl/gl-masters.tsx:996` (Notice + confirm dialog สองจุด)
 - **วิธีตรวจ:**
-  - Integration Test: `go test -v -tags=integration ./internal/generalledger -run "TestLedgerMongoPostgresAccountLevelCRUD"` ตรวจว่าเมื่อสร้างบัญชีและมีสมุดรายวันอ้างอิง การลบบัญชีต้องล้มเหลวด้วยข้อความระบุชัดเจน และบัญชียังคงอยู่ครบทั้งใน MongoDB และ PostgreSQL แม้หลัง void รายวันแล้ว
+  - Integration Test (build tag `integration`, ต้องตั้ง `BC_GL_TEST_POSTGRES_DSN` เป็นฐาน PostgreSQL แยก): `TestPostgresIntegrityPeriodAndValidation` ใน `backend/internal/generalledger/postgres_integrity_integration_test.go` (ลบบัญชีที่มีรายการอ้างอิงต้องถูกปฏิเสธ) และ `TestBudgetBlocksFiscalYearAndAccountChangesIntegration` ใน `backend/internal/generalledger/budgets_integration_test.go` (บัญชีที่มีงบประมาณอ้างอิงลบไม่ได้ด้วย `CodeReferenced` และลบได้เมื่อไม่มีการอ้างอิงแล้ว) — รันด้วย `go test -tags=integration ./internal/generalledger -run "TestPostgresIntegrityPeriodAndValidation|TestBudgetBlocksFiscalYearAndAccountChangesIntegration"`
 
 ## 8.15 มาตรฐานการออกแบบงบการเงินและปรับแต่งฟอนต์ (Financial Statement Designer Standard — 2026-09-11)
 
@@ -867,7 +869,7 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
 - **Root Cause & Rationale:**
   - ธุรกิจแต่ละแห่งมีรูปแบบการรายงานงบการเงินที่แตกต่างกันตามประเภทธุรกิจและข้อกำหนดของผู้บริหาร/ผู้สอบบัญชี การมี Financial Statement Designer ที่ผู้ใช้สร้างเองได้ไม่จำกัดและปรับแบบอักษรได้อิสระ ช่วยให้ซอฟต์แวร์ยืดหยุ่นสูงเทียบชั้นกับระบบ ERP ชั้นนำ
 - **Reference Implementation:**
-  - Backend: `backend/internal/generalledger/models.go:76`, `backend/internal/generalledger/mutations.go:121`, `backend/internal/generalledger/statement_template_test.go`
+  - Backend: `backend/internal/generalledger/models.go:134` (`Master.StatementType`/`GlobalStyle`/`Rows`), `backend/internal/generalledger/models.go:150` (`StatementRow`), `backend/internal/generalledger/postgres.go:162` (`applyChanges` บันทึก record ลง `gl_records` แบบ JSON), `backend/internal/generalledger/statement_template_test.go`
   - Frontend: `frontend/src/lib/general-ledger.ts:184`, `frontend/src/app/gl/gl-statement-designer.tsx`, `frontend/src/app/gl/general-ledger-screen.tsx:37`
 - **วิธีตรวจ:**
   - Frontend Unit Tests: `npx vitest run src/lib/general-ledger.test.ts`
@@ -886,7 +888,7 @@ CSS Grid เป็น native browser layout engine ที่คำนวณพ�
     - รองรับการนำทางด้วยแป้นพิมพ์ครบวงจร: `↑` / `↓` เลื่อนแถว, `Enter` เลือกบัญชี, `Esc` ปิดหน้าต่าง, และดับเบิ้ลคลิกแถวเพื่อเลือกทันที
     - รองรับทั้ง Single-Select (สำหรับสมุดรายวัน, รายงาน, ผังบัญชี) และ Multi-Select (สำหรับแถวในงบการเงิน)
   - **การทำงานร่วมกับ Playwright E2E และความเข้ากันได้ย้อนหลัง (Zero Regression):**
-    - `AccountSelect` ยังคงคง `<select aria-label={label}>` ไว้ใน DOM เพื่อให้คำสั่ง `locator.selectOption(...)` ใน Playwright E2E Tests (เช่น `general-ledger-uat.spec.ts`) ทำงานได้ราบรื่น 100%
+    - `AccountSelect` ยังคงคง `<select aria-label={label}>` ไว้ใน DOM เพื่อให้คำสั่ง `locator.selectOption(...)` ใน Playwright E2E Tests ทำงานได้ (`<select>` อยู่ที่ `frontend/src/app/gl/gl-common.tsx:476`; spec เดิม `general-ledger-uat.spec.ts` ที่ใช้ `.selectOption()` ถูกลบพร้อม MongoDB เมื่อ 2026-09-23)
     - ดักจับ `onMouseDown` และ `onKeyDown` เพื่อเปิด Full-Screen Dialog เมื่อผู้ใช้จริงกดคลิกหรือกดแป้นพิมพ์
 - **Anti-pattern / Deprecated:**
   - ห้ามปล่อยให้ผู้ใช้ต้องเลื่อนหาผังบัญชีใน native `<select>` dropdown ที่แคบและไม่มีช่องค้นหา
@@ -1260,7 +1262,7 @@ gl_post_journal	ผ่านรายการ	Post journal	过账	仕訳を転�
 
 **เหตุผลทางเทคนิค (Root Cause & Rationale)** — ไม่มี React context ของภาษา: แต่ละ page ถือ `language` state เอง (`main-menu-screen.tsx:488`) แล้วส่งให้จอลูกทาง prop (`:2816-2877`); dictionary ถูก cache ใน memory + localStorage และ re-fetch เมื่อภาษาเปลี่ยน (`backend-language.ts:109-172`) ดังนั้นจอที่ไม่เรียก `backendText` จะไม่ re-render ข้อความแม้ dictionary ใหม่มาแล้ว; `menuText()` ทำให้ชื่อแท็บเปลี่ยนแต่เนื้อในแท็บไม่เปลี่ยน ผู้ใช้จึงเห็นจอครึ่งไทยครึ่งอังกฤษ
 
-**ไฟล์และบรรทัดอ้างอิง (Reference Implementation)** — `frontend/src/components/system-settings/utils.ts:599-613` (`fieldLabel` + map `fieldBackendKeys` 72 รายการ), เรียกจาก `system-settings-screen.tsx:4606,4872,5073`; `frontend/src/lib/menu-data.ts:641` (`menuText`); กฎบังคับใน `AGENTS.md` หัวข้อ "ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก"; งานย้ายจอเก่า: `docs/handoff/HANDOFF-2026-09-14.md` §2D
+**ไฟล์และบรรทัดอ้างอิง (Reference Implementation)** — `frontend/src/components/system-settings/utils.ts:599-613` (`fieldLabel` + map `fieldBackendKeys` 72 รายการ), เรียกจาก `system-settings-screen.tsx:4606,4872,5073`; `frontend/src/lib/menu-data.ts:641` (`menuText`); กฎบังคับใน `AGENTS.md` หัวข้อ "ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก"; งานย้ายจอเก่า: handoff 2026-09-14 §2D (ลบแล้ว — `git show 1660b335:docs/handoff/HANDOFF-2026-09-14.md`)
 
 ### 8.25.1 แบบแผนที่ใช้จริงในโมดูล GL (ย้ายครบทั้งโมดูลแล้ว 2026-09-14 — ใช้เป็นต้นแบบกับโมดูลอื่น)
 

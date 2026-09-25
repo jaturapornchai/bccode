@@ -2,7 +2,7 @@
 
 For every task under `D:\bccode`:
 
-1. ฐานความรู้ระบบ **สร้างเสร็จและใช้งานได้แล้ว** ที่ `docs/kms/` (บทความ `00`–`19` รวม 20 ไฟล์ + `README.md` เป็นดัชนี + `decisions/` (ADR) + `bugs/` + `architecture/` + `snippets/`) — แต่ docs อธิบายว่า **โค้ดทำอะไร** ไม่ใช่ข้อกำหนดทางธุรกิจ: requirement/business rule ที่ไม่ชัด = ห้ามเดา ต้องถามลุงจืด.
+1. ฐานความรู้ระบบ **สร้างเสร็จและใช้งานได้แล้ว** ที่ `docs/kms/` (บทความ `00`–`22` รวม 22 ไฟล์ (เลข `12` ว่าง — ลบ 2026-09-25) + `README.md` เป็นดัชนี + `decisions/` (ADR) + `bugs/` + `architecture/` + `snippets/`) — แต่ docs อธิบายว่า **โค้ดทำอะไร** ไม่ใช่ข้อกำหนดทางธุรกิจ: requirement/business rule ที่ไม่ชัด = ห้ามเดา ต้องถามลุงจืด.
 2. **On-Demand Context Rule**: ฐานความรู้อยู่ที่ `docs/kms/` และ skill ส่วนตัวอยู่ที่ `.agents/skills/` — **เปิดอ่านเฉพาะไฟล์ที่จำเป็นกับงานนั้นเท่านั้น (ดูผังเลือกอ่านใน `docs/README.md`)** ห้ามกวาดอ่านทั้งโฟลเดอร์ หรือเปิด handoff ล่วงหน้าโดยไม่จำเป็น เพื่อประหยัด Context Window ของ AI.
 3. Use `D:\bccode\docs\kms\00-source-router.md` only to locate implementation evidence.
 4. Inspect the exact source, tests, schema, configuration, and runtime evidence required by the task.
@@ -253,7 +253,7 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 ## กฎ: skill ส่วนตัวอยู่ที่ `.agents/skills/` และฐานความรู้อยู่ที่ `docs/kms/` (ตั้งโดยลุงจืด 2026-09-07)
 
 1. **skill ส่วนตัวของลุงจืดทุกตัวเก็บใน `.agents/skills/<name>/SKILL.md`** (2026-09-07 เคยย้ายไป `docs/skills/`; 2026-09-20 ย้ายกลับมาที่ `.agents/skills/` เพราะกลายเป็นมาตรฐานที่ Codex/Gemini CLI/Antigravity/ZCode ค้นหาเองได้ — ดูกฎ "กฎและ skill ของ AI ทุกตัวอยู่ที่เดียว" ด้านบน) — ห้ามสร้าง/คัดลอกไปที่ `docs/skills/`, `.claude/skills/` (ใช้ junction) หรือที่อื่น เพื่อให้ตรวจง่ายที่เดียว
-2. **ต้องใช้ skill จากที่นี่จริง ๆ** — ก่อนทำงานที่ skill ครอบคลุม (เช่น UI → `.agents/skills/ui-scale-polish/SKILL.md`, MongoModel → `.agents/skills/audit-mongomodel-sync/SKILL.md`, งานบัญชี/ภาษีไทย (แบบยื่น อัตรา เครดิตภาษี งบการเงิน) → `.agents/skills/thai-accounting-tax/SKILL.md` + ทะเบียนอ้างอิงทางการ `docs/kms/21-thai-tax-form-references.md` — ห้ามเดา ต้องมีอ้างอิง ลุงจืดสั่ง 2026-09-23) ให้เปิดอ่านไฟล์ล่าสุดจาก disk ทุกครั้ง **ห้ามใช้เวอร์ชันที่จำได้/cache** เพราะลุงจืดอาจแก้ด้วยมือ; ถ้า AI ตัวใดโหลด skill ผ่านกลไกอัตโนมัติจากที่อื่นได้ ก็ยังต้องยึดไฟล์ใน `.agents/skills/` เป็นตัวจริง
+2. **ต้องใช้ skill จากที่นี่จริง ๆ** — ก่อนทำงานที่ skill ครอบคลุม (เช่น UI → `.agents/skills/ui-scale-polish/SKILL.md`, งานบัญชี/ภาษีไทย (แบบยื่น อัตรา เครดิตภาษี งบการเงิน) → `.agents/skills/thai-accounting-tax/SKILL.md` + ทะเบียนอ้างอิงทางการ `docs/kms/21-thai-tax-form-references.md` — ห้ามเดา ต้องมีอ้างอิง ลุงจืดสั่ง 2026-09-23) ให้เปิดอ่านไฟล์ล่าสุดจาก disk ทุกครั้ง **ห้ามใช้เวอร์ชันที่จำได้/cache** เพราะลุงจืดอาจแก้ด้วยมือ; ถ้า AI ตัวใดโหลด skill ผ่านกลไกอัตโนมัติจากที่อื่นได้ ก็ยังต้องยึดไฟล์ใน `.agents/skills/` เป็นตัวจริง
 3. **บทเรียน/กับดัก/ความรู้ที่ต้องไม่ลืม → เขียนลง `docs/kms/`** (ไม่ใช่แค่ memory ส่วนตัวของ AI ตัวใดตัวหนึ่ง) เป็นไฟล์ Markdown หัวข้อละไฟล์ อ้าง `file:line` ของโค้ดจริง และเพิ่มบรรทัดใน `docs/kms/README.md`; docs ต้องตามโค้ด (code = truth) — ถ้าโค้ดเปลี่ยนให้แก้ docs ใน commit เดียวกัน
 4. commit ที่แก้ skill/kms ให้รวมไปกับ commit งานที่ทำให้เกิดการเปลี่ยนแปลงนั้น (เหมือนกฎ Mandatory Skill Upgrade ด้านล่าง)
 

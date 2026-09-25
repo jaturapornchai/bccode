@@ -12,12 +12,12 @@
 |---|---|---|
 | **งานเล็ก / แก้บั๊ก 1 บรรทัด / คำถามทั่วไป** | ดูโค้ดจริงโดยตรง (`code = truth`) | ไม่ต้องเปิด `docs/` ใด ๆ |
 | **งานหน้าจอ / สไตล์ / CSS / UX** | [`.agents/skills/ui-scale-polish/SKILL.md`](../.agents/skills/ui-scale-polish/SKILL.md) | ไม่ต้องอ่าน `kms/` หรือ `handoff/` — **ยกเว้นงานเพิ่ม/แก้เมนูหลัก** ที่ SKILL.md §8 สั่งให้เปิด `kms/19-menu-coverage-market-standard.md` + ADR `kms/decisions/2026-09-08-menu-parity-market-standard.md` + `kms/decisions/2026-09-08-menu-parity-social-sweep.md` ด้วย |
-| **งาน Schema / MongoDB / MongoModel** | [`.agents/skills/audit-mongomodel-sync/SKILL.md`](../.agents/skills/audit-mongomodel-sync/SKILL.md) | ไม่ต้องอ่านไฟล์ UI |
+| **งานหน้าจอ CRUD / Master-Detail** | [`.agents/skills/datacrud/SKILL.md`](../.agents/skills/datacrud/SKILL.md) คู่กับ `ui-scale-polish` | ไม่ต้องอ่าน `kms/` |
 | **งานสถาปัตยกรรม / โดเมนเฉพาะเรื่อง** | ดูดัชนีใน [`docs/kms/README.md`](kms/README.md) แล้วเลือก **1 บทความที่ตรงเรื่อง** | ห้ามเปิดบทความอื่นที่ไม่ได้ทำ |
-| **ประวัติการแก้ไขระบบ / สิ่งที่ทำไปแล้ว** | [`README.md`](../README.md) ในหัวข้อ Project Activity Log | ไม่ต้องเปิด handoff เก่าถ้าแค่อยากรู้ว่าล่าสุดทำอะไร |
+| **ประวัติการแก้ไขระบบ / สิ่งที่ทำไปแล้ว** | `git log` (body ภาษาไทยสรุปงาน + ผลทดสอบ) — README ไม่มี Activity Log แล้ว ([ADR](kms/decisions/2026-09-23-drop-readme-activity-log.md)) | ไม่ต้องเปิด handoff เก่าถ้าแค่อยากรู้ว่าล่าสุดทำอะไร |
 | **ค้นหาตำแหน่งโค้ด / สัญญาณระบบ** | [`docs/kms/00-source-router.md`](kms/00-source-router.md) | ไม่ต้องเปิดบทความยาว |
 | **นำทางไฟล์ขนาดใหญ่ (>1,000 บรรทัด)** | [`docs/reference/CODE-MAP.md`](reference/CODE-MAP.md) — auto-generated อาจเก่า: เทียบจำนวนบรรทัดในหัวข้อกับ `wc -l` จริงก่อนเชื่อเลขบรรทัด | ไม่ต้อง grep ทั้งไฟล์ (grep เฉพาะตอนยืนยันตำแหน่งฟังก์ชันเมื่อ CODE-MAP ไม่ตรง) |
-| **สถานะงานค้าง / สรุปความเสี่ยงระบบ** | [`docs/handoff/HANDOFF-2026-09-19.md`](handoff/HANDOFF-2026-09-19.md) (ฉบับเดียว — handoff เดิมทั้งหมดลบแล้ว 2026-09-19; ของเก่าดูผ่าน `git show 1660b335:docs/handoff/<file>`) | อ่านเฉพาะเมื่อรับงานต่อจากเซสชันก่อน |
+| **สถานะงานค้าง / สรุปความเสี่ยงระบบ** | [`docs/handoff/`](handoff/) — `HANDOFF-2026-09-19.md` (รอบ Champ-parity), `HANDOFF-2026-09-20-GL-GLM.md`, `HANDOFF-2026-09-20-GL-TAX.md` (GL + ภาษี); ของเก่าดูผ่าน `git show 1660b335:docs/handoff/<file>` | อ่านเฉพาะเมื่อรับงานต่อจากเซสชันก่อน |
 | **การเตรียมพร้อมกู้คืนระบบ (Disaster Recovery)** | [`docs/runbooks/RECOVERY-READINESS.md`](runbooks/RECOVERY-READINESS.md) | อ่านเฉพาะเมื่องานเกี่ยวกับ Backup/Restore |
 | **งานเมนูหลัก / เพิ่มเมนูใหม่ / ขอบเขตผลิตภัณฑ์** | [`.agents/skills/ui-scale-polish/SKILL.md`](../.agents/skills/ui-scale-polish/SKILL.md) §8 + §8.1 — เพิ่ม 1 เมนูต้องแก้ครบ 4 จุดพร้อมกัน: `frontend/src/lib/menu-data.ts` → `backend/assets/language/languages.tsv` (13 คอลัมน์) → `frontend/src/lib/menu-icons.ts` → จำนวนใน `frontend/src/lib/menu-icons.test.ts` · ผลเทียบเคียงมาตรฐานที่ [`docs/kms/19-menu-coverage-market-standard.md`](kms/19-menu-coverage-market-standard.md) | ห้ามเพิ่มเมนูเงินเดือน / ภ.ง.ด.1 / ภ.ง.ด.1ก / ไฟล์นำส่งเงินสมทบประกันสังคม (ตัดออกจากขอบเขต 2026-09-08 — กฎใน `AGENTS.md` ชนะเสมอ) · ห้ามเขียนว่า "ครบ 100%" |
 
@@ -25,8 +25,8 @@
 
 ## โครงสร้างใน `docs/`
 
-- [`kms/`](kms/README.md) — ฐานความรู้ระบบ (บทความหลัก `00`–`19` รวม 20 ไฟล์ + `architecture/` + ADR ใน `decisions/` + `bugs/` + `snippets/`) จัดทำแบบมี citation `path:line`
-- [`skills/`](../.agents/skills/) — Skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `audit-mongomodel-sync`)
+- [`kms/`](kms/README.md) — ฐานความรู้ระบบ (บทความหลัก `00`–`22` รวม 22 ไฟล์ (เลข `12` ว่าง) + `architecture/` + ADR ใน `decisions/` + `bugs/` + `snippets/`) จัดทำแบบมี citation `path:line` — ระบบใช้ PostgreSQL ตัวเดียว (MongoDB/Kafka/Redis/ClickHouse ถอดออก 2026-09-23, [ADR](kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md))
+- [`skills/`](../.agents/skills/) — Skill ส่วนตัวของลุงจืด (`ui-scale-polish`, `datacrud`, `thai-accounting-tax`)
 - [`handoff/`](handoff/) — รายงานส่งต่องาน **เก็บฉบับล่าสุดฉบับเดียว** (ลุงจืดสั่งลบของเก่า 2026-09-19)
 - [`reference/`](reference/CODE-MAP.md) — แผนที่ระบุบรรทัดของไฟล์ขนาดยักษ์
 - [`runbooks/`](runbooks/RECOVERY-READINESS.md) — คู่มือเตรียมความพร้อมในการกู้คืนระบบ
