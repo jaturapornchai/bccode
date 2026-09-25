@@ -3,6 +3,8 @@ package fixedasset
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -25,6 +27,59 @@ type ReportResult struct {
 // passenger car / bus with ≤10 seats (Royal Decree 145 s.5; the excess is disallowed by
 // Royal Decree 315 s.4(1)) — docs/kms/21-thai-tax-form-references.md §13.
 var passengerCarTaxCostCap = decimal.NewFromInt(1000000)
+
+// passengerCarTaxRatePercent is the highest yearly tax rate for "ทรัพย์สินอย่างอื่น", the class
+// vehicles fall in (Royal Decree 145 s.4(5)) — docs/kms/21-thai-tax-form-references.md §13.
+var passengerCarTaxRatePercent = decimal.NewFromInt(20)
+
+// passengerCarTaxDeprec is the ภ.ง.ด.50 depreciation of one flagged passenger car for one year
+// (docs/kms/21-thai-tax-form-references.md §13): the book amount on the cost up to 1,000,000
+// only (RD145 s.5; same rate and holding period as the books, RD ruling 0702/5605), but never
+// above 20% a year of that capped cost for the days held (RD145 s.4 opening + s.4(5)).
+// heldDays is the days of the calendar year the car was owned (taxHeldDays), yearDays the days
+// in that year — not the days of this year's book items, which stop once the book value reaches
+// scrap even though the car is still held (3-year life: the last book year).
+// The ceiling applies to every flagged car, also at cost ≤ 1,000,000: the flag is the owner
+// asking for the passenger-car tax rules. The calculator writes equal yearly rates only (it
+// ignores Asset.Method), so RD145 s.4 para 2 — unequal-rate methods may exceed the rate in some
+// years when the life is ≥ 100/20 years — never applies to these amounts; revisit it (and s.4
+// para 3, whose double-declining option excludes passenger cars) if Method is ever honoured.
+func passengerCarTaxDeprec(cost, acctDep decimal.Decimal, heldDays, yearDays int) decimal.Decimal {
+	taxDep := acctDep
+	if cost.GreaterThan(passengerCarTaxCostCap) {
+		taxDep = acctDep.Mul(passengerCarTaxCostCap).Div(cost).Round(2)
+	}
+	if yearDays > 0 {
+		ceiling := decimal.Min(cost, passengerCarTaxCostCap).Mul(passengerCarTaxRatePercent).
+			Mul(decimal.NewFromInt(int64(heldDays))).Div(decimal.NewFromInt(int64(100 * yearDays))).Round(2)
+		taxDep = decimal.Min(taxDep, ceiling)
+	}
+	return decimal.Max(taxDep, decimal.Zero)
+}
+
+// taxHeldDays is how many days of the calendar year the company owned the asset, the period RD145
+// s.4 opening prorates the ceiling by ("ให้คำนวณหักตามระยะเวลาที่ได้ทรัพย์สินนั้นมาในแต่ละรอบระยะเวลาบัญชี",
+// docs/kms/21-thai-tax-form-references.md §13): from the acquisition date (purchasedate, else
+// startcalcdate) or 1 Jan, to the disposal date or 31 Dec, both days counted. RD145 says nothing
+// about the disposal day; it counts as held, like the first day.
+func taxHeldDays(asset Asset, disposalDate string, year int) int {
+	first := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
+	last := time.Date(year, time.December, 31, 0, 0, 0, 0, time.UTC)
+	acquired, err := time.Parse("2006-01-02", asset.PurchaseDate)
+	if err != nil {
+		acquired, err = time.Parse("2006-01-02", asset.StartCalcDate)
+	}
+	if err == nil && acquired.After(first) {
+		first = acquired
+	}
+	if disposed, err := time.Parse("2006-01-02", disposalDate); err == nil && disposed.Before(last) {
+		last = disposed
+	}
+	if last.Before(first) {
+		return 0
+	}
+	return int(last.Sub(first).Hours()/24) + 1
+}
 
 type Reporter struct {
 	records *records
@@ -209,6 +264,22 @@ func (r *Reporter) GetTaxReconciliationReport(ctx context.Context, scope Scope, 
 	for _, d := range allDep {
 		depMap[d.AssetCode] = depMap[d.AssetCode].Add(d.PeriodDeprec.Decimal())
 	}
+	// The items above are this calendar year's (calculator.go sets fiscalyear = the calendar
+	// year); an unparsable year matched no items, so the fallback never prorates anything.
+	// A disposal on or before 31 Dec ends the days held (a car sold in an earlier year: 0 days).
+	year, yearErr := strconv.Atoi(fiscalYear)
+	yearDays := 0
+	disposedOn := make(map[string]string)
+	if yearErr == nil {
+		yearDays = daysInYear(year)
+		disposals, err := queryRecords[AssetDisposal](ctx, db, scope.Company, kindDisposal, ` AND payload->>'disposaldate' <= $3`, "", fmt.Sprintf("%04d-12-31", year))
+		if err != nil {
+			return nil, err
+		}
+		for _, d := range disposals {
+			disposedOn[d.AssetCode] = d.DisposalDate
+		}
+	}
 
 	var rows []map[string]string
 	totCost := decimal.Zero
@@ -222,10 +293,9 @@ func (r *Reporter) GetTaxReconciliationReport(ctx context.Context, scope Scope, 
 		remark := "หักตามอัตราปกติ"
 
 		cost := ast.Cost.Decimal()
-		if ast.PassengerCarTaxCap && cost.GreaterThan(passengerCarTaxCostCap) {
-			// Same rate and holding period as the books, on the capped cost only (RD ruling 0702/5605).
-			taxDep = acctDep.Mul(passengerCarTaxCostCap).Div(cost).Round(2)
-			remark = "ยานพาหนะนั่งไม่เกิน 10 ที่นั่ง จำกัดมูลค่าทางภาษี 1,000,000 บาท"
+		if ast.PassengerCarTaxCap {
+			taxDep = passengerCarTaxDeprec(cost, acctDep, taxHeldDays(ast, disposedOn[ast.AssetCode], year), yearDays)
+			remark = "รถยนต์นั่ง/รถยนต์โดยสารไม่เกิน 10 ที่นั่ง: หักจากต้นทุนไม่เกิน 1,000,000 บาท อัตราไม่เกินร้อยละ 20 ต่อปี"
 		} else if ast.FirstYearPercent.Decimal().GreaterThan(decimal.Zero) {
 			remark = fmt.Sprintf("สิทธิประโยชน์หักค่าสึกหรอปีแรกพิเศษ %s%%", ast.FirstYearPercent.String())
 		}
