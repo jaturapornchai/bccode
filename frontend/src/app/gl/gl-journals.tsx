@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Eye, FileText, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
@@ -14,6 +14,7 @@ import { isTabularPaste, parseClipboardJournalLines, type ClipboardJournalIssue 
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
 import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine, appendVatLine } from "@/lib/gl-smart-guard";
 import { GLJournalDetailsPanel } from "./gl-journal-details";
+import { GLVoucherPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { detailTaxIdTarget, journalDetailsProblem, normalizeJournalDetails, reconciliationChanges } from "@/lib/gl-journal-details";
 import { GLJournalReviewPanel } from "./gl-journal-review";
 
@@ -93,6 +94,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const filters = new URLSearchParams({ ...(activeBook ? { bookcode: activeBook } : {}), ...(kind ? { kind } : {}), ...(activeStatus ? { status: activeStatus } : {}) }).toString();
   const list = useGLList<GLJournal>("journals", search, filters), refs = useReferences();
   const language = useGLLanguage();
+  const voucherPrint = useGLPrint();
   const books = useMemo(() => refs.books ?? [], [refs.books]);
   const usableBooks = useMemo(() => activeJournalBooks(books), [books]);
   const bookLabel = (code: string) => journalBookName(findJournalBook(books, code), code, language);
@@ -631,6 +633,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
+                    <Button type="button" variant="outline" className={actionClass} disabled={busy} onClick={() => voucherPrint.print(<GLVoucherPrint journal={journal} books={refs.books ?? []} company={printCompanyName()} tr={tr} language={language} scale={year?.scale} />)} title={tr("gl_print_voucher_title_hint", "พิมพ์ใบสำคัญรายวันพร้อมช่องลายมือชื่อผู้จัดทำ ผู้ตรวจสอบ และผู้อนุมัติ")}>
+                      <Printer className="size-4 mr-1.5" />{tr("gl_print_voucher", "พิมพ์ใบสำคัญ")}
+                    </Button>
                     {journal.status === "draft" && effectiveMode === "edit" && (
                       <Button
                         type="button"
@@ -1091,6 +1096,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
         }
       />
       {confirmationDialog}
+      {voucherPrint.portal}
     </div>
   );
 }

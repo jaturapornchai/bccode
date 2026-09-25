@@ -7699,3 +7699,165 @@ tbody tr.bc-list-row > td,
 tr.bc-list-row > td {
   display: table-cell !important;
 }
+
+/* 2026-09-26 GL print — สมุดบัญชีตามประกาศกรมทะเบียนการค้า พ.ศ. 2544 ข้อ 4–5 และใบสำคัญ ข้อ 11 (frontend/src/app/gl/gl-print.tsx).
+   เอกสารอยู่ใน .gl-print-root (portal ลูกของ body): ตอนพิมพ์ซ่อนแอปทั้งหมด พิมพ์ขาวดำบนกระดาษ A4;
+   @page (ขนาด/ขอบ/เลขหน้า "หน้า n / N") สร้างจาก <style> ใน portal เพราะป้ายเลขหน้าต้องมาจาก languages.tsv */
+.gl-print-root {
+  display: none;
+}
+
+@media print {
+  body.gl-printing > :not(.gl-print-root) {
+    display: none !important;
+  }
+
+  body.gl-printing .gl-print-root {
+    display: block !important;
+    color: #000;
+    background: #fff;
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+
+  .gl-print-root[data-orientation="portrait"] {
+    page: gl-print-portrait;
+  }
+
+  .gl-print-root[data-orientation="landscape"] {
+    page: gl-print-landscape;
+  }
+
+  .gl-print-root table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2mm;
+  }
+
+  .gl-print-root thead {
+    display: table-header-group;
+  }
+
+  .gl-print-root tr {
+    break-inside: avoid;
+  }
+
+  .gl-print-root th,
+  .gl-print-root td {
+    border: 0.5pt solid #555;
+    padding: 1mm 1.5mm;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  .gl-print-root th {
+    font-weight: 700;
+    background: #eee;
+  }
+
+  .gl-print-root .gl-print-num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gl-print-root .gl-print-head th {
+    border: 0;
+    background: none;
+    padding: 0 0 2mm;
+    font-weight: 400;
+  }
+
+  .gl-print-root .gl-print-company {
+    font-size: 12pt;
+    font-weight: 700;
+  }
+
+  .gl-print-root .gl-print-title {
+    font-size: 11pt;
+    font-weight: 700;
+  }
+
+  .gl-print-root .gl-print-meta {
+    font-size: 8.5pt;
+  }
+
+  .gl-print-root .gl-print-total td {
+    font-weight: 700;
+    border-top: 1pt solid #000;
+  }
+
+  .gl-print-root .gl-print-totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2mm 8mm;
+    margin-top: 3mm;
+    break-inside: avoid;
+  }
+
+  .gl-print-root .gl-print-totals div,
+  .gl-print-root .gl-print-fields div {
+    display: flex;
+    gap: 2mm;
+  }
+
+  .gl-print-root .gl-print-totals dt::after,
+  .gl-print-root .gl-print-fields dt::after {
+    content: ":";
+  }
+
+  .gl-print-root .gl-print-totals dd,
+  .gl-print-root .gl-print-fields dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .gl-print-root .gl-print-voucher-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 6mm;
+  }
+
+  .gl-print-root .gl-print-mark {
+    display: inline-block;
+    margin-top: 1mm;
+    padding: 0.5mm 2mm;
+    border: 1pt solid #000;
+    font-weight: 700;
+  }
+
+  .gl-print-root .gl-print-desc {
+    margin: 3mm 0 0;
+  }
+
+  .gl-print-root .gl-print-section {
+    margin-top: 4mm;
+    break-inside: avoid;
+  }
+
+  .gl-print-root .gl-print-section h3 {
+    margin: 0;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+
+  .gl-print-root .gl-print-sign {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10mm;
+    margin-top: 16mm;
+    text-align: center;
+    break-inside: avoid;
+  }
+
+  .gl-print-root .gl-print-sign-line {
+    height: 10mm;
+    border-bottom: 0.5pt dotted #000;
+  }
+
+  .gl-print-root .gl-print-sign-date {
+    margin-top: 2mm;
+    font-size: 8.5pt;
+  }
+}

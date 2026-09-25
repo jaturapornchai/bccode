@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-25 @ commit 84af734d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-26 @ commit 9097836f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 28
 
@@ -1178,25 +1178,25 @@ Files indexed: 28
 | 1060 | function | `DisableUser` |
 | 1086 | function | `DeleteUser` |
 
-## frontend/src/app/gl/gl-journals.tsx (1096 lines)
+## frontend/src/app/gl/gl-journals.tsx (1102 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 23 | function | `journalBookBadgeClass` |
-| 35 | function | `pasteIssueText` |
-| 48 | function | `createSmartNextLine` |
-| 71 | function | `focusDetailField` |
-| 84 | function | `GLJournals` |
-| 185 | const-arrow | `handlePasteClick` |
-| 200 | function | `closeView` |
-| 206 | function | `openView` |
-| 225 | function | `openEdit` |
-| 243 | function | `openCreate` |
-| 256 | function | `cancelEdit` |
-| 271 | function | `save` |
-| 299 | function | `saveReconciliation` |
-| 330 | function | `act` |
-| 348 | function | `deleteDraftDirect` |
+| 24 | function | `journalBookBadgeClass` |
+| 36 | function | `pasteIssueText` |
+| 49 | function | `createSmartNextLine` |
+| 72 | function | `focusDetailField` |
+| 85 | function | `GLJournals` |
+| 187 | const-arrow | `handlePasteClick` |
+| 202 | function | `closeView` |
+| 208 | function | `openView` |
+| 227 | function | `openEdit` |
+| 245 | function | `openCreate` |
+| 258 | function | `cancelEdit` |
+| 273 | function | `save` |
+| 301 | function | `saveReconciliation` |
+| 332 | function | `act` |
+| 350 | function | `deleteDraftDirect` |
 
 ## frontend/src/app/crud/erp-crud-workbench.tsx (1074 lines)
 

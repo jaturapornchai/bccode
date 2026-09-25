@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles } from "lucide-react";
+import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
-import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString } from "@/lib/general-ledger";
+import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount } from "@/lib/general-ledger";
+import type { LanguageCode } from "@/lib/i18n";
+import { formatAppDate } from "@/lib/date-time";
 import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
+import { GLVoucherPrint, PrintHeading, printCompanyName, printedAtText, printOrientation, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
 
 export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string };
 export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "" };
@@ -45,13 +48,17 @@ export function JournalDrillDownModal({
   journalId,
   open,
   onClose,
+  books = [],
 }: {
   docno: string | null;
   journalId: string | null;
   open: boolean;
   onClose: () => void;
+  books?: GLJournalBook[];
 }) {
   const tr = useGLText();
+  const language = useGLLanguage();
+  const voucherPrint = useGLPrint();
   const [journal, setJournal] = useState<GLJournal | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -133,9 +140,15 @@ export function JournalDrillDownModal({
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="size-8 rounded-lg" onClick={onClose}>
-            <X className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button type="button" variant="outline" className={actionClass} disabled={!journal} onClick={() => journal && voucherPrint.print(<GLVoucherPrint journal={journal} books={books} company={printCompanyName()} tr={tr} language={language} />)}>
+              <Printer className="size-4 mr-1.5" />{tr("gl_print_voucher", "พิมพ์ใบสำคัญ")}
+            </Button>
+            <Button variant="ghost" size="icon" className="size-8 rounded-lg" onClick={onClose} aria-label={tr("gl_close_view_dialog", "ปิดหน้าต่างแสดงข้อมูล")} title={tr("gl_close_view_dialog", "ปิดหน้าต่างแสดงข้อมูล")}>
+              <X className="size-4" />
+            </Button>
+          </div>
+          {voucherPrint.portal}
         </div>
 
         {/* Body */}
@@ -339,6 +352,57 @@ export function ReportGrid({
     <p className="shrink-0 text-[0.9rem] text-muted-foreground">{tr("gl_data_as_of", "ข้อมูล ณ {0}").replace("{0}", String(report.asof || tr("gl_last_processing_time", "เวลาประมวลผลล่าสุด")))}</p>
   </div>;
 }
+// สมุดบัญชีตามประกาศกรมทะเบียนการค้า 2544 ข้อ 5: หัวทุกหน้า (thead ซ้ำทุกหน้า) = ชื่อผู้จัดทำบัญชี + ชนิดของบัญชี + ช่วงเวลา; เลขหน้าจาก gl-print
+const PRINT_MAX_ROWS = 10000;
+const BOOK_REPORTS: ReadonlySet<string> = new Set(["gljournal", "ledger"]);
+function printCell(key: string, value: string, tr: GLTextFn, books: GLJournalBook[], language: LanguageCode) {
+  if (/(^|_)date$/.test(key) && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatAppDate(value, language);
+  return reportText(key, value, tr, books, language);
+}
+function GLReportPrint({ report, title, meta, company, books, tr, language }: { report: GLReport; title: string; meta: string[]; company: string; books: GLJournalBook[]; tr: GLTextFn; language: LanguageCode }) {
+  const rows = reportRows(report);
+  const columns = visiblePrintColumns(report.columns, rows);
+  const totals = Object.entries(report.totals ?? {}).sort(([left], [right]) => totalRank(report, left) - totalRank(report, right));
+  const inline = totals.filter(([key]) => columns.some((column) => column.amount && column.key === key));
+  const extra = totals.filter(([key]) => !inline.some(([inlineKey]) => inlineKey === key));
+  return <>
+    <table>
+      <thead>
+        <tr className="gl-print-head"><th colSpan={columns.length || 1}><PrintHeading company={company} title={title} meta={meta} /></th></tr>
+        <tr>{columns.map((column) => <th key={column.key} className={column.amount ? "gl-print-num" : ""}>{column.label}</th>)}</tr>
+      </thead>
+      <tbody>
+        {rows.map((row, index) => <tr key={index}>{columns.map((column) => <td key={column.key} className={column.amount ? "gl-print-num" : ""}>{column.amount ? printAmountCell(column.key, row[column.key] ?? "") : printCell(column.key, row[column.key] ?? "", tr, books, language)}</td>)}</tr>)}
+        {!rows.length && <tr><td colSpan={columns.length || 1}>{tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}</td></tr>}
+        {inline.length > 0 && <tr className="gl-print-total">{columns.map((column, index) => { const total = inline.find(([key]) => key === column.key); return <td key={column.key} className={column.amount ? "gl-print-num" : ""}>{total ? formatAmount(total[1]) : index === 0 ? tr("gl_total", "ยอดรวม") : ""}</td>; })}</tr>}
+      </tbody>
+    </table>
+    {extra.length > 0 && <dl className="gl-print-totals">{extra.map(([key, value]) => <div key={key}><dt>{report.columns.find((column) => column.key === key)?.label ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</dt><dd>{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</dd></div>)}</dl>}
+  </>;
+}
+function reportPrintTitle(name: string, filters: ReportFilters, tr: GLTextFn, books: GLJournalBook[], accounts: GLAccount[], language: LanguageCode) {
+  const item = GL_MENU_ITEMS.find((menu) => menu.route === `/report/${name}`);
+  const base = item ? (item.label.key ? tr(item.label.key, item.label.th) : item.label.th) : name;
+  const account = filters.accountcode ? accounts.find((row) => row.accountcode === filters.accountcode) : undefined;
+  return [
+    base,
+    filters.bookcode ? `${filters.bookcode} ${journalBookName(findJournalBook(books, filters.bookcode), filters.bookcode, language)}` : "",
+    filters.accountcode ? `${filters.accountcode} ${account ? accountName(account) : ""}`.trim() : "",
+  ].filter(Boolean).join(" — ");
+}
+function reportPrintMeta(name: string, filters: ReportFilters, asOf: boolean, volume: string, tr: GLTextFn, language: LanguageCode) {
+  const date = (value: string) => formatAppDate(value, language);
+  return [
+    asOf ? tr("gl_print_as_of", "ณ วันที่ {0}").replace("{0}", date(filters.to))
+      : filters.from && filters.to ? tr("gl_print_period", "ตั้งแต่วันที่ {0} ถึงวันที่ {1}").replace("{0}", date(filters.from)).replace("{1}", date(filters.to))
+      : `${tr("gl_fiscal_year", "ปีบัญชี")} ${filters.fiscalyear}`,
+    filters.branchcode ? `${tr("gl_branch_code", "รหัสสาขา")} ${filters.branchcode}` : "",
+    filters.departmentcode ? `${tr("gl_department_code", "รหัสแผนก")} ${filters.departmentcode}` : "",
+    filters.projectcode ? `${tr("gl_project_code", "รหัสโครงการ")} ${filters.projectcode}` : "",
+    BOOK_REPORTS.has(name) ? tr("gl_print_volume_no", "เล่มที่ {0}").replace("{0}", volume.trim() || "..........") : "",
+    tr("gl_print_printed_at", "พิมพ์เมื่อ {0}").replace("{0}", printedAtText(language)),
+  ];
+}
 const totalLabels: Record<string, GLLabel> = { debit: ["gl_total_debit", "รวมเดบิต"], credit: ["gl_total_credit", "รวมเครดิต"], balance: ["gl_balance", "ยอดคงเหลือ"], income: ["gl_revenue", "รายได้"], revenue: ["gl_revenue", "รายได้"], expense: ["gl_expense", "ค่าใช้จ่าย"], profit: ["gl_net_profit", "กำไรสุทธิ"], assets: ["gl_asset", "สินทรัพย์"], liabilities: ["gl_liability", "หนี้สิน"], equity: ["gl_equity", "ส่วนของเจ้าของ"], difference: ["gl_difference", "ผลต่าง"], budget: ["gl_budget_2", "งบประมาณ"], actual: ["gl_actual", "ยอดจริง"], budgetamount: ["gl_budget_2", "งบประมาณ"], actualamount: ["gl_actual", "ยอดจริง"], variance: ["gl_difference", "ผลต่าง"], opening: ["gl_opening_balance_2", "ยอดยกมา"], closing: ["gl_closing_balance", "ยอดยกไป"], cashin: ["gl_money_in", "เงินเข้า"], cashout: ["gl_money_out", "เงินออก"], netcash: ["gl_net_cash", "เงินสดสุทธิ"], cash: ["gl_cash_and_bank", "เงินสดและเงินฝากธนาคาร"], currentearnings: ["gl_unclosed_profit_loss", "กำไรขาดทุนที่ยังไม่ปิด"], unclassifiedlines: ["gl_unclassified_line", "บรรทัดที่ยังไม่ระบุประเภท"] };
 export function GLReports({ name, heading }: { name: string; heading?: string }) {
   const tr = useGLText();
@@ -352,6 +416,8 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const asOf = AS_OF_REPORTS.has(activeReportName);
   const [report, setReport] = useState<GLReport | null>(null), [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
+  const [volume, setVolume] = useState("");
+  const reportPrint = useGLPrint();
   const set = (key: keyof ReportFilters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
 
   async function load(nextPage = 1, selected = filters, targetReport = activeReportName) {
@@ -389,18 +455,35 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     void load(1, updatedFilters, prevReport);
   };
 
+  // ส่งออก/พิมพ์ต้องได้ทุกแถวจาก snapshot เดียวกัน (sequence) ไม่ใช่แค่หน้าที่แสดงอยู่
+  async function completeReport(selected: ReportFilters, maxRows: number, tooMany: string) {
+    const complete = await fetchReport(activeReportName, selected, 1, 500);
+    if (complete.totalrows > maxRows) throw new Error(tooMany);
+    complete.rows = complete.rows ?? [];
+    for (let next = 2; complete.rows.length < complete.totalrows; next++) {
+      const chunk = await fetchReport(activeReportName, selected, next, 500, complete.sequence);
+      if (chunk.totalrows !== complete.totalrows || chunk.sequence !== complete.sequence || !chunk.rows?.length) throw new Error(tr("gl_data_changed_during_export_retry", "ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่"));
+      complete.rows.push(...chunk.rows);
+    }
+    return complete;
+  }
+
+  async function printReport() {
+    if (!applied || !report || busy) return;
+    setBusy(true); setError("");
+    try {
+      const complete = await completeReport(applied, PRINT_MAX_ROWS, tr("gl_print_too_many", "รายการเกิน {0} รายการ กรุณาจำกัดช่วงวันที่ หรือเลือกสมุดรายวัน/บัญชีก่อนพิมพ์").replace("{0}", PRINT_MAX_ROWS.toLocaleString("en-US")));
+      const books = refs.books ?? [];
+      const columns = visiblePrintColumns(complete.columns, complete.rows ?? []);
+      reportPrint.print(<GLReportPrint report={complete} title={reportPrintTitle(activeReportName, applied, tr, books, refs.accounts, language)} meta={reportPrintMeta(activeReportName, applied, asOf, volume, tr, language)} company={printCompanyName()} books={books} tr={tr} language={language} />, printOrientation(columns.length));
+    } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+  }
+
   async function exportCsv() {
     if (!applied || !report || busy) return;
     setBusy(true); setError("");
     try {
-      const complete = await fetchReport(activeReportName, applied, 1, 500);
-      if (complete.totalrows > 100000) throw new Error(tr("gl_data_exceeds_100k_limit_date_range", "ข้อมูลเกิน 100,000 รายการ กรุณาจำกัดช่วงวันที่ก่อนส่งออก"));
-      complete.rows = complete.rows ?? [];
-      for (let next = 2; complete.rows.length < complete.totalrows; next++) {
-        const chunk = await fetchReport(activeReportName, applied, next, 500, complete.sequence);
-        if (chunk.totalrows !== complete.totalrows || chunk.sequence !== complete.sequence || !chunk.rows?.length) throw new Error(tr("gl_data_changed_during_export_retry", "ข้อมูลเปลี่ยนแปลงระหว่างส่งออก กรุณาลองใหม่"));
-        complete.rows.push(...chunk.rows);
-      }
+      const complete = await completeReport(applied, 100000, tr("gl_data_exceeds_100k_limit_date_range", "ข้อมูลเกิน 100,000 รายการ กรุณาจำกัดช่วงวันที่ก่อนส่งออก"));
       downloadText(tr("gl_accounts_csv", "บัญชี-{0}-{1}.csv").replace("{0}", String(activeReportName)).replace("{1}", String(asOf ? applied.to : applied.fiscalyear)), reportCsv(complete), "text/csv;charset=utf-8");
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
@@ -447,6 +530,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
         <Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={filters.departmentcode} onChange={(e) => set("departmentcode", e.target.value)} placeholder={tr("gl_all_departments", "ทุกแผนก")} /></Field>
         <Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={filters.projectcode} onChange={(e) => set("projectcode", e.target.value)} placeholder={tr("gl_all_projects", "ทุกโครงการ")} /></Field>
+        {BOOK_REPORTS.has(activeReportName) && <Field label={tr("gl_print_volume", "เล่มที่ (สำหรับพิมพ์สมุดบัญชี)")}><input className={control} value={volume} maxLength={20} onChange={(e) => setVolume(e.target.value)} placeholder={tr("gl_print_volume_placeholder", "เช่น 1")} /></Field>}
         <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={filters.bookcode} onChange={(value) => set("bookcode", value)}><option value="">{tr("gl_all_types", "ทุกสมุดรายวัน")}</option>{(refs.books ?? []).filter((book) => !book.isdeleted).map((book) => <option key={book.code} value={book.code}>{book.code} · {journalBookName(book, book.code, language)}</option>)}</Combobox></Field>
         </>}
         <div className="flex flex-wrap items-end gap-2">
@@ -457,6 +541,10 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
           <Button type="button" variant="outline" className={actionClass} disabled={busy || !report} onClick={() => void exportCsv()}>
             <Download />
             {tr("gl_export_table", "ส่งออกตาราง")}
+          </Button>
+          <Button type="button" variant="outline" className={actionClass} disabled={busy || !report} onClick={() => void printReport()}>
+            <Printer />
+            {tr("gl_print", "พิมพ์")}
           </Button>
         </div>
       </div>
@@ -486,6 +574,8 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       journalId={drillDocument?.journalId ?? null}
       open={drillDocument !== null}
       onClose={() => setDrillDocument(null)}
+      books={refs.books ?? []}
     />
+    {reportPrint.portal}
   </section>;
 }

@@ -134,6 +134,7 @@
 - [decisions/2026-09-25-gl-monthly-budget.md](decisions/2026-09-25-gl-monthly-budget.md) — งบประมาณรายเดือนต่อบัญชี (Champ 5500 `BCGLBudget`): ตาราง `gl_budgets` + `gl_budget_lines` (บัญชี × งวด 1–12, `numeric(18,2)`), คำสั่ง `budgets` create/update/delete/spread ผ่าน `Execute`, สถานะเปิด/ปิดแบบ Champ (ไม่มีอนุมัติ), รายงาน `budgetcomparison` (Champ 5530) เทียบ `gl_lines` ที่ผ่านบัญชีตาม `normal_balance`; จอ `/gl/budget` ขึ้น "ยังไม่พร้อม" จนกว่าจะทำจองบรายเดือน; ส่วนที่ต่างจาก Champ โดยตั้งใจอยู่ในตาราง ADR
 - [decisions/2026-09-25-retire-mongo-era-docs-and-skills.md](decisions/2026-09-25-retire-mongo-era-docs-and-skills.md) — ล้างเอกสาร/skill ยุค MongoDB/Kafka/Redis/ClickHouse: เขียนบทความ kms ใหม่ตามโค้ด, ลบ `12-kafka-messaging.md` + architecture/snippet ที่ตาย, ลบ skill `audit-mongomodel-sync` และ server `mongodb`/`mongomodel` ใน `.mcp.json`
 - [decisions/2026-09-25-wht-recorded-only.md](decisions/2026-09-25-wht-recorded-only.md) — รายงานภาษีหัก ณ ที่จ่าย/ภ.ง.ด.2-3-53/50 ทวิ อ่านเฉพาะรายการที่บันทึกในใบสำคัญ (แบบ Champ `BCAPWTaxList`) เลิกเดาฐาน/แบบจากชื่อบัญชี
+- [decisions/2026-09-26-gl-book-and-voucher-print.md](decisions/2026-09-26-gl-book-and-voucher-print.md) — พิมพ์สมุดบัญชี/รายงาน GL (หัวซ้ำทุกหน้า + เลขหน้า @page + เล่มที่) และใบสำคัญรายวันพร้อมช่องลงนาม ตามประกาศกรมทะเบียนการค้า 2544 — พิมพ์จากเบราว์เซอร์ ยังไม่มียอดรวมต่อหน้า
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 36 ไฟล์ใน `bugs/`
 
