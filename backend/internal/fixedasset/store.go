@@ -6,9 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/shopspring/decimal"
+
+	gl "smlcloudplatform/internal/generalledger"
 )
 
 var (
@@ -16,6 +19,18 @@ var (
 	ErrStaleVersion  = errors.New("รายการนี้ถูกแก้ไขโดยผู้ใช้อื่นไปแล้ว กรุณาโหลดข้อมูลใหม่")
 	ErrCodeDuplicate = errors.New("รหัสนี้มีอยู่ในระบบแล้ว")
 )
+
+// CodeSchedulePosted is the refusal to rebuild a depreciation schedule once any period of the asset
+// is posted to GL: CalculateSchedule starts again from beginaccumdeprec and cannot continue from the
+// amounts already in the ledger, so the rebuilt rows would no longer add up to cost − scrap − begin
+// accum. The screen text is gl_err_fa_schedule_posted in languages.tsv (th column = Message).
+const CodeSchedulePosted = "fa_schedule_posted"
+
+var errSchedulePosted = &gl.UserError{
+	Code:    CodeSchedulePosted,
+	Status:  http.StatusConflict,
+	Message: "สินทรัพย์นี้มีค่าเสื่อมราคาผ่านรายการเข้า GL แล้ว จึงแก้ราคาทุน ราคาซาก อัตราค่าเสื่อม % ค่าเสื่อมปีแรก อายุการใช้งาน วันเริ่มคิด หรือค่าเสื่อมสะสมยกมาไม่ได้ กรุณายกเลิกการผ่านรายการค่าเสื่อมราคาของสินทรัพย์นี้ก่อน แล้วทำรายการอีกครั้ง",
+}
 
 // Store keeps fixed-asset master data and depreciation schedules in the holding's PostgreSQL database.
 type Store struct {
@@ -111,7 +126,7 @@ func (s *Store) CreateAsset(ctx context.Context, scope Scope, asset Asset, now t
 	if err != nil {
 		return nil, err
 	}
-	if err := putSchedule(ctx, tx, scope, schedule, nil, now); err != nil {
+	if err := putSchedule(ctx, tx, scope, schedule, now); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -145,8 +160,9 @@ func (s *Store) UpdateAsset(ctx context.Context, scope Scope, id string, asset A
 		return nil, err
 	}
 
-	// Recalculate unposted schedule if cost, useful life, scrap, or dates changed
-	if !asset.Cost.Decimal().Equal(old.Cost.Decimal()) || asset.UsefulLifeYears != old.UsefulLifeYears || !asset.ScrapValue.Decimal().Equal(old.ScrapValue.Decimal()) || asset.StartCalcDate != old.StartCalcDate {
+	// Regenerate the schedule, as the recalculate action does, when a calculation input changed;
+	// refused (whole update rolled back) once a period is posted to GL.
+	if scheduleInputsChanged(*old, asset) {
 		if err := s.recalculateSchedule(ctx, tx, scope, asset, now); err != nil {
 			return nil, err
 		}
@@ -155,6 +171,18 @@ func (s *Store) UpdateAsset(ctx context.Context, scope Scope, id string, asset A
 		return nil, err
 	}
 	return &asset, nil
+}
+
+// scheduleInputsChanged reports whether an edit touches any Asset field Calculator.CalculateSchedule
+// reads; keep this list in step with calculator.go. Amounts compare by value ("20" == "20.00").
+func scheduleInputsChanged(old, asset Asset) bool {
+	return !asset.Cost.Decimal().Equal(old.Cost.Decimal()) ||
+		!asset.ScrapValue.Decimal().Equal(old.ScrapValue.Decimal()) ||
+		!asset.DeprecPercent.Decimal().Equal(old.DeprecPercent.Decimal()) ||
+		!asset.FirstYearPercent.Decimal().Equal(old.FirstYearPercent.Decimal()) ||
+		!asset.BeginAccumDeprec.Decimal().Equal(old.BeginAccumDeprec.Decimal()) ||
+		asset.UsefulLifeYears != old.UsefulLifeYears ||
+		asset.StartCalcDate != old.StartCalcDate
 }
 
 func (s *Store) DeleteAsset(ctx context.Context, scope Scope, id string, expectedVersion int64, now time.Time) error {
@@ -177,7 +205,7 @@ func (s *Store) DeleteAsset(ctx context.Context, scope Scope, id string, expecte
 	}
 
 	// Check if any depreciation is already posted to GL
-	postedCount, err := countRecords(ctx, tx, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3 AND COALESCE((payload->>'isposted')::boolean, false)`, old.AssetCode)
+	postedCount, err := countPostedDepreciation(ctx, tx, scope, old.AssetCode)
 	if err != nil {
 		return err
 	}
@@ -236,13 +264,10 @@ func depreciationKey(item DepreciationScheduleItem) string {
 	return fmt.Sprintf("%s-%s-%d", item.AssetCode, item.FiscalYear, item.Period)
 }
 
-// putSchedule stores calculated schedule rows, skipping periods already posted to GL.
-func putSchedule(ctx context.Context, q queryer, scope Scope, schedule []DepreciationScheduleItem, posted map[string]bool, now time.Time) error {
+// putSchedule stores calculated schedule rows; callers make sure no period of the asset is posted.
+func putSchedule(ctx context.Context, q queryer, scope Scope, schedule []DepreciationScheduleItem, now time.Time) error {
 	for _, item := range schedule {
 		key := depreciationKey(item)
-		if posted[key] {
-			continue
-		}
 		item.Identity = identityFor(scope, kindDepreciation, key, Identity{}, now)
 		if err := putRecord(ctx, q, scope.Company, kindDepreciation, item.ID, key, item); err != nil {
 			return err
@@ -256,10 +281,19 @@ func deleteUnpostedSchedule(ctx context.Context, q queryer, scope Scope, assetCo
 	return err
 }
 
+func countPostedDepreciation(ctx context.Context, q queryer, scope Scope, assetCode string) (int64, error) {
+	return countRecords(ctx, q, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3 AND COALESCE((payload->>'isposted')::boolean, false)`, assetCode)
+}
+
+// recalculateSchedule rebuilds the whole schedule from the asset; it refuses (errSchedulePosted)
+// while any period is posted, because a rebuild from scratch would not follow on from the ledger.
 func (s *Store) recalculateSchedule(ctx context.Context, q queryer, scope Scope, asset Asset, now time.Time) error {
-	postedItems, err := queryRecords[DepreciationScheduleItem](ctx, q, scope.Company, kindDepreciation, ` AND payload->>'assetcode' = $3 AND COALESCE((payload->>'isposted')::boolean, false)`, "", asset.AssetCode)
+	postedCount, err := countPostedDepreciation(ctx, q, scope, asset.AssetCode)
 	if err != nil {
 		return err
+	}
+	if postedCount > 0 {
+		return errSchedulePosted
 	}
 	if err := deleteUnpostedSchedule(ctx, q, scope, asset.AssetCode); err != nil {
 		return err
@@ -268,11 +302,7 @@ func (s *Store) recalculateSchedule(ctx context.Context, q queryer, scope Scope,
 	if err != nil {
 		return err
 	}
-	posted := make(map[string]bool, len(postedItems))
-	for _, p := range postedItems {
-		posted[depreciationKey(p)] = true
-	}
-	return putSchedule(ctx, q, scope, schedule, posted, now)
+	return putSchedule(ctx, q, scope, schedule, now)
 }
 
 func (s *Store) RecalculateAssetSchedule(ctx context.Context, scope Scope, assetCode string, now time.Time) error {

@@ -138,7 +138,7 @@ func (h *Http) command(request microservice.IContext) error {
 			}
 			updated, err := h.store.UpdateAsset(ctx, scope, cmd.ID, *cmd.Asset, cmd.Version, now)
 			if err != nil {
-				return fail(request, http.StatusBadRequest, err.Error())
+				return failure(request, err)
 			}
 			return success(request, map[string]interface{}{"success": true, "data": updated})
 
@@ -158,7 +158,7 @@ func (h *Http) command(request microservice.IContext) error {
 			}
 			err := h.store.RecalculateAssetSchedule(ctx, scope, cmd.AssetCode, now)
 			if err != nil {
-				return fail(request, http.StatusBadRequest, err.Error())
+				return failure(request, err)
 			}
 			return success(request, map[string]interface{}{"success": true})
 		}

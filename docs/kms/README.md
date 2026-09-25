@@ -129,7 +129,7 @@
 
 
 
-## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 33 ไฟล์ใน `bugs/`
+## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 34 ไฟล์ใน `bugs/`
 
 - [bugs/2026-06-13-product-browser-url-drift-base-href.md](bugs/2026-06-13-product-browser-url-drift-base-href.md)
 - [bugs/2026-06-13-productbarcodes-camelcase-naming.md](bugs/2026-06-13-productbarcodes-camelcase-naming.md)
@@ -162,6 +162,7 @@
 - [bugs/2026-09-24-fixed-asset-gl-guessed-accounts.md](bugs/2026-09-24-fixed-asset-gl-guessed-accounts.md) — **แก้แล้ว 2026-09-24**: ผ่านค่าเสื่อม/จำหน่ายสินทรัพย์เข้า GL — เลิกเดารหัสบัญชี (`520103`/`129101` ฯลฯ) ใช้สินทรัพย์ → ประเภทสินทรัพย์ → ถามผู้ใช้ (`fa_account_required` + field), เลขใบสำคัญขึ้นต้นด้วยสมุดประเภททั่วไปที่เลือก + ตรวจ 30 ตัวอักษร (rune), ตรวจสาขาหัวเอกสารแบบเดียวกับหน้าบันทึกรายวัน, เงินเป็น decimal ทั้งเส้น
 - [bugs/2026-09-08-permissiongroup-me-400-missing-backend-url.md](bugs/2026-09-08-permissiongroup-me-400-missing-backend-url.md) — **แก้แล้ว (รวมเข้า dev 2026-09-25)**: `GET /api/system-settings/permissiongroup/me` ตอบ 400 เมื่อผู้เรียกไม่ส่ง `x-bc-backend-url` — BFF ตรวจ URL ฝั่ง client เฉพาะเมื่อส่งมา (proxy ใช้ URL ฝั่ง server อยู่แล้ว)
 - [bugs/2026-09-25-line-code-route-unauthenticated.md](bugs/2026-09-25-line-code-route-unauthenticated.md) — **แก้แล้ว 2026-09-25**: `POST /api/auth/line/code` ออก LINE bridge code ให้ใครก็ได้โดยไม่ตรวจ session — BFF ตรวจรูปแบบ header แล้วถาม mainapi `/verify-token` ก่อนเรียก bridge (token ปลอม/หมดอายุ → 401 ไม่ยิง bridge)
+- [bugs/2026-09-25-fa-edit-does-not-recalculate-schedule.md](bugs/2026-09-25-fa-edit-does-not-recalculate-schedule.md) — **แก้แล้ว 2026-09-25**: แก้อัตราค่าเสื่อม/% ปีแรก/ค่าเสื่อมสะสมยกมาแล้วตารางค่าเสื่อมไม่คำนวณใหม่ — ตอนนี้คำนวณใหม่เมื่อค่าที่ใช้คำนวณเปลี่ยน และปฏิเสธ (409 `fa_schedule_posted`) ทั้งการแก้และการสั่งคำนวณใหม่เมื่อมีงวดผ่านรายการ GL แล้ว
 
 - [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ
 - [บทเรียน code review 2026-09-14](bugs/2026-09-14-code-review-gl-warehouse-fixes.md) — confirm() เป็น Promise, PUT location ต้อง spread doc เดิม, GL consumer group คงที่, ห้าม panic ตอน register consumer, เพดานบรรทัด journal ปิดงบ, report วนหน้า, NumericInput ไม่ปัดค่า
