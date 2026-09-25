@@ -111,7 +111,7 @@ func uatFreshInstallDB(t *testing.T) (*gl.Postgres, *sql.DB) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	for _, file := range []string{"schema.sql", "subledger.sql"} {
+	for _, file := range []string{"schema.sql", "subledger.sql", "budget.sql"} {
 		raw, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatalf("อ่าน %s ไม่ได้ (คาดหวังรันจาก package dir): %v", file, err)

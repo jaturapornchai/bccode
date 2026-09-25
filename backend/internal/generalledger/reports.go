@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type reportContext struct {
@@ -425,64 +427,58 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 	return r.run(ctx, cte, "date,docno,journalid,__line_no::integer", cols, []string{"debit", "credit"}, "journalid", "__line_no")
 }
 
+// budgetComparison (Champ 5530 รายงานเปรียบเทียบงบประมาณ, GLRepBudgetCompView) compares each
+// budget line (budget × account) with the actual movement of that account on posted ledger
+// lines inside the budget's own dimensions ('' = any), excluding opening and closing entries.
+// Actual follows the account's normal balance recorded on the line (credit-normal accounts
+// count credit - debit), so income and expense budgets both read as positive amounts.
+// Budget = the periods of the fiscal year whose start date falls inside the report range
+// (budgetPeriodsInRange); variance = budget - actual as in Champ.
 func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
-	cte := r.base() + `, budgets AS (
-		SELECT 
-			rec.code AS budgetcode,
-			rec.payload->>'name' AS budgetname,
-			rec.payload->>'accountcode' AS accountcode,
-			COALESCE((rec.payload->>'amount')::numeric, 0) AS budgetamount
-		FROM gl_records rec
-		WHERE rec.company=$1 AND rec.kind='budgets'
-			AND NOT COALESCE((rec.payload->>'isdeleted')::boolean, false)
-			AND COALESCE((rec.payload->>'isactive')::boolean, true)
-			AND rec.payload->>'fiscalyear'=$2
-			AND ($5='' OR rec.payload->>'accountcode'=$5)
-			AND ($6='' OR rec.payload->>'branchcode'=$6)
-			AND ($7='' OR rec.payload->>'departmentcode'=$7)
-			AND ($8='' OR rec.payload->>'projectcode'=$8)
-	), budget_grouped AS (
-		SELECT 
-			b.accountcode,
-			MAX(b.budgetname) AS budgetname,
-			SUM(b.budgetamount) AS budgetamount
-		FROM budgets b
-		GROUP BY b.accountcode
-	), actuals AS (
-		SELECT 
-			account_code AS accountcode,
-			MAX(account_name) AS accountname,
-			MAX(account_type) AS accounttype,
-			SUM(CASE WHEN account_type='income' THEN credit - debit ELSE debit - credit END) AS actualamount
-		FROM filtered
-		WHERE entry_date >= $3::date AND entry_date <= $4::date AND kind NOT IN ('opening', 'closing')
-		GROUP BY account_code
-	), accounts_combined AS (
-		SELECT accountcode FROM budget_grouped
-		UNION
-		SELECT accountcode FROM actuals
+	r.args = append(append([]any{}, r.args...), pq.Array(budgetPeriodsInRange(r.fiscal, r.query.From, r.query.To)), NormalizeCode(r.query.BudgetCode))
+	cte := r.base() + `, budget_rows AS (
+		SELECT b.code AS budget_code, b.name AS budget_name, b.status AS budget_status,
+			b.branch_code, b.department_code, b.project_code, l.account_code,
+			SUM(CASE WHEN l.period_no = ANY($10::smallint[]) THEN l.amount ELSE 0 END) AS budget_amount
+		FROM gl_budgets b
+		JOIN gl_budget_lines l ON l.company=b.company AND l.budget_code=b.code
+		WHERE b.company=$1 AND b.fiscal_year=$2 AND ($11='' OR b.code=$11)
+			AND ($5='' OR l.account_code=$5) AND ($6='' OR b.branch_code=$6)
+			AND ($7='' OR b.department_code=$7) AND ($8='' OR b.project_code=$8)
+		GROUP BY b.code, b.name, b.status, b.branch_code, b.department_code, b.project_code, l.account_code
+	), compared AS (
+		SELECT br.*, COALESCE(acc.payload->>'accounttype', '') AS account_type,
+			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(acc.payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1), '') AS account_name,
+			COALESCE(act.actual, 0) AS actual_amount
+		FROM budget_rows br
+		LEFT JOIN gl_records acc ON acc.company=$1 AND acc.kind='accounts' AND acc.code=br.account_code AND NOT COALESCE((acc.payload->>'isdeleted')::boolean, false)
+		LEFT JOIN LATERAL (
+			SELECT SUM(CASE WHEN f.normal_balance='credit' THEN f.credit-f.debit ELSE f.debit-f.credit END) AS actual
+			FROM filtered f
+			WHERE f.account_code=br.account_code AND f.entry_date>=$3::date AND f.kind NOT IN ('opening','closing')
+				AND (br.branch_code='' OR f.branch_code=br.branch_code)
+				AND (br.department_code='' OR f.department_code=br.department_code)
+				AND (br.project_code='' OR f.project_code=br.project_code)
+		) act ON true
 	), result AS (
-		SELECT 
-			ac.accountcode,
-			COALESCE(NULLIF(act.accountname, ''), bg.budgetname, acc.payload->>'name', acc.payload->'names'->0->>'name', '') AS accountname,
-			COALESCE(act.accounttype, acc.payload->>'accounttype', '') AS accounttype,
-			COALESCE(bg.budgetamount, 0)::text AS budgetamount,
-			COALESCE(act.actualamount, 0)::text AS actualamount,
-			(COALESCE(bg.budgetamount, 0) - COALESCE(act.actualamount, 0))::text AS variance,
-			(CASE 
-				WHEN COALESCE(bg.budgetamount, 0) > 0 
-				THEN ROUND((COALESCE(act.actualamount, 0) / bg.budgetamount) * 100, 2)::text 
-				ELSE '0.00' 
-			END) AS percentused
-		FROM accounts_combined ac
-		LEFT JOIN budget_grouped bg ON bg.accountcode = ac.accountcode
-		LEFT JOIN actuals act ON act.accountcode = ac.accountcode
-		LEFT JOIN gl_records acc ON acc.company = $1 AND acc.kind = 'accounts' AND acc.code = ac.accountcode AND NOT COALESCE((acc.payload->>'isdeleted')::boolean, false)
+		SELECT account_code AS accountcode, account_name AS accountname, account_type AS accounttype,
+			budget_code AS budgetcode, budget_name AS budgetname, budget_status AS budgetstatus,
+			branch_code AS branchcode, department_code AS departmentcode, project_code AS projectcode,
+			budget_amount::text AS budgetamount, actual_amount::text AS actualamount,
+			(budget_amount - actual_amount)::text AS variance,
+			(CASE WHEN budget_amount > 0 THEN ROUND(actual_amount / budget_amount * 100, 2) ELSE 0 END)::numeric(20,2)::text AS percentused
+		FROM compared
 	)`
 	cols := []ReportColumn{
 		textColumn("accountcode", "รหัสบัญชี"),
 		textColumn("accountname", "ชื่อบัญชี"),
 		textColumn("accounttype", "หมวดบัญชี"),
+		textColumn("budgetcode", "รหัสงบประมาณ"),
+		textColumn("budgetname", "ชื่องบประมาณ"),
+		textColumn("budgetstatus", "สถานะงบประมาณ"),
+		textColumn("branchcode", "สาขา"),
+		textColumn("departmentcode", "แผนก"),
+		textColumn("projectcode", "โครงการ"),
 		amountColumn("budgetamount", "งบประมาณ"),
 		amountColumn("actualamount", "ใช้จริง"),
 		amountColumn("variance", "ผลต่างคงเหลือ"),
@@ -493,5 +489,18 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 		{key: "actualamount", expr: "actualamount::numeric"},
 		{key: "variance", expr: "variance::numeric"},
 	}
-	return r.runWithTotals(ctx, cte, "accountcode", cols, totals)
+	// Champ orders the comparison by account, then budget code.
+	return r.runWithTotals(ctx, cte, "accountcode,budgetcode", cols, totals)
+}
+
+// budgetPeriodsInRange lists the period numbers of the fiscal year whose start date is
+// inside [from, to] (a period counts whole when its first day is in the report range).
+func budgetPeriodsInRange(y FiscalYear, from, to string) []int64 {
+	out := []int64{}
+	for i, start := range fiscalPeriodStarts(y) {
+		if start >= from && start <= to {
+			out = append(out, int64(i+1))
+		}
+	}
+	return out
 }

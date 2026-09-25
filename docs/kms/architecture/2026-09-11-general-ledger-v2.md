@@ -36,6 +36,7 @@
 - `/api/gl/*` เป็น Next.js BFF ไป `/gl/v2/*` ของ main API; ตรวจ membership/holding/company/branch และ permission ปัจจุบันจากต้นทาง สิทธิ์เข้าเมนูไม่เท่ากับสิทธิ์ create/update/delete (`httpapi/http.go:107`, `httpapi/permissions_test.go:5`)
 - MongoDB: `chart_of_accounts`, `fiscal_year`, `gl_account_groups`, `gl_product_account_groups`, `gl_account_mappings`, `gl_budgets`, `gl_periods`, `gl_cash_forecast`, `gl_journals`, `gl_events`, `gl_controls`
 - PostgreSQL ฐานตาม holding: สำเนาทุกทรัพยากรใน `gl_records` แยก company/kind/id, รายการผ่านแล้วใน `gl_lines`, ประวัติใน `gl_events`, ลำดับใน `gl_projection_state` ใช้ advisory lock และ transaction; trigger ห้ามแก้/ลบ/truncate ประวัติ
+- งบประมาณ (Champ 5500 `BCGLBudget`) ไม่อยู่ใน `gl_records` แล้ว (2026-09-25): หัวงบ `gl_budgets` + ยอดรายเดือน `gl_budget_lines` (บัญชี × งวด 1–12, `numeric(18,2)`) ใน `backend/internal/generalledger/budget.sql`; คำสั่ง `resource: "budgets"` = `create`/`update`/`delete` ผ่าน `Execute` (requestid, company lock, audit ใน `gl_events` แต่ projection ข้ามไป) + `spread` คำนวณแบ่งยอดทั้งปีเป็น 12 เดือนโดยไม่บันทึก; `GET /gl/v2/budgets[/code]`; รายงาน `budgetcomparison` (Champ 5530) เทียบกับ `gl_lines` ที่ผ่านบัญชีตาม `normal_balance` ของบรรทัด — ADR [2026-09-25-gl-monthly-budget](../decisions/2026-09-25-gl-monthly-budget.md)
 - **Transport Kafka deploy แล้วใน r20260911-gl-kafka-1:** MongoDB เป็นข้อมูลต้นฉบับที่เชื่อถือได้ คำสั่ง commit ข้อมูล + outbox ก่อน relay ส่งหัวคิวต่อบริษัทไป Kafka; เส้นทาง command ไม่เรียก Project PostgreSQL โดยตรง การส่งล้มเหลวคืนผลบันทึกสำเร็จพร้อม `projectionpending` เพราะ MongoDB commit แล้ว (`store.go:194`, `store.go:223`)
 - Topic `bc-gl-projection-v1` ส่งเฉพาะ reference 6 ฟิลด์ `schemaversion/eventid/holdingcode/businesscode/sequence/eventhash` ไม่มี payload การเงิน ใช้ SHA-256 ของ holding/company เป็น partition key; consumer ตรวจ reference แล้วอ่าน immutable event ต้นฉบับจาก MongoDB เพื่อเทียบ hash ก่อนประมวลผล (`event_reference.go:23`, `kafkatransport/transport.go:127`, `store.go:252`)
 - ลำดับยืนยันคือ **PostgreSQL Project สำเร็จ → Rebuild เมื่อเป็นคำสั่งคำนวณใหม่ → MongoDB delivered=true และลบ retryafter → commit Kafka offset**; broker ACK อย่างเดียวไม่เปลี่ยน delivered หาก handler หรือ commit offset ล้มเหลวไม่อ่าน offset ที่สูงกว่าและเปิด reader กลุ่มเดิมเพื่อ replay ข้อผิดพลาดบัญชีห้าม acknowledge-and-skip (`store.go:268`, `store.go:284`, `kafkatransport/transport.go:209`, `backend/internal/product/projection/consumer.go:23`)
@@ -115,7 +116,7 @@ Release ล่าสุด `r20260911-gl-kafka-1` สำรอง MongoDB/PG/con
 |---|---|---|
 | ผังบัญชี | `/gl/chartofaccounts` | เชื่อมหน้าจอและ API แล้ว |
 | ยอดยกมาทางบัญชี | `/gl/openingbalance` | เชื่อมหน้าจอและ API แล้ว |
-| กำหนดงบประมาณประจำปี | `/gl/budget` | เชื่อมหน้าจอและ API แล้ว |
+| กำหนดงบประมาณประจำปี | `/gl/budget` | API งบรายเดือนพร้อม (`budgets`); จอบันทึกรายเดือนยังไม่ทำ — เมนูขึ้น "ยังไม่พร้อม" (2026-09-25) |
 | กลุ่มผังบัญชี | `/gl/account-groups` | เชื่อมหน้าจอและ API แล้ว |
 | รูปแบบการเชื่อมโยงบัญชีอัตโนมัติ | `/gl/account-mapping` | เชื่อมหน้าจอและ API แล้ว |
 | กลุ่มบัญชีสินค้า | `/gl/product-account-groups` | เชื่อมหน้าจอและ API แล้ว |

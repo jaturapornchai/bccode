@@ -33,6 +33,22 @@ func checkJournalBranch(ctx context.Context, connect func(string) (*sql.DB, erro
 	if branch == "" {
 		return gl.JournalBranchRequired()
 	}
+	return checkActiveBranch(ctx, connect, scope, branch)
+}
+
+// checkBudgetBranch applies the registry half of the rule to a budget (Champ BCGLBudget.BranchCode):
+// blank means every branch, so only a named branch chosen in a company-wide session is looked up.
+// A branch-scoped session is checked by the store (the budget must be the session branch).
+func checkBudgetBranch(ctx context.Context, connect func(string) (*sql.DB, error), scope requestScope, b *gl.Budget) error {
+	branch := gl.NormalizeCode(b.BranchCode)
+	if branch == "" || scope.Scope.Branch != "" {
+		return nil
+	}
+	return checkActiveBranch(ctx, connect, scope, branch)
+}
+
+// checkActiveBranch fails closed: no registry connection or a lookup error refuses the branch.
+func checkActiveBranch(ctx context.Context, connect func(string) (*sql.DB, error), scope requestScope, branch string) error {
 	if connect == nil {
 		return errScopeDenied
 	}

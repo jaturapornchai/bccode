@@ -14,7 +14,6 @@ import { SmartBreadcrumb } from "@/components/smart-breadcrumb";
 const masterRoutes: Record<string, GLResource> = {
   "/gl/chartofaccounts": "accounts",
   "/gl/fiscal-years": "fiscal-years",
-  "/gl/budget": "budgets",
   "/gl/account-groups": "account-groups",
   "/gl/account-mapping": "mappings",
   "/gl/product-account-groups": "product-account-groups",

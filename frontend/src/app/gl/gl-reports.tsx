@@ -21,6 +21,7 @@ const reportTextLabels: Record<string, Record<string, GLLabel>> = {
   status: { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"], void: ["gl_cancel_draft", "ยกเลิกร่าง"] },
   direction: { in: ["gl_money_in", "เงินเข้า"], out: ["gl_money_out", "เงินออก"] },
   category: { operating: ["gl_operating", "ดำเนินงาน"], investing: ["gl_investing", "ลงทุน"], financing: ["gl_raise_funds", "จัดหาเงิน"], unclassified: ["gl_not_specified", "ยังไม่ระบุ"] },
+  budgetstatus: { open: ["gl_open", "เปิด"], closed: ["gl_closed", "ปิดแล้ว"] },
 };
 function reportText(key: string, value = "", tr: GLTextFn, books: GLJournalBook[] = [], language = "th") {
   // The computed earnings row is not a chart-of-accounts entry. Keep its source key for exports.

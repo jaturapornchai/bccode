@@ -227,7 +227,8 @@ func (s *PostgresStore) validatePGAccount(ctx context.Context, tx *sql.Tx, scope
 }
 func (s *PostgresStore) deletePGAccountGuard(ctx context.Context, tx *sql.Tx, scope Scope, code string) error {
 	var used bool
-	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ((kind='journals' AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'lines','[]'::jsonb)) l WHERE l->>'accountcode'=$2)) OR payload->>'parentaccountcode'=$2 OR payload->>'accountcode'=$2 AND kind<>'accounts' OR payload->>'profitlossaccount'=$2 OR payload->>'retainedearningsaccount'=$2 OR payload->>'itemaccount'=$2 OR payload->>'costaccount'=$2 OR payload->>'revenueaccount'=$2 OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rules','[]'::jsonb)) r WHERE r->>'accountcode'=$2) OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rows','[]'::jsonb)) r WHERE COALESCE(r->'accountcodes','[]'::jsonb) ? $2)))`, scope.Company, code).Scan(&used)
+	// Budget lines live in gl_budget_lines (budget.sql), outside gl_records, so they are checked separately.
+	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_budget_lines WHERE company=$1 AND account_code=$2) OR EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ((kind='journals' AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'lines','[]'::jsonb)) l WHERE l->>'accountcode'=$2)) OR payload->>'parentaccountcode'=$2 OR payload->>'accountcode'=$2 AND kind<>'accounts' OR payload->>'profitlossaccount'=$2 OR payload->>'retainedearningsaccount'=$2 OR payload->>'itemaccount'=$2 OR payload->>'costaccount'=$2 OR payload->>'revenueaccount'=$2 OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rules','[]'::jsonb)) r WHERE r->>'accountcode'=$2) OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rows','[]'::jsonb)) r WHERE COALESCE(r->'accountcodes','[]'::jsonb) ? $2)))`, scope.Company, code).Scan(&used)
 	if err != nil {
 		return err
 	}
@@ -254,7 +255,9 @@ func (s *PostgresStore) mutatePGFiscalYear(ctx context.Context, tx *sql.Tx, scop
 	}
 	var used bool
 	if old.ID != "" {
-		err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND payload->>'fiscalyear'=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false))`, scope.Company, old.Code).Scan(&used)
+		// A budget (gl_budgets) counts as a reference: its period_no is a month index from the
+		// fiscal start, so moving or shortening the year would shift or drop budget months.
+		err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND payload->>'fiscalyear'=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)) OR EXISTS(SELECT 1 FROM gl_budgets WHERE company=$1 AND fiscal_year=$2)`, scope.Company, old.Code).Scan(&used)
 		if err != nil {
 			return nil, err
 		}

@@ -15,6 +15,7 @@ describe("Thai general ledger report presentation", () => {
     ["status", { draft: "ฉบับร่าง", posted: "ผ่านรายการแล้ว", reversed: "กลับรายการแล้ว", void: "ยกเลิกร่าง" }],
     ["direction", { in: "เงินเข้า", out: "เงินออก" }],
     ["category", { operating: "ดำเนินงาน", investing: "ลงทุน", financing: "จัดหาเงิน", unclassified: "ยังไม่ระบุ" }],
+    ["budgetstatus", { open: "เปิด", closed: "ปิดแล้ว" }],
   ] as const)("renders %s as Thai labels", (key, labels) => {
     const html = render({ columns: [{ key, label: "รายการ", amount: false }], rows: Object.keys(labels).map(value => ({ [key]: value })) });
     for (const [value, label] of Object.entries(labels)) {

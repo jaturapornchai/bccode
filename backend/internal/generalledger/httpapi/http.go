@@ -574,7 +574,7 @@ func (h *Http) report(request microservice.IContext) error {
 	if err != nil {
 		return failure(request, err)
 	}
-	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), BranchCode: request.QueryParam("branchcode"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
+	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
 	data, err := h.pg.Report(ctx, scope.Scope, name, q)
 	if err != nil {
 		return failure(request, err)
@@ -614,6 +614,9 @@ func (h *Http) command(request microservice.IContext) error {
 	if action == "lock" || action == "unlock" {
 		action = "update"
 	}
+	if cmd.Resource == "budgets" && cmd.Action == "spread" {
+		action = "" // calculation only: reading the budget screen is enough
+	}
 	if cmd.Resource == "journals" {
 		if cmd.Action == "post" || cmd.Action == "reverse" {
 			screen = postingScreen
@@ -645,6 +648,11 @@ func (h *Http) command(request microservice.IContext) error {
 	}
 	if cmd.Resource == "journals" && cmd.Journal != nil && (cmd.Action == "create" || cmd.Action == "update") {
 		if err := checkJournalBranch(ctx, h.central, scope, cmd.Journal); err != nil {
+			return failure(request, err)
+		}
+	}
+	if cmd.Resource == "budgets" && cmd.Budget != nil && (cmd.Action == "create" || cmd.Action == "update") {
+		if err := checkBudgetBranch(ctx, h.central, scope, cmd.Budget); err != nil {
 			return failure(request, err)
 		}
 	}
