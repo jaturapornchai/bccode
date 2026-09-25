@@ -38,6 +38,13 @@ type fakeLedger struct {
 	failErr  error
 }
 
+// fakeFiscalYears are coded in พ.ศ. like a real Thai company, so a journal that still carries the
+// ค.ศ. schedule year is refused here as it is by the real GL (bug 2026-09-25).
+var fakeFiscalYears = []gl.FiscalYear{
+	{Code: "2569", StartDate: "2026-01-01", EndDate: "2026-12-31", IsActive: true},
+	{Code: "2570", StartDate: "2027-01-01", EndDate: "2027-12-31", IsActive: true},
+}
+
 func newFakeLedger() *fakeLedger {
 	return &fakeLedger{
 		hashes:   map[string]string{},
@@ -66,6 +73,9 @@ func (f *fakeLedger) Execute(_ context.Context, _ gl.Scope, cmd gl.Command) (gl.
 
 	switch cmd.Action {
 	case "create":
+		if !fakeYearHolds(cmd.Journal.FiscalYear, cmd.Journal.Date) {
+			return gl.Result{}, fmt.Errorf("วันที่อยู่นอกปีบัญชีที่เปิดใช้งาน")
+		}
 		f.created++
 		id := fmt.Sprintf("fake-journal-%d", f.created)
 		j := *cmd.Journal
@@ -96,8 +106,25 @@ func (f *fakeLedger) Execute(_ context.Context, _ gl.Scope, cmd gl.Command) (gl.
 	return gl.Result{}, fmt.Errorf("unsupported action in fake ledger: %s", cmd.Action)
 }
 
+// fakeYearHolds mirrors generalledger Journal.Validate: the code must be the year that holds the date.
+func fakeYearHolds(code, date string) bool {
+	for _, y := range fakeFiscalYears {
+		if y.Code == code && y.StartDate <= date && date <= y.EndDate {
+			return true
+		}
+	}
+	return false
+}
+
 func (f *fakeLedger) List(_ context.Context, _ gl.Scope, resource string, query string, _ int, _ int, _ gl.ListFilter) (gl.Page, error) {
 	page := gl.Page{Items: []json.RawMessage{}}
+	if resource == "fiscal-years" {
+		for _, y := range fakeFiscalYears {
+			raw, _ := json.Marshal(y)
+			page.Items = append(page.Items, raw)
+		}
+		return page, nil
+	}
 	if resource == "journal-books" {
 		// The company's general book is deliberately not named "JV": the poster must pick by booktype.
 		for _, b := range []gl.Master{
@@ -212,6 +239,9 @@ func TestFixedAssets_CPACycle(t *testing.T) {
 	if !dr.Equal(cr) || dr.IsZero() {
 		t.Fatalf("GL journal out of balance: Dr %s Cr %s", dr, cr)
 	}
+	if journal.FiscalYear != "2569" {
+		t.Fatalf("the journal must carry the พ.ศ. fiscal-year code of its date, got %q", journal.FiscalYear)
+	}
 	if journal.BookCode != "GJ" || journal.DocNo != "GJ-FA-2026-01" || journal.BranchCode != "HQ" {
 		t.Fatalf("depreciation must go to the active general book chosen by type, numbered from it, in the session branch; got book %q docno %q branch %q", journal.BookCode, journal.DocNo, journal.BranchCode)
 	}
@@ -294,7 +324,7 @@ func TestGLPoster_PostJournalIdempotent(t *testing.T) {
 		DocNo:       "JV-FA-2026-03",
 		Date:        "2026-03-31",
 		BookCode:    "JV",
-		FiscalYear:  "2026",
+		FiscalYear:  "2569",
 		Description: "บันทึกค่าเสื่อมราคาสินทรัพย์ประจำงวด 3/2026",
 		Reference:   "FA-2026-03",
 		BranchCode:  scope.Branch,

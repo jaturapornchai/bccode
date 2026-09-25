@@ -234,14 +234,25 @@ func (p *GLPoster) postJournal(ctx context.Context, scope Scope, j *gl.Journal) 
 
 // PostDepreciation posts monthly depreciation for a specific year and period into GL Journal.
 // branch is the voucher header branch (blank = the session branch, branch sessions only).
+// fiscalYear/period pick the schedule rows (ค.ศ. calendar year + month); a blank date is the
+// period's last day, and the journal goes into the GL fiscal year of that period.
 func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear string, period int, date, docNo, branch string, now time.Time) (*GLJournalDoc, error) {
-	if fiscalYear == "" || period < 1 || period > 12 {
+	if strings.TrimSpace(fiscalYear) == "" || period < 1 || period > 12 {
 		return nil, fmt.Errorf("กรุณาระบุปีบัญชีและงวดที่ต้องการผ่านรายการ (1-12)")
 	}
-	if date == "" {
-		date = now.Format("2006-01-02")
+	fiscalYear, date, periodEnd, err := depreciationVoucherDate(fiscalYear, period, date)
+	if err != nil {
+		return nil, err
 	}
-	branch, err := p.journalBranch(ctx, scope, branch)
+	years, err := p.fiscalYears(ctx, scope)
+	if err != nil {
+		return nil, err
+	}
+	glYear, err := depreciationFiscalYear(years, fiscalYear, period, date, periodEnd)
+	if err != nil {
+		return nil, err
+	}
+	branch, err = p.journalBranch(ctx, scope, branch)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +405,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		DocNo:       docNo,
 		Date:        date,
 		BookCode:    book,
-		FiscalYear:  fiscalYear,
+		FiscalYear:  glYear,
 		Description: description,
 		Reference:   reference,
 		BranchCode:  branch,
@@ -414,7 +425,7 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		DocNo:        docNo,
 		Date:         date,
 		BookCode:     book,
-		FiscalYear:   fiscalYear,
+		FiscalYear:   glYear,
 		Description:  description,
 		Reference:    reference,
 		BranchCode:   branch,
@@ -465,6 +476,10 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 	reverseDate := now.Format("2006-01-02")
 	if reverseDate < journal.Date {
 		reverseDate = journal.Date
+	}
+	// GL files the reversal in the fiscal year of its date; say so in Thai before GL is asked.
+	if _, err := p.fiscalYearCodeAt(ctx, scope, reverseDate, ""); err != nil {
+		return err
 	}
 	requestID := digest([]byte("fa-gl-reverse:" + scope.Holding + ":" + scope.Company + ":" + docNo))
 	_, err = p.ledger.Execute(ctx, glScope(scope), gl.Command{
@@ -547,10 +562,12 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 	if disposal.DisposalDate == "" {
 		disposal.DisposalDate = now.Format("2006-01-02")
 	}
-	// ต้องตรวจรูปแบบวันที่ก่อนใช้งาน เพราะปีงบประมาณถูกตัดมาจากสี่ตัวอักษรแรกของสตริงนี้
-	// วันที่สั้นกว่าที่ควรจะทำให้โปรแกรมหยุดทำงานทั้งตัว
-	if _, err := time.Parse("2006-01-02", disposal.DisposalDate); err != nil {
-		return nil, nil, fmt.Errorf("รูปแบบวันที่จำหน่ายไม่ถูกต้อง ต้องเป็น ปปปป-ดด-วว: %s", disposal.DisposalDate)
+	if err := checkVoucherDate(disposal.DisposalDate, "disposaldate"); err != nil {
+		return nil, nil, err
+	}
+	glYear, err := p.fiscalYearCodeAt(ctx, scope, disposal.DisposalDate, "disposaldate")
+	if err != nil {
+		return nil, nil, err
 	}
 	if disposal.DocNo == "" {
 		disposal.DocNo = fmt.Sprintf("DISP-%s", disposal.AssetCode)
@@ -731,7 +748,7 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		DocNo:       journalDocNo,
 		Date:        disposal.DisposalDate,
 		BookCode:    book,
-		FiscalYear:  disposal.DisposalDate[:4],
+		FiscalYear:  glYear,
 		Description: description,
 		Reference:   disposal.DocNo,
 		BranchCode:  branch,
@@ -751,7 +768,7 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		DocNo:        journalDocNo,
 		Date:         disposal.DisposalDate,
 		BookCode:     book,
-		FiscalYear:   disposal.DisposalDate[:4],
+		FiscalYear:   glYear,
 		Description:  description,
 		Reference:    disposal.DocNo,
 		BranchCode:   branch,
