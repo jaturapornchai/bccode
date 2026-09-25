@@ -1,13 +1,19 @@
 import { createHmac } from "crypto";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE, GET, POST, PUT } from "./route";
 
 const SECRET = "test-secret";
 
 describe("system settings API route security", () => {
+  beforeEach(() => {
+    // ที่อยู่ backend ฝั่ง server (ค่าเดียวที่ proxy ใช้จริง) — ตรึงไว้ไม่ให้ขึ้นกับ env ของเครื่อง
+    vi.stubEnv("BCAI_LOCAL_BACKEND_URL", "http://localhost:8888");
+  });
+
   afterEach(() => {
     delete process.env.JWT_SECRET_KEY;
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("delegates user login-account creation to the authorized backend save", async () => {
@@ -345,6 +351,42 @@ describe("system settings API route security", () => {
     expect(JSON.parse(String(calls[1][1]?.body))).toMatchObject(body);
     expect(JSON.parse(String(calls[2][1]?.body))).toMatchObject(body);
     expect(calls[3][1]?.body).toBeUndefined();
+  });
+
+  it("reads role permissions without a client backend URL (menu/screen-action race)", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      void url;
+      void init;
+      return Response.json({ success: true, data: { rolecode: "USER", permissions: ["sale-order"], isactive: true } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      // ไม่มี x-bc-backend-url / backendUrl ใน query — ผู้เรียกบางจอเรียกก่อน session พร้อม
+      new Request("http://localhost/api/system-settings/permissiongroup/me?holdingcode=demo", {
+        headers: { Authorization: "Bearer test-token" },
+      }),
+      { params: Promise.resolve({ settingPath: ["permissiongroup", "me"] }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toBe("http://localhost:8888/organization/role-permission/me?offset=0&limit=1000");
+  });
+
+  it("still rejects a malformed client backend URL", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/api/system-settings/permissiongroup/me?holdingcode=demo", {
+        headers: { Authorization: "Bearer test-token", "x-bc-backend-url": "ftp://bad url" },
+      }),
+      { params: Promise.resolve({ settingPath: ["permissiongroup", "me"] }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("keeps user access audit read-only at the API proxy layer", async () => {

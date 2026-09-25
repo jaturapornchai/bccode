@@ -26,7 +26,11 @@ export function getMainApiUrl(rawBackendUrl: string): string {
   // fetch the backend at the server-reachable local address. The client URL is the public
   // same-origin proxy form, which is unreachable from this server-side process. See
   // serverMainApiBase. The result is only used for server-side fetches, never echoed.
-  validateBackendUrl(rawBackendUrl);
+  //
+  // ไม่ส่ง Backend URL มาเลย = ไม่ใช่ error: ค่าจาก client ถูกทิ้งทุกครั้งอยู่แล้ว จึงใช้ค่าฝั่ง
+  // server ต่อได้ (สิทธิ์ยังถูกคุมด้วย token/JWT ตามเดิม). ก่อนหน้านี้ผู้เรียกที่ลืมใส่ header
+  // x-bc-backend-url หรือเรียกก่อน session พร้อม จะได้ 400 "Backend URL ไม่ถูกต้อง" แบบสุ่ม.
+  if (rawBackendUrl.trim()) validateBackendUrl(rawBackendUrl);
   return serverMainApiBase();
 }
 

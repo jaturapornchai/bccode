@@ -139,7 +139,8 @@ function resolveBaseUrl(request: Request, config: SystemSettingConfig, body?: Ap
   try {
     const backendUrl = getBackendUrlFromRequest(request, body);
     if (usesGoApi(config)) {
-      validateBackendUrl(backendUrl);
+      // ตรวจเฉพาะเมื่อ client ส่งค่ามา — ไม่ส่งมาก็ใช้ค่าฝั่ง server (ดู getMainApiUrl)
+      if (backendUrl.trim()) validateBackendUrl(backendUrl);
       return serverGoApiBase();
     }
     return getMainApiUrl(backendUrl);

@@ -111,7 +111,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | module | หน้าที่ | อ้างอิง |
 |---|---|---|
 | `backend-url.ts` | normalize/validate URL, `serverMainApiBase/serverGoApiBase`, migrate URL เก่า (`192.168.2.202`, `dev./api.bcaicloud.com`) | `frontend/src/lib/backend-url.ts:56-109,117-144` |
-| `workspace-api.ts` | helper proxy กลาง: `requireBearerToken`, `getBackendUrlFromRequest` (body > header `x-bc-backend-url` > query), `proxyMainApiJson` | `frontend/src/lib/workspace-api.ts:8-31,61` |
+| `workspace-api.ts` | helper proxy กลาง: `requireBearerToken`, `getBackendUrlFromRequest` (body > header `x-bc-backend-url` > query), `getMainApiUrl` (ตรวจ URL จาก client เฉพาะเมื่อส่งมา — ไม่ส่งมา = ใช้ `serverMainApiBase()` ไม่ตอบ 400 อีก ตั้งแต่ 2026-09-08), `proxyMainApiJson` | `frontend/src/lib/workspace-api.ts:8-34,65` |
 | `client-auth-session.ts` / `auth-session-server.ts` / `server-jwt.ts` | session ฝั่ง client / cookie ฝั่ง server / JWT verify | ดู §3 |
 | `auth-bridge.ts` | URL ของ auth bridge (`BC_AUTH_BRIDGE_URL`) + `postMainApiAuth` timeout 15 วิ | `frontend/src/lib/auth-bridge.ts:6-10,76-87` |
 | `theme-data.ts` | 10 พาเลต (`ban-chiang` default, `sukhothai-jade`, `ayutthaya-gold`, `lanna-teak`, `andaman-blue`, `siam-rose`, `violet-bloom`, `coral-sunset`, `citrus-lime`, `berry-magenta`) × light/dark; cookie/storage key `bc_theme`, `bc_color_theme`; ตัวแปรถูก inline บน `<html style>` ตั้งแต่ server | `frontend/src/lib/theme-data.ts:47-53,100-476,530-542`, `frontend/src/app/layout.tsx:48-73` |
