@@ -65,6 +65,9 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if err := rejectNUL(cmd); err != nil {
 		return Result{}, err
 	}
+	if cmd.Resource == "budgets" && cmd.Action == "spread" {
+		return spreadBudget(cmd)
+	}
 	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
@@ -277,6 +280,8 @@ func (s *PostgresStore) applyMutation(ctx context.Context, tx *sql.Tx, scope Sco
 		return s.mutateJournal(ctx, tx, scope, cmd, now)
 	case "processes":
 		return s.mutateProcess(ctx, tx, scope, cmd, now)
+	case "budgets":
+		return s.mutateBudget(ctx, tx, scope, cmd, now)
 	default:
 		return s.mutateMaster(ctx, tx, scope, cmd, now)
 	}

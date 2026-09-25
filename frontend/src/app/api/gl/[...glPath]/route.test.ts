@@ -92,4 +92,28 @@ describe("GL authenticated proxy", () => {
     expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ ...body, journal: { details: { statement_lines: [{ amount: "0.30", balance_after: 10 }] } } }) }), context("command"))).status).toBe(400);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("forwards monthly budget commands, spread and the budgetcode report filter", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const periods = Array.from({ length: 12 }, () => "8333.33");
+    const budget = { code: "BG-2569", name: "งบค่าเช่าหน้าร้านและคลังสินค้า ปี 2569", fiscalyear: "2569", branchcode: "00000", status: "open", lines: [{ accountcode: "53110", periods }] };
+    const body = { resource: "budgets", action: "create", requestid: "12345678-1234-1234-1234-123456789012", budget: { ...budget, holdingcode: "other", createdby: "forged" } };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"))).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ resource: "budgets", action: "create", requestid: body.requestid, budget });
+    const spread = { resource: "budgets", action: "spread", requestid: body.requestid, budget: { lines: [{ accountcode: "53110", total: "100000" }] } };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(spread) }), context("command"))).status).toBe(200);
+    expect((await GET(new Request("http://localhost/api/gl/reports/budgetcomparison?fiscalyear=2569&budgetcode=BG-2569&holdingcode=other", { headers }), context("reports", "budgetcomparison"))).status).toBe(200);
+    expect(fetchMock.mock.calls[2][0]).toContain("/gl/v2/reports/budgetcomparison?fiscalyear=2569&budgetcode=BG-2569");
+    expect(fetchMock.mock.calls[2][0]).not.toContain("holdingcode");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+  it("rejects numeric budget money and spread outside budgets", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const post = (body: unknown) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    expect((await post({ resource: "budgets", action: "create", requestid, budget: { lines: [{ accountcode: "53110", periods: [100, "0"] }] } })).status).toBe(400);
+    expect((await post({ resource: "budgets", action: "create", requestid, budget: { lines: [{ accountcode: "53110", periods: "100" }] } })).status).toBe(400);
+    expect((await post({ resource: "budgets", action: "spread", requestid, budget: { lines: [{ accountcode: "53110", total: 100000 }] } })).status).toBe(400);
+    expect((await post({ resource: "journals", action: "spread", requestid, budget: { lines: [{ accountcode: "53110", total: "100000" }] } })).status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

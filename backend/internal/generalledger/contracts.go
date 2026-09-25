@@ -50,6 +50,7 @@ type ReportQuery struct {
 	DepartmentCode string
 	ProjectCode    string
 	BookCode       string
+	BudgetCode     string
 	Page           int
 	Limit          int
 }

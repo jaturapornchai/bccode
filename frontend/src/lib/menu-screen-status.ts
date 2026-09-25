@@ -28,8 +28,11 @@ export function isFixedAssetRoute(route: string): boolean {
 
 const customRoutes = new Set<string>(CUSTOM_MENU_SCREEN_ROUTES);
 
-// GL menu items (Champ parity 2026-09-19) — all GL screens implemented.
-const pendingRoutes = new Set<string>([]);
+// GL menu items (Champ parity 2026-09-19). 2026-09-25: กำหนดงบประมาณ (Champ 5500) moved to monthly
+// budgets with their own API (/gl/v2 resource "budgets", ADR 2026-09-25-gl-monthly-budget); the
+// monthly entry screen is not built yet, so the menu says "ยังไม่พร้อม" instead of opening the
+// old one-amount master form that the new API no longer accepts.
+const pendingRoutes = new Set<string>(["/gl/budget"]);
 
 /** A connected screen is not a guarantee that its business workflow is complete. */
 // 2026-09-23: ระบบใช้ PostgreSQL อย่างเดียว (ถอด MongoDB/Kafka/Redis/ClickHouse) — จอเหล่านี้เคยอ่าน/เขียนผ่าน

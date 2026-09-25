@@ -70,3 +70,44 @@ func TestCheckJournalBranchExported(t *testing.T) {
 		t.Fatal("a company session without the branch registry must fail closed")
 	}
 }
+
+// A budget branch is optional (blank = every branch); a named branch in a company-wide
+// session must be an active branch of the company, and lookups fail closed.
+func TestCheckBudgetBranch(t *testing.T) {
+	ctx := context.Background()
+	connect := func(db *sql.DB) func(string) (*sql.DB, error) {
+		return func(string) (*sql.DB, error) { return db, nil }
+	}
+	found := connect(scopeDB(t, &scopeDriver{}))
+	missing := connect(scopeDB(t, &scopeDriver{branchErr: sql.ErrNoRows}))
+	branchScope := requestScope{Scope: gl.Scope{Holding: "H", Company: "C", Branch: "B"}}
+	companyScope := requestScope{Scope: gl.Scope{Holding: "H", Company: "C"}}
+	for _, c := range []struct {
+		name     string
+		scope    requestScope
+		connect  func(string) (*sql.DB, error)
+		branch   string
+		wantCode string
+		wantErr  bool
+	}{
+		{name: "company session blank = every branch", scope: companyScope, branch: ""},
+		{name: "company session active branch", scope: companyScope, connect: found, branch: " B "},
+		{name: "company session unknown branch", scope: companyScope, connect: missing, branch: "สาขาปลอม", wantCode: "journal_branch_not_found"},
+		{name: "company session no registry fails closed", scope: companyScope, branch: "B", wantErr: true},
+		{name: "branch session left to the store", scope: branchScope, branch: "X"},
+	} {
+		err := checkBudgetBranch(ctx, c.connect, c.scope, &gl.Budget{BranchCode: c.branch})
+		if c.wantCode == "" && !c.wantErr {
+			if err != nil {
+				t.Fatalf("%s: unexpected error %v", c.name, err)
+			}
+			continue
+		}
+		if err == nil {
+			t.Fatalf("%s: expected error", c.name)
+		}
+		if user, ok := gl.AsUserError(err); c.wantCode != "" && (!ok || user.Code != c.wantCode || user.Field != "branchcode") {
+			t.Fatalf("%s: got %#v want %s", c.name, err, c.wantCode)
+		}
+	}
+}

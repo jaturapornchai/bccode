@@ -22,6 +22,8 @@ describe("menu screen availability", () => {
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
     "/report/depreciationmonthly", "/report/depreciationyearly", "/report/depreciationpnd50", "/report/assetdisposal",
     "/report/vatsummary",
+    // 2026-09-25: monthly budgets have an API but no entry screen yet (ADR 2026-09-25-gl-monthly-budget)
+    "/gl/budget",
   ];
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
@@ -48,10 +50,10 @@ describe("menu screen availability", () => {
     expect(isMenuScreenPending("/unknown-screen")).toBe(true);
   });
 
-  it("connects every ledger workflow (all 23 Champ items are fully implemented)", () => {
+  it("connects every ledger workflow except the monthly budget entry screen (API ready, screen pending)", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
-    expect(pending).toEqual([]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(23);
+    expect(pending).toEqual(["/gl/budget"]);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(22);
     expect(isMenuScreenPending("/gl/journal-books")).toBe(false);
     expect(isMenuScreenPending("/report/gljournal")).toBe(false);
     expect(isMenuScreenPending("/report/budgetcomparison")).toBe(false);

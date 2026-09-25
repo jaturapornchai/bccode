@@ -70,6 +70,9 @@ func EnsureSchema(ctx context.Context, db *sql.DB) error {
 	if _, err = tx.ExecContext(ctx, subledgerSchema); err != nil {
 		return err
 	}
+	if _, err = tx.ExecContext(ctx, budgetSchema); err != nil {
+		return err
+	}
 	if err = tx.Commit(); err != nil {
 		return err
 	}
@@ -153,7 +156,7 @@ func (p *Postgres) Project(ctx context.Context, event Event) error {
 }
 
 func supportedRecord(kind string) bool {
-	return kind == "accounts" || kind == "fiscal-years" || kind == "journals" || MasterCollections[kind] != ""
+	return kind == "accounts" || kind == "fiscal-years" || kind == "journals" || kind == "budgets" || MasterCollections[kind] != ""
 }
 
 func applyChanges(ctx context.Context, tx *sql.Tx, event Event) error {
@@ -162,6 +165,9 @@ func applyChanges(ctx context.Context, tx *sql.Tx, event Event) error {
 	for _, change := range event.Changes {
 		if !supportedRecord(change.Kind) || change.ID == "" {
 			return fmt.Errorf("ชนิดข้อมูลบัญชีไม่ถูกต้อง")
+		}
+		if change.Kind == "budgets" {
+			continue // budgets own their tables (budgets.go); the event keeps the audit snapshot
 		}
 		var identity Identity
 		if err := json.Unmarshal([]byte(change.Payload), &identity); err != nil {
@@ -303,6 +309,9 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 	if !supportedRecord(kind) {
 		return result, fmt.Errorf("ไม่พบชนิดข้อมูลบัญชี")
 	}
+	if kind == "budgets" {
+		return p.listBudgets(ctx, scope, search, page, limit)
+	}
 	// Books are user-defined: the filter only has to be a well-formed book code.
 	filter.BookCode = NormalizeCode(filter.BookCode)
 	if filter.BookCode != "" && checkCode(filter.BookCode, "bookcode", "สมุดรายวัน", BookCodeMaxRunes) != nil {
@@ -316,7 +325,7 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 		return result, err
 	}
 	// Search is a literal substring on code, names, description, and reference (never matching JSON keys or boolean flags).
-	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || COALESCE(payload->>'name', '') || ' ' || COALESCE(payload->>'description', '') || ' ' || COALESCE(payload->>'reference', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','budgets','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7)))`
+	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || COALESCE(payload->>'name', '') || ' ' || COALESCE(payload->>'description', '') || ' ' || COALESCE(payload->>'reference', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7)))`
 	if err = db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE `+where, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status).Scan(&result.Total); err != nil {
 		return result, err
 	}
@@ -339,12 +348,15 @@ func (p *Postgres) Get(ctx context.Context, scope Scope, kind, id string) (json.
 	if !supportedRecord(kind) {
 		return nil, fmt.Errorf("ไม่พบชนิดข้อมูลบัญชี")
 	}
+	if kind == "budgets" {
+		return p.getBudget(ctx, scope, id)
+	}
 	db, err := p.database(ctx, scope.Holding)
 	if err != nil {
 		return nil, err
 	}
 	var data []byte
-	err = db.QueryRowContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE company=$1 AND kind=$2 AND id=$3 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($4='' OR kind NOT IN ('journals','budgets','forecast') OR payload->>'branchcode'=$4)`, scope.Company, kind, id, scope.Branch).Scan(&data)
+	err = db.QueryRowContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE company=$1 AND kind=$2 AND id=$3 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($4='' OR kind NOT IN ('journals','forecast') OR payload->>'branchcode'=$4)`, scope.Company, kind, id, scope.Branch).Scan(&data)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}

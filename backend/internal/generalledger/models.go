@@ -173,7 +173,7 @@ type StatementGlobalStyle struct {
 
 var MasterCollections = map[string]string{
 	"account-groups": "gl_account_groups", "product-account-groups": "gl_product_account_groups",
-	"mappings": "gl_account_mappings", "budgets": "gl_budgets", "periods": "gl_periods", "forecast": "gl_cash_forecast",
+	"mappings": "gl_account_mappings", "periods": "gl_periods", "forecast": "gl_cash_forecast",
 	"allocations":         "gl_allocations",
 	"statement-templates": "gl_statement_templates",
 	"journal-books":       "gl_journal_books",
@@ -238,6 +238,7 @@ type Command struct {
 	FiscalYear *FiscalYear `json:"fiscalyear,omitempty"`
 	Master     *Master     `json:"master,omitempty"`
 	Journal    *Journal    `json:"journal,omitempty"`
+	Budget     *Budget     `json:"budget,omitempty"`
 }
 
 // Code lengths are counted in runes (PostgreSQL VARCHAR(n) counts characters) and follow
@@ -490,6 +491,11 @@ func normalizeCommandCodes(cmd *Command) {
 			*code = NormalizeCode(*code)
 		}
 		cmd.Master = &m
+	}
+	if cmd.Budget != nil {
+		b := *cmd.Budget
+		normalizeBudget(&b)
+		cmd.Budget = &b
 	}
 	if cmd.Journal != nil {
 		j := *cmd.Journal

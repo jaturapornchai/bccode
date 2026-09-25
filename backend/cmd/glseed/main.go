@@ -511,7 +511,8 @@ func main() {
 		Settlements:  []gl.SubledgerSettlement{{ID: "SETTLE-S003", Ledger: "ar", PartnerCode: partnerCustB.Code, DebtDocumentID: "AR-S002", PaymentDocumentID: "AR-SREC2", Date: "2026-02-10", Amount: gl.Amount("160500.00")}},
 	})
 
-	// 13) งบประมาณประจำปี 2569 (ผ่าน masters)
+	// 13) งบประมาณประจำปี 2569 — งบรายเดือน 12 งวดต่อบัญชี (ยอดทั้งปีแบ่งเท่ากัน เศษไปงวดสุดท้าย)
+	// ของสาขาที่ seed; บัญชีมาจากการค้นตามประเภท+ชื่อด้านบน ไม่ใช้รหัสตายตัว
 	budgets := []struct{ code, name, acct, amount string }{
 		{"BG-2569-SALES", "งบรายได้จากการขายสินค้า ปี 2569", salesVAT, "6000000.00"},
 		{"BG-2569-COGS", "งบต้นทุนขายวัสดุก่อสร้าง ปี 2569", cogs, "3600000.00"},
@@ -524,14 +525,18 @@ func main() {
 			continue
 		}
 		var n int
-		if err := db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE company=$1 AND kind='budgets' AND payload->>'code'=$2`, *company, b.code).Scan(&n); err != nil {
+		if err := db.QueryRowContext(ctx, `SELECT count(*) FROM gl_budgets WHERE company=$1 AND code=$2`, *company, b.code).Scan(&n); err != nil {
 			fatal("ตรวจงบประมาณไม่ได้: %v", err)
 		}
 		if n > 0 {
 			continue
 		}
+		periods := []gl.Amount{}
+		for _, month := range gl.SpreadAnnual(gl.Amount(b.amount).Decimal()) {
+			periods = append(periods, gl.Amount(month.StringFixed(2)))
+		}
 		cmd := gl.Command{Resource: "budgets", Action: "create", RequestID: "seed-gl-screens-" + b.code,
-			Master: &gl.Master{Kind: "budgets", Code: b.code, Name: b.name, IsActive: true, AccountCode: b.acct, FiscalYear: *fiscal, StartDate: "2026-01-01", EndDate: "2026-12-31", Amount: gl.Amount(b.amount)}}
+			Budget: &gl.Budget{Code: b.code, Name: b.name, FiscalYear: *fiscal, BranchCode: *branch, Lines: []gl.BudgetLine{{AccountCode: b.acct, Periods: periods}}}}
 		if _, err := store.Execute(ctx, scope, cmd); err != nil {
 			fatal("สร้างงบประมาณ %s ไม่ได้: %v", b.code, err)
 		}

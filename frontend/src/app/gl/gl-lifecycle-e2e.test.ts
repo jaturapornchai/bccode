@@ -86,7 +86,7 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       expect(GL_REPORTS).toContain("budgetcomparison");
     });
 
-    it("ensures zero pending routes in GL module (all 23 Champ parity menus connected)", () => {
+    it("ensures GL module routes are connected (22 of 23; monthly budget entry screen pending)", () => {
       const glRoutes = [
         "/gl/chartofaccounts",
         "/gl/fiscal-years",
@@ -94,7 +94,6 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
         "/gl/account-groups",
         "/gl/account-mapping",
         "/gl/product-account-groups",
-        "/gl/budget",
         "/gl/periodlock",
         "/gl/statement-designer",
         "/gl/journals",
@@ -115,6 +114,8 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       for (const route of glRoutes) {
         expect(isMenuScreenPending(route)).toBe(false);
       }
+      // 2026-09-25: monthly budgets moved to their own API; the entry screen is the next step.
+      expect(isMenuScreenPending("/gl/budget")).toBe(true);
     });
 
     it("verifies account normalization and hierarchy constraints", () => {

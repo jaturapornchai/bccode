@@ -53,14 +53,14 @@ describe("GLMasters CRUD table presentation", () => {
     expect(html).toContain("title=\"ลบ (Delete)\"");
   });
 
-  it("renders amount column for budgets with formatted number and right alignment", () => {
+  it("renders amount column for cash forecast with formatted number and right alignment", () => {
     vi.mocked(glCommon.useGLList).mockReturnValue({
       data: {
         items: [
           {
-            id: "b-1",
-            code: "DEMO-BM69-BUD-410101",
-            name: "งบกันยายน - รายได้ขายปูนซีเมนต์",
+            id: "f-1",
+            code: "CF-2569-09",
+            name: "ประมาณการรับเงินค่าขายปูนซีเมนต์ กันยายน 2569",
             amount: "100000.00",
             isactive: true,
             version: 1,
@@ -78,11 +78,11 @@ describe("GLMasters CRUD table presentation", () => {
       setPage: vi.fn(),
     });
 
-    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "budgets", route: "/gl/budget" }));
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "forecast", route: "/gl/cash-flow-forecast" }));
     expect(html).toContain("จำนวนเงิน");
     expect(html).toContain("100,000.00");
-    expect(html).toContain("DEMO-BM69-BUD-410101");
-    expect(html).toContain("งบกันยายน - รายได้ขายปูนซีเมนต์");
+    expect(html).toContain("CF-2569-09");
+    expect(html).toContain("ประมาณการรับเงินค่าขายปูนซีเมนต์ กันยายน 2569");
   });
 
   it("renders account level badge when resource is accounts", () => {
