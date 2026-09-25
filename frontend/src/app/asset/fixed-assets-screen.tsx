@@ -21,10 +21,10 @@ import {
 } from "@/lib/fixed-assets";
 
 /** แม่แบบอัตราค่าเสื่อมตามประมวลรัษฎากร ม.65 ทวิ (2) — ใช้เติมค่าเริ่มต้นในฟอร์มเท่านั้น ตัวเลขจริงคำนวณที่ backend */
-const THAI_ASSET_CATEGORIES: { categoryCode: string; nameTh: string; standardUsefulLifeYears: number; standardDeprecPercent: number }[] = [
+const THAI_ASSET_CATEGORIES: { categoryCode: string; nameTh: string; standardUsefulLifeYears: number; standardDeprecPercent: number; passengerCarTaxCap?: boolean }[] = [
   { categoryCode: "BUILDING_PERM", nameTh: "อาคารถาวร", standardUsefulLifeYears: 20, standardDeprecPercent: 5.0 },
   { categoryCode: "BUILDING_TEMP", nameTh: "อาคารชั่วคราว", standardUsefulLifeYears: 1, standardDeprecPercent: 100.0 },
-  { categoryCode: "VEHICLE_PASSENGER", nameTh: "ยานพาหนะ - รถยนต์นั่งไม่เกิน 10 ที่นั่ง (จำกัดภาษี 1 ลบ.)", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
+  { categoryCode: "VEHICLE_PASSENGER", nameTh: "ยานพาหนะ - รถยนต์นั่งไม่เกิน 10 ที่นั่ง (จำกัดภาษี 1 ลบ.)", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0, passengerCarTaxCap: true },
   { categoryCode: "VEHICLE_COMMERCIAL", nameTh: "ยานพาหนะ - รถบรรทุก/เชิงพาณิชย์", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
   { categoryCode: "MACHINERY", nameTh: "เครื่องจักรและอุปกรณ์การผลิต", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
   { categoryCode: "OFFICE_EQUIPMENT", nameTh: "เครื่องใช้และอุปกรณ์สำนักงาน", standardUsefulLifeYears: 5, standardDeprecPercent: 20.0 },
@@ -538,6 +538,7 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                             assettypecode: cat.categoryCode,
                             usefullifeyears: cat.standardUsefulLifeYears,
                             deprecpercent: cat.standardDeprecPercent.toFixed(2),
+                            passengercartaxcap: Boolean(cat.passengerCarTaxCap),
                           }));
                         }}
                         className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
@@ -644,6 +645,18 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                         className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
                       />
                     </div>
+                    <label className="col-span-2 flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-input bg-background px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(editForm.passengercartaxcap)}
+                        onChange={(e) => setEditForm({ ...editForm, passengercartaxcap: e.target.checked })}
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-primary"
+                      />
+                      <span className="flex flex-col gap-0.5 leading-relaxed">
+                        <span className="font-semibold text-foreground">{tr("fa_passenger_car_tax_cap", "รถยนต์นั่งหรือรถยนต์โดยสารไม่เกิน 10 ที่นั่ง — หักค่าเสื่อมทางภาษีจากราคาทุนไม่เกินคันละ 1,000,000 บาท")}</span>
+                        <span className="text-muted-foreground">{tr("fa_passenger_car_tax_cap_hint", "ไม่ต้องเลือก ถ้าเป็นรถที่มีไว้ในกิจการให้เช่ารถยนต์ หรือรถยนต์ต้นแบบเพื่อการวิจัยที่ได้รับยกเว้นภาษีสรรพสามิต")}</span>
+                      </span>
+                    </label>
                     <div>
                       <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_asset_account_code", "รหัสบัญชีสินทรัพย์ (GL)")}</label>
                       <input

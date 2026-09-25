@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-25 @ commit bbfb931b - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-25 @ commit f0d77be9 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -1161,6 +1161,20 @@ Files indexed: 29
 | 1106 | function | `reportText` |
 | 1115 | function | `reportColumnLabel` |
 
+## frontend/src/app/asset/fixed-assets-screen.tsx (1121 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 40 | function | `FixedAssetsScreen` |
+| 115 | const-arrow | `loadData` |
+| 135 | const-arrow | `loadSchedule` |
+| 144 | const-arrow | `loadScheduleReport` |
+| 156 | const-arrow | `loadTaxReport` |
+| 174 | const-arrow | `handleSaveAsset` |
+| 198 | const-arrow | `handleDeleteAsset` |
+| 222 | const-arrow | `handlePostGL` |
+| 253 | const-arrow | `handleConfirmDisposal` |
+
 ## backend/internal/authentication/services/authentication_service.go (1112 lines)
 
 | Line | Kind | Name |
@@ -1202,20 +1216,6 @@ Files indexed: 29
 | 1041 | function | `UnlinkLine` |
 | 1059 | function | `DisableUser` |
 | 1085 | function | `DeleteUser` |
-
-## frontend/src/app/asset/fixed-assets-screen.tsx (1108 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 40 | function | `FixedAssetsScreen` |
-| 115 | const-arrow | `loadData` |
-| 135 | const-arrow | `loadSchedule` |
-| 144 | const-arrow | `loadScheduleReport` |
-| 156 | const-arrow | `loadTaxReport` |
-| 174 | const-arrow | `handleSaveAsset` |
-| 198 | const-arrow | `handleDeleteAsset` |
-| 222 | const-arrow | `handlePostGL` |
-| 253 | const-arrow | `handleConfirmDisposal` |
 
 ## frontend/src/app/gl/gl-journals.tsx (1096 lines)
 

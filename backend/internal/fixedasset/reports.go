@@ -21,6 +21,11 @@ type ReportResult struct {
 	AsOf      string              `json:"asof"`
 }
 
+// passengerCarTaxCostCap is the per-vehicle cost that may be depreciated for tax on a
+// passenger car / bus with ≤10 seats (Royal Decree 145 s.5; the excess is disallowed by
+// Royal Decree 315 s.4(1)) — docs/kms/21-thai-tax-form-references.md §13.
+var passengerCarTaxCostCap = decimal.NewFromInt(1000000)
+
 type Reporter struct {
 	records *records
 }
@@ -216,16 +221,10 @@ func (r *Reporter) GetTaxReconciliationReport(ctx context.Context, scope Scope, 
 		taxDep := acctDep
 		remark := "หักตามอัตราปกติ"
 
-		// Thai Tax Law Rules:
-		// 1. Passenger cars capped at 1,000,000 THB depreciable base (กม. พรฎ. 315)
 		cost := ast.Cost.Decimal()
-		if ast.AssetTypeCode == "PASSENGER_CAR" && cost.GreaterThan(decimal.NewFromInt(1000000)) {
-			// Tax deprec capped at 20% of 1,000,000 = 200,000/yr
-			taxRate := decimal.NewFromFloat(0.20)
-			taxDep = decimal.NewFromInt(1000000).Mul(taxRate)
-			if taxDep.GreaterThan(acctDep) {
-				taxDep = acctDep
-			}
+		if ast.PassengerCarTaxCap && cost.GreaterThan(passengerCarTaxCostCap) {
+			// Same rate and holding period as the books, on the capped cost only (RD ruling 0702/5605).
+			taxDep = acctDep.Mul(passengerCarTaxCostCap).Div(cost).Round(2)
 			remark = "ยานพาหนะนั่งไม่เกิน 10 ที่นั่ง จำกัดมูลค่าทางภาษี 1,000,000 บาท"
 		} else if ast.FirstYearPercent.Decimal().GreaterThan(decimal.Zero) {
 			remark = fmt.Sprintf("สิทธิประโยชน์หักค่าสึกหรอปีแรกพิเศษ %s%%", ast.FirstYearPercent.String())
