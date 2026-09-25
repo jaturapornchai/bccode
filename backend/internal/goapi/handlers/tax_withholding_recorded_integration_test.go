@@ -14,7 +14,7 @@ import (
 )
 
 // TestWithholdingReportUsesRecordedBase - ใบที่บันทึกฐานภาษีไว้ รายงาน ภ.ง.ด.53 ต้องใช้ฐานที่บันทึก ไม่ใช่ยอดจ่ายรวม VAT
-// ใบที่ไม่ได้บันทึก ยังประมาณจากบรรทัดบัญชีและบอกว่าเป็นค่าประมาณ (inferred) — ใช้ฐานเปล่าได้ (สร้าง schema เอง)
+// ใบที่ไม่ได้บันทึกรายการ ไม่เข้ารายงาน แม้มีบรรทัดบัญชีภาษีหัก (ไม่เดาจากชื่อบัญชี) — ใช้ฐานเปล่าได้ (สร้าง schema เอง)
 func TestWithholdingReportUsesRecordedBase(t *testing.T) {
 	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
 	if dsn == "" {
@@ -49,7 +49,7 @@ func TestWithholdingReportUsesRecordedBase(t *testing.T) {
 	exec(`INSERT INTO gl_subledger_partners(company,code,version,payload) VALUES($1,'TRANS',1,'{"partner_code":"TRANS","name_th":"บริษัท ขนส่งไทยเร็ว จำกัด","tax_id":"0105558012349","address":"12 ถนนบางนา-ตราด กรุงเทพฯ","is_supplier":true,"is_active":true}')`, company)
 	// PV1: จ่าย 107,000 รวม VAT หัก 3% จากฐานก่อน VAT ที่ผู้ใช้บันทึก 100,000 → 3,000
 	exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals','J1','PV1',1,'{"description":"จ่ายค่าขนส่ง","status":"posted","details":{"partners":[],"withholdings":[{"id":"W1","wht_direction":1,"form_type":"PND53","partner_code":"TRANS","payment_date":"2026-09-15","income_tax_type":"3_tres","income_description":"ค่าขนส่งสินค้า","condition_type":1,"wht_rate":"3","base_amount":"100000","tax_amount":"3000"}]}}')`, company)
-	// PV2: ไม่ได้บันทึกรายการภาษี — ฐานประมาณจากเดบิตฝั่งตรงข้าม
+	// PV2: ไม่ได้บันทึกรายการภาษี — ไม่เข้ารายงาน
 	exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals','J2','PV2',1,'{"description":"จ่ายค่าเช่า","status":"posted"}')`, company)
 	line := `INSERT INTO gl_lines(company,journal_id,line_no,doc_no,entry_date,fiscal_year,book_code,branch_code,department_code,project_code,kind,currency,scale,account_code,account_name,account_type,normal_balance,is_cash,description,cash_flow,debit,credit)
 		VALUES($1,$2,$3,$4,$5,'2569','PV','00000','','','manual','THB',2,$6,$6,$7,$8,false,$9,'',$10,$11)`
@@ -64,17 +64,14 @@ func TestWithholdingReportUsesRecordedBase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(report.Rows) != 2 {
+	if len(report.Rows) != 1 {
 		t.Fatalf("rows = %+v", report.Rows)
 	}
-	pv1, pv2 := report.Rows[0], report.Rows[1]
-	if pv1.TaxBaseSource != "recorded" || pv1.BaseAmount != "100000.00" || pv1.WhtAmount != "3000.00" || pv1.RatePercent != "3.00" || pv1.IncomeType != "3_tres" || pv1.PartnerName != "บริษัท ขนส่งไทยเร็ว จำกัด" || pv1.PaidDate != "2026-09-15" {
+	pv1 := report.Rows[0]
+	if pv1.BaseAmount != "100000.00" || pv1.WhtAmount != "3000.00" || pv1.RatePercent != "3.00" || pv1.IncomeType != "3_tres" || pv1.PartnerName != "บริษัท ขนส่งไทยเร็ว จำกัด" || pv1.PaidDate != "2026-09-15" {
 		t.Fatalf("recorded row = %+v", pv1)
 	}
-	if pv2.TaxBaseSource != "inferred" || pv2.BaseAmount != "10000.00" || pv2.WhtAmount != "500.00" {
-		t.Fatalf("inferred row = %+v", pv2)
-	}
-	if report.Summary.BaseTotal != "110000.00" || report.Summary.WhtTotal != "3500.00" {
+	if report.Summary.BaseTotal != "100000.00" || report.Summary.WhtTotal != "3000.00" {
 		t.Fatalf("summary = %+v", report.Summary)
 	}
 	// แบบ ภ.ง.ด.3 ต้องไม่เห็นรายการที่บันทึกเป็น ภ.ง.ด.53
@@ -83,8 +80,8 @@ func TestWithholdingReportUsesRecordedBase(t *testing.T) {
 	}
 }
 
-// TestWithholdingReceivedReport - รายงานภาษีถูกหัก: ชื่อบัญชีมาตรฐาน "ภาษีเงินได้ถูกหัก ณ ที่จ่าย" ต้องหาเจอ
-// และใบที่บันทึกรายการภาษีถูกหักไว้ต้องเข้ารายงานแม้ลงบัญชีที่ชื่อไม่ตรงรูปแบบ (หลักฐานที่บันทึกชนะการหาจากชื่อ)
+// TestWithholdingReceivedReport - รายงานภาษีถูกหัก: อ่านเฉพาะรายการที่บันทึกในใบสำคัญ ไม่ว่าลงบัญชีใด
+// ใบที่ไม่ได้บันทึกรายการไม่เข้ารายงาน แม้ลงบัญชีชื่อ "ภาษีเงินได้ถูกหัก ณ ที่จ่าย"
 func TestWithholdingReceivedReport(t *testing.T) {
 	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
 	if dsn == "" {
@@ -121,7 +118,7 @@ func TestWithholdingReceivedReport(t *testing.T) {
 	recorded := `{"description":"%s","status":"%s","details":{"withholdings":[{"id":"W1","wht_direction":2,"form_type":"PND53","partner_code":"CUST","payment_date":"2026-09-%s","income_tax_type":"3_tres","income_description":"ค่าบริการ","condition_type":1,"wht_rate":"3","base_amount":"%s","tax_amount":"%s"}]}}`
 	// RV1: ลูกค้าหัก 3% ของ 10,000 บันทึกรายการไว้ ลงบัญชีภาษีถูกหักมาตรฐาน
 	exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals','J1','RV1',1,$2)`, company, fmt.Sprintf(recorded, "รับชำระค่าบริการ", "posted", "05", "10000", "300"))
-	// RV2: ไม่ได้บันทึกรายการภาษี — ประมาณจากบรรทัดบัญชีภาษีถูกหัก
+	// RV2: ไม่ได้บันทึกรายการภาษี — ไม่เข้ารายงาน
 	exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals','J2','RV2',1,'{"description":"รับชำระค่าขนส่ง","status":"posted"}')`, company)
 	// RV3: บันทึกรายการไว้ แต่ลงยอดหักในบัญชีลูกหนี้อื่น (ชื่อไม่ตรงรูปแบบ) — ต้องยังเข้ารายงาน
 	exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals','J3','RV3',1,$2)`, company, fmt.Sprintf(recorded, "รับชำระค่าเช่า", "posted", "25", "5000", "250"))
@@ -146,35 +143,31 @@ func TestWithholdingReceivedReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(report.Rows) != 3 || report.NoteKey != "" {
+	if len(report.Rows) != 2 || report.NoteKey != "" {
 		t.Fatalf("rows = %+v note=%q", report.Rows, report.NoteKey)
 	}
-	rv1, rv2, rv3 := report.Rows[0], report.Rows[1], report.Rows[2]
-	if rv1.DocNo != "RV1" || rv1.TaxBaseSource != "recorded" || rv1.WhtAmount != "300.00" || rv1.PartnerName != "บริษัท ก่อสร้างมั่นคง จำกัด" {
+	rv1, rv3 := report.Rows[0], report.Rows[1]
+	if rv1.DocNo != "RV1" || rv1.WhtAmount != "300.00" || rv1.PartnerName != "บริษัท ก่อสร้างมั่นคง จำกัด" {
 		t.Fatalf("RV1 = %+v", rv1)
 	}
-	if rv2.DocNo != "RV2" || rv2.TaxBaseSource != "inferred" || rv2.WhtAmount != "20.00" || rv2.BaseAmount != "2000.00" {
-		t.Fatalf("RV2 = %+v", rv2)
-	}
-	if rv3.DocNo != "RV3" || rv3.TaxBaseSource != "recorded" || rv3.WhtAmount != "250.00" || rv3.BaseAmount != "5000.00" || rv3.DocDate != "2026-09-25" {
+	if rv3.DocNo != "RV3" || rv3.WhtAmount != "250.00" || rv3.BaseAmount != "5000.00" || rv3.DocDate != "2026-09-25" {
 		t.Fatalf("RV3 = %+v", rv3)
 	}
-	if report.Summary.WhtTotal != "570.00" || report.Summary.BaseTotal != "17000.00" {
+	if report.Summary.WhtTotal != "550.00" || report.Summary.BaseTotal != "15000.00" {
 		t.Fatalf("summary = %+v", report.Summary)
 	}
 	// เดือนอื่นต้องว่าง และบอกเหตุผล
-	if other, err := buildWithholdingReport(ctx, db, company, 2026, 10, "received", nil); err != nil || len(other.Rows) != 0 {
+	if other, err := buildWithholdingReport(ctx, db, company, 2026, 10, "received", nil); err != nil || len(other.Rows) != 0 || other.NoteKey != "tax_wht_note_no_records" {
 		t.Fatalf("Oct rows = %+v err=%v", other.Rows, err)
 	}
 }
 
-// TestWithholdingReportFilingMonthAndInferredRows - UAT 2026-09-24:
+// TestWithholdingReportFilingMonth - UAT 2026-09-24:
 //   - รายการที่บันทึก เข้างวดตามเดือนของวันที่จ่าย (payment_date) ไม่ใช่วันที่ใบ (docs/kms/21-thai-tax-form-references.md §9)
-//   - ใบที่บันทึกรายการแล้ว (แบบใดก็ตาม) ห้ามมีแถวประมาณซ้ำ แม้แบบที่บันทึกต่างจากแบบของบัญชี
+//   - แบบของแถว = แบบที่บันทึก ไม่ใช่ชื่อบัญชีที่ลงยอด (PV2 บันทึก ภ.ง.ด.3 ลงบัญชี ภ.ง.ด.53)
 //   - คำอธิบายว่าง → ชื่อประเภทเงินได้ ไม่ใช่คำบรรยายบรรทัดบัญชี และพิมพ์ในใบแนบ ภ.ง.ด.3
-//   - ใบนำส่งภาษีที่กลับรายการแล้ว + ใบกลับรายการ ไม่เข้ารายงาน
-//   - ฐานประมาณตัดบัญชีภาษีหัก/ภาษีซื้อจากชื่อบัญชีจริง; หลายบรรทัดบัญชีเดียวกันรวมแถวเดียว; หลายบัญชีภาษีหักในใบเดียว → ฐาน 0 อัตราว่าง
-func TestWithholdingReportFilingMonthAndInferredRows(t *testing.T) {
+//   - ใบที่ไม่ได้บันทึกรายการ (PV3/PV4), ใบนำส่งภาษีที่กลับรายการแล้ว + ใบกลับรายการ ไม่เข้ารายงาน
+func TestWithholdingReportFilingMonth(t *testing.T) {
 	dsn := os.Getenv("BC_GL_TEST_POSTGRES_DSN")
 	if dsn == "" {
 		t.Skip("set BC_GL_TEST_POSTGRES_DSN")
@@ -233,14 +226,14 @@ func TestWithholdingReportFilingMonthAndInferredRows(t *testing.T) {
 	exec(line, company, "J2", 1, "PV2", "2026-09-10", "manual", "52400", "expense", "ค่านายหน้า", "2000", "0")
 	exec(line, company, "J2", 2, "PV2", "2026-09-10", "manual", "2135", "liability", "ภาษีหัก 3% บรรทัดบัญชี", "0", "60")
 	exec(line, company, "J2", 3, "PV2", "2026-09-10", "manual", "1112", "asset", "จ่ายเงิน", "0", "1940")
-	// PV3 ไม่บันทึกรายการ: ค่าบริการ 5,000 + ภาษีซื้อ 350 หัก 3% แยกสองบรรทัดบัญชีเดียวกัน → แถวเดียว ยอดหัก 150 ฐาน 5,000
+	// PV3 ไม่บันทึกรายการ: ค่าบริการ 5,000 + ภาษีซื้อ 350 หัก 3% แยกสองบรรทัด → ไม่เข้ารายงาน
 	journal("J3", "PV3", `{"status":"posted","description":"จ่ายค่าบริการ"}`)
 	exec(line, company, "J3", 1, "PV3", "2026-09-12", "manual", "52500", "expense", "ค่าบริการ", "5000", "0")
 	exec(line, company, "J3", 2, "PV3", "2026-09-12", "manual", "1154", "asset", "ภาษีซื้อ", "350", "0")
 	exec(line, company, "J3", 3, "PV3", "2026-09-12", "manual", "2135", "liability", "ภาษีหัก 3% งวดแรก", "0", "100")
 	exec(line, company, "J3", 4, "PV3", "2026-09-12", "manual", "2135", "liability", "ภาษีหัก 3% งวดสอง", "0", "50")
 	exec(line, company, "J3", 5, "PV3", "2026-09-12", "manual", "1112", "asset", "จ่ายเงิน", "0", "5200")
-	// PV4 ไม่บันทึกรายการ แต่หักสองแบบในใบเดียว → แบ่งฐานไม่ได้โดยไม่เดา: ฐาน 0 อัตราว่าง
+	// PV4 ไม่บันทึกรายการ หักสองบัญชี (ภ.ง.ด.3 + 53) → ไม่เข้ารายงานแบบใด
 	journal("J4", "PV4", `{"status":"posted","description":"จ่ายค่าจ้าง"}`)
 	exec(line, company, "J4", 1, "PV4", "2026-09-14", "manual", "52600", "expense", "ค่าจ้างทำของ", "10000", "0")
 	exec(line, company, "J4", 2, "PV4", "2026-09-14", "manual", "2134", "liability", "ภาษีหัก บุคคล", "0", "300")
@@ -258,40 +251,27 @@ func TestWithholdingReportFilingMonthAndInferredRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sep53.Rows) != 2 {
-		t.Fatalf("Sep PND53 rows = %+v", sep53.Rows)
-	}
-	pv3, pv4 := sep53.Rows[0], sep53.Rows[1]
-	if pv3.DocNo != "PV3" || pv3.TaxBaseSource != "inferred" || pv3.WhtAmount != "150.00" || pv3.BaseAmount != "5000.00" || pv3.RatePercent != "3.00" || pv3.Description != "ภาษีหัก 3% งวดแรก" {
-		t.Fatalf("PV3 = %+v", pv3)
-	}
-	if pv4.DocNo != "PV4" || pv4.WhtAmount != "200.00" || pv4.BaseAmount != "0.00" || pv4.RatePercent != "" {
-		t.Fatalf("PV4 = %+v", pv4)
-	}
-	if sep53.Summary.WhtTotal != "350.00" || sep53.Summary.BaseTotal != "5000.00" {
-		t.Fatalf("Sep PND53 summary = %+v", sep53.Summary)
+	if len(sep53.Rows) != 0 || sep53.NoteKey != "tax_wht_note_no_records" {
+		t.Fatalf("Sep PND53 = %+v", sep53)
 	}
 
 	sep3, err := buildWithholdingReport(ctx, db, company, 2026, 9, "paid", []string{"3"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sep3.Rows) != 2 {
+	if len(sep3.Rows) != 1 {
 		t.Fatalf("Sep PND3 rows = %+v", sep3.Rows)
 	}
 	pv2 := sep3.Rows[0]
-	if pv2.DocNo != "PV2" || pv2.TaxBaseSource != "recorded" || pv2.WhtAmount != "60.00" || pv2.BaseAmount != "2000.00" || pv2.Description != "" || incomeTypeText(pv2, "th") != "ค่านายหน้า 40(2)" || incomeTypeText(pv2, "en") != "Commission 40(2)" || pv2.PartnerName != "นายสมชาย ใจดี" {
+	if pv2.DocNo != "PV2" || pv2.WhtAmount != "60.00" || pv2.BaseAmount != "2000.00" || pv2.Description != "" || incomeTypeText(pv2, "th") != "ค่านายหน้า 40(2)" || incomeTypeText(pv2, "en") != "Commission 40(2)" || pv2.PartnerName != "นายสมชาย ใจดี" {
 		t.Fatalf("PV2 = %+v", pv2)
-	}
-	if sep3.Rows[1].DocNo != "PV4" || sep3.Rows[1].WhtAmount != "300.00" || sep3.Rows[1].BaseAmount != "0.00" {
-		t.Fatalf("PV4 PND3 = %+v", sep3.Rows[1])
 	}
 
 	all, err := buildWithholdingReport(ctx, db, company, 2026, 9, "paid", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(all.Rows) != 4 || all.Summary.WhtTotal != "710.00" {
+	if len(all.Rows) != 1 || all.Summary.WhtTotal != "60.00" {
 		t.Fatalf("Sep all forms rows = %+v summary=%+v", all.Rows, all.Summary)
 	}
 
@@ -308,7 +288,7 @@ func TestWithholdingReportFilingMonthAndInferredRows(t *testing.T) {
 	if _, err := fillWithholdingForm(ctx, db, company, "pnd3", 2026, 9, &doc); err != nil {
 		t.Fatal(err)
 	}
-	if len(doc.Rows) != 2 || doc.Rows[0]["l1_income_type"] != "ค่านายหน้า 40(2)" || doc.Rows[0]["l1_amount"] != "2000.00" {
+	if len(doc.Rows) != 1 || doc.Rows[0]["l1_income_type"] != "ค่านายหน้า 40(2)" || doc.Rows[0]["l1_amount"] != "2000.00" {
 		t.Fatalf("PND3 attachment rows = %+v", doc.Rows)
 	}
 }

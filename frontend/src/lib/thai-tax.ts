@@ -192,10 +192,7 @@ export interface WhtReportRow {
   whtamounttext: string;
   netamount: string;
   ratepercent: string;
-  /** recorded = ผู้ใช้บันทึกฐานภาษีในใบสำคัญ, inferred = ระบบประมาณจากบรรทัดบัญชี */
-  taxbasesource: string;
-  /** แบบยื่น PND2 | PND3 | PND53: แถวที่บันทึก = ค่าในใบสำคัญ, แถวประมาณ = backend อ่านจากชื่อบัญชีภาษีหัก ณ ที่จ่าย
-   *  ("ภ.ง.ด.3"/"ภ.ง.ด.53"/"ภ.ง.ด.2"); "" = ระบุไม่ได้ ให้จอใช้ค่าเริ่มต้นเอง */
+  /** แบบยื่น PND2 | PND3 | PND53 ตามรายการภาษีหักที่บันทึกในใบสำคัญ (รายงานอ่านเฉพาะรายการที่บันทึก); "" = ให้จอใช้ค่าเริ่มต้นเอง */
   formtype: string;
   incometype: string;
   condition: number;
@@ -307,7 +304,6 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
     whtamounttext: toText(rec.whtamounttext),
     netamount: toMoneyOrBlank(rec.netamount),
     ratepercent: toText(rec.ratepercent),
-    taxbasesource: toText(rec.taxbasesource),
     formtype: toText(rec.formtype),
     incometype: toText(rec.incometype),
     condition: toCount(rec.condition, 0),

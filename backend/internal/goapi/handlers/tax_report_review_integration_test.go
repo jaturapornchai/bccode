@@ -96,11 +96,9 @@ func TestVatDuplicateInvoiceReachesRegisterAndPP30(t *testing.T) {
 	}
 }
 
-// ข้อค้นพบรีวิวรายงานภาษีหัก ณ ที่จ่าย 2026-09-24 (ตรวจบน PostgreSQL จริง):
-//   - C1: ใบโอนยอดระหว่างบัญชีภาษีหักที่ชื่อไม่มีคำว่า "หัก ณ ที่จ่าย" (เช่น "ภ.ง.ด.3 ค้างจ่าย" → "ภ.ง.ด.53 ค้างจ่าย") ห้ามเป็นแถวอัตรา 100%
-//   - C2: ใบที่บันทึกรายการภาษีหักไว้บางส่วน ส่วนที่เหลือในบัญชีต้องเป็นแถว inferred ฐานไม่ทราบ ให้ยอดรวมตรงกับบัญชี
-//   - C6: แถว inferred มี formtype ตามชื่อบัญชี ("ภ.ง.ด.53" → PND53) ฝั่งถูกหักไม่มีแบบ = ""
-func TestWithholdingReportReviewFindings2026_09_24(t *testing.T) {
+// รายงานภาษีหัก ณ ที่จ่ายอ่านเฉพาะรายการที่บันทึกในใบสำคัญ (แบบ Champ BCAPWTaxList; เลิกเดาจากชื่อบัญชี 2026-09-25):
+// ใบโอนยอดระหว่างบัญชีภาษีหัก, ใบที่ไม่ได้บันทึกรายการ (จ่าย/ถูกหัก) และยอดในบัญชีที่เกินรายการที่บันทึก ไม่เป็นแถว
+func TestWithholdingReportRecordedOnly(t *testing.T) {
 	const company = "WHTREV"
 	db, exec := openTaxReviewDB(t, company)
 	ctx := context.Background()
@@ -121,24 +119,24 @@ func TestWithholdingReportReviewFindings2026_09_24(t *testing.T) {
 	line := `INSERT INTO gl_lines(company,journal_id,line_no,doc_no,entry_date,fiscal_year,book_code,branch_code,department_code,project_code,kind,currency,scale,account_code,account_name,account_type,normal_balance,is_cash,description,cash_flow,debit,credit)
 		VALUES($1,$2,$3,$4,$5,'2569','PV','00000','','','manual','THB',2,$6,$6,$7,'debit',false,$8,'',$9,$10)`
 
-	// C1: โอนยอดจากบัญชี ภ.ง.ด.3 ไปบัญชี ภ.ง.ด.53 — ไม่มีบรรทัดที่ไม่ใช่บัญชีภาษี
+	// โอนยอดจากบัญชี ภ.ง.ด.3 ไปบัญชี ภ.ง.ด.53 — ไม่ใช่การหักภาษี
 	journal("J1", "JV6910-T01", `{"status":"posted","kind":"manual","description":"โอนภาษีหักค้างจ่ายให้ตรงแบบยื่น"}`)
 	exec(line, company, "J1", 1, "JV6910-T01", "2026-10-05", "2150", "liability", "โอนออก ภ.ง.ด.3", "300", "0")
 	exec(line, company, "J1", 2, "JV6910-T01", "2026-10-05", "2151", "liability", "โอนเข้า ภ.ง.ด.53", "0", "300")
 
-	// C6: จ่ายค่าบริการ ไม่ได้บันทึกรายการภาษีหัก → แถว inferred แบบ PND53 ฐาน 10,000
+	// จ่ายค่าบริการ ลงบัญชีภาษีหัก แต่ไม่ได้บันทึกรายการ → ไม่เป็นแถว
 	journal("J2", "PV6910-W02", `{"status":"posted","kind":"manual","description":"จ่ายค่าบริการทำความสะอาด"}`)
 	exec(line, company, "J2", 1, "PV6910-W02", "2026-10-08", "5221", "expense", "ค่าบริการ", "10000", "0")
 	exec(line, company, "J2", 2, "PV6910-W02", "2026-10-08", "1121", "asset", "จ่ายเงิน", "0", "9700")
 	exec(line, company, "J2", 3, "PV6910-W02", "2026-10-08", "2151", "liability", "ภาษีหัก 3%", "0", "300")
 
-	// C2: ใบเดียวจ่ายสองราย หักรวม 450 ในบัญชี ภ.ง.ด.53 แต่บันทึกรายการไว้รายเดียว (ภาษี 300) → ส่วนเหลือ 150 ต้องไม่หาย
+	// ใบเดียวจ่ายสองราย หักรวม 450 ในบัญชี ภ.ง.ด.53 แต่บันทึกรายการไว้รายเดียว (ภาษี 300) → แถวเดียวตามที่บันทึก
 	journal("J3", "PV6910-W03", `{"status":"posted","kind":"manual","description":"จ่ายค่าบริการสองราย","details":{"withholdings":[{"id":"W1","wht_direction":1,"form_type":"PND53","partner_code":"SERVE","payment_date":"2026-10-10","income_tax_type":"3_tres","condition_type":1,"wht_rate":"3","base_amount":"10000","tax_amount":"300"}]}}`)
 	exec(line, company, "J3", 1, "PV6910-W03", "2026-10-10", "5221", "expense", "ค่าบริการ", "15000", "0")
 	exec(line, company, "J3", 2, "PV6910-W03", "2026-10-10", "1121", "asset", "จ่ายเงิน", "0", "14550")
 	exec(line, company, "J3", 3, "PV6910-W03", "2026-10-10", "2151", "liability", "ภาษีหัก 3%", "0", "450")
 
-	// C6 ฝั่งถูกหัก: รับชำระค่าบริการ ลูกค้าหัก 3% ไม่ได้บันทึกรายการ → formtype ว่าง
+	// ฝั่งถูกหัก: รับชำระค่าบริการ ลูกค้าหัก 3% ไม่ได้บันทึกรายการ → ไม่เป็นแถว
 	journal("J4", "RV6910-W04", `{"status":"posted","kind":"manual","description":"รับชำระค่าบริการ ลูกค้าหักภาษี ณ ที่จ่าย 3%"}`)
 	exec(line, company, "J4", 1, "RV6910-W04", "2026-10-12", "1121", "asset", "รับเงิน", "9700", "0")
 	exec(line, company, "J4", 2, "RV6910-W04", "2026-10-12", "1153", "asset", "ภาษีถูกหัก 3%", "300", "0")
@@ -148,57 +146,23 @@ func TestWithholdingReportReviewFindings2026_09_24(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	byDoc := map[string][]TaxWithholdingRow{}
-	for _, r := range oct53.Rows {
-		byDoc[r.DocNo] = append(byDoc[r.DocNo], r)
+	// เฉพาะรายการที่บันทึก (W03 ภาษี 300) — ใบโอนยอด, ใบที่ไม่ได้บันทึก และยอดส่วนเกินในบัญชีไม่ถูกเดาเป็นแถว
+	if len(oct53.Rows) != 1 || oct53.Rows[0].DocNo != "PV6910-W03" || oct53.Rows[0].WhtAmount != "300.00" || oct53.Rows[0].BaseAmount != "10000.00" ||
+		oct53.Rows[0].RatePercent != "3.00" || oct53.Rows[0].PartnerCode != "SERVE" || oct53.Summary.WhtTotal != "300.00" || oct53.NoteKey != "" {
+		t.Fatalf("PND53 Oct = %+v", oct53)
 	}
-	if len(byDoc["JV6910-T01"]) != 0 {
-		t.Fatalf("C1 transfer between WHT accounts produced rows: %+v", byDoc["JV6910-T01"])
-	}
-	if w02 := byDoc["PV6910-W02"]; len(w02) != 1 || w02[0].FormType != "PND53" || w02[0].BaseAmount != "10000.00" || w02[0].WhtAmount != "300.00" || w02[0].RatePercent != "3.00" {
-		t.Fatalf("C6 inferred PND53 row = %+v", w02)
-	}
-	w03 := byDoc["PV6910-W03"]
-	if len(w03) != 2 {
-		t.Fatalf("C2 rows of partly recorded voucher = %+v", w03)
-	}
-	var recorded, remainder TaxWithholdingRow
-	for _, r := range w03 {
-		if r.TaxBaseSource == "recorded" {
-			recorded = r
-		} else {
-			remainder = r
-		}
-	}
-	if recorded.WhtAmount != "300.00" || recorded.BaseAmount != "10000.00" {
-		t.Fatalf("C2 recorded row = %+v", recorded)
-	}
-	// ส่วนเหลือ: ฐานไม่ทราบ (ไม่เดา) → อัตรา/สุทธิว่าง, ไม่มีคู่ค้า, แบบตามบัญชี
-	if remainder.TaxBaseSource != "inferred" || remainder.WhtAmount != "150.00" || remainder.BaseAmount != "0.00" || remainder.RatePercent != "" ||
-		remainder.NetAmount != "" || remainder.PartnerCode != "" || remainder.FormType != "PND53" {
-		t.Fatalf("C2 remainder row = %+v", remainder)
-	}
-	// ยอดภาษีของงวด = ยอดเครดิตบัญชี ภ.ง.ด.53 ของใบที่เป็นการหักภาษีจริง (300 + 450; ใบโอนยอดไม่นับ)
-	if oct53.Summary.WhtTotal != "750.00" {
-		t.Fatalf("C2 total = %+v", oct53.Summary)
-	}
-	// แบบ ภ.ง.ด.3: ใบโอนยอดเดบิตบัญชี ภ.ง.ด.3 เท่านั้น ไม่ใช่การหักภาษี → ว่าง
-	if oct3, err := buildWithholdingReport(ctx, db, company, 2026, 10, "paid", []string{"3"}); err != nil || len(oct3.Rows) != 0 {
-		t.Fatalf("PND3 rows = %+v err=%v", oct3.Rows, err)
+	if oct3, err := buildWithholdingReport(ctx, db, company, 2026, 10, "paid", []string{"3"}); err != nil || len(oct3.Rows) != 0 || oct3.NoteKey != "tax_wht_note_no_records" {
+		t.Fatalf("PND3 rows = %+v err=%v", oct3, err)
 	}
 	received, err := buildWithholdingReport(ctx, db, company, 2026, 10, "received", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(received.Rows) != 1 || received.Rows[0].FormType != "" || received.Rows[0].BaseAmount != "10000.00" || received.Rows[0].WhtAmount != "300.00" {
-		t.Fatalf("C6 received rows = %+v", received.Rows)
+	if err != nil || len(received.Rows) != 0 || received.NoteKey != "tax_wht_note_no_records" {
+		t.Fatalf("received = %+v err=%v", received, err)
 	}
 }
 
 // กลับรายการ (ประกาศฯ ฉบับที่ 111: งวด = เดือนที่จ่ายเงิน): กลับในเดือนเดียวกัน → หักล้าง ไม่แสดงทั้งคู่;
 // กลับในเดือนหลัง → ต้นฉบับอยู่ในเดือนของตัวเองพร้อม ReversedMonth และเดือนที่กลับไม่มีแถวติดลบ
-// บัญชีที่ชื่ออ้างหลายแบบ → ไม่เติมลง ภ.ง.ด.3 หรือ 53 (นับ UnknownForm) แสดงเฉพาะรายงานทุกแบบ
-// ภาษีที่บริษัทออกให้ (ค่าใช้จ่าย "ภาษีเงินได้หัก ณ ที่จ่ายออกแทน") ไม่ใช่ใบโอนยอดระหว่างบัญชีภาษี → ยังเป็นแถว ฐานไม่ทราบ
+// ใบที่ไม่ได้บันทึกรายการ (R3/R4, บัญชีที่ชื่ออ้างหลายแบบ M1, ภาษีออกแทน B1) ไม่เป็นแถวในแบบใด — ผู้ใช้ต้องบันทึกรายการในใบสำคัญ
 func TestWithholdingReportReversalsAndForms2026_09_24(t *testing.T) {
 	const company = "WHTREV2"
 	db, exec := openTaxReviewDB(t, company)
@@ -277,34 +241,25 @@ func TestWithholdingReportReversalsAndForms2026_09_24(t *testing.T) {
 			t.Fatalf("%s must not be in the PND53 report: %+v", gone, docs[gone])
 		}
 	}
-	if r2 := docs["PV6910-R02"]; len(r2) != 1 || r2[0].TaxBaseSource != "recorded" || r2[0].ReversedMonth != "2026-11" || r2[0].WhtAmount != "300.00" {
+	if r2 := docs["PV6910-R02"]; len(r2) != 1 || r2[0].ReversedMonth != "2026-11" || r2[0].WhtAmount != "300.00" || r2[0].BaseAmount != "10000.00" {
 		t.Fatalf("R2 reversed later = %+v", r2)
 	}
-	if r3 := docs["PV6910-R03"]; len(r3) != 1 || r3[0].TaxBaseSource != "inferred" || r3[0].ReversedMonth != "2026-11" || r3[0].BaseAmount != "10000.00" {
-		t.Fatalf("R3 inferred reversed later = %+v", r3)
-	}
-	if b1 := docs["JV6910-B01"]; len(b1) != 1 || b1[0].WhtAmount != "30.93" || b1[0].BaseAmount != "0.00" || b1[0].FormType != "PND53" {
-		t.Fatalf("B1 company-borne WHT = %+v", b1)
-	}
-	if oct53.Summary.WhtTotal != "630.93" || oct53.UnknownForm != 1 || len(oct53.Rows) != 3 {
-		t.Fatalf("PND53 Oct: total %s unknown %d rows %+v", oct53.Summary.WhtTotal, oct53.UnknownForm, oct53.Rows)
+	if oct53.Summary.WhtTotal != "300.00" || len(oct53.Rows) != 1 {
+		t.Fatalf("PND53 Oct: total %s rows %+v", oct53.Summary.WhtTotal, oct53.Rows)
 	}
 	oct3, err := buildWithholdingReport(ctx, db, company, 2026, 10, "paid", []string{"3"})
-	if err != nil || len(oct3.Rows) != 0 || oct3.UnknownForm != 1 {
-		t.Fatalf("PND3 Oct rows=%+v unknown=%d err=%v", oct3.Rows, oct3.UnknownForm, err)
+	if err != nil || len(oct3.Rows) != 0 {
+		t.Fatalf("PND3 Oct rows=%+v err=%v", oct3.Rows, err)
 	}
 	all, err := buildWithholdingReport(ctx, db, company, 2026, 10, "paid", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if m1 := byDoc(all.Rows)["PV6910-M01"]; len(m1) != 1 || m1[0].FormType != "" || m1[0].BaseAmount != "10000.00" || all.UnknownForm != 1 {
-		t.Fatalf("M1 in all-forms report = %+v unknown=%d", m1, all.UnknownForm)
+	if err != nil || len(all.Rows) != 1 || all.Rows[0].DocNo != "PV6910-R02" {
+		t.Fatalf("all forms Oct rows=%+v err=%v", all.Rows, err)
 	}
 	nov, err := buildWithholdingReport(ctx, db, company, 2026, 11, "paid", nil)
 	if err != nil || len(nov.Rows) != 0 {
 		t.Fatalf("Nov (reversal month) rows=%+v err=%v", nov.Rows, err)
 	}
-	// แบบ ภ.ง.ด.53 ที่เติมจากบัญชี: หมายเหตุกลับรายการเดือนหลัง 2 รายการ + ยอดที่ไม่รู้แบบ 1 รายการ
+	// แบบ ภ.ง.ด.53 ที่เติมจากรายการที่บันทึก: หมายเหตุกลับรายการเดือนหลัง 1 รายการ (R2)
 	notes, err := fillWithholdingForm(ctx, db, company, "pnd53", 2026, 10, &rdform.Document{Values: map[string]string{}})
 	if err != nil {
 		t.Fatal(err)
@@ -313,7 +268,7 @@ func TestWithholdingReportReversalsAndForms2026_09_24(t *testing.T) {
 	for _, n := range notes {
 		got[n.Key] = n.Count
 	}
-	if got["tax_form_note_wht_reversed_later"] != 2 || got["tax_form_note_wht_form_unknown"] != 1 {
+	if got["tax_form_note_wht_reversed_later"] != 1 {
 		t.Fatalf("PND53 prefill notes = %+v", notes)
 	}
 }

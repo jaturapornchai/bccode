@@ -22,7 +22,6 @@ const row = (overrides: Partial<WhtReportRow> = {}): WhtReportRow => ({
   whtamounttext: "สองร้อยบาทถ้วน",
   netamount: "19800.00",
   ratepercent: "1.00",
-  taxbasesource: "recorded",
   formtype: "PND53",
   incometype: "3_tres",
   condition: 1,
@@ -48,15 +47,15 @@ describe("WhtCertificatePanel — แบบยื่นเริ่มต้น�
     expect(selectedForm(renderToStaticMarkup(createElement(WhtCertificatePanel, { ...panelProps, row: row({ formtype: "PND53" }) })))).toBe("53");
   });
 
-  // review 2026-09-24: ไม่รู้แบบ (ฐานประมาณ) → ยังไม่เลือก ให้ผู้ใช้เลือกเอง (เดิมตั้ง ภ.ง.ด.53 ให้ ผู้รับเงินบุคคลธรรมดาได้ใบติ๊กแบบผิด)
-  it("ไม่มีแบบที่บันทึก (ฐานประมาณ) → ยังไม่เลือกแบบ และมีตัวเลือกให้เลือก", () => {
-    const html = renderToStaticMarkup(createElement(WhtCertificatePanel, { ...panelProps, row: row({ formtype: "", taxbasesource: "inferred" }) }));
+  // review 2026-09-24: ไม่รู้แบบ → ยังไม่เลือก ให้ผู้ใช้เลือกเอง (เดิมตั้ง ภ.ง.ด.53 ให้ ผู้รับเงินบุคคลธรรมดาได้ใบติ๊กแบบผิด)
+  it("ไม่มีแบบในแถว → ยังไม่เลือกแบบ และมีตัวเลือกให้เลือก", () => {
+    const html = renderToStaticMarkup(createElement(WhtCertificatePanel, { ...panelProps, row: row({ formtype: "" }) }));
     expect(selectedForm(html)).toBe("");
     expect(html).toContain("เลือกแบบยื่น");
   });
 
-  it("ฐานประมาณที่ backend อ่านแบบยื่นจากชื่อบัญชี (ภ.ง.ด.3) → เริ่มที่ ภ.ง.ด.3 ไม่ใช่ 53", () => {
-    expect(selectedForm(renderToStaticMarkup(createElement(WhtCertificatePanel, { ...panelProps, row: row({ formtype: "PND3", taxbasesource: "inferred" }) })))).toBe("3");
+  it("แบบที่บันทึก ภ.ง.ด.3 → เริ่มที่ ภ.ง.ด.3 ไม่ใช่ 53", () => {
+    expect(selectedForm(renderToStaticMarkup(createElement(WhtCertificatePanel, { ...panelProps, row: row({ formtype: "PND3" }) })))).toBe("3");
   });
 });
 
@@ -128,11 +127,6 @@ describe("WhtCertificatePanel — snapshot ผู้จ่าย/ผู้รั
     const payerName = html.slice(html.indexOf('data-field="payer.name"') - 200, html.indexOf('data-field="payer.name"'));
     expect(payerName).toContain("readOnly");
   });
-
-  it("explains why saving is not possible for an estimated (not recorded) row", () => {
-    const html = renderToStaticMarkup(createElement(WhtCertificatePanel, { ...panelProps, row: row({ taxbasesource: "inferred" }) }));
-    expect(html).toContain("ยังไม่ได้บันทึกรายการภาษีหัก");
-  });
 });
 
 // adversarial review 2026-09-24: edits were dropped silently when the tab or period changed
@@ -158,8 +152,7 @@ describe("whtRecordRef / whtCertificateFigures — recorded withholdings print f
     expect(whtRecordRef(row({ withholdingid: "W-1" }))).toEqual({ journalid: "J1", withholdingid: "W-1" });
     expect(whtRecordRef(row(), { id: "W-9" })).toEqual({ journalid: "J1", withholdingid: "W-9" });
   });
-  it("sends no reference for an estimated row or when the withholding id is unknown", () => {
-    expect(whtRecordRef(row({ taxbasesource: "inferred", withholdingid: "W-1" }))).toBeNull();
+  it("sends no reference when the withholding id or journal is unknown", () => {
     expect(whtRecordRef(row())).toBeNull();
     expect(whtRecordRef(row({ journalid: "" }), { id: "W-1" })).toBeNull();
   });

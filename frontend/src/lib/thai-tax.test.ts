@@ -243,27 +243,13 @@ describe("fetchWhtReport", () => {
   it("ยอดสุทธิว่าง (backend ยังไม่รู้ฐาน) คงว่าง ไม่กลายเป็น 0.00 — UAT S14/S25 2026-09-24", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
       status: "success",
-      data: [{ journalid: "J9", docno: "PV6912-W06", baseamount: "0.00", whtamount: "200.00", netamount: "", ratepercent: "", taxbasesource: "inferred" }],
+      data: [{ journalid: "J9", docno: "PV6912-W06", baseamount: "0.00", whtamount: "200.00", netamount: "", ratepercent: "" }],
       total: 1,
       summary: { basetotal: "0.00", whttotal: "200.00", nettotal: "0.00", payeecount: 1, byrate: [] },
     })));
     const result = await fetchWhtReport({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 12, direction: "paid" });
     expect(result.rows[0]).toMatchObject({ baseamount: "0.00", whtamount: "200.00", netamount: "" });
     expect(whtRegisterRecords(result.rows)[0].totalamount).toBe("");
-  });
-
-  // แถวประมาณ (ไม่มีรายละเอียดภาษีหักในใบสำคัญ): backend อ่านแบบยื่นจากชื่อบัญชีภาษีหัก → 50 ทวิ ใช้ค่านั้นเป็นค่าเริ่มต้น
-  it("แถวประมาณที่ backend เติม formtype จากชื่อบัญชี → ช่องแบบ 50 ทวิ ตามนั้น; ระบุไม่ได้ = ว่าง", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
-      data: [
-        { journalid: "J7", docno: "PV6912-W07", baseamount: "10000.00", whtamount: "300.00", netamount: "9700.00", ratepercent: "3.00", taxbasesource: "inferred", formtype: "PND3" },
-        { journalid: "J8", docno: "PV6912-W08", baseamount: "0.00", whtamount: "150.00", netamount: "", ratepercent: "", taxbasesource: "inferred", formtype: "" },
-      ],
-      total: 2,
-      summary: {},
-    })));
-    const result = await fetchWhtReport({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 12, direction: "paid" });
-    expect(result.rows.map((r) => [r.taxbasesource, r.formtype, whtCertificateForm(r.formtype)])).toEqual([["inferred", "PND3", "3"], ["inferred", "", ""]]);
   });
 
   it("ไม่มีบริษัท → company_required และไม่ยิง fetch", async () => {
@@ -300,7 +286,6 @@ describe("แถวภาษีหัก ณ ที่จ่ายหลาย�
     whtamount: "3000.00",
     netamount: "97000.00",
     ratepercent: "3.00",
-    taxbasesource: "recorded",
     ...overrides,
   });
 

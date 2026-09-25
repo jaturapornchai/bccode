@@ -250,14 +250,12 @@ func fillWithholdingForm(ctx context.Context, db *sql.DB, company, code string, 
 		months = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
 	}
 	var rows []TaxWithholdingRow
-	unknownForm := 0
 	for _, m := range months {
 		report, err := buildWithholdingReport(ctx, db, company, year, m, "paid", []string{whtFormOf[code]})
 		if err != nil {
 			return nil, err
 		}
 		rows = append(rows, report.Rows...)
-		unknownForm += report.UnknownForm
 	}
 	switch code {
 	case "pnd2", "pnd2a":
@@ -266,10 +264,6 @@ func fillWithholdingForm(ctx context.Context, db *sql.DB, company, code string, 
 		doc.Rows = payeeRows(rows, code == "pnd3")
 	}
 	notes := withholdingNotes(rows)
-	// ยอดที่ไม่รู้แบบไม่ถูกเติมลงแบบนี้ (ไม่เดาว่าเป็น ภ.ง.ด.3 หรือ 53) — บอกจำนวนให้ผู้ใช้บันทึกรายละเอียดและเลือกแบบ
-	if unknownForm > 0 {
-		notes = append(notes, TaxFormNote{Key: "tax_form_note_wht_form_unknown", Count: unknownForm})
-	}
 	notes = append(notes, missingTaxIDNotes(doc.Rows)...)
 	return append(notes, missingIncomeTypeNotes(code, doc.Rows)...), nil
 }
@@ -278,16 +272,7 @@ func withholdingNotes(rows []TaxWithholdingRow) []TaxFormNote {
 	if len(rows) == 0 {
 		return []TaxFormNote{{Key: "tax_form_note_no_withholding"}}
 	}
-	inferred := 0
-	for _, r := range rows {
-		if r.TaxBaseSource != "recorded" {
-			inferred++
-		}
-	}
 	var notes []TaxFormNote
-	if inferred > 0 {
-		notes = append(notes, TaxFormNote{Key: "tax_form_note_inferred_base", Count: inferred})
-	}
 	// กลับรายการในเดือนหลัง: ยังเป็นรายการของแบบเดือนนี้ (ยื่นแล้ว) — บอกทางแก้ภาษีที่ยื่นไปแล้ว (whtReversalMonthSQL)
 	if reversed := reversedLaterCount(rows); reversed > 0 {
 		notes = append(notes, TaxFormNote{Key: "tax_form_note_wht_reversed_later", Count: reversed})

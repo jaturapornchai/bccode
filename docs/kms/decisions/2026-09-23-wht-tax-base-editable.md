@@ -23,7 +23,8 @@ tags: [bc-account, general-ledger, wht, tax, postgres]
    - (อัปเดต 2026-09-24) ตอนบันทึก ถ้าฝั่งคู่ค้าของ snapshot ว่างทั้ง 4 ช่อง backend เติมจากทะเบียนคู่ค้า ณ วันนั้น (ฝั่งบริษัทไม่เติม เพราะทะเบียนบริษัทอยู่นอก GL) — ใบเก่าจึงคงเลขเดิมแม้แก้ทะเบียนภายหลัง; จอต้องส่ง snapshot ที่โหลดมากลับทุกครั้ง (**รอลุงจืดยืนยันการเติมอัตโนมัตินี้**)
    - (อัปเดต 2026-09-24) ผู้ใช้ 50 ทวิ/รายงาน: `POST /api/report/tax/wht/certificate` รับ `journalid` + `withholdingid` (ไม่บังคับ) แล้วเลือกค่าทีละช่อง snapshot → ทะเบียนปัจจุบัน → ค่าที่จอส่ง (`backend/internal/goapi/handlers/wht_certificate.go`); รายงานภาษีหักใช้ชื่อ/เลขภาษี/ที่อยู่ของคู่ค้าจาก snapshot ก่อนทะเบียน และส่ง `withholdingid` ให้จอจับคู่รายการตรงตัว (`applyWithholdingPartySnapshot` `backend/internal/goapi/handlers/tax_report.go`); จอ 50 ทวิบันทึกค่าที่แก้ลงใบสำคัญผ่าน update (ร่าง) / reconcile (ผ่านบัญชีแล้ว) แทน localStorage
    - (อัปเดต 2026-09-24) กติกาคู่ค้าในใบ: แถวที่เหมือน snapshot เดิมของใบไม่เขียนทะเบียน (ใบร่างที่ฝังฉบับเก่าบันทึก/ผ่านรายการได้), `version 0` = บันทึกทับทะเบียนแบบคนเขียนล่าสุดชนะ, `version` > 0 ที่เก่ากว่าพร้อมข้อมูลต่าง = `partner_version_conflict`; เพิ่มบทบาท/แก้เลขภาษีได้หลังมีเอกสาร แต่ยกเลิกบทบาทที่ยังมีเอกสารไม่ได้ (`partner_customer_role_in_use` / `partner_supplier_role_in_use`)
-4. รายงาน ภ.ง.ด. (`buildWithholdingReport`) ใช้รายการที่บันทึกก่อน (`taxbasesource: "recorded"`, 1 แถวต่อรายการ, กรองตามทิศทาง+แบบ); ใบที่ไม่ได้บันทึกยังประมาณจากบรรทัดบัญชีและติดป้าย `"inferred"` ให้ผู้ใช้ตรวจ
+4. รายงาน ภ.ง.ด. (`buildWithholdingReport`) ใช้รายการที่บันทึก (1 แถวต่อรายการ, กรองตามทิศทาง+แบบ)
+   - (อัปเดต 2026-09-25) **เลิกประมาณแถวจากบรรทัดบัญชีแล้ว** — ใบที่ไม่ได้บันทึกรายการไม่เข้ารายงาน/แบบ และฟิลด์ `taxbasesource` ถูกลบ: ADR `2026-09-25-wht-recorded-only.md`
 5. จอบันทึกรายวันโหลดใบสำคัญจาก backend หลังบันทึก เพื่อให้เห็นภาษีที่ backend คำนวณทันที
 
 ## Alternatives
@@ -43,5 +44,5 @@ tags: [bc-account, general-ledger, wht, tax, postgres]
 ## Evidence
 
 - `TestPostgresWithholdingBaseEditableAlways` (PG จริง): สร้าง → แก้ร่าง → ค่าผิด 5 แบบถูกปฏิเสธ → ผ่านบัญชี → แก้ฐานไม่มีเหตุผลถูกปฏิเสธ → แก้พร้อมเหตุผล → audit before/after/reason, `gl_lines` ไม่เปลี่ยน
-- `TestWithholdingReportUsesRecordedBase`: แถว recorded ใช้ฐานที่บันทึก, แถว inferred ยังประมาณ, ภ.ง.ด.3 ไม่เห็นรายการ ภ.ง.ด.53
+- `TestWithholdingReportUsesRecordedBase`: แถวใช้ฐานที่บันทึก, ภ.ง.ด.3 ไม่เห็นรายการ ภ.ง.ด.53 (ส่วนแถว inferred ถูกถอด 2026-09-25)
 - UAT จอจริง (Demo, local 2026-09-23): ฐาน 100,000 × 1% → PG 1000; แก้ 93,457.94 → 934.58; พิมพ์เอง 935; ผ่านบัญชี; แก้ฐาน 100,000 → PG version 5 posted, audit `withholding_replace`; 50 ทวิ prefill recorded + PDF 2 หน้า

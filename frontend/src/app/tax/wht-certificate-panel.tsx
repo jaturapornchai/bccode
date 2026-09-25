@@ -70,11 +70,9 @@ const CONDITION_OPTIONS = [
 // condition_type ที่บันทึกในใบสำคัญ: 1=หัก ณ ที่จ่าย 2=ออกให้ตลอดไป 3=ออกให้ครั้งเดียว ("" = ไม่ได้บันทึก)
 const conditionValue = (recorded: number) => (recorded === 1 ? "withhold" : recorded === 2 ? "always" : recorded === 3 ? "once" : "");
 
-// ฐานภาษีมาจากไหน — ใช้ทั้งจอออก 50 ทวิ และจอดูใบที่ได้รับ
-const taxBaseHint = (row: WhtReportRow, tr: (key: string, fallback: string) => string) =>
-  row.taxbasesource === "recorded"
-    ? tr("wht_cert_ui_base_recorded", "ฐานภาษีตามที่บันทึกในใบสำคัญ — แก้ได้ที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย")
-    : tr("wht_cert_ui_base_inferred", "ฐานภาษีนี้ระบบประมาณจากบรรทัดบัญชี กรุณาตรวจ — บันทึกฐานภาษีจริงได้ที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย");
+// ฐานภาษีมาจากรายการที่บันทึกในใบสำคัญเสมอ (รายงานไม่เดาจากชื่อบัญชี) — ใช้ทั้งจอออก 50 ทวิ และจอดูใบที่ได้รับ
+const taxBaseHint = (tr: (key: string, fallback: string) => string) =>
+  tr("wht_cert_ui_base_recorded", "ฐานภาษีตามที่บันทึกในใบสำคัญ — แก้ได้ที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย");
 
 // disabled (ค่าตามรายการที่บันทึก) ยังต้องอ่านชัด — ห้ามจางตาม opacity ของเบราว์เซอร์ (คน 40+)
 const selectClass =
@@ -171,7 +169,7 @@ export function whtSnapshotChanges(
  * มีค่า = backend พิมพ์ยอด ภาษี แบบยื่น เงื่อนไข ประเภทเงินได้ วันที่จ่าย และผู้รับเงินตามรายการ (ค่าบนจอที่ไม่ตรง = ปฏิเสธ)
  */
 export function whtRecordRef(row: WhtReportRow, recorded?: Pick<GLDetailWithholding, "id">): WhtCertificateRecordRef | null {
-  if (row.taxbasesource !== "recorded" || !row.journalid) return null;
+  if (!row.journalid) return null;
   const withholdingid = row.withholdingid || recorded?.id || "";
   return withholdingid ? { journalid: row.journalid, withholdingid } : null;
 }
@@ -248,7 +246,7 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, l
   const [snapshot, setSnapshot] = useState<WhtSnapshot>(() => whtSnapshotView(undefined, row, company));
   const [shown, setShown] = useState<WhtSnapshot>(() => whtSnapshotView(undefined, row, company));
   const [journal, setJournal] = useState<GLJournal | null>(null);
-  const [recordState, setRecordState] = useState<"inferred" | "loading" | "ready" | "not_found" | "ambiguous" | "failed">(row.taxbasesource === "recorded" && row.journalid ? "loading" : "inferred");
+  const [recordState, setRecordState] = useState<"loading" | "ready" | "not_found" | "ambiguous" | "failed">(row.journalid ? "loading" : "not_found");
   const [saveError, setSaveError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const { busy: saving, execute } = useGLCommand();
@@ -280,7 +278,7 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, l
   const [pdfUrl, setPdfUrl] = useState("");
 
   useEffect(() => {
-    if (row.taxbasesource !== "recorded" || !row.journalid) return;
+    if (!row.journalid) return;
     const controller = new AbortController();
     glRequest<GLJournal>(`journals/${encodeURIComponent(row.journalid)}`, { signal: controller.signal })
       .then((loaded) => {
@@ -401,9 +399,7 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, l
 
   const recordNotice = recordState === "loading"
     ? tr("wht_cert_ui_record_loading", "กำลังโหลดข้อมูลที่บันทึกในใบสำคัญ...")
-    : recordState === "inferred"
-      ? tr("wht_cert_ui_record_inferred", "ใบสำคัญนี้ยังไม่ได้บันทึกรายการภาษีหัก — บันทึกที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย ก่อน จึงจะเก็บข้อมูลผู้จ่าย/ผู้รับเงินลงใบสำคัญได้")
-      : recordState === "not_found"
+    : recordState === "not_found"
         ? tr("wht_cert_ui_record_not_found", "ไม่พบรายการภาษีหักนี้ในใบสำคัญ {0} — แก้ข้อมูลที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย").replace("{0}", row.docno)
         : recordState === "ambiguous"
           ? tr("wht_cert_ui_record_ambiguous", "ใบสำคัญ {0} มีรายการภาษีหักที่ตรงกันมากกว่า 1 รายการ — แก้ข้อมูลที่รายละเอียดใบสำคัญ หมวดภาษีหัก ณ ที่จ่าย แทน").replace("{0}", row.docno)
@@ -460,7 +456,7 @@ export function WhtCertificatePanel({ row, company, holdingcode, businesscode, l
           <div>{tr("wht_cert_ui_amount", "จำนวนเงินที่จ่าย")}<div className="font-mono text-base font-bold text-foreground">{formatAmount(row.baseamount, 2)}</div></div>
           <div>{tr("wht_cert_ui_tax", "ภาษีที่หักและนำส่ง")}<div className="font-mono text-base font-bold text-primary">{formatAmount(row.whtamount, 2)}</div></div>
           <p className="col-span-2 leading-relaxed text-muted-foreground" data-field="taxbasesource">
-            {taxBaseHint(row, tr)}
+            {taxBaseHint(tr)}
           </p>
         </div>
 
@@ -648,7 +644,7 @@ export function WhtReceivedCertificateDetails({ row, company }: { row: WhtReport
       <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-muted/30 p-3 text-sm">
         <div>{tr("wht_cert_ui_amount", "จำนวนเงินที่จ่าย")}<div className="font-mono text-base font-bold text-foreground">{formatAmount(row.baseamount, 2)}</div></div>
         <div>{tr("wht_cert_ui_tax", "ภาษีที่หักและนำส่ง")}<div className="font-mono text-base font-bold text-primary">{formatAmount(row.whtamount, 2)}</div></div>
-        <p className="col-span-2 leading-relaxed text-muted-foreground" data-field="taxbasesource">{taxBaseHint(row, tr)}</p>
+        <p className="col-span-2 leading-relaxed text-muted-foreground" data-field="taxbasesource">{taxBaseHint(tr)}</p>
       </div>
 
       <dl className="grid gap-x-6 gap-y-3 md:grid-cols-2">

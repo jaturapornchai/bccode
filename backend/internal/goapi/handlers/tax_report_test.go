@@ -302,7 +302,7 @@ func TestTaxFormComputeReturnsRecomputedTotals(t *testing.T) {
 
 // UAT S14/S25 2026-09-24: แถวที่ไม่รู้ฐาน (ฐาน 0) ต้องไม่มียอดสุทธิติดลบ และยอดสุทธิรวมนับเฉพาะแถวที่รู้ฐาน
 func TestWithholdingNetBlankWhenBaseUnknown(t *testing.T) {
-	known := finishWithholdingRow(TaxWithholdingRow{JournalID: "J1", base: decimal.RequireFromString("10000"), wht: decimal.RequireFromString("300")}, "")
+	known := finishWithholdingRow(TaxWithholdingRow{JournalID: "J1", base: decimal.RequireFromString("10000"), wht: decimal.RequireFromString("300")}, "3.00")
 	unknown := finishWithholdingRow(TaxWithholdingRow{JournalID: "J2", base: decimal.Zero, wht: decimal.RequireFromString("200")}, "")
 	inconsistent := finishWithholdingRow(TaxWithholdingRow{JournalID: "J3", base: decimal.RequireFromString("100"), wht: decimal.RequireFromString("150")}, "3")
 	if known.NetAmount != "9700.00" || known.RatePercent != "3.00" {
@@ -337,39 +337,6 @@ func TestBuildVatRegisterDuplicateWarnings(t *testing.T) {
 	}
 	if !strings.Contains(string(raw), `"duplicatedocnos":[]`) || !strings.Contains(string(raw), `"duplicatecount":1`) {
 		t.Fatalf("contract JSON = %s", raw)
-	}
-}
-
-// ส่วนที่บัญชีภาษีหักเกินยอดที่บันทึก: ไม่เดาฐาน ไม่เดาแบบ และห้ามนับซ้ำเมื่อบันทึกครบแต่ลงบัญชีคนละแบบ (UAT S25)
-func TestWithholdingRemainders(t *testing.T) {
-	d := func(v string) decimal.Decimal { return decimal.RequireFromString(v) }
-	show := func(m map[string]decimal.Decimal) string {
-		out := []string{}
-		for _, form := range []string{"", "PND2", "PND3", "PND53"} {
-			if v, ok := m[form]; ok {
-				out = append(out, form+"="+moneyText(v))
-			}
-		}
-		return strings.Join(out, ",")
-	}
-	cases := []struct {
-		name             string
-		credit, recorded map[string]decimal.Decimal
-		want             string
-	}{
-		{"fully recorded", map[string]decimal.Decimal{"PND53": d("400")}, map[string]decimal.Decimal{"PND53": d("400")}, ""},
-		{"partly recorded same form", map[string]decimal.Decimal{"PND53": d("400")}, map[string]decimal.Decimal{"PND53": d("300")}, "PND53=100.00"},
-		{"recorded PND53 but posted to PND3 account", map[string]decimal.Decimal{"PND3": d("200")}, map[string]decimal.Decimal{"PND53": d("200")}, ""},
-		{"two forms each short", map[string]decimal.Decimal{"PND3": d("200"), "PND53": d("400")}, map[string]decimal.Decimal{"PND53": d("300")}, "PND3=200.00,PND53=100.00"},
-		{"cross-posted plus one short form", map[string]decimal.Decimal{"PND3": d("300")}, map[string]decimal.Decimal{"PND53": d("200")}, "PND3=100.00"},
-		{"ambiguous split", map[string]decimal.Decimal{"PND3": d("300"), "PND53": d("200")}, map[string]decimal.Decimal{"PND2": d("250")}, "=250.00"},
-		{"received side (no form)", map[string]decimal.Decimal{"": d("600")}, map[string]decimal.Decimal{"": d("450.50")}, "=149.50"},
-		{"over-recorded", map[string]decimal.Decimal{"PND53": d("100")}, map[string]decimal.Decimal{"PND53": d("150")}, ""},
-	}
-	for _, tc := range cases {
-		if got := show(withholdingRemainders(tc.credit, tc.recorded)); got != tc.want {
-			t.Errorf("%s: got %q want %q", tc.name, got, tc.want)
-		}
 	}
 }
 
@@ -450,19 +417,19 @@ func TestWithholdingReportNotes(t *testing.T) {
 	if notes := withholdingReportNotes(taxWithholdingReport{Rows: []TaxWithholdingRow{{}}}, "th"); len(notes) != 0 {
 		t.Fatalf("no notes expected: %v", notes)
 	}
-	report := taxWithholdingReport{UnknownForm: 2, Rows: []TaxWithholdingRow{{ReversedMonth: "2026-11"}, {}, {ReversedMonth: "2026-12"}}}
+	report := taxWithholdingReport{NoteKey: "tax_wht_note_no_records", Rows: []TaxWithholdingRow{{ReversedMonth: "2026-11"}, {}, {ReversedMonth: "2026-12"}}}
 	notes := withholdingReportNotes(report, "th")
 	if len(notes) != 2 || strings.Contains(strings.Join(notes, ""), "{count}") {
 		t.Fatalf("notes = %v", notes)
 	}
-	unknown := strings.ReplaceAll(language.Text("tax_wht_note_form_unknown", "th"), "{count}", "2")
+	empty := language.Text("tax_wht_note_no_records", "th")
 	reversed := strings.ReplaceAll(language.Text("tax_wht_note_reversed_later", "th"), "{count}", "2")
-	if notes[0] != unknown || notes[1] != reversed {
-		t.Fatalf("notes = %v, want [%s %s]", notes, unknown, reversed)
+	if notes[0] != empty || notes[1] != reversed || empty == "tax_wht_note_no_records" {
+		t.Fatalf("notes = %v, want [%s %s]", notes, empty, reversed)
 	}
 	// แบบ ภ.ง.ด.: หมายเหตุกลับรายการเดือนหลังเป็น key + จำนวน (frontend แปลตามภาษา)
 	got := withholdingNotes(report.Rows)
-	if len(got) != 2 || got[1].Key != "tax_form_note_wht_reversed_later" || got[1].Count != 2 {
+	if len(got) != 1 || got[0].Key != "tax_form_note_wht_reversed_later" || got[0].Count != 2 {
 		t.Fatalf("form notes = %+v", got)
 	}
 }
