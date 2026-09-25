@@ -1526,3 +1526,19 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 - **เหตุผล**: ค่า infra ตั้งตอน deploy (compose/env) ไม่ใช่งานของผู้ใช้ปลายทาง — ปุ่มที่ดูเหมือนตั้งค่าได้แต่ไม่มีผลจริงทำลายความเชื่อมั่น (ดู 8.34) และหน้าที่ไม่ต้อง login แต่แตะ infra คือช่องโหว่
 - **วิธีตรวจ**: หน้า login ต้องนับ `.card-header .header-controls button` ได้ 4 (`tests/login-header-controls.spec.ts` HC-01); `npx vitest run src/app/api/removed-setup-api.test.ts`
 - **อ้างอิง**: `frontend/src/app/app-header-controls.tsx`, `docs/kms/bugs/2026-09-24-unauthenticated-setup-api-ssrf.md`
+
+## 8.47 ฟอร์มส่งใบสำคัญเข้า GL จากโมดูลอื่น: ปี/งวดตั้งต้นจากวันนี้, วันที่เว้นว่าง = วันสิ้นงวด, มีช่องเลขที่ใบ, error กล่องเดียวแล้วพาไปที่ช่อง (2026-09-25, FA ผ่านค่าเสื่อมเข้า GL)
+
+- **แบบแผนใหม่ (New Standard Pattern)**:
+  - ค่าตั้งต้นของปี/งวดคำนวณตอนเปิดจอ: `useState(() => String(new Date().getFullYear()))`, `useState(() => new Date().getMonth() + 1)` — ไม่ฝังตัวเลขปี
+  - ป้ายบอกชนิดปีให้ชัด: ช่องที่ต้องการปี ค.ศ. ของตาราง ใช้ "ปีของงวด (ค.ศ.)" (`fa_period_year_ce`) ไม่ใช้ป้าย "ปีบัญชี" (`gl_fiscal_year`) เพราะรหัสปีบัญชี GL อาจเป็น พ.ศ. (2569)
+  - ช่องวันที่ใบสำคัญ `<input type="date">` เริ่มว่าง + ข้อความช่วยใต้ช่อง "เว้นว่างไว้ ระบบจะใช้วันสิ้นงวดที่เลือก" (`aria-describedby`) แล้วส่ง `date: postDate || undefined` — ค่าเริ่มต้นเป็นหน้าที่ของ backend
+  - ช่องเลขที่ใบ `fa_journal_docno_optional` + `maxLength={30}` (เพดาน GL) ส่ง `docno: value.trim() || undefined`; สำเร็จแล้วล้างวันที่/เลขที่ที่พิมพ์เอง (ใช้ได้ใบเดียว ไม่ติดไปงวดถัดไป)
+  - ทุก input มี `data-field` ตรงกับ `field` ที่ backend คืน (`fiscalyear`, `date`, `docno` — งวดยังไม่มี field จาก backend) + `aria-invalid` + `aria-invalid:border-destructive`; ล้มเหลว → เก็บ `{ message, field }` แสดง `<div role="alert">` กล่องเดียวในการ์ด (โทน `border-destructive/40 bg-destructive/5 text-foreground`) และ `useEffect` โฟกัส `[data-field=field]` ด้วย `focus({ preventScroll: true })` หลัง `loading` เป็น false
+  - เรียก API ด้วย `.catch(() => null)` ให้ `loading` กลับเป็น false เสมอ; ล้าง error เดิมหลังผู้ใช้กดยืนยันเท่านั้น (กดยกเลิกแล้ว error เดิมยังอยู่)
+  - dialog ยืนยันบอกค่าที่จะใช้จริง: `fa_post_voucher_summary` "วันที่ใบสำคัญ: {0} · เลขที่ใบสำคัญ: {1}" โดยช่องว่างแสดงเป็น "วันสิ้นงวด" / "ระบบสร้างให้"
+  - ป้ายและข้อความช่วยในการ์ดใช้ `text-[0.9rem]` (กฎคน 40+) ไม่ใช้ `text-xs`
+- **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern)**: `useState("2026")`; แสดงความล้มเหลวสองที่ (แถบสถานะ "ล้มเหลว: …" + `alert()`); ข้อความ error ลอยไม่ชี้ช่อง; ป้าย "ปีบัญชี" กับช่องที่รับปี ค.ศ.; ฟอร์มส่งใบเข้า GL ที่ไม่มีช่องวันที่ (Champ ให้แก้วันที่ใบได้ — `FSTransferToGLDlg.cpp` `m_edDocDate`)
+- **เหตุผล (Root Cause & Rationale)**: ปีที่ฝังไว้ทำให้ปีถัดไปผ่านรายการผิดปีเงียบ ๆ; คน 40+ ต้องเห็นข้อความเดียวใกล้ช่องที่ผิดและถูกพาไปแก้ (ต่อจาก 8.24/8.43); ปี พ.ศ./ค.ศ. สับสนบ่อยจึงต้องบอกชนิดปีในป้าย
+- **วิธีตรวจ**: Demo → โอนข้อมูลเข้าสู่ GL: ปี/งวด = วันนี้; ใส่ปี 2569 → กล่องแดงเดียว + โฟกัสช่องปี; ใส่วันที่นอกปีบัญชี → โฟกัสช่องวันที่; `document.querySelectorAll('[role=alert]').length === 1`; ไม่มี `alert()` ตอนล้มเหลว; dark mode อ่านออก
+- **อ้างอิง (Reference Implementation)**: `frontend/src/app/asset/fixed-assets-screen.tsx` (state :52, focus effect :230, สรุปใน dialog :235, ส่ง date/docno :258, ช่องวันที่ :1002, กล่อง alert :1030); backend ค่าเริ่มต้นวันที่ `backend/internal/fixedasset/gl_fiscal_year.go` `depreciationVoucherDate`; บั๊ก `docs/kms/bugs/2026-09-25-fa-repost-after-reversal-replays-reversed-journal.md`

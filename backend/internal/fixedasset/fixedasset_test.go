@@ -63,18 +63,31 @@ func (f *fakeLedger) Execute(_ context.Context, _ gl.Scope, cmd gl.Command) (gl.
 	}
 	sum := sha256.Sum256(raw)
 	hash := fmt.Sprintf("%x", sum)
+	// Like the real GL: a known request replays its old result before any status check, even if
+	// the journal was reversed since; only a request that succeeded is remembered.
 	if prev, ok := f.hashes[cmd.RequestID]; ok {
 		if prev != hash {
 			return gl.Result{}, fmt.Errorf("รหัสคำขอนี้ถูกใช้กับข้อมูลอื่นแล้ว")
 		}
 		return f.results[cmd.RequestID], nil
 	}
+	res, err := f.apply(cmd)
+	if err != nil {
+		return gl.Result{}, err
+	}
 	f.hashes[cmd.RequestID] = hash
+	f.results[cmd.RequestID] = res
+	return res, nil
+}
 
+func (f *fakeLedger) apply(cmd gl.Command) (gl.Result, error) {
 	switch cmd.Action {
 	case "create":
 		if !fakeYearHolds(cmd.Journal.FiscalYear, cmd.Journal.Date) {
 			return gl.Result{}, fmt.Errorf("วันที่อยู่นอกปีบัญชีที่เปิดใช้งาน")
+		}
+		if f.docNoUsed(cmd.Journal.DocNo) {
+			return gl.Result{}, fmt.Errorf("เลขที่เอกสารนี้ถูกใช้แล้ว กรุณาใช้เลขที่อื่น")
 		}
 		f.created++
 		id := fmt.Sprintf("fake-journal-%d", f.created)
@@ -83,9 +96,7 @@ func (f *fakeLedger) Execute(_ context.Context, _ gl.Scope, cmd gl.Command) (gl.
 		j.Version = 1
 		j.Status = "draft"
 		f.journals[id] = &j
-		res := gl.Result{ID: id, Version: 1, Sequence: int64(f.created + f.posted)}
-		f.results[cmd.RequestID] = res
-		return res, nil
+		return gl.Result{ID: id, Version: 1, Sequence: int64(f.created + f.posted)}, nil
 	case "post":
 		j, ok := f.journals[cmd.ID]
 		if !ok || j.Version != cmd.Version {
@@ -94,16 +105,46 @@ func (f *fakeLedger) Execute(_ context.Context, _ gl.Scope, cmd gl.Command) (gl.
 		f.posted++
 		j.Status = "posted"
 		j.Version++
-		res := gl.Result{ID: j.ID, Version: j.Version, Sequence: int64(f.created + f.posted)}
-		f.results[cmd.RequestID] = res
-		return res, nil
+		return gl.Result{ID: j.ID, Version: j.Version, Sequence: int64(f.created + f.posted)}, nil
 	case "reverse":
+		// The original stays for audit as "reversed"; the reversal is a new posted journal.
+		old, ok := f.journals[cmd.ID]
+		if !ok || old.Version != cmd.Version || old.Status != "posted" {
+			return gl.Result{}, fmt.Errorf("กลับรายการได้เฉพาะรายการที่ผ่านแล้ว")
+		}
+		if f.docNoUsed(cmd.DocNo) {
+			return gl.Result{}, fmt.Errorf("เลขที่เอกสารนี้ถูกใช้แล้ว กรุณาใช้เลขที่อื่น")
+		}
 		f.reversed++
-		res := gl.Result{ID: "fake-reversal-" + cmd.DocNo, Version: 1, Sequence: int64(f.created + f.posted + f.reversed)}
-		f.results[cmd.RequestID] = res
-		return res, nil
+		old.Status = "reversed"
+		old.Version++
+		reversal := *old
+		reversal.ID = "fake-reversal-" + cmd.DocNo
+		reversal.DocNo = cmd.DocNo
+		reversal.Date = cmd.Date
+		reversal.Kind = "reversal"
+		reversal.Status = "posted"
+		reversal.Reference = old.DocNo
+		reversal.Version = 1
+		reversal.Lines = make([]gl.Line, len(old.Lines))
+		for i, line := range old.Lines {
+			line.Debit, line.Credit = line.Credit, line.Debit
+			reversal.Lines[i] = line
+		}
+		f.journals[reversal.ID] = &reversal
+		return gl.Result{ID: reversal.ID, Version: 1, Sequence: int64(f.created + f.posted + f.reversed)}, nil
 	}
 	return gl.Result{}, fmt.Errorf("unsupported action in fake ledger: %s", cmd.Action)
+}
+
+// docNoUsed mirrors the GL rule: a document number stays taken by a draft, posted or reversed journal.
+func (f *fakeLedger) docNoUsed(docNo string) bool {
+	for _, j := range f.journals {
+		if j.DocNo == docNo && !j.IsDeleted {
+			return true
+		}
+	}
+	return false
 }
 
 // fakeYearHolds mirrors generalledger Journal.Validate: the code must be the year that holds the date.
@@ -125,6 +166,9 @@ func (f *fakeLedger) List(_ context.Context, _ gl.Scope, resource string, query 
 		}
 		return page, nil
 	}
+	if resource == "periods" {
+		return page, nil // no locked periods
+	}
 	if resource == "journal-books" {
 		// The company's general book is deliberately not named "JV": the poster must pick by booktype.
 		for _, b := range []gl.Master{
@@ -137,12 +181,14 @@ func (f *fakeLedger) List(_ context.Context, _ gl.Scope, resource string, query 
 		}
 		return page, nil
 	}
+	// Journals: a case-insensitive substring over number, description and reference, like GL.
 	for _, j := range f.journals {
-		if j.DocNo == query {
+		if strings.Contains(strings.ToLower(j.DocNo+" "+j.Description+" "+j.Reference), strings.ToLower(query)) {
 			raw, _ := json.Marshal(j)
 			page.Items = append(page.Items, raw)
 		}
 	}
+	page.Total = int64(len(page.Items))
 	return page, nil
 }
 

@@ -187,26 +187,150 @@ func TestFixedAssetJournalsUseFiscalYearOfVoucherDate(t *testing.T) {
 		t.Fatalf("January 2027 → %s, April 2027 → %s; want 2569 and 2570", journalYear(january.DocNo), journalYear(april27.DocNo))
 	}
 
-	// 6. Reversal goes into the year of the reversal date and frees the schedule row again.
+	journalStatus := func(docNo string) string {
+		t.Helper()
+		var status string
+		if err := db.QueryRowContext(ctx, `SELECT payload->>'status' FROM gl_records WHERE company='01' AND kind='journals' AND payload->>'docno'=$1`, docNo).Scan(&status); err != nil {
+			t.Fatalf("journal %s: %v", docNo, err)
+		}
+		return status
+	}
+	journalDate := func(docNo string) string {
+		t.Helper()
+		var date string
+		if err := db.QueryRowContext(ctx, `SELECT payload->>'date' FROM gl_records WHERE company='01' AND kind='journals' AND payload->>'docno'=$1`, docNo).Scan(&date); err != nil {
+			t.Fatalf("journal %s: %v", docNo, err)
+		}
+		return date
+	}
+	setYearClosed := func(code string, closed bool) {
+		t.Helper()
+		if _, err := db.ExecContext(ctx, `UPDATE gl_records SET payload = jsonb_set(payload, '{closed}', to_jsonb($2::boolean)) WHERE company='01' AND kind='fiscal-years' AND code=$1`, code, closed); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// 6. Reversal while the original's fiscal year is open: dated on the original's date, so April
+	// nets to zero in April (Champ re-transfers into the same period), and the row is free again.
 	if err := poster.ReverseDepreciation(ctx, headOffice, april.DocNo, "ผ่านรายการค่าเสื่อมราคาผิดงวด", now); err != nil {
 		t.Fatalf("ReverseDepreciation: %v", err)
 	}
-	if got := journalYear("REV-" + april.DocNo); got != "2569" {
-		t.Fatalf("the reversal dated %s must be in 2569, got %q", now.Format("2006-01-02"), got)
+	if got, year := journalDate("REV-"+april.DocNo), journalYear("REV-"+april.DocNo); got != april.Date || year != "2569" {
+		t.Fatalf("the reversal of %s is dated %s in %q, want %s in 2569", april.DocNo, got, year, april.Date)
 	}
 	if n := unposted("2026", 4); n != 1 {
 		t.Fatalf("the reversed April row must be unposted again, got %d", n)
 	}
-	// A reversal date outside every fiscal year is explained in Thai, and nothing changes.
+
+	// 6b. April posted again after its reversal: the reversed journal keeps its number for audit
+	// (replaying its GL request would post nothing), so the new journal is <number>-2, and April
+	// holds exactly one month of depreciation while no other month is touched.
+	aprilAgain, err := poster.PostDepreciation(ctx, headOffice, "2026", 4, "", "", "", now)
+	if err != nil {
+		t.Fatalf("PostDepreciation April again: %v", err)
+	}
+	if aprilAgain.DocNo != april.DocNo+"-2" || journalYear(aprilAgain.DocNo) != "2569" {
+		t.Fatalf("April posted again as %s in %s, want %s-2 in 2569", aprilAgain.DocNo, journalYear(aprilAgain.DocNo), april.DocNo)
+	}
+	if journalStatus(april.DocNo) != "reversed" || journalStatus(aprilAgain.DocNo) != "posted" {
+		t.Fatalf("statuses %s=%s %s=%s", april.DocNo, journalStatus(april.DocNo), aprilAgain.DocNo, journalStatus(aprilAgain.DocNo))
+	}
+	if n := count(`SELECT count(*) FROM fa_records WHERE company='01' AND kind='depreciations' AND payload->>'journaldocno'=$1 AND (payload->>'isposted')::boolean`, aprilAgain.DocNo); n != 1 {
+		t.Fatalf("the April row must point at %s, got %d", aprilAgain.DocNo, n)
+	}
+	var aprilIsOneMonth, otherMonthsUntouched bool
+	if err := db.QueryRowContext(ctx, `SELECT
+		(SELECT SUM(debit)-SUM(credit) FROM gl_lines WHERE company='01' AND account_code='52100' AND doc_no IN ($1,$2,$3) AND entry_date BETWEEN '2026-04-01' AND '2026-04-30')
+			= (SELECT SUM((payload->>'perioddeprec')::numeric) FROM fa_records WHERE company='01' AND kind='depreciations' AND payload->>'fiscalyear'='2026' AND (payload->>'period')::int=4),
+		NOT EXISTS(SELECT 1 FROM gl_lines WHERE company='01' AND doc_no IN ($1,$2,$3) AND entry_date NOT BETWEEN '2026-04-01' AND '2026-04-30')`,
+		april.DocNo, "REV-"+april.DocNo, aprilAgain.DocNo).Scan(&aprilIsOneMonth, &otherMonthsUntouched); err != nil || !aprilIsOneMonth || !otherMonthsUntouched {
+		t.Fatalf("April must hold one month of depreciation (%v) and no other month a line (%v): %v", aprilIsOneMonth, otherMonthsUntouched, err)
+	}
+	// Posting a finished period again with its number, or a reversed number, is refused on the
+	// number field; a generated number moves on instead.
+	_, err = poster.PostDepreciation(ctx, headOffice, "2026", 5, "", april.DocNo, "", now)
+	mustUserError(t, err, "fa_docno_reversed", "docno", april.DocNo)
+	_, err = poster.PostDepreciation(ctx, headOffice, "2026", 5, "", aprilAgain.DocNo, "", now)
+	mustUserError(t, err, "fa_docno_in_use", "docno", aprilAgain.DocNo)
+
+	// A second posting of the same period while one is running is refused, not posted twice.
+	lock, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var held bool
+	if err := lock.QueryRowContext(ctx, `SELECT pg_try_advisory_lock(hashtext('fa-depreciation-post'), hashtext('01:2026:5'))`).Scan(&held); err != nil || !held {
+		t.Fatalf("could not hold the May lock: %v %v", held, err)
+	}
 	before := journals()
+	_, err = poster.PostDepreciation(ctx, headOffice, "2026", 5, "", "", "", now)
+	mustUserError(t, err, "fa_period_post_in_progress", "", "5/2026")
+	if n := journals(); n != before || unposted("2026", 5) != 1 {
+		t.Fatalf("a refused concurrent posting must write nothing: journals %d → %d, May unposted %d", before, n, unposted("2026", 5))
+	}
+	if _, err := lock.ExecContext(ctx, `SELECT pg_advisory_unlock(hashtext('fa-depreciation-post'), hashtext('01:2026:5'))`); err != nil {
+		t.Fatal(err)
+	}
+	_ = lock.Close()
+	if _, err := poster.PostDepreciation(ctx, headOffice, "2026", 5, "", "", "", now); err != nil {
+		t.Fatalf("May after the other posting finished: %v", err)
+	}
+
+	// Reversing the second April journal keeps the original's date again (the Thai-calendar
+	// "today" is only for a date that can no longer change, see 6c).
+	if err := poster.ReverseDepreciation(ctx, headOffice, aprilAgain.DocNo, "ผ่านรายการค่าเสื่อมราคาซ้ำ", time.Date(2026, 10, 1, 18, 30, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("ReverseDepreciation April again: %v", err)
+	}
+	if got := journalDate("REV-" + aprilAgain.DocNo); got != aprilAgain.Date {
+		t.Fatalf("reversal of %s dated %q, want the original's date %s", aprilAgain.DocNo, got, aprilAgain.Date)
+	}
+	if n := unposted("2026", 4); n != 1 {
+		t.Fatalf("April must be unposted after the second reversal, got %d", n)
+	}
+
+	// A reversal made in the GL screen leaves the row marked posted; reverse-gl then only frees
+	// the row and writes no journal.
+	third, err := poster.PostDepreciation(ctx, headOffice, "2026", 4, "", "", "", now)
+	if err != nil || third.DocNo != april.DocNo+"-3" {
+		t.Fatalf("third April posting: %v %+v", err, third)
+	}
+	var thirdID string
+	var thirdVersion int64
+	if err := db.QueryRowContext(ctx, `SELECT id, version FROM gl_records WHERE company='01' AND kind='journals' AND payload->>'docno'=$1`, third.DocNo).Scan(&thirdID, &thirdVersion); err != nil {
+		t.Fatal(err)
+	}
+	run(gl.Command{Resource: "journals", Action: "reverse", ID: thirdID, Version: thirdVersion, DocNo: "REV-" + third.DocNo, Date: "2026-10-05", Reason: "กลับรายการจากหน้าสมุดรายวัน"})
+	written := journals()
+	if err := poster.ReverseDepreciation(ctx, headOffice, third.DocNo, "ปลดสถานะค่าเสื่อมราคาที่กลับรายการแล้ว", now); err != nil {
+		t.Fatalf("ReverseDepreciation after a GL-screen reversal: %v", err)
+	}
+	if n := journals(); n != written {
+		t.Fatalf("freeing the rows must not write a journal, %d → %d", written, n)
+	}
+	if n := unposted("2026", 4); n != 1 {
+		t.Fatalf("April must be unposted after the GL-screen reversal, got %d", n)
+	}
+
+	// 6c. The original's year is closed: the reversal goes to today by the Thai calendar, and the
+	// period cannot be posted again into the closed year, so nothing is counted twice.
+	setYearClosed("2570", true)
+	before = journals()
 	err = poster.ReverseDepreciation(ctx, headOffice, april27.DocNo, "ผ่านรายการค่าเสื่อมราคาผิดงวด", time.Date(2028, 5, 2, 3, 0, 0, 0, time.UTC))
 	mustUserError(t, err, "fa_fiscal_year_not_found", "", "2028-05-02")
-	if n := journals(); n != before {
-		t.Fatalf("a refused reversal must not write a journal, %d → %d", before, n)
+	if n := journals(); n != before || journalStatus(april27.DocNo) != "posted" {
+		t.Fatalf("a refused reversal must write nothing: journals %d → %d, %s %s", before, n, april27.DocNo, journalStatus(april27.DocNo))
 	}
-	if n := count(`SELECT count(*) FROM gl_records WHERE company='01' AND kind='journals' AND payload->>'docno'=$1 AND payload->>'status'='posted'`, april27.DocNo); n != 1 {
-		t.Fatal("the April 2027 journal must stay posted")
+	next := gl.FiscalYear{Code: "2571", StartDate: "2028-04-01", EndDate: "2029-03-31", IsActive: true, Scale: 2, ProfitLossAccount: "32000", RetainedEarningsAccount: "31000"}
+	run(gl.Command{Resource: "fiscal-years", Action: "create", FiscalYear: &next})
+	if err := poster.ReverseDepreciation(ctx, headOffice, april27.DocNo, "ผ่านรายการค่าเสื่อมราคาผิดงวด", time.Date(2028, 5, 1, 18, 30, 0, 0, time.UTC)); err != nil {
+		t.Fatalf("ReverseDepreciation of a closed-year journal: %v", err)
 	}
+	if got, year := journalDate("REV-"+april27.DocNo), journalYear("REV-"+april27.DocNo); got != "2028-05-02" || year != "2571" {
+		t.Fatalf("reversal of the closed-year %s dated %s in %q, want the Thai date 2028-05-02 in 2571", april27.DocNo, got, year)
+	}
+	_, err = poster.PostDepreciation(ctx, headOffice, "2027", 4, "", "", "", now)
+	mustUserError(t, err, "fa_fiscal_year_closed", "fiscalyear", "2570")
+	setYearClosed("2570", false) // step 7 files a disposal into 2570
 
 	// 7. Disposal: refused in the year no longer in use, posted into 2570 by its date otherwise.
 	writeOff := fa.AssetDisposal{AssetCode: machine.AssetCode, DisposalDate: "2026-03-15", DisposalType: "write_off", GainLossAccountCode: "42100", Reason: "เครื่องบรรจุปูนซีเมนต์ชำรุดใช้งานไม่ได้"}
@@ -226,7 +350,7 @@ func TestFixedAssetJournalsUseFiscalYearOfVoucherDate(t *testing.T) {
 	if n := count(`SELECT count(*) FROM fa_records WHERE company='01' AND kind='assets' AND code=$1 AND payload->>'status'='disposed'`, machine.AssetCode); n != 1 {
 		t.Fatal("the written-off machine must be disposed")
 	}
-	if n := count(`SELECT count(*) FROM gl_records WHERE company='01' AND kind='journals' AND payload->>'fiscalyear' NOT IN ('2569','2570')`); n != 0 {
+	if n := count(`SELECT count(*) FROM gl_records WHERE company='01' AND kind='journals' AND payload->>'fiscalyear' NOT IN ('2569','2570','2571')`); n != 0 {
 		t.Fatalf("every journal must carry a พ.ศ. fiscal-year code, %d do not", n)
 	}
 }

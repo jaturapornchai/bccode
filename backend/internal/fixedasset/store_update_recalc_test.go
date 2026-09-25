@@ -315,4 +315,18 @@ func TestScheduleRebuildRefusedWhilePeriodPosted(t *testing.T) {
 	}
 	assertScheduleMatches(t, store, scope, *final, nil)
 	assertScheduleTotal(t, store, scope, *final)
+
+	// Posting the period again gets the next number: the reversed journal keeps its number for
+	// audit, and replaying its GL request would mark the row posted while GL posts nothing.
+	again, err := poster.PostDepreciation(ctx, scope, "2026", 1, "2026-01-31", "", "", created.Add(5*time.Hour))
+	if err != nil {
+		t.Fatalf("PostDepreciation after reversal and a rate edit: %v", err)
+	}
+	if again.DocNo != journal.DocNo+"-2" || again.Status != "posted" {
+		t.Fatalf("re-posted journal %s (%s), want %s-2 posted", again.DocNo, again.Status, journal.DocNo)
+	}
+	reposted := storedScheduleRows(t, db, company, asset.AssetCode)[postedID].Payload
+	if !strings.Contains(reposted, `"isposted": true`) || !strings.Contains(reposted, `"journaldocno": "`+again.DocNo+`"`) {
+		t.Fatalf("period 1 must point at %s: %s", again.DocNo, reposted)
+	}
 }

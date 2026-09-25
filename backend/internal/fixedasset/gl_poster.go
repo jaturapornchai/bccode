@@ -275,6 +275,11 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	if err != nil {
 		return nil, err
 	}
+	unlock, err := lockDepreciationPeriod(ctx, db, scope.Company, fiscalYear, period)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
 	items, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'fiscalyear' = $3 AND (payload->>'period')::int = $4 AND NOT COALESCE((payload->>'isposted')::boolean, false)`, ` ORDER BY code`, fiscalYear, period)
 	if err != nil {
 		return nil, err
@@ -401,6 +406,12 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	}
 	description := fmt.Sprintf("บันทึกค่าเสื่อมราคาสินทรัพย์ประจำงวด %d/%s", period, fiscalYear)
 	reference := fmt.Sprintf("FA-%s-%02d", fiscalYear, period)
+	docNo, err = p.depreciationDocNo(ctx, scope, docNo, reference, generated, func(candidate string) (bool, error) {
+		return depreciationRowsMarked(ctx, db, scope.Company, candidate)
+	})
+	if err != nil {
+		return nil, err
+	}
 	journalInput := &gl.Journal{
 		DocNo:       docNo,
 		Date:        date,
@@ -414,6 +425,9 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 	}
 	created, posted, err := p.postJournal(ctx, scope, journalInput)
 	if err != nil {
+		return nil, err
+	}
+	if err := p.checkJournalPosted(ctx, scope, docNo); err != nil {
 		return nil, err
 	}
 
@@ -441,16 +455,9 @@ func (p *GLPoster) PostDepreciation(ctx context.Context, scope Scope, fiscalYear
 		IsDeleted:    false,
 	}
 
-	// 6. Update depreciation items to mark as posted
-	for _, it := range items {
-		it.IsPosted = true
-		it.JournalDocNo = docNo
-		it.PostedAt = &now
-		it.UpdatedAt = now
-		it.UpdatedBy = scope.Actor
-		if err := putRecord(ctx, db, scope.Company, kindDepreciation, it.ID, depreciationKey(it), it); err != nil {
-			return nil, fmt.Errorf("ผ่านรายการสำเร็จแต่ไม่สามารถอัปเดตสถานะค่าเสื่อมราคา: %w", err)
-		}
+	// 6. Mark the period's schedule rows posted (all or none)
+	if err := setDepreciationPosted(ctx, db, scope, items, docNo, now); err != nil {
+		return nil, fmt.Errorf("ผ่านรายการสำเร็จแต่ไม่สามารถอัปเดตสถานะค่าเสื่อมราคา: %w", err)
 	}
 
 	return journal, nil
@@ -462,23 +469,40 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 	if err != nil {
 		return err
 	}
-	if journal.Status != "posted" {
+	// Already reversed (an earlier attempt whose row reset failed, or a reversal made in GL):
+	// only the schedule rows are still to be freed.
+	alreadyReversed := journal.Status == journalStatusReversed
+	if !alreadyReversed && journal.Status != journalStatusPosted {
 		return fmt.Errorf("ใบสำคัญ %s ไม่ได้อยู่ในสถานะผ่านรายการ", docNo)
 	}
+	if !alreadyReversed {
+		if err := p.reverseJournal(ctx, scope, journal, reason, now); err != nil {
+			return err
+		}
+	}
 
-	// 1. Reverse through the general ledger engine: it flips debit/credit,
-	// keeps the original journal for audit, and re-projects PostgreSQL.
+	db, err := p.records.db(ctx, scope.Holding)
+	if err != nil {
+		return err
+	}
+	items, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'journaldocno' = $3`, "", docNo)
+	if err != nil {
+		return err
+	}
+	return setDepreciationPosted(ctx, db, scope, items, "", now)
+}
+
+// reverseJournal reverses a posted depreciation journal through the general ledger engine: it
+// flips debit/credit, keeps the original journal for audit, and re-projects PostgreSQL.
+func (p *GLPoster) reverseJournal(ctx context.Context, scope Scope, journal *gl.Journal, reason string, now time.Time) error {
+	docNo := journal.DocNo
 	// doc_no is VARCHAR(30) characters: cut by runes so a Thai document number is never split mid-character.
-	reversalDocNo := "REV-" + docNo
+	reversalDocNo := reversalDocNoPrefix + docNo
 	if runes := []rune(reversalDocNo); len(runes) > gl.DocNoMaxRunes {
 		reversalDocNo = string(runes[:gl.DocNoMaxRunes])
 	}
-	reverseDate := now.Format("2006-01-02")
-	if reverseDate < journal.Date {
-		reverseDate = journal.Date
-	}
-	// GL files the reversal in the fiscal year of its date; say so in Thai before GL is asked.
-	if _, err := p.fiscalYearCodeAt(ctx, scope, reverseDate, ""); err != nil {
+	reverseDate, err := p.reversalDate(ctx, scope, journal.Date, now)
+	if err != nil {
 		return err
 	}
 	requestID := digest([]byte("fa-gl-reverse:" + scope.Holding + ":" + scope.Company + ":" + docNo))
@@ -494,26 +518,6 @@ func (p *GLPoster) ReverseDepreciation(ctx context.Context, scope Scope, docNo, 
 	})
 	if err != nil {
 		return fmt.Errorf("ไม่สามารถกลับรายการสมุดรายวัน GL: %w", err)
-	}
-
-	// 2. Reset asset depreciation items
-	db, err := p.records.db(ctx, scope.Holding)
-	if err != nil {
-		return err
-	}
-	items, err := queryRecords[DepreciationScheduleItem](ctx, db, scope.Company, kindDepreciation, ` AND payload->>'journaldocno' = $3`, "", docNo)
-	if err != nil {
-		return err
-	}
-	for _, it := range items {
-		it.IsPosted = false
-		it.JournalDocNo = ""
-		it.PostedAt = nil
-		it.UpdatedAt = now
-		it.UpdatedBy = scope.Actor
-		if err := putRecord(ctx, db, scope.Company, kindDepreciation, it.ID, depreciationKey(it), it); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -560,7 +564,7 @@ func (p *GLPoster) DisposeAsset(ctx context.Context, scope Scope, disposal Asset
 		return nil, nil, fmt.Errorf("กรุณาระบุรหัสสินทรัพย์ที่ต้องการจำหน่าย")
 	}
 	if disposal.DisposalDate == "" {
-		disposal.DisposalDate = now.Format("2006-01-02")
+		disposal.DisposalDate = businessDate(now)
 	}
 	if err := checkVoucherDate(disposal.DisposalDate, "disposaldate"); err != nil {
 		return nil, nil, err

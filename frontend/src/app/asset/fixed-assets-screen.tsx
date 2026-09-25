@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { type LanguageCode } from "@/lib/i18n";
@@ -48,9 +48,14 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
   const [scheduleItems, setScheduleItems] = useState<DepreciationScheduleItem[]>([]);
   const [reportData, setReportData] = useState<AssetScheduleReport | null>(null);
   const [taxReportData, setTaxReportData] = useState<AssetScheduleReport | null>(null);
-  const [postFiscalYear, setPostFiscalYear] = useState<string>("2026");
-  const [postPeriod, setPostPeriod] = useState<number>(1);
+  // ปี (ค.ศ. ตามตารางค่าเสื่อมราคา) และงวดตั้งต้นจากวันนี้ — ค่าที่ฝังไว้จะผ่านรายการผิดปีเมื่อข้ามปี
+  const [postFiscalYear, setPostFiscalYear] = useState<string>(() => String(new Date().getFullYear()));
+  const [postPeriod, setPostPeriod] = useState<number>(() => new Date().getMonth() + 1);
+  const [postDate, setPostDate] = useState("");
+  const [postDocNo, setPostDocNo] = useState("");
   const [postStatusMsg, setPostStatusMsg] = useState<string>("");
+  const [postError, setPostError] = useState<{ message: string; field: string }>({ message: "", field: "" });
+  const postFormRef = useRef<HTMLDivElement>(null);
 
   // Form State for New/Edit Asset
   const [isEditing, setIsEditing] = useState(false);
@@ -219,15 +224,27 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
     }
   };
 
+  // ข้อผิดพลาดของช่องใดช่องหนึ่ง: ย้ายโฟกัสไปที่ช่องนั้นโดยไม่เลื่อนจอ (รอให้คำสั่งจบก่อน)
+  useEffect(() => {
+    if (!postError.field || loading) return;
+    postFormRef.current?.querySelector<HTMLElement>(`[data-field="${postError.field}"]`)?.focus({ preventScroll: true });
+  }, [postError, loading]);
+
   const handlePostGL = async () => {
+    // บอกวันที่/เลขที่ใบที่จะใช้จริงก่อนยืนยัน — ช่องว่างหมายถึงค่าที่ระบบกำหนดให้
+    const voucher = tr("fa_post_voucher_summary", "วันที่ใบสำคัญ: {0} · เลขที่ใบสำคัญ: {1}")
+      .replace("{0}", postDate || tr("fa_voucher_date_period_end", "วันสิ้นงวด"))
+      .replace("{1}", postDocNo.trim() || tr("fa_docno_generated", "ระบบสร้างให้"));
     const ok = await confirm({
       title: tr("fa_confirm_post_depreciation", "ยืนยันการผ่านรายการค่าเสื่อมราคาเข้า GL?"),
-      description: tr("fa_post_period_summary", "ปีบัญชี {0} งวดที่ {1} (Dr. ค่าเสื่อมราคา / Cr. ค่าเสื่อมราคาสะสม)")
+      description: `${tr("fa_post_period_summary", "งวดที่ {1} ปี ค.ศ. {0} (Dr. ค่าเสื่อมราคา / Cr. ค่าเสื่อมราคาสะสม)")
         .replace("{0}", postFiscalYear)
-        .replace("{1}", String(postPeriod)),
+        .replace("{1}", String(postPeriod))} — ${voucher}`,
       confirmLabel: tr("fa_post", "ผ่านรายการ (Post)"),
     });
     if (!ok) return;
+
+    setPostError({ message: "", field: "" });
 
     setLoading(true);
     setPostStatusMsg(tr("fa_posting_in_progress", "กำลังประมวลผลผ่านรายการ..."));
@@ -235,18 +252,24 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
       resource: "depreciations",
       action: "post-gl",
       requestid: crypto.randomUUID(),
-      fiscalyear: postFiscalYear,
+      fiscalyear: postFiscalYear.trim(),
       period: postPeriod,
-    });
+      // เว้นว่าง = backend ใช้วันสิ้นงวดและสร้างเลขที่ใบสำคัญให้
+      date: postDate || undefined,
+      docno: postDocNo.trim() || undefined,
+    }).catch(() => null);
     setLoading(false);
 
     if (res?.success) {
       setPostStatusMsg(tr("fa_posted_journal_docno", "ผ่านรายการสำเร็จ! เลขที่ใบสำคัญสมุดรายวัน: {0}").replace("{0}", String(res?.journal?.docno ?? "")));
       alert(tr("fa_posted_voucher_docno", "ผ่านรายการสำเร็จ! เลขที่ใบสำคัญ: {0}").replace("{0}", String(res?.journal?.docno ?? "")));
+      // วันที่/เลขที่ที่พิมพ์เองใช้กับใบสำคัญนี้ใบเดียว — ไม่ติดไปกับงวดถัดไป
+      setPostDate("");
+      setPostDocNo("");
       loadData();
     } else {
-      setPostStatusMsg(tr("fa_failed_reason", "ล้มเหลว: {0}").replace("{0}", String(res?.message ?? "")));
-      alert(res?.message || tr("fa_posting_error", "เกิดข้อผิดพลาดในการผ่านรายการ"));
+      setPostStatusMsg("");
+      setPostError({ message: String(res?.message || tr("fa_posting_error", "เกิดข้อผิดพลาดในการผ่านรายการ")), field: String(res?.field ?? "") });
     }
   };
 
@@ -944,19 +967,26 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                 {tr("fa_depreciation_account_entry", "โดยเดบิตบัญชีค่าใช้จ่ายค่าเสื่อมราคา และเครดิตบัญชีค่าเสื่อมราคาสะสม")}
               </p>
 
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div ref={postFormRef} className="grid grid-cols-2 gap-4 pt-2">
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("gl_fiscal_year", "ปีบัญชี")}</label>
+                  <label htmlFor="fa-post-year" className="block text-[0.9rem] font-semibold text-muted-foreground mb-1">{tr("fa_period_year_ce", "ปีของงวด (ค.ศ.)")}</label>
                   <input
+                    id="fa-post-year"
+                    data-field="fiscalyear"
                     type="text"
+                    inputMode="numeric"
+                    maxLength={4}
                     value={postFiscalYear}
                     onChange={(e) => setPostFiscalYear(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
+                    aria-invalid={postError.field === "fiscalyear" || undefined}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm aria-invalid:border-destructive"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1">{tr("fa_period", "งวดที่ (1-12)")}</label>
+                  <label htmlFor="fa-post-period" className="block text-[0.9rem] font-semibold text-muted-foreground mb-1">{tr("fa_period", "งวดที่ (1-12)")}</label>
                   <input
+                    id="fa-post-period"
+                    data-field="period"
                     type="number"
                     min={1}
                     max={12}
@@ -965,7 +995,42 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                     className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm"
                   />
                 </div>
+                <div>
+                  <label htmlFor="fa-post-date" className="block text-[0.9rem] font-semibold text-muted-foreground mb-1">{tr("fa_voucher_date", "วันที่ใบสำคัญ")}</label>
+                  <input
+                    id="fa-post-date"
+                    data-field="date"
+                    type="date"
+                    value={postDate}
+                    onChange={(e) => setPostDate(e.target.value)}
+                    aria-describedby="fa-post-date-help"
+                    aria-invalid={postError.field === "date" || undefined}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm aria-invalid:border-destructive"
+                  />
+                  <p id="fa-post-date-help" className="mt-1 text-[0.9rem] text-muted-foreground leading-relaxed">
+                    {tr("fa_voucher_date_blank_period_end", "เว้นว่างไว้ ระบบจะใช้วันสิ้นงวดที่เลือก")}
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="fa-post-docno" className="block text-[0.9rem] font-semibold text-muted-foreground mb-1">{tr("fa_journal_docno_optional", "เลขที่ใบสำคัญ (เว้นว่าง = ระบบสร้างให้)")}</label>
+                  <input
+                    id="fa-post-docno"
+                    data-field="docno"
+                    type="text"
+                    maxLength={30}
+                    value={postDocNo}
+                    onChange={(e) => setPostDocNo(e.target.value)}
+                    aria-invalid={postError.field === "docno" || undefined}
+                    className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono text-sm aria-invalid:border-destructive"
+                  />
+                </div>
               </div>
+
+              {postError.message && (
+                <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-[0.95rem] leading-relaxed text-foreground">
+                  {postError.message}
+                </div>
+              )}
 
               {postStatusMsg && (
                 <div className="p-3 rounded-xl bg-muted/60 text-xs font-mono border border-border/40">

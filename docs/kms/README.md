@@ -134,7 +134,7 @@
 - [decisions/2026-09-25-gl-monthly-budget.md](decisions/2026-09-25-gl-monthly-budget.md) — งบประมาณรายเดือนต่อบัญชี (Champ 5500 `BCGLBudget`): ตาราง `gl_budgets` + `gl_budget_lines` (บัญชี × งวด 1–12, `numeric(18,2)`), คำสั่ง `budgets` create/update/delete/spread ผ่าน `Execute`, สถานะเปิด/ปิดแบบ Champ (ไม่มีอนุมัติ), รายงาน `budgetcomparison` (Champ 5530) เทียบ `gl_lines` ที่ผ่านบัญชีตาม `normal_balance`; จอ `/gl/budget` ขึ้น "ยังไม่พร้อม" จนกว่าจะทำจองบรายเดือน; ส่วนที่ต่างจาก Champ โดยตั้งใจอยู่ในตาราง ADR
 - [decisions/2026-09-25-retire-mongo-era-docs-and-skills.md](decisions/2026-09-25-retire-mongo-era-docs-and-skills.md) — ล้างเอกสาร/skill ยุค MongoDB/Kafka/Redis/ClickHouse: เขียนบทความ kms ใหม่ตามโค้ด, ลบ `12-kafka-messaging.md` + architecture/snippet ที่ตาย, ลบ skill `audit-mongomodel-sync` และ server `mongodb`/`mongomodel` ใน `.mcp.json`
 
-## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 35 ไฟล์ใน `bugs/`
+## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 36 ไฟล์ใน `bugs/`
 
 - [bugs/2026-06-13-product-browser-url-drift-base-href.md](bugs/2026-06-13-product-browser-url-drift-base-href.md)
 - [bugs/2026-06-13-productbarcodes-camelcase-naming.md](bugs/2026-06-13-productbarcodes-camelcase-naming.md)
@@ -169,6 +169,7 @@
 - [bugs/2026-09-25-line-code-route-unauthenticated.md](bugs/2026-09-25-line-code-route-unauthenticated.md) — **แก้แล้ว 2026-09-25**: `POST /api/auth/line/code` ออก LINE bridge code ให้ใครก็ได้โดยไม่ตรวจ session — BFF ตรวจรูปแบบ header แล้วถาม mainapi `/verify-token` ก่อนเรียก bridge (token ปลอม/หมดอายุ → 401 ไม่ยิง bridge)
 - [bugs/2026-09-25-fa-edit-does-not-recalculate-schedule.md](bugs/2026-09-25-fa-edit-does-not-recalculate-schedule.md) — **แก้แล้ว 2026-09-25**: แก้อัตราค่าเสื่อม/% ปีแรก/ค่าเสื่อมสะสมยกมาแล้วตารางค่าเสื่อมไม่คำนวณใหม่ — ตอนนี้คำนวณใหม่เมื่อค่าที่ใช้คำนวณเปลี่ยน และปฏิเสธ (409 `fa_schedule_posted`) ทั้งการแก้และการสั่งคำนวณใหม่เมื่อมีงวดผ่านรายการ GL แล้ว
 - [bugs/2026-09-25-fa-post-gl-ce-year-as-fiscal-year-code.md](bugs/2026-09-25-fa-post-gl-ce-year-as-fiscal-year-code.md) — **แก้แล้ว 2026-09-25**: ผ่านค่าเสื่อม/จำหน่ายสินทรัพย์เข้า GL ส่งปี ค.ศ. เป็นรหัสปีบัญชี บริษัทที่ใช้รหัส พ.ศ. จึงได้ "กรุณาตั้งค่าปีบัญชี" — ตอนนี้หาปีบัญชีจากวันที่ของใบสำคัญแบบ Champ (ไม่พบ/ปิด/ทับซ้อน = field error ไทย) ไม่ระบุวันที่ = วันสิ้นงวด และวันที่ใบต้องอยู่ปีบัญชีเดียวกับงวด (ปีของงวดรับ ค.ศ. เท่านั้น)
+- [bugs/2026-09-25-fa-repost-after-reversal-replays-reversed-journal.md](bugs/2026-09-25-fa-repost-after-reversal-replays-reversed-journal.md) — **แก้แล้ว 2026-09-25**: กลับรายการใบค่าเสื่อมแล้วผ่านงวดเดิมซ้ำ GL คืนใบเก่าที่กลับไปแล้ว (requestID มาจากเลขที่ใบ) แต่ตารางถูกทำเครื่องหมายว่าผ่าน — ตอนนี้ใช้เลขถัดไป `-2`/`-3`, lock ต่องวด, ตรวจสถานะ posted ก่อนทำเครื่องหมาย (tx เดียว), ใบกลับรายการลงวันที่ของใบเดิมเมื่อยังเปิด (ปิดแล้ว = วันที่ไทยวันนี้) และจอผ่านรายการมีช่องวันที่/เลขที่ใบ
 
 - [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ
 - [บทเรียน code review 2026-09-14](bugs/2026-09-14-code-review-gl-warehouse-fixes.md) — confirm() เป็น Promise, PUT location ต้อง spread doc เดิม, GL consumer group คงที่, ห้าม panic ตอน register consumer, เพดานบรรทัด journal ปิดงบ, report วนหน้า, NumericInput ไม่ปัดค่า
