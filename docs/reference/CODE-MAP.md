@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-25 @ commit 467c174d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-25 @ commit ed28c127 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -821,26 +821,7 @@ Files indexed: 29
 | 1425 | function | `listHoldingMembers` |
 | 1445 | function | `createHoldingPayload` |
 
-## frontend/src/app/system-settings/warehouse-tree-view.tsx (1332 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 128 | function | `WarehouseTreeView` |
-| 202 | section | `Resizable Sidebar Width State` |
-| 239 | const-arrow | `onPointerMove` |
-| 248 | const-arrow | `onPointerUp` |
-| 309 | const-arrow | `openCreateWarehouse` |
-| 316 | const-arrow | `openEditWarehouse` |
-| 335 | const-arrow | `handleSaveWarehouse` |
-| 386 | const-arrow | `handleDeleteWarehouse` |
-| 455 | const-arrow | `handleAddRow` |
-| 468 | const-arrow | `handleUpdateRowCode` |
-| 474 | const-arrow | `handleUpdateRowName` |
-| 484 | const-arrow | `handleDeleteRow` |
-| 499 | const-arrow | `handleSaveAllLocations` |
-| 696 | const-arrow | `handleResetTable` |
-
-## backend/internal/authentication/services/authentication_service_test.go (1324 lines)
+## backend/internal/authentication/services/authentication_service_test.go (1342 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -919,6 +900,26 @@ Files indexed: 29
 | 1314 | function | `MockGUID` |
 | 1318 | function | `MockRandomString` |
 | 1322 | function | `MockRandomNumber` |
+| 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
+
+## frontend/src/app/system-settings/warehouse-tree-view.tsx (1332 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 128 | function | `WarehouseTreeView` |
+| 202 | section | `Resizable Sidebar Width State` |
+| 239 | const-arrow | `onPointerMove` |
+| 248 | const-arrow | `onPointerUp` |
+| 309 | const-arrow | `openCreateWarehouse` |
+| 316 | const-arrow | `openEditWarehouse` |
+| 335 | const-arrow | `handleSaveWarehouse` |
+| 386 | const-arrow | `handleDeleteWarehouse` |
+| 455 | const-arrow | `handleAddRow` |
+| 468 | const-arrow | `handleUpdateRowCode` |
+| 474 | const-arrow | `handleUpdateRowName` |
+| 484 | const-arrow | `handleDeleteRow` |
+| 499 | const-arrow | `handleSaveAllLocations` |
+| 696 | const-arrow | `handleResetTable` |
 
 ## backend/internal/goapi/handlers/tax_report.go (1278 lines)
 
@@ -997,7 +998,7 @@ Files indexed: 29
 | 1182 | function | `JournalBookTypeBadge` |
 | 1194 | function | `JournalBookFields` |
 
-## backend/internal/authentication/authentication_http.go (1202 lines)
+## backend/internal/authentication/authentication_http.go (1210 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -1006,38 +1007,38 @@ Files indexed: 29
 | 113 | function | `devLoginConfigFor` |
 | 122 | function | `devLoginSecretMatches` |
 | 126 | function | `RegisterHttp` |
-| 167 | function | `DevLogin` |
-| 200 | function | `LoginWithPhoneNumber` |
-| 242 | function | `Login` |
-| 290 | function | `Poslogin` |
-| 332 | function | `RefreshToken` |
-| 370 | function | `GoogleLogin` |
-| 427 | function | `verifyGoogleIDToken` |
-| 461 | function | `emailVerified` |
-| 473 | function | `Register` |
-| 510 | function | `RegisterByUsername` |
-| 547 | function | `SendPhoneNumberOTP` |
-| 584 | function | `RegisterByPhoneNumber` |
-| 621 | function | `ForgotPasswordByPhoneNumber` |
-| 656 | function | `RegisterCheckExistUsername` |
-| 693 | function | `RegisterCheckExistPhonenumber` |
-| 731 | function | `Update` |
-| 768 | function | `UpdatePassword` |
-| 797 | function | `ResetPasswordToDefault` |
-| 825 | function | `Logout` |
-| 851 | function | `SessionSelection` |
-| 856 | function | `sessionSelectionPayload` |
-| 870 | function | `VerifyToken` |
-| 889 | function | `SessionsActiveCount` |
-| 908 | function | `Profile` |
-| 935 | function | `ProfileShop` |
-| 959 | function | `SelectShop` |
-| 1021 | function | `ListShopCanAccess` |
-| 1055 | function | `UpdateShopFavorite` |
-| 1092 | function | `LinkLine` |
-| 1128 | function | `UnlinkLine` |
-| 1153 | function | `DisableUser` |
-| 1197 | function | `authRequestLanguage` |
+| 169 | function | `DevLogin` |
+| 202 | function | `LoginWithPhoneNumber` |
+| 244 | function | `Login` |
+| 292 | function | `Poslogin` |
+| 334 | function | `RefreshToken` |
+| 372 | function | `GoogleLogin` |
+| 429 | function | `verifyGoogleIDToken` |
+| 463 | function | `emailVerified` |
+| 475 | function | `Register` |
+| 512 | function | `RegisterByUsername` |
+| 549 | function | `SendPhoneNumberOTP` |
+| 586 | function | `RegisterByPhoneNumber` |
+| 623 | function | `ForgotPasswordByPhoneNumber` |
+| 658 | function | `RegisterCheckExistUsername` |
+| 695 | function | `RegisterCheckExistPhonenumber` |
+| 733 | function | `Update` |
+| 770 | function | `UpdatePassword` |
+| 799 | function | `ResetPasswordToDefault` |
+| 827 | function | `Logout` |
+| 853 | function | `SessionSelection` |
+| 858 | function | `sessionSelectionPayload` |
+| 872 | function | `VerifyToken` |
+| 891 | function | `SessionsActiveCount` |
+| 910 | function | `Profile` |
+| 937 | function | `ProfileShop` |
+| 961 | function | `SelectShop` |
+| 1023 | function | `ListShopCanAccess` |
+| 1057 | function | `UpdateShopFavorite` |
+| 1094 | function | `LinkLine` |
+| 1136 | function | `UnlinkLine` |
+| 1161 | function | `DisableUser` |
+| 1205 | function | `authRequestLanguage` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 
@@ -1175,7 +1176,7 @@ Files indexed: 29
 | 222 | const-arrow | `handlePostGL` |
 | 253 | const-arrow | `handleConfirmDisposal` |
 
-## backend/internal/authentication/services/authentication_service.go (1112 lines)
+## backend/internal/authentication/services/authentication_service.go (1113 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -1213,9 +1214,9 @@ Files indexed: 29
 | 985 | function | `loginWithLinkedGoogleIdentity` |
 | 1002 | function | `normalizeGoogleIssuer` |
 | 1012 | function | `LinkLine` |
-| 1041 | function | `UnlinkLine` |
-| 1059 | function | `DisableUser` |
-| 1085 | function | `DeleteUser` |
+| 1042 | function | `UnlinkLine` |
+| 1060 | function | `DisableUser` |
+| 1086 | function | `DeleteUser` |
 
 ## frontend/src/app/gl/gl-journals.tsx (1096 lines)
 

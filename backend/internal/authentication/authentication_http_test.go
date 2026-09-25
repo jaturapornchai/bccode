@@ -23,6 +23,10 @@ func TestAuthenticationRouteSurface(t *testing.T) {
 		"POST /logout",
 		"POST /dev-login",
 		"GET /session/selection",
+		// LINE link: the BFF binds the code to the minter, checks it before each bridge poll, then links.
+		"POST /profile/link-line/code",
+		"POST /profile/link-line/code/check",
+		"PUT /profile/link-line",
 	} {
 		if !routes[route] {
 			t.Errorf("required authentication route is not registered: %s", route)

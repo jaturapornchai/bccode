@@ -1322,3 +1322,21 @@ func MockRandomString(n int) string {
 func MockRandomNumber(n int) string {
 	return "123456"
 }
+
+// A LINE already linked to someone else must be refused without naming that account (no username oracle).
+func TestAuthService_LinkLineTakenDoesNotRevealOtherUsername(t *testing.T) {
+	authRepo := new(AuthenticationRepositoryMock)
+	holder := &models.UserDoc{}
+	holder.Username = "other_holder"
+	authRepo.On("FindByLineUserID", "Uvictim").Return(holder, nil)
+	authService := services.NewAuthenticationService(
+		authRepo, new(ShopUserRepositoryMock), new(ShopUserAccessLogRepositoryMock),
+		new(SMSRepositoryMock), &AuthServiceMock{}, MockRandomString, MockRandomNumber, MockGUID,
+		MockHashPassword, MockCheckPasswordHash, MockTime)
+
+	err := authService.LinkLine("caller", models.LinkLineRequest{LineUserID: "Uvictim"})
+
+	assert.EqualError(t, err, "LINE นี้เชื่อมต่อกับบัญชีอื่นแล้ว")
+	assert.NotContains(t, err.Error(), "other_holder")
+	authRepo.AssertNotCalled(t, "SetLineIdentity", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}

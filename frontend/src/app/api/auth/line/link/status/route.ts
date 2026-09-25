@@ -8,6 +8,7 @@ import {
   readJsonOrText as readBridgeJsonOrText,
 } from "@/lib/auth-bridge";
 import { serverMainApiBase, validateBackendUrl } from "@/lib/backend-url";
+import { checkLineLinkCode, verifyLineSession } from "@/lib/line-link-session";
 import {
   extractMessage,
   isRecord,
@@ -49,6 +50,13 @@ export async function POST(request: Request) {
     );
   }
 
+  // Before the bridge is asked anything: the session must be live in mainapi and the code must have been
+  // minted by this user (api/auth/line/code binds it). A forged token or another user's code stops here.
+  const sessionError = await verifyLineSession(request, authorization);
+  if (sessionError) return sessionError;
+  const codeError = await checkLineLinkCode(request, authorization, code);
+  if (codeError) return codeError;
+
   try {
     const bridgeUrl = getAuthBridgeUrl();
     const response = await fetch(`${bridgeUrl}/api/login?code=${encodeURIComponent(code)}`, {
@@ -76,7 +84,9 @@ export async function POST(request: Request) {
 
     const displayName = getString(data, "displayName") ?? getString(data, "displayname") ?? "";
     const pictureUrl = getString(data, "pictureUrl") ?? getString(data, "pictureurl") ?? "";
+    // mainapi checks the code owner again, links, then releases the code.
     const linkResponse = await putLineProfile(request, serverMainApiBase(), authorization, {
+      code,
       lineuserid: lineUserId,
       linedisplayname: displayName,
       linepictureurl: pictureUrl,

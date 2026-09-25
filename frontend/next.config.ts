@@ -57,6 +57,10 @@ const nextConfig: NextConfig = {
       "/backend/goapi/api/mcp/:path*",
       "/backend/goapi/mcp/:path*",
       "/backend/reload-config",
+      // LINE link (2026-09-25): mainapi trusts the client-supplied code + lineuserid, so only the BFF
+      // (/api/auth/line/*, server-side via serverMainApiBase) may call these; browsers never do.
+      "/backend/profile/link-line",
+      "/backend/profile/link-line/:path*",
     ];
     return {
       beforeFiles: [...blockedAuthRoutes, ...blockedDangerousRoutes].map((source) => ({

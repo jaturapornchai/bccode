@@ -42,6 +42,36 @@ func validReloadConfigSecret(expectedSecret, suppliedSecret string) bool {
 	return subtle.ConstantTimeCompare([]byte(expectedSecret), []byte(suppliedSecret)) == 1
 }
 
+// exceptShopPaths are authenticated routes that work without a selected holding/shop
+// (MWFuncMixShop compares each entry to the request path exactly).
+var exceptShopPaths = []string{
+	"/holding",
+	"/shop",
+	"/logout",
+	"/verify-token",
+	"/profile",
+	"/profile/password",
+	"/profile/disable-user",
+	"/sessions/active-count",
+	"/list-holding",
+	"/list-shop",
+	"/select-holding",
+	"/select-shop",
+	"/create-holding",
+	"/create-shop",
+	"/favorite-holding",
+	"/favorite-shop",
+	// Holding admin management — works from the holding-selection screen (no shop selected yet);
+	// the handlers resolve the caller's role per-holding from the request holdingcode.
+	"/holding-member/list",
+	// LINE link is per user (UID/Username only), so it must work before a holding is picked — the
+	// workspace header shows "เชื่อมต่อ LINE" right after login. Matching is by path, so
+	// "/profile/link-line" covers both PUT (link) and DELETE (unlink).
+	"/profile/link-line",
+	"/profile/link-line/code",
+	"/profile/link-line/code/check",
+}
+
 // BC Ai Account API — PostgreSQL เท่านั้น (ถอด MongoDB / Kafka / Redis / ClickHouse ออกแล้ว 2026-09-23)
 func main() {
 	setupconfig.LoadBootstrapConfig()
@@ -104,28 +134,6 @@ func main() {
 		"/api/language/*", // Language — public (pre-login language loading)
 	}
 
-	exceptShopPath := []string{
-		"/holding",
-		"/shop",
-		"/logout",
-		"/verify-token",
-		"/profile",
-		"/profile/password",
-		"/profile/disable-user",
-		"/sessions/active-count",
-		"/list-holding",
-		"/list-shop",
-		"/select-holding",
-		"/select-shop",
-		"/create-holding",
-		"/create-shop",
-		"/favorite-holding",
-		"/favorite-shop",
-		// Holding admin management — works from the holding-selection screen (no shop selected yet);
-		// the handlers resolve the caller's role per-holding from the request holdingcode.
-		"/holding-member/list",
-	}
-
 	// Reload config endpoint — goapi เรียกหลัง save config เพื่อให้ mainapi ใช้ config ใหม่
 	ms.Echo().POST("/reload-config", func(c echo.Context) error {
 		secret := c.Request().Header.Get("X-Reload-Secret")
@@ -137,7 +145,7 @@ func main() {
 		return c.JSON(http.StatusOK, map[string]string{"message": "กำลัง reload config..."})
 	})
 
-	ms.HttpMiddleware(authService.MWFuncMixShop(ms.Cacher(), exceptShopPath, publicPath...))
+	ms.HttpMiddleware(authService.MWFuncMixShop(ms.Cacher(), exceptShopPaths, publicPath...))
 	ms.RegisterLivenessProbeEndpoint("/healthz")
 	ms.HttpUseCors()
 	ms.HttpPreRemoveTrailingSlash()

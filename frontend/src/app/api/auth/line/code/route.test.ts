@@ -3,6 +3,7 @@ import { POST } from "./route";
 
 const verifyUrl = "http://localhost:8888/verify-token";
 const bridgeCreateUrl = "https://bridge.example/liff/api/login?action=create";
+const bindUrl = "http://localhost:8888/profile/link-line/code";
 
 function hrefOf(url: string | URL | Request): string {
   return typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
@@ -67,6 +68,12 @@ describe("LINE link code route", () => {
           data: { code: "123456", loginUrl: "https://bridge.example/liff/login/123456", expiresAt: "2026-09-25T10:05:00Z" },
         });
       }
+      if (href === bindUrl) {
+        expect(init?.method).toBe("POST");
+        expect(headers.get("authorization")).toBe("Bearer token");
+        expect(JSON.parse(String(init?.body))).toEqual({ code: "123456" });
+        return Response.json({ success: true });
+      }
       throw new Error(`unexpected fetch ${href}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -80,7 +87,7 @@ describe("LINE link code route", () => {
       loginUrl: "https://bridge.example/liff/login/123456",
       expiresAt: "2026-09-25T10:05:00Z",
     });
-    expect(fetchMock.mock.calls.map(([url]) => hrefOf(url))).toEqual([verifyUrl, bridgeCreateUrl]);
+    expect(fetchMock.mock.calls.map(([url]) => hrefOf(url))).toEqual([verifyUrl, bridgeCreateUrl, bindUrl]);
   });
 
   it("ignores a caller-supplied bridge URL or extra fields in the body", async () => {
@@ -91,6 +98,7 @@ describe("LINE link code route", () => {
         expect(init?.body).toBeUndefined();
         return Response.json({ code: "654321", loginUrl: "https://bridge.example/liff/login/654321" });
       }
+      if (href === bindUrl) return Response.json({ success: true });
       throw new Error(`unexpected fetch ${href}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -102,7 +110,26 @@ describe("LINE link code route", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ success: true, code: "654321" });
-    expect(fetchMock.mock.calls.map(([url]) => hrefOf(url))).toEqual([verifyUrl, bridgeCreateUrl]);
+    expect(fetchMock.mock.calls.map(([url]) => hrefOf(url))).toEqual([verifyUrl, bridgeCreateUrl, bindUrl]);
+  });
+
+  it("does not hand out a code that mainapi refuses to bind to this user", async () => {
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const href = hrefOf(url);
+      if (href === verifyUrl) return Response.json({ success: true, uid: "u-1" });
+      if (href === bridgeCreateUrl) return Response.json({ code: "123456", loginUrl: "https://bridge.example/liff/login/123456" });
+      if (href === bindUrl) return Response.json({ success: false, message: "bound to another account" }, { status: 409 });
+      throw new Error(`unexpected fetch ${href}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(codeRequest({ headers: { Authorization: "Bearer token" } }));
+    const json = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(json).toMatchObject({ success: false, message: "bound to another account" });
+    expect(json).not.toHaveProperty("code");
+    expect(json).not.toHaveProperty("loginUrl");
   });
 
   it("does not mint a code when mainapi cannot be reached", async () => {

@@ -23,3 +23,19 @@ func TestValidReloadConfigSecret(t *testing.T) {
 		})
 	}
 }
+
+// LINE linking is per user and the workspace header offers it before a holding is picked, so the
+// link-code routes must not answer "Shop not selected." (which the BFF turns into "log in again").
+func TestExceptShopPathsAllowLineLinkWithoutHolding(t *testing.T) {
+	for _, path := range []string{"/profile/link-line", "/profile/link-line/code", "/profile/link-line/code/check"} {
+		found := false
+		for _, allowed := range exceptShopPaths {
+			if allowed == path {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("exceptShopPaths is missing %q", path)
+		}
+	}
+}

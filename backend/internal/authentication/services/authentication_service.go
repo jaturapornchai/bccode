@@ -1018,7 +1018,8 @@ func (svc AuthenticationService) LinkLine(username string, req auth_models.LinkL
 	// ตรวจสอบว่า LINE User ID นี้ถูกเชื่อมต่อกับ user อื่นหรือไม่
 	existingUser, err := svc.authRepo.FindByLineUserID(context.Background(), req.LineUserID)
 	if err == nil && existingUser != nil && existingUser.Username != "" && existingUser.Username != username {
-		return errors.New("LINE นี้เชื่อมต่อกับบัญชีอื่นแล้ว (" + existingUser.Username + ")")
+		// Do not name the other account: the caller only needs to know the LINE is taken (no username oracle).
+		return errors.New("LINE นี้เชื่อมต่อกับบัญชีอื่นแล้ว")
 	}
 
 	userFind, err := svc.authRepo.FindUser(context.Background(), username)

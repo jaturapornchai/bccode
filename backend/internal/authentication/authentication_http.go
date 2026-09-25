@@ -150,6 +150,8 @@ func (h AuthenticationHttp) RegisterHttp() {
 	h.ms.PUT("/profile/password", h.UpdatePassword)
 	h.ms.PUT("/profile/link-line", h.LinkLine)
 	h.ms.DELETE("/profile/link-line", h.UnlinkLine)
+	h.ms.POST("/profile/link-line/code", h.BindLineLinkCode)
+	h.ms.POST("/profile/link-line/code/check", h.CheckLineLinkCode)
 
 	middlewareShop := h.authService.MWFuncWithShop(h.ms.Cacher())
 	h.ms.GET("/list-holding", h.ListShopCanAccess, middlewareShop)
@@ -1104,11 +1106,17 @@ func (h AuthenticationHttp) LinkLine(ctx microservice.IContext) error {
 		return apperr.Respond(ctx, apperr.ErrValidation.WithWrap(err))
 	}
 
+	// Only the user who minted the LINE link code (POST /profile/link-line/code) may complete it.
+	if err = checkLineLinkCode(h.ms.Cacher(), req.Code, ctx.UserInfo().UID); err != nil {
+		return respondLineLinkCodeError(ctx, err)
+	}
+
 	err = h.authenticationService.LinkLine(authUsername, req)
 
 	if err != nil {
 		return apperr.RespondErr(ctx, err)
 	}
+	releaseLineLinkCode(h.ms.Cacher(), req.Code)
 
 	ctx.Response(http.StatusOK, common.ApiResponse{
 		Success: true,

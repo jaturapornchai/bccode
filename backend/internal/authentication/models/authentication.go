@@ -58,6 +58,8 @@ type LinkLineRequest struct {
 	LineUserID      string `json:"lineuserid" validate:"required"`
 	LineDisplayName string `json:"linedisplayname"`
 	LinePictureURL  string `json:"linepictureurl"`
+	// Code is the LINE link code bound to the caller by POST /profile/link-line/code.
+	Code string `json:"code"`
 }
 
 type UserDisableLoginError struct{}

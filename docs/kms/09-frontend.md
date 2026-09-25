@@ -60,8 +60,8 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/auth/demo-login` | POST | M `/demo-login` | ไม่มี (backend gate) | LIVE | `auth/demo-login/route.ts:11-27,51` |
 | `/api/auth/dev-login` | POST | M (หรือ `BCAI_DEV_LOGIN_BACKEND_URL`) `/dev-login` | env gate + secret ≥32 | LIVE (dev) | `auth/dev-login/route.ts:9,22-27,34,122` |
 | `/api/auth/google/verify` | POST | Google tokeninfo → M `/googlelogin` | ตรวจ `GOOGLE_CLIENT_ID` | LIVE | `auth/google/verify/route.ts:29,54-55,82` |
-| `/api/auth/line/code` | POST | M `GET /verify-token` → bridge `/api/login?action=create` (ไม่ส่ง token/body ให้ bridge) | Bearer + ตรวจ session ที่ mainapi (bugs/2026-09-25-line-code-route-unauthenticated.md) | LIVE (ต้อง bridge) | `auth/line/code/route.ts:10,13,18,49-54` |
-| `/api/auth/line/link/status` | POST | bridge `/api/login?code=` → M `PUT /profile/link-line` | Bearer — ตรวจแค่รูปแบบ header ก่อนยิง bridge (mainapi เห็น token ตอน PUT เท่านั้น; ยังไม่แก้ รอลุงจืด) | LIVE | `auth/line/link/status/route.ts:31,54,121` |
+| `/api/auth/line/code` | POST | M `GET /verify-token` → bridge `/api/login?action=create` (ไม่ส่ง token/body ให้ bridge) → M `POST /profile/link-line/code` (ผูก code กับผู้ออก) | Bearer + ตรวจ session ที่ mainapi; ผูกไม่ได้ = ไม่คืน code (bugs/2026-09-25-line-code-route-unauthenticated.md) | LIVE (ต้อง bridge) | `auth/line/code/route.ts:11,14,19,41`; helper `lib/line-link-session.ts` |
+| `/api/auth/line/link/status` | POST | M `GET /verify-token` → M `POST /profile/link-line/code/check` → bridge `/api/login?code=` → M `PUT /profile/link-line` (ส่ง `code`) | Bearer + ตรวจ session + code ต้องเป็นของผู้เรียก ก่อนยิง bridge (code ของคนอื่น/หมดอายุ → 404 ไม่ถาม bridge) | LIVE (ต้อง bridge) | `auth/line/link/status/route.ts:32,55-58,62,88-89,131` |
 | `/api/auth/profile` | GET/PUT | M `/profile`, `/profile/password` (PUT สำเร็จ → clear cookie) | Bearer | LIVE | `auth/profile/route.ts:5-26` |
 | `/api/auth/profile/reset-password` | PUT | — ตอบ 501 | — | STUBBED | `auth/profile/reset-password/route.ts:3-12` |
 | `/api/auth/sessions` | GET | M `/sessions/active-count` | Bearer | LIVE | `auth/sessions/route.ts:5-8` |
