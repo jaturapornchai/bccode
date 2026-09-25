@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ChoiceSelect } from "@/components/ui/select";
 import { formatAmount } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
+import { TAX_MONTH_KEYS } from "@/lib/thai-tax";
 import {
   attachmentChanged, cleanDocument, computeTaxForm, deleteTaxForm, fetchTaxFormCatalog, fetchTaxFormSchema, formChanges, ledgerBaseline, ledgerDrift,
   listTaxForms, loadTaxForm, noteText, prefillTaxForm, requestTaxFormPdf, requestTaxFormRdFile, saveTaxForm,
@@ -21,7 +22,6 @@ import { TaxRdFileButton, TaxRdFilePanel } from "./tax-rdfile-panel";
 // แบบยื่นภาษีกรมสรรพากร: เลือกแบบ + งวด → เปิดฉบับที่บันทึกไว้ หรือให้ backend ดึงยอดจากบัญชีแยกประเภท →
 // แก้ได้ทุกช่อง (รวมฐานภาษี) → backend คำนวณบรรทัดรวมตามสูตรบนแบบ → บันทึก → backend พิมพ์ลงแบบฟอร์มทางการ (PDF)
 
-const MONTH_KEYS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 // แบบรายปีที่ยื่นระหว่างปีของงวดเอง (ครึ่งปี/ก่อนกำหนด) — ค่าเริ่มต้นเป็นปีปัจจุบัน ที่เหลือเป็นปีที่แล้ว
 const CURRENT_YEAR_FORMS = new Set(["pnd51", "pnd94", "pnd93"]);
 
@@ -96,7 +96,7 @@ export function TaxFormEditor({ language = "th", holdingcode = "", businesscode 
 
   const item = catalog.find((c) => c.code === code);
   const money = (v: string) => formatAmount(v, 2);
-  const monthName = (m: number) => tr(`month_${MONTH_KEYS[m - 1]}`, String(m));
+  const monthName = (m: number) => tr(`month_${TAX_MONTH_KEYS[m - 1]}`, String(m));
   const yearText = (ce: number) => (language === "th" ? String(ce + 543) : String(ce));
 
   const showPdf = (url: string) => {
@@ -511,7 +511,7 @@ export function TaxFormEditor({ language = "th", holdingcode = "", businesscode 
               <ChoiceSelect
                 value={period.month}
                 onChange={(v) => void changePeriod({ ...period, month: Number(v) })}
-                options={MONTH_KEYS.map((_, i) => ({ value: i + 1, label: monthName(i + 1) }))}
+                options={TAX_MONTH_KEYS.map((_, i) => ({ value: i + 1, label: monthName(i + 1) }))}
                 radioThreshold={0}
                 aria-label={tr("tax_form_month", "เดือนภาษี")}
               />

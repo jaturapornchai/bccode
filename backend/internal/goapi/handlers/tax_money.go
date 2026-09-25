@@ -8,6 +8,7 @@ import (
 
 	"smlcloudplatform/internal/goapi/mypg"
 	"smlcloudplatform/internal/mcptoken"
+	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	"smlcloudplatform/internal/taxaddress"
 
 	"github.com/shopspring/decimal"
@@ -72,4 +73,40 @@ FROM companies WHERE holding_code = $1 AND code = $2`, holdingCode, businessCode
 		header.AddressLine = address.Line()
 	}
 	return header, nil
+}
+
+// TaxEstablishment - สถานประกอบการของบริษัท (สาขาในทะเบียน, เลขสาขา 5 หลักตาม ภ.พ.20) ให้เลือกทำรายงานภาษีซื้อ/ขาย
+// เป็นรายสถานประกอบการ (ม.87 วรรคสาม, ประกาศฯ VAT ฉบับที่ 89 ข้อ 5) และพิมพ์หัวรายงาน สำนักงานใหญ่/สาขาที่
+type TaxEstablishment struct {
+	Code         string `json:"code"`
+	Name         string `json:"name"`
+	IsHeadOffice bool   `json:"isheadoffice"`
+}
+
+// loadTaxEstablishments - สาขาทั้งหมดของบริษัทจากฐานข้อมูลควบคุมกลาง เรียงตามเลขสาขา (รวมสาขาที่ปิดแล้ว เพราะงวดเก่ายังมีรายการ)
+func loadTaxEstablishments(ctx context.Context, holdingCode, businessCode string) ([]TaxEstablishment, error) {
+	db, err := mypg.PgSqlFastConnect(mcptoken.ControlDatabase)
+	if err != nil {
+		return nil, fmt.Errorf("connect control database: %w", err)
+	}
+	return queryTaxEstablishments(ctx, db, holdingCode, businessCode)
+}
+
+// queryTaxEstablishments - เนื้อของ loadTaxEstablishments บนฐานควบคุมกลางที่ส่งมา; สำนักงานใหญ่ = เลขสาขา 00000 ตามกรมสรรพากร
+func queryTaxEstablishments(ctx context.Context, db *sql.DB, holdingCode, businessCode string) ([]TaxEstablishment, error) {
+	rows, err := db.QueryContext(ctx, `SELECT code, name FROM branches WHERE holding_code = $1 AND company_code = $2 ORDER BY code`, holdingCode, businessCode)
+	if err != nil {
+		return nil, fmt.Errorf("load branches: %w", err)
+	}
+	defer rows.Close()
+	out := []TaxEstablishment{}
+	for rows.Next() {
+		var e TaxEstablishment
+		if err := rows.Scan(&e.Code, &e.Name); err != nil {
+			return nil, fmt.Errorf("scan branch: %w", err)
+		}
+		e.IsHeadOffice = branchmodels.IsThaiHeadOfficeBranchCode(e.Code)
+		out = append(out, e)
+	}
+	return out, rows.Err()
 }

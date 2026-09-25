@@ -14,6 +14,7 @@ import (
 	"smlcloudplatform/internal/goapi/language"
 	"smlcloudplatform/internal/goapi/logger"
 	"smlcloudplatform/internal/goapi/mypg"
+	branchmodels "smlcloudplatform/internal/organization/branch/models"
 	"smlcloudplatform/internal/whtcert"
 
 	"github.com/labstack/echo/v4"
@@ -38,9 +39,12 @@ type TaxVatRegisterRequest struct {
 	Month        int    `json:"month"`
 	Type         string `json:"type"` // "sale" หรือ "purchase"
 	// View - "" = ทะเบียนตามงวดภาษี, "reversed_later" = ใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (Champ 5522/5523 ยกเลิกข้ามงวด)
-	View   string `json:"view,omitempty"`
-	Limit  int    `json:"limit,omitempty"`
-	Offset int    `json:"offset,omitempty"`
+	View string `json:"view,omitempty"`
+	// BranchCode - สถานประกอบการ (เลขสาขา 5 หลักตาม ภ.พ.20 = สาขาของใบสำคัญ); ว่าง = ทุกสถานประกอบการรวมกัน
+	// ม.87 วรรคสาม + ประกาศฯ VAT ฉบับที่ 89 ข้อ 5: รายงานภาษีซื้อ/ขายต้องจัดทำเป็นรายสถานประกอบการ
+	BranchCode string `json:"branchcode,omitempty"`
+	Limit      int    `json:"limit,omitempty"`
+	Offset     int    `json:"offset,omitempty"`
 }
 
 // TaxVatRegisterRow - แถวรายงานภาษีซื้อ/ขายต่อเอกสาร
@@ -50,9 +54,12 @@ type TaxVatRegisterRow struct {
 	CounterpartyName string `json:"counterpartyname"`
 	TaxID            string `json:"taxid"`
 	BranchNo         string `json:"branchno"`
-	AmountBeforeVat  string `json:"amountbeforevat"` // ทศนิยม 2 ตำแหน่งแบบ string (ห้ามส่งเงินเป็น JSON number)
-	VatAmount        string `json:"vatamount"`
-	TotalAmount      string `json:"totalamount"`
+	AmountBeforeVat  string `json:"amountbeforevat"` // มูลค่าสินค้าหรือบริการทั้งใบ ทศนิยม 2 ตำแหน่งแบบ string (ห้ามส่งเงินเป็น JSON number)
+	// ZeroAmount/ExemptAmount - ส่วนของมูลค่าที่เป็นอัตรา 0% / ได้รับยกเว้น (รวมอยู่ใน AmountBeforeVat แล้ว) แยกแสดงแบบ Champ GLRepInputTaxView
+	ZeroAmount   string `json:"zeroamount"`
+	ExemptAmount string `json:"exemptamount"`
+	VatAmount    string `json:"vatamount"`
+	TotalAmount  string `json:"totalamount"`
 	// DuplicateDocNos - เลขที่ใบสำคัญที่บันทึกใบกำกับภาษีฉบับเดียวกัน (ผู้ออก + เลขที่ + วันที่) — มีเลขที่ใบสำคัญของแถวนี้เอง = ซ้ำในใบสำคัญเดียวกัน; [] = ไม่ซ้ำ; เตือนให้ตรวจ ไม่บล็อก
 	DuplicateDocNos []string `json:"duplicatedocnos"`
 	// TaxMonth - งวดภาษีที่ยื่นไว้ (YYYY-MM) — มีเฉพาะมุมมองยกเลิกข้ามงวด
@@ -68,6 +75,8 @@ type TaxVatRegisterRow struct {
 // TaxVatRegisterSummary - ยอดรวมทั้งงวด (ไม่ใช่เฉพาะหน้าที่แสดง) คำนวณใน PostgreSQL
 type TaxVatRegisterSummary struct {
 	AmountBeforeVat string `json:"amountbeforevat"`
+	ZeroAmount      string `json:"zeroamount"`
+	ExemptAmount    string `json:"exemptamount"`
 	VatAmount       string `json:"vatamount"`
 	TotalAmount     string `json:"totalamount"`
 	DuplicateCount  int    `json:"duplicatecount"` // จำนวนแถวของงวดที่มีใบกำกับฉบับเดียวกันในใบสำคัญอื่น
@@ -97,6 +106,15 @@ func TaxVatRegisterHandler(c echo.Context) error {
 
 	if !isValidReportPeriod(req.Year, req.Month) {
 		return taxReportFail(c, http.StatusBadRequest, "INVALID_PERIOD", "tax_form_period_invalid")
+	}
+
+	branch := ""
+	if strings.TrimSpace(req.BranchCode) != "" {
+		code, err := branchmodels.NormalizeThaiTaxBranchCode(req.BranchCode)
+		if err != nil {
+			return taxReportFail(c, http.StatusBadRequest, "INVALID_BRANCH", "tax_report_branch_invalid")
+		}
+		branch = code
 	}
 
 	limit, offset := normalizeVatRegisterPaging(req.Limit, req.Offset)
@@ -132,10 +150,24 @@ func TaxVatRegisterHandler(c echo.Context) error {
 		return taxReportFail(c, http.StatusInternalServerError, "QUERY_ERROR", "tax_report_failed")
 	}
 
-	// ยอดรวมท้ายรายงานเป็นของทั้งงวด ไม่ใช่ผลรวมเฉพาะหน้าที่ browser ได้รับ
-	rows, summary := buildVatRegister(records)
+	company, err := loadCompanyHeader(ctx, holdingCode, businessCode)
+	if err != nil {
+		logger.Error("TaxVatRegister: company header: %v", err)
+		return taxReportFail(c, http.StatusInternalServerError, "QUERY_ERROR", "tax_report_failed")
+	}
+	establishments, err := loadTaxEstablishments(ctx, holdingCode, businessCode)
+	if err != nil {
+		logger.Error("TaxVatRegister: establishments: %v", err)
+		return taxReportFail(c, http.StatusInternalServerError, "QUERY_ERROR", "tax_report_failed")
+	}
+
+	// ยอดรวมท้ายรายงานเป็นของทั้งงวด (ของสถานประกอบการที่เลือก) ไม่ใช่ผลรวมเฉพาะหน้าที่ browser ได้รับ
+	rows, summary := buildVatRegister(vatRecordsOfBranch(records, branch))
 	lang := taxRequestLanguage(c)
 	note := vatRegisterNote(req.View, rows, lang)
+	if branch == "" && len(establishments) > 1 {
+		note = strings.TrimSpace(note + " " + language.Text("tax_vat_note_all_establishments", lang))
+	}
 	data := pageVatRegisterRows(rows, limit, offset)
 	for i := range data {
 		data[i].Note = vatRegisterRowNote(req.View, data[i], lang)
@@ -149,7 +181,25 @@ func TaxVatRegisterHandler(c echo.Context) error {
 		"limit":   limit,
 		"offset":  offset,
 		"note":    note,
+		// หัวรายงานตามแบบท้ายประกาศฯ VAT ฉบับที่ 202: ชื่อผู้ประกอบการ เลขผู้เสียภาษี ชื่อสถานประกอบการ สำนักงานใหญ่/สาขา
+		"company":        company,
+		"establishments": establishments,
+		"branchcode":     branch,
 	})
+}
+
+// vatRecordsOfBranch - แถวของสถานประกอบการเดียว (สาขาของใบสำคัญ); branch ว่าง = ทุกสถานประกอบการรวมกัน
+func vatRecordsOfBranch(records []generalledger.VatRecord, branch string) []generalledger.VatRecord {
+	if branch == "" {
+		return records
+	}
+	out := make([]generalledger.VatRecord, 0, len(records))
+	for _, r := range records {
+		if code, err := branchmodels.NormalizeThaiTaxBranchCode(r.BranchCode); err == nil && code == branch {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // vatViewReversedLater - มุมมองใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนที่เลือก
@@ -214,13 +264,14 @@ func vatAmountOf(record generalledger.VatRecord, sign decimal.Decimal) decimal.D
 }
 
 // buildVatRegister - แถวรายงานภาษีซื้อ/ขาย + ยอดรวมทั้งงวด (decimal) จากรายการภาษีที่บันทึกในใบสำคัญ
-// มูลค่าก่อนภาษี = ฐานภาษี + ยอดอัตรา 0% + ยอดยกเว้น ของใบกำกับ (มูลค่าสินค้า/บริการ ไม่รวม VAT)
+// มูลค่าก่อนภาษี = ฐานภาษี + ยอดอัตรา 0% + ยอดยกเว้น ของใบกำกับ (มูลค่าสินค้า/บริการ ไม่รวม VAT); 0% และยกเว้นแยกแสดงอีกช่อง
 func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, TaxVatRegisterSummary) {
 	rows := make([]TaxVatRegisterRow, 0, len(records))
-	var sumBefore, sumVat decimal.Decimal
+	var sumBefore, sumZero, sumExempt, sumVat decimal.Decimal
 	for _, r := range records {
 		sign := vatSign(r.DocumentType)
-		before := vatMoney(r.BaseAmount, sign).Add(vatMoney(r.ZeroRateAmount, sign)).Add(vatMoney(r.ExemptAmount, sign))
+		zero, exempt := vatMoney(r.ZeroRateAmount, sign), vatMoney(r.ExemptAmount, sign)
+		before := vatMoney(r.BaseAmount, sign).Add(zero).Add(exempt)
 		vat := vatAmountOf(r, sign)
 		rows = append(rows, TaxVatRegisterRow{
 			DocDate:          r.TaxInvoiceDate,
@@ -229,6 +280,8 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			TaxID:            r.PartnerTaxID,
 			BranchNo:         r.PartnerBranchNo,
 			AmountBeforeVat:  moneyText(before),
+			ZeroAmount:       moneyText(zero),
+			ExemptAmount:     moneyText(exempt),
 			VatAmount:        moneyText(vat),
 			TotalAmount:      moneyText(before.Add(vat)),
 			DuplicateDocNos:  append([]string{}, r.DuplicateDocNos...),
@@ -239,9 +292,12 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			Note:             r.ReversalReason,
 		})
 		sumBefore, sumVat = sumBefore.Add(before), sumVat.Add(vat)
+		sumZero, sumExempt = sumZero.Add(zero), sumExempt.Add(exempt)
 	}
 	return rows, TaxVatRegisterSummary{
 		AmountBeforeVat: moneyText(sumBefore),
+		ZeroAmount:      moneyText(sumZero),
+		ExemptAmount:    moneyText(sumExempt),
 		VatAmount:       moneyText(sumVat),
 		TotalAmount:     moneyText(sumBefore.Add(sumVat)),
 		DuplicateCount:  countDuplicateInvoices(records),

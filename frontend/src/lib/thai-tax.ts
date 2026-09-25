@@ -16,6 +16,9 @@ export interface ThaiTaxRecord {
   branchno: string; // "00000" for Head Office
   isheadoffice: boolean;
   amountbeforevat: string;
+  /** ภาษีซื้อ/ขาย: ส่วนของมูลค่าที่เป็นอัตรา 0% / ได้รับยกเว้น (รวมอยู่ใน amountbeforevat แล้ว) — ไม่มีในภาษีหัก ณ ที่จ่าย */
+  zeroamount?: string;
+  exemptamount?: string;
   vatamount: string;
   totalamount: string;
   incometype?: string;
@@ -161,6 +164,8 @@ export function taxAddressProblems(address: TaxAddress, phone: string): Partial<
 
 export interface VatRegisterSummary {
   amountbeforevat: string;
+  zeroamount: string;
+  exemptamount: string;
   vatamount: string;
   totalamount: string;
   /** จำนวนแถวในงวดที่ใบกำกับฉบับเดียวกันถูกบันทึกในใบสำคัญอื่นด้วย (นับทั้งงวดโดย backend ไม่ใช่เฉพาะแถวที่โหลด) */
@@ -243,7 +248,18 @@ export interface WhtReportResult {
 
 const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "", address: null, phone: "", addressline: "" };
 const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [] };
-const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
+const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
+
+/** key เดือนใน languages.tsv (`month_<key>`) ลำดับ ม.ค.–ธ.ค. — ใช้ร่วมทุกจอภาษี */
+export const TAX_MONTH_KEYS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"] as const;
+
+/** สถานประกอบการ (สาขาในทะเบียน เลข 5 หลักตาม ภ.พ.20) — รายงานภาษีซื้อ/ขายต้องทำเป็นรายสถานประกอบการ (ม.87) */
+export interface TaxEstablishment { code: string; name: string; isheadoffice: boolean }
+
+function toEstablishments(value: unknown): TaxEstablishment[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((e) => ({ code: toText(e.code), name: toText(e.name), isheadoffice: e.isheadoffice === true })).filter((e) => e.code !== "");
+}
 
 // taxCompanyLabel - ป้ายบริษัทบนหัวรายงาน: หัวบริษัทจาก backend (รายงานภาษีหัก ณ ที่จ่ายส่งมา) ก่อน
 // ทะเบียนภาษีมูลค่าเพิ่มไม่ส่งหัวบริษัท จึงใช้บริษัทที่ผู้ใช้เลือกไว้ใน workspace ของ session แทน — ใช้เฉพาะเมื่อ
@@ -439,6 +455,8 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
     branchno,
     isheadoffice: isHeadOfficeBranch(branchno),
     amountbeforevat: toMoney(row.amountbeforevat),
+    zeroamount: toMoney(row.zeroamount),
+    exemptamount: toMoney(row.exemptamount),
     vatamount: toMoney(row.vatamount),
     totalamount: toMoney(row.totalamount),
     // backend ตัดใบที่กลับรายการในงวดเดียวกันออกแล้ว; ใบที่กลับรายการหลังงวดยังอยู่ในงวดที่ยื่น (มีเลขที่ใบกลับรายการ)
@@ -558,23 +576,26 @@ export async function fetchVatRegister(params: {
   type: "sale" | "purchase";
   /** "reversed_later" = ใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (Champ รายงานภาษีซื้อ/ขายที่ยกเลิกข้ามงวด) */
   view?: VatRegisterView;
+  /** สถานประกอบการ (เลขสาขา 5 หลัก); ว่าง = ทุกสถานประกอบการรวมกัน */
+  branchcode?: string;
   limit?: number;
   offset?: number;
   language?: LanguageCode;
-}): Promise<{ records: ThaiTaxRecord[]; total: number; summary: VatRegisterSummary; note: string; error?: string }> {
+}): Promise<VatRegisterResult> {
+  const empty = { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, note: "", company: null, establishments: [], branchcode: "" };
   if (!params.holdingcode || !params.businesscode) {
-    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, note: "", error: "company_required" };
+    return { ...empty, error: "company_required" };
   }
 
   const { language, ...body } = params;
   const result = await postApi(VAT_REGISTER_PATH, body, language);
   if (!result.ok) {
-    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, note: "", error: result.error };
+    return { ...empty, error: result.error };
   }
 
   const payload = result.payload;
   if (!isRecord(payload) || !Array.isArray(payload.data)) {
-    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, note: "", error: "load_failed" };
+    return { ...empty, error: "load_failed" };
   }
 
   const records = payload.data.filter(isRecord).map(toTaxRecord);
@@ -584,12 +605,30 @@ export async function fetchVatRegister(params: {
     total: toCount(payload.total, records.length),
     summary: {
       amountbeforevat: toMoney(summary.amountbeforevat),
+      zeroamount: toMoney(summary.zeroamount),
+      exemptamount: toMoney(summary.exemptamount),
       vatamount: toMoney(summary.vatamount),
       totalamount: toMoney(summary.totalamount),
       duplicatecount: toCount(summary.duplicatecount, 0),
     },
     note: toText(payload.note),
+    company: isRecord(payload.company) ? toCompany(payload.company) : null,
+    establishments: toEstablishments(payload.establishments),
+    branchcode: toText(payload.branchcode),
   };
+}
+
+export interface VatRegisterResult {
+  records: ThaiTaxRecord[];
+  total: number;
+  summary: VatRegisterSummary;
+  note: string;
+  /** หัวรายงานตามแบบท้ายประกาศฯ VAT ฉบับที่ 202 — null เมื่อโหลดไม่สำเร็จ */
+  company: CompanyHeader | null;
+  establishments: TaxEstablishment[];
+  /** สถานประกอบการที่ backend ใช้กรองจริง (ว่าง = ทุกสถานประกอบการ) */
+  branchcode: string;
+  error?: string;
 }
 
 export type VatRegisterView = "reversed_later";

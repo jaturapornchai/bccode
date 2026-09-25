@@ -13,7 +13,9 @@ import {
   countTaxIdIssues,
   taxCompanyLabel,
   whtRegisterRecords,
+  TAX_MONTH_KEYS,
   type CompanyHeader,
+  type TaxEstablishment,
   type ThaiTaxRecord,
   type VatRegisterSummary,
   type WhtReportRow,
@@ -85,6 +87,9 @@ export function TaxFilingWorkbench({
   // ภาษีซื้อ/ขาย: ทะเบียนตามงวดภาษี หรือใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (ยุบ Champ 5522/5523 เป็นแท็บของจอเดิม)
   const [vatView, setVatView] = useState<"register" | "reversed_later">("register");
   const [vatNote, setVatNote] = useState<string>("");
+  // รายงานภาษีซื้อ/ขายเป็นรายสถานประกอบการ (ม.87 วรรคสาม, ประกาศฯ VAT ฉบับที่ 89 ข้อ 5): "" = ทุกสถานประกอบการรวมกัน
+  const [vatBranch, setVatBranch] = useState<string>("");
+  const [establishments, setEstablishments] = useState<TaxEstablishment[]>([]);
 
   const [selectedRecord, setSelectedRecord] = useState<ThaiTaxRecord | null>(null);
   const [selectedWhtRow, setSelectedWhtRow] = useState<WhtReportRow | null>(null);
@@ -130,8 +135,11 @@ export function TaxFilingWorkbench({
           ...period,
           type: registerType,
           view: vatView === "reversed_later" ? "reversed_later" : undefined,
+          branchcode: vatBranch || undefined,
           language: languageRef.current,
         });
+        setCompany(registerResult.company);
+        setEstablishments(registerResult.establishments);
         const periodSummary = { total: registerResult.total, summary: registerResult.summary };
         setVatNote(registerResult.note);
 
@@ -175,7 +183,7 @@ export function TaxFilingWorkbench({
     } finally {
       setLoading(false);
     }
-  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView]);
+  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView, vatBranch]);
 
   useEffect(() => {
     void loadData();
@@ -199,6 +207,8 @@ export function TaxFilingWorkbench({
       return {
         count: whtSummary?.total ?? 0,
         beforeVat: summary?.basetotal ?? "0.00",
+        zero: "0.00",
+        exempt: "0.00",
         tax: summary?.whttotal ?? "0.00",
         total: summary?.nettotal ?? "0.00",
         duplicates: 0,
@@ -208,6 +218,8 @@ export function TaxFilingWorkbench({
     return {
       count: register?.total ?? 0,
       beforeVat: register?.summary.amountbeforevat ?? "0.00",
+      zero: register?.summary.zeroamount ?? "0.00",
+      exempt: register?.summary.exemptamount ?? "0.00",
       tax: register?.summary.vatamount ?? "0.00",
       total: register?.summary.totalamount ?? "0.00",
       duplicates: register?.summary.duplicatecount ?? 0,
@@ -273,10 +285,29 @@ export function TaxFilingWorkbench({
     }
   };
 
-  const monthNamesTh = [
-    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
-  ];
+  const monthName = (m: number) => tr(`month_${TAX_MONTH_KEYS[m - 1]}`, String(m));
+  const yearLabel = (y: number) => String(language === "th" ? y + 543 : y);
+  const thisYear = new Date().getFullYear();
+  const yearOptions = [thisYear + 1, thisYear, thisYear - 1, thisYear - 2, thisYear - 3];
+  // หัวรายงานภาษีซื้อ/ขาย: สถานประกอบการที่เลือก หรือสาขาเดียวของบริษัท; หลายสาขาแต่เลือก "ทุกสถานประกอบการ" = ไม่ระบุสำนักงานใหญ่/สาขา
+  const activeEstablishment = vatBranch
+    ? establishments.find((e) => e.code === vatBranch) ?? null
+    : establishments.length === 1 ? establishments[0] : null;
+  const establishmentOffice = (e: TaxEstablishment) =>
+    e.isheadoffice ? tr("head_office", "สำนักงานใหญ่") : tr("tax_vat_branch_no", "สาขาที่ {0}").replace("{0}", e.code);
+  const establishmentOption = (e: TaxEstablishment) => `${establishmentOffice(e)} · ${e.name}`;
+  const columnLabels = {
+    seq: tr("tax_register_col_seq", "ลำดับ"),
+    date: tr("tax_register_col_date", "วันที่"),
+    docno: tr("tax_register_col_docno", "เลขที่เอกสาร/ใบกำกับ"),
+    taxid: tr("tax_register_col_taxid", "เลขประจำตัวผู้เสียภาษี 13 หลัก"),
+    branch: tr("tax_register_col_branch", "สาขา"),
+    base: tr("tax_register_col_base", "มูลค่าก่อนภาษี"),
+    zero: tr("tax_register_col_zero", "อัตรา 0%"),
+    exempt: tr("tax_register_col_exempt", "ยกเว้นภาษี"),
+    tax: tr("tax_register_col_tax", "ภาษี"),
+    net: tr("tax_register_col_net", "ยอดสุทธิ"),
+  };
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:p-6 print:p-0 print:gap-2">
@@ -354,11 +385,12 @@ export function TaxFilingWorkbench({
             variant="outline"
             disabled={!canExport}
             onClick={() => {
+              const c = columnLabels;
               const csv = [
-                "ลำดับ,วันที่,เลขที่เอกสาร,ชื่อคู่ค้า,เลขประจำตัวผู้เสียภาษี,สาขา,มูลค่าก่อนภาษี,ภาษี,ยอดรวม",
-                ...filteredRecords.map(
-                  (r, idx) =>
-                    `${idx + 1},${r.docdate},${r.taxinvoiceno},"${r.counterpartyname}",${r.taxid},${r.branchno},${r.amountbeforevat},${r.whtamount ?? r.vatamount},${r.totalamount}`,
+                [c.seq, c.date, c.docno, `"${partyHeader}"`, c.taxid, c.branch, c.base, ...(isVatType ? [c.zero, c.exempt] : []), c.tax, c.net].join(","),
+                ...filteredRecords.map((r, idx) =>
+                  [idx + 1, r.docdate, r.taxinvoiceno, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.amountbeforevat,
+                    ...(isVatType ? [r.zeroamount ?? "0.00", r.exemptamount ?? "0.00"] : []), r.whtamount ?? r.vatamount, r.totalamount].join(","),
                 ),
               ].join("\n");
               const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -404,9 +436,9 @@ export function TaxFilingWorkbench({
               onChange={(e) => { const month = Number(e.target.value); void leaveWhtEdits().then((ok) => { if (ok) setSelectedMonth(month); }); }}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
             >
-              {monthNamesTh.map((name, i) => (
+              {TAX_MONTH_KEYS.map((_, i) => (
                 <option key={i + 1} value={i + 1}>
-                  {name}
+                  {monthName(i + 1)}
                 </option>
               ))}
             </select>
@@ -416,11 +448,23 @@ export function TaxFilingWorkbench({
               layout="flex"
               className="w-auto"
               radioClassName="w-auto px-3 min-h-[2.2em] text-xs font-semibold"
-              options={[
-                { value: 2026, label: "พ.ศ. 2569 (2026)" },
-                { value: 2025, label: "พ.ศ. 2568 (2025)" },
-              ]}
+              options={yearOptions.map((y) => ({ value: y, label: yearLabel(y) }))}
             />
+            {isVatType && (
+              <select
+                aria-label={tr("tax_vat_establishment", "สถานประกอบการ")}
+                title={tr("tax_vat_establishment", "สถานประกอบการ")}
+                value={vatBranch}
+                onChange={(e) => setVatBranch(e.target.value)}
+                data-field="branchcode"
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+              >
+                <option value="">{tr("tax_vat_all_establishments", "ทุกสถานประกอบการ (รวม)")}</option>
+                {establishments.map((e) => (
+                  <option key={e.code} value={e.code}>{establishmentOption(e)}</option>
+                ))}
+              </select>
+            )}
 
             <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs text-muted-foreground">
               <Building2 className="h-3.5 w-3.5" />
@@ -545,8 +589,20 @@ export function TaxFilingWorkbench({
                     : tr("tax_vat_register_heading", "ทะเบียนรายการใบกำกับภาษี")}
               </h2>
               <p className="text-xs text-muted-foreground">
-                ประจำเดือน {monthNamesTh[selectedMonth - 1]} พ.ศ. {selectedYear + 543} (จำนวน {filteredRecords.length} รายการ)
+                {tr("tax_register_period_count", "ประจำเดือน {0} {1} (จำนวน {2} รายการ)")
+                  .replace("{0}", monthName(selectedMonth))
+                  .replace("{1}", yearLabel(selectedYear))
+                  .replace("{2}", String(filteredRecords.length))}
               </p>
+              {isVatType && (
+                // หัวรายงานตามแบบท้ายประกาศฯ VAT ฉบับที่ 202: ชื่อผู้ประกอบการ เลขผู้เสียภาษี ชื่อสถานประกอบการ สำนักงานใหญ่/สาขา
+                <dl className="mt-2 grid gap-x-6 gap-y-1 text-[0.9rem] leading-normal text-foreground sm:grid-cols-2" data-field="register-header">
+                  <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_operator", "ชื่อผู้ประกอบการ")}:</dt><dd className="font-medium">{companyName}</dd></div>
+                  <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_taxid", "เลขประจำตัวผู้เสียภาษีอากร")}:</dt><dd className="font-mono">{company?.taxid || notSpecified}</dd></div>
+                  <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_establishment", "ชื่อสถานประกอบการ")}:</dt><dd className="font-medium">{activeEstablishment?.name ?? tr("tax_vat_all_establishments", "ทุกสถานประกอบการ (รวม)")}</dd></div>
+                  <div className="flex gap-1.5" data-field="register-office"><dt className="text-muted-foreground">{tr("tax_vat_header_office", "สำนักงานใหญ่/สาขา")}:</dt><dd className="font-medium">{activeEstablishment ? establishmentOffice(activeEstablishment) : "—"}</dd></div>
+                </dl>
+              )}
               {isTruncated && (
                 <p role="status" className="mt-1 flex items-start gap-1.5 text-[0.9rem] font-semibold leading-normal text-primary" data-field="register-truncated">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -585,15 +641,17 @@ export function TaxFilingWorkbench({
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
-                  <th className="px-3 py-3 w-12 text-center">{tr("tax_register_col_seq", "ลำดับ")}</th>
-                  <th className="px-3 py-3 w-28">{tr("tax_register_col_date", "วันที่")}</th>
-                  <th className="px-3 py-3 w-36">{tr("tax_register_col_docno", "เลขที่เอกสาร/ใบกำกับ")}</th>
+                  <th className="px-3 py-3 w-12 text-center">{columnLabels.seq}</th>
+                  <th className="px-3 py-3 w-28">{columnLabels.date}</th>
+                  <th className="px-3 py-3 w-36">{columnLabels.docno}</th>
                   <th className="px-4 py-3">{partyHeader}</th>
-                  <th className="px-3 py-3 w-36">{tr("tax_register_col_taxid", "เลขประจำตัวผู้เสียภาษี 13 หลัก")}</th>
-                  <th className="px-3 py-3 w-20 text-center">{tr("tax_register_col_branch", "สาขา")}</th>
-                  <th className="px-4 py-3 text-right">{tr("tax_register_col_base", "มูลค่าก่อนภาษี")}</th>
-                  <th className="px-4 py-3 text-right">{tr("tax_register_col_tax", "ภาษี")}</th>
-                  <th className="px-4 py-3 text-right">{tr("tax_register_col_net", "ยอดสุทธิ")}</th>
+                  <th className="px-3 py-3 w-36">{columnLabels.taxid}</th>
+                  <th className="px-3 py-3 w-20 text-center">{columnLabels.branch}</th>
+                  <th className="px-4 py-3 text-right">{columnLabels.base}</th>
+                  {isVatType && <th className="px-4 py-3 text-right" data-field="col-zero">{columnLabels.zero}</th>}
+                  {isVatType && <th className="px-4 py-3 text-right" data-field="col-exempt">{columnLabels.exempt}</th>}
+                  <th className="px-4 py-3 text-right">{columnLabels.tax}</th>
+                  <th className="px-4 py-3 text-right">{columnLabels.net}</th>
                   <th className="px-3 py-3 w-20 text-center print:hidden">{tr("tax_register_col_actions", "จัดการ")}</th>
                 </tr>
               </thead>
@@ -633,6 +691,8 @@ export function TaxFilingWorkbench({
                     <td className="px-4 py-2.5 text-right font-mono font-medium">
                       {money(item.amountbeforevat)}
                     </td>
+                    {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.zeroamount ?? "0.00")}</td>}
+                    {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.exemptamount ?? "0.00")}</td>}
                     <td className="px-4 py-2.5 text-right font-mono font-medium text-primary">
                       {money(item.whtamount ?? item.vatamount)}
                     </td>
@@ -659,8 +719,10 @@ export function TaxFilingWorkbench({
               </tbody>
               <tfoot className="border-t-2 bg-muted/40 font-bold">
                 <tr>
-                  <td colSpan={6} className="px-4 py-3 text-right">{tr("tax_period_total", "รวมทั้งงวด")} ({totals.count} รายการ):</td>
+                  <td colSpan={6} className="px-4 py-3 text-right">{tr("tax_period_total_count", "รวมทั้งงวด ({0} รายการ):").replace("{0}", String(totals.count))}</td>
                   <td className="px-4 py-3 text-right font-mono">{money(totals.beforeVat)}</td>
+                  {isVatType && <td className="px-4 py-3 text-right font-mono">{money(totals.zero)}</td>}
+                  {isVatType && <td className="px-4 py-3 text-right font-mono">{money(totals.exempt)}</td>}
                   <td className="px-4 py-3 text-right font-mono text-primary">
                     {money(totals.tax)}
                   </td>

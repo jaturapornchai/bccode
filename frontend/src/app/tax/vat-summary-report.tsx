@@ -8,9 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatAmount } from "@/lib/general-ledger";
 import { formatAppDate } from "@/lib/date-time";
 import type { LanguageCode } from "@/lib/i18n";
-import { fetchVatSummary, type VatSummaryResult, type VatSummarySort } from "@/lib/thai-tax";
+import { TAX_MONTH_KEYS, fetchVatSummary, type VatSummaryResult, type VatSummarySort } from "@/lib/thai-tax";
 
-const MONTH_KEYS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 const SORTS: VatSummarySort[] = ["date", "taxno", "docno"];
 const SORT_FALLBACK: Record<VatSummarySort, string> = { date: "วันที่ใบกำกับ", taxno: "เลขที่ใบกำกับ", docno: "เลขที่ใบสำคัญ" };
 const selectClass =
@@ -62,7 +61,7 @@ export function VatSummaryReport({ language = "th", holdingcode = "", businessco
     : "";
   const data = result?.ok ? result : null;
   const dayByDate = new Map((data?.days ?? []).map((d) => [d.date, d]));
-  const monthLabel = tr(`month_${MONTH_KEYS[month - 1]}`, String(month));
+  const monthLabel = tr(`month_${TAX_MONTH_KEYS[month - 1]}`, String(month));
   const yearLabel = (y: number) => String(language === "th" ? y + 543 : y);
 
   return (
@@ -94,7 +93,7 @@ export function VatSummaryReport({ language = "th", holdingcode = "", businessco
             {tr("ops_tax_period", "งวดภาษี:")}
           </span>
           <select aria-label={tr("ops_tax_period", "งวดภาษี:")} value={month} onChange={(e) => setMonth(Number(e.target.value))} className={selectClass} data-field="month">
-            {MONTH_KEYS.map((key, i) => (
+            {TAX_MONTH_KEYS.map((key, i) => (
               <option key={key} value={i + 1}>{tr(`month_${key}`, String(i + 1))}</option>
             ))}
           </select>

@@ -89,13 +89,18 @@ describe("fetchVatRegister", () => {
             taxid: "1101700000000",
             branchno: "00000",
             amountbeforevat: "10000.00",
+            zeroamount: "2000.00",
+            exemptamount: "500.00",
             vatamount: "700.00",
             totalamount: "10700.00",
           },
         ],
         count: 1,
         total: 3,
-        summary: { amountbeforevat: "30000.10", vatamount: "2100.01", totalamount: "32100.11" },
+        summary: { amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", vatamount: "2100.01", totalamount: "32100.11" },
+        company: { code: "B001", name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxid: "0105566123456" },
+        establishments: [{ code: "00000", name: "สำนักงานใหญ่", isheadoffice: true }, { code: "00001", name: "สาขาลาดหลุมแก้ว", isheadoffice: false }, { name: "ไม่มีเลขสาขา" }],
+        branchcode: "00001",
         limit: 200,
         offset: 0,
       }),
@@ -114,7 +119,12 @@ describe("fetchVatRegister", () => {
     expect(result.records).toHaveLength(1);
     // total/summary = ทั้งงวดจาก backend ไม่ใช่ผลบวกของแถวที่โหลดมา
     expect(result.total).toBe(3);
-    expect(result.summary).toEqual({ amountbeforevat: "30000.10", vatamount: "2100.01", totalamount: "32100.11", duplicatecount: 0 });
+    expect(result.summary).toEqual({ amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", vatamount: "2100.01", totalamount: "32100.11", duplicatecount: 0 });
+    expect(result.records[0]).toMatchObject({ zeroamount: "2000.00", exemptamount: "500.00" });
+    // หัวรายงานรายสถานประกอบการ: แถวที่ไม่มีเลขสาขาไม่เป็นตัวเลือก
+    expect(result.company?.taxid).toBe("0105566123456");
+    expect(result.establishments).toEqual([{ code: "00000", name: "สำนักงานใหญ่", isheadoffice: true }, { code: "00001", name: "สาขาลาดหลุมแก้ว", isheadoffice: false }]);
+    expect(result.branchcode).toBe("00001");
     // backend ไม่ส่งรายการซ้ำ = ไม่ซ้ำ (อาร์เรย์ว่าง ไม่ใช่ undefined)
     expect(result.records[0]?.duplicatedocnos).toEqual([]);
     expect(result.records[0]?.vatamount).toBe("700.00");

@@ -305,6 +305,8 @@ type VatRecord struct {
 	ReversalDocNo  string `json:"reversaldocno,omitempty"`
 	ReversalDate   string `json:"reversaldate,omitempty"`
 	ReversalReason string `json:"reversalreason,omitempty"`
+	// BranchCode - สาขาของใบสำคัญ = สถานประกอบการ (เลขสาขา 5 หลักตาม ภ.พ.20) — รายงานภาษีซื้อ/ขายต้องทำเป็นรายสถานประกอบการ (ม.87)
+	BranchCode string `json:"branchcode,omitempty"`
 	SubledgerVat
 }
 
@@ -368,7 +370,8 @@ WITH reversals AS (
 ), items AS (
   SELECT r.id AS journal_id, r.code AS doc_no, r.payload->>'status' AS status, COALESCE(r.payload->>'date', '') AS doc_date,
     v.item, v.ord, `+vatInvoiceKeySQL+` AS invoice_key, `+vatTaxMonthSQL+` AS tax_month,
-    COALESCE(rv.reversal_date, '') AS reversal_date, COALESCE(rv.reversal_doc_no, '') AS reversal_doc_no
+    COALESCE(rv.reversal_date, '') AS reversal_date, COALESCE(rv.reversal_doc_no, '') AS reversal_doc_no,
+    COALESCE(r.payload->>'branchcode', '') AS branch_code
   FROM gl_records r
   CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'details'->'vats') = 'array'
     THEN r.payload->'details'->'vats' ELSE '[]'::jsonb END) WITH ORDINALITY AS v(item, ord)
@@ -402,7 +405,8 @@ SELECT p.journal_id, p.doc_no, p.doc_date, p.item,
   ARRAY(SELECT DISTINCT d FROM unnest(COALESCE(array_remove(s.doc_nos, p.doc_no), '{}'::text[])
     || CASE WHEN rp.journal_id IS NULL THEN '{}'::text[] ELSE ARRAY[p.doc_no] END) AS d ORDER BY d),
   CASE WHEN p.status = 'reversed' THEN p.reversal_doc_no ELSE '' END,
-  CASE WHEN p.status = 'reversed' THEN p.reversal_date ELSE '' END
+  CASE WHEN p.status = 'reversed' THEN p.reversal_date ELSE '' END,
+  p.branch_code
 FROM period p
 LEFT JOIN shared s ON s.invoice_key = p.invoice_key
 LEFT JOIN repeated rp ON rp.journal_id = p.journal_id AND rp.invoice_key = p.invoice_key
@@ -417,7 +421,7 @@ ORDER BY p.item->>'tax_invoice_date', p.doc_no, p.ord`, company, string(rawFilte
 		var rec VatRecord
 		var item []byte
 		var duplicates pq.StringArray
-		if err := rows.Scan(&rec.JournalID, &rec.DocNo, &rec.DocDate, &item, &duplicates, &rec.ReversalDocNo, &rec.ReversalDate); err != nil {
+		if err := rows.Scan(&rec.JournalID, &rec.DocNo, &rec.DocDate, &item, &duplicates, &rec.ReversalDocNo, &rec.ReversalDate, &rec.BranchCode); err != nil {
 			return nil, fmt.Errorf("scan vat record: %w", err)
 		}
 		if err := json.Unmarshal(item, &rec.SubledgerVat); err != nil {
@@ -454,7 +458,8 @@ WITH reversals AS (
     AND NOT COALESCE((rv.payload->>'isdeleted')::boolean, false)
     AND LEFT(rv.payload->>'date', 7) = $2
 )
-SELECT r.id, r.code, COALESCE(r.payload->>'date', ''), v.item, rv.reversal_doc_no, rv.reversal_date, rv.reversal_reason
+SELECT r.id, r.code, COALESCE(r.payload->>'date', ''), v.item, rv.reversal_doc_no, rv.reversal_date, rv.reversal_reason,
+  COALESCE(r.payload->>'branchcode', '')
 FROM reversals rv
 JOIN gl_records r ON r.company = $1 AND r.kind = 'journals' AND r.id = rv.original_id
   AND r.payload->>'status' = 'reversed' AND NOT COALESCE((r.payload->>'isdeleted')::boolean, false)
@@ -473,7 +478,7 @@ ORDER BY rv.reversal_date, rv.reversal_doc_no, tm.tax_month, v.ord`, company, fm
 	for rows.Next() {
 		var rec VatRecord
 		var item []byte
-		if err := rows.Scan(&rec.JournalID, &rec.DocNo, &rec.DocDate, &item, &rec.ReversalDocNo, &rec.ReversalDate, &rec.ReversalReason); err != nil {
+		if err := rows.Scan(&rec.JournalID, &rec.DocNo, &rec.DocDate, &item, &rec.ReversalDocNo, &rec.ReversalDate, &rec.ReversalReason, &rec.BranchCode); err != nil {
 			return nil, fmt.Errorf("scan vat cancellation: %w", err)
 		}
 		if err := json.Unmarshal(item, &rec.SubledgerVat); err != nil {

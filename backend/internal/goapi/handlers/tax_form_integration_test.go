@@ -379,4 +379,17 @@ func TestQueryCompanyHeaderTaxAddress(t *testing.T) {
 	if err != nil || missing.Code != "99" || missing.Name != "" {
 		t.Fatalf("missing company: %+v err=%v", missing, err)
 	}
+
+	// สถานประกอบการสำหรับรายงานภาษีซื้อ/ขายรายสาขา: เรียงตามเลขสาขา, 00000 = สำนักงานใหญ่, สาขาที่ปิดแล้วยังอยู่ (งวดเก่ามีรายการ)
+	centraldbtest.Exec(t, db, `INSERT INTO branches (holding_code, company_code, code, name, is_headquarters, is_active) VALUES
+		('rungrueng','01','00001','สาขาลาดหลุมแก้ว',false,false), ('rungrueng','01','00000','สำนักงานใหญ่',true,true),
+		('rungrueng','02','00000','สำนักงานใหญ่',true,true)`)
+	places, err := queryTaxEstablishments(ctx, db, "rungrueng", "01")
+	if err != nil || len(places) != 2 || places[0] != (TaxEstablishment{Code: "00000", Name: "สำนักงานใหญ่", IsHeadOffice: true}) ||
+		places[1] != (TaxEstablishment{Code: "00001", Name: "สาขาลาดหลุมแก้ว"}) {
+		t.Fatalf("establishments = %+v err=%v", places, err)
+	}
+	if none, err := queryTaxEstablishments(ctx, db, "rungrueng", "99"); err != nil || none == nil || len(none) != 0 {
+		t.Fatalf("no branches = %#v err=%v", none, err)
+	}
 }

@@ -107,6 +107,22 @@ func vatRecord(doc, invoice string, documentType int, base, zero, exempt, vat st
 	}}
 }
 
+// รายงานเป็นรายสถานประกอบการ (ม.87): เลือกสาขา = เฉพาะใบสำคัญของสาขานั้น (เลขสาขาเขียนแบบใดก็เทียบเป็น 5 หลัก); ว่าง = รวมทุกสาขา
+func TestVatRecordsOfBranch(t *testing.T) {
+	hq, b1, b1short := vatRecord("UV1", "IV001", 1, "100", "0", "0", "7"), vatRecord("UV2", "IV002", 1, "200", "0", "0", "14"), vatRecord("UV3", "IV003", 1, "300", "0", "0", "21")
+	hq.BranchCode, b1.BranchCode, b1short.BranchCode = "00000", "00001", "1"
+	all := []generalledger.VatRecord{hq, b1, b1short}
+	if got := vatRecordsOfBranch(all, ""); len(got) != 3 {
+		t.Fatalf("all establishments = %d", len(got))
+	}
+	if got := vatRecordsOfBranch(all, "00001"); len(got) != 2 || got[0].DocNo != "UV2" || got[1].DocNo != "UV3" {
+		t.Fatalf("branch 00001 = %+v", got)
+	}
+	if got := vatRecordsOfBranch(all, "00000"); len(got) != 1 || got[0].DocNo != "UV1" {
+		t.Fatalf("head office = %+v", got)
+	}
+}
+
 // ใบลดหนี้หักออก ใบเพิ่มหนี้บวกเพิ่ม และยอดรวมท้ายรายงาน = ผลบวกของแถว (ปัด 2 ตำแหน่งต่อรายการ)
 func TestBuildVatRegisterSignsAndTotals(t *testing.T) {
 	records := []generalledger.VatRecord{
@@ -131,6 +147,14 @@ func TestBuildVatRegisterSignsAndTotals(t *testing.T) {
 	}
 	if summary.AmountBeforeVat != "1400.11" || summary.VatAmount != "63.01" || summary.TotalAmount != "1463.12" {
 		t.Fatalf("summary = %+v", summary)
+	}
+	// ยอด 0% / ยกเว้นแยกช่อง (รวมอยู่ในมูลค่าแล้ว) — ใบลดหนี้ติดลบเหมือนช่องอื่น
+	if rows[1].ZeroAmount != "500.00" || rows[1].ExemptAmount != "0.00" || rows[0].ZeroAmount != "0.00" || summary.ZeroAmount != "500.00" || summary.ExemptAmount != "0.00" {
+		t.Fatalf("zero-rate split rows=%+v summary=%+v", rows[:2], summary)
+	}
+	if mixed, s := buildVatRegister([]generalledger.VatRecord{vatRecord("UV5", "CN002", 3, "100", "20", "30", "7")}); mixed[0].AmountBeforeVat != "-150.00" ||
+		mixed[0].ZeroAmount != "-20.00" || mixed[0].ExemptAmount != "-30.00" || s.ExemptAmount != "-30.00" {
+		t.Fatalf("credit note split = %+v %+v", mixed, s)
 	}
 	if page := pageVatRegisterRows(rows, 2, 3); len(page) != 1 || page[0].TaxInvoiceNo != "DN001" {
 		t.Fatalf("page = %+v", page)
@@ -258,6 +282,7 @@ func TestTaxReportErrorsFollowLanguage(t *testing.T) {
 		want                     string
 	}{
 		{"vat type en", "/", "en-US,en;q=0.9", `{"year":2026,"month":9,"type":"refund"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_TYPE", "tax_report_type_invalid", "en"},
+		{"vat branch th", "/", "th", `{"year":2026,"month":9,"type":"sale","branchcode":"สาขา1"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_BRANCH", "tax_report_branch_invalid", "th"},
 		{"vat view en", "/", "en", `{"year":2026,"month":9,"type":"sale","view":"deleted"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_VIEW", "tax_report_view_invalid", "en"},
 		{"vat summary sort en", "/", "en", `{"year":2026,"month":9,"sort":"amount"}`, TaxVatSummaryHandler, &taxReportTestUser, 400, "INVALID_SORT", "tax_report_sort_invalid", "en"},
 		{"vat summary period th", "/", "th", `{"year":2026,"month":0}`, TaxVatSummaryHandler, &taxReportTestUser, 400, "INVALID_PERIOD", "tax_form_period_invalid", "th"},
