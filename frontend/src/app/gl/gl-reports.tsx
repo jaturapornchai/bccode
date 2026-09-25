@@ -16,6 +16,8 @@ export async function fetchReport(name: string, filters: ReportFilters, page = 1
   return glRequest<GLReport>(`reports/${name}?${new URLSearchParams({ ...filters, ...(companywide ? { companywide: "true" } : {}), page: String(page), limit: String(limit), ...(snapshot === undefined ? {} : { snapshot: String(snapshot) }) })}`);
 }
 function reportRows(report: GLReport) { return report.rows ?? []; }
+// การ์ดยอดรวมเรียงตามลำดับคอลัมน์ (ผ่านบัญชี → ตัดยอด → คงเหลือ) ไม่ใช่ตามตัวอักษรของ key; key ที่ไม่ใช่คอลัมน์ต่อท้าย
+function totalRank(report: GLReport, key: string) { const index = report.columns.findIndex((column) => column.key === key); return index < 0 ? report.columns.length : index; }
 // ยอดคงค้างลูกหนี้/เจ้าหนี้/Statement เป็นยอด ณ วันที่ (backend อ่านแค่ to + branchcode) จึงไม่ต้องเลือกปีบัญชี
 const AS_OF_REPORTS: ReadonlySet<string> = new Set(["ar-outstanding", "ap-outstanding", "bank-unmatched"]);
 function localToday() {
@@ -265,7 +267,7 @@ export function ReportGrid({
   const max = amounts.reduce((largest, amount) => (amount < 0n ? -amount : amount) > largest ? (amount < 0n ? -amount : amount) : largest, 0n);
   return <div className="flex flex-col flex-1 min-h-0 gap-3">
     <div className="shrink-0 flex flex-col gap-2">{(report.warnings ?? []).map((warning, index) => <Notice key={index} text={warning} />)}</div>
-    {!!Object.keys(report.totals ?? {}).length && <div className="shrink-0 flex flex-wrap gap-2">{Object.entries(report.totals).map(([key, value]) => <div key={key} className="min-w-36 flex-1 rounded-xl border border-border bg-muted/40 p-3 shadow-sm"><div className="text-[0.9rem] text-muted-foreground">{report.columns.find((column) => column.key === key)?.label ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</div><div className="text-lg font-semibold tabular-nums">{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</div></div>)}</div>}
+    {!!Object.keys(report.totals ?? {}).length && <div className="shrink-0 flex flex-wrap gap-2">{Object.entries(report.totals).sort(([left], [right]) => totalRank(report, left) - totalRank(report, right)).map(([key, value]) => <div key={key} className="min-w-36 flex-1 rounded-xl border border-border bg-muted/40 p-3 shadow-sm"><div className="text-[0.9rem] text-muted-foreground">{report.columns.find((column) => column.key === key)?.label ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</div><div className="text-lg font-semibold tabular-nums">{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</div></div>)}</div>}
     {graphs && max > 0n && <div className="shrink-0 grid gap-2 rounded-xl border border-border p-3 shadow-sm" aria-label={tr("gl_balance_comparison_chart", "กราฟเปรียบเทียบยอดบัญชี")}>{reportRows(report).slice(0, 20).map((row, index) => <div key={index} className="grid gap-1"><div className="flex flex-wrap justify-between gap-2 text-[0.95rem]"><span>{row.name ?? row.accountname ?? row.month ?? row[report.columns.find((column) => !column.amount)?.key ?? ""] ?? tr("gl_item_x", "รายการ {0}").replace("{0}", String(index + 1))}</span><strong>{formatAmount(row[amountColumns[0]?.key] ?? "0")}</strong></div><div className="h-3 rounded-full bg-muted"><div className="h-3 rounded-full bg-primary" style={{ width: `${((amounts[index] < 0n ? -amounts[index] : amounts[index]) * 100n / max).toString()}%` }} /></div></div>)}</div>}
     <div className="shrink-0 flex justify-end">
       <ReportDisplayToolbar
