@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
 import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, evaluateStatementFormula, generateStarterTemplates } from "./general-ledger";
 
 const accounts = [ { ...emptyAccount(), accountcode: "A", names: [{ code: "th", name: "เงินสด" }] }, { ...emptyAccount(), accountcode: "B", names: [{ code: "th", name: "ทุน" }] } ];
@@ -44,6 +45,23 @@ describe("general ledger exact accounting helpers", () => {
     const childAcc = { ...defaultAcc, accountcode: "1101", parentaccountcode: "1100", level: 2 };
     expect(childAcc.level).toBe(2);
   });
+  it("lists budget period starts like the backend fiscalPeriodStarts (full, mid-month and short years)", () => {
+    expect(budgetPeriodStarts({ startdate: "2026-01-01", enddate: "2026-12-31" })).toEqual(["2026-01-01", "2026-02-01", "2026-03-01", "2026-04-01", "2026-05-01", "2026-06-01", "2026-07-01", "2026-08-01", "2026-09-01", "2026-10-01", "2026-11-01", "2026-12-01"]);
+    // ปีบัญชีเริ่ม ต.ค. ข้ามปีปฏิทิน และเริ่มกลางเดือน: งวด 1 = วันเริ่มจริง งวดต่อไปวันที่ 1
+    expect(budgetPeriodStarts({ startdate: "2025-10-15", enddate: "2026-09-30" }).slice(0, 4)).toEqual(["2025-10-15", "2025-11-01", "2025-12-01", "2026-01-01"]);
+    expect(budgetPeriodStarts({ startdate: "2025-10-15", enddate: "2026-09-30" })).toHaveLength(BUDGET_PERIODS);
+    // ปีแรกสั้น (เริ่ม เม.ย.) มี 9 งวด
+    expect(budgetPeriodStarts({ startdate: "2026-04-01", enddate: "2026-12-31" })).toHaveLength(9);
+    expect(budgetPeriodStarts(undefined)).toEqual([]);
+    expect(budgetPeriodStarts({ startdate: "", enddate: "" })).toEqual([]);
+  });
+
+  it("totals budget periods exactly with blanks as zero (no float drift)", () => {
+    expect(amountString(budgetPeriodsTotal(["0.1", "0.2", "", "33333.33"]), 2)).toBe("33333.63");
+    expect(budgetPeriodsTotal(Array(12).fill("8333.33"))).toBe(amountUnits("99999.96"));
+    expect(() => budgetPeriodsTotal(["1,000"])).toThrow();
+  });
+
   it("covers the exact 26 GL menu routes (Champ parity 2026-09-19 + 3 subledger reports 2026-09-25)", () => {
     expect(GL_MENU_ITEMS).toHaveLength(26);
     expect(new Set(GL_MENU_ITEMS.map((item) => item.route)).size).toBe(26);

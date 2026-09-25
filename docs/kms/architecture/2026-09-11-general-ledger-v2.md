@@ -86,7 +86,7 @@ Deploy สำรอง PostgreSQL (`pg_dumpall`) + config (`release.env.before`)
 | รายละเอียดผังบัญชี | `/gl/chartofaccounts` | เชื่อมหน้าจอและ API แล้ว |
 | บันทึกกลุ่มผังบัญชี | `/gl/account-groups` | เชื่อมหน้าจอและ API แล้ว |
 | บันทึกยอดสะสมประจำปี | `/gl/openingbalance` | เชื่อมหน้าจอและ API แล้ว |
-| กำหนดงบประมาณ | `/gl/budget` | API งบรายเดือนพร้อม (`budgets`); จอบันทึกรายเดือนยังไม่ทำ — เมนูขึ้น "ยังไม่พร้อม" (`frontend/src/lib/menu-screen-status.ts:34`) |
+| กำหนดงบประมาณ | `/gl/budget` | จองบรายเดือน `frontend/src/app/gl/gl-budgets.tsx` บน API `budgets` (สร้าง/แก้/ลบ/แบ่งงวด) |
 | กำหนดรูปแบบการเชื่อม | `/gl/account-mapping` | เชื่อมหน้าจอและ API แล้ว |
 | กำหนดกลุ่มบัญชีสินค้า | `/gl/product-account-groups` | เชื่อมหน้าจอและ API แล้ว |
 | ปีบัญชีและบัญชีปิดปี | `/gl/fiscal-years` | เชื่อมหน้าจอและ API แล้ว |

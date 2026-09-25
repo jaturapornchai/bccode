@@ -63,6 +63,19 @@ func TestBudgetLifecycleAndComparisonIntegration(t *testing.T) {
 	} else if u, ok := AsUserError(err); !ok || u.Code != "budget_branch_outside_session" {
 		t.Fatalf("branch session error = %v", err)
 	}
+	// the form's blank branch ("all branches") becomes the session branch, not an error (UAT 2026-09-25)
+	blank := b
+	blank.Code, blank.BranchCode = "BG-B2", ""
+	if _, err := f.execute(branchB2, Command{Resource: "budgets", Action: "create", Budget: &blank}); err != nil {
+		t.Fatalf("branch B2 blank-branch create: %v", err)
+	}
+	var b2Branch string
+	if err := f.db.QueryRowContext(f.ctx, `SELECT branch_code FROM gl_budgets WHERE company='C' AND code='BG-B2'`).Scan(&b2Branch); err != nil || b2Branch != "B2" {
+		t.Fatalf("PG branch of blank-branch budget = %q %v", b2Branch, err)
+	}
+	if _, err := f.execute(branchB2, Command{Resource: "budgets", Action: "delete", ID: "BG-B2", Version: 1}); err != nil {
+		t.Fatalf("branch B2 delete: %v", err)
+	}
 
 	// 1. create: header status defaults to open, 24 line rows (2 accounts × 12 months)
 	created := f.run(Command{Resource: "budgets", Action: "create", Budget: &b})
@@ -140,7 +153,7 @@ func TestBudgetLifecycleAndComparisonIntegration(t *testing.T) {
 		t.Fatalf("delete left %d rows (%v)", lines, err)
 	}
 	var events int
-	if err := f.db.QueryRowContext(f.ctx, `SELECT count(*) FROM gl_events WHERE company='C' AND EXISTS (SELECT 1 FROM jsonb_array_elements(payload->'changes') c WHERE c->>'kind'='budgets')`).Scan(&events); err != nil || events != 3 {
+	if err := f.db.QueryRowContext(f.ctx, `SELECT count(*) FROM gl_events WHERE company='C' AND EXISTS (SELECT 1 FROM jsonb_array_elements(payload->'changes') c WHERE c->>'kind'='budgets')`).Scan(&events); err != nil || events != 5 { // BG-2569 create/update/delete + BG-B2 create/delete
 		t.Fatalf("budget audit events = %d (%v)", events, err)
 	}
 	if err := f.store.Projection().Rebuild(f.ctx, f.scope); err != nil {

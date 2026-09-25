@@ -9,6 +9,25 @@ export type GLAccount = GLIdentity & {
   allowposting: boolean; isactive: boolean; accountgroup: string; iscash: boolean;
   level?: number;
 };
+/** งบประมาณรายเดือน (resource "budgets", ADR 2026-09-25-gl-monthly-budget): เงินเป็นข้อความทศนิยม 12 งวดต่อบัญชี */
+export type GLBudgetLine = { accountcode: string; accountname?: string; periods: string[]; total?: string };
+export type GLBudget = GLIdentity & { code: string; name: string; fiscalyear: string; branchcode: string; departmentcode: string; projectcode: string; status: "open" | "closed"; remark: string; lines?: GLBudgetLine[]; total?: string };
+export const BUDGET_PERIODS = 12;
+/** วันเริ่มของแต่ละงวดในปีบัญชี: งวด 1 = วันเริ่มปี งวดถัดไป = วันที่ 1 ของเดือนถัดไป ตัดงวดที่เริ่มหลังวันสิ้นปี (ตรงกับ fiscalPeriodStarts ใน backend budgets.go) */
+export function budgetPeriodStarts(year: Pick<GLFiscalYear, "startdate" | "enddate"> | undefined): string[] {
+  if (!year?.startdate || !year.enddate || !/^\d{4}-\d{2}-\d{2}$/.test(year.startdate)) return [];
+  const [startYear, startMonth] = year.startdate.split("-").map(Number);
+  const starts = [year.startdate];
+  for (let offset = 1; offset < BUDGET_PERIODS; offset++) {
+    const monthIndex = startMonth - 1 + offset;
+    const start = `${startYear + Math.floor(monthIndex / 12)}-${String((monthIndex % 12) + 1).padStart(2, "0")}-01`;
+    if (start > year.enddate) break;
+    starts.push(start);
+  }
+  return starts;
+}
+/** ผลรวมยอดงวดแบบทศนิยมตรง (BigInt) — ช่องว่างนับเป็นศูนย์ */
+export function budgetPeriodsTotal(periods: string[]): bigint { return periods.reduce((sum, value) => sum + amountUnits(blankAmountAsZero(value)), 0n); }
 export type GLFiscalYear = GLIdentity & {
   code: string; startdate: string; enddate: string; scale: number;
   retainedearningsaccount: string; profitlossaccount: string; isactive: boolean; closed: boolean;
@@ -51,7 +70,7 @@ export type GLResource = typeof GL_RESOURCES[number];
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
-  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook; journal?: GLJournal | Pick<GLJournal, "details">; statementtemplate?: GLStatementTemplate;
+  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched"] as const;

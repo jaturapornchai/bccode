@@ -285,6 +285,11 @@ func (s *PostgresStore) mutateBudget(ctx context.Context, tx *sql.Tx, scope Scop
 			return nil, errBudgetPayloadMissing
 		}
 		b := *cmd.Budget
+		// The new-budget form starts with no branch ("all branches"); like journals, a branch session's
+		// budget belongs to the session branch instead of being rejected (UAT 2026-09-25).
+		if b.BranchCode == "" {
+			b.BranchCode = scope.Branch
+		}
 		if err := s.validateBudget(ctx, tx, scope, b); err != nil {
 			return nil, err
 		}
@@ -321,6 +326,9 @@ func (s *PostgresStore) mutateBudget(ctx context.Context, tx *sql.Tx, scope Scop
 			return nil, errBudgetCodeImmutable
 		}
 		b.Code = old.Code
+		if b.BranchCode == "" {
+			b.BranchCode = scope.Branch
+		}
 		if err := s.validateBudget(ctx, tx, scope, b); err != nil {
 			return nil, err
 		}

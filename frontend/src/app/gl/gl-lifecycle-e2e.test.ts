@@ -86,7 +86,7 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       expect(GL_REPORTS).toContain("budgetcomparison");
     });
 
-    it("ensures GL module routes are connected (22 of 23; monthly budget entry screen pending)", () => {
+    it("ensures GL module routes are connected, including the monthly budget entry screen", () => {
       const glRoutes = [
         "/gl/chartofaccounts",
         "/gl/fiscal-years",
@@ -114,8 +114,8 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       for (const route of glRoutes) {
         expect(isMenuScreenPending(route)).toBe(false);
       }
-      // 2026-09-25: monthly budgets moved to their own API; the entry screen is the next step.
-      expect(isMenuScreenPending("/gl/budget")).toBe(true);
+      // 2026-09-25: monthly budget entry screen (gl-budgets.tsx) on the "budgets" API.
+      expect(isMenuScreenPending("/gl/budget")).toBe(false);
     });
 
     it("verifies account normalization and hierarchy constraints", () => {
