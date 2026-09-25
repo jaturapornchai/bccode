@@ -32,6 +32,7 @@ describe("goapi BFF allowlist", () => {
     "api/report/tax/wht",
     "api/report/debt/query",
     "api/report/tax/vat-register",
+    "api/report/tax/vat-summary",
     ...["catalog", "schema", "prefill", "compute", "save", "list", "load", "delete"].map((p) => `api/report/tax/form/${p}`),
   ])(
     "proxies POST %s to mainapi /goapi",

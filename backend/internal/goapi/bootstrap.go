@@ -354,6 +354,7 @@ func (s *GoAPIServer) RegisterRoutes(g *echo.Group, prefix string, cacher micros
 	authGroup.POST("/api/report/sales/by-document", handlers.SalesReportByDocumentHandler)
 	authGroup.POST("/api/report/sales/summary", handlers.SalesReportSummaryHandler)
 	authGroup.POST("/api/report/tax/vat-register", handlers.TaxVatRegisterHandler)
+	authGroup.POST("/api/report/tax/vat-summary", handlers.TaxVatSummaryHandler)
 	authGroup.POST("/api/report/tax/wht", handlers.TaxWithholdingHandler)
 	authGroup.POST("/api/report/tax/wht/certificate", handlers.WhtCertificateHandler)
 	// แบบยื่นภาษีของกรมสรรพากร (ภ.ง.ด./ภ.พ./ภ.ธ.) — ดึงยอดจาก GL, แก้ได้ทุกช่อง, บันทึกฉบับ, พิมพ์ลงแบบ PDF จริง

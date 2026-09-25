@@ -3,6 +3,7 @@ import {
   THAI_TAX_CONFIGS,
   countTaxIdIssues,
   fetchVatRegister,
+  fetchVatSummary,
   fetchWhtReport,
   getThaiTaxConfig,
   hasThirteenDigitTaxId,
@@ -40,6 +41,38 @@ describe("thai tax configs", () => {
       expect(isThaiTaxRoute(config.route)).toBe(true);
       expect(getThaiTaxConfig(config.route)).toEqual(config);
     });
+  });
+});
+
+describe("fetchVatSummary — รายงานสรุปยอดภาษี (Champ 5539) แสดงยอดจาก backend อย่างเดียว", () => {
+  it("map แถว/รวมรายวัน/ยอด ภ.พ.30 ข้อ 8-9; ช่องภาษีของอีกฝั่งคงว่าง; ยอดที่ไม่ใช่ string ทศนิยม = 0.00", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, {
+      status: "success",
+      data: [
+        { no: 1, taxdate: "2026-09-02", taxinvoiceno: "IV001", docno: "UV1", journalid: "J1", description: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxin: "", taxout: "70.00", balance: "-70.00" },
+        { no: 2, taxdate: "2026-09-02", taxinvoiceno: "PI001", docno: "SV1", journalid: "J2", description: "", taxin: "28.00", taxout: "", balance: 42 },
+      ],
+      days: [{ date: "2026-09-02", count: 2, taxin: "28.00", taxout: "70.00", net: "-42.00" }],
+      summary: { count: 2, taxin: "28.00", taxout: "70.00", net: "-42.00", taxpayable: "42.00", taxexcess: "0.00" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchVatSummary({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, sort: "date", language: "en" });
+    if (!result.ok) throw new Error(result.error);
+    expect(result.rows.map((r) => [r.taxin, r.taxout, r.balance])).toEqual([["", "70.00", "-70.00"], ["28.00", "", "0.00"]]);
+    expect(result.days).toEqual([{ date: "2026-09-02", count: 2, taxin: "28.00", taxout: "70.00", net: "-42.00" }]);
+    expect(result.totals).toMatchObject({ taxpayable: "42.00", taxexcess: "0.00", count: 2 });
+    expect(fetchMock).toHaveBeenCalledWith("/api/goapi/api/report/tax/vat-summary", expect.objectContaining({ method: "POST" }));
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(String(init.body))).toEqual({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, sort: "date" });
+  });
+
+  it("422 → ข้อความจาก backend ตามภาษาผู้ใช้; ไม่มีบริษัท → ไม่ยิง fetch", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(422, { success: false, code: "TOO_MANY_ROWS", message: "เกิน 5000 รายการ" })));
+    expect(await fetchVatSummary({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, sort: "date" })).toEqual({ ok: false, error: "load_failed", message: "เกิน 5000 รายการ" });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await fetchVatSummary({ holdingcode: "", businesscode: "B001", year: 2026, month: 9, sort: "date" })).toEqual({ ok: false, error: "company_required" });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

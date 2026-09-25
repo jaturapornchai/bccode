@@ -13,6 +13,7 @@ export const CUSTOM_MENU_SCREEN_ROUTES = [
   "/shortcuts", "/product",
   "/productbarcode", "/productbarcodeshelf", "/pricehistory",
   "/datamodelgraph", "/inventory/product-sets", "/productset",
+  "/report/vatsummary",
 ] as const;
 
 export const FIXED_ASSET_ROUTES = [

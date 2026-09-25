@@ -129,6 +129,7 @@ import { isErpTransactionRoute } from "@/lib/erp-transaction";
 import { ErpCrudWorkbench } from "@/app/crud/erp-crud-workbench";
 import { isThaiTaxRoute } from "@/lib/thai-tax";
 import { TaxFilingWorkbench } from "@/app/tax/tax-filing-workbench";
+import { VatSummaryReport } from "@/app/tax/vat-summary-report";
 import { TaxFormEditor } from "@/app/tax/tax-form-editor";
 import { taxFormRouteCode } from "@/lib/tax-forms";
 import { isErpReportRoute } from "@/lib/erp-reports";
@@ -2921,6 +2922,10 @@ function WorkTabPanel({
   const taxFormCode = taxFormRouteCode(activeTab.route);
   if (taxFormCode !== undefined) {
     return <TaxFormEditor key={activeTab.route} language={language} initialCode={taxFormCode} holdingcode={workspace?.shop.holdingcode ?? ""} businesscode={workspace?.company?.code ?? ""} />;
+  }
+
+  if (activeTab.route === "/report/vatsummary") {
+    return <VatSummaryReport language={language} holdingcode={workspace?.shop.holdingcode ?? ""} businesscode={workspace?.company?.code ?? ""} />;
   }
 
   if (isThaiTaxRoute(activeTab.route)) {

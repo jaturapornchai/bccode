@@ -168,6 +168,7 @@ export interface VatRegisterSummary {
 }
 
 const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
+const VAT_SUMMARY_PATH = "/api/goapi/api/report/tax/vat-summary";
 const WHT_REPORT_PATH = "/api/goapi/api/report/tax/wht";
 
 export interface WhtReportRow {
@@ -394,7 +395,7 @@ function toMoney(value: unknown): string {
   return typeof value === "string" && MONEY_TEXT.test(value.trim()) ? value.trim() : "0.00";
 }
 
-// ยอดสุทธิว่างจาก backend = ยังไม่รู้ฐานภาษี (แถวประมาณที่แบ่งฐานไม่ได้) ไม่ใช่ 0 — คงว่างให้จอแสดง "—" แทนเลขติดลบ/ศูนย์ที่ไม่มีความหมาย
+// ค่าว่างจาก backend = ไม่มีค่า (ยอดสุทธิที่ยังไม่รู้ฐาน / ช่องภาษีซื้อ-ขายของอีกฝั่งในรายงานสรุปยอดภาษี) ไม่ใช่ 0 — คงว่างให้จอแสดง "—" แทนเลขติดลบ/ศูนย์ที่ไม่มีความหมาย
 function toMoneyOrBlank(value: unknown): string {
   return typeof value === "string" && value.trim() === "" ? "" : toMoney(value);
 }
@@ -592,6 +593,72 @@ export async function fetchVatRegister(params: {
 }
 
 export type VatRegisterView = "reversed_later";
+
+/** รายงานสรุปยอดภาษี (Champ 5539): ยอดทุกช่องเป็น string ทศนิยมจาก backend — ช่องภาษีซื้อ/ขายว่าง = แถวของอีกฝั่ง */
+export interface VatSummaryRow {
+  no: number;
+  taxdate: string;
+  taxinvoiceno: string;
+  docno: string;
+  journalid: string;
+  description: string;
+  taxin: string;
+  taxout: string;
+  balance: string;
+}
+export interface VatSummaryDay { date: string; count: number; taxin: string; taxout: string; net: string }
+export interface VatSummaryTotals { count: number; taxin: string; taxout: string; net: string; taxpayable: string; taxexcess: string }
+export type VatSummarySort = "date" | "taxno" | "docno";
+export type VatSummaryResult =
+  | { ok: true; rows: VatSummaryRow[]; days: VatSummaryDay[]; totals: VatSummaryTotals }
+  | { ok: false; error: string; message?: string };
+
+/** POST /api/report/tax/vat-summary — backend คำนวณยอดคงเหลือ รวมรายวัน และ ภ.พ.30 ข้อ 8/9 ทั้งหมด (จอแสดงอย่างเดียว) */
+export async function fetchVatSummary(params: {
+  holdingcode: string;
+  businesscode: string;
+  year: number;
+  month: number;
+  sort: VatSummarySort;
+  language?: LanguageCode;
+}): Promise<VatSummaryResult> {
+  if (!params.holdingcode || !params.businesscode) return { ok: false, error: "company_required" };
+  const { language, ...body } = params;
+  const res = await apiFetch(VAT_SUMMARY_PATH, { method: "POST", headers: taxRequestHeaders(language), body: JSON.stringify(body) }).catch(() => null);
+  if (res === null) return { ok: false, error: "connection_error" };
+  if (res.status === 401 || res.status === 403) return { ok: false, error: "unauthorized" };
+  const payload: unknown = await res.json().catch(() => null);
+  if (!res.ok || !isRecord(payload) || !Array.isArray(payload.data)) {
+    // ข้อความจาก backend ตามภาษาผู้ใช้ (เช่น รายการเกินเพดาน) แสดงตรง ๆ
+    return { ok: false, error: "load_failed", message: isRecord(payload) ? toText(payload.message) || undefined : undefined };
+  }
+  const summary = isRecord(payload.summary) ? payload.summary : {};
+  return {
+    ok: true,
+    rows: payload.data.filter(isRecord).map((r) => ({
+      no: toCount(r.no, 0),
+      taxdate: toText(r.taxdate),
+      taxinvoiceno: toText(r.taxinvoiceno),
+      docno: toText(r.docno),
+      journalid: toText(r.journalid),
+      description: toText(r.description),
+      taxin: toMoneyOrBlank(r.taxin),
+      taxout: toMoneyOrBlank(r.taxout),
+      balance: toMoney(r.balance),
+    })),
+    days: (Array.isArray(payload.days) ? payload.days : []).filter(isRecord).map((d) => ({
+      date: toText(d.date), count: toCount(d.count, 0), taxin: toMoney(d.taxin), taxout: toMoney(d.taxout), net: toMoney(d.net),
+    })),
+    totals: {
+      count: toCount(summary.count, 0),
+      taxin: toMoney(summary.taxin),
+      taxout: toMoney(summary.taxout),
+      net: toMoney(summary.net),
+      taxpayable: toMoney(summary.taxpayable),
+      taxexcess: toMoney(summary.taxexcess),
+    },
+  };
+}
 
 // 2026-09-16: every user-visible string above also lives in languages.tsv,
 // keyed by `<code>.<part>`. The literals stay as the offline fallback.

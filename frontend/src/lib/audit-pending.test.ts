@@ -18,7 +18,8 @@ describe("ERP Menu Completeness Audit", () => {
       }
     }
     // 2026-09-25: /gl/budget back to pending — monthly budget API ready, entry screen not built yet.
-    expect(pendingList.length).toBe(21);
+    // 2026-09-25: /report/vatsummary (Champ 5539) connected via /api/report/tax/vat-summary.
+    expect(pendingList.length).toBe(20);
   });
 });
 

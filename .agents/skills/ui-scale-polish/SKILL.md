@@ -1542,3 +1542,16 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 - **เหตุผล (Root Cause & Rationale)**: ปีที่ฝังไว้ทำให้ปีถัดไปผ่านรายการผิดปีเงียบ ๆ; คน 40+ ต้องเห็นข้อความเดียวใกล้ช่องที่ผิดและถูกพาไปแก้ (ต่อจาก 8.24/8.43); ปี พ.ศ./ค.ศ. สับสนบ่อยจึงต้องบอกชนิดปีในป้าย
 - **วิธีตรวจ**: Demo → โอนข้อมูลเข้าสู่ GL: ปี/งวด = วันนี้; ใส่ปี 2569 → กล่องแดงเดียว + โฟกัสช่องปี; ใส่วันที่นอกปีบัญชี → โฟกัสช่องวันที่; `document.querySelectorAll('[role=alert]').length === 1`; ไม่มี `alert()` ตอนล้มเหลว; dark mode อ่านออก
 - **อ้างอิง (Reference Implementation)**: `frontend/src/app/asset/fixed-assets-screen.tsx` (state :52, focus effect :230, สรุปใน dialog :235, ส่ง date/docno :258, ช่องวันที่ :1002, กล่อง alert :1030); backend ค่าเริ่มต้นวันที่ `backend/internal/fixedasset/gl_fiscal_year.go` `depreciationVoucherDate`; บั๊ก `docs/kms/bugs/2026-09-25-fa-repost-after-reversal-replays-reversed-journal.md`
+
+## 8.48 จอรายงานยอดสะสม (สรุปภาษีซื้อ-ขาย): ทุกตัวเลขมาจาก backend, แถวรวมรายวันแทรกท้ายวัน, กันผลลัพธ์เก่าทับของใหม่ (2026-09-25, Champ 5539)
+
+- **แบบแผนใหม่ (New Standard Pattern)**:
+  - backend คืน `data` (แถว + `balance` สะสมเป็น decimal string), `days` (รวมรายวัน) และ `summary` (ยอดทั้งงวด + ข้อ 8/9 ภ.พ.30) — จอ **ไม่บวกเลขเอง** แค่วาง; ช่องจำนวนเงินว่าง = `""` แสดงเป็นช่องว่าง ไม่ใช่ `0.00`
+  - แถวรวมรายวัน (`data-row="day-total"`) แทรกหลังแถวสุดท้ายของวันนั้น โดยจับคู่ `days[].date` กับ `row.taxdate`; ส่ง `days` มาเฉพาะเรียงตามวันที่ — เรียงแบบอื่นไม่มีแถวรวมรายวัน; รวมทั้งงวดอยู่ใน `<tfoot data-row="grand-total">`
+  - ผลสรุปที่มีผลทางภาษี (ภาษีที่ต้องชำระ / ชำระเกิน) แยกเป็นการ์ด `data-field="taxpayable"` / `"taxexcess"` ใต้ตาราง พร้อมป้ายเลขข้อตามแบบ ภ.พ.30
+  - เปลี่ยนเดือน/ปี/การเรียงแล้วโหลดใหม่ทันที; กันคำตอบเก่ามาทับด้วย `requestRef` (เลขคำขอเพิ่มทุกครั้ง, คำตอบที่เลขไม่ตรงทิ้ง)
+  - 3 สถานะชัดเจน: กำลังโหลด / ผิดพลาด (ข้อความจาก backend ตามภาษา) / ไม่มีรายการ (`tax_check_no_rows`) — ไม่แสดงตารางว่าง
+- **กับดัก/สิ่งที่ห้ามทำซ้ำ (Anti-pattern)**: คำนวณยอดคงเหลือ/ยอดรวมใน browser; ลอกบรรทัดรวมของ Champ ที่บวกยอดคงเหลือสะสมทุกแถว (ตัวเลขไม่มีความหมาย); ใช้ `postApi` ที่ทิ้งข้อความ error ของ backend (ใช้ `apiFetch` ตรงแบบ `fetchVatSummary`)
+- **เหตุผล (Root Cause & Rationale)**: กฎ backend-first + ยอดต้องตรงกับ ภ.พ.30 ที่ backend คำนวณ (ปัดรายใบแบบเดียวกัน) — ถ้าจอบวกเองจะคลาดเศษสตางค์ได้; ผู้ใช้เปลี่ยนงวดเร็ว ๆ แล้วเห็นตัวเลขของงวดก่อน = ยื่นผิด
+- **วิธีตรวจ**: Demo → บัญชีแยกประเภท › รายงานสรุปยอดภาษี → เลือกงวดที่มีทั้งซื้อและขาย → ยอดรวมภาษีขาย/ซื้อ และข้อ 8/9 ต้องเท่าจอ ภ.พ.30 ของงวดเดียวกัน; เปลี่ยนการเรียงเป็นเลขที่เอกสาร → แถวรวมรายวันหาย
+- **อ้างอิง (Reference Implementation)**: `frontend/src/app/tax/vat-summary-report.tsx` (requestRef :40, แถวรวมรายวัน :161, tfoot :176, การ์ด :189); `fetchVatSummary` ใน `frontend/src/lib/thai-tax.ts`; backend `backend/internal/goapi/handlers/tax_vat_summary.go`

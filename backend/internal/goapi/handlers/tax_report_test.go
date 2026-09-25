@@ -259,6 +259,8 @@ func TestTaxReportErrorsFollowLanguage(t *testing.T) {
 	}{
 		{"vat type en", "/", "en-US,en;q=0.9", `{"year":2026,"month":9,"type":"refund"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_TYPE", "tax_report_type_invalid", "en"},
 		{"vat view en", "/", "en", `{"year":2026,"month":9,"type":"sale","view":"deleted"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_VIEW", "tax_report_view_invalid", "en"},
+		{"vat summary sort en", "/", "en", `{"year":2026,"month":9,"sort":"amount"}`, TaxVatSummaryHandler, &taxReportTestUser, 400, "INVALID_SORT", "tax_report_sort_invalid", "en"},
+		{"vat summary period th", "/", "th", `{"year":2026,"month":0}`, TaxVatSummaryHandler, &taxReportTestUser, 400, "INVALID_PERIOD", "tax_form_period_invalid", "th"},
 		{"vat period th default", "/", "", `{"year":2026,"month":13,"type":"sale"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_PERIOD", "tax_form_period_invalid", "th"},
 		{"wht direction query lang wins", "/?lang=en", "th", `{"year":2026,"month":9,"direction":"sideways"}`, TaxWithholdingHandler, &taxReportTestUser, 400, "INVALID_TYPE", "tax_report_direction_invalid", "en"},
 		// ภ.ง.ด.1 = เงินเดือน อยู่นอกขอบเขตผลิตภัณฑ์ (AGENTS.md) ต้องถูกปฏิเสธ

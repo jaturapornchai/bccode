@@ -15,6 +15,7 @@ const GET_ALLOWED_EXACT = ["api/reports/inventory-valuation"];
 
 const POST_ALLOWED_EXACT = [
   "api/report/tax/vat-register",
+  "api/report/tax/vat-summary",
   "api/report/tax/wht",
   "api/report/tax/wht/certificate",
   "api/report/tax/form/catalog",

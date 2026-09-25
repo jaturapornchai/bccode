@@ -21,7 +21,6 @@ describe("menu screen availability", () => {
     "/report/maxstock", "/report/nomovementstock", "/report/stockcountvariance",
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
     "/report/depreciationmonthly", "/report/depreciationyearly", "/report/depreciationpnd50", "/report/assetdisposal",
-    "/report/vatsummary",
     // 2026-09-25: monthly budgets have an API but no entry screen yet (ADR 2026-09-25-gl-monthly-budget)
     "/gl/budget",
   ];

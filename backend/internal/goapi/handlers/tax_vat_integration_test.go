@@ -86,6 +86,10 @@ func TestVatReportsReadRecordedVat(t *testing.T) {
 			t.Fatalf("pp30 = %v want %v", got, want)
 		}
 	}
+	// รายงานสรุปยอดภาษี (Champ 5539) อ่านชุดเดียวกับ ภ.พ.30 → ข้อ 5/7 เท่ากัน, ข้อ 8 = 6,930 − 3,500
+	if _, _, summary := buildVatSummary(purchases, sales, "", "th"); summary.TaxOut != "6930.00" || summary.TaxIn != "3500.00" || summary.TaxPayable != "3430.00" || summary.Count != 3 {
+		t.Fatalf("vat summary = %+v", summary)
+	}
 
 	// บริษัทอื่น/งวดอื่นต้องว่าง (holding ใหม่ที่ยังไม่มีรายการภาษีเห็นรายงานว่าง ไม่ใช่ error)
 	if other, err := generalledger.VatRecordsForPeriod(ctx, db, "NOPE", 2026, 9, 2); err != nil || len(other) != 0 {
