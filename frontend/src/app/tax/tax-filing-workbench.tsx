@@ -82,6 +82,9 @@ export function TaxFilingWorkbench({
   const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"table" | "50twi">(() => (config.formType === "50twi" ? "50twi" : "table"));
+  // ภาษีซื้อ/ขาย: ทะเบียนตามงวดภาษี หรือใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (ยุบ Champ 5522/5523 เป็นแท็บของจอเดิม)
+  const [vatView, setVatView] = useState<"register" | "reversed_later">("register");
+  const [vatNote, setVatNote] = useState<string>("");
 
   const [selectedRecord, setSelectedRecord] = useState<ThaiTaxRecord | null>(null);
   const [selectedWhtRow, setSelectedWhtRow] = useState<WhtReportRow | null>(null);
@@ -123,8 +126,14 @@ export function TaxFilingWorkbench({
         const period = { holdingcode, businesscode, year: selectedYear, month: selectedMonth, limit: REGISTER_PAGE_LIMIT };
         const registerType: "sale" | "purchase" =
           config.formType === "vat_buy" ? "purchase" : "sale";
-        const registerResult = await fetchVatRegister({ ...period, type: registerType, language: languageRef.current });
+        const registerResult = await fetchVatRegister({
+          ...period,
+          type: registerType,
+          view: vatView === "reversed_later" ? "reversed_later" : undefined,
+          language: languageRef.current,
+        });
         const periodSummary = { total: registerResult.total, summary: registerResult.summary };
+        setVatNote(registerResult.note);
 
         setRecords(registerResult.records);
         if (registerType === "sale") {
@@ -161,11 +170,12 @@ export function TaxFilingWorkbench({
       setSalesSummary(null);
       setPurchaseSummary(null);
       setWhtSummary(null);
+      setVatNote("");
       setErrorKey("connection_error");
     } finally {
       setLoading(false);
     }
-  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth]);
+  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView]);
 
   useEffect(() => {
     void loadData();
@@ -211,6 +221,8 @@ export function TaxFilingWorkbench({
   const showDuplicateNotice = isVatType && !loading && !errorKey && totals.duplicates > 0;
 
   const canExport = !loading && !errorKey && filteredRecords.length > 0;
+  // หมายเหตุของรายงานจาก backend ในภาษาผู้ใช้ (ภาษีหัก ณ ที่จ่าย / ภาษีซื้อขายที่กลับรายการข้ามงวด)
+  const reportNote = isWhtType ? whtSummary?.note ?? "" : vatNote;
 
   // backend ส่งแถวไม่เกิน REGISTER_PAGE_LIMIT แต่ total/summary เป็นของทั้งงวด — ต้องบอกเมื่อแถวที่เห็นไม่ครบ
   const isTruncated = !loading && !errorKey && records.length < totals.count;
@@ -290,6 +302,30 @@ export function TaxFilingWorkbench({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* ภาษีซื้อ/ขาย: ทะเบียนตามงวด + ใบที่ยกเลิกข้ามงวด (Champ รายงานภาษีซื้อ/ขายที่ยกเลิกข้ามงวด) */}
+          {isVatType && (
+            <>
+              <Button
+                variant={vatView === "register" ? "default" : "outline"}
+                aria-pressed={vatView === "register"}
+                onClick={() => setVatView("register")}
+                className="gap-2 shadow-sm font-medium"
+              >
+                <Receipt className="h-4 w-4" aria-hidden />
+                {tr("ops_table", "ทะเบียนภาษี")}
+              </Button>
+              <Button
+                variant={vatView === "reversed_later" ? "default" : "outline"}
+                aria-pressed={vatView === "reversed_later"}
+                onClick={() => setVatView("reversed_later")}
+                className="gap-2 shadow-sm font-medium"
+              >
+                <AlertTriangle className="h-4 w-4" aria-hidden />
+                {tr("tax_vat_tab_cross_period", "ยกเลิกข้ามงวด")}
+              </Button>
+            </>
+          )}
+
           {/* Action buttons for WHT (PND.3 / PND.53 / 50 Twi) */}
           {isWhtType && (
             <>
@@ -471,10 +507,10 @@ export function TaxFilingWorkbench({
             </span>
           </div>
         </div>
-      ) : whtSummary?.note ? (
-        <div role="status" className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 print:hidden">
+      ) : reportNote ? (
+        <div role="status" data-field="report-note" className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 print:hidden">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{whtSummary.note}</span>
+          <span>{reportNote}</span>
         </div>
       ) : null}
 
@@ -502,7 +538,11 @@ export function TaxFilingWorkbench({
           <div className="border-b bg-muted/40 p-4 flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-base font-bold text-foreground">
-                {isWhtType ? "ทะเบียนรายการภาษีเงินได้หัก ณ ที่จ่าย" : "ทะเบียนรายการใบกำกับภาษี"}
+                {isWhtType
+                  ? tr("tax_wht_register_heading", "ทะเบียนรายการภาษีเงินได้หัก ณ ที่จ่าย")
+                  : vatView === "reversed_later"
+                    ? tr("tax_vat_cross_period_heading", "ใบกำกับภาษีที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้")
+                    : tr("tax_vat_register_heading", "ทะเบียนรายการใบกำกับภาษี")}
               </h2>
               <p className="text-xs text-muted-foreground">
                 ประจำเดือน {monthNamesTh[selectedMonth - 1]} พ.ศ. {selectedYear + 543} (จำนวน {filteredRecords.length} รายการ)

@@ -317,3 +317,58 @@ func TestWithholdingReportReversalsAndForms2026_09_24(t *testing.T) {
 		t.Fatalf("PND53 prefill notes = %+v", notes)
 	}
 }
+
+// ภาษีขายที่กลับรายการหลังงวด (ส.ค. → กลับ 3 ก.ย.): ภ.พ.30 ส.ค. ยังรวมยอดพร้อมหมายเหตุ ม.83/4, ภ.พ.30 ก.ย. ไม่หักแต่เตือนให้ดูแท็บยกเลิกข้ามงวด,
+// มุมมองยกเลิกข้ามงวดของ ก.ย. แสดงงวดเดิม เลขที่ใบกลับรายการ และเหตุผล
+func TestVatReversedAfterPeriodFormsAndView(t *testing.T) {
+	const company = "VATREV"
+	db, exec := openTaxReviewDB(t, company)
+	ctx := context.Background()
+	const buyer = `"partner_name":"บริษัท หอมกรุ่น คอฟฟี่ แอนด์ เบเกอรี่ จำกัด","partner_tax_id":"0105558012349","partner_branch_no":"00000"`
+	sale := func(id, invoice, base, vat string) string {
+		return `{"id":"` + id + `","tax_type":2,"document_type":1,"tax_invoice_no":"` + invoice + `","tax_invoice_date":"2026-08-20","tax_period_year":2026,"tax_period_month":8,` +
+			buyer + `,"base_amount":"` + base + `","zero_rate_amount":"0","exempt_amount":"0","vat_rate":"7","vat_amount":"` + vat + `"}`
+	}
+	insert := func(id, docNo, date, status, extra string) {
+		exec(`INSERT INTO gl_records(company,kind,id,code,version,payload) VALUES($1,'journals',$2,$3,1,$4::jsonb)`, company, id, docNo,
+			`{"docno":"`+docNo+`","date":"`+date+`","status":"`+status+`"`+extra+`}`)
+	}
+	insert("J1", "UV6908-001", "2026-08-20", "reversed", `,"kind":"manual","details":{"vats":[`+sale("S1", "IV6908-001", "1000", "70")+`]}`)
+	insert("J2", "REV-UV6908-001", "2026-09-03", "posted", `,"kind":"reversal","reversalof":"J1","reason":"ออกใบกำกับภาษีผิดราย"`)
+	insert("J3", "UV6908-002", "2026-08-25", "posted", `,"kind":"manual","details":{"vats":[`+sale("S3", "IV6908-002", "500", "35")+`]}`)
+
+	pp30 := func(month int) (map[string]int, string) {
+		t.Helper()
+		f, err := newFormFiller("pp30")
+		if err != nil {
+			t.Fatal(err)
+		}
+		notes, err := fillVatForm(ctx, db, company, 2026, month, f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := map[string]int{}
+		for _, n := range notes {
+			got[n.Key] = n.Count
+		}
+		return got, f.values["output_tax"]
+	}
+	if notes, output := pp30(8); output != "105.00" || notes["tax_form_note_vat_reversed_later"] != 1 || notes["tax_form_note_vat_cross_period_cancel"] != 0 {
+		t.Fatalf("PP30 Aug output=%s notes=%v", output, notes)
+	}
+	if notes, output := pp30(9); output != "" && output != "0.00" || notes["tax_form_note_vat_cross_period_cancel"] != 1 || notes["tax_form_note_vat_reversed_later"] != 0 {
+		t.Fatalf("PP30 Sep output=%q notes=%v", output, notes)
+	}
+
+	cancelled, err := generalledger.VatCrossPeriodCancellations(ctx, db, company, 2026, 9, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, summary := buildVatRegister(cancelled)
+	if len(rows) != 1 || rows[0].TaxInvoiceNo != "IV6908-001" || rows[0].TaxMonth != "2026-08" || rows[0].ReversalDocNo != "REV-UV6908-001" || summary.VatAmount != "70.00" {
+		t.Fatalf("cross-period rows = %+v summary = %+v", rows, summary)
+	}
+	if note := vatRegisterRowNote(vatViewReversedLater, rows[0], "th"); note != "ยื่นในงวด สิงหาคม 2569 — กลับรายการด้วยใบ REV-UV6908-001 — ออกใบกำกับภาษีผิดราย" {
+		t.Fatalf("cross-period row note = %q", note)
+	}
+}

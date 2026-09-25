@@ -145,6 +145,9 @@ const CHAMP_SEARCH_ALIASES: Record<string, string[]> = {
   "stock-transfer-request": ["ใบขอโอนสินค้า"],
   "temporary-receipt": ["ใบเสร็จชั่วคราว"],
   "trial-balance": ["งบทดลอง"],
+  // Champ 5522/5523 ยุบเป็นแท็บ "ยกเลิกข้ามงวด" ในจอรายงานภาษีซื้อ/ขาย (ADR 2026-09-19 ลดเมนูซ้ำ)
+  "vat-buy": ["รายงานภาษีซื้อที่ยกเลิกข้ามงวด"],
+  "vat-sale": ["รายงานภาษีขายที่ยกเลิกข้ามงวด"],
   "withholding-tax-deduction": ["พิมพ์ภาษีหัก ณ ที่จ่าย (ภ.ง.ด. 3,ภ.ง.ด. 53)"],
   "withholding-tax-received": ["ทะเบียนถูกหัก ณ ที่จ่าย"],
   "withholding-tax-report": ["รายงานภาษีหัก ณ ที่จ่าย (ภ.ง.ด. 3)", "รายงานภาษีหัก ณ ที่จ่าย (ภ.ง.ด. 53)"],

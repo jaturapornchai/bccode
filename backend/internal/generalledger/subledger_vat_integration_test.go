@@ -176,3 +176,78 @@ func TestPostgresVatRecordsForPeriod(t *testing.T) {
 		t.Fatal("month 13 must be rejected")
 	}
 }
+
+// ใบที่กลับรายการหลังงวดภาษี (Champ CancelOutPeriod): ยังอยู่ในงวดเดิมพร้อมเลขที่/วันที่ใบกลับรายการ
+// และอยู่ในมุมมองยกเลิกข้ามงวดของเดือนที่กลับรายการ; กลับภายในงวดเดียวกัน = หายทั้งสองที่; ข้ามปี ธ.ค. → ม.ค. ใช้กติกาเดียวกัน
+func TestPostgresVatReversedAfterTaxPeriod(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	create := func(doc, date, year string, vats ...SubledgerVat) Journal {
+		t.Helper()
+		j := Journal{DocNo: doc, Date: date, BookCode: "JV", FiscalYear: year, Description: "ขายวัสดุก่อสร้าง " + doc, Kind: "manual", BranchCode: "B1",
+			Lines:   []Line{{AccountCode: "1000", Debit: "1000", Credit: "0"}, {AccountCode: "4000", Debit: "0", Credit: "1000"}},
+			Details: &JournalDetails{Vats: vats}}
+		return f.post(f.journal(f.run(Command{Resource: "journals", Action: "create", Journal: &j}).ID))
+	}
+	reverse := func(j Journal, doc, date string) {
+		t.Helper()
+		f.run(Command{Resource: "journals", Action: "reverse", ID: j.ID, Version: j.Version, DocNo: doc, Date: date, Reason: "ออกใบกำกับภาษีผิดราย"})
+	}
+	// X1 ขาย ม.ค. 2 ใบกำกับ กลับรายการ 10 ก.พ. (หลังงวด); X2 ขาย ม.ค. กลับ 31 ม.ค. (ในงวด)
+	reverse(create("JV-X1", "2026-01-10", "2026",
+		vatItem("S1", 2, 1, "IV-X1A", "2026-01-10", 2026, 1, 0, "1000", nil),
+		vatItem("S2", 2, 1, "IV-X1B", "2026-01-10", 2026, 1, 0, "200", nil)), "REV-X1", "2026-02-10")
+	reverse(create("JV-X2", "2026-01-12", "2026", vatItem("S3", 2, 1, "IV-X2", "2026-01-12", 2026, 1, 0, "300", nil)), "REV-X2", "2026-01-31")
+	// X3 ซื้อ: ใช้สิทธิ ม.ค. + ใช้สิทธิ ก.พ. + รอใช้สิทธิ + ต้องห้าม ม.ค. กลับรายการ 15 ก.พ. (มุมมองยกเลิกข้ามงวดมีเฉพาะที่ใช้สิทธิ)
+	reverse(create("JV-X3", "2026-01-20", "2026",
+		vatItem("P1", 1, 1, "PI-X3A", "2026-01-20", 2026, 1, 1, "400", nil),
+		vatItem("P2", 1, 1, "PI-X3B", "2026-01-20", 2026, 2, 1, "500", nil),
+		vatItem("P3", 1, 1, "PI-X3C", "2026-01-20", 0, 0, 3, "600", nil),
+		vatItem("P4", 1, 1, "PI-X3D", "2026-01-20", 2026, 1, 2, "800", nil)), "REV-X3", "2026-02-15")
+	// X4 บันทึกใบกำกับ IV-X1A ใหม่ในงวด ม.ค. หลังกลับรายการ → ใบเดิมกับใบใหม่เตือนซ้ำกัน (ยื่นแล้ว + ยื่นเพิ่มเติม ต้องตรวจเอง)
+	create("JV-X4", "2026-02-11", "2026", vatItem("S4", 2, 1, "IV-X1A", "2026-01-10", 2026, 1, 0, "1000", nil))
+	// X5 ขาย ธ.ค. 2569 กลับรายการ 5 ม.ค. ปีถัดไป
+	reverse(create("JV-X5", "2026-12-20", "2026", vatItem("S5", 2, 1, "IV-X5", "2026-12-20", 2026, 12, 0, "700", nil)), "REV-X5", "2027-01-05")
+
+	ctx := context.Background()
+	describe := func(records []VatRecord, err error) string {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := []string{}
+		for _, r := range records {
+			s := r.DocNo + ":" + r.TaxInvoiceNo
+			if r.ReversalDocNo != "" {
+				s += "<" + r.ReversalDocNo + "@" + r.ReversalDate
+			}
+			if r.ReversalReason != "" {
+				s += "!" + r.ReversalReason
+			}
+			if len(r.DuplicateDocNos) > 0 {
+				s += "=" + strings.Join(r.DuplicateDocNos, "+")
+			}
+			out = append(out, s)
+		}
+		return strings.Join(out, ",")
+	}
+	check := func(name, got, want string) {
+		t.Helper()
+		if got != want {
+			t.Fatalf("%s:\n got %s\nwant %s", name, got, want)
+		}
+	}
+	check("sale Jan", describe(VatRecordsForPeriod(ctx, f.db, "C", 2026, 1, 2)),
+		"JV-X1:IV-X1A<REV-X1@2026-02-10=JV-X4,JV-X1:IV-X1B<REV-X1@2026-02-10,JV-X4:IV-X1A=JV-X1")
+	check("sale Feb", describe(VatRecordsForPeriod(ctx, f.db, "C", 2026, 2, 2)), "")
+	check("sale cancelled Feb", describe(VatCrossPeriodCancellations(ctx, f.db, "C", 2026, 2, 2)),
+		"JV-X1:IV-X1A<REV-X1@2026-02-10!ออกใบกำกับภาษีผิดราย,JV-X1:IV-X1B<REV-X1@2026-02-10!ออกใบกำกับภาษีผิดราย")
+	check("sale cancelled Jan", describe(VatCrossPeriodCancellations(ctx, f.db, "C", 2026, 1, 2)), "")
+	check("purchase Jan", describe(VatRecordsForPeriod(ctx, f.db, "C", 2026, 1, 1)), "JV-X3:PI-X3A<REV-X3@2026-02-15")
+	check("purchase Feb", describe(VatRecordsForPeriod(ctx, f.db, "C", 2026, 2, 1)), "")
+	check("purchase cancelled Feb", describe(VatCrossPeriodCancellations(ctx, f.db, "C", 2026, 2, 1)), "JV-X3:PI-X3A<REV-X3@2026-02-15!ออกใบกำกับภาษีผิดราย")
+	check("sale Dec", describe(VatRecordsForPeriod(ctx, f.db, "C", 2026, 12, 2)), "JV-X5:IV-X5<REV-X5@2027-01-05")
+	check("sale cancelled Jan next year", describe(VatCrossPeriodCancellations(ctx, f.db, "C", 2027, 1, 2)), "JV-X5:IV-X5<REV-X5@2027-01-05!ออกใบกำกับภาษีผิดราย")
+	if _, err := VatCrossPeriodCancellations(ctx, f.db, "C", 2026, 13, 2); err == nil {
+		t.Fatal("month 13 must be rejected")
+	}
+}

@@ -251,7 +251,7 @@ const purchaseClaimMonths = 6
 // ใบกำกับภาษี (1) และใบเพิ่มหนี้ (2): เดือนที่ออกเอกสาร ถึงเดือนที่ 6 ถัดจากนั้น
 //   - ม.77/1(22) (https://www.rd.go.th/5205.html) "ใบกำกับภาษี" หมายความรวมถึงใบเพิ่มหนี้ ใบลดหนี้ → ช่วงของประกาศฯ ฉบับที่ 4 ใช้กับใบเพิ่มหนี้ด้วย;
 //     ม.82/9 วรรคท้าย ผู้ได้รับใบเพิ่มหนี้ถือเป็นภาษีซื้อ "ในเดือนภาษีที่ได้รับใบเพิ่มหนี้นั้น"
-//   - ม.82/3 วรรคสอง ประมวลรัษฎากร (https://www.rd.go.th/5206.html): ภาษีซื้อที่มิได้นำไปหักในเดือนภาษีเพราะมีเหตุจำเป็นตามที่อธิบดีกำหนด
+//   - ม.82/3 วรรคสี่ ประมวลรัษฎากร (https://www.rd.go.th/5206.html): ภาษีซื้อที่มิได้นำไปหักในเดือนภาษีเพราะมีเหตุจำเป็นตามที่อธิบดีกำหนด
 //     ให้หักในเดือนภาษีหลังจากนั้นได้ตามหลักเกณฑ์ที่อธิบดีกำหนด "แต่ต้องไม่เกินสามปีนับจากวันที่ได้มีการออกใบกำกับภาษี"
 //   - ประกาศอธิบดีฯ เกี่ยวกับภาษีมูลค่าเพิ่ม (ฉบับที่ 4) ข้อ 2 แก้โดยฉบับที่ 76 ใช้บังคับ 1 พ.ค. 2541 (https://www.rd.go.th/3417.html):
 //     "ต้องไม่เกินหกเดือนนับแต่เดือนถัดจากเดือนที่ออกใบกำกับภาษี"
@@ -300,6 +300,11 @@ type VatRecord struct {
 	// เป็นคำเตือนให้ตรวจเท่านั้น ไม่บล็อกการบันทึก: ใบกำกับฉบับหนึ่งใช้สิทธิได้ครั้งเดียว (ม.82/5, ประกาศฯ ฉบับที่ 42 สำเนาเป็นภาษีซื้อต้องห้าม)
 	// แต่ระบบแยกไม่ได้ว่าเป็นการคีย์ซ้ำ หรือเป็นใบคนละฉบับที่ผู้ออกใช้เลขเดียวกัน — ผู้ใช้ตัดสินจากเอกสารจริง
 	DuplicateDocNos []string `json:"duplicatedocnos"`
+	// ReversalDocNo/ReversalDate - ใบสำคัญถูกกลับรายการหลังสิ้นงวดภาษีของแถว (ภ.พ.30 ของงวดนั้นยื่นแล้ว): แถวยังนับในงวดเดิม
+	// และขึ้นในรายการยกเลิกข้ามงวดของเดือนที่กลับรายการ (VatCrossPeriodCancellations) — ว่าง = ไม่ถูกกลับ
+	ReversalDocNo  string `json:"reversaldocno,omitempty"`
+	ReversalDate   string `json:"reversaldate,omitempty"`
+	ReversalReason string `json:"reversalreason,omitempty"`
 	SubledgerVat
 }
 
@@ -324,11 +329,17 @@ const vatInvoiceKeySQL = `concat_ws(chr(31),
     upper(btrim(regexp_replace(COALESCE(v.item->>'tax_invoice_no', ''), '\s+', ' ', 'g'))),
     LEFT(COALESCE(v.item->>'tax_invoice_date', ''), 10))`
 
+// vatTaxMonthSQL - งวดภาษีของแถว (v.item) เป็น 'YYYY-MM' — ว่างเมื่อไม่มีงวด (ภาษีซื้อรอใช้สิทธิ/ไม่ใช้สิทธิ) หรือค่าไม่ใช่ตัวเลข
+const vatTaxMonthSQL = `CASE WHEN jsonb_typeof(v.item->'tax_period_year') = 'number' AND jsonb_typeof(v.item->'tax_period_month') = 'number'
+    THEN lpad(v.item->>'tax_period_year', 4, '0') || '-' || lpad(v.item->>'tax_period_month', 2, '0') ELSE '' END`
+
 // VatRecordsForPeriod - VAT lines of POSTED vouchers of the company whose tax period is year/month.
 // taxType 2 = sales (output VAT); taxType 1 = purchases with claim_status 1 (claimed in this period).
-// เรียงตามวันที่ใบกำกับ เลขที่ใบสำคัญ และลำดับรายการในใบ; ใบร่าง/ลบ/กลับรายการแล้วไม่นับ
-// พร้อมเลขที่ใบสำคัญอื่นที่บันทึกใบกำกับฉบับเดียวกัน (DuplicateDocNos) เทียบทุกงวดของบริษัท และเลขที่ของตัวเองเมื่อใบเดียวกันบันทึกซ้ำในใบสำคัญนี้ — ใบที่ยังมีผลคือ ไม่ถูกลบ, สถานะร่างหรือผ่านบัญชี,
-// ไม่ใช่ใบกลับรายการ (ต้นฉบับที่กลับแล้วเป็น reversed จึงไม่เตือนเมื่อบันทึกใหม่) — ทั้งหมดใน SQL เดียวแบบ GROUP BY ไม่ query ทีละรายการ
+// เรียงตามวันที่ใบกำกับ เลขที่ใบสำคัญ และลำดับรายการในใบ; ใบร่าง/ลบไม่นับ
+// ใบที่กลับรายการ: กลับภายในงวดภาษีของแถว (วันที่ใบกลับ ≤ สิ้นเดือนของงวด) ไม่นับ; กลับหลังสิ้นงวดยังนับในงวดเดิมพร้อม ReversalDocNo/ReversalDate
+// เพราะ ภ.พ.30 ของงวดนั้นยื่นไปแล้ว — รายงานของเดือนที่ยื่นต้องไม่เปลี่ยนย้อนหลัง (Champ BCInputTax/BCOutputTax.CancelOutPeriod, GLRepInputTaxCHMView.cpp:571-597)
+// พร้อมเลขที่ใบสำคัญอื่นที่บันทึกใบกำกับฉบับเดียวกัน (DuplicateDocNos) เทียบทุกงวดของบริษัท และเลขที่ของตัวเองเมื่อใบเดียวกันบันทึกซ้ำในใบสำคัญนี้ — ใบที่ยังมีผลคือ ไม่ถูกลบ, สถานะร่างหรือผ่านบัญชี
+// หรือกลับรายการหลังสิ้นงวดของแถว, ไม่ใช่ใบกลับรายการ (ต้นฉบับที่กลับภายในงวดจึงไม่เตือนเมื่อบันทึกใหม่) — ทั้งหมดใน SQL เดียวแบบ GROUP BY ไม่ query ทีละรายการ
 func VatRecordsForPeriod(ctx context.Context, db *sql.DB, company string, year, month, taxType int) ([]VatRecord, error) {
 	if taxType != 1 && taxType != 2 {
 		return nil, fmt.Errorf("invalid vat tax type %d", taxType)
@@ -346,18 +357,33 @@ func VatRecordsForPeriod(ctx context.Context, db *sql.DB, company string, year, 
 		return nil, err
 	}
 	rows, err := db.QueryContext(ctx, `
-WITH live AS (
+WITH reversals AS (
+  SELECT rv.payload->>'reversalof' AS original_id, MIN(LEFT(rv.payload->>'date', 10)) AS reversal_date,
+    (array_agg(rv.code ORDER BY rv.payload->>'date', rv.code))[1] AS reversal_doc_no
+  FROM gl_records rv
+  WHERE rv.company = $1 AND rv.kind = 'journals' AND rv.payload->>'kind' = 'reversal'
+    AND COALESCE(rv.payload->>'reversalof', '') <> ''
+    AND NOT COALESCE((rv.payload->>'isdeleted')::boolean, false)
+  GROUP BY rv.payload->>'reversalof'
+), items AS (
   SELECT r.id AS journal_id, r.code AS doc_no, r.payload->>'status' AS status, COALESCE(r.payload->>'date', '') AS doc_date,
-    v.item, v.ord, `+vatInvoiceKeySQL+` AS invoice_key
+    v.item, v.ord, `+vatInvoiceKeySQL+` AS invoice_key, `+vatTaxMonthSQL+` AS tax_month,
+    COALESCE(rv.reversal_date, '') AS reversal_date, COALESCE(rv.reversal_doc_no, '') AS reversal_doc_no
   FROM gl_records r
   CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'details'->'vats') = 'array'
     THEN r.payload->'details'->'vats' ELSE '[]'::jsonb END) WITH ORDINALITY AS v(item, ord)
+  LEFT JOIN reversals rv ON r.payload->>'status' = 'reversed' AND rv.original_id = r.id
   WHERE r.company = $1 AND r.kind = 'journals'
-    AND r.payload->>'status' IN ('draft', 'posted')
+    AND r.payload->>'status' IN ('draft', 'posted', 'reversed')
     AND NOT COALESCE((r.payload->>'isdeleted')::boolean, false)
     AND COALESCE(r.payload->>'kind', '') <> 'reversal'
+), live AS (
+  -- ใบที่กลับรายการหลังสิ้นงวดภาษีของแถว ยังมีผลในงวดนั้น (ภ.พ.30 ยื่นแล้ว) แบบ Champ CancelOutPeriod — กลับภายในงวดไม่นับ
+  SELECT * FROM items
+  WHERE status IN ('draft', 'posted')
+     OR (status = 'reversed' AND tax_month <> '' AND LEFT(reversal_date, 7) > tax_month)
 ), period AS (
-  SELECT * FROM live WHERE status = 'posted' AND item @> $2::jsonb
+  SELECT * FROM live WHERE status IN ('posted', 'reversed') AND item @> $2::jsonb
 ), shared AS (
   SELECT invoice_key, array_agg(DISTINCT doc_no ORDER BY doc_no) AS doc_nos
   FROM live
@@ -374,7 +400,9 @@ WITH live AS (
 )
 SELECT p.journal_id, p.doc_no, p.doc_date, p.item,
   ARRAY(SELECT DISTINCT d FROM unnest(COALESCE(array_remove(s.doc_nos, p.doc_no), '{}'::text[])
-    || CASE WHEN rp.journal_id IS NULL THEN '{}'::text[] ELSE ARRAY[p.doc_no] END) AS d ORDER BY d)
+    || CASE WHEN rp.journal_id IS NULL THEN '{}'::text[] ELSE ARRAY[p.doc_no] END) AS d ORDER BY d),
+  CASE WHEN p.status = 'reversed' THEN p.reversal_doc_no ELSE '' END,
+  CASE WHEN p.status = 'reversed' THEN p.reversal_date ELSE '' END
 FROM period p
 LEFT JOIN shared s ON s.invoice_key = p.invoice_key
 LEFT JOIN repeated rp ON rp.journal_id = p.journal_id AND rp.invoice_key = p.invoice_key
@@ -389,7 +417,7 @@ ORDER BY p.item->>'tax_invoice_date', p.doc_no, p.ord`, company, string(rawFilte
 		var rec VatRecord
 		var item []byte
 		var duplicates pq.StringArray
-		if err := rows.Scan(&rec.JournalID, &rec.DocNo, &rec.DocDate, &item, &duplicates); err != nil {
+		if err := rows.Scan(&rec.JournalID, &rec.DocNo, &rec.DocDate, &item, &duplicates, &rec.ReversalDocNo, &rec.ReversalDate); err != nil {
 			return nil, fmt.Errorf("scan vat record: %w", err)
 		}
 		if err := json.Unmarshal(item, &rec.SubledgerVat); err != nil {
@@ -400,6 +428,62 @@ ORDER BY p.item->>'tax_invoice_date', p.doc_no, p.ord`, company, string(rawFilte
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("read vat records: %w", err)
+	}
+	return records, nil
+}
+
+// VatCrossPeriodCancellations - รายการภาษียกเลิกข้ามงวด (Champ 5522/5523) ของเดือน year/month: แถวภาษีของใบสำคัญที่ถูกกลับรายการ
+// ด้วยใบกลับที่ลงวันที่ในเดือนนี้ ขณะที่งวดภาษีของแถวอยู่ก่อนเดือนนี้ — แถวเหล่านี้ยังนับในงวดเดิม (VatRecordsForPeriod) ไม่ติดลบในเดือนนี้
+// ผู้ทำบัญชีใช้รายการนี้ตรวจว่าต้องยื่น ภ.พ.30 เพิ่มเติมของงวดเดิมหรือออกใบลดหนี้ — ระบบไม่สร้างแถวติดลบให้เอง
+// taxType 2 = ภาษีขาย; 1 = ภาษีซื้อที่ใช้สิทธิแล้ว (claim_status 1) เท่านั้น เพราะสถานะอื่นไม่เคยอยู่ใน ภ.พ.30
+// เรียงตามวันที่ใบกลับ เลขที่ใบกลับ งวดภาษีเดิม และลำดับในใบ
+func VatCrossPeriodCancellations(ctx context.Context, db *sql.DB, company string, year, month, taxType int) ([]VatRecord, error) {
+	if taxType != 1 && taxType != 2 {
+		return nil, fmt.Errorf("invalid vat tax type %d", taxType)
+	}
+	if year < 1900 || year > 9999 || month < 1 || month > 12 {
+		return nil, fmt.Errorf("invalid vat tax period %d-%d", year, month)
+	}
+	rows, err := db.QueryContext(ctx, `
+WITH reversals AS (
+  SELECT rv.code AS reversal_doc_no, LEFT(rv.payload->>'date', 10) AS reversal_date,
+    rv.payload->>'reversalof' AS original_id, COALESCE(rv.payload->>'reason', '') AS reversal_reason
+  FROM gl_records rv
+  WHERE rv.company = $1 AND rv.kind = 'journals' AND rv.payload->>'kind' = 'reversal'
+    AND rv.payload->>'status' = 'posted'
+    AND NOT COALESCE((rv.payload->>'isdeleted')::boolean, false)
+    AND LEFT(rv.payload->>'date', 7) = $2
+)
+SELECT r.id, r.code, COALESCE(r.payload->>'date', ''), v.item, rv.reversal_doc_no, rv.reversal_date, rv.reversal_reason
+FROM reversals rv
+JOIN gl_records r ON r.company = $1 AND r.kind = 'journals' AND r.id = rv.original_id
+  AND r.payload->>'status' = 'reversed' AND NOT COALESCE((r.payload->>'isdeleted')::boolean, false)
+CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'details'->'vats') = 'array'
+  THEN r.payload->'details'->'vats' ELSE '[]'::jsonb END) WITH ORDINALITY AS v(item, ord)
+CROSS JOIN LATERAL (SELECT `+vatTaxMonthSQL+` AS tax_month) tm
+WHERE tm.tax_month <> '' AND tm.tax_month < $2
+  AND v.item @> jsonb_build_object('tax_type', $3::int)
+  AND ($3::int = 2 OR v.item @> '{"claim_status":1}'::jsonb)
+ORDER BY rv.reversal_date, rv.reversal_doc_no, tm.tax_month, v.ord`, company, fmt.Sprintf("%04d-%02d", year, month), taxType)
+	if err != nil {
+		return nil, fmt.Errorf("read vat cancellations: %w", err)
+	}
+	defer rows.Close()
+	records := []VatRecord{}
+	for rows.Next() {
+		var rec VatRecord
+		var item []byte
+		if err := rows.Scan(&rec.JournalID, &rec.DocNo, &rec.DocDate, &item, &rec.ReversalDocNo, &rec.ReversalDate, &rec.ReversalReason); err != nil {
+			return nil, fmt.Errorf("scan vat cancellation: %w", err)
+		}
+		if err := json.Unmarshal(item, &rec.SubledgerVat); err != nil {
+			return nil, fmt.Errorf("parse vat cancellation of %s: %w", rec.DocNo, err)
+		}
+		rec.DuplicateDocNos = []string{}
+		records = append(records, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read vat cancellations: %w", err)
 	}
 	return records, nil
 }

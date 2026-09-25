@@ -39,7 +39,34 @@ func fillVatForm(ctx context.Context, db *sql.DB, company string, year, month in
 	if n := countDuplicateInvoices(sales) + countDuplicateInvoices(purchases); n > 0 {
 		notes = append(notes, TaxFormNote{Key: "tax_form_note_duplicate_invoice", Count: n})
 	}
+	// กลับรายการในเดือนหลังงวดภาษี: ยังรวมในแบบของงวดนี้ (ยื่นแล้ว) แบบ Champ — บอกให้ตรวจการแก้ไขแบบที่ยื่นไปแล้ว
+	if n := countReversedLater(sales) + countReversedLater(purchases); n > 0 {
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_vat_reversed_later", Count: n})
+	}
+	// เดือนนี้กลับรายการใบที่ยื่นในงวดก่อน: ไม่หักจากแบบเดือนนี้ — ชี้ไปมุมมองยกเลิกข้ามงวด
+	cancelledSales, err := generalledger.VatCrossPeriodCancellations(ctx, db, company, year, month, 2)
+	if err != nil {
+		return nil, err
+	}
+	cancelledPurchases, err := generalledger.VatCrossPeriodCancellations(ctx, db, company, year, month, 1)
+	if err != nil {
+		return nil, err
+	}
+	if n := len(cancelledSales) + len(cancelledPurchases); n > 0 {
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_vat_cross_period_cancel", Count: n})
+	}
 	return append(notes, TaxFormNote{Key: "tax_form_note_vat_forward"}), nil
+}
+
+// countReversedLater - รายการของงวดที่ใบสำคัญถูกกลับรายการในเดือนหลังงวดภาษี
+func countReversedLater(records []generalledger.VatRecord) int {
+	n := 0
+	for _, r := range records {
+		if r.ReversalDocNo != "" {
+			n++
+		}
+	}
+	return n
 }
 
 // countDuplicateInvoices - จำนวนรายการของงวดที่ใบกำกับฉบับเดียวกันถูกบันทึกซ้ำ (ในใบสำคัญเดียวกันหรือใบสำคัญอื่น — DuplicateDocNos)

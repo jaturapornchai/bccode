@@ -444,8 +444,10 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
     amountbeforevat: toMoney(row.amountbeforevat),
     vatamount: toMoney(row.vatamount),
     totalamount: toMoney(row.totalamount),
-    // backend กรองเอกสารที่ยกเลิก/ตัดออกแล้ว จึงแสดงเป็น active ได้
-    status: "active",
+    // backend ตัดใบที่กลับรายการในงวดเดียวกันออกแล้ว; ใบที่กลับรายการหลังงวดยังอยู่ในงวดที่ยื่น (มีเลขที่ใบกลับรายการ)
+    status: toText(row.reversaldocno) ? "cancelled" : "active",
+    // หมายเหตุจาก backend ในภาษาผู้ใช้ (กลับรายการภายหลัง / งวดเดิมและใบกลับรายการในมุมมองยกเลิกข้ามงวด)
+    remark: toText(row.note) || undefined,
     duplicatedocnos: toTextList(row.duplicatedocnos),
   };
 }
@@ -557,23 +559,25 @@ export async function fetchVatRegister(params: {
   year: number;
   month: number;
   type: "sale" | "purchase";
+  /** "reversed_later" = ใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (Champ รายงานภาษีซื้อ/ขายที่ยกเลิกข้ามงวด) */
+  view?: VatRegisterView;
   limit?: number;
   offset?: number;
   language?: LanguageCode;
-}): Promise<{ records: ThaiTaxRecord[]; total: number; summary: VatRegisterSummary; error?: string }> {
+}): Promise<{ records: ThaiTaxRecord[]; total: number; summary: VatRegisterSummary; note: string; error?: string }> {
   if (!params.holdingcode || !params.businesscode) {
-    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: "company_required" };
+    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, note: "", error: "company_required" };
   }
 
   const { language, ...body } = params;
   const result = await postApi(VAT_REGISTER_PATH, body, language);
   if (!result.ok) {
-    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: result.error };
+    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, note: "", error: result.error };
   }
 
   const payload = result.payload;
   if (!isRecord(payload) || !Array.isArray(payload.data)) {
-    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, error: "load_failed" };
+    return { records: [], total: 0, summary: EMPTY_VAT_SUMMARY, note: "", error: "load_failed" };
   }
 
   const records = payload.data.filter(isRecord).map(toTaxRecord);
@@ -587,8 +591,11 @@ export async function fetchVatRegister(params: {
       totalamount: toMoney(summary.totalamount),
       duplicatecount: toCount(summary.duplicatecount, 0),
     },
+    note: toText(payload.note),
   };
 }
+
+export type VatRegisterView = "reversed_later";
 
 // 2026-09-16: every user-visible string above also lives in languages.tsv,
 // keyed by `<code>.<part>`. The literals stay as the offline fallback.

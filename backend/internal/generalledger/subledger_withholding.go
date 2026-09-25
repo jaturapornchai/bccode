@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/lib/pq"
 	"github.com/shopspring/decimal"
 
 	"smlcloudplatform/internal/whtcert"
@@ -306,45 +307,72 @@ func clearStaleWithholdingSnapshot(w *SubledgerWithholding, prev SubledgerWithho
 	}
 }
 
+// ReversalMonthSQL - เดือน (YYYY-MM) ของใบกลับรายการของใบต้นฉบับ r (alias ของ gl_records) ที่สถานะ reversed;
+// ค่าว่าง = ไม่ใช่ใบที่ถูกกลับ/หาใบกลับไม่พบ — ใช้ตัดสินว่าใบถูกกลับ "หลังงวดภาษี" (ยังอยู่ในงวดที่ยื่นแล้ว) หรือไม่
+const ReversalMonthSQL = `COALESCE((SELECT LEFT(MIN(rv.payload->>'date'), 7) FROM gl_records rv
+  WHERE r.payload->>'status' = 'reversed' AND rv.company = r.company AND rv.kind = 'journals'
+    AND rv.payload->>'reversalof' = r.id AND rv.payload->>'kind' = 'reversal'
+    AND NOT COALESCE((rv.payload->>'isdeleted')::boolean, false)), '')`
+
+// withholdingNonTaxJournalKinds - ใบกลับรายการ/ยอดยกมา/ปิดบัญชีไม่ใช่หลักฐานการหักภาษีใหม่ (เหมือน whtNonTaxJournalKinds ของรายงาน)
+var withholdingNonTaxJournalKinds = []string{"reversal", "opening", "closing"}
+
+// WithheldCredit - ยอดเครดิตภาษีที่ถูกหัก ณ ที่จ่าย; ReversedLater = จำนวนรายการที่ใบถูกกลับรายการหลังงวดของแบบ (ยังนับ)
+type WithheldCredit struct {
+	Total         decimal.Decimal
+	Count         int
+	ReversedLater int
+}
+
 // WithheldFromCompanyTotal - ภาษีที่ผู้จ่ายเงินหักบริษัทไว้ (wht_direction=2) ตามรายการภาษีหักของใบสำคัญที่ผ่านรายการ
 // ที่วันที่จ่ายในหลักฐานอยู่ในช่วง from..to (YYYY-MM-DD) — ใช้เป็นเครดิตภาษีของ ภ.ง.ด.50 ข้อ 3.(3) / ภ.ง.ด.51 ข้อ 5.(1)
 // (คู่มือวิธีกรอกแบบของกรมสรรพากร: "ตามหลักฐานที่ถูกหักไว้" — docs/kms/21-thai-tax-form-references.md §2)
 // ยอดภาษีเป็นยอดที่บันทึก (ช่องว่างถูกเติม ฐาน × อัตรา ตอนบันทึกแล้ว) รวมด้วย decimal; ใบที่ไม่มีรายการภาษีหักไม่นับ (ไม่ใช่หลักฐาน)
-func WithheldFromCompanyTotal(ctx context.Context, db *sql.DB, company, from, to string) (decimal.Decimal, int, error) {
-	total, count := decimal.Zero, 0
+// ใบที่ถูกกลับรายการในเดือนหลังงวดของแบบยังนับ (กติกาเดียวกับรายงานภาษีหัก/ภาษีซื้อขาย: งวดที่ผ่านไปแล้วไม่เปลี่ยนย้อนหลัง)
+// แต่นับแยกไว้เตือน; กลับรายการภายในงวด = ไม่นับ; ใบยอดยกมา/ปิดบัญชี/ใบกลับรายการเองไม่นับ
+func WithheldFromCompanyTotal(ctx context.Context, db *sql.DB, company, from, to string) (WithheldCredit, error) {
+	credit := WithheldCredit{Total: decimal.Zero}
 	if !validDate(from) || !validDate(to) {
-		return total, count, fmt.Errorf("invalid withholding period %s..%s", from, to)
+		return credit, fmt.Errorf("invalid withholding period %s..%s", from, to)
 	}
 	rows, err := db.QueryContext(ctx, `
-SELECT COALESCE(w.item->>'tax_amount','')
+SELECT COALESCE(w.item->>'tax_amount',''), r.payload->>'status' = 'reversed'
 FROM gl_records r
 CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'details'->'withholdings') = 'array'
   THEN r.payload->'details'->'withholdings' ELSE '[]'::jsonb END) AS w(item)
+CROSS JOIN LATERAL (SELECT `+ReversalMonthSQL+` AS reversal_month) rv
 WHERE r.company = $1 AND r.kind = 'journals'
-  AND r.payload->>'status' = 'posted'
+  AND r.payload->>'status' IN ('posted', 'reversed')
   AND NOT COALESCE((r.payload->>'isdeleted')::boolean, false)
+  AND NOT (COALESCE(r.payload->>'kind', '') = ANY($4::text[]))
   AND w.item @> '{"wht_direction":2}'::jsonb
-  AND w.item->>'payment_date' BETWEEN $2 AND $3`, company, from, to)
+  AND w.item->>'payment_date' BETWEEN $2 AND $3
+  AND (r.payload->>'status' = 'posted' OR rv.reversal_month > LEFT($3, 7))`, company, from, to, pq.Array(withholdingNonTaxJournalKinds))
 	if err != nil {
-		return total, count, fmt.Errorf("read withheld tax: %w", err)
+		return credit, fmt.Errorf("read withheld tax: %w", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var raw string
-		if err := rows.Scan(&raw); err != nil {
-			return total, count, fmt.Errorf("scan withheld tax: %w", err)
+		var reversed bool
+		if err := rows.Scan(&raw, &reversed); err != nil {
+			return credit, fmt.Errorf("scan withheld tax: %w", err)
 		}
 		tax, err := decimal.NewFromString(raw)
 		if err != nil {
-			return total, count, fmt.Errorf("withheld tax amount %q: %w", raw, err)
+			return credit, fmt.Errorf("withheld tax amount %q: %w", raw, err)
 		}
-		total, count = total.Add(tax), count+1
+		credit.Total, credit.Count = credit.Total.Add(tax), credit.Count+1
+		if reversed {
+			credit.ReversedLater++
+		}
 	}
-	return total, count, rows.Err()
+	return credit, rows.Err()
 }
 
 // RecordedWithholding - รายการภาษีหักหนึ่งรายการ (details.withholdings[id]) ของใบสำคัญที่ผ่านบัญชีแล้ว พร้อมทะเบียนคู่ค้าปัจจุบัน
 // สำหรับออกหนังสือรับรอง 50 ทวิ: ใช้ snapshot ที่บันทึกก่อน ช่องที่ว่างจึงใช้ทะเบียน — ไม่พบ/ยังไม่ผ่านบัญชี/ถูกลบ = ErrNotFound
+// ใบที่ถูกกลับรายการในเดือนหลังเดือนที่จ่ายยังออกได้ (แถวยังอยู่ในรายงาน/แบบของเดือนที่จ่าย); กลับภายในเดือนเดียวกัน = ErrNotFound
 func RecordedWithholding(ctx context.Context, db *sql.DB, company, journalID, itemID string) (SubledgerWithholding, SubledgerPartner, error) {
 	var item SubledgerWithholding
 	var partner SubledgerPartner
@@ -355,10 +383,14 @@ FROM gl_records r
 CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.payload->'details'->'withholdings') = 'array'
   THEN r.payload->'details'->'withholdings' ELSE '[]'::jsonb END) AS w(item)
 LEFT JOIN gl_subledger_partners p ON p.company = r.company AND p.code = w.item->>'partner_code'
+CROSS JOIN LATERAL (SELECT `+ReversalMonthSQL+` AS reversal_month) rv
 WHERE r.company = $1 AND r.kind = 'journals' AND r.id = $2
-  AND r.payload->>'status' = 'posted'
+  AND r.payload->>'status' IN ('posted', 'reversed')
   AND NOT COALESCE((r.payload->>'isdeleted')::boolean, false)
   AND w.item->>'id' = $3
+  AND (r.payload->>'status' = 'posted' OR rv.reversal_month > LEFT(CASE
+    WHEN COALESCE(w.item->>'payment_date', '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' THEN w.item->>'payment_date'
+    ELSE COALESCE(r.payload->>'date', '') END, 7))
 LIMIT 1`, company, journalID, itemID).Scan(&rawItem, &rawPartner)
 	if errors.Is(err, sql.ErrNoRows) {
 		return item, partner, ErrNotFound

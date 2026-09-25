@@ -258,6 +258,7 @@ func TestTaxReportErrorsFollowLanguage(t *testing.T) {
 		want                     string
 	}{
 		{"vat type en", "/", "en-US,en;q=0.9", `{"year":2026,"month":9,"type":"refund"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_TYPE", "tax_report_type_invalid", "en"},
+		{"vat view en", "/", "en", `{"year":2026,"month":9,"type":"sale","view":"deleted"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_VIEW", "tax_report_view_invalid", "en"},
 		{"vat period th default", "/", "", `{"year":2026,"month":13,"type":"sale"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_PERIOD", "tax_form_period_invalid", "th"},
 		{"wht direction query lang wins", "/?lang=en", "th", `{"year":2026,"month":9,"direction":"sideways"}`, TaxWithholdingHandler, &taxReportTestUser, 400, "INVALID_TYPE", "tax_report_direction_invalid", "en"},
 		// ภ.ง.ด.1 = เงินเดือน อยู่นอกขอบเขตผลิตภัณฑ์ (AGENTS.md) ต้องถูกปฏิเสธ
@@ -511,5 +512,44 @@ func TestWithholdingRowPartnerFullName(t *testing.T) {
 	renamed = finishWithholdingRow(renamed, "")
 	if renamed.PartnerFullName != "นางสาว วิไลวรรณ ทองคำ" || renamed.Title != "" {
 		t.Fatalf("renamed snapshot = %+v", renamed)
+	}
+}
+
+// ใบที่กลับรายการหลังงวดภาษี: ทะเบียนปกติเก็บเลขที่/เดือนที่กลับรายการ + หมายเหตุแถว/รายงานตามภาษา;
+// มุมมองยกเลิกข้ามงวดบอกงวดเดิม เลขที่ใบกลับรายการ และเหตุผล
+func TestVatRegisterReversedLaterNotes(t *testing.T) {
+	reversed := vatRecord("UV1", "IV001", 1, "1000", "0", "0", "70")
+	reversed.TaxPeriodYear, reversed.TaxPeriodMonth = 2026, 9
+	reversed.ReversalDocNo, reversed.ReversalDate, reversed.ReversalReason = "REV-UV1", "2026-10-05", "ออกใบกำกับภาษีผิดราย"
+	rows, summary := buildVatRegister([]generalledger.VatRecord{reversed, vatRecord("UV2", "IV002", 1, "500", "0", "0", "35")})
+	if rows[0].ReversalDocNo != "REV-UV1" || rows[0].ReversedMonth != "2026-10" || rows[0].TaxMonth != "2026-09" || rows[1].ReversalDocNo != "" || rows[1].TaxMonth != "" {
+		t.Fatalf("rows = %+v", rows)
+	}
+	// ยอดของงวดที่ยื่นแล้วไม่เปลี่ยน — แถวที่กลับรายการภายหลังยังรวมยอด
+	if summary.VatAmount != "105.00" {
+		t.Fatalf("summary = %+v", summary)
+	}
+	month := taxMonthLabel("2026-10", "th")
+	if got, want := vatRegisterRowNote("", rows[0], "th"), strings.ReplaceAll(language.Text("tax_wht_row_reversed_later", "th"), "{month}", month); got != want || !strings.Contains(got, "ตุลาคม 2569") {
+		t.Fatalf("register row note = %q want %q", got, want)
+	}
+	if got := vatRegisterRowNote("", rows[1], "th"); got != "" {
+		t.Fatalf("live row note = %q", got)
+	}
+	if got := vatRegisterNote("", rows, "en"); got != strings.ReplaceAll(language.Text("tax_vat_note_reversed_later", "en"), "{count}", "1") || strings.Contains(got, "{count}") {
+		t.Fatalf("register note = %q", got)
+	}
+	if got := vatRegisterNote("", rows[1:], "th"); got != "" {
+		t.Fatalf("note without reversed rows = %q", got)
+	}
+	cancel := vatRegisterRowNote(vatViewReversedLater, rows[0], "th")
+	if !strings.Contains(cancel, "กันยายน 2569") || !strings.Contains(cancel, "REV-UV1") || !strings.HasSuffix(cancel, " — ออกใบกำกับภาษีผิดราย") || strings.Contains(cancel, "{") {
+		t.Fatalf("cross-period row note = %q", cancel)
+	}
+	if got := vatRegisterNote(vatViewReversedLater, rows[:1], "th"); got != language.Text("tax_vat_note_cross_period_view", "th") || got == "tax_vat_note_cross_period_view" {
+		t.Fatalf("cross-period note = %q", got)
+	}
+	if got := vatRegisterNote(vatViewReversedLater, nil, "th"); got != "" {
+		t.Fatalf("empty cross-period note = %q", got)
 	}
 }

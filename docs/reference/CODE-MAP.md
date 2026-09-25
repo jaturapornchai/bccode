@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-25 @ commit 0393fa49 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-25 @ commit d8bc1706 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -821,6 +821,50 @@ Files indexed: 29
 | 1425 | function | `listHoldingMembers` |
 | 1445 | function | `createHoldingPayload` |
 
+## backend/internal/goapi/handlers/tax_report.go (1361 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 80 | function | `TaxVatRegisterHandler` |
+| 160 | function | `vatRegisterNote` |
+| 181 | function | `vatRegisterRowNote` |
+| 197 | function | `vatSign` |
+| 205 | function | `vatMoney` |
+| 210 | function | `vatAmountOf` |
+| 219 | function | `buildVatRegister` |
+| 253 | function | `vatTaxMonth` |
+| 261 | function | `firstN` |
+| 269 | function | `pageVatRegisterRows` |
+| 288 | function | `sumPP30` |
+| 310 | function | `taxRequestLanguage` |
+| 318 | function | `taxReportFail` |
+| 325 | function | `taxScopeFail` |
+| 334 | function | `isValidReportPeriod` |
+| 340 | function | `normalizeVatRegisterPaging` |
+| 447 | function | `TaxWithholdingHandler` |
+| 524 | function | `withholdingReportNotes` |
+| 542 | function | `reversedLaterCount` |
+| 557 | function | `taxMonthLabel` |
+| 570 | function | `pageWithholdingRows` |
+| 627 | function | `formType` |
+| 645 | function | `wantsForm` |
+| 650 | function | `wantsAccount` |
+| 676 | function | `buildWithholdingReport` |
+| 757 | function | `recordedWithholdingRows` |
+| 826 | function | `applyWithholdingPartySnapshot` |
+| 862 | function | `sameSpacedText` |
+| 874 | function | `inferredWithholdingRows` |
+| 1029 | function | `recordedTaxByForm` |
+| 1067 | function | `withholdingRemainders` |
+| 1108 | function | `nonTaxCounterTotals` |
+| 1145 | function | `findWithholdingAccounts` |
+| 1182 | function | `summarizeWithholding` |
+| 1232 | function | `fillWithholdingEvidence` |
+| 1321 | function | `fillPartnerMaster` |
+| 1335 | function | `finishWithholdingRow` |
+| 1354 | function | `withholdingNetKnown` |
+| 1359 | function | `pqArray` |
+
 ## backend/internal/authentication/services/authentication_service_test.go (1342 lines)
 
 | Line | Kind | Name |
@@ -920,46 +964,6 @@ Files indexed: 29
 | 484 | const-arrow | `handleDeleteRow` |
 | 499 | const-arrow | `handleSaveAllLocations` |
 | 696 | const-arrow | `handleResetTable` |
-
-## backend/internal/goapi/handlers/tax_report.go (1278 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 70 | function | `TaxVatRegisterHandler` |
-| 132 | function | `vatSign` |
-| 140 | function | `vatMoney` |
-| 145 | function | `vatAmountOf` |
-| 154 | function | `buildVatRegister` |
-| 183 | function | `pageVatRegisterRows` |
-| 202 | function | `sumPP30` |
-| 224 | function | `taxRequestLanguage` |
-| 232 | function | `taxReportFail` |
-| 239 | function | `taxScopeFail` |
-| 248 | function | `isValidReportPeriod` |
-| 254 | function | `normalizeVatRegisterPaging` |
-| 361 | function | `TaxWithholdingHandler` |
-| 438 | function | `withholdingReportNotes` |
-| 456 | function | `reversedLaterCount` |
-| 471 | function | `taxMonthLabel` |
-| 484 | function | `pageWithholdingRows` |
-| 544 | function | `formType` |
-| 562 | function | `wantsForm` |
-| 567 | function | `wantsAccount` |
-| 593 | function | `buildWithholdingReport` |
-| 674 | function | `recordedWithholdingRows` |
-| 743 | function | `applyWithholdingPartySnapshot` |
-| 779 | function | `sameSpacedText` |
-| 791 | function | `inferredWithholdingRows` |
-| 946 | function | `recordedTaxByForm` |
-| 984 | function | `withholdingRemainders` |
-| 1025 | function | `nonTaxCounterTotals` |
-| 1062 | function | `findWithholdingAccounts` |
-| 1099 | function | `summarizeWithholding` |
-| 1149 | function | `fillWithholdingEvidence` |
-| 1238 | function | `fillPartnerMaster` |
-| 1252 | function | `finishWithholdingRow` |
-| 1271 | function | `withholdingNetKnown` |
-| 1276 | function | `pqArray` |
 
 ## frontend/src/app/gl/gl-masters.tsx (1227 lines)
 

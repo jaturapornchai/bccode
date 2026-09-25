@@ -95,6 +95,37 @@ describe("fetchVatRegister", () => {
     );
   });
 
+  // 2026-09-25: ใบที่กลับรายการหลังงวดภาษียังอยู่ในงวดที่ยื่น (มีเลขที่ใบกลับรายการ) + แท็บยกเลิกข้ามงวด
+  it("ส่ง view ยกเลิกข้ามงวด และ map หมายเหตุ/สถานะแถวที่กลับรายการภายหลัง", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, {
+        data: [
+          { taxinvoiceno: "IV-1", vatamount: "70.00", reversaldocno: "REV-1", reversedmonth: "2026-10", note: "กลับรายการภายหลังในเดือน ตุลาคม 2569" },
+          { taxinvoiceno: "IV-2", vatamount: "35.00" },
+        ],
+        total: 2,
+        summary: { vatamount: "105.00" },
+        note: "1 รายการถูกกลับรายการในเดือนหลังงวดภาษี",
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "sale", view: "reversed_later" });
+    expect(JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body))).toMatchObject({ view: "reversed_later", type: "sale" });
+    expect(result.note).toBe("1 รายการถูกกลับรายการในเดือนหลังงวดภาษี");
+    expect(result.records[0]).toMatchObject({ status: "cancelled", remark: "กลับรายการภายหลังในเดือน ตุลาคม 2569" });
+    expect(result.records[1]).toMatchObject({ status: "active", remark: undefined });
+    // ยอดของงวดที่ยื่นแล้วมาจาก backend ตรง ๆ (รวมแถวที่กลับรายการภายหลัง)
+    expect(result.summary.vatamount).toBe("105.00");
+  });
+
+  it("ไม่ส่ง view = ทะเบียนตามงวด (body ไม่มีคีย์ view)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { data: [], total: 0, summary: {} }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "purchase" });
+    expect(JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body))).not.toHaveProperty("view");
+    expect(result.note).toBe("");
+  });
+
   it("401 → unauthorized และ records ว่าง", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(401, { status: "error" }));
     vi.stubGlobal("fetch", fetchMock);

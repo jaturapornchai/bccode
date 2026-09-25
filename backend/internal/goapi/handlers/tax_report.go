@@ -38,8 +38,10 @@ type TaxVatRegisterRequest struct {
 	Year         int    `json:"year"`
 	Month        int    `json:"month"`
 	Type         string `json:"type"` // "sale" หรือ "purchase"
-	Limit        int    `json:"limit,omitempty"`
-	Offset       int    `json:"offset,omitempty"`
+	// View - "" = ทะเบียนตามงวดภาษี, "reversed_later" = ใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (Champ 5522/5523 ยกเลิกข้ามงวด)
+	View   string `json:"view,omitempty"`
+	Limit  int    `json:"limit,omitempty"`
+	Offset int    `json:"offset,omitempty"`
 }
 
 // TaxVatRegisterRow - แถวรายงานภาษีซื้อ/ขายต่อเอกสาร
@@ -54,6 +56,14 @@ type TaxVatRegisterRow struct {
 	TotalAmount      string `json:"totalamount"`
 	// DuplicateDocNos - เลขที่ใบสำคัญที่บันทึกใบกำกับภาษีฉบับเดียวกัน (ผู้ออก + เลขที่ + วันที่) — มีเลขที่ใบสำคัญของแถวนี้เอง = ซ้ำในใบสำคัญเดียวกัน; [] = ไม่ซ้ำ; เตือนให้ตรวจ ไม่บล็อก
 	DuplicateDocNos []string `json:"duplicatedocnos"`
+	// TaxMonth - งวดภาษีที่ยื่นไว้ (YYYY-MM) — มีเฉพาะมุมมองยกเลิกข้ามงวด
+	TaxMonth string `json:"taxmonth,omitempty"`
+	// ReversalDocNo/ReversalDate - ใบกลับรายการของใบสำคัญนี้ (กลับในเดือนหลังงวดภาษี = แถวยังอยู่ในงวดที่ยื่นแล้ว แบบ Champ CancelOutPeriod)
+	ReversalDocNo string `json:"reversaldocno,omitempty"`
+	ReversalDate  string `json:"reversaldate,omitempty"`
+	ReversedMonth string `json:"reversedmonth,omitempty"`
+	// Note - หมายเหตุของแถวในภาษาผู้ใช้ (กลับรายการภายหลัง / เหตุผลที่กลับรายการ)
+	Note string `json:"note,omitempty"`
 }
 
 // TaxVatRegisterSummary - ยอดรวมทั้งงวด (ไม่ใช่เฉพาะหน้าที่แสดง) คำนวณใน PostgreSQL
@@ -82,6 +92,10 @@ func TaxVatRegisterHandler(c echo.Context) error {
 		return taxReportFail(c, http.StatusBadRequest, "INVALID_TYPE", "tax_report_type_invalid")
 	}
 
+	if req.View != "" && req.View != vatViewReversedLater {
+		return taxReportFail(c, http.StatusBadRequest, "INVALID_VIEW", "tax_report_view_invalid")
+	}
+
 	if !isValidReportPeriod(req.Year, req.Month) {
 		return taxReportFail(c, http.StatusBadRequest, "INVALID_PERIOD", "tax_form_period_invalid")
 	}
@@ -108,7 +122,12 @@ func TaxVatRegisterHandler(c echo.Context) error {
 	if req.Type == "purchase" {
 		taxType = 1
 	}
-	records, err := generalledger.VatRecordsForPeriod(ctx, db, businessCode, req.Year, req.Month, taxType)
+	var records []generalledger.VatRecord
+	if req.View == vatViewReversedLater {
+		records, err = generalledger.VatCrossPeriodCancellations(ctx, db, businessCode, req.Year, req.Month, taxType)
+	} else {
+		records, err = generalledger.VatRecordsForPeriod(ctx, db, businessCode, req.Year, req.Month, taxType)
+	}
 	if err != nil {
 		logger.Error("TaxVatRegister: %v", err)
 		return taxReportFail(c, http.StatusInternalServerError, "QUERY_ERROR", "tax_report_failed")
@@ -116,7 +135,12 @@ func TaxVatRegisterHandler(c echo.Context) error {
 
 	// ยอดรวมท้ายรายงานเป็นของทั้งงวด ไม่ใช่ผลรวมเฉพาะหน้าที่ browser ได้รับ
 	rows, summary := buildVatRegister(records)
+	lang := taxRequestLanguage(c)
+	note := vatRegisterNote(req.View, rows, lang)
 	data := pageVatRegisterRows(rows, limit, offset)
+	for i := range data {
+		data[i].Note = vatRegisterRowNote(req.View, data[i], lang)
+	}
 	return c.JSON(http.StatusOK, map[string]any{
 		"status":  "success",
 		"data":    data,
@@ -125,7 +149,48 @@ func TaxVatRegisterHandler(c echo.Context) error {
 		"summary": summary,
 		"limit":   limit,
 		"offset":  offset,
+		"note":    note,
 	})
+}
+
+// vatViewReversedLater - มุมมองใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนที่เลือก
+const vatViewReversedLater = "reversed_later"
+
+// vatRegisterNote - หมายเหตุของรายงานในภาษาผู้ใช้: ทะเบียนปกติบอกจำนวนแถวที่กลับรายการภายหลัง; มุมมองยกเลิกข้ามงวดอธิบายว่ายอดงวดเดิมไม่เปลี่ยน
+func vatRegisterNote(view string, rows []TaxVatRegisterRow, lang string) string {
+	if view == vatViewReversedLater {
+		if len(rows) == 0 {
+			return ""
+		}
+		return language.Text("tax_vat_note_cross_period_view", lang)
+	}
+	reversed := 0
+	for _, r := range rows {
+		if r.ReversedMonth != "" {
+			reversed++
+		}
+	}
+	if reversed == 0 {
+		return ""
+	}
+	return strings.ReplaceAll(language.Text("tax_vat_note_reversed_later", lang), "{count}", strconv.Itoa(reversed))
+}
+
+// vatRegisterRowNote - ทะเบียนปกติ: "กลับรายการภายหลังในเดือน ..." (key เดียวกับภาษีหัก ณ ที่จ่าย);
+// มุมมองยกเลิกข้ามงวด: งวดภาษีที่ยื่นไว้ + เลขที่ใบกลับรายการ + เหตุผลที่ผู้ใช้บันทึกตอนกลับรายการ (ถ้ามี)
+func vatRegisterRowNote(view string, row TaxVatRegisterRow, lang string) string {
+	if view == vatViewReversedLater {
+		note := strings.NewReplacer("{month}", taxMonthLabel(row.TaxMonth, lang), "{docno}", row.ReversalDocNo).
+			Replace(language.Text("tax_vat_row_cancelled", lang))
+		if reason := strings.TrimSpace(row.Note); reason != "" {
+			note += " — " + reason
+		}
+		return note
+	}
+	if row.ReversedMonth == "" {
+		return ""
+	}
+	return strings.ReplaceAll(language.Text("tax_wht_row_reversed_later", lang), "{month}", taxMonthLabel(row.ReversedMonth, lang))
 }
 
 // vatSign - ใบลดหนี้ (document_type 3) หักออกจากยอด; ใบกำกับภาษีและใบเพิ่มหนี้บวกเพิ่ม (vat.sql เก็บยอดบวกเสมอ)
@@ -168,6 +233,11 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			VatAmount:        moneyText(vat),
 			TotalAmount:      moneyText(before.Add(vat)),
 			DuplicateDocNos:  append([]string{}, r.DuplicateDocNos...),
+			TaxMonth:         vatTaxMonth(r),
+			ReversalDocNo:    r.ReversalDocNo,
+			ReversalDate:     r.ReversalDate,
+			ReversedMonth:    firstN(r.ReversalDate, 7),
+			Note:             r.ReversalReason,
 		})
 		sumBefore, sumVat = sumBefore.Add(before), sumVat.Add(vat)
 	}
@@ -177,6 +247,22 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 		TotalAmount:     moneyText(sumBefore.Add(sumVat)),
 		DuplicateCount:  countDuplicateInvoices(records),
 	}
+}
+
+// vatTaxMonth - งวดภาษีที่บันทึก (YYYY-MM) เฉพาะใบที่มีใบกลับรายการ — ทะเบียนปกติไม่ต้องแสดงซ้ำกับงวดที่เลือก
+func vatTaxMonth(r generalledger.VatRecord) string {
+	if r.ReversalDocNo == "" || r.TaxPeriodYear == 0 || r.TaxPeriodMonth == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%04d-%02d", r.TaxPeriodYear, r.TaxPeriodMonth)
+}
+
+// firstN - n ตัวอักษรแรก (ASCII วันที่ ISO) หรือทั้งสตริงถ้าสั้นกว่า
+func firstN(s string, n int) string {
+	if len(s) < n {
+		return s
+	}
+	return s[:n]
 }
 
 // pageVatRegisterRows - ตัดหน้าหลังคำนวณครบทั้งงวดแล้ว
@@ -525,10 +611,7 @@ var (
 //     https://www.rd.go.th/5943.html, แบบ ค.10 https://www.rd.go.th/fileadmin/tax_pdf/others/K10_061260.pdf) — หมายเหตุ tax_wht_note_reversed_later
 //
 // ใบกลับรายการไม่มี details.withholdings และบรรทัดบัญชีภาษีหักของใบกลับอยู่ฝั่งตรงข้าม จึงไม่เกิดแถวเองอยู่แล้ว
-const whtReversalMonthSQL = `COALESCE((SELECT LEFT(MIN(rv.payload->>'date'), 7) FROM gl_records rv
-  WHERE r.payload->>'status' = 'reversed' AND rv.company = r.company AND rv.kind = 'journals'
-    AND rv.payload->>'reversalof' = r.id AND rv.payload->>'kind' = 'reversal'
-    AND NOT COALESCE((rv.payload->>'isdeleted')::boolean, false)), '')`
+const whtReversalMonthSQL = generalledger.ReversalMonthSQL
 
 // whtNonTaxJournalKinds - ใบที่เกิดจากการหักภาษีจริงเท่านั้นที่เข้ารายงาน: ใบกลับรายการหักล้างต้นฉบับ,
 // ใบยอดยกมา/ปิดบัญชีแค่ยกยอดคงเหลือของงวดก่อน (หนี้ภาษีหักค้างจ่ายของ ธ.ค. ปีก่อนไม่ใช่การหักภาษีใหม่ของ ม.ค. — UAT S24 2026-09-24)

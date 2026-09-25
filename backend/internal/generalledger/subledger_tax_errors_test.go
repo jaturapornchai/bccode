@@ -116,7 +116,7 @@ func TestSubledgerVatReportsFieldOfEachError(t *testing.T) {
 }
 
 // ภาษีซื้อที่ใช้สิทธิ (claim_status 1): งวดต้องอยู่ระหว่างเดือนที่ออกใบกำกับ ถึง 6 เดือนถัดไป
-// (ม.82/3 วรรคสอง + ประกาศอธิบดีฯ VAT ฉบับที่ 4 ข้อ 2 แก้โดยฉบับที่ 76) — ใบกำกับ ม.ค. 2569 ใช้สิทธิได้ ม.ค.–ก.ค. 2026 (ค.ศ.)
+// (ม.82/3 วรรคสี่ + ประกาศอธิบดีฯ VAT ฉบับที่ 4 ข้อ 2 แก้โดยฉบับที่ 76) — ใบกำกับ ม.ค. 2569 ใช้สิทธิได้ ม.ค.–ก.ค. 2026 (ค.ศ.)
 func TestPurchaseVatClaimWindow(t *testing.T) {
 	m := &subledgerMutation{scale: 2}
 	purchase := func(invoiceDate string, year, month, claim int) SubledgerVat {

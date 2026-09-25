@@ -649,17 +649,21 @@ func setProfit(f *formFiller, amountKey, resultKey string, profit decimal.Decima
 // ภ.ง.ด.50 ข้อ 3.(4) = ยอด "ชำระเพิ่มเติม" รายการที่ 2 ข้อ 6 ของ ภ.ง.ด.51 ที่บันทึกไว้ — ช่องอื่นของรายการเครดิตผู้ใช้กรอกเอง
 func fillCitCredits(ctx context.Context, db *sql.DB, company, code string, year int, from, to time.Time, f *formFiller) ([]TaxFormNote, error) {
 	var notes []TaxFormNote
-	withheld, entries, err := generalledger.WithheldFromCompanyTotal(ctx, db, company, from.Format("2006-01-02"), to.Format("2006-01-02"))
+	withheld, err := generalledger.WithheldFromCompanyTotal(ctx, db, company, from.Format("2006-01-02"), to.Format("2006-01-02"))
 	if err != nil {
 		return nil, err
 	}
-	if entries > 0 {
+	if withheld.Count > 0 {
 		key := "less_wht"
 		if code == "pnd51" {
 			key = "r2_5_1_wht"
 		}
-		f.set(key, withheld.StringFixed(2))
-		notes = append(notes, TaxFormNote{Key: "tax_form_note_cit_wht_credit", Count: entries, Amount: withheld.StringFixed(2)})
+		f.set(key, withheld.Total.StringFixed(2))
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_cit_wht_credit", Count: withheld.Count, Amount: withheld.Total.StringFixed(2)})
+	}
+	// ใบที่ถูกกลับรายการหลังงวดของแบบยังนับเป็นเครดิต (งวดที่ผ่านไปแล้วไม่เปลี่ยนย้อนหลัง) — เตือนให้ตรวจกับหนังสือรับรองจริง
+	if withheld.ReversedLater > 0 {
+		notes = append(notes, TaxFormNote{Key: "tax_form_note_cit_wht_reversed_later", Count: withheld.ReversedLater})
 	}
 	if code != "pnd50" {
 		return notes, nil

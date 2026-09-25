@@ -187,7 +187,7 @@ export function vatPeriodPatch(value: string): {tax_period_year?: number; tax_pe
   const match = /^(\d{4})-(\d{2})$/.exec(value);
   return match ? {tax_period_year: Number(match[1]), tax_period_month: Number(match[2])} : {tax_period_year: undefined, tax_period_month: undefined};
 }
-/** เดือนที่ใช้สิทธิภาษีซื้อเทียบเดือนที่ออกใบกำกับ — ม.82/3 วรรคสอง (https://www.rd.go.th/5206.html) ให้ใช้สิทธิภายหลังได้ตามที่อธิบดีกำหนด;
+/** เดือนที่ใช้สิทธิภาษีซื้อเทียบเดือนที่ออกใบกำกับ — ม.82/3 วรรคสี่ (https://www.rd.go.th/5206.html) ให้ใช้สิทธิภายหลังได้ตามที่อธิบดีกำหนด;
  *  ประกาศอธิบดีฯ เกี่ยวกับ VAT ฉบับที่ 4 ข้อ 2 แก้โดยฉบับที่ 76 (https://www.rd.go.th/3417.html): ไม่เกิน 6 เดือนนับแต่เดือนถัดจากเดือนที่ออกใบกำกับ
  *  และต้องเขียน "ถือเป็นภาษีซื้อในเดือนภาษี ..." ในใบกำกับ → ออกเดือน M ใช้สิทธิได้งวด M..M+6 (ม.ค. → ก.พ.–ก.ค. คือเลื่อน)
  *  ตรวจเฉพาะภาษีซื้อที่ใช้สิทธิ (claim_status 1) ตรงกับ checkPurchaseClaimWindow ของ backend (ผู้ตัดสินตอนบันทึก):
