@@ -7960,3 +7960,18 @@ tr.bc-list-row > td {
     border-top: 0.75pt solid #000;
   }
 }
+
+/* 2026-09-26 GL equity statement: หัวคอลัมน์องค์ประกอบส่วนของผู้ถือหุ้นยาว ให้ตัดบรรทัดได้;
+   ตารางที่มียอดเงินมากกว่า 3 คอลัมน์ (gl-statement-wide) ไม่ล็อกความกว้าง 10em ต่อคอลัมน์ ให้พอดีกระดาษแนวนอน */
+.gl-statement .gl-statement-columns th.gl-print-num {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.gl-statement.gl-statement-wide .gl-print-num {
+  width: auto;
+}
+
+.gl-statement.gl-statement-wide .gl-print-num > span {
+  min-width: 5em;
+}

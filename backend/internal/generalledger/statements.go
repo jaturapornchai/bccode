@@ -22,6 +22,7 @@ const statementCurrentEarnings = "__current_earnings__"
 
 type statementBalance struct {
 	accountType string
+	opening     decimal.Decimal // ยอดต้นงวด = ยอดยกมา + รายการก่อนวันเริ่มงวด
 	balance     decimal.Decimal // ยอดคงเหลือเดบิตลบเครดิต ณ วันสิ้นงวด (รวมยอดยกมาและรายการปิดบัญชี)
 	movement    decimal.Decimal // ความเคลื่อนไหวในงวด ไม่รวมยอดยกมาและรายการปิดบัญชี
 }
@@ -51,11 +52,14 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 	if err = json.Unmarshal(payload, &template); err != nil {
 		return Report{}, err
 	}
-	periodic := template.StatementType == "pnl" || template.StatementType == "production_cost"
+	periodic := statementPeriodic(template.StatementType)
 	// คำนวณเต็มความละเอียด (สูตรคูณ/หารตัดที่ 8 ตำแหน่ง) แล้วแสดงผลปัดครึ่งขึ้นห่างศูนย์ที่ทศนิยมของรูปแบบงบ ทีละแถว
 	scale := int32(2)
 	if template.GlobalStyle != nil && template.GlobalStyle.Scale > 0 {
 		scale = int32(template.GlobalStyle.Scale)
+	}
+	if template.StatementType == "equity" {
+		return r.equityStatement(ctx, template, scale)
 	}
 	current, err := r.statementBalances(ctx, r.fiscal.Code, r.query.From, r.query.To)
 	if err != nil {
@@ -86,11 +90,8 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 		}
 	}
 	for _, row := range template.Rows {
-		out := map[string]string{
-			"rowno": strconv.Itoa(row.RowNo), "title": row.Title, "noteno": row.NoteNo, "rowtype": row.RowType,
-			"indent": strconv.Itoa(row.Style.Indent), "fontweight": row.Style.FontWeight, "fontstyle": row.Style.FontStyle, "underline": row.Style.Underline,
-			"showzero": strconv.FormatBool(row.ShowZero), "amount": "", "prioramount": "",
-		}
+		out := statementRowMap(row, row.Title)
+		out["amount"], out["prioramount"] = "", ""
 		if statementAmountRow(row.RowType) {
 			out["amount"] = values[row.RowNo].StringFixed(scale)
 			if prior != nil {
@@ -107,10 +108,28 @@ func statementAmountRow(rowType string) bool {
 	return rowType == "account" || rowType == "formula" || rowType == "subtotal"
 }
 
+// งบช่วงเวลาใช้ความเคลื่อนไหวในงวดเป็นค่าเริ่ม (ยกเว้นแถวที่เลือก amountbasis เอง); งบฐานะการเงินและแบบกำหนดเองใช้ยอดคงเหลือ
+func statementPeriodic(statementType string) bool {
+	switch statementType {
+	case "pnl", "production_cost", "cash_flow", "equity":
+		return true
+	}
+	return false
+}
+
+func statementRowMap(row StatementRow, title string) map[string]string {
+	return map[string]string{
+		"rowno": strconv.Itoa(row.RowNo), "title": title, "noteno": row.NoteNo, "rowtype": row.RowType,
+		"indent": strconv.Itoa(row.Style.Indent), "fontweight": row.Style.FontWeight, "fontstyle": row.Style.FontStyle, "underline": row.Style.Underline,
+		"showzero": strconv.FormatBool(row.ShowZero),
+	}
+}
+
 // ยอดต่อบัญชีของปีบัญชีหนึ่ง กรองสาขา/แผนก/โครงการเหมือนรายงานอื่น; รหัสบัญชีและสมุดรายวันไม่ใช้กรองงบการเงิน
 func (r reportContext) statementBalances(ctx context.Context, fiscalYear, from, to string) (map[string]statementBalance, error) {
 	rows, err := r.tx.QueryContext(ctx, `SELECT account_code,MAX(account_type),COALESCE(SUM(debit-credit),0)::text,
-      COALESCE(SUM(CASE WHEN entry_date>=$3::date AND kind NOT IN ('opening','closing') THEN debit-credit ELSE 0 END),0)::text
+      COALESCE(SUM(CASE WHEN entry_date>=$3::date AND kind NOT IN ('opening','closing') THEN debit-credit ELSE 0 END),0)::text,
+      COALESCE(SUM(CASE WHEN entry_date<$3::date OR kind='opening' THEN debit-credit ELSE 0 END),0)::text
     FROM gl_lines WHERE company=$1 AND fiscal_year=$2 AND entry_date<=$4::date AND ($5='' OR branch_code=$5) AND ($6='' OR department_code=$6) AND ($7='' OR project_code=$7)
     GROUP BY account_code`, r.scope.Company, fiscalYear, from, to, r.query.BranchCode, r.query.DepartmentCode, r.query.ProjectCode)
 	if err != nil {
@@ -120,16 +139,17 @@ func (r reportContext) statementBalances(ctx context.Context, fiscalYear, from, 
 	balances := map[string]statementBalance{}
 	earnings := statementBalance{accountType: "equity"}
 	for rows.Next() {
-		var code, accountType, balance, movement string
-		if err = rows.Scan(&code, &accountType, &balance, &movement); err != nil {
+		var code, accountType, balance, movement, opening string
+		if err = rows.Scan(&code, &accountType, &balance, &movement, &opening); err != nil {
 			return nil, err
 		}
-		item := statementBalance{accountType: accountType, balance: decimal.RequireFromString(balance), movement: decimal.RequireFromString(movement)}
+		item := statementBalance{accountType: accountType, balance: decimal.RequireFromString(balance), movement: decimal.RequireFromString(movement), opening: decimal.RequireFromString(opening)}
 		balances[code] = item
 		// กำไรขาดทุนที่ยังไม่ปิดเข้ากำไรสะสม: แบบเดียวกับแถว __current_earnings__ ของรายงานงบแสดงฐานะการเงิน
 		if accountType == "income" || accountType == "expense" {
 			earnings.balance = earnings.balance.Add(item.balance)
 			earnings.movement = earnings.movement.Add(item.movement)
+			earnings.opening = earnings.opening.Add(item.opening)
 		}
 	}
 	balances[statementCurrentEarnings] = earnings
@@ -202,31 +222,50 @@ func evaluateStatement(rows []StatementRow, balances map[string]statementBalance
 		}
 		sum := decimal.Zero
 		for _, code := range row.AccountCodes {
-			account, ok := balances[code]
-			if !ok {
-				continue
+			if account, ok := balances[code]; ok {
+				sum = sum.Add(statementSigned(account, statementBasisValue(account, row.AmountBasis, periodic), row.NormalBalance))
 			}
-			value := account.balance
-			if periodic {
-				value = account.movement
-			}
-			normal := row.NormalBalance
-			if normal == "" {
-				normal = "credit"
-				if account.accountType == "asset" || account.accountType == "expense" {
-					normal = "debit"
-				}
-			}
-			if normal == "credit" {
-				value = value.Neg()
-			}
-			sum = sum.Add(value)
 		}
 		if row.ReverseSign {
 			sum = sum.Neg()
 		}
 		values[row.RowNo] = sum
 	}
+	evaluateStatementFormulas(rows, values)
+	return values
+}
+
+// ยอดของบัญชีตามฐานที่แถวเลือก: ต้นงวด / ปลายงวด / ความเคลื่อนไหว; ไม่ระบุ = ตามชนิดงบ
+func statementBasisValue(account statementBalance, basis string, periodic bool) decimal.Decimal {
+	switch basis {
+	case "opening":
+		return account.opening
+	case "closing":
+		return account.balance
+	case "movement":
+		return account.movement
+	}
+	if periodic {
+		return account.movement
+	}
+	return account.balance
+}
+
+// ด้านปกติของแถว: ไม่ระบุ = ตามประเภทบัญชี (สินทรัพย์/ค่าใช้จ่ายเดบิต นอกนั้นเครดิต); ด้านเครดิตแสดงเครดิตเป็นบวก
+func statementSigned(account statementBalance, value decimal.Decimal, normal string) decimal.Decimal {
+	if normal == "" {
+		normal = "credit"
+		if account.accountType == "asset" || account.accountType == "expense" {
+			normal = "debit"
+		}
+	}
+	if normal == "credit" {
+		return value.Neg()
+	}
+	return value
+}
+
+func evaluateStatementFormulas(rows []StatementRow, values map[int]decimal.Decimal) {
 	for _, row := range rows {
 		if row.RowType != "formula" && row.RowType != "subtotal" {
 			continue
@@ -240,7 +279,6 @@ func evaluateStatement(rows []StatementRow, balances map[string]statementBalance
 		}
 		values[row.RowNo] = sum
 	}
-	return values
 }
 
 var (

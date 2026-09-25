@@ -365,7 +365,9 @@ export function reportCsv(report: GLReport) {
   return "\uFEFF" + [report.columns.map((column) => csvCell(column.label)).join(","), ...report.rows.map((row) => report.columns.map((column) => csvCell(row[column.key] ?? "", Boolean(column.amount))).join(","))].join("\r\n");
 }
 
-export type StatementType = "balance_sheet" | "pnl" | "production_cost" | "cash_flow" | "custom";
+export type StatementType = "balance_sheet" | "pnl" | "production_cost" | "cash_flow" | "equity" | "custom";
+/** ยอดที่แถวบัญชีใช้ (ว่าง = ตามประเภทงบ): ต้นงวด / ปลายงวด / ความเคลื่อนไหว / รายการอื่นที่เหลือของคอลัมน์ (งบส่วนของผู้ถือหุ้น) */
+export type StatementAmountBasis = "opening" | "closing" | "movement" | "other";
 export type StatementRowType = "header" | "account" | "formula" | "subtotal" | "blank" | "divider";
 export type StatementRowUnderline = "none" | "single" | "double" | "top_single" | "top_single_bottom_double";
 
@@ -392,8 +394,13 @@ export type StatementRow = {
   formula?: string;
   reversesign?: boolean;
   showzero?: boolean;
+  amountbasis?: StatementAmountBasis;
   style?: StatementRowStyle;
 };
+
+/** คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น (statementtype "equity") — ผู้ใช้เลือกบัญชีเอง */
+export type StatementColumn = { id: string; title: string; accountcodes?: string[] };
+export const STATEMENT_CURRENT_EARNINGS = "__current_earnings__";
 
 export type StatementGlobalStyle = {
   fontfamily?: string;
@@ -411,6 +418,7 @@ export type GLStatementTemplate = GLIdentity & {
   isactive: boolean;
   globalstyle: StatementGlobalStyle;
   rows: StatementRow[];
+  columns?: StatementColumn[];
 };
 
 export const statementTypeLabels: Record<StatementType, GLLabel> = {
@@ -418,6 +426,7 @@ export const statementTypeLabels: Record<StatementType, GLLabel> = {
   pnl: ["gl_income_statement", "งบกำไรขาดทุน"],
   production_cost: ["gl_cost_prod_cogs_stmt", "งบต้นทุนผลิตและต้นทุนขาย"],
   cash_flow: ["gl_cash_flow_stmt", "งบกระแสเงินสด"],
+  equity: ["gl_equity_changes_stmt", "งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น"],
   custom: ["gl_custom_fin_stmt", "งบการเงินกำหนดเอง"],
 };
 
@@ -428,6 +437,13 @@ export const statementRowTypeLabels: Record<StatementRowType, GLLabel> = {
   subtotal: ["gl_total_amount", "รวมยอด"],
   blank: ["gl_blank_line_2", "บรรทัดว่าง"],
   divider: ["gl_separator_line", "เส้นคั่น"],
+};
+
+export const statementAmountBasisLabels: Record<StatementAmountBasis, GLLabel> = {
+  opening: ["gl_statement_basis_opening", "ยอดต้นงวด"],
+  closing: ["gl_statement_basis_closing", "ยอดปลายงวด"],
+  movement: ["gl_statement_basis_movement", "ความเคลื่อนไหวในงวด"],
+  other: ["gl_statement_basis_other", "รายการอื่นที่ยังไม่ได้จัดประเภท"],
 };
 
 export function emptyStatementTemplate(): GLStatementTemplate {
@@ -449,15 +465,17 @@ export function emptyStatementTemplate(): GLStatementTemplate {
 }
 
 // งบการเงินคำนวณที่ backend (GET reports/statement?template=) — backend/internal/generalledger/statements.go
-type StarterRow = [rowno: number, kind: "header" | "blank" | "subtotal" | "total" | "debit" | "credit", title: string, indent?: number, formula?: string, accountcodes?: string[]];
-/** แถวแม่แบบงบ: debit/credit = แถวยอดบัญชี (ผู้ใช้เลือกบัญชีเอง), subtotal = รวมย่อยขีดเส้นเดี่ยว, total = ยอดรวมขีดเส้นคู่ */
+type StarterRow = [rowno: number, kind: "header" | "blank" | "subtotal" | "total" | "debit" | "credit" | "balance", title: string, indent?: number, formula?: string, accountcodes?: string[], amountbasis?: StatementAmountBasis];
+/** แถวแม่แบบงบ: debit/credit = แถวยอดบัญชี (ผู้ใช้เลือกบัญชีเอง), balance = ยอดต้น/ปลายงวดตัวหนา (ปลายงวดขีดเส้นคู่),
+ *  subtotal = รวมย่อยขีดเส้นเดี่ยว, total = ยอดรวมขีดเส้นคู่ */
 function starterRows(prefix: string, rows: StarterRow[]): StatementRow[] {
-  return rows.map(([rowno, kind, title, indent = 2, formula, accountcodes]) => {
+  return rows.map(([rowno, kind, title, indent = 2, formula, accountcodes, amountbasis]) => {
     const id = `${prefix}-${rowno}`;
     if (kind === "header") return { id, rowno, rowtype: "header", title, style: { fontweight: "bold", indent } };
     if (kind === "blank") return { id, rowno, rowtype: "blank", title };
     if (kind === "subtotal" || kind === "total") return { id, rowno, rowtype: "subtotal", title, formula, style: { fontweight: "bold", indent, underline: kind === "total" ? "double" : "single" } };
-    return { id, rowno, rowtype: "account", title, noteno: "", accountcodes: accountcodes ?? [], normalbalance: kind, style: { indent } };
+    if (kind === "balance") return { id, rowno, rowtype: "account", title, noteno: "", accountcodes: [], normalbalance: "credit", amountbasis, style: { fontweight: "bold", indent, underline: amountbasis === "closing" ? "double" : "none" } };
+    return { id, rowno, rowtype: "account", title, noteno: "", accountcodes: accountcodes ?? [], normalbalance: kind, ...(amountbasis ? { amountbasis } : {}), style: { indent } };
   });
 }
 export function generateStarterTemplates(): GLStatementTemplate[] {
@@ -532,21 +550,21 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       name: "งบต้นทุนผลิตและต้นทุนขาย",
       statementtype: "production_cost",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "none" },
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "previous_year" },
       rows: [
         { id: "cog-1", rowno: 10, rowtype: "header", title: "วัตถุดิบทางตรงที่ใช้ไป", style: { fontweight: "bold", indent: 0 } },
-        { id: "cog-2", rowno: 20, rowtype: "account", title: "วัตถุดิบต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-2", amountbasis: "opening", rowno: 20, rowtype: "account", title: "วัตถุดิบต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
         { id: "cog-3", rowno: 30, rowtype: "account", title: "บวก: ซื้อวัตถุดิบสุทธิ", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-4", rowno: 40, rowtype: "account", title: "หัก: วัตถุดิบปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
+        { id: "cog-4", amountbasis: "closing", rowno: 40, rowtype: "account", title: "หัก: วัตถุดิบปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
         { id: "cog-5", rowno: 50, rowtype: "subtotal", title: "วัตถุดิบทางตรงใช้ไปในการผลิต", formula: "R20 + R30 + R40", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cog-6", rowno: 60, rowtype: "account", title: "ค่าแรงทางตรง", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
         { id: "cog-7", rowno: 70, rowtype: "account", title: "ค่าใช้จ่ายการผลิต", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
         { id: "cog-8", rowno: 80, rowtype: "subtotal", title: "รวมต้นทุนการผลิตงวดนี้", formula: "R50 + R60 + R70", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "cog-9", rowno: 90, rowtype: "account", title: "บวก: งานระหว่างทำต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-10", rowno: 100, rowtype: "account", title: "หัก: งานระหว่างทำปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
+        { id: "cog-9", amountbasis: "opening", rowno: 90, rowtype: "account", title: "บวก: งานระหว่างทำต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-10", amountbasis: "closing", rowno: 100, rowtype: "account", title: "หัก: งานระหว่างทำปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
         { id: "cog-11", rowno: 110, rowtype: "formula", title: "ต้นทุนสินค้าสำเร็จรูป", formula: "R80 + R90 + R100", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "cog-12", rowno: 120, rowtype: "account", title: "บวก: สินค้าสำเร็จรูปต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cog-13", rowno: 130, rowtype: "account", title: "หัก: สินค้าสำเร็จรูปปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
+        { id: "cog-12", amountbasis: "opening", rowno: 120, rowtype: "account", title: "บวก: สินค้าสำเร็จรูปต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cog-13", amountbasis: "closing", rowno: 130, rowtype: "account", title: "หัก: สินค้าสำเร็จรูปปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
         { id: "cog-14", rowno: 140, rowtype: "formula", title: "ต้นทุนขายทั้งสิ้น", formula: "R110 + R120 + R130", style: { fontweight: "bold", indent: 0, underline: "double" } },
       ],
     },
@@ -555,7 +573,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       name: "งบกระแสเงินสด (วิธีทางอ้อม)",
       statementtype: "cash_flow",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "none" },
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "previous_year" },
       rows: [
         { id: "cf-1", rowno: 10, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมดำเนินงาน", style: { fontweight: "bold", indent: 0 } },
         { id: "cf-2", rowno: 20, rowtype: "account", title: "กำไร (ขาดทุน) สุทธิประจำงวด", accountcodes: ["__current_earnings__"], normalbalance: "credit", style: { indent: 1 } },
@@ -572,8 +590,42 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         { id: "cf-13", rowno: 130, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมจัดหาเงิน", style: { fontweight: "bold", indent: 0 } },
         { id: "cf-14", rowno: 140, rowtype: "account", title: "เงินสดรับจากเงินกู้ยืมระยะสั้น / ระยะยาว", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
         { id: "cf-15", rowno: 150, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมจัดหาเงิน", formula: "R140", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "cf-16", rowno: 160, rowtype: "formula", title: "เงินสดและรายการเทียบเท่าเงินสดเพิ่มขึ้น (ลดลง) สุทธิ", formula: "R70 + R110 + R150", style: { fontweight: "bold", indent: 0, underline: "double" } },
+        { id: "cf-16", rowno: 160, rowtype: "formula", title: "เงินสดและรายการเทียบเท่าเงินสดเพิ่มขึ้น (ลดลง) สุทธิ", formula: "R70 + R110 + R150", style: { fontweight: "bold", indent: 0, underline: "single" } },
+        { id: "cf-17", rowno: 170, rowtype: "account", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันต้นงวด", accountcodes: [], normalbalance: "debit", amountbasis: "opening", style: { indent: 0 } },
+        { id: "cf-18", rowno: 180, rowtype: "subtotal", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันปลายงวด", formula: "R160 + R170", style: { fontweight: "bold", indent: 0, underline: "double" } },
       ],
+    },
+    {
+      code: "EQ-DBD",
+      // แบบ 2 หน้า 2-21: คอลัมน์ = องค์ประกอบส่วนของผู้ถือหุ้น (ผู้ใช้เลือกบัญชีเอง), แถวซ้ำต่อปีโดย backend แทน {year} ด้วยปีบัญชี
+      name: "งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น",
+      statementtype: "equity",
+      isactive: true,
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year" },
+      columns: [
+        { id: "eq-c1", title: "ทุนที่ชำระแล้ว", accountcodes: [] },
+        { id: "eq-c2", title: "ส่วนเกินมูลค่าหุ้น", accountcodes: [] },
+        { id: "eq-c3", title: "ส่วนเกิน (ต่ำกว่า) ทุนอื่น", accountcodes: [] },
+        { id: "eq-c4", title: "กำไร (ขาดทุน) สะสม", accountcodes: [STATEMENT_CURRENT_EARNINGS] },
+        { id: "eq-c5", title: "ส่วนได้เสีย - ทุนอื่น", accountcodes: [] },
+        { id: "eq-c6", title: "องค์ประกอบอื่นของส่วนของผู้ถือหุ้น", accountcodes: [] },
+      ],
+      rows: starterRows("eq", [
+        [10, "balance", "ยอดคงเหลือ ณ ต้นงวด {year}", 0, undefined, undefined, "opening"],
+        [20, "credit", "ผลกระทบของการเปลี่ยนแปลงนโยบายการบัญชี", 1],
+        [30, "credit", "ผลสะสมจากการแก้ไขข้อผิดพลาดทางการบัญชี", 1],
+        [40, "subtotal", "ยอดคงเหลือที่ปรับปรุงแล้ว", 0, "R10 + R20 + R30"],
+        [50, "header", "การเปลี่ยนแปลงในส่วนของผู้ถือหุ้น สำหรับปี {year}", 0],
+        [60, "credit", "การเพิ่ม (ลด) หุ้นบุริมสิทธิ", 1],
+        [70, "credit", "การเพิ่ม (ลด) หุ้นสามัญ", 1],
+        [80, "credit", "การเพิ่ม (ลด) ส่วนเกิน (ต่ำกว่า) ทุนอื่น", 1],
+        [90, "credit", "เงินปันผลจ่าย", 1],
+        [100, "credit", "กำไร (ขาดทุน) สุทธิ {year}", 1, undefined, [STATEMENT_CURRENT_EARNINGS]],
+        [110, "credit", "โอนไปกำไร (ขาดทุน) สะสม", 1],
+        [120, "credit", "องค์ประกอบอื่นของส่วนของเจ้าของ", 1],
+        [130, "credit", "รายการอื่นที่ยังไม่ได้จัดประเภท", 1, undefined, undefined, "other"],
+        [140, "balance", "ยอดคงเหลือ ณ ปลายงวด {year}", 0, undefined, undefined, "closing"],
+      ]),
     },
   ];
 }

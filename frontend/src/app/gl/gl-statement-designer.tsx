@@ -23,6 +23,8 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   emptyStatementTemplate,
+  STATEMENT_CURRENT_EARNINGS,
+  statementAmountBasisLabels,
   statementTypeLabels,
   statementRowTypeLabels,
   labelText,
@@ -31,6 +33,8 @@ import {
   reportCsv,
   type GLReport,
   type GLStatementTemplate,
+  type StatementAmountBasis,
+  type StatementColumn,
   type StatementRow,
   type StatementType,
   type StatementRowType,
@@ -59,7 +63,7 @@ import {
   useGLText,
 } from "./gl-common";
 import { fetchReport, type ReportFilters, emptyReportFilters } from "./gl-reports";
-import { GLStatementTable, printCompanyName, statementPeriodText, useGLPrint } from "./gl-print";
+import { GLStatementTable, printCompanyName, statementOrientation, statementPeriodText, useGLPrint } from "./gl-print";
 
 const FONT_OPTIONS: { id: string; name: GLLabel; family: string; href: string }[] = [
   { id: "sarabun", name: ["gl_font_family_sarabun", "Sarabun (สารบรรณ - มาตรฐานทางการ)"], family: '"Sarabun", sans-serif', href: "https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" },
@@ -103,6 +107,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   const [error, setError] = useState("");
   const [starterModalOpen, setStarterModalOpen] = useState(false);
   const [accountPickerRowId, setAccountPickerRowId] = useState<string | null>(null);
+  const [accountPickerColumnId, setAccountPickerColumnId] = useState<string | null>(null);
 
   // Live preview state
   const [filters, setFilters] = useState<ReportFilters>({ ...emptyReportFilters });
@@ -193,6 +198,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
           isactive: template.isactive,
           globalstyle: template.globalstyle,
           rows: template.rows,
+          columns: template.statementtype === "equity" ? template.columns ?? [] : undefined,
         } as never,
       });
       const saved: GLStatementTemplate = { ...template, id: result.id, version: result.version };
@@ -277,6 +283,16 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
     setTemplate({ ...template, rows: template.rows.filter((r) => r.id !== rowId) });
   }
 
+  // คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น (งบ equity) — บัญชีของคอลัมน์ใช้คำนวณยอดต้น/ปลายงวดและตัดกับบัญชีของแต่ละบรรทัด
+  function updateColumns(columns: StatementColumn[]) {
+    if (!template) return;
+    setTemplate({ ...template, columns });
+  }
+
+  function updateColumn(columnId: string, patch: Partial<StatementColumn>) {
+    updateColumns((template?.columns ?? []).map((column) => (column.id === columnId ? { ...column, ...patch } : column)));
+  }
+
   function moveRow(index: number, direction: "up" | "down") {
     if (!template) return;
     const targetIndex = direction === "up" ? index - 1 : index + 1;
@@ -322,7 +338,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   // หัวงบ: ทั้งปีบัญชี = "สำหรับปีสิ้นสุดวันที่", ช่วงย่อย = "สำหรับงวดตั้งแต่ … ถึง …", งบที่ใช้ยอดคงเหลือ = "ณ วันที่" (กติกาเดียวกับ backend)
   function statementView(report: GLReport) {
     if (!template) return null;
-    const periodic = template.statementtype === "pnl" || template.statementtype === "production_cost";
+    const periodic = ["pnl", "production_cost", "cash_flow", "equity"].includes(template.statementtype);
     const current = report.periods?.[0];
     const year = refs.years.find((item) => item.code === current?.fiscalyear);
     const fullYear = Boolean(year && current && current.from === year.startdate && current.to === year.enddate);
@@ -597,6 +613,68 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
               {/* TAB 1: DESIGN MODE */}
               {activeTab === "design" && (
                 <div className="flex flex-col flex-1 min-h-0 gap-3">
+                  {template.statementtype === "equity" && (
+                    <div className="shrink-0 rounded-xl border border-border bg-muted/20 p-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold">{tr("gl_statement_equity_columns", "คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น")}</h3>
+                          <p className="text-xs text-muted-foreground">{tr("gl_statement_equity_hint", "เลือกบัญชีให้แต่ละคอลัมน์ คอลัมน์ที่ยังไม่เลือกบัญชีจะไม่แสดงในงบ · ใส่ {year} ในชื่อรายการเพื่อแสดงปีบัญชี")}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className={actionClass}
+                          onClick={() => updateColumns([...(template.columns ?? []), { id: `col-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, title: "", accountcodes: [] }])}
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" /> {tr("gl_statement_add_column", "เพิ่มคอลัมน์")}
+                        </Button>
+                      </div>
+                      <div className="mt-2 grid gap-2 xl:grid-cols-2">
+                        {(template.columns ?? []).map((column) => {
+                          const accounts = (column.accountcodes ?? []).filter((code) => code !== STATEMENT_CURRENT_EARNINGS);
+                          const earnings = (column.accountcodes ?? []).includes(STATEMENT_CURRENT_EARNINGS);
+                          return (
+                            <div key={column.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background p-2">
+                              <input
+                                className="min-w-40 flex-1 rounded border border-input bg-background px-2 py-1 text-sm font-medium"
+                                value={column.title}
+                                onChange={(e) => updateColumn(column.id, { title: e.target.value })}
+                                placeholder={tr("gl_statement_column_title", "ชื่อคอลัมน์")}
+                                aria-label={tr("gl_statement_column_title", "ชื่อคอลัมน์")}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setAccountPickerColumnId(column.id)}
+                                className="inline-flex min-h-7 items-center rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
+                              >
+                                {accounts.length
+                                  ? tr("gl_selected_accounts", "เลือกแล้ว {0} บัญชี").replace("{0}", String(accounts.length))
+                                  : tr("gl_select_chart_of_accounts", "+ เลือกผังบัญชี")}
+                              </button>
+                              <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+                                <Checkbox
+                                  checked={earnings}
+                                  onCheckedChange={(checked) => updateColumn(column.id, { accountcodes: checked ? [...accounts, STATEMENT_CURRENT_EARNINGS] : accounts })}
+                                />
+                                {tr("gl_statement_include_current_earnings", "รวมกำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี")}
+                              </label>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className={actionClass}
+                                onClick={() => updateColumns((template.columns ?? []).filter((item) => item.id !== column.id))}
+                              >
+                                <Trash2 className="mr-1 h-3.5 w-3.5" /> {tr("gl_statement_delete_column", "ลบคอลัมน์")}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Row actions */}
                   <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -693,6 +771,9 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                             <td className="p-2">
                               {row.rowtype === "account" && (
                                 <div className="flex flex-wrap items-center gap-1.5">
+                                  {template.statementtype === "equity" && row.amountbasis && row.amountbasis !== "movement" ? (
+                                    <span className="text-xs text-muted-foreground">{tr("gl_statement_uses_column_accounts", "ใช้บัญชีของแต่ละคอลัมน์")}</span>
+                                  ) : (
                                   <button
                                     type="button"
                                     onClick={() => setAccountPickerRowId(row.id)}
@@ -702,6 +783,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                       ? tr("gl_selected_accounts", "เลือกแล้ว {0} บัญชี").replace("{0}", String(row.accountcodes.length))
                                       : tr("gl_select_chart_of_accounts", "+ เลือกผังบัญชี")}
                                   </button>
+                                  )}
 
                                   <select
                                     className="rounded border border-input bg-background p-1 text-xs"
@@ -711,6 +793,19 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                     <option value="debit">{tr("gl_debit_plus", "เดบิต (+)")}</option>
                                     <option value="credit">{tr("gl_credit_plus", "เครดิต (+)")}</option>
                                     <option value="net">{tr("gl_net", "สุทธิ")}</option>
+                                  </select>
+
+                                  <select
+                                    className="rounded border border-input bg-background p-1 text-xs"
+                                    value={row.amountbasis ?? ""}
+                                    onChange={(e) => updateRow(row.id, { amountbasis: (e.target.value || undefined) as StatementAmountBasis | undefined })}
+                                    title={tr("gl_statement_amount_basis", "ยอดที่ใช้")}
+                                    aria-label={tr("gl_statement_amount_basis", "ยอดที่ใช้")}
+                                  >
+                                    <option value="">{tr("gl_statement_basis_default", "ยอดตามประเภทงบ")}</option>
+                                    {Object.entries(statementAmountBasisLabels)
+                                      .filter(([key]) => key !== "other" || template.statementtype === "equity")
+                                      .map(([key, label]) => <option key={key} value={key}>{tr(...label)}</option>)}
                                   </select>
 
                                   <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none" title={tr("gl_reverse_sign", "กลับเครื่องหมายบวกลบ")}>
@@ -864,7 +959,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button type="button" variant="outline" className={actionClass} disabled={!calculated} onClick={() => calculated && statementPrint.print(statementView(calculated))}>
+                      <Button type="button" variant="outline" className={actionClass} disabled={!calculated} onClick={() => calculated && statementPrint.print(statementView(calculated), statementOrientation(calculated))}>
                         <Printer className="mr-1.5 h-4 w-4" /> {tr("gl_print_financial_statements", "พิมพ์งบการเงิน")}
                       </Button>
                       <Button
@@ -983,6 +1078,19 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
             updateRow(accountPickerRowId, { accountcodes: codes });
           }}
           title={tr("gl_select_coa_for", "เลือกผังบัญชีสำหรับ \"{0}\"").replace("{0}", String(template?.rows.find((r) => r.id === accountPickerRowId)?.title || tr("gl_this_row", "แถวนี้")))}
+          all={true}
+        />
+      )}
+
+      {accountPickerColumnId && (
+        <AccountSearchDialog
+          open={Boolean(accountPickerColumnId)}
+          onClose={() => setAccountPickerColumnId(null)}
+          accounts={refs.accounts}
+          multiSelect={true}
+          selectedCodes={template?.columns?.find((column) => column.id === accountPickerColumnId)?.accountcodes ?? []}
+          onSelectMultiple={(codes) => updateColumn(accountPickerColumnId, { accountcodes: codes })}
+          title={tr("gl_select_coa_for", "เลือกผังบัญชีสำหรับ \"{0}\"").replace("{0}", String(template?.columns?.find((column) => column.id === accountPickerColumnId)?.title || tr("gl_statement_column_title", "ชื่อคอลัมน์")))}
           all={true}
         />
       )}

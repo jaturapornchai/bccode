@@ -191,28 +191,30 @@ export function GLStatementTable({ report, company, title, period, showNote, sca
   const amounts = report.columns.filter((column) => column.amount);
   const span = 1 + (showNote ? 1 : 0) + amounts.length;
   return (
-    <table className="gl-print-statement gl-statement">
+    <table className={`gl-print-statement gl-statement${amounts.length > 3 ? " gl-statement-wide" : ""}`}>
       <thead>
         <tr className="gl-print-head">
           <th colSpan={span} className="gl-statement-heading">
             <div className="gl-print-company">{company}</div>
             <div className="gl-print-title">{title}</div>
             {period && <div className="gl-print-meta">{period}</div>}
-            <div className="gl-print-meta">{tr("gl_statement_unit_baht", "(หน่วย : บาท)")}</div>
+            <div className="gl-print-meta">{tr("gl_statement_unit_baht", "(หน่วย: บาท)")}</div>
           </th>
         </tr>
         <tr className="gl-statement-columns">
           <th />
           {showNote && <th className="gl-statement-note">{tr("gl_note", "หมายเหตุ")}</th>}
-          {amounts.map((column) => <th key={column.key} className="gl-print-num">{column.label}</th>)}
+          {amounts.map((column) => <th key={column.key} className="gl-print-num">{column.key === "total" ? tr("gl_statement_equity_total", column.label) : column.label}</th>)}
         </tr>
       </thead>
       <tbody>
-        {(report.rows ?? []).map((row, index) => {
+        {(report.rows ?? []).map((row, index, rows) => {
+          // งบส่วนของผู้ถือหุ้นมีชุดแถวต่อปี (ปีก่อน → ปีนี้): เว้นบรรทัดคั่นระหว่างชุด
+          const spacer = index > 0 && row.block && row.block !== rows[index - 1].block ? <tr key={`gap-${index}`}><td colSpan={span}>&nbsp;</td></tr> : null;
           if (row.rowtype === "blank") return <tr key={index}><td colSpan={span}>&nbsp;</td></tr>;
           if (row.rowtype === "divider") return <tr key={index}><td colSpan={span} className="gl-statement-divider" /></tr>;
           const font = `${row.fontweight === "bold" || row.fontweight === "semibold" ? "gl-statement-bold" : ""} ${row.fontstyle === "italic" ? "gl-statement-italic" : ""}`.trim();
-          return (
+          return [spacer, (
             <tr key={index}>
               <td className={font} style={{ paddingLeft: `${Number(row.indent || 0) * 1.25 + 0.25}em` }}>{row.title}</td>
               {showNote && <td className="gl-statement-note">{row.noteno}</td>}
@@ -222,9 +224,14 @@ export function GLStatementTable({ report, company, title, period, showNote, sca
                 </td>
               ))}
             </tr>
-          );
+          )];
         })}
       </tbody>
     </table>
   );
+}
+
+/** งบที่มีคอลัมน์ยอดเงินมากกว่า 3 คอลัมน์ (งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) พิมพ์แนวนอน */
+export function statementOrientation(report: GLReport): GLPrintOrientation {
+  return report.columns.filter((column) => column.amount).length > 3 ? "landscape" : "portrait";
 }

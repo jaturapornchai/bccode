@@ -135,7 +135,8 @@
 - [decisions/2026-09-25-retire-mongo-era-docs-and-skills.md](decisions/2026-09-25-retire-mongo-era-docs-and-skills.md) — ล้างเอกสาร/skill ยุค MongoDB/Kafka/Redis/ClickHouse: เขียนบทความ kms ใหม่ตามโค้ด, ลบ `12-kafka-messaging.md` + architecture/snippet ที่ตาย, ลบ skill `audit-mongomodel-sync` และ server `mongodb`/`mongomodel` ใน `.mcp.json`
 - [decisions/2026-09-25-wht-recorded-only.md](decisions/2026-09-25-wht-recorded-only.md) — รายงานภาษีหัก ณ ที่จ่าย/ภ.ง.ด.2-3-53/50 ทวิ อ่านเฉพาะรายการที่บันทึกในใบสำคัญ (แบบ Champ `BCAPWTaxList`) เลิกเดาฐาน/แบบจากชื่อบัญชี
 - [decisions/2026-09-26-gl-book-and-voucher-print.md](decisions/2026-09-26-gl-book-and-voucher-print.md) — พิมพ์สมุดบัญชี/รายงาน GL (หัวซ้ำทุกหน้า + เลขหน้า @page + เล่มที่) และใบสำคัญรายวันพร้อมช่องลงนาม ตามประกาศกรมทะเบียนการค้า 2544 — พิมพ์จากเบราว์เซอร์ ยังไม่มียอดรวมต่อหน้า
-- [decisions/2026-09-26-gl-statements-backend-comparative.md](decisions/2026-09-26-gl-statements-backend-comparative.md) — งบการเงินจากรูปแบบงบคำนวณที่ backend (`reports/statement`) + คอลัมน์ปีก่อน + แม่แบบตามแบบ 2 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 (ไม่ใส่รหัสบัญชีเดา); ยังไม่มีงบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น/หมายเหตุ
+- [decisions/2026-09-26-gl-statements-backend-comparative.md](decisions/2026-09-26-gl-statements-backend-comparative.md) — งบการเงินจากรูปแบบงบคำนวณที่ backend (`reports/statement`) + คอลัมน์ปีก่อน + แม่แบบตามแบบ 2 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 (ไม่ใส่รหัสบัญชีเดา); ยังไม่มีหมายเหตุประกอบงบ
+- [decisions/2026-09-26-gl-equity-statement-amount-basis.md](decisions/2026-09-26-gl-equity-statement-amount-basis.md) — งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้นตามแบบ 2 (คอลัมน์องค์ประกอบที่ผู้ใช้เลือกบัญชีเอง, ต้นงวด + บรรทัด + รายการอื่น = ปลายงวด) + `amountbasis` ต่อแถว (ต้นงวด/ปลายงวด/ความเคลื่อนไหว) แก้แม่แบบงบต้นทุนขาย/กระแสเงินสด
 
 ## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 36 ไฟล์ใน `bugs/`
 

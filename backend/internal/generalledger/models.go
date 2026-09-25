@@ -134,6 +134,14 @@ type Master struct {
 	StatementType  string                `json:"statementtype,omitempty" bson:"statementtype,omitempty"`
 	GlobalStyle    *StatementGlobalStyle `json:"globalstyle,omitempty" bson:"globalstyle,omitempty"`
 	Rows           []StatementRow        `json:"rows,omitempty" bson:"rows,omitempty"`
+	Columns        []StatementColumn     `json:"columns,omitempty" bson:"columns,omitempty"` // statement-templates ชนิด equity
+}
+
+// StatementColumn คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น (งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) — ผู้ใช้เลือกบัญชีเอง
+type StatementColumn struct {
+	ID           string   `json:"id" bson:"id"`
+	Title        string   `json:"title" bson:"title"`
+	AccountCodes []string `json:"accountcodes,omitempty" bson:"accountcodes,omitempty"`
 }
 
 type StatementStyle struct {
@@ -159,6 +167,9 @@ type StatementRow struct {
 	Formula       string         `json:"formula,omitempty" bson:"formula,omitempty"`
 	ReverseSign   bool           `json:"reversesign,omitempty" bson:"reversesign,omitempty"`
 	ShowZero      bool           `json:"showzero,omitempty" bson:"showzero,omitempty"`
+	// AmountBasis ของแถวบัญชี: "" ตามชนิดงบ, opening ยอดต้นงวด, closing ยอดปลายงวด, movement ความเคลื่อนไหวในงวด,
+	// other (เฉพาะงบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) ความเคลื่อนไหวของคอลัมน์ที่ยังไม่ได้อยู่ในบรรทัดใด
+	AmountBasis string `json:"amountbasis,omitempty" bson:"amountbasis,omitempty"`
 	Style         StatementStyle `json:"style,omitempty" bson:"style,omitempty"`
 }
 

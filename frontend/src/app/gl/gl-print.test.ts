@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { GLJournal, GLReport } from "@/lib/general-ledger";
-import { GLStatementTable, GLVoucherPrint, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { GLStatementTable, GLVoucherPrint, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -108,9 +108,26 @@ describe("financial statement print", () => {
       totals: {}, totalrows: 4, warnings: [], asof: "", sequence: 1,
     };
     const html = renderToStaticMarkup(createElement(GLStatementTable, { report, company: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", title: "งบแสดงฐานะการเงิน", period: "ณ วันที่ 31 ธันวาคม 2569", showNote: true, tr }));
-    for (const text of ["บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", "งบแสดงฐานะการเงิน", "ณ วันที่ 31 ธันวาคม 2569", "(หน่วย : บาท)", ">2569<", ">2568<", ">หมายเหตุ<", ">219.75<", ">69.75<"]) expect(html).toContain(text);
+    for (const text of ["บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", "งบแสดงฐานะการเงิน", "ณ วันที่ 31 ธันวาคม 2569", "(หน่วย: บาท)", ">2569<", ">2568<", ">หมายเหตุ<", ">219.75<", ">69.75<"]) expect(html).toContain(text);
     expect(html).toContain('class="gl-statement-bold gl-statement-u-double">219.75<');
     expect(html).toContain(">-<");
     expect(html).not.toContain("ลำดับ");
+    expect(statementOrientation(report)).toBe("portrait");
+  });
+
+  // งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น: คอลัมน์ = องค์ประกอบ + รวม, ชุดแถวปีก่อน/ปีนี้คั่นด้วยบรรทัดว่าง, พิมพ์แนวนอน
+  it("renders equity component columns, year blocks and a landscape page", () => {
+    const report: GLReport = {
+      columns: [{ key: "rowno", label: "ลำดับ" }, { key: "title", label: "รายการ" }, { key: "noteno", label: "หมายเหตุ" }, { key: "c1", label: "ทุนที่ชำระแล้ว", amount: true }, { key: "c2", label: "ส่วนเกินมูลค่าหุ้น", amount: true }, { key: "c3", label: "กำไร (ขาดทุน) สะสม", amount: true }, { key: "total", label: "รวมส่วนของผู้ถือหุ้น", amount: true }],
+      rows: [
+        { block: "prioramount", rowno: "140", title: "ยอดคงเหลือ ณ ปลายงวด 2568", rowtype: "account", c1: "1000.00", c2: "0.00", c3: "69.75", total: "1069.75" },
+        { block: "amount", rowno: "10", title: "ยอดคงเหลือ ณ ต้นงวด 2569", rowtype: "account", c1: "1000.00", c2: "0.00", c3: "69.75", total: "1069.75" },
+      ],
+      totals: {}, totalrows: 2, warnings: [], asof: "", sequence: 1,
+    };
+    const html = renderToStaticMarkup(createElement(GLStatementTable, { report, company: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", title: "งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น", period: "สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569", showNote: false, tr }));
+    for (const text of ["gl-statement-wide", ">ทุนที่ชำระแล้ว<", ">รวมส่วนของผู้ถือหุ้น<", ">1,069.75<", "ยอดคงเหลือ ณ ต้นงวด 2569"]) expect(html).toContain(text);
+    expect(html.match(/<tr[ >]/g)?.length).toBe(5); // หัวงบ + หัวคอลัมน์ + ปีก่อน + บรรทัดคั่น + ปีนี้
+    expect(statementOrientation(report)).toBe("landscape");
   });
 });

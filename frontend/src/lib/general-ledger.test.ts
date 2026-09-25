@@ -75,7 +75,7 @@ describe("general ledger exact accounting helpers", () => {
 
   it("provides 4 standard starter templates with valid rows and structure", () => {
     const templates = generateStarterTemplates();
-    expect(templates).toHaveLength(4);
+    expect(templates).toHaveLength(5);
     const bs = templates.find((t) => t.statementtype === "balance_sheet")!;
     expect(bs).toBeDefined();
     expect(bs.rows.length).toBeGreaterThan(15);
@@ -97,6 +97,22 @@ describe("general ledger exact accounting helpers", () => {
     const [bs, pnl] = generateStarterTemplates();
     expect([bs.name, bs.globalstyle.comparisontype, pnl.name, pnl.globalstyle.comparisontype]).toEqual(["งบแสดงฐานะการเงิน", "previous_year", "งบกำไรขาดทุน", "previous_year"]);
     expect(bs.rows.find((row) => row.rowno === 690)).toMatchObject({ rowtype: "subtotal", formula: "R540 + R680", style: { underline: "double" } });
+  });
+
+  // ต้นงวด/ปลายงวดต้องเป็นยอดคงเหลือจริง (backend statementBasisValue) ไม่ใช่ยอดเคลื่อนไหว; งบส่วนของผู้ถือหุ้นตามแบบ 2 หน้า 2-21
+  it("cost, cash-flow and equity starters use explicit opening/closing bases", () => {
+    const byCode = Object.fromEntries(generateStarterTemplates().map((template) => [template.code, template]));
+    const basis = (code: string, rowno: number) => byCode[code].rows.find((row) => row.rowno === rowno)?.amountbasis;
+    expect([20, 40, 90, 100, 120, 130].map((rowno) => basis("COGS-STMT", rowno))).toEqual(["opening", "closing", "opening", "closing", "opening", "closing"]);
+    expect(basis("COGS-STMT", 30)).toBeUndefined();
+    expect(basis("CASH-FLOW-IND", 170)).toBe("opening");
+    expect(byCode["CASH-FLOW-IND"].rows.find((row) => row.rowno === 180)).toMatchObject({ formula: "R160 + R170", style: { underline: "double" } });
+    const equity = byCode["EQ-DBD"];
+    expect(equity.statementtype).toBe("equity");
+    expect(equity.columns?.map((column) => column.title)).toEqual(["ทุนที่ชำระแล้ว", "ส่วนเกินมูลค่าหุ้น", "ส่วนเกิน (ต่ำกว่า) ทุนอื่น", "กำไร (ขาดทุน) สะสม", "ส่วนได้เสีย - ทุนอื่น", "องค์ประกอบอื่นของส่วนของผู้ถือหุ้น"]);
+    expect(equity.columns?.flatMap((column) => column.accountcodes ?? [])).toEqual(["__current_earnings__"]);
+    expect([10, 130, 140].map((rowno) => basis("EQ-DBD", rowno))).toEqual(["opening", "other", "closing"]);
+    expect(equity.rows.find((row) => row.rowno === 100)?.accountcodes).toEqual(["__current_earnings__"]);
   });
 });
 
