@@ -3,6 +3,7 @@
 package generalledger
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -45,7 +46,30 @@ func TestStatementReportComparativeIntegration(t *testing.T) {
 		}}
 	plain := income
 	plain.Code, plain.GlobalStyle = "FS-PL-ONE", &StatementGlobalStyle{Scale: 2, ComparisonType: "none"}
-	for _, m := range []Master{position, income, plain} {
+	// ข้อ 7 ประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566: รายการที่ไม่มียอดไม่ต้องแสดง
+	indent := StatementStyle{Indent: 1}
+	positionHidden := Master{Kind: "statement-templates", Code: "FS-POS-HZ", Name: "งบแสดงฐานะการเงิน", StatementType: "balance_sheet", IsActive: true,
+		GlobalStyle: &StatementGlobalStyle{Scale: 2, ComparisonType: "previous_year", HideZeroRows: true},
+		Rows: []StatementRow{
+			{ID: "a", RowNo: 10, RowType: "header", Title: "สินทรัพย์"},
+			{ID: "b", RowNo: 20, RowType: "account", Title: "เงินสดและรายการเทียบเท่าเงินสด", AccountCodes: []string{"1000"}, Style: indent},
+			{ID: "c", RowNo: 30, RowType: "account", Title: "เงินลงทุนชั่วคราว", Style: indent},
+			{ID: "d", RowNo: 40, RowType: "blank"},
+			{ID: "e", RowNo: 50, RowType: "header", Title: "หนี้สิน"},
+			{ID: "f", RowNo: 60, RowType: "account", Title: "เจ้าหนี้การค้า", Style: indent},
+			{ID: "g", RowNo: 70, RowType: "subtotal", Title: "รวมหนี้สิน", Formula: "R60", Style: indent},
+			{ID: "h", RowNo: 80, RowType: "blank"},
+			{ID: "i", RowNo: 90, RowType: "header", Title: "ส่วนของผู้ถือหุ้น"},
+			{ID: "j", RowNo: 100, RowType: "account", Title: "ทุนที่ชำระแล้ว", AccountCodes: []string{"3000"}, Style: indent},
+			{ID: "k", RowNo: 110, RowType: "account", Title: "ส่วนเกินมูลค่าหุ้น", ShowZero: true, Style: indent},
+			{ID: "l", RowNo: 120, RowType: "account", Title: "กำไรสะสม", AccountCodes: []string{"3100", "3200"}, Style: indent},
+			{ID: "m", RowNo: 130, RowType: "account", Title: "กำไร (ขาดทุน) สุทธิประจำงวด", AccountCodes: []string{statementCurrentEarnings}, Style: indent},
+			{ID: "n", RowNo: 140, RowType: "subtotal", Title: "รวมส่วนของผู้ถือหุ้น", Formula: "SUM(R100:R130)"},
+			{ID: "o", RowNo: 150, RowType: "blank"},
+		}}
+	incomeHidden := income
+	incomeHidden.Code, incomeHidden.GlobalStyle = "FS-PL-HZ", &StatementGlobalStyle{Scale: 2, ComparisonType: "previous_year", HideZeroRows: true}
+	for _, m := range []Master{position, income, plain, positionHidden, incomeHidden} {
 		m := m
 		f.run(Command{Resource: "statement-templates", Action: "create", Master: &m})
 	}
@@ -92,6 +116,30 @@ func TestStatementReportComparativeIntegration(t *testing.T) {
 	one := check("FS-PL-ONE", "", "", map[string][2]string{"30": {"150", ""}}, 1)
 	if len(one.Columns) != 4 {
 		t.Fatalf("single-period columns = %+v", one.Columns)
+	}
+	// hidezerorows: แถวที่ไม่มียอดทั้งปีนี้และปีก่อนไม่แสดง (ติ๊กแสดงศูนย์ยังแสดง), หัวข้อ "หนี้สิน" ที่ทุกแถวถูกซ่อนไม่แสดง,
+	// บรรทัดว่างที่ซ้อนกันและบรรทัดว่างท้ายงบไม่แสดง
+	rowNos := func(report Report) string {
+		nos := []string{}
+		for _, row := range report.Rows {
+			nos = append(nos, row["rowno"])
+		}
+		return strings.Join(nos, ",")
+	}
+	hidden := check("FS-POS-HZ", "", "", map[string][2]string{"20": {"219.75", "69.75"}, "110": {"0", "0"}, "120": {"69.75", "69.75"}, "130": {"150", "0"}, "140": {"219.75", "69.75"}}, 2)
+	if got := rowNos(hidden); got != "10,20,40,90,110,120,130,140" || hidden.TotalRows != 8 {
+		t.Fatalf("FS-POS-HZ rows = %s (%d)", got, hidden.TotalRows)
+	}
+	// ปีนี้ไม่มียอดแต่ปีก่อนมียอด = ยังแสดง (ม.ค.–1 มี.ค. 2027 เทียบช่วงเดียวกันปี 2026 ที่มีรายได้ 100)
+	if got := rowNos(check("FS-PL-HZ", "2027-01-01", "2027-03-01", map[string][2]string{"10": {"0", "100"}, "30": {"0", "100"}}, 2)); got != "10,30" {
+		t.Fatalf("FS-PL-HZ early rows = %s", got)
+	}
+	if got := rowNos(check("FS-PL-HZ", "2027-06-01", "2027-12-31", map[string][2]string{"20": {"50", "30.25"}, "30": {"-50", "-30.25"}}, 2)); got != "20,30" {
+		t.Fatalf("FS-PL-HZ mid-year rows = %s", got)
+	}
+	// ไม่ตั้ง hidezerorows = แสดงทุกแถวเหมือนเดิม (รวมแถวที่เป็นศูนย์)
+	if got := rowNos(check("FS-PL", "2027-06-01", "2027-12-31", nil, 2)); got != "10,20,30" {
+		t.Fatalf("FS-PL rows without hidezerorows = %s", got)
 	}
 	// ปีแรกไม่มีปีก่อน: ยังได้ผล พร้อมคำเตือน
 	first, err := f.store.Report(f.ctx, f.scope, "statement", ReportQuery{FiscalYear: "2026", Template: "FS-PL"})

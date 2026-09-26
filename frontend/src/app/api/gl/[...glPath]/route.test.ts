@@ -106,6 +106,16 @@ describe("GL authenticated proxy", () => {
     expect(fetchMock.mock.calls[2][0]).not.toContain("holdingcode");
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+  it("forwards statement notes reads and commands with multi-line Thai text intact", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    expect((await GET(new Request("http://localhost/api/gl/statement-notes?q=2569&page=1&limit=100&holdingcode=other", { headers }), context("statement-notes"))).status).toBe(200);
+    expect(fetchMock.mock.calls[0][0]).toContain("/gl/v2/statement-notes?q=2569&page=1&limit=100");
+    expect(fetchMock.mock.calls[0][0]).not.toContain("holdingcode");
+    const master = { code: "2569", name: "", isactive: true, notes: [{ id: "n1", noteno: "1", title: "ข้อมูลทั่วไป", body: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด\nสำนักงานใหญ่" }] };
+    const body = { resource: "statement-notes", action: "create", requestid: "12345678-1234-1234-1234-123456789012", master };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"))).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual(body);
+  });
   it("rejects numeric budget money and spread outside budgets", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const requestid = "12345678-1234-1234-1234-123456789012";

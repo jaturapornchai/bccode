@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-26 @ commit e9bd9533 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-26 @ commit 411d9f06 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 28
 
@@ -1014,6 +1014,28 @@ Files indexed: 28
 | 233 | const-arrow | `handlePostGL` |
 | 276 | const-arrow | `handleConfirmDisposal` |
 
+## frontend/src/app/gl/gl-statement-designer.tsx (1156 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 79 | function | `ensureFontLoaded` |
+| 92 | function | `GLStatementDesigner` |
+| 133 | function | `switchMode` |
+| 156 | function | `open` |
+| 179 | function | `applyStarterTemplate` |
+| 192 | function | `save` |
+| 227 | function | `cloneTemplate` |
+| 241 | function | `remove` |
+| 268 | function | `addRow` |
+| 287 | function | `updateRow` |
+| 293 | function | `deleteRow` |
+| 299 | function | `updateColumns` |
+| 304 | function | `updateColumn` |
+| 308 | function | `moveRow` |
+| 319 | function | `runCalculation` |
+| 342 | const-arrow | `updateGlobalStyle` |
+| 351 | function | `statementView` |
+
 ## backend/pkg/microservice/auth.go (1152 lines)
 
 | Line | Kind | Name |
@@ -1197,27 +1219,6 @@ Files indexed: 28
 | 301 | function | `saveReconciliation` |
 | 332 | function | `act` |
 | 350 | function | `deleteDraftDirect` |
-
-## frontend/src/app/gl/gl-statement-designer.tsx (1102 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 77 | function | `ensureFontLoaded` |
-| 90 | function | `GLStatementDesigner` |
-| 144 | function | `open` |
-| 167 | function | `applyStarterTemplate` |
-| 180 | function | `save` |
-| 215 | function | `cloneTemplate` |
-| 229 | function | `remove` |
-| 256 | function | `addRow` |
-| 275 | function | `updateRow` |
-| 281 | function | `deleteRow` |
-| 287 | function | `updateColumns` |
-| 292 | function | `updateColumn` |
-| 296 | function | `moveRow` |
-| 307 | function | `runCalculation` |
-| 330 | const-arrow | `updateGlobalStyle` |
-| 339 | function | `statementView` |
 
 ## frontend/src/app/crud/erp-crud-workbench.tsx (1074 lines)
 

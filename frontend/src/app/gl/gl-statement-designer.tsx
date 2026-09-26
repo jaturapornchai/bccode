@@ -17,6 +17,7 @@ import {
   Sparkles,
   Search,
   Pencil,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -63,7 +64,8 @@ import {
   useGLText,
 } from "./gl-common";
 import { fetchReport, type ReportFilters, emptyReportFilters } from "./gl-reports";
-import { GLStatementTable, printCompanyName, statementOrientation, statementPeriodText, useGLPrint } from "./gl-print";
+import { GLReportWarnings, GLStatementChecks, GLStatementTable, printCompanyName, statementOrientation, statementPeriodText, useGLPrint } from "./gl-print";
+import { GLStatementNotesEditor } from "./gl-statement-notes";
 
 const FONT_OPTIONS: { id: string; name: GLLabel; family: string; href: string }[] = [
   { id: "sarabun", name: ["gl_font_family_sarabun", "Sarabun (สารบรรณ - มาตรฐานทางการ)"], family: '"Sarabun", sans-serif', href: "https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" },
@@ -121,8 +123,18 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   const { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
 
   const dirty = template !== null && JSON.stringify(template) !== original;
+  // จอเดียวสองโหมด: รูปแบบงบการเงิน | หมายเหตุประกอบงบการเงิน (gl-statement-notes.tsx) — ไม่มีเมนูใหม่
+  const [mode, setMode] = useState<"templates" | "notes">("templates");
+  const [notesDirty, setNotesDirty] = useState(false);
 
-  useDirtyGuard(route, dirty);
+  useDirtyGuard(route, dirty || notesDirty);
+
+  // ออกจากโหมดหมายเหตุ = ปิดตัวแก้ไขหมายเหตุ จึงต้องยืนยันก่อนทิ้งหมายเหตุที่ยังไม่บันทึก (แม่แบบงบยังอยู่ในหน่วยความจำของจอนี้)
+  async function switchMode(next: "templates" | "notes") {
+    if (next === mode) return;
+    if (mode === "notes" && notesDirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
+    setMode(next);
+  }
 
   // Ensure current font is loaded
   useEffect(() => {
@@ -349,6 +361,15 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-2">
+      <div className="flex shrink-0 flex-wrap gap-1 self-start rounded-xl border border-border bg-muted/30 p-1" role="group" aria-label={tr("gl_statement_mode_switch", "เลือกงานในจอนี้")}>
+        {([["templates", tr("gl_statement_mode_templates", "รูปแบบงบการเงิน"), SlidersHorizontal], ["notes", tr("gl_statement_notes_title", "หมายเหตุประกอบงบการเงิน"), FileText]] as const).map(([value, label, Icon]) => (
+          <Button key={value} type="button" variant={mode === value ? "default" : "ghost"} aria-pressed={mode === value} className={`${actionClass} font-semibold`} onClick={() => void switchMode(value)}>
+            <Icon className="mr-1.5 h-4 w-4" /> {label}
+          </Button>
+        ))}
+      </div>
+
+      {mode === "notes" ? <GLStatementNotesEditor onDirtyChange={setNotesDirty} /> : <>
       <div className="shrink-0 flex flex-col gap-2">
         <Notice error text={error || list.error || refs.error} />
         <Notice text={message} />
@@ -539,7 +560,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     className={control}
                     value={template.name}
                     onChange={(e) => setTemplate({ ...template, name: e.target.value })}
-                    placeholder={tr("gl_fin_stmt_template_name_ex", "เช่น งบแสดงฐานะการเงิน (แบบ DBD)")}
+                    placeholder={tr("gl_fin_stmt_template_name_ex", "เช่น งบฐานะการเงิน (แบบ 2)")}
                   />
                 </Field>
                 <Field label={tr("gl_fin_stmt_type", "ประเภทงบ")}>
@@ -599,6 +620,17 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                       onCheckedChange={(checked) => updateGlobalStyle({ shownotecolumn: checked })}
                     />
                     <span className="whitespace-nowrap">{tr("gl_show_notes_column", "แสดงคอลัมน์หมายเหตุประกอบงบ")}</span>
+                  </label>
+                  {/* ข้อ 7 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566: backend ตัดรายการที่ไม่มียอดออก (แถวที่ติ๊ก "แสดงศูนย์" ยังแสดง) */}
+                  <label
+                    className="inline-flex w-auto shrink-0 items-center gap-2.5 text-sm font-medium cursor-pointer select-none"
+                    title={tr("gl_statement_hide_zero_rows_hint", "ไม่แสดงรายการที่ยอดเป็นศูนย์ทุกคอลัมน์ หัวข้อที่ไม่เหลือรายการ และคอลัมน์ส่วนของผู้ถือหุ้นที่เป็นศูนย์ทั้งงบ — รายการที่ติ๊ก “แสดงศูนย์” ยังแสดงเสมอ")}
+                  >
+                    <Checkbox
+                      checked={template.globalstyle?.hidezerorows ?? false}
+                      onCheckedChange={(checked) => updateGlobalStyle({ hidezerorows: checked || undefined })}
+                    />
+                    <span className="whitespace-nowrap">{tr("gl_statement_hide_zero_rows", "ซ่อนรายการที่ไม่มียอด (ข้อ 7 ของประกาศ)")}</span>
                   </label>
                   <label className="inline-flex w-auto shrink-0 items-center gap-2.5 text-sm font-medium cursor-pointer select-none">
                     <Checkbox
@@ -878,6 +910,20 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                   <option value="double">{tr("gl_double_underline_net", "ขีดคู่ = (ยอดสุทธิ)")}</option>
                                   <option value="top_single_bottom_double">{tr("gl_top_single_bottom_double", "บนเดี่ยว ล่างคู่")}</option>
                                 </select>
+
+                                {/* แสดงศูนย์: พิมพ์ 0.00 แทน "-" และไม่ถูกซ่อนเมื่อแม่แบบตั้งซ่อนรายการที่ไม่มียอด */}
+                                {(row.rowtype === "account" || row.rowtype === "formula" || row.rowtype === "subtotal") && (
+                                  <label
+                                    className="inline-flex items-center gap-1.5 text-[0.8rem] cursor-pointer select-none"
+                                    title={tr("gl_statement_show_zero_hint", "พิมพ์รายการนี้เสมอแม้ยอดเป็นศูนย์ (แสดง 0.00 แทน -)")}
+                                  >
+                                    <Checkbox
+                                      checked={row.showzero ?? false}
+                                      onCheckedChange={(checked) => updateRow(row.id, { showzero: checked || undefined })}
+                                    />
+                                    <span className="whitespace-nowrap">{tr("gl_statement_show_zero", "แสดงศูนย์")}</span>
+                                  </label>
+                                )}
                               </div>
                             </td>
 
@@ -977,6 +1023,14 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                     </div>
                   </div>
 
+                  {/* ผลตรวจยอดกับบัญชี + คำเตือน: อยู่นอกตารางงบจึงไม่ถูกพิมพ์ วางเหนือพรีวิวให้เห็นก่อนออกงบ */}
+                  {calculated && ((calculated.checks?.length ?? 0) > 0 || (calculated.warnings?.length ?? 0) > 0) && (
+                    <div className="flex max-h-[40vh] shrink-0 flex-col gap-2 overflow-auto">
+                      <GLStatementChecks checks={calculated.checks} scale={template.globalstyle?.scale ?? 2} tr={tr} />
+                      <GLReportWarnings warnings={calculated.warnings} tr={tr} />
+                    </div>
+                  )}
+
                   {/* WYSIWYG Live Report Viewer */}
                   <div
                     className="flex-1 min-h-[300px] overflow-auto rounded-2xl border border-border bg-card p-6 shadow-sm print:m-0 print:border-none print:p-0 print:shadow-none"
@@ -990,7 +1044,6 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                         {calculating ? tr("gl_processing_financial_amounts", "กำลังประมวลผลยอดงบการเงิน...") : tr("gl_press_calculate_display_to_process", "กดปุ่ม 'คำนวณและแสดงผล' เพื่อประมวลผลยอดบัญชี")}
                       </p>
                     )}
-                    {calculated?.warnings?.map((warning) => <p key={warning} className="mt-3 text-sm text-muted-foreground">{warning}</p>)}
                   </div>
                 </div>
               )}
@@ -1021,6 +1074,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
           )
         }
       />
+      </>}
 
       {/* Starter Templates Modal */}
       {starterModalOpen && (

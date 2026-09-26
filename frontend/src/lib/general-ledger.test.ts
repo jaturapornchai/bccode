@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
-import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates } from "./general-ledger";
+import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
+import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, type StatementRow } from "./general-ledger";
 
 const accounts = [ { ...emptyAccount(), accountcode: "A", names: [{ code: "th", name: "เงินสด" }] }, { ...emptyAccount(), accountcode: "B", names: [{ code: "th", name: "ทุน" }] } ];
 const year = { ...emptyFiscalYear(), code: "FY", startdate: "2026-01-01", enddate: "2026-12-31", currency: "THB", scale: 2 };
@@ -95,7 +98,7 @@ describe("general ledger exact accounting helpers", () => {
       }
     }
     const [bs, pnl] = generateStarterTemplates();
-    expect([bs.name, bs.globalstyle.comparisontype, pnl.name, pnl.globalstyle.comparisontype]).toEqual(["งบแสดงฐานะการเงิน", "previous_year", "งบกำไรขาดทุน", "previous_year"]);
+    expect([bs.name, bs.globalstyle.comparisontype, pnl.name, pnl.globalstyle.comparisontype]).toEqual(["งบฐานะการเงิน", "previous_year", "งบกำไรขาดทุน", "previous_year"]);
     expect(bs.rows.find((row) => row.rowno === 690)).toMatchObject({ rowtype: "subtotal", formula: "R540 + R680", style: { underline: "double" } });
   });
 
@@ -113,6 +116,42 @@ describe("general ledger exact accounting helpers", () => {
     expect(equity.columns?.flatMap((column) => column.accountcodes ?? [])).toEqual(["__current_earnings__"]);
     expect([10, 130, 140].map((rowno) => basis("EQ-DBD", rowno))).toEqual(["opening", "other", "closing"]);
     expect(equity.rows.find((row) => row.rowno === 100)?.accountcodes).toEqual(["__current_earnings__"]);
+  });
+
+  // ข้อ 7 ประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566: แม่แบบซ่อนรายการที่ไม่มียอด (backend statements_hidezero.go);
+  // แม่แบบเปล่าไม่ตั้งไว้; บังคับแสดงศูนย์เฉพาะบรรทัดผลลัพธ์/ยอดรวมใหญ่ของงบ (ข้อ 7 ไม่ได้ให้ละบรรทัดเหล่านี้)
+  it("starter templates hide items with no amount by default", () => {
+    const templates = generateStarterTemplates();
+    expect(templates.map((template) => [template.code, template.globalstyle.hidezerorows])).toEqual([
+      ["BS-DBD", true], ["PNL-DBD", true], ["COGS-STMT", true], ["CASH-FLOW-IND", true], ["EQ-DBD", true],
+    ]);
+    expect(Object.fromEntries(templates.map((template) => [template.code, template.rows.filter((row) => row.showzero).map((row) => row.rowno)]))).toEqual({
+      "BS-DBD": [300, 690], "PNL-DBD": [140], "COGS-STMT": [140], "CASH-FLOW-IND": [180], "EQ-DBD": [140],
+    });
+    expect(emptyStatementTemplate().globalstyle.hidezerorows).toBeUndefined();
+  });
+
+  // backend hideZeroStatementBlock: หัวข้อแบบซ้อนจบที่แถวแรกที่ย่อหน้าไม่ลึกกว่าหัวข้อ — ถ้าแถวนั้นเป็นยอดรวมย่อยที่ตามด้วยหัวข้อย่อยที่ลึกกว่า
+  // (ยอดรวมกลางส่วน) หัวข้อย่อยนั้นหลุดจากส่วน และหัวข้อแม่หายทั้งที่ยอดรวมท้ายส่วนยังพิมพ์ (เคยเกิดกับ 320 "หนี้สินและส่วนของผู้ถือหุ้น"
+  // เมื่อ 540 "รวมหนี้สิน" ย่อหน้า 0); แถวบัญชีที่ต่อจากยอดรวม (เช่น ค่าแรงทางตรงต่อจากวัตถุดิบใช้ไปใน COGS-STMT) เป็นยอดสะสม ไม่ใช่ส่วนของหัวข้อ
+  it("starter template headers keep every deeper row in their hide-zero section", () => {
+    const indent = (row: StatementRow) => row.style?.indent ?? 0;
+    const broken: string[] = [];
+    for (const template of generateStarterTemplates()) {
+      const rows = template.rows.filter((row) => row.rowtype !== "blank" && row.rowtype !== "divider");
+      rows.forEach((header, i) => {
+        const level = indent(header);
+        if (header.rowtype !== "header" || !rows[i + 1] || indent(rows[i + 1]) <= level) return;
+        const end = rows.findIndex((row, j) => j > i && indent(row) <= level);
+        const total = rows[end], after = rows[end + 1];
+        if (total && (total.rowtype === "subtotal" || total.rowtype === "formula") && indent(total) === level && after?.rowtype === "header" && indent(after) > level) {
+          broken.push(`${template.code} ${header.rowno} ends at ${total.rowno}`);
+        }
+      });
+    }
+    expect(broken).toEqual([]);
+    const bs = generateStarterTemplates().find((template) => template.code === "BS-DBD");
+    expect(bs?.rows.find((row) => row.rowno === 540)?.style?.indent).toBe(1);
   });
 });
 
@@ -215,5 +254,68 @@ describe("journal books are user-defined master data (booktype drives behaviour,
   });
   it("labels the six book types from the spec", () => {
     expect(Object.keys(journalBookTypeLabels)).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+});
+
+// หมายเหตุประกอบงบการเงิน: หัวข้อเริ่มต้นตามแบบ 2 ข้อ 5.1–5.6 (ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 หน้า 2-30..2-31)
+describe("statement notes (แบบ 2 ข้อ 5)", () => {
+  it("starts with the six Form 2 headings numbered 1..6 and only the 5.2.1 sentence prefilled", () => {
+    const notes = starterStatementNotes();
+    expect(notes.map((note) => [note.noteno, note.title])).toEqual([
+      ["1", "ข้อมูลทั่วไป"], ["2", "เกณฑ์ในการจัดทำและนำเสนองบการเงิน"], ["3", "สรุปนโยบายการบัญชี"],
+      ["4", "ประมาณการทางบัญชี"], ["5", "ข้อผิดพลาดในงวดก่อน"], ["6", "ข้อมูลเพิ่มเติมอื่น ๆ"],
+    ]);
+    expect(notes[1].body).toBe(STATEMENT_NOTES_NPAES_BASIS);
+    expect(STATEMENT_NOTES_NPAES_BASIS).toBe("งบการเงินฉบับนี้จัดทำขึ้นตามมาตรฐานการรายงานทางการเงินสำหรับกิจการที่ไม่มีส่วนได้เสียสาธารณะ (TFRS for NPAEs)");
+    expect(notes.filter((note) => note.body !== "")).toHaveLength(1);
+    expect(new Set(notes.map((note) => note.id)).size).toBe(6);
+    // สร้างใหม่ทุกครั้ง: แก้ชุดหนึ่งไม่กระทบอีกชุด
+    notes[0].title = "แก้แล้ว";
+    expect(starterStatementNotes()[0].title).toBe("ข้อมูลทั่วไป");
+  });
+  it("numbers a new note after the largest plain number and ignores 5.1-style numbers", () => {
+    expect(newStatementNote([]).noteno).toBe("1");
+    const next = newStatementNote([{ id: "a", noteno: " 7 ", title: "x", body: "" }, { id: "b", noteno: "5.1", title: "y", body: "" }, { id: "c", noteno: "ก", title: "z", body: "" }]);
+    expect(next).toMatchObject({ noteno: "8", title: "", body: "" });
+    expect(next.id).not.toBe("");
+  });
+  it("fills missing API fields with empty strings", () => {
+    expect(statementNotesFromRecord(null)).toEqual([]);
+    expect(statementNotesFromRecord({ notes: null })).toEqual([]);
+    const [note] = statementNotesFromRecord({ notes: [{ id: "n1", noteno: "1", title: "ข้อมูลทั่วไป" }] });
+    expect(note).toEqual({ id: "n1", noteno: "1", title: "ข้อมูลทั่วไป", body: "" });
+    expect(statementNotesFromRecord({ notes: [{ noteno: "2" }] })[0].id).not.toBe("");
+  });
+  it("keeps text typed while a save was in flight instead of replacing it with the reloaded copy", () => {
+    const sent = [{ id: "n1", noteno: " 1 ", title: "ข้อมูลทั่วไป ", body: "บริษัท" }];
+    const server = [{ id: "n1", noteno: "1", title: "ข้อมูลทั่วไป", body: "บริษัท" }];
+    const typedMore = [{ ...sent[0], body: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด" }];
+    expect(statementNotesAfterReload(sent, JSON.stringify(sent), server)).toBe(server);
+    expect(statementNotesAfterReload(typedMore, JSON.stringify(sent), server)).toBe(typedMore);
+    expect(statementNotesAfterReload(null, null, server)).toBe(server);
+    expect(statementNotesAfterReload(typedMore, null, null)).toBeNull();
+  });
+  // บันทึกชนกับฉบับที่คนอื่นบันทึกก่อน (version เก่า / สร้างปีเดียวกันก่อน / ถูกลบไปแล้ว): ส่งซ้ำไม่มีวันผ่าน จอต้องมีปุ่มโหลดฉบับล่าสุด
+  it("offers loading the latest notes after a save or delete conflicts with the stored copy", () => {
+    expect(["stale_version", "duplicate_code", "not_found"].map(statementNotesNeedReload)).toEqual([true, true, true]);
+    expect(["validation_failed", "statement_note_no_duplicate", "unavailable", ""].map(statementNotesNeedReload)).toEqual([false, false, false, false]);
+    const editor = readFileSync(resolve(process.cwd(), "src", "app", "gl", "gl-statement-notes.tsx"), "utf8");
+    expect(editor).toMatch(/setReloadNeeded\(statementNotesNeedReload\(/);
+    expect(editor).toMatch(/onClick=\{\(\) => void reloadLatest\(\)\}/);
+    expect(editor).toContain('"gl_statement_notes_reload_latest"');
+  });
+  it("asks before deleting a note only when it has a title or text", () => {
+    expect(statementNoteHasText({ id: "a", noteno: "1", title: "", body: "  " })).toBe(false);
+    expect(statementNoteHasText({ id: "a", noteno: "1", title: " ", body: "เนื้อหา" })).toBe(true);
+    expect(statementNoteHasText({ id: "a", noteno: "1", title: "ข้อมูลทั่วไป", body: "" })).toBe(true);
+  });
+  it("gives a repeated note id a new id so editing one note never edits another", () => {
+    const notes = statementNotesFromRecord({ notes: [{ id: "n1", noteno: "1", title: "ก" }, { id: "n1", noteno: "2", title: "ข" }, { id: "n2", noteno: "3", title: "ค" }] });
+    expect(notes[0].id).toBe("n1");
+    expect(notes[2].id).toBe("n2");
+    expect(new Set(notes.map((note) => note.id)).size).toBe(3);
+  });
+  it("is a GL resource so both BFF allowlists forward it", () => {
+    expect(GL_RESOURCES).toContain("statement-notes");
   });
 });

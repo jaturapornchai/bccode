@@ -13,6 +13,8 @@ func TestEquityStatementIntegration(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	dividend := Account{AccountCode: "3300", AccountType: "equity", NormalBalance: "debit", AllowPosting: true, IsActive: true, Names: []Name{{Code: "th", Name: "เงินปันผลจ่าย"}}}
 	f.run(Command{Resource: "accounts", Action: "create", Account: &dividend})
+	premium := Account{AccountCode: "3400", AccountType: "equity", NormalBalance: "credit", AllowPosting: true, IsActive: true, Names: []Name{{Code: "th", Name: "ส่วนเกินมูลค่าหุ้น"}}}
+	f.run(Command{Resource: "accounts", Action: "create", Account: &premium})
 	post := func(doc, date, year, debitAccount, creditAccount, amount string) {
 		j := Journal{DocNo: doc, Date: date, BookCode: "JV", FiscalYear: year, Description: "รายการทดสอบงบส่วนของผู้ถือหุ้น", Kind: "manual", BranchCode: "B1",
 			Lines: []Line{{AccountCode: debitAccount, Debit: Amount(amount), Credit: Amount("0")}, {AccountCode: creditAccount, Debit: Amount("0"), Credit: Amount(amount)}}}
@@ -53,7 +55,11 @@ func TestEquityStatementIntegration(t *testing.T) {
 	unmapped.Columns = []StatementColumn{{ID: "re", Title: "กำไร (ขาดทุน) สะสม", AccountCodes: []string{"3100"}}}
 	empty := equity
 	empty.Code, empty.Columns = "EQ-EMPTY", []StatementColumn{{ID: "cap", Title: "ทุนที่ชำระแล้ว"}}
-	for _, m := range []Master{equity, unmapped, empty} {
+	// ข้อ 7 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566: รายการ/องค์ประกอบที่กิจการไม่มีไม่ต้องแสดง (3400 ไม่มีรายการทั้งสองปี)
+	hideZero := equity
+	hideZero.Code, hideZero.GlobalStyle = "EQ-HZ", &StatementGlobalStyle{Scale: 2, ComparisonType: "previous_year", HideZeroRows: true}
+	hideZero.Columns = []StatementColumn{equity.Columns[0], {ID: "premium", Title: "ส่วนเกินมูลค่าหุ้น", AccountCodes: []string{"3400"}}, equity.Columns[2]}
+	for _, m := range []Master{equity, unmapped, empty, hideZero} {
 		m := m
 		f.run(Command{Resource: "statement-templates", Action: "create", Master: &m})
 	}
@@ -91,6 +97,26 @@ func TestEquityStatementIntegration(t *testing.T) {
 	var cash string
 	if err = f.db.QueryRowContext(f.ctx, `SELECT SUM(debit-credit)::text FROM gl_lines WHERE company='C' AND fiscal_year='2027' AND account_code='1000'`).Scan(&cash); err != nil || !sameAmount(cash, "1704.75") {
 		t.Fatalf("cash = %s %v", cash, err)
+	}
+
+	// hidezerorows: ปี 2026 (ปีแรก) ไม่มียอดต้นงวด เงินปันผล และรายการอื่น จึงไม่แสดงเฉพาะในชุดปีนั้น; ปี 2027 แสดงครบ;
+	// คอลัมน์ส่วนเกินมูลค่าหุ้น (c2) เป็นศูนย์ทุกแถวทุกปี จึงไม่แสดง แต่คอลัมน์รวมยังอยู่
+	hidden, err := f.store.Report(f.ctx, f.scope, "statement", ReportQuery{FiscalYear: "2027", Template: "EQ-HZ"})
+	if err != nil || len(hidden.Warnings) != 0 {
+		t.Fatalf("EQ-HZ = %v %v", hidden.Warnings, err)
+	}
+	if len(hidden.Columns) != 6 || hidden.Columns[3].Key != "c1" || hidden.Columns[4].Key != "c3" || hidden.Columns[5].Key != "total" {
+		t.Fatalf("EQ-HZ columns = %+v", hidden.Columns)
+	}
+	keys := []string{}
+	for _, row := range hidden.Rows {
+		keys = append(keys, row["block"]+"|"+row["rowno"])
+		if w, ok := want[row["block"]+"|"+row["rowno"]]; ok && (!sameAmount(row["c1"], w[0]) || !sameAmount(row["c3"], w[1]) || !sameAmount(row["total"], w[2])) {
+			t.Errorf("EQ-HZ %s row %s = %s / %s / %s, want %v", row["block"], row["rowno"], row["c1"], row["c3"], row["total"], w)
+		}
+	}
+	if got := strings.Join(keys, ","); got != "prioramount|20,prioramount|40,prioramount|60,amount|10,amount|20,amount|30,amount|40,amount|50,amount|60" || hidden.TotalRows != 9 {
+		t.Fatalf("EQ-HZ rows = %s (%d)", got, hidden.TotalRows)
 	}
 
 	// ไม่ได้ใส่กำไรที่ยังไม่ปิด: ยังได้ผล แต่ต้องเตือน (ไม่เงียบ)

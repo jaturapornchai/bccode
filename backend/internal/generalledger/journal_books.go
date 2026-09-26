@@ -291,7 +291,7 @@ func defaultJournalBookChanges(ctx context.Context, tx *sql.Tx, scope Scope, now
 var masterCodeLabels = map[string]string{
 	"account-groups": "รหัสกลุ่มผังบัญชี", "product-account-groups": "รหัสกลุ่มบัญชีสินค้า", "mappings": "รหัสรูปแบบการเชื่อม",
 	"forecast": "รหัสประมาณการกระแสเงินสด", "allocations": "รหัสการปันส่วน",
-	"statement-templates": "รหัสรูปแบบงบการเงิน",
+	"statement-templates": "รหัสรูปแบบงบการเงิน", "statement-notes": "ปีบัญชีของหมายเหตุประกอบงบการเงิน",
 }
 
 // validateMasterCode checks the code of an auxiliary master; journal books also get their

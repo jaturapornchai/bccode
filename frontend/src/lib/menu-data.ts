@@ -52,6 +52,7 @@ const CHAMP_SEARCH_ALIASES: Record<string, string[]> = {
   "asset-post-gl": ["โอนค่าเสื่อมราคาเข้าบัญชีแยกประเภท", "Post GL"],
   "asset-registry": ["ทะเบียนสินทรัพย์ถาวร"],
   "asset-type": ["ประเภทสินทรัพย์"],
+  "balance-sheet": ["งบดุล", "งบแสดงฐานะการเงิน", "Balance Sheet"],
   "bank-contact": ["ผู้ติดต่อธนาคาร"],
   "bank-recalculate": ["คำนวณยอดสมุดบัญชีใหม่"],
   "billing-note": ["ใบวางบิล"],
@@ -636,7 +637,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("working-paper", "รายงานกระดาษทำการ", "Working Paper", "/gl/workingpaper", "report"),
           tx("financial-statement-designer", "รูปแบบงบการเงิน", "Financial Statement Designer", "/gl/statement-designer", "finance"),
           tx("profit-loss", "งบกำไรขาดทุน", "Profit and Loss", "/report/pnl", "report"),
-          tx("balance-sheet", "งบดุล", "Balance Sheet", "/report/balancesheet", "report"),
+          tx("balance-sheet", "งบฐานะการเงิน", "Statement of Financial Position", "/report/balancesheet", "report"),
           tx("budget-comparison-report", "รายงานเปรียบเทียบงบประมาณ", "Budget Comparison Report", "/report/budgetcomparison", "report"),
           // 2026-09-25 รายละเอียดประกอบบัญชีตาม mydocs/specs/gl/spec.md (ยอดค้างรับ/จ่าย + Statement รอจับคู่) — Champ: รายงานสถานะลูกหนี้/เจ้าหนี้, รายงาน Bank Statement
           tx("gl-ar-outstanding", "รายงานยอดคงค้างลูกหนี้", "Outstanding Receivables", "/report/ar-outstanding", "report"),

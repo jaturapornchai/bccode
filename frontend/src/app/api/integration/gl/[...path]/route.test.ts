@@ -46,3 +46,9 @@ it.each(["ar-outstanding","ap-outstanding","bank-unmatched"])("API token exposes
   expect(response.status).toBe(200);
   expect(fetcher.mock.calls[0][0]).toContain(`/integration/gl/v2/reports/${report}?to=2026-06-30&companywide=true`);
 });
+
+it("API token can read the notes to the financial statements (statement-notes is a GL resource)", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ success: true, data: { items: [] } })); vi.stubGlobal("fetch", fetcher);
+  expect((await GET(new Request("http://local/api/integration/gl/statement-notes?q=2569", { headers: { authorization: "Bearer bcaiapi_test.id.secret" } }), context(["statement-notes"]))).status).toBe(200);
+  expect(fetcher.mock.calls[0][0]).toBe("http://mainapi:8888/integration/gl/v2/statement-notes?q=2569");
+});

@@ -72,7 +72,8 @@ func TestEvaluateEquityStatement(t *testing.T) {
 	_, warnings = evaluateEquityStatement(rows[:4], columns, balances)
 	template := equityTemplateWarnings(append(rows[:4:4], StatementRow{RowNo: 80, RowType: "account", Title: "ซ้ำ", AccountCodes: []string{"3000"}}), append(columns, StatementColumn{Title: "อื่น", AccountCodes: []string{"3000"}}))
 	joined := strings.Join(append(warnings, template...), "\n")
-	for _, text := range []string{"ยังไม่อยู่ในบรรทัดใด", "ยังไม่ได้เลือก “รวมกำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี” ในคอลัมน์ใด", "หลายคอลัมน์", "หลายบรรทัด", "ไม่อยู่ในคอลัมน์ใด จึงไม่แสดงยอด"} {
+	// ชื่องบตามเมนู "งบฐานะการเงิน" (ADR 2026-09-26) — ไม่ใช่ชื่อเดิม "งบแสดงฐานะการเงิน"
+	for _, text := range []string{"ยังไม่อยู่ในบรรทัดใด", "ยังไม่ได้เลือก “รวมกำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี” ในคอลัมน์ใด ยอดรวมจะไม่ตรงกับงบฐานะการเงิน", "หลายคอลัมน์", "หลายบรรทัด", "ไม่อยู่ในคอลัมน์ใด จึงไม่แสดงยอด"} {
 		if !strings.Contains(joined, text) {
 			t.Errorf("missing warning %q in\n%s", text, joined)
 		}

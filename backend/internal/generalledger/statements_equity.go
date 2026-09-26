@@ -28,9 +28,10 @@ func (r reportContext) equityStatement(ctx context.Context, template Master, sca
 	if len(columns) == 0 {
 		return Report{}, fmt.Errorf("กรุณากำหนดคอลัมน์องค์ประกอบส่วนของผู้ถือหุ้นและเลือกบัญชีอย่างน้อย 1 คอลัมน์")
 	}
+	templateWarnings := equityTemplateWarnings(template.Rows, columns)
 	report := Report{
 		Columns: []ReportColumn{textColumn("rowno", "ลำดับ"), textColumn("title", "รายการ"), textColumn("noteno", "หมายเหตุ")},
-		Rows:    []map[string]string{}, Totals: map[string]string{}, Warnings: equityTemplateWarnings(template.Rows, columns),
+		Rows:    []map[string]string{}, Totals: map[string]string{}, Warnings: []string{},
 	}
 	for i, column := range columns {
 		report.Columns = append(report.Columns, amountColumn(equityColumnKey(i), column.Title))
@@ -78,6 +79,16 @@ func (r reportContext) equityStatement(ctx context.Context, template Master, sca
 			report.Rows = append(report.Rows, out)
 		}
 	}
+	if statementHideZero(template) {
+		report.Rows = hideZeroStatementRows(report.Rows, statementAmountKeys(report.Columns), statementFormulaRefs(template.Rows))
+		report.Columns = hideZeroEquityColumns(report.Columns, report.Rows)
+	}
+	// หมายเหตุตรวจเฉพาะบรรทัดที่พิมพ์จริง (หลังซ่อนแถวศูนย์); ลำดับคำเตือน: การตั้งค่ารูปแบบ → หมายเหตุ → รายปี
+	noteWarnings, err := r.statementNoteWarnings(ctx, statementPrintedNoteNos(template, report.Rows))
+	if err != nil {
+		return Report{}, err
+	}
+	report.Warnings = append(append(templateWarnings, noteWarnings...), report.Warnings...)
 	report.TotalRows = int64(len(report.Rows))
 	return report, nil
 }
@@ -113,7 +124,7 @@ func equityTemplateWarnings(rows []StatementRow, columns []StatementColumn) []st
 		}
 	}
 	if _, ok := columnOf[statementCurrentEarnings]; !ok {
-		warnings = append(warnings, "ยังไม่ได้เลือก “รวมกำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี” ในคอลัมน์ใด ยอดรวมจะไม่ตรงกับงบแสดงฐานะการเงิน")
+		warnings = append(warnings, "ยังไม่ได้เลือก “รวมกำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี” ในคอลัมน์ใด ยอดรวมจะไม่ตรงกับงบฐานะการเงิน")
 	}
 	rowOf := map[string]string{}
 	for _, row := range rows {

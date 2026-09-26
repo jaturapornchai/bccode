@@ -263,6 +263,13 @@ func (s *PostgresStore) mutatePGFiscalYear(ctx context.Context, tx *sql.Tx, scop
 		}
 	}
 	if cmd.Action == "delete" {
+		// หมายเหตุประกอบงบการเงินผูกกับปีด้วย code (ไม่ใช่ fiscalyear) — ลบปีทิ้งไว้จะเหลือหมายเหตุที่เปิดจากจอไม่ได้
+		// และกลับมาเองถ้าสร้างปีรหัสเดิม; ไม่นับเป็น used เพราะหมายเหตุไม่ได้ขึ้นกับช่วงวัน/ทศนิยมของปี
+		if !used {
+			if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND kind='statement-notes' AND code=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false))`, scope.Company, old.Code).Scan(&used); err != nil {
+				return nil, err
+			}
+		}
 		if used {
 			return nil, fmt.Errorf("ปีบัญชีมีข้อมูลอ้างอิง ลบไม่ได้")
 		}

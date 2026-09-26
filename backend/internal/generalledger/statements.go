@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -71,6 +72,11 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 		Periods: []ReportPeriod{{Key: "amount", FiscalYear: r.fiscal.Code, From: r.query.From, To: r.query.To}},
 	}
 	values := evaluateStatement(template.Rows, current, periodic)
+	// งบกระแสเงินสด: ตรวจเงินสดปลายงวดกับยอดคงเหลือตามบัญชีจากค่าเต็มความละเอียด ก่อนซ่อนแถวศูนย์ (statements_cashcheck.go)
+	cashEndings, cashWarnings := statementCashEndings(template)
+	report.Warnings = append(report.Warnings, cashWarnings...)
+	report.Checks, cashWarnings = statementCashChecks(cashEndings, current, values, report.Periods[0], scale)
+	report.Warnings = append(report.Warnings, cashWarnings...)
 	var prior map[int]decimal.Decimal
 	if template.GlobalStyle != nil && template.GlobalStyle.ComparisonType == "previous_year" {
 		year, from, to, found, err := r.priorPeriod(ctx)
@@ -85,6 +91,9 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 			prior = evaluateStatement(template.Rows, balances, periodic)
 			report.Columns = append(report.Columns, amountColumn("prioramount", year))
 			report.Periods = append(report.Periods, ReportPeriod{Key: "prioramount", FiscalYear: year, From: from, To: to})
+			priorChecks, priorWarnings := statementCashChecks(cashEndings, balances, prior, report.Periods[1], scale)
+			report.Checks = append(report.Checks, priorChecks...)
+			report.Warnings = append(report.Warnings, priorWarnings...)
 		} else {
 			report.Warnings = append(report.Warnings, "ไม่พบปีบัญชีก่อนหน้า จึงไม่มีคอลัมน์เปรียบเทียบ")
 		}
@@ -100,6 +109,15 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 		}
 		report.Rows = append(report.Rows, out)
 	}
+	if statementHideZero(template) {
+		report.Rows = hideZeroStatementRows(report.Rows, statementAmountKeys(report.Columns), statementFormulaRefs(template.Rows))
+	}
+	// หมายเหตุที่บรรทัดที่พิมพ์จริงอ้างถึงต้องมีในหมายเหตุประกอบงบการเงินของปีที่ออกงบ (statement_notes.go) — ตรวจหลังซ่อนแถวศูนย์
+	noteWarnings, err := r.statementNoteWarnings(ctx, statementPrintedNoteNos(template, report.Rows))
+	if err != nil {
+		return Report{}, err
+	}
+	report.Warnings = append(noteWarnings, report.Warnings...)
 	report.TotalRows = int64(len(report.Rows))
 	return report, nil
 }
@@ -220,19 +238,24 @@ func evaluateStatement(rows []StatementRow, balances map[string]statementBalance
 		if row.RowType != "account" {
 			continue
 		}
-		sum := decimal.Zero
-		for _, code := range row.AccountCodes {
-			if account, ok := balances[code]; ok {
-				sum = sum.Add(statementSigned(account, statementBasisValue(account, row.AmountBasis, periodic), row.NormalBalance))
-			}
-		}
-		if row.ReverseSign {
-			sum = sum.Neg()
-		}
-		values[row.RowNo] = sum
+		values[row.RowNo] = statementAccountRowValue(row, balances, row.AmountBasis, periodic)
 	}
 	evaluateStatementFormulas(rows, values)
 	return values
+}
+
+// ยอดของแถวบัญชีตามฐานที่ระบุ ด้านปกติและกลับเครื่องหมายตามแถว (ใช้ทั้งคำนวณงบและตรวจยอดเงินสดปลายงวดกับบัญชี)
+func statementAccountRowValue(row StatementRow, balances map[string]statementBalance, basis string, periodic bool) decimal.Decimal {
+	sum := decimal.Zero
+	for _, code := range row.AccountCodes {
+		if account, ok := balances[code]; ok {
+			sum = sum.Add(statementSigned(account, statementBasisValue(account, basis, periodic), row.NormalBalance))
+		}
+	}
+	if row.ReverseSign {
+		sum = sum.Neg()
+	}
+	return sum
 }
 
 // ยอดของบัญชีตามฐานที่แถวเลือก: ต้นงวด / ปลายงวด / ความเคลื่อนไหว; ไม่ระบุ = ตามชนิดงบ
@@ -281,6 +304,35 @@ func evaluateStatementFormulas(rows []StatementRow, values map[int]decimal.Decim
 	}
 }
 
+// statementFormulaRefs แถวที่สูตรของแต่ละแถวสูตร/รวมยอดอ่านจริง (เรียงตามเลขบรรทัด) ตามลำดับเดียวกับ evaluateStatementFormulas:
+// แถวบัญชีทุกแถว + แถวสูตรที่คำนวณก่อนหน้า — ใช้ทั้งการซ่อนแถวศูนย์และการหาบรรทัดเงินสดปลายงวด ให้ตรงกับการคำนวณ
+func statementFormulaRefs(rows []StatementRow) map[int][]int {
+	values := map[int]decimal.Decimal{}
+	for _, row := range rows {
+		if row.RowType == "account" {
+			values[row.RowNo] = decimal.Zero
+		}
+	}
+	refs := map[int][]int{}
+	for _, row := range rows {
+		if row.RowType != "formula" && row.RowType != "subtotal" {
+			continue
+		}
+		if strings.TrimSpace(row.Formula) != "" {
+			used := map[int]bool{}
+			statementFormula(row.Formula, values, row.RowNo, used)
+			rowNos := make([]int, 0, len(used))
+			for rowNo := range used {
+				rowNos = append(rowNos, rowNo)
+			}
+			sort.Ints(rowNos)
+			refs[row.RowNo] = rowNos
+		}
+		values[row.RowNo] = decimal.Zero
+	}
+	return refs
+}
+
 var (
 	statementRangePattern = regexp.MustCompile(`(?i)^SUM\s*\(\s*R?(\d+)\s*(?::|\.\.)\s*R?(\d+)\s*\)$`)
 	statementTokenPattern = regexp.MustCompile(`[A-Za-z]+[0-9]*|[0-9]+(?:\.[0-9]+)?|\+|-|\*|/|\(|\)`)
@@ -290,6 +342,12 @@ var (
 
 // สูตร: SUM(R10:R50) ทั้งช่วง หรือนิพจน์ + - * / วงเล็บ อ้างแถว Rnn และตัวเลข; คูณ/หารตัดเหลือ 8 ตำแหน่ง, หารศูนย์ได้ 0
 func evaluateStatementFormula(formula string, values map[int]decimal.Decimal, current int) decimal.Decimal {
+	return statementFormula(formula, values, current, nil)
+}
+
+// statementFormula คำนวณสูตร และถ้าส่ง refs มาด้วยจะบันทึกแถวที่สูตรใช้จริง (แถวในช่วง SUM / แถว Rnn ที่ถูกอ่าน และมีค่าใน values)
+// — การตรวจยอดงบกระแสเงินสดหาแถวที่สูตรอ้างด้วยกติกาเดียวกับการคำนวณ
+func statementFormula(formula string, values map[int]decimal.Decimal, current int, refs map[int]bool) decimal.Decimal {
 	clean := strings.TrimSpace(formula)
 	if match := statementRangePattern.FindStringSubmatch(clean); match != nil {
 		from, _ := strconv.Atoi(match[1])
@@ -301,11 +359,14 @@ func evaluateStatementFormula(formula string, values map[int]decimal.Decimal, cu
 		for rowNo, value := range values {
 			if rowNo >= from && rowNo <= to && rowNo != current {
 				sum = sum.Add(value)
+				if refs != nil {
+					refs[rowNo] = true
+				}
 			}
 		}
 		return sum
 	}
-	p := formulaParser{tokens: statementTokenPattern.FindAllString(clean, -1), values: values, current: current}
+	p := formulaParser{tokens: statementTokenPattern.FindAllString(clean, -1), values: values, current: current, refs: refs}
 	return p.expr()
 }
 
@@ -314,6 +375,7 @@ type formulaParser struct {
 	pos     int
 	values  map[int]decimal.Decimal
 	current int
+	refs    map[int]bool
 }
 
 func (p *formulaParser) peek() string {
@@ -375,7 +437,11 @@ func (p *formulaParser) primary() decimal.Decimal {
 		if rowNo == p.current {
 			return decimal.Zero
 		}
-		return p.values[rowNo]
+		value, ok := p.values[rowNo]
+		if ok && p.refs != nil {
+			p.refs[rowNo] = true
+		}
+		return value
 	case statementNumber.MatchString(token):
 		value, err := decimal.NewFromString(token)
 		if err != nil {

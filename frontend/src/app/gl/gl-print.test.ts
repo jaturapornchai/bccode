@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { GLJournal, GLReport } from "@/lib/general-ledger";
-import { GLStatementTable, GLVoucherPrint, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import type { GLJournal, GLReport, GLStatementCheck } from "@/lib/general-ledger";
+import { GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementTable, GLVoucherPrint, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -129,5 +129,82 @@ describe("financial statement print", () => {
     for (const text of ["gl-statement-wide", ">ทุนที่ชำระแล้ว<", ">รวมส่วนของผู้ถือหุ้น<", ">1,069.75<", "ยอดคงเหลือ ณ ต้นงวด 2569"]) expect(html).toContain(text);
     expect(html.match(/<tr[ >]/g)?.length).toBe(5); // หัวงบ + หัวคอลัมน์ + ปีก่อน + บรรทัดคั่น + ปีนี้
     expect(statementOrientation(report)).toBe("landscape");
+  });
+});
+
+// งบกระแสเงินสด: ผลตรวจเงินสดปลายงวดตามงบกับยอดคงเหลือตามบัญชี (backend) แสดงบนจอนอกตารางงบ — สถานะต้องมีข้อความ ไม่ใช่สีอย่างเดียว
+describe("statement book checks", () => {
+  const matched: GLStatementCheck = { key: "amount", fiscalyear: "2570", rowno: 180, title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันปลายงวด", statement: "219750.50", book: "219750.50", difference: "0.00", matched: true };
+  const mismatched: GLStatementCheck = { key: "prioramount", fiscalyear: "2569", rowno: 180, title: "", statement: "100000.00", book: "69750.25", difference: "30249.75", matched: false };
+  it("shows statement and ledger amounts with a matched label", () => {
+    const html = renderToStaticMarkup(createElement(GLStatementChecks, { checks: [matched], tr }));
+    expect(html).toContain("ตรวจยอดกับบัญชี: เงินสดและรายการเทียบเท่าเงินสด ณ วันปลายงวด · ปีบัญชี 2570");
+    expect(html).toContain("ตามงบ 219,750.50 · ตามบัญชี 219,750.50");
+    expect(html).toContain("ตรงกัน");
+    expect(html).not.toContain("ไม่ตรงกัน");
+    expect(html).toContain("<svg");
+  });
+  it("labels a mismatch with its difference and falls back to the row number when the row has no title", () => {
+    const html = renderToStaticMarkup(createElement(GLStatementChecks, { checks: [matched, mismatched], tr }));
+    expect(html).toContain("ตรวจยอดกับบัญชี: บรรทัด 180 · ปีบัญชี 2569");
+    expect(html).toContain("ไม่ตรงกัน ผลต่าง 30,249.75");
+    expect(html.match(/<li/g)).toHaveLength(2);
+  });
+  it("keys two checks on the same row number apart (row numbers are user-editable and may repeat)", () => {
+    const keys = [matched, { ...matched, matched: false }].map((check, index) => statementCheckKey(check, index));
+    expect(new Set(keys).size).toBe(2);
+    expect(renderToStaticMarkup(createElement(GLStatementChecks, { checks: [matched, { ...matched, matched: false }], tr })).match(/<li/g)).toHaveLength(2);
+  });
+  it("renders nothing when the report has no checks", () => {
+    expect(renderToStaticMarkup(createElement(GLStatementChecks, { checks: undefined, tr }))).toBe("");
+    expect(renderToStaticMarkup(createElement(GLStatementChecks, { checks: [], tr }))).toBe("");
+  });
+  it("is not part of the printed statement table", () => {
+    const report: GLReport = { columns: [{ key: "title", label: "รายการ" }, { key: "amount", label: "2570", amount: true }], rows: [{ rowno: "180", title: "เงินสดปลายงวด", rowtype: "subtotal", amount: "219750.50" }], totals: {}, totalrows: 1, warnings: ["คำเตือน"], asof: "", sequence: 0, checks: [mismatched] };
+    const html = renderToStaticMarkup(createElement(GLStatementTable, { report, company: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", title: "งบกระแสเงินสด", period: "", showNote: false, tr }));
+    expect(html).not.toContain("ตรวจยอดกับบัญชี");
+    expect(html).not.toContain("คำเตือน");
+  });
+});
+
+describe("GLReportWarnings", () => {
+  it("lists every warning under a titled notice with an icon", () => {
+    const html = renderToStaticMarkup(createElement(GLReportWarnings, { warnings: ["ไม่พบปีบัญชีก่อนหน้า จึงไม่มีคอลัมน์เปรียบเทียบ", " ", "ปี 2569: เงินสดปลายงวดตามงบไม่ตรง"], tr }));
+    expect(html).toContain("ข้อควรตรวจสอบก่อนออกงบ");
+    expect(html).toContain("<svg");
+    expect(html.match(/<li>/g)).toHaveLength(2);
+    expect(html).toContain("role=\"status\"");
+  });
+  it("renders nothing without warnings", () => {
+    expect(renderToStaticMarkup(createElement(GLReportWarnings, { warnings: [], tr }))).toBe("");
+    expect(renderToStaticMarkup(createElement(GLReportWarnings, { warnings: null, tr }))).toBe("");
+  });
+});
+
+// หมายเหตุประกอบงบการเงิน (แบบ 2 ข้อ 5) พิมพ์ต่อจากงบ: หัวกิจการ/ชื่อ/งวด แล้วแต่ละข้อ "เลขที่. หัวข้อ" + เนื้อหาที่คงการขึ้นบรรทัด
+describe("GLNotesPrint", () => {
+  const notes = [
+    { id: "n1", noteno: "1", title: "ข้อมูลทั่วไป", body: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด\nสำนักงานใหญ่ กรุงเทพมหานคร" },
+    { id: "n2", noteno: "2", title: "เกณฑ์ในการจัดทำและนำเสนองบการเงิน", body: "" },
+  ];
+  const html = renderToStaticMarkup(createElement(GLNotesPrint, { notes, company: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", period: "สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569", tr }));
+  it("prints the company, the notes title and the year-ended line in order", () => {
+    const company = html.indexOf("gl-print-company"), title = html.indexOf("หมายเหตุประกอบงบการเงิน"), period = html.indexOf("สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569");
+    expect(company).toBeGreaterThanOrEqual(0);
+    expect(title).toBeGreaterThan(company);
+    expect(period).toBeGreaterThan(title);
+  });
+  it("numbers each note, keeps the heading with its body and preserves line breaks", () => {
+    expect(html).toContain(">1. ข้อมูลทั่วไป</div>");
+    expect(html).toContain("break-after:avoid");
+    expect(html).toContain("white-space:pre-wrap");
+    expect(html).toContain("overflow-wrap:anywhere");
+    expect(html).toContain("บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด\nสำนักงานใหญ่ กรุงเทพมหานคร");
+    expect(html).not.toMatch(/color:\s*#/);
+  });
+  it("still prints a note whose body is empty", () => {
+    expect(html).toContain(">2. เกณฑ์ในการจัดทำและนำเสนองบการเงิน</div>");
+    expect(html.match(/gl-print-note-heading/g)).toHaveLength(2);
+    expect(html.match(/gl-print-note-body/g)).toHaveLength(1);
   });
 });

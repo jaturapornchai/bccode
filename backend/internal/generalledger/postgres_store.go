@@ -251,6 +251,10 @@ func (s *PostgresStore) checkDuplicateCode(ctx context.Context, tx *sql.Tx, comp
 		if kind == "journals" {
 			return userError(CodeDuplicateCode, "เลขที่เอกสารนี้ถูกใช้แล้ว กรุณาใช้เลขที่อื่น")
 		}
+		if kind == "statement-notes" {
+			// รหัส = ปีบัญชี ผู้ใช้เปลี่ยนเองไม่ได้: มีคนบันทึกหมายเหตุของปีนี้ก่อน ต้องโหลดฉบับล่าสุด ไม่ใช่ "ใช้รหัสอื่น"
+			return userError(CodeDuplicateCode, "ปีบัญชีนี้มีหมายเหตุประกอบงบการเงินอยู่แล้ว กรุณาโหลดหมายเหตุล่าสุดก่อนแก้ไข")
+		}
 		return userError(CodeDuplicateCode, "รหัสนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น")
 	}
 	if errors.Is(err, sql.ErrNoRows) {
@@ -375,6 +379,9 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		if err := validateMasterCode(&m, false); err != nil {
 			return nil, err
 		}
+		if err := s.validateMasterNotes(ctx, tx, scope, &m); err != nil {
+			return nil, err
+		}
 		if cmd.Action == "lock" {
 			m.Locked = true
 		}
@@ -424,6 +431,9 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		if err := validateMasterCode(&next, old.BookType == 0); err != nil {
 			return nil, err
 		}
+		if err := s.validateMasterNotes(ctx, tx, scope, &next); err != nil {
+			return nil, err
+		}
 		if kind == "journal-books" {
 			if err := guardJournalBookUpdate(ctx, tx, scope.Company, old, next); err != nil {
 				return nil, err
@@ -443,6 +453,15 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 	}
 
 	return nil, fmt.Errorf("ไม่รองรับคำสั่งนี้สำหรับข้อมูลหลัก")
+}
+
+// validateMasterNotes: หมายเหตุประกอบงบการเงินมีเฉพาะข้อมูลหลักชนิด statement-notes (statement_notes.go) — ชนิดอื่นไม่เก็บ notes
+func (s *PostgresStore) validateMasterNotes(ctx context.Context, tx *sql.Tx, scope Scope, m *Master) error {
+	if m.Kind != "statement-notes" {
+		m.Notes = nil
+		return nil
+	}
+	return validateStatementNotesMaster(ctx, tx, scope.Company, m)
 }
 
 func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {

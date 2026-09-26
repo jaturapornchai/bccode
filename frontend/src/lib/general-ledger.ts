@@ -55,7 +55,7 @@ export type GLJournal = GLIdentity & {
 /** สมุดรายวันเป็นข้อมูลหลักที่ผู้ใช้กำหนดเอง (mydocs/datamodels/gl/journalbook.sql) — ห้ามอิงรหัสสมุด ใช้ booktype เท่านั้น
  *  booktype 1=ทั่วไป 2=จ่าย 3=รับ 4=ขาย 5=ซื้อ 6=ยอดยกมา; 0/ไม่มี = ยังไม่กำหนด (ใช้กับใบใหม่ไม่ได้) */
 export type GLJournalBook = GLIdentity & { code: string; name: string; nameen?: string; booktype?: number; isactive: boolean };
-export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate | GLJournalBook;
+export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate | GLStatementNotes | GLJournalBook;
 export type GLReviewStatus = 1 | 2 | 3;
 export type GLReviewEvent = { eventno: number; version: number; status: GLReviewStatus; note: string; reviewedby: string; reviewedat: string };
 export type GLJournalReview = { journalid: string; version: number; status: GLReviewStatus; eventno: number; events: GLReviewEvent[] };
@@ -66,13 +66,16 @@ export type GLReport = {
   totalrows: number; warnings: string[]; asof: string; sequence: number;
   // statement: ช่วงของแต่ละคอลัมน์ยอดเงิน (ปีนี้/ปีก่อน) สำหรับหัวงบ
   periods?: { key: string; fiscalyear: string; from: string; to: string }[];
+  // statement ชนิดงบกระแสเงินสด: ผลตรวจเงินสดปลายงวดตามงบกับยอดคงเหลือตามบัญชี ต่องวด (key = amount / prioramount); ยอดเป็นสตริงทศนิยมจาก backend
+  checks?: GLStatementCheck[];
 };
-export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "journal-books"] as const;
+export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
+export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
-  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
+  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook | Omit<GLStatementNotes, keyof GLIdentity>; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement"] as const;
@@ -409,6 +412,8 @@ export type StatementGlobalStyle = {
   compact?: boolean;
   shownotecolumn?: boolean;
   comparisontype?: "none" | "previous_year" | "budget";
+  /** ข้อ 7 ประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566: backend ไม่ส่งแถว/คอลัมน์ที่ไม่มียอด (แถว showzero ยังแสดง) */
+  hidezerorows?: boolean;
 };
 
 export type GLStatementTemplate = GLIdentity & {
@@ -421,8 +426,59 @@ export type GLStatementTemplate = GLIdentity & {
   columns?: StatementColumn[];
 };
 
+/** หมายเหตุประกอบงบการเงิน (ประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566 แบบ 2 ข้อ 5; TFRS for NPAEs 4.1):
+ *  หนึ่งรายการต่อบริษัทต่อปีบัญชี (code = รหัสปีบัญชี) — backend ตรวจเลขที่ไม่ซ้ำ/ความยาว (statement_notes.go) และเตือนในงบเมื่อบรรทัดอ้างเลขที่ไม่มี */
+export type StatementNote = { id: string; noteno: string; title: string; body: string };
+export type GLStatementNotes = GLIdentity & { code: string; name: string; isactive: boolean; notes: StatementNote[] };
+
+/** ข้อความที่ แบบ 2 ข้อ 5.2.1 กำหนดให้ระบุ (หน้า 2-30) — เติมไว้ในหมายเหตุข้อ 2 ของหัวข้อเริ่มต้น ผู้ใช้แก้ได้ (เช่น เลือกใช้ TFRS for PAEs) */
+export const STATEMENT_NOTES_NPAES_BASIS = "งบการเงินฉบับนี้จัดทำขึ้นตามมาตรฐานการรายงานทางการเงินสำหรับกิจการที่ไม่มีส่วนได้เสียสาธารณะ (TFRS for NPAEs)";
+
+function newStatementNoteId(suffix: string | number = Math.random().toString(36).slice(2, 8)) {
+  return `note-${Date.now().toString(36)}-${suffix}`;
+}
+
+/** หัวข้อเริ่มต้นตามแบบ 2 ข้อ 5.1–5.6 (หน้า 2-30..2-31) — เนื้อหาเป็นของผู้ใช้ ระบบเติมเฉพาะข้อความที่แบบกำหนดในข้อ 5.2.1 */
+export function starterStatementNotes(): StatementNote[] {
+  const titles = ["ข้อมูลทั่วไป", "เกณฑ์ในการจัดทำและนำเสนองบการเงิน", "สรุปนโยบายการบัญชี", "ประมาณการทางบัญชี", "ข้อผิดพลาดในงวดก่อน", "ข้อมูลเพิ่มเติมอื่น ๆ"];
+  return titles.map((title, index) => ({ id: newStatementNoteId(index + 1), noteno: String(index + 1), title, body: index === 1 ? STATEMENT_NOTES_NPAES_BASIS : "" }));
+}
+
+/** หมายเหตุว่างข้อใหม่: เลขที่ถัดจากเลขที่เป็นตัวเลขล้วนที่มากที่สุด (เลขที่แบบ 5.1 / ก ไม่นับ) */
+export function newStatementNote(notes: StatementNote[]): StatementNote {
+  const last = notes.reduce((max, note) => (/^\d+$/.test(note.noteno.trim()) ? Math.max(max, Number(note.noteno.trim())) : max), 0);
+  return { id: newStatementNoteId(), noteno: String(last + 1), title: "", body: "" };
+}
+
+/** ข้อมูลจาก API อาจขาดช่อง (null/undefined) — แปลงให้ทุกช่องเป็นสตริงก่อนผูกกับช่องกรอก */
+export function statementNotesFromRecord(record: { notes?: Partial<StatementNote>[] | null } | null | undefined): StatementNote[] {
+  // id ซ้ำ (เช่น client ภายนอกส่งมา) ทำให้แก้/ลบหลายข้อพร้อมกัน — ข้อที่ id ซ้ำได้ id ใหม่
+  const seen = new Set<string>();
+  return (record?.notes ?? []).map((note, index) => {
+    const id = note?.id && !seen.has(note.id) ? note.id : newStatementNoteId(`r${index}`);
+    seen.add(id);
+    return { id, noteno: note?.noteno ?? "", title: note?.title ?? "", body: note?.body ?? "" };
+  });
+}
+
+/** หลังบันทึกแล้วอ่านกลับจาก backend: ใช้ฉบับของ backend (ตัดช่องว่างแล้ว) เฉพาะเมื่อร่างยังเหมือนที่ส่งบันทึก —
+ *  ผู้ใช้พิมพ์ต่อระหว่างรอ = คงร่างไว้ (ยังขึ้นว่าแก้ไขค้างอยู่) ไม่ทับข้อความที่พิมพ์เพิ่มเงียบ ๆ; submitted = null คือการโหลดปกติ */
+export function statementNotesAfterReload(current: StatementNote[] | null, submitted: string | null, server: StatementNote[] | null): StatementNote[] | null {
+  return submitted !== null && JSON.stringify(current) !== submitted ? current : server;
+}
+
+/** บันทึก/ลบหมายเหตุไม่ผ่านเพราะฉบับบนจอเก่ากว่าที่บันทึกไว้ (มีคนแก้ก่อน / สร้างปีเดียวกันก่อน / ลบไปแล้ว): ส่งซ้ำก็ไม่ผ่าน ต้องโหลดฉบับล่าสุด */
+export function statementNotesNeedReload(code: string) {
+  return code === "stale_version" || code === "duplicate_code" || code === "not_found";
+}
+
+/** หมายเหตุที่มีหัวข้อหรือเนื้อหาต้องยืนยันก่อนลบ (ข้อที่ว่างทั้งข้อลบได้เลย) */
+export function statementNoteHasText(note: StatementNote) {
+  return Boolean((note.title ?? "").trim() || (note.body ?? "").trim());
+}
+
 export const statementTypeLabels: Record<StatementType, GLLabel> = {
-  balance_sheet: ["gl_stmt_fin_position_bs", "งบแสดงฐานะการเงิน (งบดุล)"],
+  balance_sheet: ["gl_stmt_fin_position_bs", "งบฐานะการเงิน (งบดุล)"],
   pnl: ["gl_income_statement", "งบกำไรขาดทุน"],
   production_cost: ["gl_cost_prod_cogs_stmt", "งบต้นทุนผลิตและต้นทุนขาย"],
   cash_flow: ["gl_cash_flow_stmt", "งบกระแสเงินสด"],
@@ -478,16 +534,20 @@ function starterRows(prefix: string, rows: StarterRow[]): StatementRow[] {
     return { id, rowno, rowtype: "account", title, noteno: "", accountcodes: accountcodes ?? [], normalbalance: kind, ...(amountbasis ? { amountbasis } : {}), style: { indent } };
   });
 }
+/** ยอดสุทธิ/ยอดรวมใหญ่ต้องพิมพ์เสมอแม้เป็นศูนย์ (ข้อ 7 ให้ละเฉพาะรายการที่กิจการไม่มี ไม่ใช่บรรทัดผลลัพธ์ของงบ) — ผู้ใช้เอาติ๊กออกได้ */
+function withShowZero(rows: StatementRow[], rownos: number[]): StatementRow[] {
+  return rows.map((row) => (rownos.includes(row.rowno) ? { ...row, showzero: true } : row));
+}
 export function generateStarterTemplates(): GLStatementTemplate[] {
   return [
     {
       code: "BS-DBD",
       // ชื่อแม่แบบ = ชื่องบที่พิมพ์บนหัวงบ; แถวตามแบบ 2 (บริษัทจำกัด) ของประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 — docs/kms/21
-      name: "งบแสดงฐานะการเงิน",
+      name: "งบฐานะการเงิน",
       statementtype: "balance_sheet",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year" },
-      rows: starterRows("bs", [
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year", hidezerorows: true },
+      rows: withShowZero(starterRows("bs", [
         [10, "header", "สินทรัพย์", 0], [20, "header", "สินทรัพย์หมุนเวียน", 1],
         [30, "debit", "เงินสดและรายการเทียบเท่าเงินสด"], [40, "debit", "เงินลงทุนชั่วคราว"], [50, "debit", "ลูกหนี้การค้าและลูกหนี้หมุนเวียนอื่น"],
         [60, "debit", "มูลค่าของงานส่วนที่เสร็จแต่ยังไม่ถึงกำหนดเรียกชำระเงิน - หมุนเวียน"], [70, "debit", "เงินให้กู้ยืมระยะสั้น"], [80, "debit", "สินค้าคงเหลือ"],
@@ -512,7 +572,8 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         [490, "credit", "เงินรับล่วงหน้าส่วนที่เกินกว่างานส่วนที่เสร็จ - ไม่หมุนเวียน"], [500, "credit", "ประมาณการหนี้สินไม่หมุนเวียนสำหรับผลประโยชน์พนักงาน"],
         [510, "credit", "ประมาณการหนี้สินระยะยาวอื่น"], [520, "credit", "หนี้สินไม่หมุนเวียนอื่น"],
         [530, "subtotal", "รวมหนี้สินไม่หมุนเวียน", 1, "SUM(R460:R520)"],
-        [540, "subtotal", "รวมหนี้สิน", 0, "R440 + R530"],
+        // ย่อหน้า 1 เท่า "รวมส่วนของผู้ถือหุ้น": ส่วนของหัวข้อ 320 (hidezerorows) ต้องครอบถึงส่วนของผู้ถือหุ้น ไม่จบที่รวมหนี้สิน
+        [540, "subtotal", "รวมหนี้สิน", 1, "R440 + R530"],
         [550, "header", "ส่วนของผู้ถือหุ้น", 1], [560, "header", "ทุนเรือนหุ้น", 2], [570, "header", "ทุนจดทะเบียน (แสดงจำนวนหุ้นและมูลค่าในหมายเหตุ)", 3],
         [580, "credit", "ทุนที่ชำระแล้ว", 3], [590, "credit", "ส่วนเกินมูลค่าหุ้น"], [600, "credit", "ส่วนเกิน (ต่ำกว่า) ทุนอื่น"],
         [610, "header", "กำไร (ขาดทุน) สะสม", 2], [620, "header", "จัดสรรแล้ว", 3],
@@ -522,7 +583,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         [660, "credit", "ส่วนได้เสีย - ทุนอื่น"], [670, "credit", "องค์ประกอบอื่นของส่วนของผู้ถือหุ้น"],
         [680, "subtotal", "รวมส่วนของผู้ถือหุ้น", 1, "SUM(R580:R670)"],
         [690, "total", "รวมหนี้สินและส่วนของผู้ถือหุ้น", 0, "R540 + R680"],
-      ]),
+      ]), [300, 690]),
     },
     {
       code: "PNL-DBD",
@@ -530,8 +591,8 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       name: "งบกำไรขาดทุน",
       statementtype: "pnl",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year" },
-      rows: starterRows("pnl", [
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year", hidezerorows: true },
+      rows: withShowZero(starterRows("pnl", [
         [10, "credit", "รายได้จากการขายหรือการให้บริการ", 1], [20, "debit", "ต้นทุนขายหรือต้นทุนการให้บริการ", 1],
         [30, "subtotal", "กำไร (ขาดทุน) ขั้นต้น", 0, "R10 - R20"],
         [40, "credit", "รายได้อื่น", 1],
@@ -543,14 +604,14 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         [120, "subtotal", "กำไร (ขาดทุน) ก่อนภาษีเงินได้", 0, "R100 - R110"],
         [130, "debit", "ภาษีเงินได้", 1],
         [140, "total", "กำไร (ขาดทุน) สุทธิ", 0, "R120 - R130"],
-      ]),
+      ]), [140]),
     },
     {
       code: "COGS-STMT",
       name: "งบต้นทุนผลิตและต้นทุนขาย",
       statementtype: "production_cost",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "previous_year" },
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "previous_year", hidezerorows: true },
       rows: [
         { id: "cog-1", rowno: 10, rowtype: "header", title: "วัตถุดิบทางตรงที่ใช้ไป", style: { fontweight: "bold", indent: 0 } },
         { id: "cog-2", amountbasis: "opening", rowno: 20, rowtype: "account", title: "วัตถุดิบต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
@@ -565,7 +626,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         { id: "cog-11", rowno: 110, rowtype: "formula", title: "ต้นทุนสินค้าสำเร็จรูป", formula: "R80 + R90 + R100", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cog-12", amountbasis: "opening", rowno: 120, rowtype: "account", title: "บวก: สินค้าสำเร็จรูปต้นงวด", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
         { id: "cog-13", amountbasis: "closing", rowno: 130, rowtype: "account", title: "หัก: สินค้าสำเร็จรูปปลายงวด", accountcodes: [], normalbalance: "debit", reversesign: true, style: { indent: 1 } },
-        { id: "cog-14", rowno: 140, rowtype: "formula", title: "ต้นทุนขายทั้งสิ้น", formula: "R110 + R120 + R130", style: { fontweight: "bold", indent: 0, underline: "double" } },
+        { id: "cog-14", rowno: 140, rowtype: "formula", title: "ต้นทุนขายทั้งสิ้น", formula: "R110 + R120 + R130", showzero: true, style: { fontweight: "bold", indent: 0, underline: "double" } },
       ],
     },
     {
@@ -573,7 +634,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       name: "งบกระแสเงินสด (วิธีทางอ้อม)",
       statementtype: "cash_flow",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "previous_year" },
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: false, comparisontype: "previous_year", hidezerorows: true },
       rows: [
         { id: "cf-1", rowno: 10, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมดำเนินงาน", style: { fontweight: "bold", indent: 0 } },
         { id: "cf-2", rowno: 20, rowtype: "account", title: "กำไร (ขาดทุน) สุทธิประจำงวด", accountcodes: ["__current_earnings__"], normalbalance: "credit", style: { indent: 1 } },
@@ -592,7 +653,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         { id: "cf-15", rowno: 150, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมจัดหาเงิน", formula: "R140", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-16", rowno: 160, rowtype: "formula", title: "เงินสดและรายการเทียบเท่าเงินสดเพิ่มขึ้น (ลดลง) สุทธิ", formula: "R70 + R110 + R150", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-17", rowno: 170, rowtype: "account", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันต้นงวด", accountcodes: [], normalbalance: "debit", amountbasis: "opening", style: { indent: 0 } },
-        { id: "cf-18", rowno: 180, rowtype: "subtotal", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันปลายงวด", formula: "R160 + R170", style: { fontweight: "bold", indent: 0, underline: "double" } },
+        { id: "cf-18", rowno: 180, rowtype: "subtotal", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันปลายงวด", formula: "R160 + R170", showzero: true, style: { fontweight: "bold", indent: 0, underline: "double" } },
       ],
     },
     {
@@ -601,7 +662,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       name: "งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น",
       statementtype: "equity",
       isactive: true,
-      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year" },
+      globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year", hidezerorows: true },
       columns: [
         { id: "eq-c1", title: "ทุนที่ชำระแล้ว", accountcodes: [] },
         { id: "eq-c2", title: "ส่วนเกินมูลค่าหุ้น", accountcodes: [] },
@@ -610,7 +671,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         { id: "eq-c5", title: "ส่วนได้เสีย - ทุนอื่น", accountcodes: [] },
         { id: "eq-c6", title: "องค์ประกอบอื่นของส่วนของผู้ถือหุ้น", accountcodes: [] },
       ],
-      rows: starterRows("eq", [
+      rows: withShowZero(starterRows("eq", [
         [10, "balance", "ยอดคงเหลือ ณ ต้นงวด {year}", 0, undefined, undefined, "opening"],
         [20, "credit", "ผลกระทบของการเปลี่ยนแปลงนโยบายการบัญชี", 1],
         [30, "credit", "ผลสะสมจากการแก้ไขข้อผิดพลาดทางการบัญชี", 1],
@@ -625,7 +686,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         [120, "credit", "องค์ประกอบอื่นของส่วนของเจ้าของ", 1],
         [130, "credit", "รายการอื่นที่ยังไม่ได้จัดประเภท", 1, undefined, undefined, "other"],
         [140, "balance", "ยอดคงเหลือ ณ ปลายงวด {year}", 0, undefined, undefined, "closing"],
-      ]),
+      ]), [140]),
     },
   ];
 }

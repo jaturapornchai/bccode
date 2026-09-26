@@ -70,6 +70,7 @@ type Report struct {
 	Warnings  []string            `json:"warnings"`
 	AsOf      string              `json:"asof"`
 	Periods   []ReportPeriod      `json:"periods,omitempty"`
+	Checks    []ReportCheck       `json:"checks,omitempty"`
 }
 
 type Projection interface {

@@ -135,6 +135,7 @@ type Master struct {
 	GlobalStyle    *StatementGlobalStyle `json:"globalstyle,omitempty" bson:"globalstyle,omitempty"`
 	Rows           []StatementRow        `json:"rows,omitempty" bson:"rows,omitempty"`
 	Columns        []StatementColumn     `json:"columns,omitempty" bson:"columns,omitempty"` // statement-templates ชนิด equity
+	Notes          []StatementNote       `json:"notes,omitempty" bson:"notes,omitempty"`     // statement-notes: หมายเหตุประกอบงบการเงินของปีบัญชี (code)
 }
 
 // StatementColumn คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น (งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) — ผู้ใช้เลือกบัญชีเอง
@@ -156,30 +157,34 @@ type StatementStyle struct {
 }
 
 type StatementRow struct {
-	ID            string         `json:"id" bson:"id"`
-	RowNo         int            `json:"rowno" bson:"rowno"`
-	RowType       string         `json:"rowtype" bson:"rowtype"`
-	Title         string         `json:"title" bson:"title"`
-	NoteNo        string         `json:"noteno,omitempty" bson:"noteno,omitempty"`
-	AccountCodes  []string       `json:"accountcodes,omitempty" bson:"accountcodes,omitempty"`
-	AccountGroup  string         `json:"accountgroup,omitempty" bson:"accountgroup,omitempty"`
-	NormalBalance string         `json:"normalbalance,omitempty" bson:"normalbalance,omitempty"`
-	Formula       string         `json:"formula,omitempty" bson:"formula,omitempty"`
-	ReverseSign   bool           `json:"reversesign,omitempty" bson:"reversesign,omitempty"`
-	ShowZero      bool           `json:"showzero,omitempty" bson:"showzero,omitempty"`
+	ID            string   `json:"id" bson:"id"`
+	RowNo         int      `json:"rowno" bson:"rowno"`
+	RowType       string   `json:"rowtype" bson:"rowtype"`
+	Title         string   `json:"title" bson:"title"`
+	NoteNo        string   `json:"noteno,omitempty" bson:"noteno,omitempty"`
+	AccountCodes  []string `json:"accountcodes,omitempty" bson:"accountcodes,omitempty"`
+	AccountGroup  string   `json:"accountgroup,omitempty" bson:"accountgroup,omitempty"`
+	NormalBalance string   `json:"normalbalance,omitempty" bson:"normalbalance,omitempty"`
+	Formula       string   `json:"formula,omitempty" bson:"formula,omitempty"`
+	ReverseSign   bool     `json:"reversesign,omitempty" bson:"reversesign,omitempty"`
+	ShowZero      bool     `json:"showzero,omitempty" bson:"showzero,omitempty"`
 	// AmountBasis ของแถวบัญชี: "" ตามชนิดงบ, opening ยอดต้นงวด, closing ยอดปลายงวด, movement ความเคลื่อนไหวในงวด,
 	// other (เฉพาะงบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) ความเคลื่อนไหวของคอลัมน์ที่ยังไม่ได้อยู่ในบรรทัดใด
-	AmountBasis string `json:"amountbasis,omitempty" bson:"amountbasis,omitempty"`
-	Style         StatementStyle `json:"style,omitempty" bson:"style,omitempty"`
+	AmountBasis string         `json:"amountbasis,omitempty" bson:"amountbasis,omitempty"`
+	Style       StatementStyle `json:"style,omitempty" bson:"style,omitempty"`
 }
 
+// StatementGlobalStyle.ShowNoteColumn เป็น pointer: ไม่ระบุ (nil) = แสดงคอลัมน์หมายเหตุตามค่าเริ่มของจอ, false ที่ผู้ใช้เลือก
+// ต้องเก็บได้จริง (bool + omitempty ทิ้ง false ตอนบันทึก จอจึงกลับมาแสดงคอลัมน์หมายเหตุหลังเปิดรูปแบบใหม่)
 type StatementGlobalStyle struct {
 	FontFamily     string `json:"fontfamily,omitempty" bson:"fontfamily,omitempty"`
 	FontSize       string `json:"fontsize,omitempty" bson:"fontsize,omitempty"`
 	Scale          int    `json:"scale,omitempty" bson:"scale,omitempty"`
 	Compact        bool   `json:"compact,omitempty" bson:"compact,omitempty"`
-	ShowNoteColumn bool   `json:"shownotecolumn,omitempty" bson:"shownotecolumn,omitempty"`
+	ShowNoteColumn *bool  `json:"shownotecolumn,omitempty" bson:"shownotecolumn,omitempty"`
 	ComparisonType string `json:"comparisontype,omitempty" bson:"comparisontype,omitempty"`
+	// HideZeroRows ซ่อนรายการที่ไม่มียอด (ข้อ 7 ประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566)
+	HideZeroRows bool `json:"hidezerorows,omitempty" bson:"hidezerorows,omitempty"`
 }
 
 var MasterCollections = map[string]string{
@@ -187,6 +192,7 @@ var MasterCollections = map[string]string{
 	"mappings": "gl_account_mappings", "periods": "gl_periods", "forecast": "gl_cash_forecast",
 	"allocations":         "gl_allocations",
 	"statement-templates": "gl_statement_templates",
+	"statement-notes":     "gl_statement_notes",
 	"journal-books":       "gl_journal_books",
 }
 
@@ -600,6 +606,7 @@ var nulFieldLabels = map[string]string{
 	"description": "คำอธิบาย", "reference": "เอกสารอ้างอิง", "reason": "เหตุผล", "name": "ชื่อ",
 	"nameen": "ชื่อภาษาอังกฤษ", "docno": "เลขที่เอกสาร", "code": "รหัส", "accountcode": "รหัสบัญชี",
 	"bookcode": "สมุดรายวัน", "branchcode": "สาขา", "remark": "หมายเหตุ",
+	"noteno": "เลขที่หมายเหตุ", "title": "หัวข้อ", "body": "เนื้อหาหมายเหตุ",
 }
 
 // nulFieldLabel turns lines[2].description into "บรรทัดที่ 3 คำอธิบาย" for the Thai message.

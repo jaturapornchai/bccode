@@ -104,5 +104,5 @@ Deploy สำรอง PostgreSQL (`pg_dumpall`) + config (`release.env.before`)
 | รายงานกระดาษทำการ | `/gl/workingpaper` | เชื่อมหน้าจอและ API แล้ว |
 | รูปแบบงบการเงิน | `/gl/statement-designer` | เชื่อมหน้าจอและ API แล้ว |
 | งบกำไรขาดทุน | `/report/pnl` | เชื่อมหน้าจอและ API แล้ว |
-| งบดุล | `/report/balancesheet` | เชื่อมหน้าจอและ API แล้ว |
+| งบฐานะการเงิน (เดิม งบดุล) | `/report/balancesheet` | เชื่อมหน้าจอและ API แล้ว |
 | รายงานเปรียบเทียบงบประมาณ | `/report/budgetcomparison` | เชื่อมหน้าจอและ API แล้ว |

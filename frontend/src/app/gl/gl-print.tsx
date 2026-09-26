@@ -6,9 +6,10 @@
 // หน้าพิมพ์เป็นแค่การแสดงผล: ตัวเลขทุกตัวมาจาก API ของ backend ตามเดิม
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
-import { amountString, formatAmount, journalBookName, journalTotals, type GLJournal, type GLJournalBook, type GLReport, type GLTextFn } from "@/lib/general-ledger";
+import { amountString, formatAmount, journalBookName, journalTotals, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { useGLText } from "./gl-common";
 
@@ -231,7 +232,79 @@ export function GLStatementTable({ report, company, title, period, showNote, sca
   );
 }
 
+/** หมายเหตุประกอบงบการเงิน (แบบ 2 ข้อ 5 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566) พิมพ์ต่อจากงบ: หัว = ชื่อกิจการ, "หมายเหตุประกอบงบการเงิน",
+ *  บรรทัดงวด (สำหรับปีสิ้นสุดวันที่ …); แต่ละข้อ "เลขที่. หัวข้อ" ตัวหนา (ไม่ขึ้นหน้าใหม่ทันทีหลังหัวข้อ) ตามด้วยเนื้อหาที่คงการขึ้นบรรทัดของผู้ใช้.
+ *  ไม่กำหนดสี — ใช้สีตัวอักษรของหน้าพิมพ์ (currentColor) */
+export function GLNotesPrint({ notes, company, period, tr }: { notes: StatementNote[]; company: string; period: string; tr: GLTextFn }) {
+  return (
+    <div className="gl-print-notes">
+      <div style={{ textAlign: "center", marginBottom: "4mm" }}>
+        <div className="gl-print-company">{company}</div>
+        <div className="gl-print-title">{tr("gl_statement_notes_title", "หมายเหตุประกอบงบการเงิน")}</div>
+        {period && <div className="gl-print-meta">{period}</div>}
+      </div>
+      {notes.map((note, index) => (
+        <section key={note.id || index} style={{ marginTop: "3mm" }}>
+          <div className="gl-print-note-heading" style={{ fontWeight: 700, breakAfter: "avoid", pageBreakAfter: "avoid", breakInside: "avoid" }}>{`${(note.noteno ?? "").trim()}. ${(note.title ?? "").trim()}`}</div>
+          {(note.body ?? "") !== "" && <div className="gl-print-note-body" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", marginTop: "1mm" }}>{note.body}</div>}
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /** งบที่มีคอลัมน์ยอดเงินมากกว่า 3 คอลัมน์ (งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) พิมพ์แนวนอน */
 export function statementOrientation(report: GLReport): GLPrintOrientation {
   return report.columns.filter((column) => column.amount).length > 3 ? "landscape" : "portrait";
+}
+
+/** ผลตรวจยอดของงบกับบัญชี (งบกระแสเงินสด: เงินสดปลายงวดตามงบเทียบยอดคงเหลือตามบัญชี คำนวณที่ backend) — แสดงบนจอเท่านั้น
+ *  ไม่อยู่ใน GLStatementTable จึงไม่ถูกพิมพ์; สถานะบอกด้วยไอคอน + ข้อความเสมอ ไม่ใช้สีอย่างเดียว */
+/** key ของผลตรวจ: เลขบรรทัดของรูปแบบงบแก้ได้และซ้ำได้ จึงต่อท้ายลำดับในรายการ ไม่ให้ React ทิ้ง/ซ้ำการ์ด "ไม่ตรงกัน" */
+export function statementCheckKey(check: GLStatementCheck, index: number) {
+  return `${check.key ?? ""}-${check.rowno ?? ""}-${index}`;
+}
+export function GLStatementChecks({ checks, scale = 2, tr }: { checks?: GLStatementCheck[] | null; scale?: number; tr: GLTextFn }) {
+  const items = checks ?? [];
+  if (!items.length) return null;
+  const title = tr("gl_statement_check_title", "ตรวจยอดกับบัญชี");
+  return (
+    <ul className="grid gap-2 lg:grid-cols-2" aria-label={title}>
+      {items.map((check, index) => (
+        <li key={statementCheckKey(check, index)} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${check.matched ? "border-emerald-500/35 bg-emerald-500/5" : "border-amber-500/50 bg-amber-500/10"}`}>
+          <div className="font-semibold">
+            {title}: {check.title?.trim() || tr("gl_statement_check_row", "บรรทัด {0}").replace("{0}", String(check.rowno ?? ""))} · {tr("gl_fiscal_year", "ปีบัญชี")} {check.fiscalyear ?? ""}
+          </div>
+          <div className="mt-1 tabular-nums">
+            {tr("gl_statement_check_statement", "ตามงบ")} {formatAmount(check.statement ?? "", scale)} · {tr("gl_statement_check_book", "ตามบัญชี")} {formatAmount(check.book ?? "", scale)}
+          </div>
+          {check.matched ? (
+            <div className="mt-1.5 inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_check_matched", "ตรงกัน")}
+            </div>
+          ) : (
+            <div className="mt-1.5 inline-flex items-center gap-1.5 font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+              <AlertTriangle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_check_mismatched", "ไม่ตรงกัน")} {tr("gl_difference", "ผลต่าง")} {formatAmount(check.difference ?? "", scale)}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** คำเตือนของรายงานงบจาก backend: กล่องสีอำพันมีไอคอนและหัวข้อ (ไม่ใช้สีอย่างเดียว) — แสดงบนจอเท่านั้น ไม่อยู่ในหน้าพิมพ์ */
+export function GLReportWarnings({ warnings, tr }: { warnings?: string[] | null; tr: GLTextFn }) {
+  const items = (warnings ?? []).filter((warning) => warning?.trim());
+  if (!items.length) return null;
+  return (
+    <div role="status" className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400">
+        <AlertTriangle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_warnings_title", "ข้อควรตรวจสอบก่อนออกงบ")}
+      </div>
+      <ul className="mt-1.5 list-disc space-y-1 pl-6 [overflow-wrap:anywhere]">
+        {items.map((warning, index) => <li key={index}>{warning}</li>)}
+      </ul>
+    </div>
+  );
 }

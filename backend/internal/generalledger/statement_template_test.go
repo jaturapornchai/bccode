@@ -2,10 +2,13 @@ package generalledger
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 	"testing"
 )
 
 func TestStatementTemplateModel(t *testing.T) {
+	showNotes := true
 	tmpl := Master{
 		Kind:          "statement-templates",
 		Code:          "BS-DBD-01",
@@ -17,16 +20,16 @@ func TestStatementTemplateModel(t *testing.T) {
 			FontSize:       "15px",
 			Scale:          2,
 			Compact:        false,
-			ShowNoteColumn: true,
+			ShowNoteColumn: &showNotes,
 			ComparisonType: "none",
 		},
 		Rows: []StatementRow{
 			{
-				ID:            "row-1",
-				RowNo:         10,
-				RowType:       "header",
-				Title:         "สินทรัพย์",
-				Style:         StatementStyle{FontWeight: "bold", Indent: 0},
+				ID:      "row-1",
+				RowNo:   10,
+				RowType: "header",
+				Title:   "สินทรัพย์",
+				Style:   StatementStyle{FontWeight: "bold", Indent: 0},
 			},
 			{
 				ID:            "row-2",
@@ -39,12 +42,12 @@ func TestStatementTemplateModel(t *testing.T) {
 				Style:         StatementStyle{Indent: 1},
 			},
 			{
-				ID:       "row-3",
-				RowNo:    30,
-				RowType:  "subtotal",
-				Title:    "รวมสินทรัพย์",
-				Formula:  "R20",
-				Style:    StatementStyle{FontWeight: "bold", Indent: 0, Underline: "double"},
+				ID:      "row-3",
+				RowNo:   30,
+				RowType: "subtotal",
+				Title:   "รวมสินทรัพย์",
+				Formula: "R20",
+				Style:   StatementStyle{FontWeight: "bold", Indent: 0, Underline: "double"},
 			},
 		},
 	}
@@ -77,5 +80,33 @@ func TestStatementTemplateModel(t *testing.T) {
 	}
 	if decoded.Rows[2].Style.Underline != "double" {
 		t.Fatalf("Rows[2].Style.Underline = %q, want double", decoded.Rows[2].Style.Underline)
+	}
+}
+
+// ไม่ติ๊ก "แสดงคอลัมน์หมายเหตุประกอบงบ" ต้องบันทึก false ได้จริง; รูปแบบเก่าที่ไม่เคยระบุยังเป็น nil (จอแสดงคอลัมน์ตามค่าเริ่ม)
+func TestStatementGlobalStyleShowNoteColumnRoundTrip(t *testing.T) {
+	for _, c := range []struct {
+		payload string
+		want    string
+	}{
+		{`{"shownotecolumn":false}`, "false"},
+		{`{"shownotecolumn":true}`, "true"},
+		{`{"fontsize":"15px"}`, "nil"},
+	} {
+		var style StatementGlobalStyle
+		if err := json.Unmarshal([]byte(c.payload), &style); err != nil {
+			t.Fatal(err)
+		}
+		got := "nil"
+		if style.ShowNoteColumn != nil {
+			got = strconv.FormatBool(*style.ShowNoteColumn)
+		}
+		data, err := json.Marshal(style)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != c.want || c.want != "nil" && !strings.Contains(string(data), `"shownotecolumn":`+c.want) || c.want == "nil" && strings.Contains(string(data), "shownotecolumn") {
+			t.Fatalf("%s: decoded %s, re-encoded %s", c.payload, got, data)
+		}
 	}
 }
