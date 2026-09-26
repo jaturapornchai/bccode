@@ -37,6 +37,14 @@ const toneClass: Record<ConfirmDialogTone, { icon: string; panel: string; button
   },
 };
 
+// Guard against a double-click (or a fast second tap) that opened the dialog also answering it:
+// the second click can land on a dialog button or the backdrop drawn under the pointer before the user has read it.
+export const CONFIRM_EARLY_CLICK_MS = 400;
+
+export function isEarlyConfirmClick(clickCount: number, openedAt: number, now: number): boolean {
+  return clickCount > 1 || now - openedAt < CONFIRM_EARLY_CLICK_MS;
+}
+
 export type UseConfirmDialogOptions = {
   defaultConfirmLabel?: string;
   defaultCancelLabel?: string;
@@ -44,6 +52,7 @@ export type UseConfirmDialogOptions = {
 
 export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
+  const openedAtRef = useRef(0);
   const [pending, setPending] = useState<PendingConfirm | null>(null);
 
   const close = useCallback((confirmed: boolean) => {
@@ -56,6 +65,7 @@ export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
     resolverRef.current?.(false);
     return new Promise<boolean>((resolve) => {
       resolverRef.current = resolve;
+      openedAtRef.current = performance.now();
       setPending({
         title: options.title,
         description: options.description,
@@ -79,12 +89,17 @@ export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
 
   useEffect(() => () => resolverRef.current?.(false), []);
 
+  const closeOnClick = (confirmed: boolean, clickCount: number) => {
+    if (isEarlyConfirmClick(clickCount, openedAtRef.current, performance.now())) return;
+    close(confirmed);
+  };
+
   const confirmationDialog = pending ? (
     <div
       aria-modal="true"
       className="fixed inset-0 z-[100] grid place-items-center bg-black/45 p-2 text-foreground backdrop-blur-[2px]"
       onPointerDown={(event) => {
-        if (event.target === event.currentTarget) close(false);
+        if (event.target === event.currentTarget) closeOnClick(false, event.detail);
       }}
       role="dialog"
     >
@@ -105,7 +120,7 @@ export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
               {pending.description ? <div className="mt-1 text-sm leading-6 text-muted-foreground">{pending.description}</div> : null}
             </div>
           </div>
-          <Button type="button" variant="outline" size="icon" onClick={() => close(false)} aria-label={pending.cancelLabel}>
+          <Button type="button" variant="outline" size="icon" onClick={(event) => closeOnClick(false, event.detail)} aria-label={pending.cancelLabel}>
             <X />
           </Button>
         </header>
@@ -117,10 +132,10 @@ export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
         ) : null}
 
         <footer className="flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => close(false)}>
+          <Button type="button" variant="outline" onClick={(event) => closeOnClick(false, event.detail)}>
             {pending.cancelLabel}
           </Button>
-          <Button type="button" variant={toneClass[pending.tone].button} onClick={() => close(true)}>
+          <Button type="button" variant={toneClass[pending.tone].button} onClick={(event) => closeOnClick(true, event.detail)}>
             {pending.confirmLabel}
           </Button>
         </footer>

@@ -24,6 +24,9 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   emptyStatementTemplate,
+  statementStarterReplacedCode,
+  statementStarterReplaceNeedsConfirm,
+  statementTemplateFromStarter,
   STATEMENT_CURRENT_EARNINGS,
   statementAmountBasisLabels,
   statementTypeLabels,
@@ -176,14 +179,30 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
     }
   }
 
-  function applyStarterTemplate(starter: GLStatementTemplate) {
-    const fresh: GLStatementTemplate = {
-      ...starter,
-      id: template?.id,
-      version: template?.version,
-      code: template?.id ? (template.code || starter.code) : starter.code,
-      name: starter.name,
-    };
+  // แม่แบบมาตรฐานแทนที่ทั้งแม่แบบ: ยืนยันก่อนเมื่อมีสิ่งที่จะเสีย (dialog z-[100] อยู่เหนือหน้าต่างเลือกแม่แบบ z-50) — ยกเลิกแล้วหน้าต่างยังเปิดให้เลือกใหม่
+  async function applyStarterTemplate(starter: GLStatementTemplate) {
+    const fresh = statementTemplateFromStarter(template, starter);
+    if (statementStarterReplaceNeedsConfirm(template, dirty)) {
+      const replacedCode = statementStarterReplacedCode(template, fresh);
+      const currentLabel = [template?.code, template?.name].map((part) => String(part ?? "").trim()).filter(Boolean).join(" ");
+      const currentText = currentLabel
+        ? tr("gl_starter_replace_current_named", "แม่แบบ \"{0}\"").replace("{0}", currentLabel)
+        : tr("gl_starter_replace_current_unnamed", "แม่แบบที่กำลังแก้ไข");
+      const replaced = await confirm({
+        tone: "warning",
+        title: tr("gl_starter_replace_title", "แทนที่ด้วยแม่แบบมาตรฐาน?"),
+        description: (
+          <>
+            <p>{tr("gl_starter_replace_desc", "ประเภทงบ ชื่อ บรรทัด คอลัมน์ และรูปแบบของ{0} จะถูกแทนที่ด้วยแม่แบบมาตรฐาน \"{1}\"").replace("{0}", currentText).replace("{1}", String(starter.name))}</p>
+            {replacedCode && <p className="mt-1">{tr("gl_starter_replace_code_changes", "รหัสแม่แบบงบ \"{0}\" จะเปลี่ยนเป็น \"{1}\"").replace("{0}", replacedCode).replace("{1}", String(fresh.code))}</p>}
+            {dirty && <p className="mt-1">{tr("gl_starter_replace_unsaved_lost", "การแก้ไขที่ยังไม่ได้บันทึกจะหายไป")}</p>}
+            {template?.id && <p className="mt-1">{tr("gl_starter_replace_saved_copy_kept", "แม่แบบที่บันทึกไว้แล้วจะยังไม่เปลี่ยน จนกว่าจะกด \"{0}\"").replace("{0}", tr("gl_save_template", "บันทึกแม่แบบ"))}</p>}
+          </>
+        ),
+        confirmLabel: tr("gl_starter_replace_confirm", "ใช้แม่แบบนี้แทน"),
+      });
+      if (!replaced) return;
+    }
     setTemplate(fresh);
     setStarterModalOpen(false);
     setMessage(tr("gl_template_loaded", "โหลดแม่แบบ \"{0}\" เรียบร้อยแล้ว").replace("{0}", String(starter.name)));
@@ -1064,6 +1083,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   onClick={() => {
                     const fresh = emptyStatementTemplate();
                     setTemplate(fresh);
+                    setOriginal(JSON.stringify(fresh));
                     setStarterModalOpen(true);
                   }}
                 >
@@ -1103,7 +1123,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   <Button
                     type="button"
                     className="mt-4 w-full"
-                    onClick={() => applyStarterTemplate(starter)}
+                    onClick={() => void applyStarterTemplate(starter)}
                   >
                     {tr("gl_use_this_template", "ใช้แม่แบบนี้")}
                   </Button>

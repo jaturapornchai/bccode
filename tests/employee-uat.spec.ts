@@ -233,6 +233,8 @@ test('E-04 DELETE: temp employee removed via UI → gone in PostgreSQL; the 10 r
   await row.getByRole('button', { name: /ลบ|Delete/ }).first().click();
   const confirmBtn = page.locator('button:visible').filter({ hasText: /^(ลบ|ใช่|ยืนยัน|ตกลง|Delete|Yes)$/ }).last();
   await expect(confirmBtn).toBeVisible();
+  // The shared confirm dialog ignores clicks in its first 400ms (double-click guard, CONFIRM_EARLY_CLICK_MS).
+  await page.waitForTimeout(450);
   await confirmBtn.click();
   await expect(row).toBeHidden({ timeout: 10000 });
   await shoot(page, '04-deleted');

@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
 import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
-import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, type StatementRow } from "./general-ledger";
+import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
 
 const accounts = [ { ...emptyAccount(), accountcode: "A", names: [{ code: "th", name: "เงินสด" }] }, { ...emptyAccount(), accountcode: "B", names: [{ code: "th", name: "ทุน" }] } ];
 const year = { ...emptyFiscalYear(), code: "FY", startdate: "2026-01-01", enddate: "2026-12-31", currency: "THB", scale: 2 };
@@ -317,5 +317,39 @@ describe("statement notes (แบบ 2 ข้อ 5)", () => {
   });
   it("is a GL resource so both BFF allowlists forward it", () => {
     expect(GL_RESOURCES).toContain("statement-notes");
+  });
+});
+
+// ใช้แม่แบบมาตรฐาน = แทนที่ทั้งแม่แบบ (ประเภทงบ ชื่อ บรรทัด คอลัมน์ รูปแบบ; รหัสด้วยถ้ายังไม่บันทึก): ต้องถามก่อนเมื่อผู้ใช้จะเสียสิ่งที่ทำไว้
+describe("standard statement template replaces the open template only after confirmation", () => {
+  const starter = generateStarterTemplates()[0];
+  it("asks only when something would be lost", () => {
+    expect(statementStarterReplaceNeedsConfirm(null, false)).toBe(false);
+    expect(statementStarterReplaceNeedsConfirm(emptyStatementTemplate(), false)).toBe(false);
+    expect(statementStarterReplaceNeedsConfirm({ ...emptyStatementTemplate(), name: "งบแสดงฐานะการเงิน" }, true)).toBe(true);
+    expect(statementStarterReplaceNeedsConfirm({ ...starter, id: "t1", version: 3 }, false)).toBe(true);
+    expect(statementStarterReplaceNeedsConfirm({ ...emptyStatementTemplate(), statementtype: "equity", columns: [{ id: "c1", title: "ทุนที่ออกและชำระแล้ว", accountcodes: [] }] }, false)).toBe(true);
+    expect(statementStarterReplaceNeedsConfirm({ ...emptyStatementTemplate(), rows: null as unknown as StatementRow[] }, false)).toBe(false);
+  });
+  it("keeps id/version, keeps the code only for a saved template, and reports a typed code that will be replaced", () => {
+    const other = generateStarterTemplates().find((item) => item.statementtype !== starter.statementtype)!;
+    const saved = { ...starter, id: "t1", version: 3, code: "BS-01", name: "งบของบริษัท" };
+    const fromSaved = statementTemplateFromStarter(saved, other);
+    expect(fromSaved).toMatchObject({ id: "t1", version: 3, code: "BS-01", name: other.name, statementtype: other.statementtype, rows: other.rows });
+    expect(statementStarterReplacedCode(saved, fromSaved)).toBe("");
+    const typed = { ...emptyStatementTemplate(), code: " BS-01 ", name: "งบของบริษัท" };
+    const fromTyped = statementTemplateFromStarter(typed, other);
+    expect(fromTyped.id).toBeUndefined();
+    expect(fromTyped.code).toBe(other.code);
+    expect(statementStarterReplacedCode(typed, fromTyped)).toBe("BS-01");
+    expect(statementStarterReplacedCode({ ...emptyStatementTemplate(), code: `${other.code} ` }, fromTyped)).toBe("");
+    expect(statementStarterReplacedCode(emptyStatementTemplate(), statementTemplateFromStarter(emptyStatementTemplate(), other))).toBe("");
+    expect(statementStarterReplacedCode(null, statementTemplateFromStarter(null, other))).toBe("");
+  });
+  it("the designer awaits the confirmation before replacing, and a fresh template from the empty state is not dirty", () => {
+    const screen = readFileSync(resolve(process.cwd(), "src", "app", "gl", "gl-statement-designer.tsx"), "utf8");
+    expect(screen).toMatch(/async function applyStarterTemplate\(starter: GLStatementTemplate\) \{\s*const fresh = statementTemplateFromStarter\(template, starter\);\s*if \(statementStarterReplaceNeedsConfirm\(template, dirty\)\) \{\s*const replacedCode = statementStarterReplacedCode\(template, fresh\);[\s\S]*?const replaced = await confirm\(\{[\s\S]*?"gl_starter_replace_title"[\s\S]*?\{replacedCode && <p[^>]*>\{tr\("gl_starter_replace_code_changes"[\s\S]*?if \(!replaced\) return;\s*\}\s*setTemplate\(fresh\);/);
+    expect(screen).toMatch(/onClick=\{\(\) => void applyStarterTemplate\(starter\)\}/);
+    expect(screen).toMatch(/const fresh = emptyStatementTemplate\(\);\s*setTemplate\(fresh\);\s*setOriginal\(JSON\.stringify\(fresh\)\);\s*setStarterModalOpen\(true\);/);
   });
 });

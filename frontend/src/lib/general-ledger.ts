@@ -520,6 +520,31 @@ export function emptyStatementTemplate(): GLStatementTemplate {
   };
 }
 
+/** ใช้แม่แบบมาตรฐานแทนที่ทั้งแม่แบบ (ประเภทงบ ชื่อ บรรทัด คอลัมน์ รูปแบบ): ต้องยืนยันก่อนเมื่อมีสิ่งที่ผู้ใช้จะเสีย —
+ *  แก้ไขค้างอยู่ หรือแม่แบบมีบรรทัด/คอลัมน์องค์ประกอบแล้ว; แม่แบบใหม่ที่ยังว่างและไม่ได้แตะ = ใช้ได้เลย */
+export function statementStarterReplaceNeedsConfirm(template: GLStatementTemplate | null, dirty: boolean): boolean {
+  if (!template) return false;
+  return dirty || (template.rows ?? []).length > 0 || (template.columns ?? []).length > 0;
+}
+
+/** แม่แบบที่ได้หลังเลือกแม่แบบมาตรฐาน: เก็บ id/version ของแม่แบบที่เปิดอยู่ และเก็บรหัสเฉพาะแม่แบบที่บันทึกแล้ว —
+ *  แม่แบบที่ยังไม่บันทึกได้รหัสของแม่แบบมาตรฐาน (รหัสที่พิมพ์ไว้ถูกแทน ต้องบอกใน dialog ด้วย statementStarterReplacedCode) */
+export function statementTemplateFromStarter(current: GLStatementTemplate | null, starter: GLStatementTemplate): GLStatementTemplate {
+  return {
+    ...starter,
+    id: current?.id,
+    version: current?.version,
+    code: current?.id ? (current.code || starter.code) : starter.code,
+    name: starter.name,
+  };
+}
+
+/** รหัสที่ผู้ใช้พิมพ์ไว้ซึ่งจะถูกแทนด้วยรหัสของแม่แบบใหม่ ("" = ยังไม่ได้พิมพ์ หรือรหัสไม่เปลี่ยน) */
+export function statementStarterReplacedCode(current: GLStatementTemplate | null, next: GLStatementTemplate): string {
+  const typed = String(current?.code ?? "").trim();
+  return typed && typed !== String(next.code ?? "").trim() ? typed : "";
+}
+
 // งบการเงินคำนวณที่ backend (GET reports/statement?template=) — backend/internal/generalledger/statements.go
 type StarterRow = [rowno: number, kind: "header" | "blank" | "subtotal" | "total" | "debit" | "credit" | "balance", title: string, indent?: number, formula?: string, accountcodes?: string[], amountbasis?: StatementAmountBasis];
 /** แถวแม่แบบงบ: debit/credit = แถวยอดบัญชี (ผู้ใช้เลือกบัญชีเอง), balance = ยอดต้น/ปลายงวดตัวหนา (ปลายงวดขีดเส้นคู่),
