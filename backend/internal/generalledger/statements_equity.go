@@ -208,10 +208,10 @@ func evaluateEquityStatement(rows []StatementRow, columns []StatementColumn, bal
 				result[otherRow] = rest.Neg()
 			}
 		} else if !rest.IsZero() {
-			warnings = append(warnings, fmt.Sprintf("คอลัมน์ %s มีรายการ %s ที่ยังไม่อยู่ในบรรทัดใด กรุณาเลือกบัญชีให้บรรทัด หรือเพิ่มบรรทัดรายการอื่น", column.Title, rest.StringFixed(2)))
+			warnings = append(warnings, fmt.Sprintf("คอลัมน์ %s มีรายการ %s ที่ยังไม่อยู่ในบรรทัดใด กรุณาเลือกบัญชีให้บรรทัด หรือเพิ่มบรรทัดรายการอื่น", column.Title, statementWarningAmount(rest, 2)))
 		}
 		if closingNet := closing.Sub(opening).Sub(movement); !closingNet.IsZero() {
-			warnings = append(warnings, fmt.Sprintf("คอลัมน์ %s มีรายการปิดบัญชีที่ไม่หักล้างกัน %s กรุณาเลือก “รวมกำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี” ในคอลัมน์เดียวกับบัญชีกำไรสะสม", column.Title, closingNet.StringFixed(2)))
+			warnings = append(warnings, fmt.Sprintf("คอลัมน์ %s มีรายการปิดบัญชีที่ไม่หักล้างกัน %s กรุณาเลือก “รวมกำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี” ในคอลัมน์เดียวกับบัญชีกำไรสะสม", column.Title, statementWarningAmount(closingNet, 2)))
 		}
 		evaluateStatementFormulas(rows, result)
 		values[i] = result

@@ -312,3 +312,19 @@ func TestStatementCashChecksIgnoreChangesFromClosingAggregates(t *testing.T) {
 		t.Fatalf("checks = %+v warnings = %q", checks, warnings)
 	}
 }
+
+// ตัวเลขในข้อความเตือนมีจุลภาคหลักพัน อ่านง่ายเหมือนการ์ดตรวจยอด; ค่าติดลบ/ศูนย์/ทศนิยม 0 ตำแหน่ง
+func TestStatementWarningAmount(t *testing.T) {
+	for _, c := range []struct {
+		amount string
+		scale  int32
+		want   string
+	}{
+		{"1888400", 2, "1,888,400.00"}, {"-95280", 2, "-95,280.00"}, {"69.75", 2, "69.75"}, {"0", 2, "0.00"},
+		{"999", 0, "999"}, {"1000", 0, "1,000"}, {"-1234567.891", 2, "-1,234,567.89"}, {"100000", 2, "100,000.00"},
+	} {
+		if got := statementWarningAmount(dec(c.amount), c.scale); got != c.want {
+			t.Errorf("statementWarningAmount(%s, %d) = %s, want %s", c.amount, c.scale, got, c.want)
+		}
+	}
+}

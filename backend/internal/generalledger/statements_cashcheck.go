@@ -150,10 +150,31 @@ func statementCashChecks(endings []statementCashEnding, balances map[string]stat
 				prefix = "ปี " + period.FiscalYear + ": "
 			}
 			warnings = append(warnings, fmt.Sprintf("%sเงินสดปลายงวดตามงบ (%s) %s ไม่ตรงกับยอดคงเหลือตามบัญชี %s ผลต่าง %s กรุณาตรวจว่าเลือกบัญชีครบทุกบรรทัด",
-				prefix, statementRowLabel(ending.row), check.Statement, check.Book, check.Difference))
+				prefix, statementRowLabel(ending.row), statementWarningAmount(statement, scale), statementWarningAmount(book, scale), statementWarningAmount(difference, scale)))
 		}
 	}
 	return checks, warnings
+}
+
+// statementWarningAmount ตัวเลขในข้อความเตือน: ทศนิยมตามแม่แบบ + จุลภาคหลักพัน (แสดงผลเท่านั้น ค่าใน checks[] ยังเป็นสตริงทศนิยมล้วน)
+func statementWarningAmount(amount decimal.Decimal, scale int32) string {
+	text := amount.StringFixed(scale)
+	sign := ""
+	if strings.HasPrefix(text, "-") {
+		sign, text = "-", text[1:]
+	}
+	whole, fraction, hasFraction := strings.Cut(text, ".")
+	var grouped strings.Builder
+	for i, digit := range whole {
+		if i > 0 && (len(whole)-i)%3 == 0 {
+			grouped.WriteByte(',')
+		}
+		grouped.WriteRune(digit)
+	}
+	if hasFraction {
+		return sign + grouped.String() + "." + fraction
+	}
+	return sign + grouped.String()
 }
 
 func statementRowLabel(row StatementRow) string {
