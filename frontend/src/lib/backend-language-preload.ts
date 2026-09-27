@@ -1,4 +1,4 @@
-import { validateBackendUrl } from "./backend-url";
+import { serverGoApiBase } from "./backend-url";
 import { normalizeLanguage, type LanguageCode } from "./i18n";
 import { sanitizeBackendLanguageDictionary } from "./backend-language-sanitize";
 import type { BackendLanguageDictionary } from "./backend-language";
@@ -22,23 +22,24 @@ export function persistLanguagePreferenceCookies(language: LanguageCode, backend
   }
 }
 
+// Server-side (SSR preload) only. The host is always BCAI_LOCAL_BACKEND_URL, never the client's
+// backend_url cookie: a cookie-chosen host let any visitor point this server fetch at an arbitrary
+// http(s) URL (SSRF) and hairpinned it through the public /backend proxy. Missing env = no preload
+// ({}), the client hook then loads the dictionary through the /api/language BFF route.
 export async function loadBackendLanguageDictionary(
   language: LanguageCode,
-  backendUrl: string | undefined,
   fetcher: Fetcher = fetch,
 ): Promise<BackendLanguageDictionary> {
-  if (!backendUrl?.trim()) return {};
-
-  let normalizedGoApiUrl: string;
+  let goApiBase: string;
   try {
-    normalizedGoApiUrl = validateBackendUrl(backendUrl).normalizedGoApiUrl;
+    goApiBase = serverGoApiBase();
   } catch {
     return {};
   }
 
   const normalizedLanguage = normalizeLanguage(language);
   try {
-    const response = await fetcher(`${normalizedGoApiUrl}/api/language/${encodeURIComponent(normalizedLanguage)}`, {
+    const response = await fetcher(`${goApiBase}/api/language/${encodeURIComponent(normalizedLanguage)}`, {
       cache: "no-store",
     });
     const payload = await response.json().catch(() => ({})) as unknown;

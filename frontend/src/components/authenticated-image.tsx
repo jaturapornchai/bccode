@@ -114,7 +114,7 @@ function mainApiDisplayBase(rawBackendUrl: unknown): string {
   }
 }
 
-function imageDisplayUrl(value: unknown, backendUrl: unknown): string {
+export function imageDisplayUrl(value: unknown, backendUrl: unknown): string {
   const raw = stringValue(value).trim();
   if (!raw) return "";
   if (/^(blob:|data:|https?:\/\/)/i.test(raw)) return raw;
@@ -127,8 +127,9 @@ function imageDisplayUrl(value: unknown, backendUrl: unknown): string {
   const base = mainApiDisplayBase(backendUrl);
   if (!base) return raw;
   if (raw.startsWith("/")) return `${base}${raw}`;
-  if (raw.toLowerCase().startsWith("images/")) return `${base}/${raw.replace(/^\/+/, "")}`;
-  return `${base}/images/${raw.replace(/^\/+/, "")}`;
+  // Bare keys ("images/x.png", "x.png") used to become <backend>/images/..., a route mainapi never had;
+  // for images the public /backend proxy only forwards /goapi/s3/file/* (next.config.ts), so there is nothing to load.
+  return "";
 }
 
 function stringValue(value: unknown): string {

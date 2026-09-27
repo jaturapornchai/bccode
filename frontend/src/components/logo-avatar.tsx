@@ -93,7 +93,7 @@ function mainApiBase(backendUrl: string): string {
   }
 }
 
-function resolveDisplayUrl(value: string, backendUrl: string): string {
+export function resolveDisplayUrl(value: string, backendUrl: string): string {
   const raw = (value ?? "").trim();
   if (!raw) return "";
   if (/^(blob:|data:|https?:\/\/)/i.test(raw)) return raw;
@@ -101,17 +101,18 @@ function resolveDisplayUrl(value: string, backendUrl: string): string {
     return typeof window === "undefined" ? raw : `${window.location.protocol}${raw}`;
   }
   if (raw.startsWith("/banks/") || raw.startsWith("/flags/")) return raw;
+  // "/api/*" are same-origin BFF routes; a backend prefix turned them into /backend/api/*,
+  // which the public /backend proxy never forwards (next.config.ts).
+  if (raw.startsWith("/api/")) return raw;
   // Authenticated GoAPI/S3 proxy paths must be resolved against the backend host,
   // not the frontend origin. Otherwise authFetch() hits localhost:3000 and 404s.
-  if (raw.startsWith("/api/") || raw.startsWith("/goapi/")) {
+  if (raw.startsWith("/goapi/")) {
     const base = mainApiBase(backendUrl);
     return base ? `${base}${raw}` : raw;
   }
-  const base = mainApiBase(backendUrl);
-  if (!base) return raw;
-  if (raw.startsWith("/")) return `${base}${raw}`;
-  if (raw.toLowerCase().startsWith("images/")) return `${base}/${raw.replace(/^\/+/, "")}`;
-  return `${base}/images/${raw.replace(/^\/+/, "")}`;
+  // Nothing else has a backend route behind the public proxy (for images it only forwards /goapi/s3/file/*),
+  // so the old <backend>/images/... fallbacks are gone; public logos use logoThumbUri() instead.
+  return raw;
 }
 
 /**

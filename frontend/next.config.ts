@@ -17,58 +17,30 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     const localBackendUrl = process.env.BCAI_LOCAL_BACKEND_URL?.trim() || (process.env.NODE_ENV === "production" ? "http://mainapi:8888" : "http://localhost:8888");
-    // The browser legitimately calls many AUTHENTICATED mainapi paths via this same-origin proxy
-    // (e.g. /backend/organization/*, /backend/goapi/*, /backend/assets/*), all requiring a Bearer token.
-    // So we proxy /backend/* broadly — but BLOCK the unauthenticated, identity-trusting token routes:
-    // /googlelogin trusts the posted email with no verification, so exposing it publicly is an auth-bypass
-    // (anyone could mint an owner token). These login/register flows are only ever called server-side
-    // (Next /api/auth/* -> local backend), never by the browser, so blocking them here breaks nothing.
-    const blockedAuthRoutes = [
-      "/backend/login",
-      "/backend/login/phone-number",
-      "/backend/poslogin",
-      "/backend/googlelogin",
-      "/backend/dev-login",
-      "/backend/v1/dev-login",
-      "/backend/demo-login",
-      "/backend/v1/demo-login",
-      "/backend/register",
-      "/backend/register-username",
-      "/backend/register-phonenumber",
-    ];
-    // Defense-in-depth stopgap (2026-06-21 security audit): these backend routes are powerful and
-    // were reachable from the public internet through this /backend/* catch-all. Verified that NO
-    // browser code calls them — legitimate uses go server-side via Next /api/* (which fetches the
-    // backend directly, NOT through this rewrite), so blocking the public /backend/* path here
-    // breaks nothing while closing the audited holes:
-    //  - /goapi/get,/exec,/getdoc : raw-SQL / raw-doc query handlers (SQLi + cross-tenant)
-    //  - /reportm/*               : report query engine (NoSQL injection + cross-tenant playground)
-    //  - /goapi/api/setup/*       : unauthenticated bootstrap.json secret dump (default pw "12345")
-    //  - /goapi/api/mcp/*,/mcp/*  : MCP key mgmt + SSE/invoke + dev raw-SQL tools (weak keys, IDOR,
-    //                               holdingcode injection). Re-open intentionally only after the MCP
-    //                               holes are fixed. (LINE webhook stays public by design — LINE must
-    //                               reach it; its fix is HMAC signature verification, not blocking.)
-    const blockedDangerousRoutes = [
-      "/backend/goapi/get",
-      "/backend/goapi/exec",
-      "/backend/goapi/getdoc",
-      "/backend/reportm/:path*",
-      "/backend/goapi/api/setup/:path*",
-      "/backend/goapi/api/mcp/:path*",
-      "/backend/goapi/mcp/:path*",
-      "/backend/reload-config",
-      // LINE link (2026-09-25): mainapi trusts the client-supplied code + lineuserid, so only the BFF
-      // (/api/auth/line/*, server-side via serverMainApiBase) may call these; browsers never do.
-      "/backend/profile/link-line",
-      "/backend/profile/link-line/:path*",
-    ];
+    // Public /backend/* proxy = explicit ALLOWLIST (ADR docs/kms/decisions/2026-09-27-backend-proxy-allowlist.md).
+    // It used to be a "/backend/:path*" catch-all guarded by a blocklist of literal paths, which did not hold:
+    // mainapi registers every route a second time under /v1, so /backend/v1/profile/link-line reached that
+    // handler for any logged-in user; URL-encoded paths (/backend/goapi/%67et) slipped past the matcher and
+    // reached mainapi (Echo routes on the raw path, so they ended in goapi auth/404, but the list proved leaky);
+    // and routes mainapi itself treats as public (/metrics, /healthz, /goapi/version) were open to the internet.
+    // Each entry is a route the browser really calls with a Bearer token and maps to ONE fixed mainapi path,
+    // so a crafted suffix (..%2f, /v1, other casing) cannot land on a different mainapi route.
+    // The `has` check only trims unauthenticated scanner noise; it is NOT the security boundary (mainapi
+    // still verifies the token). Its value is a regex WITHOUT named groups on purpose: a bare `has` copies
+    // the header into the rewrite params and Next then appends it to the query of param-less destinations
+    // (?authorization=Bearer...), leaking the token into upstream URLs and logs.
+    // Any other browser -> mainapi call must go through a BFF route under src/app/api that uses
+    // serverMainApiBase()/serverGoApiBase() (src/lib/backend-url.ts) — do not widen this list without an ADR.
+    const withBearer = [{ type: "header" as const, key: "authorization", value: "Bearer .+" }];
     return {
-      beforeFiles: [...blockedAuthRoutes, ...blockedDangerousRoutes].map((source) => ({
-        source,
-        destination: "/_blocked-auth-route",
-      })),
       afterFiles: [
-        { source: "/backend/:path*", destination: `${localBackendUrl}/:path*` },
+        // Stored image/file URIs are "/goapi/s3/file/<key>" (authenticated-image.tsx, logo-avatar.tsx).
+        { source: "/backend/goapi/s3/file/:path+", destination: `${localBackendUrl}/goapi/s3/file/:path+`, has: withBearer },
+        // Company/branch management (company-branch-tree-view.tsx, currency-screen.tsx).
+        { source: "/backend/organization/company", destination: `${localBackendUrl}/organization/company`, has: withBearer },
+        { source: "/backend/organization/company/:id", destination: `${localBackendUrl}/organization/company/:id`, has: withBearer },
+        { source: "/backend/organization/branch", destination: `${localBackendUrl}/organization/branch`, has: withBearer },
+        { source: "/backend/organization/branch/:id", destination: `${localBackendUrl}/organization/branch/:id`, has: withBearer },
       ],
     };
   },

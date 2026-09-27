@@ -16,8 +16,9 @@ export type InitialBackendLanguage = {
 export async function getInitialBackendLanguage(): Promise<InitialBackendLanguage> {
   const cookieStore = await cookies();
   const initialLanguage = normalizeLanguage(cookieStore.get(languagePreferenceCookie)?.value ?? "th");
+  // Handed back to the client screens only (their fallback backend URL); the server never fetches it.
   const initialBackendUrl = cookieStore.get(backendUrlPreferenceCookie)?.value;
-  const initialBackendLanguage = await loadBackendLanguageDictionary(initialLanguage, initialBackendUrl);
+  const initialBackendLanguage = await loadBackendLanguageDictionary(initialLanguage);
 
   return {
     initialBackendLanguage,

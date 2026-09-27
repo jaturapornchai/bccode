@@ -1,8 +1,13 @@
 /**
  * Seed ข้อมูลตัวอย่างสำหรับบัญชี Demo (ปุ่ม "ทดลองใช้ระบบ (Demo)") — SME ไทย เจ้าของคนเดียวหลายกิจการ
- * ใช้ได้ทั้ง local และ public server: ทุก call ผ่าน frontend origin (rewrite /backend/goapi → mainapi)
+ * login ผ่าน BFF ของ frontend (SEED_BASE/api/auth/demo-login) แล้วเรียก mainapi ตรงที่ SEED_API
+ * (ค่าเริ่มต้น http://127.0.0.1:8888 แบบเดียวกับ tools/seed/seed-access-setup-dev.ps1) — proxy สาธารณะ
+ * /backend/* ของ Next เปิดเฉพาะ allowlist ไม่กี่เส้น (frontend/next.config.ts) จึงใช้ยิง seed ไม่ได้แล้ว
  *
- *   node scripts/seed-demo.mjs                       # local  http://127.0.0.1:3000
+ *   node scripts/seed-demo.mjs                       # local: frontend :3000 + mainapi :8888
+ *
+ * production: เปิด ssh tunnel ไป mainapi ก่อน (mainapi ฟังเฉพาะ 127.0.0.1:8888 บนเซิร์ฟเวอร์)
+ *   ssh -L 8888:127.0.0.1:8888 root@<prod-host>
  *   SEED_BASE=https://account.bcaicloud.com node scripts/seed-demo.mjs
  *
  * ข้อมูลอยู่ใน scripts/demo-data.json (schema: holding, companies[branches, product_groups, products,
@@ -14,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const BASE = (process.env.SEED_BASE || 'http://127.0.0.1:3000').replace(/\/+$/, '');
-const API = `${BASE}/backend`; // Next rewrite /backend/:path* → mainapi root
+const API = (process.env.SEED_API || 'http://127.0.0.1:8888').replace(/\/+$/, ''); // mainapi root (direct / ssh tunnel)
 const here = path.dirname(fileURLToPath(import.meta.url));
 const data = JSON.parse(readFileSync(path.join(here, 'demo-data.json'), 'utf8'));
 
@@ -39,7 +44,7 @@ async function call(method, url, body, { quiet = false } = {}) {
   const dup = res.status === 409 || /exist|ซ้ำ|มีอยู่แล้ว|duplicate|already/i.test(json?.message ?? '');
   if (res.ok && json?.success !== false) return { ok: true, dup: false, json };
   if (dup) return { ok: false, dup: true, json };
-  if (!quiet) console.log(`  ! ${method} ${url.replace(BASE, '')} → ${res.status} ${JSON.stringify(json).slice(0, 160)}`);
+  if (!quiet) console.log(`  ! ${method} ${url.replace(API, '').replace(BASE, '')} → ${res.status} ${JSON.stringify(json).slice(0, 160)}`);
   return { ok: false, dup: false, json, status: res.status };
 }
 
@@ -63,7 +68,7 @@ async function listAll(url) {
 }
 
 async function main() {
-  console.log(`seed demo → ${BASE}`);
+  console.log(`seed demo → ${BASE} (mainapi ${API})`);
   // 1) demo login (backend สร้าง user demo ให้อัตโนมัติครั้งแรก)
   const login = await fetch(`${BASE}/api/auth/demo-login`, { method: 'POST', headers: { Origin: BASE } }).then((r) => r.json());
   if (!login?.token) throw new Error(`demo-login failed: ${JSON.stringify(login).slice(0, 200)}`);

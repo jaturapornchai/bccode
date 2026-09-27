@@ -59,7 +59,7 @@
 - [architecture/gl-mcp-tokens.md](architecture/gl-mcp-tokens.md) — API / MCP token ของ Holding (`/mcp-tokens`, `/mcp/gl`): credential แยกจาก session, ตรวจสิทธิ์ผู้ออกทุกคำขอ, เพิกถอนได้
 - [architecture/admin-access-control.md](architecture/admin-access-control.md) — ข้อเสนอออกแบบ admin หลายบริษัท (**ยังไม่ได้ทำ** — ตาราง/API ในเอกสารไม่มีใน `backend/`; โมเดลปัจจุบันคือ `holding_members` ในฐานกลาง)
 
-## การตัดสินใจ (ADR) — 70 ไฟล์ใน `decisions/`
+## การตัดสินใจ (ADR) — 77 ไฟล์ใน `decisions/`
 
 > ADR และบั๊กเป็นบันทึกประวัติ ไม่แก้ย้อนหลัง — ฉบับก่อน 2026-09-23 ที่อธิบายการออกแบบบน MongoDB/Kafka/Redis/ClickHouse (2-Tier, outbox, projection, consumer) ใช้เป็นหลักฐานประวัติเท่านั้น ระบบปัจจุบันยึด [ADR ถอดระบบ 2026-09-23](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)
 
@@ -138,9 +138,10 @@
 - [decisions/2026-09-26-gl-statements-backend-comparative.md](decisions/2026-09-26-gl-statements-backend-comparative.md) — งบการเงินจากรูปแบบงบคำนวณที่ backend (`reports/statement`) + คอลัมน์ปีก่อน + แม่แบบตามแบบ 2 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 (ไม่ใส่รหัสบัญชีเดา); ยังไม่มีหมายเหตุประกอบงบ
 - [decisions/2026-09-26-gl-statement-notes-hidezero-cashcheck.md](decisions/2026-09-26-gl-statement-notes-hidezero-cashcheck.md) — หมายเหตุประกอบงบการเงินตามแบบ 2 ข้อ 5 (ข้อมูลหลัก `statement-notes` ปีละชุด, โหมดที่สองในจอออกแบบงบ, เตือนเลขหมายเหตุที่ยังไม่มี) + ซ่อนรายการที่ไม่มียอด (ข้อ 7, `hidezerorows`) + ตรวจเงินสดปลายงวดกับบัญชี (`report.checks`) + ชื่อเมนู "งบฐานะการเงิน"
 - [decisions/2026-09-27-gl-statement-set-print.md](decisions/2026-09-27-gl-statement-set-print.md) — พิมพ์ชุดงบการเงินในงานพิมพ์เดียว: งบที่เปิดใช้งานเรียงตามแบบ 2 + หมายเหตุท้ายสุด, ตรวจและเตรียมพิมพ์ก่อน (คำเตือน/ผลตรวจยอดต่องบ), แนวกระดาษต่อส่วน เลขหน้าต่อเนื่อง
+- [decisions/2026-09-27-backend-proxy-allowlist.md](decisions/2026-09-27-backend-proxy-allowlist.md) — proxy สาธารณะ `/backend/*` เป็น allowlist 5 เส้นทาง (`/goapi/s3/file/*`, `/organization/company|branch[/:id]`) ต้องมี Bearer ปลายทาง path ตายตัว; การเรียก mainapi อื่นจาก browser ต้องเป็น BFF ใต้ `src/app/api` (`serverMainApiBase()`/`serverGoApiBase()`) ห้ามขยาย allowlist โดยไม่มี ADR; ขั้นที่ 2 (ย้ายบริษัท/สาขา + สตรีมไฟล์เข้า BFF แล้วลบ `/backend`) ยังไม่ทำ
 - [decisions/2026-09-26-gl-equity-statement-amount-basis.md](decisions/2026-09-26-gl-equity-statement-amount-basis.md) — งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้นตามแบบ 2 (คอลัมน์องค์ประกอบที่ผู้ใช้เลือกบัญชีเอง, ต้นงวด + บรรทัด + รายการอื่น = ปลายงวด) + `amountbasis` ต่อแถว (ต้นงวด/ปลายงวด/ความเคลื่อนไหว) แก้แม่แบบงบต้นทุนขาย/กระแสเงินสด
 
-## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 36 ไฟล์ใน `bugs/`
+## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 40 ไฟล์ใน `bugs/`
 
 - [bugs/2026-06-13-product-browser-url-drift-base-href.md](bugs/2026-06-13-product-browser-url-drift-base-href.md)
 - [bugs/2026-06-13-productbarcodes-camelcase-naming.md](bugs/2026-06-13-productbarcodes-camelcase-naming.md)
@@ -178,6 +179,7 @@
 - [bugs/2026-09-25-fa-repost-after-reversal-replays-reversed-journal.md](bugs/2026-09-25-fa-repost-after-reversal-replays-reversed-journal.md) — **แก้แล้ว 2026-09-25**: กลับรายการใบค่าเสื่อมแล้วผ่านงวดเดิมซ้ำ GL คืนใบเก่าที่กลับไปแล้ว (requestID มาจากเลขที่ใบ) แต่ตารางถูกทำเครื่องหมายว่าผ่าน — ตอนนี้ใช้เลขถัดไป `-2`/`-3`, lock ต่องวด, ตรวจสถานะ posted ก่อนทำเครื่องหมาย (tx เดียว), ใบกลับรายการลงวันที่ของใบเดิมเมื่อยังเปิด (ปิดแล้ว = วันที่ไทยวันนี้) และจอผ่านรายการมีช่องวันที่/เลขที่ใบ
 - [bugs/2026-09-26-starter-template-silent-overwrite.md](bugs/2026-09-26-starter-template-silent-overwrite.md) — **แก้แล้ว 2026-09-26**: ปุ่ม "ใช้แม่แบบมาตรฐาน" ทับแม่แบบงบที่ยังไม่บันทึกโดยไม่ถาม + ดับเบิลคลิกข้าม dialog ยืนยัน (dialog กลางไม่รับคลิกซ้อน/400ms แรก)
 - [bugs/2026-09-27-starter-template-resets-isactive.md](bugs/2026-09-27-starter-template-resets-isactive.md) — **แก้แล้ว 2026-09-27**: ใช้แม่แบบมาตรฐานทับแม่แบบที่ปิดใช้งาน แล้วกลับเป็นเปิดใช้งานเงียบ ๆ (isactive เป็นสถานะ ต้องคงค่าเดิม)
+- [bugs/2026-09-27-backend-proxy-blocklist-bypass.md](bugs/2026-09-27-backend-proxy-blocklist-bypass.md) — **แก้แล้ว 2026-09-27 (ยังไม่ deploy)**: proxy สาธารณะ `/backend/*` ของ Next เลี่ยง blocklist ได้ด้วย alias `/v1` ของ mainapi (`/backend/v1/profile/link-line`, `/backend/v1/login`) และ URL-encoding (`/backend/goapi/%67et`) + `/backend/metrics` สาธารณะ; SSR preload ภาษา fetch host จาก cookie `backend_url` (SSRF) → allowlist 5 เส้นทางที่ต้องมี Bearer + preload ใช้ `serverGoApiBase()`
 - [bugs/2026-09-25-vat-cross-period-reversal-drops-filed-rows.md](bugs/2026-09-25-vat-cross-period-reversal-drops-filed-rows.md) — **แก้แล้ว 2026-09-25**: ใบภาษีซื้อ/ขายที่กลับรายการหลังงวดหายจากงวดที่ยื่นแล้ว + เครดิต ภ.ง.ด.50/51 ลดย้อนหลัง → คงในงวดเดิมพร้อมหมายเหตุ ม.83/4 และแท็บ "ยกเลิกข้ามงวด"
 
 - [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ

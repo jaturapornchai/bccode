@@ -1,10 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   backendUrlPreferenceCookie,
   languagePreferenceCookie,
   loadBackendLanguageDictionary,
   serializePreferenceCookie,
 } from "./backend-language-preload";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("backend language preload helpers", () => {
   it("serializes language/backend cookies for client preference sync", () => {
@@ -14,19 +18,32 @@ describe("backend language preload helpers", () => {
     );
   });
 
-  it("loads the backend dictionary from a validated goapi URL", async () => {
+  it("loads the dictionary from BCAI_LOCAL_BACKEND_URL/goapi, the server-side backend address", async () => {
+    vi.stubEnv("BCAI_LOCAL_BACKEND_URL", "http://mainapi.internal:8888/");
     const fetcher = vi.fn(async () => Response.json({ overview: "ພາບລວມ" }));
 
-    const dictionary = await loadBackendLanguageDictionary("lo", "http://localhost:8888/goapi", fetcher);
+    const dictionary = await loadBackendLanguageDictionary("lo", fetcher);
 
-    expect(fetcher).toHaveBeenCalledWith("http://localhost:8888/goapi/api/language/lo", expect.objectContaining({ cache: "no-store" }));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith(
+      "http://mainapi.internal:8888/goapi/api/language/lo",
+      expect.objectContaining({ cache: "no-store" }),
+    );
     expect(dictionary).toEqual({ overview: "ພາບລວມ" });
   });
 
-  it("returns an empty dictionary for invalid backend URLs", async () => {
+  it("returns an empty dictionary without fetching when BCAI_LOCAL_BACKEND_URL is missing", async () => {
+    vi.stubEnv("BCAI_LOCAL_BACKEND_URL", "");
     const fetcher = vi.fn(async () => Response.json({ overview: "ພາບລວມ" }));
 
-    await expect(loadBackendLanguageDictionary("lo", "ftp://localhost:8888/goapi", fetcher)).resolves.toEqual({});
+    await expect(loadBackendLanguageDictionary("lo", fetcher)).resolves.toEqual({});
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty dictionary when the backend answers with an error", async () => {
+    vi.stubEnv("BCAI_LOCAL_BACKEND_URL", "http://mainapi.internal:8888");
+    const fetcher = vi.fn(async () => Response.json({ message: "boom" }, { status: 500 }));
+
+    await expect(loadBackendLanguageDictionary("lo", fetcher)).resolves.toEqual({});
   });
 });
