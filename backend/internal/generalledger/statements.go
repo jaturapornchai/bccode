@@ -55,10 +55,7 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 	}
 	periodic := statementPeriodic(template.StatementType)
 	// คำนวณเต็มความละเอียด (สูตรคูณ/หารตัดที่ 8 ตำแหน่ง) แล้วแสดงผลปัดครึ่งขึ้นห่างศูนย์ที่ทศนิยมของรูปแบบงบ ทีละแถว
-	scale := int32(2)
-	if template.GlobalStyle != nil && template.GlobalStyle.Scale > 0 {
-		scale = int32(template.GlobalStyle.Scale)
-	}
+	scale := statementScale(template)
 	if template.StatementType == "equity" {
 		return r.equityStatement(ctx, template, scale)
 	}
@@ -120,6 +117,14 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 	report.Warnings = append(noteWarnings, report.Warnings...)
 	report.TotalRows = int64(len(report.Rows))
 	return report, nil
+}
+
+// statementScale ทศนิยมที่แสดงของรูปแบบงบ (ไม่ตั้ง = 2) — ชุดงบ (statement_set.go) ส่งค่าเดียวกันให้จอพิมพ์
+func statementScale(template Master) int32 {
+	if template.GlobalStyle != nil && template.GlobalStyle.Scale > 0 {
+		return int32(template.GlobalStyle.Scale)
+	}
+	return 2
 }
 
 func statementAmountRow(rowType string) bool {

@@ -275,7 +275,7 @@ export function statementSetRootOrientation(sections: { report: GLReport }[]): G
   return sections.length ? statementOrientation(sections[0].report) : "portrait";
 }
 
-/** ชุดงบการเงินในงานพิมพ์เดียว: งบตามลำดับที่ส่งมา (แบบ 2 — statementSetTemplates) แล้วหมายเหตุประกอบงบการเงินท้ายสุด;
+/** ชุดงบการเงินในงานพิมพ์เดียว: งบตามลำดับที่ส่งมา (แบบ 2 — backend เรียงให้ใน reports/statement-set) แล้วหมายเหตุประกอบงบการเงินท้ายสุด;
  *  แต่ละส่วนขึ้นหน้าใหม่และใช้แนวกระดาษของตัวเอง (globals.css "GL statement set print") — ตัวเลขทุกตัวมาจาก backend */
 export function GLStatementSetPrint({ sections, notes, company, notesPeriod, tr }: { sections: GLStatementSetSection[]; notes: StatementNote[]; company: string; notesPeriod: string; tr: GLTextFn }) {
   return <>

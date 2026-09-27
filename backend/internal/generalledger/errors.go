@@ -39,6 +39,9 @@ type UserError struct {
 	Message string // Thai, user facing
 	Status  int    // HTTP status; 0 = 409 Conflict
 	Field   string // JSON field of the offending input (e.g. payment_date) so the screen can point at it; "" = whole record
+	// Args fill {0}, {1}, … in the gl_err_<code> text of other languages (languages.tsv); Message already
+	// carries the values in Thai. Only for values the user must see to fix the input (e.g. the missing code).
+	Args []string
 }
 
 func (e *UserError) Error() string { return e.Message }

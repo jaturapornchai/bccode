@@ -4,19 +4,21 @@ import { GL_REPORTS, GL_RESOURCES } from "@/lib/general-ledger";
 
 type Context = { params: Promise<{ glPath: string[] }> };
 const bad = (message: string, status = 400) => NextResponse.json({ success: false, message }, { status });
+// ชุดงบการเงินในคำขอเดียว (backend/internal/generalledger/statement_set.go) — รายงานของจอพิมพ์ชุดงบ ไม่ใช่รายงานทีละจอใน GL_REPORTS
+const GL_SET_REPORTS: readonly string[] = ["statement-set"];
 export async function GET(request: Request, context: Context) {
   const authorization = requireBearerToken(request);
   if (typeof authorization !== "string") return authorization;
   const { glPath } = await context.params;
   const valid = glPath[0] === "reports"
-    ? glPath.length === 2 && (GL_REPORTS as readonly string[]).includes(glPath[1])
+    ? glPath.length === 2 && ((GL_REPORTS as readonly string[]).includes(glPath[1]) || GL_SET_REPORTS.includes(glPath[1]))
     : glPath[0] === "journal-support" ? glPath.length === 1
     : glPath[0] === "journal-reviews" ? glPath.length === 2
     : (GL_RESOURCES as readonly string[]).includes(glPath[0]) && glPath.length <= 2;
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
   try {
     const query = new URLSearchParams();
-    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "status", "kind", "snapshot", "asof", "companywide", "template"];
+    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "status", "kind", "snapshot", "asof", "companywide", "template", "templates", "notes"];
     new URL(request.url).searchParams.forEach((value, key) => { if (allowed.includes(key)) query.set(key, value); });
     return proxyMainApiJson(request, getMainApiUrl(getBackendUrlFromRequest(request)), `/gl/v2/${glPath.map(encodeURIComponent).join("/")}?${query}`, { method: "GET" });
   } catch { return bad("การเชื่อมต่อระบบไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"); }

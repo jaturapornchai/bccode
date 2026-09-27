@@ -84,7 +84,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/upload/image` | POST | M `/goapi/image/upload` (category `system-settings`, client ต้องส่ง category) | Bearer | LIVE | `upload/image/route.ts:3-8` |
 | `/api/currency/[[...path]]` | GET/POST/PUT/DELETE | M `/currency/*` | Bearer | BACKEND-REMOVED | `currency/[[...currencyPath]]/route.ts:14-60,80,91` |
 | `/api/holding-member` | GET | M `/holding-member/list` (อ่านอย่างเดียว; เพิ่ม/ถอดผู้ดูแลทำที่ ตั้งค่าระบบและการเข้าถึง › บัญชีเข้าระบบ) | Bearer | LIVE | `holding-member/route.ts:1-17` |
-| `/api/gl/[...path]` | GET/POST | M `/gl/v2/{path}?…` (allowlist query) / POST `/gl/v2/command` | Bearer | LIVE | `gl/[...glPath]/route.ts:19-21,45` |
+| `/api/gl/[...path]` | GET/POST | M `/gl/v2/{path}?…` (allowlist query รวม `templates`/`notes`; path รายงาน `GL_REPORTS` + `reports/statement-set` ผ่าน `GL_SET_REPORTS`) / POST `/gl/v2/command` | Bearer | LIVE | `gl/[...glPath]/route.ts:8,14,21-23,47` |
 | `/api/fa/[...path]` | GET/POST | M `/fa/v2/*` (resource `assets`,`types`,`reports`,`command`,`mcp`) | Bearer | LIVE | `fa/[...faPath]/route.ts:7-8,37,72,99` |
 | `/api/goapi/[...path]` | GET/POST | G ตาม allowlist แบบ path เต็ม: รายงานภาษี `api/report/tax/*` (ภาษีซื้อ-ขาย, WHT, 50 ทวิ, แบบยื่น/ไฟล์ยื่น), `api/report/debt/query`, `api/report/sales/by-document`, GET `api/reports/inventory-valuation`; PDF/.txt ส่งต่อแบบ byte | Bearer | LIVE | `goapi/[...goPath]/route.ts:14-37` |
 | `/api/erp-transaction/[...path]` | GET/POST/PUT/DELETE | M `/transaction/*` | Bearer | BACKEND-REMOVED | `erp-transaction/[...erpPath]/route.ts:64,98,138` |

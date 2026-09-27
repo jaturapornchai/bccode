@@ -216,6 +216,9 @@ func errorPayloadFor(err error, lang ...string) (int, errorPayload) {
 			translated := language.Text(key, reqLang)
 			if translated != "" && translated != key {
 				msg = translated
+				for i, arg := range user.Args {
+					msg = strings.ReplaceAll(msg, "{"+strconv.Itoa(i)+"}", arg)
+				}
 			}
 		}
 		appErr := &apperr.AppError{
@@ -575,6 +578,9 @@ func (h *Http) report(request microservice.IContext) error {
 		return failure(request, err)
 	}
 	q := gl.ReportQuery{From: request.QueryParam("from"), To: request.QueryParam("to"), FiscalYear: request.QueryParam("fiscalyear"), AccountCode: request.QueryParam("accountcode"), BranchCode: request.QueryParam("branchcode"), BudgetCode: request.QueryParam("budgetcode"), Template: request.QueryParam("template"), DepartmentCode: request.QueryParam("departmentcode"), ProjectCode: request.QueryParam("projectcode"), BookCode: request.QueryParam("bookcode"), Page: pageNumber(request.QueryParam("page"), 1, 1000000), Limit: pageNumber(request.QueryParam("limit"), 100, 1000)}
+	if name == statementSetReport {
+		return h.statementSet(ctx, request, scope.Scope, q, version)
+	}
 	data, err := h.pg.Report(ctx, scope.Scope, name, q)
 	if err != nil {
 		return failure(request, err)

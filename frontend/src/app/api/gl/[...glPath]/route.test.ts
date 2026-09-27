@@ -116,6 +116,20 @@ describe("GL authenticated proxy", () => {
     expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"))).status).toBe(200);
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual(body);
   });
+  it("forwards the one-request statement set with its template list and notes flag, including an empty list", async () => {
+    // ชุดงบการเงิน (backend statement_set.go): templates ว่าง = หมายเหตุอย่างเดียว ต้องส่งต่อเป็นค่าว่าง ไม่หายไป (ไม่ส่ง = ชุดเริ่มต้น)
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: { sections: [], notes: [] } })); vi.stubGlobal("fetch", fetchMock);
+    expect((await GET(new Request("http://localhost/api/gl/reports/statement-set?fiscalyear=2569&from=2569-01-01&to=2569-12-31&templates=BS-1,PL-1&notes=false&holdingcode=other", { headers }), context("reports", "statement-set"))).status).toBe(200);
+    const query = new URL(fetchMock.mock.calls[0][0]).searchParams;
+    expect(new URL(fetchMock.mock.calls[0][0]).pathname).toBe("/gl/v2/reports/statement-set");
+    expect(Object.fromEntries(query)).toEqual({ fiscalyear: "2569", from: "2569-01-01", to: "2569-12-31", templates: "BS-1,PL-1", notes: "false" });
+    expect((await GET(new Request("http://localhost/api/gl/reports/statement-set?fiscalyear=2569&templates=&notes=true", { headers }), context("reports", "statement-set"))).status).toBe(200);
+    const notesOnly = new URL(fetchMock.mock.calls[1][0]).searchParams;
+    expect(notesOnly.has("templates")).toBe(true);
+    expect(notesOnly.get("templates")).toBe("");
+    expect((await GET(new Request("http://localhost/api/gl/reports/statement-set/extra", { headers }), context("reports", "statement-set", "extra"))).status).toBe(404);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
   it("rejects numeric budget money and spread outside budgets", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const requestid = "12345678-1234-1234-1234-123456789012";

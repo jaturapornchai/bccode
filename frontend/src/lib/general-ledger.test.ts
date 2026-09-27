@@ -389,11 +389,12 @@ describe("financial statement set", () => {
     expect(screen).toMatch(/onClick=\{\(\) => setStatementSetOpen\(true\)\}[^>]*>\s*<Printer[^>]*\/> \{tr\("gl_statement_set_print"/);
     expect(screen).not.toContain('["pnl", "production_cost", "cash_flow", "equity"]');
     const dialog = readFileSync(resolve(process.cwd(), "src", "app", "gl", "gl-statement-set.tsx"), "utf8");
-    // portal อยู่นอก {open && …} จึงพิมพ์ต่อได้แม้ dialog ปิด; งบทุกรายการคำนวณพร้อมกันที่ backend และทิ้งผลที่ตอบกลับช้า
+    // portal อยู่นอก {open && …} จึงพิมพ์ต่อได้แม้ dialog ปิด; ทั้งชุดคำนวณที่ backend ด้วยคำขอ reports/statement-set ครั้งเดียว และทิ้งผลที่ตอบกลับช้า
     expect(dialog).toMatch(/\)\}\s*\{print\.portal\}\s*<\/>/);
     expect(dialog).toContain('glAllRecords<GLStatementTemplate>("statement-templates"');
-    expect(dialog).toContain('fetchReport("statement", query)');
-    expect(dialog).toContain("Promise.allSettled(");
+    expect(dialog).toContain("glRequest<GLStatementSetResult>(statementSetPath(");
+    expect(dialog).not.toContain("fetchReport(");
+    expect(dialog).not.toContain("Promise.allSettled(");
     expect(dialog).toContain("if (request !== requestRef.current) return;");
   });
 });

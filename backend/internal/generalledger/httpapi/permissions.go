@@ -16,6 +16,9 @@ func canReadReport(p map[string]bool, name string) bool {
 		screens = []string{"financial-close", "gl-recalculate-posted", "gl-reprocess", "xbrl-export"}
 	case "trialbalance":
 		screens = []string{"gl-year-end"}
+	case statementSetReport:
+		// ชุดงบการเงินอ่านได้เท่ากับงบทีละงบ (จอออกแบบงบการเงิน) — ไม่ใส่ใน reportScreens ดู httpapi/statement_set.go
+		screens = []string{reportScreens["statement"]}
 	}
 	for _, screen := range screens {
 		if allowed(p, screen, "") {

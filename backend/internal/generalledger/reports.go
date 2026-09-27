@@ -74,14 +74,20 @@ func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q Repor
 	if err != nil {
 		return empty, err
 	}
-	report.AsOf = rc.query.To
-	if report.Warnings == nil {
-		report.Warnings = []string{}
-	}
+	report = rc.finish(report)
 	if err = tx.Commit(); err != nil {
 		return empty, err
 	}
 	return report, nil
+}
+
+// finish ค่าท้ายที่ทุกรายงานได้เหมือนกัน — ใช้ทั้ง reports/<name> และงบแต่ละงบใน reports/statement-set (statement_set.go)
+func (r reportContext) finish(report Report) Report {
+	report.AsOf = r.query.To
+	if report.Warnings == nil {
+		report.Warnings = []string{}
+	}
+	return report
 }
 
 func newReportContext(ctx context.Context, tx *sql.Tx, scope Scope, q ReportQuery) (reportContext, error) {

@@ -128,10 +128,36 @@ func statementReportNoteNos(rows []map[string]string) []string {
 // statementPrintedNoteNos เลขที่หมายเหตุที่งบพิมพ์จริง: ไม่ติ๊ก "แสดงคอลัมน์หมายเหตุประกอบงบ" = ไม่พิมพ์เลขที่เลย จึงไม่ต้องตรวจ
 // (ไม่ระบุ = แสดงตามค่าเริ่มของจอ)
 func statementPrintedNoteNos(template Master, rows []map[string]string) []string {
-	if style := template.GlobalStyle; style != nil && style.ShowNoteColumn != nil && !*style.ShowNoteColumn {
+	if !statementShowsNoteColumn(template) {
 		return nil
 	}
 	return statementReportNoteNos(rows)
+}
+
+// statementShowsNoteColumn งบพิมพ์คอลัมน์หมายเหตุหรือไม่ (ไม่ระบุ = แสดง) — ชุดงบ (statement_set.go) ส่งค่าเดียวกันให้จอพิมพ์
+func statementShowsNoteColumn(template Master) bool {
+	style := template.GlobalStyle
+	return style == nil || style.ShowNoteColumn == nil || *style.ShowNoteColumn
+}
+
+// fiscalYearNotes หมายเหตุประกอบงบการเงินของปีที่ออกงบ (ไม่มีรายการ หรือถูกลบแล้ว = found false)
+func (r reportContext) fiscalYearNotes(ctx context.Context) ([]StatementNote, bool, error) {
+	var payload []byte
+	err := r.tx.QueryRowContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind='statement-notes' AND code=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, r.scope.Company, r.fiscal.Code).Scan(&payload)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []StatementNote{}, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	var record Master
+	if err = json.Unmarshal(payload, &record); err != nil {
+		return nil, false, err
+	}
+	if record.Notes == nil {
+		record.Notes = []StatementNote{}
+	}
+	return record.Notes, true, nil
 }
 
 // statementNoteWarnings เตือนเมื่อเลขที่หมายเหตุที่บรรทัดงบอ้างถึงยังไม่มีในหมายเหตุประกอบงบการเงินของปีที่ออกงบ (ปีปัจจุบันเท่านั้น;
@@ -142,20 +168,15 @@ func (r reportContext) statementNoteWarnings(ctx context.Context, referenced []s
 		return nil, nil
 	}
 	year := r.fiscal.Code
-	var payload []byte
-	err := r.tx.QueryRowContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind='statement-notes' AND code=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, r.scope.Company, year).Scan(&payload)
-	if errors.Is(err, sql.ErrNoRows) {
-		return []string{"ยังไม่มีหมายเหตุประกอบงบการเงินของปี " + year + " แต่มีบรรทัดอ้างหมายเหตุ"}, nil
-	}
+	notes, found, err := r.fiscalYearNotes(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var record Master
-	if err = json.Unmarshal(payload, &record); err != nil {
-		return nil, err
+	if !found {
+		return []string{"ยังไม่มีหมายเหตุประกอบงบการเงินของปี " + year + " แต่มีบรรทัดอ้างหมายเหตุ"}, nil
 	}
 	present := map[string]bool{}
-	for _, note := range record.Notes {
+	for _, note := range notes {
 		present[canonicalStatementNoteNo(note.NoteNo)] = true
 	}
 	return missingStatementNotes(referenced, present, year), nil

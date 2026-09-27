@@ -1,22 +1,52 @@
 "use client";
 // พิมพ์ชุดงบการเงิน (ลุงจืดอนุมัติ 2026-09-27 — Champ ไม่มี, ไม่มีเมนูใหม่: เปิดจากจอออกแบบงบการเงิน)
-// งบที่เลือก + หมายเหตุประกอบงบการเงิน ต่อเนื่องในงานพิมพ์เดียว เรียงตามแบบ 2 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 (statementSetRank ใน lib/general-ledger.ts)
-// ตัวเลขทุกตัวคำนวณที่ backend (GET reports/statement ต่อรูปแบบงบที่บันทึกแล้ว) — จอนี้แค่เรียก API เดิมพร้อมกัน แสดงผลตรวจ แล้วพิมพ์
+// งบที่เลือก + หมายเหตุประกอบงบการเงิน ต่อเนื่องในงานพิมพ์เดียว เรียงตามแบบ 2 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566
+// ตัวเลขทุกตัวคำนวณที่ backend ในคำขอเดียว (GET reports/statement-set — backend/internal/generalledger/statement_set.go):
+// ทุกงบคำนวณแบบเดียวกับ reports/statement + หมายเหตุของปี ใน snapshot เดียว และเรียงตามแบบ 2 มาแล้ว — จอนี้แค่ส่งรายการที่เลือก
+// แสดงผลตรวจ แล้วพิมพ์ตามลำดับที่ได้ (รายการให้เลือกเรียงด้วย statementSetTemplates ใน lib/general-ledger.ts ซึ่ง test ตรวจว่าตรงกับ backend)
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { AlertTriangle, CheckCircle2, ClipboardCheck, Loader2, Printer, X, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatAppDate } from "@/lib/date-time";
-import { glAllRecords } from "@/lib/general-ledger-api";
-import { labelText, statementSetDefaultSelection, statementSetTemplates, statementTypeLabels, type GLReport, type GLStatementTemplate, type StatementNote } from "@/lib/general-ledger";
-import { YearSelect, actionClass, useGLLanguage, useGLText, useReferences } from "./gl-common";
-import { emptyReportFilters, fetchReport } from "./gl-reports";
+import { glAllRecords, glRequest } from "@/lib/general-ledger-api";
+import { labelText, statementNotesFromRecord, statementSetDefaultSelection, statementSetTemplates, statementTypeLabels, type GLReport, type GLStatementTemplate, type StatementNote } from "@/lib/general-ledger";
+import { YearSelect, actionClass, useGLLanguage, useGLText, useReferences, type GLTextFn } from "./gl-common";
 import { GLReportWarnings, GLStatementChecks, GLStatementSetPrint, printCompanyName, statementPeriodLine, statementPeriodText, statementSetRootOrientation, useGLPrint, type GLStatementSetSection } from "./gl-print";
 import { loadStatementNotes } from "./gl-statement-notes";
 
-type PreparedSection = { template: GLStatementTemplate; report: GLReport | null; error: string };
-type PreparedSet = { year: string; sections: PreparedSection[]; notes: { items: StatementNote[]; error: string } | null };
+/** ผลของ GET reports/statement-set: งบเรียงตามแบบ 2 แล้ว; งบที่คำนวณไม่สำเร็จมี error (ข้อความตามภาษาที่เลือก) แทน report; ยอดเงินในรายงานเป็นสตริงทศนิยม */
+export type GLStatementSetSectionResult = { code: string; name: string; statementtype: string; shownotecolumn: boolean; scale: number; report?: GLReport | null; error?: string };
+export type GLStatementSetResult = { sequence: number; fiscalyear: string; from: string; to: string; sections: GLStatementSetSectionResult[] | null; notes: StatementNote[] | null };
+type PreparedSection = { code: string; title: string; statementtype: string; showNote: boolean; scale: number; report: GLReport | null; error: string };
+/** error = ทั้งคำขอไม่สำเร็จ (เช่น รูปแบบงบถูกลบ/ปิดใช้ระหว่างเปิดจอ หรือเชื่อมต่อไม่ได้) — ไม่มีงบใดพิมพ์ได้ */
+type PreparedSet = { year: string; sections: PreparedSection[]; notes: { items: StatementNote[]; error: string } | null; error: string };
 type NotesInfo = { loading: boolean; count: number; error: string };
+
+/** คำขอชุดงบของทั้งปีบัญชี: templates ส่งเสมอ (ว่าง = หมายเหตุอย่างเดียว; backend ถือว่าไม่ส่ง = ชุดเริ่มต้น) */
+export function statementSetPath(year: { code: string; startdate: string; enddate: string }, codes: string[], withNotes: boolean): string {
+  return `reports/statement-set?${new URLSearchParams({ fiscalyear: year.code, from: year.startdate, to: year.enddate, templates: codes.join(","), notes: String(withNotes) })}`;
+}
+
+/** ผลจาก backend → รายการตรวจก่อนพิมพ์ ตามลำดับที่ backend ส่งมา (ไม่เรียงใหม่ที่ browser) */
+export function preparedStatementSet(result: GLStatementSetResult, year: string, withNotes: boolean, tr: GLTextFn): PreparedSet {
+  const sections = (result.sections ?? []).map((section): PreparedSection => ({
+    code: section.code,
+    title: section.name || section.code,
+    statementtype: section.statementtype,
+    showNote: section.shownotecolumn ?? true,
+    scale: section.scale ?? 2,
+    report: section.report ?? null,
+    error: section.report ? "" : section.error?.trim() || tr("gl_statement_set_failed", "คำนวณไม่สำเร็จ"),
+  }));
+  const items = withNotes ? statementNotesFromRecord({ notes: result.notes }) : [];
+  return {
+    year: result.fiscalyear || year,
+    sections,
+    notes: withNotes ? { items, error: items.length ? "" : tr("gl_statement_set_notes_none", "ปีบัญชีนี้ยังไม่มีหมายเหตุประกอบงบการเงิน — เขียนได้ที่โหมด “หมายเหตุประกอบงบการเงิน”") } : null,
+    error: "",
+  };
+}
 
 const rowClass = "flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 text-[0.95rem] leading-snug shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-colors hover:border-primary/60 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:disabled]:cursor-default has-[:disabled]:opacity-70";
 
@@ -152,37 +182,23 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
     if (!fiscalYear || nothingSelected) return;
     const request = ++requestRef.current;
     const withNotes = includeNotes;
+    const year = fiscalYear.code;
     setPrepared(null);
     setPreparing(true);
-    const filters = { ...emptyReportFilters, fiscalyear: fiscalYear.code, from: fiscalYear.startdate, to: fiscalYear.enddate };
-    const [reports, notes] = await Promise.all([
-      Promise.allSettled(chosen.map((template) => {
-        const query = { ...filters, template: template.code };
-        return fetchReport("statement", query);
-      })),
-      withNotes
-        ? loadStatementNotes(fiscalYear.code).then(
-          (result) => ({ items: result?.notes ?? [], error: result?.notes.length ? "" : tr("gl_statement_set_notes_none", "ปีบัญชีนี้ยังไม่มีหมายเหตุประกอบงบการเงิน — เขียนได้ที่โหมด “หมายเหตุประกอบงบการเงิน”") }),
-          (e: Error) => ({ items: [] as StatementNote[], error: e.message }),
-        )
-        : Promise.resolve(null),
-    ]);
+    let next: PreparedSet;
+    try {
+      const result = await glRequest<GLStatementSetResult>(statementSetPath(fiscalYear, chosen.map((template) => template.code), withNotes));
+      next = preparedStatementSet(result, year, withNotes, tr);
+    } catch (e) {
+      next = { year, sections: [], notes: null, error: (e as Error)?.message || tr("gl_statement_set_failed", "คำนวณไม่สำเร็จ") };
+    }
     if (request !== requestRef.current) return;
-    setPrepared({
-      year: fiscalYear.code,
-      sections: chosen.map((template, index) => {
-        const result = reports[index];
-        return result.status === "fulfilled"
-          ? { template, report: result.value, error: "" }
-          : { template, report: null, error: (result.reason as Error)?.message || tr("gl_statement_set_failed", "คำนวณไม่สำเร็จ") };
-      }),
-      notes,
-    });
+    setPrepared(next);
     setPreparing(false);
   }
 
   const readySections = prepared?.sections.filter((section) => section.report) ?? [];
-  const failedCount = (prepared?.sections.filter((section) => !section.report).length ?? 0) + (prepared?.notes?.error ? 1 : 0);
+  const failedCount = (prepared?.sections.filter((section) => !section.report).length ?? 0) + (prepared?.notes?.error ? 1 : 0) + (prepared?.error ? 1 : 0);
   const reviewCount = readySections.filter((section) => section.report && reportNeedsReview(section.report)).length;
   const readyCount = readySections.length + (prepared?.notes && !prepared.notes.error && prepared.notes.items.length ? 1 : 0);
   const canPrint = Boolean(prepared) && !preparing && failedCount === 0 && readyCount > 0 && !print.printing;
@@ -190,13 +206,13 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
   function printSet() {
     if (!prepared || !canPrint) return;
     const preparedYear = refs.years.find((item) => item.code === prepared.year);
-    const sections: GLStatementSetSection[] = prepared.sections.flatMap(({ template, report }) => report ? [{
-      code: template.code,
-      title: template.name || template.code,
-      period: statementPeriodLine(template.statementtype, report, refs.years, tr, language),
+    const sections: GLStatementSetSection[] = prepared.sections.flatMap(({ code, title, statementtype, showNote, scale, report }) => report ? [{
+      code,
+      title,
+      period: statementPeriodLine(statementtype, report, refs.years, tr, language),
       report,
-      showNote: template.globalstyle?.shownotecolumn ?? true,
-      scale: template.globalstyle?.scale ?? 2,
+      showNote,
+      scale,
     }] : []);
     const notesPeriod = preparedYear ? statementPeriodText({ from: preparedYear.startdate, to: preparedYear.enddate }, false, true, tr, language) : "";
     print.print(<GLStatementSetPrint sections={sections} notes={prepared.notes?.items ?? []} company={printCompanyName()} notesPeriod={notesPeriod} tr={tr} />, statementSetRootOrientation(sections));
@@ -339,11 +355,16 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
               {prepared && (
                 <section aria-labelledby={`${titleId}-results`} className="space-y-3 rounded-xl border border-border bg-muted/20 p-3">
                   <h3 ref={resultsHeadingRef} id={`${titleId}-results`} tabIndex={-1} className="text-[0.95rem] font-semibold outline-none">{tr("gl_statement_set_results", "ผลการตรวจก่อนพิมพ์")}</h3>
+                  {prepared.error ? (
+                    <p role="alert" className="flex items-start gap-2 text-[0.95rem] leading-relaxed text-destructive [overflow-wrap:anywhere]">
+                      <XCircle aria-hidden className="mt-1 size-4 shrink-0" /> {tr("gl_statement_set_request_failed", "ตรวจชุดงบไม่สำเร็จ: {0}").replace("{0}", prepared.error)}
+                    </p>
+                  ) : <>
                   <ol className="space-y-3">
-                    {prepared.sections.map(({ template, report, error }) => (
-                      <li key={template.code} className="space-y-2">
+                    {prepared.sections.map(({ code, title, report, error, scale }) => (
+                      <li key={code} className="space-y-2">
                         <div className="flex flex-wrap items-center justify-between gap-2 text-[0.95rem]">
-                          <span className="font-semibold [overflow-wrap:anywhere]">{template.name || template.code}</span>
+                          <span className="font-semibold [overflow-wrap:anywhere]">{title}</span>
                           {!report ? (
                             <span className="inline-flex items-center gap-1.5 font-semibold text-destructive"><XCircle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_failed", "คำนวณไม่สำเร็จ")}</span>
                           ) : reportNeedsReview(report) ? (
@@ -354,7 +375,7 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
                         </div>
                         {error && <p role="alert" className="text-[0.95rem] leading-relaxed text-destructive [overflow-wrap:anywhere]">{error}</p>}
                         {report && <GLReportWarnings warnings={report.warnings} tr={tr} />}
-                        {report && <GLStatementChecks checks={report.checks} scale={template.globalstyle?.scale ?? 2} tr={tr} />}
+                        {report && <GLStatementChecks checks={report.checks} scale={scale} tr={tr} />}
                       </li>
                     ))}
                     {prepared.notes && (
@@ -376,6 +397,7 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
                     {reviewCount > 0 && <p className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400"><AlertTriangle aria-hidden className="mt-1 size-4 shrink-0" /> {tr("gl_statement_set_summary_warnings", "มีข้อควรตรวจสอบ {0} รายการ — พิมพ์ได้ แต่ควรตรวจก่อนออกงบ").replace("{0}", String(reviewCount))}</p>}
                     {failedCount > 0 && <p className="flex items-start gap-1.5 text-destructive"><XCircle aria-hidden className="mt-1 size-4 shrink-0" /> {tr("gl_statement_set_summary_errors", "คำนวณไม่สำเร็จ {0} รายการ — แก้ไข หรือยกเลิกการเลือกรายการนั้นก่อนพิมพ์").replace("{0}", String(failedCount))}</p>}
                   </div>
+                  </>}
                 </section>
               )}
             </div>
