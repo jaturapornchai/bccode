@@ -110,7 +110,6 @@ import { PermissionSetsEditor } from "@/components/system-settings/field-editors
 import { ProductCategoryTreeView } from "./product-category-tree-view";
 import { ProductCategoryItemsEditor } from "./product-category-items-editor";
 import { ProductGroupTreeView } from "./product-group-tree-view";
-import { WarehouseTreeView } from "./warehouse-tree-view";
 import { CompanyBranchTreeView } from "./company-branch-tree-view";
 import { ProductBomEditor } from "./product-bom-editor";
 import { ResizableSplitter, useSplitPercent } from "@/components/ui/resizable-splitter";
@@ -139,7 +138,9 @@ import {
   thaiBankPresets,
 } from "@/lib/thai-banks";
 import { LANGUAGES, SYSTEM_LANGUAGES, ACTIVE_LANGUAGE_CODES, normalizeLanguage, type LanguageCode } from "@/lib/i18n";
-import { MENU_SECTIONS, menuText } from "@/lib/menu-data";
+import { MENU_SECTIONS, flattenMenuItems, menuText } from "@/lib/menu-data";
+import { isMenuBackendRetired } from "@/lib/menu-screen-status";
+import { MenuPlannedCard } from "../menu/menu-planned-card";
 import { ALL_SCREEN_ACTIONS, isActionEntry, type ScreenActions } from "@/lib/permission-actions";
 import { RoleScreenMatrix } from "@/components/system-settings/field-editors/role-screen-matrix";
 import { useScreenActions } from "@/lib/use-screen-actions";
@@ -990,6 +991,8 @@ export function SystemSettingsScreen({
     ) => {
       if (!currentAuth || !currentWorkspace || !currentConfig) return;
       if (currentConfig.kind === "report") return;
+      // The API behind a retired screen no longer exists (MongoDB removed 2026-09-23) — do not call it.
+      if (isMenuBackendRetired(currentConfig.route)) return;
       if (append) setLoadingMore(true);
       else setLoading(true);
       setNotice(null);
@@ -1442,6 +1445,22 @@ export function SystemSettingsScreen({
         </Card>
       </main>
     );
+  }
+  // Same "รอพัฒนา" state as the menu tab (main-menu-screen.tsx) for a screen whose API was removed with
+  // MongoDB (ADR docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md); it returns when a
+  // PostgreSQL API exists. Covers the standalone route src/app/[systemSetting]/page.tsx and embedded use.
+  if (isMenuBackendRetired(config.route)) {
+    const plannedCard = (
+      <MenuPlannedCard
+        route={config.route}
+        item={flattenMenuItems().find((item) => item.route === config.route)}
+        title={title}
+        language={language}
+        backendLanguage={backendLanguage}
+      />
+    );
+    if (embedded) return <section className="grid w-full max-w-none min-w-0 gap-3">{plannedCard}</section>;
+    return <main className="min-h-dvh w-full max-w-none bg-background p-2 text-foreground sm:p-3">{plannedCard}</main>;
   }
   const currentConfig = config;
   // True only when the open form actually differs from its loaded baseline, so the
@@ -2638,15 +2657,6 @@ export function SystemSettingsScreen({
             ) : null}
           </div>
         </div>
-      ) : config.slug === "productwarehousescreen" && !hideChrome ? (
-        <BackendTextProvider dictionary={backendLanguage}>
-          <WarehouseTreeView
-            auth={auth}
-            workspace={workspace}
-            language={language}
-            onRefresh={() => void loadRecords(auth, workspace, config)}
-          />
-        </BackendTextProvider>
       ) : (config.slug === "company" || config.slug === "branch") ? (
         <BackendTextProvider dictionary={backendLanguage}>
           <CompanyBranchTreeView

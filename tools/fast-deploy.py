@@ -94,7 +94,6 @@ def main():
     frontend_img = f"bcai-account-frontend:{tag}"
     build_frontend_cmd = docker_base + [
         "build",
-        "--build-arg", "BCAI_LOCAL_BACKEND_URL=http://mainapi:8888",
         "--build-arg", "NEXT_PUBLIC_GOOGLE_CLIENT_ID=212036599086-c7aqvm005jiv2kqi4duju8spd9b3jb94.apps.googleusercontent.com",
         "-t", frontend_img,
         frontend_dir

@@ -12,11 +12,6 @@ const settingSource = readFileSync(
   "utf8",
 );
 
-const warehouseSource = readFileSync(
-  fileURLToPath(new URL("../../app/system-settings/warehouse-tree-view.tsx", import.meta.url)),
-  "utf8",
-);
-
 const companyBranchSource = readFileSync(
   fileURLToPath(new URL("../../app/system-settings/company-branch-tree-view.tsx", import.meta.url)),
   "utf8",
@@ -91,12 +86,6 @@ describe("ResizableSplitter component & usage", () => {
     expect(settingSource).toContain("CATEGORY_SPLIT_DEFAULT_LEFT");
     expect(settingSource).toContain("startCategorySplitResize");
     expect(settingSource).toContain("adjustCategorySplitWithKeyboard");
-  });
-
-  it("is adopted by warehouse-tree-view", () => {
-    expect(warehouseSource).toContain("<ResizableSplitter");
-    expect(warehouseSource).toContain("handleSidebarKeyDown");
-    expect(warehouseSource).toContain("handleSidebarResizeReset");
   });
 
   it("is adopted by company-branch-tree-view", () => {

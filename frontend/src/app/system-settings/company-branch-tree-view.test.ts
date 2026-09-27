@@ -13,8 +13,12 @@ const namesEditorSource = readFileSync(
 
 describe("CompanyBranchTreeView organization-management contract", () => {
   it("loads the complete management tree and keeps inactive records manageable", () => {
-    expect(source).toContain("/organization/company?management=true&_");
-    expect(source).toContain("/organization/branch?management=true&_");
+    // The browser reaches mainapi only through the BFF (src/app/api/organization), which always asks for management=true.
+    expect(source).toContain('authFetch("/api/organization/company"');
+    expect(source).toContain('authFetch("/api/organization/branch"');
+    expect(source).not.toContain("mainApiUrl}/organization");
+    expect(source).toContain('url = "/api/workspace/branch"');
+    expect(source).toContain('formType === "createbranch" ? { branch: body } : body');
     expect(source).not.toContain("if (record.isactive === false) return false");
   });
 

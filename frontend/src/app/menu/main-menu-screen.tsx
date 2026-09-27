@@ -102,6 +102,7 @@ import {
 } from "@/lib/menu-data";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type FrequentMenuEntry, type MenuUsageMap } from "@/lib/menu-usage";
 import { MenuPendingBadge } from "./menu-pending-badge";
+import { MenuPlannedCard } from "./menu-planned-card";
 import { getSystemSettingConfig } from "@/lib/system-setting-screens";
 import { authFetch, clearAuthSession, getAuthSession, logoutAuthSession } from "@/lib/client-auth-session";
 import { pushNotice } from "@/lib/toast";
@@ -141,7 +142,6 @@ import { OperationsWorkbench } from "@/app/operations/operations-workbench";
 import { MenuDataTable } from "./menu-data-table";
 import { DashboardHome } from "./dashboard-home";
 import { ManageShortcutsScreen } from "./manage-shortcuts-screen";
-import { deriveMainApiUrl } from "@/lib/backend-url";
 import { buildChartData, buildKpis, fetchErpMenuRows, type ErpMenuRow } from "./menu-dashboard-data";
 import { MenuKpiChart } from "./menu-kpi-chart";
 import { MenuQueryProvider } from "./menu-query-provider";
@@ -467,14 +467,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const loginText = backendText(backendLanguage, "login", "เข้าสู่ระบบ");
   const canAccessMenuItem = useCallback((item: MenuItem) => allowedMenuIds.has(item.id), [allowedMenuIds]);
   const allMenuItems = useMemo(() => flattenMenuItems(), []);
-  const mainApiUrl = useMemo(() => {
-    if (!auth?.backendUrl) return "";
-    try {
-      return deriveMainApiUrl(auth.backendUrl);
-    } catch {
-      return "";
-    }
-  }, [auth]);
 
   /**
    * Search results for layouts WITHOUT the sidebar (top menu / hidden sidebar):
@@ -2818,26 +2810,7 @@ function WorkTabPanel({
   workspace?: WorkspaceSession | null;
 }) {
   const plannedCard = (
-    <Card className="min-h-[420px]">
-      <CardContent className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 gap-4">
-            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-              {activeTab.item ? <MenuRouteIcon item={activeTab.item} size={28} /> : <HomeMenuIcon size={28} />}
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-muted-foreground">{menuText({ key: "menu_planned_workflow", th: "เมนูในแผนพัฒนา", en: "Planned Workflow" }, language, backendLanguage)}</p>
-              <h2 className="break-words text-2xl font-semibold leading-relaxed">{activeTab.item ? menuText(activeTab.item.label, language, backendLanguage) : activeTab.title}</h2>
-            </div>
-          </div>
-          <MenuPendingBadge route={activeTab.route} language={language} backendLanguage={backendLanguage} />
-        </div>
-
-        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-base leading-relaxed text-muted-foreground">
-          {menuText({ key: "menu_planned_description", th: "หน้าจอนี้ยังอยู่ระหว่างเตรียมพัฒนา จึงยังบันทึกหรือประมวลผลข้อมูลไม่ได้ เลือกใช้งานเมนูอื่นจากแถบเมนูได้ตามปกติ", en: "This screen is planned and cannot save or process data yet. You can continue using other menus." }, language, backendLanguage)}
-        </div>
-      </CardContent>
-    </Card>
+    <MenuPlannedCard route={activeTab.route} item={activeTab.item} title={activeTab.title} language={language} backendLanguage={backendLanguage} />
   );
 
   // 2026-09-23: backend เป็น PostgreSQL อย่างเดียว — จอที่ API เดิมอยู่บน MongoDB ถูกถอดแล้ว แสดง "ยังไม่พร้อม" ทันที ไม่ยิง API ที่ไม่มีอยู่

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 }
 
 async function probeBackend(signal: AbortSignal): Promise<string> {
-  // Probe the backend the app actually proxies to (the next.config rewrite target),
+  // Probe the backend every BFF route fetches (serverGoApiBase(), BCAI_LOCAL_BACKEND_URL),
   // not the public same-origin URL — this server-side process cannot resolve the public host.
   const base = serverGoApiBase();
   const candidates = [`${base}/api/health`, `${base}/version`];

@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 // Guard for the AGENTS.md rule (2026-09-14): screen text must follow the selected
 // language — these screens carry English keys only, the texts live in languages.tsv.
 const sources = [
-  "src/app/system-settings/warehouse-tree-view.tsx",
   "src/app/system-settings/company-branch-tree-view.tsx",
   "src/app/system-settings/product-category-tree-view.tsx",
   "src/app/system-settings/product-group-tree-view.tsx",

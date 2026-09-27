@@ -206,9 +206,9 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - **Thai 40+ Accessibility & Usability**: การตัด Dialog ซ้อน Dialog ช่วยลด cognitive load และป้องกันสายตากระโดดตามกฎ UX 40+
          - **High Information Density**: ผู้ใช้สามารถกรอกและตรวจทานที่เก็บสินค้าได้หลายสิบรายการในหน้าจอเดียว
       4) **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-         - หน้าจอผังคลังและตารางที่เก็บสินค้า: [`frontend/src/app/system-settings/warehouse-tree-view.tsx`](../../../frontend/src/app/system-settings/warehouse-tree-view.tsx)
+         - หน้าจอผังคลังและตารางที่เก็บสินค้า: `frontend/src/app/system-settings/warehouse-tree-view.tsx` — **ลบแล้ว 2026-09-27** (ไม่มี backend `/warehouse`) ดูโค้ดเดิมด้วย `git show f75e59f9:frontend/src/app/system-settings/warehouse-tree-view.tsx`
          - สเปกการตั้งค่าเมนูและฟิลด์: [`frontend/src/lib/system-setting-screens.ts`](../../../frontend/src/lib/system-setting-screens.ts#L1282-L1304) (slug `productwarehousescreen`, basePath `/warehouse`)
-         - สถานะ 2026-09-23: backend `/warehouse` เดิมอยู่บน MongoDB ถูกถอดแล้ว (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`) — จอขึ้น "รอพัฒนา" ผ่าน `isMenuBackendRetired` (`frontend/src/lib/menu-screen-status.ts`) และ e2e `product-warehouse-crud.spec.ts` ถูกลบไปพร้อมกัน; ใช้เป็นแบบแผน UI ได้ แต่ยังทดสอบ CRUD จริงไม่ได้จนกว่าจะมี API บน PostgreSQL
+         - สถานะ 2026-09-23: backend `/warehouse` เดิมอยู่บน MongoDB ถูกถอดแล้ว (ADR `docs/kms/decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md`) — จอขึ้น "รอพัฒนา" ผ่าน `isMenuBackendRetired` (`frontend/src/lib/menu-screen-status.ts`) และ e2e `product-warehouse-crud.spec.ts` ถูกลบไปพร้อมกัน; 2026-09-27 ลบ `warehouse-tree-view.tsx` แล้ว — ทั้งแท็บเมนูและ route เดี่ยว `/productwarehousescreen` แสดงการ์ด `MenuPlannedCard` (`frontend/src/app/menu/menu-planned-card.tsx`) — ทำจอใหม่เมื่อมี API บน PostgreSQL โดยใช้แบบแผนนี้
     * **แบบแผน: ตัวแบ่งและปรับความกว้างแนวตั้งมาตรฐานทั้งระบบ (Universal Resizable Splitter with Floating Pill Handle) (ตั้งโดยลุงจืด 2026-09-10)**:
       1) **แบบแผนใหม่ (New Standard Pattern)**:
          - **คอมโพเนนต์กลาง `ResizableSplitter`**: ทุกจุดที่มีการปรับขนาดความกว้างระหว่างคอลัมน์ซ้าย-ขวา (List-Detail Pane) ในระบบ ต้องใช้คอมโพเนนต์กลาง `<ResizableSplitter />` จาก `frontend/src/components/ui/resizable-splitter.tsx`
@@ -232,7 +232,7 @@ html { font-size: clamp(15px, calc(0.46875vw + 9px), 21px); }
          - คอมโพเนนต์กลาง: [`frontend/src/components/ui/resizable-splitter.tsx`](../../../frontend/src/components/ui/resizable-splitter.tsx)
          - การนำไปใช้ใน Master-Detail ตั้งค่า: [`frontend/src/app/system-settings/system-settings-screen.tsx`](../../../frontend/src/app/system-settings/system-settings-screen.tsx#L3940)
          - การนำไปใช้ใน BOM Editor: [`frontend/src/app/system-settings/system-settings-screen.tsx`](../../../frontend/src/app/system-settings/system-settings-screen.tsx#L2896)
-         - การนำไปใช้ใน ผังคลังสินค้า: [`frontend/src/app/system-settings/warehouse-tree-view.tsx`](../../../frontend/src/app/system-settings/warehouse-tree-view.tsx#L366)
+         - การนำไปใช้ใน ผังคลังสินค้า: ลบแล้ว 2026-09-27 (โค้ดเดิม `git show f75e59f9:frontend/src/app/system-settings/warehouse-tree-view.tsx`)
          - การนำไปใช้ใน สินค้า: [`frontend/src/app/menu/product-screen.tsx`](../../../frontend/src/app/menu/product-screen.tsx#L1774)
          - การนำไปใช้ใน บาร์โค้ด: [`frontend/src/app/menu/product-barcode-screen.tsx`](../../../frontend/src/app/menu/product-barcode-screen.tsx#L1152)
          - ชุดการทดสอบ Unit Tests: [`frontend/src/components/ui/resizable-splitter.test.ts`](../../../frontend/src/components/ui/resizable-splitter.test.ts)
@@ -574,7 +574,7 @@ record หมวดสินค้าที่ UI ใช้มีทั้ง Tr
 การแยกคลังสินค้าออกเป็น Selector ทางซ้าย และมอบพื้นที่หลักตรงกลางให้กับรายการที่เก็บสินค้า ทำให้ผู้ใช้สามารถสแกนรายการนับร้อย ค้นหาด้วยคีย์เวิร์ด และเจาะลึกดูที่วางสินค้า (Drill-down) ได้อย่างสะดวกรวดเร็วตามหลัก Cognitive Information Hierarchy โดยที่ฟอร์มด้านขวาพร้อมทำงานทันทีโดยไม่ต้องสลับหน้าจอไปมา
 
 **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-- `frontend/src/app/system-settings/warehouse-tree-view.tsx`
+- `frontend/src/app/system-settings/warehouse-tree-view.tsx` — ลบแล้ว 2026-09-27 (โค้ดเดิม `git show f75e59f9:frontend/src/app/system-settings/warehouse-tree-view.tsx`)
 - (e2e `product-warehouse-crud.spec.ts` ถูกลบพร้อม backend คลังบน MongoDB เมื่อ 2026-09-23 — จอขึ้น "รอพัฒนา" จนกว่าจะมี API บน PostgreSQL)
 
 ---
@@ -629,7 +629,7 @@ record หมวดสินค้าที่ UI ใช้มีทั้ง Tr
 - การมี Splitter ช่วยให้ผู้ใช้ที่มีชื่อคลังยาว หรือต้องการเน้นดูตารางฝั่งขวาสามารถปรับแต่งพื้นที่ทำงานตามความสะดวกของตนเอง
 
 **ไฟล์และบรรทัดอ้างอิง (Reference Implementation)**:
-- `frontend/src/app/system-settings/warehouse-tree-view.tsx`
+- `frontend/src/app/system-settings/warehouse-tree-view.tsx` — ลบแล้ว 2026-09-27 (โค้ดเดิม `git show f75e59f9:frontend/src/app/system-settings/warehouse-tree-view.tsx`)
 - (e2e `product-warehouse-crud.spec.ts` ถูกลบพร้อม backend คลังบน MongoDB เมื่อ 2026-09-23 — จอขึ้น "รอพัฒนา" จนกว่าจะมี API บน PostgreSQL)
 
 ---
@@ -689,7 +689,7 @@ record หมวดสินค้าที่ UI ใช้มีทั้ง Tr
 - คอมโพเนนต์กลาง: `frontend/src/components/ui/resizable-splitter.tsx`
 - ชุดทดสอบความครอบคลุม: `frontend/src/components/ui/resizable-splitter.test.ts`
 - หน้าจอที่นำไปใช้งานครบทุกจุด (11 หน้าจอ):
-  1. `frontend/src/app/system-settings/warehouse-tree-view.tsx` (ผังคลังสินค้า)
+  1. ~~`frontend/src/app/system-settings/warehouse-tree-view.tsx` (ผังคลังสินค้า)~~ — ลบแล้ว 2026-09-27 (ไม่มี backend `/warehouse`)
   2. `frontend/src/app/system-settings/company-branch-tree-view.tsx` (โครงสร้างองค์กร บริษัท-สาขา)
   3. `frontend/src/app/system-settings/system-settings-screen.tsx` (`SettingMasterDetail`)
   4. `frontend/src/app/system-settings/system-settings-screen.tsx` (`BOM` สูตรการผลิต)
@@ -1292,7 +1292,7 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 
 ### 8.25.2 โมดูลที่รับ dictionary จาก parent อยู่แล้ว: ใช้ `BackendTextProvider` กลาง (system-settings tree views + จัดการทางลัด, 2026-09-14)
 
-**แบบแผน** — `frontend/src/components/backend-text-provider.tsx` (`BackendTextProvider({ dictionary })` + `useBackendText()` คืน `(key, fallback) => string`) ใช้เมื่อจอแม่ถือ `backendLanguage` อยู่แล้ว (ต่างจาก GL ที่ provider fetch เอง) — `system-settings-screen.tsx` ห่อ `<WarehouseTreeView>` `<CompanyBranchTreeView>` `<ProductCategoryTreeView>` `<ProductGroupTreeView>` `<ProductBomEditor>` ด้วย `<BackendTextProvider dictionary={backendLanguage}>` ทีละจุด mount; component ลูก/หลานทุกตัว `const tr = useBackendText();` ตารางตัวเลือกระดับไฟล์ เช่น `MONTH_OPTIONS`/`DOC_PREFIX_TYPES` ใน `company-branch-tree-view.tsx` เป็น `{ value, label: ["st_january", "มกราคม"] } as const` แล้ว render `tr(...opt.label)`; helper ระดับไฟล์ที่คืนข้อความ (`saveErrorMessage(message, formType, tr: BackendTextFn)`) รับ `tr` เป็นพารามิเตอร์ท้าย; จอที่มี `backendLanguage` เป็น prop อยู่แล้ว (`manage-shortcuts-screen.tsx`) ไม่ต้องใช้ provider — เปลี่ยน helper เป็น `const t = (key, th) => backendText(backendLanguage, key, th)`
+**แบบแผน** — `frontend/src/components/backend-text-provider.tsx` (`BackendTextProvider({ dictionary })` + `useBackendText()` คืน `(key, fallback) => string`) ใช้เมื่อจอแม่ถือ `backendLanguage` อยู่แล้ว (ต่างจาก GL ที่ provider fetch เอง) — `system-settings-screen.tsx` ห่อ `<CompanyBranchTreeView>` `<ProductCategoryTreeView>` `<ProductGroupTreeView>` `<ProductBomEditor>` ด้วย `<BackendTextProvider dictionary={backendLanguage}>` ทีละจุด mount; component ลูก/หลานทุกตัว `const tr = useBackendText();` ตารางตัวเลือกระดับไฟล์ เช่น `MONTH_OPTIONS`/`DOC_PREFIX_TYPES` ใน `company-branch-tree-view.tsx` เป็น `{ value, label: ["st_january", "มกราคม"] } as const` แล้ว render `tr(...opt.label)`; helper ระดับไฟล์ที่คืนข้อความ (`saveErrorMessage(message, formType, tr: BackendTextFn)`) รับ `tr` เป็นพารามิเตอร์ท้าย; จอที่มี `backendLanguage` เป็น prop อยู่แล้ว (`manage-shortcuts-screen.tsx`) ไม่ต้องใช้ provider — เปลี่ยน helper เป็น `const t = (key, th) => backendText(backendLanguage, key, th)`
 
 **กับดักรอบนี้** — (1) `language === "th" ? "ไทย" : "English"` ที่คร่อมหลายบรรทัดต้อง regex ทั้งไฟล์ (ไม่ใช่ทีละบรรทัด) และข้อความในสาขาไทยต้อง `strip()` ก่อนค้น registry (`"บาร์โค้ดหน่วย: "` มีช่องว่างท้าย → หา key ไม่เจอ) (2) ternary ซ้อนใน template `${isExpanded ? "ซ่อน" : "แสดง"}หมวดย่อย` — ตัวสคริปต์เห็นแค่ `{0}หมวดย่อย` จึงลืมแปล "ซ่อน/แสดง"; ตรวจ MISSING ของสคริปต์ทุกครั้ง (3) เครื่องมือแทนที่ต้อง mask `tr("k", "…")` ที่เพิ่งสร้างก่อนรอบถัดไป ไม่งั้นได้ `tr("k", tr("k", "…"))` (4) tuple `["0", "ไม่ใส่"]` ของ `<DocSelect options>` หน้าตาเหมือน `[key, ไทย]` — ทั้งสคริปต์และ test ต้องแยกด้วย "สมาชิกตัวที่สองมีอักษรไทย" (5) หลังใส่ `tr` ในตัว component ต้องเติม `tr` ใน deps ของ `useCallback/useMemo/useEffect` ที่เรียกมัน (eslint `react-hooks/exhaustive-deps`) (6) `฿` (U+0E3F) อยู่ในบล็อกอักษรไทย — regex ตรวจไทยใน test ต้องเว้นไว้ (7) DeepSeek แบบ thinking กับ 13 ข้อความ × 12 ภาษา ชน `max_tokens` 8192 → ใช้ชุดละ 8 + `--max-tokens 16384` ขนานกัน 4 งาน
 

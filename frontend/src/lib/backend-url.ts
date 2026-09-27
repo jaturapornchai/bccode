@@ -3,6 +3,9 @@ export type BackendUrlCheck = {
   mainApiUrl: string;
 };
 
+// "<origin>/backend/goapi" is only the session's backend identifier (auth.backendUrl, sent as
+// x-bc-backend-url / ?backendUrl= and format-checked by validateBackendUrl). Nothing is served at /backend:
+// next.config.ts has no rewrites, and BFFs always fetch serverMainApiBase() below.
 export function publicGoApiUrlForOrigin(origin: string): string {
   return new URL("/backend/goapi", origin).toString().replace(/\/$/, "");
 }
@@ -111,10 +114,9 @@ export function validateBackendUrl(rawUrl: string): BackendUrlCheck {
 // Server-side only: the backend address this process can actually reach.
 // Next.js API routes run server-side (in the container / on the dev machine) and MUST
 // fetch the backend at this local address. They cannot resolve the public same-origin
-// host (e.g. account.bcaicloud.com), and the public /backend proxy is an allowlist of a few
-// browser routes only (/goapi/s3/file/*, /organization/company|branch — next.config.ts), so
-// every other mainapi call must be a BFF route under src/app/api built on these helpers.
-// Matches the next.config.ts rewrite target.
+// host (e.g. account.bcaicloud.com), and there is no public /backend proxy (next.config.ts
+// has no rewrites), so every browser -> mainapi call is a BFF route under src/app/api built
+// on these helpers (ADR docs/kms/decisions/2026-09-27-backend-proxy-allowlist.md).
 export function serverMainApiBase(): string {
   const raw = process.env.BCAI_LOCAL_BACKEND_URL?.trim();
   if (!raw) {

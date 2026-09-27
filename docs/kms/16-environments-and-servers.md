@@ -31,7 +31,7 @@
 - **มี stack อื่นอยู่บนเครื่องเดียวกัน (`bcmk-*`, `bctms-*`) — ห้าม `docker compose down` แบบไม่ระบุ project**
 - Deploy: คำสั่งเดียว `py tools/fast-deploy.py --all --tag rYYYYMMDD-N` จากเครื่อง dev (`SERVER_HOST` ที่ `tools/fast-deploy.py:25`): build image local → preflight backup (`pg_dumpall` + tar ของ `/etc/bcai-account`, `/var/lib/bcai-account/config`, `/opt/bcai-account/deploy` และสำเนา `release.env.before` ไว้ที่ `/opt/bcai-account/releases/<tag>/`) → `docker save | ssh -C docker load` → สลับ `MAINAPI_IMAGE`/`FRONTEND_IMAGE` ใน `release.env` แบบ atomic → `up -d --no-deps <service>` → รอ container healthy → เช็ค URL จริง → ลบ image เก่ากว่า 72 ชม. (`tools/fast-deploy.py:113-160,206-297`)
 - Rollback (สคริปต์ไม่ทำให้อัตโนมัติ): คืน `/opt/bcai-account/releases/<tag>/release.env.before` เป็น `/etc/bcai-account/release.env` แล้ว `up -d --no-deps` ซ้ำ ภายใน 72 ชม. ที่ image เก่ายังอยู่
-- build args ของ frontend ที่ต้องใส่ทั้งคู่: `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BCAI_LOCAL_BACKEND_URL=http://mainapi:8888` (`tools/fast-deploy.py:97-98`; `.env*` ถูก `frontend/.dockerignore`)
+- build arg ของ frontend มีตัวเดียว: `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (`tools/fast-deploy.py:97`; `.env*` ถูก `frontend/.dockerignore`) — `BCAI_LOCAL_BACKEND_URL=http://mainapi:8888` เป็น env ตอน runtime ใน `/etc/bcai-account/frontend.env` (ไม่มี `rewrites()` ให้ฝังตอน build แล้ว)
 - Demo login เปิดใน prod เช่นกัน (`BCAI_DEMO_LOGIN_ENABLED=true` ใน `backend.env` ตาม `deploy/account/provision-server.sh`) ให้ AI ทดสอบจอได้เองผ่านปุ่ม Demo (ดูกฎ "ทดสอบหน้าจอด้วยปุ่ม Demo" ใน `AGENTS.md`)
 - MCP: `https://account.bcaicloud.com/mcp/gl` (Streamable HTTP, token จากหน้า `/mcp-tokens` ระดับ Holding)
 

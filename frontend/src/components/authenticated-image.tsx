@@ -4,6 +4,7 @@ import { authFetch } from "@/lib/client-auth-session";
 import type { ImgHTMLAttributes, ReactNode, VideoHTMLAttributes } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  fileBffUrl,
   imageNeedsAuthenticatedFetch,
   imageThumbnailProxyUrl,
 } from "@/lib/image-upload-proxy";
@@ -96,39 +97,19 @@ function clearAuthenticatedImageObjectUrlCache() {
   authenticatedImageCacheOwner = "";
 }
 
-function mainApiDisplayBase(rawBackendUrl: unknown): string {
-  const raw = stringValue(rawBackendUrl).trim();
-  if (!raw) return "";
-  try {
-    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`;
-    const parsed = new URL(withProtocol);
-    const path = parsed.pathname.replace(/\/+$/, "");
-    parsed.pathname = path.toLowerCase().endsWith("/goapi")
-      ? path.slice(0, -"/goapi".length) || "/"
-      : "/";
-    parsed.search = "";
-    parsed.hash = "";
-    return parsed.toString().replace(/\/$/, "");
-  } catch {
-    return "";
-  }
-}
-
-export function imageDisplayUrl(value: unknown, backendUrl: unknown): string {
+/** Displayable URL for a stored image value; private "/goapi/s3/file/<key>" -> same-origin BFF "/api/files/<key>". */
+export function imageDisplayUrl(value: unknown): string {
   const raw = stringValue(value).trim();
   if (!raw) return "";
   if (/^(blob:|data:|https?:\/\/)/i.test(raw)) return raw;
   if (raw.startsWith("//")) {
     return typeof window === "undefined" ? raw : `${window.location.protocol}${raw}`;
   }
-  if (raw.startsWith("/api/")) return raw;
-  if (raw.startsWith("/banks/") || raw.startsWith("/flags/")) return raw;
-
-  const base = mainApiDisplayBase(backendUrl);
-  if (!base) return raw;
-  if (raw.startsWith("/")) return `${base}${raw}`;
-  // Bare keys ("images/x.png", "x.png") used to become <backend>/images/..., a route mainapi never had;
-  // for images the public /backend proxy only forwards /goapi/s3/file/* (next.config.ts), so there is nothing to load.
+  const fileUrl = fileBffUrl(raw);
+  if (fileUrl) return fileUrl;
+  // Same-origin paths ("/api/*" BFF, "/banks/*", "/flags/*", public assets) load as they are.
+  if (raw.startsWith("/")) return raw;
+  // Bare keys ("images/x.png", "x.png") never had a route behind them, so there is nothing to load.
   return "";
 }
 
@@ -163,12 +144,12 @@ export function useAuthenticatedImageDisplaySource(
   const useThumbnail = options?.thumbnail === true;
   const requestedUrl = useMemo(
     () => {
-      const displayUrl = imageDisplayUrl(value, authBackendUrl);
-      return useThumbnail && imageNeedsAuthenticatedFetch(displayUrl, authBackendUrl)
+      const displayUrl = imageDisplayUrl(value);
+      return useThumbnail && imageNeedsAuthenticatedFetch(displayUrl)
         ? imageThumbnailProxyUrl(displayUrl)
         : displayUrl;
     },
-    [authBackendUrl, useThumbnail, value],
+    [useThumbnail, value],
   );
   const [state, setState] = useState({
     displayUrl: "",
@@ -182,7 +163,7 @@ export function useAuthenticatedImageDisplaySource(
       return;
     }
 
-    if (!imageNeedsAuthenticatedFetch(requestedUrl, authBackendUrl)) {
+    if (!imageNeedsAuthenticatedFetch(requestedUrl)) {
       setState({ displayUrl: requestedUrl, failed: false, loading: false });
       return;
     }
@@ -305,8 +286,8 @@ export function AuthenticatedVideo({
   const [requested, setRequested] = useState(false);
   const [state, setState] = useState({ displayUrl: "", failed: false, loading: false });
   const requestedUrl = useMemo(
-    () => imageDisplayUrl(src, auth?.backendUrl),
-    [auth?.backendUrl, src],
+    () => imageDisplayUrl(src),
+    [src],
   );
   const poster = useAuthenticatedImageDisplaySource(posterSrc ?? "", auth, {
     thumbnail: true,
@@ -319,7 +300,7 @@ export function AuthenticatedVideo({
 
   useEffect(() => {
     if (!requested || !requestedUrl) return;
-    if (!imageNeedsAuthenticatedFetch(requestedUrl, auth?.backendUrl ?? "")) {
+    if (!imageNeedsAuthenticatedFetch(requestedUrl)) {
       setState({ displayUrl: requestedUrl, failed: false, loading: false });
       return;
     }
@@ -361,7 +342,7 @@ export function AuthenticatedVideo({
       controller.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [auth?.backendUrl, auth?.token, requested, requestedUrl]);
+  }, [auth?.token, requested, requestedUrl]);
 
   if (!requested) {
     return (

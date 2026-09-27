@@ -68,7 +68,8 @@ async function login() {
   const res = await fetch(`${BASE}/api/auth/demo-login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || typeof json.token !== 'string' || !json.token) throw new Error(`demo-login failed (HTTP ${res.status}) — needs BCAI_DEMO_LOGIN_ENABLED=true`);
-  headers = { Authorization: `Bearer ${json.token}`, 'x-bc-backend-url': `${BASE}/backend/goapi`, 'Content-Type': 'application/json', 'Accept-Language': 'th' };
+  // BFF เรียก mainapi ที่ BCAI_LOCAL_BACKEND_URL ฝั่ง server เอง — ไม่ต้องส่ง x-bc-backend-url (workspace-api.ts getMainApiUrl)
+  headers = { Authorization: `Bearer ${json.token}`, 'Content-Type': 'application/json', 'Accept-Language': 'th' };
   await call('POST', '/api/workspace/select-holding', { holdingcode: HOLDING, businesscode: COMPANY, branchuid: BRANCH });
 }
 async function listAll(resource) {
@@ -142,8 +143,10 @@ function sameContent(have, want) {
 
 // ---------- ทะเบียนบริษัท: ที่อยู่สำนักงานใหญ่ (เติมเมื่อว่างเท่านั้น) ----------
 async function ensureCompanyAddress() {
-  const companyPath = `/backend/organization/company/${encodeURIComponent(COMPANY)}`;
-  const company = (await call('GET', companyPath)).data;
+  // BFF เดียวกับจอบริษัท/สาขา (frontend/src/app/api/organization) — ไม่มี proxy /backend แล้ว
+  const list = (await call('GET', '/api/organization/company')).data;
+  const company = (Array.isArray(list) ? list : []).find((row) => row?.code === COMPANY);
+  const companyPath = `/api/organization/company/${encodeURIComponent(COMPANY)}`;
   if (!company || typeof company !== 'object' || !('address' in company)) { console.log('registry has no address fields yet — filings keep the form header address'); return; }
   const current = company.address ?? {};
   if (Object.keys(HEAD_OFFICE.address).some((k) => String(current[k] ?? '').trim())) { console.log('registry address present — kept'); return; }

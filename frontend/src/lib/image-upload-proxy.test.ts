@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { PRODUCT_VIDEO_REQUEST_MAX_BYTES } from "@/lib/product-barcode/types";
 import {
+  fileBffUrl,
   imageNeedsAuthenticatedFetch,
   imageThumbnailProxyUrl,
   normalizeImageUploadPayload,
@@ -71,45 +72,31 @@ describe("image upload proxy response", () => {
     );
   });
 
-  it("detects private GoAPI image paths across all routing surfaces", () => {
-    expect(imageNeedsAuthenticatedFetch("/goapi/s3/file/SHOP/imageuri/a.webp")).toBe(true);
-    expect(imageNeedsAuthenticatedFetch("/s3/file/SHOP/imageuri/a.webp")).toBe(true);
-    expect(
-      imageNeedsAuthenticatedFetch(
-        "http://localhost:8888/goapi/s3/file/SHOP/imageuri/a.webp",
-        "http://localhost:8888/goapi",
-      ),
-    ).toBe(true);
-    expect(
-      imageNeedsAuthenticatedFetch(
-        "http://localhost:3000/backend/goapi/s3/file/SHOP/imageuri/a.webp",
-        "http://localhost:3000/backend/goapi",
-      ),
-    ).toBe(true);
-    expect(
-      imageNeedsAuthenticatedFetch(
-        "https://dev.bcaicloud.com/backend/goapi/s3/file/SHOP/imageuri/a.webp",
-        "https://dev.bcaicloud.com/backend/goapi",
-      ),
-    ).toBe(true);
-    expect(
-      imageNeedsAuthenticatedFetch(
-        "https://evil.example/s3/file/SHOP/imageuri/a.webp",
-        "https://dev.bcaicloud.com/backend/goapi",
-      ),
-    ).toBe(false);
-    expect(
-      imageNeedsAuthenticatedFetch(
-        String.raw`\\evil.example\s3\file\SHOP\imageuri\a.webp`,
-        "https://dev.bcaicloud.com/backend/goapi",
-      ),
-    ).toBe(false);
-    expect(
-      imageNeedsAuthenticatedFetch(
-        "https:/evil.example/s3/file/SHOP/imageuri/a.webp",
-        "https://dev.bcaicloud.com/backend/goapi",
-      ),
-    ).toBe(false);
+  it("maps stored S3 URIs to the same-origin file BFF only", () => {
+    expect(fileBffUrl("/goapi/s3/file/SHOP/imageuri/a.webp")).toBe("/api/files/SHOP/imageuri/a.webp");
+    expect(fileBffUrl(" /goapi/s3/file/SHOP/a.png?variant=thumbnail ")).toBe("/api/files/SHOP/a.png?variant=thumbnail");
+    for (const other of ["", "/s3/file/SHOP/a.png", "/backend/goapi/s3/file/SHOP/a.png", "https://x.example/goapi/s3/file/a.png", "/api/x"]) {
+      expect(fileBffUrl(other), other).toBe("");
+    }
+  });
+
+  it("sends the Bearer token only to same-origin /api/files paths", () => {
+    expect(imageNeedsAuthenticatedFetch("/api/files/SHOP/imageuri/a.webp")).toBe(true);
+    expect(imageNeedsAuthenticatedFetch("http://localhost/api/files/SHOP/imageuri/a.webp")).toBe(true);
+    for (const url of [
+      // Stored form and the removed public proxy are never fetched directly any more.
+      "/goapi/s3/file/SHOP/imageuri/a.webp",
+      "/s3/file/SHOP/imageuri/a.webp",
+      "http://localhost:3000/backend/goapi/s3/file/SHOP/imageuri/a.webp",
+      "http://localhost:8888/goapi/s3/file/SHOP/imageuri/a.webp",
+      // Other hosts never get the token, whatever the path.
+      "https://evil.example/api/files/SHOP/imageuri/a.webp",
+      "//evil.example/api/files/SHOP/imageuri/a.webp",
+      String.raw`\\evil.example\api\files\SHOP\imageuri\a.webp`,
+      "https:/evil.example/api/files/SHOP/imageuri/a.webp",
+    ]) {
+      expect(imageNeedsAuthenticatedFetch(url), url).toBe(false);
+    }
   });
 
   it("ignores public, blob, data, and unrelated paths", () => {
@@ -121,19 +108,16 @@ describe("image upload proxy response", () => {
   });
 
   it("adds the fixed WebP thumbnail variant without changing the object path", () => {
-    expect(imageThumbnailProxyUrl("/goapi/s3/file/SHOP/images/a.png")).toBe(
-      "/goapi/s3/file/SHOP/images/a.png?variant=thumbnail",
+    expect(imageThumbnailProxyUrl("/api/files/SHOP/images/a.png")).toBe(
+      "/api/files/SHOP/images/a.png?variant=thumbnail",
     );
-    expect(
-      imageThumbnailProxyUrl(
-        "https://account.bcaicloud.com/goapi/s3/file/SHOP/images/a.png?download=0#image",
-      ),
-    ).toBe(
-      "https://account.bcaicloud.com/goapi/s3/file/SHOP/images/a.png?download=0&variant=thumbnail#image",
+    expect(imageThumbnailProxyUrl("/api/files/SHOP/images/a.png?download=0#image")).toBe(
+      "/api/files/SHOP/images/a.png?download=0&variant=thumbnail#image",
     );
-    expect(imageThumbnailProxyUrl("/goapi/s3/file/SHOP/images/a.png?variant=original")).toBe(
-      "/goapi/s3/file/SHOP/images/a.png?variant=thumbnail",
+    expect(imageThumbnailProxyUrl("/api/files/SHOP/images/a.png?variant=original")).toBe(
+      "/api/files/SHOP/images/a.png?variant=thumbnail",
     );
+    expect(imageThumbnailProxyUrl("/goapi/s3/file/SHOP/images/a.png")).toBe("/goapi/s3/file/SHOP/images/a.png");
     expect(imageThumbnailProxyUrl("https://cdn.example.com/a.png")).toBe(
       "https://cdn.example.com/a.png",
     );

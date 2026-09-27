@@ -1,12 +1,16 @@
+# account.bcaicloud.com block of the SHARED /etc/caddy/Caddyfile on the prod host (other sites live in the same file).
+# Keep this block identical to the server copy. 2026-09-27: HTTP-by-IP vhost removed, access log enabled.
 account.bcaicloud.com {
   encode zstd gzip
 
-  @internal_health path \
-    /backend/goapi/api/health/background \
-    /backend/goapi/api/health/queue* \
-    /backend/goapi/api/health/database \
-    /backend/goapi/api/health/system
-  respond @internal_health 404
+  # access log (Authorization/Cookie are redacted by Caddy by default); 30-day retention
+  log {
+    output file /var/log/caddy/account-access.log {
+      roll_size 50MiB
+      roll_keep 10
+      roll_keep_for 720h
+    }
+  }
 
   reverse_proxy 127.0.0.1:3200
 }

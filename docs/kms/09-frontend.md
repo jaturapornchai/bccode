@@ -4,21 +4,22 @@
 
 ## 1. ภาพรวมและเวอร์ชัน
 
-- Frontend = Next.js App Router ทำหน้าที่ **BFF** (Backend-for-Frontend): browser เรียก `/api/**` ของ Next แล้ว route handler ฝั่ง server fetch ไป mainapi/goapi ที่ `BCAI_LOCAL_BACKEND_URL` เสมอ (`frontend/src/lib/backend-url.ts:117-127`, `frontend/src/lib/workspace-api.ts:24-31`)
+- Frontend = Next.js App Router ทำหน้าที่ **BFF** (Backend-for-Frontend): browser เรียก `/api/**` ของ Next แล้ว route handler ฝั่ง server fetch ไป mainapi/goapi ที่ `BCAI_LOCAL_BACKEND_URL` เสมอ (`frontend/src/lib/backend-url.ts:120-130`, `frontend/src/lib/workspace-api.ts:24-31`)
 - เวอร์ชันหลัก: `next 16.3.0`, `react 19.2.8`, `typescript 6.0.3`, `tailwindcss ^4.3.3`, `vitest 4.1.10`, `@playwright/test ^1.62.1`, engines `node 24.x / npm 11.x` (`frontend/package.json:5-8,30,32,41,49-51`)
 - ไลบรารีเด่น: `@tanstack/react-query`, `@tanstack/react-table`, `react-hook-form` + `zod`, `motion`, `recharts`, `leaflet`/`react-leaflet`, `lucide-react`, Radix dropdown (`frontend/package.json:20-39`)
 - ไม่มี `middleware.ts`/`proxy.ts` ใน `frontend/src` (ตรวจด้วย `git ls-files frontend/src` — ไฟล์นอก `app/lib/components/locales` = 0)
 - Scripts: `dev`, `build`, `lint`, `start`, `typecheck` (`tsc --noEmit`), `test` (`vitest run`), `test:e2e` (`playwright test`) (`frontend/package.json:9-17`)
 
-## 2. เส้นทาง network: proxy `/backend/...` แบบ allowlist
+## 2. เส้นทาง network: ไม่มี proxy `/backend` — browser เรียก mainapi ผ่าน BFF เท่านั้น
 
-- `next.config.ts` rewrite เฉพาะ 5 source (afterFiles, `frontend/next.config.ts:34-44`, ตั้งแต่ 2026-09-27 — [ADR](decisions/2026-09-27-backend-proxy-allowlist.md)): `/backend/goapi/s3/file/:path+` (รูป/ไฟล์ที่ DB เก็บเป็น `/goapi/s3/file/<key>` — `frontend/src/components/authenticated-image.tsx`, `frontend/src/components/logo-avatar.tsx`), `/backend/organization/company`, `/backend/organization/company/:id`, `/backend/organization/branch`, `/backend/organization/branch/:id` (`frontend/src/app/system-settings/company-branch-tree-view.tsx`, `frontend/src/app/currency/currency-screen.tsx`) — ปลายทางคือ path เดียวกันบน `${BCAI_LOCAL_BACKEND_URL}` แบบตายตัว (ตัด `/backend`); ไม่ตั้ง env จะใช้ค่า fallback `http://mainapi:8888` (production) / `http://localhost:8888` (dev) ไม่ throw (`frontend/next.config.ts:19`) — ส่วน route handler ฝั่ง server ยัง throw ถ้าไม่ตั้ง (`frontend/src/lib/backend-url.ts:118-124`)
-- ทุก source มี `has` header `authorization` ค่า regex `Bearer .+` — ไม่มี token = ไม่ proxy (404) ใช้ตัดเสียงรบกวนจาก scanner เท่านั้น ไม่ใช่ขอบเขตความปลอดภัย (mainapi ตรวจ token เอง); ตั้งใจใส่ค่า regex ที่ไม่มี named group เพราะ `has` แบบไม่มีค่าจะก๊อปค่า header เข้า params แล้ว Next ต่อท้าย query ของปลายทางที่ไม่มี param (`?authorization=Bearer...`) ทำให้ token รั่วเข้า URL/ log ของ mainapi (ตรวจใน `node_modules/next/dist/shared/lib/router/utils/prepare-destination.js` `matchHas`/`prepareDestination`)
-- path อื่นทั้งหมดไม่ถูก proxy — รวม `/backend/v1/*`, `/backend/metrics`, `/backend/healthz`, login/register, `/backend/profile/link-line*`, `/backend/goapi/api/language/*`; ของเดิม (catch-all `/backend/:path*` + blocklist → `/_blocked-auth-route`) ถูกลบเพราะถูกเลี่ยงด้วย alias `/v1` ของ mainapi และ URL-encoding ([บั๊ก](bugs/2026-09-27-backend-proxy-blocklist-bypass.md)); guard test `frontend/src/lib/next-config-rewrites.test.ts` ใช้ `parseUrl`/`getPathMatch`/`matchHas`/`prepareDestination` ตัวเดียวกับ Next
-- **กติกา:** การเรียก mainapi/goapi ใหม่จาก browser ต้องทำเป็น BFF route ใต้ `frontend/src/app/api/**` ที่ใช้ `serverMainApiBase()`/`serverGoApiBase()` เสมอ — ห้ามขยาย allowlist ใน `next.config.ts` โดยไม่มี ADR ใหม่
-- Header ทุก path: `Referrer-Policy: no-referrer-when-downgrade`, `COOP: same-origin-allow-popups` (จำเป็นสำหรับ Google popup) (`frontend/next.config.ts:10-15`)
+- `next.config.ts` **ไม่มี `rewrites()`/`redirects()`** และไม่มี `middleware.ts`/`proxy.ts` (`frontend/next.config.ts:7-9`, ตั้งแต่ 2026-09-27 — [ADR](decisions/2026-09-27-backend-proxy-allowlist.md)) → ทุก `/backend/*` = Next 404; ทางเดียวจาก browser ถึง mainapi/goapi คือ BFF ใต้ `frontend/src/app/api/**` ที่ fetch `serverMainApiBase()`/`serverGoApiBase()` (`frontend/src/lib/backend-url.ts:120-130`)
+- ของที่เคยผ่าน `/backend`: รูป/ไฟล์ส่วนตัว → `GET /api/files/<key>[?variant=thumbnail]` (`frontend/src/app/api/files/[...key]/route.ts`); บริษัท/สาขา → `/api/organization/{company,branch}[/:id]` (`frontend/src/app/api/organization/[...orgPath]/route.ts`) + สร้างสาขาผ่าน `POST /api/workspace/branch` เดิม — ตาราง §5
+- DB ยังเก็บรูปเป็น `/goapi/s3/file/<key>`; ตัวแสดงรูปแปลงเป็น `/api/files/<key>` ด้วย `fileBffUrl` (`frontend/src/lib/image-upload-proxy.ts:231`) ผ่าน `imageDisplayUrl` (`frontend/src/components/authenticated-image.tsx:101`) และ `resolveDisplayUrl` (`frontend/src/components/logo-avatar.tsx:81`); แนบ Bearer เฉพาะ URL origin เดียวกันที่ขึ้นต้น `/api/files/` (`imageNeedsAuthenticatedFetch` `frontend/src/lib/image-upload-proxy.ts:237`)
+- guard test `frontend/src/lib/next-config-rewrites.test.ts`: `rewrites`/`redirects` ต้อง undefined, config ต้องไม่มี host backend/`/backend`, ไม่มีไฟล์ middleware/proxy, ไม่มี `src/app/backend`; ประวัติ (catch-all + blocklist → allowlist 5 เส้น) อยู่ใน [บั๊ก](bugs/2026-09-27-backend-proxy-blocklist-bypass.md)
+- **กติกา:** การเรียก mainapi/goapi ใหม่จาก browser ต้องทำเป็น BFF route ใต้ `frontend/src/app/api/**` (allowlist path+method แคบ, validate param, ส่ง Authorization + Accept-Language) — ห้ามเพิ่ม rewrite/middleware ที่ชี้ mainapi
+- Header ทุก path: `Referrer-Policy: no-referrer-when-downgrade`, `COOP: same-origin-allow-popups` (จำเป็นสำหรับ Google popup) (`frontend/next.config.ts:10-19`)
 - `allowedDevOrigins` ระบุ IP Tailscale 1 ค่าเพื่อให้เครื่องอื่นเรียก dev server ได้ (`frontend/next.config.ts:6`)
-- Browser ใช้ URL สาธารณะรูป `<origin>/backend/goapi` (`frontend/src/lib/backend-url.ts:6-8`) ส่วน server-side ใช้ `serverMainApiBase()`/`serverGoApiBase()` — client URL ถูก validate แล้วทิ้ง ไม่ถูก echo กลับ (`frontend/src/lib/workspace-api.ts:24-31`); `public/config.json` มี key เดียว `goapi_url` (ตรวจด้วย node; ไม่คัดลอกค่า)
+- `auth.backendUrl` = `<origin>/backend/goapi` (`frontend/src/lib/backend-url.ts:6-11`) เป็น **ตัวระบุเท่านั้น** — ส่งเป็น header `x-bc-backend-url` ให้ BFF ตรวจรูปแบบแล้วทิ้ง ไม่ถูกใช้เป็นปลายทางและไม่ถูก echo กลับ (`frontend/src/lib/workspace-api.ts:24-31`); `public/config.json` มี key เดียว `goapi_url` (ตรวจด้วย node; ไม่คัดลอกค่า)
 
 ## 3. Auth / Session model
 
@@ -52,7 +53,7 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/manual`, `/manual/[screen]` | คู่มือ th/en อ่านจากไฟล์ `frontend/manual/*.json` (workspace, menu, currency, company, user, permissiongroup ฯลฯ) | server-rendered | LIVE (มี json 9 ไฟล์) | `frontend/src/app/manual/page.tsx`, `frontend/Dockerfile:45` |
 | `/favicon.ico` | route handler ส่ง icon พร้อม cache 1 ปี | — | LIVE | `frontend/src/app/favicon.ico/route.ts:8-11` |
 
-## 5. API route handlers (34 ไฟล์ `route.ts` ใต้ `frontend/src/app/api/`; รวม `favicon.ico/route.ts` + `mcp/gl/route.ts` = 36 — นับ 2026-09-25 ด้วย `find frontend/src/app -name route.ts`) → backend path
+## 5. API route handlers (36 ไฟล์ `route.ts` ใต้ `frontend/src/app/api/`; รวม `favicon.ico/route.ts` + `mcp/gl/route.ts` = 38 — นับ 2026-09-27 ด้วย `find frontend/src/app -name route.ts`) → backend path
 
 ฐาน: **M** = mainapi (`serverMainApiBase()`), **G** = goapi (`serverGoApiBase()` = `M/goapi`)
 
@@ -84,6 +85,8 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/api/product-barcode/image` | POST | M `/goapi/image/upload` (category `products`) | Bearer | LIVE | `product-barcode/image/route.ts:9-13`, `frontend/src/lib/image-upload-proxy.ts:28,129` |
 | `/api/product-barcode/video` | POST | M `/goapi/video/upload` (stream + จำกัดขนาด) | Bearer | LIVE | `product-barcode/video/route.ts:7-15`, `frontend/src/lib/image-upload-proxy.ts:47-79` |
 | `/api/upload/image` | POST | M `/goapi/image/upload` (category `system-settings`, client ต้องส่ง category) | Bearer | LIVE | `upload/image/route.ts:3-8` |
+| `/api/files/[...key]` | GET | G `/s3/file/<key>` (query เดียวที่ส่งต่อ `?variant=thumbnail`; encode ทีละ segment; segment ว่าง, `.`, `..`, มี `/` หรือ backslash หรืออักขระควบคุม, ยาวเกิน 255 = 400; ส่ง IP ผู้ใช้ต่อเป็น `X-Forwarded-For` (ค่าแรกที่ Caddy ใส่ — ไม่มี trusted_proxies จึงทับค่าที่ client ส่งมา) ให้ rate limiter ของ `/goapi` นับรายคน ไม่ใช่รวมที่ IP ของ container frontend; `redirect: manual` 3xx = 502; สตรีม body + content-type/length, cache-control, etag, last-modified, vary, nosniff; If-None-Match → 304) | Bearer | LIVE | `files/[...key]/route.ts:15,26-27,31-72,87,99` |
+| `/api/organization/[...orgPath]` | GET/POST/PUT | GET `company` หรือ `branch` → M `/organization/{resource}?management=true` (ไม่ส่ง query ของ client); POST `company` → M `/organization/company` (ตัด `backendUrl`); PUT `company/:id` หรือ `branch/:id` → M `/organization/{resource}/{id}` — id คือรหัสตามที่เก็บ (รหัสบริษัท/สาขาเป็นข้อความอิสระ) รับทุกอักขระยกเว้น `/`, backslash, อักขระควบคุม, `.`/`..` และยาวไม่เกิน 128 แล้วส่งต่อด้วย escaping แบบเดียวกับ Go net/url (`goPathEscape`) เพราะ Echo route ด้วย RawPath และไม่ unescape `:id` — รหัสอย่าง `A&B`, `K+1(ก)!` จึงถึง mainapi ตรงตัว (`encodeURIComponent` ทำให้ `&` กลายเป็น `%26` ค้างใน id); path อื่น = 404, method ที่ route ไม่มี (เช่น DELETE) = 405 จาก Next; สร้างสาขาใช้ `POST /api/workspace/branch` | Bearer | LIVE | `organization/[...orgPath]/route.ts:27,31-79,87` |
 | `/api/currency/[[...path]]` | GET/POST/PUT/DELETE | M `/currency/*` | Bearer | BACKEND-REMOVED | `currency/[[...currencyPath]]/route.ts:14-60,80,91` |
 | `/api/holding-member` | GET | M `/holding-member/list` (อ่านอย่างเดียว; เพิ่ม/ถอดผู้ดูแลทำที่ ตั้งค่าระบบและการเข้าถึง › บัญชีเข้าระบบ) | Bearer | LIVE | `holding-member/route.ts:1-17` |
 | `/api/gl/[...path]` | GET/POST | M `/gl/v2/{path}?…` (allowlist query รวม `templates`/`notes`; path รายงาน `GL_REPORTS` + `reports/statement-set` ผ่าน `GL_SET_REPORTS`) / POST `/gl/v2/command` | Bearer | LIVE | `gl/[...glPath]/route.ts:8,14,21-23,47` |
@@ -107,18 +110,18 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 | `/menu` product / product-set | `product`, `product/*`, `product-barcode/*`, `product-barcode/list`, `workspace/select-holding` | `frontend/src/app/menu/product-screen.tsx`, `product-set-screen.tsx` |
 | `/menu` barcode / shelf / marketplace | `product-barcode/*`, `product-barcode/list` | `frontend/src/app/menu/product-barcode-screen.tsx`, `product-barcode-shelf-screen.tsx`, `marketplace-screen.tsx` |
 | `/price_history` | `product-barcode/list`, `product-price-history` | `frontend/src/app/menu/product-price-history-screen.tsx` |
-| `/[systemSetting]` | `system-settings/*`, `system-settings/branch`, `workspace/holdings`, `workspace/product-units/standard|defaults`, `upload/image`, `auth/profile/reset-password` (501) | `frontend/src/app/system-settings/system-settings-screen.tsx` |
-| `/currency` | `currency`, `currency/*` | `frontend/src/app/currency/currency-screen.tsx` |
+| `/[systemSetting]` | `system-settings/*`, `system-settings/branch`, `organization/*` + `workspace/branch` (จอบริษัท/สาขา `company-branch-tree-view.tsx:965,978,1250-1305`), `workspace/holdings`, `workspace/product-units/standard|defaults`, `upload/image`, `auth/profile/reset-password` (501) | `frontend/src/app/system-settings/system-settings-screen.tsx` |
+| `/currency` | `currency`, `currency/*`, `organization/branch` (ตั้งสกุลเงินหลักของสาขา `currency-screen.tsx:342,349`) | `frontend/src/app/currency/currency-screen.tsx` |
 | `/gl/*` + เมนูภาษี/รายงานในหมวด GL | `gl/*` (ผ่าน `authFetch`), `goapi/api/report/*` | `frontend/src/lib/general-ledger-api.ts:118`, `frontend/src/lib/thai-tax.ts`, `frontend/src/lib/tax-forms.ts`, `frontend/src/lib/erp-reports.ts` |
 | `/asset/*` (สินทรัพย์ถาวร) | `fa/*` | `frontend/src/lib/fixed-assets.ts` |
 | `/mcp-tokens` | `mcp-tokens` | `frontend/src/app/mcp-tokens/token-client.ts` |
-| lib/components ทั่วไป | `auth/refresh`, `auth/logout`, `language/{lang}`, `address/thailand`, `product-barcode/master/*` (ผ่าน `listMaster()` ที่ `master-picker.tsx` import), `upload/image` | `frontend/src/lib/client-auth-session.ts:121,205`, `frontend/src/lib/backend-language.ts:135`, `frontend/src/lib/thailand-addresses.ts`, `frontend/src/lib/product-barcode/api.ts:288`, `frontend/src/components/product-barcode/master-picker.tsx:8`, `frontend/src/components/system-settings/field-editors/image-upload-editor.tsx` |
+| lib/components ทั่วไป | `auth/refresh`, `auth/logout`, `language/{lang}`, `address/thailand`, `product-barcode/master/*` (ผ่าน `listMaster()` ที่ `master-picker.tsx` import), `upload/image`, `files/*` (รูป/โลโก้ — `authenticated-image.tsx`, `logo-avatar.tsx`) | `frontend/src/lib/client-auth-session.ts:121,205`, `frontend/src/lib/backend-language.ts:135`, `frontend/src/lib/thailand-addresses.ts`, `frontend/src/lib/product-barcode/api.ts:288`, `frontend/src/components/product-barcode/master-picker.tsx:8`, `frontend/src/components/system-settings/field-editors/image-upload-editor.tsx` |
 
 ## 7. `frontend/src/lib/**` — โมดูลสำคัญ
 
 | module | หน้าที่ | อ้างอิง |
 |---|---|---|
-| `backend-url.ts` | normalize/validate URL, `serverMainApiBase/serverGoApiBase`, migrate URL เก่า (`192.168.2.202`, `dev./api.bcaicloud.com`) | `frontend/src/lib/backend-url.ts:56-109,117-144` |
+| `backend-url.ts` | normalize/validate URL, `serverMainApiBase/serverGoApiBase`, migrate URL เก่า (`192.168.2.202`, `dev./api.bcaicloud.com`) | `frontend/src/lib/backend-url.ts:59-117,120-147` |
 | `workspace-api.ts` | helper proxy กลาง: `requireBearerToken`, `getBackendUrlFromRequest` (body > header `x-bc-backend-url` > query), `getMainApiUrl` (ตรวจ URL จาก client เฉพาะเมื่อส่งมา — ไม่ส่งมา = ใช้ `serverMainApiBase()` ไม่ตอบ 400 อีก ตั้งแต่ 2026-09-08), `proxyMainApiJson` | `frontend/src/lib/workspace-api.ts:8-34,65` |
 | `client-auth-session.ts` / `auth-session-server.ts` / `server-jwt.ts` | session ฝั่ง client / cookie ฝั่ง server / JWT verify | ดู §3 |
 | `auth-bridge.ts` | URL ของ auth bridge (`BC_AUTH_BRIDGE_URL`) + `postMainApiAuth` timeout 15 วิ | `frontend/src/lib/auth-bridge.ts:6-10,76-87` |
@@ -167,9 +170,9 @@ page ส่วนใหญ่เป็น server component บาง ๆ ที�
 
 ## 12. รัน dev / build / deploy และ env (ชื่อเท่านั้น)
 
-- Dev: `cd frontend && npm run dev` (root มี `npm run dev:frontend` = port 3001, `package.json:13`); ต้องตั้ง `BCAI_LOCAL_BACKEND_URL` ไม่งั้น route handler ของ BFF throw (`frontend/src/lib/backend-url.ts:117-120`; `next.config.ts` ใช้ค่า fallback ไม่ throw แล้ว); ตรวจ runtime 2026-09-07: `curl localhost:3000` → 200, container `mainapi` up ที่ 8888 (read-only)
+- Dev: `cd frontend && npm run dev` (root มี `npm run dev:frontend` = port 3001, `package.json:13`); ต้องตั้ง `BCAI_LOCAL_BACKEND_URL` ไม่งั้น route handler ของ BFF throw (`frontend/src/lib/backend-url.ts:120-125`; `next.config.ts` ไม่อ่านค่านี้แล้วเพราะไม่มี rewrites); ตรวจ runtime 2026-09-07: `curl localhost:3000` → 200, container `mainapi` up ที่ 8888 (read-only)
 - Env ที่โค้ดอ่าน: `BCAI_LOCAL_BACKEND_URL`, `JWT_SECRET_KEY`, `BCAI_DEV_LOGIN_ENABLED`, `BCAI_DEV_LOGIN_SECRET`, `BCAI_DEV_LOGIN_BACKEND_URL`, `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BC_AUTH_BRIDGE_URL`, `NODE_ENV`, `E2E_BASE_URL`, `E2E_BROWSER_CHANNEL`, `PW_BASE_URL`, `CI` (grep `process.env.*` ใน `frontend/src`, `next.config.ts`, `playwright.config.ts`); `BCAI_DEMO_LOGIN_ENABLED` เป็นของ backend (`frontend/src/app/api/auth/demo-login/route.ts:9`)
-- Docker: `frontend/Dockerfile` multi-stage `node:24.18.0-alpine`, build-args `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `BCAI_LOCAL_BACKEND_URL`, copy `manual/` + `.next` แล้ว `npm run start` (ไม่ใช้ standalone) (`frontend/Dockerfile:2,25-32,44-57`)
+- Docker: `frontend/Dockerfile` multi-stage `node:24.18.0-alpine`, build-arg `NEXT_PUBLIC_GOOGLE_CLIENT_ID` อย่างเดียว (`BCAI_LOCAL_BACKEND_URL` อ่านตอน runtime), copy `manual/` + `.next` แล้ว `npm run start` (ไม่ใช้ standalone) (`frontend/Dockerfile:2,25-28,40-53`)
 - Prod compose: service `frontend` image `${FRONTEND_IMAGE}` + `env_file /etc/bcai-account/frontend.env` (`deploy/account/compose.yml:113-115`)
 - ~~ไฟล์ log ถูก track ใน git~~ **เลิก track แล้ว 2026-09-09** (`git rm --cached frontend/.next-dev.log frontend/.next-dev.err.log`) — root `.gitignore:53` (`*.log`) คุมอยู่แล้ว ส่วน `frontend/.gitignore:9-12` ยัง ignore เฉพาะ `npm-debug.log*`, `yarn-debug.log*`, `yarn-error.log*`, `pnpm-debug.log*` (`git ls-files frontend | grep .log`, `frontend/.gitignore:9-12`)
 

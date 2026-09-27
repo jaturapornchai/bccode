@@ -38,6 +38,7 @@ describe("menu screen availability", () => {
     expect(isMenuBackendRetired("/promotionscreen")).toBe(true);
     expect(isMenuBackendRetired("/transaction/saleorder")).toBe(true);
     expect(isMenuBackendRetired("/product")).toBe(true);
+    expect(isMenuBackendRetired("/productwarehousescreen")).toBe(true);
     expect(isMenuScreenPending("/useraccessaudit")).toBe(false);
     expect(isMenuBackendRetired("/organization/branch")).toBe(false);
     expect(isMenuBackendRetired("/gl/fiscal-years")).toBe(false);

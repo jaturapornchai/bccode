@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, type LucideIcon } from "lucide-react";
 import { logoThumbUri } from "@/lib/logo-thumb";
 import {
+  fileBffUrl,
   imageNeedsAuthenticatedFetch,
   imageThumbnailProxyUrl,
 } from "@/lib/image-upload-proxy";
@@ -76,43 +77,17 @@ function setCached(cacheKey: string, objectUrl: string) {
   }
 }
 
-function mainApiBase(backendUrl: string): string {
-  const raw = (backendUrl ?? "").trim();
-  if (!raw) return "";
-  try {
-    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`;
-    const parsed = new URL(withProtocol);
-    const path = parsed.pathname.replace(/\/+$/, "");
-    parsed.pathname = path.toLowerCase().endsWith("/goapi")
-      ? path.slice(0, -"/goapi".length) || "/"
-      : "/";
-    parsed.search = "";
-    return parsed.toString().replace(/\/+$/, "");
-  } catch {
-    return raw;
-  }
-}
-
-export function resolveDisplayUrl(value: string, backendUrl: string): string {
+/** Displayable URL for a logo URI; private "/goapi/s3/file/<key>" -> same-origin BFF "/api/files/<key>". */
+export function resolveDisplayUrl(value: string): string {
   const raw = (value ?? "").trim();
   if (!raw) return "";
   if (/^(blob:|data:|https?:\/\/)/i.test(raw)) return raw;
   if (raw.startsWith("//")) {
     return typeof window === "undefined" ? raw : `${window.location.protocol}${raw}`;
   }
-  if (raw.startsWith("/banks/") || raw.startsWith("/flags/")) return raw;
-  // "/api/*" are same-origin BFF routes; a backend prefix turned them into /backend/api/*,
-  // which the public /backend proxy never forwards (next.config.ts).
-  if (raw.startsWith("/api/")) return raw;
-  // Authenticated GoAPI/S3 proxy paths must be resolved against the backend host,
-  // not the frontend origin. Otherwise authFetch() hits localhost:3000 and 404s.
-  if (raw.startsWith("/goapi/")) {
-    const base = mainApiBase(backendUrl);
-    return base ? `${base}${raw}` : raw;
-  }
-  // Nothing else has a backend route behind the public proxy (for images it only forwards /goapi/s3/file/*),
-  // so the old <backend>/images/... fallbacks are gone; public logos use logoThumbUri() instead.
-  return raw;
+  // Anything else ("/api/*" BFF, "/banks/*", "/flags/*", public logo keys) is used as it is;
+  // public logos go through logoThumbUri() instead.
+  return fileBffUrl(raw) || raw;
 }
 
 /**
@@ -126,8 +101,8 @@ function useLogoImage(uri: string, auth: AuthLike, width: number) {
   const token = auth?.token ?? "";
   const username = auth?.username ?? "";
   const isProtected = useMemo(
-    () => imageNeedsAuthenticatedFetch(resolveDisplayUrl(uri, backendUrl), backendUrl),
-    [uri, backendUrl],
+    () => imageNeedsAuthenticatedFetch(resolveDisplayUrl(uri)),
+    [uri],
   );
   // For public paths, ask Cloudflare for a resized thumbnail.
   const publicThumb = useMemo(
@@ -137,9 +112,9 @@ function useLogoImage(uri: string, auth: AuthLike, width: number) {
   const resolvedUrl = useMemo(
     () =>
       isProtected
-        ? imageThumbnailProxyUrl(resolveDisplayUrl(uri, backendUrl))
+        ? imageThumbnailProxyUrl(resolveDisplayUrl(uri))
         : publicThumb,
-    [isProtected, uri, backendUrl, publicThumb],
+    [isProtected, uri, publicThumb],
   );
   const [displayUrl, setDisplayUrl] = useState("");
   const [failed, setFailed] = useState(false);

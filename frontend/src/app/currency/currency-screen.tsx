@@ -19,7 +19,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { backendText, useBackendLanguage, type BackendLanguageDictionary } from "@/lib/backend-language";
-import { deriveMainApiUrl } from "@/lib/backend-url";
 import { applyCurrencySymbolPreset, currencyPresetSource, filterCurrencySymbolPresets, findCurrencySymbolPreset } from "@/lib/currency-presets";
 import { normalizeLanguage, type LanguageCode } from "@/lib/i18n";
 import { pushNotice } from "@/lib/toast";
@@ -338,16 +337,16 @@ export function CurrencyScreen({ embedded = false, initialBackendLanguage, initi
     }
     setSaving(true);
     try {
-      const mainApiUrl = deriveMainApiUrl(auth.backendUrl);
       const headers = { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` };
-      const listRes = await authFetch(`${mainApiUrl}/organization/branch?management=true&_=${Date.now()}`, { headers, cache: "no-store" });
+      // Branch list + update through the organization BFF (src/app/api/organization).
+      const listRes = await authFetch("/api/organization/branch", { headers, cache: "no-store" });
       const listPayload = await listRes.json() as ApiResponse<unknown>;
       if (!listRes.ok || listPayload.success === false) throw new Error(String(listPayload.message || text("requestFailed")));
       const branchDoc = (Array.isArray(listPayload.data) ? listPayload.data : []).find(
         (item) => (item as { guidfixed?: string })?.guidfixed === branchGuid,
       ) as Record<string, unknown> | undefined;
       if (!branchDoc) throw new Error(text("requestFailed"));
-      const putRes = await authFetch(`${mainApiUrl}/organization/branch/${encodeURIComponent(branchGuid)}`, {
+      const putRes = await authFetch(`/api/organization/branch/${encodeURIComponent(branchGuid)}`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ ...branchDoc, basecurrency: code }),

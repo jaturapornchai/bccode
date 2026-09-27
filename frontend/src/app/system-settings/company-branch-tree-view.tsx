@@ -61,7 +61,6 @@ import {
   normalizeThaiPostalCode,
   type ThailandAddressData,
 } from "@/lib/thailand-addresses";
-import { deriveMainApiUrl } from "@/lib/backend-url";
 import { NamesEditor } from "@/components/product-barcode/names-editor";
 import { AddressesEditor } from "@/components/product-barcode/addresses-editor";
 import { isThaiHeadOfficeBranchCode, normalizeThaiTaxBranchCode } from "@/lib/thai-branch-code";
@@ -907,15 +906,6 @@ export function CompanyBranchTreeView({
   });
 
 
-  const mainApiUrl = useMemo(() => {
-    if (!auth?.backendUrl) return "";
-    try {
-      return deriveMainApiUrl(auth.backendUrl);
-    } catch {
-      return auth.backendUrl;
-    }
-  }, [auth]);
-
   const ensureActiveWorkspaceHolding = useCallback(async () => {
     const holdingcode = workspace?.shop?.holdingcode?.trim();
     if (!auth || !holdingcode) return;
@@ -965,15 +955,14 @@ export function CompanyBranchTreeView({
 
   // Fetch Companies & Branches
   const loadData = useCallback(async () => {
-    if (!auth || !mainApiUrl) return;
+    if (!auth) return;
     setLoading(true);
     setLoadError("");
     try {
       await ensureActiveWorkspaceHolding();
 
-      // Load Companies
-      const cacheBuster = Date.now().toString();
-      const resComp = await authFetch(`${mainApiUrl}/organization/company?management=true&_=${cacheBuster}`, {
+      // Load Companies (BFF src/app/api/organization — whole structure for Holding managers)
+      const resComp = await authFetch("/api/organization/company", {
         headers: { Authorization: `Bearer ${auth.token}` },
         cache: "no-store",
       });
@@ -986,7 +975,7 @@ export function CompanyBranchTreeView({
       }
 
       // Load Branches
-      const resBranch = await authFetch(`${mainApiUrl}/organization/branch?management=true&_=${cacheBuster}`, {
+      const resBranch = await authFetch("/api/organization/branch", {
         headers: { Authorization: `Bearer ${auth.token}` },
         cache: "no-store",
       });
@@ -1005,7 +994,7 @@ export function CompanyBranchTreeView({
     } finally {
       setLoading(false);
     }
-  }, [auth, dictionary, ensureActiveWorkspaceHolding, language, mainApiUrl, tr]);
+  }, [auth, dictionary, ensureActiveWorkspaceHolding, language, tr]);
 
   useEffect(() => {
     void loadData();
@@ -1258,7 +1247,7 @@ export function CompanyBranchTreeView({
       let body: Record<string, unknown> = {};
 
       if (formType === "createcompany") {
-        url = `${mainApiUrl}/organization/company`;
+        url = "/api/organization/company";
         method = "POST";
         body = {
           code: normalizedCompanyCode,
@@ -1270,7 +1259,7 @@ export function CompanyBranchTreeView({
           isactive: true,
         };
       } else if (formType === "editcompany") {
-        url = `${mainApiUrl}/organization/company/${selectedNode.guidfixed}`;
+        url = `/api/organization/company/${encodeURIComponent(selectedNode.guidfixed ?? "")}`;
         method = "PUT";
         body = {
           code: normalizedCompanyCode,
@@ -1283,7 +1272,7 @@ export function CompanyBranchTreeView({
           statusreason: formStatusReason.trim(),
         };
       } else if (formType === "createbranch") {
-        url = `${mainApiUrl}/organization/branch`;
+        url = "/api/workspace/branch";
         method = "POST";
         body = {
           companyuid: selectedNode.companyuid,
@@ -1313,7 +1302,7 @@ export function CompanyBranchTreeView({
           isactive: true,
         };
       } else if (formType === "editbranch") {
-        url = `${mainApiUrl}/organization/branch/${selectedNode.guidfixed}`;
+        url = `/api/organization/branch/${encodeURIComponent(selectedNode.guidfixed ?? "")}`;
         method = "PUT";
         body = {
           companyuid: selectedNode.companyuid,
@@ -1351,7 +1340,8 @@ export function CompanyBranchTreeView({
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth.token}`,
         },
-        body: JSON.stringify(body),
+        // Branch create reuses the workspace BFF (POST /api/workspace/branch), which takes { branch: <payload> }.
+        body: JSON.stringify(formType === "createbranch" ? { branch: body } : body),
       });
 
       const json = (await res.json().catch(() => ({}))) as OrganizationSaveResponse;

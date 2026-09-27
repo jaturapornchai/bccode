@@ -22,7 +22,7 @@
 ## 3. Frontend ยังอยู่แต่ "รอพัฒนา"
 
 - เอกสารสต็อกอยู่ใน registry `ERP_MODULE_CONFIGS` ของ `frontend/src/lib/erp-transaction.ts` (domain `inventory` 11 รายการ เช่น `/transaction/stockbalance`, `/transaction/stockreceiveproduct`, `/transaction/stockpickupproduct`, `/transaction/stockreturnproduct`, `/transaction/stocktransfer`, `/transaction/adjust`, `/transaction/stockcount`) — ดูรายละเอียด registry และ BFF `/api/erp-transaction/[...erpPath]` ใน [`05-transaction-sales-purchase.md`](05-transaction-sales-purchase.md) §3; ทุก route ถูก `isMenuBackendRetired()` ตัดสินว่า "ยังไม่พร้อม"
-- หน้าคลัง `frontend/src/app/system-settings/warehouse-tree-view.tsx` ยังอยู่ แต่ตั้งค่า `basePath: "/warehouse"` (`frontend/src/lib/system-setting-screens.ts:1288`) ซึ่งไม่อยู่ใน `POSTGRES_SETTING_BASE_PATHS` (`frontend/src/lib/menu-screen-status.ts:46-49`) จึง "ยังไม่พร้อม" เช่นกัน (ไม่มี backend `/warehouse` แล้ว)
+- หน้าคลัง (`/productwarehousescreen`) ตั้งค่า `basePath: "/warehouse"` (`frontend/src/lib/system-setting-screens.ts:1288`) ซึ่งไม่อยู่ใน `POSTGRES_SETTING_BASE_PATHS` (`frontend/src/lib/menu-screen-status.ts:46-49`) จึง "ยังไม่พร้อม" เช่นกัน (ไม่มี backend `/warehouse` แล้ว) — ทั้งแท็บเมนูและ route เดี่ยวแสดงการ์ด "รอพัฒนา" `MenuPlannedCard` (`frontend/src/app/menu/menu-planned-card.tsx`, guard `frontend/src/app/system-settings/system-settings-screen.tsx:995,1452`); จอเดิม `warehouse-tree-view.tsx` ถูกลบ 2026-09-27 (โค้ดเดิม `git show f75e59f9:frontend/src/app/system-settings/warehouse-tree-view.tsx`)
 
 ## 4. ยังไม่ตัดสินใจ
 

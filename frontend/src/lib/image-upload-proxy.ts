@@ -221,19 +221,28 @@ function normalizeImageProxyUrl(value: string): string {
   return value;
 }
 
-export function imageNeedsAuthenticatedFetch(imageUrl: string, trustedBackendUrl = ""): boolean {
+// Stored private file URIs are "/goapi/s3/file/<key>" (normalizeImageUploadPayload above). The browser
+// reads them through the same-origin BFF src/app/api/files/[...key]/route.ts — there is no public
+// /backend proxy to mainapi (ADR docs/kms/decisions/2026-09-27-backend-proxy-allowlist.md).
+const STORED_FILE_PREFIX = "/goapi/s3/file/";
+export const FILE_BFF_PREFIX = "/api/files/";
+
+/** "/goapi/s3/file/<key>[?query]" -> "/api/files/<key>[?query]"; anything else -> "". */
+export function fileBffUrl(storedUri: string): string {
+  const value = storedUri.trim();
+  return value.startsWith(STORED_FILE_PREFIX) ? `${FILE_BFF_PREFIX}${value.slice(STORED_FILE_PREFIX.length)}` : "";
+}
+
+/** Only same-origin /api/files/* gets the Bearer token; a URL on any other host never does. */
+export function imageNeedsAuthenticatedFetch(imageUrl: string): boolean {
   if (!imageUrl || /^(blob:|data:)/i.test(imageUrl)) return false;
-  const fallbackOrigin =
+  const frontendOrigin =
     typeof window === "undefined"
       ? "http://localhost"
       : window.location.origin;
   try {
-    const parsed = new URL(imageUrl, fallbackOrigin);
-    if (!parsed.pathname.includes("/s3/file/")) return false;
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-    const frontendOrigin = new URL(fallbackOrigin).origin;
-    const trustedOrigin = uploadOrigin(trustedBackendUrl, fallbackOrigin);
-    return parsed.origin === frontendOrigin || parsed.origin === trustedOrigin;
+    const parsed = new URL(imageUrl, frontendOrigin);
+    return parsed.origin === new URL(frontendOrigin).origin && parsed.pathname.startsWith(FILE_BFF_PREFIX);
   } catch {
     return false;
   }
@@ -243,7 +252,7 @@ export function imageThumbnailProxyUrl(imageUrl: string): string {
   const value = imageUrl.trim();
   if (!value) return value;
   const pathOnly = value.split(/[?#]/, 1)[0];
-  if (!pathOnly.includes("/s3/file/")) return value;
+  if (!pathOnly.startsWith(FILE_BFF_PREFIX)) return value;
 
   const hashIndex = value.indexOf("#");
   const hash = hashIndex >= 0 ? value.slice(hashIndex) : "";
@@ -253,16 +262,6 @@ export function imageThumbnailProxyUrl(imageUrl: string): string {
   }
   const separator = withoutHash.includes("?") ? "&" : "?";
   return `${withoutHash}${separator}variant=thumbnail${hash}`;
-}
-
-function uploadOrigin(value: string, fallbackOrigin: string): string {
-  const normalized = value.trim();
-  if (!normalized) return fallbackOrigin;
-  try {
-    return new URL(/^https?:\/\//i.test(normalized) ? normalized : `http://${normalized}`).origin;
-  } catch {
-    return fallbackOrigin;
-  }
 }
 
 function resolveUploadCategory(

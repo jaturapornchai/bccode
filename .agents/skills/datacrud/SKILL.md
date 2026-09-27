@@ -67,7 +67,7 @@ description: มาตรฐานการสร้างและปรับ�
 ---
 
 ## 6. รายชื่อหน้าจอที่ต้องมี `ResizableSplitter` (Current Roster)
-1. [`warehouse-tree-view.tsx`](../../../frontend/src/app/system-settings/warehouse-tree-view.tsx) — ผังคลังสินค้า (ต้นแบบ)
+1. ~~`warehouse-tree-view.tsx` — ผังคลังสินค้า (ต้นแบบ)~~ — ลบแล้ว 2026-09-27 เพราะไม่มี backend `/warehouse` (โค้ดเดิม `git show f75e59f9:frontend/src/app/system-settings/warehouse-tree-view.tsx`)
 2. [`system-settings-screen.tsx`](../../../frontend/src/app/system-settings/system-settings-screen.tsx) — SettingMasterDetail (หน้าจอตั้งค่าระบบทั่วไป)
 3. [`system-settings-screen.tsx`](../../../frontend/src/app/system-settings/system-settings-screen.tsx) — BOM Editor (สูตรการผลิต)
 4. [`system-settings-screen.tsx`](../../../frontend/src/app/system-settings/system-settings-screen.tsx) — ProductGroupTreeView & ProductSubgroupTreeView (กลุ่มสินค้าและกลุ่มย่อย)

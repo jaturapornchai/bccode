@@ -1,8 +1,8 @@
 /**
  * Seed ข้อมูลตัวอย่างสำหรับบัญชี Demo (ปุ่ม "ทดลองใช้ระบบ (Demo)") — SME ไทย เจ้าของคนเดียวหลายกิจการ
  * login ผ่าน BFF ของ frontend (SEED_BASE/api/auth/demo-login) แล้วเรียก mainapi ตรงที่ SEED_API
- * (ค่าเริ่มต้น http://127.0.0.1:8888 แบบเดียวกับ tools/seed/seed-access-setup-dev.ps1) — proxy สาธารณะ
- * /backend/* ของ Next เปิดเฉพาะ allowlist ไม่กี่เส้น (frontend/next.config.ts) จึงใช้ยิง seed ไม่ได้แล้ว
+ * (ค่าเริ่มต้น http://127.0.0.1:8888 แบบเดียวกับ tools/seed/seed-access-setup-dev.ps1) — Next ไม่มี proxy
+ * สาธารณะ /backend/* ไปถึง mainapi แล้ว (frontend/next.config.ts ไม่มี rewrites)
  *
  *   node scripts/seed-demo.mjs                       # local: frontend :3000 + mainapi :8888
  *

@@ -5,18 +5,16 @@
 - ระบบเป็น monorepo 2 ส่วนหลัก: Go backend (module `smlcloudplatform`, binary เดียวจาก `backend/main.go`, 192 บรรทัด) และ Next.js frontend (`frontend/`); ทั้งคู่ deploy เป็น Docker container ตาม `deploy/account/compose.yml`
 - binary backend มีบทบาทเดียว ไม่มีโหมดสลับ: `func main()` (`backend/main.go:76-182`) เชื่อม PostgreSQL ฐานควบคุมกลาง → ตั้ง cacher → ลงทะเบียน HTTP module → mount goapi ใต้ `/goapi` แล้ว `ms.Start()`; env `DEV_API_MODE=2` ที่ยังตั้งอยู่ใน `backend/Dockerfile:42`, `backend/docker-compose.yml:39` และ `backend.env` ของ prod (`deploy/account/provision-server.sh:85`) ถูกอ่านเข้า config (`backend/internal/setupconfig/loader.go:34`) แต่ไม่มีโค้ดใดใช้ค่าแล้ว
 - goapi ไม่ใช่ service แยกใน deploy — เป็น sub-server ที่สร้างด้วย `goapi.New()` แล้ว mount กลุ่ม `/goapi` บน Echo instance เดียวกับ mainapi (`backend/main.go:168-179`); ไม่มี `cmd/goapi`/`Dockerfile.goapi` standalone แล้ว (ลบ 2026-09-23)
-- browser ไม่คุย mainapi ตรง: ทุก request ผ่าน Next.js (route handler ใต้ `frontend/src/app/api/**`, 34 ไฟล์ `route.ts`, หรือ rewrite `/backend/...` ที่เปิดเป็น allowlist 5 เส้นทางเท่านั้น) แล้ว Next.js ค่อย fetch ไป `BCAI_LOCAL_BACKEND_URL` ฝั่ง server (`frontend/next.config.ts:19,34-44`)
+- browser ไม่คุย mainapi ตรง: ทุก request ผ่าน route handler (BFF) ใต้ `frontend/src/app/api/**` (36 ไฟล์ `route.ts`) แล้ว Next.js ค่อย fetch ไป `BCAI_LOCAL_BACKEND_URL` ฝั่ง server (`serverMainApiBase()`/`serverGoApiBase()`, `frontend/src/lib/backend-url.ts:120-128`); ไม่มี rewrite/proxy `/backend` แล้ว (`frontend/next.config.ts:7-9`, ตั้งแต่ 2026-09-27 — [ADR](decisions/2026-09-27-backend-proxy-allowlist.md))
 
 ## 2. แผนภาพ (ASCII)
 ```
  Browser (Thai 40+ users)
-   |  HTTPS account.bcaicloud.com  (prod: Caddy -> 127.0.0.1:3200, deploy/account/Caddyfile.account;
-   |                                Caddy ตอบ 404 ให้ /backend/goapi/api/health/{background,queue*,database,system})
+   |  HTTPS account.bcaicloud.com  (prod: Caddy -> 127.0.0.1:3200, deploy/account/Caddyfile.account)
    v
  Next.js frontend :3000 (prod publish 127.0.0.1:3200, deploy/account/compose.yml)
-   |-- route handlers  frontend/src/app/api/**  (34 route.ts)  -- forward Authorization: Bearer
-   `-- rewrite allowlist (ต้องมี Bearer)  /backend/goapi/s3/file/*, /backend/organization/{company,branch}[/:id]
-                        ->  ${BCAI_LOCAL_BACKEND_URL}/<path เดียวกันไม่มี /backend>   (next.config.ts:34-44; path อื่น = 404)
+   `-- route handlers  frontend/src/app/api/**  (36 route.ts)  -- forward Authorization: Bearer
+        (ไม่มี rewrite /backend — รูป/ไฟล์ = /api/files/*, บริษัท/สาขา = /api/organization/*)
    v
  mainapi :8888  (backend/main.go)  -- Echo via pkg/microservice, ตรวจสิทธิ์สดทุกคำขอ (AuthService.MWFuncMixShop, main.go:118,148)
    |-- โมดูล (main.go:153-166): /login /googlelogin /dev-login /demo-login /refresh /logout /holding/* /shop/* /profile/*
@@ -73,9 +71,9 @@ Stack prod (`deploy/account/compose.yml`): 5 service — `postgres` (18-alpine),
 
 ## 7. เส้นทาง request: browser → Next.js → mainapi
 1. browser เรียก `/api/<domain>/...` ของ Next.js เอง; route handler ดึง `Authorization` header แล้ว fetch ไป mainapi ด้วย `BCAI_LOCAL_BACKEND_URL`
-2. เส้นทางที่สอง: rewrite `/backend/...` แบบ **allowlist** (`frontend/next.config.ts:34-44`, ตั้งแต่ 2026-09-27 — [ADR](decisions/2026-09-27-backend-proxy-allowlist.md)) เปิดแค่ 5 source ที่ browser เรียกจริงพร้อม `Authorization: Bearer`: `/backend/goapi/s3/file/:path+` (รูป/ไฟล์), `/backend/organization/company`, `/backend/organization/company/:id`, `/backend/organization/branch`, `/backend/organization/branch/:id` — แต่ละ source ชี้ปลายทาง mainapi แบบ path ตายตัว (ตัด `/backend` ออก) และมีเงื่อนไข `has` header `authorization` ค่า `Bearer .+` (กันเสียงรบกวนจาก scanner เท่านั้น mainapi ยังตรวจ token เอง); path อื่นทุกเส้น (รวม `/backend/v1/*`, `/backend/metrics`, `/backend/healthz`, login, language) ไม่ถูก proxy. ของเดิมที่เป็น catch-all `/backend/:path*` + blocklist ถูกลบเพราะถูกเลี่ยงได้ ([บั๊ก](bugs/2026-09-27-backend-proxy-blocklist-bypass.md))
+2. ไม่มีเส้นทางที่สอง: `frontend/next.config.ts` ไม่มี `rewrites()` (`:7-9`, ตั้งแต่ 2026-09-27 — [ADR](decisions/2026-09-27-backend-proxy-allowlist.md)) ทุก `/backend/*` = Next 404; ของที่เคยผ่าน `/backend` ย้ายเข้า BFF: รูป/ไฟล์ `GET /api/files/<key>[?variant=thumbnail]` (`frontend/src/app/api/files/[...key]/route.ts`), บริษัท/สาขา `/api/organization/{company,branch}[/:id]` (`frontend/src/app/api/organization/[...orgPath]/route.ts`). ของเดิม (catch-all `/backend/:path*` + blocklist แล้วเป็น allowlist 5 เส้น) ถูกลบเพราะถูกเลี่ยงได้และเปิด mainapi สู่อินเทอร์เน็ต ([บั๊ก](bugs/2026-09-27-backend-proxy-blocklist-bypass.md))
 3. ที่ mainapi: `publicPath` ไม่ต้อง token (`/mcp/gl`, `/integration/gl/v2/*`, login family, `/healthz`, `/metrics`, `/reload-config`, `/goapi/*`, `/api/language/*` — `main.go:119-135`); `exceptShopPaths` ต้องมี token แต่ยังไม่ต้องเลือก holding/shop (`main.go:47-73`)
-4. `BCAI_LOCAL_BACKEND_URL` เป็น build ARG/ENV ของ image frontend (`frontend/Dockerfile:26-28`), image ฟัง `:3000`
+4. `BCAI_LOCAL_BACKEND_URL` เป็น env ตอน runtime ของ container frontend (prod: `/etc/bcai-account/frontend.env`) ไม่ใช่ build ARG แล้ว (`frontend/Dockerfile:25-28` มีแค่ `NEXT_PUBLIC_GOOGLE_CLIENT_ID`), image ฟัง `:3000`
 
 ## 8. Background workers ที่ยังทำงานจริง
 | ตัวประมวลผล | รันที่ไหน | กลไก | อ้างอิง |
