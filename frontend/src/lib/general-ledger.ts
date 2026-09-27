@@ -560,7 +560,8 @@ export function statementStarterReplaceNeedsConfirm(template: GLStatementTemplat
 }
 
 /** แม่แบบที่ได้หลังเลือกแม่แบบมาตรฐาน: เก็บ id/version ของแม่แบบที่เปิดอยู่ และเก็บรหัสเฉพาะแม่แบบที่บันทึกแล้ว —
- *  แม่แบบที่ยังไม่บันทึกได้รหัสของแม่แบบมาตรฐาน (รหัสที่พิมพ์ไว้ถูกแทน ต้องบอกใน dialog ด้วย statementStarterReplacedCode) */
+ *  แม่แบบที่ยังไม่บันทึกได้รหัสของแม่แบบมาตรฐาน (รหัสที่พิมพ์ไว้ถูกแทน ต้องบอกใน dialog ด้วย statementStarterReplacedCode);
+ *  "เปิดใช้งาน" เป็นสถานะของแม่แบบที่เปิดอยู่ ไม่ใช่รูปแบบงบ — คงค่าเดิมไว้ (แม่แบบที่ปิดไว้ต้องไม่กลับมาอยู่ในชุดพิมพ์งบเอง) */
 export function statementTemplateFromStarter(current: GLStatementTemplate | null, starter: GLStatementTemplate): GLStatementTemplate {
   return {
     ...starter,
@@ -568,6 +569,7 @@ export function statementTemplateFromStarter(current: GLStatementTemplate | null
     version: current?.version,
     code: current?.id ? (current.code || starter.code) : starter.code,
     name: starter.name,
+    isactive: current?.isactive ?? starter.isactive,
   };
 }
 

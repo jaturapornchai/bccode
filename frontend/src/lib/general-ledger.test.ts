@@ -347,6 +347,20 @@ describe("standard statement template replaces the open template only after conf
     expect(statementStarterReplacedCode(emptyStatementTemplate(), statementTemplateFromStarter(emptyStatementTemplate(), other))).toBe("");
     expect(statementStarterReplacedCode(null, statementTemplateFromStarter(null, other))).toBe("");
   });
+  // "เปิดใช้งาน" เป็นสถานะ ไม่ใช่รูปแบบงบ: แม่แบบที่ปิดไว้ต้องไม่กลับมาเปิดเอง (ไม่งั้นโผล่ในชุดพิมพ์งบ statementSetTemplates หลังบันทึก)
+  it("keeps the open template's active flag instead of taking the starter's", () => {
+    const other = generateStarterTemplates().find((item) => item.statementtype !== starter.statementtype)!;
+    expect(other.isactive).toBe(true);
+    const savedInactive = { ...starter, id: "t1", version: 3, isactive: false };
+    const fromInactive = statementTemplateFromStarter(savedInactive, other);
+    expect(fromInactive.isactive).toBe(false);
+    expect(fromInactive.rows).toEqual(other.rows);
+    expect(statementTemplateFromStarter({ ...starter, id: "t2", version: 1, isactive: true }, other).isactive).toBe(true);
+    expect(statementTemplateFromStarter(null, other).isactive).toBe(true);
+    expect(statementTemplateFromStarter(null, { ...other, isactive: false }).isactive).toBe(false);
+    expect(statementTemplateFromStarter({ ...emptyStatementTemplate(), isactive: false }, other).isactive).toBe(false);
+    expect(statementTemplateFromStarter(emptyStatementTemplate(), other).isactive).toBe(true);
+  });
   it("the designer awaits the confirmation before replacing, and a fresh template from the empty state is not dirty", () => {
     const screen = readFileSync(resolve(process.cwd(), "src", "app", "gl", "gl-statement-designer.tsx"), "utf8");
     expect(screen).toMatch(/async function applyStarterTemplate\(starter: GLStatementTemplate\) \{\s*const fresh = statementTemplateFromStarter\(template, starter\);\s*if \(statementStarterReplaceNeedsConfirm\(template, dirty\)\) \{\s*const replacedCode = statementStarterReplacedCode\(template, fresh\);[\s\S]*?const replaced = await confirm\(\{[\s\S]*?"gl_starter_replace_title"[\s\S]*?\{replacedCode && <p[^>]*>\{tr\("gl_starter_replace_code_changes"[\s\S]*?if \(!replaced\) return;\s*\}\s*setTemplate\(fresh\);/);
