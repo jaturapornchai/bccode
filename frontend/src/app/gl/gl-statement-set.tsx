@@ -12,7 +12,7 @@ import { formatAppDate } from "@/lib/date-time";
 import { glAllRecords, glRequest } from "@/lib/general-ledger-api";
 import { labelText, statementNotesFromRecord, statementSetDefaultSelection, statementSetTemplates, statementTypeLabels, type GLReport, type GLStatementTemplate, type StatementNote } from "@/lib/general-ledger";
 import { YearSelect, actionClass, useGLLanguage, useGLText, useReferences, type GLTextFn } from "./gl-common";
-import { GLReportWarnings, GLStatementChecks, GLStatementSetPrint, printCompanyName, statementPeriodLine, statementPeriodText, statementSetRootOrientation, useGLPrint, type GLStatementSetSection } from "./gl-print";
+import { GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementUnassigned, printCompanyName, statementPeriodLine, statementPeriodText, statementSetRootOrientation, useGLPrint, type GLStatementSetSection } from "./gl-print";
 import { loadStatementNotes } from "./gl-statement-notes";
 
 /** ผลของ GET reports/statement-set: งบเรียงตามแบบ 2 แล้ว; งบที่คำนวณไม่สำเร็จมี error (ข้อความตามภาษาที่เลือก) แทน report; ยอดเงินในรายงานเป็นสตริงทศนิยม */
@@ -50,9 +50,9 @@ export function preparedStatementSet(result: GLStatementSetResult, year: string,
 
 const rowClass = "flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 text-[0.95rem] leading-snug shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-colors hover:border-primary/60 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:disabled]:cursor-default has-[:disabled]:opacity-70";
 
-// ผลคำนวณที่มีคำเตือนจาก backend หรือผลตรวจยอดกับบัญชีที่ไม่ตรง: พิมพ์ได้ แต่ต้องบอกให้ตรวจก่อนออกงบ
-function reportNeedsReview(report: GLReport) {
-  return (report.warnings ?? []).some((warning) => warning?.trim()) || (report.checks ?? []).some((check) => !check.matched);
+// ผลคำนวณที่มีคำเตือนจาก backend ผลตรวจยอดกับบัญชีที่ไม่ตรง หรือบัญชีที่มียอดแต่ไม่อยู่ในบรรทัดใด: พิมพ์ได้ แต่ต้องบอกให้ตรวจก่อนออกงบ
+export function reportNeedsReview(report: GLReport) {
+  return (report.warnings ?? []).some((warning) => warning?.trim()) || (report.checks ?? []).some((check) => !check.matched) || (report.unassigned?.length ?? 0) > 0;
 }
 
 export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: boolean; onClose: () => void; unsavedChanges: boolean }) {
@@ -291,8 +291,8 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
               {unsavedChanges && (
-                <div role="note" className="flex items-start gap-2 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-[0.95rem] leading-relaxed text-foreground">
-                  <AlertTriangle aria-hidden className="mt-1 size-4 shrink-0 text-amber-700 dark:text-amber-400" />
+                <div role="note" className="flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 p-3 text-[0.95rem] leading-relaxed text-foreground">
+                  <AlertTriangle aria-hidden className="mt-1 size-4 shrink-0 text-primary" />
                   <span>{tr("gl_statement_set_unsaved", "จอนี้มีการแก้ไขที่ยังไม่บันทึก — ชุดงบที่พิมพ์ใช้ฉบับที่บันทึกแล้วเท่านั้น การแก้ไขที่ค้างอยู่จะไม่ถูกพิมพ์")}</span>
                 </div>
               )}
@@ -368,14 +368,15 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
                           {!report ? (
                             <span className="inline-flex items-center gap-1.5 font-semibold text-destructive"><XCircle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_failed", "คำนวณไม่สำเร็จ")}</span>
                           ) : reportNeedsReview(report) ? (
-                            <span className="inline-flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400"><AlertTriangle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_has_warnings", "พร้อมพิมพ์ มีข้อควรตรวจสอบ")}</span>
+                            <span className="inline-flex items-center gap-1.5 font-semibold text-primary"><AlertTriangle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_has_warnings", "พร้อมพิมพ์ มีข้อควรตรวจสอบ")}</span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400"><CheckCircle2 aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_ready", "พร้อมพิมพ์")}</span>
+                            <span className="inline-flex items-center gap-1.5 font-semibold text-primary"><CheckCircle2 aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_ready", "พร้อมพิมพ์")}</span>
                           )}
                         </div>
                         {error && <p role="alert" className="text-[0.95rem] leading-relaxed text-destructive [overflow-wrap:anywhere]">{error}</p>}
                         {report && <GLReportWarnings warnings={report.warnings} tr={tr} />}
                         {report && <GLStatementChecks checks={report.checks} scale={scale} tr={tr} />}
+                        {report && <GLStatementUnassigned items={report.unassigned} scale={scale} tr={tr} />}
                       </li>
                     ))}
                     {prepared.notes && (
@@ -385,7 +386,7 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
                           {prepared.notes.error ? (
                             <span className="inline-flex items-center gap-1.5 font-semibold text-destructive"><XCircle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_failed", "คำนวณไม่สำเร็จ")}</span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400"><CheckCircle2 aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_ready", "พร้อมพิมพ์")}</span>
+                            <span className="inline-flex items-center gap-1.5 font-semibold text-primary"><CheckCircle2 aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_set_ready", "พร้อมพิมพ์")}</span>
                           )}
                         </div>
                         {prepared.notes.error && <p role="alert" className="text-[0.95rem] leading-relaxed text-destructive [overflow-wrap:anywhere]">{prepared.notes.error}</p>}
@@ -394,7 +395,7 @@ export function GLStatementSetDialog({ open, onClose, unsavedChanges }: { open: 
                   </ol>
                   <div role="status" className="space-y-1 border-t border-border pt-2 text-[0.95rem] leading-relaxed">
                     <p className="font-semibold">{tr("gl_statement_set_summary_ready", "พร้อมพิมพ์ {0} รายการ").replace("{0}", String(readyCount))}</p>
-                    {reviewCount > 0 && <p className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400"><AlertTriangle aria-hidden className="mt-1 size-4 shrink-0" /> {tr("gl_statement_set_summary_warnings", "มีข้อควรตรวจสอบ {0} รายการ — พิมพ์ได้ แต่ควรตรวจก่อนออกงบ").replace("{0}", String(reviewCount))}</p>}
+                    {reviewCount > 0 && <p className="flex items-start gap-1.5 text-primary"><AlertTriangle aria-hidden className="mt-1 size-4 shrink-0" /> {tr("gl_statement_set_summary_warnings", "มีข้อควรตรวจสอบ {0} รายการ — พิมพ์ได้ แต่ควรตรวจก่อนออกงบ").replace("{0}", String(reviewCount))}</p>}
                     {failedCount > 0 && <p className="flex items-start gap-1.5 text-destructive"><XCircle aria-hidden className="mt-1 size-4 shrink-0" /> {tr("gl_statement_set_summary_errors", "คำนวณไม่สำเร็จ {0} รายการ — แก้ไข หรือยกเลิกการเลือกรายการนั้นก่อนพิมพ์").replace("{0}", String(failedCount))}</p>}
                   </div>
                   </>}

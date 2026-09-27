@@ -130,6 +130,19 @@ describe("GL authenticated proxy", () => {
     expect((await GET(new Request("http://localhost/api/gl/reports/statement-set/extra", { headers }), context("reports", "statement-set", "extra"))).status).toBe(404);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+  it("forwards account suggestions for statement templates only (calculation, nothing saved)", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: { suggestions: { targets: [], fixes: [] } } })); vi.stubGlobal("fetch", fetchMock);
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const master = { code: "BS-DBD", name: "งบฐานะการเงิน", statementtype: "balance_sheet", isactive: true, rows: [{ id: "bs-30", rowno: 30, rowtype: "account", title: "เงินสดและรายการเทียบเท่าเงินสด", accountcodes: [], suggestkey: "cash_and_equivalents" }], holdingcode: "other" };
+    const post = (body: unknown) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    expect((await post({ resource: "statement-templates", action: "suggest", id: "tpl-1", requestid, master })).status).toBe(200);
+    const { holdingcode: _scope, ...forwarded } = master;
+    expect(_scope).toBe("other");
+    expect(fetchMock.mock.calls[0][0]).toContain("/gl/v2/command");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ resource: "statement-templates", action: "suggest", id: "tpl-1", requestid, master: forwarded });
+    for (const resource of ["accounts", "journals", "budgets", "statement-notes"]) expect((await post({ resource, action: "suggest", requestid, master })).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("rejects numeric budget money and spread outside budgets", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const requestid = "12345678-1234-1234-1234-123456789012";

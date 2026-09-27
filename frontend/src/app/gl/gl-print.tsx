@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
-import { amountString, formatAmount, journalBookName, journalTotals, statementIsPeriodic, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
+import { STATEMENT_CURRENT_EARNINGS, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, statementIsPeriodic, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { useGLText } from "./gl-common";
 
@@ -305,7 +305,7 @@ export function GLStatementChecks({ checks, scale = 2, tr }: { checks?: GLStatem
   return (
     <ul className="grid gap-2 lg:grid-cols-2" aria-label={title}>
       {items.map((check, index) => (
-        <li key={statementCheckKey(check, index)} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${check.matched ? "border-emerald-500/35 bg-emerald-500/5" : "border-amber-500/50 bg-amber-500/10"}`}>
+        <li key={statementCheckKey(check, index)} className={`rounded-xl border p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)] ${check.matched ? "border-border bg-muted/40" : "border-primary/40 bg-primary/10"}`}>
           <div className="font-semibold">
             {title}: {check.title?.trim() || tr("gl_statement_check_row", "บรรทัด {0}").replace("{0}", String(check.rowno ?? ""))} · {tr("gl_fiscal_year", "ปีบัญชี")} {check.fiscalyear ?? ""}
           </div>
@@ -313,11 +313,11 @@ export function GLStatementChecks({ checks, scale = 2, tr }: { checks?: GLStatem
             {tr("gl_statement_check_statement", "ตามงบ")} {formatAmount(check.statement ?? "", scale)} · {tr("gl_statement_check_book", "ตามบัญชี")} {formatAmount(check.book ?? "", scale)}
           </div>
           {check.matched ? (
-            <div className="mt-1.5 inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+            <div className="mt-1.5 inline-flex items-center gap-1.5 font-semibold text-primary">
               <CheckCircle2 aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_check_matched", "ตรงกัน")}
             </div>
           ) : (
-            <div className="mt-1.5 inline-flex items-center gap-1.5 font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+            <div className="mt-1.5 inline-flex items-center gap-1.5 font-semibold tabular-nums text-primary">
               <AlertTriangle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_check_mismatched", "ไม่ตรงกัน")} {tr("gl_difference", "ผลต่าง")} {formatAmount(check.difference ?? "", scale)}
             </div>
           )}
@@ -327,18 +327,50 @@ export function GLStatementChecks({ checks, scale = 2, tr }: { checks?: GLStatem
   );
 }
 
-/** คำเตือนของรายงานงบจาก backend: กล่องสีอำพันมีไอคอนและหัวข้อ (ไม่ใช้สีอย่างเดียว) — แสดงบนจอเท่านั้น ไม่อยู่ในหน้าพิมพ์ */
+/** คำเตือนของรายงานงบจาก backend: กล่องสีหลัก (primary) มีไอคอนและหัวข้อ (ไม่ใช้สีอย่างเดียว) — แสดงบนจอเท่านั้น ไม่อยู่ในหน้าพิมพ์ */
 export function GLReportWarnings({ warnings, tr }: { warnings?: string[] | null; tr: GLTextFn }) {
   const items = (warnings ?? []).filter((warning) => warning?.trim());
   if (!items.length) return null;
   return (
-    <div role="status" className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
-      <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400">
+    <div role="status" className="rounded-xl border border-primary/40 bg-primary/10 p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center gap-1.5 font-semibold text-primary">
         <AlertTriangle aria-hidden className="size-4 shrink-0" /> {tr("gl_statement_warnings_title", "ข้อควรตรวจสอบก่อนออกงบ")}
       </div>
       <ul className="mt-1.5 list-disc space-y-1 pl-6 [overflow-wrap:anywhere]">
         {items.map((warning, index) => <li key={index}>{warning}</li>)}
       </ul>
+    </div>
+  );
+}
+
+/** บัญชีที่มียอดแต่ยังไม่อยู่ในบรรทัดใดของงบ (backend statements_unassigned.go — งบฐานะการเงิน/งบกำไรขาดทุน): ยอดรวมของงบไม่ครบ
+ *  จนกว่าผู้ใช้เพิ่มบัญชีเข้าบรรทัดในแท็บออกแบบ. กล่องสีหลัก (primary) + ไอคอน + หัวข้อ (ไม่ใช้สีอย่างเดียว) อยู่นอก GLStatementTable จึงไม่ถูกพิมพ์ */
+export const STATEMENT_UNASSIGNED_SHOWN = 30;
+export function GLStatementUnassigned({ items, scale = 2, tr }: { items?: GLStatementUnassignedItem[] | null; scale?: number; tr: GLTextFn }) {
+  const list = items ?? [];
+  if (!list.length) return null;
+  const title = tr("gl_statement_unassigned_title", "บัญชีที่มียอดแต่ยังไม่อยู่ในบรรทัดใดของงบนี้");
+  const description = list[0].basis === "movement"
+    ? tr("gl_statement_unassigned_desc_movement", "ยอดเคลื่อนไหวในงวดของบัญชีเหล่านี้ไม่ถูกนับในงบ รายได้ ค่าใช้จ่าย และกำไร (ขาดทุน) สุทธิจึงอาจไม่ตรงกับบัญชี — เพิ่มบัญชีเข้าบรรทัดที่ถูกต้องในแท็บออกแบบ แล้วบันทึกแม่แบบ")
+    : tr("gl_statement_unassigned_desc_balance", "ยอดคงเหลือ ณ วันสิ้นงวดของบัญชีเหล่านี้ไม่ถูกนับในงบ ยอดรวมจึงไม่ครบ — เพิ่มบัญชีเข้าบรรทัดที่ถูกต้องในแท็บออกแบบ แล้วบันทึกแม่แบบ");
+  return (
+    <div role="status" aria-label={title} className="rounded-xl border border-primary/40 bg-primary/10 p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center gap-1.5 font-semibold text-primary">
+        <AlertTriangle aria-hidden className="size-4 shrink-0" /> {title}
+      </div>
+      <p className="mt-1 [overflow-wrap:anywhere]">{description}</p>
+      <ul className="mt-1.5 list-disc space-y-1 pl-6 tabular-nums [overflow-wrap:anywhere]">
+        {list.slice(0, STATEMENT_UNASSIGNED_SHOWN).map((item, index) => (
+          <li key={`${item.key ?? ""}-${item.fiscalyear ?? ""}-${item.accountcode ?? ""}-${index}`}>
+            {item.accountcode === STATEMENT_CURRENT_EARNINGS
+              ? fillText(tr("gl_statement_unassigned_current_earnings", "ปีบัญชี {0} · กำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี {1} ยังไม่อยู่ในบรรทัดใด — กด “ใช้แม่แบบมาตรฐาน” แล้วเลือกงบแสดงฐานะการเงิน (บรรทัด “ยังไม่ได้จัดสรร” รวมยอดนี้ให้) หรือทำ “ประมวลผลสิ้นปี” เพื่อโอนเข้ากำไรสะสม"), item.fiscalyear ?? "", formatAmount(item.amount ?? "", scale))
+              : fillText(tr("gl_statement_unassigned_line", "ปีบัญชี {0} · {1} {2} · {3} · {4}"), item.fiscalyear ?? "", item.accountcode ?? "", item.accountname ?? "", labelText(accountTypeLabels, item.accounttype ?? "", tr), formatAmount(item.amount ?? "", scale))}
+          </li>
+        ))}
+      </ul>
+      {list.length > STATEMENT_UNASSIGNED_SHOWN && (
+        <p className="mt-1">{fillText(tr("gl_statement_unassigned_more", "และอีก {0} บัญชี"), list.length - STATEMENT_UNASSIGNED_SHOWN)}</p>
+      )}
     </div>
   );
 }

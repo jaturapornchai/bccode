@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, TreeNodeRow, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget } from "./gl-masters";
+import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -486,5 +486,44 @@ describe("ผังบัญชี: parent-account picker", () => {
   it("excludes the account itself and every descendant so the chart can never loop", () => {
     expect(codes(parentAccountCandidates(chart, "11000"))).toEqual(["10000", "20000", "21000"]);
     expect(codes(parentAccountCandidates(chart, "10000"))).toEqual(["20000", "21000"]);
+  });
+});
+
+// ยอดปกติเลือกได้ (บัญชีปรับลด เช่น ค่าเสื่อมราคาสะสม) และ "บัญชีเงินสด" (iscash) — ADR 2026-09-27-gl-statement-account-suggestions (D4)
+describe("account normal balance and cash flag", () => {
+  const account = (patch: Partial<GLAccount> = {}): GLAccount => ({ ...(normalizeRecord("accounts", { accountcode: "12120", accounttype: "asset" } as never) as GLAccount), ...patch });
+
+  it("defaults the normal balance from the category but keeps a stored contra side", () => {
+    expect(["asset", "liability", "equity", "income", "expense"].map((type) => defaultNormalBalance(type))).toEqual(["debit", "credit", "credit", "credit", "debit"]);
+    expect(normalizeRecord("accounts", { accountcode: "41000", accounttype: "income" } as never)).toMatchObject({ normalbalance: "credit", iscash: false });
+    expect(normalizeRecord("accounts", { accountcode: "12120", accounttype: "asset", normalbalance: "credit" } as never)).toMatchObject({ normalbalance: "credit" });
+  });
+
+  it("resets the side only when the category really changes", () => {
+    const contra = account({ normalbalance: "credit" });
+    expect(accountTypePatch(contra, "asset")).toEqual({ accounttype: "asset" });
+    expect(accountTypePatch(contra, "expense")).toEqual({ accounttype: "expense", normalbalance: "debit", iscash: false });
+    expect(accountTypePatch(account({ accounttype: "liability" }), "asset")).toEqual({ accounttype: "asset", normalbalance: "debit" });
+    const parent = account({ accountcode: "12100", level: 3, accounttype: "asset" });
+    expect(accountParentPatch(contra, "12100", parent)).toEqual({ parentaccountcode: "12100", level: 4, accounttype: "asset" });
+    expect(accountParentPatch(contra, "", undefined)).toEqual({ parentaccountcode: null, level: 1 });
+    expect(accountParentPatch(contra, "99999", undefined)).toEqual({ parentaccountcode: "99999" });
+  });
+
+  it("allows the cash flag only on postable asset accounts without sub-accounts", () => {
+    expect(accountCashAllowed(account(), false)).toBe(true);
+    expect(accountCashAllowed(account(), true)).toBe(false);
+    expect(accountCashAllowed(account({ allowposting: false }), false)).toBe(false);
+    expect(accountCashAllowed(account({ accounttype: "expense" }), false)).toBe(false);
+    expect(accountPostingPatch(false)).toEqual({ allowposting: false, iscash: false });
+    expect(accountPostingPatch(true)).toEqual({ allowposting: true });
+  });
+
+  it("never sends a cash flag the backend would reject", () => {
+    expect(accountSavePayload(account({ iscash: true }), false)).toMatchObject({ iscash: true, allowposting: true });
+    expect(accountSavePayload(account({ iscash: true }), true)).toMatchObject({ iscash: false, allowposting: false });
+    expect(accountSavePayload(account({ iscash: true, accounttype: "liability" }), false)).toMatchObject({ iscash: false });
+    expect(accountSavePayload(account({ parentaccountcode: " 12100 " }), false).parentaccountcode).toBe("12100");
+    expect(accountSavePayload(account({ parentaccountcode: "  " }), false).parentaccountcode).toBeNull();
   });
 });

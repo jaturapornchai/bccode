@@ -14,6 +14,8 @@ type Result struct {
 	ProjectionPending bool   `json:"projectionpending"`
 	// Lines answers budgets action "spread" (nothing is saved).
 	Lines []BudgetLine `json:"lines,omitempty"`
+	// Suggestions answers statement-templates action "suggest" (nothing saved).
+	Suggestions *StatementSuggestions `json:"suggestions,omitempty"`
 }
 
 func digest(value []byte) string { sum := sha256.Sum256(value); return hex.EncodeToString(sum[:]) }

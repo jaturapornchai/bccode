@@ -5,6 +5,7 @@ import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./genera
 import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
 import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
 import { statementIsPeriodic, statementSetDefaultSelection, statementSetRank, statementSetTemplates, type GLStatementTemplate, type StatementType } from "./general-ledger";
+import { STATEMENT_SUGGEST_KEYS, addStatementAccounts, applyStatementAccountFix, applyStatementTemplateFixes, fillText, statementEngineTargets, statementFixesToApply, statementSuggestSignature, statementTargetKey, withKnownSuggestKeys, type GLStatementAccountFix } from "./general-ledger";
 
 const accounts = [ { ...emptyAccount(), accountcode: "A", names: [{ code: "th", name: "เงินสด" }] }, { ...emptyAccount(), accountcode: "B", names: [{ code: "th", name: "ทุน" }] } ];
 const year = { ...emptyFiscalYear(), code: "FY", startdate: "2026-01-01", enddate: "2026-12-31", currency: "THB", scale: 2 };
@@ -410,5 +411,141 @@ describe("financial statement set", () => {
     expect(dialog).not.toContain("fetchReport(");
     expect(dialog).not.toContain("Promise.allSettled(");
     expect(dialog).toContain("if (request !== requestRef.current) return;");
+  });
+});
+
+// แนะนำบัญชีให้บรรทัดของแม่แบบงบ (ADR 2026-09-27-gl-statement-account-suggestions): backend ถือกติกา (statement_suggestions.go),
+// จอเก็บชนิดบรรทัด (suggestkey) ในแม่แบบมาตรฐาน แก้บัญชีหัวข้อตามผลจาก backend และไม่เดารหัสบัญชีเอง
+describe("statement account suggestions", () => {
+  const byCode = () => Object.fromEntries(generateStarterTemplates().map((template) => [template.code, template]));
+  it("tags exactly the agreed starter lines with a suggestion kind", () => {
+    const keys: Record<string, string> = {};
+    for (const template of generateStarterTemplates()) {
+      for (const row of template.rows) if (row.suggestkey) keys[row.id] = row.suggestkey;
+      for (const column of template.columns ?? []) if (column.suggestkey) keys[column.id] = column.suggestkey;
+    }
+    expect(keys).toEqual({
+      "bs-30": "cash_and_equivalents", "bs-50": "trade_receivables", "bs-80": "inventories", "bs-230": "property_plant_equipment", "bs-350": "trade_payables", "bs-650": "retained_earnings",
+      "pnl-10": "sales_revenue", "pnl-20": "cost_of_sales",
+      "cf-3": "depreciation_expense", "cf-4": "trade_receivables", "cf-5": "inventories", "cf-6": "trade_payables", "cf-10": "purchase_of_ppe", "cf-17": "cash_and_equivalents",
+      "eq-c4": "retained_earnings",
+    });
+    expect(byCode()["COGS-STMT"].rows.some((row) => row.suggestkey)).toBe(false);
+  });
+
+  it("lists the same suggestion kinds in the same order as the backend statementSuggestKeys", () => {
+    const source = readFileSync(resolve(process.cwd(), "..", "backend", "internal", "generalledger", "statement_suggestions.go"), "utf8");
+    const match = /^var statementSuggestKeys = \[\]string\{([^}]*)\}/m.exec(source);
+    expect(match, "var statementSuggestKeys = []string{...} not found in statement_suggestions.go").not.toBeNull();
+    expect([...match![1].matchAll(/"([a-z_]+)"/g)].map((item) => item[1])).toEqual([...STATEMENT_SUGGEST_KEYS]);
+  });
+
+  it("reads codes only where the statement engine reads them (backend statementCodeTargets)", () => {
+    const templates = byCode();
+    const bs = statementEngineTargets(templates["BS-DBD"]);
+    expect(bs.every((target) => target.target === "row" && target.basis === "closing")).toBe(true);
+    expect(bs.map((target) => target.id)).not.toContain("bs-10");
+    const cf = statementEngineTargets(templates["CASH-FLOW-IND"]);
+    expect(cf.find((target) => target.id === "cf-17")?.basis).toBe("opening");
+    expect(cf.find((target) => target.id === "cf-3")?.basis).toBe("movement");
+    const equity = statementEngineTargets(templates["EQ-DBD"]);
+    // ยอดต้นงวด/ปลายงวด/รายการอื่นใช้บัญชีของคอลัมน์ ไม่อ่านรหัสของบรรทัด
+    expect(equity.filter((target) => target.target === "row").map((target) => target.id)).not.toEqual(expect.arrayContaining(["eq-10", "eq-130", "eq-140"]));
+    expect(equity.filter((target) => target.target === "row").every((target) => target.basis === "movement")).toBe(true);
+    expect(equity.filter((target) => target.target === "column").map((target) => [target.id, target.basis])).toEqual(["eq-c1", "eq-c2", "eq-c3", "eq-c4", "eq-c5", "eq-c6"].map((id) => [id, "column"]));
+    const hidden: GLStatementTemplate = { ...emptyStatementTemplate(), statementtype: "pnl", rows: [{ id: "h", rowno: 10, rowtype: "header", title: "หัวข้อ", accountcodes: ["1000"] }, { id: "a", rowno: 20, rowtype: "account", title: "รายได้", accountcodes: ["4000"], amountbasis: "closing" }] };
+    expect(statementEngineTargets(hidden).map((target) => [target.id, target.basis, target.codes])).toEqual([["a", "closing", ["4000"]]]);
+  });
+
+  it("asks the backend only when there is something to check, and ignores title edits", () => {
+    const blank: GLStatementTemplate = { ...emptyStatementTemplate(), statementtype: "balance_sheet", rows: [{ id: "r1", rowno: 10, rowtype: "account", title: "เงินสด", accountcodes: ["__current_earnings__"] }] };
+    expect(statementSuggestSignature(blank)).toBe("");
+    expect(statementSuggestSignature({ ...blank, rows: [{ ...blank.rows[0], suggestkey: "not_a_key" }] })).toBe("");
+    const keyed = { ...blank, rows: [{ ...blank.rows[0], suggestkey: "cash_and_equivalents" }] };
+    const signature = statementSuggestSignature(keyed);
+    expect(signature).not.toBe("");
+    expect(statementSuggestSignature({ ...keyed, rows: [{ ...keyed.rows[0], title: "เงินสดในมือและเงินฝากธนาคาร" }] })).toBe(signature);
+    expect(statementSuggestSignature({ ...keyed, rows: [{ ...keyed.rows[0], accountcodes: ["11110"] }] })).not.toBe(signature);
+    expect(statementSuggestSignature({ ...keyed, rows: [{ ...keyed.rows[0], amountbasis: "opening" }] })).not.toBe(signature);
+    expect(statementSuggestSignature({ ...keyed, rows: [...keyed.rows, { id: "r2", rowno: 20, rowtype: "header", title: "หัวข้อ" }] })).not.toBe(signature);
+    // เปลี่ยนชนิดบรรทัด = เครื่องคำนวณอ่านรหัสต่างไป
+    expect(statementSuggestSignature({ ...blank, rows: [{ ...blank.rows[0], rowtype: "header", accountcodes: ["11110"] }] })).toBe("");
+    expect(statementSuggestSignature({ ...blank, rows: [{ ...blank.rows[0], accountcodes: ["11110"] }] })).not.toBe("");
+    expect(statementSuggestSignature(generateStarterTemplates()[0])).not.toBe("");
+  });
+
+  it("drops suggestion kinds the backend does not know before save/suggest", () => {
+    const template: GLStatementTemplate = { ...emptyStatementTemplate(), statementtype: "equity", rows: [{ id: "a", rowno: 10, rowtype: "account", title: "ก", suggestkey: "cash_and_equivalents" }, { id: "b", rowno: 20, rowtype: "account", title: "ข", suggestkey: "guessed_by_name" }, { id: "c", rowno: 30, rowtype: "account", title: "ค" }], columns: [{ id: "k", title: "กำไรสะสม", suggestkey: "bogus" }] };
+    const known = withKnownSuggestKeys(template);
+    expect(known.rows.map((row) => row.suggestkey)).toEqual(["cash_and_equivalents", undefined, undefined]);
+    expect("suggestkey" in known.rows[1]).toBe(false);
+    expect(known.columns?.[0]).toEqual({ id: "k", title: "กำไรสะสม" });
+    expect(template.rows[1].suggestkey).toBe("guessed_by_name");
+    expect(withKnownSuggestKeys({ ...emptyStatementTemplate(), columns: undefined }).columns).toBeUndefined();
+  });
+
+  it("replaces a header account in place with its sub-accounts, skips codes already there and removes unknown codes", () => {
+    const fix: Pick<GLStatementAccountFix, "headers" | "removed"> = {
+      headers: [{ accountcode: "11100", accountname: "เงินสดและรายการเทียบเท่าเงินสด", descendants: ["11110", "11120", "11130"], skipped: [{ accountcode: "11140", accountname: "เงินฝากประจำ", target: "row", id: "bs-140", rowno: 140, title: "เงินฝากธนาคารที่มีภาระค้ำประกัน" }] }],
+      removed: ["ZZZ"],
+    };
+    expect(applyStatementAccountFix(["10000X", "11100", "11120", "ZZZ", "__current_earnings__"], fix)).toEqual(["10000X", "11110", "11130", "11120", "__current_earnings__"]);
+    expect(applyStatementAccountFix(["11100", "11100"], { headers: [{ accountcode: "11100", accountname: "", descendants: [], skipped: [] }], removed: [] })).toEqual([]);
+    expect(applyStatementAccountFix(["11110"], fix)).toEqual(["11110"]);
+    const template: GLStatementTemplate = { ...emptyStatementTemplate(), statementtype: "equity", rows: [{ id: "r", rowno: 10, rowtype: "account", title: "ก", accountcodes: ["11100"] }, { id: "s", rowno: 20, rowtype: "account", title: "ข", accountcodes: ["11100"] }], columns: [{ id: "r", title: "คอลัมน์ชื่อซ้ำ id", accountcodes: ["ZZZ", "31000"] }] };
+    const fixes: GLStatementAccountFix[] = [{ target: "row", id: "r", title: "ก", ...fix }, { target: "column", id: "r", title: "คอลัมน์", headers: [], removed: ["ZZZ"] }];
+    const fixed = applyStatementTemplateFixes(template, fixes);
+    expect(fixed.rows.map((row) => row.accountcodes)).toEqual([["11110", "11120", "11130"], ["11100"]]);
+    expect(fixed.columns?.[0].accountcodes).toEqual(["31000"]);
+    expect(template.rows[0].accountcodes).toEqual(["11100"]);
+  });
+
+  it("applies the fix of a line that took the sub-accounts by expanding the same header, so the skipped message is true", () => {
+    // แม่แบบเดิม: bs-30 = [1100] (หัวข้อ) และผู้ใช้เพิ่งเลือก 1100 ให้ bs-140 — backend ให้ bs-30 รับ 1110/1120 ก่อน
+    const skipped = (accountcode: string) => ({ accountcode, accountname: "", target: "row" as const, id: "bs-30", rowno: 30, title: "เงินสด" });
+    const fixes: GLStatementAccountFix[] = [
+      { target: "row", id: "bs-30", title: "เงินสด", headers: [{ accountcode: "1100", accountname: "", descendants: ["1110", "1120"], skipped: [] }], removed: [] },
+      { target: "row", id: "bs-90", title: "อื่น", headers: [], removed: ["ZZZ"] },
+      { target: "row", id: "bs-140", title: "สินทรัพย์หมุนเวียนอื่น", headers: [{ accountcode: "1100", accountname: "", descendants: [], skipped: [skipped("1110"), skipped("1120")] }], removed: [] },
+    ];
+    expect(statementFixesToApply(fixes, [statementTargetKey(fixes[2])])).toEqual([fixes[0], fixes[2]]);
+    expect(statementFixesToApply(fixes, [statementTargetKey({ target: "row", id: "bs-90" })])).toEqual([fixes[1]]);
+    // ผู้ถือบัญชีย่อยที่มีรหัสนั้นอยู่แล้ว (ไม่ได้มาจากการแทนหัวข้อ) ไม่ถูกแก้ตาม
+    const explicit: GLStatementAccountFix[] = [{ ...fixes[0], headers: [{ accountcode: "1900", accountname: "", descendants: ["1910"], skipped: [] }] }, fixes[2]];
+    expect(statementFixesToApply(explicit, [statementTargetKey(fixes[2])])).toEqual([fixes[2]]);
+    expect(statementFixesToApply(fixes, [])).toEqual([]);
+  });
+
+  it("adds accepted suggestions after the existing codes without duplicates", () => {
+    expect(addStatementAccounts(["11110", "__current_earnings__"], ["11120", "11110", "11130"])).toEqual(["11110", "__current_earnings__", "11120", "11130"]);
+    expect(addStatementAccounts([], [])).toEqual([]);
+  });
+
+  it("fills {n} placeholders once, left to right", () => {
+    expect(fillText("บรรทัด {0} “{1}”", 30, "เงินสด {1}")).toBe("บรรทัด 30 “เงินสด {1}”");
+    expect(fillText("{0} และ {2}", "ก")).toBe("ก และ {2}");
+  });
+
+  it("the designer fetches suggestions outside the save command, saves only known kinds and never applies fixes on open", () => {
+    const screen = readFileSync(resolve(process.cwd(), "src", "app", "gl", "gl-statement-designer.tsx"), "utf8");
+    expect(screen).toContain("glStatementSuggestions(sent, controller.signal)");
+    expect(screen).toContain("const known = withKnownSuggestKeys(template);");
+    expect(screen).toMatch(/rows: known\.rows,\s*columns: template\.statementtype === "equity" \? known\.columns \?\? \[\] : undefined,/);
+    expect(screen).toContain('onSelectMultiple={(codes) => pickAccounts("row", accountPickerRowId, codes)}');
+    expect(screen).toContain('onSelectMultiple={(codes) => pickAccounts("column", accountPickerColumnId, codes)}');
+    // แก้บัญชีหัวข้ออัตโนมัติเฉพาะตำแหน่งที่ผู้ใช้เพิ่งเลือกผังบัญชี; แม่แบบเก่าแก้เมื่อผู้ใช้กดปุ่มเท่านั้น
+    expect(screen).toContain("applyFixes(statementFixesToApply(currentSuggestions.fixes, pending), templateRef.current);");
+    expect(screen).toContain("disabled={suggestionsStale} onClick={() => applyFixes(noticeFixes, template)}");
+    // ผลเก่าระหว่างรอผลใหม่ยังแสดง (ปุ่มกดไม่ได้) ไม่ถอดออกจาก DOM; โหลดไม่สำเร็จมีปุ่มลองใหม่; เพิ่มแล้วโฟกัสกลับปุ่มเลือกผังบัญชี
+    expect(screen).toContain("const suggestTarget = suggestTargetKey && !suggestionsStale ?");
+    expect(screen).toContain("disabled={suggestionsStale}\n        onClick={() => setSuggestTargetKey(statementTargetKey(suggestion))}");
+    expect(screen).toContain("}, [suggestSignature, suggestRetry]);");
+    expect(screen).toContain('tr("gl_statement_suggest_retry"');
+    expect(screen).toContain('data-statement-picker={statementTargetKey({ target: "row", id: row.id })}');
+    expect(screen).toContain('data-statement-picker={statementTargetKey({ target: "column", id: column.id })}');
+    expect(screen).toContain("<GLStatementUnassigned items={calculated.unassigned}");
+    const api = readFileSync(resolve(process.cwd(), "src", "lib", "general-ledger-api.ts"), "utf8");
+    expect(api).toMatch(/resource: "statement-templates", action: "suggest"/);
+    expect(api).toContain("const known = withKnownSuggestKeys(template);");
   });
 });

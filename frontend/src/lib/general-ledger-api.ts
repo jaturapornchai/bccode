@@ -1,5 +1,5 @@
 import { authFetch, getAuthSession, restoreAuthSession } from "./client-auth-session";
-import type { GLCommand, GLPage, GLRecord, GLResource } from "./general-ledger";
+import { withKnownSuggestKeys, type GLCommand, type GLPage, type GLRecord, type GLResource, type GLStatementSuggestions, type GLStatementTemplate } from "./general-ledger";
 import { extractMessage, getString, isRecord } from "./workspace-api";
 import { normalizeLanguage } from "./i18n";
 
@@ -148,6 +148,14 @@ export async function glRequest<T>(path: string, init?: RequestInit): Promise<T>
 }
 export function glCommand(command: Omit<GLCommand, "requestid">, requestid: string) {
   return glRequest<{ id: string; version: number; projectionpending?: boolean; createdjournals?: number }>("command", { method: "POST", body: JSON.stringify({ ...command, requestid }) });
+}
+/** บัญชีที่แนะนำให้บรรทัดของแม่แบบงบ + บัญชีหัวข้อ/รหัสที่ต้องแก้ (backend statement_suggestions.go): คำสั่งคำนวณอย่างเดียว ไม่บันทึกอะไร
+ *  สิทธิ์อ่านจอออกแบบงบก็พอ — ส่งแม่แบบที่กำลังแก้ (ยังไม่บันทึกก็ได้); id = แม่แบบที่บันทึกแล้ว (backend ไม่นับเป็น "แม่แบบงบอื่น") */
+export async function glStatementSuggestions(template: GLStatementTemplate, signal?: AbortSignal): Promise<GLStatementSuggestions> {
+  const known = withKnownSuggestKeys(template);
+  const master = { code: template.code, name: template.name, statementtype: template.statementtype, isactive: template.isactive, rows: known.rows, ...(template.statementtype === "equity" ? { columns: known.columns ?? [] } : {}) };
+  const data = await glRequest<{ suggestions?: Partial<GLStatementSuggestions> | null }>("command", { method: "POST", signal, body: JSON.stringify({ resource: "statement-templates", action: "suggest", ...(template.id ? { id: template.id } : {}), requestid: crypto.randomUUID(), master }) });
+  return { targets: data?.suggestions?.targets ?? [], fixes: data?.suggestions?.fixes ?? [] };
 }
 /** Abort instead of silently producing a partial accounting export. */
 export async function glAllRecords<T extends GLRecord>(resource: GLResource, query = "", cap = 100000, snapshot?: number): Promise<T[]> {

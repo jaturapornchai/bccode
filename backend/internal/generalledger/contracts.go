@@ -71,6 +71,8 @@ type Report struct {
 	AsOf      string              `json:"asof"`
 	Periods   []ReportPeriod      `json:"periods,omitempty"`
 	Checks    []ReportCheck       `json:"checks,omitempty"`
+	// Unassigned: บัญชีที่มียอดแต่ไม่อยู่ในบรรทัดใดของงบฐานะการเงิน/งบกำไรขาดทุน (statements_unassigned.go)
+	Unassigned []StatementUnassigned `json:"unassigned,omitempty"`
 }
 
 type Projection interface {

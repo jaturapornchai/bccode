@@ -23,6 +23,7 @@ const statementCurrentEarnings = "__current_earnings__"
 
 type statementBalance struct {
 	accountType string
+	name        string          // MAX(account_name) ของ gl_lines เหมือนรายงานอื่น
 	opening     decimal.Decimal // ยอดต้นงวด = ยอดยกมา + รายการก่อนวันเริ่มงวด
 	balance     decimal.Decimal // ยอดคงเหลือเดบิตลบเครดิต ณ วันสิ้นงวด (รวมยอดยกมาและรายการปิดบัญชี)
 	movement    decimal.Decimal // ความเคลื่อนไหวในงวด ไม่รวมยอดยกมาและรายการปิดบัญชี
@@ -69,6 +70,7 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 		Periods: []ReportPeriod{{Key: "amount", FiscalYear: r.fiscal.Code, From: r.query.From, To: r.query.To}},
 	}
 	values := evaluateStatement(template.Rows, current, periodic)
+	report.Unassigned = statementUnassigned(template, current, "amount", r.fiscal.Code, scale)
 	// งบกระแสเงินสด: ตรวจเงินสดปลายงวดกับยอดคงเหลือตามบัญชีจากค่าเต็มความละเอียด ก่อนซ่อนแถวศูนย์ (statements_cashcheck.go)
 	cashEndings, cashWarnings := statementCashEndings(template)
 	report.Warnings = append(report.Warnings, cashWarnings...)
@@ -86,6 +88,7 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 				return Report{}, err
 			}
 			prior = evaluateStatement(template.Rows, balances, periodic)
+			report.Unassigned = append(report.Unassigned, statementUnassigned(template, balances, "prioramount", year, scale)...)
 			report.Columns = append(report.Columns, amountColumn("prioramount", year))
 			report.Periods = append(report.Periods, ReportPeriod{Key: "prioramount", FiscalYear: year, From: from, To: to})
 			priorChecks, priorWarnings := statementCashChecks(cashEndings, balances, prior, report.Periods[1], scale)
@@ -152,7 +155,8 @@ func statementRowMap(row StatementRow, title string) map[string]string {
 func (r reportContext) statementBalances(ctx context.Context, fiscalYear, from, to string) (map[string]statementBalance, error) {
 	rows, err := r.tx.QueryContext(ctx, `SELECT account_code,MAX(account_type),COALESCE(SUM(debit-credit),0)::text,
       COALESCE(SUM(CASE WHEN entry_date>=$3::date AND kind NOT IN ('opening','closing') THEN debit-credit ELSE 0 END),0)::text,
-      COALESCE(SUM(CASE WHEN entry_date<$3::date OR kind='opening' THEN debit-credit ELSE 0 END),0)::text
+      COALESCE(SUM(CASE WHEN entry_date<$3::date OR kind='opening' THEN debit-credit ELSE 0 END),0)::text,
+      COALESCE(MAX(account_name),'')
     FROM gl_lines WHERE company=$1 AND fiscal_year=$2 AND entry_date<=$4::date AND ($5='' OR branch_code=$5) AND ($6='' OR department_code=$6) AND ($7='' OR project_code=$7)
     GROUP BY account_code`, r.scope.Company, fiscalYear, from, to, r.query.BranchCode, r.query.DepartmentCode, r.query.ProjectCode)
 	if err != nil {
@@ -162,11 +166,11 @@ func (r reportContext) statementBalances(ctx context.Context, fiscalYear, from, 
 	balances := map[string]statementBalance{}
 	earnings := statementBalance{accountType: "equity"}
 	for rows.Next() {
-		var code, accountType, balance, movement, opening string
-		if err = rows.Scan(&code, &accountType, &balance, &movement, &opening); err != nil {
+		var code, accountType, balance, movement, opening, name string
+		if err = rows.Scan(&code, &accountType, &balance, &movement, &opening, &name); err != nil {
 			return nil, err
 		}
-		item := statementBalance{accountType: accountType, balance: decimal.RequireFromString(balance), movement: decimal.RequireFromString(movement), opening: decimal.RequireFromString(opening)}
+		item := statementBalance{accountType: accountType, name: name, balance: decimal.RequireFromString(balance), movement: decimal.RequireFromString(movement), opening: decimal.RequireFromString(opening)}
 		balances[code] = item
 		// กำไรขาดทุนที่ยังไม่ปิดเข้ากำไรสะสม: แบบเดียวกับแถว __current_earnings__ ของรายงานงบแสดงฐานะการเงิน
 		if accountType == "income" || accountType == "expense" {

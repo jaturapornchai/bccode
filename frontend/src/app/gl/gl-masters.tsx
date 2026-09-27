@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_TYPES, accountName, accountTypeLabels, activeJournalBooks, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_TYPES, accountName, accountTypeLabels, activeJournalBooks, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
@@ -32,6 +32,36 @@ export function parentAccountCandidates(accounts: GLAccount[], accountcode: stri
     .filter((account) => account.isactive && !account.allowposting && !account.isdeleted && account.accountcode !== self && !descendants.has(account.accountcode))
     .sort((a, b) => a.accountcode.localeCompare(b.accountcode, "en", { numeric: true }));
 }
+/** ยอดคงเหลือปกติตามหมวด (สินทรัพย์/ค่าใช้จ่าย = เดบิต, หมวดอื่น = เครดิต) — บัญชีปรับลด เช่น ค่าเสื่อมราคาสะสม เลือกด้านตรงข้ามได้เอง */
+export function defaultNormalBalance(accounttype: string): GLAccount["normalbalance"] {
+  return accounttype === "asset" || accounttype === "expense" ? "debit" : "credit";
+}
+/** บัญชีเงินสดหรือรายการเทียบเท่าเงินสด (iscash): backend ยอมเฉพาะบัญชีสินทรัพย์ที่บันทึกบัญชีได้; บัญชีที่มีบัญชีย่อยเป็นบัญชีคุม */
+export function accountCashAllowed(account: Pick<GLAccount, "accounttype" | "allowposting">, hasChildren: boolean): boolean {
+  return account.accounttype === "asset" && account.allowposting !== false && !hasChildren;
+}
+/** เปลี่ยนหมวด: ยอดปกติกลับไปตามหมวดใหม่เฉพาะเมื่อหมวดเปลี่ยนจริง (ด้านที่ผู้ใช้เลือกไว้ไม่หาย); ออกจากหมวดสินทรัพย์ = ไม่ใช่บัญชีเงินสด */
+export function accountTypePatch(account: Pick<GLAccount, "accounttype">, accounttype: GLAccount["accounttype"]): Partial<GLAccount> {
+  if (accounttype === account.accounttype) return { accounttype };
+  return { accounttype, normalbalance: defaultNormalBalance(accounttype), ...(accounttype === "asset" ? {} : { iscash: false }) };
+}
+/** เลือกบัญชีแม่: ระดับ = แม่ + 1 และหมวดตามแม่ (ยอดปกติเปลี่ยนเฉพาะเมื่อหมวดเปลี่ยน) */
+export function accountParentPatch(account: Pick<GLAccount, "accounttype">, parentCode: string, parent: GLAccount | undefined): Partial<GLAccount> {
+  if (!parentCode) return { parentaccountcode: null, level: 1 };
+  if (!parent) return { parentaccountcode: parentCode };
+  return { parentaccountcode: parent.accountcode, level: Math.min(12, (parent.level ?? 1) + 1), ...accountTypePatch(account, parent.accounttype) };
+}
+/** ปิด "บันทึกบัญชีได้" = เป็นบัญชีคุม จึงไม่ใช่บัญชีเงินสด */
+export function accountPostingPatch(allowposting: boolean): Partial<GLAccount> {
+  return allowposting ? { allowposting } : { allowposting, iscash: false };
+}
+/** ค่าที่ส่งบันทึก: บัญชีที่มีบัญชีย่อยบันทึกบัญชีไม่ได้; iscash เหลือเฉพาะบัญชีที่ backend ยอม */
+export function accountSavePayload(account: GLAccount, hasChildren: boolean): GLAccount {
+  const acc = { ...account, parentaccountcode: account.parentaccountcode && account.parentaccountcode.trim() !== "" ? account.parentaccountcode.trim() : null };
+  if (hasChildren) acc.allowposting = false;
+  acc.iscash = Boolean(acc.iscash) && accountCashAllowed(acc, hasChildren);
+  return acc;
+}
 export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
   const base = { ...newRecord(resource), ...raw };
   if (!base.id) {
@@ -52,7 +82,8 @@ export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLReco
     acc.parentaccountcode = acc.parentaccountcode && acc.parentaccountcode.trim() !== "" ? acc.parentaccountcode : null;
     acc.accountgroup = acc.accountgroup || "";
     acc.accounttype = acc.accounttype || "asset";
-    acc.normalbalance = acc.normalbalance || "debit";
+    // ค่าว่างจาก emptyAccount() เป็นเดบิตเสมอ — ยอดปกติที่ไม่ได้ส่งมาจึงต้องตามหมวดของบัญชีนี้
+    acc.normalbalance = (raw as Partial<GLAccount>).normalbalance || defaultNormalBalance(acc.accounttype);
     acc.level = typeof acc.level === "number" ? acc.level : 1;
     acc.isactive = acc.isactive ?? true;
     acc.allowposting = acc.allowposting ?? true;
@@ -362,13 +393,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       setError("");
       let accPayload: GLAccount | undefined;
       if (resource === "accounts") {
-        const acc = { ...(record as GLAccount) };
-        acc.parentaccountcode = acc.parentaccountcode && acc.parentaccountcode.trim() !== "" ? acc.parentaccountcode.trim() : null;
-        const hasChildren = refs.accounts.some((a) => a.parentaccountcode === acc.accountcode);
-        if (hasChildren) {
-          acc.allowposting = false;
-        }
-        accPayload = acc;
+        const acc = record as GLAccount;
+        accPayload = accountSavePayload(acc, refs.accounts.some((a) => a.parentaccountcode === acc.accountcode));
       }
       const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : resource === "journal-books" ? { master: journalBookPayload(record as GLJournalBook) } : { master: record as GLMaster };
       const result = await execute({ resource, action: record.id ? "update" : "create", id: record.id, version: record.version, reason: reason.trim() || (record.id ? tr("gl_edit_data", "แก้ไขข้อมูล") : tr("gl_create_new", "สร้างข้อมูลใหม่")), ...field });
@@ -955,10 +981,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
   const thName = (value.names || []).find((name) => name.code === "th")?.name ?? "";
   const enName = (value.names || []).find((name) => name.code === "en")?.name ?? "";
 
-  const handleTypeChange = (accounttype: string) => {
-    const normalbalance = accounttype === "asset" || accounttype === "expense" ? "debit" : "credit";
-    set({ accounttype, normalbalance });
-  };
+  const handleTypeChange = (accounttype: string) => set(accountTypePatch(value, accounttype as GLAccount["accounttype"]));
 
   const hasChildren = Boolean(
     value.accountcode && accounts.some((a) => a.parentaccountcode === value.accountcode)
@@ -968,25 +991,11 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
   // บัญชีแม่เดิมที่เลือกไม่ได้แล้ว (ปิดใช้งาน/รับลงรายการ/เป็นลูกของตัวเอง) ยังแสดงให้เห็น พร้อมบอกให้เลือกใหม่
   const invalidParent = value.parentaccountcode && !parentCandidates.some((a) => a.accountcode === value.parentaccountcode) ? value.parentaccountcode : "";
 
-  const handleParentChange = (parentCode: string) => {
-    if (!parentCode) {
-      set({ parentaccountcode: null, level: 1 });
-      return;
-    }
-    const parentAcc = accounts.find((a) => a.accountcode === parentCode);
-    if (parentAcc) {
-      const newLevel = Math.min(12, (parentAcc.level ?? 1) + 1);
-      const normalbalance = parentAcc.accounttype === "asset" || parentAcc.accounttype === "expense" ? "debit" : "credit";
-      set({
-        parentaccountcode: parentAcc.accountcode,
-        level: newLevel,
-        accounttype: parentAcc.accounttype,
-        normalbalance,
-      });
-    } else {
-      set({ parentaccountcode: parentCode });
-    }
-  };
+  const handleParentChange = (parentCode: string) => set(accountParentPatch(value, parentCode, accounts.find((a) => a.accountcode === parentCode)));
+  const categoryBalance = defaultNormalBalance(value.accounttype || "asset");
+  const normalBalance = value.normalbalance || categoryBalance;
+  const balanceLabel = (side: GLAccount["normalbalance"]) => (side === "debit" ? `${tr("gl_debit", "เดบิต")} (Dr.)` : `${tr("gl_credit", "เครดิต")} (Cr.)`);
+  const cashAllowed = accountCashAllowed(value, hasChildren);
 
   return (
     <>
@@ -1082,17 +1091,22 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")}
           />
         </Field>
-        <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}>
-          <div className="flex min-h-[2.6em] w-full items-center justify-between gap-2 rounded-xl border border-input bg-muted/20 px-3 py-1.5 text-[0.95rem] leading-normal text-foreground select-none shadow-[0_3px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.1)] dark:shadow-[0_3px_10px_rgba(0,0,0,0.6)]">
-            <div className="flex items-center gap-2 font-semibold">
-              {value.accounttype === "asset" || value.accounttype === "expense" ? (
-                <span className="text-primary">{tr("gl_debit", "เดบิต")} (Dr.)</span>
-              ) : (
-                <span className="text-foreground">{tr("gl_credit", "เครดิต")} (Cr.)</span>
-              )}
-            </div>
-            <span className="text-xs text-muted-foreground font-normal">({tr("gl_auto_by_category", "กำหนดตามหมวดบัญชี")})</span>
-          </div>
+        {/* ยอดปกติเลือกได้ (บัญชีปรับลด) — ค่าเริ่มตามหมวด; backend ล็อกหลังมีรายการผ่านบัญชีแล้ว (validatePGAccount) */}
+        <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")} hint={fillText(tr("gl_normal_balance_default_hint", "ปกติของหมวดนี้: {0} — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว"), balanceLabel(categoryBalance))}>
+          <Combobox
+            data-field="normalbalance"
+            aria-label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}
+            value={normalBalance}
+            onChange={(side) => set({ normalbalance: side === "credit" ? "credit" : "debit" })}
+          >
+            <option value="debit">{balanceLabel("debit")}</option>
+            <option value="credit">{balanceLabel("credit")}</option>
+          </Combobox>
+          {normalBalance !== categoryBalance && (
+            <span role="status" className="flex items-start gap-1.5 text-[0.9rem] font-medium leading-[1.45] text-primary">
+              <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" /> {tr("gl_normal_balance_contra", "บัญชีปรับลด (ด้านตรงข้ามกับหมวด) เช่น ค่าเสื่อมราคาสะสม ส่วนลดจ่าย")}
+            </span>
+          )}
         </Field>
         <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 border-t border-border/50">
           <Check
@@ -1107,7 +1121,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
               disabled={hasChildren}
               onChange={(allowposting) => {
                 if (!hasChildren) {
-                  set({ allowposting });
+                  set(accountPostingPatch(allowposting));
                 }
               }}
             />
@@ -1116,6 +1130,16 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
                 ({tr("gl_parent_has_children_no_posting", "ผังบัญชีที่เป็นหัว มีตัวลูก ไม่สามารถบันทึกตัวเลขได้")})
               </span>
             )}
+          </div>
+          {/* บัญชีเงินสด: ใช้ในรายงานเงินสด (reports_operations.go is_cash) และคำแนะนำบัญชีของแม่แบบงบ (statement_suggestions.go) — backend ยอมเฉพาะสินทรัพย์ที่บันทึกบัญชีได้ และล็อกเมื่อมีรายการผ่านแล้ว (validatePGAccount) */}
+          <div className="inline-flex flex-wrap items-center gap-2">
+            <Check
+              label={tr("gl_iscash_account", "เป็นบัญชีเงินสดหรือรายการเทียบเท่าเงินสด")}
+              checked={cashAllowed && Boolean(value.iscash)}
+              disabled={!cashAllowed}
+              onChange={(iscash) => set({ iscash })}
+            />
+            <span className="text-[0.9rem] text-muted-foreground font-medium">{tr("gl_iscash_hint", "เลือกได้เฉพาะบัญชีสินทรัพย์ที่บันทึกบัญชีได้และไม่มีบัญชีย่อย — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว")}</span>
           </div>
         </div>
       </div>

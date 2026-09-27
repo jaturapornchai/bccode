@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   RefreshCw,
@@ -18,12 +18,24 @@ import {
   Search,
   Pencil,
   FileText,
+  AlertTriangle,
+  Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  addStatementAccounts,
+  applyStatementTemplateFixes,
   emptyStatementTemplate,
+  fillText,
+  statementFixesToApply,
+  statementSuggestSignature,
+  statementTargetKey,
+  withKnownSuggestKeys,
+  type GLStatementAccountFix,
+  type GLStatementSuggestions,
+  type GLStatementSuggestionTarget,
   statementStarterReplacedCode,
   statementStarterReplaceNeedsConfirm,
   statementTemplateFromStarter,
@@ -44,7 +56,7 @@ import {
   type StatementRowType,
   type StatementRowUnderline,
 } from "@/lib/general-ledger";
-import { glRequest } from "@/lib/general-ledger-api";
+import { glRequest, glStatementSuggestions } from "@/lib/general-ledger-api";
 import {
   Combobox,
   Field,
@@ -67,9 +79,10 @@ import {
   useGLText,
 } from "./gl-common";
 import { fetchReport, type ReportFilters, emptyReportFilters } from "./gl-reports";
-import { GLReportWarnings, GLStatementChecks, GLStatementTable, printCompanyName, statementOrientation, statementPeriodLine, useGLPrint } from "./gl-print";
+import { GLReportWarnings, GLStatementChecks, GLStatementTable, GLStatementUnassigned, printCompanyName, statementOrientation, statementPeriodLine, useGLPrint } from "./gl-print";
 import { GLStatementNotesEditor } from "./gl-statement-notes";
 import { GLStatementSetDialog } from "./gl-statement-set";
+import { GLStatementSuggestionDialog, statementFixMessage, statementTargetLabel } from "./gl-statement-suggestions";
 
 const FONT_OPTIONS: { id: string; name: GLLabel; family: string; href: string }[] = [
   { id: "sarabun", name: ["gl_font_family_sarabun", "Sarabun (สารบรรณ - มาตรฐานทางการ)"], family: '"Sarabun", sans-serif', href: "https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" },
@@ -134,6 +147,134 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
 
   useDirtyGuard(route, dirty || notesDirty);
 
+  // แนะนำบัญชี + ตรวจบัญชีหัวข้อ (backend statement-templates/suggest ไม่บันทึกอะไร — ADR 2026-09-27-gl-statement-account-suggestions):
+  // ขอใหม่เมื่อสิ่งที่ผลขึ้นกับเปลี่ยน (signature ไม่รวมชื่อบรรทัด) หน่วง 400ms; ไม่ใช้ useGLCommand จึงไม่ขวางปุ่มบันทึก;
+  // ผลที่ signature ไม่ตรงกับแม่แบบตอนนี้ = เก่า: ยังแสดงปุ่ม/กล่องเดิมไว้ (กดไม่ได้) ระหว่างรอผลใหม่ ตารางจึงไม่กระตุก แต่ไม่ใช้ผลเก่าแก้แม่แบบ
+  const [suggestions, setSuggestions] = useState<{ signature: string; data: GLStatementSuggestions } | null>(null);
+  const [suggestError, setSuggestError] = useState("");
+  const [suggestRetry, setSuggestRetry] = useState(0);
+  const [suggestTargetKey, setSuggestTargetKey] = useState<string | null>(null);
+  // บรรทัด/คอลัมน์ที่ผู้ใช้เพิ่งเลือกผังบัญชี: ผลแนะนำรอบถัดไปแทนบัญชีหัวข้อของตำแหน่งเหล่านี้ (ต่อจากการกระทำของผู้ใช้เอง)
+  const [pendingFixTargets, setPendingFixTargets] = useState<string[]>([]);
+  const templateRef = useRef(template);
+  const signatureRef = useRef("");
+  const suggestSignature = useMemo(() => (template ? statementSuggestSignature(template) : ""), [template]);
+  useEffect(() => {
+    templateRef.current = template;
+    signatureRef.current = suggestSignature;
+  }, [template, suggestSignature]);
+  const currentSuggestions = suggestions && suggestSignature && suggestions.signature === suggestSignature ? suggestions.data : null;
+  const shownSuggestions = suggestSignature ? suggestions?.data ?? null : null;
+  const suggestionsStale = shownSuggestions !== null && currentSuggestions === null;
+
+  useEffect(() => {
+    if (!suggestSignature) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      const sent = templateRef.current;
+      if (!sent) return;
+      const sentSignature = statementSuggestSignature(sent);
+      glStatementSuggestions(sent, controller.signal)
+        .then((data) => {
+          if (signatureRef.current !== sentSignature) return;
+          setSuggestError("");
+          setSuggestions({ signature: sentSignature, data });
+        })
+        .catch((e: Error) => {
+          if (controller.signal.aborted || signatureRef.current !== sentSignature) return;
+          setSuggestError(e.message);
+        });
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [suggestSignature, suggestRetry]);
+
+  const suggestionTargets = useMemo(() => new Map((shownSuggestions?.targets ?? []).map((target) => [statementTargetKey(target), target])), [shownSuggestions]);
+  const suggestTarget = suggestTargetKey && !suggestionsStale ? suggestionTargets.get(suggestTargetKey) ?? null : null;
+
+  // ชื่อบรรทัด/คอลัมน์ตามแม่แบบตอนนี้ (ผลจาก backend อาจมีชื่อก่อนผู้ใช้แก้)
+  function targetRefFor(ref: { target: "row" | "column"; id: string; rowno?: number; title?: string }, current: GLStatementTemplate | null = template) {
+    const row = ref.target === "row" ? current?.rows.find((item) => item.id === ref.id) : undefined;
+    const column = ref.target === "column" ? current?.columns?.find((item) => item.id === ref.id) : undefined;
+    return { target: ref.target, rowno: row?.rowno ?? ref.rowno, title: row?.title ?? column?.title ?? ref.title };
+  }
+  // "บรรทัด 30 “…”" สำหรับรายการ/ข้อความ; ชื่ออย่างเดียวสำหรับข้อความที่มีเครื่องหมายคำพูดครอบ {0} อยู่แล้ว
+  function targetLabelFor(ref: { target: "row" | "column"; id: string; rowno?: number; title?: string }, current: GLStatementTemplate | null = template) {
+    return statementTargetLabel(targetRefFor(ref, current), tr);
+  }
+  function targetTitleFor(ref: { target: "row" | "column"; id: string; rowno?: number; title?: string }) {
+    const resolved = targetRefFor(ref);
+    return resolved.title?.trim() || String(resolved.rowno ?? "");
+  }
+
+  function applyFixes(fixes: GLStatementAccountFix[], current: GLStatementTemplate | null) {
+    if (!fixes.length) return;
+    setTemplate((prev) => (prev ? applyStatementTemplateFixes(prev, fixes) : prev));
+    setMessage(statementFixMessage(fixes, (fix) => targetLabelFor(fix, current), tr));
+  }
+
+  // ผลแนะนำที่ตรงกับแม่แบบตอนนี้มาถึง: แก้ตำแหน่งที่ผู้ใช้เพิ่งเลือกผังบัญชี (+ ตำแหน่งที่รับบัญชีย่อยของบัญชีหัวข้อเดียวกันไปก่อน —
+  // statementFixesToApply) แล้วล้างรายการรอ (ผลไม่มีอะไรต้องแก้ = จบ)
+  useEffect(() => {
+    if (!currentSuggestions || !pendingFixTargets.length) return;
+    const pending = pendingFixTargets;
+    setPendingFixTargets([]);
+    applyFixes(statementFixesToApply(currentSuggestions.fixes, pending), templateRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSuggestions, pendingFixTargets]);
+
+  // แม่แบบเก่าที่ยังมีบัญชีหัวข้อ/รหัสที่ไม่มีในผัง (ยอดเป็นศูนย์เสมอ): เปิดจอไม่แก้ให้เอง — แจ้งพร้อมปุ่มให้ผู้ใช้กดเอง
+  // (ผลเก่าระหว่างรอผลใหม่: กล่องยังอยู่ ปุ่มกดไม่ได้)
+  const noticeFixes = (shownSuggestions?.fixes ?? []).filter((fix) => !pendingFixTargets.includes(statementTargetKey(fix)));
+
+  // เลือกผังบัญชีจากหน้าต่างค้นหา: เก็บรหัสตามที่เลือก แล้วรอผลแนะนำรอบถัดไปแทนบัญชีหัวข้อ
+  function pickAccounts(target: "row" | "column", id: string, codes: string[]) {
+    if (target === "row") updateRow(id, { accountcodes: codes });
+    else updateColumn(id, { accountcodes: codes });
+    const key = statementTargetKey({ target, id });
+    setPendingFixTargets((current) => (current.includes(key) ? current : [...current, key]));
+  }
+
+  function acceptSuggestions(target: GLStatementSuggestionTarget, codes: string[]) {
+    setSuggestTargetKey(null);
+    if (!template || !codes.length) return;
+    const label = targetTitleFor(target);
+    if (target.target === "row") {
+      updateRow(target.id, { accountcodes: addStatementAccounts(template.rows.find((row) => row.id === target.id)?.accountcodes ?? [], codes) });
+    } else {
+      updateColumn(target.id, { accountcodes: addStatementAccounts(template.columns?.find((column) => column.id === target.id)?.accountcodes ?? [], codes) });
+    }
+    setMessage(fillText(tr("gl_statement_suggest_added", "เพิ่ม {0} บัญชีเข้า “{1}” แล้ว — กดบันทึกแม่แบบเพื่อใช้งาน"), codes.length, label));
+    // ปุ่ม "แนะนำ" ที่เปิดหน้าต่างกดไม่ได้ระหว่างรอผลใหม่ (อาจหายไปเมื่อไม่มีอะไรแนะนำแล้ว) — คืนโฟกัสที่ปุ่มเลือกผังบัญชีของตำแหน่งเดิมซึ่งอยู่เสมอ
+    const pickerKey = statementTargetKey(target);
+    requestAnimationFrame(() => {
+      Array.from(document.querySelectorAll<HTMLElement>("[data-statement-picker]")).find((element) => element.dataset.statementPicker === pickerKey)?.focus();
+    });
+  }
+
+  // ปุ่ม "แนะนำ N บัญชี" (มีข้อความ ไม่ใช่ไอคอนเปล่า) — ขึ้นเฉพาะตำแหน่งที่มีบัญชีให้แนะนำ
+  function suggestButton(target: "row" | "column", id: string) {
+    const suggestion = suggestionTargets.get(statementTargetKey({ target, id }));
+    const count = suggestion?.accounts?.length ?? 0;
+    if (!suggestion || !count) return null;
+    const text = fillText(tr("gl_statement_suggest_button", "แนะนำ {0} บัญชี"), count);
+    const hint = fillText(tr("gl_statement_suggest_button_title", "ดูบัญชีที่ระบบแนะนำสำหรับ “{0}” แล้วเลือกเพิ่มเอง"), targetTitleFor(suggestion));
+    return (
+      <button
+        type="button"
+        disabled={suggestionsStale}
+        onClick={() => setSuggestTargetKey(statementTargetKey(suggestion))}
+        title={hint}
+        aria-label={`${text} — ${hint}`}
+        className="inline-flex min-h-[2.6em] items-center gap-1.5 rounded-lg border border-primary/50 bg-background px-2.5 py-1 font-semibold leading-[1.45] text-primary text-[0.95rem]! shadow-[0_2px_8px_color-mix(in_srgb,var(--primary)_14%,transparent)] transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
+      >
+        <Wand2 aria-hidden className="size-4 shrink-0" /> {text}
+      </button>
+    );
+  }
+
   // ออกจากโหมดหมายเหตุ = ปิดตัวแก้ไขหมายเหตุ จึงต้องยืนยันก่อนทิ้งหมายเหตุที่ยังไม่บันทึก (แม่แบบงบยังอยู่ในหน่วยความจำของจอนี้)
   async function switchMode(next: "templates" | "notes") {
     if (next === mode) return;
@@ -161,6 +302,10 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   async function open(item?: GLStatementTemplate, targetTab: "preview" | "design" = "preview") {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
     try {
+      // แม่แบบอื่น = คำแนะนำของแม่แบบเดิมไม่เกี่ยวแล้ว (id บรรทัดของแม่แบบมาตรฐานซ้ำกันได้) — ไม่แสดงเป็นผลเก่า
+      setSuggestions(null);
+      setSuggestError("");
+      setPendingFixTargets([]);
       if (item?.id) {
         const value = await glRequest<GLStatementTemplate>(`statement-templates/${encodeURIComponent(item.id)}`);
         const normalized = { ...emptyStatementTemplate(), ...value };
@@ -176,6 +321,8 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
       setMessage("");
       setError("");
       setCalculated(null);
+      setPendingFixTargets([]);
+      setSuggestTargetKey(null);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -219,6 +366,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
     if (template.id && !await confirm({ title: tr("gl_save_fin_stmt_template_changes", "บันทึกการแก้ไขแม่แบบงบ?"), description: tr("gl_edit_item", "แก้ไข {0} ({1})").replace("{0}", String(template.code)).replace("{1}", String(template.name)), confirmLabel: tr("gl_save_changes", "บันทึกการแก้ไข"), tone: "info" })) return;
     try {
       setError("");
+      const known = withKnownSuggestKeys(template);
       const result = await execute({
         resource: "statement-templates",
         action: template.id ? "update" : "create",
@@ -230,8 +378,8 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
           statementtype: template.statementtype,
           isactive: template.isactive,
           globalstyle: template.globalstyle,
-          rows: template.rows,
-          columns: template.statementtype === "equity" ? template.columns ?? [] : undefined,
+          rows: known.rows,
+          columns: template.statementtype === "equity" ? known.columns ?? [] : undefined,
         } as never,
       });
       const saved: GLStatementTemplate = { ...template, id: result.id, version: result.version };
@@ -700,6 +848,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                               />
                               <button
                                 type="button"
+                                data-statement-picker={statementTargetKey({ target: "column", id: column.id })}
                                 onClick={() => setAccountPickerColumnId(column.id)}
                                 className="inline-flex min-h-7 items-center rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
                               >
@@ -707,6 +856,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                   ? tr("gl_selected_accounts", "เลือกแล้ว {0} บัญชี").replace("{0}", String(accounts.length))
                                   : tr("gl_select_chart_of_accounts", "+ เลือกผังบัญชี")}
                               </button>
+                              {suggestButton("column", column.id)}
                               <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
                                 <Checkbox
                                   checked={earnings}
@@ -727,6 +877,37 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                           );
                         })}
                       </div>
+                    </div>
+                  )}
+
+                  {noticeFixes.length > 0 && (
+                    <div role="status" className="shrink-0 rounded-xl border border-primary/40 bg-primary/10 p-3 text-[0.95rem] leading-relaxed text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+                      <div className="flex items-start gap-1.5 font-semibold text-primary">
+                        <AlertTriangle aria-hidden className="mt-1 size-4 shrink-0" /> {fillText(tr("gl_statement_fixes_pending_title", "มี {0} บรรทัดที่ใช้บัญชีหัวข้อหรือรหัสบัญชีที่ไม่มีในผังบัญชี ยอดของบัญชีเหล่านี้จะเป็นศูนย์"), noticeFixes.length)}
+                      </div>
+                      <p className="mt-1">{tr("gl_statement_fixes_pending_desc", "กดปุ่มด้านล่างเพื่อแทนบัญชีหัวข้อด้วยบัญชีย่อยที่ลงรายการได้ และนำรหัสที่ไม่มีในผังออก (ยังไม่บันทึกจนกว่าจะกดบันทึกแม่แบบ)")}</p>
+                      <ul className="mt-1.5 max-h-40 list-disc space-y-1 overflow-auto pl-6 [overflow-wrap:anywhere]">
+                        {noticeFixes.map((fix) => (
+                          <li key={statementTargetKey(fix)}>
+                            {targetLabelFor(fix)}
+                            {(fix.headers ?? []).length > 0 && <> · {fillText(tr("gl_statement_fixes_header_codes", "บัญชีหัวข้อ: {0}"), fix.headers.map((header) => header.accountcode).join(", "))}</>}
+                            {(fix.removed ?? []).length > 0 && <> · {fillText(tr("gl_statement_fixes_removed_codes", "ไม่มีในผังบัญชี: {0}"), fix.removed.join(", "))}</>}
+                          </li>
+                        ))}
+                      </ul>
+                      <Button type="button" variant="outline" className={`${actionClass} mt-2 border-primary/60`} disabled={suggestionsStale} onClick={() => applyFixes(noticeFixes, template)}>
+                        <Wand2 aria-hidden className="mr-1.5 h-4 w-4" /> {fillText(tr("gl_statement_fixes_apply_all", "แทนบัญชีหัวข้อด้วยบัญชีย่อย ({0} บรรทัด)"), noticeFixes.length)}
+                      </Button>
+                    </div>
+                  )}
+                  {suggestSignature && suggestError && (
+                    <div role="status" className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-[0.95rem] leading-relaxed text-foreground">
+                      <p className="flex min-w-0 flex-1 items-start gap-1.5 [overflow-wrap:anywhere]">
+                        <AlertTriangle aria-hidden className="mt-1 size-4 shrink-0 text-destructive" /> {fillText(tr("gl_statement_suggest_failed", "โหลดบัญชีที่แนะนำไม่สำเร็จ: {0} — กด “ลองโหลดคำแนะนำใหม่” หรือแก้และบันทึกแม่แบบต่อได้ตามปกติ"), suggestError)}
+                      </p>
+                      <Button type="button" variant="outline" className={actionClass} onClick={() => setSuggestRetry((count) => count + 1)}>
+                        <RefreshCw aria-hidden className="mr-1.5 h-4 w-4" /> {tr("gl_statement_suggest_retry", "ลองโหลดคำแนะนำใหม่")}
+                      </Button>
                     </div>
                   )}
 
@@ -831,6 +1012,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                   ) : (
                                   <button
                                     type="button"
+                                    data-statement-picker={statementTargetKey({ target: "row", id: row.id })}
                                     onClick={() => setAccountPickerRowId(row.id)}
                                     className="inline-flex min-h-7 items-center rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
                                   >
@@ -839,6 +1021,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                       : tr("gl_select_chart_of_accounts", "+ เลือกผังบัญชี")}
                                   </button>
                                   )}
+                                  {suggestButton("row", row.id)}
 
                                   <select
                                     className="rounded border border-input bg-background p-1 text-xs"
@@ -1047,9 +1230,10 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                   </div>
 
                   {/* ผลตรวจยอดกับบัญชี + คำเตือน: อยู่นอกตารางงบจึงไม่ถูกพิมพ์ วางเหนือพรีวิวให้เห็นก่อนออกงบ */}
-                  {calculated && ((calculated.checks?.length ?? 0) > 0 || (calculated.warnings?.length ?? 0) > 0) && (
+                  {calculated && ((calculated.checks?.length ?? 0) > 0 || (calculated.warnings?.length ?? 0) > 0 || (calculated.unassigned?.length ?? 0) > 0) && (
                     <div className="flex max-h-[40vh] shrink-0 flex-col gap-2 overflow-auto">
                       <GLStatementChecks checks={calculated.checks} scale={template.globalstyle?.scale ?? 2} tr={tr} />
+                      <GLStatementUnassigned items={calculated.unassigned} scale={template.globalstyle?.scale ?? 2} tr={tr} />
                       <GLReportWarnings warnings={calculated.warnings} tr={tr} />
                     </div>
                   )}
@@ -1152,9 +1336,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
           accounts={refs.accounts}
           multiSelect={true}
           selectedCodes={template?.rows.find((r) => r.id === accountPickerRowId)?.accountcodes ?? []}
-          onSelectMultiple={(codes) => {
-            updateRow(accountPickerRowId, { accountcodes: codes });
-          }}
+          onSelectMultiple={(codes) => pickAccounts("row", accountPickerRowId, codes)}
           title={tr("gl_select_coa_for", "เลือกผังบัญชีสำหรับ \"{0}\"").replace("{0}", String(template?.rows.find((r) => r.id === accountPickerRowId)?.title || tr("gl_this_row", "แถวนี้")))}
           all={true}
         />
@@ -1167,9 +1349,22 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
           accounts={refs.accounts}
           multiSelect={true}
           selectedCodes={template?.columns?.find((column) => column.id === accountPickerColumnId)?.accountcodes ?? []}
-          onSelectMultiple={(codes) => updateColumn(accountPickerColumnId, { accountcodes: codes })}
+          onSelectMultiple={(codes) => pickAccounts("column", accountPickerColumnId, codes)}
           title={tr("gl_select_coa_for", "เลือกผังบัญชีสำหรับ \"{0}\"").replace("{0}", String(template?.columns?.find((column) => column.id === accountPickerColumnId)?.title || tr("gl_statement_column_title", "ชื่อคอลัมน์")))}
           all={true}
+        />
+      )}
+
+      {suggestTarget && (
+        <GLStatementSuggestionDialog
+          key={suggestTargetKey ?? ""}
+          open
+          target={suggestTarget}
+          targetLabel={targetTitleFor(suggestTarget)}
+          inUseLabel={(ref) => targetLabelFor(ref)}
+          onClose={() => setSuggestTargetKey(null)}
+          onAccept={(codes) => acceptSuggestions(suggestTarget, codes)}
+          tr={tr}
         />
       )}
 

@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { statementSetRank, statementSetTemplates, type GLReport, type GLStatementTemplate, type StatementType } from "@/lib/general-ledger";
-import { GLStatementSetDialog, preparedStatementSet, statementSetPath, type GLStatementSetResult } from "./gl-statement-set";
+import { GLStatementSetDialog, preparedStatementSet, reportNeedsReview, statementSetPath, type GLStatementSetResult } from "./gl-statement-set";
 
 const tr = (_key: string, fallback: string) => fallback;
 const report = (warnings: string[] = []): GLReport => ({ columns: [], rows: [], totals: {}, totalrows: 0, warnings, asof: "2569-12-31", sequence: 7 });
@@ -78,5 +78,15 @@ describe("statement set order parity with the backend", () => {
     const template = (code: string, statementtype: StatementType): GLStatementTemplate => ({ id: code, version: 1, code, name: code, statementtype, isactive: true, globalstyle: {}, rows: [] } as unknown as GLStatementTemplate);
     const checklist = statementSetTemplates([template("ZZ", "custom"), template("CF", "cash_flow"), template("EQ", "equity"), template("PL", "pnl"), template("BS", "balance_sheet"), template("PC", "production_cost")]);
     expect(checklist.map((item) => item.statementtype)).toEqual([...backendOrder, "production_cost", "custom"]);
+  });
+});
+
+// งบที่ต้องตรวจ = มีคำเตือน, ผลตรวจความถูกต้องไม่ตรง หรือมีบัญชีที่มียอดแต่ไม่อยู่ในบรรทัดใด (report.unassigned)
+describe("reportNeedsReview", () => {
+  it("flags reports with accounts left out of every line", () => {
+    expect(reportNeedsReview(report())).toBe(false);
+    expect(reportNeedsReview({ ...report(), unassigned: [] })).toBe(false);
+    expect(reportNeedsReview({ ...report(), unassigned: [{ key: "amount", fiscalyear: "2569", accountcode: "11140", accountname: "เงินฝากประจำ", accounttype: "asset", basis: "closing", amount: "10.00" }] })).toBe(true);
+    expect(reportNeedsReview(report(["ยอดไม่ตรง"]))).toBe(true);
   });
 });

@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
-import { GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLVoucherPrint, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -260,5 +260,33 @@ describe("statementPeriodLine", () => {
     expect(statementPeriodLine("pnl", report("2026-01-01", "2026-12-31"), years, tr, "th")).toBe("สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569");
     expect(statementPeriodLine("equity", report("2026-04-01", "2026-06-30"), years, tr, "th")).toBe("สำหรับงวดตั้งแต่วันที่ 1 เมษายน 2569 ถึงวันที่ 30 มิถุนายน 2569");
     expect(statementPeriodLine("cash_flow", { ...report("2026-01-01", "2026-12-31"), periods: undefined }, years, tr, "th")).toBe("");
+  });
+});
+
+// บัญชีที่มียอดแต่ไม่อยู่ในบรรทัดใดของงบ (backend ส่ง report.unassigned) — เตือนบนจอ ไม่ใช่ส่วนของงบที่พิมพ์
+describe("GLStatementUnassigned", () => {
+  const item = { key: "amount", fiscalyear: "2569", accountcode: "11140", accountname: "เงินฝากประจำ", accounttype: "asset", basis: "closing", amount: "1234.5" };
+  it("lists each account with year, code, name, category and amount as a status box", () => {
+    const html = renderToStaticMarkup(createElement(GLStatementUnassigned, { items: [item], tr }));
+    expect(html).toContain('role="status"');
+    expect(html).toContain("บัญชีที่มียอดแต่ยังไม่อยู่ในบรรทัดใดของงบนี้");
+    expect(html).toContain("ยอดคงเหลือ ณ วันสิ้นงวด");
+    expect(html).toContain("ปีบัญชี 2569 · 11140 เงินฝากประจำ · สินทรัพย์ · 1,234.50");
+  });
+  it("uses the movement wording for period statements and explains unclosed profit", () => {
+    const html = renderToStaticMarkup(createElement(GLStatementUnassigned, { items: [{ ...item, basis: "movement", accountcode: "__current_earnings__", accountname: "", accounttype: "", amount: "-50" }], tr }));
+    expect(html).toContain("ยอดเคลื่อนไหวในงวด");
+    expect(html).toContain("ปีบัญชี 2569 · กำไร (ขาดทุน) ที่ยังไม่ปิดบัญชี");
+    expect(html).not.toContain("__current_earnings__");
+  });
+  it("shows the first 30 accounts and counts the rest", () => {
+    const many = Array.from({ length: STATEMENT_UNASSIGNED_SHOWN + 3 }, (_, index) => ({ ...item, accountcode: String(11000 + index) }));
+    const html = renderToStaticMarkup(createElement(GLStatementUnassigned, { items: many, tr }));
+    expect(html.match(/<li/g)).toHaveLength(STATEMENT_UNASSIGNED_SHOWN);
+    expect(html).toContain("และอีก 3 บัญชี");
+  });
+  it("renders nothing when every account is in a line", () => {
+    expect(renderToStaticMarkup(createElement(GLStatementUnassigned, { items: [], tr }))).toBe("");
+    expect(renderToStaticMarkup(createElement(GLStatementUnassigned, { items: undefined, tr }))).toBe("");
   });
 });

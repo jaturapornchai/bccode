@@ -143,6 +143,8 @@ type StatementColumn struct {
 	ID           string   `json:"id" bson:"id"`
 	Title        string   `json:"title" bson:"title"`
 	AccountCodes []string `json:"accountcodes,omitempty" bson:"accountcodes,omitempty"`
+	// SuggestKey ชนิดคอลัมน์สำหรับแนะนำบัญชีจากข้อมูลที่บันทึกไว้ (statement_suggestions.go) — ไม่มีผลต่อการคำนวณงบ
+	SuggestKey string `json:"suggestkey,omitempty" bson:"suggestkey,omitempty"`
 }
 
 type StatementStyle struct {
@@ -170,8 +172,10 @@ type StatementRow struct {
 	ShowZero      bool     `json:"showzero,omitempty" bson:"showzero,omitempty"`
 	// AmountBasis ของแถวบัญชี: "" ตามชนิดงบ, opening ยอดต้นงวด, closing ยอดปลายงวด, movement ความเคลื่อนไหวในงวด,
 	// other (เฉพาะงบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) ความเคลื่อนไหวของคอลัมน์ที่ยังไม่ได้อยู่ในบรรทัดใด
-	AmountBasis string         `json:"amountbasis,omitempty" bson:"amountbasis,omitempty"`
-	Style       StatementStyle `json:"style,omitempty" bson:"style,omitempty"`
+	AmountBasis string `json:"amountbasis,omitempty" bson:"amountbasis,omitempty"`
+	// SuggestKey ชนิดบรรทัดสำหรับแนะนำบัญชีจากข้อมูลที่บันทึกไว้ (statement_suggestions.go) — ไม่มีผลต่อการคำนวณงบ
+	SuggestKey string         `json:"suggestkey,omitempty" bson:"suggestkey,omitempty"`
+	Style      StatementStyle `json:"style,omitempty" bson:"style,omitempty"`
 }
 
 // StatementGlobalStyle.ShowNoteColumn เป็น pointer: ไม่ระบุ (nil) = แสดงคอลัมน์หมายเหตุตามค่าเริ่มของจอ, false ที่ผู้ใช้เลือก

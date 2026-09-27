@@ -168,7 +168,21 @@ func (s *PostgresStore) validatePGAccount(ctx context.Context, tx *sql.Tx, scope
 			return err
 		}
 		if used {
-			return userError(CodePostedLocked, "บัญชีนี้ผ่านรายการแล้ว เปลี่ยนหมวด ด้านบัญชี หรือโครงสร้างไม่ได้")
+			return userError(CodePostedLocked, "บัญชีนี้ผ่านรายการแล้ว เปลี่ยนหมวด ยอดคงเหลือปกติ การเป็นบัญชีเงินสด หรือโครงสร้าง (บัญชีแม่ / บันทึกบัญชีได้) ไม่ได้")
+		}
+	}
+	// บัญชีหัวข้อได้ยอดศูนย์ในงบเสมอ (ยอดไม่รวมขึ้นบัญชีแม่) — ห้ามเปลี่ยนบัญชีที่แม่แบบงบอ่านอยู่ให้เป็นบัญชีหัวข้อ
+	if old != nil && old.AllowPosting && !next.AllowPosting {
+		templates, err := statementTemplatesReadingAccount(ctx, tx, scope.Company, old.AccountCode)
+		if err != nil {
+			return err
+		}
+		if len(templates) > 0 {
+			joined := strings.Join(templates, ", ")
+			e := userError("account_in_statement_template", fmt.Sprintf("บัญชีนี้ผูกอยู่ในรูปแบบงบการเงิน %s — ถ้าเปลี่ยนเป็นบัญชีหัวข้อ บรรทัดนั้นจะได้ยอดศูนย์ กรุณาเอาบัญชีออกจากรูปแบบงบก่อน แล้วค่อยเลือกบัญชีย่อยแทน", joined))
+			e.Field = "allowposting"
+			e.Args = []string{joined}
+			return e
 		}
 	}
 	seen := map[string]bool{next.AccountCode: true}
@@ -228,7 +242,9 @@ func (s *PostgresStore) validatePGAccount(ctx context.Context, tx *sql.Tx, scope
 func (s *PostgresStore) deletePGAccountGuard(ctx context.Context, tx *sql.Tx, scope Scope, code string) error {
 	var used bool
 	// Budget lines live in gl_budget_lines (budget.sql), outside gl_records, so they are checked separately.
-	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_budget_lines WHERE company=$1 AND account_code=$2) OR EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ((kind='journals' AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'lines','[]'::jsonb)) l WHERE l->>'accountcode'=$2)) OR payload->>'parentaccountcode'=$2 OR payload->>'accountcode'=$2 AND kind<>'accounts' OR payload->>'profitlossaccount'=$2 OR payload->>'retainedearningsaccount'=$2 OR payload->>'itemaccount'=$2 OR payload->>'costaccount'=$2 OR payload->>'revenueaccount'=$2 OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rules','[]'::jsonb)) r WHERE r->>'accountcode'=$2) OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rows','[]'::jsonb)) r WHERE COALESCE(r->'accountcodes','[]'::jsonb) ? $2)))`, scope.Company, code).Scan(&used)
+	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_budget_lines WHERE company=$1 AND account_code=$2) OR EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ((kind='journals' AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'lines','[]'::jsonb)) l WHERE l->>'accountcode'=$2)) OR payload->>'parentaccountcode'=$2 OR payload->>'accountcode'=$2 AND kind<>'accounts' OR payload->>'profitlossaccount'=$2 OR payload->>'retainedearningsaccount'=$2 OR payload->>'itemaccount'=$2 OR payload->>'costaccount'=$2 OR payload->>'revenueaccount'=$2 OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rules','[]'::jsonb)) r WHERE r->>'accountcode'=$2)))`+
+		// รูปแบบงบการเงิน: เฉพาะรหัสในตำแหน่งที่เครื่องคำนวณงบอ่านจริง (รวมคอลัมน์ของงบส่วนของผู้ถือหุ้น) — รหัสที่ค้างอยู่ในบรรทัดชนิดอื่นไม่กันการลบ
+		` OR EXISTS(SELECT 1 FROM gl_records t WHERE t.company=$1 AND t.kind='statement-templates' AND NOT COALESCE((t.payload->>'isdeleted')::boolean,false) AND `+statementTemplateReadsAccount+`)`, scope.Company, code).Scan(&used)
 	if err != nil {
 		return err
 	}

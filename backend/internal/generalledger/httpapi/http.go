@@ -373,6 +373,11 @@ func isAmountField(text string) bool {
 	return strings.Contains(text, "จำนวนเงิน")
 }
 
+// calculationOnly: commands that save nothing — reading the resource screen is enough
+func calculationOnly(cmd gl.Command) bool {
+	return (cmd.Resource == "budgets" && cmd.Action == "spread") || (cmd.Resource == "statement-templates" && cmd.Action == "suggest")
+}
+
 func decodeCommand(reader io.Reader) (gl.Command, error) {
 	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
@@ -620,8 +625,8 @@ func (h *Http) command(request microservice.IContext) error {
 	if action == "lock" || action == "unlock" {
 		action = "update"
 	}
-	if cmd.Resource == "budgets" && cmd.Action == "spread" {
-		action = "" // calculation only: reading the budget screen is enough
+	if calculationOnly(cmd) {
+		action = ""
 	}
 	if cmd.Resource == "journals" {
 		if cmd.Action == "post" || cmd.Action == "reverse" {

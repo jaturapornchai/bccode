@@ -72,6 +72,9 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 		}
 		return spreadBudget(cmd, periods)
 	}
+	if cmd.Resource == "statement-templates" && cmd.Action == "suggest" {
+		return s.suggestStatementAccounts(ctx, scope, cmd)
+	}
 	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
@@ -382,6 +385,9 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		if err := s.validateMasterNotes(ctx, tx, scope, &m); err != nil {
 			return nil, err
 		}
+		if err := s.validateMasterStatement(ctx, tx, scope, &m); err != nil {
+			return nil, err
+		}
 		if cmd.Action == "lock" {
 			m.Locked = true
 		}
@@ -432,6 +438,9 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 			return nil, err
 		}
 		if err := s.validateMasterNotes(ctx, tx, scope, &next); err != nil {
+			return nil, err
+		}
+		if err := s.validateMasterStatement(ctx, tx, scope, &next); err != nil {
 			return nil, err
 		}
 		if kind == "journal-books" {

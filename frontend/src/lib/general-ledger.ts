@@ -68,8 +68,12 @@ export type GLReport = {
   periods?: { key: string; fiscalyear: string; from: string; to: string }[];
   // statement ชนิดงบกระแสเงินสด: ผลตรวจเงินสดปลายงวดตามงบกับยอดคงเหลือตามบัญชี ต่องวด (key = amount / prioramount); ยอดเป็นสตริงทศนิยมจาก backend
   checks?: GLStatementCheck[];
+  // statement ชนิดงบฐานะการเงิน/งบกำไรขาดทุน: บัญชีที่มียอดแต่ไม่อยู่ในบรรทัดใดของงบ (backend statements_unassigned.go) — แสดงบนจอเท่านั้น
+  unassigned?: GLStatementUnassigned[];
 };
 export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
+/** accountcode อาจเป็น STATEMENT_CURRENT_EARNINGS (กำไรขาดทุนที่ยังไม่ปิดบัญชี, accountname ว่าง); amount = สตริงทศนิยมด้านปกติของหมวดบัญชี */
+export type GLStatementUnassigned = { key: string; fiscalyear: string; accountcode: string; accountname: string; accounttype: string; basis: string; amount: string };
 export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
 export type GLCommand = {
@@ -87,6 +91,10 @@ export type GLLabel = readonly [key: string, thai: string];
 export type GLTextFn = (key: string, fallback: string) => string;
 export function labelText(labels: Record<string, GLLabel>, value: string, tr: GLTextFn, fallback = value) {
   const label = labels[value]; return label ? tr(label[0], label[1]) : fallback;
+}
+/** แทน {0} {1} … ในข้อความจาก languages.tsv ครั้งเดียว (ค่าที่ใส่มี "{1}" ก็ไม่ถูกแทนซ้ำ) */
+export function fillText(text: string, ...args: (string | number)[]): string {
+  return text.replace(/\{(\d+)\}/g, (match, index: string) => (Number(index) < args.length ? String(args[Number(index)]) : match));
 }
 export function thaiLabels<K extends string>(labels: Record<K, GLLabel>): Record<K, string> {
   return Object.fromEntries(Object.entries<GLLabel>(labels).map(([code, label]) => [code, label[1]])) as Record<K, string>;
@@ -398,11 +406,13 @@ export type StatementRow = {
   reversesign?: boolean;
   showzero?: boolean;
   amountbasis?: StatementAmountBasis;
+  /** ชนิดบรรทัดสำหรับแนะนำบัญชี (STATEMENT_SUGGEST_KEYS) — ติดมากับแม่แบบมาตรฐาน ไม่มีช่องให้แก้ */
+  suggestkey?: string;
   style?: StatementRowStyle;
 };
 
 /** คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น (statementtype "equity") — ผู้ใช้เลือกบัญชีเอง */
-export type StatementColumn = { id: string; title: string; accountcodes?: string[] };
+export type StatementColumn = { id: string; title: string; accountcodes?: string[]; suggestkey?: string };
 export const STATEMENT_CURRENT_EARNINGS = "__current_earnings__";
 
 export type StatementGlobalStyle = {
@@ -534,6 +544,134 @@ export const statementAmountBasisLabels: Record<StatementAmountBasis, GLLabel> =
   other: ["gl_statement_basis_other", "รายการอื่นที่ยังไม่ได้จัดประเภท"],
 };
 
+// แนะนำบัญชีให้บรรทัดของแม่แบบงบ (ADR docs/kms/decisions/2026-09-27-gl-statement-account-suggestions.md): backend ถือกติกา
+// (statement_suggestions.go — command statement-templates/suggest ไม่บันทึกอะไร) จากข้อมูลที่ผู้ใช้บันทึกไว้ ไม่ดูรหัส/ชื่อบัญชี;
+// จอแค่แสดงให้ผู้ใช้ติ๊กเลือกเอง. ลำดับต้องตรงกับ var statementSuggestKeys ใน backend (general-ledger.test.ts ตรวจ)
+export const STATEMENT_SUGGEST_KEYS = ["cash_and_equivalents", "trade_receivables", "inventories", "property_plant_equipment", "purchase_of_ppe", "trade_payables", "retained_earnings", "sales_revenue", "cost_of_sales", "depreciation_expense"] as const;
+export type StatementSuggestKey = typeof STATEMENT_SUGGEST_KEYS[number];
+export function isStatementSuggestKey(value: unknown): value is StatementSuggestKey {
+  return typeof value === "string" && (STATEMENT_SUGGEST_KEYS as readonly string[]).includes(value);
+}
+export type GLStatementSuggestionReason = { source: string; count: number; templates?: string[] };
+export type GLStatementSuggestedAccount = { accountcode: string; accountname: string; isactive: boolean; reasons: GLStatementSuggestionReason[] };
+export type GLStatementAccountInUse = { accountcode: string; accountname: string; target: "row" | "column"; id: string; rowno?: number; title: string; reasons?: GLStatementSuggestionReason[] };
+export type GLStatementSuggestionTarget = { target: "row" | "column"; id: string; rowno?: number; suggestkey: string; accounttype: string; accounts: GLStatementSuggestedAccount[]; inuse: GLStatementAccountInUse[] };
+export type GLStatementHeaderExpansion = { accountcode: string; accountname: string; descendants: string[]; skipped: GLStatementAccountInUse[] };
+export type GLStatementAccountFix = { target: "row" | "column"; id: string; rowno?: number; title: string; headers: GLStatementHeaderExpansion[]; removed: string[] };
+export type GLStatementSuggestions = { targets: GLStatementSuggestionTarget[]; fixes: GLStatementAccountFix[] };
+/** เหตุผลที่แนะนำ ({0} = จำนวน, {1} = รหัสแม่แบบงบอื่น) — ลำดับตามที่ backend ส่งมา */
+export const statementSuggestReasonLabels: Record<string, GLLabel> = {
+  iscash: ["gl_statement_suggest_reason_iscash", "ตั้งเป็นบัญชีเงินสดในผังบัญชี"],
+  bank_accounts: ["gl_statement_suggest_reason_bank_accounts", "ผูกกับบัญชีธนาคาร {0} บัญชี"],
+  ar_documents: ["gl_statement_suggest_reason_ar_documents", "เป็นบัญชีคุมของเอกสารลูกหนี้ {0} ใบ"],
+  ap_documents: ["gl_statement_suggest_reason_ap_documents", "เป็นบัญชีคุมของเอกสารเจ้าหนี้ {0} ใบ"],
+  product_item: ["gl_statement_suggest_reason_product_item", "เป็นบัญชีสินค้าของกลุ่มบัญชีสินค้า {0} กลุ่ม"],
+  product_revenue: ["gl_statement_suggest_reason_product_revenue", "เป็นบัญชีรายได้จากการขายของกลุ่มบัญชีสินค้า {0} กลุ่ม"],
+  product_cost: ["gl_statement_suggest_reason_product_cost", "เป็นบัญชีต้นทุนขายของกลุ่มบัญชีสินค้า {0} กลุ่ม"],
+  fiscal_retained: ["gl_statement_suggest_reason_fiscal_retained", "เป็นบัญชีกำไรสะสมของปีบัญชี {0} ปี"],
+  fa_asset: ["gl_statement_suggest_reason_fa_asset", "เป็นบัญชีสินทรัพย์ในข้อมูลสินทรัพย์ถาวร {0} รายการ"],
+  fa_accum: ["gl_statement_suggest_reason_fa_accum", "เป็นบัญชีค่าเสื่อมราคาสะสมในข้อมูลสินทรัพย์ถาวร {0} รายการ"],
+  fa_expense: ["gl_statement_suggest_reason_fa_expense", "เป็นบัญชีค่าเสื่อมราคาในข้อมูลสินทรัพย์ถาวร {0} รายการ"],
+  other_templates: ["gl_statement_suggest_reason_other_templates", "ผูกไว้ในบรรทัดชนิดเดียวกันของแม่แบบงบอื่น {0} แม่แบบ ({1})"],
+};
+
+/** ตำแหน่งที่เครื่องคำนวณงบอ่านรหัสบัญชีจริง — กติกาเดียวกับ statementCodeTargets ใน backend: งบทั่วไป = ทุกแถวชนิดยอดบัญชี
+ *  (ฐาน = amountbasis หรือตามชนิดงบ); งบส่วนของผู้ถือหุ้น = แถวความเคลื่อนไหว + ทุกคอลัมน์. รหัสที่ค้างในแถวชนิดอื่นไม่ถูกอ่าน */
+export type StatementEngineTarget = { target: "row" | "column"; id: string; rowno?: number; title: string; basis: "opening" | "closing" | "movement" | "column"; codes: string[]; suggestkey: string };
+export function statementEngineTargets(template: Pick<GLStatementTemplate, "statementtype" | "rows" | "columns">): StatementEngineTarget[] {
+  const equity = template.statementtype === "equity";
+  const targets: StatementEngineTarget[] = [];
+  for (const row of template.rows ?? []) {
+    if (row.rowtype !== "account") continue;
+    let basis: StatementEngineTarget["basis"];
+    if (equity) {
+      if (row.amountbasis === "opening" || row.amountbasis === "closing" || row.amountbasis === "other") continue;
+      basis = "movement";
+    } else {
+      basis = row.amountbasis === "opening" || row.amountbasis === "closing" || row.amountbasis === "movement" ? row.amountbasis : statementIsPeriodic(template.statementtype) ? "movement" : "closing";
+    }
+    targets.push({ target: "row", id: row.id, rowno: row.rowno, title: row.title, basis, codes: row.accountcodes ?? [], suggestkey: row.suggestkey ?? "" });
+  }
+  if (equity) {
+    for (const column of template.columns ?? []) targets.push({ target: "column", id: column.id, title: column.title, basis: "column", codes: column.accountcodes ?? [], suggestkey: column.suggestkey ?? "" });
+  }
+  return targets;
+}
+export function statementTargetKey(target: { target: "row" | "column"; id: string }): string {
+  return `${target.target}:${target.id}`;
+}
+
+/** สิ่งที่ผลแนะนำขึ้นกับ (ไม่รวมชื่อบรรทัด): เปลี่ยน = ขอใหม่. "" = ไม่มีอะไรให้ backend ตรวจ (ไม่มีชนิดบรรทัดที่แนะนำได้และไม่มีรหัสบัญชี) */
+export function statementSuggestSignature(template: Pick<GLStatementTemplate, "statementtype" | "rows" | "columns">): string {
+  const targets = statementEngineTargets(template);
+  if (!targets.some((target) => isStatementSuggestKey(target.suggestkey) || target.codes.some((code) => code !== STATEMENT_CURRENT_EARNINGS))) return "";
+  return JSON.stringify({
+    statementtype: template.statementtype,
+    rows: (template.rows ?? []).map((row) => [row.id, row.rowtype, row.amountbasis ?? "", row.accountcodes ?? [], row.suggestkey ?? ""]),
+    columns: template.statementtype === "equity" ? (template.columns ?? []).map((column) => [column.id, column.accountcodes ?? [], column.suggestkey ?? ""]) : [],
+  });
+}
+
+/** ตัด suggestkey ที่ backend ไม่รู้จักออกก่อนบันทึก/ขอคำแนะนำ (backend ปฏิเสธชนิดที่ไม่รู้จัก) */
+export function withKnownSuggestKeys<T extends Pick<GLStatementTemplate, "rows" | "columns">>(template: T): T {
+  const strip = <R extends { suggestkey?: string }>(item: R): R => {
+    if (item.suggestkey === undefined || isStatementSuggestKey(item.suggestkey)) return item;
+    const next = { ...item };
+    delete next.suggestkey;
+    return next;
+  };
+  return { ...template, rows: (template.rows ?? []).map(strip), ...(template.columns ? { columns: template.columns.map(strip) } : {}) };
+}
+
+function uniqueCodes(codes: string[]): string[] {
+  return [...new Set(codes)];
+}
+/** แทนบัญชีหัวข้อด้วยบัญชีย่อยที่ลงรายการได้ ณ ตำแหน่งเดิม (ข้ามรหัสที่มีอยู่แล้ว) และนำรหัสที่ไม่มีในผังออก — ผลจาก backend (fixes) */
+export function applyStatementAccountFix(codes: string[], fix: Pick<GLStatementAccountFix, "headers" | "removed">): string[] {
+  const removed = new Set(fix.removed ?? []);
+  const headers = new Map((fix.headers ?? []).map((header) => [header.accountcode, header.descendants ?? []]));
+  const present = new Set(codes);
+  return uniqueCodes(codes.flatMap((code) => removed.has(code) ? [] : headers.has(code) ? headers.get(code)!.filter((child) => !present.has(child)) : [code]));
+}
+/** ใช้ผลแก้หลายบรรทัด/คอลัมน์พร้อมกัน (จับคู่ด้วย id ของบรรทัด/คอลัมน์) */
+export function applyStatementTemplateFixes<T extends Pick<GLStatementTemplate, "rows" | "columns">>(template: T, fixes: GLStatementAccountFix[]): T {
+  const byKey = new Map(fixes.map((fix) => [statementTargetKey(fix), fix]));
+  const fixed = <R extends { id: string; accountcodes?: string[] }>(item: R, target: "row" | "column"): R => {
+    const fix = byKey.get(statementTargetKey({ target, id: item.id }));
+    return fix ? { ...item, accountcodes: applyStatementAccountFix(item.accountcodes ?? [], fix) } : item;
+  };
+  return { ...template, rows: (template.rows ?? []).map((row) => fixed(row, "row")), ...(template.columns ? { columns: template.columns.map((column) => fixed(column, "column")) } : {}) };
+}
+/** ผลแก้ที่ต้องใช้เมื่อผู้ใช้เพิ่งเลือกบัญชีให้ตำแหน่ง pendingKeys: ตำแหน่งเหล่านั้น + ตำแหน่งที่ backend บอกว่ารับบัญชีย่อยไปแล้ว
+ *  ด้วยการแทนบัญชีหัวข้อของตัวเอง (ยังถือแค่รหัสหัวข้อ — statement_suggestions.go statementAccountFixes ให้ตำแหน่งก่อนหน้ารับก่อน)
+ *  จึงต้องแทนพร้อมกัน ไม่งั้นบรรทัดที่ผู้ใช้เลือกได้ 0 บัญชี และข้อความ "อยู่ในบรรทัดอื่นแล้ว" ไม่จริง; ไล่ต่อจนครบ เรียงตามลำดับของ backend */
+export function statementFixesToApply(fixes: GLStatementAccountFix[], pendingKeys: Iterable<string>): GLStatementAccountFix[] {
+  const byKey = new Map(fixes.map((fix) => [statementTargetKey(fix), fix]));
+  const chosen = new Set<string>();
+  const queue = [...pendingKeys].filter((key) => byKey.has(key));
+  while (queue.length) {
+    const key = queue.shift() as string;
+    if (chosen.has(key)) continue;
+    chosen.add(key);
+    for (const header of byKey.get(key)?.headers ?? []) {
+      for (const skipped of header.skipped ?? []) {
+        const holderKey = statementTargetKey(skipped);
+        const holder = byKey.get(holderKey);
+        if (holder && !chosen.has(holderKey) && (holder.headers ?? []).some((item) => (item.descendants ?? []).includes(skipped.accountcode))) queue.push(holderKey);
+      }
+    }
+  }
+  return fixes.filter((fix) => chosen.has(statementTargetKey(fix)));
+}
+/** เพิ่มบัญชีที่ผู้ใช้ติ๊กจากคำแนะนำต่อท้าย ไม่ซ้ำ */
+export function addStatementAccounts(codes: string[], add: string[]): string[] {
+  return uniqueCodes([...codes, ...add]);
+}
+/** ชนิดบรรทัดสำหรับแนะนำบัญชีของแม่แบบมาตรฐาน (ตามเลขบรรทัด) */
+function withSuggestKeys(rows: StatementRow[], keys: Partial<Record<number, StatementSuggestKey>>): StatementRow[] {
+  return rows.map((row) => (keys[row.rowno] ? { ...row, suggestkey: keys[row.rowno] } : row));
+}
+
 export function emptyStatementTemplate(): GLStatementTemplate {
   return {
     code: "",
@@ -606,7 +744,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       statementtype: "balance_sheet",
       isactive: true,
       globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year", hidezerorows: true },
-      rows: withShowZero(starterRows("bs", [
+      rows: withSuggestKeys(withShowZero(starterRows("bs", [
         [10, "header", "สินทรัพย์", 0], [20, "header", "สินทรัพย์หมุนเวียน", 1],
         [30, "debit", "เงินสดและรายการเทียบเท่าเงินสด"], [40, "debit", "เงินลงทุนชั่วคราว"], [50, "debit", "ลูกหนี้การค้าและลูกหนี้หมุนเวียนอื่น"],
         [60, "debit", "มูลค่าของงานส่วนที่เสร็จแต่ยังไม่ถึงกำหนดเรียกชำระเงิน - หมุนเวียน"], [70, "debit", "เงินให้กู้ยืมระยะสั้น"], [80, "debit", "สินค้าคงเหลือ"],
@@ -642,7 +780,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         [660, "credit", "ส่วนได้เสีย - ทุนอื่น"], [670, "credit", "องค์ประกอบอื่นของส่วนของผู้ถือหุ้น"],
         [680, "subtotal", "รวมส่วนของผู้ถือหุ้น", 1, "SUM(R580:R670)"],
         [690, "total", "รวมหนี้สินและส่วนของผู้ถือหุ้น", 0, "R540 + R680"],
-      ]), [300, 690]),
+      ]), [300, 690]), { 30: "cash_and_equivalents", 50: "trade_receivables", 80: "inventories", 230: "property_plant_equipment", 350: "trade_payables", 650: "retained_earnings" }),
     },
     {
       code: "PNL-DBD",
@@ -651,7 +789,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       statementtype: "pnl",
       isactive: true,
       globalstyle: { fontfamily: "sarabun", fontsize: "15px", scale: 2, compact: false, shownotecolumn: true, comparisontype: "previous_year", hidezerorows: true },
-      rows: withShowZero(starterRows("pnl", [
+      rows: withSuggestKeys(withShowZero(starterRows("pnl", [
         [10, "credit", "รายได้จากการขายหรือการให้บริการ", 1], [20, "debit", "ต้นทุนขายหรือต้นทุนการให้บริการ", 1],
         [30, "subtotal", "กำไร (ขาดทุน) ขั้นต้น", 0, "R10 - R20"],
         [40, "credit", "รายได้อื่น", 1],
@@ -663,7 +801,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         [120, "subtotal", "กำไร (ขาดทุน) ก่อนภาษีเงินได้", 0, "R100 - R110"],
         [130, "debit", "ภาษีเงินได้", 1],
         [140, "total", "กำไร (ขาดทุน) สุทธิ", 0, "R120 - R130"],
-      ]), [140]),
+      ]), [140]), { 10: "sales_revenue", 20: "cost_of_sales" }),
     },
     {
       code: "COGS-STMT",
@@ -697,21 +835,21 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
       rows: [
         { id: "cf-1", rowno: 10, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมดำเนินงาน", style: { fontweight: "bold", indent: 0 } },
         { id: "cf-2", rowno: 20, rowtype: "account", title: "กำไร (ขาดทุน) สุทธิประจำงวด", accountcodes: ["__current_earnings__"], normalbalance: "credit", style: { indent: 1 } },
-        { id: "cf-3", rowno: 30, rowtype: "account", title: "ปรับปรุง: ค่าเสื่อมราคาและค่าตัดจำหน่าย", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
-        { id: "cf-4", rowno: 40, rowtype: "account", title: "การเปลี่ยนแปลงในลูกหนี้การค้า (เพิ่มขึ้น) ลดลง", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
-        { id: "cf-5", rowno: 50, rowtype: "account", title: "การเปลี่ยนแปลงในสินค้าคงเหลือ (เพิ่มขึ้น) ลดลง", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
-        { id: "cf-6", rowno: 60, rowtype: "account", title: "การเปลี่ยนแปลงในเจ้าหนี้การค้า เพิ่มขึ้น (ลดลง)", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-3", suggestkey: "depreciation_expense", rowno: 30, rowtype: "account", title: "ปรับปรุง: ค่าเสื่อมราคาและค่าตัดจำหน่าย", accountcodes: [], normalbalance: "debit", style: { indent: 1 } },
+        { id: "cf-4", suggestkey: "trade_receivables", rowno: 40, rowtype: "account", title: "การเปลี่ยนแปลงในลูกหนี้การค้า (เพิ่มขึ้น) ลดลง", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-5", suggestkey: "inventories", rowno: 50, rowtype: "account", title: "การเปลี่ยนแปลงในสินค้าคงเหลือ (เพิ่มขึ้น) ลดลง", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-6", suggestkey: "trade_payables", rowno: 60, rowtype: "account", title: "การเปลี่ยนแปลงในเจ้าหนี้การค้า เพิ่มขึ้น (ลดลง)", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
         { id: "cf-7", rowno: 70, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมดำเนินงาน", formula: "SUM(R20:R60)", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-8", rowno: 80, rowtype: "blank", title: "" },
         { id: "cf-9", rowno: 90, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมลงทุน", style: { fontweight: "bold", indent: 0 } },
-        { id: "cf-10", rowno: 100, rowtype: "account", title: "เงินสดจ่ายเพื่อซื้อที่ดิน อาคาร และอุปกรณ์", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
+        { id: "cf-10", suggestkey: "purchase_of_ppe", rowno: 100, rowtype: "account", title: "เงินสดจ่ายเพื่อซื้อที่ดิน อาคาร และอุปกรณ์", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
         { id: "cf-11", rowno: 110, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมลงทุน", formula: "R100", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-12", rowno: 120, rowtype: "blank", title: "" },
         { id: "cf-13", rowno: 130, rowtype: "header", title: "กระแสเงินสดจากกิจกรรมจัดหาเงิน", style: { fontweight: "bold", indent: 0 } },
         { id: "cf-14", rowno: 140, rowtype: "account", title: "เงินสดรับจากเงินกู้ยืมระยะสั้น / ระยะยาว", accountcodes: [], normalbalance: "credit", style: { indent: 1 } },
         { id: "cf-15", rowno: 150, rowtype: "subtotal", title: "เงินสดสุทธิได้มาจาก (ใช้ไปใน) กิจกรรมจัดหาเงิน", formula: "R140", style: { fontweight: "bold", indent: 0, underline: "single" } },
         { id: "cf-16", rowno: 160, rowtype: "formula", title: "เงินสดและรายการเทียบเท่าเงินสดเพิ่มขึ้น (ลดลง) สุทธิ", formula: "R70 + R110 + R150", style: { fontweight: "bold", indent: 0, underline: "single" } },
-        { id: "cf-17", rowno: 170, rowtype: "account", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันต้นงวด", accountcodes: [], normalbalance: "debit", amountbasis: "opening", style: { indent: 0 } },
+        { id: "cf-17", suggestkey: "cash_and_equivalents", rowno: 170, rowtype: "account", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันต้นงวด", accountcodes: [], normalbalance: "debit", amountbasis: "opening", style: { indent: 0 } },
         { id: "cf-18", rowno: 180, rowtype: "subtotal", title: "เงินสดและรายการเทียบเท่าเงินสด ณ วันปลายงวด", formula: "R160 + R170", showzero: true, style: { fontweight: "bold", indent: 0, underline: "double" } },
       ],
     },
@@ -726,7 +864,7 @@ export function generateStarterTemplates(): GLStatementTemplate[] {
         { id: "eq-c1", title: "ทุนที่ชำระแล้ว", accountcodes: [] },
         { id: "eq-c2", title: "ส่วนเกินมูลค่าหุ้น", accountcodes: [] },
         { id: "eq-c3", title: "ส่วนเกิน (ต่ำกว่า) ทุนอื่น", accountcodes: [] },
-        { id: "eq-c4", title: "กำไร (ขาดทุน) สะสม", accountcodes: [STATEMENT_CURRENT_EARNINGS] },
+        { id: "eq-c4", title: "กำไร (ขาดทุน) สะสม", accountcodes: [STATEMENT_CURRENT_EARNINGS], suggestkey: "retained_earnings" },
         { id: "eq-c5", title: "ส่วนได้เสีย - ทุนอื่น", accountcodes: [] },
         { id: "eq-c6", title: "องค์ประกอบอื่นของส่วนของผู้ถือหุ้น", accountcodes: [] },
       ],

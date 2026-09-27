@@ -162,3 +162,18 @@ func TestJournalEvidenceDecimalBoundary(t *testing.T) {
 		t.Fatal("caller company inside evidence accepted")
 	}
 }
+
+// suggestkey (ชนิดบรรทัด/คอลัมน์สำหรับแนะนำบัญชี) ต้องมีใน struct ก่อนจอส่งมา — DisallowUnknownFields จะปฏิเสธการบันทึกทุกครั้ง
+func TestStatementTemplateSuggestKeyDecodes(t *testing.T) {
+	body := `{"resource":"statement-templates","action":"suggest","requestid":"0f8c1c0a-4a3b-4f2e-9d1a-7c6b5e4d3c2b",
+	  "master":{"code":"BS-DBD","name":"งบฐานะการเงิน","statementtype":"equity","isactive":true,
+	    "rows":[{"id":"bs-30","rowno":30,"rowtype":"account","title":"เงินสด","accountcodes":["11110"],"suggestkey":"cash_and_equivalents"}],
+	    "columns":[{"id":"eq-c4","title":"กำไรสะสม","accountcodes":["__current_earnings__"],"suggestkey":"retained_earnings"}]}}`
+	cmd, err := decodeCommand(strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("statement template with suggestkey rejected: %v", err)
+	}
+	if cmd.Master == nil || cmd.Master.Rows[0].SuggestKey != "cash_and_equivalents" || cmd.Master.Columns[0].SuggestKey != "retained_earnings" {
+		t.Fatalf("suggestkey lost: %+v", cmd.Master)
+	}
+}
