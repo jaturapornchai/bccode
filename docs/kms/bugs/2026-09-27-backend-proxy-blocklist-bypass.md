@@ -42,7 +42,7 @@ proxy สาธารณะ `/backend/*` ของ Next (`frontend/next.config.t
 
 # ยังค้าง
 
-- ยังไม่ได้ deploy — `rewrites()` ถูก bake ตอน build (`tools/fast-deploy.py:97`) ต้อง build + deploy frontend แล้วยิงซ้ำชุด path ด้านบนบน prod เพื่อยืนยัน
+- deploy แล้ว r20260927-3 (commit `835cf27f`) และยิงซ้ำบน prod ผ่านครบ — หลักฐานใน ADR `decisions/2026-09-27-backend-proxy-allowlist.md` หัวข้อ Evidence
 - mainapi `/profile/link-line*` ยังเชื่อ `code` + `lineuserid` ที่ผู้เรียกส่งมา (งาน LINE พักไว้ตามคำสั่งลุงจืด) — ตอนนี้ปลอดภัยจากอินเทอร์เน็ตเพราะ allowlist ไม่มีเส้นทางนี้ แต่เครื่องที่เปิด `:8888` ออก LAN ยังยิงตรงได้
 - Caddy บน prod มี vhost HTTP ของ IP เซิร์ฟเวอร์ และ Caddyfile บนเซิร์ฟเวอร์ไม่ตรงกับ `deploy/account/Caddyfile.account` ใน repo; ไม่มี access log ให้ตรวจย้อนหลังว่าเคยมีใครใช้ช่องทางนี้
 - path เดี่ยวอย่าง `/backend` ยังตกไปที่หน้า `[systemSetting]` (`notFound()` ตอบ 200 `text/html`) — ไม่ถึง mainapi แต่ไม่ใช่ 404 จริง
