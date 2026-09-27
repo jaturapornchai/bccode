@@ -63,3 +63,10 @@ describe("confirm dialog default labels come from the language table", () => {
     expect(renderDefaults(null)).toBe("<span>Confirm|Cancel</span>");
   });
 });
+
+// ปุ่มไอคอน X ต้องมีทั้ง aria-label และ title (กฎ UX คนไทย 40+ ข้อ 4: ห้ามไอคอนเปล่ากับ action สำคัญ) — ข้อความเดียวกับปุ่มยกเลิกตามภาษาที่เลือก
+describe("confirm dialog close icon", () => {
+  it("has a tooltip as well as an accessible name", () => {
+    expect(readSource()).toMatch(/aria-label=\{pending\.cancelLabel\} title=\{pending\.cancelLabel\}/);
+  });
+});

@@ -133,7 +133,7 @@ export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
               {pending.description ? <div className="mt-1 text-sm leading-6 text-muted-foreground">{pending.description}</div> : null}
             </div>
           </div>
-          <Button type="button" variant="outline" size="icon" onClick={(event) => closeOnClick(false, event.detail)} aria-label={pending.cancelLabel}>
+          <Button type="button" variant="outline" size="icon" onClick={(event) => closeOnClick(false, event.detail)} aria-label={pending.cancelLabel} title={pending.cancelLabel}>
             <X />
           </Button>
         </header>
