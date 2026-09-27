@@ -76,6 +76,17 @@ tags: [bc-account, gl, financial-statements, backend, frontend]
 11. กล่องเตือนและปุ่มแทนบัญชีหัวข้อเป็นปุ่มใหม่ในจอออกแบบ (ส่วนหนึ่งของ D2 สำหรับแม่แบบเดิม)
 12. ขีดจำกัดคำสั่งแนะนำ 500 / 2,000 / 20,000 เป็นค่าที่เลือกเอง
 
+## Evidence
+
+- `npm run verify:all` ผ่านทั้งหมด (codemap, frontend lint/typecheck/test, frontend-build, backend, postgres integration) — commit `ee4fc44d`, deploy r20260927-4 (`fast-deploy --all`)
+- UAT prod ผ่านปุ่ม Demo (rungrueng/01/00000), ตรวจ PostgreSQL ทีละขั้น:
+  1. ใช้แม่แบบมาตรฐาน BS-DBD → คำสั่ง suggest ตอบ 6 บรรทัดที่มีคีย์: เงินสดฯ 10 บัญชี (`iscash`; 1121 มี `bank_accounts` ด้วย), ลูกหนี้การค้า 1131 (`ar_documents` 4), สินค้า 1141 (`product_item` 3), เจ้าหนี้การค้า 2111 (`ap_documents` 3), กำไรสะสม 3221 (`fiscal_retained`), ที่ดินอาคารฯ ไม่มีหลักฐาน = ไม่แนะนำ; ก่อนบันทึก PG ไม่มีแม่แบบ active (17 ใบเดิม isdeleted ทั้งหมด)
+  2. dialog เปิดมาไม่มีบัญชีถูกติ๊ก (`เพิ่มบัญชีที่เลือก (0)`) → ติ๊ก 1111 + 1121 → เพิ่ม → บันทึก → PG `gl_records` แม่แบบ BS-DBD version 1 บรรทัด 30 `accountcodes` = `["1111","1121"]`, `suggestkey` ถูกเก็บครบ 6 บรรทัด
+  3. พรีวิวงบปี 2569 → กล่อง "บัญชีที่มียอดแต่ยังไม่อยู่ในบรรทัดใดของงบนี้" (ยอดปลายงวด) ยอดตรง `SUM(debit-credit)` ใน `gl_lines`: 1131 = 498,420.00, 1141 = 1,036,400.00, 2111 = 511,460.00
+  4. ฟอร์มบัญชี: 1153 (มีรายการแล้ว) ติ๊กบัญชีเงินสด → ยืนยัน → backend ตอบ `account_posted_immutable` (409) ข้อความไทยขึ้นบนจอ, PG ยัง version เดิม; ยกเลิก → dirty guard ถาม "ละทิ้งข้อมูลที่ยังไม่บันทึก?"; 1123 (ยังไม่มีรายการ) iscash true → false: PG version 2 → 3, คืนค่า true: version 4
+  5. ลบแม่แบบทดสอบ `edb9b66e-e7dd-41c8-9bcd-c569560667b2` → PG version 2 `isdeleted` = true, แม่แบบ active เหลือ 0
+- ยังไม่ได้ทดสอบบน prod: dialog ชุดงบ (ใช้ component `GLStatementUnassigned` ตัวเดียวกัน + integration test), การปฏิเสธบัญชีหัวข้อตอนบันทึก (ทดสอบ local + integration แล้ว)
+
 ## Links
 
 - ADR `2026-09-26-gl-statements-backend-comparative.md` (แก้ข้อห้ามจับคู่บัญชี: อนุญาตคำแนะนำจากข้อมูลที่บันทึกไว้ที่ผู้ใช้ยืนยันเอง)
