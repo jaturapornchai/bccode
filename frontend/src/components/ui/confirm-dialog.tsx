@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Info, ShieldAlert, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useBackendText } from "@/components/backend-text-provider";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 
@@ -50,7 +51,19 @@ export type UseConfirmDialogOptions = {
   defaultCancelLabel?: string;
 };
 
+// Shared component: no screen text lives here (AGENTS.md i18n rule 2026-09-14). Default button labels come
+// from the caller's own dictionary, else from the nearest <BackendTextProvider>; the English fallback only
+// shows when a screen renders outside every provider and passes no labels of its own.
+export function useConfirmDialogDefaults(defaults?: UseConfirmDialogOptions): { confirmLabel: string; cancelLabel: string } {
+  const tr = useBackendText();
+  return {
+    confirmLabel: defaults?.defaultConfirmLabel ?? tr("common_confirm", "Confirm"),
+    cancelLabel: defaults?.defaultCancelLabel ?? tr("common_cancel", "Cancel"),
+  };
+}
+
 export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
+  const { confirmLabel: defaultConfirmLabel, cancelLabel: defaultCancelLabel } = useConfirmDialogDefaults(defaults);
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
   const openedAtRef = useRef(0);
   const [pending, setPending] = useState<PendingConfirm | null>(null);
@@ -70,12 +83,12 @@ export function useConfirmDialog(defaults?: UseConfirmDialogOptions) {
         title: options.title,
         description: options.description,
         details: options.details,
-        confirmLabel: options.confirmLabel ?? defaults?.defaultConfirmLabel ?? "ยืนยัน",
-        cancelLabel: options.cancelLabel ?? defaults?.defaultCancelLabel ?? "ยกเลิก",
+        confirmLabel: options.confirmLabel ?? defaultConfirmLabel,
+        cancelLabel: options.cancelLabel ?? defaultCancelLabel,
         tone: options.tone ?? "warning",
       });
     });
-  }, [defaults?.defaultConfirmLabel, defaults?.defaultCancelLabel]);
+  }, [defaultConfirmLabel, defaultCancelLabel]);
 
 
   useEffect(() => {

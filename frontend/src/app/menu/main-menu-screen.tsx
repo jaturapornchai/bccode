@@ -679,7 +679,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   async function confirmLeaveLedger(action: string, route?: string): Promise<boolean> {
     const unsaved = tabs.filter((tab) => dirtyLedgerRoutes.current.has(tab.route) && (!route || tab.route === route));
     if (!unsaved.length) return true;
-    return confirmDiscard({ title: `${action}ทั้งที่ยังไม่บันทึก?`, description: "ข้อมูลบัญชีที่ยังไม่บันทึกจะหายไป กรุณากลับไปบันทึก หรือยืนยันละทิ้งการแก้ไข", details: unsaved.map((tab) => tab.title).join(" · "), confirmLabel: "ยืนยันละทิ้งข้อมูล", cancelLabel: "กลับไปบันทึก", tone: "warning" });
+    return confirmDiscard({ title: backendText(backendLanguage, "menu_unsaved_leave_title", "{action}ทั้งที่ยังไม่บันทึก?").replace("{action}", action), description: backendText(backendLanguage, "menu_unsaved_leave_desc", "ข้อมูลบัญชีที่ยังไม่บันทึกจะหายไป กรุณากลับไปบันทึก หรือยืนยันละทิ้งการแก้ไข"), details: unsaved.map((tab) => tab.title).join(" · "), confirmLabel: backendText(backendLanguage, "menu_unsaved_leave_confirm", "ยืนยันละทิ้งข้อมูล"), cancelLabel: backendText(backendLanguage, "menu_unsaved_leave_cancel", "กลับไปบันทึก"), tone: "warning" });
   }
 
   function selectWorkTab(tabId: string) {
@@ -688,7 +688,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   }
 
   async function openWorkspace() {
-    if (await confirmLeaveLedger("เปลี่ยนบริษัท")) router.push("/workspace");
+    if (await confirmLeaveLedger(backendText(backendLanguage, "change_company", "เปลี่ยนบริษัท"))) router.push("/workspace");
   }
 
   function openMenuItem(
@@ -784,7 +784,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
   async function closeTab(tabId: string) {
     const closing = tabs.find((tab) => tab.id === tabId);
-    if (!closing?.closable || !await confirmLeaveLedger("ปิดแท็บ", closing.route)) return;
+    if (!closing?.closable || !await confirmLeaveLedger(backendText(backendLanguage, "close_tab", "ปิดแท็บ"), closing.route)) return;
     setTabs((current) => {
       const nextTabs = current.filter((tab) => tab.id !== tabId);
       if (activeTabId === tabId) setActiveTabId(nextTabs[nextTabs.length - 1]?.id ?? firstTab.id);
@@ -946,7 +946,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
       return;
     }
 
-    if (!await confirmLeaveLedger("เปลี่ยนรหัสผ่านและเข้าสู่ระบบใหม่")) return;
+    if (!await confirmLeaveLedger(backendText(backendLanguage, "menu_change_password_relogin", "เปลี่ยนรหัสผ่านและเข้าสู่ระบบใหม่"))) return;
     setPasswordSaving(true);
     setPasswordNotice(null);
     try {
@@ -983,7 +983,7 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   }
 
   async function logout() {
-    if (!await confirmLeaveLedger("ออกจากระบบ")) return;
+    if (!await confirmLeaveLedger(backendText(backendLanguage, "logout", "ออกจากระบบ"))) return;
     await logoutAuthSession();
     localStorage.removeItem(workspaceStorageKeys.workspace);
     localStorage.removeItem(workspaceStorageKeys.shopInfo);
