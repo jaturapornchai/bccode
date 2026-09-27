@@ -7975,3 +7975,21 @@ tr.bc-list-row > td {
 .gl-statement.gl-statement-wide .gl-print-num > span {
   min-width: 5em;
 }
+
+/* 2026-09-27 GL statement set print — พิมพ์ชุดงบการเงิน (frontend/src/app/gl/gl-statement-set.tsx + GLStatementSetPrint ใน gl-print.tsx).
+   งบแต่ละรายการและหมายเหตุอยู่ใน .gl-print-set-section ของงานพิมพ์เดียว: ส่วนถัดไปขึ้นหน้าใหม่เสมอ (ใช้ + แทน :first-child
+   เพราะลูกแรกของ .gl-print-root คือ <style> ของ @page — ส่วนแรกจึงไม่ขึ้นหน้าว่าง) และแต่ละส่วนใช้ named page ตามแนวกระดาษของตัวเอง
+   งบแนวตั้ง/แนวนอนจึงปนกันได้ในงานพิมพ์เดียว (Chrome named pages); เลขหน้า "หน้า n / N" ต่อเนื่องจาก @page เดิมใน printPageStyle() */
+@media print {
+  .gl-print-root .gl-print-set-section + .gl-print-set-section {
+    break-before: page;
+  }
+
+  .gl-print-root .gl-print-set-section[data-orientation="portrait"] {
+    page: gl-print-portrait;
+  }
+
+  .gl-print-root .gl-print-set-section[data-orientation="landscape"] {
+    page: gl-print-landscape;
+  }
+}

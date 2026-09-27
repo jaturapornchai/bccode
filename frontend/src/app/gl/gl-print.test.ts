@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { GLJournal, GLReport, GLStatementCheck } from "@/lib/general-ledger";
-import { GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementTable, GLVoucherPrint, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
+import { GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLVoucherPrint, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -206,5 +206,59 @@ describe("GLNotesPrint", () => {
     expect(html).toContain(">2. เกณฑ์ในการจัดทำและนำเสนองบการเงิน</div>");
     expect(html.match(/gl-print-note-heading/g)).toHaveLength(2);
     expect(html.match(/gl-print-note-body/g)).toHaveLength(1);
+  });
+});
+
+// ชุดงบการเงิน (แบบ 2 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566): งบตามลำดับที่ส่งมา แต่ละส่วนขึ้นหน้าใหม่ด้วยแนวกระดาษของตัวเอง หมายเหตุท้ายสุดแนวตั้ง
+describe("GLStatementSetPrint", () => {
+  const company = "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด";
+  const narrow: GLReport = { columns: [{ key: "title", label: "รายการ" }, { key: "amount", label: "2569", amount: true }], rows: [{ rowno: "10", title: "เงินสดในมือ", rowtype: "account", amount: "219.75" }], totals: {}, totalrows: 1, warnings: [], asof: "", sequence: 1 };
+  const wide: GLReport = {
+    columns: [{ key: "title", label: "รายการ" }, { key: "c1", label: "ทุนที่ชำระแล้ว", amount: true }, { key: "c2", label: "ส่วนเกินมูลค่าหุ้น", amount: true }, { key: "c3", label: "กำไร (ขาดทุน) สะสม", amount: true }, { key: "total", label: "รวมส่วนของผู้ถือหุ้น", amount: true }],
+    rows: [{ rowno: "10", title: "ยอดคงเหลือ ณ ต้นงวด 2569", rowtype: "account", c1: "1000.00", c2: "0.00", c3: "69.75", total: "1069.75" }],
+    totals: {}, totalrows: 1, warnings: [], asof: "", sequence: 1,
+  };
+  const sections = [
+    { code: "BS-01", title: "งบแสดงฐานะการเงิน", period: "ณ วันที่ 31 ธันวาคม 2569", report: narrow, showNote: true, scale: 2 },
+    { code: "EQ-01", title: "งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น", period: "สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569", report: wide, showNote: false, scale: 2 },
+  ];
+  const notes = [{ id: "n1", noteno: "1", title: "ข้อมูลทั่วไป", body: "บริษัทจดทะเบียนเป็นนิติบุคคลในประเทศไทย" }];
+  const sectionOrientations = (html: string) => [...html.matchAll(/<section class="gl-print-set-section" data-orientation="(\w+)">/g)].map((match) => match[1]);
+
+  it("prints every statement in order, each in its own section with its own orientation, and the notes last in portrait", () => {
+    const html = renderToStaticMarkup(createElement(GLStatementSetPrint, { sections, notes, company, notesPeriod: "สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569", tr }));
+    expect(sectionOrientations(html)).toEqual(["portrait", "landscape", "portrait"]);
+    const balanceSheet = html.indexOf("งบแสดงฐานะการเงิน"), equity = html.indexOf("งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น"), notesTitle = html.indexOf("หมายเหตุประกอบงบการเงิน");
+    expect(balanceSheet).toBeGreaterThan(-1);
+    expect(equity).toBeGreaterThan(balanceSheet);
+    expect(notesTitle).toBeGreaterThan(equity);
+    expect(html.indexOf(">1. ข้อมูลทั่วไป</div>")).toBeGreaterThan(notesTitle);
+    // ตัวเลขมาจาก backend ตามเดิม — ชุดงบแค่ห่อ GLStatementTable
+    for (const text of [">219.75<", ">1,069.75<", ">(หน่วย: บาท)<"]) expect(html).toContain(text);
+    expect(html.match(/gl-print-company/g)).toHaveLength(3);
+  });
+
+  it("leaves the notes section out when there are no notes", () => {
+    const html = renderToStaticMarkup(createElement(GLStatementSetPrint, { sections, notes: [], company, notesPeriod: "", tr }));
+    expect(sectionOrientations(html)).toEqual(["portrait", "landscape"]);
+    expect(html).not.toContain("หมายเหตุประกอบงบการเงิน");
+  });
+
+  it("takes the page orientation of the whole job from the first printed section", () => {
+    expect(statementSetRootOrientation(sections)).toBe("portrait");
+    expect(statementSetRootOrientation([sections[1], sections[0]])).toBe("landscape");
+    expect(statementSetRootOrientation([])).toBe("portrait");
+  });
+});
+
+// บรรทัดวันที่ของงบจากงวดที่ backend ส่งมา: ใช้ทั้งพรีวิวในจอออกแบบและชุดงบการเงิน
+describe("statementPeriodLine", () => {
+  const years = [{ ...emptyFiscalYear(), code: "2569", startdate: "2026-01-01", enddate: "2026-12-31" }];
+  const report = (from: string, to: string): GLReport => ({ columns: [], rows: [], totals: {}, totalrows: 0, warnings: [], asof: to, sequence: 1, periods: [{ key: "amount", fiscalyear: "2569", from, to }] });
+  it("dates point-in-time statements 'as of' and period statements for the year or the partial period", () => {
+    expect(statementPeriodLine("balance_sheet", report("2026-01-01", "2026-12-31"), years, tr, "th")).toBe("ณ วันที่ 31 ธันวาคม 2569");
+    expect(statementPeriodLine("pnl", report("2026-01-01", "2026-12-31"), years, tr, "th")).toBe("สำหรับปีสิ้นสุดวันที่ 31 ธันวาคม 2569");
+    expect(statementPeriodLine("equity", report("2026-04-01", "2026-06-30"), years, tr, "th")).toBe("สำหรับงวดตั้งแต่วันที่ 1 เมษายน 2569 ถึงวันที่ 30 มิถุนายน 2569");
+    expect(statementPeriodLine("cash_flow", { ...report("2026-01-01", "2026-12-31"), periods: undefined }, years, tr, "th")).toBe("");
   });
 });

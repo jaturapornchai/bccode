@@ -486,6 +486,38 @@ export const statementTypeLabels: Record<StatementType, GLLabel> = {
   custom: ["gl_custom_fin_stmt", "งบการเงินกำหนดเอง"],
 };
 
+/** งบช่วงเวลา (ใช้ความเคลื่อนไหวของงวด) — กติกาเดียวกับ statementPeriodic ใน backend/internal/generalledger/statements.go; งบอื่นเป็นงบ ณ วันที่ */
+export function statementIsPeriodic(type: string): boolean {
+  return type === "pnl" || type === "production_cost" || type === "cash_flow" || type === "equity";
+}
+
+/** ลำดับพิมพ์ชุดงบการเงินตามแบบ 2 (บริษัทจำกัด) ประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566
+ *  (https://www.dbd.go.th/storage/law/4941272b-c21b-4d78-b1ca-3e63f83252e7.pdf): งบฐานะการเงิน (หน้า 2-1) → งบกำไรขาดทุน (2-4)
+ *  → งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น (2-20) → งบกระแสเงินสด (2-23; NPAEs ไม่บังคับ) → หมายเหตุประกอบงบการเงิน (2-30) ซึ่งพิมพ์ท้ายชุดเสมอ.
+ *  งบที่ไม่อยู่ในแบบ 2 (งบต้นทุนผลิต / กำหนดเอง) ต่อท้ายงบกระแสเงินสด ก่อนหมายเหตุ เรียงตามรหัส */
+const STATEMENT_SET_ORDER: readonly StatementType[] = ["balance_sheet", "pnl", "equity", "cash_flow"];
+export function statementSetRank(type: string): number {
+  const index = STATEMENT_SET_ORDER.indexOf(type as StatementType);
+  return index < 0 ? STATEMENT_SET_ORDER.length : index;
+}
+/** รูปแบบงบที่พิมพ์ในชุดได้: เปิดใช้งานและไม่ถูกลบ เรียงตามแบบ 2 แล้วตามรหัส */
+export function statementSetTemplates(items: GLStatementTemplate[]): GLStatementTemplate[] {
+  return items
+    .filter((item) => item.isactive === true && !item.isdeleted)
+    .sort((a, b) => statementSetRank(a.statementtype) - statementSetRank(b.statementtype) || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+}
+/** ค่าเริ่มต้นของชุด: รูปแบบแรกของงบแต่ละชนิดในแบบ 2 (งบต้นทุนผลิต / กำหนดเอง ไม่เลือกให้) — รับรายการที่เรียงแล้วจาก statementSetTemplates */
+export function statementSetDefaultSelection(sorted: GLStatementTemplate[]): string[] {
+  const taken = new Set<string>();
+  const codes: string[] = [];
+  for (const item of sorted) {
+    if (!STATEMENT_SET_ORDER.includes(item.statementtype) || taken.has(item.statementtype)) continue;
+    taken.add(item.statementtype);
+    codes.push(item.code);
+  }
+  return codes;
+}
+
 export const statementRowTypeLabels: Record<StatementRowType, GLLabel> = {
   header: ["gl_heading", "หัวข้อ"],
   account: ["gl_account_balance", "ยอดบัญชี"],

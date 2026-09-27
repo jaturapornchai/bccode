@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
-import { amountString, formatAmount, journalBookName, journalTotals, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
+import { amountString, formatAmount, journalBookName, journalTotals, statementIsPeriodic, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { useGLText } from "./gl-common";
 
@@ -178,6 +178,15 @@ export function statementPeriodText(period: { from: string; to: string } | undef
   return tr("gl_statement_period_range", "สำหรับงวดตั้งแต่วันที่ {0} ถึงวันที่ {1}").replace("{0}", statementDate(period.from, language)).replace("{1}", to);
 }
 
+/** บรรทัดวันที่ของงบที่ backend คำนวณแล้ว: งวดแรกของรายงาน (ปีนี้) เทียบช่วงของปีบัญชี — ทั้งปี = "สำหรับปีสิ้นสุดวันที่",
+ *  ช่วงย่อย = "สำหรับงวดตั้งแต่ … ถึง …", งบ ณ วันที่ = "ณ วันที่" (กติกาเดียวกับ backend); ใช้ทั้งพรีวิวในจอออกแบบและชุดงบการเงิน */
+export function statementPeriodLine(statementtype: string, report: GLReport, years: GLFiscalYear[], tr: GLTextFn, language: LanguageCode): string {
+  const current = report.periods?.[0];
+  const year = years.find((item) => item.code === current?.fiscalyear);
+  const fullYear = Boolean(year && current && current.from === year.startdate && current.to === year.enddate);
+  return statementPeriodText(current, !statementIsPeriodic(statementtype), fullYear, tr, language);
+}
+
 /** ยอดในงบ: backend ปัดตามทศนิยมของรูปแบบแล้ว; ศูนย์แสดง "-" เว้นแต่แถวตั้งให้แสดงศูนย์ */
 export function statementAmountText(value: string, showZero: boolean, scale = 2): string {
   const text = formatAmount(value, scale);
@@ -256,6 +265,31 @@ export function GLNotesPrint({ notes, company, period, tr }: { notes: StatementN
 /** งบที่มีคอลัมน์ยอดเงินมากกว่า 3 คอลัมน์ (งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) พิมพ์แนวนอน */
 export function statementOrientation(report: GLReport): GLPrintOrientation {
   return report.columns.filter((column) => column.amount).length > 3 ? "landscape" : "portrait";
+}
+
+/** งบหนึ่งรายการในชุดงบการเงิน: ผลคำนวณจาก backend + หัวงบ (ชื่อรูปแบบ, บรรทัดวันที่) และรูปแบบแสดงผลของรูปแบบงบ */
+export type GLStatementSetSection = { code: string; title: string; period: string; report: GLReport; showNote: boolean; scale: number };
+
+/** แนวกระดาษของ .gl-print-root = แนวของส่วนแรกที่พิมพ์ (หน้าแรกได้ชื่อ @page ถูกต้อง); มีแต่หมายเหตุ = แนวตั้ง */
+export function statementSetRootOrientation(sections: { report: GLReport }[]): GLPrintOrientation {
+  return sections.length ? statementOrientation(sections[0].report) : "portrait";
+}
+
+/** ชุดงบการเงินในงานพิมพ์เดียว: งบตามลำดับที่ส่งมา (แบบ 2 — statementSetTemplates) แล้วหมายเหตุประกอบงบการเงินท้ายสุด;
+ *  แต่ละส่วนขึ้นหน้าใหม่และใช้แนวกระดาษของตัวเอง (globals.css "GL statement set print") — ตัวเลขทุกตัวมาจาก backend */
+export function GLStatementSetPrint({ sections, notes, company, notesPeriod, tr }: { sections: GLStatementSetSection[]; notes: StatementNote[]; company: string; notesPeriod: string; tr: GLTextFn }) {
+  return <>
+    {sections.map((section) => (
+      <section key={section.code} className="gl-print-set-section" data-orientation={statementOrientation(section.report)}>
+        <GLStatementTable report={section.report} company={company} title={section.title} period={section.period} showNote={section.showNote} scale={section.scale} tr={tr} />
+      </section>
+    ))}
+    {notes.length > 0 && (
+      <section className="gl-print-set-section" data-orientation="portrait">
+        <GLNotesPrint notes={notes} company={company} period={notesPeriod} tr={tr} />
+      </section>
+    )}
+  </>;
 }
 
 /** ผลตรวจยอดของงบกับบัญชี (งบกระแสเงินสด: เงินสดปลายงวดตามงบเทียบยอดคงเหลือตามบัญชี คำนวณที่ backend) — แสดงบนจอเท่านั้น

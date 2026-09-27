@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
 import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
 import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
+import { statementIsPeriodic, statementSetDefaultSelection, statementSetRank, statementSetTemplates, type GLStatementTemplate, type StatementType } from "./general-ledger";
 
 const accounts = [ { ...emptyAccount(), accountcode: "A", names: [{ code: "th", name: "เงินสด" }] }, { ...emptyAccount(), accountcode: "B", names: [{ code: "th", name: "ทุน" }] } ];
 const year = { ...emptyFiscalYear(), code: "FY", startdate: "2026-01-01", enddate: "2026-12-31", currency: "THB", scale: 2 };
@@ -351,5 +352,48 @@ describe("standard statement template replaces the open template only after conf
     expect(screen).toMatch(/async function applyStarterTemplate\(starter: GLStatementTemplate\) \{\s*const fresh = statementTemplateFromStarter\(template, starter\);\s*if \(statementStarterReplaceNeedsConfirm\(template, dirty\)\) \{\s*const replacedCode = statementStarterReplacedCode\(template, fresh\);[\s\S]*?const replaced = await confirm\(\{[\s\S]*?"gl_starter_replace_title"[\s\S]*?\{replacedCode && <p[^>]*>\{tr\("gl_starter_replace_code_changes"[\s\S]*?if \(!replaced\) return;\s*\}\s*setTemplate\(fresh\);/);
     expect(screen).toMatch(/onClick=\{\(\) => void applyStarterTemplate\(starter\)\}/);
     expect(screen).toMatch(/const fresh = emptyStatementTemplate\(\);\s*setTemplate\(fresh\);\s*setOriginal\(JSON\.stringify\(fresh\)\);\s*setStarterModalOpen\(true\);/);
+  });
+});
+
+// พิมพ์ชุดงบการเงิน: ลำดับตามแบบ 2 ประกาศกรมพัฒนาธุรกิจการค้า พ.ศ. 2566 (งบฐานะการเงิน → กำไรขาดทุน → ส่วนของผู้ถือหุ้น → กระแสเงินสด → งบอื่น → หมายเหตุ)
+describe("financial statement set", () => {
+  const template = (code: string, statementtype: StatementType, extra: Partial<GLStatementTemplate> = {}): GLStatementTemplate => ({ ...emptyStatementTemplate(), code, name: code, statementtype, isactive: true, ...extra });
+  const items = [
+    template("Z-CUSTOM", "custom"),
+    template("CF-01", "cash_flow"),
+    template("PC-01", "production_cost"),
+    template("EQ-01", "equity"),
+    template("PL-02", "pnl"),
+    template("PL-01", "pnl"),
+    template("BS-02", "balance_sheet", { isactive: false }),
+    template("BS-01", "balance_sheet"),
+    template("BS-00", "balance_sheet", { isdeleted: true }),
+  ];
+  it("orders active, non-deleted templates by DBD Form 2 and then by code", () => {
+    expect(statementSetTemplates(items).map((item) => item.code)).toEqual(["BS-01", "PL-01", "PL-02", "EQ-01", "CF-01", "PC-01", "Z-CUSTOM"]);
+    expect(items.map((item) => item.code)[0]).toBe("Z-CUSTOM");
+  });
+  it("ranks the four DBD statements first and puts other statement types after the cash flow statement", () => {
+    expect(["balance_sheet", "pnl", "equity", "cash_flow", "production_cost", "custom"].map(statementSetRank)).toEqual([0, 1, 2, 3, 4, 4]);
+  });
+  it("selects the first template of each DBD statement by default, never production cost or custom", () => {
+    expect(statementSetDefaultSelection(statementSetTemplates(items))).toEqual(["BS-01", "PL-01", "EQ-01", "CF-01"]);
+    expect(statementSetDefaultSelection(statementSetTemplates([template("PC-01", "production_cost"), template("X-1", "custom")]))).toEqual([]);
+  });
+  it("marks period statements exactly like the backend statementPeriodic", () => {
+    expect(["pnl", "production_cost", "cash_flow", "equity", "balance_sheet", "custom"].map(statementIsPeriodic)).toEqual([true, true, true, true, false, false]);
+  });
+  it("is opened from the designer, knows about unsaved edits, and prints from backend reports only", () => {
+    const screen = readFileSync(resolve(process.cwd(), "src", "app", "gl", "gl-statement-designer.tsx"), "utf8");
+    expect(screen).toContain("<GLStatementSetDialog open={statementSetOpen} onClose={() => setStatementSetOpen(false)} unsavedChanges={dirty || notesDirty} />");
+    expect(screen).toMatch(/onClick=\{\(\) => setStatementSetOpen\(true\)\}[^>]*>\s*<Printer[^>]*\/> \{tr\("gl_statement_set_print"/);
+    expect(screen).not.toContain('["pnl", "production_cost", "cash_flow", "equity"]');
+    const dialog = readFileSync(resolve(process.cwd(), "src", "app", "gl", "gl-statement-set.tsx"), "utf8");
+    // portal อยู่นอก {open && …} จึงพิมพ์ต่อได้แม้ dialog ปิด; งบทุกรายการคำนวณพร้อมกันที่ backend และทิ้งผลที่ตอบกลับช้า
+    expect(dialog).toMatch(/\)\}\s*\{print\.portal\}\s*<\/>/);
+    expect(dialog).toContain('glAllRecords<GLStatementTemplate>("statement-templates"');
+    expect(dialog).toContain('fetchReport("statement", query)');
+    expect(dialog).toContain("Promise.allSettled(");
+    expect(dialog).toContain("if (request !== requestRef.current) return;");
   });
 });

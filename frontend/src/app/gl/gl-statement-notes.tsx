@@ -12,7 +12,7 @@ import { Field, Notice, UnsavedBadge, YearSelect, actionClass, control, useGLCom
 import { GLNotesPrint, printCompanyName, statementPeriodText, useGLPrint } from "./gl-print";
 
 /** อ่านหมายเหตุของปีบัญชี: ค้นจาก list แล้วเลือกรายการที่ code ตรงปีพอดี จากนั้นอ่านฉบับล่าสุดด้วย id (ได้ version สำหรับแก้ไข) */
-async function loadStatementNotes(year: string): Promise<{ record: GLStatementNotes; notes: StatementNote[] } | null> {
+export async function loadStatementNotes(year: string): Promise<{ record: GLStatementNotes; notes: StatementNote[] } | null> {
   const page = await glRequest<GLPage<GLStatementNotes>>(`statement-notes?${new URLSearchParams({ q: year, page: "1", limit: "100" })}`);
   const found = (page.items ?? []).find((item) => item.code === year);
   if (!found?.id) return null;

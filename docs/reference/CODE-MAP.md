@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-09-26 @ commit 0dab5988 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-09-27 @ commit 1da440b2 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 28
 
@@ -1014,27 +1014,27 @@ Files indexed: 28
 | 233 | const-arrow | `handlePostGL` |
 | 276 | const-arrow | `handleConfirmDisposal` |
 
-## frontend/src/app/gl/gl-statement-designer.tsx (1176 lines)
+## frontend/src/app/gl/gl-statement-designer.tsx (1181 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 82 | function | `ensureFontLoaded` |
-| 95 | function | `GLStatementDesigner` |
-| 136 | function | `switchMode` |
-| 159 | function | `open` |
-| 183 | function | `applyStarterTemplate` |
-| 211 | function | `save` |
-| 246 | function | `cloneTemplate` |
-| 260 | function | `remove` |
-| 287 | function | `addRow` |
-| 306 | function | `updateRow` |
-| 312 | function | `deleteRow` |
-| 318 | function | `updateColumns` |
-| 323 | function | `updateColumn` |
-| 327 | function | `moveRow` |
-| 338 | function | `runCalculation` |
-| 361 | const-arrow | `updateGlobalStyle` |
-| 370 | function | `statementView` |
+| 83 | function | `ensureFontLoaded` |
+| 96 | function | `GLStatementDesigner` |
+| 138 | function | `switchMode` |
+| 161 | function | `open` |
+| 185 | function | `applyStarterTemplate` |
+| 213 | function | `save` |
+| 248 | function | `cloneTemplate` |
+| 262 | function | `remove` |
+| 289 | function | `addRow` |
+| 308 | function | `updateRow` |
+| 314 | function | `deleteRow` |
+| 320 | function | `updateColumns` |
+| 325 | function | `updateColumn` |
+| 329 | function | `moveRow` |
+| 340 | function | `runCalculation` |
+| 363 | const-arrow | `updateGlobalStyle` |
+| 372 | function | `statementView` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 

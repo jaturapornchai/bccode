@@ -67,8 +67,9 @@ import {
   useGLText,
 } from "./gl-common";
 import { fetchReport, type ReportFilters, emptyReportFilters } from "./gl-reports";
-import { GLReportWarnings, GLStatementChecks, GLStatementTable, printCompanyName, statementOrientation, statementPeriodText, useGLPrint } from "./gl-print";
+import { GLReportWarnings, GLStatementChecks, GLStatementTable, printCompanyName, statementOrientation, statementPeriodLine, useGLPrint } from "./gl-print";
 import { GLStatementNotesEditor } from "./gl-statement-notes";
+import { GLStatementSetDialog } from "./gl-statement-set";
 
 const FONT_OPTIONS: { id: string; name: GLLabel; family: string; href: string }[] = [
   { id: "sarabun", name: ["gl_font_family_sarabun", "Sarabun (สารบรรณ - มาตรฐานทางการ)"], family: '"Sarabun", sans-serif', href: "https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" },
@@ -129,6 +130,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   // จอเดียวสองโหมด: รูปแบบงบการเงิน | หมายเหตุประกอบงบการเงิน (gl-statement-notes.tsx) — ไม่มีเมนูใหม่
   const [mode, setMode] = useState<"templates" | "notes">("templates");
   const [notesDirty, setNotesDirty] = useState(false);
+  const [statementSetOpen, setStatementSetOpen] = useState(false);
 
   useDirtyGuard(route, dirty || notesDirty);
 
@@ -369,23 +371,25 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   // หัวงบ: ทั้งปีบัญชี = "สำหรับปีสิ้นสุดวันที่", ช่วงย่อย = "สำหรับงวดตั้งแต่ … ถึง …", งบที่ใช้ยอดคงเหลือ = "ณ วันที่" (กติกาเดียวกับ backend)
   function statementView(report: GLReport) {
     if (!template) return null;
-    const periodic = ["pnl", "production_cost", "cash_flow", "equity"].includes(template.statementtype);
-    const current = report.periods?.[0];
-    const year = refs.years.find((item) => item.code === current?.fiscalyear);
-    const fullYear = Boolean(year && current && current.from === year.startdate && current.to === year.enddate);
-    return <GLStatementTable report={report} company={printCompanyName()} title={template.name} period={statementPeriodText(current, !periodic, fullYear, tr, language)} showNote={template.globalstyle?.shownotecolumn ?? true} scale={template.globalstyle?.scale ?? 2} tr={tr} />;
+    return <GLStatementTable report={report} company={printCompanyName()} title={template.name} period={statementPeriodLine(template.statementtype, report, refs.years, tr, language)} showNote={template.globalstyle?.shownotecolumn ?? true} scale={template.globalstyle?.scale ?? 2} tr={tr} />;
   }
 
   const selectedFont = FONT_OPTIONS.find((f) => f.id === (template?.globalstyle?.fontfamily ?? "sarabun")) ?? FONT_OPTIONS[0];
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-2">
-      <div className="flex shrink-0 flex-wrap gap-1 self-start rounded-xl border border-border bg-muted/30 p-1" role="group" aria-label={tr("gl_statement_mode_switch", "เลือกงานในจอนี้")}>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap gap-1 rounded-xl border border-border bg-muted/30 p-1" role="group" aria-label={tr("gl_statement_mode_switch", "เลือกงานในจอนี้")}>
         {([["templates", tr("gl_statement_mode_templates", "รูปแบบงบการเงิน"), SlidersHorizontal], ["notes", tr("gl_statement_notes_title", "หมายเหตุประกอบงบการเงิน"), FileText]] as const).map(([value, label, Icon]) => (
           <Button key={value} type="button" variant={mode === value ? "default" : "ghost"} aria-pressed={mode === value} className={`${actionClass} font-semibold`} onClick={() => void switchMode(value)}>
             <Icon className="mr-1.5 h-4 w-4" /> {label}
           </Button>
         ))}
+      </div>
+      {/* พิมพ์ชุดงบการเงิน (gl-statement-set.tsx): ใช้ได้ทั้งสองโหมด พิมพ์จากฉบับที่บันทึกแล้วเท่านั้น */}
+      <Button type="button" variant="outline" className={actionClass} onClick={() => setStatementSetOpen(true)}>
+        <Printer aria-hidden className="mr-1.5 h-4 w-4" /> {tr("gl_statement_set_print", "พิมพ์ชุดงบการเงิน")}
+      </Button>
       </div>
 
       {mode === "notes" ? <GLStatementNotesEditor onDirtyChange={setNotesDirty} /> : <>
@@ -1169,6 +1173,7 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
         />
       )}
 
+      <GLStatementSetDialog open={statementSetOpen} onClose={() => setStatementSetOpen(false)} unsavedChanges={dirty || notesDirty} />
       {confirmationDialog}
       {statementPrint.portal}
     </div>
