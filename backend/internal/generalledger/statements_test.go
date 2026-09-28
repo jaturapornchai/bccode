@@ -1,6 +1,7 @@
 package generalledger
 
 import (
+	"context"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -97,5 +98,13 @@ func TestPriorRange(t *testing.T) {
 		if got := oneYearEarlier(in); got != want {
 			t.Errorf("oneYearEarlier(%s) = %s, want %s", in, got, want)
 		}
+	}
+}
+
+// Missing template is rejected before any query (nil tx), with a code the non-Thai screens can translate.
+func TestStatementRequiresTemplate(t *testing.T) {
+	_, err := reportContext{query: ReportQuery{Template: "  "}}.statement(context.Background())
+	if user := setUserError(t, err, "statement_template_required"); user.Field != "template" || user.Message != "กรุณาเลือกรูปแบบงบการเงิน" {
+		t.Fatalf("missing template = %+v", user)
 	}
 }

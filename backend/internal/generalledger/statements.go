@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
@@ -40,12 +39,13 @@ type ReportPeriod struct {
 func (r reportContext) statement(ctx context.Context) (Report, error) {
 	code := strings.TrimSpace(r.query.Template)
 	if code == "" {
-		return Report{}, fmt.Errorf("กรุณาเลือกรูปแบบงบการเงิน")
+		return Report{}, fieldError("statement_template_required", "template", "กรุณาเลือกรูปแบบงบการเงิน")
 	}
 	var payload []byte
 	err := r.tx.QueryRowContext(ctx, `SELECT payload FROM gl_records WHERE company=$1 AND kind='statement-templates' AND code=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, r.scope.Company, code).Scan(&payload)
 	if err == sql.ErrNoRows {
-		return Report{}, fmt.Errorf("ไม่พบรูปแบบงบการเงินนี้")
+		// 400 like statement_set_template_not_found: the code comes from the template query parameter the user picked
+		return Report{}, fieldError("statement_template_not_found", "template", "ไม่พบรูปแบบงบการเงินนี้")
 	}
 	if err != nil {
 		return Report{}, err

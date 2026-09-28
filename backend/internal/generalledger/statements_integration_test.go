@@ -146,10 +146,12 @@ func TestStatementReportComparativeIntegration(t *testing.T) {
 	if err != nil || len(first.Periods) != 1 || len(first.Warnings) != 1 {
 		t.Fatalf("first year = %+v %v", first, err)
 	}
-	if _, err = f.store.Report(f.ctx, f.scope, "statement", ReportQuery{FiscalYear: "2027", Template: "NOPE"}); err == nil {
-		t.Fatal("unknown template accepted")
+	_, err = f.store.Report(f.ctx, f.scope, "statement", ReportQuery{FiscalYear: "2027", Template: "NOPE"})
+	if user := setUserError(t, err, "statement_template_not_found"); user.Field != "template" {
+		t.Fatalf("unknown template = %+v", user)
 	}
-	if _, err = f.store.Report(f.ctx, f.scope, "statement", ReportQuery{FiscalYear: "2027"}); err == nil {
-		t.Fatal("missing template accepted")
+	_, err = f.store.Report(f.ctx, f.scope, "statement", ReportQuery{FiscalYear: "2027"})
+	if user := setUserError(t, err, "statement_template_required"); user.Field != "template" {
+		t.Fatalf("missing template = %+v", user)
 	}
 }
