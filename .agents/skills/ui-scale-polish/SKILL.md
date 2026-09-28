@@ -909,6 +909,8 @@ record หมวดสินค้าที่ UI ใช้มีทั้ง Tr
 
 ## 8.17 มาตรฐานเครื่องมือช่วยตรวจสอบและคัดลอก DOM (DOM Inspector & Copy DOM Standard — 2026-09-12)
 
+- **แก้ไข 2026-09-28 (ทับบางส่วนของหัวข้อนี้ — ADR `docs/kms/decisions/2026-09-28-copy-dom-button-dev-only.md`)**: ปุ่มลอย `Copy DOM` และ Toggle Mode (คลิกปุ่มเปิดโหมดคัดลอกต่อเนื่อง) แสดงเฉพาะ `next dev` แล้ว — ครอบเฉพาะปุ่มด้วย `{process.env.NODE_ENV === "development" && (` (`frontend/src/components/dev-dom-inspector.tsx:251`; ทั้งไฟล์มี `NODE_ENV` ได้จุดเดียว test บังคับ); **Alt+คลิกคัดลอก DOM ยังทำงานบน production** — listener คีย์/เมาส์ (:70-186) ห้ามใส่ gate. การตัดสินว่าจะกลืนคลิกต้องอ่าน `e.altKey` ของ event นั้นเอง (:156) ไม่ใช่ state `altHeld` ที่จำจาก keydown/keyup (Alt+Tab ส่ง keyup ไปหน้าต่างอื่น → `altHeld` ค้าง → คลิกปกติถูกกลืนเป็น Copy DOM); รีเซ็ตเมื่อ `window` blur และ `visibilitychange` เป็น hidden (`resetAlt` :91-112); mousemove ซิงก์ state จาก `e.altKey` (:120-126). กฎทั่วไป: control ลอย `z-[999999]` ต้องเป็น dev-only หรือทดสอบบนจอเตี้ยแล้วว่าไม่บังปุ่มบันทึก/CTA; listener ใน effect deps `[mounted]` เห็น state รอบแรกเท่านั้น → อ่านค่าสดผ่าน ref. Mount อยู่ที่ `frontend/src/app/layout.tsx:100`. ข้อความ "ทำงานได้ทั้ง Localhost และ Production" และ Toggle Mode ด้านล่างใช้กับ dev เท่านั้นแล้ว
+
 - **New Standard Pattern:**
   - **DOM Inspector Widget (`DevDomInspector`):**
     - แสดงปุ่มลอยอยู่ที่มุมล่างซ้าย (`fixed bottom-4 left-4 z-[999999]`) มีไอคอน `Code2`, ข้อความ "Copy DOM" และปุ่มลัด `Alt+คลิก`
@@ -923,13 +925,13 @@ record หมวดสินค้าที่ UI ใช้มีทั้ง Tr
       - เรียกใช้ `navigator.clipboard.writeText` ก่อน
       - หากล้มเหลว (เช่น ใน iframe หรือ non-secure context) ให้ fallback ไปยัง `<textarea>` + `document.execCommand('copy')` อัตโนมัติ
 - **Anti-pattern / Deprecated:**
-  - ห้ามใส่เงื่อนไข `process.env.NODE_ENV !== "development"` บล็อกไม่ให้วิดเจ็ตทำงานบน Production ตามคำสั่งลุงจืด 2026-09-12
+  - ห้ามใส่เงื่อนไข `process.env.NODE_ENV !== "development"` บล็อกไม่ให้วิดเจ็ตทำงานบน Production ตามคำสั่งลุงจืด 2026-09-12 (ปรับ 2026-09-28: ห้าม gate ตัว listener/ฟีเจอร์ Alt+คลิก แต่ปุ่มลอยต้อง gate เป็น dev-only — ดูข้อแก้ไขต้นหัวข้อ)
   - ห้ามให้ click event ของโหมดคัดลอก DOM ไปกระตุ้น action จริงของหน้าจอ (ต้องใช้ `e.preventDefault()`, `e.stopPropagation()`, `e.stopImmediatePropagation()` ใน capture phase `useCapture = true`)
 - **Root Cause & Rationale:**
   - ลุงจืดและทีมงานต้องการความสะดวกในการชี้องค์ประกอบบนหน้าจอจริงทั้งบนเครื่อง Localhost และ Live Production เพื่อคัดลอกโค้ด DOM ไปสั่งปรับแต่งหรือส่งต่อให้ AI วิเคราะห์แก้ไขได้อย่างรวดเร็ว แม่นยำ ไม่ต้องเปิด DevTools (F12) หาแถวเอง
 - **Reference Implementation:**
   - Component: `frontend/src/components/dev-dom-inspector.tsx`
-  - Layout: `frontend/src/app/layout.tsx:94`
+  - Layout: `frontend/src/app/layout.tsx:100`
   - Unit Tests: `frontend/src/components/dev-dom-inspector.test.ts`
 - **วิธีตรวจ:**
   - `npx vitest run src/components/dev-dom-inspector.test.ts`

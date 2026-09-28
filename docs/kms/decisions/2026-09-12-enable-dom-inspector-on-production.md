@@ -6,6 +6,8 @@ tags: [bc-account, ui, developer-experience, dev-dom-inspector, production]
 
 # เปิดใช้งานวิดเจ็ต Copy DOM (DevDomInspector) บน Production (account.bcaicloud.com)
 
+> **ถูกแทนบางส่วน 2026-09-28** โดย [2026-09-28-copy-dom-button-dev-only.md](2026-09-28-copy-dom-button-dev-only.md): ปุ่มลอย `Copy DOM` + โหมดคลิกเปิด/ปิด แสดงเฉพาะตอน dev แล้ว — Alt+คลิกคัดลอก DOM ยังทำงานบน production ตาม ADR นี้
+
 ## บริบทและความเป็นมา
 เดิมคอมโพเนนต์ `DevDomInspector` (`frontend/src/components/dev-dom-inspector.tsx`) มีเงื่อนไขตรวจสอบ:
 ```tsx

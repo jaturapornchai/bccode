@@ -88,12 +88,28 @@ export function DevDomInspector() {
       }
     };
 
+    // Alt+Tab delivers Alt's keyup to the other window, so altHeld would stay true and swallow the next click.
+    const resetAlt = () => {
+      setAltHeld(false);
+      if (!activeRef.current) {
+        setHighlight(null);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") resetAlt();
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", resetAlt);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", resetAlt);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [mounted]);
 
@@ -102,8 +118,11 @@ export function DevDomInspector() {
     if (!mounted) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!activeRef.current && !altHeldRef.current) {
-        if (highlight) setHighlight(null);
+      // Trust the event's own altKey: Alt's keydown/keyup can land in another window, leaving altHeld stale.
+      const altStale = e.altKey !== altHeldRef.current;
+      if (altStale) setAltHeld(e.altKey);
+      if (!activeRef.current && !e.altKey) {
+        if (altStale) setHighlight(null);
         return;
       }
 
@@ -133,7 +152,8 @@ export function DevDomInspector() {
     };
 
     const handleClick = (e: MouseEvent) => {
-      if (!activeRef.current && !altHeldRef.current) return;
+      // e.altKey, not altHeld: a stale altHeld must never turn an ordinary click into a DOM copy.
+      if (!activeRef.current && !e.altKey) return;
 
       const target = e.target as HTMLElement | null;
       if (!target || target.closest("[data-dev-dom-inspector]")) return;
@@ -226,56 +246,59 @@ export function DevDomInspector() {
         </div>
       )}
 
-      {/* Floating Control Button */}
-      <div
-        data-dev-dom-inspector
-        className="fixed bottom-4 left-4 z-[999999] flex items-center gap-1.5 select-none"
-      >
-        <button
-          type="button"
-          onClick={() => {
-            const next = !active;
-            setActive(next);
-            if (!next) setHighlight(null);
-            if (next) {
-              toast.info("เปิดโหมด Copy DOM แล้ว — ชี้แล้วคลิกที่องค์ประกอบใดก็ได้บนจอ");
-            }
-          }}
-          title={
-            active
-              ? "คลิกเพื่อปิดโหมด Copy DOM (หรือกด Esc)"
-              : "คลิกเพื่อเปิดโหมด Copy DOM (หรือกดปุ่ม Alt ค้างไว้แล้วคลิกองค์ประกอบใดก็ได้บนจอ)"
-          }
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium shadow-lg transition-all duration-200 border ${
-            active
-              ? "bg-blue-600 text-white border-blue-400 ring-2 ring-blue-400/40 shadow-blue-500/20"
-              : altHeld
-              ? "bg-amber-600 text-white border-amber-400 ring-2 ring-amber-400/40 animate-pulse"
-              : "bg-slate-900/80 hover:bg-slate-900 text-slate-300 hover:text-white border-slate-700/80 backdrop-blur-md"
-          }`}
+      {/* Floating Control Button — dev only: on production it sat over form save buttons on short screens
+          and its click-to-toggle mode hijacked clicks. Alt+click copy (listeners above) stays on production. */}
+      {process.env.NODE_ENV === "development" && (
+        <div
+          data-dev-dom-inspector
+          className="fixed bottom-4 left-4 z-[999999] flex items-center gap-1.5 select-none"
         >
-          {active ? (
-            <>
-              <Crosshair size={14} className="animate-spin text-blue-200" style={{ animationDuration: "3s" }} />
-              <span>โหมด Copy DOM: เปิดอยู่</span>
-              <X size={13} className="text-blue-200 hover:text-white ml-0.5" />
-            </>
-          ) : altHeld ? (
-            <>
-              <Crosshair size={14} className="text-amber-200" />
-              <span>กด Alt ค้าง: พร้อมคลิก Copy</span>
-            </>
-          ) : (
-            <>
-              <Code2 size={14} className="text-blue-400" />
-              <span>Copy DOM</span>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-800 rounded border border-slate-700 text-slate-400">
-                Alt+คลิก
-              </kbd>
-            </>
-          )}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !active;
+              setActive(next);
+              if (!next) setHighlight(null);
+              if (next) {
+                toast.info("เปิดโหมด Copy DOM แล้ว — ชี้แล้วคลิกที่องค์ประกอบใดก็ได้บนจอ");
+              }
+            }}
+            title={
+              active
+                ? "คลิกเพื่อปิดโหมด Copy DOM (หรือกด Esc)"
+                : "คลิกเพื่อเปิดโหมด Copy DOM (หรือกดปุ่ม Alt ค้างไว้แล้วคลิกองค์ประกอบใดก็ได้บนจอ)"
+            }
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium shadow-lg transition-all duration-200 border ${
+              active
+                ? "bg-blue-600 text-white border-blue-400 ring-2 ring-blue-400/40 shadow-blue-500/20"
+                : altHeld
+                ? "bg-amber-600 text-white border-amber-400 ring-2 ring-amber-400/40 animate-pulse"
+                : "bg-slate-900/80 hover:bg-slate-900 text-slate-300 hover:text-white border-slate-700/80 backdrop-blur-md"
+            }`}
+          >
+            {active ? (
+              <>
+                <Crosshair size={14} className="animate-spin text-blue-200" style={{ animationDuration: "3s" }} />
+                <span>โหมด Copy DOM: เปิดอยู่</span>
+                <X size={13} className="text-blue-200 hover:text-white ml-0.5" />
+              </>
+            ) : altHeld ? (
+              <>
+                <Crosshair size={14} className="text-amber-200" />
+                <span>กด Alt ค้าง: พร้อมคลิก Copy</span>
+              </>
+            ) : (
+              <>
+                <Code2 size={14} className="text-blue-400" />
+                <span>Copy DOM</span>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-800 rounded border border-slate-700 text-slate-400">
+                  Alt+คลิก
+                </kbd>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </>
   );
 }
