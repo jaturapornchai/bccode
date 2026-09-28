@@ -233,7 +233,7 @@ export function GLStatementNotesEditor({ onDirtyChange }: { onDirtyChange: (dirt
         ) : loading && draft === null ? (
           <p className="py-8 text-center text-[0.95rem] text-muted-foreground">{tr("gl_loading_data_2", "กำลังโหลดข้อมูล...")}</p>
         ) : loadFailed && draft === null ? (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-amber-500/50 bg-amber-500/10 p-8 text-center" role="alert">
+          <div className="mx-auto max-w-2xl rounded-2xl border border-destructive/40 bg-destructive/5 p-8 text-center" role="alert">
             <p className="text-[0.95rem] leading-relaxed text-foreground">{tr("gl_statement_notes_load_failed", "โหลดหมายเหตุประกอบงบการเงินของปี {0} ไม่สำเร็จ กรุณากดลองใหม่ก่อนเขียนหมายเหตุ เพื่อไม่ให้เขียนทับหมายเหตุที่มีอยู่แล้ว").replace("{0}", year)}</p>
             <Button type="button" variant="outline" className={`${actionClass} mt-4`} onClick={() => setRevision((value) => value + 1)}>
               <RotateCw className="mr-1.5 h-4 w-4" /> {tr("common_retry", "ลองใหม่")}

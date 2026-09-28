@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -122,5 +124,13 @@ describe("report source identifiers", () => {
     expect((html.match(/title="รายละเอียดใบสำคัญรายวัน"/g) ?? []).length).toBe(1);
     expect(reportCsv(report)).not.toContain("hidden-id");
     expect(reportCsv(report)).toContain("JV2");
+  });
+});
+
+// สีต้องตามพาเลตที่ผู้ใช้เลือก (10 พาเลต + dark) — สถานะใช้ token primary/destructive/muted ตาม ui-scale-polish 8.27
+describe("GL report and statement-note colours follow the theme tokens", () => {
+  it.each(["gl-reports.tsx", "gl-statement-notes.tsx"])("%s has no hard-coded palette colour classes", (file) => {
+    const source = readFileSync(resolve(process.cwd(), "src", "app", "gl", file), "utf8");
+    expect(source).not.toMatch(/\b(amber|emerald|purple|red|green)-\d/);
   });
 });

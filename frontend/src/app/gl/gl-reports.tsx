@@ -126,10 +126,8 @@ export function JournalDrillDownModal({
                 {journal?.status && (
                   <span className={`text-xs px-2 py-0.5 rounded-md font-medium border ${
                     journal.status === "posted"
-                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                      : journal.status === "reversed"
-                        ? "bg-purple-500/10 text-purple-600 border-purple-500/20"
-                        : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                      ? "bg-primary/10 text-primary border-primary/20"
+                      : "bg-muted text-muted-foreground border-border"
                   }`}>
                     {journal.status === "posted" ? tr("gl_posted", "ผ่านรายการแล้ว") : journal.status === "reversed" ? tr("gl_reversed", "กลับรายการแล้ว") : tr("gl_draft", "ฉบับร่าง")}
                   </span>
@@ -234,11 +232,11 @@ export function JournalDrillDownModal({
               <div className="flex items-center justify-between p-2.5 rounded-xl border border-border bg-muted/20 text-xs">
                 <span className="text-muted-foreground">{tr("gl_accounting_check", "การตรวจสอบสมดุลบัญชี")}:</span>
                 {isBalanced ? (
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20">
                     <CheckCircle2 className="size-4" /> {tr("gl_debit_equals_credit", "เดบิต = เครดิต สมดุล 100%")}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-destructive bg-destructive/10 px-2.5 py-1 rounded-lg border border-destructive/30">
                     <AlertTriangle className="size-4" /> {tr("gl_debit_not_equals_credit", "เดบิตและเครดิตไม่สมดุล")}
                   </span>
                 )}
