@@ -33,4 +33,4 @@ fixed: true
 - `npx vitest run src/components/dev-dom-inspector.test.ts` 8/8 ผ่าน; `tsc --noEmit` 0 error; eslint 0 error
 - browser บน `next dev` localhost:3000/login ด้วย synthetic event: หลัง blur คลิกปกติไม่ถูกดัก (`defaultPrevented` false); Alt ค้าง (keydown ไม่มี keyup) คลิกปกติไม่ถูกดัก และ mousemove ปกติรีเซ็ตป้าย; คลิก `altKey: true` ถูกดัก; Toggle Mode + Escape ทำงาน; `visibilitychange` hidden รีเซ็ตป้าย
 - ช่องว่างของเทสต์: ยังไม่ pin ว่า `resetAlt` เรียก `setAltHeld(false)` และบรรทัด `if (altStale) setAltHeld(e.altKey);`; เช็คว่าปุ่มอยู่ "ใน" gate ด้วยลำดับ index เท่านั้น (vitest environment `node` ไม่มี jsdom)
-- ยังไม่ได้ยืนยันบน production build — หลัง deploy: `document.querySelectorAll('[data-dev-dom-inspector]').length === 0` บน account.bcaicloud.com ขณะไม่กด Alt; Alt+Tab จริงไปโปรแกรมอื่นจำลองด้วย `window` blur เท่านั้น
+- prod r20260928-1 (2026-09-28): ไม่มีปุ่ม/ข้อความ Copy DOM บนจอ และ chunk ไม่มีคลาสปุ่มลอย; Alt ค้าง + `window` blur → คลิกปกติไม่ถูกดัก; Alt+คลิกยังคัดลอกได้ (stub `navigator.clipboard`) — Alt+Tab จริงไปโปรแกรมอื่นยังจำลองด้วย `window` blur เท่านั้น

@@ -38,4 +38,4 @@ supersedes: บางส่วนของ `2026-09-12-enable-dom-inspector-on-p
 - vitest `src/components/dev-dom-inspector.test.ts` 8/8 ผ่าน; `tsc --noEmit` 0 error; eslint 0 error (warning 2 ตัวเดิมที่ :58, :61 — warning exhaustive-deps เรื่อง `highlight` หายไป)
 - ทดสอบใน browser บน `next dev` (localhost:3000/login) ด้วย synthetic event: ปุ่มแสดงใน dev; หลัง `window` blur คลิกปกติไม่ถูกดัก; Alt ค้าง (keydown แต่ไม่มี keyup) คลิกปกติไม่ถูกดักและ mousemove รีเซ็ตป้าย; คลิกที่ `altKey: true` ถูกดัก; Toggle Mode + Escape ทำงาน; `visibilitychange` hidden รีเซ็ต
 - ยังไม่ได้ `next build` ในเครื่อง (ห้ามรันใน tree ที่ใช้ร่วมกันเพราะทับ `.next` ของ dev) — ตรวจหลัง deploy: `document.querySelectorAll('[data-dev-dom-inspector]').length === 0` บน account.bcaicloud.com ขณะไม่กด Alt
-- (เติมหลังทดสอบ)
+- prod r20260928-1 (2026-09-28): chunk ใน container frontend ไม่มีคลาสปุ่มลอย `fixed bottom-4 left-4 z-[999999]` (นับได้ 0) และบนจอไม่มีปุ่ม/ข้อความ Copy DOM; จำลอง Alt ค้าง (keydown ไม่มี keyup) แล้ว `window` blur → คลิกปกติไม่ถูกดัก (handler ของหน้าทำงานตามปกติ); Alt+คลิกยังถูกดักและคัดลอก 22 ตัวอักษร — ทดสอบกับ `navigator.clipboard` ที่ stub ไว้ ไม่แตะ clipboard จริงของเครื่อง
