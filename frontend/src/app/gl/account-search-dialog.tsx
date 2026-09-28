@@ -514,7 +514,14 @@ export function AccountSearchDialog({
                       >
                         {/* Multi-select checkbox */}
                         {multiSelect && (
-                          <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                          <td
+                            className="py-2.5 px-3 text-center"
+                            // Keep the tr toggle out, but move the highlight here: Space/Enter act on the highlighted row.
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHighlightedIndex(index);
+                            }}
+                          >
                             <Checkbox
                               checked={isChecked}
                               onCheckedChange={() => toggleMultiCheck(acc.accountcode)}

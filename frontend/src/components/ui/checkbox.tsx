@@ -23,18 +23,23 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             onChange?.(e);
             onCheckedChange?.(e.target.checked);
           }}
-          className="peer sr-only"
+          // The real input sits invisibly on top of the drawn box so a click on the box toggles it natively,
+          // even when no <label> wraps the Checkbox (sr-only left the box dead outside a label).
+          // min-h-0! beats the unlayered global `input { min-height: 2.6em }` (globals.css), which would
+          // stretch the invisible hit area below the box and steal clicks meant for the next row.
+          className="peer absolute inset-0 m-0 size-full min-h-0! cursor-pointer appearance-none opacity-0 disabled:cursor-default"
           {...props}
         />
         <span
           aria-hidden="true"
           className={cn(
-            "flex size-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-150 cursor-pointer select-none",
+            "pointer-events-none flex size-5 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-150 select-none",
             "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-1 peer-focus-visible:outline-none",
             checked
               ? "border-primary bg-primary text-primary-foreground shadow-[0_1px_3px_rgba(0,0,0,0.15)]"
-              : "border-muted-foreground/40 bg-background hover:border-primary/60 shadow-inner",
-            disabled && "cursor-default opacity-50 bg-muted/40 border-border pointer-events-none shadow-none",
+              : "border-muted-foreground/40 bg-background shadow-inner",
+            !checked && !disabled && "peer-hover:border-primary/60",
+            disabled && "opacity-50 bg-muted/40 border-border shadow-none",
             className
           )}
         >

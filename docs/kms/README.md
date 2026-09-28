@@ -59,7 +59,7 @@
 - [architecture/gl-mcp-tokens.md](architecture/gl-mcp-tokens.md) — API / MCP token ของ Holding (`/mcp-tokens`, `/mcp/gl`): credential แยกจาก session, ตรวจสิทธิ์ผู้ออกทุกคำขอ, เพิกถอนได้
 - [architecture/admin-access-control.md](architecture/admin-access-control.md) — ข้อเสนอออกแบบ admin หลายบริษัท (**ยังไม่ได้ทำ** — ตาราง/API ในเอกสารไม่มีใน `backend/`; โมเดลปัจจุบันคือ `holding_members` ในฐานกลาง)
 
-## การตัดสินใจ (ADR) — 77 ไฟล์ใน `decisions/`
+## การตัดสินใจ (ADR) — 79 ไฟล์ใน `decisions/`
 
 > ADR และบั๊กเป็นบันทึกประวัติ ไม่แก้ย้อนหลัง — ฉบับก่อน 2026-09-23 ที่อธิบายการออกแบบบน MongoDB/Kafka/Redis/ClickHouse (2-Tier, outbox, projection, consumer) ใช้เป็นหลักฐานประวัติเท่านั้น ระบบปัจจุบันยึด [ADR ถอดระบบ 2026-09-23](decisions/2026-09-23-remove-mongo-kafka-redis-clickhouse.md)
 
@@ -98,7 +98,7 @@
 - [decisions/2026-09-11-financial-statement-designer.md](decisions/2026-09-11-financial-statement-designer.md) — ออกแบบงบการเงิน (Financial Statement Designer), รองรับหลายประเภทงบ, ปรับแต่งฟอนต์อิสระ, สูตรคำนวณสด และสร้างได้ไม่จำกัด
 - [decisions/2026-09-11-deploy-financial-statement-designer.md](decisions/2026-09-11-deploy-financial-statement-designer.md) — Deploy ระบบออกแบบงบการเงิน สู่ Production (r20260911-gl-statement-1) พร้อมผลการตรวจ Live CRUD และ Healthcheck 100%
 - [decisions/2026-09-12-fullscreen-account-search-dialog.md](decisions/2026-09-12-fullscreen-account-search-dialog.md) — ระบบค้นหาผังบัญชีแบบเต็มจอ (Full-Screen Chart of Accounts Search Dialog) พร้อมตัวกรอง 5 หมวดและคีย์ลัดสำหรับผู้ใช้ 40+
-- [decisions/2026-09-12-enable-dom-inspector-on-production.md](decisions/2026-09-12-enable-dom-inspector-on-production.md) — เปิดใช้งานวิดเจ็ต Copy DOM (DevDomInspector) บน Production (account.bcaicloud.com)
+- [decisions/2026-09-12-enable-dom-inspector-on-production.md](decisions/2026-09-12-enable-dom-inspector-on-production.md) — เปิดใช้งานวิดเจ็ต Copy DOM (DevDomInspector) บน Production (account.bcaicloud.com) — _ถูกแทนบางส่วน 2026-09-28: ปุ่มลอยเป็น dev-only, Alt+คลิกยังอยู่_
 - [decisions/2026-09-12-deploy-search-and-copy-dom.md](decisions/2026-09-12-deploy-search-and-copy-dom.md) — Deploy ระบบค้นหาผังบัญชีแบบเต็มจอและ Copy DOM สู่ Production (r20260912-search-dom-1)
 - [decisions/2026-09-12-chart-of-accounts-tree-sort-and-search-icon.md](decisions/2026-09-12-chart-of-accounts-tree-sort-and-search-icon.md) — แก้การเรียงผังบัญชีแบบต้นไม้ (ระดับที่แท้จริง) และไอคอนในช่องค้นหาโดนทับ
 - [decisions/2026-09-12-baseline-search-debounce-and-clean-icon.md](decisions/2026-09-12-baseline-search-debounce-and-clean-icon.md) — ระบบค้นหาหลัก Baseline Toolbar ค้นหาอัตโนมัติ (Auto 2s debounce) และปุ่ม Clean (✕) ล้างคำค้น
@@ -141,8 +141,9 @@
 - [decisions/2026-09-27-gl-statement-account-suggestions.md](decisions/2026-09-27-gl-statement-account-suggestions.md) — แนะนำบัญชีให้บรรทัดของแม่แบบงบจากข้อมูลที่บันทึกไว้ (ไม่ใช้รหัส/ชื่อบัญชี, ผู้ใช้ติ๊กเอง), แทนบัญชีหัวข้อด้วยบัญชีย่อย, เตือนบัญชีที่มียอดแต่ไม่อยู่ในงบ (`unassigned`), ผังบัญชีเลือกยอดปกติ + ติ๊กบัญชีเงินสดได้; ต้อง deploy mainapi + frontend พร้อมกัน
 - [decisions/2026-09-27-backend-proxy-allowlist.md](decisions/2026-09-27-backend-proxy-allowlist.md) — ไม่มี proxy สาธารณะ `/backend/*` แล้ว (ขั้น 2 เสร็จในโค้ด 2026-09-27; prod ยังเป็นขั้น 1 = allowlist 5 เส้น r20260927-3 จนกว่าจะ deploy): `next.config.ts` ไม่มี `rewrites()`, browser ถึง mainapi ผ่าน BFF ใต้ `src/app/api` เท่านั้น (`/api/files` สตรีมไฟล์ S3 + ส่ง IP ผู้ใช้ต่อ, `/api/organization` บริษัท/สาขา escape รหัสแบบ Go) ที่ใช้ `serverMainApiBase()`/`serverGoApiBase()`; ห้ามเพิ่ม `rewrites()`/middleware ที่ชี้ mainapi (`next-config-rewrites.test.ts`)
 - [decisions/2026-09-26-gl-equity-statement-amount-basis.md](decisions/2026-09-26-gl-equity-statement-amount-basis.md) — งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้นตามแบบ 2 (คอลัมน์องค์ประกอบที่ผู้ใช้เลือกบัญชีเอง, ต้นงวด + บรรทัด + รายการอื่น = ปลายงวด) + `amountbasis` ต่อแถว (ต้นงวด/ปลายงวด/ความเคลื่อนไหว) แก้แม่แบบงบต้นทุนขาย/กระแสเงินสด
+- [decisions/2026-09-28-copy-dom-button-dev-only.md](decisions/2026-09-28-copy-dom-button-dev-only.md) — ปุ่มลอย `Copy DOM` + โหมดคลิกเปิด/ปิด แสดงเฉพาะ `next dev` (บังปุ่มบันทึกมุมล่างซ้ายบนจอเตี้ย + กดโดนแล้วทุกคลิกกลายเป็น Copy DOM); Alt+คลิกคัดลอก DOM ยังทำงานบน production โดยตัดสินจาก `e.altKey` + รีเซ็ต Alt ตอน blur/ซ่อนแท็บ; `NODE_ENV` มีได้จุดเดียวในไฟล์ (ทับบางส่วนของ ADR 2026-09-12)
 
-## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 40 ไฟล์ใน `bugs/`
+## บั๊กที่แก้แล้ว (symptom → root cause → fix → regression test) — 42 ไฟล์ใน `bugs/`
 
 - [bugs/2026-06-13-product-browser-url-drift-base-href.md](bugs/2026-06-13-product-browser-url-drift-base-href.md)
 - [bugs/2026-06-13-productbarcodes-camelcase-naming.md](bugs/2026-06-13-productbarcodes-camelcase-naming.md)
@@ -181,6 +182,8 @@
 - [bugs/2026-09-26-starter-template-silent-overwrite.md](bugs/2026-09-26-starter-template-silent-overwrite.md) — **แก้แล้ว 2026-09-26**: ปุ่ม "ใช้แม่แบบมาตรฐาน" ทับแม่แบบงบที่ยังไม่บันทึกโดยไม่ถาม + ดับเบิลคลิกข้าม dialog ยืนยัน (dialog กลางไม่รับคลิกซ้อน/400ms แรก)
 - [bugs/2026-09-27-starter-template-resets-isactive.md](bugs/2026-09-27-starter-template-resets-isactive.md) — **แก้แล้ว 2026-09-27**: ใช้แม่แบบมาตรฐานทับแม่แบบที่ปิดใช้งาน แล้วกลับเป็นเปิดใช้งานเงียบ ๆ (isactive เป็นสถานะ ต้องคงค่าเดิม)
 - [bugs/2026-09-27-backend-proxy-blocklist-bypass.md](bugs/2026-09-27-backend-proxy-blocklist-bypass.md) — **แก้แล้ว 2026-09-27**: proxy สาธารณะ `/backend/*` ของ Next เลี่ยง blocklist ได้ด้วย alias `/v1` ของ mainapi (`/backend/v1/profile/link-line`, `/backend/v1/login`) และ URL-encoding (`/backend/goapi/%67et`) + `/backend/metrics` สาธารณะ; SSR preload ภาษา fetch host จาก cookie `backend_url` (SSRF) → ขั้น 1 (deploy r20260927-3) allowlist 5 เส้นทางที่ต้องมี Bearer + preload ใช้ `serverGoApiBase()`; ขั้น 2 (deploy r20260927-4) ลบ `/backend` ทั้งหมด — browser ถึง mainapi ผ่าน BFF เท่านั้น
+- [bugs/2026-09-28-checkbox-box-click-no-toggle.md](bugs/2026-09-28-checkbox-box-click-no-toggle.md) — **แก้แล้ว 2026-09-28**: คลิกสี่เหลี่ยมช่องติ๊กนอก `<label>` (หน้าต่างเลือกบัญชีหลายรายการ, รูปแบบเลขที่เอกสาร, ช่องติ๊กแบบยื่นภาษี) ไม่ติ๊ก เพราะ input เป็น `sr-only` → input จริงวางทับกล่อง `absolute inset-0 size-full min-h-0! opacity-0` (ต้อง `min-h-0!` ไม่งั้น `input{min-height:2.6em}` ใน globals.css ทำให้ไปติ๊ก "+/-" ของแถวบนเมื่อคลิกแถวถัดไป) + td ย้ายไฮไลต์ให้ Space/Enter ตรงแถวที่คลิก; ตรวจครบ 25 จุด/14 ไฟล์
+- [bugs/2026-09-28-copy-dom-alt-stuck-after-alt-tab.md](bugs/2026-09-28-copy-dom-alt-stuck-after-alt-tab.md) — **แก้แล้ว 2026-09-28**: หลัง Alt+Tab ไปโปรแกรมอื่น คลิกปกติใน BC ถูกกลืนเป็น Copy DOM เพราะ `altHeld` ค้าง (keyup ไปตกหน้าต่างอื่น) → ตัดสินจาก `e.altKey` + รีเซ็ตตอน `blur`/`visibilitychange` hidden + mousemove ซิงก์ state; ปุ่มลอยเป็น dev-only
 - [bugs/2026-09-25-vat-cross-period-reversal-drops-filed-rows.md](bugs/2026-09-25-vat-cross-period-reversal-drops-filed-rows.md) — **แก้แล้ว 2026-09-25**: ใบภาษีซื้อ/ขายที่กลับรายการหลังงวดหายจากงวดที่ยื่นแล้ว + เครดิต ภ.ง.ด.50/51 ลดย้อนหลัง → คงในงวดเดิมพร้อมหมายเหตุ ม.83/4 และแท็บ "ยกเลิกข้ามงวด"
 
 - [ชื่อเมนูและสถานะรอพัฒนา 2026-09-09](bugs/2026-09-09-menu-labels-and-pending-screens.md) — ชื่อไทยไม่ถูกแคชทับ, ชื่อหน้าจอตรงกัน และป้ายสำหรับ 177 เมนูที่ยังไม่มีหน้าจอ
