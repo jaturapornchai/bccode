@@ -112,6 +112,9 @@ func NewMicroservice(config config.IConfig) (*Microservice, error) {
 	return m, nil
 }
 
+// postgresStartupAttempts waits roughly one minute in total (1+2+4+8+8+...).
+const postgresStartupAttempts = 10
+
 func (ms *Microservice) CheckReadyToStart() error {
 	// check resources availability
 
@@ -121,10 +124,23 @@ func (ms *Microservice) CheckReadyToStart() error {
 		// TEST Connetion PostgreSQL
 		ms.Logger.Debug("[PostgreSQL]Test Connection.")
 		postgresqlPst := ms.Persister(persisterConfig)
-		err := postgresqlPst.TestConnect()
-		if err != nil {
-			ms.Logger.Error("[PostgreSQL]Connection Failed.", err)
-			return err
+		// After a host reboot Docker restarts containers without compose depends_on,
+		// so postgres (or its DNS name) may not be ready yet — retry for about a minute.
+		var err error
+		delay := time.Second
+		for attempt := 1; attempt <= postgresStartupAttempts; attempt++ {
+			if err = postgresqlPst.TestConnect(); err == nil {
+				break
+			}
+			if attempt == postgresStartupAttempts {
+				ms.Logger.Error("[PostgreSQL]Connection Failed.", err)
+				return err
+			}
+			ms.Logger.Warnf("[PostgreSQL]Not ready (attempt %d/%d), retry in %s: %v", attempt, postgresStartupAttempts, delay, err)
+			time.Sleep(delay)
+			if delay < 8*time.Second {
+				delay *= 2
+			}
 		}
 	}
 
