@@ -257,11 +257,12 @@ BC **ไม่ทำระบบเงินเดือน (payroll)** แล�
 3. **บทเรียน/กับดัก/ความรู้ที่ต้องไม่ลืม → เขียนลง `docs/kms/`** (ไม่ใช่แค่ memory ส่วนตัวของ AI ตัวใดตัวหนึ่ง) เป็นไฟล์ Markdown หัวข้อละไฟล์ อ้าง `file:line` ของโค้ดจริง และเพิ่มบรรทัดใน `docs/kms/README.md`; docs ต้องตามโค้ด (code = truth) — ถ้าโค้ดเปลี่ยนให้แก้ docs ใน commit เดียวกัน
 4. commit ที่แก้ skill/kms ให้รวมไปกับ commit งานที่ทำให้เกิดการเปลี่ยนแปลงนั้น (เหมือนกฎ Mandatory Skill Upgrade ด้านล่าง)
 
-## กฎ: ไม่ใช้ DeepSeek หรือผู้ช่วย AI ภายนอก — Claude ทำเองทั้งหมด (ตั้งโดยลุงจืด 2026-09-23; แทนกฎ "Fable คิด, DeepSeek ทำ" 2026-09-14)
+## กฎ: Opus 5.5 คุมงาน — Claude รุ่นอื่นเป็น agent ลูก (ตั้งโดยลุงจืด 2026-10-04; แทนกฎ "ไม่ใช้ผู้ช่วย AI ภายนอก" 2026-09-23)
 
-- ลุงจืดสั่ง 2026-09-23: "ต่อไปไม่ต้องใช้ deepseek ให้ claude ทำเลย" — ห้ามเรียก `deepseek-ask.py` / DeepSeek API หรือ AI ภายนอกอื่น (Kimi/GLM/ChatGPT/OpenRouter) เพื่อร่างโค้ด เอกสาร แปล วิเคราะห์ หรือ review
-- AI ที่ทำงานใน repo นี้ทำเองทุกขั้นแล้ว verify กับ source/build/test เอง; งานสำรวจกว้างใช้ subagent ของเครื่องมือเอง (Claude Agent/Workflow ฯลฯ)
-- กฎระดับเครื่องฉบับเต็มอยู่ใน Orchestration Rule ของ `~/.agents/AGENTS.md`; จะเปิดผู้ช่วยภายนอกกลับมาต้องได้คำสั่งจากลุงจืดก่อน
+- ลุงจืดสั่ง 2026-10-04: Claude Opus 5.5 เป็นผู้คุมทั้งหมด ส่วน Claude รุ่นอื่นเป็น agent ลูก — กฎเต็ม + ตารางเลือกรุ่น (haiku/sonnet/opus/fable) อยู่ใน Orchestration Rule ของ `~/.agents/AGENTS.md`
+- **ใน repo นี้:** งานบัญชี/ภาษี/เงิน (Rule 20), security/auth/สิทธิ์, และการ verify ผลของลูกตัวอื่น → `opus`; สำรวจโค้ด, แก้ UI, เขียน unit + test → `sonnet`; `haiku` ใช้ได้แค่งานกลไก **ห้ามใช้เขียนคอลัมน์ th ของ `languages.tsv`/ข้อความบนจอ/KMS ภาษาไทย** (audit ไทยเพี้ยน) และห้ามใช้ทำ audit ที่ต้องครบ (Champ parity, secret scan, ลบ flag); `fable` เฉพาะปัญหายากที่ Opus ติด
+- ลูกได้กฎไฟล์นี้อัตโนมัติ แต่ผลของลูกยังต้องผ่าน Opus: รัน `npm run verify`/test/query PostgreSQL เอง, ภาษีต้องมีอ้างอิงทางการตาม skill `thai-accounting-tax`; ลูกห้าม commit/push/deploy และห้ามแตะ `mydocs/`
+- ห้ามใช้ AI ค่ายอื่น (`deepseek-ask.py` ฯลฯ) ร่าง/แปล/review เว้นลุงจืดสั่ง
 
 ## กฎ: ข้อความบนจอต้องเปลี่ยนตามภาษาที่เลือก — โค้ดใช้ key ภาษาอังกฤษ ข้อความอยู่ใน backend (ตั้งโดยลุงจืด 2026-09-14)
 
