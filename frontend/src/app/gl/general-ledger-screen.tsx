@@ -40,7 +40,7 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   else if (cleanRoute in processRoutes) content = <GLProcesses key={cleanRoute} route={cleanRoute} action={processRoutes[cleanRoute as keyof typeof processRoutes]} />;
   else content = <GLReports key={cleanRoute} name={cleanRoute.split("/").at(-1) ?? "trialbalance"} />;
   if (!item) return <div className={panel}>{tr("gl_account_page_not_found", "ไม่พบหน้าบัญชีที่ต้องการ")}</div>;
-  return <main className={`gl-workbench flex min-w-0 flex-1 flex-col gap-2 text-[0.95rem] leading-relaxed ${embedded ? "p-2 h-full min-h-0 overflow-hidden" : "mx-auto max-w-[1800px] p-3 min-h-[calc(100dvh-2rem)]"}`} data-gl-route={cleanRoute}>
+  return <main className={`gl-workbench flex min-w-0 flex-1 flex-col gap-2 text-[0.95rem] leading-relaxed ${embedded ? "p-2 h-full min-h-0 overflow-hidden" : "mx-auto max-w-[1800px] p-3 min-h-[calc(100dvh-2rem)] xl:h-[calc(100dvh-1.5rem)] xl:max-h-[calc(100dvh-1.5rem)] xl:overflow-hidden"}`} data-gl-route={cleanRoute}>
     {!embedded && <SmartBreadcrumb currentTitle={item ? (item.label.key ? tr(item.label.key, item.label.th) : item.label.th) : undefined} />}
     <div className="flex-1 min-h-0 flex flex-col">{content}</div>
   </main>;

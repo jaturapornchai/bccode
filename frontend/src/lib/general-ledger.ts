@@ -8,6 +8,8 @@ export type GLAccount = GLIdentity & {
   parentaccountcode: string | null; normalbalance: "debit" | "credit";
   allowposting: boolean; isactive: boolean; accountgroup: string; iscash: boolean;
   level?: number;
+  require_department?: boolean;
+  require_project?: boolean;
 };
 /** งบประมาณรายเดือน (resource "budgets", ADR 2026-09-25-gl-monthly-budget): เงินเป็นข้อความทศนิยม 12 งวดต่อบัญชี */
 export type GLBudgetLine = { accountcode: string; accountname?: string; periods: string[]; total?: string };
@@ -156,7 +158,7 @@ export function journalBookProblem(bookcode: string, books: GLJournalBook[], pre
   return null;
 }
 export function accountName(account: GLAccount) { return account.names?.find((name) => name.code === "th")?.name ?? account.accountcode; }
-export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1 }; }
+export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1, require_department: false, require_project: false }; }
 
 export const ACCOUNT_TYPE_ORDER: Record<string, number> = {
   asset: 1,
@@ -374,6 +376,49 @@ export function csvCell(value: string, isAmount = false) {
 }
 export function reportCsv(report: GLReport) {
   return "\uFEFF" + [report.columns.map((column) => csvCell(column.label)).join(","), ...report.rows.map((row) => report.columns.map((column) => csvCell(row[column.key] ?? "", Boolean(column.amount))).join(","))].join("\r\n");
+}
+
+export function chartOfAccountsCsv(accounts: GLAccount[], tr: GLTextFn): string {
+  const sorted = sortAccountsHierarchically(accounts);
+  const headers = [
+    tr("gl_account_code", "รหัสบัญชี"),
+    tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย"),
+    tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ"),
+    tr("gl_account_category", "หมวดบัญชี"),
+    tr("gl_parent_account", "หัวบัญชี (บัญชีแม่)"),
+    tr("gl_account_level", "ระดับบัญชี"),
+    tr("gl_account_type_role", "ประเภท"),
+    tr("gl_normal_balance", "ยอดคงเหลือปกติ"),
+    tr("gl_iscash_account", "บัญชีเงินสด"),
+    tr("gl_status", "สถานะ"),
+  ];
+
+  const rows = sorted.map((acc) => {
+    const thName = (acc.names || []).find((n) => n.code === "th")?.name ?? "";
+    const enName = (acc.names || []).find((n) => n.code === "en")?.name ?? "";
+    const catLabel = accountTypeLabels[acc.accounttype];
+    const categoryName = catLabel ? tr(...catLabel) : acc.accounttype;
+    const isControl = !acc.allowposting;
+    const roleName = isControl ? tr("gl_control_account", "บัญชีคุม") : tr("gl_posting_account", "บัญชีย่อย");
+    const normalBal = acc.normalbalance === "credit" ? `${tr("gl_credit", "เครดิต")} (Cr.)` : `${tr("gl_debit", "เดบิต")} (Dr.)`;
+    const cash = acc.iscash ? tr("gl_yes", "ใช่") : "";
+    const status = acc.isactive !== false ? tr("gl_enable", "ใช้งาน") : tr("gl_disable", "ปิดใช้งาน");
+
+    return [
+      csvCell(acc.accountcode),
+      csvCell(thName),
+      csvCell(enName),
+      csvCell(categoryName),
+      csvCell(acc.parentaccountcode || ""),
+      csvCell(String(acc.effectiveLevel ?? acc.level ?? 1)),
+      csvCell(roleName),
+      csvCell(normalBal),
+      csvCell(cash),
+      csvCell(status),
+    ].join(",");
+  });
+
+  return "\uFEFF" + [headers.map((h) => csvCell(h)).join(","), ...rows].join("\r\n");
 }
 
 export type StatementType = "balance_sheet" | "pnl" | "production_cost" | "cash_flow" | "equity" | "custom";

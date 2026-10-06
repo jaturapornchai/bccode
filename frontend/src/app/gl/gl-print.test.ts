@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
-import { GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { GLChartOfAccountsPrint, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -288,5 +288,32 @@ describe("GLStatementUnassigned", () => {
   it("renders nothing when every account is in a line", () => {
     expect(renderToStaticMarkup(createElement(GLStatementUnassigned, { items: [], tr }))).toBe("");
     expect(renderToStaticMarkup(createElement(GLStatementUnassigned, { items: undefined, tr }))).toBe("");
+  });
+});
+
+describe("GLChartOfAccountsPrint", () => {
+  it("renders chart of accounts table with hierarchical tree, codes, names, roles and statuses", () => {
+    const testAccounts = [
+      { accountcode: "1000", names: [{ code: "th", name: "สินทรัพย์" }], accounttype: "asset", allowposting: false, level: 1, isactive: true },
+      { accountcode: "1100", parentaccountcode: "1000", names: [{ code: "th", name: "เงินสดและรายการเทียบเท่า" }], accounttype: "asset", allowposting: false, level: 2, isactive: true },
+      { accountcode: "1101", parentaccountcode: "1100", names: [{ code: "th", name: "เงินสดในมือ" }], accounttype: "asset", allowposting: true, level: 3, isactive: true, iscash: true, normalbalance: "debit" },
+    ];
+    const html = renderToStaticMarkup(createElement(GLChartOfAccountsPrint, {
+      accounts: testAccounts as never,
+      company: "บริษัท บีซี จำกัด",
+      tr,
+      language: "th",
+    }));
+    expect(html).toContain("ผังบัญชี (Chart of Accounts)");
+    expect(html).toContain("บริษัท บีซี จำกัด");
+    expect(html).toContain("1000");
+    expect(html).toContain("สินทรัพย์");
+    expect(html).toContain("บัญชีคุม");
+    expect(html).toContain("1101");
+    expect(html).toContain("เงินสดในมือ");
+    expect(html).toContain("บัญชีย่อย");
+    expect(html).toContain("เดบิต (Dr.)");
+    expect(html).toContain("ใช้งาน");
+    expect(html).toContain("เงินสด");
   });
 });

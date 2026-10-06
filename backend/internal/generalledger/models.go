@@ -51,6 +51,8 @@ type Account struct {
 	AccountGroup      string `json:"accountgroup" bson:"accountgroup"`
 	IsCash            bool   `json:"iscash" bson:"iscash"`
 	Level             int    `json:"level" bson:"level"`
+	RequireDepartment bool   `json:"require_department,omitempty" bson:"require_department,omitempty"`
+	RequireProject    bool   `json:"require_project,omitempty" bson:"require_project,omitempty"`
 }
 
 func (Account) CollectionName() string { return "chart_of_accounts" }

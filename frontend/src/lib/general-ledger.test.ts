@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
 import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
-import { activeJournalBooks, amountString, amountUnits, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
+import { activeJournalBooks, amountString, amountUnits, chartOfAccountsCsv, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
 import { statementIsPeriodic, statementSetDefaultSelection, statementSetRank, statementSetTemplates, type GLStatementTemplate, type StatementType } from "./general-ledger";
 import { STATEMENT_SUGGEST_KEYS, addStatementAccounts, applyStatementAccountFix, applyStatementTemplateFixes, fillText, statementEngineTargets, statementFixesToApply, statementSuggestSignature, statementTargetKey, withKnownSuggestKeys, type GLStatementAccountFix } from "./general-ledger";
 
@@ -43,6 +43,30 @@ describe("general ledger exact accounting helpers", () => {
     expect(csv).toContain('"\'=1+1","999999999999999999.01"');
     expect(csv).toContain('"ติดลบ","-1234.50"');
     expect(csv).not.toContain("'-1234.50");
+  });
+  it("exports chart of accounts as CSV with UTF-8 BOM, hierarchical sorting and proper headers", () => {
+    const mockTr = (_key: string, fallback: string) => fallback;
+    const testAccounts = [
+      { ...emptyAccount(), accountcode: "1000", names: [{ code: "th", name: "สินทรัพย์" }, { code: "en", name: "Assets" }], accounttype: "asset", allowposting: false, level: 1, isactive: true },
+      { ...emptyAccount(), accountcode: "1100", parentaccountcode: "1000", names: [{ code: "th", name: "เงินสดและเงินฝากธนาคาร" }], accounttype: "asset", allowposting: false, level: 2, isactive: true },
+      { ...emptyAccount(), accountcode: "1101", parentaccountcode: "1100", names: [{ code: "th", name: "เงินสดในมือ" }], accounttype: "asset", allowposting: true, level: 3, isactive: true, iscash: true, normalbalance: "debit" },
+      { ...emptyAccount(), accountcode: "1201", parentaccountcode: "1000", names: [{ code: "th", name: "ค่าเสื่อมราคาสะสม" }], accounttype: "asset", allowposting: true, level: 2, isactive: true, normalbalance: "credit" },
+      { ...emptyAccount(), accountcode: "2000", names: [{ code: "th", name: "หนี้สิน" }], accounttype: "liability", allowposting: false, level: 1, isactive: true },
+    ];
+    const csv = chartOfAccountsCsv(testAccounts as never, mockTr);
+    expect(csv.startsWith("\uFEFF")).toBe(true);
+    expect(csv).toContain('"รหัสบัญชี","ชื่อบัญชีภาษาไทย","ชื่อบัญชีภาษาอังกฤษ","หมวดบัญชี","หัวบัญชี (บัญชีแม่)","ระดับบัญชี","ประเภท","ยอดคงเหลือปกติ","บัญชีเงินสด","สถานะ"');
+    expect(csv).toContain('"1000","สินทรัพย์","Assets","สินทรัพย์","","1","บัญชีคุม"');
+    expect(csv).toContain('"1101","เงินสดในมือ","","สินทรัพย์","1100","3","บัญชีย่อย","เดบิต (Dr.)","ใช่","ใช้งาน"');
+    expect(csv).toContain('"1201","ค่าเสื่อมราคาสะสม","","สินทรัพย์","1000","2","บัญชีย่อย","เครดิต (Cr.)","","ใช้งาน"');
+    // ตรวจสอบลำดับการจัดเรียง: 1000 มาก่อน 1100 และ 1100 มาก่อน 1101
+    const idx1000 = csv.indexOf('"1000"');
+    const idx1100 = csv.indexOf('"1100"');
+    const idx1101 = csv.indexOf('"1101"');
+    const idx2000 = csv.indexOf('"2000"');
+    expect(idx1000).toBeLessThan(idx1100);
+    expect(idx1100).toBeLessThan(idx1101);
+    expect(idx1101).toBeLessThan(idx2000);
   });
   it("provides default level 1 and supports 1 to 12 in account models", () => {
     const defaultAcc = emptyAccount();

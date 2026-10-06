@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
-import { STATEMENT_CURRENT_EARNINGS, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, statementIsPeriodic, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
+import { STATEMENT_CURRENT_EARNINGS, accountName, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, sortAccountsHierarchically, statementIsPeriodic, type GLAccount, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { useGLText } from "./gl-common";
 
@@ -372,5 +372,86 @@ export function GLStatementUnassigned({ items, scale = 2, tr }: { items?: GLStat
         <p className="mt-1">{fillText(tr("gl_statement_unassigned_more", "และอีก {0} บัญชี"), list.length - STATEMENT_UNASSIGNED_SHOWN)}</p>
       )}
     </div>
+  );
+}
+
+/** ผังบัญชี (Chart of Accounts): พิมพ์แสดง 5 หมวดบัญชี เรียงตามลำดับชั้นต้นไม้ พร้อมระดับ บทบาท ยอดปกติ และสถานะ */
+export function GLChartOfAccountsPrint({
+  accounts,
+  company,
+  tr,
+  language,
+}: {
+  accounts: GLAccount[];
+  company: string;
+  tr: GLTextFn;
+  language: LanguageCode;
+}) {
+  const sorted = sortAccountsHierarchically(accounts);
+  const now = new Date();
+  const meta = [
+    `${tr("gl_all_records", "รายการทั้งหมด")} ${sorted.length.toLocaleString("th-TH")} ${tr("gl_records_unit", "รายการ")}`,
+    `${tr("gl_printed_at", "พิมพ์เมื่อ")} ${printedAtText(language, now)}`,
+  ];
+
+  return (
+    <article className="gl-print-chart-of-accounts">
+      <table>
+        <thead>
+          <tr className="gl-print-head">
+            <th colSpan={7}>
+              <PrintHeading
+                company={company}
+                title={tr("gl_chart_of_accounts_title", "ผังบัญชี (Chart of Accounts)")}
+                meta={meta}
+              />
+            </th>
+          </tr>
+          <tr>
+            <th style={{ width: "16%" }}>{tr("gl_account_code", "รหัสบัญชี")}</th>
+            <th style={{ width: "36%" }}>{tr("gl_account_name", "ชื่อบัญชี")}</th>
+            <th style={{ width: "14%" }}>{tr("gl_account_category", "หมวดบัญชี")}</th>
+            <th style={{ width: "8%", textAlign: "center" }}>{tr("gl_account_level", "ระดับ")}</th>
+            <th style={{ width: "10%", textAlign: "center" }}>{tr("gl_account_type_role", "ประเภท")}</th>
+            <th style={{ width: "8%", textAlign: "center" }}>{tr("gl_normal_balance", "ยอดปกติ")}</th>
+            <th style={{ width: "8%", textAlign: "center" }}>{tr("gl_status", "สถานะ")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((acc) => {
+            const lvl = acc.effectiveLevel ?? acc.level ?? 1;
+            const isControl = !acc.allowposting;
+            const indent = lvl > 1 ? (lvl - 1) * 1.25 : 0;
+            const catLabel = accountTypeLabels[acc.accounttype];
+            const categoryName = catLabel ? tr(...catLabel) : acc.accounttype;
+            const normalBal = acc.normalbalance === "credit" ? `${tr("gl_credit", "เครดิต")} (Cr.)` : `${tr("gl_debit", "เดบิต")} (Dr.)`;
+            const statusName = acc.isactive !== false ? tr("gl_enable", "ใช้งาน") : tr("gl_disable", "ปิดใช้งาน");
+
+            return (
+              <tr key={acc.accountcode}>
+                <td className="font-mono">{acc.accountcode}</td>
+                <td style={{ paddingLeft: `${indent + 0.5}em` }}>
+                  {lvl > 1 && <span className="text-muted-foreground mr-1">└─</span>}
+                  <span className={isControl ? "font-semibold" : ""}>{accountName(acc)}</span>
+                  {acc.iscash && <span className="ml-1.5 text-xs text-muted-foreground">({tr("gl_cash_short", "เงินสด")})</span>}
+                </td>
+                <td>{categoryName}</td>
+                <td style={{ textAlign: "center" }}>{lvl}</td>
+                <td style={{ textAlign: "center" }}>{isControl ? tr("gl_control_account", "บัญชีคุม") : tr("gl_posting_account", "บัญชีย่อย")}</td>
+                <td style={{ textAlign: "center" }}>{normalBal}</td>
+                <td style={{ textAlign: "center" }}>{statusName}</td>
+              </tr>
+            );
+          })}
+          {!sorted.length && (
+            <tr>
+              <td colSpan={7} style={{ textAlign: "center", padding: "2rem" }}>
+                {tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </article>
   );
 }

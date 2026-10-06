@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget } from "./gl-masters";
+import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget, suggestNextAccountCode } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -525,5 +525,149 @@ describe("account normal balance and cash flag", () => {
     expect(accountSavePayload(account({ iscash: true, accounttype: "liability" }), false)).toMatchObject({ iscash: false });
     expect(accountSavePayload(account({ parentaccountcode: " 12100 " }), false).parentaccountcode).toBe("12100");
     expect(accountSavePayload(account({ parentaccountcode: "  " }), false).parentaccountcode).toBeNull();
+  });
+});
+
+describe("ผังบัญชี: TreeNodeRow sub-account shortcut", () => {
+  const tr = (_key: string, fallback: string) => fallback;
+  const controlNode = {
+    account: {
+      accountcode: "1000",
+      parentaccountcode: null,
+      names: [{ code: "th", name: "สินทรัพย์หมุนเวียน" }],
+      accounttype: "asset" as const,
+      allowposting: false,
+      level: 1,
+      isactive: true,
+      normalbalance: "debit" as const,
+      accountgroup: "",
+      iscash: false,
+    },
+    children: [],
+    level: 1,
+    hasChildren: false,
+    category: "asset" as const,
+  };
+  const postingNode = {
+    account: {
+      accountcode: "1101",
+      parentaccountcode: "1000",
+      names: [{ code: "th", name: "เงินสดในมือ" }],
+      accounttype: "asset" as const,
+      allowposting: true,
+      level: 2,
+      isactive: true,
+      normalbalance: "debit" as const,
+      accountgroup: "",
+      iscash: true,
+    },
+    children: [],
+    level: 2,
+    hasChildren: false,
+    category: "asset" as const,
+  };
+
+  it("renders '+ เพิ่มบัญชีย่อย' button on control accounts when onAddChild is provided", () => {
+    const onAddChild = vi.fn();
+    const html = renderToStaticMarkup(createElement(TreeNodeRow, {
+      node: controlNode,
+      depth: 0,
+      isEditing: false,
+      expandedNodes: {},
+      onToggleNode: vi.fn(),
+      onSelect: vi.fn(),
+      onEdit: vi.fn(),
+      onDelete: vi.fn(),
+      onAddChild,
+      tr,
+    }));
+    expect(html).toContain("เพิ่มบัญชีย่อย");
+    expect(html).toContain("เพิ่มบัญชีย่อยใต้ 1000");
+    expect(html).toContain("บัญชีคุม");
+  });
+
+  it("does not render '+ เพิ่มบัญชีย่อย' button on posting leaf accounts", () => {
+    const onAddChild = vi.fn();
+    const html = renderToStaticMarkup(createElement(TreeNodeRow, {
+      node: postingNode,
+      depth: 1,
+      isEditing: false,
+      expandedNodes: {},
+      onToggleNode: vi.fn(),
+      onSelect: vi.fn(),
+      onEdit: vi.fn(),
+      onDelete: vi.fn(),
+      onAddChild,
+      tr,
+    }));
+    expect(html).not.toContain("เพิ่มบัญชีย่อย");
+    expect(html).toContain("บัญชีย่อย");
+  });
+
+  it("normalizes a preset sub-account maintaining parent, category, level, and allowposting=true", () => {
+    const preset = {
+      parentaccountcode: "1000",
+      level: 2,
+      accounttype: "asset" as const,
+      normalbalance: "debit" as const,
+      allowposting: true,
+      isactive: true,
+      iscash: false,
+    };
+    const created = normalizeRecord("accounts", preset as never) as GLAccount;
+    expect(created.parentaccountcode).toBe("1000");
+    expect(created.level).toBe(2);
+    expect(created.accounttype).toBe("asset");
+    expect(created.normalbalance).toBe("debit");
+    expect(created.allowposting).toBe(true);
+    expect(created.isactive).toBe(true);
+  });
+
+  it("suggests next account code smartly from parent and existing siblings", () => {
+    const parent: GLAccount = {
+      accountcode: "11100",
+      names: [{ code: "th", name: "เงินสดและเงินฝาก" }],
+      accounttype: "asset",
+      parentaccountcode: "11000",
+      normalbalance: "debit",
+      allowposting: false,
+      isactive: true,
+      accountgroup: "",
+      iscash: false,
+      level: 3,
+    };
+
+    // No children yet: parent 11100 -> suggests 11101
+    expect(suggestNextAccountCode(parent, [parent])).toBe("11101");
+
+    // Parent 10000 with 4 zeros -> suggests 11000
+    const rootParent: GLAccount = { ...parent, accountcode: "10000", level: 1, parentaccountcode: null };
+    expect(suggestNextAccountCode(rootParent, [rootParent])).toBe("11000");
+
+    // With existing children 11101, 11102 -> suggests 11103
+    const child1: GLAccount = { ...parent, accountcode: "11101", parentaccountcode: "11100", allowposting: true, level: 4 };
+    const child2: GLAccount = { ...parent, accountcode: "11102", parentaccountcode: "11100", allowposting: true, level: 4 };
+    expect(suggestNextAccountCode(parent, [parent, child1, child2])).toBe("11103");
+
+    // Parent with hyphen prefix ACC-101 -> suggests ACC-102
+    const hyphenParent: GLAccount = { ...parent, accountcode: "ACC-100" };
+    const hyphenChild: GLAccount = { ...parent, accountcode: "ACC-101", parentaccountcode: "ACC-100" };
+    expect(suggestNextAccountCode(hyphenParent, [hyphenParent, hyphenChild])).toBe("ACC-102");
+  });
+
+  it("handles require_department and require_project flags properly", () => {
+    const raw = {
+      accountcode: "51000",
+      accounttype: "expense" as const,
+      require_department: true,
+      require_project: true,
+    };
+    const norm = normalizeRecord("accounts", raw as never) as GLAccount;
+    expect(norm.require_department).toBe(true);
+    expect(norm.require_project).toBe(true);
+
+    const payload = accountSavePayload(norm, false);
+    expect(payload.require_department).toBe(true);
+    expect(payload.require_project).toBe(true);
   });
 });

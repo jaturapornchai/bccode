@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight, Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_TYPES, accountName, accountTypeLabels, activeJournalBooks, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_TYPES, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
-import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
+import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
+import { GLChartOfAccountsPrint, printCompanyName, useGLPrint } from "./gl-print";
+import { AccountBalanceCard, AccountLedgerModal } from "./account-ledger-drilldown";
 
 type MasterResource = Exclude<GLResource, "journals">;
 function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : resource === "journal-books" ? emptyJournalBook() : emptyMaster(); }
@@ -51,6 +53,63 @@ export function accountParentPatch(account: Pick<GLAccount, "accounttype">, pare
   if (!parent) return { parentaccountcode: parentCode };
   return { parentaccountcode: parent.accountcode, level: Math.min(12, (parent.level ?? 1) + 1), ...accountTypePatch(account, parent.accounttype) };
 }
+/** แนะนำรหัสบัญชีถัดไปใต้บัญชีแม่: หาเลขลำดับสูงสุดของลูกที่มีอยู่แล้ว หรือสร้างเลขรหัสลูกตัวแรก */
+export function suggestNextAccountCode(parent: GLAccount, allAccounts: GLAccount[] = []): string {
+  if (!parent?.accountcode) return "";
+  const parentCode = parent.accountcode.trim();
+  const children = allAccounts.filter((a) => a.parentaccountcode === parentCode);
+
+  if (children.length > 0) {
+    const numericChildren = children
+      .map((c) => c.accountcode.trim())
+      .filter((code) => /^\d+$/.test(code));
+
+    if (numericChildren.length > 0) {
+      const sampleLen = numericChildren[0].length;
+      const maxNum = numericChildren.reduce((max, code) => {
+        const val = parseInt(code, 10);
+        return val > max ? val : max;
+      }, 0);
+      return String(maxNum + 1).padStart(sampleLen, "0");
+    }
+
+    const suffixed = children
+      .map((c) => c.accountcode.trim())
+      .map((code) => {
+        const match = code.match(/^(.*?)([-/_])?(\d+)$/);
+        return match ? { prefix: match[1] + (match[2] ?? ""), num: parseInt(match[3], 10), pad: match[3].length } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+
+    if (suffixed.length > 0) {
+      const max = suffixed.reduce((prev, curr) => (curr.num > prev.num ? curr : prev), suffixed[0]);
+      return `${max.prefix}${String(max.num + 1).padStart(max.pad, "0")}`;
+    }
+  }
+
+  if (/^\d+$/.test(parentCode)) {
+    const trailingZerosMatch = parentCode.match(/(0+)$/);
+    if (trailingZerosMatch) {
+      const zeros = trailingZerosMatch[1];
+      if (zeros.length >= 2) {
+        const power = zeros.length;
+        if (power >= 3) {
+          const base = parseInt(parentCode, 10);
+          const step = Math.pow(10, power - 1);
+          return String(base + step).padStart(parentCode.length, "0");
+        }
+        const base = parseInt(parentCode, 10);
+        return String(base + 1).padStart(parentCode.length, "0");
+      } else if (zeros.length === 1) {
+        const base = parseInt(parentCode, 10);
+        return String(base + 1).padStart(parentCode.length, "0");
+      }
+    }
+    return `${parentCode}01`;
+  }
+
+  return `${parentCode}-01`;
+}
 /** ปิด "บันทึกบัญชีได้" = เป็นบัญชีคุม จึงไม่ใช่บัญชีเงินสด */
 export function accountPostingPatch(allowposting: boolean): Partial<GLAccount> {
   return allowposting ? { allowposting } : { allowposting, iscash: false };
@@ -60,6 +119,8 @@ export function accountSavePayload(account: GLAccount, hasChildren: boolean): GL
   const acc = { ...account, parentaccountcode: account.parentaccountcode && account.parentaccountcode.trim() !== "" ? account.parentaccountcode.trim() : null };
   if (hasChildren) acc.allowposting = false;
   acc.iscash = Boolean(acc.iscash) && accountCashAllowed(acc, hasChildren);
+  acc.require_department = Boolean(account.require_department);
+  acc.require_project = Boolean(account.require_project);
   return acc;
 }
 export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
@@ -88,6 +149,8 @@ export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLReco
     acc.isactive = acc.isactive ?? true;
     acc.allowposting = acc.allowposting ?? true;
     acc.iscash = acc.iscash ?? false;
+    acc.require_department = Boolean(acc.require_department);
+    acc.require_project = Boolean(acc.require_project);
   }
   return base as GLRecord;
 }
@@ -126,6 +189,7 @@ export function TreeNodeRow({
   onSelect,
   onEdit,
   onDelete,
+  onAddChild,
   tr,
 }: {
   node: AccountTreeNode;
@@ -137,6 +201,7 @@ export function TreeNodeRow({
   onSelect: (acc: GLAccount) => void;
   onEdit: (acc: GLAccount) => void;
   onDelete: (acc: GLAccount) => void;
+  onAddChild?: (parentAcc: GLAccount) => void;
   tr: GLTextFn;
 }) {
   const acc = node.account;
@@ -221,7 +286,21 @@ export function TreeNodeRow({
             )}
           </div>
 
-          <div className="w-16 flex items-center justify-end gap-1 shrink-0">
+          <div className="w-20 flex items-center justify-end gap-1 shrink-0">
+            {isControl && onAddChild && (
+              <button
+                type="button"
+                className="p-1 rounded text-primary hover:bg-primary/20 transition-colors inline-flex items-center justify-center h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddChild(acc);
+                }}
+                title={tr("gl_add_sub_account_under", "เพิ่มบัญชีย่อยใต้ {0}").replace("{0}", acc.accountcode)}
+                aria-label={tr("gl_add_sub_account", "เพิ่มบัญชีย่อย")}
+              >
+                <Plus className="size-3.5 block" />
+              </button>
+            )}
             <button
               type="button"
               className="p-1 rounded text-primary hover:bg-primary/20 transition-colors inline-flex items-center justify-center h-6 w-6"
@@ -262,6 +341,7 @@ export function TreeNodeRow({
           onSelect={onSelect}
           onEdit={onEdit}
           onDelete={onDelete}
+          onAddChild={onAddChild}
           tr={tr}
         />
       ))}
@@ -271,6 +351,8 @@ export function TreeNodeRow({
 
 export function GLMasters({ resource, route }: { resource: MasterResource; route: string }) {
   const tr = useGLText();
+  const language = useGLLanguage();
+  const { print: printJob, portal: printPortal } = useGLPrint();
   const [search, setSearch] = useState("");
   const list = useGLList<GLRecord>(resource, search);
   const searchDebounce = useDebouncedSearch({
@@ -287,6 +369,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(""), [error, setError] = useState(""), [reason, setReason] = useState("");
   const [errorField, setErrorField] = useState("");
+  const [ledgerModalAcc, setLedgerModalAcc] = useState<GLAccount | null>(null);
+  const [ledgerFiscalYear, setLedgerFiscalYear] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
   const { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const isRecordDirty = record !== null && JSON.stringify(record) !== original;
@@ -354,15 +438,34 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     }
   }
 
-  async function openCreate() {
+  async function openCreate(preset?: Partial<GLAccount>) {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_data", "ละทิ้งข้อมูลที่ยังไม่บันทึก?"), description: tr("gl_editing_data_not_saved", "ข้อมูลที่กำลังแก้ไขจะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
-    const fresh = normalizeRecord(resource, newRecord(resource));
+    const fresh = normalizeRecord(resource, { ...newRecord(resource), ...(preset ?? {}) });
+    delete fresh.id;
     setRecord(fresh);
     setOriginal(JSON.stringify(fresh));
     setIsEditing(true);
     setMessage("");
     setError("");
     setReason("");
+  }
+
+  function handleAddChild(parentAcc: GLAccount) {
+    const childLevel = Math.min(12, (parentAcc.level ?? 1) + 1);
+    const childType = parentAcc.accounttype;
+    const suggestedCode = suggestNextAccountCode(parentAcc, treeAccounts);
+    void openCreate({
+      accountcode: suggestedCode,
+      parentaccountcode: parentAcc.accountcode,
+      level: childLevel,
+      accounttype: childType,
+      normalbalance: parentAcc.normalbalance || defaultNormalBalance(childType),
+      allowposting: true,
+      isactive: true,
+      iscash: false,
+      require_department: Boolean(parentAcc.require_department),
+      require_project: Boolean(parentAcc.require_project),
+    });
   }
 
   async function cancelEdit() {
@@ -507,7 +610,31 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     return filterAccountTree(base, searchDebounce.query);
   }, [isAcc, treeAccounts, searchDebounce.query]);
 
+  const handlePrint = () => {
+    if (!isAcc || !treeAccounts.length) return;
+    printJob(
+      <GLChartOfAccountsPrint
+        accounts={treeAccounts}
+        company={printCompanyName()}
+        tr={tr}
+        language={language}
+      />,
+      "portrait"
+    );
+  };
+
+  const handleExportCsv = () => {
+    if (!isAcc || !treeAccounts.length) return;
+    const csv = chartOfAccountsCsv(treeAccounts, tr);
+    downloadText(
+      tr("gl_coa_export_filename", "ผังบัญชี-chart-of-accounts.csv"),
+      csv,
+      "text/csv;charset=utf-8"
+    );
+  };
+
   return <div className="flex flex-col flex-1 min-h-0 gap-2">
+    {printPortal}
     <div className="shrink-0 flex flex-col gap-2"><Notice error text={alerts.page} /><Notice text={message} /></div>
     <SplitWorkbench list={<div className="flex flex-col flex-1 min-h-0 gap-2">
       <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
@@ -526,25 +653,47 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
             <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
             {isAcc && (
-              <Button
-                type="button"
-                variant={viewMode === "tree" ? "default" : "outline"}
-                className={actionClass}
-                onClick={() => setViewMode((m) => m === "tree" ? "list" : "tree")}
-                title={viewMode === "tree" ? tr("gl_view_list", "มุมมองตาราง") : tr("gl_view_tree", "มุมมองผังต้นไม้")}
-              >
-                {viewMode === "tree" ? (
-                  <>
-                    <List className="size-4 mr-1.5" />
-                    {tr("gl_view_list", "มุมมองตาราง")}
-                  </>
-                ) : (
-                  <>
-                    <FolderTree className="size-4 mr-1.5" />
-                    {tr("gl_view_tree", "มุมมองผังต้นไม้")}
-                  </>
-                )}
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant={viewMode === "tree" ? "default" : "outline"}
+                  className={actionClass}
+                  onClick={() => setViewMode((m) => m === "tree" ? "list" : "tree")}
+                  title={viewMode === "tree" ? tr("gl_view_list", "มุมมองตาราง") : tr("gl_view_tree", "มุมมองผังต้นไม้")}
+                >
+                  {viewMode === "tree" ? (
+                    <>
+                      <List className="size-4 mr-1.5" />
+                      {tr("gl_view_list", "มุมมองตาราง")}
+                    </>
+                  ) : (
+                    <>
+                      <FolderTree className="size-4 mr-1.5" />
+                      {tr("gl_view_tree", "มุมมองผังต้นไม้")}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={actionClass}
+                  onClick={handlePrint}
+                  title={tr("gl_print_coa", "พิมพ์ผังบัญชี")}
+                >
+                  <Printer className="size-4 mr-1.5" />
+                  {tr("gl_print", "พิมพ์")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={actionClass}
+                  onClick={handleExportCsv}
+                  title={tr("gl_export_csv", "ส่งออก CSV (Excel)")}
+                >
+                  <Download className="size-4 mr-1.5" />
+                  {tr("gl_export_csv_short", "ส่งออก Excel")}
+                </Button>
+              </>
             )}
           </div>
         </form>
@@ -629,6 +778,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                         onSelect={(acc) => void openView(acc)}
                         onEdit={(acc) => void openEdit(acc)}
                         onDelete={(acc) => void deleteItem(acc)}
+                        onAddChild={handleAddChild}
                         tr={tr}
                       />
                     ))}
@@ -783,8 +933,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     </div>} editor={record ? (
 
       !isEditing ? (
-        <div className="flex flex-col h-full min-h-0 gap-3">
-          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 shrink-0">
+        <div className="flex flex-col h-full min-h-0 gap-2">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 shrink-0">
             <div className="flex items-center gap-2">
               <div className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
                 <Eye className="size-4" />
@@ -822,12 +972,25 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               </Button>
             </div>
           </header>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground shrink-0">
-            <Eye className="size-3.5 text-primary shrink-0" />
-            <span>{tr("gl_readonly_mode_edit_hint", "โหมดแสดงข้อมูล (Read-only) — หากต้องการแก้ไข ให้กดปุ่ม")} <strong>{tr("gl_edit", "แก้ไข")}</strong></span>
-          </div>
+          {resource !== "accounts" && (
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground shrink-0">
+              <Eye className="size-3.5 text-primary shrink-0" />
+              <span>{tr("gl_readonly_mode_edit_hint", "โหมดแสดงข้อมูล (Read-only) — หากต้องการแก้ไข ให้กดปุ่ม")} <strong>{tr("gl_edit", "แก้ไข")}</strong></span>
+            </div>
+          )}
           {alerts.pane && <FormErrorAlert text={alerts.pane} />}
-          <fieldset disabled className="grid gap-3 opacity-95 content-start overflow-y-auto p-1">
+          {resource === "accounts" && (
+            <AccountBalanceCard
+              account={record as GLAccount}
+              years={refs.years}
+              books={refs.books ?? []}
+              onOpenLedger={(year) => {
+                setLedgerModalAcc(record as GLAccount);
+                setLedgerFiscalYear(year);
+              }}
+            />
+          )}
+          <fieldset disabled className="grid gap-2 opacity-95 content-start overflow-y-auto min-h-0 flex-1 p-0.5">
             {resource === "accounts" ? (
               <AccountFields value={record as GLAccount} set={set} accounts={refs.accounts} />
             ) : resource === "fiscal-years" ? (
@@ -838,7 +1001,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               <MasterFields resource={resource} value={record as GLMaster} set={set} accounts={refs.accounts} years={refs.years} books={refs.books ?? []} />
             )}
           </fieldset>
-          <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
+          <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2 shrink-0 mt-auto">
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -882,14 +1045,18 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
           </footer>
         </div>
       ) : (
-        <form ref={formRef} className="flex flex-col h-full min-h-0 gap-3" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-          <header className="flex items-center justify-between gap-2 border-b border-border pb-3 shrink-0">
+        <form ref={formRef} className="flex flex-col h-full min-h-0 gap-2" onSubmit={(event) => { event.preventDefault(); void save(); }}>
+          <header className="flex items-center justify-between gap-2 border-b border-border pb-2 shrink-0">
             <div className="flex min-w-0 items-center gap-2">
               <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                 {record.id ? <Pencil className="size-4" /> : <Plus className="size-4" />}
               </div>
               <h2 className="truncate text-base font-semibold">
-                {record.id ? tr("gl_edit_2", "แก้ไข {0}").replace("{0}", String(recordCode(record))) : tr("gl_add_new_item", "เพิ่มรายการใหม่")}
+                {record.id
+                  ? tr("gl_edit_2", "แก้ไข {0}").replace("{0}", String(recordCode(record)))
+                  : isAcc && (record as GLAccount).parentaccountcode
+                  ? tr("gl_add_sub_account_under", "เพิ่มบัญชีย่อยใต้ {0}").replace("{0}", (record as GLAccount).parentaccountcode!)
+                  : tr("gl_add_new_item", "เพิ่มรายการใหม่")}
               </h2>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -908,7 +1075,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             </div>
           </header>
           {alerts.pane && <FormErrorAlert text={alerts.pane} />}
-          <fieldset disabled={busy} className="grid gap-3 opacity-95 content-start overflow-y-auto p-1">
+          <fieldset disabled={busy} className="grid gap-2 opacity-95 content-start overflow-y-auto min-h-0 flex-1 p-0.5">
             {resource === "accounts" ? (
               <AccountFields value={record as GLAccount} set={set} accounts={refs.accounts} />
             ) : resource === "fiscal-years" ? (
@@ -924,7 +1091,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               </Field>
             )}
           </fieldset>
-          <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
+          <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2 shrink-0 mt-auto">
             <div className="flex flex-wrap gap-2">
               <Button type="submit" className={actionClass} disabled={busy || !dirty}>
                 <Save className="size-4 mr-1.5" />{busy ? tr("gl_saving", "กำลังบันทึก…") : tr("gl_save_data", "บันทึกข้อมูล")}
@@ -972,6 +1139,15 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
         </div>
       </div>
     )} />
+    {ledgerModalAcc && (
+      <AccountLedgerModal
+        open={Boolean(ledgerModalAcc)}
+        onClose={() => setLedgerModalAcc(null)}
+        account={ledgerModalAcc}
+        fiscalYear={ledgerFiscalYear}
+        books={refs.books ?? []}
+      />
+    )}
     {confirmationDialog}
   </div>;
 }
@@ -991,23 +1167,32 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
   // บัญชีแม่เดิมที่เลือกไม่ได้แล้ว (ปิดใช้งาน/รับลงรายการ/เป็นลูกของตัวเอง) ยังแสดงให้เห็น พร้อมบอกให้เลือกใหม่
   const invalidParent = value.parentaccountcode && !parentCandidates.some((a) => a.accountcode === value.parentaccountcode) ? value.parentaccountcode : "";
 
-  const handleParentChange = (parentCode: string) => set(accountParentPatch(value, parentCode, accounts.find((a) => a.accountcode === parentCode)));
+  const handleParentChange = (parentCode: string) => {
+    const parent = accounts.find((a) => a.accountcode === parentCode);
+    const patch = accountParentPatch(value, parentCode, parent);
+    if (!value.id && parent && (!value.accountcode || accounts.some((a) => a.accountcode === value.accountcode))) {
+      const suggested = suggestNextAccountCode(parent, accounts);
+      if (suggested) {
+        set({ ...patch, accountcode: suggested });
+        return;
+      }
+    }
+    set(patch);
+  };
   const categoryBalance = defaultNormalBalance(value.accounttype || "asset");
   const normalBalance = value.normalbalance || categoryBalance;
   const balanceLabel = (side: GLAccount["normalbalance"]) => (side === "debit" ? `${tr("gl_debit", "เดบิต")} (Dr.)` : `${tr("gl_credit", "เครดิต")} (Cr.)`);
   const cashAllowed = accountCashAllowed(value, hasChildren);
 
   return (
-    <>
+    <div className="flex flex-col gap-2">
       {value.id && (
-        <Notice
-          text={tr(
-            "gl_coa_referenced_no_delete",
-            "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน"
-          )}
-        />
+        <div className="flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs text-muted-foreground shrink-0">
+          <AlertTriangle className="size-3.5 text-primary shrink-0" />
+          <span>{tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน")}</span>
+        </div>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <Field label={tr("gl_account_code", "รหัสบัญชี")}>
           <input
             className={control}
@@ -1017,6 +1202,19 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             value={value.accountcode || ""}
             onChange={(e) => set({ accountcode: e.target.value })}
             maxLength={20}
+          />
+        </Field>
+        <Field label={tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย")}>
+          <input
+            className={control}
+            data-field="accountnameth"
+            required
+            value={thName}
+            onChange={(e) => {
+              const currentNames = (value.names || []).filter((name) => name.code !== "th");
+              set({ names: [...currentNames, { code: "th", name: e.target.value }] });
+            }}
+            maxLength={100}
           />
         </Field>
         <Field label={tr("gl_parent_account", "หัวบัญชี (บัญชีแม่)")}>
@@ -1039,6 +1237,18 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             })}
           </Combobox>
         </Field>
+        <Field label={tr("gl_account_category", "หมวดบัญชี")}>
+          <Combobox
+            value={value.accounttype || "asset"}
+            onChange={handleTypeChange}
+          >
+            {Object.entries(accountTypeLabels).map(([code, name]) => (
+              <option key={code} value={code}>
+                {tr(...name)}
+              </option>
+            ))}
+          </Combobox>
+        </Field>
         <Field label={tr("gl_account_level_range", "ระดับบัญชี (1–12)")}>
           <Combobox
             data-field="level"
@@ -1053,97 +1263,96 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             ))}
           </Combobox>
         </Field>
-        <Field label={tr("gl_account_category", "หมวดบัญชี")}>
-          <Combobox
-            value={value.accounttype || "asset"}
-            onChange={handleTypeChange}
-          >
-            {Object.entries(accountTypeLabels).map(([code, name]) => (
-              <option key={code} value={code}>
-                {tr(...name)}
-              </option>
-            ))}
-          </Combobox>
-        </Field>
-        <Field label={tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย")}>
-          <input
-            className={control}
-            data-field="accountnameth"
-            required
-            value={thName}
-            onChange={(e) => {
-              const currentNames = (value.names || []).filter((name) => name.code !== "th");
-              set({ names: [...currentNames, { code: "th", name: e.target.value }] });
-            }}
-            maxLength={100}
-          />
-        </Field>
-        <Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ")}>
-          <input
-            className={control}
-            data-field="accountnameen"
-            value={enName}
-            onChange={(e) => {
-              const currentNames = (value.names || []).filter((name) => name.code !== "en");
-              set({ names: [...currentNames, { code: "en", name: e.target.value }] });
-            }}
-            maxLength={100}
-            placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")}
-          />
-        </Field>
-        {/* ยอดปกติเลือกได้ (บัญชีปรับลด) — ค่าเริ่มตามหมวด; backend ล็อกหลังมีรายการผ่านบัญชีแล้ว (validatePGAccount) */}
-        <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")} hint={fillText(tr("gl_normal_balance_default_hint", "ปกติของหมวดนี้: {0} — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว"), balanceLabel(categoryBalance))}>
-          <Combobox
-            data-field="normalbalance"
-            aria-label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}
-            value={normalBalance}
-            onChange={(side) => set({ normalbalance: side === "credit" ? "credit" : "debit" })}
-          >
-            <option value="debit">{balanceLabel("debit")}</option>
-            <option value="credit">{balanceLabel("credit")}</option>
-          </Combobox>
+        <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}>
+          <div title={fillText(tr("gl_normal_balance_default_hint", "ปกติของหมวดนี้: {0} — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว"), balanceLabel(categoryBalance))}>
+            <Combobox
+              data-field="normalbalance"
+              aria-label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}
+              value={normalBalance}
+              onChange={(side) => set({ normalbalance: side === "credit" ? "credit" : "debit" })}
+            >
+              <option value="debit">{balanceLabel("debit")}</option>
+              <option value="credit">{balanceLabel("credit")}</option>
+            </Combobox>
+          </div>
           {normalBalance !== categoryBalance && (
-            <span role="status" className="flex items-start gap-1.5 text-[0.9rem] font-medium leading-[1.45] text-primary">
-              <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" /> {tr("gl_normal_balance_contra", "บัญชีปรับลด (ด้านตรงข้ามกับหมวด) เช่น ค่าเสื่อมราคาสะสม ส่วนลดจ่าย")}
+            <span role="status" className="flex items-center gap-1 text-xs font-medium text-primary mt-0.5">
+              <AlertTriangle aria-hidden className="size-3.5 shrink-0" />
+              {tr("gl_normal_balance_contra", "บัญชีปรับลด (ด้านตรงข้ามกับหมวด)")}
             </span>
           )}
         </Field>
-        <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 border-t border-border/50">
-          <Check
-            label={tr("gl_enabled", "เปิดใช้งาน")}
-            checked={value.isactive ?? true}
-            onChange={(isactive) => set({ isactive })}
-          />
-          <div className="inline-flex items-center gap-2">
-            <Check
-              label={tr("gl_allow_posting", "บันทึกบัญชีได้ (IsGLAccess)")}
-              checked={hasChildren ? false : (value.allowposting ?? true)}
-              disabled={hasChildren}
-              onChange={(allowposting) => {
-                if (!hasChildren) {
-                  set(accountPostingPatch(allowposting));
-                }
+        <div className="sm:col-span-2">
+          <Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ (ไม่บังคับ)")}>
+            <input
+              className={control}
+              data-field="accountnameen"
+              value={enName}
+              onChange={(e) => {
+                const currentNames = (value.names || []).filter((name) => name.code !== "en");
+                set({ names: [...currentNames, { code: "en", name: e.target.value }] });
               }}
+              maxLength={100}
+              placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")}
             />
-            {hasChildren && (
-              <span className="text-[0.9rem] text-muted-foreground font-medium">
-                ({tr("gl_parent_has_children_no_posting", "ผังบัญชีที่เป็นหัว มีตัวลูก ไม่สามารถบันทึกตัวเลขได้")})
-              </span>
-            )}
-          </div>
-          {/* บัญชีเงินสด: ใช้ในรายงานเงินสด (reports_operations.go is_cash) และคำแนะนำบัญชีของแม่แบบงบ (statement_suggestions.go) — backend ยอมเฉพาะสินทรัพย์ที่บันทึกบัญชีได้ และล็อกเมื่อมีรายการผ่านแล้ว (validatePGAccount) */}
-          <div className="inline-flex flex-wrap items-center gap-2">
+          </Field>
+        </div>
+        <div className="sm:col-span-2 flex flex-col gap-1.5 p-2 rounded-xl border border-border/60 bg-muted/20">
+          <div className="flex flex-wrap items-center gap-2">
             <Check
-              label={tr("gl_iscash_account", "เป็นบัญชีเงินสดหรือรายการเทียบเท่าเงินสด")}
-              checked={cashAllowed && Boolean(value.iscash)}
-              disabled={!cashAllowed}
-              onChange={(iscash) => set({ iscash })}
+              className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
+              label={tr("gl_enabled", "เปิดใช้งาน")}
+              checked={value.isactive ?? true}
+              onChange={(isactive) => set({ isactive })}
             />
-            <span className="text-[0.9rem] text-muted-foreground font-medium">{tr("gl_iscash_hint", "เลือกได้เฉพาะบัญชีสินทรัพย์ที่บันทึกบัญชีได้และไม่มีบัญชีย่อย — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว")}</span>
+            <div className="inline-flex items-center gap-1.5">
+              <Check
+                className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
+                label={tr("gl_allow_posting", "บันทึกบัญชีได้")}
+                checked={hasChildren ? false : (value.allowposting ?? true)}
+                disabled={hasChildren}
+                onChange={(allowposting) => {
+                  if (!hasChildren) {
+                    set(accountPostingPatch(allowposting));
+                  }
+                }}
+              />
+              {hasChildren && (
+                <span className="text-[0.75rem] text-muted-foreground font-medium" title={tr("gl_parent_has_children_no_posting", "ผังบัญชีที่เป็นหัว มีตัวลูก ไม่สามารถบันทึกตัวเลขได้")}>
+                  ({tr("gl_control_account", "บัญชีคุม")})
+                </span>
+              )}
+            </div>
+            <div className="inline-flex items-center" title={tr("gl_iscash_hint", "เลือกได้เฉพาะบัญชีสินทรัพย์ที่บันทึกบัญชีได้และไม่มีบัญชีย่อย — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว")}>
+              <Check
+                className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
+                label={tr("gl_iscash_account", "บัญชีเงินสด / เทียบเท่าเงินสด")}
+                checked={cashAllowed && Boolean(value.iscash)}
+                disabled={!cashAllowed}
+                onChange={(iscash) => set({ iscash })}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40" title={tr("gl_dim_separate_hint", "(กำหนดมิติการวิเคราะห์ระดับผังบัญชีเหมือนระบบ Champ เพื่อตรวจสอบในใบสำคัญรายวัน)")}>
+            <span className="text-xs text-muted-foreground font-medium shrink-0">
+              {tr("gl_dim_separate", "มิติวิเคราะห์ (Champ):")}
+            </span>
+            <Check
+              className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
+              label={tr("gl_require_department", "บังคับระบุแผนก")}
+              checked={Boolean(value.require_department)}
+              onChange={(require_department) => set({ require_department })}
+            />
+            <Check
+              className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
+              label={tr("gl_require_project", "บังคับระบุโครงการ")}
+              checked={Boolean(value.require_project)}
+              onChange={(require_project) => set({ require_project })}
+            />
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: (patch: object) => void; accounts: GLAccount[] }) {
