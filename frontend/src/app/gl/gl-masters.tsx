@@ -1220,7 +1220,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid items-start gap-2 sm:grid-cols-2">
         <Field label={tr("gl_account_code", "รหัสบัญชี")}>
           <CodeInput
             locked={!!value.id}
@@ -1401,7 +1401,7 @@ function MasterFields({ resource, value, set, accounts, years, books }: { resour
   const language = useGLLanguage();
   const usableBooks = activeJournalBooks(books);
   const dateFields = ["periods", "forecast"].includes(resource);
-  return <><div className="grid gap-3 sm:grid-cols-2">
+  return <><div className="grid items-start gap-3 sm:grid-cols-2">
     <Field label={tr("gl_code", "รหัส")}><CodeInput locked={!!value.id} data-field="code" required value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
     <Field label={tr("gl_name", "ชื่อ")}><input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} /></Field>
     {dateFields && <><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect value={value.fiscalyear || ""} onChange={(fiscalyear) => set({ fiscalyear })} years={years} /></Field><Field label={tr("gl_start_date", "วันเริ่มต้น")}><input className={control} type="date" required value={value.startdate || ""} onChange={(e) => set({ startdate: e.target.value })} /></Field><Field label={tr("gl_end_date", "วันสิ้นสุด")}><input className={control} type="date" required value={value.enddate || ""} onChange={(e) => set({ enddate: e.target.value })} /></Field></>}
