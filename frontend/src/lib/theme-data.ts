@@ -608,7 +608,7 @@ function paletteVars(seed: PaletteSeed, mode: ThemeMode): ThemeVars {
     "--shadow-popover": isDark
       ? "0 8px 24px rgba(0, 0, 0, 0.4), 0 28px 64px -24px rgba(0, 0, 0, 0.6)"
       : `0 8px 24px rgba(0, 0, 0, 0.08), 0 28px 64px -24px ${colorMixAlpha(seed.primary, 0.3)}`,
-    "--success": "#13795b",
+    "--success": isDark ? "#86efac" : "#13795b",
     "--teal": seed.tertiary,
     "--text": seed.foreground,
     "--text-soft": seed.muted,

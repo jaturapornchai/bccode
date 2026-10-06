@@ -19,6 +19,14 @@ function messageClass(kind: ToastKind): string {
   return `message ${modifier}`;
 }
 
+// The notice tints for success/error are translucent in dark mode (made for inline notices on a panel).
+// A toast floats over arbitrary content, so paint the same tint over an opaque panel to keep the text readable.
+function opaqueSurface(kind: ToastKind) {
+  if (kind !== "success" && kind !== "error") return undefined;
+  const tint = `var(--message-${kind}-bg)`;
+  return { background: `linear-gradient(${tint}, ${tint}) var(--panel)` };
+}
+
 export function ToastViewport() {
   const toasts = useToasts();
 
@@ -43,6 +51,7 @@ export function ToastViewport() {
               role={isError ? "alert" : "status"}
               aria-live={isError ? "assertive" : "polite"}
               className={`${messageClass(toast.kind)} pointer-events-auto items-start gap-2.5 shadow-lg`}
+              style={opaqueSurface(toast.kind)}
             >
               <Icon size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
               <span className="flex-1 text-sm leading-snug break-words">{toast.text}</span>

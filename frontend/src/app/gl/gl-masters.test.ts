@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget, suggestNextAccountCode } from "./gl-masters";
+import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, confirmSubject, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget, suggestNextAccountCode } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -669,5 +669,48 @@ describe("ผังบัญชี: TreeNodeRow sub-account shortcut", () => {
     const payload = accountSavePayload(norm, false);
     expect(payload.require_department).toBe(true);
     expect(payload.require_project).toBe(true);
+  });
+});
+
+describe("ผังบัญชี: tree badges, toggle labels and delete confirm (2026-10-06)", () => {
+  const tr = (_key: string, fallback: string) => fallback;
+  const posting = {
+    account: { id: "a-1111", accountcode: "1111", names: [{ code: "th", name: "เงินสดในมือ" }], accounttype: "asset", allowposting: true, isactive: true, level: 4 } as GLAccount,
+    children: [], level: 4, hasChildren: false, category: "asset" as const,
+  };
+  const control = {
+    account: { id: "a-1100", accountcode: "1100", names: [{ code: "th", name: "สินทรัพย์หมุนเวียน" }], accounttype: "asset", allowposting: false, isactive: true, level: 2 } as GLAccount,
+    children: [posting], level: 2, hasChildren: true, category: "asset" as const,
+  };
+  const row = (node: typeof control | typeof posting, depth: number, expandedNodes: Record<string, boolean> = {}) =>
+    renderToStaticMarkup(createElement(TreeNodeRow, { node, depth, isEditing: false, expandedNodes, onToggleNode: () => {}, onSelect: () => {}, onEdit: () => {}, onDelete: () => {}, tr }));
+
+  it("keeps the posting badge on one line in its fixed column, full meaning in the tooltip", () => {
+    const html = row(posting, 1);
+    expect(html).toContain('title="บัญชีย่อย (บันทึกรายการ)"');
+    // `!` matters: plain whitespace-nowrap loses to the unlayered span { text-wrap: pretty } in globals.css.
+    expect(html).toMatch(/whitespace-nowrap![^>]*>บัญชีย่อย</);
+    expect(html).not.toContain(">บัญชีย่อย (บันทึกรายการ)<");
+    // Badge text and tooltip come from their own language keys.
+    const keyed = renderToStaticMarkup(createElement(TreeNodeRow, { node: posting, depth: 1, isEditing: false, expandedNodes: {}, onToggleNode: () => {}, onSelect: () => {}, onEdit: () => {}, onDelete: () => {}, tr: (key: string) => key }));
+    expect(keyed).toContain(">gl_posting_account_short<");
+    expect(keyed).toContain('title="gl_posting_account"');
+  });
+
+  it("labels the expand/collapse toggle in Thai with the account code and its state", () => {
+    const open = row(control, 0);
+    expect(open).toContain('aria-label="ยุบบัญชีย่อยของ 1100"');
+    expect(open).toContain('aria-expanded="true"');
+    const closed = row(control, 0, { "1100": false });
+    expect(closed).toContain('aria-label="ขยายบัญชีย่อยของ 1100"');
+    expect(closed).toContain('aria-expanded="false"');
+    expect(open + closed).not.toMatch(/aria-label="(Collapse|Expand)"/);
+  });
+
+  it("confirm subtitle names the record and adds the reason only when the user typed one", () => {
+    expect(confirmSubject(posting.account, "", tr)).toBe("1111 · เงินสดในมือ");
+    expect(confirmSubject(posting.account, "   ", tr)).toBe("1111 · เงินสดในมือ");
+    expect(confirmSubject(posting.account, "เลิกใช้บัญชีนี้", tr)).toBe("1111 · เงินสดในมือ — เหตุผล: เลิกใช้บัญชีนี้");
+    expect(confirmSubject({ id: "p-1", code: "P01", name: "", isactive: true, version: 1 } as GLMaster, "", tr)).toBe("P01");
   });
 });

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight, Printer, Download } from "lucide-react";
+import { useEffect, useMemo, useRef, useId, useState, type InputHTMLAttributes } from "react";
+import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight, Printer, Download, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_TYPES, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
+import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
 import { GLChartOfAccountsPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { AccountBalanceCard, AccountLedgerModal } from "./account-ledger-drilldown";
@@ -178,6 +180,13 @@ export function recordId(record: GLRecord | null | undefined): string {
 }
 function recordCode(record: GLRecord) { return "accountcode" in record && "names" in record ? record.accountcode : "code" in record ? record.code : ""; }
 function recordName(record: GLRecord) { return "names" in record ? accountName(record) : "name" in record ? record.name : ""; }
+/** Confirm-dialog subtitle: which record (code · name), plus the reason only when the user typed one — never the action label, the title already says it. */
+export function confirmSubject(record: GLRecord, typedReason: string, tr: GLTextFn) {
+  const name = recordName(record);
+  const subject = name ? `${recordCode(record)} · ${name}` : String(recordCode(record));
+  const reason = typedReason.trim();
+  return reason ? fillText(tr("gl_confirm_subject_reason", "{0} — เหตุผล: {1}"), subject, reason) : subject;
+}
 
 export function TreeNodeRow({
   node,
@@ -211,6 +220,10 @@ export function TreeNodeRow({
   const isControl = !acc.allowposting;
   const isActive = acc.isactive ?? true;
   const isExpanded = expandedNodes[acc.accountcode] ?? (depth < 2);
+  const toggleLabel = fillText(isExpanded ? tr("gl_collapse_sub_accounts", "ยุบบัญชีย่อยของ {0}") : tr("gl_expand_sub_accounts", "ขยายบัญชีย่อยของ {0}"), acc.accountcode);
+  // Badges sit in fixed w-16 columns so rows stay aligned: short label + nowrap, full meaning in the tooltip.
+  // nowrap needs `!`: the unlayered `span { text-wrap: pretty }` in globals.css resets text-wrap-mode and beats plain utilities.
+  const badge = "inline-flex items-center justify-center whitespace-nowrap! rounded px-1.5 py-0.5 text-[0.65rem] leading-none h-5";
 
   return (
     <div className="flex flex-col shrink-0">
@@ -234,7 +247,9 @@ export function TreeNodeRow({
                 e.stopPropagation();
                 onToggleNode(acc.accountcode);
               }}
-              aria-label={isExpanded ? "Collapse" : "Expand"}
+              aria-expanded={isExpanded}
+              aria-label={toggleLabel}
+              title={toggleLabel}
             >
               {isExpanded ? <ChevronDown className="size-4 block" /> : <ChevronRight className="size-4 block" />}
             </button>
@@ -256,7 +271,7 @@ export function TreeNodeRow({
         {/* Right anchored items: Level -> Account Role -> Status -> Actions (Fixed Width Columns) */}
         <div className="flex items-center justify-end shrink-0 ml-auto gap-2" onClick={(e) => e.stopPropagation()}>
           <div className="w-16 flex justify-end shrink-0">
-            <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5">
+            <span className={`${badge} font-semibold bg-primary/10 text-primary border border-primary/20`}>
               {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(node.level))}
               <span className="sr-only">L{node.level}</span>
             </span>
@@ -264,23 +279,23 @@ export function TreeNodeRow({
 
           <div className="w-16 flex justify-end shrink-0">
             {isControl ? (
-              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-muted text-muted-foreground border border-border leading-none h-5">
-                {tr("gl_control_account", "บัญชีคุม")}
+              <span className={`${badge} font-medium bg-muted text-muted-foreground border border-border`} title={tr("gl_control_account", "บัญชีคุม")}>
+                {tr("gl_control_account_short", "บัญชีคุม")}
               </span>
             ) : (
-              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-medium bg-primary/10 text-primary border border-primary/20 leading-none h-5">
-                {tr("gl_posting_account", "บัญชีย่อย")}
+              <span className={`${badge} font-medium bg-primary/10 text-primary border border-primary/20`} title={tr("gl_posting_account", "บัญชีย่อย (บันทึกรายการ)")}>
+                {tr("gl_posting_account_short", "บัญชีย่อย")}
               </span>
             )}
           </div>
 
           <div className="w-16 flex justify-end shrink-0">
             {isActive ? (
-              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-primary/10 text-primary border border-primary/20 leading-none h-5">
+              <span className={`${badge} font-semibold bg-primary/10 text-primary border border-primary/20`}>
                 {tr("gl_enable", "ใช้งาน")}
               </span>
             ) : (
-              <span className="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[0.65rem] font-semibold bg-muted text-muted-foreground border border-border leading-none h-5">
+              <span className={`${badge} font-semibold bg-muted text-muted-foreground border border-border`}>
                 {tr("gl_disable", "ปิดใช้งาน")}
               </span>
             )}
@@ -367,7 +382,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   const [revision, setRevision] = useState(0), refs = useReferences(revision);
   const [record, setRecord] = useState<GLRecord | null>(null), [original, setOriginal] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [message, setMessage] = useState(""), [error, setError] = useState(""), [reason, setReason] = useState("");
+  const [error, setError] = useState(""), [reason, setReason] = useState("");
   const [errorField, setErrorField] = useState("");
   const [ledgerModalAcc, setLedgerModalAcc] = useState<GLAccount | null>(null);
   const [ledgerFiscalYear, setLedgerFiscalYear] = useState<string>("");
@@ -413,7 +428,6 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       setRecord(normalized);
       setOriginal(JSON.stringify(normalized));
       setIsEditing(false);
-      setMessage("");
       setError("");
       setReason("");
     } catch (e) {
@@ -430,7 +444,6 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       setRecord(normalized);
       setOriginal(JSON.stringify(normalized));
       setIsEditing(true);
-      setMessage("");
       setError("");
       setReason("");
     } catch (e) {
@@ -445,7 +458,6 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     setRecord(fresh);
     setOriginal(JSON.stringify(fresh));
     setIsEditing(true);
-    setMessage("");
     setError("");
     setReason("");
   }
@@ -508,7 +520,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       setReason("");
       list.reload();
       setRevision((value) => value + 1);
-      setMessage(result.projectionpending ? tr("gl_saved_updating_reload", "บันทึกแล้ว กำลังปรับปรุงข้อมูลสำหรับรายงาน กดโหลดใหม่เพื่อตรวจสอบ") : tr("gl_saved_successfully", "บันทึกเรียบร้อยแล้ว"));
+      if (result.projectionpending) toast.info(tr("gl_saved_updating_reload", "บันทึกแล้ว กำลังปรับปรุงข้อมูลสำหรับรายงาน กดโหลดใหม่เพื่อตรวจสอบ"));
+      else toast.success(tr("gl_saved_successfully", "บันทึกเรียบร้อยแล้ว"));
     } catch (e) { showFormError(e, tr("gl_save_failed_retry", "บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"), saveFailureTarget(resource)); }
   }
 
@@ -518,8 +531,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     const isAcc = resource === "accounts";
     if (!await confirm({
       title: tr("gl_confirm_delete", "ยืนยันลบรายการ?"),
-      description: `${recordCode(item)} · ${recordName(item)}`,
-      details: isAcc ? tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
+      description: confirmSubject(item, "", tr),
+      details: isAcc ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
       confirmLabel: tr("gl_delete_item", "ลบรายการ"),
       tone: "danger",
     })) return;
@@ -533,7 +546,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       }
       list.reload();
       setRevision((value) => value + 1);
-      setMessage(tr("gl_delete_success", "ลบ {0} เรียบร้อยแล้ว").replace("{0}", String(recordCode(item))));
+      toast.success(tr("gl_delete_success", "ลบ {0} เรียบร้อยแล้ว").replace("{0}", String(recordCode(item))));
     } catch (e) {
       showFormError(e, tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"));
     }
@@ -548,15 +561,16 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     const effectiveReason = reason.trim() || defaultReason;
     if (!await confirm({
       title: `${label}?`,
-      description: `${recordCode(record)} · ${effectiveReason}`,
-      details: resource === "accounts" && action === "delete" ? tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน") : resource === "journal-books" && action === "delete" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
+      // Name the record as saved — the form may hold unsaved edits to the code/name.
+      description: confirmSubject(original ? JSON.parse(original) as GLRecord : record, reason, tr),
+      details: resource === "accounts" && action === "delete" ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" && action === "delete" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
       confirmLabel: label,
       tone: action === "delete" ? "danger" : "warning"
     })) return;
     try {
       setError("");
       await execute({ resource, id, version: record.version, action, reason: effectiveReason });
-      setRecord(null); setOriginal(""); setIsEditing(false); list.reload(); setRevision((value) => value + 1); setMessage(tr("gl_success_message", "{0}เรียบร้อยแล้ว").replace("{0}", String(label)));
+      setRecord(null); setOriginal(""); setIsEditing(false); list.reload(); setRevision((value) => value + 1); toast.success(tr("gl_success_message", "{0}เรียบร้อยแล้ว").replace("{0}", String(label)));
     } catch (e) { showFormError(e, tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")); }
   }
 
@@ -635,7 +649,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
 
   return <div className="flex flex-col flex-1 min-h-0 gap-2">
     {printPortal}
-    <div className="shrink-0 flex flex-col gap-2"><Notice error text={alerts.page} /><Notice text={message} /></div>
+    <div className="shrink-0 flex flex-col gap-2"><Notice error text={alerts.page} /></div>
     <SplitWorkbench list={<div className="flex flex-col flex-1 min-h-0 gap-2">
       <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
         <form className="flex flex-wrap items-center gap-2 w-full" onSubmit={(event) => { event.preventDefault(); searchDebounce.searchNow(); }}>
@@ -990,7 +1004,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               }}
             />
           )}
-          <fieldset disabled className="grid gap-2 opacity-95 content-start overflow-y-auto min-h-0 flex-1 p-0.5">
+          <fieldset disabled data-mode="view" className="grid gap-2 opacity-95 content-start overflow-y-auto min-h-0 flex-1 p-0.5">
             {resource === "accounts" ? (
               <AccountFields value={record as GLAccount} set={set} accounts={refs.accounts} />
             ) : resource === "fiscal-years" ? (
@@ -1152,6 +1166,26 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   </div>;
 }
 
+/** A saved record code cannot change. The shared `control` keeps disabled inputs looking normal (read-only view mode),
+ *  so a code locked inside an editable form needs its own cue: muted fill, lock icon, not-allowed cursor and a visible hint under the field.
+ *  The fill sits on the wrapper because globals.css forces every input background to transparent (!important). */
+function CodeInput({ locked, ...props }: InputHTMLAttributes<HTMLInputElement> & { locked: boolean }) {
+  const tr = useGLText();
+  const hintId = useId();
+  if (!locked) return <input className={control} {...props} />;
+  const hint = tr("gl_code_locked_hint", "รหัสแก้ไขไม่ได้หลังบันทึกแล้ว");
+  return (
+    <div className="grid gap-1">
+      <div className="relative rounded-xl bg-muted/60">
+        {/* pr-9 needs `!`: the shared control sets its own padding and globals.css input rules win over plain utilities. */}
+        <input className={cn(control, "pr-9! disabled:cursor-not-allowed")} {...props} disabled aria-describedby={hintId} />
+        <Lock aria-hidden className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
+      {/* View mode disables every field, so the hint only matters while editing. */}
+      <span id={hintId} className="text-[0.9rem] text-muted-foreground in-data-[mode=view]:sr-only">{hint}</span>
+    </div>
+  );
+}
 function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (patch: object) => void; accounts?: GLAccount[] }) {
   const tr = useGLText();
   const thName = (value.names || []).find((name) => name.code === "th")?.name ?? "";
@@ -1186,19 +1220,12 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
 
   return (
     <div className="flex flex-col gap-2">
-      {value.id && (
-        <div className="flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs text-muted-foreground shrink-0">
-          <AlertTriangle className="size-3.5 text-primary shrink-0" />
-          <span>{tr("gl_coa_referenced_no_delete", "ผังบัญชีที่มีข้อมูลอ้างอิงจากสมุดรายวัน ห้ามลบเด็ดขาด หากไม่ใช้งานให้ปิดใช้งานแทน")}</span>
-        </div>
-      )}
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label={tr("gl_account_code", "รหัสบัญชี")}>
-          <input
-            className={control}
+          <CodeInput
+            locked={!!value.id}
             data-field="accountcode"
             required
-            disabled={!!value.id}
             value={value.accountcode || ""}
             onChange={(e) => set({ accountcode: e.target.value })}
             maxLength={20}
@@ -1333,9 +1360,9 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
               />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40" title={tr("gl_dim_separate_hint", "(กำหนดมิติการวิเคราะห์ระดับผังบัญชีเหมือนระบบ Champ เพื่อตรวจสอบในใบสำคัญรายวัน)")}>
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40" title={tr("gl_dim_separate_hint", "กำหนดมิติการแยกบัญชี")}>
             <span className="text-xs text-muted-foreground font-medium shrink-0">
-              {tr("gl_dim_separate", "มิติวิเคราะห์ (Champ):")}
+              {tr("gl_dim_separate", "มิติวิเคราะห์:")}
             </span>
             <Check
               className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
@@ -1358,7 +1385,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
 function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: (patch: object) => void; accounts: GLAccount[] }) {
   const tr = useGLText();
   return <><Notice text={tr("gl_set_fy_currency_before_journal", "กำหนดปีบัญชีก่อนบันทึกรายวัน ระบบตรวจจำนวนทศนิยมตามปีบัญชีและไม่ปัดยอดให้อัตโนมัติ")} /><div className="grid gap-3 sm:grid-cols-2">
-    <Field label={tr("gl_fiscal_year_code", "รหัสปีบัญชี")}><input className={control} required value={value.code || ""} disabled={!!value.id} onChange={(e) => set({ code: e.target.value })} /></Field>
+    <Field label={tr("gl_fiscal_year_code", "รหัสปีบัญชี")}><CodeInput locked={!!value.id} required value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
     <Field label={tr("gl_fiscal_year_start_date", "วันเริ่มต้นปีบัญชี")}><input className={control} required type="date" value={value.startdate || ""} onChange={(e) => set({ startdate: e.target.value })} /></Field>
     <Field label={tr("gl_fiscal_year_end_date", "วันสิ้นสุดปีบัญชี")}><input className={control} required type="date" value={value.enddate || ""} onChange={(e) => set({ enddate: e.target.value })} /></Field>
     <Field label={tr("gl_decimal_places", "จำนวนตำแหน่งทศนิยม")}><Combobox value={value.scale ?? 2} onChange={(scale) => set({ scale: Number(scale) })}>{Array.from({ length: 9 }, (_, scale) => <option key={scale} value={scale}>{tr("gl_positions_count", "{0} ตำแหน่ง").replace("{0}", String(scale))}</option>)}</Combobox></Field>
@@ -1375,7 +1402,7 @@ function MasterFields({ resource, value, set, accounts, years, books }: { resour
   const usableBooks = activeJournalBooks(books);
   const dateFields = ["periods", "forecast"].includes(resource);
   return <><div className="grid gap-3 sm:grid-cols-2">
-    <Field label={tr("gl_code", "รหัส")}><input className={control} data-field="code" required disabled={!!value.id} value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
+    <Field label={tr("gl_code", "รหัส")}><CodeInput locked={!!value.id} data-field="code" required value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
     <Field label={tr("gl_name", "ชื่อ")}><input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} /></Field>
     {dateFields && <><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect value={value.fiscalyear || ""} onChange={(fiscalyear) => set({ fiscalyear })} years={years} /></Field><Field label={tr("gl_start_date", "วันเริ่มต้น")}><input className={control} type="date" required value={value.startdate || ""} onChange={(e) => set({ startdate: e.target.value })} /></Field><Field label={tr("gl_end_date", "วันสิ้นสุด")}><input className={control} type="date" required value={value.enddate || ""} onChange={(e) => set({ enddate: e.target.value })} /></Field></>}
     {resource === "forecast" && <><Field label={tr("gl_account", "บัญชี")}><AccountSelect value={value.accountcode || ""} onChange={(accountcode) => set({ accountcode })} accounts={accounts} /></Field><Field label={tr("gl_amount", "จำนวนเงิน")}><AmountInput required value={value.amount || ""} onChange={(amount) => set({ amount })} /></Field><Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={value.branchcode || ""} onChange={(e) => set({ branchcode: e.target.value })} /></Field><Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={value.departmentcode || ""} onChange={(e) => set({ departmentcode: e.target.value })} /></Field><Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={value.projectcode || ""} onChange={(e) => set({ projectcode: e.target.value })} /></Field></>}
