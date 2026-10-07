@@ -43,8 +43,15 @@ const POSTGRES_SETTING_BASE_PATHS = new Set<string>([
   "/holding/employee", "/holding/permission", "/organization/role-permission",
 ]);
 
+// 2026-10-08: รายการเอกสารจัดซื้อ/จัดขาย ที่เชื่อมต่อ GoAPI + PostgreSQL (doc, docdetail) แล้ว
+export const LIVE_ERP_TRANSACTION_ROUTES = new Set<string>([
+  "/transaction/purchaseorder",
+  "/transaction/sale",
+]);
+
 export function isMenuBackendRetired(route: string): boolean {
   const clean = route.split("?")[0];
+  if (LIVE_ERP_TRANSACTION_ROUTES.has(clean)) return false;
   if (RETIRED_BACKEND_ROUTES.has(clean) || isErpTransactionRoute(clean) || isOperationsRoute(clean)) return true;
   const setting = getSystemSettingConfig(clean);
   return Boolean(setting?.basePath && !POSTGRES_SETTING_BASE_PATHS.has(setting.basePath));

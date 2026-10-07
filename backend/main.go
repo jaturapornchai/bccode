@@ -26,6 +26,7 @@ import (
 	"smlcloudplatform/internal/setupconfig"
 	"smlcloudplatform/internal/shop"
 	"smlcloudplatform/internal/shop/employee"
+	txhttp "smlcloudplatform/internal/transaction/httpapi"
 	"smlcloudplatform/pkg/microservice"
 
 	"github.com/labstack/echo/v4"
@@ -162,6 +163,7 @@ func main() {
 		branch.NewBranchHttp(ms, cfg),
 		businesstype.NewBusinessTypeHttp(ms, cfg),
 		rolepermission.NewRolePermissionHttp(ms, cfg),
+		txhttp.NewHttp(ms, cfg),
 	)
 	ms.RegisterHttp(media.InitMediaUploadHttp(ms, cfg))
 
