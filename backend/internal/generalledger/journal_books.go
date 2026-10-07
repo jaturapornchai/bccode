@@ -29,19 +29,20 @@ func validBookType(t int) bool { return t >= BookTypeGeneral && t <= BookTypeOpe
 
 // DefaultJournalBook is one of the standard books a new company starts with.
 type DefaultJournalBook struct {
-	Code, Name, NameEn string
+	Code, Name, NameEn, TitleName string
 	BookType           int
 }
 
 // DefaultJournalBooks returns the market-standard set named in the spec comment of
-// journalbook.sql: JV general, PV payment, RV receipt, SV sales, UV purchase.
+// journalbook.sql: JV general, PV payment, RV receipt, SV sales, UV purchase; TitleName = the voucher
+// heading of Champ's five auto-created books (gldlgglbookcode.cpp:379-398).
 func DefaultJournalBooks() []DefaultJournalBook {
 	return []DefaultJournalBook{
-		{Code: "JV", Name: "สมุดรายวันทั่วไป", NameEn: "General Journal", BookType: BookTypeGeneral},
-		{Code: "PV", Name: "สมุดรายวันจ่ายเงิน", NameEn: "Payment Journal", BookType: BookTypePayment},
-		{Code: "RV", Name: "สมุดรายวันรับเงิน", NameEn: "Receipt Journal", BookType: BookTypeReceipt},
-		{Code: "SV", Name: "สมุดรายวันขาย", NameEn: "Sales Journal", BookType: BookTypeSales},
-		{Code: "UV", Name: "สมุดรายวันซื้อ", NameEn: "Purchase Journal", BookType: BookTypePurchase},
+		{Code: "JV", Name: "สมุดรายวันทั่วไป", NameEn: "General Journal", TitleName: "ใบสำคัญทั่วไป", BookType: BookTypeGeneral},
+		{Code: "PV", Name: "สมุดรายวันจ่ายเงิน", NameEn: "Payment Journal", TitleName: "ใบสำคัญจ่าย", BookType: BookTypePayment},
+		{Code: "RV", Name: "สมุดรายวันรับเงิน", NameEn: "Receipt Journal", TitleName: "ใบสำคัญรับ", BookType: BookTypeReceipt},
+		{Code: "SV", Name: "สมุดรายวันขาย", NameEn: "Sales Journal", TitleName: "ใบสำคัญขาย", BookType: BookTypeSales},
+		{Code: "UV", Name: "สมุดรายวันซื้อ", NameEn: "Purchase Journal", TitleName: "ใบสำคัญซื้อ", BookType: BookTypePurchase},
 	}
 }
 
@@ -284,7 +285,7 @@ func defaultJournalBookChanges(ctx context.Context, tx *sql.Tx, scope Scope, now
 	}
 	changes := make([]Change, 0, len(DefaultJournalBooks()))
 	for _, d := range DefaultJournalBooks() {
-		m := Master{Kind: "journal-books", Code: d.Code, Name: d.Name, NameEn: d.NameEn, BookType: d.BookType, IsActive: true, Identity: newIdentity(scope, now)}
+		m := Master{Kind: "journal-books", Code: d.Code, Name: d.Name, NameEn: d.NameEn, TitleName: d.TitleName, BookType: d.BookType, IsActive: true, Identity: newIdentity(scope, now)}
 		data, err := json.Marshal(m)
 		if err != nil {
 			return nil, err

@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit 8fb8764d - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit c64ca5d4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 27
 
@@ -821,7 +821,7 @@ Files indexed: 27
 | 1425 | function | `listHoldingMembers` |
 | 1445 | function | `createHoldingPayload` |
 
-## frontend/src/app/gl/gl-masters.tsx (1473 lines)
+## frontend/src/app/gl/gl-masters.tsx (1472 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -856,19 +856,19 @@ Files indexed: 27
 | 497 | function | `save` |
 | 528 | function | `deleteItem` |
 | 556 | function | `runAction` |
-| 594 | const-arrow | `toggleCategory` |
-| 598 | const-arrow | `toggleNode` |
-| 627 | const-arrow | `handlePrint` |
-| 640 | const-arrow | `handleExportCsv` |
-| 1150 | function | `CodeInput` |
-| 1167 | function | `AccountFields` |
-| 1172 | const-arrow | `handleTypeChange` |
-| 1182 | const-arrow | `handleParentChange` |
-| 1363 | function | `FiscalYearFields` |
-| 1377 | function | `MasterFields` |
-| 1400 | function | `UntypedJournalBooksNotice` |
-| 1420 | function | `JournalBookTypeBadge` |
-| 1432 | function | `JournalBookFields` |
+| 595 | const-arrow | `toggleCategory` |
+| 599 | const-arrow | `toggleNode` |
+| 628 | const-arrow | `handlePrint` |
+| 641 | const-arrow | `handleExportCsv` |
+| 1153 | function | `CodeInput` |
+| 1170 | function | `AccountFields` |
+| 1175 | const-arrow | `handleTypeChange` |
+| 1185 | const-arrow | `handleParentChange` |
+| 1362 | function | `FiscalYearFields` |
+| 1376 | function | `MasterFields` |
+| 1399 | function | `UntypedJournalBooksNotice` |
+| 1419 | function | `JournalBookTypeBadge` |
+| 1431 | function | `JournalBookFields` |
 
 ## frontend/src/app/gl/gl-statement-designer.tsx (1376 lines)
 

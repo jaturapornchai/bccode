@@ -286,7 +286,7 @@ func main() {
 			fmt.Printf("แผน: สร้างสมุดรายวัน %s %s (ประเภท %d)\n", d.Code, d.Name, d.BookType)
 			if *apply {
 				cmd := gl.Command{Resource: "journal-books", Action: "create", RequestID: "seed-gl-screens-book-" + d.Code,
-					Master: &gl.Master{Kind: "journal-books", Code: d.Code, Name: d.Name, NameEn: d.NameEn, BookType: d.BookType, IsActive: true}}
+					Master: &gl.Master{Kind: "journal-books", Code: d.Code, Name: d.Name, NameEn: d.NameEn, TitleName: d.TitleName, BookType: d.BookType, IsActive: true}}
 				if _, err := store.Execute(ctx, scope, cmd); err != nil {
 					fatal("สร้างสมุดรายวัน %s ไม่ได้: %v", d.Code, err)
 				}

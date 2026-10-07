@@ -576,6 +576,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
 
   const hasAmount = resource === "forecast";
   const isAcc = resource === "accounts";
+  const isBook = resource === "journal-books";
   // One alert at a time: the pane owns the message while a record is open (the page notice stays quiet),
   // otherwise the page notice shows the operation/list/reference failure.
   const alerts = editorAlert({ error, listError: list.error, refsError: refs.error, hasRecord: !!record });
@@ -818,8 +819,9 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             {/* .bc-list-header */}
             <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="py-2 px-2.5 text-left w-28 whitespace-nowrap">{tr("gl_code", "รหัส")}</th>
-                <th className="py-2 px-2 text-left min-w-44">{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
+                <th className="py-2 px-2.5 text-left w-28 whitespace-nowrap">{isBook ? tr("gl_book_code", "รหัสสมุดรายวัน") : tr("gl_code", "รหัส")}</th>
+                <th className="py-2 px-2 text-left min-w-44">{isBook ? tr("gl_book_name", "ชื่อสมุดรายวัน") : tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
+                {isBook && <th className="py-2 px-2 text-left min-w-36">{tr("gl_book_title_name", "หัวเอกสาร")}</th>}
                 {hasAmount && <th className="py-2 px-2 text-right w-36 whitespace-nowrap">{tr("gl_amount", "จำนวนเงิน")}</th>}
                 {isAcc && <th className="py-2 px-2 text-right w-20 whitespace-nowrap">{tr("gl_level", "ระดับ")}</th>}
                 <th className="py-2 px-2 text-right w-24 whitespace-nowrap">{tr("gl_status", "สถานะ")}</th>
@@ -864,6 +866,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                         <span className="align-middle">{recordName(item)}{resource === "journal-books" && <JournalBookTypeBadge booktype={(item as GLJournalBook).booktype} />}</span>
                       )}
                     </td>
+                    {isBook && <td className="py-2 px-2 truncate align-middle">{(item as GLJournalBook).titlename || ""}</td>}
                     {hasAmount && (
                       <td className="py-2 px-2 text-right font-mono font-medium tabular-nums whitespace-nowrap align-middle">
                         {"amount" in item ? formatAmount(item.amount) : "-"}
@@ -1209,18 +1212,73 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             maxLength={20}
           />
         </Field>
-        <Field label={tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย")}>
-          <input
-            className={control}
-            data-field="accountnameth"
-            required
-            value={thName}
-            onChange={(e) => {
-              const currentNames = (value.names || []).filter((name) => name.code !== "th");
-              set({ names: [...currentNames, { code: "th", name: e.target.value }] });
+        {/* Champ: ช่อง "เป็นบัญชีคุม" อยู่ข้างรหัสบัญชี (IsHeader = ลงรายการไม่ได้) — BC เก็บเป็น allowposting กลับด้าน */}
+        <div className="grid min-w-0 content-start gap-1 text-[0.95rem] leading-normal sm:pt-7">
+          <Check
+            label={tr("gl_is_control_account", "เป็นบัญชีคุม")}
+            checked={hasChildren || value.allowposting === false}
+            disabled={hasChildren}
+            onChange={(control) => {
+              if (!hasChildren) set(accountPostingPatch(!control));
             }}
-            maxLength={100}
           />
+          <span className="text-[0.9rem] text-muted-foreground">{hasChildren ? tr("gl_parent_has_children_no_posting", "ผังบัญชีที่เป็นหัว (มีตัวลูก) ไม่สามารถบันทึกตัวเลขได้") : tr("gl_is_control_account_hint", "บัญชีคุมใช้รวมยอดบัญชีย่อย ลงรายการในสมุดรายวันไม่ได้")}</span>
+        </div>
+        <div className="sm:col-span-2">
+          <Field label={tr("gl_account_name_th", "ชื่อบัญชี 1")}>
+            <input
+              className={control}
+              data-field="accountnameth"
+              required
+              value={thName}
+              onChange={(e) => {
+                const currentNames = (value.names || []).filter((name) => name.code !== "th");
+                set({ names: [...currentNames, { code: "th", name: e.target.value }] });
+              }}
+              maxLength={100}
+            />
+          </Field>
+        </div>
+        <div className="sm:col-span-2">
+          <Field label={tr("gl_account_name_en", "ชื่อบัญชี 2")}>
+            <input
+              className={control}
+              data-field="accountnameen"
+              value={enName}
+              onChange={(e) => {
+                const currentNames = (value.names || []).filter((name) => name.code !== "en");
+                set({ names: [...currentNames, { code: "en", name: e.target.value }] });
+              }}
+              maxLength={100}
+              placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")}
+            />
+          </Field>
+        </div>
+        <Field label={tr("gl_account_category", "หมวดบัญชี")}>
+          <Combobox
+            value={value.accounttype || "asset"}
+            onChange={handleTypeChange}
+          >
+            {Object.entries(accountTypeLabels).map(([code, name]) => (
+              <option key={code} value={code}>
+                {tr(...name)}
+              </option>
+            ))}
+          </Combobox>
+        </Field>
+        <Field label={tr("gl_account_level", "ระดับบัญชี")}>
+          <Combobox
+            data-field="level"
+            aria-label={tr("gl_account_level", "ระดับบัญชี")}
+            value={value.level ?? 1}
+            onChange={(level) => set({ level: Number(level) })}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => (
+              <option key={lvl} value={lvl}>
+                {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))}
+              </option>
+            ))}
+          </Combobox>
         </Field>
         <Field label={tr("gl_parent_account", "หัวบัญชี (บัญชีแม่)")}>
           <Combobox
@@ -1242,32 +1300,6 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             })}
           </Combobox>
         </Field>
-        <Field label={tr("gl_account_category", "หมวดบัญชี")}>
-          <Combobox
-            value={value.accounttype || "asset"}
-            onChange={handleTypeChange}
-          >
-            {Object.entries(accountTypeLabels).map(([code, name]) => (
-              <option key={code} value={code}>
-                {tr(...name)}
-              </option>
-            ))}
-          </Combobox>
-        </Field>
-        <Field label={tr("gl_account_level_range", "ระดับบัญชี (1–12)")}>
-          <Combobox
-            data-field="level"
-            aria-label={tr("gl_account_level", "ระดับบัญชี")}
-            value={value.level ?? 1}
-            onChange={(level) => set({ level: Number(level) })}
-          >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => (
-              <option key={lvl} value={lvl}>
-                {tr("gl_level_2", "ระดับ {0}").replace("{0}", String(lvl))}
-              </option>
-            ))}
-          </Combobox>
-        </Field>
         <Field label={tr("gl_normal_balance", "ยอดคงเหลือปกติ")}>
           <div title={fillText(tr("gl_normal_balance_default_hint", "ปกติของหมวดนี้: {0} — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว"), balanceLabel(categoryBalance))}>
             <Combobox
@@ -1287,21 +1319,6 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             </span>
           )}
         </Field>
-        <div className="sm:col-span-2">
-          <Field label={tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ (ไม่บังคับ)")}>
-            <input
-              className={control}
-              data-field="accountnameen"
-              value={enName}
-              onChange={(e) => {
-                const currentNames = (value.names || []).filter((name) => name.code !== "en");
-                set({ names: [...currentNames, { code: "en", name: e.target.value }] });
-              }}
-              maxLength={100}
-              placeholder={tr("gl_optional_example_cash_on_hand", "ไม่บังคับ เช่น Cash on hand")}
-            />
-          </Field>
-        </div>
         <div className="sm:col-span-2 flex flex-col gap-1.5 p-2 rounded-xl border border-border/60 bg-muted/20">
           <div className="flex flex-wrap items-center gap-2">
             <Check
@@ -1310,24 +1327,6 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
               checked={value.isactive ?? true}
               onChange={(isactive) => set({ isactive })}
             />
-            <div className="inline-flex items-center gap-1.5">
-              <Check
-                className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
-                label={tr("gl_allow_posting", "บันทึกบัญชีได้")}
-                checked={hasChildren ? false : (value.allowposting ?? true)}
-                disabled={hasChildren}
-                onChange={(allowposting) => {
-                  if (!hasChildren) {
-                    set(accountPostingPatch(allowposting));
-                  }
-                }}
-              />
-              {hasChildren && (
-                <span className="text-[0.75rem] text-muted-foreground font-medium" title={tr("gl_parent_has_children_no_posting", "ผังบัญชีที่เป็นหัว มีตัวลูก ไม่สามารถบันทึกตัวเลขได้")}>
-                  ({tr("gl_control_account", "บัญชีคุม")})
-                </span>
-              )}
-            </div>
             <div className="inline-flex items-center" title={tr("gl_iscash_hint", "เลือกได้เฉพาะบัญชีสินทรัพย์ที่บันทึกบัญชีได้และไม่มีบัญชีย่อย — เปลี่ยนไม่ได้เมื่อบัญชีผ่านรายการแล้ว")}>
               <Check
                 className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
@@ -1436,7 +1435,7 @@ function JournalBookFields({ value, set }: { value: GLJournalBook; set: (patch: 
     <>
       {value.id && <Notice text={tr("gl_journal_book_in_use_hint", "สมุดที่มีใบสำคัญใช้อยู่แล้ว เปลี่ยนรหัสหรือประเภทไม่ได้ และลบไม่ได้ — ถ้าเลิกใช้ให้ปิดใช้งานแทน (แก้ชื่อได้เสมอ)")} />}
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={tr("gl_code", "รหัส")} hint={tr("gl_book_code_hint", "ไม่เกิน {0} ตัวอักษร เช่น JV, PV, RV, SV, UV").replace("{0}", String(JOURNAL_BOOK_CODE_MAX))}>
+        <Field label={tr("gl_book_code", "รหัสสมุดรายวัน")} hint={tr("gl_book_code_hint", "ไม่เกิน {0} ตัวอักษร เช่น JV, PV, RV, SV, UV").replace("{0}", String(JOURNAL_BOOK_CODE_MAX))}>
           <input className={control} data-field="code" required value={value.code || ""} aria-invalid={codeLength > JOURNAL_BOOK_CODE_MAX || undefined} onChange={(e) => set({ code: e.target.value })} />
           {codeLength > JOURNAL_BOOK_CODE_MAX && (
             <span role="alert" className="text-[0.9rem] leading-snug text-destructive">
@@ -1444,21 +1443,21 @@ function JournalBookFields({ value, set }: { value: GLJournalBook; set: (patch: 
             </span>
           )}
         </Field>
+        <Field label={tr("gl_book_name", "ชื่อสมุดรายวัน")}>
+          <input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} />
+        </Field>
+        {/* Champ BCGLBook.TitleName — หัวใบสำคัญที่พิมพ์ (gl-print.tsx) */}
+        <Field label={tr("gl_book_title_name", "หัวเอกสาร")} hint={tr("gl_book_title_hint", "ชื่อใบสำคัญที่พิมพ์ เช่น ใบสำคัญจ่าย — เว้นว่างจะพิมพ์ชื่อสมุด")}>
+          <input className={control} data-field="titlename" maxLength={JOURNAL_BOOK_NAME_MAX} value={value.titlename || ""} onChange={(e) => set({ titlename: e.target.value })} />
+        </Field>
         <Field label={tr("gl_book_type", "ประเภทสมุดรายวัน")} hint={value.id && !isJournalBookType(value.booktype) ? tr("gl_book_type_untyped_hint", "ยังไม่ได้กำหนดประเภท — เลือกประเภทก่อนบันทึกเอกสาร (เปลี่ยนชื่อหรือปิดใช้งานได้โดยไม่ต้องเลือก)") : undefined}>
           <Combobox data-field="booktype" aria-label={tr("gl_book_type", "ประเภทสมุดรายวัน")} value={value.booktype ? String(value.booktype) : ""} onChange={(booktype) => set({ booktype: Number(booktype) || 0 })}>
             <option value="">{tr("gl_select", "เลือก")}</option>
             {JOURNAL_BOOK_TYPES.map((type) => <option key={type} value={String(type)}>{tr(journalBookTypeLabels[type][0], journalBookTypeLabels[type][1])}</option>)}
           </Combobox>
         </Field>
-        <Field label={tr("gl_name", "ชื่อ")}>
-          <input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} />
-        </Field>
         <Field label={tr("gl_name_en", "ชื่อภาษาอังกฤษ (ไม่บังคับ)")}>
           <input className={control} data-field="nameen" value={value.nameen || ""} onChange={(e) => set({ nameen: e.target.value })} />
-        </Field>
-        {/* Champ BCGLBook.TitleName — หัวใบสำคัญที่พิมพ์ (gl-print.tsx) */}
-        <Field label={tr("gl_book_title_name", "หัวเอกสาร")} hint={tr("gl_book_title_hint", "ชื่อใบสำคัญที่พิมพ์ เช่น ใบสำคัญจ่าย — เว้นว่างจะพิมพ์ชื่อสมุด")}>
-          <input className={control} data-field="titlename" maxLength={JOURNAL_BOOK_NAME_MAX} value={value.titlename || ""} onChange={(e) => set({ titlename: e.target.value })} />
         </Field>
         {/* เลขรันแบบ Champ (BRunningBttn) — backend journal_docno.go ออกเลขตอนบันทึกใบใหม่ที่เว้นเลขที่ไว้ */}
         <Field label={tr("gl_book_doc_format", "รูปแบบเลขที่เอกสาร")} hint={tr("gl_book_doc_format_hint", "@ = รหัสสมุด · YY = ปี พ.ศ. 2 หลัก · MM = เดือน · DD = วัน · # = เลขรัน 1 หลัก — เว้นว่างใช้ {0}").replace("{0}", JOURNAL_DOC_FORMAT_DEFAULT)}>

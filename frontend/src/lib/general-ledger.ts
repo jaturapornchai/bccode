@@ -401,8 +401,8 @@ export function chartOfAccountsCsv(accounts: GLAccount[], tr: GLTextFn): string 
   const sorted = sortAccountsHierarchically(accounts);
   const headers = [
     tr("gl_account_code", "รหัสบัญชี"),
-    tr("gl_account_name_th", "ชื่อบัญชีภาษาไทย"),
-    tr("gl_account_name_en", "ชื่อบัญชีภาษาอังกฤษ"),
+    tr("gl_account_name_th", "ชื่อบัญชี 1"),
+    tr("gl_account_name_en", "ชื่อบัญชี 2"),
     tr("gl_account_category", "หมวดบัญชี"),
     tr("gl_parent_account", "หัวบัญชี (บัญชีแม่)"),
     tr("gl_account_level", "ระดับบัญชี"),

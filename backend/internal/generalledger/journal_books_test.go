@@ -171,10 +171,10 @@ func TestDefaultJournalBooksFollowSpecMeaning(t *testing.T) {
 		t.Fatalf("default books = %d", len(books))
 	}
 	for _, b := range books {
-		if want[b.Code] != b.BookType || b.Name == "" || b.NameEn == "" {
+		if want[b.Code] != b.BookType || b.Name == "" || b.NameEn == "" || b.TitleName == "" {
 			t.Fatalf("default book %+v", b)
 		}
-		m := Master{Kind: "journal-books", Code: b.Code, Name: b.Name, NameEn: b.NameEn, BookType: b.BookType}
+		m := Master{Kind: "journal-books", Code: b.Code, Name: b.Name, NameEn: b.NameEn, TitleName: b.TitleName, BookType: b.BookType}
 		if err := validateJournalBookMaster(&m, false); err != nil {
 			t.Fatalf("default book %s invalid: %v", b.Code, err)
 		}
