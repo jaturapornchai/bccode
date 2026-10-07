@@ -47,6 +47,18 @@ const POSTGRES_SETTING_BASE_PATHS = new Set<string>([
 export const LIVE_ERP_TRANSACTION_ROUTES = new Set<string>([
   "/transaction/purchaseorder",
   "/transaction/sale",
+  "/transaction/quotation",
+  "/transaction/saleorder",
+  "/transaction/purchase",
+  "/transaction/purchaserequisition",
+  "/transaction/purchasereturn",
+  "/transaction/salereturn",
+  "/transaction/stockbalance",
+  "/transaction/stockreceiveproduct",
+  "/transaction/stockpickupproduct",
+  "/transaction/stockreturnproduct",
+  "/transaction/stocktransfer",
+  "/transaction/adjust",
 ]);
 
 export function isMenuBackendRetired(route: string): boolean {

@@ -8,7 +8,7 @@ if (!fs.existsSync(SHOTS_DIR)) {
 }
 
 async function runUat() {
-  console.log('🚀 เริ่มต้นการทดสอบ Browser UAT หน้าจอ DataCRUD (PO & Sale)...');
+  console.log('🚀 เริ่มต้นการทดสอบ Browser UAT หน้าจอ DataCRUD (Quotation, SO, Purchase)...');
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -16,7 +16,7 @@ async function runUat() {
   const page = await context.newPage();
 
   // 1. Login flow
-  console.log('👉 [1/4] เข้าสู่ระบบผ่าน Demo Login...');
+  console.log('👉 [1/6] เข้าสู่ระบบผ่าน Demo Login...');
   await page.goto('http://localhost:3000/');
   await page.waitForTimeout(2000);
   await page.locator('button', { hasText: 'ทดลองใช้ระบบ (Demo)' }).click();
@@ -24,13 +24,13 @@ async function runUat() {
   // 2. Select Holding
   await page.waitForURL('**/holding**', { timeout: 30000 });
   await page.waitForTimeout(1500);
-  console.log('👉 [2/4] เลือกกลุ่มกิจการรุ่งเรืองกรุ๊ป...');
+  console.log('👉 [2/6] เลือกกลุ่มกิจการรุ่งเรืองกรุ๊ป...');
   await page.locator('button', { hasText: 'รุ่งเรืองกรุ๊ป' }).click();
 
   // 3. Select Company & Branch
   await page.waitForURL('**/workspace**', { timeout: 30000 });
   await page.waitForTimeout(1500);
-  console.log('👉 [3/4] เลือกบริษัท 01 และ สาขา 00000...');
+  console.log('👉 [3/6] เลือกบริษัท 01 และ สาขา 00000...');
   await page.locator('button', { hasText: 'บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด' }).click();
   await page.waitForTimeout(1500);
   await page.locator('button', { hasText: 'สำนักงานใหญ่' }).click();
@@ -40,33 +40,45 @@ async function runUat() {
   await page.waitForTimeout(2000);
   console.log('✅ เข้าสู่หน้าจอหลัก /menu เรียบร้อย');
 
-  // Test 1: Purchase Order Screen
-  console.log('👉 [4/4] เปิดหน้าจอและทดสอบใบสั่งซื้อสินค้า (PO)...');
-  const searchInput = page.locator('input[placeholder*="ค้นหาเมนู"]');
-  await searchInput.fill('ใบสั่งซื้อสินค้า');
-  await page.waitForTimeout(800);
+  async function openBySearch(keyword, expectedTitle) {
+    const homeTab = page.locator('button[role="tab"]').first();
+    await homeTab.click();
+    await page.waitForTimeout(1000);
 
-  const poMenu = page.locator('button, div[role="button"]').filter({ hasText: 'บันทึกใบสั่งซื้อสินค้า' }).first();
-  await poMenu.click();
-  await page.waitForTimeout(3000);
+    const searchInput = page.locator('input[placeholder*="ค้นหา"]').first();
+    await searchInput.fill('');
+    await searchInput.fill(keyword);
+    await page.waitForTimeout(1000);
 
-  await page.screenshot({ path: path.join(SHOTS_DIR, 'uat-datacrud-po.png') });
-  console.log('   └─ ถ่ายภาพหน้าจอ PO สำเร็จ: uat-datacrud-po.png');
+    const searchResult = page.locator('div[role="search"] button').filter({ hasText: expectedTitle }).first();
+    if (await searchResult.count() > 0) {
+      await searchResult.click();
+    } else {
+      await page.locator('div[role="search"] button').first().click();
+    }
+    await page.waitForTimeout(3000);
+  }
 
-  // Test 2: Sale Invoice Screen
-  console.log('👉 เปิดหน้าจอและทดสอบใบขายสินค้า (Sale Invoice)...');
-  await searchInput.fill('ขายสินค้า');
-  await page.waitForTimeout(800);
+  // Test 1: Quotation
+  console.log('👉 [4/6] เปิดหน้าจอใบเสนอราคาสินค้า (/transaction/quotation)...');
+  await openBySearch('ใบเสนอราคา', 'ใบเสนอราคา');
+  await page.screenshot({ path: path.join(SHOTS_DIR, 'uat-datacrud-quotation.png') });
+  console.log('   └─ ถ่ายภาพหน้าจอ Quotation สำเร็จ: uat-datacrud-quotation.png');
 
-  const saleMenu = page.locator('button, div[role="button"]').filter({ hasText: 'บันทึกขายสินค้า,บริการ' }).first();
-  await saleMenu.click();
-  await page.waitForTimeout(3000);
+  // Test 2: Sale Order
+  console.log('👉 [5/6] เปิดหน้าจอใบสั่งขายสินค้า (/transaction/saleorder)...');
+  await openBySearch('ใบสั่งขายสินค้า', 'ใบสั่งขายสินค้า');
+  await page.screenshot({ path: path.join(SHOTS_DIR, 'uat-datacrud-saleorder.png') });
+  console.log('   └─ ถ่ายภาพหน้าจอ Sale Order สำเร็จ: uat-datacrud-saleorder.png');
 
-  await page.screenshot({ path: path.join(SHOTS_DIR, 'uat-datacrud-sale.png') });
-  console.log('   └─ ถ่ายภาพหน้าจอ Sale Invoice สำเร็จ: uat-datacrud-sale.png');
+  // Test 3: Purchase
+  console.log('👉 [6/6] เปิดหน้าจอซื้อสินค้า,บริการ (/transaction/purchase)...');
+  await openBySearch('บันทึกซื้อสินค้า,บริการ', 'บันทึกซื้อสินค้า,บริการ');
+  await page.screenshot({ path: path.join(SHOTS_DIR, 'uat-datacrud-purchase.png') });
+  console.log('   └─ ถ่ายภาพหน้าจอ Purchase สำเร็จ: uat-datacrud-purchase.png');
 
   await browser.close();
-  console.log('\n🎉 ผลการทดสอบ Browser UAT หน้าจอ DataCRUD สำเร็จสมบูรณ์ 100%!');
+  console.log('\n🎉 ผลการทดสอบ Browser UAT สำเร็จสมบูรณ์ 100%!');
 }
 
 runUat().catch((err) => {

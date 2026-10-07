@@ -55,6 +55,7 @@ type ErpDetailItem struct {
 	WhCode         string  `json:"whcode,omitempty"`
 	LocationCode   string  `json:"locationcode,omitempty"`
 	Description    string  `json:"description,omitempty"`
+	DocRef         string  `json:"docref,omitempty"`
 }
 
 type ErpTransactionDoc struct {
@@ -64,6 +65,8 @@ type ErpTransactionDoc struct {
 	TransFlag      int             `json:"transflag"`
 	CustCode       string          `json:"custcode,omitempty"`
 	CustName       string          `json:"custname,omitempty"`
+	DocRef         string          `json:"docref,omitempty"`
+	DocRefTransFlag int            `json:"docreftransflag,omitempty"`
 	Description    string          `json:"description,omitempty"`
 	TotalAmount    float64         `json:"totalamount"`
 	TotalValue     float64         `json:"totalvalue,omitempty"`
@@ -78,6 +81,7 @@ type ErpTransactionDoc struct {
 	IsCancel       bool            `json:"iscancel,omitempty"`
 	BranchCode     string          `json:"branchcode,omitempty"`
 	Remark         string          `json:"remark,omitempty"`
+	PostToGL       bool            `json:"post_to_gl,omitempty"`
 	Details        []ErpDetailItem `json:"details"`
 	CreatedAt      *time.Time      `json:"created_at,omitempty"`
 	ModifiedAt     *time.Time      `json:"modified_at,omitempty"`

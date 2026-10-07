@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -144,10 +145,19 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 		d.Status = 0
 	}
 
+	// Fetch docref if any
+	var refDocNo string
+	var refTransFlag int
+	if err := db.QueryRowContext(ctx, `SELECT docnoref, docnoreftransflag FROM docref WHERE businesscode=$1 AND docno=$2 LIMIT 1`, company, d.DocNo).Scan(&refDocNo, &refTransFlag); err == nil {
+		d.DocRef = refDocNo
+		d.DocRefTransFlag = refTransFlag
+	}
+
 	// Fetch detail items
 	detailQuery := `SELECT id, linenumber, COALESCE(itemcode, ''), COALESCE(barcode, ''),
 		COALESCE(unitcode, ''), COALESCE(totalqty, 0), COALESCE(price, 0),
-		COALESCE(sumamount, 0), COALESCE(description, ''), COALESCE(whcode, ''), COALESCE(locationcode, '')
+		COALESCE(sumamount, 0), COALESCE(description, ''), COALESCE(whcode, ''), COALESCE(locationcode, ''),
+		COALESCE(docref, '')
 		FROM docdetail WHERE businesscode = $1 AND transflag = $2 AND docno = $3
 		ORDER BY linenumber`
 
@@ -164,6 +174,7 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 			&item.ID, &item.LineNumber, &item.ItemCode, &item.Barcode,
 			&item.UnitCode, &item.Qty, &item.Price,
 			&item.SumAmount, &item.Description, &item.WhCode, &item.LocationCode,
+			&item.DocRef,
 		); err != nil {
 			return nil, fmt.Errorf("scan doc detail: %w", err)
 		}
@@ -175,7 +186,6 @@ func (s *Store) GetDoc(ctx context.Context, db *sql.DB, company string, transfla
 
 func (s *Store) NextDocNo(ctx context.Context, db *sql.DB, company string, transflag int, prefix string) (string, error) {
 	now := time.Now()
-	// ปี พ.ศ. สองหลัก + เดือน เช่น 6910
 	thaiYear2D := (now.Year() + 543) % 100
 	periodPrefix := fmt.Sprintf("%s%02d%02d", prefix, thaiYear2D, int(now.Month()))
 
@@ -279,13 +289,14 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	insertDetailQuery := `INSERT INTO docdetail (
 		businesscode, transflag, docno, docdatetime, linenumber,
 		itemcode, barcode, unitcode, totalqty, price, sumamount,
-		description, whcode, locationcode
+		description, whcode, locationcode, docref
 	) VALUES (
 		$1, $2, $3, $4, $5,
 		$6, $7, $8, $9, $10, $11,
-		$12, $13, $14
+		$12, $13, $14, $15
 	)`
 
+	docRefGlobal := strings.TrimSpace(doc.DocRef)
 	for i, item := range doc.Details {
 		lineNo := item.LineNumber
 		if lineNo <= 0 {
@@ -295,14 +306,46 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 		if desc == "" {
 			desc = item.ItemName
 		}
+		itemRef := strings.TrimSpace(item.DocRef)
+		if itemRef == "" {
+			itemRef = docRefGlobal
+		}
 		_, err = tx.ExecContext(ctx, insertDetailQuery,
 			company, transflag, docNo, docDate, lineNo,
 			item.ItemCode, item.Barcode, item.UnitCode, item.Qty, item.Price, item.SumAmount,
-			desc, item.WhCode, item.LocationCode,
+			desc, item.WhCode, item.LocationCode, itemRef,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("insert docdetail line %d: %w", lineNo, err)
 		}
+	}
+
+	// บันทึกความสัมพันธ์การอ้างอิงเอกสาร (Document Reference Linkage)
+	if docRefGlobal != "" {
+		refTransFlag := doc.DocRefTransFlag
+		if refTransFlag == 0 {
+			if strings.HasPrefix(docRefGlobal, "PO") {
+				refTransFlag = 6
+			} else if strings.HasPrefix(docRefGlobal, "SO") {
+				refTransFlag = 36
+			} else if strings.HasPrefix(docRefGlobal, "QT") {
+				refTransFlag = 34
+			} else if strings.HasPrefix(docRefGlobal, "PR") {
+				refTransFlag = 2
+			}
+		}
+		_, _ = tx.ExecContext(ctx, `DELETE FROM docref WHERE businesscode=$1 AND docno=$2`, company, docNo)
+		_, _ = tx.ExecContext(ctx, `INSERT INTO docref (businesscode, docno, docnotransflag, docnoref, docnoreftransflag)
+			VALUES ($1, $2, $3, $4, $5)`, company, docNo, transflag, docRefGlobal, refTransFlag)
+
+		// อัปเดตเอกสารต้นทาง (PO, SO, QT) ให้เป็นอ้างอิงแล้วและปิดเอกสาร
+		_, _ = tx.ExecContext(ctx, `UPDATE doc SET isref = true, isclosed = true, modified_at = $1
+			WHERE businesscode = $2 AND docno = $3`, now, company, docRefGlobal)
+	}
+
+	// Auto-posting GL สำหรับการซื้อสินค้า (Purchase: transflag=12) หรือ flag PostToGL
+	if transflag == 12 || doc.PostToGL {
+		_ = s.postPurchaseToGL(ctx, tx, company, branch, doc, docNo, docDate, actor, now)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -313,6 +356,159 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 	doc.TransFlag = transflag
 	doc.BranchCode = branch
 	return doc, nil
+}
+
+func (s *Store) postPurchaseToGL(ctx context.Context, tx *sql.Tx, company, branch string, doc *ErpTransactionDoc, docNo string, docDate time.Time, actor string, now time.Time) error {
+	var fiscalYear string
+	dateStr := docDate.Format("2006-01-02")
+	err := tx.QueryRowContext(ctx, `SELECT code FROM gl_records WHERE company=$1 AND kind='fiscal-years' AND payload->>'startdate'<=$2 AND payload->>'enddate'>=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, company, dateStr).Scan(&fiscalYear)
+	if err != nil {
+		fiscalYear = "2569"
+	}
+
+	totalAmount := doc.TotalAmount
+	vatAmount := doc.TotalVatValue
+	if vatAmount == 0 && doc.TotalBeforeVat > 0 {
+		vatAmount = totalAmount - doc.TotalBeforeVat
+	}
+	goodsAmount := totalAmount - vatAmount
+	if goodsAmount <= 0 {
+		goodsAmount = totalAmount
+	}
+
+	totalAmountStr := fmt.Sprintf("%.2f", totalAmount)
+	goodsAmountStr := fmt.Sprintf("%.2f", goodsAmount)
+	vatAmountStr := fmt.Sprintf("%.2f", vatAmount)
+
+	glDocNo := "UV-" + docNo
+	journalID := fmt.Sprintf("PUR-%s", docNo)
+
+	lines := []map[string]any{
+		{
+			"accountcode": "1141",
+			"accountname": "สินค้าสำเร็จรูป",
+			"debit":       goodsAmountStr,
+			"credit":      "0.00",
+			"description": fmt.Sprintf("ซื้อสินค้าตามเอกสาร %s", docNo),
+		},
+	}
+	if vatAmount > 0 {
+		lines = append(lines, map[string]any{
+			"accountcode": "1151",
+			"accountname": "ภาษีซื้อ",
+			"debit":       vatAmountStr,
+			"credit":      "0.00",
+			"description": fmt.Sprintf("ภาษีซื้อ 7%% ตามเอกสาร %s", docNo),
+		})
+	}
+	lines = append(lines, map[string]any{
+		"accountcode": "2111",
+		"accountname": "เจ้าหนี้การค้า - ในประเทศ",
+		"debit":       "0.00",
+		"credit":      totalAmountStr,
+		"description": fmt.Sprintf("ตั้งเจ้าหนี้ %s ตามเอกสาร %s", doc.CustCode, docNo),
+	})
+
+	payloadMap := map[string]any{
+		"id":          journalID,
+		"date":        dateStr,
+		"kind":        "manual",
+		"docno":       glDocNo,
+		"bookcode":    "UV",
+		"branchcode":  branch,
+		"fiscalyear":  fiscalYear,
+		"description": fmt.Sprintf("บันทึกซื้อสินค้าเชื่อ เลขที่ %s (เจ้าหนี้ %s)", docNo, doc.CustCode),
+		"status":      "posted",
+		"version":     2,
+		"postedat":    now.Format(time.RFC3339Nano),
+		"postedby":    actor,
+		"createdat":   now.Format(time.RFC3339Nano),
+		"createdby":   actor,
+		"lines":       lines,
+	}
+
+	payloadJSON, err := json.Marshal(payloadMap)
+	if err != nil {
+		return err
+	}
+
+	// บันทึก gl_records (status: posted)
+	_, err = tx.ExecContext(ctx, `INSERT INTO gl_records (company, kind, id, code, version, payload)
+		VALUES ($1, 'journals', $2, $3, 2, $4)
+		ON CONFLICT (company, kind, id) DO UPDATE SET version=2, payload=$4`,
+		company, journalID, glDocNo, payloadJSON)
+	if err != nil {
+		return err
+	}
+
+	// บันทึก gl_lines
+	_, _ = tx.ExecContext(ctx, `DELETE FROM gl_lines WHERE company=$1 AND journal_id=$2`, company, journalID)
+
+	lineNo := 1
+	// Line 1: Goods (Asset)
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'UV', $7,
+		'', '', 'manual', 'THB', 2, '1141', 'สินค้าสำเร็จรูป',
+		'asset', 'debit', false, $8, '', $9, 0
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("ซื้อสินค้าตามเอกสาร %s", docNo), goodsAmount)
+	lineNo++
+
+	// Line 2: VAT Buy (if any)
+	if vatAmount > 0 {
+		_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+			company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+			department_code, project_code, kind, currency, scale, account_code, account_name,
+			account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, 'UV', $7,
+			'', '', 'manual', 'THB', 2, '1151', 'ภาษีซื้อ',
+			'asset', 'debit', false, $8, '', $9, 0
+		)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+			fmt.Sprintf("ภาษีซื้อ 7%% ตามเอกสาร %s", docNo), vatAmount)
+		lineNo++
+	}
+
+	// Line 3: AP Creditor
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'UV', $7,
+		'', '', 'manual', 'THB', 2, '2111', 'เจ้าหนี้การค้า - ในประเทศ',
+		'liability', 'credit', false, $8, '', 0, $9
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("ตั้งเจ้าหนี้ %s ตามเอกสาร %s", doc.CustCode, docNo), totalAmount)
+
+	// บันทึก AP Subledger (ตาราง gl_subledger_documents)
+	if strings.TrimSpace(doc.CustCode) != "" {
+		var partnerExists bool
+		_ = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_subledger_partners WHERE company=$1 AND code=$2)`, company, doc.CustCode).Scan(&partnerExists)
+		if partnerExists {
+			subledgerDocID := fmt.Sprintf("AP-%s", docNo)
+			subPayload, _ := json.Marshal(map[string]any{
+				"doc_no":      docNo,
+				"doc_date":    dateStr,
+				"due_date":    dateStr,
+				"journal_id":  journalID,
+				"total":       totalAmountStr,
+				"description": fmt.Sprintf("ซื้อสินค้าเชื่อ เอกสาร %s", docNo),
+			})
+			_, _ = tx.ExecContext(ctx, `INSERT INTO gl_subledger_documents (
+				company, id, ledger, partner_code, branch_code, control_account_code, amount, side, version, created_journal_id, payload
+			) VALUES (
+				$1, $2, 'ap', $3, $4, '2111', $5, 2, 1, $6, $7
+			) ON CONFLICT (company, id) DO UPDATE SET amount=$5, payload=$7`,
+				company, subledgerDocID, doc.CustCode, branch, totalAmount, journalID, subPayload)
+		}
+	}
+
+	return nil
 }
 
 func (s *Store) DeleteDoc(ctx context.Context, db *sql.DB, company string, transflag int, docIdOrNo string, actor string) error {
@@ -332,7 +528,6 @@ func (s *Store) DeleteDoc(ctx context.Context, db *sql.DB, company string, trans
 		args = []any{company, transflag, docIdOrNo}
 	}
 
-	// Soft delete
 	updateDoc := fmt.Sprintf("UPDATE doc SET isdelete = true, modifier_code = $%d, modified_at = $%d %s", len(args)+1, len(args)+2, where)
 	args = append(args, actor, time.Now().UTC())
 

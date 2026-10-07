@@ -40,7 +40,7 @@ describe("menu screen availability", () => {
     expect(isMenuBackendRetired("/banking/cheques/deposit")).toBe(true);
     expect(isMenuBackendRetired("/productserialregistry")).toBe(true);
     expect(isMenuBackendRetired("/promotionscreen")).toBe(true);
-    expect(isMenuBackendRetired("/transaction/saleorder")).toBe(true);
+    expect(isMenuBackendRetired("/transaction/saleorder")).toBe(false);
     expect(isMenuBackendRetired("/product")).toBe(true);
     expect(isMenuBackendRetired("/productwarehousescreen")).toBe(true);
     expect(isMenuScreenPending("/useraccessaudit")).toBe(false);
