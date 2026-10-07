@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount } from "@/lib/general-ledger";
-import { AccountSearchDialog } from "./account-search-dialog";
+import { AccountSearchDialog, parseAccountSearch } from "./account-search-dialog";
 import { AccountSelect } from "./gl-common";
 
 const mockAccounts: GLAccount[] = [
@@ -225,5 +225,14 @@ describe("AccountSelect in gl-common", () => {
     // Search button trigger
     expect(html).toContain("เปิดระบบค้นหาผังบัญชีแบบเต็มจอ");
     expect(html).toContain("ล้างค่าที่เลือก");
+  });
+});
+
+describe("parseAccountSearch — Champ ? / ?? ในช่องรหัสบัญชี", () => {
+  it("? = รหัสขึ้นต้น, ?? = ชื่อมีคำ, อื่น ๆ = ค้นทุกช่อง", () => {
+    expect(parseAccountSearch("?11")).toEqual({ mode: "code", query: "11" });
+    expect(parseAccountSearch(" ??เงินสด ")).toEqual({ mode: "name", query: "เงินสด" });
+    expect(parseAccountSearch("?")).toEqual({ mode: "code", query: "" });
+    expect(parseAccountSearch("1101")).toEqual({ mode: "any", query: "1101" });
   });
 });

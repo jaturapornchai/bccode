@@ -1719,6 +1719,7 @@ export function YearSelect({ label: labelProp, ... }) { const tr = useGLText(); 
 - **เหตุผลทางเทคนิค (Root Cause & Rationale)**: ลุงจืดสั่ง 2026-10-07 "ให้ Champ เป็นหลัก เหมือนกันแทบทุกอย่าง เพราะ user จะได้ง่าย" และให้ภาพจริงเป็นสเปกเพิ่ม; ช่อง/ลำดับที่คุ้นมือทำให้คนย้ายจาก Champ คีย์ได้ทันที
 - **วิธีตรวจ**: `npx vitest run src/app/gl src/lib/general-ledger.test.ts`; บนจอจริง: ปุ่ม Demo → รายการผังบัญชี → เพิ่มรายการ → ติ๊ก "เป็นบัญชีคุม" → บันทึก → `gl_records` ได้ `allowposting=false` → แก้ไขเอาติ๊กออก → `true`; กำหนดสมุดรายวัน → ตารางมีคอลัมน์หัวเอกสาร
 - **อ้างอิง (Reference Implementation)**: `frontend/src/app/gl/gl-masters.tsx` `AccountFields`, `JournalBookFields`, หัวตาราง `isBook`; ค่าเริ่มต้นหัวเอกสาร `backend/internal/generalledger/journal_books.go` `DefaultJournalBooks` (Champ `gldlgglbookcode.cpp:379-398`)
+- **ค้นบัญชีด้วย `?`/`??` แบบ Champ (2026-10-07)**: ช่องเลือกบัญชีทุกจอ (`AccountSelect` ใน `gl-common.tsx`) กด `?` = เปิดจอค้นผังบัญชีพร้อมข้อความ "?" แล้วพิมพ์ต่อ — `?ข้อความ` = รหัสขึ้นต้นด้วย, `??ข้อความ` = ชื่อมีคำนั้น, ไม่มี ? = ค้นทุกช่องเหมือนเดิม (`parseAccountSearch` ใน `account-search-dialog.tsx`, Champ `glfrmjournal.cpp:1268-1338`); มี `initialSearch` แล้วห้าม `select()` ข้อความทับ เพราะผู้ใช้กำลังพิมพ์ต่อ
 
 ## 8.68 เมนูหลักแบบ Champ: 13 หัว + dropdown คอลัมน์เดียว/เส้นคั่น/submenu จากชั้นจัดวาง `MENU_BARS` (2026-10-07)
 

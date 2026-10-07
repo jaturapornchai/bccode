@@ -470,6 +470,8 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
   const tr = useGLText();
   const label = labelProp ?? tr("gl_account", "บัญชี");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [initialSearch, setInitialSearch] = useState("");
+  const openSearch = (text = "") => { setInitialSearch(text); setDialogOpen(true); };
   const sortedAccounts = useMemo(() => sortAccountsHierarchically(accounts), [accounts]);
   return (
     <>
@@ -482,12 +484,16 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
           onChange={(event) => onChange(event.target.value)}
           onMouseDown={(event) => {
             event.preventDefault();
-            setDialogOpen(true);
+            openSearch();
           }}
           onKeyDown={(event) => {
             if (event.key === "F2" || event.key === " " || event.key === "Enter") {
               event.preventDefault();
-              setDialogOpen(true);
+              openSearch();
+            } else if (event.key === "?") {
+              // Champ: พิมพ์ ? ในช่องรหัสบัญชีเพื่อค้น (?รหัสขึ้นต้น / ??ชื่อมีคำ)
+              event.preventDefault();
+              openSearch("?");
             }
           }}
           disabled={disabled}
@@ -524,7 +530,7 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setDialogOpen(true);
+              openSearch();
             }}
             className="inline-flex !size-7 !min-h-0 !max-h-none !min-w-0 !p-0 items-center justify-center rounded-[8px] border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-50 cursor-pointer shadow-[0_2px_6px_rgba(0,0,0,0.14)] hover:shadow-[0_3px_10px_rgba(0,0,0,0.2)] shrink-0"
             title={tr("gl_open_fullscreen_coa_search_f2", "เปิดระบบค้นหาผังบัญชีแบบเต็มจอ (F2)")}
@@ -544,6 +550,7 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
         all={all}
         title={tr("gl_search_and_select", "ค้นหาและเลือก{0}").replace("{0}", String(label))}
         allowEmpty={allowEmpty}
+        initialSearch={initialSearch}
       />
     </>
   );

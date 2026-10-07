@@ -40,6 +40,16 @@ export interface AccountSearchDialogProps {
   all?: boolean; // if false, defaults to showing only allowposting && isactive
   title?: string;
   allowEmpty?: boolean;
+  /** ข้อความค้นหาตั้งต้นตอนเปิด เช่น "?" เมื่อผู้ใช้พิมพ์ ? ในช่องรหัสบัญชีแบบ Champ */
+  initialSearch?: string;
+}
+
+/** Champ ช่องรหัสบัญชี (glfrmjournal.cpp:1268-1338): "?ข้อความ" = รหัสขึ้นต้นด้วย, "??ข้อความ" = ชื่อมีคำนั้น, อื่น ๆ = ค้นทุกช่อง */
+export function parseAccountSearch(search: string): { mode: "any" | "code" | "name"; query: string } {
+  const text = search.trim().toLowerCase();
+  if (text.startsWith("??")) return { mode: "name", query: text.slice(2).trim() };
+  if (text.startsWith("?")) return { mode: "code", query: text.slice(1).trim() };
+  return { mode: "any", query: text };
 }
 
 const CATEGORY_TABS: { key: string; label: GLLabel; type?: GLAccount["accounttype"] }[] = [
@@ -63,6 +73,7 @@ export function AccountSearchDialog({
   all = false,
   title: titleProp,
   allowEmpty = true,
+  initialSearch = "",
 }: AccountSearchDialogProps) {
   const tr = useGLText();
   const title = titleProp ?? tr("gl_search_select_coa", "ค้นหาและเลือกผังบัญชี (Chart of Accounts)");
@@ -89,7 +100,7 @@ export function AccountSearchDialog({
     const justOpened = open && !wasOpenRef.current;
     wasOpenRef.current = open;
     if (justOpened) {
-      setSearch("");
+      setSearch(initialSearch);
       setCategory("all");
       setOnlyPosting(false);
       setLevelFilter("all");
@@ -101,10 +112,11 @@ export function AccountSearchDialog({
 
       setTimeout(() => {
         searchInputRef.current?.focus();
-        searchInputRef.current?.select();
+        // พิมพ์ต่อจาก "?" ได้เลย ไม่เลือกทับ
+        if (!initialSearch) searchInputRef.current?.select();
       }, 50);
     }
-  }, [open, multiSelect, selectedCodes, selectedCode]);
+  }, [open, multiSelect, selectedCodes, selectedCode, initialSearch]);
 
   // Hierarchical sort with calculated effective levels
   const hierarchicallySortedAccounts = useMemo(() => {
@@ -122,7 +134,7 @@ export function AccountSearchDialog({
 
   // Filter accounts while preserving hierarchy order
   const filteredAccounts = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const { mode, query } = parseAccountSearch(search);
     return hierarchicallySortedAccounts.filter((acc) => {
       // Category filter
       if (category !== "all" && acc.accounttype !== category) {
@@ -142,6 +154,8 @@ export function AccountSearchDialog({
 
       // Text search query
       if (!query) return true;
+      if (mode === "code") return acc.accountcode.toLowerCase().startsWith(query);
+      if (mode === "name") return acc.names?.some((n) => n.name.toLowerCase().includes(query)) ?? false;
 
       const codeMatch = acc.accountcode.toLowerCase().includes(query);
       if (codeMatch) return true;
@@ -348,6 +362,7 @@ export function AccountSearchDialog({
               type="text"
               className="w-full rounded-xl border border-input bg-card py-2.5 !pl-11 !pr-10 text-base sm:text-lg text-foreground placeholder:text-muted-foreground/80 focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/25 transition-all"
               placeholder={tr("gl_search_account_hint", "พิมพ์ค้นหารหัสบัญชี เช่น 1101, ชื่อบัญชี เช่น เงินสด, เงินฝาก, ลูกหนี้... (↑ ↓ เลื่อน, Enter เลือก)")}
+              title={tr("gl_search_account_prefix_hint", "?ข้อความ = รหัสบัญชีขึ้นต้นด้วย · ??ข้อความ = ชื่อบัญชีมีคำนั้น")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
