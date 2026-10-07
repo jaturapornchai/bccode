@@ -764,17 +764,13 @@ export function FixedAssetsScreen({ route, embedded = false, language = "th" }: 
                         type="number"
                         step="0.01"
                         value={disposalForm.saleprice}
-                        onChange={(e) => {
-                          const price = Number(e.target.value) || 0;
-                          const vat = Math.round(price * 0.07 * 100) / 100;
-                          setDisposalForm({ ...disposalForm, saleprice: e.target.value, vatamount: String(vat) });
-                        }}
+                        onChange={(e) => setDisposalForm({ ...disposalForm, saleprice: e.target.value })}
                         className="w-full h-10 px-3 rounded-lg border border-input bg-background font-mono"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                        {tr("fa_vat_amount", "ภาษีมูลค่าเพิ่ม (VAT 7%)")}
+                        {tr("fa_vat_amount", "ภาษีมูลค่าเพิ่ม")}
                       </label>
                       <input
                         type="number"

@@ -12,7 +12,7 @@ import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { isTabularPaste, parseClipboardJournalLines, type ClipboardJournalIssue } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
-import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine } from "@/lib/gl-smart-guard";
+import { analyzeGLBalance, autoBalanceJournalLines } from "@/lib/gl-smart-guard";
 import { GLJournalDetailsPanel } from "./gl-journal-details";
 import { GLVoucherPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { detailTaxIdTarget, journalDetailsProblem, normalizeJournalDetails, reconciliationChanges, type GLDetailVat } from "@/lib/gl-journal-details";
@@ -195,11 +195,11 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);
   const smartGuard = useMemo(() => {
     try {
-      return journal ? analyzeGLTaxAndBalance(journal.lines, refs.accounts, year?.scale ?? 2) : null;
+      return journal ? analyzeGLBalance(journal.lines, year?.scale ?? 2) : null;
     } catch {
       return null;
     }
-  }, [journal, refs.accounts, year?.scale]);
+  }, [journal, year?.scale]);
   const patch = (value: Partial<GLJournal>) => setJournal((current) => current ? { ...current, ...value } : current);
   const patchLine = (index: number, value: Partial<GLLine>) => patch({ lines: journal!.lines.map((line, i) => i === index ? { ...line, ...value } : line) });
   // Champ รันเลขที่ให้ใบใหม่ (BRunningEdit) — แสดงเลขถัดไปของสมุดตามวันที่เป็นตัวอย่าง; เลขจริงออกตอนบันทึก (backend journal_docno.go)
@@ -1211,49 +1211,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </div>
                   </div>
 
-                  {/* VAT 7% Smart Checker Card */}
-                  {smartGuard?.vat.hasVatLine && (
-                    <div
-                      className={`flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border text-xs ${
-                        smartGuard.vat.isExactVat
-                          ? "bg-primary/5 border-primary/20 text-foreground"
-                          : smartGuard.vat.isCloseVat
-                          ? "bg-muted border-border text-foreground"
-                          : "bg-destructive/5 border-destructive/30 text-foreground"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {smartGuard.vat.isExactVat ? (
-                          <CheckCircle2 className="size-4 shrink-0 text-primary" />
-                        ) : (
-                          <AlertTriangle className={`size-4 shrink-0 ${smartGuard.vat.isCloseVat ? "text-muted-foreground" : "text-destructive"}`} />
-                        )}
-                        <span>
-                          {smartGuard.vat.isExactVat
-                            ? tr("gl_vat_verified_exact", "ตรวจสอบภาษีมูลค่าเพิ่ม 7%: ยอด {0} ตรงตามฐานคำนวณเป๊ะ").replace("{0}", smartGuard.vat.actualVatFormatted)
-                            : smartGuard.vat.isCloseVat
-                            ? tr("gl_vat_close_satang", "ภาษีมูลค่าเพิ่มในเอกสาร {0} (ต่างจาก 7% คำนวณปกติ {1} อยู่ {2} สตางค์ — สรรพากรยอมรับได้ตามใบกำกับภาษีจริง)")
-                                .replace("{0}", smartGuard.vat.actualVatFormatted)
-                                .replace("{1}", smartGuard.vat.expectedVatFormatted)
-                                .replace("{2}", formatAmount(amountString(smartGuard.vat.varianceUnits < 0n ? -smartGuard.vat.varianceUnits : smartGuard.vat.varianceUnits), 2))
-                            : tr("gl_vat_mismatch", "ภาษีมูลค่าเพิ่มในเอกสาร {0} ต่างจาก 7% ของฐานภาษี ({1}) โปรดตรวจสอบ")
-                                .replace("{0}", smartGuard.vat.actualVatFormatted)
-                                .replace("{1}", smartGuard.vat.expectedVatFormatted)}
-                        </span>
-                      </div>
-                      {!smartGuard.vat.isExactVat && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-6 px-2.5 text-[11px] font-medium bg-background border-border hover:bg-muted"
-                          onClick={() => patch({ lines: setExactVatLine(journal.lines, smartGuard.vat.vatLineIndex, smartGuard.vat.expectedVatUnits, year?.scale ?? 2) })}
-                        >
-                          {tr("gl_adjust_exact_vat", "ปรับเป็น 7% พอดี ({0})").replace("{0}", smartGuard.vat.expectedVatFormatted)}
-                        </Button>
-                      )}
-                    </div>
-                  )}
                   <GLJournalDetailsPanel key={`details:${journal.id ?? "new"}:${journal.version ?? 0}`} value={journal.details} original={original ? (JSON.parse(original) as GLJournal).details : undefined}
                     onChange={details => patch({ details })} lines={journal.lines} accounts={refs.accounts} date={journal.date} branch={journal.branchcode ?? ""} booktype={findJournalBook(books, journal.bookcode)?.booktype} journalId={journal.id}
                     editable={!busy && (isEditing || detailsEditing)} posted={journal.status === "posted"} onBusyChange={setDetailsBusy} scale={year?.scale} />
