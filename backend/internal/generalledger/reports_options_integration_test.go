@@ -4,6 +4,7 @@ package generalledger
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -261,8 +262,51 @@ func TestJournalSummaryOneRowPerDocument(t *testing.T) {
 			glpgDecimalEqual(t, row["amount"], "300")
 		}
 	}
-	if got := strings.Join(docs, ","); got != "Z1,Z2,SALE,COST" { // opening entries stay out like the detail report
+	if got := strings.Join(docs, ","); got != "COST,SALE,Z1,Z2" { // Champ เรียงตามเลขที่เอกสาร; opening entries stay out like the detail report
 		t.Fatalf("summary documents = %s", got)
 	}
 	glpgDecimalEqual(t, report.Totals["amount"], "500")
+}
+
+// Champ 5532: ทีละเอกสารเรียงตามเลขที่ — หัวเอกสาร → บรรทัดรายการ → รวมของเอกสาร; ยอดรวมท้ายรายงานนับเฉพาะบรรทัดรายการ
+func TestJournalDetailDocumentBlocks(t *testing.T) {
+	p, scope := reportOptionsFixture(t)
+	report, err := p.Report(context.Background(), scope, "gljournal", ReportQuery{FiscalYear: "2026"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var shape, docs []string
+	lines := 0
+	for _, row := range report.Rows {
+		switch row["rowtype"] {
+		case "document":
+			docs = append(docs, row["docno"])
+			shape = append(shape, "D")
+			lines = 0
+			if row["journalid"] == "" || row["accountcode"] != "" {
+				t.Fatalf("document header = %v", row)
+			}
+			if row["docno"] == "SALE" && (row["referenceno"] != "INV-1" || row["description"] != "รายการทดสอบ") {
+				t.Fatalf("SALE header = %v", row)
+			}
+		case "docline":
+			lines++
+			shape = append(shape, "L")
+		case "doctotal":
+			shape = append(shape, "T")
+			if row["linecount"] != strconv.Itoa(lines) {
+				t.Fatalf("document total line count = %v, counted %d", row, lines)
+			}
+			glpgDecimalEqual(t, row["debit"], row["credit"])
+		default:
+			t.Fatalf("unexpected row type: %v", row)
+		}
+	}
+	if got := strings.Join(docs, ","); got != "COST,SALE,Z1,Z2" {
+		t.Fatalf("documents = %s (shape %s)", got, strings.Join(shape, ""))
+	}
+	if report.TotalRows != int64(len(report.Rows)) {
+		t.Fatalf("total rows = %d, rows = %d", report.TotalRows, len(report.Rows))
+	}
+	glpgDecimalEqual(t, report.Totals["debit"], report.Totals["credit"])
 }

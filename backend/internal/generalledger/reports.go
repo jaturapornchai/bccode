@@ -591,20 +591,36 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 	if r.query.Summary {
 		return r.glJournalSummary(ctx)
 	}
+	// Champ 5532 รายงานข้อมูลรายวัน (GLRepTransView): ทีละเอกสารเรียงตามเลขที่เอกสาร — หัวเอกสาร (rowtype=document:
+	// วันที่ · สมุดรายวัน · เลขที่ · เอกสารอ้างอิง · คำอธิบายของเอกสาร) → บรรทัดรายการ (docline) → รวมของเอกสาร (doctotal,
+	// linecount = จำนวนบรรทัด); ยอดรวมท้ายรายงานนับเฉพาะบรรทัดรายการ
 	cte := r.base() + `, movements AS (
 		SELECT * FROM filtered WHERE entry_date >= $3::date AND entry_date <= $4::date AND kind <> 'opening'
+	), docs AS (
+		SELECT journal_id, MIN(entry_date) AS entry_date, MIN(doc_no) AS doc_no, MIN(book_code) AS book_code,
+		       SUM(debit) AS debit, SUM(credit) AS credit, COUNT(*) AS lines
+		FROM movements GROUP BY journal_id
 	), result AS (
-		SELECT entry_date::text AS date, doc_no AS docno, book_code AS bookcode,
-		       account_code AS accountcode, account_name AS accountname,
-		       description, debit::text, credit::text,
-		       branch_code AS branchcode, department_code AS departmentcode,
-		       project_code AS projectcode, journal_id AS journalid, line_no::text AS __line_no
+		SELECT d.entry_date::text AS date, d.book_code AS bookcode, d.doc_no AS docno,
+		       COALESCE(j.payload->>'reference','') AS referenceno, ''::text AS accountcode, ''::text AS accountname,
+		       COALESCE(j.payload->>'description','') AS description, NULL::text AS debit, NULL::text AS credit,
+		       ''::text AS branchcode, ''::text AS departmentcode, ''::text AS projectcode,
+		       'document'::text AS rowtype, ''::text AS linecount, d.journal_id AS journalid, '0'::text AS __sort, '0'::text AS __line_no
+		FROM docs d LEFT JOIN gl_records j ON j.company=$1 AND j.kind='journals' AND j.id=d.journal_id
+		UNION ALL
+		SELECT entry_date::text, book_code, doc_no, '', account_code, account_name, description, debit::text, credit::text,
+		       branch_code, department_code, project_code, 'docline', '', journal_id, '1', line_no::text
 		FROM movements
+		UNION ALL
+		SELECT entry_date::text, book_code, doc_no, '', '', '', '', debit::text, credit::text,
+		       '', '', '', 'doctotal', lines::text, journal_id, '2', '0'
+		FROM docs
 	)`
 	cols := []ReportColumn{
 		textColumn("date", "วันที่"),
 		textColumn("bookcode", "สมุดรายวัน"),
 		textColumn("docno", "เลขที่เอกสาร"),
+		textColumn("referenceno", "เอกสารอ้างอิง"),
 		textColumn("accountcode", "ผังบัญชี"),
 		textColumn("accountname", "ชื่อบัญชี"),
 		textColumn("description", "คำอธิบาย"),
@@ -614,7 +630,10 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 		amountColumn("credit", "เครดิต"),
 		textColumn("branchcode", "สาขา"),
 	}
-	return r.run(ctx, cte, "date,docno,journalid,__line_no::integer", cols, []string{"debit", "credit"}, "journalid", "__line_no")
+	lineOnly := func(key string) reportTotal {
+		return reportTotal{key: key, expr: "CASE WHEN rowtype='docline' THEN " + key + "::numeric ELSE 0 END"}
+	}
+	return r.runWithTotals(ctx, cte, "docno,date,journalid,__sort,__line_no::integer", cols, []reportTotal{lineOnly("debit"), lineOnly("credit")}, "rowtype", "linecount", "journalid", "__sort", "__line_no")
 }
 
 // glJournalSummary = Champ 5533 รายงานข้อมูลรายวันแบบสรุป (GLRepTrans2View): แถวละเอกสาร — วันที่ · สมุดรายวัน ·
@@ -637,7 +656,7 @@ func (r reportContext) glJournalSummary(ctx context.Context) (Report, error) {
 		textColumn("description", "คำอธิบาย"),
 		amountColumn("amount", "จำนวนเงิน"),
 	}
-	return r.run(ctx, cte, "date,docno,journalid", cols, []string{"amount"}, "journalid")
+	return r.run(ctx, cte, "docno,date,journalid", cols, []string{"amount"}, "journalid") // Champ เรียงตามเลขที่เอกสาร
 }
 
 // budgetComparison (Champ 5530 รายงานเปรียบเทียบงบประมาณ, GLRepBudgetCompView) compares each

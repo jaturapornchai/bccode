@@ -8823,3 +8823,4 @@ gl_print_description	รายละเอียด	Description	Description	Desc
 gl_print_conditions	เงื่อนไขการพิมพ์รายงาน	Report print conditions	Report print conditions	Report print conditions	Report print conditions	Report print conditions	Report print conditions	Report print conditions	Report print conditions	Report print conditions	Report print conditions	Report print conditions
 gl_wp_net_profit_loss	กำไรขาดทุนสุทธิ	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)	Net profit (loss)
 gl_report_total	รวม	Total	Total	Total	Total	Total	Total	Total	Total	Total	Total	Total
+gl_report_doc_total	รวมทั้งสิ้น {0} รายการ	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines	Total {0} lines

@@ -161,6 +161,19 @@ describe("Champ report filters and options", () => {
     expect(summary).not.toHaveProperty("hideopening");
     expect(summary).not.toHaveProperty("from");
   });
+  it("shows the journal report as Champ document blocks: header, lines without repeating the header fields, then the document total", () => {
+    const report: GLReport = { sequence: 1, columns: [{ key: "date", label: "วันที่", amount: false }, { key: "docno", label: "เลขที่เอกสาร", amount: false }, { key: "accountcode", label: "ผังบัญชี", amount: false }, { key: "description", label: "คำอธิบาย", amount: false }, { key: "debit", label: "เดบิต", amount: true }, { key: "credit", label: "เครดิต", amount: true }], rows: [
+      { date: "2569-01-05", docno: "JV6901-0001", accountcode: "", description: "ขายวัสดุก่อสร้าง รับชำระเงินสดหน้าร้าน", debit: "", credit: "", rowtype: "document", journalid: "j1" },
+      { date: "2569-01-05", docno: "JV6901-0001", accountcode: "11110", description: "", debit: "107", credit: "0", rowtype: "docline", journalid: "j1" },
+      { date: "2569-01-05", docno: "JV6901-0001", accountcode: "41100", description: "", debit: "0", credit: "107", rowtype: "docline", journalid: "j1" },
+      { date: "2569-01-05", docno: "JV6901-0001", accountcode: "", description: "", debit: "107", credit: "107", rowtype: "doctotal", linecount: "2", journalid: "j1" },
+    ], totals: { debit: "107", credit: "107" }, totalrows: 4, warnings: [], asof: "2569-12-31" };
+    const html = renderToStaticMarkup(createElement(ReportGrid, { report, onDrillAccount: () => {} }));
+    expect(html.match(/JV6901-0001/g)?.length).toBe(1); // เลขที่เอกสารพิมพ์ที่หัวเอกสารเท่านั้น
+    expect(html).toContain("ขายวัสดุก่อสร้าง รับชำระเงินสดหน้าร้าน");
+    expect(html).toContain("รวมทั้งสิ้น 2 รายการ");
+  });
+
   it("prints Champ control-account header rows before the children and name-only bold subtotals after, neither drilling to the ledger", () => {
     const report: GLReport = { sequence: 1, columns: [{ key: "accountcode", label: "รหัสบัญชี", amount: false }, { key: "accountname", label: "ชื่อบัญชี", amount: false }, { key: "debit", label: "เดบิต", amount: true }], rows: [{ accountcode: "11100", accountname: "เงินสดและรายการเทียบเท่าเงินสด", debit: "", rowtype: "header", accountlevel: "3" }, { accountcode: "11110", accountname: "เงินสดในมือ", debit: "100", rowtype: "account", accountlevel: "4" }, { accountcode: "11100", accountname: "เงินสดและรายการเทียบเท่าเงินสด", debit: "100", rowtype: "control", accountlevel: "3" }], totals: { debit: "100" }, totalrows: 3, warnings: [], asof: "2569-12-31" };
     const html = renderToStaticMarkup(createElement(ReportGrid, { report, onDrillAccount: () => {} }));

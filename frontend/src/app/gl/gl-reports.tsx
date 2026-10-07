@@ -49,6 +49,8 @@ const LEDGER_ROW_LABELS: Record<string, GLLabel> = { opening: ["gl_opening_balan
 export function controlRowText(row: Record<string, string>, key: string, value: string, tr: GLTextFn) {
   // แถวรวมบัญชีคุมแบบ Champ: ไม่พิมพ์รหัส มีแต่ชื่อบัญชีคุม (ตัวหนา) — หัวบัญชีคุม (rowtype=header) พิมพ์รหัส + ชื่อก่อนบัญชีลูกแล้ว
   if (row.rowtype === "control" && key === "accountcode") return "";
+  // รวมของเอกสารในรายงานข้อมูลรายวัน (Champ 5532: "รวมทั้งสิ้น n รายการ" ต่อเอกสาร)
+  if (row.rowtype === "doctotal" && key === "description") return tr("gl_report_doc_total", "รวมทั้งสิ้น {0} รายการ").replace("{0}", row.linecount ?? "");
   const ledgerLabel = LEDGER_ROW_LABELS[row.rowtype ?? ""];
   return ledgerLabel && key === "description" ? tr(...ledgerLabel) : value;
 }
@@ -76,10 +78,15 @@ function balanceText(key: string, text: string) {
 }
 /** แถวรวม/ยอดยกของรายงาน พิมพ์ตัวหนาแบบ Champ */
 export function isSummaryRow(row: Record<string, string>) {
-  return row.rowtype === "control" || row.rowtype in LEDGER_ROW_LABELS;
+  return row.rowtype === "control" || row.rowtype === "document" || row.rowtype === "doctotal" || row.rowtype in LEDGER_ROW_LABELS;
 }
+// รายงานข้อมูลรายวันแบบ Champ: วันที่/สมุด/เลขที่/เอกสารอ้างอิง อยู่ที่หัวเอกสารแล้ว
+const DOCUMENT_HEADER_KEYS: ReadonlySet<string> = new Set(["date", "bookcode", "docno", "referenceno"]);
 /** รายงานแยกประเภทแสดงรหัส/ชื่อบัญชีครั้งเดียวที่แถวแรกของบัญชี (หัวบัญชีแบบ Champ) และแถวแรกของหน้า */
 export function repeatsAccount(row: Record<string, string>, key: string, firstOnPage: boolean) {
+  // แถวรวมของเอกสารไม่พิมพ์หัวเอกสารซ้ำ; บรรทัดรายการพิมพ์หัวเอกสารเฉพาะแถวแรกของหน้า (หน้าที่เริ่มกลางเอกสาร)
+  if (row.rowtype === "doctotal" && DOCUMENT_HEADER_KEYS.has(key)) return true;
+  if (row.rowtype === "docline" && DOCUMENT_HEADER_KEYS.has(key)) return !firstOnPage;
   return !firstOnPage && row.accountfirst === "" && (key === "accountcode" || key === "accountname");
 }
 function accountIndent(row: Record<string, string>, key: string) {
