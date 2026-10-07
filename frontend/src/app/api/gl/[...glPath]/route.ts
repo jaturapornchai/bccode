@@ -32,15 +32,18 @@ export async function POST(request: Request, context: Context) {
   let body: unknown;
   try { body = await request.json(); } catch { return bad("รูปแบบข้อมูลไม่ถูกต้อง"); }
   if (!isRecord(body) || Array.isArray(body) || typeof body.requestid !== "string" || !/^[0-9a-f-]{36}$/i.test(body.requestid)) return bad("กรุณาระบุหมายเลขคำขอที่ถูกต้อง");
-  if (![...GL_RESOURCES, "processes"].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  if (![...GL_RESOURCES, "processes"].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (body.action === "spread" && body.resource !== "budgets") return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  // สร้างงวดอัตโนมัติ (backend periods_generate.go) / ตรวจใบก่อนผ่านรายการแบบชุด (post_batches.go, คำนวณอย่างเดียว ไม่บันทึก)
+  if (body.action === "generate" && body.resource !== "periods") return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  if (body.action === "check" && body.resource !== "post-batches") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // แนะนำบัญชีให้บรรทัดของแม่แบบงบ (คำนวณอย่างเดียว ไม่บันทึก) — backend statement_suggestions.go
   if (body.action === "suggest" && body.resource !== "statement-templates") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (["review", "reconcile"].includes(String(body.action)) && body.resource !== "journals") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (hasNumericAmount(body)) return bad("จำนวนเงินต้องส่งเป็นข้อความทศนิยม");
   // Scope is resolved from the authenticated backend session. Never forward a caller's company/holding override.
   const payload: Record<string, unknown> = {};
-  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review"]) {
+  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review", "postbatch"]) {
     if (!(key in body)) continue;
     if (isRecord(body[key])) {
       const record = { ...body[key] };

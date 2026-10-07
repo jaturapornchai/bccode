@@ -9,6 +9,8 @@ import { GLReports } from "./gl-reports";
 import { GLProcesses } from "./gl-processes";
 import { GLStatementDesigner } from "./gl-statement-designer";
 import { GLBudgets } from "./gl-budgets";
+import { GLPeriods } from "./gl-periods";
+import { GLPostBatch } from "./gl-post-batch";
 import { GLLanguageProvider, panel, useGLText } from "./gl-common";
 import { SmartBreadcrumb } from "@/components/smart-breadcrumb";
 
@@ -18,7 +20,6 @@ const masterRoutes: Record<string, GLResource> = {
   "/gl/account-groups": "account-groups",
   "/gl/account-mapping": "mappings",
   "/gl/product-account-groups": "product-account-groups",
-  "/gl/periodlock": "periods",
   "/gl/journal-books": "journal-books",
 };
 const processRoutes = { "/gl/financialclose": "close", "/gl/year-end": "year-end", "/gl/recalculate-posted": "recalculate", "/gl/reprocess": "reprocess" } as const;
@@ -32,11 +33,14 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   if (isMenuScreenPending(cleanRoute)) content = <GLPendingPanel />;
   else if (cleanRoute === "/gl/statement-designer") content = <GLStatementDesigner route={cleanRoute} />;
   else if (cleanRoute === "/gl/budget") content = <GLBudgets route={cleanRoute} />;
+  else if (cleanRoute === "/gl/periodlock") content = <GLPeriods />;
   else if (masterRoutes[cleanRoute]) content = <GLMasters key={cleanRoute} resource={masterRoutes[cleanRoute] as Exclude<GLResource, "journals">} route={cleanRoute} />;
   else if (cleanRoute === "/gl/openingbalance") content = <GLJournals route={cleanRoute} kind="opening" />;
   else if (cleanRoute === "/gl/journals" || cleanRoute === "/gl/journal") content = <GLJournals key="all" route={cleanRoute} book="" />;
   else if (cleanRoute.startsWith("/gl/journal/")) content = <GLJournals key={cleanRoute} route={cleanRoute} book={cleanRoute.split("/").at(-1)!.toUpperCase()} />;
-  else if (cleanRoute === "/gl/posting" || cleanRoute === "/gl/unposting") content = <GLJournals key={cleanRoute} route={cleanRoute} mode={cleanRoute === "/gl/posting" ? "post" : "reverse"} />;
+  // ผ่านรายการทีละชุด (Champ 5512) + แท็บกลับรายการ; /gl/unposting (ลิงก์เดิม) ยังเปิดจอกลับรายการตรง ๆ
+  else if (cleanRoute === "/gl/posting") content = <GLPostBatch route={cleanRoute} />;
+  else if (cleanRoute === "/gl/unposting") content = <GLJournals key={cleanRoute} route={cleanRoute} mode="reverse" />;
   else if (cleanRoute in processRoutes) content = <GLProcesses key={cleanRoute} route={cleanRoute} action={processRoutes[cleanRoute as keyof typeof processRoutes]} />;
   else content = <GLReports key={cleanRoute} name={cleanRoute.split("/").at(-1) ?? "trialbalance"} />;
   if (!item) return <div className={panel}>{tr("gl_account_page_not_found", "ไม่พบหน้าบัญชีที่ต้องการ")}</div>;

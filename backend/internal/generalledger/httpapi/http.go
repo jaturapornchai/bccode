@@ -91,7 +91,7 @@ func (h *Http) scope(ctx context.Context, request microservice.IContext) (reques
 	return scope, err
 }
 
-var resourceScreens = map[string]string{"journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "statement-notes": "financial-statement-designer", "journal-books": "gl-journal-books"}
+var resourceScreens = map[string]string{"journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "statement-notes": "financial-statement-designer", "journal-books": "gl-journal-books", gl.PostBatchKind: postingScreen}
 var reportScreens = map[string]string{"ar-outstanding": "gl-ar-outstanding", "ap-outstanding": "gl-ap-outstanding", "bank-unmatched": "gl-bank-unmatched", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report", "statement": "financial-statement-designer"}
 
 func allowed(p map[string]bool, screen, action string) bool {
@@ -375,7 +375,7 @@ func isAmountField(text string) bool {
 
 // calculationOnly: commands that save nothing — reading the resource screen is enough
 func calculationOnly(cmd gl.Command) bool {
-	return (cmd.Resource == "budgets" && cmd.Action == "spread") || (cmd.Resource == "statement-templates" && cmd.Action == "suggest")
+	return (cmd.Resource == "budgets" && cmd.Action == "spread") || (cmd.Resource == "statement-templates" && cmd.Action == "suggest") || (cmd.Resource == gl.PostBatchKind && cmd.Action == "check")
 }
 
 func decodeCommand(reader io.Reader) (gl.Command, error) {
@@ -631,6 +631,12 @@ func (h *Http) command(request microservice.IContext) error {
 	}
 	if action == "lock" || action == "unlock" {
 		action = "update"
+	}
+	if action == "generate" {
+		action = "create" // สร้างงวดอัตโนมัติ = create periods
+	}
+	if cmd.Resource == gl.PostBatchKind {
+		action = "update" // a posting batch needs the same right as posting one journal
 	}
 	if calculationOnly(cmd) {
 		action = ""

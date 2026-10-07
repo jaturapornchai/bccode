@@ -16,6 +16,13 @@ type Result struct {
 	Lines []BudgetLine `json:"lines,omitempty"`
 	// Suggestions answers statement-templates action "suggest" (nothing saved).
 	Suggestions *StatementSuggestions `json:"suggestions,omitempty"`
+	// CreatedPeriods answers periods action "generate" (monthly periods created).
+	CreatedPeriods int `json:"createdperiods,omitempty"`
+	// PostCheck answers post-batches action "check" (nothing saved).
+	PostCheck *PostCheck `json:"postcheck,omitempty"`
+	// BatchNo/PostedJournals answer post-batches action "create".
+	BatchNo        string `json:"batchno,omitempty"`
+	PostedJournals int    `json:"postedjournals,omitempty"`
 }
 
 func digest(value []byte) string { sum := sha256.Sum256(value); return hex.EncodeToString(sum[:]) }

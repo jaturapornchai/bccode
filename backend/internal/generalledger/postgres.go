@@ -156,7 +156,7 @@ func (p *Postgres) Project(ctx context.Context, event Event) error {
 }
 
 func supportedRecord(kind string) bool {
-	return kind == "accounts" || kind == "fiscal-years" || kind == "journals" || kind == "budgets" || MasterCollections[kind] != ""
+	return kind == "accounts" || kind == "fiscal-years" || kind == "journals" || kind == "budgets" || kind == PostBatchKind || MasterCollections[kind] != ""
 }
 
 func applyChanges(ctx context.Context, tx *sql.Tx, event Event) error {

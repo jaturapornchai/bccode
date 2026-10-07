@@ -552,20 +552,20 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     }
   }
 
-  async function runAction(action: "delete" | "lock" | "unlock") {
+  // ล็อก/ปลดล็อกงวดย้ายไปจอกำหนดงวดบัญชี (gl-periods.tsx) — จอนี้เหลือแค่ลบ
+  async function runAction(action: "delete") {
     if (!record || busy) return;
     const id = recordId(record);
     if (!id) return;
-    const label = action === "delete" ? tr("gl_delete_item", "ลบรายการ") : action === "lock" ? tr("gl_lock_period_2", "ล็อกงวดบัญชี") : tr("gl_unlock_period_2", "ปลดล็อกงวดบัญชี");
-    const defaultReason = action === "delete" ? tr("gl_delete_item", "ลบรายการ") : action === "lock" ? tr("gl_lock_period_2", "ล็อกงวดบัญชี") : tr("gl_unlock_period_2", "ปลดล็อกงวดบัญชี");
-    const effectiveReason = reason.trim() || defaultReason;
+    const label = tr("gl_delete_item", "ลบรายการ");
+    const effectiveReason = reason.trim() || label;
     if (!await confirm({
       title: `${label}?`,
       // Name the record as saved — the form may hold unsaved edits to the code/name.
       description: confirmSubject(original ? JSON.parse(original) as GLRecord : record, reason, tr),
-      details: resource === "accounts" && action === "delete" ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" && action === "delete" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
+      details: resource === "accounts" ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
       confirmLabel: label,
-      tone: action === "delete" ? "danger" : "warning"
+      tone: "danger"
     })) return;
     try {
       setError("");
@@ -1033,17 +1033,6 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               >
                 {tr("gl_close", "ปิด")}
               </Button>
-              {resource === "periods" && record.id && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={actionClass}
-                  disabled={busy}
-                  onClick={() => void runAction((record as GLMaster).locked ? "unlock" : "lock")}
-                >
-                  {(record as GLMaster).locked ? tr("gl_unlock_period", "ปลดล็อกงวด") : tr("gl_lock_period", "ล็อกงวด")}
-                </Button>
-              )}
             </div>
             {record.id && (
               <Button
@@ -1113,17 +1102,6 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
               <Button type="button" variant="outline" className={actionClass} onClick={() => void cancelEdit()}>
                 {tr("gl_cancel", "ยกเลิก")}
               </Button>
-              {resource === "periods" && record.id && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={actionClass}
-                  disabled={busy || dirty}
-                  onClick={() => void runAction((record as GLMaster).locked ? "unlock" : "lock")}
-                >
-                  {(record as GLMaster).locked ? tr("gl_unlock_period", "ปลดล็อกงวด") : tr("gl_lock_period", "ล็อกงวด")}
-                </Button>
-              )}
             </div>
             {record.id && (
               <Button
@@ -1400,7 +1378,7 @@ function MasterFields({ resource, value, set, accounts, years, books }: { resour
   const tr = useGLText();
   const language = useGLLanguage();
   const usableBooks = activeJournalBooks(books);
-  const dateFields = ["periods", "forecast"].includes(resource);
+  const dateFields = resource === "forecast";
   return <><div className="grid items-start gap-3 sm:grid-cols-2">
     <Field label={tr("gl_code", "รหัส")}><CodeInput locked={!!value.id} data-field="code" required value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
     <Field label={tr("gl_name", "ชื่อ")}><input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} /></Field>

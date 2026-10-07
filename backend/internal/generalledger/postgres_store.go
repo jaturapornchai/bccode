@@ -75,19 +75,25 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if cmd.Resource == "statement-templates" && cmd.Action == "suggest" {
 		return s.suggestStatementAccounts(ctx, scope, cmd)
 	}
+	if cmd.Resource == PostBatchKind && cmd.Action == "check" {
+		return s.checkPostBatch(ctx, scope, cmd)
+	}
 	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
 	if !supportedRecord(cmd.Resource) && cmd.Resource != "processes" {
 		return Result{}, fmt.Errorf("ไม่รองรับรายการบัญชีนี้")
 	}
-	if !contains([]string{"reconcile", "review", "create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess"}, cmd.Action) {
+	if !contains([]string{"reconcile", "review", "create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess", "generate"}, cmd.Action) {
 		return Result{}, fmt.Errorf("ไม่รองรับคำสั่งบัญชีนี้")
 	}
 	if cmd.Action == "reconcile" && cmd.Resource != "journals" {
 		return Result{}, fmt.Errorf("กระทบยอดได้เฉพาะใบสำคัญ")
 	}
-	if cmd.Action != "create" && cmd.ID == "" {
+	if cmd.Action == "generate" && cmd.Resource != "periods" {
+		return Result{}, fmt.Errorf("ไม่รองรับคำสั่งบัญชีนี้")
+	}
+	if cmd.Action != "create" && cmd.Action != "generate" && cmd.ID == "" {
 		return Result{}, fmt.Errorf("กรุณาเลือกรายการบัญชี")
 	}
 
@@ -121,25 +127,7 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 			if savedEvent.RequestHash != hash {
 				return Result{}, fmt.Errorf("รหัสคำขอนี้ถูกใช้แล้วด้วยข้อมูลที่ต่างกัน")
 			}
-			res := Result{Sequence: savedEvent.Sequence}
-			if cmd.Action == "review" {
-				res.ID = cmd.ID
-				res.Version = cmd.Version
-			}
-			if cmd.Resource == "processes" && (cmd.Action == "close" || cmd.Action == "year-end") {
-				for _, change := range savedEvent.Changes {
-					if change.Kind == "journals" {
-						res.CreatedJournals++
-					}
-				}
-			}
-			if len(savedEvent.Changes) > 0 {
-				res.ID = savedEvent.Changes[0].ID
-				var idt Identity
-				_ = json.Unmarshal([]byte(savedEvent.Changes[0].Payload), &idt)
-				res.Version = idt.Version
-			}
-			return res, nil
+			return commandResult(cmd, savedEvent.Sequence, savedEvent.Changes), nil
 		}
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return Result{}, err
@@ -153,25 +141,41 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 
 	now := time.Now().UTC()
 
-	// 2. Mutate changes in PostgreSQL
-	changes, err := s.applyMutation(ctx, tx, scope, cmd, now)
+	// 2. Mutate changes in PostgreSQL. A posting batch writes one event per journal (the
+	// single-post event) and then its own event, all inside this transaction.
+	var event Event
+	if cmd.Resource == PostBatchKind {
+		event, err = s.postBatch(ctx, tx, scope, cmd, hash, now)
+	} else {
+		var changes []Change
+		if changes, err = s.applyMutation(ctx, tx, scope, cmd, now); err == nil {
+			event, err = s.appendEvent(ctx, tx, scope, cmd, hash, changes, now)
+		}
+	}
 	if err != nil {
 		return Result{}, err
 	}
 
-	// 3. Get next sequence
-	if _, err = tx.ExecContext(ctx, `INSERT INTO gl_projection_state(company) VALUES ($1) ON CONFLICT DO NOTHING`, scope.Company); err != nil {
+	if err = tx.Commit(); err != nil {
 		return Result{}, err
 	}
+	return commandResult(cmd, event.Sequence, event.Changes), nil
+}
+
+// appendEvent assigns the next sequence to one command's changes, projects them into gl_records /
+// gl_lines and stores the append-only audit event — all inside the caller's transaction.
+func (s *PostgresStore) appendEvent(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, hash string, changes []Change, now time.Time) (Event, error) {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO gl_projection_state(company) VALUES ($1) ON CONFLICT DO NOTHING`, scope.Company); err != nil {
+		return Event{}, err
+	}
 	var sequence int64
-	if err = tx.QueryRowContext(ctx, `SELECT sequence FROM gl_projection_state WHERE company=$1 FOR UPDATE`, scope.Company).Scan(&sequence); err != nil {
-		return Result{}, err
+	if err := tx.QueryRowContext(ctx, `SELECT sequence FROM gl_projection_state WHERE company=$1 FOR UPDATE`, scope.Company).Scan(&sequence); err != nil {
+		return Event{}, err
 	}
 	sequence++
 
-	eventID := fmt.Sprintf("%s-%012d", scope.Company, sequence)
 	event := Event{
-		ID:           eventID,
+		ID:           fmt.Sprintf("%s-%012d", scope.Company, sequence),
 		HoldingCode:  scope.Holding,
 		BusinessCode: scope.Company,
 		Sequence:     sequence,
@@ -183,35 +187,30 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 		OccurredAt:   now,
 		Changes:      changes,
 	}
-
-	// 4. Project event into gl_records and gl_lines directly
-	if err = applyChanges(ctx, tx, event); err != nil {
-		return Result{}, err
+	if err := applyChanges(ctx, tx, event); err != nil {
+		return Event{}, err
 	}
-
-	if err = s.recordSourceJournal(ctx, tx, scope, cmd, changes, sequence, now); err != nil {
-		return Result{}, err
+	if err := s.recordSourceJournal(ctx, tx, scope, cmd, changes, sequence, now); err != nil {
+		return Event{}, err
 	}
-
 	eventHash, data, err := eventDigest(event)
 	if err != nil {
-		return Result{}, err
+		return Event{}, err
 	}
-
 	if _, err = tx.ExecContext(ctx, `INSERT INTO gl_events(company,id,sequence,event_hash,occurred_at,payload) VALUES ($1,$2,$3,$4,$5,$6::jsonb)`,
 		scope.Company, event.ID, event.Sequence, eventHash, event.OccurredAt, string(data)); err != nil {
-		return Result{}, err
+		return Event{}, err
 	}
-
 	if _, err = tx.ExecContext(ctx, `UPDATE gl_projection_state SET sequence=$2 WHERE company=$1`, scope.Company, event.Sequence); err != nil {
-		return Result{}, err
+		return Event{}, err
 	}
+	return event, nil
+}
 
-	if err = tx.Commit(); err != nil {
-		return Result{}, err
-	}
-
-	res := Result{Sequence: event.Sequence, ProjectionPending: false}
+// commandResult answers a command from its event changes — the same answer for the first run and
+// for an idempotent retry that finds the saved event.
+func commandResult(cmd Command, sequence int64, changes []Change) Result {
+	res := Result{Sequence: sequence}
 	if cmd.Action == "review" {
 		res.ID = cmd.ID
 		res.Version = cmd.Version
@@ -222,14 +221,20 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 		_ = json.Unmarshal([]byte(changes[0].Payload), &idt)
 		res.Version = idt.Version
 	}
-	if cmd.Resource == "processes" && (cmd.Action == "close" || cmd.Action == "year-end") {
-		for _, ch := range changes {
-			if ch.Kind == "journals" {
-				res.CreatedJournals++
+	for _, change := range changes {
+		switch {
+		case change.Kind == "journals" && cmd.Resource == "processes" && (cmd.Action == "close" || cmd.Action == "year-end"):
+			res.CreatedJournals++
+		case change.Kind == "periods" && cmd.Action == "generate":
+			res.CreatedPeriods++
+		case change.Kind == PostBatchKind:
+			var batch PostBatch
+			if json.Unmarshal([]byte(change.Payload), &batch) == nil {
+				res.BatchNo, res.PostedJournals = batch.BatchNo, batch.Count
 			}
 		}
 	}
-	return res, nil
+	return res
 }
 
 func (s *PostgresStore) loadRecord(ctx context.Context, tx *sql.Tx, company, kind, id string, target any) error {
@@ -479,7 +484,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 			return nil, fmt.Errorf("ไม่พบข้อมูลเอกสารรายวัน")
 		}
 		j := *cmd.Journal
-		if j.PostedAt != nil || j.PostedBy != "" || j.ReversalOf != "" || j.IsDeleted || (j.Status != "" && j.Status != "draft") {
+		if j.PostedAt != nil || j.PostedBy != "" || j.PostBatchNo != "" || j.ReversalOf != "" || j.IsDeleted || (j.Status != "" && j.Status != "draft") {
 			return nil, fmt.Errorf("สถานะผ่านรายการและข้อมูลกลับรายการกำหนดโดยระบบเท่านั้น")
 		}
 		// closing/reversal are written only by year-end/reverse; reports skip or cancel them, so a forged one hides amounts.
@@ -611,6 +616,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		next.Status = old.Status
 		next.PostedAt = old.PostedAt
 		next.PostedBy = old.PostedBy
+		next.PostBatchNo = old.PostBatchNo
 		next.ReversalOf = old.ReversalOf
 		next.Identity = updateIdentity(scope, old.Identity, now)
 		related, err := s.syncJournalDetails(ctx, tx, scope, &next, &previous, "update", now)
@@ -635,6 +641,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		tNow := now
 		old.PostedAt = &tNow
 		old.PostedBy = scope.Actor
+		old.PostBatchNo = cmd.postBatchNo
 		old.Identity = updateIdentity(scope, old.Identity, now)
 		related, err := s.syncJournalDetails(ctx, tx, scope, &old, &previous, "post", now)
 		if err != nil {

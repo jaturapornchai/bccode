@@ -243,7 +243,9 @@ type Journal struct {
 	ReversalOf     string     `json:"reversalof,omitempty" bson:"reversalof,omitempty"`
 	PostedAt       *time.Time `json:"postedat,omitempty" bson:"postedat,omitempty"`
 	PostedBy       string     `json:"postedby,omitempty" bson:"postedby,omitempty"`
-	Reason         string     `json:"reason,omitempty" bson:"reason,omitempty"`
+	// PostBatchNo: เลขที่ชุดผ่านรายการ (post-batches) ที่ผ่านใบนี้ — ระบบกำหนดตอนผ่านรายการแบบชุด; ว่าง = ผ่านทีละใบ
+	PostBatchNo string `json:"postbatchno,omitempty" bson:"postbatchno,omitempty"`
+	Reason      string `json:"reason,omitempty" bson:"reason,omitempty"`
 }
 
 func (Journal) CollectionName() string { return "gl_journals" }
@@ -252,19 +254,23 @@ type Command struct {
 	Review     *ReviewInput `json:"review,omitempty"`
 	TargetYear string       `json:"targetyear,omitempty"`
 	prepared   *preparedProcess
-	Resource   string      `json:"resource"`
-	ID         string      `json:"id"`
-	Action     string      `json:"action"`
-	RequestID  string      `json:"requestid"`
-	Version    int64       `json:"version"`
-	Reason     string      `json:"reason"`
-	Date       string      `json:"date"`
-	DocNo      string      `json:"docno"`
-	Account    *Account    `json:"account,omitempty"`
-	FiscalYear *FiscalYear `json:"fiscalyear,omitempty"`
-	Master     *Master     `json:"master,omitempty"`
-	Journal    *Journal    `json:"journal,omitempty"`
-	Budget     *Budget     `json:"budget,omitempty"`
+	// postBatchNo is set only by the batch post (post_batches.go) when it reuses the single-journal post path.
+	postBatchNo string
+	Resource    string      `json:"resource"`
+	ID          string      `json:"id"`
+	Action      string      `json:"action"`
+	RequestID   string      `json:"requestid"`
+	Version     int64       `json:"version"`
+	Reason      string      `json:"reason"`
+	Date        string      `json:"date"`
+	DocNo       string      `json:"docno"`
+	Account     *Account    `json:"account,omitempty"`
+	FiscalYear  *FiscalYear `json:"fiscalyear,omitempty"`
+	Master      *Master     `json:"master,omitempty"`
+	Journal     *Journal    `json:"journal,omitempty"`
+	Budget      *Budget     `json:"budget,omitempty"`
+	// PostBatch: filters of the posting screen (action "check") or the journals to post (create).
+	PostBatch *PostBatchInput `json:"postbatch,omitempty"`
 }
 
 // Code lengths are counted in runes (PostgreSQL VARCHAR(n) counts characters) and follow
@@ -523,6 +529,14 @@ func normalizeCommandCodes(cmd *Command) {
 		b := *cmd.Budget
 		normalizeBudget(&b)
 		cmd.Budget = &b
+	}
+	if cmd.PostBatch != nil {
+		p := *cmd.PostBatch
+		for _, code := range []*string{&p.BookCode, &p.DocNoFrom, &p.DocNoTo} {
+			*code = NormalizeCode(*code)
+		}
+		p.Items = append([]PostBatchItem(nil), p.Items...)
+		cmd.PostBatch = &p
 	}
 	if cmd.Journal != nil {
 		j := *cmd.Journal

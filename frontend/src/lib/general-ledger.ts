@@ -53,6 +53,8 @@ export type GLJournal = GLIdentity & {
   docno: string; date: string; bookcode: string; fiscalyear: string; description: string;
   reference: string; refdate?: string; branchcode: string; kind: string; status: string;
   lines: GLLine[]; reversalof?: string; reason?: string;
+  /** เลขที่ชุดผ่านรายการ — ระบบกำหนดตอนผ่านรายการแบบชุด (อ่านอย่างเดียว) */
+  postbatchno?: string;
 };
 /** สมุดรายวันเป็นข้อมูลหลักที่ผู้ใช้กำหนดเอง (mydocs/datamodels/gl/journalbook.sql) — ห้ามอิงรหัสสมุด ใช้ booktype เท่านั้น
  *  booktype 1=ทั่วไป 2=จ่าย 3=รับ 4=ขาย 5=ซื้อ 6=ยอดยกมา; 0/ไม่มี = ยังไม่กำหนด (ใช้กับใบใหม่ไม่ได้) */
@@ -80,13 +82,19 @@ export type GLReport = {
 export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
 /** accountcode อาจเป็น STATEMENT_CURRENT_EARNINGS (กำไรขาดทุนที่ยังไม่ปิดบัญชี, accountname ว่าง); amount = สตริงทศนิยมด้านปกติของหมวดบัญชี */
 export type GLStatementUnassigned = { key: string; fiscalyear: string; accountcode: string; accountname: string; accounttype: string; basis: string; amount: string };
-export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books"] as const;
+export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "post-batches"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
+/** ผ่านรายการแบบชุด (backend post_batches.go): action "check" ใช้ตัวกรอง (ว่าง = ไม่จำกัด), action "create" ใช้ items + remark */
+export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: string; docnofrom?: string; docnoto?: string; items?: { id: string; version: number }[]; remark?: string };
+/** ผลตรวจหนึ่งใบจาก backend: ok = ผ่านกฎเดียวกับการผ่านรายการ; debit/credit = สตริงทศนิยมยอดรวมของใบ */
+export type GLPostCheckRow = { id: string; version: number; docno: string; date: string; bookcode: string; fiscalyear: string; branchcode: string; description: string; debit: string; credit: string; ok: boolean; code?: string; message?: string };
+export type GLPostCheck = { rows: GLPostCheckRow[]; more: boolean; limit: number };
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
   account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook | Omit<GLStatementNotes, keyof GLIdentity>; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
+  postbatch?: GLPostBatchInput;
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement"] as const;
 // เฉพาะกลุ่ม gl-* ที่จอ GL เปิดเอง; กลุ่มภาษี (vat-*) อยู่ในหมวดเดียวกันแต่ใช้จอภาษี

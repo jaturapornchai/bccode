@@ -60,6 +60,9 @@ func pgChange(kind, id, code string, value any) ([]Change, error) {
 }
 
 func (s *PostgresStore) mutatePeriod(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {
+	if cmd.Action == "generate" {
+		return s.generatePeriods(ctx, tx, scope, cmd, now)
+	}
 	var old Master
 	if cmd.Action != "create" {
 		if err := s.loadRecord(ctx, tx, scope.Company, "periods", cmd.ID, &old); err != nil {
@@ -273,7 +276,8 @@ func (s *PostgresStore) mutatePGFiscalYear(ctx context.Context, tx *sql.Tx, scop
 	if old.ID != "" {
 		// A budget (gl_budgets) counts as a reference: its period_no is a month index from the
 		// fiscal start, so moving or shortening the year would shift or drop budget months.
-		err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND payload->>'fiscalyear'=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)) OR EXISTS(SELECT 1 FROM gl_budgets WHERE company=$1 AND fiscal_year=$2)`, scope.Company, old.Code).Scan(&used)
+		// Unlocked periods do not: they follow the year (yearPeriodChanges), a locked one pins it.
+		err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND payload->>'fiscalyear'=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND (kind<>'periods' OR COALESCE((payload->>'locked')::boolean,false))) OR EXISTS(SELECT 1 FROM gl_budgets WHERE company=$1 AND fiscal_year=$2)`, scope.Company, old.Code).Scan(&used)
 		if err != nil {
 			return nil, err
 		}
@@ -291,7 +295,15 @@ func (s *PostgresStore) mutatePGFiscalYear(ctx context.Context, tx *sql.Tx, scop
 		}
 		old.IsDeleted = true
 		old.Identity = updateIdentity(scope, old.Identity, now)
-		return pgChange("fiscal-years", old.ID, old.Code, old)
+		changes, err := pgChange("fiscal-years", old.ID, old.Code, old)
+		if err != nil {
+			return nil, err
+		}
+		periods, err := s.yearPeriodChanges(ctx, tx, scope, old, nil, now)
+		if err != nil {
+			return nil, err
+		}
+		return append(changes, periods...), nil
 	}
 	if cmd.FiscalYear == nil {
 		return nil, fmt.Errorf("ไม่พบข้อมูลปีบัญชี")
@@ -339,7 +351,20 @@ func (s *PostgresStore) mutatePGFiscalYear(ctx context.Context, tx *sql.Tx, scop
 	} else {
 		next.Identity = updateIdentity(scope, old.Identity, now)
 	}
-	return pgChange("fiscal-years", next.ID, next.Code, next)
+	changes, err := pgChange("fiscal-years", next.ID, next.Code, next)
+	if err != nil {
+		return nil, err
+	}
+	// Like Champ 5511 F9, a new year comes with its monthly periods; a year whose dates change
+	// (only possible while nothing uses it) gets its periods rebuilt for the new dates.
+	if cmd.Action == "create" || next.StartDate != old.StartDate || next.EndDate != old.EndDate {
+		periods, err := s.yearPeriodChanges(ctx, tx, scope, old, &next, now)
+		if err != nil {
+			return nil, err
+		}
+		changes = append(changes, periods...)
+	}
+	return changes, nil
 }
 
 // Protect only openings actually emitted by year-end, not a user's free-text reference.

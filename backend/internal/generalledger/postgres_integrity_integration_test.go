@@ -158,8 +158,9 @@ func TestPostgresIntegrityBlankBranchDefaultsToSession(t *testing.T) {
 func TestPostgresIntegrityPeriodAndValidation(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	j := f.draft("JV1", "B1")
-	p := Master{Code: "2026-01", FiscalYear: "2026", StartDate: "2026-01-01", EndDate: "2026-01-31", IsActive: true}
-	r := f.run(Command{Resource: "periods", Action: "create", Master: &p})
+	// The fiscal year came with its monthly periods (periods_generate.go): work on its January.
+	jan := f.period("2026-01")
+	r := Result{ID: jan.ID, Version: jan.Version}
 	f.deny(f.scope, Command{Resource: "periods", Action: "lock", ID: r.ID, Version: r.Version, Reason: "pending"})
 	j = f.post(j)
 	r = f.run(Command{Resource: "periods", Action: "lock", ID: r.ID, Version: r.Version, Reason: "close month"})

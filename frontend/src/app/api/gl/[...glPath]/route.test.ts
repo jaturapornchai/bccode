@@ -153,4 +153,21 @@ describe("GL authenticated proxy", () => {
     expect((await post({ resource: "journals", action: "spread", requestid, budget: { lines: [{ accountcode: "53110", total: "100000" }] } })).status).toBe(400);
     expect(fetch).not.toHaveBeenCalled();
   });
+  it("forwards period generation and batch posting (check + create) only for their resources", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const post = (body: unknown) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    expect((await post({ resource: "periods", action: "generate", requestid, targetyear: "2569" })).status).toBe(200);
+    const filter = { bookcode: "JV", datefrom: "2026-01-01", dateto: "2026-01-31", docnofrom: "JV001", docnoto: "JV099" };
+    expect((await post({ resource: "post-batches", action: "check", requestid, postbatch: filter })).status).toBe(200);
+    const batch = { items: [{ id: "j1", version: 3 }], remark: "ผ่านรายการประจำเดือนมกราคม 2569", holdingcode: "other" };
+    expect((await post({ resource: "post-batches", action: "create", requestid, postbatch: batch })).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ resource: "periods", action: "generate", requestid, targetyear: "2569" });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ resource: "post-batches", action: "check", requestid, postbatch: filter });
+    const { holdingcode: _scope, ...forwarded } = batch;
+    expect(_scope).toBe("other");
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ resource: "post-batches", action: "create", requestid, postbatch: forwarded });
+    for (const body of [{ resource: "journals", action: "generate", requestid }, { resource: "journals", action: "check", requestid }, { resource: "periods", action: "check", requestid }]) expect((await post(body)).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
 });
