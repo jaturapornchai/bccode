@@ -162,46 +162,44 @@ function PostBatchPanel() {
         <Combobox aria-label={tr("gl_journal", "สมุดรายวัน")} value={filter.bookcode} disabled={working} onChange={(value) => changeFilter({ bookcode: String(value) })}
           options={[{ value: "", label: tr("gl_post_batch_all_books", "ทุกสมุดรายวัน") }, ...books.map((book) => ({ value: book.code, label: `${book.code} · ${journalBookName(book, book.code, language)}` }))]} />
       </Field>
-      <Field label={tr("gl_from_date", "ตั้งแต่วันที่")}><input className={control} type="date" value={filter.datefrom} disabled={working} onChange={(event) => changeFilter({ datefrom: event.target.value })} /></Field>
+      <Field label={tr("gl_post_batch_date_from", "จากวันที่")}><input className={control} type="date" value={filter.datefrom} disabled={working} onChange={(event) => changeFilter({ datefrom: event.target.value })} /></Field>
       <Field label={tr("gl_to_date", "ถึงวันที่")}><input className={control} type="date" value={filter.dateto} disabled={working} onChange={(event) => changeFilter({ dateto: event.target.value })} /></Field>
-      <Field label={tr("gl_post_batch_docno_from", "ตั้งแต่เลขที่")}><input className={control} value={filter.docnofrom} disabled={working} maxLength={50} onChange={(event) => changeFilter({ docnofrom: event.target.value })} /></Field>
-      <Field label={tr("gl_post_batch_docno_to", "ถึงเลขที่")}><input className={control} value={filter.docnoto} disabled={working} maxLength={50} onChange={(event) => changeFilter({ docnoto: event.target.value })} /></Field>
+      <Field label={tr("gl_post_batch_docno_from", "จากเลขที่เอกสาร")}><input className={control} value={filter.docnofrom} disabled={working} maxLength={50} onChange={(event) => changeFilter({ docnofrom: event.target.value })} /></Field>
+      <Field label={tr("gl_post_batch_docno_to", "ถึงเลขที่เอกสาร")}><input className={control} value={filter.docnoto} disabled={working} maxLength={50} onChange={(event) => changeFilter({ docnoto: event.target.value })} /></Field>
       <Field label={tr("gl_post_batch_remark", "หมายเหตุชุดผ่านรายการ")}><input className={control} value={remark} disabled={working} maxLength={500} onChange={(event) => setRemark(event.target.value)} /></Field>
     </div>
     <div className="flex flex-wrap items-center gap-2">
-      <Button className={actionClass} variant="outline" disabled={working} onClick={() => void runCheck()}><ListChecks className="mr-1.5 size-4" aria-hidden="true" />{tr("gl_post_batch_check", "ตรวจสอบ")} (F7)</Button>
+      <Button className={actionClass} variant="outline" disabled={working} onClick={() => void runCheck()}><ListChecks className="mr-1.5 size-4" aria-hidden="true" />{tr("gl_post_batch_check", "ประมวลผล")} (F7)</Button>
       <Button className={actionClass} variant="outline" disabled={working || summary.ready === 0} onClick={selectAll}><SquareCheck className="mr-1.5 size-4" aria-hidden="true" />{allReadySelected ? tr("gl_post_batch_clear_selection", "ไม่เลือกทั้งหมด") : tr("gl_post_batch_select_all", "เลือกทั้งหมด")} (F2)</Button>
-      <Button className={actionClass} disabled={working || summary.selected === 0} onClick={() => void runPost()}><Send className="mr-1.5 size-4" aria-hidden="true" />{working ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_post_accounting_entry", "ผ่านรายการ")} (F11)</Button>
-      <span className="text-[0.9rem] text-muted-foreground">{tr("gl_post_batch_shortcuts", "ปุ่มลัด: F7 ตรวจสอบ · F2 เลือกทั้งหมด · F11 ผ่านรายการ")}</span>
+      <Button className={actionClass} disabled={working || summary.selected === 0} onClick={() => void runPost()}><Send className="mr-1.5 size-4" aria-hidden="true" />{working ? tr("gl_processing", "กำลังประมวลผล…") : tr("gl_post_batch_save", "บันทึกรายการ")} (F11)</Button>
+      <span className="text-[0.9rem] text-muted-foreground">{tr("gl_post_batch_shortcuts", "ปุ่มลัด: F7 ประมวลผล · F2 เลือก/ไม่เลือกทั้งหมด · F11 บันทึกรายการ")}</span>
     </div>
     <Notice text={error} error />
     {refs.error && <Notice text={refs.error} error />}
-    {!check && !checking && <Notice text={tr("gl_post_batch_hint", "เลือกเงื่อนไข แล้วกด ตรวจสอบ (F7) ระบบจะตรวจใบร่างทุกใบด้วยกฎเดียวกับการผ่านรายการ (เดบิตเท่ากับเครดิต งวดยังไม่ล็อก บัญชีใช้งานได้ รายละเอียดภาษีครบ)")} />}
+    {!check && !checking && <Notice text={tr("gl_post_batch_hint", "การผ่านรายการรายวัน: กำหนดเงื่อนไข แล้วกด ประมวลผล (F7) เพื่อค้นหารายการ ทำเครื่องหมายถูกในแถวที่ต้องการ จากนั้นกด บันทึกรายการ (F11) เพื่อยืนยันการผ่านรายการ (ระบบตรวจ เดบิตเท่ากับเครดิต งวดยังไม่ปิด และผังบัญชีลงรายการได้ ให้ทุกใบ)")} />}
     {check?.more && <Notice text={fillText(tr("gl_post_batch_more", "แสดงเพียง {0} ใบแรก กรุณากำหนดช่วงวันที่หรือเลขที่ให้แคบลง แล้วตรวจสอบอีกครั้ง"), check.limit.toLocaleString("th-TH"))} />}
     {check && <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border">
       <table className="w-full min-w-[880px] border-collapse text-[0.95rem]">
         <thead className="sticky top-0 z-10 bg-muted text-left">
           <tr className="[&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold">
             <th className="w-12"><span className="sr-only">{tr("gl_select", "เลือก")}</span></th>
-            <th>{tr("gl_document_no", "เลขที่เอกสาร")}</th>
-            <th>{tr("gl_date", "วันที่")}</th>
             <th>{tr("gl_journal", "สมุดรายวัน")}</th>
+            <th>{tr("gl_date", "วันที่")}</th>
+            <th>{tr("gl_document_no", "เลขที่เอกสาร")}</th>
             <th>{tr("gl_description", "คำอธิบาย")}</th>
-            <th className="text-right">{tr("gl_debit", "เดบิต")}</th>
-            <th className="text-right">{tr("gl_credit", "เครดิต")}</th>
-            <th className="min-w-[16rem]">{tr("gl_post_batch_result", "ผลตรวจ")}</th>
+            <th className="text-right">{tr("gl_amount", "จำนวนเงิน")}</th>
+            <th className="min-w-[16rem]">{tr("gl_status", "สถานะ")}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_post_batch_none", "ไม่พบใบร่างตามเงื่อนไขนี้")}</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_post_batch_none", "ไม่พบใบร่างตามเงื่อนไขนี้")}</td></tr>}
           {rows.map((row) => <tr key={row.id} className={cn("border-t border-border align-top [&_td]:px-3 [&_td]:py-2", row.ok ? "hover:bg-muted/40" : "bg-destructive/5")} data-post-check={row.ok ? "ok" : "issue"}>
             <td><Checkbox checked={row.ok && selected.has(row.id)} disabled={!row.ok || working} onCheckedChange={(checked) => toggleRow(row.id, checked)} aria-label={fillText(tr("gl_post_batch_select_row", "เลือกเอกสาร {0}"), row.docno)} /></td>
-            <td className="whitespace-nowrap font-medium">{row.docno}</td>
-            <td className="whitespace-nowrap">{row.date ? formatAppDate(row.date, language) : "-"}</td>
             <td className="whitespace-nowrap">{bookLabel(row.bookcode)}</td>
+            <td className="whitespace-nowrap">{row.date ? formatAppDate(row.date, language) : "-"}</td>
+            <td className="whitespace-nowrap font-medium">{row.docno}</td>
             <td className="[overflow-wrap:anywhere]">{row.description || "-"}</td>
             <td className="whitespace-nowrap text-right tabular-nums">{formatAmount(row.debit ?? "")}</td>
-            <td className="whitespace-nowrap text-right tabular-nums">{formatAmount(row.credit ?? "")}</td>
             <td>{row.ok
               ? <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary"><CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />{tr("gl_post_batch_ready", "พร้อมผ่านรายการ")}</span>
               : <span className="inline-flex items-start gap-1.5 text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span className="leading-relaxed"><span className="font-semibold">{tr("gl_post_batch_issue", "ติดปัญหา")}:</span> {row.message || row.code || "-"}</span></span>}</td>

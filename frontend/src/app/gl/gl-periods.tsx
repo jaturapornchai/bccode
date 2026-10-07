@@ -160,9 +160,9 @@ export function GLPeriods() {
         <thead className="sticky top-0 z-10 bg-muted text-left">
           <tr className="[&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold">
             <th className="w-24">{tr("gl_periods_no", "งวดที่")}</th>
-            <th>{tr("gl_code", "รหัส")}</th>
-            <th>{tr("gl_start_date", "วันเริ่มต้น")}</th>
-            <th>{tr("gl_end_date", "วันสิ้นสุด")}</th>
+            <th>{tr("gl_period_code", "งวดบัญชี")}</th>
+            <th>{tr("gl_period_start_date", "วันที่เริ่มต้นงวดบัญชี")}</th>
+            <th>{tr("gl_period_end_date", "วันที่สิ้นสุดงวดบัญชี")}</th>
             <th>{tr("gl_status", "สถานะ")}</th>
             <th className="text-right">{tr("gl_manage", "จัดการ")}</th>
           </tr>

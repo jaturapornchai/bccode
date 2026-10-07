@@ -61,7 +61,7 @@ describe("batch posting helpers (Champ 5512)", () => {
 
   it("renders Thai labels with keyboard hints and the reverse tab", () => {
     const html = renderToStaticMarkup(createElement(GLPostBatch, { route: "/gl/posting" }));
-    for (const text of ["ผ่านรายการทีละชุด", "กลับรายการที่ผ่านแล้ว", "ทุกสมุดรายวัน", "ตั้งแต่วันที่", "ถึงวันที่", "ตั้งแต่เลขที่", "ถึงเลขที่", "ตรวจสอบ","(F7)", "(F2)", "(F11)"]) expect(html).toContain(text);
+    for (const text of ["ผ่านรายการทีละชุด", "กลับรายการที่ผ่านแล้ว", "ทุกสมุดรายวัน", "จากวันที่", "ถึงวันที่", "จากเลขที่เอกสาร", "ถึงเลขที่เอกสาร", "ประมวลผล", "บันทึกรายการ", "(F7)", "(F2)", "(F11)"]) expect(html).toContain(text);
     expect(html).toContain("role=\"tablist\"");
   });
 
