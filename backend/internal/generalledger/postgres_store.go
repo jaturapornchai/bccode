@@ -492,6 +492,22 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		if strings.TrimSpace(j.BranchCode) == "" {
 			j.BranchCode = scope.Branch
 		}
+		// Champ runs the number for a new voucher (BRunningEdit); a number the user typed is kept.
+		if j.DocNo = strings.TrimSpace(j.DocNo); j.DocNo == "" {
+			if j.BookCode == "" {
+				return nil, errJournalBookRequired
+			}
+			book, found, err := loadJournalBook(ctx, tx, scope.Company, j.BookCode)
+			if err != nil {
+				return nil, err
+			}
+			if !found {
+				return nil, journalBookNotFound(j.BookCode)
+			}
+			if j.DocNo, err = nextJournalDocNo(ctx, tx, scope.Company, book, j.Date); err != nil {
+				return nil, err
+			}
+		}
 		if err := s.validateJournalLines(ctx, tx, scope, &j, true); err != nil {
 			return nil, err
 		}

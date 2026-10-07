@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, FileText, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -8,7 +8,7 @@ import { activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, 
 import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
 import { workspaceStorageKeys } from "@/lib/workspace-models";
 import { formatAppDate } from "@/lib/date-time";
-import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
+import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, actionClass, control, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { isTabularPaste, parseClipboardJournalLines, type ClipboardJournalIssue } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
@@ -105,7 +105,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
       list.setPage(1);
       setSearch(val);
     },
-    debounceMs: 2000,
+    debounceMs: 400,
   });
   const density = useRowDensity();
   const [journal, setJournal] = useState<GLJournal | null>(null), [original, setOriginal] = useState("");
@@ -135,6 +135,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   }, [journal, refs.accounts, year?.scale]);
   const patch = (value: Partial<GLJournal>) => setJournal((current) => current ? { ...current, ...value } : current);
   const patchLine = (index: number, value: Partial<GLLine>) => patch({ lines: journal!.lines.map((line, i) => i === index ? { ...line, ...value } : line) });
+  // Champ รันเลขที่ให้ใบใหม่ (BRunningEdit) — แสดงเลขถัดไปของสมุดตามวันที่เป็นตัวอย่าง; เลขจริงออกตอนบันทึก (backend journal_docno.go)
+  const [nextDocNo, setNextDocNo] = useState("");
+  const previewBook = isEditing && journal && !journal.id ? journal.bookcode : "", previewDate = journal?.date ?? "";
+  useEffect(() => {
+    if (!previewBook || !previewDate) { setNextDocNo(""); return; }
+    const controller = new AbortController();
+    glRequest<{ docno: string }>(`journal-next-docno?${new URLSearchParams({ bookcode: previewBook, from: previewDate })}`, { signal: controller.signal })
+      .then((value) => setNextDocNo(value?.docno ?? ""))
+      .catch(() => { if (!controller.signal.aborted) setNextDocNo(""); });
+    return () => controller.abort();
+  }, [previewBook, previewDate]);
 
   const addNewLine = () => {
     if (!journal || journal.lines.length >= 500) return;
@@ -156,6 +167,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     onAddNewRow: () => {
       addNewLine();
     },
+  });
+
+  // หัวเอกสาร: Enter เลื่อนไปช่องถัดไปแบบ Champ (ไม่ส่งฟอร์มบันทึก) — ช่องสุดท้ายพาเข้าตารางบัญชี
+  const linesRef = useRef<HTMLDivElement>(null);
+  const headerEnterNav = useTabularEnterNav({
+    onAddNewRow: () => linesRef.current?.querySelector<HTMLElement>("input:not([disabled]):not([readonly]), button:not([disabled])")?.focus(),
   });
 
   const applyPastedLines = (clipboardText: string) => {
@@ -669,12 +686,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 <div className="overflow-y-auto p-1 grid min-w-0 gap-3 content-start">
                   <fieldset disabled className="grid min-w-0 gap-3 opacity-95">
                     <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label={tr("gl_journal", "สมุดรายวัน")}><input className={control} value={journal.bookcode ? `${journal.bookcode} · ${bookLabel(journal.bookcode)}` : ""} readOnly /></Field>
                       <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} value={journal.docno} readOnly /></Field>
                       <Field label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} type="date" value={journal.date} readOnly /></Field>
-                      <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><input className={control} value={journal.fiscalyear} readOnly /></Field>
-                      <Field label={tr("gl_journal", "สมุดรายวัน")}><input className={control} value={journal.bookcode ? `${journal.bookcode} · ${bookLabel(journal.bookcode)}` : ""} readOnly /></Field>
-                      <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}><input className={control} value={journal.description} readOnly /></Field>
-                      <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference || "-"} readOnly /></Field>
+                      <Field label={tr("gl_ref_docno", "เลขที่เอกสารอ้างอิง")}><input className={control} value={journal.reference || "-"} readOnly /></Field>
+                      <Field label={tr("gl_ref_date", "วันที่เอกสารอ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} readOnly /></Field>
+                      <Field label={tr("gl_note", "หมายเหตุ")}><input className={control} value={journal.description || "-"} readOnly /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode || "-"} readOnly /></Field>
                     </div>
                     <div className="overflow-x-auto rounded-xl border border-border">
@@ -821,22 +838,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 </header>
                 <div className="overflow-y-auto p-1 grid min-w-0 gap-3 content-start">
                   <fieldset disabled={busy} className="grid min-w-0 gap-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} required value={journal.docno} maxLength={60} onChange={(e) => patch({ docno: e.target.value })} /></Field>
-                      <Field label={tr("gl_document_date", "วันที่เอกสาร")}>
-                        <input
-                          className={control}
-                          required
-                          type="date"
-                          value={journal.date}
-                          onChange={(e) => {
-                            const newDate = e.target.value;
-                            const matched = fiscalYearForDate(refs.years, newDate);
-                            patch({ date: newDate, ...(matched ? { fiscalyear: matched } : {}) });
-                          }}
-                        />
-                      </Field>
-                      <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={journal.fiscalyear} onChange={(fiscalyear) => patch({ fiscalyear })} /></Field>
+                    <div className="grid gap-3 sm:grid-cols-2" onKeyDown={(e) => { if (e.key === "Enter") headerEnterNav.onKeyDown(e); }}>
                       <Field label={tr("gl_journal", "สมุดรายวัน")}>
                         <Combobox
                           // backend ห้ามเปลี่ยนสมุดของใบสำคัญที่บันทึกแล้ว (journal_book_immutable) — ล็อกไว้ ไม่ให้ผู้ใช้เลือกแล้วค่อยเจอ error ตอนบันทึก
@@ -852,13 +854,38 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           )}
                         </Combobox>
                       </Field>
-                      <Field label={tr("gl_entry_description", "คำอธิบายรายการ")}>
-                        <input className={control} required value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
+                      <Field label={tr("gl_document_no", "เลขที่เอกสาร")} hint={journal.id ? undefined : tr("gl_docno_auto_hint", "เว้นว่างไว้ ระบบจะรันเลขที่ให้ตอนบันทึก")}>
+                        <input
+                          className={control}
+                          required={Boolean(journal.id)}
+                          value={journal.docno}
+                          maxLength={30}
+                          placeholder={journal.id ? undefined : nextDocNo ? tr("gl_docno_auto_preview", "อัตโนมัติ: {0}").replace("{0}", nextDocNo) : tr("gl_auto", "อัตโนมัติ")}
+                          onChange={(e) => patch({ docno: e.target.value })}
+                        />
                       </Field>
-                      <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} onChange={(e) => patch({ reference: e.target.value })} /></Field>
+                      <Field label={tr("gl_document_date", "วันที่เอกสาร")}>
+                        <input
+                          className={control}
+                          required
+                          type="date"
+                          value={journal.date}
+                          onChange={(e) => {
+                            const newDate = e.target.value;
+                            const matched = fiscalYearForDate(refs.years, newDate);
+                            patch({ date: newDate, ...(matched ? { fiscalyear: matched } : {}) });
+                          }}
+                        />
+                      </Field>
+                      <Field label={tr("gl_ref_docno", "เลขที่เอกสารอ้างอิง")}><input className={control} value={journal.reference} maxLength={50} onChange={(e) => patch({ reference: e.target.value })} /></Field>
+                      <Field label={tr("gl_ref_date", "วันที่เอกสารอ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} onChange={(e) => patch({ refdate: e.target.value })} /></Field>
+                      <Field label={tr("gl_note", "หมายเหตุ")}>
+                        <input className={control} value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
+                      </Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
                     </div>
                     <div
+                      ref={linesRef}
                       className="overflow-x-auto rounded-xl border border-border"
                       onKeyDown={tabularEnterNav.onKeyDown}
                       onPaste={(e) => {

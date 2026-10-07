@@ -15,6 +15,17 @@ describe("evaluateFormShortcut", () => {
     expect(onSave).toHaveBeenCalled();
   });
 
+  it("saves on F11 like Champ and leaves F11 to the browser when the screen cannot save", () => {
+    const onSave = vi.fn();
+    const preventDefault = vi.fn();
+    expect(evaluateFormShortcut({ key: "F11", preventDefault }, { onSave, canSave: true })).toBe("save");
+    expect(preventDefault).toHaveBeenCalled();
+    expect(onSave).toHaveBeenCalled();
+    const untouched = vi.fn();
+    expect(evaluateFormShortcut({ key: "F11", preventDefault: untouched }, {})).toBeNull();
+    expect(untouched).not.toHaveBeenCalled();
+  });
+
   it("does not trigger onSave when canSave is false", () => {
     const onSave = vi.fn();
     const preventDefault = vi.fn();

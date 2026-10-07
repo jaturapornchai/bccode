@@ -310,7 +310,7 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       ];
 
       const err = validateJournal(outOfYearJournal, fy, accList);
-      expect(err).toContain("กรุณาเลือกปีบัญชีที่เปิดใช้งานและวันที่ภายในปีบัญชี");
+      expect(err).toContain("วันที่เอกสารไม่อยู่ในปีบัญชีที่เปิดใช้งาน");
     });
 
     it("parses and validates tabular journal paste from Excel", () => {

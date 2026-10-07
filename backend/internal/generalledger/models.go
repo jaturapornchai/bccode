@@ -115,6 +115,8 @@ type Master struct {
 	Name           string                `json:"name" bson:"name"`
 	NameEn         string                `json:"nameen,omitempty" bson:"nameen,omitempty"`     // journal-books: English name
 	BookType       int                   `json:"booktype,omitempty" bson:"booktype,omitempty"` // journal-books: 1 ทั่วไป 2 จ่าย 3 รับ 4 ขาย 5 ซื้อ 6 ยอดยกมา
+	DocFormat      string                `json:"docformat,omitempty" bson:"docformat,omitempty"` // journal-books: running number format (journal_docno.go), empty = DefaultJournalDocFormat
+	TitleName      string                `json:"titlename,omitempty" bson:"titlename,omitempty"` // journal-books: heading printed on the voucher (Champ BCGLBook.TitleName)
 	IsActive       bool                  `json:"isactive" bson:"isactive"`
 	AccountCode    string                `json:"accountcode,omitempty" bson:"accountcode,omitempty"`
 	FiscalYear     string                `json:"fiscalyear,omitempty" bson:"fiscalyear,omitempty"`
@@ -233,6 +235,7 @@ type Journal struct {
 	FiscalYear     string     `json:"fiscalyear" bson:"fiscalyear"`
 	Description    string     `json:"description" bson:"description"`
 	Reference      string     `json:"reference" bson:"reference"`
+	RefDate        string     `json:"refdate,omitempty" bson:"refdate,omitempty"` // วันที่เอกสารอ้างอิง (Champ BCTrans.RefDate)
 	BranchCode     string     `json:"branchcode" bson:"branchcode"`
 	Kind           string     `json:"kind" bson:"kind"`
 	Status         string     `json:"status" bson:"status"`
@@ -433,8 +436,9 @@ func (j Journal) Validate(f FiscalYear, accounts map[string]Account) error {
 	if !validDate(j.Date) {
 		return fieldError("journal_date_invalid", "date", "วันที่เอกสารไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
 	}
-	if strings.TrimSpace(j.Description) == "" {
-		return fieldError("journal_description_required", "description", "กรุณาระบุคำอธิบายรายการ")
+	// Champ does not require the voucher description (glfrmjournal.cpp ConfirmSaveData) — lines carry their own.
+	if j.RefDate != "" && !validDate(j.RefDate) {
+		return fieldError("journal_refdate_invalid", "refdate", "วันที่เอกสารอ้างอิงไม่ถูกต้อง กรุณาเลือกวันที่ให้ครบ วัน เดือน ปี")
 	}
 	// bookcode is checked against the company's journal-books master by the store
 	// (checkJournalBook) — books are user-defined, so there is no fixed list here.

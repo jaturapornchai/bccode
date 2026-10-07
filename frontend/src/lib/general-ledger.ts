@@ -51,12 +51,16 @@ export type GLJournal = GLIdentity & {
   details?: GLJournalDetails;
   source_type?: number; source_system?: string; source_record_id?: string;
   docno: string; date: string; bookcode: string; fiscalyear: string; description: string;
-  reference: string; branchcode: string; kind: string; status: string;
+  reference: string; refdate?: string; branchcode: string; kind: string; status: string;
   lines: GLLine[]; reversalof?: string; reason?: string;
 };
 /** สมุดรายวันเป็นข้อมูลหลักที่ผู้ใช้กำหนดเอง (mydocs/datamodels/gl/journalbook.sql) — ห้ามอิงรหัสสมุด ใช้ booktype เท่านั้น
  *  booktype 1=ทั่วไป 2=จ่าย 3=รับ 4=ขาย 5=ซื้อ 6=ยอดยกมา; 0/ไม่มี = ยังไม่กำหนด (ใช้กับใบใหม่ไม่ได้) */
-export type GLJournalBook = GLIdentity & { code: string; name: string; nameen?: string; booktype?: number; isactive: boolean };
+export type GLJournalBook = GLIdentity & { code: string; name: string; nameen?: string; booktype?: number; isactive: boolean;
+  /** รูปแบบเลขที่เอกสารแบบ Champ (backend journal_docno.go): @ = รหัสสมุด, YY = ปี พ.ศ. 2 หลัก, MM = เดือน, DD = วัน, # = เลขรัน 1 หลัก; ว่าง = @YYMM-#### */
+  docformat?: string;
+  /** หัวเอกสารที่พิมพ์บนใบสำคัญ เช่น ใบสำคัญจ่าย (Champ BCGLBook.TitleName) */
+  titlename?: string };
 export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate | GLStatementNotes | GLJournalBook;
 export type GLReviewStatus = 1 | 2 | 3;
 export type GLReviewEvent = { eventno: number; version: number; status: GLReviewStatus; note: string; reviewedby: string; reviewedat: string };
@@ -109,11 +113,13 @@ export type GLJournalBookType = (typeof JOURNAL_BOOK_TYPES)[number];
 export const journalBookTypeLabels: Record<string, GLLabel> = { 1: ["gl_general_journal", "รายวันทั่วไป"], 2: ["gl_cash_payments_journal", "รายวันจ่ายเงิน"], 3: ["gl_cash_receipts_journal", "รายวันรับเงิน"], 4: ["gl_sales_journal", "รายวันขาย"], 5: ["gl_purchase_journal", "รายวันซื้อ"], 6: ["gl_opening_balance_2", "ยอดยกมา"] };
 export const JOURNAL_BOOK_CODE_MAX = 15;
 export const JOURNAL_BOOK_NAME_MAX = 100;
+export const JOURNAL_DOC_FORMAT_DEFAULT = "@YYMM-####";
+export const JOURNAL_DOC_FORMAT_MAX = 20;
 export function isJournalBookType(value: unknown): value is GLJournalBookType { return Number.isInteger(Number(value)) && JOURNAL_BOOK_TYPES.includes(Number(value) as GLJournalBookType); }
 export function emptyJournalBook(): GLJournalBook { return { code: "", name: "", nameen: "", booktype: 0, isactive: true }; }
 /** payload ของคำสั่ง create/update สมุดรายวัน: ส่งเฉพาะช่องตามสัญญา ไม่พ่วงช่องของข้อมูลหลักอื่น */
 export function journalBookPayload(book: GLJournalBook): GLJournalBook {
-  return { ...(book.id ? { id: book.id } : {}), ...(book.version ? { version: book.version } : {}), code: book.code.trim(), name: book.name.trim(), nameen: (book.nameen ?? "").trim(), booktype: Number(book.booktype) || 0, isactive: book.isactive ?? true };
+  return { ...(book.id ? { id: book.id } : {}), ...(book.version ? { version: book.version } : {}), code: book.code.trim(), name: book.name.trim(), nameen: (book.nameen ?? "").trim(), booktype: Number(book.booktype) || 0, isactive: book.isactive ?? true, docformat: (book.docformat ?? "").trim(), titlename: (book.titlename ?? "").trim() };
 }
 /** ตรวจก่อนส่ง: ข้อความบอกช่องที่ผิดและวิธีแก้ (field = data-field ของช่อง) — นับความยาวเป็นตัวอักษร ไม่ใช่ไบต์
  *  allowUntyped: แก้สมุดเดิมที่ยังไม่มีประเภท — เปลี่ยนชื่อ/ปิดใช้งานได้โดยไม่ต้องเลือกประเภท (ตรงกับ backend allowUntyped) */
@@ -125,6 +131,9 @@ export function validateJournalBook(book: GLJournalBook, tr: GLTextFn = (_key, f
   if ([...name].length > JOURNAL_BOOK_NAME_MAX) return { message: tr("gl_book_name_too_long", "ชื่อสมุดรายวันยาวได้ไม่เกิน {0} ตัวอักษร").replace("{0}", String(JOURNAL_BOOK_NAME_MAX)), field: "name" };
   if ([...nameen].length > JOURNAL_BOOK_NAME_MAX) return { message: tr("gl_book_name_en_too_long", "ชื่อสมุดรายวันภาษาอังกฤษยาวได้ไม่เกิน {0} ตัวอักษร").replace("{0}", String(JOURNAL_BOOK_NAME_MAX)), field: "nameen" };
   if (!isJournalBookType(book.booktype) && !(allowUntyped && !Number(book.booktype))) return { message: tr("gl_book_type_required", "กรุณาเลือกประเภทสมุดรายวัน (ทั่วไป จ่าย รับ ขาย ซื้อ หรือยอดยกมา)"), field: "booktype" };
+  const docformat = (book.docformat ?? "").trim();
+  if (docformat && (!docformat.includes("#") || [...docformat].length > JOURNAL_DOC_FORMAT_MAX)) return { message: tr("gl_book_doc_format_invalid", "รูปแบบเลขที่เอกสารต้องมีเครื่องหมาย # อย่างน้อย 1 ตัวสำหรับเลขรัน และยาวไม่เกิน 20 ตัวอักษร"), field: "docformat" };
+  if ([...(book.titlename ?? "").trim()].length > JOURNAL_BOOK_NAME_MAX) return { message: tr("gl_book_title_too_long", "หัวเอกสารของสมุดรายวันยาวไม่เกิน 100 ตัวอักษร"), field: "titlename" };
   return null;
 }
 /** สมุดที่ใช้บันทึกใบใหม่ได้: เปิดใช้งาน ไม่ถูกลบ และกำหนดประเภทแล้ว — เรียงตามประเภทแล้วตามรหัส */
@@ -277,7 +286,7 @@ export function localDate() { const date = new Date(); return `${date.getFullYea
 export function fiscalYearForDate(years: GLFiscalYear[], date: string): string {
   return years.find((year) => year.isactive && !year.closed && !year.isdeleted && date >= year.startdate && date <= year.enddate)?.code ?? "";
 }
-export function emptyJournal(bookcode = "", kind = "manual", years: GLFiscalYear[] = [], branchcode = ""): GLJournal { const date = localDate(); return { docno: "", date, bookcode, fiscalyear: fiscalYearForDate(years, date), description: "", reference: "", branchcode, kind, status: "draft", lines: [emptyLine(), emptyLine()] }; }
+export function emptyJournal(bookcode = "", kind = "manual", years: GLFiscalYear[] = [], branchcode = ""): GLJournal { const date = localDate(); return { docno: "", date, bookcode, fiscalyear: fiscalYearForDate(years, date), description: "", reference: "", refdate: "", branchcode, kind, status: "draft", lines: [emptyLine(), emptyLine()] }; }
 /** สาขาที่ผู้ใช้เลือกตอนเข้าพื้นที่ทำงาน (localStorage bc_workspace → branch.code/guidfixed) — ใบใหม่ใช้เป็นสาขาเริ่มต้น
  *  เพราะ session อาจกลายเป็นระดับบริษัท (บางจอเรียก select-holding โดยไม่ส่งสาขา) แล้ว backend บังคับให้ระบุสาขาเอง */
 export function workspaceBranchCode(workspaceJson: string | null): string {
@@ -344,8 +353,10 @@ export function journalTotals(lines: GLLine[]) {
   return { debit, credit, difference: debit - credit };
 }
 export function validateJournal(journal: GLJournal, year: GLFiscalYear | undefined, accounts: GLAccount[], tr: GLTextFn = (_key, fallback) => fallback): string | null {
-  if (!journal.docno.trim() || !journal.date || !journal.description.trim()) return tr("gl_required_no_date_description", "กรุณาระบุเลขที่ วันที่ และคำอธิบายรายการ");
-  if (!year || !year.isactive || year.closed || journal.date < year.startdate || journal.date > year.enddate) return tr("gl_select_active_fiscal_year_date", "กรุณาเลือกปีบัญชีที่เปิดใช้งานและวันที่ภายในปีบัญชี");
+  // Champ ไม่บังคับหมายเหตุหัวเอกสาร และรันเลขที่ให้ใบใหม่เมื่อเว้นว่าง (backend journal_docno.go) — ใบที่บันทึกแล้วต้องมีเลขที่
+  if (!journal.date) return tr("gl_document_date_required", "กรุณาเลือกวันที่เอกสาร");
+  if (journal.id && !journal.docno.trim()) return tr("gl_document_no_required", "กรุณาระบุเลขที่เอกสาร");
+  if (!year || !year.isactive || year.closed || journal.date < year.startdate || journal.date > year.enddate) return tr("gl_date_outside_open_fiscal_year", "วันที่เอกสารไม่อยู่ในปีบัญชีที่เปิดใช้งาน กรุณาเปลี่ยนวันที่ หรือเปิดปีบัญชีก่อน");
   if (journal.lines.length < 2 || journal.lines.length > 500) return tr("gl_entries_2_500_lines", "รายการบัญชีต้องมี 2–500 บรรทัด");
   try {
     for (const [index, raw] of journal.lines.entries()) {

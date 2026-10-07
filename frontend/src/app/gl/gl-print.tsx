@@ -107,18 +107,19 @@ export function GLVoucherPrint({ journal, books, company, tr, language, scale = 
     [tr("gl_document_no", "เลขที่เอกสาร"), journal.docno],
     [tr("gl_date", "วันที่"), formatAppDate(journal.date, language)],
     [tr("gl_journal", "สมุดรายวัน"), journal.bookcode],
-    [tr("gl_reference", "เอกสารอ้างอิง"), journal.reference],
+    [tr("gl_ref_docno", "เลขที่เอกสารอ้างอิง"), journal.reference],
+    [tr("gl_ref_date", "วันที่เอกสารอ้างอิง"), journal.refdate ? formatAppDate(journal.refdate, language) : ""],
     [tr("gl_branch_code", "รหัสสาขา"), journal.branchcode],
   ];
   return <article className="gl-print-voucher">
     <header className="gl-print-voucher-head">
       <div>
-        <PrintHeading company={company} title={`${tr("gl_print_voucher_title", "ใบสำคัญรายวัน")}${book ? ` — ${journalBookName(book, journal.bookcode, language)}` : ""}`} meta={[]} />
+        <PrintHeading company={company} title={book?.titlename?.trim() || `${tr("gl_print_voucher_title", "ใบสำคัญรายวัน")}${book ? ` — ${journalBookName(book, journal.bookcode, language)}` : ""}`} meta={[]} />
         {mark && <div className="gl-print-mark">{mark}</div>}
       </div>
       <dl className="gl-print-fields">{fields.filter(([, value]) => value?.trim()).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
     </header>
-    <p className="gl-print-desc"><strong>{tr("gl_entry_description", "คำอธิบายรายการ")}:</strong> {journal.description || "—"}</p>
+    <p className="gl-print-desc"><strong>{tr("gl_note", "หมายเหตุ")}:</strong> {journal.description || "—"}</p>
     <table>
       <thead><tr>
         <th>{tr("gl_account_code", "รหัสบัญชี")}</th><th>{tr("gl_account_name", "ชื่อบัญชี")}</th><th>{tr("gl_description", "คำอธิบาย")}</th>

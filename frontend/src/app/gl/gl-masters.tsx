@@ -5,7 +5,7 @@ import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Tr
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_TYPES, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { toast } from "@/lib/toast";
@@ -1477,6 +1477,14 @@ function JournalBookFields({ value, set }: { value: GLJournalBook; set: (patch: 
         </Field>
         <Field label={tr("gl_name_en", "ชื่อภาษาอังกฤษ (ไม่บังคับ)")}>
           <input className={control} data-field="nameen" value={value.nameen || ""} onChange={(e) => set({ nameen: e.target.value })} />
+        </Field>
+        {/* Champ BCGLBook.TitleName — หัวใบสำคัญที่พิมพ์ (gl-print.tsx) */}
+        <Field label={tr("gl_book_title_name", "หัวเอกสาร")} hint={tr("gl_book_title_hint", "ชื่อใบสำคัญที่พิมพ์ เช่น ใบสำคัญจ่าย — เว้นว่างจะพิมพ์ชื่อสมุด")}>
+          <input className={control} data-field="titlename" maxLength={JOURNAL_BOOK_NAME_MAX} value={value.titlename || ""} onChange={(e) => set({ titlename: e.target.value })} />
+        </Field>
+        {/* เลขรันแบบ Champ (BRunningBttn) — backend journal_docno.go ออกเลขตอนบันทึกใบใหม่ที่เว้นเลขที่ไว้ */}
+        <Field label={tr("gl_book_doc_format", "รูปแบบเลขที่เอกสาร")} hint={tr("gl_book_doc_format_hint", "@ = รหัสสมุด · YY = ปี พ.ศ. 2 หลัก · MM = เดือน · DD = วัน · # = เลขรัน 1 หลัก — เว้นว่างใช้ {0}").replace("{0}", JOURNAL_DOC_FORMAT_DEFAULT)}>
+          <input className={control} data-field="docformat" maxLength={JOURNAL_DOC_FORMAT_MAX} placeholder={JOURNAL_DOC_FORMAT_DEFAULT} value={value.docformat || ""} onChange={(e) => set({ docformat: e.target.value.toUpperCase() })} />
         </Field>
         <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
           <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />

@@ -55,6 +55,7 @@ var (
 	errJournalBookRequired       = fieldError("journal_book_required", "bookcode", "กรุณาเลือกสมุดรายวันของเอกสาร")
 	errJournalBookImmutable      = fieldError("journal_book_immutable", "bookcode", "เปลี่ยนสมุดรายวันของเอกสารที่บันทึกแล้วไม่ได้ ถ้าเลือกสมุดผิด ให้ลบใบร่างนี้แล้วบันทึกใหม่ในสมุดที่ถูกต้อง")
 	errJournalKindImmutable      = fieldError("journal_kind_immutable", "kind", "เปลี่ยนประเภทรายการของเอกสารที่บันทึกแล้วไม่ได้ ถ้าเลือกประเภทผิด ให้ลบใบร่างนี้แล้วบันทึกใหม่")
+	errJournalBookTitleTooLong   = fieldError("journal_book_title_too_long", "titlename", "หัวเอกสารของสมุดรายวันยาวไม่เกิน 100 ตัวอักษร")
 	errJournalKindNotAllowed     = fieldError("journal_kind_not_allowed", "kind", "ประเภทรายการปิดบัญชี กลับรายการ และเชื่อมบัญชี ระบบสร้างให้เองเท่านั้น สร้างด้วยตนเองไม่ได้ กรุณาเลือกประเภททั่วไป หรือยอดยกมา")
 	errJournalDocNoImmutable     = fieldError("journal_docno_immutable", "docno", "เลขที่เอกสารที่บันทึกแล้วแก้ไม่ได้ ถ้าต้องการเลขใหม่ ให้ลบใบร่างนี้แล้วบันทึกใหม่")
 	errJournalBranchRequired     = fieldError("journal_branch_required", "branchcode", "กรุณาเลือกสาขาของเอกสาร (คุณเข้าระบบระดับบริษัท ระบบจึงเลือกสาขาให้อัตโนมัติไม่ได้)")
@@ -123,8 +124,12 @@ func validateJournalBookMaster(m *Master, allowUntyped bool) error {
 		return errJournalBookNameEnTooLong
 	case !validBookType(m.BookType) && !(allowUntyped && m.BookType == 0):
 		return errJournalBookTypeInvalid
+	case utf8.RuneCountInString(strings.TrimSpace(m.TitleName)) > bookNameMaxRunes:
+		return errJournalBookTitleTooLong
 	}
-	return nil
+	m.TitleName = strings.TrimSpace(m.TitleName)
+	m.DocFormat = strings.TrimSpace(m.DocFormat)
+	return validateDocFormat(m.DocFormat)
 }
 
 // journalBookInUse reports whether any live journal or account-mapping master refers to the book

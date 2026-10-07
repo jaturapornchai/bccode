@@ -500,6 +500,9 @@ func (h *Http) list(request microservice.IContext) error {
 	if resource == "journal-support" {
 		return h.listJournalSupport(ctx, request, scope)
 	}
+	if resource == "journal-next-docno" {
+		return h.previewJournalDocNo(ctx, request, scope)
+	}
 	screen := resourceScreens[resource]
 	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status")}
 	permitted := allowed(scope.Permissions, screen, "")
@@ -678,4 +681,17 @@ func (h *Http) command(request microservice.IContext) error {
 		return failure(request, err)
 	}
 	return response(request, result)
+}
+
+// previewJournalDocNo - GET /gl/v2/journal-next-docno?bookcode=&from=YYYY-MM-DD: the number the
+// next new voucher of the book would get (shown in the empty document-number box like Champ).
+func (h *Http) previewJournalDocNo(ctx context.Context, request microservice.IContext, scope requestScope) error {
+	if !allowed(scope.Permissions, journalsScreen, "") && !allowed(scope.Permissions, openingScreen, "") {
+		return fail(request, 403, "ไม่มีสิทธิ์อ่านข้อมูลบัญชีนี้")
+	}
+	docno, err := h.store.PreviewJournalDocNo(ctx, scope.Scope, request.QueryParam("bookcode"), request.QueryParam("from"))
+	if err != nil {
+		return failure(request, err)
+	}
+	return response(request, map[string]string{"docno": docno})
 }

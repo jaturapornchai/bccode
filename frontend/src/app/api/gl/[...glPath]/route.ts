@@ -13,6 +13,8 @@ export async function GET(request: Request, context: Context) {
   const valid = glPath[0] === "reports"
     ? glPath.length === 2 && ((GL_REPORTS as readonly string[]).includes(glPath[1]) || GL_SET_REPORTS.includes(glPath[1]))
     : glPath[0] === "journal-support" ? glPath.length === 1
+    // เลขที่เอกสารถัดไปของสมุดรายวัน (แสดงก่อนบันทึก) — backend journal_docno.go
+    : glPath[0] === "journal-next-docno" ? glPath.length === 1
     : glPath[0] === "journal-reviews" ? glPath.length === 2
     : (GL_RESOURCES as readonly string[]).includes(glPath[0]) && glPath.length <= 2;
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);

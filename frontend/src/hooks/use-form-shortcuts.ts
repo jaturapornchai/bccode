@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 export interface FormShortcutsOptions {
-  /** Callback triggered on Ctrl+S / Cmd+S */
+  /** Callback triggered on Ctrl+S / Cmd+S and F11 (Champ's save key) */
   onSave?: () => void | Promise<void>;
   /** Callback triggered on Alt+N */
   onNew?: () => void | Promise<void>;
@@ -28,7 +28,7 @@ export interface ShortcutKeyEvent {
 
 /**
  * Pure evaluation function for shortcut keyboard events:
- * - Ctrl+S / Cmd+S: Save document / draft (calls preventDefault to suppress browser dialog)
+ * - Ctrl+S / Cmd+S or F11 (Champ): Save document / draft (calls preventDefault to suppress the browser's save dialog / fullscreen)
  * - Alt+N: New document / create entry
  * - Escape: Cancel edit / close workbench form
  */
@@ -47,8 +47,9 @@ export function evaluateFormShortcut(
   const key = e.key.toLowerCase();
   const isCtrlOrMeta = Boolean(e.ctrlKey || e.metaKey);
 
-  // 1. Ctrl+S or Cmd+S -> Save
-  if (isCtrlOrMeta && key === "s") {
+  // 1. Ctrl+S or Cmd+S -> Save; F11 = Champ's "บันทึกรายการ F11" (only on screens that can save,
+  // so F11 keeps toggling browser fullscreen everywhere else)
+  if ((isCtrlOrMeta && key === "s") || (e.key === "F11" && !e.altKey && !isCtrlOrMeta && options.onSave)) {
     e.preventDefault?.();
     if (options.canSave !== false && options.onSave) {
       void options.onSave();

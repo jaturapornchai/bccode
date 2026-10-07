@@ -31,8 +31,12 @@ describe("general ledger exact accounting helpers", () => {
     expect(journalTotals(journal.lines).difference).toBe(0n);
     expect(validateJournal({ ...journal, lines: [{ ...journal.lines[0], credit: "1" }, journal.lines[1]] }, year, accounts)).toContain("ด้านเดียว");
     expect(validateJournal({ ...journal, lines: [{ ...journal.lines[0], debit: "0.301" }, { ...journal.lines[1], credit: "0.301" }] }, year, accounts)).toContain("ทศนิยม");
-    expect(validateJournal({ ...journal, date: "2027-01-01" }, year, accounts)).toContain("วันที่ภายในปีบัญชี");
+    expect(validateJournal({ ...journal, date: "2027-01-01" }, year, accounts)).toContain("ไม่อยู่ในปีบัญชีที่เปิดใช้งาน");
     expect(validateJournal(journal, { ...year, closed: true }, accounts)).toContain("ปีบัญชี");
+    // Champ: blank number on a new voucher is run by the backend; remark (description) is optional
+    expect(validateJournal({ ...journal, id: undefined, docno: "", description: "" }, year, accounts)).toBeNull();
+    expect(validateJournal({ ...journal, id: "j1", docno: " " }, year, accounts)).toContain("เลขที่เอกสาร");
+    expect(validateJournal({ ...journal, date: "" }, year, accounts)).toContain("วันที่เอกสาร");
     expect(validateJournal(journal, year, [{ ...accounts[0], allowposting: false }, accounts[1]])).toContain("ลงรายการได้");
     expect(validateJournal({ ...journal, lines: [journal.lines[0], { ...journal.lines[1], credit: "0.2" }] }, year, accounts)).toContain("เท่ากัน");
   });
@@ -276,7 +280,7 @@ describe("journal books are user-defined master data (booktype drives behaviour,
   });
   it("sends only the journal-book contract fields", () => {
     const payload = journalBookPayload({ id: "b1", version: 3, code: " PV ", name: " สมุดรายวันจ่ายเงิน ", nameen: " Payments ", booktype: 2, isactive: false, bookcode: "x" } as GLJournalBook);
-    expect(payload).toEqual({ id: "b1", version: 3, code: "PV", name: "สมุดรายวันจ่ายเงิน", nameen: "Payments", booktype: 2, isactive: false });
+    expect(payload).toEqual({ id: "b1", version: 3, code: "PV", name: "สมุดรายวันจ่ายเงิน", nameen: "Payments", booktype: 2, isactive: false, docformat: "", titlename: "" });
   });
   it("labels the six book types from the spec", () => {
     expect(Object.keys(journalBookTypeLabels)).toEqual(["1", "2", "3", "4", "5", "6"]);
