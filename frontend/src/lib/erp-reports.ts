@@ -532,6 +532,8 @@ const API_READY_REPORTS: ReadonlySet<string> = new Set<string>([
   "gross_profit_document",
   "stock_balance_item",
   "stock_balance_warehouse",
+  "stock_movement_cost",
+  "stock_movement_simple",
   "ap_movement",
   "ap_status",
   "ap_outstanding",
@@ -640,6 +642,44 @@ function mapStockBalanceWarehouse(source: Record<string, unknown>): ErpReportRow
   if (unitname !== undefined) row.unitname = unitname;
   const totalcost = toNumber(source.totalvalue);
   if (totalcost !== undefined) row.totalcost = totalcost;
+  return row;
+}
+
+function mapStockMovementCost(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const transname = toText(source.transname);
+  if (transname !== undefined) row.transname = transname;
+  const inqty = toNumber(source.inqty);
+  if (inqty !== undefined) row.inqty = inqty;
+  const outqty = toNumber(source.outqty);
+  if (outqty !== undefined) row.outqty = outqty;
+  const balanceqty = toNumber(source.balanceqty);
+  if (balanceqty !== undefined) row.balanceqty = balanceqty;
+  const unitcost = toNumber(source.unitcost);
+  if (unitcost !== undefined) row.unitcost = unitcost;
+  const totalcost = toNumber(source.balanceamount) ?? toNumber(source.totalcost);
+  if (totalcost !== undefined) row.totalcost = totalcost;
+  return row;
+}
+
+function mapStockMovementSimple(source: Record<string, unknown>): ErpReportRow {
+  const row: ErpReportRow = {};
+  const docdate = toText(source.docdate);
+  if (docdate !== undefined) row.docdate = docdate;
+  const docno = toText(source.docno);
+  if (docno !== undefined) row.docno = docno;
+  const itemcode = toText(source.itemcode);
+  if (itemcode !== undefined) row.itemcode = itemcode;
+  const itemname = toText(source.itemname);
+  if (itemname !== undefined) row.itemname = itemname;
+  const inqty = toNumber(source.inqty);
+  if (inqty !== undefined) row.inqty = inqty;
+  const outqty = toNumber(source.outqty);
+  if (outqty !== undefined) row.outqty = outqty;
   return row;
 }
 
@@ -796,6 +836,8 @@ const ROW_MAPPERS: Record<string, RowMapper> = {
   gross_profit_document: mapGrossProfitDocument,
   stock_balance_item: mapStockBalanceItem,
   stock_balance_warehouse: mapStockBalanceWarehouse,
+  stock_movement_cost: mapStockMovementCost,
+  stock_movement_simple: mapStockMovementSimple,
   ap_movement: mapApMovement,
   ap_status: mapApStatus,
   ap_outstanding: mapApOutstanding,
@@ -906,6 +948,23 @@ export async function fetchErpReportData(params: {
       }
       payload = await res.json();
       const rawRows = extractRows(payload, "data");
+      if (rawRows === null) {
+        return { rows: [], error: "load_failed" };
+      }
+      return { rows: rawRows.map(mapper) };
+    }
+
+    if (code === "stock_movement_cost" || code === "stock_movement_simple") {
+      const url = `/api/goapi/api/reports/stock-movement?holdingcode=${encodeURIComponent(holdingcode)}&from=${encodeURIComponent(fromdate)}&to=${encodeURIComponent(todate)}`;
+      const res = await apiFetch(url);
+      if (!res.ok) {
+        return {
+          rows: [],
+          error: res.status === 401 || res.status === 403 ? "unauthorized" : "load_failed",
+        };
+      }
+      payload = await res.json();
+      const rawRows = extractRows(payload, "items");
       if (rawRows === null) {
         return { rows: [], error: "load_failed" };
       }

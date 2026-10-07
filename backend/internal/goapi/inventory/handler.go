@@ -31,7 +31,7 @@ func RegisterRoutes(g *echo.Group) {
 	// Reports
 	g.GET("/reports/inventory-valuation", GetInventoryValuation)
 	g.GET("/reports/stock-card/:itemcode", GetStockCard)
-
+	g.GET("/reports/stock-movement", GetStockMovement)
 }
 
 // connectAndService — สร้าง DB connection + service จาก holdingCode
@@ -249,6 +249,40 @@ func GetStockCard(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, report)
+}
+
+func GetStockMovement(c echo.Context) error {
+	holdingCode := c.QueryParam("holdingcode")
+	itemCode := c.QueryParam("itemcode")
+	fromDate := c.QueryParam("from")
+	toDate := c.QueryParam("to")
+
+	if holdingCode == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ต้องระบุ holdingcode"})
+	}
+
+	from, err := time.Parse("2006-01-02", fromDate)
+	if err != nil {
+		from = time.Now().AddDate(0, -1, 0)
+	}
+	to, err := time.Parse("2006-01-02", toDate)
+	if err != nil {
+		to = time.Now().AddDate(0, 0, 1)
+	}
+
+	svc, svcErr := connectAndService(holdingCode)
+	if svcErr != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": svcErr.Error()})
+	}
+
+	items, err := svc.GetStockMovementReport(c.Request().Context(), holdingCode, itemCode, from, to)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]any{
+		"holdingcode": holdingCode,
+		"items":       items,
+	})
 }
 
 func GetCostLayers(c echo.Context) error {

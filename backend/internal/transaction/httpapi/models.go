@@ -18,6 +18,10 @@ var ModuleTransFlags = map[string]int{
 	"stock-transfer":        62,  // XFR โอนสินค้า
 	"stock-receive-product": 72,  // RCV รับสินค้าสำเร็จรูป
 	"stock-adjustment":      310, // ADJ ปรับปรุงสต็อก
+	"paid":                  28,  // RE ใบเสร็จรับเงิน/รับชำระหนี้
+	"pay":                   29,  // PV ใบสำคัญจ่าย/จ่ายชำระหนี้
+	"receipt":               28,  // RE ใบเสร็จรับเงิน
+	"payment":               29,  // PV ใบสำคัญจ่าย
 }
 
 // ModulePrefixes maps ERP module to default document number prefix.
@@ -36,6 +40,10 @@ var ModulePrefixes = map[string]string{
 	"stock-transfer":        "XFR",
 	"stock-receive-product": "RCV",
 	"stock-adjustment":      "ADJ",
+	"paid":                  "RE",
+	"pay":                   "PV",
+	"receipt":               "RE",
+	"payment":               "PV",
 }
 
 type ErpDetailItem struct {

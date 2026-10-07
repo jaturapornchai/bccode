@@ -4,9 +4,9 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-08 @ commit 9f863af6 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-08 @ commit a3acdc13 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
-Files indexed: 31
+Files indexed: 32
 
 ## frontend/src/app/system-settings/system-settings-screen.tsx (16117 lines)
 
@@ -1055,6 +1055,35 @@ Files indexed: 31
 | 1161 | function | `DisableUser` |
 | 1205 | function | `authRequestLanguage` |
 
+## frontend/src/lib/erp-reports.ts (1187 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 518 | function | `isErpReportRoute` |
+| 523 | function | `getErpReportConfig` |
+| 547 | function | `isErpReportApiReady` |
+| 551 | function | `isRecord` |
+| 555 | function | `toNumber` |
+| 566 | function | `toText` |
+| 574 | function | `mapSalesByDocument` |
+| 589 | function | `mapGrossProfitDocument` |
+| 614 | function | `mapStockBalanceItem` |
+| 631 | function | `mapStockBalanceWarehouse` |
+| 648 | function | `mapStockMovementCost` |
+| 669 | function | `mapStockMovementSimple` |
+| 686 | function | `mapApMovement` |
+| 707 | function | `mapApStatus` |
+| 726 | function | `mapApOutstanding` |
+| 745 | function | `mapApDailyPayment` |
+| 762 | function | `mapArMovement` |
+| 783 | function | `mapArStatus` |
+| 802 | function | `mapArOutstanding` |
+| 821 | function | `mapArCreditLimit` |
+| 851 | function | `extractRows` |
+| 865 | function | `fetchErpReportData` |
+| 1165 | function | `reportText` |
+| 1174 | function | `reportColumnLabel` |
+
 ## frontend/src/app/asset/fixed-assets-screen.tsx (1182 lines)
 
 | Line | Kind | Name |
@@ -1068,6 +1097,22 @@ Files indexed: 31
 | 203 | const-arrow | `handleDeleteAsset` |
 | 233 | const-arrow | `handlePostGL` |
 | 276 | const-arrow | `handleConfirmDisposal` |
+
+## backend/internal/transaction/httpapi/service.go (1169 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 15 | function | `NewStore` |
+| 19 | function | `ListDocs` |
+| 99 | function | `GetDoc` |
+| 187 | function | `NextDocNo` |
+| 211 | function | `SaveDoc` |
+| 405 | function | `postPurchaseToGL` |
+| 558 | function | `postSaleToGL` |
+| 712 | function | `postReceiptToGLAndAR` |
+| 868 | function | `postPaymentToGLAndAP` |
+| 1024 | function | `postStockMovement` |
+| 1133 | function | `DeleteDoc` |
 
 ## backend/pkg/microservice/auth.go (1152 lines)
 
@@ -1163,33 +1208,6 @@ Files indexed: 31
 | Line | Kind | Name |
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
-
-## frontend/src/lib/erp-reports.ts (1128 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 518 | function | `isErpReportRoute` |
-| 523 | function | `getErpReportConfig` |
-| 545 | function | `isErpReportApiReady` |
-| 549 | function | `isRecord` |
-| 553 | function | `toNumber` |
-| 564 | function | `toText` |
-| 572 | function | `mapSalesByDocument` |
-| 587 | function | `mapGrossProfitDocument` |
-| 612 | function | `mapStockBalanceItem` |
-| 629 | function | `mapStockBalanceWarehouse` |
-| 646 | function | `mapApMovement` |
-| 667 | function | `mapApStatus` |
-| 686 | function | `mapApOutstanding` |
-| 705 | function | `mapApDailyPayment` |
-| 722 | function | `mapArMovement` |
-| 743 | function | `mapArStatus` |
-| 762 | function | `mapArOutstanding` |
-| 781 | function | `mapArCreditLimit` |
-| 809 | function | `extractRows` |
-| 823 | function | `fetchErpReportData` |
-| 1106 | function | `reportText` |
-| 1115 | function | `reportColumnLabel` |
 
 ## backend/internal/goapi/handlers/tax_report.go (1120 lines)
 

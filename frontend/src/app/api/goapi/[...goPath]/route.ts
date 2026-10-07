@@ -11,7 +11,10 @@ import {
 type Context = { params: Promise<{ goPath: string[] }> };
 
 // Allowlist matches full paths because goapi exposes many destructive endpoints that must never be reachable.
-const GET_ALLOWED_EXACT = ["api/reports/inventory-valuation"];
+const GET_ALLOWED_EXACT = [
+  "api/reports/inventory-valuation",
+  "api/reports/stock-movement",
+];
 
 const POST_ALLOWED_EXACT = [
   "api/report/tax/vat-register",
@@ -43,6 +46,9 @@ const ALLOWED_QUERY_PARAMS = [
   "warehousecode",
   "fromdate",
   "todate",
+  "from",
+  "to",
+  "itemcode",
   "limit",
   "offset",
   "lang",

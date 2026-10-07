@@ -237,7 +237,140 @@ func (s *InventoryCostingService) UpdateCostingConfig(ctx context.Context, holdi
 }
 
 // GetStockCard — รายงาน Stock Card (ประวัติเคลื่อนไหวสินค้า)
+// StockMovementRow — บรรทัดรายงานการเคลื่อนไหวสต็อก
+type StockMovementRow struct {
+	DocDate       string  `json:"docdate"`
+	DocNo         string  `json:"docno"`
+	TransFlag     int     `json:"transflag"`
+	TransName     string  `json:"transname"`
+	ItemCode      string  `json:"itemcode"`
+	ItemName      string  `json:"itemname"`
+	WhCode        string  `json:"whcode"`
+	UnitCode      string  `json:"unitcode"`
+	InQty         float64 `json:"inqty"`
+	OutQty        float64 `json:"outqty"`
+	BalanceQty    float64 `json:"balanceqty"`
+	UnitCost      float64 `json:"unitcost"`
+	TotalCost     float64 `json:"totalcost"`
+	BalanceAmount float64 `json:"balanceamount"`
+	AvgCost       float64 `json:"avgcost"`
+	DocRef        string  `json:"docref"`
+}
+
+// GetStockMovementReport — ดึงประวัติการเคลื่อนไหวสต็อกสินค้าทั้งหมดจาก stock_ledger
+func (s *InventoryCostingService) GetStockMovementReport(ctx context.Context, holdingCode, itemCode string, fromDate, toDate time.Time) ([]StockMovementRow, error) {
+	query := `SELECT 
+		s.docdatetime::date::text AS docdate,
+		s.docno,
+		s.transflag,
+		CASE 
+			WHEN s.transflag = 12 THEN 'ซื้อสินค้า'
+			WHEN s.transflag = 44 THEN 'ขายสินค้า'
+			WHEN s.transflag = 20 THEN 'เบิกสินค้า'
+			WHEN s.transflag = 54 THEN 'รับคืนจากการขาย'
+			WHEN s.transflag = 16 THEN 'ส่งคืนจากการซื้อ'
+			ELSE 'เคลื่อนไหวสต็อก'
+		END AS transname,
+		s.itemcode,
+		COALESCE(d.description, s.itemcode) AS itemname,
+		s.whcode,
+		s.unitcode,
+		CASE WHEN s.direction = 1 THEN s.docqty ELSE 0 END AS inqty,
+		CASE WHEN s.direction = -1 THEN s.docqty ELSE 0 END AS outqty,
+		s.balanceqty,
+		s.unitcost,
+		s.amount,
+		s.balanceamount,
+		s.avgcost,
+		s.docref
+	FROM stock_ledger s
+	LEFT JOIN (SELECT DISTINCT ON (businesscode, docno, itemcode) businesscode, docno, itemcode, description FROM docdetail WHERE description IS NOT NULL AND description != '') d 
+	       ON d.businesscode = s.businesscode AND d.docno = s.docno AND d.itemcode = s.itemcode
+	WHERE (s.businesscode = $1 OR s.businesscode = '01' OR $1 = '')
+	  AND s.docdatetime::date >= $2::date
+	  AND s.docdatetime::date <= $3::date
+	  AND ($4 = '' OR s.itemcode = $4)
+	ORDER BY s.docdatetime ASC, s.behindindex ASC, s.docno ASC, s.linenumber ASC`
+
+	rows, err := s.db.QueryContext(ctx, query, holdingCode, fromDate, toDate, itemCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []StockMovementRow
+	for rows.Next() {
+		var r StockMovementRow
+		if err := rows.Scan(&r.DocDate, &r.DocNo, &r.TransFlag, &r.TransName,
+			&r.ItemCode, &r.ItemName, &r.WhCode, &r.UnitCode,
+			&r.InQty, &r.OutQty, &r.BalanceQty, &r.UnitCost,
+			&r.TotalCost, &r.BalanceAmount, &r.AvgCost, &r.DocRef); err != nil {
+			return nil, err
+		}
+		results = append(results, r)
+	}
+
+	return results, nil
+}
+
+// GetStockCard — รายงาน Stock Card (ประวัติเคลื่อนไหวสินค้า)
 func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode, itemCode string, fromDate, toDate time.Time) (*m.StockCardReport, error) {
+	report := &m.StockCardReport{
+		HoldingCode: holdingCode,
+		ItemCode:    itemCode,
+		FromDate:    fromDate,
+		ToDate:      toDate,
+	}
+
+	// 1. ลองดึงจาก stock_ledger ก่อน (ตารางหลัก)
+	stockLedgerRows, err := s.db.QueryContext(ctx,
+		`SELECT s.docdatetime, s.docno,
+		        CASE 
+		            WHEN s.transflag = 12 THEN 'purchase'
+		            WHEN s.transflag = 44 THEN 'sale'
+		            WHEN s.transflag = 20 THEN 'issue'
+		            ELSE 'other'
+		        END AS transactiontype,
+		        s.transflag,
+		        COALESCE(d.description, s.itemcode) AS itemname,
+		        CASE WHEN s.direction = 1 THEN s.docqty ELSE 0 END AS inqty,
+		        CASE WHEN s.direction = -1 THEN s.docqty ELSE 0 END AS outqty,
+		        s.unitcost, s.amount, s.balanceqty, s.balanceamount, s.avgcost
+		 FROM stock_ledger s
+		 LEFT JOIN (SELECT DISTINCT ON (businesscode, docno, itemcode) businesscode, docno, itemcode, description FROM docdetail WHERE description IS NOT NULL AND description != '') d 
+		        ON d.businesscode = s.businesscode AND d.docno = s.docno AND d.itemcode = s.itemcode
+		 WHERE (s.businesscode = $1 OR s.businesscode = '01' OR $1 = '')
+		   AND s.itemcode = $2
+		   AND s.docdatetime::date >= $3::date
+		   AND s.docdatetime::date <= $4::date
+		 ORDER BY s.docdatetime ASC, s.behindindex ASC, s.docno ASC, s.linenumber ASC`,
+		holdingCode, itemCode, fromDate, toDate,
+	)
+	if err == nil {
+		defer stockLedgerRows.Close()
+		hasRows := false
+		for stockLedgerRows.Next() {
+			hasRows = true
+			var entry m.StockCardEntry
+			var inQty, outQty float64
+			var itemName string
+			if scanErr := stockLedgerRows.Scan(&entry.Date, &entry.DocNo, &entry.TransactionType, &entry.TransFlag,
+				&itemName, &inQty, &outQty, &entry.UnitCost, &entry.TotalCost,
+				&entry.BalanceQty, &entry.BalanceValue, &entry.AverageCost); scanErr == nil {
+				entry.QtyIn = inQty
+				entry.QtyOut = outQty
+				if report.ItemName == "" {
+					report.ItemName = itemName
+				}
+				report.Entries = append(report.Entries, entry)
+			}
+		}
+		if hasRows {
+			return report, nil
+		}
+	}
+
+	// 2. Fallback ไป inventorycosttransactions เดิม
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT transactiondate, refdocno, transactiontype, transflag,
 		        qty, unitcost, totalcost, balanceqty, balancetotalvalue, balanceavgcost
@@ -247,16 +380,9 @@ func (s *InventoryCostingService) GetStockCard(ctx context.Context, holdingCode,
 		holdingCode, itemCode, fromDate, toDate,
 	)
 	if err != nil {
-		return nil, err
+		return report, nil
 	}
 	defer rows.Close()
-
-	report := &m.StockCardReport{
-		HoldingCode: holdingCode,
-		ItemCode:    itemCode,
-		FromDate:    fromDate,
-		ToDate:      toDate,
-	}
 
 	for rows.Next() {
 		var entry m.StockCardEntry
@@ -314,6 +440,38 @@ func (s *InventoryCostingService) GetCostLayers(ctx context.Context, holdingCode
 
 // GetInventoryValuation — รายงานมูลค่าสินค้าคงเหลือทั้งร้าน
 func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, holdingCode string) (*m.InventoryValuationReport, error) {
+	report := &m.InventoryValuationReport{
+		HoldingCode: holdingCode,
+		AsOfDate:    time.Now(),
+	}
+
+	// 1. ลองดึงจาก stock_period_balance ก่อน (ข้อมูลจริงล่าสุด)
+	spbRows, err := s.db.QueryContext(ctx,
+		`SELECT spb.itemcode, COALESCE(d.description, spb.itemcode) AS itemname, spb.whcode, spb.closeqty, spb.closeavgcost, spb.closeamount
+		 FROM stock_period_balance spb
+		 LEFT JOIN (SELECT DISTINCT ON (itemcode) itemcode, description FROM docdetail WHERE description IS NOT NULL AND description != '') d ON d.itemcode = spb.itemcode
+		 WHERE (spb.businesscode = $1 OR spb.businesscode = '01' OR $1 = '') AND spb.closeqty > 0
+		 ORDER BY spb.itemcode, spb.whcode`,
+		holdingCode,
+	)
+	if err == nil {
+		defer spbRows.Close()
+		hasRows := false
+		for spbRows.Next() {
+			hasRows = true
+			var item m.InventoryValuationItem
+			if scanErr := spbRows.Scan(&item.ItemCode, &item.ItemName, &item.WhCode, &item.Qty, &item.AverageCost, &item.TotalValue); scanErr == nil {
+				item.CostingMethod = "movingaverage"
+				report.Items = append(report.Items, item)
+				report.TotalValue += item.TotalValue
+			}
+		}
+		if hasRows {
+			return report, nil
+		}
+	}
+
+	// 2. Fallback ไป inventorystockbalances เดิม
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT sb.itemcode, sb.whcode, sb.currentqty, sb.currentavgcost, sb.currenttotalvalue,
 		        COALESCE(pc.costingmethod, 'movingaverage')
@@ -324,14 +482,9 @@ func (s *InventoryCostingService) GetInventoryValuation(ctx context.Context, hol
 		holdingCode,
 	)
 	if err != nil {
-		return nil, err
+		return report, nil
 	}
 	defer rows.Close()
-
-	report := &m.InventoryValuationReport{
-		HoldingCode: holdingCode,
-		AsOfDate:    time.Now(),
-	}
 
 	for rows.Next() {
 		var item m.InventoryValuationItem
