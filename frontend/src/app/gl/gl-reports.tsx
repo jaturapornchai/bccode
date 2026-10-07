@@ -11,7 +11,7 @@ import { glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, Check, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
-import { GLVoucherPrint, PrintHeading, printCompanyName, printedAtText, printOrientation, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
+import { GLVoucherPrint, ReportPrintConditions, ReportPrintHeading, printCompanyName, printedAtText, printOrientation, printUserName, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
 
 // accountfrom/accountto = Champ "จากรหัสบัญชี–ถึงรหัสบัญชี"; ตัวเลือกเป็น "true" หรือ "" (ส่งเป็น query ตรง ๆ)
 export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string };
@@ -435,7 +435,7 @@ function printGroups(rows: Record<string, string>[], key?: string) {
     return groups;
   }, []);
 }
-function GLReportPrint({ report, title, meta, company, books, tr, language, breakKey }: { report: GLReport; title: string; meta: string[]; company: string; books: GLJournalBook[]; tr: GLTextFn; language: LanguageCode; breakKey?: string }) {
+function GLReportPrint({ report, title, meta, company, books, tr, language, breakKey }: { report: GLReport; title: string; meta: ReportPrintMeta; company: string; books: GLJournalBook[]; tr: GLTextFn; language: LanguageCode; breakKey?: string }) {
   const rows = reportRows(report);
   const columns = visiblePrintColumns(report.columns, rows);
   const totals = Object.entries(report.totals ?? {}).sort(([left], [right]) => totalRank(report, left) - totalRank(report, right));
@@ -445,7 +445,7 @@ function GLReportPrint({ report, title, meta, company, books, tr, language, brea
   return <>
     {groups.map((group, groupIndex) => <table key={groupIndex} style={groupIndex > 0 ? { breakBefore: "page", pageBreakBefore: "always" } : undefined}>
       <thead>
-        <tr className="gl-print-head"><th colSpan={columns.length || 1}><PrintHeading company={company} title={title} meta={breakKey && group[0] ? [...meta, `${group[0].accountcode ?? ""} ${group[0].accountname ?? ""}`.trim()] : meta} /></th></tr>
+        <tr className="gl-print-head"><th colSpan={columns.length || 1}><ReportPrintHeading company={company} title={title} printedBy={meta.printedBy} printedAt={meta.printedAt} description={breakKey && group[0] ? [...meta.description, `${group[0].accountcode ?? ""} ${group[0].accountname ?? ""}`.trim()] : meta.description} tr={tr} /></th></tr>
         <ReportHeadRows columns={columns} cellClass={(column) => column.amount ? "gl-print-num" : ""} />
       </thead>
       <tbody>
@@ -455,6 +455,7 @@ function GLReportPrint({ report, title, meta, company, books, tr, language, brea
       </tbody>
     </table>)}
     {extra.length > 0 && <dl className="gl-print-totals">{extra.map(([key, value]) => <div key={key}><dt>{columnTitle(report.columns.find((column) => column.key === key)) ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</dt><dd>{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</dd></div>)}</dl>}
+    <ReportPrintConditions lines={meta.conditions} tr={tr} />
   </>;
 }
 function reportPrintTitle(name: string, filters: ReportFilters, tr: GLTextFn, books: GLJournalBook[], accounts: GLAccount[], language: LanguageCode) {
@@ -471,21 +472,28 @@ function reportPrintTitle(name: string, filters: ReportFilters, tr: GLTextFn, bo
     single ? `${single} ${account ? accountName(account) : ""}`.trim() : "",
   ].filter(Boolean).join(" — ");
 }
-function reportPrintMeta(name: string, filters: ReportFilters, asOf: boolean, volume: string, tr: GLTextFn, language: LanguageCode) {
+// กรอบหน้ารายงานแบบ Champ: หัว = ช่วงวันที่ (รายละเอียด) + พิมพ์โดย/วันที่พิมพ์; ตัวกรองอื่นไปอยู่ "เงื่อนไขการพิมพ์รายงาน" ท้ายรายงาน
+type ReportPrintMeta = { description: string[]; conditions: string[]; printedBy: string; printedAt: string };
+function reportPrintMeta(name: string, filters: ReportFilters, asOf: boolean, volume: string, tr: GLTextFn, language: LanguageCode): ReportPrintMeta {
   const date = (value: string) => formatAppDate(value, language);
   const range = !filters.accountcode && filters.accountfrom !== filters.accountto;
-  return [
-    asOf || name === "ledger" && reportOptionOn(name, filters, "summary") ? tr("gl_print_as_of", "ณ วันที่ {0}").replace("{0}", date(filters.to))
-      : filters.from && filters.to ? tr("gl_print_period", "ตั้งแต่วันที่ {0} ถึงวันที่ {1}").replace("{0}", date(filters.from)).replace("{1}", date(filters.to))
-      : `${tr("gl_fiscal_year", "ปีบัญชี")} ${filters.fiscalyear}`,
-    range && filters.accountfrom ? `${tr("gl_account_from", "จากรหัสบัญชี")} ${filters.accountfrom}` : "",
-    range && filters.accountto ? `${tr("gl_account_to", "ถึงรหัสบัญชี")} ${filters.accountto}` : "",
-    filters.branchcode ? `${tr("gl_branch_code", "รหัสสาขา")} ${filters.branchcode}` : "",
-    filters.departmentcode ? `${tr("gl_department_code", "รหัสแผนก")} ${filters.departmentcode}` : "",
-    filters.projectcode ? `${tr("gl_project_code", "รหัสโครงการ")} ${filters.projectcode}` : "",
-    BOOK_REPORTS.has(name) ? tr("gl_print_volume_no", "เล่มที่ {0}").replace("{0}", volume.trim() || "..........") : "",
-    tr("gl_print_printed_at", "พิมพ์เมื่อ {0}").replace("{0}", printedAtText(language)),
-  ];
+  return {
+    description: [
+      asOf || name === "ledger" && reportOptionOn(name, filters, "summary") ? tr("gl_print_as_of", "ณ วันที่ {0}").replace("{0}", date(filters.to))
+        : filters.from && filters.to ? tr("gl_print_period", "ตั้งแต่วันที่ {0} ถึงวันที่ {1}").replace("{0}", date(filters.from)).replace("{1}", date(filters.to))
+        : `${tr("gl_fiscal_year", "ปีบัญชี")} ${filters.fiscalyear}`,
+      BOOK_REPORTS.has(name) ? tr("gl_print_volume_no", "เล่มที่ {0}").replace("{0}", volume.trim() || "..........") : "",
+    ],
+    conditions: [
+      range && filters.accountfrom ? `${tr("gl_account_from", "จากรหัสบัญชี")} ${filters.accountfrom}` : "",
+      range && filters.accountto ? `${tr("gl_account_to", "ถึงรหัสบัญชี")} ${filters.accountto}` : "",
+      filters.branchcode ? `${tr("gl_branch_code", "รหัสสาขา")} ${filters.branchcode}` : "",
+      filters.departmentcode ? `${tr("gl_department_code", "รหัสแผนก")} ${filters.departmentcode}` : "",
+      filters.projectcode ? `${tr("gl_project_code", "รหัสโครงการ")} ${filters.projectcode}` : "",
+    ],
+    printedBy: printUserName(),
+    printedAt: printedAtText(language),
+  };
 }
 const totalLabels: Record<string, GLLabel> = { debit: ["gl_total_debit", "รวมเดบิต"], credit: ["gl_total_credit", "รวมเครดิต"], balance: ["gl_balance", "ยอดคงเหลือ"], income: ["gl_revenue", "รายได้"], revenue: ["gl_revenue", "รายได้"], expense: ["gl_expense", "ค่าใช้จ่าย"], profit: ["gl_net_profit", "กำไรสุทธิ"], assets: ["gl_asset", "สินทรัพย์"], liabilities: ["gl_liability", "หนี้สิน"], equity: ["gl_equity", "ส่วนของเจ้าของ"], difference: ["gl_difference", "ผลต่าง"], budget: ["gl_budget_2", "งบประมาณ"], actual: ["gl_actual", "ยอดจริง"], budgetamount: ["gl_budget_2", "งบประมาณ"], actualamount: ["gl_actual", "ยอดจริง"], variance: ["gl_difference", "ผลต่าง"], opening: ["gl_opening_balance_2", "ยอดยกมา"], closing: ["gl_closing_balance", "ยอดยกไป"], cashin: ["gl_money_in", "เงินเข้า"], cashout: ["gl_money_out", "เงินออก"], netcash: ["gl_net_cash", "เงินสดสุทธิ"], cash: ["gl_cash_and_bank", "เงินสดและเงินฝากธนาคาร"], currentearnings: ["gl_unclosed_profit_loss", "กำไรขาดทุนที่ยังไม่ปิด"], unclassifiedlines: ["gl_unclassified_line", "บรรทัดที่ยังไม่ระบุประเภท"] };
 const SUMMARY_LABELS: Record<string, GLLabel> = { gljournal: ["gl_report_summary_journal", "แบบสรุป (แถวละเอกสาร)"], ledger: ["gl_report_summary_ledger", "แบบสรุป (ยอดสะสม ณ วันที่)"] };

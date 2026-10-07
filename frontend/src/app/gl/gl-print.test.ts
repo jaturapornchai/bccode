@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
-import { GLChartOfAccountsPrint, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { ReportPrintConditions, ReportPrintHeading, GLChartOfAccountsPrint, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -14,10 +14,31 @@ describe("printPageStyle", () => {
     expect(css).toContain(`@page gl-print-landscape { size: A4 landscape;`);
     expect(css.match(/content: "หน้า" " " counter\(page\) " \/ " counter\(pages\)/g)).toHaveLength(2);
   });
+  it("prints the page number at the top right like Champ (Page No. : n/N)", () => {
+    const css = printPageStyle("หน้า");
+    expect(css.match(/@top-right/g)).toHaveLength(2);
+    expect(css).not.toContain("@bottom-right");
+  });
   it("escapes quotes and cannot close the <style> element", () => {
     const css = printPageStyle(`Page "x" </style><script>`);
     expect(css).toContain(`"Page \\"x\\" \\3c /style>\\3c script>"`);
     expect(css).not.toContain("</style>");
+  });
+});
+
+describe("Champ report page frame", () => {
+  it("prints company, title, printed by / printed date and the description line in the repeated heading", () => {
+    const html = renderToStaticMarkup(createElement(ReportPrintHeading, { company: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", title: "รายงานงบทดลอง", printedBy: "สมศรี", printedAt: "07/10/2569 10:30", description: ["ตั้งแต่วันที่ 01/01/2569 ถึงวันที่ 31/12/2569", ""], tr }));
+    expect(html).toContain("บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด");
+    expect(html).toContain("พิมพ์โดย : สมศรี");
+    expect(html).toContain("วันที่พิมพ์ : 07/10/2569 10:30");
+    expect(html).toContain("รายละเอียด : ตั้งแต่วันที่ 01/01/2569 ถึงวันที่ 31/12/2569");
+  });
+  it("puts the filters under เงื่อนไขการพิมพ์รายงาน at the end, and prints nothing when no filter was used", () => {
+    const html = renderToStaticMarkup(createElement(ReportPrintConditions, { lines: ["รหัสสาขา 00001", ""], tr }));
+    expect(html).toContain("เงื่อนไขการพิมพ์รายงาน");
+    expect(html).toContain("รหัสสาขา 00001");
+    expect(renderToStaticMarkup(createElement(ReportPrintConditions, { lines: ["", ""], tr }))).toBe("");
   });
 });
 

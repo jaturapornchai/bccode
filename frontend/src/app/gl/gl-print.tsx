@@ -11,15 +11,16 @@ import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
 import { STATEMENT_CURRENT_EARNINGS, accountName, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, sortAccountsHierarchically, statementIsPeriodic, type GLAccount, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
+import { getAuthSession } from "@/lib/client-auth-session";
 import { useGLText } from "./gl-common";
 
 export type GLPrintOrientation = "portrait" | "landscape";
 
-/** เลขหน้า "หน้า n / N" ทุกหน้าด้วย @page margin box (Chrome 131+, Safari 18.2); ป้ายมาจาก languages.tsv จึงต้อง escape ให้เป็น CSS string */
+/** เลขหน้า "หน้า n / N" มุมขวาบนทุกหน้าแบบ Champ (Page No. : n/N) ด้วย @page margin box (Chrome 131+, Safari 18.2); ป้ายมาจาก languages.tsv จึงต้อง escape ให้เป็น CSS string */
 export function printPageStyle(pageLabel: string): string {
   const label = JSON.stringify(pageLabel).replace(/</g, "\\3c ");
   return (["portrait", "landscape"] as const).map((orientation) =>
-    `@page gl-print-${orientation} { size: A4 ${orientation}; margin: ${orientation === "portrait" ? "12mm 10mm 14mm" : "10mm 10mm 12mm"}; @bottom-right { content: ${label} " " counter(page) " / " counter(pages); font-size: 8pt; } }`,
+    `@page gl-print-${orientation} { size: A4 ${orientation}; margin: ${orientation === "portrait" ? "12mm 10mm 14mm" : "10mm 10mm 12mm"}; @top-right { content: ${label} " " counter(page) " / " counter(pages); font-size: 8pt; } }`,
   ).join("\n");
 }
 
@@ -48,6 +49,12 @@ export function printCompanyName(): string {
   } catch {
     return "";
   }
+}
+
+/** ชื่อผู้พิมพ์ (Printed By ของ Champ): ชื่อในโปรไฟล์ หรือชื่อผู้ใช้ที่เข้าระบบ */
+export function printUserName(): string {
+  const session = getAuthSession();
+  return session?.profile?.name?.trim() || session?.username?.trim() || "";
 }
 
 export function printedAtText(language: LanguageCode, now = new Date()): string {
@@ -86,6 +93,30 @@ export function PrintHeading({ company, title, meta }: { company: string; title:
     <div className="gl-print-title">{title}</div>
     {lines.length > 0 && <div className="gl-print-meta">{lines.join(" · ")}</div>}
   </>;
+}
+
+/** หัวรายงานแบบ Champ (ซ้ำทุกหน้าใน thead): ชื่อบริษัท, ชื่อรายงาน, พิมพ์โดย ↔ วันที่พิมพ์, รายละเอียด — เลขหน้าอยู่มุมขวาบนจาก @page */
+export function ReportPrintHeading({ company, title, printedBy, printedAt, description, tr }: { company: string; title: string; printedBy: string; printedAt: string; description: string[]; tr: GLTextFn }) {
+  const details = description.filter(Boolean);
+  return <>
+    <div className="gl-print-company">{company}</div>
+    <div className="gl-print-title">{title}</div>
+    <div className="gl-print-meta" style={{ display: "flex", justifyContent: "space-between", gap: "8mm" }}>
+      <span>{tr("gl_print_printed_by", "พิมพ์โดย")} : {printedBy || "-"}</span>
+      <span>{tr("gl_print_printed_date", "วันที่พิมพ์")} : {printedAt}</span>
+    </div>
+    {details.length > 0 && <div className="gl-print-meta">{tr("gl_print_description", "รายละเอียด")} : {details.join(" · ")}</div>}
+  </>;
+}
+
+/** "เงื่อนไขการพิมพ์รายงาน" ท้ายรายงานแบบ Champ — ตัวกรองที่ใช้ (ช่วงบัญชี สาขา แผนก โครงการ) */
+export function ReportPrintConditions({ lines, tr }: { lines: string[]; tr: GLTextFn }) {
+  const items = lines.filter(Boolean);
+  if (!items.length) return null;
+  return <div className="gl-print-meta" style={{ marginTop: "4mm", breakInside: "avoid", pageBreakInside: "avoid", textAlign: "left" }}>
+    <div style={{ fontWeight: 700 }}>{tr("gl_print_conditions", "เงื่อนไขการพิมพ์รายงาน")}</div>
+    {items.map((line) => <div key={line}>{line}</div>)}
+  </div>;
 }
 
 const vatTypeLabels: Record<string, [string, string]> = { "1": ["gl_vat_tax_type_purchase", "ภาษีซื้อ (ใบกำกับที่ได้รับ)"], "2": ["gl_vat_tax_type_sale", "ภาษีขาย (ใบกำกับที่ออก)"] };
