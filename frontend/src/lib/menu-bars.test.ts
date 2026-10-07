@@ -36,6 +36,9 @@ const CHAMP_LABELS: Record<string, string> = {
   "gl-journals": "บันทึกข้อมูลรายวัน",
   "gl-post": "ผ่านรายการ",
   "withholding-tax-deduction": "พิมพ์ภาษีหัก ณ ที่จ่าย (ภ.ง.ด. 3,ภ.ง.ด. 53)",
+  "product-set-assemble": "บันทึกการจัดชุดสินค้า",
+  "product-set-disassemble": "บันทึกการแยกสินค้าออกจากชุด",
+  "ar-credit-limit": "ตรวจสอบวงเงินเครดิต",
 };
 
 const tsvPath = resolve(process.cwd(), "..", "backend", "assets", "language", "languages.tsv");

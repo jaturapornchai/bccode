@@ -21,7 +21,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-09-25: /report/vatsummary (Champ 5539) connected via /api/report/tax/vat-summary.
     // 2026-09-25: /gl/budget monthly entry screen connected (gl-budgets.tsx).
     // 2026-10-07: +20 items the real Champ menu has but BC lacks ("รอพัฒนา", routes /pending/*) — see menu-bars.test.ts.
-    expect(pendingList.length).toBe(39);
+    // 2026-10-08: -15 non-Champ items pruned to align with Champ parity, leaving 5 Champ-only items + 19 original = 24.
+    expect(pendingList.length).toBe(24);
   });
 });
 
