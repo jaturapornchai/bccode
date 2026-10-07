@@ -34,6 +34,8 @@ export type GLFiscalYear = GLIdentity & {
   code: string; startdate: string; enddate: string; scale: number;
   retainedearningsaccount: string; profitlossaccount: string; isactive: boolean; closed: boolean;
 };
+/** Read-only profit columns of the period screen (backend period_profit.go); amounts are decimal strings, loss is negative. */
+export type GLPeriodProfit = { code: string; netprofitloss: string; summprofitloss: string };
 export type GLRule = { accountcode: string; side: string; source: string };
 export type GLAllocationRule = { branchcode: string; departmentcode: string; projectcode: string; accountcode: string; rate: string };
 export type GLMaster = GLIdentity & {

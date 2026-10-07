@@ -510,6 +510,9 @@ func (h *Http) list(request microservice.IContext) error {
 	if resource == "vat-calc" {
 		return h.vatCalc(ctx, request, scope)
 	}
+	if resource == "period-profit" {
+		return h.periodProfit(ctx, request, scope)
+	}
 	screen := resourceScreens[resource]
 	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status"), DateFrom: request.QueryParam("from"), DateTo: request.QueryParam("to")}
 	permitted := allowed(scope.Permissions, screen, "")
@@ -725,4 +728,24 @@ func (h *Http) vatCalc(ctx context.Context, request microservice.IContext, scope
 		return failure(request, err)
 	}
 	return response(request, result)
+}
+
+// periodProfit - GET /gl/v2/period-profit?fiscalyear=: the read-only "กำไร(ขาดทุน)สุทธิ" / "กำไร(ขาดทุน)สะสม"
+// columns of the period screen (Champ 5511), computed from posted lines (generalledger/period_profit.go).
+func (h *Http) periodProfit(ctx context.Context, request microservice.IContext, scope requestScope) error {
+	if !allowed(scope.Permissions, resourceScreens["periods"], "") {
+		return fail(request, 403, "ไม่มีสิทธิ์อ่านข้อมูลบัญชีนี้")
+	}
+	version, err := h.startRead(ctx, scope.Scope, request)
+	if err != nil {
+		return failure(request, err)
+	}
+	data, err := h.pg.PeriodProfit(ctx, scope.Scope, request.QueryParam("fiscalyear"))
+	if err != nil {
+		return failure(request, err)
+	}
+	if err = h.endRead(ctx, scope.Scope, version); err != nil {
+		return failure(request, err)
+	}
+	return response(request, data)
 }

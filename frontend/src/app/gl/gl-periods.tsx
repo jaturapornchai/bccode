@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarPlus, Lock, LockOpen, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { fillText, localDate, type GLFiscalYear, type GLMaster } from "@/lib/general-ledger";
-import { GLCommandError, commandFailure, glAllRecords } from "@/lib/general-ledger-api";
+import { fillText, formatAmount, localDate, type GLFiscalYear, type GLMaster, type GLPeriodProfit } from "@/lib/general-ledger";
+import { GLCommandError, commandFailure, glAllRecords, glRequest } from "@/lib/general-ledger-api";
 import { formatAppDate } from "@/lib/date-time";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,11 @@ export function periodSummary(periods: readonly GLMaster[]) {
 export function periodReasonMissing(reason: string): boolean {
   return !reason.trim();
 }
+/** Net/accumulated profit cell of one period (Champ 5511): "-" until the amounts are loaded, otherwise the amount at the year scale; a loss keeps its minus sign. */
+export function periodProfitText(profits: Readonly<Record<string, GLPeriodProfit>>, code: string, key: "netprofitloss" | "summprofitloss", scale: number): string {
+  const row = profits[code];
+  return row ? formatAmount(row[key], scale) : "-";
+}
 /** ปุ่มลัดแบบ Champ 5511: F9 สร้างงวดอัตโนมัติ */
 export function periodShortcut(key: string): "generate" | null {
   return key === "F9" ? "generate" : null;
@@ -43,6 +48,7 @@ export function GLPeriods() {
   const yearCode = pickedYear || defaultPeriodYear(years, localDate());
   const year = years.find((item) => item.code === yearCode);
   const [periods, setPeriods] = useState<GLMaster[]>([]);
+  const [profits, setProfits] = useState<Record<string, GLPeriodProfit>>({});
   const [loading, setLoading] = useState(false);
   const [revision, setRevision] = useState(0);
   const [reason, setReason] = useState("");
@@ -54,6 +60,7 @@ export function GLPeriods() {
   const summary = periodSummary(rows);
   const working = busy || loading;
   const closed = Boolean(year?.closed);
+  const scale = year?.scale ?? 2;
 
   useEffect(() => {
     let active = true;
@@ -66,6 +73,14 @@ export function GLPeriods() {
   }, [revision, tr]);
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   const failed = useCallback((e: unknown) => setError(commandFailure(e, tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")).message), [tr]);
+  useEffect(() => {
+    if (!yearCode) { setProfits({}); return; }
+    let active = true;
+    glRequest<{ periods: GLPeriodProfit[] }>(`period-profit?${new URLSearchParams({ fiscalyear: yearCode })}`)
+      .then((data) => { if (active) setProfits(Object.fromEntries((data.periods ?? []).map((row) => [row.code, row]))); })
+      .catch((e: unknown) => { if (active) { setProfits({}); failed(e); } });
+    return () => { active = false; };
+  }, [yearCode, revision, failed]);
 
   const generate = useCallback(async () => {
     if (working) return;
@@ -156,7 +171,7 @@ export function GLPeriods() {
     <Notice text={info} />
     {!yearCode && !refs.error && <Notice text={tr("gl_periods_select_year_first", "กรุณาเลือกปีบัญชีก่อน")} />}
     {yearCode && <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border">
-      <table className="w-full min-w-[760px] border-collapse text-[0.95rem]">
+      <table className="w-full min-w-[980px] border-collapse text-[0.95rem]">
         <thead className="sticky top-0 z-10 bg-muted text-left">
           <tr className="[&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold">
             <th className="w-24">{tr("gl_periods_no", "งวดที่")}</th>
@@ -164,11 +179,13 @@ export function GLPeriods() {
             <th>{tr("gl_period_start_date", "วันที่เริ่มต้นงวดบัญชี")}</th>
             <th>{tr("gl_period_end_date", "วันที่สิ้นสุดงวดบัญชี")}</th>
             <th>{tr("gl_status", "สถานะ")}</th>
+            <th className="text-right">{tr("gl_periods_net_profit_loss", "กำไร(ขาดทุน)สุทธิ")}</th>
+            <th className="text-right">{tr("gl_periods_summ_profit_loss", "กำไร(ขาดทุน)สะสม")}</th>
             <th className="text-right">{tr("gl_manage", "จัดการ")}</th>
           </tr>
         </thead>
         <tbody>
-          {!loading && rows.length === 0 && <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_periods_empty", "ปีบัญชีนี้ยังไม่มีงวด กด สร้างงวดอัตโนมัติ (F9) เพื่อสร้างงวดรายเดือน")}</td></tr>}
+          {!loading && rows.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_periods_empty", "ปีบัญชีนี้ยังไม่มีงวด กด สร้างงวดอัตโนมัติ (F9) เพื่อสร้างงวดรายเดือน")}</td></tr>}
           {rows.map((period, index) => <tr key={period.id ?? period.code} className="border-t border-border [&_td]:px-3 [&_td]:py-2 hover:bg-muted/40" data-period-locked={period.locked ? "true" : "false"}>
             <td className="tabular-nums">{index + 1}</td>
             <td className="font-medium">{period.code}{period.name ? <span className="ml-2 font-normal text-muted-foreground">{period.name}</span> : null}</td>
@@ -177,6 +194,8 @@ export function GLPeriods() {
             <td>{period.locked
               ? <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 font-semibold text-foreground"><Lock className="size-4" aria-hidden="true" />{tr("gl_locked", "ล็อกแล้ว")}</span>
               : <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary"><LockOpen className="size-4" aria-hidden="true" />{tr("gl_periods_open", "เปิดอยู่")}</span>}</td>
+            <td className="whitespace-nowrap text-right tabular-nums">{periodProfitText(profits, period.code ?? "", "netprofitloss", scale)}</td>
+            <td className="whitespace-nowrap text-right tabular-nums">{periodProfitText(profits, period.code ?? "", "summprofitloss", scale)}</td>
             <td><div className="flex flex-wrap justify-end gap-2">
               <Button className={actionClass} variant="outline" disabled={working || closed} onClick={() => void setLock(period, !period.locked)}>
                 {period.locked ? <LockOpen className="mr-1.5 size-4" aria-hidden="true" /> : <Lock className="mr-1.5 size-4" aria-hidden="true" />}

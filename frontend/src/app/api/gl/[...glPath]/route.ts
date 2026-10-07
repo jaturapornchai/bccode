@@ -17,6 +17,8 @@ export async function GET(request: Request, context: Context) {
     : glPath[0] === "journal-next-docno" ? glPath.length === 1
     // ปุ่มภาษีแยกนอก/รวมใน ของกล่องภาษีบนใบสำคัญ — backend คำนวณ (generalledger/vat_calc.go) ไม่บันทึกอะไร
     : glPath[0] === "vat-calc" ? glPath.length === 1
+    // กำไร(ขาดทุน)สุทธิ/สะสมของงวดบัญชี (จอ 5511) — backend generalledger/period_profit.go คำนวณจากรายการที่ผ่านแล้ว อ่านอย่างเดียว
+    : glPath[0] === "period-profit" ? glPath.length === 1
     : glPath[0] === "journal-reviews" ? glPath.length === 2
     : (GL_RESOURCES as readonly string[]).includes(glPath[0]) && glPath.length <= 2;
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);

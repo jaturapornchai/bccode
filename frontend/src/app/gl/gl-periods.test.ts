@@ -2,8 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import type { GLFiscalYear, GLMaster } from "@/lib/general-ledger";
-import { GLPeriods, defaultPeriodYear, periodReasonMissing, periodShortcut, periodSummary, yearPeriods } from "./gl-periods";
+import type { GLFiscalYear, GLMaster, GLPeriodProfit } from "@/lib/general-ledger";
+import { GLPeriods, defaultPeriodYear, periodProfitText, periodReasonMissing, periodShortcut, periodSummary, yearPeriods } from "./gl-periods";
 
 const year = (code: string, startdate: string, enddate: string, extra: Partial<GLFiscalYear> = {}): GLFiscalYear => ({
   id: code, code, startdate, enddate, scale: 2, retainedearningsaccount: "", profitlossaccount: "", isactive: true, closed: false, ...extra,
@@ -40,6 +40,19 @@ describe("period screen helpers (Champ 5511)", () => {
     ], "2569");
     expect(rows.map((item) => item.code)).toEqual(["2569-01", "2569-02", "2569-04"]);
     expect(periodSummary(rows)).toEqual({ total: 3, locked: 2 });
+  });
+
+  it("shows profit as positive and loss as negative at the year scale, or a dash before the amounts load", () => {
+    const profits: Record<string, GLPeriodProfit> = {
+      "2569-01": { code: "2569-01", netprofitloss: "750", summprofitloss: "1234567.5" },
+      "2569-02": { code: "2569-02", netprofitloss: "-300", summprofitloss: "0" },
+    };
+    expect(periodProfitText(profits, "2569-01", "netprofitloss", 2)).toBe("750.00");
+    expect(periodProfitText(profits, "2569-01", "summprofitloss", 2)).toBe("1,234,567.50");
+    expect(periodProfitText(profits, "2569-02", "netprofitloss", 2)).toBe("-300.00");
+    expect(periodProfitText(profits, "2569-02", "summprofitloss", 0)).toBe("0");
+    expect(periodProfitText(profits, "2569-03", "netprofitloss", 2)).toBe("-");
+    expect(periodProfitText({}, "2569-01", "summprofitloss", 2)).toBe("-");
   });
 
   it("requires a reason before lock/unlock and maps F9 to generate", () => {

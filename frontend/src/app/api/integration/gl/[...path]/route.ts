@@ -9,6 +9,7 @@ export async function GET(request: Request, context: Context) {
   const valid = path[0] === "reports"
     ? path.length === 2 && (GL_REPORTS as readonly string[]).includes(path[1])
     : path[0] === "journal-support" ? path.length === 1
+    : path[0] === "period-profit" ? path.length === 1
     : path[0] === "journal-reviews" ? path.length === 2
     : (GL_RESOURCES as readonly string[]).includes(path[0]) && path.length <= 2;
   if (!valid) return missing();
