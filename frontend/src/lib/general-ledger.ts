@@ -78,6 +78,8 @@ export type GLReport = {
   checks?: GLStatementCheck[];
   // statement ชนิดงบฐานะการเงิน/งบกำไรขาดทุน: บัญชีที่มียอดแต่ไม่อยู่ในบรรทัดใดของงบ (backend statements_unassigned.go) — แสดงบนจอเท่านั้น
   unassigned?: GLStatementUnassigned[];
+  // แถวท้ายรายงานต่อจากแถวรวม (กระดาษทำการ: กำไรขาดทุนสุทธิ + รวมทั้งสิ้น) — labelkey = key ภาษาของป้าย, ยอดเป็นสตริงทศนิยมจาก backend
+  footer?: Record<string, string>[];
 };
 export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
 /** accountcode อาจเป็น STATEMENT_CURRENT_EARNINGS (กำไรขาดทุนที่ยังไม่ปิดบัญชี, accountname ว่าง); amount = สตริงทศนิยมด้านปกติของหมวดบัญชี */

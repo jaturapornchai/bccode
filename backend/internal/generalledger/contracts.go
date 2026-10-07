@@ -82,6 +82,8 @@ type Report struct {
 	Checks    []ReportCheck       `json:"checks,omitempty"`
 	// Unassigned: บัญชีที่มียอดแต่ไม่อยู่ในบรรทัดใดของงบฐานะการเงิน/งบกำไรขาดทุน (statements_unassigned.go)
 	Unassigned []StatementUnassigned `json:"unassigned,omitempty"`
+	// Footer: แถวท้ายรายงานที่พิมพ์ต่อจากแถวรวม (เช่น กำไรขาดทุนสุทธิ + รวมทั้งสิ้น ของกระดาษทำการ) — labelkey = key ภาษาของป้ายแถว
+	Footer []map[string]string `json:"footer,omitempty"`
 }
 
 type Projection interface {

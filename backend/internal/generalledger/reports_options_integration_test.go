@@ -173,6 +173,13 @@ func TestTrialBalanceControlTotalsAndHideZero(t *testing.T) {
 		t.Fatalf("zero account missing without the option: %v", reportCodes(shown))
 	}
 	glpgDecimalEqual(t, hidden.Totals["endingdebit"], shown.Totals["endingdebit"])
+	// ท้ายกระดาษทำการแบบ Champ: กำไรขาดทุนสุทธิ แล้วรวมทั้งสิ้นที่งบกำไรขาดทุนและงบดุลดุลทั้งคู่
+	if len(shown.Footer) != 2 || shown.Footer[0]["labelkey"] != "gl_wp_net_profit_loss" || shown.Footer[1]["labelkey"] != "gl_report_grand_total" {
+		t.Fatalf("working paper footer = %v", shown.Footer)
+	}
+	final := shown.Footer[1]
+	glpgDecimalEqual(t, final["pnldebit"], final["pnlcredit"])
+	glpgDecimalEqual(t, final["bsdebit"], final["bscredit"])
 }
 
 func TestLedgerHideOpeningAndSummary(t *testing.T) {

@@ -333,10 +333,30 @@ func (r reportContext) trialBalance(ctx context.Context, working bool) (Report, 
 	total := func(key string) decimal.Decimal { return Amount(result.Totals[key]).Decimal() }
 	result.Totals["difference"] = total("endingdebit").Sub(total("endingcredit")).String()
 	if working {
-		// Champ พิมพ์แถว "กำไร(ขาดทุน)สุทธิ" ท้ายกระดาษทำการ = ส่วนต่างที่ทำให้งบกำไรขาดทุนดุล
-		result.Totals["profit"] = total("pnlcredit").Sub(total("pnldebit")).String()
+		// Champ พิมพ์แถว "กำไรขาดทุนสุทธิ" ท้ายกระดาษทำการ = ส่วนต่างที่ทำให้งบกำไรขาดทุนดุล
+		profit := total("pnlcredit").Sub(total("pnldebit"))
+		result.Totals["profit"] = profit.String()
+		result.Footer = workingPaperFooter(total, profit)
 	}
 	return result, nil
+}
+
+// workingPaperFooter - 2 แถวท้ายกระดาษทำการแบบ Champ ต่อจากแถว "รวม": "กำไรขาดทุนสุทธิ" วางฝั่งที่ทำให้งบดุล
+// (กำไร = เดบิตงบกำไรขาดทุน + เครดิตงบดุล, ขาดทุน = เครดิตงบกำไรขาดทุน + เดบิตงบดุล) แล้ว "รวมทั้งสิ้น" ที่สองฝั่งเท่ากัน;
+// ฝั่งที่เป็นศูนย์เว้นว่างแบบ Champ
+func workingPaperFooter(total func(string) decimal.Decimal, profit decimal.Decimal) []map[string]string {
+	gain, loss := decimal.Max(profit, decimal.Zero), decimal.Max(profit.Neg(), decimal.Zero)
+	side := func(value decimal.Decimal) string {
+		if value.IsZero() {
+			return ""
+		}
+		return value.String()
+	}
+	return []map[string]string{
+		{"labelkey": "gl_wp_net_profit_loss", "pnldebit": side(gain), "pnlcredit": side(loss), "bsdebit": side(loss), "bscredit": side(gain)},
+		{"labelkey": "gl_report_grand_total", "pnldebit": total("pnldebit").Add(gain).String(), "pnlcredit": total("pnlcredit").Add(loss).String(),
+			"bsdebit": total("bsdebit").Add(loss).String(), "bscredit": total("bscredit").Add(gain).String()},
+	}
 }
 
 // accountBalanceReport renders the chart of accounts as Champ prints its trial balance family

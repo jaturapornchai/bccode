@@ -442,6 +442,7 @@ function GLReportPrint({ report, title, meta, company, books, tr, language, brea
   const inline = totals.filter(([key]) => columns.some((column) => column.amount && column.key === key));
   const extra = totals.filter(([key]) => !inline.some(([inlineKey]) => inlineKey === key));
   const groups = rows.length ? printGroups(rows, breakKey) : [rows];
+  const footer = report.footer ?? [];
   return <>
     {groups.map((group, groupIndex) => <table key={groupIndex} style={groupIndex > 0 ? { breakBefore: "page", pageBreakBefore: "always" } : undefined}>
       <thead>
@@ -451,7 +452,8 @@ function GLReportPrint({ report, title, meta, company, books, tr, language, brea
       <tbody>
         {group.map((row, index) => <tr key={index} className={isSummaryRow(row) ? "gl-print-total" : undefined}>{columns.map((column) => <td key={column.key} style={accountIndent(row, column.key)} className={column.amount ? "gl-print-num" : ""}>{column.amount ? balanceText(column.key, printAmountCell(column.key, row[column.key] ?? "")) : repeatsAccount(row, column.key, index === 0) ? "" : printCell(column.key, controlRowText(row, column.key, row[column.key] ?? "", tr), tr, books, language)}</td>)}</tr>)}
         {!rows.length && <tr><td colSpan={columns.length || 1}>{tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}</td></tr>}
-        {inline.length > 0 && groupIndex === groups.length - 1 && <tr className="gl-print-total">{columns.map((column, index) => { const total = inline.find(([key]) => key === column.key); return <td key={column.key} className={column.amount ? "gl-print-num" : ""}>{total ? formatAmount(total[1]) : index === 0 ? tr("gl_report_grand_total", "รวมทั้งสิ้น") : ""}</td>; })}</tr>}
+        {inline.length > 0 && groupIndex === groups.length - 1 && <tr className="gl-print-total">{columns.map((column, index) => { const total = inline.find(([key]) => key === column.key); return <td key={column.key} className={column.amount ? "gl-print-num" : ""}>{total ? formatAmount(total[1]) : index === 0 ? (footer.length ? tr("gl_report_total", "รวม") : tr("gl_report_grand_total", "รวมทั้งสิ้น")) : ""}</td>; })}</tr>}
+        {groupIndex === groups.length - 1 && footer.map((row, rowIndex) => <tr key={`footer-${rowIndex}`} className="gl-print-total">{columns.map((column, index) => <td key={column.key} className={column.amount ? "gl-print-num" : ""}>{column.amount ? (row[column.key] ? formatAmount(row[column.key]) : "") : index === 0 && FOOTER_LABELS[row.labelkey ?? ""] ? tr(...FOOTER_LABELS[row.labelkey ?? ""]) : ""}</td>)}</tr>)}
       </tbody>
     </table>)}
     {extra.length > 0 && <dl className="gl-print-totals">{extra.map(([key, value]) => <div key={key}><dt>{columnTitle(report.columns.find((column) => column.key === key)) ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</dt><dd>{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</dd></div>)}</dl>}
@@ -496,6 +498,8 @@ function reportPrintMeta(name: string, filters: ReportFilters, asOf: boolean, vo
   };
 }
 const totalLabels: Record<string, GLLabel> = { debit: ["gl_total_debit", "รวมเดบิต"], credit: ["gl_total_credit", "รวมเครดิต"], balance: ["gl_balance", "ยอดคงเหลือ"], income: ["gl_revenue", "รายได้"], revenue: ["gl_revenue", "รายได้"], expense: ["gl_expense", "ค่าใช้จ่าย"], profit: ["gl_net_profit", "กำไรสุทธิ"], assets: ["gl_asset", "สินทรัพย์"], liabilities: ["gl_liability", "หนี้สิน"], equity: ["gl_equity", "ส่วนของเจ้าของ"], difference: ["gl_difference", "ผลต่าง"], budget: ["gl_budget_2", "งบประมาณ"], actual: ["gl_actual", "ยอดจริง"], budgetamount: ["gl_budget_2", "งบประมาณ"], actualamount: ["gl_actual", "ยอดจริง"], variance: ["gl_difference", "ผลต่าง"], opening: ["gl_opening_balance_2", "ยอดยกมา"], closing: ["gl_closing_balance", "ยอดยกไป"], cashin: ["gl_money_in", "เงินเข้า"], cashout: ["gl_money_out", "เงินออก"], netcash: ["gl_net_cash", "เงินสดสุทธิ"], cash: ["gl_cash_and_bank", "เงินสดและเงินฝากธนาคาร"], currentearnings: ["gl_unclosed_profit_loss", "กำไรขาดทุนที่ยังไม่ปิด"], unclassifiedlines: ["gl_unclassified_line", "บรรทัดที่ยังไม่ระบุประเภท"] };
+// ป้ายแถวท้ายรายงานจาก backend (Report.footer[].labelkey) — ข้อความจริงมาจาก languages.tsv
+const FOOTER_LABELS: Record<string, GLLabel> = { gl_wp_net_profit_loss: ["gl_wp_net_profit_loss", "กำไรขาดทุนสุทธิ"], gl_report_grand_total: ["gl_report_grand_total", "รวมทั้งสิ้น"] };
 const SUMMARY_LABELS: Record<string, GLLabel> = { gljournal: ["gl_report_summary_journal", "แบบสรุป (แถวละเอกสาร)"], ledger: ["gl_report_summary_ledger", "แบบสรุป (ยอดสะสม ณ วันที่)"] };
 // Champ แสดงผลรวมบัญชีคุมเป็นค่าเริ่มต้น (ช่อง "ไม่แสดงผลรวมบัญชีคุม" ไม่ได้ติ๊ก) — งบทดลอง กระดาษทำการ และแยกประเภทแบบสรุป
 const CONTROL_TOTAL_REPORTS: ReadonlySet<string> = new Set(["trialbalance", "workingpaper", "ledger"]);
