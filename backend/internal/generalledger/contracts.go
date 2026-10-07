@@ -60,9 +60,18 @@ type ReportQuery struct {
 	ControlTotals bool // trialbalance/workingpaper/ledger summary: เพิ่มแถวผลรวมบัญชีคุมตามต้นไม้บัญชีแม่
 	Summary       bool // gljournal: แถวละเอกสาร (Champ 5533); ledger: ยอดสะสมสุทธิ ณ วันที่ต่อบัญชี (Champ 5535)
 	Gross         bool // trialbalance: ยอดรวมเดบิต/เครดิตของช่วงแบบไม่หักกลบ 2 คอลัมน์ (Champ 5507 งบทดลอง 2)
-	DayTotals     bool // ledger: รวมรายวัน — แทรกแถวผลรวมเดบิต/เครดิตหลังรายการสุดท้ายของแต่ละวัน (Champ 5534 m_iSumOfDay)
-	Page          int
-	Limit         int
+	DayTotals     bool // ledger: รวมรายวัน — แทรกแถวผลรวมเดบิต/เครดิตหลังรายการสุดท้ายของแต่ละวัน (Champ 5534 m_iSumOfDay); gljournal 5532: เรียงตามวันที่เท่านั้น
+	// gljournal (Champ 5532/5533 GLRepTransDlg.cpp:167-246): เลขที่เอกสาร จาก–ถึง (จากอย่างเดียว = เอกสารนั้นใบเดียว) และเรียงตาม เลขที่เอกสาร (ค่าเริ่มต้น) / วันที่เอกสาร
+	DocNoFrom string
+	DocNoTo   string
+	OrderBy   string // "docno" | "date"
+	// trialbalance/workingpaper/ledger summary (Champ 5506/5499/5535 "แยกแผนก"/"แยกโครงการ" + "มียอดรวม"): หนึ่งแถวต่อบัญชี × รหัสมิติ;
+	// DimTotals = แถวรวมของแต่ละบัญชีที่ตั้งแยกแผนก (มีผลเมื่อ ByDepartment เท่านั้น เหมือน Champ m_iSumDepart)
+	ByDepartment bool
+	ByProject    bool
+	DimTotals    bool
+	Page         int
+	Limit        int
 }
 
 type ReportColumn struct {

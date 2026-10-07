@@ -5,6 +5,9 @@ import { X } from "lucide-react";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { glAllRecords } from "@/lib/general-ledger-api";
 import { activeDimensions, dimensionOptions, normalizeDimensionCodes, type GLDimension, type GLDimensionResource, type GLTextFn } from "@/lib/general-ledger";
+
+// books = the journal-book filter of a report (Champ GLRepTransDlg book list), picked the same way as departments/projects
+export type ReportCodeResource = GLDimensionResource | "books";
 import { useGLText } from "./gl-common";
 
 type Registers = { departments: GLDimension[]; projects: GLDimension[] };
@@ -60,6 +63,7 @@ function plainLabel(item: Pick<GLDimension, "code" | "name">): string {
 const resourceTexts = {
   departments: { all: ["gl_all_departments", "ทุกแผนก"], label: ["gl_depart_codes_label", "แผนกที่ใช้ได้"], pick: ["gl_depart_codes_pick", "เลือกแผนกที่อนุญาต"], reportLabel: ["gl_department_code", "รหัสแผนก"], reportPick: ["gl_report_depart_pick", "เลือกแผนก"] },
   projects: { all: ["gl_all_projects", "ทุกโครงการ"], label: ["gl_project_codes_label", "โครงการที่ใช้ได้"], pick: ["gl_project_codes_pick", "เลือกโครงการที่อนุญาต"], reportLabel: ["gl_project_code", "รหัสโครงการ"], reportPick: ["gl_report_project_pick", "เลือกโครงการ"] },
+  books: { all: ["gl_report_all_books", "ทุกสมุดรายวัน"], label: ["gl_journal", "สมุดรายวัน"], pick: ["gl_report_book_pick", "เลือกสมุดรายวัน"], reportLabel: ["gl_journal", "สมุดรายวัน"], reportPick: ["gl_report_book_pick", "เลือกสมุดรายวัน"] },
 } as const;
 
 /** One journal line department / project: a searchable list of the register codes the line account allows (empty list = all). */
@@ -83,7 +87,7 @@ export function DimensionSelect({ value, onChange, register, allowed, label, dis
 /** Allowed codes of an account for one register (Champ BCAccSeparate): chips of the chosen codes plus a picker; nothing chosen = every code.
  * report = the department/project filter of a report (Champ multi-select DEPART_LIST): every registered code can be picked, closed ones included, since reports read history. */
 export function DimensionCodeMultiSelect({ resource, value, onChange, register, disabled = false, report = false }: {
-  resource: GLDimensionResource; value: string[]; onChange: (codes: string[]) => void; register: GLDimension[]; disabled?: boolean; report?: boolean;
+  resource: ReportCodeResource; value: string[]; onChange: (codes: string[]) => void; register: GLDimension[]; disabled?: boolean; report?: boolean;
 }) {
   const tr = useGLText();
   const texts = resourceTexts[resource];

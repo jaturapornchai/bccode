@@ -233,3 +233,59 @@ describe("report range chosen by period", () => {
     expect(query).toEqual({ fiscalyear: "2026", from: "2026-02-01", to: "2026-03-31" });
   });
 });
+
+// Champ 5532/5533/5506/5499/5535 report details: document-no range + sort, several books, per-department/project split
+describe("Champ report details: documents, books and dimension split", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const base = { ...emptyReportFilters, fiscalyear: "2569" };
+  const tr = (_key: string, fallback: string) => fallback;
+  it("sends several journal books as one comma-separated value on every report that filters by book", () => {
+    for (const name of ["gljournal", "ledger", "trialbalance"]) expect(reportQuery(name, { ...base, bookcode: "JV,PV" })).toMatchObject({ bookcode: "JV,PV" });
+  });
+  it("gljournal keeps the document range and sort order; day totals only for the detail report sorted by date", () => {
+    const picked = { ...base, docnofrom: "JV6901-0001", docnoto: "JV6901-0009", orderby: "date", daytotals: "true" };
+    expect(reportQuery("gljournal", picked)).toMatchObject({ docnofrom: "JV6901-0001", docnoto: "JV6901-0009", orderby: "date", daytotals: "true" });
+    expect(reportQuery("gljournal", { ...picked, orderby: "docno" })).not.toHaveProperty("daytotals");
+    expect(reportQuery("gljournal", { ...picked, summary: "true" })).not.toHaveProperty("daytotals");
+    expect(reportQuery("gljournal", { ...picked, summary: "true" })).toMatchObject({ summary: "true", docnofrom: "JV6901-0001", orderby: "date" });
+    for (const name of ["ledger", "trialbalance", "workingpaper", "pnl"]) {
+      const query = reportQuery(name, picked);
+      for (const key of ["docnofrom", "docnoto", "orderby"]) expect(query).not.toHaveProperty(key);
+    }
+  });
+  it("trial balance, working paper and the ledger summary send the department/project split; the total row only with the department split", () => {
+    const split = { ...base, bydepartment: "true", byproject: "true", dimtotals: "true" };
+    for (const name of ["trialbalance", "workingpaper"]) expect(reportQuery(name, split)).toMatchObject({ bydepartment: "true", byproject: "true", dimtotals: "true" });
+    expect(reportQuery("ledger", { ...split, summary: "true" })).toMatchObject({ bydepartment: "true", byproject: "true", dimtotals: "true" });
+    expect(reportQuery("trialbalance", { ...split, bydepartment: "" })).not.toHaveProperty("dimtotals");
+    expect(reportQuery("trialbalance", { ...split, bydepartment: "", dimtotals: "" })).toMatchObject({ byproject: "true" });
+    for (const key of ["bydepartment", "byproject", "dimtotals"]) {
+      expect(reportQuery("ledger", split)).not.toHaveProperty(key); // detail ledger has no split
+      expect(reportQuery("gljournal", split)).not.toHaveProperty(key);
+    }
+  });
+  it("day totals of the journal report say how many lines or documents the day holds; the ledger keeps its plain label", () => {
+    expect(controlRowText({ rowtype: "daytotal", linecount: "3" }, "description", "", tr)).toBe("รวมรายวัน 3 รายการ");
+    expect(controlRowText({ rowtype: "daytotal" }, "description", "", tr)).toBe("รวมรายวัน");
+    expect(controlRowText({ rowtype: "daytotal", linecount: "3" }, "debit", "50", tr)).toBe("50");
+  });
+  it("prints the tax invoice date and number on the document header row only", () => {
+    const columns = [{ key: "docno", label: "เลขที่เอกสาร", amount: false }, { key: "taxinvoicedate", label: "วันที่ใบกำกับภาษี", amount: false }, { key: "taxinvoiceno", label: "เลขที่ใบกำกับภาษี", amount: false }, { key: "description", label: "คำอธิบาย", amount: false }, { key: "debit", label: "เดบิต", amount: true }];
+    const rows = [
+      { docno: "PV6901-0007", taxinvoicedate: "2569-01-05", taxinvoiceno: "IV-0042", description: "ซื้อวัสดุสำนักงาน", debit: "", rowtype: "document", journalid: "j1" },
+      { docno: "PV6901-0007", taxinvoicedate: "", taxinvoiceno: "", description: "ค่าวัสดุสำนักงาน", debit: "100", rowtype: "docline", journalid: "j1" },
+    ];
+    const html = renderToStaticMarkup(createElement(ReportGrid, { report: { sequence: 1, columns, rows, totals: {}, totalrows: 2, warnings: [], asof: "2569-12-31" } as GLReport }));
+    expect(html).toContain("วันที่ใบกำกับภาษี");
+    expect(html.match(/IV-0042/g)?.length).toBe(1);
+    expect(html).toContain("ค่าวัสดุสำนักงาน");
+  });
+  it("the BFF forwards the new report query keys to the backend", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const headers = { Authorization: "Bearer test-token", "x-bc-backend-url": "http://localhost:8888" };
+    await GET(new Request("http://localhost/api/gl/reports/gljournal?fiscalyear=2569&bookcode=JV,PV&docnofrom=A1&docnoto=A9&orderby=date&daytotals=true&bydepartment=true&byproject=true&dimtotals=true", { headers }), { params: Promise.resolve({ glPath: ["reports", "gljournal"] }) });
+    const forwarded = new URL(String(fetchMock.mock.calls[0][0])).searchParams;
+    for (const key of ["bookcode", "docnofrom", "docnoto", "orderby", "daytotals", "bydepartment", "byproject", "dimtotals"]) expect(forwarded.has(key)).toBe(true);
+    expect(forwarded.get("bookcode")).toBe("JV,PV");
+  });
+});
