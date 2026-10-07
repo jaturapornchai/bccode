@@ -655,20 +655,20 @@ describe("ผังบัญชี: TreeNodeRow sub-account shortcut", () => {
     expect(suggestNextAccountCode(hyphenParent, [hyphenParent, hyphenChild])).toBe("ACC-102");
   });
 
-  it("handles require_department and require_project flags properly", () => {
+  it("keeps the Champ แยกแผนก/แยกโครงการ flags (departseparate/projectseparate)", () => {
     const raw = {
       accountcode: "51000",
       accounttype: "expense" as const,
-      require_department: true,
-      require_project: true,
+      departseparate: true,
+      projectseparate: true,
     };
     const norm = normalizeRecord("accounts", raw as never) as GLAccount;
-    expect(norm.require_department).toBe(true);
-    expect(norm.require_project).toBe(true);
+    expect(norm.departseparate).toBe(true);
+    expect(norm.projectseparate).toBe(true);
 
     const payload = accountSavePayload(norm, false);
-    expect(payload.require_department).toBe(true);
-    expect(payload.require_project).toBe(true);
+    expect(payload.departseparate).toBe(true);
+    expect(payload.projectseparate).toBe(true);
   });
 });
 

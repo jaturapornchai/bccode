@@ -25,7 +25,7 @@ func newPGIntegrityFixture(t *testing.T) *pgIntegrityFixture {
 	pg, db := glpgTestDB(t)
 	f := &pgIntegrityFixture{t: t, ctx: context.Background(), db: db, store: NewPostgresStore(pg), scope: Scope{Holding: "H", Company: "C", Actor: "tester"}, accounts: map[string]Account{}, years: map[string]FiscalYear{}}
 	for _, row := range []struct{ code, kind, normal string }{{"1000", "asset", "debit"}, {"3000", "equity", "credit"}, {"3100", "equity", "credit"}, {"3200", "equity", "credit"}, {"4000", "income", "credit"}, {"5000", "expense", "debit"}} {
-		a := Account{AccountCode: row.code, AccountType: row.kind, NormalBalance: row.normal, AllowPosting: true, IsActive: true, Names: []Name{{Code: "th", Name: row.code}}}
+		a := Account{AccountCode: row.code, AccountType: row.kind, NormalBalance: row.normal, AllowPosting: true, IsActive: true, Names: []Name{{Code: "th", Name: row.code}}, DepartSeparate: true, ProjectSeparate: true}
 		result := f.run(Command{Resource: "accounts", Action: "create", Account: &a})
 		a.ID = result.ID
 		a.Version = result.Version
@@ -118,6 +118,7 @@ func TestPostgresIntegrityLifecycleAndBranch(t *testing.T) {
 		t.Fatalf("branch not reconciled: %s", total)
 	}
 }
+
 // UAT 2026-09-24: the new-journal form sends branchcode "", which a branch-scoped session rejected as not found.
 func TestPostgresIntegrityBlankBranchDefaultsToSession(t *testing.T) {
 	f := newPGIntegrityFixture(t)
@@ -312,4 +313,23 @@ func TestPostgresIntegrityManualReferenceAndManagedMetadata(t *testing.T) {
 	forged.ReversalOf = "unrelated"
 	f.deny(f.scope, Command{Resource: "journals", Action: "create", Journal: &forged})
 	f.run(Command{Resource: "journals", Action: "delete", ID: j.ID, Version: j.Version})
+}
+
+// Champ OnCheckSeparate runs when the user saves lines: turning "แยกแผนก" off later must not block posting or
+// reversing a document saved while it was on, but a new draft with a department on that account is refused.
+func TestPostgresLineSeparationCheckedOnSaveOnly(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	j := f.draft("JV1", "B1")
+	a := f.accounts["1000"]
+	a.DepartSeparate = false
+	f.run(Command{Resource: "accounts", Action: "update", ID: a.ID, Version: a.Version, Account: &a})
+	j = f.post(j)
+	f.run(Command{Resource: "journals", Action: "reverse", ID: j.ID, Version: j.Version, DocNo: "REV1", Date: "2026-01-11", Reason: "correct"})
+	next := Journal{DocNo: "JV2", Date: "2026-01-12", BookCode: "JV", FiscalYear: "2026", Description: "test", Kind: "manual", BranchCode: "B1", Lines: []Line{{AccountCode: "1000", Debit: Amount("100"), Credit: Amount("0"), DepartmentCode: "D"}, {AccountCode: "4000", Debit: Amount("0"), Credit: Amount("100")}}}
+	_, err := f.execute(f.scope, Command{Resource: "journals", Action: "create", Journal: &next})
+	if err == nil || err.Error() != "บรรทัด 1: ผังบัญชี 1000 ไม่ได้กำหนดให้แยกแผนก" {
+		t.Fatalf("create with a department on a non-separated account: %v", err)
+	}
+	next.Lines[0].DepartmentCode = ""
+	f.run(Command{Resource: "journals", Action: "create", Journal: &next})
 }

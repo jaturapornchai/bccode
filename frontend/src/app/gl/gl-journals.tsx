@@ -154,6 +154,10 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   useDirtyGuard(route, dirty);
   const year = refs.years.find((item) => item.code === journal?.fiscalyear);
   const accountNames = useMemo(() => new Map(refs.accounts.map((account) => [account.accountcode, accountName(account)])), [refs.accounts]);
+  // Champ OnCheckSeparate: แผนก/โครงการใส่ได้เฉพาะบัญชีที่ตั้ง "แยกแผนก"/"แยกโครงการ" — ช่องที่มีค่าอยู่แล้วยังแก้/ล้างได้
+  const accountsByCode = useMemo(() => new Map(refs.accounts.map((account) => [account.accountcode, account])), [refs.accounts]);
+  const departLocked = (line: { accountcode: string; departmentcode?: string }) => !accountsByCode.get(line.accountcode)?.departseparate && !line.departmentcode;
+  const projectLocked = (line: { accountcode: string; projectcode?: string }) => !accountsByCode.get(line.accountcode)?.projectseparate && !line.projectcode;
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);
   const smartGuard = useMemo(() => {
     try {
@@ -1014,10 +1018,10 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                                 <input className={control} aria-label={tr("gl_line_extra_detail", "รายละเอียดเพิ่มเติมบรรทัด {0}").replace("{0}", String(index + 1))} value={line.description} onChange={(e) => patchLine(index, { description: e.target.value })} />
                               </td>
                               <td className="min-w-24 p-2">
-                                <input className={control} aria-label={tr("gl_line_department", "แผนกบรรทัด {0}").replace("{0}", String(index + 1))} value={line.departmentcode} onChange={(e) => patchLine(index, { departmentcode: e.target.value })} />
+                                <input className={control} aria-label={tr("gl_line_department", "แผนกบรรทัด {0}").replace("{0}", String(index + 1))} value={line.departmentcode} disabled={busy || departLocked(line)} title={departLocked(line) ? tr("gl_line_not_depart_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกแผนก (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(e) => patchLine(index, { departmentcode: e.target.value })} />
                               </td>
                               <td className="min-w-24 p-2">
-                                <input className={control} aria-label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} value={line.projectcode} onChange={(e) => patchLine(index, { projectcode: e.target.value })} />
+                                <input className={control} aria-label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} value={line.projectcode} disabled={busy || projectLocked(line)} title={projectLocked(line) ? tr("gl_line_not_project_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกโครงการ (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(e) => patchLine(index, { projectcode: e.target.value })} />
                               </td>
                               <td className="min-w-32 p-2">
                                 <AmountInput ariaLabel={tr("gl_line_debit", "เดบิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.debit} onChange={(debit) => patchLine(index, { debit })} />

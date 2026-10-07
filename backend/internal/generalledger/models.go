@@ -51,8 +51,10 @@ type Account struct {
 	AccountGroup      string `json:"accountgroup" bson:"accountgroup"`
 	IsCash            bool   `json:"iscash" bson:"iscash"`
 	Level             int    `json:"level" bson:"level"`
-	RequireDepartment bool   `json:"require_department,omitempty" bson:"require_department,omitempty"`
-	RequireProject    bool   `json:"require_project,omitempty" bson:"require_project,omitempty"`
+	// DepartSeparate/ProjectSeparate - เงื่อนไข "แยกแผนก"/"แยกโครงการ" ของ Champ (BCChartOfAccount.DepartSeparate/ProjectSeparate):
+	// บรรทัดรายวันของบัญชีนี้ระบุแผนก/โครงการได้เฉพาะเมื่อเปิดไว้ (CGLFrmJournal::OnCheckSeparate) — ไม่ใช่ "บังคับต้องใส่"
+	DepartSeparate  bool `json:"departseparate,omitempty" bson:"departseparate,omitempty"`
+	ProjectSeparate bool `json:"projectseparate,omitempty" bson:"projectseparate,omitempty"`
 }
 
 func (Account) CollectionName() string { return "chart_of_accounts" }
@@ -113,8 +115,8 @@ type Master struct {
 	Kind           string                `json:"kind" bson:"-"`
 	Code           string                `json:"code" bson:"code"`
 	Name           string                `json:"name" bson:"name"`
-	NameEn         string                `json:"nameen,omitempty" bson:"nameen,omitempty"`     // journal-books: English name
-	BookType       int                   `json:"booktype,omitempty" bson:"booktype,omitempty"` // journal-books: 1 ทั่วไป 2 จ่าย 3 รับ 4 ขาย 5 ซื้อ 6 ยอดยกมา
+	NameEn         string                `json:"nameen,omitempty" bson:"nameen,omitempty"`       // journal-books: English name
+	BookType       int                   `json:"booktype,omitempty" bson:"booktype,omitempty"`   // journal-books: 1 ทั่วไป 2 จ่าย 3 รับ 4 ขาย 5 ซื้อ 6 ยอดยกมา
 	DocFormat      string                `json:"docformat,omitempty" bson:"docformat,omitempty"` // journal-books: running number format (journal_docno.go), empty = DefaultJournalDocFormat
 	TitleName      string                `json:"titlename,omitempty" bson:"titlename,omitempty"` // journal-books: heading printed on the voucher (Champ BCGLBook.TitleName)
 	IsActive       bool                  `json:"isactive" bson:"isactive"`
@@ -486,6 +488,22 @@ func (j Journal) Validate(f FiscalYear, accounts map[string]Account) error {
 	}
 	if !debit.Equal(credit) {
 		return fmt.Errorf("ยอดเดบิตและเครดิตไม่เท่ากัน ต่างกัน %s", debit.Sub(credit).Abs().StringFixed(int32(f.Scale)))
+	}
+	return nil
+}
+
+// checkLineSeparation - Champ CGLFrmJournal::OnCheckSeparate (glfrmjournal.cpp:639-686): บรรทัดที่ใส่แผนก/โครงการ
+// ต้องเป็นบัญชีที่ตั้ง "แยกแผนก"/"แยกโครงการ" ไว้ ไม่งั้นแจ้ง "ผังบัญชี … ไม่ได้กำหนดให้แยก…" (Chart_Of_Account + NOT_SEPARATE)
+// ตรวจเฉพาะตอนผู้ใช้บันทึกบรรทัด (Champ ตรวจตอนบันทึกใบใหม่) ไม่ตรวจตอนผ่านรายการ/กลับรายการ เพื่อไม่ให้การแก้ผังบัญชีทีหลังล็อกเอกสารเดิม
+func checkLineSeparation(lines []Line, accounts map[string]Account) error {
+	for index, line := range lines {
+		account := accounts[line.AccountCode]
+		if strings.TrimSpace(line.DepartmentCode) != "" && !account.DepartSeparate {
+			return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกแผนก", index+1, line.AccountCode)
+		}
+		if strings.TrimSpace(line.ProjectCode) != "" && !account.ProjectSeparate {
+			return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกโครงการ", index+1, line.AccountCode)
+		}
 	}
 	return nil
 }

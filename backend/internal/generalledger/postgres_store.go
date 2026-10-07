@@ -513,7 +513,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 				return nil, err
 			}
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &j, true); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &j, true, true); err != nil {
 			return nil, err
 		}
 		if err := checkJournalTextLimits(j, nil); err != nil {
@@ -607,7 +607,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		case next.Kind != old.Kind:
 			return nil, errJournalKindImmutable
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &next, false); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &next, false, true); err != nil {
 			return nil, err
 		}
 		if err := checkJournalTextLimits(next, &old); err != nil {
@@ -634,7 +634,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		if old.Status != "draft" {
 			return nil, fmt.Errorf("รายการนี้ผ่านบัญชีแล้ว")
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &old, false); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &old, false, false); err != nil {
 			return nil, err
 		}
 		old.Status = "posted"
@@ -718,7 +718,7 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 		revDoc.PostedBy = scope.Actor
 
 		// The reversal stays in the original's book even if that book was deactivated since.
-		if err := s.validateJournalLines(ctx, tx, scope, &revDoc, false); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &revDoc, false, false); err != nil {
 			return nil, err
 		}
 		revData, err := json.Marshal(revDoc)
@@ -749,7 +749,8 @@ func (s *PostgresStore) mutateJournal(ctx context.Context, tx *sql.Tx, scope Sco
 
 // validateJournalLines checks a voucher before it is stored; requireActiveBook is true for new
 // vouchers only (an existing voucher stays editable/postable after its book is deactivated).
-func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, scope Scope, j *Journal, requireActiveBook bool) error {
+// checkSeparate: ตรวจเงื่อนไขแยกแผนก/โครงการของบัญชี เฉพาะบรรทัดที่ผู้ใช้บันทึก (สร้าง/แก้ฉบับร่าง)
+func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, scope Scope, j *Journal, requireActiveBook, checkSeparate bool) error {
 	if err := validateJournalSource(*j); err != nil {
 		return err
 	}
@@ -766,6 +767,11 @@ func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, sc
 	}
 	if err = j.Validate(year, accounts); err != nil {
 		return err
+	}
+	if checkSeparate {
+		if err = checkLineSeparation(j.Lines, accounts); err != nil {
+			return err
+		}
 	}
 	if err = checkJournalBook(ctx, tx, scope.Company, *j, requireActiveBook); err != nil {
 		return err

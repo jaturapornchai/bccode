@@ -8,8 +8,8 @@ export type GLAccount = GLIdentity & {
   parentaccountcode: string | null; normalbalance: "debit" | "credit";
   allowposting: boolean; isactive: boolean; accountgroup: string; iscash: boolean;
   level?: number;
-  require_department?: boolean;
-  require_project?: boolean;
+  departseparate?: boolean;
+  projectseparate?: boolean;
 };
 /** งบประมาณรายเดือน (resource "budgets", ADR 2026-09-25-gl-monthly-budget): เงินเป็นข้อความทศนิยม 12 งวดต่อบัญชี */
 export type GLBudgetLine = { accountcode: string; accountname?: string; periods: string[]; total?: string };
@@ -177,7 +177,7 @@ export function journalBookProblem(bookcode: string, books: GLJournalBook[], pre
   return null;
 }
 export function accountName(account: GLAccount) { return account.names?.find((name) => name.code === "th")?.name ?? account.accountcode; }
-export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1, require_department: false, require_project: false }; }
+export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1, departseparate: false, projectseparate: false }; }
 
 export const ACCOUNT_TYPE_ORDER: Record<string, number> = {
   asset: 1,

@@ -121,8 +121,8 @@ export function accountSavePayload(account: GLAccount, hasChildren: boolean): GL
   const acc = { ...account, parentaccountcode: account.parentaccountcode && account.parentaccountcode.trim() !== "" ? account.parentaccountcode.trim() : null };
   if (hasChildren) acc.allowposting = false;
   acc.iscash = Boolean(acc.iscash) && accountCashAllowed(acc, hasChildren);
-  acc.require_department = Boolean(account.require_department);
-  acc.require_project = Boolean(account.require_project);
+  acc.departseparate = Boolean(account.departseparate);
+  acc.projectseparate = Boolean(account.projectseparate);
   return acc;
 }
 export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
@@ -151,8 +151,8 @@ export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLReco
     acc.isactive = acc.isactive ?? true;
     acc.allowposting = acc.allowposting ?? true;
     acc.iscash = acc.iscash ?? false;
-    acc.require_department = Boolean(acc.require_department);
-    acc.require_project = Boolean(acc.require_project);
+    acc.departseparate = Boolean(acc.departseparate);
+    acc.projectseparate = Boolean(acc.projectseparate);
   }
   return base as GLRecord;
 }
@@ -475,8 +475,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       allowposting: true,
       isactive: true,
       iscash: false,
-      require_department: Boolean(parentAcc.require_department),
-      require_project: Boolean(parentAcc.require_project),
+      departseparate: Boolean(parentAcc.departseparate),
+      projectseparate: Boolean(parentAcc.projectseparate),
     });
   }
 
@@ -1353,21 +1353,21 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
               />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40" title={tr("gl_dim_separate_hint", "กำหนดมิติการแยกบัญชี")}>
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40" title={tr("gl_dim_separate_hint", "บรรทัดรายวันของบัญชีนี้ระบุแผนก/โครงการได้เฉพาะเงื่อนไขที่เลือก")}>
             <span className="text-xs text-muted-foreground font-medium shrink-0">
-              {tr("gl_dim_separate", "มิติวิเคราะห์:")}
+              {tr("gl_dim_separate", "เงื่อนไข:")}
             </span>
             <Check
               className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
-              label={tr("gl_require_department", "บังคับระบุแผนก")}
-              checked={Boolean(value.require_department)}
-              onChange={(require_department) => set({ require_department })}
+              label={tr("gl_depart_separate", "แยกแผนก")}
+              checked={Boolean(value.departseparate)}
+              onChange={(departseparate) => set({ departseparate })}
             />
             <Check
               className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
-              label={tr("gl_require_project", "บังคับระบุโครงการ")}
-              checked={Boolean(value.require_project)}
-              onChange={(require_project) => set({ require_project })}
+              label={tr("gl_project_separate", "แยกโครงการ")}
+              checked={Boolean(value.projectseparate)}
+              onChange={(projectseparate) => set({ projectseparate })}
             />
           </div>
         </div>

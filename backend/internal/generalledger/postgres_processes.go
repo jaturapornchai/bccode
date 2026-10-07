@@ -172,7 +172,7 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 			j.Reference = "YEAR-END:" + year.Code
 			j.Description = "ยอดยกมาจากปี " + year.Code
 		}
-		if err := s.validateJournalLines(ctx, tx, scope, &j, true); err != nil {
+		if err := s.validateJournalLines(ctx, tx, scope, &j, true, false); err != nil {
 			return nil, err
 		}
 		prepared.Journals = append(prepared.Journals, j)
