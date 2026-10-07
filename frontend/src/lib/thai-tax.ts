@@ -172,6 +172,19 @@ export function taxAddressProblems(address: TaxAddress, phone: string): Partial<
   return problems;
 }
 
+/** ยอดรวมของกลุ่มแถวในทะเบียนภาษี (backend คำนวณ decimal) — ใช้แยก "รวมรับคืน/ลดหนี้" แบบ Champ 5537 */
+export interface VatRegisterGroup {
+  count: number;
+  amountbeforevat: string;
+  zeroamount: string;
+  exemptamount: string;
+  taxableamount: string;
+  nonexemptamount: string;
+  nonexempttotal: string;
+  vatamount: string;
+  totalamount: string;
+}
+
 export interface VatRegisterSummary {
   amountbeforevat: string;
   zeroamount: string;
@@ -183,6 +196,10 @@ export interface VatRegisterSummary {
   totalamount: string;
   /** จำนวนแถวในงวดที่ใบกำกับฉบับเดียวกันถูกบันทึกในใบสำคัญอื่นด้วย (นับทั้งงวดโดย backend ไม่ใช่เฉพาะแถวที่โหลด) */
   duplicatecount: number;
+  /** ใบกำกับ/ใบเพิ่มหนี้ */
+  regular: VatRegisterGroup;
+  /** ใบลดหนี้ (ยอดติดลบ) */
+  creditnote: VatRegisterGroup;
 }
 
 const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
@@ -272,7 +289,26 @@ export interface WhtReportResult {
 
 const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "", address: null, phone: "", addressline: "" };
 const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [], payees: [] };
-const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "0.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
+const EMPTY_VAT_GROUP: VatRegisterGroup = { count: 0, amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "0.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "0.00", totalamount: "0.00" };
+const EMPTY_VAT_SUMMARY: VatRegisterSummary = { ...EMPTY_VAT_GROUP, duplicatecount: 0, regular: EMPTY_VAT_GROUP, creditnote: EMPTY_VAT_GROUP };
+
+function toVatGroup(value: unknown): VatRegisterGroup {
+  const group = isRecord(value) ? value : {};
+  return { count: toCount(group.count, 0), ...toVatTotals(group) };
+}
+
+function toVatTotals(group: Record<string, unknown>): Omit<VatRegisterGroup, "count"> {
+  return {
+    amountbeforevat: toMoney(group.amountbeforevat),
+    zeroamount: toMoney(group.zeroamount),
+    exemptamount: toMoney(group.exemptamount),
+    taxableamount: toMoney(group.taxableamount),
+    nonexemptamount: toMoney(group.nonexemptamount),
+    nonexempttotal: toMoney(group.nonexempttotal),
+    vatamount: toMoney(group.vatamount),
+    totalamount: toMoney(group.totalamount),
+  };
+}
 
 /** key เดือนใน languages.tsv (`month_<key>`) ลำดับ ม.ค.–ธ.ค. — ใช้ร่วมทุกจอภาษี */
 export const TAX_MONTH_KEYS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"] as const;
@@ -642,15 +678,10 @@ export async function fetchVatRegister(params: {
     records,
     total: toCount(payload.total, records.length),
     summary: {
-      amountbeforevat: toMoney(summary.amountbeforevat),
-      zeroamount: toMoney(summary.zeroamount),
-      exemptamount: toMoney(summary.exemptamount),
-      taxableamount: toMoney(summary.taxableamount),
-      nonexemptamount: toMoney(summary.nonexemptamount),
-      nonexempttotal: toMoney(summary.nonexempttotal),
-      vatamount: toMoney(summary.vatamount),
-      totalamount: toMoney(summary.totalamount),
+      ...toVatTotals(summary),
       duplicatecount: toCount(summary.duplicatecount, 0),
+      regular: toVatGroup(summary.regular),
+      creditnote: toVatGroup(summary.creditnote),
     },
     note: toText(payload.note),
     company: isRecord(payload.company) ? toCompany(payload.company) : null,

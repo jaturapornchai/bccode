@@ -86,6 +86,45 @@ type TaxVatRegisterSummary struct {
 	VatAmount      string `json:"vatamount"`
 	TotalAmount    string `json:"totalamount"`
 	DuplicateCount int    `json:"duplicatecount"` // จำนวนแถวของงวดที่มีใบกำกับฉบับเดียวกันในใบสำคัญอื่น
+	// Regular/CreditNote - ยอดแยกใบกำกับ/ใบเพิ่มหนี้ กับ ใบลดหนี้ (รับคืน/ลดหนี้) ตามตัวเลือก "แยกรับคืน/ลดหนี้" ของ Champ 5537
+	// (GLRepOutputTaxView.cpp:473-599: รวมทั้งสิ้น n รายการ → รวมรับคืน/ลดหนี้ n รายการ → รวมทั้งสิ้นของทั้งสองกลุ่ม)
+	Regular    TaxVatRegisterGroup `json:"regular"`
+	CreditNote TaxVatRegisterGroup `json:"creditnote"`
+}
+
+// TaxVatRegisterGroup - ยอดรวมของกลุ่มแถวในทะเบียนภาษี (จำนวน + ยอดตามคอลัมน์รายงาน) คำนวณ decimal ที่ backend
+type TaxVatRegisterGroup struct {
+	Count           int    `json:"count"`
+	AmountBeforeVat string `json:"amountbeforevat"`
+	ZeroAmount      string `json:"zeroamount"`
+	ExemptAmount    string `json:"exemptamount"`
+	vatColumns
+	VatAmount   string `json:"vatamount"`
+	TotalAmount string `json:"totalamount"`
+}
+
+// vatTotals - ตัวสะสมยอดของกลุ่มแถว (ยอดแต่ละแถวปัด 2 ตำแหน่งและใส่เครื่องหมายแล้ว)
+type vatTotals struct {
+	count                   int
+	base, zero, exempt, vat decimal.Decimal
+}
+
+func (t *vatTotals) add(base, zero, exempt, vat decimal.Decimal) {
+	t.count++
+	t.base, t.zero, t.exempt, t.vat = t.base.Add(base), t.zero.Add(zero), t.exempt.Add(exempt), t.vat.Add(vat)
+}
+
+func (t vatTotals) group() TaxVatRegisterGroup {
+	before := t.base.Add(t.zero).Add(t.exempt)
+	return TaxVatRegisterGroup{
+		Count:           t.count,
+		AmountBeforeVat: moneyText(before),
+		ZeroAmount:      moneyText(t.zero),
+		ExemptAmount:    moneyText(t.exempt),
+		vatColumns:      newVatColumns(t.base, t.zero, t.vat),
+		VatAmount:       moneyText(t.vat),
+		TotalAmount:     moneyText(before.Add(t.vat)),
+	}
 }
 
 // TaxVatRegisterHandler - POST /api/report/tax/vat-register
@@ -294,7 +333,7 @@ func newVatColumns(base, zero, vat decimal.Decimal) vatColumns {
 // มูลค่าก่อนภาษี = ฐานภาษี + ยอดอัตรา 0% + ยอดยกเว้น ของใบกำกับ (มูลค่าสินค้า/บริการ ไม่รวม VAT); 0% และยกเว้นแยกแสดงอีกช่อง
 func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, TaxVatRegisterSummary) {
 	rows := make([]TaxVatRegisterRow, 0, len(records))
-	var sumBase, sumZero, sumExempt, sumVat decimal.Decimal
+	var all, regular, creditNote vatTotals
 	for _, r := range records {
 		sign := vatSign(r.DocumentType)
 		base, zero, exempt := vatMoney(r.BaseAmount, sign), vatMoney(r.ZeroRateAmount, sign), vatMoney(r.ExemptAmount, sign)
@@ -320,18 +359,24 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			ReversedMonth:    firstN(r.ReversalDate, 7),
 			Note:             r.ReversalReason,
 		})
-		sumBase, sumVat = sumBase.Add(base), sumVat.Add(vat)
-		sumZero, sumExempt = sumZero.Add(zero), sumExempt.Add(exempt)
+		all.add(base, zero, exempt, vat)
+		if r.DocumentType == 3 { // ใบลดหนี้ = กลุ่มรับคืน/ลดหนี้ (เครื่องหมายลบเดียวกับ vatSign)
+			creditNote.add(base, zero, exempt, vat)
+		} else {
+			regular.add(base, zero, exempt, vat)
+		}
 	}
-	sumBefore := sumBase.Add(sumZero).Add(sumExempt)
+	total := all.group()
 	return rows, TaxVatRegisterSummary{
-		AmountBeforeVat: moneyText(sumBefore),
-		ZeroAmount:      moneyText(sumZero),
-		ExemptAmount:    moneyText(sumExempt),
-		vatColumns:      newVatColumns(sumBase, sumZero, sumVat),
-		VatAmount:       moneyText(sumVat),
-		TotalAmount:     moneyText(sumBefore.Add(sumVat)),
+		AmountBeforeVat: total.AmountBeforeVat,
+		ZeroAmount:      total.ZeroAmount,
+		ExemptAmount:    total.ExemptAmount,
+		vatColumns:      total.vatColumns,
+		VatAmount:       total.VatAmount,
+		TotalAmount:     total.TotalAmount,
 		DuplicateCount:  countDuplicateInvoices(records),
+		Regular:         regular.group(),
+		CreditNote:      creditNote.group(),
 	}
 }
 

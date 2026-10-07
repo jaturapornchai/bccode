@@ -123,7 +123,9 @@ describe("fetchVatRegister", () => {
     expect(result.records).toHaveLength(1);
     // total/summary = ทั้งงวดจาก backend ไม่ใช่ผลบวกของแถวที่โหลดมา
     expect(result.total).toBe(3);
-    expect(result.summary).toEqual({ amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", taxableamount: "27500.10", nonexemptamount: "29500.10", nonexempttotal: "31600.11", vatamount: "2100.01", totalamount: "32100.11", duplicatecount: 0 });
+    expect(result.summary).toMatchObject({ amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", taxableamount: "27500.10", nonexemptamount: "29500.10", nonexempttotal: "31600.11", vatamount: "2100.01", totalamount: "32100.11", duplicatecount: 0 });
+    // backend เก่าไม่ส่งยอดแยก → กลุ่มว่าง 0 รายการ (ไม่ undefined)
+    expect(result.summary.creditnote).toMatchObject({ count: 0, totalamount: "0.00" });
     // คอลัมน์แบบ Champ มาจาก backend ตรง ๆ (ไม่คำนวณบน browser) + เลขที่เอกสารบัญชี
     expect(result.records[0]).toMatchObject({ zeroamount: "2000.00", exemptamount: "500.00", taxableamount: "7500.00", nonexemptamount: "9500.00", nonexempttotal: "10200.00", docno: "SV6909-0001" });
     // หัวรายงานรายสถานประกอบการ: แถวที่ไม่มีเลขสาขาไม่เป็นตัวเลือก
@@ -424,6 +426,21 @@ describe("fetchVatRegister — ใบกำกับฉบับเดียว�
     expect(result.records.map((r) => r.duplicatedocnos)).toEqual([["PV6909-0012", "JV6909-0003"], [], []]);
     // ยอดนับทั้งงวดจาก backend ไม่ใช่นับแถวที่โหลด
     expect(result.summary.duplicatecount).toBe(4);
+  });
+
+  // Champ 5537 "แยกรับคืน/ลดหนี้": backend แยกยอดใบกำกับ/ใบเพิ่มหนี้ กับ ใบลดหนี้ (ติดลบ) — จอแสดงตามที่ได้ ไม่บวกเอง
+  it("map ยอดแยก regular/creditnote จาก summary", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      data: [], total: 4,
+      summary: {
+        amountbeforevat: "1900.11", vatamount: "63.01", totalamount: "1963.12",
+        regular: { count: 3, amountbeforevat: "2000.11", zeroamount: "500.00", taxableamount: "1500.11", vatamount: "70.01", totalamount: "2070.12" },
+        creditnote: { count: 1, amountbeforevat: "-100.00", taxableamount: "-100.00", vatamount: "-7.00", totalamount: "-107.00" },
+      },
+    })));
+    const result = await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "sale" });
+    expect(result.summary.regular).toMatchObject({ count: 3, zeroamount: "500.00", taxableamount: "1500.11", vatamount: "70.01", totalamount: "2070.12" });
+    expect(result.summary.creditnote).toEqual({ count: 1, amountbeforevat: "-100.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "-100.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "-7.00", totalamount: "-107.00" });
   });
 
   it("duplicatecount ผิดสัญญา (ติดลบ/ทศนิยม/ข้อความ) → 0 ไม่เดา", async () => {

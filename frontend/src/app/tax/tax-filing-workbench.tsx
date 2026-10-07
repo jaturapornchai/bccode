@@ -17,6 +17,7 @@ import {
   type CompanyHeader,
   type TaxEstablishment,
   type ThaiTaxRecord,
+  type VatRegisterGroup,
   type VatRegisterSummary,
   type WhtReportRow,
   type WhtReportSummary,
@@ -47,6 +48,8 @@ interface TaxFilingWorkbenchProps {
 
 // ยอดเงินมาจาก backend เป็น string ทศนิยม — จอนี้จัดรูปแบบแสดงผลอย่างเดียว ไม่คำนวณภาษีเอง
 const money = (value: string | undefined) => formatAmount(value ?? "0.00", 2);
+// ยอดติดลบในวงเล็บแบบรายงาน Champ (XMoneyFormat "(" ")")
+const bracketMoney = (value: string | undefined) => (value?.startsWith("-") ? `(${money(value.slice(1))})` : money(value));
 // ขอทั้งงวดในหน้าเดียวตามเพดาน backend (taxRegisterMaxLimit) — ยอดรวมท้ายตารางมาจาก backend ทั้งงวดเสมอ
 const REGISTER_PAGE_LIMIT = 500;
 
@@ -86,6 +89,8 @@ export function TaxFilingWorkbench({
   const [activeTab, setActiveTab] = useState<"table" | "50twi">(() => (config.formType === "50twi" ? "50twi" : "table"));
   // ภาษีซื้อ/ขาย: ทะเบียนตามงวดภาษี หรือใบที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้ (ยุบ Champ 5522/5523 เป็นแท็บของจอเดิม)
   const [vatView, setVatView] = useState<"register" | "reversed_later">("register");
+  // Champ 5537 ตัวเลือก "แยกรับคืน/ลดหนี้": แถวยังเรียงตามวันที่ แยกเฉพาะบรรทัดรวมท้ายรายงาน
+  const [separateCreditNotes, setSeparateCreditNotes] = useState(false);
   const [vatNote, setVatNote] = useState<string>("");
   // รายงานภาษีซื้อ/ขายเป็นรายสถานประกอบการ (ม.87 วรรคสาม, ประกาศฯ VAT ฉบับที่ 89 ข้อ 5): "" = ทุกสถานประกอบการรวมกัน
   const [vatBranch, setVatBranch] = useState<string>("");
@@ -341,26 +346,33 @@ export function TaxFilingWorkbench({
     branchNo: tr("tax_vat_col_branch_no", "สาขาที่"),
   };
   // ทุกยอดมาจาก backend (decimal string) — ขาย: ยกเว้น | อัตราศูนย์ | มูลค่า (ฐานภาษี) | ภาษี | รวม; ซื้อ: มูลค่า (ฐาน + อัตราศูนย์) | ยกเว้น | ภาษี | รวม | รวมทั้งสิ้น
-  type VatMoneyColumn = { id: string; label: string; row: (r: ThaiTaxRecord) => string | undefined; total: string; tone?: "tax" | "total" };
-  const vatExempt: VatMoneyColumn = { id: "exempt", label: tr("tax_vat_col_exempt", "ยอดยกเว้นภาษี"), row: (r) => r.exemptamount, total: totals.exempt };
-  const vatTax: VatMoneyColumn = { id: "vat", label: tr("tax_vat_col_vat", "จำนวนเงิน ภาษีมูลค่าเพิ่ม"), row: (r) => r.vatamount, total: totals.tax, tone: "tax" };
+  type VatMoneyColumn = { id: string; label: string; row: (r: ThaiTaxRecord) => string | undefined; total: string; field: Exclude<keyof VatRegisterGroup, "count">; tone?: "tax" | "total" };
+  const vatExempt: VatMoneyColumn = { id: "exempt", label: tr("tax_vat_col_exempt", "ยอดยกเว้นภาษี"), row: (r) => r.exemptamount, total: totals.exempt, field: "exemptamount" };
+  const vatTax: VatMoneyColumn = { id: "vat", label: tr("tax_vat_col_vat", "จำนวนเงิน ภาษีมูลค่าเพิ่ม"), row: (r) => r.vatamount, total: totals.tax, field: "vatamount", tone: "tax" };
   const vatValueLabel = tr("tax_vat_col_value", "มูลค่าสินค้า/บริการ");
   const vatSumLabel = tr("tax_vat_col_sum", "รวม");
   const vatMoneyColumns: VatMoneyColumn[] = isVatBuy
     ? [
-        { id: "value", label: vatValueLabel, row: (r) => r.nonexemptamount, total: totals.nonExempt },
+        { id: "value", label: vatValueLabel, row: (r) => r.nonexemptamount, total: totals.nonExempt, field: "nonexemptamount" },
         vatExempt,
         vatTax,
-        { id: "sum", label: vatSumLabel, row: (r) => r.nonexempttotal, total: totals.nonExemptTotal },
-        { id: "grand", label: tr("tax_vat_col_grand", "รวมทั้งสิ้น"), row: (r) => r.totalamount, total: totals.total, tone: "total" },
+        { id: "sum", label: vatSumLabel, row: (r) => r.nonexempttotal, total: totals.nonExemptTotal, field: "nonexempttotal" },
+        { id: "grand", label: tr("tax_vat_col_grand", "รวมทั้งสิ้น"), row: (r) => r.totalamount, total: totals.total, field: "totalamount", tone: "total" },
       ]
     : [
         vatExempt,
-        { id: "zero", label: tr("tax_vat_col_zero", "มูลค่าสินค้า ภาษีอัตราศูนย์"), row: (r) => r.zeroamount, total: totals.zero },
-        { id: "value", label: vatValueLabel, row: (r) => r.taxableamount, total: totals.taxable },
+        { id: "zero", label: tr("tax_vat_col_zero", "มูลค่าสินค้า ภาษีอัตราศูนย์"), row: (r) => r.zeroamount, total: totals.zero, field: "zeroamount" },
+        { id: "value", label: vatValueLabel, row: (r) => r.taxableamount, total: totals.taxable, field: "taxableamount" },
         vatTax,
-        { id: "sum", label: vatSumLabel, row: (r) => r.totalamount, total: totals.total, tone: "total" },
+        { id: "sum", label: vatSumLabel, row: (r) => r.totalamount, total: totals.total, field: "totalamount", tone: "total" },
       ];
+  // บรรทัดรวมแยกใบกำกับ/ใบเพิ่มหนี้ กับ ใบลดหนี้ ตามลำดับของ Champ (GLRepOutputTaxView.cpp) — ยอดติดลบพิมพ์ในวงเล็บ
+  const creditNoteSplit = config.formType === "vat_sale" && vatView === "register" && separateCreditNotes && salesSummary
+    ? [
+        { id: "regular", label: tr("tax_register_grand_total", "รวมทั้งสิ้น {0} รายการ"), group: salesSummary.summary.regular },
+        { id: "creditnote", label: tr("tax_vat_credit_note_total", "รวมรับคืน/ลดหนี้ {0} รายการ"), group: salesSummary.summary.creditnote },
+      ]
+    : [];
   const vatMoneyClass = (tone?: VatMoneyColumn["tone"]) =>
     tone === "tax" ? "font-medium text-primary" : tone === "total" ? "font-bold text-foreground" : "";
   const grandTotalLabel = tr("tax_register_grand_total", "รวมทั้งสิ้น {0} รายการ").replace("{0}", String(totals.count));
@@ -511,6 +523,18 @@ export function TaxFilingWorkbench({
               radioClassName="w-auto px-3 min-h-[2.2em] text-xs font-semibold"
               options={yearOptions.map((y) => ({ value: y, label: yearLabel(y) }))}
             />
+            {config.formType === "vat_sale" && vatView === "register" && (
+              <label className="flex min-h-[2.2em] cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm print:hidden">
+                <input
+                  type="checkbox"
+                  checked={separateCreditNotes}
+                  onChange={(e) => setSeparateCreditNotes(e.target.checked)}
+                  data-field="separatecreditnotes"
+                  className="h-4 w-4 accent-primary"
+                />
+                {tr("tax_vat_separate_credit_notes", "แยกรับคืน/ลดหนี้")}
+              </label>
+            )}
             {isVatType && (
               <select
                 aria-label={tr("tax_vat_establishment", "สถานประกอบการ")}
@@ -874,13 +898,24 @@ export function TaxFilingWorkbench({
                     <td className="print:hidden"></td>
                   </tr>
                 ) : (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-3 text-right">{grandTotalLabel}</td>
-                    {vatMoneyColumns.map((m) => (
-                      <td key={m.id} className={`px-4 py-3 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{money(m.total)}</td>
+                  <>
+                    {creditNoteSplit.map((split) => (
+                      <tr key={split.id} data-total={split.id}>
+                        <td colSpan={8} className="px-4 py-3 text-right">{split.label.replace("{0}", String(split.group.count))}</td>
+                        {vatMoneyColumns.map((m) => (
+                          <td key={m.id} className={`px-4 py-3 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{bracketMoney(split.group[m.field])}</td>
+                        ))}
+                        <td className="print:hidden"></td>
+                      </tr>
                     ))}
-                    <td className="print:hidden"></td>
-                  </tr>
+                    <tr>
+                      <td colSpan={8} className="px-4 py-3 text-right">{grandTotalLabel}</td>
+                      {vatMoneyColumns.map((m) => (
+                        <td key={m.id} className={`px-4 py-3 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{creditNoteSplit.length > 0 ? bracketMoney(m.total) : money(m.total)}</td>
+                      ))}
+                      <td className="print:hidden"></td>
+                    </tr>
+                  </>
                 )}
               </tfoot>
             </table>

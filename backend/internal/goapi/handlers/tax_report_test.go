@@ -149,6 +149,13 @@ func TestBuildVatRegisterSignsAndTotals(t *testing.T) {
 	if summary.AmountBeforeVat != "1400.11" || summary.VatAmount != "63.01" || summary.TotalAmount != "1463.12" {
 		t.Fatalf("summary = %+v", summary)
 	}
+	// Champ 5537 "แยกรับคืน/ลดหนี้": ใบลดหนี้รวมแยก (ติดลบ) + ใบกำกับ/ใบเพิ่มหนี้ อีกกลุ่ม; สองกลุ่มรวมกัน = ยอดทั้งงวด
+	if c := summary.CreditNote; c.Count != 1 || c.AmountBeforeVat != "-100.00" || c.VatAmount != "-7.00" || c.TotalAmount != "-107.00" {
+		t.Fatalf("credit note group = %+v", c)
+	}
+	if g := summary.Regular; g.Count != 3 || g.AmountBeforeVat != "1500.11" || g.VatAmount != "70.01" || g.TotalAmount != "1570.12" || g.ZeroAmount != "500.00" || g.TaxableAmount != "1000.11" {
+		t.Fatalf("regular group = %+v", g)
+	}
 	// ยอด 0% / ยกเว้นแยกช่อง (รวมอยู่ในมูลค่าแล้ว) — ใบลดหนี้ติดลบเหมือนช่องอื่น
 	if rows[1].ZeroAmount != "500.00" || rows[1].ExemptAmount != "0.00" || rows[0].ZeroAmount != "0.00" || summary.ZeroAmount != "500.00" || summary.ExemptAmount != "0.00" {
 		t.Fatalf("zero-rate split rows=%+v summary=%+v", rows[:2], summary)
