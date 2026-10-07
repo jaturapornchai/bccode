@@ -73,6 +73,8 @@ func (f *pgIntegrityFixture) journal(id string) Journal {
 	return j
 }
 func (f *pgIntegrityFixture) draft(doc, branch string) Journal {
+	f.ensureDimension(DepartmentKind, "D")
+	f.ensureDimension(ProjectKind, "P")
 	j := Journal{DocNo: doc, Date: "2026-01-10", BookCode: "JV", FiscalYear: "2026", Description: "test", Kind: "manual", BranchCode: branch, Lines: []Line{{AccountCode: "1000", Debit: Amount("100"), Credit: Amount("0"), DepartmentCode: "D", ProjectCode: "P"}, {AccountCode: "4000", Debit: Amount("0"), Credit: Amount("100"), DepartmentCode: "D", ProjectCode: "P"}}}
 	r := f.run(Command{Resource: "journals", Action: "create", Journal: &j})
 	return f.journal(r.ID)

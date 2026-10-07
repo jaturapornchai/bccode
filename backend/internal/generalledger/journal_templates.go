@@ -84,7 +84,11 @@ func prepareJournalTemplate(ctx context.Context, tx *sql.Tx, company string, m *
 			return fmt.Errorf("บรรทัด %d: กรุณาเลือกบัญชีที่เปิดใช้งานและลงรายการได้", i+1)
 		}
 	}
-	if err = checkLineSeparation(lines, accounts); err != nil {
+	dims, err := loadLineDimensions(ctx, tx, company, lines)
+	if err != nil {
+		return err
+	}
+	if err = checkLineSeparation(lines, accounts, dims); err != nil {
 		return err
 	}
 	if code == "" {

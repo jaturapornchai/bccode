@@ -793,7 +793,11 @@ func (s *PostgresStore) validateJournalLines(ctx context.Context, tx *sql.Tx, sc
 		return err
 	}
 	if checkSeparate {
-		if err = checkLineSeparation(j.Lines, accounts); err != nil {
+		dims, err := loadLineDimensions(ctx, tx, scope.Company, j.Lines)
+		if err != nil {
+			return err
+		}
+		if err = checkLineSeparation(j.Lines, accounts, dims); err != nil {
 			return err
 		}
 	}

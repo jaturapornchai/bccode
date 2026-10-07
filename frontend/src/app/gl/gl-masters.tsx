@@ -5,7 +5,7 @@ import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Tr
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, dimensionPayload, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isDimensionResource, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, dimensionPayload, normalizeDimensionCodes, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isDimensionResource, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { toast } from "@/lib/toast";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
 import { GLChartOfAccountsPrint, GLJournalBooksPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { AccountBalanceCard, AccountLedgerModal } from "./account-ledger-drilldown";
+import { DimensionCodeMultiSelect, invalidateDimensionRegisters, useDimensionRegisters } from "./gl-dimension-select";
 
 type MasterResource = Exclude<GLResource, "journals">;
 function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : resource === "journal-books" ? emptyJournalBook() : emptyMaster(); }
@@ -123,6 +124,10 @@ export function accountSavePayload(account: GLAccount, hasChildren: boolean): GL
   acc.iscash = Boolean(acc.iscash) && accountCashAllowed(acc, hasChildren);
   acc.departseparate = Boolean(account.departseparate);
   acc.projectseparate = Boolean(account.projectseparate);
+  const departcodes = acc.departseparate ? normalizeDimensionCodes(account.departcodes) : [];
+  const projectcodes = acc.projectseparate ? normalizeDimensionCodes(account.projectcodes) : [];
+  if (departcodes.length > 0) acc.departcodes = departcodes; else delete acc.departcodes;
+  if (projectcodes.length > 0) acc.projectcodes = projectcodes; else delete acc.projectcodes;
   return acc;
 }
 export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLRecord {
@@ -153,6 +158,8 @@ export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLReco
     acc.iscash = acc.iscash ?? false;
     acc.departseparate = Boolean(acc.departseparate);
     acc.projectseparate = Boolean(acc.projectseparate);
+    acc.departcodes = normalizeDimensionCodes(acc.departcodes);
+    acc.projectcodes = normalizeDimensionCodes(acc.projectcodes);
   }
   return base as GLRecord;
 }
@@ -381,6 +388,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
 
   const density = useRowDensity();
   const [revision, setRevision] = useState(0), refs = useReferences(revision);
+  useEffect(() => { if (isDimensionResource(resource)) invalidateDimensionRegisters(); }, [resource, revision]);
   const [record, setRecord] = useState<GLRecord | null>(null), [original, setOriginal] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState(""), [reason, setReason] = useState("");
@@ -1190,6 +1198,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
   const tr = useGLText();
   const thName = (value.names || []).find((name) => name.code === "th")?.name ?? "";
   const enName = (value.names || []).find((name) => name.code === "en")?.name ?? "";
+  const dims = useDimensionRegisters();
 
   const handleTypeChange = (accounttype: string) => set(accountTypePatch(value, accounttype as GLAccount["accounttype"]));
 
@@ -1364,15 +1373,22 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
               className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
               label={tr("gl_depart_separate", "แยกแผนก")}
               checked={Boolean(value.departseparate)}
-              onChange={(departseparate) => set({ departseparate })}
+              onChange={(departseparate) => set(departseparate ? { departseparate } : { departseparate, departcodes: [] })}
             />
             <Check
               className="px-2.5 py-1 text-xs rounded-lg gap-1.5"
               label={tr("gl_project_separate", "แยกโครงการ")}
               checked={Boolean(value.projectseparate)}
-              onChange={(projectseparate) => set({ projectseparate })}
+              onChange={(projectseparate) => set(projectseparate ? { projectseparate } : { projectseparate, projectcodes: [] })}
             />
           </div>
+          {(value.departseparate || value.projectseparate) && (
+            <div className="grid gap-3 border-t border-border/40 pt-2 sm:grid-cols-2">
+              {dims.error && <div className="sm:col-span-2"><Notice error text={dims.error} /></div>}
+              {value.departseparate && <DimensionCodeMultiSelect resource="departments" value={value.departcodes ?? []} register={dims.departments} onChange={(departcodes) => set({ departcodes })} />}
+              {value.projectseparate && <DimensionCodeMultiSelect resource="projects" value={value.projectcodes ?? []} register={dims.projects} onChange={(projectcodes) => set({ projectcodes })} />}
+            </div>
+          )}
         </div>
       </div>
     </div>

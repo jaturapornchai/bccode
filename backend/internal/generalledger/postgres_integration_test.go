@@ -89,6 +89,10 @@ func glpgSeed(t *testing.T, p *Postgres, company string) {
 	// the store checks journal.bookcode against the journal-books master (glpgJournal uses JV)
 	book := Master{Identity: glpgIdentity("book-JV", company, 1), Kind: "journal-books", Code: "JV", Name: "สมุดรายวันทั่วไป", BookType: BookTypeGeneral, IsActive: true}
 	changes = append(changes, glpgChange(t, "journal-books", book.ID, book.Code, book))
+	// glpgJournal names department D1 and project P1 on accounts that separate them, so both must be registered
+	department := Master{Identity: glpgIdentity("department-D1", company, 1), Kind: DepartmentKind, Code: "D1", Name: "ฝ่ายขายและการตลาด", IsActive: true}
+	project := Master{Identity: glpgIdentity("project-P1", company, 1), Kind: ProjectKind, Code: "P1", Name: "โครงการขยายสาขาภาคเหนือ", IsActive: true}
+	changes = append(changes, glpgChange(t, DepartmentKind, department.ID, department.Code, department), glpgChange(t, ProjectKind, project.ID, project.Code, project))
 	if err := p.Project(context.Background(), glpgEvent(company, 1, changes...)); err != nil {
 		t.Fatal(err)
 	}

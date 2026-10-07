@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, FileText, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Table2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLJournalTemplate, type GLLine } from "@/lib/general-ledger";
+import { accountDimensionCodes, accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, lineDimensionsAfterAccountChange, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLJournalTemplate, type GLLine } from "@/lib/general-ledger";
 import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
 import { workspaceStorageKeys } from "@/lib/workspace-models";
 import { formatAppDate } from "@/lib/date-time";
@@ -22,6 +22,7 @@ import { JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctio
 import { getAuthSession } from "@/lib/client-auth-session";
 import { journalFromTemplate, journalJumpKey, jumpRowIndex, type JournalJumpSide } from "@/lib/gl-journal-templates";
 import { JournalTemplateTools } from "./gl-journal-templates";
+import { DimensionSelect, useDimensionRegisters } from "./gl-dimension-select";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -148,7 +149,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const activeStatus = mode === "reverse" ? "posted" : "";
   const dateSearch = parseChampDateSearch(search);
   const filters = journalListFilters({ bookcode: activeBook, kind, status: activeStatus, from: dateSearch?.from, to: dateSearch?.to });
-  const list = useGLList<GLJournal>("journals", dateSearch ? "" : search, filters), refs = useReferences();
+  const list = useGLList<GLJournal>("journals", dateSearch ? "" : search, filters), refs = useReferences(), dims = useDimensionRegisters();
   const language = useGLLanguage();
   const voucherPrint = useGLPrint();
   const books = useMemo(() => refs.books ?? [], [refs.books]);
@@ -571,7 +572,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-2">
       <div className="shrink-0 flex flex-col gap-2">
-        <Notice error text={error || list.error || refs.error} />
+        <Notice error text={error || list.error || refs.error || dims.error} />
         <Notice text={message} />
         {kind === "opening" && <Notice text={tr("gl_opening_balance_dr_cr_entries", "บันทึกยอดยกมาเป็นรายการเดบิตและเครดิตที่สมดุล เลือกปีบัญชี วันที่ และบัญชีคู่รายการตามยอดปิดที่ตรวจสอบแล้ว")} />}
       </div>
@@ -1102,17 +1103,17 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             <tr key={index} data-line-row={index} className="border-t border-border">
                               <td className="p-2 text-center tabular-nums text-muted-foreground">{index + 1}</td>
                               <td className="min-w-36 p-2">
-                                <AccountSelect codeOnly label={tr("gl_line_account", "บัญชีบรรทัด {0}").replace("{0}", String(index + 1))} value={line.accountcode} accounts={refs.accounts} onChange={(accountcode) => patchLine(index, { accountcode })} disabled={busy} />
+                                <AccountSelect codeOnly label={tr("gl_line_account", "บัญชีบรรทัด {0}").replace("{0}", String(index + 1))} value={line.accountcode} accounts={refs.accounts} onChange={(accountcode) => patchLine(index, { accountcode, ...lineDimensionsAfterAccountChange(line, accountsByCode.get(accountcode)) })} disabled={busy} />
                               </td>
                               <td className="min-w-40 p-2 leading-snug [overflow-wrap:anywhere]">{line.accountcode ? accountNames.get(line.accountcode) ?? "" : ""}</td>
                               <td className="min-w-40 p-2">
                                 <input className={control} aria-label={tr("gl_line_extra_detail", "รายละเอียดเพิ่มเติมบรรทัด {0}").replace("{0}", String(index + 1))} value={line.description} onChange={(e) => patchLine(index, { description: e.target.value })} />
                               </td>
-                              <td className="min-w-24 p-2">
-                                <input className={control} aria-label={tr("gl_line_department", "แผนกบรรทัด {0}").replace("{0}", String(index + 1))} value={line.departmentcode} disabled={busy || departLocked(line)} title={departLocked(line) ? tr("gl_line_not_depart_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกแผนก (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(e) => patchLine(index, { departmentcode: e.target.value })} />
+                              <td className="min-w-44 p-2">
+                                <DimensionSelect label={tr("gl_line_department", "แผนกบรรทัด {0}").replace("{0}", String(index + 1))} value={line.departmentcode} register={accountsByCode.get(line.accountcode)?.departseparate ? dims.departments : []} allowed={accountDimensionCodes(accountsByCode.get(line.accountcode), "departments")} disabled={busy || departLocked(line)} title={departLocked(line) ? tr("gl_line_not_depart_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกแผนก (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(departmentcode) => patchLine(index, { departmentcode })} />
                               </td>
-                              <td className="min-w-24 p-2">
-                                <input className={control} aria-label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} value={line.projectcode} disabled={busy || projectLocked(line)} title={projectLocked(line) ? tr("gl_line_not_project_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกโครงการ (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(e) => patchLine(index, { projectcode: e.target.value })} />
+                              <td className="min-w-44 p-2">
+                                <DimensionSelect label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} value={line.projectcode} register={accountsByCode.get(line.accountcode)?.projectseparate ? dims.projects : []} allowed={accountDimensionCodes(accountsByCode.get(line.accountcode), "projects")} disabled={busy || projectLocked(line)} title={projectLocked(line) ? tr("gl_line_not_project_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกโครงการ (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(projectcode) => patchLine(index, { projectcode })} />
                               </td>
                               <td data-line-cell="debit" className="min-w-32 p-2">
                                 <AmountInput ariaLabel={tr("gl_line_debit", "เดบิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.debit} onChange={(debit) => patchLine(index, { debit })} />

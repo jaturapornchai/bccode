@@ -108,7 +108,7 @@ func TestJournalListPermissionsDoNotDependOnBookCode(t *testing.T) {
 		}
 	}
 	// ผู้ใช้สมุดรายวันทุกคนต้องอ่านรายการสมุดได้ (ไว้เลือกสมุดตอนคีย์) แต่แก้สมุดต้องมีสิทธิ์จอกำหนดสมุดรายวัน
-	for _, resource := range []string{"accounts", "fiscal-years", "journal-books"} {
+	for _, resource := range []string{"accounts", "fiscal-years", "journal-books", "departments", "projects"} {
 		if !ledgerLookup(resource) {
 			t.Fatalf("%s must be a ledger lookup", resource)
 		}
@@ -122,6 +122,10 @@ func TestJournalListPermissionsDoNotDependOnBookCode(t *testing.T) {
 		}
 		if allowed(p, resourceScreens["journal-books"], "update") {
 			t.Fatalf("journal user %v can edit journal books", p)
+		}
+		// the department / project pickers read the registers, but only the register screen may change them
+		if allowed(p, resourceScreens["departments"], "create") || allowed(p, resourceScreens["projects"], "update") {
+			t.Fatalf("journal user %v can edit the department or project register", p)
 		}
 	}
 	if anyLedger(map[string]bool{"jv-journal": true}) || anyLedger(map[string]bool{"gl-unpost": true}) {

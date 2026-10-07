@@ -156,7 +156,7 @@ func canListJournals(p map[string]bool, kind, status string) bool {
 
 // Reference masters every ledger user needs to fill a voucher (account, year and book pickers).
 func ledgerLookup(resource string) bool {
-	return resource == "accounts" || resource == "fiscal-years" || resource == "journal-books"
+	return resource == "accounts" || resource == "fiscal-years" || resource == "journal-books" || resource == gl.DepartmentKind || resource == gl.ProjectKind
 }
 
 func response(request microservice.IContext, data interface{}) error {

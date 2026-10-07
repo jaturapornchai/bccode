@@ -355,6 +355,8 @@ func TestStatementUnassignedIntegration(t *testing.T) {
 		}
 	}
 	// ตัวกรองสาขา/แผนก/โครงการของรายงานใช้กับยอดที่หลุดงบด้วย: รายการของสาขา B2 ไม่ปนในรายงานสาขา B1 และกลับกัน
+	f.ensureDimension(DepartmentKind, "D2")
+	f.ensureDimension(ProjectKind, "P2")
 	b2 := Journal{DocNo: "JV26-B2", Date: "2026-04-01", BookCode: "JV", FiscalYear: "2026", Description: "รับเงินเพิ่มทุน สาขาบางนา", Kind: "manual", BranchCode: "B2",
 		Lines: []Line{{AccountCode: "1000", Debit: Amount("40"), Credit: Amount("0"), DepartmentCode: "D2", ProjectCode: "P2"}, {AccountCode: "3000", Debit: Amount("0"), Credit: Amount("40"), DepartmentCode: "D2", ProjectCode: "P2"}}}
 	f.post(f.journal(f.run(Command{Resource: "journals", Action: "create", Journal: &b2}).ID))

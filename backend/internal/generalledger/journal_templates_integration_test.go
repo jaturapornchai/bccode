@@ -38,6 +38,8 @@ func rentTemplate() *Master {
 // A journal template is a Champ "รูปแบบรายการรายวัน": created from the screen, listed for the picker, never a voucher.
 func TestJournalTemplatesLifecycleIntegration(t *testing.T) {
 	f := newPGIntegrityFixture(t)
+	f.ensureDimension(DepartmentKind, "D01")
+	f.ensureDimension(ProjectKind, "P01")
 
 	// 1. created with the typed name trimmed and a system number; only the pattern is stored
 	first := f.run(Command{Resource: JournalTemplateKind, Action: "create", Master: rentTemplate()})

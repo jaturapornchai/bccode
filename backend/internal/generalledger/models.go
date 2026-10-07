@@ -55,6 +55,10 @@ type Account struct {
 	// บรรทัดรายวันของบัญชีนี้ระบุแผนก/โครงการได้เฉพาะเมื่อเปิดไว้ (CGLFrmJournal::OnCheckSeparate) — ไม่ใช่ "บังคับต้องใส่"
 	DepartSeparate  bool `json:"departseparate,omitempty" bson:"departseparate,omitempty"`
 	ProjectSeparate bool `json:"projectseparate,omitempty" bson:"projectseparate,omitempty"`
+	// DepartCodes/ProjectCodes - รหัสแผนก/โครงการที่บัญชีนี้ใช้ได้ (Champ BCAccSeparate.SeparateCode; ว่าง = ใช้ได้ทุกรหัสในทะเบียน
+	// ต่างจาก Champ ที่เปิดแยกแต่ไม่มีแถว = ห้ามทุกรหัส) ตั้งได้เฉพาะเมื่อเปิดตัวแยกคู่กัน
+	DepartCodes  []string `json:"departcodes,omitempty" bson:"departcodes,omitempty"`
+	ProjectCodes []string `json:"projectcodes,omitempty" bson:"projectcodes,omitempty"`
 }
 
 func (Account) CollectionName() string { return "chart_of_accounts" }
@@ -376,6 +380,12 @@ func (a Account) Validate() error {
 	if a.Level < 0 || a.Level > 12 {
 		return fmt.Errorf("ระดับบัญชีต้องอยู่ระหว่าง 1 ถึง 12")
 	}
+	if len(a.DepartCodes) > 0 && !a.DepartSeparate {
+		return fieldError("account_depart_codes_need_flag", "departcodes", "กำหนดแผนกที่ใช้ได้ต้องเปิด “แยกแผนก” ของบัญชีนี้ก่อน หรือล้างรายการแผนกที่เลือกไว้")
+	}
+	if len(a.ProjectCodes) > 0 && !a.ProjectSeparate {
+		return fieldError("account_project_codes_need_flag", "projectcodes", "กำหนดโครงการที่ใช้ได้ต้องเปิด “แยกโครงการ” ของบัญชีนี้ก่อน หรือล้างรายการโครงการที่เลือกไว้")
+	}
 	for _, n := range a.Names {
 		if utf8.RuneCountInString(n.Name) > accountNameMaxRunes {
 			return fieldError("account_name_too_long", "names", fmt.Sprintf("ชื่อบัญชียาวได้ไม่เกิน %d ตัวอักษร กรุณาย่อชื่อให้สั้นลง", accountNameMaxRunes))
@@ -500,15 +510,27 @@ func (j Journal) Validate(f FiscalYear, accounts map[string]Account) error {
 
 // checkLineSeparation - Champ CGLFrmJournal::OnCheckSeparate (glfrmjournal.cpp:639-686): บรรทัดที่ใส่แผนก/โครงการ
 // ต้องเป็นบัญชีที่ตั้ง "แยกแผนก"/"แยกโครงการ" ไว้ ไม่งั้นแจ้ง "ผังบัญชี … ไม่ได้กำหนดให้แยก…" (Chart_Of_Account + NOT_SEPARATE)
+// แล้วรหัสต้องมีและเปิดใช้งานในทะเบียน (dims) และถ้าบัญชีกำหนดรายการรหัสที่ใช้ได้ไว้ รหัสต้องอยู่ในรายการนั้น
+// (OnCheckComboData glfrmjournal.cpp:2913-2917; รายการว่าง = ทุกรหัส)
 // ตรวจเฉพาะตอนผู้ใช้บันทึกบรรทัด (Champ ตรวจตอนบันทึกใบใหม่) ไม่ตรวจตอนผ่านรายการ/กลับรายการ เพื่อไม่ให้การแก้ผังบัญชีทีหลังล็อกเอกสารเดิม
-func checkLineSeparation(lines []Line, accounts map[string]Account) error {
+func checkLineSeparation(lines []Line, accounts map[string]Account, dims dimensionRegisters) error {
 	for index, line := range lines {
 		account := accounts[line.AccountCode]
-		if strings.TrimSpace(line.DepartmentCode) != "" && !account.DepartSeparate {
-			return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกแผนก", index+1, line.AccountCode)
+		if code := strings.TrimSpace(line.DepartmentCode); code != "" {
+			if !account.DepartSeparate {
+				return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกแผนก", index+1, line.AccountCode)
+			}
+			if err := dims.checkLineCode(DepartmentKind, index, line.AccountCode, code, account.DepartCodes); err != nil {
+				return err
+			}
 		}
-		if strings.TrimSpace(line.ProjectCode) != "" && !account.ProjectSeparate {
-			return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกโครงการ", index+1, line.AccountCode)
+		if code := strings.TrimSpace(line.ProjectCode); code != "" {
+			if !account.ProjectSeparate {
+				return fmt.Errorf("บรรทัด %d: ผังบัญชี %s ไม่ได้กำหนดให้แยกโครงการ", index+1, line.AccountCode)
+			}
+			if err := dims.checkLineCode(ProjectKind, index, line.AccountCode, code, account.ProjectCodes); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -533,6 +555,8 @@ func normalizeCommandCodes(cmd *Command) {
 		a.AccountCode = NormalizeCode(a.AccountCode)
 		a.ParentAccountCode = NormalizeCode(a.ParentAccountCode)
 		a.AccountGroup = NormalizeCode(a.AccountGroup)
+		a.DepartCodes = normalizeCodeList(a.DepartCodes)
+		a.ProjectCodes = normalizeCodeList(a.ProjectCodes)
 		cmd.Account = &a
 	}
 	if cmd.FiscalYear != nil {

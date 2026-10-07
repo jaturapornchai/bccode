@@ -154,6 +154,9 @@ func (s *PostgresStore) validatePGAccount(ctx context.Context, tx *sql.Tx, scope
 	if err := next.Validate(); err != nil {
 		return err
 	}
+	if err := checkAccountDimensionCodes(ctx, tx, scope.Company, *next, old); err != nil {
+		return err
+	}
 	if next.AccountGroup != "" {
 		var exists bool
 		err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND kind='account-groups' AND code=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND COALESCE((payload->>'isactive')::boolean,false))`, scope.Company, next.AccountGroup).Scan(&exists)

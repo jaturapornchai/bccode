@@ -38,6 +38,22 @@ func (f *pgIntegrityFixture) dimension(kind, code string) Master {
 	return m
 }
 
+// ensureDimension registers a code a fixture journal names (a line may only use active codes of the register).
+func (f *pgIntegrityFixture) ensureDimension(kind, code string) {
+	f.t.Helper()
+	page, err := f.store.List(f.ctx, f.scope, kind, "", 1, 1, ListFilter{CodeFrom: code})
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	if len(page.Items) == 0 {
+		name := "ฝ่ายบริหารทั่วไป"
+		if kind == ProjectKind {
+			name = "โครงการปรับปรุงสำนักงานใหญ่"
+		}
+		f.createDimension(kind, code, name)
+	}
+}
+
 func (f *pgIntegrityFixture) createDimension(kind, code, name string) Result {
 	f.t.Helper()
 	return f.run(Command{Resource: kind, Action: "create", Master: &Master{Kind: kind, Code: code, Name: name, IsActive: true}})
@@ -190,5 +206,174 @@ func TestDimensionRegistersLifecycleIntegration(t *testing.T) {
 	// the two registers never see each other's records
 	if got, _ := f.dimensions(DepartmentKind, "P02", ""); len(got) != 0 {
 		t.Fatalf("project code leaked into departments: %v", got)
+	}
+}
+
+// updateAccount saves the fixture account with the given edit and keeps its version current.
+func (f *pgIntegrityFixture) updateAccount(code string, edit func(a *Account)) {
+	f.t.Helper()
+	a := f.accounts[code]
+	edit(&a)
+	r := f.run(Command{Resource: "accounts", Action: "update", ID: a.ID, Version: a.Version, Account: &a})
+	a.Version = r.Version
+	f.accounts[code] = a
+}
+
+func (f *pgIntegrityFixture) failAccountUpdate(code string, edit func(a *Account), wantCode, wantField string) *UserError {
+	f.t.Helper()
+	a := f.accounts[code]
+	edit(&a)
+	return f.failCode(Command{Resource: "accounts", Action: "update", ID: a.ID, Version: a.Version, Account: &a}, wantCode, wantField)
+}
+
+func (f *pgIntegrityFixture) deactivateDimension(kind, code string) {
+	f.t.Helper()
+	m := f.dimension(kind, code)
+	m.IsActive = false
+	f.run(Command{Resource: kind, Action: "update", ID: m.ID, Version: m.Version, Master: &m})
+}
+
+// A journal line may only name an active code of its register (Champ OnCheckComboData glfrmjournal.cpp:2913-2917) and,
+// when the account lists codes, one of them. An empty list means every code; the flag-off rule still comes first.
+func TestJournalLineDimensionCodesIntegration(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	for _, kind := range []string{DepartmentKind, ProjectKind} {
+		prefix, jsonField := "D", "lines[0].departmentcode"
+		wantNotFound, wantNotAllowed := "journal_line_depart_not_found", "journal_line_depart_not_allowed"
+		setList := func(a *Account, codes []string) { a.DepartCodes = codes }
+		if kind == ProjectKind {
+			prefix, jsonField = "P", "lines[0].projectcode"
+			wantNotFound, wantNotAllowed = "journal_line_project_not_found", "journal_line_project_not_allowed"
+			setList = func(a *Account, codes []string) { a.ProjectCodes = codes }
+		}
+		code := func(n string) string { return prefix + n }
+		f.createDimension(kind, code("01"), "ฝ่ายบัญชีและการเงิน")
+		f.createDimension(kind, code("02"), "ฝ่ายขาย")
+		f.createDimension(kind, code("03"), "ฝ่ายผลิต")
+		f.deactivateDimension(kind, code("03"))
+		doc := func(n string) string { return "JV-" + prefix + n }
+
+		// 1. a code that is not in the register, or is inactive, is refused with the line number and the code
+		unknown := dimensionJournal(kind, doc("U"), code("99"))
+		user := f.failCode(Command{Resource: "journals", Action: "create", Journal: &unknown}, wantNotFound, jsonField)
+		if len(user.Args) != 2 || user.Args[0] != "1" || user.Args[1] != code("99") || !strings.Contains(user.Message, "บรรทัด 1") {
+			t.Fatalf("%s unknown code error = %+v", kind, user)
+		}
+		inactive := dimensionJournal(kind, doc("I"), code("03"))
+		f.failCode(Command{Resource: "journals", Action: "create", Journal: &inactive}, wantNotFound, jsonField)
+
+		// 2. no list on the account = every active register code
+		anyA := dimensionJournal(kind, doc("A"), code("01"))
+		f.run(Command{Resource: "journals", Action: "create", Journal: &anyA})
+		anyB := dimensionJournal(kind, doc("B"), code("02"))
+		made := f.run(Command{Resource: "journals", Action: "create", Journal: &anyB})
+
+		// 3. a list narrows the codes: outside the list refused on create and on editing a draft, inside accepted
+		f.updateAccount("5000", func(a *Account) { setList(a, []string{code("01")}) })
+		outside := dimensionJournal(kind, doc("O"), code("02"))
+		user = f.failCode(Command{Resource: "journals", Action: "create", Journal: &outside}, wantNotAllowed, jsonField)
+		if len(user.Args) != 3 || user.Args[1] != "5000" || user.Args[2] != code("02") {
+			t.Fatalf("%s not-allowed error args = %+v", kind, user.Args)
+		}
+		inside := dimensionJournal(kind, doc("N"), code("01"))
+		f.run(Command{Resource: "journals", Action: "create", Journal: &inside})
+		draft := f.journal(made.ID) // saved earlier with the second code, before the list existed
+		f.failCode(Command{Resource: "journals", Action: "update", ID: draft.ID, Version: draft.Version, Journal: &draft}, wantNotAllowed, jsonField)
+		draft.Lines[0].DepartmentCode, draft.Lines[0].ProjectCode = "", ""
+		f.run(Command{Resource: "journals", Action: "update", ID: draft.ID, Version: draft.Version, Journal: &draft})
+
+		// 4. emptying the list opens the account to every code again
+		f.updateAccount("5000", func(a *Account) { setList(a, nil) })
+		again := dimensionJournal(kind, doc("E"), code("02"))
+		f.run(Command{Resource: "journals", Action: "create", Journal: &again})
+	}
+
+	// 5. the flag rule still comes first: a registered code on an account that does not separate is refused as before
+	f.updateAccount("5000", func(a *Account) { a.DepartSeparate, a.ProjectSeparate = false, false })
+	flagOff := dimensionJournal(DepartmentKind, "JV-OFF", "D01")
+	if _, err := f.execute(f.scope, Command{Resource: "journals", Action: "create", Journal: &flagOff}); err == nil || err.Error() != "บรรทัด 1: ผังบัญชี 5000 ไม่ได้กำหนดให้แยกแผนก" {
+		t.Fatalf("flag off with a registered department: %v", err)
+	}
+}
+
+// A saved journal pattern is held to the same register rules as a voucher line.
+func TestJournalTemplateDimensionCodesIntegration(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	f.createDimension(DepartmentKind, "D01", "ฝ่ายบัญชีและการเงิน")
+	f.createDimension(ProjectKind, "P01", "โครงการก่อสร้างโรงงานแห่งที่สอง")
+	f.run(Command{Resource: JournalTemplateKind, Action: "create", Master: rentTemplate()})
+	unknown := rentTemplate()
+	unknown.Template.Lines[0].DepartmentCode = "D99"
+	f.failCode(Command{Resource: JournalTemplateKind, Action: "create", Master: unknown}, "journal_line_depart_not_found", "lines[0].departmentcode")
+	f.updateAccount("5000", func(a *Account) { a.ProjectCodes = []string{"P01"} })
+	f.createDimension(ProjectKind, "P02", "โครงการปรับปรุงคลังสินค้า")
+	outside := rentTemplate()
+	outside.Template.Lines[0].ProjectCode = "P02"
+	f.failCode(Command{Resource: JournalTemplateKind, Action: "create", Master: outside}, "journal_line_project_not_allowed", "lines[0].projectcode")
+}
+
+// The allowed-code lists of an account (Champ BCAccSeparate): only with the matching flag, only register codes,
+// stored trimmed / unique / sorted, and a code a list still names can be neither deleted nor recoded.
+func TestAccountDimensionCodeListsIntegration(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	for _, kind := range []string{DepartmentKind, ProjectKind} {
+		prefix, listField, wantNeedFlag, wantNotFound := "D", "departcodes", "account_depart_codes_need_flag", "account_depart_code_not_found"
+		setList := func(a *Account, codes []string) { a.DepartCodes = codes }
+		getList := func(a Account) []string { return a.DepartCodes }
+		setFlag := func(a *Account, on bool) { a.DepartSeparate = on }
+		if kind == ProjectKind {
+			prefix, listField, wantNeedFlag, wantNotFound = "P", "projectcodes", "account_project_codes_need_flag", "account_project_code_not_found"
+			setList = func(a *Account, codes []string) { a.ProjectCodes = codes }
+			getList = func(a Account) []string { return a.ProjectCodes }
+			setFlag = func(a *Account, on bool) { a.ProjectSeparate = on }
+		}
+		code := func(n string) string { return prefix + n }
+		f.createDimension(kind, code("01"), "ฝ่ายบัญชีและการเงิน")
+		f.createDimension(kind, code("02"), "ฝ่ายขาย")
+		f.createDimension(kind, code("03"), "ฝ่ายผลิต")
+		f.deactivateDimension(kind, code("03"))
+
+		// 1. a list needs the matching flag (reject, not silently dropped)
+		f.failAccountUpdate("1000", func(a *Account) { setFlag(a, false); setList(a, []string{code("01")}) }, wantNeedFlag, listField)
+
+		// 2. every code must be in the register and active
+		user := f.failAccountUpdate("1000", func(a *Account) { setList(a, []string{code("01"), code("99")}) }, wantNotFound, listField)
+		if len(user.Args) != 1 || user.Args[0] != code("99") {
+			t.Fatalf("%s unknown list code args = %+v", kind, user.Args)
+		}
+		f.failAccountUpdate("1000", func(a *Account) { setList(a, []string{code("03")}) }, wantNotFound, listField)
+
+		// 3. stored trimmed, unique and sorted
+		f.updateAccount("1000", func(a *Account) { setList(a, []string{" " + code("02"), code("01"), code("02"), ""}) })
+		var stored Account
+		raw, err := f.store.Get(f.ctx, f.scope, "accounts", f.accounts["1000"].ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = json.Unmarshal(raw, &stored); err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.Join(getList(stored), ","); got != code("01")+","+code("02") {
+			t.Fatalf("%s stored list = %q", kind, got)
+		}
+
+		// 4. a code deactivated after it was listed stays valid for the account that already lists it
+		f.deactivateDimension(kind, code("02"))
+		f.updateAccount("1000", func(a *Account) {
+			a.Names = []Name{{Code: "th", Name: "เงินสดและเงินฝากธนาคาร"}}
+		})
+
+		// 5. a listed code cannot be deleted or recoded; once the list drops it, it can
+		listed := f.dimension(kind, code("01"))
+		f.failCode(Command{Resource: kind, Action: "delete", ID: listed.ID, Version: listed.Version}, "dimension_in_use_delete", "code")
+		recoded := listed
+		recoded.Code = code("11")
+		f.failCode(Command{Resource: kind, Action: "update", ID: listed.ID, Version: listed.Version, Master: &recoded}, "dimension_in_use_code", "code")
+		f.updateAccount("1000", func(a *Account) { setList(a, nil) })
+		listed = f.dimension(kind, code("01"))
+		f.run(Command{Resource: kind, Action: "delete", ID: listed.ID, Version: listed.Version})
+		if got, _ := f.dimensions(kind, code("01"), ""); len(got) != 0 {
+			t.Fatalf("%s code unused by any list not deleted: %v", kind, got)
+		}
 	}
 }

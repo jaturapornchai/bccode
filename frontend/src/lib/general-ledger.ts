@@ -10,6 +10,9 @@ export type GLAccount = GLIdentity & {
   level?: number;
   departseparate?: boolean;
   projectseparate?: boolean;
+  /** Codes the account may use per register (Champ BCAccSeparate.SeparateCode); empty or absent = every code. Only with the matching flag on. */
+  departcodes?: string[];
+  projectcodes?: string[];
 };
 /** งบประมาณรายเดือน (resource "budgets", ADR 2026-09-25-gl-monthly-budget): เงินเป็นข้อความทศนิยม 12 งวดต่อบัญชี */
 export type GLBudgetLine = { accountcode: string; accountname?: string; periods: string[]; total?: string };
@@ -147,6 +150,37 @@ export const DIMENSION_RESOURCES = ["departments", "projects"] as const;
 export type GLDimensionResource = (typeof DIMENSION_RESOURCES)[number];
 export type GLDimension = GLIdentity & { code: string; name: string; isactive: boolean };
 export function isDimensionResource(resource: string): resource is GLDimensionResource { return (DIMENSION_RESOURCES as readonly string[]).includes(resource); }
+/** Active, not deleted register entries ordered by code (the journal and the account pickers offer nothing else). */
+export function activeDimensions(list: GLDimension[]): GLDimension[] {
+  return list.filter((item) => item.isactive && !item.isdeleted).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }));
+}
+/** The allowed-code list an account keeps for a register; empty = every code. */
+export function accountDimensionCodes(account: Pick<GLAccount, "departcodes" | "projectcodes"> | undefined, resource: GLDimensionResource): string[] {
+  const list = resource === "departments" ? account?.departcodes : account?.projectcodes;
+  return Array.isArray(list) ? list : [];
+}
+/** Trimmed, unique, sorted codes — the shape the backend stores. */
+export function normalizeDimensionCodes(codes: unknown): string[] {
+  if (!Array.isArray(codes)) return [];
+  return [...new Set(codes.map((code) => String(code ?? "").trim()).filter(Boolean))].sort();
+}
+/** Options for one journal line: active register codes the account allows, plus the code the line already holds when it is no longer offered (shown so it can be read and replaced). */
+export function dimensionOptions(register: GLDimension[], allowed: string[], current: string): GLDimension[] {
+  const offered = activeDimensions(register).filter((item) => allowed.length === 0 || allowed.includes(item.code));
+  const held = current.trim();
+  if (!held || offered.some((item) => item.code === held)) return offered;
+  return [...offered, { code: held, name: "", isactive: false }];
+}
+/** Champ OnCheckComboData (glfrmjournal.cpp:2812-3056): after the account of a line changes, a department or project the new account
+ *  does not allow is cleared — flag off, or a code outside the account's list. Returns only the fields to clear. */
+export function lineDimensionsAfterAccountChange(line: Pick<GLLine, "departmentcode" | "projectcode">, account: GLAccount | undefined): Partial<Pick<GLLine, "departmentcode" | "projectcode">> {
+  const patch: Partial<Pick<GLLine, "departmentcode" | "projectcode">> = {};
+  const depart = line.departmentcode?.trim() ?? "", project = line.projectcode?.trim() ?? "";
+  const departList = accountDimensionCodes(account, "departments"), projectList = accountDimensionCodes(account, "projects");
+  if (depart && (!account?.departseparate || (departList.length > 0 && !departList.includes(depart)))) patch.departmentcode = "";
+  if (project && (!account?.projectseparate || (projectList.length > 0 && !projectList.includes(project)))) patch.projectcode = "";
+  return patch;
+}
 /** create/update payload of a department or project: only the contract fields, trimmed — nothing from the other masters. */
 export function dimensionPayload(record: Pick<GLDimension, "id" | "version" | "code" | "name" | "isactive">): GLDimension {
   return { ...(record.id ? { id: record.id } : {}), ...(record.version ? { version: record.version } : {}), code: record.code.trim(), name: record.name.trim(), isactive: record.isactive ?? true };
