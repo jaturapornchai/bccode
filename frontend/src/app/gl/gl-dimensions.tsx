@@ -4,45 +4,27 @@ import { useCallback, useState } from "react";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { DIMENSION_RESOURCES, fillText, type GLDimension, type GLDimensionResource, type GLPage, type GLTextFn } from "@/lib/general-ledger";
+import { DIMENSION_RESOURCES, fillText, type GLDimension, type GLDimensionResource, type GLTextFn } from "@/lib/general-ledger";
 import { glRequest } from "@/lib/general-ledger-api";
 import { cn } from "@/lib/utils";
 import { Field, Notice, actionClass, control, useGLLanguage, useGLText } from "./gl-common";
 import { TemplateModal as Modal } from "./gl-journal-templates";
 import { GLMasters } from "./gl-masters";
+import { codeRangeLines, codeRangePrintRows } from "./gl-print-conditions";
 import { GLDimensionsPrint, printCompanyName, useGLPrint } from "./gl-print";
 
 // Departments and projects share one two-tab screen: Champ edits both in its generic code-setup form (myfrmbasemaster.cpp:223,242)
 // and prints them from two report dialogs (5538 / 5521) whose only condition is a code range — "from" alone means that exact code,
 // "to" is read only together with "from" (GLRepDeaprtmentDlg.cpp:87-98). The backend list endpoint does the filtering and the ordering.
 
-const PRINT_PAGE_SIZE = 500;
-const PRINT_MAX_PAGES = 20;
-
-/** Rows of a register in print order. `request` is injectable for tests; `complete` is false when the backend reported more rows than were read. */
-export async function dimensionPrintRows(kind: GLDimensionResource, from: string, to: string, request: <T>(path: string) => Promise<T> = glRequest): Promise<{ rows: GLDimension[]; complete: boolean }> {
-  const codefrom = from.trim(), codeto = codefrom ? to.trim() : "";
-  const rows: GLDimension[] = [];
-  let total = 0;
-  for (let page = 1; page <= PRINT_MAX_PAGES; page += 1) {
-    const query = new URLSearchParams({ page: String(page), limit: String(PRINT_PAGE_SIZE), ...(codefrom ? { codefrom } : {}), ...(codeto ? { codeto } : {}) });
-    const result = await request<GLPage<GLDimension>>(`${kind}?${query}`);
-    const items = result.items ?? [];
-    total = result.total;
-    rows.push(...items);
-    if (rows.length >= total || items.length === 0) break;
-  }
-  return { rows, complete: rows.length >= total };
+/** Rows of a register in print order (the shared code-range loader of gl-print-conditions.tsx). `request` is injectable for tests; `complete` is false when the backend reported more rows than were read. */
+export function dimensionPrintRows(kind: GLDimensionResource, from: string, to: string, request: <T>(path: string) => Promise<T> = glRequest): Promise<{ rows: GLDimension[]; complete: boolean }> {
+  return codeRangePrintRows<GLDimension>(kind, from, to, request);
 }
 
-/** Print-condition lines of the report footer: nothing for the whole register, "equals" for one code, a range for from + to. */
+/** Print-condition line of the report footer: nothing for the whole register, "equals" for one code, a range for from + to. */
 export function dimensionConditionLines(kind: GLDimensionResource, from: string, to: string, tr: GLTextFn): string[] {
-  const codefrom = from.trim(), codeto = to.trim();
-  if (!codefrom) return [];
-  const noun = kind === "departments" ? tr("gl_department", "แผนก") : tr("gl_project", "โครงการ");
-  return [codeto
-    ? fillText(tr("gl_dimension_cond_range", "จาก{0} {1} ถึง {2}"), noun, codefrom, codeto)
-    : fillText(tr("gl_dimension_cond_equal", "จาก{0} เท่ากับ {1}"), noun, codefrom)];
+  return codeRangeLines(kind === "departments" ? tr("gl_department", "แผนก") : tr("gl_project", "โครงการ"), from, to, tr);
 }
 
 function PrintDialog({ kind, print, onClose }: { kind: GLDimensionResource; print: ReturnType<typeof useGLPrint>["print"]; onClose: () => void }) {

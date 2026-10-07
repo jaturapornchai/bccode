@@ -16,8 +16,8 @@ import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { GLVoucherPrint, ReportPrintConditions, ReportPrintHeading, printCompanyName, printedAtText, printOrientation, printUserName, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
 
 // accountfrom/accountto = Champ "จากรหัสบัญชี–ถึงรหัสบัญชี"; ตัวเลือกเป็น "true" หรือ "" (ส่งเป็น query ตรง ๆ)
-export type ReportFilters = { fiscalyear: string; from: string; to: string; periodfrom: string; periodto: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string; docnofrom: string; docnoto: string; orderby: string; bydepartment: string; byproject: string; dimtotals: string };
-export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", periodfrom: "", periodto: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "", docnofrom: "", docnoto: "", orderby: "", bydepartment: "", byproject: "", dimtotals: "" };
+export type ReportFilters = { fiscalyear: string; from: string; to: string; periodfrom: string; periodto: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; budgetcodeto: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string; docnofrom: string; docnoto: string; orderby: string; bydepartment: string; byproject: string; dimtotals: string };
+export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", periodfrom: "", periodto: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", budgetcodeto: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "", docnofrom: "", docnoto: "", orderby: "", bydepartment: "", byproject: "", dimtotals: "" };
 // ตัวเลือกแบบ Champ ที่แต่ละรายงานรับ (docs/kms/champ/09-gl.md §5.2-5.6) — รายงานอื่นไม่ส่ง เพื่อให้ URL ตรงกับสิ่งที่จอแสดง
 // แยกแผนก / แยกโครงการ / มียอดรวม (Champ 5506/5499/5535): หนึ่งแถวต่อบัญชี × รหัสมิติ — แยกประเภทใช้เฉพาะแบบสรุป
 const BREAKDOWN_KEYS: readonly (keyof ReportFilters)[] = ["bydepartment", "byproject", "dimtotals"];
@@ -28,8 +28,9 @@ const REPORT_OPTIONS: Readonly<Record<string, readonly (keyof ReportFilters)[]>>
   trialbalance: ["hidezero", "controltotals", "gross", ...BREAKDOWN_KEYS], // gross = Champ 5507 (trial balance 2) as an option of this screen, not a separate menu
   workingpaper: ["hidezero", "controltotals", ...BREAKDOWN_KEYS],
   budgetcomparison: ["budgetcode"],
+  budgetdetail: ["budgetcode", "budgetcodeto"], // Champ 5525 print conditions: budget code range (from alone = that code)
 };
-const OPTION_KEYS: readonly (keyof ReportFilters)[] = ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "docnofrom", "docnoto", "orderby", ...BREAKDOWN_KEYS];
+const OPTION_KEYS: readonly (keyof ReportFilters)[] = ["budgetcode", "budgetcodeto", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "docnofrom", "docnoto", "orderby", ...BREAKDOWN_KEYS];
 // periodfrom/periodto = รหัสงวดที่เลือกบนจอ (Champ "พิมพ์จากงวด") ใช้แสดงหัวรายงานเท่านั้น — backend รับเฉพาะ from/to ที่แปลงจากงวดแล้ว จึงไม่ส่งไป
 const PERIOD_PICK_KEYS: readonly (keyof ReportFilters)[] = ["periodfrom", "periodto"];
 export function reportOptionOn(name: string, filters: ReportFilters, key: keyof ReportFilters) {

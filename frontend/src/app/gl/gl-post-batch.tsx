@@ -5,13 +5,14 @@ import { AlertTriangle, CheckCircle2, ListChecks, Send, SquareCheck } from "luci
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { activeJournalBooks, amountString, displayAmountUnits, fillText, findJournalBook, formatAmount, journalBookName, type GLPostBatchInput, type GLPostCheck, type GLPostCheckRow } from "@/lib/general-ledger";
+import { activeJournalBooks, amountString, displayAmountUnits, fillText, findJournalBook, formatAmount, journalBookName, type GLPostBatchInput, type GLPostCheck, type GLPostCheckRow, type GLTextFn } from "@/lib/general-ledger";
 import { commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { formatAppDate } from "@/lib/date-time";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Combobox, Field, Notice, actionClass, control, panel, useGLCommand, useGLLanguage, useGLText, useReferences } from "./gl-common";
 import { GLJournals } from "./gl-journals";
+import { JournalDrillDownModal } from "./gl-reports";
 
 /** ตัวกรองของจอผ่านรายการแบบชุด (Champ 5512): สมุดรายวัน วันที่ จาก–ถึง เลขที่ จาก–ถึง — ช่องว่าง = ไม่จำกัด */
 export type PostBatchFilter = { bookcode: string; datefrom: string; dateto: string; docnofrom: string; docnoto: string };
@@ -65,6 +66,10 @@ export function postBatchSummary(rows: readonly GLPostCheckRow[], selected: Read
   }
   return { checked: rows.length, ready, issues: rows.length - ready, selected: chosen, debit: debit === null ? "" : amountString(debit, 2) };
 }
+/** ช่อง "ที่มา" (Champ 5512): ระบบที่นำเข้าใบสำคัญ — ใบที่คีย์ในบัญชีแยกประเภทเองบอกว่าคีย์เอง */
+export function postBatchSourceText(row: Pick<GLPostCheckRow, "sourcesystem">, tr: GLTextFn): string {
+  return row.sourcesystem?.trim() || tr("gl_post_batch_source_manual", "คีย์ในบัญชีแยกประเภท");
+}
 export type PostBatchShortcut = "check" | "select-all" | "post";
 /** ปุ่มลัดแบบ Champ: F7 ตรวจสอบ · F2 เลือกทั้งหมด · F11 ผ่านรายการ */
 export function postBatchShortcut(key: string): PostBatchShortcut | null {
@@ -104,6 +109,7 @@ function PostBatchPanel() {
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
+  const [viewing, setViewing] = useState<{ id: string; docno: string } | null>(null);
   const rootRef = useRef<HTMLElement>(null), checkSeq = useRef(0);
   const rows = useMemo(() => check?.rows ?? [], [check]);
   const summary = useMemo(() => postBatchSummary(rows, selected), [rows, selected]);
@@ -154,7 +160,7 @@ function PostBatchPanel() {
   }, [working, rows, selected, confirm, execute, remark, signatories, runCheck, tr]);
 
   // ปุ่มลัด F7/F2/F11 ทำงานเฉพาะเมื่อจอนี้มองเห็นอยู่ (แท็บเมนูอื่นที่ซ่อนอยู่ไม่รับ) และไม่มีกล่องยืนยันเปิดอยู่
-  const dialogOpen = confirmationDialog !== null;
+  const dialogOpen = confirmationDialog !== null || viewing !== null;
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const shortcut = postBatchShortcut(event.key);
@@ -201,7 +207,7 @@ function PostBatchPanel() {
     {!check && !checking && <Notice text={tr("gl_post_batch_hint", "การผ่านรายการรายวัน: กำหนดเงื่อนไข แล้วกด ประมวลผล (F7) เพื่อค้นหารายการ ทำเครื่องหมายถูกในแถวที่ต้องการ จากนั้นกด บันทึกรายการ (F11) เพื่อยืนยันการผ่านรายการ (ระบบตรวจ เดบิตเท่ากับเครดิต งวดยังไม่ปิด และผังบัญชีลงรายการได้ ให้ทุกใบ)")} />}
     {check?.more && <Notice text={fillText(tr("gl_post_batch_more", "แสดงเพียง {0} ใบแรก กรุณากำหนดช่วงวันที่หรือเลขที่ให้แคบลง แล้วตรวจสอบอีกครั้ง"), check.limit.toLocaleString("th-TH"))} />}
     {check && <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border">
-      <table className="w-full min-w-[880px] border-collapse text-[0.95rem]">
+      <table className="w-full min-w-[960px] border-collapse text-[0.95rem]">
         <thead className="sticky top-0 z-10 bg-muted text-left">
           <tr className="[&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold">
             <th className="w-12"><span className="sr-only">{tr("gl_select", "เลือก")}</span></th>
@@ -210,18 +216,21 @@ function PostBatchPanel() {
             <th>{tr("gl_document_no", "เลขที่เอกสาร")}</th>
             <th>{tr("gl_description", "คำอธิบาย")}</th>
             <th className="text-right">{tr("gl_amount", "จำนวนเงิน")}</th>
+            <th>{tr("gl_post_batch_source", "ที่มา")}</th>
             <th className="min-w-[16rem]">{tr("gl_status", "สถานะ")}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_post_batch_none", "ไม่พบใบร่างตามเงื่อนไขนี้")}</td></tr>}
-          {rows.map((row) => <tr key={row.id} className={cn("border-t border-border align-top [&_td]:px-3 [&_td]:py-2", row.ok ? "hover:bg-muted/40" : "bg-destructive/5")} data-post-check={row.ok ? "ok" : "issue"}>
+          {rows.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_post_batch_none", "ไม่พบใบร่างตามเงื่อนไขนี้")}</td></tr>}
+          {rows.map((row) => <tr key={row.id} className={cn("border-t border-border align-top [&_td]:px-3 [&_td]:py-2", row.ok ? "hover:bg-muted/40" : "bg-destructive/5")} data-post-check={row.ok ? "ok" : "issue"}
+            onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest("button,input,[role=checkbox]")) setViewing({ id: row.id, docno: row.docno }); }}>
             <td><Checkbox checked={row.ok && selected.has(row.id)} disabled={!row.ok || working} onCheckedChange={(checked) => toggleRow(row.id, checked)} aria-label={fillText(tr("gl_post_batch_select_row", "เลือกเอกสาร {0}"), row.docno)} /></td>
             <td className="whitespace-nowrap">{bookLabel(row.bookcode)}</td>
             <td className="whitespace-nowrap">{row.date ? formatAppDate(row.date, language) : "-"}</td>
-            <td className="whitespace-nowrap font-medium">{row.docno}</td>
+            <td className="whitespace-nowrap font-medium"><button type="button" className="min-h-0! rounded-md p-0! font-medium text-primary underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-ring" title={fillText(tr("gl_post_batch_view_voucher", "ดูรายการบัญชีของเอกสาร {0}"), row.docno)} aria-label={fillText(tr("gl_post_batch_view_voucher", "ดูรายการบัญชีของเอกสาร {0}"), row.docno)} onClick={() => setViewing({ id: row.id, docno: row.docno })}>{row.docno}</button></td>
             <td className="[overflow-wrap:anywhere]">{row.description || "-"}</td>
             <td className="whitespace-nowrap text-right tabular-nums">{formatAmount(row.debit ?? "")}</td>
+            <td className="[overflow-wrap:anywhere]">{postBatchSourceText(row, tr)}</td>
             <td>{row.ok
               ? <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary"><CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />{tr("gl_post_batch_ready", "พร้อมผ่านรายการ")}</span>
               : <span className="inline-flex items-start gap-1.5 text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span className="leading-relaxed"><span className="font-semibold">{tr("gl_post_batch_issue", "ติดปัญหา")}:</span> {row.message || row.code || "-"}</span></span>}</td>
@@ -233,6 +242,7 @@ function PostBatchPanel() {
       <span>{fillText(tr("gl_post_batch_summary", "ตรวจแล้ว {0} ใบ · พร้อมผ่าน {1} ใบ · ติดปัญหา {2} ใบ · เลือกไว้ {3} ใบ"), summary.checked, summary.ready, summary.issues, summary.selected)}</span>
       <span className="font-semibold">{tr("gl_post_batch_selected_debit", "ยอดเดบิตที่เลือก")}: <span className="tabular-nums">{summary.debit ? formatAmount(summary.debit) : "-"}</span></span>
     </div>}
+    <JournalDrillDownModal docno={viewing?.docno ?? null} journalId={viewing?.id ?? null} open={viewing !== null} onClose={() => setViewing(null)} books={refs.books} />
     {confirmationDialog}
   </section>;
 }

@@ -157,6 +157,9 @@ func (s *PostgresStore) validatePGAccount(ctx context.Context, tx *sql.Tx, scope
 	if err := checkAccountDimensionCodes(ctx, tx, scope.Company, *next, old); err != nil {
 		return err
 	}
+	if err := checkDuplicateAccountName(ctx, tx, scope.Company, *next, old); err != nil {
+		return err
+	}
 	if old != nil && (next.AccountType != old.AccountType || next.NormalBalance != old.NormalBalance || next.IsCash != old.IsCash || next.ParentAccountCode != old.ParentAccountCode || next.AllowPosting != old.AllowPosting) {
 		var used bool
 		err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_lines WHERE company=$1 AND account_code=$2)`, scope.Company, old.AccountCode).Scan(&used)
@@ -238,11 +241,11 @@ func (s *PostgresStore) validatePGAccount(ctx context.Context, tx *sql.Tx, scope
 func (s *PostgresStore) deletePGAccountGuard(ctx context.Context, tx *sql.Tx, scope Scope, code string) error {
 	var used bool
 	// Budget lines live in gl_budget_lines (budget.sql), outside gl_records, so they are checked separately.
-	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_budget_lines WHERE company=$1 AND account_code=$2) OR EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ((kind='journals' AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'lines','[]'::jsonb)) l WHERE l->>'accountcode'=$2)) OR payload->>'parentaccountcode'=$2 OR payload->>'accountcode'=$2 AND kind<>'accounts' OR payload->>'profitlossaccount'=$2 OR payload->>'retainedearningsaccount'=$2 OR payload->>'itemaccount'=$2 OR payload->>'costaccount'=$2 OR payload->>'revenueaccount'=$2 OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(payload->'rules','[]'::jsonb)) r WHERE r->>'accountcode'=$2)))`+
-		// รูปแบบงบการเงิน: เฉพาะรหัสในตำแหน่งที่เครื่องคำนวณงบอ่านจริง (รวมคอลัมน์ของงบส่วนของผู้ถือหุ้น) — รหัสที่ค้างอยู่ในบรรทัดชนิดอื่นไม่กันการลบ
+	// รูปแบบงบการเงิน: เฉพาะรหัสในตำแหน่งที่เครื่องคำนวณงบอ่านจริง (รวมคอลัมน์ของงบส่วนของผู้ถือหุ้น) — รหัสที่ค้างอยู่ในบรรทัดชนิดอื่นไม่กันการลบ
+	// The gl_records predicates are shared with the "references" panel (account_references.go) so both always agree.
+	err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM gl_budget_lines WHERE company=$1 AND account_code=$2) OR EXISTS(SELECT 1 FROM gl_records WHERE company=$1 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND `+accountReferencedByRecord+`)`+
 		` OR EXISTS(SELECT 1 FROM gl_records t WHERE t.company=$1 AND t.kind='statement-templates' AND NOT COALESCE((t.payload->>'isdeleted')::boolean,false) AND `+statementTemplateReadsAccount+`)`+
-		// กลุ่มผังบัญชี: รหัสเดี่ยวในรายการของกลุ่ม (ปลายช่วงไม่ใช่สมาชิก — ช่วงเทียบเป็นตัวอักษรจึงไม่ผูกกับตัวบัญชี)
-		` OR EXISTS(SELECT 1 FROM gl_records g WHERE g.company=$1 AND g.kind='account-groups' AND NOT COALESCE((g.payload->>'isdeleted')::boolean,false) AND EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(g.payload->'accountentries','[]'::jsonb)) e WHERE e->>'from'=$2 AND COALESCE(e->>'to','')=''))`, scope.Company, code).Scan(&used)
+		` OR EXISTS(SELECT 1 FROM gl_records t WHERE t.company=$1 AND t.kind='account-groups' AND NOT COALESCE((t.payload->>'isdeleted')::boolean,false) AND `+accountGroupListsAccount+`)`, scope.Company, code).Scan(&used)
 	if err != nil {
 		return err
 	}

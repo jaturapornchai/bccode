@@ -90,6 +90,8 @@ type PostCheckRow struct {
 	OK          bool   `json:"ok"`
 	Code        string `json:"code,omitempty"`
 	Message     string `json:"message,omitempty"`
+	// SourceSystem = the "ที่มา" column of Champ 5512: the system the voucher was imported from, empty when it was keyed in the GL itself.
+	SourceSystem string `json:"sourcesystem,omitempty"`
 }
 
 func validatePostBatchFilter(f PostBatchInput) error {
@@ -138,7 +140,7 @@ func (s *PostgresStore) checkPostBatch(ctx context.Context, scope Scope, cmd Com
 	}
 	now := time.Now().UTC()
 	for _, j := range journals {
-		row := PostCheckRow{ID: j.ID, Version: j.Version, DocNo: j.DocNo, Date: j.Date, BookCode: j.BookCode, FiscalYear: j.FiscalYear, BranchCode: j.BranchCode, Description: j.Description}
+		row := PostCheckRow{ID: j.ID, Version: j.Version, DocNo: j.DocNo, Date: j.Date, BookCode: j.BookCode, FiscalYear: j.FiscalYear, BranchCode: j.BranchCode, Description: j.Description, SourceSystem: j.SourceSystem}
 		debit, credit := decimal.Zero, decimal.Zero
 		for _, line := range j.Lines {
 			debit, credit = debit.Add(line.Debit.Decimal()), credit.Add(line.Credit.Decimal())

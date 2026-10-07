@@ -53,6 +53,7 @@ type ReportQuery struct {
 	ProjectCode    string
 	BookCode       string
 	BudgetCode     string
+	BudgetCodeTo   string // budgetdetail: ถึงรหัสงบประมาณ — ว่าง = เฉพาะรหัสใน BudgetCode (Champ 5525 GLRepBudgetDlg.cpp:244-251)
 	Template       string // statement: รหัสรูปแบบงบการเงิน
 	// ตัวเลือกรายงานแบบ Champ (docs/kms/champ/09-gl.md §5.3-5.6) — รายงานที่ไม่รู้จักตัวเลือกนั้นไม่สนใจค่า
 	HideOpening   bool // ledger: ไม่แสดงยอดยกมา — ยอดคงเหลือสะสมเริ่มจากรายการในช่วง (Champ 5534)

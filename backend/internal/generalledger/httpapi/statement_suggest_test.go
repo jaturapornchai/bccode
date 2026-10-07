@@ -8,12 +8,12 @@ import (
 
 // คำสั่งที่คำนวณอย่างเดียว (ไม่บันทึก) ใช้แค่สิทธิ์เปิดจอ — คำสั่งอื่นของ resource เดียวกันยังต้องมีสิทธิ์แก้ไข
 func TestCalculationOnlyCommands(t *testing.T) {
-	for _, cmd := range []gl.Command{{Resource: "budgets", Action: "spread"}, {Resource: "statement-templates", Action: "suggest"}} {
+	for _, cmd := range []gl.Command{{Resource: "budgets", Action: "spread"}, {Resource: "statement-templates", Action: "suggest"}, {Resource: "accounts", Action: "references"}} {
 		if !calculationOnly(cmd) {
 			t.Fatalf("%s/%s must be calculation only", cmd.Resource, cmd.Action)
 		}
 	}
-	for _, cmd := range []gl.Command{{Resource: "statement-templates", Action: "update"}, {Resource: "statement-templates", Action: "create"}, {Resource: "budgets", Action: "suggest"}, {Resource: "accounts", Action: "suggest"}} {
+	for _, cmd := range []gl.Command{{Resource: "statement-templates", Action: "update"}, {Resource: "statement-templates", Action: "create"}, {Resource: "budgets", Action: "suggest"}, {Resource: "accounts", Action: "suggest"}, {Resource: "accounts", Action: "update"}, {Resource: "journals", Action: "references"}} {
 		if calculationOnly(cmd) {
 			t.Fatalf("%s/%s must need its normal permission", cmd.Resource, cmd.Action)
 		}

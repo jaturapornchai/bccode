@@ -10,9 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
-func (f *pgIntegrityFixture) draftOn(doc, date string) Journal {
+func (f *pgIntegrityFixture) draftOn(doc, date string) Journal { return f.draftFrom(doc, date, "") }
+
+// draftFrom creates a draft; a non-empty system makes it a voucher imported from that system (source type 2 + record id), like the import API does.
+func (f *pgIntegrityFixture) draftFrom(doc, date, system string) Journal {
 	f.t.Helper()
 	j := Journal{DocNo: doc, Date: date, BookCode: "JV", FiscalYear: date[:4], Description: "ขายวัสดุก่อสร้าง รับชำระเงินสดหน้าร้าน", Kind: "manual", Lines: []Line{{AccountCode: "1000", Debit: Amount("100"), Credit: Amount("0")}, {AccountCode: "4000", Debit: Amount("0"), Credit: Amount("100")}}}
+	if system != "" {
+		j.SourceType, j.SourceSystem, j.SourceRecordID = 2, system, "SRC-"+doc
+	}
 	r := f.run(Command{Resource: "journals", Action: "create", Journal: &j})
 	return f.journal(r.ID)
 }
@@ -88,7 +94,7 @@ func (f *pgIntegrityFixture) postCheck(filter PostBatchInput) PostCheck {
 func TestPostBatchCheckAllOrNothingAndReplay(t *testing.T) {
 	f := newPGIntegrityFixture(t)
 	a := f.draftOn("JV001", "2026-01-05")
-	b := f.draftOn("JV002", "2026-01-06")
+	b := f.draftFrom("JV002", "2026-01-06", "pos-branch") // imported voucher: the Source column shows its system
 	bad := f.draftOn("JV003", "2026-01-07")
 	// Only a legacy/tampered row can be unbalanced — the save path refuses it.
 	if _, err := f.db.Exec(`UPDATE gl_records SET payload=jsonb_set(payload,'{lines,0,debit}','"150"') WHERE company='C' AND kind='journals' AND id=$1`, bad.ID); err != nil {
@@ -100,7 +106,7 @@ func TestPostBatchCheckAllOrNothingAndReplay(t *testing.T) {
 	if len(check.Rows) != 3 || check.More || check.Limit != PostBatchMaxJournals {
 		t.Fatalf("want 3 rows in January, got %+v", check)
 	}
-	if !check.Rows[0].OK || !check.Rows[1].OK || check.Rows[0].DocNo != "JV001" || check.Rows[0].Debit != "100" || check.Rows[0].Version != a.Version {
+	if !check.Rows[0].OK || !check.Rows[1].OK || check.Rows[0].DocNo != "JV001" || check.Rows[0].Debit != "100" || check.Rows[0].Version != a.Version || check.Rows[0].SourceSystem != "" || check.Rows[1].SourceSystem != "pos-branch" {
 		t.Fatalf("good rows wrong: %+v", check.Rows[:2])
 	}
 	if check.Rows[2].OK || !strings.Contains(check.Rows[2].Message, "เดบิตและเครดิตไม่เท่ากัน") {

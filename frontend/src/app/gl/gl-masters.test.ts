@@ -232,6 +232,10 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
   });
 
 
+  it("a duplicate account name (backend field 'names') focuses the Thai name input", () => {
+    expect(errorStatePatch({ message: "ซ้ำ", field: "names" }, "account_name_duplicate", "accountcode")).toEqual({ error: "ซ้ำ", errorField: "accountnameth" });
+    expect(errorStatePatch({ message: "x", field: "parentaccountcode" }, "validation_failed_field", "accountcode").errorField).toBe("parentaccountcode");
+  });
   it("a rejected save always has a field to focus, even when the API sends none", () => {
     expect(saveFailureTarget("accounts")).toBe("accountcode");
     expect(saveFailureTarget("mappings")).toBe("code");

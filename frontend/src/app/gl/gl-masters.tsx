@@ -11,7 +11,9 @@ import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, S
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
-import { GLChartOfAccountsPrint, GLJournalBooksPrint, printCompanyName, useGLPrint } from "./gl-print";
+import { useGLPrint } from "./gl-print";
+import { BookPrintDialog, ChartPrintDialog } from "./gl-print-conditions";
+import { AccountReferencesPanel } from "./gl-account-references";
 import { AccountBalanceCard, AccountLedgerModal } from "./account-ledger-drilldown";
 import { DimensionCodeMultiSelect, invalidateDimensionRegisters, useDimensionRegisters } from "./gl-dimension-select";
 import { GLAccountGroupEntries } from "./gl-account-group-entries";
@@ -174,7 +176,7 @@ export function pageErrorText(error: string, hasRecord: boolean) { return hasRec
 export function paneErrorText(error: string, hasRecord: boolean) { return hasRecord ? error : ""; }
 export function FormErrorAlert({ text }: { text: string }) { return text ? <div className="shrink-0"><Notice error text={text} /></div> : null; }
 /** The only state a failed save may touch: the message and the field to focus. Entered values are kept. */
-export function errorStatePatch(info: { message: string; field: string }, code = "", fallbackField = "") { return { error: info.message, errorField: code === "duplicate_code" || code === "immutable_code" || code === "validation_failed" ? "accountcode" : info.field || fallbackField }; }
+export function errorStatePatch(info: { message: string; field: string }, code = "", fallbackField = "") { return { error: info.message, errorField: code === "duplicate_code" || code === "immutable_code" || code === "validation_failed" ? "accountcode" : info.field === "names" ? "accountnameth" : info.field || fallbackField }; }
 /** ช่องที่ต้องโฟกัสเมื่อบันทึกไม่ผ่านและเซิร์ฟเวอร์ไม่ได้ระบุ field */
 export function saveFailureTarget(resource: string) { return resource === "accounts" ? "accountcode" : "code"; }
 
@@ -374,8 +376,8 @@ export function TreeNodeRow({
 /** extraActions: buttons the host screen adds to the list toolbar (print of a dimension register); onDirtyChange: lets a host with several masters ask before it drops unsaved edits. */
 export function GLMasters({ resource, route, extraActions, onDirtyChange }: { resource: MasterResource; route: string; extraActions?: ReactNode; onDirtyChange?: (dirty: boolean) => void }) {
   const tr = useGLText();
-  const language = useGLLanguage();
   const { print: printJob, portal: printPortal } = useGLPrint();
+  const [printDialog, setPrintDialog] = useState<"chart" | "books" | null>(null);
   const [search, setSearch] = useState("");
   const list = useGLList<GLRecord>(resource, search);
   const searchDebounce = useDebouncedSearch({
@@ -638,25 +640,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
     return filterAccountTree(base, searchDebounce.query);
   }, [isAcc, treeAccounts, searchDebounce.query]);
 
-  const handlePrint = () => {
-    if (!isAcc || !treeAccounts.length) return;
-    printJob(
-      <GLChartOfAccountsPrint
-        accounts={treeAccounts}
-        company={printCompanyName()}
-        tr={tr}
-        language={language}
-      />,
-      "portrait"
-    );
-  };
-
-  // Champ 5531 รายงานรายละเอียดสมุดบัญชี = ปุ่มพิมพ์ในจอกำหนดสมุดรายวัน (ไม่แยกเมนูรายงาน)
-  const handlePrintBooks = () => {
-    if (!isBook || !refs.books.length) return;
-    printJob(<GLJournalBooksPrint books={refs.books} company={printCompanyName()} tr={tr} language={language} />, "portrait");
-  };
-
+  // Champ 5520 ผังบัญชี / 5531 รายละเอียดสมุดบัญชี = ปุ่มพิมพ์ในจอของตัวเอง; ถามเงื่อนไขการพิมพ์ก่อน (gl-print-conditions.tsx)
   const handleExportCsv = () => {
     if (!isAcc || !treeAccounts.length) return;
     const csv = chartOfAccountsCsv(treeAccounts, tr);
@@ -669,6 +653,8 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
 
   return <div className="flex flex-col flex-1 min-h-0 gap-2">
     {printPortal}
+    {printDialog === "chart" && <ChartPrintDialog accounts={treeAccounts} print={printJob} onClose={() => setPrintDialog(null)} />}
+    {printDialog === "books" && <BookPrintDialog print={printJob} onClose={() => setPrintDialog(null)} />}
     <div className="shrink-0 flex flex-col gap-2"><Notice error text={alerts.page} /></div>
     <SplitWorkbench list={<div className="flex flex-col flex-1 min-h-0 gap-2">
       <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
@@ -688,7 +674,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
             <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
             {extraActions}
             {isBook && (
-              <Button type="button" variant="outline" className={actionClass} onClick={handlePrintBooks} disabled={!refs.books.length} title={tr("gl_book_report_title", "รายงานรายละเอียดสมุดบัญชี")}>
+              <Button type="button" variant="outline" className={actionClass} onClick={() => setPrintDialog("books")} disabled={!refs.books.length} title={tr("gl_book_report_title", "รายงานรายละเอียดสมุดบัญชี")}>
                 <Printer className="size-4 mr-1.5" />
                 {tr("gl_print", "พิมพ์")}
               </Button>
@@ -718,7 +704,8 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
                   type="button"
                   variant="outline"
                   className={actionClass}
-                  onClick={handlePrint}
+                  onClick={() => setPrintDialog("chart")}
+                  disabled={!treeAccounts.length}
                   title={tr("gl_print_coa", "พิมพ์ผังบัญชี")}
                 >
                   <Printer className="size-4 mr-1.5" />
@@ -1393,6 +1380,7 @@ function AccountFields({ value, set, accounts = [] }: { value: GLAccount; set: (
             </div>
           )}
         </div>
+        {value.id && <AccountReferencesPanel accountId={value.id} version={value.version} />}
       </div>
     </div>
   );

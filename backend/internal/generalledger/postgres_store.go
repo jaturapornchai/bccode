@@ -75,6 +75,9 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if cmd.Resource == "statement-templates" && cmd.Action == "suggest" {
 		return s.suggestStatementAccounts(ctx, scope, cmd)
 	}
+	if cmd.Resource == "accounts" && cmd.Action == "references" {
+		return s.accountReferences(ctx, scope, cmd)
+	}
 	if cmd.Resource == PostBatchKind && cmd.Action == "check" {
 		return s.checkPostBatch(ctx, scope, cmd)
 	}

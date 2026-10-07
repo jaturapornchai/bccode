@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import type { GLPostCheckRow } from "@/lib/general-ledger";
-import { EMPTY_POST_BATCH_FILTER, EMPTY_POST_BATCH_SIGNATORIES, GLPostBatch, POST_BATCH_PERSON_MAX_LENGTH, postBatchCreatePayload, postBatchFilterPayload, postBatchItems, postBatchShortcut, postBatchSummary, readyRowIds, toggleAllReady } from "./gl-post-batch";
+import { EMPTY_POST_BATCH_FILTER, EMPTY_POST_BATCH_SIGNATORIES, GLPostBatch, POST_BATCH_PERSON_MAX_LENGTH, postBatchCreatePayload, postBatchFilterPayload, postBatchItems, postBatchShortcut, postBatchSourceText, postBatchSummary, readyRowIds, toggleAllReady } from "./gl-post-batch";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -20,6 +20,12 @@ const row = (id: string, ok: boolean, debit = "0", extra: Partial<GLPostCheckRow
 });
 
 describe("batch posting helpers (Champ 5512)", () => {
+  it("Source column ('ที่มา'): the importing system, or 'keyed in the ledger' when there is none", () => {
+    const tr = (_key: string, fallback: string) => fallback;
+    expect(postBatchSourceText(row("a", true), tr)).toBe("คีย์ในบัญชีแยกประเภท");
+    expect(postBatchSourceText(row("b", true, "0", { sourcesystem: "pos-branch" }), tr)).toBe("pos-branch");
+    expect(postBatchSourceText(row("c", true, "0", { sourcesystem: "  " }), tr)).toBe("คีย์ในบัญชีแยกประเภท");
+  });
   it("sends only the filled filters, trimmed", () => {
     expect(postBatchFilterPayload(EMPTY_POST_BATCH_FILTER)).toEqual({});
     expect(postBatchFilterPayload({ bookcode: " JV ", datefrom: "2026-01-01", dateto: "", docnofrom: "  ", docnoto: "JV0099 " }))

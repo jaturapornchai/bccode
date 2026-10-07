@@ -16,6 +16,8 @@ type Result struct {
 	Lines []BudgetLine `json:"lines,omitempty"`
 	// Suggestions answers statement-templates action "suggest" (nothing saved).
 	Suggestions *StatementSuggestions `json:"suggestions,omitempty"`
+	// References answers accounts action "references" (nothing saved).
+	References *AccountReferences `json:"references,omitempty"`
 	// CreatedPeriods answers periods action "generate" (monthly periods created).
 	CreatedPeriods int `json:"createdperiods,omitempty"`
 	// PostCheck answers post-batches action "check" (nothing saved).

@@ -1,5 +1,5 @@
 import { authFetch, getAuthSession, restoreAuthSession } from "./client-auth-session";
-import { withKnownSuggestKeys, type GLCommand, type GLPage, type GLRecord, type GLResource, type GLStatementSuggestions, type GLStatementTemplate } from "./general-ledger";
+import { withKnownSuggestKeys, type GLAccountReference, type GLCommand, type GLPage, type GLRecord, type GLResource, type GLStatementSuggestions, type GLStatementTemplate } from "./general-ledger";
 import { extractMessage, getString, isRecord } from "./workspace-api";
 import { normalizeLanguage } from "./i18n";
 
@@ -155,6 +155,11 @@ export async function glStatementSuggestions(template: GLStatementTemplate, sign
   const master = { code: template.code, name: template.name, statementtype: template.statementtype, isactive: template.isactive, rows: known.rows, ...(template.statementtype === "equity" ? { columns: known.columns ?? [] } : {}) };
   const data = await glRequest<{ suggestions?: Partial<GLStatementSuggestions> | null }>("command", { method: "POST", signal, body: JSON.stringify({ resource: "statement-templates", action: "suggest", ...(template.id ? { id: template.id } : {}), requestid: crypto.randomUUID(), master }) });
   return { targets: data?.suggestions?.targets ?? [], fixes: data?.suggestions?.fixes ?? [] };
+}
+/** รายการที่ใช้บัญชีนี้ (Champ 5502 "รายการที่ใช้บัญชีนี้"): นับต่อชนิดในคำสั่งเดียวจาก backend (account_references.go) — คำนวณอย่างเดียว ไม่บันทึก */
+export async function glAccountReferences(accountId: string, signal?: AbortSignal): Promise<GLAccountReference[]> {
+  const data = await glRequest<{ references?: { items?: GLAccountReference[] } | null }>("command", { method: "POST", signal, body: JSON.stringify({ resource: "accounts", action: "references", id: accountId, requestid: crypto.randomUUID() }) });
+  return data?.references?.items ?? [];
 }
 /** Abort instead of silently producing a partial accounting export. */
 export async function glAllRecords<T extends GLRecord>(resource: GLResource, query = "", cap = 100000, snapshot?: number): Promise<T[]> {

@@ -160,6 +160,15 @@ describe("GL authenticated proxy", () => {
     for (const resource of ["accounts", "journals", "budgets", "statement-notes"]) expect((await post({ resource, action: "suggest", requestid, master })).status).toBe(400);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("forwards account references for accounts only (counting, nothing saved)", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: { references: { items: [{ kind: "journals", count: 2 }] } } })); vi.stubGlobal("fetch", fetchMock);
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const post = (body: unknown) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    expect((await post({ resource: "accounts", action: "references", id: "acc-1", requestid })).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ resource: "accounts", action: "references", id: "acc-1", requestid });
+    for (const resource of ["journals", "budgets", "fiscal-years", "mappings"]) expect((await post({ resource, action: "references", id: "x", requestid })).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("rejects numeric budget money and spread outside budgets", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const requestid = "12345678-1234-1234-1234-123456789012";

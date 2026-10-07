@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
-import { ReportPrintConditions, ReportPrintHeading, GLBudgetsPrint, GLChartOfAccountsPrint, GLDimensionsPrint, GLJournalBooksPrint, budgetPrintColumnCount, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { chartPrintName, ReportPrintConditions, ReportPrintHeading, GLBudgetsPrint, GLChartOfAccountsPrint, GLDimensionsPrint, GLJournalBooksPrint, budgetPrintColumnCount, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -403,6 +403,26 @@ describe("GLBudgetsPrint", () => {
     const html = renderToStaticMarkup(createElement(GLBudgetsPrint, { report: { rows: [], totals: {} }, company: "", tr, language: "th" }));
     expect(html).toContain("ไม่พบรายการตามเงื่อนไขที่เลือก");
     expect(html).not.toContain("รวมทั้งสิ้น");
+  });
+});
+
+describe("chart name display (Champ 5520 'แสดงชื่อบัญชี')", () => {
+  it("both = 'th / en', name 1 = Thai, name 2 = English with a Thai fallback", () => {
+    expect(chartPrintName("เงินสด", "Cash", "both")).toBe("เงินสด / Cash");
+    expect(chartPrintName("เงินสด", "Cash", "name1")).toBe("เงินสด");
+    expect(chartPrintName("เงินสด", "Cash", "name2")).toBe("Cash");
+    expect(chartPrintName("เงินสด", undefined, "name2")).toBe("เงินสด");
+    expect(chartPrintName("เงินสด", "  ", "name2")).toBe("เงินสด");
+    expect(chartPrintName("เงินสด", "เงินสด", "both")).toBe("เงินสด");
+  });
+  it("prints the chosen name and the conditions footer", () => {
+    const accounts = [{ accountcode: "1101", names: [{ code: "th", name: "เงินสดในมือ" }, { code: "en", name: "Cash on hand" }], accounttype: "asset", allowposting: true, level: 1, isactive: true }];
+    const html = (extra: object) => renderToStaticMarkup(createElement(GLChartOfAccountsPrint, { accounts: accounts as never, company: "บริษัท บีซี จำกัด", tr, language: "th", ...extra }));
+    expect(html({ nameMode: "name2" })).toContain("Cash on hand");
+    expect(html({ nameMode: "name2" })).not.toContain("เงินสดในมือ");
+    expect(html({ nameMode: "name1" })).not.toContain("Cash on hand");
+    expect(html({ conditions: ["จากรหัสบัญชี 1100 ถึง 1999"] })).toContain("จากรหัสบัญชี 1100 ถึง 1999");
+    expect(html({})).not.toContain("จากรหัสบัญชี");
   });
 });
 

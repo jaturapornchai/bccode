@@ -922,9 +922,16 @@ func newBudgetDetailContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportConte
 	if err := r.parseReportDimensions(q); err != nil {
 		return r, err
 	}
+	q.BudgetCode, q.BudgetCodeTo = NormalizeCode(q.BudgetCode), NormalizeCode(q.BudgetCodeTo)
+	if q.BudgetCode == "" {
+		q.BudgetCodeTo = ""
+	}
+	if q.BudgetCodeTo != "" && q.BudgetCode > q.BudgetCodeTo {
+		return r, fieldError("report_budget_range_invalid", "budgetcode", "รหัสงบประมาณเริ่มต้นต้องไม่มากกว่ารหัสงบประมาณสิ้นสุด")
+	}
 	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
 	r.query = q
-	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), NormalizeCode(q.BudgetCode), q.AccountFrom, q.AccountTo}
+	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), q.BudgetCode, q.AccountFrom, q.AccountTo, q.BudgetCodeTo}
 	return r, nil
 }
 
@@ -940,7 +947,7 @@ func (r reportContext) budgetDetail(ctx context.Context) (Report, error) {
 		FROM gl_budgets b
 		JOIN gl_budget_lines l ON l.company=b.company AND l.budget_code=b.code
 		WHERE b.company=$1 AND ($2='' OR b.fiscal_year=$2) AND ($3='' OR b.branch_code=$3) AND (cardinality($4::text[])=0 OR b.department_code=ANY($4::text[]))
-			AND (cardinality($5::text[])=0 OR b.project_code=ANY($5::text[])) AND ($6='' OR b.code=$6)
+			AND (cardinality($5::text[])=0 OR b.project_code=ANY($5::text[])) AND ($6='' OR CASE WHEN $9='' THEN b.code=$6 ELSE b.code COLLATE "C">=$6 AND b.code COLLATE "C"<=$9 END)
 			AND ($7='' OR l.account_code COLLATE "C">=$7) AND ($8='' OR l.account_code COLLATE "C"<=$8)
 		GROUP BY b.code, b.name, b.fiscal_year, b.branch_code, b.department_code, b.project_code, l.account_code
 	), budget_lines AS (

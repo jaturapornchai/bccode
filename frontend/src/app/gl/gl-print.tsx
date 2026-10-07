@@ -412,7 +412,7 @@ export function GLStatementUnassigned({ items, scale = 2, tr }: { items?: GLStat
 }
 
 /** รายงานรายละเอียดสมุดบัญชีแบบ Champ 5531 (GLRepGLBookView): รหัสสมุด · ชื่อสมุดรายวัน · ชื่อ/รายละเอียด (หัวเอกสาร) เรียงตามรหัส */
-export function GLJournalBooksPrint({ books, company, tr, language }: { books: GLJournalBook[]; company: string; tr: GLTextFn; language: LanguageCode }) {
+export function GLJournalBooksPrint({ books, company, tr, language, conditions = [] }: { books: GLJournalBook[]; company: string; tr: GLTextFn; language: LanguageCode; conditions?: string[] }) {
   const rows = books.filter((book) => !book.isdeleted).sort((a, b) => a.code.localeCompare(b.code));
   return (
     <article className="gl-print-chart-of-accounts">
@@ -440,6 +440,7 @@ export function GLJournalBooksPrint({ books, company, tr, language }: { books: G
           <tr className="gl-print-total"><td colSpan={3}>{fillText(tr("gl_report_doc_total", "รวมทั้งสิ้น {0} รายการ"), rows.length.toLocaleString("th-TH"))}</td></tr>
         </tbody>
       </table>
+      <ReportPrintConditions lines={conditions} tr={tr} />
     </article>
   );
 }
@@ -489,7 +490,7 @@ export function budgetPrintColumnCount(rows: Record<string, string>[]) {
 
 /** Budget detail report like Champ 5525 (GLRepBudgetView), rendering the rows of the backend report "budgetdetail" as they come:
  *  budgetaccount heading → budgetline rows → budgettotal (linecount, amount); report totals = grand total. */
-export function GLBudgetsPrint({ report, company, tr, language }: { report: Pick<GLReport, "rows" | "totals">; company: string; tr: GLTextFn; language: LanguageCode }) {
+export function GLBudgetsPrint({ report, company, tr, language, conditions = [] }: { report: Pick<GLReport, "rows" | "totals">; company: string; tr: GLTextFn; language: LanguageCode; conditions?: string[] }) {
   const rows = report.rows ?? [];
   const dimensions = budgetPrintDimensions(rows);
   const columnCount = budgetPrintColumnCount(rows);
@@ -558,22 +559,37 @@ export function GLBudgetsPrint({ report, company, tr, language }: { report: Pick
           {!rows.length && <tr><td colSpan={columnCount} style={{ textAlign: "center", padding: "2rem" }}>{tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}</td></tr>}
         </tbody>
       </table>
+      <ReportPrintConditions lines={conditions} tr={tr} />
     </article>
   );
 }
 
 /** รายงานรายละเอียดผังบัญชีแบบ Champ 5520 (GLRepChartOfAccountView): หมวด · รหัสผังบัญชี · ชื่อผังบัญชี (ไทย / อังกฤษ) · ระดับ
  *  เรียงตามต้นไม้ในแต่ละหมวด, ชื่อหมวดพิมพ์แถวแรกของหมวด, "รวม<หมวด> n รายการ" ท้ายหมวด แล้วจำนวนบัญชีคุม/บัญชีย่อยท้ายรายงาน */
+/** "แสดงชื่อบัญชี" ของ Champ 5520: ทั้งสอง / ชื่อบัญชี 1 (ไทย) / ชื่อบัญชี 2 (อังกฤษ) */
+export type ChartNameMode = "both" | "name1" | "name2";
+/** ชื่อที่พิมพ์ตามตัวเลือก; ชื่อ 2 ที่ไม่มีใช้ชื่อไทยแทน ไม่ให้แถวชื่อว่าง */
+export function chartPrintName(thai: string, english: string | undefined, mode: ChartNameMode): string {
+  const second = english?.trim();
+  if (mode === "name1") return thai;
+  if (mode === "name2") return second || thai;
+  return second && second !== thai ? `${thai} / ${second}` : thai;
+}
+
 export function GLChartOfAccountsPrint({
   accounts,
   company,
   tr,
   language,
+  conditions = [],
+  nameMode = "both",
 }: {
   accounts: GLAccount[];
   company: string;
   tr: GLTextFn;
   language: LanguageCode;
+  conditions?: string[];
+  nameMode?: ChartNameMode;
 }) {
   const sorted = sortAccountsHierarchically(accounts);
   const codes = new Set(sorted.map((acc) => acc.accountcode));
@@ -627,7 +643,7 @@ export function GLChartOfAccountsPrint({
                   <td>{firstOfCategory ? categoryName(category) : ""}</td>
                   <td className="font-mono">{acc.accountcode}</td>
                   <td style={{ paddingLeft: `${(lvl > 1 ? (lvl - 1) * 1.25 : 0) + 0.5}em` }} className={acc.allowposting ? "" : "font-semibold"}>
-                    {english && english !== thai ? `${thai} / ${english}` : thai}
+                    {chartPrintName(thai, english, nameMode)}
                   </td>
                   <td style={{ textAlign: "center" }}>{lvl}</td>
                 </tr>
@@ -652,6 +668,7 @@ export function GLChartOfAccountsPrint({
           )}
         </tbody>
       </table>
+      <ReportPrintConditions lines={conditions} tr={tr} />
     </article>
   );
 }

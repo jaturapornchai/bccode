@@ -116,7 +116,9 @@ export type GLResource = typeof GL_RESOURCES[number];
 /** ผ่านรายการแบบชุด (backend post_batches.go): action "check" ใช้ตัวกรอง (ว่าง = ไม่จำกัด), action "create" ใช้ items + remark + ผู้ตรวจสอบ 1/2 (ไม่บังคับ) + ผู้อนุมัติ (บังคับ) */
 export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: string; docnofrom?: string; docnoto?: string; items?: { id: string; version: number }[]; remark?: string; check1?: string; check2?: string; approver?: string };
 /** ผลตรวจหนึ่งใบจาก backend: ok = ผ่านกฎเดียวกับการผ่านรายการ; debit/credit = สตริงทศนิยมยอดรวมของใบ */
-export type GLPostCheckRow = { id: string; version: number; docno: string; date: string; bookcode: string; fiscalyear: string; branchcode: string; description: string; debit: string; credit: string; ok: boolean; code?: string; message?: string };
+export type GLPostCheckRow = { id: string; version: number; docno: string; date: string; bookcode: string; fiscalyear: string; branchcode: string; description: string; debit: string; credit: string; ok: boolean; code?: string; message?: string; sourcesystem?: string };
+/** Records of one kind that still use an account (backend account_references.go, accounts action "references"): kind = gl_records kind or "budgets", count = rows of that kind. */
+export type GLAccountReference = { kind: string; count: number };
 export type GLPostCheck = { rows: GLPostCheckRow[]; more: boolean; limit: number };
 /** Closing-entries preview (backend close_preview.go, processes action "close-preview", nothing saved): the vouchers the real close would create as drafts, one per branch. Amounts are decimal strings at the year scale; transfer = the lines moving net profit (loss) to retained earnings; balanced = total debit equals total credit. */
 export type GLClosePreviewLine = { accountcode: string; accountname: string; departmentcode: string; projectcode: string; debit: string; credit: string; transfer: boolean };

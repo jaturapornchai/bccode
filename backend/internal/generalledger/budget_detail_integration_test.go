@@ -56,6 +56,19 @@ func TestBudgetDetailReportIntegration(t *testing.T) {
 	if one, err := f.store.Report(f.ctx, f.scope, "budgetdetail", ReportQuery{BudgetCode: "BG-B"}); err != nil || len(one.Rows) != 3 || one.Totals["linecount"] != "1" {
 		t.Fatalf("budgetcode filter = %+v %v", one.Rows, err)
 	}
+	// budget code range (Champ 5525 GLRepBudgetDlg.cpp:244-251): "to" without "from" is ignored, a reversed range is refused
+	if span, err := f.store.Report(f.ctx, f.scope, "budgetdetail", ReportQuery{BudgetCode: "BG-A", BudgetCodeTo: "BG-B"}); err != nil || span.Totals["linecount"] != "3" {
+		t.Fatalf("budget code range BG-A..BG-B = %+v %v", span.Totals, err)
+	}
+	if span, err := f.store.Report(f.ctx, f.scope, "budgetdetail", ReportQuery{BudgetCode: "BG-A", BudgetCodeTo: "BG-A"}); err != nil || span.Totals["linecount"] != "2" {
+		t.Fatalf("budget code range BG-A..BG-A = %+v %v", span.Totals, err)
+	}
+	if span, err := f.store.Report(f.ctx, f.scope, "budgetdetail", ReportQuery{BudgetCodeTo: "BG-A"}); err != nil || span.Totals["linecount"] != "3" {
+		t.Fatalf("budget code to without from = %+v %v", span.Totals, err)
+	}
+	if _, err := f.store.Report(f.ctx, f.scope, "budgetdetail", ReportQuery{BudgetCode: "BG-B", BudgetCodeTo: "BG-A"}); err == nil {
+		t.Fatal("reversed budget code range accepted")
+	}
 	if only, err := f.store.Report(f.ctx, f.scope, "budgetdetail", ReportQuery{AccountFrom: "5000", AccountTo: "5000"}); err != nil || len(only.Rows) != 3 || only.Rows[0]["accountcode"] != "5000" {
 		t.Fatalf("account range filter = %+v %v", only.Rows, err)
 	}

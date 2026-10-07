@@ -24,7 +24,7 @@ export async function GET(request: Request, context: Context) {
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
   try {
     const query = new URLSearchParams();
-    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "docnofrom", "docnoto", "orderby", "bydepartment", "byproject", "dimtotals", "templates", "notes", "mode", "amount", "rate", "docdatefrom", "docdateto", "invdatefrom", "invdateto", "partnerfrom", "partnerto", "codefrom", "codeto"];
+    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "budgetcodeto", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "docnofrom", "docnoto", "orderby", "bydepartment", "byproject", "dimtotals", "templates", "notes", "mode", "amount", "rate", "docdatefrom", "docdateto", "invdatefrom", "invdateto", "partnerfrom", "partnerto", "codefrom", "codeto"];
     new URL(request.url).searchParams.forEach((value, key) => { if (allowed.includes(key)) query.set(key, value); });
     return proxyMainApiJson(request, getMainApiUrl(getBackendUrlFromRequest(request)), `/gl/v2/${glPath.map(encodeURIComponent).join("/")}?${query}`, { method: "GET" });
   } catch { return bad("การเชื่อมต่อระบบไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"); }
@@ -36,13 +36,15 @@ export async function POST(request: Request, context: Context) {
   let body: unknown;
   try { body = await request.json(); } catch { return bad("รูปแบบข้อมูลไม่ถูกต้อง"); }
   if (!isRecord(body) || Array.isArray(body) || typeof body.requestid !== "string" || !/^[0-9a-f-]{36}$/i.test(body.requestid)) return bad("กรุณาระบุหมายเลขคำขอที่ถูกต้อง");
-  if (![...GL_RESOURCES, "processes"].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "close-preview", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  if (![...GL_RESOURCES, "processes"].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "close-preview", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check", "references"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (body.action === "spread" && body.resource !== "budgets") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // สร้างงวดอัตโนมัติ (backend periods_generate.go) / ตรวจใบก่อนผ่านรายการแบบชุด (post_batches.go, คำนวณอย่างเดียว ไม่บันทึก)
   if (body.action === "generate" && body.resource !== "periods") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // Closing-entries preview (backend close_preview.go): calculation only, nothing is saved.
   if (body.action === "close-preview" && body.resource !== "processes") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (body.action === "check" && body.resource !== "post-batches") return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  // รายการที่ใช้บัญชีนี้ (backend account_references.go): นับอย่างเดียว ไม่บันทึก
+  if (body.action === "references" && body.resource !== "accounts") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // แนะนำบัญชีให้บรรทัดของแม่แบบงบ (คำนวณอย่างเดียว ไม่บันทึก) — backend statement_suggestions.go
   if (body.action === "suggest" && body.resource !== "statement-templates") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (["review", "reconcile"].includes(String(body.action)) && body.resource !== "journals") return bad("ประเภทการทำรายการไม่ถูกต้อง");
