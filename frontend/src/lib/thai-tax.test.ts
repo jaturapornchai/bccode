@@ -260,6 +260,8 @@ describe("fetchWhtReport", () => {
             whtamounttext: "สามพันสองร้อยสิบบาทถ้วน",
             netamount: "103790.00",
             ratepercent: "3.00",
+            condition: 1,
+            payeeseq: 1,
           },
         ],
         total: 1,
@@ -270,6 +272,7 @@ describe("fetchWhtReport", () => {
           nettotal: "103790.00",
           payeecount: 1,
           byrate: [{ ratepercent: "3.00", count: 1, baseamount: "107000.00", whtamount: "3210.00" }],
+          payees: [{ payeeseq: 1, count: 1, baseamount: "107000.00", whtamount: "3210.00" }],
         },
         company: { code: "01", name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxid: "0105558001234" },
         note: "",
@@ -284,6 +287,9 @@ describe("fetchWhtReport", () => {
     expect(result.rows[0]).toMatchObject({ whtamount: "3210.00", baseamount: "107000.00", netamount: "103790.00", ratepercent: "3.00" });
     expect(result.summary.byrate).toEqual([{ ratepercent: "3.00", count: 1, baseamount: "107000.00", whtamount: "3210.00" }]);
     expect(result.summary.whttotaltext).toBe("สามพันสองร้อยสิบบาทถ้วน");
+    // กลุ่มผู้มีเงินได้แบบ Champ 5543: ลำดับกลุ่มของแถว + รวมต่อกลุ่มจาก backend ไปถึงทะเบียนบนจอ
+    expect(result.summary.payees).toEqual([{ payeeseq: 1, count: 1, baseamount: "107000.00", whtamount: "3210.00" }]);
+    expect(whtRegisterRecords(result.rows)[0]).toMatchObject({ payeeseq: 1, condition: 1, address: "" });
     expect(result.company.taxid).toBe("0105558001234");
     expect(fetchMock).toHaveBeenCalledWith("/api/goapi/api/report/tax/wht", expect.objectContaining({ method: "POST" }));
   });

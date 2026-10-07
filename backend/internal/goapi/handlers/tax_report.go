@@ -510,6 +510,9 @@ type TaxWithholdingRow struct {
 	ReversedMonth string `json:"reversedmonth,omitempty"`
 	// Note - หมายเหตุของแถวตามภาษาผู้ใช้ (handler เติม เช่น กลับรายการภายหลัง)
 	Note string `json:"note,omitempty"`
+	// PayeeSeq - ลำดับที่ของกลุ่มผู้มีเงินได้ตามรายงาน Champ 5543/5541/5540: แถวเรียงตามวันที่จ่ายแล้ว
+	// ผู้มีเงินได้คนเดียวกันที่ติดกันเป็นกลุ่มเดียว (GLRep53VatView.cpp:237-299 ตัดกลุ่มเมื่อ ApCode เปลี่ยน)
+	PayeeSeq int `json:"payeeseq"`
 
 	base, wht decimal.Decimal
 }
@@ -522,14 +525,23 @@ type TaxWithholdingRateGroup struct {
 	WhtAmount   string `json:"whtamount"`
 }
 
+// TaxWithholdingPayeeTotal - "รวม n รายการ" ต่อกลุ่มผู้มีเงินได้ (PayeeSeq) แบบรายงาน Champ: จำนวนรายการ ฐานภาษี ภาษีที่หัก
+type TaxWithholdingPayeeTotal struct {
+	PayeeSeq   int    `json:"payeeseq"`
+	Count      int    `json:"count"`
+	BaseAmount string `json:"baseamount"`
+	WhtAmount  string `json:"whtamount"`
+}
+
 // TaxWithholdingSummary - ยอดรวมทั้งงวด (ทุกแถว ไม่ใช่เฉพาะหน้าที่แสดง)
 type TaxWithholdingSummary struct {
-	BaseTotal    string                    `json:"basetotal"`
-	WhtTotal     string                    `json:"whttotal"`
-	WhtTotalText string                    `json:"whttotaltext"`
-	NetTotal     string                    `json:"nettotal"`
-	PayeeCount   int                       `json:"payeecount"`
-	ByRate       []TaxWithholdingRateGroup `json:"byrate"`
+	BaseTotal    string                     `json:"basetotal"`
+	WhtTotal     string                     `json:"whttotal"`
+	WhtTotalText string                     `json:"whttotaltext"`
+	NetTotal     string                     `json:"nettotal"`
+	PayeeCount   int                        `json:"payeecount"`
+	ByRate       []TaxWithholdingRateGroup  `json:"byrate"`
+	Payees       []TaxWithholdingPayeeTotal `json:"payees"`
 }
 
 // taxWithholdingReport - ผลคำนวณรายงานทั้งงวดก่อนตัดหน้า
@@ -740,6 +752,17 @@ func buildWithholdingReport(ctx context.Context, db *sql.DB, company string, yea
 	return report, nil
 }
 
+// withholdingPayeeKey - ตัวตนผู้มีเงินได้ของแถว: เลขประจำตัวผู้เสียภาษี → รหัสคู่ค้า → ใบสำคัญ (ไม่รู้ตัวตน = แยกตามใบ ไม่เดารวม)
+func withholdingPayeeKey(r TaxWithholdingRow) string {
+	if r.TaxID != "" {
+		return r.TaxID
+	}
+	if r.PartnerCode != "" {
+		return r.PartnerCode
+	}
+	return "journal:" + r.JournalID
+}
+
 // recordedWithholdingRows - รายการภาษีหักที่บันทึกในรายละเอียดใบสำคัญ (details.withholdings) ของใบที่ยังมีผล ตามทิศทาง/แบบที่ขอ
 // งวด = เดือนของวันที่จ่ายในรายการ (payment_date): ประกาศกระทรวงการคลังเรื่องขยายกำหนดเวลาการนำส่งภาษีเงินได้หัก ณ ที่จ่าย
 // ให้ยื่น "ภายในเจ็ดวัน นับแต่วันสิ้นเดือนของเดือนที่จ่ายเงินได้พึงประเมิน" (docs/kms/21-thai-tax-form-references.md §9)
@@ -857,7 +880,8 @@ func sameSpacedText(a, b string) bool {
 	return strings.Join(strings.Fields(a), " ") == strings.Join(strings.Fields(b), " ")
 }
 
-// summarizeWithholding - ยอดรวมทั้งงวด + สรุปตามอัตรา (สำหรับหน้าสรุปแบบยื่น) จากยอด decimal ของทุกแถว
+// summarizeWithholding - ยอดรวมทั้งงวด + สรุปตามอัตรา (สำหรับหน้าสรุปแบบยื่น) + รวมต่อกลุ่มผู้มีเงินได้ จากยอด decimal ของทุกแถว
+// และเขียน PayeeSeq ลงแถวของ rows (slice เดียวกับ report.Rows) ให้จอจัดกลุ่มได้แม้ได้รับทีละหน้า
 func summarizeWithholding(rows []TaxWithholdingRow) TaxWithholdingSummary {
 	baseTotal, whtTotal, netTotal := decimal.Zero, decimal.Zero, decimal.Zero
 	payees := map[string]bool{}
@@ -867,20 +891,30 @@ func summarizeWithholding(rows []TaxWithholdingRow) TaxWithholdingSummary {
 	}
 	groups := map[string]*group{}
 	var order []string
-	for _, r := range rows {
+	payeeTotals := []TaxWithholdingPayeeTotal{}
+	var payeeBase, payeeWht decimal.Decimal
+	flushPayee := func() {
+		if n := len(payeeTotals); n > 0 {
+			payeeTotals[n-1].BaseAmount, payeeTotals[n-1].WhtAmount = moneyText(payeeBase), moneyText(payeeWht)
+		}
+	}
+	for i := range rows {
+		r := &rows[i]
+		// กลุ่มผู้มีเงินได้ต่อเนื่องแบบ Champ: แถวเรียงตามวันที่จ่ายแล้ว เปลี่ยนผู้มีเงินได้ = เริ่มกลุ่มใหม่
+		if i == 0 || withholdingPayeeKey(rows[i-1]) != withholdingPayeeKey(*r) {
+			flushPayee()
+			payeeTotals = append(payeeTotals, TaxWithholdingPayeeTotal{PayeeSeq: len(payeeTotals) + 1})
+			payeeBase, payeeWht = decimal.Zero, decimal.Zero
+		}
+		r.PayeeSeq = len(payeeTotals)
+		payeeTotals[len(payeeTotals)-1].Count++
+		payeeBase, payeeWht = payeeBase.Add(r.base), payeeWht.Add(r.wht)
 		baseTotal, whtTotal = baseTotal.Add(r.base), whtTotal.Add(r.wht)
 		// สุทธิรวมเฉพาะแถวที่รู้ฐาน (ตรงกับยอดสุทธิที่แสดงรายแถว) — แถวฐาน 0 ไม่ดึงยอดรวมให้ติดลบ
-		if withholdingNetKnown(r) {
+		if withholdingNetKnown(*r) {
 			netTotal = netTotal.Add(r.base.Sub(r.wht))
 		}
-		payee := r.TaxID
-		if payee == "" {
-			payee = r.PartnerCode
-		}
-		if payee == "" {
-			payee = "journal:" + r.JournalID
-		}
-		payees[payee] = true
+		payees[withholdingPayeeKey(*r)] = true
 		g, ok := groups[r.RatePercent]
 		if !ok {
 			g = &group{}
@@ -890,6 +924,7 @@ func summarizeWithholding(rows []TaxWithholdingRow) TaxWithholdingSummary {
 		g.count++
 		g.base, g.wht = g.base.Add(r.base), g.wht.Add(r.wht)
 	}
+	flushPayee()
 	byRate := make([]TaxWithholdingRateGroup, 0, len(order))
 	for _, rate := range order {
 		g := groups[rate]
@@ -902,6 +937,7 @@ func summarizeWithholding(rows []TaxWithholdingRow) TaxWithholdingSummary {
 		NetTotal:     moneyText(netTotal),
 		PayeeCount:   len(payees),
 		ByRate:       byRate,
+		Payees:       payeeTotals,
 	}
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
+import { Fragment, useState, useMemo, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import {
   useBackendDictionary,
   useBackendText,
@@ -269,6 +269,14 @@ export function TaxFilingWorkbench({
     : isWhtType
       ? tr("tax_register_col_payee", "ชื่อผู้มีเงินได้")
       : tr("tax_register_col_party", "ชื่อผู้ซื้อ/ผู้ขาย");
+  // รายงานภาษีหัก ณ ที่จ่ายแบบ Champ 5543/5541/5540: จัดกลุ่มต่อผู้มีเงินได้ (หัว = ลำดับ · ชื่อ · ที่อยู่ · เลขภาษี · เงื่อนไข)
+  // แล้วรายการ และ "รวม n รายการ" ต่อกลุ่มจาก backend; จอออก 50 ทวิ ยังเป็นรายการเรียงแถวเพื่อเลือกออกหนังสือรับรอง
+  const groupByPayee = config.formType === "wht_summary" || config.formType === "wht_received";
+  const payeeTotals = new Map((whtSummary?.summary.payees ?? []).map((payee) => [payee.payeeseq, payee]));
+  const conditionText = (condition = 0) => {
+    const label = ({ 1: ["wht_cert_ui_condition_withhold", "(1) หัก ณ ที่จ่าย"], 2: ["wht_cert_ui_condition_always", "(2) ออกให้ตลอดไป"], 3: ["wht_cert_ui_condition_once", "(3) ออกให้ครั้งเดียว"] } as Record<number, [string, string]>)[condition];
+    return label ? `${tr("condition", "เงื่อนไข")} ${tr(...label)}` : "";
+  };
   const viewDetails = tr("tax_register_view_details", "ดูรายละเอียด");
   const closeLabel = tr("close", "ปิด");
   const baht = tr("baht", "บาท");
@@ -543,7 +551,7 @@ export function TaxFilingWorkbench({
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 print:hidden">
         <Card className="p-4 shadow-sm border-border">
           <p className="text-xs text-muted-foreground">
-            {isWhtType ? "มูลค่าเงินได้พึงประเมินก่อนหักภาษี" : tr("ops_base_amount_before_vat", "มูลค่าสินค้า/บริการก่อนภาษี")}
+            {isWhtType ? tr("tax_wht_income_before_tax", "มูลค่าเงินได้พึงประเมินก่อนหักภาษี") : tr("ops_base_amount_before_vat", "มูลค่าสินค้า/บริการก่อนภาษี")}
           </p>
           <p className="mt-1 text-xl font-bold text-foreground font-mono">
             {money(totals.beforeVat)}
@@ -595,12 +603,12 @@ export function TaxFilingWorkbench({
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               {errorKey === "company_required"
-                ? "กรุณาเลือกบริษัทก่อน"
+                ? tr("company_required", "กรุณาเลือกบริษัทก่อน")
                 : errorKey === "unauthorized"
-                  ? "ไม่มีสิทธิ์เข้าถึงข้อมูล"
+                  ? tr("unauthorized", "ไม่มีสิทธิ์เข้าถึงข้อมูล")
                   : errorKey === "connection_error"
-                    ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต"
-                    : "โหลดข้อมูลไม่สำเร็จ"}
+                    ? tr("connection_error", "เชื่อมต่อไม่สำเร็จ")
+                    : tr("load_failed", "โหลดข้อมูลไม่สำเร็จ")}
             </span>
           </div>
         </div>
@@ -742,9 +750,12 @@ export function TaxFilingWorkbench({
                   );
                   const partyCell = (
                     <td className="px-4 py-2.5">
-                      <div className="font-medium text-foreground">{item.counterpartyname}</div>
+                      {!groupByPayee && <div className="font-medium text-foreground">{item.counterpartyname}</div>}
                       {item.incometype && (
-                        <div className="text-xs text-muted-foreground">{item.incometype}</div>
+                        <div className={groupByPayee ? "text-foreground" : "text-xs text-muted-foreground"}>{item.incometype}</div>
+                      )}
+                      {groupByPayee && item.taxrate && (
+                        <div className="text-xs text-muted-foreground">{tr("tax_wht_rate_text", "อัตรา {0}%").replace("{0}", item.taxrate)}</div>
                       )}
                       {item.remark && (
                         <div role="note" className="mt-0.5 flex items-start gap-1 text-sm leading-relaxed text-foreground">
@@ -776,13 +787,30 @@ export function TaxFilingWorkbench({
                       {money(item.whtamount ?? item.vatamount)}
                     </td>
                   );
+                  const startsPayee = groupByPayee && item.payeeseq !== filteredRecords[idx - 1]?.payeeseq;
+                  // รวมต่อกลุ่มเป็นยอดทั้งกลุ่มจาก backend — ซ่อนตอนค้นหาเพราะแถวที่เห็นอาจไม่ครบกลุ่ม
+                  const payeeTotal = groupByPayee && !searchTerm.trim() && item.payeeseq !== filteredRecords[idx + 1]?.payeeseq
+                    ? payeeTotals.get(item.payeeseq ?? 0)
+                    : undefined;
                   return (
+                    <Fragment key={item.id}>
+                    {startsPayee && (
+                      <tr className="bg-muted/40 font-semibold">
+                        <td className="px-3 py-2.5 text-center font-mono">{item.payeeseq}</td>
+                        <td className="px-4 py-2.5">
+                          <div className="text-foreground">{item.counterpartyname}</div>
+                          {item.address && <div className="text-xs font-normal text-muted-foreground [overflow-wrap:anywhere]">{item.address}</div>}
+                        </td>
+                        {taxidCell}{branchCell}
+                        <td colSpan={5} className="px-3 py-2.5 text-sm font-normal text-muted-foreground">{conditionText(item.condition)}</td>
+                        <td className="print:hidden" />
+                      </tr>
+                    )}
                     <tr
-                      key={item.id}
                       className="hover:bg-muted/30 transition-colors cursor-pointer"
                       onClick={() => selectRecord(item)}
                     >
-                      <td className="px-3 py-2.5 text-center text-muted-foreground font-mono">{idx + 1}</td>
+                      <td className="px-3 py-2.5 text-center text-muted-foreground font-mono">{groupByPayee ? "" : idx + 1}</td>
                       {isWhtType ? (
                         <>
                           {partyCell}{taxidCell}{branchCell}{dateCell}{baseCell}{taxCell}{docnoCell}
@@ -822,6 +850,16 @@ export function TaxFilingWorkbench({
                         </Button>
                       </td>
                     </tr>
+                    {payeeTotal && (
+                      <tr className="font-semibold">
+                        <td colSpan={5} className="px-4 py-2.5 text-right">{tr("tax_wht_payee_total", "รวม {0} รายการ").replace("{0}", String(payeeTotal.count))}</td>
+                        <td className="px-4 py-2.5 text-right font-mono">{money(payeeTotal.baseamount)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-primary">{money(payeeTotal.whtamount)}</td>
+                        <td colSpan={2} />
+                        <td className="print:hidden" />
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>

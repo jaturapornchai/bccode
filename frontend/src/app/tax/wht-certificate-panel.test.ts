@@ -8,6 +8,7 @@ import { WhtCertificatePanel, WhtReceivedCertificateDetails, findRecordedWithhol
 
 const row = (overrides: Partial<WhtReportRow> = {}): WhtReportRow => ({
   rowid: "wht-J1#0",
+  payeeseq: 1,
   journalid: "J1",
   docno: "RV6909-0001",
   docdate: "2026-09-10",

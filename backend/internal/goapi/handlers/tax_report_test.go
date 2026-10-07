@@ -396,6 +396,35 @@ func TestWithholdingNetBlankWhenBaseUnknown(t *testing.T) {
 	}
 }
 
+// Champ 5543 (GLRep53VatView.cpp:237-299): แถวเรียงตามวันที่จ่าย ผู้มีเงินได้คนเดียวกันที่ติดกันเป็นกลุ่มเดียว
+// กลับมาอีกหลังคนอื่น = กลุ่มใหม่; ไม่รู้เลขภาษี → รหัสคู่ค้า; รวมต่อกลุ่มนับรายการ/ฐาน/ภาษี
+func TestWithholdingPayeeRunsLikeChamp(t *testing.T) {
+	row := func(journal, taxid, partner, base, wht string) TaxWithholdingRow {
+		return finishWithholdingRow(TaxWithholdingRow{JournalID: journal, TaxID: taxid, PartnerCode: partner, base: decimal.RequireFromString(base), wht: decimal.RequireFromString(wht)}, "3")
+	}
+	rows := []TaxWithholdingRow{
+		row("J1", "0105555000001", "S101", "1000", "30"),
+		row("J2", "0105555000001", "S101", "2000", "60"),
+		row("J3", "", "S102", "500", "15"),
+		row("J4", "0105555000001", "S101", "100", "3"),
+	}
+	s := summarizeWithholding(rows)
+	seqs := []int{rows[0].PayeeSeq, rows[1].PayeeSeq, rows[2].PayeeSeq, rows[3].PayeeSeq}
+	if seqs[0] != 1 || seqs[1] != 1 || seqs[2] != 2 || seqs[3] != 3 {
+		t.Fatalf("payee seq = %v", seqs)
+	}
+	if len(s.Payees) != 3 || s.Payees[0].Count != 2 || s.Payees[0].BaseAmount != "3000.00" || s.Payees[0].WhtAmount != "90.00" ||
+		s.Payees[1].Count != 1 || s.Payees[1].WhtAmount != "15.00" || s.Payees[2].PayeeSeq != 3 || s.Payees[2].BaseAmount != "100.00" {
+		t.Fatalf("payee totals = %+v", s.Payees)
+	}
+	if s.PayeeCount != 2 { // จำนวนราย (ภ.ง.ด.) ยังนับคนไม่ซ้ำ
+		t.Fatalf("payee count = %d", s.PayeeCount)
+	}
+	if empty := summarizeWithholding(nil); empty.Payees == nil || len(empty.Payees) != 0 {
+		t.Fatalf("empty payees must be [] not null: %+v", empty.Payees)
+	}
+}
+
 // ใบกำกับที่ซ้ำกับใบสำคัญอื่น: แถวบอกเลขที่ใบสำคัญอื่น, ไม่ซ้ำ = [] (ไม่ใช่ null — จอวนลูปได้เลย), สรุปนับจำนวนแถวที่ซ้ำ
 func TestBuildVatRegisterDuplicateWarnings(t *testing.T) {
 	dup := vatRecord("SV1", "IV001", 1, "1000", "0", "0", "70")

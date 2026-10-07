@@ -23,6 +23,10 @@ export interface ThaiTaxRecord {
   taxableamount?: string;
   nonexemptamount?: string;
   nonexempttotal?: string;
+  /** ภาษีหัก ณ ที่จ่าย: ลำดับที่ของกลุ่มผู้มีเงินได้ (backend payeeseq) + ที่อยู่ + เงื่อนไขการหัก (1/2/3) สำหรับรายงานแบบ Champ 5543 */
+  payeeseq?: number;
+  address?: string;
+  condition?: number;
   /** ภาษีซื้อ/ขาย: เลขที่เอกสารบัญชี (ใบสำคัญ GL ที่บันทึกใบกำกับ) */
   docno?: string;
   vatamount: string;
@@ -213,12 +217,22 @@ export interface WhtReportRow {
   condition: number;
   paiddate: string;
   certificateno: string;
+  /** ลำดับที่ของกลุ่มผู้มีเงินได้ตามรายงาน Champ: ผู้มีเงินได้เดียวกันที่ติดกันตามวันที่จ่าย = กลุ่มเดียว */
+  payeeseq: number;
   /** หมายเหตุของแถวที่ backend แปลตามภาษาผู้ใช้แล้ว เช่น "กลับรายการภายหลังในเดือน ..." (tax_wht_row_reversed_later) — ว่าง = ไม่มี */
   note: string;
 }
 
 export interface WhtRateGroup {
   ratepercent: string;
+  count: number;
+  baseamount: string;
+  whtamount: string;
+}
+
+/** "รวม n รายการ" ต่อกลุ่มผู้มีเงินได้ (ยอด decimal จาก backend) */
+export interface WhtPayeeTotal {
+  payeeseq: number;
   count: number;
   baseamount: string;
   whtamount: string;
@@ -231,6 +245,7 @@ export interface WhtReportSummary {
   nettotal: string;
   payeecount: number;
   byrate: WhtRateGroup[];
+  payees: WhtPayeeTotal[];
 }
 
 export interface WhtReportParams {
@@ -256,7 +271,7 @@ export interface WhtReportResult {
 }
 
 const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "", address: null, phone: "", addressline: "" };
-const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [] };
+const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [], payees: [] };
 const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "0.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
 
 /** key เดือนใน languages.tsv (`month_<key>`) ลำดับ ม.ค.–ธ.ค. — ใช้ร่วมทุกจอภาษี */
@@ -335,6 +350,7 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
     condition: toCount(rec.condition, 0),
     paiddate: toText(rec.paiddate),
     certificateno: toText(rec.certificateno),
+    payeeseq: toCount(rec.payeeseq, 0),
     note: toText(rec.note),
   }));
   const summary = isRecord(payload.summary) ? payload.summary : {};
@@ -352,6 +368,12 @@ export async function fetchWhtReport(params: WhtReportParams): Promise<WhtReport
         count: toCount(group.count, 0),
         baseamount: toMoney(group.baseamount),
         whtamount: toMoney(group.whtamount),
+      })),
+      payees: (Array.isArray(summary.payees) ? summary.payees : []).filter(isRecord).map((payee) => ({
+        payeeseq: toCount(payee.payeeseq, 0),
+        count: toCount(payee.count, 0),
+        baseamount: toMoney(payee.baseamount),
+        whtamount: toMoney(payee.whtamount),
       })),
     },
     company: toCompany(payload.company),
@@ -382,6 +404,9 @@ export function whtRegisterRecords(rows: WhtReportRow[]): ThaiTaxRecord[] {
     taxrate: row.ratepercent,
     incometype: row.description,
     remark: row.note || undefined,
+    payeeseq: row.payeeseq,
+    address: row.address,
+    condition: row.condition,
     status: "active",
     duplicatedocnos: [],
   }));
