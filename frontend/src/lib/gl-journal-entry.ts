@@ -134,16 +134,22 @@ export function vatErrorTarget(details: GLJournalDetails | undefined, code: stri
   return { section: "vats", row: 1, field };
 }
 
-/** ค่าที่ส่งให้ backend คำนวณภาษีจากกล่องภาษี — ตรวจแค่ "กรอกครบไหม" (อัตราห้ามเดา ไม่ใส่ 7% ให้เอง) ตัวเลขจริงคำนวณที่ backend */
-export type TaxBoxCalcInput = { ok: true; amount: string; rate: string; taxType: 1 | 2 } | { ok: false; problem: "no_row" | "rate" | "amount" };
-export function taxBoxCalcInput(details: GLJournalDetails | undefined): TaxBoxCalcInput {
+/** ค่าที่ส่งให้ backend คำนวณภาษีจากกล่องภาษี — ตรวจแค่ "กรอกครบไหม" (อัตราห้ามเดา ไม่ใส่ 7% ให้เอง) ตัวเลขจริงคำนวณที่ backend
+ *  ส่งปุ่มที่กด (button) มาด้วยแล้ว mode คือค่าที่ส่ง backend: จำนวนเงินว่างแต่กรอกภาษีไว้ → "from_tax" (backend หาฐาน = ภาษี × 100 ÷ อัตรา
+ *  แบบ Champ OnTaxAuto glfrmjournal.cpp:1691-1701); กรอกทั้งคู่ → ใช้จำนวนเงินตามปุ่ม (Champ คำนวณภาษีทับจากจำนวนเงิน) */
+export type VatCalcMode = "exclusive" | "inclusive" | "from_tax";
+export type TaxBoxCalcInput = { ok: true; mode?: VatCalcMode; amount: string; rate: string; taxType: 1 | 2 } | { ok: false; problem: "no_row" | "rate" | "amount" };
+export function taxBoxCalcInput(details: GLJournalDetails | undefined, button?: "exclusive" | "inclusive"): TaxBoxCalcInput {
   const view = taxBoxView(details);
   if (view.mode !== "single") return { ok: false, problem: "no_row" };
   const rate = String(view.row.vat_rate ?? "").trim();
   if (!rate) return { ok: false, problem: "rate" };
+  const taxType = Number(view.row.tax_type) === 2 ? 2 : 1;
   const amount = String(view.row.base_amount ?? "").trim();
-  if (isZeroText(amount)) return { ok: false, problem: "amount" };
-  return { ok: true, amount, rate, taxType: Number(view.row.tax_type) === 2 ? 2 : 1 };
+  if (!isZeroText(amount)) return { ok: true, mode: button, amount, rate, taxType };
+  const tax = String(view.row.vat_amount ?? "").trim();
+  if (!button || isZeroText(tax)) return { ok: false, problem: "amount" };
+  return { ok: true, mode: "from_tax", amount: tax, rate, taxType };
 }
 
 /** ปุ่มฟังก์ชันของจอแบบ Champ: F2 เลือกรายการ (ช่องค้นหารายการ) · F3 ตารางภาษี · F5 รายละเอียดอื่นๆ

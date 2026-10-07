@@ -25,6 +25,9 @@ const defaultVatCalcScale = 2
 //   - exclusive (ภาษีแยกนอก): จำนวนเงิน = ฐานภาษี; ภาษี = ฐาน × อัตรา ÷ 100 ปัดแบบเดียวกับตอนบันทึก (subledger_vat.go vat)
 //   - inclusive (ภาษีรวมใน): จำนวนเงิน = ยอดรวมภาษี; ฐาน = ยอดรวม × 100 ÷ (100 + อัตรา) ปัดตามทศนิยม; ภาษี = ยอดรวม − ฐาน
 //     (Champ คำนวณภาษีจากฐานที่ปัดแล้วอีกรอบ ทำให้ ฐาน + ภาษี คลาดจากยอดรวมได้ 1 สตางค์ — ที่นี่ให้รวมกลับได้พอดีเสมอ)
+//   - from_tax (กรอกภาษีไว้แต่จำนวนเงินว่าง — Champ OnTaxAuto glfrmjournal.cpp:1691-1701): จำนวนเงิน = ยอดภาษีที่กรอก (คงไว้ตามนั้น);
+//     ฐาน = ภาษี × 100 ÷ อัตรา ปัดครึ่งขึ้นตามทศนิยม (Champ จัดรูปด้วย MoneyType ตามทศนิยมบริษัท); รวม = ฐาน + ภาษี; อัตราต้องมากกว่า 0
+//     (Champ รวมยอดก่อนปัด ทำให้คลาดได้ 1 สตางค์ — ที่นี่ใช้ฐานที่ปัดแล้ว ยอดรวมกลับได้พอดีเสมอ)
 //
 // อัตราภาษีต้องส่งมาเสมอ ไม่มีค่าเริ่มต้น 7% (mydocs/specs/gl/tax-design-notes.md:19)
 func VatCalc(mode, amount, rate string, scale int) (VatCalcResult, error) {
@@ -32,7 +35,7 @@ func VatCalc(mode, amount, rate string, scale int) (VatCalcResult, error) {
 		scale = defaultVatCalcScale
 	}
 	mode = strings.TrimSpace(mode)
-	if mode != "exclusive" && mode != "inclusive" {
+	if mode != "exclusive" && mode != "inclusive" && mode != "from_tax" {
 		return VatCalcResult{}, fieldError("vat_calc_mode_invalid", "mode", "กรุณาเลือกวิธีคำนวณ: ภาษีแยกนอก หรือ ภาษีรวมใน")
 	}
 	value, err := ParseAmount(strings.TrimSpace(amount))
@@ -45,14 +48,22 @@ func VatCalc(mode, amount, rate string, scale int) (VatCalcResult, error) {
 	}
 	places := int32(scale)
 	var base, vat, total decimal.Decimal
-	if mode == "exclusive" {
+	switch mode {
+	case "exclusive":
 		base = value.Decimal()
 		vat = base.Mul(r.Decimal()).Div(hundred).Round(places)
 		total = base.Add(vat)
-	} else {
+	case "inclusive":
 		total = value.Decimal()
 		base = total.Mul(hundred).Div(hundred.Add(r.Decimal())).Round(places)
 		vat = total.Sub(base)
+	default: // from_tax
+		if !r.Decimal().IsPositive() {
+			return VatCalcResult{}, fieldError("vat_calc_rate_zero", "vat_rate", "ใส่อัตราภาษีมากกว่า 0% ก่อนคำนวณจำนวนเงินจากยอดภาษี")
+		}
+		vat = value.Decimal()
+		base = vat.Mul(hundred).DivRound(r.Decimal(), places) // DivRound = ปัดครึ่งขึ้นแบบ exact ไม่ผ่านทศนิยม 16 ตำแหน่งของ Div
+		total = base.Add(vat)
 	}
 	if total.GreaterThanOrEqual(vatAmountLimit) {
 		return VatCalcResult{}, fieldError("vat_calc_amount_invalid", "amount", "จำนวนเงินต้องเป็นตัวเลขไม่ติดลบ ไม่เกิน 14 หลัก และทศนิยมตามปีบัญชี")

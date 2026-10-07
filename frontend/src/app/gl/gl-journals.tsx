@@ -530,7 +530,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   // ภาษีแยกนอก / ภาษีรวมใน แบบ Champ (OnTaxAuto): backend คำนวณ (GET /gl/v2/vat-calc) แล้ววางยอดในกรอบภาษีและ 3 บรรทัดแรก — ไม่เติมรหัสบัญชี
   async function calcTax(mode: "exclusive" | "inclusive") {
     if (!journal || vatCalcBusy) return;
-    const input = taxBoxCalcInput(journal.details);
+    const input = taxBoxCalcInput(journal.details, mode);
     if (!input.ok) {
       if (input.problem === "rate") { setError(tr("gl_tax_calc_need_rate", "ใส่อัตราภาษี (%) ก่อนคำนวณ — ระบบไม่ใส่ 7% ให้เอง")); focusDetailField({ section: "vats", row: 1, field: "vat_rate" }); }
       if (input.problem === "amount") { setError(tr("gl_tax_calc_need_amount", "ใส่จำนวนเงินก่อนคำนวณภาษี")); focusDetailField({ section: "vats", row: 1, field: "base_amount" }); }
@@ -538,7 +538,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     }
     setVatCalcBusy(true);
     try {
-      const calc = await glRequest<VatCalcResult>(`vat-calc?${new URLSearchParams({ mode, amount: input.amount, rate: input.rate, ...(journal.fiscalyear ? { fiscalyear: journal.fiscalyear } : {}) })}`);
+      const calc = await glRequest<VatCalcResult>(`vat-calc?${new URLSearchParams({ mode: input.mode ?? mode, amount: input.amount, rate: input.rate, ...(journal.fiscalyear ? { fiscalyear: journal.fiscalyear } : {}) })}`);
       // Champ ล้างยอดทุกบรรทัดแล้วเติมใหม่เงียบ ๆ — BC ถามก่อนถ้ามียอดเดิม (ปฏิเสธ = คำนวณเฉพาะกรอบภาษี)
       const fill = !linesHaveAmounts(journal.lines) || await confirm({ title: tr("gl_tax_fill_lines_title", "เติมยอดลงบรรทัดบัญชีด้วย?"), description: tr("gl_tax_fill_lines_desc", "ยอดเดบิตและเครดิตเดิมทุกบรรทัดจะถูกล้าง แล้วเติมฐานภาษี ภาษี และยอดรวมลง 3 บรรทัดแรก — รหัสบัญชีเลือกเอง"), confirmLabel: tr("gl_tax_fill_lines", "เติมยอดลงบรรทัด"), cancelLabel: tr("gl_tax_box_only", "คำนวณเฉพาะกรอบภาษี"), tone: "warning" });
       setJournal((current) => current ? { ...current, details: patchTaxBox(current.details, { base_amount: calc.base_amount, vat_amount: calc.vat_amount }), ...(fill ? { lines: taxLinesFromCalc(current.lines, input.taxType, calc) } : {}) } : current);

@@ -720,8 +720,9 @@ func (h *Http) previewJournalDocNo(ctx context.Context, request microservice.ICo
 	return response(request, map[string]string{"docno": docno})
 }
 
-// vatCalc - GET /gl/v2/vat-calc?mode=exclusive|inclusive&amount=&rate=&fiscalyear=: the tax-box buttons
-// "ภาษีแยกนอก" / "ภาษีรวมใน" of the voucher screen (Champ OnTaxAuto). Read-only calculator — nothing is
+// vatCalc - GET /gl/v2/vat-calc?mode=exclusive|inclusive|from_tax&amount=&rate=&fiscalyear=: the tax-box buttons
+// "ภาษีแยกนอก" / "ภาษีรวมใน" of the voucher screen (Champ OnTaxAuto; from_tax = amount is the typed tax, base
+// = tax × 100 ÷ rate when the amount is blank). Read-only calculator — nothing is
 // stored; rounding follows the fiscal year scale exactly like the VAT computed on save (generalledger/vat_calc.go).
 func (h *Http) vatCalc(ctx context.Context, request microservice.IContext, scope requestScope) error {
 	if !allowed(scope.Permissions, journalsScreen, "") && !allowed(scope.Permissions, openingScreen, "") {

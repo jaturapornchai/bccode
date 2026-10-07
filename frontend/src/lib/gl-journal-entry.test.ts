@@ -124,6 +124,19 @@ describe("tax box", () => {
     expect(taxBoxCalcInput({ vats: [vat({ base_amount: "0.00" })] })).toEqual({ ok: false, problem: "amount" });
     expect(taxBoxCalcInput({ vats: [vat({ base_amount: "10700.00", tax_type: 2 })] })).toEqual({ ok: true, amount: "10700.00", rate: "7", taxType: 2 });
   });
+
+  it("blank amount + typed tax asks the backend for the base like Champ OnTaxAuto (both filled = amount wins)", () => {
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "0", vat_amount: "10.70" })] }, "exclusive")).toEqual({ ok: true, mode: "from_tax", amount: "10.70", rate: "7", taxType: 1 });
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "", vat_amount: " 7.00 ", tax_type: 2 })] }, "inclusive")).toEqual({ ok: true, mode: "from_tax", amount: "7.00", rate: "7", taxType: 2 });
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "10000.00", vat_amount: "10.70" })] }, "inclusive")).toEqual({ ok: true, mode: "inclusive", amount: "10000.00", rate: "7", taxType: 1 });
+    // rate 0 goes to the backend (vat_calc_rate_zero) — the browser only checks that something was typed
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "0", vat_amount: "7.00", vat_rate: "0" })] }, "exclusive")).toEqual({ ok: true, mode: "from_tax", amount: "7.00", rate: "0", taxType: 1 });
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "0", vat_amount: "7.00", vat_rate: "" })] }, "exclusive")).toEqual({ ok: false, problem: "rate" });
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "0", vat_amount: undefined })] }, "exclusive")).toEqual({ ok: false, problem: "amount" });
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "0", vat_amount: "0.00" })] }, "exclusive")).toEqual({ ok: false, problem: "amount" });
+    // without the pressed button the old contract stays: blank amount = ask for the amount
+    expect(taxBoxCalcInput({ vats: [vat({ base_amount: "0", vat_amount: "10.70" })] })).toEqual({ ok: false, problem: "amount" });
+  });
 });
 
 describe("taxLinesFromCalc (Champ OnTaxAuto amounts, no account codes)", () => {
