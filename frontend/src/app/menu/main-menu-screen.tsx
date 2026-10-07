@@ -5,23 +5,16 @@ import { BackendTextProvider } from "@/components/backend-text-provider";
 import {
   AlertCircle,
   AlertTriangle,
-  Archive,
   BarChart3,
   Bell,
   BookOpen,
-  Bot,
   BriefcaseBusiness,
   Building2,
-  Calculator,
-  CheckCheck,
   CheckCircle2,
-  ChefHat,
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
-  CircleDollarSign,
   CircleX,
-  CloudDownload,
   X,
   Command,
   Copy,
@@ -29,12 +22,8 @@ import {
   Crown,
   Database,
   ExternalLink,
-  FileText,
-  Folder,
-  FolderGit2,
-  Gift,
+  FileCheck,
   GitBranch,
-  Globe,
   GripVertical,
   HandCoins,
   KeyRound,
@@ -45,13 +34,10 @@ import {
   Loader2,
   LogOut,
   MessageCircle,
-  MonitorCog,
   Package,
-  Palette,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
-  Printer,
   ReceiptText,
   RefreshCcw,
   Search,
@@ -61,12 +47,7 @@ import {
   SlidersHorizontal,
   Star,
   Store,
-  Tag,
-  Truck,
   UserRound,
-  UsersRound,
-  Warehouse,
-  type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -95,11 +76,9 @@ import {
   menuSearchMatches,
   menuText,
   normalizeMenuSearchText,
-  type MenuGroup,
   type MenuItem,
-  type MenuLabel,
-  type MenuSection,
 } from "@/lib/menu-data";
+import { MENU_BARS, menuBarItems, type MenuBar, type MenuBarActionId, type MenuBarNode } from "@/lib/menu-bars";
 import { getFrequentMenuEntries, menuUsageStorageKey, readMenuUsage, recordMenuUsage, type FrequentMenuEntry, type MenuUsageMap } from "@/lib/menu-usage";
 import { MenuPendingBadge } from "./menu-pending-badge";
 import { MenuPlannedCard } from "./menu-planned-card";
@@ -121,6 +100,7 @@ import { AppHeaderControls } from "../app-header-controls";
 import { ManualLink } from "../manual-link";
 import { SystemSettingsScreen } from "../system-settings/system-settings-screen";
 import { ZoomControl } from "../zoom-control";
+import { ChampMenuBar } from "./champ-menu-bar";
 import { HomeMenuIcon, MenuRouteIcon } from "./menu-icon";
 import { isMenuBackendRetired, isMenuScreenPending, isFixedAssetRoute } from "@/lib/menu-screen-status";
 import { isGeneralLedgerRoute } from "@/lib/general-ledger";
@@ -193,7 +173,8 @@ type ProfileResponse = {
 };
 type MenuTreeNode =
   | { id: string; item: MenuItem; type: "item" }
-  | { children: MenuItem[]; id: string; label: string; seedItem?: MenuItem; type: "folder" };
+  | { children: MenuItem[]; id: string; label: string; seedItem?: MenuItem; type: "folder" }
+  | { id: string; type: "divider" };
 type SettingRecord = Record<string, unknown>;
 
 const firstTab: WorkTab = { id: "home", title: "ภาพรวม", route: "/menu", closable: false };
@@ -216,8 +197,7 @@ const emptyLineDialog: LineDialogState = {
   expired: false,
 };
 
-// ตั้งค่า ไม่มีโฟลเดอร์ย่อยแล้ว (ตั้งค่าบริษัท → ขั้น 2 ของ wizard; ตั้งค่าทั่วไป ถอดออก 2026-09-02) — โครงยังรองรับหากเพิ่มกลับ
-const systemTreeFolders: { id: string; itemIds: Set<string>; label: MenuLabel; seedId: string }[] = [];
+const TREE_BARS = MENU_BARS.filter((bar) => menuBarItems(bar.nodes).length > 0);
 const menuUiKeys = {
   closeTab: "close_tab",
   dashboardRoute: "dashboard",
@@ -429,7 +409,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   const dirtyLedgerRoutes = useRef(new Set<string>());
   const { confirm: confirmDiscard, confirmationDialog: unsavedLedgerDialog } = useConfirmDialog();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [menuUsageKey, setMenuUsageKey] = useState("");
   const [menuUsage, setMenuUsage] = useState<MenuUsageMap>({});
   const [menuLayout, setMenuLayout] = useState<MenuLayoutMode>("top");
@@ -758,7 +737,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     setActiveTabId(firstTab.id);
     setGlobalSearch("");
     setExpandedSections([]);
-    setExpandedGroups([]);
   }
 
   function toggleSection(sectionId: string) {
@@ -768,10 +746,21 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
     setActiveSection(sectionId);
   }
 
-  function toggleGroup(groupKey: string) {
-    setExpandedGroups((current) =>
-      current.includes(groupKey) ? current.filter((id) => id !== groupKey) : [...current, groupKey],
-    );
+  async function closeAllTabs() {
+    if (tabs.every((tab) => !tab.closable)) return;
+    if (!await confirmLeaveLedger(backendText(backendLanguage, "close_tab", "ปิดแท็บ"))) return;
+    setTabs([firstTab]);
+    setActiveTabId(firstTab.id);
+  }
+
+  // Menu-bar entries that are not screens (ไฟล์ / จัดการระบบ / หน้าต่าง / ช่วยเหลือ) reuse functions this page already has.
+  function runMenuAction(action: MenuBarActionId) {
+    if (action === "change-company") void openWorkspace();
+    else if (action === "change-password") setPasswordDialogOpen(true);
+    else if (action === "exit-program") void logout();
+    else if (action === "create-shortcut") openManageShortcuts();
+    else if (action === "close-all-tabs") void closeAllTabs();
+    else window.open(`/manual/menu?lang=${language}`, "_blank", "noopener");
   }
 
   async function closeTab(tabId: string) {
@@ -1095,28 +1084,23 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
 
               <nav aria-label={mt(backendLanguage, "navigation")} className="grid w-full max-w-full gap-1" role="tree">
                 <SidebarButton active={activeSection === "all" && activeTabId === firstTab.id} count={rows.length} icon={<LayoutDashboard className="h-4 w-4" />} label={mt(backendLanguage, "overview")} onClick={openOverview} />
-                {MENU_SECTIONS.map((section) => {
-                  const label = menuText(section.title, language, backendLanguage);
-                  return (
-                    <MenuSectionAccordion
-                      active={activeSection === section.id}
-                      backendLanguage={backendLanguage}
-                      canAccessMenuItem={canAccessMenuItem}
-                      count={countSectionItems(section)}
-                      expanded={expandedSections.includes(section.id) || Boolean(globalSearch.trim())}
-                      expandedGroups={expandedGroups}
-                      key={section.id}
-                      language={language}
-                      label={label}
-                      onOpenNewItem={openMenuItemInNewTab}
-                      onOpenItem={openMenuItem}
-                      onToggleGroup={toggleGroup}
-                      onToggle={() => toggleSection(section.id)}
-                      search={globalSearch}
-                      section={section}
-                    />
-                  );
-                })}
+                {TREE_BARS.map((bar) => (
+                  <MenuSectionAccordion
+                    active={activeSection === bar.id}
+                    backendLanguage={backendLanguage}
+                    bar={bar}
+                    canAccessMenuItem={canAccessMenuItem}
+                    count={menuBarItems(bar.nodes).length}
+                    expanded={expandedSections.includes(bar.id) || Boolean(globalSearch.trim())}
+                    key={bar.id}
+                    label={menuText(bar.label, language, backendLanguage)}
+                    language={language}
+                    onOpenNewItem={openMenuItemInNewTab}
+                    onOpenItem={openMenuItem}
+                    onToggle={() => toggleSection(bar.id)}
+                    search={globalSearch}
+                  />
+                ))}
               </nav>
               <div className="pointer-events-none sticky bottom-3 z-20 mt-auto flex justify-end pt-3">
                 <Button
@@ -1419,15 +1403,18 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
           ) : null}
           <div hidden={!!topSearchResults} className={cn("min-h-0 flex-1 flex-col", topSearchResults ? "hidden" : "flex")} data-worktabs-preserved>
           {menuLayout === "top" ? (
-            <TopMenuChrome
+            <ChampMenuBar
               activeSection={activeSection}
               backendLanguage={backendLanguage}
               canAccessMenuItem={canAccessMenuItem}
               language={language}
-              onOpenNewItem={openMenuItemInNewTab}
+              navigationLabel={mt(backendLanguage, "navigation")}
+              onAction={runMenuAction}
               onOpenItem={openMenuItem}
+              onOpenNewItem={openMenuItemInNewTab}
               onOpenOverview={openOverview}
               onSelectSection={setActiveSection}
+              overviewLabel={mt(backendLanguage, "overview")}
             />
           ) : null}
 
@@ -1703,366 +1690,6 @@ function MainMenuDashboard({ initialBackendLanguage, initialBackendUrl, initialL
   );
 }
 
-function TopMenuChrome({
-  activeSection,
-  backendLanguage,
-  canAccessMenuItem,
-  language,
-  onOpenNewItem,
-  onOpenItem,
-  onOpenOverview,
-  onSelectSection,
-}: {
-  activeSection: string;
-  backendLanguage: BackendLanguageDictionary;
-  canAccessMenuItem: (item: MenuItem) => boolean;
-  language: LanguageCode;
-  onOpenNewItem: (item: MenuItem) => void;
-  onOpenItem: (item: MenuItem) => void;
-  onOpenOverview: () => void;
-  onSelectSection: (sectionId: string) => void;
-}) {
-  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
-  const [activeFolderIndex, setActiveFolderIndex] = useState<number>(0);
-  const [openSectionLeft, setOpenSectionLeft] = useState(0);
-  const [flyoutSide, setFlyoutSide] = useState<"left" | "right">("right");
-  const menuRootRef = useRef<HTMLDivElement | null>(null);
-  const openSection = MENU_SECTIONS.find((section) => section.id === openSectionId) ?? null;
-  const visibleGroups = openSection
-    ? getVisibleGroups(openSection, language, "", backendLanguage)
-        .map((group) => ({ group, items: getVisibleItems(group.items, language, "", backendLanguage) }))
-        .filter((entry) => entry.items.length > 0)
-    : [];
-  const activeGroupEntry = visibleGroups.find((entry) => entry.group.id === activeGroupId) ?? visibleGroups[0] ?? null;
-  const activeGroupIndex = Math.max(0, visibleGroups.findIndex((entry) => entry.group.id === activeGroupEntry?.group.id));
-
-  useEffect(() => {
-    if (!openSectionId) {
-      setActiveFolderId(null);
-      setActiveFolderIndex(0);
-      return;
-    }
-
-    function closeOnOutsidePointer(event: PointerEvent) {
-      const target = event.target;
-      if (target instanceof Node && menuRootRef.current?.contains(target)) return;
-      setOpenSectionId(null);
-      setActiveGroupId(null);
-      setActiveFolderId(null);
-      setActiveFolderIndex(0);
-    }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setOpenSectionId(null);
-      setActiveGroupId(null);
-      setActiveFolderId(null);
-      setActiveFolderIndex(0);
-    }
-
-    document.addEventListener("pointerdown", closeOnOutsidePointer);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsidePointer);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [openSectionId]);
-
-  function positionOpenSection(target: HTMLElement, section: MenuSection) {
-    const rect = target.getBoundingClientRect();
-    const firstPanelWidth = 434;
-    const secondPanelWidth = 480;
-    const gap = 4;
-    const viewportPadding = 12;
-    const containerWidth = menuRootRef.current?.clientWidth ?? window.innerWidth;
-    const maxLeft = Math.max(0, containerWidth - 300);
-    const clampedLeft = Math.min(Math.max(0, target.offsetLeft), maxLeft);
-    setOpenSectionLeft(clampedLeft);
-    setFlyoutSide(rect.left + firstPanelWidth + gap + secondPanelWidth <= window.innerWidth - viewportPadding ? "right" : "left");
-    setOpenSectionId(section.id);
-    setActiveGroupId(getVisibleGroups(section, language, "", backendLanguage)[0]?.id ?? null);
-    setActiveFolderId(null);
-    setActiveFolderIndex(0);
-  }
-
-  function closeTopMenu() {
-    setOpenSectionId(null);
-    setActiveGroupId(null);
-    setActiveFolderId(null);
-    setActiveFolderIndex(0);
-  }
-
-  function topMenuItemRow(item: MenuItem, key: string, onMouseEnter?: () => void) {
-    const locked = !canAccessMenuItem(item);
-    const label = menuText(item.label, language, backendLanguage);
-    const newTabLabel = backendText(backendLanguage, "menu_open_new_tab", "เปิดแท็บใหม่ {0}").replace("{0}", String(label));
-
-    return (
-      <div
-        key={key}
-        className={cn(
-          "group/top-item flex min-h-10 w-full min-w-0 items-center gap-1 rounded-lg border border-transparent px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:border-border/70 hover:bg-accent hover:text-foreground",
-          locked && "cursor-not-allowed opacity-55",
-        )}
-        onMouseEnter={onMouseEnter}
-      >
-        <button
-          type="button"
-          disabled={locked}
-          className="flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left disabled:cursor-not-allowed"
-          onClick={() => {
-            closeTopMenu();
-            onOpenItem(item);
-          }}
-        >
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground transition-colors group-hover/top-item:bg-background group-hover/top-item:text-primary">
-            <MenuRouteIcon item={item} size={15} />
-          </span>
-          <span className="line-clamp-2 min-w-0 flex-1 break-words font-medium leading-5">{label}</span>
-          <MenuPendingBadge route={item.route} language={language} backendLanguage={backendLanguage} />
-          {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-        </button>
-        {locked ? null : (
-          <button
-            type="button"
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-background hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            aria-label={newTabLabel}
-            title={newTabLabel}
-            onClick={(event) => {
-              event.stopPropagation();
-              closeTopMenu();
-              onOpenNewItem(item);
-            }}
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  const hasSingleGroup = openSection ? openSection.groups.length === 1 : false;
-
-  // Find active folder node under active group
-  const activeFolderNode = (() => {
-    if (!activeFolderId) return null;
-    const targetGroup = hasSingleGroup ? openSection?.groups[0] : activeGroupEntry?.group;
-    if (!targetGroup) return null;
-    return getMenuTreeNodes(targetGroup, language, "", backendLanguage).find(
-      (node) => node.type === "folder" && node.id === activeFolderId
-    ) as Extract<MenuTreeNode, { type: "folder" }> | undefined;
-  })();
-
-  return (
-    <nav className="shrink-0 border-b border-border bg-card/95 px-2 py-1" aria-label={mt(backendLanguage, "navigation")}>
-      <div className="relative" ref={menuRootRef}>
-      <div className="flex flex-wrap items-center gap-1">
-        <Button
-          type="button"
-          variant={activeSection === "all" ? "secondary" : "ghost"}
-          size="sm"
-          className="h-7 shrink-0 gap-1 px-2 text-[12px]"
-          onClick={() => {
-            setOpenSectionId(null);
-            setActiveGroupId(null);
-            setActiveFolderId(null);
-            onOpenOverview();
-          }}
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          {mt(backendLanguage, "overview")}
-        </Button>
-        {MENU_SECTIONS.map((section) => {
-          const sectionLabel = menuText(section.title, language, backendLanguage);
-          return (
-            <Button
-              key={section.id}
-              type="button"
-              variant={activeSection === section.id ? "secondary" : "ghost"}
-              size="sm"
-              className="h-7 shrink-0 gap-1 px-2 text-[12px]"
-              aria-expanded={openSectionId === section.id}
-              onMouseEnter={(event) => {
-                onSelectSection(section.id);
-                positionOpenSection(event.currentTarget, section);
-              }}
-              onFocus={(event) => {
-                onSelectSection(section.id);
-                positionOpenSection(event.currentTarget, section);
-              }}
-              onClick={(event) => {
-                onSelectSection(section.id);
-                const rect = event.currentTarget.getBoundingClientRect();
-                const firstPanelWidth = 434;
-                const secondPanelWidth = 480;
-                const containerWidth = menuRootRef.current?.clientWidth ?? window.innerWidth;
-                const maxLeft = Math.max(0, containerWidth - 300);
-                const clampedLeft = Math.min(Math.max(0, event.currentTarget.offsetLeft), maxLeft);
-                setOpenSectionLeft(clampedLeft);
-                setFlyoutSide(rect.left + firstPanelWidth + 4 + secondPanelWidth <= window.innerWidth - 12 ? "right" : "left");
-                setOpenSectionId((current) => {
-                  const next = current === section.id ? null : section.id;
-                  setActiveGroupId(next ? getVisibleGroups(section, language, "", backendLanguage)[0]?.id ?? null : null);
-                  setActiveFolderId(null);
-                  return next;
-                });
-              }}
-            >
-              <SectionIcon sectionId={section.id} />
-              <span>{sectionLabel}</span>
-              <Badge variant="outline" className="h-4 px-1.5 text-[10px]">{countSectionItems(section)}</Badge>
-              <ChevronDown className={cn("h-3.5 w-3.5 opacity-70 transition", openSectionId === section.id && "rotate-180")} />
-            </Button>
-          );
-        })}
-      </div>
-      {openSection ? (
-        <div
-          className="absolute top-[calc(100%+6px)] z-40 flex overflow-visible rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
-          style={{ left: `${openSectionLeft}px` }}
-        >
-          {hasSingleGroup && openSection.groups[0] ? (
-            <>
-              {/* Column 1: Items and folders of the single group */}
-              <div className="w-72 min-w-0 max-w-[calc(100vw-1.5rem)] overflow-y-auto p-1.5">
-                <div className="mb-1 px-2 text-xs font-semibold text-muted-foreground">
-                  {menuText(openSection.title, language, backendLanguage)}
-                </div>
-                <div className="grid gap-1">
-                  {getMenuTreeNodes(openSection.groups[0], language, "", backendLanguage).map((node, nodeIndex) => {
-                    if (node.type === "folder") {
-                      const active = activeFolderId === node.id;
-                      return (
-                        <button
-                          key={node.id}
-                          type="button"
-                          className={cn(
-                            "flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
-                            active && "bg-primary/10 text-primary"
-                          )}
-                          onMouseEnter={() => {
-                            setActiveFolderId(node.id);
-                            setActiveFolderIndex(nodeIndex);
-                          }}
-                          onClick={() => {
-                            setActiveFolderId(node.id);
-                            setActiveFolderIndex(nodeIndex);
-                          }}
-                        >
-                          <span className="flex min-w-0 items-center gap-2">
-                            {node.seedItem ? <MenuRouteIcon item={node.seedItem} size={15} /> : <Command className="h-4 w-4" />}
-                            <span className="truncate">{node.label}</span>
-                          </span>
-                          <span className="flex shrink-0 items-center gap-1">
-                            <Badge variant={active ? "secondary" : "outline"} className="h-5 px-1.5">{node.children.length}</Badge>
-                            <ChevronDown className={cn("h-3.5 w-3.5 -rotate-90 opacity-70", active && "opacity-100")} />
-                          </span>
-                        </button>
-                      );
-                    }
-
-                    return topMenuItemRow(node.item, node.id, () => {
-                      setActiveFolderId(null);
-                      setActiveFolderIndex(0);
-                    });
-                  })}
-                </div>
-              </div>
-
-              {/* Column 2: sub-items of the active folder */}
-              {activeFolderNode ? (
-                <div
-                  className={cn(
-                    "absolute w-80 max-h-[72vh] overflow-y-auto rounded-lg border border-border bg-popover p-1.5 shadow-lg text-popover-foreground",
-                    flyoutSide === "left" ? "right-[calc(100%+4px)]" : "left-[calc(100%+4px)]"
-                  )}
-                  style={{ top: `${28 + activeFolderIndex * 40}px` }}
-                >
-                  <div className="mb-1 flex items-center justify-between gap-2 px-2 text-xs font-semibold text-muted-foreground">
-                    <span className="truncate">{activeFolderNode.label}</span>
-                    <Badge variant="secondary" className="h-5 px-1.5">{activeFolderNode.children.length}</Badge>
-                  </div>
-                  <div className="grid gap-1">
-                    {activeFolderNode.children.map((item) => {
-                      return topMenuItemRow(item, item.id);
-                    })}
-                  </div>
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <>
-              {/* Column 1: Groups list */}
-              <div className="w-72 min-w-0 max-w-[calc(100vw-1.5rem)] overflow-y-auto p-1.5">
-                <div className="mb-1 px-2 text-xs font-semibold text-muted-foreground">
-                  {menuText(openSection.title, language, backendLanguage)}
-                </div>
-                <div className="grid gap-1">
-                  {visibleGroups.map(({ group, items }) => {
-                    const active = activeGroupEntry?.group.id === group.id;
-                    return (
-                      <button
-                        key={group.id}
-                        type="button"
-                        className={cn(
-                          "group flex h-9 min-w-0 items-center justify-between gap-2 rounded-md px-2 text-left text-sm hover:bg-muted",
-                          active && "bg-primary/10 text-primary",
-                        )}
-                        onClick={() => {
-                          setActiveGroupId(group.id);
-                          setActiveFolderId(null);
-                        }}
-                        onMouseEnter={() => {
-                          setActiveGroupId(group.id);
-                          setActiveFolderId(null);
-                        }}
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <MenuGroupIcon groupId={group.id} size={14} />
-                          <span className="truncate">{menuText(group.title, language, backendLanguage)}</span>
-                        </span>
-                        <span className="flex shrink-0 items-center gap-1">
-                          <Badge variant={active ? "secondary" : "outline"} className="h-5 px-1.5">{items.length}</Badge>
-                          <ChevronDown className={cn("h-3.5 w-3.5 -rotate-90 opacity-70", active && "opacity-100")} />
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Column 2: Items of the active group */}
-              {activeGroupEntry ? (
-                <div
-                  className="absolute z-50 w-80 max-w-[calc(100vw-19rem)] overflow-y-auto rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg"
-                  style={{
-                    maxHeight: "72vh",
-                    top: `${28 + activeGroupIndex * 40}px`,
-                    ...(flyoutSide === "left" ? { right: "calc(100% + 4px)" } : { left: "calc(100% + 4px)" }),
-                  }}
-                >
-                  <div className="mb-1 flex items-center justify-between gap-2 px-2 text-xs font-semibold text-muted-foreground">
-                    <span className="truncate">{menuText(activeGroupEntry.group.title, language, backendLanguage)}</span>
-                    <Badge variant="secondary" className="h-5 px-1.5">{activeGroupEntry.items.length}</Badge>
-                  </div>
-                  <div className="grid gap-1">
-                    {activeGroupEntry.items.map((item) => {
-                      return topMenuItemRow(item, item.id);
-                    })}
-                  </div>
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      ) : null}
-      </div>
-    </nav>
-  );
-}
-
 function SidebarButton({
   active,
   count,
@@ -2099,35 +1726,32 @@ function SidebarButton({
 function MenuSectionAccordion({
   active,
   backendLanguage,
+  bar,
   canAccessMenuItem,
   count,
   expanded,
-  expandedGroups,
   label,
   language,
   onOpenNewItem,
   onOpenItem,
-  onToggleGroup,
   onToggle,
   search,
-  section,
 }: {
   active: boolean;
   backendLanguage: BackendLanguageDictionary;
+  bar: MenuBar;
   canAccessMenuItem: (item: MenuItem) => boolean;
   count: number;
   expanded: boolean;
-  expandedGroups: string[];
   label: string;
   language: LanguageCode;
   onOpenNewItem: (item: MenuItem) => void;
   onOpenItem: (item: MenuItem) => void;
-  onToggleGroup: (groupKey: string) => void;
   onToggle: () => void;
   search: string;
-  section: MenuSection;
 }) {
-  const visibleGroups = getVisibleGroups(section, language, search, backendLanguage);
+  // Same head order, block dividers and submenus as the top bar (menu-bars.ts) — one layout, two views.
+  const nodes = getBarTreeNodes(bar.nodes, language, search, backendLanguage);
   const hasSearch = Boolean(search.trim());
 
   return (
@@ -2135,7 +1759,7 @@ function MenuSectionAccordion({
       <button
         type="button"
         onClick={onToggle}
-        aria-controls={`menu-tree-${section.id}`}
+        aria-controls={`menu-tree-${bar.id}`}
         aria-expanded={expanded}
         className={cn(
           "flex w-full min-w-0 items-center justify-between gap-2 rounded-xl border px-2 py-1.5 text-left text-xs font-semibold transition-colors",
@@ -2143,7 +1767,7 @@ function MenuSectionAccordion({
         )}
       >
         <span className="flex min-w-0 items-center gap-2">
-          <SectionIcon sectionId={section.id} />
+          <SectionIcon sectionId={bar.id} />
           <span className="truncate">{label}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2">
@@ -2153,13 +1777,12 @@ function MenuSectionAccordion({
       </button>
 
       {expanded ? (
-        <div id={`menu-tree-${section.id}`} className="grid gap-1 rounded-2xl border border-border bg-background/70 p-1.5" role="group">
-          {visibleGroups.length ? (
-            section.groups.length === 1 ? (
-              (() => {
-                const group = section.groups[0];
-                const nodes = getMenuTreeNodes(group, language, search, backendLanguage);
-                return nodes.map((node) => node.type === "folder" ? (
+        <div id={`menu-tree-${bar.id}`} className="grid gap-1 rounded-2xl border border-border bg-background/70 p-1.5" role="group">
+          {nodes.length ? (
+            nodes.map((node) => {
+              if (node.type === "divider") return <div aria-hidden="true" className="mx-1 my-0.5 h-px bg-border/70" key={node.id} />;
+              if (node.type === "folder") {
+                return (
                   <MenuTreeFolder
                     backendLanguage={backendLanguage}
                     canAccessMenuItem={canAccessMenuItem}
@@ -2170,100 +1793,25 @@ function MenuSectionAccordion({
                     onOpenItem={onOpenItem}
                     search={search}
                   />
-                ) : (
-                  <MenuTreeItemButton
-                    backendLanguage={backendLanguage}
-                    isLocked={!canAccessMenuItem(node.item)}
-                    item={node.item}
-                    key={node.id}
-                    language={language}
-                    onOpenNewItem={onOpenNewItem}
-                    onOpenItem={onOpenItem}
-                  />
-                ));
-              })()
-            ) : (
-              visibleGroups.map((group) => {
-                const nodes = getMenuTreeNodes(group, language, search, backendLanguage);
-                if (!nodes.length) return null;
-
-                const groupKey = `${section.id}:${group.id}`;
-                return (
-                  <MenuTreeGroup
-                    backendLanguage={backendLanguage}
-                    canAccessMenuItem={canAccessMenuItem}
-                    expanded={expandedGroups.includes(groupKey) || Boolean(search.trim())}
-                    group={group}
-                    groupKey={groupKey}
-                    key={group.id}
-                    language={language}
-                    onOpenNewItem={onOpenNewItem}
-                    onOpenItem={onOpenItem}
-                    onToggle={() => onToggleGroup(groupKey)}
-                    search={search}
-                  />
                 );
-              })
-            )
+              }
+              return (
+                <MenuTreeItemButton
+                  backendLanguage={backendLanguage}
+                  isLocked={!canAccessMenuItem(node.item)}
+                  item={node.item}
+                  key={node.id}
+                  language={language}
+                  onOpenNewItem={onOpenNewItem}
+                  onOpenItem={onOpenItem}
+                />
+              );
+            })
           ) : (
             <div className="rounded-xl border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">{mt(backendLanguage, "noMenu")}</div>
           )}
           {hasSearch ? null : <span className="px-2 pt-1 text-[11px] font-semibold text-muted-foreground">{count} {mt(backendLanguage, "items")}</span>}
         </div>
-      ) : null}
-    </div>
-  );
-}
-
-function MenuTreeGroup({
-  backendLanguage,
-  canAccessMenuItem,
-  expanded,
-  group,
-  groupKey,
-  language,
-  onOpenNewItem,
-  onOpenItem,
-  onToggle,
-  search,
-}: {
-  backendLanguage: BackendLanguageDictionary;
-  canAccessMenuItem: (item: MenuItem) => boolean;
-  expanded: boolean;
-  group: MenuGroup;
-  groupKey: string;
-  language: LanguageCode;
-  onOpenNewItem: (item: MenuItem) => void;
-  onOpenItem: (item: MenuItem) => void;
-  onToggle: () => void;
-  search: string;
-}) {
-  const nodes = getMenuTreeNodes(group, language, search, backendLanguage);
-  const count = nodes.reduce((total, node) => total + (node.type === "folder" ? node.children.length : 1), 0);
-  if (!nodes.length) return null;
-
-  return (
-    <div className="grid gap-1 rounded-xl border border-border/70 bg-card/60 shadow-2xs" role="treeitem" aria-expanded={expanded} aria-selected={expanded}>
-      <button
-        aria-controls={`menu-tree-${groupKey}`}
-        aria-expanded={expanded}
-        className="group grid min-h-8 w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 px-2 py-1 text-left text-xs font-semibold transition-colors hover:bg-muted/40 rounded-t-lg"
-        onClick={onToggle}
-        type="button"
-      >
-        <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", expanded && "rotate-180")} aria-hidden="true" />
-        <MenuGroupIcon groupId={group.id} size={14} />
-        <span className="min-w-0 truncate text-foreground/90">{menuText(group.title, language, backendLanguage)}</span>
-        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-muted/80 px-1.5 text-[11px] font-medium text-muted-foreground">{count}</span>
-      </button>
-      {expanded ? (
-      <div id={`menu-tree-${groupKey}`} className="ml-3.5 grid gap-0.5 border-l border-border/50 pb-1.5 pl-2" role="group">
-        {nodes.map((node) => node.type === "folder" ? (
-          <MenuTreeFolder backendLanguage={backendLanguage} canAccessMenuItem={canAccessMenuItem} folder={node} key={node.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} search={search} />
-        ) : (
-          <MenuTreeItemButton backendLanguage={backendLanguage} isLocked={!canAccessMenuItem(node.item)} item={node.item} key={node.id} language={language} onOpenNewItem={onOpenNewItem} onOpenItem={onOpenItem} nested />
-        ))}
-      </div>
       ) : null}
     </div>
   );
@@ -2387,19 +1935,6 @@ function MenuTreeItemButton({
   );
 }
 
-function countSectionItems(section: MenuSection): number {
-  return section.groups.reduce((total, group) => total + group.items.length, 0);
-}
-
-function getVisibleGroups(section: MenuSection, language: LanguageCode, search: string, dictionary: BackendLanguageDictionary): MenuGroup[] {
-  const needle = normalizeMenuSearchText(search);
-  if (!needle) return section.groups;
-  return section.groups.filter((group) => {
-    if (menuSearchMatches(group.title, needle, dictionary)) return true;
-    return getVisibleItems(group.items, language, search, dictionary).length > 0;
-  });
-}
-
 function getVisibleItems(items: MenuItem[], language: LanguageCode, search: string, dictionary: BackendLanguageDictionary): MenuItem[] {
   const needle = normalizeMenuSearchText(search);
   if (!needle) return items;
@@ -2409,159 +1944,22 @@ function getVisibleItems(items: MenuItem[], language: LanguageCode, search: stri
   });
 }
 
-function getMenuTreeNodes(group: MenuGroup, language: LanguageCode, search: string, dictionary: BackendLanguageDictionary): MenuTreeNode[] {
+/** Left-tree view of one menu-bar head: items in Champ order, submenus as folders, dividers kept while not searching. */
+function getBarTreeNodes(nodes: MenuBarNode[], language: LanguageCode, search: string, dictionary: BackendLanguageDictionary): MenuTreeNode[] {
   const needle = normalizeMenuSearchText(search);
-  const groupTitleMatches = Boolean(needle) && menuSearchMatches(group.title, needle, dictionary);
-
-  if (group.id !== "company-system") {
-    const items = groupTitleMatches ? group.items : getVisibleItems(group.items, language, search, dictionary);
-    return items.map((item) => ({ id: item.id, item, type: "item" }));
-  }
-
-  const nodes: MenuTreeNode[] = [];
-  const insertedFolderIds = new Set<string>();
-
-  const pushSystemFolder = (folder: (typeof systemTreeFolders)[number]) => {
-    const folderItems = group.items.filter((item) => folder.itemIds.has(item.id));
-    const seedItem = folderItems.find((item) => item.id === folder.seedId) ?? folderItems[0];
-    const labelObject: MenuLabel = "label" in folder && folder.label ? folder.label : seedItem ? seedItem.label : { th: folder.id, en: folder.id };
-    const label = menuText(labelObject, language, dictionary);
-    const labelMatches = menuSearchMatches(labelObject, needle, dictionary);
-    const children = !needle || groupTitleMatches || labelMatches ? folderItems : getVisibleItems(folderItems, language, search, dictionary);
-    if (!children.length) return;
-
-    nodes.push({
-      children,
-      id: folder.id,
-      label,
-      seedItem,
-      type: "folder",
-    });
-  };
-
-  for (const item of group.items) {
-    const folder = systemTreeFolders.find((candidate) => candidate.itemIds.has(item.id));
-    if (folder) {
-      if (!insertedFolderIds.has(folder.id)) {
-        pushSystemFolder(folder);
-        insertedFolderIds.add(folder.id);
-      }
-      continue;
+  const result: MenuTreeNode[] = [];
+  nodes.forEach((node, index) => {
+    if (node.kind === "item") {
+      if (getVisibleItems([node.item], language, search, dictionary).length) result.push({ id: node.item.id, item: node.item, type: "item" });
+    } else if (node.kind === "submenu") {
+      const all = menuBarItems(node.nodes);
+      const children = !needle || menuSearchMatches(node.label, needle, dictionary) ? all : getVisibleItems(all, language, search, dictionary);
+      if (children.length) result.push({ children, id: node.id, label: menuText(node.label, language, dictionary), type: "folder" });
+    } else if (node.kind === "divider" && !needle) {
+      result.push({ id: `divider-${index}`, type: "divider" });
     }
-
-    if (groupTitleMatches || !needle || getVisibleItems([item], language, search, dictionary).length) {
-      nodes.push({ id: item.id, item, type: "item" });
-    }
-  }
-
-  return nodes;
-}
-
-const MENU_GROUP_ICONS: Record<string, LucideIcon> = {
-  "po-approvals": CheckCheck,
-  "po-costs": Calculator,
-  "bill-approvals": CheckCheck,
-  "bill-delivery": Truck,
-  "ap-adjustments": FileText,
-  "ap-utilities": Calculator,
-  "ar-adjustments": FileText,
-  "ar-utilities": Calculator,
-  "cheques-received": HandCoins,
-  "cheques-issued": CreditCard,
-  "card-settlement": CreditCard,
-  "bank-utilities": Calculator,
-  "ic-requests": FileText,
-  "ic-counting": CheckCheck,
-  "ic-sets": Package,
-  "ic-identifiers": Package,
-  "ic-pricing": Tag,
-  "ic-utilities": Calculator,
-  "fa-posting": FileText,
-  "gl-posting": CheckCheck,
-  // ค่าเริ่มต้น (Defaults / Setup)
-  "product-setup": Package,
-  "product-classification": FolderGit2,
-  "product-descriptors": Tag,
-  "product-sku-options": Palette,
-  "warehouse-setup": Warehouse,
-  "partner-groups": UsersRound,
-  "sales-payment-banking": Landmark,
-  "sales-channel-pricing": Truck,
-  "sales-documents": ReceiptText,
-  "approval": CheckCheck,
-  "sales-pos": MonitorCog,
-  "sales-loyalty": Gift,
-  "restaurant-setup": ChefHat,
-  "marketplace-connectors": Globe,
-
-  // 9 ERP Modules groups (Champ alignment)
-  "po-procurement": ShoppingCart,
-  "po-transactions": Package,
-  "po-payment": CreditCard,
-  "po-reports": BarChart3,
-  "bill-transactions": ReceiptText,
-  "bill-adjustments": FileText,
-  "bill-payment": HandCoins,
-  "bill-reports": BarChart3,
-  "ap-master": UsersRound,
-  "ap-payment": CreditCard,
-  "ap-reports": BarChart3,
-  "ar-master": UsersRound,
-  "ar-transactions": ReceiptText,
-  "ar-payment": HandCoins,
-  "ar-reports": BarChart3,
-  "cash-bank-master": Landmark,
-  "cash-management": CircleDollarSign,
-  "bank-transactions": Landmark,
-  "ic-master": Package,
-  "ic-transactions": Warehouse,
-  "ic-reports": BarChart3,
-  "fa-transactions": Building2,
-  "fa-reports": BarChart3,
-  "vat-transactions": Calculator,
-  "vat-reports": ReceiptText,
-  "gl-master": Database,
-  "gl-journals": FileText,
-  "gl-reports": BarChart3,
-
-  // ข้อมูลหลัก (Master data)
-  "products": Package,
-  "partners": UsersRound,
-  "bank-accounts": Landmark,
-  "fixed-assets": Landmark,
-  "dimensions": Tag,
-  "product-tools": Printer,
-  "import-export": CloudDownload,
-  "product-assistant": Bot,
-  "product-stock-production": Warehouse,
-  "restaurant": ChefHat,
-
-  // งานประจำ (Transactions / Operations)
-  "procurement": ShoppingCart,
-  "purchase": Package,
-  "purchase-payment": CreditCard,
-  "sales": HandCoins,
-  "sales-payment": CreditCard,
-  "stock": Warehouse,
-  "payment": CircleDollarSign,
-  "accounting": Calculator,
-
-  // รายงาน (Reports)
-  "financial-reports": Landmark,
-  "tax-reports": ReceiptText,
-  "sales-reports": BarChart3,
-  "purchase-reports": ShoppingCart,
-  "inventory-reports": Package,
-  "audit-reports": Archive,
-};
-
-function MenuGroupIcon({ groupId, size = 14 }: { groupId: string; size?: number }) {
-  const Icon = MENU_GROUP_ICONS[groupId] ?? Folder;
-  return (
-    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground transition-colors group-hover:bg-primary/20 group-hover:text-primary">
-      <Icon aria-hidden="true" size={size} />
-    </span>
-  );
+  });
+  return result;
 }
 
 function SectionIcon({ sectionId }: { sectionId: string }) {
@@ -2571,7 +1969,8 @@ function SectionIcon({ sectionId }: { sectionId: string }) {
   if (sectionId === "ap") return <CreditCard className="h-4 w-4" />;
   if (sectionId === "ar") return <HandCoins className="h-4 w-4" />;
   if (sectionId === "bill") return <ReceiptText className="h-4 w-4" />;
-  if (sectionId === "cash-bank") return <Landmark className="h-4 w-4" />;
+  if (sectionId === "cheque") return <FileCheck className="h-4 w-4" />;
+  if (sectionId === "bank-cash") return <Landmark className="h-4 w-4" />;
   if (sectionId === "fa") return <Building2 className="h-4 w-4" />;
   if (sectionId === "transactions") return <BriefcaseBusiness className="h-4 w-4" />;
   if (sectionId === "reports") return <BarChart3 className="h-4 w-4" />;

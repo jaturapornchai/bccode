@@ -13,11 +13,10 @@ test("Champ workflows are searchable, open pending screens, and preserve connect
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   await page.setViewportSize({ width: 1600, height: 900 });
-  const cashSection = page.getByRole("button", { name: /^เงินสดและธนาคาร/ }).first();
-  if (!(await page.locator("#menu-tree-cash-bank").isVisible())) await cashSection.click();
-  const chequeGroup = page.locator("#menu-tree-cash-bank").getByRole("button", { name: /^เช็ครับ/ }).first();
-  if (await chequeGroup.getAttribute("aria-expanded") !== "true") await chequeGroup.click();
-  await expect(page.locator("#menu-tree-cash-bank").getByRole("button", { name: /^นำเช็คเข้าใหม่/ })).toBeVisible();
+  // 2026-10-07: the left tree follows the Champ menu bar (src/lib/menu-bars.ts) — head "เช็ค/บัตร" holds the cheque screens directly.
+  const chequeSection = page.getByRole("button", { name: /^เช็ค\/บัตร/ }).first();
+  if (!(await page.locator("#menu-tree-cheque").isVisible())) await chequeSection.click();
+  await expect(page.locator("#menu-tree-cheque").getByRole("button", { name: /บันทึกนำเช็คเข้าใหม่/ })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("champ-sidebar-workflow.png"), animations: "disabled", fullPage: true });
   await page.getByRole("button", { name: "เมนูบน", exact: true }).click();
   const search = page.getByPlaceholder("ค้นหาเมนู เอกสาร หรือหน้าจอ");

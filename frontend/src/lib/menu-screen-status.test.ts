@@ -21,11 +21,19 @@ describe("menu screen availability", () => {
     "/report/maxstock", "/report/nomovementstock", "/report/stockcountvariance",
     "/report/pendingreceive", "/report/pendingdelivery", "/report/serialmovement",
     "/report/depreciationmonthly", "/report/depreciationyearly", "/report/depreciationpnd50", "/report/assetdisposal",
+    // 2026-10-07: items the real Champ menu has but BC has no screen for yet (shown as "รอพัฒนา").
+    "/pending/purchase-requisition-cancel", "/pending/purchase-requisition-approval-cancel", "/pending/purchase-order-approve",
+    "/pending/purchase-receipt-date-adjust", "/pending/sale-reservation", "/pending/sale-dispatch-order",
+    "/pending/ap-payment-prepare", "/pending/billing-note-auto", "/pending/billing-note-auto-print",
+    "/pending/customer-label-print", "/pending/cheque-issue-prepare", "/pending/cheque-movement",
+    "/pending/bank-service", "/pending/product-supplier-adjust", "/pending/stock-issue-request-cancel",
+    "/pending/stock-transfer-request-cancel", "/pending/stock-count-handheld", "/pending/transaction-lock",
+    "/pending/product-status-report", "/pending/product-price-setting-report",
   ];
 
   it("verifies connected status for ERP transactions, reports, tools and unknown fallback", () => {
     const items = flattenMenuItems();
-    expect(items).toHaveLength(198);
+    expect(items).toHaveLength(218);
     // 2026-09-23: จอที่เคยพึ่ง API บน MongoDB (ถอดแล้ว) เป็น "ยังไม่พร้อม" จนกว่าจะมี API บน PostgreSQL
     const retired = items.filter((item) => isMenuBackendRetired(item.route)).map((item) => item.route);
     const expected = [...new Set([...CHAMP_PENDING_ROUTES, ...retired])].sort();

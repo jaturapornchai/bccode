@@ -75,7 +75,8 @@ describe("menu language labels", () => {
     const items = flattenMenuItems();
     expect(baseline).toHaveLength(194);
     // +3 รายงานยอดคงค้างลูกหนี้/เจ้าหนี้/Statement ในบัญชีแยกประเภท (2026-09-25)
-    expect(items).toHaveLength(198);
+    // +20 เมนูหลักแบบ Champ (2026-10-07): รายการที่ Champ มีแต่ BC ยังไม่มีจอ (รอพัฒนา)
+    expect(items).toHaveLength(218);
     for (const previous of baseline) {
       expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(previous.route);
     }
@@ -89,7 +90,7 @@ describe("menu language labels", () => {
       "cheque-redeposit", "cheque-received-cancel", "cheque-discount",
     ]);
     expect(cash.groups.find((group) => group.id === "cheques-issued")?.items.map((item) => item.id)).toEqual([
-      "cheque-issued", "cheque-issued-clear", "cheque-issued-cancel",
+      "cheque-issued", "cheque-issue-prepare", "cheque-issued-clear", "cheque-issued-cancel",
     ]);
     expect(cash.groups.find((group) => group.id === "card-settlement")?.items.some((item) => item.id === "credit-card-receipts")).toBe(true);
   });
@@ -113,7 +114,7 @@ describe("menu language labels", () => {
 
   it("does not let a stale Thai dictionary rename a business action", () => {
     const item = flattenMenuItems().find((item) => item.id === "sale-order")!;
-    expect(menuText(item.label, "th", readyDictionary({ sale_order: "ใบเสนอราคา/ใบแจ้งหนี้" }))).toBe("บันทึกใบสั่งขาย/สั่งจองสินค้า");
+    expect(menuText(item.label, "th", readyDictionary({ sale_order: "ใบเสนอราคา/ใบแจ้งหนี้" }))).toBe("ใบสั่งขายสินค้า");
     expect(menuText(item.label, "en", readyDictionary({ sale_order: "Sales Order" }))).toBe("Sales Order");
   });
 
@@ -211,6 +212,8 @@ describe("menu language labels", () => {
     expect(procurement?.items.map((item) => item.id)).toEqual([
       "purchase-requisition",
       "purchase-requisition-approve",
+      "purchase-requisition-cancel",
+      "purchase-requisition-approval-cancel",
       "rfq",
       "rfq-price-table",
       "purchase-order-generate",

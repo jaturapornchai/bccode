@@ -10,11 +10,12 @@ describe("main menu tree consistency", () => {
     expect(source).not.toContain("ถ้าข้างในมี เมนูเดียว ไม่ต้องทำเป็น Group");
   });
 
-  it("renders all groups uniformly with MenuTreeGroup in multi-group sections", () => {
-    expect(source).toContain("<MenuTreeGroup");
-  });
-
-  it("has group icon configured for bank-accounts", () => {
-    expect(source).toContain('"bank-accounts": Landmark,');
+  // 2026-10-07: the left tree is the same layout as the Champ-style top bar (src/lib/menu-bars.ts):
+  // one accordion per head, items in Champ order, submenus as folders — no per-group tree any more.
+  it("renders the left tree from the same MENU_BARS as the top bar", () => {
+    expect(source).toContain("TREE_BARS.map((bar)");
+    expect(source).toContain("<ChampMenuBar");
+    expect(source).not.toContain("TopMenuChrome");
+    expect(source).not.toContain("<MenuTreeGroup");
   });
 });

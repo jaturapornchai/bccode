@@ -6,7 +6,7 @@ describe("ERP Menu Completeness Audit", () => {
   // 2026-09-19 Champ parity: originally 31 routes from Champ menuconfig.xml without screen/backend.
   // On 2026-09-19, 8 AP/AR debt reports were connected via /api/report/debt/query, leaving 23 pending.
   // Then, 3 GL routes (/gl/journal-books, /report/gljournal, /report/budgetcomparison) connected, leaving 20 pending.
-  it("keeps pending routes limited to the 19 Champ-parity items plus screens whose MongoDB API was removed", () => {
+  it("keeps pending routes limited to the 19 Champ-parity items, the 20 Champ menu-bar items without a screen yet and screens whose MongoDB API was removed", () => {
     const pendingList: { group: string; title: string; route: string }[] = [];
     for (const section of MENU_SECTIONS) {
       for (const group of section.groups) {
@@ -20,7 +20,8 @@ describe("ERP Menu Completeness Audit", () => {
     // 2026-09-25: /gl/budget back to pending — monthly budget API ready, entry screen not built yet.
     // 2026-09-25: /report/vatsummary (Champ 5539) connected via /api/report/tax/vat-summary.
     // 2026-09-25: /gl/budget monthly entry screen connected (gl-budgets.tsx).
-    expect(pendingList.length).toBe(19);
+    // 2026-10-07: +20 items the real Champ menu has but BC lacks ("รอพัฒนา", routes /pending/*) — see menu-bars.test.ts.
+    expect(pendingList.length).toBe(39);
   });
 });
 

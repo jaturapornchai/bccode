@@ -10,7 +10,7 @@ describe("smart-breadcrumb", () => {
   it("finds GL journal screen in breadcrumb hierarchy", () => {
     const trail = getBreadcrumbTrail("/gl/journals", "th");
     expect(trail).not.toBeNull();
-    expect(trail?.item).toBe("สมุดรายวัน");
+    expect(trail?.item).toBe("บันทึกข้อมูลรายวัน");
     expect(trail?.route).toBe("/gl/journals");
     expect(trail?.group).toBe("สมุดรายวันและงานประจำ");
   });
@@ -24,6 +24,6 @@ describe("smart-breadcrumb", () => {
   it("matches prefix routes for dynamic subpaths", () => {
     const trail = getBreadcrumbTrail("/gl/journals/edit/123", "th");
     expect(trail).not.toBeNull();
-    expect(trail?.item).toBe("สมุดรายวัน");
+    expect(trail?.item).toBe("บันทึกข้อมูลรายวัน");
   });
 });
