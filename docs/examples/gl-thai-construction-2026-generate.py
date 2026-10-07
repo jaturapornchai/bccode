@@ -81,10 +81,10 @@ for account, name, kind, cash, normal in [
     specs.append((account, name, kind, True, cash, normal))
 accounts = []
 for account, name, kind, posting, cash, normal in specs:
-    group, parent, _ = type_info[kind]
+    _, parent, _ = type_info[kind]
     accounts.append({"accountcode": code(account), "names": [{"code": "th", "name": "ข้อมูลตัวอย่าง - " + name}],
                      "accounttype": kind, "parentaccountcode": code(parent) if posting else "", "normalbalance": normal,
-                     "allowposting": posting, "isactive": True, "accountgroup": "BM69-" + group, "iscash": cash})
+                     "allowposting": posting, "isactive": True, "iscash": cash})
 account_map = {a["accountcode"]: a for a in accounts}
 assert len(accounts) == 38
 year = {"code": FY, "startdate": "2026-01-01", "enddate": "2026-12-31", "currency": "THB", "scale": 2,

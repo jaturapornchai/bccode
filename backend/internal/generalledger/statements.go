@@ -54,11 +54,20 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 	if err = json.Unmarshal(payload, &template); err != nil {
 		return Report{}, err
 	}
+	// แถวที่อ้างกลุ่มผังบัญชีกลายเป็นรายการบัญชีจริงที่นี่ที่เดียว (statement_groups.go) ตัวคำนวณและตัวตรวจอื่นอ่าน AccountCodes ตามเดิม
+	template, groupWarnings, err := resolveStatementGroups(ctx, r.tx, r.scope.Company, template)
+	if err != nil {
+		return Report{}, err
+	}
 	periodic := statementPeriodic(template.StatementType)
 	// คำนวณเต็มความละเอียด (สูตรคูณ/หารตัดที่ 8 ตำแหน่ง) แล้วแสดงผลปัดครึ่งขึ้นห่างศูนย์ที่ทศนิยมของรูปแบบงบ ทีละแถว
 	scale := statementScale(template)
 	if template.StatementType == "equity" {
-		return r.equityStatement(ctx, template, scale)
+		report, err := r.equityStatement(ctx, template, scale)
+		if err == nil {
+			report.Warnings = append(groupWarnings, report.Warnings...)
+		}
+		return report, err
 	}
 	current, err := r.statementBalances(ctx, r.fiscal.Code, r.query.From, r.query.To)
 	if err != nil {
@@ -69,6 +78,7 @@ func (r reportContext) statement(ctx context.Context) (Report, error) {
 		Rows:    []map[string]string{}, Totals: map[string]string{}, Warnings: []string{},
 		Periods: []ReportPeriod{{Key: "amount", FiscalYear: r.fiscal.Code, From: r.query.From, To: r.query.To}},
 	}
+	report.Warnings = append(report.Warnings, groupWarnings...)
 	values := evaluateStatement(template.Rows, current, periodic)
 	report.Unassigned = statementUnassigned(template, current, "amount", r.fiscal.Code, scale)
 	// งบกระแสเงินสด: ตรวจเงินสดปลายงวดกับยอดคงเหลือตามบัญชีจากค่าเต็มความละเอียด ก่อนซ่อนแถวศูนย์ (statements_cashcheck.go)

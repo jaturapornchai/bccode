@@ -5,7 +5,7 @@ import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Tr
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, dimensionPayload, normalizeDimensionCodes, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isDimensionResource, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, accountEntriesText, accountGroupPayload, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, dimensionPayload, normalizeDimensionCodes, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isDimensionResource, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { toast } from "@/lib/toast";
@@ -14,6 +14,7 @@ import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } fro
 import { GLChartOfAccountsPrint, GLJournalBooksPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { AccountBalanceCard, AccountLedgerModal } from "./account-ledger-drilldown";
 import { DimensionCodeMultiSelect, invalidateDimensionRegisters, useDimensionRegisters } from "./gl-dimension-select";
+import { GLAccountGroupEntries } from "./gl-account-group-entries";
 
 type MasterResource = Exclude<GLResource, "journals">;
 function newRecord(resource: MasterResource): GLRecord { return resource === "accounts" ? emptyAccount() : resource === "fiscal-years" ? emptyFiscalYear() : resource === "journal-books" ? emptyJournalBook() : emptyMaster(); }
@@ -148,7 +149,6 @@ export function normalizeRecord(resource: MasterResource, raw: GLRecord): GLReco
     }
     acc.accountcode = acc.accountcode || "";
     acc.parentaccountcode = acc.parentaccountcode && acc.parentaccountcode.trim() !== "" ? acc.parentaccountcode : null;
-    acc.accountgroup = acc.accountgroup || "";
     acc.accounttype = acc.accounttype || "asset";
     // ค่าว่างจาก emptyAccount() เป็นเดบิตเสมอ — ยอดปกติที่ไม่ได้ส่งมาจึงต้องตามหมวดของบัญชีนี้
     acc.normalbalance = (raw as Partial<GLAccount>).normalbalance || defaultNormalBalance(acc.accounttype);
@@ -521,7 +521,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
         const acc = record as GLAccount;
         accPayload = accountSavePayload(acc, refs.accounts.some((a) => a.parentaccountcode === acc.accountcode));
       }
-      const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : resource === "journal-books" ? { master: journalBookPayload(record as GLJournalBook) } : isDimensionResource(resource) ? { master: dimensionPayload(record as GLMaster) } : { master: record as GLMaster };
+      const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : resource === "journal-books" ? { master: journalBookPayload(record as GLJournalBook) } : isDimensionResource(resource) ? { master: dimensionPayload(record as GLMaster) } : resource === "account-groups" ? { master: accountGroupPayload(record as GLMaster) } : { master: record as GLMaster };
       const result = await execute({ resource, action: record.id ? "update" : "create", id: record.id, version: record.version, reason: reason.trim() || (record.id ? tr("gl_edit_data", "แก้ไขข้อมูล") : tr("gl_create_new", "สร้างข้อมูลใหม่")), ...field });
       const saved = normalizeRecord(resource, { ...record, id: result.id, version: result.version });
       setRecord(saved);
@@ -588,11 +588,12 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
   const isAcc = resource === "accounts";
   const isBook = resource === "journal-books";
   const isProductGroup = resource === "product-account-groups";
+  const isAccountGroup = resource === "account-groups";
   const champLabels = champMasterLabels(resource, tr);
   // One alert at a time: the pane owns the message while a record is open (the page notice stays quiet),
   // otherwise the page notice shows the operation/list/reference failure.
   const alerts = editorAlert({ error, listError: list.error, refsError: refs.error, hasRecord: !!record });
-  const colSpan = 4 + (hasAmount ? 1 : 0) + (isAcc ? 1 : 0);
+  const colSpan = 4 + (hasAmount ? 1 : 0) + (isAcc ? 1 : 0) + (isAccountGroup ? 1 : 0);
 
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
@@ -848,6 +849,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
                 <th className="py-2 px-2 text-left min-w-44">{isBook ? tr("gl_book_name", "ชื่อสมุดรายวัน") : champLabels?.name ?? tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
                 {isBook && <th className="py-2 px-2 text-left min-w-36">{tr("gl_book_title_name", "หัวเอกสาร")}</th>}
                 {isProductGroup && PRODUCT_GROUP_ACCOUNTS.map(({ key, label }) => <th key={key} className="py-2 px-2 text-left w-36 whitespace-nowrap">{tr(...label)}</th>)}
+                {isAccountGroup && <th className="py-2 px-2 text-left min-w-44">{tr("gl_account_code", "รหัสบัญชี")}</th>}
                 {hasAmount && <th className="py-2 px-2 text-right w-36 whitespace-nowrap">{tr("gl_amount", "จำนวนเงิน")}</th>}
                 {isAcc && <th className="py-2 px-2 text-right w-20 whitespace-nowrap">{tr("gl_level", "ระดับ")}</th>}
                 <th className="py-2 px-2 text-right w-24 whitespace-nowrap">{tr("gl_status", "สถานะ")}</th>
@@ -894,6 +896,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
                     </td>
                     {isBook && <td className="py-2 px-2 truncate align-middle">{(item as GLJournalBook).titlename || ""}</td>}
                     {isProductGroup && PRODUCT_GROUP_ACCOUNTS.map(({ key }) => <td key={key} className="py-2 px-2 whitespace-nowrap align-middle font-mono">{(item as GLMaster)[key] || ""}</td>)}
+                    {isAccountGroup && <td className="py-2 px-2 truncate align-middle font-mono" title={accountEntriesText((item as GLMaster).accountentries)}>{accountEntriesText((item as GLMaster).accountentries)}</td>}
                     {hasAmount && (
                       <td className="py-2 px-2 text-right font-mono font-medium tabular-nums whitespace-nowrap align-middle">
                         {"amount" in item ? formatAmount(item.amount) : "-"}
@@ -1440,6 +1443,7 @@ function MasterFields({ resource, value, set, accounts, years, books }: { resour
       <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
     </div>
   </div>
+    {resource === "account-groups" && <GLAccountGroupEntries entries={value.accountentries ?? []} accounts={accounts} groupLabel={value.code || value.name || ""} onChange={(accountentries) => set({ accountentries })} />}
     {resource === "mappings" && <div className="grid gap-2"><h3 className="font-semibold">{tr("gl_account_mapping_rules", "กฎการเชื่อมบัญชี")}</h3>{(value.rules ?? []).map((rule, index) => <div key={index} className="grid gap-2 rounded-xl border border-border p-2 sm:grid-cols-2 shadow-sm bg-muted/20"><Field label={tr("gl_accounts_in_rule", "รหัสผังบัญชี")}><AccountSelect label={tr("gl_accounts_in_rule", "รหัสผังบัญชี")} value={rule.accountcode || ""} accounts={accounts} onChange={(accountcode) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, accountcode } : item) })} /></Field><Field label={tr("gl_accounting_side_rule", "ประเภท")}><ChoiceSelect value={rule.side || "debit"} onChange={(side) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, side } : item) })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field><Field label={tr("gl_amount_source_rule", "เงื่อนไข")}><input className={control} value={rule.source || ""} placeholder={tr("gl_select_supported_source_doc", "เลือกตามเอกสารต้นทางที่ระบบรองรับ")} onChange={(e) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, source: e.target.value } : item) })} /></Field><Button type="button" className={actionClass} variant="outline" onClick={() => set({ rules: (value.rules ?? []).filter((_, i) => i !== index) })}>{tr("gl_remove_rule", "นำกฎ {0} ออก").replace("{0}", String(index + 1))}</Button></div>)}<Button type="button" variant="outline" className={actionClass} onClick={() => set({ rules: [...(value.rules ?? []), { accountcode: "", side: "debit", source: "" }] })}>{tr("gl_add_account_mapping_rule", "เพิ่มกฎการเชื่อมบัญชี")}</Button></div>}
   </>;
 }

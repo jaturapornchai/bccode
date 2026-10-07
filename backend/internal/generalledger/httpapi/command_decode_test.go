@@ -22,7 +22,6 @@ const frontendAccountCreate = `{
     "normalbalance": "debit",
     "allowposting": true,
     "isactive": true,
-    "accountgroup": "",
     "iscash": true,
     "level": 1
   }

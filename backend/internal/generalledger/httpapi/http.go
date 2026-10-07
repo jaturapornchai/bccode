@@ -377,8 +377,11 @@ func isAmountField(text string) bool {
 
 // calculationOnly: commands that save nothing — reading the resource screen is enough
 func calculationOnly(cmd gl.Command) bool {
-	return (cmd.Resource == "budgets" && cmd.Action == "spread") || (cmd.Resource == "statement-templates" && cmd.Action == "suggest") || (cmd.Resource == gl.PostBatchKind && cmd.Action == "check")
+	return (cmd.Resource == "budgets" && cmd.Action == "spread") || (cmd.Resource == "statement-templates" && cmd.Action == "suggest") || (cmd.Resource == gl.PostBatchKind && cmd.Action == "check") || (cmd.Resource == "processes" && cmd.Action == gl.ClosePreviewAction)
 }
+
+// processScreens: the menu screen whose permission each processes action needs.
+var processScreens = map[string]string{"close": "financial-close", gl.ClosePreviewAction: "financial-close", "year-end": "gl-year-end", "recalculate": "gl-recalculate-posted", "reprocess": "gl-reprocess"}
 
 func decodeCommand(reader io.Reader) (gl.Command, error) {
 	decoder := json.NewDecoder(reader)
@@ -637,7 +640,7 @@ func (h *Http) command(request microservice.IContext) error {
 		action = "update"
 	}
 	if cmd.Resource == "processes" {
-		screen = map[string]string{"close": "financial-close", "year-end": "gl-year-end", "recalculate": "gl-recalculate-posted", "reprocess": "gl-reprocess"}[cmd.Action]
+		screen = processScreens[cmd.Action]
 		action = "update"
 	}
 	if action == "lock" || action == "unlock" {

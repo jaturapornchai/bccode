@@ -10,7 +10,7 @@ import { accountSavePayload, normalizeRecord } from "./gl-masters";
 const tr = (_key: string, fallback: string) => fallback;
 const dim = (code: string, name: string, isactive = true): GLDimension => ({ id: `id-${code}`, code, name, isactive });
 const register = [dim("D02", "ฝ่ายขาย"), dim("D01", "ฝ่ายบัญชีและการเงิน"), dim("D03", "ฝ่ายผลิต", false)];
-const account = (extra: Partial<GLAccount>): GLAccount => ({ accountcode: "5100", names: [{ code: "th", name: "ค่าใช้จ่ายในการขาย" }], accounttype: "expense", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 4, ...extra });
+const account = (extra: Partial<GLAccount>): GLAccount => ({ accountcode: "5100", names: [{ code: "th", name: "ค่าใช้จ่ายในการขาย" }], accounttype: "expense", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, iscash: false, level: 4, ...extra });
 
 describe("dimensionOptions (journal line combo)", () => {
   it("offers active register codes in code order; an empty account list means every code", () => {

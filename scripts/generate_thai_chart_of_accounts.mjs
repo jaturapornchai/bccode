@@ -28,7 +28,6 @@ const accounts = [
     allowposting: false,
     level: 1,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
 
   // [Level 2]
@@ -42,7 +41,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1200',
@@ -54,7 +52,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
 
   // [Level 3] ภายใต้ 1100 (สินทรัพย์หมุนเวียน)
@@ -68,7 +65,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1112',
@@ -80,7 +76,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1113',
@@ -92,7 +87,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1121',
@@ -104,7 +98,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1122',
@@ -116,7 +109,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1123',
@@ -128,7 +120,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1124',
@@ -140,7 +131,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1125',
@@ -152,7 +142,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1126',
@@ -164,7 +153,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1127',
@@ -176,7 +164,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: true,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1131',
@@ -188,7 +175,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1132',
@@ -200,7 +186,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1133',
@@ -212,7 +197,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1134',
@@ -224,7 +208,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1138',
@@ -236,7 +219,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1139',
@@ -248,7 +230,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1141',
@@ -260,7 +241,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1142',
@@ -272,7 +252,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1143',
@@ -284,7 +263,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1144',
@@ -296,7 +274,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1145',
@@ -308,7 +285,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1149',
@@ -320,7 +296,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1151',
@@ -332,7 +307,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1152',
@@ -344,7 +318,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1153',
@@ -356,7 +329,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1154',
@@ -368,7 +340,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1161',
@@ -380,7 +351,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1162',
@@ -392,7 +362,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1163',
@@ -404,7 +373,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1169',
@@ -416,7 +384,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
 
   // [Level 3] ภายใต้ 1200 (สินทรัพย์ไม่หมุนเวียน)
@@ -430,7 +397,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1212',
@@ -442,7 +408,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1213',
@@ -454,7 +419,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1214',
@@ -466,7 +430,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1221',
@@ -478,7 +441,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1222',
@@ -490,7 +452,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1223',
@@ -502,7 +463,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1224',
@@ -514,7 +474,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1231',
@@ -526,7 +485,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1241',
@@ -538,7 +496,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1281',
@@ -550,7 +507,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1282',
@@ -562,7 +518,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1283',
@@ -574,7 +529,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1284',
@@ -586,7 +540,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1285',
@@ -598,7 +551,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1286',
@@ -610,7 +562,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1287',
@@ -622,7 +573,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1288',
@@ -634,7 +584,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1291',
@@ -646,7 +595,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1292',
@@ -658,7 +606,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
   {
     accountcode: '1295',
@@ -670,7 +617,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-A',
   },
 
   // ==========================================================================
@@ -687,7 +633,6 @@ const accounts = [
     allowposting: false,
     level: 1,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
 
   // [Level 2]
@@ -701,7 +646,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2200',
@@ -713,7 +657,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
 
   // [Level 3] ภายใต้ 2100 (หนี้สินหมุนเวียน)
@@ -727,7 +670,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2112',
@@ -739,7 +681,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2113',
@@ -751,7 +692,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2114',
@@ -763,7 +703,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2121',
@@ -775,7 +714,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2122',
@@ -787,7 +725,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2131',
@@ -799,7 +736,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2132',
@@ -811,7 +747,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2141',
@@ -823,7 +758,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2142',
@@ -835,7 +769,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2143',
@@ -847,7 +780,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2144',
@@ -859,7 +791,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2145',
@@ -871,7 +802,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2151',
@@ -883,7 +813,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2152',
@@ -895,7 +824,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2153',
@@ -907,7 +835,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2154',
@@ -919,7 +846,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2155',
@@ -931,7 +857,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2156',
@@ -943,7 +868,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2157',
@@ -955,7 +879,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2158',
@@ -967,7 +890,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2159',
@@ -979,7 +901,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2161',
@@ -991,7 +912,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2171',
@@ -1003,7 +923,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2172',
@@ -1015,7 +934,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2173',
@@ -1027,7 +945,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2181',
@@ -1039,7 +956,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
 
   // [Level 3] ภายใต้ 2200 (หนี้สินไม่หมุนเวียน)
@@ -1053,7 +969,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2212',
@@ -1065,7 +980,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2221',
@@ -1077,7 +991,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2231',
@@ -1089,7 +1002,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
   {
     accountcode: '2291',
@@ -1101,7 +1013,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-L',
   },
 
   // ==========================================================================
@@ -1118,7 +1029,6 @@ const accounts = [
     allowposting: false,
     level: 1,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
 
   // [Level 2]
@@ -1132,7 +1042,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3200',
@@ -1144,7 +1053,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
 
   // [Level 3] ภายใต้ 3100
@@ -1158,7 +1066,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3112',
@@ -1170,7 +1077,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3121',
@@ -1182,7 +1088,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3131',
@@ -1194,7 +1099,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3132',
@@ -1206,7 +1110,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
 
   // [Level 3] ภายใต้ 3200
@@ -1220,7 +1123,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3212',
@@ -1232,7 +1134,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3221',
@@ -1244,7 +1145,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3222',
@@ -1256,7 +1156,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
   {
     accountcode: '3223',
@@ -1268,7 +1167,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-E',
   },
 
   // ==========================================================================
@@ -1285,7 +1183,6 @@ const accounts = [
     allowposting: false,
     level: 1,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
 
   // [Level 2]
@@ -1299,7 +1196,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4200',
@@ -1311,7 +1207,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
 
   // [Level 3] ภายใต้ 4100
@@ -1325,7 +1220,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4112',
@@ -1337,7 +1231,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4113',
@@ -1349,7 +1242,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4121',
@@ -1361,7 +1253,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4122',
@@ -1373,7 +1264,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4131',
@@ -1385,7 +1275,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4132',
@@ -1397,7 +1286,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4141',
@@ -1409,7 +1297,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
 
   // [Level 3] ภายใต้ 4200
@@ -1423,7 +1310,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4212',
@@ -1435,7 +1321,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4221',
@@ -1447,7 +1332,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4231',
@@ -1459,7 +1343,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4241',
@@ -1471,7 +1354,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4251',
@@ -1483,7 +1365,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
   {
     accountcode: '4291',
@@ -1495,7 +1376,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-R',
   },
 
   // ==========================================================================
@@ -1512,7 +1392,6 @@ const accounts = [
     allowposting: false,
     level: 1,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
 
   // [Level 2]
@@ -1526,7 +1405,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5200',
@@ -1538,7 +1416,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5300',
@@ -1550,7 +1427,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5400',
@@ -1562,7 +1438,6 @@ const accounts = [
     allowposting: false,
     level: 2,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
 
   // [Level 3] ภายใต้ 5100 (ต้นทุนขายและบริการ)
@@ -1576,7 +1451,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5112',
@@ -1588,7 +1462,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5113',
@@ -1600,7 +1473,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5114',
@@ -1612,7 +1484,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5121',
@@ -1624,7 +1495,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5131',
@@ -1636,7 +1506,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5132',
@@ -1648,7 +1517,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5141',
@@ -1660,7 +1528,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
 
   // [Level 3] ภายใต้ 5200 (ค่าใช้จ่ายในการขาย)
@@ -1674,7 +1541,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5212',
@@ -1686,7 +1552,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5221',
@@ -1698,7 +1563,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5222',
@@ -1710,7 +1574,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5231',
@@ -1722,7 +1585,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5232',
@@ -1734,7 +1596,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5241',
@@ -1746,7 +1607,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5251',
@@ -1758,7 +1618,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5291',
@@ -1770,7 +1629,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
 
   // [Level 3] ภายใต้ 5300 (ค่าใช้จ่ายในการบริหาร)
@@ -1784,7 +1642,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5312',
@@ -1796,7 +1653,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5313',
@@ -1808,7 +1664,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5314',
@@ -1820,7 +1675,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5315',
@@ -1832,7 +1686,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5316',
@@ -1844,7 +1697,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5317',
@@ -1856,7 +1708,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5321',
@@ -1868,7 +1719,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5322',
@@ -1880,7 +1730,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5323',
@@ -1892,7 +1741,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5324',
@@ -1904,7 +1752,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5325',
@@ -1916,7 +1763,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5331',
@@ -1928,7 +1774,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5332',
@@ -1940,7 +1785,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5341',
@@ -1952,7 +1796,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5342',
@@ -1964,7 +1807,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5343',
@@ -1976,7 +1818,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5351',
@@ -1988,7 +1829,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5352',
@@ -2000,7 +1840,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5353',
@@ -2012,7 +1851,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5361',
@@ -2024,7 +1862,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5362',
@@ -2036,7 +1873,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5363',
@@ -2048,7 +1884,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5364',
@@ -2060,7 +1895,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5365',
@@ -2072,7 +1906,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5366',
@@ -2084,7 +1917,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5367',
@@ -2096,7 +1928,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5368',
@@ -2108,7 +1939,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5371',
@@ -2120,7 +1950,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5381',
@@ -2132,7 +1961,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5382',
@@ -2144,7 +1972,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5383',
@@ -2156,7 +1983,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5384',
@@ -2168,7 +1994,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5385',
@@ -2180,7 +2005,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5391',
@@ -2192,7 +2016,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5392',
@@ -2204,7 +2027,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5393',
@@ -2216,7 +2038,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5394',
@@ -2228,7 +2049,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5395',
@@ -2240,7 +2060,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5399',
@@ -2252,7 +2071,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
 
   // [Level 3] ภายใต้ 5400 (ต้นทุนทางการเงินและภาษี)
@@ -2266,7 +2084,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5412',
@@ -2278,7 +2095,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5413',
@@ -2290,7 +2106,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5421',
@@ -2302,7 +2117,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
   {
     accountcode: '5431',
@@ -2314,7 +2128,6 @@ const accounts = [
     allowposting: true,
     level: 3,
     iscash: false,
-    accountgroup: 'BM69-X',
   },
 ];
 
@@ -2365,7 +2178,6 @@ const jsonFixture = {
     normalbalance: a.normalbalance,
     allowposting: a.allowposting,
     isactive: true,
-    accountgroup: a.accountgroup,
     iscash: a.iscash,
     level: a.level,
   })),
@@ -2405,7 +2217,6 @@ function buildSqlForCompany(holding, company) {
       normalbalance: a.normalbalance,
       allowposting: a.allowposting,
       isactive: true,
-      accountgroup: a.accountgroup,
       iscash: a.iscash,
       level: a.level,
     }).replace(/'/g, "''");

@@ -78,6 +78,9 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if cmd.Resource == PostBatchKind && cmd.Action == "check" {
 		return s.checkPostBatch(ctx, scope, cmd)
 	}
+	if cmd.Resource == "processes" && cmd.Action == ClosePreviewAction {
+		return s.previewClose(ctx, scope, cmd)
+	}
 	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
@@ -402,6 +405,9 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		if err := s.validateMasterStatement(ctx, tx, scope, &m); err != nil {
 			return nil, err
 		}
+		if err := s.validateMasterAccountGroup(ctx, tx, scope, &m); err != nil {
+			return nil, err
+		}
 		if cmd.Action == "lock" {
 			m.Locked = true
 		}
@@ -427,6 +433,11 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 	if cmd.Action == "delete" {
 		if kind == "journal-books" {
 			if err := guardJournalBookDelete(ctx, tx, scope.Company, old); err != nil {
+				return nil, err
+			}
+		}
+		if kind == "account-groups" {
+			if err := guardAccountGroupDelete(ctx, tx, scope.Company, old); err != nil {
 				return nil, err
 			}
 		}
@@ -466,6 +477,14 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		}
 		if err := s.validateMasterStatement(ctx, tx, scope, &next); err != nil {
 			return nil, err
+		}
+		if err := s.validateMasterAccountGroup(ctx, tx, scope, &next); err != nil {
+			return nil, err
+		}
+		if kind == "account-groups" {
+			if err := guardAccountGroupRecode(ctx, tx, scope.Company, old, next); err != nil {
+				return nil, err
+			}
 		}
 		if kind == "journal-books" {
 			if err := guardJournalBookUpdate(ctx, tx, scope.Company, old, next); err != nil {

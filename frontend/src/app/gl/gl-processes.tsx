@@ -3,31 +3,40 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { localDate, type GLLabel, type GLReport } from "@/lib/general-ledger";
-import { Field, Notice, Pager, YearSelect, actionClass, control, panel, useDirtyGuard, useGLCommand, useReferences, useGLText } from "./gl-common";
+import { formatAppDate } from "@/lib/date-time";
+import { localDate, type GLClosePreview, type GLLabel, type GLMaster, type GLReport } from "@/lib/general-ledger";
+import { glAllRecords } from "@/lib/general-ledger-api";
+import { ClosePreviewTable, fetchClosePreview } from "./gl-close-preview";
+import { Combobox, Field, Notice, Pager, YearSelect, actionClass, control, panel, useDirtyGuard, useGLCommand, useGLLanguage, useReferences, useGLText } from "./gl-common";
+import { yearPeriods } from "./gl-periods";
 import { ReportGrid, emptyReportFilters, fetchReport } from "./gl-reports";
 
 const processText: Record<string, { button: GLLabel; text: GLLabel }> = {
-  close: { button: ["gl_create_close_period_draft", "สร้างฉบับร่างปิดงวด"], text: ["gl_review_ws_create_close_draft", "ตรวจสอบกระดาษทำการตั้งแต่ต้นปีถึงวันที่ดำเนินการ แล้วสร้างรายการปิดงวดเป็นฉบับร่างแยกตามสาขา หลังตรวจและผ่านรายการทุกฉบับให้ล็อกช่วงวันที่ในเมนูล็อกงวดบัญชี"] },
+  close: { button: ["gl_create_close_period_draft", "สร้างฉบับร่างปิดงวด"], text: ["gl_close_preview_intro", "กด ประมวลผล เพื่อดูรายการปิดบัญชีตามที่จะบันทึก (ยอดสะสมของบัญชีรายได้และค่าใช้จ่ายถึงวันที่ปิด พร้อมการโอนกำไรขาดทุนเข้ากำไรสะสม) แล้วกด บันทึกรายการ เพื่อสร้างเป็นฉบับร่างแยกตามสาขา หลังตรวจและผ่านรายการทุกฉบับให้ล็อกช่วงวันที่ในเมนูล็อกงวดบัญชี"] },
   "year-end": { button: ["gl_process_year_end", "ประมวลผลสิ้นปี"], text: ["gl_close_income_expense_first", "ต้องผ่านรายการปิดรายได้และค่าใช้จ่ายก่อน เลือกปีถัดไปที่ต่อเนื่องกับปีเดิม ระบบจะปิดปีเดิมและสร้างยอดยกมาเป็นฉบับร่างในปีถัดไปให้ตรวจและผ่านรายการ"] },
   recalculate: { button: ["gl_recalc_posted_balances", "คำนวณยอดผ่านรายการใหม่"], text: ["gl_verify_balances_before_update", "ตรวจยอดจากรายการที่ผ่านบัญชีแล้ว ก่อนปรับปรุงยอดประมวลผลสำหรับรายงาน"] },
   reprocess: { button: ["gl_replay_journal_history", "ประมวลผลใหม่จากประวัติใบสำคัญ"], text: ["gl_replay_journal_history_description", "ตรวจประวัติใบสำคัญและสร้างข้อมูลรายงานใหม่ทุกปีของบริษัท โดยคงเลขเอกสารและประวัติเดิมครบถ้วน"] },
 };
 export function GLProcesses({ route, action }: { route: string; action: "close" | "year-end" | "recalculate" | "reprocess" }) {
-  const tr = useGLText();
+  const tr = useGLText(), language = useGLLanguage();
   const refs = useReferences(), { busy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const [yearCode, setYear] = useState(""), [date, setDate] = useState(localDate()), [docno, setDocno] = useState(""), [reason, setReason] = useState("");
 
   const [targetYear, setTargetYear] = useState(""), [previewPage, setPreviewPage] = useState(1);
-  const [preview, setPreview] = useState<GLReport | null>(null), [previewFor, setPreviewFor] = useState("");
+  const [preview, setPreview] = useState<GLReport | null>(null), [closePreview, setClosePreview] = useState<GLClosePreview | null>(null), [previewFor, setPreviewFor] = useState("");
+  const [periods, setPeriods] = useState<GLMaster[]>([]);
   const [loading, setLoading] = useState(false), [message, setMessage] = useState(""), [error, setError] = useState("");
   const year = refs.years.find((item) => item.code === yearCode), config = processText[action];
   // Only close/year-end write a dated document; recalculate/reprocess rebuild from the history and ignore docno/date (backend mutateProcess).
   const isClose = action === "close", hasDocument = isClose || action === "year-end";
   const rootRef = useRef<HTMLElement>(null), saveRef = useRef<() => void>(() => undefined);
-  const previewKey = JSON.stringify({ year: yearCode, to: action === "close" ? date : year?.enddate, targetYear });
+  const previewKey = JSON.stringify({ year: yearCode, to: action === "close" ? date : year?.enddate, targetYear, docno: isClose ? docno.trim() : "" });
+  // The close preview shows the vouchers the save will create; it must come from the same year, cut-off date and document number.
+  const hasPreview = isClose ? !!closePreview && !closePreview.pendingdrafts : !!preview;
+  const closePeriods = isClose ? yearPeriods(periods, yearCode) : [];
+  const periodCode = closePeriods.find((period) => period.enddate === date)?.code ?? "";
   useDirtyGuard(route, !!docno || !!reason);
-  const canProcess = !!preview && previewFor === previewKey && !busy && !loading && !(action === "year-end" && !targetYear);
+  const canProcess = hasPreview && previewFor === previewKey && !busy && !loading && !(action === "year-end" && !targetYear);
   const dialogOpen = confirmationDialog !== null;
   // F11 = Champ's "บันทึกรายการ F11" on the close screen: same handler as the button, only while this screen is visible and no dialog is open.
   useEffect(() => { saveRef.current = () => { if (canProcess) void process(); }; });
@@ -41,14 +50,27 @@ export function GLProcesses({ route, action }: { route: string; action: "close" 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isClose, dialogOpen]);
+  // Optional helper: choosing a period only fills the cut-off date, so the screen still works if the list can not load.
+  useEffect(() => {
+    if (!isClose) return;
+    let active = true;
+    glAllRecords<GLMaster>("periods", "", 1000).then((items) => { if (active) setPeriods(items); }).catch(() => { if (active) setPeriods([]); });
+    return () => { active = false; };
+  }, [isClose]);
   async function inspect(page = 1) {
     if (!year || loading) return;
     setLoading(true); setError("");
-    try { const report = await fetchReport(action === "year-end" ? "trialbalance" : "workingpaper", { ...emptyReportFilters, fiscalyear: yearCode, from: year.startdate, to: action === "close" ? date : year.enddate }, page, 50, page > 1 && previewFor === previewKey ? preview?.sequence : undefined, true); setPreview(report); setPreviewFor(previewKey); setPreviewPage(page); }
+    try {
+      if (isClose) {
+        const result = await fetchClosePreview({ year: yearCode, version: year.version, date, docno });
+        if (!result) throw new Error(tr("gl_close_preview_missing", "ไม่ได้รับรายการปิดบัญชีจากระบบ กรุณากดประมวลผลอีกครั้ง"));
+        setClosePreview(result); setPreviewFor(previewKey); return;
+      }
+      const report = await fetchReport(action === "year-end" ? "trialbalance" : "workingpaper", { ...emptyReportFilters, fiscalyear: yearCode, from: year.startdate, to: year.enddate }, page, 50, page > 1 && previewFor === previewKey ? preview?.sequence : undefined, true); setPreview(report); setPreviewFor(previewKey); setPreviewPage(page); }
     catch (e) { setError((e as Error).message); } finally { setLoading(false); }
   }
   async function process() {
-    if (!year || !preview || previewFor !== previewKey || busy) return;
+    if (!year || !hasPreview || previewFor !== previewKey || busy) return;
     if (!reason.trim() || hasDocument && (!date || !docno.trim())) { setError(isClose ? tr("gl_close_specify_fields", "กรุณาระบุเลขที่เอกสาร วันที่เอกสาร และคำอธิบายก่อนบันทึกรายการ") : hasDocument ? tr("gl_specify_date_doc_reason", "กรุณาระบุวันที่ เลขที่เอกสาร และเหตุผลก่อนดำเนินการ") : tr("gl_enter_reason_before_posting", "กรุณาระบุเหตุผลก่อนทำรายการ")); return; }
     if (action === "year-end" && !targetYear) { setError(tr("gl_select_next_fy_opening", "กรุณาเลือกปีบัญชีถัดไปสำหรับยอดยกมา")); return; }
     if (!await confirm({ title: `${tr(...config.button)}?`, description: tr("gl_fy_doc_date", "ปีบัญชี {0} · เอกสาร {1} · วันที่ {2}").replace("{0}", String(yearCode)).replace("{1}", String(docno)).replace("{2}", String(date)), details: reason, confirmLabel: tr(...config.button), tone: "warning" })) return;
@@ -57,16 +79,17 @@ export function GLProcesses({ route, action }: { route: string; action: "close" 
       const count = result.createdjournals ?? 0;
       const documents = tr("gl_x_docs_no", "{0} เอกสาร เลขที่ {1}{2}").replace("{0}", String(count)).replace("{1}", String(docno)).replace("{2}", String(count > 1 ? tr("gl_001_etc", "-001 เป็นต้น") : ""));
       setMessage(action === "close" ? tr("gl_draft_created_open_gj_lock_period", "สร้างฉบับร่าง {0} กรุณาเปิดสมุดรายวันทั่วไปเพื่อตรวจและผ่านรายการทุกฉบับ แล้วล็อกช่วงวันที่ในเมนูล็อกงวดบัญชี").replace("{0}", String(documents)) : action === "year-end" ? count === 0 ? tr("gl_fy_closed_no_balance_cf", "ปิดปีบัญชีแล้ว ไม่มียอดคงเหลือที่ต้องยกไปปีถัดไป") : tr("gl_close_year_create_ob_draft", "ปิดปีเดิมและสร้างฉบับร่างยอดยกมา {0} กรุณาตรวจสอบและผ่านรายการยอดยกมาในปีถัดไป").replace("{0}", String(documents)) : tr("gl_completed_download_report", "ดำเนินการเรียบร้อยแล้ว กรุณาโหลดรายงานเพื่อตรวจสอบยอด"));
-      setDocno(""); setReason(""); setPreview(null); setError("");
+      setDocno(""); setReason(""); setPreview(null); setClosePreview(null); setError("");
     } catch (e) { setError((e as Error).message); }
   }
+  const periodField = <Field label={tr("gl_period_code", "งวดบัญชี")} hint={tr("gl_close_period_hint", "เลือกงวดเพื่อใช้วันสิ้นงวดเป็นวันที่ปิด ยอดปิดคือยอดสะสมของรายได้และค่าใช้จ่ายถึงวันนั้น")}><Combobox aria-label={tr("gl_period_code", "งวดบัญชี")} value={periodCode} onChange={(value: string | number) => { const picked = closePeriods.find((period) => period.code === String(value)); if (picked?.enddate) setDate(picked.enddate); }} disabled={!year || busy || loading} placeholder={tr("gl_close_period_custom", "กำหนดวันที่เอง")}><option value="">{tr("gl_close_period_custom", "กำหนดวันที่เอง")}</option>{closePeriods.map((period) => <option key={period.code} value={period.code}>{`${period.code}${period.name ? ` ${period.name}` : ""} · ${formatAppDate(period.enddate, language)}`}</option>)}</Combobox></Field>;
   const dateField = <Field label={isClose ? tr("gl_close_document_date", "วันที่เอกสาร") : tr("gl_processing_date", "วันที่ดำเนินการ")}><input className={control} type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>;
   const docnoField = <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} value={docno} onChange={(e) => setDocno(e.target.value)} /></Field>;
   return <section ref={rootRef} className={`${panel} grid gap-3`}><Notice text={tr(...config.text)} /><Notice text={tr("gl_process_companywide_scope", "ยอดตรวจสอบและการดำเนินการครอบคลุมทุกสาขาของบริษัท ต้องมีสิทธิ์ระดับบริษัท แม้เลือกสาขาอยู่ในพื้นที่ทำงาน")} /><Notice error text={error || refs.error} /><Notice text={message} />
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={yearCode} onChange={setYear} /></Field>{isClose ? <>{docnoField}{dateField}</> : hasDocument ? <>{dateField}{docnoField}</> : null}<Field label={isClose ? tr("gl_close_description", "คำอธิบาย") : tr("gl_reason", "เหตุผล")}><input className={control} value={reason} onChange={(e) => setReason(e.target.value)} /></Field></div>
+    <div className={`grid gap-3 sm:grid-cols-2 ${isClose ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={yearCode} onChange={setYear} /></Field>{isClose ? <>{periodField}{docnoField}{dateField}</> : hasDocument ? <>{dateField}{docnoField}</> : null}<Field label={isClose ? tr("gl_close_description", "คำอธิบาย") : tr("gl_reason", "เหตุผล")}><input className={control} value={reason} onChange={(e) => setReason(e.target.value)} /></Field></div>
     {action === "year-end" && <Field label={tr("gl_next_fy_opening_balance", "ปีบัญชีถัดไปสำหรับยอดยกมา")}><YearSelect label={tr("gl_next_fy_opening_balance", "ปีบัญชีถัดไปสำหรับยอดยกมา")} years={refs.years.filter((item) => item.code !== yearCode && !item.closed && item.isactive)} value={targetYear} onChange={(value) => { setTargetYear(value); setDate(refs.years.find((item) => item.code === value)?.startdate ?? ""); }} /></Field>}
     {year && <p className="text-[0.95rem]">{tr("gl_process_year_range_status", "{0} ถึง {1} · {2}").replace("{0}", String(year.startdate)).replace("{1}", String(year.enddate)).replace("{2}", String(year.closed ? tr("gl_year_closed", "ปิดปีแล้ว") : tr("gl_active_fiscal_year", "ปีบัญชีเปิดใช้งาน")))}</p>}
     <div className="flex flex-wrap gap-2"><Button className={actionClass} variant="outline" disabled={!year || busy || loading} onClick={() => void inspect()}>{loading ? tr("gl_checking", "กำลังตรวจสอบ…") : isClose ? tr("gl_close_verify", "ประมวลผล") : tr("gl_verify_balances_before", "ตรวจสอบยอดก่อนดำเนินการ")}</Button><Button className={actionClass} disabled={!canProcess} onClick={() => void process()}>{isClose ? `${tr("gl_close_save_entry", "บันทึกรายการ")} (F11)` : tr(...config.button)}</Button></div>
-    {preview && <><ReportGrid report={preview} books={refs.books} /><Pager page={previewPage} total={preview.totalrows} onPage={(page) => void inspect(page)} loading={loading || busy} limit={50} /></>}{confirmationDialog}
+    {isClose ? closePreview && previewFor === previewKey && <ClosePreviewTable preview={closePreview} /> : preview && <><ReportGrid report={preview} books={refs.books} /><Pager page={previewPage} total={preview.totalrows} onPage={(page) => void inspect(page)} loading={loading || busy} limit={50} /></>}{confirmationDialog}
   </section>;
 }

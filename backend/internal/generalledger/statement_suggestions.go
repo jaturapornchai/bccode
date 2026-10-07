@@ -130,7 +130,8 @@ type statementCodeTarget struct {
 	basis      string // opening | closing | movement | column
 	codes      []string
 	suggestKey string
-	index      int // ตำแหน่งใน rows หรือ columns ของแม่แบบ
+	group      bool // แถวอ้างกลุ่มผังบัญชี: codes มาจากกลุ่มตอนคำนวณ ไม่ใช่รายการที่ผู้ใช้เลือก จึงไม่แนะนำบัญชีให้
+	index      int  // ตำแหน่งใน rows หรือ columns ของแม่แบบ
 }
 
 // statementCodeTargets: งบทั่วไป = ทุกแถวชนิด account (ฐานตาม amountbasis หรือตามชนิดงบ);
@@ -149,7 +150,7 @@ func statementCodeTargets(m Master) []statementCodeTarget {
 			}
 			basis = "movement"
 		}
-		targets = append(targets, statementCodeTarget{target: "row", id: row.ID, rowNo: row.RowNo, title: row.Title, basis: basis, codes: row.AccountCodes, suggestKey: row.SuggestKey, index: i})
+		targets = append(targets, statementCodeTarget{target: "row", id: row.ID, rowNo: row.RowNo, title: row.Title, basis: basis, codes: row.AccountCodes, suggestKey: row.SuggestKey, group: row.AccountGroup != "", index: i})
 	}
 	if equity {
 		for i, column := range m.Columns {
@@ -261,7 +262,7 @@ func buildStatementSuggestions(m Master, chart map[string]Account, ev statementE
 	others := statementOtherTemplateEvidence(chart, ev.templates)
 	for _, target := range targets {
 		rule, ok := statementSuggestRules[target.suggestKey]
-		if !ok {
+		if !ok || target.group {
 			continue // ไม่มีชนิดหรือชนิดที่ไม่รู้จัก: ไม่แนะนำ (การบันทึกแม่แบบตรวจชนิดเอง)
 		}
 		out.Targets = append(out.Targets, statementSuggestTarget(m.StatementType, target, targets, positions, rule, chart, ev, others[target.suggestKey]))
@@ -543,6 +544,9 @@ func (s *PostgresStore) validateMasterStatement(ctx context.Context, tx *sql.Tx,
 		return nil
 	}
 	if err := checkStatementSuggestKeys(*m); err != nil {
+		return err
+	}
+	if err := validateStatementTemplateGroups(ctx, tx, scope.Company, *m); err != nil {
 		return err
 	}
 	lines := []Line{}

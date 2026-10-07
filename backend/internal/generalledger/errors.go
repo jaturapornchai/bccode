@@ -25,7 +25,6 @@ const (
 	CodeReferencedMaster = "account_referenced_master"
 	CodePostedLocked     = "account_posted_immutable"
 	CodeImmutableCode    = "code_immutable"
-	CodeGroupNotFound    = "account_group_not_found"
 	CodePayloadMissing   = "account_payload_required"
 	CodeUnsupported      = "unsupported_command"
 )

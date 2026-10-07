@@ -48,7 +48,6 @@ type Account struct {
 	NormalBalance     string `json:"normalbalance" bson:"normalbalance"`
 	AllowPosting      bool   `json:"allowposting" bson:"allowposting"`
 	IsActive          bool   `json:"isactive" bson:"isactive"`
-	AccountGroup      string `json:"accountgroup" bson:"accountgroup"`
 	IsCash            bool   `json:"iscash" bson:"iscash"`
 	Level             int    `json:"level" bson:"level"`
 	// DepartSeparate/ProjectSeparate - เงื่อนไข "แยกแผนก"/"แยกโครงการ" ของ Champ (BCChartOfAccount.DepartSeparate/ProjectSeparate):
@@ -147,6 +146,7 @@ type Master struct {
 	Columns        []StatementColumn     `json:"columns,omitempty" bson:"columns,omitempty"`   // statement-templates ชนิด equity
 	Notes          []StatementNote       `json:"notes,omitempty" bson:"notes,omitempty"`       // statement-notes: หมายเหตุประกอบงบการเงินของปีบัญชี (code)
 	Template       *JournalTemplate      `json:"template,omitempty" bson:"template,omitempty"` // journal-templates: รูปแบบรายการรายวัน (journal_templates.go)
+	AccountEntries []AccountEntry        `json:"accountentries,omitempty" bson:"accountentries,omitempty"`
 }
 
 // StatementColumn คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น (งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) — ผู้ใช้เลือกบัญชีเอง
@@ -176,7 +176,7 @@ type StatementRow struct {
 	Title         string   `json:"title" bson:"title"`
 	NoteNo        string   `json:"noteno,omitempty" bson:"noteno,omitempty"`
 	AccountCodes  []string `json:"accountcodes,omitempty" bson:"accountcodes,omitempty"`
-	AccountGroup  string   `json:"accountgroup,omitempty" bson:"accountgroup,omitempty"`
+	AccountGroup  string   `json:"accountgroup,omitempty" bson:"accountgroup,omitempty"` // กลุ่มผังบัญชีที่แถว account อ้างถึง แทน AccountCodes ตอนคำนวณ (statement_groups.go)
 	NormalBalance string   `json:"normalbalance,omitempty" bson:"normalbalance,omitempty"`
 	Formula       string   `json:"formula,omitempty" bson:"formula,omitempty"`
 	ReverseSign   bool     `json:"reversesign,omitempty" bson:"reversesign,omitempty"`
@@ -554,7 +554,6 @@ func normalizeCommandCodes(cmd *Command) {
 		a := *cmd.Account
 		a.AccountCode = NormalizeCode(a.AccountCode)
 		a.ParentAccountCode = NormalizeCode(a.ParentAccountCode)
-		a.AccountGroup = NormalizeCode(a.AccountGroup)
 		a.DepartCodes = normalizeCodeList(a.DepartCodes)
 		a.ProjectCodes = normalizeCodeList(a.ProjectCodes)
 		cmd.Account = &a

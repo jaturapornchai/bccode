@@ -20,6 +20,8 @@ type Result struct {
 	CreatedPeriods int `json:"createdperiods,omitempty"`
 	// PostCheck answers post-batches action "check" (nothing saved).
 	PostCheck *PostCheck `json:"postcheck,omitempty"`
+	// ClosePreview answers processes action "close-preview" (nothing saved).
+	ClosePreview *ClosePreview `json:"closepreview,omitempty"`
 	// BatchNo/PostedJournals answer post-batches action "create".
 	BatchNo        string `json:"batchno,omitempty"`
 	PostedJournals int    `json:"postedjournals,omitempty"`

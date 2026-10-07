@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  accountEntriesText,
   addStatementAccounts,
   applyStatementTemplateFixes,
   emptyStatementTemplate,
@@ -47,6 +48,7 @@ import {
   type GLLabel,
   generateStarterTemplates,
   reportCsv,
+  type GLMaster,
   type GLReport,
   type GLStatementTemplate,
   type StatementAmountBasis,
@@ -56,7 +58,7 @@ import {
   type StatementRowType,
   type StatementRowUnderline,
 } from "@/lib/general-ledger";
-import { glRequest, glStatementSuggestions } from "@/lib/general-ledger-api";
+import { glAllRecords, glRequest, glStatementSuggestions } from "@/lib/general-ledger-api";
 import {
   Combobox,
   Field,
@@ -127,6 +129,15 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
   const [starterModalOpen, setStarterModalOpen] = useState(false);
   const [accountPickerRowId, setAccountPickerRowId] = useState<string | null>(null);
   const [accountPickerColumnId, setAccountPickerColumnId] = useState<string | null>(null);
+  // Chart-of-accounts groups (Champ 5497): an account line can take its accounts from a group instead of picking them one by one.
+  const [accountGroups, setAccountGroups] = useState<GLMaster[]>([]);
+  useEffect(() => {
+    let active = true;
+    glAllRecords<GLMaster>("account-groups", "", 2000)
+      .then((items) => { if (active) setAccountGroups(items); })
+      .catch((e) => { if (active) setError((e as Error).message); });
+    return () => { active = false; };
+  }, []);
 
   // Live preview state
   const [filters, setFilters] = useState<ReportFilters>({ ...emptyReportFilters });
@@ -1010,6 +1021,18 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                   {template.statementtype === "equity" && row.amountbasis && row.amountbasis !== "movement" ? (
                                     <span className="text-xs text-muted-foreground">{tr("gl_statement_uses_column_accounts", "ใช้บัญชีของแต่ละคอลัมน์")}</span>
                                   ) : (
+                                  <>
+                                  <select
+                                    className="rounded border border-input bg-background p-1 text-xs"
+                                    value={row.accountgroup === undefined ? "accounts" : "group"}
+                                    onChange={(e) => updateRow(row.id, e.target.value === "group" ? { accountgroup: "" } : { accountgroup: undefined })}
+                                    title={tr("gl_statement_source_label", "ที่มาของบัญชีในบรรทัดนี้")}
+                                    aria-label={tr("gl_statement_source_label", "ที่มาของบัญชีในบรรทัดนี้")}
+                                  >
+                                    <option value="accounts">{tr("gl_statement_source_accounts", "บัญชีที่ระบุ")}</option>
+                                    <option value="group">{tr("gl_statement_source_group", "กลุ่มผังบัญชี")}</option>
+                                  </select>
+                                  {row.accountgroup === undefined ? (
                                   <button
                                     type="button"
                                     data-statement-picker={statementTargetKey({ target: "row", id: row.id })}
@@ -1020,8 +1043,26 @@ export function GLStatementDesigner({ route = "/gl/statement-designer" }: { rout
                                       ? tr("gl_selected_accounts", "เลือกแล้ว {0} บัญชี").replace("{0}", String(row.accountcodes.length))
                                       : tr("gl_select_chart_of_accounts", "+ เลือกผังบัญชี")}
                                   </button>
+                                  ) : (
+                                  <>
+                                  <select
+                                    className="min-w-40 rounded border border-input bg-background p-1 text-xs"
+                                    data-field={`rows[${index}].accountgroup`}
+                                    value={row.accountgroup}
+                                    onChange={(e) => updateRow(row.id, e.target.value ? { accountgroup: e.target.value, accountcodes: [] } : { accountgroup: "" })}
+                                    title={accountEntriesText(accountGroups.find((group) => group.code === row.accountgroup)?.accountentries)}
+                                    aria-label={tr("gl_statement_source_group", "กลุ่มผังบัญชี")}
+                                  >
+                                    <option value="">{tr("gl_statement_group_select", "เลือกกลุ่มผังบัญชี")}</option>
+                                    {row.accountgroup && !accountGroups.some((group) => group.code === row.accountgroup) && <option value={row.accountgroup}>{row.accountgroup}</option>}
+                                    {accountGroups.map((group) => <option key={group.code} value={group.code}>{group.code} · {group.name}</option>)}
+                                  </select>
+                                  {accountGroups.length === 0 && <span className="text-xs text-muted-foreground">{tr("gl_statement_group_none", "ยังไม่มีกลุ่มผังบัญชี — สร้างที่เมนู “บันทึกกลุ่มผังบัญชี”")}</span>}
+                                  </>
                                   )}
-                                  {suggestButton("row", row.id)}
+                                  </>
+                                  )}
+                                  {row.accountgroup === undefined && suggestButton("row", row.id)}
 
                                   <select
                                     className="rounded border border-input bg-background p-1 text-xs"

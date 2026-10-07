@@ -6,7 +6,7 @@ export type GLAccount = GLIdentity & {
   accountcode: string; names: { code: string; name: string }[];
   accounttype: "asset" | "liability" | "equity" | "income" | "expense";
   parentaccountcode: string | null; normalbalance: "debit" | "credit";
-  allowposting: boolean; isactive: boolean; accountgroup: string; iscash: boolean;
+  allowposting: boolean; isactive: boolean; iscash: boolean;
   level?: number;
   departseparate?: boolean;
   projectseparate?: boolean;
@@ -41,12 +41,16 @@ export type GLFiscalYear = GLIdentity & {
 export type GLPeriodProfit = { code: string; netprofitloss: string; summprofitloss: string };
 export type GLRule = { accountcode: string; side: string; source: string };
 export type GLAllocationRule = { branchcode: string; departmentcode: string; projectcode: string; accountcode: string; rate: string };
+/** One line of a chart-of-accounts group (Champ BCAccGroup.AccGroup): no `to` = a single code, otherwise every account whose code
+ *  sorts between `from` and `to` (byte order, backend statement_groups.go). `to: ""` only exists in the form for a range row whose end is not filled yet. */
+export type GLAccountEntry = { from: string; to?: string };
 export type GLMaster = GLIdentity & {
   code: string; name: string; isactive: boolean; accountcode: string; fiscalyear: string;
   startdate: string; enddate: string; locked: boolean; amount: string;
   branchcode: string; departmentcode: string; projectcode: string; direction: string;
   bookcode: string; rules: GLRule[]; itemaccount: string; costaccount: string; revenueaccount: string;
   allocatemode: string; allocaterules: GLAllocationRule[];
+  accountentries?: GLAccountEntry[];
 };
 export type GLLine = {
   accountcode: string; accountname?: string; description: string; debit: string; credit: string;
@@ -102,6 +106,10 @@ export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: 
 /** ผลตรวจหนึ่งใบจาก backend: ok = ผ่านกฎเดียวกับการผ่านรายการ; debit/credit = สตริงทศนิยมยอดรวมของใบ */
 export type GLPostCheckRow = { id: string; version: number; docno: string; date: string; bookcode: string; fiscalyear: string; branchcode: string; description: string; debit: string; credit: string; ok: boolean; code?: string; message?: string };
 export type GLPostCheck = { rows: GLPostCheckRow[]; more: boolean; limit: number };
+/** Closing-entries preview (backend close_preview.go, processes action "close-preview", nothing saved): the vouchers the real close would create as drafts, one per branch. Amounts are decimal strings at the year scale; transfer = the lines moving net profit (loss) to retained earnings; balanced = total debit equals total credit. */
+export type GLClosePreviewLine = { accountcode: string; accountname: string; departmentcode: string; projectcode: string; debit: string; credit: string; transfer: boolean };
+export type GLClosePreviewBranch = { branchcode: string; docno: string; netprofit: string; totaldebit: string; totalcredit: string; lines: GLClosePreviewLine[] };
+export type GLClosePreview = { fiscalyear: string; date: string; scale: number; pendingdrafts: boolean; netprofit: string; totaldebit: string; totalcredit: string; balanced: boolean; branches: GLClosePreviewBranch[] };
 /** Adjust purchase VAT (Champ 5498, backend vat_adjust.go) filter: "from" alone matches that value exactly, from-to is a range; at least one document-date or tax-invoice-date bound is required. */
 export type GLVatAdjustFilter = { docdatefrom?: string; docdateto?: string; invdatefrom?: string; invdateto?: string; partnerfrom?: string; partnerto?: string };
 /** One purchase VAT row the user changed (claim period + status) with the journal version the screen loaded; a stale version makes the backend refuse the whole command. */
@@ -237,7 +245,7 @@ export function journalBookProblem(bookcode: string, books: GLJournalBook[], pre
   return null;
 }
 export function accountName(account: GLAccount) { return account.names?.find((name) => name.code === "th")?.name ?? account.accountcode; }
-export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, accountgroup: "", iscash: false, level: 1, departseparate: false, projectseparate: false }; }
+export function emptyAccount(): GLAccount { return { accountcode: "", names: [{ code: "th", name: "" }], accounttype: "asset", parentaccountcode: null, normalbalance: "debit", allowposting: true, isactive: true, iscash: false, level: 1, departseparate: false, projectseparate: false }; }
 
 export const ACCOUNT_TYPE_ORDER: Record<string, number> = {
   asset: 1,
@@ -350,6 +358,27 @@ export function sortAccountsHierarchically(accounts: GLAccount[]): (GLAccount & 
 export function emptyFiscalYear(): GLFiscalYear { return { code: "", startdate: "", enddate: "", scale: 2, retainedearningsaccount: "", profitlossaccount: "", isactive: true, closed: false }; }
 export function emptyAllocationRule(): GLAllocationRule { return { branchcode: "", departmentcode: "", projectcode: "", accountcode: "", rate: "0" }; }
 export function emptyMaster(): GLMaster { return { code: "", name: "", isactive: true, accountcode: "", fiscalyear: "", startdate: "", enddate: "", locked: false, amount: "0", branchcode: "", departmentcode: "", projectcode: "", direction: "in", bookcode: "", rules: [], itemaccount: "", costaccount: "", revenueaccount: "", allocatemode: "percent", allocaterules: [] }; }
+/** Champ-style one-line summary of a group's entries, for example "1110:1130, 1210". */
+export function accountEntriesText(entries?: GLAccountEntry[]): string {
+  return (entries ?? []).map((entry) => (entry.to ? `${entry.from}:${entry.to}` : entry.from)).join(", ");
+}
+/** The picker returns the complete set of single codes: keep range rows and singles still selected (in place), append the newly picked ones. */
+export function replaceAccountGroupSingles(entries: GLAccountEntry[], codes: string[]): GLAccountEntry[] {
+  const wanted = new Set(codes);
+  const kept = entries.filter((entry) => entry.to !== undefined || wanted.has(entry.from));
+  const present = new Set(kept.filter((entry) => entry.to === undefined).map((entry) => entry.from));
+  return [...kept, ...codes.filter((code) => !present.has(code)).map((from) => ({ from }))];
+}
+/** Payload of an account group: blank rows dropped, codes trimmed, an end equal to the start (or empty) becomes a single code. */
+export function accountGroupPayload(master: GLMaster): GLMaster {
+  const entries: GLAccountEntry[] = [];
+  for (const entry of master.accountentries ?? []) {
+    const from = entry.from.trim(), to = (entry.to ?? "").trim();
+    if (!from && !to) continue;
+    entries.push(to && to !== from ? { from, to } : { from });
+  }
+  return { ...master, code: master.code.trim(), name: master.name.trim(), accountentries: entries };
+}
 export function emptyLine(): GLLine { return { accountcode: "", description: "", debit: "0", credit: "0", departmentcode: "", projectcode: "", cashflow: "" }; }
 export function localDate() { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
 /** ปีบัญชีที่เปิดใช้งาน (ยังไม่ปิด) ซึ่งครอบคลุมวันที่ — ไม่มี = "" ให้ผู้ใช้เลือกเอง */
@@ -733,7 +762,7 @@ export function statementSuggestSignature(template: Pick<GLStatementTemplate, "s
   if (!targets.some((target) => isStatementSuggestKey(target.suggestkey) || target.codes.some((code) => code !== STATEMENT_CURRENT_EARNINGS))) return "";
   return JSON.stringify({
     statementtype: template.statementtype,
-    rows: (template.rows ?? []).map((row) => [row.id, row.rowtype, row.amountbasis ?? "", row.accountcodes ?? [], row.suggestkey ?? ""]),
+    rows: (template.rows ?? []).map((row) => [row.id, row.rowtype, row.amountbasis ?? "", row.accountcodes ?? [], row.suggestkey ?? "", row.accountgroup ?? ""]),
     columns: template.statementtype === "equity" ? (template.columns ?? []).map((column) => [column.id, column.accountcodes ?? [], column.suggestkey ?? ""]) : [],
   });
 }

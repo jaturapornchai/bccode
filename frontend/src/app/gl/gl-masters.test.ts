@@ -465,7 +465,7 @@ describe("ผังบัญชี: failed save shows one Thai alert in the edit
 describe("ผังบัญชี: parent-account picker", () => {
   const account = (accountcode: string, parentaccountcode: string | null, patch: Partial<GLAccount> = {}): GLAccount => ({
     accountcode, names: [{ code: "th", name: accountcode }], accounttype: "asset", parentaccountcode, normalbalance: "debit",
-    allowposting: false, isactive: true, accountgroup: "", iscash: false, ...patch,
+    allowposting: false, isactive: true, iscash: false, ...patch,
   });
   const chart = [
     account("10000", null),
@@ -540,7 +540,6 @@ describe("ผังบัญชี: TreeNodeRow sub-account shortcut", () => {
       level: 1,
       isactive: true,
       normalbalance: "debit" as const,
-      accountgroup: "",
       iscash: false,
     },
     children: [],
@@ -558,7 +557,6 @@ describe("ผังบัญชี: TreeNodeRow sub-account shortcut", () => {
       level: 2,
       isactive: true,
       normalbalance: "debit" as const,
-      accountgroup: "",
       iscash: true,
     },
     children: [],
@@ -632,7 +630,6 @@ describe("ผังบัญชี: TreeNodeRow sub-account shortcut", () => {
       normalbalance: "debit",
       allowposting: false,
       isactive: true,
-      accountgroup: "",
       iscash: false,
       level: 3,
     };
@@ -728,10 +725,11 @@ describe("Champ wording of group and link-template lists (2026-10-07)", () => {
     for (const code of ["G01", "ปูนซีเมนต์", "11310", "51110", "41110"]) expect(html).toContain(code);
   });
 
-  it("บันทึกกลุ่มผังบัญชี uses รหัสกลุ่ม / ชื่อกลุ่ม and no extra account columns", () => {
-    listOf([{ id: "ag-1", code: "A01", name: "สินทรัพย์หมุนเวียน", isactive: true, version: 1 }]);
+  it("บันทึกกลุ่มผังบัญชี uses รหัสกลุ่ม / ชื่อกลุ่ม / รหัสบัญชี like Champ 5497 and lists the entries as 1110:1130, 1210", () => {
+    listOf([{ id: "ag-1", code: "A01", name: "สินทรัพย์หมุนเวียน", isactive: true, version: 1, accountentries: [{ from: "1110", to: "1130" }, { from: "1210" }] }]);
     const html = renderToStaticMarkup(createElement(GLMasters, { resource: "account-groups", route: "/gl/account-groups" }));
-    expect(headers(html)).toEqual(["รหัสกลุ่ม", "ชื่อกลุ่ม", "สถานะ", "จัดการ"]);
+    expect(headers(html)).toEqual(["รหัสกลุ่ม", "ชื่อกลุ่ม", "รหัสบัญชี", "สถานะ", "จัดการ"]);
+    expect(html).toContain("1110:1130, 1210");
   });
 
   it("กำหนดรูปแบบการเชื่อม uses รหัสรูปแบบ / ชื่อรูปแบบ while other masters keep รหัส / ชื่อ / รายละเอียด", () => {

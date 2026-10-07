@@ -179,6 +179,15 @@ describe("GL authenticated proxy", () => {
     for (const body of [{ resource: "journals", action: "generate", requestid }, { resource: "journals", action: "check", requestid }, { resource: "periods", action: "check", requestid }]) expect((await post(body)).status).toBe(400);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+  it("forwards the closing-entries preview only as processes/close-preview (calculation only)", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: { closepreview: { branches: [] } } })); vi.stubGlobal("fetch", fetchMock);
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const post = (body: unknown) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    expect((await post({ resource: "processes", action: "close-preview", id: "2026", version: 3, date: "2026-02-28", docno: "CLOSE-FEB", holdingcode: "other", requestid })).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ resource: "processes", action: "close-preview", id: "2026", version: 3, date: "2026-02-28", docno: "CLOSE-FEB", requestid });
+    for (const resource of ["journals", "periods", "post-batches"]) expect((await post({ resource, action: "close-preview", requestid })).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("forwards the department and project code range, ignoring unknown filters and caller scope", async () => {
     const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
     for (const resource of ["departments", "projects"]) {

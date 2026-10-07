@@ -27,6 +27,41 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 	if cmd.Action != "close" && cmd.Action != "year-end" {
 		return nil, fmt.Errorf("คำสั่งประมวลผลไม่ถูกต้อง")
 	}
+	plan, err := s.planProcess(ctx, tx, scope, cmd, false)
+	if err != nil {
+		return nil, err
+	}
+	changes := []Change{}
+	for _, j := range plan.Journals {
+		if err = s.checkDuplicateCode(ctx, tx, scope.Company, "journals", j.DocNo, ""); err != nil {
+			return nil, err
+		}
+		j.Identity = newIdentity(scope, now)
+		part, e := pgChange("journals", j.ID, j.DocNo, j)
+		if e != nil {
+			return nil, e
+		}
+		changes = append(changes, part...)
+	}
+	if plan.CloseYear {
+		year := plan.Year
+		year.Closed = true
+		year.Identity = updateIdentity(scope, year.Identity, now)
+		part, e := pgChange("fiscal-years", year.ID, year.Code, year)
+		if e != nil {
+			return nil, e
+		}
+		changes = append(changes, part...)
+	}
+	return changes, nil
+}
+
+// planProcess builds the vouchers a close / year-end command creates and checks them with the
+// same rules the save uses. It only reads, so the real command (mutateProcess) and the
+// read-only preview (previewClose) share this one generator and cannot disagree. With
+// allowPending the "drafts still exist" guard becomes the plan's PendingDrafts flag, so the
+// preview can show the entries while telling the user to post the drafts first.
+func (s *PostgresStore) planProcess(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, allowPending bool) (*preparedProcess, error) {
 	year, err := s.openPGYear(ctx, tx, scope, cmd.ID)
 	if err != nil {
 		return nil, err
@@ -53,7 +88,7 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 	if err != nil {
 		return nil, err
 	}
-	if pending {
+	if pending && !allowPending {
 		return nil, fmt.Errorf("ยังมีรายการร่าง กรุณาผ่านรายการก่อนประมวลผล")
 	}
 	snapshot, err := processBalancesTx(ctx, tx, scope, year.Code, to)
@@ -61,7 +96,7 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 		return nil, err
 	}
 	target := year
-	prepared := &preparedProcess{Year: year}
+	prepared := &preparedProcess{Year: year, To: to, PendingDrafts: pending, TransferFrom: map[string]int{}, NetProfit: map[string]decimal.Decimal{}}
 	if cmd.Action == "close" {
 		if year.ProfitLossAccount == "" || year.RetainedEarningsAccount == "" {
 			return nil, fmt.Errorf("กรุณากำหนดบัญชีกำไรขาดทุนและกำไรสะสม")
@@ -135,6 +170,11 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 		if balance.IsZero() {
 			continue
 		}
+		// Per branch the account lines come first and the profit transfer lines after them.
+		if _, ok := prepared.TransferFrom[key.branch]; !ok {
+			prepared.TransferFrom[key.branch] = len(byBranch[key.branch])
+		}
+		prepared.NetProfit[key.branch] = prepared.NetProfit[key.branch].Add(balance)
 		for _, item := range []struct {
 			code  string
 			value decimal.Decimal
@@ -177,28 +217,7 @@ func (s *PostgresStore) mutateProcess(ctx context.Context, tx *sql.Tx, scope Sco
 		}
 		prepared.Journals = append(prepared.Journals, j)
 	}
-	changes := []Change{}
-	for _, j := range prepared.Journals {
-		if err = s.checkDuplicateCode(ctx, tx, scope.Company, "journals", j.DocNo, ""); err != nil {
-			return nil, err
-		}
-		j.Identity = newIdentity(scope, now)
-		part, e := pgChange("journals", j.ID, j.DocNo, j)
-		if e != nil {
-			return nil, e
-		}
-		changes = append(changes, part...)
-	}
-	if prepared.CloseYear {
-		year.Closed = true
-		year.Identity = updateIdentity(scope, year.Identity, now)
-		part, e := pgChange("fiscal-years", year.ID, year.Code, year)
-		if e != nil {
-			return nil, e
-		}
-		changes = append(changes, part...)
-	}
-	return changes, nil
+	return prepared, nil
 }
 
 func processBalancesTx(ctx context.Context, tx *sql.Tx, scope Scope, year, to string) (ProcessBalanceSnapshot, error) {
