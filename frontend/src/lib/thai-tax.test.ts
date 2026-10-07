@@ -9,7 +9,11 @@ import {
   hasThirteenDigitTaxId,
   isHeadOfficeBranch,
   isThaiTaxRoute,
+  REPORT_TITLE_MAX_LENGTH,
+  reportHeading,
   requestWhtCertificatePdf,
+  VAT_REGISTER_CLAIMS,
+  VAT_REGISTER_SORTS,
   taxAddressProblems,
   taxCompanyLabel,
   toTaxAddress,
@@ -188,6 +192,41 @@ describe("fetchVatRegister", () => {
     expect(bodies[0]).toMatchObject({ datebasis: "invoice_date", type: "purchase" });
     expect(bodies[1]).toMatchObject({ datebasis: "document_date" });
     expect(bodies[2]).not.toHaveProperty("datebasis");
+  });
+
+  // Champ 5536/5537 "เรียงตาม" + 5536 "แสดงยอดขอคืนภาษี": ส่งไป backend (เรียง/กรองที่ SQL); หมายเหตุและช่องภาษีขอคืน/ไม่ขอคืนมาจาก backend ตรง ๆ
+  it("ส่ง sort/claim และ map หมายเหตุที่ผู้ใช้บันทึก + ยอดภาษีขอคืน/ไม่ขอคืน", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, {
+        data: [
+          { taxinvoiceno: "PI-20", vatamount: "70.00", vatclaimed: "70.00", vatnotclaimed: "0.00", remark: "ค่าเช่าโกดังลาดกระบัง เดือน ก.ย. 2569" },
+          { taxinvoiceno: "PI-30", vatamount: "35.00", vatclaimed: "0.00", vatnotclaimed: "35.00", note: "กลับรายการภายหลังในเดือน ตุลาคม 2569" },
+        ],
+        total: 2,
+        summary: { vatamount: "105.00", vatclaimed: "70.00", vatnotclaimed: "35.00", days: [{ date: "2026-09-10", all: { count: 1, vatclaimed: "70.00" } }] },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "purchase", sort: "invoice_no", claim: "all" });
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body)) as Record<string, unknown>;
+    expect(body).toMatchObject({ sort: "invoice_no", claim: "all", type: "purchase" });
+    // หมายเหตุของผู้ใช้ (คอลัมน์ "หมายเหตุ") แยกจากหมายเหตุสถานะจาก backend (remark)
+    expect(result.records[0]).toMatchObject({ vatremark: "ค่าเช่าโกดังลาดกระบัง เดือน ก.ย. 2569", remark: undefined, vatclaimed: "70.00", vatnotclaimed: "0.00" });
+    expect(result.records[1]).toMatchObject({ vatremark: undefined, remark: "กลับรายการภายหลังในเดือน ตุลาคม 2569", vatclaimed: "0.00", vatnotclaimed: "35.00" });
+    expect(result.summary).toMatchObject({ vatamount: "105.00", vatclaimed: "70.00", vatnotclaimed: "35.00" });
+    expect(result.summary.days[0]?.all).toMatchObject({ count: 1, vatclaimed: "70.00", vatnotclaimed: "0.00" });
+    // backend เก่าไม่ส่งช่องแยก → "0.00" ไม่ใช่ undefined
+    expect(result.summary.creditnote).toMatchObject({ vatclaimed: "0.00", vatnotclaimed: "0.00" });
+    // ไม่ส่ง = ค่าเริ่มต้นเดิม (วันที่ใบกำกับ / ขอคืน) — body ไม่มีคีย์
+    await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "purchase" });
+    const plain = JSON.parse(String((fetchMock.mock.calls[1] as [string, RequestInit])[1].body)) as Record<string, unknown>;
+    expect(plain).not.toHaveProperty("sort");
+    expect(plain).not.toHaveProperty("claim");
+  });
+
+  it("ตัวเลือกเรียงตาม/ขอคืนตามลำดับของ Champ", () => {
+    expect(VAT_REGISTER_SORTS).toEqual(["document_date", "invoice_date", "invoice_no", "document_no"]);
+    expect(VAT_REGISTER_CLAIMS).toEqual(["claimed", "not_claimed", "all"]);
   });
 
   it("401 → unauthorized และ records ว่าง", async () => {
@@ -466,7 +505,7 @@ describe("fetchVatRegister — ใบกำกับฉบับเดียว�
     })));
     const result = await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "sale" });
     expect(result.summary.regular).toMatchObject({ count: 3, zeroamount: "500.00", taxableamount: "1500.11", vatamount: "70.01", totalamount: "2070.12" });
-    expect(result.summary.creditnote).toEqual({ count: 1, amountbeforevat: "-100.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "-100.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "-7.00", totalamount: "-107.00" });
+    expect(result.summary.creditnote).toEqual({ count: 1, amountbeforevat: "-100.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "-100.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "-7.00", vatclaimed: "0.00", vatnotclaimed: "0.00", totalamount: "-107.00" });
   });
 
   // Champ 5537/5538 "รวมรายวัน": backend ส่งยอดรายวัน (all/regular/creditnote) — จอแสดงตามที่ได้ ไม่บวกเอง
@@ -528,6 +567,20 @@ describe("taxCompanyLabel — ป้ายบริษัทบนหัวร�
   it("workspace เสีย/ว่าง หรือไม่มีรหัสบริษัท", () => {
     expect(taxCompanyLabel(null, "{not json", "rungrueng", "01")).toBe("[01]");
     expect(taxCompanyLabel({ code: "", name: "", taxid: "" }, "", "rungrueng", "")).toBe("");
+  });
+});
+
+// Champ 5536/5537/5541/5543 "ชื่อรายงาน": ว่าง = ชื่อมาตรฐาน (GLRepInputTaxCHMView.cpp:89), ตัดช่องว่างหัวท้าย, ไม่เกินเพดาน
+describe("reportHeading — ชื่อรายงานที่ผู้ใช้กรอกเป็นหัวรายงาน", () => {
+  it("ใช้ชื่อที่กรอก ตัดช่องว่าง และกลับไปชื่อมาตรฐานเมื่อเว้นว่าง", () => {
+    expect(reportHeading("  รายงานภาษีซื้อ สาขาลาดหลุมแก้ว  ", "ทะเบียนรายการใบกำกับภาษี")).toBe("รายงานภาษีซื้อ สาขาลาดหลุมแก้ว");
+    expect(reportHeading("   ", "ทะเบียนรายการใบกำกับภาษี")).toBe("ทะเบียนรายการใบกำกับภาษี");
+    expect(reportHeading("", "ทะเบียนรายการภาษีเงินได้หัก ณ ที่จ่าย")).toBe("ทะเบียนรายการภาษีเงินได้หัก ณ ที่จ่าย");
+  });
+
+  it("ตัดที่เพดานความยาวแม้ค่าที่ส่งมายาวเกิน (ช่องกรอกจำกัดไว้แล้ว)", () => {
+    const long = "ก".repeat(REPORT_TITLE_MAX_LENGTH + 20);
+    expect(reportHeading(long, "x")).toHaveLength(REPORT_TITLE_MAX_LENGTH);
   });
 });
 

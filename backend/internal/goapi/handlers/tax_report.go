@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +47,12 @@ type TaxVatRegisterRequest struct {
 	// DateBasis - วันที่ที่ใช้เลือกแถวของเดือน (Champ 5536 "พิมพ์ตาม", 5537): "" หรือ "period" = งวดภาษีที่บันทึก (ค่าเริ่มต้น), "invoice_date" = วันที่ใบกำกับ,
 	// "document_date" = วันที่เอกสาร (ใบสำคัญ); ใช้กับทะเบียนปกติเท่านั้น — มุมมองยกเลิกข้ามงวดอิงงวดภาษีเสมอ
 	DateBasis string `json:"datebasis,omitempty"`
+	// Sort - ลำดับแถว (Champ 5536/5537 "เรียงตาม"): "" หรือ "invoice_date" = วันที่ใบกำกับ (ลำดับเดิม), "document_date" = วันที่เอกสาร,
+	// "invoice_no" = เลขที่ใบกำกับ, "document_no" = เลขที่เอกสาร; ค่าอื่น = 400 — ใช้กับทะเบียนปกติเท่านั้น
+	Sort string `json:"sort,omitempty"`
+	// Claim - ภาษีซื้อเท่านั้น (Champ 5536 "แสดงยอดขอคืนภาษี"): "" หรือ "claimed" = ใช้สิทธิ (ชุดเดียวกับ ภ.พ.30), "not_claimed" = ต้องห้าม/รอใช้สิทธิ/ไม่ใช้สิทธิ,
+	// "all" = ทุกสถานะ; กรองเฉพาะรายการในทะเบียน ไม่กระทบยอด ภ.พ.30 — ใช้กับทะเบียนปกติเท่านั้น
+	Claim string `json:"claim,omitempty"`
 	// BranchCode - สถานประกอบการ (เลขสาขา 5 หลักตาม ภ.พ.20 = สาขาของใบสำคัญ); ว่าง = ทุกสถานประกอบการรวมกัน
 	// ม.87 วรรคสาม + ประกาศฯ VAT ฉบับที่ 89 ข้อ 5: รายงานภาษีซื้อ/ขายต้องจัดทำเป็นรายสถานประกอบการ
 	BranchCode string `json:"branchcode,omitempty"`
@@ -78,6 +85,8 @@ type TaxVatRegisterRow struct {
 	ReversedMonth string `json:"reversedmonth,omitempty"`
 	// Note - หมายเหตุของแถวในภาษาผู้ใช้ (กลับรายการภายหลัง / เหตุผลที่กลับรายการ)
 	Note string `json:"note,omitempty"`
+	// Remark - หมายเหตุที่ผู้ใช้บันทึกในรายการภาษีของใบสำคัญ — คอลัมน์ "หมายเหตุ" ของ Champ 5536/5537 (ShortTaxDesc, GLRepInputTaxCHMView.cpp:244,481-503)
+	Remark string `json:"remark,omitempty"`
 }
 
 // TaxVatRegisterSummary - ยอดรวมทั้งงวด (ไม่ใช่เฉพาะหน้าที่แสดง) คำนวณใน PostgreSQL
@@ -121,11 +130,13 @@ type TaxVatRegisterGroup struct {
 type vatTotals struct {
 	count                   int
 	base, zero, exempt, vat decimal.Decimal
+	notClaimed              decimal.Decimal // ส่วนของ vat ที่เป็นภาษีซื้อไม่ขอคืน (claim_status 2/3/4)
 }
 
-func (t *vatTotals) add(base, zero, exempt, vat decimal.Decimal) {
+func (t *vatTotals) add(base, zero, exempt, vat, notClaimed decimal.Decimal) {
 	t.count++
 	t.base, t.zero, t.exempt, t.vat = t.base.Add(base), t.zero.Add(zero), t.exempt.Add(exempt), t.vat.Add(vat)
+	t.notClaimed = t.notClaimed.Add(notClaimed)
 }
 
 // vatDayTotals - ตัวสะสมของวันหนึ่งวัน (สามกลุ่มเดียวกับยอดทั้งงวด)
@@ -140,7 +151,7 @@ func (t vatTotals) group() TaxVatRegisterGroup {
 		AmountBeforeVat: moneyText(before),
 		ZeroAmount:      moneyText(t.zero),
 		ExemptAmount:    moneyText(t.exempt),
-		vatColumns:      newVatColumns(t.base, t.zero, t.vat),
+		vatColumns:      newVatColumns(t.base, t.zero, t.vat, t.notClaimed),
 		VatAmount:       moneyText(t.vat),
 		TotalAmount:     moneyText(before.Add(t.vat)),
 	}
@@ -149,6 +160,7 @@ func (t vatTotals) group() TaxVatRegisterGroup {
 // TaxVatRegisterHandler - POST /api/report/tax/vat-register
 // รายงานภาษีซื้อ/ขายรายใบกำกับ อ่านจากรายละเอียดภาษีมูลค่าเพิ่มของใบสำคัญ GL ที่ผ่านรายการแล้ว (details.vats)
 // ของบริษัทที่ผู้ใช้เลือก ตามงวดภาษีที่บันทึกเป็นค่าเริ่มต้น (หรือวันที่ใบกำกับ/วันที่เอกสารตาม datebasis) — ภาษีซื้อนับเฉพาะรายการที่ใช้สิทธิ
+// เว้นแต่เลือก claim (ไม่ขอคืน/ทั้งหมด) ซึ่งกรองเฉพาะรายการในทะเบียนนี้; ภ.พ.30 ใช้ VatRecordsForPeriod (ใช้สิทธิเท่านั้น) เสมอ
 func TaxVatRegisterHandler(c echo.Context) error {
 	var req TaxVatRegisterRequest
 	if err := c.Bind(&req); err != nil {
@@ -170,6 +182,15 @@ func TaxVatRegisterHandler(c echo.Context) error {
 
 	if !generalledger.ValidVatBasis(req.DateBasis) {
 		return taxReportFail(c, http.StatusBadRequest, "INVALID_BASIS", "tax_report_basis_invalid")
+	}
+
+	if !generalledger.ValidVatSort(req.Sort) {
+		return taxReportFail(c, http.StatusBadRequest, "INVALID_SORT", "tax_report_sort_invalid")
+	}
+
+	// ภาษีขายไม่มีสถานะการใช้สิทธิ — ส่งตัวเลือกขอคืนมากับภาษีขาย = คำขอผิด ไม่ใช่เงียบแล้วคืนทุกแถว
+	if !generalledger.ValidVatClaim(req.Claim) || (req.Claim != "" && req.Type != "purchase") {
+		return taxReportFail(c, http.StatusBadRequest, "INVALID_CLAIM", "tax_report_claim_invalid")
 	}
 
 	if !isValidReportPeriod(req.Year, req.Month) {
@@ -215,7 +236,8 @@ func TaxVatRegisterHandler(c echo.Context) error {
 	if req.View == vatViewReversedLater {
 		records, err = generalledger.VatCrossPeriodCancellations(ctx, db, businessCode, req.Year, req.Month, taxType)
 	} else {
-		records, err = generalledger.VatRecordsForBasis(ctx, db, businessCode, req.Year, req.Month, taxType, req.DateBasis)
+		records, err = generalledger.VatRegisterRecords(ctx, db, businessCode, req.Year, req.Month, taxType,
+			generalledger.VatRegisterQuery{Basis: req.DateBasis, Sort: req.Sort, Claim: req.Claim})
 	}
 	if err != nil {
 		logger.Error("TaxVatRegister: %v", err)
@@ -338,18 +360,33 @@ func vatAmountOf(record generalledger.VatRecord, sign decimal.Decimal) decimal.D
 // vatColumns - ยอดตามคอลัมน์รายงานภาษีของ Champ (คำนวณที่ backend ทั้งหมด จอแค่แสดง):
 //   - รายงานภาษีขาย (GLRepOutputTaxView.cpp:446-509): ยอดยกเว้นภาษี | มูลค่าสินค้า ภาษีอัตราศูนย์ | มูลค่าสินค้า/บริการ (= TaxableAmount ฐานภาษีอย่างเดียว) | ภาษี | รวม (= TotalAmount)
 //   - รายงานภาษีซื้อ (GLRepInputTaxView.cpp:408-470): มูลค่าสินค้า/บริการ (= NonExemptAmount ฐาน + อัตราศูนย์) | ยอดยกเว้นภาษี | ภาษี | รวม (= NonExemptTotal) | รวมทั้งสิ้น (= TotalAmount)
+//   - รายงานภาษีซื้อเมื่อเลือก "แสดงยอดขอคืนภาษี" (GLRepInputTaxCHMView.cpp:293-294,510-550): ช่องภาษีแยก ขอคืน (= VatClaimed) | ไม่ขอคืน (= VatNotClaimed)
+//     — ภาษีขายไม่มีสถานะการใช้สิทธิ จึงอยู่ใน VatClaimed ทั้งหมด (จอไม่ใช้ช่องแยกกับภาษีขาย)
 type vatColumns struct {
 	TaxableAmount   string `json:"taxableamount"`
 	NonExemptAmount string `json:"nonexemptamount"`
 	NonExemptTotal  string `json:"nonexempttotal"`
+	VatClaimed      string `json:"vatclaimed"`
+	VatNotClaimed   string `json:"vatnotclaimed"`
 }
 
-func newVatColumns(base, zero, vat decimal.Decimal) vatColumns {
+// newVatColumns - notClaimed = ส่วนของ vat ที่เป็นภาษีซื้อไม่ขอคืน (ยอดปัดและใส่เครื่องหมายแล้วเหมือน vat)
+func newVatColumns(base, zero, vat, notClaimed decimal.Decimal) vatColumns {
 	return vatColumns{
 		TaxableAmount:   moneyText(base),
 		NonExemptAmount: moneyText(base.Add(zero)),
 		NonExemptTotal:  moneyText(base.Add(zero).Add(vat)),
+		VatClaimed:      moneyText(vat.Sub(notClaimed)),
+		VatNotClaimed:   moneyText(notClaimed),
 	}
+}
+
+// vatNotClaimedOf - ภาษีซื้อที่ไม่ใช้สิทธิในงวด (claim_status 2 ต้องห้าม / 3 รอใช้สิทธิ / 4 ไม่ใช้สิทธิ) = ช่อง "ไม่ขอคืน" ของ Champ (ReturnTax 1)
+func vatNotClaimedOf(r generalledger.VatRecord, vat decimal.Decimal) decimal.Decimal {
+	if r.TaxType == 1 && r.ClaimStatus != 1 {
+		return vat
+	}
+	return decimal.Zero
 }
 
 // buildVatRegister - แถวรายงานภาษีซื้อ/ขาย + ยอดรวมทั้งงวด (decimal) จากรายการภาษีที่บันทึกในใบสำคัญ
@@ -365,6 +402,7 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 		base, zero, exempt := vatMoney(r.BaseAmount, sign), vatMoney(r.ZeroRateAmount, sign), vatMoney(r.ExemptAmount, sign)
 		before := base.Add(zero).Add(exempt)
 		vat := vatAmountOf(r, sign)
+		notClaimed := vatNotClaimedOf(r, vat)
 		rows = append(rows, TaxVatRegisterRow{
 			DocDate:          r.TaxInvoiceDate,
 			TaxInvoiceNo:     r.TaxInvoiceNo,
@@ -375,7 +413,7 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			AmountBeforeVat:  moneyText(before),
 			ZeroAmount:       moneyText(zero),
 			ExemptAmount:     moneyText(exempt),
-			vatColumns:       newVatColumns(base, zero, vat),
+			vatColumns:       newVatColumns(base, zero, vat, notClaimed),
 			VatAmount:        moneyText(vat),
 			TotalAmount:      moneyText(before.Add(vat)),
 			DuplicateDocNos:  append([]string{}, r.DuplicateDocNos...),
@@ -384,6 +422,7 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			ReversalDate:     r.ReversalDate,
 			ReversedMonth:    firstN(r.ReversalDate, 7),
 			Note:             r.ReversalReason,
+			Remark:           r.Remark,
 		})
 		day := dayTotals[r.TaxInvoiceDate]
 		if day == nil {
@@ -391,16 +430,18 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			dayTotals[r.TaxInvoiceDate] = day
 			dayOrder = append(dayOrder, r.TaxInvoiceDate)
 		}
-		all.add(base, zero, exempt, vat)
-		day.all.add(base, zero, exempt, vat)
+		all.add(base, zero, exempt, vat, notClaimed)
+		day.all.add(base, zero, exempt, vat, notClaimed)
 		if r.DocumentType == 3 { // ใบลดหนี้ = กลุ่มรับคืน/ลดหนี้ (เครื่องหมายลบเดียวกับ vatSign)
-			creditNote.add(base, zero, exempt, vat)
-			day.creditNote.add(base, zero, exempt, vat)
+			creditNote.add(base, zero, exempt, vat, notClaimed)
+			day.creditNote.add(base, zero, exempt, vat, notClaimed)
 		} else {
-			regular.add(base, zero, exempt, vat)
-			day.regular.add(base, zero, exempt, vat)
+			regular.add(base, zero, exempt, vat, notClaimed)
+			day.regular.add(base, zero, exempt, vat, notClaimed)
 		}
 	}
+	// ยอดรายวันเรียงตามวันที่ใบกำกับเสมอ แม้แถวเรียงตามเลขที่/วันที่เอกสาร ("เรียงตาม") — จอจับคู่ด้วยวันที่
+	sort.Strings(dayOrder)
 	days := make([]TaxVatRegisterDay, 0, len(dayOrder))
 	for _, date := range dayOrder {
 		d := dayTotals[date]

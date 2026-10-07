@@ -29,6 +29,11 @@ export interface ThaiTaxRecord {
   condition?: number;
   /** ภาษีซื้อ/ขาย: เลขที่เอกสารบัญชี (ใบสำคัญ GL ที่บันทึกใบกำกับ) */
   docno?: string;
+  /** ภาษีซื้อ/ขาย: หมายเหตุที่ผู้ใช้บันทึกในรายการภาษีของใบสำคัญ — คอลัมน์ "หมายเหตุ" ของ Champ 5536/5537 (ต่างจาก remark = หมายเหตุสถานะจาก backend) */
+  vatremark?: string;
+  /** ภาษีซื้อ: ภาษีแยกช่อง ขอคืน / ไม่ขอคืน จาก backend (Champ 5536 "แสดงยอดขอคืนภาษี") */
+  vatclaimed?: string;
+  vatnotclaimed?: string;
   vatamount: string;
   totalamount: string;
   incometype?: string;
@@ -182,6 +187,9 @@ export interface VatRegisterGroup {
   nonexemptamount: string;
   nonexempttotal: string;
   vatamount: string;
+  /** ภาษีซื้อ: ส่วนของ vatamount ที่ขอคืน (ใช้สิทธิ) / ไม่ขอคืน (ต้องห้าม รอใช้สิทธิ ไม่ใช้สิทธิ) */
+  vatclaimed: string;
+  vatnotclaimed: string;
   totalamount: string;
 }
 
@@ -202,6 +210,8 @@ export interface VatRegisterSummary {
   nonexemptamount: string;
   nonexempttotal: string;
   vatamount: string;
+  vatclaimed: string;
+  vatnotclaimed: string;
   totalamount: string;
   /** จำนวนแถวในงวดที่ใบกำกับฉบับเดียวกันถูกบันทึกในใบสำคัญอื่นด้วย (นับทั้งงวดโดย backend ไม่ใช่เฉพาะแถวที่โหลด) */
   duplicatecount: number;
@@ -303,7 +313,7 @@ export interface WhtReportResult {
 
 const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "", address: null, phone: "", addressline: "" };
 const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [], payees: [] };
-const EMPTY_VAT_GROUP: VatRegisterGroup = { count: 0, amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "0.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "0.00", totalamount: "0.00" };
+const EMPTY_VAT_GROUP: VatRegisterGroup = { count: 0, amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "0.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "0.00", vatclaimed: "0.00", vatnotclaimed: "0.00", totalamount: "0.00" };
 const EMPTY_VAT_SUMMARY: VatRegisterSummary = { ...EMPTY_VAT_GROUP, duplicatecount: 0, regular: EMPTY_VAT_GROUP, creditnote: EMPTY_VAT_GROUP, days: [] };
 
 function toVatGroup(value: unknown): VatRegisterGroup {
@@ -331,6 +341,8 @@ function toVatTotals(group: Record<string, unknown>): Omit<VatRegisterGroup, "co
     nonexemptamount: toMoney(group.nonexemptamount),
     nonexempttotal: toMoney(group.nonexempttotal),
     vatamount: toMoney(group.vatamount),
+    vatclaimed: toMoney(group.vatclaimed),
+    vatnotclaimed: toMoney(group.vatnotclaimed),
     totalamount: toMoney(group.totalamount),
   };
 }
@@ -556,6 +568,9 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
     nonexemptamount: toMoney(row.nonexemptamount),
     nonexempttotal: toMoney(row.nonexempttotal),
     docno: toText(row.docno),
+    vatremark: toText(row.remark) || undefined,
+    vatclaimed: toMoney(row.vatclaimed),
+    vatnotclaimed: toMoney(row.vatnotclaimed),
     vatamount: toMoney(row.vatamount),
     totalamount: toMoney(row.totalamount),
     // backend ตัดใบที่กลับรายการในงวดเดียวกันออกแล้ว; ใบที่กลับรายการหลังงวดยังอยู่ในงวดที่ยื่น (มีเลขที่ใบกลับรายการ)
@@ -677,6 +692,10 @@ export async function fetchVatRegister(params: {
   view?: VatRegisterView;
   /** Champ 5536 "พิมพ์ตาม": วันที่ที่ใช้เลือกแถวของเดือน — ไม่ส่ง = งวดภาษีที่บันทึก (ใช้กับทะเบียนปกติเท่านั้น) */
   datebasis?: VatRegisterDateBasis;
+  /** Champ 5536/5537 "เรียงตาม" — ไม่ส่ง = วันที่ใบกำกับ (ลำดับเดิม); ใช้กับทะเบียนปกติเท่านั้น */
+  sort?: VatRegisterSort;
+  /** ภาษีซื้อเท่านั้น: Champ 5536 "แสดงยอดขอคืนภาษี" — ไม่ส่ง = ขอคืน (ชุดเดียวกับ ภ.พ.30) */
+  claim?: VatRegisterClaim;
   /** สถานประกอบการ (เลขสาขา 5 หลัก); ว่าง = ทุกสถานประกอบการรวมกัน */
   branchcode?: string;
   limit?: number;
@@ -735,6 +754,23 @@ export type VatRegisterView = "reversed_later";
 
 /** period = งวดภาษี (ค่าเริ่มต้น), invoice_date = วันที่ใบกำกับ, document_date = วันที่เอกสาร — กรองที่ backend */
 export type VatRegisterDateBasis = "period" | "invoice_date" | "document_date";
+
+/** Champ 5536/5537 "เรียงตาม" (ลำดับตัวเลือกตาม Champ: วันที่เอกสาร, วันที่ใบกำกับ, เลขที่ใบกำกับ, เลขที่เอกสาร) — backend เรียงที่ SQL */
+export const VAT_REGISTER_SORTS = ["document_date", "invoice_date", "invoice_no", "document_no"] as const;
+export type VatRegisterSort = (typeof VAT_REGISTER_SORTS)[number];
+
+/** Champ 5536 "แสดงยอดขอคืนภาษี": ขอคืน = ใช้สิทธิ (ค่าเริ่มต้น), ไม่ขอคืน = ต้องห้าม/รอใช้สิทธิ/ไม่ใช้สิทธิ, ทั้งหมด */
+export const VAT_REGISTER_CLAIMS = ["claimed", "not_claimed", "all"] as const;
+export type VatRegisterClaim = (typeof VAT_REGISTER_CLAIMS)[number];
+
+/** ช่อง "ชื่อรายงาน" (Champ 5536/5537/5541/5543) — Champ ไม่จำกัดความยาวช่อง (EDITTEXT ไม่ตั้ง limit) จึงกำหนดเองให้พอดีหัวรายงาน 1 บรรทัด */
+export const REPORT_TITLE_MAX_LENGTH = 100;
+
+/** หัวรายงาน: ชื่อรายงานที่ผู้ใช้กรอก (ตัดช่องว่างหัวท้าย ไม่เกิน REPORT_TITLE_MAX_LENGTH) หรือชื่อมาตรฐานเมื่อเว้นว่าง — แบบ Champ GLRepInputTaxCHMView.cpp:85-97 */
+export function reportHeading(title: string, fallback: string): string {
+  const trimmed = title.trim().slice(0, REPORT_TITLE_MAX_LENGTH).trim();
+  return trimmed || fallback;
+}
 
 /** รายงานสรุปยอดภาษี (Champ 5539): ยอดทุกช่องเป็น string ทศนิยมจาก backend — ช่องภาษีซื้อ/ขายว่าง = แถวของอีกฝั่ง */
 export interface VatSummaryRow {

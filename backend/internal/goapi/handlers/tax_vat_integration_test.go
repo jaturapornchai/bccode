@@ -154,7 +154,7 @@ func TestVatRegisterDateBasis(t *testing.T) {
 
 	invoiceNos := func(taxType int, basis string) string {
 		t.Helper()
-		records, err := generalledger.VatRecordsForBasis(ctx, db, company, 2026, 9, taxType, basis)
+		records, err := generalledger.VatRegisterRecords(ctx, db, company, 2026, 9, taxType, generalledger.VatRegisterQuery{Basis: basis})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -191,7 +191,7 @@ func TestVatRegisterDateBasis(t *testing.T) {
 	if rows, _ := buildVatRegister(period); len(rows) != 3 {
 		t.Errorf("period register = %+v", rows)
 	}
-	if _, err := generalledger.VatRecordsForBasis(ctx, db, company, 2026, 9, 1, "claim"); err == nil {
+	if _, err := generalledger.VatRegisterRecords(ctx, db, company, 2026, 9, 1, generalledger.VatRegisterQuery{Basis: "claim"}); err == nil {
 		t.Error("unknown basis must be rejected")
 	}
 }

@@ -343,26 +343,39 @@ const vatTaxMonthSQL = `CASE WHEN jsonb_typeof(v.item->'tax_period_year') = 'num
 // พร้อมเลขที่ใบสำคัญอื่นที่บันทึกใบกำกับฉบับเดียวกัน (DuplicateDocNos) เทียบทุกงวดของบริษัท และเลขที่ของตัวเองเมื่อใบเดียวกันบันทึกซ้ำในใบสำคัญนี้ — ใบที่ยังมีผลคือ ไม่ถูกลบ, สถานะร่างหรือผ่านบัญชี
 // หรือกลับรายการหลังสิ้นงวดของแถว, ไม่ใช่ใบกลับรายการ (ต้นฉบับที่กลับภายในงวดจึงไม่เตือนเมื่อบันทึกใหม่) — ทั้งหมดใน SQL เดียวแบบ GROUP BY ไม่ query ทีละรายการ
 func VatRecordsForPeriod(ctx context.Context, db *sql.DB, company string, year, month, taxType int) ([]VatRecord, error) {
-	return VatRecordsForBasis(ctx, db, company, year, month, taxType, VatBasisPeriod)
+	return VatRegisterRecords(ctx, db, company, year, month, taxType, VatRegisterQuery{})
 }
 
-// VatRecordsForBasis - เหมือน VatRecordsForPeriod แต่เลือกแถวของเดือน year/month ตามฐานวันที่ (Champ 5536/5537 "พิมพ์ตาม"):
-// VatBasisPeriod = งวดภาษีที่บันทึก, VatBasisInvoiceDate = วันที่ใบกำกับ, VatBasisDocumentDate = วันที่ใบสำคัญ;
-// ภาษีซื้อเฉพาะที่ใช้สิทธิ (claim_status 1) ทุกฐาน
-func VatRecordsForBasis(ctx context.Context, db *sql.DB, company string, year, month, taxType int, basis string) ([]VatRecord, error) {
+// VatRegisterRecords - เหมือน VatRecordsForPeriod แต่เลือกแถวของเดือน year/month ตามตัวเลือกทะเบียนของ Champ 5536/5537:
+// q.Basis "พิมพ์ตาม" (VatBasisPeriod = งวดภาษีที่บันทึก, VatBasisInvoiceDate = วันที่ใบกำกับ, VatBasisDocumentDate = วันที่ใบสำคัญ),
+// q.Sort "เรียงตาม" (vatSortOrders), q.Claim "แสดงยอดขอคืนภาษี" ของภาษีซื้อ (ค่าเริ่มต้น = ใช้สิทธิ claim_status 1 แบบ ภ.พ.30)
+func VatRegisterRecords(ctx context.Context, db *sql.DB, company string, year, month, taxType int, q VatRegisterQuery) ([]VatRecord, error) {
 	if taxType != 1 && taxType != 2 {
 		return nil, fmt.Errorf("invalid vat tax type %d", taxType)
 	}
 	if year < 1900 || year > 9999 || month < 1 || month > 12 {
 		return nil, fmt.Errorf("invalid vat tax period %d-%d", year, month)
 	}
+	orderBy, ok := vatSortOrders[q.Sort]
+	if !ok {
+		return nil, fmt.Errorf("invalid vat register sort %q", q.Sort)
+	}
+	if !ValidVatClaim(q.Claim) || (taxType == 2 && q.Claim != "") {
+		return nil, fmt.Errorf("invalid vat claim filter %q for tax type %d", q.Claim, taxType)
+	}
 	// jsonb containment เทียบตัวเลขตรง ๆ — แถวที่ไม่มีงวดหรือชนิดไม่ตรงจะไม่ถูกเลือก โดยไม่ต้อง cast ข้อความ
 	filter := map[string]int{"tax_type": taxType}
+	claimCond := ""
 	if taxType == 1 {
-		filter["claim_status"] = 1
+		switch q.Claim {
+		case "", VatClaimClaimed:
+			filter["claim_status"] = 1
+		case VatClaimNotClaimed:
+			claimCond = ` AND NOT item @> '{"claim_status":1}'::jsonb`
+		}
 	}
 	monthCond := ""
-	switch basis {
+	switch q.Basis {
 	case "", VatBasisPeriod:
 		filter["tax_period_year"], filter["tax_period_month"] = year, month
 	case VatBasisInvoiceDate:
@@ -370,7 +383,7 @@ func VatRecordsForBasis(ctx context.Context, db *sql.DB, company string, year, m
 	case VatBasisDocumentDate:
 		monthCond = " AND LEFT(doc_date, 7) = $3"
 	default:
-		return nil, fmt.Errorf("invalid vat date basis %q", basis)
+		return nil, fmt.Errorf("invalid vat date basis %q", q.Basis)
 	}
 	rawFilter, err := json.Marshal(filter)
 	if err != nil {
@@ -408,7 +421,7 @@ WITH reversals AS (
   WHERE status IN ('draft', 'posted')
      OR (status = 'reversed' AND tax_month <> '' AND LEFT(reversal_date, 7) > tax_month)
 ), period AS (
-  SELECT * FROM live WHERE status IN ('posted', 'reversed') AND item @> $2::jsonb`+monthCond+`
+  SELECT * FROM live WHERE status IN ('posted', 'reversed') AND item @> $2::jsonb`+monthCond+claimCond+`
 ), shared AS (
   SELECT invoice_key, array_agg(DISTINCT doc_no ORDER BY doc_no) AS doc_nos
   FROM live
@@ -433,7 +446,7 @@ FROM period p
 LEFT JOIN shared s ON s.invoice_key = p.invoice_key
 LEFT JOIN repeated rp ON rp.journal_id = p.journal_id AND rp.invoice_key = p.invoice_key
   AND rp.claim_status = COALESCE(p.item->>'claim_status', '')
-ORDER BY p.item->>'tax_invoice_date', p.doc_no, p.ord`, args...)
+ORDER BY `+orderBy, args...)
 	if err != nil {
 		return nil, fmt.Errorf("read vat records: %w", err)
 	}

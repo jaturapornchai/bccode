@@ -356,6 +356,34 @@ func TestTaxVatRegisterHandler_InvalidDateBasis(t *testing.T) {
 	}
 }
 
+// เรียงตาม/แสดงยอดขอคืนภาษี (Champ 5536/5537): รับเฉพาะคีย์ใน whitelist — ค่าอื่น (รวมข้อความ SQL) ถูกปฏิเสธ 400 ก่อนแตะฐานข้อมูล;
+// ตัวเลือกขอคืนใช้กับภาษีซื้อเท่านั้น
+func TestTaxVatRegisterHandler_InvalidSortAndClaim(t *testing.T) {
+	cases := []struct{ body, code string }{
+		{`{"year":2026,"month":9,"type":"purchase","sort":"amount"}`, "INVALID_SORT"},
+		{`{"year":2026,"month":9,"type":"sale","sort":"tax_invoice_date; DROP TABLE gl_records"}`, "INVALID_SORT"},
+		{`{"year":2026,"month":9,"type":"sale","sort":"Invoice_No"}`, "INVALID_SORT"},
+		{`{"year":2026,"month":9,"type":"purchase","claim":"refund"}`, "INVALID_CLAIM"},
+		{`{"year":2026,"month":9,"type":"sale","claim":"all"}`, "INVALID_CLAIM"},
+	}
+	for _, tc := range cases {
+		rec := callTaxReportHandler(t, TaxVatRegisterHandler, tc.body, &taxReportTestUser)
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), tc.code) {
+			t.Errorf("%s: expected 400 %s, got %d body=%s", tc.body, tc.code, rec.Code, rec.Body.String())
+		}
+	}
+	for key, want := range map[string]bool{"": true, "invoice_date": true, "document_date": true, "invoice_no": true, "document_no": true, "date": false, "p.doc_no": false} {
+		if got := generalledger.ValidVatSort(key); got != want {
+			t.Errorf("ValidVatSort(%q) = %v, want %v", key, got, want)
+		}
+	}
+	for claim, want := range map[string]bool{"": true, "claimed": true, "not_claimed": true, "all": true, "1": false} {
+		if got := generalledger.ValidVatClaim(claim); got != want {
+			t.Errorf("ValidVatClaim(%q) = %v, want %v", claim, got, want)
+		}
+	}
+}
+
 func TestTaxVatRegisterHandler_InvalidPeriod(t *testing.T) {
 	rec := callTaxReportHandler(t, TaxVatRegisterHandler, `{"year":2026,"month":13,"type":"sale"}`, &taxReportTestUser)
 	if rec.Code != http.StatusBadRequest {
@@ -410,6 +438,8 @@ func TestTaxReportErrorsFollowLanguage(t *testing.T) {
 		{"vat branch th", "/", "th", `{"year":2026,"month":9,"type":"sale","branchcode":"สาขา1"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_BRANCH", "tax_report_branch_invalid", "th"},
 		{"vat view en", "/", "en", `{"year":2026,"month":9,"type":"sale","view":"deleted"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_VIEW", "tax_report_view_invalid", "en"},
 		{"vat summary sort en", "/", "en", `{"year":2026,"month":9,"sort":"amount"}`, TaxVatSummaryHandler, &taxReportTestUser, 400, "INVALID_SORT", "tax_report_sort_invalid", "en"},
+		{"vat register sort th", "/", "th", `{"year":2026,"month":9,"type":"purchase","sort":"amount"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_SORT", "tax_report_sort_invalid", "th"},
+		{"vat register claim en", "/", "en", `{"year":2026,"month":9,"type":"sale","claim":"not_claimed"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_CLAIM", "tax_report_claim_invalid", "en"},
 		{"vat summary period th", "/", "th", `{"year":2026,"month":0}`, TaxVatSummaryHandler, &taxReportTestUser, 400, "INVALID_PERIOD", "tax_form_period_invalid", "th"},
 		{"vat period th default", "/", "", `{"year":2026,"month":13,"type":"sale"}`, TaxVatRegisterHandler, &taxReportTestUser, 400, "INVALID_PERIOD", "tax_form_period_invalid", "th"},
 		{"wht direction query lang wins", "/?lang=en", "th", `{"year":2026,"month":9,"direction":"sideways"}`, TaxWithholdingHandler, &taxReportTestUser, 400, "INVALID_TYPE", "tax_report_direction_invalid", "en"},

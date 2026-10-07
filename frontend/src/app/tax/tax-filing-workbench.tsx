@@ -18,6 +18,12 @@ import {
   type TaxEstablishment,
   type ThaiTaxRecord,
   type VatRegisterDateBasis,
+  type VatRegisterSort,
+  type VatRegisterClaim,
+  VAT_REGISTER_SORTS,
+  VAT_REGISTER_CLAIMS,
+  REPORT_TITLE_MAX_LENGTH,
+  reportHeading,
   type VatRegisterDay,
   type VatRegisterGroup,
   type VatRegisterSummary,
@@ -94,6 +100,12 @@ export function TaxFilingWorkbench({
   // Champ 5537 ตัวเลือก "แยกรับคืน/ลดหนี้": แถวยังเรียงตามวันที่ แยกเฉพาะบรรทัดรวมท้ายรายงาน
   // Champ 5536/5537 ตัวเลือก "พิมพ์ตาม" (GLRepInputTaxCHMDlg.cpp:108-110): เลือกว่าเดือนที่เลือกกรองด้วยวันที่ใดของแถว — กรองที่ backend (datebasis)
   const [vatDateBasis, setVatDateBasis] = useState<VatRegisterDateBasis>("period");
+  // Champ 5536/5537 "เรียงตาม" (GLRepInputTaxCHMDlg.cpp:119-122) — เรียงที่ backend; ค่าเริ่มต้นวันที่ใบกำกับ = ลำดับเดิมของทะเบียน
+  const [vatSort, setVatSort] = useState<VatRegisterSort>("invoice_date");
+  // Champ 5536 "แสดงยอดขอคืนภาษี" (GLRepInputTaxCHMDlg.cpp:136-140,370-381) ภาษีซื้อเท่านั้น — กรองที่ backend, ไม่กระทบยอด ภ.พ.30
+  const [vatClaim, setVatClaim] = useState<VatRegisterClaim>("claimed");
+  // Champ 5536/5537/5541/5543 "ชื่อรายงาน": พิมพ์เป็นหัวรายงาน (ว่าง = ชื่อมาตรฐาน) — ใช้บนจอ/ตอนพิมพ์เท่านั้น ไม่ส่ง backend
+  const [reportTitle, setReportTitle] = useState("");
   const [separateCreditNotes, setSeparateCreditNotes] = useState(false);
   // Champ 5536/5537 ตัวเลือก "รวมรายวัน": แทรกแถวรวมหลังแถวสุดท้ายของแต่ละวันที่ใบกำกับ (ยอดจาก backend)
   const [dailyTotals, setDailyTotals] = useState(false);
@@ -152,6 +164,8 @@ export function TaxFilingWorkbench({
           type: registerType,
           view: vatView === "reversed_later" ? "reversed_later" : undefined,
           datebasis: vatView === "register" && vatDateBasis !== "period" ? vatDateBasis : undefined,
+          sort: vatView === "register" && vatSort !== "invoice_date" ? vatSort : undefined,
+          claim: vatView === "register" && registerType === "purchase" && vatClaim !== "claimed" ? vatClaim : undefined,
           branchcode: vatBranch || undefined,
           language: languageRef.current,
         });
@@ -202,7 +216,7 @@ export function TaxFilingWorkbench({
     } finally {
       setLoading(false);
     }
-  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView, vatDateBasis, vatBranch, partnerFrom, partnerTo]);
+  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView, vatDateBasis, vatSort, vatClaim, vatBranch, partnerFrom, partnerTo]);
 
   useEffect(() => {
     void loadData();
@@ -239,6 +253,8 @@ export function TaxFilingWorkbench({
         nonExempt: "0.00",
         nonExemptTotal: "0.00",
         tax: summary?.whttotal ?? "0.00",
+        vatClaimed: "0.00",
+        vatNotClaimed: "0.00",
         total: summary?.nettotal ?? "0.00",
         duplicates: 0,
       };
@@ -253,6 +269,8 @@ export function TaxFilingWorkbench({
       nonExempt: register?.summary.nonexemptamount ?? "0.00",
       nonExemptTotal: register?.summary.nonexempttotal ?? "0.00",
       tax: register?.summary.vatamount ?? "0.00",
+      vatClaimed: register?.summary.vatclaimed ?? "0.00",
+      vatNotClaimed: register?.summary.vatnotclaimed ?? "0.00",
       total: register?.summary.totalamount ?? "0.00",
       duplicates: register?.summary.duplicatecount ?? 0,
     };
@@ -372,11 +390,30 @@ export function TaxFilingWorkbench({
   const vatTax: VatMoneyColumn = { id: "vat", label: tr("tax_vat_col_vat", "จำนวนเงิน ภาษีมูลค่าเพิ่ม"), row: (r) => r.vatamount, total: totals.tax, field: "vatamount", tone: "tax" };
   const vatValueLabel = tr("tax_vat_col_value", "มูลค่าสินค้า/บริการ");
   const vatSumLabel = tr("tax_vat_col_sum", "รวม");
+  // ภาษีซื้อเลือกไม่ขอคืน/ทั้งหมด: ช่องภาษีแยก ขอคืน | ไม่ขอคืน แบบ Champ (GLRepInputTaxCHMView.cpp:293-294) — ยอดจาก backend; ยอดยื่น ภ.พ.30 = ช่องขอคืน
+  const vatClaimSplit = isVatBuy && vatView === "register" && vatClaim !== "claimed";
+  const vatTaxColumns: VatMoneyColumn[] = vatClaimSplit
+    ? [
+        { id: "vatclaimed", label: tr("tax_vat_col_vat_claimed", "ภาษีมูลค่าเพิ่ม ขอคืน"), row: (r) => r.vatclaimed, total: totals.vatClaimed, field: "vatclaimed", tone: "tax" },
+        { id: "vatnotclaimed", label: tr("tax_vat_col_vat_not_claimed", "ภาษีมูลค่าเพิ่ม ไม่ขอคืน"), row: (r) => r.vatnotclaimed, total: totals.vatNotClaimed, field: "vatnotclaimed" },
+      ]
+    : [vatTax];
+  const sortLabel = (key: VatRegisterSort) => ({
+    document_date: tr("document_date", "วันที่เอกสาร"),
+    invoice_date: tr("tax_vat_summary_sort_date", "วันที่ใบกำกับ"),
+    invoice_no: tr("tax_vat_summary_sort_taxno", "เลขที่ใบกำกับ"),
+    document_no: tr("tax_vat_col_voucher", "เลขที่เอกสารบัญชี"),
+  })[key];
+  const claimLabel = (key: VatRegisterClaim) => ({
+    claimed: tr("tax_vat_claim_claimed", "ขอคืน (ใช้สิทธิ — ยอดที่ยื่น ภ.พ.30)"),
+    not_claimed: tr("tax_vat_claim_not_claimed", "ไม่ขอคืน (ต้องห้าม / รอใช้สิทธิ / ไม่ใช้สิทธิ)"),
+    all: tr("all", "ทั้งหมด"),
+  })[key];
   const vatMoneyColumns: VatMoneyColumn[] = isVatBuy
     ? [
         { id: "value", label: vatValueLabel, row: (r) => r.nonexemptamount, total: totals.nonExempt, field: "nonexemptamount" },
         vatExempt,
-        vatTax,
+        ...vatTaxColumns,
         { id: "sum", label: vatSumLabel, row: (r) => r.nonexempttotal, total: totals.nonExemptTotal, field: "nonexempttotal" },
         { id: "grand", label: tr("tax_vat_col_grand", "รวมทั้งสิ้น"), row: (r) => r.totalamount, total: totals.total, field: "totalamount", tone: "total" },
       ]
@@ -396,7 +433,8 @@ export function TaxFilingWorkbench({
     : [];
   // แถวรวมรายวันของภาษีซื้อ/ขาย (Champ: SUM_OF_DAY / SUM_OF_CREDITNOTEDAY) — ไม่แยกรับคืน/ลดหนี้ = ยอดรวมของวัน (ใบลดหนี้หักแล้ว);
   // แยก = ยอดใบกำกับของวัน + ยอดใบลดหนี้ของวัน
-  const showDailyTotals = dailyTotals && isVatType && vatView === "register" && !searchTerm.trim();
+  // แถวรวมรายวันต้องเรียงตามวันที่ใบกำกับ (แถวของวันเดียวกันติดกัน) — Champ ก็ซ่อน "รวมรายวัน" เมื่อเปลี่ยนการเรียง (GLRepInputTaxCHMDlg.cpp:530-540)
+  const showDailyTotals = dailyTotals && isVatType && vatView === "register" && vatSort === "invoice_date" && !searchTerm.trim();
   const vatDaysByDate = new Map<string, VatRegisterDay>((config.formType === "vat_buy" ? purchaseSummary : salesSummary)?.summary.days.map((d) => [d.date, d]) ?? []);
   const dailyTotalRows = (day: VatRegisterDay): { id: string; label: string; group: VatRegisterGroup }[] => {
     const dayLabel = tr("tax_vat_day_total", "รวมประจำวัน {0} รายการ");
@@ -409,6 +447,14 @@ export function TaxFilingWorkbench({
   const vatMoneyClass = (tone?: VatMoneyColumn["tone"]) =>
     tone === "tax" ? "font-medium text-primary" : tone === "total" ? "font-bold text-foreground" : "";
   const grandTotalLabel = tr("tax_register_grand_total", "รวมทั้งสิ้น {0} รายการ").replace("{0}", String(totals.count));
+  const defaultRegisterHeading = isWhtType
+    ? tr("tax_wht_register_heading", "ทะเบียนรายการภาษีเงินได้หัก ณ ที่จ่าย")
+    : vatView === "reversed_later"
+      ? tr("tax_vat_cross_period_heading", "ใบกำกับภาษีที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้")
+      : tr("tax_vat_register_heading", "ทะเบียนรายการใบกำกับภาษี");
+  // ช่อง "ชื่อรายงาน" มีในทะเบียนภาษีซื้อ/ขาย (5536/5537) และรายงาน ภ.ง.ด.3/53 (5541/5543) ของ Champ
+  const showReportTitle = (isVatType && vatView === "register") || config.formType === "wht_summary";
+  const registerHeading = showReportTitle ? reportHeading(reportTitle, defaultRegisterHeading) : defaultRegisterHeading;
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:p-6 print:p-0 print:gap-2">
@@ -571,6 +617,49 @@ export function TaxFilingWorkbench({
                 </select>
               </label>
             )}
+            {isVatType && vatView === "register" && (
+              <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <span>{tr("tax_vat_summary_sort", "เรียงตาม")}</span>
+                <select
+                  value={vatSort}
+                  onChange={(e) => setVatSort(e.target.value as VatRegisterSort)}
+                  data-field="sort"
+                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                >
+                  {VAT_REGISTER_SORTS.map((key) => (
+                    <option key={key} value={key}>{sortLabel(key)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {isVatBuy && vatView === "register" && (
+              <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <span>{tr("tax_vat_claim_filter", "แสดงยอดขอคืนภาษี")}</span>
+                <select
+                  value={vatClaim}
+                  onChange={(e) => setVatClaim(e.target.value as VatRegisterClaim)}
+                  data-field="claim"
+                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                >
+                  {VAT_REGISTER_CLAIMS.map((key) => (
+                    <option key={key} value={key}>{claimLabel(key)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {showReportTitle && (
+              <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground print:hidden">
+                <span>{tr("report_name", "ชื่อรายงาน")}</span>
+                <Input
+                  value={reportTitle}
+                  onChange={(e) => setReportTitle(e.target.value)}
+                  maxLength={REPORT_TITLE_MAX_LENGTH}
+                  placeholder={defaultRegisterHeading}
+                  data-field="reporttitle"
+                  className="w-64"
+                />
+              </label>
+            )}
             {config.formType === "vat_sale" && vatView === "register" && (
               <label className="flex min-h-[2.2em] cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm print:hidden">
                 <input
@@ -583,7 +672,7 @@ export function TaxFilingWorkbench({
                 {tr("tax_vat_separate_credit_notes", "แยกรับคืน/ลดหนี้")}
               </label>
             )}
-            {isVatType && vatView === "register" && (
+            {isVatType && vatView === "register" && vatSort === "invoice_date" && (
               <label className="flex min-h-[2.2em] cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm print:hidden">
                 <input
                   type="checkbox"
@@ -760,13 +849,7 @@ export function TaxFilingWorkbench({
         <Card className="overflow-hidden shadow-sm">
           <div className="border-b bg-muted/40 p-4 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-foreground">
-                {isWhtType
-                  ? tr("tax_wht_register_heading", "ทะเบียนรายการภาษีเงินได้หัก ณ ที่จ่าย")
-                  : vatView === "reversed_later"
-                    ? tr("tax_vat_cross_period_heading", "ใบกำกับภาษีที่ยื่นในงวดก่อนแล้วกลับรายการในเดือนนี้")
-                    : tr("tax_vat_register_heading", "ทะเบียนรายการใบกำกับภาษี")}
-              </h2>
+              <h2 className="text-base font-bold text-foreground" data-field="register-heading">{registerHeading}</h2>
               <p className="text-xs text-muted-foreground">
                 {tr("tax_register_period_count", "ประจำเดือน {0} {1} (จำนวน {2} รายการ)")
                   .replace("{0}", monthName(selectedMonth))
@@ -781,6 +864,12 @@ export function TaxFilingWorkbench({
                   <div className="flex gap-1.5"><dt className="text-muted-foreground">{tr("tax_vat_header_establishment", "ชื่อสถานประกอบการ")}:</dt><dd className="font-medium">{activeEstablishment?.name ?? tr("tax_vat_all_establishments", "ทุกสถานประกอบการ (รวม)")}</dd></div>
                   <div className="flex gap-1.5" data-field="register-office"><dt className="text-muted-foreground">{tr("tax_vat_header_office", "สำนักงานใหญ่/สาขา")}:</dt><dd className="font-medium">{activeEstablishment ? establishmentOffice(activeEstablishment) : "—"}</dd></div>
                 </dl>
+              )}
+              {vatClaimSplit && (
+                <p role="note" className="mt-2 flex items-start gap-1.5 text-[0.9rem] leading-normal text-foreground" data-field="claim-note">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  <span>{tr("tax_vat_claim_filter_note", "ทะเบียนนี้แสดงภาษีซื้อที่ไม่ขอคืนด้วย — ยอดที่ยื่น ภ.พ.30 คือช่อง “ภาษีมูลค่าเพิ่ม ขอคืน” เท่านั้น")}</span>
+                </p>
               )}
               {isTruncated && (
                 <p role="status" className="mt-1 flex items-start gap-1.5 text-[0.9rem] font-semibold leading-normal text-primary" data-field="register-truncated">
@@ -844,6 +933,7 @@ export function TaxFilingWorkbench({
                       {vatMoneyColumns.map((m) => (
                         <th key={m.id} rowSpan={2} data-field={`col-${m.id}`} className="px-4 py-2 text-right align-bottom">{m.label}</th>
                       ))}
+                      <th rowSpan={2} data-field="col-remark" className="px-3 py-2 min-w-40 align-bottom">{tr("remark", "หมายเหตุ")}</th>
                       <th rowSpan={2} className="px-3 py-2 w-20 text-center align-bottom print:hidden">{tr("tax_register_col_actions", "จัดการ")}</th>
                     </tr>
                     <tr>
@@ -953,6 +1043,7 @@ export function TaxFilingWorkbench({
                           {vatMoneyColumns.map((m) => (
                             <td key={m.id} className={`px-4 py-2.5 text-right font-mono ${vatMoneyClass(m.tone)}`}>{money(m.row(item) ?? "0.00")}</td>
                           ))}
+                          <td className="px-3 py-2.5 text-sm leading-relaxed text-foreground" data-field="remark">{item.vatremark}</td>
                         </>
                       )}
                       <td className="px-3 py-2.5 text-center print:hidden">
@@ -977,6 +1068,7 @@ export function TaxFilingWorkbench({
                         {vatMoneyColumns.map((m) => (
                           <td key={m.id} className={`px-4 py-2.5 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{bracketMoney(total.group[m.field])}</td>
                         ))}
+                        <td />
                         <td className="print:hidden" />
                       </tr>
                     ))}
@@ -1011,6 +1103,7 @@ export function TaxFilingWorkbench({
                         {vatMoneyColumns.map((m) => (
                           <td key={m.id} className={`px-4 py-3 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{bracketMoney(split.group[m.field])}</td>
                         ))}
+                        <td />
                         <td className="print:hidden"></td>
                       </tr>
                     ))}
@@ -1019,6 +1112,7 @@ export function TaxFilingWorkbench({
                       {vatMoneyColumns.map((m) => (
                         <td key={m.id} className={`px-4 py-3 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{creditNoteSplit.length > 0 ? bracketMoney(m.total) : money(m.total)}</td>
                       ))}
+                      <td />
                       <td className="print:hidden"></td>
                     </tr>
                   </>
