@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit 4fcca458 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit 6c312894 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 30
 
@@ -973,7 +973,7 @@ Files indexed: 30
 | 1322 | function | `MockRandomNumber` |
 | 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
 
-## frontend/src/app/gl/gl-journals.tsx (1245 lines)
+## frontend/src/app/gl/gl-journals.tsx (1260 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -995,12 +995,13 @@ Files indexed: 30
 | 371 | function | `applyTemplate` |
 | 398 | function | `cancelEdit` |
 | 413 | function | `save` |
-| 454 | function | `changeTaxType` |
-| 463 | function | `calcTax` |
-| 490 | const-arrow | `onKeyDown` |
-| 501 | function | `saveReconciliation` |
-| 532 | function | `act` |
-| 549 | function | `deleteDraftDirect` |
+| 428 | const-arrow | `run` |
+| 468 | function | `changeTaxType` |
+| 477 | function | `calcTax` |
+| 504 | const-arrow | `onKeyDown` |
+| 515 | function | `saveReconciliation` |
+| 546 | function | `act` |
+| 563 | function | `deleteDraftDirect` |
 
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 

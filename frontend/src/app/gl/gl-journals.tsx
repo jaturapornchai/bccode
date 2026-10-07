@@ -18,7 +18,7 @@ import { GLVoucherPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { detailTaxIdTarget, journalDetailsProblem, normalizeJournalDetails, reconciliationChanges, type GLDetailVat } from "@/lib/gl-journal-details";
 import { GLJournalReviewPanel } from "./gl-journal-review";
 import { ChampField, ChampGroupBox, ChampKey, ChampSpacer, ChampTaxBox } from "./gl-journal-boxes";
-import { JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctionKey, journalSaveOptionStorageKey, linesHaveAmounts, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget, type JournalSaveOption, type VatCalcResult } from "@/lib/gl-journal-entry";
+import { JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctionKey, journalSaveOptionStorageKey, linesHaveAmounts, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, shouldOfferNewDocNo, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget, type JournalSaveOption, type VatCalcResult } from "@/lib/gl-journal-entry";
 import { getAuthSession } from "@/lib/client-auth-session";
 import { journalFromTemplate, journalJumpKey, jumpRowIndex, type JournalJumpSide } from "@/lib/gl-journal-templates";
 import { JournalTemplateTools } from "./gl-journal-templates";
@@ -425,7 +425,21 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     const payload: GLJournal = { ...candidate, details: normalizeJournalDetails(details) };
     if (journal.id && !await confirm({ title: tr("gl_save_draft_changes", "บันทึกการแก้ไขฉบับร่าง?"), description: journal.docno, confirmLabel: tr("gl_save_draft", "บันทึกฉบับร่าง"), tone: "info" })) return;
     try {
-      const result = await execute({ resource: "journals", id: journal.id, version: journal.version, action: journal.id ? "update" : "create", journal: payload });
+      const run = (body: GLJournal) => execute({ resource: "journals", id: journal.id, version: journal.version, action: journal.id ? "update" : "create", journal: body });
+      let result: Awaited<ReturnType<typeof run>>;
+      try {
+        result = await run(payload);
+      } catch (duplicate) {
+        // Champ glfrmjournal.cpp:500-509: เลขที่ซ้ำ → ถามว่าจะรันเลขที่ใหม่ไหม; ใช่ = ส่งซ้ำโดยเว้นเลขที่ให้ backend ออกเลขถัดไป, ไม่ = เก็บหน้าจอไว้แล้วโฟกัสช่องเลขที่ (backend ยังเป็นตัวตัดสินความซ้ำ)
+        if (!shouldOfferNewDocNo(duplicate instanceof GLCommandError ? duplicate.code : undefined, { isNew: !journal.id, typedDocNo: payload.docno, bookFound: Boolean(findJournalBook(books, payload.bookcode)) })) throw duplicate;
+        const runNew = await confirm({ title: tr("gl_docno_duplicate_title", "เลขที่เอกสารซ้ำ"), description: tr("gl_docno_duplicate_ask", "เลขที่ {0} มีอยู่แล้ว — ต้องการให้ระบบรันเลขที่ใหม่แล้วบันทึกเลยหรือไม่?").replace("{0}", payload.docno), confirmLabel: tr("gl_docno_run_new", "รันเลขที่ใหม่"), cancelLabel: tr("gl_docno_edit_myself", "แก้เลขที่เอง"), tone: "warning" });
+        if (!runNew) {
+          setError((duplicate as Error).message);
+          requestAnimationFrame(() => headerRef.current?.querySelector<HTMLElement>('[data-journal-field="docno"]')?.focus());
+          return;
+        }
+        result = await run({ ...payload, docno: "" });
+      }
       // backend เติมค่าที่คำนวณเอง (เช่น ภาษีหัก ณ ที่จ่าย = ฐาน × อัตรา) — แสดงฉบับที่บันทึกจริง; โหลดไม่ได้ใช้ค่าที่ส่งไป (คำสั่ง commit แล้ว)
       const reloaded = await glRequest<GLJournal>(`journals/${encodeURIComponent(result.id)}`).catch(() => ({ ...payload, id: result.id, version: result.version }));
       list.reload();
@@ -1012,6 +1026,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                             <input
                               className={control}
                               aria-label={tr("gl_document_no", "เลขที่เอกสาร")}
+                              data-journal-field="docno"
                               required={Boolean(journal.id)}
                               value={journal.docno}
                               maxLength={30}

@@ -36,6 +36,14 @@ export function nextJournalAfterSave(saved: GLJournal, option: JournalSaveOption
     details: keptVat ? { vats: [keptVat] } : undefined,
   };
 }
+/**
+ * เลขที่เอกสารที่พิมพ์เองซ้ำ: Champ ถามว่าจะรันเลขที่ใหม่ไหม (glfrmjournal.cpp:500-509 + BRunningEdit.cpp:153-178 "Document No is duplicated / Do you want to try again?")
+ * เฉพาะใบใหม่ที่พิมพ์เลขที่เอง และ backend ออกเลขให้สมุดนี้ได้ — สมุดที่ไม่ตั้งรูปแบบใช้ค่าเริ่มต้น @YYMM-#### จึงออกเลขได้ทุกสมุดที่มีอยู่จริง
+ * (journal_docno.go); ความซ้ำเป็นของ backend (duplicate_code) ผู้เรียกส่งเฉพาะรหัสข้อผิดพลาดมา
+ */
+export function shouldOfferNewDocNo(errorCode: string | undefined, ctx: { isNew: boolean; typedDocNo: string; bookFound: boolean }): boolean {
+  return errorCode === "duplicate_code" && ctx.isNew && ctx.bookFound && ctx.typedDocNo.trim() !== "";
+}
 function keptTaxBoxRow(row: GLDetailVat): GLDetailVat {
   const type = Number(row.tax_type) === 2 ? 2 : 1;
   return {

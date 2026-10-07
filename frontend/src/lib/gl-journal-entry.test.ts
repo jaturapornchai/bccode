@@ -3,7 +3,7 @@ import { emptyJournal, emptyLine, type GLJournal, type GLLine } from "./general-
 import type { GLDetailVat } from "./gl-journal-details";
 import {
   JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctionKey, journalSaveOptionStorageKey, linesHaveAmounts,
-  newVatRow, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget,
+  newVatRow, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, shouldOfferNewDocNo, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget,
 } from "./gl-journal-entry";
 
 const vat = (patch: Partial<GLDetailVat> = {}): GLDetailVat => ({
@@ -152,6 +152,20 @@ describe("vatErrorTarget", () => {
     expect(vatErrorTarget({ vats: [vat()] }, "wht_payee_name_invalid", "partner_name")).toBeNull();
     expect(vatErrorTarget({ vats: [vat()] }, "vat_partner_name_invalid", "")).toBeNull();
     expect(vatErrorTarget(undefined, "vat_partner_name_invalid", "partner_name")).toBeNull();
+  });
+});
+
+describe("shouldOfferNewDocNo (Champ: Document No is duplicated, run again?)", () => {
+  const ctx = { isNew: true, typedDocNo: "JV6910-0001", bookFound: true };
+  it("offers a new running number only for a typed number that the backend rejected as duplicate on a new voucher", () => {
+    expect(shouldOfferNewDocNo("duplicate_code", ctx)).toBe(true);
+  });
+  it("keeps the plain error for other codes, edits, blank or unknown-book cases", () => {
+    expect(shouldOfferNewDocNo("validation_failed", ctx)).toBe(false);
+    expect(shouldOfferNewDocNo(undefined, ctx)).toBe(false);
+    expect(shouldOfferNewDocNo("duplicate_code", { ...ctx, isNew: false })).toBe(false);
+    expect(shouldOfferNewDocNo("duplicate_code", { ...ctx, typedDocNo: "  " })).toBe(false);
+    expect(shouldOfferNewDocNo("duplicate_code", { ...ctx, bookFound: false })).toBe(false);
   });
 });
 
