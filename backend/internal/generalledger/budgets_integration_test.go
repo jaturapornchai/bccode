@@ -115,11 +115,22 @@ func TestBudgetLifecycleAndComparisonIntegration(t *testing.T) {
 	f.run(Command{Resource: "journals", Action: "create", Journal: &draftOnly}) // drafts are not actuals
 
 	report, err := f.store.Report(f.ctx, f.scope, "budgetcomparison", ReportQuery{FiscalYear: "2026", From: "2026-01-01", To: "2026-01-31"})
-	if err != nil || len(report.Rows) != 2 {
+	// Champ 5530 account blocks: หัวบัญชี → แถวงบ → รวมของบัญชี; totals count budget lines only
+	if err != nil || len(report.Rows) != 6 {
 		t.Fatalf("report %+v %v", report, err)
 	}
-	income, cost := report.Rows[0], report.Rows[1] // Champ order: account, then budget
-	if income["accountcode"] != "4000" || !sameAmount(income["budgetamount"], "100") || !sameAmount(income["actualamount"], "100") || !sameAmount(income["variance"], "0") || income["percentused"] != "100.00" || income["budgetstatus"] != "closed" || income["branchcode"] != "B1" {
+	rowtypes := make([]string, len(report.Rows))
+	for i, row := range report.Rows {
+		rowtypes[i] = row["accountcode"] + ":" + row["rowtype"]
+	}
+	if got := strings.Join(rowtypes, ","); got != "4000:budgetaccount,4000:budgetline,4000:budgettotal,5000:budgetaccount,5000:budgetline,5000:budgettotal" {
+		t.Fatalf("budget blocks = %s", got)
+	}
+	income, cost := report.Rows[1], report.Rows[4] // Champ order: account, then budget
+	if !sameAmount(report.Rows[5]["variance"], "-1200.50") || report.Rows[3]["budgetamount"] != "" {
+		t.Fatalf("account total/header = %v / %v", report.Rows[5], report.Rows[3])
+	}
+	if income["accountcode"] != "4000" || income["budgetcode"] != "BG-2569" || !sameAmount(income["budgetamount"], "100") || !sameAmount(income["actualamount"], "100") || !sameAmount(income["variance"], "0") || income["branchcode"] != "B1" {
 		t.Fatalf("income row = %v", income)
 	}
 	if cost["accountcode"] != "5000" || !sameAmount(cost["budgetamount"], "50") || !sameAmount(cost["actualamount"], "1250.50") || !sameAmount(cost["variance"], "-1200.50") {
@@ -129,7 +140,7 @@ func TestBudgetLifecycleAndComparisonIntegration(t *testing.T) {
 		t.Fatalf("totals = %v", report.Totals)
 	}
 	q1, err := f.store.Report(f.ctx, f.scope, "budgetcomparison", ReportQuery{FiscalYear: "2026", From: "2026-01-01", To: "2026-03-31", BudgetCode: "BG-2569", AccountCode: "4000"})
-	if err != nil || len(q1.Rows) != 1 || !sameAmount(q1.Rows[0]["budgetamount"], "300") || !sameAmount(q1.Rows[0]["actualamount"], "100") {
+	if err != nil || len(q1.Rows) != 3 || !sameAmount(q1.Rows[1]["budgetamount"], "300") || !sameAmount(q1.Rows[1]["actualamount"], "100") {
 		t.Fatalf("Q1 = %+v %v", q1.Rows, err)
 	}
 	if other, err := f.store.Report(f.ctx, f.scope, "budgetcomparison", ReportQuery{FiscalYear: "2026", BudgetCode: "BG-OTHER"}); err != nil || len(other.Rows) != 0 {

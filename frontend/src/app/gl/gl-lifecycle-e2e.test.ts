@@ -539,22 +539,27 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       const budgetReport: GLReport = {
         sequence: 14,
         columns: [
-          { key: "accountcode", label: "รหัสบัญชี" },
-          { key: "accountname", label: "ชื่อบัญชี" },
-          { key: "budgetamount", label: "งบประมาณ", amount: true },
-          { key: "actualamount", label: "ใช้จริง", amount: true },
-          { key: "variance", label: "ผลต่างคงเหลือ", amount: true },
-          { key: "percentused", label: "ร้อยละที่ใช้ (%)", amount: true },
+          { key: "accountcode", label: "รหัสผังบัญชี" },
+          { key: "accountname", label: "ชื่อผังบัญชี" },
+          { key: "budgetcode", label: "รหัส" },
+          { key: "budgetname", label: "ชื่อ/รายละเอียด" },
+          { key: "budgetamount", label: "จำนวนเงิน", amount: true },
+          { key: "actualamount", label: "งบประมาณที่ใช้จริง", amount: true },
+          { key: "variance", label: "ผลต่าง", amount: true },
         ],
+        // Champ 5530: หัวบัญชี → แถวงบ → รวมของบัญชี
         rows: [
-          { accountcode: "5200", accountname: "ค่าใช้จ่ายในการบริหาร", budgetamount: "100000.00", actualamount: "65000.00", variance: "35000.00", percentused: "65.00" },
+          { rowtype: "budgetaccount", accountcode: "5200", accountname: "ค่าใช้จ่ายในการบริหาร", budgetcode: "", budgetname: "", budgetamount: "", actualamount: "", variance: "" },
+          { rowtype: "budgetline", accountcode: "5200", accountname: "ค่าใช้จ่ายในการบริหาร", budgetcode: "BG-2569", budgetname: "งบประมาณปี 2569", budgetamount: "100000.00", actualamount: "65000.00", variance: "35000.00" },
+          { rowtype: "budgetline", accountcode: "5200", accountname: "ค่าใช้จ่ายในการบริหาร", budgetcode: "BG-MKT", budgetname: "งบการตลาด", budgetamount: "10000.00", actualamount: "11200.50", variance: "-1200.50" },
+          { rowtype: "budgettotal", accountcode: "5200", accountname: "ค่าใช้จ่ายในการบริหาร", budgetcode: "", budgetname: "", budgetamount: "110000.00", actualamount: "76200.50", variance: "33799.50" },
         ],
         totals: {
-          budgetamount: "100000.00",
-          actualamount: "65000.00",
-          variance: "35000.00",
+          budgetamount: "110000.00",
+          actualamount: "76200.50",
+          variance: "33799.50",
         },
-        totalrows: 1,
+        totalrows: 4,
         warnings: [],
         asof: "2026-09-19",
       };
@@ -565,7 +570,9 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       expect(html).toContain("100,000.00");
       expect(html).toContain("65,000.00");
       expect(html).toContain("35,000.00");
-      expect(html).toContain("65.00");
+      expect(html).toContain("(1,200.50)"); // ผลต่างติดลบในวงเล็บแบบ Champ
+      expect(html).toContain(">รวม</td>");
+      expect(html.match(/ค่าใช้จ่ายในการบริหาร/g)).toHaveLength(1); // ชื่อผังบัญชีพิมพ์ครั้งเดียวที่หัวบัญชี
     });
 
     it("verifies accurate CSV export serialization", () => {

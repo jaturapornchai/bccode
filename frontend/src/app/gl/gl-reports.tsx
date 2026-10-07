@@ -51,6 +51,8 @@ export function controlRowText(row: Record<string, string>, key: string, value: 
   if (row.rowtype === "control" && key === "accountcode") return "";
   // รวมของเอกสารในรายงานข้อมูลรายวัน (Champ 5532: "รวมทั้งสิ้น n รายการ" ต่อเอกสาร)
   if (row.rowtype === "doctotal" && key === "description") return tr("gl_report_doc_total", "รวมทั้งสิ้น {0} รายการ").replace("{0}", row.linecount ?? "");
+  // รวมของบัญชีในรายงานเปรียบเทียบงบประมาณ (Champ 5530)
+  if (row.rowtype === "budgettotal" && key === "budgetname") return tr("gl_report_total", "รวม");
   const ledgerLabel = LEDGER_ROW_LABELS[row.rowtype ?? ""];
   return ledgerLabel && key === "description" ? tr(...ledgerLabel) : value;
 }
@@ -72,13 +74,13 @@ function ReportHeadRows({ columns, cellClass }: { columns: ReportColumn[]; cellC
     <tr>{columns.filter((column) => column.group).map((column) => <th key={column.key} className={cellClass(column)}>{column.label}</th>)}</tr>
   </>;
 }
-/** ยอดคงเหลือติดลบแสดงในวงเล็บแบบ Champ เช่น (1,000.00) */
+/** ยอดคงเหลือ/ผลต่างงบประมาณที่ติดลบแสดงในวงเล็บแบบ Champ เช่น (1,000.00) */
 function balanceText(key: string, text: string) {
-  return key === "balance" && text.startsWith("-") ? `(${text.slice(1)})` : text;
+  return (key === "balance" || key === "variance") && text.startsWith("-") ? `(${text.slice(1)})` : text;
 }
 /** แถวรวม/ยอดยกของรายงาน พิมพ์ตัวหนาแบบ Champ */
 export function isSummaryRow(row: Record<string, string>) {
-  return row.rowtype === "control" || row.rowtype === "document" || row.rowtype === "doctotal" || row.rowtype in LEDGER_ROW_LABELS;
+  return row.rowtype === "control" || row.rowtype === "document" || row.rowtype === "doctotal" || row.rowtype === "budgetaccount" || row.rowtype === "budgettotal" || row.rowtype in LEDGER_ROW_LABELS;
 }
 // รายงานข้อมูลรายวันแบบ Champ: วันที่/สมุด/เลขที่/เอกสารอ้างอิง อยู่ที่หัวเอกสารแล้ว
 const DOCUMENT_HEADER_KEYS: ReadonlySet<string> = new Set(["date", "bookcode", "docno", "referenceno"]);
@@ -87,6 +89,10 @@ export function repeatsAccount(row: Record<string, string>, key: string, firstOn
   // แถวรวมของเอกสารไม่พิมพ์หัวเอกสารซ้ำ; บรรทัดรายการพิมพ์หัวเอกสารเฉพาะแถวแรกของหน้า (หน้าที่เริ่มกลางเอกสาร)
   if (row.rowtype === "doctotal" && DOCUMENT_HEADER_KEYS.has(key)) return true;
   if (row.rowtype === "docline" && DOCUMENT_HEADER_KEYS.has(key)) return !firstOnPage;
+  // เปรียบเทียบงบประมาณ: รหัส/ชื่อผังบัญชีอยู่ที่หัวบัญชี (budgetaccount) แล้ว
+  const accountKey = key === "accountcode" || key === "accountname";
+  if (row.rowtype === "budgettotal" && accountKey) return true;
+  if (row.rowtype === "budgetline" && accountKey) return !firstOnPage;
   return !firstOnPage && row.accountfirst === "" && (key === "accountcode" || key === "accountname");
 }
 function accountIndent(row: Record<string, string>, key: string) {
@@ -108,7 +114,6 @@ const reportTextLabels: Record<string, Record<string, GLLabel>> = {
   direction: { in: ["gl_money_in", "เงินเข้า"], out: ["gl_money_out", "เงินออก"], 1: ["gl_money_in", "เงินเข้า"], 2: ["gl_money_out", "เงินออก"] },
   document_kind: { 1: ["gl_details_ui_1", "ตั้งหนี้"], 2: ["gl_details_ui_2", "ผลชำระที่เกิดแล้ว"], 3: ["gl_details_ui_3", "เพิ่มหนี้"], 4: ["gl_details_ui_4", "ลดหนี้"], 5: ["gl_opening_balance_2", "ยอดยกมา"] },
   category: { operating: ["gl_operating", "ดำเนินงาน"], investing: ["gl_investing", "ลงทุน"], financing: ["gl_raise_funds", "จัดหาเงิน"], unclassified: ["gl_not_specified", "ยังไม่ระบุ"] },
-  budgetstatus: { open: ["gl_open", "เปิด"], closed: ["gl_closed", "ปิดแล้ว"] },
 };
 function reportText(key: string, value = "", tr: GLTextFn, books: GLJournalBook[] = [], language = "th") {
   // The computed earnings row is not a chart-of-accounts entry. Keep its source key for exports.

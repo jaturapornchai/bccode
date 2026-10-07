@@ -678,7 +678,7 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 	// $12 = งวดงบที่เริ่มในช่วงรายงาน, $13 = รหัสงบประมาณ ('' = ทุกงบ) ต่อท้าย r.args ($1-$11)
 	r.args = append(append([]any{}, r.args...), pq.Array(budgetPeriodsInRange(r.fiscal, r.query.From, r.query.To)), NormalizeCode(r.query.BudgetCode))
 	cte := r.base() + `, budget_rows AS (
-		SELECT b.code AS budget_code, b.name AS budget_name, b.status AS budget_status,
+		SELECT b.code AS budget_code, b.name AS budget_name,
 			b.branch_code, b.department_code, b.project_code, l.account_code,
 			SUM(CASE WHEN l.period_no = ANY($12::smallint[]) THEN l.amount ELSE 0 END) AS budget_amount
 		FROM gl_budgets b
@@ -686,9 +686,9 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 		WHERE b.company=$1 AND b.fiscal_year=$2 AND ($13='' OR b.code=$13)
 			AND ($5='' OR l.account_code=$5)` + accountRangeFilter("l.account_code") + ` AND ($6='' OR b.branch_code=$6)
 			AND ($7='' OR b.department_code=$7) AND ($8='' OR b.project_code=$8)
-		GROUP BY b.code, b.name, b.status, b.branch_code, b.department_code, b.project_code, l.account_code
+		GROUP BY b.code, b.name, b.branch_code, b.department_code, b.project_code, l.account_code
 	), compared AS (
-		SELECT br.*, COALESCE(acc.payload->>'accounttype', '') AS account_type,
+		SELECT br.*,
 			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(acc.payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1), '') AS account_name,
 			COALESCE(act.actual, 0) AS actual_amount
 		FROM budget_rows br
@@ -702,36 +702,38 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 				AND (br.project_code='' OR f.project_code=br.project_code)
 		) act ON true
 	), result AS (
-		SELECT account_code AS accountcode, account_name AS accountname, account_type AS accounttype,
-			budget_code AS budgetcode, budget_name AS budgetname, budget_status AS budgetstatus,
-			branch_code AS branchcode, department_code AS departmentcode, project_code AS projectcode,
-			budget_amount::text AS budgetamount, actual_amount::text AS actualamount,
-			(budget_amount - actual_amount)::text AS variance,
-			(CASE WHEN budget_amount > 0 THEN ROUND(actual_amount / budget_amount * 100, 2) ELSE 0 END)::numeric(20,2)::text AS percentused
+		-- Champ 5530 (GLRepBudgetCompView): หัวบัญชี (budgetaccount) → แถวงบ (budgetline) → รวมของบัญชี (budgettotal)
+		SELECT account_code AS accountcode, MIN(account_name) AS accountname, ''::text AS budgetcode, ''::text AS budgetname,
+			''::text AS branchcode, ''::text AS departmentcode, ''::text AS projectcode,
+			NULL::text AS budgetamount, NULL::text AS actualamount, NULL::text AS variance, 'budgetaccount'::text AS rowtype, '0'::text AS __sort
+		FROM compared GROUP BY account_code
+		UNION ALL
+		SELECT account_code, account_name, budget_code, budget_name, branch_code, department_code, project_code,
+			budget_amount::text, actual_amount::text, (budget_amount - actual_amount)::text, 'budgetline', '1'
 		FROM compared
+		UNION ALL
+		SELECT account_code, MIN(account_name), '', '', '', '', '',
+			SUM(budget_amount)::text, SUM(actual_amount)::text, SUM(budget_amount - actual_amount)::text, 'budgettotal', '2'
+		FROM compared GROUP BY account_code
 	)`
+	// ป้ายตาม Champ 5530; จัดสรร/วันที่เริ่ม/วันที่สิ้นสุด ไม่มีเพราะงบของ BC เป็นบัญชี × งวด (ไม่ใช่แถวละช่วงวันที่)
 	cols := []ReportColumn{
-		textColumn("accountcode", "รหัสบัญชี"),
-		textColumn("accountname", "ชื่อบัญชี"),
-		textColumn("accounttype", "หมวดบัญชี"),
-		textColumn("budgetcode", "รหัสงบประมาณ"),
-		textColumn("budgetname", "ชื่องบประมาณ"),
-		textColumn("budgetstatus", "สถานะงบประมาณ"),
+		textColumn("accountcode", "รหัสผังบัญชี"),
+		textColumn("accountname", "ชื่อผังบัญชี"),
+		textColumn("budgetcode", "รหัส"),
+		textColumn("budgetname", "ชื่อ/รายละเอียด"),
 		textColumn("branchcode", "สาขา"),
 		textColumn("departmentcode", "แผนก"),
 		textColumn("projectcode", "โครงการ"),
-		amountColumn("budgetamount", "งบประมาณ"),
-		amountColumn("actualamount", "ใช้จริง"),
-		amountColumn("variance", "ผลต่างคงเหลือ"),
-		amountColumn("percentused", "ร้อยละที่ใช้ (%)"),
+		amountColumn("budgetamount", "จำนวนเงิน"),
+		amountColumn("actualamount", "งบประมาณที่ใช้จริง"),
+		amountColumn("variance", "ผลต่าง"),
 	}
-	totals := []reportTotal{
-		{key: "budgetamount", expr: "budgetamount::numeric"},
-		{key: "actualamount", expr: "actualamount::numeric"},
-		{key: "variance", expr: "variance::numeric"},
+	lineOnly := func(key string) reportTotal {
+		return reportTotal{key: key, expr: "CASE WHEN rowtype='budgetline' THEN " + key + "::numeric ELSE 0 END"}
 	}
 	// Champ orders the comparison by account, then budget code.
-	return r.runWithTotals(ctx, cte, "accountcode,budgetcode", cols, totals)
+	return r.runWithTotals(ctx, cte, "accountcode,__sort,budgetcode", cols, []reportTotal{lineOnly("budgetamount"), lineOnly("actualamount"), lineOnly("variance")}, "rowtype", "__sort")
 }
 
 // budgetPeriodsInRange lists the period numbers of the fiscal year whose start date is
