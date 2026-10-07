@@ -438,14 +438,15 @@ func TestFreshInstall_FullUATCycle(t *testing.T) {
 	}
 
 	// 7.1.2 ความเคลื่อนไหวระหว่างงวด (Movements)
-	// Movement: SV(107,000) + UV(267,500) + COGS(80,000) + PV(21,400) + RV(267,500) = 743,400.00
+	// ยอดประจำงวดของงบทดลอง (Champ 5506) หักกลบเดบิต-เครดิตต่อบัญชีแล้วลงฝั่งเดียว จึงไม่ใช่ยอดหมุนเวียนรวม 743,400
+	// (SV 107,000 + UV 267,500 + COGS 80,000 + PV 21,400 + RV 267,500) แต่เป็นผลรวมยอดสุทธิฝั่งเดบิต 375,100
 	tbMovDr, _ := decimal.NewFromString(tb.Totals["debit"])
 	tbMovCr, _ := decimal.NewFromString(tb.Totals["credit"])
 	t.Logf("Trial Balance Movement: Debit = %s, Credit = %s", tbMovDr.String(), tbMovCr.String())
 	if !tbMovDr.Equal(tbMovCr) {
 		t.Fatalf("Trial Balance Movement not balanced! DR %s != CR %s", tbMovDr.String(), tbMovCr.String())
 	}
-	expectedMov := decimal.NewFromInt(743400)
+	expectedMov := decimal.NewFromInt(375100)
 	if !tbMovDr.Equal(expectedMov) {
 		t.Fatalf("Expected Movement %s, got %s", expectedMov.String(), tbMovDr.String())
 	}

@@ -67,6 +67,8 @@ type ReportColumn struct {
 	Key    string `json:"key"`
 	Label  string `json:"label"`
 	Amount bool   `json:"amount,omitempty"`
+	// Group = หัวคอลัมน์ชั้นบนแบบ Champ (เช่น "ยอดยกมา" คร่อม เดบิต | เครดิต) — คอลัมน์ติดกันที่ Group เดียวกันรวมเป็นแถบเดียว
+	Group string `json:"group,omitempty"`
 }
 type Report struct {
 	Sequence  int64               `json:"sequence"`

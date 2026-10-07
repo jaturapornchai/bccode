@@ -283,9 +283,9 @@ func TestPostgresStore_FullLedgerFlow(t *testing.T) {
 	if !tbRevDebit.Equal(tbRevCredit) {
 		t.Fatalf("Trial balance after reversal is not balanced! Debit: %s, Credit: %s", tbRevDebit.String(), tbRevCredit.String())
 	}
-	// Total turnover should be 10700 + 10700 = 21400
-	if !tbRevDebit.Equal(decimal.NewFromInt(21400)) {
-		t.Fatalf("Expected TotalDebit after reversal to be 21400, got %s", tbRevDebit.String())
+	// ยอดประจำงวดหักกลบต่อบัญชี (Champ 5506): รายการกลับหักล้างรายการเดิมจนเหลือศูนย์
+	if !tbRevDebit.IsZero() {
+		t.Fatalf("Expected net period debit after reversal to be 0, got %s", tbRevDebit.String())
 	}
 
 	t.Logf("Pure PostgreSQL General Ledger Flow Passed 100%% with ACID direct transactions!")

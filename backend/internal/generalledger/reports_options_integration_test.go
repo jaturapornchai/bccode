@@ -78,7 +78,14 @@ func TestReportAccountRangeFiltersEveryAccountReport(t *testing.T) {
 			t.Fatalf("ledger row outside range: %v", row)
 		}
 	}
-	if ledger.TotalRows != 4 { // 1000: Z1, Z2, COST · 1100: SALE (OPEN is the opening column, not a movement row)
+	lines := 0
+	for _, row := range ledger.Rows {
+		if row["rowtype"] == "line" {
+			lines++
+		}
+	}
+	// 1000: Z1, Z2, COST · 1100: SALE — OPEN อยู่ในแถว "ยอดยกมา" ไม่ใช่รายการเคลื่อนไหว
+	if lines != 4 || ledger.TotalRows != 10 { // + ยอดยกมา/ยอดยกไป/ยอดรวม ต่อบัญชี (Champ 5534)
 		t.Fatalf("ledger rows in range = %v", ledger.Rows)
 	}
 	trial, err := p.Report(ctx, scope, "trialbalance", ReportQuery{FiscalYear: "2026", AccountFrom: "2000"})
@@ -161,7 +168,7 @@ func TestTrialBalanceControlTotalsAndHideZero(t *testing.T) {
 	if !strings.Contains(strings.Join(reportCodes(shown), ","), "2000,2*") {
 		t.Fatalf("zero account missing without the option: %v", reportCodes(shown))
 	}
-	glpgDecimalEqual(t, hidden.Totals["debit"], shown.Totals["debit"])
+	glpgDecimalEqual(t, hidden.Totals["endingdebit"], shown.Totals["endingdebit"])
 }
 
 func TestLedgerHideOpeningAndSummary(t *testing.T) {
@@ -172,11 +179,17 @@ func TestLedgerHideOpeningAndSummary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(normal.Rows) != 1 {
+	// Champ 5534: ยอดยกมา → รายการ → ยอดยกไป (ลงฝั่งตรงข้ามให้ดุล) → ยอดรวม
+	if len(normal.Rows) != 4 || normal.Rows[0]["rowtype"] != "opening" || normal.Rows[1]["rowtype"] != "line" || normal.Rows[2]["rowtype"] != "carry" || normal.Rows[3]["rowtype"] != "total" {
 		t.Fatalf("ledger 1000 from February = %v", normal.Rows)
 	}
-	glpgDecimalEqual(t, normal.Rows[0]["opening"], "1000")
-	glpgDecimalEqual(t, normal.Rows[0]["balance"], "900")
+	glpgDecimalEqual(t, normal.Rows[0]["debit"], "1000")
+	glpgDecimalEqual(t, normal.Rows[0]["balance"], "1000")
+	glpgDecimalEqual(t, normal.Rows[1]["balance"], "900")
+	glpgDecimalEqual(t, normal.Rows[2]["credit"], "900")
+	glpgDecimalEqual(t, normal.Rows[3]["debit"], "1000")
+	glpgDecimalEqual(t, normal.Rows[3]["credit"], "1000")
+	glpgDecimalEqual(t, normal.Totals["credit"], "100") // แถวพิเศษไม่นับในยอดรวมรายงาน
 	glpgDecimalEqual(t, normal.Totals["opening"], "1000")
 
 	base.HideOpening = true
@@ -193,6 +206,10 @@ func TestLedgerHideOpeningAndSummary(t *testing.T) {
 		t.Fatalf("opening total shown: %v", hidden.Totals)
 	}
 	glpgDecimalEqual(t, hidden.Rows[0]["balance"], "-100") // running balance starts at zero (Champ 5534)
+	if len(hidden.Rows) != 3 || hidden.Rows[0]["rowtype"] != "line" {
+		t.Fatalf("hide opening rows = %v", hidden.Rows)
+	}
+	glpgDecimalEqual(t, hidden.Rows[1]["debit"], "100") // ยอดยกไป
 	glpgDecimalEqual(t, hidden.Totals["balance"], "-100")
 
 	// 5535: balance as of the end date per account, one side only, control totals by level

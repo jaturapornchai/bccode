@@ -251,7 +251,8 @@ export function AccountLedgerModal({
 
   if (!open || !account) return null;
 
-  const rows = report?.rows ?? [];
+  // แถวยอดยกมา/ยอดยกไป/ยอดรวมของรายงานแยกประเภท (Champ 5534) ไม่ใช่รายการ — หน้าต่างนี้แสดงยอดยกมาด้านบนอยู่แล้ว
+  const rows = (report?.rows ?? []).filter((row) => !row.rowtype || row.rowtype === "line");
   const thName = (account.names || []).find((n) => n.code === "th")?.name ?? account.accountcode;
 
   return (

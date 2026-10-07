@@ -8696,3 +8696,4 @@ gl_post_batch_hint	การผ่านรายการรายวัน: �
 gl_period_code	งวดบัญชี	Accounting period	Accounting period	Accounting period	Accounting period	Accounting period	Accounting period	Accounting period	Accounting period	Accounting period	Accounting period	Accounting period
 gl_period_start_date	วันที่เริ่มต้นงวดบัญชี	Period start date	Period start date	Period start date	Period start date	Period start date	Period start date	Period start date	Period start date	Period start date	Period start date	Period start date
 gl_period_end_date	วันที่สิ้นสุดงวดบัญชี	Period end date	Period end date	Period end date	Period end date	Period end date	Period end date	Period end date	Period end date	Period end date	Period end date	Period end date
+gl_report_grand_total	รวมทั้งสิ้น	Grand total	Grand total	Grand total	Grand total	Grand total	Grand total	Grand total	Grand total	Grand total	Grand total	Grand total

@@ -181,7 +181,8 @@ func TestPostgresProjectionSequenceAndImmutableLines(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, row := range trial.Rows {
-		glpgDecimalEqual(t, row["balance"], "0")
+		glpgDecimalEqual(t, row["endingdebit"], "0")
+		glpgDecimalEqual(t, row["endingcredit"], "0")
 	}
 	glpgSeed(t, p, "B")
 	other := glpgJournal("B", "OTHER", "2026-01-02", "manual", "posted", "1000", "4000", "9")
@@ -241,6 +242,9 @@ func TestPostgresAccountingReportsExactAndScoped(t *testing.T) {
 			}
 			if name == "gljournal" || name == "ledger" {
 				for _, row := range report.Rows {
+					if name == "ledger" && row["rowtype"] != "line" {
+						continue // ยอดยกมา/ยอดยกไป/ยอดรวม (Champ 5534) ไม่มีใบสำคัญต้นทาง
+					}
 					if row["journalid"] == "" {
 						t.Fatal("missing source journal ID")
 					}
@@ -275,7 +279,7 @@ func TestPostgresAccountingReportsExactAndScoped(t *testing.T) {
 	}
 	glpgDecimalEqual(t, trial.Totals["difference"], "0")
 	glpgDecimalEqual(t, trial.Totals["openingdebit"], "1000")
-	glpgDecimalEqual(t, trial.Totals["debit"], "12.3")
+	glpgDecimalEqual(t, trial.Totals["debit"], "10") // ยอดประจำงวดหักกลบต่อบัญชีลงฝั่งเดียว (Champ 5506)
 	bs, err := p.Report(ctx, scope, "balancesheet", query)
 	if err != nil {
 		t.Fatal(err)
@@ -295,12 +299,12 @@ func TestPostgresAccountingReportsExactAndScoped(t *testing.T) {
 	ledgerQuery := query
 	ledgerQuery.AccountCode = "1000"
 	ledgerQuery.Limit = 1
-	ledgerQuery.Page = 2
+	ledgerQuery.Page = 3 // Champ 5534: ยอดยกมา, 4 รายการ, ยอดยกไป, ยอดรวม
 	ledger, err := p.Report(ctx, scope, "ledger", ledgerQuery)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ledger.TotalRows != 4 || len(ledger.Rows) != 1 {
+	if ledger.TotalRows != 7 || len(ledger.Rows) != 1 || ledger.Rows[0]["rowtype"] != "line" {
 		t.Fatalf("pagination total=%d rows=%d", ledger.TotalRows, len(ledger.Rows))
 	}
 	glpgDecimalEqual(t, ledger.Rows[0]["balance"], "1000.3")

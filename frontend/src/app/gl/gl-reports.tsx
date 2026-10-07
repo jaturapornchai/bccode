@@ -44,8 +44,42 @@ export async function fetchReport(name: string, filters: ReportFilters, page = 1
   return glRequest<GLReport>(`reports/${name}?${new URLSearchParams({ ...reportQuery(name, filters), ...(companywide ? { companywide: "true" } : {}), page: String(page), limit: String(limit), ...(snapshot === undefined ? {} : { snapshot: String(snapshot) }) })}`);
 }
 // แถวรวมบัญชีคุม (rowtype=control จาก backend accountBalanceReport) แสดงเป็น "รวม <ชื่อบัญชีคุม>" ทั้งจอ พิมพ์ และไฟล์ส่งออก
+// แถวพิเศษของรายงานแยกประเภท (Champ 5534, backend ledger) — backend ส่งคำอธิบายว่าง ข้อความแปลที่นี่
+const LEDGER_ROW_LABELS: Record<string, GLLabel> = { opening: ["gl_opening_balance_2", "ยอดยกมา"], carry: ["gl_closing_balance", "ยอดยกไป"], total: ["gl_total", "ยอดรวม"] };
 export function controlRowText(row: Record<string, string>, key: string, value: string, tr: GLTextFn) {
-  return row.rowtype === "control" && key === "accountname" ? tr("gl_report_control_total", "รวม {0}").replace("{0}", value) : value;
+  if (row.rowtype === "control" && key === "accountname") return tr("gl_report_control_total", "รวม {0}").replace("{0}", value);
+  const ledgerLabel = LEDGER_ROW_LABELS[row.rowtype ?? ""];
+  return ledgerLabel && key === "description" ? tr(...ledgerLabel) : value;
+}
+type ReportColumn = GLReport["columns"][number];
+/** ชื่อเต็มของคอลัมน์ที่มีหัวกลุ่ม เช่น "ยอดยกมา เดบิต" — ใช้กับการ์ดยอดรวมและไฟล์ส่งออก */
+export function columnTitle(column: ReportColumn | undefined) {
+  return column && (column.group ? `${column.group} ${column.label}` : column.label);
+}
+/** หัวตาราง 2 ชั้นแบบ Champ (ยอดยกมา คร่อม เดบิต | เครดิต); คอลัมน์ที่ไม่มีกลุ่มกินสองแถว */
+function ReportHeadRows({ columns, cellClass }: { columns: ReportColumn[]; cellClass: (column: ReportColumn) => string }) {
+  if (!columns.some((column) => column.group)) return <tr>{columns.map((column) => <th key={column.key} className={cellClass(column)}>{column.label}</th>)}</tr>;
+  const bands: { column: ReportColumn; span: number }[] = [];
+  for (const column of columns) {
+    const last = bands.at(-1);
+    if (column.group && last?.column.group === column.group) last.span++; else bands.push({ column, span: 1 });
+  }
+  return <>
+    <tr>{bands.map(({ column, span }) => column.group ? <th key={column.key} colSpan={span} className={cellClass(column)} style={{ textAlign: "center" }}>{column.group}</th> : <th key={column.key} rowSpan={2} className={cellClass(column)}>{column.label}</th>)}</tr>
+    <tr>{columns.filter((column) => column.group).map((column) => <th key={column.key} className={cellClass(column)}>{column.label}</th>)}</tr>
+  </>;
+}
+/** ยอดคงเหลือติดลบแสดงในวงเล็บแบบ Champ เช่น (1,000.00) */
+function balanceText(key: string, text: string) {
+  return key === "balance" && text.startsWith("-") ? `(${text.slice(1)})` : text;
+}
+/** แถวรวม/ยอดยกของรายงาน พิมพ์ตัวหนาแบบ Champ */
+export function isSummaryRow(row: Record<string, string>) {
+  return row.rowtype === "control" || row.rowtype in LEDGER_ROW_LABELS;
+}
+/** รายงานแยกประเภทแสดงรหัส/ชื่อบัญชีครั้งเดียวที่แถวแรกของบัญชี (หัวบัญชีแบบ Champ) และแถวแรกของหน้า */
+export function repeatsAccount(row: Record<string, string>, key: string, firstOnPage: boolean) {
+  return !firstOnPage && row.accountfirst === "" && (key === "accountcode" || key === "accountname");
 }
 function accountIndent(row: Record<string, string>, key: string) {
   const level = Number(row.accountlevel);
@@ -311,7 +345,7 @@ export function ReportGrid({
   const max = amounts.reduce((largest, amount) => (amount < 0n ? -amount : amount) > largest ? (amount < 0n ? -amount : amount) : largest, 0n);
   return <div className="flex flex-col flex-1 min-h-0 gap-3">
     <div className="shrink-0 flex flex-col gap-2">{(report.warnings ?? []).map((warning, index) => <Notice key={index} text={warning} />)}</div>
-    {!!Object.keys(report.totals ?? {}).length && <div className="shrink-0 flex flex-wrap gap-2">{Object.entries(report.totals).sort(([left], [right]) => totalRank(report, left) - totalRank(report, right)).map(([key, value]) => <div key={key} className="min-w-36 flex-1 rounded-xl border border-border bg-muted/40 p-3 shadow-sm"><div className="text-[0.9rem] text-muted-foreground">{report.columns.find((column) => column.key === key)?.label ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</div><div className="text-lg font-semibold tabular-nums">{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</div></div>)}</div>}
+    {!!Object.keys(report.totals ?? {}).length && <div className="shrink-0 flex flex-wrap gap-2">{Object.entries(report.totals).sort(([left], [right]) => totalRank(report, left) - totalRank(report, right)).map(([key, value]) => <div key={key} className="min-w-36 flex-1 rounded-xl border border-border bg-muted/40 p-3 shadow-sm"><div className="text-[0.9rem] text-muted-foreground">{columnTitle(report.columns.find((column) => column.key === key)) ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</div><div className="text-lg font-semibold tabular-nums">{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</div></div>)}</div>}
     {graphs && max > 0n && <div className="shrink-0 grid gap-2 rounded-xl border border-border p-3 shadow-sm" aria-label={tr("gl_balance_comparison_chart", "กราฟเปรียบเทียบยอดบัญชี")}>{reportRows(report).slice(0, 20).map((row, index) => <div key={index} className="grid gap-1"><div className="flex flex-wrap justify-between gap-2 text-[0.95rem]"><span>{row.name ?? row.accountname ?? row.month ?? row[report.columns.find((column) => !column.amount)?.key ?? ""] ?? tr("gl_item_x", "รายการ {0}").replace("{0}", String(index + 1))}</span><strong>{formatAmount(row[amountColumns[0]?.key] ?? "0")}</strong></div><div className="h-3 rounded-full bg-muted"><div className="h-3 rounded-full bg-primary" style={{ width: `${((amounts[index] < 0n ? -amounts[index] : amounts[index]) * 100n / max).toString()}%` }} /></div></div>)}</div>}
     <div className="shrink-0 flex justify-end">
       <ReportDisplayToolbar
@@ -324,20 +358,20 @@ export function ReportGrid({
     <div className={`flex-1 min-h-[300px] overflow-auto rounded-xl border border-border shadow-sm ${reportPref.contrastClass}`}>
       <table className={`w-full text-left leading-normal ${density.tableClass} ${reportPref.fontSizeClass}`}>
         <thead className="sticky top-0 bg-muted z-10">
-          <tr>{report.columns.map((column) => <th key={column.key} className={`whitespace-nowrap p-2 ${column.amount ? "text-right" : "text-left"}`}>{column.label}</th>)}</tr>
+          <ReportHeadRows columns={report.columns} cellClass={(column) => `whitespace-nowrap p-2 ${column.amount ? "text-right" : "text-left"}`} />
         </thead>
         <tbody>
           {reportRows(report).map((row, index) => (
-            <tr key={index} className={`border-t border-border hover:bg-accent/60 transition-colors ${row.rowtype === "control" ? "font-semibold bg-muted/40" : ""}`}>
+            <tr key={index} className={`border-t border-border hover:bg-accent/60 transition-colors ${isSummaryRow(row) ? "font-semibold bg-muted/40" : ""}`}>
               {report.columns.map((column) => {
-                const val = row[column.key] ?? "";
+                const val = repeatsAccount(row, column.key, index === 0) ? "" : row[column.key] ?? "";
                 const isDocNoCol = (column.key === "docno" || column.key === "documentno" || column.key === "reference") && val && val.trim() !== "";
                 // แถวรวมบัญชีคุมไม่มีรายการของตัวเอง จึงไม่เปิดรายงานแยกประเภท
                 const isAccountCodeCol = column.key === "accountcode" && val && val !== "__current_earnings__" && row.rowtype !== "control";
 
                 let cellContent;
                 if (column.amount) {
-                  cellContent = formatAmount(val);
+                  cellContent = balanceText(column.key, formatAmount(val));
                 } else if (isDocNoCol && onDrillDocNo && (row.journalid || row.id)) {
                   cellContent = (
                     <button
@@ -411,15 +445,15 @@ function GLReportPrint({ report, title, meta, company, books, tr, language, brea
     {groups.map((group, groupIndex) => <table key={groupIndex} style={groupIndex > 0 ? { breakBefore: "page", pageBreakBefore: "always" } : undefined}>
       <thead>
         <tr className="gl-print-head"><th colSpan={columns.length || 1}><PrintHeading company={company} title={title} meta={breakKey && group[0] ? [...meta, `${group[0].accountcode ?? ""} ${group[0].accountname ?? ""}`.trim()] : meta} /></th></tr>
-        <tr>{columns.map((column) => <th key={column.key} className={column.amount ? "gl-print-num" : ""}>{column.label}</th>)}</tr>
+        <ReportHeadRows columns={columns} cellClass={(column) => column.amount ? "gl-print-num" : ""} />
       </thead>
       <tbody>
-        {group.map((row, index) => <tr key={index} className={row.rowtype === "control" ? "gl-print-total" : undefined}>{columns.map((column) => <td key={column.key} style={accountIndent(row, column.key)} className={column.amount ? "gl-print-num" : ""}>{column.amount ? printAmountCell(column.key, row[column.key] ?? "") : printCell(column.key, controlRowText(row, column.key, row[column.key] ?? "", tr), tr, books, language)}</td>)}</tr>)}
+        {group.map((row, index) => <tr key={index} className={isSummaryRow(row) ? "gl-print-total" : undefined}>{columns.map((column) => <td key={column.key} style={accountIndent(row, column.key)} className={column.amount ? "gl-print-num" : ""}>{column.amount ? balanceText(column.key, printAmountCell(column.key, row[column.key] ?? "")) : repeatsAccount(row, column.key, index === 0) ? "" : printCell(column.key, controlRowText(row, column.key, row[column.key] ?? "", tr), tr, books, language)}</td>)}</tr>)}
         {!rows.length && <tr><td colSpan={columns.length || 1}>{tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}</td></tr>}
-        {inline.length > 0 && groupIndex === groups.length - 1 && <tr className="gl-print-total">{columns.map((column, index) => { const total = inline.find(([key]) => key === column.key); return <td key={column.key} className={column.amount ? "gl-print-num" : ""}>{total ? formatAmount(total[1]) : index === 0 ? tr("gl_total", "ยอดรวม") : ""}</td>; })}</tr>}
+        {inline.length > 0 && groupIndex === groups.length - 1 && <tr className="gl-print-total">{columns.map((column, index) => { const total = inline.find(([key]) => key === column.key); return <td key={column.key} className={column.amount ? "gl-print-num" : ""}>{total ? formatAmount(total[1]) : index === 0 ? tr("gl_report_grand_total", "รวมทั้งสิ้น") : ""}</td>; })}</tr>}
       </tbody>
     </table>)}
-    {extra.length > 0 && <dl className="gl-print-totals">{extra.map(([key, value]) => <div key={key}><dt>{report.columns.find((column) => column.key === key)?.label ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</dt><dd>{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</dd></div>)}</dl>}
+    {extra.length > 0 && <dl className="gl-print-totals">{extra.map(([key, value]) => <div key={key}><dt>{columnTitle(report.columns.find((column) => column.key === key)) ?? labelText(totalLabels, key, tr, tr("gl_total", "ยอดรวม"))}</dt><dd>{key === "unclassifiedlines" ? tr("gl_x_items", "{0} รายการ").replace("{0}", String(value)) : formatAmount(value)}</dd></div>)}</dl>}
   </>;
 }
 function reportPrintTitle(name: string, filters: ReportFilters, tr: GLTextFn, books: GLJournalBook[], accounts: GLAccount[], language: LanguageCode) {

@@ -69,7 +69,7 @@ export type GLReviewEvent = { eventno: number; version: number; status: GLReview
 export type GLJournalReview = { journalid: string; version: number; status: GLReviewStatus; eventno: number; events: GLReviewEvent[] };
 export type GLPage<T> = { items: T[]; total: number; page: number; limit: number; sequence: number };
 export type GLReport = {
-  columns: { key: string; label: string; amount?: boolean }[];
+  columns: { key: string; label: string; amount?: boolean; group?: string }[];
   rows: Record<string, string>[]; totals: Record<string, string>;
   totalrows: number; warnings: string[]; asof: string; sequence: number;
   // statement: ช่วงของแต่ละคอลัมน์ยอดเงิน (ปีนี้/ปีก่อน) สำหรับหัวงบ
@@ -394,7 +394,7 @@ export function csvCell(value: string, isAmount = false) {
   return `"${(needsApostrophe ? "'" : "") + value.replace(/"/g, '""')}"`;
 }
 export function reportCsv(report: GLReport) {
-  return "\uFEFF" + [report.columns.map((column) => csvCell(column.label)).join(","), ...report.rows.map((row) => report.columns.map((column) => csvCell(row[column.key] ?? "", Boolean(column.amount))).join(","))].join("\r\n");
+  return "\uFEFF" + [report.columns.map((column) => csvCell(column.group ? `${column.group} ${column.label}` : column.label)).join(","), ...report.rows.map((row) => report.columns.map((column) => csvCell(row[column.key] ?? "", Boolean(column.amount))).join(","))].join("\r\n");
 }
 
 export function chartOfAccountsCsv(accounts: GLAccount[], tr: GLTextFn): string {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 )
 
 type reportContext struct {
@@ -167,6 +168,11 @@ func amountColumn(key, label string) ReportColumn {
 	return ReportColumn{Key: key, Label: label, Amount: true}
 }
 
+// debitCreditColumns = คู่ เดบิต | เครดิต ใต้หัวกลุ่มเดียว (หัวตาราง 2 ชั้นของ Champ)
+func debitCreditColumns(debitKey, creditKey, group string) []ReportColumn {
+	return []ReportColumn{{Key: debitKey, Label: "เดบิต", Amount: true, Group: group}, {Key: creditKey, Label: "เครดิต", Amount: true, Group: group}}
+}
+
 type reportTotal struct {
 	key  string
 	expr string
@@ -306,17 +312,31 @@ func (r reportContext) trialCTE() string {
     )`
 }
 
+// trialBalance = Champ 5506 รายงานงบทดลอง: ยอดยกมา · ยอดประจำงวด · ยอดสะสม แต่ละกลุ่มหักกลบลงฝั่งเดียว
+// (GLRepTrialBalanceView.cpp:654-697); working = Champ 5499 รายงานกระดาษทำการ: งบทดลอง · งบกำไรขาดทุน · งบดุล
+// (GLRepWorkingPaperView.cpp:181-195) ป้ายตามตัวอย่างรายงานจริง bcspec/Report_ระบบบัญชี
 func (r reportContext) trialBalance(ctx context.Context, working bool) (Report, error) {
-	columns := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("accounttype", "หมวดบัญชี"), amountColumn("openingdebit", "ยกมาเดบิต"), amountColumn("openingcredit", "ยกมาเครดิต"), amountColumn("debit", "เคลื่อนไหวเดบิต"), amountColumn("credit", "เคลื่อนไหวเครดิต"), amountColumn("endingdebit", "คงเหลือเดบิต"), amountColumn("endingcredit", "คงเหลือเครดิต"), amountColumn("balance", "สุทธิเดบิตลบเครดิต")}
-	cte := r.trialCTE() + `, leaf AS (SELECT account_code,account_name,account_type,GREATEST(opening,0) AS openingdebit,GREATEST(-opening,0) AS openingcredit,debit,credit,GREATEST(balance,0) AS endingdebit,GREATEST(-balance,0) AS endingcredit,balance`
+	columns := []ReportColumn{textColumn("accountcode", "รหัสผังบัญชี"), textColumn("accountname", "รายการ")}
+	cte := r.trialCTE() + `, leaf AS (SELECT account_code,account_name,account_type,GREATEST(balance,0) AS endingdebit,GREATEST(-balance,0) AS endingcredit`
 	if working {
 		cte += `,(CASE WHEN account_type IN ('income','expense') THEN GREATEST(balance,0) ELSE 0 END) AS pnldebit,(CASE WHEN account_type IN ('income','expense') THEN GREATEST(-balance,0) ELSE 0 END) AS pnlcredit,(CASE WHEN account_type IN ('asset','liability','equity') THEN GREATEST(balance,0) ELSE 0 END) AS bsdebit,(CASE WHEN account_type IN ('asset','liability','equity') THEN GREATEST(-balance,0) ELSE 0 END) AS bscredit`
-		columns = append(columns, amountColumn("pnldebit", "กำไรขาดทุนเดบิต"), amountColumn("pnlcredit", "กำไรขาดทุนเครดิต"), amountColumn("bsdebit", "ฐานะการเงินเดบิต"), amountColumn("bscredit", "ฐานะการเงินเครดิต"))
+		columns = append(append(append(columns, debitCreditColumns("endingdebit", "endingcredit", "งบทดลอง")...), debitCreditColumns("pnldebit", "pnlcredit", "งบกำไรขาดทุน")...), debitCreditColumns("bsdebit", "bscredit", "งบดุล")...)
+	} else {
+		cte += `,GREATEST(opening,0) AS openingdebit,GREATEST(-opening,0) AS openingcredit,GREATEST(debit-credit,0) AS debit,GREATEST(credit-debit,0) AS credit`
+		columns = append(append(append(columns, debitCreditColumns("openingdebit", "openingcredit", "ยอดยกมา")...), debitCreditColumns("debit", "credit", "ยอดประจำงวด")...), debitCreditColumns("endingdebit", "endingcredit", "ยอดสะสม")...)
 	}
 	cte += ` FROM balances)`
 	result, err := r.accountBalanceReport(ctx, cte, columns, r.query.HideZero)
-	result.Totals["difference"] = result.Totals["balance"]
-	return result, err
+	if err != nil {
+		return result, err
+	}
+	total := func(key string) decimal.Decimal { return Amount(result.Totals[key]).Decimal() }
+	result.Totals["difference"] = total("endingdebit").Sub(total("endingcredit")).String()
+	if working {
+		// Champ พิมพ์แถว "กำไร(ขาดทุน)สุทธิ" ท้ายกระดาษทำการ = ส่วนต่างที่ทำให้งบกำไรขาดทุนดุล
+		result.Totals["profit"] = total("pnlcredit").Sub(total("pnldebit")).String()
+	}
+	return result, nil
 }
 
 // accountBalanceReport renders one row per account from the leaf CTE, which must expose
@@ -396,14 +416,37 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
 	if r.query.HideOpening {
 		opening = "0"
 	}
-	cte := r.base() + `, openings AS (SELECT account_code,SUM(debit-credit) AS opening FROM filtered WHERE entry_date<$3::date OR kind='opening' GROUP BY account_code), movements AS (SELECT * FROM filtered WHERE entry_date>=$3::date AND kind<>'opening'), result AS (
-      SELECT m.account_code AS accountcode,m.account_name AS accountname,m.entry_date::text AS date,m.doc_no AS docno,m.book_code AS bookcode,m.branch_code AS branchcode,m.department_code AS departmentcode,m.project_code AS projectcode,m.description,
-      m.debit::text,m.credit::text,` + opening + `::text AS opening,(` + opening + `+SUM(m.debit-m.credit) OVER(PARTITION BY m.account_code ORDER BY m.entry_date,m.doc_no,m.journal_id,m.line_no ROWS UNBOUNDED PRECEDING))::text AS balance,m.journal_id AS journalid,m.line_no::text AS __line_no FROM movements m LEFT JOIN openings o USING(account_code))`
-	cols := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), textColumn("date", "วันที่"), textColumn("docno", "เลขที่เอกสาร"), textColumn("bookcode", "สมุดรายวัน"), textColumn("branchcode", "สาขา"), textColumn("departmentcode", "แผนก"), textColumn("projectcode", "โครงการ"), textColumn("description", "รายละเอียด"), amountColumn("opening", "ยอดยกมา"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "ยอดคงเหลือ")}
+	// Champ 5534 (GLRepGL2View.cpp:187-1099): ต่อบัญชี = แถว "ยอดยกมา" → รายการ → "ยอดยกไป" (ยอดคงเหลือลงฝั่งตรงข้ามให้ดุล)
+	// → "ยอดรวม" (เดบิต = เครดิต); rowtype opening/line/carry/total — ข้อความของแถวพิเศษแปลที่ frontend;
+	// accountfirst = "1" ที่แถวแรกของบัญชี ให้จอแสดงรหัส/ชื่อบัญชีครั้งเดียวแบบหัวบัญชีของ Champ
+	accounts := `accts a FULL JOIN openings o USING(account_code) WHERE a.account_code IS NOT NULL OR o.opening<>0`
 	if r.query.HideOpening {
-		cols = append(cols[:9], cols[10:]...)
+		accounts = `accts a LEFT JOIN openings o USING(account_code)`
 	}
-	result, err := r.run(ctx, cte, "accountcode,date,docno,journalid,__line_no::integer", cols, []string{"debit", "credit"}, "journalid", "__line_no")
+	special := func(rowtype string, sort int, debit, credit, balance string) string {
+		return `SELECT la.account_code,la.account_name,'','','','','','','',(` + debit + `)::text,(` + credit + `)::text,` + balance + `,'` + rowtype + `','','` + fmt.Sprint(sort) + `',NULL::text FROM ledger_accounts la`
+	}
+	ending := `(la.opening+la.debit-la.credit)`
+	rows := []string{
+		`SELECT m.account_code,m.account_name,m.entry_date::text,m.doc_no,m.book_code,m.branch_code,m.department_code,m.project_code,m.description,m.debit::text,m.credit::text,
+      (la.opening+SUM(m.debit-m.credit) OVER(PARTITION BY m.account_code ORDER BY m.entry_date,m.doc_no,m.journal_id,m.line_no ROWS UNBOUNDED PRECEDING))::text,'line',m.journal_id,'2',m.line_no::text FROM movements m JOIN ledger_accounts la USING(account_code)`,
+		special("carry", 3, `GREATEST(-`+ending+`,0)`, `GREATEST(`+ending+`,0)`, `''`),
+		special("total", 4, `GREATEST(la.opening,0)+la.debit+GREATEST(-`+ending+`,0)`, `GREATEST(-la.opening,0)+la.credit+GREATEST(`+ending+`,0)`, `''`),
+	}
+	if !r.query.HideOpening {
+		rows = append(rows, special("opening", 1, `GREATEST(la.opening,0)`, `GREATEST(-la.opening,0)`, `la.opening::text`))
+	}
+	cte := r.base() + `, openings AS (SELECT account_code,MAX(account_name) AS account_name,SUM(debit-credit) AS opening FROM filtered WHERE entry_date<$3::date OR kind='opening' GROUP BY account_code),
+      movements AS (SELECT * FROM filtered WHERE entry_date>=$3::date AND kind<>'opening'),
+      accts AS (SELECT account_code,MAX(account_name) AS account_name,SUM(debit) AS debit,SUM(credit) AS credit FROM movements GROUP BY account_code),
+      ledger_accounts AS (SELECT account_code,COALESCE(a.account_name,o.account_name) AS account_name,` + opening + ` AS opening,COALESCE(a.debit,0) AS debit,COALESCE(a.credit,0) AS credit FROM ` + accounts + `),
+      ledger_rows(accountcode,accountname,date,docno,bookcode,branchcode,departmentcode,projectcode,description,debit,credit,balance,rowtype,journalid,__sort,__line_no) AS (` + strings.Join(rows, "\n      UNION ALL ") + `),
+      result AS (SELECT *,CASE WHEN ROW_NUMBER() OVER(PARTITION BY accountcode ORDER BY __sort,date,docno,journalid,__line_no::integer)=1 THEN '1' ELSE '' END AS accountfirst FROM ledger_rows)`
+	cols := []ReportColumn{textColumn("accountcode", "ผังบัญชี"), textColumn("accountname", "ชื่อผังบัญชี"), textColumn("date", "วันที่"), textColumn("bookcode", "สมุดรายวัน"), textColumn("docno", "เลขที่เอกสาร"), textColumn("description", "คำอธิบาย"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "ยอดคงเหลือ"), textColumn("branchcode", "สาขา"), textColumn("departmentcode", "แผนก"), textColumn("projectcode", "โครงการ")}
+	lineOnly := func(key string) reportTotal {
+		return reportTotal{key: key, expr: "CASE WHEN rowtype='line' THEN " + key + "::numeric ELSE 0 END"}
+	}
+	result, err := r.runWithTotals(ctx, cte, "accountcode,__sort,date,docno,journalid,__line_no::integer", cols, []reportTotal{lineOnly("debit"), lineOnly("credit")}, "rowtype", "accountfirst", "journalid", "__sort", "__line_no")
 	if err != nil {
 		return result, err
 	}
@@ -419,7 +462,7 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
 // ของแต่ละบัญชีตั้งแต่ต้นปีบัญชีรวมยอดยกมา ลงฝั่งเดบิตหรือเครดิตฝั่งเดียว พร้อมผลรวมบัญชีคุมตามระดับ
 func (r reportContext) ledgerSummary(ctx context.Context) (Report, error) {
 	cte := r.base() + `, leaf AS (SELECT account_code,MAX(account_name) AS account_name,MAX(account_type) AS account_type,GREATEST(SUM(debit-credit),0) AS debit,GREATEST(-SUM(debit-credit),0) AS credit FROM filtered GROUP BY account_code)`
-	columns := []ReportColumn{textColumn("accountcode", "รหัสบัญชี"), textColumn("accountname", "ชื่อบัญชี"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต")}
+	columns := []ReportColumn{textColumn("accountcode", "รหัสผังบัญชี"), textColumn("accountname", "รายการ"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต")}
 	return r.accountBalanceReport(ctx, cte, columns, false)
 }
 
@@ -469,16 +512,16 @@ func (r reportContext) annualBalances(ctx context.Context) (Report, error) {
 // comes from gl_lines, which is the only place accounting arithmetic may run.
 func (r reportContext) allocation(ctx context.Context) (Report, error) {
 	columns := []ReportColumn{
-		textColumn("alloccode", "รหัสการปันส่วน"),
+		textColumn("alloccode", "รหัสการจัดสรร"),
 		textColumn("allocname", "ชื่อ/รายละเอียด"),
 		textColumn("accountcode", "บัญชีต้นทุน"),
 		textColumn("accountname", "ชื่อบัญชี"),
-		textColumn("target", "ปลายทางที่ปันส่วน"),
+		textColumn("target", "ปลายทางที่จัดสรร"),
 		textColumn("departmentcode", "แผนก"),
 		textColumn("projectcode", "โครงการ"),
 		amountColumn("rate", "อัตรา %"),
-		amountColumn("sourceamount", "ยอดต้นทุนที่ปันส่วน"),
-		amountColumn("allocatedamount", "ยอดปันส่วน"),
+		amountColumn("sourceamount", "ยอดต้นทุนที่จัดสรร"),
+		amountColumn("allocatedamount", "ยอดจัดสรร"),
 	}
 	cte := r.base() + `, source AS (
       SELECT account_code, SUM(debit-credit) AS amount FROM filtered GROUP BY account_code
@@ -526,16 +569,16 @@ func (r reportContext) glJournal(ctx context.Context) (Report, error) {
 	)`
 	cols := []ReportColumn{
 		textColumn("date", "วันที่"),
-		textColumn("docno", "เลขที่เอกสาร"),
 		textColumn("bookcode", "สมุดรายวัน"),
-		textColumn("accountcode", "รหัสบัญชี"),
+		textColumn("docno", "เลขที่เอกสาร"),
+		textColumn("accountcode", "ผังบัญชี"),
 		textColumn("accountname", "ชื่อบัญชี"),
 		textColumn("description", "คำอธิบาย"),
+		textColumn("departmentcode", "แผนก"),
+		textColumn("projectcode", "โครงการ"),
 		amountColumn("debit", "เดบิต"),
 		amountColumn("credit", "เครดิต"),
 		textColumn("branchcode", "สาขา"),
-		textColumn("departmentcode", "แผนก"),
-		textColumn("projectcode", "โครงการ"),
 	}
 	return r.run(ctx, cte, "date,docno,journalid,__line_no::integer", cols, []string{"debit", "credit"}, "journalid", "__line_no")
 }
@@ -553,10 +596,10 @@ func (r reportContext) glJournalSummary(ctx context.Context) (Report, error) {
 		FROM docs d LEFT JOIN gl_records j ON j.company=$1 AND j.kind='journals' AND j.id=d.journal_id
 	)`
 	cols := []ReportColumn{
-		textColumn("date", "วันที่"),
+		textColumn("date", "วันที่เอกสาร"),
 		textColumn("bookcode", "สมุดรายวัน"),
 		textColumn("docno", "เลขที่เอกสาร"),
-		textColumn("referenceno", "เลขที่อ้างอิง"),
+		textColumn("referenceno", "เอกสารอ้างอิง"),
 		textColumn("description", "คำอธิบาย"),
 		amountColumn("amount", "จำนวนเงิน"),
 	}
