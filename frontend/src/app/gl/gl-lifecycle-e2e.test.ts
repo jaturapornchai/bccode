@@ -371,12 +371,21 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       const htmlRecalc = renderToStaticMarkup(createElement(GLProcesses, { route: "/gl/recalculate-posted", action: "recalculate" }));
       expect(htmlRecalc).toContain("คำนวณยอดผ่านรายการใหม่");
       expect(htmlRecalc).toContain("ตรวจสอบยอดก่อนดำเนินการ");
+      // recalculate/reprocess rebuild from the history: the backend ignores docno/date, so the screen does not ask for them
+      expect(htmlRecalc).not.toContain("เลขที่เอกสาร");
+      expect(htmlRecalc).not.toContain("วันที่ดำเนินการ");
 
       const htmlClose = renderToStaticMarkup(createElement(GLProcesses, { route: "/gl/financialclose", action: "close" }));
-      expect(htmlClose).toContain("สร้างฉบับร่างปิดงวด");
+      // Champ 5513 wording: ปีบัญชี → เลขที่เอกสาร → วันที่เอกสาร → คำอธิบาย, buttons ประมวลผล / บันทึกรายการ (F11)
+      expect(htmlClose).toContain("บันทึกรายการ (F11)");
+      expect(htmlClose).toContain("ประมวลผล");
+      const closeLabels = ["ปีบัญชี", "เลขที่เอกสาร", "วันที่เอกสาร", "คำอธิบาย"].map((label) => htmlClose.indexOf(label));
+      expect(closeLabels.every((position) => position >= 0)).toBe(true);
+      expect([...closeLabels].sort((a, b) => a - b)).toEqual(closeLabels);
 
       const htmlYearEnd = renderToStaticMarkup(createElement(GLProcesses, { route: "/gl/year-end", action: "year-end" }));
       expect(htmlYearEnd).toContain("ประมวลผลสิ้นปี");
+      expect(htmlYearEnd).toContain("วันที่ดำเนินการ");
     });
   });
 

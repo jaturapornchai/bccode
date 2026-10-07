@@ -714,3 +714,29 @@ describe("ผังบัญชี: tree badges, toggle labels and delete confir
     expect(confirmSubject({ id: "p-1", code: "P01", name: "", isactive: true, version: 1 } as GLMaster, "", tr)).toBe("P01");
   });
 });
+describe("Champ wording of group and link-template lists (2026-10-07)", () => {
+  const listOf = (items: object[]) => vi.mocked(glCommon.useGLList).mockReturnValue({
+    data: { items: items as GLMaster[], total: items.length, page: 1, limit: 30, sequence: 0 },
+    page: 1, loading: false, error: "", reload: vi.fn(), setPage: vi.fn(),
+  });
+  const headers = (html: string) => [...html.matchAll(/<th(?:\s[^>]*)?>(.*?)<\/th>/g)].map((match) => match[1]);
+
+  it("กำหนดกลุ่มบัญชีสินค้า lists รหัสกลุ่ม · ชื่อกลุ่ม · รหัสผังบัญชีสินค้า · ต้นทุน · รายได้ with the account codes of each row", () => {
+    listOf([{ id: "pg-1", code: "G01", name: "ปูนซีเมนต์", itemaccount: "11310", costaccount: "51110", revenueaccount: "41110", isactive: true, version: 1 }]);
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "product-account-groups", route: "/gl/product-account-groups" }));
+    expect(headers(html)).toEqual(["รหัสกลุ่ม", "ชื่อกลุ่ม", "รหัสผังบัญชีสินค้า", "รหัสผังบัญชีต้นทุน", "รหัสผังบัญชีรายได้", "สถานะ", "จัดการ"]);
+    for (const code of ["G01", "ปูนซีเมนต์", "11310", "51110", "41110"]) expect(html).toContain(code);
+  });
+
+  it("บันทึกกลุ่มผังบัญชี uses รหัสกลุ่ม / ชื่อกลุ่ม and no extra account columns", () => {
+    listOf([{ id: "ag-1", code: "A01", name: "สินทรัพย์หมุนเวียน", isactive: true, version: 1 }]);
+    const html = renderToStaticMarkup(createElement(GLMasters, { resource: "account-groups", route: "/gl/account-groups" }));
+    expect(headers(html)).toEqual(["รหัสกลุ่ม", "ชื่อกลุ่ม", "สถานะ", "จัดการ"]);
+  });
+
+  it("กำหนดรูปแบบการเชื่อม uses รหัสรูปแบบ / ชื่อรูปแบบ while other masters keep รหัส / ชื่อ / รายละเอียด", () => {
+    listOf([{ id: "mp-1", code: "SV1", name: "ขายเชื่อ", isactive: true, version: 1 }]);
+    expect(headers(renderToStaticMarkup(createElement(GLMasters, { resource: "mappings", route: "/gl/account-mapping" })))).toEqual(["รหัสรูปแบบ", "ชื่อรูปแบบ", "สถานะ", "จัดการ"]);
+    expect(headers(renderToStaticMarkup(createElement(GLMasters, { resource: "periods", route: "/gl/periodlock" })))).toEqual(["รหัส", "ชื่อ / รายละเอียด", "สถานะ", "จัดการ"]);
+  });
+});

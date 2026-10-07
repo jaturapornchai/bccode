@@ -166,7 +166,7 @@ export function GLBudgets({ route }: { route: string }) {
     <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border">
       <table className="w-full text-[0.95rem]" data-field="budget-list">
         <thead className="sticky top-0 z-10 bg-muted/90 text-left"><tr>
-          <th className="p-2">{tr("gl_code", "รหัส")}</th><th className="p-2">{tr("gl_name", "ชื่อ")}</th><th className="p-2">{tr("gl_fiscal_year", "ปีบัญชี")}</th><th className="p-2">{tr("gl_status", "สถานะ")}</th><th className="p-2 text-right">{tr("gl_total", "ยอดรวม")}</th>
+          <th className="p-2">{tr("gl_code", "รหัส")}</th><th className="p-2">{tr("gl_budget_list_name", "ชื่อ/รายละเอียด")}</th><th className="p-2">{tr("gl_fiscal_year", "ปีบัญชี")}</th><th className="p-2">{tr("gl_status", "สถานะ")}</th><th className="p-2 text-right">{tr("gl_budget_list_amount", "จำนวน")}</th>
         </tr></thead>
         <tbody>
           {list.items.map((item) => <tr key={item.code} className={`border-t border-border cursor-pointer hover:bg-accent/60 ${draft?.id === item.code ? "bg-primary/10" : ""}`} onClick={() => void openBudget(item.code)}>
@@ -210,10 +210,11 @@ export function GLBudgets({ route }: { route: string }) {
         <Field label={tr("gl_note", "หมายเหตุ")}><input className={control} data-field="remark" value={draft.remark} onChange={(e) => setHeader({ remark: e.target.value })} /></Field>
       </fieldset>
       <p className="shrink-0 text-[0.9rem] text-muted-foreground">{tr("gl_budget_spread_hint", "ใส่ยอดทั้งปีแล้วกด แบ่งงวด ระบบจะแบ่งเท่ากันทุกงวดของปีบัญชี (เศษสตางค์อยู่งวดสุดท้าย) หรือพิมพ์ยอดรายเดือนเองได้")}</p>
+      <div className="shrink-0"><Notice text={tr("gl_budget_period_close_note", "การปิดงวดของงบประมาณควรปิดให้สัมพันธ์กับงวดของบัญชี เพื่อให้การกระทบยอดและการเปรียบเทียบงบประมาณสมบูรณ์")} /></div>
       <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border">
         <table className="w-max min-w-full text-[0.9rem]" data-field="budget-lines">
           <thead className="sticky top-0 z-10 bg-muted/95"><tr>
-            <th className="sticky left-0 z-20 bg-muted p-2 text-left min-w-64">{tr("gl_account", "บัญชี")}</th>
+            <th className="sticky left-0 z-20 bg-muted p-2 text-left min-w-64">{tr("gl_budget_line_account_code", "รหัสบัญชี")}</th>
             <th className="p-2 text-right min-w-36">{tr("gl_budget_annual", "ยอดทั้งปี")}</th>
             <th className="p-2" aria-label={tr("gl_budget_spread", "แบ่งงวด")} />
             {Array.from({ length: BUDGET_PERIODS }, (_, period) => <th key={period} className={`p-2 text-right min-w-32 ${period >= periodCount ? "text-muted-foreground" : ""}`}>{periodLabel(period)}</th>)}

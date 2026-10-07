@@ -261,7 +261,7 @@ export function TaxFilingWorkbench({
   const partyHeader = isReceivedWht
     ? tr("tax_register_col_withholder", "ชื่อผู้หักภาษี (ผู้จ่ายเงิน)")
     : isWhtType
-      ? tr("tax_register_col_payee", "ชื่อผู้ถูกหักภาษี (ผู้รับเงิน)")
+      ? tr("tax_register_col_payee", "ชื่อผู้มีเงินได้")
       : tr("tax_register_col_party", "ชื่อผู้ซื้อ/ผู้ขาย");
   const viewDetails = tr("tax_register_view_details", "ดูรายละเอียด");
   const closeLabel = tr("close", "ปิด");
@@ -301,14 +301,15 @@ export function TaxFilingWorkbench({
   };
   const columnLabels = {
     seq: tr("tax_register_col_seq", "ลำดับ"),
-    date: tr("tax_register_col_date", "วันที่"),
-    docno: tr("tax_register_col_docno", "เลขที่เอกสาร/ใบกำกับ"),
-    taxid: tr("tax_register_col_taxid", "เลขประจำตัวผู้เสียภาษี 13 หลัก"),
+    // ทะเบียนภาษีหัก ณ ที่จ่ายใช้ป้ายตามจอพิมพ์ภาษีหัก ณ ที่จ่ายของ Champ; ทะเบียนภาษีซื้อ/ขายคงป้ายเดิม
+    date: isWhtType ? tr("tax_register_col_wht_date", "วันที่จ่าย") : tr("tax_register_col_date", "วันที่"),
+    docno: isWhtType ? tr("tax_register_col_wht_docno", "เลขที่เอกสาร") : tr("tax_register_col_docno", "เลขที่เอกสาร/ใบกำกับ"),
+    taxid: isWhtType ? tr("tax_register_col_wht_taxid", "เลขประจำตัวผู้เสียภาษี") : tr("tax_register_col_taxid", "เลขประจำตัวผู้เสียภาษี 13 หลัก"),
     branch: tr("tax_register_col_branch", "สาขา"),
-    base: tr("tax_register_col_base", "มูลค่าก่อนภาษี"),
+    base: isWhtType ? tr("tax_register_col_wht_base", "ฐานภาษี") : tr("tax_register_col_base", "มูลค่าก่อนภาษี"),
     zero: tr("tax_register_col_zero", "อัตรา 0%"),
     exempt: tr("tax_register_col_exempt", "ยกเว้นภาษี"),
-    tax: tr("tax_register_col_tax", "ภาษี"),
+    tax: isWhtType ? tr("tax_register_col_wht_tax", "ภาษีหัก ณ ที่จ่าย") : tr("tax_register_col_tax", "ภาษี"),
     net: tr("tax_register_col_net", "ยอดสุทธิ"),
   };
 
@@ -390,10 +391,14 @@ export function TaxFilingWorkbench({
             onClick={() => {
               const c = columnLabels;
               const csv = [
-                [c.seq, c.date, c.docno, `"${partyHeader}"`, c.taxid, c.branch, c.base, ...(isVatType ? [c.zero, c.exempt] : []), c.tax, c.net].join(","),
+                (isWhtType
+                  ? [c.seq, `"${partyHeader}"`, c.taxid, c.branch, c.date, c.base, c.tax, c.docno, c.net]
+                  : [c.seq, c.date, c.docno, `"${partyHeader}"`, c.taxid, c.branch, c.base, ...(isVatType ? [c.zero, c.exempt] : []), c.tax, c.net]).join(","),
                 ...filteredRecords.map((r, idx) =>
-                  [idx + 1, r.docdate, r.taxinvoiceno, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.amountbeforevat,
-                    ...(isVatType ? [r.zeroamount ?? "0.00", r.exemptamount ?? "0.00"] : []), r.whtamount ?? r.vatamount, r.totalamount].join(","),
+                  (isWhtType
+                    ? [idx + 1, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.docdate, r.amountbeforevat, r.whtamount ?? r.vatamount, r.taxinvoiceno, r.totalamount]
+                    : [idx + 1, r.docdate, r.taxinvoiceno, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.amountbeforevat,
+                      ...(isVatType ? [r.zeroamount ?? "0.00", r.exemptamount ?? "0.00"] : []), r.whtamount ?? r.vatamount, r.totalamount]).join(","),
                 ),
               ].join("\n");
               const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -645,32 +650,45 @@ export function TaxFilingWorkbench({
               <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
                   <th className="px-3 py-3 w-12 text-center">{columnLabels.seq}</th>
-                  <th className="px-3 py-3 w-28">{columnLabels.date}</th>
-                  <th className="px-3 py-3 w-36">{columnLabels.docno}</th>
-                  <th className="px-4 py-3">{partyHeader}</th>
-                  <th className="px-3 py-3 w-36">{columnLabels.taxid}</th>
-                  <th className="px-3 py-3 w-20 text-center">{columnLabels.branch}</th>
-                  <th className="px-4 py-3 text-right">{columnLabels.base}</th>
-                  {isVatType && <th className="px-4 py-3 text-right" data-field="col-zero">{columnLabels.zero}</th>}
-                  {isVatType && <th className="px-4 py-3 text-right" data-field="col-exempt">{columnLabels.exempt}</th>}
-                  <th className="px-4 py-3 text-right">{columnLabels.tax}</th>
+                  {isWhtType ? (
+                    <>
+                      <th className="px-4 py-3">{partyHeader}</th>
+                      <th className="px-3 py-3 w-36">{columnLabels.taxid}</th>
+                      <th className="px-3 py-3 w-20 text-center">{columnLabels.branch}</th>
+                      <th className="px-3 py-3 w-28">{columnLabels.date}</th>
+                      <th className="px-4 py-3 text-right">{columnLabels.base}</th>
+                      <th className="px-4 py-3 text-right">{columnLabels.tax}</th>
+                      <th className="px-3 py-3 w-36">{columnLabels.docno}</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-3 py-3 w-28">{columnLabels.date}</th>
+                      <th className="px-3 py-3 w-36">{columnLabels.docno}</th>
+                      <th className="px-4 py-3">{partyHeader}</th>
+                      <th className="px-3 py-3 w-36">{columnLabels.taxid}</th>
+                      <th className="px-3 py-3 w-20 text-center">{columnLabels.branch}</th>
+                      <th className="px-4 py-3 text-right">{columnLabels.base}</th>
+                      {isVatType && <th className="px-4 py-3 text-right" data-field="col-zero">{columnLabels.zero}</th>}
+                      {isVatType && <th className="px-4 py-3 text-right" data-field="col-exempt">{columnLabels.exempt}</th>}
+                      <th className="px-4 py-3 text-right">{columnLabels.tax}</th>
+                    </>
+                  )}
                   <th className="px-4 py-3 text-right">{columnLabels.net}</th>
                   <th className="px-3 py-3 w-20 text-center print:hidden">{tr("tax_register_col_actions", "จัดการ")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredRecords.map((item, idx) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-muted/30 transition-colors cursor-pointer"
-                    onClick={() => selectRecord(item)}
-                  >
-                    <td className="px-3 py-2.5 text-center text-muted-foreground font-mono">{idx + 1}</td>
+                {filteredRecords.map((item, idx) => {
+                  const dateCell = (
                     <td className="px-3 py-2.5 text-xs whitespace-nowrap">{formatAppDate(item.docdate, language)}</td>
+                  );
+                  const docnoCell = (
                     <td className="px-3 py-2.5 font-medium text-primary">
                       {item.taxinvoiceno}
                       <DuplicateInvoiceBadge docnos={item.duplicatedocnos} tr={tr} />
                     </td>
+                  );
+                  const partyCell = (
                     <td className="px-4 py-2.5">
                       <div className="font-medium text-foreground">{item.counterpartyname}</div>
                       {item.incometype && (
@@ -683,7 +701,11 @@ export function TaxFilingWorkbench({
                         </div>
                       )}
                     </td>
+                  );
+                  const taxidCell = (
                     <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{item.taxid}</td>
+                  );
+                  const branchCell = (
                     <td className="px-3 py-2.5 text-center">
                       {item.branchno && (
                         <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
@@ -691,44 +713,68 @@ export function TaxFilingWorkbench({
                         </span>
                       )}
                     </td>
+                  );
+                  const baseCell = (
                     <td className="px-4 py-2.5 text-right font-mono font-medium">
                       {money(item.amountbeforevat)}
                     </td>
-                    {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.zeroamount ?? "0.00")}</td>}
-                    {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.exemptamount ?? "0.00")}</td>}
+                  );
+                  const taxCell = (
                     <td className="px-4 py-2.5 text-right font-mono font-medium text-primary">
                       {money(item.whtamount ?? item.vatamount)}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-bold text-foreground">
-                      {money(item.totalamount)}
-                    </td>
-                    <td className="px-3 py-2.5 text-center print:hidden">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          selectRecord(item);
-                        }}
-                        aria-label={viewDetails}
-                        title={viewDetails}
-                        className="h-8 px-2 text-xs"
-                      >
-                        <FileText className="h-4 w-4" aria-hidden />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                  );
+                  return (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-muted/30 transition-colors cursor-pointer"
+                      onClick={() => selectRecord(item)}
+                    >
+                      <td className="px-3 py-2.5 text-center text-muted-foreground font-mono">{idx + 1}</td>
+                      {isWhtType ? (
+                        <>
+                          {partyCell}{taxidCell}{branchCell}{dateCell}{baseCell}{taxCell}{docnoCell}
+                        </>
+                      ) : (
+                        <>
+                          {dateCell}{docnoCell}{partyCell}{taxidCell}{branchCell}{baseCell}
+                          {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.zeroamount ?? "0.00")}</td>}
+                          {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.exemptamount ?? "0.00")}</td>}
+                          {taxCell}
+                        </>
+                      )}
+                      <td className="px-4 py-2.5 text-right font-mono font-bold text-foreground">
+                        {money(item.totalamount)}
+                      </td>
+                      <td className="px-3 py-2.5 text-center print:hidden">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectRecord(item);
+                          }}
+                          aria-label={viewDetails}
+                          title={viewDetails}
+                          className="h-8 px-2 text-xs"
+                        >
+                          <FileText className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot className="border-t-2 bg-muted/40 font-bold">
                 <tr>
-                  <td colSpan={6} className="px-4 py-3 text-right">{tr("tax_period_total_count", "รวมทั้งงวด ({0} รายการ):").replace("{0}", String(totals.count))}</td>
+                  <td colSpan={isWhtType ? 5 : 6} className="px-4 py-3 text-right">{tr("tax_period_total_count", "รวมทั้งงวด ({0} รายการ):").replace("{0}", String(totals.count))}</td>
                   <td className="px-4 py-3 text-right font-mono">{money(totals.beforeVat)}</td>
                   {isVatType && <td className="px-4 py-3 text-right font-mono">{money(totals.zero)}</td>}
                   {isVatType && <td className="px-4 py-3 text-right font-mono">{money(totals.exempt)}</td>}
                   <td className="px-4 py-3 text-right font-mono text-primary">
                     {money(totals.tax)}
                   </td>
+                  {isWhtType && <td />}
                   <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>
                   <td className="print:hidden"></td>
                 </tr>
@@ -762,11 +808,11 @@ export function TaxFilingWorkbench({
             <CardContent className="space-y-3 p-5 text-sm">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <span className="text-xs text-muted-foreground">{tr("tax_register_col_date", "วันที่")}</span>
+                  <span className="text-xs text-muted-foreground">{columnLabels.date}</span>
                   <p className="font-medium">{formatAppDate(selectedRecord.docdate, language)}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">{tr("tax_register_col_docno", "เลขที่เอกสาร/ใบกำกับ")}</span>
+                  <span className="text-xs text-muted-foreground">{columnLabels.docno}</span>
                   <p className="font-medium text-primary">{selectedRecord.taxinvoiceno}</p>
                   <DuplicateInvoiceBadge docnos={selectedRecord.duplicatedocnos} tr={tr} />
                 </div>
@@ -775,7 +821,7 @@ export function TaxFilingWorkbench({
                   <p className="font-medium">{selectedRecord.counterpartyname}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">{tr("tax_register_col_taxid", "เลขประจำตัวผู้เสียภาษี 13 หลัก")}</span>
+                  <span className="text-xs text-muted-foreground">{columnLabels.taxid}</span>
                   <p className="font-mono font-medium">{selectedRecord.taxid}</p>
                 </div>
                 <div>
@@ -792,7 +838,7 @@ export function TaxFilingWorkbench({
 
               <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-1.5 font-mono">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{tr("tax_register_col_base", "มูลค่าก่อนภาษี")}</span>
+                  <span className="text-muted-foreground">{columnLabels.base}</span>
                   <span>{money(selectedRecord.amountbeforevat)} {baht}</span>
                 </div>
                 <div className="flex justify-between text-primary font-semibold">

@@ -5,7 +5,7 @@ import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Tr
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { toast } from "@/lib/toast";
@@ -577,6 +577,8 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   const hasAmount = resource === "forecast";
   const isAcc = resource === "accounts";
   const isBook = resource === "journal-books";
+  const isProductGroup = resource === "product-account-groups";
+  const champLabels = champMasterLabels(resource, tr);
   // One alert at a time: the pane owns the message while a record is open (the page notice stays quiet),
   // otherwise the page notice shows the operation/list/reference failure.
   const alerts = editorAlert({ error, listError: list.error, refsError: refs.error, hasRecord: !!record });
@@ -819,9 +821,10 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             {/* .bc-list-header */}
             <thead className="bc-list-header sticky top-0 bg-muted/95 backdrop-blur z-10 border-b border-border/80 text-[0.7rem] font-extrabold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="py-2 px-2.5 text-left w-28 whitespace-nowrap">{isBook ? tr("gl_book_code", "รหัสสมุดรายวัน") : tr("gl_code", "รหัส")}</th>
-                <th className="py-2 px-2 text-left min-w-44">{isBook ? tr("gl_book_name", "ชื่อสมุดรายวัน") : tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
+                <th className="py-2 px-2.5 text-left w-28 whitespace-nowrap">{isBook ? tr("gl_book_code", "รหัสสมุดรายวัน") : champLabels?.code ?? tr("gl_code", "รหัส")}</th>
+                <th className="py-2 px-2 text-left min-w-44">{isBook ? tr("gl_book_name", "ชื่อสมุดรายวัน") : champLabels?.name ?? tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
                 {isBook && <th className="py-2 px-2 text-left min-w-36">{tr("gl_book_title_name", "หัวเอกสาร")}</th>}
+                {isProductGroup && PRODUCT_GROUP_ACCOUNTS.map(({ key, label }) => <th key={key} className="py-2 px-2 text-left w-36 whitespace-nowrap">{tr(...label)}</th>)}
                 {hasAmount && <th className="py-2 px-2 text-right w-36 whitespace-nowrap">{tr("gl_amount", "จำนวนเงิน")}</th>}
                 {isAcc && <th className="py-2 px-2 text-right w-20 whitespace-nowrap">{tr("gl_level", "ระดับ")}</th>}
                 <th className="py-2 px-2 text-right w-24 whitespace-nowrap">{tr("gl_status", "สถานะ")}</th>
@@ -867,6 +870,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
                       )}
                     </td>
                     {isBook && <td className="py-2 px-2 truncate align-middle">{(item as GLJournalBook).titlename || ""}</td>}
+                    {isProductGroup && PRODUCT_GROUP_ACCOUNTS.map(({ key }) => <td key={key} className="py-2 px-2 whitespace-nowrap align-middle font-mono">{(item as GLMaster)[key] || ""}</td>)}
                     {hasAmount && (
                       <td className="py-2 px-2 text-right font-mono font-medium tabular-nums whitespace-nowrap align-middle">
                         {"amount" in item ? formatAmount(item.amount) : "-"}
@@ -1373,24 +1377,37 @@ function FiscalYearFields({ value, set, accounts }: { value: GLFiscalYear; set: 
     </div>
   </div>{value.closed && <Notice text={tr("gl_fiscal_year_closed", "ปีบัญชีนี้ปิดแล้ว")} />}</>;
 }
+/** Champ columns of กำหนดกลุ่มบัญชีสินค้า (key = field in the record, label = [language key, Champ wording]). */
+const PRODUCT_GROUP_ACCOUNTS: readonly { key: "itemaccount" | "costaccount" | "revenueaccount"; label: GLLabel }[] = [
+  { key: "itemaccount", label: ["gl_inventory_account", "รหัสผังบัญชีสินค้า"] },
+  { key: "costaccount", label: ["gl_cogs_account", "รหัสผังบัญชีต้นทุน"] },
+  { key: "revenueaccount", label: ["gl_sales_revenue_account", "รหัสผังบัญชีรายได้"] },
+];
+/** Code/name wording of the Champ group and link-template screens; the shared gl_code/gl_name keys stay for the other masters. */
+function champMasterLabels(resource: MasterResource, tr: GLTextFn) {
+  if (resource === "account-groups" || resource === "product-account-groups") return { code: tr("gl_group_code", "รหัสกลุ่ม"), name: tr("gl_group_name", "ชื่อกลุ่ม") };
+  if (resource === "mappings") return { code: tr("gl_mapping_code", "รหัสรูปแบบ"), name: tr("gl_mapping_name", "ชื่อรูปแบบ") };
+  return null;
+}
 function MasterFields({ resource, value, set, accounts, years, books }: { resource: MasterResource; value: GLMaster; set: (patch: object) => void; accounts: GLAccount[]; years: GLFiscalYear[]; books: GLJournalBook[] }) {
   const tr = useGLText();
   const language = useGLLanguage();
   const usableBooks = activeJournalBooks(books);
   const dateFields = resource === "forecast";
+  const champLabels = champMasterLabels(resource, tr);
   return <><div className="grid items-start gap-3 sm:grid-cols-2">
-    <Field label={tr("gl_code", "รหัส")}><CodeInput locked={!!value.id} data-field="code" required value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
-    <Field label={tr("gl_name", "ชื่อ")}><input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} /></Field>
+    <Field label={champLabels?.code ?? tr("gl_code", "รหัส")}><CodeInput locked={!!value.id} data-field="code" required value={value.code || ""} onChange={(e) => set({ code: e.target.value })} /></Field>
+    <Field label={champLabels?.name ?? tr("gl_name", "ชื่อ")}><input className={control} data-field="name" required value={value.name || ""} onChange={(e) => set({ name: e.target.value })} /></Field>
     {dateFields && <><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect value={value.fiscalyear || ""} onChange={(fiscalyear) => set({ fiscalyear })} years={years} /></Field><Field label={tr("gl_start_date", "วันเริ่มต้น")}><input className={control} type="date" required value={value.startdate || ""} onChange={(e) => set({ startdate: e.target.value })} /></Field><Field label={tr("gl_end_date", "วันสิ้นสุด")}><input className={control} type="date" required value={value.enddate || ""} onChange={(e) => set({ enddate: e.target.value })} /></Field></>}
     {resource === "forecast" && <><Field label={tr("gl_account", "บัญชี")}><AccountSelect value={value.accountcode || ""} onChange={(accountcode) => set({ accountcode })} accounts={accounts} /></Field><Field label={tr("gl_amount", "จำนวนเงิน")}><AmountInput required value={value.amount || ""} onChange={(amount) => set({ amount })} /></Field><Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={value.branchcode || ""} onChange={(e) => set({ branchcode: e.target.value })} /></Field><Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={value.departmentcode || ""} onChange={(e) => set({ departmentcode: e.target.value })} /></Field><Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={value.projectcode || ""} onChange={(e) => set({ projectcode: e.target.value })} /></Field></>}
     {resource === "forecast" && <Field label={tr("gl_money_direction", "ทิศทางเงิน")}><ChoiceSelect value={value.direction || "in"} onChange={(direction) => set({ direction })}><option value="in">{tr("gl_money_in", "เงินเข้า")}</option><option value="out">{tr("gl_money_out", "เงินออก")}</option></ChoiceSelect></Field>}
-    {resource === "product-account-groups" && <>{([ ["itemaccount", tr("gl_inventory_account", "บัญชีสินค้า")], ["costaccount", tr("gl_cogs_account", "บัญชีต้นทุนขาย")], ["revenueaccount", tr("gl_sales_revenue_account", "บัญชีรายได้จากการขาย")] ] as const).map(([key, label]) => <Field key={key} label={label}><AccountSelect label={label} value={value[key] ?? ""} onChange={(accountcode) => set({ [key]: accountcode })} accounts={accounts} /></Field>)}</>}
-    {resource === "mappings" && <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={value.bookcode || ""} onChange={(bookcode) => set({ bookcode })}><option value="">{tr("gl_select", "เลือก")}</option>{usableBooks.map((book) => <option key={book.code} value={book.code}>{book.code} · {journalBookName(book, book.code, language)}</option>)}{value.bookcode && !usableBooks.some((book) => book.code === value.bookcode) && <option value={value.bookcode}>{value.bookcode} {tr("gl_book_inactive_suffix", "(ปิดใช้งาน — เลือกสมุดอื่น)")}</option>}</Combobox></Field>}
+    {resource === "product-account-groups" && <>{PRODUCT_GROUP_ACCOUNTS.map(({ key, label }) => { const text = tr(...label); return <Field key={key} label={text}><AccountSelect label={text} value={value[key] ?? ""} onChange={(accountcode) => set({ [key]: accountcode })} accounts={accounts} /></Field>; })}</>}
+    {resource === "mappings" && <Field label={tr("gl_book_code", "รหัสสมุดรายวัน")}><Combobox value={value.bookcode || ""} onChange={(bookcode) => set({ bookcode })}><option value="">{tr("gl_select", "เลือก")}</option>{usableBooks.map((book) => <option key={book.code} value={book.code}>{book.code} · {journalBookName(book, book.code, language)}</option>)}{value.bookcode && !usableBooks.some((book) => book.code === value.bookcode) && <option value={value.bookcode}>{value.bookcode} {tr("gl_book_inactive_suffix", "(ปิดใช้งาน — เลือกสมุดอื่น)")}</option>}</Combobox></Field>}
     <div className="sm:col-span-2 flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
       <Check label={tr("gl_enabled", "เปิดใช้งาน")} checked={value.isactive ?? true} onChange={(isactive) => set({ isactive })} />
     </div>
   </div>
-    {resource === "mappings" && <div className="grid gap-2"><h3 className="font-semibold">{tr("gl_account_mapping_rules", "กฎการเชื่อมบัญชี")}</h3>{(value.rules ?? []).map((rule, index) => <div key={index} className="grid gap-2 rounded-xl border border-border p-2 sm:grid-cols-2 shadow-sm bg-muted/20"><AccountSelect label={tr("gl_accounts_in_rule", "บัญชีในกฎ {0}").replace("{0}", String(index + 1))} value={rule.accountcode || ""} accounts={accounts} onChange={(accountcode) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, accountcode } : item) })} /><Field label={tr("gl_accounting_side_rule", "ด้านบัญชีกฎ {0}").replace("{0}", String(index + 1))}><ChoiceSelect value={rule.side || "debit"} onChange={(side) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, side } : item) })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field><Field label={tr("gl_amount_source_rule", "แหล่งจำนวนเงินกฎ {0}").replace("{0}", String(index + 1))}><input className={control} value={rule.source || ""} placeholder={tr("gl_select_supported_source_doc", "เลือกตามเอกสารต้นทางที่ระบบรองรับ")} onChange={(e) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, source: e.target.value } : item) })} /></Field><Button type="button" className={actionClass} variant="outline" onClick={() => set({ rules: (value.rules ?? []).filter((_, i) => i !== index) })}>{tr("gl_remove_rule", "นำกฎ {0} ออก").replace("{0}", String(index + 1))}</Button></div>)}<Button type="button" variant="outline" className={actionClass} onClick={() => set({ rules: [...(value.rules ?? []), { accountcode: "", side: "debit", source: "" }] })}>{tr("gl_add_account_mapping_rule", "เพิ่มกฎการเชื่อมบัญชี")}</Button></div>}
+    {resource === "mappings" && <div className="grid gap-2"><h3 className="font-semibold">{tr("gl_account_mapping_rules", "กฎการเชื่อมบัญชี")}</h3>{(value.rules ?? []).map((rule, index) => <div key={index} className="grid gap-2 rounded-xl border border-border p-2 sm:grid-cols-2 shadow-sm bg-muted/20"><Field label={tr("gl_accounts_in_rule", "รหัสผังบัญชี")}><AccountSelect label={tr("gl_accounts_in_rule", "รหัสผังบัญชี")} value={rule.accountcode || ""} accounts={accounts} onChange={(accountcode) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, accountcode } : item) })} /></Field><Field label={tr("gl_accounting_side_rule", "ประเภท")}><ChoiceSelect value={rule.side || "debit"} onChange={(side) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, side } : item) })}><option value="debit">{tr("gl_debit", "เดบิต")}</option><option value="credit">{tr("gl_credit", "เครดิต")}</option></ChoiceSelect></Field><Field label={tr("gl_amount_source_rule", "เงื่อนไข")}><input className={control} value={rule.source || ""} placeholder={tr("gl_select_supported_source_doc", "เลือกตามเอกสารต้นทางที่ระบบรองรับ")} onChange={(e) => set({ rules: (value.rules ?? []).map((item, i) => i === index ? { ...item, source: e.target.value } : item) })} /></Field><Button type="button" className={actionClass} variant="outline" onClick={() => set({ rules: (value.rules ?? []).filter((_, i) => i !== index) })}>{tr("gl_remove_rule", "นำกฎ {0} ออก").replace("{0}", String(index + 1))}</Button></div>)}<Button type="button" variant="outline" className={actionClass} onClick={() => set({ rules: [...(value.rules ?? []), { accountcode: "", side: "debit", source: "" }] })}>{tr("gl_add_account_mapping_rule", "เพิ่มกฎการเชื่อมบัญชี")}</Button></div>}
   </>;
 }
 

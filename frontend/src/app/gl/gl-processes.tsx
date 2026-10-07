@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { localDate, type GLLabel, type GLReport } from "@/lib/general-ledger";
@@ -22,8 +22,25 @@ export function GLProcesses({ route, action }: { route: string; action: "close" 
   const [preview, setPreview] = useState<GLReport | null>(null), [previewFor, setPreviewFor] = useState("");
   const [loading, setLoading] = useState(false), [message, setMessage] = useState(""), [error, setError] = useState("");
   const year = refs.years.find((item) => item.code === yearCode), config = processText[action];
+  // Only close/year-end write a dated document; recalculate/reprocess rebuild from the history and ignore docno/date (backend mutateProcess).
+  const isClose = action === "close", hasDocument = isClose || action === "year-end";
+  const rootRef = useRef<HTMLElement>(null), saveRef = useRef<() => void>(() => undefined);
   const previewKey = JSON.stringify({ year: yearCode, to: action === "close" ? date : year?.enddate, targetYear });
   useDirtyGuard(route, !!docno || !!reason);
+  const canProcess = !!preview && previewFor === previewKey && !busy && !loading && !(action === "year-end" && !targetYear);
+  const dialogOpen = confirmationDialog !== null;
+  // F11 = Champ's "บันทึกรายการ F11" on the close screen: same handler as the button, only while this screen is visible and no dialog is open.
+  useEffect(() => { saveRef.current = () => { if (canProcess) void process(); }; });
+  useEffect(() => {
+    if (!isClose) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "F11" || event.repeat || event.altKey || event.ctrlKey || event.metaKey || dialogOpen || !rootRef.current?.getClientRects().length) return;
+      event.preventDefault();
+      saveRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isClose, dialogOpen]);
   async function inspect(page = 1) {
     if (!year || loading) return;
     setLoading(true); setError("");
@@ -32,7 +49,7 @@ export function GLProcesses({ route, action }: { route: string; action: "close" 
   }
   async function process() {
     if (!year || !preview || previewFor !== previewKey || busy) return;
-    if (!reason.trim() || !date || !docno.trim()) { setError(tr("gl_specify_date_doc_reason", "กรุณาระบุวันที่ เลขที่เอกสาร และเหตุผลก่อนดำเนินการ")); return; }
+    if (!reason.trim() || hasDocument && (!date || !docno.trim())) { setError(isClose ? tr("gl_close_specify_fields", "กรุณาระบุเลขที่เอกสาร วันที่เอกสาร และคำอธิบายก่อนบันทึกรายการ") : hasDocument ? tr("gl_specify_date_doc_reason", "กรุณาระบุวันที่ เลขที่เอกสาร และเหตุผลก่อนดำเนินการ") : tr("gl_enter_reason_before_posting", "กรุณาระบุเหตุผลก่อนทำรายการ")); return; }
     if (action === "year-end" && !targetYear) { setError(tr("gl_select_next_fy_opening", "กรุณาเลือกปีบัญชีถัดไปสำหรับยอดยกมา")); return; }
     if (!await confirm({ title: `${tr(...config.button)}?`, description: tr("gl_fy_doc_date", "ปีบัญชี {0} · เอกสาร {1} · วันที่ {2}").replace("{0}", String(yearCode)).replace("{1}", String(docno)).replace("{2}", String(date)), details: reason, confirmLabel: tr(...config.button), tone: "warning" })) return;
     try {
@@ -43,11 +60,13 @@ export function GLProcesses({ route, action }: { route: string; action: "close" 
       setDocno(""); setReason(""); setPreview(null); setError("");
     } catch (e) { setError((e as Error).message); }
   }
-  return <section className={`${panel} grid gap-3`}><Notice text={tr(...config.text)} /><Notice text={tr("gl_process_companywide_scope", "ยอดตรวจสอบและการดำเนินการครอบคลุมทุกสาขาของบริษัท ต้องมีสิทธิ์ระดับบริษัท แม้เลือกสาขาอยู่ในพื้นที่ทำงาน")} /><Notice error text={error || refs.error} /><Notice text={message} />
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={yearCode} onChange={setYear} /></Field><Field label={tr("gl_processing_date", "วันที่ดำเนินการ")}><input className={control} type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field><Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} value={docno} onChange={(e) => setDocno(e.target.value)} /></Field><Field label={tr("gl_reason", "เหตุผล")}><input className={control} value={reason} onChange={(e) => setReason(e.target.value)} /></Field></div>
+  const dateField = <Field label={isClose ? tr("gl_close_document_date", "วันที่เอกสาร") : tr("gl_processing_date", "วันที่ดำเนินการ")}><input className={control} type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>;
+  const docnoField = <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} value={docno} onChange={(e) => setDocno(e.target.value)} /></Field>;
+  return <section ref={rootRef} className={`${panel} grid gap-3`}><Notice text={tr(...config.text)} /><Notice text={tr("gl_process_companywide_scope", "ยอดตรวจสอบและการดำเนินการครอบคลุมทุกสาขาของบริษัท ต้องมีสิทธิ์ระดับบริษัท แม้เลือกสาขาอยู่ในพื้นที่ทำงาน")} /><Notice error text={error || refs.error} /><Notice text={message} />
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={yearCode} onChange={setYear} /></Field>{isClose ? <>{docnoField}{dateField}</> : hasDocument ? <>{dateField}{docnoField}</> : null}<Field label={isClose ? tr("gl_close_description", "คำอธิบาย") : tr("gl_reason", "เหตุผล")}><input className={control} value={reason} onChange={(e) => setReason(e.target.value)} /></Field></div>
     {action === "year-end" && <Field label={tr("gl_next_fy_opening_balance", "ปีบัญชีถัดไปสำหรับยอดยกมา")}><YearSelect label={tr("gl_next_fy_opening_balance", "ปีบัญชีถัดไปสำหรับยอดยกมา")} years={refs.years.filter((item) => item.code !== yearCode && !item.closed && item.isactive)} value={targetYear} onChange={(value) => { setTargetYear(value); setDate(refs.years.find((item) => item.code === value)?.startdate ?? ""); }} /></Field>}
     {year && <p className="text-[0.95rem]">{tr("gl_process_year_range_status", "{0} ถึง {1} · {2}").replace("{0}", String(year.startdate)).replace("{1}", String(year.enddate)).replace("{2}", String(year.closed ? tr("gl_year_closed", "ปิดปีแล้ว") : tr("gl_active_fiscal_year", "ปีบัญชีเปิดใช้งาน")))}</p>}
-    <div className="flex flex-wrap gap-2"><Button className={actionClass} variant="outline" disabled={!year || busy || loading} onClick={() => void inspect()}>{loading ? tr("gl_checking", "กำลังตรวจสอบ…") : tr("gl_verify_balances_before", "ตรวจสอบยอดก่อนดำเนินการ")}</Button><Button className={actionClass} disabled={!preview || previewFor !== previewKey || busy || loading || action === "year-end" && !targetYear} onClick={() => void process()}>{tr(...config.button)}</Button></div>
+    <div className="flex flex-wrap gap-2"><Button className={actionClass} variant="outline" disabled={!year || busy || loading} onClick={() => void inspect()}>{loading ? tr("gl_checking", "กำลังตรวจสอบ…") : isClose ? tr("gl_close_verify", "ประมวลผล") : tr("gl_verify_balances_before", "ตรวจสอบยอดก่อนดำเนินการ")}</Button><Button className={actionClass} disabled={!canProcess} onClick={() => void process()}>{isClose ? `${tr("gl_close_save_entry", "บันทึกรายการ")} (F11)` : tr(...config.button)}</Button></div>
     {preview && <><ReportGrid report={preview} books={refs.books} /><Pager page={previewPage} total={preview.totalrows} onPage={(page) => void inspect(page)} loading={loading || busy} limit={50} /></>}{confirmationDialog}
   </section>;
 }
