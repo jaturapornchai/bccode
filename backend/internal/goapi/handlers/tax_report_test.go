@@ -156,6 +156,12 @@ func TestBuildVatRegisterSignsAndTotals(t *testing.T) {
 	if mixed, s := buildVatRegister([]generalledger.VatRecord{vatRecord("UV5", "CN002", 3, "100", "20", "30", "7")}); mixed[0].AmountBeforeVat != "-150.00" ||
 		mixed[0].ZeroAmount != "-20.00" || mixed[0].ExemptAmount != "-30.00" || s.ExemptAmount != "-30.00" {
 		t.Fatalf("credit note split = %+v %+v", mixed, s)
+	} else if c := mixed[0]; c.DocNo != "UV5" || c.TaxableAmount != "-100.00" || c.NonExemptAmount != "-120.00" || c.NonExemptTotal != "-127.00" || c.TotalAmount != "-157.00" {
+		// คอลัมน์แบบ Champ: ขาย "มูลค่าสินค้า/บริการ" = ฐานภาษีอย่างเดียว; ซื้อ = ฐาน + อัตราศูนย์ และ "รวม" ไม่รวมยอดยกเว้น
+		t.Fatalf("champ vat columns = %+v", c)
+	}
+	if rows[0].DocNo != "UV1" || summary.TaxableAmount != "900.11" || summary.NonExemptAmount != "1400.11" || summary.NonExemptTotal != "1463.12" {
+		t.Fatalf("champ vat summary columns = %+v / %+v", rows[0], summary)
 	}
 	if page := pageVatRegisterRows(rows, 2, 3); len(page) != 1 || page[0].TaxInvoiceNo != "DN001" {
 		t.Fatalf("page = %+v", page)

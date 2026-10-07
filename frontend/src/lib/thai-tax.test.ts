@@ -91,13 +91,17 @@ describe("fetchVatRegister", () => {
             amountbeforevat: "10000.00",
             zeroamount: "2000.00",
             exemptamount: "500.00",
+            taxableamount: "7500.00",
+            nonexemptamount: "9500.00",
+            nonexempttotal: "10200.00",
+            docno: "SV6909-0001",
             vatamount: "700.00",
             totalamount: "10700.00",
           },
         ],
         count: 1,
         total: 3,
-        summary: { amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", vatamount: "2100.01", totalamount: "32100.11" },
+        summary: { amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", taxableamount: "27500.10", nonexemptamount: "29500.10", nonexempttotal: "31600.11", vatamount: "2100.01", totalamount: "32100.11" },
         company: { code: "B001", name: "บริษัท รุ่งเรืองค้าวัสดุก่อสร้าง จำกัด", taxid: "0105566123456" },
         establishments: [{ code: "00000", name: "สำนักงานใหญ่", isheadoffice: true }, { code: "00001", name: "สาขาลาดหลุมแก้ว", isheadoffice: false }, { name: "ไม่มีเลขสาขา" }],
         branchcode: "00001",
@@ -119,8 +123,9 @@ describe("fetchVatRegister", () => {
     expect(result.records).toHaveLength(1);
     // total/summary = ทั้งงวดจาก backend ไม่ใช่ผลบวกของแถวที่โหลดมา
     expect(result.total).toBe(3);
-    expect(result.summary).toEqual({ amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", vatamount: "2100.01", totalamount: "32100.11", duplicatecount: 0 });
-    expect(result.records[0]).toMatchObject({ zeroamount: "2000.00", exemptamount: "500.00" });
+    expect(result.summary).toEqual({ amountbeforevat: "30000.10", zeroamount: "2000.00", exemptamount: "500.00", taxableamount: "27500.10", nonexemptamount: "29500.10", nonexempttotal: "31600.11", vatamount: "2100.01", totalamount: "32100.11", duplicatecount: 0 });
+    // คอลัมน์แบบ Champ มาจาก backend ตรง ๆ (ไม่คำนวณบน browser) + เลขที่เอกสารบัญชี
+    expect(result.records[0]).toMatchObject({ zeroamount: "2000.00", exemptamount: "500.00", taxableamount: "7500.00", nonexemptamount: "9500.00", nonexempttotal: "10200.00", docno: "SV6909-0001" });
     // หัวรายงานรายสถานประกอบการ: แถวที่ไม่มีเลขสาขาไม่เป็นตัวเลือก
     expect(result.company?.taxid).toBe("0105566123456");
     expect(result.establishments).toEqual([{ code: "00000", name: "สำนักงานใหญ่", isheadoffice: true }, { code: "00001", name: "สาขาลาดหลุมแก้ว", isheadoffice: false }]);

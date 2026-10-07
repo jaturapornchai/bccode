@@ -34,7 +34,7 @@ import { WhtCertificatePanel, WhtReceivedCertificateDetails, leaveWhtCertificate
 import { useDirtyGuard } from "@/app/gl/gl-common";
 import {
   FileText, Printer, Download, Building2, Calendar, CheckCircle2, Receipt, Search,
-  AlertCircle, AlertTriangle, Loader2,
+  AlertCircle, AlertTriangle, Check, Loader2,
 } from "lucide-react";
 
 interface TaxFilingWorkbenchProps {
@@ -209,6 +209,9 @@ export function TaxFilingWorkbench({
         beforeVat: summary?.basetotal ?? "0.00",
         zero: "0.00",
         exempt: "0.00",
+        taxable: "0.00",
+        nonExempt: "0.00",
+        nonExemptTotal: "0.00",
         tax: summary?.whttotal ?? "0.00",
         total: summary?.nettotal ?? "0.00",
         duplicates: 0,
@@ -220,6 +223,9 @@ export function TaxFilingWorkbench({
       beforeVat: register?.summary.amountbeforevat ?? "0.00",
       zero: register?.summary.zeroamount ?? "0.00",
       exempt: register?.summary.exemptamount ?? "0.00",
+      taxable: register?.summary.taxableamount ?? "0.00",
+      nonExempt: register?.summary.nonexemptamount ?? "0.00",
+      nonExemptTotal: register?.summary.nonexempttotal ?? "0.00",
       tax: register?.summary.vatamount ?? "0.00",
       total: register?.summary.totalamount ?? "0.00",
       duplicates: register?.summary.duplicatecount ?? 0,
@@ -312,6 +318,44 @@ export function TaxFilingWorkbench({
     tax: isWhtType ? tr("tax_register_col_wht_tax", "ภาษีหัก ณ ที่จ่าย") : tr("tax_register_col_tax", "ภาษี"),
     net: tr("tax_register_col_net", "ยอดสุทธิ"),
   };
+  // รายงานภาษีขาย/ซื้อเรียงคอลัมน์ตาม Champ (GLRepOutputTaxView / GLRepInputTaxView) + หัว 2 ชั้นแบบแบบฟอร์มสรรพากร
+  const isVatBuy = config.formType === "vat_buy";
+  const vatLabels = {
+    seq: tr("tax_vat_col_seq", "ลำดับที่"),
+    invoice: tr("tax_vat_col_invoice", "ใบกำกับภาษี"),
+    date: tr("tax_vat_col_date", "วัน เดือน ปี"),
+    number: tr("tax_vat_col_number", "เล่มที่/เลขที่"),
+    voucher: tr("tax_vat_col_voucher", "เลขที่เอกสารบัญชี"),
+    party: isVatBuy ? tr("tax_vat_col_seller", "ชื่อผู้ขายสินค้า/ผู้ให้บริการ") : tr("tax_vat_col_buyer", "ชื่อผู้ซื้อสินค้า/ผู้รับบริการ"),
+    taxid: tr("tax_vat_col_taxid", "เลขประจำตัวผู้เสียภาษี"),
+    establishment: tr("tax_vat_col_establishment", "สถานประกอบการ"),
+    headOffice: tr("tax_vat_col_head_office", "สนญ."),
+    branchNo: tr("tax_vat_col_branch_no", "สาขาที่"),
+  };
+  // ทุกยอดมาจาก backend (decimal string) — ขาย: ยกเว้น | อัตราศูนย์ | มูลค่า (ฐานภาษี) | ภาษี | รวม; ซื้อ: มูลค่า (ฐาน + อัตราศูนย์) | ยกเว้น | ภาษี | รวม | รวมทั้งสิ้น
+  type VatMoneyColumn = { id: string; label: string; row: (r: ThaiTaxRecord) => string | undefined; total: string; tone?: "tax" | "total" };
+  const vatExempt: VatMoneyColumn = { id: "exempt", label: tr("tax_vat_col_exempt", "ยอดยกเว้นภาษี"), row: (r) => r.exemptamount, total: totals.exempt };
+  const vatTax: VatMoneyColumn = { id: "vat", label: tr("tax_vat_col_vat", "จำนวนเงิน ภาษีมูลค่าเพิ่ม"), row: (r) => r.vatamount, total: totals.tax, tone: "tax" };
+  const vatValueLabel = tr("tax_vat_col_value", "มูลค่าสินค้า/บริการ");
+  const vatSumLabel = tr("tax_vat_col_sum", "รวม");
+  const vatMoneyColumns: VatMoneyColumn[] = isVatBuy
+    ? [
+        { id: "value", label: vatValueLabel, row: (r) => r.nonexemptamount, total: totals.nonExempt },
+        vatExempt,
+        vatTax,
+        { id: "sum", label: vatSumLabel, row: (r) => r.nonexempttotal, total: totals.nonExemptTotal },
+        { id: "grand", label: tr("tax_vat_col_grand", "รวมทั้งสิ้น"), row: (r) => r.totalamount, total: totals.total, tone: "total" },
+      ]
+    : [
+        vatExempt,
+        { id: "zero", label: tr("tax_vat_col_zero", "มูลค่าสินค้า ภาษีอัตราศูนย์"), row: (r) => r.zeroamount, total: totals.zero },
+        { id: "value", label: vatValueLabel, row: (r) => r.taxableamount, total: totals.taxable },
+        vatTax,
+        { id: "sum", label: vatSumLabel, row: (r) => r.totalamount, total: totals.total, tone: "total" },
+      ];
+  const vatMoneyClass = (tone?: VatMoneyColumn["tone"]) =>
+    tone === "tax" ? "font-medium text-primary" : tone === "total" ? "font-bold text-foreground" : "";
+  const grandTotalLabel = tr("tax_register_grand_total", "รวมทั้งสิ้น {0} รายการ").replace("{0}", String(totals.count));
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:p-6 print:p-0 print:gap-2">
@@ -390,15 +434,16 @@ export function TaxFilingWorkbench({
             disabled={!canExport}
             onClick={() => {
               const c = columnLabels;
+              const v = vatLabels;
               const csv = [
                 (isWhtType
                   ? [c.seq, `"${partyHeader}"`, c.taxid, c.branch, c.date, c.base, c.tax, c.docno, c.net]
-                  : [c.seq, c.date, c.docno, `"${partyHeader}"`, c.taxid, c.branch, c.base, ...(isVatType ? [c.zero, c.exempt] : []), c.tax, c.net]).join(","),
+                  : [v.seq, v.date, v.number, v.voucher, `"${v.party}"`, v.taxid, v.headOffice, v.branchNo, ...vatMoneyColumns.map((m) => `"${m.label}"`)]).join(","),
                 ...filteredRecords.map((r, idx) =>
                   (isWhtType
                     ? [idx + 1, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.docdate, r.amountbeforevat, r.whtamount ?? r.vatamount, r.taxinvoiceno, r.totalamount]
-                    : [idx + 1, r.docdate, r.taxinvoiceno, `"${r.counterpartyname}"`, r.taxid, r.branchno, r.amountbeforevat,
-                      ...(isVatType ? [r.zeroamount ?? "0.00", r.exemptamount ?? "0.00"] : []), r.whtamount ?? r.vatamount, r.totalamount]).join(","),
+                    : [idx + 1, r.docdate, r.taxinvoiceno, r.docno ?? "", `"${r.counterpartyname}"`, r.taxid, r.isheadoffice ? "✓" : "", r.isheadoffice ? "" : r.branchno,
+                      ...vatMoneyColumns.map((m) => m.row(r) ?? "0.00")]).join(","),
                 ),
               ].join("\n");
               const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -648,34 +693,41 @@ export function TaxFilingWorkbench({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/60 text-xs font-semibold text-muted-foreground uppercase">
-                <tr>
-                  <th className="px-3 py-3 w-12 text-center">{columnLabels.seq}</th>
-                  {isWhtType ? (
-                    <>
-                      <th className="px-4 py-3">{partyHeader}</th>
-                      <th className="px-3 py-3 w-36">{columnLabels.taxid}</th>
-                      <th className="px-3 py-3 w-20 text-center">{columnLabels.branch}</th>
-                      <th className="px-3 py-3 w-28">{columnLabels.date}</th>
-                      <th className="px-4 py-3 text-right">{columnLabels.base}</th>
-                      <th className="px-4 py-3 text-right">{columnLabels.tax}</th>
-                      <th className="px-3 py-3 w-36">{columnLabels.docno}</th>
-                    </>
-                  ) : (
-                    <>
-                      <th className="px-3 py-3 w-28">{columnLabels.date}</th>
-                      <th className="px-3 py-3 w-36">{columnLabels.docno}</th>
-                      <th className="px-4 py-3">{partyHeader}</th>
-                      <th className="px-3 py-3 w-36">{columnLabels.taxid}</th>
-                      <th className="px-3 py-3 w-20 text-center">{columnLabels.branch}</th>
-                      <th className="px-4 py-3 text-right">{columnLabels.base}</th>
-                      {isVatType && <th className="px-4 py-3 text-right" data-field="col-zero">{columnLabels.zero}</th>}
-                      {isVatType && <th className="px-4 py-3 text-right" data-field="col-exempt">{columnLabels.exempt}</th>}
-                      <th className="px-4 py-3 text-right">{columnLabels.tax}</th>
-                    </>
-                  )}
-                  <th className="px-4 py-3 text-right">{columnLabels.net}</th>
-                  <th className="px-3 py-3 w-20 text-center print:hidden">{tr("tax_register_col_actions", "จัดการ")}</th>
-                </tr>
+                {isWhtType ? (
+                  <tr>
+                    <th className="px-3 py-3 w-12 text-center">{columnLabels.seq}</th>
+                    <th className="px-4 py-3">{partyHeader}</th>
+                    <th className="px-3 py-3 w-36">{columnLabels.taxid}</th>
+                    <th className="px-3 py-3 w-20 text-center">{columnLabels.branch}</th>
+                    <th className="px-3 py-3 w-28">{columnLabels.date}</th>
+                    <th className="px-4 py-3 text-right">{columnLabels.base}</th>
+                    <th className="px-4 py-3 text-right">{columnLabels.tax}</th>
+                    <th className="px-3 py-3 w-36">{columnLabels.docno}</th>
+                    <th className="px-4 py-3 text-right">{columnLabels.net}</th>
+                    <th className="px-3 py-3 w-20 text-center print:hidden">{tr("tax_register_col_actions", "จัดการ")}</th>
+                  </tr>
+                ) : (
+                  <>
+                    <tr>
+                      <th rowSpan={2} className="px-3 py-2 w-14 text-center align-bottom">{vatLabels.seq}</th>
+                      <th colSpan={2} className="px-3 pt-2 pb-1 text-center border-b border-border">{vatLabels.invoice}</th>
+                      <th rowSpan={2} className="px-3 py-2 w-32 align-bottom">{vatLabels.voucher}</th>
+                      <th rowSpan={2} className="px-4 py-2 align-bottom">{vatLabels.party}</th>
+                      <th rowSpan={2} className="px-3 py-2 w-36 align-bottom">{vatLabels.taxid}</th>
+                      <th colSpan={2} className="px-3 pt-2 pb-1 text-center border-b border-border">{vatLabels.establishment}</th>
+                      {vatMoneyColumns.map((m) => (
+                        <th key={m.id} rowSpan={2} data-field={`col-${m.id}`} className="px-4 py-2 text-right align-bottom">{m.label}</th>
+                      ))}
+                      <th rowSpan={2} className="px-3 py-2 w-20 text-center align-bottom print:hidden">{tr("tax_register_col_actions", "จัดการ")}</th>
+                    </tr>
+                    <tr>
+                      <th className="px-3 pt-1 pb-2 w-28">{vatLabels.date}</th>
+                      <th className="px-3 pt-1 pb-2 w-36">{vatLabels.number}</th>
+                      <th className="px-2 pt-1 pb-2 w-14 text-center">{vatLabels.headOffice}</th>
+                      <th className="px-2 pt-1 pb-2 w-20 text-center">{vatLabels.branchNo}</th>
+                    </tr>
+                  </>
+                )}
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredRecords.map((item, idx) => {
@@ -734,18 +786,26 @@ export function TaxFilingWorkbench({
                       {isWhtType ? (
                         <>
                           {partyCell}{taxidCell}{branchCell}{dateCell}{baseCell}{taxCell}{docnoCell}
+                          <td className="px-4 py-2.5 text-right font-mono font-bold text-foreground">
+                            {money(item.totalamount)}
+                          </td>
                         </>
                       ) : (
                         <>
-                          {dateCell}{docnoCell}{partyCell}{taxidCell}{branchCell}{baseCell}
-                          {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.zeroamount ?? "0.00")}</td>}
-                          {isVatType && <td className="px-4 py-2.5 text-right font-mono">{money(item.exemptamount ?? "0.00")}</td>}
-                          {taxCell}
+                          {dateCell}{docnoCell}
+                          <td className="px-3 py-2.5 font-mono text-xs">{item.docno}</td>
+                          {partyCell}{taxidCell}
+                          <td className="px-2 py-2.5 text-center">
+                            {item.isheadoffice && (
+                              <Check className="mx-auto size-4 text-foreground" role="img" aria-label={tr("head_office", "สำนักงานใหญ่")} />
+                            )}
+                          </td>
+                          <td className="px-2 py-2.5 text-center font-mono text-xs">{item.isheadoffice ? "" : item.branchno}</td>
+                          {vatMoneyColumns.map((m) => (
+                            <td key={m.id} className={`px-4 py-2.5 text-right font-mono ${vatMoneyClass(m.tone)}`}>{money(m.row(item) ?? "0.00")}</td>
+                          ))}
                         </>
                       )}
-                      <td className="px-4 py-2.5 text-right font-mono font-bold text-foreground">
-                        {money(item.totalamount)}
-                      </td>
                       <td className="px-3 py-2.5 text-center print:hidden">
                         <Button
                           size="sm"
@@ -766,18 +826,24 @@ export function TaxFilingWorkbench({
                 })}
               </tbody>
               <tfoot className="border-t-2 bg-muted/40 font-bold">
-                <tr>
-                  <td colSpan={isWhtType ? 5 : 6} className="px-4 py-3 text-right">{tr("tax_period_total_count", "รวมทั้งงวด ({0} รายการ):").replace("{0}", String(totals.count))}</td>
-                  <td className="px-4 py-3 text-right font-mono">{money(totals.beforeVat)}</td>
-                  {isVatType && <td className="px-4 py-3 text-right font-mono">{money(totals.zero)}</td>}
-                  {isVatType && <td className="px-4 py-3 text-right font-mono">{money(totals.exempt)}</td>}
-                  <td className="px-4 py-3 text-right font-mono text-primary">
-                    {money(totals.tax)}
-                  </td>
-                  {isWhtType && <td />}
-                  <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>
-                  <td className="print:hidden"></td>
-                </tr>
+                {isWhtType ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-3 text-right">{grandTotalLabel}</td>
+                    <td className="px-4 py-3 text-right font-mono">{money(totals.beforeVat)}</td>
+                    <td className="px-4 py-3 text-right font-mono text-primary">{money(totals.tax)}</td>
+                    <td />
+                    <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>
+                    <td className="print:hidden"></td>
+                  </tr>
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-3 text-right">{grandTotalLabel}</td>
+                    {vatMoneyColumns.map((m) => (
+                      <td key={m.id} className={`px-4 py-3 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{money(m.total)}</td>
+                    ))}
+                    <td className="print:hidden"></td>
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>

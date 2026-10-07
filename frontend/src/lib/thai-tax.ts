@@ -19,6 +19,12 @@ export interface ThaiTaxRecord {
   /** ภาษีซื้อ/ขาย: ส่วนของมูลค่าที่เป็นอัตรา 0% / ได้รับยกเว้น (รวมอยู่ใน amountbeforevat แล้ว) — ไม่มีในภาษีหัก ณ ที่จ่าย */
   zeroamount?: string;
   exemptamount?: string;
+  /** ภาษีซื้อ/ขาย: ยอดตามคอลัมน์รายงานของ Champ ที่ backend คำนวณให้ — ขาย "มูลค่าสินค้า/บริการ" = taxableamount; ซื้อ = nonexemptamount และ "รวม" = nonexempttotal */
+  taxableamount?: string;
+  nonexemptamount?: string;
+  nonexempttotal?: string;
+  /** ภาษีซื้อ/ขาย: เลขที่เอกสารบัญชี (ใบสำคัญ GL ที่บันทึกใบกำกับ) */
+  docno?: string;
   vatamount: string;
   totalamount: string;
   incometype?: string;
@@ -166,6 +172,9 @@ export interface VatRegisterSummary {
   amountbeforevat: string;
   zeroamount: string;
   exemptamount: string;
+  taxableamount: string;
+  nonexemptamount: string;
+  nonexempttotal: string;
   vatamount: string;
   totalamount: string;
   /** จำนวนแถวในงวดที่ใบกำกับฉบับเดียวกันถูกบันทึกในใบสำคัญอื่นด้วย (นับทั้งงวดโดย backend ไม่ใช่เฉพาะแถวที่โหลด) */
@@ -248,7 +257,7 @@ export interface WhtReportResult {
 
 const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "", address: null, phone: "", addressline: "" };
 const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [] };
-const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
+const EMPTY_VAT_SUMMARY: VatRegisterSummary = { amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "0.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "0.00", totalamount: "0.00", duplicatecount: 0 };
 
 /** key เดือนใน languages.tsv (`month_<key>`) ลำดับ ม.ค.–ธ.ค. — ใช้ร่วมทุกจอภาษี */
 export const TAX_MONTH_KEYS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"] as const;
@@ -457,6 +466,10 @@ function toTaxRecord(row: Record<string, unknown>, index: number): ThaiTaxRecord
     amountbeforevat: toMoney(row.amountbeforevat),
     zeroamount: toMoney(row.zeroamount),
     exemptamount: toMoney(row.exemptamount),
+    taxableamount: toMoney(row.taxableamount),
+    nonexemptamount: toMoney(row.nonexemptamount),
+    nonexempttotal: toMoney(row.nonexempttotal),
+    docno: toText(row.docno),
     vatamount: toMoney(row.vatamount),
     totalamount: toMoney(row.totalamount),
     // backend ตัดใบที่กลับรายการในงวดเดียวกันออกแล้ว; ใบที่กลับรายการหลังงวดยังอยู่ในงวดที่ยื่น (มีเลขที่ใบกลับรายการ)
@@ -607,6 +620,9 @@ export async function fetchVatRegister(params: {
       amountbeforevat: toMoney(summary.amountbeforevat),
       zeroamount: toMoney(summary.zeroamount),
       exemptamount: toMoney(summary.exemptamount),
+      taxableamount: toMoney(summary.taxableamount),
+      nonexemptamount: toMoney(summary.nonexemptamount),
+      nonexempttotal: toMoney(summary.nonexempttotal),
       vatamount: toMoney(summary.vatamount),
       totalamount: toMoney(summary.totalamount),
       duplicatecount: toCount(summary.duplicatecount, 0),

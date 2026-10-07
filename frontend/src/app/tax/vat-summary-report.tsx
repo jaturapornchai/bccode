@@ -16,6 +16,11 @@ const selectClass =
   "min-h-[2.6em] rounded-lg border border-border bg-background px-3 text-[0.95rem] font-medium text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
 // ยอดเงินเป็น string ทศนิยมจาก backend — จอจัดรูปแบบอย่างเดียว ไม่คำนวณ (ui-scale-polish §8.29)
 const money = (value: string) => formatAmount(value, 2);
+// ยอดคงเหลือติดลบแสดงในวงเล็บแบบรายงานสรุปยอดภาษีของ Champ — จัดรูปข้อความเท่านั้น ไม่คำนวณเลข
+const balanceText = (value: string) => {
+  const text = money(value);
+  return text.startsWith("-") ? `(${text.slice(1)})` : text;
+};
 
 interface Props {
   language?: LanguageCode;
@@ -130,14 +135,14 @@ export function VatSummaryReport({ language = "th", holdingcode = "", businessco
             <table className="w-full text-left text-[0.95rem]">
               <thead className="border-b bg-muted/60 text-[0.9rem] font-semibold text-muted-foreground">
                 <tr>
-                  <th className="w-12 px-3 py-3 text-center">{tr("tax_register_col_seq", "ลำดับ")}</th>
-                  <th className="px-3 py-3 whitespace-nowrap">{tr("tax_vat_summary_col_taxdate", "วันที่ใบกำกับ")}</th>
-                  <th className="px-3 py-3">{tr("tax_vat_summary_col_taxno", "เลขที่ใบกำกับ")}</th>
-                  <th className="px-3 py-3">{tr("tax_vat_summary_col_docno", "เลขที่ใบสำคัญ")}</th>
-                  <th className="px-3 py-3">{tr("tax_vat_summary_col_desc", "รายละเอียด")}</th>
+                  <th className="w-12 px-3 py-3 text-center">{tr("tax_vat_col_seq", "ลำดับที่")}</th>
+                  <th className="px-3 py-3 whitespace-nowrap">{tr("tax_vat_summary_col_taxdate", "วันที่ใบกำกับภาษี")}</th>
+                  <th className="px-3 py-3">{tr("tax_vat_summary_col_taxno", "เล่มที่/เลขที่")}</th>
+                  <th className="px-3 py-3">{tr("tax_vat_summary_col_docno", "เลขที่เอกสาร")}</th>
+                  <th className="px-3 py-3">{tr("tax_vat_summary_col_desc", "รายการ")}</th>
                   <th className="px-3 py-3 text-right">{tr("tax_vat_summary_col_taxin", "ภาษีซื้อ")}</th>
                   <th className="px-3 py-3 text-right">{tr("tax_vat_summary_col_taxout", "ภาษีขาย")}</th>
-                  <th className="px-3 py-3 text-right">{tr("tax_vat_summary_col_balance", "คงเหลือ (ซื้อ − ขาย)")}</th>
+                  <th className="px-3 py-3 text-right">{tr("tax_vat_summary_col_balance", "ยอดคงเหลือ")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -154,7 +159,7 @@ export function VatSummaryReport({ language = "th", holdingcode = "", businessco
                         <td className="px-3 py-2 leading-normal [overflow-wrap:anywhere]">{row.description}</td>
                         <td className="px-3 py-2 text-right font-mono">{row.taxin ? money(row.taxin) : ""}</td>
                         <td className="px-3 py-2 text-right font-mono">{row.taxout ? money(row.taxout) : ""}</td>
-                        <td className="px-3 py-2 text-right font-mono font-semibold">{money(row.balance)}</td>
+                        <td className="px-3 py-2 text-right font-mono font-semibold">{balanceText(row.balance)}</td>
                       </tr>
                       {day && (
                         <tr className="bg-muted/40 font-semibold" data-row="day-total">
@@ -175,11 +180,11 @@ export function VatSummaryReport({ language = "th", holdingcode = "", businessco
               <tfoot className="border-t-2 border-border bg-primary/10 font-bold text-foreground">
                 <tr data-row="grand-total">
                   <td colSpan={5} className="px-3 py-3 text-right">
-                    {tr("tax_vat_summary_grand_total", "รวมทั้งงวด ({count} รายการ)").replace("{count}", String(data.totals.count))}
+                    {tr("tax_vat_summary_grand_total", "รวมทั้งสิ้น {count} รายการ").replace("{count}", String(data.totals.count))}
                   </td>
                   <td className="px-3 py-3 text-right font-mono">{money(data.totals.taxin)}</td>
                   <td className="px-3 py-3 text-right font-mono">{money(data.totals.taxout)}</td>
-                  <td className="px-3 py-3 text-right font-mono">{money(data.totals.net)}</td>
+                  <td className="px-3 py-3 text-right font-mono">{balanceText(data.totals.net)}</td>
                 </tr>
               </tfoot>
             </table>

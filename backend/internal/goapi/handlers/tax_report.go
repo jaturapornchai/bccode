@@ -54,6 +54,7 @@ type TaxVatRegisterRequest struct {
 type TaxVatRegisterRow struct {
 	DocDate          string `json:"docdate"`
 	TaxInvoiceNo     string `json:"taxinvoiceno"`
+	DocNo            string `json:"docno"` // เลขที่เอกสารบัญชี (ใบสำคัญ GL ที่บันทึกใบกำกับนี้) — คอลัมน์ "เลขที่เอกสารบัญชี" ของ Champ
 	CounterpartyName string `json:"counterpartyname"`
 	TaxID            string `json:"taxid"`
 	BranchNo         string `json:"branchno"`
@@ -61,8 +62,9 @@ type TaxVatRegisterRow struct {
 	// ZeroAmount/ExemptAmount - ส่วนของมูลค่าที่เป็นอัตรา 0% / ได้รับยกเว้น (รวมอยู่ใน AmountBeforeVat แล้ว) แยกแสดงแบบ Champ GLRepInputTaxView
 	ZeroAmount   string `json:"zeroamount"`
 	ExemptAmount string `json:"exemptamount"`
-	VatAmount    string `json:"vatamount"`
-	TotalAmount  string `json:"totalamount"`
+	vatColumns
+	VatAmount   string `json:"vatamount"`
+	TotalAmount string `json:"totalamount"`
 	// DuplicateDocNos - เลขที่ใบสำคัญที่บันทึกใบกำกับภาษีฉบับเดียวกัน (ผู้ออก + เลขที่ + วันที่) — มีเลขที่ใบสำคัญของแถวนี้เอง = ซ้ำในใบสำคัญเดียวกัน; [] = ไม่ซ้ำ; เตือนให้ตรวจ ไม่บล็อก
 	DuplicateDocNos []string `json:"duplicatedocnos"`
 	// TaxMonth - งวดภาษีที่ยื่นไว้ (YYYY-MM) — มีเฉพาะมุมมองยกเลิกข้ามงวด
@@ -80,9 +82,10 @@ type TaxVatRegisterSummary struct {
 	AmountBeforeVat string `json:"amountbeforevat"`
 	ZeroAmount      string `json:"zeroamount"`
 	ExemptAmount    string `json:"exemptamount"`
-	VatAmount       string `json:"vatamount"`
-	TotalAmount     string `json:"totalamount"`
-	DuplicateCount  int    `json:"duplicatecount"` // จำนวนแถวของงวดที่มีใบกำกับฉบับเดียวกันในใบสำคัญอื่น
+	vatColumns
+	VatAmount      string `json:"vatamount"`
+	TotalAmount    string `json:"totalamount"`
+	DuplicateCount int    `json:"duplicatecount"` // จำนวนแถวของงวดที่มีใบกำกับฉบับเดียวกันในใบสำคัญอื่น
 }
 
 // TaxVatRegisterHandler - POST /api/report/tax/vat-register
@@ -270,25 +273,44 @@ func vatAmountOf(record generalledger.VatRecord, sign decimal.Decimal) decimal.D
 	return vatMoney(*record.VatAmount, sign)
 }
 
+// vatColumns - ยอดตามคอลัมน์รายงานภาษีของ Champ (คำนวณที่ backend ทั้งหมด จอแค่แสดง):
+//   - รายงานภาษีขาย (GLRepOutputTaxView.cpp:446-509): ยอดยกเว้นภาษี | มูลค่าสินค้า ภาษีอัตราศูนย์ | มูลค่าสินค้า/บริการ (= TaxableAmount ฐานภาษีอย่างเดียว) | ภาษี | รวม (= TotalAmount)
+//   - รายงานภาษีซื้อ (GLRepInputTaxView.cpp:408-470): มูลค่าสินค้า/บริการ (= NonExemptAmount ฐาน + อัตราศูนย์) | ยอดยกเว้นภาษี | ภาษี | รวม (= NonExemptTotal) | รวมทั้งสิ้น (= TotalAmount)
+type vatColumns struct {
+	TaxableAmount   string `json:"taxableamount"`
+	NonExemptAmount string `json:"nonexemptamount"`
+	NonExemptTotal  string `json:"nonexempttotal"`
+}
+
+func newVatColumns(base, zero, vat decimal.Decimal) vatColumns {
+	return vatColumns{
+		TaxableAmount:   moneyText(base),
+		NonExemptAmount: moneyText(base.Add(zero)),
+		NonExemptTotal:  moneyText(base.Add(zero).Add(vat)),
+	}
+}
+
 // buildVatRegister - แถวรายงานภาษีซื้อ/ขาย + ยอดรวมทั้งงวด (decimal) จากรายการภาษีที่บันทึกในใบสำคัญ
 // มูลค่าก่อนภาษี = ฐานภาษี + ยอดอัตรา 0% + ยอดยกเว้น ของใบกำกับ (มูลค่าสินค้า/บริการ ไม่รวม VAT); 0% และยกเว้นแยกแสดงอีกช่อง
 func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, TaxVatRegisterSummary) {
 	rows := make([]TaxVatRegisterRow, 0, len(records))
-	var sumBefore, sumZero, sumExempt, sumVat decimal.Decimal
+	var sumBase, sumZero, sumExempt, sumVat decimal.Decimal
 	for _, r := range records {
 		sign := vatSign(r.DocumentType)
-		zero, exempt := vatMoney(r.ZeroRateAmount, sign), vatMoney(r.ExemptAmount, sign)
-		before := vatMoney(r.BaseAmount, sign).Add(zero).Add(exempt)
+		base, zero, exempt := vatMoney(r.BaseAmount, sign), vatMoney(r.ZeroRateAmount, sign), vatMoney(r.ExemptAmount, sign)
+		before := base.Add(zero).Add(exempt)
 		vat := vatAmountOf(r, sign)
 		rows = append(rows, TaxVatRegisterRow{
 			DocDate:          r.TaxInvoiceDate,
 			TaxInvoiceNo:     r.TaxInvoiceNo,
+			DocNo:            r.DocNo,
 			CounterpartyName: r.PartnerName,
 			TaxID:            r.PartnerTaxID,
 			BranchNo:         r.PartnerBranchNo,
 			AmountBeforeVat:  moneyText(before),
 			ZeroAmount:       moneyText(zero),
 			ExemptAmount:     moneyText(exempt),
+			vatColumns:       newVatColumns(base, zero, vat),
 			VatAmount:        moneyText(vat),
 			TotalAmount:      moneyText(before.Add(vat)),
 			DuplicateDocNos:  append([]string{}, r.DuplicateDocNos...),
@@ -298,13 +320,15 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			ReversedMonth:    firstN(r.ReversalDate, 7),
 			Note:             r.ReversalReason,
 		})
-		sumBefore, sumVat = sumBefore.Add(before), sumVat.Add(vat)
+		sumBase, sumVat = sumBase.Add(base), sumVat.Add(vat)
 		sumZero, sumExempt = sumZero.Add(zero), sumExempt.Add(exempt)
 	}
+	sumBefore := sumBase.Add(sumZero).Add(sumExempt)
 	return rows, TaxVatRegisterSummary{
 		AmountBeforeVat: moneyText(sumBefore),
 		ZeroAmount:      moneyText(sumZero),
 		ExemptAmount:    moneyText(sumExempt),
+		vatColumns:      newVatColumns(sumBase, sumZero, sumVat),
 		VatAmount:       moneyText(sumVat),
 		TotalAmount:     moneyText(sumBefore.Add(sumVat)),
 		DuplicateCount:  countDuplicateInvoices(records),
