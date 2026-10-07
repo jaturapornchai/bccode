@@ -321,6 +321,10 @@ func (r reportContext) trialBalance(ctx context.Context, working bool) (Report, 
 	if working {
 		cte += `,(CASE WHEN account_type IN ('income','expense') THEN GREATEST(balance,0) ELSE 0 END) AS pnldebit,(CASE WHEN account_type IN ('income','expense') THEN GREATEST(-balance,0) ELSE 0 END) AS pnlcredit,(CASE WHEN account_type IN ('asset','liability','equity') THEN GREATEST(balance,0) ELSE 0 END) AS bsdebit,(CASE WHEN account_type IN ('asset','liability','equity') THEN GREATEST(-balance,0) ELSE 0 END) AS bscredit`
 		columns = append(append(append(columns, debitCreditColumns("endingdebit", "endingcredit", "งบทดลอง")...), debitCreditColumns("pnldebit", "pnlcredit", "งบกำไรขาดทุน")...), debitCreditColumns("bsdebit", "bscredit", "งบดุล")...)
+	} else if r.query.Gross {
+		// Champ 5507 งบทดลอง 2 (GLRepTrialBalance2View): ยอดรวมเดบิต/เครดิตของช่วง ไม่หักกลบ — บัญชีเดียวมีได้ทั้งสองฝั่ง
+		cte += `,debit,credit`
+		columns = append(columns, amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"))
 	} else {
 		cte += `,GREATEST(opening,0) AS openingdebit,GREATEST(-opening,0) AS openingcredit,GREATEST(debit-credit,0) AS debit,GREATEST(credit-debit,0) AS credit`
 		columns = append(append(append(columns, debitCreditColumns("openingdebit", "openingcredit", "ยอดยกมา")...), debitCreditColumns("debit", "credit", "ยอดประจำงวด")...), debitCreditColumns("endingdebit", "endingcredit", "ยอดสะสม")...)
@@ -331,7 +335,11 @@ func (r reportContext) trialBalance(ctx context.Context, working bool) (Report, 
 		return result, err
 	}
 	total := func(key string) decimal.Decimal { return Amount(result.Totals[key]).Decimal() }
-	result.Totals["difference"] = total("endingdebit").Sub(total("endingcredit")).String()
+	if r.query.Gross && !working {
+		result.Totals["difference"] = total("debit").Sub(total("credit")).String()
+	} else {
+		result.Totals["difference"] = total("endingdebit").Sub(total("endingcredit")).String()
+	}
 	if working {
 		// Champ พิมพ์แถว "กำไรขาดทุนสุทธิ" ท้ายกระดาษทำการ = ส่วนต่างที่ทำให้งบกำไรขาดทุนดุล
 		profit := total("pnlcredit").Sub(total("pnldebit"))

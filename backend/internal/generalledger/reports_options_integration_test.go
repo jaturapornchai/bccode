@@ -183,6 +183,37 @@ func TestTrialBalanceControlTotalsAndHideZero(t *testing.T) {
 	glpgDecimalEqual(t, final["bsdebit"], final["bscredit"])
 }
 
+// Champ 5507 งบทดลอง 2: ยอดรวมเดบิต/เครดิตของช่วงไม่หักกลบ (ไม่รวมยอดยกมา) — บัญชีที่เคลื่อนไหวทั้งสองฝั่งแสดงทั้งสองฝั่ง
+func TestTrialBalanceGrossMovement(t *testing.T) {
+	p, scope := reportOptionsFixture(t)
+	gross, err := p.Report(context.Background(), scope, "trialbalance", ReportQuery{FiscalYear: "2026", Gross: true, HideZero: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys := make([]string, len(gross.Columns))
+	for i, column := range gross.Columns {
+		keys[i] = column.Key
+	}
+	if got := strings.Join(keys, ","); got != "accountcode,accountname,debit,credit" {
+		t.Fatalf("gross columns = %s", got)
+	}
+	// 3000 มีแต่ยอดยกมา → ไม่มีความเคลื่อนไหวในช่วงจึงถูกซ่อน; 2000 สุทธิเป็นศูนย์แต่เคลื่อนไหวจึงยังแสดง
+	if got := strings.Join(reportCodes(gross), ","); got != "[1],[11],1000,1100,[2],2000,[4],4000,5000" {
+		t.Fatalf("gross rows = %s", got)
+	}
+	row := map[string]map[string]string{}
+	for _, r := range gross.Rows {
+		row[r["accountcode"]] = r
+	}
+	glpgDecimalEqual(t, row["1000"]["debit"], "50")
+	glpgDecimalEqual(t, row["1000"]["credit"], "150")
+	glpgDecimalEqual(t, row["2000"]["debit"], "50")
+	glpgDecimalEqual(t, row["2000"]["credit"], "50")
+	glpgDecimalEqual(t, gross.Totals["debit"], "500")
+	glpgDecimalEqual(t, gross.Totals["credit"], "500")
+	glpgDecimalEqual(t, gross.Totals["difference"], "0")
+}
+
 func TestLedgerHideOpeningAndSummary(t *testing.T) {
 	p, scope := reportOptionsFixture(t)
 	ctx := context.Background()

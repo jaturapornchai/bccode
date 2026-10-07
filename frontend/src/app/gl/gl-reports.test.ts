@@ -139,13 +139,13 @@ describe("GL report and statement-note colours follow the theme tokens", () => {
 // Champ report options (docs/kms/champ/09-gl.md §5.2-5.6): each report sends only the options it takes
 describe("Champ report filters and options", () => {
   afterEach(() => vi.unstubAllGlobals());
-  const all = { ...emptyReportFilters, fiscalyear: "2569", from: "2569-01-01", to: "2569-12-31", accountfrom: "11000", accountto: "11999", budgetcode: "BG-1", hideopening: "true", hidezero: "true", controltotals: "true", summary: "true" };
+  const all = { ...emptyReportFilters, fiscalyear: "2569", from: "2569-01-01", to: "2569-12-31", accountfrom: "11000", accountto: "11999", budgetcode: "BG-1", hideopening: "true", hidezero: "true", controltotals: "true", summary: "true", gross: "true" };
   it.each([
-    ["trialbalance", { accountfrom: "11000", accountto: "11999", hidezero: "true", controltotals: "true" }, ["budgetcode", "hideopening", "summary"]],
-    ["workingpaper", { hidezero: "true", controltotals: "true" }, ["budgetcode", "hideopening", "summary"]],
-    ["gljournal", { summary: "true", accountto: "11999" }, ["budgetcode", "hideopening", "hidezero", "controltotals"]],
-    ["budgetcomparison", { budgetcode: "BG-1", accountfrom: "11000" }, ["hideopening", "hidezero", "controltotals", "summary"]],
-    ["pnl", { accountfrom: "11000" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "summary"]],
+    ["trialbalance", { accountfrom: "11000", accountto: "11999", hidezero: "true", controltotals: "true", gross: "true" }, ["budgetcode", "hideopening", "summary"]],
+    ["workingpaper", { hidezero: "true", controltotals: "true" }, ["budgetcode", "hideopening", "summary", "gross"]],
+    ["gljournal", { summary: "true", accountto: "11999" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "gross"]],
+    ["budgetcomparison", { budgetcode: "BG-1", accountfrom: "11000" }, ["hideopening", "hidezero", "controltotals", "summary", "gross"]],
+    ["pnl", { accountfrom: "11000" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross"]],
   ] as const)("%s keeps its own options and drops the rest", (name, kept, dropped) => {
     const query = reportQuery(name, all);
     expect(query).toMatchObject(kept);
@@ -187,8 +187,8 @@ describe("Champ report filters and options", () => {
   it("the BFF forwards the account range and option flags to the backend", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
     const headers = { Authorization: "Bearer test-token", "x-bc-backend-url": "http://localhost:8888" };
-    await GET(new Request("http://localhost/api/gl/reports/trialbalance?fiscalyear=2569&accountfrom=11000&accountto=11999&hideopening=true&hidezero=true&controltotals=true&summary=true&budgetcode=BG-1", { headers }), { params: Promise.resolve({ glPath: ["reports", "trialbalance"] }) });
+    await GET(new Request("http://localhost/api/gl/reports/trialbalance?fiscalyear=2569&accountfrom=11000&accountto=11999&hideopening=true&hidezero=true&controltotals=true&summary=true&gross=true&budgetcode=BG-1", { headers }), { params: Promise.resolve({ glPath: ["reports", "trialbalance"] }) });
     const forwarded = new URL(String(fetchMock.mock.calls[0][0])).searchParams;
-    for (const key of ["accountfrom", "accountto", "hideopening", "hidezero", "controltotals", "summary", "budgetcode"]) expect(forwarded.has(key)).toBe(true);
+    for (const key of ["accountfrom", "accountto", "hideopening", "hidezero", "controltotals", "summary", "gross", "budgetcode"]) expect(forwarded.has(key)).toBe(true);
   });
 });

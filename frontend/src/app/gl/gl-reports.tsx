@@ -14,17 +14,17 @@ import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { GLVoucherPrint, ReportPrintConditions, ReportPrintHeading, printCompanyName, printedAtText, printOrientation, printUserName, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
 
 // accountfrom/accountto = Champ "จากรหัสบัญชี–ถึงรหัสบัญชี"; ตัวเลือกเป็น "true" หรือ "" (ส่งเป็น query ตรง ๆ)
-export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string };
-export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", hideopening: "", hidezero: "", controltotals: "", summary: "" };
+export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string };
+export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "" };
 // ตัวเลือกแบบ Champ ที่แต่ละรายงานรับ (docs/kms/champ/09-gl.md §5.2-5.6) — รายงานอื่นไม่ส่ง เพื่อให้ URL ตรงกับสิ่งที่จอแสดง
 const REPORT_OPTIONS: Readonly<Record<string, readonly (keyof ReportFilters)[]>> = {
   gljournal: ["summary"],
   ledger: ["summary", "hideopening", "controltotals"],
-  trialbalance: ["hidezero", "controltotals"],
+  trialbalance: ["hidezero", "controltotals", "gross"], // gross = Champ 5507 (trial balance 2) as an option of this screen, not a separate menu
   workingpaper: ["hidezero", "controltotals"],
   budgetcomparison: ["budgetcode"],
 };
-const OPTION_KEYS: readonly (keyof ReportFilters)[] = ["budgetcode", "hideopening", "hidezero", "controltotals", "summary"];
+const OPTION_KEYS: readonly (keyof ReportFilters)[] = ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross"];
 export function reportOptionOn(name: string, filters: ReportFilters, key: keyof ReportFilters) {
   return filters[key] === "true" && (REPORT_OPTIONS[name] ?? []).includes(key);
 }
@@ -474,9 +474,11 @@ function reportPrintTitle(name: string, filters: ReportFilters, tr: GLTextFn, bo
   const single = filters.accountcode || (filters.accountfrom && filters.accountfrom === filters.accountto ? filters.accountfrom : "");
   const account = single ? accounts.find((row) => row.accountcode === single) : undefined;
   const summary = reportOptionOn(name, filters, "summary") ? tr(...SUMMARY_LABELS[name]) : "";
+  const gross = reportOptionOn(name, filters, "gross") ? tr("gl_report_gross_title", "ยอดรวมเดบิต/เครดิตประจำงวด") : "";
   return [
     base,
     summary,
+    gross,
     filters.bookcode ? `${filters.bookcode} ${journalBookName(findJournalBook(books, filters.bookcode), filters.bookcode, language)}` : "",
     single ? `${single} ${account ? accountName(account) : ""}`.trim() : "",
   ].filter(Boolean).join(" — ");
@@ -664,6 +666,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
           {activeReportName === "ledger" && !ledgerSummary && <Check label={tr("gl_report_hide_opening", "ไม่แสดงยอดยกมา")} checked={option("hideopening")} onChange={(on) => toggle("hideopening", on)} />}
           {activeReportName === "ledger" && !ledgerSummary && <Check label={tr("gl_report_new_page_per_account", "ขึ้นหน้าใหม่ทุกบัญชี (เมื่อพิมพ์)")} checked={newPagePerAccount} onChange={setNewPagePerAccount} />}
           {(activeReportName !== "ledger" || ledgerSummary) && REPORT_OPTIONS[activeReportName].includes("controltotals") && <Check label={tr("gl_report_hide_control_totals", "ไม่แสดงผลรวมบัญชีคุม")} checked={filters.controltotals !== "true"} onChange={(hide) => toggle("controltotals", !hide)} />}
+          {REPORT_OPTIONS[activeReportName].includes("gross") && <Check label={tr("gl_report_gross_movement", "แสดงยอดรวมเดบิต/เครดิตประจำงวด (ไม่หักกลบ)")} checked={option("gross")} onChange={(on) => toggle("gross", on)} />}
           {REPORT_OPTIONS[activeReportName].includes("hidezero") && <Check label={tr("gl_report_hide_zero_accounts", "ไม่แสดงรายการผังบัญชีที่มียอดเท่ากับศูนย์")} checked={option("hidezero")} onChange={(on) => toggle("hidezero", on)} />}
         </div>}
         </>}

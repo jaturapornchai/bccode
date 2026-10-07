@@ -59,6 +59,7 @@ type ReportQuery struct {
 	HideZero      bool // trialbalance/workingpaper: ไม่แสดงรายการผังบัญชีที่ยอดทุกช่องเป็นศูนย์ (Champ 5506/5499)
 	ControlTotals bool // trialbalance/workingpaper/ledger summary: เพิ่มแถวผลรวมบัญชีคุมตามต้นไม้บัญชีแม่
 	Summary       bool // gljournal: แถวละเอกสาร (Champ 5533); ledger: ยอดสะสมสุทธิ ณ วันที่ต่อบัญชี (Champ 5535)
+	Gross         bool // trialbalance: ยอดรวมเดบิต/เครดิตของช่วงแบบไม่หักกลบ 2 คอลัมน์ (Champ 5507 งบทดลอง 2)
 	Page          int
 	Limit         int
 }
