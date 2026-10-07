@@ -17,6 +17,7 @@ import {
   type CompanyHeader,
   type TaxEstablishment,
   type ThaiTaxRecord,
+  type VatRegisterDay,
   type VatRegisterGroup,
   type VatRegisterSummary,
   type WhtReportRow,
@@ -91,6 +92,8 @@ export function TaxFilingWorkbench({
   const [vatView, setVatView] = useState<"register" | "reversed_later">("register");
   // Champ 5537 ตัวเลือก "แยกรับคืน/ลดหนี้": แถวยังเรียงตามวันที่ แยกเฉพาะบรรทัดรวมท้ายรายงาน
   const [separateCreditNotes, setSeparateCreditNotes] = useState(false);
+  // Champ 5536/5537 ตัวเลือก "รวมรายวัน": แทรกแถวรวมหลังแถวสุดท้ายของแต่ละวันที่ใบกำกับ (ยอดจาก backend)
+  const [dailyTotals, setDailyTotals] = useState(false);
   const [vatNote, setVatNote] = useState<string>("");
   // รายงานภาษีซื้อ/ขายเป็นรายสถานประกอบการ (ม.87 วรรคสาม, ประกาศฯ VAT ฉบับที่ 89 ข้อ 5): "" = ทุกสถานประกอบการรวมกัน
   const [vatBranch, setVatBranch] = useState<string>("");
@@ -204,6 +207,13 @@ export function TaxFilingWorkbench({
         r.taxid.includes(term),
     );
   }, [records, searchTerm]);
+
+  // จำนวนแถวที่เห็นของแต่ละวัน — แถวรวมรายวันแสดงเมื่อเห็นครบทั้งวันเท่านั้น (โหลดไม่ครบเพดานหน้า/กำลังค้นหา = ยอดวันนั้นจะไม่ตรงแถวที่เห็น)
+  const visibleDayCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of filteredRecords) counts.set(r.docdate, (counts.get(r.docdate) ?? 0) + 1);
+    return counts;
+  }, [filteredRecords]);
 
   // ยอดรวมทั้งงวดจาก backend (decimal) — ไม่บวกเลขบน browser
   const totals = useMemo(() => {
@@ -373,6 +383,18 @@ export function TaxFilingWorkbench({
         { id: "creditnote", label: tr("tax_vat_credit_note_total", "รวมรับคืน/ลดหนี้ {0} รายการ"), group: salesSummary.summary.creditnote },
       ]
     : [];
+  // แถวรวมรายวันของภาษีซื้อ/ขาย (Champ: SUM_OF_DAY / SUM_OF_CREDITNOTEDAY) — ไม่แยกรับคืน/ลดหนี้ = ยอดรวมของวัน (ใบลดหนี้หักแล้ว);
+  // แยก = ยอดใบกำกับของวัน + ยอดใบลดหนี้ของวัน
+  const showDailyTotals = dailyTotals && isVatType && vatView === "register" && !searchTerm.trim();
+  const vatDaysByDate = new Map<string, VatRegisterDay>((config.formType === "vat_buy" ? purchaseSummary : salesSummary)?.summary.days.map((d) => [d.date, d]) ?? []);
+  const dailyTotalRows = (day: VatRegisterDay): { id: string; label: string; group: VatRegisterGroup }[] => {
+    const dayLabel = tr("tax_vat_day_total", "รวมประจำวัน {0} รายการ");
+    if (creditNoteSplit.length === 0) return [{ id: "day", label: dayLabel, group: day.all }];
+    const rows = [{ id: "day", label: dayLabel, group: day.regular }];
+    // Champ พิมพ์แถวรวมรับคืน/ลดหนี้ประจำวันทุกวันเมื่อเปิดแยก (GLRepOutputTaxView.cpp:336-344)
+    rows.push({ id: "day-creditnote", label: tr("tax_vat_day_credit_note_total", "รวมรับคืน/ลดหนี้ประจำวัน {0} รายการ"), group: day.creditnote });
+    return rows;
+  };
   const vatMoneyClass = (tone?: VatMoneyColumn["tone"]) =>
     tone === "tax" ? "font-medium text-primary" : tone === "total" ? "font-bold text-foreground" : "";
   const grandTotalLabel = tr("tax_register_grand_total", "รวมทั้งสิ้น {0} รายการ").replace("{0}", String(totals.count));
@@ -533,6 +555,18 @@ export function TaxFilingWorkbench({
                   className="h-4 w-4 accent-primary"
                 />
                 {tr("tax_vat_separate_credit_notes", "แยกรับคืน/ลดหนี้")}
+              </label>
+            )}
+            {isVatType && vatView === "register" && (
+              <label className="flex min-h-[2.2em] cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm print:hidden">
+                <input
+                  type="checkbox"
+                  checked={dailyTotals}
+                  onChange={(e) => setDailyTotals(e.target.checked)}
+                  data-field="dailytotals"
+                  className="h-4 w-4 accent-primary"
+                />
+                {tr("tax_vat_daily_totals", "รวมรายวัน")}
               </label>
             )}
             {isVatType && (
@@ -813,6 +847,9 @@ export function TaxFilingWorkbench({
                   );
                   const startsPayee = groupByPayee && item.payeeseq !== filteredRecords[idx - 1]?.payeeseq;
                   // รวมต่อกลุ่มเป็นยอดทั้งกลุ่มจาก backend — ซ่อนตอนค้นหาเพราะแถวที่เห็นอาจไม่ครบกลุ่ม
+                  // วันที่ใบกำกับเปลี่ยนในแถวถัดไป = แถวนี้เป็นแถวสุดท้ายของวัน → แทรกแถวรวมประจำวัน (เห็นครบทั้งวันเท่านั้น)
+                  const dayTotal = showDailyTotals && item.docdate !== filteredRecords[idx + 1]?.docdate ? vatDaysByDate.get(item.docdate) : undefined;
+                  const dayTotalRows = dayTotal && dayTotal.all.count === visibleDayCounts.get(item.docdate) ? dailyTotalRows(dayTotal) : [];
                   const payeeTotal = groupByPayee && !searchTerm.trim() && item.payeeseq !== filteredRecords[idx + 1]?.payeeseq
                     ? payeeTotals.get(item.payeeseq ?? 0)
                     : undefined;
@@ -874,6 +911,15 @@ export function TaxFilingWorkbench({
                         </Button>
                       </td>
                     </tr>
+                    {dayTotalRows.map((total) => (
+                      <tr key={total.id} data-total={total.id} data-date={item.docdate} className="bg-muted/30 font-semibold">
+                        <td colSpan={8} className="px-4 py-2.5 text-right">{total.label.replace("{0}", String(total.group.count))}</td>
+                        {vatMoneyColumns.map((m) => (
+                          <td key={m.id} className={`px-4 py-2.5 text-right font-mono ${m.tone === "tax" ? "text-primary" : ""}`}>{bracketMoney(total.group[m.field])}</td>
+                        ))}
+                        <td className="print:hidden" />
+                      </tr>
+                    ))}
                     {payeeTotal && (
                       <tr className="font-semibold">
                         <td colSpan={5} className="px-4 py-2.5 text-right">{tr("tax_wht_payee_total", "รวม {0} รายการ").replace("{0}", String(payeeTotal.count))}</td>

@@ -185,6 +185,15 @@ export interface VatRegisterGroup {
   totalamount: string;
 }
 
+/** ยอดรวมของวันหนึ่งวัน (วันที่ใบกำกับเดียวกัน) — Champ 5537/5538 "รวมรายวัน"; backend คำนวณ ไม่บวกบน browser */
+export interface VatRegisterDay {
+  date: string;
+  /** ทุกใบของวัน (ใบลดหนี้ติดลบหักแล้ว) — ใช้เมื่อไม่แยกรับคืน/ลดหนี้ */
+  all: VatRegisterGroup;
+  regular: VatRegisterGroup;
+  creditnote: VatRegisterGroup;
+}
+
 export interface VatRegisterSummary {
   amountbeforevat: string;
   zeroamount: string;
@@ -200,6 +209,8 @@ export interface VatRegisterSummary {
   regular: VatRegisterGroup;
   /** ใบลดหนี้ (ยอดติดลบ) */
   creditnote: VatRegisterGroup;
+  /** ยอดรวมรายวัน เรียงตามวันที่ใบกำกับ; ไม่มี = [] */
+  days: VatRegisterDay[];
 }
 
 const VAT_REGISTER_PATH = "/api/goapi/api/report/tax/vat-register";
@@ -290,11 +301,22 @@ export interface WhtReportResult {
 const EMPTY_COMPANY: CompanyHeader = { code: "", name: "", taxid: "", address: null, phone: "", addressline: "" };
 const EMPTY_WHT_SUMMARY: WhtReportSummary = { basetotal: "0.00", whttotal: "0.00", whttotaltext: "", nettotal: "0.00", payeecount: 0, byrate: [], payees: [] };
 const EMPTY_VAT_GROUP: VatRegisterGroup = { count: 0, amountbeforevat: "0.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "0.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "0.00", totalamount: "0.00" };
-const EMPTY_VAT_SUMMARY: VatRegisterSummary = { ...EMPTY_VAT_GROUP, duplicatecount: 0, regular: EMPTY_VAT_GROUP, creditnote: EMPTY_VAT_GROUP };
+const EMPTY_VAT_SUMMARY: VatRegisterSummary = { ...EMPTY_VAT_GROUP, duplicatecount: 0, regular: EMPTY_VAT_GROUP, creditnote: EMPTY_VAT_GROUP, days: [] };
 
 function toVatGroup(value: unknown): VatRegisterGroup {
   const group = isRecord(value) ? value : {};
   return { count: toCount(group.count, 0), ...toVatTotals(group) };
+}
+
+/** ยอดรายวันจาก backend — ค่า null/ไม่ใช่อาร์เรย์ → [] ; แถวที่ไม่มีวันที่ทิ้ง (จับคู่กับแถวไม่ได้) */
+function toVatDays(value: unknown): VatRegisterDay[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((day) => ({
+    date: toText(day.date),
+    all: toVatGroup(day.all),
+    regular: toVatGroup(day.regular),
+    creditnote: toVatGroup(day.creditnote),
+  })).filter((day) => day.date !== "");
 }
 
 function toVatTotals(group: Record<string, unknown>): Omit<VatRegisterGroup, "count"> {
@@ -682,6 +704,7 @@ export async function fetchVatRegister(params: {
       duplicatecount: toCount(summary.duplicatecount, 0),
       regular: toVatGroup(summary.regular),
       creditnote: toVatGroup(summary.creditnote),
+      days: toVatDays(summary.days),
     },
     note: toText(payload.note),
     company: isRecord(payload.company) ? toCompany(payload.company) : null,

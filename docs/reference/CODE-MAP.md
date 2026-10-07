@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit 96f2ea35 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit 535e40d4 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -1218,6 +1218,15 @@ Files indexed: 29
 | 1060 | function | `DisableUser` |
 | 1086 | function | `DeleteUser` |
 
+## frontend/src/app/tax/tax-filing-workbench.tsx (1088 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 58 | function | `subscribeWorkspace` |
+| 69 | function | `TaxFilingWorkbench` |
+| 302 | const-arrow | `onKey` |
+| 1075 | function | `DuplicateInvoiceBadge` |
+
 ## frontend/src/app/crud/erp-crud-workbench.tsx (1074 lines)
 
 | Line | Kind | Name |
@@ -1278,14 +1287,45 @@ Files indexed: 29
 | 1057 | function | `normalizeHexColor` |
 | 1064 | function | `languageName` |
 
-## frontend/src/app/tax/tax-filing-workbench.tsx (1042 lines)
+## backend/internal/goapi/handlers/tax_report.go (1045 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 57 | function | `subscribeWorkspace` |
-| 68 | function | `TaxFilingWorkbench` |
-| 292 | const-arrow | `onKey` |
-| 1029 | function | `DuplicateInvoiceBadge` |
+| 123 | function | `add` |
+| 133 | function | `group` |
+| 149 | function | `TaxVatRegisterHandler` |
+| 257 | function | `vatRecordsOfBranch` |
+| 274 | function | `vatRegisterNote` |
+| 295 | function | `vatRegisterRowNote` |
+| 311 | function | `vatSign` |
+| 319 | function | `vatMoney` |
+| 324 | function | `vatAmountOf` |
+| 340 | function | `newVatColumns` |
+| 350 | function | `buildVatRegister` |
+| 418 | function | `vatTaxMonth` |
+| 426 | function | `firstN` |
+| 434 | function | `pageVatRegisterRows` |
+| 453 | function | `sumPP30` |
+| 475 | function | `taxRequestLanguage` |
+| 483 | function | `taxReportFail` |
+| 490 | function | `taxScopeFail` |
+| 501 | function | `taxCallerAllowed` |
+| 519 | function | `isValidReportPeriod` |
+| 525 | function | `normalizeVatRegisterPaging` |
+| 639 | function | `TaxWithholdingHandler` |
+| 720 | function | `withholdingReportNotes` |
+| 735 | function | `reversedLaterCount` |
+| 750 | function | `taxMonthLabel` |
+| 763 | function | `pageWithholdingRows` |
+| 803 | function | `buildWithholdingReport` |
+| 835 | function | `withholdingPayeeKey` |
+| 853 | function | `recordedWithholdingRows` |
+| 922 | function | `applyWithholdingPartySnapshot` |
+| 958 | function | `sameSpacedText` |
+| 964 | function | `summarizeWithholding` |
+| 1024 | function | `finishWithholdingRow` |
+| 1038 | function | `withholdingNetKnown` |
+| 1043 | function | `pqArray` |
 
 ## frontend/src/app/currency/currency-screen.tsx (1032 lines)
 
@@ -1314,44 +1354,4 @@ Files indexed: 29
 | 1001 | function | `upsertRateEntry` |
 | 1007 | function | `validateForm` |
 | 1016 | function | `formatCount` |
-
-## backend/internal/goapi/handlers/tax_report.go (1011 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 112 | function | `add` |
-| 117 | function | `group` |
-| 133 | function | `TaxVatRegisterHandler` |
-| 241 | function | `vatRecordsOfBranch` |
-| 258 | function | `vatRegisterNote` |
-| 279 | function | `vatRegisterRowNote` |
-| 295 | function | `vatSign` |
-| 303 | function | `vatMoney` |
-| 308 | function | `vatAmountOf` |
-| 324 | function | `newVatColumns` |
-| 334 | function | `buildVatRegister` |
-| 384 | function | `vatTaxMonth` |
-| 392 | function | `firstN` |
-| 400 | function | `pageVatRegisterRows` |
-| 419 | function | `sumPP30` |
-| 441 | function | `taxRequestLanguage` |
-| 449 | function | `taxReportFail` |
-| 456 | function | `taxScopeFail` |
-| 467 | function | `taxCallerAllowed` |
-| 485 | function | `isValidReportPeriod` |
-| 491 | function | `normalizeVatRegisterPaging` |
-| 605 | function | `TaxWithholdingHandler` |
-| 686 | function | `withholdingReportNotes` |
-| 701 | function | `reversedLaterCount` |
-| 716 | function | `taxMonthLabel` |
-| 729 | function | `pageWithholdingRows` |
-| 769 | function | `buildWithholdingReport` |
-| 801 | function | `withholdingPayeeKey` |
-| 819 | function | `recordedWithholdingRows` |
-| 888 | function | `applyWithholdingPartySnapshot` |
-| 924 | function | `sameSpacedText` |
-| 930 | function | `summarizeWithholding` |
-| 990 | function | `finishWithholdingRow` |
-| 1004 | function | `withholdingNetKnown` |
-| 1009 | function | `pqArray` |
 

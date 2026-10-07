@@ -443,6 +443,42 @@ describe("fetchVatRegister — ใบกำกับฉบับเดียว�
     expect(result.summary.creditnote).toEqual({ count: 1, amountbeforevat: "-100.00", zeroamount: "0.00", exemptamount: "0.00", taxableamount: "-100.00", nonexemptamount: "0.00", nonexempttotal: "0.00", vatamount: "-7.00", totalamount: "-107.00" });
   });
 
+  // Champ 5537/5538 "รวมรายวัน": backend ส่งยอดรายวัน (all/regular/creditnote) — จอแสดงตามที่ได้ ไม่บวกเอง
+  it("map ยอดรวมรายวัน summary.days", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {
+      data: [], total: 3,
+      summary: {
+        days: [
+          {
+            date: "2026-09-05",
+            all: { count: 2, amountbeforevat: "350.00", taxableamount: "400.00", vatamount: "28.00", totalamount: "378.00" },
+            regular: { count: 1, amountbeforevat: "500.00", taxableamount: "500.00", vatamount: "35.00", totalamount: "535.00" },
+            creditnote: { count: 1, amountbeforevat: "-150.00", zeroamount: "-20.00", exemptamount: "-30.00", taxableamount: "-100.00", vatamount: "-7.00", totalamount: "-157.00" },
+          },
+          { date: "2026-09-09", regular: { count: 1, vatamount: "14.00" } },
+          { date: "", all: { count: 9 } },
+          "ไม่ใช่ออบเจกต์",
+        ],
+      },
+    })));
+    const result = await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "sale" });
+    // แถวไม่มีวันที่/ไม่ใช่ออบเจกต์ถูกทิ้ง; วันที่ขาดบางกลุ่ม → กลุ่มว่าง 0 รายการ (ไม่ undefined)
+    expect(result.summary.days.map((d) => d.date)).toEqual(["2026-09-05", "2026-09-09"]);
+    expect(result.summary.days[0].all).toMatchObject({ count: 2, amountbeforevat: "350.00", vatamount: "28.00", totalamount: "378.00" });
+    expect(result.summary.days[0].creditnote).toMatchObject({ count: 1, zeroamount: "-20.00", exemptamount: "-30.00", totalamount: "-157.00" });
+    expect(result.summary.days[1].regular).toMatchObject({ count: 1, vatamount: "14.00" });
+    expect(result.summary.days[1].all).toMatchObject({ count: 0, totalamount: "0.00" });
+    expect(result.summary.days[1].creditnote).toMatchObject({ count: 0, totalamount: "0.00" });
+  });
+
+  it("summary.days ขาด/null/ผิดชนิด → [] ไม่ crash", async () => {
+    for (const days of [undefined, null, "x", 3, {}]) {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { data: [], total: 0, summary: { days } })));
+      const result = await fetchVatRegister({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, type: "purchase" });
+      expect(result.summary.days).toEqual([]);
+    }
+  });
+
   it("duplicatecount ผิดสัญญา (ติดลบ/ทศนิยม/ข้อความ) → 0 ไม่เดา", async () => {
     for (const bad of [-1, 1.5, "2"]) {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { data: [], total: 0, summary: { duplicatecount: bad } })));

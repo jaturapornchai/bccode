@@ -90,6 +90,17 @@ type TaxVatRegisterSummary struct {
 	// (GLRepOutputTaxView.cpp:473-599: รวมทั้งสิ้น n รายการ → รวมรับคืน/ลดหนี้ n รายการ → รวมทั้งสิ้นของทั้งสองกลุ่ม)
 	Regular    TaxVatRegisterGroup `json:"regular"`
 	CreditNote TaxVatRegisterGroup `json:"creditnote"`
+	// Days - ยอดรวมรายวันตามวันที่ใบกำกับ (ตัวเลือก "รวมรายวัน" ของ Champ 5537/5538); ไม่มีรายการ = [] ไม่ใช่ null
+	Days []TaxVatRegisterDay `json:"days"`
+}
+
+// TaxVatRegisterDay - ยอดรวมของวันหนึ่งวัน (วันที่ใบกำกับเดียวกัน): All = ทุกใบ (ใบลดหนี้ติดลบรวมอยู่แล้ว) ใช้เมื่อไม่แยกรับคืน/ลดหนี้,
+// Regular/CreditNote = แยกกลุ่มเมื่อเปิด "แยกรับคืน/ลดหนี้" (GLRepOutputTaxView.cpp:326-345 SUM_OF_DAY / SUM_OF_CREDITNOTEDAY)
+type TaxVatRegisterDay struct {
+	Date       string              `json:"date"`
+	All        TaxVatRegisterGroup `json:"all"`
+	Regular    TaxVatRegisterGroup `json:"regular"`
+	CreditNote TaxVatRegisterGroup `json:"creditnote"`
 }
 
 // TaxVatRegisterGroup - ยอดรวมของกลุ่มแถวในทะเบียนภาษี (จำนวน + ยอดตามคอลัมน์รายงาน) คำนวณ decimal ที่ backend
@@ -112,6 +123,11 @@ type vatTotals struct {
 func (t *vatTotals) add(base, zero, exempt, vat decimal.Decimal) {
 	t.count++
 	t.base, t.zero, t.exempt, t.vat = t.base.Add(base), t.zero.Add(zero), t.exempt.Add(exempt), t.vat.Add(vat)
+}
+
+// vatDayTotals - ตัวสะสมของวันหนึ่งวัน (สามกลุ่มเดียวกับยอดทั้งงวด)
+type vatDayTotals struct {
+	all, regular, creditNote vatTotals
 }
 
 func (t vatTotals) group() TaxVatRegisterGroup {
@@ -334,6 +350,9 @@ func newVatColumns(base, zero, vat decimal.Decimal) vatColumns {
 func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, TaxVatRegisterSummary) {
 	rows := make([]TaxVatRegisterRow, 0, len(records))
 	var all, regular, creditNote vatTotals
+	// ตัดกลุ่มรายวันด้วยวันที่ใบกำกับ (TaxInvoiceDate) — ฟิลด์เดียวกับที่ใช้เรียงแถวและแสดงในคอลัมน์วันที่
+	dayOrder := []string{}
+	dayTotals := map[string]*vatDayTotals{}
 	for _, r := range records {
 		sign := vatSign(r.DocumentType)
 		base, zero, exempt := vatMoney(r.BaseAmount, sign), vatMoney(r.ZeroRateAmount, sign), vatMoney(r.ExemptAmount, sign)
@@ -359,12 +378,26 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 			ReversedMonth:    firstN(r.ReversalDate, 7),
 			Note:             r.ReversalReason,
 		})
+		day := dayTotals[r.TaxInvoiceDate]
+		if day == nil {
+			day = &vatDayTotals{}
+			dayTotals[r.TaxInvoiceDate] = day
+			dayOrder = append(dayOrder, r.TaxInvoiceDate)
+		}
 		all.add(base, zero, exempt, vat)
+		day.all.add(base, zero, exempt, vat)
 		if r.DocumentType == 3 { // ใบลดหนี้ = กลุ่มรับคืน/ลดหนี้ (เครื่องหมายลบเดียวกับ vatSign)
 			creditNote.add(base, zero, exempt, vat)
+			day.creditNote.add(base, zero, exempt, vat)
 		} else {
 			regular.add(base, zero, exempt, vat)
+			day.regular.add(base, zero, exempt, vat)
 		}
+	}
+	days := make([]TaxVatRegisterDay, 0, len(dayOrder))
+	for _, date := range dayOrder {
+		d := dayTotals[date]
+		days = append(days, TaxVatRegisterDay{Date: date, All: d.all.group(), Regular: d.regular.group(), CreditNote: d.creditNote.group()})
 	}
 	total := all.group()
 	return rows, TaxVatRegisterSummary{
@@ -377,6 +410,7 @@ func buildVatRegister(records []generalledger.VatRecord) ([]TaxVatRegisterRow, T
 		DuplicateCount:  countDuplicateInvoices(records),
 		Regular:         regular.group(),
 		CreditNote:      creditNote.group(),
+		Days:            days,
 	}
 }
 

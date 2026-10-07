@@ -181,6 +181,61 @@ func TestBuildVatRegisterSignsAndTotals(t *testing.T) {
 	}
 }
 
+// Champ 5537/5538 "รวมรายวัน": ตัดกลุ่มตามวันที่ใบกำกับ — วันที่มีใบลดหนี้แยกยอดใบลดหนี้ได้ (SUM_OF_CREDITNOTEDAY), All = ทุกใบของวัน (ใบลดหนี้ติดลบหักแล้ว)
+func TestBuildVatRegisterDailyTotals(t *testing.T) {
+	onDate := func(r generalledger.VatRecord, date string) generalledger.VatRecord {
+		r.TaxInvoiceDate = date
+		return r
+	}
+	records := []generalledger.VatRecord{
+		onDate(vatRecord("UV1", "IV001", 1, "1000", "0", "0", "70"), "2026-09-01"),
+		onDate(vatRecord("UV2", "IV002", 1, "0.105", "0", "0", "0.0074"), "2026-09-01"),
+		onDate(vatRecord("UV3", "IV003", 1, "500", "0", "0", "35"), "2026-09-05"),
+		onDate(vatRecord("UV4", "CN001", 3, "100", "20", "30", "7"), "2026-09-05"),
+		onDate(vatRecord("UV5", "IV004", 1, "200", "0", "0", "14"), "2026-09-09"),
+	}
+	_, summary := buildVatRegister(records)
+	if len(summary.Days) != 3 || summary.Days[0].Date != "2026-09-01" || summary.Days[1].Date != "2026-09-05" || summary.Days[2].Date != "2026-09-09" {
+		t.Fatalf("days = %+v", summary.Days)
+	}
+	// วันที่ 1: ใบกำกับ 2 ใบ (ฐานแต่ละแถวปัด 2 ตำแหน่ง: 0.105 → 0.11, VAT 0.0074 → 0.01) ไม่มีใบลดหนี้
+	d1 := summary.Days[0]
+	if d1.Regular.Count != 2 || d1.Regular.AmountBeforeVat != "1000.11" || d1.Regular.VatAmount != "70.01" || d1.Regular.TotalAmount != "1070.12" {
+		t.Fatalf("day 1 regular = %+v", d1.Regular)
+	}
+	if d1.CreditNote.Count != 0 || d1.CreditNote.TotalAmount != "0.00" || d1.All != d1.Regular {
+		t.Fatalf("day 1 credit note / all = %+v / %+v", d1.CreditNote, d1.All)
+	}
+	// วันที่ 5: ใบกำกับ 1 ใบ + ใบลดหนี้ 1 ใบ (ติดลบ ฐาน 100 + 0% 20 + ยกเว้น 30 = -150) — แยกกลุ่มและรวมวัน
+	d5 := summary.Days[1]
+	if g := d5.Regular; g.Count != 1 || g.AmountBeforeVat != "500.00" || g.VatAmount != "35.00" || g.TotalAmount != "535.00" {
+		t.Fatalf("day 5 regular = %+v", g)
+	}
+	if g := d5.CreditNote; g.Count != 1 || g.AmountBeforeVat != "-150.00" || g.ZeroAmount != "-20.00" || g.ExemptAmount != "-30.00" || g.VatAmount != "-7.00" || g.TotalAmount != "-157.00" {
+		t.Fatalf("day 5 credit note = %+v", g)
+	}
+	if g := d5.All; g.Count != 2 || g.AmountBeforeVat != "350.00" || g.VatAmount != "28.00" || g.TotalAmount != "378.00" || g.TaxableAmount != "400.00" {
+		t.Fatalf("day 5 all = %+v", g)
+	}
+	// ผลรวมรายวันทุกวัน = ยอดทั้งงวด (ไม่ตกหล่น ไม่นับซ้ำ)
+	var totalVat, totalAmount decimal.Decimal
+	count := 0
+	for _, d := range summary.Days {
+		count += d.All.Count
+		totalVat = totalVat.Add(decimal.RequireFromString(d.All.VatAmount))
+		totalAmount = totalAmount.Add(decimal.RequireFromString(d.All.TotalAmount))
+	}
+	if count != 5 || moneyText(totalVat) != summary.VatAmount || moneyText(totalAmount) != summary.TotalAmount {
+		t.Fatalf("days total count=%d vat=%s amount=%s summary=%+v", count, totalVat, totalAmount, summary)
+	}
+	// ไม่มีรายการ → days เป็น [] (JSON ต้องไม่เป็น null)
+	if _, empty := buildVatRegister(nil); empty.Days == nil || len(empty.Days) != 0 {
+		t.Fatalf("empty days = %#v", empty.Days)
+	} else if raw, err := json.Marshal(empty); err != nil || !strings.Contains(string(raw), `"days":[]`) {
+		t.Fatalf("empty summary json = %s (%v)", raw, err)
+	}
+}
+
 // ภ.พ.30: ข้อ 2/3/4 แยกจากยอดที่บันทึก, ข้อ 5/7 = VAT ที่บันทึก (ไม่คำนวณจากฐาน x 7%), ใบลดหนี้หักออก
 func TestSumPP30FromRecordedVat(t *testing.T) {
 	sales := []generalledger.VatRecord{
