@@ -226,3 +226,10 @@ describe("labelledReportRows — CSV carries the screen labels", () => {
     expect(rows[2].description).toBe("ขายเงินสด");
   });
 });
+
+describe("report range chosen by period", () => {
+  it("sends the dates resolved from the periods and never the picked period codes", () => {
+    const query = reportQuery("trialbalance", { ...emptyReportFilters, fiscalyear: "2026", from: "2026-02-01", to: "2026-03-31", periodfrom: "2026-02", periodto: "2026-03" });
+    expect(query).toEqual({ fiscalyear: "2026", from: "2026-02-01", to: "2026-03-31" });
+  });
+});

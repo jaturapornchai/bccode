@@ -31,6 +31,18 @@ export function budgetPeriodStarts(year: Pick<GLFiscalYear, "startdate" | "endda
   }
   return starts;
 }
+/** ช่วงรายงานที่เลือกตามงวดบัญชีแบบ Champ (GLRepGLDlg.cpp OnGetPeriodDate :534-562): เริ่มที่วันเริ่มต้นของงวดแรก สิ้นสุดที่วันสิ้นสุดของงวดสุดท้าย อ่านจากทะเบียนงวด
+ *  `periods` = งวดของปีบัญชีเดียว เรียงตามวันเริ่มต้น; รหัสว่าง = งวดแรก (จากงวด) / งวดสุดท้าย (ถึงงวด) ตามที่ Champ เปิดจอด้วยงวดต่ำสุด–สูงสุด (:184-199)
+ *  คืน null เมื่อไม่พบรหัสงวด งวดไม่มีวันที่ หรืองวดเริ่มต้นอยู่หลังงวดสิ้นสุด */
+export function periodRangeDates(periods: readonly Pick<GLMaster, "code" | "startdate" | "enddate">[], fromCode: string, toCode: string): { from: string; to: string; fromcode: string; tocode: string } | null {
+  const fromIndex = fromCode ? periods.findIndex((period) => period.code === fromCode) : 0;
+  const toIndex = toCode ? periods.findIndex((period) => period.code === toCode) : periods.length - 1;
+  if (fromIndex < 0 || toIndex < 0 || fromIndex > toIndex) return null;
+  const first = periods[fromIndex], last = periods[toIndex];
+  if (!first.startdate || !last.enddate) return null;
+  return { from: first.startdate, to: last.enddate, fromcode: first.code, tocode: last.code };
+}
+
 /** ผลรวมยอดงวดแบบทศนิยมตรง (BigInt) — ช่องว่างนับเป็นศูนย์ */
 export function budgetPeriodsTotal(periods: string[]): bigint { return periods.reduce((sum, value) => sum + amountUnits(blankAmountAsZero(value)), 0n); }
 export type GLFiscalYear = GLIdentity & {

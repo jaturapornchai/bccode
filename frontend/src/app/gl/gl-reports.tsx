@@ -4,19 +4,20 @@ import { useEffect, useState } from "react";
 import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
-import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, type GLBudget, type GLPage, normalizeDimensionCodes, reportCodeList } from "@/lib/general-ledger";
+import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, type GLBudget, type GLPage, normalizeDimensionCodes, reportCodeList, type GLMaster, periodRangeDates } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate } from "@/lib/date-time";
-import { glRequest } from "@/lib/general-ledger-api";
+import { glAllRecords, glRequest } from "@/lib/general-ledger-api";
 import { DimensionCodeMultiSelect, useDimensionRegisters } from "./gl-dimension-select";
 import { AccountSelect, Check, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
+import { yearPeriods } from "./gl-periods";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { GLVoucherPrint, ReportPrintConditions, ReportPrintHeading, printCompanyName, printedAtText, printOrientation, printUserName, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
 
 // accountfrom/accountto = Champ "จากรหัสบัญชี–ถึงรหัสบัญชี"; ตัวเลือกเป็น "true" หรือ "" (ส่งเป็น query ตรง ๆ)
-export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string };
-export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "" };
+export type ReportFilters = { fiscalyear: string; from: string; to: string; periodfrom: string; periodto: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string };
+export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", periodfrom: "", periodto: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "" };
 // ตัวเลือกแบบ Champ ที่แต่ละรายงานรับ (docs/kms/champ/09-gl.md §5.2-5.6) — รายงานอื่นไม่ส่ง เพื่อให้ URL ตรงกับสิ่งที่จอแสดง
 const REPORT_OPTIONS: Readonly<Record<string, readonly (keyof ReportFilters)[]>> = {
   gljournal: ["summary"],
@@ -26,6 +27,8 @@ const REPORT_OPTIONS: Readonly<Record<string, readonly (keyof ReportFilters)[]>>
   budgetcomparison: ["budgetcode"],
 };
 const OPTION_KEYS: readonly (keyof ReportFilters)[] = ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals"];
+// periodfrom/periodto = รหัสงวดที่เลือกบนจอ (Champ "พิมพ์จากงวด") ใช้แสดงหัวรายงานเท่านั้น — backend รับเฉพาะ from/to ที่แปลงจากงวดแล้ว จึงไม่ส่งไป
+const PERIOD_PICK_KEYS: readonly (keyof ReportFilters)[] = ["periodfrom", "periodto"];
 export function reportOptionOn(name: string, filters: ReportFilters, key: keyof ReportFilters) {
   return filters[key] === "true" && (REPORT_OPTIONS[name] ?? []).includes(key);
 }
@@ -35,7 +38,7 @@ export function reportQuery(name: string, filters: ReportFilters): Record<string
   const ledgerSummary = name === "ledger" && reportOptionOn(name, filters, "summary");
   const query: Record<string, string> = {};
   for (const [key, value] of Object.entries(filters) as [keyof ReportFilters, string][]) {
-    if (!value || OPTION_KEYS.includes(key) && !(REPORT_OPTIONS[name] ?? []).includes(key)) continue;
+    if (!value || PERIOD_PICK_KEYS.includes(key) || OPTION_KEYS.includes(key) && !(REPORT_OPTIONS[name] ?? []).includes(key)) continue;
     if (name === "ledger" && (ledgerSummary ? key === "hideopening" || key === "daytotals" || key === "from" : key === "controltotals")) continue;
     query[key] = value;
   }
@@ -495,14 +498,24 @@ function reportPrintTitle(name: string, filters: ReportFilters, tr: GLTextFn, bo
 }
 // กรอบหน้ารายงานแบบ Champ: หัว = ช่วงวันที่ (รายละเอียด) + พิมพ์โดย/วันที่พิมพ์; ตัวกรองอื่นไปอยู่ "เงื่อนไขการพิมพ์รายงาน" ท้ายรายงาน
 type ReportPrintMeta = { description: string[]; conditions: string[]; printedBy: string; printedAt: string };
+// หัวรายงานเมื่อเลือกตามงวด (Champ GLRepTrialBalanceDlg.cpp:565-580: "ตั้งแต่งวดที่ n ถึงงวดที่ m", งวดเดียวพิมพ์ "งวดที่ n"); null = เลือกตามวันที่
+function periodHeading(filters: ReportFilters, cumulative: boolean, date: (value: string) => string, tr: GLTextFn): string | null {
+  const { periodfrom: from, periodto: to } = filters;
+  if (!from || !to) return null;
+  if (cumulative) return tr("gl_for_period_as_of", "สำหรับงวดบัญชี {0} (ณ วันที่ {1})").replace("{0}", to).replace("{1}", date(filters.to));
+  if (from === to) return tr("gl_print_period_single", "งวดที่ {0}").replace("{0}", from);
+  return tr("gl_print_period_range", "ตั้งแต่งวดที่ {0} ถึงงวดที่ {1}").replace("{0}", from).replace("{1}", to);
+}
 function reportPrintMeta(name: string, filters: ReportFilters, asOf: boolean, volume: string, tr: GLTextFn, language: LanguageCode): ReportPrintMeta {
   const date = (value: string) => formatAppDate(value, language);
   const range = !filters.accountcode && filters.accountfrom !== filters.accountto;
+  const cumulative = asOf || name === "ledger" && reportOptionOn(name, filters, "summary");
   return {
     description: [
-      asOf || name === "ledger" && reportOptionOn(name, filters, "summary") ? tr("gl_print_as_of", "ณ วันที่ {0}").replace("{0}", date(filters.to))
+      periodHeading(filters, cumulative, date, tr)
+        ?? (cumulative ? tr("gl_print_as_of", "ณ วันที่ {0}").replace("{0}", date(filters.to))
         : filters.from && filters.to ? tr("gl_print_period", "ตั้งแต่วันที่ {0} ถึงวันที่ {1}").replace("{0}", date(filters.from)).replace("{1}", date(filters.to))
-        : `${tr("gl_fiscal_year", "ปีบัญชี")} ${filters.fiscalyear}`,
+        : `${tr("gl_fiscal_year", "ปีบัญชี")} ${filters.fiscalyear}`),
       BOOK_REPORTS.has(name) ? tr("gl_print_volume_no", "เล่มที่ {0}").replace("{0}", volume.trim() || "..........") : "",
     ],
     conditions: [
@@ -539,11 +552,17 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
   const [volume, setVolume] = useState("");
   const [newPagePerAccount, setNewPagePerAccount] = useState(false);
   const [budgets, setBudgets] = useState<BudgetOption[]>([]);
+  // ทะเบียนงวด ใช้เลือกช่วงรายงานตามงวดแบบ Champ (ไม่ติ๊ก "ดูจากวันที่เอกสาร" = ตามงวด); โหลดไม่ได้หรือปียังไม่มีงวด = ใช้ช่วงวันที่ตามเดิม
+  const [periods, setPeriods] = useState<GLMaster[]>([]);
+  const [byDocDate, setByDocDate] = useState(false);
   const reportPrint = useGLPrint();
   const set = (key: keyof ReportFilters, value: string) => setFilters((current) => ({ ...current, [key]: value }));
   const option = (key: keyof ReportFilters) => reportOptionOn(activeReportName, filters, key);
   const toggle = (key: keyof ReportFilters, on: boolean) => set(key, on ? "true" : "");
   const ledgerSummary = activeReportName === "ledger" && option("summary");
+  const yearPeriodList = yearPeriods(periods, filters.fiscalyear);
+  const byPeriod = !asOf && !byDocDate && yearPeriodList.length > 0;
+  const firstPeriod = yearPeriodList[0]?.code ?? "", lastPeriod = yearPeriodList.at(-1)?.code ?? "";
 
   // 5530 เลือกรหัสงบประมาณได้ (Champ เงื่อนไข "รหัสงบประมาณ") — รายการงบมาจากทะเบียนงบประมาณของบริษัท
   useEffect(() => {
@@ -555,6 +574,29 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       .catch(() => { if (active) setBudgets([]); });
     return () => { active = false; };
   }, [activeReportName]);
+
+  useEffect(() => {
+    if (AS_OF_REPORTS.has(name)) return;
+    let active = true;
+    glAllRecords<GLMaster>("periods", "", 1000).then((items) => { if (active) setPeriods(items); }).catch(() => { if (active) setPeriods([]); });
+    return () => { active = false; };
+  }, [name]);
+
+  // ตามงวด: ช่วงวันที่มาจากทะเบียนงวด (วันเริ่มของงวดแรก–วันสิ้นสุดของงวดสุดท้าย แบบ Champ OnGetPeriodDate); ช่องว่าง = งวดแรก/งวดสุดท้ายของปี; แบบสรุป (ถึงงวด) ไม่มีงวดเริ่ม
+  function submit() {
+    if (!byPeriod) { void load(); return; }
+    const range = periodRangeDates(yearPeriodList, ledgerSummary ? "" : filters.periodfrom, filters.periodto);
+    if (!range) { setError(tr("gl_start_period_not_after_end", "งวดเริ่มต้นต้องไม่เกินงวดสิ้นสุด")); return; }
+    void load(1, { ...filters, from: range.from, to: range.to, periodfrom: range.fromcode, periodto: range.tocode });
+  }
+
+  // ติ๊ก "ดูจากวันที่เอกสาร" = เริ่มจากช่วงวันที่ของงวดที่เลือกอยู่ แล้วแก้เป็นวันใดก็ได้ (Champ OnChkDate)
+  function changeByDocDate(on: boolean) {
+    setByDocDate(on);
+    const range = on ? periodRangeDates(yearPeriodList, filters.periodfrom, filters.periodto) : null;
+    setFilters((current) => ({ ...current, periodfrom: "", periodto: "", ...(range ? { from: range.from, to: range.to } : {}) }));
+  }
+  const periodSelect = (label: string, value: string, onChange: (code: string) => void) => <Combobox aria-label={label} value={value} onChange={(picked: string | number) => onChange(String(picked))}>{yearPeriodList.map((period) => <option key={period.code} value={period.code}>{period.code}{period.name ? ` · ${period.name}` : ""}</option>)}</Combobox>;
 
   async function load(nextPage = 1, selected = filters, targetReport = activeReportName) {
     if (!(AS_OF_REPORTS.has(targetReport) ? selected.to : selected.fiscalyear) || busy) return;
@@ -655,15 +697,21 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     )}
 
     <Notice error text={error || refs.error || dims.error} />
-    <form className="shrink-0 grid gap-3" onSubmit={(event) => { event.preventDefault(); void load(); }}>
+    <form className="shrink-0 grid gap-3" onSubmit={(event) => { event.preventDefault(); submit(); }}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {asOf ? <>
         <Field label={tr("gl_as_of_date", "ณ วันที่")}><input className={control} type="date" required value={filters.to} onChange={(e) => set("to", e.target.value)} /></Field>
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
         </> : <>
-        <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={filters.fiscalyear} onChange={(value) => { const year = refs.years.find((item) => item.code === value); setFilters((current) => ({ ...current, fiscalyear: value, from: year?.startdate ?? "", to: year?.enddate ?? "" })); }} /></Field>
+        <Field label={tr("gl_fiscal_year", "ปีบัญชี")}><YearSelect years={refs.years} value={filters.fiscalyear} onChange={(value) => { const year = refs.years.find((item) => item.code === value); setFilters((current) => ({ ...current, fiscalyear: value, from: year?.startdate ?? "", to: year?.enddate ?? "", periodfrom: "", periodto: "" })); }} /></Field>
+        {yearPeriodList.length > 0 && <div className="flex items-end"><Check label={tr("gl_report_by_doc_date", "ดูจากวันที่เอกสาร")} checked={byDocDate} onChange={changeByDocDate} /></div>}
+        {byPeriod ? <>
+          {!ledgerSummary && <Field label={tr("gl_report_from_period", "จากงวด")}>{periodSelect(tr("gl_report_from_period", "จากงวด"), filters.periodfrom || firstPeriod, (code) => set("periodfrom", code))}</Field>}
+          <Field label={tr("gl_report_to_period", "ถึงงวด")}>{periodSelect(tr("gl_report_to_period", "ถึงงวด"), filters.periodto || lastPeriod, (code) => set("periodto", code))}</Field>
+        </> : <>
         {!ledgerSummary && <Field label={tr("gl_from_date", "ตั้งแต่วันที่")}><input className={control} type="date" value={filters.from} onChange={(e) => set("from", e.target.value)} /></Field>}
         <Field label={tr("gl_to_date", "ถึงวันที่")}><input className={control} type="date" value={filters.to} onChange={(e) => set("to", e.target.value)} /></Field>
+        </>}
         <Field label={tr("gl_account_from", "จากรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_from", "จากรหัสบัญชี")} value={filters.accountfrom} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountfrom: value }))} /></Field>
         <Field label={tr("gl_account_to", "ถึงรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_to", "ถึงรหัสบัญชี")} value={filters.accountto} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountto: value }))} /></Field>
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>

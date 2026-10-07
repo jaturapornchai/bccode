@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { BUDGET_PERIODS, activeDimensions, budgetPeriodStarts, budgetPeriodsTotal, reportCodeList, type GLDimension } from "./general-ledger";
+import { BUDGET_PERIODS, activeDimensions, budgetPeriodStarts, budgetPeriodsTotal, periodRangeDates, reportCodeList, type GLDimension } from "./general-ledger";
 import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
 import { activeJournalBooks, amountString, amountUnits, chartOfAccountsCsv, csvCell, defaultJournalBookCode, dimensionPayload, fiscalYearForDate, isDimensionResource, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
 import { statementIsPeriodic, statementSetDefaultSelection, statementSetRank, statementSetTemplates, type GLStatementTemplate, type StatementType } from "./general-ledger";
@@ -602,5 +602,31 @@ describe("report department / project multi-select value", () => {
     const register = [{ code: "D1", name: "ขาย", isactive: true }, { code: "D2", name: "ผลิต", isactive: false }, { code: "D3", name: "ลบแล้ว", isactive: true, isdeleted: true }] as GLDimension[];
     expect(activeDimensions(register).map((item) => item.code)).toEqual(["D1"]);
     expect(activeDimensions(register, true).map((item) => item.code)).toEqual(["D1", "D2"]);
+  });
+});
+
+describe("report range chosen by accounting period (Champ OnGetPeriodDate)", () => {
+  const periods = [
+    { code: "2026-01", startdate: "2026-01-01", enddate: "2026-01-31" },
+    { code: "2026-02", startdate: "2026-02-01", enddate: "2026-02-28" },
+    { code: "2026-03", startdate: "2026-03-01", enddate: "2026-03-31" },
+  ];
+
+  it("starts on the start date of the from-period and ends on the end date of the to-period", () => {
+    expect(periodRangeDates(periods, "2026-02", "2026-03")).toEqual({ from: "2026-02-01", to: "2026-03-31", fromcode: "2026-02", tocode: "2026-03" });
+    expect(periodRangeDates(periods, "2026-02", "2026-02")).toEqual({ from: "2026-02-01", to: "2026-02-28", fromcode: "2026-02", tocode: "2026-02" });
+  });
+
+  it("opens on the first and last period when no period is picked", () => {
+    expect(periodRangeDates(periods, "", "")).toEqual({ from: "2026-01-01", to: "2026-03-31", fromcode: "2026-01", tocode: "2026-03" });
+    expect(periodRangeDates(periods, "", "2026-02")?.to).toBe("2026-02-28");
+  });
+
+  it("refuses a from-period after the to-period, unknown codes, missing dates and an empty year", () => {
+    expect(periodRangeDates(periods, "2026-03", "2026-01")).toBeNull();
+    expect(periodRangeDates(periods, "2026-13", "2026-03")).toBeNull();
+    expect(periodRangeDates(periods, "2026-01", "2027-01")).toBeNull();
+    expect(periodRangeDates([{ code: "P1", startdate: "", enddate: "2026-01-31" }], "", "")).toBeNull();
+    expect(periodRangeDates([], "", "")).toBeNull();
   });
 });
