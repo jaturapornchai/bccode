@@ -89,7 +89,9 @@ describe("Champ-style menu bar layout", () => {
       readFileSync(resolve(process.cwd(), "src/lib/__fixtures__/menu-before-champ-upgrade.json"), "utf8"),
     ) as { id: string; route: string }[];
     const shown = new Map(MENU_BARS.flatMap((bar) => menuBarItems(bar.nodes)).map((item) => [item.id, item.route]));
-    for (const previous of baseline) expect(shown.get(previous.id), previous.id).toBe(previous.route);
+    // Screens deliberately moved after the baseline snapshot (id stays, route changes).
+    const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust" };
+    for (const previous of baseline) expect(shown.get(previous.id), previous.id).toBe(moved[previous.id] ?? previous.route);
   });
 
   it("never leaves a stray divider or an empty submenu", () => {

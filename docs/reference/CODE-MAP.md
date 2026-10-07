@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit 9e1ea33f - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit 04fe1471 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -973,32 +973,34 @@ Files indexed: 29
 | 1322 | function | `MockRandomNumber` |
 | 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
 
-## frontend/src/app/gl/gl-journals.tsx (1221 lines)
+## frontend/src/app/gl/gl-journals.tsx (1287 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
-| 27 | function | `journalBookBadgeClass` |
-| 39 | function | `pasteIssueText` |
-| 52 | function | `parseChampDateSearch` |
-| 67 | function | `journalListFilters` |
-| 82 | function | `createSmartNextLine` |
-| 105 | function | `focusDetailField` |
-| 122 | function | `openDetailsSection` |
-| 136 | function | `focusJournalSearch` |
-| 140 | function | `GLJournals` |
-| 271 | const-arrow | `handlePasteClick` |
-| 286 | function | `closeView` |
-| 292 | function | `openView` |
-| 311 | function | `openEdit` |
-| 329 | function | `openCreate` |
-| 342 | function | `cancelEdit` |
-| 357 | function | `save` |
-| 398 | function | `changeTaxType` |
-| 407 | function | `calcTax` |
-| 434 | const-arrow | `onKeyDown` |
-| 445 | function | `saveReconciliation` |
-| 476 | function | `act` |
-| 493 | function | `deleteDraftDirect` |
+| 29 | function | `journalBookBadgeClass` |
+| 41 | function | `pasteIssueText` |
+| 54 | function | `parseChampDateSearch` |
+| 69 | function | `journalListFilters` |
+| 84 | function | `createSmartNextLine` |
+| 107 | function | `focusDetailField` |
+| 124 | function | `openDetailsSection` |
+| 138 | function | `focusJournalSearch` |
+| 142 | function | `GLJournals` |
+| 263 | const-arrow | `onKeyDown` |
+| 297 | const-arrow | `handlePasteClick` |
+| 312 | function | `closeView` |
+| 318 | function | `openView` |
+| 337 | function | `openEdit` |
+| 355 | function | `openCreate` |
+| 370 | function | `applyTemplate` |
+| 397 | function | `cancelEdit` |
+| 412 | function | `save` |
+| 453 | function | `changeTaxType` |
+| 462 | function | `calcTax` |
+| 489 | const-arrow | `onKeyDown` |
+| 500 | function | `saveReconciliation` |
+| 531 | function | `act` |
+| 548 | function | `deleteDraftDirect` |
 
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 

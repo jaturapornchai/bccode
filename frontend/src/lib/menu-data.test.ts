@@ -77,8 +77,10 @@ describe("menu language labels", () => {
     // +3 รายงานยอดคงค้างลูกหนี้/เจ้าหนี้/Statement ในบัญชีแยกประเภท (2026-09-25)
     // +20 เมนูหลักแบบ Champ (2026-10-07): รายการที่ Champ มีแต่ BC ยังไม่มีจอ (รอพัฒนา)
     expect(items).toHaveLength(218);
+    // Screens deliberately moved after the baseline snapshot (id stays, route changes).
+    const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust" };
     for (const previous of baseline) {
-      expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(previous.route);
+      expect(items.find((item) => item.id === previous.id)?.route, previous.id).toBe(moved[previous.id] ?? previous.route);
     }
     expect(new Set(items.map((item) => item.route)).size).toBe(items.length);
   });

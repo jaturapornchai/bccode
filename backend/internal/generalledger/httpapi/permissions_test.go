@@ -24,6 +24,10 @@ func TestLedgerPermissionsSeparateEntryFromActions(t *testing.T) {
 	if resourceScreens["journal-books"] != "gl-journal-books" {
 		t.Fatalf("expected resourceScreens[journal-books] to be gl-journal-books, got %s", resourceScreens["journal-books"])
 	}
+	// รูปแบบรายการรายวัน (journal-templates) ใช้สิทธิ์จอบันทึกรายวันเดียวกัน — ไม่มีเมนูใหม่
+	if resourceScreens["journal-templates"] != "gl-journals" || !allowed(map[string]bool{"gl-journals": true, "gl-journals:create": true}, resourceScreens["journal-templates"], "create") || allowed(map[string]bool{"gl-journals": true}, resourceScreens["journal-templates"], "delete") {
+		t.Fatalf("journal templates screen = %q", resourceScreens["journal-templates"])
+	}
 	// หมายเหตุประกอบงบการเงินอยู่ในจอออกแบบงบการเงิน (ไม่มีเมนูใหม่)
 	if resourceScreens["statement-notes"] != "financial-statement-designer" || resourceScreens["statement-templates"] != "financial-statement-designer" {
 		t.Fatalf("statement notes screen = %q", resourceScreens["statement-notes"])

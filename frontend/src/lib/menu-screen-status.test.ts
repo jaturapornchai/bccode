@@ -59,7 +59,7 @@ describe("menu screen availability", () => {
   it("connects every ledger workflow including the monthly budget entry screen (2026-09-25)", () => {
     const pending = GL_MENU_ITEMS.filter((item) => isMenuScreenPending(item.route)).map((item) => item.route);
     expect(pending).toEqual([]);
-    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(26);
+    expect(GL_MENU_ITEMS.filter((item) => !isMenuScreenPending(item.route))).toHaveLength(27);
     expect(isMenuScreenPending("/gl/budget")).toBe(false);
     expect(isMenuScreenPending("/gl/journal-books")).toBe(false);
     expect(isMenuScreenPending("/report/gljournal")).toBe(false);

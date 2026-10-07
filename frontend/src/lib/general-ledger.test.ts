@@ -95,9 +95,9 @@ describe("general ledger exact accounting helpers", () => {
     expect(() => budgetPeriodsTotal(["1,000"])).toThrow();
   });
 
-  it("covers the exact 26 GL menu routes (Champ parity 2026-09-19 + 3 subledger reports 2026-09-25)", () => {
-    expect(GL_MENU_ITEMS).toHaveLength(26);
-    expect(new Set(GL_MENU_ITEMS.map((item) => item.route)).size).toBe(26);
+  it("covers the exact 27 GL menu routes (Champ parity 2026-09-19 + 3 subledger reports 2026-09-25 + purchase VAT adjustment 2026-10-07)", () => {
+    expect(GL_MENU_ITEMS).toHaveLength(27);
+    expect(new Set(GL_MENU_ITEMS.map((item) => item.route)).size).toBe(27);
     expect(GL_MENU_ITEMS.every((item) => isGeneralLedgerRoute(item.route))).toBe(true);
     expect(isGeneralLedgerRoute("/report/ledger?accountcode=A")).toBe(true);
     expect(isGeneralLedgerRoute("/gl/journals")).toBe(true);

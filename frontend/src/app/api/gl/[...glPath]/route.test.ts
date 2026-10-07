@@ -179,4 +179,25 @@ describe("GL authenticated proxy", () => {
     for (const body of [{ resource: "journals", action: "generate", requestid }, { resource: "journals", action: "check", requestid }, { resource: "periods", action: "check", requestid }]) expect((await post(body)).status).toBe(400);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+  it("forwards the purchase VAT adjustment list filters and both command modes, dropping caller scope", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const filters = "docdatefrom=2026-01-01&docdateto=2026-01-31&invdatefrom=2026-01-01&invdateto=2026-01-31&partnerfrom=AP001&partnerto=AP999&page=2&limit=100";
+    expect((await GET(new Request(`http://localhost/api/gl/vat-adjustments?${filters}&holdingcode=other`, { headers }), context("vat-adjustments"))).status).toBe(200);
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.pathname).toBe("/gl/v2/vat-adjustments");
+    expect(url.searchParams.get("holdingcode")).toBeNull();
+    expect(Object.fromEntries(url.searchParams)).toEqual(Object.fromEntries(new URLSearchParams(filters)));
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const post = (body: unknown) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    const rows = { mode: "rows", items: [{ journalid: "j1", version: 3, vatid: "v1", taxperiodyear: 2026, taxperiodmonth: 2, claimstatus: 1 }], holdingcode: "other" };
+    expect((await post({ resource: "vat-adjustments", action: "update", requestid, reason: "ย้ายงวด", vatadjust: rows })).status).toBe(200);
+    const bulk = { mode: "invoice_date", filter: { invdatefrom: "2026-01-01", invdateto: "2026-01-31" }, expectedcount: 12 };
+    expect((await post({ resource: "vat-adjustments", action: "update", requestid, reason: "ตั้งงวด", vatadjust: bulk })).status).toBe(200);
+    const { holdingcode: _scope, ...forwarded } = rows;
+    expect(_scope).toBe("other");
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ resource: "vat-adjustments", action: "update", requestid, reason: "ย้ายงวด", vatadjust: forwarded });
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ resource: "vat-adjustments", action: "update", requestid, reason: "ตั้งงวด", vatadjust: bulk });
+    expect((await post({ resource: "vat-adjustments", action: "generate", requestid })).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
 });

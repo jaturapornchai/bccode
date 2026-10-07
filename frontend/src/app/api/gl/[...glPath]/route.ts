@@ -24,7 +24,7 @@ export async function GET(request: Request, context: Context) {
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
   try {
     const query = new URLSearchParams();
-    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "templates", "notes", "mode", "amount", "rate"];
+    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals", "templates", "notes", "mode", "amount", "rate", "docdatefrom", "docdateto", "invdatefrom", "invdateto", "partnerfrom", "partnerto"];
     new URL(request.url).searchParams.forEach((value, key) => { if (allowed.includes(key)) query.set(key, value); });
     return proxyMainApiJson(request, getMainApiUrl(getBackendUrlFromRequest(request)), `/gl/v2/${glPath.map(encodeURIComponent).join("/")}?${query}`, { method: "GET" });
   } catch { return bad("การเชื่อมต่อระบบไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"); }
@@ -47,7 +47,7 @@ export async function POST(request: Request, context: Context) {
   if (hasNumericAmount(body)) return bad("จำนวนเงินต้องส่งเป็นข้อความทศนิยม");
   // Scope is resolved from the authenticated backend session. Never forward a caller's company/holding override.
   const payload: Record<string, unknown> = {};
-  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review", "postbatch"]) {
+  for (const key of ["resource", "id", "action", "requestid", "version", "reason", "date", "docno", "targetyear", "account", "fiscalyear", "master", "journal", "budget", "statementtemplate", "review", "postbatch", "vatadjust"]) {
     if (!(key in body)) continue;
     if (isRecord(body[key])) {
       const record = { ...body[key] };

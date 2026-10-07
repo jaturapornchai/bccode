@@ -140,8 +140,9 @@ type Master struct {
 	StatementType  string                `json:"statementtype,omitempty" bson:"statementtype,omitempty"`
 	GlobalStyle    *StatementGlobalStyle `json:"globalstyle,omitempty" bson:"globalstyle,omitempty"`
 	Rows           []StatementRow        `json:"rows,omitempty" bson:"rows,omitempty"`
-	Columns        []StatementColumn     `json:"columns,omitempty" bson:"columns,omitempty"` // statement-templates ชนิด equity
-	Notes          []StatementNote       `json:"notes,omitempty" bson:"notes,omitempty"`     // statement-notes: หมายเหตุประกอบงบการเงินของปีบัญชี (code)
+	Columns        []StatementColumn     `json:"columns,omitempty" bson:"columns,omitempty"`   // statement-templates ชนิด equity
+	Notes          []StatementNote       `json:"notes,omitempty" bson:"notes,omitempty"`       // statement-notes: หมายเหตุประกอบงบการเงินของปีบัญชี (code)
+	Template       *JournalTemplate      `json:"template,omitempty" bson:"template,omitempty"` // journal-templates: รูปแบบรายการรายวัน (journal_templates.go)
 }
 
 // StatementColumn คอลัมน์องค์ประกอบส่วนของผู้ถือหุ้น (งบการเปลี่ยนแปลงส่วนของผู้ถือหุ้น) — ผู้ใช้เลือกบัญชีเอง
@@ -204,6 +205,7 @@ var MasterCollections = map[string]string{
 	"statement-templates": "gl_statement_templates",
 	"statement-notes":     "gl_statement_notes",
 	"journal-books":       "gl_journal_books",
+	JournalTemplateKind:   "gl_journal_templates",
 }
 
 func (m Master) CollectionName() string { return MasterCollections[m.Kind] }
@@ -273,6 +275,8 @@ type Command struct {
 	Budget      *Budget     `json:"budget,omitempty"`
 	// PostBatch: filters of the posting screen (action "check") or the journals to post (create).
 	PostBatch *PostBatchInput `json:"postbatch,omitempty"`
+	// VatAdjust: the purchase VAT rows to change at once (resource "vat-adjustments", vat_adjust.go).
+	VatAdjust *VatAdjustInput `json:"vatadjust,omitempty"`
 }
 
 // Code lengths are counted in runes (PostgreSQL VARCHAR(n) counts characters) and follow
@@ -555,6 +559,12 @@ func normalizeCommandCodes(cmd *Command) {
 		}
 		p.Items = append([]PostBatchItem(nil), p.Items...)
 		cmd.PostBatch = &p
+	}
+	if cmd.VatAdjust != nil {
+		v := *cmd.VatAdjust
+		v.Filter = normalizeVatAdjustFilter(v.Filter)
+		v.Items = append([]VatAdjustItem(nil), v.Items...)
+		cmd.VatAdjust = &v
 	}
 	if cmd.Journal != nil {
 		j := *cmd.Journal

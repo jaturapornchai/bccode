@@ -672,7 +672,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "vat-transactions",
         title: { key: "menu_tax_registers", th: "บันทึกภาษี", en: "Tax Entries" },
         items: [
-          tx("purchase-vat-adjust", "ปรับปรุงภาษีซื้อ", "Adjust Purchase VAT", "/transaction/purchasevatadjustment", "finance"),
+          tx("purchase-vat-adjust", "ปรับปรุงภาษีซื้อ", "Adjust Purchase VAT", "/gl/purchasevatadjust", "finance"),
           tx("withholding-tax-deduction", "พิมพ์ภาษีหัก ณ ที่จ่าย (ภ.ง.ด. 3,ภ.ง.ด. 53)", "Withholding Tax", "/transaction/withholdingtax", "finance"),
         ],
       },

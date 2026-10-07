@@ -81,7 +81,7 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if !validRequestID(cmd.RequestID) {
 		return Result{}, fmt.Errorf("รหัสคำขอไม่ถูกต้อง กรุณาลองบันทึกอีกครั้ง")
 	}
-	if !supportedRecord(cmd.Resource) && cmd.Resource != "processes" {
+	if !supportedRecord(cmd.Resource) && cmd.Resource != "processes" && cmd.Resource != VatAdjustKind {
 		return Result{}, fmt.Errorf("ไม่รองรับรายการบัญชีนี้")
 	}
 	if !contains([]string{"reconcile", "review", "create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess", "generate"}, cmd.Action) {
@@ -93,7 +93,7 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if cmd.Action == "generate" && cmd.Resource != "periods" {
 		return Result{}, fmt.Errorf("ไม่รองรับคำสั่งบัญชีนี้")
 	}
-	if cmd.Action != "create" && cmd.Action != "generate" && cmd.ID == "" {
+	if cmd.Action != "create" && cmd.Action != "generate" && cmd.Resource != VatAdjustKind && cmd.ID == "" {
 		return Result{}, fmt.Errorf("กรุณาเลือกรายการบัญชี")
 	}
 
@@ -227,6 +227,8 @@ func commandResult(cmd Command, sequence int64, changes []Change) Result {
 			res.CreatedJournals++
 		case change.Kind == "periods" && cmd.Action == "generate":
 			res.CreatedPeriods++
+		case change.Kind == "journals" && cmd.Resource == VatAdjustKind:
+			res.AdjustedJournals++
 		case change.Kind == PostBatchKind:
 			var batch PostBatch
 			if json.Unmarshal([]byte(change.Payload), &batch) == nil {
@@ -296,6 +298,8 @@ func (s *PostgresStore) applyMutation(ctx context.Context, tx *sql.Tx, scope Sco
 		return s.mutateJournal(ctx, tx, scope, cmd, now)
 	case "processes":
 		return s.mutateProcess(ctx, tx, scope, cmd, now)
+	case VatAdjustKind:
+		return s.mutateVatAdjust(ctx, tx, scope, cmd, now)
 	case "budgets":
 		return s.mutateBudget(ctx, tx, scope, cmd, now)
 	default:
@@ -384,6 +388,11 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		}
 		m := *cmd.Master
 		m.Kind = kind
+		if kind == JournalTemplateKind {
+			if err := prepareJournalTemplate(ctx, tx, scope.Company, &m, ""); err != nil {
+				return nil, err
+			}
+		}
 		if err := validateMasterCode(&m, false); err != nil {
 			return nil, err
 		}
@@ -438,6 +447,11 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		next.Kind = kind
 		if cmd.Action == "unlock" {
 			next.Locked = false
+		}
+		if kind == JournalTemplateKind {
+			if err := prepareJournalTemplate(ctx, tx, scope.Company, &next, old.Code); err != nil {
+				return nil, err
+			}
 		}
 		if err := validateMasterCode(&next, old.BookType == 0); err != nil {
 			return nil, err

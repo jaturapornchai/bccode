@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, FileText, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Table2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
+import { accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLJournalTemplate, type GLLine } from "@/lib/general-ledger";
 import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
 import { workspaceStorageKeys } from "@/lib/workspace-models";
 import { formatAppDate } from "@/lib/date-time";
@@ -20,6 +20,8 @@ import { GLJournalReviewPanel } from "./gl-journal-review";
 import { ChampField, ChampGroupBox, ChampKey, ChampSpacer, ChampTaxBox } from "./gl-journal-boxes";
 import { JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctionKey, journalSaveOptionStorageKey, linesHaveAmounts, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget, type JournalSaveOption, type VatCalcResult } from "@/lib/gl-journal-entry";
 import { getAuthSession } from "@/lib/client-auth-session";
+import { journalFromTemplate, journalJumpKey, jumpRowIndex, type JournalJumpSide } from "@/lib/gl-journal-templates";
+import { JournalTemplateTools } from "./gl-journal-templates";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -242,6 +244,30 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     onAddNewRow: () => linesRef.current?.querySelector<HTMLElement>("input:not([disabled]):not([readonly]), button:not([disabled])")?.focus(),
   });
 
+  // Champ OnToDebit/OnToCredit (glfrmjournal.cpp:2583-2591): jump to the debit or credit cell of the current line.
+  // Alt+D / Alt+C or the buttons under the lines; the current line is the one that has focus, else the last one worked in.
+  const lastLineRef = useRef(0);
+  const jumpToAmount = (side: JournalJumpSide): boolean => {
+    const root = linesRef.current;
+    if (!root || !journal || root.getClientRects().length === 0) return false;
+    const focused = document.activeElement?.closest<HTMLElement>("[data-line-row]");
+    const row = jumpRowIndex(focused && root.contains(focused) ? Number(focused.dataset.lineRow) : null, lastLineRef.current, journal.lines.length);
+    const cell = root.querySelector<HTMLInputElement>(`[data-line-row="${row}"] [data-line-cell="${side}"] input`);
+    cell?.focus();
+    return cell !== null;
+  };
+  const jumpRef = useRef(jumpToAmount);
+  useEffect(() => { jumpRef.current = jumpToAmount; });
+  useEffect(() => {
+    if (!isEditing) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const side = journalJumpKey(event);
+      if (side && jumpRef.current(side)) event.preventDefault();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isEditing]);
+
   const applyPastedLines = (clipboardText: string) => {
     if (!journal || !clipboardText.trim()) return;
     const { lines: parsed, issues } = parseClipboardJournalLines(clipboardText);
@@ -338,6 +364,35 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     setReason("");
     setReverseDocno(""); setReverseDate(localDate());
   }
+
+  // Champ OnSelRecure (glfrmjournal.cpp:2704-2757): fill the screen from a template as a NEW voucher; the document number stays empty and the amounts blank.
+  // A new draft on the screen keeps its date, fiscal year and branch (Champ does not load the template date); a saved voucher is never overwritten.
+  async function applyTemplate(template: GLJournalTemplate) {
+    if (busy) return;
+    if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
+    const blank = emptyJournal(newBookCode(), kind || "manual", refs.years, workspaceBranchCode(localStorage.getItem(workspaceStorageKeys.workspace)));
+    const base: GLJournal = journal && !journal.id ? { ...blank, date: journal.date, fiscalyear: journal.fiscalyear, branchcode: journal.branchcode } : blank;
+    setJournal(journalFromTemplate(template, base, usableBooks.map((book) => book.code)));
+    setOriginal(JSON.stringify(blank));
+    setIsEditing(true);
+    setDetailsEditing(false);
+    setError("");
+    setReason("");
+    setReverseDocno(""); setReverseDate(localDate());
+    setMessage(tr("gl_journal_template_applied", "เติมรูปแบบ “{0}” แล้ว — ใส่ยอดเดบิต/เครดิตและเลขที่ใบกำกับ ตรวจสอบ แล้วบันทึก").replace("{0}", template.name));
+    requestAnimationFrame(() => headerRef.current?.querySelector<HTMLElement>("input:not([disabled]):not([readonly]):not([type=\"hidden\"]), select:not([disabled]), button:not([disabled])")?.focus());
+  }
+
+  // Daily-entry templates belong to the editable voucher screens only (not opening balances, not reverse/unpost)
+  const templateTools = mode === "edit" && kind !== "opening" ? (
+    <JournalTemplateTools
+      journal={journal}
+      disabled={busy}
+      confirm={confirm}
+      onApply={(template) => void applyTemplate(template)}
+      onNotice={(notice) => { if (notice.error) { setMessage(""); setError(notice.text); } else { setError(""); setMessage(notice.text); } }}
+    />
+  ) : null;
 
   async function cancelEdit() {
     if (dirty && !await confirm({ title: tr("gl_discard_unsaved_entries", "ละทิ้งรายการที่ยังไม่บันทึก?"), description: tr("gl_unsaved_entries_not_saved", "รายการที่กรอกอยู่จะไม่ถูกบันทึก"), tone: "warning", confirmLabel: tr("gl_discard_changes", "ละทิ้งการแก้ไข") })) return;
@@ -759,6 +814,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </Button>
                   </div>
                 </header>
+                {templateTools && <div className="shrink-0">{templateTools}</div>}
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground shrink-0">
                   <Eye className="size-3.5 text-primary shrink-0" />
                   <span>
@@ -916,17 +972,20 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 </header>
                 <div className="@container overflow-y-auto p-1 grid min-w-0 gap-3 content-start">
                   <fieldset disabled={busy} className="grid min-w-0 gap-3">
-                    {!journal.id && (
-                      // ตัวเลือกหลังบันทึกของ Champ (combo บนสุดของจอ) — มีผลกับใบใหม่เท่านั้น ใบที่แก้จะกลับไปโหมดแสดงข้อมูลเหมือนเดิม
-                      <label className="flex flex-wrap items-center gap-2 text-[0.95rem]">
-                        <span className="font-medium">{tr("gl_save_option", "ตัวเลือกการบันทึก")}</span>
-                        <span className="min-w-60 max-w-sm flex-1">
-                          <select className={control} value={saveOption} onChange={(e) => changeSaveOption(parseJournalSaveOption(e.target.value))} title={tr("gl_save_option_hint", "ใช้หลังกดบันทึกรายการ F11 — ระบบจำค่าที่เลือกไว้ให้ผู้ใช้นี้ในเครื่องนี้")}>
-                            {JOURNAL_SAVE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{tr(option.key, option.th)}</option>)}
-                          </select>
-                        </span>
-                      </label>
-                    )}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                      {!journal.id && (
+                        // ตัวเลือกหลังบันทึกของ Champ (combo บนสุดของจอ) — มีผลกับใบใหม่เท่านั้น ใบที่แก้จะกลับไปโหมดแสดงข้อมูลเหมือนเดิม
+                        <label className="flex flex-wrap items-center gap-2 text-[0.95rem]">
+                          <span className="font-medium">{tr("gl_save_option", "ตัวเลือกการบันทึก")}</span>
+                          <span className="min-w-60 max-w-sm flex-1">
+                            <select className={control} value={saveOption} onChange={(e) => changeSaveOption(parseJournalSaveOption(e.target.value))} title={tr("gl_save_option_hint", "ใช้หลังกดบันทึกรายการ F11 — ระบบจำค่าที่เลือกไว้ให้ผู้ใช้นี้ในเครื่องนี้")}>
+                              {JOURNAL_SAVE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{tr(option.key, option.th)}</option>)}
+                            </select>
+                          </span>
+                        </label>
+                      )}
+                      {templateTools}
+                    </div>
                     <div className="grid min-w-0 gap-3 @4xl:grid-cols-[minmax(0,1fr)_14rem] @4xl:items-start">
                       {/* กรอบหัวเอกสาร + กรอบภาษีแบบ Champ: Enter เลื่อนช่องตามลำดับ สมุด → เลขที่ → วันที่ → อ้างอิง → วันที่อ้างอิง → คำอธิบาย → สาขา → ภาษี แล้วเข้าตารางบัญชี */}
                       <div ref={headerRef} className="grid min-w-0 gap-3" onKeyDown={(e) => { if (e.key === "Enter") headerEnterNav.onKeyDown(e); }}>
@@ -1013,6 +1072,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       ref={linesRef}
                       className="overflow-x-auto rounded-xl border border-border"
                       onKeyDown={tabularEnterNav.onKeyDown}
+                      onFocusCapture={(event) => { const row = (event.target as HTMLElement).closest<HTMLElement>("[data-line-row]"); if (row) lastLineRef.current = Number(row.dataset.lineRow); }}
                       onPaste={(e) => {
                         const text = e.clipboardData.getData("text");
                         // One Excel cell ("1,500.00\r\n") pastes into the focused box; only a block of cells becomes lines
@@ -1039,7 +1099,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         </thead>
                         <tbody>
                           {journal.lines.map((line, index) => (
-                            <tr key={index} className="border-t border-border">
+                            <tr key={index} data-line-row={index} className="border-t border-border">
                               <td className="p-2 text-center tabular-nums text-muted-foreground">{index + 1}</td>
                               <td className="min-w-36 p-2">
                                 <AccountSelect codeOnly label={tr("gl_line_account", "บัญชีบรรทัด {0}").replace("{0}", String(index + 1))} value={line.accountcode} accounts={refs.accounts} onChange={(accountcode) => patchLine(index, { accountcode })} disabled={busy} />
@@ -1054,10 +1114,10 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                               <td className="min-w-24 p-2">
                                 <input className={control} aria-label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} value={line.projectcode} disabled={busy || projectLocked(line)} title={projectLocked(line) ? tr("gl_line_not_project_separate", "บัญชีนี้ไม่ได้กำหนดให้แยกโครงการ (ตั้งที่ผังบัญชี › เงื่อนไข)") : undefined} onChange={(e) => patchLine(index, { projectcode: e.target.value })} />
                               </td>
-                              <td className="min-w-32 p-2">
+                              <td data-line-cell="debit" className="min-w-32 p-2">
                                 <AmountInput ariaLabel={tr("gl_line_debit", "เดบิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.debit} onChange={(debit) => patchLine(index, { debit })} />
                               </td>
-                              <td className="min-w-32 p-2">
+                              <td data-line-cell="credit" className="min-w-32 p-2">
                                 <AmountInput ariaLabel={tr("gl_line_credit", "เครดิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.credit} onChange={(credit) => patchLine(index, { credit })} />
                               </td>
                               <td className="p-2">
@@ -1077,6 +1137,12 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Button type="button" variant="outline" className={actionClass} disabled={journal.lines.length >= 500} onClick={() => void handlePasteClick()} title={tr("gl_paste_from_excel_hint", "วางแถวที่คัดลอกจาก Excel หรือ Google Sheets (Ctrl+V) คอลัมน์: รหัสบัญชี คำอธิบาย เดบิต เครดิต แผนก โครงการ")}>
                         <ClipboardPaste className="size-4 mr-1.5" />
                         <span>{tr("gl_paste_from_excel", "วางจาก Excel")}</span>
+                      </Button>
+                      <Button type="button" variant="outline" className={actionClass} onClick={() => void jumpToAmount("debit")} title={tr("gl_jump_to_debit_hint", "ไปที่ช่องเดบิตของบรรทัดปัจจุบัน")}>
+                        {tr("gl_jump_to_debit", "ไปเดบิต")}<ChampKey>Alt+D</ChampKey>
+                      </Button>
+                      <Button type="button" variant="outline" className={actionClass} onClick={() => void jumpToAmount("credit")} title={tr("gl_jump_to_credit_hint", "ไปที่ช่องเครดิตของบรรทัดปัจจุบัน")}>
+                        {tr("gl_jump_to_credit", "ไปเครดิต")}<ChampKey>Alt+C</ChampKey>
                       </Button>
                       {smartGuard && !smartGuard.isBalanced && (
                         <Button

@@ -23,6 +23,8 @@ type Result struct {
 	// BatchNo/PostedJournals answer post-batches action "create".
 	BatchNo        string `json:"batchno,omitempty"`
 	PostedJournals int    `json:"postedjournals,omitempty"`
+	// AdjustedJournals answers vat-adjustments action "update" (journals whose purchase VAT rows changed).
+	AdjustedJournals int `json:"adjustedjournals,omitempty"`
 }
 
 func digest(value []byte) string { sum := sha256.Sum256(value); return hex.EncodeToString(sum[:]) }

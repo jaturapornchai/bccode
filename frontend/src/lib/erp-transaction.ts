@@ -836,17 +836,6 @@ export const ERP_MODULE_CONFIGS: ErpModuleConfig[] = [
     defaultDocPrefix: "WHT",
     hasLineItems: true,
   },
-  {
-    route: "/transaction/purchasevatadjustment",
-    moduleKey: "purchase_vat_adjustment",
-    apiPath: "purchase",
-    domain: "purchase",
-    title: { th: "ปรับปรุงภาษีซื้อ", en: "Purchase VAT Adjustment" },
-    counterpartyLabel: { th: "เจ้าหนี้", en: "Vendor" },
-    counterpartyKey: "cp_vendor",
-    defaultDocPrefix: "VAT-ADJ",
-    hasLineItems: false,
-  },
 ];
 
 const routeMap = new Map<string, ErpModuleConfig>(

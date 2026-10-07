@@ -91,7 +91,7 @@ func (h *Http) scope(ctx context.Context, request microservice.IContext) (reques
 	return scope, err
 }
 
-var resourceScreens = map[string]string{"journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "statement-notes": "financial-statement-designer", "journal-books": "gl-journal-books", gl.PostBatchKind: postingScreen}
+var resourceScreens = map[string]string{"journal-support": "gl-journals", "accounts": "chart-of-accounts", "fiscal-years": "chart-of-accounts", "account-groups": "gl-account-groups", "product-account-groups": "gl-product-account-groups", "mappings": "gl-account-mapping", "budgets": "gl-budget", "periods": "period-lock", "forecast": "cash-flow-forecast", "allocations": "gl-allocation", "statement-templates": "financial-statement-designer", "statement-notes": "financial-statement-designer", "journal-books": "gl-journal-books", gl.JournalTemplateKind: "gl-journals", gl.PostBatchKind: postingScreen, gl.VatAdjustKind: vatAdjustScreen}
 var reportScreens = map[string]string{"ar-outstanding": "gl-ar-outstanding", "ap-outstanding": "gl-ap-outstanding", "bank-unmatched": "gl-bank-unmatched", "ledger": "general-ledger", "trialbalance": "trial-balance", "pnl": "profit-loss", "balancesheet": "balance-sheet", "cashflow": "cash-flow", "cashflowforecast": "cash-flow-forecast", "financialgraphs": "financial-graphs", "project-pnl": "project-pnl", "dimensionpnl": "dimension-pnl", "projectsummary": "project-summary-report", "dashboard": "business-dashboard", "executivesummary": "executive-summary", "workingpaper": "working-paper", "daily-check": "daily-info", "annual-balances": "gl-annual-accumulated", "allocate": "gl-allocation", "gljournal": "gl-daily-report", "budgetcomparison": "budget-comparison-report", "budgetdetail": "gl-budget", "statement": "financial-statement-designer"}
 
 func allowed(p map[string]bool, screen, action string) bool {
@@ -509,6 +509,9 @@ func (h *Http) list(request microservice.IContext) error {
 	}
 	if resource == "vat-calc" {
 		return h.vatCalc(ctx, request, scope)
+	}
+	if resource == gl.VatAdjustKind {
+		return h.listVatAdjust(ctx, request, scope)
 	}
 	if resource == "period-profit" {
 		return h.periodProfit(ctx, request, scope)

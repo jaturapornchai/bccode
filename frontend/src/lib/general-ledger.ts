@@ -1,5 +1,5 @@
 import { MENU_SECTIONS } from "./menu-data";
-import type { GLJournalDetails } from "./gl-journal-details";
+import type { GLDetailVat, GLJournalDetails } from "./gl-journal-details";
 
 export type GLIdentity = { id?: string; version?: number; isdeleted?: boolean };
 export type GLAccount = GLIdentity & {
@@ -65,7 +65,13 @@ export type GLJournalBook = GLIdentity & { code: string; name: string; nameen?: 
   docformat?: string;
   /** หัวเอกสารที่พิมพ์บนใบสำคัญ เช่น ใบสำคัญจ่าย (Champ BCGLBook.TitleName) */
   titlename?: string };
-export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate | GLStatementNotes | GLJournalBook;
+/** Saved journal entry format (Champ recurring entry): a pattern, not a voucher — no document number, date, amount or invoice number (backend journal_templates.go).
+ *  taxtype: 1 = purchase VAT, 2 = sales VAT (same as tax_type of an invoice in the journal details); absent = no tax. */
+export type GLJournalTemplateLine = { accountcode: string; description?: string; departmentcode?: string; projectcode?: string; cashflow?: string };
+export type GLJournalTemplateBody = { bookcode?: string; reference?: string; refdate?: string; description?: string; taxtype?: 1 | 2; lines: GLJournalTemplateLine[] };
+export type GLJournalTemplateInput = { name: string; isactive: boolean; template: GLJournalTemplateBody };
+export type GLJournalTemplate = GLIdentity & GLJournalTemplateInput & { code: string };
+export type GLRecord = GLAccount | GLFiscalYear | GLMaster | GLJournal | GLStatementTemplate | GLStatementNotes | GLJournalBook | GLJournalTemplate;
 export type GLReviewStatus = 1 | 2 | 3;
 export type GLReviewEvent = { eventno: number; version: number; status: GLReviewStatus; note: string; reviewedby: string; reviewedat: string };
 export type GLJournalReview = { journalid: string; version: number; status: GLReviewStatus; eventno: number; events: GLReviewEvent[] };
@@ -86,23 +92,32 @@ export type GLReport = {
 export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
 /** accountcode อาจเป็น STATEMENT_CURRENT_EARNINGS (กำไรขาดทุนที่ยังไม่ปิดบัญชี, accountname ว่าง); amount = สตริงทศนิยมด้านปกติของหมวดบัญชี */
 export type GLStatementUnassigned = { key: string; fiscalyear: string; accountcode: string; accountname: string; accounttype: string; basis: string; amount: string };
-export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "post-batches"] as const;
+export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "journal-templates", "post-batches", "vat-adjustments"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
 /** ผ่านรายการแบบชุด (backend post_batches.go): action "check" ใช้ตัวกรอง (ว่าง = ไม่จำกัด), action "create" ใช้ items + remark + ผู้ตรวจสอบ 1/2 (ไม่บังคับ) + ผู้อนุมัติ (บังคับ) */
 export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: string; docnofrom?: string; docnoto?: string; items?: { id: string; version: number }[]; remark?: string; check1?: string; check2?: string; approver?: string };
 /** ผลตรวจหนึ่งใบจาก backend: ok = ผ่านกฎเดียวกับการผ่านรายการ; debit/credit = สตริงทศนิยมยอดรวมของใบ */
 export type GLPostCheckRow = { id: string; version: number; docno: string; date: string; bookcode: string; fiscalyear: string; branchcode: string; description: string; debit: string; credit: string; ok: boolean; code?: string; message?: string };
 export type GLPostCheck = { rows: GLPostCheckRow[]; more: boolean; limit: number };
+/** Adjust purchase VAT (Champ 5498, backend vat_adjust.go) filter: "from" alone matches that value exactly, from-to is a range; at least one document-date or tax-invoice-date bound is required. */
+export type GLVatAdjustFilter = { docdatefrom?: string; docdateto?: string; invdatefrom?: string; invdateto?: string; partnerfrom?: string; partnerto?: string };
+/** One purchase VAT row the user changed (claim period + status) with the journal version the screen loaded; a stale version makes the backend refuse the whole command. */
+export type GLVatAdjustItem = { journalid: string; version: number; vatid: string; taxperiodyear: number; taxperiodmonth: number; claimstatus: number };
+/** Mode "rows" sends items; mode "invoice_date" sends the filter and the row count shown, and the backend selects the rows itself and sets the claim period to the invoice month. */
+export type GLVatAdjustInput = { mode: "rows" | "invoice_date"; filter?: GLVatAdjustFilter; expectedcount?: number; items?: GLVatAdjustItem[] };
+/** One purchase VAT row of a posted journal; amounts are decimal strings from the backend, version is the journal version. */
+export type GLVatAdjustRow = GLDetailVat & { journalid: string; version: number; docno: string; docdate: string; branchcode?: string };
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
-  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook | Omit<GLStatementNotes, keyof GLIdentity>; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
+  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook | GLJournalTemplateInput | Omit<GLStatementNotes, keyof GLIdentity>; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
   postbatch?: GLPostBatchInput;
+  vatadjust?: GLVatAdjustInput;
 };
 export const GL_REPORTS = ["ledger", "trialbalance", "pnl", "balancesheet", "workingpaper", "gljournal", "budgetcomparison", "budgetdetail", "ar-outstanding", "ap-outstanding", "bank-unmatched", "statement"] as const;
 // เฉพาะกลุ่ม gl-* ที่จอ GL เปิดเอง; กลุ่มภาษี (vat-*) อยู่ในหมวดเดียวกันแต่ใช้จอภาษี
-export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.filter((group) => group.id.startsWith("gl-")).flatMap((group) => group.items);
+export const GL_MENU_ITEMS = MENU_SECTIONS.find((section) => section.id === "gl")!.groups.flatMap((group) => group.items.filter((item) => group.id.startsWith("gl-") || item.route.startsWith("/gl/")));
 export function isGeneralLedgerRoute(route: string) { const clean = route.split("?")[0]; return GL_MENU_ITEMS.some((item) => item.route === clean) || clean.startsWith("/gl/journal/") || clean === "/gl/unposting"; }
 /** Screen text follows the selected language (AGENTS.md 2026-09-14): [languages.tsv key, Thai fallback]. */
 export type GLLabel = readonly [key: string, thai: string];

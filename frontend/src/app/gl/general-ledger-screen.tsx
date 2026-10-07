@@ -11,6 +11,7 @@ import { GLStatementDesigner } from "./gl-statement-designer";
 import { GLBudgets } from "./gl-budgets";
 import { GLPeriods } from "./gl-periods";
 import { GLPostBatch } from "./gl-post-batch";
+import { GLVatAdjust } from "./gl-vat-adjust";
 import { GLLanguageProvider, panel, useGLText } from "./gl-common";
 import { SmartBreadcrumb } from "@/components/smart-breadcrumb";
 
@@ -40,6 +41,7 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   else if (cleanRoute.startsWith("/gl/journal/")) content = <GLJournals key={cleanRoute} route={cleanRoute} book={cleanRoute.split("/").at(-1)!.toUpperCase()} />;
   // ผ่านรายการทีละชุด (Champ 5512) + แท็บกลับรายการ; /gl/unposting (ลิงก์เดิม) ยังเปิดจอกลับรายการตรง ๆ
   else if (cleanRoute === "/gl/posting") content = <GLPostBatch route={cleanRoute} />;
+  else if (cleanRoute === "/gl/purchasevatadjust") content = <GLVatAdjust route={cleanRoute} />;
   else if (cleanRoute === "/gl/unposting") content = <GLJournals key={cleanRoute} route={cleanRoute} mode="reverse" />;
   else if (cleanRoute in processRoutes) content = <GLProcesses key={cleanRoute} route={cleanRoute} action={processRoutes[cleanRoute as keyof typeof processRoutes]} />;
   else content = <GLReports key={cleanRoute} name={cleanRoute.split("/").at(-1) ?? "trialbalance"} />;
