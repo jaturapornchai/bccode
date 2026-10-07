@@ -94,6 +94,11 @@ export function TaxFilingWorkbench({
   const [separateCreditNotes, setSeparateCreditNotes] = useState(false);
   // Champ 5536/5537 ตัวเลือก "รวมรายวัน": แทรกแถวรวมหลังแถวสุดท้ายของแต่ละวันที่ใบกำกับ (ยอดจาก backend)
   const [dailyTotals, setDailyTotals] = useState(false);
+  // Champ 5541 ตัวเลือก "แสดงยอดรวมรายบุคคล" (GLRep3VatDlg.cpp:148): ติ๊ก = แทรกแถว "รวม n รายการ" ต่อผู้มีเงินได้; จอนี้รวม 5543 ที่แสดงเสมอ จึงเริ่มที่ติ๊ก
+  const [showPayeeTotals, setShowPayeeTotals] = useState(true);
+  // Champ 5543/5541 เงื่อนไข "รหัสเจ้าหนี้ จาก–ถึง": ส่ง backend กรองก่อนรวมยอด (กรอกเสร็จแล้วค่อยโหลด: ออกจากช่อง/กด Enter)
+  const [partnerFrom, setPartnerFrom] = useState("");
+  const [partnerTo, setPartnerTo] = useState("");
   const [vatNote, setVatNote] = useState<string>("");
   // รายงานภาษีซื้อ/ขายเป็นรายสถานประกอบการ (ม.87 วรรคสาม, ประกาศฯ VAT ฉบับที่ 89 ข้อ 5): "" = ทุกสถานประกอบการรวมกัน
   const [vatBranch, setVatBranch] = useState<string>("");
@@ -168,6 +173,8 @@ export function TaxFilingWorkbench({
           month: selectedMonth,
           direction: whtDirection,
           limit: REGISTER_PAGE_LIMIT,
+          partnercodefrom: config.formType === "wht_summary" ? partnerFrom || undefined : undefined,
+          partnercodeto: config.formType === "wht_summary" ? partnerTo || undefined : undefined,
           language: languageRef.current,
         });
 
@@ -191,7 +198,7 @@ export function TaxFilingWorkbench({
     } finally {
       setLoading(false);
     }
-  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView, vatBranch]);
+  }, [config.formType, isVatType, isWhtType, holdingcode, businesscode, selectedYear, selectedMonth, vatView, vatBranch, partnerFrom, partnerTo]);
 
   useEffect(() => {
     void loadData();
@@ -585,6 +592,40 @@ export function TaxFilingWorkbench({
               </select>
             )}
 
+            {config.formType === "wht_summary" && (
+              <label className="flex min-h-[2.2em] cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm print:hidden">
+                <input
+                  type="checkbox"
+                  checked={showPayeeTotals}
+                  onChange={(e) => setShowPayeeTotals(e.target.checked)}
+                  data-field="showpayeetotals"
+                  className="h-4 w-4 accent-primary"
+                />
+                {tr("tax_wht_show_payee_totals", "แสดงยอดรวมรายบุคคล")}
+              </label>
+            )}
+            {config.formType === "wht_summary" && (
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground print:hidden">
+                <span>{tr("creditor_code", "รหัสเจ้าหนี้")}</span>
+                {(["from", "to"] as const).map((edge) => {
+                  const apply = (value: string) => (edge === "from" ? setPartnerFrom : setPartnerTo)(value.trim());
+                  const label = edge === "from" ? tr("from", "จาก") : tr("to", "ถึง");
+                  return (
+                    <Input
+                      key={edge}
+                      defaultValue={edge === "from" ? partnerFrom : partnerTo}
+                      onBlur={(e) => apply(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") apply(e.currentTarget.value); }}
+                      placeholder={label}
+                      aria-label={`${tr("creditor_code", "รหัสเจ้าหนี้")} ${label}`}
+                      data-field={edge === "from" ? "partnercodefrom" : "partnercodeto"}
+                      className="w-28 font-mono"
+                    />
+                  );
+                })}
+              </div>
+            )}
+
             <div className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-xs text-muted-foreground">
               <Building2 className="h-3.5 w-3.5" />
               <span>{companyName}</span>
@@ -850,7 +891,7 @@ export function TaxFilingWorkbench({
                   // วันที่ใบกำกับเปลี่ยนในแถวถัดไป = แถวนี้เป็นแถวสุดท้ายของวัน → แทรกแถวรวมประจำวัน (เห็นครบทั้งวันเท่านั้น)
                   const dayTotal = showDailyTotals && item.docdate !== filteredRecords[idx + 1]?.docdate ? vatDaysByDate.get(item.docdate) : undefined;
                   const dayTotalRows = dayTotal && dayTotal.all.count === visibleDayCounts.get(item.docdate) ? dailyTotalRows(dayTotal) : [];
-                  const payeeTotal = groupByPayee && !searchTerm.trim() && item.payeeseq !== filteredRecords[idx + 1]?.payeeseq
+                  const payeeTotal = groupByPayee && showPayeeTotals && !searchTerm.trim() && item.payeeseq !== filteredRecords[idx + 1]?.payeeseq
                     ? payeeTotals.get(item.payeeseq ?? 0)
                     : undefined;
                   return (

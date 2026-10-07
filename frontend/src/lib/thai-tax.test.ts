@@ -329,6 +329,18 @@ describe("fetchWhtReport", () => {
     }
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  // Champ 5543/5541 "รหัสเจ้าหนี้ จาก–ถึง": กรองที่ backend — client ส่งรหัสไปใน body เท่านั้น ไม่กรองเอง
+  it("ส่งรหัสเจ้าหนี้ จาก–ถึง ไปให้ backend กรอง และไม่ส่งช่องที่ไม่ได้กรอก", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { data: [], total: 0, summary: {} }));
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchWhtReport({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, direction: "paid", partnercodefrom: "S101", partnercodeto: "S103" });
+    await fetchWhtReport({ holdingcode: "H001", businesscode: "B001", year: 2026, month: 9, direction: "paid" });
+    const bodies = (fetchMock.mock.calls as [string, RequestInit][]).map(([, init]) => JSON.parse(String(init.body)));
+    expect(bodies[0]).toMatchObject({ partnercodefrom: "S101", partnercodeto: "S103" });
+    expect(bodies[1]).not.toHaveProperty("partnercodefrom");
+    expect(bodies[1]).not.toHaveProperty("partnercodeto");
+  });
 });
 
 describe("แถวภาษีหัก ณ ที่จ่ายหลายรายการในใบสำคัญเดียว", () => {

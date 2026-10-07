@@ -549,6 +549,9 @@ type TaxWithholdingRequest struct {
 	Forms        []string `json:"forms,omitempty"` // กรองตามแบบยื่น เช่น ["53"], ["3"] — ว่าง = ทุกแบบ (ภ.ง.ด.2/3/53)
 	Limit        int      `json:"limit,omitempty"`
 	Offset       int      `json:"offset,omitempty"`
+	// เงื่อนไข "รหัสเจ้าหนี้ จาก–ถึง" ของรายงาน Champ 5543/5541 (GLRep3VatDlg.cpp:195-216) — ว่าง = ทุกรหัส
+	PartnerCodeFrom string `json:"partnercodefrom,omitempty"`
+	PartnerCodeTo   string `json:"partnercodeto,omitempty"`
 }
 
 // TaxWithholdingRow - แถวภาษีหัก ณ ที่จ่ายหนึ่งแถวต่อรายการที่บันทึกในใบสำคัญ (details.withholdings)
@@ -686,6 +689,10 @@ func TaxWithholdingHandler(c echo.Context) error {
 	if err != nil {
 		logger.Error("TaxWithholding: %v", err)
 		return taxReportFail(c, http.StatusInternalServerError, "QUERY_ERROR", "tax_report_failed")
+	}
+	if strings.TrimSpace(req.PartnerCodeFrom) != "" {
+		report.Rows = filterWithholdingRowsByPartnerCode(report.Rows, req.PartnerCodeFrom, req.PartnerCodeTo)
+		report.Summary = summarizeWithholding(report.Rows) // ยอดรวม/ลำดับกลุ่มผู้มีเงินได้ต้องเป็นของแถวที่กรองแล้ว
 	}
 
 	company, err := loadCompanyHeader(ctx, holdingCode, businessCode)
@@ -829,6 +836,26 @@ func buildWithholdingReport(ctx context.Context, db *sql.DB, company string, yea
 	}
 	report.Summary = summarizeWithholding(report.Rows)
 	return report, nil
+}
+
+// filterWithholdingRowsByPartnerCode - เงื่อนไข "รหัสเจ้าหนี้ จาก–ถึง" แบบ Champ (GLRep3VatDlg.cpp:195-216): จากว่าง = ไม่กรอง
+// (ใส่แต่ "ถึง" Champ ก็ไม่กรอง), ใส่แต่ "จาก" หรือจาก = ถึง = รหัสนั้นตรง ๆ, ไม่เช่นนั้น BETWEEN จาก–ถึง; เทียบตัวพิมพ์ใหญ่
+// ลำดับแถวคงเดิม (จัดกลุ่มผู้มีเงินได้ตามวันที่จ่ายต่อเนื่องทำใน summarizeWithholding หลังกรอง)
+func filterWithholdingRowsByPartnerCode(rows []TaxWithholdingRow, from, to string) []TaxWithholdingRow {
+	from, to = strings.ToUpper(strings.TrimSpace(from)), strings.ToUpper(strings.TrimSpace(to))
+	if from == "" {
+		return rows
+	}
+	if to == "" {
+		to = from
+	}
+	out := make([]TaxWithholdingRow, 0, len(rows))
+	for _, r := range rows {
+		if code := strings.ToUpper(strings.TrimSpace(r.PartnerCode)); code >= from && code <= to {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // withholdingPayeeKey - ตัวตนผู้มีเงินได้ของแถว: เลขประจำตัวผู้เสียภาษี → รหัสคู่ค้า → ใบสำคัญ (ไม่รู้ตัวตน = แยกตามใบ ไม่เดารวม)

@@ -285,6 +285,9 @@ export interface WhtReportParams {
   forms?: string[];
   limit?: number;
   offset?: number;
+  /** Champ 5543/5541 "รหัสเจ้าหนี้ จาก–ถึง" — backend กรองก่อนรวมยอด (จากว่าง = ทุกรหัส) */
+  partnercodefrom?: string;
+  partnercodeto?: string;
   /** ภาษาที่เลือกในแอป — backend แปลข้อความ (ประเภทเงินได้, หมายเหตุ) ตามภาษานี้ ไม่ใช่ภาษาของเบราว์เซอร์ */
   language?: LanguageCode;
 }

@@ -487,6 +487,40 @@ func TestWithholdingPayeeRunsLikeChamp(t *testing.T) {
 	}
 }
 
+// Champ 5543/5541 เงื่อนไข "รหัสเจ้าหนี้ จาก–ถึง" (GLRep3VatDlg.cpp:195-216): กรองก่อนรวมยอด — ยอดรวม/ลำดับกลุ่มเป็นของแถวที่กรองแล้ว
+func TestFilterWithholdingRowsByPartnerCode(t *testing.T) {
+	mk := func() []TaxWithholdingRow {
+		row := func(journal, partner, base, wht string) TaxWithholdingRow {
+			return finishWithholdingRow(TaxWithholdingRow{JournalID: journal, PartnerCode: partner, base: decimal.RequireFromString(base), wht: decimal.RequireFromString(wht)}, "3")
+		}
+		return []TaxWithholdingRow{row("J1", "S101", "1000", "30"), row("J2", "S102", "500", "15"), row("J3", "s103", "200", "6"), row("J4", "", "100", "3"), row("J5", "S101", "300", "9")}
+	}
+	ids := func(rows []TaxWithholdingRow) string {
+		out := ""
+		for _, r := range rows {
+			out += r.JournalID + ","
+		}
+		return out
+	}
+	cases := []struct{ name, from, to, want string }{
+		{"empty from keeps every row (to alone ignored like Champ)", "", "S102", "J1,J2,J3,J4,J5,"},
+		{"from only = exact code", "S101", "", "J1,J5,"},
+		{"from = to = exact code", " s102 ", "S102", "J2,"},
+		{"between is inclusive, case-insensitive, drops blank code", "S102", "S103", "J2,J3,"},
+		{"from after to matches nothing", "S103", "S101", ""},
+	}
+	for _, tc := range cases {
+		if got := ids(filterWithholdingRowsByPartnerCode(mk(), tc.from, tc.to)); got != tc.want {
+			t.Errorf("%s: got %q want %q", tc.name, got, tc.want)
+		}
+	}
+	filtered := filterWithholdingRowsByPartnerCode(mk(), "S101", "S102")
+	s := summarizeWithholding(filtered)
+	if len(filtered) != 3 || s.BaseTotal != "1800.00" || s.WhtTotal != "54.00" || len(s.Payees) != 3 || s.Payees[2].PayeeSeq != 3 || filtered[2].PayeeSeq != 3 {
+		t.Fatalf("filtered summary = %+v rows=%d", s, len(filtered))
+	}
+}
+
 // ใบกำกับที่ซ้ำกับใบสำคัญอื่น: แถวบอกเลขที่ใบสำคัญอื่น, ไม่ซ้ำ = [] (ไม่ใช่ null — จอวนลูปได้เลย), สรุปนับจำนวนแถวที่ซ้ำ
 func TestBuildVatRegisterDuplicateWarnings(t *testing.T) {
 	dup := vatRecord("SV1", "IV001", 1, "1000", "0", "0", "70")
