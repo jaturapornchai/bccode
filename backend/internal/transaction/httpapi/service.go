@@ -383,8 +383,35 @@ func (s *Store) SaveDoc(ctx context.Context, db *sql.DB, company, branch string,
 		}
 	}
 
-	// Real-time Stock Movement สำหรับใบซื้อ (12) และใบขาย (44)
-	if transflag == 12 || transflag == 44 {
+	// Auto-posting GL และ AR สำหรับรับคืนสินค้าจากการขาย (Sale Return: transflag=48)
+	if transflag == 48 {
+		if err := s.postSaleReturnToGLAndAR(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
+			fmt.Printf("❌ [Auto-GL] postSaleReturnToGLAndAR error for %s: %v\n", docNo, err)
+		} else {
+			fmt.Printf("✅ [Auto-GL] postSaleReturnToGLAndAR success for %s\n", docNo)
+		}
+	}
+
+	// Auto-posting GL และ AP สำหรับส่งคืนสินค้าจากการซื้อ (Purchase Return: transflag=16)
+	if transflag == 16 {
+		if err := s.postPurchaseReturnToGLAndAP(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
+			fmt.Printf("❌ [Auto-GL] postPurchaseReturnToGLAndAP error for %s: %v\n", docNo, err)
+		} else {
+			fmt.Printf("✅ [Auto-GL] postPurchaseReturnToGLAndAP success for %s\n", docNo)
+		}
+	}
+
+	// Auto-posting GL สำหรับบันทึกค่าใช้จ่าย (Expense: transflag=24)
+	if transflag == 24 {
+		if err := s.postExpenseToGL(ctx, tx, company, branch, doc, docNo, docDate, actor, now); err != nil {
+			fmt.Printf("❌ [Auto-GL] postExpenseToGL error for %s: %v\n", docNo, err)
+		} else {
+			fmt.Printf("✅ [Auto-GL] postExpenseToGL success for %s\n", docNo)
+		}
+	}
+
+	// Real-time Stock Movement สำหรับใบซื้อ (12), ใบขาย (44), รับคืนขาย (48), ส่งคืนซื้อ (16)
+	if transflag == 12 || transflag == 44 || transflag == 48 || transflag == 16 || transflag == 20 {
 		if err := s.postStockMovement(ctx, tx, company, branch, doc, docNo, transflag, docDate, now); err != nil {
 			fmt.Printf("❌ [Stock] postStockMovement error for %s (transflag=%d): %v\n", docNo, transflag, err)
 		} else {
@@ -1021,6 +1048,472 @@ func (s *Store) postPaymentToGLAndAP(ctx context.Context, tx *sql.Tx, company, b
 	return nil
 }
 
+func (s *Store) postSaleReturnToGLAndAR(ctx context.Context, tx *sql.Tx, company, branch string, doc *ErpTransactionDoc, docNo string, docDate time.Time, actor string, now time.Time) error {
+	var fiscalYear string
+	dateStr := docDate.Format("2006-01-02")
+	err := tx.QueryRowContext(ctx, `SELECT code FROM gl_records WHERE company=$1 AND kind='fiscal-years' AND payload->>'startdate'<=$2 AND payload->>'enddate'>=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, company, dateStr).Scan(&fiscalYear)
+	if err != nil {
+		fiscalYear = "2569"
+	}
+
+	totalAmount := doc.TotalAmount
+	vatAmount := doc.TotalVatValue
+	if vatAmount == 0 && doc.TotalBeforeVat > 0 {
+		vatAmount = totalAmount - doc.TotalBeforeVat
+	}
+	goodsAmount := totalAmount - vatAmount
+	if goodsAmount <= 0 {
+		goodsAmount = totalAmount
+	}
+
+	totalAmountStr := fmt.Sprintf("%.2f", totalAmount)
+	goodsAmountStr := fmt.Sprintf("%.2f", goodsAmount)
+	vatAmountStr := fmt.Sprintf("%.2f", vatAmount)
+
+	glDocNo := "SRN-" + docNo
+	journalID := fmt.Sprintf("SRN-%s", docNo)
+
+	lines := []map[string]any{
+		{
+			"accountcode": "4111",
+			"accountname": "รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%",
+			"debit":       goodsAmountStr,
+			"credit":      "0.00",
+			"description": fmt.Sprintf("รับคืนสินค้าตามเอกสาร %s", docNo),
+		},
+	}
+	if vatAmount > 0 {
+		lines = append(lines, map[string]any{
+			"accountcode": "2131",
+			"accountname": "ภาษีขาย",
+			"debit":       vatAmountStr,
+			"credit":      "0.00",
+			"description": fmt.Sprintf("ลดภาษีขายตามรับคืน %s", docNo),
+		})
+	}
+	lines = append(lines, map[string]any{
+		"accountcode": "1131",
+		"accountname": "ลูกหนี้การค้า - ในประเทศ",
+		"debit":       "0.00",
+		"credit":      totalAmountStr,
+		"description": fmt.Sprintf("ลดหนี้ลูกหนี้ %s ตามเอกสาร %s", doc.CustCode, docNo),
+	})
+
+	payloadMap := map[string]any{
+		"id":          journalID,
+		"date":        dateStr,
+		"kind":        "manual",
+		"docno":       glDocNo,
+		"bookcode":    "SV",
+		"branchcode":  branch,
+		"fiscalyear":  fiscalYear,
+		"description": fmt.Sprintf("รับคืนสินค้า/ใบลดหนี้ เลขที่ %s (ลูกหนี้ %s)", docNo, doc.CustCode),
+		"status":      "posted",
+		"version":     2,
+		"postedat":    now.Format(time.RFC3339Nano),
+		"postedby":    actor,
+		"createdat":   now.Format(time.RFC3339Nano),
+		"createdby":   actor,
+		"lines":       lines,
+	}
+
+	payloadJSON, err := json.Marshal(payloadMap)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `INSERT INTO gl_records (company, kind, id, code, version, payload)
+		VALUES ($1, 'journals', $2, $3, 2, $4)
+		ON CONFLICT (company, kind, id) DO UPDATE SET version=2, payload=$4`,
+		company, journalID, glDocNo, payloadJSON)
+	if err != nil {
+		return err
+	}
+
+	_, _ = tx.ExecContext(ctx, `DELETE FROM gl_lines WHERE company=$1 AND journal_id=$2`, company, journalID)
+
+	lineNo := 1
+	// Line 1: Sales Revenue reduced (Debit)
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'SV', $7,
+		'', '', 'manual', 'THB', 2, '4111', 'รายได้จากการขายสินค้า - มีภาษีมูลค่าเพิ่ม 7%',
+		'income', 'debit', false, $8, '', $9, 0
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("รับคืนสินค้าตามเอกสาร %s", docNo), goodsAmount)
+	lineNo++
+
+	// Line 2: Output VAT reduced (Debit)
+	if vatAmount > 0 {
+		_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+			company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+			department_code, project_code, kind, currency, scale, account_code, account_name,
+			account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, 'SV', $7,
+			'', '', 'manual', 'THB', 2, '2131', 'ภาษีขาย',
+			'liability', 'debit', false, $8, '', $9, 0
+		)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+			fmt.Sprintf("ลดภาษีขายตามรับคืน %s", docNo), vatAmount)
+		lineNo++
+	}
+
+	// Line 3: Accounts Receivable reduced (Credit)
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'SV', $7,
+		'', '', 'manual', 'THB', 2, '1131', 'ลูกหนี้การค้า - ในประเทศ',
+		'asset', 'credit', false, $8, '', 0, $9
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("ลดหนี้ลูกหนี้ %s ตามเอกสาร %s", doc.CustCode, docNo), totalAmount)
+
+	// Subledger Document & Settlement
+	if strings.TrimSpace(doc.CustCode) != "" {
+		retDocID := fmt.Sprintf("CN-%s", docNo)
+		subPayload, _ := json.Marshal(map[string]any{
+			"doc_no":      docNo,
+			"doc_date":    dateStr,
+			"journal_id":  journalID,
+			"total":       totalAmountStr,
+			"description": fmt.Sprintf("ใบลดหนี้ลูกหนี้ เอกสาร %s", docNo),
+		})
+		_, _ = tx.ExecContext(ctx, `INSERT INTO gl_subledger_documents (
+			company, id, ledger, partner_code, branch_code, control_account_code, amount, side, version, created_journal_id, payload
+		) VALUES (
+			$1, $2, 'ar', $3, $4, '1131', $5, 2, 1, $6, $7
+		) ON CONFLICT (company, id) DO UPDATE SET amount=$5, payload=$7`,
+			company, retDocID, doc.CustCode, branch, totalAmount, journalID, subPayload)
+
+		refDoc := strings.TrimSpace(doc.DocRef)
+		if refDoc != "" {
+			var debtDocID string
+			_ = tx.QueryRowContext(ctx, `SELECT id FROM gl_subledger_documents WHERE company=$1 AND (id=$2 OR id=$3) AND ledger='ar' AND side=1`,
+				company, fmt.Sprintf("AR-%s", refDoc), refDoc).Scan(&debtDocID)
+			if debtDocID != "" {
+				settleID := fmt.Sprintf("SET-CN-%s", docNo)
+				settlePayload, _ := json.Marshal(map[string]any{
+					"debt_id":    debtDocID,
+					"payment_id": retDocID,
+					"docno":      docNo,
+					"docref":     refDoc,
+					"amount":     totalAmountStr,
+				})
+				_, _ = tx.ExecContext(ctx, `INSERT INTO gl_subledger_settlements (
+					company, id, journal_id, debt_id, payment_id, amount, settlement_date, payload, created_at, created_by
+				) VALUES (
+					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+				) ON CONFLICT (company, id) DO UPDATE SET amount=$6, payload=$8`,
+					company, settleID, journalID, debtDocID, retDocID, totalAmount, dateStr, settlePayload, now, actor)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Store) postPurchaseReturnToGLAndAP(ctx context.Context, tx *sql.Tx, company, branch string, doc *ErpTransactionDoc, docNo string, docDate time.Time, actor string, now time.Time) error {
+	var fiscalYear string
+	dateStr := docDate.Format("2006-01-02")
+	err := tx.QueryRowContext(ctx, `SELECT code FROM gl_records WHERE company=$1 AND kind='fiscal-years' AND payload->>'startdate'<=$2 AND payload->>'enddate'>=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, company, dateStr).Scan(&fiscalYear)
+	if err != nil {
+		fiscalYear = "2569"
+	}
+
+	totalAmount := doc.TotalAmount
+	vatAmount := doc.TotalVatValue
+	if vatAmount == 0 && doc.TotalBeforeVat > 0 {
+		vatAmount = totalAmount - doc.TotalBeforeVat
+	}
+	goodsAmount := totalAmount - vatAmount
+	if goodsAmount <= 0 {
+		goodsAmount = totalAmount
+	}
+
+	totalAmountStr := fmt.Sprintf("%.2f", totalAmount)
+	goodsAmountStr := fmt.Sprintf("%.2f", goodsAmount)
+	vatAmountStr := fmt.Sprintf("%.2f", vatAmount)
+
+	glDocNo := "PRN-" + docNo
+	journalID := fmt.Sprintf("PRN-%s", docNo)
+
+	lines := []map[string]any{
+		{
+			"accountcode": "2111",
+			"accountname": "เจ้าหนี้การค้า - ในประเทศ",
+			"debit":       totalAmountStr,
+			"credit":      "0.00",
+			"description": fmt.Sprintf("ลดหนี้เจ้าหนี้ %s ตามเอกสารส่งคืน %s", doc.CustCode, docNo),
+		},
+		{
+			"accountcode": "1141",
+			"accountname": "สินค้าสำเร็จรูป",
+			"debit":       "0.00",
+			"credit":      goodsAmountStr,
+			"description": fmt.Sprintf("ส่งคืนสินค้าตามเอกสาร %s", docNo),
+		},
+	}
+	if vatAmount > 0 {
+		lines = append(lines, map[string]any{
+			"accountcode": "1151",
+			"accountname": "ภาษีซื้อ",
+			"debit":       "0.00",
+			"credit":      vatAmountStr,
+			"description": fmt.Sprintf("ลดภาษีซื้อตามส่งคืน %s", docNo),
+		})
+	}
+
+	payloadMap := map[string]any{
+		"id":          journalID,
+		"date":        dateStr,
+		"kind":        "manual",
+		"docno":       glDocNo,
+		"bookcode":    "UV",
+		"branchcode":  branch,
+		"fiscalyear":  fiscalYear,
+		"description": fmt.Sprintf("ส่งคืนสินค้า/ใบลดหนี้ เลขที่ %s (เจ้าหนี้ %s)", docNo, doc.CustCode),
+		"status":      "posted",
+		"version":     2,
+		"postedat":    now.Format(time.RFC3339Nano),
+		"postedby":    actor,
+		"createdat":   now.Format(time.RFC3339Nano),
+		"createdby":   actor,
+		"lines":       lines,
+	}
+
+	payloadJSON, err := json.Marshal(payloadMap)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `INSERT INTO gl_records (company, kind, id, code, version, payload)
+		VALUES ($1, 'journals', $2, $3, 2, $4)
+		ON CONFLICT (company, kind, id) DO UPDATE SET version=2, payload=$4`,
+		company, journalID, glDocNo, payloadJSON)
+	if err != nil {
+		return err
+	}
+
+	_, _ = tx.ExecContext(ctx, `DELETE FROM gl_lines WHERE company=$1 AND journal_id=$2`, company, journalID)
+
+	lineNo := 1
+	// Line 1: Accounts Payable reduced (Debit)
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'UV', $7,
+		'', '', 'manual', 'THB', 2, '2111', 'เจ้าหนี้การค้า - ในประเทศ',
+		'liability', 'debit', false, $8, '', $9, 0
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("ลดหนี้เจ้าหนี้ %s ตามเอกสาร %s", doc.CustCode, docNo), totalAmount)
+	lineNo++
+
+	// Line 2: Inventory reduced (Credit)
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'UV', $7,
+		'', '', 'manual', 'THB', 2, '1141', 'สินค้าสำเร็จรูป',
+		'asset', 'credit', false, $8, '', 0, $9
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("ส่งคืนสินค้าตามเอกสาร %s", docNo), goodsAmount)
+	lineNo++
+
+	// Line 3: Input VAT reduced (Credit)
+	if vatAmount > 0 {
+		_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+			company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+			department_code, project_code, kind, currency, scale, account_code, account_name,
+			account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, 'UV', $7,
+			'', '', 'manual', 'THB', 2, '1151', 'ภาษีซื้อ',
+			'asset', 'credit', false, $8, '', 0, $9
+		)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+			fmt.Sprintf("ลดภาษีซื้อตามส่งคืน %s", docNo), vatAmount)
+	}
+
+	// Subledger Document & Settlement
+	if strings.TrimSpace(doc.CustCode) != "" {
+		retDocID := fmt.Sprintf("PRN-%s", docNo)
+		subPayload, _ := json.Marshal(map[string]any{
+			"doc_no":      docNo,
+			"doc_date":    dateStr,
+			"journal_id":  journalID,
+			"total":       totalAmountStr,
+			"description": fmt.Sprintf("ใบส่งคืนสินค้า/ลดหนี้ เอกสาร %s", docNo),
+		})
+		_, _ = tx.ExecContext(ctx, `INSERT INTO gl_subledger_documents (
+			company, id, ledger, partner_code, branch_code, control_account_code, amount, side, version, created_journal_id, payload
+		) VALUES (
+			$1, $2, 'ap', $3, $4, '2111', $5, 1, 1, $6, $7
+		) ON CONFLICT (company, id) DO UPDATE SET amount=$5, payload=$7`,
+			company, retDocID, doc.CustCode, branch, totalAmount, journalID, subPayload)
+
+		refDoc := strings.TrimSpace(doc.DocRef)
+		if refDoc != "" {
+			var debtDocID string
+			_ = tx.QueryRowContext(ctx, `SELECT id FROM gl_subledger_documents WHERE company=$1 AND (id=$2 OR id=$3) AND ledger='ap' AND side=2`,
+				company, fmt.Sprintf("AP-%s", refDoc), refDoc).Scan(&debtDocID)
+			if debtDocID != "" {
+				settleID := fmt.Sprintf("SET-PRN-%s", docNo)
+				settlePayload, _ := json.Marshal(map[string]any{
+					"debt_id":    debtDocID,
+					"payment_id": retDocID,
+					"docno":      docNo,
+					"docref":     refDoc,
+					"amount":     totalAmountStr,
+				})
+				_, _ = tx.ExecContext(ctx, `INSERT INTO gl_subledger_settlements (
+					company, id, journal_id, debt_id, payment_id, amount, settlement_date, payload, created_at, created_by
+				) VALUES (
+					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+				) ON CONFLICT (company, id) DO UPDATE SET amount=$6, payload=$8`,
+					company, settleID, journalID, debtDocID, retDocID, totalAmount, dateStr, settlePayload, now, actor)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Store) postExpenseToGL(ctx context.Context, tx *sql.Tx, company, branch string, doc *ErpTransactionDoc, docNo string, docDate time.Time, actor string, now time.Time) error {
+	var fiscalYear string
+	dateStr := docDate.Format("2006-01-02")
+	err := tx.QueryRowContext(ctx, `SELECT code FROM gl_records WHERE company=$1 AND kind='fiscal-years' AND payload->>'startdate'<=$2 AND payload->>'enddate'>=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false)`, company, dateStr).Scan(&fiscalYear)
+	if err != nil {
+		fiscalYear = "2569"
+	}
+
+	totalAmount := doc.TotalAmount
+	vatAmount := doc.TotalVatValue
+	if vatAmount == 0 && doc.TotalBeforeVat > 0 {
+		vatAmount = totalAmount - doc.TotalBeforeVat
+	}
+	goodsAmount := totalAmount - vatAmount
+	if goodsAmount <= 0 {
+		goodsAmount = totalAmount
+	}
+
+	totalAmountStr := fmt.Sprintf("%.2f", totalAmount)
+	goodsAmountStr := fmt.Sprintf("%.2f", goodsAmount)
+	vatAmountStr := fmt.Sprintf("%.2f", vatAmount)
+
+	glDocNo := "PV-" + docNo
+	journalID := fmt.Sprintf("EXP-%s", docNo)
+
+	lines := []map[string]any{
+		{
+			"accountcode": "5201",
+			"accountname": "ค่าใช้จ่ายในการบริหารและดำเนินงาน",
+			"debit":       goodsAmountStr,
+			"credit":      "0.00",
+			"description": fmt.Sprintf("ค่าใช้จ่ายตามเอกสาร %s", docNo),
+		},
+	}
+	if vatAmount > 0 {
+		lines = append(lines, map[string]any{
+			"accountcode": "1151",
+			"accountname": "ภาษีซื้อ",
+			"debit":       vatAmountStr,
+			"credit":      "0.00",
+			"description": fmt.Sprintf("ภาษีซื้อ 7%% ตามเอกสาร %s", docNo),
+		})
+	}
+	lines = append(lines, map[string]any{
+		"accountcode": "1121",
+		"accountname": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย",
+		"debit":       "0.00",
+		"credit":      totalAmountStr,
+		"description": fmt.Sprintf("จ่ายเงินค่าใช้จ่ายตามเอกสาร %s", docNo),
+	})
+
+	payloadMap := map[string]any{
+		"id":          journalID,
+		"date":        dateStr,
+		"kind":        "manual",
+		"docno":       glDocNo,
+		"bookcode":    "PV",
+		"branchcode":  branch,
+		"fiscalyear":  fiscalYear,
+		"description": fmt.Sprintf("บันทึกค่าใช้จ่าย เลขที่ %s", docNo),
+		"status":      "posted",
+		"version":     2,
+		"postedat":    now.Format(time.RFC3339Nano),
+		"postedby":    actor,
+		"createdat":   now.Format(time.RFC3339Nano),
+		"createdby":   actor,
+		"lines":       lines,
+	}
+
+	payloadJSON, err := json.Marshal(payloadMap)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `INSERT INTO gl_records (company, kind, id, code, version, payload)
+		VALUES ($1, 'journals', $2, $3, 2, $4)
+		ON CONFLICT (company, kind, id) DO UPDATE SET version=2, payload=$4`,
+		company, journalID, glDocNo, payloadJSON)
+	if err != nil {
+		return err
+	}
+
+	_, _ = tx.ExecContext(ctx, `DELETE FROM gl_lines WHERE company=$1 AND journal_id=$2`, company, journalID)
+
+	lineNo := 1
+	// Line 1: Administrative Expense (Debit)
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'PV', $7,
+		'', '', 'manual', 'THB', 2, '5201', 'ค่าใช้จ่ายในการบริหารและดำเนินงาน',
+		'expense', 'debit', false, $8, '', $9, 0
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("ค่าใช้จ่ายตามเอกสาร %s", docNo), goodsAmount)
+	lineNo++
+
+	// Line 2: VAT Buy (Debit)
+	if vatAmount > 0 {
+		_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+			company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+			department_code, project_code, kind, currency, scale, account_code, account_name,
+			account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, 'PV', $7,
+			'', '', 'manual', 'THB', 2, '1151', 'ภาษีซื้อ',
+			'asset', 'debit', false, $8, '', $9, 0
+		)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+			fmt.Sprintf("ภาษีซื้อ 7%% ตามเอกสาร %s", docNo), vatAmount)
+		lineNo++
+	}
+
+	// Line 3: Bank (Credit)
+	_, _ = tx.ExecContext(ctx, `INSERT INTO gl_lines (
+		company, journal_id, line_no, doc_no, entry_date, fiscal_year, book_code, branch_code,
+		department_code, project_code, kind, currency, scale, account_code, account_name,
+		account_type, normal_balance, is_cash, description, cash_flow, debit, credit
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, 'PV', $7,
+		'', '', 'manual', 'THB', 2, '1121', 'เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย',
+		'asset', 'credit', true, $8, '', 0, $9
+	)`, company, journalID, lineNo, glDocNo, dateStr, fiscalYear, branch,
+		fmt.Sprintf("จ่ายเงินค่าใช้จ่ายตามเอกสาร %s", docNo), totalAmount)
+
+	return nil
+}
+
 func (s *Store) postStockMovement(ctx context.Context, tx *sql.Tx, company, branch string, doc *ErpTransactionDoc, docNo string, transflag int, docDate time.Time, now time.Time) error {
 	if len(doc.Details) == 0 {
 		return nil
@@ -1030,8 +1523,10 @@ func (s *Store) postStockMovement(ctx context.Context, tx *sql.Tx, company, bran
 	_, _ = tx.ExecContext(ctx, `DELETE FROM stock_ledger WHERE businesscode=$1 AND docno=$2`, company, docNo)
 
 	direction := 1
-	if transflag == 44 || transflag == 20 { // Sale หรือ Out
+	if transflag == 44 || transflag == 20 || transflag == 16 { // Sale, Out หรือ Purchase Return (ส่งคืน)
 		direction = -1
+	} else if transflag == 12 || transflag == 48 { // Purchase หรือ Sale Return (รับคืน)
+		direction = 1
 	}
 
 	periodKey := docDate.Format("2006-01")

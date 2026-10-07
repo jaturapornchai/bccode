@@ -22,6 +22,11 @@ var ModuleTransFlags = map[string]int{
 	"pay":                   29,  // PV ใบสำคัญจ่าย/จ่ายชำระหนี้
 	"receipt":               28,  // RE ใบเสร็จรับเงิน
 	"payment":               29,  // PV ใบสำคัญจ่าย
+	"purchasereturn":        16,  // PRN ใบส่งคืนสินค้าจากการซื้อ
+	"salereturn":            48,  // SRN ใบรับคืนสินค้าจากการขาย
+	"creditnote":            48,  // CN ใบลดหนี้
+	"debitnote":             50,  // DN ใบเพิ่มหนี้
+	"expense":               24,  // EXP บันทึกค่าใช้จ่าย
 }
 
 // ModulePrefixes maps ERP module to default document number prefix.
@@ -44,6 +49,11 @@ var ModulePrefixes = map[string]string{
 	"pay":                   "PV",
 	"receipt":               "RE",
 	"payment":               "PV",
+	"purchasereturn":        "PRN",
+	"salereturn":            "SRN",
+	"creditnote":            "CN",
+	"debitnote":             "DN",
+	"expense":               "EXP",
 }
 
 type ErpDetailItem struct {

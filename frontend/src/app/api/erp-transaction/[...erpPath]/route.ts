@@ -32,6 +32,11 @@ const ALLOWED_MODULES = [
   "bank",
   "chequereceive",
   "chequepayment",
+  "salereturn",
+  "purchasereturn",
+  "expense",
+  "creditnote",
+  "debitnote",
 ];
 
 function sanitizeSegments(segments: string[]): boolean {

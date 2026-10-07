@@ -61,6 +61,7 @@ export const LIVE_ERP_TRANSACTION_ROUTES = new Set<string>([
   "/transaction/adjust",
   "/transaction/paid",
   "/transaction/pay",
+  "/transaction/expense",
 ]);
 
 export function isMenuBackendRetired(route: string): boolean {

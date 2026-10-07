@@ -157,79 +157,69 @@ func DebtReportHandler(c echo.Context) error {
 	})
 }
 
-// BuildDebtReportQuery constructs parameterized SQL queries for the 8 AP and AR reports.
+// BuildDebtReportQuery constructs parameterized SQL queries for the 8 AP and AR reports from gl_subledger tables.
 func BuildDebtReportQuery(reportCode, businessCode string, fromDate, toDate time.Time, partyCode string, limit, offset int) (string, []any, error) {
 	hasDate := !fromDate.IsZero() && !toDate.IsZero()
+	companyParam := businessCode
+	if companyParam == "" {
+		companyParam = "01"
+	}
 
 	switch reportCode {
 	case "ap_movement":
 		query := `
 SELECT
-  TO_CHAR(t.docdate + INTERVAL '7 hour', 'YYYY-MM-DD') AS docdate,
-  t.docno,
-  t.creditorcode,
-  COALESCE(
-    CASE WHEN c.names IS NOT NULL AND jsonb_typeof(c.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(c.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    t.creditorcode
-  ) AS creditorname,
-  t.transflag,
-  CASE
-    WHEN t.transflag = 36 THEN 'ซื้อเชื่อ'
-    WHEN t.transflag = 38 THEN 'จ่ายชำระหนี้'
-    WHEN t.transflag = 40 THEN 'ลดหนี้เจ้าหนี้'
-    ELSE 'รายการเจ้าหนี้'
-  END AS transname,
-  COALESCE(t.totalamount, 0) AS totalamount,
-  COALESCE(t.paidamount, 0) AS paidamount,
-  COALESCE(t.balanceamount, 0) AS balanceamount
-FROM public.creditortransaction t
-LEFT JOIN public.creditor c ON c.code = t.creditorcode
-WHERE t.iscancel = false`
-		args := []any{}
-		argIdx := 1
+  d.payload->>'doc_date' AS docdate,
+  COALESCE(d.payload->>'doc_no', SUBSTRING(d.id FROM 5)) AS docno,
+  d.partner_code AS creditorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS creditorname,
+  CASE WHEN d.side = 2 THEN 36 ELSE 38 END AS transflag,
+  CASE WHEN d.side = 2 THEN 'ซื้อเชื่อ' ELSE 'จ่ายชำระหนี้' END AS transname,
+  CASE WHEN d.side = 2 THEN d.amount ELSE 0 END AS totalamount,
+  CASE WHEN d.side = 1 THEN d.amount ELSE 0 END AS paidamount,
+  d.amount AS balanceamount
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ap'`
+		args := []any{companyParam}
+		argIdx := 2
 		if hasDate {
-			query += fmt.Sprintf(" AND t.docdate >= $%d AND t.docdate < $%d", argIdx, argIdx+1)
-			args = append(args, fromDate, toDate)
+			query += fmt.Sprintf(" AND (d.payload->>'doc_date')::date >= $%d AND (d.payload->>'doc_date')::date < $%d", argIdx, argIdx+1)
+			args = append(args, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
 			argIdx += 2
 		}
 		if partyCode != "" {
-			query += fmt.Sprintf(" AND t.creditorcode = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
-		query += fmt.Sprintf(" ORDER BY t.docdate ASC, t.docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+		query += fmt.Sprintf(" ORDER BY docdate ASC, docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
 
 	case "ap_status":
 		query := `
 SELECT
-  c.code AS creditorcode,
-  COALESCE(
-    CASE WHEN c.names IS NOT NULL AND jsonb_typeof(c.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(c.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    c.code
-  ) AS creditorname,
-  COALESCE(c.creditday, 0) AS creditday,
-  COALESCE(c.phoneprimary, '') AS phone,
-  COALESCE(SUM(t.totalamount), 0) AS totalamount,
-  COALESCE(SUM(t.paidamount), 0) AS paidamount,
-  COALESCE(SUM(t.balanceamount), c.creditorbalanceamount, 0) AS balanceamount
-FROM public.creditor c
-LEFT JOIN public.creditortransaction t ON t.creditorcode = c.code AND t.iscancel = false`
-		args := []any{}
-		argIdx := 1
+  d.partner_code AS creditorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS creditorname,
+  0 AS creditday,
+  '' AS phone,
+  COALESCE(SUM(CASE WHEN d.side = 2 THEN d.amount ELSE 0 END), 0) AS totalamount,
+  COALESCE(SUM(CASE WHEN d.side = 1 THEN d.amount ELSE 0 END), 0) AS paidamount,
+  COALESCE((SUM(CASE WHEN d.side = 2 THEN d.amount ELSE 0 END) - SUM(CASE WHEN d.side = 1 THEN d.amount ELSE 0 END)), 0) AS balanceamount
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ap'`
+		args := []any{companyParam}
+		argIdx := 2
 		if partyCode != "" {
-			query += fmt.Sprintf(" WHERE c.code = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
 		query += fmt.Sprintf(`
-GROUP BY c.code, c.names, c.creditday, c.phoneprimary, c.creditorbalanceamount
-ORDER BY c.code ASC
+GROUP BY d.partner_code, p.payload
+ORDER BY d.partner_code ASC
 LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
@@ -237,135 +227,119 @@ LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
 	case "ap_outstanding":
 		query := `
 SELECT
-  TO_CHAR(t.docdate + INTERVAL '7 hour', 'YYYY-MM-DD') AS docdate,
-  t.docno,
-  t.creditorcode,
-  COALESCE(
-    CASE WHEN c.names IS NOT NULL AND jsonb_typeof(c.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(c.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    t.creditorcode
-  ) AS creditorname,
-  COALESCE(t.totalamount, 0) AS totalamount,
-  COALESCE(t.paidamount, 0) AS paidamount,
-  COALESCE(t.balanceamount, 0) AS balanceamount
-FROM public.creditortransaction t
-LEFT JOIN public.creditor c ON c.code = t.creditorcode
-WHERE t.iscancel = false
-  AND t.balanceamount > 0`
-		args := []any{}
-		argIdx := 1
+  d.payload->>'doc_date' AS docdate,
+  COALESCE(d.payload->>'doc_no', SUBSTRING(d.id FROM 4)) AS docno,
+  d.partner_code AS creditorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS creditorname,
+  d.amount AS totalamount,
+  COALESCE(SUM(s.amount), 0) AS paidamount,
+  (d.amount - COALESCE(SUM(s.amount), 0)) AS balanceamount
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+LEFT JOIN gl_subledger_settlements s ON s.company = d.company AND s.debt_id = d.id AND s.reversed_at IS NULL
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ap' AND d.side = 2`
+		args := []any{companyParam}
+		argIdx := 2
+		if hasDate {
+			query += fmt.Sprintf(" AND (d.payload->>'doc_date')::date >= $%d AND (d.payload->>'doc_date')::date < $%d", argIdx, argIdx+1)
+			args = append(args, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
+			argIdx += 2
+		}
 		if partyCode != "" {
-			query += fmt.Sprintf(" AND t.creditorcode = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
-		query += fmt.Sprintf(" ORDER BY t.docdate ASC, t.docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+		query += fmt.Sprintf(`
+GROUP BY d.company, d.id, d.payload, d.partner_code, p.payload, d.amount
+HAVING (d.amount - COALESCE(SUM(s.amount), 0)) > 0
+ORDER BY docdate ASC, docno ASC
+LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
 
 	case "ap_daily_payment":
 		query := `
 SELECT
-  TO_CHAR(t.docdate + INTERVAL '7 hour', 'YYYY-MM-DD') AS docdate,
-  t.docno,
-  t.creditorcode,
-  COALESCE(
-    CASE WHEN c.names IS NOT NULL AND jsonb_typeof(c.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(c.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    t.creditorcode
-  ) AS creditorname,
-  COALESCE(t.paidamount, 0) AS paidamount,
-  COALESCE(t.balanceamount, 0) AS balanceamount
-FROM public.creditortransaction t
-LEFT JOIN public.creditor c ON c.code = t.creditorcode
-WHERE t.iscancel = false
-  AND t.paidamount > 0`
-		args := []any{}
-		argIdx := 1
+  d.payload->>'doc_date' AS docdate,
+  COALESCE(d.payload->>'doc_no', SUBSTRING(d.id FROM 5)) AS docno,
+  d.partner_code AS creditorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS creditorname,
+  d.amount AS paidamount,
+  0 AS balanceamount
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ap' AND d.side = 1`
+		args := []any{companyParam}
+		argIdx := 2
 		if hasDate {
-			query += fmt.Sprintf(" AND t.docdate >= $%d AND t.docdate < $%d", argIdx, argIdx+1)
-			args = append(args, fromDate, toDate)
+			query += fmt.Sprintf(" AND (d.payload->>'doc_date')::date >= $%d AND (d.payload->>'doc_date')::date < $%d", argIdx, argIdx+1)
+			args = append(args, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
 			argIdx += 2
 		}
 		if partyCode != "" {
-			query += fmt.Sprintf(" AND t.creditorcode = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
-		query += fmt.Sprintf(" ORDER BY t.docdate ASC, t.docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+		query += fmt.Sprintf(" ORDER BY docdate ASC, docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
 
 	case "ar_movement":
 		query := `
 SELECT
-  TO_CHAR(t.docdate + INTERVAL '7 hour', 'YYYY-MM-DD') AS docdate,
-  t.docno,
-  t.creditorcode AS debtorcode,
-  COALESCE(
-    CASE WHEN d.names IS NOT NULL AND jsonb_typeof(d.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(d.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    t.creditorcode
-  ) AS debtorname,
-  t.transflag,
-  CASE
-    WHEN t.transflag = 44 THEN 'ขายเชื่อ'
-    WHEN t.transflag = 48 THEN 'รับชำระหนี้'
-    WHEN t.transflag = 50 THEN 'ลดหนี้ลูกหนี้'
-    ELSE 'รายการลูกหนี้'
-  END AS transname,
-  COALESCE(t.totalamount, 0) AS totalamount,
-  COALESCE(t.paidamount, 0) AS paidamount,
-  COALESCE(t.balanceamount, 0) AS balanceamount
-FROM public.debtortransaction t
-LEFT JOIN public.debtor d ON d.code = t.creditorcode
-WHERE t.iscancel = false`
-		args := []any{}
-		argIdx := 1
+  d.payload->>'doc_date' AS docdate,
+  COALESCE(d.payload->>'doc_no', SUBSTRING(d.id FROM 5)) AS docno,
+  d.partner_code AS debtorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS debtorname,
+  CASE WHEN d.side = 1 THEN 44 ELSE 48 END AS transflag,
+  CASE WHEN d.side = 1 THEN 'ขายเชื่อ' ELSE 'รับชำระหนี้' END AS transname,
+  CASE WHEN d.side = 1 THEN d.amount ELSE 0 END AS totalamount,
+  CASE WHEN d.side = 2 THEN d.amount ELSE 0 END AS paidamount,
+  d.amount AS balanceamount
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ar'`
+		args := []any{companyParam}
+		argIdx := 2
 		if hasDate {
-			query += fmt.Sprintf(" AND t.docdate >= $%d AND t.docdate < $%d", argIdx, argIdx+1)
-			args = append(args, fromDate, toDate)
+			query += fmt.Sprintf(" AND (d.payload->>'doc_date')::date >= $%d AND (d.payload->>'doc_date')::date < $%d", argIdx, argIdx+1)
+			args = append(args, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
 			argIdx += 2
 		}
 		if partyCode != "" {
-			query += fmt.Sprintf(" AND t.creditorcode = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
-		query += fmt.Sprintf(" ORDER BY t.docdate ASC, t.docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+		query += fmt.Sprintf(" ORDER BY docdate ASC, docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
 
 	case "ar_status":
 		query := `
 SELECT
-  d.code AS debtorcode,
-  COALESCE(
-    CASE WHEN d.names IS NOT NULL AND jsonb_typeof(d.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(d.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    d.code
-  ) AS debtorname,
-  COALESCE(d.creditday, 0) AS creditday,
-  COALESCE(d.phoneprimary, '') AS phone,
-  COALESCE(SUM(t.totalamount), 0) AS totalamount,
-  COALESCE(SUM(t.paidamount), 0) AS paidamount,
-  COALESCE(SUM(t.balanceamount), d.debtorbalanceamount, 0) AS balanceamount
-FROM public.debtor d
-LEFT JOIN public.debtortransaction t ON t.creditorcode = d.code AND t.iscancel = false`
-		args := []any{}
-		argIdx := 1
+  d.partner_code AS debtorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS debtorname,
+  0 AS creditday,
+  '' AS phone,
+  COALESCE(SUM(CASE WHEN d.side = 1 THEN d.amount ELSE 0 END), 0) AS totalamount,
+  COALESCE(SUM(CASE WHEN d.side = 2 THEN d.amount ELSE 0 END), 0) AS paidamount,
+  COALESCE((SUM(CASE WHEN d.side = 1 THEN d.amount ELSE 0 END) - SUM(CASE WHEN d.side = 2 THEN d.amount ELSE 0 END)), 0) AS balanceamount
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ar'`
+		args := []any{companyParam}
+		argIdx := 2
 		if partyCode != "" {
-			query += fmt.Sprintf(" WHERE d.code = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
 		query += fmt.Sprintf(`
-GROUP BY d.code, d.names, d.creditday, d.phoneprimary, d.debtorbalanceamount
-ORDER BY d.code ASC
+GROUP BY d.partner_code, p.payload
+ORDER BY d.partner_code ASC
 LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
@@ -373,57 +347,57 @@ LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
 	case "ar_outstanding":
 		query := `
 SELECT
-  TO_CHAR(t.docdate + INTERVAL '7 hour', 'YYYY-MM-DD') AS docdate,
-  t.docno,
-  t.creditorcode AS debtorcode,
-  COALESCE(
-    CASE WHEN d.names IS NOT NULL AND jsonb_typeof(d.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(d.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    t.creditorcode
-  ) AS debtorname,
-  COALESCE(t.totalamount, 0) AS totalamount,
-  COALESCE(t.paidamount, 0) AS paidamount,
-  COALESCE(t.balanceamount, 0) AS balanceamount
-FROM public.debtortransaction t
-LEFT JOIN public.debtor d ON d.code = t.creditorcode
-WHERE t.iscancel = false
-  AND t.balanceamount > 0`
-		args := []any{}
-		argIdx := 1
+  d.payload->>'doc_date' AS docdate,
+  COALESCE(d.payload->>'doc_no', SUBSTRING(d.id FROM 4)) AS docno,
+  d.partner_code AS debtorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS debtorname,
+  d.amount AS totalamount,
+  COALESCE(SUM(s.amount), 0) AS paidamount,
+  (d.amount - COALESCE(SUM(s.amount), 0)) AS balanceamount
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+LEFT JOIN gl_subledger_settlements s ON s.company = d.company AND s.debt_id = d.id AND s.reversed_at IS NULL
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ar' AND d.side = 1`
+		args := []any{companyParam}
+		argIdx := 2
+		if hasDate {
+			query += fmt.Sprintf(" AND (d.payload->>'doc_date')::date >= $%d AND (d.payload->>'doc_date')::date < $%d", argIdx, argIdx+1)
+			args = append(args, fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
+			argIdx += 2
+		}
 		if partyCode != "" {
-			query += fmt.Sprintf(" AND t.creditorcode = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
-		query += fmt.Sprintf(" ORDER BY t.docdate ASC, t.docno ASC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+		query += fmt.Sprintf(`
+GROUP BY d.company, d.id, d.payload, d.partner_code, p.payload, d.amount
+HAVING (d.amount - COALESCE(SUM(s.amount), 0)) > 0
+ORDER BY docdate ASC, docno ASC
+LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
 
 	case "ar_credit_limit":
 		query := `
 SELECT
-  d.code AS debtorcode,
-  COALESCE(
-    CASE WHEN d.names IS NOT NULL AND jsonb_typeof(d.names) = 'array'
-         THEN (SELECT nm->>'name' FROM jsonb_array_elements(d.names) nm WHERE nm->>'code' = 'th' LIMIT 1)
-         ELSE '' END,
-    d.code
-  ) AS debtorname,
-  COALESCE(SUM(t.balanceamount), d.debtorbalanceamount, 0) AS balanceamount,
-  COALESCE(d.creditday, 0) AS creditday
-FROM public.debtor d
-LEFT JOIN public.debtortransaction t ON t.creditorcode = d.code AND t.iscancel = false`
-		args := []any{}
-		argIdx := 1
+  d.partner_code AS debtorcode,
+  COALESCE(p.payload->>'name', d.partner_code) AS debtorname,
+  COALESCE((SUM(CASE WHEN d.side = 1 THEN d.amount ELSE 0 END) - SUM(CASE WHEN d.side = 2 THEN d.amount ELSE 0 END)), 0) AS balanceamount,
+  0 AS creditday
+FROM gl_subledger_documents d
+LEFT JOIN gl_subledger_partners p ON p.company = d.company AND p.code = d.partner_code
+WHERE (d.company = $1 OR d.company = '01' OR $1 = '') AND d.ledger = 'ar'`
+		args := []any{companyParam}
+		argIdx := 2
 		if partyCode != "" {
-			query += fmt.Sprintf(" WHERE d.code = $%d", argIdx)
+			query += fmt.Sprintf(" AND d.partner_code = $%d", argIdx)
 			args = append(args, partyCode)
 			argIdx++
 		}
 		query += fmt.Sprintf(`
-GROUP BY d.code, d.names, d.debtorbalanceamount, d.creditday
-ORDER BY d.code ASC
+GROUP BY d.partner_code, p.payload
+ORDER BY d.partner_code ASC
 LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
 		args = append(args, limit, offset)
 		return query, args, nil
