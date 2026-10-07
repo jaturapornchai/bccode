@@ -161,10 +161,12 @@ describe("Champ report filters and options", () => {
     expect(summary).not.toHaveProperty("hideopening");
     expect(summary).not.toHaveProperty("from");
   });
-  it("shows control-account totals as bold 'รวม' rows that never drill to the ledger", () => {
-    const report: GLReport = { sequence: 1, columns: [{ key: "accountcode", label: "รหัสบัญชี", amount: false }, { key: "accountname", label: "ชื่อบัญชี", amount: false }, { key: "debit", label: "เดบิต", amount: true }], rows: [{ accountcode: "11110", accountname: "เงินสดในมือ", debit: "100", rowtype: "account", accountlevel: "4" }, { accountcode: "11100", accountname: "เงินสดและรายการเทียบเท่าเงินสด", debit: "100", rowtype: "control", accountlevel: "3" }], totals: { debit: "100" }, totalrows: 2, warnings: [], asof: "2569-12-31" };
+  it("prints Champ control-account header rows before the children and name-only bold subtotals after, neither drilling to the ledger", () => {
+    const report: GLReport = { sequence: 1, columns: [{ key: "accountcode", label: "รหัสบัญชี", amount: false }, { key: "accountname", label: "ชื่อบัญชี", amount: false }, { key: "debit", label: "เดบิต", amount: true }], rows: [{ accountcode: "11100", accountname: "เงินสดและรายการเทียบเท่าเงินสด", debit: "", rowtype: "header", accountlevel: "3" }, { accountcode: "11110", accountname: "เงินสดในมือ", debit: "100", rowtype: "account", accountlevel: "4" }, { accountcode: "11100", accountname: "เงินสดและรายการเทียบเท่าเงินสด", debit: "100", rowtype: "control", accountlevel: "3" }], totals: { debit: "100" }, totalrows: 3, warnings: [], asof: "2569-12-31" };
     const html = renderToStaticMarkup(createElement(ReportGrid, { report, onDrillAccount: () => {} }));
-    expect(html).toContain("รวม เงินสดและรายการเทียบเท่าเงินสด");
+    expect(html.match(/11100/g)?.length).toBe(1); // รหัสพิมพ์ที่หัวบัญชีคุมเท่านั้น
+    expect(html.match(/เงินสดและรายการเทียบเท่าเงินสด/g)?.length).toBe(2);
+    expect(html).not.toContain("รวม เงินสด");
     expect(html).toContain("font-semibold");
     expect((html.match(/title="ดูรายงานแยกประเภท"/g) ?? []).length).toBe(1);
     expect(html).toContain("padding-inline-start:calc(0.5rem + 3em)");

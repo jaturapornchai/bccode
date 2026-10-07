@@ -43,11 +43,12 @@ export function reportQuery(name: string, filters: ReportFilters): Record<string
 export async function fetchReport(name: string, filters: ReportFilters, page = 1, limit = 50, snapshot?: number, companywide = false) {
   return glRequest<GLReport>(`reports/${name}?${new URLSearchParams({ ...reportQuery(name, filters), ...(companywide ? { companywide: "true" } : {}), page: String(page), limit: String(limit), ...(snapshot === undefined ? {} : { snapshot: String(snapshot) }) })}`);
 }
-// แถวรวมบัญชีคุม (rowtype=control จาก backend accountBalanceReport) แสดงเป็น "รวม <ชื่อบัญชีคุม>" ทั้งจอ พิมพ์ และไฟล์ส่งออก
+// แถวพิเศษจาก backend: control = รวมบัญชีคุม (accountBalanceReport), opening/carry/total = แยกประเภท (ledger)
 // แถวพิเศษของรายงานแยกประเภท (Champ 5534, backend ledger) — backend ส่งคำอธิบายว่าง ข้อความแปลที่นี่
 const LEDGER_ROW_LABELS: Record<string, GLLabel> = { opening: ["gl_opening_balance_2", "ยอดยกมา"], carry: ["gl_closing_balance", "ยอดยกไป"], total: ["gl_total", "ยอดรวม"] };
 export function controlRowText(row: Record<string, string>, key: string, value: string, tr: GLTextFn) {
-  if (row.rowtype === "control" && key === "accountname") return tr("gl_report_control_total", "รวม {0}").replace("{0}", value);
+  // แถวรวมบัญชีคุมแบบ Champ: ไม่พิมพ์รหัส มีแต่ชื่อบัญชีคุม (ตัวหนา) — หัวบัญชีคุม (rowtype=header) พิมพ์รหัส + ชื่อก่อนบัญชีลูกแล้ว
+  if (row.rowtype === "control" && key === "accountcode") return "";
   const ledgerLabel = LEDGER_ROW_LABELS[row.rowtype ?? ""];
   return ledgerLabel && key === "description" ? tr(...ledgerLabel) : value;
 }
@@ -367,7 +368,7 @@ export function ReportGrid({
                 const val = repeatsAccount(row, column.key, index === 0) ? "" : row[column.key] ?? "";
                 const isDocNoCol = (column.key === "docno" || column.key === "documentno" || column.key === "reference") && val && val.trim() !== "";
                 // แถวรวมบัญชีคุมไม่มีรายการของตัวเอง จึงไม่เปิดรายงานแยกประเภท
-                const isAccountCodeCol = column.key === "accountcode" && val && val !== "__current_earnings__" && row.rowtype !== "control";
+                const isAccountCodeCol = column.key === "accountcode" && val && val !== "__current_earnings__" && row.rowtype !== "control" && row.rowtype !== "header";
 
                 let cellContent;
                 if (column.amount) {

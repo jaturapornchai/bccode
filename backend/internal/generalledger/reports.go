@@ -339,13 +339,18 @@ func (r reportContext) trialBalance(ctx context.Context, working bool) (Report, 
 	return result, nil
 }
 
-// accountBalanceReport renders one row per account from the leaf CTE, which must expose
+// accountBalanceReport renders the chart of accounts as Champ prints its trial balance family
+// (GLRepTrialBalanceView.cpp:445-509, งบทดลอง/กระดาษทำการ/แยกประเภทแบบสรุป): the leaf CTE must expose
 // account_code, account_name, account_type and every amount column of columns as numeric.
-// hideZero drops accounts whose amounts are all zero (Champ "ไม่แสดงรายการผังบัญชีที่มียอดเท่ากับศูนย์").
-// With ControlTotals each control account above those accounts in the chart tree
-// (accounts.parentaccountcode) gets a subtotal row (rowtype=control) placed after its
-// descendants, as Champ prints them in bold after the children (GLRepTrialBalanceView.cpp:445-509).
-// Control rows add the children's column values and never count in the report totals.
+//   - every posting account of the chart inside the account filters is listed, zero or not, plus any
+//     account that has lines; hideZero drops accounts whose amounts are all zero
+//     (Champ "ไม่แสดงรายการผังบัญชีที่มียอดเท่ากับศูนย์")
+//   - each control account above a listed account gets a header row (rowtype=header, code + name,
+//     no amounts) before its descendants
+//   - with ControlTotals it also gets a subtotal row (rowtype=control) after its descendants; the
+//     frontend prints it name-only in bold like Champ (option "ไม่แสดงผลรวมบัญชีคุม" turns it off)
+//
+// Header and control rows never count in the report totals.
 func (r reportContext) accountBalanceReport(ctx context.Context, leafCTE string, columns []ReportColumn, hideZero bool) (Report, error) {
 	amounts := []string{}
 	for _, column := range columns {
@@ -353,56 +358,65 @@ func (r reportContext) accountBalanceReport(ctx context.Context, leafCTE string,
 			amounts = append(amounts, column.Key)
 		}
 	}
-	kept := leafCTE + `, kept AS (SELECT * FROM leaf`
-	if hideZero {
-		zero := make([]string, len(amounts))
-		for i, key := range amounts {
-			zero[i] = key + "=0"
-		}
-		kept += ` WHERE NOT (` + strings.Join(zero, " AND ") + `)`
-	}
-	kept += `)`
 	names := map[string]string{"accountcode": "account_code", "accountname": "account_name", "accounttype": "account_type"}
-	selectFrom := func(alias string) string {
+	selectFrom := func(alias string, blankAmounts bool) string {
 		parts := make([]string, len(columns))
 		for i, column := range columns {
-			if column.Amount {
+			switch {
+			case column.Amount && blankAmounts:
+				parts[i] = "''::text AS " + column.Key
+			case column.Amount:
 				parts[i] = alias + column.Key + "::text AS " + column.Key
-			} else {
+			default:
 				parts[i] = alias + names[column.Key] + " AS " + column.Key
 			}
 		}
 		return strings.Join(parts, ",")
 	}
-	totals := make([]reportTotal, len(amounts))
-	if !r.query.ControlTotals {
-		for i, key := range amounts {
-			totals[i] = reportTotal{key: key, expr: key + "::numeric"}
-		}
-		return r.runWithTotals(ctx, kept+`, result AS (SELECT `+selectFrom("")+` FROM kept)`, "accountcode", columns, totals)
-	}
+	listed := make([]string, len(amounts))
 	sums := make([]string, len(amounts))
+	zero := make([]string, len(amounts))
+	totals := make([]reportTotal, len(amounts))
 	for i, key := range amounts {
+		listed[i] = "COALESCE(l." + key + ",0) AS " + key
 		sums[i] = "SUM(p." + key + ") AS " + key
-		totals[i] = reportTotal{key: key, expr: "CASE WHEN rowtype='control' THEN 0 ELSE " + key + "::numeric END"}
+		zero[i] = key + "=0"
+		totals[i] = reportTotal{key: key, expr: "CASE WHEN rowtype='account' THEN " + key + "::numeric ELSE 0 END"}
 	}
-	// path = รหัสบัญชีแม่ทุกชั้นคั่นด้วย chr(1); แถวรวมบัญชีคุมใช้ path||chr(2) จึงเรียงหลังลูกทุกตัวเมื่อเทียบแบบไบต์
-	cte := kept + `, chart AS (
+	kept := `SELECT * FROM listed`
+	if hideZero {
+		kept += ` WHERE NOT (` + strings.Join(zero, " AND ") + `)`
+	}
+	subtotals := ""
+	if r.query.ControlTotals {
+		subtotals = `
+		UNION ALL
+		SELECT ` + selectFrom("c.", false) + `,'control',(cardinality(t.parents)+1)::text,t.path||chr(2) FROM (SELECT s.*,ch.account_name,ch.account_type FROM controls s JOIN chart ch ON ch.code=s.account_code) c JOIN tree t ON t.code=c.account_code`
+	}
+	// path = รหัสบัญชีแม่ทุกชั้นคั่นด้วย chr(1): หัวบัญชีคุม (path) มาก่อนลูกทุกตัว (path||chr(1)||…) และแถวรวม (path||chr(2)) ตามหลังเมื่อเทียบแบบไบต์
+	cte := leafCTE + `, chart AS (
 		SELECT DISTINCT ON (code) code, COALESCE(payload->>'parentaccountcode','') AS parent, COALESCE(payload->>'accounttype','') AS account_type,
-			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1),'') AS account_name
+			COALESCE((SELECT n->>'name' FROM jsonb_array_elements(COALESCE(payload->'names','[]'::jsonb)) n WHERE n->>'code'='th' LIMIT 1),'') AS account_name,
+			COALESCE((payload->>'allowposting')::boolean,true) AS allowposting
 		FROM gl_records WHERE company=$1 AND kind='accounts' AND NOT COALESCE((payload->>'isdeleted')::boolean,false) ORDER BY code,id
 	), tree AS (
 		SELECT c.code, ARRAY[]::text[] AS parents, c.code AS path FROM chart c WHERE NOT EXISTS (SELECT 1 FROM chart p WHERE p.code=c.parent)
 		UNION ALL
 		SELECT c.code, t.parents||t.code, t.path||chr(1)||c.code FROM tree t JOIN chart c ON c.parent=t.code WHERE cardinality(t.parents)<64 AND c.code<>ALL(t.parents)
+	), postable AS (
+		SELECT c.* FROM chart c WHERE c.allowposting AND NOT EXISTS (SELECT 1 FROM chart k WHERE k.parent=c.code) AND ($5='' OR c.code=$5)` + accountRangeFilter("c.code") + `
+	), listed AS (
+		SELECT COALESCE(l.account_code,c.code) AS account_code,COALESCE(NULLIF(l.account_name,''),c.account_name) AS account_name,COALESCE(NULLIF(l.account_type,''),c.account_type) AS account_type,` + strings.Join(listed, ",") + `
+		FROM leaf l FULL JOIN postable c ON c.code=l.account_code
+	), kept AS (` + kept + `
 	), placed AS (
 		SELECT k.*, COALESCE(t.parents,ARRAY[]::text[]) AS parents, COALESCE(t.path,k.account_code) AS path FROM kept k LEFT JOIN tree t ON t.code=k.account_code
 	), controls AS (
 		SELECT a.code AS account_code, ` + strings.Join(sums, ",") + ` FROM placed p CROSS JOIN LATERAL unnest(p.parents) AS a(code) GROUP BY a.code
 	), result AS (
-		SELECT ` + selectFrom("p.") + `,'account' AS rowtype,(cardinality(p.parents)+1)::text AS accountlevel,p.path AS __path FROM placed p
+		SELECT ` + selectFrom("p.", false) + `,'account' AS rowtype,(cardinality(p.parents)+1)::text AS accountlevel,p.path AS __path FROM placed p
 		UNION ALL
-		SELECT ` + selectFrom("c.") + `,'control',(cardinality(t.parents)+1)::text,t.path||chr(2) FROM (SELECT s.*,ch.account_name,ch.account_type FROM controls s JOIN chart ch ON ch.code=s.account_code) c JOIN tree t ON t.code=c.account_code
+		SELECT ` + selectFrom("h.", true) + `,'header',(cardinality(t.parents)+1)::text,t.path FROM (SELECT ch.code AS account_code,ch.account_name,ch.account_type FROM controls s JOIN chart ch ON ch.code=s.account_code) h JOIN tree t ON t.code=h.account_code` + subtotals + `
 	)`
 	return r.runWithTotals(ctx, cte, `__path COLLATE "C"`, columns, totals, "rowtype", "accountlevel", "__path")
 }

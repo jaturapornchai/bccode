@@ -58,8 +58,11 @@ func reportCodes(report Report) []string {
 	out := make([]string, len(report.Rows))
 	for i, row := range report.Rows {
 		out[i] = row["accountcode"]
-		if row["rowtype"] == "control" {
-			out[i] += "*"
+		switch row["rowtype"] {
+		case "control":
+			out[i] += "*" // แถวรวมบัญชีคุม หลังลูก
+		case "header":
+			out[i] = "[" + out[i] + "]" // หัวบัญชีคุม ก่อนลูก (Champ)
 		}
 	}
 	return out
@@ -92,7 +95,8 @@ func TestReportAccountRangeFiltersEveryAccountReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Join(reportCodes(trial), ","); got != "2000,3000,4000,5000" {
+	// Champ: หัวบัญชีคุมของบัญชีในช่วงพิมพ์ก่อนลูก แม้รหัสหัวจะอยู่นอกช่วง
+	if got := strings.Join(reportCodes(trial), ","); got != "[2],2000,3000,[4],4000,5000" {
 		t.Fatalf("trial balance from 2000 = %s", got)
 	}
 	journal, err := p.Report(ctx, scope, "gljournal", ReportQuery{FiscalYear: "2026", AccountTo: "1100"})
@@ -129,7 +133,7 @@ func TestTrialBalanceControlTotalsAndHideZero(t *testing.T) {
 		t.Fatal(err)
 	}
 	// control total rows follow their descendants (Champ GLRepTrialBalanceView) and nest by level
-	if got := strings.Join(reportCodes(tree), ","); got != "1000,1100,11*,1*,2000,2*,3000,4000,4*,5000" {
+	if got := strings.Join(reportCodes(tree), ","); got != "[1],[11],1000,1100,11*,1*,[2],2000,2*,3000,[4],4000,4*,5000" {
 		t.Fatalf("control order = %s", got)
 	}
 	for key, want := range plain.Totals {
@@ -157,7 +161,7 @@ func TestTrialBalanceControlTotalsAndHideZero(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Join(reportCodes(hidden), ","); got != "1000,1100,11*,1*,3000,4000,4*,5000" {
+	if got := strings.Join(reportCodes(hidden), ","); got != "[1],[11],1000,1100,11*,1*,3000,[4],4000,4*,5000" {
 		t.Fatalf("hide zero = %s", got)
 	}
 	query.HideZero = false
@@ -217,12 +221,12 @@ func TestLedgerHideOpeningAndSummary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Join(reportCodes(summary), ","); got != "1000,1100,11*,1*,2000,2*,3000,4000,4*,5000" {
+	if got := strings.Join(reportCodes(summary), ","); got != "[1],[11],1000,1100,11*,1*,[2],2000,2*,3000,[4],4000,4*,5000" {
 		t.Fatalf("summary order = %s", got)
 	}
 	want := map[string][2]string{"1000": {"900", "0"}, "1100": {"300", "0"}, "11": {"1200", "0"}, "2000": {"0", "0"}, "3000": {"0", "1000"}, "4000": {"0", "300"}, "5000": {"100", "0"}}
 	for _, row := range summary.Rows {
-		if amounts, ok := want[row["accountcode"]]; ok {
+		if amounts, ok := want[row["accountcode"]]; ok && row["rowtype"] != "header" {
 			glpgDecimalEqual(t, row["debit"], amounts[0])
 			glpgDecimalEqual(t, row["credit"], amounts[1])
 		}
