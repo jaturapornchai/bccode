@@ -151,6 +151,13 @@ describe("Champ report filters and options", () => {
     for (const key of dropped) expect(query).not.toHaveProperty(key);
     expect(reportQuery(name, emptyReportFilters)).toEqual({});
   });
+  it("sends the picked departments and projects as one comma-separated value each (Champ multi-select), nothing when none is picked", () => {
+    const picked = { ...emptyReportFilters, fiscalyear: "2569", departmentcode: "D1,D2", projectcode: "P1" };
+    for (const name of ["ledger", "trialbalance", "gljournal", "budgetcomparison", "budgetdetail", "statement"]) {
+      expect(reportQuery(name, picked)).toMatchObject({ departmentcode: "D1,D2", projectcode: "P1" });
+      expect(reportQuery(name, { ...picked, departmentcode: "", projectcode: "" })).not.toHaveProperty("departmentcode");
+    }
+  });
   it("ledger: hide-opening for the detail report, control totals and as-of date for the summary (5535)", () => {
     const detail = reportQuery("ledger", { ...all, summary: "" });
     expect(detail).toMatchObject({ hideopening: "true", daytotals: "true", from: "2569-01-01" });

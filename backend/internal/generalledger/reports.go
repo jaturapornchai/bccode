@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,38 @@ type reportContext struct {
 	fiscal FiscalYear
 	args   []any
 	filter string
+	// departments/projects = รหัสแผนก/โครงการที่เลือกหลายค่าแบบ Champ (GLRepGLDlg.cpp: DepartCode IN (...)); ว่าง = ทุกรหัส
+	departments []string
+	projects    []string
+}
+
+// maxReportDimensionCodes caps how many departments (or projects) one report filters on.
+const maxReportDimensionCodes = 200
+
+// parseReportCodeList reads the comma-separated codes of a report department/project filter (Champ multi-select, one
+// code is the old single value): trimmed, NFC-normalised, blanks and repeats dropped. Codes never contain a comma
+// (checkCode), so the split is exact. The result is never nil — pq.Array(nil) would send NULL, not an empty array.
+func parseReportCodeList(raw, field string) ([]string, error) {
+	codes := normalizeCodeList(strings.Split(raw, ","))
+	if len(codes) > maxReportDimensionCodes {
+		err := fieldError("report_dimension_too_many", field, fmt.Sprintf("เลือกได้ไม่เกิน %d รหัสต่อรายงาน (ตอนนี้เลือก %d รหัส) กรุณาลดจำนวนที่เลือกลง", maxReportDimensionCodes, len(codes)))
+		err.Args = []string{strconv.Itoa(maxReportDimensionCodes), strconv.Itoa(len(codes))}
+		return nil, err
+	}
+	if codes == nil {
+		codes = []string{}
+	}
+	return codes, nil
+}
+
+// parseReportDimensions resolves both filters of a report query.
+func (r *reportContext) parseReportDimensions(q ReportQuery) error {
+	var err error
+	if r.departments, err = parseReportCodeList(q.DepartmentCode, "departmentcode"); err != nil {
+		return err
+	}
+	r.projects, err = parseReportCodeList(q.ProjectCode, "projectcode")
+	return err
 }
 
 func (p *Postgres) Report(ctx context.Context, scope Scope, name string, q ReportQuery) (Report, error) {
@@ -117,6 +150,9 @@ func newReportContext(ctx context.Context, tx *sql.Tx, scope Scope, q ReportQuer
 	if q.AccountFrom != "" && q.AccountTo != "" && q.AccountFrom > q.AccountTo {
 		return r, fieldError("report_account_range_invalid", "accountfrom", "รหัสบัญชีเริ่มต้นต้องไม่มากกว่ารหัสบัญชีสิ้นสุด")
 	}
+	if err := r.parseReportDimensions(q); err != nil {
+		return r, err
+	}
 	date := q.To
 	if date == "" {
 		date = time.Now().UTC().Format("2006-01-02")
@@ -158,9 +194,9 @@ func newReportContext(ctx context.Context, tx *sql.Tx, scope Scope, q ReportQuer
 	q.FiscalYear = r.fiscal.Code
 	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
 	r.query = q
-	r.args = []any{scope.Company, q.FiscalYear, q.From, q.To, q.AccountCode, q.BranchCode, q.DepartmentCode, q.ProjectCode, q.BookCode, q.AccountFrom, q.AccountTo}
+	r.args = []any{scope.Company, q.FiscalYear, q.From, q.To, q.AccountCode, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), q.BookCode, q.AccountFrom, q.AccountTo}
 	// $10/$11 = ช่วงรหัสบัญชีแบบ Champ (รวมปลายทั้งสอง) เทียบแบบไบต์ให้ผลเหมือนกันทุก locale ของฐานข้อมูล
-	r.filter = `company=$1 AND fiscal_year=$2 AND $3::date<=$4::date AND entry_date<=$4::date AND ($5='' OR account_code=$5) AND ($6='' OR branch_code=$6) AND ($7='' OR department_code=$7) AND ($8='' OR project_code=$8) AND ($9='' OR book_code=$9)` + accountRangeFilter("account_code")
+	r.filter = `company=$1 AND fiscal_year=$2 AND $3::date<=$4::date AND entry_date<=$4::date AND ($5='' OR account_code=$5) AND ($6='' OR branch_code=$6) AND (cardinality($7::text[])=0 OR department_code=ANY($7::text[])) AND (cardinality($8::text[])=0 OR project_code=ANY($8::text[])) AND ($9='' OR book_code=$9)` + accountRangeFilter("account_code")
 	return r, nil
 }
 
@@ -697,7 +733,7 @@ func (r reportContext) budgetComparison(ctx context.Context) (Report, error) {
 		JOIN gl_budget_lines l ON l.company=b.company AND l.budget_code=b.code
 		WHERE b.company=$1 AND b.fiscal_year=$2 AND ($13='' OR b.code=$13)
 			AND ($5='' OR l.account_code=$5)` + accountRangeFilter("l.account_code") + ` AND ($6='' OR b.branch_code=$6)
-			AND ($7='' OR b.department_code=$7) AND ($8='' OR b.project_code=$8)
+			AND (cardinality($7::text[])=0 OR b.department_code=ANY($7::text[])) AND (cardinality($8::text[])=0 OR b.project_code=ANY($8::text[]))
 		GROUP BY b.code, b.name, b.branch_code, b.department_code, b.project_code, l.account_code
 	), compared AS (
 		SELECT br.*,
@@ -766,9 +802,12 @@ func newBudgetDetailContext(tx *sql.Tx, scope Scope, q ReportQuery) (reportConte
 	if q.AccountFrom != "" && q.AccountTo != "" && q.AccountFrom > q.AccountTo {
 		return r, fieldError("report_account_range_invalid", "accountfrom", "รหัสบัญชีเริ่มต้นต้องไม่มากกว่ารหัสบัญชีสิ้นสุด")
 	}
+	if err := r.parseReportDimensions(q); err != nil {
+		return r, err
+	}
 	q.Page, q.Limit = pageBounds(q.Page, q.Limit)
 	r.query = q
-	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, q.DepartmentCode, q.ProjectCode, NormalizeCode(q.BudgetCode), q.AccountFrom, q.AccountTo}
+	r.args = []any{scope.Company, q.FiscalYear, q.BranchCode, pq.Array(r.departments), pq.Array(r.projects), NormalizeCode(q.BudgetCode), q.AccountFrom, q.AccountTo}
 	return r, nil
 }
 
@@ -783,8 +822,8 @@ func (r reportContext) budgetDetail(ctx context.Context) (Report, error) {
 			l.account_code, SUM(l.amount) AS amount
 		FROM gl_budgets b
 		JOIN gl_budget_lines l ON l.company=b.company AND l.budget_code=b.code
-		WHERE b.company=$1 AND ($2='' OR b.fiscal_year=$2) AND ($3='' OR b.branch_code=$3) AND ($4='' OR b.department_code=$4)
-			AND ($5='' OR b.project_code=$5) AND ($6='' OR b.code=$6)
+		WHERE b.company=$1 AND ($2='' OR b.fiscal_year=$2) AND ($3='' OR b.branch_code=$3) AND (cardinality($4::text[])=0 OR b.department_code=ANY($4::text[]))
+			AND (cardinality($5::text[])=0 OR b.project_code=ANY($5::text[])) AND ($6='' OR b.code=$6)
 			AND ($7='' OR l.account_code COLLATE "C">=$7) AND ($8='' OR l.account_code COLLATE "C"<=$8)
 		GROUP BY b.code, b.name, b.fiscal_year, b.branch_code, b.department_code, b.project_code, l.account_code
 	), budget_lines AS (

@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { Download, RefreshCw, FileText, ArrowLeft, ExternalLink, X, CheckCircle2, AlertTriangle, Sparkles, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/select";
-import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, type GLBudget, type GLPage } from "@/lib/general-ledger";
+import { accountTypeLabels, displayAmountUnits, findJournalBook, journalBookName, type GLJournalBook, labelText, type GLLabel, type GLTextFn, formatAmount, reportCsv, type GLReport, type GLJournal, journalTotals, amountString, GL_MENU_ITEMS, accountName, type GLAccount, type GLBudget, type GLPage, normalizeDimensionCodes, reportCodeList } from "@/lib/general-ledger";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate } from "@/lib/date-time";
 import { glRequest } from "@/lib/general-ledger-api";
+import { DimensionCodeMultiSelect, useDimensionRegisters } from "./gl-dimension-select";
 import { AccountSelect, Check, Field, Notice, Pager, YearSelect, actionClass, control, downloadText, panel, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { useReportPreferences } from "@/hooks/use-report-preferences";
 import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
@@ -508,8 +509,8 @@ function reportPrintMeta(name: string, filters: ReportFilters, asOf: boolean, vo
       range && filters.accountfrom ? `${tr("gl_account_from", "จากรหัสบัญชี")} ${filters.accountfrom}` : "",
       range && filters.accountto ? `${tr("gl_account_to", "ถึงรหัสบัญชี")} ${filters.accountto}` : "",
       filters.branchcode ? `${tr("gl_branch_code", "รหัสสาขา")} ${filters.branchcode}` : "",
-      filters.departmentcode ? `${tr("gl_department_code", "รหัสแผนก")} ${filters.departmentcode}` : "",
-      filters.projectcode ? `${tr("gl_project_code", "รหัสโครงการ")} ${filters.projectcode}` : "",
+      filters.departmentcode ? `${tr("gl_department_code", "รหัสแผนก")} ${reportCodeList(filters.departmentcode).join(", ")}` : "",
+      filters.projectcode ? `${tr("gl_project_code", "รหัสโครงการ")} ${reportCodeList(filters.projectcode).join(", ")}` : "",
     ],
     printedBy: printUserName(),
     printedAt: printedAtText(language),
@@ -525,6 +526,7 @@ type BudgetOption = { code: string; name: string; fiscalyear: string };
 export function GLReports({ name, heading }: { name: string; heading?: string }) {
   const tr = useGLText();
   const refs = useReferences();
+  const dims = useDimensionRegisters();
   const language = useGLLanguage();
   const [activeReportName, setActiveReportName] = useState(name);
   const [drilledFrom, setDrilledFrom] = useState<{ report: string; filters: ReportFilters } | null>(null);
@@ -652,7 +654,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
       </div>
     )}
 
-    <Notice error text={error || refs.error} />
+    <Notice error text={error || refs.error || dims.error} />
     <form className="shrink-0 grid gap-3" onSubmit={(event) => { event.preventDefault(); void load(); }}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {asOf ? <>
@@ -665,8 +667,8 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         <Field label={tr("gl_account_from", "จากรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_from", "จากรหัสบัญชี")} value={filters.accountfrom} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountfrom: value }))} /></Field>
         <Field label={tr("gl_account_to", "ถึงรหัสบัญชี")}><AccountSelect accounts={refs.accounts} all label={tr("gl_account_to", "ถึงรหัสบัญชี")} value={filters.accountto} onChange={(value) => setFilters((current) => ({ ...current, accountcode: "", accountto: value }))} /></Field>
         <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={filters.branchcode} onChange={(e) => set("branchcode", e.target.value)} placeholder={tr("gl_all_branches", "ทุกสาขา")} /></Field>
-        <Field label={tr("gl_department_code", "รหัสแผนก")}><input className={control} value={filters.departmentcode} onChange={(e) => set("departmentcode", e.target.value)} placeholder={tr("gl_all_departments", "ทุกแผนก")} /></Field>
-        <Field label={tr("gl_project_code", "รหัสโครงการ")}><input className={control} value={filters.projectcode} onChange={(e) => set("projectcode", e.target.value)} placeholder={tr("gl_all_projects", "ทุกโครงการ")} /></Field>
+        <DimensionCodeMultiSelect report resource="departments" value={reportCodeList(filters.departmentcode)} register={dims.departments} onChange={(codes) => set("departmentcode", normalizeDimensionCodes(codes).join(","))} />
+        <DimensionCodeMultiSelect report resource="projects" value={reportCodeList(filters.projectcode)} register={dims.projects} onChange={(codes) => set("projectcode", normalizeDimensionCodes(codes).join(","))} />
         {BOOK_REPORTS.has(activeReportName) && <Field label={tr("gl_print_volume", "เล่มที่ (สำหรับพิมพ์สมุดบัญชี)")}><input className={control} value={volume} maxLength={20} onChange={(e) => setVolume(e.target.value)} placeholder={tr("gl_print_volume_placeholder", "เช่น 1")} /></Field>}
         <Field label={tr("gl_journal", "สมุดรายวัน")}><Combobox value={filters.bookcode} onChange={(value) => set("bookcode", value)}><option value="">{tr("gl_all_types", "ทุกสมุดรายวัน")}</option>{(refs.books ?? []).filter((book) => !book.isdeleted).map((book) => <option key={book.code} value={book.code}>{book.code} · {journalBookName(book, book.code, language)}</option>)}</Combobox></Field>
         {activeReportName === "budgetcomparison" && <Field label={tr("gl_budget_code", "รหัสงบประมาณ")}><Combobox value={filters.budgetcode} onChange={(value) => set("budgetcode", value)}><option value="">{tr("gl_all_budgets", "ทุกงบประมาณ")}</option>{budgets.filter((budget) => !filters.fiscalyear || budget.fiscalyear === filters.fiscalyear).map((budget) => <option key={budget.code} value={budget.code}>{budget.code} · {budget.name}</option>)}</Combobox></Field>}

@@ -158,9 +158,9 @@ export const DIMENSION_RESOURCES = ["departments", "projects"] as const;
 export type GLDimensionResource = (typeof DIMENSION_RESOURCES)[number];
 export type GLDimension = GLIdentity & { code: string; name: string; isactive: boolean };
 export function isDimensionResource(resource: string): resource is GLDimensionResource { return (DIMENSION_RESOURCES as readonly string[]).includes(resource); }
-/** Active, not deleted register entries ordered by code (the journal and the account pickers offer nothing else). */
-export function activeDimensions(list: GLDimension[]): GLDimension[] {
-  return list.filter((item) => item.isactive && !item.isdeleted).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }));
+/** Active, not deleted register entries ordered by code (the journal and the account pickers offer nothing else; a report also takes closed codes). */
+export function activeDimensions(list: GLDimension[], includeInactive = false): GLDimension[] {
+  return list.filter((item) => (includeInactive || item.isactive) && !item.isdeleted).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" }));
 }
 /** The allowed-code list an account keeps for a register; empty = every code. */
 export function accountDimensionCodes(account: Pick<GLAccount, "departcodes" | "projectcodes"> | undefined, resource: GLDimensionResource): string[] {
@@ -172,6 +172,8 @@ export function normalizeDimensionCodes(codes: unknown): string[] {
   if (!Array.isArray(codes)) return [];
   return [...new Set(codes.map((code) => String(code ?? "").trim()).filter(Boolean))].sort();
 }
+/** A report's department/project filter is ONE comma-separated query value (Champ multi-select, GLRepGLDlg.cpp DepartCode IN (...)); a code never holds a comma. */
+export function reportCodeList(value: string): string[] { return normalizeDimensionCodes(value.split(",")); }
 /** Options for one journal line: active register codes the account allows, plus the code the line already holds when it is no longer offered (shown so it can be read and replaced). */
 export function dimensionOptions(register: GLDimension[], allowed: string[], current: string): GLDimension[] {
   const offered = activeDimensions(register).filter((item) => allowed.length === 0 || allowed.includes(item.code));

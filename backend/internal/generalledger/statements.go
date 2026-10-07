@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/shopspring/decimal"
 )
 
@@ -167,8 +168,8 @@ func (r reportContext) statementBalances(ctx context.Context, fiscalYear, from, 
       COALESCE(SUM(CASE WHEN entry_date>=$3::date AND kind NOT IN ('opening','closing') THEN debit-credit ELSE 0 END),0)::text,
       COALESCE(SUM(CASE WHEN entry_date<$3::date OR kind='opening' THEN debit-credit ELSE 0 END),0)::text,
       COALESCE(MAX(account_name),'')
-    FROM gl_lines WHERE company=$1 AND fiscal_year=$2 AND entry_date<=$4::date AND ($5='' OR branch_code=$5) AND ($6='' OR department_code=$6) AND ($7='' OR project_code=$7)
-    GROUP BY account_code`, r.scope.Company, fiscalYear, from, to, r.query.BranchCode, r.query.DepartmentCode, r.query.ProjectCode)
+    FROM gl_lines WHERE company=$1 AND fiscal_year=$2 AND entry_date<=$4::date AND ($5='' OR branch_code=$5) AND (cardinality($6::text[])=0 OR department_code=ANY($6::text[])) AND (cardinality($7::text[])=0 OR project_code=ANY($7::text[]))
+    GROUP BY account_code`, r.scope.Company, fiscalYear, from, to, r.query.BranchCode, pq.Array(r.departments), pq.Array(r.projects))
 	if err != nil {
 		return nil, err
 	}

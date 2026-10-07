@@ -13,6 +13,14 @@ describe("GL authenticated proxy", () => {
     expect(url).not.toContain("holdingcode");
     expect(init.headers.Authorization).toBe("Bearer test-token");
   });
+  it("passes a comma-separated department and project list to the backend as one value each", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    const request = new Request("http://localhost/api/gl/reports/trialbalance?fiscalyear=FY&departmentcode=D1%2CD2&projectcode=P1%2CP2%2CP3", { headers });
+    expect((await GET(request, context("reports", "trialbalance"))).status).toBe(200);
+    const query = new URL(fetchMock.mock.calls[0][0]).searchParams;
+    expect(query.get("departmentcode")).toBe("D1,D2");
+    expect(query.get("projectcode")).toBe("P1,P2,P3");
+  });
   it("rejects unknown/traversal paths and unauthenticated reads", async () => {
     vi.stubGlobal("fetch", vi.fn());
     expect((await GET(new Request("http://localhost/api/gl/accounts"), context("accounts"))).status).toBe(401);

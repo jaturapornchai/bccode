@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
+import { BUDGET_PERIODS, activeDimensions, budgetPeriodStarts, budgetPeriodsTotal, reportCodeList, type GLDimension } from "./general-ledger";
 import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
 import { activeJournalBooks, amountString, amountUnits, chartOfAccountsCsv, csvCell, defaultJournalBookCode, dimensionPayload, fiscalYearForDate, isDimensionResource, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
 import { statementIsPeriodic, statementSetDefaultSelection, statementSetRank, statementSetTemplates, type GLStatementTemplate, type StatementType } from "./general-ledger";
@@ -588,5 +588,19 @@ describe("statement account suggestions", () => {
     const api = readFileSync(resolve(process.cwd(), "src", "lib", "general-ledger-api.ts"), "utf8");
     expect(api).toMatch(/resource: "statement-templates", action: "suggest"/);
     expect(api).toContain("const known = withKnownSuggestKeys(template);");
+  });
+});
+
+describe("report department / project multi-select value", () => {
+  it("reads the comma-separated query value as a trimmed, de-duplicated, sorted code list", () => {
+    expect(reportCodeList("")).toEqual([]);
+    expect(reportCodeList(" , ,")).toEqual([]);
+    expect(reportCodeList("D1")).toEqual(["D1"]);
+    expect(reportCodeList("D2, D1 ,D2,,")).toEqual(["D1", "D2"]);
+  });
+  it("a report may pick closed registry codes, the journal and the account pickers may not", () => {
+    const register = [{ code: "D1", name: "ขาย", isactive: true }, { code: "D2", name: "ผลิต", isactive: false }, { code: "D3", name: "ลบแล้ว", isactive: true, isdeleted: true }] as GLDimension[];
+    expect(activeDimensions(register).map((item) => item.code)).toEqual(["D1"]);
+    expect(activeDimensions(register, true).map((item) => item.code)).toEqual(["D1", "D2"]);
   });
 });
