@@ -649,6 +649,9 @@ func (h *Http) command(request microservice.IContext) error {
 	if action == "generate" {
 		action = "create" // สร้างงวดอัตโนมัติ = create periods
 	}
+	if cmd.Resource == "accounts" && cmd.Action == "load-standard" {
+		action = "create" // ใช้ผังบัญชีมาตรฐาน = สร้างบัญชีหลายรายการ ต้องมีสิทธิ์สร้างผังบัญชีเท่านั้น
+	}
 	if cmd.Resource == gl.PostBatchKind {
 		action = "update" // a posting batch needs the same right as posting one journal
 	}

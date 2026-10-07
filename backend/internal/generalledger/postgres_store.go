@@ -90,7 +90,10 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if !supportedRecord(cmd.Resource) && cmd.Resource != "processes" && cmd.Resource != VatAdjustKind {
 		return Result{}, fmt.Errorf("ไม่รองรับรายการบัญชีนี้")
 	}
-	if !contains([]string{"reconcile", "review", "create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess", "generate"}, cmd.Action) {
+	if !contains([]string{"reconcile", "review", "create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "year-end", "recalculate", "reprocess", "generate", "load-standard"}, cmd.Action) {
+		return Result{}, fmt.Errorf("ไม่รองรับคำสั่งบัญชีนี้")
+	}
+	if cmd.Action == "load-standard" && cmd.Resource != "accounts" {
 		return Result{}, fmt.Errorf("ไม่รองรับคำสั่งบัญชีนี้")
 	}
 	if cmd.Action == "reconcile" && cmd.Resource != "journals" {
@@ -99,7 +102,7 @@ func (s *PostgresStore) Execute(ctx context.Context, scope Scope, cmd Command) (
 	if cmd.Action == "generate" && cmd.Resource != "periods" {
 		return Result{}, fmt.Errorf("ไม่รองรับคำสั่งบัญชีนี้")
 	}
-	if cmd.Action != "create" && cmd.Action != "generate" && cmd.Resource != VatAdjustKind && cmd.ID == "" {
+	if cmd.Action != "create" && cmd.Action != "generate" && cmd.Action != "load-standard" && cmd.Resource != VatAdjustKind && cmd.ID == "" {
 		return Result{}, fmt.Errorf("กรุณาเลือกรายการบัญชี")
 	}
 
@@ -233,6 +236,8 @@ func commandResult(cmd Command, sequence int64, changes []Change) Result {
 			res.CreatedJournals++
 		case change.Kind == "periods" && cmd.Action == "generate":
 			res.CreatedPeriods++
+		case change.Kind == "accounts" && cmd.Action == "load-standard":
+			res.CreatedAccounts++
 		case change.Kind == "journals" && cmd.Resource == VatAdjustKind:
 			res.AdjustedJournals++
 		case change.Kind == PostBatchKind:
@@ -314,6 +319,9 @@ func (s *PostgresStore) applyMutation(ctx context.Context, tx *sql.Tx, scope Sco
 }
 
 func (s *PostgresStore) mutateAccount(ctx context.Context, tx *sql.Tx, scope Scope, cmd Command, now time.Time) ([]Change, error) {
+	if cmd.Action == "load-standard" {
+		return s.loadStandardChart(ctx, tx, scope, now)
+	}
 	if cmd.Action == "create" {
 		if cmd.Account == nil {
 			return nil, fmt.Errorf("ไม่พบข้อมูลผังบัญชี")

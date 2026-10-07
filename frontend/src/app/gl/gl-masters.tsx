@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
-import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight, Printer, Download, Lock } from "lucide-react";
+import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight, Printer, Download, Lock, LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -171,6 +171,10 @@ export function editorAlert({ error, listError, refsError, hasRecord }: { error:
   const pane = hasRecord ? error : "";
   const page = hasRecord ? "" : [error, listError, refsError].map((text) => text ?? "").filter(Boolean).join(" ");
   return { pane, page, count: (pane ? 1 : 0) + (page ? 1 : 0) };
+}
+/** Champ 5502 "ผังบัญชีตัวอย่าง" → ปุ่ม "ใช้ผังบัญชีมาตรฐาน": แสดงเมื่อโหลดรายการแล้วสำเร็จ ผังว่างจริง และไม่ได้ค้นหาอยู่ (ค้นแล้วไม่พบ ≠ ผังว่าง) — backend ตรวจซ้ำอีกชั้น */
+export function canLoadStandardChart({ loaded, loading, error, total, search }: { loaded: boolean; loading: boolean; error: string; total: number; search: string }): boolean {
+  return loaded && !loading && !error && total === 0 && !search.trim();
 }
 export function pageErrorText(error: string, hasRecord: boolean) { return hasRecord ? "" : error; }
 export function paneErrorText(error: string, hasRecord: boolean) { return hasRecord ? error : ""; }
@@ -586,6 +590,26 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
     } catch (e) { showFormError(e, tr("gl_transaction_failed_try_again", "ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")); }
   }
 
+  // Champ 5502 "ผังบัญชีตัวอย่าง": BC never wipes a chart — backend loads the standard chart only into a company with no account at all.
+  async function loadStandardChart() {
+    if (busy) return;
+    if (!await confirm({
+      title: tr("gl_standard_chart_confirm_title", "ใช้ผังบัญชีมาตรฐาน?"),
+      description: tr("gl_standard_chart_confirm_desc", "ระบบจะสร้างผังบัญชีมาตรฐานแบบไทย 5 ระดับ จัดกลุ่มตามรายการย่อในงบการเงินของกรมพัฒนาธุรกิจการค้า"),
+      details: tr("gl_standard_chart_confirm_details", "ใช้ได้เฉพาะบริษัทที่ยังไม่มีผังบัญชี แก้ไข เพิ่ม หรือปิดใช้บัญชีได้ภายหลัง"),
+      confirmLabel: tr("gl_standard_chart_use", "ใช้ผังบัญชีมาตรฐาน"),
+      tone: "info",
+    })) return;
+    try {
+      setError("");
+      const result = await execute({ resource: "accounts", action: "load-standard", reason: tr("gl_standard_chart_use", "ใช้ผังบัญชีมาตรฐาน") });
+      list.reload();
+      refs.reload();
+      setRevision((value) => value + 1);
+      toast.success(tr("gl_standard_chart_done", "สร้างผังบัญชีมาตรฐาน {0} บัญชีเรียบร้อยแล้ว").replace("{0}", String(result.createdaccounts ?? 0)));
+    } catch (e) { showFormError(e, tr("gl_standard_chart_failed", "ใช้ผังบัญชีมาตรฐานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")); }
+  }
+
   const hasAmount = resource === "forecast";
   const isAcc = resource === "accounts";
   const isBook = resource === "journal-books";
@@ -606,6 +630,10 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
     expense: true,
   });
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
+  // The list starts empty before its first request: show the standard-chart offer only after a load has really finished.
+  const [listRequested, setListRequested] = useState(false);
+  useEffect(() => { if (list.loading) setListRequested(true); }, [list.loading]);
+  const standardChartOffer = isAcc && canLoadStandardChart({ loaded: listRequested, loading: list.loading, error: list.error || refs.error, total: list.data.total, search: `${search}${searchDebounce.query}` });
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
@@ -672,6 +700,7 @@ export function GLMasters({ resource, route, extraActions, onDirtyChange }: { re
             <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
             <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
             <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
+            {standardChartOffer && <Button type="button" variant="outline" className={actionClass} onClick={() => void loadStandardChart()} disabled={busy}><LayoutTemplate className="size-4 mr-1.5" />{tr("gl_standard_chart_use", "ใช้ผังบัญชีมาตรฐาน")}</Button>}
             {extraActions}
             {isBook && (
               <Button type="button" variant="outline" className={actionClass} onClick={() => setPrintDialog("books")} disabled={!refs.books.length} title={tr("gl_book_report_title", "รายงานรายละเอียดสมุดบัญชี")}>

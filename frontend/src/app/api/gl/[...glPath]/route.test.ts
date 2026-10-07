@@ -169,6 +169,15 @@ describe("GL authenticated proxy", () => {
     for (const resource of ["journals", "budgets", "fiscal-years", "mappings"]) expect((await post({ resource, action: "references", id: "x", requestid })).status).toBe(400);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("forwards loading the standard chart for accounts only", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: { id: "acc-1", version: 1, createdaccounts: 120 } })); vi.stubGlobal("fetch", fetchMock);
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const post = (body: unknown) => POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify(body) }), context("command"));
+    expect((await post({ resource: "accounts", action: "load-standard", requestid, reason: "ใช้ผังบัญชีมาตรฐาน" })).status).toBe(200);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ resource: "accounts", action: "load-standard", requestid, reason: "ใช้ผังบัญชีมาตรฐาน" });
+    for (const resource of ["journals", "budgets", "fiscal-years", "mappings"]) expect((await post({ resource, action: "load-standard", requestid })).status).toBe(400);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("rejects numeric budget money and spread outside budgets", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const requestid = "12345678-1234-1234-1234-123456789012";

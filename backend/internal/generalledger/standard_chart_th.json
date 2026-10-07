@@ -1,0 +1,3962 @@
+[
+  {
+    "accountcode": "10000",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินทรัพย์"
+      },
+      {
+        "code": "en",
+        "name": "Assets"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": null,
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 1
+  },
+  {
+    "accountcode": "11000",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินทรัพย์หมุนเวียน"
+      },
+      {
+        "code": "en",
+        "name": "Current assets"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "10000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "11100",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินสดและรายการเทียบเท่าเงินสด"
+      },
+      {
+        "code": "en",
+        "name": "Cash and cash equivalents"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "11110",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินสด"
+      },
+      {
+        "code": "en",
+        "name": "Cash on hand"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": true,
+    "level": 4
+  },
+  {
+    "accountcode": "11120",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินสดย่อย"
+      },
+      {
+        "code": "en",
+        "name": "Petty cash"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": true,
+    "level": 4
+  },
+  {
+    "accountcode": "11130",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากธนาคาร - กระแสรายวัน"
+      },
+      {
+        "code": "en",
+        "name": "Bank deposits - current accounts"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11100",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11131",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากกระแสรายวัน - ธนาคารกสิกรไทย"
+      },
+      {
+        "code": "en",
+        "name": "Current account - Kasikornbank"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11130",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": true,
+    "level": 5
+  },
+  {
+    "accountcode": "11132",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากกระแสรายวัน - ธนาคารกรุงเทพ"
+      },
+      {
+        "code": "en",
+        "name": "Current account - Bangkok Bank"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11130",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": true,
+    "level": 5
+  },
+  {
+    "accountcode": "11140",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากธนาคาร - ออมทรัพย์"
+      },
+      {
+        "code": "en",
+        "name": "Bank deposits - savings accounts"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11100",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11141",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากออมทรัพย์ - ธนาคารกสิกรไทย"
+      },
+      {
+        "code": "en",
+        "name": "Savings account - Kasikornbank"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11140",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": true,
+    "level": 5
+  },
+  {
+    "accountcode": "11142",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากออมทรัพย์ - ธนาคารไทยพาณิชย์"
+      },
+      {
+        "code": "en",
+        "name": "Savings account - Siam Commercial Bank"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11140",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": true,
+    "level": 5
+  },
+  {
+    "accountcode": "11150",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากประจำครบกำหนดไม่เกินสามเดือน"
+      },
+      {
+        "code": "en",
+        "name": "Fixed deposits maturing within three months"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": true,
+    "level": 4
+  },
+  {
+    "accountcode": "11200",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินลงทุนชั่วคราว"
+      },
+      {
+        "code": "en",
+        "name": "Temporary investments"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "11210",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากประจำครบกำหนดเกินสามเดือนแต่ไม่เกินหนึ่งปี"
+      },
+      {
+        "code": "en",
+        "name": "Fixed deposits maturing over three months to one year"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11300",
+    "names": [
+      {
+        "code": "th",
+        "name": "ลูกหนี้การค้าและลูกหนี้หมุนเวียนอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Trade and other current receivables"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "11310",
+    "names": [
+      {
+        "code": "th",
+        "name": "ลูกหนี้การค้า"
+      },
+      {
+        "code": "en",
+        "name": "Trade receivables"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11300",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11320",
+    "names": [
+      {
+        "code": "th",
+        "name": "เช็ครับลงวันที่ล่วงหน้า"
+      },
+      {
+        "code": "en",
+        "name": "Post-dated cheques received"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11300",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11330",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเผื่อหนี้สงสัยจะสูญ"
+      },
+      {
+        "code": "en",
+        "name": "Allowance for doubtful accounts"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11300",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11340",
+    "names": [
+      {
+        "code": "th",
+        "name": "ลูกหนี้อื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other receivables"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11300",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11341",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินทดรองจ่ายพนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Advances to employees"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11340",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "11342",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายจ่ายล่วงหน้า"
+      },
+      {
+        "code": "en",
+        "name": "Prepaid expenses"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11340",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "11343",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้ค้างรับ"
+      },
+      {
+        "code": "en",
+        "name": "Accrued income"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11340",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "11350",
+    "names": [
+      {
+        "code": "th",
+        "name": "ลูกหนี้กรมสรรพากร"
+      },
+      {
+        "code": "en",
+        "name": "Receivable from the Revenue Department"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11300",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11351",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีซื้อ"
+      },
+      {
+        "code": "en",
+        "name": "Input VAT"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11350",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "11352",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีมูลค่าเพิ่มรอเรียกคืน (ภ.พ.30)"
+      },
+      {
+        "code": "en",
+        "name": "VAT refundable (P.P.30)"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11350",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "11353",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีเงินได้ถูกหัก ณ ที่จ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Withholding tax deducted at source"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11350",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "11354",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีเงินได้นิติบุคคลจ่ายล่วงหน้า (ภ.ง.ด.51)"
+      },
+      {
+        "code": "en",
+        "name": "Prepaid corporate income tax (P.N.D.51)"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11350",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "11400",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินให้กู้ยืมระยะสั้น"
+      },
+      {
+        "code": "en",
+        "name": "Short-term loans"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "11410",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินให้กู้ยืมระยะสั้นแก่กรรมการและกิจการที่เกี่ยวข้องกัน"
+      },
+      {
+        "code": "en",
+        "name": "Short-term loans to directors and related parties"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11400",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11500",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินค้าคงเหลือ"
+      },
+      {
+        "code": "en",
+        "name": "Inventories"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "11510",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินค้าสำเร็จรูป"
+      },
+      {
+        "code": "en",
+        "name": "Finished goods and merchandise"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11500",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11520",
+    "names": [
+      {
+        "code": "th",
+        "name": "งานระหว่างทำ"
+      },
+      {
+        "code": "en",
+        "name": "Work in process"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11500",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11530",
+    "names": [
+      {
+        "code": "th",
+        "name": "วัตถุดิบ"
+      },
+      {
+        "code": "en",
+        "name": "Raw materials"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11500",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11540",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเผื่อมูลค่าสินค้าลดลง"
+      },
+      {
+        "code": "en",
+        "name": "Allowance for decline in inventory value"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11500",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "11600",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินทรัพย์หมุนเวียนอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other current assets"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "11610",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีซื้อยังไม่ถึงกำหนด"
+      },
+      {
+        "code": "en",
+        "name": "Undue input VAT"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "11600",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12000",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินทรัพย์ไม่หมุนเวียน"
+      },
+      {
+        "code": "en",
+        "name": "Non-current assets"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "10000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "12100",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากธนาคารที่มีภาระค้ำประกัน"
+      },
+      {
+        "code": "en",
+        "name": "Bank deposits pledged as collateral"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "12110",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินฝากประจำที่ติดภาระค้ำประกัน"
+      },
+      {
+        "code": "en",
+        "name": "Fixed deposits pledged as collateral"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12200",
+    "names": [
+      {
+        "code": "th",
+        "name": "ที่ดิน อาคารและอุปกรณ์"
+      },
+      {
+        "code": "en",
+        "name": "Property, plant and equipment"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "12210",
+    "names": [
+      {
+        "code": "th",
+        "name": "ที่ดิน"
+      },
+      {
+        "code": "en",
+        "name": "Land"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12220",
+    "names": [
+      {
+        "code": "th",
+        "name": "อาคารและส่วนปรับปรุงอาคาร - สุทธิ"
+      },
+      {
+        "code": "en",
+        "name": "Buildings and improvements - net"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12200",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12221",
+    "names": [
+      {
+        "code": "th",
+        "name": "อาคารและส่วนปรับปรุงอาคาร"
+      },
+      {
+        "code": "en",
+        "name": "Buildings and improvements"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12220",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12222",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคาสะสม - อาคารและส่วนปรับปรุงอาคาร"
+      },
+      {
+        "code": "en",
+        "name": "Accumulated depreciation - buildings and improvements"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12220",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12230",
+    "names": [
+      {
+        "code": "th",
+        "name": "เครื่องจักรและอุปกรณ์ - สุทธิ"
+      },
+      {
+        "code": "en",
+        "name": "Machinery and equipment - net"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12200",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12231",
+    "names": [
+      {
+        "code": "th",
+        "name": "เครื่องจักรและอุปกรณ์"
+      },
+      {
+        "code": "en",
+        "name": "Machinery and equipment"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12230",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12232",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคาสะสม - เครื่องจักรและอุปกรณ์"
+      },
+      {
+        "code": "en",
+        "name": "Accumulated depreciation - machinery and equipment"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12230",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12240",
+    "names": [
+      {
+        "code": "th",
+        "name": "เครื่องตกแต่งและอุปกรณ์สำนักงาน - สุทธิ"
+      },
+      {
+        "code": "en",
+        "name": "Furniture and office equipment - net"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12200",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12241",
+    "names": [
+      {
+        "code": "th",
+        "name": "เครื่องตกแต่งและอุปกรณ์สำนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Furniture and office equipment"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12240",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12242",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคาสะสม - เครื่องตกแต่งและอุปกรณ์สำนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Accumulated depreciation - furniture and office equipment"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12240",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12250",
+    "names": [
+      {
+        "code": "th",
+        "name": "ยานพาหนะ - สุทธิ"
+      },
+      {
+        "code": "en",
+        "name": "Vehicles - net"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12200",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12251",
+    "names": [
+      {
+        "code": "th",
+        "name": "ยานพาหนะ"
+      },
+      {
+        "code": "en",
+        "name": "Vehicles"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12250",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12252",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคาสะสม - ยานพาหนะ"
+      },
+      {
+        "code": "en",
+        "name": "Accumulated depreciation - vehicles"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12250",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12300",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินทรัพย์ไม่มีตัวตน"
+      },
+      {
+        "code": "en",
+        "name": "Intangible assets"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "12310",
+    "names": [
+      {
+        "code": "th",
+        "name": "โปรแกรมคอมพิวเตอร์ - สุทธิ"
+      },
+      {
+        "code": "en",
+        "name": "Computer software - net"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12300",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12311",
+    "names": [
+      {
+        "code": "th",
+        "name": "โปรแกรมคอมพิวเตอร์"
+      },
+      {
+        "code": "en",
+        "name": "Computer software"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12310",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12312",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าตัดจำหน่ายสะสม - โปรแกรมคอมพิวเตอร์"
+      },
+      {
+        "code": "en",
+        "name": "Accumulated amortization - computer software"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12310",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "12400",
+    "names": [
+      {
+        "code": "th",
+        "name": "สินทรัพย์ไม่หมุนเวียนอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other non-current assets"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "12410",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินประกันจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Guarantee deposits paid"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12400",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "12420",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีเงินได้นิติบุคคลรอขอคืน"
+      },
+      {
+        "code": "en",
+        "name": "Corporate income tax refund claims"
+      }
+    ],
+    "accounttype": "asset",
+    "parentaccountcode": "12400",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "20000",
+    "names": [
+      {
+        "code": "th",
+        "name": "หนี้สิน"
+      },
+      {
+        "code": "en",
+        "name": "Liabilities"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": null,
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 1
+  },
+  {
+    "accountcode": "21000",
+    "names": [
+      {
+        "code": "th",
+        "name": "หนี้สินหมุนเวียน"
+      },
+      {
+        "code": "en",
+        "name": "Current liabilities"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "20000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "21100",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินเบิกเกินบัญชีและเงินกู้ยืมระยะสั้นจากสถาบันการเงิน"
+      },
+      {
+        "code": "en",
+        "name": "Bank overdrafts and short-term borrowings from financial institutions"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "21110",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินเบิกเกินบัญชีธนาคาร"
+      },
+      {
+        "code": "en",
+        "name": "Bank overdrafts"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21120",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินกู้ยืมระยะสั้นจากธนาคาร"
+      },
+      {
+        "code": "en",
+        "name": "Short-term bank loans"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21200",
+    "names": [
+      {
+        "code": "th",
+        "name": "เจ้าหนี้การค้าและเจ้าหนี้หมุนเวียนอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Trade and other current payables"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "21210",
+    "names": [
+      {
+        "code": "th",
+        "name": "เจ้าหนี้การค้า"
+      },
+      {
+        "code": "en",
+        "name": "Trade payables"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21220",
+    "names": [
+      {
+        "code": "th",
+        "name": "เช็คจ่ายลงวันที่ล่วงหน้า"
+      },
+      {
+        "code": "en",
+        "name": "Post-dated cheques issued"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21230",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายค้างจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Accrued expenses"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21200",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21231",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินเดือนและค่าจ้างค้างจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Accrued salaries and wages"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21230",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21232",
+    "names": [
+      {
+        "code": "th",
+        "name": "ดอกเบี้ยค้างจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Accrued interest"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21230",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21233",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายค้างจ่ายอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other accrued expenses"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21230",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21240",
+    "names": [
+      {
+        "code": "th",
+        "name": "เจ้าหนี้อื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other payables"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21200",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21241",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้รับล่วงหน้า"
+      },
+      {
+        "code": "en",
+        "name": "Unearned revenue"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21240",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21242",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินรับล่วงหน้าจากลูกค้า"
+      },
+      {
+        "code": "en",
+        "name": "Advances from customers"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21240",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21243",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินประกันสังคมค้างจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Social security contributions payable"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21240",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21250",
+    "names": [
+      {
+        "code": "th",
+        "name": "เจ้าหนี้กรมสรรพากร - ภาษีมูลค่าเพิ่ม"
+      },
+      {
+        "code": "en",
+        "name": "VAT payable to the Revenue Department"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21200",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21251",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีขาย"
+      },
+      {
+        "code": "en",
+        "name": "Output VAT"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21250",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21252",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีมูลค่าเพิ่มค้างชำระ (ภ.พ.30)"
+      },
+      {
+        "code": "en",
+        "name": "VAT payable (P.P.30)"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21250",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21253",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีมูลค่าเพิ่มค้างจ่าย (ภ.พ.36)"
+      },
+      {
+        "code": "en",
+        "name": "Reverse-charge VAT payable (P.P.36)"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21250",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21260",
+    "names": [
+      {
+        "code": "th",
+        "name": "เจ้าหนี้กรมสรรพากร - ภาษีหัก ณ ที่จ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Withholding tax payable to the Revenue Department"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21200",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21261",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีหัก ณ ที่จ่ายค้างจ่าย - ภ.ง.ด.1"
+      },
+      {
+        "code": "en",
+        "name": "Withholding tax payable - P.N.D.1"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21260",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21262",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีหัก ณ ที่จ่ายค้างจ่าย - ภ.ง.ด.2"
+      },
+      {
+        "code": "en",
+        "name": "Withholding tax payable - P.N.D.2"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21260",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21263",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีหัก ณ ที่จ่ายค้างจ่าย - ภ.ง.ด.3"
+      },
+      {
+        "code": "en",
+        "name": "Withholding tax payable - P.N.D.3"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21260",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21264",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีหัก ณ ที่จ่ายค้างจ่าย - ภ.ง.ด.53"
+      },
+      {
+        "code": "en",
+        "name": "Withholding tax payable - P.N.D.53"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21260",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21265",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีหัก ณ ที่จ่ายค้างจ่าย - ภ.ง.ด.54"
+      },
+      {
+        "code": "en",
+        "name": "Withholding tax payable - P.N.D.54"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21260",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "21300",
+    "names": [
+      {
+        "code": "th",
+        "name": "ส่วนของหนี้สินระยะยาวที่ถึงกำหนดชำระภายในหนึ่งปี"
+      },
+      {
+        "code": "en",
+        "name": "Current portion of long-term liabilities"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "21310",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินกู้ยืมระยะยาวจากสถาบันการเงินที่ถึงกำหนดชำระภายในหนึ่งปี"
+      },
+      {
+        "code": "en",
+        "name": "Current portion of long-term borrowings from financial institutions"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21300",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21400",
+    "names": [
+      {
+        "code": "th",
+        "name": "ส่วนของหนี้สินตามสัญญาเช่าเงินทุนที่ถึงกำหนดชำระภายในหนึ่งปี"
+      },
+      {
+        "code": "en",
+        "name": "Current portion of finance lease liabilities"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "21410",
+    "names": [
+      {
+        "code": "th",
+        "name": "เจ้าหนี้ตามสัญญาเช่าซื้อที่ถึงกำหนดชำระภายในหนึ่งปี"
+      },
+      {
+        "code": "en",
+        "name": "Hire-purchase payables due within one year"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21400",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21500",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินกู้ยืมระยะสั้น"
+      },
+      {
+        "code": "en",
+        "name": "Short-term borrowings"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "21510",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินกู้ยืมระยะสั้นจากกรรมการและกิจการที่เกี่ยวข้องกัน"
+      },
+      {
+        "code": "en",
+        "name": "Short-term borrowings from directors and related parties"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21500",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21600",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีเงินได้นิติบุคคลค้างจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Corporate income tax payable"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "21610",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีเงินได้นิติบุคคลค้างจ่าย (ภ.ง.ด.50)"
+      },
+      {
+        "code": "en",
+        "name": "Corporate income tax payable (P.N.D.50)"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21600",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "21700",
+    "names": [
+      {
+        "code": "th",
+        "name": "หนี้สินหมุนเวียนอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other current liabilities"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "21710",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีขายยังไม่ถึงกำหนด"
+      },
+      {
+        "code": "en",
+        "name": "Undue output VAT"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "21700",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "22000",
+    "names": [
+      {
+        "code": "th",
+        "name": "หนี้สินไม่หมุนเวียน"
+      },
+      {
+        "code": "en",
+        "name": "Non-current liabilities"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "20000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "22100",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินกู้ยืมระยะยาว"
+      },
+      {
+        "code": "en",
+        "name": "Long-term borrowings"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "22000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "22110",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินกู้ยืมระยะยาวจากสถาบันการเงิน"
+      },
+      {
+        "code": "en",
+        "name": "Long-term borrowings from financial institutions"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "22100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "22200",
+    "names": [
+      {
+        "code": "th",
+        "name": "หนี้สินตามสัญญาเช่าเงินทุน"
+      },
+      {
+        "code": "en",
+        "name": "Finance lease liabilities"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "22000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "22210",
+    "names": [
+      {
+        "code": "th",
+        "name": "เจ้าหนี้ตามสัญญาเช่าซื้อ"
+      },
+      {
+        "code": "en",
+        "name": "Hire-purchase payables"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "22200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "22300",
+    "names": [
+      {
+        "code": "th",
+        "name": "ประมาณการหนี้สินไม่หมุนเวียนสำหรับผลประโยชน์พนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Non-current provisions for employee benefits"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "22000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "22310",
+    "names": [
+      {
+        "code": "th",
+        "name": "ประมาณการหนี้สินผลประโยชน์พนักงานเมื่อเกษียณอายุ"
+      },
+      {
+        "code": "en",
+        "name": "Provision for retirement benefits"
+      }
+    ],
+    "accounttype": "liability",
+    "parentaccountcode": "22300",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "30000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ส่วนของเจ้าของ"
+      },
+      {
+        "code": "en",
+        "name": "Owners' equity"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": null,
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 1
+  },
+  {
+    "accountcode": "31000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ส่วนของผู้ถือหุ้น"
+      },
+      {
+        "code": "en",
+        "name": "Shareholders' equity"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "30000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "31100",
+    "names": [
+      {
+        "code": "th",
+        "name": "ทุนเรือนหุ้น"
+      },
+      {
+        "code": "en",
+        "name": "Share capital"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "31110",
+    "names": [
+      {
+        "code": "th",
+        "name": "ทุนที่ชำระแล้ว"
+      },
+      {
+        "code": "en",
+        "name": "Issued and paid-up share capital"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "31200",
+    "names": [
+      {
+        "code": "th",
+        "name": "ส่วนเกินมูลค่าหุ้น"
+      },
+      {
+        "code": "en",
+        "name": "Share premium"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "31210",
+    "names": [
+      {
+        "code": "th",
+        "name": "ส่วนเกินมูลค่าหุ้นสามัญ"
+      },
+      {
+        "code": "en",
+        "name": "Share premium - ordinary shares"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "31300",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไร (ขาดทุน) สะสม"
+      },
+      {
+        "code": "en",
+        "name": "Retained earnings (deficit)"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "31310",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไรสะสม - จัดสรรแล้ว"
+      },
+      {
+        "code": "en",
+        "name": "Retained earnings - appropriated"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31300",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "31311",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไรสะสมจัดสรรแล้ว - ทุนสำรองตามกฎหมาย"
+      },
+      {
+        "code": "en",
+        "name": "Appropriated - legal reserve"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31310",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "31312",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไรสะสมจัดสรรแล้ว - สำรองอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Appropriated - other reserves"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31310",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "31320",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไรสะสม - ยังไม่ได้จัดสรร"
+      },
+      {
+        "code": "en",
+        "name": "Retained earnings - unappropriated"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31300",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "31330",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไร (ขาดทุน) สุทธิประจำงวด"
+      },
+      {
+        "code": "en",
+        "name": "Net profit (loss) for the period"
+      }
+    ],
+    "accounttype": "equity",
+    "parentaccountcode": "31300",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "40000",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้"
+      },
+      {
+        "code": "en",
+        "name": "Revenue"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": null,
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 1
+  },
+  {
+    "accountcode": "41000",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้จากการขายหรือการให้บริการ"
+      },
+      {
+        "code": "en",
+        "name": "Revenue from sales or services"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "40000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "41100",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้จากการขาย"
+      },
+      {
+        "code": "en",
+        "name": "Sales revenue"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "41000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "41110",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้จากการขายสินค้าในประเทศ"
+      },
+      {
+        "code": "en",
+        "name": "Domestic sales"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "41100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "41120",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้จากการขายสินค้าส่งออก"
+      },
+      {
+        "code": "en",
+        "name": "Export sales"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "41100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "41130",
+    "names": [
+      {
+        "code": "th",
+        "name": "รับคืนและส่วนลดจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Sales returns and discounts"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "41100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "41200",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้จากการให้บริการ"
+      },
+      {
+        "code": "en",
+        "name": "Service revenue"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "41000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "41210",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้ค่าบริการ"
+      },
+      {
+        "code": "en",
+        "name": "Service fees"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "41200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "42000",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้อื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other income"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "40000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "42100",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้ดอกเบี้ยและเงินปันผล"
+      },
+      {
+        "code": "en",
+        "name": "Interest and dividend income"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "42000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "42110",
+    "names": [
+      {
+        "code": "th",
+        "name": "ดอกเบี้ยรับ"
+      },
+      {
+        "code": "en",
+        "name": "Interest income"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "42100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "42120",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินปันผลรับ"
+      },
+      {
+        "code": "en",
+        "name": "Dividend income"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "42100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "42200",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไรและรายได้อื่นจากการดำเนินงาน"
+      },
+      {
+        "code": "en",
+        "name": "Other gains and operating income"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "42000",
+    "normalbalance": "credit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "42210",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไรจากการจำหน่ายสินทรัพย์"
+      },
+      {
+        "code": "en",
+        "name": "Gain on disposal of assets"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "42200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "42220",
+    "names": [
+      {
+        "code": "th",
+        "name": "กำไรจากอัตราแลกเปลี่ยน"
+      },
+      {
+        "code": "en",
+        "name": "Foreign exchange gain"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "42200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "42230",
+    "names": [
+      {
+        "code": "th",
+        "name": "รายได้เบ็ดเตล็ด"
+      },
+      {
+        "code": "en",
+        "name": "Miscellaneous income"
+      }
+    ],
+    "accounttype": "income",
+    "parentaccountcode": "42200",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "50000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": null,
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 1
+  },
+  {
+    "accountcode": "51000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ต้นทุนขายหรือต้นทุนการให้บริการ"
+      },
+      {
+        "code": "en",
+        "name": "Cost of sales or cost of services"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "50000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "51100",
+    "names": [
+      {
+        "code": "th",
+        "name": "ต้นทุนขาย"
+      },
+      {
+        "code": "en",
+        "name": "Cost of sales"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "51110",
+    "names": [
+      {
+        "code": "th",
+        "name": "ซื้อสินค้า"
+      },
+      {
+        "code": "en",
+        "name": "Purchases"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "51130",
+    "names": [
+      {
+        "code": "th",
+        "name": "ส่งคืนและส่วนลดรับ"
+      },
+      {
+        "code": "en",
+        "name": "Purchase returns and discounts"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51100",
+    "normalbalance": "credit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "51140",
+    "names": [
+      {
+        "code": "th",
+        "name": "ต้นทุนขายสินค้า"
+      },
+      {
+        "code": "en",
+        "name": "Cost of goods sold"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "51150",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าแรงและค่าใช้จ่ายในการผลิต"
+      },
+      {
+        "code": "en",
+        "name": "Production labour and overhead"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "51200",
+    "names": [
+      {
+        "code": "th",
+        "name": "ต้นทุนการให้บริการ"
+      },
+      {
+        "code": "en",
+        "name": "Cost of services"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "51210",
+    "names": [
+      {
+        "code": "th",
+        "name": "ต้นทุนค่าแรงงานบริการ"
+      },
+      {
+        "code": "en",
+        "name": "Service labour cost"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "51220",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าจ้างผู้รับเหมาช่วง"
+      },
+      {
+        "code": "en",
+        "name": "Subcontractor fees"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "51200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "52000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายในการขาย"
+      },
+      {
+        "code": "en",
+        "name": "Selling expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "50000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "52100",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายในการขายและจัดจำหน่าย"
+      },
+      {
+        "code": "en",
+        "name": "Selling and distribution expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "52000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "52110",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินเดือนพนักงานขาย"
+      },
+      {
+        "code": "en",
+        "name": "Sales staff salaries"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "52100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "52120",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่านายหน้าและค่าคอมมิชชั่น"
+      },
+      {
+        "code": "en",
+        "name": "Commissions"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "52100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "52130",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าโฆษณาและส่งเสริมการขาย"
+      },
+      {
+        "code": "en",
+        "name": "Advertising and sales promotion"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "52100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "52140",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าขนส่งสินค้าออก"
+      },
+      {
+        "code": "en",
+        "name": "Freight-out"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "52100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายในการบริหาร"
+      },
+      {
+        "code": "en",
+        "name": "Administrative expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "50000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "53100",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายพนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Employee expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "53110",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินเดือนและค่าจ้าง"
+      },
+      {
+        "code": "en",
+        "name": "Salaries and wages"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53100",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53111",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินเดือน"
+      },
+      {
+        "code": "en",
+        "name": "Salaries"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53110",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53112",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าจ้างรายวันและค่าล่วงเวลา"
+      },
+      {
+        "code": "en",
+        "name": "Daily wages and overtime"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53110",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53113",
+    "names": [
+      {
+        "code": "th",
+        "name": "โบนัส"
+      },
+      {
+        "code": "en",
+        "name": "Bonuses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53110",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53120",
+    "names": [
+      {
+        "code": "th",
+        "name": "สวัสดิการพนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Employee welfare"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53100",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53121",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินสมทบกองทุนประกันสังคม"
+      },
+      {
+        "code": "en",
+        "name": "Social security fund contributions"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53120",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53122",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินสมทบกองทุนสำรองเลี้ยงชีพ"
+      },
+      {
+        "code": "en",
+        "name": "Provident fund contributions"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53120",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53123",
+    "names": [
+      {
+        "code": "th",
+        "name": "สวัสดิการพนักงานอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other employee welfare"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53120",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53130",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายผลประโยชน์พนักงานหลังออกจากงาน"
+      },
+      {
+        "code": "en",
+        "name": "Post-employment benefit expense"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53140",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าตอบแทนกรรมการ"
+      },
+      {
+        "code": "en",
+        "name": "Directors' remuneration"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53200",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายสำนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Office expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "53210",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเช่าสำนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Office rent"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53220",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าสาธารณูปโภค"
+      },
+      {
+        "code": "en",
+        "name": "Utilities"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53230",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเครื่องเขียนและแบบพิมพ์"
+      },
+      {
+        "code": "en",
+        "name": "Stationery and printing"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53240",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าซ่อมแซมและบำรุงรักษา"
+      },
+      {
+        "code": "en",
+        "name": "Repairs and maintenance"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53250",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าพาหนะและเดินทาง"
+      },
+      {
+        "code": "en",
+        "name": "Travel and transportation"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53260",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเบี้ยประกันภัย"
+      },
+      {
+        "code": "en",
+        "name": "Insurance premiums"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53270",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่ารับรอง"
+      },
+      {
+        "code": "en",
+        "name": "Entertainment"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53200",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53300",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าธรรมเนียมและค่าบริการวิชาชีพ"
+      },
+      {
+        "code": "en",
+        "name": "Fees and professional services"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "53310",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าสอบบัญชี"
+      },
+      {
+        "code": "en",
+        "name": "Audit fee"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53300",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53320",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าทำบัญชีและที่ปรึกษา"
+      },
+      {
+        "code": "en",
+        "name": "Bookkeeping and consulting fees"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53300",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53330",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าธรรมเนียมธนาคาร"
+      },
+      {
+        "code": "en",
+        "name": "Bank charges"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53300",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53400",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคาและค่าตัดจำหน่าย"
+      },
+      {
+        "code": "en",
+        "name": "Depreciation and amortization"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "53410",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคา"
+      },
+      {
+        "code": "en",
+        "name": "Depreciation"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53400",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53411",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคา - อาคารและส่วนปรับปรุงอาคาร"
+      },
+      {
+        "code": "en",
+        "name": "Depreciation - buildings and improvements"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53410",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53412",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคา - เครื่องจักรและอุปกรณ์"
+      },
+      {
+        "code": "en",
+        "name": "Depreciation - machinery and equipment"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53410",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53413",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคา - เครื่องตกแต่งและอุปกรณ์สำนักงาน"
+      },
+      {
+        "code": "en",
+        "name": "Depreciation - furniture and office equipment"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53410",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53414",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าเสื่อมราคา - ยานพาหนะ"
+      },
+      {
+        "code": "en",
+        "name": "Depreciation - vehicles"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53410",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 5
+  },
+  {
+    "accountcode": "53420",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าตัดจำหน่ายสินทรัพย์ไม่มีตัวตน"
+      },
+      {
+        "code": "en",
+        "name": "Amortization of intangible assets"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53400",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53500",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีและอากร"
+      },
+      {
+        "code": "en",
+        "name": "Taxes and duties"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "53510",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีที่ดินและสิ่งปลูกสร้าง"
+      },
+      {
+        "code": "en",
+        "name": "Land and building tax"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53500",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53530",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีซื้อต้องห้าม"
+      },
+      {
+        "code": "en",
+        "name": "Non-creditable input VAT"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53500",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53540",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินเพิ่มและเบี้ยปรับทางภาษี"
+      },
+      {
+        "code": "en",
+        "name": "Tax surcharges and penalties"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53500",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53600",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายในการบริหารอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other administrative expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "53610",
+    "names": [
+      {
+        "code": "th",
+        "name": "หนี้สงสัยจะสูญ"
+      },
+      {
+        "code": "en",
+        "name": "Doubtful debts expense"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53600",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53620",
+    "names": [
+      {
+        "code": "th",
+        "name": "หนี้สูญ"
+      },
+      {
+        "code": "en",
+        "name": "Bad debts written off"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53600",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53630",
+    "names": [
+      {
+        "code": "th",
+        "name": "เงินบริจาค"
+      },
+      {
+        "code": "en",
+        "name": "Donations"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53600",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "53640",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายเบ็ดเตล็ด"
+      },
+      {
+        "code": "en",
+        "name": "Miscellaneous expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "53600",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "54000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other expenses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "50000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "54100",
+    "names": [
+      {
+        "code": "th",
+        "name": "ผลขาดทุนอื่น"
+      },
+      {
+        "code": "en",
+        "name": "Other losses"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "54000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "54110",
+    "names": [
+      {
+        "code": "th",
+        "name": "ขาดทุนจากการจำหน่ายสินทรัพย์"
+      },
+      {
+        "code": "en",
+        "name": "Loss on disposal of assets"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "54100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "54120",
+    "names": [
+      {
+        "code": "th",
+        "name": "ขาดทุนจากอัตราแลกเปลี่ยน"
+      },
+      {
+        "code": "en",
+        "name": "Foreign exchange loss"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "54100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "55000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ต้นทุนทางการเงิน"
+      },
+      {
+        "code": "en",
+        "name": "Finance costs"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "50000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "55100",
+    "names": [
+      {
+        "code": "th",
+        "name": "ดอกเบี้ยจ่าย"
+      },
+      {
+        "code": "en",
+        "name": "Interest expense"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "55000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "55110",
+    "names": [
+      {
+        "code": "th",
+        "name": "ดอกเบี้ยจ่ายสถาบันการเงิน"
+      },
+      {
+        "code": "en",
+        "name": "Interest to financial institutions"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "55100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "55120",
+    "names": [
+      {
+        "code": "th",
+        "name": "ดอกเบี้ยจ่ายตามสัญญาเช่าซื้อ"
+      },
+      {
+        "code": "en",
+        "name": "Hire-purchase interest"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "55100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  },
+  {
+    "accountcode": "56000",
+    "names": [
+      {
+        "code": "th",
+        "name": "ภาษีเงินได้"
+      },
+      {
+        "code": "en",
+        "name": "Income tax"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "50000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 2
+  },
+  {
+    "accountcode": "56100",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายภาษีเงินได้"
+      },
+      {
+        "code": "en",
+        "name": "Income tax expense"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "56000",
+    "normalbalance": "debit",
+    "allowposting": false,
+    "isactive": true,
+    "iscash": false,
+    "level": 3
+  },
+  {
+    "accountcode": "56110",
+    "names": [
+      {
+        "code": "th",
+        "name": "ค่าใช้จ่ายภาษีเงินได้นิติบุคคล"
+      },
+      {
+        "code": "en",
+        "name": "Corporate income tax expense"
+      }
+    ],
+    "accounttype": "expense",
+    "parentaccountcode": "56100",
+    "normalbalance": "debit",
+    "allowposting": true,
+    "isactive": true,
+    "iscash": false,
+    "level": 4
+  }
+]

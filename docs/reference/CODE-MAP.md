@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit f0880cee - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-08 @ commit 9f863af6 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 31
 
@@ -713,7 +713,7 @@ Files indexed: 31
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## frontend/src/app/gl/gl-masters.tsx (1514 lines)
+## frontend/src/app/gl/gl-masters.tsx (1543 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -728,39 +728,41 @@ Files indexed: 31
 | 124 | function | `accountSavePayload` |
 | 136 | function | `normalizeRecord` |
 | 170 | function | `editorAlert` |
-| 175 | function | `pageErrorText` |
-| 176 | function | `paneErrorText` |
-| 177 | function | `FormErrorAlert` |
-| 179 | function | `errorStatePatch` |
-| 181 | function | `saveFailureTarget` |
-| 183 | function | `recordId` |
-| 190 | function | `recordCode` |
-| 191 | function | `recordName` |
-| 193 | function | `confirmSubject` |
-| 200 | function | `TreeNodeRow` |
-| 377 | function | `GLMasters` |
-| 412 | function | `showFormError` |
-| 434 | function | `openView` |
-| 450 | function | `openEdit` |
-| 466 | function | `openCreate` |
-| 477 | function | `handleAddChild` |
-| 495 | function | `cancelEdit` |
-| 509 | function | `save` |
-| 540 | function | `deleteItem` |
-| 568 | function | `runAction` |
-| 610 | const-arrow | `toggleCategory` |
-| 614 | const-arrow | `toggleNode` |
-| 644 | const-arrow | `handleExportCsv` |
-| 1170 | function | `CodeInput` |
-| 1187 | function | `AccountFields` |
-| 1193 | const-arrow | `handleTypeChange` |
-| 1203 | const-arrow | `handleParentChange` |
-| 1388 | function | `FiscalYearFields` |
-| 1409 | function | `champMasterLabels` |
-| 1416 | function | `MasterFields` |
-| 1441 | function | `UntypedJournalBooksNotice` |
-| 1461 | function | `JournalBookTypeBadge` |
-| 1473 | function | `JournalBookFields` |
+| 176 | function | `canLoadStandardChart` |
+| 179 | function | `pageErrorText` |
+| 180 | function | `paneErrorText` |
+| 181 | function | `FormErrorAlert` |
+| 183 | function | `errorStatePatch` |
+| 185 | function | `saveFailureTarget` |
+| 187 | function | `recordId` |
+| 194 | function | `recordCode` |
+| 195 | function | `recordName` |
+| 197 | function | `confirmSubject` |
+| 204 | function | `TreeNodeRow` |
+| 381 | function | `GLMasters` |
+| 416 | function | `showFormError` |
+| 438 | function | `openView` |
+| 454 | function | `openEdit` |
+| 470 | function | `openCreate` |
+| 481 | function | `handleAddChild` |
+| 499 | function | `cancelEdit` |
+| 513 | function | `save` |
+| 544 | function | `deleteItem` |
+| 572 | function | `runAction` |
+| 594 | function | `loadStandardChart` |
+| 638 | const-arrow | `toggleCategory` |
+| 642 | const-arrow | `toggleNode` |
+| 672 | const-arrow | `handleExportCsv` |
+| 1199 | function | `CodeInput` |
+| 1216 | function | `AccountFields` |
+| 1222 | const-arrow | `handleTypeChange` |
+| 1232 | const-arrow | `handleParentChange` |
+| 1417 | function | `FiscalYearFields` |
+| 1438 | function | `champMasterLabels` |
+| 1445 | function | `MasterFields` |
+| 1470 | function | `UntypedJournalBooksNotice` |
+| 1490 | function | `JournalBookTypeBadge` |
+| 1502 | function | `JournalBookFields` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 

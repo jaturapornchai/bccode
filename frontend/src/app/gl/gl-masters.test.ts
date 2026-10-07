@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { GLAccount, GLMaster } from "@/lib/general-ledger";
 import * as glCommon from "./gl-common";
-import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, confirmSubject, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget, suggestNextAccountCode } from "./gl-masters";
+import { FormErrorAlert, GLMasters, TreeNodeRow, accountCashAllowed, canLoadStandardChart, confirmSubject, accountParentPatch, accountPostingPatch, accountSavePayload, accountTypePatch, defaultNormalBalance, editorAlert, errorStatePatch, normalizeRecord, pageErrorText, paneErrorText, parentAccountCandidates, saveFailureTarget, suggestNextAccountCode } from "./gl-masters";
 
 vi.mock("./gl-common", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./gl-common")>();
@@ -740,5 +740,18 @@ describe("Champ wording of group and link-template lists (2026-10-07)", () => {
     listOf([{ id: "mp-1", code: "SV1", name: "ขายเชื่อ", isactive: true, version: 1 }]);
     expect(headers(renderToStaticMarkup(createElement(GLMasters, { resource: "mappings", route: "/gl/account-mapping" })))).toEqual(["รหัสรูปแบบ", "ชื่อรูปแบบ", "สถานะ", "จัดการ"]);
     expect(headers(renderToStaticMarkup(createElement(GLMasters, { resource: "periods", route: "/gl/periodlock" })))).toEqual(["รหัส", "ชื่อ / รายละเอียด", "สถานะ", "จัดการ"]);
+  });
+});
+
+describe("ผังบัญชี: ปุ่มใช้ผังบัญชีมาตรฐาน (Champ 5502 ผังบัญชีตัวอย่าง)", () => {
+  const ready = { loaded: true, loading: false, error: "", total: 0, search: "" };
+  it("shows only after a finished load of a truly empty chart with no search", () => {
+    expect(canLoadStandardChart(ready)).toBe(true);
+    expect(canLoadStandardChart({ ...ready, loaded: false })).toBe(false); // list not requested yet: still the initial empty state
+    expect(canLoadStandardChart({ ...ready, loading: true })).toBe(false);
+    expect(canLoadStandardChart({ ...ready, error: "โหลดรายการไม่สำเร็จ" })).toBe(false);
+    expect(canLoadStandardChart({ ...ready, total: 1 })).toBe(false);
+    expect(canLoadStandardChart({ ...ready, search: "เงินสด" })).toBe(false); // nothing found for a search is not an empty chart
+    expect(canLoadStandardChart({ ...ready, search: "   " })).toBe(true);
   });
 });

@@ -36,7 +36,7 @@ export async function POST(request: Request, context: Context) {
   let body: unknown;
   try { body = await request.json(); } catch { return bad("รูปแบบข้อมูลไม่ถูกต้อง"); }
   if (!isRecord(body) || Array.isArray(body) || typeof body.requestid !== "string" || !/^[0-9a-f-]{36}$/i.test(body.requestid)) return bad("กรุณาระบุหมายเลขคำขอที่ถูกต้อง");
-  if (![...GL_RESOURCES, "processes"].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "close-preview", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check", "references"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  if (![...GL_RESOURCES, "processes"].includes(body.resource as never) || !["create", "update", "delete", "post", "reverse", "lock", "unlock", "close", "close-preview", "year-end", "recalculate", "reprocess", "review", "reconcile", "spread", "suggest", "generate", "check", "references", "load-standard"].includes(String(body.action))) return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (body.action === "spread" && body.resource !== "budgets") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // สร้างงวดอัตโนมัติ (backend periods_generate.go) / ตรวจใบก่อนผ่านรายการแบบชุด (post_batches.go, คำนวณอย่างเดียว ไม่บันทึก)
   if (body.action === "generate" && body.resource !== "periods") return bad("ประเภทการทำรายการไม่ถูกต้อง");
@@ -45,6 +45,8 @@ export async function POST(request: Request, context: Context) {
   if (body.action === "check" && body.resource !== "post-batches") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // รายการที่ใช้บัญชีนี้ (backend account_references.go): นับอย่างเดียว ไม่บันทึก
   if (body.action === "references" && body.resource !== "accounts") return bad("ประเภทการทำรายการไม่ถูกต้อง");
+  // ใช้ผังบัญชีมาตรฐาน (backend standard_chart.go): สร้างได้เฉพาะบริษัทที่ยังไม่มีบัญชีเลย — สิทธิ์เท่ากับสร้างบัญชี
+  if (body.action === "load-standard" && body.resource !== "accounts") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   // แนะนำบัญชีให้บรรทัดของแม่แบบงบ (คำนวณอย่างเดียว ไม่บันทึก) — backend statement_suggestions.go
   if (body.action === "suggest" && body.resource !== "statement-templates") return bad("ประเภทการทำรายการไม่ถูกต้อง");
   if (["review", "reconcile"].includes(String(body.action)) && body.resource !== "journals") return bad("ประเภทการทำรายการไม่ถูกต้อง");

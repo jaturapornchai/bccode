@@ -20,6 +20,8 @@ type Result struct {
 	References *AccountReferences `json:"references,omitempty"`
 	// CreatedPeriods answers periods action "generate" (monthly periods created).
 	CreatedPeriods int `json:"createdperiods,omitempty"`
+	// CreatedAccounts answers accounts action "load-standard" (accounts created from the standard chart).
+	CreatedAccounts int `json:"createdaccounts,omitempty"`
 	// PostCheck answers post-batches action "check" (nothing saved).
 	PostCheck *PostCheck `json:"postcheck,omitempty"`
 	// ClosePreview answers processes action "close-preview" (nothing saved).

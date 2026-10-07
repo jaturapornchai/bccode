@@ -146,7 +146,7 @@ export async function glRequest<T>(path: string, init?: RequestInit): Promise<T>
   }
 }
 export function glCommand(command: Omit<GLCommand, "requestid">, requestid: string) {
-  return glRequest<{ id: string; version: number; projectionpending?: boolean; createdjournals?: number; createdperiods?: number; batchno?: string; postedjournals?: number; adjustedjournals?: number }>("command", { method: "POST", body: JSON.stringify({ ...command, requestid }) });
+  return glRequest<{ id: string; version: number; projectionpending?: boolean; createdjournals?: number; createdperiods?: number; createdaccounts?: number; batchno?: string; postedjournals?: number; adjustedjournals?: number }>("command", { method: "POST", body: JSON.stringify({ ...command, requestid }) });
 }
 /** บัญชีที่แนะนำให้บรรทัดของแม่แบบงบ + บัญชีหัวข้อ/รหัสที่ต้องแก้ (backend statement_suggestions.go): คำสั่งคำนวณอย่างเดียว ไม่บันทึกอะไร
  *  สิทธิ์อ่านจอออกแบบงบก็พอ — ส่งแม่แบบที่กำลังแก้ (ยังไม่บันทึกก็ได้); id = แม่แบบที่บันทึกแล้ว (backend ไม่นับเป็น "แม่แบบงบอื่น") */
