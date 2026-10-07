@@ -11,7 +11,7 @@ import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, S
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { buildChartOfAccountsTree, filterAccountTree, type AccountTreeNode } from "@/lib/chart-of-accounts-tree";
-import { GLChartOfAccountsPrint, printCompanyName, useGLPrint } from "./gl-print";
+import { GLChartOfAccountsPrint, GLJournalBooksPrint, printCompanyName, useGLPrint } from "./gl-print";
 import { AccountBalanceCard, AccountLedgerModal } from "./account-ledger-drilldown";
 
 type MasterResource = Exclude<GLResource, "journals">;
@@ -640,6 +640,12 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     );
   };
 
+  // Champ 5531 รายงานรายละเอียดสมุดบัญชี = ปุ่มพิมพ์ในจอกำหนดสมุดรายวัน (ไม่แยกเมนูรายงาน)
+  const handlePrintBooks = () => {
+    if (!isBook || !refs.books.length) return;
+    printJob(<GLJournalBooksPrint books={refs.books} company={printCompanyName()} tr={tr} language={language} />, "portrait");
+  };
+
   const handleExportCsv = () => {
     if (!isAcc || !treeAccounts.length) return;
     const csv = chartOfAccountsCsv(treeAccounts, tr);
@@ -669,6 +675,12 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
             <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
             <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
+            {isBook && (
+              <Button type="button" variant="outline" className={actionClass} onClick={handlePrintBooks} disabled={!refs.books.length} title={tr("gl_book_report_title", "รายงานรายละเอียดสมุดบัญชี")}>
+                <Printer className="size-4 mr-1.5" />
+                {tr("gl_print", "พิมพ์")}
+              </Button>
+            )}
             {isAcc && (
               <>
                 <Button

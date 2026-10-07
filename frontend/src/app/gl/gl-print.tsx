@@ -4,7 +4,7 @@
 // ข้อ 11 (เอกสารที่ทำขึ้นใช้เอง: คำอธิบายรายการ วิธีคำนวณ ลายมือชื่อผู้จัดทำบัญชีหรือผู้อนุมัติ) — ทะเบียนอ้างอิง docs/kms/21 §11
 // งบการเงิน (GLStatementTable) ตามประกาศกรมพัฒนาธุรกิจการค้า เรื่อง กำหนดรายการย่อที่ต้องมีในงบการเงิน พ.ศ. 2566 + TFRS for NPAEs บทที่ 4 — docs/kms/21
 // หน้าพิมพ์เป็นแค่การแสดงผล: ตัวเลขทุกตัวมาจาก API ของ backend ตามเดิม
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
@@ -407,7 +407,41 @@ export function GLStatementUnassigned({ items, scale = 2, tr }: { items?: GLStat
   );
 }
 
-/** ผังบัญชี (Chart of Accounts): พิมพ์แสดง 5 หมวดบัญชี เรียงตามลำดับชั้นต้นไม้ พร้อมระดับ บทบาท ยอดปกติ และสถานะ */
+/** รายงานรายละเอียดสมุดบัญชีแบบ Champ 5531 (GLRepGLBookView): รหัสสมุด · ชื่อสมุดรายวัน · ชื่อ/รายละเอียด (หัวเอกสาร) เรียงตามรหัส */
+export function GLJournalBooksPrint({ books, company, tr, language }: { books: GLJournalBook[]; company: string; tr: GLTextFn; language: LanguageCode }) {
+  const rows = books.filter((book) => !book.isdeleted).sort((a, b) => a.code.localeCompare(b.code));
+  return (
+    <article className="gl-print-chart-of-accounts">
+      <table>
+        <thead>
+          <tr className="gl-print-head">
+            <th colSpan={3}>
+              <ReportPrintHeading company={company} title={tr("gl_book_report_title", "รายงานรายละเอียดสมุดบัญชี")} printedBy={printUserName()} printedAt={printedAtText(language)} description={[]} tr={tr} />
+            </th>
+          </tr>
+          <tr>
+            <th style={{ width: "18%" }}>{tr("gl_book_col_code", "รหัสสมุด")}</th>
+            <th style={{ width: "42%" }}>{tr("gl_book_name", "ชื่อสมุดรายวัน")}</th>
+            <th style={{ width: "40%" }}>{tr("gl_book_col_detail", "ชื่อ/รายละเอียด")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((book) => (
+            <tr key={book.code}>
+              <td className="font-mono">{book.code}</td>
+              <td>{journalBookName(book, book.code, language)}</td>
+              <td>{book.titlename ?? ""}</td>
+            </tr>
+          ))}
+          <tr className="gl-print-total"><td colSpan={3}>{fillText(tr("gl_report_doc_total", "รวมทั้งสิ้น {0} รายการ"), rows.length.toLocaleString("th-TH"))}</td></tr>
+        </tbody>
+      </table>
+    </article>
+  );
+}
+
+/** รายงานรายละเอียดผังบัญชีแบบ Champ 5520 (GLRepChartOfAccountView): หมวด · รหัสผังบัญชี · ชื่อผังบัญชี (ไทย / อังกฤษ) · ระดับ
+ *  เรียงตามต้นไม้ในแต่ละหมวด, ชื่อหมวดพิมพ์แถวแรกของหมวด, "รวม<หมวด> n รายการ" ท้ายหมวด แล้วจำนวนบัญชีคุม/บัญชีย่อยท้ายรายงาน */
 export function GLChartOfAccountsPrint({
   accounts,
   company,
@@ -420,64 +454,75 @@ export function GLChartOfAccountsPrint({
   language: LanguageCode;
 }) {
   const sorted = sortAccountsHierarchically(accounts);
-  const now = new Date();
-  const meta = [
-    `${tr("gl_all_records", "รายการทั้งหมด")} ${sorted.length.toLocaleString("th-TH")} ${tr("gl_records_unit", "รายการ")}`,
-    `${tr("gl_printed_at", "พิมพ์เมื่อ")} ${printedAtText(language, now)}`,
-  ];
+  const codes = new Set(sorted.map((acc) => acc.accountcode));
+  // หมวดของแถว = หมวดของบัญชีรากในต้นไม้ (sortAccountsHierarchically จัดรากตามหมวดอยู่แล้ว ลูกตามพ่อ)
+  let current = "";
+  const rows = sorted.map((acc) => {
+    const parent = acc.parentaccountcode?.trim();
+    if (!parent || !codes.has(parent) || parent === acc.accountcode) current = acc.accounttype;
+    return { acc, category: current };
+  });
+  const categoryName = (category: string) => labelText(accountTypeLabels, category, tr);
+  const controlCount = sorted.filter((acc) => !acc.allowposting).length;
+  const count = (value: number) => value.toLocaleString("th-TH");
+  const categoryCounts = new Map<string, number>();
+  for (const row of rows) categoryCounts.set(row.category, (categoryCounts.get(row.category) ?? 0) + 1);
 
   return (
     <article className="gl-print-chart-of-accounts">
       <table>
         <thead>
           <tr className="gl-print-head">
-            <th colSpan={7}>
-              <PrintHeading
+            <th colSpan={4}>
+              <ReportPrintHeading
                 company={company}
-                title={tr("gl_chart_of_accounts_title", "ผังบัญชี (Chart of Accounts)")}
-                meta={meta}
+                title={tr("gl_coa_report_title", "รายงานรายละเอียดผังบัญชี")}
+                printedBy={printUserName()}
+                printedAt={printedAtText(language)}
+                description={[]}
+                tr={tr}
               />
             </th>
           </tr>
           <tr>
-            <th style={{ width: "16%" }}>{tr("gl_account_code", "รหัสบัญชี")}</th>
-            <th style={{ width: "36%" }}>{tr("gl_account_name", "ชื่อบัญชี")}</th>
-            <th style={{ width: "14%" }}>{tr("gl_account_category", "หมวดบัญชี")}</th>
-            <th style={{ width: "8%", textAlign: "center" }}>{tr("gl_account_level", "ระดับ")}</th>
-            <th style={{ width: "10%", textAlign: "center" }}>{tr("gl_account_type_role", "ประเภท")}</th>
-            <th style={{ width: "8%", textAlign: "center" }}>{tr("gl_normal_balance", "ยอดปกติ")}</th>
-            <th style={{ width: "8%", textAlign: "center" }}>{tr("gl_status", "สถานะ")}</th>
+            <th style={{ width: "16%" }}>{tr("gl_coa_col_category", "หมวด")}</th>
+            <th style={{ width: "18%" }}>{tr("gl_coa_col_code", "รหัสผังบัญชี")}</th>
+            <th style={{ width: "56%" }}>{tr("gl_coa_col_name", "ชื่อผังบัญชี")}</th>
+            <th style={{ width: "10%", textAlign: "center" }}>{tr("gl_level", "ระดับ")}</th>
           </tr>
         </thead>
         <tbody>
-          {sorted.map((acc) => {
+          {rows.map(({ acc, category }, index) => {
             const lvl = acc.effectiveLevel ?? acc.level ?? 1;
-            const isControl = !acc.allowposting;
-            const indent = lvl > 1 ? (lvl - 1) * 1.25 : 0;
-            const catLabel = accountTypeLabels[acc.accounttype];
-            const categoryName = catLabel ? tr(...catLabel) : acc.accounttype;
-            const normalBal = acc.normalbalance === "credit" ? `${tr("gl_credit", "เครดิต")} (Cr.)` : `${tr("gl_debit", "เดบิต")} (Dr.)`;
-            const statusName = acc.isactive !== false ? tr("gl_enable", "ใช้งาน") : tr("gl_disable", "ปิดใช้งาน");
-
+            const english = acc.names?.find((name) => name.code === "en")?.name?.trim();
+            const thai = accountName(acc);
+            const firstOfCategory = rows[index - 1]?.category !== category;
+            const lastOfCategory = rows[index + 1]?.category !== category;
             return (
-              <tr key={acc.accountcode}>
-                <td className="font-mono">{acc.accountcode}</td>
-                <td style={{ paddingLeft: `${indent + 0.5}em` }}>
-                  {lvl > 1 && <span className="text-muted-foreground mr-1">└─</span>}
-                  <span className={isControl ? "font-semibold" : ""}>{accountName(acc)}</span>
-                  {acc.iscash && <span className="ml-1.5 text-xs text-muted-foreground">({tr("gl_cash_short", "เงินสด")})</span>}
-                </td>
-                <td>{categoryName}</td>
-                <td style={{ textAlign: "center" }}>{lvl}</td>
-                <td style={{ textAlign: "center" }}>{isControl ? tr("gl_control_account", "บัญชีคุม") : tr("gl_posting_account", "บัญชีย่อย")}</td>
-                <td style={{ textAlign: "center" }}>{normalBal}</td>
-                <td style={{ textAlign: "center" }}>{statusName}</td>
-              </tr>
+              <Fragment key={acc.accountcode}>
+                <tr>
+                  <td>{firstOfCategory ? categoryName(category) : ""}</td>
+                  <td className="font-mono">{acc.accountcode}</td>
+                  <td style={{ paddingLeft: `${(lvl > 1 ? (lvl - 1) * 1.25 : 0) + 0.5}em` }} className={acc.allowposting ? "" : "font-semibold"}>
+                    {english && english !== thai ? `${thai} / ${english}` : thai}
+                  </td>
+                  <td style={{ textAlign: "center" }}>{lvl}</td>
+                </tr>
+                {lastOfCategory && (
+                  <tr className="gl-print-total">
+                    <td colSpan={4}>{fillText(tr("gl_coa_category_total", "รวม{0} {1} รายการ"), categoryName(category), count(categoryCounts.get(category) ?? 0))}</td>
+                  </tr>
+                )}
+              </Fragment>
             );
           })}
+          {sorted.length > 0 && <>
+            <tr className="gl-print-total"><td colSpan={4}>{fillText(tr("gl_coa_control_total", "รวมเป็นบัญชีคุม {1} รายการ"), "", count(controlCount))}</td></tr>
+            <tr className="gl-print-total"><td colSpan={4}>{fillText(tr("gl_coa_posting_total", "รวมเป็นบัญชีย่อย {1} รายการ"), "", count(sorted.length - controlCount))}</td></tr>
+          </>}
           {!sorted.length && (
             <tr>
-              <td colSpan={7} style={{ textAlign: "center", padding: "2rem" }}>
+              <td colSpan={4} style={{ textAlign: "center", padding: "2rem" }}>
                 {tr("gl_no_records_found_criteria", "ไม่พบรายการตามเงื่อนไขที่เลือก")}
               </td>
             </tr>

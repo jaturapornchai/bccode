@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
-import { ReportPrintConditions, ReportPrintHeading, GLChartOfAccountsPrint, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { ReportPrintConditions, ReportPrintHeading, GLChartOfAccountsPrint, GLJournalBooksPrint, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -312,12 +312,31 @@ describe("GLStatementUnassigned", () => {
   });
 });
 
+describe("GLJournalBooksPrint", () => {
+  it("prints the Champ 5531 book list: code · book name · title, sorted by code, deleted books left out", () => {
+    const books = [
+      { id: "b2", code: "PV", name: "สมุดรายวันจ่าย", titlename: "ใบสำคัญจ่าย", isactive: true },
+      { id: "b1", code: "JV", name: "สมุดรายวันทั่วไป", titlename: "ใบสำคัญทั่วไป", isactive: true },
+      { id: "b3", code: "XX", name: "สมุดที่ลบแล้ว", isactive: false, isdeleted: true },
+    ];
+    const html = renderToStaticMarkup(createElement(GLJournalBooksPrint, { books: books as never, company: "บริษัท บีซี จำกัด", tr, language: "th" }));
+    expect(html).toContain("รายงานรายละเอียดสมุดบัญชี");
+    expect(html).toContain("รหัสสมุด");
+    expect(html).toContain("ใบสำคัญจ่าย");
+    expect(html.indexOf(">JV<")).toBeLessThan(html.indexOf(">PV<"));
+    expect(html).not.toContain("สมุดที่ลบแล้ว");
+    expect(html).toContain("รวมทั้งสิ้น 2 รายการ");
+  });
+});
+
 describe("GLChartOfAccountsPrint", () => {
-  it("renders chart of accounts table with hierarchical tree, codes, names, roles and statuses", () => {
+  it("prints the Champ 5520 chart report: category once, th / en name, level, category and control/posting counts", () => {
     const testAccounts = [
       { accountcode: "1000", names: [{ code: "th", name: "สินทรัพย์" }], accounttype: "asset", allowposting: false, level: 1, isactive: true },
       { accountcode: "1100", parentaccountcode: "1000", names: [{ code: "th", name: "เงินสดและรายการเทียบเท่า" }], accounttype: "asset", allowposting: false, level: 2, isactive: true },
-      { accountcode: "1101", parentaccountcode: "1100", names: [{ code: "th", name: "เงินสดในมือ" }], accounttype: "asset", allowposting: true, level: 3, isactive: true, iscash: true, normalbalance: "debit" },
+      { accountcode: "1101", parentaccountcode: "1100", names: [{ code: "th", name: "เงินสดในมือ" }, { code: "en", name: "Cash on hand" }], accounttype: "asset", allowposting: true, level: 3, isactive: true, iscash: true, normalbalance: "debit" },
+      { accountcode: "2000", names: [{ code: "th", name: "หนี้สิน" }], accounttype: "liability", allowposting: false, level: 1, isactive: true },
+      { accountcode: "2101", parentaccountcode: "2000", names: [{ code: "th", name: "เจ้าหนี้การค้า" }], accounttype: "liability", allowposting: true, level: 2, isactive: true },
     ];
     const html = renderToStaticMarkup(createElement(GLChartOfAccountsPrint, {
       accounts: testAccounts as never,
@@ -325,16 +344,14 @@ describe("GLChartOfAccountsPrint", () => {
       tr,
       language: "th",
     }));
-    expect(html).toContain("ผังบัญชี (Chart of Accounts)");
+    expect(html).toContain("รายงานรายละเอียดผังบัญชี");
     expect(html).toContain("บริษัท บีซี จำกัด");
-    expect(html).toContain("1000");
-    expect(html).toContain("สินทรัพย์");
-    expect(html).toContain("บัญชีคุม");
-    expect(html).toContain("1101");
-    expect(html).toContain("เงินสดในมือ");
-    expect(html).toContain("บัญชีย่อย");
-    expect(html).toContain("เดบิต (Dr.)");
-    expect(html).toContain("ใช้งาน");
-    expect(html).toContain("เงินสด");
+    expect(html).toContain("เงินสดในมือ / Cash on hand");
+    expect(html.split("<td>สินทรัพย์</td>")).toHaveLength(2); // ชื่อหมวดเฉพาะแถวแรกของหมวด
+    expect(html).toContain("รวมสินทรัพย์ 3 รายการ");
+    expect(html).toContain("รวมหนี้สิน 2 รายการ");
+    expect(html).toContain("รวมเป็นบัญชีคุม 3 รายการ");
+    expect(html).toContain("รวมเป็นบัญชีย่อย 2 รายการ");
+    expect(html.indexOf("รวมสินทรัพย์")).toBeLessThan(html.indexOf("2000"));
   });
 });

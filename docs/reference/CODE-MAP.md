@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit 96c5c821 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit 9efd4e44 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 28
 
@@ -713,6 +713,57 @@ Files indexed: 28
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
+## frontend/src/app/gl/gl-masters.tsx (1501 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 18 | function | `newRecord` |
+| 21 | function | `parentAccountCandidates` |
+| 40 | function | `defaultNormalBalance` |
+| 44 | function | `accountCashAllowed` |
+| 48 | function | `accountTypePatch` |
+| 53 | function | `accountParentPatch` |
+| 59 | function | `suggestNextAccountCode` |
+| 116 | function | `accountPostingPatch` |
+| 120 | function | `accountSavePayload` |
+| 128 | function | `normalizeRecord` |
+| 161 | function | `editorAlert` |
+| 166 | function | `pageErrorText` |
+| 167 | function | `paneErrorText` |
+| 168 | function | `FormErrorAlert` |
+| 170 | function | `errorStatePatch` |
+| 172 | function | `saveFailureTarget` |
+| 174 | function | `recordId` |
+| 181 | function | `recordCode` |
+| 182 | function | `recordName` |
+| 184 | function | `confirmSubject` |
+| 191 | function | `TreeNodeRow` |
+| 367 | function | `GLMasters` |
+| 400 | function | `showFormError` |
+| 422 | function | `openView` |
+| 438 | function | `openEdit` |
+| 454 | function | `openCreate` |
+| 465 | function | `handleAddChild` |
+| 483 | function | `cancelEdit` |
+| 497 | function | `save` |
+| 528 | function | `deleteItem` |
+| 556 | function | `runAction` |
+| 597 | const-arrow | `toggleCategory` |
+| 601 | const-arrow | `toggleNode` |
+| 630 | const-arrow | `handlePrint` |
+| 644 | const-arrow | `handlePrintBooks` |
+| 649 | const-arrow | `handleExportCsv` |
+| 1169 | function | `CodeInput` |
+| 1186 | function | `AccountFields` |
+| 1191 | const-arrow | `handleTypeChange` |
+| 1201 | const-arrow | `handleParentChange` |
+| 1378 | function | `FiscalYearFields` |
+| 1399 | function | `champMasterLabels` |
+| 1404 | function | `MasterFields` |
+| 1428 | function | `UntypedJournalBooksNotice` |
+| 1448 | function | `JournalBookTypeBadge` |
+| 1460 | function | `JournalBookFields` |
+
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 
 | Line | Kind | Name |
@@ -776,56 +827,6 @@ Files indexed: 28
 | 1182 | function | `updateSpecialRule` |
 | 1275 | function | `PointGeneralRulesTable` |
 | 1376 | function | `PointSpecialRulesTable` |
-
-## frontend/src/app/gl/gl-masters.tsx (1489 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 18 | function | `newRecord` |
-| 21 | function | `parentAccountCandidates` |
-| 40 | function | `defaultNormalBalance` |
-| 44 | function | `accountCashAllowed` |
-| 48 | function | `accountTypePatch` |
-| 53 | function | `accountParentPatch` |
-| 59 | function | `suggestNextAccountCode` |
-| 116 | function | `accountPostingPatch` |
-| 120 | function | `accountSavePayload` |
-| 128 | function | `normalizeRecord` |
-| 161 | function | `editorAlert` |
-| 166 | function | `pageErrorText` |
-| 167 | function | `paneErrorText` |
-| 168 | function | `FormErrorAlert` |
-| 170 | function | `errorStatePatch` |
-| 172 | function | `saveFailureTarget` |
-| 174 | function | `recordId` |
-| 181 | function | `recordCode` |
-| 182 | function | `recordName` |
-| 184 | function | `confirmSubject` |
-| 191 | function | `TreeNodeRow` |
-| 367 | function | `GLMasters` |
-| 400 | function | `showFormError` |
-| 422 | function | `openView` |
-| 438 | function | `openEdit` |
-| 454 | function | `openCreate` |
-| 465 | function | `handleAddChild` |
-| 483 | function | `cancelEdit` |
-| 497 | function | `save` |
-| 528 | function | `deleteItem` |
-| 556 | function | `runAction` |
-| 597 | const-arrow | `toggleCategory` |
-| 601 | const-arrow | `toggleNode` |
-| 630 | const-arrow | `handlePrint` |
-| 643 | const-arrow | `handleExportCsv` |
-| 1157 | function | `CodeInput` |
-| 1174 | function | `AccountFields` |
-| 1179 | const-arrow | `handleTypeChange` |
-| 1189 | const-arrow | `handleParentChange` |
-| 1366 | function | `FiscalYearFields` |
-| 1387 | function | `champMasterLabels` |
-| 1392 | function | `MasterFields` |
-| 1416 | function | `UntypedJournalBooksNotice` |
-| 1436 | function | `JournalBookTypeBadge` |
-| 1448 | function | `JournalBookFields` |
 
 ## frontend/src/app/holding/holding-screen.tsx (1474 lines)
 
