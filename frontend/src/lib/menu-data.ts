@@ -194,7 +194,6 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("purchase", "บันทึกซื้อสินค้า,บริการ", "Purchase", "/transaction/purchase"),
           tx("purchase-debit-note", "ใบส่งคืนสินค้า/ลดหนี้", "Purchase Debit Note", "/transaction/purchasedebitnote"),
           tx("purchase-credit-note", "บันทึกใบเพิ่มหนี้/เพิ่มสินค้า(เจ้าหนี้)", "Purchase Credit Note", "/transaction/purchasecreditnote"),
-          tx("purchase-order-approve", "อนุมัติใบสั่งซื้อสินค้า", "Approve Purchase Order", "/pending/purchase-order-approve", "approval"),
         ],
       },
       {
@@ -203,8 +202,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("purchase-requisition", "บันทึกใบเสนอซื้อสินค้า", "Purchase Requisition", "/transaction/purchaserequisition"),
           tx("purchase-requisition-approve", "บันทึกอนุมัติใบเสนอซื้อสินค้า", "Approve Purchase Requisition", "/procurement/requisition-approval", "approval"),
-          tx("purchase-requisition-cancel", "ยกเลิกใบเสนอซื้อสินค้า", "Cancel Purchase Requisition", "/pending/purchase-requisition-cancel", "approval"),
-          tx("purchase-requisition-approval-cancel", "ยกเลิกใบอนุมัติเสนอซื้อสินค้า", "Cancel Requisition Approval", "/pending/purchase-requisition-approval-cancel", "approval"),
           tx("rfq", "บันทึกใบสืบราคาสินค้ารวม", "Price Inquiry & Negotiation", "/transaction/rfq"),
           tx("rfq-price-table", "บันทึกใบตารางราคารวม", "Consolidated Price Table", "/transaction/rfqpricetable"),
           tx("purchase-order-generate", "ประมวลผลใบสั่งซื้อสินค้าอัตโนมัติ", "Generate Purchase Orders", "/procurement/generate-orders", "transaction"),
@@ -225,7 +222,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("purchase-landed-cost", "บันทึกต้นทุนแฝง (Weight cost)", "Landed Cost Allocation", "/transaction/landedcost", "transaction"),
           tx("purchase-receipt-adjustment", "ปรับปรุงใบรับสินค้า", "Adjust Purchase Receipt", "/transaction/purchasereceiptadjustment", "transaction"),
-          tx("purchase-receipt-date-adjust", "ปรับปรุงวันที่รับสินค้าจากเจ้าหนี้", "Adjust Supplier Receipt Date", "/pending/purchase-receipt-date-adjust", "transaction"),
         ],
       },
       {
@@ -251,11 +247,9 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("quotation", "บันทึกใบเสนอราคาสินค้า", "Quotation", "/transaction/quotation"),
           tx("quotation-approve", "อนุมัติใบเสนอราคาสินค้า", "Approve Quotation", "/sales/quotation-approval", "approval"),
           tx("quotation-cancel", "ยกเลิกใบเสนอราคาสินค้า", "Cancel Quotation", "/sales/quotation-cancellation", "approval"),
-          tx("sale-order", "ใบสั่งขายสินค้า", "Sale Order", "/transaction/saleorder"),
-          tx("sale-reservation", "ใบสั่งจองสินค้า", "Sales Reservation", "/pending/sale-reservation"),
+          tx("sale-order", "ใบสั่งขายสินค้า", "Sale Order / Reservation", "/transaction/saleorder"),
           tx("sale-order-approve", "อนุมัติใบสั่งขาย/สั่งจองสินค้า", "Approve Sales Order / Reservation", "/sales/order-approval", "approval"),
           tx("sale-order-cancel", "ยกเลิกใบสั่งขายสินค้า", "Cancel Sales Order / Reservation", "/sales/order-cancellation", "approval"),
-          tx("sale-dispatch-order", "ใบสั่งจ่ายสินค้า", "Goods Dispatch Order", "/pending/sale-dispatch-order"),
           tx("sale-reservation-flow", "Flow ใบสั่งจองสินค้า", "Sales Reservation Tracking", "/sales/reservations", "transaction"),
           tx("sale-order-date-check", "ตรวจสอบวันที่ใบสั่งขาย/สั่งจองสินค้า", "Check Sales Order / Reservation Dates", "/sales/order-dates", "transaction"),
         ],
@@ -315,7 +309,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("ap-other-debt", "บันทึกเอกสารตั้งเจ้าหนี้อื่นๆ", "Other Payables", "/transaction/apotherdebt", "finance"),
           tx("ap-billing-receipt", "บันทึกใบรับวางบิล", "Supplier Billing Receipt", "/transaction/apbillingreceipt", "finance"),
-          tx("ap-payment-prepare", "บันทึกเตรียมจ่ายชำระหนี้", "Prepare Debt Payment", "/pending/ap-payment-prepare", "finance"),
           tx("pay", "บันทึกจ่ายชำระหนี้", "Pay", "/transaction/pay", "finance"),
           tx("ap-bad-debt", "บันทึกตัดหนี้สูญ(เจ้าหนี้)", "Write Off Payables", "/transaction/apbaddebt", "finance"),
         ],
@@ -411,7 +404,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("cheques-issued", "เช็คจ่าย", "Issued Cheques"),
         items: [
           tx("cheque-issued", "บันทึกเช็คจ่าย", "Cheques Issued", "/transaction/chequeissued", "finance"),
-          tx("cheque-issue-prepare", "บันทึกเช็คเตรียมจ่าย", "Prepare Cheques for Payment", "/pending/cheque-issue-prepare", "finance"),
           tx("cheque-issued-clear", "บันทึกเช็คจ่ายผ่าน", "Clear Issued Cheques", "/banking/cheques/issued-clear", "finance"),
           tx("cheque-issued-cancel", "บันทึกยกเลิกเช็คจ่าย", "Cancel Issued Cheques", "/banking/cheques/issued-cancel", "finance"),
         ],
@@ -439,7 +431,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "cash-bank-master",
         title: { key: "menu_bank_accounts", th: "สมุดเงินฝากธนาคาร", en: "Bank Accounts" },
         items: [
-          tx("bank-service", "บริการธนาคาร", "Bank Services", "/pending/bank-service", "master"),
           tx("bank-contact", "บันทึกรายละเอียดผู้ติดต่อธนาคาร", "Bank Contacts", "/banking/contacts", "master"),
           tx("book-bank", "บันทึกสมุดเงินฝากธนาคาร", "Bank Book", "/bookbankscreen", "master", "book_bank"),
         ],
@@ -459,7 +450,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         id: "bank-utilities",
         title: ml("bank-utilities", "ตรวจและประมวลผลเงินฝากและเช็ค", "Bank & Cheque Utilities"),
         items: [
-          tx("cheque-movement", "ข้อมูลการเคลื่อนไหวเช็ค", "Cheque Movement Inquiry", "/pending/cheque-movement", "report"),
           tx("cheque-recalculate", "คำนวณยอดคงเหลือของเช็คใหม่", "Recalculate Cheque Balances", "/tools/cheque-balances", "finance"),
           tx("bank-recalculate", "คำนวณยอดคงเหลือของสมุดบัญชีใหม่", "Recalculate Bank Book Balances", "/tools/bank-balances", "finance"),
         ],
@@ -501,7 +491,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("ic-pricing", "ราคาขายและโปรโมชั่น", "Selling Prices & Promotions"),
         items: [
           tx("product-price-adjust", "ปรับปรุงราคาขายสินค้า", "Adjust Selling Prices", "/inventory/price-adjustment", "master"),
-          tx("product-supplier-adjust", "ปรับปรุง ข้อมูล Supplier ตามสินค้า", "Adjust Supplier Data by Product", "/pending/product-supplier-adjust", "master"),
         ],
       },
       {
@@ -510,12 +499,10 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("stock-balance", "บันทึกสินค้ายกมา", "Stock Balance", "/transaction/stockbalance"),
           tx("stock-issue-request", "บันทึกใบขอเบิกใช้สินค้า,วัตถุดิบ", "Stock / Material Issue Request", "/inventory/issue-request", "transaction"),
-          tx("stock-issue-request-cancel", "ยกเลิกใบขอเบิกใช้สินค้า,วัตถุดิบ", "Cancel Stock Issue Request", "/pending/stock-issue-request-cancel", "approval"),
           tx("stock-pickup", "บันทึกเบิกใช้สินค้า,วัตถุดิบ", "Stock Pickup", "/transaction/stockpickupproduct"),
           tx("stock-return", "บันทึกรับคืนสินค้า,วัตถุดิบ", "Stock Return", "/transaction/stockreturnproduct"),
           tx("stock-receive", "บันทึกรับสินค้าสำเร็จรูป", "Stock Receive", "/transaction/stockreceiveproduct"),
           tx("stock-transfer-request", "บันทึกใบขอโอนสินค้า", "Stock Transfer Request", "/inventory/transfer-request", "transaction"),
-          tx("stock-transfer-request-cancel", "ยกเลิกใบขอโอนสินค้า", "Cancel Stock Transfer Request", "/pending/stock-transfer-request-cancel", "approval"),
           tx("stock-transfer", "บันทึกโอนสินค้าระหว่างคลัง", "Stock Transfer", "/transaction/stocktransfer"),
           tx("goods-inspection", "ใบตรวจรับสินค้า", "Goods Inspection Note", "/inventory/goods-inspection", "transaction"),
         ],
@@ -526,7 +513,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
           tx("stock-count-sheet", "บันทึกเอกสารเพื่อตรวจนับสินค้า", "Stock Count Sheet", "/inventory/count-sheet", "transaction"),
           tx("stock-count", "บันทึกผลการตรวจนับสินค้า", "Stock Count", "/transaction/stockcount"),
-          tx("stock-count-handheld", "ตรวจนับสต็อกโดย Hand Held", "Hand Held Stock Count", "/pending/stock-count-handheld", "transaction"),
           tx("stock-adjust", "บันทึกปรับปรุงสินค้าหลังตรวจนับ", "Stock Adjustment", "/transaction/adjust"),
         ],
       },
@@ -572,7 +558,6 @@ export const MENU_SECTIONS: MenuSection[] = [
         title: ml("ic-utilities", "ตรวจและประมวลผลสินค้า", "Inventory Utilities"),
         items: [
           tx("stock-daily-sequence", "กำหนดลำดับรายวัน", "Inventory Daily Sequence", "/inventory/daily-sequence", "transaction"),
-          tx("transaction-lock", "Transaction Lock", "Transaction Lock", "/pending/transaction-lock", "settings"),
           tx("reprocess", "คำนวณยอดคงเหลือรวมของสินค้าใหม่", "Recalculate Data", "/rebuildstockscreen", "report"),
         ],
       },

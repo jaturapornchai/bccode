@@ -75,9 +75,9 @@ describe("menu language labels", () => {
     const items = flattenMenuItems();
     expect(baseline).toHaveLength(194);
     // +3 รายงานยอดคงค้างลูกหนี้/เจ้าหนี้/Statement ในบัญชีแยกประเภท (2026-09-25)
-    // +20 เมนูหลักแบบ Champ (2026-10-07): รายการที่ Champ มีแต่ BC ยังไม่มีจอ (รอพัฒนา)
-    // +1 กำหนดรหัสต่างๆ (แผนก/โครงการ) ใต้บัญชีแยกประเภท: ทะเบียนแผนกและโครงการ (2026-10-07)
-    expect(items).toHaveLength(219);
+    // +6 เมนูหลักแบบ Champ (รอพัฒนา)
+    // +1 กำหนดรหัสต่างๆ (แผนก/โครงการ) ใต้บัญชีแยกประเภท: ทะเบียนแผนกและโครงการ
+    expect(items).toHaveLength(204);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
     const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust" };
     for (const previous of baseline) {
@@ -93,7 +93,7 @@ describe("menu language labels", () => {
       "cheque-redeposit", "cheque-received-cancel", "cheque-discount",
     ]);
     expect(cash.groups.find((group) => group.id === "cheques-issued")?.items.map((item) => item.id)).toEqual([
-      "cheque-issued", "cheque-issue-prepare", "cheque-issued-clear", "cheque-issued-cancel",
+      "cheque-issued", "cheque-issued-clear", "cheque-issued-cancel",
     ]);
     expect(cash.groups.find((group) => group.id === "card-settlement")?.items.some((item) => item.id === "credit-card-receipts")).toBe(true);
   });
@@ -215,8 +215,6 @@ describe("menu language labels", () => {
     expect(procurement?.items.map((item) => item.id)).toEqual([
       "purchase-requisition",
       "purchase-requisition-approve",
-      "purchase-requisition-cancel",
-      "purchase-requisition-approval-cancel",
       "rfq",
       "rfq-price-table",
       "purchase-order-generate",

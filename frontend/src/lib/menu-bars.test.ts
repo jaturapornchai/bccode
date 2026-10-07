@@ -18,12 +18,8 @@ const CHAMP_HEADS = [
 
 /** Items the real Champ menu has but BC has no screen for yet — added as "รอพัฒนา" (no real route). */
 const CHAMP_ONLY_PENDING_IDS = [
-  "purchase-requisition-cancel", "purchase-requisition-approval-cancel", "purchase-order-approve",
-  "purchase-receipt-date-adjust", "sale-reservation", "sale-dispatch-order", "ap-payment-prepare",
-  "billing-note-auto", "billing-note-auto-print", "customer-label-print", "cheque-issue-prepare",
-  "cheque-movement", "bank-service", "product-supplier-adjust", "stock-issue-request-cancel",
-  "stock-transfer-request-cancel", "stock-count-handheld", "transaction-lock", "product-status-report",
-  "product-price-setting-report",
+  "billing-note-auto", "billing-note-auto-print", "customer-label-print",
+  "product-status-report", "product-price-setting-report",
 ];
 
 const CHAMP_LABELS: Record<string, string> = {
