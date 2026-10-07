@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useId, useState, type InputHTMLAttributes } from "react";
+import { useEffect, useMemo, useRef, useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { AlertTriangle, Eye, FileText, Pencil, Plus, RefreshCw, Save, Search, Trash2, X, FolderTree, List, ChevronDown, ChevronRight, Printer, Download, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChoiceSelect, Combobox } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
+import { JOURNAL_BOOK_CODE_MAX, JOURNAL_BOOK_NAME_MAX, JOURNAL_BOOK_TYPES, JOURNAL_DOC_FORMAT_DEFAULT, JOURNAL_DOC_FORMAT_MAX, accountName, accountTypeLabels, activeJournalBooks, chartOfAccountsCsv, dimensionPayload, emptyAccount, emptyFiscalYear, emptyJournalBook, emptyMaster, fillText, formatAmount, isDimensionResource, isJournalBookType, journalBookName, journalBookPayload, journalBookTypeLabels, untypedJournalBooks, validateJournalBook, type GLAccount, type GLFiscalYear, type GLJournalBook, type GLLabel, type GLMaster, type GLRecord, type GLResource, type GLTextFn } from "@/lib/general-ledger";
 import { GLCommandError, commandFailure, glRequest } from "@/lib/general-ledger-api";
 import { AccountSelect, AmountInput, Check, Field, Notice, Pager, SearchInput, SplitWorkbench, UnsavedBadge, YearSelect, actionClass, control, downloadText, useDebouncedSearch, useDirtyGuard, useGLCommand, useGLList, useReferences, useRowDensity, useGLLanguage, useGLText } from "./gl-common";
 import { toast } from "@/lib/toast";
@@ -364,7 +364,8 @@ export function TreeNodeRow({
   );
 }
 
-export function GLMasters({ resource, route }: { resource: MasterResource; route: string }) {
+/** extraActions: buttons the host screen adds to the list toolbar (print of a dimension register); onDirtyChange: lets a host with several masters ask before it drops unsaved edits. */
+export function GLMasters({ resource, route, extraActions, onDirtyChange }: { resource: MasterResource; route: string; extraActions?: ReactNode; onDirtyChange?: (dirty: boolean) => void }) {
   const tr = useGLText();
   const language = useGLLanguage();
   const { print: printJob, portal: printPortal } = useGLPrint();
@@ -393,6 +394,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
   const dirty = isEditing && record !== null && (isRecordDirty || isReasonDirty);
 
   useDirtyGuard(route, dirty);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   const set = (patch: object) => setRecord((current) => current ? { ...current, ...patch } as GLRecord : current);
 
   // Failures must never be silent: keep the Thai text in the pane the user is looking at and move
@@ -511,7 +513,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
         const acc = record as GLAccount;
         accPayload = accountSavePayload(acc, refs.accounts.some((a) => a.parentaccountcode === acc.accountcode));
       }
-      const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : resource === "journal-books" ? { master: journalBookPayload(record as GLJournalBook) } : { master: record as GLMaster };
+      const field = resource === "accounts" ? { account: accPayload! } : resource === "fiscal-years" ? { fiscalyear: record as GLFiscalYear } : resource === "journal-books" ? { master: journalBookPayload(record as GLJournalBook) } : isDimensionResource(resource) ? { master: dimensionPayload(record as GLMaster) } : { master: record as GLMaster };
       const result = await execute({ resource, action: record.id ? "update" : "create", id: record.id, version: record.version, reason: reason.trim() || (record.id ? tr("gl_edit_data", "แก้ไขข้อมูล") : tr("gl_create_new", "สร้างข้อมูลใหม่")), ...field });
       const saved = normalizeRecord(resource, { ...record, id: result.id, version: result.version });
       setRecord(saved);
@@ -532,7 +534,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
     if (!await confirm({
       title: tr("gl_confirm_delete", "ยืนยันลบรายการ?"),
       description: confirmSubject(item, "", tr),
-      details: isAcc ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
+      details: isAcc ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : isDimensionResource(resource) ? tr("gl_dimension_delete_hint", "รหัสที่มีรายการบัญชี ใบสำคัญร่าง หรือข้อมูลบัญชีอื่นใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : undefined,
       confirmLabel: tr("gl_delete_item", "ลบรายการ"),
       tone: "danger",
     })) return;
@@ -563,7 +565,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
       title: `${label}?`,
       // Name the record as saved — the form may hold unsaved edits to the code/name.
       description: confirmSubject(original ? JSON.parse(original) as GLRecord : record, reason, tr),
-      details: resource === "accounts" ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : undefined,
+      details: resource === "accounts" ? tr("gl_coa_referenced_no_delete", "บัญชีที่มีรายการในสมุดรายวัน หรือมีข้อมูลอื่นอ้างอิงอยู่ จะลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : resource === "journal-books" ? tr("gl_journal_book_delete_hint", "สมุดที่มีใบสำคัญใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้แก้เป็นปิดใช้งานแทน") : isDimensionResource(resource) ? tr("gl_dimension_delete_hint", "รหัสที่มีรายการบัญชี ใบสำคัญร่าง หรือข้อมูลบัญชีอื่นใช้อยู่ลบไม่ได้ — ถ้าเลิกใช้ ให้ปิดใช้งานแทน") : undefined,
       confirmLabel: label,
       tone: "danger"
     })) return;
@@ -675,6 +677,7 @@ export function GLMasters({ resource, route }: { resource: MasterResource; route
             <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
             <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
             <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}><Plus className="size-4 mr-1.5" />{tr("gl_add_row", "เพิ่มรายการ")}</Button>
+            {extraActions}
             {isBook && (
               <Button type="button" variant="outline" className={actionClass} onClick={handlePrintBooks} disabled={!refs.books.length} title={tr("gl_book_report_title", "รายงานรายละเอียดสมุดบัญชี")}>
                 <Printer className="size-4 mr-1.5" />
@@ -1399,6 +1402,8 @@ const PRODUCT_GROUP_ACCOUNTS: readonly { key: "itemaccount" | "costaccount" | "r
 function champMasterLabels(resource: MasterResource, tr: GLTextFn) {
   if (resource === "account-groups" || resource === "product-account-groups") return { code: tr("gl_group_code", "รหัสกลุ่ม"), name: tr("gl_group_name", "ชื่อกลุ่ม") };
   if (resource === "mappings") return { code: tr("gl_mapping_code", "รหัสรูปแบบ"), name: tr("gl_mapping_name", "ชื่อรูปแบบ") };
+  if (resource === "departments") return { code: tr("gl_department_code", "รหัสแผนก"), name: tr("gl_name_description", "ชื่อ / รายละเอียด") };
+  if (resource === "projects") return { code: tr("gl_project_code", "รหัสโครงการ"), name: tr("gl_name_description", "ชื่อ / รายละเอียด") };
   return null;
 }
 function MasterFields({ resource, value, set, accounts, years, books }: { resource: MasterResource; value: GLMaster; set: (patch: object) => void; accounts: GLAccount[]; years: GLFiscalYear[]; books: GLJournalBook[] }) {

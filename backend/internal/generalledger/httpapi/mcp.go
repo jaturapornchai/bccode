@@ -57,7 +57,7 @@ func (h *Http) executeMCP(ctx context.Context, p mcptoken.Principal, tool string
 		return nil, fmt.Errorf("รูปแบบ arguments ไม่ถูกต้อง")
 	}
 	query := url.Values{}
-	allowedQuery := map[string]bool{"q": true, "page": true, "limit": true, "bookcode": true, "kind": true, "status": true, "from": true, "to": true, "fiscalyear": true, "accountcode": true, "branchcode": true, "departmentcode": true, "projectcode": true, "snapshot": true, "asof": true, "companywide": true}
+	allowedQuery := map[string]bool{"q": true, "page": true, "limit": true, "bookcode": true, "kind": true, "status": true, "from": true, "to": true, "codefrom": true, "codeto": true, "fiscalyear": true, "accountcode": true, "branchcode": true, "departmentcode": true, "projectcode": true, "snapshot": true, "asof": true, "companywide": true}
 	for key, value := range args.Query {
 		if !allowedQuery[key] {
 			return nil, fmt.Errorf("query parameter ไม่ถูกต้อง: %s", key)

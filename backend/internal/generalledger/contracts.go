@@ -107,4 +107,8 @@ type ListFilter struct {
 	// DateFrom and DateTo (YYYY-MM-DD, both inclusive) bound the journal document date; empty = open end.
 	DateFrom string
 	DateTo   string
+	// CodeFrom and CodeTo bound the record code of any master list (print ranges like Champ 5538/5521): CodeFrom alone matches
+	// that code exactly, both are an inclusive range, CodeTo alone is ignored (Champ GLRepDeaprtmentDlg.cpp:87-98).
+	CodeFrom string
+	CodeTo   string
 }

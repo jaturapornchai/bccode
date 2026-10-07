@@ -430,6 +430,11 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 				return nil, err
 			}
 		}
+		if isDimensionKind(kind) {
+			if err := guardDimensionDelete(ctx, tx, scope.Company, kind, old); err != nil {
+				return nil, err
+			}
+		}
 		old.Identity = updateIdentity(scope, old.Identity, now)
 		old.IsDeleted = true
 		data, err := json.Marshal(old)
@@ -464,6 +469,11 @@ func (s *PostgresStore) mutateMaster(ctx context.Context, tx *sql.Tx, scope Scop
 		}
 		if kind == "journal-books" {
 			if err := guardJournalBookUpdate(ctx, tx, scope.Company, old, next); err != nil {
+				return nil, err
+			}
+		}
+		if isDimensionKind(kind) {
+			if err := guardDimensionUpdate(ctx, tx, scope.Company, kind, old, next); err != nil {
 				return nil, err
 			}
 		}

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 //go:embed schema.sql
@@ -333,6 +334,13 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 	if err := validateDateFilter(filter); err != nil {
 		return result, err
 	}
+	filter.CodeFrom, filter.CodeTo = NormalizeCode(filter.CodeFrom), NormalizeCode(filter.CodeTo)
+	if filter.CodeFrom == "" {
+		filter.CodeTo = ""
+	}
+	if utf8.RuneCountInString(filter.CodeFrom) > codeMaxRunes || utf8.RuneCountInString(filter.CodeTo) > codeMaxRunes {
+		return result, fieldError("master_filter_code_invalid", "codefrom", "ช่วงรหัสที่ใช้กรองยาวเกินกำหนด กรุณาเลือกรหัสจากรายการ")
+	}
 	if filter.Kind != "" && !contains([]string{"manual", "opening", "closing", "reversal", "mapping"}, filter.Kind) || filter.Status != "" && !contains([]string{"draft", "posted", "reversed", "void"}, filter.Status) {
 		return result, fmt.Errorf("ตัวกรองรายการบัญชีไม่ถูกต้อง")
 	}
@@ -341,11 +349,11 @@ func (p *Postgres) List(ctx context.Context, scope Scope, kind, search string, p
 		return result, err
 	}
 	// Search is a literal substring on code, names, description, and reference (never matching JSON keys or boolean flags).
-	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || COALESCE(payload->>'name', '') || ' ' || COALESCE(payload->>'description', '') || ' ' || COALESCE(payload->>'reference', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7) AND ($8='' OR payload->>'date'>=$8) AND ($9='' OR payload->>'date'<=$9)))`
-	if err = db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE `+where, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, filter.DateFrom, filter.DateTo).Scan(&result.Total); err != nil {
+	where := `company=$1 AND kind=$2 AND NOT COALESCE((payload->>'isdeleted')::boolean,false) AND ($3='' OR strpos(lower(code || ' ' || COALESCE(payload->>'name', '') || ' ' || COALESCE(payload->>'description', '') || ' ' || COALESCE(payload->>'reference', '') || ' ' || COALESCE(jsonb_path_query_array(payload, '$.names[*].name')::text, '')),lower($3))>0) AND ($4='' OR kind NOT IN ('journals','forecast') OR payload->>'branchcode'=$4) AND (kind<>'journals' OR (($5='' OR payload->>'bookcode'=$5) AND ($6='' OR payload->>'kind'=$6) AND ($7='' OR payload->>'status'=$7) AND ($8='' OR payload->>'date'>=$8) AND ($9='' OR payload->>'date'<=$9))) AND ($10='' OR (CASE WHEN $11='' THEN code=$10 ELSE code>=$10 AND code<=$11 END))`
+	if err = db.QueryRowContext(ctx, `SELECT count(*) FROM gl_records WHERE `+where, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, filter.DateFrom, filter.DateTo, filter.CodeFrom, filter.CodeTo).Scan(&result.Total); err != nil {
 		return result, err
 	}
-	rows, err := db.QueryContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE `+where+` ORDER BY code,id LIMIT $10 OFFSET $11`, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, filter.DateFrom, filter.DateTo, limit, (page-1)*limit)
+	rows, err := db.QueryContext(ctx, `SELECT payload || jsonb_build_object('id', id, 'version', version) FROM gl_records WHERE `+where+` ORDER BY code,id LIMIT $12 OFFSET $13`, scope.Company, kind, search, scope.Branch, filter.BookCode, filter.Kind, filter.Status, filter.DateFrom, filter.DateTo, filter.CodeFrom, filter.CodeTo, limit, (page-1)*limit)
 	if err != nil {
 		return result, err
 	}

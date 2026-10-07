@@ -91,6 +91,7 @@ const CHAMP_SEARCH_ALIASES: Record<string, string[]> = {
   "gl-bank-unmatched": ["รายงาน Bank Statement", "กระทบยอดธนาคาร"],
   "gl-account-mapping": ["รูปแบบการเชื่อมโยงบัญชีอัตโนมัติ", "Account Mapping"],
   "gl-budget": ["กำหนดงบประมาณประจำปี", "Budgeting"],
+  "gl-dimensions": ["กำหนดรหัสแผนก", "กำหนดรหัสโครงการ", "รหัสแผนก", "รหัสโครงการ", "Department", "Project"],
   "gl-opening-balance": ["บันทึกข้อมูลรายวันยกมา", "ยอดยกมาทางบัญชี"],
   // Champ แยกเมนู "ยกเลิกเอกสารที่ผ่านรายการแล้ว" แต่ BC ยุบเป็นแท็บในจอผ่านรายการ (AGENTS.md กฎ Champ parity ข้อ 1) — ชื่อเดิมค้นหาเจอที่นี่
   "gl-post": ["ผ่านรายการบัญชี", "posting", "ผ่านรายการและยกเลิก", "ยกเลิกเอกสารที่ผ่านรายการแล้ว", "ยกเลิกการผ่านรายการบัญชี", "unpost", "กลับรายการ"],
@@ -627,6 +628,7 @@ export const MENU_SECTIONS: MenuSection[] = [
           tx("gl-account-mapping", "กำหนดรูปแบบการเชื่อม", "Automatic Account Mapping", "/gl/account-mapping", "finance"),
           tx("gl-product-account-groups", "กำหนดกลุ่มบัญชีสินค้า", "Product Account Groups", "/gl/product-account-groups", "finance"),
           tx("gl-fiscal-years", "ปีบัญชีและบัญชีปิดปี", "Fiscal Year and Closing Accounts", "/gl/fiscal-years", "finance", "gl_fiscal_year_closing_acct"),
+          tx("gl-dimensions", "กำหนดรหัสต่างๆ (แผนก/โครงการ)", "Code Setup (Departments / Projects)", "/gl/dimensions", "finance"),
         ],
       },
       {

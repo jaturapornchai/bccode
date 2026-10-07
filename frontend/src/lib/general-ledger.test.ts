@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BUDGET_PERIODS, budgetPeriodStarts, budgetPeriodsTotal } from "./general-ledger";
 import { GL_RESOURCES, STATEMENT_NOTES_NPAES_BASIS, newStatementNote, starterStatementNotes, statementNoteHasText, statementNotesAfterReload, statementNotesFromRecord, statementNotesNeedReload } from "./general-ledger";
-import { activeJournalBooks, amountString, amountUnits, chartOfAccountsCsv, csvCell, defaultJournalBookCode, fiscalYearForDate, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
+import { activeJournalBooks, amountString, amountUnits, chartOfAccountsCsv, csvCell, defaultJournalBookCode, dimensionPayload, fiscalYearForDate, isDimensionResource, journalBookPayload, journalBookProblem, journalBookTypeLabels, normalizeJournalLines, untypedJournalBooks, validateJournalBook, workspaceBranchCode, type GLJournalBook, emptyAccount, emptyFiscalYear, emptyJournal, emptyLine, formatAmount, GL_MENU_ITEMS, isGeneralLedgerRoute, journalTotals, reportCsv, validateJournal, generateStarterTemplates, emptyStatementTemplate, statementStarterReplaceNeedsConfirm, statementStarterReplacedCode, statementTemplateFromStarter, type StatementRow } from "./general-ledger";
 import { statementIsPeriodic, statementSetDefaultSelection, statementSetRank, statementSetTemplates, type GLStatementTemplate, type StatementType } from "./general-ledger";
 import { STATEMENT_SUGGEST_KEYS, addStatementAccounts, applyStatementAccountFix, applyStatementTemplateFixes, fillText, statementEngineTargets, statementFixesToApply, statementSuggestSignature, statementTargetKey, withKnownSuggestKeys, type GLStatementAccountFix } from "./general-ledger";
 
@@ -95,9 +95,9 @@ describe("general ledger exact accounting helpers", () => {
     expect(() => budgetPeriodsTotal(["1,000"])).toThrow();
   });
 
-  it("covers the exact 27 GL menu routes (Champ parity 2026-09-19 + 3 subledger reports 2026-09-25 + purchase VAT adjustment 2026-10-07)", () => {
-    expect(GL_MENU_ITEMS).toHaveLength(27);
-    expect(new Set(GL_MENU_ITEMS.map((item) => item.route)).size).toBe(27);
+  it("covers the exact 28 GL menu routes (Champ parity 2026-09-19 + 3 subledger reports 2026-09-25 + purchase VAT adjustment and department/project codes 2026-10-07)", () => {
+    expect(GL_MENU_ITEMS).toHaveLength(28);
+    expect(new Set(GL_MENU_ITEMS.map((item) => item.route)).size).toBe(28);
     expect(GL_MENU_ITEMS.every((item) => isGeneralLedgerRoute(item.route))).toBe(true);
     expect(isGeneralLedgerRoute("/report/ledger?accountcode=A")).toBe(true);
     expect(isGeneralLedgerRoute("/gl/journals")).toBe(true);
@@ -284,6 +284,19 @@ describe("journal books are user-defined master data (booktype drives behaviour,
   });
   it("labels the six book types from the spec", () => {
     expect(Object.keys(journalBookTypeLabels)).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+});
+
+describe("department and project registers", () => {
+  it("are GL resources the BFF can proxy, and only those two count as dimensions", () => {
+    expect(GL_RESOURCES).toEqual(expect.arrayContaining(["departments", "projects"]));
+    expect(isDimensionResource("departments") && isDimensionResource("projects")).toBe(true);
+    expect(isDimensionResource("journal-books") || isDimensionResource("accounts")).toBe(false);
+  });
+  it("send only the contract fields, trimmed — nothing from the other masters", () => {
+    const payload = dimensionPayload({ id: "d1", version: 4, code: " D01 ", name: " ฝ่ายบัญชีและการเงิน ", isactive: false, amount: "0", accountcode: "x" } as never);
+    expect(payload).toEqual({ id: "d1", version: 4, code: "D01", name: "ฝ่ายบัญชีและการเงิน", isactive: false });
+    expect(dimensionPayload({ code: "P01", name: "โครงการก่อสร้างโกดัง", isactive: true })).toEqual({ code: "P01", name: "โครงการก่อสร้างโกดัง", isactive: true });
   });
 });
 

@@ -18,7 +18,7 @@ type TemplateNotice = { error: boolean; text: string };
 
 /** Native modal dialog in a portal: focus stays inside, Esc and Tab are handled by the browser, and the journal form around the
  *  trigger neither receives the dialog's submit/keyboard events nor disables its controls. */
-function TemplateModal({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) {
+export function TemplateModal({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const element = dialog.current;

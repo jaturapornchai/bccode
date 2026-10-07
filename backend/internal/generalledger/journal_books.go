@@ -30,7 +30,7 @@ func validBookType(t int) bool { return t >= BookTypeGeneral && t <= BookTypeOpe
 // DefaultJournalBook is one of the standard books a new company starts with.
 type DefaultJournalBook struct {
 	Code, Name, NameEn, TitleName string
-	BookType           int
+	BookType                      int
 }
 
 // DefaultJournalBooks returns the market-standard set named in the spec comment of
@@ -306,6 +306,9 @@ var masterCodeLabels = map[string]string{
 func validateMasterCode(m *Master, allowUntypedBook bool) error {
 	if m.Kind == "journal-books" {
 		return validateJournalBookMaster(m, allowUntypedBook)
+	}
+	if isDimensionKind(m.Kind) {
+		return validateDimensionMaster(m)
 	}
 	label, ok := masterCodeLabels[m.Kind]
 	if !ok {

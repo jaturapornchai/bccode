@@ -205,6 +205,8 @@ var MasterCollections = map[string]string{
 	"statement-templates": "gl_statement_templates",
 	"statement-notes":     "gl_statement_notes",
 	"journal-books":       "gl_journal_books",
+	DepartmentKind:        "gl_departments",
+	ProjectKind:           "gl_projects",
 	JournalTemplateKind:   "gl_journal_templates",
 }
 

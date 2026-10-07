@@ -92,7 +92,7 @@ export type GLReport = {
 export type GLStatementCheck = { key: string; fiscalyear: string; rowno: number; title: string; statement: string; book: string; difference: string; matched: boolean };
 /** accountcode อาจเป็น STATEMENT_CURRENT_EARNINGS (กำไรขาดทุนที่ยังไม่ปิดบัญชี, accountname ว่าง); amount = สตริงทศนิยมด้านปกติของหมวดบัญชี */
 export type GLStatementUnassigned = { key: string; fiscalyear: string; accountcode: string; accountname: string; accounttype: string; basis: string; amount: string };
-export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "journal-templates", "post-batches", "vat-adjustments"] as const;
+export const GL_RESOURCES = ["accounts", "fiscal-years", "account-groups", "product-account-groups", "mappings", "budgets", "periods", "forecast", "allocations", "journals", "statement-templates", "statement-notes", "journal-books", "journal-templates", "post-batches", "vat-adjustments", "departments", "projects"] as const;
 export type GLResource = typeof GL_RESOURCES[number];
 /** ผ่านรายการแบบชุด (backend post_batches.go): action "check" ใช้ตัวกรอง (ว่าง = ไม่จำกัด), action "create" ใช้ items + remark + ผู้ตรวจสอบ 1/2 (ไม่บังคับ) + ผู้อนุมัติ (บังคับ) */
 export type GLPostBatchInput = { bookcode?: string; datefrom?: string; dateto?: string; docnofrom?: string; docnoto?: string; items?: { id: string; version: number }[]; remark?: string; check1?: string; check2?: string; approver?: string };
@@ -110,7 +110,7 @@ export type GLVatAdjustRow = GLDetailVat & { journalid: string; version: number;
 export type GLCommand = {
   resource: GLResource | "processes"; id?: string; action: string; requestid: string;
   version?: number; reason?: string; date?: string; docno?: string; targetyear?: string;
-  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook | GLJournalTemplateInput | Omit<GLStatementNotes, keyof GLIdentity>; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
+  account?: GLAccount; fiscalyear?: GLFiscalYear; master?: GLMaster | GLJournalBook | GLDimension | GLJournalTemplateInput | Omit<GLStatementNotes, keyof GLIdentity>; journal?: GLJournal | Pick<GLJournal, "details">; budget?: Omit<GLBudget, keyof GLIdentity | "total">; statementtemplate?: GLStatementTemplate;
   review?: { status: GLReviewStatus; note: string; expectedEventNo: number };
   postbatch?: GLPostBatchInput;
   vatadjust?: GLVatAdjustInput;
@@ -142,6 +142,15 @@ export const JOURNAL_BOOK_CODE_MAX = 15;
 export const JOURNAL_BOOK_NAME_MAX = 100;
 export const JOURNAL_DOC_FORMAT_DEFAULT = "@YYMM-####";
 export const JOURNAL_DOC_FORMAT_MAX = 20;
+/** Department and project registers share one screen and one record shape (Champ BCDepartment / BCProject: code + name; limits are enforced by the backend, dimensions.go). */
+export const DIMENSION_RESOURCES = ["departments", "projects"] as const;
+export type GLDimensionResource = (typeof DIMENSION_RESOURCES)[number];
+export type GLDimension = GLIdentity & { code: string; name: string; isactive: boolean };
+export function isDimensionResource(resource: string): resource is GLDimensionResource { return (DIMENSION_RESOURCES as readonly string[]).includes(resource); }
+/** create/update payload of a department or project: only the contract fields, trimmed — nothing from the other masters. */
+export function dimensionPayload(record: Pick<GLDimension, "id" | "version" | "code" | "name" | "isactive">): GLDimension {
+  return { ...(record.id ? { id: record.id } : {}), ...(record.version ? { version: record.version } : {}), code: record.code.trim(), name: record.name.trim(), isactive: record.isactive ?? true };
+}
 export function isJournalBookType(value: unknown): value is GLJournalBookType { return Number.isInteger(Number(value)) && JOURNAL_BOOK_TYPES.includes(Number(value) as GLJournalBookType); }
 export function emptyJournalBook(): GLJournalBook { return { code: "", name: "", nameen: "", booktype: 0, isactive: true }; }
 /** payload ของคำสั่ง create/update สมุดรายวัน: ส่งเฉพาะช่องตามสัญญา ไม่พ่วงช่องของข้อมูลหลักอื่น */

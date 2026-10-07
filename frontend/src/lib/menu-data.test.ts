@@ -76,7 +76,8 @@ describe("menu language labels", () => {
     expect(baseline).toHaveLength(194);
     // +3 รายงานยอดคงค้างลูกหนี้/เจ้าหนี้/Statement ในบัญชีแยกประเภท (2026-09-25)
     // +20 เมนูหลักแบบ Champ (2026-10-07): รายการที่ Champ มีแต่ BC ยังไม่มีจอ (รอพัฒนา)
-    expect(items).toHaveLength(218);
+    // +1 กำหนดรหัสต่างๆ (แผนก/โครงการ) ใต้บัญชีแยกประเภท: ทะเบียนแผนกและโครงการ (2026-10-07)
+    expect(items).toHaveLength(219);
     // Screens deliberately moved after the baseline snapshot (id stays, route changes).
     const moved: Record<string, string> = { "purchase-vat-adjust": "/gl/purchasevatadjust" };
     for (const previous of baseline) {

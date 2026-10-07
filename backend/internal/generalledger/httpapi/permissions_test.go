@@ -24,6 +24,10 @@ func TestLedgerPermissionsSeparateEntryFromActions(t *testing.T) {
 	if resourceScreens["journal-books"] != "gl-journal-books" {
 		t.Fatalf("expected resourceScreens[journal-books] to be gl-journal-books, got %s", resourceScreens["journal-books"])
 	}
+	// แผนกและโครงการอยู่จอเดียว (กำหนดรหัสต่างๆ): สิทธิ์เดียวกัน อ่านได้ไม่ได้แปลว่าแก้ได้
+	if resourceScreens["departments"] != "gl-dimensions" || resourceScreens["projects"] != "gl-dimensions" || allowed(map[string]bool{"gl-dimensions": true}, resourceScreens["departments"], "delete") || !allowed(map[string]bool{"gl-dimensions": true, "gl-dimensions:delete": true}, resourceScreens["projects"], "delete") {
+		t.Fatalf("dimension screens = %q / %q", resourceScreens["departments"], resourceScreens["projects"])
+	}
 	// รูปแบบรายการรายวัน (journal-templates) ใช้สิทธิ์จอบันทึกรายวันเดียวกัน — ไม่มีเมนูใหม่
 	if resourceScreens["journal-templates"] != "gl-journals" || !allowed(map[string]bool{"gl-journals": true, "gl-journals:create": true}, resourceScreens["journal-templates"], "create") || allowed(map[string]bool{"gl-journals": true}, resourceScreens["journal-templates"], "delete") {
 		t.Fatalf("journal templates screen = %q", resourceScreens["journal-templates"])

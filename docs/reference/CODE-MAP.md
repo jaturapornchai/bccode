@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit 04fe1471 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit 5f4ad355 - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 29
 
@@ -713,7 +713,7 @@ Files indexed: 29
 | 1673 | function | `formatNumber` |
 | 1677 | function | `formatCodeName` |
 
-## frontend/src/app/gl/gl-masters.tsx (1501 lines)
+## frontend/src/app/gl/gl-masters.tsx (1506 lines)
 
 | Line | Kind | Name |
 |---:|---|---|
@@ -738,31 +738,31 @@ Files indexed: 29
 | 182 | function | `recordName` |
 | 184 | function | `confirmSubject` |
 | 191 | function | `TreeNodeRow` |
-| 367 | function | `GLMasters` |
-| 400 | function | `showFormError` |
-| 422 | function | `openView` |
-| 438 | function | `openEdit` |
-| 454 | function | `openCreate` |
-| 465 | function | `handleAddChild` |
-| 483 | function | `cancelEdit` |
-| 497 | function | `save` |
-| 528 | function | `deleteItem` |
-| 556 | function | `runAction` |
-| 597 | const-arrow | `toggleCategory` |
-| 601 | const-arrow | `toggleNode` |
-| 630 | const-arrow | `handlePrint` |
-| 644 | const-arrow | `handlePrintBooks` |
-| 649 | const-arrow | `handleExportCsv` |
-| 1169 | function | `CodeInput` |
-| 1186 | function | `AccountFields` |
-| 1191 | const-arrow | `handleTypeChange` |
-| 1201 | const-arrow | `handleParentChange` |
-| 1378 | function | `FiscalYearFields` |
-| 1399 | function | `champMasterLabels` |
-| 1404 | function | `MasterFields` |
-| 1428 | function | `UntypedJournalBooksNotice` |
-| 1448 | function | `JournalBookTypeBadge` |
-| 1460 | function | `JournalBookFields` |
+| 368 | function | `GLMasters` |
+| 402 | function | `showFormError` |
+| 424 | function | `openView` |
+| 440 | function | `openEdit` |
+| 456 | function | `openCreate` |
+| 467 | function | `handleAddChild` |
+| 485 | function | `cancelEdit` |
+| 499 | function | `save` |
+| 530 | function | `deleteItem` |
+| 558 | function | `runAction` |
+| 599 | const-arrow | `toggleCategory` |
+| 603 | const-arrow | `toggleNode` |
+| 632 | const-arrow | `handlePrint` |
+| 646 | const-arrow | `handlePrintBooks` |
+| 651 | const-arrow | `handleExportCsv` |
+| 1172 | function | `CodeInput` |
+| 1189 | function | `AccountFields` |
+| 1194 | const-arrow | `handleTypeChange` |
+| 1204 | const-arrow | `handleParentChange` |
+| 1381 | function | `FiscalYearFields` |
+| 1402 | function | `champMasterLabels` |
+| 1409 | function | `MasterFields` |
+| 1433 | function | `UntypedJournalBooksNotice` |
+| 1453 | function | `JournalBookTypeBadge` |
+| 1465 | function | `JournalBookFields` |
 
 ## frontend/src/components/system-settings/field-editors/structured-field-editors.tsx (1496 lines)
 

@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { LanguageCode } from "@/lib/i18n";
 import { formatAppDate, localeForDate } from "@/lib/date-time";
-import { STATEMENT_CURRENT_EARNINGS, accountName, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, sortAccountsHierarchically, statementIsPeriodic, type GLAccount, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
+import { STATEMENT_CURRENT_EARNINGS, accountName, accountTypeLabels, amountString, fillText, formatAmount, journalBookName, journalTotals, labelText, sortAccountsHierarchically, statementIsPeriodic, type GLAccount, type GLDimension, type GLDimensionResource, type GLFiscalYear, type GLJournal, type GLJournalBook, type GLReport, type GLStatementCheck, type GLStatementUnassigned as GLStatementUnassignedItem, type GLTextFn, type StatementNote } from "@/lib/general-ledger";
 import { companyBaseName, workspaceCompanyDisplayName, workspaceStorageKeys, type WorkspaceSession } from "@/lib/workspace-models";
 import { getAuthSession } from "@/lib/client-auth-session";
 import { useGLText } from "./gl-common";
@@ -436,6 +436,39 @@ export function GLJournalBooksPrint({ books, company, tr, language }: { books: G
           <tr className="gl-print-total"><td colSpan={3}>{fillText(tr("gl_report_doc_total", "รวมทั้งสิ้น {0} รายการ"), rows.length.toLocaleString("th-TH"))}</td></tr>
         </tbody>
       </table>
+    </article>
+  );
+}
+
+/** Department / project listing like Champ 5538 / 5521 (GLRepDeaprtmentView, GLRepProjectView): code · name/description, rows in the order
+ *  the backend returned them (ORDER BY code, already filtered by the code range), total-count line, the range as the print condition. */
+export function GLDimensionsPrint({ kind, rows, conditions, company, tr, language }: { kind: GLDimensionResource; rows: GLDimension[]; conditions: string[]; company: string; tr: GLTextFn; language: LanguageCode }) {
+  const isDepartment = kind === "departments";
+  return (
+    <article className="gl-print-chart-of-accounts">
+      <table>
+        <thead>
+          <tr className="gl-print-head">
+            <th colSpan={2}>
+              <ReportPrintHeading company={company} title={isDepartment ? tr("gl_department_report_title", "รายงานรายละเอียดแผนก") : tr("gl_project_report_title", "รายงานรายละเอียดโครงการ")} printedBy={printUserName()} printedAt={printedAtText(language)} description={[]} tr={tr} />
+            </th>
+          </tr>
+          <tr>
+            <th style={{ width: "20%" }}>{isDepartment ? tr("gl_department_code", "รหัสแผนก") : tr("gl_project_code", "รหัสโครงการ")}</th>
+            <th style={{ width: "80%" }}>{tr("gl_name_description", "ชื่อ / รายละเอียด")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id ?? row.code}>
+              <td className="font-mono">{row.code}</td>
+              <td>{row.name}</td>
+            </tr>
+          ))}
+          <tr className="gl-print-total"><td colSpan={2}>{fillText(tr("gl_report_doc_total", "รวมทั้งสิ้น {0} รายการ"), rows.length.toLocaleString("th-TH"))}</td></tr>
+        </tbody>
+      </table>
+      <ReportPrintConditions lines={conditions} tr={tr} />
     </article>
   );
 }

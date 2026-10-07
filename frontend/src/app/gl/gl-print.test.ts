@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { emptyFiscalYear, type GLJournal, type GLReport, type GLStatementCheck } from "@/lib/general-ledger";
-import { ReportPrintConditions, ReportPrintHeading, GLBudgetsPrint, GLChartOfAccountsPrint, GLJournalBooksPrint, budgetPrintColumnCount, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
+import { ReportPrintConditions, ReportPrintHeading, GLBudgetsPrint, GLChartOfAccountsPrint, GLDimensionsPrint, GLJournalBooksPrint, budgetPrintColumnCount, GLNotesPrint, GLReportWarnings, GLStatementChecks, GLStatementSetPrint, GLStatementTable, GLStatementUnassigned, GLVoucherPrint, STATEMENT_UNASSIGNED_SHOWN, statementPeriodLine, statementSetRootOrientation, statementCheckKey, printAmountCell, printOrientation, printPageStyle, statementAmountText, statementOrientation, statementPeriodText, visiblePrintColumns } from "./gl-print";
 
 const tr = (_key: string, fallback: string) => fallback;
 
@@ -326,6 +326,32 @@ describe("GLJournalBooksPrint", () => {
     expect(html.indexOf(">JV<")).toBeLessThan(html.indexOf(">PV<"));
     expect(html).not.toContain("สมุดที่ลบแล้ว");
     expect(html).toContain("รวมทั้งสิ้น 2 รายการ");
+  });
+});
+
+describe("GLDimensionsPrint", () => {
+  // the backend returns the rows already filtered by the code range and ordered by code: the print must not re-sort or re-filter them
+  const rows = [
+    { id: "d2", code: "D02", name: "ฝ่ายขาย", isactive: true },
+    { id: "d1", code: "D01", name: "ฝ่ายบัญชีและการเงิน", isactive: false },
+  ];
+  it("prints the Champ 5538 list: code · name, rows as returned, total line and the range condition", () => {
+    const html = renderToStaticMarkup(createElement(GLDimensionsPrint, { kind: "departments", rows, conditions: ["จากแผนก D01 ถึง D02"], company: "บริษัท บีซี จำกัด", tr, language: "th" }));
+    expect(html).toContain("รายงานรายละเอียดแผนก");
+    expect(html).toContain("รหัสแผนก");
+    expect(html).toContain("ชื่อ / รายละเอียด");
+    expect(html.indexOf(">D02<")).toBeLessThan(html.indexOf(">D01<"));
+    expect(html).toContain("ฝ่ายบัญชีและการเงิน");
+    expect(html).toContain("รวมทั้งสิ้น 2 รายการ");
+    expect(html).toContain("เงื่อนไขการพิมพ์รายงาน");
+    expect(html).toContain("จากแผนก D01 ถึง D02");
+  });
+  it("titles the project report like Champ 5521 and omits the condition block when the whole register is printed", () => {
+    const html = renderToStaticMarkup(createElement(GLDimensionsPrint, { kind: "projects", rows: [{ id: "p1", code: "P01", name: "โครงการก่อสร้างโกดัง", isactive: true }], conditions: [], company: "บริษัท บีซี จำกัด", tr, language: "th" }));
+    expect(html).toContain("รายงานรายละเอียดโครงการ");
+    expect(html).toContain("รหัสโครงการ");
+    expect(html).toContain("รวมทั้งสิ้น 1 รายการ");
+    expect(html).not.toContain("เงื่อนไขการพิมพ์รายงาน");
   });
 });
 

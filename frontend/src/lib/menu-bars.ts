@@ -254,7 +254,7 @@ export const MENU_BARS: MenuBar[] = [
     DIVIDER,
     items("gl-reprocess", "gl-post", "gl-recalculate-posted"),
     DIVIDER,
-    items("gl-account-mapping", "period-lock", "gl-journal-books", "gl-budget", "gl-account-groups", "gl-product-account-groups"),
+    items("gl-account-mapping", "period-lock", "gl-journal-books", "gl-budget", "gl-account-groups", "gl-product-account-groups", "gl-dimensions"),
     DIVIDER,
     items("gl-opening-balance", "financial-close", "purchase-vat-adjust", "withholding-tax-deduction", "gl-fiscal-years", "gl-year-end"),
     DIVIDER,

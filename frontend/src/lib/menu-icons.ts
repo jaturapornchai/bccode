@@ -330,6 +330,7 @@ export const ROUTE_ICON_KEYS: Record<string, MenuIconKey> = {
   "/report/assetdisposal": "archive",
   "/report/vatsummary": "fileChart",
   "/gl/journal-books": "folder",
+  "/gl/dimensions": "department",
   "/report/gljournal": "fileText",
   "/report/budgetcomparison": "barChart",
   "/report/ar-outstanding": "fileText",

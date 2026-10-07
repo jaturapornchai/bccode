@@ -179,6 +179,21 @@ describe("GL authenticated proxy", () => {
     for (const body of [{ resource: "journals", action: "generate", requestid }, { resource: "journals", action: "check", requestid }, { resource: "periods", action: "check", requestid }]) expect((await post(body)).status).toBe(400);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+  it("forwards the department and project code range, ignoring unknown filters and caller scope", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
+    for (const resource of ["departments", "projects"]) {
+      expect((await GET(new Request(`http://localhost/api/gl/${resource}?codefrom=D01&codeto=D09&page=1&limit=500&holdingcode=other&sql=x`, { headers }), context(resource))).status).toBe(200);
+    }
+    const urls = fetchMock.mock.calls.map((call) => new URL(call[0]));
+    expect(urls.map((url) => url.pathname)).toEqual(["/gl/v2/departments", "/gl/v2/projects"]);
+    for (const url of urls) expect(Object.fromEntries(url.searchParams)).toEqual({ codefrom: "D01", codeto: "D09", page: "1", limit: "500" });
+    const requestid = "12345678-1234-1234-1234-123456789012";
+    const master = { id: "d1", version: 2, code: "D01", name: "ฝ่ายบัญชีและการเงิน", isactive: true, holdingcode: "other" };
+    expect((await POST(new Request("http://localhost/api/gl/command", { method: "POST", headers, body: JSON.stringify({ resource: "departments", action: "update", requestid, reason: "แก้ชื่อ", master }) }), context("command"))).status).toBe(200);
+    const { holdingcode: _scope, ...forwarded } = master;
+    expect(_scope).toBe("other");
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ resource: "departments", action: "update", requestid, reason: "แก้ชื่อ", master: forwarded });
+  });
   it("forwards the purchase VAT adjustment list filters and both command modes, dropping caller scope", async () => {
     const fetchMock = vi.fn().mockImplementation(async () => Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
     const filters = "docdatefrom=2026-01-01&docdateto=2026-01-31&invdatefrom=2026-01-01&invdateto=2026-01-31&partnerfrom=AP001&partnerto=AP999&page=2&limit=100";

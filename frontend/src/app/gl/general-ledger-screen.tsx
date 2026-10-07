@@ -9,6 +9,7 @@ import { GLReports } from "./gl-reports";
 import { GLProcesses } from "./gl-processes";
 import { GLStatementDesigner } from "./gl-statement-designer";
 import { GLBudgets } from "./gl-budgets";
+import { GLDimensions } from "./gl-dimensions";
 import { GLPeriods } from "./gl-periods";
 import { GLPostBatch } from "./gl-post-batch";
 import { GLVatAdjust } from "./gl-vat-adjust";
@@ -35,6 +36,7 @@ function GeneralLedgerWorkbench({ route, embedded }: { route: string; embedded: 
   else if (cleanRoute === "/gl/statement-designer") content = <GLStatementDesigner route={cleanRoute} />;
   else if (cleanRoute === "/gl/budget") content = <GLBudgets route={cleanRoute} />;
   else if (cleanRoute === "/gl/periodlock") content = <GLPeriods />;
+  else if (cleanRoute === "/gl/dimensions") content = <GLDimensions route={cleanRoute} />;
   else if (masterRoutes[cleanRoute]) content = <GLMasters key={cleanRoute} resource={masterRoutes[cleanRoute] as Exclude<GLResource, "journals">} route={cleanRoute} />;
   else if (cleanRoute === "/gl/openingbalance") content = <GLJournals route={cleanRoute} kind="opening" />;
   else if (cleanRoute === "/gl/journals" || cleanRoute === "/gl/journal") content = <GLJournals key="all" route={cleanRoute} book="" />;
