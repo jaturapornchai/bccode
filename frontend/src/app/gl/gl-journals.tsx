@@ -689,9 +689,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                       <Field label={tr("gl_journal", "สมุดรายวัน")}><input className={control} value={journal.bookcode ? `${journal.bookcode} · ${bookLabel(journal.bookcode)}` : ""} readOnly /></Field>
                       <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} value={journal.docno} readOnly /></Field>
                       <Field label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} type="date" value={journal.date} readOnly /></Field>
-                      <Field label={tr("gl_ref_docno", "เลขที่เอกสารอ้างอิง")}><input className={control} value={journal.reference || "-"} readOnly /></Field>
-                      <Field label={tr("gl_ref_date", "วันที่เอกสารอ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} readOnly /></Field>
-                      <Field label={tr("gl_note", "หมายเหตุ")}><input className={control} value={journal.description || "-"} readOnly /></Field>
+                      <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference || "-"} readOnly /></Field>
+                      <Field label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} readOnly /></Field>
+                      <Field label={tr("gl_description", "คำอธิบาย")}><input className={control} value={journal.description || "-"} readOnly /></Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode || "-"} readOnly /></Field>
                     </div>
                     <div className="overflow-x-auto rounded-xl border border-border">
@@ -877,9 +877,9 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           }}
                         />
                       </Field>
-                      <Field label={tr("gl_ref_docno", "เลขที่เอกสารอ้างอิง")}><input className={control} value={journal.reference} maxLength={50} onChange={(e) => patch({ reference: e.target.value })} /></Field>
-                      <Field label={tr("gl_ref_date", "วันที่เอกสารอ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} onChange={(e) => patch({ refdate: e.target.value })} /></Field>
-                      <Field label={tr("gl_note", "หมายเหตุ")}>
+                      <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} maxLength={50} onChange={(e) => patch({ reference: e.target.value })} /></Field>
+                      <Field label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} onChange={(e) => patch({ refdate: e.target.value })} /></Field>
+                      <Field label={tr("gl_description", "คำอธิบาย")}>
                         <input className={control} value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
                       </Field>
                       <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
