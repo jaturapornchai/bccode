@@ -3,7 +3,6 @@ import {
   resolveAccountCategory,
   buildChartOfAccountsTree,
   filterAccountTree,
-  type AccountTreeNode,
 } from "./chart-of-accounts-tree";
 import type { GLAccount } from "./general-ledger";
 
@@ -180,44 +179,52 @@ describe("chart-of-accounts-tree", () => {
     expect(child1100.children[1].account.accountcode).toBe("1112");
   });
 
-  it("should validate the 3-level Thai standard chart of accounts fixture with >= 100 accounts", () => {
+  it("should validate the 5-level Thai standard chart of accounts fixture (DBD 2566) with >= 100 accounts", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("node:fs");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require("node:path");
 
-    const jsonPath = path.resolve(__dirname, "../../../docs/examples/thai-chart-of-accounts-standard.json");
+    const jsonPath = path.resolve(__dirname, "../../../backend/internal/generalledger/standard_chart_th.json");
     const raw = fs.readFileSync(jsonPath, "utf-8");
-    const data = JSON.parse(raw);
+    const accounts = JSON.parse(raw);
 
-    expect(data.accounts.length).toBeGreaterThanOrEqual(100);
-    expect(data.levels.level1).toBe(5);
-    expect(data.levels.level2).toBe(12);
-    expect(data.levels.level3).toBeGreaterThanOrEqual(100);
+    expect(accounts.length).toBeGreaterThanOrEqual(100);
+    const level1 = accounts.filter((a: GLAccount) => a.level === 1);
+    const level2 = accounts.filter((a: GLAccount) => a.level === 2);
+    const level3 = accounts.filter((a: GLAccount) => a.level === 3);
+    const level4 = accounts.filter((a: GLAccount) => a.level === 4);
+    const level5 = accounts.filter((a: GLAccount) => a.level === 5);
+
+    expect(level1.length).toBe(5);
+    expect(level2.length).toBe(13);
+    expect(level3.length).toBe(39);
+    expect(level4.length).toBe(94);
+    expect(level5.length).toBe(47);
 
     // Test tree building with full standard accounts
-    const groups = buildChartOfAccountsTree(data.accounts);
+    const groups = buildChartOfAccountsTree(accounts);
     expect(groups.length).toBe(5);
 
     const totalTreeAccounts = groups.reduce((sum: number, g: { totalAccounts: number }) => sum + g.totalAccounts, 0);
-    expect(totalTreeAccounts).toBe(data.accounts.length);
+    expect(totalTreeAccounts).toBe(accounts.length);
 
     // Verify specific rules from mydocs/specs/chatofaccount.md
     // 1. Sort by accountcode
-    const codes = data.accounts.map((a: GLAccount) => a.accountcode);
+    const codes = accounts.map((a: GLAccount) => a.accountcode);
     const sortedCodes = [...codes].sort((a: string, b: string) => a.localeCompare(b, "en", { numeric: true }));
     expect(codes).toEqual(sortedCodes);
 
     // 2. All level 1 accounts have parentaccountcode === null
-    const level1Accounts = data.accounts.filter((a: GLAccount) => a.level === 1);
+    const level1Accounts = accounts.filter((a: GLAccount) => a.level === 1);
     for (const a of level1Accounts) {
       expect(a.parentaccountcode).toBeNull();
       expect(a.allowposting).toBe(false);
     }
 
     // 3. Parent accounts (having children) have allowposting === false
-    const parentCodesSet = new Set(data.accounts.map((a: GLAccount) => a.parentaccountcode).filter(Boolean));
-    for (const a of data.accounts) {
+    const parentCodesSet = new Set(accounts.map((a: GLAccount) => a.parentaccountcode).filter(Boolean));
+    for (const a of accounts) {
       if (parentCodesSet.has(a.accountcode)) {
         expect(a.allowposting).toBe(false);
       } else {

@@ -202,7 +202,7 @@
 
 ## ที่อื่นใน `docs/`
 
-- `docs/handoff/` — สถานะงานค้างระหว่าง session: `HANDOFF-2026-09-19.md` (รอบ Champ-parity), `HANDOFF-2026-09-20-GL-GLM.md`, `HANDOFF-2026-09-20-GL-TAX.md` (GL + ภาษี); handoff เก่ากว่านี้ดูผ่าน `git show 1660b335:docs/handoff/<file>`
+- `docs/handoff/` — สถานะงานค้างระหว่าง session: `HANDOFF-2026-10-08-GL-CHAMP-PARITY.md` (ล่าสุด: GL Champ parity); handoff เก่ากว่านี้ดูผ่าน git history
 - `docs/audits/` — ผลตรวจ GL 2026-09-20 (`GL-AUDIT-2026-09-20.md`, `GL-FIX-2026-09-20.md`)
 - `docs/user-guide/gl-journals.md` — คู่มือใช้งานสมุดรายวัน GL
 - `docs/examples/` — ชุดข้อมูล/manifest ตัวอย่าง GL และภาษี (อ้างจาก [22-sample-data-gl-tax-2569.md](22-sample-data-gl-tax-2569.md))
