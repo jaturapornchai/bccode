@@ -56,15 +56,16 @@ export function postBatchItems(rows: readonly GLPostCheckRow[], selected: Readon
 }
 /** สรุปท้ายตาราง: จำนวนใบ + ยอดเดบิตของใบที่เลือก (คิดด้วย BigInt ไม่ใช้ float — Rule 20); ยอดอ่านไม่ได้ = "" (แสดง "-") */
 export function postBatchSummary(rows: readonly GLPostCheckRow[], selected: ReadonlySet<string>) {
-  let ready = 0, chosen = 0, debit: bigint | null = 0n;
+  let ready = 0, chosen = 0, taxcount = 0, debit: bigint | null = 0n;
   for (const row of rows) {
     if (!row.ok) continue;
     ready++;
     if (!selected.has(row.id)) continue;
     chosen++;
+    taxcount += row.taxcount ?? 0;
     try { if (debit !== null) debit += displayAmountUnits(row.debit || "0"); } catch { debit = null; }
   }
-  return { checked: rows.length, ready, issues: rows.length - ready, selected: chosen, debit: debit === null ? "" : amountString(debit, 2) };
+  return { checked: rows.length, ready, issues: rows.length - ready, selected: chosen, taxcount, debit: debit === null ? "" : amountString(debit, 2) };
 }
 /** ช่อง "ที่มา" (Champ 5512): ระบบที่นำเข้าใบสำคัญ — ใบที่คีย์ในบัญชีแยกประเภทเองบอกว่าคีย์เอง */
 export function postBatchSourceText(row: Pick<GLPostCheckRow, "sourcesystem">, tr: GLTextFn): string {
@@ -207,7 +208,7 @@ function PostBatchPanel() {
     {!check && !checking && <Notice text={tr("gl_post_batch_hint", "การผ่านรายการรายวัน: กำหนดเงื่อนไข แล้วกด ประมวลผล (F7) เพื่อค้นหารายการ ทำเครื่องหมายถูกในแถวที่ต้องการ จากนั้นกด บันทึกรายการ (F11) เพื่อยืนยันการผ่านรายการ (ระบบตรวจ เดบิตเท่ากับเครดิต งวดยังไม่ปิด และผังบัญชีลงรายการได้ ให้ทุกใบ)")} />}
     {check?.more && <Notice text={fillText(tr("gl_post_batch_more", "แสดงเพียง {0} ใบแรก กรุณากำหนดช่วงวันที่หรือเลขที่ให้แคบลง แล้วตรวจสอบอีกครั้ง"), check.limit.toLocaleString("th-TH"))} />}
     {check && <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border">
-      <table className="w-full min-w-[960px] border-collapse text-[0.95rem]">
+      <table className="w-full min-w-[1040px] border-collapse text-[0.95rem]">
         <thead className="sticky top-0 z-10 bg-muted text-left">
           <tr className="[&_th]:px-3 [&_th]:py-2 [&_th]:font-semibold">
             <th className="w-12"><span className="sr-only">{tr("gl_select", "เลือก")}</span></th>
@@ -216,12 +217,13 @@ function PostBatchPanel() {
             <th>{tr("gl_document_no", "เลขที่เอกสาร")}</th>
             <th>{tr("gl_description", "คำอธิบาย")}</th>
             <th className="text-right">{tr("gl_amount", "จำนวนเงิน")}</th>
+            <th className="text-right">{tr("gl_post_batch_tax_count", "จำนวนภาษี")}</th>
             <th>{tr("gl_post_batch_source", "ที่มา")}</th>
             <th className="min-w-[16rem]">{tr("gl_status", "สถานะ")}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_post_batch_none", "ไม่พบใบร่างตามเงื่อนไขนี้")}</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">{tr("gl_post_batch_none", "ไม่พบใบร่างตามเงื่อนไขนี้")}</td></tr>}
           {rows.map((row) => <tr key={row.id} className={cn("border-t border-border align-top [&_td]:px-3 [&_td]:py-2", row.ok ? "hover:bg-muted/40" : "bg-destructive/5")} data-post-check={row.ok ? "ok" : "issue"}
             onDoubleClick={(event) => { if (!(event.target as HTMLElement).closest("button,input,[role=checkbox]")) setViewing({ id: row.id, docno: row.docno }); }}>
             <td><Checkbox checked={row.ok && selected.has(row.id)} disabled={!row.ok || working} onCheckedChange={(checked) => toggleRow(row.id, checked)} aria-label={fillText(tr("gl_post_batch_select_row", "เลือกเอกสาร {0}"), row.docno)} /></td>
@@ -230,6 +232,7 @@ function PostBatchPanel() {
             <td className="whitespace-nowrap font-medium"><button type="button" className="min-h-0! rounded-md p-0! font-medium text-primary underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-ring" title={fillText(tr("gl_post_batch_view_voucher", "ดูรายการบัญชีของเอกสาร {0}"), row.docno)} aria-label={fillText(tr("gl_post_batch_view_voucher", "ดูรายการบัญชีของเอกสาร {0}"), row.docno)} onClick={() => setViewing({ id: row.id, docno: row.docno })}>{row.docno}</button></td>
             <td className="[overflow-wrap:anywhere]">{row.description || "-"}</td>
             <td className="whitespace-nowrap text-right tabular-nums">{formatAmount(row.debit ?? "")}</td>
+            <td className="whitespace-nowrap text-right tabular-nums">{(row.taxcount ?? 0).toLocaleString("th-TH")}</td>
             <td className="[overflow-wrap:anywhere]">{postBatchSourceText(row, tr)}</td>
             <td>{row.ok
               ? <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary"><CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />{tr("gl_post_batch_ready", "พร้อมผ่านรายการ")}</span>
@@ -240,7 +243,10 @@ function PostBatchPanel() {
     </div>}
     {check && <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2 text-[0.95rem]" data-post-batch-summary="true">
       <span>{fillText(tr("gl_post_batch_summary", "ตรวจแล้ว {0} ใบ · พร้อมผ่าน {1} ใบ · ติดปัญหา {2} ใบ · เลือกไว้ {3} ใบ"), summary.checked, summary.ready, summary.issues, summary.selected)}</span>
-      <span className="font-semibold">{tr("gl_post_batch_selected_debit", "ยอดเดบิตที่เลือก")}: <span className="tabular-nums">{summary.debit ? formatAmount(summary.debit) : "-"}</span></span>
+      <span className="flex flex-wrap gap-x-4 font-semibold">
+        <span>{tr("gl_post_batch_tax_count", "จำนวนภาษี")}: <span className="tabular-nums">{summary.taxcount.toLocaleString("th-TH")}</span></span>
+        <span>{tr("gl_post_batch_selected_debit", "ยอดเดบิตที่เลือก")}: <span className="tabular-nums">{summary.debit ? formatAmount(summary.debit) : "-"}</span></span>
+      </span>
     </div>}
     <JournalDrillDownModal docno={viewing?.docno ?? null} journalId={viewing?.id ?? null} open={viewing !== null} onClose={() => setViewing(null)} books={refs.books} />
     {confirmationDialog}

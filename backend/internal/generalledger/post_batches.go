@@ -55,6 +55,7 @@ type PostBatch struct {
 	PostedAt   time.Time          `json:"postedat"`
 	PostedBy   string             `json:"postedby"`
 	Count      int                `json:"count"`
+	TaxCount   int                `json:"taxcount"` // Champ BCPostTrans.TaxCount "จำนวนภาษี": VAT tax-invoice rows of the vouchers in the batch
 	Remark     string             `json:"remark"`
 	Check1     string             `json:"check1,omitempty"`
 	Check2     string             `json:"check2,omitempty"`
@@ -92,6 +93,33 @@ type PostCheckRow struct {
 	Message     string `json:"message,omitempty"`
 	// SourceSystem = the "ที่มา" column of Champ 5512: the system the voucher was imported from, empty when it was keyed in the GL itself.
 	SourceSystem string `json:"sourcesystem,omitempty"`
+	// TaxCount = the "จำนวนภาษี" column of Champ 5512 (BCTrans.TaxCount): VAT tax-invoice rows of the voucher.
+	TaxCount int `json:"taxcount"`
+}
+
+// vatRowCount is Champ's TaxCount of one voucher: the tax-invoice rows of the VAT box (BCInputTax/BCOutputTax rows with a
+// TaxNo, LIBDlgMultiTax::SumAllAmount). Withholding rows are not counted by Champ, so they are not counted here.
+func vatRowCount(vats []SubledgerVat) int {
+	count := 0
+	for _, v := range vats {
+		if strings.TrimSpace(v.TaxInvoiceNo) != "" {
+			count++
+		}
+	}
+	return count
+}
+
+// postedVatRowCount reads the VAT rows from the journal payload the post just produced, so the batch needs no second query.
+func postedVatRowCount(payload string) (int, error) {
+	var posted struct {
+		Details struct {
+			Vats []SubledgerVat `json:"vats"`
+		} `json:"details"`
+	}
+	if err := json.Unmarshal([]byte(payload), &posted); err != nil {
+		return 0, err
+	}
+	return vatRowCount(posted.Details.Vats), nil
 }
 
 func validatePostBatchFilter(f PostBatchInput) error {
@@ -141,6 +169,9 @@ func (s *PostgresStore) checkPostBatch(ctx context.Context, scope Scope, cmd Com
 	now := time.Now().UTC()
 	for _, j := range journals {
 		row := PostCheckRow{ID: j.ID, Version: j.Version, DocNo: j.DocNo, Date: j.Date, BookCode: j.BookCode, FiscalYear: j.FiscalYear, BranchCode: j.BranchCode, Description: j.Description, SourceSystem: j.SourceSystem}
+		if j.Details != nil {
+			row.TaxCount = vatRowCount(j.Details.Vats)
+		}
 		debit, credit := decimal.Zero, decimal.Zero
 		for _, line := range j.Lines {
 			debit, credit = debit.Add(line.Debit.Decimal()), credit.Add(line.Credit.Decimal())
@@ -253,6 +284,11 @@ func (s *PostgresStore) postBatch(ctx context.Context, tx *sql.Tx, scope Scope, 
 			return Event{}, postBatchItemError(ctx, tx, scope, item.ID, err)
 		}
 		batch.Journals = append(batch.Journals, PostBatchJournal{ID: item.ID, DocNo: changes[0].Code})
+		taxCount, err := postedVatRowCount(changes[0].Payload)
+		if err != nil {
+			return Event{}, err
+		}
+		batch.TaxCount += taxCount
 	}
 	batch.Count = len(batch.Journals)
 	batch.Identity = newIdentity(scope, now)

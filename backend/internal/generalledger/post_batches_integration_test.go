@@ -294,3 +294,56 @@ func TestFiscalYearMonthlyPeriods(t *testing.T) {
 		t.Fatalf("deleting the year must delete its periods, %d left", n)
 	}
 }
+
+// Champ 5512 "จำนวนภาษี" (BCTrans.TaxCount): VAT tax-invoice rows of the vouchers, shown per draft in the check and
+// summed into the batch when it is posted. Withholding rows are not counted by Champ, so a withholding-only voucher counts 0.
+func TestPostBatchTaxCount(t *testing.T) {
+	f := newPGIntegrityFixture(t)
+	draft := func(doc string, amount string, details *JournalDetails) Journal {
+		t.Helper()
+		j := Journal{DocNo: doc, Date: "2026-01-10", BookCode: "JV", FiscalYear: "2026", Kind: "manual", BranchCode: "B1", Description: "ขายวัสดุก่อสร้างและรับชำระเงินสด " + doc,
+			Lines: []Line{{AccountCode: "1000", Debit: Amount(amount), Credit: "0"}, {AccountCode: "4000", Debit: "0", Credit: Amount(amount)}}, Details: details}
+		return f.journal(f.run(Command{Resource: "journals", Action: "create", Journal: &j}).ID)
+	}
+	sale := func(id, invoice string) SubledgerVat {
+		return vatItem(id, 2, 1, invoice, "2026-01-10", 2026, 1, 0, "100", nil)
+	}
+	twoVat := draft("JV101", "214", &JournalDetails{Vats: []SubledgerVat{sale("V1", "IV6901-001"), sale("V2", "IV6901-002")}})
+	oneVat := draft("JV102", "107", &JournalDetails{Vats: []SubledgerVat{vatItem("V3", 1, 1, "IV6901-003", "2026-01-10", 2026, 1, 1, "100", nil)}})
+	whtOnly := draft("JV103", "10000", &JournalDetails{
+		Partners:     []SubledgerPartner{{Code: "S001", Name: "บริษัท ขนส่งไทยเร็ว จำกัด", TaxID: "0105558012349", IsSupplier: true, IsActive: true}},
+		Withholdings: []SubledgerWithholding{{ID: "W1", Direction: 1, FormType: "PND53", PartnerCode: "S001", PaymentDate: "2026-01-10", IncomeType: "3_tres", Condition: 1, Rate: "1", BaseAmount: "10000", PayeeTaxID: "0105558012349", PayeeName: "บริษัท ขนส่งไทยเร็ว จำกัด"}},
+	})
+	plain := draft("JV104", "100", nil)
+	next := draft("JV105", "107", &JournalDetails{Vats: []SubledgerVat{sale("V4", "IV6901-004")}})
+
+	check := f.postCheck(PostBatchInput{DocNoTo: "JV104"})
+	got := []int{}
+	for _, row := range check.Rows {
+		got = append(got, row.TaxCount)
+	}
+	if len(got) != 4 || got[0] != 2 || got[1] != 1 || got[2] != 0 || got[3] != 0 {
+		t.Fatalf("check tax counts = %v, want [2 1 0 0]", got)
+	}
+
+	storedBatch := func(batchNo string) PostBatch {
+		t.Helper()
+		var raw []byte
+		if err := f.db.QueryRow(`SELECT payload FROM gl_records WHERE company='C' AND kind=$1 AND code=$2`, PostBatchKind, batchNo).Scan(&raw); err != nil {
+			t.Fatal(err)
+		}
+		var batch PostBatch
+		if err := json.Unmarshal(raw, &batch); err != nil {
+			t.Fatal(err)
+		}
+		return batch
+	}
+	r := f.run(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(twoVat, oneVat, whtOnly, plain)})
+	if batch := storedBatch(r.BatchNo); batch.Count != 4 || batch.TaxCount != 3 {
+		t.Fatalf("batch %s count/taxcount = %d/%d, want 4/3", r.BatchNo, batch.Count, batch.TaxCount)
+	}
+	r = f.run(Command{Resource: PostBatchKind, Action: "create", PostBatch: batchInput(next)})
+	if batch := storedBatch(r.BatchNo); batch.Count != 1 || batch.TaxCount != 1 {
+		t.Fatalf("batch %s count/taxcount = %d/%d, want 1/1", r.BatchNo, batch.Count, batch.TaxCount)
+	}
+}

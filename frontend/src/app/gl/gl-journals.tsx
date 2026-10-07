@@ -962,6 +962,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                           [tr("gl_journal_postbatch_no", "เลขที่ผ่านรายการ"), postBatchNo],
                           [tr("gl_journal_postbatch_date", "วันที่ผ่านรายการ"), postBatchView?.info?.postedat ? formatAppDate(postBatchDate(postBatchView.info.postedat), language) : ""],
                           [tr("gl_journal_postbatch_count", "จำนวนรายการในชุด"), postBatchView?.info?.count === undefined ? "" : String(postBatchView.info.count)],
+                          [tr("gl_post_batch_tax_count", "จำนวนภาษี"), postBatchView?.info?.taxcount === undefined ? "" : String(postBatchView.info.taxcount)],
                           [tr("gl_journal_postbatch_by", "ผู้ผ่านรายการ"), postBatchView?.info?.postedby ?? ""],
                           [tr("gl_post_batch_approver", "ผู้อนุมัติ"), postBatchView?.info?.approver ?? ""],
                           [tr("gl_post_batch_check1", "ผู้ตรวจสอบ 1"), postBatchView?.info?.check1 ?? ""],

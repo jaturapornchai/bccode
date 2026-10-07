@@ -1,7 +1,7 @@
 import type { GLLine } from "./general-ledger";
 
 /** Posting batch (Champ BCPostTrans) as returned by GET post-batches: names are free text typed at posting time; postedby is the user id. */
-export type GLPostBatchInfo = { batchno: string; postedat?: string; postedby?: string; count?: number; remark?: string; check1?: string; check2?: string; approver?: string };
+export type GLPostBatchInfo = { batchno: string; postedat?: string; postedby?: string; count?: number; taxcount?: number; remark?: string; check1?: string; check2?: string; approver?: string };
 
 // Exact digits only (no float): "0", "0.00" and "" are zero, anything with a digit 1-9 is an amount.
 const hasAmount = (value: string | undefined) => /[1-9]/.test(value ?? "");

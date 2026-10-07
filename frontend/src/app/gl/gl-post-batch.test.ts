@@ -60,9 +60,16 @@ describe("batch posting helpers (Champ 5512)", () => {
   it("totals the selected debit exactly without floating point", () => {
     const rows = [row("1", true, "0.1"), row("2", true, "0.2"), row("3", false, "999"), row("4", true, "12345678901234567890.05")];
     const summary = postBatchSummary(rows, new Set(["1", "2", "3"]));
-    expect(summary).toEqual({ checked: 4, ready: 3, issues: 1, selected: 2, debit: "0.30" });
+    expect(summary).toEqual({ checked: 4, ready: 3, issues: 1, selected: 2, taxcount: 0, debit: "0.30" });
     expect(postBatchSummary(rows, new Set(["1", "4"])).debit).toBe("12345678901234567890.15");
     expect(postBatchSummary([row("1", true, "1,000")], new Set(["1"])).debit).toBe("");
+  });
+
+  it("sums the tax count (จำนวนภาษี) of the selected ready rows only; a missing count is 0", () => {
+    const rows = [row("1", true, "1", { taxcount: 2 }), row("2", true, "1", { taxcount: 1 }), row("3", false, "1", { taxcount: 5 }), row("4", true, "1")];
+    expect(postBatchSummary(rows, new Set(["1", "2", "3", "4"])).taxcount).toBe(3);
+    expect(postBatchSummary(rows, new Set(["2"])).taxcount).toBe(1);
+    expect(postBatchSummary(rows, new Set()).taxcount).toBe(0);
   });
 
   it("maps the Champ function keys", () => {
