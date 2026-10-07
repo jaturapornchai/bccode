@@ -14,17 +14,17 @@ import { ReportDisplayToolbar } from "@/components/report-display-toolbar";
 import { GLVoucherPrint, ReportPrintConditions, ReportPrintHeading, printCompanyName, printedAtText, printOrientation, printUserName, useGLPrint, visiblePrintColumns, printAmountCell } from "./gl-print";
 
 // accountfrom/accountto = Champ "จากรหัสบัญชี–ถึงรหัสบัญชี"; ตัวเลือกเป็น "true" หรือ "" (ส่งเป็น query ตรง ๆ)
-export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string };
-export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "" };
+export type ReportFilters = { fiscalyear: string; from: string; to: string; accountcode: string; accountfrom: string; accountto: string; branchcode: string; departmentcode: string; projectcode: string; bookcode: string; budgetcode: string; hideopening: string; hidezero: string; controltotals: string; summary: string; gross: string; daytotals: string };
+export const emptyReportFilters: ReportFilters = { fiscalyear: "", from: "", to: "", accountcode: "", accountfrom: "", accountto: "", branchcode: "", departmentcode: "", projectcode: "", bookcode: "", budgetcode: "", hideopening: "", hidezero: "", controltotals: "", summary: "", gross: "", daytotals: "" };
 // ตัวเลือกแบบ Champ ที่แต่ละรายงานรับ (docs/kms/champ/09-gl.md §5.2-5.6) — รายงานอื่นไม่ส่ง เพื่อให้ URL ตรงกับสิ่งที่จอแสดง
 const REPORT_OPTIONS: Readonly<Record<string, readonly (keyof ReportFilters)[]>> = {
   gljournal: ["summary"],
-  ledger: ["summary", "hideopening", "controltotals"],
+  ledger: ["summary", "hideopening", "controltotals", "daytotals"],
   trialbalance: ["hidezero", "controltotals", "gross"], // gross = Champ 5507 (trial balance 2) as an option of this screen, not a separate menu
   workingpaper: ["hidezero", "controltotals"],
   budgetcomparison: ["budgetcode"],
 };
-const OPTION_KEYS: readonly (keyof ReportFilters)[] = ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross"];
+const OPTION_KEYS: readonly (keyof ReportFilters)[] = ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals"];
 export function reportOptionOn(name: string, filters: ReportFilters, key: keyof ReportFilters) {
   return filters[key] === "true" && (REPORT_OPTIONS[name] ?? []).includes(key);
 }
@@ -35,7 +35,7 @@ export function reportQuery(name: string, filters: ReportFilters): Record<string
   const query: Record<string, string> = {};
   for (const [key, value] of Object.entries(filters) as [keyof ReportFilters, string][]) {
     if (!value || OPTION_KEYS.includes(key) && !(REPORT_OPTIONS[name] ?? []).includes(key)) continue;
-    if (name === "ledger" && (ledgerSummary ? key === "hideopening" || key === "from" : key === "controltotals")) continue;
+    if (name === "ledger" && (ledgerSummary ? key === "hideopening" || key === "daytotals" || key === "from" : key === "controltotals")) continue;
     query[key] = value;
   }
   return query;
@@ -45,7 +45,7 @@ export async function fetchReport(name: string, filters: ReportFilters, page = 1
 }
 // แถวพิเศษจาก backend: control = รวมบัญชีคุม (accountBalanceReport), opening/carry/total = แยกประเภท (ledger)
 // แถวพิเศษของรายงานแยกประเภท (Champ 5534, backend ledger) — backend ส่งคำอธิบายว่าง ข้อความแปลที่นี่
-const LEDGER_ROW_LABELS: Record<string, GLLabel> = { opening: ["gl_opening_balance_2", "ยอดยกมา"], carry: ["gl_closing_balance", "ยอดยกไป"], total: ["gl_total", "ยอดรวม"] };
+const LEDGER_ROW_LABELS: Record<string, GLLabel> = { opening: ["gl_opening_balance_2", "ยอดยกมา"], carry: ["gl_closing_balance", "ยอดยกไป"], total: ["gl_total", "ยอดรวม"], daytotal: ["gl_report_day_total", "รวมรายวัน"] };
 export function controlRowText(row: Record<string, string>, key: string, value: string, tr: GLTextFn) {
   // แถวรวมบัญชีคุมแบบ Champ: ไม่พิมพ์รหัส มีแต่ชื่อบัญชีคุม (ตัวหนา) — หัวบัญชีคุม (rowtype=header) พิมพ์รหัส + ชื่อก่อนบัญชีลูกแล้ว
   if (row.rowtype === "control" && key === "accountcode") return "";
@@ -55,6 +55,10 @@ export function controlRowText(row: Record<string, string>, key: string, value: 
   if (row.rowtype === "budgettotal" && key === "budgetname") return tr("gl_report_total", "รวม");
   const ledgerLabel = LEDGER_ROW_LABELS[row.rowtype ?? ""];
   return ledgerLabel && key === "description" ? tr(...ledgerLabel) : value;
+}
+/** Rows for file export carry the same labels as the screen (opening/carry/day totals, document totals, control rows). */
+export function labelledReportRows(rows: Record<string, string>[], tr: GLTextFn) {
+  return rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, controlRowText(row, key, value ?? "", tr)])));
 }
 type ReportColumn = GLReport["columns"][number];
 /** ชื่อเต็มของคอลัมน์ที่มีหัวกลุ่ม เช่น "ยอดยกมา เดบิต" — ใช้กับการ์ดยอดรวมและไฟล์ส่งออก */
@@ -616,7 +620,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
     setBusy(true); setError("");
     try {
       const complete = await completeReport(applied, 100000, tr("gl_data_exceeds_100k_limit_date_range", "ข้อมูลเกิน 100,000 รายการ กรุณาจำกัดช่วงวันที่ก่อนส่งออก"));
-      downloadText(tr("gl_accounts_csv", "บัญชี-{0}-{1}.csv").replace("{0}", String(activeReportName)).replace("{1}", String(asOf ? applied.to : applied.fiscalyear)), reportCsv({ ...complete, rows: (complete.rows ?? []).map((row) => row.rowtype === "control" ? { ...row, accountname: controlRowText(row, "accountname", row.accountname ?? "", tr) } : row) }), "text/csv;charset=utf-8");
+      downloadText(tr("gl_accounts_csv", "บัญชี-{0}-{1}.csv").replace("{0}", String(activeReportName)).replace("{1}", String(asOf ? applied.to : applied.fiscalyear)), reportCsv({ ...complete, rows: labelledReportRows(complete.rows ?? [], tr) }), "text/csv;charset=utf-8");
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
 
@@ -669,6 +673,7 @@ export function GLReports({ name, heading }: { name: string; heading?: string })
         {!!REPORT_OPTIONS[activeReportName]?.some((key) => key !== "budgetcode") && <div role="group" aria-label={tr("gl_report_options", "ตัวเลือกรายงาน")} className="flex flex-wrap items-center gap-2 sm:col-span-2 xl:col-span-4">
           {SUMMARY_LABELS[activeReportName] && <Check label={tr(...SUMMARY_LABELS[activeReportName])} checked={option("summary")} onChange={(on) => toggle("summary", on)} />}
           {activeReportName === "ledger" && !ledgerSummary && <Check label={tr("gl_report_hide_opening", "ไม่แสดงยอดยกมา")} checked={option("hideopening")} onChange={(on) => toggle("hideopening", on)} />}
+          {activeReportName === "ledger" && !ledgerSummary && <Check label={tr("gl_report_day_total", "รวมรายวัน")} checked={option("daytotals")} onChange={(on) => toggle("daytotals", on)} />}
           {activeReportName === "ledger" && !ledgerSummary && <Check label={tr("gl_report_new_page_per_account", "ขึ้นหน้าใหม่ทุกบัญชี (เมื่อพิมพ์)")} checked={newPagePerAccount} onChange={setNewPagePerAccount} />}
           {(activeReportName !== "ledger" || ledgerSummary) && REPORT_OPTIONS[activeReportName].includes("controltotals") && <Check label={tr("gl_report_hide_control_totals", "ไม่แสดงผลรวมบัญชีคุม")} checked={filters.controltotals !== "true"} onChange={(hide) => toggle("controltotals", !hide)} />}
           {REPORT_OPTIONS[activeReportName].includes("gross") && <Check label={tr("gl_report_gross_movement", "แสดงยอดรวมเดบิต/เครดิตประจำงวด (ไม่หักกลบ)")} checked={option("gross")} onChange={(on) => toggle("gross", on)} />}

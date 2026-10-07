@@ -274,6 +274,55 @@ func TestLedgerHideOpeningAndSummary(t *testing.T) {
 	glpgDecimalEqual(t, summary.Totals["credit"], "1300")
 }
 
+// รวมรายวัน (Champ 5534 m_iSumOfDay): แทรกแถว daytotal หลังรายการสุดท้ายของแต่ละวัน ไม่นับในยอดรวมท้ายรายงาน
+func TestLedgerDayTotals(t *testing.T) {
+	p, scope := reportOptionsFixture(t)
+	ctx := context.Background()
+	glpgSendJournal(t, p, 7, glpgJournal("A", "Z3", "2026-01-11", "manual", "posted", "1000", "2000", "25"))
+	base := ReportQuery{FiscalYear: "2026", AccountFrom: "1000", AccountTo: "1000"}
+	plain, err := p.Report(ctx, scope, "ledger", base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	base.DayTotals = true
+	report, err := p.Report(ctx, scope, "ledger", base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	types := make([]string, len(report.Rows))
+	for i, row := range report.Rows {
+		types[i] = row["rowtype"]
+	}
+	if got := strings.Join(types, ","); got != "opening,line,daytotal,line,line,daytotal,line,daytotal,carry,total" {
+		t.Fatalf("row types = %s", got)
+	}
+	if len(plain.Rows) != 7 {
+		t.Fatalf("without day totals = %d rows", len(plain.Rows))
+	}
+	for index, want := range map[int][2]string{2: {"0", "50"}, 5: {"75", "0"}, 7: {"0", "100"}} {
+		row := report.Rows[index]
+		glpgDecimalEqual(t, row["debit"], want[0])
+		glpgDecimalEqual(t, row["credit"], want[1])
+		if row["balance"] != "" || row["date"] != "" || row["docno"] != "" || row["accountfirst"] != "" {
+			t.Fatalf("day total row %d should carry only the sums: %v", index, row)
+		}
+	}
+	glpgDecimalEqual(t, report.Rows[8]["credit"], "925") // ยอดยกไป ไม่เปลี่ยนเมื่อมีรวมรายวัน
+	glpgDecimalEqual(t, report.Totals["debit"], "75")    // แถวรวมรายวันไม่นับซ้ำในยอดรวมรายงาน
+	glpgDecimalEqual(t, report.Totals["credit"], "150")
+	glpgDecimalEqual(t, plain.Totals["debit"], report.Totals["debit"])
+	glpgDecimalEqual(t, plain.Totals["credit"], report.Totals["credit"])
+	// ไม่แสดงยอดยกมา: แถวแรกของบัญชียังเป็นรายการ (accountfirst) ไม่ใช่แถวรวมรายวัน
+	base.HideOpening = true
+	hidden, err := p.Report(ctx, scope, "ledger", base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hidden.Rows[0]["rowtype"] != "line" || hidden.Rows[0]["accountfirst"] != "1" || hidden.Rows[1]["rowtype"] != "daytotal" {
+		t.Fatalf("hide opening + day totals = %v", hidden.Rows[:2])
+	}
+}
+
 func TestJournalSummaryOneRowPerDocument(t *testing.T) {
 	p, scope := reportOptionsFixture(t)
 	report, err := p.Report(context.Background(), scope, "gljournal", ReportQuery{FiscalYear: "2026", Summary: true})

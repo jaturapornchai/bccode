@@ -461,19 +461,24 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
 	// Champ 5534 (GLRepGL2View.cpp:187-1099): ต่อบัญชี = แถว "ยอดยกมา" → รายการ → "ยอดยกไป" (ยอดคงเหลือลงฝั่งตรงข้ามให้ดุล)
 	// → "ยอดรวม" (เดบิต = เครดิต); rowtype opening/line/carry/total — ข้อความของแถวพิเศษแปลที่ frontend;
 	// accountfirst = "1" ที่แถวแรกของบัญชี ให้จอแสดงรหัส/ชื่อบัญชีครั้งเดียวแบบหัวบัญชีของ Champ
+	// รวมรายวัน (DayTotals, Champ m_iSumOfDay GLRepGL2View.cpp:810-851,997-1031): แทรกแถว rowtype=daytotal หลังรายการสุดท้ายของแต่ละวันในบล็อกบัญชี
+	// = ผลรวมเดบิต/เครดิตของวันนั้น ไม่มียอดคงเหลือ (Champ ใส่ว่าง) — __daykey = วันที่ + 0 (รายการ) / 1 (รวมรายวัน) ให้แถวรวมตามหลังรายการของวันเดียวกัน
 	accounts := `accts a FULL JOIN openings o USING(account_code) WHERE a.account_code IS NOT NULL OR o.opening<>0`
 	if r.query.HideOpening {
 		accounts = `accts a LEFT JOIN openings o USING(account_code)`
 	}
 	special := func(rowtype string, sort int, debit, credit, balance string) string {
-		return `SELECT la.account_code,la.account_name,'','','','','','','',(` + debit + `)::text,(` + credit + `)::text,` + balance + `,'` + rowtype + `','','` + fmt.Sprint(sort) + `',NULL::text FROM ledger_accounts la`
+		return `SELECT la.account_code,la.account_name,'','','','','','','',(` + debit + `)::text,(` + credit + `)::text,` + balance + `,'` + rowtype + `','','` + fmt.Sprint(sort) + `',NULL::text,'' FROM ledger_accounts la`
 	}
 	ending := `(la.opening+la.debit-la.credit)`
 	rows := []string{
 		`SELECT m.account_code,m.account_name,m.entry_date::text,m.doc_no,m.book_code,m.branch_code,m.department_code,m.project_code,m.description,m.debit::text,m.credit::text,
-      (la.opening+SUM(m.debit-m.credit) OVER(PARTITION BY m.account_code ORDER BY m.entry_date,m.doc_no,m.journal_id,m.line_no ROWS UNBOUNDED PRECEDING))::text,'line',m.journal_id,'2',m.line_no::text FROM movements m JOIN ledger_accounts la USING(account_code)`,
+      (la.opening+SUM(m.debit-m.credit) OVER(PARTITION BY m.account_code ORDER BY m.entry_date,m.doc_no,m.journal_id,m.line_no ROWS UNBOUNDED PRECEDING))::text,'line',m.journal_id,'2',m.line_no::text,m.entry_date::text||'0' FROM movements m JOIN ledger_accounts la USING(account_code)`,
 		special("carry", 3, `GREATEST(-`+ending+`,0)`, `GREATEST(`+ending+`,0)`, `''`),
 		special("total", 4, `GREATEST(la.opening,0)+la.debit+GREATEST(-`+ending+`,0)`, `GREATEST(-la.opening,0)+la.credit+GREATEST(`+ending+`,0)`, `''`),
+	}
+	if r.query.DayTotals {
+		rows = append(rows, `SELECT m.account_code,la.account_name,'','','','','','','',SUM(m.debit)::text,SUM(m.credit)::text,'','daytotal','','2',NULL::text,m.entry_date::text||'1' FROM movements m JOIN ledger_accounts la USING(account_code) GROUP BY m.account_code,la.account_name,m.entry_date`)
 	}
 	if !r.query.HideOpening {
 		rows = append(rows, special("opening", 1, `GREATEST(la.opening,0)`, `GREATEST(-la.opening,0)`, `la.opening::text`))
@@ -482,13 +487,13 @@ func (r reportContext) ledger(ctx context.Context) (Report, error) {
       movements AS (SELECT * FROM filtered WHERE entry_date>=$3::date AND kind<>'opening'),
       accts AS (SELECT account_code,MAX(account_name) AS account_name,SUM(debit) AS debit,SUM(credit) AS credit FROM movements GROUP BY account_code),
       ledger_accounts AS (SELECT account_code,COALESCE(a.account_name,o.account_name) AS account_name,` + opening + ` AS opening,COALESCE(a.debit,0) AS debit,COALESCE(a.credit,0) AS credit FROM ` + accounts + `),
-      ledger_rows(accountcode,accountname,date,docno,bookcode,branchcode,departmentcode,projectcode,description,debit,credit,balance,rowtype,journalid,__sort,__line_no) AS (` + strings.Join(rows, "\n      UNION ALL ") + `),
-      result AS (SELECT *,CASE WHEN ROW_NUMBER() OVER(PARTITION BY accountcode ORDER BY __sort,date,docno,journalid,__line_no::integer)=1 THEN '1' ELSE '' END AS accountfirst FROM ledger_rows)`
+      ledger_rows(accountcode,accountname,date,docno,bookcode,branchcode,departmentcode,projectcode,description,debit,credit,balance,rowtype,journalid,__sort,__line_no,__daykey) AS (` + strings.Join(rows, "\n      UNION ALL ") + `),
+      result AS (SELECT *,CASE WHEN ROW_NUMBER() OVER(PARTITION BY accountcode ORDER BY __sort,__daykey,docno,journalid,__line_no::integer)=1 THEN '1' ELSE '' END AS accountfirst FROM ledger_rows)`
 	cols := []ReportColumn{textColumn("accountcode", "ผังบัญชี"), textColumn("accountname", "ชื่อผังบัญชี"), textColumn("date", "วันที่"), textColumn("bookcode", "สมุดรายวัน"), textColumn("docno", "เลขที่เอกสาร"), textColumn("description", "คำอธิบาย"), amountColumn("debit", "เดบิต"), amountColumn("credit", "เครดิต"), amountColumn("balance", "ยอดคงเหลือ"), textColumn("branchcode", "สาขา"), textColumn("departmentcode", "แผนก"), textColumn("projectcode", "โครงการ")}
 	lineOnly := func(key string) reportTotal {
 		return reportTotal{key: key, expr: "CASE WHEN rowtype='line' THEN " + key + "::numeric ELSE 0 END"}
 	}
-	result, err := r.runWithTotals(ctx, cte, "accountcode,__sort,date,docno,journalid,__line_no::integer", cols, []reportTotal{lineOnly("debit"), lineOnly("credit")}, "rowtype", "accountfirst", "journalid", "__sort", "__line_no")
+	result, err := r.runWithTotals(ctx, cte, "accountcode,__sort,__daykey,docno,journalid,__line_no::integer", cols, []reportTotal{lineOnly("debit"), lineOnly("credit")}, "rowtype", "accountfirst", "journalid", "__sort", "__line_no", "__daykey")
 	if err != nil {
 		return result, err
 	}

@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { accountTypes, reportCsv, type GLJournalBook, type GLReport } from "@/lib/general-ledger";
 import { GET } from "../api/gl/[...glPath]/route";
-import { ReportGrid, emptyReportFilters, reportQuery } from "./gl-reports";
+import { ReportGrid, controlRowText, emptyReportFilters, isSummaryRow, labelledReportRows, reportQuery } from "./gl-reports";
 
 function render(patch: Partial<GLReport>) {
   const report: GLReport = { sequence: 1, columns: [], rows: [], totals: {}, totalrows: 0, warnings: [], asof: "2026-09-11", ...patch };
@@ -138,13 +138,13 @@ describe("GL report and statement-note colours follow the theme tokens", () => {
 // Champ report options (docs/kms/champ/09-gl.md §5.2-5.6): each report sends only the options it takes
 describe("Champ report filters and options", () => {
   afterEach(() => vi.unstubAllGlobals());
-  const all = { ...emptyReportFilters, fiscalyear: "2569", from: "2569-01-01", to: "2569-12-31", accountfrom: "11000", accountto: "11999", budgetcode: "BG-1", hideopening: "true", hidezero: "true", controltotals: "true", summary: "true", gross: "true" };
+  const all = { ...emptyReportFilters, fiscalyear: "2569", from: "2569-01-01", to: "2569-12-31", accountfrom: "11000", accountto: "11999", budgetcode: "BG-1", hideopening: "true", hidezero: "true", controltotals: "true", summary: "true", gross: "true", daytotals: "true" };
   it.each([
-    ["trialbalance", { accountfrom: "11000", accountto: "11999", hidezero: "true", controltotals: "true", gross: "true" }, ["budgetcode", "hideopening", "summary"]],
-    ["workingpaper", { hidezero: "true", controltotals: "true" }, ["budgetcode", "hideopening", "summary", "gross"]],
-    ["gljournal", { summary: "true", accountto: "11999" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "gross"]],
-    ["budgetcomparison", { budgetcode: "BG-1", accountfrom: "11000" }, ["hideopening", "hidezero", "controltotals", "summary", "gross"]],
-    ["pnl", { accountfrom: "11000" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross"]],
+    ["trialbalance", { accountfrom: "11000", accountto: "11999", hidezero: "true", controltotals: "true", gross: "true" }, ["budgetcode", "hideopening", "summary", "daytotals"]],
+    ["workingpaper", { hidezero: "true", controltotals: "true" }, ["budgetcode", "hideopening", "summary", "gross", "daytotals"]],
+    ["gljournal", { summary: "true", accountto: "11999" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "gross", "daytotals"]],
+    ["budgetcomparison", { budgetcode: "BG-1", accountfrom: "11000" }, ["hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals"]],
+    ["pnl", { accountfrom: "11000" }, ["budgetcode", "hideopening", "hidezero", "controltotals", "summary", "gross", "daytotals"]],
   ] as const)("%s keeps its own options and drops the rest", (name, kept, dropped) => {
     const query = reportQuery(name, all);
     expect(query).toMatchObject(kept);
@@ -153,12 +153,26 @@ describe("Champ report filters and options", () => {
   });
   it("ledger: hide-opening for the detail report, control totals and as-of date for the summary (5535)", () => {
     const detail = reportQuery("ledger", { ...all, summary: "" });
-    expect(detail).toMatchObject({ hideopening: "true", from: "2569-01-01" });
+    expect(detail).toMatchObject({ hideopening: "true", daytotals: "true", from: "2569-01-01" });
     expect(detail).not.toHaveProperty("controltotals");
     const summary = reportQuery("ledger", all);
     expect(summary).toMatchObject({ summary: "true", controltotals: "true", to: "2569-12-31" });
     expect(summary).not.toHaveProperty("hideopening");
+    expect(summary).not.toHaveProperty("daytotals");
     expect(summary).not.toHaveProperty("from");
+  });
+  it("ledger day totals print as bold summary rows labelled รวมรายวัน with the day sums and no account code, date or balance", () => {
+    const columns = [{ key: "accountcode", label: "ผังบัญชี", amount: false }, { key: "date", label: "วันที่", amount: false }, { key: "description", label: "คำอธิบาย", amount: false }, { key: "debit", label: "เดบิต", amount: true }, { key: "credit", label: "เครดิต", amount: true }, { key: "balance", label: "ยอดคงเหลือ", amount: true }];
+    const rows = [
+      { accountcode: "11110", date: "2569-01-05", description: "ขายสด", debit: "50", credit: "0", balance: "50", rowtype: "line", accountfirst: "1" },
+      { accountcode: "11110", date: "2569-01-05", description: "ขายสด", debit: "25", credit: "0", balance: "75", rowtype: "line", accountfirst: "" },
+      { accountcode: "11110", date: "", description: "", debit: "75", credit: "0", balance: "", rowtype: "daytotal", accountfirst: "" },
+    ];
+    const html = renderToStaticMarkup(createElement(ReportGrid, { report: { sequence: 1, columns, rows, totals: { debit: "75", credit: "0" }, totalrows: 3, warnings: [], asof: "2569-12-31" } as GLReport, onDrillAccount: () => {} }));
+    expect(html).toContain("รวมรายวัน");
+    expect(html.match(/11110/g)?.length).toBe(1); // รหัสบัญชีพิมพ์ที่แถวแรกของบัญชีเท่านั้น
+    expect(isSummaryRow({ rowtype: "daytotal" })).toBe(true);
+    expect(controlRowText({ rowtype: "daytotal" }, "description", "", (_key: string, fallback: string) => fallback)).toBe("รวมรายวัน");
   });
   it("shows the journal report as Champ document blocks: header, lines without repeating the header fields, then the document total", () => {
     const report: GLReport = { sequence: 1, columns: [{ key: "date", label: "วันที่", amount: false }, { key: "docno", label: "เลขที่เอกสาร", amount: false }, { key: "accountcode", label: "ผังบัญชี", amount: false }, { key: "description", label: "คำอธิบาย", amount: false }, { key: "debit", label: "เดบิต", amount: true }, { key: "credit", label: "เครดิต", amount: true }], rows: [
@@ -189,5 +203,19 @@ describe("Champ report filters and options", () => {
     await GET(new Request("http://localhost/api/gl/reports/trialbalance?fiscalyear=2569&accountfrom=11000&accountto=11999&hideopening=true&hidezero=true&controltotals=true&summary=true&gross=true&budgetcode=BG-1", { headers }), { params: Promise.resolve({ glPath: ["reports", "trialbalance"] }) });
     const forwarded = new URL(String(fetchMock.mock.calls[0][0])).searchParams;
     for (const key of ["accountfrom", "accountto", "hideopening", "hidezero", "controltotals", "summary", "gross", "budgetcode"]) expect(forwarded.has(key)).toBe(true);
+  });
+});
+
+describe("labelledReportRows — CSV carries the screen labels", () => {
+  it("labels ledger summary rows and document totals, leaves posting lines untouched", () => {
+    const tr = (_key: string, fallback: string) => fallback;
+    const rows = labelledReportRows([
+      { rowtype: "daytotal", description: "", debit: "100.00" },
+      { rowtype: "doctotal", description: "", linecount: "2" },
+      { rowtype: "line", description: "ขายเงินสด", debit: "100.00" },
+    ], tr);
+    expect(rows[0]).toMatchObject({ description: "รวมรายวัน", debit: "100.00" });
+    expect(rows[1].description).toBe("รวมทั้งสิ้น 2 รายการ");
+    expect(rows[2].description).toBe("ขายเงินสด");
   });
 });
