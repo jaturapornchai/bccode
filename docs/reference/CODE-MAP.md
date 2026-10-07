@@ -4,7 +4,7 @@
 > Read this FIRST before editing a big file so you can jump straight to the right line range
 > instead of grep + re-read. Regenerate after major refactors.
 > ตัวกันดริฟต์: git hook `.githooks/pre-commit` รัน `-Check` ทุกครั้งที่ commit แตะไฟล์ใหญ่ - ต้องติดตั้งเองครั้งเดียวต่อ clone ด้วย `npm run hooks:install` (ไม่มี CI ฝั่ง GitHub แล้ว - ลบทิ้ง 2026-09-09 ตามมติให้ GitHub เป็นที่เก็บโค้ดอย่างเดียว; ตรวจมือได้ด้วย `sh tools/verify.sh codemap`)
-> Generated: 2026-10-07 @ commit d0ebfd7c - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
+> Generated: 2026-10-07 @ commit 3ed3cbba - ถ้า commit ปัจจุบันไม่ใช่อันนี้ ให้ถือว่าเลขบรรทัดอาจเลื่อนแล้ว ตรวจด้วย grep ก่อนใช้ หรือรัน tools/gen-code-map.ps1 ใหม่
 
 Files indexed: 27
 
@@ -981,6 +981,31 @@ Files indexed: 27
 | 1322 | function | `MockRandomNumber` |
 | 1327 | function | `TestAuthService_LinkLineTakenDoesNotRevealOtherUsername` |
 
+## frontend/src/app/gl/gl-journals.tsx (1246 lines)
+
+| Line | Kind | Name |
+|---:|---|---|
+| 27 | function | `journalBookBadgeClass` |
+| 39 | function | `pasteIssueText` |
+| 52 | function | `createSmartNextLine` |
+| 75 | function | `focusDetailField` |
+| 92 | function | `openDetailsSection` |
+| 106 | function | `focusJournalSearch` |
+| 110 | function | `GLJournals` |
+| 238 | const-arrow | `handlePasteClick` |
+| 253 | function | `closeView` |
+| 259 | function | `openView` |
+| 278 | function | `openEdit` |
+| 296 | function | `openCreate` |
+| 309 | function | `cancelEdit` |
+| 324 | function | `save` |
+| 365 | function | `changeTaxType` |
+| 374 | function | `calcTax` |
+| 401 | const-arrow | `onKeyDown` |
+| 412 | function | `saveReconciliation` |
+| 443 | function | `act` |
+| 461 | function | `deleteDraftDirect` |
+
 ## backend/internal/authentication/authentication_http.go (1210 lines)
 
 | Line | Kind | Name |
@@ -1131,26 +1156,6 @@ Files indexed: 27
 | Line | Kind | Name |
 |---:|---|---|
 | 1117 | function | `getBarcodeText` |
-
-## frontend/src/app/gl/gl-journals.tsx (1129 lines)
-
-| Line | Kind | Name |
-|---:|---|---|
-| 24 | function | `journalBookBadgeClass` |
-| 36 | function | `pasteIssueText` |
-| 49 | function | `createSmartNextLine` |
-| 72 | function | `focusDetailField` |
-| 85 | function | `GLJournals` |
-| 204 | const-arrow | `handlePasteClick` |
-| 219 | function | `closeView` |
-| 225 | function | `openView` |
-| 244 | function | `openEdit` |
-| 262 | function | `openCreate` |
-| 275 | function | `cancelEdit` |
-| 290 | function | `save` |
-| 318 | function | `saveReconciliation` |
-| 349 | function | `act` |
-| 367 | function | `deleteDraftDirect` |
 
 ## frontend/src/lib/erp-reports.ts (1128 lines)
 

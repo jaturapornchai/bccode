@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, FileText, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Eye, FileText, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash2, X, ClipboardPaste, Scale, Table2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
+import { accountName, activeJournalBooks, amountString, amountUnits, defaultJournalBookCode, findJournalBook, fiscalYearForDate, journalBookName, journalBookProblem, labelText, type GLLabel, emptyJournal, workspaceBranchCode, emptyLine, formatAmount, journalTotals, localDate, normalizeJournalLines, validateJournal, type GLJournal, type GLLine } from "@/lib/general-ledger";
 import { GLCommandError, glRequest } from "@/lib/general-ledger-api";
 import { workspaceStorageKeys } from "@/lib/workspace-models";
 import { formatAppDate } from "@/lib/date-time";
@@ -12,11 +12,14 @@ import { AccountSelect, AmountInput, Combobox, Field, Notice, Pager, SearchInput
 import { useFormShortcuts } from "@/hooks/use-form-shortcuts";
 import { isTabularPaste, parseClipboardJournalLines, type ClipboardJournalIssue } from "@/lib/clipboard-journal-parser";
 import { useTabularEnterNav } from "@/hooks/use-tabular-enter-nav";
-import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine, appendVatLine } from "@/lib/gl-smart-guard";
+import { analyzeGLTaxAndBalance, autoBalanceJournalLines, setExactVatLine } from "@/lib/gl-smart-guard";
 import { GLJournalDetailsPanel } from "./gl-journal-details";
 import { GLVoucherPrint, printCompanyName, useGLPrint } from "./gl-print";
-import { detailTaxIdTarget, journalDetailsProblem, normalizeJournalDetails, reconciliationChanges } from "@/lib/gl-journal-details";
+import { detailTaxIdTarget, journalDetailsProblem, normalizeJournalDetails, reconciliationChanges, type GLDetailVat } from "@/lib/gl-journal-details";
 import { GLJournalReviewPanel } from "./gl-journal-review";
+import { ChampField, ChampGroupBox, ChampKey, ChampSpacer, ChampTaxBox } from "./gl-journal-boxes";
+import { JOURNAL_SAVE_OPTIONS, dropBlankTaxBoxRow, isBlankVatRow, journalFunctionKey, journalSaveOptionStorageKey, linesHaveAmounts, nextJournalAfterSave, parseJournalSaveOption, patchTaxBox, setTaxBoxType, taxBoxCalcInput, taxBoxView, taxLinesFromCalc, vatErrorTarget, type JournalSaveOption, type VatCalcResult } from "@/lib/gl-journal-entry";
+import { getAuthSession } from "@/lib/client-auth-session";
 
 const statusLabel: Record<string, GLLabel> = { draft: ["gl_draft", "ฉบับร่าง"], posted: ["gl_posted", "ผ่านรายการแล้ว"], reversed: ["gl_reversed", "กลับรายการแล้ว"] };
 
@@ -82,6 +85,28 @@ function focusDetailField(target: { section: string; row: number; field: string 
   });
 }
 
+/** ปุ่มคำสั่งด้านขวาแบบ Champ: แผงกว้าง (@4xl) = คอลัมน์ปุ่มเต็มความกว้าง ข้อความชิดซ้าย ปุ่มลัดชิดขวา */
+const champCommandClass = `${actionClass} @4xl:w-full @4xl:justify-start`;
+
+/** F3 ตารางภาษี / F5 รายละเอียดอื่นๆ: เปิดหมวดในแผงรายละเอียด (null = ทั้งแผง) เลื่อนมาให้เห็น แล้ว focus หัวหมวด */
+function openDetailsSection(section: string | null) {
+  if (typeof document === "undefined") return;
+  requestAnimationFrame(() => {
+    const panel = document.querySelector<HTMLElement>("[data-gl-details-panel]");
+    const group = section ? panel?.querySelector<HTMLDetailsElement>(`[data-detail-section="${section}"]`) : null;
+    if (group) group.open = true;
+    const target = group?.querySelector<HTMLElement>("summary") ?? panel;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    target?.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+    target?.focus({ preventScroll: true });
+  });
+}
+
+/** F2 เลือกรายการ: กลับไปที่ช่องค้นหาของรายการใบสำคัญ (Champ เปิดหน้าต่างค้นหาเอกสาร) */
+function focusJournalSearch() {
+  document.querySelector<HTMLInputElement>("[data-gl-journal-search] input")?.focus();
+}
+
 export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { route: string; book?: string; kind?: string; mode?: "edit" | "post" | "reverse" }) {
   const tr = useGLText();
   const [selectedBook, setSelectedBook] = useState(book || "");
@@ -116,6 +141,11 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const [reason, setReason] = useState(""), [reverseDate, setReverseDate] = useState(localDate()), [reverseDocno, setReverseDocno] = useState("");
   const [reviewDirty, setReviewDirty] = useState(false), [reviewBusy, setReviewBusy] = useState(false);
   const [reviewLoad, setReviewLoad] = useState(0);
+  // ตัวเลือกหลังบันทึกแบบ Champ — จำแยกผู้ใช้ในเครื่องนี้ (อ่านหลัง mount เพราะตอน render ฝั่ง server ไม่มี localStorage)
+  const [saveOption, setSaveOption] = useState<JournalSaveOption>("keep");
+  useEffect(() => { setSaveOption(parseJournalSaveOption(localStorage.getItem(journalSaveOptionStorageKey(getAuthSession()?.username)))); }, []);
+  const changeSaveOption = (value: JournalSaveOption) => { setSaveOption(value); localStorage.setItem(journalSaveOptionStorageKey(getAuthSession()?.username), value); };
+  const [vatCalcBusy, setVatCalcBusy] = useState(false);
   const { busy: journalBusy, execute } = useGLCommand(), { confirm, confirmationDialog } = useConfirmDialog({ defaultConfirmLabel: tr("common_confirm", "ยืนยัน"), defaultCancelLabel: tr("common_cancel", "ยกเลิก") });
   const busy = journalBusy || reviewBusy || detailsBusy;
   const isJournalDirty = journal !== null && JSON.stringify(journal) !== original;
@@ -125,6 +155,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
   useDirtyGuard(route, dirty);
   const year = refs.years.find((item) => item.code === journal?.fiscalyear);
+  const accountNames = useMemo(() => new Map(refs.accounts.map((account) => [account.accountcode, accountName(account)])), [refs.accounts]);
   const totals = useMemo(() => { try { return journal ? journalTotals(journal.lines) : null; } catch { return null; } }, [journal]);
   const smartGuard = useMemo(() => {
     try {
@@ -137,6 +168,8 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   const patchLine = (index: number, value: Partial<GLLine>) => patch({ lines: journal!.lines.map((line, i) => i === index ? { ...line, ...value } : line) });
   // Champ รันเลขที่ให้ใบใหม่ (BRunningEdit) — แสดงเลขถัดไปของสมุดตามวันที่เป็นตัวอย่าง; เลขจริงออกตอนบันทึก (backend journal_docno.go)
   const [nextDocNo, setNextDocNo] = useState("");
+  // บันทึกใบใหม่แล้วสมุด/วันที่มักเท่าเดิม (ตัวเลือก "ไม่ล้างหน้าจอ") — นับรอบบันทึกเพื่อขอเลขถัดไปใหม่ ไม่ค้างเลขที่เพิ่งใช้
+  const [savedNewCount, setSavedNewCount] = useState(0);
   const previewBook = isEditing && journal && !journal.id ? journal.bookcode : "", previewDate = journal?.date ?? "";
   useEffect(() => {
     if (!previewBook || !previewDate) { setNextDocNo(""); return; }
@@ -145,7 +178,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
       .then((value) => setNextDocNo(value?.docno ?? ""))
       .catch(() => { if (!controller.signal.aborted) setNextDocNo(""); });
     return () => controller.abort();
-  }, [previewBook, previewDate]);
+  }, [previewBook, previewDate, savedNewCount]);
 
   const addNewLine = () => {
     if (!journal || journal.lines.length >= 500) return;
@@ -171,6 +204,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
 
   // หัวเอกสาร: Enter เลื่อนไปช่องถัดไปแบบ Champ (ไม่ส่งฟอร์มบันทึก) — ช่องสุดท้ายพาเข้าตารางบัญชี
   const linesRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const headerEnterNav = useTabularEnterNav({
     onAddNewRow: () => linesRef.current?.querySelector<HTMLElement>("input:not([disabled]):not([readonly]), button:not([disabled])")?.focus(),
   });
@@ -295,25 +329,85 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
     const candidate: GLJournal = { ...journal, lines: normalizeJournalLines(journal.lines) };
     const problem = validateJournal(candidate, year, refs.accounts, tr);
     if (problem) { setError(problem); return; }
-    const detailProblem = journalDetailsProblem(journal.details, tr);
+    // กรอบภาษีที่เลือกประเภทไว้แต่ไม่ได้กรอกอะไร ไม่ต้องกลายเป็นใบกำกับเปล่า (Champ ไม่บันทึกภาษีเมื่อไม่มีเลขที่ใบกำกับ)
+    const details = dropBlankTaxBoxRow(journal.details);
+    const detailProblem = journalDetailsProblem(details, tr);
     if (detailProblem) { setError(detailProblem.message); focusDetailField(detailProblem); return; }
-    const payload: GLJournal = { ...candidate, details: normalizeJournalDetails(journal.details) };
+    const payload: GLJournal = { ...candidate, details: normalizeJournalDetails(details) };
     if (journal.id && !await confirm({ title: tr("gl_save_draft_changes", "บันทึกการแก้ไขฉบับร่าง?"), description: journal.docno, confirmLabel: tr("gl_save_draft", "บันทึกฉบับร่าง"), tone: "info" })) return;
     try {
       const result = await execute({ resource: "journals", id: journal.id, version: journal.version, action: journal.id ? "update" : "create", journal: payload });
       // backend เติมค่าที่คำนวณเอง (เช่น ภาษีหัก ณ ที่จ่าย = ฐาน × อัตรา) — แสดงฉบับที่บันทึกจริง; โหลดไม่ได้ใช้ค่าที่ส่งไป (คำสั่ง commit แล้ว)
       const reloaded = await glRequest<GLJournal>(`journals/${encodeURIComponent(result.id)}`).catch(() => ({ ...payload, id: result.id, version: result.version }));
+      list.reload();
+      setError("");
+      if (!journal.id) {
+        // Champ: ใบใหม่บันทึกแล้วขึ้นใบถัดไปทันทีตามตัวเลือกการบันทึก (ไม่ล้างหน้าจอ = เก็บหัวเอกสารและรหัสบัญชีไว้ ล้างเลขที่และยอด)
+        const next = nextJournalAfterSave(reloaded, saveOption, emptyJournal(newBookCode(), kind || "manual", refs.years, workspaceBranchCode(localStorage.getItem(workspaceStorageKeys.workspace))));
+        setJournal(next);
+        setOriginal(JSON.stringify(next));
+        setSavedNewCount((count) => count + 1);
+        setMessage(tr("gl_saved_next_voucher", "บันทึกฉบับร่าง {0} แล้ว — พร้อมบันทึกใบถัดไป").replace("{0}", String(reloaded.docno ?? "")));
+        requestAnimationFrame(() => headerRef.current?.querySelector<HTMLElement>("input:not([disabled]):not([readonly]):not([type=\"hidden\"]), select:not([disabled]), button:not([disabled])")?.focus());
+        return;
+      }
       setJournal(reloaded);
       setOriginal(JSON.stringify(reloaded));
       setIsEditing(false);
-      list.reload();
-      setError("");
       setMessage(result.projectionpending ? tr("gl_draft_saved_updating_report_data", "บันทึกฉบับร่างแล้ว กำลังปรับปรุงข้อมูลสำหรับรายงาน") : tr("gl_draft_saved_review_and_post", "บันทึกฉบับร่างแล้ว ตรวจสอบและกดผ่านรายการเมื่อพร้อม"));
     } catch (e) {
       setError((e as Error).message);
-      if (e instanceof GLCommandError) focusDetailField(detailTaxIdTarget(payload.details, e.field));
+      if (e instanceof GLCommandError) focusDetailField(detailTaxIdTarget(payload.details, e.field) ?? vatErrorTarget(payload.details, e.code, e.field));
     }
   }
+
+  // กรอบภาษี: เปลี่ยนเป็น "ไม่มีภาษี" ขณะใบกำกับมีข้อมูล = ถามก่อนนำออก (กันพลาด)
+  async function changeTaxType(value: "" | "1" | "2") {
+    if (!journal) return;
+    const view = taxBoxView(journal.details);
+    if (value === "" && view.mode === "single" && !isBlankVatRow(view.row) && !await confirm({ title: tr("gl_tax_remove_title", "นำใบกำกับภาษีออก?"), description: tr("gl_tax_remove_desc", "ข้อมูลใบกำกับภาษีที่กรอกในกรอบนี้จะถูกนำออกจากใบสำคัญ"), confirmLabel: tr("gl_tax_remove", "นำใบกำกับออก"), tone: "warning" })) return;
+    setJournal((current) => current ? { ...current, details: setTaxBoxType(current.details, value, current.date) } : current);
+  }
+  const patchTaxBoxRow = (value: Partial<GLDetailVat>) => setJournal((current) => current ? { ...current, details: patchTaxBox(current.details, value) } : current);
+
+  // ภาษีแยกนอก / ภาษีรวมใน แบบ Champ (OnTaxAuto): backend คำนวณ (GET /gl/v2/vat-calc) แล้ววางยอดในกรอบภาษีและ 3 บรรทัดแรก — ไม่เติมรหัสบัญชี
+  async function calcTax(mode: "exclusive" | "inclusive") {
+    if (!journal || vatCalcBusy) return;
+    const input = taxBoxCalcInput(journal.details);
+    if (!input.ok) {
+      if (input.problem === "rate") { setError(tr("gl_tax_calc_need_rate", "ใส่อัตราภาษี (%) ก่อนคำนวณ — ระบบไม่ใส่ 7% ให้เอง")); focusDetailField({ section: "vats", row: 1, field: "vat_rate" }); }
+      if (input.problem === "amount") { setError(tr("gl_tax_calc_need_amount", "ใส่จำนวนเงินก่อนคำนวณภาษี")); focusDetailField({ section: "vats", row: 1, field: "base_amount" }); }
+      return;
+    }
+    setVatCalcBusy(true);
+    try {
+      const calc = await glRequest<VatCalcResult>(`vat-calc?${new URLSearchParams({ mode, amount: input.amount, rate: input.rate, ...(journal.fiscalyear ? { fiscalyear: journal.fiscalyear } : {}) })}`);
+      // Champ ล้างยอดทุกบรรทัดแล้วเติมใหม่เงียบ ๆ — BC ถามก่อนถ้ามียอดเดิม (ปฏิเสธ = คำนวณเฉพาะกรอบภาษี)
+      const fill = !linesHaveAmounts(journal.lines) || await confirm({ title: tr("gl_tax_fill_lines_title", "เติมยอดลงบรรทัดบัญชีด้วย?"), description: tr("gl_tax_fill_lines_desc", "ยอดเดบิตและเครดิตเดิมทุกบรรทัดจะถูกล้าง แล้วเติมฐานภาษี ภาษี และยอดรวมลง 3 บรรทัดแรก — รหัสบัญชีเลือกเอง"), confirmLabel: tr("gl_tax_fill_lines", "เติมยอดลงบรรทัด"), cancelLabel: tr("gl_tax_box_only", "คำนวณเฉพาะกรอบภาษี"), tone: "warning" });
+      setJournal((current) => current ? { ...current, details: patchTaxBox(current.details, { base_amount: calc.base_amount, vat_amount: calc.vat_amount }), ...(fill ? { lines: taxLinesFromCalc(current.lines, input.taxType, calc) } : {}) } : current);
+      setError("");
+      setMessage(tr("gl_tax_calc_done", "คำนวณภาษีแล้ว: ฐานภาษี {0} · ภาษี {1} · รวม {2}").replace("{0}", formatAmount(calc.base_amount, year?.scale)).replace("{1}", formatAmount(calc.vat_amount, year?.scale)).replace("{2}", formatAmount(calc.total_amount, year?.scale)));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setVatCalcBusy(false);
+    }
+  }
+
+  // ปุ่มฟังก์ชันแบบ Champ ทำงานเมื่อเปิดใบสำคัญอยู่ (F2 เลือกรายการ · F3 ตารางภาษี · F5 รายละเอียดอื่นๆ)
+  const journalOpen = journal !== null;
+  useEffect(() => {
+    if (!journalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const action = journalFunctionKey(event);
+      if (!action) return;
+      event.preventDefault();
+      if (action === "list") focusJournalSearch();
+      else openDetailsSection(action === "tax" ? "vats" : null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [journalOpen]);
 
   async function saveReconciliation() {
     if (!journal?.id || !detailsDirty || busy) return;
@@ -347,7 +441,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   });
 
   async function act(action: "post" | "reverse" | "delete") {
-    if (!journal?.id || busy || dirty) return;
+    if (!journal?.id || busy || reviewDirty || detailsDirty || (isEditing && isJournalDirty)) return;
     if (action === "post") { const problem = validateJournal(journal, year, refs.accounts, tr); if (problem) { setError(problem); return; } }
     if (action !== "post" && !reason.trim()) { setError(tr("gl_enter_reason_before_posting", "กรุณาระบุเหตุผลก่อนทำรายการ")); return; }
     if (action === "reverse" && (!reverseDate || !reverseDocno.trim())) { setError(tr("gl_enter_date_and_reversal_doc_no", "กรุณาระบุวันที่และเลขที่ใบกลับรายการ")); return; }
@@ -399,6 +493,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
           <div className="flex flex-col flex-1 min-h-0 gap-2">
             <div className="shrink-0 pb-3 border-b border-border/70 flex flex-col gap-2">
               <form className="flex flex-wrap items-center gap-2 w-full" onSubmit={(event) => { event.preventDefault(); searchDebounce.searchNow(); }}>
+                <div data-gl-journal-search className="contents">
                 <SearchInput
                   className="min-w-36 flex-1 basis-44"
                   ariaLabel={tr("gl_search_number_or_desc", "ค้นหาเลขที่หรือคำอธิบาย")}
@@ -408,6 +503,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   onClear={searchDebounce.clear}
                   onSearch={searchDebounce.searchNow}
                 />
+                </div>
                 <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
                   <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
@@ -683,49 +779,56 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     {tr("gl_read_only_mode", "โหมดแสดงข้อมูล (Read-only) — {0}").replace("{0}", String(journal.status === "draft" ? tr("gl_edit_draft_instruction", "หากต้องการแก้ไข ให้กดปุ่ม \"แก้ไขฉบับร่าง\"") : tr("gl_posted_cannot_edit_directly", "เอกสารนี้ผ่านรายการแล้ว ไม่สามารถแก้ไขได้โดยตรง")))}
                   </span>
                 </div>
-                <div className="overflow-y-auto p-1 grid min-w-0 gap-3 content-start">
+                {/* auto-rows-max: ทุกแถวสูงตามเนื้อหา — ตารางเลื่อนแนวนอน (scroll container) ที่เป็นลูกตรงของ grid ซึ่งเลื่อนแนวตั้ง จะถูกบีบแถวเหลือ ~0 แล้วการ์ดยอดรวมทับตาราง */}
+                <div className="@container overflow-y-auto p-1 grid min-w-0 auto-rows-max gap-3 content-start">
                   <fieldset disabled className="grid min-w-0 gap-3 opacity-95">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label={tr("gl_journal", "สมุดรายวัน")}><input className={control} value={journal.bookcode ? `${journal.bookcode} · ${bookLabel(journal.bookcode)}` : ""} readOnly /></Field>
-                      <Field label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} value={journal.docno} readOnly /></Field>
-                      <Field label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} type="date" value={journal.date} readOnly /></Field>
-                      <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference || "-"} readOnly /></Field>
-                      <Field label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} readOnly /></Field>
-                      <Field label={tr("gl_description", "คำอธิบาย")}><input className={control} value={journal.description || "-"} readOnly /></Field>
-                      <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode || "-"} readOnly /></Field>
-                    </div>
-                    <div className="overflow-x-auto rounded-xl border border-border">
-                      <table className="w-full min-w-[760px] text-left text-[0.95rem]">
-                        <thead className="bg-muted">
-                          <tr>
-                            <th className="p-2">{tr("gl_account_description", "บัญชี / คำอธิบาย")}</th>
-                            <th className="p-2 text-right">{tr("gl_debit", "เดบิต")}</th>
-                            <th className="p-2 text-right">{tr("gl_credit", "เครดิต")}</th>
-                            <th className="p-2">{tr("gl_department_project", "แผนก / โครงการ")}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {journal.lines.map((line, index) => (
-                            <tr key={index}>
-                              <td className="min-w-56 p-2">
-                                <div className="font-mono font-semibold text-primary">{line.accountcode}</div>
-                                {line.description && <div className="text-xs text-muted-foreground">{line.description}</div>}
-                              </td>
-                              <td className="min-w-32 p-2 text-right font-mono tabular-nums whitespace-nowrap">
-                                {line.debit ? formatAmount(line.debit, year?.scale) : "—"}
-                              </td>
-                              <td className="min-w-32 p-2 text-right font-mono tabular-nums whitespace-nowrap">
-                                {line.credit ? formatAmount(line.credit, year?.scale) : "—"}
-                              </td>
-                              <td className="min-w-32 p-2">
-                                <span className="text-sm">{line.departmentcode || line.projectcode ? `${line.departmentcode || "-"}${line.projectcode ? ` / ${line.projectcode}` : ""}` : "—"}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <ChampGroupBox title={tr("gl_journal_header_box", "หัวเอกสาร")}>
+                      <ChampField label={tr("gl_journal", "สมุดรายวัน")}><input className={control} aria-label={tr("gl_journal", "สมุดรายวัน")} value={journal.bookcode ? `${journal.bookcode} · ${bookLabel(journal.bookcode)}` : ""} readOnly /></ChampField>
+                      <ChampSpacer />
+                      <ChampField label={tr("gl_document_no", "เลขที่เอกสาร")}><input className={control} aria-label={tr("gl_document_no", "เลขที่เอกสาร")} value={journal.docno} readOnly /></ChampField>
+                      <ChampField label={tr("gl_document_date", "วันที่เอกสาร")}><input className={control} aria-label={tr("gl_document_date", "วันที่เอกสาร")} type="date" value={journal.date} readOnly /></ChampField>
+                      <ChampField label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} aria-label={tr("gl_reference_document", "เอกสารอ้างอิง")} value={journal.reference || "-"} readOnly /></ChampField>
+                      <ChampField label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} aria-label={tr("gl_ref_date", "วันที่อ้างอิง")} type="date" value={journal.refdate ?? ""} readOnly /></ChampField>
+                      <ChampField label={tr("gl_description", "คำอธิบาย")} wide><input className={control} aria-label={tr("gl_description", "คำอธิบาย")} value={journal.description || "-"} readOnly /></ChampField>
+                      <ChampField label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} aria-label={tr("gl_branch_code", "รหัสสาขา")} value={journal.branchcode || "-"} readOnly /></ChampField>
+                    </ChampGroupBox>
                   </fieldset>
+                  {/* กรอบภาษีแสดงอย่างเดียว (แก้ภาษีของใบที่ผ่านรายการแล้วผ่านตารางภาษี) — อยู่นอก fieldset ให้ปุ่มตารางภาษีกดได้ */}
+                  <ChampTaxBox details={journal.details} scale={year?.scale ?? 2} disabled onOpenTaxTable={() => openDetailsSection("vats")} />
+                  <div className="overflow-x-auto rounded-xl border border-border">
+                    <table className="w-full min-w-[900px] text-left text-[0.95rem]">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="w-10 p-2 text-center">#</th>
+                          <th className="p-2">{tr("gl_account_code", "รหัสบัญชี")}</th>
+                          <th className="p-2">{tr("gl_account_name", "ชื่อบัญชี")}</th>
+                          <th className="p-2">{tr("gl_extra_detail", "รายละเอียดเพิ่มเติม")}</th>
+                          <th className="p-2">{tr("gl_department", "แผนก")}</th>
+                          <th className="p-2">{tr("gl_project", "โครงการ")}</th>
+                          <th className="p-2 text-right">{tr("gl_debit", "เดบิต")}</th>
+                          <th className="p-2 text-right">{tr("gl_credit", "เครดิต")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {journal.lines.map((line, index) => (
+                          <tr key={index}>
+                            <td className="p-2 text-center tabular-nums text-muted-foreground">{index + 1}</td>
+                            <td className="p-2 font-mono font-semibold text-primary whitespace-nowrap">{line.accountcode}</td>
+                            <td className="min-w-40 p-2 leading-snug [overflow-wrap:anywhere]">{accountNames.get(line.accountcode) ?? ""}</td>
+                            <td className="min-w-40 p-2 leading-snug [overflow-wrap:anywhere]">{line.description || "—"}</td>
+                            <td className="p-2">{line.departmentcode || "—"}</td>
+                            <td className="p-2">{line.projectcode || "—"}</td>
+                            <td className="min-w-32 p-2 text-right font-mono tabular-nums whitespace-nowrap">
+                              {line.debit ? formatAmount(line.debit, year?.scale) : "—"}
+                            </td>
+                            <td className="min-w-32 p-2 text-right font-mono tabular-nums whitespace-nowrap">
+                              {line.credit ? formatAmount(line.credit, year?.scale) : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                   {(journal.source_system || journal.source_record_id) && <p className="rounded-lg border border-border p-3">{tr("gl_details_ui_34","แหล่งข้อมูล:")}{journal.source_system || "—"}{tr("gl_details_ui_35","· อ้างอิง:")}{journal.source_record_id || "—"}</p>}
                   <div className="grid gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3" aria-live="polite">
                     {([ [tr("gl_total_debit", "รวมเดบิต"), totals?.debit], [tr("gl_total_credit", "รวมเครดิต"), totals?.credit], [tr("gl_difference", "ผลต่าง"), totals?.difference] ] as const).map(([label, units]) => (
@@ -836,53 +939,100 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     </Button>
                   </div>
                 </header>
-                <div className="overflow-y-auto p-1 grid min-w-0 gap-3 content-start">
+                <div className="@container overflow-y-auto p-1 grid min-w-0 gap-3 content-start">
                   <fieldset disabled={busy} className="grid min-w-0 gap-3">
-                    <div className="grid gap-3 sm:grid-cols-2" onKeyDown={(e) => { if (e.key === "Enter") headerEnterNav.onKeyDown(e); }}>
-                      <Field label={tr("gl_journal", "สมุดรายวัน")}>
-                        <Combobox
-                          // backend ห้ามเปลี่ยนสมุดของใบสำคัญที่บันทึกแล้ว (journal_book_immutable) — ล็อกไว้ ไม่ให้ผู้ใช้เลือกแล้วค่อยเจอ error ตอนบันทึก
-                          disabled={!isEditing || busy || Boolean(journal.id)}
-                          value={journal.bookcode}
-                          onChange={(val) => patch({ bookcode: String(val) })}
-                          placeholder={tr("gl_journal", "สมุดรายวัน")}
-                        >
-                          {!journal.bookcode && <option value="">{tr("gl_select", "เลือก")}</option>}
-                          {usableBooks.map((item) => <option key={item.code} value={item.code}>{item.code} · {journalBookName(item, item.code, language)}</option>)}
-                          {journal.bookcode && !usableBooks.some((item) => item.code === journal.bookcode) && (
-                            <option value={journal.bookcode}>{journal.bookcode} · {bookLabel(journal.bookcode)}{!journal.id && <> {tr("gl_book_inactive_suffix", "(ปิดใช้งาน — เลือกสมุดอื่น)")}</>}</option>
-                          )}
-                        </Combobox>
-                      </Field>
-                      <Field label={tr("gl_document_no", "เลขที่เอกสาร")} hint={journal.id ? undefined : tr("gl_docno_auto_hint", "เว้นว่างไว้ ระบบจะรันเลขที่ให้ตอนบันทึก")}>
-                        <input
-                          className={control}
-                          required={Boolean(journal.id)}
-                          value={journal.docno}
-                          maxLength={30}
-                          placeholder={journal.id ? undefined : nextDocNo ? tr("gl_docno_auto_preview", "อัตโนมัติ: {0}").replace("{0}", nextDocNo) : tr("gl_auto", "อัตโนมัติ")}
-                          onChange={(e) => patch({ docno: e.target.value })}
-                        />
-                      </Field>
-                      <Field label={tr("gl_document_date", "วันที่เอกสาร")}>
-                        <input
-                          className={control}
-                          required
-                          type="date"
-                          value={journal.date}
-                          onChange={(e) => {
-                            const newDate = e.target.value;
-                            const matched = fiscalYearForDate(refs.years, newDate);
-                            patch({ date: newDate, ...(matched ? { fiscalyear: matched } : {}) });
-                          }}
-                        />
-                      </Field>
-                      <Field label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} value={journal.reference} maxLength={50} onChange={(e) => patch({ reference: e.target.value })} /></Field>
-                      <Field label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} type="date" value={journal.refdate ?? ""} onChange={(e) => patch({ refdate: e.target.value })} /></Field>
-                      <Field label={tr("gl_description", "คำอธิบาย")}>
-                        <input className={control} value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
-                      </Field>
-                      <Field label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></Field>
+                    {!journal.id && (
+                      // ตัวเลือกหลังบันทึกของ Champ (combo บนสุดของจอ) — มีผลกับใบใหม่เท่านั้น ใบที่แก้จะกลับไปโหมดแสดงข้อมูลเหมือนเดิม
+                      <label className="flex flex-wrap items-center gap-2 text-[0.95rem]">
+                        <span className="font-medium">{tr("gl_save_option", "ตัวเลือกการบันทึก")}</span>
+                        <span className="min-w-60 max-w-sm flex-1">
+                          <select className={control} value={saveOption} onChange={(e) => changeSaveOption(parseJournalSaveOption(e.target.value))} title={tr("gl_save_option_hint", "ใช้หลังกดบันทึกรายการ F11 — ระบบจำค่าที่เลือกไว้ให้ผู้ใช้นี้ในเครื่องนี้")}>
+                            {JOURNAL_SAVE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{tr(option.key, option.th)}</option>)}
+                          </select>
+                        </span>
+                      </label>
+                    )}
+                    <div className="grid min-w-0 gap-3 @4xl:grid-cols-[minmax(0,1fr)_14rem] @4xl:items-start">
+                      {/* กรอบหัวเอกสาร + กรอบภาษีแบบ Champ: Enter เลื่อนช่องตามลำดับ สมุด → เลขที่ → วันที่ → อ้างอิง → วันที่อ้างอิง → คำอธิบาย → สาขา → ภาษี แล้วเข้าตารางบัญชี */}
+                      <div ref={headerRef} className="grid min-w-0 gap-3" onKeyDown={(e) => { if (e.key === "Enter") headerEnterNav.onKeyDown(e); }}>
+                        <ChampGroupBox title={tr("gl_journal_header_box", "หัวเอกสาร")}>
+                          <ChampField label={tr("gl_journal", "สมุดรายวัน")}>
+                            <Combobox
+                              // backend ห้ามเปลี่ยนสมุดของใบสำคัญที่บันทึกแล้ว (journal_book_immutable) — ล็อกไว้ ไม่ให้ผู้ใช้เลือกแล้วค่อยเจอ error ตอนบันทึก
+                              disabled={!isEditing || busy || Boolean(journal.id)}
+                              value={journal.bookcode}
+                              onChange={(val) => patch({ bookcode: String(val) })}
+                              placeholder={tr("gl_journal", "สมุดรายวัน")}
+                              aria-label={tr("gl_journal", "สมุดรายวัน")}
+                            >
+                              {!journal.bookcode && <option value="">{tr("gl_select", "เลือก")}</option>}
+                              {usableBooks.map((item) => <option key={item.code} value={item.code}>{item.code} · {journalBookName(item, item.code, language)}</option>)}
+                              {journal.bookcode && !usableBooks.some((item) => item.code === journal.bookcode) && (
+                                <option value={journal.bookcode}>{journal.bookcode} · {bookLabel(journal.bookcode)}{!journal.id && <> {tr("gl_book_inactive_suffix", "(ปิดใช้งาน — เลือกสมุดอื่น)")}</>}</option>
+                              )}
+                            </Combobox>
+                          </ChampField>
+                          <ChampSpacer />
+                          <ChampField label={tr("gl_document_no", "เลขที่เอกสาร")} hint={journal.id ? undefined : tr("gl_docno_auto_hint", "เว้นว่างไว้ ระบบจะรันเลขที่ให้ตอนบันทึก")}>
+                            <input
+                              className={control}
+                              aria-label={tr("gl_document_no", "เลขที่เอกสาร")}
+                              required={Boolean(journal.id)}
+                              value={journal.docno}
+                              maxLength={30}
+                              placeholder={journal.id ? undefined : nextDocNo ? tr("gl_docno_auto_preview", "อัตโนมัติ: {0}").replace("{0}", nextDocNo) : tr("gl_auto", "อัตโนมัติ")}
+                              onChange={(e) => patch({ docno: e.target.value })}
+                            />
+                          </ChampField>
+                          <ChampField label={tr("gl_document_date", "วันที่เอกสาร")}>
+                            <input
+                              className={control}
+                              aria-label={tr("gl_document_date", "วันที่เอกสาร")}
+                              required
+                              type="date"
+                              value={journal.date}
+                              onChange={(e) => {
+                                const newDate = e.target.value;
+                                const matched = fiscalYearForDate(refs.years, newDate);
+                                patch({ date: newDate, ...(matched ? { fiscalyear: matched } : {}) });
+                              }}
+                            />
+                          </ChampField>
+                          <ChampField label={tr("gl_reference_document", "เอกสารอ้างอิง")}><input className={control} aria-label={tr("gl_reference_document", "เอกสารอ้างอิง")} value={journal.reference} maxLength={50} onChange={(e) => patch({ reference: e.target.value })} /></ChampField>
+                          <ChampField label={tr("gl_ref_date", "วันที่อ้างอิง")}><input className={control} aria-label={tr("gl_ref_date", "วันที่อ้างอิง")} type="date" value={journal.refdate ?? ""} onChange={(e) => patch({ refdate: e.target.value })} /></ChampField>
+                          <ChampField label={tr("gl_description", "คำอธิบาย")} wide>
+                            <input className={control} aria-label={tr("gl_description", "คำอธิบาย")} value={journal.description} onChange={(e) => patch({ description: e.target.value })} maxLength={500} />
+                          </ChampField>
+                          <ChampField label={tr("gl_branch_code", "รหัสสาขา")}><input className={control} aria-label={tr("gl_branch_code", "รหัสสาขา")} value={journal.branchcode} onChange={(e) => patch({ branchcode: e.target.value })} /></ChampField>
+                        </ChampGroupBox>
+                        <ChampTaxBox details={journal.details} scale={year?.scale ?? 2} disabled={busy} calcBusy={vatCalcBusy} onTaxType={(value) => void changeTaxType(value)} onPatch={patchTaxBoxRow} onCalc={(mode) => void calcTax(mode)} onOpenTaxTable={() => openDetailsSection("vats")} />
+                      </div>
+                      {/* ปุ่มคำสั่งด้านขวาตามลำดับของ Champ — แผงแคบจะเรียงเป็นแถวแทน */}
+                      <div className="flex flex-wrap gap-2 @4xl:flex-col @4xl:flex-nowrap" role="group" aria-label={tr("gl_journal_commands", "คำสั่งใบสำคัญ")}>
+                        <Button type="button" variant="outline" className={champCommandClass} onClick={() => openDetailsSection(null)}>
+                          <FileText className="size-4" />{tr("gl_other_details", "รายละเอียดอื่นๆ")}<ChampKey>F5</ChampKey>
+                        </Button>
+                        <Button type="submit" className={champCommandClass} disabled={busy || !dirty}>
+                          <Save className="size-4" />{busy ? tr("gl_saving", "กำลังบันทึก…") : tr("gl_save_entry", "บันทึกรายการ")}<ChampKey primary>F11</ChampKey>
+                        </Button>
+                        <Button type="button" variant="outline" className={champCommandClass} onClick={focusJournalSearch}>
+                          <Search className="size-4" />{tr("gl_pick_entry", "เลือกรายการ")}<ChampKey>F2</ChampKey>
+                        </Button>
+                        {effectiveMode === "edit" && (
+                          <Button type="button" variant="outline" className={champCommandClass} onClick={() => void openCreate()}>
+                            <Plus className="size-4" />{tr("gl_new_entry", "เพิ่มรายการใหม่")}<ChampKey>Alt+N</ChampKey>
+                          </Button>
+                        )}
+                        <Button type="button" variant="outline" className={`${champCommandClass} text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50`} disabled={!journal.id || isJournalDirty} onClick={() => void act("delete")}>
+                          <Trash2 className="size-4" />{tr("gl_delete_entry", "ลบรายการ")}
+                        </Button>
+                        <Button type="button" variant="outline" className={champCommandClass} onClick={() => openDetailsSection("vats")}>
+                          <Table2 className="size-4" />{tr("gl_tax_table", "ตารางภาษี")}<ChampKey>F3</ChampKey>
+                        </Button>
+                        <Button type="button" variant="outline" className={champCommandClass} onClick={() => void cancelEdit()}>
+                          <X className="size-4" />{tr("gl_cancel", "ยกเลิก")}<ChampKey>Esc</ChampKey>
+                        </Button>
+                      </div>
                     </div>
                     <div
                       ref={linesRef}
@@ -897,36 +1047,43 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         }
                       }}
                     >
-                      <table className="w-full min-w-[760px] text-left text-[0.95rem]">
+                      {/* คอลัมน์ตาม Champ: รหัสบัญชี | ชื่อบัญชี | รายละเอียดเพิ่มเติม | แผนก | (โครงการ — มีเฉพาะ BC) | เดบิต | เครดิต */}
+                      <table className="w-full min-w-[1040px] text-left text-[0.95rem]">
                         <thead className="bg-muted">
                           <tr>
-                            <th className="p-2">{tr("gl_account_description", "บัญชี / คำอธิบาย")}</th>
+                            <th className="w-10 p-2 text-center">#</th>
+                            <th className="p-2">{tr("gl_account_code", "รหัสบัญชี")}</th>
+                            <th className="p-2">{tr("gl_account_name", "ชื่อบัญชี")}</th>
+                            <th className="p-2">{tr("gl_extra_detail", "รายละเอียดเพิ่มเติม")}</th>
+                            <th className="p-2">{tr("gl_department", "แผนก")}</th>
+                            <th className="p-2">{tr("gl_project", "โครงการ")}</th>
                             <th className="p-2">{tr("gl_debit", "เดบิต")}</th>
                             <th className="p-2">{tr("gl_credit", "เครดิต")}</th>
-                            <th className="p-2">{tr("gl_department_project", "แผนก / โครงการ")}</th>
-                            <th className="p-2">{tr("gl_manage", "จัดการ")}</th>
+                            <th className="p-2"><span className="sr-only">{tr("gl_manage", "จัดการ")}</span></th>
                           </tr>
                         </thead>
                         <tbody>
                           {journal.lines.map((line, index) => (
                             <tr key={index} className="border-t border-border">
-                              <td className="min-w-56 p-2">
-                                <div className="grid gap-1">
-                                  <AccountSelect label={tr("gl_line_account", "บัญชีบรรทัด {0}").replace("{0}", String(index + 1))} value={line.accountcode} accounts={refs.accounts} onChange={(accountcode) => patchLine(index, { accountcode })} disabled={busy} />
-                                  <input className={control} aria-label={tr("gl_line_description", "คำอธิบายบรรทัด {0}").replace("{0}", String(index + 1))} placeholder={tr("gl_description", "คำอธิบาย")} value={line.description} onChange={(e) => patchLine(index, { description: e.target.value })} />
-                                </div>
+                              <td className="p-2 text-center tabular-nums text-muted-foreground">{index + 1}</td>
+                              <td className="min-w-36 p-2">
+                                <AccountSelect codeOnly label={tr("gl_line_account", "บัญชีบรรทัด {0}").replace("{0}", String(index + 1))} value={line.accountcode} accounts={refs.accounts} onChange={(accountcode) => patchLine(index, { accountcode })} disabled={busy} />
+                              </td>
+                              <td className="min-w-40 p-2 leading-snug [overflow-wrap:anywhere]">{line.accountcode ? accountNames.get(line.accountcode) ?? "" : ""}</td>
+                              <td className="min-w-40 p-2">
+                                <input className={control} aria-label={tr("gl_line_extra_detail", "รายละเอียดเพิ่มเติมบรรทัด {0}").replace("{0}", String(index + 1))} value={line.description} onChange={(e) => patchLine(index, { description: e.target.value })} />
+                              </td>
+                              <td className="min-w-24 p-2">
+                                <input className={control} aria-label={tr("gl_line_department", "แผนกบรรทัด {0}").replace("{0}", String(index + 1))} value={line.departmentcode} onChange={(e) => patchLine(index, { departmentcode: e.target.value })} />
+                              </td>
+                              <td className="min-w-24 p-2">
+                                <input className={control} aria-label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} value={line.projectcode} onChange={(e) => patchLine(index, { projectcode: e.target.value })} />
                               </td>
                               <td className="min-w-32 p-2">
                                 <AmountInput ariaLabel={tr("gl_line_debit", "เดบิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.debit} onChange={(debit) => patchLine(index, { debit })} />
                               </td>
                               <td className="min-w-32 p-2">
                                 <AmountInput ariaLabel={tr("gl_line_credit", "เครดิตบรรทัด {0}").replace("{0}", String(index + 1))} disabled={busy} scale={year?.scale ?? 2} allowEmpty={false} value={line.credit} onChange={(credit) => patchLine(index, { credit })} />
-                              </td>
-                              <td className="min-w-32 p-2">
-                                <div className="grid gap-1">
-                                  <input className={control} aria-label={tr("gl_line_department", "แผนกบรรทัด {0}").replace("{0}", String(index + 1))} placeholder={tr("gl_department", "แผนก")} value={line.departmentcode} onChange={(e) => patchLine(index, { departmentcode: e.target.value })} />
-                                  <input className={control} aria-label={tr("gl_line_project", "โครงการบรรทัด {0}").replace("{0}", String(index + 1))} placeholder={tr("gl_project", "โครงการ")} value={line.projectcode} onChange={(e) => patchLine(index, { projectcode: e.target.value })} />
-                                </div>
                               </td>
                               <td className="p-2">
                                 <Button type="button" variant="outline" className={actionClass} disabled={busy || journal.lines.length <= 2} onClick={() => { if ((journal.details?.allocations?.length ?? 0) + (journal.details?.bank_lines?.length ?? 0) + (journal.details?.matches?.length ?? 0) > 0) { setError(tr("gl_details_ui_39","นำการจัดสรรและจับคู่ออกก่อนลบบรรทัดบัญชี เพื่อป้องกันการอ้างอิงผิดแถว")); return; } patch({ lines: journal.lines.filter((_, i) => i !== index) }); }}>
@@ -956,18 +1113,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         >
                           <Scale className="size-4 mr-1.5 text-primary" />
                           <span>{tr("gl_auto_balance", "ปรับยอดให้ดุล (Auto-Balance)")}</span>
-                        </Button>
-                      )}
-                      {smartGuard && !smartGuard.vat.hasVatLine && smartGuard.vat.suggestedVatUnits > 0n && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className={`${actionClass} border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 shadow-sm`}
-                          onClick={() => patch({ lines: appendVatLine(journal.lines, refs.accounts, smartGuard.vat.suggestedVatType!, smartGuard.vat.suggestedVatUnits, year?.scale ?? 2) })}
-                          title={tr("gl_add_vat_line_hint", "คำนวณและเพิ่มบรรทัดภาษีมูลค่าเพิ่ม 7% จากฐาน")}
-                        >
-                          <Sparkles className="size-4 mr-1.5 text-primary" />
-                          <span>{tr("gl_add_vat_7", "+ ภาษี 7% ({0})").replace("{0}", smartGuard.vat.suggestedVatFormatted)}</span>
                         </Button>
                       )}
                     </div>
@@ -1074,34 +1219,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     <Field label={tr("gl_reason", "เหตุผล")}><input className={control} value={reason} disabled={busy} onChange={(e) => setReason(e.target.value)} placeholder={tr("gl_edit_reason_hint", "ระบุเหตุผลการแก้ไข (ถ้ามี)")} /></Field>
                   )}
                 </div>
-                <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="submit" className={actionClass} disabled={busy || !dirty}>
-                      <Save className="size-4 mr-1.5" />
-                      <span>{busy ? tr("gl_saving", "กำลังบันทึก…") : tr("gl_save_draft", "บันทึกฉบับร่าง")}</span>
-                      <kbd className="ml-1.5 hidden sm:inline-block rounded border border-primary-foreground/30 bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-mono text-primary-foreground">
-                        Ctrl+S
-                      </kbd>
-                    </Button>
-                    <Button type="button" variant="outline" className={actionClass} onClick={() => void cancelEdit()}>
-                      <span>{tr("gl_cancel", "ยกเลิก")}</span>
-                      <kbd className="ml-1.5 hidden sm:inline-block rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-                        Esc
-                      </kbd>
-                    </Button>
-                  </div>
-                  {journal.id && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={`${actionClass} text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50`}
-                      disabled={busy}
-                      onClick={() => void act("delete")}
-                    >
-                      <Trash2 className="size-4 mr-1.5" />{tr("gl_delete_draft", "ลบฉบับร่าง")}
-                    </Button>
-                  )}
-                </footer>
               </form>
             )
           ) : (

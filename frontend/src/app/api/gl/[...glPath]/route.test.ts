@@ -37,6 +37,15 @@ describe("GL authenticated proxy", () => {
     expect((await GET(new Request("http://localhost/api/gl/journal-books/สมุดซื้อ", { headers }), context("journal-books", "สมุดซื้อ"))).status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("forwards the VAT calculator with its decimal-string inputs and drops caller scope", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: { base_amount: "100.00", vat_amount: "7.00", total_amount: "107.00" } })); vi.stubGlobal("fetch", fetchMock);
+    const response = await GET(new Request("http://localhost/api/gl/vat-calc?mode=inclusive&amount=107.00&rate=7&fiscalyear=FY2569&holdingcode=other", { headers }), context("vat-calc"));
+    expect(response.status).toBe(200);
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.pathname).toBe("/gl/v2/vat-calc");
+    expect(Object.fromEntries(url.searchParams)).toEqual({ mode: "inclusive", amount: "107.00", rate: "7", fiscalyear: "FY2569" });
+    expect((await GET(new Request("http://localhost/api/gl/vat-calc/x", { headers }), context("vat-calc", "x"))).status).toBe(404);
+  });
   it("forwards journal review reads but rejects missing IDs and nested paths", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ success: true, data: {} })); vi.stubGlobal("fetch", fetchMock);
     expect((await GET(new Request("http://localhost/api/gl/journal-reviews/j-1?holdingcode=other", { headers }), context("journal-reviews", "j-1"))).status).toBe(200);

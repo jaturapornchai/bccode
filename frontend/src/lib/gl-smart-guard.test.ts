@@ -5,7 +5,6 @@ import {
   analyzeGLTaxAndBalance,
   autoBalanceJournalLines,
   setExactVatLine,
-  appendVatLine,
 } from "./gl-smart-guard";
 import { amountUnits, emptyAccount, emptyLine, type GLAccount, type GLLine } from "./general-ledger";
 
@@ -93,12 +92,6 @@ describe("gl-smart-guard (Thai Accounting Tax & Balance Guard)", () => {
       expect(res.vat.vatAccountCode).toBe("9001");
       expect(res.vat.isExactVat).toBe(true);
     });
-
-    it("leaves the account empty when the chart has no VAT account (no hard-coded fallback code)", () => {
-      const updated = appendVatLine([{ ...emptyLine(), accountcode: "1111", debit: "100.00", credit: "0" }], chart, "input_tax", amountUnits("7.00"), 2);
-      expect(updated[1].accountcode).toBe("");
-      expect(updated[1].debit).toBe("7.00");
-    });
   });
 
   describe("calculateVat7", () => {
@@ -159,17 +152,6 @@ describe("gl-smart-guard (Thai Accounting Tax & Balance Guard)", () => {
       expect(res.vat.expectedVatFormatted).toBe("70.00");
       expect(res.vat.varianceUnits).toBe(amountUnits("0.01"));
     });
-
-    it("suggests 7% VAT when user inputs expense without VAT line", () => {
-      const lines: GLLine[] = [
-        { ...emptyLine(), accountcode: "5111", debit: "5000.00", credit: "0" },
-      ];
-
-      const res = analyzeGLTaxAndBalance(lines, sampleAccounts, 2);
-      expect(res.vat.hasVatLine).toBe(false);
-      expect(res.vat.suggestedVatType).toBe("input_tax");
-      expect(res.vat.suggestedVatFormatted).toBe("350.00");
-    });
   });
 
   describe("autoBalanceJournalLines", () => {
@@ -209,53 +191,6 @@ describe("gl-smart-guard (Thai Accounting Tax & Balance Guard)", () => {
 
       const exactUnits = amountUnits("70.00");
       const updated = setExactVatLine(lines, 1, exactUnits, 2);
-      expect(updated[1].debit).toBe("70.00");
-    });
-  });
-
-  describe("appendVatLine", () => {
-    it("appends input VAT line with account 1151", () => {
-      const lines: GLLine[] = [
-        { ...emptyLine(), accountcode: "5111", debit: "2000.00", credit: "0" },
-      ];
-
-      const vatUnits = amountUnits("140.00");
-      const updated = appendVatLine(lines, sampleAccounts, "input_tax", vatUnits, 2);
-      expect(updated.length).toBe(2);
-      expect(updated[1].accountcode).toBe("1151");
-      expect(updated[1].debit).toBe("140.00");
-      expect(updated[1].credit).toBe("0");
-      expect(updated[1].description).toContain("7%");
-    });
-
-    const line: GLLine = { ...emptyLine(), accountcode: "5111", debit: "1000.00", credit: "0" };
-
-    it("skips an inactive VAT account", () => {
-      const chart: GLAccount[] = [
-        { ...emptyAccount(), accountcode: "8801", isactive: false, names: [{ code: "th", name: "ภาษีซื้อ" }] },
-        { ...emptyAccount(), accountcode: "8802", names: [{ code: "th", name: "ภาษีซื้อ" }] },
-      ];
-      expect(appendVatLine([line], chart, "input_tax", amountUnits("70.00"), 2)[1].accountcode).toBe("8802");
-    });
-
-    it("prefers the normal VAT account over an undue-VAT account listed first", () => {
-      const chart: GLAccount[] = [
-        { ...emptyAccount(), accountcode: "8801", names: [{ code: "th", name: "ภาษีซื้อยังไม่ถึงกำหนด" }] },
-        { ...emptyAccount(), accountcode: "8802", names: [{ code: "th", name: "ภาษีซื้อ" }] },
-        { ...emptyAccount(), accountcode: "8803", accounttype: "liability", names: [{ code: "th", name: "ภาษีขายยังไม่ถึงกำหนด" }] },
-        { ...emptyAccount(), accountcode: "8804", accounttype: "liability", names: [{ code: "th", name: "ภาษีขาย" }] },
-      ];
-      expect(appendVatLine([line], chart, "input_tax", amountUnits("70.00"), 2)[1].accountcode).toBe("8802");
-      expect(appendVatLine([line], chart, "output_tax", amountUnits("70.00"), 2)[1].accountcode).toBe("8804");
-    });
-
-    it("leaves the account empty when no active posting VAT account matches", () => {
-      const chart: GLAccount[] = [
-        { ...emptyAccount(), accountcode: "8801", isactive: false, names: [{ code: "th", name: "ภาษีซื้อ" }] },
-        { ...emptyAccount(), accountcode: "8802", allowposting: false, names: [{ code: "th", name: "ภาษีซื้อ" }] },
-      ];
-      const updated = appendVatLine([line], chart, "input_tax", amountUnits("70.00"), 2);
-      expect(updated[1].accountcode).toBe("");
       expect(updated[1].debit).toBe("70.00");
     });
   });

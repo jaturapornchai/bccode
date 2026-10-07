@@ -15,12 +15,14 @@ export async function GET(request: Request, context: Context) {
     : glPath[0] === "journal-support" ? glPath.length === 1
     // เลขที่เอกสารถัดไปของสมุดรายวัน (แสดงก่อนบันทึก) — backend journal_docno.go
     : glPath[0] === "journal-next-docno" ? glPath.length === 1
+    // ปุ่มภาษีแยกนอก/รวมใน ของกล่องภาษีบนใบสำคัญ — backend คำนวณ (generalledger/vat_calc.go) ไม่บันทึกอะไร
+    : glPath[0] === "vat-calc" ? glPath.length === 1
     : glPath[0] === "journal-reviews" ? glPath.length === 2
     : (GL_RESOURCES as readonly string[]).includes(glPath[0]) && glPath.length <= 2;
   if (!valid || glPath.some((segment) => !/^[\p{L}\p{M}\p{N}_.-]+$/u.test(segment) || segment === "." || segment === "..")) return bad("ไม่พบรายการที่ต้องการ", 404);
   try {
     const query = new URLSearchParams();
-    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "templates", "notes"];
+    const allowed = ["q", "page", "limit", "from", "to", "fiscalyear", "accountcode", "accountfrom", "accountto", "branchcode", "departmentcode", "projectcode", "bookcode", "budgetcode", "status", "kind", "snapshot", "asof", "companywide", "template", "hideopening", "hidezero", "controltotals", "summary", "templates", "notes", "mode", "amount", "rate"];
     new URL(request.url).searchParams.forEach((value, key) => { if (allowed.includes(key)) query.set(key, value); });
     return proxyMainApiJson(request, getMainApiUrl(getBackendUrlFromRequest(request)), `/gl/v2/${glPath.map(encodeURIComponent).join("/")}?${query}`, { method: "GET" });
   } catch { return bad("การเชื่อมต่อระบบไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"); }

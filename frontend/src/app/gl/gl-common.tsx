@@ -465,7 +465,8 @@ export function AmountInput({
   );
 }
 
-export function AccountSelect({ value, onChange, accounts, label: labelProp, all = false, disabled = false, allowEmpty = true, field }: { value: string; onChange: (value: string) => void; accounts: GLAccount[]; label?: string; all?: boolean; disabled?: boolean; allowEmpty?: boolean; field?: string }) {
+/** codeOnly: ช่องแสดงแค่รหัสบัญชี (ตารางใบสำคัญแบบ Champ มีคอลัมน์ "ชื่อบัญชี" แยก) — รายการค้นหาในหน้าต่างยังแสดงชื่อเต็ม */
+export function AccountSelect({ value, onChange, accounts, label: labelProp, all = false, disabled = false, allowEmpty = true, field, codeOnly = false }: { value: string; onChange: (value: string) => void; accounts: GLAccount[]; label?: string; all?: boolean; disabled?: boolean; allowEmpty?: boolean; field?: string; codeOnly?: boolean }) {
   const tr = useGLText();
   const label = labelProp ?? tr("gl_account", "บัญชี");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -492,11 +493,11 @@ export function AccountSelect({ value, onChange, accounts, label: labelProp, all
           disabled={disabled}
           title={tr("gl_f2_full_coa_search", "{0} (คลิกหรือกด F2 เพื่อค้นหาผังบัญชีแบบเต็มจอ)").replace("{0}", String(label))}
         >
-          {allowEmpty && <option value="">{tr("gl_select_acct_search_full", "เลือกบัญชี (กดค้นหาเพื่อเปิดจอใหญ่)")}</option>}
+          {allowEmpty && <option value="">{codeOnly ? tr("gl_select", "เลือก") : tr("gl_select_acct_search_full", "เลือกบัญชี (กดค้นหาเพื่อเปิดจอใหญ่)")}</option>}
           {sortedAccounts.filter((account) => all || account.allowposting && account.isactive).map((account) => {
             const level = account.effectiveLevel ?? account.level ?? 1;
             const indent = level > 1 ? `${"\u00A0\u00A0".repeat(level - 1)}└─ ` : "";
-            return <option key={account.id ?? account.accountcode} value={account.accountcode}>{indent}{account.accountcode} · {accountName(account)}</option>;
+            return <option key={account.id ?? account.accountcode} value={account.accountcode}>{codeOnly ? account.accountcode : `${indent}${account.accountcode} · ${accountName(account)}`}</option>;
           })}
         </select>
         <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1.5 pointer-events-auto">

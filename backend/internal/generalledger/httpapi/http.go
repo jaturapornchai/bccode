@@ -507,6 +507,9 @@ func (h *Http) list(request microservice.IContext) error {
 	if resource == "journal-next-docno" {
 		return h.previewJournalDocNo(ctx, request, scope)
 	}
+	if resource == "vat-calc" {
+		return h.vatCalc(ctx, request, scope)
+	}
 	screen := resourceScreens[resource]
 	filters := gl.ListFilter{BookCode: request.QueryParam("bookcode"), Kind: request.QueryParam("kind"), Status: request.QueryParam("status")}
 	permitted := allowed(scope.Permissions, screen, "")
@@ -704,4 +707,22 @@ func (h *Http) previewJournalDocNo(ctx context.Context, request microservice.ICo
 		return failure(request, err)
 	}
 	return response(request, map[string]string{"docno": docno})
+}
+
+// vatCalc - GET /gl/v2/vat-calc?mode=exclusive|inclusive&amount=&rate=&fiscalyear=: the tax-box buttons
+// "ภาษีแยกนอก" / "ภาษีรวมใน" of the voucher screen (Champ OnTaxAuto). Read-only calculator — nothing is
+// stored; rounding follows the fiscal year scale exactly like the VAT computed on save (generalledger/vat_calc.go).
+func (h *Http) vatCalc(ctx context.Context, request microservice.IContext, scope requestScope) error {
+	if !allowed(scope.Permissions, journalsScreen, "") && !allowed(scope.Permissions, openingScreen, "") {
+		return fail(request, 403, "ไม่มีสิทธิ์อ่านข้อมูลบัญชีนี้")
+	}
+	scale, err := h.store.FiscalYearScale(ctx, scope.Scope, request.QueryParam("fiscalyear"))
+	if err != nil {
+		return failure(request, err)
+	}
+	result, err := gl.VatCalc(request.QueryParam("mode"), request.QueryParam("amount"), request.QueryParam("rate"), scale)
+	if err != nil {
+		return failure(request, err)
+	}
+	return response(request, result)
 }

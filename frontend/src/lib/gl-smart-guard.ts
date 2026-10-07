@@ -22,9 +22,6 @@ export interface VatAnalysis {
   isCloseVat: boolean; // within 5 Satang (e.g. invoice rounding variance)
   actualVatFormatted: string;
   expectedVatFormatted: string;
-  suggestedVatFormatted: string;
-  suggestedVatType: TaxType | null;
-  suggestedVatUnits: bigint;
 }
 
 export interface GLBalanceAnalysis {
@@ -39,8 +36,6 @@ export interface GLBalanceAnalysis {
 
 // Withholding tax (ภาษีเงินได้ถูกหัก/ค้างจ่าย, ภ.ง.ด.51 จ่ายล่วงหน้า) is not VAT even when it sits next to VAT in the chart.
 const NOT_VAT_NAME = /หัก\s*ณ\s*ที่จ่าย|ภาษีเงินได้|withholding/i;
-// Undue VAT (ภาษีซื้อ/ภาษีขายยังไม่ถึงกำหนด) waits for the tax point; it is not the account for a normal VAT line.
-const UNDUE_VAT_NAME = /ยังไม่ถึงกำหนด|undue/i;
 
 /**
  * Checks whether a line is a Thai VAT line (ภาษีซื้อ / ภาษีขาย) from the account name, account type and line
@@ -150,9 +145,6 @@ export function analyzeGLTaxAndBalance(
   let isExactVat = false;
   let isCloseVat = false;
 
-  let suggestedVatType: TaxType | null = null;
-  let suggestedVatUnits = 0n;
-
   if (vatLine) {
     hasVatLine = true;
     vatLineIndex = vatLine.index;
@@ -179,27 +171,6 @@ export function analyzeGLTaxAndBalance(
       isExactVat = varianceUnits === 0n;
       const absVar = varianceUnits < 0n ? -varianceUnits : varianceUnits;
       isCloseVat = absVar <= 5n * PENNY_FACTOR;
-    }
-  } else {
-    const nonZeroDebits = parsedLines.filter((p) => p.debit > 0n);
-    const nonZeroCredits = parsedLines.filter((p) => p.credit > 0n);
-
-    if (nonZeroDebits.length > 0 && nonZeroCredits.length === 0) {
-      suggestedVatType = "input_tax";
-      const totalBase = nonZeroDebits.reduce((sum, p) => sum + p.debit, 0n);
-      suggestedVatUnits = calculateVat7(totalBase, scale);
-    } else if (nonZeroCredits.length > 0 && nonZeroDebits.length === 0) {
-      suggestedVatType = "output_tax";
-      const totalBase = nonZeroCredits.reduce((sum, p) => sum + p.credit, 0n);
-      suggestedVatUnits = calculateVat7(totalBase, scale);
-    } else if (nonZeroDebits.length > 0 && nonZeroCredits.length > 0) {
-      if (totalDebitUnits > totalCreditUnits) {
-        suggestedVatType = "output_tax";
-        suggestedVatUnits = calculateVat7(totalDebitUnits - totalCreditUnits, scale);
-      } else if (totalCreditUnits > totalDebitUnits) {
-        suggestedVatType = "input_tax";
-        suggestedVatUnits = calculateVat7(totalCreditUnits - totalDebitUnits, scale);
-      }
     }
   }
 
@@ -233,9 +204,6 @@ export function analyzeGLTaxAndBalance(
       isCloseVat,
       actualVatFormatted: formatUnits(actualVatUnits),
       expectedVatFormatted: formatUnits(expectedVatUnits),
-      suggestedVatFormatted: formatUnits(suggestedVatUnits),
-      suggestedVatType,
-      suggestedVatUnits,
     },
   };
 }
@@ -350,42 +318,3 @@ export function setExactVatLine(
   return nextLines;
 }
 
-/**
- * Appends a new 7% VAT line with automatic account lookup
- */
-export function appendVatLine(
-  lines: GLLine[],
-  accounts: GLAccount[],
-  vatType: TaxType,
-  vatUnits: bigint,
-  scale = 2
-): GLLine[] {
-  const vatStr = amountString(vatUnits, scale);
-  const isInput = vatType === "input_tax";
-
-  // Find the VAT account by name among active posting accounts; no code guessing. Not found → leave the account
-  // empty so the user picks it (the save validates it) rather than writing to a code that may not exist.
-  // Charts often keep "ภาษีซื้อ/ภาษีขายยังไม่ถึงกำหนด" next to the normal VAT account; a plain 7% VAT line
-  // belongs to the normal one, so the undue account is only the fallback when it is the sole match.
-  const candidates = accounts.filter((a) =>
-    a.allowposting !== false &&
-    a.isactive !== false &&
-    isVatAccount(a.names?.[0]?.name ?? "", "", a.accounttype).type === vatType
-  );
-  const matchingAcc = candidates.find((a) => !UNDUE_VAT_NAME.test(a.names?.[0]?.name ?? "")) ?? candidates[0];
-
-  const accountCode = matchingAcc?.accountcode ?? "";
-  const description = isInput ? "ภาษีซื้อ 7%" : "ภาษีขาย 7%";
-
-  const newLine: GLLine = {
-    accountcode: accountCode,
-    description,
-    debit: isInput ? vatStr : "0",
-    credit: isInput ? "0" : vatStr,
-    departmentcode: "",
-    projectcode: "",
-    cashflow: "",
-  };
-
-  return [...lines, newLine];
-}
