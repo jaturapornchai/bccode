@@ -644,7 +644,7 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
       expect(html).toContain("งวดกุมภาพันธ์ 2026");
     });
 
-    it("tests GLJournals posting and unposting mode screens", () => {
+    it("tests GLJournals edit and unposting mode screens (Champ posts in batches only)", () => {
       vi.mocked(glCommon.useGLList).mockReturnValue({
         data: {
           items: [
@@ -662,12 +662,13 @@ describe("General Ledger Full Lifecycle End-to-End Simulation", () => {
         setPage: vi.fn(),
       });
 
-      const htmlPost = renderToStaticMarkup(createElement(GLJournals, { route: "/gl/posting", mode: "post" }));
-      expect(htmlPost).toContain("ผ่านรายการ");
-      expect(htmlPost).toContain("JV-DRAFT-01");
+      const htmlEdit = renderToStaticMarkup(createElement(GLJournals, { route: "/gl/journal" }));
+      expect(htmlEdit).toContain("JV-DRAFT-01");
+      expect(htmlEdit).not.toContain("ผ่านรายการแล้ว (ขอยกเลิก)");
 
       const htmlUnpost = renderToStaticMarkup(createElement(GLJournals, { route: "/gl/unposting", mode: "reverse" }));
-      expect(htmlUnpost).toContain("ผ่านรายการแล้ว (ขอยกเลิก)");
+      expect(htmlUnpost).toContain("JV-DRAFT-01");
+      expect(htmlUnpost).not.toContain("ผ่านรายการแล้ว (ขอยกเลิก)");
     });
 
     it("tests GLJournals opening balance mode screen", () => {

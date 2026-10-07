@@ -107,15 +107,13 @@ function focusJournalSearch() {
   document.querySelector<HTMLInputElement>("[data-gl-journal-search] input")?.focus();
 }
 
-export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { route: string; book?: string; kind?: string; mode?: "edit" | "post" | "reverse" }) {
+export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { route: string; book?: string; kind?: string; mode?: "edit" | "reverse" }) {
   const tr = useGLText();
   const [selectedBook, setSelectedBook] = useState(book || "");
   const activeBook = selectedBook || "";
-  const isPostingRoute = mode === "post" || mode === "reverse";
-  const [postingSubTab, setPostingSubTab] = useState<"draft" | "posted">(mode === "reverse" ? "posted" : "draft");
-  const effectiveMode = isPostingRoute ? (postingSubTab === "posted" ? "reverse" : "post") : mode;
   const [search, setSearch] = useState("");
-  const activeStatus = effectiveMode === "post" ? "draft" : effectiveMode === "reverse" ? "posted" : "";
+  // reverse = ยกเลิกการผ่านรายการ (กลับรายการทีละใบ): แสดงเฉพาะใบที่ผ่านรายการแล้ว; ผ่านรายการทำเป็นชุดที่ gl-post-batch แบบ Champ 5512
+  const activeStatus = mode === "reverse" ? "posted" : "";
   const filters = new URLSearchParams({ ...(activeBook ? { bookcode: activeBook } : {}), ...(kind ? { kind } : {}), ...(activeStatus ? { status: activeStatus } : {}) }).toString();
   const list = useGLList<GLJournal>("journals", search, filters), refs = useReferences();
   const language = useGLLanguage();
@@ -434,19 +432,18 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
   // Global Keyboard Shortcuts (Ctrl+S, Alt+N, Esc)
   useFormShortcuts({
     onSave: () => void (detailsDirty ? saveReconciliation() : save()),
-    onNew: effectiveMode === "edit" ? () => void openCreate() : undefined,
+    onNew: mode === "edit" ? () => void openCreate() : undefined,
     onCancel: isEditing || detailsEditing ? () => void cancelEdit() : undefined,
     canSave: (isEditing || detailsDirty) && dirty && !busy,
     disabled: busy,
   });
 
-  async function act(action: "post" | "reverse" | "delete") {
+  async function act(action: "reverse" | "delete") {
     if (!journal?.id || busy || reviewDirty || detailsDirty || (isEditing && isJournalDirty)) return;
-    if (action === "post") { const problem = validateJournal(journal, year, refs.accounts, tr); if (problem) { setError(problem); return; } }
-    if (action !== "post" && !reason.trim()) { setError(tr("gl_enter_reason_before_posting", "กรุณาระบุเหตุผลก่อนทำรายการ")); return; }
+    if (!reason.trim()) { setError(tr("gl_enter_reason_before_posting", "กรุณาระบุเหตุผลก่อนทำรายการ")); return; }
     if (action === "reverse" && (!reverseDate || !reverseDocno.trim())) { setError(tr("gl_enter_date_and_reversal_doc_no", "กรุณาระบุวันที่และเลขที่ใบกลับรายการ")); return; }
-    const label = action === "post" ? tr("gl_post_accounting_entry", "ผ่านรายการ") : action === "reverse" ? tr("gl_create_reversing_entry", "สร้างรายการกลับบัญชี") : tr("gl_delete_draft", "ลบฉบับร่าง");
-    if (!await confirm({ title: `${label}?`, description: action === "post" ? tr("gl_after_posting_edit_requires_reversal", "หลังผ่านรายการจะไม่สามารถแก้ไขหรือลบได้ การแก้ไขต้องสร้างรายการกลับบัญชีพร้อมเหตุผล") : action === "reverse" ? tr("gl_create_reversal_doc", "สร้างเอกสาร {0} วันที่ {1} กลับเดบิตและเครดิตของ {2} โดยเก็บรายการเดิมไว้").replace("{0}", String(reverseDocno)).replace("{1}", formatAppDate(reverseDate, language)).replace("{2}", String(journal.docno)) : tr("gl_delete_draft_keep_history", "ลบฉบับร่าง {0} พร้อมเก็บประวัติ").replace("{0}", String(journal.docno)), details: tr("gl_debit_credit", "เดบิต {0} · เครดิต {1}").replace("{0}", String(totals ? formatAmount(amountString(totals.debit), year?.scale) : "—")).replace("{1}", String(totals ? formatAmount(amountString(totals.credit), year?.scale) : "—")), confirmLabel: label, tone: action === "delete" ? "danger" : "warning" })) return;
+    const label = action === "reverse" ? tr("gl_create_reversing_entry", "สร้างรายการกลับบัญชี") : tr("gl_delete_draft", "ลบฉบับร่าง");
+    if (!await confirm({ title: `${label}?`, description: action === "reverse" ? tr("gl_create_reversal_doc", "สร้างเอกสาร {0} วันที่ {1} กลับเดบิตและเครดิตของ {2} โดยเก็บรายการเดิมไว้").replace("{0}", String(reverseDocno)).replace("{1}", formatAppDate(reverseDate, language)).replace("{2}", String(journal.docno)) : tr("gl_delete_draft_keep_history", "ลบฉบับร่าง {0} พร้อมเก็บประวัติ").replace("{0}", String(journal.docno)), details: tr("gl_debit_credit", "เดบิต {0} · เครดิต {1}").replace("{0}", String(totals ? formatAmount(amountString(totals.debit), year?.scale) : "—")).replace("{1}", String(totals ? formatAmount(amountString(totals.credit), year?.scale) : "—")), confirmLabel: label, tone: action === "delete" ? "danger" : "warning" })) return;
     try {
       await execute({ resource: "journals", action, id: journal.id, version: journal.version, reason, ...(action === "reverse" ? { date: reverseDate, docno: reverseDocno } : {}) });
       setJournal(null);
@@ -507,7 +504,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <Button type="submit" variant="outline" className={actionClass}><Search className="size-4 mr-1.5" />{tr("gl_search", "ค้นหา")}</Button>
                   <Button type="button" variant="outline" className={actionClass} onClick={() => { list.reload(); refs.reload(); }} disabled={list.loading}><RefreshCw className="size-4 mr-1.5" />{tr("gl_reload", "โหลดใหม่")}</Button>
-                  {effectiveMode === "edit" && (
+                  {mode === "edit" && (
                     <Button type="button" className={actionClass} disabled={busy} onClick={() => void openCreate()}>
                       <Plus className="size-4 mr-1.5" />
                       <span>{tr("gl_add_row", "เพิ่มรายการ")}</span>
@@ -518,52 +515,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                   )}
                 </div>
               </form>
-
-              {/* Posting & Reversal Dual-Tabs (รวมหน้าผ่านรายการและยกเลิกเข้าด้วยกันตามต้นแบบ Champ) */}
-              {isPostingRoute && (
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border shrink-0" role="tablist" aria-label={tr("gl_post_and_reverse", "ผ่านรายการและยกเลิก")}>
-                  <button
-                    type="button"
-                    role="tab"
-                    disabled={busy || reviewDirty}
-                    aria-selected={postingSubTab === "draft"}
-                    onClick={() => {
-                      setPostingSubTab("draft");
-                      setJournal(null);
-                      setOriginal("");
-                      list.setPage(1);
-                    }}
-                    className={`flex-1 inline-flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      postingSubTab === "draft"
-                        ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <FileText className="size-3.5" />
-                    <span>{tr("gl_draft_to_post", "รอผ่านรายการ (ฉบับร่าง)")}</span>
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    disabled={busy || reviewDirty}
-                    aria-selected={postingSubTab === "posted"}
-                    onClick={() => {
-                      setPostingSubTab("posted");
-                      setJournal(null);
-                      setOriginal("");
-                      list.setPage(1);
-                    }}
-                    className={`flex-1 inline-flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      postingSubTab === "posted"
-                        ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <CheckCircle2 className="size-3.5" />
-                    <span>{tr("gl_posted_to_reverse", "ผ่านรายการแล้ว (ขอยกเลิก)")}</span>
-                  </button>
-                </div>
-              )}
 
               {/* Journal Book Category Tabs (แยกกันข้างในตามคำสั่งลุงจืด) */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none" role="tablist" aria-label={tr("gl_journal", "สมุดรายวัน")}>
@@ -667,7 +618,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         </td>
                         <td className="py-2 pr-2.5 pl-2 text-right whitespace-nowrap align-middle" onClick={(e) => e.stopPropagation()}>
                           <div className="inline-flex items-center justify-end gap-1 align-middle">
-                            {isDraft && effectiveMode === "edit" ? (
+                            {isDraft && mode === "edit" ? (
                               <>
                                 <button
                                   type="button"
@@ -749,7 +700,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                     <Button type="button" variant="outline" className={actionClass} disabled={busy} onClick={() => voucherPrint.print(<GLVoucherPrint journal={journal} books={refs.books ?? []} company={printCompanyName()} tr={tr} language={language} scale={year?.scale} />)} title={tr("gl_print_voucher_title_hint", "พิมพ์ใบสำคัญรายวันพร้อมช่องลายมือชื่อผู้จัดทำ ผู้ตรวจสอบ และผู้อนุมัติ")}>
                       <Printer className="size-4 mr-1.5" />{tr("gl_print_voucher", "พิมพ์ใบสำคัญ")}
                     </Button>
-                    {journal.status === "draft" && effectiveMode === "edit" && (
+                    {journal.status === "draft" && mode === "edit" && (
                       <Button
                         type="button"
                         className={actionClass}
@@ -859,7 +810,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                 </div>
                 <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 shrink-0 mt-auto">
                   <div className="flex flex-wrap gap-2">
-                    {journal.status === "draft" && effectiveMode === "edit" && (
+                    {journal.status === "draft" && mode === "edit" && (
                       <Button
                         type="button"
                         className={actionClass}
@@ -867,17 +818,6 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         disabled={busy}
                       >
                         <Pencil className="size-4 mr-1.5" />{tr("gl_edit_draft_3", "แก้ไขฉบับร่าง")}
-                      </Button>
-                    )}
-                    {journal.status === "draft" && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={actionClass}
-                        disabled={busy}
-                        onClick={() => void act("post")}
-                      >
-                        {tr("gl_post_accounting_entry", "ผ่านรายการ")}
                       </Button>
                     )}
                     {journal.status === "posted" && (detailsEditing ? <><Button type="button" className={actionClass} disabled={busy || !detailsDirty} onClick={() => void saveReconciliation()}><Save className="mr-1.5 size-4" />{tr("gl_details_ui_36","บันทึกผลกระทบยอด")}</Button><Button type="button" variant="outline" onClick={() => void cancelEdit()}>{tr("gl_details_ui_37","ยกเลิกกระทบยอด")}</Button></> : <Button type="button" variant="outline" disabled={busy || reviewDirty} onClick={() => setDetailsEditing(true)}>{tr("gl_details_ui_38","เพิ่มผลกระทบยอด")}</Button>)}
@@ -1018,7 +958,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
                         <Button type="button" variant="outline" className={champCommandClass} onClick={focusJournalSearch}>
                           <Search className="size-4" />{tr("gl_pick_entry", "เลือกรายการ")}<ChampKey>F2</ChampKey>
                         </Button>
-                        {effectiveMode === "edit" && (
+                        {mode === "edit" && (
                           <Button type="button" variant="outline" className={champCommandClass} onClick={() => void openCreate()}>
                             <Plus className="size-4" />{tr("gl_new_entry", "เพิ่มรายการใหม่")}<ChampKey>Alt+N</ChampKey>
                           </Button>
@@ -1228,7 +1168,7 @@ export function GLJournals({ route, book = "", kind = "", mode = "edit" }: { rou
               </div>
               <h2 className="text-base font-semibold">{tr("gl_select_item_show_acct", "เลือกรายการเพื่อแสดงข้อมูลบัญชี")}</h2>
               <p className="text-sm text-muted-foreground">{tr("gl_click_row_or_add_journal", "คลิกที่แถวในตารางเพื่อแสดงข้อมูล หรือกดปุ่ม “+ เพิ่มรายการ” เพื่อบันทึกรายวันใหม่")}</p>
-              {effectiveMode === "edit" && (
+              {mode === "edit" && (
                 <div className="pt-2">
                   <Button type="button" className={actionClass} onClick={() => void openCreate()} disabled={busy}>
                     <Plus className="size-4 mr-1.5" />{tr("gl_save_new_journal", "บันทึกรายวันใหม่")}

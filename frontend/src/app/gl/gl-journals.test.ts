@@ -193,7 +193,7 @@ describe("GLJournals CRUD table presentation", () => {
     expect(html).toContain(journalBookBadgeClass(4));
   });
 
-  it("renders posting dual tabs (รอผ่านรายการ and ผ่านรายการแล้ว) when on posting route", () => {
+  it("the unposting screen has no draft/posted sub-tabs — Champ posts in batches (5512) and reverses one voucher at a time", () => {
     vi.mocked(glCommon.useGLList).mockReturnValue({
       data: {
         items: [],
@@ -209,10 +209,9 @@ describe("GLJournals CRUD table presentation", () => {
       setPage: vi.fn(),
     });
 
-    const html = renderToStaticMarkup(createElement(GLJournals, { route: "/gl/posting", mode: "post" }));
-    // Contains Posting & Reversal dual tabs
-    expect(html).toContain("รอผ่านรายการ (ฉบับร่าง)");
-    expect(html).toContain("ผ่านรายการแล้ว (ขอยกเลิก)");
+    const html = renderToStaticMarkup(createElement(GLJournals, { route: "/gl/unposting", mode: "reverse" }));
+    expect(html).not.toContain("รอผ่านรายการ (ฉบับร่าง)");
+    expect(html).not.toContain("ผ่านรายการแล้ว (ขอยกเลิก)");
   });
 });
 
